@@ -75,6 +75,12 @@ Client apps should provide the following:
 
 ## Sequence diagrams
 
+Prepared with [mermaid-js](https://mermaid-js.github.io/mermaid-live-editor)
+
+### Adding connection
+
+![Adding connection](/diagrams/connection.svg)
+
 ### Sending message
 
 ![Sending message](/diagrams/message.svg)

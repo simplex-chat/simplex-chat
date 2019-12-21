@@ -1,0 +1,24 @@
+sequenceDiagram
+  participant Alice
+  participant App A
+  participant Server A
+  participant Server B
+  participant App B
+  participant Bob
+  Alice ->> App A: Alice shows <AB public key> as QR code on the screen<br>(Alice's public key for Bob's eyes only)
+  Bob ->> App B: Bob requests app to add connection
+  App A ->> App B: Bob's app reads <AB public key> via the camera
+  App B ->> Server B: Bob's app encrypts "connection request" (including <BA public key> and Bob's profile) and sends it to Bob's servers<br>{from: <BA public key hash>, to: <AB public key hash>, message: <request encrypted with AB public key>}
+  Server B ->> Server A: Bob's servers use <AB public key hash> to locate Alice's servers<br>and forward encrypted message to all Alice's servers (when they are different from Bob's servers)
+  Server A ->> App A: Alice's servers send the message to Alice's app
+  App A ->> Alice: Alice's app uses <AB public key hash> to identify Bob<br>and decrypts Bob's request with <AB private key> to show it
+  Alice ->> App A: Alice identifies Bob's profile and accepts the connection<br>(Bob is now added to Alice's list of connections as "pending")
+  App A ->> Server A: Alice's app creates "connection accepted" message (including Alice's profile) and sends it to Alice's servers<br>{from: <AB public key hash>, to: <BA public key hash>, message: <encrypted with AB public key>}
+  Server A ->> Server B: Alice's servers use <BA public key hash> to locate Bob's servers<br>and forward encrypted message to all Bob's servers (when they are different from Alice's servers)
+  Server B ->> App B: Bob's servers send the message to Bob's app
+  App B ->> Bob: Bob's app uses <AB public key hash> to identify Alice<br>and decrypts the acceptance with Bob's <BA private key>
+  App B ->> Bob: Bob's app adds Alice to the list of connections
+  App B ->> Server B: "connection acknowledgement" message
+  Server B ->> Server A: "connection acknowledgement" message
+  Server A ->> App A: "connection acknowledgement" message
+  App A ->> Alice: Bob is now in the Alice's list of connections as "established"
