@@ -11,12 +11,12 @@ sequenceDiagram
   App B ->> Server B: Bob's app encrypts "connection request" (including <BA public key> and Bob's profile) and sends it to Bob's servers<br>{from: <BA public key hash>, to: <AB public key hash>, message: <request encrypted with AB public key>}
   Server B ->> Server A: Bob's servers use <AB public key hash> to locate Alice's servers<br>and forward encrypted message to all Alice's servers (when they are different from Bob's servers)
   Server A ->> App A: Alice's servers send the message to Alice's app
-  App A ->> Alice: Alice's app uses <AB public key hash> to identify Bob<br>and decrypts Bob's request with <AB private key> to show it
+  App A ->> Alice: Alice's app matches <AB public key hash> with shown QR code<br>and decrypts Bob's profile with <AB private key> to show it
   Alice ->> App A: Alice identifies Bob's profile and accepts the connection<br>(Bob is now added to Alice's list of connections as "pending")
   App A ->> Server A: Alice's app creates "connection accepted" message (including Alice's profile) and sends it to Alice's servers<br>{from: <AB public key hash>, to: <BA public key hash>, message: <encrypted with AB public key>}
   Server A ->> Server B: Alice's servers use <BA public key hash> to locate Bob's servers<br>and forward encrypted message to all Bob's servers (when they are different from Alice's servers)
   Server B ->> App B: Bob's servers send the message to Bob's app
-  App B ->> Bob: Bob's app uses <AB public key hash> to identify Alice<br>and decrypts the acceptance with Bob's <BA private key>
+  App B ->> Bob: Bob's app matches <AB public key hash> with read QR code<br>and decrypts the Alice's profile with Bob's <BA private key>
   App B ->> Bob: Bob's app adds Alice to the list of connections
   App B ->> Server B: "connection acknowledgement" message
   Server B ->> Server A: "connection acknowledgement" message
