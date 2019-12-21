@@ -1,49 +1,49 @@
-<svg id="mermaid-1576939215542" width="100%" xmlns="http://www.w3.org/2000/svg" height="100%" style="max-width:1250px;" viewBox="-50 -10 1250 336"><style>
+<svg id="mermaid-1576967608788" width="100%" xmlns="http://www.w3.org/2000/svg" height="100%" style="max-width:1250px;" viewBox="-50 -10 1250 516"><style>
 
 
 
-#mermaid-1576939215542 .label {
+#mermaid-1576967608788 .label {
   font-family: 'trebuchet ms', verdana, arial;
   font-family: var(--mermaid-font-family);
   color: #333; }
 
-#mermaid-1576939215542 .label text {
+#mermaid-1576967608788 .label text {
   fill: #333; }
 
-#mermaid-1576939215542 .node rect,
-#mermaid-1576939215542 .node circle,
-#mermaid-1576939215542 .node ellipse,
-#mermaid-1576939215542 .node polygon {
+#mermaid-1576967608788 .node rect,
+#mermaid-1576967608788 .node circle,
+#mermaid-1576967608788 .node ellipse,
+#mermaid-1576967608788 .node polygon {
   fill: #ECECFF;
   stroke: #9370DB;
   stroke-width: 1px; }
 
-#mermaid-1576939215542 .node .label {
+#mermaid-1576967608788 .node .label {
   text-align: center; }
 
-#mermaid-1576939215542 .node.clickable {
+#mermaid-1576967608788 .node.clickable {
   cursor: pointer; }
 
-#mermaid-1576939215542 .arrowheadPath {
+#mermaid-1576967608788 .arrowheadPath {
   fill: #333333; }
 
-#mermaid-1576939215542 .edgePath .path {
+#mermaid-1576967608788 .edgePath .path {
   stroke: #333333;
   stroke-width: 1.5px; }
 
-#mermaid-1576939215542 .edgeLabel {
+#mermaid-1576967608788 .edgeLabel {
   background-color: #e8e8e8;
   text-align: center; }
 
-#mermaid-1576939215542 .cluster rect {
+#mermaid-1576967608788 .cluster rect {
   fill: #ffffde;
   stroke: #aaaa33;
   stroke-width: 1px; }
 
-#mermaid-1576939215542 .cluster text {
+#mermaid-1576967608788 .cluster text {
   fill: #333; }
 
-#mermaid-1576939215542 div.mermaidTooltip {
+#mermaid-1576967608788 div.mermaidTooltip {
   position: absolute;
   text-align: center;
   max-width: 200px;
@@ -57,117 +57,117 @@
   pointer-events: none;
   z-index: 100; }
 
-#mermaid-1576939215542 .actor {
+#mermaid-1576967608788 .actor {
   stroke: #CCCCFF;
   fill: #ECECFF; }
 
-#mermaid-1576939215542 text.actor {
+#mermaid-1576967608788 text.actor {
   fill: black;
   stroke: none; }
 
-#mermaid-1576939215542 .actor-line {
+#mermaid-1576967608788 .actor-line {
   stroke: grey; }
 
-#mermaid-1576939215542 .messageLine0 {
+#mermaid-1576967608788 .messageLine0 {
   stroke-width: 1.5;
   stroke-dasharray: '2 2';
   stroke: #333; }
 
-#mermaid-1576939215542 .messageLine1 {
+#mermaid-1576967608788 .messageLine1 {
   stroke-width: 1.5;
   stroke-dasharray: '2 2';
   stroke: #333; }
 
-#mermaid-1576939215542 #arrowhead {
+#mermaid-1576967608788 #arrowhead {
   fill: #333; }
 
-#mermaid-1576939215542 .sequenceNumber {
+#mermaid-1576967608788 .sequenceNumber {
   fill: white; }
 
-#mermaid-1576939215542 #sequencenumber {
+#mermaid-1576967608788 #sequencenumber {
   fill: #333; }
 
-#mermaid-1576939215542 #crosshead path {
+#mermaid-1576967608788 #crosshead path {
   fill: #333 !important;
   stroke: #333 !important; }
 
-#mermaid-1576939215542 .messageText {
+#mermaid-1576967608788 .messageText {
   fill: #333;
   stroke: none; }
 
-#mermaid-1576939215542 .labelBox {
+#mermaid-1576967608788 .labelBox {
   stroke: #CCCCFF;
   fill: #ECECFF; }
 
-#mermaid-1576939215542 .labelText {
+#mermaid-1576967608788 .labelText {
   fill: black;
   stroke: none; }
 
-#mermaid-1576939215542 .loopText {
+#mermaid-1576967608788 .loopText {
   fill: black;
   stroke: none; }
 
-#mermaid-1576939215542 .loopLine {
+#mermaid-1576967608788 .loopLine {
   stroke-width: 2;
   stroke-dasharray: '2 2';
   stroke: #CCCCFF; }
 
-#mermaid-1576939215542 .note {
+#mermaid-1576967608788 .note {
   stroke: #aaaa33;
   fill: #fff5ad; }
 
-#mermaid-1576939215542 .noteText {
+#mermaid-1576967608788 .noteText {
   fill: black;
   stroke: none;
   font-family: 'trebuchet ms', verdana, arial;
   font-family: var(--mermaid-font-family);
   font-size: 14px; }
 
-#mermaid-1576939215542 .activation0 {
+#mermaid-1576967608788 .activation0 {
   fill: #f4f4f4;
   stroke: #666; }
 
-#mermaid-1576939215542 .activation1 {
+#mermaid-1576967608788 .activation1 {
   fill: #f4f4f4;
   stroke: #666; }
 
-#mermaid-1576939215542 .activation2 {
+#mermaid-1576967608788 .activation2 {
   fill: #f4f4f4;
   stroke: #666; }
 
 
-#mermaid-1576939215542 .mermaid-main-font {
+#mermaid-1576967608788 .mermaid-main-font {
   font-family: "trebuchet ms", verdana, arial;
   font-family: var(--mermaid-font-family); }
 
-#mermaid-1576939215542 .section {
+#mermaid-1576967608788 .section {
   stroke: none;
   opacity: 0.2; }
 
-#mermaid-1576939215542 .section0 {
+#mermaid-1576967608788 .section0 {
   fill: rgba(102, 102, 255, 0.49); }
 
-#mermaid-1576939215542 .section2 {
+#mermaid-1576967608788 .section2 {
   fill: #fff400; }
 
-#mermaid-1576939215542 .section1,
-#mermaid-1576939215542 .section3 {
+#mermaid-1576967608788 .section1,
+#mermaid-1576967608788 .section3 {
   fill: white;
   opacity: 0.2; }
 
-#mermaid-1576939215542 .sectionTitle0 {
+#mermaid-1576967608788 .sectionTitle0 {
   fill: #333; }
 
-#mermaid-1576939215542 .sectionTitle1 {
+#mermaid-1576967608788 .sectionTitle1 {
   fill: #333; }
 
-#mermaid-1576939215542 .sectionTitle2 {
+#mermaid-1576967608788 .sectionTitle2 {
   fill: #333; }
 
-#mermaid-1576939215542 .sectionTitle3 {
+#mermaid-1576967608788 .sectionTitle3 {
   fill: #333; }
 
-#mermaid-1576939215542 .sectionTitle {
+#mermaid-1576967608788 .sectionTitle {
   text-anchor: start;
   font-size: 11px;
   text-height: 14px;
@@ -175,313 +175,313 @@
   font-family: var(--mermaid-font-family); }
 
 
-#mermaid-1576939215542 .grid .tick {
+#mermaid-1576967608788 .grid .tick {
   stroke: lightgrey;
   opacity: 0.3;
   shape-rendering: crispEdges; }
-#mermaid-1576939215542   .grid .tick text {
+#mermaid-1576967608788   .grid .tick text {
     font-family: 'trebuchet ms', verdana, arial;
     font-family: var(--mermaid-font-family); }
 
-#mermaid-1576939215542 .grid path {
+#mermaid-1576967608788 .grid path {
   stroke-width: 0; }
 
 
-#mermaid-1576939215542 .today {
+#mermaid-1576967608788 .today {
   fill: none;
   stroke: red;
   stroke-width: 2px; }
 
 
 
-#mermaid-1576939215542 .task {
+#mermaid-1576967608788 .task {
   stroke-width: 2; }
 
-#mermaid-1576939215542 .taskText {
+#mermaid-1576967608788 .taskText {
   text-anchor: middle;
   font-family: 'trebuchet ms', verdana, arial;
   font-family: var(--mermaid-font-family); }
 
-#mermaid-1576939215542 .taskText:not([font-size]) {
+#mermaid-1576967608788 .taskText:not([font-size]) {
   font-size: 11px; }
 
-#mermaid-1576939215542 .taskTextOutsideRight {
+#mermaid-1576967608788 .taskTextOutsideRight {
   fill: black;
   text-anchor: start;
   font-size: 11px;
   font-family: 'trebuchet ms', verdana, arial;
   font-family: var(--mermaid-font-family); }
 
-#mermaid-1576939215542 .taskTextOutsideLeft {
+#mermaid-1576967608788 .taskTextOutsideLeft {
   fill: black;
   text-anchor: end;
   font-size: 11px; }
 
 
-#mermaid-1576939215542 .task.clickable {
+#mermaid-1576967608788 .task.clickable {
   cursor: pointer; }
 
-#mermaid-1576939215542 .taskText.clickable {
+#mermaid-1576967608788 .taskText.clickable {
   cursor: pointer;
   fill: #003163 !important;
   font-weight: bold; }
 
-#mermaid-1576939215542 .taskTextOutsideLeft.clickable {
+#mermaid-1576967608788 .taskTextOutsideLeft.clickable {
   cursor: pointer;
   fill: #003163 !important;
   font-weight: bold; }
 
-#mermaid-1576939215542 .taskTextOutsideRight.clickable {
+#mermaid-1576967608788 .taskTextOutsideRight.clickable {
   cursor: pointer;
   fill: #003163 !important;
   font-weight: bold; }
 
 
-#mermaid-1576939215542 .taskText0,
-#mermaid-1576939215542 .taskText1,
-#mermaid-1576939215542 .taskText2,
-#mermaid-1576939215542 .taskText3 {
+#mermaid-1576967608788 .taskText0,
+#mermaid-1576967608788 .taskText1,
+#mermaid-1576967608788 .taskText2,
+#mermaid-1576967608788 .taskText3 {
   fill: white; }
 
-#mermaid-1576939215542 .task0,
-#mermaid-1576939215542 .task1,
-#mermaid-1576939215542 .task2,
-#mermaid-1576939215542 .task3 {
+#mermaid-1576967608788 .task0,
+#mermaid-1576967608788 .task1,
+#mermaid-1576967608788 .task2,
+#mermaid-1576967608788 .task3 {
   fill: #8a90dd;
   stroke: #534fbc; }
 
-#mermaid-1576939215542 .taskTextOutside0,
-#mermaid-1576939215542 .taskTextOutside2 {
+#mermaid-1576967608788 .taskTextOutside0,
+#mermaid-1576967608788 .taskTextOutside2 {
   fill: black; }
 
-#mermaid-1576939215542 .taskTextOutside1,
-#mermaid-1576939215542 .taskTextOutside3 {
+#mermaid-1576967608788 .taskTextOutside1,
+#mermaid-1576967608788 .taskTextOutside3 {
   fill: black; }
 
 
-#mermaid-1576939215542 .active0,
-#mermaid-1576939215542 .active1,
-#mermaid-1576939215542 .active2,
-#mermaid-1576939215542 .active3 {
+#mermaid-1576967608788 .active0,
+#mermaid-1576967608788 .active1,
+#mermaid-1576967608788 .active2,
+#mermaid-1576967608788 .active3 {
   fill: #bfc7ff;
   stroke: #534fbc; }
 
-#mermaid-1576939215542 .activeText0,
-#mermaid-1576939215542 .activeText1,
-#mermaid-1576939215542 .activeText2,
-#mermaid-1576939215542 .activeText3 {
+#mermaid-1576967608788 .activeText0,
+#mermaid-1576967608788 .activeText1,
+#mermaid-1576967608788 .activeText2,
+#mermaid-1576967608788 .activeText3 {
   fill: black !important; }
 
 
-#mermaid-1576939215542 .done0,
-#mermaid-1576939215542 .done1,
-#mermaid-1576939215542 .done2,
-#mermaid-1576939215542 .done3 {
+#mermaid-1576967608788 .done0,
+#mermaid-1576967608788 .done1,
+#mermaid-1576967608788 .done2,
+#mermaid-1576967608788 .done3 {
   stroke: grey;
   fill: lightgrey;
   stroke-width: 2; }
 
-#mermaid-1576939215542 .doneText0,
-#mermaid-1576939215542 .doneText1,
-#mermaid-1576939215542 .doneText2,
-#mermaid-1576939215542 .doneText3 {
+#mermaid-1576967608788 .doneText0,
+#mermaid-1576967608788 .doneText1,
+#mermaid-1576967608788 .doneText2,
+#mermaid-1576967608788 .doneText3 {
   fill: black !important; }
 
 
-#mermaid-1576939215542 .crit0,
-#mermaid-1576939215542 .crit1,
-#mermaid-1576939215542 .crit2,
-#mermaid-1576939215542 .crit3 {
+#mermaid-1576967608788 .crit0,
+#mermaid-1576967608788 .crit1,
+#mermaid-1576967608788 .crit2,
+#mermaid-1576967608788 .crit3 {
   stroke: #ff8888;
   fill: red;
   stroke-width: 2; }
 
-#mermaid-1576939215542 .activeCrit0,
-#mermaid-1576939215542 .activeCrit1,
-#mermaid-1576939215542 .activeCrit2,
-#mermaid-1576939215542 .activeCrit3 {
+#mermaid-1576967608788 .activeCrit0,
+#mermaid-1576967608788 .activeCrit1,
+#mermaid-1576967608788 .activeCrit2,
+#mermaid-1576967608788 .activeCrit3 {
   stroke: #ff8888;
   fill: #bfc7ff;
   stroke-width: 2; }
 
-#mermaid-1576939215542 .doneCrit0,
-#mermaid-1576939215542 .doneCrit1,
-#mermaid-1576939215542 .doneCrit2,
-#mermaid-1576939215542 .doneCrit3 {
+#mermaid-1576967608788 .doneCrit0,
+#mermaid-1576967608788 .doneCrit1,
+#mermaid-1576967608788 .doneCrit2,
+#mermaid-1576967608788 .doneCrit3 {
   stroke: #ff8888;
   fill: lightgrey;
   stroke-width: 2;
   cursor: pointer;
   shape-rendering: crispEdges; }
 
-#mermaid-1576939215542 .milestone {
+#mermaid-1576967608788 .milestone {
   transform: rotate(45deg) scale(0.8, 0.8); }
 
-#mermaid-1576939215542 .milestoneText {
+#mermaid-1576967608788 .milestoneText {
   font-style: italic; }
 
-#mermaid-1576939215542 .doneCritText0,
-#mermaid-1576939215542 .doneCritText1,
-#mermaid-1576939215542 .doneCritText2,
-#mermaid-1576939215542 .doneCritText3 {
+#mermaid-1576967608788 .doneCritText0,
+#mermaid-1576967608788 .doneCritText1,
+#mermaid-1576967608788 .doneCritText2,
+#mermaid-1576967608788 .doneCritText3 {
   fill: black !important; }
 
-#mermaid-1576939215542 .activeCritText0,
-#mermaid-1576939215542 .activeCritText1,
-#mermaid-1576939215542 .activeCritText2,
-#mermaid-1576939215542 .activeCritText3 {
+#mermaid-1576967608788 .activeCritText0,
+#mermaid-1576967608788 .activeCritText1,
+#mermaid-1576967608788 .activeCritText2,
+#mermaid-1576967608788 .activeCritText3 {
   fill: black !important; }
 
-#mermaid-1576939215542 .titleText {
+#mermaid-1576967608788 .titleText {
   text-anchor: middle;
   font-size: 18px;
   fill: black;
   font-family: 'trebuchet ms', verdana, arial;
   font-family: var(--mermaid-font-family); }
 
-#mermaid-1576939215542 g.classGroup text {
+#mermaid-1576967608788 g.classGroup text {
   fill: #9370DB;
   stroke: none;
   font-family: 'trebuchet ms', verdana, arial;
   font-family: var(--mermaid-font-family);
   font-size: 10px; }
-#mermaid-1576939215542   g.classGroup text .title {
+#mermaid-1576967608788   g.classGroup text .title {
     font-weight: bolder; }
 
-#mermaid-1576939215542 g.classGroup rect {
+#mermaid-1576967608788 g.classGroup rect {
   fill: #ECECFF;
   stroke: #9370DB; }
 
-#mermaid-1576939215542 g.classGroup line {
+#mermaid-1576967608788 g.classGroup line {
   stroke: #9370DB;
   stroke-width: 1; }
 
-#mermaid-1576939215542 .classLabel .box {
+#mermaid-1576967608788 .classLabel .box {
   stroke: none;
   stroke-width: 0;
   fill: #ECECFF;
   opacity: 0.5; }
 
-#mermaid-1576939215542 .classLabel .label {
+#mermaid-1576967608788 .classLabel .label {
   fill: #9370DB;
   font-size: 10px; }
 
-#mermaid-1576939215542 .relation {
+#mermaid-1576967608788 .relation {
   stroke: #9370DB;
   stroke-width: 1;
   fill: none; }
 
-#mermaid-1576939215542 #compositionStart {
+#mermaid-1576967608788 #compositionStart {
   fill: #9370DB;
   stroke: #9370DB;
   stroke-width: 1; }
 
-#mermaid-1576939215542 #compositionEnd {
+#mermaid-1576967608788 #compositionEnd {
   fill: #9370DB;
   stroke: #9370DB;
   stroke-width: 1; }
 
-#mermaid-1576939215542 #aggregationStart {
+#mermaid-1576967608788 #aggregationStart {
   fill: #ECECFF;
   stroke: #9370DB;
   stroke-width: 1; }
 
-#mermaid-1576939215542 #aggregationEnd {
+#mermaid-1576967608788 #aggregationEnd {
   fill: #ECECFF;
   stroke: #9370DB;
   stroke-width: 1; }
 
-#mermaid-1576939215542 #dependencyStart {
+#mermaid-1576967608788 #dependencyStart {
   fill: #9370DB;
   stroke: #9370DB;
   stroke-width: 1; }
 
-#mermaid-1576939215542 #dependencyEnd {
+#mermaid-1576967608788 #dependencyEnd {
   fill: #9370DB;
   stroke: #9370DB;
   stroke-width: 1; }
 
-#mermaid-1576939215542 #extensionStart {
+#mermaid-1576967608788 #extensionStart {
   fill: #9370DB;
   stroke: #9370DB;
   stroke-width: 1; }
 
-#mermaid-1576939215542 #extensionEnd {
+#mermaid-1576967608788 #extensionEnd {
   fill: #9370DB;
   stroke: #9370DB;
   stroke-width: 1; }
 
-#mermaid-1576939215542 .commit-id,
-#mermaid-1576939215542 .commit-msg,
-#mermaid-1576939215542 .branch-label {
+#mermaid-1576967608788 .commit-id,
+#mermaid-1576967608788 .commit-msg,
+#mermaid-1576967608788 .branch-label {
   fill: lightgrey;
   color: lightgrey;
   font-family: 'trebuchet ms', verdana, arial;
   font-family: var(--mermaid-font-family); }
 
-#mermaid-1576939215542 .pieTitleText {
+#mermaid-1576967608788 .pieTitleText {
   text-anchor: middle;
   font-size: 25px;
   fill: black;
   font-family: 'trebuchet ms', verdana, arial;
   font-family: var(--mermaid-font-family); }
 
-#mermaid-1576939215542 .slice {
+#mermaid-1576967608788 .slice {
   font-family: 'trebuchet ms', verdana, arial;
   font-family: var(--mermaid-font-family); }
 
-#mermaid-1576939215542 g.stateGroup text {
+#mermaid-1576967608788 g.stateGroup text {
   fill: #9370DB;
   stroke: none;
   font-size: 10px;
   font-family: 'trebuchet ms', verdana, arial;
   font-family: var(--mermaid-font-family); }
 
-#mermaid-1576939215542 g.stateGroup text {
+#mermaid-1576967608788 g.stateGroup text {
   fill: #9370DB;
   stroke: none;
   font-size: 10px; }
 
-#mermaid-1576939215542 g.stateGroup .state-title {
+#mermaid-1576967608788 g.stateGroup .state-title {
   font-weight: bolder;
   fill: black; }
 
-#mermaid-1576939215542 g.stateGroup rect {
+#mermaid-1576967608788 g.stateGroup rect {
   fill: #ECECFF;
   stroke: #9370DB; }
 
-#mermaid-1576939215542 g.stateGroup line {
+#mermaid-1576967608788 g.stateGroup line {
   stroke: #9370DB;
   stroke-width: 1; }
 
-#mermaid-1576939215542 .transition {
+#mermaid-1576967608788 .transition {
   stroke: #9370DB;
   stroke-width: 1;
   fill: none; }
 
-#mermaid-1576939215542 .stateGroup .composit {
+#mermaid-1576967608788 .stateGroup .composit {
   fill: white;
   border-bottom: 1px; }
 
-#mermaid-1576939215542 .stateGroup .alt-composit {
+#mermaid-1576967608788 .stateGroup .alt-composit {
   fill: #e0e0e0;
   border-bottom: 1px; }
 
-#mermaid-1576939215542 .state-note {
+#mermaid-1576967608788 .state-note {
   stroke: #aaaa33;
   fill: #fff5ad; }
-#mermaid-1576939215542   .state-note text {
+#mermaid-1576967608788   .state-note text {
     fill: black;
     stroke: none;
     font-size: 10px; }
 
-#mermaid-1576939215542 .stateLabel .box {
+#mermaid-1576967608788 .stateLabel .box {
   stroke: none;
   stroke-width: 0;
   fill: #ECECFF;
   opacity: 0.5; }
 
-#mermaid-1576939215542 .stateLabel text {
+#mermaid-1576967608788 .stateLabel text {
   fill: black;
   font-size: 10px;
   font-weight: bold;
@@ -492,7 +492,7 @@
   --mermaid-font-family: '"trebuchet ms", verdana, arial';
   --mermaid-font-family: "Comic Sans MS", "Comic Sans", cursive; }
 
-:root { --mermaid-font-family: "trebuchet ms", verdana, arial;}</style><style>#mermaid-1576939215542 {
+:root { --mermaid-font-family: "trebuchet ms", verdana, arial;}</style><style>#mermaid-1576967608788 {
     color: rgb(0, 0, 0);
     font: normal normal 400 normal 16px / normal "trebuchet ms", verdana, arial;
-  }</style><g></g><g><line id="actor1836" x1="75" y1="5" x2="75" y2="325" class="actor-line" stroke-width="0.5px" stroke="#999"></line><rect x="0" y="0" fill="#eaeaea" stroke="#666" width="150" height="65" rx="3" ry="3" class="actor"></rect><text x="75" y="32.5" dominant-baseline="central" alignment-baseline="central" class="actor" style="text-anchor: middle; font-size: 14px;"><tspan x="75" dy="0">Alice</tspan></text></g><g><line id="actor1837" x1="275" y1="5" x2="275" y2="325" class="actor-line" stroke-width="0.5px" stroke="#999"></line><rect x="200" y="0" fill="#eaeaea" stroke="#666" width="150" height="65" rx="3" ry="3" class="actor"></rect><text x="275" y="32.5" dominant-baseline="central" alignment-baseline="central" class="actor" style="text-anchor: middle; font-size: 14px;"><tspan x="275" dy="0">App A</tspan></text></g><g><line id="actor1838" x1="475" y1="5" x2="475" y2="325" class="actor-line" stroke-width="0.5px" stroke="#999"></line><rect x="400" y="0" fill="#eaeaea" stroke="#666" width="150" height="65" rx="3" ry="3" class="actor"></rect><text x="475" y="32.5" dominant-baseline="central" alignment-baseline="central" class="actor" style="text-anchor: middle; font-size: 14px;"><tspan x="475" dy="0">Server A</tspan></text></g><g><line id="actor1839" x1="675" y1="5" x2="675" y2="325" class="actor-line" stroke-width="0.5px" stroke="#999"></line><rect x="600" y="0" fill="#eaeaea" stroke="#666" width="150" height="65" rx="3" ry="3" class="actor"></rect><text x="675" y="32.5" dominant-baseline="central" alignment-baseline="central" class="actor" style="text-anchor: middle; font-size: 14px;"><tspan x="675" dy="0">Server B</tspan></text></g><g><line id="actor1840" x1="875" y1="5" x2="875" y2="325" class="actor-line" stroke-width="0.5px" stroke="#999"></line><rect x="800" y="0" fill="#eaeaea" stroke="#666" width="150" height="65" rx="3" ry="3" class="actor"></rect><text x="875" y="32.5" dominant-baseline="central" alignment-baseline="central" class="actor" style="text-anchor: middle; font-size: 14px;"><tspan x="875" dy="0">App B</tspan></text></g><g><line id="actor1841" x1="1075" y1="5" x2="1075" y2="325" class="actor-line" stroke-width="0.5px" stroke="#999"></line><rect x="1000" y="0" fill="#eaeaea" stroke="#666" width="150" height="65" rx="3" ry="3" class="actor"></rect><text x="1075" y="32.5" dominant-baseline="central" alignment-baseline="central" class="actor" style="text-anchor: middle; font-size: 14px;"><tspan x="1075" dy="0">Bob</tspan></text></g><defs><marker id="arrowhead" refX="5" refY="2" markerWidth="6" markerHeight="4" orient="auto"><path d="M 0,0 V 4 L6,2 Z"></path></marker></defs><defs><marker id="crosshead" markerWidth="15" markerHeight="8" orient="auto" refX="16" refY="4"><path fill="black" stroke="#000000" stroke-width="1px" d="M 9,2 V 6 L16,4 Z" style="stroke-dasharray: 0, 0;"></path><path fill="none" stroke="#000000" stroke-width="1px" d="M 0,1 L 6,7 M 6,1 L 0,7" style="stroke-dasharray: 0, 0;"></path></marker></defs><defs><marker id="sequencenumber" refX="15" refY="15" markerWidth="60" markerHeight="40" orient="auto"><circle cx="15" cy="15" r="6"></circle></marker></defs><g><text x="175" y="93" class="messageText" style="text-anchor: middle;">Alice writes the message to Bob in the app</text><line x1="75" y1="100" x2="275" y2="100" class="messageLine0" stroke-width="2" stroke="black" marker-end="url(#arrowhead)" style="fill: none;"></line></g><g><text x="375" y="128" class="messageText" style="text-anchor: middle;">The message (including ID &amp; timestamp) is encrypted with Bob's &lt;BA public key&gt; and sent to all Alice's servers</text><text x="375" y="145" class="messageText" style="text-anchor: middle;">{from: &lt;AB public key hash&gt;, to: &lt;BA public key hash&gt;, message: &lt;encrypted with BA public key&gt;}</text><line x1="275" y1="135" x2="475" y2="135" class="messageLine0" stroke-width="2" stroke="black" marker-end="url(#arrowhead)" style="fill: none;"></line></g><g><text x="575" y="163" class="messageText" style="text-anchor: middle;">Alice's servers use &lt;BA public key hash&gt; to locate Bob's servers</text><text x="575" y="180" class="messageText" style="text-anchor: middle;">and forward encrypted message to all Bob's servers (when they are different from Alice's servers)</text><line x1="475" y1="170" x2="675" y2="170" class="messageLine0" stroke-width="2" stroke="black" marker-end="url(#arrowhead)" style="fill: none;"></line></g><g><text x="775" y="198" class="messageText" style="text-anchor: middle;">Bob's servers send the message to Bob's app</text><line x1="675" y1="205" x2="875" y2="205" class="messageLine0" stroke-width="2" stroke="black" marker-end="url(#arrowhead)" style="fill: none;"></line></g><g><text x="975" y="233" class="messageText" style="text-anchor: middle;">Bob's app uses &lt;AB public key hash&gt; to identify Alice</text><text x="975" y="250" class="messageText" style="text-anchor: middle;">and decrypts the messages with Bob's &lt;BA private key&gt;</text><line x1="875" y1="240" x2="1075" y2="240" class="messageLine0" stroke-width="2" stroke="black" marker-end="url(#arrowhead)" style="fill: none;"></line></g><g><rect x="0" y="260" fill="#eaeaea" stroke="#666" width="150" height="65" rx="3" ry="3" class="actor"></rect><text x="75" y="292.5" dominant-baseline="central" alignment-baseline="central" class="actor" style="text-anchor: middle; font-size: 14px;"><tspan x="75" dy="0">Alice</tspan></text></g><g><rect x="200" y="260" fill="#eaeaea" stroke="#666" width="150" height="65" rx="3" ry="3" class="actor"></rect><text x="275" y="292.5" dominant-baseline="central" alignment-baseline="central" class="actor" style="text-anchor: middle; font-size: 14px;"><tspan x="275" dy="0">App A</tspan></text></g><g><rect x="400" y="260" fill="#eaeaea" stroke="#666" width="150" height="65" rx="3" ry="3" class="actor"></rect><text x="475" y="292.5" dominant-baseline="central" alignment-baseline="central" class="actor" style="text-anchor: middle; font-size: 14px;"><tspan x="475" dy="0">Server A</tspan></text></g><g><rect x="600" y="260" fill="#eaeaea" stroke="#666" width="150" height="65" rx="3" ry="3" class="actor"></rect><text x="675" y="292.5" dominant-baseline="central" alignment-baseline="central" class="actor" style="text-anchor: middle; font-size: 14px;"><tspan x="675" dy="0">Server B</tspan></text></g><g><rect x="800" y="260" fill="#eaeaea" stroke="#666" width="150" height="65" rx="3" ry="3" class="actor"></rect><text x="875" y="292.5" dominant-baseline="central" alignment-baseline="central" class="actor" style="text-anchor: middle; font-size: 14px;"><tspan x="875" dy="0">App B</tspan></text></g><g><rect x="1000" y="260" fill="#eaeaea" stroke="#666" width="150" height="65" rx="3" ry="3" class="actor"></rect><text x="1075" y="292.5" dominant-baseline="central" alignment-baseline="central" class="actor" style="text-anchor: middle; font-size: 14px;"><tspan x="1075" dy="0">Bob</tspan></text></g></svg>
+  }</style><g></g><g><line id="actor9090" x1="75" y1="5" x2="75" y2="505" class="actor-line" stroke-width="0.5px" stroke="#999"></line><rect x="0" y="0" fill="#eaeaea" stroke="#666" width="150" height="65" rx="3" ry="3" class="actor"></rect><text x="75" y="32.5" dominant-baseline="central" alignment-baseline="central" class="actor" style="text-anchor: middle; font-size: 14px;"><tspan x="75" dy="0">Alice</tspan></text></g><g><line id="actor9091" x1="275" y1="5" x2="275" y2="505" class="actor-line" stroke-width="0.5px" stroke="#999"></line><rect x="200" y="0" fill="#eaeaea" stroke="#666" width="150" height="65" rx="3" ry="3" class="actor"></rect><text x="275" y="32.5" dominant-baseline="central" alignment-baseline="central" class="actor" style="text-anchor: middle; font-size: 14px;"><tspan x="275" dy="0">Alice's app</tspan></text></g><g><line id="actor9092" x1="475" y1="5" x2="475" y2="505" class="actor-line" stroke-width="0.5px" stroke="#999"></line><rect x="400" y="0" fill="#eaeaea" stroke="#666" width="150" height="65" rx="3" ry="3" class="actor"></rect><text x="475" y="32.5" dominant-baseline="central" alignment-baseline="central" class="actor" style="text-anchor: middle; font-size: 14px;"><tspan x="475" dy="0">Alice's server</tspan></text></g><g><line id="actor9093" x1="675" y1="5" x2="675" y2="505" class="actor-line" stroke-width="0.5px" stroke="#999"></line><rect x="600" y="0" fill="#eaeaea" stroke="#666" width="150" height="65" rx="3" ry="3" class="actor"></rect><text x="675" y="32.5" dominant-baseline="central" alignment-baseline="central" class="actor" style="text-anchor: middle; font-size: 14px;"><tspan x="675" dy="0">Bob's server</tspan></text></g><g><line id="actor9094" x1="875" y1="5" x2="875" y2="505" class="actor-line" stroke-width="0.5px" stroke="#999"></line><rect x="800" y="0" fill="#eaeaea" stroke="#666" width="150" height="65" rx="3" ry="3" class="actor"></rect><text x="875" y="32.5" dominant-baseline="central" alignment-baseline="central" class="actor" style="text-anchor: middle; font-size: 14px;"><tspan x="875" dy="0">Bob's app</tspan></text></g><g><line id="actor9095" x1="1075" y1="5" x2="1075" y2="505" class="actor-line" stroke-width="0.5px" stroke="#999"></line><rect x="1000" y="0" fill="#eaeaea" stroke="#666" width="150" height="65" rx="3" ry="3" class="actor"></rect><text x="1075" y="32.5" dominant-baseline="central" alignment-baseline="central" class="actor" style="text-anchor: middle; font-size: 14px;"><tspan x="1075" dy="0">Bob</tspan></text></g><defs><marker id="arrowhead" refX="5" refY="2" markerWidth="6" markerHeight="4" orient="auto"><path d="M 0,0 V 4 L6,2 Z"></path></marker></defs><defs><marker id="crosshead" markerWidth="15" markerHeight="8" orient="auto" refX="16" refY="4"><path fill="black" stroke="#000000" stroke-width="1px" d="M 9,2 V 6 L16,4 Z" style="stroke-dasharray: 0, 0;"></path><path fill="none" stroke="#000000" stroke-width="1px" d="M 0,1 L 6,7 M 6,1 L 0,7" style="stroke-dasharray: 0, 0;"></path></marker></defs><defs><marker id="sequencenumber" refX="15" refY="15" markerWidth="60" markerHeight="40" orient="auto"><circle cx="15" cy="15" r="6"></circle></marker></defs><g><text x="175" y="93" class="messageText" style="text-anchor: middle;">Alice writes the message to Bob in the app</text><line x1="75" y1="100" x2="275" y2="100" class="messageLine1" stroke-width="2" stroke="black" marker-end="url(#arrowhead)" style="stroke-dasharray: 3, 3; fill: none;"></line></g><g><text x="475" y="128" class="messageText" style="text-anchor: middle;">The message (including msg ID &amp; timestamp) is signed with &lt;AB private key&gt;, encrypted with Bob's &lt;BA public key&gt; and sent to Bob's servers</text><text x="475" y="145" class="messageText" style="text-anchor: middle;">{to: &lt;BA public key hash&gt;, message: &lt;encrypted with BA public key&gt;} (also signed/encrypted with &lt;A_BA server private/public keys&gt;)</text><line x1="275" y1="135" x2="675" y2="135" class="messageLine0" stroke-width="2" stroke="black" marker-end="url(#arrowhead)" style="fill: none;"></line></g><g><text x="775" y="163" class="messageText" style="text-anchor: middle;">Bob's servers send the message to Bob's app</text><line x1="675" y1="170" x2="875" y2="170" class="messageLine0" stroke-width="2" stroke="black" marker-end="url(#arrowhead)" style="fill: none;"></line></g><g><text x="975" y="198" class="messageText" style="text-anchor: middle;">Bob's app uses &lt;BA public key hash&gt; to identify Alice</text><text x="975" y="215" class="messageText" style="text-anchor: middle;">and decrypts the messages with Bob's &lt;BA private key&gt;</text><line x1="875" y1="205" x2="1075" y2="205" class="messageLine1" stroke-width="2" stroke="black" marker-end="url(#arrowhead)" style="stroke-dasharray: 3, 3; fill: none;"></line></g><g><rect x="800" y="215" fill="#EDF2AE" stroke="#666" width="150" height="100" rx="0" ry="0" class="note"></rect><text x="796" y="239" class="noteText"><tspan x="816">App creates</tspan></text><text x="796" y="255" class="noteText"><tspan x="816">"message received"</tspan></text><text x="796" y="271" class="noteText"><tspan x="816">including:</tspan></text><text x="796" y="287" class="noteText"><tspan x="816">- msg correlation ID</tspan></text><text x="796" y="303" class="noteText"><tspan x="816">- timestamp</tspan></text></g><g><text x="675" y="343" class="messageText" style="text-anchor: middle;">"message received" signed with &lt;BA private key&gt;, encrypted with Alice's &lt;AB public key&gt;</text><text x="675" y="360" class="messageText" style="text-anchor: middle;">{to: &lt;AB public key hash&gt;, message: &lt;encrypted with AB public key&gt;} (also signed/encrypted with &lt;B_AB server private/public keys&gt;)</text><line x1="875" y1="350" x2="475" y2="350" class="messageLine0" stroke-width="2" stroke="black" marker-end="url(#arrowhead)" style="fill: none;"></line></g><g><text x="375" y="378" class="messageText" style="text-anchor: middle;">"message received": Alice's app uses &lt;AB public key hash&gt; to identify Bob</text><text x="375" y="395" class="messageText" style="text-anchor: middle;">and decrypts "message received" with Alice's &lt;AB private key&gt;</text><line x1="475" y1="385" x2="275" y2="385" class="messageLine0" stroke-width="2" stroke="black" marker-end="url(#arrowhead)" style="fill: none;"></line></g><g><text x="175" y="413" class="messageText" style="text-anchor: middle;">"message received" shown to Alice</text><line x1="275" y1="420" x2="75" y2="420" class="messageLine1" stroke-width="2" stroke="black" marker-end="url(#arrowhead)" style="stroke-dasharray: 3, 3; fill: none;"></line></g><g><rect x="0" y="440" fill="#eaeaea" stroke="#666" width="150" height="65" rx="3" ry="3" class="actor"></rect><text x="75" y="472.5" dominant-baseline="central" alignment-baseline="central" class="actor" style="text-anchor: middle; font-size: 14px;"><tspan x="75" dy="0">Alice</tspan></text></g><g><rect x="200" y="440" fill="#eaeaea" stroke="#666" width="150" height="65" rx="3" ry="3" class="actor"></rect><text x="275" y="472.5" dominant-baseline="central" alignment-baseline="central" class="actor" style="text-anchor: middle; font-size: 14px;"><tspan x="275" dy="0">Alice's app</tspan></text></g><g><rect x="400" y="440" fill="#eaeaea" stroke="#666" width="150" height="65" rx="3" ry="3" class="actor"></rect><text x="475" y="472.5" dominant-baseline="central" alignment-baseline="central" class="actor" style="text-anchor: middle; font-size: 14px;"><tspan x="475" dy="0">Alice's server</tspan></text></g><g><rect x="600" y="440" fill="#eaeaea" stroke="#666" width="150" height="65" rx="3" ry="3" class="actor"></rect><text x="675" y="472.5" dominant-baseline="central" alignment-baseline="central" class="actor" style="text-anchor: middle; font-size: 14px;"><tspan x="675" dy="0">Bob's server</tspan></text></g><g><rect x="800" y="440" fill="#eaeaea" stroke="#666" width="150" height="65" rx="3" ry="3" class="actor"></rect><text x="875" y="472.5" dominant-baseline="central" alignment-baseline="central" class="actor" style="text-anchor: middle; font-size: 14px;"><tspan x="875" dy="0">Bob's app</tspan></text></g><g><rect x="1000" y="440" fill="#eaeaea" stroke="#666" width="150" height="65" rx="3" ry="3" class="actor"></rect><text x="1075" y="472.5" dominant-baseline="central" alignment-baseline="central" class="actor" style="text-anchor: middle; font-size: 14px;"><tspan x="1075" dy="0">Bob</tspan></text></g></svg>

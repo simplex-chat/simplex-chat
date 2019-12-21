@@ -1,12 +1,17 @@
 sequenceDiagram
   participant Alice
-  participant App A
-  participant Server A
-  participant Server B
-  participant App B
+  participant App A as Alice's app
+  participant Server A as Alice's server
+  participant Server B as Bob's server
+  participant App B as Bob's app
   participant Bob
-  Alice ->> App A: Alice writes the message to Bob in the app
-  App A ->> Server A: The message (including ID & timestamp) is encrypted with Bob's <BA public key> and sent to all Alice's servers<br>{from: <AB public key hash>, to: <BA public key hash>, message: <encrypted with BA public key>}
-  Server A ->> Server B: Alice's servers use <BA public key hash> to locate Bob's servers<br>and forward encrypted message to all Bob's servers (when they are different from Alice's servers)
+  Alice -->> App A: Alice writes the message to Bob in the app
+  App A ->> Server B: The message (including msg ID & timestamp) is signed with <AB private key>, encrypted with Bob's <BA public key> and sent to Bob's servers<br>{to: <BA public key hash>, message: <encrypted with BA public key>} (also signed/encrypted with <A_BA server private/public keys>)
   Server B ->> App B: Bob's servers send the message to Bob's app
-  App B ->> Bob: Bob's app uses <AB public key hash> to identify Alice<br>and decrypts the messages with Bob's <BA private key>
+  App B -->> Bob: Bob's app uses <BA public key hash> to identify Alice<br>and decrypts the messages with Bob's <BA private key>
+
+  Note over App B: App creates<br>"message received"<br>including:<br>- msg correlation ID<br>- timestamp
+
+  App B ->> Server A: "message received" signed with <BA private key>, encrypted with Alice's <AB public key><br>{to: <AB public key hash>, message: <encrypted with AB public key>} (also signed/encrypted with <B_AB server private/public keys>)
+  Server A ->> App A: "message received": Alice's app uses <AB public key hash> to identify Bob<br>and decrypts "message received" with Alice's <AB private key>
+  App A -->> Alice: "message received" shown to Alice
