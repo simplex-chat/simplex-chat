@@ -1,0 +1,12 @@
+sequenceDiagram
+  participant Alice
+  participant App A
+  participant Server A
+  participant Server B
+  participant App B
+  participant Bob
+  Alice ->> App A: Alice writes the message to Bob in the app
+  App A ->> Server A: the message (including ID & timestamp) is encrypted by <Alice-Bob public key> and sent to all Alice's servers<br>{from: <Bob-Alice key hash>, to: <Alice-Bob key hash>, message: <encrypted with Alice-Bob public key>}
+  Server A ->> Server B: Alice's servers use <Alice-Bob key hash> to locate Bob's servers<br>and forwards encrypted message to all Bob's servers (in case they are different from Alice's servers
+  Server B ->> App B: Bob's servers send the message to Bob's app
+  App B ->> Bob: Bob's app uses <Bob-Alice key hash> to identify Alice<br>and decrypts the message with <Bob-Alice private key> to show it

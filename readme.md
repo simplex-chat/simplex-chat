@@ -71,4 +71,10 @@ Client apps should provide the following:
   - optionally define the server(s) they trust and will connect to, including the servers that require server key to access.
   - optionally require that connected users connect to one of the servers they trust when sending messages to the user profile.
   - store history of all conversations encrypted using user client app password (or some other device specific encryption mechanism).
-  
+
+
+## Sequence diagrams
+
+### Sending message
+
+![Sending message](/diagrams/message.svg)
