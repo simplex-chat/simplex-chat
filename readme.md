@@ -13,6 +13,20 @@ The problems of existing chat solutions this system intends to solve:
 - Visiblity of user profile information to chat system and other chat users.
 
 
+## Requirements
+
+- User profile is only visible to the proifle connections, but not to the chat network
+- User profile is not stored on the server.
+- Profile connections are not stored on the server.
+- It should not be possible to construct the list of user connections by analysing server database or any logs.
+- It should not be possible, other than by compromising the client, to send messages from another user profile.
+- It should not be possible, other than by compromising all servers the user is connected to, to prevent message delivery to a user.
+- All participants of the conversation should be able to:
+  - prove that the received messages were actually sent by another party.
+  - prove that the sent messages were received by another party.
+  - prove sent/received time/delivery order - with the solution below only timestamp of another party can be proven, not the actual time.
+
+
 ## Solution
 
 - No phone numbers, user names and no DNS are used to identify to users (chat servers may choose to be accessible via DNS, but it is not required)
@@ -80,6 +94,36 @@ Client apps should provide the following:
 ## System design
 
 Prepared with [mermaid-js](https://mermaid-js.github.io/mermaid-live-editor)
+
+
+## Client-server architecture
+
+To allow sending the message when receiver client is not available, and to allow receiving the messages when the sender client is not available, the system relies on the client-server architecture with multiple servers.
+
+The communication always happens through the servers that the recepient defines, that manages simplex connections (see below).
+
+Servers store messages only until delivered to the recepients, they do not store any message history or delivery log.
+
+Servers do not have visibility of the message senders and message types, they only have visibility of connection address that is equal to the hash of public key used to encrypt messages sent into the connection (hash of receiver's public key).
+
+
+## Simplex connection - the main unit of network design
+
+The network consists of multiple "simplex (non-duplex) connections". Access to each connection is controlled with unique (not shared with other connections) assymetric key pairs, separate for sender and the receiver. The sender and the receiver have private keys, and the server has associated public keys to verify participants.
+
+The messages sent into the connection are encrypted and decrypted using another key pair - the recepient has the private key and the sender has the associated public key.
+
+**Simplified simplex connection diagram:**
+
+![Simplex connection diagram](/diagrams/simplex1.svg)
+
+Connection is defined by sender's key 1 that is used to verify sender's messages and by receiver's key 2 that is used to verify subscription to messages (or requests to receive messages).
+
+**Simplex connection operation:**
+
+![Simplex connection operations](/diagrams/simplex2.svg)
+
+Sequence diagram does not show E2EE - connection itself knows nothing about encryption between sender and receiver.
 
 
 ### Connections between user profiles

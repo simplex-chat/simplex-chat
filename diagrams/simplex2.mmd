@@ -1,0 +1,26 @@
+sequenceDiagram
+  participant S as sender (client)
+  participant A as API
+  participant Q as pubsub
+  participant P as publisher
+  participant R as receiver (client)
+  note over R: sign subscription (1)
+  R ->> P: subscribe to messages
+  note over P: verify subscriber (1)
+  alt subscriber verified?
+    P -->> Q: subscribe
+  else
+    P ->> R: reject subscription
+  end
+  note over S: sign message (2)
+  S ->> A: send message
+  note over A: verify sender (2)
+  alt sender verified?
+    A -->> Q: queue message
+    activate Q
+  else
+    A ->> S: reject message
+  end
+  Q -->> P: take message
+  deactivate Q
+  P ->> R: deliver message

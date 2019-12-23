@@ -1,0 +1,8 @@
+graph LR
+  S("sender (key 1)") --> C
+  C --> R("receiver (key 2)")
+  R --> C
+  subgraph connection
+    C{{"verify sender (1) ---> pubsub <---> verify receiver (2)"}}
+  end
+  
