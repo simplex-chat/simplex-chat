@@ -128,7 +128,7 @@ Sequence diagram does not show E2EE - connection itself knows nothing about encr
 
 ### Connections between user profiles
 
-The system uses connections between user profiles (no information identifying users is stored on the servers) to send and to receive messages. Each connection is one-directional, from sender to recepient, without any correlation between connections and user profiles, and between 2 connections used to send and to receive messages to/from the same participants.
+The system uses separate simplex connections (shown above) between user profiles (no information identifying users is stored on the servers) to send and to receive messages. Each connection is one-directional, from sender to recepient, without any correlation between connections and user profiles, and between 2 connections used to send and to receive messages to/from the same participants.
 
 This design aims to reduce the risk of correlating communication of a user profile with other user profiles (to keep the list of connections private), and of correlating sent and received messages between the same participants.
 
@@ -145,11 +145,11 @@ Each connection also allow another user to send messages to connection (by signi
 In this way the server will only have the list of connections via which messages can be sent or received (identified by \<connection public key hash\>), associated public keys to authenticate senders and recievers (\<server public key\>), with a separate server public key for each connection participant. The attacker will not be able to establish that any list of connections belongs to the same user (other than by analysing socket or network traffic).
 
 
-### Establishing connection between user profiles
+### Establishing connection between user profiles (two simplex connections)
 
 ![Adding connection](/diagrams/connection.svg)
 
 
-### Sending message
+### Sending message and message receipt
 
 ![Sending message](/diagrams/message.svg)
