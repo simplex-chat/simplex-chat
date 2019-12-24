@@ -27,6 +27,13 @@ The problems of existing chat solutions this system intends to solve:
   - prove sent/received time/delivery order - with the solution below only timestamp of another party can be proven, not the actual time.
 
 
+## Other ideas
+
+- [OTR messaging](https://en.wikipedia.org/wiki/Off-the-Record_Messaging) - below defines verifiable messaging, there is also value in supporting off-the-record messaging. Not in prototype
+- Group support - 1) separately encrypt for each recepient or 2) encrypt once per group using distributed symmetric key or 3) ... ? Probably encrypt separately, at least initially.
+- Multiple user devices - 1) known to servers or 2) known to senders? Probably known to senders. Not in prototype.
+
+
 ## Solution
 
 - No phone numbers, user names and no DNS are used to identify to users (chat servers may choose to be accessible via DNS, but it is not required)
