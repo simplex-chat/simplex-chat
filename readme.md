@@ -4,13 +4,14 @@
 
 The problems of existing chat solutions this system intends to solve:
 
-- Dependency on a single company/server to access and use chat. That creates implications for chat privacy (see E2EE), resilience and data ownership.
+- Dependency on a single company/server to access and use chat. That creates implications for chat privacy (see E2EE), user profile resilience and data ownership.
 - Existing [E2EE](https://en.wikipedia.org/wiki/End-to-end_encryption) implementations in chat platforms are easily compromised via the platform itself with [MITM attack](https://en.wikipedia.org/wiki/Man-in-the-middle_attack) - as the key exchange happens via the same channel, the key can be substituted.
-- Dependency on DNS (e.g. with XMPP protocol). While DNS is useful for shared information access, connecting chat users to particular domains undermines users privacy and gives control over chat users communications to domain owners.
-- Dependency on phone numbers. Most phone numbers either expose or allow to access private information about the user, including personal identity.
-- User names. They must be unique, but they can violate existing trademarks and be reclaimed by trademark owners, lead to name squatting and can leak private information about the users.
-- Using any user identifiers to route messages (whether usernames, phone numbers or DNS-based addresses) exposes the list of user connections to the chat system.
 - Visiblity of user profile information to chat system and other chat users.
+- Spam and exposing the list of connections to the chat system: when using any user identity to send messages (whether usernames, phone numbers, unique IDs or DNS-based addresses).
+- Other problems caused by specific types of user identities:
+  - DNS-based (e.g. with XMPP protocol). While DNS is useful for shared information access, connecting chat users to particular domains undermines users privacy and gives control over chat users communications to domain owners.
+  - Phone numbers. Most phone numbers either expose or allow to access private information about the user, including personal identity.
+  - User names. They must be unique, but they can violate existing trademarks and be reclaimed by trademark owners, lead to name squatting and can leak private information about the users.
 
 
 ## Requirements
@@ -31,7 +32,8 @@ The problems of existing chat solutions this system intends to solve:
 
 - [OTR messaging](https://en.wikipedia.org/wiki/Off-the-Record_Messaging) - below defines verifiable messaging, there is also value in supporting off-the-record messaging. Not in prototype
 - Group support - 1) separately encrypt for each recepient or 2) encrypt once per group using distributed symmetric key or 3) ... ? Probably encrypt separately, at least initially.
-- Multiple user devices - 1) known to servers or 2) known to senders? Probably known to senders. Not in prototype.
+- Multiple user devices - 1) known to servers (servers broadcast) or 2) known to senders (senders send to multiple devices) or 3) known to device owners (once one device receives it forwards to other devices; messages expire)? Probably known to device owners. Not in prototype.
+- Introductions - with the current design, user must initiate the connection before anybody can send messages to them. Can this be delegated to another user? One-off introduction? Trusted users? Is adding to group amounts to introduction to all users in group?
 
 
 ## Solution
