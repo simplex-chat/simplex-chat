@@ -1,4 +1,6 @@
-# Graph-messaging protocol: a generic protocol for asynchronous unidirectional messaging
+# Graph-messaging protocol
+
+A generic client-server protocol for asynchronous distributed unidirectional messaging
 
 ## Problems of the existing messaging protocols
 
