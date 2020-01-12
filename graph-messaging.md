@@ -28,7 +28,7 @@ Alice (recipient) wants to receive the messages from Bob (sender).
 
 To do it Alice and Bob follow these steps:
 
-1. Alice prepares the connection:
+1. Alice creates the connection on the server:
    1. she decides which graph-messaging server to use (can be the same or different server that Alice uses for other connections).
    2. she decides which assymetric encryption algorithm Bob should use to encrypt messages.
    3. she generates a new random public/private key pair (encryption key - `EK`) that she did not use before for Bob to encrypt the messages.
@@ -45,18 +45,42 @@ To do it Alice and Bob follow these steps:
    - the encryption algorithm that Bob should use.
    - the unique "public" key (`EK`) that Bob should use to encrypt messages.
    - the connection URI (that includes server URI and connection ID) for Bob to use.
-3. Bob, having receieved the out-of-band message from Alice, confirms the connection:
+3. Bob, having receieved the out-of-band message from Alice, accepts the connection:
    1. he generates a new random public/private key pair (sender key - `SK`) that he did not use before for him to sign requests to Alice's server to send the messages.
    2. he prepares the first message for Alice to confirm the connection. This message includes:
       - previously generated "public" key `SK` that will be used by Alice's server to verify Bob's requests to send messages.
       - optionally, any information that allows Alice to identify Bob (e.g., in graph-chat protocol it is Bob's chat profile, but it can be any other information).
       - optionally, any other additional information (e.g., Bob could pass the details of another connection and a new "public" key for Alice to send reply messages to Bob).
    3. he encrypts the message by the "public" key `EK` (that Alice provided via the out-of-band message).
-   4. he sends the encrypted message to the connection URI (that Alice provided via the out-of-band message). This request to send the first message does not need to be signed.
-4. Alice, having retrieved Bob's message from the server via connection `CID`, secures the connection:
-   1. she decrypts Bob's message with "private" key `EK`.
-   2. Even though anybody could have sent the message to the connection `CID` before it is secured (e.g. if communication is compromised), Alice would ignore all messages until the decryption succeeds (i.e. contains the expected message structure). Optionally, she also may identify Bob using the information provided, but it is not required by this protocol.
-   3. sends the request signed with "private" key `RK` to update the connection to only accept requests signed by "private" key `SK` provided by Bob. From this moment the server will accept only signed requests, and only Bob will be able to send messages to the connection `CID`.
+   4. he sends the encrypted message to the connection URI to confirm the connection (that Alice provided via the out-of-band message). This request to send the first message does not need to be signed.
+4. Alice retrieves Bob's message from the server via connection `CID`:
+   1. she decrypts retrieved message with "private" key `EK`.
+   2. even though anybody could have sent the message to the connection `CID` before it is secured (e.g. if communication is compromised), Alice would ignore all messages until the decryption succeeds (i.e. the result contains the expected message structure). Optionally, she also may identify Bob using the information provided, but it is not required by this protocol.
+5. Alice secures the connection `CID` so only Bob can send messages to it:
+   1. she sends the request signed with "private" key `RK` to update the connection to only accept requests signed by "private" key `SK` provided by Bob.
+   2. From this moment the server will accept only signed requests, and only Bob will be able to send messages to the connection `CID`.
+6. The unidirectional connection `CID` is now established on the server.
+
+**Creating unidirectional connection from Bob to Alice:**
+
+![Creating connection](/diagrams/graph-messaging/edge-creating.svg)
+
+
+Bob now can securely send messages to Alice.
+
+1. Bob sends the message:
+   1. he encrypts the message to Alice with "public" key `EK` (provided by Alice, only known to Alice and Bob, used only for one unidirectional connection).
+   2. he signs the request to the server (via connection `CID`) using the "private" key `SK` (that only he knows, used only for this connection).
+   3. he sends requests to the server, that the server will verify using the "public" key SK (that Alice provided to the server).
+2. Alice retrieves the message(s):
+   1. she sigms request to the server with the "private" key `RK` (that only she has, used only for this connection).
+   2. the server, having verified Alice's request with the "public" key `RK` that she provided, responds with Bob's message(s).
+   3. she decrypts Bob's message(s) with the "private" key `EK` (that only she has).
+
+**Sending messages from Bob to Alice via unidirectional connection:**
+
+![Using connection](/diagrams/graph-messaging/edge-using.svg)
+
 
 A higher level protocol (e.g., graph-chat) should define the semantics that allow to use two unidirectional connections for the bi-directional messaging chat and for any other communication scenarios.
 

@@ -1,0 +1,19 @@
+sequenceDiagram
+  participant B as Bob (sender)
+  participant S as server (conn. CID)
+  participant A as Alice (recipient)
+
+  note over A: creating connection <br> (connection ID and <br> "public" key RK <br> for msg retrieval)
+  A ->> S: 1. create connection
+
+  note over A: out-of-band msg <br> (connection URI and <br> "public" key EK to <br> encrypt messages)
+  A -->> B: 2. send out-of-band message
+
+  note over B: accept connection <br> ("public" key SK for <br>  sending messages <br> and any optional <br> info encrypted with <br> "public" key EK)
+  B ->> S: 3. confirm connection (req not signed)
+
+  S ->> A: 4. retrieve Bob's message (RK-signed req)
+  note over A: decrypt message <br> ("private" key EK)
+  A ->> S: 5. secure connection
+
+  note over S: 6. secure <br> connection CID <br> is established!
