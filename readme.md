@@ -104,6 +104,29 @@ Client apps should provide the following:
 
 Prepared with [mermaid-js](https://mermaid-js.github.io/mermaid-live-editor)
 
+This document will be split into 4 separate parts:
+
+1. [graph-messaging protocol](graph-messaging.md) - a low level generic messaging protocol that defines establishing and using a unidirectional connection (graph edge) between chat participants on a single server. While this protocol is designed to support graph-chat client protocol (below), it can be used for other messaging scenarios, not limited to chats.
+2. graph-messaging server protocol (TODO) - a low level specific messaging protocol for a server implementing generic graph-messaging protocol, including:
+  - specific encryption algorithm(s) that can be used to sign requests.
+  - defines how clients generate connection IDs.
+  - REST API to send and to retrieve messages.
+  - WebSocket API to subscribe to connections and to receive the new messages.
+  - any other requirements for graph-messaging servers
+3. graph-chat protocol (TODO) - a high level generic chat protocol for client applications (graph vertices) that communicate via connections (graph edges) created using graph-messaging protocol. This protocol defines connection and message types and semantics for:
+  - various chat elements (user profiles, conversations, chat groups, broadcasts, etc.).
+  - other communication scenarios - e.g. introduction, delegation, off-the-record chat, etc.
+  - using multiple servers to ensure message delivery.
+  - sharing user profiles, contacts and chats across multiple client devices.
+  - changing encryption protocols, encryption keys and servers to send and receive messages using graph-messaging server protocol.
+4. graph-chat client application protocol (TODO) - a high level specific chat protocol for client applications. This protocol specifies:
+  - specific encryption and hashing algorithms.
+  - data structures for sending and receiving messages of all types.
+  - process to send and receive out-of-band messages between client applications.
+  - any other requirements for graph-chat client applications.
+
+The document below defines the whole communication platform using the same principles and elements, but it does not yet use these protocol names and terminology.
+
 
 ## Client-server architecture
 

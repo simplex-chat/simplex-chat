@@ -1,0 +1,11 @@
+graph LR
+  VS{{"verify sender (SK)"}}
+  VR{{"verify recipient (RK)"}}
+
+  S(sender) -->|msg| VS
+  subgraph "connection CID (server)"
+    VS --> DB(("storage"))
+    DB --> VR
+  end
+  R(recipient) -->|"1) req"| VR
+  VR -->|"2) msg"| R
