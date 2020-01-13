@@ -119,11 +119,13 @@ This document will be split into 4 separate parts:
   - using multiple servers to ensure message delivery.
   - sharing user profiles, contacts and chats across multiple client devices.
   - changing encryption protocols, encryption keys and servers to send and receive messages using graph-messaging server protocol.
+  - defines process to send and receive out-of-band messages between client applications via a visual code.
 4. graph-chat client application protocol (TODO) - a high level specific chat protocol for client applications. This protocol specifies:
   - specific encryption and hashing algorithms.
   - data structures for sending and receiving messages of all types.
   - process to send and receive out-of-band messages between client applications.
   - any other requirements for graph-chat client applications.
+  - defines a specific visual code format to send an out-of-band message
 
 The document below defines the whole communication platform using the same principles and elements, but it does not yet use these protocol names and terminology.
 
