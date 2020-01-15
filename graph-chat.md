@@ -32,7 +32,7 @@ TODO
 
 TODO - possibly re-write in a more generic way, describing duplex connection.
 
-Alice and Bob want to have a conversation in chat app, exchanging messaged with each other. They both have graph-chat client and access to several [graph-messaging servers][3] that they can use to receive messages, and their graph-chat clients are configured to use these servers.
+Alice and Bob want to have a conversation in chat app, exchanging messaged with each other. They both have graph-chat client and access to several graph-messaging servers (see [graph-messaging protocol][3]) that they can use to receive messages, and their graph-chat clients are configured to use these servers.
 
 The following symbols are used below:
 
@@ -52,8 +52,8 @@ To chat in the app Alice needs to add Bob to her contacts in the app.
    6. Alice now can share this visual code with Bob, either in person or via a video call (see [graph-messaging protocol][3]).
 2. Bob reads "visual code" that Alice prepared via his app:
    1. he initiates adding contact via visual code in his graph-chat client app.
-   2. his app interprets this visual code as an out-of-band message to accept a unidirectional connections `AC` (see [graph-messaging protocol][3]).
-   3. his app creates a new unidirectional connections `BC` (graph-chat protocol: type of connection is "contact") on Bob's server (see [graph-messaging protocol][3]).
+   2. his app interprets this visual code as an out-of-band message to accept a unidirectional connection `AC` (see [graph-messaging protocol][3]).
+   3. his app creates a new unidirectional connection `BC` (graph-chat protocol: type of connection is "contact") on Bob's server (see [graph-messaging protocol][3]).
    4. optionally, his app subsribes to be notified about messages from this new connection `BC` (see graph-messaging server protocol).
    5. his app prepares required response with a key `SK` for connection `AC`.
    6. as optional information to identify Bob, his app includes Bob's user profile (that is only stored in graph-chat client and not visible to any server).
@@ -77,7 +77,7 @@ To chat in the app Alice needs to add Bob to her contacts in the app.
    3. her app sends a special "welcome" message to Bob's app (via connection `BC`).
 8. Bob's app finalises adding Alice's contact:
    1. his app receives "welcome" message from Alice's app via connection `AC`.
-   2. his app changes Bob's contact status to "established" (and it may show chat with Alice).
+   2. his app changes Alice's contact status to "established" (and it may show chat with Alice).
 
 
 ## Connection and message types used in graph-chat protocol
@@ -87,7 +87,7 @@ To chat in the app Alice needs to add Bob to her contacts in the app.
 TODO
 
 - "contact" - can be of type "person", "bot", "device", "organisation".
-- "broadcast" - duplex connection, that by convention only allows to receive messages and send back control messages, but not the control messages. Profile of the recipient is not shared.
+- "broadcast" - duplex connection, that by convention only allows to receive messages and send back control messages, but not the content messages. Profile of the recipient is not shared.
 
 
 ##### Messages

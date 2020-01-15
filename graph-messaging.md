@@ -42,7 +42,7 @@ To do it Alice and Bob follow these steps:
       - it can be shared as part of the connection URI that the server would recognise.
    6. she requests from the server to create a unidirectional connection. The request to create the connection is un-authenticated and anonymous. This connection definition contains previouisly generated connection ID (`CID`) and a uniqie "public" key that will be used to:
       - verify the requests to retrieve the messages (`RK`) as signed by the same person who created the connection.
-      - update the connection, e.g. by setting the ke required to send the messages (initially Alice creates the connection that accepts unsigned requests to send messages, so anybody could send the message via this connection if they knew the connection URI).
+      - update the connection, e.g. by setting the key required to send the messages (initially Alice creates the connection that accepts unsigned requests to send messages, so anybody could send the message via this connection if they knew the connection URI).
 2. Alice sends an out-of-band message to Bob via the alternative channel that both Alice and Bob trust (see [Graph-messaging protocol abstract](#graph-messaging-protocol-abstract) above). The message includes:
    - the encryption algorithm that Bob should use.
    - the unique "public" key (`EK`) that Bob should use to encrypt messages.
