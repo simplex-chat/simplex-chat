@@ -23,7 +23,7 @@ TODO
 
 ## Duplex connection
 
-A generic term for two unidirectional connections to connect participants or devices - used for "contacts", "devices" and "group participants".
+A generic term for two unidirectional connections (or two sets of connections, for redundancy) to connect participants or devices - used for "contacts", "devices" and "group participants".
 
 TODO
 
