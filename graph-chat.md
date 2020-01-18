@@ -54,10 +54,17 @@ The following symbols are used below:
 
 To create a duplex connection initiated by Alice, Alice's and Bob's apps follow these steps.
 
-1. Alice's app prepares unidirectional connections:
-   1. it creates `n` unidirectional connections `CAi` with client-generated IDs `IDAi` on different Alice's servers (see [edge-messaging protocol][3]) with different keys `RKAi` (Alice's recipient keys) - edge-messaging server returns recipient and sender connection URIs `RUAi` and `SUAi`.
+1. Alice's app initiates duplex connection:
+   1. it creates `n` unidirectional connections ("edges") `CAi` (step 1 in [edge-messaging][3]) that are defined by:
+      - client-generated:
+         - Alice's asymmetric key pairs `EKAi` to encrypt messages.
+         - connection IDs `IDAi`.
+         - recipient keys `RKAi`.
+      - server-generated:
+         - recipient URIs `SUAi`.
+         - sender URIs `RUAi`.
    2. optionally, Alice's app subsribes to receive messages from these new connections `CAi` ([edge-messaging server protocol][4] defines protocol to be used for subscriptions).
-2. Alice's app sends a secure message to Bob's app:
+2. Alice's app sends a secure message to Bob's app (step 2 in [edge-messaging][3]):
    1. it prepares the message with the information needed to establish all connections `CAi`, including all encryption keys `EKAi` and sender connection URIs (`SUAi`).
    2. depending on the communication scenario, Alice's app sends this message to Bob's app in one of available secure ways (either out-of-band or via available secure duplex connections(s) - see [Duplex connection security level](#TODO)), depending on communication scenario:
      - if Bob is a new contact, the information is presented as a visual code (e.g. QR code(s)) to Bob's app - as out-of-band message needed to establish connections `CAi` (see [edge-messaging protocol][3] and [Adding direct contact](#adding-direct-contact)).
@@ -65,36 +72,50 @@ To create a duplex connection initiated by Alice, Alice's and Bob's apps follow 
      - if Alice adds Bob as a contact via Bob's trusted contact John, who also has Alice as a trusted contact, this information will be passed via John (who has secure duplex connections with both Alice and Bob), in the same way as with Group chat (see [Trusted contacts](#TODO)).
      - if Alice already has Bob as a contact, and she wants to create a separate off-the-record chat with him, this information will be passed via their existing connection (see [Off-the-record chat](#TODO)).
      - etc. In all cases, the protocol defines the most secure possible way to pass the out-of-band (from the point of view of the new connections) message required by [edge-messaging protocol][3] to create unidirectional connections.
-3. Bob's app accepts all Alice's connections:
+3. Bob's app accepts duplex connection with Alice:
    1. it receives the message from Alice's app, in a way defined by a specific chat scenario.
-   2. it interprets the received information as edge-messaging protocol out-of-band messages to accept all unidirectional connections `CAi` (see [edge-messaging protocol][3]).
-   3. it creates `n` new unidirectional connections `CBi` on Bob's server with client-generated IDs `IDBi` on different Bob's servers with different keys `RKBi` (Bob's recipient keys) - edge-messaging server returns recipient and sender connection URIs `RUBi` and `SUBi`.
+   2. it interprets the received information as edge-messaging protocol out-of-band messages to accept all unidirectional connections `CAi`.
+   3. it creates `n` new unidirectional connections `CBi` on Bob's servers defined by:
+      - client-generated:
+         - Bob's asymmetric key pairs `EKBi` to encrypt messages.
+         - connection IDs `IDBi`.
+         - recipient keys `RKBi`.
+      - server-generated:
+         - recipient URIs `SUBi`.
+         - sender URIs `RUBi`.
    4. optionally, Bob's app subsribes to receive messages from these new connection `CBi` (see [edge-messaging server protocol][4]).
-   5. it prepares required `n` responses, each with sender key `SKAi` for connection `CAi`.
-   6. as optional information to identify Bob, depending on communication scenario, his app includes Bob's user profile (that is only stored in graph-chat client and not visible to any server).
-   7. as additional optional information, his app includes in each response the information required to establish a connection `CBi` with Alice so that she can send messages to Bob - this includes public key `EKBi` and sender connection URIs `SUBi` in each corresponding message sent to connection `CAi`.
-   8. his app now sends the unsigned requiests to Alice's connections `CAi` to URIs `SUAi` (see [edge-messaging protocol][3]), to both confirm the connections `CAi` and to propose the new connections `CBi`. As each message is encrypted by the key `EKAi` of the connection `CAi` that only Alice can decrypt, it is safe to send it - from edge-messaging server point of view it is an out-of-band message.
-4. Alice's app accepts Bob's app connections:
-   1. it receives the messages from Bob.
+   5. it proceeds with accepting Alice's app connections `CAi` (step 3 in [edge-messaging protocol][3]).
+   6. in response to each connection `CAi`, as optional information, Bob's app includes:
+      - Bob's user profile (that is only stored in graph-chat client and not visible to any server)
+      - information to establish connection `CBi`:
+         - encryption key `EKBi`.
+         - sender connection URIs (`SUBi`).
+   7. his app now sends the unsigned requiests to Alice's connections `CAi` (step 3.4 in [edge-messaging protocol][3]), to both confirm the connections `CAi` and to propose the new connections `CBi`. As each message is encrypted by the key `EKAi` of the connection `CAi` that only Alice can decrypt, it is safe to send it - from edge-messaging server point of view it is an out-of-band message.
+4. Alice's app adds Bob's duplex connection:
+   1. it receives the messages from Bob via connections `CAi`.
    2. depending on chat scenario, Bob is identified and confirmed:
      - for new contact, Alice may visually identify Bob's user profile and accepts Bob as a contact.
      - for group participant, Alice's app will match known Bob's user profile ID with received user profile ID.
-   3. it secures the connections `CAi` with keys `SKAi` received from Bob - the connections are now established (see [edge-messaging protocol][3]).
-   4. it accepts the connections `CBi`, including in the response to Bob's server Alice's user profile and (as the additional information) the confirmation that the connections `CAi` are secured and can be used (see [edge-messaging protocol][3]).
+   3. it secures the connections `CAi` with keys `SKAi` received from Bob - the connections are now established (step 5 in [edge-messaging protocol][3]).
+   4. it accepts the connections `CBi`, including in the response to Bob's server Alice's user profile and (as the additional information) the confirmation that the connections `CAi` are secured and can be used (step 3 in [edge-messaging protocol][3]).
    5. it sends the unsigned messages via connections `CBi`.
    6. it adds Bob's duplex connection to the list of available duplex connections as "pending" (Alice cannot yet send messages to Bob, but Bob already can send messages to Alice). Possibly, the status of duplex connection can indicate that Bob already can send messages to Alice.
 5. Bob's app adds duplex connection with Alice:
    1. it receives the initial messages via connections `CBi`.
-   2. it adds duplex connection with Alice in the list of available duplex connections as "pending" (to indicate that Alice cannot yet send messages). Possibly, the status of duplex connection can indicate that Bob already can send messages to Alice.
-   3. it secures the connections `CBi` - they are now established as well (see [edge-messaging protocol][3]).
+   2. it secures the connections `CBi` - they are now established as well (step 5 in [edge-messaging protocol][3]).
+   3. it adds duplex connection with Alice in the list of available duplex connections as "pending" (to indicate that Alice cannot yet send messages). Possibly, the status of duplex connection can indicate that Bob already can send messages to Alice.
    4. it sends a special message (message type "welcome") to Alice's app via duplex connection (i.e., via all connections `CAi`) to confirm that adding Alice's contact is completed (see [Sending messages via duplex connection](#TODO)).
 6. Alice's app finalises adding duplex connection with Bob:
    1. it receives "welcome" message from Bob's app via duplex connection.
    2. it changes Bob's duplex connection status to "established".
-   3. it send a special "welcome" message to Bob's app via duplex connection.
+   3. it sends a special "welcome" message to Bob's app via duplex connection.
 7. Bob's app finalises adding duplex connection with Alice:
    1. it receives "welcome" message from Alice's app via duplex connection.
    2. it changes Alice's duplex connection status "established".
+
+**Creating duplex connection between Alice and Bob:**
+
+![Creating connection](/diagrams/graph-chat/duplex-creating.svg)
 
 
 ## Adding direct contact

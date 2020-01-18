@@ -1,0 +1,40 @@
+sequenceDiagram
+  participant A as Alice's app
+  participant SA as Alice's servers <br> (connections CAi)
+  participant SB as Bob's servers <br> (connections CBi)
+  participant B as Bob's app
+
+  note over A, SA: 1. initiate duplex connection
+  A ->> SA: create n connections CAi (send IDAi and RKAi)
+  SA ->> A: receive connections URIs (RUAi and SUAi)
+  A ->> SA: subscribe to messages from CAi
+
+  A -->> B: 2. send secure message with connections "public" keys (EKAi) and URIs (SUAi)
+
+  note over B: 3. accept Alice's <br> duplex connection
+  B ->> SB: create n connections CBi (send IDBi and RKBi)
+  SB ->> B: receive connections URIs (RUBi and SUBi)
+  B ->> SB: subscribe to messages from CBi
+  note over B: prepare msgs with: <br> - sender key SKAi <br> - Bob's profile <br> - EKBi and SUBi
+  B ->> SA: accept CAi (send EKAi-encrypted messages to CAi)
+
+  note over A: 4. Add Bob's duplex <br> connection
+  SA ->> A: receive Bob's app messages
+  note over A: id and confirm Bob
+  A ->> SA: secure connections CAi with Bob's SKAi
+  note over A: prepare msgs with: <br> - sender key SKBi <br> - Alice's profile <br> - CAi confirmation
+  A ->> SB: accept CBi (send EKBi-encrypted messages to CBi)
+  note over A: Bob's duplex conn. <br> "pending"
+
+  note over B: 5. Add Alice's duplex <br> connection
+  SB ->> B: receive Alice's app messages
+  B ->> SB: secure connections CBi with Alice's SKBi
+  B ->> SA: send "welcome" message to duplex connection (via all CAi)
+  note over B: Alice's duplex conn. <br> "pending"
+
+  SA ->> A: 6. receive Bob's "welcome" message
+  A ->> SB: send "welcome" message to duplex connection (via all CBi)
+  note over A: Bob's duplex conn. <br> "established"
+
+  SB ->> B: 7. receive Alice's "welcome" message
+  note over B: Alice's duplex conn. <br> "established"
