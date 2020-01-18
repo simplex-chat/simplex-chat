@@ -67,11 +67,11 @@ To create a duplex connection initiated by Alice, Alice's and Bob's apps follow 
 2. Alice's app sends a secure message to Bob's app (step 2 in [edge-messaging][3]):
    1. it prepares the message with the information needed to establish all connections `CAi`, including all encryption keys `EKAi` and sender connection URIs (`SUAi`).
    2. depending on the communication scenario, Alice's app sends this message to Bob's app in one of available secure ways (either out-of-band or via available secure duplex connections(s) - see [Duplex connection security level](#TODO)), depending on communication scenario:
-     - if Bob is a new contact, the information is presented as a visual code (e.g. QR code(s)) to Bob's app - as out-of-band message needed to establish connections `CAi` (see [edge-messaging protocol][3] and [Adding direct contact](#adding-direct-contact)).
-     - if Bob is added to group chat with Alice by some contact of Alice or Bob, this information can be passed through all possible chains of contacts between Alice and Bob in the group (to minimise the risk of MITM attack) (see [Group chat](#TODO)).
-     - if Alice adds Bob as a contact via Bob's trusted contact John, who also has Alice as a trusted contact, this information will be passed via John (who has secure duplex connections with both Alice and Bob), in the same way as with Group chat (see [Trusted contacts](#TODO)).
-     - if Alice already has Bob as a contact, and she wants to create a separate off-the-record chat with him, this information will be passed via their existing connection (see [Off-the-record chat](#TODO)).
-     - etc. In all cases, the protocol defines the most secure possible way to pass the out-of-band (from the point of view of the new connections) message required by [edge-messaging protocol][3] to create unidirectional connections.
+      - if Bob is a new contact, the information is presented as a visual code (e.g. QR code(s)) to Bob's app - as out-of-band message needed to establish connections `CAi` (see [edge-messaging protocol][3] and [Adding direct contact](#adding-direct-contact)).
+      - if Bob is added to group chat with Alice by some contact of Alice or Bob, this information can be passed through all possible chains of contacts between Alice and Bob in the group (to minimise the risk of MITM attack) (see [Group chat](#TODO)).
+      - if Alice adds Bob as a contact via Bob's trusted contact John, who also has Alice as a trusted contact, this information will be passed via John (who has secure duplex connections with both Alice and Bob), in the same way as with Group chat (see [Trusted contacts](#TODO)).
+      - if Alice already has Bob as a contact, and she wants to create a separate off-the-record chat with him, this information will be passed via their existing connection (see [Off-the-record chat](#TODO)).
+      - etc. In all cases, the protocol defines the most secure possible way to pass the out-of-band (from the point of view of the new connections) message required by [edge-messaging protocol][3] to create unidirectional connections.
 3. Bob's app accepts duplex connection with Alice:
    1. it receives the message from Alice's app, in a way defined by a specific chat scenario.
    2. it interprets the received information as edge-messaging protocol out-of-band messages to accept all unidirectional connections `CAi`.
@@ -94,8 +94,8 @@ To create a duplex connection initiated by Alice, Alice's and Bob's apps follow 
 4. Alice's app adds Bob's duplex connection:
    1. it receives the messages from Bob via connections `CAi`.
    2. depending on chat scenario, Bob is identified and confirmed:
-     - for new contact, Alice may visually identify Bob's user profile and accepts Bob as a contact.
-     - for group participant, Alice's app will match known Bob's user profile ID with received user profile ID.
+      - for new contact, Alice may visually identify Bob's user profile and accepts Bob as a contact.
+      - for group participant, Alice's app will match known Bob's user profile ID with received user profile ID.
    3. it secures the connections `CAi` with keys `SKAi` received from Bob - the connections are now established (step 5 in [edge-messaging protocol][3]).
    4. it accepts the connections `CBi`, including in the response to Bob's server Alice's user profile and (as the additional information) the confirmation that the connections `CAi` are secured and can be used (step 3 in [edge-messaging protocol][3]).
    5. it sends the unsigned messages via connections `CBi`.
