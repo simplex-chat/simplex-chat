@@ -8,7 +8,7 @@ This document defines:
    - [connection IDs](#connection-id) for clients.
    - [connection URIs](#connection-uris) for servers.
 - [privacy requirements](#privacy-requirements) to the servers.
-- [Rest API](#rest-api):
+- [REST API](#rest-api):
    - to create connections and to update connection attributes.
    - to send and to retrieve messages.
 - WebSocket API to subscribe to connections:
@@ -79,7 +79,7 @@ Edge-messaging server implementations MUST NOT:
 - create/store any other information that may undermine privacy or [forward secrecy][4] of communication between clients using edge-messaging server.
 
 
-## Rest API
+## REST API
 
 ### General API considerations
 
@@ -121,7 +121,7 @@ TODO Authorisation header format
 TODO
 
 
-### Rest API endpoints
+### REST API endpoints
 
 Edge-messaging server MUST provide the API endpoints for the recipient and for the sender. The list of endpoints below has URI examples, the actual API URI schemes can differ between implementations, and even from deployment to deployment, based on server configuration.
 
@@ -141,7 +141,7 @@ Endpoints for the sender:
 - [Send messages](#send-messages): POST `<SU>/messages` (e.g. `https://example.com/connection/bY1h/messages`
 
 
-### Rest API endpoints for the connection recipients
+### REST API endpoints for the connection recipients
 
 #### Create connection
 
@@ -264,7 +264,7 @@ If the request is successful, the server MUST respond with HTTP status code (200
 If the unknown message ID is passed in `fromMessageID` parameter, the request should be rejected with HTTP status code 400 (Bad Request).
 
 
-### Rest API endpoints for the connection sender
+### REST API endpoints for the connection sender
 
 #### Update connection
 
