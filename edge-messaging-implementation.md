@@ -11,7 +11,7 @@ This document defines:
 - [REST API](#rest-api):
    - to create connections and to update connection attributes.
    - to send and to retrieve messages.
-- WebSocket API to subscribe to connections:
+- [WebSockets API](#websockets-api) to subscribe to connections:
    - to receive the new messages.
    - to update connection attributes.
 - any other requirements for edge-messaging servers
@@ -34,7 +34,7 @@ To sign and verify requests, clients and servers MUST use RSA-PSS algorythm defi
 
 To optinally sign and verify messages, clients SHOULD use RSA-PSS algorythm.
 
-To encrypt and decrypt messages, clients SHOULD use RSAES-OAEP algorythm defined in [RFC3447][2].
+To encrypt and decrypt messages, clients SHOULD use RSA-OAEP algorythm defined in [RFC3447][2].
 
 The reasons to support these algorithms:
 - they are supported by WebCrypto API.
@@ -309,6 +309,17 @@ Request body should be sent as JSON object with the following properties:
    - `msg`: encrypted message body, that the recipient should be able to decrypt with the key `EK`. Any message meta-data (client timestamp, ID, etc.) MUST be inside the encrypted message and MUST NOT passed via additional properties.
 
 If the request is successful, the server MUST respond with HTTP status code 200 (OK) without body.
+
+
+## WebSockets API
+
+TODO
+
+**Simplex connection operation:**
+
+![Simplex connection operations](/diagrams/simplex2.svg)
+
+Sequence diagram does not show E2EE - connection itself knows nothing about encryption between sender and receiver.
 
 
 [1]: edge-messaging.md

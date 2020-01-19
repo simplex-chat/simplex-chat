@@ -17,7 +17,7 @@ A generic chat protocol for client applications that communicate via edge-messag
 TODO
 
 
-## Creating duplex connection
+## Duplex connection
 
 Majority of chat scenarios requires duplex (bi-directional) connections between participants. Graph-chat protocol uses multiple unidirectional connections (graph edges) created on multiple edge-messaging servers to implement duplex connections.
 
@@ -48,7 +48,10 @@ The following symbols are used below:
   - `RKBi` - Bob's recipient key of `CBi`.
   - `SKBi` - Alice's sender key of `CBi`.
 
-To create a duplex connection initiated by Alice, Alice's and Bob's apps follow these steps.
+
+### Creating duplex connection
+
+To create a duplex connection initiated by Alice, Alice's and Bob's apps follow these steps:
 
 1. Alice's app initiates duplex connection:
    1. it creates `n` unidirectional connections ("edges") `CAi` (step 1 in [edge-messaging][3]) that are defined by:
@@ -112,6 +115,15 @@ To create a duplex connection initiated by Alice, Alice's and Bob's apps follow 
 **Creating duplex connection between Alice and Bob:**
 
 ![Creating connection](/diagrams/graph-chat/duplex-creating.svg)
+
+
+### Sending message via duplex connection
+
+When Alice sends the message to Bob via the duplex connection, they follow these steps:
+
+TODO (below moved from readme)
+
+![Sending message](/diagrams/message.svg)
 
 
 ## Adding direct contact

@@ -31,13 +31,26 @@ This approach is based on the concepts of [unidirectional networks][4] that are 
 Defining the approach to out-of-band message passing is out of scope of this edge-messaging protocol. For practical purposes, and from the graph-chat client application point of view, various solutions can be used, e.g. one of the versions or the analogues of [QR code][3] (or their sequence) that is read via the camera, either directly from the chat participant's device or via the video call. Although a video call still allows for a highly sophisticated MITM attack, it requires that in addition to compromising edge-messaging connection to intercept messages, the attacker also identifies and compromises the video connection in another channel and substitutes the video in real time - it seems extremely unlikely.
 
 
+## Simplex connection - the main unit of protocol design
+
+The network consists of multiple "simplex connections" (i.e. unidirectional, non-duplex). Access to each connection is controlled with unique (not shared with other connections) assymetric key pairs, separate for sender and the receiver. The sender and the receiver have private keys, and the server has associated public keys to verify participants.
+
+The messages sent into the connection are encrypted and decrypted using another key pair - the recepient has the private key and the sender has the associated public key.
+
+**Unidirectional connection diagram:**
+
+![Unidirectional connection](/diagrams/edge-messaging/edge.svg)
+
+Connection is defined by ID (`ID`) unique to the server, sender URI `SU` and receiver URI `RU`. Sender key (`SK`) is used by the server to verify sender's requests (made via `SU`) to send messages. Recipient key (`RK`) is used by the server to verify recipient's requests (made via `RU`) to retrieve messages.
+
+
 ## How Alice and Bob use edge-messaging protocol
 
 Alice (recipient) wants to receive the messages from Bob (sender).
 
 To do it Alice and Bob follow these steps:
 
-1. Alice creates the connection on the server:
+1. Alice creates the unidirectional connection on the server:
    1. she decides which edge-messaging server to use (can be the same or different server that Alice uses for other connections).
    2. she generates a new random public/private key pair (encryption key - `EK`) that she did not use before for Bob to encrypt the messages.
    3. she generates another new random public/private key pair (recepient key - `RK`) that she did not use before for her to sign requests to retrieve the messages from the server.
@@ -103,13 +116,6 @@ This protocol also can be used for off-the-record messaging, as Alice and Bob ca
 How unidirectional connections (graph edges) are used by the participants (graph vertices) is defined by graph-chat protocol and is not in scope of this low level edge-messaging protocol.
 
 
-**Unidirectional connection diagram:**
-
-![Unidirectional connection](/diagrams/edge-messaging/edge.svg)
-
-Connection is defined by ID (`ID`) unique to the server, sender URI `SU` and receiver URI `RU`. Sender key (`SK`) is used by the server to verify sender's requests (made via `SU`) to send messages. Recipient key (`RK`) is used by the server to verify recipient's requests (made via `RU`) to retrieve messages.
-
-
 ## Alternative flow to establish unidirectional connection
 
 When Alice and Bob already have a secure duplex (bi-directional) communication channel that allows conveniently send two out-of-band messages, a flow with smaller number of steps to establish the connection can be used.
@@ -130,7 +136,7 @@ TODO
   - while multiple servers and multiple connections can be used to pass each chat message, it is in scope of graph-chat protocol, and out of scope of this edge-messaging protocol.
   - servers store messages only until they are retrieved by the recipients
   - servers are not supposed to store any message history or delivery log, but even if the server is compromised, it does not allow to decrypt the messages or to determine the list of connections established by any participant - this information is only stored on client devices.
-- the only element provided by graphmessaging servers is unidirectional connections (graph edges):
+- the only element provided by edge-messaging servers is unidirectional connections (graph edges):
   - each connection is created and managed by the connection recipient.
   - assymetric encryption is used to sign and verify the requests to send and receive the messages.
   - one unique "public" key is used for the servers to authenticate requests to send the messages into the connection, and another unique "public" key - to retrieve the messages from the connection. "Unique" here means that each "public" key is used only for one connection and is not used for any other context - effectively this key is not public and does not represent any participant identity.
