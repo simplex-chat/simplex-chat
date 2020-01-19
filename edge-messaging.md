@@ -4,7 +4,14 @@ A generic client-server protocol for asynchronous distributed unidirectional mes
 
 ## Problems of the existing messaging protocols
 
-- Participants' identities are known to the network. Depending on the identity type (e.g., phone number, DNS-based, username, uuid, public key, etc.) it creates different problems, but in all cases it exposes participants and their contacts graph to the network and also allows for unsolicited messages (spam and abuse).
+- Identity related problems:
+  - visibility of user contacts to anybody observing messages
+  - unsolicited messages (spam and abuse)
+  - trademark issues (when usernames are used)
+  - privacy issues (when phone numbers are used)
+
+  Participants' identities are known to the network. Depending on the identity type (e.g., phone number, DNS-based, username, uuid, public key, etc.) it creates different problems, but in all cases it exposes participants and their contacts graph to the network and also allows for unsolicited messages (spam and abuse).
+
 - [MITM attack][1]. Any mechanism of the key exchange via the same network is prone to this type of attack when the public keys of the participants are substituted with the public keys of the attacker intercepting communication. While some solutions have been proposed that complicate MITM attack (social millionaire, OTR), if the attacker understands the protocol and has intercepted and can substitute all information exchanged between the participants, it is still possible to substitute encryption keys. It means that the existing [E2EE][2] implementations in messaging protocols and platforms can be compromised by the attacked who either compromised the server or communication channel.
 
 
@@ -46,12 +53,12 @@ To do it Alice and Bob follow these steps:
 2. Alice sends an out-of-band message to Bob via the alternative channel that both Alice and Bob trust (see [Edge-messaging protocol abstract](#edge-messaging-protocol-abstract) above). The message includes:
    - the unique "public" key (`EK`) that Bob should use to encrypt messages.
    - the sender connection URI `SU` for Bob to use.
-3. Bob, having receieved the out-of-band message from Alice, accepts the connection:
+3. Bob, having received the out-of-band message from Alice, accepts the connection:
    1. he generates a new random public/private key pair (sender key - `SK`) that he did not use before for him to sign requests to Alice's server to send the messages.
    2. he prepares the first message for Alice to confirm the connection. This message includes:
       - previously generated "public" key `SK` that will be used by Alice's server to verify Bob's requests to send messages.
-      - optionally, any information that allows Alice to identify Bob (e.g., in graph-chat protocol it is Bob's chat profile, but it can be any other information).
-      - optionally, any other additional information (e.g., Bob could pass the details of another connection and a new "public" key for Alice to send reply messages to Bob).
+      - optionally, any information that allows Alice to identify Bob (e.g., in [graph-chat protocol][7] it is Bob's chat profile, but it can be any other information).
+      - optionally, any other additional information (e.g., Bob could pass the details of another connection including sender connection URI and a new "public" encryption key for Alice to send reply messages to Bob, also see [graph-chat protocol][7]).
    3. he encrypts the message by the "public" key `EK` (that Alice provided via the out-of-band message).
    4. he sends the encrypted message to the connection URI `SU` to confirm the connection (that Alice provided via the out-of-band message). This request to send the first message does not need to be signed.
 4. Alice retrieves Bob's message from the server via recipient connection URI `RU`:
@@ -59,7 +66,7 @@ To do it Alice and Bob follow these steps:
    2. even though anybody could have sent the message to the connection `ID` before it is secured (e.g. if communication is compromised), Alice would ignore all messages until the decryption succeeds (i.e. the result contains the expected message structure). Optionally, she also may identify Bob using the information provided, but it is not required by this protocol.
 5. Alice secures the connection `ID` so only Bob can send messages to it:
    1. she sends the request to `RU` signed with "private" key `RK` to update the connection to only accept requests signed by "private" key `SK` provided by Bob.
-   2. From this moment the server will accept only signed requests, and only Bob will be able to send messages to the connection `ID` via `SU`.
+   2. From this moment the server will accept only signed requests, and only Bob will be able to send messages to the `SU` corresponding to connection `ID`.
 6. The unidirectional connection `ID` is now established on the server.
 
 **Creating unidirectional connection from Bob to Alice:**
@@ -71,10 +78,10 @@ Bob now can securely send messages to Alice.
 
 1. Bob sends the message:
    1. he encrypts the message to Alice with "public" key `EK` (provided by Alice, only known to Alice and Bob, used only for one unidirectional connection).
-   2. he signs the request to the server (via connection `CID`) using the "private" key `SK` (that only he knows, used only for this connection).
-   3. he sends requests to the server, that the server will verify using the "public" key SK (that Alice provided to the server).
+   2. he signs the request to the server (via `SU`) using the "private" key `SK` (that only he knows, used only for this connection).
+   3. he sends the request to the server, that the server will verify using the "public" key SK (that Alice provided to the server).
 2. Alice retrieves the message(s):
-   1. she sigms request to the server with the "private" key `RK` (that only she has, used only for this connection).
+   1. she signs request to the server with the "private" key `RK` (that only she has, used only for this connection).
    2. the server, having verified Alice's request with the "public" key `RK` that she provided, responds with Bob's message(s).
    3. she decrypts Bob's message(s) with the "private" key `EK` (that only she has).
 
@@ -83,7 +90,7 @@ Bob now can securely send messages to Alice.
 ![Using connection](/diagrams/edge-messaging/edge-using.svg)
 
 
-A higher level protocol (e.g., graph-chat) defines the semantics that allow to use two unidirectional connections (or two sets of connections for redundancy) for the bi-directional messaging chat and for any other communication scenarios.
+A higher level protocol (e.g., [graph-chat][7]) defines the semantics that allow to use two unidirectional connections (or two sets of connections for redundancy) for the bi-directional messaging chat and for any other communication scenarios.
 
 The edge-messaging protocol is intentionally unidirectional - it provides no answer to how Bob will know that the process succeeded, and whether Alice received any messages. There may be a situation when Alice wants to securely receive the messages from Bob, but she does not want Bob to have any proof that she received any messages - this low-level edge-messaging protocol can be used in this scenario, as all Bob knows as a fact is that he was able to send one unsigned message to the server that Alice provided, and now can only send messages signed with the key `SK` that he sent to the server - it does not prove that any message was received by Alice.
 
@@ -100,7 +107,7 @@ How unidirectional connections (graph edges) are used by the participants (graph
 
 ![Unidirectional connection](/diagrams/edge-messaging/edge.svg)
 
-Connection is defined by unique ID (`CID`). Sender key (`SK`) is used by the server to verify sender's requests to send messages. Recipient key (`RK`) is used by the server to verify requests to retrieve messages.
+Connection is defined by ID (`ID`) unique to the server, sender URI `SU` and receiver URI `RU`. Sender key (`SK`) is used by the server to verify sender's requests (made via `SU`) to send messages. Recipient key (`RK`) is used by the server to verify recipient's requests (made via `RU`) to retrieve messages.
 
 
 ## Alternative flow to establish unidirectional connection
@@ -130,7 +137,7 @@ TODO
   - both "public" keys are provided to the server by the connection recepient when the connection is established.
   - the "public" keys known to the server and used to authenticate requests from the participants are unrelated to the keys used to encrypt and decrypt the messages - the latter keys are also unique per each connection but they are only known to participants, not to the servers.
   - messaging graph can be asymmetric: Bob's ability to send messages to Alice does not automatically lead to the Alice's ability to send messages to Bob.
-  - connections are identified by the "connection URI" - server URI and connection ID (`CID`).
+  - connections are identified by the "connection URI" - server URI and connection ID (`ID`).
 
 
 [1]: https://en.wikipedia.org/wiki/Man-in-the-middle_attack
@@ -139,3 +146,4 @@ TODO
 [4]: https://en.wikipedia.org/wiki/Unidirectional_network
 [5]: https://en.wikipedia.org/wiki/Forward_secrecy
 [6]: https://en.wikipedia.org/wiki/Off-the-Record_Messaging
+[7]: graph-chat.md

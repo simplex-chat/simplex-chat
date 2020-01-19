@@ -33,8 +33,8 @@ sequenceDiagram
   note over B: Alice's duplex conn. <br> "pending"
 
   SA ->> A: 6. receive Bob's "welcome" message
-  A ->> SB: send "welcome" message to duplex connection (via all CBi)
   note over A: Bob's duplex conn. <br> "established"
+  A ->> SB: send "welcome" message to duplex connection (via all CBi)
 
   SB ->> B: 7. receive Alice's "welcome" message
   note over B: Alice's duplex conn. <br> "established"
