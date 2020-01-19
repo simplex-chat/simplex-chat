@@ -1,0 +1,16 @@
+sequenceDiagram
+  participant B as Bob (sender)
+  participant S as server (conn. ID)
+  participant A as Alice (recipient)
+
+  note over B: out-of-band msg <br> ("public" key SK <br> to sign requests)
+  B -->> A: 1. send out-of-band message to Alice
+
+  note over A: creating connection: <br> - connection ID <br> - key RK to retrieve <br> - key SK to send
+  A ->> S: 2. create secure connection
+  S ->> A: respond with connection URIs
+
+  note over A: out-of-band msg <br> - sender conn. URI <br> - key EK to encrypt
+  A -->> B: 3. send out-of-band message to Bob
+
+  note over S: 4. secure <br> connection ID <br> is established!

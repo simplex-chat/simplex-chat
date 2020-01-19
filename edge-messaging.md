@@ -122,6 +122,10 @@ When Alice and Bob already have a secure duplex (bi-directional) communication c
 
 TODO
 
+**Altervative flow of creating unidirectional connection from Bob to Alice:**
+
+![Alternative flow of creating connection](/diagrams/edge-messaging/edge-creating-alt.svg)
+
 
 ## Elements of the generic edge-messaging protocol
 
