@@ -3,12 +3,12 @@
 This document defines specific elements to be used by client and server implementations of edge-messaging protocol. This protocol relies on the connection creation and messaging flows defined in generic [edge-messaging protocol][1].
 
 This document defines:
-- cryptographic algorithms to sign/verify requests and to encrypt/decrypt messages.
+- [cryptographic algorithms](#cryptographic-algorithms) to sign/verify requests and to encrypt/decrypt messages.
 - required approaches to generate:
-   - connection IDs for clients.
-   - connection URIs for servers.
-- privacy requirements to the servers.
-- REST API:
+   - [connection IDs](#connection-id) for clients.
+   - [connection URIs](#connection-uris) for servers.
+- [privacy requirements](#privacy-requirements) to the servers.
+- [Rest API](#rest-api):
    - to create connections and to update connection attributes.
    - to send and to retrieve messages.
 - WebSocket API to subscribe to connections:
@@ -69,9 +69,9 @@ Coonection URIs can be:
 - any unique URI that server recognises.
 
 
-## Privacy requirements to the edge-messaging server implementations:
+## Privacy requirements
 
-Edge-messaging server MUST NOT:
+Edge-messaging server implementations MUST NOT:
 - create any logs of the client requests in the production environment.
 - create any history of deleted connections or retrieved (and removed) messages.
 - create any history of connection updates and store old keys or URIs.
@@ -79,7 +79,7 @@ Edge-messaging server MUST NOT:
 - create/store any other information that may undermine privacy or [forward secrecy][4] of communication between clients using edge-messaging server.
 
 
-## REST API
+## Rest API
 
 ### General API considerations
 
@@ -121,17 +121,39 @@ TODO Authorisation header format
 TODO
 
 
+### Rest API endpoints
+
+Edge-messaging server MUST provide the API endpoints for the recipient and for the sender. The list of endpoints below has URI examples, the actual API URI schemes can differ between implementations, and even from deployment to deployment, based on server configuration.
+
+URI scheme provides an additional layer of security to access the connection for both the sender and the recipient, and allows, if required, to implement and deploy private and commercial edge-messaging servers.
+
+`messages` path segment in all endpoints to retrieve, delete and send messages is REQUIRED and MUST NOT be changed by any implementation or deployment.
+
+Endpoints for the recipient:
+- [Create connection](#create-connection): POST `create URI` (e.g. `https://example.com/connection`)
+- [Update connection](#update-connection): PUT `<RU>` (e.g. `https://example.com/connection/aZ9f`)
+- [Delete connection](#delete-connection): DELETE `<RU>` (e.g. `https://example.com/connection/aZ9f`)
+- [Retrieve messages](#retrieve-messages): POST `<RU>/messages` (e.g. `https://example.com/connection/aZ9f/messages`)
+- [Delete messages](#delete-messages): DELETE `<RU>/messages` (e.g. `https://example.com/connection/aZ9f/messages`)
+
+Endpoints for the sender:
+- [Update connection](#update-connection): PUT `<SU>` (e.g. `https://example.com/connection/bY1h`)
+- [Send messages](#send-messages): POST `<SU>/messages` (e.g. `https://example.com/connection/bY1h/messages`
+
+
 ### Rest API endpoints for the connection recipients
 
 #### Create connection
+
+URI: as defined by server configuration, can be different per server user.
 
 Example: POST `https://example.com/connection`
 
 Server MUST define a single endpoint to create connections. This endpoint can be:
 - server domain without any path, if the domain is not shared with other web application.
 - server domain and path used for all connection URIs.
-- server domain, path and secure token(s), if the server owner wants to restrict access to creating connections (for a private or commercial server).
-- any other URI that server recognises.
+- server domain, path and secure token(s) (possibly user-specific), if the server owner wants to restrict access to creating connections (for private or commercial servers).
+- any other, potentially undiscoverable, URI that server recognises.
 
 To create a connection, edge-messaging client MUST send POST request to this endpoint, signed with the key `RK`.
 
@@ -149,6 +171,8 @@ If the connection creation succeeded, the server MUST respond with HTTP status c
 
 
 #### Update connection
+
+URI: recipient connection URI `<RU>`
 
 Example: PUT `https://example.com/connection/aZ9f`
 
@@ -176,6 +200,8 @@ If any of the connection URIs have changed, all the following requests to the ol
 
 #### Delete connection
 
+URI: recipient connection URI `<RU>`
+
 Example: DELETE `https://example.com/connection/aZ9f`
 
 To delete the connection, edge-messaging client MUST send DELETE request to the recipient connection URI `RU` (returned by the server when creating the connection), signed with the key `RK`.
@@ -190,11 +216,13 @@ Server MUST permanently delete the connection and all unretrieved messages witho
 All further requests to the recipient and sender connection URIs MUST be rejected with HTTP status code 404 (Not Found).
 
 
-#### Retrieve messages from the connection
+#### Retrieve messages
+
+URI: `<RU>/messages`
 
 Example: POST `https://example.com/connection/aZ9f/messages`
 
-To get messages from the connection, edge-messaging client MUST send POST request to the recipient connection URI `RU` (returned by the server when creating the connection) with appended string `/messages`, signed with the key `RK`.
+To retrieve messages from the connection, edge-messaging client MUST send POST request to the recipient connection URI `RU` (returned by the server when creating the connection) with the REQUIRED appended string `/messages` (it MUST NOT be changed by any implementation or deployment), signed with the key `RK`.
 
 Request body should be sent as JSON object with the following properties:
 - `connectionID` (string): existing connection ID (see [Connection ID](#connection-id)).
@@ -214,11 +242,13 @@ If the request is successful, the server MUST respond with HTTP status code (200
 - `nextMessageID` (string, optional): if server has more messages available it MUST return this parameter that can be used by the next request in `fromMessageID` property.
 
 
-#### Delete messages from the connection
+#### Delete messages
+
+URI: `<RU>/messages`
 
 Example: DELETE `https://example.com/connection/aZ9f/messages`
 
-To delete messages from the connection, edge-messaging client MUST send DELETE request to the recipient connection URI `RU` (returned by the server when creating the connection) with appended string `/messages`, signed with the key `RK`.
+To delete messages from the connection, edge-messaging client MUST send DELETE request to the recipient connection URI `RU` (returned by the server when creating the connection) with the REQUIRED appended string `/messages` (it MUST NOT be changed by any implementation or deployment), signed with the key `RK`.
 
 This request SHOULD be used by edge-messaging clients to delete the previously retrived messages when `"keepMessages": true` parameter was used or in case they no longer require to retrive the messages.
 
@@ -237,6 +267,8 @@ If the unknown message ID is passed in `fromMessageID` parameter, the request sh
 ### Rest API endpoints for the connection sender
 
 #### Update connection
+
+URI: sender connection URI `<SU>`
 
 Example: PUT `https://example.com/connection/bY1h`
 
@@ -261,9 +293,11 @@ If the connection URI `SU` has changed, all the following requests to the old UR
 
 #### Send messages
 
+URI: `<SU>/messages`
+
 Example: POST `https://example.com/connection/bY1h/messages`
 
-To send messages to the connection, edge-messaging client MUST send POST request to the recipient connection URI `RU` (returned by the server when creating the connection) with appended string `/messages`, signed with the key `SK`.
+To send messages to the connection, edge-messaging client MUST send POST request to the recipient connection URI `RU` (returned by the server when creating the connection) with the REQUIRED appended string `/messages` (it MUST NOT be changed by any implementation or deployment), signed with the key `SK`.
 
 Request body should be sent as JSON object with the following properties:
 - `connectionID` (string): existing connection ID (see [Connection ID](#connection-id)).
