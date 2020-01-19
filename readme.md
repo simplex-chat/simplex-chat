@@ -5,7 +5,7 @@
 The problems of existing chat solutions this system intends to solve:
 
 - Dependency on a single company/server to access and use chat. That creates implications for chat privacy (see E2EE), user profile resilience and data ownership.
-- Existing [E2EE](https://en.wikipedia.org/wiki/End-to-end_encryption) implementations in chat platforms are easily compromised via the platform itself with [MITM attack](https://en.wikipedia.org/wiki/Man-in-the-middle_attack) - as the key exchange happens via the same channel, the key can be substituted.
+- Existing [E2EE][1] implementations in chat platforms are easily compromised via the platform itself with [MITM attack][2] - as the key exchange happens via the same channel, the key can be substituted.
 - Visiblity of user profile information to chat system and other chat users.
 - Spam and exposing the list of connections to the chat system: when using any user identity to send messages (whether usernames, phone numbers, unique IDs or DNS-based addresses).
 - Other problems caused by specific types of user identities:
@@ -30,7 +30,7 @@ The problems of existing chat solutions this system intends to solve:
 
 ## Other ideas
 
-- [OTR messaging](https://en.wikipedia.org/wiki/Off-the-Record_Messaging) - below defines verifiable messaging, there is also value in supporting off-the-record messaging. Not in prototype
+- [OTR messaging][3] - below defines verifiable messaging, there is also value in supporting off-the-record messaging. Not in prototype
 - Group support - 1) separately encrypt for each recepient or 2) encrypt once per group using distributed symmetric key or 3) ... ? Probably encrypt separately, at least initially.
 - Multiple user devices - 1) known to servers (servers broadcast) or 2) known to senders (senders send to multiple devices) or 3) known to device owners (once one device receives it forwards to other devices; messages expire)? Probably known to device owners. Not in prototype.
 - Introductions - with the current design, user must initiate the connection before anybody can send messages to them. Can this be delegated to another user? One-off introduction? Trusted users? Is adding to group amounts to introduction to all users in group?
@@ -51,7 +51,7 @@ The problems of existing chat solutions this system intends to solve:
   - reduce the risk of attacker posing as user's connection
   - avoid exposing all user connections to the servers
 - Unique public key is used to identify each connection participant to each server.
-- Public keys used between connections are regularly rotated to prevent decryption of the full message history ([forward secrecy](https://en.wikipedia.org/wiki/Forward_secrecy)) in case when some servers or middle-men preserve message history and the current key is compromised.
+- Public keys used between connections are regularly rotated to prevent decryption of the full message history ([forward secrecy][4]) in case when some servers or middle-men preserve message history and the current key is compromised.
 - Users can repeat key exchange using QR code and alternative channel at any point to increase communication security.
 - No single server in the system has visibility of all connections or messages of any user, as user profiles are identified by multiple rotating public keys, using separate key for each profile connection.
 - Servers only store hashes of public keys, so that nobody can encrypt messages from a pending user profile connection while the connection is established, other than the user who has this public key received via QR code (in addition to that, messages are signed once key exchange is done both ways).
@@ -102,18 +102,18 @@ Client apps should provide the following:
 
 ## System design
 
-Prepared with [mermaid-js](https://mermaid-js.github.io/mermaid-live-editor)
+Prepared with [mermaid-js][5]
 
 This document will be split into 4 separate parts:
 
-1. [edge-messaging protocol](edge-messaging.md) - a low level generic messaging protocol that defines establishing and using a unidirectional connection (graph edge) between chat participants on a single server. While this protocol is designed to support graph-chat client protocol (below), it can be used for other messaging scenarios, not limited to chats.
-2. edge-messaging server protocol (TODO) - a low level specific messaging protocol for a server implementing generic edge-messaging protocol, including:
+1. [edge-messaging protocol][6] - a low level generic messaging protocol that defines establishing and using a unidirectional connection (graph edge) between chat participants on a single server. While this protocol is designed to support graph-chat client protocol (below), it can be used for other messaging scenarios, not limited to chats.
+2. [edge-messaging server protocol][7] - a low level specific messaging protocol for a server implementing generic edge-messaging protocol, including:
   - specific encryption algorithm(s) that can be used to sign requests.
   - defines how clients generate connection IDs.
   - REST API to send and to retrieve messages.
   - WebSocket API to subscribe to connections and to receive the new messages.
   - any other requirements for edge-messaging servers
-3. graph-chat protocol (TODO) - a high level generic chat protocol for client applications (graph vertices) that communicate via connections (graph edges) created using edge-messaging protocol. This protocol defines connection and message types and semantics for:
+3. [graph-chat protocol][8] - a high level generic chat protocol for client applications (graph vertices) that communicate via connections (graph edges) created using edge-messaging protocol. This protocol defines connection and message types and semantics for:
   - various chat elements (user profiles, conversations, chat groups, broadcasts, etc.).
   - other communication scenarios - e.g. introduction, delegation, off-the-record chat, etc.
   - using multiple servers to ensure message delivery.
@@ -187,3 +187,13 @@ In this way the server will only have the list of connections via which messages
 ### Sending message and message receipt
 
 ![Sending message](/diagrams/message.svg)
+
+
+[1]: https://en.wikipedia.org/wiki/End-to-end_encryption
+[2]: https://en.wikipedia.org/wiki/Man-in-the-middle_attack
+[3]: https://en.wikipedia.org/wiki/Off-the-Record_Messaging
+[4]: https://en.wikipedia.org/wiki/Forward_secrecy
+[5]: https://mermaid-js.github.io/mermaid-live-editor
+[6]: edge-messaging.md
+[7]: edge-messaging-implementation.md
+[8]: graph-chat.md

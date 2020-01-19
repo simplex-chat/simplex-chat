@@ -103,6 +103,13 @@ How unidirectional connections (graph edges) are used by the participants (graph
 Connection is defined by unique ID (`CID`). Sender key (`SK`) is used by the server to verify sender's requests to send messages. Recipient key (`RK`) is used by the server to verify requests to retrieve messages.
 
 
+## Alternative flow to establish unidirectional connection
+
+When Alice and Bob already have a secure duplex (bi-directional) communication channel that allows conveniently send two out-of-band messages, a flow with smaller number of steps to establish the connection can be used.
+
+TODO
+
+
 ## Elements of the generic edge-messaging protocol
 
 - defines only message-passing protocol:

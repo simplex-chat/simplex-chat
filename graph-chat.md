@@ -63,7 +63,7 @@ To create a duplex connection initiated by Alice, Alice's and Bob's apps follow 
       - server-generated:
          - recipient URIs `SUAi`.
          - sender URIs `RUAi`.
-   2. optionally, Alice's app subsribes to receive messages from these new connections `CAi` ([edge-messaging server protocol][4] defines protocol to be used for subscriptions).
+   2. optionally, Alice's app subsribes to receive messages from these new connections `CAi` ([edge-messaging protocol implementation][4] defines protocol to be used for subscriptions).
 2. Alice's app sends a secure message to Bob's app (step 2 in [edge-messaging][3]):
    1. it prepares the message with the information needed to establish all connections `CAi`, including all encryption keys `EKAi` and sender connection URIs (`SUAi`).
    2. depending on the communication scenario, Alice's app sends this message to Bob's app in one of available secure ways (either out-of-band or via available secure duplex connections(s) - see [Duplex connection security level](#TODO)), depending on communication scenario:
@@ -83,7 +83,7 @@ To create a duplex connection initiated by Alice, Alice's and Bob's apps follow 
       - server-generated:
          - recipient URIs `SUBi`.
          - sender URIs `RUBi`.
-   4. optionally, Bob's app subsribes to receive messages from these new connection `CBi` (see [edge-messaging server protocol][4]).
+   4. optionally, Bob's app subsribes to receive messages from these new connection `CBi` (see [edge-messaging protocol implementation][4]).
    5. it proceeds with accepting Alice's app connections `CAi` (step 3 in [edge-messaging protocol][3]).
    6. in response to each connection `CAi`, as optional information, Bob's app includes:
       - Bob's user profile (that is only stored in graph-chat client and not visible to any server)
@@ -178,4 +178,4 @@ Content messages:
 [1]: https://en.wikipedia.org/wiki/Man-in-the-middle_attack
 [2]: https://en.wikipedia.org/wiki/End-to-end_encryption
 [3]: edge-messaging.md
-[4]: #TODO
+[4]: edge-messaging-implementation.md
