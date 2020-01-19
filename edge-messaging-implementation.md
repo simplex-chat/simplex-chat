@@ -138,7 +138,9 @@ Endpoints for the recipient:
 
 Endpoints for the sender:
 - [Update connection](#update-connection): PUT `<SU>` (e.g. `https://example.com/connection/bY1h`)
-- [Send messages](#send-messages): POST `<SU>/messages` (e.g. `https://example.com/connection/bY1h/messages`
+- [Send messages](#send-messages): POST `<SU>/messages` (e.g. `https://example.com/connection/bY1h/messages`)
+
+__Please note__: the server MUST NOT allow the sender to delete of modify the messages after they are sent.
 
 
 ### REST API endpoints for the connection recipients
@@ -231,6 +233,8 @@ Request body should be sent as JSON object with the following properties:
 - `keepMessages` (boolean, optional):  if `true`, the server will keep the retrieved messages available in the connection to be retrieved again (or deleted via a separate request). By default the retrieved messages will be removed from the server. Clients may need to process messages in some way, and until the processing succeded clients may choose to keep messages on the server to ensure they are not lost if processing fails for any reason.
 
 Edge-messaging server MUST permanently remove the retrieved messages, unless specifically instructed by the clients to keep them.
+
+__Please note__: server implementations MUST NOT track in any form how many times or whether the messages were retrieved.
 
 If the unknown message ID is passed in `afterMessageID` parameter, the request should be rejected with HTTP status code 400 (Bad Request).
 
