@@ -43,6 +43,8 @@ The messages sent into the connection are encrypted and decrypted using another 
 
 Connection is defined by ID (`ID`) unique to the server, sender URI `SU` and receiver URI `RU`. Sender key (`SK`) is used by the server to verify sender's requests (made via `SU`) to send messages. Recipient key (`RK`) is used by the server to verify recipient's requests (made via `RU`) to retrieve messages.
 
+The protocol uses different URIs for sender and recipient in order to provide an additional connection privacy by complicating correlation of senders and recipients.
+
 
 ## How Alice and Bob use edge-messaging protocol
 
