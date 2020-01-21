@@ -20,7 +20,7 @@ sequenceDiagram
 
   note over A: 4. Add Bob's duplex <br> connection
   SA ->> A: receive Bob's app messages
-  note over A: id and confirm Bob
+  note over A: identify Bob and <br> confirm connection
   A ->> SA: secure connections CAi with Bob's SKAi
   note over A: prepare msgs with: <br> - sender key SKBi <br> - Alice's profile <br> - CAi confirmation
   A ->> SB: accept CBi (send EKBi-encrypted messages to CBi)
