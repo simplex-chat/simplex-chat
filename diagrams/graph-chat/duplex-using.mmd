@@ -1,0 +1,21 @@
+sequenceDiagram
+  participant A as Alice's app
+  participant SA as Alice's servers <br> (connections CAi)
+  participant SB as Bob's servers <br> (connections CBi)
+  participant B as Bob's app
+
+  note over A: 1. Alice writes msg <br> to Bob in the app: <br> - message ID <br> - timestamp <br> - message body
+  note over A: sign and encrypt <br> message version <br> for each conn. CBi
+  A ->> SB: send message versions to connections CBi on Bob's servers
+
+  SB ->> B: 2. retrive message versions from CBi
+  note over B: decrypt and verify <br> message versions
+  note over B: discard duplicates <br> and show in chat <br> with Alice
+
+  note over B: 3. prepare msg <br> "message received": <br> - new message ID <br> - msg correlation ID <br> - receipt timestamp
+  note over B: sign and encrypt <br> message version <br> for each conn. CAi
+  B ->> SA: send message versions to connections CAi on Alice's servers
+
+  SA ->> A: 4. retrive message versions from CAi
+  note over A: decrypt and verify <br> message versions
+  note over A: discard duplicates <br> and show sent msg <br> as delivered <br> in chat with Bob

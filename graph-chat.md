@@ -17,7 +17,7 @@ A generic chat protocol for client applications that communicate via edge-messag
 TODO
 
 
-## Creating duplex connection
+## Duplex connection
 
 Majority of chat scenarios requires duplex (bi-directional) connections between participants. Graph-chat protocol uses multiple unidirectional connections (graph edges) created on multiple edge-messaging servers to implement duplex connections.
 
@@ -48,7 +48,10 @@ The following symbols are used below:
   - `RKBi` - Bob's recipient key of `CBi`.
   - `SKBi` - Alice's sender key of `CBi`.
 
-To create a duplex connection initiated by Alice, Alice's and Bob's apps follow these steps.
+
+### Creating duplex connection
+
+To create a duplex connection initiated by Alice, Alice's and Bob's apps follow these steps:
 
 1. Alice's app initiates duplex connection:
    1. it creates `n` unidirectional connections ("edges") `CAi` (step 1 in [edge-messaging][3]) that are defined by:
@@ -112,6 +115,44 @@ To create a duplex connection initiated by Alice, Alice's and Bob's apps follow 
 **Creating duplex connection between Alice and Bob:**
 
 ![Creating connection](/diagrams/graph-chat/duplex-creating.svg)
+
+
+### Sending message via duplex connection
+
+When Alice sends the message to Bob via the duplex connection, they follow these steps:
+
+1. Alice sends the message to Bob in the app:
+    1. her app prepares the message, including:
+       - client-generated message ID (unique per duplex connection).
+       - client timestamp.
+       - message body.
+    2. her app prepares a separate version of the message for each connection `CBi`, by signing each version of the message with the corresponding key `EKAi` and encrypting it with `EKBi`.
+    3. her app sends all copies of the message to corresponding connections `CBi`.
+2. Bob's app receives the message from Alice:
+    1. it retrieves all versions of the message via all connections `CBi` (they can arrive at different time and possibly out of order with other messages).
+    2. it decrypts each version with `EKBi` and verifies the signature with `EKAi`.
+    3. the first successfully decrypted message version is added to the Bob's chat with Alice and notification can be shown to Bob; if message verification failed it is marked as "unverified" in the chat.
+    4. all subsequently decrypted and verified copies are discarded.
+       - if some of the decryptions or verifications fail, the corresponding connection is marked as "possibly compromised" and has to be replaced by the app with another connection.
+       - if decryption or verification fails for all connections `CBi`, Alice's contact is marked as "compromised".
+3. Bob's app sends "message received" to Alice's app:
+    1. it prepares a special "message received" message, including:
+       - client-generated message ID (unique per duplex connection).
+       - correlation ID of the message received from Alice.
+       - client timestamp of the message reception.
+    2. it prepares a separate version of the message for each connection `CAi`, by signing each version of the message with the corresponding key `EKBi` and encrypting it with `EKAi`.
+    3. it sends all copies of the message to corresponding connections `CAi`.
+4. Alice's app receives "message received" from Bob's app:
+    1. it retrieves all versions of the "message received" message via all connections `CAi` (they can arrive at different time and possibly out of order with other messages).
+    2. it decrypts each version with `EKAi` and verifies the signature with `EKBi`.
+    3. once the first version is successfully decrypted and verified, the previosly sent message in the Alice's chat with Bob is marked as delivered.
+    4. all subsequently decrypted and verified copies are discarded.
+       - if some of the decryptions or verifications fail, the corresponding connection is marked as "possibly compromised" and has to be replaced by the app with another connection.
+       - if decryption or verification fails for all connections `CAi`, Bob's contact is marked as "compromised".
+    
+**Sending message from Alice to Bob via duplex connection:**
+
+![Sending message](/diagrams/graph-chat/duplex-using.svg)
 
 
 ## Adding direct contact
