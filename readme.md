@@ -13,7 +13,7 @@ Some of these problems are covered in more details in the proposed protocols on 
 - [edge-messaging][6] - low level client-server protocol for asynchronous distributed unidirectional messaging
 - [graph-chat][8] - high level chat protocol for client applications that communicate via edge-messaging protocol
 
-Even though EU-wide GDPR legislation to ensure users' privacy and data protection was adopted, the centralisation of the communication in a single platform providers makes resolving these problems quite difficult.
+Even though EU-wide GDPR legislation to ensure users' privacy and data protection was adopted, the centralisation of the communication in a small number of platforms makes resolving these problems quite difficult.
 
 
 ## Privacy requirements
