@@ -192,7 +192,9 @@ To chat in the app Alice needs to add Bob as "direct contact" to her contacts in
 TODO
 
 - "contact" - can be of type "person", "bot", "device", "organisation".
-- "broadcast" - duplex connection, that by convention only allows to receive messages and send back control messages, but not the content messages. Profile of the recipient is not shared.
+- "group-participant" - connection to another group participant that was established via the chain of other contacts in the group.
+- "broadcast" - duplex connection from broadcast subscriber to publisher; client apps should only allow to receive messages and send back control messages, but not the content messages. Profile of the subscriber is not shared with the publisher.
+- "broadcast-subscriber" - duplex connection from broadcast publisher to subscriber.
 
 
 ##### Messages
