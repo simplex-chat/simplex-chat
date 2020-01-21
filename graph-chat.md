@@ -94,7 +94,7 @@ To create a duplex connection initiated by Alice, Alice's and Bob's apps follow 
    1. it receives the messages from Bob via connections `CAi` (step 4 in [edge-messaging protocol][3]).
    2. depending on chat scenario, Bob is identified and confirmed:
       - for new contact, Alice may visually identify Bob's user profile and accepts Bob as a contact.
-      - for group participant, Alice's app will match known Bob's user profile ID with received user profile ID.
+      - for group participant, Alice's app will match known Bob's user profile ID with received user profile ID (that is only visible to the clients apps that have this profile).
    3. it secures the connections `CAi` with keys `SKAi` received from Bob - the connections are now established (step 5 in [edge-messaging protocol][3]).
    4. it accepts the connections `CBi`, including in the response to Bob's server Alice's user profile and (as the additional information) the confirmation that the connections `CAi` are secured and can be used (step 3 in [edge-messaging protocol][3]).
    5. it sends the unsigned messages via connections `CBi`.
