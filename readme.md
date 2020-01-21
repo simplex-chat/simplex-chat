@@ -99,15 +99,15 @@ Client apps should provide the following features:
 
 ## System design
 
-The chat system design is based on 2 protocols, each with the generic part, describing protocol flow and logic, and implementation part, describing protocol transports, data structures and algorythms.
+The chat system design is based on 2 protocols, each with the generic part, describing protocol flow and logic, and implementation part, describing protocol transports, data structures and algorithms.
 
 1. [edge-messaging protocol][6] - a low level generic messaging protocol that defines establishing and using a unidirectional connection ("graph edge") between chat participants on a single server. While this protocol is designed to support graph-chat client protocol (below), it can be used for other messaging scenarios, not limited to chats.
 2. [edge-messaging protocol implementation][7] - requirements to clients and servers implementing edge-messaging protocol, including:
    - cryptographic algorithms to sign/verify requests and to encrypt/decrypt messages.
    - privacy requirements to the servers.
    - REST API for connections and messages.
-   - WebSocket API to subscribe to connections and receive new messages
-   - other requirements for edge-messaging servers
+   - WebSocket API to subscribe to connections and receive new messages.
+   - other requirements for edge-messaging servers.
 3. [graph-chat protocol][8] - a high level generic chat protocol for client applications (graph vertices) that communicate via connections (graph edges) created using edge-messaging protocol. This protocol defines connection and message types and semantics for:
    - various chat elements (user profiles, direct chats, chat groups, broadcasts, etc.).
    - other communication scenarios - e.g. introduction, off-the-record chat, etc.
@@ -117,9 +117,9 @@ The chat system design is based on 2 protocols, each with the generic part, desc
    - sending and receiving out-of-band messages between client applications using "visual code".
 4. graph-chat client application protocol (TODO) - a high level specific chat protocol for client applications. This protocol specifies:
    - data structures for sending and receiving messages of all types.
-   - process to send and receive out-of-band messages between client applications, 
+   - process to send and receive out-of-band messages between client applications.
    - other requirements for graph-chat client applications.
-   - defines a specific "visual code" format to send an out-of-band message
+   - defines a specific "visual code" format to send an out-of-band message.
 
 
 [1]: https://en.wikipedia.org/wiki/End-to-end_encryption
