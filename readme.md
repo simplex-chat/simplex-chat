@@ -18,7 +18,7 @@ Even though EU-wide GDPR legislation to ensure users' privacy and data protectio
 
 ## Privacy requirements
 
-- User profile is only visible to the proifle connections, but not to the chat network
+- User profile is only visible to the profile connections, but not to the chat network
 - User profile is not stored on the servers.
 - Profile connections are not stored on the server.
 - It should not be possible to construct the list of user connections by analysing server database or any logs.
@@ -47,11 +47,11 @@ While it is not required to be supported in the v1 of the protocol, it is import
 ## Chat system features
 
 - No user identity known to system servers - no phone numbers, user names and no DNS are used to identify the users to the system.
-- Each user can be connected to multiple servers to ensure message delivery even if some of the servers are compromised.
-- Uses standard assymetric cryptographic protocols, so system users can create independent server and client implementations complying with the protocols.
+- Each user can be connected to multiple servers to ensure message delivery, even if some of the servers are compromised.
+- Uses standard asymmetric cryptographic protocols, so that system users can create independent server and client implementations complying with the protocols.
 - Open-source server implementations that can be easily deployed by any user with minimal technical expertise (e.g. on Heroku via web UI).
 - Open-source mobile client implementations (including web client) so that system users can independently assess system security model.
-- Only client applications store user profiles, contacts of other user profiles, messages; servers do NOT have access to any of this information (and unless compromised, do NOT store encrypted messages or any logs).
+- Only client applications store user profiles, contacts of other user profiles, messages; servers do NOT have access to any of this information and (unless compromised) do NOT store encrypted messages or any logs.
 - Multiple client applications and devices can be used by each user profile to communicate and to share connections and message history - the devices are not known to the servers.
 - Initial key exchange and establishing connections between user profiles is done by sharing QR code via any independent communication channel (or directly via screen and camera), system servers are NOT used for key exchange - to reduce risk of key substitution in [MITM][2] attack. QR code contains the connection-specific public key and other information needed to establish connection.
 - Connections between users can be established via shared trusted connections to simplify key exchange.
@@ -60,7 +60,7 @@ While it is not required to be supported in the v1 of the protocol, it is import
   - reduce the risk of attacker posing as user's connection
   - avoid exposing all user connections to the servers
 - Unique public key is used to identify each connection participant to each server.
-- Public keys used between connections are regularly rotated to prevent decryption of the full message history ([forward secrecy][4]) in case when some servers or middle-men preserve message history and the current key is compromised.
+- Public keys used between connections are regularly rotated to prevent decryption of the full message history ([forward secrecy][4]) in case when some servers or middlemen preserve message history and the current key is compromised.
 - Users can repeat key exchange using QR code and alternative channel at any point to increase communication security and trust.
 - No single server in the system has visibility of all connections or messages of any user, as user profiles are identified by multiple rotating public keys, using separate key for each profile connection.
 - User profile (meta-data of the user including non-unique name / handle and optional additional data, e.g. avatar and status) is stored in the client apps and is shared only with accepted user profile connections.
