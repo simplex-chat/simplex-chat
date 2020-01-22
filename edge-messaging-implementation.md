@@ -184,20 +184,14 @@ Request body should be sent as JSON object with the following properties:
 - `connectionID` (string): existing connection ID (see [Connection ID](#connection-id)).
 - `recipient` (string, optional): public key `RK` to verify digital signature of the recipient, if the recipient wants to change the key (TBC - the request should be signed with both current and new key).
 - `sender` (string, optional/required): public key `SK` to verify digital signature of the sender. Unless this key was set when connection was created, this key is required on the first connection update request.
-- `newRecipientURI` (boolean, optional): if `true`, the server will generate a new URI `RU` for the recipient to use the connection.
-- `newSenderURI` (boolean, optional): if `true`, the server will generate a new URI `RU` for the sender to use the connection - it has to be passed to the sender so they can continue using the connection.
 - `disabled` (boolean, optional): if `true`, the connection will be "disabled" and it will not be possible for the sender to use it to send messages. It will still be possible to retrieve the available messages and for both sides to modify the connection. This parameter can be used to allow the back-pressure to the message sender (e.g. if the recipient is overloaded with message processing and cannot accept any new messages).
 
 
 Server MUST permanently update required connection keys and URIs without preserving any copy.
 
-If the connection update succeeded, the server MUST respond with HTTP status code 200 (OK) with body (possibly empty) that may have the following properties:
--  `recipientURI` (string, optional): only returned if the new recipient URI was requested to be generated with `"newRecipientURI": true`.
--  `senderURI` (string, optional): only returned if the new sender URI was requested to be generated with `"newSenderURI": true`.
+If the connection update succeeded, the server MUST respond with HTTP status code 200 (OK) without body.
 
 If any of the connection keys have changed, all the following requests signed with the old keys MUST be rejected with HTTP status code 401 (Unauthorised).
-
-If any of the connection URIs have changed, all the following requests to the old URIs MUST be rejected with HTTP status code 404 (Not Found).
 
 
 #### Delete connection
@@ -279,20 +273,14 @@ Example: PUT `https://example.com/connection/bY1h`
 To update the connection, edge-messaging client of the sender MUST send PUT request to the sender connection URI `SU` (returned by the server to the connection recipient when creating the connection), signed with the key `SK`.
 
 Request body should be sent as JSON object with the following properties:
-- `connectionID` (string): existing connection ID (see [Connection ID](#connection-id)).
 - `sender` (string, optional): the new public key `SK` to verify digital signature of the sender. This parameter is only allowed if the sender key `SK` is already available on the connection, otherwise the server MUST reject the request with HTTP status code 401 (Unauthorised).
-- `newSenderURI` (boolean, optional): if `true`, the server will generate a new URI `RU` for the sender to use the connection.
-- `recipient`, `newRecipientURI`, `disabled`: these parameters are prohibited, and if any of them is present the server MUST reject the request with HTTP status code 401 (Unauthorised).
+- `recipient`, `disabled`: these parameters are prohibited, and if any of them is present the server MUST reject the request with HTTP status code 401 (Unauthorised).
 
 Server MUST permanently update required connection keys and URIs without preserving any copy.
 
-If the connection update succeeded, the server MUST respond with HTTP status code 200 (OK) with body (possibly empty) that may have the following properties:
--  `recipientURI` (string, optional): only returned if the new recipient URI was requested to be generated with `"newRecipientURI": true`.
--  `senderURI` (string, optional): only returned if the new sender URI was requested to be generated with `"newSenderURI": true`.
+If the connection update succeeded, the server MUST respond with HTTP status code 200 (OK) with emty body.
 
 If the connection key `SK` has changed, all the following requests signed with the old key MUST be rejected with HTTP status code 401 (Unauthorised).
-
-If the connection URI `SU` has changed, all the following requests to the old URI MUST be rejected with HTTP status code 404 (Not Found).
 
 
 #### Send messages
@@ -304,7 +292,6 @@ Example: POST `https://example.com/connection/bY1h/messages`
 To send messages to the connection, edge-messaging client MUST send POST request to the recipient connection URI `RU` (returned by the server when creating the connection) with the REQUIRED appended string `/messages` (it MUST NOT be changed by any implementation or deployment), signed with the key `SK`.
 
 Request body should be sent as JSON object with the following properties:
-- `connectionID` (string): existing connection ID (see [Connection ID](#connection-id)).
 - `messages` (array): retrieved messages. Each sent message is an object with the following properties:
    - `msg`: encrypted message body, that the recipient should be able to decrypt with the key `EK`. Any message meta-data (client timestamp, ID, etc.) MUST be inside the encrypted message and MUST NOT passed via additional properties.
 
