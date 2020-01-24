@@ -1,6 +1,6 @@
-# Edge-messagng protocol implementation
+# Simplex messaging protocol implementation
 
-This document defines specific elements to be used by client and server implementations of edge-messaging protocol. This protocol relies on the connection creation and messaging flows defined in generic [edge-messaging protocol][1].
+This document defines specific elements to be used by client and server implementations of simplex messaging protocol. This protocol relies on the connection creation and messaging flows defined in generic [simplex messaging protocol][1].
 
 This document defines:
 - [cryptographic algorithms](#cryptographic-algorithms) to sign/verify requests and to encrypt/decrypt messages.
@@ -14,12 +14,12 @@ This document defines:
 - [WebSockets API](#websockets-api) to subscribe to connections:
    - to receive the new messages.
    - to update connection attributes.
-- any other requirements for edge-messaging servers
+- any other requirements for simplex messaging servers
 
 
 ## Cryptographic algorithms
 
-Edge-messaging clients need to cryptographically sign requests:
+Simplex messaging clients need to cryptographically sign requests:
 - with the recipient's key `RK` (server to verify):
    - to create connections.
    - to subscribe to connection.
@@ -46,7 +46,7 @@ Future versions of the protocol may allow different algorithms.
 
 ## Connection ID
 
-Edge-messaging clients MUST generate random unique ID for each new unidirectional connection.
+Simplex messaging clients MUST generate random unique ID for each new unidirectional connection.
 
 It is not required that this ID is globally unique across all clients and servers, and this ID is known only to the server on which connection is created and to the connection recipient.
 
@@ -59,7 +59,7 @@ If connection IDs do not match, the server MUST reject the request with HTTP sta
 
 ## Connection URIs
 
-Edge-messaging servers MUST generate 2 different URIs for each new connection - for recipient (that created the connection) and for sender. It is REQUIRED that:
+Simplex messaging servers MUST generate 2 different URIs for each new connection - for recipient (that created the connection) and for sender. It is REQUIRED that:
 - these URIs are different.
 - they do not contain client-generated connection ID, any keys, or key hashes.
 - based on 64(?)-bit number generated with cryptographically strong pseudo-random number generator.
@@ -71,19 +71,19 @@ Coonection URIs can be:
 
 ## Privacy requirements
 
-Edge-messaging server implementations MUST NOT:
+Simplex messaging server implementations MUST NOT:
 - create any logs of the client requests in the production environment.
 - create any history of deleted connections or retrieved (and removed) messages.
 - create any history of connection updates and store old keys or URIs.
-- create any snapshots of the database they use to store connections and messages (instead edge-messaging clients must manage redundancy by using more than one edge-messaging server, e.g., as described in [graph-chat protocol][3]).
-- create/store any other information that may undermine privacy or [forward secrecy][4] of communication between clients using edge-messaging server.
+- create any snapshots of the database they use to store connections and messages (instead simplex messaging clients must manage redundancy by using more than one simplex messaging server, e.g., as described in [graph-chat protocol][3]).
+- create/store any other information that may undermine privacy or [forward secrecy][4] of communication between clients using simplex messaging server.
 
 
 ## REST API
 
 ### General API considerations
 
-Edge-messaging server MUST provide REST API via HTTPS protocol. It MAY operate on the same domain as any other web application. It is RECOMMENDED that the endpoint to create connections and all connection URIs start from the same path, to avoid namespace conflicts with other applications.
+Simplex messaging server MUST provide REST API via HTTPS protocol. It MAY operate on the same domain as any other web application. It is RECOMMENDED that the endpoint to create connections and all connection URIs start from the same path, to avoid namespace conflicts with other applications.
 
 In case of any requests sent to unknown URIs, server MUST reject the request with HTTP status code 404 (Not Found).
 
@@ -123,9 +123,9 @@ TODO
 
 ### REST API endpoints
 
-Edge-messaging server MUST provide the API endpoints for the recipient and for the sender. The list of endpoints below has URI examples, the actual API URI schemes can differ between implementations, and even from deployment to deployment, based on server configuration.
+Simplex messaging server MUST provide the API endpoints for the recipient and for the sender. The list of endpoints below has URI examples, the actual API URI schemes can differ between implementations, and even from deployment to deployment, based on server configuration.
 
-URI scheme provides an additional layer of security to access the connection for both the sender and the recipient, and allows, if required, to implement and deploy private and commercial edge-messaging servers.
+URI scheme provides an additional layer of security to access the connection for both the sender and the recipient, and allows, if required, to implement and deploy private and commercial simplex messaging servers.
 
 `messages` path segment in all endpoints to retrieve, delete and send messages is REQUIRED and MUST NOT be changed by any implementation or deployment.
 
@@ -157,12 +157,12 @@ Server MUST define a single endpoint to create connections. This endpoint can be
 - server domain, path and secure token(s) (possibly user-specific), if the server owner wants to restrict access to creating connections (for private or commercial servers).
 - any other, potentially undiscoverable, URI that server recognises.
 
-To create a connection, edge-messaging client MUST send POST request to this endpoint, signed with the key `RK`.
+To create a connection, simplex messaging client MUST send POST request to this endpoint, signed with the key `RK`.
 
 Request body should be sent as JSON object with the following properties:
 - `connectionID` (string): new client-generated connection ID.
 - `recipient` (string): public key `RK` to verify digital signature of the recipient.
-- `sender` (string, optional): public key `SK` to verify digital signature of the sender (it can be used in the alternative flow of establishing the connection when recipient and sender exchanged two secure out-of-band messages with each other, to reduce the number of connection steps - see [edge-messaging protocol][1]).
+- `sender` (string, optional): public key `SK` to verify digital signature of the sender (it can be used in the alternative flow of establishing the connection when recipient and sender exchanged two secure out-of-band messages with each other, to reduce the number of connection steps - see [simplex messaging protocol][1]).
 - `disabled` (boolean, optional): if `true`, the connection will be created but it will not be possible for the sender to use it to send messages. It will still be possible to retrieve the available messages and to modify the connection. 
 
 Servers MUST require that connection ID is unique, and in the unlikely case of ID collision reject the connection creation request with HTTP status code 409 (Conflict).
@@ -178,7 +178,7 @@ URI: recipient connection URI `<RU>`
 
 Example: PUT `https://example.com/connection/aZ9f`
 
-To update the connection, edge-messaging client MUST send PUT request to the recipient connection URI `RU` (returned by the server when creating the connection), signed with the key `RK`.
+To update the connection, simplex messaging client MUST send PUT request to the recipient connection URI `RU` (returned by the server when creating the connection), signed with the key `RK`.
 
 Request body should be sent as JSON object with the following properties:
 - `connectionID` (string): existing connection ID (see [Connection ID](#connection-id)).
@@ -200,7 +200,7 @@ URI: recipient connection URI `<RU>`
 
 Example: DELETE `https://example.com/connection/aZ9f`
 
-To delete the connection, edge-messaging client MUST send DELETE request to the recipient connection URI `RU` (returned by the server when creating the connection), signed with the key `RK`.
+To delete the connection, simplex messaging client MUST send DELETE request to the recipient connection URI `RU` (returned by the server when creating the connection), signed with the key `RK`.
 
 Request body should be sent as JSON object with the following properties:
 - `connectionID` (string): existing connection ID (see [Connection ID](#connection-id)).
@@ -218,7 +218,7 @@ URI: `<RU>/messages`
 
 Example: POST `https://example.com/connection/aZ9f/messages`
 
-To retrieve messages from the connection, edge-messaging client MUST send POST request to the recipient connection URI `RU` (returned by the server when creating the connection) with the REQUIRED appended string `/messages` (it MUST NOT be changed by any implementation or deployment), signed with the key `RK`.
+To retrieve messages from the connection, simplex messaging client MUST send POST request to the recipient connection URI `RU` (returned by the server when creating the connection) with the REQUIRED appended string `/messages` (it MUST NOT be changed by any implementation or deployment), signed with the key `RK`.
 
 Request body should be sent as JSON object with the following properties:
 - `connectionID` (string): existing connection ID (see [Connection ID](#connection-id)).
@@ -226,7 +226,7 @@ Request body should be sent as JSON object with the following properties:
 - `fromMessageID` (string, optional): if set, the server will retrieve the messages received starting from the message with server message ID (unique per server) passed in this parameter. This ID of the next available message is passed in the response to this request (if more messages are available).
 - `keepMessages` (boolean, optional):  if `true`, the server will keep the retrieved messages available in the connection to be retrieved again (or deleted via a separate request). By default the retrieved messages will be removed from the server. Clients may need to process messages in some way, and until the processing succeded clients may choose to keep messages on the server to ensure they are not lost if processing fails for any reason.
 
-Edge-messaging server MUST permanently remove the retrieved messages, unless specifically instructed by the clients to keep them.
+Simplex messaging server MUST permanently remove the retrieved messages, unless specifically instructed by the clients to keep them.
 
 __Please note__: server implementations MUST NOT track in any form how many times or whether the messages were retrieved.
 
@@ -246,16 +246,16 @@ URI: `<RU>/messages`
 
 Example: DELETE `https://example.com/connection/aZ9f/messages`
 
-To delete messages from the connection, edge-messaging client MUST send DELETE request to the recipient connection URI `RU` (returned by the server when creating the connection) with the REQUIRED appended string `/messages` (it MUST NOT be changed by any implementation or deployment), signed with the key `RK`.
+To delete messages from the connection, simplex messaging client MUST send DELETE request to the recipient connection URI `RU` (returned by the server when creating the connection) with the REQUIRED appended string `/messages` (it MUST NOT be changed by any implementation or deployment), signed with the key `RK`.
 
-This request SHOULD be used by edge-messaging clients to delete the previously retrived messages when `"keepMessages": true` parameter was used or in case they no longer require to retrive the messages.
+This request SHOULD be used by simplex messaging clients to delete the previously retrived messages when `"keepMessages": true` parameter was used or in case they no longer require to retrive the messages.
 
 Request body should be sent as JSON object with the following properties:
 - `connectionID` (string): existing connection ID (see [Connection ID](#connection-id)).
 - `pageSize` (number, optional): if set, the server will delete up to the requested number of messages, otherwise all messages, in both cases from the message ID in `fromMessageID` parameter (or from the earliest available).
 - `fromMessageID` (string, optional): the server will delete the messages received, starting from the message with the server message ID passed in this parameter. If not specified, it defaults to the server message ID of the earliest received message.
 
-Edge-messaging server MUST permanently remove the messages as requested.
+Simplex messaging server MUST permanently remove the messages as requested.
 
 If the request is successful, the server MUST respond with HTTP status code (200) with the body that has the count of deleted messages in `deleted` property.
 
@@ -270,7 +270,7 @@ URI: sender connection URI `<SU>`
 
 Example: PUT `https://example.com/connection/bY1h`
 
-To update the connection, edge-messaging client of the sender MUST send PUT request to the sender connection URI `SU` (returned by the server to the connection recipient when creating the connection), signed with the key `SK`.
+To update the connection, simplex messaging client of the sender MUST send PUT request to the sender connection URI `SU` (returned by the server to the connection recipient when creating the connection), signed with the key `SK`.
 
 Request body should be sent as JSON object with the following properties:
 - `sender` (string, optional): the new public key `SK` to verify digital signature of the sender. This parameter is only allowed if the sender key `SK` is already available on the connection, otherwise the server MUST reject the request with HTTP status code 401 (Unauthorised).
@@ -289,7 +289,7 @@ URI: `<SU>/messages`
 
 Example: POST `https://example.com/connection/bY1h/messages`
 
-To send messages to the connection, edge-messaging client MUST send POST request to the recipient connection URI `RU` (returned by the server when creating the connection) with the REQUIRED appended string `/messages` (it MUST NOT be changed by any implementation or deployment), signed with the key `SK`.
+To send messages to the connection, simplex messaging client MUST send POST request to the recipient connection URI `RU` (returned by the server when creating the connection) with the REQUIRED appended string `/messages` (it MUST NOT be changed by any implementation or deployment), signed with the key `SK`.
 
 Request body should be sent as JSON object with the following properties:
 - `messages` (array): retrieved messages. Each sent message is an object with the following properties:
@@ -304,12 +304,12 @@ TODO
 
 **Simplex connection operation:**
 
-![Simplex connection operations](/diagrams/simplex2.svg)
+![Simplex connection operations](/diagrams/simplex-messaging-impl/simplex-op.svg)
 
 Sequence diagram does not show E2EE - connection itself knows nothing about encryption between sender and receiver.
 
 
-[1]: edge-messaging.md
+[1]: simplex-messaging.md
 [2]: https://tools.ietf.org/html/rfc3447
 [3]: graph-chat.md
 [4]: https://en.wikipedia.org/wiki/Forward_secrecy

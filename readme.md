@@ -10,8 +10,8 @@ Existing chat platforms and protocols have some or all of the following problems
 - complexity of usage for all non-centralised protocols to all non-technical users
 
 Some of these problems are covered in more details in the proposed protocols on which this chat system will be based on:
-- [edge-messaging][6] - low level client-server protocol for asynchronous distributed unidirectional messaging
-- [graph-chat][8] - high level chat protocol for client applications that communicate via edge-messaging protocol
+- [simplex messaging][6] - low level client-server protocol for asynchronous distributed unidirectional messaging
+- [graph-chat][8] - high level chat protocol for client applications that communicate via simplex messaging protocol
 
 Even though EU-wide GDPR legislation to ensure users' privacy and data protection was adopted, the centralisation of the communication in a small number of platforms makes resolving these problems quite difficult.
 
@@ -68,13 +68,13 @@ While it is not required to be supported in the v1 of the protocol, it is import
 
 ## System components
 
-- edge-messaging servers
-- graph-chat client applications (using edge-messaging protocol to communicate with the servers)
+- simplex messaging servers
+- graph-chat client applications (using simplex messaging protocol to communicate with the servers)
 
 
 ### Chat servers
 
-Edge-messaging servers can be either available to all users or only to users who have a valid URI to create connections (see [edge-messaging protocol][6]).
+Simplex messaging servers can be either available to all users or only to users who have a valid URI to create connections (see [simplex messaging protocol][6]).
 
 
 ### Chat client application
@@ -101,19 +101,19 @@ Client apps should provide the following features:
 
 The chat system design is based on 2 protocols, each with the generic part, describing protocol flow and logic, and implementation part, describing protocol transports, data structures and algorithms.
 
-1. [edge-messaging protocol][6] - a low level generic messaging protocol that defines establishing and using a unidirectional connection ("graph edge") between chat participants on a single server. While this protocol is designed to support graph-chat client protocol (below), it can be used for other messaging scenarios, not limited to chats.
-2. [edge-messaging protocol implementation][7] - requirements to clients and servers implementing edge-messaging protocol, including:
+1. [simplex messaging protocol][6] - a low level generic messaging protocol that defines establishing and using a unidirectional connection (simplex) between chat participants on a single server. While this protocol is designed to support graph-chat client protocol (below), it can be used for other messaging scenarios, not limited to chats.
+2. [simplex messaging protocol implementation][7] - requirements to clients and servers implementing simplex messaging protocol, including:
    - cryptographic algorithms to sign/verify requests and to encrypt/decrypt messages.
    - privacy requirements to the servers.
    - REST API for connections and messages.
    - WebSocket API to subscribe to connections and receive new messages.
-   - other requirements for edge-messaging servers.
-3. [graph-chat protocol][8] - a high level generic chat protocol for client applications (graph vertices) that communicate via connections (graph edges) created using edge-messaging protocol. This protocol defines connection and message types and semantics for:
+   - other requirements for simplex messaging servers.
+3. [graph-chat protocol][8] - a high level generic chat protocol for client applications (graph vertices) that communicate via connections (simplexes) created using simplex messaging protocol. This protocol defines connection and message types and semantics for:
    - various chat elements (user profiles, direct chats, chat groups, broadcasts, etc.).
    - other communication scenarios - e.g. introduction, off-the-record chat, etc.
    - using multiple servers to ensure message delivery.
    - sharing user profiles, contacts and chats across multiple client devices.
-   - changing cryptographic keys and servers used to send and receive messages using edge-messaging server protocol.
+   - changing cryptographic keys and servers used to send and receive messages using simplex messaging server protocol.
    - sending and receiving out-of-band messages between client applications using "visual code".
 4. graph-chat client application protocol (TODO) - a high level specific chat protocol for client applications. This protocol specifies:
    - data structures for sending and receiving messages of all types.
@@ -127,6 +127,6 @@ The chat system design is based on 2 protocols, each with the generic part, desc
 [3]: https://en.wikipedia.org/wiki/Off-the-Record_Messaging
 [4]: https://en.wikipedia.org/wiki/Forward_secrecy
 [5]: https://mermaid-js.github.io/mermaid-live-editor
-[6]: edge-messaging.md
-[7]: edge-messaging-implementation.md
+[6]: simplex-messaging.md
+[7]: simplex-messaging-implementation.md
 [8]: graph-chat.md
