@@ -1,4 +1,4 @@
-# Federated chat system with [E2EE][1] and low risk of [MITM][2] attack
+# Federated chat system with [E2EE][1] and low risk of [MITM attack][2]
 
 ## Problems
 
@@ -14,6 +14,18 @@ Some of these problems are covered in more details in the proposed protocols on 
 - [graph-chat][8] - high level chat protocol for client applications that communicate via simplex messaging protocol
 
 Even though EU-wide GDPR legislation to ensure users' privacy and data protection was adopted, the centralisation of the communication in a small number of platforms makes resolving these problems quite difficult.
+
+
+# Comparison with [P2P][9] messaging protocols
+
+There are several P2P chat/messaging protocols and implementations that aim to solve privacy and centralisation problem, but they have their own set of problems that makes them less reliable than the proposed chat system design, more complex to implement and analyse and more vulnerable to attacks.
+
+1. [P2P][9] networks either have some centralised component, which makes them highly vulnerable, or, more commonly, use some variant of [DHT][10] to route messages/requests through the network. DHT implementations have complex designs that have to balance reliability, delivery guarantee and latency, and also have some other problems. The proposed chat system design has both high delivery guarantee and low latency (the message is passed multiple times in parallel, through one node each time, using servers chosen by the recipient, while in P2P networks the message is passed through `O(log N)` nodes sequentially, using nodes chosen by the algorithm).
+2. The proposed design, unlike most P2P networks, has no global identity of any form, even temporary.
+3. P2P itself does not solve [MITM attack][2] problem, but most existing solutions do not use out-of-band messages for the initial key exchange. The proposed design uses out-of-band messages or, in some cases, pre-existing secure and trusted connections for the initial key exchange.
+4. P2P implementations can be blocked by some Internet providers (like [BitTorrent][11]). The proposed design uses standard web protocols, and the servers can be deployed on the same domains as existing public websites.
+5. All known P2P networks are likely to be vulnerable to [Sybil attack][12], because each node is discoverable, and the network operates as a whole. Known measures to reduce the probability of the Sybil attack problem either require a vulnerable centralised component or expensive [proof of work][13]. The proposed design, on the opposite, has no server discoverability - servers are not connected, not known to each other and to all clients. The chat network is fragmented and operates as multiple isolated networks. It makes Sybil attack on the whole chat network impossible - even if some servers are compromised, other parts of the network can operate normally, and affected clients can always switch to using other servers without losing contacts or messages.
+6. P2P networks are likely to be vulnerable to [DRDoS attack][14]. In the proposed design clients only relay traffic from known trusted connection and cannot be used to reflect and amplify the traffic in the whole network.
 
 
 ## Privacy requirements
@@ -53,7 +65,7 @@ While it is not required to be supported in the v1 of the protocol, it is import
 - Open-source mobile client implementations (including web client) so that system users can independently assess system security model.
 - Only client applications store user profiles, contacts of other user profiles, messages; servers do NOT have access to any of this information and (unless compromised) do NOT store encrypted messages or any logs.
 - Multiple client applications and devices can be used by each user profile to communicate and to share connections and message history - the devices are not known to the servers.
-- Initial key exchange and establishing connections between user profiles is done by sharing QR code via any independent communication channel (or directly via screen and camera), system servers are NOT used for key exchange - to reduce risk of key substitution in [MITM][2] attack. QR code contains the connection-specific public key and other information needed to establish connection.
+- Initial key exchange and establishing connections between user profiles is done by sharing QR code via any independent communication channel (or directly via screen and camera), system servers are NOT used for key exchange - to reduce risk of key substitution in [MITM attack][2]. QR code contains the connection-specific public key and other information needed to establish connection.
 - Connections between users can be established via shared trusted connections to simplify key exchange.
 - Servers do NOT communicate with each other, they only communicate with client applications.
 - Unique public key is used for each user profile connection in order to:
@@ -130,3 +142,9 @@ The chat system design is based on 2 protocols, each with the generic part, desc
 [6]: simplex-messaging.md
 [7]: simplex-messaging-implementation.md
 [8]: graph-chat.md
+[9]: https://en.wikipedia.org/wiki/Peer-to-peer
+[10]: https://en.wikipedia.org/wiki/Distributed_hash_table
+[11]: https://en.wikipedia.org/wiki/BitTorrent
+[12]: https://en.wikipedia.org/wiki/Sybil_attack
+[13]: https://en.wikipedia.org/wiki/Proof_of_work
+[14]: https://www.usenix.org/conference/woot15/workshop-program/presentation/p2p-file-sharing-hell-exploiting-bittorrent
