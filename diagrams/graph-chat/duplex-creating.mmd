@@ -5,14 +5,14 @@ sequenceDiagram
   participant B as Bob's app
 
   note over A, SA: 1. initiate duplex connection
-  A ->> SA: create n connections CAi (send IDAi and RKAi)
+  A ->> SA: create n connections CAi (send RKAi)
   SA ->> A: receive connections URIs (RUAi and SUAi)
   A ->> SA: subscribe to messages from CAi
 
   A -->> B: 2. send secure message with connections "public" keys (EKAi) and URIs (SUAi)
 
   note over B: 3. accept Alice's <br> duplex connection
-  B ->> SB: create n connections CBi (send IDBi and RKBi)
+  B ->> SB: create n connections CBi (send RKBi)
   SB ->> B: receive connections URIs (RUBi and SUBi)
   B ->> SB: subscribe to messages from CBi
   note over B: prepare msgs with: <br> - sender key SKAi <br> - Bob's profile <br> - EKBi and SUBi
