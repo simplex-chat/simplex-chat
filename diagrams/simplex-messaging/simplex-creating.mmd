@@ -1,9 +1,9 @@
 sequenceDiagram
   participant B as Bob (sender)
-  participant S as server (conn. ID)
+  participant S as server (conn. RU)
   participant A as Alice (recipient)
 
-  note over A: creating connection <br> (connection ID and <br> "public" key RK <br> for msg retrieval)
+  note over A: creating connection <br> ("public" key RK <br> for msg retrieval)
   A ->> S: 1. create connection
   S ->> A: respond with connection URIs
 
@@ -17,4 +17,4 @@ sequenceDiagram
   note over A: decrypt message <br> ("private" key EK)
   A ->> S: 5. secure connection
 
-  note over S: 6. secure <br> connection ID <br> is established!
+  note over S: 6. secure <br> connection RU <br> is established!
