@@ -101,14 +101,14 @@ Client apps should provide the following features:
 
 The chat system design is based on 2 protocols, each with the generic part, describing protocol flow and logic, and implementation part, describing protocol transports, data structures and algorithms.
 
-1. [simplex messaging protocol][6] - a low level generic messaging protocol that defines establishing and using a unidirectional connection (simplex) between chat participants on a single server. While this protocol is designed to support graph-chat client protocol (below), it can be used for other messaging scenarios, not limited to chats.
+1. [simplex messaging protocol][6] - a low level generic messaging protocol that defines establishing and using a simplex connection between chat participants on a single server. While this protocol is designed to support graph-chat client protocol (below), it can be used for other messaging scenarios, not limited to chats.
 2. [simplex messaging protocol implementation][7] - requirements to clients and servers implementing simplex messaging protocol, including:
    - cryptographic algorithms to sign/verify requests and to encrypt/decrypt messages.
    - privacy requirements to the servers.
    - REST API for connections and messages.
    - WebSocket API to subscribe to connections and receive new messages.
    - other requirements for simplex messaging servers.
-3. [graph-chat protocol][8] - a high level generic chat protocol for client applications (graph vertices) that communicate via connections (simplexes) created using simplex messaging protocol. This protocol defines connection and message types and semantics for:
+3. [graph-chat protocol][8] - a high level generic chat protocol for client applications (graph vertices) that communicate via simplex connections created using simplex messaging protocol. This protocol defines connection and message types and semantics for:
    - various chat elements (user profiles, direct chats, chat groups, broadcasts, etc.).
    - other communication scenarios - e.g. introduction, off-the-record chat, etc.
    - using multiple servers to ensure message delivery.

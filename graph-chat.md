@@ -19,16 +19,16 @@ TODO
 
 ## Duplex connection
 
-Majority of chat scenarios requires duplex (bi-directional) connections between participants. Graph-chat protocol uses multiple unidirectional connections (simplexes) created on multiple simplex messaging servers to implement duplex connections.
+Majority of chat scenarios requires duplex (bi-directional) connections between participants. Graph-chat protocol uses multiple simplex (unidirectional) connections created on multiple simplex messaging servers to implement duplex connections.
 
-Each duplex connection consists of one or multiple, for redundancy, pairs of unidirectional connections to connect chat participants or devices of the same participant - it is used for "contacts", "devices", "group participants", etc. For practical purposes of redundancy, chat clients can use 2-4 pairs of unidirectional connections.
+Each duplex connection consists of one or multiple, for redundancy, pairs of simplex connections to connect chat participants or devices of the same participant - it is used for "contacts", "devices", "group participants", etc. For practical purposes of redundancy, chat clients can use 2-4 pairs of simplex connections.
 
-The process described below establishes a duplex connection between Alice and Bob that has `n` unidirectional connections `CAi` (where `1 <= i <= n`) from Bob to Alice (created by Alice on her servers) and `n` unidirectional connections `CBi` (where `1 <= i <= n`) from Alice to Bob (created by Bob on his servers).
+The process described below establishes a duplex connection between Alice and Bob that has `n` simplex connections `CAi` (where `1 <= i <= n`) from Bob to Alice (created by Alice on her servers) and `n` simplex connections `CBi` (where `1 <= i <= n`) from Alice to Bob (created by Bob on his servers).
 
 The following symbols are used below:
-- unidirectional simplex messaging connections:
-  - `CAi` - Alice's simplex messaging connection number `i` (out of `n`) allowing Bob to send messages to Alice.
-  - `CBi` - Bob's simplex messaging connection number `i` (out of `n`) allowing Alice to send messages to Bob.
+- simplex connections:
+  - `CAi` - Alice's simplex connection number `i` (out of `n`) allowing Bob to send messages to Alice.
+  - `CBi` - Bob's simplex connection number `i` (out of `n`) allowing Alice to send messages to Bob.
 - keys created for Alice's connections:
   - `EKAi` - Alice's assymetric key pair used:
     - by Bob to encrypt and by Alice to decrypt messages from Bob sent via `CAi`.
@@ -54,7 +54,7 @@ The following symbols are used below:
 To create a duplex connection initiated by Alice, Alice's and Bob's apps follow these steps:
 
 1. Alice's app initiates duplex connection:
-   1. it creates `n` unidirectional connections (simplexes) `CAi` (step 1 in [simplex messaging][3]) that are defined by:
+   1. it creates `n` simplex connections `CAi` (step 1 in [simplex messaging][3]) that are defined by:
       - client-generated:
          - Alice's asymmetric key pairs `EKAi` to encrypt messages.
          - connection IDs `IDAi`.
@@ -70,11 +70,11 @@ To create a duplex connection initiated by Alice, Alice's and Bob's apps follow 
       - if Bob is added to group chat with Alice by some contact of Alice or Bob, this information can be passed through all possible chains of contacts between Alice and Bob in the group (to minimise the risk of MITM attack) (see [Group chat](#TODO)).
       - if Alice adds Bob as a contact via Bob's trusted contact John, who also has Alice as a trusted contact, this information will be passed via John (who has secure duplex connections with both Alice and Bob), in the same way as with Group chat (see [Trusted contacts](#TODO)).
       - if Alice already has Bob as a contact, and she wants to create a separate off-the-record chat with him, this information will be passed via their existing connection (see [Off-the-record chat](#TODO)).
-      - etc. In all cases, the protocol defines the most secure possible way to pass the out-of-band (from the point of view of the new connections) message required by [simplex messaging protocol][3] to create unidirectional connections.
+      - etc. In all cases, the protocol defines the most secure possible way to pass the out-of-band (from the point of view of the new connections) message required by [simplex messaging protocol][3] to create simplex connections.
 3. Bob's app accepts duplex connection with Alice:
    1. it receives the message from Alice's app, in a way defined by a specific chat scenario.
-   2. it interprets the received information as simplex messaging protocol out-of-band messages to accept all unidirectional connections `CAi`.
-   3. it creates `n` new unidirectional connections `CBi` on Bob's servers defined by:
+   2. it interprets the received information as simplex messaging protocol out-of-band messages to accept all simplex connections `CAi`.
+   3. it creates `n` new simplex connections `CBi` on Bob's servers defined by:
       - client-generated:
          - Bob's asymmetric key pairs `EKBi` to encrypt messages.
          - connection IDs `IDBi`.
@@ -205,8 +205,8 @@ Control messages:
 - "receipt" - acknowledging message receipt.
 - "contact: update" - changing "contact" profile .
 - "profile" - changing "contact 
-- "gm: add" - sent to add unidirectional simplex messaging connection to graph-chat duplex connection.
-- "gm: remove" - sent to remove unidirectional simplex messaging connection from graph-chat duplex connection.
+- "gm: add" - sent to add simplex connection to graph-chat duplex connection.
+- "gm: remove" - sent to remove simplex connection from graph-chat duplex connection.
 
 Content messages:
 

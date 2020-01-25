@@ -46,7 +46,7 @@ Future versions of the protocol may allow different algorithms.
 
 ## Connection ID
 
-Simplex messaging clients MUST generate random unique ID for each new unidirectional connection.
+Simplex messaging clients MUST generate random unique ID for each new simplex connection.
 
 It is not required that this ID is globally unique across all clients and servers, and this ID is known only to the server on which connection is created and to the connection recipient.
 
