@@ -115,17 +115,6 @@ This protocol also can be used for off-the-record messaging, as Alice and Bob ca
 How simplex connections are used by the participants (graph vertices) is defined by graph-chat protocol and is not in scope of this low level simplex messaging protocol.
 
 
-## Alternative flow to establish a simplex connection
-
-When Alice and Bob already have a secure duplex (bi-directional) communication channel that allows to conveniently send two out-of-band messages, a flow with smaller number of steps to establish the connection can be used.
-
-TODO
-
-**Alternative flow of creating a simplex connection from Bob to Alice:**
-
-![Alternative flow of creating connection](/diagrams/simplex-messaging/simplex-creating-alt.svg)
-
-
 ## Elements of the generic simplex messaging protocol
 
 - defines only message-passing protocol:
