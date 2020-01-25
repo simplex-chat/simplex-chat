@@ -4,16 +4,14 @@ This document defines specific elements to be used by client and server implemen
 
 This document defines:
 - [cryptographic algorithms](#cryptographic-algorithms) to sign/verify requests and to encrypt/decrypt messages.
-- required approaches to generate:
-   - [connection IDs](#connection-id) for clients.
-   - [connection URIs](#connection-uris) for servers.
+- [connection URIs](#connection-uris) generation by the servers.
 - [privacy requirements](#privacy-requirements) to the servers.
 - [REST API](#rest-api):
-   - to create connections and to update connection attributes.
-   - to send and to retrieve messages.
-- [WebSockets API](#websockets-api) to subscribe to connections:
+   - to create and to secure connections.
+   - to send, to retrieve and to delete messages.
+- [WebSockets API](#websockets-api):
+   - to subscribe to connections.
    - to receive the new messages.
-   - to update connection attributes.
 - any other requirements for simplex messaging servers
 
 
@@ -44,19 +42,6 @@ The reasons to support these algorithms:
 Future versions of the protocol may allow different algorithms.
 
 
-## Connection ID
-
-Simplex messaging clients MUST generate random unique ID for each new simplex connection.
-
-It is not required that this ID is globally unique across all clients and servers, and this ID is known only to the server on which connection is created and to the connection recipient.
-
-Clients MUST use cryptographically strong pseudo-random number generator to generate 64(?)-bit connection IDs.
-
-All requests (other than Create connection) require that `connectionID` property is passed to the server in the request body. This connection ID MUST match the client-generated `connectionID` earlier passed in the request to create the connection.
-
-If connection IDs do not match, the server MUST reject the request with HTTP status code 404 (Not Found).
-
-
 ## Connection URIs
 
 Simplex messaging servers MUST generate 2 different URIs for each new connection - for recipient (that created the connection) and for sender. It is REQUIRED that:
@@ -71,12 +56,11 @@ Coonection URIs can be:
 
 ## Privacy requirements
 
-Simplex messaging server implementations MUST NOT:
-- create any logs of the client requests in the production environment.
-- create any history of deleted connections or retrieved (and removed) messages.
-- create any history of connection updates and store old keys or URIs.
-- create any snapshots of the database they use to store connections and messages (instead simplex messaging clients must manage redundancy by using more than one simplex messaging server, e.g., as described in [graph-chat protocol][3]).
-- create/store any other information that may undermine privacy or [forward secrecy][4] of communication between clients using simplex messaging server.
+Simplex messaging server implementations MUST NOT create, store or send to any other servers:
+- logs of the client requests in the production environment.
+- history of deleted connections or retrieved (and removed) messages.
+- snapshots of the database they use to store connections and messages (instead simplex messaging clients must manage redundancy by using more than one simplex messaging server, e.g., as described in [graph-chat protocol][3]).
+- any other information that may compromise privacy or [forward secrecy][4] of communication between clients using simplex messaging server.
 
 
 ## REST API
@@ -87,7 +71,11 @@ Simplex messaging server MUST provide REST API via HTTPS protocol. It MAY operat
 
 In case of any requests sent to unknown URIs, server MUST reject the request with HTTP status code 404 (Not Found).
 
-In case of any requests sent with missing required properties, incorrect property type/value or any additional unknown property (or sub-property), server MUST reject the request with HTTP status code 400 (Bad Request).
+All request parameters are required, unless specified as optional. In case of any requests sent with missing required properties, incorrect property type/value or any additional unknown property (or sub-property), server MUST reject the request with HTTP status code 400 (Bad Request).
+
+Request body, unless specified, MUST be empty, otherwise the server should reject the request with HTTP status code 400 (Bad Request).
+
+Servers MUST NOT allow cookies in the requests. Any request with cookies MUST be rejected with HTTP status code 400 (Bad Request).
 
 Below examples of API endpoints use:
 - server `https://example.com`
@@ -123,21 +111,22 @@ TODO
 
 ### REST API endpoints
 
-Simplex messaging server MUST provide the API endpoints for the recipient and for the sender. The list of endpoints below has URI examples, the actual API URI schemes can differ between implementations, and even from deployment to deployment, based on server configuration.
+Simplex messaging server MUST provide the API endpoints for the recipient and for the sender. The list of endpoints below is exhaustive and servers MUST NOT implement any other endpoints. The actual API URI schemes can differ between implementations from the below examples, and even from deployment to deployment, based on server configuration.
 
-URI scheme provides an additional layer of security to access the connection for both the sender and the recipient, and allows, if required, to implement and deploy private and commercial simplex messaging servers.
+URI scheme provides an additional layer of security to access the connection for both the sender and the recipient, and allows to implement and deploy private and commercial simplex messaging servers.
 
 `messages` path segment in all endpoints to retrieve, delete and send messages is REQUIRED and MUST NOT be changed by any implementation or deployment.
 
 Endpoints for the recipient:
 - [Create connection](#create-connection): POST `create URI` (e.g. `https://example.com/connection`)
-- [Update connection](#update-connection): PUT `<RU>` (e.g. `https://example.com/connection/aZ9f`)
+- [Secure connection](#update-connection): PUT `<RU>` (e.g. `https://example.com/connection/aZ9f`)
 - [Delete connection](#delete-connection): DELETE `<RU>` (e.g. `https://example.com/connection/aZ9f`)
-- [Retrieve messages](#retrieve-messages): POST `<RU>/messages` (e.g. `https://example.com/connection/aZ9f/messages`)
+- [Retrieve messages](#retrieve-messages): GET `<RU>/messages` (e.g. `https://example.com/connection/aZ9f/messages`)
+- [Retrieve message](#retrieve-message): GET `<RU>/messages/<message_id>` (e.g. `https://example.com/connection/aZ9f/messages/1234`)
 - [Delete messages](#delete-messages): DELETE `<RU>/messages` (e.g. `https://example.com/connection/aZ9f/messages`)
+- [Delete message](#delete-message): DELETE `<RU>/messages/<message_id>` (e.g. `https://example.com/connection/aZ9f/messages/1234`)
 
 Endpoints for the sender:
-- [Update connection](#update-connection): PUT `<SU>` (e.g. `https://example.com/connection/bY1h`)
 - [Send messages](#send-messages): POST `<SU>/messages` (e.g. `https://example.com/connection/bY1h/messages`)
 
 __Please note__: the server MUST NOT allow the sender to delete of modify the messages after they are sent.
@@ -147,7 +136,7 @@ __Please note__: the server MUST NOT allow the sender to delete of modify the me
 
 #### Create connection
 
-URI: as defined by server configuration, can be different per server user.
+POST: `CREATE_CONNECTION` URI as defined by server configuration, can be different per server user.
 
 Example: POST `https://example.com/connection`
 
@@ -157,55 +146,43 @@ Server MUST define a single endpoint to create connections. This endpoint can be
 - server domain, path and secure token(s) (possibly user-specific), if the server owner wants to restrict access to creating connections (for private or commercial servers).
 - any other, potentially undiscoverable, URI that server recognises.
 
-To create a connection, simplex messaging client MUST send POST request to this endpoint, signed with the key `RK`.
+To create a connection, simplex messaging client MUST send POST request to this endpoint. The request MUST be signed with the key `RK`.
 
 Request body should be sent as JSON object with the following properties:
-- `connectionID` (string): new client-generated connection ID.
 - `recipient` (string): public key `RK` to verify digital signature of the recipient.
-- `sender` (string, optional): public key `SK` to verify digital signature of the sender (it can be used in the alternative flow of establishing the connection when recipient and sender exchanged two secure out-of-band messages with each other, to reduce the number of connection steps - see [simplex messaging protocol][1]).
-- `disabled` (boolean, optional): if `true`, the connection will be created but it will not be possible for the sender to use it to send messages. It will still be possible to retrieve the available messages and to modify the connection. 
-
-Servers MUST require that connection ID is unique, and in the unlikely case of ID collision reject the connection creation request with HTTP status code 409 (Conflict).
 
 If the connection creation succeeded, the server MUST respond with HTTP status code 201 (Created) and the response body MUST be a JSON object with the following properties:
 - `recipientURI` (string): recipient URI `RU` of the connection that MUST be used as the endpoint for requests to retrieve the messages, to update connection attributes and to delete the connection. Clients MUST NOT share this URI with the sender.
 - `senderURI` (string): sender URI `SU` of the connection that MUST be used as the endpoint for requests to send the messages.
 
 
-#### Update connection
+#### Secure connection
 
-URI: recipient connection URI `<RU>`
+PUT: recipient connection URI `<RU>`
 
 Example: PUT `https://example.com/connection/aZ9f`
 
-To update the connection, simplex messaging client MUST send PUT request to the recipient connection URI `RU` (returned by the server when creating the connection), signed with the key `RK`.
+To secure the connection, simplex messaging client MUST send PUT request to the recipient connection URI `RU` (returned by the server when creating the connection). The request MUST be signed with the key `RK`.
 
 Request body should be sent as JSON object with the following properties:
-- `connectionID` (string): existing connection ID (see [Connection ID](#connection-id)).
-- `recipient` (string, optional): public key `RK` to verify digital signature of the recipient, if the recipient wants to change the key (TBC - the request should be signed with both current and new key).
-- `sender` (string, optional/required): public key `SK` to verify digital signature of the sender. Unless this key was set when connection was created, this key is required on the first connection update request.
-- `disabled` (boolean, optional): if `true`, the connection will be "disabled" and it will not be possible for the sender to use it to send messages. It will still be possible to retrieve the available messages and for both sides to modify the connection. This parameter can be used to allow the back-pressure to the message sender (e.g. if the recipient is overloaded with message processing and cannot accept any new messages).
+- `sender` (string): public key `SK` to verify digital signature of the sender.
 
-
-Server MUST permanently update required connection keys and URIs without preserving any copy.
+Server MUST update sender key without preserving the previous key.
 
 If the connection update succeeded, the server MUST respond with HTTP status code 200 (OK) without body.
 
-If any of the connection keys have changed, all the following requests signed with the old keys MUST be rejected with HTTP status code 401 (Unauthorised).
+If the sender key has changed, all the following requests from the sender signed with the old key MUST be rejected with HTTP status code 401 (Unauthorised).
 
 
 #### Delete connection
 
-URI: recipient connection URI `<RU>`
+DELETE: recipient connection URI `<RU>`
 
 Example: DELETE `https://example.com/connection/aZ9f`
 
 To delete the connection, simplex messaging client MUST send DELETE request to the recipient connection URI `RU` (returned by the server when creating the connection), signed with the key `RK`.
 
-Request body should be sent as JSON object with the following properties:
-- `connectionID` (string): existing connection ID (see [Connection ID](#connection-id)).
-
-If the connection deletion succeeded, the server MUST respond with HTTP status code 200 (OK) without body. 
+If the connection deletion succeeded, the server MUST respond with HTTP status code 200 (OK) without body.
 
 Server MUST permanently delete the connection and all unretrieved messages without preserving any copy of the connection or messages.
 
@@ -214,86 +191,103 @@ All further requests to the recipient and sender connection URIs MUST be rejecte
 
 #### Retrieve messages
 
-URI: `<RU>/messages`
+GET: `<RU>/messages[?fromMessageID=<message_id>]`
 
-Example: POST `https://example.com/connection/aZ9f/messages`
+Example: GET `https://example.com/connection/aZ9f/messages`
 
-To retrieve messages from the connection, simplex messaging client MUST send POST request to the recipient connection URI `RU` (returned by the server when creating the connection) with the REQUIRED appended string `/messages` (it MUST NOT be changed by any implementation or deployment), signed with the key `RK`.
+To retrieve messages from the connection, simplex messaging client MUST send POST request to the recipient connection URI `RU` (returned by the server when creating the connection) with the REQUIRED appended string `/messages` (it MUST NOT be changed by any implementation or deployment). The request MUST be signed with the key `RK`.
 
-Request body should be sent as JSON object with the following properties:
-- `connectionID` (string): existing connection ID (see [Connection ID](#connection-id)).
-- `pageSize` (number, optional): if set, the server will return the number of messages, from the earliest available, up to the maximum of this parameter and `PAGE_SIZE` configured in the server. If not set the server will return up to `PAGE_SIZE` available messages.
-- `fromMessageID` (string, optional): if set, the server will retrieve the messages received starting from the message with server message ID (unique per server) passed in this parameter. This ID of the next available message is passed in the response to this request (if more messages are available).
-- `keepMessages` (boolean, optional):  if `true`, the server will keep the retrieved messages available in the connection to be retrieved again (or deleted via a separate request). By default the retrieved messages will be removed from the server. Clients may need to process messages in some way, and until the processing succeded clients may choose to keep messages on the server to ensure they are not lost if processing fails for any reason.
+Optional query string parameter can be used for pagination:
+- `fromMessageID` (string, optional): if set, the server will retrieve the messages received starting from the message with server message ID (unique per server) passed in this parameter.
 
-Simplex messaging server MUST permanently remove the retrieved messages, unless specifically instructed by the clients to keep them.
+Simplex messaging server will NOT delete the messages when this endpoint is called, to remove messages once retrieved [Delete messages](#delete-messages) should be called.
 
 __Please note__: server implementations MUST NOT track in any form how many times or whether the messages were retrieved.
 
 If the unknown message ID is passed in `afterMessageID` parameter, the request should be rejected with HTTP status code 400 (Bad Request).
 
-If the request is successful, the server MUST respond with HTTP status code (200) returning as response body the required number (but not more than `PAGE_SIZE` configured in the server) of the earliest sent messages with the following properties:
+If the request is successful, the server MUST respond with HTTP status code (200) returning as response body not more than `PAGE_SIZE` (as configured in the server) of the earliest sent messages with the following properties:
 - `messages` (array): retrieved messages. Each retrieved message is an object with the following properties:
-   - `id`: server-generated unique ID allowing to identify messages until (they are deleted from the server) and to paginate responses.
-   - `ts`: server timestamp of the time when the message was received from the sender.
-   - `msg`: encrypted message body, that the recipient should be able to decrypt with the key `EK`.
-- `nextMessageID` (string, optional): if server has more messages available it MUST return this parameter that can be used by the next request in `fromMessageID` property.
+   - `id` (string): server-generated unique ID allowing to identify messages until (they are deleted from the server) and to paginate responses.
+   - `ts`(string) : server timestamp of the time when the message was received from the sender.
+   - `size` (number): message size, in bytes.
+   - `msg` (string, optional): encrypted message body, that the recipient should be able to decrypt with the key `EK`. This field is not returned if the message is larger than `LARGE_MESSAGE` (configured in the server), large messages should be retrieved via [Retrieve message](#retrieve_message) endpoint.
+- `nextMessageID` (string, optional): if server has more messages available it MUST return this parameter with the ID of the next available message - it can be used by the next request in `fromMessageID` query string parameter.
+
+
+#### Retrieve message
+
+GET: `<RU>/messages/<message_id>`
+
+Example: GET `https://example.com/connection/aZ9f/messages/1234`
+
+To retrieve single message from the connection (e.g. large message), simplex messaging client MUST send POST request to the recipient connection URI `RU` (returned by the server when creating the connection) with the REQUIRED appended string `/messages/<message_id>` (it MUST NOT be changed by any implementation or deployment). The request MUST be signed with the key `RK`.
+
+Simplex messaging server will NOT delete the message when this endpoint is called, to remove the message once retrieved [Delete message](#delete-message) should be called.
+
+__Please note__: server implementations MUST NOT track in any form how many times or whether the messages were retrieved.
+
+If the unknown message ID is passed in `message_id` parameter, the request should be rejected with HTTP status code 400 (Bad Request).
+
+If the request is successful, the server MUST respond with HTTP status code (200) returning as response body the requested message with the following properties:
+- `id` (string): server-generated unique ID allowing to identify messages until (they are deleted from the server) and to paginate responses.
+- `ts` (string): server timestamp of the time when the message was received from the sender.
+- `size` (number): message size, in bytes.
+- `msg` (string): encrypted message body, that the recipient should be able to decrypt with the key `EK`.
 
 
 #### Delete messages
 
-URI: `<RU>/messages`
+DELETE: `<RU>/messages`
 
 Example: DELETE `https://example.com/connection/aZ9f/messages`
 
-To delete messages from the connection, simplex messaging client MUST send DELETE request to the recipient connection URI `RU` (returned by the server when creating the connection) with the REQUIRED appended string `/messages` (it MUST NOT be changed by any implementation or deployment), signed with the key `RK`.
+To delete messages from the connection, simplex messaging client MUST send DELETE request to the recipient connection URI `RU` (returned by the server when creating the connection) with the REQUIRED appended string `/messages` (it MUST NOT be changed by any implementation or deployment). The request MUST be signed with the key `RK`.
 
-This request SHOULD be used by simplex messaging clients to delete the previously retrived messages when `"keepMessages": true` parameter was used or in case they no longer require to retrive the messages.
+Simplex messaging clients MUST use this endpoint to delete the previously retrived and stored (or processed) messages.
 
 Request body should be sent as JSON object with the following properties:
-- `connectionID` (string): existing connection ID (see [Connection ID](#connection-id)).
-- `pageSize` (number, optional): if set, the server will delete up to the requested number of messages, otherwise all messages, in both cases from the message ID in `fromMessageID` parameter (or from the earliest available).
-- `fromMessageID` (string, optional): the server will delete the messages received, starting from the message with the server message ID passed in this parameter. If not specified, it defaults to the server message ID of the earliest received message.
+- `fromMessageID` (string): the server will delete the messages starting from the message with the server message ID passed in this parameter.
+- `count` (number): the server will delete up to the requested number of messages from the message ID in `fromMessageID` parameter.
 
-Simplex messaging server MUST permanently remove the messages as requested.
+Simplex messaging server MUST permanently remove the messages.
 
-If the request is successful, the server MUST respond with HTTP status code (200) with the body that has the count of deleted messages in `deleted` property.
+If the request is successful, the server MUST respond with HTTP status code (200) with the body with property:
+-  `count` (number): the count of deleted messages.
 
-If the unknown message ID is passed in `fromMessageID` parameter, the request should be rejected with HTTP status code 400 (Bad Request).
+If the unknown message ID is passed in `fromMessageID` parameter, the request should be rejected with HTTP status code 404 (Not Found).
+
+
+#### Delete message
+
+DELETE: `<RU>/messages/<message_id>`
+
+Example: DELETE `https://example.com/connection/aZ9f/messages/1234`
+
+To delete a single message from the connection, simplex messaging client MUST send DELETE request to the recipient connection URI `RU` (returned by the server when creating the connection) with the REQUIRED appended string `/messages` and message ID. The request MUST be signed with the key `RK`.
+
+Simplex messaging clients MUST use this endpoint to delete the previously retrived and stored (or processed) large messages.
+
+Simplex messaging server MUST permanently remove the message.
+
+If the request is successful, the server MUST respond with HTTP status code (200).
+
+If the unknown message ID is passed in request URI, the request should be rejected with HTTP status code 404 (Not Found).
 
 
 ### REST API endpoints for the connection sender
 
-#### Update connection
-
-URI: sender connection URI `<SU>`
-
-Example: PUT `https://example.com/connection/bY1h`
-
-To update the connection, simplex messaging client of the sender MUST send PUT request to the sender connection URI `SU` (returned by the server to the connection recipient when creating the connection), signed with the key `SK`.
-
-Request body should be sent as JSON object with the following properties:
-- `sender` (string, optional): the new public key `SK` to verify digital signature of the sender. This parameter is only allowed if the sender key `SK` is already available on the connection, otherwise the server MUST reject the request with HTTP status code 401 (Unauthorised).
-- `recipient`, `disabled`: these parameters are prohibited, and if any of them is present the server MUST reject the request with HTTP status code 401 (Unauthorised).
-
-Server MUST permanently update required connection keys and URIs without preserving any copy.
-
-If the connection update succeeded, the server MUST respond with HTTP status code 200 (OK) with emty body.
-
-If the connection key `SK` has changed, all the following requests signed with the old key MUST be rejected with HTTP status code 401 (Unauthorised).
-
-
 #### Send messages
 
-URI: `<SU>/messages`
+POST: `<SU>/messages`
 
 Example: POST `https://example.com/connection/bY1h/messages`
 
 To send messages to the connection, simplex messaging client MUST send POST request to the recipient connection URI `RU` (returned by the server when creating the connection) with the REQUIRED appended string `/messages` (it MUST NOT be changed by any implementation or deployment), signed with the key `SK`.
 
-Request body should be sent as JSON object with the following properties:
+Request body MUST be sent as JSON object with the following properties:
 - `messages` (array): retrieved messages. Each sent message is an object with the following properties:
-   - `msg`: encrypted message body, that the recipient should be able to decrypt with the key `EK`. Any message meta-data (client timestamp, ID, etc.) MUST be inside the encrypted message and MUST NOT passed via additional properties.
+   - `msg` (string): encrypted message body, that the recipient should be able to decrypt with the key `EK`. Any message meta-data (client timestamp, ID, etc.) MUST be inside the encrypted message and MUST NOT passed via additional properties.
 
 If the request is successful, the server MUST respond with HTTP status code 200 (OK) without body.
 
