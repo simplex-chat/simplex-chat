@@ -30,20 +30,18 @@ The following symbols are used below:
   - `CAi` - Alice's simplex connection number `i` (out of `n`) allowing Bob to send messages to Alice.
   - `CBi` - Bob's simplex connection number `i` (out of `n`) allowing Alice to send messages to Bob.
 - keys created for Alice's connections:
+  - `RUAi` - server-generated recipient connection URI of `CAi` (to be used by Alice to retrieve messages).
   - `EKAi` - Alice's assymetric key pair used:
     - by Bob to encrypt and by Alice to decrypt messages from Bob sent via `CAi`.
     - by Alice to sign and Bob to verify messages from Alice sent via `CBi`.
-  - `IDAi` - client-generated ID of connection `CAi`
-  - `RUAi` - server-generated recipient connection URI of `CAi` (to be used by Alice to retrieve messages).
   - `SUAi` - server-generated sender connection URI of `CAi` (to be used by Bob to send messages).
   - `RKAi` - Alice's recipient key of `CAi`.
   - `SKAi` - Bob's sender key of `CAi`.
 - keys created for Bob's connections
+  - `RUBi` - server-generated recipient connection URI of `CBi` (to be used by Bob to retrive messages).
   - `EKBi` - Bob's assymetric key pair used for:
     - Alice to encrypt and Bob to decrypt messages from Alice sent via `CBi`.
     - Bob to sign and Alice to verify messages from Bob sent via `CAi`.
-  - `IDBi` - client-generated ID of connection `CBi`
-  - `RUBi` - server-generated recipient connection URI of `CBi` (to be used by Bob to retrive messages).
   - `SUBi` - server-generated sender connection URI of `CBi` (to be used by Alice to send messages).
   - `RKBi` - Bob's recipient key of `CBi`.
   - `SKBi` - Alice's sender key of `CBi`.
@@ -54,13 +52,11 @@ The following symbols are used below:
 To create a duplex connection initiated by Alice, Alice's and Bob's apps follow these steps:
 
 1. Alice's app initiates duplex connection:
-   1. it creates `n` simplex connections `CAi` (step 1 in [simplex messaging][3]) that are defined by:
+   1. it creates `n` simplex connections `CAi` (step 1 in [simplex messaging][3]) that are defined by recipient URIs `RUAi` and have:
       - client-generated:
          - Alice's asymmetric key pairs `EKAi` to encrypt messages.
-         - connection IDs `IDAi`.
          - recipient keys `RKAi`.
       - server-generated:
-         - recipient URIs `RUAi`.
          - sender URIs `SUAi`.
    2. optionally, Alice's app subsribes to receive messages from these new connections `CAi` ([simplex messaging protocol implementation][4] defines protocol to be used for subscriptions).
 2. Alice's app sends a secure message to Bob's app (step 2 in [simplex messaging][3]):
@@ -74,13 +70,11 @@ To create a duplex connection initiated by Alice, Alice's and Bob's apps follow 
 3. Bob's app accepts duplex connection with Alice:
    1. it receives the message from Alice's app, in a way defined by a specific chat scenario.
    2. it interprets the received information as simplex messaging protocol out-of-band messages to accept all simplex connections `CAi`.
-   3. it creates `n` new simplex connections `CBi` on Bob's servers defined by:
+   3. it creates `n` new simplex connections `CBi` on Bob's servers defined by recipient URIs `RUBi` and have:
       - client-generated:
          - Bob's asymmetric key pairs `EKBi` to encrypt messages.
-         - connection IDs `IDBi`.
          - recipient keys `RKBi`.
       - server-generated:
-         - recipient URIs `RUBi`.
          - sender URIs `SUBi`.
    4. optionally, Bob's app subsribes to receive messages from these new connection `CBi` (see [simplex messaging protocol implementation][4]).
    5. it proceeds with accepting Alice's app connections `CAi` (step 3 in [simplex messaging protocol][3]).
