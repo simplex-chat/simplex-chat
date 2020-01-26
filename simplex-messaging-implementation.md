@@ -127,7 +127,7 @@ Endpoints for the recipient:
 Endpoints for the sender:
 - [Send message](#send-message): POST `<SU>/messages` (e.g. `https://example.com/connection/bY1h/messages`)
 
-__Please note__: the server MUST NOT allow the sender to delete of modify the messages after they are sent via any endpoints or any other means.
+__Please note__: the server MUST NOT allow the sender to delete or modify the messages after they are sent via any endpoints or any other means.
 
 
 ### REST API endpoints for the connection recipients
