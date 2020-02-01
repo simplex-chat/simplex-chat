@@ -70,11 +70,14 @@ Simplex messaging server MUST provide REST API via HTTPS protocol. It MAY operat
 
 In case of any requests sent to unknown URIs, server MUST reject the request with HTTP status code 404 (Not Found).
 
-All request parameters are required, unless specified as optional. In case of any requests sent with missing required properties, additional unknown parameters, incorrect property type/value or any additional unknown property (or sub-property), server MUST reject the request with HTTP status code 400 (Bad Request).
+All request parameters and properties of the request body are required, unless specified as optional. The server MUST reject the request with HTTP status code 400 (Bad Request) in the following cases:
+- missing required parameter.
+- additional unknown parameter.
+- incorrect type/value of the parameter.
+- not empty request body when request body is not specified in the API description.
+- any cookie in the request.
 
-Request body, unless specified, MUST be empty, otherwise the server should reject the request with HTTP status code 400 (Bad Request).
-
-Servers MUST NOT allow cookies in the requests. Any request with cookies MUST be rejected with HTTP status code 400 (Bad Request).
+"Parameter" in the list above includes URI path component, query string request parameter and any property or sub-property of the request body.
 
 Below examples of API endpoints use:
 - server `https://example.com`
@@ -94,7 +97,7 @@ TODO
 
 All server requests MUST be signed with the relevant key and the digital signature MUST be passed in HTTP header `Authorization`.
 
-In case of signature verification failure, server MUST reject the request with HTTP status code 401 (Unauthorised).
+In case of signature verification failure, server MUST reject the request with HTTP status code 401 (Unauthorized).
 
 TODO Authorisation header format
 
@@ -104,6 +107,10 @@ TODO Authorisation header format
 ... server protocol version
 
 ... server timestamp
+
+... CORS headers
+
+... OPTION requests
 
 TODO
 
@@ -149,7 +156,7 @@ To create a connection, simplex messaging client MUST send POST request to this 
 Request body should be sent as JSON object with the following properties:
 - `recipient` (string): public key `RK` to verify digital signature of the recipient.
 
-If the connection creation succeeded, the server MUST respond with HTTP status code 201 (Created) and the response body MUST be a JSON object with the following properties:
+REQUIRED server responses: if the connection creation succeeded, the server MUST respond with HTTP status code 201 (Created) and the response body MUST be a JSON object with the following properties:
 - `recipientURI` (string): recipient URI `RU` of the connection that MUST be used as the endpoint for requests to retrieve the messages, to update connection attributes and to delete the connection. Clients MUST NOT share this URI with the sender.
 - `senderURI` (string): sender URI `SU` of the connection that MUST be used as the endpoint for requests to send the messages.
 
@@ -165,11 +172,14 @@ To secure the connection, simplex messaging client MUST send PUT request to the 
 Request body should be sent as JSON object with the following properties:
 - `sender` (string): public key `SK` to verify digital signature of the sender.
 
-If the connection was previously secured and the sender key is already set, the server MUST reject the request with HTTP status code 401 (Unauthorised).
+REQUIRED server responses:
+- success - HTTP status code 200 (OK) with body `"OK"`.
+- failure - HTTP status code 401 (Unauthorized) with body `"Unauthorized"` in the following cases:
+   - the connection `RU` was previously secured and the sender key is already set.
+   - the request is unsigned or signed with the wrong key.
+   - the connection `RU` does not exist.
 
-If the connection is successfully secured, the server MUST respond with HTTP status code 200 (OK) without body.
-
-Once the sender key is set, all the following unsigned requests from the sender (or signed with the wrong key) MUST be rejected with HTTP status code 401 (Unauthorised).
+In case of failure the server MUST aim to respond in the same time to prevent timing attacks - it can be achieved by verifying a signature even if the connection does not exist.
 
 
 #### Delete connection
@@ -180,11 +190,17 @@ Example: DELETE `https://example.com/connection/aZ9f`
 
 To delete the connection, simplex messaging client MUST send DELETE request to the recipient connection URI `RU` (returned by the server when creating the connection), signed with the key `RK`.
 
-If the connection deletion succeeded, the server MUST respond with HTTP status code 200 (OK) without body.
-
 Server MUST permanently delete the connection and all unretrieved messages without preserving any copy of the connection or messages.
 
-All further requests to the recipient and sender connection URIs MUST be rejected with HTTP status code 404 (Not Found).
+REQUIRED server responses:
+- success - HTTP status code 200 (OK) with body `"OK"`.
+- failure - HTTP status code 401 (Unauthorized) with body `"Unauthorized"` in the following cases:
+   - the request is unsigned or signed with the wrong key.
+   - the connection `RU` does not exist.
+
+In case of failure the server MUST aim to respond in the same time to prevent timing attacks - it can be achieved by verifying a signature even if the connection does not exist.
+
+All further requests to the recipient and sender connection URIs MUST fail.
 
 
 #### Retrieve messages
@@ -202,15 +218,20 @@ Simplex messaging server will NOT delete the messages when this endpoint is call
 
 __Please note__: server implementations MUST NOT track in any form how many times or whether the messages were retrieved.
 
-If the unknown message ID is passed in `fromMessageId` parameter, the request should be rejected with HTTP status code 404 (Not Found).
-
 If the request is successful, the server MUST respond with HTTP status code (200) returning as response body not more than `PAGE_SIZE` (as configured in the server) of the earliest sent messages with the following properties:
 - `messages` (array): retrieved messages. Each retrieved message is an object with the following properties:
-   - `id` (string): server-generated unique ID allowing to identify messages until (they are deleted from the server) and to paginate responses.
+   - `id` (string): server-generated unique ID allowing to identify messages (until they are deleted from the server) and to paginate responses.
    - `ts`(string) : server timestamp of the time when the message was received from the sender.
    - `size` (number): message size, in bytes.
    - `msg` (string, optional): encrypted message body, that the recipient should be able to decrypt with the key `EK`. This field is not returned if the message is larger than `LARGE_MESSAGE` (configured in the server), large messages can be retrieved via [Retrieve message](#retrieve_message) endpoint.
 - `nextMessageID` (string, optional): if server has more messages available it MUST return this parameter with the ID of the next available message - it can be used by the next request in `fromMessageId` query string parameter.
+
+Server MUST respond with HTTP status code 401 (Unauthorized) with body `"Unauthorized"` in the following request failure scenarios:
+   - the request is unsigned or signed with the wrong key.
+   - the connection `RU` does not exist.
+   - the message with ID `fromMessageId` does not exist.
+
+In case of failure the server MUST aim to respond in the same time to prevent timing attacks - it can be achieved by verifying a signature even if the connection does not exist.
 
 
 #### Retrieve message
@@ -225,13 +246,18 @@ Simplex messaging server will NOT delete the message when this endpoint is calle
 
 __Please note__: server implementations MUST NOT track in any form how many times or whether the messages were retrieved.
 
-If the unknown message ID is passed in `messageId` parameter, the request should be rejected with HTTP status code 404 (Not Found).
-
 If the request is successful, the server MUST respond with HTTP status code (200) returning as response body the requested message with the following properties:
-- `id` (string): server-generated unique ID allowing to identify messages until (they are deleted from the server) and to paginate responses.
+- `id` (string): server-generated unique ID allowing to identify messages (until they are deleted from the server) and to paginate responses.
 - `ts` (string): server timestamp of the time when the message was received from the sender.
 - `size` (number): message size, in bytes.
 - `msg` (string): encrypted message body, that the recipient should be able to decrypt with the key `EK`.
+
+Server MUST respond with HTTP status code 401 (Unauthorized) with body `"Unauthorized"` in the following request failure scenarios:
+   - the request is unsigned or signed with the wrong key.
+   - the connection `RU` does not exist.
+   - the message with ID `messageId` does not exist.
+
+In case of failure the server MUST aim to respond in the same time to prevent timing attacks - it can be achieved by verifying a signature even if the connection does not exist.
 
 
 #### Delete message
@@ -246,9 +272,14 @@ Simplex messaging clients MUST use this endpoint to delete the previously retriv
 
 Simplex messaging server MUST permanently remove the message.
 
-If the request is successful, the server MUST respond with HTTP status code (200).
+REQUIRED server responses:
+- success - HTTP status code 200 (OK) with body `"OK"`.
+- failure - HTTP status code 401 (Unauthorized) with body `"Unauthorized"` in the following cases:
+   - the request is unsigned or signed with the wrong key.
+   - the connection `RU` does not exist.
+   - the message with ID `messageId` does not exist.
 
-If the unknown message ID is passed in request URI, the request should be rejected with HTTP status code 404 (Not Found).
+In case of failure the server MUST aim to respond in the same time to prevent timing attacks - it can be achieved by verifying a signature even if the connection does not exist.
 
 
 ### REST API endpoints for the connection sender
@@ -259,17 +290,104 @@ POST: `<SU>/messages`
 
 Example: POST `https://example.com/connection/bY1h/messages`
 
-To send message to the connection, simplex messaging client MUST send POST request to the recipient connection URI `RU` (returned by the server when creating the connection) with the REQUIRED appended string `/messages` (it MUST NOT be changed by any implementation or deployment), signed with the key `SK`.
+To send message to the connection, simplex messaging client MUST send POST request to the sender connection URI `SU` (returned by the server when creating the connection) with the REQUIRED appended string `/messages` (it MUST NOT be changed by any implementation or deployment), signed with the key `SK`.
 
 Request body MUST be sent as JSON object with the following properties:
 - `msg` (string): encrypted message body, that the recipient should be able to decrypt with the key `EK`. Any message meta-data (client timestamp, ID, etc.) MUST be inside the encrypted message and MUST NOT passed via additional properties.
 
-If the request is successful, the server MUST respond with HTTP status code 200 (OK) without body.
+REQUIRED server responses:
+- success - HTTP status code 200 (OK) with body `"OK"`.
+- failure - HTTP status code 401 (Unauthorized) with body `"Unauthorized"` in the following cases:
+   - the request is unsigned or signed with the wrong key.
+   - the connection `SU` does not exist.
+
+In case of failure the server MUST aim to respond in the same time to prevent timing attacks - it can be achieved by verifying a signature even if the connection does not exist.
 
 
 ## WebSockets API
 
-TODO
+Simplex messaging servers MUST provide WebSocket API on the same URI as creating connection but with secure WebSocket protocol. For example, if the URI to create a new connection is `https://example.com/connection` then WebSocket API MUST be available on `wss://example.com/connection`.
+
+WebSocket API is only intended for connection recipients to subscribe to connections in order to receive and to delete messages from the connections.
+
+Data of the messages sent both from the client and from the server MUST be an object type in JSON format. 
+
+
+### Subscribe to the connection
+
+Client message properties:
+
+- `id` (string): request ID, MUST be unique for WebSocket session.
+- `type` (string): MUST be `"subscribe"`
+- `recipientURI` (string): recipient connection URI
+- `auth` (string): digital signature of the message object without `auth` property, serialised without whitespace, signed with the "private" key `RK` (counterpart of the "public" key in `recipient` parameter of connection creation request).
+
+Server response message properties:
+
+- `id` (string): client request ID.
+- `type` (string): MUST be `"subscribe"`
+- `recipientURI` (string): recipient connection URI
+- `ok` (boolean): subscription success. Subcription can fail in case connection URI does not exist or in case signature verification fails. The server MUST process the response in the same time in both cases to prevent timing attacks - it can be achieved by verifying a digital signature of a sample data.
+
+
+### Unsubscribe from the connection
+
+#### Client message properties:
+
+- `id` (string): request ID, MUST be random and unique for WebSocket session.
+- `type` (string): MUST be `"unsubscribe"`
+- `recipientURI` (string): recipient connection URI
+
+#### Server response message:
+
+- `id` (string): client request ID.
+- `type` (string): MUST be `"unsubscribe"`
+- `recipientURI` (string): recipient connection URI
+- `ok` (boolean): unsubscription success. Subcription can fail in case connection URI does not exist or in case the client did not previously subscribe to this connection in the same WebSocket session. The server MUST process the response in the same time in both cases to prevent timing attacks.
+
+
+### Receive and delete messages
+
+Server will send messages via WebSocket sent to all the simplex connections that the recepient is subscribed to via the current WebSocket connection. Server MUST send the messages in the same order as they arrive.
+
+#### Server message properties:
+
+- `type` (string): MUST be `"message"`.
+- `recipientURI` (string): recipient connection URI that the message is received from.
+- `message` (object): it has properties:
+   - `id` (string): server-generated unique ID allowing to identify messages until they are deleted from the server and to paginate responses.
+   - `ts`(string) : server timestamp of the time when the message was received from the sender.
+   - `size` (number): message size, in bytes.
+   - `msg` (string, optional): encrypted message body, that the recipient should be able to decrypt with the key `EK`. This field is not returned if the message is larger than `LARGE_MESSAGE` (configured in the server), large messages can be retrieved via [Retrieve message](#retrieve_message) endpoint.
+
+#### Client response message properties:
+
+This message MUST be sent to the server once the message is stored in the client. Large messages not sent over WebSocket have to be downloaded via REST API before they are deleted.
+
+- `id` (string): request ID, MUST be random and unique for WebSocket session
+- `type` (string): MUST be `"delete_message"`
+- `recipientURI` (string): recipient connection URI that the message is deleted from.
+- `messageId` (string): server-generated unique per simplex sonnection message ID.
+
+#### Server response message:
+
+This message MUST be sent to the client once the message is deleted from the server.
+
+- `id`: client request ID.
+- `type`: MUST be `"delete_message"`
+- `recipientURI` (string): recipient connection URI that the message is deleted from.
+- `messageId` (string): server-generated unique per simplex sonnection message ID.
+- `ok` (boolean): deletion success. Deletion can fail in case connection URI or message ID does not exist, or in case the client did not previously subscribe to this connection in the same WebSocket session. The server MUST process the response in the same time in all cases to prevent timing attacks.
+
+
+### Invalid client messages
+
+When a client sends the messages with unknown `type`, missing or additional properties, the server MUST respond with the message:
+
+- `id`: client request ID.
+- `type`: `"invalid"`.
+- `error` (string): JSON pointer ([RFC6901][5]) to the first incorrect property in the client message. The property is "incorrect" if it's either unallowed type or value, missing required property or present additional property. If the whole message data is incorrect (e.g. it is not an object or it is bigger than `MAX_WEBSOCKET_MESSAGE` server config parameter), this JSON pointer MUST point to the whole object and is an empty string, as defined in RFC6901.
+
 
 **Simplex connection operation:**
 
@@ -282,3 +400,4 @@ Sequence diagram does not show E2EE - connection itself knows nothing about encr
 [2]: https://tools.ietf.org/html/rfc3447
 [3]: graph-chat.md
 [4]: https://en.wikipedia.org/wiki/Forward_secrecy
+[5]: https://tools.ietf.org/html/rfc6901
