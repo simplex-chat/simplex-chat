@@ -68,8 +68,6 @@ Simplex messaging server implementations MUST NOT create, store or send to any o
 
 Simplex messaging server MUST provide REST API via HTTPS protocol. It MAY operate on the same domain as any other web application. It is RECOMMENDED that the endpoint to create connections and all connection URIs start from the same path, to avoid namespace conflicts with other applications.
 
-In case of any requests sent to unknown URIs, server MUST reject the request with HTTP status code 404 (Not Found).
-
 All request parameters and properties of the request body are required, unless specified as optional. The server MUST reject the request with HTTP status code 400 (Bad Request) in the following cases:
 - missing required parameter.
 - additional unknown parameter.
@@ -78,6 +76,8 @@ All request parameters and properties of the request body are required, unless s
 - any cookie in the request.
 
 "Parameter" in the list above includes URI path component, query string request parameter and any property or sub-property of the request body.
+
+> **NOTE**: To prevent timing attacks response time for all syntactically correct requests of one type is REQUIRED to be the same. In case of any failure caused by bad request values (e.g. non existant URI or message ID, wrong signature or lack of one), server MUST always reject the request with the same HTTP status code and MUST aim to make response time to be the same regardless of failure cause.
 
 Below examples of API endpoints use:
 - server `https://example.com`
@@ -93,13 +93,13 @@ All server requests MUST use JSON object as request body and MUST use HTTP heade
 TODO
 
 
-### Request authorisation
+### Request authorization
 
 All server requests MUST be signed with the relevant key and the digital signature MUST be passed in HTTP header `Authorization`.
 
 In case of signature verification failure, server MUST reject the request with HTTP status code 401 (Unauthorized).
 
-TODO Authorisation header format
+TODO Authorization header format
 
 
 ### Response headers
@@ -348,7 +348,7 @@ Server response message properties:
 
 ### Receive and delete messages
 
-Server will send messages via WebSocket sent to all the simplex connections that the recepient is subscribed to via the current WebSocket connection. Server MUST send the messages in the same order as they arrive.
+Server will send messages sent to all the simplex connections that the recepient is subscribed to via the current WebSocket connection. Server MUST send the messages in the same order as they arrive.
 
 #### Server message properties:
 
@@ -367,7 +367,7 @@ This message MUST be sent to the server once the message is stored in the client
 - `id` (string): request ID, MUST be random and unique for WebSocket session
 - `type` (string): MUST be `"delete_message"`
 - `recipientURI` (string): recipient connection URI that the message is deleted from.
-- `messageId` (string): server-generated unique per simplex sonnection message ID.
+- `messageId` (string): server-generated unique per simplex connection message ID.
 
 #### Server response message:
 
