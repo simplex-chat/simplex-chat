@@ -1,0 +1,38 @@
+name:                simplex-messaging-api
+version:             0.1.0.0
+#synopsis:
+#description:
+homepage:            https://github.com/simplex-chat/protocol/blob/master/simplex-messaging-api/readme.md
+license:             AGPL-3
+author:              Evgeny Poberezkin
+copyright:           2020 Evgeny Poberezkin
+category:            Web
+extra-source-files:
+- readme.md
+
+ghc-options:
+  - -Wall
+  - -Wcompat
+  - -Werror=incomplete-patterns
+  - -Wredundant-constraints
+  - -Wincomplete-record-updates
+  - -Wincomplete-uni-patterns
+
+default-extensions:
+  - DeriveGeneric
+  - DeriveAnyClass
+  - DataKinds
+  - DuplicateRecordFields
+  - FlexibleInstances
+  - TypeOperators
+
+dependencies:
+  - base >= 4.7 && < 5
+  - aeson
+  - servant-server
+  - servant-docs
+
+executables:
+  simplex-messaging-api:
+    source-dirs:      src
+    main:             Main.hs
