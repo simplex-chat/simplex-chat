@@ -1,8 +1,8 @@
-name:                simplex-messaging-api
+name:                simplex-definitions
 version:             0.1.0.0
 #synopsis:
 #description:
-homepage:            https://github.com/simplex-chat/protocol/blob/master/simplex-messaging-api/readme.md
+homepage:            https://github.com/simplex-chat/protocol/blob/master/definitions/readme.md
 license:             AGPL-3
 author:              Evgeny Poberezkin
 copyright:           2020 Evgeny Poberezkin
@@ -42,6 +42,6 @@ library:
     - Simplex.Messaging.ServerAPI
 
 executables:
-  simplex-messaging-api:
+  api-docs:
     source-dirs:      src
     main:             Main.hs

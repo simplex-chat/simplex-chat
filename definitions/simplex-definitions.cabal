@@ -4,12 +4,12 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 6b368aee7c6adfb0efcc938d9e3fc9c3fb2d6ad9eeb2fb40a029d6ab61403b0e
+-- hash: 99136a96dd2c64b9aa7676ea7d38ebb39ed31a83ea08dcaf63b53c9c1a24003e
 
-name:           simplex-messaging-api
+name:           simplex-definitions
 version:        0.1.0.0
 category:       Web
-homepage:       https://github.com/simplex-chat/protocol/blob/master/simplex-messaging-api/readme.md
+homepage:       https://github.com/simplex-chat/protocol/blob/master/definitions/readme.md
 author:         Evgeny Poberezkin
 maintainer:     Evgeny Poberezkin
 copyright:      2020 Evgeny Poberezkin
@@ -24,9 +24,10 @@ library
       Simplex.Messaging.Types
       Simplex.Messaging.ServerAPI
   other-modules:
-      Paths_simplex_messaging_api
+      Main
+      Paths_simplex_definitions
   hs-source-dirs:
-      simplex-messaging-api/src
+      src
   default-extensions: DeriveGeneric DeriveAnyClass DataKinds DuplicateRecordFields FlexibleInstances OverloadedStrings TypeOperators
   ghc-options: -Wall -Wcompat -Worphans -Werror=incomplete-patterns -Wredundant-constraints -Wincomplete-record-updates -Wincomplete-uni-patterns
   build-depends:
@@ -37,12 +38,12 @@ library
     , servant-server
   default-language: Haskell2010
 
-executable simplex-messaging-api
+executable api-docs
   main-is: Main.hs
   other-modules:
       Simplex.Messaging.ServerAPI
       Simplex.Messaging.Types
-      Paths_simplex_messaging_api
+      Paths_simplex_definitions
   hs-source-dirs:
       src
   default-extensions: DeriveGeneric DeriveAnyClass DataKinds DuplicateRecordFields FlexibleInstances OverloadedStrings TypeOperators
