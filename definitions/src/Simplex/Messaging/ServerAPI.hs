@@ -20,11 +20,11 @@ type ServerAPI =
   :<|> DeleteMessage
   :<|> SendMessage
 
-type CreateConnection = "connection" :> ReqBody '[JSON] NewConnectionRequest
-                                     :> PostCreated '[JSON] NewConnectionResponse
+type CreateConnection = "connection" :> ReqBody '[JSON] NewConnectionReqBody
+                                     :> PostCreated '[JSON] NewConnectionResBody
 
 type SecureConnection = "connection" :> Capture "connectionId" Base64EncodedString
-                                     :> ReqBody '[JSON] SecureConnectionRequest
+                                     :> ReqBody '[JSON] SecureConnectionReqBody
                                      :> Put '[JSON] NoContent
 
 type DeleteConnection = "connection" :> Capture "connectionId" Base64EncodedString
@@ -32,14 +32,14 @@ type DeleteConnection = "connection" :> Capture "connectionId" Base64EncodedStri
 
 type GetMessages      = "connection" :> Capture "connectionId" Base64EncodedString :>
                         "messages"   :> QueryParam "fromMessageId" (Maybe Base64EncodedString)
-                                     :> Get '[JSON] MessagesResponse
+                                     :> Get '[JSON] MessagesResBody
 
 type DeleteMessage    = "connection" :> Capture "connectionId" Base64EncodedString :>
                         "messages"   :> Capture "messageId" Base64EncodedString
                                      :> Delete '[JSON] NoContent
 
 type SendMessage      = "connection" :> Capture "senderConnectionId" Base64EncodedString :>
-                        "messages"   :> ReqBody '[JSON] SendMessageRequest
+                        "messages"   :> ReqBody '[JSON] SendMessageReqBody
                                      :> PostCreated '[JSON] NoContent
 
 -- API docs
@@ -100,14 +100,14 @@ instance ToParam (QueryParam "fromMessageId" (Maybe Base64EncodedString)) where
                   "if set, the server will respond with the messages received starting from the message with server message ID (unique per server) passed in this parameter."
                   Normal
 
-instance ToSample (NewConnectionRequest) where
-  toSamples _ = singleSample $ NewConnectionRequest "BODbZxmtKUUF1l8pj4nVjQ"
+instance ToSample (NewConnectionReqBody) where
+  toSamples _ = singleSample $ NewConnectionReqBody "BODbZxmtKUUF1l8pj4nVjQ"
 
-instance ToSample (NewConnectionResponse) where
-  toSamples _ = singleSample $ NewConnectionResponse "Qxz93A" "N9pA3g"
+instance ToSample (NewConnectionResBody) where
+  toSamples _ = singleSample $ NewConnectionResBody "Qxz93A" "N9pA3g"
 
-instance ToSample (SecureConnectionRequest) where
-  toSamples _ = singleSample $ SecureConnectionRequest "XPaVEVNunkYKqqK0dnAT5Q"
+instance ToSample (SecureConnectionReqBody) where
+  toSamples _ = singleSample $ SecureConnectionReqBody "XPaVEVNunkYKqqK0dnAT5Q"
 
 dummyMessage :: Message
 dummyMessage = Message
@@ -116,13 +116,13 @@ dummyMessage = Message
                 , msg = "OQLMXoEA4iv-aR46puPJuY1Rdoc1KY0gfq8oElJwtAs"
                 }
 
-instance ToSample (MessagesResponse) where
-  toSamples _ = singleSample $ MessagesResponse
+instance ToSample (MessagesResBody) where
+  toSamples _ = singleSample $ MessagesResBody
                                 { messages = [dummyMessage]
                                 , nextMessageId = Nothing
                                 }
 
-instance ToSample (SendMessageRequest) where
-  toSamples _ = singleSample $ SendMessageRequest
+instance ToSample (SendMessageReqBody) where
+  toSamples _ = singleSample $ SendMessageReqBody
                                 { msg = "OQLMXoEA4iv-aR46puPJuY1Rdoc1KY0gfq8oElJwtAs"
                                 }
