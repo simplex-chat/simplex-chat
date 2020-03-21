@@ -13,6 +13,7 @@ extra-source-files:
 ghc-options:
   - -Wall
   - -Wcompat
+  - -Worphans
   - -Werror=incomplete-patterns
   - -Wredundant-constraints
   - -Wincomplete-record-updates
@@ -24,11 +25,13 @@ default-extensions:
   - DataKinds
   - DuplicateRecordFields
   - FlexibleInstances
+  - OverloadedStrings
   - TypeOperators
 
 dependencies:
   - base >= 4.7 && < 5
   - aeson
+  - lens
   - servant-server
   - servant-docs
 

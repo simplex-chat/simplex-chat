@@ -1,35 +1,47 @@
+{-# LANGUAGE OverloadedStrings  #-}
+
 module SimplexAPI
   ( SimplexAPI
+  , simplexApiIntro
+  , simplexApiExtra
   ) where
 
 import GHC.Generics
+import Control.Lens
 import Data.Aeson
+import Data.Function()
 import Servant
 import Servant.Docs
 
 type SimplexAPI =
-       "connection" :> ReqBody '[JSON] NewConnectionRequest
-                    :> PostCreated '[JSON] NewConnectionResponse
-                    
-  :<|> "connection" :> Capture "connectionId" Base64EncodedString
-                    :> ReqBody '[JSON] SecureConnectionRequest
-                    :> Put '[JSON] NoContent
+       CreateConnection
+  :<|> SecureConnection
+  :<|> DeleteConnection
+  :<|> GetMessages
+  :<|> DeleteMessage
+  :<|> SendMessage
 
-  :<|> "connection" :> Capture "connectionId" Base64EncodedString
-                    :> Delete '[JSON] NoContent
+type CreateConnection = "connection" :> ReqBody '[JSON] NewConnectionRequest
+                                     :> PostCreated '[JSON] NewConnectionResponse
 
-  :<|> "connection" :> Capture "connectionId" Base64EncodedString
-    :> "messages"   :> QueryParam "fromMessageId" (Maybe Base64EncodedString)
-                    :> Get '[JSON] MessagesResponse
-  
-  :<|> "connection" :> Capture "connectionId" Base64EncodedString
-    :> "messages"   :> Capture "messageId" Base64EncodedString
-                    :> Delete '[JSON] NoContent
-  
-  :<|> "connection" :> Capture "senderConnectionId" Base64EncodedString
-    :> "messages"   :> ReqBody '[JSON] SendMessageRequest
-                    :> PostCreated '[JSON] NoContent
+type SecureConnection = "connection" :> Capture "connectionId" Base64EncodedString
+                                     :> ReqBody '[JSON] SecureConnectionRequest
+                                     :> Put '[JSON] NoContent
 
+type DeleteConnection = "connection" :> Capture "connectionId" Base64EncodedString
+                                     :> Delete '[JSON] NoContent
+
+type GetMessages      = "connection" :> Capture "connectionId" Base64EncodedString :>
+                        "messages"   :> QueryParam "fromMessageId" (Maybe Base64EncodedString)
+                                     :> Get '[JSON] MessagesResponse
+
+type DeleteMessage    = "connection" :> Capture "connectionId" Base64EncodedString :>
+                        "messages"   :> Capture "messageId" Base64EncodedString
+                                     :> Delete '[JSON] NoContent
+
+type SendMessage      = "connection" :> Capture "senderConnectionId" Base64EncodedString :>
+                        "messages"   :> ReqBody '[JSON] SendMessageRequest
+                                     :> PostCreated '[JSON] NoContent
 
 data NewConnectionRequest = NewConnectionRequest
   { recipientKey :: Base64EncodedString
@@ -64,6 +76,26 @@ type TimeStamp = String
 
 
 -- API docs
+simplexApiIntro :: DocIntro
+simplexApiIntro = DocIntro "Simplex messaging protocol REST API"
+  [ "This document lists all required REST endpoints of simplex messaging API."
+  , "Also see [Simplex messaging protocol implementation](simplex-messaging-implementation.md) for more details."
+  ]
+
+simplexApiExtra :: ExtraInfo SimplexAPI
+simplexApiExtra =
+  extraInfo (Proxy :: Proxy CreateConnection) $
+    defAction
+      & notes <>~ [ DocNote "Create connection"
+                            ["To create a connection, simplex messaging client MUST send POST request to this endpoint."]
+                  ]
+      & response.respBody <>~ [( "\
+\if the connection creation succeeded, the server MUST respond with HTTP status code 201 (Created) and the response body MUST be a JSON object with the following properties:\
+\- `recipientURI` (string): recipient URI `RU` of the connection that MUST be used as the endpoint for requests to retrieve the messages, to update connection attributes and to delete the connection. Clients MUST NOT share this URI with the sender.\
+\- `senderURI` (string): sender URI `SU` of the connection that MUST be used as the endpoint for requests to send the messages."
+                              , "application/json"
+                              , "{ \"status\": \"ok\" }"
+                              )]
 
 instance ToCapture (Capture "connectionId" String) where
   toCapture _ =

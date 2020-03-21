@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 7fadd69a4da006173594efd3d47aa0b56fba3e79a6a38d001a674082fb09ecc6
+-- hash: a2f1228d971a7550266188041fe3cc5443896df5aa9fb1ee5b70c3b59e6d0f02
 
 name:           simplex-messaging-api
 version:        0.1.0.0
@@ -26,11 +26,12 @@ executable simplex-messaging-api
       Paths_simplex_messaging_api
   hs-source-dirs:
       src
-  default-extensions: DeriveGeneric DeriveAnyClass DataKinds DuplicateRecordFields FlexibleInstances TypeOperators
-  ghc-options: -Wall -Wcompat -Werror=incomplete-patterns -Wredundant-constraints -Wincomplete-record-updates -Wincomplete-uni-patterns
+  default-extensions: DeriveGeneric DeriveAnyClass DataKinds DuplicateRecordFields FlexibleInstances OverloadedStrings TypeOperators
+  ghc-options: -Wall -Wcompat -Worphans -Werror=incomplete-patterns -Wredundant-constraints -Wincomplete-record-updates -Wincomplete-uni-patterns
   build-depends:
       aeson
     , base >=4.7 && <5
+    , lens
     , servant-docs
     , servant-server
   default-language: Haskell2010
