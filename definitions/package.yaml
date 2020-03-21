@@ -36,7 +36,7 @@ dependencies:
   - servant-docs
 
 library:
-  source-dirs: simplex-messaging-api/src
+  source-dirs: src
   exposed-modules:
     - Simplex.Messaging.Types
     - Simplex.Messaging.ServerAPI
