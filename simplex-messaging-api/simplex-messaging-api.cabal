@@ -1,0 +1,38 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.31.2.
+--
+-- see: https://github.com/sol/hpack
+--
+-- hash: 41b0ad8ab0fefac5df0146b9a45558b3d03f5fff91bafead1f4387a6a08a1fda
+
+name:           simplex-messaging-api
+version:        0.1.0.0
+category:       Web
+homepage:       https://github.com/simplex-chat/protocol/blob/master/simplex-messaging-api/readme.md
+author:         Evgeny Poberezkin
+maintainer:     Evgeny Poberezkin
+copyright:      2020 Evgeny Poberezkin
+license:        AGPL-3
+license-file:   LICENSE
+build-type:     Simple
+extra-source-files:
+    readme.md
+
+executable simplex-messaging-api
+  main-is: Main.hs
+  other-modules:
+      Simplex.Messaging.ServerAPI
+      Simplex.Messaging.Types
+      Paths_simplex_messaging_api
+  hs-source-dirs:
+      src
+  default-extensions: DeriveGeneric DeriveAnyClass DataKinds DuplicateRecordFields FlexibleInstances OverloadedStrings TypeOperators
+  ghc-options: -Wall -Wcompat -Worphans -Werror=incomplete-patterns -Wredundant-constraints -Wincomplete-record-updates -Wincomplete-uni-patterns
+  build-depends:
+      aeson
+    , base >=4.7 && <5
+    , lens
+    , servant-docs
+    , servant-server
+  default-language: Haskell2010
