@@ -84,18 +84,34 @@ simplexApiIntro = DocIntro "Simplex messaging protocol REST API"
 
 simplexApiExtra :: ExtraInfo SimplexAPI
 simplexApiExtra =
-  extraInfo (Proxy :: Proxy CreateConnection) $
-    defAction
-      & notes <>~ [ DocNote "Create connection"
-                            ["To create a connection, simplex messaging client MUST send POST request to this endpoint."]
-                  ]
-      & response.respBody <>~ [( "\
-\if the connection creation succeeded, the server MUST respond with HTTP status code 201 (Created) and the response body MUST be a JSON object with the following properties:\
-\- `recipientURI` (string): recipient URI `RU` of the connection that MUST be used as the endpoint for requests to retrieve the messages, to update connection attributes and to delete the connection. Clients MUST NOT share this URI with the sender.\
-\- `senderURI` (string): sender URI `SU` of the connection that MUST be used as the endpoint for requests to send the messages."
-                              , "application/json"
-                              , "{ \"status\": \"ok\" }"
-                              )]
+  endpointInfo (Proxy :: Proxy CreateConnection)
+    "Create connection"
+    []
+  <>
+  endpointInfo (Proxy :: Proxy SecureConnection)
+    "Secure connection"
+    []
+  <>
+  endpointInfo (Proxy :: Proxy DeleteConnection)
+    "Delete connection"
+    []
+  <>
+  endpointInfo (Proxy :: Proxy GetMessages)
+    "Get messages"
+    []
+  <>
+  endpointInfo (Proxy :: Proxy DeleteMessage)
+    "Delete message"
+    []
+  <>
+  endpointInfo (Proxy :: Proxy SendMessage)
+    "Send message"
+    []
+
+endpointInfo :: (IsIn endpoint SimplexAPI, HasLink endpoint, HasDocs endpoint)
+             => Proxy endpoint -> String -> [String] -> ExtraInfo SimplexAPI
+endpointInfo p title comments =
+  extraInfo p (defAction & notes <>~ [ DocNote title comments ])
 
 instance ToCapture (Capture "connectionId" String) where
   toCapture _ =
