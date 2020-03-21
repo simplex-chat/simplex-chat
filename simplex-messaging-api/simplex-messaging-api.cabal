@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 41b0ad8ab0fefac5df0146b9a45558b3d03f5fff91bafead1f4387a6a08a1fda
+-- hash: 23629656e9233214a3725358fc7625837ba540b728c3cb7bdec37dbdb0f1320c
 
 name:           simplex-messaging-api
 version:        0.1.0.0
@@ -18,6 +18,25 @@ license-file:   LICENSE
 build-type:     Simple
 extra-source-files:
     readme.md
+
+library
+  exposed-modules:
+      Simplex.Messaging.Types
+      Data.StaticText.Class
+      Data.StaticText.TH
+  other-modules:
+      Paths_simplex_messaging_api
+  hs-source-dirs:
+      simplex-messaging-api/src
+  default-extensions: DeriveGeneric DeriveAnyClass DataKinds DuplicateRecordFields FlexibleInstances OverloadedStrings TypeOperators
+  ghc-options: -Wall -Wcompat -Worphans -Werror=incomplete-patterns -Wredundant-constraints -Wincomplete-record-updates -Wincomplete-uni-patterns
+  build-depends:
+      aeson
+    , base >=4.7 && <5
+    , lens
+    , servant-docs
+    , servant-server
+  default-language: Haskell2010
 
 executable simplex-messaging-api
   main-is: Main.hs
