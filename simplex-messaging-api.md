@@ -1,4 +1,13 @@
+## Simplex messaging protocol REST API
+
+This document lists all required REST endpoints of simplex messaging API.
+
+Also see [Simplex messaging protocol implementation](simplex-messaging-implementation.md) for more details.
+
 ## POST /connection
+
+### Create connection
+
 
 ### Request:
 
@@ -31,6 +40,9 @@
 
 ## DELETE /connection/:connectionId
 
+### Delete connection
+
+
 ### Captures:
 
 - *connectionId*: Recipient connection ID - unique connection ID to be used by connection recipient
@@ -52,6 +64,9 @@
 ```
 
 ## PUT /connection/:connectionId
+
+### Secure connection
+
 
 ### Captures:
 
@@ -88,6 +103,9 @@
 
 ## GET /connection/:connectionId/messages
 
+### Get messages
+
+
 ### Captures:
 
 - *connectionId*: Recipient connection ID - unique connection ID to be used by connection recipient
@@ -117,6 +135,9 @@
 
 ## DELETE /connection/:connectionId/messages/:messageId
 
+### Delete message
+
+
 ### Captures:
 
 - *connectionId*: Recipient connection ID - unique connection ID to be used by connection recipient
@@ -139,6 +160,9 @@
 ```
 
 ## POST /connection/:senderConnectionId/messages
+
+### Send message
+
 
 ### Captures:
 

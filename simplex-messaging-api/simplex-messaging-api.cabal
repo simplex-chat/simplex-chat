@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: a2f1228d971a7550266188041fe3cc5443896df5aa9fb1ee5b70c3b59e6d0f02
+-- hash: 41b0ad8ab0fefac5df0146b9a45558b3d03f5fff91bafead1f4387a6a08a1fda
 
 name:           simplex-messaging-api
 version:        0.1.0.0
@@ -22,7 +22,8 @@ extra-source-files:
 executable simplex-messaging-api
   main-is: Main.hs
   other-modules:
-      SimplexAPI
+      Simplex.Messaging.ServerAPI
+      Simplex.Messaging.Types
       Paths_simplex_messaging_api
   hs-source-dirs:
       src

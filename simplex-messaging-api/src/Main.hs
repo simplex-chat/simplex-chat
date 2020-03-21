@@ -1,14 +1,15 @@
 module Main where
 
-import SimplexAPI
+import Simplex.Messaging.ServerAPI
 import Servant
 import Servant.Docs
 
-simplexApi :: Proxy SimplexAPI
-simplexApi = Proxy
-
 apiDocs :: API
-apiDocs = docsWith defaultDocOptions [simplexApiIntro] simplexApiExtra simplexApi
+apiDocs = docsWith
+            defaultDocOptions
+            [serverApiIntro]
+            serverApiExtra
+            (Proxy :: Proxy ServerAPI)
 
 main :: IO ()
 main = (writeFile "../simplex-messaging-api.md" . markdown) apiDocs

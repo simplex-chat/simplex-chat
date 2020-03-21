@@ -1,19 +1,18 @@
 {-# LANGUAGE OverloadedStrings  #-}
 
-module SimplexAPI
-  ( SimplexAPI
-  , simplexApiIntro
-  , simplexApiExtra
+module Simplex.Messaging.ServerAPI
+  ( ServerAPI
+  , serverApiIntro
+  , serverApiExtra
   ) where
 
-import GHC.Generics
+import Simplex.Messaging.Types as T
 import Control.Lens
-import Data.Aeson
 import Data.Function()
 import Servant
 import Servant.Docs
 
-type SimplexAPI =
+type ServerAPI =
        CreateConnection
   :<|> SecureConnection
   :<|> DeleteConnection
@@ -43,75 +42,41 @@ type SendMessage      = "connection" :> Capture "senderConnectionId" Base64Encod
                         "messages"   :> ReqBody '[JSON] SendMessageRequest
                                      :> PostCreated '[JSON] NoContent
 
-data NewConnectionRequest = NewConnectionRequest
-  { recipientKey :: Base64EncodedString
-  } deriving (Show, Generic, ToJSON, FromJSON)
-
-data NewConnectionResponse = NewConnectionResponse
-  { recipientId :: String
-  , senderId    :: String
-  } deriving (Show, Generic, ToJSON, FromJSON)
-
-data SecureConnectionRequest = SecureConnectionRequest
-  { senderKey :: Base64EncodedString
-  } deriving (Show, Generic, ToJSON, FromJSON)
-
-data Message = Message
-  { id   :: Base64EncodedString
-  , ts   :: TimeStamp
-  , msg  :: Base64EncodedString
-  } deriving (Show, Generic, ToJSON, FromJSON)
-
-data MessagesResponse = MessagesResponse
-  { messages      :: [Message]
-  , nextMessageId :: Maybe Base64EncodedString
-  } deriving (Show, Generic, ToJSON, FromJSON)
-
-data SendMessageRequest = SendMessageRequest
-  { msg :: Base64EncodedString
-  } deriving (Show, Generic, ToJSON, FromJSON)
-
-type Base64EncodedString = String
-type TimeStamp = String
-
-
 -- API docs
-simplexApiIntro :: DocIntro
-simplexApiIntro = DocIntro "Simplex messaging protocol REST API"
+serverApiIntro :: DocIntro
+serverApiIntro = DocIntro "Simplex messaging protocol REST API"
   [ "This document lists all required REST endpoints of simplex messaging API."
   , "Also see [Simplex messaging protocol implementation](simplex-messaging-implementation.md) for more details."
   ]
 
-simplexApiExtra :: ExtraInfo SimplexAPI
-simplexApiExtra =
-  endpointInfo (Proxy :: Proxy CreateConnection)
+serverApiExtra :: ExtraInfo ServerAPI
+serverApiExtra =
+  info (Proxy :: Proxy CreateConnection)
     "Create connection"
     []
   <>
-  endpointInfo (Proxy :: Proxy SecureConnection)
+  info (Proxy :: Proxy SecureConnection)
     "Secure connection"
     []
   <>
-  endpointInfo (Proxy :: Proxy DeleteConnection)
+  info (Proxy :: Proxy DeleteConnection)
     "Delete connection"
     []
   <>
-  endpointInfo (Proxy :: Proxy GetMessages)
+  info (Proxy :: Proxy GetMessages)
     "Get messages"
     []
   <>
-  endpointInfo (Proxy :: Proxy DeleteMessage)
+  info (Proxy :: Proxy DeleteMessage)
     "Delete message"
     []
   <>
-  endpointInfo (Proxy :: Proxy SendMessage)
+  info (Proxy :: Proxy SendMessage)
     "Send message"
     []
 
-endpointInfo :: (IsIn endpoint SimplexAPI, HasLink endpoint, HasDocs endpoint)
-             => Proxy endpoint -> String -> [String] -> ExtraInfo SimplexAPI
-endpointInfo p title comments =
-  extraInfo p (defAction & notes <>~ [ DocNote title comments ])
+info p title comments =
+  extraInfo p $ defAction & notes <>~ [ DocNote title comments ]
 
 instance ToCapture (Capture "connectionId" String) where
   toCapture _ =
@@ -146,7 +111,7 @@ instance ToSample (SecureConnectionRequest) where
 
 dummyMessage :: Message
 dummyMessage = Message
-                { SimplexAPI.id = "p8PCiGPZ"
+                { T.id = "p8PCiGPZ"
                 , ts = "2020-03-15T19:58:33.695Z"
                 , msg = "OQLMXoEA4iv-aR46puPJuY1Rdoc1KY0gfq8oElJwtAs"
                 }
