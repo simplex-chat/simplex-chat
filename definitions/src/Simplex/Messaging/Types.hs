@@ -1,9 +1,10 @@
 module Simplex.Messaging.Types where
 
-import GHC.Generics
+import ClassyPrelude
 import Data.Aeson
+import GHC.Generics
 
-data NewConnectionReqBody = NewConnectionReqBody
+newtype NewConnectionReqBody = NewConnectionReqBody
   { recipientKey :: Base64EncodedString
   } deriving (Show, Generic, ToJSON, FromJSON)
 
@@ -12,7 +13,7 @@ data NewConnectionResBody = NewConnectionResBody
   , senderId    :: String
   } deriving (Show, Generic, ToJSON, FromJSON)
 
-data SecureConnectionReqBody = SecureConnectionReqBody
+newtype SecureConnectionReqBody = SecureConnectionReqBody
   { senderKey :: Base64EncodedString
   } deriving (Show, Generic, ToJSON, FromJSON)
 
@@ -27,9 +28,9 @@ data MessagesResBody = MessagesResBody
   , nextMessageId :: Maybe Base64EncodedString
   } deriving (Show, Generic, ToJSON, FromJSON)
 
-data SendMessageReqBody = SendMessageReqBody
+newtype SendMessageReqBody = SendMessageReqBody
   { msg :: Base64EncodedString
   } deriving (Show, Generic, ToJSON, FromJSON)
 
-type Base64EncodedString = String
-type TimeStamp = String
+type Base64EncodedString = Text
+type TimeStamp = Text

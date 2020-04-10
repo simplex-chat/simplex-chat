@@ -1,6 +1,8 @@
 module Main where
 
 import Simplex.Messaging.ServerAPI
+
+import ClassyPrelude
 import Servant
 import Servant.Docs
 
@@ -12,4 +14,4 @@ apiDocs = docsWith
             (Proxy :: Proxy ServerAPI)
 
 main :: IO ()
-main = (writeFile "../simplex-messaging-api.md" . markdown) apiDocs
+main = writeFile "../simplex-messaging-api.md" $ fromString $ markdown apiDocs

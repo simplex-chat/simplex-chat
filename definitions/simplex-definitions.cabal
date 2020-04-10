@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 99136a96dd2c64b9aa7676ea7d38ebb39ed31a83ea08dcaf63b53c9c1a24003e
+-- hash: 0ccb821856e91efe2302b7718ec2477aa768ae2bdf82cdd9d352333d5a8bf829
 
 name:           simplex-definitions
 version:        0.1.0.0
@@ -28,11 +28,12 @@ library
       Paths_simplex_definitions
   hs-source-dirs:
       src
-  default-extensions: DeriveGeneric DeriveAnyClass DataKinds DuplicateRecordFields FlexibleInstances OverloadedStrings TypeOperators
+  default-extensions: DeriveAnyClass DeriveGeneric DuplicateRecordFields FlexibleInstances NoImplicitPrelude OverloadedStrings
   ghc-options: -Wall -Wcompat -Worphans -Werror=incomplete-patterns -Wredundant-constraints -Wincomplete-record-updates -Wincomplete-uni-patterns
   build-depends:
       aeson
     , base >=4.7 && <5
+    , classy-prelude
     , lens
     , servant-docs
     , servant-server
@@ -46,11 +47,12 @@ executable api-docs
       Paths_simplex_definitions
   hs-source-dirs:
       src
-  default-extensions: DeriveGeneric DeriveAnyClass DataKinds DuplicateRecordFields FlexibleInstances OverloadedStrings TypeOperators
+  default-extensions: DeriveAnyClass DeriveGeneric DuplicateRecordFields FlexibleInstances NoImplicitPrelude OverloadedStrings
   ghc-options: -Wall -Wcompat -Worphans -Werror=incomplete-patterns -Wredundant-constraints -Wincomplete-record-updates -Wincomplete-uni-patterns
   build-depends:
       aeson
     , base >=4.7 && <5
+    , classy-prelude
     , lens
     , servant-docs
     , servant-server

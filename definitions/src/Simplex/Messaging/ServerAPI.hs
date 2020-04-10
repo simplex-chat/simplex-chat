@@ -1,4 +1,5 @@
-{-# LANGUAGE OverloadedStrings  #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE TypeOperators #-}
 
 module Simplex.Messaging.ServerAPI
   ( ServerAPI
@@ -7,6 +8,8 @@ module Simplex.Messaging.ServerAPI
   ) where
 
 import Simplex.Messaging.Types as T
+
+import ClassyPrelude
 import Control.Lens
 import Data.Function()
 import Servant
@@ -78,17 +81,17 @@ serverApiExtra =
 info p title comments =
   extraInfo p $ defAction & notes <>~ [ DocNote title comments ]
 
-instance ToCapture (Capture "connectionId" String) where
+instance ToCapture (Capture "connectionId" Text) where
   toCapture _ =
     DocCapture "connectionId"
                "Recipient connection ID - unique connection ID to be used by connection recipient"
 
-instance ToCapture (Capture "senderConnectionId" String) where
+instance ToCapture (Capture "senderConnectionId" Text) where
   toCapture _ =
     DocCapture "senderConnectionId"
                "Sender connection ID - unique connection ID to be used by connection sender"
 
-instance ToCapture (Capture "messageId" String) where
+instance ToCapture (Capture "messageId" Text) where
   toCapture _ =
     DocCapture "messageId"
                "Message ID - unique message ID to be used by connection recipient"

@@ -20,20 +20,20 @@ ghc-options:
   - -Wincomplete-uni-patterns
 
 default-extensions:
-  - DeriveGeneric
   - DeriveAnyClass
-  - DataKinds
+  - DeriveGeneric
   - DuplicateRecordFields
   - FlexibleInstances
+  - NoImplicitPrelude
   - OverloadedStrings
-  - TypeOperators
-
+  
 dependencies:
-  - base >= 4.7 && < 5
   - aeson
+  - base >= 4.7 && < 5
+  - classy-prelude
   - lens
-  - servant-server
   - servant-docs
+  - servant-server
 
 library:
   source-dirs: src
