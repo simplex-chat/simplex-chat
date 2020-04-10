@@ -103,13 +103,13 @@ instance ToParam (QueryParam "fromMessageId" (Maybe Base64EncodedString)) where
                   "if set, the server will respond with the messages received starting from the message with server message ID (unique per server) passed in this parameter."
                   Normal
 
-instance ToSample (NewConnectionReqBody) where
+instance ToSample NewConnectionReqBody where
   toSamples _ = singleSample $ NewConnectionReqBody "BODbZxmtKUUF1l8pj4nVjQ"
 
-instance ToSample (NewConnectionResBody) where
+instance ToSample NewConnectionResBody where
   toSamples _ = singleSample $ NewConnectionResBody "Qxz93A" "N9pA3g"
 
-instance ToSample (SecureConnectionReqBody) where
+instance ToSample SecureConnectionReqBody where
   toSamples _ = singleSample $ SecureConnectionReqBody "XPaVEVNunkYKqqK0dnAT5Q"
 
 dummyMessage :: Message
@@ -119,13 +119,13 @@ dummyMessage = Message
                 , msg = "OQLMXoEA4iv-aR46puPJuY1Rdoc1KY0gfq8oElJwtAs"
                 }
 
-instance ToSample (MessagesResBody) where
+instance ToSample MessagesResBody where
   toSamples _ = singleSample $ MessagesResBody
                                 { messages = [dummyMessage]
                                 , nextMessageId = Nothing
                                 }
 
-instance ToSample (SendMessageReqBody) where
+instance ToSample SendMessageReqBody where
   toSamples _ = singleSample $ SendMessageReqBody
                                 { msg = "OQLMXoEA4iv-aR46puPJuY1Rdoc1KY0gfq8oElJwtAs"
                                 }
