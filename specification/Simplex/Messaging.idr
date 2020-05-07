@@ -171,25 +171,96 @@ goodSndConn = SCSecured (record
 
 
 -- protocol commands that participants send
-data CmdResult = OK | Denied
+data Result : (a : Type) -> Type where
+  OK : a -> Result a
+  Deny  : Result a -- access restriction, not some arbitrary error
+  Error : String -> Result a
+
+record BrkCreateConnRes where
+  constructor MkBrkCreateConnRes
+  connId : String
+  senderConnId : String
+
+Message : Type
+Message = String
+
+infix 10 /@
+
+-- operator to define connection state change based on the result
+(/@) : ConnectionState
+    -> ConnectionState
+    -> (Result a -> ConnectionState)
+(/@) okCS failCS = \x => case x of
+                           OK _ => okCS
+                           Deny => failCS
+                           Error _ => failCS
+
 
 data Command : (ty : Type)
-            -> (from : Participant)
-            -> (to : Participant)
-            -> (fromConn  : ConnectionState)
-            -> (fromConn' : ty -> ConnectionState)
-            -> (toConn  : ConnectionState)
-            -> (toConn' : ty -> ConnectionState)
-            -> {auto prf : HasState from fromConn}
-            -> {auto prf : HasState to toConn}
+            -> (act    : Participant)
+            -> (rcv    : Participant)
+            -> (actCS  : ConnectionState)
+            -> (rcvCS  : ConnectionState)
+            -> (actCS' : ty -> ConnectionState)
+            -> (rcvCS' : ty -> ConnectionState)
+            -> {auto prf : HasState act actCS}
+            -> {auto prf : HasState rcv rcvCS}
             -> Type where
 
-  SendMsg : String
-         -> Command CmdResult
-                    Sender Broker
-                    Secured
-                    (\ok => case ok of
-                              OK => Secured
-                              Denied => Null)
-                    Secured
-                    (const Secured)
+  CreateConn  : (recipientBrokerKey : Key)
+             -> Command (Result BrkCreateConnRes)
+                  Recipient Broker
+                  Null      Null
+                  (New /@ Null) (New /@ Null)
+
+  Subscribe   : (connId : String)
+             -> {auto prf : BrokerCS state}
+             -> Command (Result ())
+                  Recipient Broker
+                  state     state
+                  (const state) (const state)
+
+  SendInvite  : Invitation
+             -> Command ()
+                  Recipient Sender
+                  New       Null
+                  (const Pending) (const New)
+
+  ConfirmConn : (connId : String)
+             -> (senderBrokerKey : Key)
+             -> {auto prf : BrokerCS bcState}
+             -> Command (Result ())
+                  Sender Broker
+                  New    bcState
+                  (Confirmed /@ New) (const bcState)
+
+  DeliverConfirmation : (connId : String)
+                     -> Command (Result ())
+                          Broker Recipient
+                          New    New
+                          (const New) (Confirmed /@ New)
+
+  SecureConn  : (connId : String)
+             -> (senderKey : Key)
+             -> Command (Result ())
+                  Recipient Broker
+                  Confirmed New
+                  (Secured /@ Confirmed) (Secured /@ New)
+
+  WelcomeMsg  : (connId : String)
+             -> {auto prf : BrokerCS bcState}
+             -> Command (Result ())
+                  Sender    Broker
+                  Confirmed bcState
+                  (const Confirmed) (const bcState)
+
+  SendMsg    : Message
+            -> {auto prf : BrokerCS bcState}
+            -> Command (Result ())
+                 Sender  Broker
+                 Secured bcState
+                 (\x => case x of
+                          OK _    => Secured
+                          Error _ => Secured
+                          Deny    => Null)
+                 (const bcState)
