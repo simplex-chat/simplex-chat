@@ -89,7 +89,7 @@ data EstablishedCS : ConnectionState -> Type where
   EDrained  : EstablishedCS Drained
 
 
--- state-dependent types to represent connections for all participants
+-- dependent types to represent connections for all participants
 
 data BrokerConn : (state : ConnectionState) -> {auto prf : BrokerCS state} -> Type where
   BCNew      : (recipient : Conn) -> (senderId : String) -> BrokerConn New
