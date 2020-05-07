@@ -2,39 +2,61 @@ module Simplex.Messaging
 
 data Participant = Recipient | Sender | Broker
 
+data Client : Participant -> Type where
+  CRecipient : Client Recipient
+  CSender    : Client Sender
+
 Key : Type
 Key = String
 
-data Conn : Type where
-  MkConn : (id : String) -> (key : Key) -> Conn
+PrivateKey : Type
+PrivateKey = String
+
+
+-- Data structures for participants to store and pass connection information
+
+data Conn : Type where   -- connection info shared between a client and broker
+  MkConn : (id : String) -- connection ID to identify it with the broker
+        -> (key : Key)   -- public key for broker to verify commands
+        -> Conn
 
 record ClientConn where
   constructor MkClientConn
-  label     : String
-  broker    : String
-  conn      : Conn
-  senderKey : Key -- public key for sender to encrypt messages
+  conn   : Conn   -- same info that broker has for this client
+  label  : String -- label for the client to identify connection
+  broker : String -- broker URI
+  brokerPrivateKey : PrivateKey -- private key to sign commands to broker
 
 newClientConn : ClientConn
-newClientConn = MkClientConn "" "" (MkConn "" "") ""
+newClientConn = MkClientConn (MkConn "" "") "" "" ""
 
-record RCData where -- recipient connection data
-  constructor MkRCData
-  conn             : ClientConn
-  privateBrokerKey : Key
-  privateSenderKey : Key
+record RcpConn where -- recipient connection data
+  constructor MkRcpConn
+  clientConn       : ClientConn
+  senderPrivateKey : PrivateKey -- private key to decrypt sender messages
 
-newRCData : RCData
-newRCData = MkRCData newClientConn "" ""
+newRcpConn : RcpConn
+newRcpConn = MkRcpConn newClientConn ""
 
-record SCData where -- sender connection data
-  constructor MkSCData
-  conn   : ClientConn
-  privateBrokerKey : Key
+record Invitation where -- out of band message to sender inviting to connect
+  constructor MkInvitation
+  conn   : Conn
+  broker : String
+  senderKey : Key -- public key for sender to encrypt messages
 
-newSCData : SCData
-newSCData = MkSCData newClientConn ""
+newInvitation : Invitation
+newInvitation = MkInvitation (MkConn "" "") "" ""
 
+record SndConn where -- sender connection data
+  constructor MkSndConn
+  clientConn : ClientConn
+  senderKey  : Key -- public key for sender to encrypt messages
+
+newSndConn : SndConn
+newSndConn = MkSndConn newClientConn ""
+
+
+-- connection states for all participants
 
 data ConnectionState =  -- connection states for all participants
             New         -- (participants: all) connection created (or received from sender)
@@ -67,6 +89,8 @@ data EstablishedCS : ConnectionState -> Type where
   EDrained  : EstablishedCS Drained
 
 
+-- state-dependent types to represent connections for all participants
+
 data BrokerConn : (state : ConnectionState) -> {auto prf : BrokerCS state} -> Type where
   BCNew      : (recipient : Conn) -> (senderId : String) -> BrokerConn New
   MkBrkConn  : (state : ConnectionState)
@@ -93,47 +117,50 @@ goodBrkConn = MkBrkConn Secured (MkConn "1" "1") (MkConn "2" "2")
 
 
 data RecipientConn : (state : ConnectionState) -> Type where
-  RCNew       : (conn : RCData) -> (senderId : String) -> RecipientConn New
-  RCPending   : (conn : RCData) -> (senderId : String) -> RecipientConn Pending
-  RCConfirmed : (conn : RCData) -> (sender : Conn) -> RecipientConn Confirmed
-  MkRcpConn   : (state : ConnectionState)
-             -> (conn : RCData)
-             -> {auto prf : EstablishedCS state}
-             -> RecipientConn state
+  RCNew       : (conn : RcpConn) -> (sender : Invitation) -> RecipientConn New
+  RCPending   : (conn : RcpConn) -> (sender : Invitation) -> RecipientConn Pending
+  RCConfirmed : (conn : RcpConn) -> (sender : Conn) -> RecipientConn Confirmed
+  MkRecipientConn   : (state : ConnectionState)
+                   -> (conn : RcpConn)
+                   -> {auto prf : EstablishedCS state}
+                   -> RecipientConn state
   -- 3 constructors below are equivalent to MkRcpConn with some state
-  RCSecured   : (conn : RCData) -> RecipientConn Secured
-  RCDisabled  : (conn : RCData) -> RecipientConn Disabled
-  RCDrained   : (conn : RCData) -> RecipientConn Drained
+  RCSecured   : (conn : RcpConn) -> RecipientConn Secured
+  RCDisabled  : (conn : RcpConn) -> RecipientConn Disabled
+  RCDrained   : (conn : RcpConn) -> RecipientConn Drained
   --
-  RCNull      : (conn : RCData) -> RecipientConn Null
+  RCNull      : (conn : RcpConn) -> RecipientConn Null
 
 -- recipient connection sample
 goodRcpConn : RecipientConn Secured
-goodRcpConn = MkRcpConn Secured (record
-                                  { conn = record
-                                            { label  = "label"
-                                            , broker = "broker"
-                                            , conn   = MkConn "1" "1"
-                                            , senderKey = "2" } newClientConn
-                                  , privateBrokerKey = "3"
-                                  , privateSenderKey = "4" } newRCData)
+goodRcpConn = MkRecipientConn Secured (record
+                                        { clientConn = record
+                                                        { conn   = MkConn "1" "1"
+                                                        , label  = "label"
+                                                        , broker = "broker"
+                                                        , brokerPrivateKey = "2" }
+                                                       newClientConn
+                                        , senderPrivateKey = "3" }
+                                       newRcpConn)
 
 
 data SenderConn : (state : ConnectionState) -> {auto prf : SenderCS state} -> Type where
-  SCNew       : (conn : ClientConn) -> SenderConn New
-  SCConfirmed : (conn : SCData) -> SenderConn Confirmed
-  SCSecured   : (conn : SCData) -> SenderConn Secured
-  SCNull      : (conn : SCData) -> SenderConn Null
+  SCNew       : (conn : Invitation) -> SenderConn New
+  SCConfirmed : (conn : SndConn) -> SenderConn Confirmed
+  SCSecured   : (conn : SndConn) -> SenderConn Secured
+  SCNull      : (conn : SndConn) -> SenderConn Null
 
 -- sender connection sample
 goodSndConn : SenderConn Secured
 goodSndConn = SCSecured (record
-                          { conn = record
-                                    { label  = "label"
-                                    , broker = "broker"
-                                    , conn   = MkConn "1" "1"
-                                    , senderKey = "2" } newClientConn
-                          , privateBrokerKey = "3" } newSCData)
+                          { clientConn = record
+                                          { conn   = MkConn "1" "1"
+                                          , label  = "label"
+                                          , broker = "broker"
+                                          , brokerPrivateKey = "2" }
+                                         newClientConn
+                          , senderKey = "3" }
+                         newSndConn)
 
 
 
