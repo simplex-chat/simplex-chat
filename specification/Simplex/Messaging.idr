@@ -82,6 +82,13 @@ data SenderCS : ConnectionState -> Type where
   SSecured   : SenderCS Secured
   SNull      : SenderCS Null
 
+-- allowed participant connection states
+data HasState : (p : Participant) -> (s : ConnectionState) -> Type where
+  BHasState : {auto prf : BrokerCS s} -> HasState Broker s
+  RHasState : HasState Recipient s
+  SHasState : {auto prf : SenderCS s} -> HasState Sender s
+
+
 -- established connection states (used by broker and recipient)
 data EstablishedCS : ConnectionState -> Type where
   ESecured  : EstablishedCS Secured
@@ -163,13 +170,26 @@ goodSndConn = SCSecured (record
                          newSndConn)
 
 
+-- protocol commands that participants send
+data CmdResult = OK | Denied
 
--- -- data Action  : (res : Type)
--- --             -> (snd : Participant)
--- --             -> (rcv : Participant)
--- --             -> (sndConn  : snd -> ConnState)
--- --             -> (sndConn' : snd -> res -> ConnState)
--- --             -> (rcvConn  : res -> ConnState)
--- --             -> (rcvConn' : rcv -> res -> ConnState)
--- --             -> Type where
--- --   SendMsg : Msg -> Action () Sender Server state (const state) state (conn state)
+data Command : (ty : Type)
+            -> (from : Participant)
+            -> (to : Participant)
+            -> (fromConn  : ConnectionState)
+            -> (fromConn' : ty -> ConnectionState)
+            -> (toConn  : ConnectionState)
+            -> (toConn' : ty -> ConnectionState)
+            -> {auto prf : HasState from fromConn}
+            -> {auto prf : HasState to toConn}
+            -> Type where
+
+  SendMsg : String
+         -> Command CmdResult
+                    Sender Broker
+                    Secured
+                    (\ok => case ok of
+                              OK => Secured
+                              Denied => Null)
+                    Secured
+                    (const Secured)
