@@ -2,10 +2,11 @@ module Simplex.Messaging
 
 data Participant = Recipient | Sender | Broker
 
+Key : Type
+Key = String
+
 data Conn : Type where
   MkConn : (id : String) -> (key : Key) -> Conn
-
-type Key = String
 
 record ClientConn where
   constructor MkClientConn
@@ -14,76 +15,125 @@ record ClientConn where
   conn      : Conn
   senderKey : Key -- public key for sender to encrypt messages
 
-record RecipientConnData where
-  constructor MkRecipientConnData
-  conn   : ClientConn
+newClientConn : ClientConn
+newClientConn = MkClientConn "" "" (MkConn "" "") ""
+
+record RCData where -- recipient connection data
+  constructor MkRCData
+  conn             : ClientConn
   privateBrokerKey : Key
   privateSenderKey : Key
 
-record SenderConnData where
-  constructor MkSenderConnData
+newRCData : RCData
+newRCData = MkRCData newClientConn "" ""
+
+record SCData where -- sender connection data
+  constructor MkSCData
   conn   : ClientConn
   privateBrokerKey : Key
 
-data BrokerConnState =  -- broker connection state
-          New           -- connection created by the receiver but not secured yet
-          | Secured     -- connection is secured and active
-          | Disabled    -- connection is disabled (by receiver)
-          | Drained     -- connection is disabled and has no messages
-          | NoRecipient -- connection for given receiver ID does not exist
-          | NoSender    -- connection for given sender ID does not exist
+newSCData : SCData
+newSCData = MkSCData newClientConn ""
 
-data BrokerConn : BrokerConnState -> Type where
-  BCNew         : (recipient : Conn) -> (senderId : String) -> BrokerConn New
-  -- three constructors below can probably be merged into one
-  MkBrokerConn  : (recipient : Conn) -> (sender : Conn) -> BrokerConn state
-  -- with some restriction on the state
-  BCSecured     : (recipient : Conn) -> (sender : Conn) -> BrokerConn Secured
-  BCDisabled    : (recipient : Conn) -> (sender : Conn) -> BrokerConn Disabled
-  BCDrained     : (recipient : Conn) -> (sender : Conn) -> BrokerConn Drained
+
+data ConnectionState =  -- connection states for all participants
+            New         -- (participants: all) connection created (or received from sender)
+            | Pending   -- (recipient) sent to sender out-of-band
+            | Confirmed -- (recipient) confirmed by sender with the broker
+            | Secured   -- (all) secured with the broker
+            | Disabled  -- (broker, recipient) disabled with the broker by recipient
+            | Drained   -- (broker, recipient) drained (no messages)
+            | Null      -- (all) not available or removed from the broker
+
+-- broker connection states
+data BrokerCS : ConnectionState -> Type where
+  BNew      : BrokerCS New
+  BSecured  : BrokerCS Secured
+  BDisabled : BrokerCS Disabled
+  BDrained  : BrokerCS Drained
+  BNull     : BrokerCS Null
+
+-- sender connection states
+data SenderCS : ConnectionState -> Type where
+  SNew       : SenderCS New
+  SConfirmed : SenderCS Confirmed
+  SSecured   : SenderCS Secured
+  SNull      : SenderCS Null
+
+-- established connection states (used by broker and recipient)
+data EstablishedCS : ConnectionState -> Type where
+  ESecured  : EstablishedCS Secured
+  EDisabled : EstablishedCS Disabled
+  EDrained  : EstablishedCS Drained
+
+
+data BrokerConn : (state : ConnectionState) -> {auto prf : BrokerCS state} -> Type where
+  BCNew      : (recipient : Conn) -> (senderId : String) -> BrokerConn New
+  MkBrkConn  : (state : ConnectionState)
+            -> (recipient : Conn)
+            -> (sender : Conn)
+            -> {auto prf : BrokerCS state}
+            -> {auto prf : EstablishedCS state}
+            -> BrokerConn state
+  -- 3 constructors below are equivalent to MkBrkConn with some state
+  BCSecured  : (recipient : Conn) -> (sender : Conn) -> BrokerConn Secured
+  BCDisabled : (recipient : Conn) -> (sender : Conn) -> BrokerConn Disabled
+  BCDrained  : (recipient : Conn) -> (sender : Conn) -> BrokerConn Drained
   --
-  BCNoRecipient : (id : String) -> BrokerConn NoRecipient
-  BCNoSender    : (senderId : String) -> BrokerConn NoSender
+  BCNull     : (id : String) -> BrokerConn Null
 
 
-data RecipientConnState = -- recipient connection state
-              RNew        -- connection created with the broker
-              | Pending   -- pending: connection informaiton sent to sender out-of-band
-              | Confirmed -- sender confirmation received from the broker
-              | RSecured  -- connection secured with the broker
-              | RDisabled -- connection is disabled with the broker
-              | RDrained  -- connection is disabled with the broker and drained
-              | Deleted   -- connection is deleted from the broker
+-- good broker connection sample
+goodBrkConn : BrokerConn Secured
+goodBrkConn = MkBrkConn Secured (MkConn "1" "1") (MkConn "2" "2")
 
-data RecipientConn : (state : RecipientConnState) -> Type where
-  RCRcvNew         : (conn : RecipientConnData) -> (senderId : String) -> RecipientConn RNew
-  RCPending        : (conn : RecipientConnData) -> (senderId : String) -> RecipientConn Pending
-  RCConfirmed      : (conn : RecipientConnData) -> (sender : Conn) -> RecipientConn Confirmed
-  -- 4 constructors below can probably be merged into this one
-  MkRecipientConn  : (conn : RecipientConnData) -> RecipientConn state
-  -- with some restriction on the state
-  RCSecured        : (conn : RecipientConnData) -> RecipientConn RSecured
-  RCDisabled       : (conn : RecipientConnData) -> RecipientConn RDisabled
-  RCDrained        : (conn : RecipientConnData) -> RecipientConn RDrained
-  RCDeleted        : (conn : RecipientConnData) -> RecipientConn Deleted
+-- bad broker connection sample - does not type check
+-- badBrkConn : BrokerConn Null
+-- badBrkConn = BCEstablished Null (MkConn "1" "1") (MkConn "2" "2")
+
+
+data RecipientConn : (state : ConnectionState) -> Type where
+  RCNew       : (conn : RCData) -> (senderId : String) -> RecipientConn New
+  RCPending   : (conn : RCData) -> (senderId : String) -> RecipientConn Pending
+  RCConfirmed : (conn : RCData) -> (sender : Conn) -> RecipientConn Confirmed
+  MkRcpConn   : (state : ConnectionState)
+             -> (conn : RCData)
+             -> {auto prf : EstablishedCS state}
+             -> RecipientConn state
+  -- 3 constructors below are equivalent to MkRcpConn with some state
+  RCSecured   : (conn : RCData) -> RecipientConn Secured
+  RCDisabled  : (conn : RCData) -> RecipientConn Disabled
+  RCDrained   : (conn : RCData) -> RecipientConn Drained
   --
+  RCNull      : (conn : RCData) -> RecipientConn Null
+
+-- recipient connection sample
+goodRcpConn : RecipientConn Secured
+goodRcpConn = MkRcpConn Secured (record
+                                  { conn = record
+                                            { label  = "label"
+                                            , broker = "broker"
+                                            , conn   = MkConn "1" "1"
+                                            , senderKey = "2" } newClientConn
+                                  , privateBrokerKey = "3"
+                                  , privateSenderKey = "4" } newRCData)
 
 
-data SenderConnState =  -- sender connection state
-          Received      -- connection received from the recipient
-          | Failed      -- failed to send confirmation message to broker
-          | SConfirmed  -- sent confirmation message to broker
-          | SSecured    -- succeeded sending the message after sending confirmation message
-          | Unavailable -- connection is no longer available with the broker
+data SenderConn : (state : ConnectionState) -> {auto prf : SenderCS state} -> Type where
+  SCNew       : (conn : ClientConn) -> SenderConn New
+  SCConfirmed : (conn : SCData) -> SenderConn Confirmed
+  SCSecured   : (conn : SCData) -> SenderConn Secured
+  SCNull      : (conn : SCData) -> SenderConn Null
 
-data SenderConn : (state : SenderConnState) -> Type where
-  SCReceived    : (conn : ClientConn) -> SenderConn Received
-  SCFailed      : (conn : SenderConnData) -> SenderConn Failed
-  SCConfirmed   : (conn : SenderConnData) -> SenderConn SConfirmed
-  SCSecured     : (conn : SenderConnData) -> SenderConn SSecured
-  SCUnavailable : (conn : SenderConnData) -> SenderConn Unavailable
-
-  -- RDisabled
+-- sender connection sample
+goodSndConn : SenderConn Secured
+goodSndConn = SCSecured (record
+                          { conn = record
+                                    { label  = "label"
+                                    , broker = "broker"
+                                    , conn   = MkConn "1" "1"
+                                    , senderKey = "2" } newClientConn
+                          , privateBrokerKey = "3" } newSCData)
 
 
 
