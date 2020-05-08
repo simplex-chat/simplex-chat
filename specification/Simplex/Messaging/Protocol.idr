@@ -1,4 +1,4 @@
-module Simplex.Messaging
+module Simplex.Messaging.Protocol
 
 data Participant = Recipient | Sender | Broker
 
