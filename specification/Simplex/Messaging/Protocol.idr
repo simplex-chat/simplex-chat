@@ -289,9 +289,9 @@ data Command : (ty : Type)
           -> Command b from1 to2 state1 state3_fn
 
 
-infix 5 &>
-(&>) : (p : Participant)
+infix 5 &:
+(&:) : (p : Participant)
     -> Command a from1 to1 state1 state2_fn
     -> {auto prf : p = from1}
     -> Command a from1 to1 state1 state2_fn
-(&>) _ c = c
+(&:) _ c = c
