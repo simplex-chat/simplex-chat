@@ -3,8 +3,8 @@ module Simplex.Messaging.Scenarios
 import Protocol
 
 establishConnection : Command () Recipient Recipient
-                        (Null <==> (Z, Null) <==| Null)
-                        (>>> Secured <==> (Z, Secured) <==| Secured)
+                        (Null <==> (Null, 0) <==| Null)
+                        (>>> Secured <==> (Secured, 0) <==| Secured)
 establishConnection = do
   ids <- CreateConn "recipient's public key for broker"
   Subscribe

@@ -197,8 +197,8 @@ prefix 6 ///, >>>
 
 data RBConnState : Type where
   (<==>) : (recipient : ConnectionState)
-        -> (broker    : (Nat, ConnectionState)) -- number of messages in connection
-        -> {auto prf  : (\(_, s) => HasState Broker s) broker}
+        -> (broker    : (ConnectionState, Nat)) -- number of messages in connection
+        -> {auto prf  : (\(s, _) => HasState Broker s) broker}
         -> RBConnState
 
 data AllConnState : Type where
@@ -230,52 +230,52 @@ data Command : (ty : Type)
              -> {auto prf : HasState Sender s}
              -> Command BrkCreateConnRes
                   Recipient Broker
-                  (Null <==> (Z, Null) <==| s)
-                  (>>> New <==> (Z, New)  <==| s)
+                  (Null <==> (Null, 0) <==| s)
+                  (>>> New <==> (New, 0)  <==| s)
 
   Subscribe   : Command () Recipient Broker state (>>> state) -- to improve
 
   SendInvite  : Invitation
              -> {auto prf : HasState Broker s}
              -> Command () Recipient Sender
-                  (New <==> (n, s) <==| Null)
-                  (>>> Pending <==> (n, s) <==| New)
+                  (New <==> (s, n) <==| Null)
+                  (>>> Pending <==> (s, n) <==| New)
 
   ConfirmConn : (senderBrokerKey : Key)
              -> Command () Sender Broker
-                  (s <==> (n, New) <==| New)
-                  (>>> s <==> (S n, New) <==| Confirmed)
+                  (s <==> (New, n) <==| New)
+                  (>>> s <==> (New, 1 + n) <==| Confirmed)
 
   PushConfirm : {auto prf : HasState Sender s}
              -> Command () Broker Recipient
-                  (Pending <==> (S n, New) <==| s)
-                  (>>> Confirmed <==> (n, New) <==| s)
+                  (Pending <==> (New, 1 + n) <==| s)
+                  (>>> Confirmed <==> (New, n) <==| s)
 
   SecureConn  : (senderBrokerKey : Key)
              -> {auto prf : HasState Sender s}
              -> Command () Recipient Broker
-                  (Confirmed <==> (n, New) <==| s)
-                  (>>> Secured <==> (n, Secured) <==| s)
+                  (Confirmed <==> (New, n) <==| s)
+                  (>>> Secured <==> (Secured, n) <==| s)
 
   SendWelcome : {auto prf : HasState Broker bs}
              -> Command () Sender Broker
-                  (rs <==> (n, Secured) <==| Confirmed)
-                  (>>> rs <==> (S n, Secured) <==| Secured)
+                  (rs <==> (Secured, n) <==| Confirmed)
+                  (>>> rs <==> (Secured, 1 + n) <==| Secured)
 
   PushWelcome : {auto prf : HasState Sender s}
              -> Command () Broker Recipient
-                  (Secured <==> (S n, Secured) <==| s)
-                  (>>> Secured <==> (n, Secured) <==| s)
+                  (Secured <==> (Secured, 1 + n) <==| s)
+                  (>>> Secured <==> (Secured, n) <==| s)
 
   SendMsg     : Message
              -> Command () Sender Broker
-                  (rs <==> (n, Secured) <==| Secured)
-                  (>>> rs <==> (S n, Secured) <==| Secured)
+                  (rs <==> (Secured, n) <==| Secured)
+                  (>>> rs <==> (Secured, 1 + n) <==| Secured)
 
   PushMsg     : {auto prf : HasState Sender s}
              -> Command () Broker Recipient
-                  (Secured <==> (S n, Secured) <==| s)
-                  (>>> Secured <==> (n, Secured) <==| s)
+                  (Secured <==> (Secured, 1 + n) <==| s)
+                  (>>> Secured <==> (Secured, n) <==| s)
 
   Pure  : (res : Result a) -> Command a from to state state_fn
   (>>=) : Command a from1 to1 state1 state2_fn
