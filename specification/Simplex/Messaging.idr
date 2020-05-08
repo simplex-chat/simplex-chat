@@ -170,7 +170,7 @@ goodSndConn = SCSecured (record
                          newSndConn)
 
 
--- data types for protocol commands
+-- protocol commands that participants send in relation to specific connection
 data Result : (a : Type) -> Type where
   OK   : a -> Result a
   Deny : Result a -- access restriction, not some arbitrary error
@@ -184,9 +184,9 @@ record BrkCreateConnRes where
 Message : Type
 Message = String
 
-
--- operators to create connection state and state change based on the result
+-- operator to define connection state change based on the result
 infixl 7 <==>, <==|
+prefix 8 @@@
 prefix 6 ///
 
 data RBConnState : Type where
@@ -208,11 +208,6 @@ data AllConnState : Type where
                       Deny  => s
                       Err _ => s
 
-sameState : (AllConnState -> Result a -> AllConnState)
-sameState s _ => s
-
-
--- protocol commands that participants send in relation to a specific connection
 data Command : (ty : Type)
             -> (from : Participant)
             -> (to : Participant)
@@ -227,7 +222,7 @@ data Command : (ty : Type)
                   (Null <==> Null <==| s)
                   (/// New <==> New  <==| s)
 
-  Subscribe   : Command () Recipient Broker state sameState -- to improve
+  Subscribe   : Command () Recipient Broker state (/// state) -- to improve
 
   SendInvite  : Invitation
              -> {auto prf : HasState Broker s}
@@ -260,7 +255,7 @@ data Command : (ty : Type)
   PushWelcome : {auto prf : HasState Sender s}
              -> Command () Broker Recipient
                   (Secured <==> Secured <==| s)
-                  sameState
+                  (/// Secured <==> Secured <==| s)
 
   SendMsg     : Message
              -> {auto prf : HasState Broker bs}
@@ -272,7 +267,7 @@ data Command : (ty : Type)
                                   Deny  => (rs <==> bs <==| Null))
 
   PushMsg     : Message
-             -> {auto prf : BrokerCS bcState}
+             -> {auto prf : HasState Sender s}
              -> Command () Broker Recipient
                   (Secured <==> Secured <==| s)
-                  sameState
+                  (/// Secured <==> Secured <==| s)
