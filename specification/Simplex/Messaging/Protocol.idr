@@ -1,5 +1,7 @@
 module Simplex.Messaging.Protocol
 
+%access public export
+
 data Participant = Recipient | Sender | Broker
 
 data Client : Participant -> Type where
@@ -191,7 +193,7 @@ Message = String
 -- operator to define connection state change based on the result
 infixl 7 <==>, <==|
 prefix 8 @@@
-prefix 6 ///
+prefix 6 ///, >>>
 
 data RBConnState : Type where
   (<==>) : (recipient : ConnectionState)
@@ -212,6 +214,11 @@ data AllConnState : Type where
                       Deny  => s
                       Err _ => s
 
+(>>>) : AllConnState
+     -> (AllConnState -> Result a -> AllConnState)
+(>>>) s = \_, _ => s
+
+
 data Command : (ty : Type)
             -> (from : Participant)
             -> (to : Participant)
@@ -224,42 +231,41 @@ data Command : (ty : Type)
              -> Command BrkCreateConnRes
                   Recipient Broker
                   (Null <==> Null <==| s)
-                  (/// New <==> New  <==| s)
+                  (>>> New <==> New  <==| s)
 
-  Subscribe   : Command () Recipient Broker state (/// state) -- to improve
+  Subscribe   : Command () Recipient Broker state (>>> state) -- to improve
 
   SendInvite  : Invitation
              -> {auto prf : HasState Broker s}
              -> Command () Recipient Sender
                   (New <==> s <==| Null)
-                  (/// Pending <==> s <==| New)
+                  (>>> Pending <==> s <==| New)
 
   ConfirmConn : (senderBrokerKey : Key)
              -> Command () Sender Broker
                   (s <==> New <==| New)
-                  (/// s <==> New <==| Confirmed)
+                  (>>> s <==> New <==| Confirmed)
 
-  PushConfirm : (senderBrokerKey : Key)
-             -> {auto prf : HasState Sender s}
+  PushConfirm : {auto prf : HasState Sender s}
              -> Command () Broker Recipient
-                  (New <==> New <==| s)
-                  (/// Confirmed <==> New <==| s)
+                  (Pending <==> New <==| s)
+                  (>>> Confirmed <==> New <==| s)
 
   SecureConn  : (senderBrokerKey : Key)
              -> {auto prf : HasState Sender s}
              -> Command () Recipient Broker
                   (Confirmed <==> New <==| s)
-                  (/// Secured <==> Secured <==| s)
+                  (>>> Secured <==> Secured <==| s)
 
   SendWelcome : {auto prf : HasState Broker bs}
              -> Command () Sender Broker
                   (rs <==> bs <==| Confirmed)
-                  (/// rs <==> bs <==| Secured)
+                  (>>> rs <==> bs <==| Secured)
 
   PushWelcome : {auto prf : HasState Sender s}
              -> Command () Broker Recipient
                   (Secured <==> Secured <==| s)
-                  (/// Secured <==> Secured <==| s)
+                  (>>> Secured <==> Secured <==| s)
 
   SendMsg     : Message
              -> {auto prf : HasState Broker bs}
@@ -275,3 +281,8 @@ data Command : (ty : Type)
              -> Command () Broker Recipient
                   (Secured <==> Secured <==| s)
                   (/// Secured <==> Secured <==| s)
+
+  Pure  : (res : Result a) -> Command a from to state state_fn
+  (>>=) : Command a from1 to1 state1 state2_fn
+          -> ((res : Result a) -> Command b from2 to2 (state2_fn state1 res) state3_fn)
+          -> Command b from1 to2 state1 state3_fn
