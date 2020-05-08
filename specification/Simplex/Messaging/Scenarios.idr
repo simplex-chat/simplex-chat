@@ -1,9 +1,9 @@
 module Simplex.Messaging.Scenarios
 
-import Protocol
+import Simplex.Messaging.Protocol
 
 establishConnection : Command ()
-                        (Recipient &> Broker)
+                        (Recipient, Broker)
                         (Null <==> (Null, 0) <==| Null)
                         (>>> Secured <==> (Secured, 0) <==| Secured)
 establishConnection = do

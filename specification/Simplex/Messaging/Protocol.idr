@@ -3,11 +3,6 @@ module Simplex.Messaging.Protocol
 %access public export
 
 data Participant = Recipient | Sender | Broker
-Eq Participant where
-  (==) Recipient Recipient = True
-  (==) Sender Sender = True
-  (==) Broker Broker = True
-  (==) _ _ = False
 
 data Client : Participant -> Type where
   CRecipient : Client Recipient
@@ -222,41 +217,8 @@ data AllConnState : Type where
      -> (AllConnState -> Result a -> AllConnState)
 (>>>) s = \_, _ => s
 
-infixl 8 &>, &>>
-infixr 7 ///
-
-data Participants : Type where
-  (&>) : Participant -> Participant -> Participants
-  (&>>) : Participants -> Participant -> Participants
-  (///) : Participants -> Participants -> Participants
-
-firstParticipant : Participants -> Participant
-firstParticipant (p &> _) = p
-firstParticipant (ps &>> _) = firstParticipant ps
-firstParticipant (ps /// _) = firstParticipant ps
-
-lastParticipant : Participants -> Participant
-lastParticipant (_ &> p) = p
-lastParticipant (_ &>> p) = p
-lastParticipant (_ /// ps) = lastParticipant ps
-
-infixl 6 &++
-total (&++) : Participants -> Participants -> Participants
-(&++) (x &> y) (z &> w) = if y == z then x &> y &>> w
-                                    else x &> y /// z &> w
-(&++) (x &> y) (zs &>> w) = (x &> y &++ zs) &>> w
-(&++) (x &> y) (zs /// ws) = (x &> y &++ zs) /// ws
-
-(&++) (xs &>> y) (z &> w) = if y == z then xs &>> y &>> w
-                                      else xs &>> y /// z &> w
-(&++) (xs &>> y) (zs &>> w) = (xs &>> y &++ zs) &>> w
-(&++) (xs &>> y) (zs /// ws) = (xs &>> y &++ zs) /// ws
-
-(&++) (xs /// ys) zs = xs /// (ys &++ zs)
-
-
 data Command : (ty : Type)
-            -> Participants
+            -> (Participant, Participant)
             -> (state : AllConnState)
             -> ((state : AllConnState) -> Result ty -> AllConnState)
             -> Type where
@@ -264,65 +226,65 @@ data Command : (ty : Type)
   CreateConn  : (recipientBrokerKey : Key)
              -> {auto prf : HasState Sender s}
              -> Command BrkCreateConnRes
-                  (Recipient &> Broker)
+                  (Recipient, Broker)
                   (Null <==> (Null, 0) <==| s)
                   (>>> New <==> (New, 0)  <==| s)
 
-  Subscribe   : Command () (Recipient &> Broker) state (>>> state) -- to improve
+  Subscribe   : Command () (Recipient, Broker) state (>>> state) -- to improve
 
   SendInvite  : Invitation
              -> {auto prf : HasState Broker s}
              -> Command ()
-                  (Recipient &> Sender)
+                  (Recipient, Sender)
                   (New <==> (s, n) <==| Null)
                   (>>> Pending <==> (s, n) <==| New)
 
   ConfirmConn : (senderBrokerKey : Key)
              -> Command ()
-                  (Sender &> Broker)
+                  (Sender, Broker)
                   (s <==> (New, n) <==| New)
                   (>>> s <==> (New, 1 + n) <==| Confirmed)
 
   PushConfirm : {auto prf : HasState Sender s}
              -> Command ()
-                  (Broker &> Recipient)
+                  (Broker, Recipient)
                   (Pending <==> (New, 1 + n) <==| s)
                   (>>> Confirmed <==> (New, n) <==| s)
 
   SecureConn  : (senderBrokerKey : Key)
              -> {auto prf : HasState Sender s}
              -> Command ()
-                  (Recipient &> Broker)
+                  (Recipient, Broker)
                   (Confirmed <==> (New, n) <==| s)
                   (>>> Secured <==> (Secured, n) <==| s)
 
   SendWelcome : {auto prf : HasState Broker bs}
              -> Command ()
-                  (Sender &> Broker)
+                  (Sender, Broker)
                   (rs <==> (Secured, n) <==| Confirmed)
                   (>>> rs <==> (Secured, 1 + n) <==| Secured)
 
   PushWelcome : {auto prf : HasState Sender s}
              -> Command ()
-                  (Broker &> Recipient)
+                  (Broker, Recipient)
                   (Secured <==> (Secured, 1 + n) <==| s)
                   (>>> Secured <==> (Secured, n) <==| s)
 
   SendMsg     : Message
              -> Command ()
-                  (Sender &> Broker)
+                  (Sender, Broker)
                   (rs <==> (Secured, n) <==| Secured)
                   (>>> rs <==> (Secured, 1 + n) <==| Secured)
 
   PushMsg     : {auto prf : HasState Sender s}
              -> Command ()
-                  (Broker &> Recipient)
+                  (Broker, Recipient)
                   (Secured <==> (Secured, n) <==| s)
                   (>>> Secured <==> (Secured, n) <==| s)
 
   DeleteMsg   : {auto prf : HasState Sender s}
              -> Command ()
-                  (Recipient &> Broker)
+                  (Recipient, Broker)
                   (Secured <==> (Secured, 1 + n) <==| s)
                   (>>> Secured <==> (Secured, n) <==| s)
 
@@ -330,12 +292,12 @@ data Command : (ty : Type)
   Pure  : (res : Result a) -> Command a ps state state_fn
   (>>=) : Command a ps1 state1 state2_fn
           -> ((res : Result a) -> Command b ps2 (state2_fn state1 res) state3_fn)
-          -> Command b (firstParticipant ps1 &> lastParticipant ps2) state1 state3_fn
+          -> Command b (fst ps1, snd ps2) state1 state3_fn
 
 
 infix 5 &:
 (&:) : (p : Participant)
     -> Command a ps state1 state2_fn
-    -> {auto prf : p = firstParticipant ps}
+    -> {auto prf : p = fst ps}
     -> Command a ps state1 state2_fn
 (&:) _ c = c
