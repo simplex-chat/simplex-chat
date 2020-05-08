@@ -274,10 +274,24 @@ data Command : (ty : Type)
 
   PushMsg     : {auto prf : HasState Sender s}
              -> Command () Broker Recipient
+                  (Secured <==> (Secured, n) <==| s)
+                  (>>> Secured <==> (Secured, n) <==| s)
+
+  DeleteMsg   : {auto prf : HasState Sender s}
+             -> Command () Recipient Broker
                   (Secured <==> (Secured, 1 + n) <==| s)
                   (>>> Secured <==> (Secured, n) <==| s)
+
 
   Pure  : (res : Result a) -> Command a from to state state_fn
   (>>=) : Command a from1 to1 state1 state2_fn
           -> ((res : Result a) -> Command b from2 to2 (state2_fn state1 res) state3_fn)
           -> Command b from1 to2 state1 state3_fn
+
+
+infix 5 &>
+(&>) : (p : Participant)
+    -> Command a from1 to1 state1 state2_fn
+    -> {auto prf : p = from1}
+    -> Command a from1 to1 state1 state2_fn
+(&>) _ c = c

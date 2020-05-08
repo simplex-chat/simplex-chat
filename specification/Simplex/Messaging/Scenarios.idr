@@ -2,17 +2,18 @@ module Simplex.Messaging.Scenarios
 
 import Protocol
 
-establishConnection : Command () Recipient Recipient
+establishConnection : Command () Recipient Broker
                         (Null <==> (Null, 0) <==| Null)
                         (>>> Secured <==> (Secured, 0) <==| Secured)
 establishConnection = do
-  ids <- CreateConn "recipient's public key for broker"
-  Subscribe
-  SendInvite newInvitation
-  ConfirmConn "sender's public key for broker"
-  PushConfirm
-  SecureConn "sender's public key for broker"
-  SendWelcome
-  PushWelcome
-  SendMsg "Hello"
-  PushMsg
+  Recipient &> CreateConn "recipient's public key for broker"
+  Recipient &> Subscribe
+  Recipient &> SendInvite newInvitation
+  Sender    &> ConfirmConn "sender's public key for broker"
+  Broker    &> PushConfirm
+  Recipient &> SecureConn "sender's public key for broker"
+  Sender    &> SendWelcome
+  Broker    &> PushWelcome
+  Sender    &> SendMsg "Hello"
+  Broker    &> PushMsg
+  Recipient &> DeleteMsg
