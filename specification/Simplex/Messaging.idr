@@ -90,21 +90,23 @@ data HasState : (p : Participant) -> (s : ConnectionState) -> Type where
 
 
 -- established connection states (used by broker and recipient)
-data EstablishedCS : ConnectionState -> Type where
-  ESecured  : EstablishedCS Secured
-  EDisabled : EstablishedCS Disabled
-  EDrained  : EstablishedCS Drained
+data EstablishedState : ConnectionState -> Type where
+  ESecured  : EstablishedState Secured
+  EDisabled : EstablishedState Disabled
+  EDrained  : EstablishedState Drained
 
 
 -- dependent types to represent connections for all participants
 
-data BrokerConn : (state : ConnectionState) -> {auto prf : BrokerCS state} -> Type where
+data BrokerConn : (state : ConnectionState)
+               -> {auto prf : HasState Broker state}
+               -> Type where
   BCNew      : (recipient : Conn) -> (senderId : String) -> BrokerConn New
   MkBrkConn  : (state : ConnectionState)
             -> (recipient : Conn)
             -> (sender : Conn)
-            -> {auto prf : BrokerCS state}
-            -> {auto prf : EstablishedCS state}
+            -> {auto prf : HasState Broker state}
+            -> {auto prf : EstablishedState state}
             -> BrokerConn state
   -- 3 constructors below are equivalent to MkBrkConn with some state
   BCSecured  : (recipient : Conn) -> (sender : Conn) -> BrokerConn Secured
@@ -129,7 +131,7 @@ data RecipientConn : (state : ConnectionState) -> Type where
   RCConfirmed : (conn : RcpConn) -> (sender : Conn) -> RecipientConn Confirmed
   MkRecipientConn   : (state : ConnectionState)
                    -> (conn : RcpConn)
-                   -> {auto prf : EstablishedCS state}
+                   -> {auto prf : EstablishedState state}
                    -> RecipientConn state
   -- 3 constructors below are equivalent to MkRcpConn with some state
   RCSecured   : (conn : RcpConn) -> RecipientConn Secured
@@ -151,7 +153,9 @@ goodRcpConn = MkRecipientConn Secured (record
                                        newRcpConn)
 
 
-data SenderConn : (state : ConnectionState) -> {auto prf : SenderCS state} -> Type where
+data SenderConn : (state : ConnectionState)
+               -> {auto prf : HasState Sender state}
+               -> Type where
   SCNew       : (conn : Invitation) -> SenderConn New
   SCConfirmed : (conn : SndConn) -> SenderConn Confirmed
   SCSecured   : (conn : SndConn) -> SenderConn Secured
