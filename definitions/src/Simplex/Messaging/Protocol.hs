@@ -1,5 +1,4 @@
 {-# LANGUAGE ConstraintKinds #-}
-{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE EmptyCase #-}
 {-# LANGUAGE FlexibleContexts #-}
@@ -8,13 +7,13 @@
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NoStarIsType #-}
-{-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE TypeInType #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module Simplex.Messaging.Protocol where
@@ -125,14 +124,87 @@ st2 = SPending :<==> SNew :<==| SConfirmed
 -- stBad = SPending :<==> SConfirmed :<==| SConfirmed
 
 
--- data Command (res :: Type)
---              (ps :: (Participant, Participant))
---              (AllConnState r b s)
---              (AllConnState r b s) :: Type where
+data Command res (from :: Participant) (to :: Participant) state state' :: Type where
+  CreateConn   :: Prf HasState 'Sender s
+               => CreateConnRequest
+               -> Command CreateConnResponse
+                    'Recipient 'Broker
+                    ('None <==> 'None <==| s)
+                    ('New <==> 'New  <==| s)
 
---   CreateConn  :: Prf HasState 'Sender s
---               => NewConnectionReqBody
---               -> Command NewConnectionResBody
---                     ('Recipient, 'Broker)
---                     ('None <==> 'None <==| s)
---                     ('New <==> 'New  <==| s)
+  Subscribe    :: Command () 'Recipient 'Broker state state -- TODO
+
+  SendInvite   :: Prf HasState 'Broker s
+               => String -- invitation - TODO
+               -> Command ()
+                    'Recipient 'Sender
+                    ('New <==> s <==| 'None)
+                    ('Pending <==> s <==| 'New)
+
+  ConfirmConn  :: Prf HasState 'Recipient s
+               => SecureConnRequest
+               -> Command ()
+                    'Sender 'Broker
+                    (s <==> 'New <==| 'New)
+                    (s <==> 'New <==| 'Confirmed)
+
+  PushConfirm  :: Prf HasState 'Sender s
+               => Command SecureConnRequest
+                    'Broker 'Recipient
+                    ('Pending <==> 'New <==| s)
+                    ('Confirmed <==> 'New <==| s)
+
+  SecureConn   :: Prf HasState 'Sender s
+               => SecureConnRequest
+               -> Command ()
+                    'Recipient 'Broker
+                    ('Confirmed <==> 'New <==| s)
+                    ('Secured <==> 'Secured <==| s)
+
+  SendWelcome  :: Prf HasState 'Recipient s
+               => Command ()
+                    'Sender 'Broker
+                    (s <==> 'Secured <==| 'Confirmed)
+                    (s <==> 'Secured <==| 'Secured)
+
+  PushWelcome  :: Prf HasState 'Sender s
+               => Command ()
+                    'Broker 'Recipient
+                    ('Secured <==> 'Secured <==| s)
+                    ('Secured <==> 'Secured <==| s)
+
+  SendMsg      :: Prf HasState 'Recipient s
+               => SendMessageRequest
+               -> Command ()
+                    'Sender 'Broker
+                    (s <==> 'Secured <==| 'Secured)
+                    (s <==> 'Secured <==| 'Secured)
+
+  PushMsg      :: Prf HasState 'Sender s
+               => Command MessagesResponse -- TODO, has to be a single message
+                    'Broker 'Recipient
+                    ('Secured <==> 'Secured <==| s)
+                    ('Secured <==> 'Secured <==| s)
+
+  DeleteMsg    :: Prf HasState 'Sender s   -- TODO needs message ID parameter
+               => Command ()
+                    'Recipient 'Broker
+                    ('Secured <==> 'Secured <==| s)
+                    ('Secured <==> 'Secured <==| s)
+
+  Return       :: a -> Command a from to state state
+
+  (:>>)        :: Command a from1 to1 s1 s2
+               -> Command b from2 to2 s2 s3
+               -> Command b from1 to2 s1 s3
+
+  (:>>=)       :: Command a from1 to1 s1 s2
+               -> (a -> Command b from2 to2 s2 s3)
+               -> Command b from1 to2 s1 s3
+
+
+infix 5 &:
+(&:) :: Sing from
+     -> Command a from to s1 s2
+     -> Command a from to s1 s2
+(&:) _ c = c

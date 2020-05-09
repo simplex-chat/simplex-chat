@@ -7,16 +7,16 @@ import ClassyPrelude
 import Data.Aeson
 import GHC.Generics()
 
-newtype NewConnectionReqBody = NewConnectionReqBody
+newtype CreateConnRequest = CreateConnRequest
   { recipientKey :: Key
   } deriving (Show, Generic, ToJSON, FromJSON)
 
-data NewConnectionResBody = NewConnectionResBody
+data CreateConnResponse = CreateConnResponse
   { recipientId :: String
   , senderId    :: String
   } deriving (Show, Generic, ToJSON, FromJSON)
 
-newtype SecureConnectionReqBody = SecureConnectionReqBody
+newtype SecureConnRequest = SecureConnRequest
   { senderKey :: Key
   } deriving (Show, Generic, ToJSON, FromJSON)
 
@@ -26,12 +26,12 @@ data Message = Message
   , msg  :: Base64EncodedString
   } deriving (Show, Generic, ToJSON, FromJSON)
 
-data MessagesResBody = MessagesResBody
+data MessagesResponse = MessagesResponse
   { messages      :: [Message]
   , nextMessageId :: Maybe Base64EncodedString
   } deriving (Show, Generic, ToJSON, FromJSON)
 
-newtype SendMessageReqBody = SendMessageReqBody
+newtype SendMessageRequest = SendMessageRequest
   { msg :: Base64EncodedString
   } deriving (Show, Generic, ToJSON, FromJSON)
 
