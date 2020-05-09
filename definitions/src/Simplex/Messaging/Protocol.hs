@@ -1,20 +1,30 @@
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE EmptyCase #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NoStarIsType #-}
 {-# LANGUAGE PolyKinds #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module Simplex.Messaging.Protocol where
 
+import Simplex.Messaging.Types
+
+import ClassyPrelude
 import Data.Kind
-import Data.Singletons()
+import Data.Singletons
+import Data.Singletons.ShowSing
 import Data.Singletons.TH
 import Data.Type.Predicate
 import Data.Type.Predicate.Auto
@@ -29,6 +39,7 @@ $(singletons [d|
                         | Disabled  -- (broker, recipient) disabled with the broker by recipient
                         | Drained   -- (broker, recipient) drained (no messages)
                         | None      -- (all) not available or removed from the broker
+    deriving (Show, ShowSing, Eq)
   |])
 
 -- broker connection states
@@ -90,13 +101,17 @@ data (<==>) (rs :: ConnectionState) (bs :: ConnectionState) :: Type where
           -> Sing bs
           -> rs <==> bs
 
+deriving instance Show (rs <==> bs)
+
 data AllConnState (rs :: ConnectionState)
                   (bs :: ConnectionState)
-                  (ss :: ConnectionState) where
+                  (ss :: ConnectionState) :: Type where
   (:<==|) :: Prf HasState 'Sender ss
           => rs <==> bs
           -> Sing ss
           -> AllConnState rs bs ss
+
+deriving instance Show (AllConnState rs bs ss)
 
 type family (<==|) rb ss where
   (rs <==> bs) <==| (ss :: ConnectionState) = AllConnState rs bs ss
@@ -108,3 +123,16 @@ st2 = SPending :<==> SNew :<==| SConfirmed
 -- this must not type check
 -- stBad :: 'Pending <==> 'Confirmed <==| 'Confirmed
 -- stBad = SPending :<==> SConfirmed :<==| SConfirmed
+
+
+-- data Command (res :: Type)
+--              (ps :: (Participant, Participant))
+--              (AllConnState r b s)
+--              (AllConnState r b s) :: Type where
+
+--   CreateConn  :: Prf HasState 'Sender s
+--               => NewConnectionReqBody
+--               -> Command NewConnectionResBody
+--                     ('Recipient, 'Broker)
+--                     ('None <==> 'None <==| s)
+--                     ('New <==> 'New  <==| s)

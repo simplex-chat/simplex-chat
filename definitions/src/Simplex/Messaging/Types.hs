@@ -8,7 +8,7 @@ import Data.Aeson
 import GHC.Generics()
 
 newtype NewConnectionReqBody = NewConnectionReqBody
-  { recipientKey :: Base64EncodedString
+  { recipientKey :: Key
   } deriving (Show, Generic, ToJSON, FromJSON)
 
 data NewConnectionResBody = NewConnectionResBody
@@ -17,7 +17,7 @@ data NewConnectionResBody = NewConnectionResBody
   } deriving (Show, Generic, ToJSON, FromJSON)
 
 newtype SecureConnectionReqBody = SecureConnectionReqBody
-  { senderKey :: Base64EncodedString
+  { senderKey :: Key
   } deriving (Show, Generic, ToJSON, FromJSON)
 
 data Message = Message
@@ -35,5 +35,6 @@ newtype SendMessageReqBody = SendMessageReqBody
   { msg :: Base64EncodedString
   } deriving (Show, Generic, ToJSON, FromJSON)
 
+type Key = Base64EncodedString
 type Base64EncodedString = Text
 type TimeStamp = Text
