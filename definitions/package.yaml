@@ -19,45 +19,11 @@ ghc-options:
   - -Wincomplete-uni-patterns
 
 default-extensions:
-  - TemplateHaskell
-  - NoImplicitPrelude
-  # numbers, strings, lists
-  - NegativeLiterals
-  - NumericUnderscores
-  - OverloadedStrings
-  # function syntax
-  - BlockArguments
-  - EmptyCase
-  - LambdaCase
-  # Records
   - DuplicateRecordFields
   - NamedFieldPuns
+  - NoImplicitPrelude
+  - OverloadedStrings
   - RecordWildCards
-  # deriving
-  - DeriveAnyClass
-  - DeriveFunctor
-  - DeriveGeneric
-  - StandaloneDeriving
-  # type classes
-  - FunctionalDependencies
-  - FlexibleContexts
-  - FlexibleInstances
-  - InstanceSigs
-  - TypeSynonymInstances
-  - UndecidableInstances
-  # types
-  - DataKinds
-  - ConstraintKinds
-  - GADTs
-  - KindSignatures
-  - LiberalTypeSynonyms
-  - NoStarIsType
-  - PolyKinds
-  - RankNTypes
-  - ScopedTypeVariables
-  - TypeApplications
-  - TypeFamilies
-  - TypeOperators
   
 dependencies:
   - aeson

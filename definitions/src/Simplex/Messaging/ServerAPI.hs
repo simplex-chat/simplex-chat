@@ -1,4 +1,7 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE TypeOperators #-}
 
 module Simplex.Messaging.ServerAPI
   ( ServerAPI

@@ -1,4 +1,15 @@
+{-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE NoStarIsType #-}
+{-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module Simplex.Messaging.Protocol where
 
@@ -30,11 +41,11 @@ data BrokerCS :: ConnectionState -> Type where
   BrkDrained  :: BrokerCS 'Drained
   BrkNone     :: BrokerCS 'None
 
-instance Auto (TyPred BrokerCS) 'New      where auto = BrkNew
-instance Auto (TyPred BrokerCS) 'Secured  where auto = BrkSecured
-instance Auto (TyPred BrokerCS) 'Disabled where auto = BrkDisabled
-instance Auto (TyPred BrokerCS) 'Drained  where auto = BrkDrained
-instance Auto (TyPred BrokerCS) 'None     where auto = BrkNone
+instance Auto (TyPred BrokerCS) 'New      where auto = autoTC
+instance Auto (TyPred BrokerCS) 'Secured  where auto = autoTC
+instance Auto (TyPred BrokerCS) 'Disabled where auto = autoTC
+instance Auto (TyPred BrokerCS) 'Drained  where auto = autoTC
+instance Auto (TyPred BrokerCS) 'None     where auto = autoTC
 
 -- sender connection states
 data SenderCS :: ConnectionState -> Type where
@@ -43,10 +54,10 @@ data SenderCS :: ConnectionState -> Type where
   SndSecured   :: SenderCS 'Secured
   SndNone      :: SenderCS 'None
 
-instance Auto (TyPred SenderCS) 'New       where auto = SndNew
-instance Auto (TyPred SenderCS) 'Confirmed where auto = SndConfirmed
-instance Auto (TyPred SenderCS) 'Secured   where auto = SndSecured
-instance Auto (TyPred SenderCS) 'None      where auto = SndNone
+instance Auto (TyPred SenderCS) 'New       where auto = autoTC
+instance Auto (TyPred SenderCS) 'Confirmed where auto = autoTC
+instance Auto (TyPred SenderCS) 'Secured   where auto = autoTC
+instance Auto (TyPred SenderCS) 'None      where auto = autoTC
 
 -- allowed participant connection states
 data HasState (p :: Participant) (s :: ConnectionState) :: Type where
@@ -54,7 +65,7 @@ data HasState (p :: Participant) (s :: ConnectionState) :: Type where
   BrkHasState :: Prf1 BrokerCS s => HasState 'Broker s
   SndHasState :: Prf1 SenderCS s => HasState 'Sender s
 
-class Prf p a s where auto' :: p a s
+class Prf t p s where auto' :: t p s
 instance                    Prf HasState 'Recipient s
   where auto' = RcpHasState
 instance Prf1 BrokerCS s => Prf HasState 'Broker s
