@@ -90,12 +90,16 @@ data (<==>) (rs :: ConnectionState) (bs :: ConnectionState) :: Type where
           -> Sing bs
           -> rs <==> bs
 
-data family (<==|) rb (ss :: ConnectionState)
-data instance (<==|) (rs <==> bs) ss :: Type where
+data AllConnState (rs :: ConnectionState)
+                  (bs :: ConnectionState)
+                  (ss :: ConnectionState) where
   (:<==|) :: Prf HasState 'Sender ss
           => rs <==> bs
           -> Sing ss
-          -> rs <==> bs <==| ss
+          -> AllConnState rs bs ss
+
+type family (<==|) rb ss where
+  (rs <==> bs) <==| (ss :: ConnectionState) = AllConnState rs bs ss
 
 --   recipient <==> broker <==| sender
 st2 :: 'Pending <==> 'New <==| 'Confirmed
