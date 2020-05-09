@@ -97,9 +97,7 @@ data instance (<==|) (rs <==> bs) ss :: Type where
           -> Sing ss
           -> rs <==> bs <==| ss
 
-st1 :: 'New <==> 'New
-st1 = SNew :<==> SNew
-
+--   recipient <==> broker <==| sender
 st2 :: 'Pending <==> 'New <==| 'Confirmed
 st2 = SPending :<==> SNew :<==| SConfirmed
 
