@@ -124,6 +124,8 @@ st2 = SPending :<==> SNew :<==| SConfirmed
 -- stBad = SPending :<==> SConfirmed :<==| SConfirmed
 
 
+infixl 4 :>>, :>>=
+
 data Command res (from :: Participant) (to :: Participant) state state' :: Type where
   CreateConn   :: Prf HasState 'Sender s
                => CreateConnRequest
@@ -203,8 +205,12 @@ data Command res (from :: Participant) (to :: Participant) state state' :: Type 
                -> Command b from1 to2 s1 s3
 
 
+infix 6 ==>
+(==>) :: from -> to -> (from, to)
+from ==> to = (from, to)
+
 infix 5 &:
-(&:) :: Sing from
+(&:) :: (Sing from, Sing to)
      -> Command a from to s1 s2
      -> Command a from to s1 s2
 (&:) _ c = c

@@ -9,7 +9,11 @@ import GHC.Generics()
 
 newtype CreateConnRequest = CreateConnRequest
   { recipientKey :: Key
-  } deriving (Show, Generic, ToJSON, FromJSON)
+  } deriving (Eq, Show, Generic, ToJSON, FromJSON)
+
+instance IsString CreateConnRequest where
+  fromString = CreateConnRequest . pack
+
 
 data CreateConnResponse = CreateConnResponse
   { recipientId :: String
@@ -19,6 +23,10 @@ data CreateConnResponse = CreateConnResponse
 newtype SecureConnRequest = SecureConnRequest
   { senderKey :: Key
   } deriving (Show, Generic, ToJSON, FromJSON)
+
+instance IsString SecureConnRequest where
+  fromString = SecureConnRequest . pack
+
 
 data Message = Message
   { id   :: Base64EncodedString
@@ -34,6 +42,10 @@ data MessagesResponse = MessagesResponse
 newtype SendMessageRequest = SendMessageRequest
   { msg :: Base64EncodedString
   } deriving (Show, Generic, ToJSON, FromJSON)
+
+instance IsString SendMessageRequest where
+  fromString = SendMessageRequest . pack
+
 
 type Key = Base64EncodedString
 type Base64EncodedString = Text
