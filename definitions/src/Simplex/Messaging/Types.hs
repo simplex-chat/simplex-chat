@@ -2,7 +2,7 @@ module Simplex.Messaging.Types where
 
 import ClassyPrelude
 import Data.Aeson
-import GHC.Generics
+import GHC.Generics()
 
 newtype NewConnectionReqBody = NewConnectionReqBody
   { recipientKey :: Base64EncodedString

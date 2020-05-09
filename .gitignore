@@ -40,6 +40,8 @@ cabal.project.local
 cabal.project.local~
 .HTF/
 .ghc.environment.*
+.cabal
+stack.yaml.lock
 
 # Idris
 *.ibc

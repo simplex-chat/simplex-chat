@@ -2,7 +2,7 @@ module Simplex.Messaging.Protocol
 
 %access public export
 
-data Participant = Recipient | Sender | Broker
+data Participant = Recipient | Broker | Sender
 
 data Client : Participant -> Type where
   CRecipient : Client Recipient

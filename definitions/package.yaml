@@ -13,25 +13,59 @@ extra-source-files:
 ghc-options:
   - -Wall
   - -Wcompat
-  - -Worphans
   - -Werror=incomplete-patterns
   - -Wredundant-constraints
   - -Wincomplete-record-updates
   - -Wincomplete-uni-patterns
 
 default-extensions:
-  - DeriveAnyClass
-  - DeriveGeneric
-  - DuplicateRecordFields
-  - FlexibleInstances
+  - TemplateHaskell
   - NoImplicitPrelude
+  # numbers, strings, lists
+  - NegativeLiterals
+  - NumericUnderscores
   - OverloadedStrings
+  # function syntax
+  - BlockArguments
+  - EmptyCase
+  - LambdaCase
+  # Records
+  - DuplicateRecordFields
+  - NamedFieldPuns
+  - RecordWildCards
+  # deriving
+  - DeriveAnyClass
+  - DeriveFunctor
+  - DeriveGeneric
+  - StandaloneDeriving
+  # type classes
+  - FunctionalDependencies
+  - FlexibleContexts
+  - FlexibleInstances
+  - InstanceSigs
+  - TypeSynonymInstances
+  - UndecidableInstances
+  # types
+  - DataKinds
+  - ConstraintKinds
+  - GADTs
+  - KindSignatures
+  - LiberalTypeSynonyms
+  - NoStarIsType
+  - PolyKinds
+  - RankNTypes
+  - ScopedTypeVariables
+  - TypeApplications
+  - TypeFamilies
+  - TypeOperators
   
 dependencies:
   - aeson
   - base >= 4.7 && < 5
   - classy-prelude
+  - decidable
   - lens
+  - singletons
   - servant-docs
   - servant-server
 

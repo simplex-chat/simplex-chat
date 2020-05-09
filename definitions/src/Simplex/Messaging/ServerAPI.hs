@@ -1,5 +1,4 @@
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE TypeOperators #-}
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 
 module Simplex.Messaging.ServerAPI
   ( ServerAPI
@@ -78,8 +77,9 @@ serverApiExtra =
     "Send message"
     []
 
-info p title comments =
-  extraInfo p $ defAction & notes <>~ [ DocNote title comments ]
+    where
+      info p title comments =
+        extraInfo p $ defAction & notes <>~ [ DocNote title comments ]
 
 instance ToCapture (Capture "connectionId" Text) where
   toCapture _ =
