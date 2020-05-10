@@ -134,7 +134,15 @@ data Command res (from :: Participant) (to :: Participant) state state' :: Type 
                     ('None <==> 'None <==| s)
                     ('New <==> 'New  <==| s)
 
-  Subscribe    :: Command () 'Recipient 'Broker state state -- TODO
+  Subscribe    :: ( (r == 'None) ~ 'False
+                  , (r == 'Disabled) ~ 'False
+                  , (b == 'None) ~ 'False
+                  , (b == 'Disabled) ~ 'False
+                  , Prf HasState 'Sender s )
+               => Command ()
+                    'Recipient 'Broker
+                    (r <==> b <==| s)
+                    (r <==> b <==| s)
 
   SendInvite   :: Prf HasState 'Broker s
                => String -- invitation - TODO
