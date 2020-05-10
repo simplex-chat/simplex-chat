@@ -1,25 +1,23 @@
 {-# OPTIONS_GHC -fno-warn-unticked-promoted-constructors #-}
-{-# LANGUAGE ConstraintKinds #-}
-{-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE EmptyCase #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE GADTs #-}
-{-# LANGUAGE InstanceSigs #-}
+{-# LANGUAGE ConstraintKinds       #-}
+{-# LANGUAGE DeriveAnyClass        #-}
+{-# LANGUAGE EmptyCase             #-}
+{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE GADTs                 #-}
+{-# LANGUAGE InstanceSigs          #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NoStarIsType #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE StandaloneDeriving #-}
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE TypeInType #-}
-{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE NoStarIsType          #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE StandaloneDeriving    #-}
+{-# LANGUAGE TemplateHaskell       #-}
+{-# LANGUAGE TypeApplications      #-}
+{-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE TypeInType            #-}
+{-# LANGUAGE TypeOperators         #-}
+{-# LANGUAGE UndecidableInstances  #-}
 
 module Simplex.Messaging.Protocol where
-
-import Simplex.Messaging.Types
 
 import ClassyPrelude
 import Data.Kind
@@ -29,6 +27,7 @@ import Data.Singletons.TH
 import Data.Type.Predicate
 import Data.Type.Predicate.Auto
 import GHC.TypeLits
+import Simplex.Messaging.Types
 
 $(singletons [d|
   data Participant = Recipient | Broker | Sender
@@ -221,21 +220,34 @@ data Command a (from :: Participant) (to :: Participant)
 
   Return       :: a -> Command a from to state state ss ss n n
 
-  (:>>)        :: Command a from1 to1 s1 s2 ss1 ss2 n1 n2
-               -> Command b from2 to2 s2 s3 ss2 ss3 n2 n3
-               -> Command b from1 to2 s1 s3 ss1 ss3 n1 n3
-
   (:>>=)       :: Command a from1 to1 s1 s2 ss1 ss2 n1 n2
                -> (a -> Command b from2 to2 s2 s3 ss2 ss3 n2 n3)
                -> Command b from1 to2 s1 s3 ss1 ss3 n1 n3
 
+  (:>>)        :: Command a from1 to1 s1 s2 ss1 ss2 n1 n2
+               -> Command b from2 to2 s2 s3 ss2 ss3 n2 n3
+               -> Command b from1 to2 s1 s3 ss1 ss3 n1 n3
 
-infix 6 ==>
-(==>) :: from -> to -> (from, to)
-from ==> to = (from, to)
+  Fail         :: String
+               -> Command String from to state (None <==> None <==| None) ss ss n n
 
-infix 5 &:
-(&:) :: (Sing from, Sing to)
-     -> Command a from to s1 s2 ss1 ss2 n1 n2
-     -> Command a from to s1 s2 ss1 ss2 n1 n2
-(&:) _ c = c
+-- redifine Monad operators to compose commands
+-- using `do` notation with RebindableSyntax extension
+(>>=) :: Command a from1 to1 s1 s2 ss1 ss2 n1 n2
+      -> (a -> Command b from2 to2 s2 s3 ss2 ss3 n2 n3)
+      -> Command b from1 to2 s1 s3 ss1 ss3 n1 n3
+(>>=) = (:>>=)
+
+(>>)  :: Command a from1 to1 s1 s2 ss1 ss2 n1 n2
+      -> Command b from2 to2 s2 s3 ss2 ss3 n2 n3
+      -> Command b from1 to2 s1 s3 ss1 ss3 n1 n3
+(>>) = (:>>)
+
+fail :: String -> Command String from to state (None <==> None <==| None) ss ss n n
+fail = Fail
+
+-- show and validate expexcted command participants
+infix 6 -->
+(-->) :: Sing from -> Sing to
+      -> (Command a from to s s' ss ss' n n' -> Command a from to s s' ss ss' n n')
+(-->) _ _ = id

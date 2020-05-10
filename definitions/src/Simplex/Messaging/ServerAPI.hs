@@ -1,7 +1,7 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
-{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DataKinds         #-}
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE TypeOperators     #-}
 
 module Simplex.Messaging.ServerAPI
   ( ServerAPI
@@ -9,13 +9,12 @@ module Simplex.Messaging.ServerAPI
   , serverApiExtra
   ) where
 
-import Simplex.Messaging.Types as T
-
 import ClassyPrelude
 import Control.Lens
 import Data.Function()
 import Servant
 import Servant.Docs
+import Simplex.Messaging.Types
 
 type ServerAPI =
        CreateConnection
@@ -117,7 +116,7 @@ instance ToSample SecureConnRequest where
 
 dummyMessage :: Message
 dummyMessage = Message
-                { T.id = "p8PCiGPZ"
+                { connId = "p8PCiGPZ"
                 , ts = "2020-03-15T19:58:33.695Z"
                 , msg = "OQLMXoEA4iv-aR46puPJuY1Rdoc1KY0gfq8oElJwtAs"
                 }

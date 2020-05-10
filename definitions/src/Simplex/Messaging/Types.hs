@@ -1,5 +1,5 @@
 {-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveGeneric  #-}
 
 module Simplex.Messaging.Types where
 
@@ -29,9 +29,9 @@ instance IsString SecureConnRequest where
 
 
 data Message = Message
-  { id   :: Base64EncodedString
-  , ts   :: TimeStamp
-  , msg  :: Base64EncodedString
+  { connId :: Base64EncodedString
+  , ts     :: TimeStamp
+  , msg    :: Base64EncodedString
   } deriving (Show, Generic, ToJSON, FromJSON)
 
 data MessagesResponse = MessagesResponse
