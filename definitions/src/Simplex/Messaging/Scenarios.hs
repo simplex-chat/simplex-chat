@@ -12,6 +12,7 @@ module Simplex.Messaging.Scenarios where
 import ClassyPrelude hiding ((>>=), (>>), fail)
 import Data.Singletons
 import Simplex.Messaging.Protocol
+import Simplex.Messaging.Types
 
 r :: Sing Recipient
 r = SRecipient
@@ -22,23 +23,24 @@ b = SBroker
 s :: Sing Sender
 s = SSender
 
-establishConnection  :: Command ()
+establishConnection  :: Command Comp
+                          CreateConnRequest ()
                           Recipient Broker
                           (None <==> None <==| None)
                           (Secured <==> Secured <==| Secured)
-                          False False 0 0
+                          Idle Idle 0 0
 establishConnection = do -- it is commands composition, not Monad
-  r --> b $ CreateConn "123"     -- recipient's public key for broker
+  r --> b $ CreateConn
   r --> b $ Subscribe
-  r --> s $ SendInvite "invite"  -- TODO invitation object
-  s --> b $ ConfirmConn "456"    -- sender's public key for broker"
-  key <- b --> r $ PushConfirm
-  r --> b $ SecureConn key
+  r --> s $ SendInvite
+  s --> b $ ConfirmConn
+  b --> r $ PushConfirm
+  r --> b $ SecureConn
   r --> b $ DeleteMsg
   s --> b $ SendWelcome
   b --> r $ PushMsg
   r --> b $ DeleteMsg
-  s --> b $ SendMsg "Hello"
+  s --> b $ SendMsg
   b --> r $ PushMsg
   r --> b $ DeleteMsg
   r --> b $ Unsubscribe

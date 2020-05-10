@@ -40,6 +40,8 @@ $(singletons [d|
                         | Disabled  -- (broker, recipient) disabled with the broker by recipient
                         | Drained   -- (broker, recipient) drained (no messages)
     deriving (Show, ShowSing, Eq)
+
+  data ConnectionSubscription = Subscribed | Idle
   |])
 
 -- broker connection states
@@ -91,6 +93,13 @@ data EstablishedState (s :: ConnectionState) :: Type where
   EDrained  :: EstablishedState Drained
 
 
+-- connection type stub for all participants, TODO move from idris
+data Connection (p :: Participant)
+                (s :: ConnectionState)
+                (ss :: ConnectionSubscription) :: Type where
+  Connection :: String -> Connection p s ss  -- TODO replace with real type definition
+
+
 -- data types for connection states of all participants
 infixl 7 <==>, <==|   -- types
 infixl 7 :<==>, :<==| -- constructors
@@ -125,129 +134,203 @@ st2 = SPending :<==> SNew :<==| SConfirmed
 -- stBad = SPending :<==> SConfirmed :<==| SConfirmed
 
 
+-- data type with all available protocol commands
+$(singletons [d|
+  data ProtocolCmd =  CreateConnCmd
+                    | SubscribeCmd
+                    | UnsubscribeCmd
+                    | SendInviteCmd
+                    | ConfirmConnCmd
+                    | PushConfirmCmd
+                    | SecureConnCmd
+                    | SendWelcomeCmd
+                    | SendMsgCmd
+                    | PushMsgCmd
+                    | DeleteMsgCmd
+                    | Comp    -- result of composing multiple commands
+  |])
+
 infixl 4 :>>, :>>=
 
-data Command a (from :: Participant) (to :: Participant)
-               state state'
-               (subscribed :: Bool) (subscribed' :: Bool)
-               (messages :: Nat) (messages' :: Nat)
-               :: Type where
+data Command (cmd :: ProtocolCmd) arg result
+             (from :: Participant) (to :: Participant)
+             state state'
+             (ss :: ConnectionSubscription) (ss' :: ConnectionSubscription)
+             (messages :: Nat) (messages' :: Nat)
+             :: Type where
   CreateConn   :: Prf HasState Sender s
-               => CreateConnRequest
-               -> Command CreateConnResponse
+               => Command CreateConnCmd
+                    CreateConnRequest CreateConnResponse
                     Recipient Broker
                     (None <==> None <==| s)
                     (New <==> New  <==| s)
-                    False False 0 0
+                    Idle Idle 0 0
 
   Subscribe    :: ( (r /= None && r /= Disabled) ~ True
                   , (b /= None && b /= Disabled) ~ True
                   , Prf HasState Sender s )
-               => Command ()
+               => Command SubscribeCmd
+                    () ()
                     Recipient Broker
                     (r <==> b <==| s)
                     (r <==> b <==| s)
-                    False True n n
+                    Idle Subscribed n n
 
   Unsubscribe  :: ( (r /= None && r /= Disabled) ~ True
                   , (b /= None && b /= Disabled) ~ True
                   , Prf HasState Sender s )
-               => Command ()
+               => Command UnsubscribeCmd
+                    () ()
                     Recipient Broker
                     (r <==> b <==| s)
                     (r <==> b <==| s)
-                    True False n n
+                    Subscribed Idle n n
 
   SendInvite   :: Prf HasState Broker s
-               => String -- invitation - TODO
-               -> Command ()
+               => Command SendInviteCmd
+                    String () -- invitation - TODO
                     Recipient Sender
                     (New <==> s <==| None)
                     (Pending <==> s <==| New)
                     ss ss n n
 
   ConfirmConn  :: Prf HasState Recipient s
-               => SecureConnRequest
-               -> Command ()
+               => Command ConfirmConnCmd
+                    SecureConnRequest ()
                     Sender Broker
                     (s <==> New <==| New)
                     (s <==> New <==| Confirmed)
                     ss ss n (n+1)
 
   PushConfirm  :: Prf HasState Sender s
-               => Command SecureConnRequest
+               => Command PushConfirmCmd
+                    SecureConnRequest ()
                     Broker Recipient
                     (Pending <==> New <==| s)
                     (Confirmed <==> New <==| s)
-                    True True n n
+                    Subscribed Subscribed n n
 
   SecureConn   :: Prf HasState Sender s
-               => SecureConnRequest
-               -> Command ()
+               => Command SecureConnCmd
+                    SecureConnRequest ()
                     Recipient Broker
                     (Confirmed <==> New <==| s)
                     (Secured <==> Secured <==| s)
                     ss ss n n
 
   SendWelcome  :: Prf HasState Recipient s
-               => Command ()
+               => Command SendWelcomeCmd
+                    () ()
                     Sender Broker
                     (s <==> Secured <==| Confirmed)
                     (s <==> Secured <==| Secured)
                     ss ss n (n+1)
 
   SendMsg      :: Prf HasState Recipient s
-               => SendMessageRequest
-               -> Command ()
+               => Command SendMsgCmd
+                    SendMessageRequest ()
                     Sender Broker
                     (s <==> Secured <==| Secured)
                     (s <==> Secured <==| Secured)
                     ss ss n (n+1)
 
   PushMsg      :: Prf HasState 'Sender s
-               => Command MessagesResponse -- TODO, has to be a single message
+               => Command PushMsgCmd
+                    MessagesResponse () -- TODO, has to be a single message
                     Broker Recipient
                     (Secured <==> Secured <==| s)
                     (Secured <==> Secured <==| s)
-                    True True n n
+                    Subscribed Subscribed n n
 
-  DeleteMsg    :: Prf HasState Sender s   -- TODO needs message ID parameter
-               => Command ()
+  DeleteMsg    :: Prf HasState Sender s
+               => Command DeleteMsgCmd
+                    () ()   -- TODO needs message ID parameter
                     Recipient Broker
                     (Secured <==> Secured <==| s)
                     (Secured <==> Secured <==| s)
                     ss ss n (n-1)
 
-  Return       :: a -> Command a from to state state ss ss n n
+-- this command has to be removed - this is here to allow proof
+-- that any command can be constructed
+  AnyCmd       :: Command cmd a b from to s1 s2 ss1 ss2 n1 n2
 
-  (:>>=)       :: Command a from1 to1 s1 s2 ss1 ss2 n1 n2
-               -> (a -> Command b from2 to2 s2 s3 ss2 ss3 n2 n3)
-               -> Command b from1 to2 s1 s3 ss1 ss3 n1 n3
+  Return       :: b -> Command Comp a b from to state state ss ss n n
 
-  (:>>)        :: Command a from1 to1 s1 s2 ss1 ss2 n1 n2
-               -> Command b from2 to2 s2 s3 ss2 ss3 n2 n3
-               -> Command b from1 to2 s1 s3 ss1 ss3 n1 n3
+  (:>>=)       :: Command cmd1 a b from1 to1 s1 s2 ss1 ss2 n1 n2
+               -> (b -> Command cmd2 b c from2 to2 s2 s3 ss2 ss3 n2 n3)
+               -> Command Comp a c from1 to2 s1 s3 ss1 ss3 n1 n3
+
+  (:>>)        :: Command cmd1 a b from1 to1 s1 s2 ss1 ss2 n1 n2
+               -> Command cmd2 c d from2 to2 s2 s3 ss2 ss3 n2 n3
+               -> Command Comp a d from1 to2 s1 s3 ss1 ss3 n1 n3
 
   Fail         :: String
-               -> Command String from to state (None <==> None <==| None) ss ss n n
+               -> Command Comp a String from to state (None <==> None <==| None) ss ss n n
 
 -- redifine Monad operators to compose commands
 -- using `do` notation with RebindableSyntax extension
-(>>=) :: Command a from1 to1 s1 s2 ss1 ss2 n1 n2
-      -> (a -> Command b from2 to2 s2 s3 ss2 ss3 n2 n3)
-      -> Command b from1 to2 s1 s3 ss1 ss3 n1 n3
+(>>=) :: Command cmd1 a b from1 to1 s1 s2 ss1 ss2 n1 n2
+      -> (b -> Command cmd2 b c from2 to2 s2 s3 ss2 ss3 n2 n3)
+      -> Command Comp a c from1 to2 s1 s3 ss1 ss3 n1 n3
 (>>=) = (:>>=)
 
-(>>)  :: Command a from1 to1 s1 s2 ss1 ss2 n1 n2
-      -> Command b from2 to2 s2 s3 ss2 ss3 n2 n3
-      -> Command b from1 to2 s1 s3 ss1 ss3 n1 n3
+(>>)  :: Command cmd1 a b from1 to1 s1 s2 ss1 ss2 n1 n2
+      -> Command cmd2 c d from2 to2 s2 s3 ss2 ss3 n2 n3
+      -> Command Comp a d from1 to2 s1 s3 ss1 ss3 n1 n3
 (>>) = (:>>)
 
-fail :: String -> Command String from to state (None <==> None <==| None) ss ss n n
+fail :: String -> Command Comp a String from to state (None <==> None <==| None) ss ss n n
 fail = Fail
 
 -- show and validate expexcted command participants
 infix 6 -->
 (-->) :: Sing from -> Sing to
-      -> (Command a from to s s' ss ss' n n' -> Command a from to s s' ss ss' n n')
+      -> ( Command cmd a b from to s s' ss ss' n n'
+           -> Command cmd a b from to s s' ss ss' n n' )
 (-->) _ _ = id
+
+
+-- extract connection state of specfic participant
+type family PConnSt (p :: Participant) state where
+  PConnSt Recipient (AllConnState r b s) = r
+  PConnSt Broker    (AllConnState r b s) = b
+  PConnSt Sender    (AllConnState r b s) = s
+
+
+-- type class to ensure consistency of types of implementations
+-- of participants actions/functions and connection state transitions (types)
+-- with types of protocol commands defined here
+
+-- TODO it still allows to construct invalid implementations
+-- there should be added proof that such command can be constructed
+-- (or it should be constructed by implementations, but it looks ugly)
+class PrfCmd cmd arg res from to s s' ss ss' n n' where
+  command :: Command cmd arg res from to s s' ss ss' n n'
+
+-- TODO have to be specific commands, as is it allows to construct any command
+-- not matching any real command in the protocol
+instance PrfCmd cmd arg res from to s s' ss ss' n n' where
+  command = AnyCmd @cmd @arg @res @from @to @s @s' @ss @ss' @n @n'
+
+class ProtocolFunc (p :: Participant) (cmd :: ProtocolCmd) arg res ps ps' ss ss' where
+  protoFunc    :: ( PrfCmd cmd arg res from p s s' ss ss' n n'
+                  , PConnSt p s ~ ps
+                  , PConnSt p s' ~ ps' )
+               => Command cmd arg res
+                          from p  -- participant receives this command
+                          s s' ss ss' n n'
+               -> ( Connection p ps ss
+                    -> arg
+                    -> Either String (res, Connection p ps' ss') )
+
+class ProtocolAction (p :: Participant) (cmd :: ProtocolCmd) arg res ps ps' ss ss' where
+  protoAction  :: ( PrfCmd cmd arg res p to s s' ss ss' n n'
+                  , PConnSt p s ~ ps
+                  , PConnSt p s' ~ ps' )
+               => Command cmd arg res
+                          p to    -- participant sends this command
+                          s s' ss ss' n n'
+               -> ( Connection p ps ss
+                    -> arg
+                    -> Either String res
+                    -> Connection p ps' ss' )
