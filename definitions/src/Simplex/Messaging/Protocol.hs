@@ -25,19 +25,21 @@ import Data.Kind
 import Data.Singletons
 import Data.Singletons.ShowSing
 import Data.Singletons.TH
+import Data.Type.Bool
 import Data.Type.Predicate
 import Data.Type.Predicate.Auto
+import GHC.TypeLits
 
 $(singletons [d|
   data Participant = Recipient | Broker | Sender
 
-  data ConnectionState =  New       -- (participants: all) connection created (or received from sender)
+  data ConnectionState =  None      -- (all) not available or removed from the broker
+                        | New       -- (participants: all) connection created (or received from sender)
                         | Pending   -- (recipient) sent to sender out-of-band
                         | Confirmed -- (recipient) confirmed by sender with the broker
                         | Secured   -- (all) secured with the broker
                         | Disabled  -- (broker, recipient) disabled with the broker by recipient
                         | Drained   -- (broker, recipient) drained (no messages)
-                        | None      -- (all) not available or removed from the broker
     deriving (Show, ShowSing, Eq)
   |])
 
@@ -126,23 +128,35 @@ st2 = SPending :<==> SNew :<==| SConfirmed
 
 infixl 4 :>>, :>>=
 
-data Command res (from :: Participant) (to :: Participant) state state' :: Type where
+data Command a (from :: Participant) (to :: Participant)
+               state state'
+               (subscribed :: Bool) (subscribed' :: Bool)
+               :: Type where
   CreateConn   :: Prf HasState 'Sender s
                => CreateConnRequest
                -> Command CreateConnResponse
                     'Recipient 'Broker
                     ('None <==> 'None <==| s)
                     ('New <==> 'New  <==| s)
+                    'False 'False
 
-  Subscribe    :: ( (r == 'None) ~ 'False
-                  , (r == 'Disabled) ~ 'False
-                  , (b == 'None) ~ 'False
-                  , (b == 'Disabled) ~ 'False
+  Subscribe    :: ( (r /= 'None && r /= 'Disabled) ~ 'True
+                  , (b /= 'None && b /= 'Disabled) ~ 'True
                   , Prf HasState 'Sender s )
                => Command ()
                     'Recipient 'Broker
                     (r <==> b <==| s)
                     (r <==> b <==| s)
+                    'False 'True
+
+  Unsubscribe  :: ( (r /= 'None && r /= 'Disabled) ~ 'True
+                  , (b /= 'None && b /= 'Disabled) ~ 'True
+                  , Prf HasState 'Sender s )
+               => Command ()
+                    'Recipient 'Broker
+                    (r <==> b <==| s)
+                    (r <==> b <==| s)
+                    'True 'False
 
   SendInvite   :: Prf HasState 'Broker s
                => String -- invitation - TODO
@@ -150,6 +164,7 @@ data Command res (from :: Participant) (to :: Participant) state state' :: Type 
                     'Recipient 'Sender
                     ('New <==> s <==| 'None)
                     ('Pending <==> s <==| 'New)
+                    ss ss
 
   ConfirmConn  :: Prf HasState 'Recipient s
                => SecureConnRequest
@@ -157,12 +172,14 @@ data Command res (from :: Participant) (to :: Participant) state state' :: Type 
                     'Sender 'Broker
                     (s <==> 'New <==| 'New)
                     (s <==> 'New <==| 'Confirmed)
+                    ss ss
 
   PushConfirm  :: Prf HasState 'Sender s
                => Command SecureConnRequest
                     'Broker 'Recipient
                     ('Pending <==> 'New <==| s)
                     ('Confirmed <==> 'New <==| s)
+                    'True 'True
 
   SecureConn   :: Prf HasState 'Sender s
                => SecureConnRequest
@@ -170,18 +187,14 @@ data Command res (from :: Participant) (to :: Participant) state state' :: Type 
                     'Recipient 'Broker
                     ('Confirmed <==> 'New <==| s)
                     ('Secured <==> 'Secured <==| s)
+                    ss ss
 
   SendWelcome  :: Prf HasState 'Recipient s
                => Command ()
                     'Sender 'Broker
                     (s <==> 'Secured <==| 'Confirmed)
                     (s <==> 'Secured <==| 'Secured)
-
-  PushWelcome  :: Prf HasState 'Sender s
-               => Command ()
-                    'Broker 'Recipient
-                    ('Secured <==> 'Secured <==| s)
-                    ('Secured <==> 'Secured <==| s)
+                    ss ss
 
   SendMsg      :: Prf HasState 'Recipient s
                => SendMessageRequest
@@ -189,28 +202,31 @@ data Command res (from :: Participant) (to :: Participant) state state' :: Type 
                     'Sender 'Broker
                     (s <==> 'Secured <==| 'Secured)
                     (s <==> 'Secured <==| 'Secured)
+                    ss ss
 
   PushMsg      :: Prf HasState 'Sender s
                => Command MessagesResponse -- TODO, has to be a single message
                     'Broker 'Recipient
                     ('Secured <==> 'Secured <==| s)
                     ('Secured <==> 'Secured <==| s)
+                    'True 'True
 
   DeleteMsg    :: Prf HasState 'Sender s   -- TODO needs message ID parameter
                => Command ()
                     'Recipient 'Broker
                     ('Secured <==> 'Secured <==| s)
                     ('Secured <==> 'Secured <==| s)
+                    ss ss
 
-  Return       :: a -> Command a from to state state
+  Return       :: a -> Command a from to state state ss ss
 
-  (:>>)        :: Command a from1 to1 s1 s2
-               -> Command b from2 to2 s2 s3
-               -> Command b from1 to2 s1 s3
+  (:>>)        :: Command a from1 to1 s1 s2 ss1 ss2
+               -> Command b from2 to2 s2 s3 ss2 ss3
+               -> Command b from1 to2 s1 s3 ss1 ss3
 
-  (:>>=)       :: Command a from1 to1 s1 s2
-               -> (a -> Command b from2 to2 s2 s3)
-               -> Command b from1 to2 s1 s3
+  (:>>=)       :: Command a from1 to1 s1 s2 ss1 ss2
+               -> (a -> Command b from2 to2 s2 s3 ss2 ss3)
+               -> Command b from1 to2 s1 s3 ss1 ss3
 
 
 infix 6 ==>
@@ -219,6 +235,6 @@ from ==> to = (from, to)
 
 infix 5 &:
 (&:) :: (Sing from, Sing to)
-     -> Command a from to s1 s2
-     -> Command a from to s1 s2
+     -> Command a from to s1 s2 ss1 ss2
+     -> Command a from to s1 s2 ss1 ss2
 (&:) _ c = c
