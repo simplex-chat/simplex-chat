@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -fno-warn-unticked-promoted-constructors #-}
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE TypeOperators #-}
@@ -10,10 +11,10 @@ import Simplex.Messaging.Types
 import ClassyPrelude
 
 establishConnection  :: Command ()
-                          'Recipient 'Broker
-                          ('None <==> 'None <==| 'None)
-                          ('Secured <==> 'Secured <==| 'Secured)
-                          'False 'False
+                          Recipient Broker
+                          (None <==> None <==| None)
+                          (Secured <==> Secured <==| Secured)
+                          False False 0 0
 establishConnection =
   SRecipient ==> SBroker     &: CreateConn "123"     :>>=  -- recipient's public key for broker
                                 \CreateConnResponse{..} ->
@@ -23,8 +24,10 @@ establishConnection =
   SBroker    ==> SRecipient  &: PushConfirm          :>>=
                                 \senderKey ->
   SRecipient ==> SBroker     &: SecureConn senderKey :>>
+  SRecipient ==> SBroker     &: DeleteMsg            :>>
   SSender    ==> SBroker     &: SendWelcome          :>>
   SBroker    ==> SRecipient  &: PushMsg              :>>
+  SRecipient ==> SBroker     &: DeleteMsg            :>>
   SSender    ==> SBroker     &: SendMsg "Hello"      :>>
   SBroker    ==> SRecipient  &: PushMsg              :>>
   SRecipient ==> SBroker     &: DeleteMsg            :>>

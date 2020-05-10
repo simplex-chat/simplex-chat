@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -fno-warn-unticked-promoted-constructors #-}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE EmptyCase #-}
@@ -25,7 +26,6 @@ import Data.Kind
 import Data.Singletons
 import Data.Singletons.ShowSing
 import Data.Singletons.TH
-import Data.Type.Bool
 import Data.Type.Predicate
 import Data.Type.Predicate.Auto
 import GHC.TypeLits
@@ -47,49 +47,49 @@ $(singletons [d|
 type Prf1 t a = Auto (TyPred t) a
 
 data BrokerCS :: ConnectionState -> Type where
-  BrkNew      :: BrokerCS 'New
-  BrkSecured  :: BrokerCS 'Secured
-  BrkDisabled :: BrokerCS 'Disabled
-  BrkDrained  :: BrokerCS 'Drained
-  BrkNone     :: BrokerCS 'None
+  BrkNew      :: BrokerCS New
+  BrkSecured  :: BrokerCS Secured
+  BrkDisabled :: BrokerCS Disabled
+  BrkDrained  :: BrokerCS Drained
+  BrkNone     :: BrokerCS None
 
-instance Auto (TyPred BrokerCS) 'New      where auto = autoTC
-instance Auto (TyPred BrokerCS) 'Secured  where auto = autoTC
-instance Auto (TyPred BrokerCS) 'Disabled where auto = autoTC
-instance Auto (TyPred BrokerCS) 'Drained  where auto = autoTC
-instance Auto (TyPred BrokerCS) 'None     where auto = autoTC
+instance Auto (TyPred BrokerCS) New      where auto = autoTC
+instance Auto (TyPred BrokerCS) Secured  where auto = autoTC
+instance Auto (TyPred BrokerCS) Disabled where auto = autoTC
+instance Auto (TyPred BrokerCS) Drained  where auto = autoTC
+instance Auto (TyPred BrokerCS) None     where auto = autoTC
 
 -- sender connection states
 data SenderCS :: ConnectionState -> Type where
-  SndNew       :: SenderCS 'New
-  SndConfirmed :: SenderCS 'Confirmed
-  SndSecured   :: SenderCS 'Secured
-  SndNone      :: SenderCS 'None
+  SndNew       :: SenderCS New
+  SndConfirmed :: SenderCS Confirmed
+  SndSecured   :: SenderCS Secured
+  SndNone      :: SenderCS None
 
-instance Auto (TyPred SenderCS) 'New       where auto = autoTC
-instance Auto (TyPred SenderCS) 'Confirmed where auto = autoTC
-instance Auto (TyPred SenderCS) 'Secured   where auto = autoTC
-instance Auto (TyPred SenderCS) 'None      where auto = autoTC
+instance Auto (TyPred SenderCS) New       where auto = autoTC
+instance Auto (TyPred SenderCS) Confirmed where auto = autoTC
+instance Auto (TyPred SenderCS) Secured   where auto = autoTC
+instance Auto (TyPred SenderCS) None      where auto = autoTC
 
 -- allowed participant connection states
 data HasState (p :: Participant) (s :: ConnectionState) :: Type where
-  RcpHasState :: HasState 'Recipient s
-  BrkHasState :: Prf1 BrokerCS s => HasState 'Broker s
-  SndHasState :: Prf1 SenderCS s => HasState 'Sender s
+  RcpHasState :: HasState Recipient s
+  BrkHasState :: Prf1 BrokerCS s => HasState Broker s
+  SndHasState :: Prf1 SenderCS s => HasState Sender s
 
 class Prf t p s where auto' :: t p s
-instance                    Prf HasState 'Recipient s
+instance                    Prf HasState Recipient s
   where auto' = RcpHasState
-instance Prf1 BrokerCS s => Prf HasState 'Broker s
+instance Prf1 BrokerCS s => Prf HasState Broker s
   where auto' = BrkHasState
-instance Prf1 SenderCS s => Prf HasState 'Sender s
+instance Prf1 SenderCS s => Prf HasState Sender s
   where auto' = SndHasState
 
 -- established connection states (used by broker and recipient)
 data EstablishedState (s :: ConnectionState) :: Type where
-  ESecured  :: EstablishedState 'Secured
-  EDisabled :: EstablishedState 'Disabled
-  EDrained  :: EstablishedState 'Drained
+  ESecured  :: EstablishedState Secured
+  EDisabled :: EstablishedState Disabled
+  EDrained  :: EstablishedState Drained
 
 
 -- data types for connection states of all participants
@@ -97,7 +97,7 @@ infixl 7 <==>, <==|   -- types
 infixl 7 :<==>, :<==| -- constructors
 
 data (<==>) (rs :: ConnectionState) (bs :: ConnectionState) :: Type where
-  (:<==>) :: (Prf HasState 'Recipient rs, Prf HasState 'Broker bs)
+  (:<==>) :: (Prf HasState Recipient rs, Prf HasState Broker bs)
           => Sing rs
           -> Sing bs
           -> rs <==> bs
@@ -107,7 +107,7 @@ deriving instance Show (rs <==> bs)
 data AllConnState (rs :: ConnectionState)
                   (bs :: ConnectionState)
                   (ss :: ConnectionState) :: Type where
-  (:<==|) :: Prf HasState 'Sender ss
+  (:<==|) :: Prf HasState Sender ss
           => rs <==> bs
           -> Sing ss
           -> AllConnState rs bs ss
@@ -118,7 +118,7 @@ type family (<==|) rb ss where
   (rs <==> bs) <==| (ss :: ConnectionState) = AllConnState rs bs ss
 
 --   recipient <==> broker <==| sender
-st2 :: 'Pending <==> 'New <==| 'Confirmed
+st2 :: Pending <==> New <==| Confirmed
 st2 = SPending :<==> SNew :<==| SConfirmed
 
 -- this must not type check
@@ -131,102 +131,103 @@ infixl 4 :>>, :>>=
 data Command a (from :: Participant) (to :: Participant)
                state state'
                (subscribed :: Bool) (subscribed' :: Bool)
+               (messages :: Nat) (messages' :: Nat)
                :: Type where
-  CreateConn   :: Prf HasState 'Sender s
+  CreateConn   :: Prf HasState Sender s
                => CreateConnRequest
                -> Command CreateConnResponse
-                    'Recipient 'Broker
-                    ('None <==> 'None <==| s)
-                    ('New <==> 'New  <==| s)
-                    'False 'False
+                    Recipient Broker
+                    (None <==> None <==| s)
+                    (New <==> New  <==| s)
+                    False False 0 0
 
-  Subscribe    :: ( (r /= 'None && r /= 'Disabled) ~ 'True
-                  , (b /= 'None && b /= 'Disabled) ~ 'True
-                  , Prf HasState 'Sender s )
+  Subscribe    :: ( (r /= None && r /= Disabled) ~ True
+                  , (b /= None && b /= Disabled) ~ True
+                  , Prf HasState Sender s )
                => Command ()
-                    'Recipient 'Broker
+                    Recipient Broker
                     (r <==> b <==| s)
                     (r <==> b <==| s)
-                    'False 'True
+                    False True n n
 
-  Unsubscribe  :: ( (r /= 'None && r /= 'Disabled) ~ 'True
-                  , (b /= 'None && b /= 'Disabled) ~ 'True
-                  , Prf HasState 'Sender s )
+  Unsubscribe  :: ( (r /= None && r /= Disabled) ~ True
+                  , (b /= None && b /= Disabled) ~ True
+                  , Prf HasState Sender s )
                => Command ()
-                    'Recipient 'Broker
+                    Recipient Broker
                     (r <==> b <==| s)
                     (r <==> b <==| s)
-                    'True 'False
+                    True False n n
 
-  SendInvite   :: Prf HasState 'Broker s
+  SendInvite   :: Prf HasState Broker s
                => String -- invitation - TODO
                -> Command ()
-                    'Recipient 'Sender
-                    ('New <==> s <==| 'None)
-                    ('Pending <==> s <==| 'New)
-                    ss ss
+                    Recipient Sender
+                    (New <==> s <==| None)
+                    (Pending <==> s <==| New)
+                    ss ss n n
 
-  ConfirmConn  :: Prf HasState 'Recipient s
+  ConfirmConn  :: Prf HasState Recipient s
                => SecureConnRequest
                -> Command ()
-                    'Sender 'Broker
-                    (s <==> 'New <==| 'New)
-                    (s <==> 'New <==| 'Confirmed)
-                    ss ss
+                    Sender Broker
+                    (s <==> New <==| New)
+                    (s <==> New <==| Confirmed)
+                    ss ss n (n+1)
 
-  PushConfirm  :: Prf HasState 'Sender s
+  PushConfirm  :: Prf HasState Sender s
                => Command SecureConnRequest
-                    'Broker 'Recipient
-                    ('Pending <==> 'New <==| s)
-                    ('Confirmed <==> 'New <==| s)
-                    'True 'True
+                    Broker Recipient
+                    (Pending <==> New <==| s)
+                    (Confirmed <==> New <==| s)
+                    True True n n
 
-  SecureConn   :: Prf HasState 'Sender s
+  SecureConn   :: Prf HasState Sender s
                => SecureConnRequest
                -> Command ()
-                    'Recipient 'Broker
-                    ('Confirmed <==> 'New <==| s)
-                    ('Secured <==> 'Secured <==| s)
-                    ss ss
+                    Recipient Broker
+                    (Confirmed <==> New <==| s)
+                    (Secured <==> Secured <==| s)
+                    ss ss n n
 
-  SendWelcome  :: Prf HasState 'Recipient s
+  SendWelcome  :: Prf HasState Recipient s
                => Command ()
-                    'Sender 'Broker
-                    (s <==> 'Secured <==| 'Confirmed)
-                    (s <==> 'Secured <==| 'Secured)
-                    ss ss
+                    Sender Broker
+                    (s <==> Secured <==| Confirmed)
+                    (s <==> Secured <==| Secured)
+                    ss ss n (n+1)
 
-  SendMsg      :: Prf HasState 'Recipient s
+  SendMsg      :: Prf HasState Recipient s
                => SendMessageRequest
                -> Command ()
-                    'Sender 'Broker
-                    (s <==> 'Secured <==| 'Secured)
-                    (s <==> 'Secured <==| 'Secured)
-                    ss ss
+                    Sender Broker
+                    (s <==> Secured <==| Secured)
+                    (s <==> Secured <==| Secured)
+                    ss ss n (n+1)
 
   PushMsg      :: Prf HasState 'Sender s
                => Command MessagesResponse -- TODO, has to be a single message
-                    'Broker 'Recipient
-                    ('Secured <==> 'Secured <==| s)
-                    ('Secured <==> 'Secured <==| s)
-                    'True 'True
+                    Broker Recipient
+                    (Secured <==> Secured <==| s)
+                    (Secured <==> Secured <==| s)
+                    True True n n
 
-  DeleteMsg    :: Prf HasState 'Sender s   -- TODO needs message ID parameter
+  DeleteMsg    :: Prf HasState Sender s   -- TODO needs message ID parameter
                => Command ()
-                    'Recipient 'Broker
-                    ('Secured <==> 'Secured <==| s)
-                    ('Secured <==> 'Secured <==| s)
-                    ss ss
+                    Recipient Broker
+                    (Secured <==> Secured <==| s)
+                    (Secured <==> Secured <==| s)
+                    ss ss n (n-1)
 
-  Return       :: a -> Command a from to state state ss ss
+  Return       :: a -> Command a from to state state ss ss n n
 
-  (:>>)        :: Command a from1 to1 s1 s2 ss1 ss2
-               -> Command b from2 to2 s2 s3 ss2 ss3
-               -> Command b from1 to2 s1 s3 ss1 ss3
+  (:>>)        :: Command a from1 to1 s1 s2 ss1 ss2 n1 n2
+               -> Command b from2 to2 s2 s3 ss2 ss3 n2 n3
+               -> Command b from1 to2 s1 s3 ss1 ss3 n1 n3
 
-  (:>>=)       :: Command a from1 to1 s1 s2 ss1 ss2
-               -> (a -> Command b from2 to2 s2 s3 ss2 ss3)
-               -> Command b from1 to2 s1 s3 ss1 ss3
+  (:>>=)       :: Command a from1 to1 s1 s2 ss1 ss2 n1 n2
+               -> (a -> Command b from2 to2 s2 s3 ss2 ss3 n2 n3)
+               -> Command b from1 to2 s1 s3 ss1 ss3 n1 n3
 
 
 infix 6 ==>
@@ -235,6 +236,6 @@ from ==> to = (from, to)
 
 infix 5 &:
 (&:) :: (Sing from, Sing to)
-     -> Command a from to s1 s2 ss1 ss2
-     -> Command a from to s1 s2 ss1 ss2
+     -> Command a from to s1 s2 ss1 ss2 n1 n2
+     -> Command a from to s1 s2 ss1 ss2 n1 n2
 (&:) _ c = c
