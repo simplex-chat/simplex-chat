@@ -297,20 +297,26 @@ type family PConnSt (p :: Participant) state where
   PConnSt Sender    (AllConnState r b s) = s
 
 
--- type class to ensure consistency of types of implementations
+-- Type classes to ensure consistency of types of implementations
 -- of participants actions/functions and connection state transitions (types)
--- with types of protocol commands defined here
+-- with types of protocol commands defined above.
 
--- TODO it still allows to construct invalid implementations
--- there should be added proof that such command can be constructed
--- (or it should be constructed by implementations, but it looks ugly)
+-- TODO for some reason this type class is not enforced -
+-- it still allows to construct invalid implementations.
+-- See comment in Broker.hs
+-- As done in Client.hs it type-checks, but it looks ugly
 class PrfCmd cmd arg res from to s s' ss ss' n n' where
   command :: Command cmd arg res from to s s' ss ss' n n'
+instance Prf HasState Sender s
+         => PrfCmd CreateConnCmd
+              CreateConnRequest CreateConnResponse
+              Recipient Broker
+              (AllConnState None None s)
+              (AllConnState New New s)
+              Idle Idle 0 0
+              where
+  command = CreateConn
 
--- TODO have to be specific commands, as is it allows to construct any command
--- not matching any real command in the protocol
-instance PrfCmd cmd arg res from to s s' ss ss' n n' where
-  command = AnyCmd @cmd @arg @res @from @to @s @s' @ss @ss' @n @n'
 
 class ProtocolFunc (p :: Participant) (cmd :: ProtocolCmd) arg res ps ps' ss ss' where
   protoFunc    :: ( PrfCmd cmd arg res from p s s' ss ss' n n'

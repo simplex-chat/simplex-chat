@@ -1,8 +1,8 @@
 {-# OPTIONS_GHC -fno-warn-unticked-promoted-constructors #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 {-# LANGUAGE DataKinds             #-}
-{-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE TypeApplications      #-}
 
 module Simplex.Messaging.Client where
 
@@ -15,11 +15,11 @@ instance ProtocolAction Recipient CreateConnCmd
          CreateConnRequest CreateConnResponse  -- request responce
          None New Idle Idle                    -- connection states
          where 
-  protoAction _ = rCreateConn
+  protoAction _ = \(Connection str) _ _ -> Connection str --  TODO stub
 
 
 rCreateConn :: Connection Recipient None Idle
             -> CreateConnRequest
             -> Either String CreateConnResponse
             -> Connection Recipient New Idle
-rCreateConn (Connection str) _ _ = Connection str --  TODO stub
+rCreateConn = protoAction $ CreateConn @None
