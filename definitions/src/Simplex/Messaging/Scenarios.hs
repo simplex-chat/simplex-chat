@@ -23,7 +23,7 @@ b = SBroker
 s :: Sing Sender
 s = SSender
 
-establishConnection  :: Command Comp
+establishConnection  :: Command
                           CreateConnRequest ()
                           Recipient Broker
                           (None <==> None <==| None)

@@ -1,8 +1,12 @@
 {-# OPTIONS_GHC -fno-warn-unticked-promoted-constructors #-}
-{-# OPTIONS_GHC -fno-warn-orphans #-}
+{-# OPTIONS_GHC -fno-warn-orphans  #-}
+{-# LANGUAGE AllowAmbiguousTypes   #-}
 {-# LANGUAGE DataKinds             #-}
+{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE GADTs                 #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE TypeApplications      #-}
+{-# LANGUAGE TypeOperators         #-}
 
 module Simplex.Messaging.Client where
 
@@ -10,16 +14,20 @@ import ClassyPrelude
 import Simplex.Messaging.Protocol
 import Simplex.Messaging.Types
 
-  
-instance ProtocolAction Recipient CreateConnCmd
-         CreateConnRequest CreateConnResponse  -- request responce
-         None New Idle Idle                    -- connection states
-         where 
-  protoAction _ = \(Connection str) _ _ -> Connection str --  TODO stub
 
+instance Prf HasState Sender s
+         => ProtocolActionOf Recipient
+              CreateConnRequest CreateConnResponse
+              Recipient Broker
+              (None <==> None <==| s)
+              (New <==> New <==| s)
+              Idle Idle 0 0
+  where
+    action      = CreateConn
+    protoAction = rCreateConn
 
 rCreateConn :: Connection Recipient None Idle
             -> CreateConnRequest
             -> Either String CreateConnResponse
-            -> Connection Recipient New Idle
-rCreateConn = protoAction $ CreateConn @None
+            -> Either String (Connection Recipient New Idle)
+rCreateConn = protoActionStub
