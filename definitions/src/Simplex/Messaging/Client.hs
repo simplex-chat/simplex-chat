@@ -17,9 +17,9 @@ import Simplex.Messaging.Types
 
 
 instance Prf HasState Sender s
-         => ProtocolActionOf Recipient
+         => ProtocolAction Recipient
+              Broker
               CreateConnRequest CreateConnResponse
-              Recipient Broker
               (None <==> None <==| s)
               (New <==> New <==| s)
               Idle Idle 0 0
@@ -30,9 +30,9 @@ instance Prf HasState Sender s
 instance ( (r /= None && r /= Disabled) ~ True
          , (b /= None && b /= Disabled) ~ True
          , Prf HasState Sender s )
-         => ProtocolActionOf Recipient
+         => ProtocolAction Recipient
+              Broker
               () ()
-              Recipient Broker
               (r <==> b <==| s)
               (r <==> b <==| s)
               Idle Subscribed n n

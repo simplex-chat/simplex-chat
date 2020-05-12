@@ -28,6 +28,7 @@ import Data.Singletons.TH
 import Data.Type.Predicate
 import Data.Type.Predicate.Auto
 import GHC.TypeLits
+import Predicate
 import Simplex.Messaging.Types
 
 $(singletons [d|
@@ -45,33 +46,25 @@ $(singletons [d|
   data ConnSubscription = Subscribed | Idle
   |])
 
--- broker connection states
 type Prf1 t a = Auto (TyPred t) a
 
-data BrokerCS :: ConnectionState -> Type where
-  BrkNew      :: BrokerCS New
-  BrkSecured  :: BrokerCS Secured
-  BrkDisabled :: BrokerCS Disabled
-  BrkDrained  :: BrokerCS Drained
-  BrkNone     :: BrokerCS None
-
-instance Auto (TyPred BrokerCS) New      where auto = autoTC
-instance Auto (TyPred BrokerCS) Secured  where auto = autoTC
-instance Auto (TyPred BrokerCS) Disabled where auto = autoTC
-instance Auto (TyPred BrokerCS) Drained  where auto = autoTC
-instance Auto (TyPred BrokerCS) None     where auto = autoTC
+$(predicate [d|
+-- broker connection states
+  data BrokerCS :: ConnectionState -> Type where
+    BrkNew      :: BrokerCS New
+    BrkSecured  :: BrokerCS Secured
+    BrkDisabled :: BrokerCS Disabled
+    BrkDrained  :: BrokerCS Drained
+    BrkNone     :: BrokerCS None
 
 -- sender connection states
-data SenderCS :: ConnectionState -> Type where
-  SndNew       :: SenderCS New
-  SndConfirmed :: SenderCS Confirmed
-  SndSecured   :: SenderCS Secured
-  SndNone      :: SenderCS None
+  data SenderCS :: ConnectionState -> Type where
+    SndNew       :: SenderCS New
+    SndConfirmed :: SenderCS Confirmed
+    SndSecured   :: SenderCS Secured
+    SndNone      :: SenderCS None
+  |])
 
-instance Auto (TyPred SenderCS) New       where auto = autoTC
-instance Auto (TyPred SenderCS) Confirmed where auto = autoTC
-instance Auto (TyPred SenderCS) Secured   where auto = autoTC
-instance Auto (TyPred SenderCS) None      where auto = autoTC
 
 -- allowed participant connection states
 data HasState (p :: Participant) (s :: ConnectionState) :: Type where
@@ -140,6 +133,7 @@ data Command arg result
              (ss :: ConnSubscription) (ss' :: ConnSubscription)
              (messages :: Nat) (messages' :: Nat)
              :: Type where
+
   CreateConn   :: Prf HasState Sender s
                => Command
                     CreateConnRequest CreateConnResponse
@@ -279,9 +273,9 @@ type family PConnSt (p :: Participant) state where
 -- of participants actions/functions and connection state transitions (types)
 -- with types of protocol commands defined above.
 
-class me ~ p => ProtocolCommandOf (me :: Participant)
+class ProtocolCommand (p :: Participant)
+        (from :: Participant)
         arg res
-        (from :: Participant) (p :: Participant)
         state state'
         (ss :: ConnSubscription) (ss' :: ConnSubscription)
         (n :: Nat) (n' :: Nat)
@@ -297,9 +291,9 @@ protoCmdStub :: Connection p ps ss
 protoCmdStub _ _ = Left "Command not implemented"
 
 
-class me ~ p => ProtocolActionOf (me :: Participant)
+class ProtocolAction (p :: Participant)
+        (to :: Participant)
         arg res
-        (p :: Participant) (to :: Participant)
         state state'
         (ss :: ConnSubscription) (ss' :: ConnSubscription)
         (n :: Nat) (n' :: Nat)

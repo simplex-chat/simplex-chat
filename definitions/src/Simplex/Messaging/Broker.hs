@@ -11,14 +11,15 @@
 module Simplex.Messaging.Broker where
 
 import ClassyPrelude
+import Data.Singletons.TH
 import Simplex.Messaging.Protocol
 import Simplex.Messaging.Types
 
 
 instance Prf HasState Sender s
-         => ProtocolCommandOf Broker
+         => ProtocolCommand Broker
+              Recipient
               CreateConnRequest CreateConnResponse
-              Recipient Broker
               (None <==> None <==| s)
               (New <==> New <==| s)
               Idle Idle 0 0
@@ -26,7 +27,26 @@ instance Prf HasState Sender s
     command = CreateConn
     protoCmd = bCreateConn
 
+instance ( (r /= None && r /= Disabled) ~ True
+         , (b /= None && b /= Disabled) ~ True
+         , Prf HasState Sender s )
+         => ProtocolCommand Broker
+              Recipient
+              () ()
+              (r <==> b <==| s)
+              (r <==> b <==| s)
+              Idle Subscribed n n
+  where
+    command  = Subscribe
+    protoCmd = bSubscribe
+
+
 bCreateConn :: Connection Broker None Idle
             -> CreateConnRequest
             -> Either String (CreateConnResponse, Connection Broker New Idle)
 bCreateConn = protoCmdStub
+
+bSubscribe  :: Connection Broker s Idle
+            -> ()
+            -> Either String ((), Connection Broker s Subscribed)
+bSubscribe = protoCmdStub
