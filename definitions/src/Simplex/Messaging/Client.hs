@@ -16,6 +16,14 @@ import Simplex.Messaging.Protocol
 import Simplex.Messaging.Types
 
 
+-- $(protocol Recipient [d|
+--   raCreateConn  :: (--> Broker) CreateConn
+--   raSubscribe   :: (--> Broker) Subscribe
+--   rcPushConfirm :: (<-- Broker) PushConfirm
+--   rcPushMsg     :: (<-- Broker) PushMsg
+--   ...
+--   |]
+
 instance Prf HasState Sender s
          => ProtocolAction Recipient
               Broker

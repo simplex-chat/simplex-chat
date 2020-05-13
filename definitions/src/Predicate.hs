@@ -1,6 +1,11 @@
+{-# LANGUAGE TemplateHaskell #-}
+
 module Predicate where
 
 import ClassyPrelude
+import Data.Type.Predicate
+import Data.Type.Predicate.Auto
+import Language.Haskell.TH.Lib
 import Language.Haskell.TH.Syntax
 
 -- This template adds instances of Auto typeclass (from decidable package)
@@ -24,23 +29,18 @@ import Language.Haskell.TH.Syntax
 -- to be used in type constraints
 
 predicate :: Q [Dec] -> Q [Dec]
-predicate decls = mconcat . map mkInstances <$> decls
+predicate decls = concat <$> (decls >>= mapM addInstances)
   where
-    mkInstances :: Dec -> [Dec]
-    mkInstances d@(DataD _ tName _ _ constructors _) =
-      d : mapMaybe (mkInstance tName) constructors
-    mkInstances d = [d]
+    addInstances :: Dec -> Q [Dec]
+    addInstances d@(DataD _ ty _ _ constructors _) = do
+      ds <- mapM (mkInstance ty) constructors
+      return $ d : concat ds
+    addInstances d = return [d]
 
-    mkInstance :: Name -> Con -> Maybe InstanceDec
-    mkInstance tName (GadtC [cName] [] (AppT _ pType)) =
-      let tyCon name = AppT (ConT (mkName name))
-          ty =  AppT
-                  (tyCon "Auto"
-                    (tyCon "TyPred"
-                      (ConT tName)))
-                  pType
-          ds =  [ValD
-                  (VarP (mkName "auto"))
-                  (NormalB (ConE cName)) []]
-      in Just $ InstanceD Nothing [] ty ds
-    mkInstance _ _ = Nothing
+    mkInstance :: Name -> Con -> Q [Dec]
+    mkInstance ty (GadtC [con] [] (AppT _ (PromotedT p))) =
+      [d|
+        instance Auto (TyPred $(conT ty)) $(promotedT p) where
+          auto = $(conE con)
+        |]
+    mkInstance _ _ = return []
