@@ -7,6 +7,7 @@
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE GADTs                 #-}
 {-# LANGUAGE InstanceSigs          #-}
+{-# LANGUAGE LambdaCase            #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NoStarIsType          #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
@@ -21,6 +22,7 @@
 module Simplex.Messaging.Protocol where
 
 import ClassyPrelude
+import Control.Monad.Fail
 import Data.Kind
 import Data.Singletons
 import Data.Singletons.ShowSing
@@ -28,8 +30,11 @@ import Data.Singletons.TH
 import Data.Type.Predicate
 import Data.Type.Predicate.Auto
 import GHC.TypeLits
+import Language.Haskell.TH hiding (Type)
+import qualified Language.Haskell.TH as TH
 import Predicate
 import Simplex.Messaging.Types
+import Text.Show.Pretty (ppShow)
 
 $(singletons [d|
   data Participant = Recipient | Broker | Sender
@@ -127,7 +132,7 @@ st2 = SPending :<==> SNew :<==| SConfirmed
 
 infixl 4 :>>, :>>=
 
-data Command arg result
+data Command arg res
              (from :: Participant) (to :: Participant)
              state state'
              (ss :: ConnSubscription) (ss' :: ConnSubscription)
@@ -239,20 +244,6 @@ data Command arg result
   Fail         :: String
                -> Command a String from to state (None <==> None <==| None) ss ss n n
 
--- redifine Monad operators to compose commands
--- using `do` notation with RebindableSyntax extension
-(>>=) :: Command a b from1 to1 s1 s2 ss1 ss2 n1 n2
-      -> (b -> Command b c from2 to2 s2 s3 ss2 ss3 n2 n3)
-      -> Command a c from1 to2 s1 s3 ss1 ss3 n1 n3
-(>>=) = (:>>=)
-
-(>>)  :: Command a b from1 to1 s1 s2 ss1 ss2 n1 n2
-      -> Command c d from2 to2 s2 s3 ss2 ss3 n2 n3
-      -> Command a d from1 to2 s1 s3 ss1 ss3 n1 n3
-(>>) = (:>>)
-
-fail :: String -> Command a String from to state (None <==> None <==| None) ss ss n n
-fail = Fail
 
 -- show and validate expexcted command participants
 infix 6 -->
@@ -270,42 +261,174 @@ type family PConnSt (p :: Participant) state where
 
 
 -- Type classes to ensure consistency of types of implementations
--- of participants actions/functions and connection state transitions (types)
+-- of participants commands/actions and connection state transitions (types)
 -- with types of protocol commands defined above.
+-- One participant's command is another participant's action.
 
-class ProtocolCommand (p :: Participant)
-        (from :: Participant)
+class ProtocolCommand
         arg res
+        (from :: Participant) (to :: Participant)
         state state'
         (ss :: ConnSubscription) (ss' :: ConnSubscription)
-        (n :: Nat) (n' :: Nat)
+        (messages :: Nat) (messages' :: Nat)
   where
-    command  :: Command arg res from p state state' ss ss' n n'
-    protoCmd :: Connection p (PConnSt p state) ss
+    command  :: Command arg res from to state state' ss ss' messages messages'
+    protoCmd :: Connection to (PConnSt to state) ss
              -> arg
-             -> Either String (res, Connection p (PConnSt p state') ss')
+             -> Either String (res, Connection to (PConnSt to state') ss')
 
-protoCmdStub :: Connection p ps ss
+protoCmdStub :: Connection to ps ss
              -> arg
-             -> Either String (res, Connection p ps' ss')
+             -> Either String (res, Connection to ps' ss')
 protoCmdStub _ _ = Left "Command not implemented"
 
 
-class ProtocolAction (p :: Participant)
-        (to :: Participant)
+class ProtocolAction
         arg res
+        (from :: Participant) (to :: Participant)
         state state'
         (ss :: ConnSubscription) (ss' :: ConnSubscription)
-        (n :: Nat) (n' :: Nat)
+        (messages :: Nat) (messages' :: Nat)
   where
-    action      :: Command arg res p to state state' ss ss' n n'
-    protoAction :: Connection p (PConnSt p state) ss
+    action      :: Command arg res from to state state' ss ss' messages messages'
+    protoAction :: Connection from (PConnSt from state) ss
                 -> arg
                 -> Either String res
-                -> Either String (Connection p (PConnSt p state') ss')
+                -> Either String (Connection from (PConnSt from state') ss')
 
-protoActionStub :: Connection p ps ss
+protoActionStub :: Connection from ps ss
                 -> arg
                 -> Either String res
-                -> Either String (Connection p ps' ss')
+                -> Either String (Connection from ps' ss')
 protoActionStub _ _ _ = Left "Action not implemented"
+
+
+-- Splice to generate typeclasse instances for ProtocolCommand
+-- and ProtocolAction classes from implementation definition syntax.
+--
+-- Given this declaration:
+--
+-- $(protocol Recipient [d|
+--     rcPushConfirm = PushConfirm <-- Broker
+--     raCreateConn  = CreateConn  --> Broker
+--   |])
+--
+-- two instance declarations will be generated:
+--   - for ProtocolCommand with `protoCmd = rcPushConfirm` and `command = PushConfirm`
+--   - for ProtocolAction class with `protoAction = raCreateConn` and `action = CreateConn`
+-- matching PushConfirm and CreateConn constructors types
+-- Type definitions for functions rcPushConfirm and raCreateConn have to be written manually -
+-- they have to be consistent with the typeclass instances
+
+data ProtocolOpeartion = POCommand | POAction | POUndefined
+
+protocol :: Participant -> Q [Dec] -> Q [Dec]
+protocol me ds = catMaybes <$> (ds >>= mapM mkProtocolInstance)
+  where
+    mkProtocolInstance :: Dec -> Q (Maybe Dec)
+    mkProtocolInstance d@(ValD
+                           (VarP funcName)
+                           (NormalB
+                             (InfixE
+                               (Just (ConE cmdConstructor))
+                               op
+                               (Just (ConE otherParticipant))))
+                           []) =
+      case getOperation op of
+        POUndefined -> failSyntax d
+        POCommand ->
+          return Nothing
+        POAction -> mkProtocolAction funcName cmdConstructor otherParticipant
+    mkProtocolInstance d = failSyntax d
+
+    -- mkProtocolCommand :: Name -> Name -> Name -> Q [Dec]
+    -- mkProtocolCommand _ _ _ = return []
+
+    mkProtocolAction :: Name -> Name -> Name -> Q (Maybe Dec)
+    mkProtocolAction funcName cmdConstructor otherParticipan = do
+      info <- reify cmdConstructor
+      case info of
+        DataConI _ (ForallT _ cxt ty) _ ->
+          Just . InstanceD Nothing cxt (changeTypeName ty "ProtocolAction") <$>
+            [d|
+              protoAction = $(varE funcName)
+              action      = $(conE cmdConstructor)
+              |]
+        _ -> return Nothing -- failSyntax d
+
+    changeTypeName :: TH.Type -> String -> TH.Type
+    changeTypeName (AppT t1 t2) n = AppT (changeTypeName t1 n) t2
+    changeTypeName (ConT _) n = ConT (mkName n)
+    changeTypeName t _ = t
+
+    getOperation :: Exp -> ProtocolOpeartion
+    getOperation = \case
+      VarE name        -> getOp name
+      UnboundVarE name -> getOp name
+      _ -> POUndefined
+      where
+        getOp n = case nameBase n of
+          "<--" -> POCommand
+          "-->" -> POAction
+          _ -> POUndefined
+
+    failSyntax :: Dec -> Q (Maybe Dec)
+    failSyntax d = fail $ "invalid protocol syntax: " ++ pprint d
+
+
+introspect :: Name -> Q Exp
+introspect n = reify n >>= runIO . putStrLn . pack . ppShow  >> [|return ()|]
+
+-- DataConI
+--   Simplex.Messaging.Protocol.CreateConn
+  
+--   (ForallT
+--     [KindedTV
+--       s_6341068275337869648
+--       (ConT Simplex.Messaging.Protocol.ConnectionState)]
+
+--     contexts
+
+--   (AppT (AppT (AppT (AppT (AppT (AppT (AppT (AppT (AppT (AppT
+--     (ConT Simplex.Messaging.Protocol.Command)
+--       (ConT Simplex.Messaging.Types.CreateConnRequest))
+--       (ConT Simplex.Messaging.Types.CreateConnResponse))
+--       (PromotedT Simplex.Messaging.Protocol.Recipient))
+--       (PromotedT Simplex.Messaging.Protocol.Broker))
+--       (AppT (AppT (ConT Simplex.Messaging.Protocol.<==|) (AppT (AppT (ConT Simplex.Messaging.Protocol.<==>) (PromotedT Simplex.Messaging.Protocol.None)) (PromotedT Simplex.Messaging.Protocol.None))) (VarT s_6341068275337869648)))
+--       (AppT (AppT (ConT Simplex.Messaging.Protocol.<==|) (AppT (AppT (ConT Simplex.Messaging.Protocol.<==>) (PromotedT Simplex.Messaging.Protocol.New)) (PromotedT Simplex.Messaging.Protocol.New))) (VarT s_6341068275337869648)))
+--       (PromotedT Simplex.Messaging.Protocol.Idle))
+--       (PromotedT Simplex.Messaging.Protocol.Idle))
+--       (LitT (NumTyLit 0))) (LitT (NumTyLit 0))))
+  
+--   Simplex.Messaging.Protocol.Command
+
+
+
+
+-- InstanceD
+--   Nothing - always (non-overlapping)
+
+--   contexts - same as in constructor
+
+--   (AppT (AppT (AppT (AppT (AppT (AppT (AppT (AppT (AppT (AppT
+--     (ConT Simplex.Messaging.Protocol.ProtocolAction)
+--       (ConT Simplex.Messaging.Types.CreateConnRequest))
+--       (ConT Simplex.Messaging.Types.CreateConnResponse))
+--       (PromotedT Simplex.Messaging.Protocol.Recipient))
+--       (PromotedT Simplex.Messaging.Protocol.Broker))
+--       (AppT (AppT (ConT Simplex.Messaging.Protocol.<==|) (AppT (AppT (ConT Simplex.Messaging.Protocol.<==>) (PromotedT Simplex.Messaging.Protocol.None)) (PromotedT Simplex.Messaging.Protocol.None))) (VarT s_0)))
+--       (AppT (AppT (ConT Simplex.Messaging.Protocol.<==|) (AppT (AppT (ConT Simplex.Messaging.Protocol.<==>) (PromotedT Simplex.Messaging.Protocol.New)) (PromotedT Simplex.Messaging.Protocol.New))) (VarT s_0)))
+--       (PromotedT Simplex.Messaging.Protocol.Idle))
+--       (PromotedT Simplex.Messaging.Protocol.Idle))
+--       (LitT (NumTyLit 0))) (LitT (NumTyLit 0)))
+    
+
+--   [ ValD
+--       (VarP Simplex.Messaging.Protocol.action)
+--       (NormalB (ConE Simplex.Messaging.Protocol.CreateConn))
+--       []
+--   , ValD
+--       (VarP Simplex.Messaging.Protocol.protoAction)
+--       (NormalB (VarE Simplex.Messaging.Client.rCreateConn))
+--       [] ]

@@ -35,6 +35,7 @@ dependencies:
   - servant-docs
   - servant-server
   - template-haskell
+  - pretty-show
 
 library:
   source-dirs: src

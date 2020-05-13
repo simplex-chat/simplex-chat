@@ -5,8 +5,7 @@ module Predicate where
 import ClassyPrelude
 import Data.Type.Predicate
 import Data.Type.Predicate.Auto
-import Language.Haskell.TH.Lib
-import Language.Haskell.TH.Syntax
+import Language.Haskell.TH
 
 -- This template adds instances of Auto typeclass (from decidable package)
 -- to a given parametrised type definition
@@ -32,15 +31,28 @@ predicate :: Q [Dec] -> Q [Dec]
 predicate decls = concat <$> (decls >>= mapM addInstances)
   where
     addInstances :: Dec -> Q [Dec]
-    addInstances d@(DataD _ ty _ _ constructors _) = do
-      ds <- mapM (mkInstance ty) constructors
-      return $ d : concat ds
-    addInstances d = return [d]
+    addInstances d@(DataD _ _ _ _ constructors _) = do
+      ds <- mapM mkInstance constructors
+      if any null ds
+        then do
+          reportWarning $
+            "warning: not a parametrised GADT predicate (no instances added)\n"
+            ++ pprint d
+          return [d]
+        else
+          return $ d : concat ds
+    addInstances d = do
+      reportWarning $ "warning: not a data type declaration\n" ++ pprint d
+      return [d]
 
-    mkInstance :: Name -> Con -> Q [Dec]
-    mkInstance ty (GadtC [con] [] (AppT _ (PromotedT p))) =
+    mkInstance :: Con -> Q [Dec]
+    mkInstance (GadtC
+                 [con] _
+                 (AppT
+                   (ConT ty)
+                   (PromotedT p))) =
       [d|
         instance Auto (TyPred $(conT ty)) $(promotedT p) where
           auto = $(conE con)
         |]
-    mkInstance _ _ = return []
+    mkInstance _ = return []
