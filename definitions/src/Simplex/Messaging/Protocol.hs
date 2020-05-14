@@ -125,9 +125,16 @@ deriving instance Show (rs <==> bs <==| ss)
 st2 :: Pending <==> New <==| Confirmed
 st2 = SPending :<==> SNew :<==| SConfirmed
 
--- this must not type check
+-- | Using not allowed connection type results in type error
+--
+-- >>> :{
 -- stBad :: 'Pending <==> 'Confirmed <==| 'Confirmed
 -- stBad = SPending :<==> SConfirmed :<==| SConfirmed
+-- :}
+-- ...
+-- ... No instance for (Auto (TyPred BrokerCS) 'Confirmed)
+-- ... arising from a use of ‘:<==>’
+-- ...
 
 
 infixl 4 :>>, :>>=
@@ -356,24 +363,25 @@ protocol me ds = ds >>= mapM mkProtocolInstance
         (VarP fName)
         (NormalB
           (InfixE
-            (Just (ConE cmdCon))
+            (Just (ConE cmd))
             opExp
             (Just (ConE other)))) [] ->
         case getCls (getOperation opExp) of
           Nothing  -> badSyntax d
-          Just cls -> instanceDecl d fName cmdCon other cls
+          Just cls -> instanceDecl d fName cmd other cls
       _ -> badSyntax d
 
     instanceDecl :: Dec
                  -> Name -> Name -> Name
                  -> ProtocolClassDescription
                  -> Q Dec
-    instanceDecl d fName cmdCon other ProtocolClassDescription{..} =
-      reify cmdCon >>= \case
-        DataConI _ (ForallT _ ctxs ty) _ ->
+    instanceDecl d fName cmd other ProtocolClassDescription{..} =
+      reify cmd >>= \case
+        DataConI _ (ForallT _ ctxs ty) _ -> do
+          tc <- changeTyCon d ty clsName
           return $
-            InstanceD Nothing ctxs (changeTyCon ty clsName)
-              [ mkMethod mthd (ConE cmdCon)
+            InstanceD Nothing ctxs tc
+              [ mkMethod mthd (ConE cmd)
               , mkMethod meSing (mkSing $ show me) 
               , mkMethod otherSing (mkSing $ nameBase other) 
               , mkMethod protoMthd (VarE . mkName $ nameBase fName) ]
@@ -385,10 +393,17 @@ protocol me ds = ds >>= mapM mkProtocolInstance
     mkSing :: String -> Exp
     mkSing = ConE . mkName . ('S':)
 
-    changeTyCon :: TH.Type -> String -> TH.Type
-    changeTyCon (AppT t1 t2) n = AppT (changeTyCon t1 n) t2
-    changeTyCon (ConT _) n = ConT (mkName n)
-    changeTyCon t _ = t
+    changeTyCon :: Dec -> TH.Type -> String -> Q TH.Type
+    changeTyCon d (AppT t1 t2) n =
+      (`AppT` t2) <$> changeTyCon d t1 n
+    changeTyCon d (ConT name) n =
+      if nameBase name == "Command"
+        then conT $ mkName n
+        else badConstructor d
+    changeTyCon d _ _ = badConstructor d
+
+    badConstructor :: Dec -> Q TH.Type
+    badConstructor d = fail $ "constructor type must be Command\n" ++ pprint d
 
     getOperation :: Exp -> ProtocolOpeartion
     getOperation = \case

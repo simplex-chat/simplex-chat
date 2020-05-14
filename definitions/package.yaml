@@ -42,6 +42,7 @@ dependencies:
 library:
   source-dirs: src
   exposed-modules:
+    - Predicate
     - Simplex.Messaging.Types
     - Simplex.Messaging.ServerAPI
 
@@ -49,3 +50,12 @@ executables:
   api-docs:
     source-dirs:      src
     main:             Main.hs
+
+tests:
+  simplex-definitions-doctests:
+    source-dirs: tests
+    main: doctest-driver.hs
+    ghc-options: -threaded
+    dependencies:
+      - doctest
+      - doctest-driver-gen

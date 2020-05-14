@@ -18,7 +18,7 @@ import Language.Haskell.TH
 --   data T (a :: P) where
 --     TA :: T 'A
 --     TB :: T 'B
---   |]
+--   |])
 --
 -- `predicate` splice will add these instances:
 --

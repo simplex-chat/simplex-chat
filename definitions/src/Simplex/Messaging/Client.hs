@@ -1,6 +1,6 @@
 {-# OPTIONS_GHC -fno-warn-unticked-promoted-constructors #-}
 {-# OPTIONS_GHC -fno-warn-orphans  #-}
-{-# OPTIONS_GHC -ddump-splices     #-}
+-- {-# OPTIONS_GHC -ddump-splices     #-}
 {-# LANGUAGE AllowAmbiguousTypes   #-}
 {-# LANGUAGE DataKinds             #-}
 {-# LANGUAGE FlexibleContexts      #-}
