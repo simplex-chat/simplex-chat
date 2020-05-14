@@ -7,7 +7,6 @@
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE GADTs                 #-}
 {-# LANGUAGE InstanceSigs          #-}
-{-# LANGUAGE LambdaCase            #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NoStarIsType          #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
@@ -323,43 +322,48 @@ protoActionStub _ _ _ = Left "Action not implemented"
 data ProtocolOpeartion = POCommand | POAction | POUndefined
 
 protocol :: Participant -> Q [Dec] -> Q [Dec]
-protocol me ds = catMaybes <$> (ds >>= mapM mkProtocolInstance)
+protocol me ds = ds >>= mapM mkProtocolInstance
   where
-    mkProtocolInstance :: Dec -> Q (Maybe Dec)
+    cmdCls = ("ProtocolCommand", "command", "protoCmd")
+    actCls = ("ProtocolAction", "action", "protoAction")
+
+    mkProtocolInstance :: Dec -> Q Dec
     mkProtocolInstance d@(ValD
-                           (VarP funcName)
+                           (VarP fName)
                            (NormalB
                              (InfixE
-                               (Just (ConE cmdConstructor))
+                               (Just (ConE cmdCon))
                                op
-                               (Just (ConE otherParticipant))))
+                               (Just (ConE other))))
                            []) =
+      let inst = instanceDecl d fName cmdCon other in
       case getOperation op of
         POUndefined -> failSyntax d
-        POCommand ->
-          return Nothing
-        POAction -> mkProtocolAction funcName cmdConstructor otherParticipant
+        POCommand -> inst cmdCls
+        POAction  -> inst actCls
     mkProtocolInstance d = failSyntax d
 
-    -- mkProtocolCommand :: Name -> Name -> Name -> Q [Dec]
-    -- mkProtocolCommand _ _ _ = return []
-
-    mkProtocolAction :: Name -> Name -> Name -> Q (Maybe Dec)
-    mkProtocolAction funcName cmdConstructor otherParticipan = do
-      info <- reify cmdConstructor
+    instanceDecl :: Dec
+                 -> Name -> Name -> Name
+                 -> (String, String, String)
+                 -> Q Dec
+    instanceDecl d fName cmdCon other (cls, mthd, protoMthd) = do
+      info <- reify cmdCon
       case info of
-        DataConI _ (ForallT _ cxt ty) _ ->
-          Just . InstanceD Nothing cxt (changeTypeName ty "ProtocolAction") <$>
-            [d|
-              protoAction = $(varE funcName)
-              action      = $(conE cmdConstructor)
-              |]
-        _ -> return Nothing -- failSyntax d
+        DataConI _ (ForallT _ ctxs ty) _ ->
+          return $
+            InstanceD Nothing ctxs (changeTyCon ty cls)
+              [ mkMethod mthd (ConE cmdCon)
+              , mkMethod protoMthd (VarE . mkName $ nameBase fName) ]
+        _ -> failSyntax d
 
-    changeTypeName :: TH.Type -> String -> TH.Type
-    changeTypeName (AppT t1 t2) n = AppT (changeTypeName t1 n) t2
-    changeTypeName (ConT _) n = ConT (mkName n)
-    changeTypeName t _ = t
+    mkMethod :: String -> Exp -> Dec
+    mkMethod name d = ValD (VarP (mkName name)) (NormalB d) []
+
+    changeTyCon :: TH.Type -> String -> TH.Type
+    changeTyCon (AppT t1 t2) n = AppT (changeTyCon t1 n) t2
+    changeTyCon (ConT _) n = ConT (mkName n)
+    changeTyCon t _ = t
 
     getOperation :: Exp -> ProtocolOpeartion
     getOperation = \case
@@ -372,7 +376,7 @@ protocol me ds = catMaybes <$> (ds >>= mapM mkProtocolInstance)
           "-->" -> POAction
           _ -> POUndefined
 
-    failSyntax :: Dec -> Q (Maybe Dec)
+    failSyntax :: Dec -> Q Dec
     failSyntax d = fail $ "invalid protocol syntax: " ++ pprint d
 
 

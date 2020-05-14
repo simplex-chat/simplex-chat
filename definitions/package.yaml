@@ -19,7 +19,9 @@ ghc-options:
   - -Wincomplete-uni-patterns
 
 default-extensions:
+  - BlockArguments
   - DuplicateRecordFields
+  - LambdaCase
   - NamedFieldPuns
   - NoImplicitPrelude
   - OverloadedStrings
