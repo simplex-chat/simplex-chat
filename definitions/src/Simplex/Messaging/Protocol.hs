@@ -21,6 +21,7 @@
 module Simplex.Messaging.Protocol where
 
 import ClassyPrelude
+import Control.Monad.Fail
 import Data.Kind
 import Data.Singletons
 import Data.Singletons.ShowSing
@@ -28,11 +29,15 @@ import Data.Singletons.TH
 import Data.Type.Predicate
 import Data.Type.Predicate.Auto
 import GHC.TypeLits
+import Language.Haskell.TH hiding (Type)
+import qualified Language.Haskell.TH as TH
 import Predicate
 import Simplex.Messaging.Types
+-- import Text.Show.Pretty (ppShow)
 
 $(singletons [d|
   data Participant = Recipient | Broker | Sender
+    deriving (Show, Eq)
 
   data ConnectionState =  None      -- (all) not available or removed from the broker
                         | New       -- (participants: all) connection created (or received from sender)
@@ -120,14 +125,21 @@ deriving instance Show (rs <==> bs <==| ss)
 st2 :: Pending <==> New <==| Confirmed
 st2 = SPending :<==> SNew :<==| SConfirmed
 
--- this must not type check
+-- | Using not allowed connection type results in type error
+--
+-- >>> :{
 -- stBad :: 'Pending <==> 'Confirmed <==| 'Confirmed
 -- stBad = SPending :<==> SConfirmed :<==| SConfirmed
+-- :}
+-- ...
+-- ... No instance for (Auto (TyPred BrokerCS) 'Confirmed)
+-- ... arising from a use of ‘:<==>’
+-- ...
 
 
 infixl 4 :>>, :>>=
 
-data Command arg result
+data Command arg res
              (from :: Participant) (to :: Participant)
              state state'
              (ss :: ConnSubscription) (ss' :: ConnSubscription)
@@ -239,20 +251,6 @@ data Command arg result
   Fail         :: String
                -> Command a String from to state (None <==> None <==| None) ss ss n n
 
--- redifine Monad operators to compose commands
--- using `do` notation with RebindableSyntax extension
-(>>=) :: Command a b from1 to1 s1 s2 ss1 ss2 n1 n2
-      -> (b -> Command b c from2 to2 s2 s3 ss2 ss3 n2 n3)
-      -> Command a c from1 to2 s1 s3 ss1 ss3 n1 n3
-(>>=) = (:>>=)
-
-(>>)  :: Command a b from1 to1 s1 s2 ss1 ss2 n1 n2
-      -> Command c d from2 to2 s2 s3 ss2 ss3 n2 n3
-      -> Command a d from1 to2 s1 s3 ss1 ss3 n1 n3
-(>>) = (:>>)
-
-fail :: String -> Command a String from to state (None <==> None <==| None) ss ss n n
-fail = Fail
 
 -- show and validate expexcted command participants
 infix 6 -->
@@ -270,42 +268,157 @@ type family PConnSt (p :: Participant) state where
 
 
 -- Type classes to ensure consistency of types of implementations
--- of participants actions/functions and connection state transitions (types)
+-- of participants commands/actions and connection state transitions (types)
 -- with types of protocol commands defined above.
+-- One participant's command is another participant's action.
 
-class ProtocolCommand (p :: Participant)
-        (from :: Participant)
+class ProtocolCommand
         arg res
+        (from :: Participant) (to :: Participant)
         state state'
         (ss :: ConnSubscription) (ss' :: ConnSubscription)
-        (n :: Nat) (n' :: Nat)
+        (messages :: Nat) (messages' :: Nat)
   where
-    command  :: Command arg res from p state state' ss ss' n n'
-    protoCmd :: Connection p (PConnSt p state) ss
+    command  :: Command arg res from to state state' ss ss' messages messages'
+    cmdMe    :: Sing to
+    cmdOther :: Sing from
+    protoCmd :: Connection to (PConnSt to state) ss
              -> arg
-             -> Either String (res, Connection p (PConnSt p state') ss')
+             -> Either String (res, Connection to (PConnSt to state') ss')
 
-protoCmdStub :: Connection p ps ss
+protoCmdStub :: Connection to ps ss
              -> arg
-             -> Either String (res, Connection p ps' ss')
+             -> Either String (res, Connection to ps' ss')
 protoCmdStub _ _ = Left "Command not implemented"
 
 
-class ProtocolAction (p :: Participant)
-        (to :: Participant)
+class ProtocolAction
         arg res
+        (from :: Participant) (to :: Participant)
         state state'
         (ss :: ConnSubscription) (ss' :: ConnSubscription)
-        (n :: Nat) (n' :: Nat)
+        (messages :: Nat) (messages' :: Nat)
   where
-    action      :: Command arg res p to state state' ss ss' n n'
-    protoAction :: Connection p (PConnSt p state) ss
+    action      :: Command arg res from to state state' ss ss' messages messages'
+    actionMe    :: Sing from
+    actionOther :: Sing to
+    protoAction :: Connection from (PConnSt from state) ss
                 -> arg
                 -> Either String res
-                -> Either String (Connection p (PConnSt p state') ss')
+                -> Either String (Connection from (PConnSt from state') ss')
 
-protoActionStub :: Connection p ps ss
+protoActionStub :: Connection from ps ss
                 -> arg
                 -> Either String res
-                -> Either String (Connection p ps' ss')
+                -> Either String (Connection from ps' ss')
 protoActionStub _ _ _ = Left "Action not implemented"
+
+
+-- TH to generate typeclasse instances for ProtocolCommand
+-- and ProtocolAction classes from implementation definition syntax.
+--
+-- Given this declaration:
+--
+-- $(protocol Recipient [d|
+--     rcPushConfirm = PushConfirm <-- Broker
+--     raCreateConn  = CreateConn  --> Broker
+--   |])
+--
+-- two instance declarations will be generated:
+--   - for ProtocolCommand with `protoCmd = rcPushConfirm` and `command = PushConfirm`
+--   - for ProtocolAction class with `protoAction = raCreateConn` and `action = CreateConn`
+-- matching PushConfirm and CreateConn constructors types
+-- Type definitions for functions rcPushConfirm and raCreateConn have to be written manually -
+-- they have to be consistent with the typeclass.
+
+data ProtocolOpeartion = POCommand | POAction | POUndefined
+data ProtocolClassDescription = ProtocolClassDescription
+                                  { clsName   :: String
+                                  , mthd      :: String
+                                  , meSing    :: String
+                                  , otherSing :: String
+                                  , protoMthd :: String }
+
+protocol :: Participant -> Q [Dec] -> Q [Dec]
+protocol me ds = ds >>= mapM mkProtocolInstance
+  where
+    getCls :: ProtocolOpeartion -> Maybe ProtocolClassDescription
+    getCls POUndefined = Nothing
+    getCls POCommand = Just ProtocolClassDescription
+                              { clsName = "ProtocolCommand"
+                              , mthd = "command"
+                              , meSing = "cmdMe"
+                              , otherSing = "cmdOther"
+                              , protoMthd = "protoCmd" }
+    getCls POAction  = Just ProtocolClassDescription
+                              { clsName = "ProtocolAction"
+                              , mthd = "action"
+                              , meSing = "actionMe"
+                              , otherSing = "actionOther"
+                              , protoMthd = "protoAction" }
+
+    mkProtocolInstance :: Dec -> Q Dec
+    mkProtocolInstance d = case d of
+      ValD
+        (VarP fName)
+        (NormalB
+          (InfixE
+            (Just (ConE cmd))
+            opExp
+            (Just (ConE other)))) [] ->
+        case getCls (getOperation opExp) of
+          Nothing  -> badSyntax d
+          Just cls -> instanceDecl d fName cmd other cls
+      _ -> badSyntax d
+
+    instanceDecl :: Dec
+                 -> Name -> Name -> Name
+                 -> ProtocolClassDescription
+                 -> Q Dec
+    instanceDecl d fName cmd other ProtocolClassDescription{..} =
+      reify cmd >>= \case
+        DataConI _ (ForallT _ ctxs ty) _ -> do
+          tc <- changeTyCon d ty clsName
+          return $
+            InstanceD Nothing ctxs tc
+              [ mkMethod mthd (ConE cmd)
+              , mkMethod meSing (mkSing $ show me) 
+              , mkMethod otherSing (mkSing $ nameBase other) 
+              , mkMethod protoMthd (VarE . mkName $ nameBase fName) ]
+        _ -> badSyntax d
+
+    mkMethod :: String -> Exp -> Dec
+    mkMethod name rhs = ValD (VarP (mkName name)) (NormalB rhs) []
+
+    mkSing :: String -> Exp
+    mkSing = ConE . mkName . ('S':)
+
+    changeTyCon :: Dec -> TH.Type -> String -> Q TH.Type
+    changeTyCon d (AppT t1 t2) n =
+      (`AppT` t2) <$> changeTyCon d t1 n
+    changeTyCon d (ConT name) n =
+      if nameBase name == "Command"
+        then conT $ mkName n
+        else badConstructor d
+    changeTyCon d _ _ = badConstructor d
+
+    badConstructor :: Dec -> Q TH.Type
+    badConstructor d = fail $ "constructor type must be Command\n" ++ pprint d
+
+    getOperation :: Exp -> ProtocolOpeartion
+    getOperation = \case
+      VarE name        -> getOp name
+      UnboundVarE name -> getOp name
+      _ -> POUndefined
+      where
+        getOp n = case nameBase n of
+          "<--" -> POCommand
+          "-->" -> POAction
+          _ -> POUndefined
+
+    badSyntax :: Dec -> Q Dec
+    badSyntax d = fail $ "invalid protocol syntax: " ++ pprint d
+
+
+-- introspect :: Name -> Q Exp
+-- introspect n = reify n >>= runIO . putStrLn . pack . ppShow  >> [|return ()|]

@@ -12,6 +12,7 @@ module Simplex.Messaging.Scenarios where
 import ClassyPrelude hiding ((>>=), (>>), fail)
 import Data.Singletons
 import Simplex.Messaging.Protocol
+import Simplex.Messaging.ProtocolDo
 import Simplex.Messaging.Types
 
 r :: Sing Recipient
