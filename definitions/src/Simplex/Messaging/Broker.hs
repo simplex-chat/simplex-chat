@@ -19,8 +19,8 @@ import Simplex.Messaging.Types
 $(protocol Broker [d|
   bcCreateConn  = CreateConn  <-- Recipient
   bcSubscribe   = Subscribe   <-- Recipient
-  -- rcPushConfirm = PushConfirm <-- Broker
-  -- rcPushMsg     = PushMsg     <-- Broker
+  baPushConfirm = PushConfirm --> Recipient
+  baPushMsg     = PushMsg     --> Recipient
   |])
 
 
@@ -33,3 +33,15 @@ bcSubscribe  :: Connection Broker s Idle
              -> ()
              -> Either String ((), Connection Broker s Subscribed)
 bcSubscribe = protoCmdStub
+
+baPushConfirm :: Connection Broker New Subscribed
+              -> SecureConnRequest
+              -> Either String ()
+              -> Either String (Connection Broker New Subscribed)
+baPushConfirm = protoActionStub
+
+baPushMsg     :: Connection Broker Secured Subscribed
+              -> MessagesResponse -- TODO, has to be a single message
+              -> Either String ()
+              -> Either String (Connection Broker Secured Subscribed)
+baPushMsg = protoActionStub
