@@ -33,10 +33,11 @@ import Language.Haskell.TH hiding (Type)
 import qualified Language.Haskell.TH as TH
 import Predicate
 import Simplex.Messaging.Types
-import Text.Show.Pretty (ppShow)
+-- import Text.Show.Pretty (ppShow)
 
 $(singletons [d|
   data Participant = Recipient | Broker | Sender
+    deriving (Show, Eq)
 
   data ConnectionState =  None      -- (all) not available or removed from the broker
                         | New       -- (participants: all) connection created (or received from sender)
@@ -272,6 +273,8 @@ class ProtocolCommand
         (messages :: Nat) (messages' :: Nat)
   where
     command  :: Command arg res from to state state' ss ss' messages messages'
+    cmdMe    :: Sing to
+    cmdOther :: Sing from
     protoCmd :: Connection to (PConnSt to state) ss
              -> arg
              -> Either String (res, Connection to (PConnSt to state') ss')
@@ -290,6 +293,8 @@ class ProtocolAction
         (messages :: Nat) (messages' :: Nat)
   where
     action      :: Command arg res from to state state' ss ss' messages messages'
+    actionMe    :: Sing from
+    actionOther :: Sing to
     protoAction :: Connection from (PConnSt from state) ss
                 -> arg
                 -> Either String res
@@ -302,7 +307,7 @@ protoActionStub :: Connection from ps ss
 protoActionStub _ _ _ = Left "Action not implemented"
 
 
--- Splice to generate typeclasse instances for ProtocolCommand
+-- TH to generate typeclasse instances for ProtocolCommand
 -- and ProtocolAction classes from implementation definition syntax.
 --
 -- Given this declaration:
@@ -317,48 +322,68 @@ protoActionStub _ _ _ = Left "Action not implemented"
 --   - for ProtocolAction class with `protoAction = raCreateConn` and `action = CreateConn`
 -- matching PushConfirm and CreateConn constructors types
 -- Type definitions for functions rcPushConfirm and raCreateConn have to be written manually -
--- they have to be consistent with the typeclass instances
+-- they have to be consistent with the typeclass.
 
 data ProtocolOpeartion = POCommand | POAction | POUndefined
+data ProtocolClassDescription = ProtocolClassDescription
+                                  { clsName   :: String
+                                  , mthd      :: String
+                                  , meSing    :: String
+                                  , otherSing :: String
+                                  , protoMthd :: String }
 
 protocol :: Participant -> Q [Dec] -> Q [Dec]
 protocol me ds = ds >>= mapM mkProtocolInstance
   where
-    cmdCls = ("ProtocolCommand", "command", "protoCmd")
-    actCls = ("ProtocolAction", "action", "protoAction")
+    getCls :: ProtocolOpeartion -> Maybe ProtocolClassDescription
+    getCls POUndefined = Nothing
+    getCls POCommand = Just ProtocolClassDescription
+                              { clsName = "ProtocolCommand"
+                              , mthd = "command"
+                              , meSing = "cmdMe"
+                              , otherSing = "cmdOther"
+                              , protoMthd = "protoCmd" }
+    getCls POAction  = Just ProtocolClassDescription
+                              { clsName = "ProtocolAction"
+                              , mthd = "action"
+                              , meSing = "actionMe"
+                              , otherSing = "actionOther"
+                              , protoMthd = "protoAction" }
 
     mkProtocolInstance :: Dec -> Q Dec
-    mkProtocolInstance d@(ValD
-                           (VarP fName)
-                           (NormalB
-                             (InfixE
-                               (Just (ConE cmdCon))
-                               op
-                               (Just (ConE other))))
-                           []) =
-      let inst = instanceDecl d fName cmdCon other in
-      case getOperation op of
-        POUndefined -> failSyntax d
-        POCommand -> inst cmdCls
-        POAction  -> inst actCls
-    mkProtocolInstance d = failSyntax d
+    mkProtocolInstance d = case d of
+      ValD
+        (VarP fName)
+        (NormalB
+          (InfixE
+            (Just (ConE cmdCon))
+            opExp
+            (Just (ConE other)))) [] ->
+        case getCls (getOperation opExp) of
+          Nothing  -> badSyntax d
+          Just cls -> instanceDecl d fName cmdCon other cls
+      _ -> badSyntax d
 
     instanceDecl :: Dec
                  -> Name -> Name -> Name
-                 -> (String, String, String)
+                 -> ProtocolClassDescription
                  -> Q Dec
-    instanceDecl d fName cmdCon other (cls, mthd, protoMthd) = do
-      info <- reify cmdCon
-      case info of
+    instanceDecl d fName cmdCon other ProtocolClassDescription{..} =
+      reify cmdCon >>= \case
         DataConI _ (ForallT _ ctxs ty) _ ->
           return $
-            InstanceD Nothing ctxs (changeTyCon ty cls)
+            InstanceD Nothing ctxs (changeTyCon ty clsName)
               [ mkMethod mthd (ConE cmdCon)
+              , mkMethod meSing (mkSing $ show me) 
+              , mkMethod otherSing (mkSing $ nameBase other) 
               , mkMethod protoMthd (VarE . mkName $ nameBase fName) ]
-        _ -> failSyntax d
+        _ -> badSyntax d
 
     mkMethod :: String -> Exp -> Dec
-    mkMethod name d = ValD (VarP (mkName name)) (NormalB d) []
+    mkMethod name rhs = ValD (VarP (mkName name)) (NormalB rhs) []
+
+    mkSing :: String -> Exp
+    mkSing = ConE . mkName . ('S':)
 
     changeTyCon :: TH.Type -> String -> TH.Type
     changeTyCon (AppT t1 t2) n = AppT (changeTyCon t1 n) t2
@@ -376,63 +401,9 @@ protocol me ds = ds >>= mapM mkProtocolInstance
           "-->" -> POAction
           _ -> POUndefined
 
-    failSyntax :: Dec -> Q Dec
-    failSyntax d = fail $ "invalid protocol syntax: " ++ pprint d
+    badSyntax :: Dec -> Q Dec
+    badSyntax d = fail $ "invalid protocol syntax: " ++ pprint d
 
 
-introspect :: Name -> Q Exp
-introspect n = reify n >>= runIO . putStrLn . pack . ppShow  >> [|return ()|]
-
--- DataConI
---   Simplex.Messaging.Protocol.CreateConn
-  
---   (ForallT
---     [KindedTV
---       s_6341068275337869648
---       (ConT Simplex.Messaging.Protocol.ConnectionState)]
-
---     contexts
-
---   (AppT (AppT (AppT (AppT (AppT (AppT (AppT (AppT (AppT (AppT
---     (ConT Simplex.Messaging.Protocol.Command)
---       (ConT Simplex.Messaging.Types.CreateConnRequest))
---       (ConT Simplex.Messaging.Types.CreateConnResponse))
---       (PromotedT Simplex.Messaging.Protocol.Recipient))
---       (PromotedT Simplex.Messaging.Protocol.Broker))
---       (AppT (AppT (ConT Simplex.Messaging.Protocol.<==|) (AppT (AppT (ConT Simplex.Messaging.Protocol.<==>) (PromotedT Simplex.Messaging.Protocol.None)) (PromotedT Simplex.Messaging.Protocol.None))) (VarT s_6341068275337869648)))
---       (AppT (AppT (ConT Simplex.Messaging.Protocol.<==|) (AppT (AppT (ConT Simplex.Messaging.Protocol.<==>) (PromotedT Simplex.Messaging.Protocol.New)) (PromotedT Simplex.Messaging.Protocol.New))) (VarT s_6341068275337869648)))
---       (PromotedT Simplex.Messaging.Protocol.Idle))
---       (PromotedT Simplex.Messaging.Protocol.Idle))
---       (LitT (NumTyLit 0))) (LitT (NumTyLit 0))))
-  
---   Simplex.Messaging.Protocol.Command
-
-
-
-
--- InstanceD
---   Nothing - always (non-overlapping)
-
---   contexts - same as in constructor
-
---   (AppT (AppT (AppT (AppT (AppT (AppT (AppT (AppT (AppT (AppT
---     (ConT Simplex.Messaging.Protocol.ProtocolAction)
---       (ConT Simplex.Messaging.Types.CreateConnRequest))
---       (ConT Simplex.Messaging.Types.CreateConnResponse))
---       (PromotedT Simplex.Messaging.Protocol.Recipient))
---       (PromotedT Simplex.Messaging.Protocol.Broker))
---       (AppT (AppT (ConT Simplex.Messaging.Protocol.<==|) (AppT (AppT (ConT Simplex.Messaging.Protocol.<==>) (PromotedT Simplex.Messaging.Protocol.None)) (PromotedT Simplex.Messaging.Protocol.None))) (VarT s_0)))
---       (AppT (AppT (ConT Simplex.Messaging.Protocol.<==|) (AppT (AppT (ConT Simplex.Messaging.Protocol.<==>) (PromotedT Simplex.Messaging.Protocol.New)) (PromotedT Simplex.Messaging.Protocol.New))) (VarT s_0)))
---       (PromotedT Simplex.Messaging.Protocol.Idle))
---       (PromotedT Simplex.Messaging.Protocol.Idle))
---       (LitT (NumTyLit 0))) (LitT (NumTyLit 0)))
-    
-
---   [ ValD
---       (VarP Simplex.Messaging.Protocol.action)
---       (NormalB (ConE Simplex.Messaging.Protocol.CreateConn))
---       []
---   , ValD
---       (VarP Simplex.Messaging.Protocol.protoAction)
---       (NormalB (VarE Simplex.Messaging.Client.rCreateConn))
---       [] ]
+-- introspect :: Name -> Q Exp
+-- introspect n = reify n >>= runIO . putStrLn . pack . ppShow  >> [|return ()|]
