@@ -45,7 +45,6 @@ $(singletons [d|
                         | Confirmed -- (recipient) confirmed by sender with the broker
                         | Secured   -- (all) secured with the broker
                         | Disabled  -- (broker, recipient) disabled with the broker by recipient
-                        | Drained   -- (broker, recipient) drained (no messages)
     deriving (Show, ShowSing, Eq)
 
   data ConnSubscription = Subscribed | Idle
@@ -59,7 +58,6 @@ $(predicate [d|
     BrkNew      :: BrokerCS New
     BrkSecured  :: BrokerCS Secured
     BrkDisabled :: BrokerCS Disabled
-    BrkDrained  :: BrokerCS Drained
     BrkNone     :: BrokerCS None
 
 -- sender connection states
@@ -89,7 +87,6 @@ instance Prf1 SenderCS s => Prf HasState Sender s
 data EstablishedState (s :: ConnectionState) :: Type where
   ESecured  :: EstablishedState Secured
   EDisabled :: EstablishedState Disabled
-  EDrained  :: EstablishedState Drained
 
 
 -- connection type stub for all participants, TODO move from idris

@@ -50,6 +50,7 @@ executables:
   api-docs:
     source-dirs:      src
     main:             Main.hs
+    ghc-options: -threaded
 
 tests:
   simplex-definitions-doctests:
