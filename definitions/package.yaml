@@ -18,14 +18,14 @@ ghc-options:
   - -Wincomplete-record-updates
   - -Wincomplete-uni-patterns
 
-default-extensions:
-  - BlockArguments
-  - DuplicateRecordFields
-  - LambdaCase
-  - NamedFieldPuns
-  - NoImplicitPrelude
-  - OverloadedStrings
-  - RecordWildCards
+# default-extensions:
+#   - BlockArguments
+#   - DuplicateRecordFields
+#   - LambdaCase
+#   - NamedFieldPuns
+#   - NoImplicitPrelude
+#   - OverloadedStrings
+#   - RecordWildCards
   
 dependencies:
   - aeson
@@ -37,7 +37,7 @@ dependencies:
   - servant-docs
   - servant-server
   - template-haskell
-  # - pretty-show
+  - pretty-show
 
 library:
   source-dirs: src

@@ -1,3 +1,5 @@
+{-# LANGUAGE NoImplicitPrelude #-}
+
 module Main where
 
 import Simplex.Messaging.ServerAPI

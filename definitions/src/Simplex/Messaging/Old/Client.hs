@@ -7,13 +7,14 @@
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE GADTs                 #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE NoImplicitPrelude     #-}
 {-# LANGUAGE TemplateHaskell       #-}
 {-# LANGUAGE TypeOperators         #-}
 
-module Simplex.Messaging.Client where
+module Simplex.Messaging.Old.Client where
 
 import ClassyPrelude
-import Simplex.Messaging.Protocol
+import Simplex.Messaging.Old.Protocol
 import Simplex.Messaging.Types
 
 

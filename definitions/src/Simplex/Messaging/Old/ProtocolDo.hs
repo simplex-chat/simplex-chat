@@ -2,10 +2,9 @@
 {-# LANGUAGE DataKinds     #-}
 {-# LANGUAGE TypeOperators #-}
 
-module Simplex.Messaging.ProtocolDo where
+module Simplex.Messaging.Old.ProtocolDo where
 
-import ClassyPrelude
-import Simplex.Messaging.Protocol
+import Simplex.Messaging.Old.Protocol
 
 -- redifine Monad operators to compose commands
 -- using `do` notation with RebindableSyntax extension
