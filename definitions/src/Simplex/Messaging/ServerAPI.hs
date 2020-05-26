@@ -134,7 +134,7 @@ instance ToSample SecureConnRequest where
 dummyMessage :: Message
 dummyMessage =
   Message
-    { connId = "p8PCiGPZ",
+    { msgId = "p8PCiGPZ",
       ts = "2020-03-15T19:58:33.695Z",
       msg = "OQLMXoEA4iv-aR46puPJuY1Rdoc1KY0gfq8oElJwtAs"
     }

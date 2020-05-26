@@ -35,9 +35,9 @@ instance IsString SecureConnRequest where
 
 data Message
   = Message
-      { connId :: Base64EncodedString,
+      { msgId :: MessageId,
         ts :: TimeStamp,
-        msg :: Base64EncodedString -- TODO make it Text
+        msg :: Encrypted -- TODO make it Text
       }
   deriving (Show, Generic, ToJSON, FromJSON)
 
@@ -57,9 +57,19 @@ newtype SendMessageRequest
 instance IsString SendMessageRequest where
   fromString = SendMessageRequest
 
-type Key = Base64EncodedString
+type Invitation = Base64EncodedString -- TODO define
 
-type ConnectionId = Base64EncodedString
+type Key = Base64EncodedString -- deprecated, not to be used
+
+type PublicKey = Base64EncodedString
+
+type ConnId = Base64EncodedString
+
+type SenderConnId = Base64EncodedString
+
+type MessageId = Base64EncodedString
+
+type Encrypted = Base64EncodedString
 
 type Base64EncodedString = String
 

@@ -33,24 +33,29 @@ dependencies:
   - classy-prelude
   - decidable
   - lens
+  - mtl
   - singletons
   - servant-docs
   - servant-server
   - template-haskell
-  - pretty-show
 
 library:
   source-dirs: src
-  exposed-modules:
-    - Predicate
-    - Simplex.Messaging.Types
-    - Simplex.Messaging.ServerAPI
 
 executables:
   api-docs:
-    source-dirs:      src
-    main:             Main.hs
+    source-dirs: app/api-docs
+    main: Main.hs
     ghc-options: -threaded
+    dependencies:
+      simplex-definitions
+
+  print-scenarios:
+    source-dirs: app/print-scenarios
+    main: Main.hs
+    ghc-options: -threaded
+    dependencies:
+      simplex-definitions
 
 tests:
   simplex-definitions-doctests:
