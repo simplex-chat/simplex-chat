@@ -1,48 +1,46 @@
-{-# OPTIONS_GHC -fno-warn-unticked-promoted-constructors #-}
-{-# OPTIONS_GHC -fno-warn-orphans  #-}
--- {-# OPTIONS_GHC -ddump-splices     #-}
-{-# LANGUAGE AllowAmbiguousTypes   #-}
-{-# LANGUAGE DataKinds             #-}
-{-# LANGUAGE FlexibleContexts      #-}
-{-# LANGUAGE FlexibleInstances     #-}
-{-# LANGUAGE GADTs                 #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE TemplateHaskell       #-}
-{-# LANGUAGE TypeOperators         #-}
+{-# OPTIONS_GHC -fno-warn-orphans #-}
+{-# OPTIONS_GHC -fno-warn-unticked-promoted-constructors #-}
 
 module Simplex.Messaging.Client where
 
-import ClassyPrelude
 import Simplex.Messaging.Protocol
-import Simplex.Messaging.Types
 
+instance Monad m => PartyProtocol m Recipient where
+  api ::
+    Command from fs fs' Recipient ps ps' res ->
+    Connection Recipient ps ->
+    m (Either String (res, Connection Recipient ps'))
+  api (PushConfirm _ _) = apiStub
+  api (PushMsg _ _) = apiStub
 
-$(protocol Recipient [d|
-  raCreateConn  = CreateConn  --> Broker
-  raSubscribe   = Subscribe   --> Broker
-  rcPushConfirm = PushConfirm <-- Broker
-  rcPushMsg     = PushMsg     <-- Broker
-  |])
+  action ::
+    Command Recipient ps ps' to ts ts' res ->
+    Connection Recipient ps ->
+    Either String res ->
+    m (Either String (Connection Recipient ps'))
+  action (CreateConn _) = actionStub
+  action (Subscribe _) = actionStub
+  action (Unsubscribe _) = actionStub
+  action (SendInvite _) = actionStub
+  action (SecureConn _ _) = actionStub
+  action (DeleteMsg _ _) = actionStub
 
+instance Monad m => PartyProtocol m Sender where
+  api ::
+    Command from fs fs' Sender ps ps' res ->
+    Connection Sender ps ->
+    m (Either String (res, Connection Sender ps'))
+  api (SendInvite _) = apiStub
 
-raCreateConn  :: Connection Recipient None Idle
-              -> CreateConnRequest
-              -> Either String CreateConnResponse
-              -> Either String (Connection Recipient New Idle)
-raCreateConn = protoActionStub
-
-raSubscribe   :: Connection Recipient s Idle
-              -> ()
-              -> Either String ()
-              -> Either String (Connection Recipient s Subscribed)
-raSubscribe = protoActionStub
-
-rcPushConfirm :: Connection Recipient Pending Subscribed
-              -> SecureConnRequest
-              -> Either String ((), Connection Recipient Confirmed Subscribed)
-rcPushConfirm = protoCmdStub
-
-rcPushMsg     :: Connection Recipient Secured Subscribed
-              -> MessagesResponse -- TODO, has to be a single message
-              -> Either String ((), Connection Recipient Secured Subscribed)
-rcPushMsg = protoCmdStub
+  action ::
+    Command Sender ps ps' to ts ts' res ->
+    Connection Sender ps ->
+    Either String res ->
+    m (Either String (Connection Sender ps'))
+  action (ConfirmConn _ _) = actionStub
+  action (SendMsg _ _) = actionStub
