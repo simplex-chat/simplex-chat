@@ -20,6 +20,7 @@
 
 module Simplex.Messaging.Protocol where
 
+import Control.Monad.Trans.Except
 import Data.Kind
 import Data.Singletons
 import Data.Singletons.TH
@@ -118,18 +119,18 @@ class Monad m => PartyProtocol m (p :: Party) where
   api ::
     Command from fs fs' p ps ps' res ->
     Connection p ps ->
-    m (Either String (res, Connection p ps'))
+    ExceptT String m (res, Connection p ps')
   action ::
     Command p ps ps' to ts ts' res ->
     Connection p ps ->
-    Either String res ->
-    m (Either String (Connection p ps'))
+    ExceptT String m res ->
+    ExceptT String m (Connection p ps')
 
-apiStub :: Monad m => Connection p ps -> m (Either String (res, Connection p ps'))
-apiStub _ = return $ Left "api not implemented"
+apiStub :: Monad m => Connection p ps -> ExceptT String m (res, Connection p ps')
+apiStub _ = throwE "api not implemented"
 
-actionStub :: Monad m => Connection p ps -> Either String res -> m (Either String (Connection p ps'))
-actionStub _ _ = return $ Left "action not implemented"
+actionStub :: Monad m => Connection p ps -> ExceptT String m res -> ExceptT String m (Connection p ps')
+actionStub _ _ = throwE "action not implemented"
 
 type AllowedStates from fs fs' to ts ts' =
   ( HasState from fs,

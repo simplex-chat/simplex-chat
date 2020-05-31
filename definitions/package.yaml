@@ -38,6 +38,7 @@ dependencies:
   - servant-docs
   - servant-server
   - template-haskell
+  - transformers
 
 library:
   source-dirs: src
