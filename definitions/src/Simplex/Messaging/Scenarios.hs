@@ -21,18 +21,18 @@ s = SSender
 
 establishConnection :: Protocol None None None Secured Secured Secured ()
 establishConnection =
-  Start "Establish simplex messaging connection"
+  Start "Establish simplex messaging connection and send first message"
     :>> r :-> b |$ CreateConn "BODbZxmtKUUF1l8pj4nVjQ"
-    :>> r :-> b |$ Subscribe "Qxz93A"
-    :>> r :-> s |$ SendInvite "invitation Qxz93A" -- invitation - TODo
-    :>> s :-> b |$ ConfirmConn "N9pA3g" "encrypted"
-    :>> b :-> r |$ PushConfirm "Qxz93A" Message {msgId = "abc", msg = "XPaVEVNunkYKqqK0dnAT5Q"}
-    :>> r :-> b |$ SecureConn "Qxz93A" "XPaVEVNunkYKqqK0dnAT5Q"
-    :>> r :-> b |$ DeleteMsg "Qxz93A" "abc"
-    :>> s :-> b |$ SendMsg "N9pA3g" "welcome" -- welcome message
-    :>> b :-> r |$ PushMsg "Qxz93A" Message {msgId = "def", msg = "welcome"}
-    :>> r :-> b |$ DeleteMsg "Qxz93A" "def"
-    :>> s :-> b |$ SendMsg "N9pA3g" "hello there"
-    :>> b :-> r |$ PushMsg "Qxz93A" Message {msgId = "ghi", msg = "hello there"}
-    :>> r :-> b |$ DeleteMsg "Qxz93A" "ghi"
-    :>> r :-> b |$ Unsubscribe "Qxz93A"
+    :>> r :-> b |$ Subscribe "RU"
+    :>> r :-> s |$ SendInvite "invitation RU" -- invitation - TODo
+    :>> s :-> b |$ ConfirmConn "SU" "encrypted"
+    :>> b :-> r |$ PushConfirm "RU" Message {msgId = "abc", msg = "XPaVEVNunkYKqqK0dnAT5Q"}
+    :>> r :-> b |$ SecureConn "RU" "XPaVEVNunkYKqqK0dnAT5Q"
+    :>> r :-> b |$ DeleteMsg "RU" "abc"
+    :>> s :-> b |$ SendMsg "SU" "welcome" -- welcome message
+    :>> b :-> r |$ PushMsg "RU" Message {msgId = "def", msg = "welcome"}
+    :>> r :-> b |$ DeleteMsg "RU" "def"
+    :>> s :-> b |$ SendMsg "SU" "hello there"
+    :>> b :-> r |$ PushMsg "RU" Message {msgId = "ghi", msg = "hello there"}
+    :>> r :-> b |$ DeleteMsg "RU" "ghi"
+    :>> r :-> b |$ Unsubscribe "RU"

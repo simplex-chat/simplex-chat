@@ -130,7 +130,7 @@ Also see [Simplex messaging protocol implementation](simplex-messaging-implement
 - Example (`application/json;charset=utf-8`, `application/json`):
 
 ```javascript
-{"messages":[{"ts":"2020-03-15T19:58:33.695Z","msg":"OQLMXoEA4iv-aR46puPJuY1Rdoc1KY0gfq8oElJwtAs","connId":"p8PCiGPZ"}],"nextMessageId":null}
+{"messages":[{"ts":"2020-03-15T19:58:33.695Z","msg":"OQLMXoEA4iv-aR46puPJuY1Rdoc1KY0gfq8oElJwtAs","msgId":"p8PCiGPZ"}],"nextMessageId":null}
 ```
 
 ## DELETE /connection/:connectionId/messages/:messageId

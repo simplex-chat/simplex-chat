@@ -184,6 +184,14 @@ data
       (PConnSt Broker bs' from fs' to ts')
       (PConnSt Sender ss' from fs' to ts')
       b
+  (:>>=) ::
+    Protocol rs bs ss rs' bs' ss' a ->
+    (a -> PartiesCommand from (CConnSt from rs' bs' ss') fs' to (CConnSt to rs' bs' ss') ts' b) ->
+    Protocol rs bs ss
+      (PConnSt Recipient rs' from fs' to ts')
+      (PConnSt Broker bs' from fs' to ts')
+      (PConnSt Sender ss' from fs' to ts')
+      b
 
 infix 5 |$
 

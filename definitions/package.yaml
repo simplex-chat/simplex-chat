@@ -1,14 +1,14 @@
-name:                simplex-definitions
-version:             0.1.0.0
+name: simplex-definitions
+version: 0.1.0.0
 #synopsis:
 #description:
-homepage:            https://github.com/simplex-chat/protocol/blob/master/definitions/readme.md
-license:             AGPL-3
-author:              Evgeny Poberezkin
-copyright:           2020 Evgeny Poberezkin
-category:            Web
+homepage: https://github.com/simplex-chat/protocol/blob/master/definitions/readme.md
+license: AGPL-3
+author: Evgeny Poberezkin
+copyright: 2020 Evgeny Poberezkin
+category: Web
 extra-source-files:
-- readme.md
+  - readme.md
 
 ghc-options:
   - -Wall
@@ -26,7 +26,7 @@ ghc-options:
 #   - NoImplicitPrelude
 #   - OverloadedStrings
 #   - RecordWildCards
-  
+
 dependencies:
   - aeson
   - base >= 4.7 && < 5
@@ -47,15 +47,13 @@ executables:
     source-dirs: app/api-docs
     main: Main.hs
     ghc-options: -threaded
-    dependencies:
-      simplex-definitions
+    dependencies: simplex-definitions
 
   print-scenarios:
     source-dirs: app/print-scenarios
     main: Main.hs
     ghc-options: -threaded
-    dependencies:
-      simplex-definitions
+    dependencies: simplex-definitions
 
 tests:
   simplex-definitions-doctests:
