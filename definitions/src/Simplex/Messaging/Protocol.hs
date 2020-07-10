@@ -45,7 +45,7 @@ $( singletons
  )
 
 type family HasState (p :: Party) (s :: ConnState) :: Constraint where
-  HasState Recipient s = ()
+  HasState Recipient _ = ()
   HasState Broker None = ()
   HasState Broker New = ()
   HasState Broker Secured = ()
@@ -55,10 +55,11 @@ type family HasState (p :: Party) (s :: ConnState) :: Constraint where
   HasState Sender Confirmed = ()
   HasState Sender Secured = ()
 
-type Enabled rs bs =
-  ( (rs == New || rs == Pending || rs == Confirmed || rs == Secured) ~ True,
-    (bs == New || bs == Secured) ~ True
-  )
+type family Enabled (rs :: ConnState) (bs :: ConnState) :: Constraint where
+  Enabled New New = ()
+  Enabled Pending New = ()
+  Enabled Confirmed New = ()
+  Enabled Secured Secured = ()
 
 type PartyCmd = (Party, ConnState, ConnState)
 

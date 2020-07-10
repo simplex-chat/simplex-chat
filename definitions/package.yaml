@@ -17,6 +17,7 @@ ghc-options:
   - -Wredundant-constraints
   - -Wincomplete-record-updates
   - -Wincomplete-uni-patterns
+  - -Wunused-type-patterns
 
 dependencies:
   - aeson
