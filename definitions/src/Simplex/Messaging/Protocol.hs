@@ -21,6 +21,7 @@
 module Simplex.Messaging.Protocol where
 
 import Control.Monad.Trans.Except
+import Control.XFreer
 import Data.Kind
 import Data.Singletons
 import Data.Singletons.TH
@@ -134,16 +135,14 @@ apiStub _ = throwE "api not implemented"
 actionStub :: Monad m => Connection p ps -> ExceptT String m res -> ExceptT String m (Connection p ps')
 actionStub _ _ = throwE "action not implemented"
 
-type family AllowedStates' s from fs' to ts' :: Constraint where
-  AllowedStates' '(rs, bs, ss) from fs' to ts' =
+type family AllowedStates s from fs' to ts' :: Constraint where
+  AllowedStates '(rs, bs, ss) from fs' to ts' =
     ( HasState Recipient rs,
       HasState Broker bs,
       HasState Sender ss,
       HasState from fs',
       HasState to ts'
     )
-
-infix 6 :->
 
 type ProtocolState = (ConnState, ConnState, ConnState)
 
@@ -164,24 +163,29 @@ type family PartySt (p :: Party) (s :: ProtocolState) from fs' to ts' where
   PartySt to _ _ _ to ts' = ts'
   PartySt p s _ _ _ _ = ConnSt p s
 
-infixl 4 :>>
-
-data Protocol (s :: ProtocolState) (s' :: ProtocolState) (a :: Type) :: Type where
-  Start :: String -> Protocol s s ()
-  (:->) ::
-    AllowedStates' s from fs' to ts' =>
+data ProtocolEff (s :: ProtocolState) (s' :: ProtocolState) (a :: Type) :: Type where
+  Start :: String -> ProtocolEff s s ()
+  ProtocolCmd ::
+    AllowedStates s from fs' to ts' =>
     Sing from ->
     Sing to ->
     Command from (ConnSt from s) fs' to (ConnSt to s) ts' a ->
-    Protocol s (ProtoSt s from fs' to ts') a
-  (:>>) ::
-    Protocol s s' a ->
-    Protocol s' s'' b ->
-    Protocol s s'' b
-  (:>>=) ::
-    Protocol s s' a ->
-    (a -> Protocol s' s'' b) ->
-    Protocol s s'' b
+    ProtocolEff s (ProtoSt s from fs' to ts') a
+
+type Protocol = XFree ProtocolEff
+
+infix 6 ->:
+
+(->:) ::
+  AllowedStates s from fs' to ts' =>
+  Sing from ->
+  Sing to ->
+  Command from (ConnSt from s) fs' to (ConnSt to s) ts' a ->
+  Protocol s (ProtoSt s from fs' to ts') a
+(->:) f t c = xfree $ ProtocolCmd f t c
+
+start :: String -> Protocol s s ()
+start = xfree . Start
 
 infix 5 |$
 

@@ -6,6 +6,7 @@
 module Simplex.Messaging.PrintScenario where
 
 import Control.Monad.Writer
+import Control.XFreer
 import Data.Singletons
 import Simplex.Messaging.Protocol
 import Simplex.Messaging.Types
@@ -24,12 +25,14 @@ printScenario scn = ps 1 "" $ execWriter $ logScenario scn
         l' = "   - " <> l
 
 logScenario :: Protocol s s' a -> Writer [(String, String)] a
-logScenario (Start s) = tell [("", s)]
-logScenario ((:->) from to cmd) = do
+logScenario (Pure x) = return x
+logScenario (Bind p f) = logProtocol p >>= \x -> logScenario (f x)
+
+logProtocol :: ProtocolEff s s' a -> Writer [(String, String)] a
+logProtocol (Start s) = tell [("", s)]
+logProtocol (ProtocolCmd from to cmd) = do
   tell [(party from, commandStr cmd <> " " <> party to)]
   mockCommand cmd
-logScenario (p :>> c) = logScenario p >> logScenario c
-logScenario (p :>>= f) = logScenario p >>= \x -> logScenario (f x)
 
 commandStr :: Command from fs fs' to ts ts' a -> String
 commandStr (CreateConn _) = "creates connection in"

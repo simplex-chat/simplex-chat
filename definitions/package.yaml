@@ -18,26 +18,15 @@ ghc-options:
   - -Wincomplete-record-updates
   - -Wincomplete-uni-patterns
 
-# default-extensions:
-#   - BlockArguments
-#   - DuplicateRecordFields
-#   - LambdaCase
-#   - NamedFieldPuns
-#   - NoImplicitPrelude
-#   - OverloadedStrings
-#   - RecordWildCards
-
 dependencies:
   - aeson
   - base >= 4.7 && < 5
-  - classy-prelude
-  - decidable
+  - freer-indexed
   - lens
   - mtl
   - singletons
   - servant-docs
   - servant-server
-  - template-haskell
   - transformers
 
 library:

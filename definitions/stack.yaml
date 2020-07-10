@@ -29,7 +29,7 @@ resolver: lts-15.11
 #   - auto-update
 #   - wai
 packages:
-- .
+  - .
 # Dependency packages to be pulled from upstream that are not in the resolver.
 # These entries can reference officially published versions as well as
 # forks / in-progress versions pinned to a git hash. For example:
@@ -40,10 +40,7 @@ packages:
 #   commit: e7b331f14bcffb8367cd58fbfc8b40ec7642100a
 #
 extra-deps:
-- decidable-0.3.0.0@sha256:34857003b57139a047c9ab7944c313c227d9db702a8dcefa1478966257099423,1774
-- functor-products-0.1.1.0@sha256:2bea36b6106b5756be6b81b3a5bfe7b41db1cf45fb63c19a1f04b572ba90fd0c,1456
-- vinyl-0.12.1@sha256:03f5e246fae2434250987bbfe708015dc6e23f60c20739c34738acde1383b96c,3921
-
+  - freer-indexed-0.1.0.0@sha256:b247be91b8ad2154fe1a514dec7c6a2553281d89325f0bc213d1d832d4c1a0e9,3007
 # Override default flag values for local packages and extra-deps
 # flags: {}
 
