@@ -19,7 +19,7 @@ b = SBroker
 s :: Sing Sender
 s = SSender
 
-establishConnection :: Protocol None None None Secured Secured Secured ()
+establishConnection :: Protocol '(None, None, None) '(Secured, Secured, Secured) ()
 establishConnection =
   Start "Establish simplex messaging connection and send first message"
     :>> r :-> b |$ CreateConn "BODbZxmtKUUF1l8pj4nVjQ"

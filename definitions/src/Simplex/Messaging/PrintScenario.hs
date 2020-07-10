@@ -10,7 +10,7 @@ import Data.Singletons
 import Simplex.Messaging.Protocol
 import Simplex.Messaging.Types
 
-printScenario :: Protocol rs bs ss rs' bs' ss' a -> IO ()
+printScenario :: Protocol s s' a -> IO ()
 printScenario scn = ps 1 "" $ execWriter $ logScenario scn
   where
     ps :: Int -> String -> [(String, String)] -> IO ()
@@ -23,15 +23,13 @@ printScenario scn = ps 1 "" $ execWriter $ logScenario scn
         prt i' s = putStrLn s >> ps i' p' ls
         l' = "   - " <> l
 
-logScenario :: Protocol rs bs ss rs' bs' ss' a -> Writer [(String, String)] a
+logScenario :: Protocol s s' a -> Writer [(String, String)] a
 logScenario (Start s) = tell [("", s)]
-logScenario (p :>> c) = logScenario p >> logCommand c
-logScenario (p :>>= f) = logScenario p >>= \x -> logCommand (f x)
-
-logCommand :: PartiesCommand from fs fs' to ts ts' a -> Writer [(String, String)] a
-logCommand ((:->) from to cmd) = do
+logScenario ((:->) from to cmd) = do
   tell [(party from, commandStr cmd <> " " <> party to)]
   mockCommand cmd
+logScenario (p :>> c) = logScenario p >> logScenario c
+logScenario (p :>>= f) = logScenario p >>= \x -> logScenario (f x)
 
 commandStr :: Command from fs fs' to ts ts' a -> String
 commandStr (CreateConn _) = "creates connection in"

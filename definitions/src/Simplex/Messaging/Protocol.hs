@@ -67,7 +67,8 @@ data
     (to :: Party)
     (ts :: ConnState)
     (ts' :: ConnState)
-    (res :: Type) :: Type where
+    (res :: Type) :: Type
+  where
   CreateConn ::
     PublicKey ->
     Command Recipient None New Broker None New CreateConnResponse
@@ -112,7 +113,8 @@ data
 data
   Connection
     (p :: Party)
-    (s :: ConnState) :: Type where
+    (s :: ConnState) :: Type
+  where
   Connection :: String -> Connection p s -- TODO replace with real type definition
 
 class Monad m => PartyProtocol m (p :: Party) where
@@ -132,67 +134,54 @@ apiStub _ = throwE "api not implemented"
 actionStub :: Monad m => Connection p ps -> ExceptT String m res -> ExceptT String m (Connection p ps')
 actionStub _ _ = throwE "action not implemented"
 
-type AllowedStates from fs fs' to ts ts' =
-  ( HasState from fs,
-    HasState from fs',
-    HasState to ts,
-    HasState to ts'
-  )
+type family AllowedStates' s from fs' to ts' :: Constraint where
+  AllowedStates' '(rs, bs, ss) from fs' to ts' =
+    ( HasState Recipient rs,
+      HasState Broker bs,
+      HasState Sender ss,
+      HasState from fs',
+      HasState to ts'
+    )
 
 infix 6 :->
 
-data PartiesCommand from fs fs' to ts ts' res :: Type where
-  (:->) ::
-    AllowedStates from fs fs' to ts ts' =>
-    Sing from ->
-    Sing to ->
-    Command from fs fs' to ts ts' res ->
-    PartiesCommand from fs fs' to ts ts' res
+type ProtocolState = (ConnState, ConnState, ConnState)
 
-$( promote
-     [d|
-       cConnSt :: Party -> ConnState -> ConnState -> ConnState -> ConnState
-       cConnSt p rs bs ss = case p of
-         Recipient -> rs
-         Broker -> bs
-         Sender -> ss
+type family ConnSt (p :: Party) (s :: ProtocolState) :: ConnState where
+  ConnSt Recipient '(rs, _, _) = rs
+  ConnSt Broker '(_, bs, _) = bs
+  ConnSt Sender '(_, _, ss) = ss
 
-       pConnSt :: Party -> ConnState -> Party -> ConnState -> Party -> ConnState -> ConnState
-       pConnSt p ps from fs' to ts'
-         | p == from = fs'
-         | p == to = ts'
-         | otherwise = ps
-       |]
- )
+type family ProtoSt (s :: ProtocolState) from fs' to ts' where
+  ProtoSt s from fs' to ts' =
+    '( PartySt Recipient s from fs' to ts',
+       PartySt Broker s from fs' to ts',
+       PartySt Sender s from fs' to ts'
+     )
+
+type family PartySt (p :: Party) (s :: ProtocolState) from fs' to ts' where
+  PartySt from _ from fs' _ _ = fs'
+  PartySt to _ _ _ to ts' = ts'
+  PartySt p s _ _ _ _ = ConnSt p s
 
 infixl 4 :>>
 
-data
-  Protocol
-    (rs :: ConnState)
-    (bs :: ConnState)
-    (ss :: ConnState)
-    (rs' :: ConnState)
-    (bs' :: ConnState)
-    (ss' :: ConnState)
-    (res :: Type) :: Type where
-  Start :: String -> Protocol rs bs ss rs' bs' ss' ()
+data Protocol (s :: ProtocolState) (s' :: ProtocolState) (a :: Type) :: Type where
+  Start :: String -> Protocol s s ()
+  (:->) ::
+    AllowedStates' s from fs' to ts' =>
+    Sing from ->
+    Sing to ->
+    Command from (ConnSt from s) fs' to (ConnSt to s) ts' a ->
+    Protocol s (ProtoSt s from fs' to ts') a
   (:>>) ::
-    Protocol rs bs ss rs' bs' ss' a ->
-    PartiesCommand from (CConnSt from rs' bs' ss') fs' to (CConnSt to rs' bs' ss') ts' b ->
-    Protocol rs bs ss
-      (PConnSt Recipient rs' from fs' to ts')
-      (PConnSt Broker bs' from fs' to ts')
-      (PConnSt Sender ss' from fs' to ts')
-      b
+    Protocol s s' a ->
+    Protocol s' s'' b ->
+    Protocol s s'' b
   (:>>=) ::
-    Protocol rs bs ss rs' bs' ss' a ->
-    (a -> PartiesCommand from (CConnSt from rs' bs' ss') fs' to (CConnSt to rs' bs' ss') ts' b) ->
-    Protocol rs bs ss
-      (PConnSt Recipient rs' from fs' to ts')
-      (PConnSt Broker bs' from fs' to ts')
-      (PConnSt Sender ss' from fs' to ts')
-      b
+    Protocol s s' a ->
+    (a -> Protocol s' s'' b) ->
+    Protocol s s'' b
 
 infix 5 |$
 
