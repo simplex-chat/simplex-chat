@@ -129,49 +129,47 @@ apiStub _ = throwE "api not implemented"
 actionStub :: Monad m => Connection p s -> ExceptT String m a -> ExceptT String m (Connection p s')
 actionStub _ _ = throwE "action not implemented"
 
-type family AllowedStates s from fs' to ts' :: Constraint where
-  AllowedStates '(rs, bs, ss) from fs' to ts' =
+type ProtocolState = (ConnState, ConnState, ConnState)
+
+type family HasProtoSt (s :: ProtocolState) :: Constraint where
+  HasProtoSt '(rs, bs, ss) =
     ( HasState Recipient rs,
       HasState Broker bs,
-      HasState Sender ss,
-      HasState from fs',
-      HasState to ts'
+      HasState Sender ss
     )
-
-type ProtocolState = (ConnState, ConnState, ConnState)
 
 type family ConnSt (p :: Party) (s :: ProtocolState) :: ConnState where
   ConnSt Recipient '(rs, _, _) = rs
   ConnSt Broker '(_, bs, _) = bs
   ConnSt Sender '(_, _, ss) = ss
 
-type family ProtoSt (s :: ProtocolState) from fs' to ts' where
+type family ProtoSt (s :: ProtocolState) from fs' to ts' :: ProtocolState where
   ProtoSt s from fs' to ts' =
     '( PartySt Recipient s from fs' to ts',
        PartySt Broker s from fs' to ts',
        PartySt Sender s from fs' to ts'
      )
 
-type family PartySt (p :: Party) (s :: ProtocolState) from fs' to ts' where
+type family PartySt (p :: Party) (s :: ProtocolState) from fs' to ts' :: ConnState where
   PartySt from _ from fs' _ _ = fs'
   PartySt to _ _ _ to ts' = ts'
   PartySt p s _ _ _ _ = ConnSt p s
 
-data ProtocolEff (s :: ProtocolState) (s' :: ProtocolState) (a :: Type) :: Type where
-  Start :: String -> ProtocolEff s s ()
+data ProtocolCmd (s :: ProtocolState) (s' :: ProtocolState) (a :: Type) :: Type where
+  Start :: String -> ProtocolCmd s s ()
   ProtocolCmd ::
-    AllowedStates s from fs' to ts' =>
+    (HasProtoSt s, HasState from fs', HasState to ts') =>
     Sing from ->
     Sing to ->
     Command '(from, ConnSt from s, fs') '(to, ConnSt to s, ts') a ->
-    ProtocolEff s (ProtoSt s from fs' to ts') a
+    ProtocolCmd s (ProtoSt s from fs' to ts') a
 
-type Protocol = XFree ProtocolEff
+type Protocol = XFree ProtocolCmd
 
 infix 6 ->:
 
 (->:) ::
-  AllowedStates s from fs' to ts' =>
+  (HasProtoSt s, HasState from fs', HasState to ts') =>
   Sing from ->
   Sing to ->
   Command '(from, ConnSt from s, fs') '(to, ConnSt to s, ts') a ->

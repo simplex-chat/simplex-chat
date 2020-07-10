@@ -28,7 +28,7 @@ logScenario :: Protocol s s' a -> Writer [(String, String)] a
 logScenario (Pure x) = return x
 logScenario (Bind p f) = logProtocol p >>= \x -> logScenario (f x)
 
-logProtocol :: ProtocolEff s s' a -> Writer [(String, String)] a
+logProtocol :: ProtocolCmd s s' a -> Writer [(String, String)] a
 logProtocol (Start s) = tell [("", s)]
 logProtocol (ProtocolCmd from to cmd) = do
   tell [(party from, commandStr cmd <> " " <> party to)]
