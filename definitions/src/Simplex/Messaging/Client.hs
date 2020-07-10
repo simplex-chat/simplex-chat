@@ -13,17 +13,17 @@ import Simplex.Messaging.Protocol
 
 instance Monad m => PartyProtocol m Recipient where
   api ::
-    Command from fs fs' Recipient ps ps' res ->
-    Connection Recipient ps ->
-    ExceptT String m (res, Connection Recipient ps')
+    Command from '(Recipient, s, s') a ->
+    Connection Recipient s ->
+    ExceptT String m (a, Connection Recipient s')
   api (PushConfirm _ _) = apiStub
   api (PushMsg _ _) = apiStub
 
   action ::
-    Command Recipient ps ps' to ts ts' res ->
-    Connection Recipient ps ->
-    ExceptT String m res ->
-    ExceptT String m (Connection Recipient ps')
+    Command '(Recipient, s, s') to a ->
+    Connection Recipient s ->
+    ExceptT String m a ->
+    ExceptT String m (Connection Recipient s')
   action (CreateConn _) = actionStub
   action (Subscribe _) = actionStub
   action (Unsubscribe _) = actionStub
@@ -33,15 +33,15 @@ instance Monad m => PartyProtocol m Recipient where
 
 instance Monad m => PartyProtocol m Sender where
   api ::
-    Command from fs fs' Sender ps ps' res ->
-    Connection Sender ps ->
-    ExceptT String m (res, Connection Sender ps')
+    Command from '(Sender, s, s') a ->
+    Connection Sender s ->
+    ExceptT String m (a, Connection Sender s')
   api (SendInvite _) = apiStub
 
   action ::
-    Command Sender ps ps' to ts ts' res ->
-    Connection Sender ps ->
-    ExceptT String m res ->
-    ExceptT String m (Connection Sender ps')
+    Command '(Sender, s, s') to a ->
+    Connection Sender s ->
+    ExceptT String m a ->
+    ExceptT String m (Connection Sender s')
   action (ConfirmConn _ _) = actionStub
   action (SendMsg _ _) = actionStub

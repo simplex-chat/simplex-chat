@@ -34,7 +34,7 @@ logProtocol (ProtocolCmd from to cmd) = do
   tell [(party from, commandStr cmd <> " " <> party to)]
   mockCommand cmd
 
-commandStr :: Command from fs fs' to ts ts' a -> String
+commandStr :: Command from to a -> String
 commandStr (CreateConn _) = "creates connection in"
 commandStr (Subscribe cid) = "subscribes to connection " <> show cid <> " in"
 commandStr (Unsubscribe cid) = "unsubscribes from connection " <> show cid <> " in"
@@ -46,7 +46,7 @@ commandStr (SendMsg cid _) = "sends message to connection " <> show cid <> " in"
 commandStr (PushMsg cid _) = "pushes message from connection " <> show cid <> " to"
 commandStr (DeleteMsg cid _) = "deletes message from connection " <> show cid <> " in"
 
-mockCommand :: Monad m => Command from fs fs' to ts ts' a -> m a
+mockCommand :: Monad m => Command from to a -> m a
 mockCommand (CreateConn _) =
   return
     CreateConnResponse

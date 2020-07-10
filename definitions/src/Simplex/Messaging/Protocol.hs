@@ -60,55 +60,48 @@ type Enabled rs bs =
     (bs == New || bs == Secured) ~ True
   )
 
-data
-  Command
-    (from :: Party)
-    (fs :: ConnState)
-    (fs' :: ConnState)
-    (to :: Party)
-    (ts :: ConnState)
-    (ts' :: ConnState)
-    (res :: Type) :: Type
-  where
+type PartyCmd = (Party, ConnState, ConnState)
+
+data Command (from :: PartyCmd) (to :: PartyCmd) (a :: Type) :: Type where
   CreateConn ::
     PublicKey ->
-    Command Recipient None New Broker None New CreateConnResponse
+    Command '(Recipient, None, New) '(Broker, None, New) CreateConnResponse
   Subscribe ::
     Enabled rs bs =>
     ConnId ->
-    Command Recipient rs rs Broker bs bs ()
+    Command '(Recipient, rs, rs) '(Broker, bs, bs) ()
   Unsubscribe ::
     Enabled rs bs =>
     ConnId ->
-    Command Recipient rs rs Broker bs bs ()
+    Command '(Recipient, rs, rs) '(Broker, bs, bs) ()
   SendInvite ::
     Invitation ->
-    Command Recipient New Pending Sender None New ()
+    Command '(Recipient, New, Pending) '(Sender, None, New) ()
   ConfirmConn ::
     SenderConnId ->
     Encrypted ->
-    Command Sender New Confirmed Broker New New ()
+    Command '(Sender, New, Confirmed) '(Broker, New, New) ()
   PushConfirm ::
     ConnId ->
     Message ->
-    Command Broker New New Recipient Pending Confirmed ()
+    Command '(Broker, New, New) '(Recipient, Pending, Confirmed) ()
   SecureConn ::
     ConnId ->
     PublicKey ->
-    Command Recipient Confirmed Secured Broker New Secured ()
+    Command '(Recipient, Confirmed, Secured) '(Broker, New, Secured) ()
   SendMsg ::
     (ss == Confirmed || ss == Secured) ~ True =>
     SenderConnId ->
     Encrypted ->
-    Command Sender ss Secured Broker Secured Secured ()
+    Command '(Sender, ss, Secured) '(Broker, Secured, Secured) ()
   PushMsg ::
     ConnId ->
     Message ->
-    Command Broker Secured Secured Recipient Secured Secured ()
+    Command '(Broker, Secured, Secured) '(Recipient, Secured, Secured) ()
   DeleteMsg ::
     ConnId ->
     MessageId ->
-    Command Recipient Secured Secured Broker Secured Secured ()
+    Command '(Recipient, Secured, Secured) '(Broker, Secured, Secured) ()
 
 -- connection type stub for all participants, TODO move from idris
 data
@@ -120,19 +113,19 @@ data
 
 class Monad m => PartyProtocol m (p :: Party) where
   api ::
-    Command from fs fs' p ps ps' res ->
-    Connection p ps ->
-    ExceptT String m (res, Connection p ps')
+    Command from '(p, s, s') a ->
+    Connection p s ->
+    ExceptT String m (a, Connection p s')
   action ::
-    Command p ps ps' to ts ts' res ->
-    Connection p ps ->
-    ExceptT String m res ->
-    ExceptT String m (Connection p ps')
+    Command '(p, s, s') to a ->
+    Connection p s ->
+    ExceptT String m a ->
+    ExceptT String m (Connection p s')
 
-apiStub :: Monad m => Connection p ps -> ExceptT String m (res, Connection p ps')
+apiStub :: Monad m => Connection p s -> ExceptT String m (a, Connection p s')
 apiStub _ = throwE "api not implemented"
 
-actionStub :: Monad m => Connection p ps -> ExceptT String m res -> ExceptT String m (Connection p ps')
+actionStub :: Monad m => Connection p s -> ExceptT String m a -> ExceptT String m (Connection p s')
 actionStub _ _ = throwE "action not implemented"
 
 type family AllowedStates s from fs' to ts' :: Constraint where
@@ -169,7 +162,7 @@ data ProtocolEff (s :: ProtocolState) (s' :: ProtocolState) (a :: Type) :: Type 
     AllowedStates s from fs' to ts' =>
     Sing from ->
     Sing to ->
-    Command from (ConnSt from s) fs' to (ConnSt to s) ts' a ->
+    Command '(from, ConnSt from s, fs') '(to, ConnSt to s, ts') a ->
     ProtocolEff s (ProtoSt s from fs' to ts') a
 
 type Protocol = XFree ProtocolEff
@@ -180,14 +173,9 @@ infix 6 ->:
   AllowedStates s from fs' to ts' =>
   Sing from ->
   Sing to ->
-  Command from (ConnSt from s) fs' to (ConnSt to s) ts' a ->
+  Command '(from, ConnSt from s, fs') '(to, ConnSt to s, ts') a ->
   Protocol s (ProtoSt s from fs' to ts') a
 (->:) f t c = xfree $ ProtocolCmd f t c
 
 start :: String -> Protocol s s ()
 start = xfree . Start
-
-infix 5 |$
-
-(|$) :: (a -> b) -> a -> b
-f |$ x = f x
