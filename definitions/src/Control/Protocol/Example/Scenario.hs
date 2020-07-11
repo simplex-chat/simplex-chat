@@ -8,21 +8,21 @@ module Control.Protocol.Example.Scenario where
 import Control.Protocol
 import Control.Protocol.Example.Command
 import Control.XMonad.Do
-import Data.Proxy
+import Data.Singletons
 import Prelude hiding ((>>), (>>=))
 
-r :: Proxy Recipient
-r = Proxy
+r :: Sing Recipient
+r = SRecipient
 
-b :: Proxy Broker
-b = Proxy
+b :: Sing Broker
+b = SBroker
 
-s :: Proxy Sender
-s = Proxy
+s :: Sing Sender
+s = SSender
 
 scenario :: String -> MyProtocol (RNone |: BNone |: SNone) (RReady |: BEmpty |: SReady) String
 scenario str = do
-  r ->:: b $ Create
-  r ->:: s $ Notify
-  s ->:: b $ Send str
-  b ->:: r $ Forward
+  r ->: b $ Create
+  r ->: s $ Notify
+  s ->: b $ Send str
+  b ->: r $ Forward

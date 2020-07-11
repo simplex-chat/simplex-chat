@@ -2,12 +2,14 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RebindableSyntax #-}
+{-# LANGUAGE TypeOperators #-}
 {-# OPTIONS_GHC -fno-warn-missing-fields #-}
 {-# OPTIONS_GHC -fno-warn-unticked-promoted-constructors #-}
 {-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
 
 module Simplex.Messaging.Scenarios where
 
+import Control.Protocol
 import Control.XMonad.Do
 import Data.Singletons
 import Data.String
@@ -15,18 +17,18 @@ import Simplex.Messaging.Protocol
 import Simplex.Messaging.Types
 import Prelude hiding ((>>), (>>=))
 
-r :: Proxy Recipient
-r = Proxy
+r :: Sing Recipient
+r = SRecipient
 
-b :: Proxy Broker
-b = Proxy
+b :: Sing Broker
+b = SBroker
 
-s :: Proxy Sender
-s = Proxy
+s :: Sing Sender
+s = SSender
 
-establishConnection :: Protocol' '(None, None, None) '(Secured, Secured, Secured) ()
+establishConnection :: SimplexProtocol (None |: None |: None) (Secured |: Secured |: Secured) ()
 establishConnection = do
-  start "Establish simplex messaging connection and send first message"
+  comment "Establish simplex messaging connection and send first message"
   r ->: b $ CreateConn "BODbZxmtKUUF1l8pj4nVjQ"
   r ->: b $ Subscribe "RU"
   r ->: s $ SendInvite "invitation RU" -- invitation - TODo

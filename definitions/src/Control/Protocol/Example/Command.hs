@@ -1,36 +1,48 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE EmptyCase #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE PolyKinds #-}
-{-# LANGUAGE NoMonomorphismRestriction #-}
+{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -fno-warn-unticked-promoted-constructors #-}
 
 module Control.Protocol.Example.Command where
 
 import Control.Protocol
+import Data.Singletons.TH
 
-data Party = Recipient | Broker | Sender
-  deriving (Show, Eq)
+$( singletons
+     [d|
+       data Party = Recipient | Broker | Sender
+         deriving (Show, Eq)
 
-data RState
-  = RNone
-  | RReady
-  deriving (Show, Eq)
+       data RState
+         = RNone
+         | RReady
+         deriving (Show, Eq)
 
-data BState
-  = BNone
-  | BEmpty
-  | BFull
-  deriving (Show, Eq)
+       data BState
+         = BNone
+         | BEmpty
+         | BFull
+         deriving (Show, Eq)
 
-data SState
-  = SNone
-  | SReady
-  deriving (Show, Eq)
+       data SState
+         = SNone
+         | SReady
+         deriving (Show, Eq)
+       |]
+ )
 
-data MyCommand (fromCmd :: PartyCmd Party) (toCmd :: PartyCmd Party) a where
-  Create :: MyCommand (P Recipient RNone RReady) (P Broker BNone BEmpty) ()
-  Notify :: MyCommand (P Recipient RReady RReady) (P Sender SNone SReady) ()
-  Send :: String -> MyCommand (P Sender SReady SReady) (P Broker BEmpty BFull) ()
-  Forward :: MyCommand (P Broker BFull BEmpty) (P Recipient RReady RReady) String
+data MyCommand :: Command Party where
+  Create :: MyCommand (Cmd Recipient RNone RReady) (Cmd Broker BNone BEmpty) ()
+  Notify :: MyCommand (Cmd Recipient RReady RReady) (Cmd Sender SNone SReady) ()
+  Send :: String -> MyCommand (Cmd Sender SReady SReady) (Cmd Broker BEmpty BFull) ()
+  Forward :: MyCommand (Cmd Broker BFull BEmpty) (Cmd Recipient RReady RReady) String
 
-type MyProtocol = Protocol '[Recipient, Broker, Sender] MyCommand
+type MyProtocol = Protocol MyCommand '[Recipient, Broker, Sender]

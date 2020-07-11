@@ -17,14 +17,14 @@ import Simplex.Messaging.Protocol
 
 instance Monad m => PartyProtocol m Recipient where
   api ::
-    Command from (P Recipient s s') a ->
+    SimplexCommand from (Cmd Recipient s s') a ->
     Connection Recipient s ->
     ExceptT String m (a, Connection Recipient s')
   api (PushConfirm _ _) = apiStub
   api (PushMsg _ _) = apiStub
 
   action ::
-    Command (P Recipient s s') to a ->
+    SimplexCommand (Cmd Recipient s s') to a ->
     Connection Recipient s ->
     ExceptT String m a ->
     ExceptT String m (Connection Recipient s')
@@ -37,13 +37,13 @@ instance Monad m => PartyProtocol m Recipient where
 
 instance Monad m => PartyProtocol m Sender where
   api ::
-    Command from (P Sender s s') a ->
+    SimplexCommand from (Cmd Sender s s') a ->
     Connection Sender s ->
     ExceptT String m (a, Connection Sender s')
   api (SendInvite _) = apiStub
 
   action ::
-    Command (P Sender s s') to a ->
+    SimplexCommand (Cmd Sender s s') to a ->
     Connection Sender s ->
     ExceptT String m a ->
     ExceptT String m (Connection Sender s')
@@ -56,14 +56,14 @@ type SimplexSender = SimplexParty Sender
 
 rApi ::
   Member SimplexRecipient r =>
-  Command from (P Recipient s s') a ->
+  SimplexCommand from (Cmd Recipient s s') a ->
   Connection Recipient s ->
   Sem r (Either String (a, Connection Recipient s'))
 rApi cmd conn = send $ Api cmd conn
 
 rAction ::
   Member SimplexRecipient r =>
-  Command (P Recipient s s') to a ->
+  SimplexCommand (Cmd Recipient s s') to a ->
   Connection Recipient s ->
   Either String a ->
   Sem r (Either String (Connection Recipient s'))
@@ -71,14 +71,14 @@ rAction cmd conn res = send $ Action cmd conn res
 
 sApi ::
   Member SimplexSender r =>
-  Command from (P Sender s s') a ->
+  SimplexCommand from (Cmd Sender s s') a ->
   Connection Sender s ->
   Sem r (Either String (a, Connection Sender s'))
 sApi cmd conn = send $ Api cmd conn
 
 sAction ::
   Member SimplexSender r =>
-  Command (P Sender s s') to a ->
+  SimplexCommand (Cmd Sender s s') to a ->
   Connection Sender s ->
   Either String a ->
   Sem r (Either String (Connection Sender s'))
