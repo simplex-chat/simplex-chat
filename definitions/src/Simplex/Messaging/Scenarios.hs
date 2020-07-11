@@ -15,16 +15,16 @@ import Simplex.Messaging.Protocol
 import Simplex.Messaging.Types
 import Prelude hiding ((>>), (>>=))
 
-r :: Sing Recipient
-r = SRecipient
+r :: Proxy Recipient
+r = Proxy
 
-b :: Sing Broker
-b = SBroker
+b :: Proxy Broker
+b = Proxy
 
-s :: Sing Sender
-s = SSender
+s :: Proxy Sender
+s = Proxy
 
-establishConnection :: Protocol '(None, None, None) '(Secured, Secured, Secured) ()
+establishConnection :: Protocol' '(None, None, None) '(Secured, Secured, Secured) ()
 establishConnection = do
   start "Establish simplex messaging connection and send first message"
   r ->: b $ CreateConn "BODbZxmtKUUF1l8pj4nVjQ"

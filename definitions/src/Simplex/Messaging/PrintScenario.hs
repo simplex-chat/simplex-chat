@@ -1,7 +1,9 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE KindSignatures #-}
+{-# OPTIONS_GHC -fno-warn-unticked-promoted-constructors #-}
 
 module Simplex.Messaging.PrintScenario where
 
@@ -11,7 +13,7 @@ import Data.Singletons
 import Simplex.Messaging.Protocol
 import Simplex.Messaging.Types
 
-printScenario :: Protocol s s' a -> IO ()
+printScenario :: Protocol' s s' a -> IO ()
 printScenario scn = ps 1 "" $ execWriter $ logScenario scn
   where
     ps :: Int -> String -> [(String, String)] -> IO ()
@@ -24,7 +26,7 @@ printScenario scn = ps 1 "" $ execWriter $ logScenario scn
         prt i' s = putStrLn s >> ps i' p' ls
         l' = "   - " <> l
 
-logScenario :: Protocol s s' a -> Writer [(String, String)] a
+logScenario :: Protocol' s s' a -> Writer [(String, String)] a
 logScenario (Pure x) = return x
 logScenario (Bind p f) = logProtocol p >>= \x -> logScenario (f x)
 
@@ -63,7 +65,18 @@ mockCommand (SendMsg _ _) = return ()
 mockCommand (PushMsg _ _) = return ()
 mockCommand (DeleteMsg _ _) = return ()
 
-party :: Sing (p :: Party) -> String
-party SRecipient = "Alice (recipient)"
-party SBroker = "Alice's server (broker)"
-party SSender = "Bob (sender)"
+class PartyStr (p :: Party) where
+  party :: Proxy p -> String
+
+instance PartyStr Recipient where party _ = "Alice (recipient)"
+
+instance PartyStr Broker where party _ = "Alice's server (broker)"
+
+instance PartyStr Sender where party _ = "Bob (sender)"
+
+instance PartyStr (p :: Party) where party _ = error "no such party"
+
+-- party :: Sing (p :: Party) -> String
+-- party SRecipient = "Alice (recipient)"
+-- party SBroker = "Alice's server (broker)"
+-- party SSender = "Bob (sender)"
