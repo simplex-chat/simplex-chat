@@ -2,12 +2,14 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RebindableSyntax #-}
+{-# LANGUAGE TypeOperators #-}
 {-# OPTIONS_GHC -fno-warn-missing-fields #-}
 {-# OPTIONS_GHC -fno-warn-unticked-promoted-constructors #-}
 {-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
 
 module Simplex.Messaging.Scenarios where
 
+import Control.Protocol
 import Control.XMonad.Do
 import Data.Singletons
 import Data.String
@@ -24,9 +26,9 @@ b = SBroker
 s :: Sing Sender
 s = SSender
 
-establishConnection :: Protocol '(None, None, None) '(Secured, Secured, Secured) ()
+establishConnection :: SimplexProtocol (None |: None |: None) (Secured |: Secured |: Secured) ()
 establishConnection = do
-  start "Establish simplex messaging connection and send first message"
+  comment "Establish simplex messaging connection and send first message"
   r ->: b $ CreateConn "BODbZxmtKUUF1l8pj4nVjQ"
   r ->: b $ Subscribe "RU"
   r ->: s $ SendInvite "invitation RU" -- invitation - TODo
