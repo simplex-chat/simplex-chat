@@ -1,17 +1,20 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE KindSignatures #-}
+{-# OPTIONS_GHC -fno-warn-unticked-promoted-constructors #-}
 
 module Simplex.Messaging.PrintScenario where
 
 import Control.Monad.Writer
+import Control.Protocol
 import Control.XFreer
 import Data.Singletons
 import Simplex.Messaging.Protocol
 import Simplex.Messaging.Types
 
-printScenario :: Protocol s s' a -> IO ()
+printScenario :: SimplexProtocol s s' a -> IO ()
 printScenario scn = ps 1 "" $ execWriter $ logScenario scn
   where
     ps :: Int -> String -> [(String, String)] -> IO ()
@@ -24,17 +27,17 @@ printScenario scn = ps 1 "" $ execWriter $ logScenario scn
         prt i' s = putStrLn s >> ps i' p' ls
         l' = "   - " <> l
 
-logScenario :: Protocol s s' a -> Writer [(String, String)] a
+logScenario :: SimplexProtocol s s' a -> Writer [(String, String)] a
 logScenario (Pure x) = return x
 logScenario (Bind p f) = logProtocol p >>= \x -> logScenario (f x)
 
-logProtocol :: ProtocolCmd s s' a -> Writer [(String, String)] a
-logProtocol (Start s) = tell [("", s)]
+logProtocol :: ProtocolCmd SimplexCommand '[Recipient, Broker, Sender] s s' a -> Writer [(String, String)] a
+logProtocol (Comment s) = tell [("", s)]
 logProtocol (ProtocolCmd from to cmd) = do
   tell [(party from, commandStr cmd <> " " <> party to)]
   mockCommand cmd
 
-commandStr :: Command from to a -> String
+commandStr :: SimplexCommand from to a -> String
 commandStr (CreateConn _) = "creates connection in"
 commandStr (Subscribe cid) = "subscribes to connection " <> show cid <> " in"
 commandStr (Unsubscribe cid) = "unsubscribes from connection " <> show cid <> " in"
@@ -46,7 +49,7 @@ commandStr (SendMsg cid _) = "sends message to connection " <> show cid <> " in"
 commandStr (PushMsg cid _) = "pushes message from connection " <> show cid <> " to"
 commandStr (DeleteMsg cid _) = "deletes message from connection " <> show cid <> " in"
 
-mockCommand :: Monad m => Command from to a -> m a
+mockCommand :: Monad m => SimplexCommand from to a -> m a
 mockCommand (CreateConn _) =
   return
     CreateConnResponse
