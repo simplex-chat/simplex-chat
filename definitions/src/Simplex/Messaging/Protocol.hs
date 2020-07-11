@@ -129,6 +129,17 @@ apiStub _ = throwE "api not implemented"
 actionStub :: Monad m => Connection p s -> ExceptT String m a -> ExceptT String m (Connection p s')
 actionStub _ _ = throwE "action not implemented"
 
+data SimplexParty (p :: Party) m a where
+  Api ::
+    Command from '(p, s, s') x ->
+    Connection p s ->
+    SimplexParty p m (Either String (x, Connection p s'))
+  Action ::
+    Command '(p, s, s') to x ->
+    Connection p s ->
+    Either String x ->
+    SimplexParty p m (Either String (Connection p s'))
+
 type ProtocolState = (ConnState, ConnState, ConnState)
 
 type family HasProtoSt (s :: ProtocolState) :: Constraint where

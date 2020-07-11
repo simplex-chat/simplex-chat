@@ -11,6 +11,8 @@ extra-source-files:
   - readme.md
 
 ghc-options:
+  # - -fplugin=Polysemy.Plugin
+  - -O2
   - -Wall
   - -Wcompat
   - -Werror=incomplete-patterns
@@ -23,6 +25,8 @@ dependencies:
   - aeson
   - base >= 4.7 && < 5
   - freer-indexed
+  - polysemy
+  # - polysemy-plugin
   - lens
   - mtl
   - singletons
