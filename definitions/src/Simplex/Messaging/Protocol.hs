@@ -28,43 +28,73 @@ type SimplexProtocol = Protocol SimplexCommand '[Recipient, Broker, Sender]
 data SimplexCommand :: Command Party where
   CreateConn ::
     PublicKey ->
-    SimplexCommand (Cmd Recipient None New) (Cmd Broker None New) CreateConnResponse
+    SimplexCommand
+      (Cmd Recipient None New)
+      (Cmd Broker None New)
+      CreateConnResponse
   Subscribe ::
     Enabled rs bs =>
     ConnId ->
-    SimplexCommand (Cmd Recipient rs rs) (Cmd Broker bs bs) ()
+    SimplexCommand
+      (Cmd Recipient rs rs)
+      (Cmd Broker bs bs)
+      ()
   Unsubscribe ::
     Enabled rs bs =>
     ConnId ->
-    SimplexCommand (Cmd Recipient rs rs) (Cmd Broker bs bs) ()
+    SimplexCommand
+      (Cmd Recipient rs rs)
+      (Cmd Broker bs bs)
+      ()
   SendInvite ::
     Invitation ->
-    SimplexCommand (Cmd Recipient New Pending) (Cmd Sender None New) ()
+    SimplexCommand
+      (Cmd Recipient New Pending)
+      (Cmd Sender None New)
+      ()
   ConfirmConn ::
     SenderConnId ->
     Encrypted ->
-    SimplexCommand (Cmd Sender New Confirmed) (Cmd Broker New New) ()
+    SimplexCommand
+      (Cmd Sender New Confirmed)
+      (Cmd Broker New New)
+      ()
   PushConfirm ::
     ConnId ->
     Message ->
-    SimplexCommand (Cmd Broker New New) (Cmd Recipient Pending Confirmed) ()
+    SimplexCommand
+      (Cmd Broker New New)
+      (Cmd Recipient Pending Confirmed)
+      ()
   SecureConn ::
     ConnId ->
     PublicKey ->
-    SimplexCommand (Cmd Recipient Confirmed Secured) (Cmd Broker New Secured) ()
+    SimplexCommand
+      (Cmd Recipient Confirmed Secured)
+      (Cmd Broker New Secured)
+      ()
   SendMsg ::
     (ss == Confirmed || ss == Secured) ~ True =>
     SenderConnId ->
     Encrypted ->
-    SimplexCommand (Cmd Sender ss Secured) (Cmd Broker Secured Secured) ()
+    SimplexCommand
+      (Cmd Sender ss Secured)
+      (Cmd Broker Secured Secured)
+      ()
   PushMsg ::
     ConnId ->
     Message ->
-    SimplexCommand (Cmd Broker Secured Secured) (Cmd Recipient Secured Secured) ()
+    SimplexCommand
+      (Cmd Broker Secured Secured)
+      (Cmd Recipient Secured Secured)
+      ()
   DeleteMsg ::
     ConnId ->
     MessageId ->
-    SimplexCommand (Cmd Recipient Secured Secured) (Cmd Broker Secured Secured) ()
+    SimplexCommand
+      (Cmd Recipient Secured Secured)
+      (Cmd Broker Secured Secured)
+      ()
 
 -- connection type stub for all participants, TODO move from idris
 data
