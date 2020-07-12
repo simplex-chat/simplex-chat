@@ -48,14 +48,14 @@ type family Prj (parties :: [pk]) (state :: [k]) (party :: pk) :: k where
   Prj (p ': _) (s ': _) p = s
   Prj (_ ': ps) (_ ': ss) p = Prj ps ss p
   Prj '[] _ p = TypeError (NoParty p)
-  Prj _ '[] p = TypeError (NoParty p :<>: StateError)
+  Prj _ '[] p = TypeError (NoParty p :$$: StateError)
 
 type family Inj (parties :: [pk]) (state :: [k]) (p :: pk) (s' :: k) :: [k] where
   Inj (p ': _) (_ ': ss) p s' = s' ': ss
   Inj (_ ': ps) (s ': ss) p s' = s ': Inj ps ss p s'
   Inj '[] _ p _ = TypeError (NoParty p)
-  Inj _ '[] p _ = TypeError (NoParty p :<>: StateError)
+  Inj _ '[] p _ = TypeError (NoParty p :$$: StateError)
 
 type NoParty p = Text "Party " :<>: ShowType p :<>: Text " is not found."
 
-type StateError = Text "\nSpecified fewer protocol states than parties."
+type StateError = Text "Specified fewer protocol states than parties."
