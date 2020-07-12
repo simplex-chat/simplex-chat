@@ -1,5 +1,6 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE KindSignatures #-}
@@ -20,18 +21,18 @@ printScenario scn = ps 1 "" $ execWriter $ logScenario scn
     ps :: Int -> String -> [(String, String)] -> IO ()
     ps _ _ [] = return ()
     ps i p ((p', l) : ls)
-      | p' == "" = prt i $ "## " <> l <> "\n"
-      | p' /= p = prt (i + 1) $ show i <> ". " <> p' <> ":\n" <> l'
-      | otherwise = prt i l'
+      | p' == "" = part i $ "\n" <> l <> "\n"
+      | p' /= p = part (i + 1) $ show i <> ". " <> p' <> ":\n" <> prefix l
+      | otherwise = part i $ prefix l
       where
-        prt i' s = putStrLn s >> ps i' p' ls
-        l' = "   - " <> l
+        part i' s = putStrLn s >> ps i' p' ls
+        prefix s = "   - " <> s
 
-logScenario :: SimplexProtocol s s' a -> Writer [(String, String)] a
+logScenario :: MonadWriter [(String, String)] m => SimplexProtocol s s' a -> m a
 logScenario (Pure x) = return x
 logScenario (Bind p f) = logProtocol p >>= \x -> logScenario (f x)
 
-logProtocol :: ProtocolCmd SimplexCommand '[Recipient, Broker, Sender] s s' a -> Writer [(String, String)] a
+logProtocol :: MonadWriter [(String, String)] m => SimplexProtocolCmd s s' a -> m a
 logProtocol (Comment s) = tell [("", s)]
 logProtocol (ProtocolCmd from to cmd) = do
   tell [(party from, commandStr cmd <> " " <> party to)]
