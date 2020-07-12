@@ -1,6 +1,5 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE RebindableSyntax #-}
-{-# LANGUAGE TypeOperators #-}
 {-# OPTIONS_GHC -fno-warn-unticked-promoted-constructors #-}
 
 module Control.Protocol.Example.Scenario where
@@ -20,7 +19,7 @@ b = SBroker
 s :: Sing Sender
 s = SSender
 
-scenario :: String -> MyProtocol (RNone |: BNone |: SNone) (RReady |: BEmpty |: SReady) String
+scenario :: String -> MyProtocol '[None, None, None] '[Ready, Ready, Ready] String
 scenario str = do
   r ->: b $ Create
   r ->: s $ Notify

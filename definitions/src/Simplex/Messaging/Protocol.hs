@@ -25,75 +25,75 @@ import Simplex.Messaging.Types
 
 type SimplexProtocol = Protocol SimplexCommand '[Recipient, Broker, Sender]
 
-data SimplexCommand :: Command Party where
+data SimplexCommand :: Command Party ConnState where
   CreateConn ::
     PublicKey ->
     SimplexCommand
-      (Cmd Recipient None New)
-      (Cmd Broker None New)
+      '(Recipient, None, New)
+      '(Broker, None, New)
       CreateConnResponse
   Subscribe ::
     Enabled rs bs =>
     ConnId ->
     SimplexCommand
-      (Cmd Recipient rs rs)
-      (Cmd Broker bs bs)
+      '(Recipient, rs, rs)
+      '(Broker, bs, bs)
       ()
   Unsubscribe ::
     Enabled rs bs =>
     ConnId ->
     SimplexCommand
-      (Cmd Recipient rs rs)
-      (Cmd Broker bs bs)
+      '(Recipient, rs, rs)
+      '(Broker, bs, bs)
       ()
   SendInvite ::
     Invitation ->
     SimplexCommand
-      (Cmd Recipient New Pending)
-      (Cmd Sender None New)
+      '(Recipient, New, Pending)
+      '(Sender, None, New)
       ()
   ConfirmConn ::
     SenderConnId ->
     Encrypted ->
     SimplexCommand
-      (Cmd Sender New Confirmed)
-      (Cmd Broker New New)
+      '(Sender, New, Confirmed)
+      '(Broker, New, New)
       ()
   PushConfirm ::
     ConnId ->
     Message ->
     SimplexCommand
-      (Cmd Broker New New)
-      (Cmd Recipient Pending Confirmed)
+      '(Broker, New, New)
+      '(Recipient, Pending, Confirmed)
       ()
   SecureConn ::
     ConnId ->
     PublicKey ->
     SimplexCommand
-      (Cmd Recipient Confirmed Secured)
-      (Cmd Broker New Secured)
+      '(Recipient, Confirmed, Secured)
+      '(Broker, New, Secured)
       ()
   SendMsg ::
     (ss == Confirmed || ss == Secured) ~ True =>
     SenderConnId ->
     Encrypted ->
     SimplexCommand
-      (Cmd Sender ss Secured)
-      (Cmd Broker Secured Secured)
+      '(Sender, ss, Secured)
+      '(Broker, Secured, Secured)
       ()
   PushMsg ::
     ConnId ->
     Message ->
     SimplexCommand
-      (Cmd Broker Secured Secured)
-      (Cmd Recipient Secured Secured)
+      '(Broker, Secured, Secured)
+      '(Recipient, Secured, Secured)
       ()
   DeleteMsg ::
     ConnId ->
     MessageId ->
     SimplexCommand
-      (Cmd Recipient Secured Secured)
-      (Cmd Broker Secured Secured)
+      '(Recipient, Secured, Secured)
+      '(Broker, Secured, Secured)
       ()
 
 -- connection type stub for all participants, TODO move from idris
@@ -106,11 +106,11 @@ data
 
 class Monad m => PartyProtocol m (p :: Party) where
   api ::
-    SimplexCommand from (Cmd p s s') a ->
+    SimplexCommand from '(p, s, s') a ->
     Connection p s ->
     ExceptT String m (a, Connection p s')
   action ::
-    SimplexCommand (Cmd p s s') to a ->
+    SimplexCommand '(p, s, s') to a ->
     Connection p s ->
     ExceptT String m a ->
     ExceptT String m (Connection p s')
@@ -123,11 +123,11 @@ actionStub _ _ = throwE "action not implemented"
 
 data SimplexParty (p :: Party) m a where
   Api ::
-    SimplexCommand from (Cmd p s s') x ->
+    SimplexCommand from '(p, s, s') x ->
     Connection p s ->
     SimplexParty p m (Either String (x, Connection p s'))
   Action ::
-    SimplexCommand (Cmd p s s') to x ->
+    SimplexCommand '(p, s, s') to x ->
     Connection p s ->
     Either String x ->
     SimplexParty p m (Either String (Connection p s'))

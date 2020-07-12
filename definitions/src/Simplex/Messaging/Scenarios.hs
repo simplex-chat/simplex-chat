@@ -26,7 +26,7 @@ b = SBroker
 s :: Sing Sender
 s = SSender
 
-establishConnection :: SimplexProtocol (None |: None |: None) (Secured |: Secured |: Secured) ()
+establishConnection :: SimplexProtocol '[None, None, None] '[Secured, Secured, Secured] ()
 establishConnection = do
   comment "Establish simplex messaging connection and send first message"
   r ->: b $ CreateConn "BODbZxmtKUUF1l8pj4nVjQ"

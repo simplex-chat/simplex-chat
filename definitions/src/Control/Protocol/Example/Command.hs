@@ -21,28 +21,18 @@ $( singletons
        data Party = Recipient | Broker | Sender
          deriving (Show, Eq)
 
-       data RState
-         = RNone
-         | RReady
-         deriving (Show, Eq)
-
-       data BState
-         = BNone
-         | BEmpty
-         | BFull
-         deriving (Show, Eq)
-
-       data SState
-         = SNone
-         | SReady
+       data ChannelState
+         = None
+         | Ready
+         | Busy
          deriving (Show, Eq)
        |]
  )
 
-data MyCommand :: Command Party where
-  Create :: MyCommand (Cmd Recipient RNone RReady) (Cmd Broker BNone BEmpty) ()
-  Notify :: MyCommand (Cmd Recipient RReady RReady) (Cmd Sender SNone SReady) ()
-  Send :: String -> MyCommand (Cmd Sender SReady SReady) (Cmd Broker BEmpty BFull) ()
-  Forward :: MyCommand (Cmd Broker BFull BEmpty) (Cmd Recipient RReady RReady) String
+data MyCommand :: Command Party ChannelState where
+  Create :: MyCommand '(Recipient, None, Ready) '(Broker, None, Ready) ()
+  Notify :: MyCommand '(Recipient, Ready, Ready) '(Sender, None, Ready) ()
+  Send :: String -> MyCommand '(Sender, Ready, Ready) '(Broker, Ready, Busy) ()
+  Forward :: MyCommand '(Broker, Busy, Ready) '(Recipient, Ready, Ready) String
 
 type MyProtocol = Protocol MyCommand '[Recipient, Broker, Sender]

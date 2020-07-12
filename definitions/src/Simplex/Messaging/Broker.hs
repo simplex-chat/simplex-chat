@@ -11,13 +11,12 @@
 module Simplex.Messaging.Broker where
 
 import Control.Monad.Trans.Except
-import Control.Protocol (PartyCmd (..))
 import Polysemy.Internal
 import Simplex.Messaging.Protocol
 
 instance Monad m => PartyProtocol m Broker where
   api ::
-    SimplexCommand from (Cmd Broker s s') a ->
+    SimplexCommand from '(Broker, s, s') a ->
     Connection Broker s ->
     ExceptT String m (a, Connection Broker s')
   api (CreateConn _) = apiStub
@@ -29,7 +28,7 @@ instance Monad m => PartyProtocol m Broker where
   api (DeleteMsg _ _) = apiStub
 
   action ::
-    SimplexCommand (Cmd Broker s s') to a ->
+    SimplexCommand '(Broker, s, s') to a ->
     Connection Broker s ->
     ExceptT String m a ->
     ExceptT String m (Connection Broker s')
@@ -40,14 +39,14 @@ type SimplexBroker = SimplexParty Broker
 
 api' ::
   Member SimplexBroker r =>
-  SimplexCommand from (Cmd Broker s s') a ->
+  SimplexCommand from '(Broker, s, s') a ->
   Connection Broker s ->
   Sem r (Either String (a, Connection Broker s'))
 api' cmd conn = send $ Api cmd conn
 
 action' ::
   Member SimplexBroker r =>
-  SimplexCommand (Cmd Broker s s') to a ->
+  SimplexCommand '(Broker, s, s') to a ->
   Connection Broker s ->
   Either String a ->
   Sem r (Either String (Connection Broker s'))
