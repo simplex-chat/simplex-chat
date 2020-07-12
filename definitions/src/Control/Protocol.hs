@@ -20,7 +20,7 @@ import Data.Kind
 import Data.Singletons
 import GHC.TypeLits (ErrorMessage (..), TypeError)
 
-type Command p k = (p, k, k) -> (p, k, k) -> Type -> Type
+type Command party state = (party, state, state) -> (party, state, state) -> Type -> Type
 
 data ProtocolCmd (cmd :: Command p k) (parties :: [p]) (s :: [k]) (s' :: [k]) (a :: Type) where
   Comment :: String -> ProtocolCmd cmd ps s s ()
