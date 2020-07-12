@@ -25,8 +25,6 @@ import Simplex.Messaging.Types
 
 type SimplexProtocol = Protocol SimplexCommand '[Recipient, Broker, Sender]
 
-type SimplexProtocolCmd = ProtocolCmd SimplexCommand '[Recipient, Broker, Sender]
-
 data SimplexCommand :: Command Party ConnState where
   CreateConn ::
     PublicKey ->
