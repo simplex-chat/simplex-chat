@@ -1,6 +1,5 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -11,10 +10,10 @@
 
 module Control.Protocol
   ( Protocol,
-    ProtocolCmd (..),
+    ProtocolCmd,
     Command,
     (->:),
-    interpret,
+    runProtocol,
   )
 where
 
@@ -43,22 +42,19 @@ infix 6 ->:
   Protocol cmd ps s (Inj ps (Inj ps s from fs') to ts') a
 (->:) f t c = xfree $ ProtocolCmd f t c
 
-interpret ::
+runProtocol ::
   forall m cmd ps s s' a.
   Monad m =>
   (forall from to b. (Sing (P from) -> Sing (P to) -> cmd from to b -> m b)) ->
   Protocol cmd ps s s' a ->
   m a
-interpret runCommand = loop
+runProtocol runCmd = loop
   where
     loop :: forall s1 s2 b. Protocol cmd ps s1 s2 b -> m b
-    loop = \case
-      Pure x -> return x
-      Bind c f -> do
-        x <- run c
-        loop (f x)
+    loop (Pure x) = return x
+    loop (Bind c f) = run c >>= loop . f
     run :: forall s1 s2 b. ProtocolCmd cmd ps s1 s2 b -> m b
-    run (ProtocolCmd from to cmd) = runCommand from to cmd
+    run (ProtocolCmd from to cmd) = runCmd from to cmd
 
 type family P (partyCmd :: (party, s, s)) where
   P '(p, _, _) = p

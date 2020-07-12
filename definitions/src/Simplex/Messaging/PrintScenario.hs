@@ -10,7 +10,7 @@
 module Simplex.Messaging.PrintScenario where
 
 import Control.Monad.Writer
-import Control.Protocol (interpret)
+import Control.Protocol (runProtocol)
 import Data.Singletons
 import Simplex.Messaging.Protocol
 import Simplex.Messaging.Types
@@ -28,7 +28,7 @@ printScenario scn = ps 1 "" $ execWriter $ logScenario scn
         prefix s = "   - " <> s
 
 logScenario :: MonadWriter [(String, String)] m => SimplexProtocol s s' a -> m a
-logScenario = interpret $ \from to cmd -> do
+logScenario = runProtocol $ \from to cmd -> do
   tell [(party from, commandStr cmd <> " " <> party to)]
   mockCommand cmd
 
