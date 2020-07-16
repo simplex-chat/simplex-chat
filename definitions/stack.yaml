@@ -41,6 +41,7 @@ packages:
 #
 extra-deps:
   - freer-indexed-0.1.0.0@sha256:b247be91b8ad2154fe1a514dec7c6a2553281d89325f0bc213d1d832d4c1a0e9,3007
+  - protocol-0.1.0.1@sha256:1e95952ba8fc17bbd6c1e4cf1e2993590a90ab938c30c6e530ad0f3ba4ec1a8c,1598
 # Override default flag values for local packages and extra-deps
 # flags: {}
 

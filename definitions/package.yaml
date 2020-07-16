@@ -29,9 +29,11 @@ dependencies:
   # - polysemy-plugin
   - lens
   - mtl
+  - protocol
   - singletons
   - servant-docs
   - servant-server
+  - text
   - transformers
 
 library:

@@ -30,7 +30,7 @@ establishConnection :: SimplexProtocol '[None, None, None] '[Secured, Secured, S
 establishConnection = do
   r ->: b $ CreateConn "BODbZxmtKUUF1l8pj4nVjQ"
   r ->: b $ Subscribe "RU"
-  r ->: s $ SendInvite "invitation RU" -- invitation - TODo
+  r ->: s $ SendInvite Invitation {connId = "SU"}
   s ->: b $ ConfirmConn "SU" "encrypted"
   b ->: r $ PushConfirm "RU" Message {msgId = "abc", msg = "XPaVEVNunkYKqqK0dnAT5Q"}
   r ->: b $ SecureConn "RU" "XPaVEVNunkYKqqK0dnAT5Q"
