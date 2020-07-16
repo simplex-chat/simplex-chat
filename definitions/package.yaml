@@ -33,6 +33,7 @@ dependencies:
   - singletons
   - servant-docs
   - servant-server
+  - text
   - transformers
 
 library:
