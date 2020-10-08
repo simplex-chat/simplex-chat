@@ -106,10 +106,10 @@ information necessary to establish secure encrypted connection with SMP server
 The syntax of the message defined with [ABNF][8] is:
 
 ```
-outOfBandMsg = "(" conn_id "," server_host "," transport_info ")"
-conn_id = encoded ; defined below
-server_host = DQUOTE hostname DQUOTE ; RFC 1123, section 2.1
-transport_info = JSON ; for example, TCP port number and encryption key fingerprint
+outOfBandMsg = "(" connId "," serverHost "," transportInfo ")"
+connId = encoded ; defined below
+serverHost = DQUOTE hostname DQUOTE ; RFC 1123, section 2.1
+transportInfo = JSON ; for example, TCP port number and encryption key fingerprint
 ```
 
 Defining the approach to out-of-band message passing is out of scope of the
@@ -440,11 +440,11 @@ Each transmission between the client and the server must have this format/syntax
 
 ```abnf
 transmission = "(" signed "," signature ")"
-signed = "(" conn_id "," msg ")"
+signed = "(" connId "," msg ")"
 msg = command | response | confirmation | message
 command = create | subscribe | deleteMsg | secure | confirm | send | suspend | delete
 response = conn | ok | error
-conn_id = encoded | empty ; empty connection ID is used with "create" command
+connId = encoded | empty ; empty connection ID is used with "create" command
 signature = encoded | empty ; empty signature is used with "create" and "confirm" commands
 encoded = DQUOTE base64 DQUOTE
 empty = DQUOTE DQUOTE
@@ -606,7 +606,7 @@ The body should be the sender's server key and any additional information
 encrypted with the recipient's "public" key (`EK`); once decrypted it must have
 this format:
 
-```
+```abnf
 decryptedBody = "(" senderKey "," info ")"
 senderKey = encoded
 info = JSON
