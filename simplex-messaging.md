@@ -285,7 +285,7 @@ This flow is show on sequence diagram below.
 
 **Simplex connection operation:**
 
-![Simplex connection operations](/diagrams/simplex-messaging-impl/simplex-op.svg)
+![Simplex connection operations](/diagrams/simplex-messaging/simplex-op.svg)
 
 Sequence diagram does not show E2EE - connection itself knows nothing about
 encryption between sender and receiver.
@@ -651,7 +651,7 @@ body = encoded
 The recipient can suspend connection prior to deleting it to make sure no
 messages are lost:
 
-```
+```abnf
 suspendCmd = %s"SUSPEND"
 ```
 
@@ -674,7 +674,7 @@ The recipient can delete the connection, whether it was suspended or not.
 All undelivered messages will not be delivered - they will be deleted as soon as
 command is received.
 
-```
+```abnf
 deleteCmd = %s"DELETE"
 ```
 

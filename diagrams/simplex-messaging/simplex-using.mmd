@@ -1,10 +1,10 @@
 sequenceDiagram
   participant B as Bob (sender)
-  participant S as server (conn. RU)
+  participant S as server (conn. RID)
   participant A as Alice (recipient)
 
-  note over B: encrypt message <br> ("public" key EK)
-  B ->> S: 1. send message to SU (SK-signed req)
+  note over B: encrypt message<br>("public" key EK)
+  B ->> S: 1. send message to SID (SK-signed command)
 
-  S ->> A: 2. retrieve messages from RU (RK-signed req)
-  note over A: decrypt message <br> ("private" key EK)
+  S ->> A: 2. retrieve messages from RID (RK-signed subscription)
+  note over A: decrypt message<br>("private" key EK)
