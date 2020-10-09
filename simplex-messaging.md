@@ -727,6 +727,6 @@ another channel and substitutes the video in real time.
 [4]: https://en.wikipedia.org/wiki/Unidirectional_network
 [5]: https://en.wikipedia.org/wiki/Forward_secrecy
 [6]: https://en.wikipedia.org/wiki/Off-the-Record_Messaging
-[8]: https://tools.ietf.org/html/rfc2234
+[8]: https://tools.ietf.org/html/rfc5234
 [9]: https://tools.ietf.org/html/rfc4648#section-4
 [10]: https://tools.ietf.org/html/rfc3339
