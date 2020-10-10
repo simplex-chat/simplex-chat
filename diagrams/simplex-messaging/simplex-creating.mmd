@@ -1,20 +1,20 @@
 sequenceDiagram
   participant B as Bob (sender)
-  participant S as server (conn. RU)
+  participant S as server (conn. RID)
   participant A as Alice (recipient)
 
-  note over A: creating connection <br> ("public" key RK <br> for msg retrieval)
+  note over A: creating connection<br>("public" key RK<br>for msg retrieval)
   A ->> S: 1. create connection
-  S ->> A: respond with connection URIs
+  S ->> A: respond with connection's RID and SID
 
-  note over A: out-of-band msg <br> (sender conn. URI <br> and "public" key EK <br> to encrypt msgs)
+  note over A: out-of-band msg<br>(sender's conn. SID<br>and "public" key EK<br>to encrypt msgs)
   A -->> B: 2. send out-of-band message
 
-  note over B: accept connection <br> ("public" key SK for <br>  sending messages <br> and any optional <br> info encrypted with <br> "public" key EK)
-  B ->> S: 3. confirm connection (req not signed)
+  note over B: confirm connection<br>("public" key SK for<br>sending messages<br>and any optional<br>info encrypted with<br>"public" key EK)
+  B ->> S: 3. confirm connection (command not signed)
 
-  S ->> A: 4. retrieve Bob's message (RK-signed req)
-  note over A: decrypt message <br> ("private" key EK)
-  A ->> S: 5. secure connection
+  S ->> A: 4. deliver Bob's message
+  note over A: decrypt message<br>("private" key EK)
+  A ->> S: 5. secure connection (RK-signed)
 
-  note over S: 6. secure <br> connection RU <br> is established!
+  note over S: 6. simplex<br>connection RID<br>is established!
