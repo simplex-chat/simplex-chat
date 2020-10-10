@@ -139,16 +139,23 @@ information necessary to establish secure encrypted connection with SMP server
 
 The syntax of the message defined with [ABNF][8] is:
 
+```abnf
+outOfBandMsg = encryptionKey SP senderConnId SP server SP serverKeyHash
+  ; SP is a space character in ABNF
+encryptionKey = encoded ; base64
+senderConnId = encoded
+server = hostname [":" port]
+port = 1*DIGIT
+serverKeyHash = encoded
 ```
-outOfBandMsg = "(" connId "," serverHost "," transportInfo ")"
-connId = encoded ; defined below
-serverHost = DQUOTE hostname DQUOTE ; RFC 1123, section 2.1
-transportInfo = JSON ; for example, TCP port number and encryption key fingerprint
-```
+
+`hostname` can be IP address or domain name, as defined in RFC 1123, section 2.1.
+
+`port` is optional, the default TCP port for SMP protocol is 5223.
 
 Defining the approach to out-of-band message passing is out of scope of the
 simplex messaging protocol. See [Appendix B](#appendix-b) for one of the
-possible practical approaches to passing out-of-band message.
+possible practical approaches.
 
 ## Simplex connection
 
@@ -475,13 +482,13 @@ Each transmission between the client and the server must have this format/syntax
 (after the decryption):
 
 ```abnf
-transmission = signed CRLF signature CRLF
-signed = connId CRLF msg
+transmission = signed CRLF [signature] CRLF
+signed = [connId] CRLF msg
 msg = recipientCmd / send / serverMsg
 recipientCmd = create / subscribe / secure / deleteMsg / suspend / delete
 serverMsg = conn / ok / error / message
-connId = (encoded " ") / "" ; empty connection ID is used with "create" command
-signature = encoded / "" ; empty signature can be used with "create" and "send" commands
+connId = encoded ; empty connection ID is used with "create" command
+signature = encoded ; empty signature can be used with "create" and "send" commands
 encoded = base64
 ```
 
@@ -521,7 +528,7 @@ This command is sent by the recipient to the SMP server to create the new
 connection. The syntax is:
 
 ```abnf
-create = %s"CREATE " recipientKey
+create = %s"CREATE" SP recipientKey
 recipientKey = encoded
 ```
 
@@ -529,7 +536,7 @@ If the connection is created successfully, the server must send `conn` response
 with the recipient's and sender's connection IDs:
 
 ```abnf
-conn = %s"CONN " recipientId " " senderId
+conn = %s"CONN" SP recipientId SP senderId
 recipientId = encoded
 senderId = encoded
 ```
@@ -561,7 +568,7 @@ This command is sent by the recipient to the server to add sender's key to the
 connection:
 
 ```
-secure = %s"SECURE " senderKey
+secure = %s"SECURE" SP senderKey
 senderKey = encoded
 ```
 
@@ -576,7 +583,7 @@ The recipient should send this command once the message was stored in the
 client, to notify the server that the message should be deleted:
 
 ```abnf
-deleteMsg = %s"DELMSG " msgId
+deleteMsg = %s"DELMSG" SP msgId
 msgId = encoded
 ```
 
@@ -630,7 +637,7 @@ after the sender received out-of-band message from the recipient and to send
 messages after the connection is secured:
 
 ```abnf
-send = %s"SEND " msgBody
+send = %s"SEND" SP msgBody
 msgBody = stringMsg | binaryMsg
 stringMsg = ":" string ; until CRLF in the transmission
 string = *(%x01-09 / %x0B-0C / %x0E-FF %) ; any characters other than NUL, CR and LF
@@ -672,7 +679,7 @@ decrypted it must have this format:
 ```abnf
 decryptedBody = reserved CRLF clientBody CRLF
 reserved = senderKeyMsg / *VCHAR
-senderKeyMsg = "KEY " senderKey
+senderKeyMsg = %s"KEY" SP senderKey
 senderKey = encoded
 clientBody = *OCTET
 ```
@@ -694,7 +701,7 @@ The server must deliver messages to all subscribed simplex connections on the
 currently open transport connection. The syntax for the message delivery is:
 
 ```abnf
-message = %s"MSG " msgId " " timestamp " " msgBody
+message = %s"MSG" SP msgId SP timestamp SP msgBody
 msgId = encoded
 timestamp = date-time; RFC3339
 ```
