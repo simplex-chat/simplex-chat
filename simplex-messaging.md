@@ -184,17 +184,17 @@ To do it Alice and Bob follow these steps:
       `RK`) that she did not use before for her to sign commands and to decrypt
       the transmissions received from the server.
    4. sends the command to the server to create a simplex connection (see
-      `createCmd` in [Create connection command](#create-connection-command)).
-      This command can either be anonymous or the server can be configured to
-      use the signature field to authenticate the users who are allowed to
-      create connections. This connection command contains previouisly generated
-      uniqie "public" key `RK` that will be used to sign the following commands
-      related to the same connection, for example to subscribe to the messages
-      received to this connection or to update the connection, e.g. by setting
-      the key required to send the messages (initially Alice creates the
-      connection that accepts unsigned commands to send messages, so anybody
-      could send the message via this connection if they knew the connection ID
-      and server address).
+      `create` in [Create connection command](#create-connection-command)). This
+      command can either be anonymous or the server can be configured to use the
+      signature field to authenticate the users who are allowed to create
+      connections. This connection command contains previouisly generated uniqie
+      "public" key `RK` that will be used to sign the following commands related
+      to the same connection, for example to subscribe to the messages received
+      to this connection or to update the connection, e.g. by setting the key
+      required to send the messages (initially Alice creates the connection that
+      accepts unsigned commands to send messages, so anybody could send the
+      message via this connection if they knew the connection ID and server
+      address).
    5. The server responds with connection IDs (`connResp`):
       - recipient ID `RID` for Alice to manage the connection and to receive the
         messages.
@@ -221,15 +221,14 @@ To do it Alice and Bob follow these steps:
         profile name and details).
    3. encrypts the confirmation body with the "public" key `EK` (that Alice
       provided via the out-of-band message).
-   4. sends the encrypted confirmation to the server with connection ID `SID`
-      (see `confirmCmd` in
-      [Confirm connection command](#confirm-connection-command)) to confirm the
-      connection. This command to confirm the connection must not be signed -
+   4. sends the encrypted message to the server with connection ID `SID` (see
+      `send` in [Send message command](#send-message-command)) to confirm the
+      connection. This message to confirm the connection must not be signed -
       signed messages will be rejected until Alice secures the connection
       (below).
 4. Alice receives Bob's message from the server using recipient connection ID
    `RID` (possibly, via the same transport connection she already has opened -
-   see `confirmation` in [Delivering confirmation](#d elivering-confirmation)):
+   see `message` in [Deliver connection message](#deliver-connection-message)):
    1. she decrypts received message with "private" key `EK`.
    2. even though anybody could have sent the message to the connection with ID
       `SID` before it is secured (e.g. if communication is compromised), Alice
@@ -238,7 +237,7 @@ To do it Alice and Bob follow these steps:
       application, she also may identify Bob using the information provided, but
       it is out of scope of SMP protocol.
 5. Alice secures the connection `RID` so only Bob can send messages to it (see
-   `secureCmd` in [Secure conection command](#secure-conection-command)):
+   `secure` in [Secure connection command](#secure-connection-command)):
    1. she sends the command with `RID` signed with "private" key `RK` to update
       the connection to only accept requests signed by "private" key `SK`
       provided by Bob.
@@ -439,54 +438,20 @@ Each transmission between the client and the server must have this format/syntax
 (after the decryption):
 
 ```abnf
-transmission = "(" signed "," signature ")"
-signed = "(" connId "," msg ")"
-msg = command | response | confirmation | message
-command = create | subscribe | deleteMsg | secure | confirm | send | suspend | delete
-response = conn | ok | error
-connId = encoded | empty ; empty connection ID is used with "create" command
-signature = encoded | empty ; empty signature is used with "create" and "confirm" commands
-encoded = DQUOTE base64 DQUOTE
-empty = DQUOTE DQUOTE
+transmission = signed CRLF signature CRLF
+signed = connId CRLF msg
+msg = recipientCmd / send / serverMsg
+recipientCmd = create / subscribe / secure / deleteMsg / suspend / delete
+serverMsg = conn / ok / error / message
+connId = (encoded " ") / "" ; empty connection ID is used with "create" command
+signature = encoded / "" ; empty signature can be used with "create" and "send" commands
+encoded = base64
 ```
 
 `base64` encoding should be used with padding, as defined in section 4 of [RFC
 4648][9]
 
 The syntax of specific commands and responses is defined below.
-
-### Error responses
-
-The server can respond with an error response in the following cases:
-
-- unknown command name (`"CMD"`),
-- incorrect command or transmission syntax - wrong format, number of parameters
-  or incorrect format of parameters (`"SYNTAX"`),
-- authentication error - incorrect command signature, non-existing or suspended
-  connection, sender's ID is used in place of recipient's and vice versa
-  (`"AUTH"`),
-- internal server error (`"INTERNAL"`).
-
-The syntax for error responses:
-
-```abnf
-error = %s"ERROR " errorType
-errorType = %s"CMD" | %s"SYNTAX" | %s"AUTH" | %s"INTERNAL"
-```
-
-Server implementations must aim to respond within the same time in all cases
-when `ERROR AUTH` response is required to prevent timing attacks (e.g., the
-server could execute signature verification even if the connection does not
-exist on the server).
-
-### OK response
-
-When the command is successfully executed by the server, it should respond with
-OK response:
-
-```abnf
-ok = %s"OK"
-```
 
 ### Correlating responses with commands
 
@@ -500,12 +465,20 @@ responses should be discarded.
 ### Command authentication
 
 The SMP servers must athenticate all transmissions (excluding `create` and
-`confirm` commands) by verifying the provided signatures. Signature should be
-the hash of the first part `signed` of `transmission`, encrypted with the key
-associated with the connection ID (sender's or recepient's, depending on which
-ID is used).
+`send` commands sent with empty signatures) by verifying the provided
+signatures. Signature should be the hash of the first part `signed` (including
+CRLF characters) of `transmission`, encrypted with the key associated with the
+connection ID (sender's or recepient's, depending on which connection ID is
+used).
 
-### Create connection command
+### Recipient commands
+
+Sending any of the commands in this section (other than `create`, that is sent
+without connection ID) is only allowed with recipient's ID (`RID`). If sender's
+ID is used the server must respond with `"ERROR AUTH"` response (see
+[Error responses](#error-responses)).
+
+#### Create connection command
 
 This command is sent by the recipient to the SMP server to create the new
 connection. The syntax is:
@@ -515,7 +488,7 @@ create = %s"CREATE " recipientKey
 recipientKey = encoded
 ```
 
-If the connection is created successfully, the server must send `conn` responce
+If the connection is created successfully, the server must send `conn` response
 with the recipient's and sender's connection IDs:
 
 ```abnf
@@ -525,128 +498,55 @@ senderId = encoded
 ```
 
 Once the connection is created, the recipient gets automatically subscribed to
-receive the messages from that connection. The `subscribe` command is needed
-only to start receiving the messages from existing connection when the new
-transport connection is opened.
+receive the messages from that connection, until the transport connection is
+closed. The `subscribe` command is needed only to start receiving the messages
+from the existing connection when the new transport connection is opened.
 
-Normally `signature` field of `transmission` is an empty string with this
-command, but SMP servers can also use it to authenticate users who are allowed
-to create connections.
+`signature` part of `transmission` should an empty string; SMP servers can also
+use it to authenticate users who are allowed to create simplex connections.
 
-### Subscribe to connection
+#### Subscribe to connection
 
-If the simplex connection was created previously, the recipient must use this
-command to start receiving messages from it:
+When the simplex connection was not created in the current transport connection,
+the recipient must use this command to start receiving messages from it:
 
 ```abnf
 subscribe = %s"SUB"
 ```
 
-This command can be sent only with the recipient's connection ID (`RID`), the
-sender is not allowed to subscribe to the connection - using sender's ID must
-result in `ERROR AUTH` response.
-
 If subscription is successful (`ok` response) the recipient will be receiving
-the messages from this connection until the transport connection is terminated.
+the messages from this connection until the transport connection is closed -
+there is no command to unsubscribe.
 
-## Deliver connection message
-
-The server must deliver messages to all subscribed simplex connections on the
-currently open transport connections. The syntax for the message delivery is:
-
-```abnf
-message = %s"MSG " msgId " " timestamp " " body
-msgId = encoded
-body = encoded
-timestamp = DQUOTE date-time DQUOTE ; RFC3339
-```
-
-`msgId` - a unique within the server message ID based on 128-bit
-cryptographically random integer.
-
-`timestamp` - the time when the server received the message from the sender,
-must be in date-time format defined by [RFC 3339][10]
-
-## Delete message command
-
-The recipient should send this command once the message was stored in the
-client, so that the server can delete the message:
-
-```abnf
-deleteMsg = %s"DELMSG " msgId
-```
-
-Even if this command is not sent by the recipient, the servers should limit the
-time of message storage, whether it was delivered to the recipient or not.
-
-### Confirm connection command
-
-This command is sent to the server by the sender who received out-of-band
-message from the recipient:
-
-```abnf
-confirmCmd = %s"CONF " body
-body = encoded
-```
-
-The signature with this command must be empty, otherwise it must result in
-`ERROR SYNTAX` response.
-
-If connection does not exist, is suspended, is secured, or recipient's ID was
-used, this command should result in `ERROR AUTH` response.
-
-The server should accept any number of confirmations until the connection is
-secured - it both enables the legimate sender to resend the confirmation in case
-of failure and also allows the recipient to ignore any confirmations that may be
-sent by the attackers (assuming they could have intercepted the connection ID in
-the server response, but do not have a correct encryption key passed to sender
-in out-of-band message).
-
-The body should be the sender's server key and any additional information
-encrypted with the recipient's "public" key (`EK`); once decrypted it must have
-this format:
-
-```abnf
-decryptedBody = "(" senderKey "," info ")"
-senderKey = encoded
-info = JSON
-```
-
-### Delivering confirmation
-
-Once received, the server should send the confirmation to the recipient:
-
-```abnf
-confirmation = %s"CONFMSG " msgId " " timestamp " " body
-msgId = encoded
-body = encoded; encrypted message confirmation, defined in Confirm Connection Command
-timestamp =  DQUOTE date-time DQUOTE ; RFC3339
-```
-
-### Secure conection command
+#### Secure connection command
 
 This command is sent by the recipient to the server to add sender's key to the
 connection:
 
 ```
-secureCmd = %s"SECURE " senderKey
+secure = %s"SECURE " senderKey
+senderKey = encoded
 ```
 
-All confirmations should be removed from the server once the connection is
-secured, and all further confirmation commands should be rejected with
-`ERROR AUTH` response.
+`senderKey` is received from the sender as part of the first message - see
+[Send Message Command](#send-message-command).
 
-### Send message command
+Once the connection is secured only signed messages can be sent to it.
 
-Once the connection is secured, the sender can send messages to the connection
-signing them using sender's key:
+#### Delete message command
+
+The recipient should send this command once the message was stored in the
+client, to notify the server that the message should be deleted:
 
 ```abnf
-send = %s"SEND " body
-body = encoded
+deleteMsg = %s"DELMSG " msgId
+msgId = encoded
 ```
 
-### Suspend connection
+Even if this command is not sent by the recipient, the servers should limit the
+time of message storage, whether it was delivered to the recipient or not.
+
+#### Suspend connection
 
 The recipient can suspend connection prior to deleting it to make sure no
 messages are lost:
@@ -655,27 +555,153 @@ messages are lost:
 suspendCmd = %s"SUSPEND"
 ```
 
-All messages sent after the connection was suspended must be rejected with Auth
-error.
+The server must respond with `"ERROR AUTH"` to any messages sent after the
+connection was suspended (see [Error responses](#error-responses)).
 
-The server should reply `ok` to this command only after all messages related to
+The server must respond `ok` to this command only after all messages related to
 the connection were delivered.
 
 This command can be sent multiple times (in case transport connection was
-interrupted and the response was not delivered).
+interrupted and the response was not delivered), the server should still respond
+`ok` even if the connection is already suspended.
 
-There is no command to unsuspend the connection. Servers should delete suspended
-connection that were not deleted after some period of time.
+There is no command to unsuspend the connection. Servers must delete suspended
+connections that were not deleted after some period of time.
 
-### Delete connection
+#### Delete connection
 
 The recipient can delete the connection, whether it was suspended or not.
 
 All undelivered messages will not be delivered - they will be deleted as soon as
-command is received.
+command is received, before the response is sent.
 
 ```abnf
 deleteCmd = %s"DELETE"
+```
+
+### Sender commands
+
+Currently SMP defines only one command that can be used by sender - `send`
+message. This command must be used with sender's ID, if recipient's ID is used
+the server must respond with `"ERROR AUTH"` response (see
+[Error responses](#error-responses)).
+
+#### Send message command
+
+This command is sent to the server by the sender both to confirm the connection
+after the sender received out-of-band message from the recipient and to send
+messages after the connection is secured:
+
+```abnf
+send = %s"SEND " msgBody
+msgBody = stringMsg | binaryMsg
+stringMsg = ":" string ; until CRLF in the transmission
+string = *(%x01-09 / %x0B-0C / %x0E-FF %) ; any characters other than NUL, CR and LF
+binaryMsg = size CRLF msgBody CRLF ; the last CRLF is in addition to CRLF
+                        ; in the transmission
+size = 1*DIGIT ; size in bytes
+msgBody = *OCTET ; any content of specified size - safe for binary
+```
+
+`stringMsg` is allowed primarily to test SMP servers, e.g. via telnet.
+
+The signature with this command must be empty, otherwise it must result in
+`ERROR SYNTAX` response.
+
+The first message is sent to confirm the connection - it should contain sender's
+server key (see decrypted message syntax below) - this message must be sent
+without signature.
+
+Once connection is secured (see
+[Secure connection command](#secure-connection-command)), messages must be sent
+with signature.
+
+The server must respond with `"ERROR AUTH"` response in the following cases:
+
+- connection does not exist or suspended,
+- connection is secured but the transmission does NOT have a signature,
+- connection is NOT secured but the transmission has a signature.
+
+Until the connection is secured, the server should accept any number of unsigned
+messages - it both enables the legimate sender to resend the confirmation in
+case of failure and also allows the simplex messaging client to ignore any
+confirmation messages that may be sent by the attackers (assuming they could
+have intercepted the connection ID in the server response, but do not have a
+correct encryption key passed to sender in out-of-band message).
+
+The body should be encrypted with the recipient's "public" key (`EK`); once
+decrypted it must have this format:
+
+```abnf
+decryptedBody = reserved CRLF clientBody CRLF
+reserved = senderKeyMsg / *VCHAR
+senderKeyMsg = "KEY " senderKey
+senderKey = encoded
+clientBody = *OCTET
+```
+
+`reserved` for the initial unsigned message is used to transmit sender's server
+key and can be used in future revision of the protocol for other purposes.
+
+### Server messages
+
+#### New connection response
+
+Server must respond with this message when the new connection is created.
+
+See its syntax in [Create connection command](#create-connection-command)
+
+#### Deliver connection message
+
+The server must deliver messages to all subscribed simplex connections on the
+currently open transport connection. The syntax for the message delivery is:
+
+```abnf
+message = %s"MSG " msgId " " timestamp " " msgBody
+msgId = encoded
+timestamp = date-time; RFC3339
+```
+
+`msgId` - a unique within the server message ID based on 128-bit
+cryptographically random integer.
+
+`timestamp` - the UTC time when the server received the message from the sender,
+must be in date-time format defined by [RFC 3339][10]
+
+`msgBody` - string or binary message, see syntax in
+[Send message command](#send-message-command)
+
+#### Error responses
+
+The server can respond with an error response in the following cases:
+
+- unknown command name (`"CMD"`),
+- incorrect command or transmission syntax (`"SYNTAX"`) - wrong format, number
+  of parameters or incorrect format of parameters ,
+- authentication error (`"AUTH"`) - incorrect signature, unknown or suspended
+  connection, sender's ID is used in place of recipient's and vice versa, and
+  some other cases (see [Send message command](#send-message-command))
+- internal server error (`"INTERNAL"`).
+
+The syntax for error responses:
+
+```abnf
+error = %s"ERROR " errorType
+errorType = %s"CMD" / %s"SYNTAX" / %s"AUTH" / %s"INTERNAL"
+```
+
+Server implementations must aim to respond within the same time for each command
+in all cases when `"ERROR AUTH"` response is required to prevent timing attacks
+(e.g., the server should execute signature verification even when the connection
+does not exist on the server).
+
+### OK response
+
+When the command is successfully executed by the server, it should respond with
+OK response:
+
+```abnf
+ok = %s"OK"
 ```
 
 ## Appendices
