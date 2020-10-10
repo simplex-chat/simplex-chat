@@ -1,5 +1,39 @@
 # Simplex messaging protocol (SMP)
 
+## Table of contents
+
+- [Abstract](#abstract)
+- [Introduction](#introduction)
+- [SMP Model](#smp-model)
+- [Out-of-band messages](#out-of-band-messages)
+- [Simplex connection](#simplex-connection)
+- [SMP procedure](#smp-procedure)
+- [SMP elements](#smp-elements)
+- [SMP qualities and features](#smp-qualities-and-features)
+- [Cryptographic algorithms](#cryptographic-algorithms)
+- [Simplex connection IDs](#simplex-connection-ids)
+- [Server privacy requirements](#server-privacy-requirements)
+- [SMP commands](#smp-commands)
+  - [Correlating responses with commands](#correlating-responses-with-commands)
+  - [Command authentication](#command-authentication)
+  - [Recipient commands](#recipient-commands)
+    - [Create connection command](#create-connection-command)
+    - [Subscribe to connection](#subscribe-to-connection)
+    - [Secure connection command](#secure-connection-command)
+    - [Delete message command](#delete-message-command)
+    - [Suspend connection](#suspend-connection)
+    - [Delete connection](#delete-connection)
+  - [Sender commands](#sender-commands)
+    - [Send message command](#send-message-command)
+  - [Server messages](#server-messages)
+    - [New connection response](#new-connection-response)
+    - [Deliver connection message](#deliver-connection-message)
+    - [Error responses](#error-responses)
+    - [OK response](#ok-response)
+- [Appendices](#appendices)
+  - [Appendix A. Transport connection with the SMP server](#appendix-a)
+  - [Appendix B. Sending out-of-band message](#appendix-b)
+
 ## Abstract
 
 Simplex messaging protocol is a transport agnostic client-server protocol for
@@ -73,7 +107,7 @@ the possibility of [MITM attack][1] attack relying on two pre-requisites:
   this message is used to establish the connection via SMP server that the
   sender will use to send the encrypted messages to the recipient.
 
-# The SMP Model
+## SMP Model
 
 The SMP model has three communication participants: the recipient, the message
 broker (SMP server) that is chosen and, possibly, controlled by the recipient,
@@ -116,9 +150,9 @@ Defining the approach to out-of-band message passing is out of scope of the
 simplex messaging protocol. See [Appendix B](#appendix-b) for one of the
 possible practical approaches to passing out-of-band message.
 
-## Simplex connection - the main unit of SMP protocol
+## Simplex connection
 
-The simplex connection is used by:
+The simplex connection is the main unit of SMP protocol. It is used by:
 
 - the sender of the connection (who received out-of-band message) to send
   messages to the server using connection ID, signed by sender's key.
@@ -167,12 +201,13 @@ server's public key, in case this key is compromised it would still be difficult
 to correlate senders and recipients, it would require access to connections
 records on the server.
 
-## Establishing the simplex connection via SMP server
+## SMP procedure
 
-This is explained using participants Alice (the recipient) who wants to receive
-the messages from Bob (the sender).
+The SMP procedure of creating a simplex connection on SMP server is explained
+using participants Alice (the recipient) who wants to receive the messages from
+Bob (the sender).
 
-To do it Alice and Bob follow these steps:
+To create a simpelex connection Alice and Bob follow these steps:
 
 1. Alice creates a simplex connection on the server:
    1. decides which SMP server to use (can be the same or different server that
@@ -323,7 +358,9 @@ anonymity and better protection from [MITM][1] than [OTR][6] protocol.
 How simplex connections are used by the participants is not in scope of this low
 level simplex messaging protocol.
 
-## Elements of the simplex messaging protocol
+## SMP qualities and features
+
+The simplex messaging protocol:
 
 - defines only message-passing protocol:
   - transport agnostic - the protocol does not define how clients connect to the
@@ -406,7 +443,7 @@ The reasons to use these algorithms:
 
 Future versions of the protocol may allow different algorithms.
 
-## Connection IDs
+## Simplex connection IDs
 
 Simplex messaging servers MUST generate 2 different IDs for each new
 connection - for recipient (that created the connection) and for sender. It is
@@ -416,7 +453,7 @@ REQUIRED that:
 - based on 128-bit integers generated with cryptographically strong
   pseudo-random number generator.
 
-## Privacy requirements
+## Server privacy requirements
 
 Simplex messaging server implementations MUST NOT create, store or send to any
 other servers:
@@ -430,7 +467,7 @@ other servers:
 - any other information that may compromise privacy or [forward secrecy][4] of
   communication between clients using simplex messaging servers.
 
-## Simplex messaging commands
+## SMP commands
 
 Commands syntax below is provided using [ABNF][8].
 
