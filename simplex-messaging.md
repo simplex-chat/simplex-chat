@@ -20,7 +20,7 @@
     - [Create connection command](#create-connection-command)
     - [Subscribe to connection](#subscribe-to-connection)
     - [Secure connection command](#secure-connection-command)
-    - [Delete message command](#delete-message-command)
+    - [Acknowledge message command](#acknowledge-message-command)
     - [Suspend connection](#suspend-connection)
     - [Delete connection](#delete-connection)
   - [Sender commands](#sender-commands)
@@ -149,7 +149,8 @@ port = 1*DIGIT
 serverKeyHash = encoded
 ```
 
-`hostname` can be IP address or domain name, as defined in RFC 1123, section 2.1.
+`hostname` can be IP address or domain name, as defined in RFC 1123, section
+2.1.
 
 `port` is optional, the default TCP port for SMP protocol is 5223.
 
@@ -428,7 +429,7 @@ Simplex messaging clients need to cryptographically sign commands:
 - with the recipient's key `RK` (server to verify):
   - to subscribe to connection.
   - to secure the connection.
-  - to delete received messages.
+  - to acknowledge received messages.
   - to suspend the connection.
   - to delete the connection.
 - with the sender's key `SK`:
@@ -467,7 +468,7 @@ other servers:
 
 - logs of the client commands and transport connections in the production
   environment.
-- history of deleted connections, retrieved or removed messages.
+- history of deleted connections, retrieved or acknowledged messages.
 - snapshots of the database they use to store connections and messages (instead
   simplex messaging clients must manage redundancy by using more than one
   simplex messaging server.
@@ -482,11 +483,11 @@ Each transmission between the client and the server must have this format/syntax
 (after the decryption):
 
 ```abnf
-transmission = signed CRLF [signature] CRLF
-signed = [connId] CRLF msg
+transmission = [signature] LF signed LF
+signed = [connId] LF msg
 msg = recipientCmd / send / serverMsg
-recipientCmd = create / subscribe / secure / deleteMsg / suspend / delete
-serverMsg = conn / ok / error / message
+recipientCmd = create / subscribe / secure / acknowledge / suspend / delete
+serverMsg = connIds / ok / error / message
 connId = encoded ; empty connection ID is used with "create" command
 signature = encoded ; empty signature can be used with "create" and "send" commands
 encoded = base64
@@ -499,9 +500,9 @@ The syntax of specific commands and responses is defined below.
 
 ### Correlating responses with commands
 
-The server must send `conn`, `error` and `ok` responses in the same order within
-each connection ID as the commands received in the transport connection, so that
-they can be correlated by the clients.
+The server must send `connIds`, `error` and `ok` responses in the same order
+within each connection ID as the commands received in the transport connection,
+so that they can be correlated by the clients.
 
 If the transport connection is closed before some responses are sent, these
 responses should be discarded.
@@ -519,7 +520,7 @@ used).
 
 Sending any of the commands in this section (other than `create`, that is sent
 without connection ID) is only allowed with recipient's ID (`RID`). If sender's
-ID is used the server must respond with `"ERROR AUTH"` response (see
+ID is used the server must respond with `"ERR AUTH"` response (see
 [Error responses](#error-responses)).
 
 #### Create connection command
@@ -528,15 +529,15 @@ This command is sent by the recipient to the SMP server to create the new
 connection. The syntax is:
 
 ```abnf
-create = %s"CREATE" SP recipientKey
+create = %s"CONN" SP recipientKey
 recipientKey = encoded
 ```
 
-If the connection is created successfully, the server must send `conn` response
-with the recipient's and sender's connection IDs:
+If the connection is created successfully, the server must send `connIds`
+response with the recipient's and sender's connection IDs:
 
 ```abnf
-conn = %s"CONN" SP recipientId SP senderId
+connIds = %s"IDS" SP recipientId SP senderId
 recipientId = encoded
 senderId = encoded
 ```
@@ -562,13 +563,17 @@ If subscription is successful (`ok` response) the recipient will be receiving
 the messages from this connection until the transport connection is closed -
 there is no command to unsubscribe.
 
+The first message is delivered as soon as it is available, to receive the
+following messages the recipient must acknoledge the reception of the message
+with [Acknowledge message command](#acknowledge-message-command)
+
 #### Secure connection command
 
 This command is sent by the recipient to the server to add sender's key to the
 connection:
 
 ```
-secure = %s"SECURE" SP senderKey
+secure = %s"KEY" SP senderKey
 senderKey = encoded
 ```
 
@@ -577,14 +582,13 @@ senderKey = encoded
 
 Once the connection is secured only signed messages can be sent to it.
 
-#### Delete message command
+#### Acknowledge message command
 
 The recipient should send this command once the message was stored in the
-client, to notify the server that the message should be deleted:
+client, to notify the server that the message is received and should be deleted:
 
 ```abnf
-deleteMsg = %s"DELMSG" SP msgId
-msgId = encoded
+acknowledge = %s"ACK"
 ```
 
 Even if this command is not sent by the recipient, the servers should limit the
@@ -596,10 +600,10 @@ The recipient can suspend connection prior to deleting it to make sure no
 messages are lost:
 
 ```abnf
-suspendCmd = %s"SUSPEND"
+suspend = %s"HOLD"
 ```
 
-The server must respond with `"ERROR AUTH"` to any messages sent after the
+The server must respond with `"ERR AUTH"` to any messages sent after the
 connection was suspended (see [Error responses](#error-responses)).
 
 The server must respond `ok` to this command only after all messages related to
@@ -620,14 +624,14 @@ All undelivered messages will not be delivered - they will be deleted as soon as
 command is received, before the response is sent.
 
 ```abnf
-deleteCmd = %s"DELETE"
+delete = %s"DEL"
 ```
 
 ### Sender commands
 
 Currently SMP defines only one command that can be used by sender - `send`
 message. This command must be used with sender's ID, if recipient's ID is used
-the server must respond with `"ERROR AUTH"` response (see
+the server must respond with `"ERR AUTH"` response (see
 [Error responses](#error-responses)).
 
 #### Send message command
@@ -639,10 +643,9 @@ messages after the connection is secured:
 ```abnf
 send = %s"SEND" SP msgBody
 msgBody = stringMsg | binaryMsg
-stringMsg = ":" string ; until CRLF in the transmission
+stringMsg = ":" string ; until LF in the transmission
 string = *(%x01-09 / %x0B-0C / %x0E-FF %) ; any characters other than NUL, CR and LF
-binaryMsg = size CRLF msgBody CRLF ; the last CRLF is in addition to CRLF
-                        ; in the transmission
+binaryMsg = size LF msgBody LF ; the last LF is in addition to LF in the transmission
 size = 1*DIGIT ; size in bytes
 msgBody = *OCTET ; any content of specified size - safe for binary
 ```
@@ -650,7 +653,7 @@ msgBody = *OCTET ; any content of specified size - safe for binary
 `stringMsg` is allowed primarily to test SMP servers, e.g. via telnet.
 
 The signature with this command must be empty, otherwise it must result in
-`ERROR SYNTAX` response.
+`ERR SYNTAX` response.
 
 The first message is sent to confirm the connection - it should contain sender's
 server key (see decrypted message syntax below) - this message must be sent
@@ -660,7 +663,7 @@ Once connection is secured (see
 [Secure connection command](#secure-connection-command)), messages must be sent
 with signature.
 
-The server must respond with `"ERROR AUTH"` response in the following cases:
+The server must respond with `"ERR AUTH"` response in the following cases:
 
 - connection does not exist or suspended,
 - connection is secured but the transmission does NOT have a signature,
@@ -677,7 +680,7 @@ The body should be encrypted with the recipient's "public" key (`EK`); once
 decrypted it must have this format:
 
 ```abnf
-decryptedBody = reserved CRLF clientBody CRLF
+decryptedBody = reserved LF clientBody LF
 reserved = senderKeyMsg / *VCHAR
 senderKeyMsg = %s"KEY" SP senderKey
 senderKey = encoded
@@ -701,13 +704,9 @@ The server must deliver messages to all subscribed simplex connections on the
 currently open transport connection. The syntax for the message delivery is:
 
 ```abnf
-message = %s"MSG" SP msgId SP timestamp SP msgBody
-msgId = encoded
+message = %s"MSG" SP timestamp SP msgBody
 timestamp = date-time; RFC3339
 ```
-
-`msgId` - a unique within the server message ID based on 128-bit
-cryptographically random integer.
 
 `timestamp` - the UTC time when the server received the message from the sender,
 must be in date-time format defined by [RFC 3339][10]
@@ -719,10 +718,11 @@ must be in date-time format defined by [RFC 3339][10]
 
 The server can respond with an error response in the following cases:
 
-- unknown command name (`"CMD"`),
-- incorrect command or transmission syntax (`"SYNTAX"`) - wrong format, number
-  of parameters or incorrect format of parameters ,
-- authentication error (`"AUTH"`) - incorrect signature, unknown or suspended
+- unknown command name (`"UNKNOWN"`),
+- prohibited command (`"PROHIBITED"`) - server response sent from client,
+- incorrect command or transmission syntax (`"SYNTAX"`) - see error codes below
+- incorrect message body size (`"SIZE"`)
+- authentication error (`"AUTH"`) - incorrect signature, unknown (or suspended)
   connection, sender's ID is used in place of recipient's and vice versa, and
   some other cases (see [Send message command](#send-message-command))
 - internal server error (`"INTERNAL"`).
@@ -730,12 +730,18 @@ The server can respond with an error response in the following cases:
 The syntax for error responses:
 
 ```abnf
-error = %s"ERROR " errorType
-errorType = %s"CMD" / %s"SYNTAX" / %s"AUTH" / %s"INTERNAL"
+error = %s"ERR " errorType
+errorType = %s"UNKNOWN" / %s"PROHIBITED" / %s"SYNTAX " code / %s"SIZE" / %s"AUTH" / %s"INTERNAL"
+code = badParameters / noCredentials / hasCredentials / noConnId / msgBody
+badParameters = "2" ; incorrect number or format of parameters
+noCredentials = "3" ; connection ID and/or signature are required but absent
+hasCredentials = "4" ; connection ID and/or signature are not allowed but present
+noConnId = "5" ; connection ID is required and absent - only used in SEND command atm
+msgBody = "6" ; message body has incorrect format, it is neither a number nor starts from ":"
 ```
 
 Server implementations must aim to respond within the same time for each command
-in all cases when `"ERROR AUTH"` response is required to prevent timing attacks
+in all cases when `"ERR AUTH"` response is required to prevent timing attacks
 (e.g., the server should execute signature verification even when the connection
 does not exist on the server).
 
