@@ -176,7 +176,7 @@ communication network. For example, two (or more, for redundancy) simplex
 connections can be used to create a duplex communication channel. Higher level
 primitives that are only known to system participants in their client
 applications can be created as well - user profiles, contacts, conversations,
-groups and broadcasts. Simplex messaging servers have have the information about
+groups and broadcasts. Simplex messaging servers only have the information about
 the low-level simplex connections. In this way a high level of privacy and
 security of the conversations is provided. Application level primitives are not
 in scope of the simplex messaging protocol.
@@ -185,9 +185,10 @@ This approach is based on the concept of [unidirectional networks][4] that are
 used for applications with high level of information security.
 
 Access to each connection is controlled with unique (not shared with other
-connections) assymetric key pairs, separate for sender and the recipient. The
-sender and the receiver have private keys, and the server has associated public
-keys to authnticate participants' commands by verifying the signatures.
+connections) assymetric key pairs, separate for the sender and the recipient.
+The sender and the receiver have private keys, and the server has associated
+public keys to authenticate participants' commands by verifying cryptographic
+signatures.
 
 The messages sent into the connection are encrypted and decrypted using another
 key pair - the recepient has the private key and the sender has the associated
@@ -227,7 +228,7 @@ To create a simpelex connection Alice and Bob follow these steps:
    3. generates another new random public/private key pair (recepient key -
       `RK`) that she did not use before for her to sign commands and to decrypt
       the transmissions received from the server.
-   4. sends the command to the server to create a simplex connection (see
+   4. sends `"CONN"` command to the server to create a simplex connection (see
       `create` in [Create connection command](#create-connection-command)). This
       command can either be anonymous or the server can be configured to use the
       signature field to authenticate the users who are allowed to create
@@ -239,7 +240,7 @@ To create a simpelex connection Alice and Bob follow these steps:
       accepts unsigned commands to send messages, so anybody could send the
       message via this connection if they knew the connection ID and server
       address).
-   5. The server responds with connection IDs (`connResp`):
+   5. The server sends `"IDS"` response with connection IDs (`connIds`):
       - recipient ID `RID` for Alice to manage the connection and to receive the
         messages.
       - sender ID `SID` for Bob to send messages to the connection.
@@ -280,8 +281,8 @@ To create a simpelex connection Alice and Bob follow these steps:
       contains the expected message format). Optionally, in the client
       application, she also may identify Bob using the information provided, but
       it is out of scope of SMP protocol.
-5. Alice secures the connection `RID` so only Bob can send messages to it (see
-   `secure` in [Secure connection command](#secure-connection-command)):
+5. Alice secures the connection `RID` with `"KEY"` command so only Bob can send
+   messages to it (see [Secure connection command](#secure-connection-command)):
    1. she sends the command with `RID` signed with "private" key `RK` to update
       the connection to only accept requests signed by "private" key `SK`
       provided by Bob.
@@ -306,19 +307,21 @@ Bob now can securely send messages to Alice:
       Alice, only known to Alice and Bob, used only for one simplex connection).
    2. he signs the command to the server connection `SID` using the "private"
       key `SK` (that only he knows, used only for this connection).
-   3. he sends the command to the server (see `send` in
+   3. he sends `"SEND"` command to the server (see `send` in
       [Send message command](#send-message-command)), that the server will
       authenticate using the "public" key `SK` (that Alice earlier provided to
       the server).
 2. Alice receives the message(s):
-   1. she signs the command to the server to subscribe to the connection `RID`
-      with the "private" key `RK` (see `subscribeCmd` in
+   1. she signs `"SUB"` command to the server to subscribe to the connection
+      `RID` with the "private" key `RK` (see `subscribeCmd` in
       [Subscribe to connection](#subscribe-to-connection)).
    2. the server, having authenticated Alice's command with the "public" key
       `RK` that she provided, delivers Bob's message(s) (see `message` in
       [Deliver connection message](#deliver-connection-message)).
    3. she decrypts Bob's message(s) with the "private" key `EK` (that only she
       has).
+   4. she acknowledges the message reception to the server with `"ACK"` so that
+      the server can delete the message and deliver the next messages.
 
 This flow is show on sequence diagram below.
 
@@ -373,9 +376,8 @@ The simplex messaging protocol:
 
 - defines only message-passing protocol:
   - transport agnostic - the protocol does not define how clients connect to the
-    servers and does not require persistent connections. While a generic term
-    "command" is used, it can be implemented in various ways - TCP connection,
-    HTTP requests, messages over (web)sockets, etc..
+    servers. It can be implemented over any ordered data stream channel: TCP
+    connection, HTTP with long polling, websockets, etc..
   - not semantic - the protocol does not assign any meaning to connections and
     messages. While on the application level the connections and messages can
     have different meaning (e.g., for messages: text or image chat message,
@@ -383,13 +385,13 @@ The simplex messaging protocol:
     changing "public" key to encrypt messages, changing servers, etc.), on the
     simplex messaging protocol level all the messages are binary and their
     meaning can only be interpreted by client applications and not by the
-    servers - this interpretation is in scope of application level protocol and
-    out of scope of this simplex messaging protocol.
+    servers - this interpretation is out of scope of this simplex messaging
+    protocol.
 - client-server architecture:
   - multiple servers, that can be deployed by the system users, can be used to
     send and retrieve messages.
-  - servers do not communicate with each other and do not even "know" about
-    other servers.
+  - servers do not communicate with each other and do not "know" about other
+    servers.
   - clients only communicate with servers (excluding the initial out-of-band
     message), so the message passing is asynchronous.
   - for each connection, the message recipient defines the server through which
@@ -411,7 +413,7 @@ The simplex messaging protocol:
     send the messages into the connection, and another unique "public" key - to
     retrieve the messages from the connection. "Unique" here means that each
     "public" key is used only for one connection and is not used for any other
-    context - effectively this key is not public and does not represent any
+    context - effectively, this key is not public and does not represent any
     participant identity.
   - both "public" keys are provided to the server by the connection recepient
     when the connection is established.
@@ -421,7 +423,6 @@ The simplex messaging protocol:
     only known to participants, not to the servers.
   - messaging graph can be asymmetric: Bob's ability to send messages to Alice
     does not automatically lead to the Alice's ability to send messages to Bob.
-  - connections are identified by sender and recipient server IDs.
 
 ## Cryptographic algorithms
 
@@ -459,7 +460,7 @@ connection - for recipient (that created the connection) and for sender. It is
 REQUIRED that:
 
 - these IDs are different and unique within the server.
-- based on 128-bit integers generated with cryptographically strong
+- based on 64-128-bit integers generated with cryptographically strong
   pseudo-random number generator.
 
 ## Server privacy requirements
@@ -576,8 +577,6 @@ available; to receive the following message the recipient must acknoledge the
 reception of the message (see
 [Acknowledge message delivery](#acknowledge-message-delivery)).
 
-If the same simplex connection is subscribed via another transport connection,
-
 #### Secure connection command
 
 This command is sent by the recipient to the server to add sender's key to the
@@ -606,8 +605,9 @@ acknowledge = %s"ACK"
 Even if acknowledgement is not sent by the recipient, the server should limit
 the time of message storage, whether it was delivered to the recipient or not.
 
-Having received the acknowledgement, SMP server should send the next message or
-respond with `ok` if there are no more messages in this simplex connection.
+Having received the acknowledgement, SMP server should immediately delete the
+sent message and then send the next available message or respond with `ok` if
+there are no more messages stored in this simplex connection.
 
 #### Suspend connection
 
@@ -621,14 +621,13 @@ suspend = %s"OFF"
 The server must respond with `"ERR AUTH"` to any messages sent after the
 connection was suspended (see [Error responses](#error-responses)).
 
-The server must respond `ok` to this command only after all messages related to
-the connection were delivered.
+The server must respond `ok` to this command if it was successful.
 
 This command can be sent multiple times (in case transport connection was
 interrupted and the response was not delivered), the server should still respond
 `ok` even if the connection is already suspended.
 
-There is no command to unsuspend the connection. Servers must delete suspended
+There is no command to reactivate the connection. Servers must delete suspended
 connections that were not deleted after some period of time.
 
 #### Delete connection
@@ -667,12 +666,9 @@ msgBody = *OCTET ; any content of specified size - safe for binary
 
 `stringMsg` is allowed primarily to test SMP servers, e.g. via telnet.
 
-The signature with this command must be empty, otherwise it must result in
-`ERR SYNTAX` response.
-
 The first message is sent to confirm the connection - it should contain sender's
-server key (see decrypted message syntax below) - this message must be sent
-without signature.
+server key (see decrypted message syntax below) - this first message must be
+sent without signature.
 
 Once connection is secured (see
 [Secure connection command](#secure-connection-command)), messages must be sent
@@ -719,9 +715,16 @@ The server must deliver messages to all subscribed simplex connections on the
 currently open transport connection. The syntax for the message delivery is:
 
 ```abnf
-message = %s"MSG" SP timestamp SP binaryMsg
+message = %s"MSG" SP msgId SP timestamp SP binaryMsg
+msgId = encoded
 timestamp = date-time; RFC3339
 ```
+
+`msgId` - unique message ID generated by the server based on 32-64 bits
+cryptographically strong random number. It can be used by the clients to detect
+messages that were delivered more than once (in case the transport connection
+was interrupted and the server did not receive the message delivery
+acknowledgement).
 
 `timestamp` - the UTC time when the server received the message from the sender,
 must be in date-time format defined by [RFC 3339][10]
@@ -738,7 +741,7 @@ subscribed transport connection:
 unsubscribed = %s"END"
 ```
 
-No further messages should be delivered to unsubscribed connection.
+No further messages should be delivered to unsubscribed transport connection.
 
 #### Error responses
 
