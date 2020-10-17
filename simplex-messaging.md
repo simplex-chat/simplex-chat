@@ -20,14 +20,15 @@
     - [Create connection command](#create-connection-command)
     - [Subscribe to connection](#subscribe-to-connection)
     - [Secure connection command](#secure-connection-command)
-    - [Acknowledge message command](#acknowledge-message-command)
+    - [Acknowledge message delivery](#acknowledge-message-delivery)
     - [Suspend connection](#suspend-connection)
     - [Delete connection](#delete-connection)
   - [Sender commands](#sender-commands)
     - [Send message command](#send-message-command)
   - [Server messages](#server-messages)
-    - [New connection response](#new-connection-response)
+    - [Connection IDs response](#connection-ids-response)
     - [Deliver connection message](#deliver-connection-message)
+    - [Subscription END notification](#subscription-end-notification)
     - [Error responses](#error-responses)
     - [OK response](#ok-response)
 - [Appendices](#appendices)
@@ -487,7 +488,7 @@ transmission = [signature] LF signed LF
 signed = [connId] LF msg
 msg = recipientCmd / send / serverMsg
 recipientCmd = create / subscribe / secure / acknowledge / suspend / delete
-serverMsg = connIds / ok / error / message
+serverMsg = connIds / message / unsubscribed / ok / error
 connId = encoded ; empty connection ID is used with "create" command
 signature = encoded ; empty signature can be used with "create" and "send" commands
 encoded = base64
@@ -542,13 +543,16 @@ recipientId = encoded
 senderId = encoded
 ```
 
+This response should be sent with empty connection ID (the second part of the
+transmission).
+
 Once the connection is created, the recipient gets automatically subscribed to
 receive the messages from that connection, until the transport connection is
 closed. The `subscribe` command is needed only to start receiving the messages
 from the existing connection when the new transport connection is opened.
 
-`signature` part of `transmission` should an empty string; SMP servers can also
-use it to authenticate users who are allowed to create simplex connections.
+`signature` part of CONN `transmission` should an empty string; SMP servers can
+also use it to authenticate users who are allowed to create simplex connections.
 
 #### Subscribe to connection
 
@@ -559,13 +563,20 @@ the recipient must use this command to start receiving messages from it:
 subscribe = %s"SUB"
 ```
 
-If subscription is successful (`ok` response) the recipient will be receiving
-the messages from this connection until the transport connection is closed -
-there is no command to unsubscribe.
+If subscription is successful the server should respond with the first available
+message or with `ok` response if no messages are available. The recipient will
+continue receiving the messages from this connection until the transport
+connection is closed or until another transport connection subscribes to the
+same simplex connection - in this case the first subscription should be
+cancelled and [subscription END notification](#subscription-end-notification)
+delivered.
 
-The first message is delivered as soon as it is available, to receive the
-following messages the recipient must acknoledge the reception of the message
-with [Acknowledge message command](#acknowledge-message-command)
+The first message will be delivered either immediately or as soon as it is
+available; to receive the following message the recipient must acknoledge the
+reception of the message (see
+[Acknowledge message delivery](#acknowledge-message-delivery)).
+
+If the same simplex connection is subscribed via another transport connection,
 
 #### Secure connection command
 
@@ -582,25 +593,29 @@ senderKey = encoded
 
 Once the connection is secured only signed messages can be sent to it.
 
-#### Acknowledge message command
+#### Acknowledge message delivery
 
-The recipient should send this command once the message was stored in the
-client, to notify the server that the message is received and should be deleted:
+The recipient should send the acknowledgement of message delivery once the
+message was stored in the client, to notify the server that the message should
+be deleted:
 
 ```abnf
 acknowledge = %s"ACK"
 ```
 
-Even if this command is not sent by the recipient, the servers should limit the
-time of message storage, whether it was delivered to the recipient or not.
+Even if acknowledgement is not sent by the recipient, the server should limit
+the time of message storage, whether it was delivered to the recipient or not.
+
+Having received the acknowledgement, SMP server should send the next message or
+respond with `ok` if there are no more messages in this simplex connection.
 
 #### Suspend connection
 
-The recipient can suspend connection prior to deleting it to make sure no
+The recipient can suspend connection prior to deleting it to make sure that no
 messages are lost:
 
 ```abnf
-suspend = %s"HOLD"
+suspend = %s"OFF"
 ```
 
 The server must respond with `"ERR AUTH"` to any messages sent after the
@@ -661,7 +676,7 @@ without signature.
 
 Once connection is secured (see
 [Secure connection command](#secure-connection-command)), messages must be sent
-with signature.
+with the signature.
 
 The server must respond with `"ERR AUTH"` response in the following cases:
 
@@ -687,12 +702,12 @@ senderKey = encoded
 clientBody = *OCTET
 ```
 
-`reserved` for the initial unsigned message is used to transmit sender's server
-key and can be used in future revision of the protocol for other purposes.
+`reserved` in the initial unsigned message is used to transmit sender's server
+key and can be used in the future revisions of SMP protocol for other purposes.
 
 ### Server messages
 
-#### New connection response
+#### Connection IDs response
 
 Server must respond with this message when the new connection is created.
 
@@ -704,15 +719,26 @@ The server must deliver messages to all subscribed simplex connections on the
 currently open transport connection. The syntax for the message delivery is:
 
 ```abnf
-message = %s"MSG" SP timestamp SP msgBody
+message = %s"MSG" SP timestamp SP binaryMsg
 timestamp = date-time; RFC3339
 ```
 
 `timestamp` - the UTC time when the server received the message from the sender,
 must be in date-time format defined by [RFC 3339][10]
 
-`msgBody` - string or binary message, see syntax in
-[Send message command](#send-message-command)
+`binaryMsg` - see syntax in [Send message command](#send-message-command)
+
+#### Subscription END notification
+
+When another transport connection is subscribed to the same simplex connection,
+the server should unsubscribe and to send the notification to the previously
+subscribed transport connection:
+
+```abnf
+unsubscribed = %s"END"
+```
+
+No further messages should be delivered to unsubscribed connection.
 
 #### Error responses
 
@@ -732,7 +758,8 @@ The syntax for error responses:
 ```abnf
 error = %s"ERR " errorType
 errorType = %s"UNKNOWN" / %s"PROHIBITED" / %s"SYNTAX " code / %s"SIZE" / %s"AUTH" / %s"INTERNAL"
-code = badParameters / noCredentials / hasCredentials / noConnId / msgBody
+code = badTransmission / badParameters / noCredentials / hasCredentials / noConnId / msgBody
+badTransmission = "1" ; signature or connection ID are not valid base64 encoded string
 badParameters = "2" ; incorrect number or format of parameters
 noCredentials = "3" ; connection ID and/or signature are required but absent
 hasCredentials = "4" ; connection ID and/or signature are not allowed but present
