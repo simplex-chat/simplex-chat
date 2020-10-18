@@ -485,8 +485,8 @@ Each transmission between the client and the server must have this format/syntax
 (after the decryption):
 
 ```abnf
-transmission = [signature] LF signed LF
-signed = [connId] LF msg
+transmission = [signature] CRLF signed CRLF
+signed = [connId] CRLF msg
 msg = recipientCmd / send / serverMsg
 recipientCmd = create / subscribe / secure / acknowledge / suspend / delete
 serverMsg = connIds / message / unsubscribed / ok / error
@@ -657,9 +657,9 @@ messages after the connection is secured:
 ```abnf
 send = %s"SEND" SP msgBody
 msgBody = stringMsg | binaryMsg
-stringMsg = ":" string ; until LF in the transmission
+stringMsg = ":" string ; until CRLF in the transmission
 string = *(%x01-09 / %x0B-0C / %x0E-FF %) ; any characters other than NUL, CR and LF
-binaryMsg = size LF msgBody LF ; the last LF is in addition to LF in the transmission
+binaryMsg = size CRLF msgBody CRLF ; the last CRLF is in addition to CRLF in the transmission
 size = 1*DIGIT ; size in bytes
 msgBody = *OCTET ; any content of specified size - safe for binary
 ```
