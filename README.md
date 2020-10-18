@@ -2,7 +2,7 @@
 
 ## SMP server demo
 
-This is a demo implementation of SMP (simplex messaging protocol) server.
+This is a demo implementation of SMP ([simplex messaging protocol](https://github.com/simplex-chat/protocol/blob/master/simplex-messaging.md)) server.
 
 This is not usable for real applications, as it lacks the following protocol features:
 
@@ -54,7 +54,7 @@ OK
 3. Secure queue with sender's "key"
 
 ```telnet
-> 1234 -- "signature" - same as "key" in the demo
+> 1234 -- recipient's "signature" - same as "key" in the demo
 > QuCLU4YxgS7wcPFA -- recipient ID
 > KEY abcd -- "key" provided by sender
 
@@ -65,8 +65,8 @@ OK
 4. Sender can now send messages to the queue
 
 ```telnet
-> abcd
-> YB4CCATREHkaQcEh
+> abcd -- sender's "signature" - same as "key" in the demo
+> YB4CCATREHkaQcEh -- sender ID
 > SEND :hello
 
 YB4CCATREHkaQcEh
@@ -88,6 +88,6 @@ QuCLU4YxgS7wcPFA
 OK
 ```
 
-## Desgin
+## Design
 
 ![server design](design/server.svg)
