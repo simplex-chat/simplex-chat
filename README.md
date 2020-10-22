@@ -4,12 +4,12 @@
 
 This is a demo implementation of SMP ([simplex messaging protocol](https://github.com/simplex-chat/protocol/blob/master/simplex-messaging.md)) server.
 
-This is not usable for real applications, as it lacks the following protocol features:
+It has a very limited utility (if any) for real applications, as it lacks the following protocol features:
 
 - cryptographic signature verification, instead it simply compares provided "signature" with stored "public key", effectively treating them as plain text passwords.
 - there is no transport encryption
 
-These limitations make it easy to experiment with the protocol logic via telnet.
+Because of these limitations, it is easy to experiment with the protocol logic via telnet.
 
 You can either run it locally or try with the deployed demo server:
 
@@ -25,22 +25,22 @@ telnet smp.simplex.im 5223
 
 Lines you should send are prefixed with `>` character, you should not type them.
 
-Comments are prefixed with `--`, they are not part of transmission.
+Comments are prefixed with `--`, they are not part of transmissions.
 
-`>` on its own means you need to press return - telnet should be configured to send CRLF.
+`>` on its own means you need to press `return` - telnet should be configured to send it as CRLF.
 
 1. Create simplex message queue:
 
 ```telnet
 >
 >
-> CONN 1234 -- 1234 is recipient's key
+> NEW 1234 -- 1234 is recipient's key
 
 
-IDS QuCLU4YxgS7wcPFA YB4CCATREHkaQcEh -- recipient and sender ID for the queue
+IDS QuCLU4YxgS7wcPFA YB4CCATREHkaQcEh -- recipient and sender IDs for the queue
 ```
 
-2. Sender can send their "key" to the connection:
+2. Sender can send their "key" to the queue:
 
 ```telnet
 > -- no signature (just press enter)
