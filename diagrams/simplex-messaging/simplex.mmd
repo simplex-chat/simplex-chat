@@ -3,7 +3,7 @@ graph LR
   VR{{"verify recipient (RK)"}}
 
   S(sender) -->|msg| VS
-  subgraph "server (connection RID)"
+  subgraph "server (queue RID)"
     VS --> DB[("storage")]
     DB --> VR
   end
