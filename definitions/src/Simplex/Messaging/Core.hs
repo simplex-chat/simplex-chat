@@ -22,9 +22,9 @@ $( singletons
 
        data ConnState
          = None -- (all) not available or removed from the broker
-         | New -- (recipient, broker) connection created (or received from sender)
-         | Pending -- (recipient, sender) sent to sender out-of-band
-         | Confirmed -- (recipient) confirmed by sender with the broker
+         | New -- (all) connection created (or, for sender, received from recipient)
+         | Pending -- (recipient) sent to sender out-of-band
+         | Confirmed -- (recipient, sender) confirmed by sender with the broker
          | Secured -- (all) secured with the broker
          | Disabled -- (broker, recipient) disabled with the broker by recipient
          deriving (Show, Eq)

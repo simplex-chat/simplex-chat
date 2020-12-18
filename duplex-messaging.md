@@ -3,13 +3,19 @@
 ## Table of contents
 
 - [Abstract](#abstract)
+- [Messages between SMP agents](#messages-between-smp-agents)
 - [SMP agent commands](#smp-agent-commands)
 
 ## Abstract
 
-Protocol describes the command that can be sent to the client that communicates with multiple SMP servers. This protocol allows to manage multiple simplex connections organised into groups defining duplex communication channels.
+SMP agent protocol has 3 main parts:
+- the syntax and semantics of messages that SMP agents exchange between each other to negotiate establishing multiple unidirectional (simplex) encrypted queues on SMP server(s) to provide their users convenient interface to establish and operate duplex (bi-directional) connections, providing redundancy, server, queue and key rotation, and notifications about any communication integrity violations.
+- the syntax and semantics of the commands that should be sent over TCP or other sequential streaming protocol to the client-side agent that communicates with one or multiple SMP servers. This protocol allows to manage multiple simplex connections organised into groups defining duplex communication channels that can be used to build higher-level communication and application primitives.
+- the syntax and contents of messages that users of SMP agents should send out-of-band to ensure [E2E encryption][1] integrity for the first SMP queue and protection against active attacks ([MITM attacks][2]).
 
 ## SMP agent commands
+
+This part describes the transmissions between users and client-side SMP agents: commands that the users send to create and operate duplex connections and SMP agent responses and messages they deliver.
 
 Commands syntax below is provided using [ABNF][1].
 
@@ -18,25 +24,29 @@ Each transmission between the user and SMP agent must have this format/syntax
 
 ```abnf
 transmission = (userCmd / agentMsg) CRLF
-userCmd = create / alias / subscribe
-          / invite / accept
-          / send / acknowledge
+userCmd = addServer / deleteServer / killServer / listServers
+          / create / alias / subscribe / suspend / delete
+          / invite / accept / send / acknowledge
           / status / info
-          / suspend / delete
+
 agentMsg = connection / connectionInfo / invitation / message / unsubscribed / ok / error
 
-create = %s"NEW" SP serverUris ; response is "connection" or "error"
-serverUris = serverUri ["," serverUris]
+addServer = %s"SRV ADD" SP serverHost
+deleteServer = %s"SRV DEL" SP serverHost
+killServer = %s"SRV KILL" SP serverHost
+listServers = %s"SRV LS" SP serverHost
+
+create = %s"NEW"; response is "connection" or "error"
 
 connection = %s"ID" SP cAlias SP recipientQueuesStatus SP senderQueuesStatus SP cId
-alias = %s"NAME" SP cName SP cId ; response is "connection" or "error"
+alias = %s"NAME" SP cAlias SP cName ; response is "ok" or "error"
 status = %"STAT" SP cAlias ; response is "connection" or "error"
 cId = encoded
-cAlias = cId / cName ; TODO add cName syntax - it's letters, numbers, "-" and "_"
+cAlias = cId / cName ; TODO add cName syntax - letters, numbers, "-" and "_"
 
-; only needed for debugging, so maybe should be removed or maybe keys should be added
+; only needed for debugging, so maybe should be removed (or maybe encryption keys should be added)
 info = %s"INFO" SP cAlias ; response is "connectionInfo" or "error
-connectionInfo = %s "IDS" queueId queueId
+connectionInfo = %s "IDS" queueIds queueIds
 
 recipientQueuesStatus = rqStatus ["," recipientQueuesStatus]
 senderQueuesStatus = sqStatus ["," senderQueuesStatus]
@@ -70,5 +80,6 @@ timestamp = date-time; RFC3339
 encoded = base64
 ```
 
-[1]: https://tools.ietf.org/html/rfc5234
-
+[1]: https://en.wikipedia.org/wiki/End-to-end_encryption
+[2]: https://en.wikipedia.org/wiki/Man-in-the-middle_attack
+[3]: https://tools.ietf.org/html/rfc5234
