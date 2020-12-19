@@ -47,7 +47,7 @@ delQueueMsg = %s"QDEL" SP qNum ; notification that recipient queue will be delet
 
 errorQueueMsg = %s "QERR" SP qNum SP queueErrorInfo
 messageErrorInfo = skippedMsgErr / badHashErr / noMessagesErr
-skippedMsgErr = %"SKIPPED" SP agentMsgSeqId
+skippedMsgErr = %"SKIPPED" SP fromAgentMsgSeqId SP toAgentMsgSeqId
 badHashErr = %"HASH" SP agentMsgSeqId
 noMessagesErr = %s"NOMSG"
 
