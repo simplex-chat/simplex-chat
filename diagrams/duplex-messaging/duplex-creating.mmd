@@ -28,6 +28,7 @@ sequenceDiagram
   note over BA, AA: 4. establish Alice's SMP queue
   BA ->> AS: SEND: KEY: sender's key and Bob's profile
   note over BA: status: NONE/CONFIRMED
+  activate BA
   AS ->> AA: MSG: KEY: sender's key<br>and Bob's profile
   note over AA: status: CONFIRMED/NONE
   AA ->> A: Bob's profile<br>and party ID
@@ -36,6 +37,7 @@ sequenceDiagram
   note over AA: status: SECURED/NONE
 
   BA ->> AS: SEND: HI: try sending until successful
+  deactivate BA
   note over BA: status: NONE/ACTIVE
   AS ->> AA: MSG: HI: Alice's agent<br>knows Bob can send
   note over AA: status: ACTIVE/NONE
@@ -53,12 +55,14 @@ sequenceDiagram
 
   AA ->> BS: SEND: KEY: sender's key and Alice's profile
   note over AA: status: ACTIVE/CONFIRMED
+  activate AA
   BS ->> BA: MSG: KEY: sender's key<br>and Alice's profile
   note over BA: status: CONFIRMED/ACTIVE
   BA ->> BS: KEY: secure queue
   note over BA: status: SECURED/ACTIVE
 
   AA ->> BS: SEND: HI: try sending until successful
+  deactivate AA
   note over AA: status: ACTIVE/ACTIVE
   BS ->> BA: MSG: HI: Bob's agent<br>knows Alice can send
   note over BA: status: ACTIVE/ACTIVE
