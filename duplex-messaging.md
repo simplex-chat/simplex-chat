@@ -21,7 +21,7 @@ SMP agent protocol has 3 main parts:
 
 **Creating duplex connection between Alice and Bob:**
 
-![Creating duplex connection](/diagrams/simplex-messaging/duplex-creating.svg)
+![Creating duplex connection](/diagrams/duplex-messaging/duplex-creating.svg)
 
 ## Messages between SMP agents
 
