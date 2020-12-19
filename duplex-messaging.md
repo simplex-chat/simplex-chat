@@ -8,22 +8,13 @@
 
 ## Abstract
 
+SMP agent is a client-side process or library that communicates via SMP servers using [simplex messaging protocol (SMP)](./simplex-messaging.md).
+
 SMP agent protocol has 3 main parts:
 
-- the syntax and semantics of messages that SMP agents exchange between each
-  other to negotiate establishing multiple unidirectional (simplex) encrypted
-  queues on SMP server(s) to provide their users convenient interface to
-  establish and operate duplex (bi-directional) connections, providing
-  redundancy, server, queue and key rotation, and notifications about any
-  communication integrity violations.
-- the syntax and semantics of the commands that should be sent over TCP or other
-  sequential streaming protocol to the client-side agent that communicates with
-  one or multiple SMP servers. This protocol allows to manage multiple simplex
-  connections organised into groups defining duplex communication channels that
-  can be used to build higher-level communication and application primitives.
-- the syntax and contents of messages that users of SMP agents should send
-  out-of-band ("invitation") to ensure [E2E encryption][1] integrity for the
-  first SMP queue and protection against active attacks ([MITM attacks][2]).
+- the syntax and semantics of messages that SMP agents exchange between each other to negotiate establishing multiple unidirectional (simplex) encrypted queues on SMP server(s) to provide their users convenient interface to establish and operate duplex (bi-directional) connections, providing redundancy, queue and key rotation, notifications about any communication integrity violations.
+- the syntax and semantics of the commands that should be sent over TCP or other sequential streaming protocol to the client-side agent that communicates with one or multiple SMP servers. This protocol allows to manage multiple simplex connections organised into groups defining duplex communication channels that can be used to build higher-level communication and application primitives.
+- the syntax and contents of messages that users of SMP agents should send out-of-band ("invitation") to ensure [E2E encryption][1] integrity for the first SMP queue and protection against active attacks ([MITM attacks][2]).
 
 ## Messages between SMP agents
 
@@ -79,14 +70,11 @@ To secure connection
 
 ## SMP agent commands
 
-This part describes the transmissions between users and client-side SMP agents:
-commands that the users send to create and operate duplex connections and SMP
-agent responses and messages they deliver.
+This part describes the transmissions between users and client-side SMP agents: commands that the users send to create and operate duplex connections and SMP agent responses and messages they deliver.
 
 Commands syntax below is provided using [ABNF][1].
 
-Each transmission between the user and SMP agent must have this format/syntax
-(after unwrapping it out of SMP message):
+Each transmission between the user and SMP agent must have this format/syntax (after unwrapping it out of SMP message):
 
 ```abnf
 transmission = (userCmd / agentMsg) CRLF
