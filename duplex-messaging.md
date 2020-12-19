@@ -110,8 +110,9 @@ rqInfo = qNum "-" rqState ["-" %s"SUB"]
 sqInfo = qNum "-" sqState
 qId = encoded
 
-sqState = %s"NONE" / %s"NEW / %s"CONFIRMED" / %s"SECURED"
-rqState = sqState / %s"PENDING / %s"DISABLED" ; see comments in ./core/definitions/src/Simplex/Messaging/Core.hs
+sqState = %s"NONE" / %s"NEW / %s"CONFIRMED" / %s"ACTIVE"
+rqState = sqState / %s"PENDING / %s"SECURED" / %s"DISABLED"
+; see comments in ./core/definitions/src/Simplex/Messaging/Core.hs
 
 info = %s"QINFO" SP cAlias SP qNum
 queueInfo = %s"QUEUE" SP qInfo SP serverHost SP qId
