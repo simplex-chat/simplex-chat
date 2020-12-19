@@ -24,45 +24,45 @@ Each transmission between the user and SMP agent must have this format/syntax
 
 ```abnf
 transmission = (userCmd / agentMsg) CRLF
-userCmd = addServer / deleteServer / killServer / listServers
-          / create / alias / subscribe / suspend / delete
-          / invite / accept / send / acknowledge
+userCmd = create / alias
+          / subscribe / unsubscribe
+          / invite / accept
+          / send / acknowledge
+          / suspend / delete
           / status / info
 
 agentMsg = connection / connectionInfo / invitation / message / unsubscribed / ok / error
 
-addServer = %s"SRV ADD" SP serverHost
-deleteServer = %s"SRV DEL" SP serverHost
-killServer = %s"SRV KILL" SP serverHost
-listServers = %s"SRV LS" SP serverHost
-
 create = %s"NEW"; response is "connection" or "error"
+connection = %s"ID" SP cAlias SP recipientQueuesInfo SP senderQueuesInfo SP cId
 
-connection = %s"ID" SP cAlias SP recipientQueuesStatus SP senderQueuesStatus SP cId
 alias = %s"NAME" SP cAlias SP cName ; response is "ok" or "error"
 status = %"STAT" SP cAlias ; response is "connection" or "error"
 cId = encoded
 cAlias = cId / cName ; TODO add cName syntax - letters, numbers, "-" and "_"
 
-; only needed for debugging, so maybe should be removed (or maybe encryption keys should be added)
-info = %s"INFO" SP cAlias ; response is "connectionInfo" or "error
-connectionInfo = %s "IDS" queueIds queueIds
+recipientQueuesInfo = rqInfo ["," recipientQueuesInfo]
+senderQueuesInfo = sqInfo ["," senderQueuesInfo]
 
-recipientQueuesStatus = rqStatus ["," recipientQueuesStatus]
-senderQueuesStatus = sqStatus ["," senderQueuesStatus]
+rqInfo = serverHost "-" qId "-" rqState "-" [%s"SUB"]
+sqInfo = serverHost "-" qId "-" sqState "-"
+qId = encoded
 
-sqStatus = serverUri SP (%s"NONE" / %s"NEW / %s"CONFIRMED" / %s"SECURED")
-rqStatus = serverUri SP (sqStatus / %s"PENDING / %s"DISABLED")
+sqState = %s"NONE" / %s"NEW / %s"CONFIRMED" / %s"SECURED"
+rqState = sqState / %s"PENDING / %s"DISABLED"
 ; see comments in ./core/definitions/src/Simplex/Messaging/Core.hs
+
+subscribe = %s"SUB" SP cAlias ; response "ok" or "error"
+unsubscribe = %s"UNSUB" SP cAlias ; response "ok" or "error"
 
 invite = %s"INV" SP cAlias ; response is "invitation" or "error"
 invitation = %s"JOIN" SP cInfo
 
 accept = %s"ACC" SP cInfo ; response is "connection" or "error"
 
-suspend = %s"OFF" SP cAlias ; unlike SMP, can be executed by either side
+suspend = %s"OFF" SP cAlias ; can be executed by either side (unlike SMP)
 
-delete = %s"DEL" SP cAlias ; unlike SMP, can be executed by either side
+delete = %s"DEL" SP cAlias ; can be executed by either side (unlike SMP)
 
 send = %s"SEND" SP cAlias SP msgBody
 ; send syntax is similar to that of SMP protocol, but it is wrapped in SMP message
