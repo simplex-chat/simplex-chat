@@ -654,7 +654,7 @@ The body should be encrypted with the recipient's "public" key (`EK`); once
 decrypted it must have this format:
 
 ```abnf
-decryptedBody = reserved LF clientBody LF
+decryptedBody = reserved CRLF clientBody CRLF
 reserved = senderKeyMsg / *VCHAR
 senderKeyMsg = %s"KEY" SP senderKey
 senderKey = encoded
