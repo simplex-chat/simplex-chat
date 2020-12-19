@@ -3,6 +3,7 @@
 ## Table of contents
 
 - [Abstract](#abstract)
+- [Duplex connection](#duplex-connection)
 - [Messages between SMP agents](#messages-between-smp-agents)
 - [SMP agent commands](#smp-agent-commands)
 
@@ -15,6 +16,12 @@ SMP agent protocol has 3 main parts:
 - the syntax and semantics of messages that SMP agents exchange between each other to negotiate establishing multiple unidirectional (simplex) encrypted queues on SMP server(s) to provide their users convenient interface to establish and operate duplex (bi-directional) connections, providing redundancy, queue and key rotation, notifications about any communication integrity violations.
 - the syntax and semantics of the commands that should be sent over TCP or other sequential streaming protocol to the client-side agent that communicates with one or multiple SMP servers. This protocol allows to manage multiple simplex connections organised into groups defining duplex communication channels that can be used to build higher-level communication and application primitives.
 - the syntax and contents of messages that users of SMP agents should send out-of-band ("invitation") to ensure [E2E encryption][1] integrity for the first SMP queue and protection against active attacks ([MITM attacks][2]).
+
+## Duplex connection
+
+**Creating duplex connection between Alice and Bob:**
+
+![Creating duplex connection](/diagrams/simplex-messaging/duplex-creating.svg)
 
 ## Messages between SMP agents
 
