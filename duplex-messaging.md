@@ -31,30 +31,45 @@ Message syntax below is provided using [ABNF][1].
 
 ```abnf
 decryptedSmpMessageBody = agentMsgHeader CRLF agentMessage CRLF contentMessageBody CRLF
-agentMsgHeader = agentMsgSeqId SP agentTimestamp SP previousMsgHash
+agentMsgHeader = agentMsgSeqId SP agentTimestamp [SP previousMsgHash]
 agentMsgSeqId = 1*DIGIT
 contentMessageBody = *OCTET
 
-agentSmpMessage = confirmMsg / addQueueMsg / delQueueMsg / errorQueueMsg
-                / badMessageMsg / contentMessage
+agentSmpMessage = addQueueMsg / delQueueMsg / queueErrorMsg
+                  / clientErrorMsg / contentMsg / acknowledgeMsg
 
-confirmMsg = %s"KEY" SP senderKey
-senderKey = encoded
+addQueueMsg = %s"ADD" SP qInfo ; notification that recipient queue is added
+; `qInfo` is the same as out-of-band message
 
-addQueueMsg = %s"QADD" SP qInfo ; notification that recipient queue is added - same as out-of-band message
+delQueueMsg = %s"DEL" SP qNum ; notification that recipient queue will be deleted - sender shouldn't sent anything to it further
 
-delQueueMsg = %s"QDEL" SP qNum ; notification that recipient queue will be deleted - sender shouldn't sent anything to it further
+queueErrorMsg = %s "ERR" SP qNum SP queueErrorInfo
+messageErrorInfo = skippedMsgErr / differentMsgErr / badMsgId / badHashErr / noMessagesErr
+skippedMsgErr = %"SKIP" SP fromMsgSeqId SP toMsgSeqId
+differentMsgErr = %"DIFF" SP msgSeqId
+badMsgId = %"ID" SP msgSeqId ; ID is lower than the previous
+badHashErr = %"HASH" SP msgSeqId
+noMessagesErr = %s"EMPTY"
 
-errorQueueMsg = %s "QERR" SP qNum SP queueErrorInfo
-messageErrorInfo = skippedMsgErr / badHashErr / noMessagesErr
-skippedMsgErr = %"SKIPPED" SP fromAgentMsgSeqId SP toAgentMsgSeqId
-badHashErr = %"HASH" SP agentMsgSeqId
-noMessagesErr = %s"NOMSG"
+clientErrorMsg = %s"CERR" SP messageErrorInfo
 
-badMessageMsg = %s"MERR" SP messageErrorInfo
+contentMsg = %s"MSG" SP clientMsgSeqId
 
-contentMessage = %s"MSG"
+acknowledgeMsg = %s"ACK" SP clientMsgSeqId
 ```
+
+### Communication between SMP agents
+
+SMP agents communicate via SMP servers managing creating, deleting and operating SMP queues using SMP protocol. Each SMP message body once decrypted contains 3 lines, as defined by `decryptedSmpMessageBody` syntax:
+
+- `agentMsgHeader` - agent message header that contains sequential client message ID (`clientMsgSeqId`), sequential agent message ID for a particular SMP queue, agent timestamp and the hash of the previous message.
+- `agentSmpMessage` - command to the other SMP message:
+  - to add/delete SMP queues to the connection (`addQueueMsg`, `delQueueMsg`)
+  - to notify about any communication problems (`queueErrorMsg`, `messageErrorMsg`)
+  - to send client messages (`contentMessage`)
+- `contentMessageBody`
+
+All these messages should be sent via all active SMP sender queues belonging to the duplex connection.
 
 ### First message
 
@@ -82,26 +97,30 @@ userCmd = create / alias
           / suspend / delete
           / status / info
 
-agentMsg = connection / connectionInfo / invitation / message / unsubscribed / ok / error
+agentMsg = connection / queueInfo / invitation / message / unsubscribed / ok / error
 
-create = %s"NEW"; response is "connection" or "error"
+create = %s"NEW"; response is `connection` or `error`
 connection = %s"ID" SP cAlias SP recipientQueuesInfo SP senderQueuesInfo SP cId
 
-alias = %s"NAME" SP cAlias SP cName ; response is "ok" or "error"
-status = %"STAT" SP cAlias ; response is "connection" or "error"
-cId = encoded
+alias = %s"NAME" SP cAlias SP cName ; response is `ok` or `error`
+
+status = %"STAT" SP cAlias ; response is `connection` or `error`
 cAlias = cId / cName ; TODO add cName syntax - letters, numbers, "-" and "_"
+cId = encoded
 
 recipientQueuesInfo = rqInfo ["," recipientQueuesInfo]
 senderQueuesInfo = sqInfo ["," senderQueuesInfo]
 
-rqInfo = serverHost "-" qId "-" rqState "-" [%s"SUB"]
-sqInfo = serverHost "-" qId "-" sqState "-"
+rqInfo = qNum "-" rqState ["-" %s"SUB"]
+sqInfo = qNum "-" sqState
 qId = encoded
 
 sqState = %s"NONE" / %s"NEW / %s"CONFIRMED" / %s"SECURED"
-rqState = sqState / %s"PENDING / %s"DISABLED"
-; see comments in ./core/definitions/src/Simplex/Messaging/Core.hs
+rqState = sqState / %s"PENDING / %s"DISABLED" ; see comments in ./core/definitions/src/Simplex/Messaging/Core.hs
+
+info = %s"QINFO" SP cAlias SP qNum
+queueInfo = %s"QUEUE" SP qInfo SP serverHost SP qId
+qInfo = rqInfo / sqInfo
 
 subscribe = %s"SUB" SP cAlias ; response `ok` or `error`
 unsubscribe = %s"UNSUB" SP cAlias ; response `ok` or `error`
