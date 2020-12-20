@@ -25,42 +25,43 @@ SMP agent protocol has 3 main parts:
 
 ## Messages between SMP agents
 
-Message syntax below is provided using [ABNF][1].
+Message syntax below uses [ABNF][1].
 
 ```abnf
-decryptedSmpMessageBody = agentMsgHeader CRLF agentMessage CRLF contentMessageBody CRLF
-agentMsgHeader = agentMsgSeqId SP agentTimestamp [SP previousMsgHash]
-agentMsgSeqId = 1*DIGIT
-contentMessageBody = *OCTET
+decryptedSmpMessageBody = agentMsgHeader CRLF agentMessage CRLF msgPadding
+agentMsgHeader = agentMsgId SP agentTimestamp [SP previousMsgHash]
+agentMsgId = 1*DIGIT ; sequential agent message ID set by sender
 
-agentSmpMessage = addQueueMsg / delQueueMsg / queueErrorMsg
-                  / clientErrorMsg / contentMsg / acknowledgeMsg
+agentMessage = helloMsg / replyQueueMsg
+               / suspendQueueMsg / deleteQueueMsg
+               / clientMsg / acknowledgeMsg
+               / messageErrorMsg 
 
-addQueueMsg = %s"ADD" SP qInfo ; notification that recipient queue is added
-; `qInfo` is the same as out-of-band message
+msgPadding = *OCTET ; random bytes to get messages to the same size
 
-delQueueMsg = %s"DEL" SP qNum ; notification that recipient queue will be deleted - sender shouldn't sent anything to it further
+helloMsg = %s"HELLO" SP signatureVerificationKey [SP %s"NO_ACK"]
+; NO_ACK means that acknowledgements will NOT be sent in this connection by sending party
+; to messages after `helloMsg` in reply queue
+signatureVerificationKey = encoded
 
-queueErrorMsg = %s "ERR" SP qNum SP queueErrorInfo
-messageErrorInfo = skippedMsgErr / differentMsgErr / badMsgId / badHashErr / noMessagesErr
-skippedMsgErr = %"SKIP" SP fromMsgSeqId SP toMsgSeqId
-differentMsgErr = %"DIFF" SP msgSeqId
-badMsgId = %"ID" SP msgSeqId ; ID is lower than the previous
-badHashErr = %"HASH" SP msgSeqId
-noMessagesErr = %s"EMPTY"
+replyQueueMsg = %s"REPLY" SP qInfo ; `qInfo` is the same as in out-of-band message
+; this message can only be sent by the second connection party
 
-clientErrorMsg = %s"CERR" SP messageErrorInfo
+suspendQueueMsg = %s"PAUSE" ; notification that recipient queue will be suspended
 
-contentMsg = %s"MSG" SP clientMsgSeqId
+deleteQueueMsg = %s"DEL" ; notification that recipient queue will be deleted
 
-acknowledgeMsg = %s"ACK" SP clientMsgSeqId
+clientMsg = %s"MSG" SP size SP clientMsgBody CRLF ; CRLF is in addition to CRLF in decryptedSmpMessageBody
+clientMsgBody = *OCTET
+
+acknowledgeMsg = %s"ACK" SP agentMsgId ; this message should not be acknowledged by the receiving agent
 ```
 
 ### Communication between SMP agents
 
 SMP agents communicate via SMP servers managing creating, deleting and operating SMP queues using SMP protocol. Each SMP message body once decrypted contains 3 lines, as defined by `decryptedSmpMessageBody` syntax:
 
-- `agentMsgHeader` - agent message header that contains sequential client message ID (`clientMsgSeqId`), sequential agent message ID for a particular SMP queue, agent timestamp and the hash of the previous message.
+- `agentMsgHeader` - agent message header that contains sequential agent message ID for a particular SMP queue, agent timestamp and the hash of the previous message.
 - `agentSmpMessage` - command to the other SMP message:
   - to add/delete SMP queues to the connection (`addQueueMsg`, `delQueueMsg`)
   - to notify about any communication problems (`queueErrorMsg`, `messageErrorMsg`)
@@ -84,41 +85,51 @@ Commands syntax below is provided using [ABNF][1].
 Each transmission between the user and SMP agent must have this format/syntax (after unwrapping it out of SMP message):
 
 ```abnf
-transmission = (userCmd / agentMsg) CRLF
-userCmd = create / alias
-          / subscribe / unsubscribe
-          / invite / connect / extend / accept
-          / send / acknowledge
-          / suspend / delete
+duplexCommand = (userCmd / agentMsg) CRLF
+userCmd = create / alias / list 
           / status / info
+          / invite / accept
+          / connect / reply
+          / send / acknowledge
+          / subscribe / unsubscribe
+          / suspend / delete
 
-agentMsg = connection / queueInfo / invitation / message / unsubscribed / ok / error
+agentMsg = connection / connectionStatus / queueInfo
+           / invitation / confirmation
+           / message / unsubscribed
+           / ok / error
 
-create = %s"NEW"; response is `connection` or `error`
-connection = %s"ID" SP cAlias SP recipientQueuesInfo SP senderQueuesInfo SP cId
+create = %s"CONN" SP srvHost [":" port] ["#" keyFingerprint] [SP %s"NO_ACK"] ; response is `connection` or `error`
+port = 1*DIGIT
+keyFingerprint = encoded
+connection = %s"CONN" SP cAlias ; cAlias will be cId when in response to `create`
 
-alias = %s"NAME" SP cAlias SP cName ; response is `ok` or `error`
-
-status = %"STAT" SP cAlias ; response is `connection` or `error`
+alias = %s"ALIAS" SP cId SP cName ; response is `ok` or `error`
 cAlias = cId / cName ; TODO add cName syntax - letters, numbers, "-" and "_"
 cId = encoded
 
-recipientQueuesInfo = rqInfo ["," recipientQueuesInfo]
-senderQueuesInfo = sqInfo ["," senderQueuesInfo]
+list = %"LIST" [SP beforeConnection]; response - multiple `connection`s
+beforeConnection = cAlias
 
-rqInfo = qNum "-" rqState ["-" %s"SUB"]
-sqInfo = qNum "-" sqState
-qId = encoded
+status = %s"STAT" SP direction SP cAlias ; response is `queueStatus` or `error`
+direction = %s"SND" / %s"RCV"
+; queueStatus should be sent by agent whenever status changes as well as response to `status` command
+queueStatus = %s"STAT" SP direction SP cAlias SP cId SP (rqState / sqState) [SP subscriptionState]
+subscriptionState = %s"SUB=" onOff
+onOff = %s"ON" / %s"OFF"
 
 sqState = %s"NONE" / %s"NEW / %s"CONFIRMED" / %s"ACTIVE"
 rqState = sqState / %s"PENDING / %s"SECURED" / %s"DISABLED"
 ; see comments in ./core/definitions/src/Simplex/Messaging/Core.hs
 
-info = %s"QINFO" SP cAlias SP qNum
-queueInfo = %s"QUEUE" SP qInfo SP serverHost SP qId
-qInfo = rqInfo / sqInfo
+; TODO connection should store some information about sent and received messages
+; e.g. the hash of the last message, to include/check in the next message
+; sequential ID of the previous message, to include/check messages
+; list of communication errors, e.g. missed messages can be re-sent and reconciled
+; party(ies) that sent confirmation - to accept to the connection
 
 subscribe = %s"SUB" SP cAlias ; response `ok` or `error`
+
 unsubscribe = %s"UNSUB" SP cAlias ; response `ok` or `error`
 
 invite = %s"INVITE" SP cAlias ; response is `invitation` or `error`
@@ -126,13 +137,15 @@ invitation = %s"JOIN" SP qInfo
 
 connect = %s"CONNECT" SP qInfo ; response is `connection` or `error`
 
-extend = %s"EXTEND" SP cAlias SP qInfo
+reply = %s"REPLY" SP srvHost [SP keyFingerprint] ; response is `ok` or `error`
 
-accept = %s"ACCEPT" SP cAlias ; response is `connection` or `error`
+confirmation = %s"CONF" SP cAlias SP partyId SP partyInfo
 
-suspend = %s"OFF" SP cAlias ; can be executed by either side (unlike SMP)
+accept = %s"ACCEPT" SP cAlias SP partyId ; response is `ok` or `error`
 
-delete = %s"DEL" SP cAlias ; can be executed by either side (unlike SMP)
+suspend = %s"SUSPEND" SP cAlias ; can be sent by either party, response `ok` or `error`
+
+delete = %s"DELETE" SP cAlias ; can be sent by either party, response `ok` or `error`
 
 send = %s"SEND" SP cAlias SP msgBody
 ; send syntax is similar to that of SMP protocol, but it is wrapped in SMP message
@@ -143,10 +156,29 @@ binaryMsg = size CRLF msgBody CRLF ; the last CRLF is in addition to CRLF in the
 size = 1*DIGIT ; size in bytes
 msgBody = *OCTET ; any content of specified size - safe for binary
 
-message = %s"MSG" SP cAlias SP agentMsgSeqId SP timestamp SP agentTimestamp SP msgHashStatus SP binaryMsg
-agentMsgSeqId = 1*DIGIT
-agentTimestamp = date-time; RFC3339
-msgHashStatus = %s"HASH" SP ("OK" / "ERR")
+message = %s"MSG" SP cAlias SP agentMsgId SP srvTimestamp SP agentTimestamp SP msgStatus SP binaryMsg
+agentMsgId = 1*DIGIT
+srvTimestamp = date-time ; RFC3339
+agentTimestamp = date-time
+msgStatus = ok / messageError
+
+messageError = %s"ERR" SP messageErrorType
+messageErrorType = unknownMsgErr / prohibitedMsgErr / syntaxErr
+                   / skippedMsgErr / badMsgIdErr
+                   / badHashErr / noAckErr / badAckErr
+                   / noMessagesErr
+; TODO maybe some of these errors should not be sent to the agent of another party, only to the user?
+unknownMsgErr = %"UNKNOWN" SP agentMsgId
+prohibitedMsgErr = %"PROHIBITED" SP agentMsgId ; e.g. "HELLO" or "REPLY"
+syntaxErr = %"SYNTAX" SP syntaxErrCode SP agentMsgId
+skippedMsgErr = %"NO_ID" receivedMsgId SP missingFromMsgId SP missingToMsgId
+badMsgIdErr = %"ID" SP receivedMsgId SP previousMsgId ; ID is lower than the previous
+badHashErr = %"HASH" SP agentMsgId
+noAckErr = %"NO_ACK" SP fromMsgId SP toMsgId ; message IDs of unacknowledged messages
+badAckErr = %"ACK" SP agentMsgId ; acknowledgement received to the message that was not sent
+syntaxErrCode = 1*DIGIT ; TODO
+
+acknowledge = %s"ACK" SP cAlias SP agentMsgId
 
 encoded = base64
 ```
