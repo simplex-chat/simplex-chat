@@ -35,7 +35,6 @@ agentMsgId = 1*DIGIT ; sequential agent message ID set by sender
 agentMessage = helloMsg / replyQueueMsg
                / suspendQueueMsg / deleteQueueMsg
                / clientMsg / acknowledgeMsg
-               / messageErrorMsg 
 
 msgPadding = *OCTET ; random bytes to get messages to the same size
 
