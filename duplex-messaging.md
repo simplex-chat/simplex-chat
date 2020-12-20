@@ -85,15 +85,12 @@ Each transmission between the user and SMP agent must have this format/syntax (a
 
 ```abnf
 duplexCommand = (userCmd / agentMsg) CRLF
-userCmd = create / alias / list 
-          / status / info
-          / invite / accept
-          / connect / reply
-          / send / acknowledge
-          / subscribe / unsubscribe
+userCmd = create / alias / list / status
+          / invite / accept / connect / reply
+          / send / acknowledge / subscribe / unsubscribe
           / suspend / delete
 
-agentMsg = connection / connectionStatus / queueInfo
+agentMsg = connection / connectionStatus
            / invitation / confirmation
            / message / unsubscribed
            / ok / error
@@ -130,6 +127,10 @@ rqState = sqState / %s"PENDING / %s"SECURED" / %s"DISABLED"
 subscribe = %s"SUB" SP cAlias ; response `ok` or `error`
 
 unsubscribe = %s"UNSUB" SP cAlias ; response `ok` or `error`
+
+unsubscribed = %s"NO_SUB" SP cAlias SP (%s"USER" / %s"AGENT")
+; when another user subscribes the connection via the same agent
+; or another agent subscribes the SMP queue on the server
 
 invite = %s"INVITE" SP cAlias ; response is `invitation` or `error`
 invitation = %s"JOIN" SP qInfo
