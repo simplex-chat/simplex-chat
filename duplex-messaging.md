@@ -77,8 +77,22 @@ clientMsg = %s"MSG" SP size SP clientMsgBody CRLF ; CRLF is in addition to CRLF 
 size = 1*DIGIT
 clientMsgBody = *OCTET
 
-acknowledgeMsg = %s"ACK" SP agentMsgId
+acknowledgeMsg = %s"ACK" SP agentMsgId SP ackStatus
 ; the acknowledgement message itself should NOT be acknowledged by the receiving agent
+
+ackStatus = %s"OK" / ackError
+
+ackError = %s"ERR" SP ackErrorType
+
+ackErrorType = ackUnknownMsg / ackProhibitedMsg / ackSyntaxErr
+
+ackUnknownMsg = %s"UNKNOWN"
+
+ackProhibitedMsg = %"PROHIBITED" ; e.g. "HELLO" or "REPLY"
+
+ackSyntaxErr = %"SYNTAX" SP syntaxErrCode
+syntaxErrCode = 1*DIGIT ; TODO
+
 ```
 
 ## SMP agent commands
@@ -92,12 +106,12 @@ Each transmission between the user and SMP agent must have this format/syntax (a
 ```abnf
 duplexCommand = (userCmd / agentMsg) CRLF
 userCmd = create / join / accept
-          / subscribe / list  / getStatus
+          / subscribe / getStatus
           / send / acknowledge
           / suspend / delete
 
 agentMsg = connection / connectionInvitation / confirmation
-           / message / unsubscribed
+           / message / received / unsubscribed
            / queueStatus / ok / error
 
 create = %s"NEW" SP smpServer [SP %s"A=" cName] [SP %s"ACK=" onOff]
@@ -106,20 +120,18 @@ smpServer = srvHost [":" port] ["#" keyFingerprint]
 srvHost = hostname ; TODO add RFC here
 port = 1*DIGIT
 keyFingerprint = encoded
-connectionInvitation = %s"CONN" SP cAlias SP qInfo
+connectionInvitation = %s"INV" SP cAlias SP qInfo
 
 cId = encoded
 cName = 1*(ALPHA / DIGIT / "_" / "-")
 cAlias = cId / cName
 
-list = %"LS" [SP beforeConnection] ; response - multiple `connection`s, in the reverse order of creation
-beforeConnection = cAlias ; used to paginate responses
-connection = %s"ID" SP cAlias ; `cAlias` will be `cId` when in response to `create`
+connection = %s"CON" SP cAlias ; `cAlias` will be `cId` when in response to `create`
 
-getStatus = %s"QST" SP direction SP cAlias ; response is `queueStatus` or `error`
+getStatus = %s"QST" SP cAlias SP direction ; response is `queueStatus` or `error`
 direction = %s"SND" / %s"RCV"
 ; `queueStatus` should be sent by agent whenever queue status changes as well as response to `getStatus` command
-queueStatus = %s"STAT" SP direction SP cAlias SP cId SP (rqState / sqState) [SP subscriptionState]
+queueStatus = %s"STAT" SP cAlias SP direction SP (rqState / sqState) [SP subscriptionState]
 subscriptionState = %s"SUB" onOff
 onOff = %s"ON" / %s"OFF"
 
@@ -146,7 +158,7 @@ join = %s"JOIN" SP qInfo
 
 confirmation = %s"CONF" SP cAlias SP partyId SP partyInfo
 
-accept = %s"ACCEPT" SP cAlias SP partyId ; response is `ok` or `error`
+accept = %s"LET" SP cAlias SP partyId ; response is `ok` or `error`
 
 suspend = %s"OFF" SP cAlias ; can be sent by either party, response `ok` or `error`
 
@@ -173,17 +185,17 @@ messageErrorType = unknownMsgErr / prohibitedMsgErr / syntaxErr
                    / badHashErr / noAckErr / badAckErr
                    / noMessagesErr
 ; TODO maybe some of these errors should not be sent to the agent of another party, only to the user?
-unknownMsgErr = %"UNKNOWN" SP agentMsgId
-prohibitedMsgErr = %"PROHIBITED" SP agentMsgId ; e.g. "HELLO" or "REPLY"
-syntaxErr = %"SYNTAX" SP syntaxErrCode SP agentMsgId
-skippedMsgErr = %"NO_ID" receivedMsgId SP missingFromMsgId SP missingToMsgId
-badMsgIdErr = %"ID" SP receivedMsgId SP previousMsgId ; ID is lower than the previous
-badHashErr = %"HASH" SP agentMsgId
+skippedMsgErr = %"NO_ID" SP missingFromMsgId SP missingToMsgId
+badMsgIdErr = %"ID" SP previousMsgId ; ID is lower than the previous
+badHashErr = %"HASH"
+
+; these should not be sent with the messages
 noAckErr = %"NO_ACK" SP fromMsgId SP toMsgId ; message IDs of unacknowledged messages
 badAckErr = %"ACK" SP agentMsgId ; acknowledgement received to the message that was not sent
-syntaxErrCode = 1*DIGIT ; TODO
 
 acknowledge = %s"ACK" SP cAlias SP agentMsgId
+
+received = %s"RCVD" SP cAlias SP agentMsgId
 
 ok = %s"OK"
 
