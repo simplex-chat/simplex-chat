@@ -126,7 +126,7 @@ cId = encoded
 cName = 1*(ALPHA / DIGIT / "_" / "-")
 cAlias = cId / cName
 
-connection = %s"CON" SP cAlias ; `cAlias` will be `cId` when in response to `create`
+connection = %s"CON" SP cAlias ; `cAlias` will be `cId` when in response to `join`
 
 getStatus = %s"QST" SP cAlias SP direction ; response is `queueStatus` or `error`
 direction = %s"SND" / %s"RCV"
