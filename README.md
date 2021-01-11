@@ -1,5 +1,7 @@
 # simplex-messaging
 
+The released version is [v0.1.0.0](https://github.com/simplex-chat/simplex-messaging/tree/v0.1.0.0)
+
 ## SMP server demo
 
 This is a demo implementation of SMP ([simplex messaging protocol](https://github.com/simplex-chat/protocol/blob/master/simplex-messaging.md)) server.
