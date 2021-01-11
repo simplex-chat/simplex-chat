@@ -1,6 +1,7 @@
 # simplex-messaging
 
-The released version is [v0.1.0.0](https://github.com/simplex-chat/simplex-messaging/tree/v0.1.0.0)
+[![GitHub build](https://github.com/simplex-chat/simplex-messaging/workflows/build/badge.svg)](https://github.com/simplex-chat/simplex-messaging/actions?query=workflow%3Abuild)
+![GitHub release](https://img.shields.io/github/v/release/simplex-chat/simplex-messaging)
 
 ## SMP server demo
 
