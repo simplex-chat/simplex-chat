@@ -1,6 +1,6 @@
 # Base: https://github.com/haskell/actions/tree/main/setup#usage
 
-name: CI
+name: build
 
 on:
   push:
@@ -19,7 +19,7 @@ jobs:
       - uses: haskell/actions/setup@v1
         with:
           ghc-version: '8.8.3' # Exact version of ghc to use
-          # cabal-version: 'latest'. Omitted, but defalts to 'latest'
+          # cabal-version: 'latest'. Omitted, but defaults to 'latest'
           enable-stack: true
           stack-version: 'latest'
       - run: stack test
