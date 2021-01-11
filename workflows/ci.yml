@@ -1,0 +1,25 @@
+# Base: https://github.com/haskell/actions/tree/main/setup#usage
+
+name: CI
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+
+jobs:
+  test:
+
+    name: Tests
+    runs-on: ubuntu-latest # TODO matrix testing
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: haskell/actions/setup@v1
+        with:
+          ghc-version: '8.8.3' # Exact version of ghc to use
+          # cabal-version: 'latest'. Omitted, but defalts to 'latest'
+          enable-stack: true
+          stack-version: 'latest'
+      - run: stack test
