@@ -1,5 +1,8 @@
 # simplex-messaging
 
+[![GitHub build](https://github.com/simplex-chat/simplex-messaging/workflows/build/badge.svg)](https://github.com/simplex-chat/simplex-messaging/actions?query=workflow%3Abuild)
+[![GitHub release](https://img.shields.io/github/v/release/simplex-chat/simplex-messaging)](https://github.com/simplex-chat/simplex-messaging/releases)
+
 ## SMP server demo
 
 This is a demo implementation of SMP ([simplex messaging protocol](https://github.com/simplex-chat/protocol/blob/master/simplex-messaging.md)) server.
@@ -33,9 +36,11 @@ Comments are prefixed with `--`, they are not part of transmissions.
 
 ```telnet
 >
+> abcd -- correlation ID, any string
 >
 > NEW 1234 -- 1234 is recipient's key
 
+abcd
 
 IDS QuCLU4YxgS7wcPFA YB4CCATREHkaQcEh -- recipient and sender IDs for the queue
 ```
@@ -44,9 +49,11 @@ IDS QuCLU4YxgS7wcPFA YB4CCATREHkaQcEh -- recipient and sender IDs for the queue
 
 ```telnet
 > -- no signature (just press enter)
+> bcda -- correlation ID, any string
 > YB4CCATREHkaQcEh -- sender ID for the queue
 > SEND :key abcd
 
+bcda
 YB4CCATREHkaQcEh
 OK
 ```
@@ -55,9 +62,11 @@ OK
 
 ```telnet
 > 1234 -- recipient's "signature" - same as "key" in the demo
+> cdab
 > QuCLU4YxgS7wcPFA -- recipient ID
 > KEY abcd -- "key" provided by sender
 
+cdab
 QuCLU4YxgS7wcPFA
 OK
 ```
@@ -66,9 +75,11 @@ OK
 
 ```telnet
 > abcd -- sender's "signature" - same as "key" in the demo
+> dabc -- correlation ID
 > YB4CCATREHkaQcEh -- sender ID
 > SEND :hello
 
+dabc
 YB4CCATREHkaQcEh
 OK
 ```
@@ -77,13 +88,16 @@ OK
 
 ```telnet
 
+-- no correlation ID for messages delivered without client command
 QuCLU4YxgS7wcPFA
 MSG ECA3w3ID 2020-10-18T20:19:36.874Z 5
 hello
 > 1234
+> abcd
 > QuCLU4YxgS7wcPFA
 > ACK
 
+abcd
 QuCLU4YxgS7wcPFA
 OK
 ```
