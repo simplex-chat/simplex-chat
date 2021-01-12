@@ -10,16 +10,25 @@ on:
 
 jobs:
   test:
-
     name: Tests
     runs-on: ubuntu-latest # TODO matrix testing
-
     steps:
-      - uses: actions/checkout@v2
-      - uses: haskell/actions/setup@v1
+      - name: Clone project
+        uses: actions/checkout@v2
+
+      - name: Setup Stack
+        uses: haskell/actions/setup@v1
         with:
           ghc-version: '8.8.3' # Exact version of ghc to use
           # cabal-version: 'latest'. Omitted, but defaults to 'latest'
           enable-stack: true
           stack-version: 'latest'
-      - run: stack test
+
+      - name: Cache dependencies
+        uses: actions/cache@v2
+        with:
+          path: ~/.stack
+          key: ${{ runner.os }}-${{ hashFiles('stack.yaml') }}
+
+      - name: Build and run tests
+        run: stack build --test
