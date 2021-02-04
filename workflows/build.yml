@@ -9,8 +9,8 @@ on:
   pull_request:
 
 jobs:
-  test:
-    name: Tests
+  build:
+    name: build
     runs-on: ubuntu-latest # TODO matrix testing
     steps:
       - name: Clone project
@@ -19,7 +19,7 @@ jobs:
       - name: Setup Stack
         uses: haskell/actions/setup@v1
         with:
-          ghc-version: '8.8.3' # Exact version of ghc to use
+          ghc-version: '8.8.4'
           # cabal-version: 'latest'. Omitted, but defaults to 'latest'
           enable-stack: true
           stack-version: 'latest'
