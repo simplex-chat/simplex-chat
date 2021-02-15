@@ -97,7 +97,7 @@ serializeChatResponse name = \case
   ChatHelpInfo -> chatHelpInfo
   Invitation qInfo -> "ask your contact to enter: /accept " <> showName name <> " " <> serializeSmpQueueInfo qInfo
   Connected c -> ttyContact c <> " connected"
-  ReceivedMessage c t -> ttyContact c <> ": " <> t
+  ReceivedMessage c t -> ttyFromContact c <> " " <> t
   Disconnected c -> "disconnected from " <> ttyContact c <> " - try \"/chat " <> toBs c <> "\""
   YesYes -> "you got it!"
   ErrorInput t -> "invalid input: " <> t
@@ -236,7 +236,7 @@ getChatLn t = do
     getWithContact :: Contact -> ByteString -> IO ByteString
     getWithContact a s = do
       C.cursorBackward 1
-      B.hPut stdout $ "    " <> ttyContact a <> " " <> s
+      B.hPut stdout $ ttyToContact a <> " " <> s
       getRest $ "@" <> toBs a <> " " <> s
     getRest :: ByteString -> IO ByteString
     getRest s = do
@@ -249,10 +249,19 @@ setTTY mode = do
   hSetBuffering stdout mode
 
 ttyContact :: Contact -> ByteString
-ttyContact (Contact a) = withSGR contactSGR $ "@" <> a
+ttyContact (Contact a) = withSGR contactSGR a
+
+ttyFromContact :: Contact -> ByteString
+ttyFromContact (Contact a) = withSGR contactSGR $ a <> ">"
+
+ttyToContact :: Contact -> ByteString
+ttyToContact (Contact a) = withSGR selfSGR $ "@" <> a
 
 contactSGR :: [C.SGR]
-contactSGR = [C.SetColor C.Foreground C.Vivid C.Cyan]
+contactSGR = [C.SetColor C.Foreground C.Vivid C.Yellow]
+
+selfSGR :: [C.SGR]
+selfSGR = [C.SetColor C.Foreground C.Vivid C.Cyan]
 
 withSGR :: [C.SGR] -> ByteString -> ByteString
 withSGR sgr s = B.pack (C.setSGRCode sgr) <> s <> B.pack (C.setSGRCode [C.Reset])
