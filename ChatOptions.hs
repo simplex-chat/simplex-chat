@@ -34,7 +34,7 @@ chatOpts =
       ( long "server"
           <> short 's'
           <> metavar "SERVER"
-          <> help "SMP server to use (localhost:5223)"
+          <> help "SMP server to use (smp.simplex.im:5223)"
           <> value (SMPServer "smp.simplex.im" (Just "5223") Nothing)
       )
 
