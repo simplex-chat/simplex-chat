@@ -10,6 +10,7 @@
 module Main where
 
 import ChatOptions
+import ChatTerminal
 import Control.Applicative ((<|>))
 import Control.Concurrent.STM
 import Control.Logger.Simple
@@ -19,18 +20,14 @@ import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.Functor (($>))
-import qualified Data.Text as T
-import Data.Text.Encoding
 import Numeric.Natural
 import Simplex.Messaging.Agent (getSMPAgentClient, runSMPAgentClient)
 import Simplex.Messaging.Agent.Client (AgentClient (..))
 import Simplex.Messaging.Agent.Env.SQLite
 import Simplex.Messaging.Agent.Transmission
 import Simplex.Messaging.Client (smpDefaultConfig)
-import Simplex.Messaging.Transport (getLn, putLn)
 import Simplex.Messaging.Util (bshow, raceAny_)
-import qualified System.Console.ANSI as C
-import System.IO
+import Types
 
 cfg :: AgentConfig
 cfg =
@@ -50,11 +47,8 @@ data ChatClient = ChatClient
   { inQ :: TBQueue ChatCommand,
     outQ :: TBQueue ChatResponse,
     smpServer :: SMPServer,
-    activeContact :: TVar (Maybe Contact),
     username :: TVar (Maybe Contact)
   }
-
-newtype Contact = Contact {toBs :: ByteString}
 
 -- | GroupMessage ChatGroup ByteString
 -- | AddToGroup Contact
@@ -125,21 +119,24 @@ main :: IO ()
 main = do
   ChatOpts {dbFileName, smpServer, name} <- getChatOpts
   putStrLn "simpleX chat prototype (no encryption), \"/help\" for usage information"
-  t <- getChatClient smpServer (Contact <$> name)
+  let user = Contact <$> name
+  t <- getChatClient smpServer user
+  ct <- newChatTerminal (tbqSize cfg) user
   -- setLogLevel LogInfo -- LogError
   -- withGlobalLogging logCfg $
   env <- newSMPAgentEnv cfg {dbFile = dbFileName}
-  dogFoodChat t env
+  dogFoodChat t ct env
 
-dogFoodChat :: ChatClient -> Env -> IO ()
-dogFoodChat t env = do
+dogFoodChat :: ChatClient -> ChatTerminal -> Env -> IO ()
+dogFoodChat t ct env = do
   c <- runReaderT getSMPAgentClient env
   raceAny_
     [ runReaderT (runSMPAgentClient c) env,
-      sendToAgent t c,
-      sendToTTY t,
-      receiveFromAgent t c,
-      receiveFromTTY t
+      sendToAgent t ct c,
+      sendToChatTerm t ct,
+      receiveFromAgent t ct c,
+      receiveFromChatTerm t ct,
+      chatTerminal ct
     ]
 
 getChatClient :: SMPServer -> Maybe Contact -> IO ChatClient
@@ -149,32 +146,34 @@ newChatClient :: Natural -> SMPServer -> Maybe Contact -> STM ChatClient
 newChatClient qSize smpServer name = do
   inQ <- newTBQueue qSize
   outQ <- newTBQueue qSize
-  activeContact <- newTVar Nothing
   username <- newTVar name
-  return ChatClient {inQ, outQ, smpServer, activeContact, username}
+  return ChatClient {inQ, outQ, smpServer, username}
 
-receiveFromTTY :: ChatClient -> IO ()
-receiveFromTTY t =
-  forever $ getChatLn t >>= processOrError . A.parseOnly (chatCommandP <* A.endOfInput)
+receiveFromChatTerm :: ChatClient -> ChatTerminal -> IO ()
+receiveFromChatTerm t ct = forever $ do
+  atomically (readTBQueue $ inputQ ct)
+    >>= processOrError . A.parseOnly (chatCommandP <* A.endOfInput)
   where
     processOrError = \case
       Left err -> atomically . writeTBQueue (outQ t) . ErrorInput $ B.pack err
       Right ChatHelp -> atomically . writeTBQueue (outQ t) $ ChatHelpInfo
       Right (SetName a) -> atomically $ do
-        writeTVar (username t) $ Just a
+        let user = Just a
+        writeTVar (username (t :: ChatClient)) user
+        updateUsername ct user
         writeTBQueue (outQ t) YesYes
       Right cmd -> atomically $ writeTBQueue (inQ t) cmd
 
-sendToTTY :: ChatClient -> IO ()
-sendToTTY ChatClient {outQ, username} = forever $ do
+sendToChatTerm :: ChatClient -> ChatTerminal -> IO ()
+sendToChatTerm ChatClient {outQ, username} ChatTerminal {outputQ} = forever $ do
   atomically (readTBQueue outQ) >>= \case
     NoChatResponse -> return ()
     resp -> do
       name <- readTVarIO username
-      putLn stdout $ serializeChatResponse name resp
+      atomically . writeTBQueue outputQ $ serializeChatResponse name resp
 
-sendToAgent :: ChatClient -> AgentClient -> IO ()
-sendToAgent ChatClient {inQ, smpServer, activeContact} AgentClient {rcvQ} =
+sendToAgent :: ChatClient -> ChatTerminal -> AgentClient -> IO ()
+sendToAgent ChatClient {inQ, smpServer} ct AgentClient {rcvQ} =
   forever . atomically $ do
     cmd <- readTBQueue inQ
     writeTBQueue rcvQ `mapM_` agentTransmission cmd
@@ -182,7 +181,7 @@ sendToAgent ChatClient {inQ, smpServer, activeContact} AgentClient {rcvQ} =
   where
     setActiveContact :: ChatCommand -> STM ()
     setActiveContact cmd =
-      writeTVar activeContact $ case cmd of
+      writeTVar (activeContact ct) $ case cmd of
         ChatWith a -> Just a
         SendMessage a _ -> Just a
         _ -> Nothing
@@ -197,8 +196,8 @@ sendToAgent ChatClient {inQ, smpServer, activeContact} AgentClient {rcvQ} =
     transmission :: Contact -> ACommand 'Client -> Maybe (ATransmission 'Client)
     transmission (Contact a) cmd = Just ("1", a, cmd)
 
-receiveFromAgent :: ChatClient -> AgentClient -> IO ()
-receiveFromAgent t c = forever . atomically $ do
+receiveFromAgent :: ChatClient -> ChatTerminal -> AgentClient -> IO ()
+receiveFromAgent t ct c = forever . atomically $ do
   resp <- chatResponse <$> readTBQueue (sndQ c)
   writeTBQueue (outQ t) resp
   setActiveContact resp
@@ -219,49 +218,4 @@ receiveFromAgent t c = forever . atomically $ do
       Disconnected _ -> set Nothing
       _ -> return ()
       where
-        set a = writeTVar (activeContact t) a
-
-getChatLn :: ChatClient -> IO ByteString
-getChatLn t = do
-  setTTY NoBuffering
-  getChar >>= \case
-    '/' -> getRest "/"
-    '@' -> getRest "@"
-    ch -> do
-      let s = encodeUtf8 $ T.singleton ch
-      readTVarIO (activeContact t) >>= \case
-        Nothing -> getRest s
-        Just a -> getWithContact a s
-  where
-    getWithContact :: Contact -> ByteString -> IO ByteString
-    getWithContact a s = do
-      C.cursorBackward 1
-      B.hPut stdout $ ttyToContact a <> " " <> s
-      getRest $ "@" <> toBs a <> " " <> s
-    getRest :: ByteString -> IO ByteString
-    getRest s = do
-      setTTY LineBuffering
-      (s <>) <$> getLn stdin
-
-setTTY :: BufferMode -> IO ()
-setTTY mode = do
-  hSetBuffering stdin mode
-  hSetBuffering stdout mode
-
-ttyContact :: Contact -> ByteString
-ttyContact (Contact a) = withSGR contactSGR a
-
-ttyFromContact :: Contact -> ByteString
-ttyFromContact (Contact a) = withSGR contactSGR $ a <> ">"
-
-ttyToContact :: Contact -> ByteString
-ttyToContact (Contact a) = withSGR selfSGR $ "@" <> a
-
-contactSGR :: [C.SGR]
-contactSGR = [C.SetColor C.Foreground C.Vivid C.Yellow]
-
-selfSGR :: [C.SGR]
-selfSGR = [C.SetColor C.Foreground C.Vivid C.Cyan]
-
-withSGR :: [C.SGR] -> ByteString -> ByteString
-withSGR sgr s = B.pack (C.setSGRCode sgr) <> s <> B.pack (C.setSGRCode [C.Reset])
+        set a = writeTVar (activeContact ct) a
