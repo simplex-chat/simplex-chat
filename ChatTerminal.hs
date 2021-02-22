@@ -35,7 +35,8 @@ data ChatTerminal = ChatTerminal
     username :: TVar (Maybe Contact),
     termState :: TVar TerminalState,
     termSize :: (Int, Int),
-    nextMessageRow :: TVar Int
+    nextMessageRow :: TVar Int,
+    termLock :: TMVar ()
   }
 
 data TerminalState = TerminalState
@@ -75,9 +76,10 @@ newChatTerminal qSize user = do
   termSize <- fromMaybe (0, 0) <$> C.getTerminalSize
   let lastRow = fst termSize - 1
   termState <- newTVarIO $ newTermState user
+  termLock <- newTMVarIO ()
   nextMessageRow <- newTVarIO lastRow
   threadDelay 500000 -- this delay is the same as timeout in getTerminalSize
-  return ChatTerminal {inputQ, outputQ, activeContact, username, termState, termSize, nextMessageRow}
+  return ChatTerminal {inputQ, outputQ, activeContact, username, termState, termSize, nextMessageRow, termLock}
 
 newTermState :: Maybe Contact -> TerminalState
 newTermState user =
@@ -104,10 +106,16 @@ receiveFromTTY :: ChatTerminal -> IO ()
 receiveFromTTY ct@ChatTerminal {inputQ} =
   forever $ getChatLn ct >>= atomically . writeTBQueue inputQ
 
+withTermLock :: ChatTerminal -> IO () -> IO ()
+withTermLock ChatTerminal {termLock} action = do
+  _ <- atomically $ takeTMVar termLock
+  action
+  atomically $ putTMVar termLock ()
+
 receiveFromTTY' :: ChatTerminal -> IO ()
 receiveFromTTY' ct@ChatTerminal {inputQ, activeContact, termSize, termState} =
   forever $
-    getKey >>= processKey >> updateInput ct
+    getKey >>= processKey >> withTermLock ct (updateInput ct)
   where
     processKey :: Key -> IO ()
     processKey = \case
@@ -124,7 +132,7 @@ receiveFromTTY' ct@ChatTerminal {inputQ, activeContact, termSize, termState} =
         let msg = encodeUtf8 . T.pack $ inputString ts
         writeTBQueue inputQ msg
         return msg
-      printMessage ct $ highlightContact msg
+      withTermLock ct . printMessage ct $ highlightContact msg
 
     updateTermState :: Maybe Contact -> Int -> Key -> TerminalState -> TerminalState
     updateTermState ac tw key ts@TerminalState {inputString = s, inputPosition = p} = case key of
@@ -228,8 +236,11 @@ sendToTTY ChatTerminal {outputQ} =
   forever $ atomically (readTBQueue outputQ) >>= putLn stdout
 
 sendToTTY' :: ChatTerminal -> IO ()
-sendToTTY' ct@ChatTerminal {outputQ} =
-  forever $ atomically (readTBQueue outputQ) >>= printMessage ct >> updateInput ct
+sendToTTY' ct@ChatTerminal {outputQ} = forever $ do
+  msg <- atomically (readTBQueue outputQ)
+  withTermLock ct $ do
+    printMessage ct msg
+    updateInput ct
 
 printMessage :: ChatTerminal -> ByteString -> IO ()
 printMessage ChatTerminal {termSize, nextMessageRow} msg = do
@@ -279,7 +290,7 @@ getKey = charsToKey . reverse <$> keyChars ""
     keyChars cs = do
       c <- getChar
       more <- hReady stdin
-      -- for debugging - uncomment this, comment line after: 
+      -- for debugging - uncomment this, comment line after:
       -- (if more then keyChars else \c' -> print (reverse c') >> return c') (c : cs)
       (if more then keyChars else return) (c : cs)
 
