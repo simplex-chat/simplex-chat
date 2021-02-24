@@ -118,7 +118,7 @@ chatHelpInfo =
 main :: IO ()
 main = do
   ChatOpts {dbFileName, smpServer, name} <- getChatOpts
-  putStrLn "simpleX chat prototype (no encryption), \"/help\" for usage information"
+  putStrLn "simpleX chat prototype, \"/help\" for usage information"
   let user = Contact <$> name
   t <- getChatClient smpServer user
   ct <- newChatTerminal (tbqSize cfg) user
