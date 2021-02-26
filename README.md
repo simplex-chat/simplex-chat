@@ -43,7 +43,7 @@ $ DOCKER_BUILDKIT=1 docker build --output ~/.local/bin .
 $ dog-food
 ```
 
-> **NOTE:** when running chat client executable built with the latter approach, if you encounter ``version `GLIBC_2.28' not found`` error, rebuild it with `haskell:8.8.4-stretch` base image instead (you'd have to change it in your local [Dockerfile](Dockerfile)).
+> **NOTE:** When running chat client executable built with the latter approach, if you encounter ``version `GLIBC_2.28' not found`` error, rebuild it with `haskell:8.8.4-stretch` base image instead (you'd have to change it in your local [Dockerfile](Dockerfile)).
 
 `dog-food` (as in "eating your own dog food" - it is an early prototype) starts chat client with default parameters. By default, SQLite database file is created in the working directory (`smp-chat.db`), and the default SMP server is `smp.simplex.im:5223`.
 
@@ -97,6 +97,22 @@ Since SMP doesn't use global identity (all account information is managed by cli
 Now Alice's invitations would be generated with her name in it for others' convenience.
 
 Use `/help` in chat to see the list of available commands and their explanation.
+
+### Accessing chat history
+
+You can access your chat history by opening a connection to your SQLite database file and querying `messages` table, for example:
+
+```sql
+select * from messages
+where conn_alias = cast('alice' as blob)
+order by internal_id desc;
+
+select * from messages
+where conn_alias = cast('alice' as blob)
+and body like '%cats%';
+```
+
+> **NOTE:** Beware that SQLite foreign key constraints are disabled by default, and must be **[enabled separately for each database connection](https://sqlite.org/foreignkeys.html#fk_enable)**. The latter can be achieved by running `PRAGMA foreign_keys = ON;` command on an open database connection. By running data altering queries without enabling foreign keys prior to that, you may risk putting your database in an inconsistent state.
 
 ## 🚧 [further README not up to date] SMP server demo 🏗
 
