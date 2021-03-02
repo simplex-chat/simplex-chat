@@ -30,5 +30,10 @@ jobs:
           path: ~/.stack
           key: ${{ runner.os }}-${{ hashFiles('stack.yaml') }}
 
+      - name: Log SQLite default threading mode
+        run: |
+          sqlite3 test.db "pragma COMPILE_OPTIONS;" | grep THREADSAFE
+          rm test.db
+
       - name: Build and run tests
         run: stack build --test
