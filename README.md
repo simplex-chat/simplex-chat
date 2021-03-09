@@ -25,7 +25,13 @@ Limitations/disclaimers:
 
 ## How to run chat client locally
 
-Install [Haskell platform](https://www.haskell.org/platform/) (ghc, cabal, stack) and build the project:
+Install [Haskell stack](https://docs.haskellstack.org/en/stable/README/):
+
+```shell
+curl -sSL https://get.haskellstack.org/ | sh
+```
+
+and build the project:
 
 ```shell
 $ git clone git@github.com:simplex-chat/simplex-messaging.git
