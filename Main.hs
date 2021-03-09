@@ -116,11 +116,11 @@ chatHelpInfo =
 
 main :: IO ()
 main = do
-  ChatOpts {dbFileName, smpServer, name} <- getChatOpts
+  ChatOpts {dbFileName, smpServer, name, termMode} <- getChatOpts
   putStrLn "simpleX chat prototype, \"/help\" for usage information"
   let user = Contact <$> name
   t <- getChatClient smpServer user
-  ct <- newChatTerminal (tbqSize cfg) user
+  ct <- newChatTerminal (tbqSize cfg) user termMode
   -- setLogLevel LogInfo -- LogError
   -- withGlobalLogging logCfg $
   env <- newSMPAgentEnv cfg {dbFile = dbFileName}

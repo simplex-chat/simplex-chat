@@ -1,6 +1,11 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+
+#ifdef mingw32_HOST_OS
+{-# LANGUAGE ForeignFunctionInterface #-}
+#endif
 
 module ChatTerminal
   ( ChatTerminal (..),
@@ -28,11 +33,17 @@ import qualified System.Console.ANSI as C
 import System.IO
 import Types
 
+#ifdef mingw32_HOST_OS
+import Data.Char
+import Foreign.C.Types
+#endif
+
 data ChatTerminal = ChatTerminal
   { inputQ :: TBQueue ByteString,
     outputQ :: TBQueue ByteString,
     activeContact :: TVar (Maybe Contact),
     username :: TVar (Maybe Contact),
+    termMode :: TermMode,
     termState :: TVar TerminalState,
     termSize :: (Int, Int),
     nextMessageRow :: TVar Int,
@@ -67,8 +78,8 @@ data Key
   | KeyUnsupported
   deriving (Eq)
 
-newChatTerminal :: Natural -> Maybe Contact -> IO ChatTerminal
-newChatTerminal qSize user = do
+newChatTerminal :: Natural -> Maybe Contact -> TermMode -> IO ChatTerminal
+newChatTerminal qSize user termMode = do
   inputQ <- newTBQueueIO qSize
   outputQ <- newTBQueueIO qSize
   activeContact <- newTVarIO Nothing
@@ -79,7 +90,7 @@ newChatTerminal qSize user = do
   termLock <- newTMVarIO ()
   nextMessageRow <- newTVarIO lastRow
   threadDelay 500000 -- this delay is the same as timeout in getTerminalSize
-  return ChatTerminal {inputQ, outputQ, activeContact, username, termState, termSize, nextMessageRow, termLock}
+  return ChatTerminal {inputQ, outputQ, activeContact, username, termMode, termState, termSize, nextMessageRow, termLock}
 
 newTermState :: Maybe Contact -> TerminalState
 newTermState user =
@@ -90,21 +101,22 @@ newTermState user =
     }
 
 chatTerminal :: ChatTerminal -> IO ()
-chatTerminal ct =
-  if termSize ct /= (0, 0)
-    then do
-      hSetBuffering stdin NoBuffering
-      hSetBuffering stdout NoBuffering
-      hSetEcho stdin False
-      updateInput ct
-      run receiveFromTTY' sendToTTY'
-    else run receiveFromTTY sendToTTY
+chatTerminal ct
+  | termMode ct == TermModeBasic =
+    run (receiveFromTTY $ getLn stdin) sendToTTY
+  | termSize ct == (0, 0) || termMode ct == TermModeSimple =
+    run (receiveFromTTY $ getChatLn ct) sendToTTY
+  | otherwise = do
+    setTTY NoBuffering
+    hSetEcho stdin False
+    updateInput ct
+    run receiveFromTTY' sendToTTY'
   where
     run receive send = race_ (receive ct) (send ct)
 
-receiveFromTTY :: ChatTerminal -> IO ()
-receiveFromTTY ct@ChatTerminal {inputQ} =
-  forever $ getChatLn ct >>= atomically . writeTBQueue inputQ
+receiveFromTTY :: IO ByteString -> ChatTerminal -> IO ()
+receiveFromTTY get ct =
+  forever $ get >>= atomically . writeTBQueue (inputQ ct)
 
 withTermLock :: ChatTerminal -> IO () -> IO ()
 withTermLock ChatTerminal {termLock} action = do
@@ -232,15 +244,17 @@ promptString :: Maybe Contact -> String
 promptString a = maybe "" (B.unpack . toBs) a <> "> "
 
 sendToTTY :: ChatTerminal -> IO ()
-sendToTTY ChatTerminal {outputQ} =
-  forever $ atomically (readTBQueue outputQ) >>= putLn stdout
+sendToTTY ct = forever $ readOutputQ ct >>= putLn stdout
 
 sendToTTY' :: ChatTerminal -> IO ()
-sendToTTY' ct@ChatTerminal {outputQ} = forever $ do
-  msg <- atomically (readTBQueue outputQ)
+sendToTTY' ct = forever $ do
+  msg <- readOutputQ ct
   withTermLock ct $ do
     printMessage ct msg
     updateInput ct
+
+readOutputQ :: ChatTerminal -> IO ByteString
+readOutputQ = atomically . readTBQueue . outputQ
 
 printMessage :: ChatTerminal -> ByteString -> IO ()
 printMessage ChatTerminal {termSize, nextMessageRow} msg = do
@@ -288,7 +302,7 @@ getKey = charsToKey . reverse <$> keyChars ""
       cs -> KeyChars cs
 
     keyChars cs = do
-      c <- getChar
+      c <- getHiddenChar
       more <- hReady stdin
       -- for debugging - uncomment this, comment line after:
       -- (if more then keyChars else \c' -> print (reverse c') >> return c') (c : cs)
@@ -297,24 +311,38 @@ getKey = charsToKey . reverse <$> keyChars ""
 getChatLn :: ChatTerminal -> IO ByteString
 getChatLn ct = do
   setTTY NoBuffering
-  getChar >>= \case
-    '/' -> getRest "/"
-    '@' -> getRest "@"
+  hSetEcho stdin False
+  getHiddenChar >>= \case
+    '/' -> getWithChar "/"
+    '@' -> getWithChar "@"
     ch -> do
       let s = encodeUtf8 $ T.singleton ch
       readTVarIO (activeContact ct) >>= \case
-        Nothing -> getRest s
+        Nothing -> getWithChar s
         Just a -> getWithContact a s
   where
+    getWithChar :: ByteString -> IO ByteString
+    getWithChar c = do
+      B.hPut stdout c
+      getRest c
     getWithContact :: Contact -> ByteString -> IO ByteString
     getWithContact a s = do
-      C.cursorBackward 1
       B.hPut stdout $ ttyToContact a <> " " <> s
       getRest $ "@" <> toBs a <> " " <> s
     getRest :: ByteString -> IO ByteString
     getRest s = do
       setTTY LineBuffering
+      hSetEcho stdin True
       (s <>) <$> getLn stdin
+
+getHiddenChar :: IO Char
+#ifdef mingw32_HOST_OS
+getHiddenChar = fmap (chr.fromEnum) c_getch
+foreign import ccall unsafe "conio.h getch"
+  c_getch :: IO CInt
+#else
+getHiddenChar = getChar
+#endif
 
 setTTY :: BufferMode -> IO ()
 setTTY mode = do

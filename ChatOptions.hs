@@ -1,21 +1,25 @@
+{-# LANGUAGE LambdaCase #-}
+
 module ChatOptions (getChatOpts, ChatOpts (..)) where
 
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.ByteString.Char8 as B
 import Options.Applicative
 import Simplex.Messaging.Agent.Transmission (SMPServer (..), smpServerP)
+import Types
 
 data ChatOpts = ChatOpts
   { name :: Maybe B.ByteString,
     dbFileName :: String,
-    smpServer :: SMPServer
+    smpServer :: SMPServer,
+    termMode :: TermMode
   }
 
 chatOpts :: Parser ChatOpts
 chatOpts =
   ChatOpts
     <$> option
-      parseName
+      (Just <$> str)
       ( long "name"
           <> short 'n'
           <> metavar "NAME"
@@ -37,12 +41,24 @@ chatOpts =
           <> help "SMP server to use (smp.simplex.im:5223)"
           <> value (SMPServer "smp.simplex.im" (Just "5223") Nothing)
       )
-
-parseName :: ReadM (Maybe B.ByteString)
-parseName = maybeReader $ Just . Just . B.pack
+    <*> option
+      parseTermMode
+      ( long "term"
+          <> short 't'
+          <> metavar "TERM"
+          <> help "terminal mode: \"editor\", \"simple\" or \"basic\" (editor)"
+          <> value TermModeEditor
+      )
 
 parseSMPServer :: ReadM SMPServer
 parseSMPServer = eitherReader $ A.parseOnly (smpServerP <* A.endOfInput) . B.pack
+
+parseTermMode :: ReadM TermMode
+parseTermMode = maybeReader $ \case
+  "basic" -> Just TermModeBasic
+  "simple" -> Just TermModeSimple
+  "editor" -> Just TermModeEditor
+  _ -> Nothing
 
 getChatOpts :: IO ChatOpts
 getChatOpts = execParser opts
