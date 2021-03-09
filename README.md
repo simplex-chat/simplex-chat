@@ -40,7 +40,7 @@ $ stack install
 $ dog-food
 ```
 
-If you'd prefer to not set up Haskell locally, you may instead build the chat client executable using [docker build with custom output](https://docs.docker.com/engine/reference/commandline/build/#custom-build-outputs):
+If you'd prefer to not set up Haskell locally, on Linux you may instead build the chat client executable using [docker build with custom output](https://docs.docker.com/engine/reference/commandline/build/#custom-build-outputs):
 
 ```shell
 $ git clone git@github.com:simplex-chat/simplex-messaging.git
