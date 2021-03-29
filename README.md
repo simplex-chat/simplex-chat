@@ -10,7 +10,7 @@ See [simplex.chat](https://simplex.chat) website for chat demo and the explanati
 SMP protocol is semi-formally defined [here](https://github.com/simplex-chat/protocol).
 
 Currently only these features are available:
-- simple 1-2-1 chat with multiple people in the same terminal window.
+- simple 1-to-1 chat with multiple people in the same terminal window.
 - auto-populated recipient name - just type your messages.
 - default server is available to play with - `smp.simplex.im:5223` - and you can deploy your own (`smp-server` executable in this repo).
 - no global identity or names visible to the server(s) - for the privacy of contacts and conversations.
@@ -51,16 +51,15 @@ $ dog-food
 
 > **NOTE:** When running chat client executable built with the latter approach, if you encounter ``version `GLIBC_2.28' not found`` error, rebuild it with `haskell:8.8.4-stretch` base image instead (you'd have to change it in your local [Dockerfile](Dockerfile)).
 
-`dog-food` (as in "eating your own dog food" - it is an early prototype) starts chat client with default parameters. By default, SQLite database file is created in the working directory (`smp-chat.db`), and the default SMP server is `smp.simplex.im:5223`.
+`dog-food` (as in "eating your own dog food" - it is an early prototype) starts chat client with default parameters. By default, app data directory is created in the home directory (`~/.simplex`, or `%APPDATA%/simplex` on Windows), and SQLite database file `smp-chat.db` is initialized in it. The default SMP server is `smp.simplex.im:5223`.
 
-To specify a different chat database location run:
+To specify a different file path for the chat database use `-d` command line option:
 
 ```shell
-$ mkdir ~/simplex
-$ dog-food -d ~/simplex/my-chat.db
+$ dog-food -d my-chat.db
 ```
 
-You can deploy your own server and set client to use it via command line option:
+If you deployed your own SMP server you can set client to use it via `-s` option:
 
 ```shell
 $ dog-food -s smp.example.com:5223
