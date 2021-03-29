@@ -6,6 +6,7 @@ import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.ByteString.Char8 as B
 import Options.Applicative
 import Simplex.Messaging.Agent.Transmission (SMPServer (..), smpServerP)
+import System.FilePath (combine)
 import Types
 
 data ChatOpts = ChatOpts
@@ -15,8 +16,9 @@ data ChatOpts = ChatOpts
     termMode :: TermMode
   }
 
-chatOpts :: Parser ChatOpts
-chatOpts =
+chatOpts :: FilePath -> Parser ChatOpts
+chatOpts appDir = do
+  let defaultDbFilePath = combine appDir "smp-chat.db"
   ChatOpts
     <$> option
       (Just <$> str)
@@ -30,8 +32,8 @@ chatOpts =
       ( long "database"
           <> short 'd'
           <> metavar "DB_FILE"
-          <> help "sqlite database filename (smp-chat.db)"
-          <> value "smp-chat.db"
+          <> help ("sqlite database file path (" ++ defaultDbFilePath ++ ")")
+          <> value defaultDbFilePath
       )
     <*> option
       parseSMPServer
@@ -60,12 +62,12 @@ parseTermMode = maybeReader $ \case
   "editor" -> Just TermModeEditor
   _ -> Nothing
 
-getChatOpts :: IO ChatOpts
-getChatOpts = execParser opts
+getChatOpts :: FilePath -> IO ChatOpts
+getChatOpts appDir = execParser opts
   where
     opts =
       info
-        (chatOpts <**> helper)
+        (chatOpts appDir <**> helper)
         ( fullDesc
             <> header "Chat prototype using Simplex Messaging Protocol (SMP)"
             <> progDesc "Start chat with DB_FILE file and use SERVER as SMP server"
