@@ -3,10 +3,6 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
--- #ifdef mingw32_HOST_OS
--- {-# LANGUAGE ForeignFunctionInterface #-}
--- #endif
-
 module ChatTerminal
   ( ChatTerminal (..),
     newChatTerminal,
@@ -32,11 +28,6 @@ import Simplex.Messaging.Transport (getLn, putLn)
 import qualified System.Console.ANSI as C
 import System.IO
 import Types
-
--- #ifdef mingw32_HOST_OS
--- import Data.Char
--- import Foreign.C.Types
--- #endif
 
 data ChatTerminal = ChatTerminal
   { inputQ :: TBQueue ByteString,
@@ -102,10 +93,8 @@ newTermState user =
 
 chatTerminal :: ChatTerminal -> IO ()
 chatTerminal ct
-  | termMode ct == TermModeBasic =
-    run (receiveFromTTY $ getLn stdin) sendToTTY
-  | termSize ct == (0, 0) || termMode ct == TermModeSimple =
-    run (receiveFromTTY $ getChatLn ct) sendToTTY
+  | termSize ct == (0, 0) || termMode ct == TermModeBasic =
+    run receiveFromTTY sendToTTY
   | otherwise = do
     setTTY NoBuffering
     hSetEcho stdin False
@@ -114,9 +103,9 @@ chatTerminal ct
   where
     run receive send = race_ (receive ct) (send ct)
 
-receiveFromTTY :: IO ByteString -> ChatTerminal -> IO ()
-receiveFromTTY get ct =
-  forever $ get >>= atomically . writeTBQueue (inputQ ct)
+receiveFromTTY :: ChatTerminal -> IO ()
+receiveFromTTY ct =
+  forever $ getLn stdin >>= atomically . writeTBQueue (inputQ ct)
 
 withTermLock :: ChatTerminal -> IO () -> IO ()
 withTermLock ChatTerminal {termLock} action = do
@@ -302,47 +291,11 @@ getKey = charsToKey . reverse <$> keyChars ""
       cs -> KeyChars cs
 
     keyChars cs = do
-      c <- getHiddenChar
+      c <- getChar
       more <- hReady stdin
       -- for debugging - uncomment this, comment line after:
       -- (if more then keyChars else \c' -> print (reverse c') >> return c') (c : cs)
       (if more then keyChars else return) (c : cs)
-
-getChatLn :: ChatTerminal -> IO ByteString
-getChatLn ct = do
-  setTTY NoBuffering
-  hSetEcho stdin False
-  getHiddenChar >>= \case
-    '/' -> getWithChar "/"
-    '@' -> getWithChar "@"
-    ch -> do
-      let s = encodeUtf8 $ T.singleton ch
-      readTVarIO (activeContact ct) >>= \case
-        Nothing -> getWithChar s
-        Just a -> getWithContact a s
-  where
-    getWithChar :: ByteString -> IO ByteString
-    getWithChar c = do
-      B.hPut stdout c
-      getRest c
-    getWithContact :: Contact -> ByteString -> IO ByteString
-    getWithContact a s = do
-      B.hPut stdout $ ttyToContact a <> " " <> s
-      getRest $ "@" <> toBs a <> " " <> s
-    getRest :: ByteString -> IO ByteString
-    getRest s = do
-      setTTY LineBuffering
-      hSetEcho stdin True
-      (s <>) <$> getLn stdin
-
-getHiddenChar :: IO Char
--- #ifdef mingw32_HOST_OS
--- getHiddenChar = fmap (chr.fromEnum) c_getch
--- foreign import ccall unsafe "conio.h getch"
---   c_getch :: IO CInt
--- #else
-getHiddenChar = getChar
--- #endif
 
 setTTY :: BufferMode -> IO ()
 setTTY mode = do

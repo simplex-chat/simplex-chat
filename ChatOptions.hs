@@ -48,7 +48,7 @@ chatOpts appDir =
       ( long "term"
           <> short 't'
           <> metavar "TERM"
-          <> help ("terminal mode: editor, simple or basic (" <> termModeName deafultTermMode <> ")")
+          <> help ("terminal mode: editor or basic (" <> termModeName deafultTermMode <> ")")
           <> value deafultTermMode
       )
   where
@@ -63,7 +63,6 @@ parseSMPServer = eitherReader $ A.parseOnly (smpServerP <* A.endOfInput) . B.pac
 parseTermMode :: ReadM TermMode
 parseTermMode = maybeReader $ \case
   "basic" -> Just TermModeBasic
-  "simple" -> Just TermModeSimple
   "editor" -> Just TermModeEditor
   _ -> Nothing
 
