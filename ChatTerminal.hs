@@ -3,9 +3,9 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-#ifdef mingw32_HOST_OS
-{-# LANGUAGE ForeignFunctionInterface #-}
-#endif
+-- #ifdef mingw32_HOST_OS
+-- {-# LANGUAGE ForeignFunctionInterface #-}
+-- #endif
 
 module ChatTerminal
   ( ChatTerminal (..),
@@ -33,10 +33,10 @@ import qualified System.Console.ANSI as C
 import System.IO
 import Types
 
-#ifdef mingw32_HOST_OS
-import Data.Char
-import Foreign.C.Types
-#endif
+-- #ifdef mingw32_HOST_OS
+-- import Data.Char
+-- import Foreign.C.Types
+-- #endif
 
 data ChatTerminal = ChatTerminal
   { inputQ :: TBQueue ByteString,
@@ -336,13 +336,13 @@ getChatLn ct = do
       (s <>) <$> getLn stdin
 
 getHiddenChar :: IO Char
-#ifdef mingw32_HOST_OS
-getHiddenChar = fmap (chr.fromEnum) c_getch
-foreign import ccall unsafe "conio.h getch"
-  c_getch :: IO CInt
-#else
+-- #ifdef mingw32_HOST_OS
+-- getHiddenChar = fmap (chr.fromEnum) c_getch
+-- foreign import ccall unsafe "conio.h getch"
+--   c_getch :: IO CInt
+-- #else
 getHiddenChar = getChar
-#endif
+-- #endif
 
 setTTY :: BufferMode -> IO ()
 setTTY mode = do

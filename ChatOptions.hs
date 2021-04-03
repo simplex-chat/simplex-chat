@@ -7,6 +7,7 @@ import qualified Data.ByteString.Char8 as B
 import Options.Applicative
 import Simplex.Messaging.Agent.Transmission (SMPServer (..), smpServerP)
 import System.FilePath (combine)
+import System.Info (os)
 import Types
 
 data ChatOpts = ChatOpts
@@ -17,8 +18,7 @@ data ChatOpts = ChatOpts
   }
 
 chatOpts :: FilePath -> Parser ChatOpts
-chatOpts appDir = do
-  let defaultDbFilePath = combine appDir "smp-chat.db"
+chatOpts appDir =
   ChatOpts
     <$> option
       (Just <$> str)
@@ -32,7 +32,7 @@ chatOpts appDir = do
       ( long "database"
           <> short 'd'
           <> metavar "DB_FILE"
-          <> help ("sqlite database file path (" ++ defaultDbFilePath ++ ")")
+          <> help ("sqlite database file path (" <> defaultDbFilePath <> ")")
           <> value defaultDbFilePath
       )
     <*> option
@@ -48,9 +48,14 @@ chatOpts appDir = do
       ( long "term"
           <> short 't'
           <> metavar "TERM"
-          <> help "terminal mode: \"editor\", \"simple\" or \"basic\" (editor)"
-          <> value TermModeEditor
+          <> help ("terminal mode: editor, simple or basic (" <> termModeName deafultTermMode <> ")")
+          <> value deafultTermMode
       )
+  where
+    defaultDbFilePath = combine appDir "smp-chat.db"
+    deafultTermMode
+      | os == "mingw32" = TermModeBasic
+      | otherwise = TermModeEditor
 
 parseSMPServer :: ReadM SMPServer
 parseSMPServer = eitherReader $ A.parseOnly (smpServerP <* A.endOfInput) . B.pack
