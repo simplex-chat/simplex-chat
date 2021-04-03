@@ -1,17 +1,60 @@
-# Base: https://github.com/haskell/actions/tree/main/setup#usage
-
 name: build
 
 on:
   push:
     branches:
       - master
+    tags:
+      - "v*"
   pull_request:
 
 jobs:
+  prepare-release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clone project
+        uses: actions/checkout@v2
+
+      - name: Create release
+        uses: softprops/action-gh-release@v1
+        with:
+          fail_on_unmatched_files: true
+          files: |
+            LICENSE
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   build:
-    name: build
-    runs-on: ubuntu-latest # TODO matrix testing
+    name: build-${{ matrix.os }}
+    if: always()
+    needs: prepare-release
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-20.04
+            cache_path: ~/.stack
+            stack_args: "--test"
+            artifact_rel_path: /bin/dog-food
+            asset_name: dog-food-ubuntu-20_04-x86-64
+          - os: ubuntu-18.04
+            cache_path: ~/.stack
+            stack_args: "--test"
+            artifact_rel_path: /bin/dog-food
+            asset_name: dog-food-ubuntu-18_04-x86-64
+          # TODO re-enable tests for mac and windows when they consistently pass (remove stack_args altogether)
+          - os: macos-latest
+            cache_path: ~/.stack
+            stack_args: ""
+            artifact_rel_path: /bin/dog-food
+            asset_name: dog-food-macos-x86-64
+          - os: windows-latest
+            cache_path: C:/sr
+            stack_args: ""
+            artifact_rel_path: /bin/dog-food.exe
+            asset_name: dog-food-windows-x86-64
     steps:
       - name: Clone project
         uses: actions/checkout@v2
@@ -20,20 +63,26 @@ jobs:
         uses: haskell/actions/setup@v1
         with:
           ghc-version: '8.8.4'
-          # cabal-version: 'latest'. Omitted, but defaults to 'latest'
           enable-stack: true
           stack-version: 'latest'
 
       - name: Cache dependencies
         uses: actions/cache@v2
         with:
-          path: ~/.stack
-          key: ${{ runner.os }}-${{ hashFiles('stack.yaml') }}
+          path: ${{ matrix.cache_path }}
+          key: ${{ matrix.os }}-${{ hashFiles('stack.yaml') }}
 
-      - name: Log SQLite default threading mode
+      - name: Build & test
+        id: build_test
         run: |
-          sqlite3 test.db "pragma COMPILE_OPTIONS;" | grep THREADSAFE
-          rm test.db
+          stack build ${{ matrix.stack_args }}
+          echo "::set-output name=LOCAL_INSTALL_ROOT::$(stack path --local-install-root)"
 
-      - name: Build and run tests
-        run: stack build --test
+      - name: Upload binaries to release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: ${{ steps.build_test.outputs.LOCAL_INSTALL_ROOT }}${{ matrix.artifact_rel_path }}
+          asset_name: ${{ matrix.asset_name }}
+          tag: ${{ github.ref }}
