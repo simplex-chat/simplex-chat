@@ -2,10 +2,10 @@
 
 module ChatOptions (getChatOpts, ChatOpts (..)) where
 
-import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.ByteString.Char8 as B
 import Options.Applicative
 import Simplex.Messaging.Agent.Transmission (SMPServer (..), smpServerP)
+import Simplex.Messaging.Parsers (parseAll)
 import System.FilePath (combine)
 import System.Info (os)
 import Types
@@ -58,7 +58,7 @@ chatOpts appDir =
       | otherwise = TermModeEditor
 
 parseSMPServer :: ReadM SMPServer
-parseSMPServer = eitherReader $ A.parseOnly (smpServerP <* A.endOfInput) . B.pack
+parseSMPServer = eitherReader $ parseAll smpServerP . B.pack
 
 parseTermMode :: ReadM TermMode
 parseTermMode = maybeReader $ \case

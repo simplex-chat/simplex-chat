@@ -26,6 +26,7 @@ import Simplex.Messaging.Agent.Client (AgentClient (..))
 import Simplex.Messaging.Agent.Env.SQLite
 import Simplex.Messaging.Agent.Transmission
 import Simplex.Messaging.Client (smpDefaultConfig)
+import Simplex.Messaging.Parsers (parseAll)
 import Simplex.Messaging.Util (bshow, raceAny_)
 import System.Directory (getAppUserDataDirectory)
 import System.Exit (exitFailure)
@@ -124,7 +125,7 @@ main = do
   t <- getChatClient smpServer user
   ct <- newChatTerminal (tbqSize cfg) user termMode
   -- setLogLevel LogInfo -- LogError
-  -- withGlobalLogging logCfg $
+  -- withGlobalLogging logCfg $ do
   env <- newSMPAgentEnv cfg {dbFile = dbFileName}
   dogFoodChat t ct env
 
@@ -172,7 +173,7 @@ newChatClient qSize smpServer name = do
 receiveFromChatTerm :: ChatClient -> ChatTerminal -> IO ()
 receiveFromChatTerm t ct = forever $ do
   atomically (readTBQueue $ inputQ ct)
-    >>= processOrError . A.parseOnly (chatCommandP <* A.endOfInput)
+    >>= processOrError . parseAll chatCommandP
   where
     processOrError = \case
       Left err -> atomically . writeTBQueue (outQ t) . ErrorInput $ B.pack err
