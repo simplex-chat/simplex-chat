@@ -20,13 +20,16 @@ import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.Functor (($>))
+import qualified Data.Text as T
+import Data.Text.Encoding
 import Numeric.Natural
 import Simplex.Messaging.Agent (getSMPAgentClient, runSMPAgentClient)
 import Simplex.Messaging.Agent.Client (AgentClient (..))
 import Simplex.Messaging.Agent.Env.SQLite
 import Simplex.Messaging.Agent.Transmission
 import Simplex.Messaging.Client (smpDefaultConfig)
-import Simplex.Messaging.Util (bshow, raceAny_)
+import Simplex.Messaging.Util (raceAny_)
+import Styled
 import System.Directory (getAppUserDataDirectory)
 import System.Exit (exitFailure)
 import System.Info (os)
@@ -89,22 +92,24 @@ data ChatResponse
   | ChatError AgentErrorType
   | NoChatResponse
 
-serializeChatResponse :: Maybe Contact -> ChatResponse -> ByteString
+serializeChatResponse :: Maybe Contact -> ChatResponse -> StyledString
 serializeChatResponse name = \case
   ChatHelpInfo -> chatHelpInfo
-  Invitation qInfo -> "ask your contact to enter: /accept " <> showName name <> " " <> serializeSmpQueueInfo qInfo
+  Invitation qInfo -> "ask your contact to enter: /accept " <> showName name <> " " <> (bPlain . serializeSmpQueueInfo) qInfo
   Connected c -> ttyContact c <> " connected"
-  ReceivedMessage c t -> ttyFromContact c <> " " <> t
-  Disconnected c -> "disconnected from " <> ttyContact c <> " - try \"/chat " <> toBs c <> "\""
+  ReceivedMessage c t -> ttyFromContact c <> " " <> msgPlain t
+  Disconnected c -> "disconnected from " <> ttyContact c <> " - try \"/chat " <> bPlain (toBs c) <> "\""
   YesYes -> "you got it!"
-  ErrorInput t -> "invalid input: " <> t
-  ChatError e -> "chat error: " <> bshow e
+  ErrorInput t -> "invalid input: " <> bPlain t
+  ChatError e -> "chat error: " <> plain (show e)
   NoChatResponse -> ""
   where
     showName Nothing = "<your name>"
-    showName (Just (Contact a)) = a
+    showName (Just (Contact a)) = bPlain a
+    msgPlain = plain . T.unpack . decodeUtf8With onError
+    onError _ _ = Just '?'
 
-chatHelpInfo :: ByteString
+chatHelpInfo :: StyledString
 chatHelpInfo =
   "Using chat:\n\
   \/add <name>       - create invitation to send out-of-band\n\
@@ -172,7 +177,7 @@ newChatClient qSize smpServer name = do
 receiveFromChatTerm :: ChatClient -> ChatTerminal -> IO ()
 receiveFromChatTerm t ct = forever $ do
   atomically (readTBQueue $ inputQ ct)
-    >>= processOrError . A.parseOnly (chatCommandP <* A.endOfInput)
+    >>= processOrError . A.parseOnly (chatCommandP <* A.endOfInput) . encodeUtf8 . T.pack
   where
     processOrError = \case
       Left err -> atomically . writeTBQueue (outQ t) . ErrorInput $ B.pack err
@@ -226,12 +231,14 @@ receiveFromAgent t ct c = forever . atomically $ do
     chatResponse :: ATransmission 'Agent -> ChatResponse
     chatResponse (_, a, resp) = case resp of
       INV qInfo -> Invitation qInfo
-      CON -> Connected $ Contact a
-      END -> Disconnected $ Contact a
-      MSG {m_body} -> ReceivedMessage (Contact a) m_body
+      CON -> Connected contact
+      END -> Disconnected contact
+      MSG {m_body} -> ReceivedMessage contact m_body
       SENT _ -> NoChatResponse
-      OK -> Connected $ Contact a -- hack for subscribing to all
+      OK -> Connected contact -- hack for subscribing to all
       ERR e -> ChatError e
+      where
+        contact = Contact a
     setActiveContact :: ChatResponse -> STM ()
     setActiveContact = \case
       Connected a -> set $ Just a

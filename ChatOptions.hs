@@ -3,6 +3,7 @@
 module ChatOptions (getChatOpts, ChatOpts (..)) where
 
 import qualified Data.Attoparsec.ByteString.Char8 as A
+import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Options.Applicative
 import Simplex.Messaging.Agent.Transmission (SMPServer (..), smpServerP)
@@ -11,7 +12,7 @@ import System.Info (os)
 import Types
 
 data ChatOpts = ChatOpts
-  { name :: Maybe B.ByteString,
+  { name :: Maybe ByteString,
     dbFileName :: String,
     smpServer :: SMPServer,
     termMode :: TermMode
