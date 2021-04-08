@@ -1,6 +1,6 @@
 {-# LANGUAGE LambdaCase #-}
 
-module Terminal where
+module ChatTerminal.Basic where
 
 import Control.Monad.IO.Class (liftIO)
 import Styled
