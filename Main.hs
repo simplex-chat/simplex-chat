@@ -29,6 +29,7 @@ import Simplex.Messaging.Agent.Env.SQLite
 import Simplex.Messaging.Agent.Transmission
 import Simplex.Messaging.Client (smpDefaultConfig)
 import Simplex.Messaging.Util (raceAny_)
+import SimplexMarkdown
 import Styled
 import System.Directory (getAppUserDataDirectory)
 import System.Exit (exitFailure)
@@ -106,7 +107,7 @@ serializeChatResponse name = \case
   where
     showName Nothing = "<your name>"
     showName (Just (Contact a)) = bPlain a
-    msgPlain = plain . T.unpack . decodeUtf8With onError
+    msgPlain = styleMarkdown . parseMarkdown . decodeUtf8With onError
     onError _ _ = Just '?'
 
 chatHelpInfo :: StyledString

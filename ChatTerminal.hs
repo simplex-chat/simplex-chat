@@ -20,7 +20,9 @@ import Control.Monad
 import qualified Data.ByteString.Char8 as B
 import Data.List (dropWhileEnd)
 import Data.Maybe (fromMaybe)
+import qualified Data.Text as T
 import Numeric.Natural
+import SimplexMarkdown
 import Styled
 import qualified System.Console.ANSI as C
 import System.IO
@@ -131,7 +133,7 @@ receiveFromTTY' ct@ChatTerminal {inputQ, activeContact, termSize, termState} =
         let s = inputString ts
         writeTBQueue inputQ s
         return s
-      withTermLock ct . printMessage ct $ highlightContact msg
+      withTermLock ct . printMessage ct $ styleMessage msg
 
     updateTermState :: Maybe Contact -> Int -> Key -> TerminalState -> TerminalState
     updateTermState ac tw key ts@TerminalState {inputString = s, inputPosition = p} = case key of
@@ -181,11 +183,14 @@ receiveFromTTY' ct@ChatTerminal {inputQ, activeContact, termSize, termState} =
              in min (length s) $ p + length after - length afterWord
         ts' (s', p') = ts {inputString = s', inputPosition = p'}
 
-highlightContact :: String -> StyledString
-highlightContact = \case
+styleMessage :: String -> StyledString
+styleMessage = \case
   "" -> ""
-  s@('@' : _) -> let (c, rest) = span (/= ' ') s in Styled selfSGR c <> plain rest
-  s -> plain s
+  s@('@' : _) -> let (c, rest) = span (/= ' ') s in Styled selfSGR c <> markdown rest
+  s -> markdown s
+  where
+    markdown :: String -> StyledString
+    markdown = styleMarkdown . parseMarkdown . T.pack
 
 updateInput :: ChatTerminal -> IO ()
 updateInput ct@ChatTerminal {termSize, termState, nextMessageRow} = do
