@@ -16,12 +16,24 @@ jobs:
       - name: Clone project
         uses: actions/checkout@v2
 
+      - name: Build changelog
+        id: build_changelog
+        uses: mikepenz/release-changelog-builder-action@v1
+        with:
+          configuration: .github/changelog_conf.json
+          failOnError: true
+          ignorePreReleases: true
+          commitMode: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Create release
         uses: softprops/action-gh-release@v1
         with:
-          fail_on_unmatched_files: true
+          body: ${{ steps.build_changelog.outputs.changelog }}
           files: |
             LICENSE
+          fail_on_unmatched_files: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

@@ -1,0 +1,4 @@
+{
+  "template": "${{UNCATEGORIZED}}",
+  "pr_template": "- ${{TITLE}}\n"
+}
