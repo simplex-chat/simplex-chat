@@ -55,25 +55,15 @@ updateTermState ac tw (key, ms) ts@TerminalState {inputString = s, inputPosition
   HomeKey -> setPosition 0
   EndKey -> setPosition $ length s
   ArrowKey d -> case d of
-    Leftwards
-      | ms == mempty -> setPosition $ max 0 (p - 1)
-      | ms == shiftKey -> setPosition 0
-      | ms == ctrlKey -> setPosition prevWordPos
-      | ms == altKey -> setPosition prevWordPos
-      | otherwise -> setPosition p
-    Rightwards
-      | ms == mempty -> setPosition $ min (length s) (p + 1)
-      | ms == shiftKey -> setPosition $ length s
-      | ms == ctrlKey -> setPosition nextWordPos
-      | ms == altKey -> setPosition nextWordPos
-      | otherwise -> setPosition p
+    Leftwards -> setPosition leftPos
+    Rightwards -> setPosition rightPos
     Upwards
       | ms == mempty && null s -> let s' = previousInput ts in ts' (s', length s')
-      | ms == mempty -> let p' = p - tw in setPosition $ if p' > 0 then p' else p
-      | otherwise -> setPosition p
+      | ms == mempty -> let p' = p - tw in if p' > 0 then setPosition p' else ts
+      | otherwise -> ts
     Downwards
-      | ms == mempty -> let p' = p + tw in setPosition $ if p' <= length s then p' else p
-      | otherwise -> setPosition p
+      | ms == mempty -> let p' = p + tw in if p' <= length s then setPosition p' else ts
+      | otherwise -> ts
   _ -> ts
   where
     insertCharsWithContact cs
@@ -94,6 +84,18 @@ updateTermState ac tw (key, ms) ts@TerminalState {inputString = s, inputPosition
       | p >= length s || null s = ts
       | p == 0 = ts' (tail s, 0)
       | otherwise = let (b, a) = splitAt p s in ts' (b <> tail a, p)
+    leftPos
+      | ms == mempty = min (length s) (p + 1)
+      | ms == shiftKey = length s
+      | ms == ctrlKey = nextWordPos
+      | ms == altKey = nextWordPos
+      | otherwise = p
+    rightPos
+      | ms == mempty = min (length s) (p + 1)
+      | ms == shiftKey = length s
+      | ms == ctrlKey = nextWordPos
+      | ms == altKey = nextWordPos
+      | otherwise = p
     setPosition p' = ts' (s, p')
     prevWordPos
       | p == 0 || null s = p
