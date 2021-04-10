@@ -13,18 +13,17 @@ module ChatTerminal
   )
 where
 
-import ChatTerminal.Basic (getLn, putLn)
+import ChatTerminal.Basic
 import ChatTerminal.Core
-import ChatTerminal.POSIX
+import ChatTerminal.Editor
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (race_)
-import Control.Concurrent.STM
 import Control.Monad
-import Data.Maybe (fromMaybe)
 import Numeric.Natural
 import Styled
-import qualified System.Console.ANSI as C
+import System.Terminal
 import Types
+import UnliftIO.STM
 
 newChatTerminal :: Natural -> Maybe Contact -> TermMode -> IO ChatTerminal
 newChatTerminal qSize user termMode = do
@@ -32,8 +31,8 @@ newChatTerminal qSize user termMode = do
   outputQ <- newTBQueueIO qSize
   activeContact <- newTVarIO Nothing
   username <- newTVarIO user
-  termSize <- fromMaybe (0, 0) <$> C.getTerminalSize
-  let lastRow = fst termSize - 1
+  termSize <- withTerminal . runTerminalT $ getWindowSize
+  let lastRow = height termSize - 1
   termState <- newTVarIO $ newTermState user
   termLock <- newTMVarIO ()
   nextMessageRow <- newTVarIO lastRow
@@ -45,16 +44,16 @@ newTermState user =
   TerminalState
     { inputString = "",
       inputPosition = 0,
-      inputPrompt = promptString user
+      inputPrompt = promptString user,
+      previousInput = ""
     }
 
 chatTerminal :: ChatTerminal -> IO ()
 chatTerminal ct
-  | termSize ct == (0, 0) || termMode ct == TermModeBasic =
+  | termSize ct == Size 0 0 || termMode ct == TermModeBasic =
     run basicReceiveFromTTY basicSendToTTY
   | otherwise = do
-    initTTY
-    updateInput ct
+    withTerminal . runTerminalT $ updateInput ct
     run receiveFromTTY sendToTTY
   where
     run receive send = race_ (receive ct) (send ct)
@@ -64,9 +63,9 @@ basicReceiveFromTTY ct =
   forever $ getLn >>= atomically . writeTBQueue (inputQ ct)
 
 basicSendToTTY :: ChatTerminal -> IO ()
-basicSendToTTY ct = forever $ readOutputQ ct >>= putLn
+basicSendToTTY ct = forever $ atomically (readOutputQ ct) >>= putStyledLn
 
-withTermLock :: ChatTerminal -> IO () -> IO ()
+withTermLock :: MonadTerminal m => ChatTerminal -> m () -> m ()
 withTermLock ChatTerminal {termLock} action = do
   _ <- atomically $ takeTMVar termLock
   action
@@ -74,32 +73,32 @@ withTermLock ChatTerminal {termLock} action = do
 
 receiveFromTTY :: ChatTerminal -> IO ()
 receiveFromTTY ct@ChatTerminal {inputQ, activeContact, termSize, termState} =
-  forever $
+  withTerminal . runTerminalT . forever $
     getKey >>= processKey >> withTermLock ct (updateInput ct)
   where
-    processKey :: Key -> IO ()
+    processKey :: MonadTerminal m => (Key, Modifiers) -> m ()
     processKey = \case
-      KeyEnter -> submitInput
+      (EnterKey, _) -> submitInput
       key -> atomically $ do
         ac <- readTVar activeContact
-        modifyTVar termState $ updateTermState ac (snd termSize) key
+        modifyTVar termState $ updateTermState ac (width termSize) key
 
-    submitInput :: IO ()
+    submitInput :: MonadTerminal m => m ()
     submitInput = do
       msg <- atomically $ do
         ts <- readTVar termState
-        writeTVar termState $ ts {inputString = "", inputPosition = 0}
         let s = inputString ts
+        writeTVar termState $ ts {inputString = "", inputPosition = 0, previousInput = s}
         writeTBQueue inputQ s
         return s
       withTermLock ct . printMessage ct $ styleMessage msg
 
 sendToTTY :: ChatTerminal -> IO ()
-sendToTTY ct = forever $ do
-  msg <- readOutputQ ct
+sendToTTY ct = withTerminal . runTerminalT . forever $ do
+  msg <- atomically $ readOutputQ ct
   withTermLock ct $ do
     printMessage ct msg
     updateInput ct
 
-readOutputQ :: ChatTerminal -> IO StyledString
-readOutputQ = atomically . readTBQueue . outputQ
+readOutputQ :: ChatTerminal -> STM StyledString
+readOutputQ = readTBQueue . outputQ

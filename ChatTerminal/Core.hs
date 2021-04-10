@@ -1,4 +1,5 @@
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module ChatTerminal.Core where
@@ -7,9 +8,10 @@ import Control.Concurrent.STM
 import qualified Data.ByteString.Char8 as B
 import Data.List (dropWhileEnd)
 import qualified Data.Text as T
-import SimplexMarkdown
+import Simplex.Markdown
 import Styled
 import System.Console.ANSI.Types
+import System.Terminal hiding (insertChars)
 import Types
 
 data ChatTerminal = ChatTerminal
@@ -19,7 +21,7 @@ data ChatTerminal = ChatTerminal
     username :: TVar (Maybe Contact),
     termMode :: TermMode,
     termState :: TVar TerminalState,
-    termSize :: (Int, Int),
+    termSize :: Size,
     nextMessageRow :: TVar Int,
     termLock :: TMVar ()
   }
@@ -27,46 +29,48 @@ data ChatTerminal = ChatTerminal
 data TerminalState = TerminalState
   { inputPrompt :: String,
     inputString :: String,
-    inputPosition :: Int
+    inputPosition :: Int,
+    previousInput :: String
   }
 
-data Key
-  = KeyLeft
-  | KeyRight
-  | KeyUp
-  | KeyDown
-  | KeyAltLeft
-  | KeyAltRight
-  | KeyCtrlLeft
-  | KeyCtrlRight
-  | KeyShiftLeft
-  | KeyShiftRight
-  | KeyEnter
-  | KeyBack
-  | KeyTab
-  | KeyEsc
-  | KeyChars String
-  | KeyUnsupported
-  deriving (Eq)
-
 inputHeight :: TerminalState -> ChatTerminal -> Int
-inputHeight ts ct = length (inputPrompt ts <> inputString ts) `div` snd (termSize ct) + 1
+inputHeight ts ct = length (inputPrompt ts <> inputString ts) `div` width (termSize ct) + 1
 
-updateTermState :: Maybe Contact -> Int -> Key -> TerminalState -> TerminalState
-updateTermState ac tw key ts@TerminalState {inputString = s, inputPosition = p} = case key of
-  KeyChars cs -> insertCharsWithContact cs
-  KeyTab -> insertChars "    "
-  KeyBack -> backDeleteChar
-  KeyLeft -> setPosition $ max 0 (p - 1)
-  KeyRight -> setPosition $ min (length s) (p + 1)
-  KeyUp -> setPosition $ let p' = p - tw in if p' > 0 then p' else p
-  KeyDown -> setPosition $ let p' = p + tw in if p' <= length s then p' else p
-  KeyAltLeft -> setPosition prevWordPos
-  KeyAltRight -> setPosition nextWordPos
-  KeyCtrlLeft -> setPosition prevWordPos
-  KeyCtrlRight -> setPosition nextWordPos
-  KeyShiftLeft -> setPosition 0
-  KeyShiftRight -> setPosition $ length s
+positionRowColumn :: Int -> Int -> Position
+positionRowColumn wid pos =
+  let row = pos `div` wid
+      col = pos - row * wid
+   in Position {row, col}
+
+updateTermState :: Maybe Contact -> Int -> (Key, Modifiers) -> TerminalState -> TerminalState
+updateTermState ac tw (key, ms) ts@TerminalState {inputString = s, inputPosition = p} = case key of
+  CharKey c
+    | ms == mempty || ms == shiftKey -> insertCharsWithContact [c]
+    | ms == altKey && c == 'b' -> setPosition prevWordPos
+    | ms == altKey && c == 'f' -> setPosition nextWordPos
+    | otherwise -> ts
+  TabKey -> insertCharsWithContact "    "
+  BackspaceKey -> backDeleteChar
+  ArrowKey d -> case d of
+    Leftwards
+      | ms == mempty -> setPosition $ max 0 (p - 1)
+      | ms == shiftKey -> setPosition 0
+      | ms == ctrlKey -> setPosition prevWordPos
+      | ms == altKey -> setPosition prevWordPos
+      | otherwise -> setPosition p
+    Rightwards
+      | ms == mempty -> setPosition $ min (length s) (p + 1)
+      | ms == shiftKey -> setPosition $ length s
+      | ms == ctrlKey -> setPosition nextWordPos
+      | ms == altKey -> setPosition nextWordPos
+      | otherwise -> setPosition p
+    Upwards
+      | ms == mempty && null s -> let s' = previousInput ts in ts' (s', length s')
+      | ms == mempty -> let p' = p - tw in setPosition $ if p' > 0 then p' else p
+      | otherwise -> setPosition p
+    Downwards
+      | ms == mempty -> let p' = p + tw in setPosition $ if p' <= length s then p' else p
+      | otherwise -> setPosition p
   _ -> ts
   where
     insertCharsWithContact cs

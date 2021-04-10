@@ -8,7 +8,6 @@ import qualified Data.ByteString.Char8 as B
 import Options.Applicative
 import Simplex.Messaging.Agent.Transmission (SMPServer (..), smpServerP)
 import System.FilePath (combine)
-import System.Info (os)
 import Types
 
 data ChatOpts = ChatOpts
@@ -49,14 +48,11 @@ chatOpts appDir =
       ( long "term"
           <> short 't'
           <> metavar "TERM"
-          <> help ("terminal mode: editor or basic (" <> termModeName deafultTermMode <> ")")
-          <> value deafultTermMode
+          <> help ("terminal mode: editor or basic (" <> termModeName TermModeEditor <> ")")
+          <> value TermModeEditor
       )
   where
     defaultDbFilePath = combine appDir "smp-chat.db"
-    deafultTermMode
-      | os == "mingw32" = TermModeBasic
-      | otherwise = TermModeEditor
 
 parseSMPServer :: ReadM SMPServer
 parseSMPServer = eitherReader $ A.parseOnly (smpServerP <* A.endOfInput) . B.pack
