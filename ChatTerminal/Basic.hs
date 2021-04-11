@@ -61,7 +61,7 @@ setSGR = mapM_ $ \case
 
 getKey :: MonadTerminal m => m (Key, Modifiers)
 getKey =
-  awaitEvent >>= \case
+  flush >> awaitEvent >>= \case
     Left Interrupt -> liftIO exitSuccess
     Right (KeyEvent key ms) -> pure (key, ms)
     _ -> getKey
