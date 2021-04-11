@@ -11,8 +11,7 @@ import System.FilePath (combine)
 import Types
 
 data ChatOpts = ChatOpts
-  { name :: Maybe ByteString,
-    dbFileName :: String,
+  { dbFileName :: String,
     smpServer :: SMPServer,
     termMode :: TermMode
   }
@@ -20,15 +19,7 @@ data ChatOpts = ChatOpts
 chatOpts :: FilePath -> Parser ChatOpts
 chatOpts appDir =
   ChatOpts
-    <$> option
-      (Just <$> str)
-      ( long "name"
-          <> short 'n'
-          <> metavar "NAME"
-          <> help "optional name to use for invitations"
-          <> value Nothing
-      )
-    <*> strOption
+    <$> strOption
       ( long "database"
           <> short 'd'
           <> metavar "DB_FILE"

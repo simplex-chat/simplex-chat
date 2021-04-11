@@ -20,7 +20,6 @@ data ChatTerminal = ChatTerminal
   { inputQ :: TBQueue String,
     outputQ :: TBQueue [StyledString],
     activeContact :: TVar (Maybe Contact),
-    username :: TVar (Maybe Contact),
     termMode :: TermMode,
     termState :: TVar TerminalState,
     termSize :: Size,
@@ -126,14 +125,6 @@ safeDecodeUtf8 :: ByteString -> Text
 safeDecodeUtf8 = decodeUtf8With onError
   where
     onError _ _ = Just '?'
-
-updateUsername :: ChatTerminal -> Maybe Contact -> STM ()
-updateUsername ct a = do
-  writeTVar (username ct) a
-  modifyTVar (termState ct) $ \ts -> ts {inputPrompt = promptString a}
-
-promptString :: Maybe Contact -> String
-promptString a = maybe "" (B.unpack . toBs) a <> "> "
 
 ttyContact :: Contact -> StyledString
 ttyContact (Contact a) = Styled contactSGR $ B.unpack a

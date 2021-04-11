@@ -7,7 +7,6 @@ module ChatTerminal
   ( ChatTerminal (..),
     newChatTerminal,
     chatTerminal,
-    updateUsername,
     ttyContact,
     ttyFromContact,
   )
@@ -25,26 +24,25 @@ import System.Terminal
 import Types
 import UnliftIO.STM
 
-newChatTerminal :: Natural -> Maybe Contact -> TermMode -> IO ChatTerminal
-newChatTerminal qSize user termMode = do
+newChatTerminal :: Natural -> TermMode -> IO ChatTerminal
+newChatTerminal qSize termMode = do
   inputQ <- newTBQueueIO qSize
   outputQ <- newTBQueueIO qSize
   activeContact <- newTVarIO Nothing
-  username <- newTVarIO user
   termSize <- withTerminal . runTerminalT $ getWindowSize
   let lastRow = height termSize - 1
-  termState <- newTVarIO $ newTermState user
+  termState <- newTVarIO newTermState
   termLock <- newTMVarIO ()
   nextMessageRow <- newTVarIO lastRow
   threadDelay 500000 -- this delay is the same as timeout in getTerminalSize
-  return ChatTerminal {inputQ, outputQ, activeContact, username, termMode, termState, termSize, nextMessageRow, termLock}
+  return ChatTerminal {inputQ, outputQ, activeContact, termMode, termState, termSize, nextMessageRow, termLock}
 
-newTermState :: Maybe Contact -> TerminalState
-newTermState user =
+newTermState :: TerminalState
+newTermState =
   TerminalState
     { inputString = "",
       inputPosition = 0,
-      inputPrompt = promptString user,
+      inputPrompt = "> ",
       previousInput = ""
     }
 

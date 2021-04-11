@@ -21,6 +21,7 @@ import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.Functor (($>))
+import Data.List (intersperse)
 import qualified Data.Text as T
 import Data.Text.Encoding
 import Numeric.Natural
@@ -53,8 +54,7 @@ logCfg = LogConfig {lc_file = Nothing, lc_stderr = True}
 data ChatClient = ChatClient
   { inQ :: TBQueue ChatCommand,
     outQ :: TBQueue ChatResponse,
-    smpServer :: SMPServer,
-    username :: TVar (Maybe Contact)
+    smpServer :: SMPServer
   }
 
 -- | GroupMessage ChatGroup ByteString
@@ -62,25 +62,23 @@ data ChatClient = ChatClient
 data ChatCommand
   = ChatHelp
   | MarkdownHelp
-  | AddContact Contact
-  | AcceptContact Contact SMPQueueInfo
-  | ChatWith Contact
-  | SetName Contact
+  | AddConnection Contact
+  | Connect Contact SMPQueueInfo
+  | DeleteConnection Contact
+  | ResetChat
   | SendMessage Contact ByteString
 
 chatCommandP :: Parser ChatCommand
 chatCommandP =
-  "/help" $> ChatHelp
-    <|> "/md" $> MarkdownHelp
-    <|> "/add " *> (AddContact <$> contact)
-    <|> "/accept " *> acceptContact
-    <|> "/chat " *> chatWith
-    <|> "/name " *> setName
+  ("/help" <|> "/h") $> ChatHelp
+    <|> ("/markdown" <|> "/m") $> MarkdownHelp
+    <|> ("/add " <|> "/a ") *> (AddConnection <$> contact)
+    <|> ("/connect " <> "/c ") *> connect
+    <|> ("/delete " <> "/d ") *> (DeleteConnection <$> contact)
+    <|> ("/reset" <> "/r") $> ResetChat
     <|> "@" *> sendMessage
   where
-    acceptContact = AcceptContact <$> contact <* A.space <*> smpQueueInfoP
-    chatWith = ChatWith <$> contact
-    setName = SetName <$> contact
+    connect = Connect <$> contact <* A.space <*> smpQueueInfoP
     sendMessage = SendMessage <$> contact <* A.space <*> A.takeByteString
     contact = Contact <$> A.takeTill (== ' ')
 
@@ -89,6 +87,7 @@ data ChatResponse
   | MarkdownInfo
   | Invitation SMPQueueInfo
   | Connected Contact
+  | Confirmation Contact
   | ReceivedMessage Contact ByteString
   | Disconnected Contact
   | YesYes
@@ -96,12 +95,19 @@ data ChatResponse
   | ChatError AgentErrorType
   | NoChatResponse
 
-serializeChatResponse :: Maybe Contact -> ChatResponse -> [StyledString]
-serializeChatResponse name = \case
+serializeChatResponse :: ChatResponse -> [StyledString]
+serializeChatResponse = \case
   ChatHelpInfo -> chatHelpInfo
   MarkdownInfo -> markdownInfo
-  Invitation qInfo -> ["ask your contact to enter: /accept " <> showName name <> " " <> (bPlain . serializeSmpQueueInfo) qInfo]
+  Invitation qInfo ->
+    [ "pass this invitation to your contact (via any channel): ",
+      "",
+      (bPlain . serializeSmpQueueInfo) qInfo,
+      "",
+      "and ask them to connect: /c <name_for_you> <invitation_above>"
+    ]
   Connected c -> [ttyContact c <> " connected"]
+  Confirmation c -> [ttyContact c <> " ok"]
   ReceivedMessage c t -> prependFirst (ttyFromContact c) $ msgPlain t
   Disconnected c -> ["disconnected from " <> ttyContact c <> " - try \"/chat " <> bPlain (toBs c) <> "\""]
   YesYes -> ["you got it!"]
@@ -109,8 +115,6 @@ serializeChatResponse name = \case
   ChatError e -> ["chat error: " <> plain (show e)]
   NoChatResponse -> [""]
   where
-    showName Nothing = "<your name>"
-    showName (Just (Contact a)) = bPlain a
     prependFirst :: StyledString -> [StyledString] -> [StyledString]
     prependFirst s [] = [s]
     prependFirst s (s' : ss) = (s <> s') : ss
@@ -122,18 +126,24 @@ chatHelpInfo =
   map
     styleMarkdown
     [ "Using chat:",
-      highlight "/add <name>" <> "       - create invitation to send out-of-band",
-      "                    to your contact <name>",
-      "                    (any unique string without spaces)",
-      highlight "/accept <name> <invitation>" <> " - accept <invitation>",
-      "                    (a string that starts from \"smp::\")",
-      "                    from your contact <name>",
-      highlight "/name <name>" <> "      - set <name> to use in invitations",
+      highlight "/add <name>" <> "       - create invitation to send out-of-band to your contact <name>",
+      "                    (<name> is the alias you choose to message your contact)",
+      highlight "/connect <name> <invitation>" <> " - connect using <invitation>",
+      "                    (a string returned by /add that starts from \"smp::\")",
+      "                    if /connect is used by your contact,",
+      "                    <name> is the alias your contact chooses to message you",
       highlight "@<name> <message>" <> " - send <message> (any string) to contact <name>",
-      "                    @<name> can be omitted to send to previous",
-      highlight "/md" <> "               - markdown cheat-sheet"
+      "                    @<name> will be auto-typed to send to the previous contact -",
+      "                    just start typing the message!",
+      highlight "/delete" <> "           - delete contact and all messages you had with them",
+      highlight "/reset" <> "            - reset chat and all connections",
+      highlight "/markdown" <> "         - markdown cheat-sheet",
+      "",
+      "Commands can be abbreviated to 1 letter: ",
+      listCommands ["/h", "/a", "/c", "/d", "/r", "/m"]
     ]
   where
+    listCommands = mconcat . intersperse ", " . map highlight
     highlight = Markdown (Colored Cyan)
 
 markdownInfo :: [StyledString]
@@ -155,10 +165,9 @@ markdownInfo =
 
 main :: IO ()
 main = do
-  ChatOpts {dbFileName, smpServer, name, termMode} <- welcomeGetOpts
-  let user = Contact <$> name
-  t <- getChatClient smpServer user
-  ct <- newChatTerminal (tbqSize cfg) user termMode
+  ChatOpts {dbFileName, smpServer, termMode} <- welcomeGetOpts
+  t <- getChatClient smpServer
+  ct <- newChatTerminal (tbqSize cfg) termMode
   -- setLogLevel LogInfo -- LogError
   -- withGlobalLogging logCfg $
   env <- newSMPAgentEnv cfg {dbFile = dbFileName}
@@ -168,9 +177,9 @@ welcomeGetOpts :: IO ChatOpts
 welcomeGetOpts = do
   appDir <- getAppUserDataDirectory "simplex"
   opts@ChatOpts {dbFileName} <- getChatOpts appDir
-  putStrLn "simpleX chat prototype"
+  putStrLn "SimpleX chat prototype"
   putStrLn $ "db: " <> dbFileName
-  putStrLn "type \"/help\" for usage information"
+  putStrLn "type \"/help\" or \"/h\" for usage info"
   pure opts
 
 dogFoodChat :: ChatClient -> ChatTerminal -> Env -> IO ()
@@ -185,15 +194,14 @@ dogFoodChat t ct env = do
       chatTerminal ct
     ]
 
-getChatClient :: SMPServer -> Maybe Contact -> IO ChatClient
-getChatClient srv name = atomically $ newChatClient (tbqSize cfg) srv name
+getChatClient :: SMPServer -> IO ChatClient
+getChatClient srv = atomically $ newChatClient (tbqSize cfg) srv
 
-newChatClient :: Natural -> SMPServer -> Maybe Contact -> STM ChatClient
-newChatClient qSize smpServer name = do
+newChatClient :: Natural -> SMPServer -> STM ChatClient
+newChatClient qSize smpServer = do
   inQ <- newTBQueue qSize
   outQ <- newTBQueue qSize
-  username <- newTVar name
-  return ChatClient {inQ, outQ, smpServer, username}
+  return ChatClient {inQ, outQ, smpServer}
 
 receiveFromChatTerm :: ChatClient -> ChatTerminal -> IO ()
 receiveFromChatTerm t ct = forever $ do
@@ -204,21 +212,14 @@ receiveFromChatTerm t ct = forever $ do
       Left err -> writeOutQ . ErrorInput $ B.pack err
       Right ChatHelp -> writeOutQ ChatHelpInfo
       Right MarkdownHelp -> writeOutQ MarkdownInfo
-      Right (SetName a) -> atomically $ do
-        let user = Just a
-        writeTVar (username (t :: ChatClient)) user
-        updateUsername ct user
-        writeTBQueue (outQ t) YesYes
       Right cmd -> atomically $ writeTBQueue (inQ t) cmd
     writeOutQ = atomically . writeTBQueue (outQ t)
 
 sendToChatTerm :: ChatClient -> ChatTerminal -> IO ()
-sendToChatTerm ChatClient {outQ, username} ChatTerminal {outputQ} = forever $ do
+sendToChatTerm ChatClient {outQ} ChatTerminal {outputQ} = forever $ do
   atomically (readTBQueue outQ) >>= \case
     NoChatResponse -> return ()
-    resp -> do
-      name <- readTVarIO username
-      atomically . writeTBQueue outputQ $ serializeChatResponse name resp
+    resp -> atomically . writeTBQueue outputQ $ serializeChatResponse resp
 
 sendToAgent :: ChatClient -> ChatTerminal -> AgentClient -> IO ()
 sendToAgent ChatClient {inQ, smpServer} ct AgentClient {rcvQ} = do
@@ -229,20 +230,19 @@ sendToAgent ChatClient {inQ, smpServer} ct AgentClient {rcvQ} = do
     setActiveContact cmd
   where
     setActiveContact :: ChatCommand -> STM ()
-    setActiveContact cmd =
-      writeTVar (activeContact ct) $ case cmd of
-        ChatWith a -> Just a
-        SendMessage a _ -> Just a
-        _ -> Nothing
+    setActiveContact = \case
+      SendMessage a _ -> setActive ct a
+      DeleteConnection a -> unsetActive ct a
+      _ -> pure ()
     agentTransmission :: ChatCommand -> Maybe (ATransmission 'Client)
     agentTransmission = \case
-      AddContact a -> transmission a $ NEW smpServer
-      AcceptContact a qInfo -> transmission a $ JOIN qInfo $ ReplyVia smpServer
-      ChatWith a -> transmission a SUB
+      AddConnection a -> transmission a $ NEW smpServer
+      Connect a qInfo -> transmission a $ JOIN qInfo $ ReplyVia smpServer
+      DeleteConnection a -> transmission a DEL
+      ResetChat -> transmission (Contact "") SUBALL
       SendMessage a msg -> transmission a $ SEND msg
       ChatHelp -> Nothing
       MarkdownHelp -> Nothing
-      SetName _ -> Nothing
     transmission :: Contact -> ACommand 'Client -> Maybe (ATransmission 'Client)
     transmission (Contact a) cmd = Just ("1", a, cmd)
 
@@ -259,15 +259,21 @@ receiveFromAgent t ct c = forever . atomically $ do
       END -> Disconnected contact
       MSG {m_body} -> ReceivedMessage contact m_body
       SENT _ -> NoChatResponse
-      OK -> Connected contact -- hack for subscribing to all
+      OK -> Confirmation contact
       ERR e -> ChatError e
       where
         contact = Contact a
     setActiveContact :: ChatResponse -> STM ()
     setActiveContact = \case
-      Connected a -> set $ Just a
-      ReceivedMessage a _ -> set $ Just a
-      Disconnected _ -> set Nothing
-      _ -> return ()
-      where
-        set a = writeTVar (activeContact ct) a
+      Connected a -> setActive ct a
+      ReceivedMessage a _ -> setActive ct a
+      Disconnected a -> unsetActive ct a
+      _ -> pure ()
+
+setActive :: ChatTerminal -> Contact -> STM ()
+setActive ct = writeTVar (activeContact ct) . Just
+
+unsetActive :: ChatTerminal -> Contact -> STM ()
+unsetActive ct a = modifyTVar (activeContact ct) unset
+  where
+    unset a' = if Just a == a' then Nothing else a'
