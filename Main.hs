@@ -61,6 +61,7 @@ data ChatClient = ChatClient
 -- | AddToGroup Contact
 data ChatCommand
   = ChatHelp
+  | MarkdownHelp
   | AddContact Contact
   | AcceptContact Contact SMPQueueInfo
   | ChatWith Contact
@@ -70,6 +71,7 @@ data ChatCommand
 chatCommandP :: Parser ChatCommand
 chatCommandP =
   "/help" $> ChatHelp
+    <|> "/md" $> MarkdownHelp
     <|> "/add " *> (AddContact <$> contact)
     <|> "/accept " *> acceptContact
     <|> "/chat " *> chatWith
@@ -84,6 +86,7 @@ chatCommandP =
 
 data ChatResponse
   = ChatHelpInfo
+  | MarkdownInfo
   | Invitation SMPQueueInfo
   | Connected Contact
   | ReceivedMessage Contact ByteString
@@ -96,6 +99,7 @@ data ChatResponse
 serializeChatResponse :: Maybe Contact -> ChatResponse -> [StyledString]
 serializeChatResponse name = \case
   ChatHelpInfo -> chatHelpInfo
+  MarkdownInfo -> markdownInfo
   Invitation qInfo -> ["ask your contact to enter: /accept " <> showName name <> " " <> (bPlain . serializeSmpQueueInfo) qInfo]
   Connected c -> [ttyContact c <> " connected"]
   ReceivedMessage c t -> prependFirst (ttyFromContact c) $ msgPlain t
@@ -126,10 +130,28 @@ chatHelpInfo =
       "                    from your contact <name>",
       highlight "/name <name>" <> "      - set <name> to use in invitations",
       highlight "@<name> <message>" <> " - send <message> (any string) to contact <name>",
-      "                    @<name> can be omitted to send to previous"
+      "                    @<name> can be omitted to send to previous",
+      highlight "/md" <> "               - markdown cheat-sheet"
     ]
   where
     highlight = Markdown (Colored Cyan)
+
+markdownInfo :: [StyledString]
+markdownInfo =
+  map
+    styleMarkdown
+    [ "Markdown:",
+      "  *bold*          - " <> Markdown Bold "bold text",
+      "  _italic_        - " <> Markdown Italic "italic text" <> " (shown as underlined)",
+      "  +underlined+    - " <> Markdown Underline "underlined text",
+      "  ~strikethrough~ - " <> Markdown StrikeThrough "strikethrough text" <> " (shown as inverse)",
+      "  `code snippet`  - " <> Markdown Snippet "a + b // no *markdown* here",
+      "  !r text!        - " <> red "red text" <> " (red, green, blue, yellow, cyan, magenta)",
+      "  !1 text!        - " <> red "also red text" <> " (1-6)",
+      "  #secret#        - " <> Markdown Secret "secret text" <> " (can be copy-pasted)"
+    ]
+  where
+    red = Markdown (Colored Red)
 
 main :: IO ()
 main = do
@@ -179,14 +201,16 @@ receiveFromChatTerm t ct = forever $ do
     >>= processOrError . A.parseOnly (chatCommandP <* A.endOfInput) . encodeUtf8 . T.pack
   where
     processOrError = \case
-      Left err -> atomically . writeTBQueue (outQ t) . ErrorInput $ B.pack err
-      Right ChatHelp -> atomically . writeTBQueue (outQ t) $ ChatHelpInfo
+      Left err -> writeOutQ . ErrorInput $ B.pack err
+      Right ChatHelp -> writeOutQ ChatHelpInfo
+      Right MarkdownHelp -> writeOutQ MarkdownInfo
       Right (SetName a) -> atomically $ do
         let user = Just a
         writeTVar (username (t :: ChatClient)) user
         updateUsername ct user
         writeTBQueue (outQ t) YesYes
       Right cmd -> atomically $ writeTBQueue (inQ t) cmd
+    writeOutQ = atomically . writeTBQueue (outQ t)
 
 sendToChatTerm :: ChatClient -> ChatTerminal -> IO ()
 sendToChatTerm ChatClient {outQ, username} ChatTerminal {outputQ} = forever $ do
@@ -217,6 +241,7 @@ sendToAgent ChatClient {inQ, smpServer} ct AgentClient {rcvQ} = do
       ChatWith a -> transmission a SUB
       SendMessage a msg -> transmission a $ SEND msg
       ChatHelp -> Nothing
+      MarkdownHelp -> Nothing
       SetName _ -> Nothing
     transmission :: Contact -> ACommand 'Client -> Maybe (ATransmission 'Client)
     transmission (Contact a) cmd = Just ("1", a, cmd)
