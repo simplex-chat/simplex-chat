@@ -63,7 +63,7 @@ basicReceiveFromTTY ct =
   forever $ getLn >>= atomically . writeTBQueue (inputQ ct)
 
 basicSendToTTY :: ChatTerminal -> IO ()
-basicSendToTTY ct = forever $ atomically (readOutputQ ct) >>= mapM_ putStyledLn
+basicSendToTTY ct = forever $ readOutputQ ct >>= mapM_ putStyledLn
 
 withTermLock :: MonadTerminal m => ChatTerminal -> m () -> m ()
 withTermLock ChatTerminal {termLock} action = do
@@ -94,11 +94,12 @@ receiveFromTTY ct@ChatTerminal {inputQ, activeContact, termSize, termState} =
       withTermLock ct $ printMessage ct [styleMessage msg]
 
 sendToTTY :: ChatTerminal -> IO ()
-sendToTTY ct = withTerminal . runTerminalT . forever $ do
-  msg <- atomically $ readOutputQ ct
-  withTermLock ct $ do
+sendToTTY ct = forever $ do
+  -- `readOutputQ` should be outside of `withTerminal` (see #94)
+  msg <- readOutputQ ct
+  withTerminal . runTerminalT . withTermLock ct $ do
     printMessage ct msg
     updateInput ct
 
-readOutputQ :: ChatTerminal -> STM [StyledString]
-readOutputQ = readTBQueue . outputQ
+readOutputQ :: ChatTerminal -> IO [StyledString]
+readOutputQ = atomically . readTBQueue . outputQ
