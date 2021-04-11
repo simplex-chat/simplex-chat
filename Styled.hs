@@ -1,5 +1,3 @@
-{-# LANGUAGE LambdaCase #-}
-
 module Styled
   ( StyledString (..),
     bPlain,

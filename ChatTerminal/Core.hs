@@ -87,10 +87,10 @@ updateTermState ac tw (key, ms) ts@TerminalState {inputString = s, inputPosition
       | p == 0 = ts' (tail s, 0)
       | otherwise = let (b, a) = splitAt p s in ts' (b <> tail a, p)
     leftPos
-      | ms == mempty = min (length s) (p + 1)
-      | ms == shiftKey = length s
-      | ms == ctrlKey = nextWordPos
-      | ms == altKey = nextWordPos
+      | ms == mempty = max 0 (p - 1)
+      | ms == shiftKey = 0
+      | ms == ctrlKey = prevWordPos
+      | ms == altKey = prevWordPos
       | otherwise = p
     rightPos
       | ms == mempty = min (length s) (p + 1)
