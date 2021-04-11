@@ -11,6 +11,7 @@ module Main where
 
 import ChatOptions
 import ChatTerminal
+import ChatTerminal.Core
 import Control.Applicative ((<|>))
 import Control.Concurrent.STM
 import Control.Logger.Simple
@@ -31,6 +32,7 @@ import Simplex.Messaging.Agent.Transmission
 import Simplex.Messaging.Client (smpDefaultConfig)
 import Simplex.Messaging.Util (raceAny_)
 import Styled
+import System.Console.ANSI.Types
 import System.Directory (getAppUserDataDirectory)
 import Types
 
@@ -91,35 +93,43 @@ data ChatResponse
   | ChatError AgentErrorType
   | NoChatResponse
 
-serializeChatResponse :: Maybe Contact -> ChatResponse -> StyledString
+serializeChatResponse :: Maybe Contact -> ChatResponse -> [StyledString]
 serializeChatResponse name = \case
   ChatHelpInfo -> chatHelpInfo
-  Invitation qInfo -> "ask your contact to enter: /accept " <> showName name <> " " <> (bPlain . serializeSmpQueueInfo) qInfo
-  Connected c -> ttyContact c <> " connected"
-  ReceivedMessage c t -> ttyFromContact c <> " " <> msgPlain t
-  Disconnected c -> "disconnected from " <> ttyContact c <> " - try \"/chat " <> bPlain (toBs c) <> "\""
-  YesYes -> "you got it!"
-  ErrorInput t -> "invalid input: " <> bPlain t
-  ChatError e -> "chat error: " <> plain (show e)
-  NoChatResponse -> ""
+  Invitation qInfo -> ["ask your contact to enter: /accept " <> showName name <> " " <> (bPlain . serializeSmpQueueInfo) qInfo]
+  Connected c -> [ttyContact c <> " connected"]
+  ReceivedMessage c t -> prependFirst (ttyFromContact c) $ msgPlain t
+  Disconnected c -> ["disconnected from " <> ttyContact c <> " - try \"/chat " <> bPlain (toBs c) <> "\""]
+  YesYes -> ["you got it!"]
+  ErrorInput t -> ["invalid input: " <> bPlain t]
+  ChatError e -> ["chat error: " <> plain (show e)]
+  NoChatResponse -> [""]
   where
     showName Nothing = "<your name>"
     showName (Just (Contact a)) = bPlain a
-    msgPlain = styleMarkdown . parseMarkdown . decodeUtf8With onError
-    onError _ _ = Just '?'
+    prependFirst :: StyledString -> [StyledString] -> [StyledString]
+    prependFirst s [] = [s]
+    prependFirst s (s' : ss) = (s <> s') : ss
+    msgPlain :: ByteString -> [StyledString]
+    msgPlain = map styleMarkdownText . T.lines . safeDecodeUtf8
 
-chatHelpInfo :: StyledString
+chatHelpInfo :: [StyledString]
 chatHelpInfo =
-  "Using chat:\n\
-  \/add <name>       - create invitation to send out-of-band\n\
-  \                    to your contact <name>\n\
-  \                    (any unique string without spaces)\n\
-  \/accept <name> <invitation> - accept <invitation>\n\
-  \                    (a string that starts from \"smp::\")\n\
-  \                    from your contact <name>\n\
-  \/name <name>      - set <name> to use in invitations\n\
-  \@<name> <message> - send <message> (any string) to contact <name>\n\
-  \                    @<name> can be omitted to send to previous"
+  map
+    styleMarkdown
+    [ "Using chat:",
+      highlight "/add <name>" <> "       - create invitation to send out-of-band",
+      "                    to your contact <name>",
+      "                    (any unique string without spaces)",
+      highlight "/accept <name> <invitation>" <> " - accept <invitation>",
+      "                    (a string that starts from \"smp::\")",
+      "                    from your contact <name>",
+      highlight "/name <name>" <> "      - set <name> to use in invitations",
+      highlight "@<name> <message>" <> " - send <message> (any string) to contact <name>",
+      "                    @<name> can be omitted to send to previous"
+    ]
+  where
+    highlight = Markdown (Colored Cyan)
 
 main :: IO ()
 main = do

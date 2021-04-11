@@ -3,6 +3,7 @@ module Styled where
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.String
+import Data.Text (Text)
 import qualified Data.Text as T
 import Simplex.Markdown
 import System.Console.ANSI (setSGRCode)
@@ -21,6 +22,9 @@ plain = Styled []
 
 bPlain :: ByteString -> StyledString
 bPlain = Styled [] . B.unpack
+
+styleMarkdownText :: Text -> StyledString
+styleMarkdownText = styleMarkdown . parseMarkdown
 
 styleMarkdown :: Markdown -> StyledString
 styleMarkdown (s1 :|: s2) = styleMarkdown s1 <> styleMarkdown s2

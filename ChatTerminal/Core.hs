@@ -5,10 +5,12 @@
 module ChatTerminal.Core where
 
 import Control.Concurrent.STM
+import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.List (dropWhileEnd)
+import Data.Text (Text)
 import qualified Data.Text as T
-import Simplex.Markdown
+import Data.Text.Encoding
 import Styled
 import System.Console.ANSI.Types
 import System.Terminal hiding (insertChars)
@@ -16,7 +18,7 @@ import Types
 
 data ChatTerminal = ChatTerminal
   { inputQ :: TBQueue String,
-    outputQ :: TBQueue StyledString,
+    outputQ :: TBQueue [StyledString],
     activeContact :: TVar (Maybe Contact),
     username :: TVar (Maybe Contact),
     termMode :: TermMode,
@@ -118,7 +120,12 @@ styleMessage = \case
   s -> markdown s
   where
     markdown :: String -> StyledString
-    markdown = styleMarkdown . parseMarkdown . T.pack
+    markdown = styleMarkdownText . T.pack
+
+safeDecodeUtf8 :: ByteString -> Text
+safeDecodeUtf8 = decodeUtf8With onError
+  where
+    onError _ _ = Just '?'
 
 updateUsername :: ChatTerminal -> Maybe Contact -> STM ()
 updateUsername ct a = do
@@ -132,7 +139,7 @@ ttyContact :: Contact -> StyledString
 ttyContact (Contact a) = Styled contactSGR $ B.unpack a
 
 ttyFromContact :: Contact -> StyledString
-ttyFromContact (Contact a) = Styled contactSGR $ B.unpack a <> ">"
+ttyFromContact (Contact a) = Styled contactSGR $ B.unpack a <> "> "
 
 contactSGR :: [SGR]
 contactSGR = [SetColor Foreground Vivid Yellow]

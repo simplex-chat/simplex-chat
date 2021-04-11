@@ -43,13 +43,19 @@ updateInput ct@ChatTerminal {termSize = Size {height, width}, termState, nextMes
         eraseInLine EraseForward
         clearLines (from + 1) till
 
-printMessage :: MonadTerminal m => ChatTerminal -> StyledString -> m ()
+printMessage :: forall m. MonadTerminal m => ChatTerminal -> [StyledString] -> m ()
 printMessage ChatTerminal {termSize = Size {height, width}, nextMessageRow} msg = do
   nmr <- readTVarIO nextMessageRow
   setCursorPosition $ Position {row = nmr, col = 0}
-  let lc = sLength msg `div` width + 1
-  putStyled msg
-  eraseInLine EraseForward
-  putLn
+  mapM_ printStyled msg
   flush
+  let lc = sum $ map lineCount msg
   atomically . writeTVar nextMessageRow $ min (height - 1) (nmr + lc)
+  where
+    lineCount :: StyledString -> Int
+    lineCount s = sLength s `div` width + 1
+    printStyled :: StyledString -> m ()
+    printStyled s = do
+      putStyled s
+      eraseInLine EraseForward
+      putLn
