@@ -65,7 +65,6 @@ data ChatCommand
   | AddConnection Contact
   | Connect Contact SMPQueueInfo
   | DeleteConnection Contact
-  | ResetChat
   | SendMessage Contact ByteString
 
 chatCommandP :: Parser ChatCommand
@@ -75,7 +74,6 @@ chatCommandP =
     <|> ("/add " <|> "/a ") *> (AddConnection <$> contact)
     <|> ("/connect " <> "/c ") *> connect
     <|> ("/delete " <> "/d ") *> (DeleteConnection <$> contact)
-    <|> ("/reset" <> "/r") $> ResetChat
     <|> "@" *> sendMessage
   where
     connect = Connect <$> contact <* A.space <*> smpQueueInfoP
@@ -136,11 +134,10 @@ chatHelpInfo =
       "                    @<name> will be auto-typed to send to the previous contact -",
       "                    just start typing the message!",
       highlight "/delete" <> "           - delete contact and all messages you had with them",
-      highlight "/reset" <> "            - reset chat and all connections",
       highlight "/markdown" <> "         - markdown cheat-sheet",
       "",
       "Commands can be abbreviated to 1 letter: ",
-      listCommands ["/h", "/a", "/c", "/d", "/r", "/m"]
+      listCommands ["/h", "/a", "/c", "/d", "/m"]
     ]
   where
     listCommands = mconcat . intersperse ", " . map highlight
@@ -156,8 +153,7 @@ markdownInfo =
       "  +underlined+    - " <> Markdown Underline "underlined text",
       "  ~strikethrough~ - " <> Markdown StrikeThrough "strikethrough text" <> " (shown as inverse)",
       "  `code snippet`  - " <> Markdown Snippet "a + b // no *markdown* here",
-      "  !r text!        - " <> red "red text" <> " (red, green, blue, yellow, cyan, magenta)",
-      "  !1 text!        - " <> red "also red text" <> " (1-6)",
+      "  !1 text!        - " <> red "red text" <> " (1-6: red, green, blue, yellow, cyan, magenta)",
       "  #secret#        - " <> Markdown Secret "secret text" <> " (can be copy-pasted)"
     ]
   where
@@ -239,7 +235,6 @@ sendToAgent ChatClient {inQ, smpServer} ct AgentClient {rcvQ} = do
       AddConnection a -> transmission a $ NEW smpServer
       Connect a qInfo -> transmission a $ JOIN qInfo $ ReplyVia smpServer
       DeleteConnection a -> transmission a DEL
-      ResetChat -> transmission (Contact "") SUBALL
       SendMessage a msg -> transmission a $ SEND msg
       ChatHelp -> Nothing
       MarkdownHelp -> Nothing
