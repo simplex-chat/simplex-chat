@@ -56,12 +56,12 @@ jobs:
             stack_args: "--test"
             artifact_rel_path: /bin/dog-food
             asset_name: dog-food-ubuntu-18_04-x86-64
-          # TODO re-enable tests for mac and windows when they consistently pass (remove stack_args altogether)
           - os: macos-latest
             cache_path: ~/.stack
-            stack_args: ""
+            stack_args: "--test"
             artifact_rel_path: /bin/dog-food
             asset_name: dog-food-macos-x86-64
+          # TODO enable tests for windows once fixed (remove stack_args altogether)
           - os: windows-latest
             cache_path: C:/sr
             stack_args: ""
