@@ -7,12 +7,10 @@ import Options.Applicative
 import Simplex.Messaging.Agent.Transmission (SMPServer (..), smpServerP)
 import Simplex.Messaging.Parsers (parseAll)
 import System.FilePath (combine)
-import System.Info (os)
 import Types
 
 data ChatOpts = ChatOpts
-  { name :: Maybe B.ByteString,
-    dbFileName :: String,
+  { dbFileName :: String,
     smpServer :: SMPServer,
     termMode :: TermMode
   }
@@ -20,15 +18,7 @@ data ChatOpts = ChatOpts
 chatOpts :: FilePath -> Parser ChatOpts
 chatOpts appDir =
   ChatOpts
-    <$> option
-      (Just <$> str)
-      ( long "name"
-          <> short 'n'
-          <> metavar "NAME"
-          <> help "optional name to use for invitations"
-          <> value Nothing
-      )
-    <*> strOption
+    <$> strOption
       ( long "database"
           <> short 'd'
           <> metavar "DB_FILE"
@@ -48,14 +38,11 @@ chatOpts appDir =
       ( long "term"
           <> short 't'
           <> metavar "TERM"
-          <> help ("terminal mode: editor or basic (" <> termModeName deafultTermMode <> ")")
-          <> value deafultTermMode
+          <> help ("terminal mode: editor or basic (" <> termModeName TermModeEditor <> ")")
+          <> value TermModeEditor
       )
   where
     defaultDbFilePath = combine appDir "smp-chat.db"
-    deafultTermMode
-      | os == "mingw32" = TermModeBasic
-      | otherwise = TermModeEditor
 
 parseSMPServer :: ReadM SMPServer
 parseSMPServer = eitherReader $ parseAll smpServerP . B.pack
