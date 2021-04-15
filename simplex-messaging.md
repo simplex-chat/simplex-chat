@@ -451,10 +451,11 @@ Each transmission between the client and the server must have this format/syntax
 
 ```abnf
 transmission = [signature] CRLF signed CRLF
-signed = [queueId] CRLF msg
+signed = [corrId] CRLF [queueId] CRLF msg
 msg = recipientCmd / send / serverMsg
 recipientCmd = create / subscribe / secure / acknowledge / suspend / delete
 serverMsg = queueIds / message / unsubscribed / ok / error
+corrId = 1*(%x21-FF) ; any characters after space
 queueId = encoded ; empty queue ID is used with "create" command
 signature = encoded ; empty signature can be used with "create" and "send" commands
 encoded = base64
@@ -654,14 +655,14 @@ The body should be encrypted with the recipient's "public" key (`EK`); once
 decrypted it must have this format:
 
 ```abnf
-decryptedBody = reserved CRLF clientBody CRLF
-reserved = senderKeyMsg / *VCHAR
+decryptedBody = clientHeader CRLF clientBody CRLF
+clientHeader = senderKeyMsg / *VCHAR
 senderKeyMsg = %s"KEY" SP senderKey
 senderKey = encoded
 clientBody = *OCTET
 ```
 
-`reserved` in the initial unsigned message is used to transmit sender's server
+`clientHeader` in the initial unsigned message is used to transmit sender's server
 key and can be used in the future revisions of SMP protocol for other purposes.
 
 ### Server messages
