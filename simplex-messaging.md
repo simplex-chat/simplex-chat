@@ -645,7 +645,7 @@ The server must respond with `"ERR AUTH"` response in the following cases:
 - queue is NOT secured but the transmission has a signature.
 
 Until the queue is secured, the server should accept any number of unsigned
-messages - it both enables the legimate sender to resend the confirmation in
+messages - it both enables the legitimate sender to resend the confirmation in
 case of failure and also allows the simplex messaging client to ignore any
 confirmation messages that may be sent by the attackers (assuming they could
 have intercepted the queue ID in the server response, but do not have a correct
