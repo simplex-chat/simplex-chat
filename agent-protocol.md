@@ -3,7 +3,7 @@
 ## Table of contents
 
 - [Abstract](#abstract)
-- [SMP Agent](#smp-agent)
+- [SMP agent](#smp-agent)
 - [SMP agent protocol components](#smp-agent-protocol-components)
 - [Duplex connection](#duplex-connection)
 - [Communication between SMP agents](#communication-between-smp-agents)
@@ -16,7 +16,7 @@
 The purpose of SMP agent protocol is to define the syntax and the semantics of communications between the client and the agent that connects to [SMP](./simplex-messaging.md) servers.
 
 It provides:
-- convenient protocol to create and manage bi-directional (duplex) connection to the users of SMP agents consisting of two separate unidirectional (simplex) SMP queues, abstracting away multiple steps required to establish bi-directional connections.
+- convenient protocol to create and manage a bi-directional (duplex) connection to the users of SMP agents consisting of two separate unidirectional (simplex) SMP queues, abstracting away multiple steps required to establish bi-directional connections.
 - management of E2E encryption between SMP agents, generating ephemeral RSA keys for each connection.
 - SMP command authentication on SMP servers, generating ephemeral RSA keys for each SMP queue.
 - TCP transport handshake and encryption with SMP servers.
@@ -30,11 +30,11 @@ The future versions of this protocol could provide:
 - agent cluster - synchronizing states of multiple agents.
 - secure "synchronous" streams with symmetric message encryption and connection-level authentication (requires extending SMP protocol) - it can be used, e.g., for file transfers.
 
-## SMP Agent
+## SMP agent
 
 SMP agent is a client-side process or library that communicates via SMP servers using [simplex messaging protocol (SMP)](./simplex-messaging.md) with other SMP agents according to the commands received from its users. This protocol is a middle layer in SMP protocols stack (above SMP protocol but below any application level protocol) - it is intended to be used by client-side applications that need secure asynchronous bi-directional communication channels ("connections").
 
-The agent must have a persistent storage to manage the states of known "connections" and of the client-side information of two SMP queues that each connection consists of, and also the buffer of the most recent messages. The number of the messages that should be stored is implementation specific, depending on the error management approach that the agent implements; at the very least the agent must store the hash and id of the last received message.
+The agent must have a persistent storage to manage the states of known connections and of the client-side information of two SMP queues that each connection consists of, and also the buffer of the most recent messages. The number of the messages that should be stored is implementation specific, depending on the error management approach that the agent implements; at the very least the agent must store the hash and id of the last received message.
 
 ## SMP agent protocol components
 
@@ -63,7 +63,7 @@ Each SMP message client body, once decrypted, contains 3 parts (one of them may 
   - to establish the connection with two SMP queues (`helloMsg`, `replyQueueMsg`)
   - to send and to acknowledge user messages (`clientMsg`, `acknowledgeMsg`)
   - to notify another agent about queue deletion (`deleteQueueMsg`)
-- `msgPadding` - an optional message padding to make all SMP messages having consistent size as additional privacy protection.
+- `msgPadding` - an optional message padding to make all SMP messages have consistent size as an additional privacy protection measure.
 
 ### Messages between SMP agents
 
