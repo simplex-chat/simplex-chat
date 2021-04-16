@@ -1,0 +1,72 @@
+sequenceDiagram
+  participant A as Alice
+  participant AA as Alice's<br>agent
+  participant AS as Alice's<br>server
+  participant BS as Bob's<br>server
+  participant BA as Bob's<br>agent
+  participant B as Bob
+
+  note over AA, BA: status (receive/send): NONE/NONE
+
+  note over A, AA: 1. request connection from agent
+  A ->> AA: NEW: create<br>duplex connection
+ 
+  note over AA, AS: 2. create Alice's SMP queue
+  AA ->> AS: NEW: create SMP queue
+  AS ->> AA: IDS: SMP queue IDs
+  note over AA: status: NEW/NONE
+
+  A ->> AA: INVITE: invite<br>another party
+  AA ->> A: JOIN: invitation<br>to connect
+  note over AA: status: PENDING/NONE
+
+  note over A, B: 3. out-of-band invitation
+  A ->> B: OOB: invitation to connect
+  B ->> BA: CONNECT:<br>via invitation info
+  note over BA: status: NONE/NEW
+
+  note over BA, AA: 4. establish Alice's SMP queue
+  BA ->> AS: SEND: KEY: sender's key and Bob's profile
+  note over BA: status: NONE/CONFIRMED
+  activate BA
+  AS ->> AA: MSG: KEY: sender's key<br>and Bob's profile
+  note over AA: status: CONFIRMED/NONE
+  AA ->> A: Bob's profile<br>and party ID
+  A ->> AA: ACCEPT:<br>accept party ID
+  AA ->> AS: KEY: secure queue
+  note over AA: status: SECURED/NONE
+
+  BA ->> AS: SEND: HI: try sending until successful
+  deactivate BA
+  note over BA: status: NONE/ACTIVE
+  AS ->> AA: MSG: HI: Alice's agent<br>knows Bob can send
+  note over AA: status: ACTIVE/NONE
+
+  note over BA, BS: 5. create Bob's SMP queue
+  BA ->> BS: NEW: create SMP queue
+  BS ->> BA: IDS: SMP queue IDs
+  note over BA: status: NEW/ACTIVE
+
+  note over AA, BA: 6. establish Bob's SMP queue
+  BA ->> AS: SEND: REPLY: invitation to the connect
+  note over BA: status: PENDING/ACTIVE
+  AS ->> AA: MSG: REPLY: invitation<br>to connect
+  note over AA: status: ACTIVE/NEW
+
+  AA ->> BS: SEND: KEY: sender's key and Alice's profile
+  note over AA: status: ACTIVE/CONFIRMED
+  activate AA
+  BS ->> BA: MSG: KEY: sender's key<br>and Alice's profile
+  note over BA: status: CONFIRMED/ACTIVE
+  BA ->> BS: KEY: secure queue
+  note over BA: status: SECURED/ACTIVE
+
+  AA ->> BS: SEND: HI: try sending until successful
+  deactivate AA
+  note over AA: status: ACTIVE/ACTIVE
+  BS ->> BA: MSG: HI: Bob's agent<br>knows Alice can send
+  note over BA: status: ACTIVE/ACTIVE
+
+  note over A, B: 7. notify users about connection success
+  AA ->> A: CONNECTED
+  BA ->> B: CONNECTED

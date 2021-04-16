@@ -451,10 +451,11 @@ Each transmission between the client and the server must have this format/syntax
 
 ```abnf
 transmission = [signature] CRLF signed CRLF
-signed = [queueId] CRLF msg
+signed = [corrId] CRLF [queueId] CRLF msg
 msg = recipientCmd / send / serverMsg
 recipientCmd = create / subscribe / secure / acknowledge / suspend / delete
 serverMsg = queueIds / message / unsubscribed / ok / error
+corrId = 1*(%x21-7F) ; any characters other than control/whitespace
 queueId = encoded ; empty queue ID is used with "create" command
 signature = encoded ; empty signature can be used with "create" and "send" commands
 encoded = base64
@@ -644,7 +645,7 @@ The server must respond with `"ERR AUTH"` response in the following cases:
 - queue is NOT secured but the transmission has a signature.
 
 Until the queue is secured, the server should accept any number of unsigned
-messages - it both enables the legimate sender to resend the confirmation in
+messages - it both enables the legitimate sender to resend the confirmation in
 case of failure and also allows the simplex messaging client to ignore any
 confirmation messages that may be sent by the attackers (assuming they could
 have intercepted the queue ID in the server response, but do not have a correct
@@ -654,14 +655,14 @@ The body should be encrypted with the recipient's "public" key (`EK`); once
 decrypted it must have this format:
 
 ```abnf
-decryptedBody = reserved LF clientBody LF
-reserved = senderKeyMsg / *VCHAR
+decryptedBody = clientHeader CRLF clientBody CRLF
+clientHeader = senderKeyMsg / *VCHAR
 senderKeyMsg = %s"KEY" SP senderKey
 senderKey = encoded
 clientBody = *OCTET
 ```
 
-`reserved` in the initial unsigned message is used to transmit sender's server
+`clientHeader` in the initial unsigned message is used to transmit sender's server
 key and can be used in the future revisions of SMP protocol for other purposes.
 
 ### Server messages
