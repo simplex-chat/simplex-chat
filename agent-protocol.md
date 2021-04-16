@@ -40,9 +40,11 @@ The agent must have a persistent storage to manage the states of known connectio
 
 SMP agent protocol has 3 main parts:
 
-- the syntax and semantics of messages that SMP agents exchange between each other to negotiate establishing unidirectional (simplex) encrypted queues on SMP server(s) to provide their users a higher level interface than SMP protocol to establish and operate duplex (bi-directional) connections and notifications about any communication integrity violations (via hash validation, sequential message IDs and message acknowledgements send over SMP queues).
-- the syntax and semantics of the commands that should be sent over TCP or other sequential protocol by the agent user to the agent. This protocol allows to create and manage multiple connections, each consisting of two simplex SMP queues.
-- the syntax and semantics of the message that users of SMP agents should send out-of-band (as pre-shared key / "invitation") to ensure [E2E encryption][1] integrity for the first SMP queue and protection against active attacks ([MITM attacks][2]).
+- the syntax and semantics of messages that SMP agents exchange between each other in order to:
+  - negotiate establishing unidirectional (simplex) encrypted queues on SMP server(s)
+  - exchange client messages and delivery notifications, providing sequential message IDs and message integrity (by including the hash of the previous message).
+- the syntax and semantics of the commands (a higher level interface than SMP protocol) that are sent over TCP or other sequential protocol by agent clients to the agents. This protocol allows to create and manage multiple connections, each consisting of two simplex SMP queues.
+- the syntax and semantics of the message that the clients of SMP agents should send out-of-band (as pre-shared "invitation" including SMP server, queue ID and encryption key) to ensure [E2E encryption][1] the integrity of SMP queues and protection against active attacks ([MITM attacks][2]).
 
 ## Duplex connection
 
@@ -54,7 +56,7 @@ SMP agent protocol has 3 main parts:
 
 SMP agents communicate via SMP servers managing creation, deletion and operations of SMP queues.
 
-Agents can use SMP message client body to transmit agent client messages and exchange messages between each other.
+Agents can use SMP message client body (the part of the SMP message after header - see SMP protocol) to transmit agent client messages and exchange messages between each other.
 
 Each SMP message client body, once decrypted, contains 3 parts (one of them may include binary message body), as defined by `decryptedSmpMessageBody` syntax:
 
@@ -81,7 +83,7 @@ msgPadding = *OCTET ; optional random bytes to get messages to the same size (as
 
 helloMsg = %s"HELLO" SP signatureVerificationKey [SP %s"NO_ACK"]
 ; NO_ACK means that acknowledgements to client messages will NOT be sent in this connection by the agent that sent `HELLO` message.
-signatureVerificationKey = encoded
+signatureVerificationKey = encoded ; base64 encoded
 
 replyQueueMsg = %s"REPLY" SP qInfo ; `qInfo` is the same as in out-of-band message
 ; this message can only be sent by the second connection party
@@ -120,9 +122,11 @@ Each transmission between the user and SMP agent must have this format/syntax:
 ```abnf
 agentTransmission = [corrId] CRLF [cAlias] CRLF agentCommand
 
+corrId = 1*(%x21-7F) ; any characters other than control/whitespace
+
+cAlias = cId / cName
 cId = encoded
 cName = 1*(ALPHA / DIGIT / "_" / "-")
-cAlias = cId / cName
 
 agentCommand = (userCmd / agentMsg) CRLF
 userCmd = newCmd / joinCmd
