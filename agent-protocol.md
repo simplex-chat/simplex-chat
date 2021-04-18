@@ -5,7 +5,7 @@
 - [Abstract](#abstract)
 - [SMP agent](#smp-agent)
 - [SMP agent protocol components](#smp-agent-protocol-components)
-- [Duplex connection](#duplex-connection)
+- [Duplex connection procedure](#duplex-connection-procedure)
 - [Communication between SMP agents](#communication-between-smp-agents)
   - [Message syntax](#messages-between-smp-agents)
 - [SMP agent commands](#smp-agent-commands)
@@ -46,11 +46,37 @@ SMP agent protocol has 3 main parts:
 - the syntax and semantics of the commands (a higher level interface than SMP protocol) that are sent over TCP or other sequential protocol by agent clients to the agents. This protocol allows to create and manage multiple connections, each consisting of two simplex SMP queues.
 - the syntax and semantics of the message that the clients of SMP agents should send out-of-band (as pre-shared "invitation" including SMP server, queue ID and encryption key) to ensure [E2E encryption][1] the integrity of SMP queues and protection against active attacks ([MITM attacks][2]).
 
-## Duplex connection
+## Duplex connection procedure
 
-**Creating duplex connection between Alice and Bob:**
+![Duplex connection procedure](/diagrams/duplex-messaging/duplex-creating.svg)
 
-![Creating duplex connection](/diagrams/duplex-messaging/duplex-creating.svg)
+The procedure of establishing a duplex connection is explained on the example of Alice and Bob creating a bi-directional connection comprised of two unidirectional (simplex) queues, using SMP agents (A and B) to facilitate it, and two different SMP servers (which could be the same server). It is shown on the diagram above and has these steps:
+
+1. Alice requests the new connection from the SMP agent A using `NEW` command.
+2. Agent A creates an SMP queue on the server (using [SMP protocol](./simplex-messaging.md)) and responds to Alice with the invitation that contains queue information and the encryption key Bob's agent B should use. The invitation format is described in [Connection invitation](#connection-invitation).
+3. Alice sends the invitation to Bob via any secure channel they have (out-of-band message).
+4. Bob sends `JOIN` command with the invitation as a parameter to agent B to accept the connection.
+5. Establishing Alice's SMP queue (with SMP protocol commands):
+  - Agent B sends unauthenticated message to SMP queue with ephemeral key that will be used to authenticate commands to the queue, as described in SMP protocol.
+  - Agent A receives the KEY and secures the queue.
+  - Agent B tries sending authenticated SMP SEND command with agent `HELLO` message until it succeeds. Once it succeeds, Bob's agent "knows" the queue is secured.
+6. Agent B creates a new SMP queue on the server.
+7. Establish Bob's SMP queue:
+  - Agent B sends `REPLY` message with the invitation to this 2nd queue to Alice's agent (via the 1st queue).
+  - Agent A having received this `REPLY` message sends unauthenticated message to SMP queue with Alice agent's ephemeral key that will be used to authenticate commands to the queue, as described in SMP protocol.
+  - Bob's agent receives the key and secures the queue.
+  - Alice's agent keeps sending `HELLO` message until it succeeds.
+8. Agents A and B notify Alice and Bob that connection is established.
+  - Once sending `HELLO` succeeds, Alice's agent sends to Alice `CON` notification that confirms that now both parties can communicate.
+  - Once Bob's agent receives `HELLO` from Alice's agent, it sends to Bob `CON` notification as well.
+
+At this point the duplex connection between Alice and Bob is established, they can use `SEND` command to send messages. The diagram also shows how the connection status changes for both parties, where the first part is the status of the SMP queue to receive messages, and the second part - the status of the queue to send messages.
+
+The most communication happens between the agents and servers, from the point of view of Alice and Bob they have only 3 steps to do:
+
+1. Alice requests a new connection with `NEW` command and receives the invitation.
+2. Alice passes invitation out-of-band to Bob.
+3. Bob accepts the connection by sending `JOIN` command with the invitation to his agent.
 
 ## Communication between SMP agents
 
@@ -220,7 +246,7 @@ Connection invitation is a text with the following syntax:
 ```
 qInfo = %s"smp::" smpServer "::" queueId "::" ephemeralPublicKey
 queueId = encoded
-ephemeralPublicKey = encoded ; RSA key for sender to encrypt messages X509 base64 encoded
+ephemeralPublicKey = %s"rsa:" encoded ; RSA key for sender to encrypt messages X509 base64 encoded
 ```
 
 [1]: https://en.wikipedia.org/wiki/End-to-end_encryption
