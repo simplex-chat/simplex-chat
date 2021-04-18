@@ -27,10 +27,10 @@ sequenceDiagram
   note over BA: status: NONE/NEW
 
   note over BA, AA: 5. establish Alice's SMP queue
-  BA ->> AS: SEND: KEY: sender's key and Bob's profile
+  BA ->> AS: SEND: KEY: sender's server key
   note over BA: status: NONE/CONFIRMED
   activate BA
-  AS ->> AA: MSG: KEY: sender's key<br>and Bob's profile
+  AS ->> AA: MSG: KEY: sender's server key
   note over AA: status: CONFIRMED/NONE
   AA ->> AS: KEY: secure queue
   note over AA: status: SECURED/NONE
@@ -52,10 +52,10 @@ sequenceDiagram
   AS ->> AA: MSG: REPLY: invitation<br>to connect
   note over AA: status: ACTIVE/NEW
 
-  AA ->> BS: SEND: KEY: sender's key and Alice's profile
+  AA ->> BS: SEND: KEY: sender's server key
   note over AA: status: ACTIVE/CONFIRMED
   activate AA
-  BS ->> BA: MSG: KEY: sender's key<br>and Alice's profile
+  BS ->> BA: MSG: KEY: sender's server key
   note over BA: status: CONFIRMED/ACTIVE
   BA ->> BS: KEY: secure queue
   note over BA: status: SECURED/ACTIVE
