@@ -1,4 +1,4 @@
-# Simplex messaging protocol (SMP)
+# Simplex Messaging Protocol (SMP)
 
 ## Table of contents
 
@@ -8,7 +8,6 @@
 - [Out-of-band messages](#out-of-band-messages)
 - [Simplex queue](#simplex-queue)
 - [SMP procedure](#smp-procedure)
-- [SMP elements](#smp-elements)
 - [SMP qualities and features](#smp-qualities-and-features)
 - [Cryptographic algorithms](#cryptographic-algorithms)
 - [Simplex queue IDs](#simplex-queue-ids)
@@ -37,85 +36,43 @@
 
 ## Abstract
 
-Simplex messaging protocol is a transport agnostic client-server protocol for
-asynchronous distributed secure unidirectional message transmission via
-persistent simplex message queues.
+Simplex Messaging Protocol is a transport agnostic client-server protocol for asynchronous distributed secure unidirectional message transmission via persistent simplex message queues.
 
-It's designed with the focus on communication security and integrity, under the
-assumption that any part of the message transmission network can be compromised.
+It's designed with the focus on communication security and integrity, under the assumption that any part of the message transmission network can be compromised.
 
-It is designed as a low level protocol for other application protocols to solve
-the problem of secure and private message transmission, making [MITM attack][1]
-very difficult at any part of the message transmission system.
+It is designed as a low level protocol for other application protocols to solve the problem of secure and private message transmission, making [MITM attack][1] very difficult at any part of the message transmission system.
 
 ## Introduction
 
-The objective of Simplex Messaging Protocol (SMP) is to facilitate the secure
-and private unidirectional transfer of messages from senders to recipients via
-persistent simplex queues.
+The objective of Simplex Messaging Protocol (SMP) is to facilitate the secure and private unidirectional transfer of messages from senders to recipients via persistent simplex queues.
 
-SMP is independent of the particular transmission system and requires only a
-reliable ordered data stream channel. While this document describes transport
-over TCP, other transports are also possible.
+SMP is independent of the particular transmission system and requires only a reliable ordered data stream channel. While this document describes transport over TCP, other transports are also possible.
 
-The protocol describes the set of commands that recipient and sender can
-exchange with the SMP server to create and to operate a unidirectional "queue"
-(a data abstraction identifying one of many communication channels managed by
-the server) and to send messages from the sender to the recipient via the SMP
-server.
+The protocol describes the set of commands that recipient and sender can exchange with the SMP server to create and to operate a unidirectional "queue" (a data abstraction identifying one of many communication channels managed by the server) and to send messages from the sender to the recipient via the SMP server.
 
-More complex communication scenarios can be designed using multiple queues - for
-example, a duplex communication channel can be made of 2 simplex queues.
+More complex communication scenarios can be designed using multiple queues - for example, a duplex communication channel can be made of 2 simplex queues.
 
-Protocol is designed with the focus on privacy and security, to some extent
-deprioritizing reliability by requiring that SMP servers only store messages
-until they are delivered to the recipients and, in any case, for a limited
-period of time. For communication scenarios requiring more reliable transmission
-the users should use several SMP servers to pass each message and implement some
-additional protocol to ensure that messages are not removed, inserted or
-re-ordered - this is out of scope of this document.
+Protocol is designed with the focus on privacy and security, to some extent deprioritizing reliability by requiring that SMP servers only store messages until they are delivered to the recipients and, in any case, for a limited period of time. For communication scenarios requiring more reliable transmission the users should use several SMP servers to pass each message and implement some additional protocol to ensure that messages are not removed, inserted or re-ordered - this is out of scope of this document.
 
-SMP removes the need for participants' identities and provides [E2EE][2] without
-the possibility of [MITM attack][1] relying on two pre-requisites:
+SMP removes the need for participants' identities and provides [E2EE][2] without the possibility of [MITM attack][1] relying on two pre-requisites:
 
-- the users can establish a secure encrypted transport connection with the SMP
-  server. [Appendix A](#appendix-a) has a possible simple protocol of such
-  transport connection over TCP, but any other transport connection encryption
-  protocol can be used.
-- the recipient can pass a single message to the sender via pre-existing secure
-  and private communication channel (out-of-band message) - the information in
-  this message is used to encrypt messages and to establish connection with SMP
-  server.
+- Users can establish a secure encrypted transport connection with the SMP server. [Appendix A](#appendix-a) has a possible simple protocol of such transport connection over TCP, but any other transport connection encryption protocol can be used.
+
+- Recipient can pass a single message to the sender via pre-existing secure and private communication channel (out-of-band message) - the information in this message is used to encrypt messages and to establish connection with SMP server.
 
 ## SMP Model
 
-The SMP model has three communication participants: the recipient, the message
-broker (SMP server) that is chosen and, possibly, controlled by the recipient,
-and the sender.
+The SMP model has three communication participants: the recipient, the message broker (SMP server) that is chosen and, possibly, controlled by the recipient, and the sender.
 
-SMP server manages multiple "simplex queues" - data records on the server that
-identify communication channels from the senders to the recipients. The same
-communicating party that is the sender in one queue, can be the recipient in
-another - without exposing this fact to the server.
+SMP server manages multiple "simplex queues" - data records on the server that identify communication channels from the senders to the recipients. The same communicating party that is the sender in one queue, can be the recipient in another - without exposing this fact to the server.
 
-The queue record consists of 2 unique random IDs generated by the server, one
-for the recipient and another for the sender, and 2 keys to authenticate the
-recipient and the sender respectively. The users of SMP protocol must use a
-unique key for each queue, to avoid the possibility of aggregating and analysing
-their queues in case SMP server is compromised.
+The queue record consists of 2 unique random IDs generated by the server, one for the recipient and another for the sender, and 2 keys to authenticate the recipient and the sender respectively. The users of SMP protocol must use a unique key for each queue, to avoid the possibility of aggregating and analysing their queues in case SMP server is compromised.
 
-Creating and using the queue requires sending commands to the SMP server from
-the recipient and the sender - they are described in detail in
-[SMP commands](#smp-commands) section.
+Creating and using the queue requires sending commands to the SMP server from the recipient and the sender - they are described in detail in [SMP commands](#smp-commands) section.
 
 ## Out-of-band messages
 
-The out-of band invitation message is sent via some trusted alternative channel
-from the recipient to the sender. This message is used to share the encryption
-(a.k.a. "public") key that the sender will use to encrypt the messages (to be
-decrypted by the recipient), sender queue ID, server address and any other
-information necessary to establish secure encrypted connection with SMP server
-(see [Appendix A](#appendix-a) for a simple transport protocol example).
+The out-of band invitation message is sent via some trusted alternative channel from the recipient to the sender. This message is used to share the encryption (a.k.a. "public") key that the sender will use to encrypt the messages (to be decrypted by the recipient), sender queue ID, server address and any other information necessary to establish secure encrypted connection with SMP server (see [Appendix A](#appendix-a) for a simple transport protocol example).
 
 The [ABNF][8] syntax of the message is:
 
@@ -128,141 +85,96 @@ port = 1*DIGIT
 serverKeyHash = encoded
 ```
 
-`hostname` can be IP address or domain name, as defined in RFC 1123, section
-2.1.
+`hostname` can be IP address or domain name, as defined in RFC 1123, section 2.1.
 
 `port` is optional, the default TCP port for SMP protocol is 5223.
 
-Defining the approach to out-of-band message passing is out of scope of this
-protocol. See [Appendix B](#appendix-b) for one of the possible practical
-approaches.
+Defining the approach to out-of-band message passing is out of scope of this protocol. See [Appendix B](#appendix-b) for one of the possible practical approaches.
 
 ## Simplex queue
 
 The simplex queue is the main unit of SMP protocol. It is used by:
 
-- the sender of the queue (who received out-of-band message) to send messages to
-  the server using sender's queue ID, signed by sender's key.
-- the recepient of the queue (who created the queue and who sent out-of-band
-  message) will use it to retrieve messages from the server, signing the
-  commands by the recepient key.
-- participant identities are not shared with the server - new unique keys and
-  queue IDs are used for each queue.
+- Sender of the queue (who received out-of-band message) to send messages to the server using sender's queue ID, signed by sender's key.
 
-This simplex queue can serve as a building block for more complex communication
-network. For example, two (or more, for redundancy) simplex queues can be used
-to create a duplex communication channel. Higher level primitives that are only
-known to system participants in their client applications can be created as
-well - contacts, conversations, groups and broadcasts. Simplex messaging servers
-only have the information about the low-level simplex queues. In this way a high
-level of privacy and security of the conversations is provided. Application
-level primitives are not in scope of this protocol.
+- Recepient of the queue (who created the queue and who sent out-of-band message) will use it to retrieve messages from the server, signing the commands by the recepient key.
 
-This approach is based on the concept of [unidirectional networks][4] that are
-used for applications with high level of information security.
+- Participant identities are not shared with the server - new unique keys and queue IDs are used for each queue.
 
-Access to each queue is controlled with unique (not shared with other queues)
-assymetric key pairs, separate for the sender and the recipient. The sender and
-the receiver have private keys, and the server has associated public keys to
-authenticate participants' commands by verifying cryptographic signatures.
+This simplex queue can serve as a building block for more complex communication network. For example, two (or more, for redundancy) simplex queues can be used to create a duplex communication channel. Higher level primitives that are only known to system participants in their client applications can be created as well - contacts, conversations, groups and broadcasts. Simplex messaging servers only have the information about the low-level simplex queues. In this way a high level of privacy and security of the conversations is provided. Application level primitives are not in scope of this protocol.
 
-The messages sent into the queue are encrypted and decrypted using another key
-pair that was shared via out-of-band message - the recepient has the private key
-and the sender has the associated public key.
+This approach is based on the concept of [unidirectional networks][4] that are used for applications with high level of information security.
+
+Access to each queue is controlled with unique (not shared with other queues) assymetric key pairs, separate for the sender and the recipient. The sender and the receiver have private keys, and the server has associated public keys to authenticate participants' commands by verifying cryptographic signatures.
+
+The messages sent into the queue are encrypted and decrypted using another key pair that was shared via out-of-band message - the recepient has the private key and the sender has the associated public key.
 
 **Simplex queue diagram:**
 
 ![Simplex queue](/diagrams/simplex-messaging/simplex.svg)
 
-Queue is defined by recipient ID `RID` unique for the server. It also has a
-different unique sender ID `SID`. Sender key (`SK`) is used by the server to
-verify sender's commands (identified by `SID`) to send messages. Recipient key
-(`RK`) is used by the server to verify recipient's commands (identified by
-`SID`) to retrieve messages.
+Queue is defined by recipient ID `RID` unique for the server. It also has a different unique sender ID `SID`. Sender key (`SK`) is used by the server to verify sender's commands (identified by `SID`) to send messages. Recipient key (`RK`) is used by the server to verify recipient's commands (identified by `SID`) to retrieve messages.
 
-The protocol uses different IDs for sender and recipient in order to provide an
-additional privacy by complicating correlation of senders and recipients
-commands sent over the network - even though they are encrypted using server's
-public key, in case this key is compromised it would still be difficult to
-correlate senders and recipients without access to queue records on the server.
+The protocol uses different IDs for sender and recipient in order to provide an additional privacy by complicating correlation of senders and recipients commands sent over the network - even though they are encrypted using server's public key, in case this key is compromised it would still be difficult to correlate senders and recipients without access to queue records on the server.
 
 ## SMP procedure
 
-The SMP procedure of creating a simplex queue on SMP server is explained using
-participants Alice (the recipient) who wants to receive the messages from Bob
-(the sender).
+The SMP procedure of creating a simplex queue on SMP server is explained using participants Alice (the recipient) who wants to receive the messages from Bob (the sender).
 
 To create and start using a simpelex queue Alice and Bob follow these steps:
 
 1. Alice creates a simplex queue on the server:
-   1. decides which SMP server to use (can be the same or different server that
-      Alice uses for other queues) and opens secure encrypted transport
-      connection to the chosen SMP server (see [Appendix A](#appendix-a)).
-   2. generates a new random public/private key pair (encryption key - `EK`)
-      that she did not use before for Bob to encrypt the messages.
-   3. generates another new random public/private key pair (recepient key -
-      `RK`) that she did not use before for her to sign commands and to decrypt
-      the transmissions received from the server.
-   4. sends `"CONN"` command to the server to create a simplex queue (see
-      `create` in [Create queue command](#create-queue-command)). This command
-      can either be anonymous or the server can be configured to use the
-      signature field to authenticate the users who are allowed to create
-      queues. This command contains previouisly generated uniqie "public" key
-      `RK` that will be used to sign the following commands related to the same
-      queue, for example to subscribe to the messages received to this queue or
-      to update the queue, e.g. by setting the key required to send the messages
-      (initially Alice creates the queue that accepts unsigned messages, so
-      anybody could send the message via this queue if they knew the queue
-      sender's ID and server address).
-   5. The server sends `"IDS"` response with queue IDs (`queueIds`):
-      - recipient ID `RID` for Alice to manage the queue and to receive the
-        messages.
-      - sender ID `SID` for Bob to send messages to the queue.
-2. Alice sends an out-of-band message to Bob via the alternative channel that
-   both Alice and Bob trust (see
-   [Simplex messaging protocol abstract](#simplex-messaging-protocol-abstract)
-   and [Appendix B](#appendix-b)). The message must include:
-   - the unique "public" key (`EK`) that Bob must use to encrypt messages.
-   - SMP server address and information to open secure encrypted transport
-     connection (see [Appendix A](#appendix-a))
-   - the sender queue ID `SID` for Bob to use.
-3. Bob, having received the out-of-band message from Alice, connects to the
-   queue:
-   1. generates a new random public/private key pair (sender key - `SK`) that he
-      did not use before for him to sign messages sent to Alice's server.
-   2. prepares the confirmation message for Alice to secure the queue. This
-      message includes:
-      - previously generated "public" key `SK` that will be used by Alice's
-        server to authenticate Bob's messages, once the queue is secured.
-      - optionally, any additional information (application specific, e.g. Bob's
-        profile name and details).
-   3. encrypts the confirmation body with the "public" key `EK` (that Alice
-      provided via the out-of-band message).
-   4. sends the encrypted message to the server with queue ID `SID` (see `send`
-      in [Send message](#send-message)). This initial message to the queue must
-      not be signed - signed messages will be rejected until Alice secures the
-      queue (below).
-4. Alice receives Bob's message from the server using recipient queue ID `RID`
-   (possibly, via the same transport connection she already has opened - see
-   `message` in [Deliver queue message](#deliver-queue-message)):
-   1. she decrypts received message with "private" key `EK`.
-   2. even though anybody could have sent the message to the queue with ID `SID`
-      before it is secured (e.g. if communication is compromised), Alice would
-      ignore all messages until the decryption succeeds (i.e. the result
-      contains the expected message format). Optionally, in the client
-      application, she also may identify Bob using the information provided, but
-      it is out of scope of SMP protocol.
-5. Alice secures the queue `RID` with `"KEY"` command so only Bob can send
-   messages to it (see [Secure queue command](#secure-queue-command)):
-   1. she sends the command with `RID` signed with "private" key `RK` to update
-      the queue to only accept requests signed by "private" key `SK` provided by
-      Bob.
-   2. From this moment the server will accept only signed commands to `SID`, so
-      only Bob will be able to send messages to the queue `SID` (corresponding
-      to `RID` that Alice has).
-   3. Once queue is secured, Alice deletes `SID` and `SK` - even if Alice's
-      client is compromised in the future, the attacker would not be able to
-      send messages pretending to be Bob.
+
+    1. Decides which SMP server to use (can be the same or different server that Alice uses for other queues) and opens secure encrypted transport connection to the chosen SMP server (see [Appendix A](#appendix-a)).
+
+    2. Generates a new random public/private key pair (encryption key - `EK`) that she did not use before for Bob to encrypt the messages.
+
+    3. Generates another new random public/private key pair (recepient key - `RK`) that she did not use before for her to sign commands and to decrypt the transmissions received from the server.
+
+    4. Sends `"CONN"` command to the server to create a simplex queue (see `create` in [Create queue command](#create-queue-command)). This command can either be anonymous or the server can be configured to use the signature field to authenticate the users who are allowed to create queues. This command contains previouisly generated uniqie "public" key `RK` that will be used to sign the following commands related to the same queue, for example to subscribe to the messages received to this queue or to update the queue, e.g. by setting the key required to send the messages (initially Alice creates the queue that accepts unsigned messages, so anybody could send the message via this queue if they knew the queue sender's ID and server address).
+
+    5. The server sends `"IDS"` response with queue IDs (`queueIds`):
+
+        - Recipient ID `RID` for Alice to manage the queue and to receive the messages.
+
+        - Sender ID `SID` for Bob to send messages to the queue.
+
+2. Alice sends an out-of-band message to Bob via the alternative channel that both Alice and Bob trust (see [protocol abstract](#simplex-messaging-protocol-abstract) and [Appendix B](#appendix-b)). The message must include:
+
+    - Unique "public" key (`EK`) that Bob must use to encrypt messages.
+
+    - SMP server address and information to open secure encrypted transport connection (see [Appendix A](#appendix-a)).
+
+    - Sender queue ID `SID` for Bob to use.
+
+3. Bob, having received the out-of-band message from Alice, connects to the queue:
+
+    1. Generates a new random public/private key pair (sender key - `SK`) that he did not use before for him to sign messages sent to Alice's server.
+
+    2. Prepares the confirmation message for Alice to secure the queue. This message includes:
+
+        - Previously generated "public" key `SK` that will be used by Alice's server to authenticate Bob's messages, once the queue is secured.
+
+        - Optionally, any additional information (application specific, e.g. Bob's profile name and details).
+
+    3. Encrypts the confirmation body with the "public" key `EK` (that Alice provided via the out-of-band message).
+
+    4. Sends the encrypted message to the server with queue ID `SID` (see `send` in [Send message](#send-message)). This initial message to the queue must not be signed - signed messages will be rejected until Alice secures the queue (below).
+
+4. Alice receives Bob's message from the server using recipient queue ID `RID` (possibly, via the same transport connection she already has opened - see `message` in [Deliver queue message](#deliver-queue-message)):
+
+    1. She decrypts received message with "private" key `EK`.
+
+    2. Even though anybody could have sent the message to the queue with ID `SID` before it is secured (e.g. if communication is compromised), Alice would ignore all messages until the decryption succeeds (i.e. the result contains the expected message format). Optionally, in the client application, she also may identify Bob using the information provided, but it is out of scope of SMP protocol.
+
+5. Alice secures the queue `RID` with `"KEY"` command so only Bob can send messages to it (see [Secure queue command](#secure-queue-command)):
+
+    1. She sends the command with `RID` signed with "private" key `RK` to update the queue to only accept requests signed by "private" key `SK` provided by Bob.
+
+    2. From this moment the server will accept only signed commands to `SID`, so only Bob will be able to send messages to the queue `SID` (corresponding to `RID` that Alice has).
+
+    3. Once queue is secured, Alice deletes `SID` and `SK` - even if Alice's client is compromised in the future, the attacker would not be able to send messages pretending to be Bob.
+
 6. The simplex queue `RID` is now ready to use.
 
 This flow is shown on the sequence diagram below.
@@ -274,24 +186,22 @@ This flow is shown on the sequence diagram below.
 Bob now can securely send messages to Alice:
 
 1. Bob sends the message:
-   1. he encrypts the message to Alice with "public" key `EK` (provided by
-      Alice, only known to Alice and Bob, used only for one simplex queue).
-   2. he signs `"SEND"` command to the server queue `SID` using the "private"
-      key `SK` (that only he knows, used only for this queue).
-   3. he sends the command to the server (see `send` in
-      [Send message](#send-message)), that the server will authenticate using
-      the "public" key `SK` (that Alice earlier provided to the server).
+
+    1. He encrypts the message to Alice with "public" key `EK` (provided by Alice, only known to Alice and Bob, used only for one simplex queue).
+
+    2. He signs `"SEND"` command to the server queue `SID` using the "private" key `SK` (that only he knows, used only for this queue).
+
+    3. He sends the command to the server (see `send` in [Send message](#send-message)), that the server will authenticate using the "public" key `SK` (that Alice earlier provided to the server).
+
 2. Alice receives the message(s):
-   1. she signs `"SUB"` command to the server to subscribe to the queue `RID`
-      with the "private" key `RK` (see `subscribe` in
-      [Subscribe to queue](#subscribe-to-queue)).
-   2. the server, having authenticated Alice's command with the "public" key
-      `RK` that she provided, delivers Bob's message(s) (see `message` in
-      [Deliver queue message](#deliver-queue-message)).
-   3. she decrypts Bob's message(s) with the "private" key `EK` (that only she
-      has).
-   4. she acknowledges the message reception to the server with `"ACK"` so that
-      the server can delete the message and deliver the next messages.
+
+    1. She signs `"SUB"` command to the server to subscribe to the queue `RID` with the "private" key `RK` (see `subscribe` in [Subscribe to queue](#subscribe-to-queue)).
+
+    2. The server, having authenticated Alice's command with the "public" key `RK` that she provided, delivers Bob's message(s) (see `message` in [Deliver queue message](#deliver-queue-message)).
+
+    3. She decrypts Bob's message(s) with the "private" key `EK` (that only she has).
+
+    4. She acknowledges the message reception to the server with `"ACK"` so that the server can delete the message and deliver the next messages.
 
 This flow is show on sequence diagram below.
 
@@ -303,151 +213,119 @@ This flow is show on sequence diagram below.
 
 ![Simplex queue operations](/diagrams/simplex-messaging/simplex-op.svg)
 
-Sequence diagram does not show E2EE - server knows nothing about encryption
-between sender and receiver.
+Sequence diagram does not show E2EE - server knows nothing about encryption between sender and receiver.
 
-A higher level protocol application protocol should define the semantics that
-allow to use two simplex queues (or two sets of queues for redundancy) for the
-bi-directional chat and for any other communication scenarios.
+A higher level protocol application protocol should define the semantics that allow to use two simplex queues (or two sets of queues for redundancy) for the bi-directional chat and for any other communication scenarios.
 
-The SMP is intentionally unidirectional - it provides no answer to how Bob will
-know that the transmission succeeded, and whether Alice received any messages.
-There may be a scenario when Alice wants to securely receive the messages from
-Bob, but she does not want Bob to have any proof that she received any
-messages - this low-level simplex messaging protocol can be used in this
-scenario, as all Bob knows as a fact is that he was able to send one unsigned
-message to the server that Alice provided, and now can only send messages signed
-with the key `SK` that he sent to the server - it does not prove that any
-message was received by Alice.
+The SMP is intentionally unidirectional - it provides no answer to how Bob will know that the transmission succeeded, and whether Alice received any messages. There may be a scenario when Alice wants to securely receive the messages from Bob, but she does not want Bob to have any proof that she received any messages - this low-level protocol can be used in this scenario, as all Bob knows as a fact is that he was able to send one unsigned message to the server that Alice provided, and now can only send messages signed with the key `SK` that he sent to the server - it does not prove that any message was received by Alice.
 
-For practical purposes of bi-directional conversation, now that Bob can securely
-send encrypted messages to Alice, Bob can create the second simplex queue that
-will allow Alice to send messages to Bob in the same way, sending the second
-queue details via the first queue. If both Alice and Bob have their respective
-uniqie "public" keys (Alice's and Bob's `EK`s of two separate queues), the
-conversation can be both encrypted and signed.
+For practical purposes of bi-directional conversation, now that Bob can securely send encrypted messages to Alice, Bob can create the second simplex queue that will allow Alice to send messages to Bob in the same way, sending the second queue details via the first queue. If both Alice and Bob have their respective uniqie "public" keys (Alice's and Bob's `EK`s of two separate queues), the conversation can be both encrypted and signed.
 
-The established queues can also be used to change the encryption keys providing
-[forward secrecy][5].
+The established queues can also be used to change the encryption keys providing [forward secrecy][5].
 
-This protocol also can be used for off-the-record messaging, as Alice and Bob
-can use multiple queues between them and only information they pass to each
-other allows proving their identity, so if they want to share anything
-off-the-record they can initiate a new queue without linking it to any other
-information they exchanged. As a result, this protocol provides better anonymity
-and better protection from [MITM][1] than [OTR][6] protocol.
+This protocol also can be used for off-the-record messaging, as Alice and Bob can use multiple queues between them and only information they pass to each other allows proving their identity, so if they want to share anything off-the-record they can initiate a new queue without linking it to any other information they exchanged. As a result, this protocol provides better anonymity and better protection from [MITM][1] than [OTR][6] protocol.
 
 ## SMP qualities and features
 
-The simplex messaging protocol:
+Simplex Messaging Protocol:
 
-- defines only message-passing protocol:
-  - transport agnostic - the protocol does not define how clients connect to the
-    servers. It can be implemented over any ordered data stream channel: TCP
-    connection, HTTP with long polling, websockets, etc..
-  - not semantic - the protocol does not assign any meaning to queues and
-    messages. While on the application level the queues and messages can have
-    different meaning (e.g., for messages: text or image chat message, message
-    acknowledgement, participant profile information, status updates, changing
-    "public" key to encrypt messages, changing servers, etc.), on the simplex
-    messaging protocol level all the messages are binary and their meaning can
-    only be interpreted by client applications and not by the servers - this
-    interpretation is out of scope of this simplex messaging protocol.
-- client-server architecture:
-  - multiple servers, that can be deployed by the system users, can be used to
-    send and retrieve messages.
-  - servers do not communicate with each other and do not "know" about other
-    servers.
-  - clients only communicate with servers (excluding the initial out-of-band
-    message), so the message passing is asynchronous.
-  - for each queue, the message recipient defines the server through which the
-    sender should send messages.
-  - while multiple servers and multiple queues can be used to pass each message,
-    it is in scope of application level protocol(s), and out of scope of this
-    simplex messaging protocol.
-  - servers store messages only until they are retrieved by the recipients, and
-    in any case, for a limited time.
-  - servers are required to NOT store any message history or delivery log, but
-    even if the server is compromised, it does not allow to decrypt the messages
-    or to determine the list of queues established by any participant - this
-    information is only stored on client devices.
-- the only element provided by SMP servers is simplex queues:
-  - each queue is created and managed by the queue recipient.
-  - assymetric encryption is used to sign and verify the requests to send and
-    receive the messages.
-  - one unique "public" key is used for the servers to authenticate requests to
-    send the messages into the queue, and another unique "public" key - to
-    retrieve the messages from the queue. "Unique" here means that each "public"
-    key is used only for one queue and is not used for any other context -
-    effectively, this key is not public and does not represent any participant
-    identity.
-  - both "public" keys are provided to the server by the queue recepient when
-    the queue is created.
-  - the "public" keys known to the server and used to authenticate commands from
-    the participants are unrelated to the keys used to encrypt and decrypt the
-    messages - the latter keys are also unique per each queue but they are only
-    known to participants, not to the servers.
-  - messaging graph can be asymmetric: Bob's ability to send messages to Alice
-    does not automatically lead to the Alice's ability to send messages to Bob.
+- Defines only message-passing protocol:
+
+  - Transport agnostic - the protocol does not define how clients connect to the servers. It can be implemented over any ordered data stream channel: TCP connection, HTTP with long polling, websockets, etc.
+
+  - Not semantic - the protocol does not assign any meaning to queues and messages. While on the application level the queues and messages can have different meaning (e.g., for messages: text or image chat message, message acknowledgement, participant profile information, status updates, changing "public" key to encrypt messages, changing servers, etc.), on the protocol level all the messages are binary and their meaning can only be interpreted by client applications and not by the servers - this interpretation is out of scope of this protocol.
+
+- Client-server architecture:
+
+  - Multiple servers, that can be deployed by the system users, can be used to send and retrieve messages.
+
+  - Servers do not communicate with each other and do not "know" about other servers.
+
+  - Clients only communicate with servers (excluding the initial out-of-band message), so the message passing is asynchronous.
+
+  - For each queue, the message recipient defines the server through which the sender should send messages.
+
+  - While multiple servers and multiple queues can be used to pass each message, it is in scope of application level protocol(s), and out of scope of this protocol.
+
+  - Servers store messages only until they are retrieved by the recipients, and in any case, for a limited time.
+
+  - Servers are required to NOT store any message history or delivery log, but even if the server is compromised, it does not allow to decrypt the messages or to determine the list of queues established by any participant - this information is only stored on client devices.
+
+- The only element provided by SMP servers is simplex queues:
+
+  - Each queue is created and managed by the queue recipient.
+
+  - Assymetric encryption is used to sign and verify the requests to send and receive the messages.
+
+  - One unique "public" key is used for the servers to authenticate requests to send the messages into the queue, and another unique "public" key - to retrieve the messages from the queue. "Unique" here means that each "public" key is used only for one queue and is not used for any other context - effectively, this key is not public and does not represent any participant identity.
+
+  - Both "public" keys are provided to the server by the queue recepient when the queue is created.
+
+  - The "public" keys known to the server and used to authenticate commands from the participants are unrelated to the keys used to encrypt and decrypt the messages - the latter keys are also unique per each queue but they are only known to participants, not to the servers.
+
+  - Messaging graph can be asymmetric: Bob's ability to send messages to Alice does not automatically lead to the Alice's ability to send messages to Bob.
 
 ## Cryptographic algorithms
 
-Simplex messaging clients need to cryptographically sign commands:
+Simplex messaging clients need to cryptographically sign commands for following operations:
 
-- with the recipient's key `RK` (server to verify):
-  - to subscribe to queue.
-  - to secure the queue.
-  - to acknowledge received messages.
-  - to suspend the queue.
-  - to delete the queue.
-- with the sender's key `SK`:
-  - to send messages (server to verify).
+- With the recipient's key `RK` (server to verify):
 
-To sign and verify commands, clients and servers MUST use RSA-PSS algorythm
-defined in [RFC3447][2].
+  - Subscribe to queue.
+
+  - Secure the queue.
+
+  - Acknowledge received messages.
+
+  - Suspend the queue.
+
+  - Delete the queue.
+
+- With the sender's key `SK`:
+
+  - Send messages (server to verify).
+
+To sign and verify commands, clients and servers MUST use RSA-PSS algorythm defined in [RFC3447][2].
 
 To optinally sign and verify messages, clients SHOULD use RSA-PSS algorythm.
 
-To encrypt and decrypt messages, clients and servers SHOULD use RSA-OAEP
-algorythm defined in [RFC3447][2].
+To encrypt and decrypt messages, clients and servers SHOULD use RSA-OAEP algorythm defined in [RFC3447][2].
 
 The reasons to use these algorithms:
 
-- they are supported by WebCrypto API.
-- they are newer versions than RSA-PKCS1-v1_5 encryption and signature schemes.
-- they are more widely supported than ECC algorithms
+- They are supported by WebCrypto API.
+
+- They are newer versions than RSA-PKCS1-v1_5 encryption and signature schemes.
+
+- They are more widely supported than ECC algorithms.
 
 Future versions of the protocol may allow different algorithms.
 
 ## Simplex queue IDs
 
-Simplex messaging servers MUST generate 2 different IDs for each new queue - for
-recipient (that created the queue) and for sender. It is REQUIRED that:
+Simplex messaging servers MUST generate 2 different IDs for each new queue - for recipient (that created the queue) and for sender. It is REQUIRED that:
 
-- these IDs are different and unique within the server.
-- based on 64-128-bit integers generated with cryptographically strong
-  pseudo-random number generator.
+- These IDs are different and unique within the server.
+
+- Based on 64-128-bit integers generated with cryptographically strong pseudo-random number generator.
 
 ## Server privacy requirements
 
-Simplex messaging server implementations MUST NOT create, store or send to any
-other servers:
+Simplex messaging server implementations MUST NOT create, store or send to any other servers:
 
-- logs of the client commands and transport connections in the production
-  environment.
-- history of deleted queues, retrieved or acknowledged messages.
-- snapshots of the database they use to store queues and messages (instead
-  simplex messaging clients must manage redundancy by using more than one
-  simplex messaging server).
-- any other information that may compromise privacy or [forward secrecy][4] of
-  communication between clients using simplex messaging servers.
+- Logs of the client commands and transport connections in the production environment.
+
+- History of deleted queues, retrieved or acknowledged messages.
+
+- Snapshots of the database they use to store queues and messages (instead simplex messaging clients must manage redundancy by using more than one simplex messaging server).
+
+- Any other information that may compromise privacy or [forward secrecy][4] of communication between clients using simplex messaging servers.
 
 ## SMP commands
 
 Commands syntax below is provided using [ABNF][8].
 
-Each transmission between the client and the server must have this format/syntax
-(after the decryption):
+Each transmission between the client and the server must have this format/syntax (after the decryption):
 
 ```abnf
 transmission = [signature] CRLF signed CRLF
@@ -461,47 +339,34 @@ signature = encoded ; empty signature can be used with "create" and "send" comma
 encoded = base64
 ```
 
-`base64` encoding should be used with padding, as defined in section 4 of [RFC
-4648][9]
+`base64` encoding should be used with padding, as defined in section 4 of [RFC 4648][9]
 
 The syntax of specific commands and responses is defined below.
 
 ### Correlating responses with commands
 
-The server must send `queueIds`, `error` and `ok` responses in the same order
-within each queue ID as the commands received in the transport connection, so
-that they can be correlated by the clients.
+The server must send `queueIds`, `error` and `ok` responses in the same order within each queue ID as the commands received in the transport connection, so that they can be correlated by the clients.
 
-If the transport connection is closed before some responses are sent, these
-responses should be discarded.
+If the transport connection is closed before some responses are sent, these responses should be discarded.
 
 ### Command authentication
 
-The SMP servers must athenticate all transmissions (excluding `create` and
-`send` commands sent with empty signatures) by verifying the provided
-signatures. Signature should be the hash of the first part `signed` (including
-CRLF characters) of `transmission`, encrypted with the key associated with the
-queue ID (sender's or recepient's, depending on which queue ID is used).
+The SMP servers must athenticate all transmissions (excluding `create` and `send` commands sent with empty signatures) by verifying the provided signatures. Signature should be the hash of the first part `signed` (including CRLF characters) of `transmission`, encrypted with the key associated with the queue ID (sender's or recepient's, depending on which queue ID is used).
 
 ### Recipient commands
 
-Sending any of the commands in this section (other than `create`, that is sent
-without queue ID) is only allowed with recipient's ID (`RID`). If sender's ID is
-used the server must respond with `"ERR AUTH"` response (see
-[Error responses](#error-responses)).
+Sending any of the commands in this section (other than `create`, that is sent without queue ID) is only allowed with recipient's ID (`RID`). If sender's ID is used the server must respond with `"ERR AUTH"` response (see [Error responses](#error-responses)).
 
 #### Create queue command
 
-This command is sent by the recipient to the SMP server to create the new queue.
-The syntax is:
+This command is sent by the recipient to the SMP server to create the new queue. The syntax is:
 
 ```abnf
 create = %s"NEW" SP recipientKey
 recipientKey = encoded
 ```
 
-If the queue is created successfully, the server must send `queueIds` response
-with the recipient's and sender's queue IDs:
+If the queue is created successfully, the server must send `queueIds` response with the recipient's and sender's queue IDs:
 
 ```abnf
 queueIds = %s"IDS" SP recipientId SP senderId
@@ -509,98 +374,70 @@ recipientId = encoded
 senderId = encoded
 ```
 
-This response should be sent with empty queue ID (the second part of the
-transmission).
+This response should be sent with empty queue ID (the second part of the transmission).
 
-Once the queue is created, the recipient gets automatically subscribed to
-receive the messages from that queue, until the transport connection is closed.
-The `subscribe` command is needed only to start receiving the messages from the
-existing queue when the new transport queue is opened.
+Once the queue is created, the recipient gets automatically subscribed to receive the messages from that queue, until the transport connection is closed. The `subscribe` command is needed only to start receiving the messages from the existing queue when the new transport queue is opened.
 
-`signature` part of NEW `transmission` should an empty string; SMP servers can
-also use it to authenticate users who are allowed to create simplex queues on
-the server.
+`signature` part of NEW `transmission` should an empty string; SMP servers can also use it to authenticate users who are allowed to create simplex queues on the server.
 
 #### Subscribe to queue
 
-When the simplex queue was not created in the current transport connection, the
-recipient must use this command to start receiving messages from it:
+When the simplex queue was not created in the current transport connection, the recipient must use this command to start receiving messages from it:
 
 ```abnf
 subscribe = %s"SUB"
 ```
 
-If subscription is successful the server should respond with the first available
-message or with `ok` response if no messages are available. The recipient will
-continue receiving the messages from this queue until the transport connection
-is closed or until another transport connection subscribes to the same simplex
-queue - in this case the first subscription should be cancelled and
-[subscription END notification](#subscription-end-notification) delivered.
+If subscription is successful the server should respond with the first available message or with `ok` response if no messages are available. The recipient will continue receiving the messages from this queue until the transport connection is closed or until another transport connection subscribes to the same simplex queue - in this case the first subscription should be cancelled and [subscription END notification](#subscription-end-notification) delivered.
 
-The first message will be delivered either immediately or as soon as it is
-available; to receive the following message the recipient must acknoledge the
-reception of the message (see
-[Acknowledge message delivery](#acknowledge-message-delivery)).
+The first message will be delivered either immediately or as soon as it is available; to receive the following message the recipient must acknoledge the reception of the message (see [Acknowledge message delivery](#acknowledge-message-delivery)).
 
 #### Secure queue command
 
-This command is sent by the recipient to the server to add sender's key to the
-queue:
+This command is sent by the recipient to the server to add sender's key to the queue:
 
 ```
 secure = %s"KEY" SP senderKey
 senderKey = encoded
 ```
 
-`senderKey` is received from the sender as part of the first message - see
-[Send Message Command](#send-message-command).
+`senderKey` is received from the sender as part of the first message - see [Send Message Command](#send-message-command).
 
 Once the queue is secured only signed messages can be sent to it.
 
 #### Acknowledge message delivery
 
-The recipient should send the acknowledgement of message delivery once the
-message was stored in the client, to notify the server that the message should
-be deleted:
+The recipient should send the acknowledgement of message delivery once the message was stored in the client, to notify the server that the message should be deleted:
 
 ```abnf
 acknowledge = %s"ACK"
 ```
 
-Even if acknowledgement is not sent by the recipient, the server should limit
-the time of message storage, whether it was delivered to the recipient or not.
+Even if acknowledgement is not sent by the recipient, the server should limit the time of message storage, whether it was delivered to the recipient or not.
 
-Having received the acknowledgement, SMP server should immediately delete the
-sent message and then send the next available message or respond with `ok` if
-there are no more messages stored in this simplex queue.
+Having received the acknowledgement, SMP server should immediately delete the sent message and then send the next available message or respond with `ok` if there are no more messages stored in this simplex queue.
 
 #### Suspend queue
 
-The recipient can suspend queue prior to deleting it to make sure that no
-messages are lost:
+The recipient can suspend queue prior to deleting it to make sure that no messages are lost:
 
 ```abnf
 suspend = %s"OFF"
 ```
 
-The server must respond with `"ERR AUTH"` to any messages sent after the queue
-was suspended (see [Error responses](#error-responses)).
+The server must respond with `"ERR AUTH"` to any messages sent after the queue was suspended (see [Error responses](#error-responses)).
 
 The server must respond `ok` to this command if it was successful.
 
-This command can be sent multiple times (in case transport connection was
-interrupted and the response was not delivered), the server should still respond
-`ok` even if the queue is already suspended.
+This command can be sent multiple times (in case transport connection was interrupted and the response was not delivered), the server should still respond `ok` even if the queue is already suspended.
 
-There is no command to resume the queue. Servers must delete suspended queues
-that were not deleted after some period of time.
+There is no command to resume the queue. Servers must delete suspended queues that were not deleted after some period of time.
 
 #### Delete queue
 
 The recipient can delete the queue, whether it was suspended or not.
 
-All undelivered messages will not be delivered - they should be deleted as soon
-as command is received, before the response is sent.
+All undelivered messages will not be delivered - they should be deleted as soon as command is received, before the response is sent.
 
 ```abnf
 delete = %s"DEL"
@@ -608,16 +445,11 @@ delete = %s"DEL"
 
 ### Sender commands
 
-Currently SMP defines only one command that can be used by senders - `send`
-message. This command must be used with sender's ID, if recipient's ID is used
-the server must respond with `"ERR AUTH"` response (see
-[Error responses](#error-responses)).
+Currently SMP defines only one command that can be used by senders - `send` message. This command must be used with sender's ID, if recipient's ID is used the server must respond with `"ERR AUTH"` response (see [Error responses](#error-responses)).
 
 #### Send message
 
-This command is sent to the server by the sender both to confirm the queue after
-the sender received out-of-band message from the recipient and to send messages
-after the queue is secured:
+This command is sent to the server by the sender both to confirm the queue after the sender received out-of-band message from the recipient and to send messages after the queue is secured:
 
 ```abnf
 send = %s"SEND" SP msgBody
@@ -631,28 +463,21 @@ msgBody = *OCTET ; any content of specified size - safe for binary
 
 `stringMsg` is allowed primarily to test SMP servers, e.g. via telnet.
 
-The first message is sent to confirm the queue - it should contain sender's
-server key (see decrypted message syntax below) - this first message must be
-sent without signature.
+The first message is sent to confirm the queue - it should contain sender's server key (see decrypted message syntax below) - this first message must be sent without signature.
 
-Once queue is secured (see [Secure queue command](#secure-queue-command)),
-messages must be sent with the signature.
+Once queue is secured (see [Secure queue command](#secure-queue-command)), messages must be sent with the signature.
 
 The server must respond with `"ERR AUTH"` response in the following cases:
 
-- queue does not exist or suspended,
-- queue is secured but the transmission does NOT have a signature,
-- queue is NOT secured but the transmission has a signature.
+- Queue does not exist or suspended.
 
-Until the queue is secured, the server should accept any number of unsigned
-messages - it both enables the legitimate sender to resend the confirmation in
-case of failure and also allows the simplex messaging client to ignore any
-confirmation messages that may be sent by the attackers (assuming they could
-have intercepted the queue ID in the server response, but do not have a correct
-encryption key passed to sender in out-of-band message).
+- Queue is secured but the transmission does NOT have a signature.
 
-The body should be encrypted with the recipient's "public" key (`EK`); once
-decrypted it must have this format:
+- Queue is NOT secured but the transmission has a signature.
+
+Until the queue is secured, the server should accept any number of unsigned messages - it both enables the legitimate sender to resend the confirmation in case of failure and also allows the simplex messaging client to ignore any confirmation messages that may be sent by the attackers (assuming they could have intercepted the queue ID in the server response, but do not have a correct encryption key passed to sender in out-of-band message).
+
+The body should be encrypted with the recipient's "public" key (`EK`); once decrypted it must have this format:
 
 ```abnf
 decryptedBody = clientHeader CRLF clientBody CRLF
@@ -662,8 +487,7 @@ senderKey = encoded
 clientBody = *OCTET
 ```
 
-`clientHeader` in the initial unsigned message is used to transmit sender's server
-key and can be used in the future revisions of SMP protocol for other purposes.
+`clientHeader` in the initial unsigned message is used to transmit sender's server key and can be used in the future revisions of SMP protocol for other purposes.
 
 ### Server messages
 
@@ -675,8 +499,7 @@ See its syntax in [Create queue command](#create-queue-command)
 
 #### Deliver queue message
 
-The server must deliver messages to all subscribed simplex queues on the
-currently open transport connection. The syntax for the message delivery is:
+The server must deliver messages to all subscribed simplex queues on the currently open transport connection. The syntax for the message delivery is:
 
 ```abnf
 message = %s"MSG" SP msgId SP timestamp SP binaryMsg
@@ -684,22 +507,15 @@ msgId = encoded
 timestamp = date-time; RFC3339
 ```
 
-`msgId` - unique message ID generated by the server based on 32-64 bits
-cryptographically strong random number. It should be used by the clients to
-detect messages that were delivered more than once (in case the transport
-connection was interrupted and the server did not receive the message delivery
-acknowledgement).
+`msgId` - unique message ID generated by the server based on 32-64 bits cryptographically strong random number. It should be used by the clients to detect messages that were delivered more than once (in case the transport connection was interrupted and the server did not receive the message delivery acknowledgement).
 
-`timestamp` - the UTC time when the server received the message from the sender,
-must be in date-time format defined by [RFC 3339][10]
+`timestamp` - the UTC time when the server received the message from the sender, must be in date-time format defined by [RFC 3339][10]
 
 `binaryMsg` - see syntax in [Send message](#send-message)
 
 #### Subscription END notification
 
-When another transport connection is subscribed to the same simplex queue, the
-server should unsubscribe and to send the notification to the previously
-subscribed transport connection:
+When another transport connection is subscribed to the same simplex queue, the server should unsubscribe and to send the notification to the previously subscribed transport connection:
 
 ```abnf
 unsubscribed = %s"END"
@@ -711,15 +527,17 @@ No further messages should be delivered to unsubscribed transport connection.
 
 The server can respond with an error response in the following cases:
 
-- unknown command name (`"UNKNOWN"`),
-- prohibited command (`"PROHIBITED"`) - any server response sent from client or
-  `ACK` sent without active subscription or without message delivery,
-- incorrect command or transmission syntax (`"SYNTAX"`) - see error codes below
-- incorrect message body size (`"SIZE"`)
-- authentication error (`"AUTH"`) - incorrect signature, unknown (or suspended)
-  queue, sender's ID is used in place of recipient's and vice versa, and some
-  other cases (see [Send message command](#send-message-command))
-- internal server error (`"INTERNAL"`).
+- Unknown command name (`"UNKNOWN"`).
+
+- Prohibited command (`"PROHIBITED"`) - any server response sent from client or `ACK` sent without active subscription or without message delivery.
+
+- Incorrect command or transmission syntax (`"SYNTAX"`) - see error codes below.
+
+- Incorrect message body size (`"SIZE"`).
+
+- Authentication error (`"AUTH"`) - incorrect signature, unknown (or suspended) queue, sender's ID is used in place of recipient's and vice versa, and some other cases (see [Send message command](#send-message-command)).
+
+- Internal server error (`"INTERNAL"`).
 
 The syntax for error responses:
 
@@ -735,15 +553,11 @@ noConnId = "5" ; queue ID is required and absent - only used in SEND command atm
 msgBody = "6" ; message body has incorrect format, it is neither a number nor starts from ":"
 ```
 
-Server implementations must aim to respond within the same time for each command
-in all cases when `"ERR AUTH"` response is required to prevent timing attacks
-(e.g., the server should execute signature verification even when the queue does
-not exist on the server).
+Server implementations must aim to respond within the same time for each command in all cases when `"ERR AUTH"` response is required to prevent timing attacks (e.g., the server should execute signature verification even when the queue does not exist on the server).
 
 ### OK response
 
-When the command is successfully executed by the server, it should respond with
-OK response:
+When the command is successfully executed by the server, it should respond with OK response:
 
 ```abnf
 ok = %s"OK"
@@ -755,42 +569,23 @@ ok = %s"OK"
 
 Secure encrypted transport connection with the SMP server.
 
-Both the recipient and the sender can use TCP or some other (possibly higher
-level) transport protocol to communicate with the server.
+Both the recipient and the sender can use TCP or some other (possibly higher level) transport protocol to communicate with the server.
 
-Some protocol should be used to ecrypt the connection traffic - one simple
-option that does not require any cetralized certificate authority is below.
+Some protocol should be used to ecrypt the connection traffic - one simple option that does not require any cetralized certificate authority is below.
 
-When the transport connection is established, the server sends the binary
-encryption key that the client should match with key or fingerprint available to
-them - if they do not match, they should terminate the connection.
+When the transport connection is established, the server sends the binary encryption key that the client should match with key or fingerprint available to them - if they do not match, they should terminate the connection.
 
-The client should respond with the symmetric key that will be used by both the
-client and the server to encrypt all traffic in the connection - this key should
-be encrypted with the public key initially sent by the server.
+The client should respond with the symmetric key that will be used by both the client and the server to encrypt all traffic in the connection - this key should be encrypted with the public key initially sent by the server.
 
-After the symmetric key is sent to the server, all communication should happen
-in encrypted binary chunks having a fixed size (e.g. 4096 bytes) irrespective of
-the size of the command/message that should be sent. Smaller messages should be
-padded, multiple commands/messages can be packed into a single chunk. If the
-application using SMP needs to transmit a file or a larger message, it should be
-broken down into fragments. The format of application level messages within SMP
-commands is out of scope of this protocol.
+After the symmetric key is sent to the server, all communication should happen in encrypted binary chunks having a fixed size (e.g. 4096 bytes) irrespective of the size of the command/message that should be sent. Smaller messages should be padded, multiple commands/messages can be packed into a single chunk. If the application using SMP needs to transmit a file or a larger message, it should be broken down into fragments. The format of application level messages within SMP commands is out of scope of this protocol.
 
 ### Appendix B.
 
 Sending out-of-band message.
 
-SMP does not prescribe the channel to pass out-of-band message - it should be
-agreed by the client applications.
+SMP does not prescribe the channel to pass out-of-band message - it should be agreed by the client applications.
 
-For practical purposes various solutions can be used, e.g. one of the versions
-or the analogues of [QR code][3] (or their sequence) that is read via the
-camera, either directly from the participant's device or via the video call.
-Although a video call still allows for a highly sophisticated MITM attack, it
-would require that in addition to compromising simplex queue to intercept
-messages, the attacker also identifies and compromises the video connection in
-another channel and substitutes the video in real time.
+For practical purposes various solutions can be used, e.g. one of the versions or the analogues of [QR code][3] (or their sequence) that is read via the camera, either directly from the participant's device or via the video call. Although a video call still allows for a highly sophisticated MITM attack, it would require that in addition to compromising simplex queue to intercept messages, the attacker also identifies and compromises the video connection in another channel and substitutes the video in real time.
 
 [1]: https://en.wikipedia.org/wiki/Man-in-the-middle_attack
 [2]: https://en.wikipedia.org/wiki/End-to-end_encryption
