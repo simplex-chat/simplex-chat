@@ -90,6 +90,7 @@ data ChatResponse
   | ReceivedMessage Contact ByteString
   | Disconnected Contact
   | YesYes
+  | ContactError ConnectionErrorType Contact
   | ErrorInput ByteString
   | ChatError AgentErrorType
   | NoChatResponse
@@ -110,6 +111,10 @@ serializeChatResponse = \case
   ReceivedMessage c t -> prependFirst (ttyFromContact c) $ msgPlain t
   Disconnected c -> ["disconnected from " <> ttyContact c <> " - try \"/chat " <> bPlain (toBs c) <> "\""]
   YesYes -> ["you got it!"]
+  ContactError e c -> case e of
+    UNKNOWN -> ["no contact " <> ttyContact c]
+    DUPLICATE -> ["contact " <> ttyContact c <> " already exists"]
+    SIMPLEX -> ["contact " <> ttyContact c <> " did not accept invitation yet"]
   ErrorInput t -> ["invalid input: " <> bPlain t]
   ChatError e -> ["chat error: " <> plain (show e)]
   NoChatResponse -> [""]
@@ -256,6 +261,7 @@ receiveFromAgent t ct c = forever . atomically $ do
       MSG {m_body} -> ReceivedMessage contact m_body
       SENT _ -> NoChatResponse
       OK -> Confirmation contact
+      ERR (CONN e) -> ContactError e contact
       ERR e -> ChatError e
       where
         contact = Contact a
