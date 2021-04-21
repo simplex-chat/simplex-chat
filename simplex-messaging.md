@@ -77,12 +77,14 @@ The out-of band invitation message is sent via some trusted alternative channel 
 The [ABNF][8] syntax of the message is:
 
 ```abnf
-outOfBandMsg = encryptionKey CRLF senderConnId CRLF server CRLF serverKeyHash
-encryptionKey = encoded ; base64
-senderConnId = encoded
-server = hostname [":" port]
+outOfBandMsg = "smp::" server "::" queueId "::" encryptionKey
+server = hostname [":" port] ["#" serverKeyHash]
+hostname = 1*VCHAR
 port = 1*DIGIT
 serverKeyHash = encoded
+queueId = encoded
+encryptionKey = encoded
+encoded = base64
 ```
 
 `hostname` can be IP address or domain name, as defined in RFC 1123, section 2.1.
