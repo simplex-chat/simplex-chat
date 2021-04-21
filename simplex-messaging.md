@@ -83,7 +83,7 @@ port = 1*DIGIT
 serverKeyHash = encoded
 queueId = encoded
 encryptionKey = encoded
-encoded = <base64>
+encoded = <base64 encoded data>
 ```
 
 `hostname` can be IP address or domain name, as defined in RFC 1123, section 2.1.
