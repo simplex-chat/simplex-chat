@@ -98,7 +98,7 @@ The simplex queue is the main unit of SMP protocol. It is used by:
 
 - Sender of the queue (who received out-of-band message) to send messages to the server using sender's queue ID, signed by sender's key.
 
-- Recepient of the queue (who created the queue and who sent out-of-band message) will use it to retrieve messages from the server, signing the commands by the recepient key.
+- Recipient of the queue (who created the queue and who sent out-of-band message) will use it to retrieve messages from the server, signing the commands by the recipient key.
 
 - Participant identities are not shared with the server - new unique keys and queue IDs are used for each queue.
 
@@ -108,21 +108,21 @@ This approach is based on the concept of [unidirectional networks][4] that are u
 
 Access to each queue is controlled with unique (not shared with other queues) assymetric key pairs, separate for the sender and the recipient. The sender and the receiver have private keys, and the server has associated public keys to authenticate participants' commands by verifying cryptographic signatures.
 
-The messages sent into the queue are encrypted and decrypted using another key pair that was shared via out-of-band message - the recepient has the private key and the sender has the associated public key.
+The messages sent over the queue are encrypted and decrypted using another key pair that was shared via out-of-band message - the recipient has the private key and the sender has the associated public key.
 
 **Simplex queue diagram:**
 
 ![Simplex queue](/diagrams/simplex-messaging/simplex.svg)
 
-Queue is defined by recipient ID `RID` unique for the server. It also has a different unique sender ID `SID`. Sender key (`SK`) is used by the server to verify sender's commands (identified by `SID`) to send messages. Recipient key (`RK`) is used by the server to verify recipient's commands (identified by `SID`) to retrieve messages.
+Queue is defined by recipient ID `RID` and sender ID `SID`, unique for the server. Sender key (`SK`) is used by the server to verify sender's commands (identified by `SID`) to send messages. Recipient key (`RK`) is used by the server to verify recipient's commands (identified by `RID`) to retrieve messages.
 
 The protocol uses different IDs for sender and recipient in order to provide an additional privacy by complicating correlation of senders and recipients commands sent over the network - even though they are encrypted using server's public key, in case this key is compromised it would still be difficult to correlate senders and recipients without access to queue records on the server.
 
 ## SMP procedure
 
-The SMP procedure of creating a simplex queue on SMP server is explained using participants Alice (the recipient) who wants to receive the messages from Bob (the sender).
+The SMP procedure of creating a simplex queue on SMP server is explained using participants Alice (the recipient) who wants to receive messages from Bob (the sender).
 
-To create and start using a simpelex queue Alice and Bob follow these steps:
+To create and start using a simplex queue Alice and Bob follow these steps:
 
 1. Alice creates a simplex queue on the server:
 
@@ -130,7 +130,7 @@ To create and start using a simpelex queue Alice and Bob follow these steps:
 
     2. Generates a new random public/private key pair (encryption key - `EK`) that she did not use before for Bob to encrypt the messages.
 
-    3. Generates another new random public/private key pair (recepient key - `RK`) that she did not use before for her to sign commands and to decrypt the transmissions received from the server.
+    3. Generates another new random public/private key pair (recipient key - `RK`) that she did not use before for her to sign commands and to decrypt the transmissions received from the server.
 
     4. Sends `"CONN"` command to the server to create a simplex queue (see `create` in [Create queue command](#create-queue-command)). This command can either be anonymous or the server can be configured to use the signature field to authenticate the users who are allowed to create queues. This command contains previouisly generated uniqie "public" key `RK` that will be used to sign the following commands related to the same queue, for example to subscribe to the messages received to this queue or to update the queue, e.g. by setting the key required to send the messages (initially Alice creates the queue that accepts unsigned messages, so anybody could send the message via this queue if they knew the queue sender's ID and server address).
 
@@ -260,7 +260,7 @@ Simplex Messaging Protocol:
 
   - One unique "public" key is used for the servers to authenticate requests to send the messages into the queue, and another unique "public" key - to retrieve the messages from the queue. "Unique" here means that each "public" key is used only for one queue and is not used for any other context - effectively, this key is not public and does not represent any participant identity.
 
-  - Both "public" keys are provided to the server by the queue recepient when the queue is created.
+  - Both "public" keys are provided to the server by the queue recipient when the queue is created.
 
   - The "public" keys known to the server and used to authenticate commands from the participants are unrelated to the keys used to encrypt and decrypt the messages - the latter keys are also unique per each queue but they are only known to participants, not to the servers.
 
@@ -352,7 +352,7 @@ If the transport connection is closed before some responses are sent, these resp
 
 ### Command authentication
 
-The SMP servers must athenticate all transmissions (excluding `create` and `send` commands sent with empty signatures) by verifying the provided signatures. Signature should be the hash of the first part `signed` (including CRLF characters) of `transmission`, encrypted with the key associated with the queue ID (sender's or recepient's, depending on which queue ID is used).
+The SMP servers must athenticate all transmissions (excluding `create` and `send` commands sent with empty signatures) by verifying the provided signatures. Signature should be the hash of the first part `signed` (including CRLF characters) of `transmission`, encrypted with the key associated with the queue ID (sender's or recipient's, depending on which queue ID is used).
 
 ### Recipient commands
 
