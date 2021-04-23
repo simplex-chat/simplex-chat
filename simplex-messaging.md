@@ -30,6 +30,7 @@
     - [Subscription END notification](#subscription-end-notification)
     - [Error responses](#error-responses)
     - [OK response](#ok-response)
+- [Possible extensions](#possible-extensions)
 - [Appendices](#appendices)
   - [Appendix A. Transport connection with the SMP server](#appendix-a)
   - [Appendix B. Sending out-of-band message](#appendix-b)
@@ -132,7 +133,7 @@ To create and start using a simplex queue Alice and Bob follow these steps:
 
     3. Generates another new random public/private key pair (recipient key - `RK`) that she did not use before for her to sign commands and to decrypt the transmissions received from the server.
 
-    4. Sends `"CONN"` command to the server to create a simplex queue (see `create` in [Create queue command](#create-queue-command)). This command can either be anonymous or the server can be configured to use the signature field to authenticate the users who are allowed to create queues. This command contains previouisly generated uniqie "public" key `RK` that will be used to sign the following commands related to the same queue, for example to subscribe to the messages received to this queue or to update the queue, e.g. by setting the key required to send the messages (initially Alice creates the queue that accepts unsigned messages, so anybody could send the message via this queue if they knew the queue sender's ID and server address).
+    4. Sends `"NEW"` command to the server to create a simplex queue (see `create` in [Create queue command](#create-queue-command)). This command contains previouisly generated unique "public" key `RK` that will be used to sign the following commands related to the same queue, for example to subscribe to the messages received to this queue or to update the queue, e.g. by setting the key required to send the messages (initially Alice creates the queue that accepts unsigned messages, so anybody could send the message via this queue if they knew the queue sender's ID and server address).
 
     5. The server sends `"IDS"` response with queue IDs (`queueIds`):
 
@@ -563,6 +564,10 @@ When the command is successfully executed by the server, it should respond with 
 ```abnf
 ok = %s"OK"
 ```
+
+## Possible extensions
+
+- `"NEW"` command can either be anonymous or the server can be configured to use the signature field to authenticate the users who are allowed to create queues.
 
 ## Appendices
 
