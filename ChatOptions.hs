@@ -1,4 +1,5 @@
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module ChatOptions (getChatOpts, ChatOpts (..)) where
 
@@ -30,8 +31,8 @@ chatOpts appDir =
       ( long "server"
           <> short 's'
           <> metavar "SERVER"
-          <> help "SMP server to use (smp.simplex.im:5223)"
-          <> value (SMPServer "smp.simplex.im" (Just "5223") Nothing)
+          <> help "SMP server to use (smp1.simplex.im:5223#pLdiGvm0jD1CMblnov6Edd/391OrYsShw+RgdfR0ChA=)"
+          <> value (SMPServer "smp1.simplex.im" (Just "5223") (Just "pLdiGvm0jD1CMblnov6Edd/391OrYsShw+RgdfR0ChA="))
       )
     <*> option
       parseTermMode
