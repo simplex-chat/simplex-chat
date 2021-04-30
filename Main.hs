@@ -119,58 +119,36 @@ serializeChatResponse = \case
     msgPlain :: ByteString -> [StyledString]
     msgPlain = map styleMarkdownText . T.lines . safeDecodeUtf8
 
-
 chatHelpInfo :: [StyledString]
 chatHelpInfo =
   map
     styleMarkdown
-      [
-        "",
-        Markdown (Colored Green) "Using Simplex chat prototype:",
-        indent <> "A connection is established in three steps.",
-        indent <> "The following example shows how to set up a connection and message a contact.",
-        "",
-        Markdown (Colored Green) "Step 1:",
-        indent <> "Alice enters the add command to add her contact, Bob.",
-        "",
-        indent <> Markdown (Colored Yellow)  "/add bob",
-        "",
-        indent <> "The add command creates an invitation.",
-        indent <> "Alice adds a name for her contact, Bob.",
-        indent <> "The command outputs an invitation to the terminal.",
-        indent <> "Alice copies the key and sends it to her contact,",
-        indent <> "Bob, out of band using a trusted method.",
-        "",
-        Markdown (Colored Green) "Step 2:",
-        indent <> "When Bob receives the invitation from Alice,",
-        indent <> "he uses the connect command to establish a connection.",
-        "",
-        indent <> Markdown (Colored Yellow)  "/connect alice <invitation>",
-        "",
-        
-        indent <> "Bob enters the command, followed by a name for his contact,",
-        indent <> "- in this case Alice - followed by the invitation he received out of band from Alice.",
-        "",
-        Markdown (Colored Green) "Step 3:",
-        indent <> "Bob and Alice are notified once the connection is established.",
-        indent <> "Both may now use the message command to send a message.",
-        "",
-        indent <> Markdown (Colored Yellow) "@bob Hello, Alice!",
-        "",
-        "",
-        Markdown (Colored Green) "Other commands:",
-        indent <> Markdown (Colored Yellow) "/delete" <> " - deletes contact and all communications with them.",
-        indent <> Markdown (Colored Yellow) "/markdown" <> " - displays cheatsheet of markdown syntax.",
-        "",
-        "The above commands may be abbreviated to a single letter: ",
-        listCommands ["/a", "/c", "/m", "/d"]
-
-      ]
-
+    [ Markdown (Colored Cyan) "Using Simplex chat prototype.",
+      "Follow these steps to set up a connection:",
+      "",
+      Markdown (Colored Green) "Step 1: " <> Markdown (Colored Cyan) "/add bob" <> " -- Alice adds her contact, Bob (she can use any name).",
+      indent <> "Alice should send the invitation printed by the /add command",
+      indent <> "to her contact, Bob, out-of-band, via any trusted channel.",
+      "",
+      Markdown (Colored Green) "Step 2: " <> Markdown (Colored Cyan) "/connect alice <invitation>" <> " -- Bob accepts the invitation.",
+      indent <> "Bob also can use any name for his contact, Alice,",
+      indent <> "followed by the invitation he received out-of-band.",
+      "",
+      Markdown (Colored Green) "Step 3: " <> "Bob and Alice are notified that the connection is set up,",
+      indent <> "both can now send messages:",
+      indent <> Markdown (Colored Cyan) "@bob Hello, Bob!" <> " -- Alice messages Bob.",
+      indent <> Markdown (Colored Cyan) "@alice Hey, Alice!" <> " -- Bob replies to Alice.",
+      "",
+      Markdown (Colored Green) "Other commands:",
+      indent <> Markdown (Colored Cyan) "/delete" <> " -- deletes contact and all messages with them.",
+      indent <> Markdown (Colored Cyan) "/markdown" <> " -- prints the supported markdown syntax.",
+      "",
+      "The commands may be abbreviated to a single letter: " <> listCommands ["/a", "/c", "/d", "/m"]
+    ]
   where
     listCommands = mconcat . intersperse ", " . map highlight
     highlight = Markdown (Colored Cyan)
-    indent = "   "
+    indent = "        "
 
 markdownInfo :: [StyledString]
 markdownInfo =
