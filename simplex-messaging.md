@@ -31,7 +31,6 @@
     - [Subscription END notification](#subscription-end-notification)
     - [Error responses](#error-responses)
     - [OK response](#ok-response)
-- [Possible extensions](#possible-extensions)
 - [Appendices](#appendices)
   - [Appendix A. Transport connection with the SMP server](#appendix-a)
   - [Appendix B. Sending out-of-band message](#appendix-b)
