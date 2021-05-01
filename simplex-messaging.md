@@ -58,6 +58,7 @@ Protocol is designed with the focus on privacy and security, to some extent depr
 SMP removes the need for participants' identities and provides [E2EE][2] without the possibility of [MITM attack][1] relying on two pre-requisites:
 
 - the users can establish a secure encrypted transport connection with the SMP server. [Appendix A](#appendix-a) describes transport protocol of such connection over TCP, but any other transport connection encryption protocol can be used.
+
 - the recipient can pass a single message to the sender via pre-existing secure and private communication channel (out-of-band message) - the information in this message is used to encrypt messages and to establish connection with SMP server.
 
 ## SMP Model
@@ -100,7 +101,9 @@ Defining the approach to out-of-band message passing is out of scope of this pro
 The simplex queue is the main unit of SMP protocol. It is used by:
 
 - Sender of the queue (who received out-of-band message) to send messages to the server using sender's queue ID, signed by sender's key.
+
 - Recipient of the queue (who created the queue and who sent out-of-band message) will use it to retrieve messages from the server, signing the commands by the recipient key.
+
 - Participant identities are not shared with the server - new unique keys and queue IDs are used for each queue.
 
 This simplex queue can serve as a building block for more complex communication network. For example, two (or more, for redundancy) simplex queues can be used to create a duplex communication channel. Higher level primitives that are only known to system participants in their client applications can be created as well - contacts, conversations, groups and broadcasts. Simplex messaging servers only have the information about the low-level simplex queues. In this way a high level of privacy and security of the conversations is provided. Application level primitives are not in scope of this protocol.
@@ -232,24 +235,39 @@ This protocol also can be used for off-the-record messaging, as Alice and Bob ca
 Simplex Messaging Protocol:
 
 - Defines only message-passing protocol:
+
   - Transport agnostic - the protocol does not define how clients connect to the servers. It can be implemented over any ordered data stream channel: TCP connection, HTTP with long polling, websockets, etc.
+
   - Not semantic - the protocol does not assign any meaning to queues and messages. While on the application level the queues and messages can have different meaning (e.g., for messages: text or image chat message, message acknowledgement, participant profile information, status updates, changing "public" key to encrypt messages, changing servers, etc.), on the protocol level all the messages are binary and their meaning can only be interpreted by client applications and not by the servers - this interpretation is out of scope of this protocol.
 
 - Client-server architecture:
+
   - Multiple servers, that can be deployed by the system users, can be used to send and retrieve messages.
+
   - Servers do not communicate with each other and do not "know" about other servers.
+
   - Clients only communicate with servers (excluding the initial out-of-band message), so the message passing is asynchronous.
+
   - For each queue, the message recipient defines the server through which the sender should send messages.
+
   - While multiple servers and multiple queues can be used to pass each message, it is in scope of application level protocol(s), and out of scope of this protocol.
+
   - Servers store messages only until they are retrieved by the recipients, and in any case, for a limited time.
+
   - Servers are required to NOT store any message history or delivery log, but even if the server is compromised, it does not allow to decrypt the messages or to determine the list of queues established by any participant - this information is only stored on client devices.
 
 - The only element provided by SMP servers is simplex queues:
+
   - Each queue is created and managed by the queue recipient.
+
   - Asymmetric encryption is used to sign and verify the requests to send and receive the messages.
+
   - One unique "public" key is used for the servers to authenticate requests to send the messages into the queue, and another unique "public" key - to retrieve the messages from the queue. "Unique" here means that each "public" key is used only for one queue and is not used for any other context - effectively, this key is not public and does not represent any participant identity.
+
   - Both "public" keys are provided to the server by the queue recipient when the queue is created.
+
   - The "public" keys known to the server and used to authenticate commands from the participants are unrelated to the keys used to encrypt and decrypt the messages - the latter keys are also unique per each queue but they are only known to participants, not to the servers.
+
   - Messaging graph can be asymmetric: Bob's ability to send messages to Alice does not automatically lead to the Alice's ability to send messages to Bob.
 
 ## Cryptographic algorithms
@@ -292,8 +310,11 @@ Simplex messaging servers MUST generate 2 different IDs for each new queue - for
 Simplex messaging server implementations MUST NOT create, store or send to any other servers:
 
 - Logs of the client commands and transport connections in the production environment.
+
 - History of deleted queues, retrieved or acknowledged messages (deleted queues MAY be stored temporarily as part of the queue persistence implementation).
+
 - Snapshots of the database they use to store queues and messages (instead simplex messaging clients must manage redundancy by using more than one simplex messaging server). In-memory persistence is recommended.
+
 - Any other information that may compromise privacy or [forward secrecy][4] of communication between clients using simplex messaging servers.
 
 ## SMP commands
@@ -452,11 +473,9 @@ Once queue is secured (see [Secure queue command](#secure-queue-command)), messa
 
 The server must respond with `"ERR AUTH"` response in the following cases:
 
-- Queue does not exist or suspended.
-
-- Queue is secured but the transmission does NOT have a signature.
-
-- Queue is NOT secured but the transmission has a signature.
+- queue does not exist or suspended
+- queue is secured but the transmission does NOT have a signature
+- queue is NOT secured but the transmission has a signature
 
 Until the queue is secured, the server should accept any number of unsigned messages - it both enables the legitimate sender to resend the confirmation in case of failure and also allows the simplex messaging client to ignore any confirmation messages that may be sent by the attackers (assuming they could have intercepted the queue ID in the server response, but do not have a correct encryption key passed to sender in out-of-band message).
 
