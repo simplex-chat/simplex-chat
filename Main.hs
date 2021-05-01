@@ -259,7 +259,7 @@ receiveFromAgent t ct c = forever . atomically $ do
       INV qInfo -> Invitation qInfo
       CON -> Connected contact
       END -> Disconnected contact
-      MSG {m_body} -> ReceivedMessage contact m_body
+      MSG {msgBody} -> ReceivedMessage contact msgBody
       SENT _ -> NoChatResponse
       OK -> Confirmation contact
       ERR (CONN e) -> ContactError e contact
