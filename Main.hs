@@ -130,25 +130,32 @@ chatHelpInfo :: [StyledString]
 chatHelpInfo =
   map
     styleMarkdown
-    [ "Using chat:",
-      highlight "/add <name>" <> "       - create invitation to send out-of-band to your contact <name>",
-      "                    (<name> is the alias you choose to message your contact)",
-      highlight "/connect <name> <invitation>" <> " - connect using <invitation>",
-      "                    (a string returned by /add that starts from \"smp::\")",
-      "                    if /connect is used by your contact,",
-      "                    <name> is the alias your contact chooses to message you",
-      highlight "@<name> <message>" <> " - send <message> (any string) to contact <name>",
-      "                    @<name> will be auto-typed to send to the previous contact -",
-      "                    just start typing the message!",
-      highlight "/delete" <> "           - delete contact and all messages you had with them",
-      highlight "/markdown" <> "         - markdown cheat-sheet",
+    [ Markdown (Colored Cyan) "Using Simplex chat prototype.",
+      "Follow these steps to set up a connection:",
       "",
-      "Commands can be abbreviated to 1 letter: ",
-      listCommands ["/h", "/a", "/c", "/d", "/m"]
+      Markdown (Colored Green) "Step 1: " <> Markdown (Colored Cyan) "/add bob" <> " -- Alice adds her contact, Bob (she can use any name).",
+      indent <> "Alice should send the invitation printed by the /add command",
+      indent <> "to her contact, Bob, out-of-band, via any trusted channel.",
+      "",
+      Markdown (Colored Green) "Step 2: " <> Markdown (Colored Cyan) "/connect alice <invitation>" <> " -- Bob accepts the invitation.",
+      indent <> "Bob also can use any name for his contact, Alice,",
+      indent <> "followed by the invitation he received out-of-band.",
+      "",
+      Markdown (Colored Green) "Step 3: " <> "Bob and Alice are notified that the connection is set up,",
+      indent <> "both can now send messages:",
+      indent <> Markdown (Colored Cyan) "@bob Hello, Bob!" <> " -- Alice messages Bob.",
+      indent <> Markdown (Colored Cyan) "@alice Hey, Alice!" <> " -- Bob replies to Alice.",
+      "",
+      Markdown (Colored Green) "Other commands:",
+      indent <> Markdown (Colored Cyan) "/delete" <> " -- deletes contact and all messages with them.",
+      indent <> Markdown (Colored Cyan) "/markdown" <> " -- prints the supported markdown syntax.",
+      "",
+      "The commands may be abbreviated to a single letter: " <> listCommands ["/a", "/c", "/d", "/m"]
     ]
   where
     listCommands = mconcat . intersperse ", " . map highlight
     highlight = Markdown (Colored Cyan)
+    indent = "        "
 
 markdownInfo :: [StyledString]
 markdownInfo =
