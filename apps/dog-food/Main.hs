@@ -110,7 +110,7 @@ serializeChatResponse = \case
   Confirmation c -> [ttyContact c <> " ok"]
   ReceivedMessage c t -> prependFirst (ttyFromContact c) $ msgPlain t
   -- TODO either add command to re-connect or update message below
-  Disconnected c -> ["disconnected from " <> ttyContact c <> " - try \"/chat " <> bPlain (toBs c) <> "\""]
+  Disconnected c -> ["disconnected from " <> ttyContact c <> " - restart chat"]
   YesYes -> ["you got it!"]
   ContactError e c -> case e of
     UNKNOWN -> ["no contact " <> ttyContact c]
