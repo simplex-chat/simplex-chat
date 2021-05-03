@@ -45,3 +45,6 @@ stack.yaml.lock
 
 # Idris
 *.ibc
+
+# chat database
+*.db
