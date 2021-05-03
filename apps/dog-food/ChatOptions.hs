@@ -13,7 +13,8 @@ import Types
 data ChatOpts = ChatOpts
   { dbFileName :: String,
     smpServer :: SMPServer,
-    termMode :: TermMode
+    termMode :: TermMode,
+    msgIntegrity :: Bool
   }
 
 chatOpts :: FilePath -> Parser ChatOpts
@@ -41,6 +42,11 @@ chatOpts appDir =
           <> metavar "TERM"
           <> help ("terminal mode: editor or basic (" <> termModeName TermModeEditor <> ")")
           <> value TermModeEditor
+      )
+    <*> switch
+      ( long "integrity"
+          <> short 'i'
+          <> help "warn on message integrity violations"
       )
   where
     defaultDbFilePath = combine appDir "smp-chat.db"

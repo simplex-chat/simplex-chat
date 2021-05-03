@@ -87,7 +87,7 @@ data ChatResponse
   | Invitation SMPQueueInfo
   | Connected Contact
   | Confirmation Contact
-  | ReceivedMessage Contact ByteString
+  | ReceivedMessage Contact ByteString MsgIntegrity
   | Disconnected Contact
   | YesYes
   | ContactError ConnectionErrorType Contact
@@ -95,8 +95,8 @@ data ChatResponse
   | ChatError AgentErrorType
   | NoChatResponse
 
-serializeChatResponse :: ChatResponse -> [StyledString]
-serializeChatResponse = \case
+serializeChatResponse :: ChatOpts -> ChatResponse -> [StyledString]
+serializeChatResponse ChatOpts {msgIntegrity} = \case
   ChatHelpInfo -> chatHelpInfo
   MarkdownInfo -> markdownInfo
   Invitation qInfo ->
@@ -108,8 +108,9 @@ serializeChatResponse = \case
     ]
   Connected c -> [ttyContact c <> " connected"]
   Confirmation c -> [ttyContact c <> " ok"]
-  ReceivedMessage c t -> prependFirst (ttyFromContact c) $ msgPlain t
-  -- TODO either add command to re-connect or update message below
+  ReceivedMessage c t mi ->
+    prependFirst (ttyFromContact c) (msgPlain t)
+      ++ showIntegrity mi
   Disconnected c -> ["disconnected from " <> ttyContact c <> " - restart chat"]
   YesYes -> ["you got it!"]
   ContactError e c -> case e of
@@ -125,6 +126,17 @@ serializeChatResponse = \case
     prependFirst s (s' : ss) = (s <> s') : ss
     msgPlain :: ByteString -> [StyledString]
     msgPlain = map styleMarkdownText . T.lines . safeDecodeUtf8
+    showIntegrity :: MsgIntegrity -> [StyledString]
+    showIntegrity MsgOk = []
+    showIntegrity (MsgError err)
+      | msgIntegrity = msgError $ case err of
+        MsgSkipped fromId toId -> unwords ["skipped message IDs from", show fromId, "to", show toId]
+        MsgBadId msgId -> "unexpected message ID " <> show msgId
+        MsgBadHash -> "incorrect message hash"
+        MsgDuplicate -> "duplicate message ID"
+      | otherwise = []
+    msgError :: String -> [StyledString]
+    msgError s = [styled (Colored Red) s]
 
 chatHelpInfo :: [StyledString]
 chatHelpInfo =
@@ -175,13 +187,13 @@ markdownInfo =
 
 main :: IO ()
 main = do
-  ChatOpts {dbFileName, smpServer, termMode} <- welcomeGetOpts
+  opts@ChatOpts {dbFileName, smpServer, termMode} <- welcomeGetOpts
   t <- getChatClient smpServer
   ct <- newChatTerminal (tbqSize cfg) termMode
   -- setLogLevel LogInfo -- LogError
   -- withGlobalLogging logCfg $ do
   env <- newSMPAgentEnv cfg {dbFile = dbFileName}
-  dogFoodChat t ct env
+  dogFoodChat t ct env opts
 
 welcomeGetOpts :: IO ChatOpts
 welcomeGetOpts = do
@@ -192,13 +204,13 @@ welcomeGetOpts = do
   putStrLn "type \"/help\" or \"/h\" for usage info"
   pure opts
 
-dogFoodChat :: ChatClient -> ChatTerminal -> Env -> IO ()
-dogFoodChat t ct env = do
+dogFoodChat :: ChatClient -> ChatTerminal -> Env -> ChatOpts -> IO ()
+dogFoodChat t ct env opts = do
   c <- runReaderT getSMPAgentClient env
   raceAny_
     [ runReaderT (runSMPAgentClient c) env,
       sendToAgent t ct c,
-      sendToChatTerm t ct,
+      sendToChatTerm t ct opts,
       receiveFromAgent t ct c,
       receiveFromChatTerm t ct,
       chatTerminal ct
@@ -225,11 +237,11 @@ receiveFromChatTerm t ct = forever $ do
       Right cmd -> atomically $ writeTBQueue (inQ t) cmd
     writeOutQ = atomically . writeTBQueue (outQ t)
 
-sendToChatTerm :: ChatClient -> ChatTerminal -> IO ()
-sendToChatTerm ChatClient {outQ} ChatTerminal {outputQ} = forever $ do
+sendToChatTerm :: ChatClient -> ChatTerminal -> ChatOpts -> IO ()
+sendToChatTerm ChatClient {outQ} ChatTerminal {outputQ} opts = forever $ do
   atomically (readTBQueue outQ) >>= \case
     NoChatResponse -> return ()
-    resp -> atomically . writeTBQueue outputQ $ serializeChatResponse resp
+    resp -> atomically . writeTBQueue outputQ $ serializeChatResponse opts resp
 
 sendToAgent :: ChatClient -> ChatTerminal -> AgentClient -> IO ()
 sendToAgent ChatClient {inQ, smpServer} ct AgentClient {rcvQ} = do
@@ -266,7 +278,7 @@ receiveFromAgent t ct c = forever . atomically $ do
       INV qInfo -> Invitation qInfo
       CON -> Connected contact
       END -> Disconnected contact
-      MSG {msgBody} -> ReceivedMessage contact msgBody
+      MSG {msgBody, msgIntegrity} -> ReceivedMessage contact msgBody msgIntegrity
       SENT _ -> NoChatResponse
       OK -> Confirmation contact
       ERR (CONN e) -> ContactError e contact
@@ -276,7 +288,7 @@ receiveFromAgent t ct c = forever . atomically $ do
     setActiveContact :: ChatResponse -> STM ()
     setActiveContact = \case
       Connected a -> setActive ct a
-      ReceivedMessage a _ -> setActive ct a
+      ReceivedMessage a _ _ -> setActive ct a
       Disconnected a -> unsetActive ct a
       _ -> pure ()
 
