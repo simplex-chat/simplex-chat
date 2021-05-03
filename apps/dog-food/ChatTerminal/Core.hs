@@ -11,6 +11,7 @@ import Data.List (dropWhileEnd)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding
+import Simplex.Markdown
 import Styled
 import System.Console.ANSI.Types
 import System.Terminal hiding (insertChars)
@@ -115,7 +116,7 @@ updateTermState ac tw (key, ms) ts@TerminalState {inputString = s, inputPosition
 styleMessage :: String -> StyledString
 styleMessage = \case
   "" -> ""
-  s@('@' : _) -> let (c, rest) = span (/= ' ') s in Styled selfSGR c <> markdown rest
+  s@('@' : _) -> let (c, rest) = span (/= ' ') s in styled (Colored Cyan) c <> markdown rest
   s -> markdown s
   where
     markdown :: String -> StyledString
@@ -127,13 +128,7 @@ safeDecodeUtf8 = decodeUtf8With onError
     onError _ _ = Just '?'
 
 ttyContact :: Contact -> StyledString
-ttyContact (Contact a) = Styled contactSGR $ B.unpack a
+ttyContact (Contact a) = styled (Colored Green) a
 
 ttyFromContact :: Contact -> StyledString
-ttyFromContact (Contact a) = Styled contactSGR $ B.unpack a <> "> "
-
-contactSGR :: [SGR]
-contactSGR = [SetColor Foreground Vivid Yellow]
-
-selfSGR :: [SGR]
-selfSGR = [SetColor Foreground Vivid Cyan]
+ttyFromContact (Contact a) = styled (Colored Yellow) $ a <> "> "
