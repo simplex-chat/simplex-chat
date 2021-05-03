@@ -47,9 +47,9 @@ You can:
 
 You can download the executable file for your platform from the [latest stable release](https://github.com/simplex-chat/simplex-chat/releases) and make it executable:
 
-  - Linux: `chmod +x` the binary.
-  - Windows: add `.exe` extension.
-  - Mac: `chmod +x` and [allow Mac Gatekeeper to execute it](https://support.apple.com/en-us/HT202491).
+  - Linux: `chmod +x` the binary, for convenience `mv <binary> ~/.local/bin/dog-food`.
+  - Mac: `chmod +x` and [allow Mac Gatekeeper to execute it](https://support.apple.com/en-us/HT202491), for convenience `mv <binary> ~/.local/bin/dog-food`.
+  - Windows: add `.exe` extension, for convenience `move <binary> %APPDATA%\local\bin\dog-food.exe`.
 
 ### Building from source
 
