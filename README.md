@@ -3,26 +3,26 @@
 [![GitHub build](https://github.com/simplex-chat/simplex-chat/workflows/build/badge.svg)](https://github.com/simplex-chat/simplex-chat/actions?query=workflow%3Abuild)
 [![GitHub release](https://img.shields.io/github/v/release/simplex-chat/simplex-chat)](https://github.com/simplex-chat/simplex-chat/releases)
 
-## Federated chat - private, secure, decentralised
+## Federated chat - private, secure, decentralized
 
 See [simplex.chat](https://simplex.chat) website for chat demo and the explanations of the system and how SMP protocol works.
 
-SimpleX chat prototype is a "thin" terminal UI on top of [SimpleXMQ](https://github.com/simplex-chat/simplexmq) message broker, that uses [SMP protocol](https://github.com/simplex-chat/simplexmq/protocol) and SMP agent protocol.
+SimpleX chat prototype is a "thin" terminal UI on top of [SimpleXMQ](https://github.com/simplex-chat/simplexmq) message broker, that uses [SMP protocol](https://github.com/simplex-chat/simplexmq/tree/master/protocol) and SMP agent protocol.
 
 These features are implemented:
 - 1-to-1 chat with multiple people in the same terminal window.
-- auto-populated recipient name - just type your messages.
+- auto-populated recipient name - just type your messages to reply to the sender.
 - default server is available to use - `smp1.simplex.im:5223` - you can deploy your own server (`smp-server` executable in [simplexmq](https://github.com/simplex-chat/simplexmq) repo).
 - no global identity or any names visible to the server(s) - for the full privacy of your contacts and conversations.
 - E2E encryption, with RSA public key that has to be passed out-of-band (see below).
 - message signing and verification with automatically generated RSA keys.
 - message integrity validation (via including the digests of the previous messages).
-- authentication of each command/message with automatically generated RSA key pairs.
+- authentication of each command/message by SMP servers with automatically generated RSA key pairs.
 - TCP transport encryption using SMP transport protocol.
 
-RSA keys are not used as identity, they are randomly generated for each contact. 2048 bit keys are used, it can be changed in code via [rsaKeySize setting](https://github.com/simplex-chat/simplex-chat/blob/master/apps/dog-food/Main.hs).
+RSA keys are not used as identity, they are randomly generated for each contact. 2048 bit keys are used, it can be changed to 4096-bit in code via [rsaKeySize setting](https://github.com/simplex-chat/simplex-chat/blob/master/apps/dog-food/Main.hs).
 
-The chat client "seems" stable, but it is quite new and unaudited, so you probably should NOT use it yet for high security communications - unless you know what you are doing.
+The chat client is stable, but it is quite new and unaudited, so you probably should NOT use it yet for high security communications - unless you know what you are doing.
 
 ## SimpleX chat roadmap for 2021-22
 
@@ -32,7 +32,7 @@ The chat client "seems" stable, but it is quite new and unaudited, so you probab
 4. Delivery confirmation in SMP agent protocol.
 5. Multi-agent/device data synchronisation - to use chat on multiple devices.
 6. Synchronous streams support in SMP and SMP agent protocols, to support file transfer.
-7. Terminal chat UI and web-based mobile apps
+7. Terminal chat UI and mobile apps.
 8. Scripts for simple SMP server deployment to hosting providers: Linode, Digital Ocean and Heroku.
 9. Public broadcast channels.
 10. Optional public contact/group addresses using DNS to establish connections, but not using it to send and receive messages - in this way you will keep all your contacts and groups even if you lose the control of the domain.
@@ -45,11 +45,10 @@ You can:
 
 ### Downloading the executable chat client
 
-You can download the executable file for your platform from the [latest stable release](https://github.com/simplex-chat/simplex-chat/releases) and make it executable:
+You can download the executable binary file for your platform from the [latest stable release](https://github.com/simplex-chat/simplex-chat/releases) and make it executable:
 
-  - Linux: `chmod +x` the binary, for convenience `mv <binary> ~/.local/bin/dog-food`.
-  - Mac: `chmod +x` and [allow Mac Gatekeeper to execute it](https://support.apple.com/en-us/HT202491), for convenience `mv <binary> ~/.local/bin/dog-food`.
-  - Windows: add `.exe` extension, for convenience `move <binary> %APPDATA%\local\bin\dog-food.exe`.
+  - Linux and MacOS: `chmod +x <binary>; mv <binary> ~/.local/bin/dog-food` (or any other preferred location on PATH). On MacOS you need to [allow Gatekeeper to run it](https://support.apple.com/en-us/HT202491).
+  - Windows: `move <binary> %APPDATA%\local\bin\dog-food.exe`.
 
 ### Building from source
 
@@ -85,7 +84,7 @@ $ dog-food
 
 ## Running the chat client
 
-Run `dog-food` (as in "eating your own dog food"), if you built it from source, or the the downloaded file to start the chat client.
+Run `dog-food` (as in "eating your own dog food"), or the downloaded file (if you did not move it to bin folder), to start the chat client.
 
 By default, app data directory is created in the home directory (`~/.simplex`, or `%APPDATA%/simplex` on Windows), and SQLite database file `smp-chat.db` is initialized in it. The default SMP server is `smp1.simplex.im:5223#pLdiGvm0jD1CMblnov6Edd/391OrYsShw+RgdfR0ChA=` (base-64 encoded string after server port is the transport key digest) - it is pre-configured in the app.
 
@@ -101,7 +100,7 @@ If you deployed your own SMP server you can set client to use it via `-s` option
 $ dog-food -s smp.example.com:5223#KXNE1m2E1m0lm92WGKet9CL6+lO742Vy5G6nsrkvgs8=
 ```
 
-The server will generate RSA transport key on the first run and output key digest every time you run it.
+The base-64 encoded string in server address is the digest of RSA transport handshake key that the server will generate on the first run and output its digest.
 
 You can still talk to people using default or any other server, it only affects the location of the message queue when you initiate the connection (and the reply queue can be on another server, as set by the other party's client).
 
@@ -129,7 +128,7 @@ And then send the generated invitation to Bob out-of-band. Bob then would use [i
 
 They would then use `@<name> <message>` commands to send messages. One may also press Space or just start typing a message to send a message to the contact that was the last.
 
-If you exit from chat client (or if internet connection is interrupted) you need to use `/chat <name>` to activate conversation with respective contact - it is not resumed automatically (it will improve soon).
+If your contact is disconnected, restart the chat client - it may happen if you lose internet connection.
 
 Use `/help` in chat to see the list of available commands.
 
