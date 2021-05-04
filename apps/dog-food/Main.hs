@@ -96,7 +96,7 @@ data ChatResponse
   | NoChatResponse
 
 serializeChatResponse :: ChatOpts -> ChatResponse -> [StyledString]
-serializeChatResponse ChatOpts {msgIntegrity} = \case
+serializeChatResponse _ = \case
   ChatHelpInfo -> chatHelpInfo
   MarkdownInfo -> markdownInfo
   Invitation qInfo ->
@@ -128,13 +128,13 @@ serializeChatResponse ChatOpts {msgIntegrity} = \case
     msgPlain = map styleMarkdownText . T.lines . safeDecodeUtf8
     showIntegrity :: MsgIntegrity -> [StyledString]
     showIntegrity MsgOk = []
-    showIntegrity (MsgError err)
-      | msgIntegrity = msgError $ case err of
-        MsgSkipped fromId toId -> unwords ["skipped message IDs from", show fromId, "to", show toId]
-        MsgBadId msgId -> "unexpected message ID " <> show msgId
-        MsgBadHash -> "incorrect message hash"
-        MsgDuplicate -> "duplicate message ID"
-      | otherwise = []
+    showIntegrity (MsgError err) = msgError $ case err of
+      MsgSkipped fromId toId ->
+        "skipped message ID " <> show fromId
+          <> if fromId == toId then "" else ".." <> show toId
+      MsgBadId msgId -> "unexpected message ID " <> show msgId
+      MsgBadHash -> "incorrect message hash"
+      MsgDuplicate -> "duplicate message ID"
     msgError :: String -> [StyledString]
     msgError s = [styled (Colored Red) s]
 
