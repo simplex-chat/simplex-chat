@@ -24,6 +24,8 @@ import Data.Functor (($>))
 import Data.List (intersperse)
 import qualified Data.Text as T
 import Data.Text.Encoding
+import Data.Time.Clock (UTCTime)
+import Data.Time.Format (defaultTimeLocale, formatTime)
 import Numeric.Natural
 import Simplex.Markdown
 import Simplex.Messaging.Agent (getSMPAgentClient, runSMPAgentClient)
@@ -87,7 +89,7 @@ data ChatResponse
   | Invitation SMPQueueInfo
   | Connected Contact
   | Confirmation Contact
-  | ReceivedMessage Contact ByteString MsgIntegrity
+  | ReceivedMessage Contact UTCTime ByteString MsgIntegrity
   | Disconnected Contact
   | YesYes
   | ContactError ConnectionErrorType Contact
@@ -108,8 +110,8 @@ serializeChatResponse _ = \case
     ]
   Connected c -> [ttyContact c <> " connected"]
   Confirmation c -> [ttyContact c <> " ok"]
-  ReceivedMessage c t mi ->
-    prependFirst (ttyFromContact c) (msgPlain t)
+  ReceivedMessage c ts t mi ->
+    prependFirst (formatTs ts <> " " <> ttyFromContact c) (msgPlain t)
       ++ showIntegrity mi
   Disconnected c -> ["disconnected from " <> ttyContact c <> " - restart chat"]
   YesYes -> ["you got it!"]
@@ -124,6 +126,10 @@ serializeChatResponse _ = \case
     prependFirst :: StyledString -> [StyledString] -> [StyledString]
     prependFirst s [] = [s]
     prependFirst s (s' : ss) = (s <> s') : ss
+    formatTs :: UTCTime -> StyledString
+    formatTs ts = styled (Colored Green) $ timeToByteStr ts
+    timeToByteStr :: UTCTime -> ByteString
+    timeToByteStr = B.pack . formatTime defaultTimeLocale "%H:%M"
     msgPlain :: ByteString -> [StyledString]
     msgPlain = map styleMarkdownText . T.lines . safeDecodeUtf8
     showIntegrity :: MsgIntegrity -> [StyledString]
@@ -278,7 +284,7 @@ receiveFromAgent t ct c = forever . atomically $ do
       INV qInfo -> Invitation qInfo
       CON -> Connected contact
       END -> Disconnected contact
-      MSG {msgBody, msgIntegrity} -> ReceivedMessage contact msgBody msgIntegrity
+      MSG {msgBody, msgIntegrity, brokerMeta} -> ReceivedMessage contact (snd brokerMeta) msgBody msgIntegrity
       SENT _ -> NoChatResponse
       OK -> Confirmation contact
       ERR (CONN e) -> ContactError e contact
@@ -288,7 +294,7 @@ receiveFromAgent t ct c = forever . atomically $ do
     setActiveContact :: ChatResponse -> STM ()
     setActiveContact = \case
       Connected a -> setActive ct a
-      ReceivedMessage a _ _ -> setActive ct a
+      ReceivedMessage a _ _ _ -> setActive ct a
       Disconnected a -> unsetActive ct a
       _ -> pure ()
 

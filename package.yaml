@@ -30,6 +30,7 @@ executables:
       - stm == 2.5.*
       - terminal == 0.2.*
       - text == 1.2.*
+      - time == 1.9.*
       - unliftio == 0.2.*
     ghc-options:
       - -threaded
