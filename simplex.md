@@ -60,7 +60,7 @@ There are several P2P chat/messaging protocols and implementations that aim to s
 - Open-source client implementations so that system users can independently assess system security model.
 - Only client applications store user profiles, contacts of other user profiles, messages; servers do NOT have access to any of this information and (unless compromised) do NOT store encrypted messages or any logs.
 - Multiple client applications and devices can be used by each user profile to communicate and to share connections and message history - the devices are not known to the servers.
-- Initial key exchange and establishing connections between user profiles is done by sharing the invitation (e.g. QR code_ via any independent communication channel (or directly via screen and camera), system servers are NOT used for key exchange - to reduce risk of key substitution in [MITM attack][2]. QR code contains the connection-specific public key and other information needed to establish the connection.
+- Initial key exchange and establishing connections between user profiles is done by sharing the invitation (e.g. QR code via any independent communication channel (or directly via screen and camera), system servers are NOT used for key exchange - to reduce risk of key substitution in [MITM attack][2]. QR code contains the connection-specific public key and other information needed to establish the connection.
 - Connections between users can be established via shared trusted connections to simplify key exchange.
 - Servers do NOT communicate with each other, they only communicate with client applications.
 - Unique public key is used for each user profile connection in order to:
