@@ -1,74 +1,74 @@
-<h1 align="center">
-    <img src="images/logo.svg" alt="SimpleX logo" height="90">
-</h1>
-<h2 align="center">
-    <img alt="Federated chat | private, secure, decentralised" src="images/strapline.svg" height="25">
-</h2>
+<img align="right" src="images/logo.svg" alt="SimpleX logo" height="90">
 
-<div align="center">
-    <a href="https://github.com/simplex-chat/simplex-messaging/actions?query=workflow%3Abuild" target="_blank">
-        <img src="https://github.com/simplex-chat/simplex-messaging/workflows/build/badge.svg" alt="GitHub license">
-    </a>
-    <a href="https://github.com/simplex-chat/simplex-messaging/releases" target="_blank">
-        <img src="https://img.shields.io/github/v/release/simplex-chat/simplex-messaging" alt="GitHub license">
-    </a>
-    <a>
-        <img src="https://img.shields.io/github/last-commit/simplex-chat/simplex-messaging">
-    </a>
-</div>
-<br>
+# SimpleX chat
 
-SimpleX is an open-source messaging protocol that enables privacy-conscious software engineers and technology enthusiasts to be in full control of their communications. SimpleX allows simple deployment of chat servers and easy to use chat clients providing complete privacy, security and ownership of your contacts and chat data.
+## Federated, private, secure, decentralized
 
-SimpleX chat prototype is a _thin_ terminal UI on top of [SimpleXMQ](https://github.com/simplex-chat/simplexmq) message broker that uses [SMP protocol](https://github.com/simplex-chat/simplexmq/tree/master/protocol) and SMP agent protocol.
+[![GitHub build](https://github.com/simplex-chat/simplex-chat/workflows/build/badge.svg)](https://github.com/simplex-chat/simplex-chat/actions?query=workflow%3Abuild)
+[![GitHub release](https://img.shields.io/github/v/release/simplex-chat/simplex-chat)](https://github.com/simplex-chat/simplex-chat/releases)
+
+SimpleX chat objective: to give you the full control of your chat with free open-source protocol and software of simple to deploy servers and simple to use clients providing complete privacy, security and ownership of your contacts and chat.
+
+SimpleX chat prototype is a _thin_ terminal UI on top of [SimpleXMQ](https://github.com/simplex-chat/simplexmq) message broker that uses [SMP protocol](https://github.com/simplex-chat/simplexmq/blob/master/protocol/simplex-messaging.md) and [SMP agent protocol](https://github.com/simplex-chat/simplexmq/blob/master/protocol/agent-protocol.md).
 
 See [simplex.chat](https://simplex.chat) website for chat demo and the explanations of the system and how SMP protocol works.
 
 ## Table of contents
 
-- [Installation](#installation)
-    - [Download executable chat client](#download-executable-chat-client)
-    - [Build from source](#build-from-source)
-      - [Docker build](#docker-build)
-      - [Build locally](#build-locally)
-- [Usage](#usage)
-    - [Running the chat client](#running-the-chat-client)
-    - [How to use Simplex](#how-to-use-simplex)
-    - [Access chat history](#access-chat-history)
 - [Features](#features)
-  - [Current features](#current-features)
-  - [Roadmap](#roadmap)
-  - [Disclaimers and limitations](#disclaimers-and-limitations)
-- [Development](#development)
-- [Contribute](#contribute)
-    - [Sponsor](#sponsor)
-    - [Adding new features or fixing bugs](#adding-new-features-or-fixing-bugs)
+- [Installation](#installation)
+  - [Download executable chat client](#download-executable-chat-client)
+  - [Build from source](#build-from-source)
+    - [with Docker](#with-docker)
+    - [with Haskell stack](#with-haskell-stack)
+- [Usage](#usage)
+  - [Running the chat client](#running-the-chat-client)
+  - [How to use Simplex](#how-to-use-simplex-chat)
+  - [Access chat history](#access-chat-history)
+- [Roadmap](#roadmap)
+- [Disclaimer](#disclaimer)
 - [License](#license)
+
+## Features
+
+- 1-to-1 chat with multiple people in the same terminal window.
+- Auto-populated recipient name - just type your messages to reply to the sender once the connection is established.
+- Demo SMP server available to use - `smp1.simplex.im:5223`, SMP server executable file is available in [simplexmq](https://github.com/simplex-chat/simplexmq) repo.
+- No global identity or any names visible to the server(s), ensuring full privacy of your contacts and conversations.
+- E2E encryption, with RSA public key that has to be passed out-of-band (see [How to use SimpleX chat](#how-to-use-simplex-chat)).
+- Message signing and verification with automatically generated RSA keys.
+- Message integrity validation (via including the digests of the previous messages).
+- Authentication of each command/message by SMP servers with automatically generated RSA key pairs.
+- TCP transport encryption using SMP transport protocol.
+
+RSA keys are not used as identity, they are randomly generated for each contact. 2048 bit keys are used, it can be changed to 4096-bit in code via [rsaKeySize setting](https://github.com/simplex-chat/simplex-chat/blob/master/apps/dog-food/Main.hs).
 
 ## Installation
 
-There are three options to install the SimpleX chat prototype. The installation and usage instructions assume you are a confident user of the terminal.
-
 ### Download executable chat client
 
-Download the executable binary file for your platform from the [latest stable release](https://github.com/simplex-chat/simplex-chat/releases). Follow the next steps depending on your operating system.
+Download the chat binary for your system from the [latest stable release](https://github.com/simplex-chat/simplex-chat/releases) and make it executable as shown below.
 
 #### Linux and MacOS
 
-From the directory where you saved the binary, run:
+```sh
+chmod +x <binary>
+mv <binary> ~/.local/bin/dog-food
+```
 
-`chmod +x <binary>; mv <binary> ~/.local/bin/dog-food` (or any other preferred location on PATH).
+(or any other preferred location on PATH).
 
-On MacOS you need to [allow Gatekeeper to run it](https://support.apple.com/en-us/HT202491).
+On MacOS you also need to [allow Gatekeeper to run it](https://support.apple.com/en-us/HT202491).
 
 #### Windows
 
-From the directory where you saved the binary, run:
-`move <binary> %APPDATA%\local\bin\dog-food.exe`.
-
+```sh
+move <binary> %APPDATA%\local\bin\dog-food.exe
+```
 
 ### Build from source
-#### Docker build
+
+#### With Docker
 
 On Linux, you can build the chat executable using [docker build with custom output](https://docs.docker.com/engine/reference/commandline/build/#custom-build-outputs):
 
@@ -80,8 +80,7 @@ $ DOCKER_BUILDKIT=1 docker build --output ~/.local/bin .
 
 > **Please note:** If you encounter ``version `GLIBC_2.28' not found`` error, rebuild it with `haskell:8.8.4-stretch` base image (change it in your local [Dockerfile](Dockerfile)).
 
-
-#### Build locally
+#### With Haskell stack
 
 Install [Haskell stack](https://docs.haskellstack.org/en/stable/README/):
 
@@ -97,14 +96,15 @@ $ cd simplex-chat
 $ stack install
 ```
 
-[(Back to top)](#table-of-contents)
-
 ## Usage
+
 ### Running the chat client
 
-To start the chat client, run `dog-food` (as in [eating your own dog food]('https://en.wikipedia.org/wiki/Eating_your_own_dog_food#Criticisms_and_support)), or if you installed SimpleX from executable double click the executable.
+To start the chat client, run `dog-food` from the terminal (as in [eating your own dog food](https://en.wikipedia.org/wiki/Eating_your_own_dog_food)).
 
-By default, app data directory is created in the home directory (`~/.simplex`, or `%APPDATA%/simplex` on Windows), and SQLite database file `smp-chat.db` is initialized in it. The default SMP server is `smp1.simplex.im:5223#pLdiGvm0jD1CMblnov6Edd/391OrYsShw+RgdfR0ChA=` (base-64 encoded string after server port is the transport key digest) - it is pre-configured in the app.
+By default, app data directory is created in the home directory (`~/.simplex`, or `%APPDATA%/simplex` on Windows), and SQLite database file `smp-chat.db` is initialized in it.
+
+The default SMP server is `smp1.simplex.im#pLdiGvm0jD1CMblnov6Edd/391OrYsShw+RgdfR0ChA=` (base-64 encoded string after server host is the transport key digest) - it is pre-configured in the app.
 
 To specify a different file path for the chat database use `-d` command line option:
 
@@ -112,7 +112,7 @@ To specify a different file path for the chat database use `-d` command line opt
 $ dog-food -d my-chat.db
 ```
 
-If you deployed your own SMP server you can set the client to use it via `-s` option:
+If you deployed your own SMP server(s) you can set the client to use it via `-s` option:
 
 ```shell
 $ dog-food -s smp.example.com:5223#KXNE1m2E1m0lm92WGKet9CL6+lO742Vy5G6nsrkvgs8=
@@ -124,28 +124,27 @@ You can still talk to people using default or any other server; it only affects 
 
 Run `dog-food --help` to see all available options.
 
-### How to use SimpleX
+### How to use SimpleX chat
 
-The below diagram is a high level description of how to connect and message a contact.
+This diagram shows how to connect and message a contact:
 
 <div align="center">
-    <img src="images/how-to-use-simplex.svg">
+  <img align="center" src="images/how-to-use-simplex.svg">
 </div>
 
-Once you have started the chat client, use `/add <name1>` to create a new connection and generate an invitation (`<name1>` - is any name you want to use for that contact). The add command will output an invitation. Send this invitation to your contact via any other trusted communication channel.
+Once you have started the chat, use `/add <name1>` to create a new connection and generate an invitation (`<name1>` - is any name you want to use for that contact). The add command will output an invitation. Send this invitation to your contact via any other channel.
 
 The invitation has the format `smp::<server>::<queue_id>::<rsa_public_key_for_this_queue_only>`. The invitation can only be used once and even if this is intercepted, the attacker would not be able to use it to send you the messages via this queue once your contact confirms that the connection is established.
 
 The contact who received the invitation should use `/connect <name2> <invitation>` to accept the connection (`<name2>` is any name that the accepting contact wants to use for you).
 
-Once the contact has entered the connect command, a connection is established and both parties are notified.
+Once the contact has entered the `/connect` command, a connection is established and both parties are notified.
 
 They would then use `@<name> <message>` commands to send messages. One may also press Space or just start typing a message to send a message to the contact that was the last.
 
 If your contact is disconnected, restart the chat client - it may happen if you lose internet connection.
 
 Use `/help` in chat to see the list of available commands.
-
 
 ### Access chat history
 
@@ -157,7 +156,7 @@ You can search your chat history via SQLite database file:
 sqlite3 ~/.simplex/smp-chat.db
 ```
 
-You can query `messages` table as follows:
+You can query `messages` table:
 
 ```sql
 select * from messages
@@ -168,27 +167,7 @@ order by internal_id desc;
 
 > **Please note:** SQLite foreign key constraints are disabled by default, and must be **[enabled separately for each database connection](https://sqlite.org/foreignkeys.html#fk_enable)**. The latter can be achieved by running `PRAGMA foreign_keys = ON;` command on an open database connection. By running data altering queries without enabling foreign keys prior to that, you may risk putting your database in an inconsistent state.
 
-
-[(Back to top)](#table-of-contents)
-
-
-## Features
-### Current features
-
-- 1-to-1 chat with multiple people in the same terminal window.
-- Auto-populated recipient name - just type your messages to reply to the sender once the connection is established.
-- Default SimpleX available to use - `smp1.simplex.im:5223`.
-- Server deployment using `smp-server` executable in [simplexmq](https://github.com/simplex-chat/simplexmq) repo.
-- No global identity or any names visible to the server(s), ensuring full privacy of your contacts and conversations.
-- E2E encryption, with RSA public key that has to be passed out-of-band (see [How to use SimpleX](#how-to-use-simplex)).
-- Message signing and verification with automatically generated RSA keys.
-- Message integrity validation (via including the digests of the previous messages).
-- Authentication of each command/message by SMP servers with automatically generated RSA key pairs.
-- TCP transport encryption using SMP transport protocol.
-
-RSA keys are not used as identity, they are randomly generated for each contact. 2048 bit keys are used, it can be changed to 4096-bit in code via [rsaKeySize setting](https://github.com/simplex-chat/simplex-chat/blob/master/apps/dog-food/Main.hs).
-
-### Roadmap
+## Roadmap
 
 1. Switch to application level chat protocol. This will allow to separate physical server connection management from logical chat contacts, and to support all common chat functions.
 2. SMP queue redundancy and rotation in SMP agent protocol.
@@ -201,31 +180,9 @@ RSA keys are not used as identity, they are randomly generated for each contact.
 9. Public broadcast channels.
 10. Optional public contact/group addresses using DNS to establish connections, but not using it to send and receive messages - in this way you will keep all your contacts and groups even if you lose the control of the domain.
 
-### Disclaimers and limitations
+## Disclaimer
 
-- System and protocol security have not been audited yet. As such, it is not advised to use SimpleX for high security communications.
-
-
-
-[(Back to top)](#table-of-contents)
-
-
-## Development
-
-[(Back to top)](#table-of-contents)
-
-## Contribute
-
-[(Back to top)](#table-of-contents)
-...
-
-### Sponsor
-
-Display any sponsors or encourage people/organisations to sponsor SimpleX.
-[(Back to top)](#table-of-contents)
-
-### Adding new features or fixing bugs
-[(Back to top)](#table-of-contents)
+System and protocol security have not been audited yet. As such, it is not advised to use SimpleX chat for high security communications.
 
 ## License
 
