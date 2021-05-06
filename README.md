@@ -7,9 +7,7 @@
 [![GitHub build](https://github.com/simplex-chat/simplex-chat/workflows/build/badge.svg)](https://github.com/simplex-chat/simplex-chat/actions?query=workflow%3Abuild)
 [![GitHub release](https://img.shields.io/github/v/release/simplex-chat/simplex-chat)](https://github.com/simplex-chat/simplex-chat/releases)
 
-SimpleX chat objective: to give you the full control of your chat with free open-source protocol and software of simple to deploy servers and simple to use clients providing complete privacy, security and ownership of your contacts and chat.
-
-SimpleX chat prototype is a _thin_ terminal UI on top of [SimpleXMQ](https://github.com/simplex-chat/simplexmq) message broker that uses [SMP protocol](https://github.com/simplex-chat/simplexmq/blob/master/protocol/simplex-messaging.md) and [SMP agent protocol](https://github.com/simplex-chat/simplexmq/blob/master/protocol/agent-protocol.md).
+SimpleX chat prototype is a thin terminal UI on top of [SimpleXMQ](https://github.com/simplex-chat/simplexmq) message broker that uses [SMP protocol](https://github.com/simplex-chat/simplexmq/blob/master/protocol/simplex-messaging.md) and [SMP agent protocol](https://github.com/simplex-chat/simplexmq/blob/master/protocol/agent-protocol.md).
 
 See [simplex.chat](https://simplex.chat) website for chat demo and the explanations of the system and how SMP protocol works.
 
@@ -17,13 +15,13 @@ See [simplex.chat](https://simplex.chat) website for chat demo and the explanati
 
 - [Features](#features)
 - [Installation](#installation)
-  - [Download executable chat client](#download-executable-chat-client)
+  - [Download chat client](#download-chat-client)
   - [Build from source](#build-from-source)
-    - [with Docker](#with-docker)
-    - [with Haskell stack](#with-haskell-stack)
+    - [Using Docker](#using-docker)
+    - [Using Haskell stack](#using-haskell-stack)
 - [Usage](#usage)
   - [Running the chat client](#running-the-chat-client)
-  - [How to use Simplex](#how-to-use-simplex-chat)
+  - [How to use SimpleX chat](#how-to-use-simplex-chat)
   - [Access chat history](#access-chat-history)
 - [Roadmap](#roadmap)
 - [Disclaimer](#disclaimer)
@@ -33,7 +31,7 @@ See [simplex.chat](https://simplex.chat) website for chat demo and the explanati
 
 - 1-to-1 chat with multiple people in the same terminal window.
 - Auto-populated recipient name - just type your messages to reply to the sender once the connection is established.
-- Demo SMP server available to use - `smp1.simplex.im:5223`, SMP server executable file is available in [simplexmq](https://github.com/simplex-chat/simplexmq) repo.
+- Demo SMP server available at `smp1.simplex.im:5223` - you can deploy your own server (`smp-server` executable in [simplexmq](https://github.com/simplex-chat/simplexmq) repo).
 - No global identity or any names visible to the server(s), ensuring full privacy of your contacts and conversations.
 - E2E encryption, with RSA public key that has to be passed out-of-band (see [How to use SimpleX chat](#how-to-use-simplex-chat)).
 - Message signing and verification with automatically generated RSA keys.
@@ -45,7 +43,7 @@ RSA keys are not used as identity, they are randomly generated for each contact.
 
 ## Installation
 
-### Download executable chat client
+### Download chat client
 
 Download the chat binary for your system from the [latest stable release](https://github.com/simplex-chat/simplex-chat/releases) and make it executable as shown below.
 
@@ -68,7 +66,7 @@ move <binary> %APPDATA%/local/bin/dog-food.exe
 
 ### Build from source
 
-#### With Docker
+#### Using Docker
 
 On Linux, you can build the chat executable using [docker build with custom output](https://docs.docker.com/engine/reference/commandline/build/#custom-build-outputs):
 
@@ -80,7 +78,7 @@ $ DOCKER_BUILDKIT=1 docker build --output ~/.local/bin .
 
 > **Please note:** If you encounter ``version `GLIBC_2.28' not found`` error, rebuild it with `haskell:8.8.4-stretch` base image (change it in your local [Dockerfile](Dockerfile)).
 
-#### With Haskell stack
+#### Using Haskell stack
 
 Install [Haskell stack](https://docs.haskellstack.org/en/stable/README/):
 
@@ -100,7 +98,7 @@ $ stack install
 
 ### Running the chat client
 
-To start the chat client, run `dog-food` from the terminal (as in [eating your own dog food](https://en.wikipedia.org/wiki/Eating_your_own_dog_food)).
+To start the chat client, run `dog-food` (as in [eating your own dog food](https://en.wikipedia.org/wiki/Eating_your_own_dog_food)) from the terminal.
 
 By default, app data directory is created in the home directory (`~/.simplex`, or `%APPDATA%/simplex` on Windows), and SQLite database file `smp-chat.db` is initialized in it.
 
@@ -112,7 +110,7 @@ To specify a different file path for the chat database use `-d` command line opt
 $ dog-food -d my-chat.db
 ```
 
-If you deployed your own SMP server(s) you can set the client to use it via `-s` option:
+If you deployed your own SMP server(s) you can configure client via `-s` option:
 
 ```shell
 $ dog-food -s smp.example.com:5223#KXNE1m2E1m0lm92WGKet9CL6+lO742Vy5G6nsrkvgs8=
@@ -120,7 +118,7 @@ $ dog-food -s smp.example.com:5223#KXNE1m2E1m0lm92WGKet9CL6+lO742Vy5G6nsrkvgs8=
 
 The base-64 encoded string in server address is the digest of RSA transport handshake key that the server will generate on the first run and output its digest.
 
-You can still talk to people using default or any other server; it only affects the location of the message queue when you initiate the connection (and the reply queue can be on another server, as set by the other party's client).
+You can still talk to people using default or any other server - it only affects the location of the message queue when you initiate the connection (and the reply queue can be on another server, as set by the other party's client).
 
 Run `dog-food --help` to see all available options.
 
@@ -132,13 +130,13 @@ This diagram shows how to connect and message a contact:
   <img align="center" src="images/how-to-use-simplex.svg">
 </div>
 
-Once you have started the chat, use `/add <name1>` to create a new connection and generate an invitation (`<name1>` - is any name you want to use for that contact). The add command will output an invitation. Send this invitation to your contact via any other channel.
+Once you have started the chat, use `/add <name1>` to create a new connection and generate an invitation (`<name1>` is any name you want to use for that contact). The add command will output an invitation. Send this invitation to your contact via any other channel.
 
 The invitation has the format `smp::<server>::<queue_id>::<rsa_public_key_for_this_queue_only>`. The invitation can only be used once and even if this is intercepted, the attacker would not be able to use it to send you the messages via this queue once your contact confirms that the connection is established.
 
 The contact who received the invitation should use `/connect <name2> <invitation>` to accept the connection (`<name2>` is any name that the accepting contact wants to use for you).
 
-Once the contact has entered the `/connect` command, a connection is established and both parties are notified.
+Once the contact has used the `/connect` command, a connection is established and both parties are notified.
 
 They would then use `@<name> <message>` commands to send messages. One may also press Space or just start typing a message to send a message to the contact that was the last.
 
@@ -156,7 +154,7 @@ You can search your chat history via SQLite database file:
 sqlite3 ~/.simplex/smp-chat.db
 ```
 
-You can query `messages` table:
+Now you can query `messages` table, for example:
 
 ```sql
 select * from messages
