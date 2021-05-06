@@ -34,8 +34,8 @@ chatOpts appDir =
       ( long "server"
           <> short 's'
           <> metavar "SERVER"
-          <> help "SMP server(s) to use (smp1.simplex.im:5223#pLdiGvm0jD1CMblnov6Edd/391OrYsShw+RgdfR0ChA=)"
-          <> value (L.fromList ["smp1.simplex.im:5223#pLdiGvm0jD1CMblnov6Edd/391OrYsShw+RgdfR0ChA="])
+          <> help "SMP server(s) to use (smp1.simplex.im#pLdiGvm0jD1CMblnov6Edd/391OrYsShw+RgdfR0ChA=)"
+          <> value (L.fromList ["smp1.simplex.im#pLdiGvm0jD1CMblnov6Edd/391OrYsShw+RgdfR0ChA="])
       )
     <*> option
       parseTermMode
