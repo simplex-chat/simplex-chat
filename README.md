@@ -63,7 +63,7 @@ On MacOS you also need to [allow Gatekeeper to run it](https://support.apple.com
 #### Windows
 
 ```sh
-move <binary> %APPDATA%\local\bin\dog-food.exe
+move <binary> %APPDATA%/local/bin/dog-food.exe
 ```
 
 ### Build from source
