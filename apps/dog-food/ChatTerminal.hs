@@ -18,6 +18,9 @@ import ChatTerminal.Editor
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (race_)
 import Control.Monad
+import Control.Monad.IO.Class (liftIO)
+import Data.Time.Format (defaultTimeLocale, formatTime)
+import Data.Time.LocalTime (getZonedTime)
 import Numeric.Natural
 import Styled
 import System.Terminal
@@ -89,7 +92,10 @@ receiveFromTTY ct@ChatTerminal {inputQ, activeContact, termSize, termState} =
         writeTVar termState $ ts {inputString = "", inputPosition = 0, previousInput = s}
         writeTBQueue inputQ s
         return s
-      withTermLock ct $ printMessage ct [styleMessage msg]
+      withTermLock ct $ do
+        localTime <- liftIO getZonedTime
+        let localTimeStr = formatTime defaultTimeLocale "%H:%M" localTime
+        printMessage ct [styleMessage localTimeStr msg]
 
 sendToTTY :: ChatTerminal -> IO ()
 sendToTTY ct = forever $ do

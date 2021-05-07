@@ -112,8 +112,8 @@ serializeChatResponse _ cr localTz = do
       ]
     Connected c -> [ttyContact c <> " connected"]
     Confirmation c -> [ttyContact c <> " ok"]
-    ReceivedMessage c ts t mi ->
-      prependFirst (formatTs localTz ts <> " " <> ttyFromContact c) (msgPlain t)
+    ReceivedMessage c utcTime t mi ->
+      prependFirst (styleTime (formatUTCTime localTz utcTime) <> " " <> ttyFromContact c) (msgPlain t)
         ++ showIntegrity mi
     Disconnected c -> ["disconnected from " <> ttyContact c <> " - restart chat"]
     YesYes -> ["you got it!"]
@@ -128,12 +128,10 @@ serializeChatResponse _ cr localTz = do
     prependFirst :: StyledString -> [StyledString] -> [StyledString]
     prependFirst s [] = [s]
     prependFirst s (s' : ss) = (s <> s') : ss
-    formatTs :: TimeZone -> UTCTime -> StyledString
-    formatTs tz ts = styled (Colored Green) $ timeToByteStr tz ts
-    timeToByteStr :: TimeZone -> UTCTime -> ByteString
-    timeToByteStr tz utcTs = do
-      let localTs = utcToLocalTime tz utcTs
-      B.pack $ formatTime defaultTimeLocale "%H:%M" localTs
+    formatUTCTime :: TimeZone -> UTCTime -> String
+    formatUTCTime tz utcTime = do
+      let localTime = utcToLocalTime tz utcTime
+      formatTime defaultTimeLocale "%H:%M" localTime
     msgPlain :: ByteString -> [StyledString]
     msgPlain = map styleMarkdownText . T.lines . safeDecodeUtf8
     showIntegrity :: MsgIntegrity -> [StyledString]
