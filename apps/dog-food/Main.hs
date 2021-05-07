@@ -98,32 +98,31 @@ data ChatResponse
   | ChatError AgentErrorType
   | NoChatResponse
 
-serializeChatResponse :: ChatOpts -> ChatResponse -> TimeZone -> ZonedTime -> [StyledString]
-serializeChatResponse _ cr localTz currentTime = do
-  case cr of
-    ChatHelpInfo -> chatHelpInfo
-    MarkdownInfo -> markdownInfo
-    Invitation qInfo ->
-      [ "pass this invitation to your contact (via any channel): ",
-        "",
-        (bPlain . serializeSmpQueueInfo) qInfo,
-        "",
-        "and ask them to connect: /c <name_for_you> <invitation_above>"
-      ]
-    Connected c -> [ttyContact c <> " connected"]
-    Confirmation c -> [ttyContact c <> " ok"]
-    ReceivedMessage c utcTime t mi ->
-      prependFirst (styleTime (formatUTCTime localTz utcTime currentTime) <> " " <> ttyFromContact c) (msgPlain t)
-        ++ showIntegrity mi
-    Disconnected c -> ["disconnected from " <> ttyContact c <> " - restart chat"]
-    YesYes -> ["you got it!"]
-    ContactError e c -> case e of
-      UNKNOWN -> ["no contact " <> ttyContact c]
-      DUPLICATE -> ["contact " <> ttyContact c <> " already exists"]
-      SIMPLEX -> ["contact " <> ttyContact c <> " did not accept invitation yet"]
-    ErrorInput t -> ["invalid input: " <> bPlain t]
-    ChatError e -> ["chat error: " <> plain (show e)]
-    NoChatResponse -> [""]
+serializeChatResponse :: ChatOpts -> TimeZone -> ZonedTime -> ChatResponse -> [StyledString]
+serializeChatResponse _ localTz currentTime = \case
+  ChatHelpInfo -> chatHelpInfo
+  MarkdownInfo -> markdownInfo
+  Invitation qInfo ->
+    [ "pass this invitation to your contact (via any channel): ",
+      "",
+      (bPlain . serializeSmpQueueInfo) qInfo,
+      "",
+      "and ask them to connect: /c <name_for_you> <invitation_above>"
+    ]
+  Connected c -> [ttyContact c <> " connected"]
+  Confirmation c -> [ttyContact c <> " ok"]
+  ReceivedMessage c utcTime t mi ->
+    prependFirst (styleTime (formatUTCTime localTz utcTime currentTime) <> " " <> ttyFromContact c) (msgPlain t)
+      ++ showIntegrity mi
+  Disconnected c -> ["disconnected from " <> ttyContact c <> " - restart chat"]
+  YesYes -> ["you got it!"]
+  ContactError e c -> case e of
+    UNKNOWN -> ["no contact " <> ttyContact c]
+    DUPLICATE -> ["contact " <> ttyContact c <> " already exists"]
+    SIMPLEX -> ["contact " <> ttyContact c <> " did not accept invitation yet"]
+  ErrorInput t -> ["invalid input: " <> bPlain t]
+  ChatError e -> ["chat error: " <> plain (show e)]
+  NoChatResponse -> [""]
   where
     prependFirst :: StyledString -> [StyledString] -> [StyledString]
     prependFirst s [] = [s]
@@ -257,7 +256,7 @@ sendToChatTerm ChatClient {outQ} ChatTerminal {outputQ} opts localTz = forever $
     NoChatResponse -> return ()
     resp -> do
       currentTime <- liftIO getZonedTime
-      atomically . writeTBQueue outputQ $ serializeChatResponse opts resp localTz currentTime
+      atomically . writeTBQueue outputQ $ serializeChatResponse opts localTz currentTime resp
 
 sendToAgent :: ChatClient -> ChatTerminal -> AgentClient -> IO ()
 sendToAgent ChatClient {inQ, smpServer} ct AgentClient {rcvQ} = do
