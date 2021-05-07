@@ -55,6 +55,7 @@ There are several P2P chat/messaging protocols and implementations that aim to s
 
 - No user identity known to system servers - no phone numbers, user names and no DNS are needed to authorize users to the network.
 - Each user can be connected to multiple servers to ensure message delivery, even if some of the servers are compromised.
+- No single server in the system has visibility of all connections or messages of any user, as user profiles are identified by multiple rotating public keys, using separate key for each profile connection.
 - Uses standard asymmetric cryptographic protocols, so that system users can create independent server and client implementations complying with the protocols.
 - Open-source server implementations that can be easily deployed by any user with minimal technical expertise (e.g. on Heroku via web UI).
 - Open-source client implementations so that system users can independently assess system security model.
@@ -69,8 +70,6 @@ There are several P2P chat/messaging protocols and implementations that aim to s
 - Unique public key is used to identify each connection participant to each server.
 - Public keys used between connections are regularly rotated to prevent decryption of the full message history ([forward secrecy][4]) in case when some servers or middlemen preserve message history and the current key is compromised.
 - Users can repeat key exchange using QR code and alternative channel at any point to increase communication security and trust.
-- No single server in the system has visibility of all connections or messages of any user, as user profiles are identified by multiple rotating public keys, using separate key for each profile connection.
-- User profile (meta-data of the user including non-unique name / handle and optional additional data, e.g. avatar and status) is stored in the client apps and is shared only with accepted user profile connections.
 
 [1]: https://en.wikipedia.org/wiki/End-to-end_encryption
 [2]: https://en.wikipedia.org/wiki/Man-in-the-middle_attack
