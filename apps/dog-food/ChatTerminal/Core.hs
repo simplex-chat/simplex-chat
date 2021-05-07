@@ -126,7 +126,7 @@ styleMessage time msg = do
     markdown = styleMarkdownText . T.pack
 
 styleTime :: String -> StyledString
-styleTime = styled NoFormat . B.pack
+styleTime = Styled [SetColor Foreground Vivid Black]
 
 safeDecodeUtf8 :: ByteString -> Text
 safeDecodeUtf8 = decodeUtf8With onError
