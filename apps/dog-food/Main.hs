@@ -24,9 +24,9 @@ import Data.Functor (($>))
 import Data.List (intersperse)
 import qualified Data.Text as T
 import Data.Text.Encoding
-import Data.Time.Clock (UTCTime)
+import Data.Time.Clock (DiffTime, UTCTime)
 import Data.Time.Format (defaultTimeLocale, formatTime)
-import Data.Time.LocalTime (TimeZone, getCurrentTimeZone, utcToLocalTime)
+import Data.Time.LocalTime
 import Numeric.Natural
 import Simplex.Markdown
 import Simplex.Messaging.Agent (getSMPAgentClient, runSMPAgentClient)
@@ -98,8 +98,8 @@ data ChatResponse
   | ChatError AgentErrorType
   | NoChatResponse
 
-serializeChatResponse :: ChatOpts -> ChatResponse -> TimeZone -> [StyledString]
-serializeChatResponse _ cr localTz = do
+serializeChatResponse :: ChatOpts -> ChatResponse -> TimeZone -> ZonedTime -> [StyledString]
+serializeChatResponse _ cr localTz currentTime = do
   case cr of
     ChatHelpInfo -> chatHelpInfo
     MarkdownInfo -> markdownInfo
@@ -113,7 +113,7 @@ serializeChatResponse _ cr localTz = do
     Connected c -> [ttyContact c <> " connected"]
     Confirmation c -> [ttyContact c <> " ok"]
     ReceivedMessage c utcTime t mi ->
-      prependFirst (styleTime (formatUTCTime localTz utcTime) <> " " <> ttyFromContact c) (msgPlain t)
+      prependFirst (styleTime (formatUTCTime localTz utcTime currentTime) <> " " <> ttyFromContact c) (msgPlain t)
         ++ showIntegrity mi
     Disconnected c -> ["disconnected from " <> ttyContact c <> " - restart chat"]
     YesYes -> ["you got it!"]
@@ -128,10 +128,15 @@ serializeChatResponse _ cr localTz = do
     prependFirst :: StyledString -> [StyledString] -> [StyledString]
     prependFirst s [] = [s]
     prependFirst s (s' : ss) = (s <> s') : ss
-    formatUTCTime :: TimeZone -> UTCTime -> String
-    formatUTCTime tz utcTime = do
+    formatUTCTime :: TimeZone -> UTCTime -> ZonedTime -> String
+    formatUTCTime tz utcTime curTime = do
       let localTime = utcToLocalTime tz utcTime
-      formatTime defaultTimeLocale "%H:%M" localTime
+          format =
+            if (localDay localTime < localDay (zonedTimeToLocalTime curTime))
+              && (timeOfDayToTime (localTimeOfDay localTime) > (6 * 60 * 60 :: DiffTime))
+              then "%m-%d" -- if message is from yesterday or before and 6 hours has passed since midnight
+              else "%H:%M"
+      formatTime defaultTimeLocale format localTime
     msgPlain :: ByteString -> [StyledString]
     msgPlain = map styleMarkdownText . T.lines . safeDecodeUtf8
     showIntegrity :: MsgIntegrity -> [StyledString]
@@ -250,7 +255,9 @@ sendToChatTerm :: ChatClient -> ChatTerminal -> ChatOpts -> TimeZone -> IO ()
 sendToChatTerm ChatClient {outQ} ChatTerminal {outputQ} opts localTz = forever $ do
   atomically (readTBQueue outQ) >>= \case
     NoChatResponse -> return ()
-    resp -> atomically . writeTBQueue outputQ $ serializeChatResponse opts resp localTz
+    resp -> do
+      currentTime <- liftIO getZonedTime
+      atomically . writeTBQueue outputQ $ serializeChatResponse opts resp localTz currentTime
 
 sendToAgent :: ChatClient -> ChatTerminal -> AgentClient -> IO ()
 sendToAgent ChatClient {inQ, smpServer} ct AgentClient {rcvQ} = do
