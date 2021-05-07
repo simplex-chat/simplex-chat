@@ -112,7 +112,7 @@ serializeChatResponse _ localTz currentTime = \case
   Connected c -> [ttyContact c <> " connected"]
   Confirmation c -> [ttyContact c <> " ok"]
   ReceivedMessage c utcTime t mi ->
-    prependFirst (styleTime (formatUTCTime localTz utcTime currentTime) <> " " <> ttyFromContact c) (msgPlain t)
+    prependFirst (formatUTCTime utcTime <> " " <> ttyFromContact c) (msgPlain t)
       ++ showIntegrity mi
   Disconnected c -> ["disconnected from " <> ttyContact c <> " - restart chat"]
   YesYes -> ["you got it!"]
@@ -127,15 +127,15 @@ serializeChatResponse _ localTz currentTime = \case
     prependFirst :: StyledString -> [StyledString] -> [StyledString]
     prependFirst s [] = [s]
     prependFirst s (s' : ss) = (s <> s') : ss
-    formatUTCTime :: TimeZone -> UTCTime -> ZonedTime -> String
-    formatUTCTime tz utcTime curTime = do
-      let localTime = utcToLocalTime tz utcTime
+    formatUTCTime :: UTCTime -> StyledString
+    formatUTCTime utcTime = do
+      let localTime = utcToLocalTime localTz utcTime
           format =
-            if (localDay localTime < localDay (zonedTimeToLocalTime curTime))
+            if (localDay localTime < localDay (zonedTimeToLocalTime currentTime))
               && (timeOfDayToTime (localTimeOfDay localTime) > (6 * 60 * 60 :: DiffTime))
               then "%m-%d" -- if message is from yesterday or before and 6 hours has passed since midnight
               else "%H:%M"
-      formatTime defaultTimeLocale format localTime
+      styleTime $ formatTime defaultTimeLocale format localTime
     msgPlain :: ByteString -> [StyledString]
     msgPlain = map styleMarkdownText . T.lines . safeDecodeUtf8
     showIntegrity :: MsgIntegrity -> [StyledString]
