@@ -26,6 +26,7 @@ import qualified Data.Text as T
 import Data.Text.Encoding
 import Data.Time.Clock (UTCTime)
 import Data.Time.Format (defaultTimeLocale, formatTime)
+import Data.Time.LocalTime (TimeZone, getCurrentTimeZone, utcToLocalTime)
 import Numeric.Natural
 import Simplex.Markdown
 import Simplex.Messaging.Agent (getSMPAgentClient, runSMPAgentClient)
@@ -97,39 +98,42 @@ data ChatResponse
   | ChatError AgentErrorType
   | NoChatResponse
 
-serializeChatResponse :: ChatOpts -> ChatResponse -> [StyledString]
-serializeChatResponse _ = \case
-  ChatHelpInfo -> chatHelpInfo
-  MarkdownInfo -> markdownInfo
-  Invitation qInfo ->
-    [ "pass this invitation to your contact (via any channel): ",
-      "",
-      (bPlain . serializeSmpQueueInfo) qInfo,
-      "",
-      "and ask them to connect: /c <name_for_you> <invitation_above>"
-    ]
-  Connected c -> [ttyContact c <> " connected"]
-  Confirmation c -> [ttyContact c <> " ok"]
-  ReceivedMessage c ts t mi ->
-    prependFirst (formatTs ts <> " " <> ttyFromContact c) (msgPlain t)
-      ++ showIntegrity mi
-  Disconnected c -> ["disconnected from " <> ttyContact c <> " - restart chat"]
-  YesYes -> ["you got it!"]
-  ContactError e c -> case e of
-    UNKNOWN -> ["no contact " <> ttyContact c]
-    DUPLICATE -> ["contact " <> ttyContact c <> " already exists"]
-    SIMPLEX -> ["contact " <> ttyContact c <> " did not accept invitation yet"]
-  ErrorInput t -> ["invalid input: " <> bPlain t]
-  ChatError e -> ["chat error: " <> plain (show e)]
-  NoChatResponse -> [""]
+serializeChatResponse :: ChatOpts -> ChatResponse -> TimeZone -> [StyledString]
+serializeChatResponse _ cr localTz = do
+  case cr of
+    ChatHelpInfo -> chatHelpInfo
+    MarkdownInfo -> markdownInfo
+    Invitation qInfo ->
+      [ "pass this invitation to your contact (via any channel): ",
+        "",
+        (bPlain . serializeSmpQueueInfo) qInfo,
+        "",
+        "and ask them to connect: /c <name_for_you> <invitation_above>"
+      ]
+    Connected c -> [ttyContact c <> " connected"]
+    Confirmation c -> [ttyContact c <> " ok"]
+    ReceivedMessage c ts t mi ->
+      prependFirst (formatTs localTz ts <> " " <> ttyFromContact c) (msgPlain t)
+        ++ showIntegrity mi
+    Disconnected c -> ["disconnected from " <> ttyContact c <> " - restart chat"]
+    YesYes -> ["you got it!"]
+    ContactError e c -> case e of
+      UNKNOWN -> ["no contact " <> ttyContact c]
+      DUPLICATE -> ["contact " <> ttyContact c <> " already exists"]
+      SIMPLEX -> ["contact " <> ttyContact c <> " did not accept invitation yet"]
+    ErrorInput t -> ["invalid input: " <> bPlain t]
+    ChatError e -> ["chat error: " <> plain (show e)]
+    NoChatResponse -> [""]
   where
     prependFirst :: StyledString -> [StyledString] -> [StyledString]
     prependFirst s [] = [s]
     prependFirst s (s' : ss) = (s <> s') : ss
-    formatTs :: UTCTime -> StyledString
-    formatTs ts = styled (Colored Green) $ timeToByteStr ts
-    timeToByteStr :: UTCTime -> ByteString
-    timeToByteStr = B.pack . formatTime defaultTimeLocale "%H:%M"
+    formatTs :: TimeZone -> UTCTime -> StyledString
+    formatTs tz ts = styled (Colored Green) $ timeToByteStr tz ts
+    timeToByteStr :: TimeZone -> UTCTime -> ByteString
+    timeToByteStr tz utcTs = do
+      let localTs = utcToLocalTime tz utcTs
+      B.pack $ formatTime defaultTimeLocale "%H:%M" localTs
     msgPlain :: ByteString -> [StyledString]
     msgPlain = map styleMarkdownText . T.lines . safeDecodeUtf8
     showIntegrity :: MsgIntegrity -> [StyledString]
@@ -213,10 +217,11 @@ welcomeGetOpts = do
 dogFoodChat :: ChatClient -> ChatTerminal -> Env -> ChatOpts -> IO ()
 dogFoodChat t ct env opts = do
   c <- runReaderT getSMPAgentClient env
+  localTz <- liftIO getCurrentTimeZone
   raceAny_
     [ runReaderT (runSMPAgentClient c) env,
       sendToAgent t ct c,
-      sendToChatTerm t ct opts,
+      sendToChatTerm t ct opts localTz,
       receiveFromAgent t ct c,
       receiveFromChatTerm t ct,
       chatTerminal ct
@@ -243,11 +248,11 @@ receiveFromChatTerm t ct = forever $ do
       Right cmd -> atomically $ writeTBQueue (inQ t) cmd
     writeOutQ = atomically . writeTBQueue (outQ t)
 
-sendToChatTerm :: ChatClient -> ChatTerminal -> ChatOpts -> IO ()
-sendToChatTerm ChatClient {outQ} ChatTerminal {outputQ} opts = forever $ do
+sendToChatTerm :: ChatClient -> ChatTerminal -> ChatOpts -> TimeZone -> IO ()
+sendToChatTerm ChatClient {outQ} ChatTerminal {outputQ} opts localTz = forever $ do
   atomically (readTBQueue outQ) >>= \case
     NoChatResponse -> return ()
-    resp -> atomically . writeTBQueue outputQ $ serializeChatResponse opts resp
+    resp -> atomically . writeTBQueue outputQ $ serializeChatResponse opts resp localTz
 
 sendToAgent :: ChatClient -> ChatTerminal -> AgentClient -> IO ()
 sendToAgent ChatClient {inQ, smpServer} ct AgentClient {rcvQ} = do
