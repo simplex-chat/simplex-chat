@@ -24,6 +24,9 @@ import Data.Functor (($>))
 import Data.List (intersperse)
 import qualified Data.Text as T
 import Data.Text.Encoding
+import Data.Time.Clock (DiffTime, UTCTime)
+import Data.Time.Format (defaultTimeLocale, formatTime)
+import Data.Time.LocalTime
 import Numeric.Natural
 import Simplex.Markdown
 import Simplex.Messaging.Agent (getSMPAgentClient, runSMPAgentClient)
@@ -87,7 +90,7 @@ data ChatResponse
   | Invitation SMPQueueInfo
   | Connected Contact
   | Confirmation Contact
-  | ReceivedMessage Contact ByteString MsgIntegrity
+  | ReceivedMessage Contact UTCTime ByteString MsgIntegrity
   | Disconnected Contact
   | YesYes
   | ContactError ConnectionErrorType Contact
@@ -95,8 +98,8 @@ data ChatResponse
   | ChatError AgentErrorType
   | NoChatResponse
 
-serializeChatResponse :: ChatOpts -> ChatResponse -> [StyledString]
-serializeChatResponse _ = \case
+serializeChatResponse :: ChatOpts -> TimeZone -> ZonedTime -> ChatResponse -> [StyledString]
+serializeChatResponse _ localTz currentTime = \case
   ChatHelpInfo -> chatHelpInfo
   MarkdownInfo -> markdownInfo
   Invitation qInfo ->
@@ -108,8 +111,8 @@ serializeChatResponse _ = \case
     ]
   Connected c -> [ttyContact c <> " connected"]
   Confirmation c -> [ttyContact c <> " ok"]
-  ReceivedMessage c t mi ->
-    prependFirst (ttyFromContact c) (msgPlain t)
+  ReceivedMessage c utcTime t mi ->
+    prependFirst (formatUTCTime utcTime <> " " <> ttyFromContact c) (msgPlain t)
       ++ showIntegrity mi
   Disconnected c -> ["disconnected from " <> ttyContact c <> " - restart chat"]
   YesYes -> ["you got it!"]
@@ -124,6 +127,15 @@ serializeChatResponse _ = \case
     prependFirst :: StyledString -> [StyledString] -> [StyledString]
     prependFirst s [] = [s]
     prependFirst s (s' : ss) = (s <> s') : ss
+    formatUTCTime :: UTCTime -> StyledString
+    formatUTCTime utcTime = do
+      let localTime = utcToLocalTime localTz utcTime
+          format =
+            if (localDay localTime < localDay (zonedTimeToLocalTime currentTime))
+              && (timeOfDayToTime (localTimeOfDay localTime) > (6 * 60 * 60 :: DiffTime))
+              then "%m-%d" -- if message is from yesterday or before and 6 hours has passed since midnight
+              else "%H:%M"
+      styleTime $ formatTime defaultTimeLocale format localTime
     msgPlain :: ByteString -> [StyledString]
     msgPlain = map styleMarkdownText . T.lines . safeDecodeUtf8
     showIntegrity :: MsgIntegrity -> [StyledString]
@@ -207,10 +219,11 @@ welcomeGetOpts = do
 dogFoodChat :: ChatClient -> ChatTerminal -> Env -> ChatOpts -> IO ()
 dogFoodChat t ct env opts = do
   c <- runReaderT getSMPAgentClient env
+  localTz <- liftIO getCurrentTimeZone
   raceAny_
     [ runReaderT (runSMPAgentClient c) env,
       sendToAgent t ct c,
-      sendToChatTerm t ct opts,
+      sendToChatTerm t ct opts localTz,
       receiveFromAgent t ct c,
       receiveFromChatTerm t ct,
       chatTerminal ct
@@ -237,11 +250,13 @@ receiveFromChatTerm t ct = forever $ do
       Right cmd -> atomically $ writeTBQueue (inQ t) cmd
     writeOutQ = atomically . writeTBQueue (outQ t)
 
-sendToChatTerm :: ChatClient -> ChatTerminal -> ChatOpts -> IO ()
-sendToChatTerm ChatClient {outQ} ChatTerminal {outputQ} opts = forever $ do
+sendToChatTerm :: ChatClient -> ChatTerminal -> ChatOpts -> TimeZone -> IO ()
+sendToChatTerm ChatClient {outQ} ChatTerminal {outputQ} opts localTz = forever $ do
   atomically (readTBQueue outQ) >>= \case
     NoChatResponse -> return ()
-    resp -> atomically . writeTBQueue outputQ $ serializeChatResponse opts resp
+    resp -> do
+      currentTime <- liftIO getZonedTime
+      atomically . writeTBQueue outputQ $ serializeChatResponse opts localTz currentTime resp
 
 sendToAgent :: ChatClient -> ChatTerminal -> AgentClient -> IO ()
 sendToAgent ChatClient {inQ, smpServer} ct AgentClient {rcvQ} = do
@@ -278,7 +293,7 @@ receiveFromAgent t ct c = forever . atomically $ do
       INV qInfo -> Invitation qInfo
       CON -> Connected contact
       END -> Disconnected contact
-      MSG {msgBody, msgIntegrity} -> ReceivedMessage contact msgBody msgIntegrity
+      MSG {msgBody, msgIntegrity, brokerMeta} -> ReceivedMessage contact (snd brokerMeta) msgBody msgIntegrity
       SENT _ -> NoChatResponse
       OK -> Confirmation contact
       ERR (CONN e) -> ContactError e contact
@@ -288,7 +303,7 @@ receiveFromAgent t ct c = forever . atomically $ do
     setActiveContact :: ChatResponse -> STM ()
     setActiveContact = \case
       Connected a -> setActive ct a
-      ReceivedMessage a _ _ -> setActive ct a
+      ReceivedMessage a _ _ _ -> setActive ct a
       Disconnected a -> unsetActive ct a
       _ -> pure ()
 

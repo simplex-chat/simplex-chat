@@ -113,14 +113,20 @@ updateTermState ac tw (key, ms) ts@TerminalState {inputString = s, inputPosition
          in min (length s) $ p + length after - length afterWord
     ts' (s', p') = ts {inputString = s', inputPosition = p'}
 
-styleMessage :: String -> StyledString
-styleMessage = \case
-  "" -> ""
-  s@('@' : _) -> let (c, rest) = span (/= ' ') s in styled (Colored Cyan) c <> markdown rest
-  s -> markdown s
+styleMessage :: String -> String -> StyledString
+styleMessage time msg = do
+  case msg of
+    "" -> ""
+    s@('@' : _) -> do
+      let (c, rest) = span (/= ' ') s
+      styleTime time <> " " <> styled (Colored Cyan) c <> markdown rest
+    s -> markdown s
   where
     markdown :: String -> StyledString
     markdown = styleMarkdownText . T.pack
+
+styleTime :: String -> StyledString
+styleTime = Styled [SetColor Foreground Vivid Black]
 
 safeDecodeUtf8 :: ByteString -> Text
 safeDecodeUtf8 = decodeUtf8With onError
