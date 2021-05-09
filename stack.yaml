@@ -42,7 +42,7 @@ extra-deps:
   - terminal-0.2.0.0@sha256:de6770ecaae3197c66ac1f0db5a80cf5a5b1d3b64a66a05b50f442de5ad39570,2977
   # - ../simplexmq
   - github: simplex-chat/simplexmq
-    commit: 4b9ebbbab2fb8912cf08a289fa73050ec86ddf51
+    commit: 5d59e4b2bd8880a78e2c85bbd02c7455ae4417ea
 # - network-run-0.2.4@sha256:7dbb06def522dab413bce4a46af476820bffdff2071974736b06f52f4ab57c96,885
 # - git: https://github.com/commercialhaskell/stack.git
 #   commit: e7b331f14bcffb8367cd58fbfc8b40ec7642100a
