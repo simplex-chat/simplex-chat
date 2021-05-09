@@ -1,4 +1,3 @@
-{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
@@ -11,7 +10,7 @@ import Data.List (dropWhileEnd)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding
-import Simplex.Markdown
+import Simplex.Chat.Markdown
 import Styled
 import System.Console.ANSI.Types
 import System.Terminal hiding (insertChars)

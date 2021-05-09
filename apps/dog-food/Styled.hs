@@ -17,7 +17,7 @@ import qualified Data.ByteString.Char8 as B
 import Data.String
 import Data.Text (Text)
 import qualified Data.Text as T
-import Simplex.Markdown
+import Simplex.Chat.Markdown
 import System.Console.ANSI.Types
 
 data StyledString = Styled [SGR] String | StyledString :<>: StyledString

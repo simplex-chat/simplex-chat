@@ -11,15 +11,23 @@ category: Web, System, Services, Cryptography
 extra-source-files:
   - README.md
 
+dependencies:
+  - ansi-terminal == 0.10.*
+  - attoparsec == 0.13.*
+  - base == 4.13.*
+  - containers == 0.6.*
+  - text == 1.2.*
+
+library:
+  source-dirs: src
+
 executables:
   dog-food:
     source-dirs: apps/dog-food
     main: Main.hs
     dependencies:
-      - base == 4.13.*
-      - ansi-terminal == 0.10.*
+      - simplex-chat
       - async == 2.2.*
-      - attoparsec == 0.13.*
       - bytestring == 0.10.*
       - directory == 1.3.*
       - filepath == 1.4.*
@@ -29,11 +37,18 @@ executables:
       - simplexmq == 0.3.*
       - stm == 2.5.*
       - terminal == 0.2.*
-      - text == 1.2.*
       - time == 1.9.*
       - unliftio == 0.2.*
     ghc-options:
       - -threaded
+
+tests:
+  simplex-chat-test:
+    source-dirs: tests
+    main: Test.hs
+    dependencies:
+      - simplex-chat
+      - hspec == 2.7.*
 
 ghc-options:
   # - -haddock

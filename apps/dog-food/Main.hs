@@ -28,11 +28,11 @@ import Data.Time.Clock (DiffTime, UTCTime)
 import Data.Time.Format (defaultTimeLocale, formatTime)
 import Data.Time.LocalTime
 import Numeric.Natural
-import Simplex.Markdown
+import Simplex.Chat.Markdown
 import Simplex.Messaging.Agent (getSMPAgentClient, runSMPAgentClient)
 import Simplex.Messaging.Agent.Client (AgentClient (..))
 import Simplex.Messaging.Agent.Env.SQLite
-import Simplex.Messaging.Agent.Transmission
+import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Client (smpDefaultConfig)
 import Simplex.Messaging.Parsers (parseAll)
 import Simplex.Messaging.Util (raceAny_)
