@@ -44,7 +44,8 @@ import Types
 cfg :: AgentConfig
 cfg =
   AgentConfig
-    { tcpPort = undefined, -- TODO maybe take it out of config
+    { tcpPort = undefined, -- agent does not listen to TCP
+      smpServers = undefined, -- filled in from options
       rsaKeySize = 2048 `div` 8,
       connIdBytes = 12,
       tbqSize = 16,
@@ -57,8 +58,7 @@ logCfg = LogConfig {lc_file = Nothing, lc_stderr = True}
 
 data ChatClient = ChatClient
   { inQ :: TBQueue ChatCommand,
-    outQ :: TBQueue ChatResponse,
-    smpServer :: SMPServer
+    outQ :: TBQueue ChatResponse
   }
 
 -- | GroupMessage ChatGroup ByteString
@@ -199,20 +199,20 @@ markdownInfo =
 
 main :: IO ()
 main = do
-  opts@ChatOpts {dbFileName, smpServer, termMode} <- welcomeGetOpts
-  t <- getChatClient smpServer
+  opts@ChatOpts {dbFile, smpServers, termMode} <- welcomeGetOpts
+  t <- atomically $ newChatClient (tbqSize cfg)
   ct <- newChatTerminal (tbqSize cfg) termMode
   -- setLogLevel LogInfo -- LogError
   -- withGlobalLogging logCfg $ do
-  env <- newSMPAgentEnv cfg {dbFile = dbFileName}
+  env <- newSMPAgentEnv cfg {dbFile, smpServers}
   dogFoodChat t ct env opts
 
 welcomeGetOpts :: IO ChatOpts
 welcomeGetOpts = do
   appDir <- getAppUserDataDirectory "simplex"
-  opts@ChatOpts {dbFileName} <- getChatOpts appDir
+  opts@ChatOpts {dbFile} <- getChatOpts appDir
   putStrLn "SimpleX chat prototype v0.3.0"
-  putStrLn $ "db: " <> dbFileName
+  putStrLn $ "db: " <> dbFile
   putStrLn "type \"/help\" or \"/h\" for usage info"
   pure opts
 
@@ -229,14 +229,11 @@ dogFoodChat t ct env opts = do
       chatTerminal ct
     ]
 
-getChatClient :: SMPServer -> IO ChatClient
-getChatClient srv = atomically $ newChatClient (tbqSize cfg) srv
-
-newChatClient :: Natural -> SMPServer -> STM ChatClient
-newChatClient qSize smpServer = do
+newChatClient :: Natural -> STM ChatClient
+newChatClient qSize = do
   inQ <- newTBQueue qSize
   outQ <- newTBQueue qSize
-  return ChatClient {inQ, outQ, smpServer}
+  return ChatClient {inQ, outQ}
 
 receiveFromChatTerm :: ChatClient -> ChatTerminal -> IO ()
 receiveFromChatTerm t ct = forever $ do
@@ -259,7 +256,7 @@ sendToChatTerm ChatClient {outQ} ChatTerminal {outputQ} opts localTz = forever $
       atomically . writeTBQueue outputQ $ serializeChatResponse opts localTz currentTime resp
 
 sendToAgent :: ChatClient -> ChatTerminal -> AgentClient -> IO ()
-sendToAgent ChatClient {inQ, smpServer} ct AgentClient {rcvQ} = do
+sendToAgent ChatClient {inQ} ct AgentClient {rcvQ} = do
   atomically $ writeTBQueue rcvQ ("1", "", SUBALL) -- hack for subscribing to all
   forever . atomically $ do
     cmd <- readTBQueue inQ
@@ -273,8 +270,8 @@ sendToAgent ChatClient {inQ, smpServer} ct AgentClient {rcvQ} = do
       _ -> pure ()
     agentTransmission :: ChatCommand -> Maybe (ATransmission 'Client)
     agentTransmission = \case
-      AddConnection a -> transmission a $ NEW smpServer
-      Connect a qInfo -> transmission a $ JOIN qInfo $ ReplyVia smpServer
+      AddConnection a -> transmission a NEW
+      Connect a qInfo -> transmission a $ JOIN qInfo $ ReplyMode On
       DeleteConnection a -> transmission a DEL
       SendMessage a msg -> transmission a $ SEND msg
       ChatHelp -> Nothing

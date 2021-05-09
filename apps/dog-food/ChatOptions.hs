@@ -3,7 +3,10 @@
 
 module ChatOptions (getChatOpts, ChatOpts (..)) where
 
+import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.ByteString.Char8 as B
+import Data.List.NonEmpty (NonEmpty)
+import qualified Data.List.NonEmpty as L
 import Options.Applicative
 import Simplex.Messaging.Agent.Transmission (SMPServer (..), smpServerP)
 import Simplex.Messaging.Parsers (parseAll)
@@ -11,8 +14,8 @@ import System.FilePath (combine)
 import Types
 
 data ChatOpts = ChatOpts
-  { dbFileName :: String,
-    smpServer :: SMPServer,
+  { dbFile :: String,
+    smpServers :: NonEmpty SMPServer,
     termMode :: TermMode
   }
 
@@ -31,8 +34,8 @@ chatOpts appDir =
       ( long "server"
           <> short 's'
           <> metavar "SERVER"
-          <> help "SMP server to use (smp1.simplex.im:5223#pLdiGvm0jD1CMblnov6Edd/391OrYsShw+RgdfR0ChA=)"
-          <> value (SMPServer "smp1.simplex.im" (Just "5223") (Just "pLdiGvm0jD1CMblnov6Edd/391OrYsShw+RgdfR0ChA="))
+          <> help "SMP server(s) to use (smp1.simplex.im#pLdiGvm0jD1CMblnov6Edd/391OrYsShw+RgdfR0ChA=)"
+          <> value (L.fromList ["smp1.simplex.im#pLdiGvm0jD1CMblnov6Edd/391OrYsShw+RgdfR0ChA="])
       )
     <*> option
       parseTermMode
@@ -45,8 +48,10 @@ chatOpts appDir =
   where
     defaultDbFilePath = combine appDir "smp-chat.db"
 
-parseSMPServer :: ReadM SMPServer
-parseSMPServer = eitherReader $ parseAll smpServerP . B.pack
+parseSMPServer :: ReadM (NonEmpty SMPServer)
+parseSMPServer = eitherReader $ parseAll servers . B.pack
+  where
+    servers = L.fromList <$> smpServerP `A.sepBy1` A.char ','
 
 parseTermMode :: ReadM TermMode
 parseTermMode = maybeReader $ \case
