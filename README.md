@@ -13,6 +13,8 @@ SimpleX chat prototype is a thin terminal UI on top of [SimpleXMQ](https://githu
 
 See [simplex.chat](https://simplex.chat) website for chat demo and the explanations of the system and how SMP protocol works.
 
+![simplex-chat](./images/simplex-chat.gif)
+
 ## Table of contents
 
 - [Features](#features)
