@@ -14,7 +14,7 @@ extra-source-files:
 dependencies:
   - ansi-terminal == 0.10.*
   - attoparsec == 0.13.*
-  - base == 4.13.*
+  - base >= 4.7 && < 5
   - containers == 0.6.*
   - text == 1.2.*
 

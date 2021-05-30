@@ -68,7 +68,7 @@ updateTermState ac tw (key, ms) ts@TerminalState {inputString = s, inputPosition
   _ -> ts
   where
     insertCharsWithContact cs
-      | null s && cs /= "@" && cs /= "/" =
+      | null s && cs /= "@" && cs /= "#" && cs /= "/" =
         insertChars $ contactPrefix <> cs
       | otherwise = insertChars cs
     insertChars = ts' . if p >= length s then append else insert
@@ -137,3 +137,6 @@ ttyContact (Contact a) = styled (Colored Green) a
 
 ttyFromContact :: Contact -> StyledString
 ttyFromContact (Contact a) = styled (Colored Yellow) $ a <> "> "
+
+ttyGroup :: Group -> StyledString
+ttyGroup (Group g) = styled (Colored Blue) $ "#" <> g

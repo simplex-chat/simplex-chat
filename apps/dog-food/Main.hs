@@ -70,19 +70,31 @@ data ChatCommand
   | Connect Contact SMPQueueInfo
   | DeleteConnection Contact
   | SendMessage Contact ByteString
+  | NewBroadcast Group
+  | AddToBroadcast Group Contact
+  | RemoveFromBroadcast Group Contact
+  | DeleteBroadcast Group
+  | ListBroadcast Group
+  | BroadcastMessage Group ByteString
+  deriving (Show)
 
 chatCommandP :: Parser ChatCommand
 chatCommandP =
   ("/help" <|> "/h") $> ChatHelp
-    <|> ("/markdown" <|> "/m") $> MarkdownHelp
+    <|> ("/group #" <|> "/g #") *> (NewBroadcast <$> group)
+    <|> ("/add #" <|> "/a #") *> (AddToBroadcast <$> group <* A.space <*> contact)
+    <|> ("/remove #" <|> "/rm #") *> (RemoveFromBroadcast <$> group <* A.space <*> contact)
+    <|> ("/delete #" <|> "/d #") *> (DeleteBroadcast <$> group)
+    <|> ("/members #" <|> "/ms #") *> (ListBroadcast <$> group)
+    <|> A.char '#' *> (BroadcastMessage <$> group <* A.space <*> A.takeByteString)
     <|> ("/add " <|> "/a ") *> (AddConnection <$> contact)
-    <|> ("/connect " <> "/c ") *> connect
-    <|> ("/delete " <> "/d ") *> (DeleteConnection <$> contact)
-    <|> "@" *> sendMessage
+    <|> ("/connect " <|> "/c ") *> (Connect <$> contact <* A.space <*> smpQueueInfoP)
+    <|> ("/delete " <|> "/d ") *> (DeleteConnection <$> contact)
+    <|> A.char '@' *> (SendMessage <$> contact <* A.space <*> A.takeByteString)
+    <|> ("/markdown" <|> "/m") $> MarkdownHelp
   where
-    connect = Connect <$> contact <* A.space <*> smpQueueInfoP
-    sendMessage = SendMessage <$> contact <* A.space <*> A.takeByteString
     contact = Contact <$> A.takeTill (== ' ')
+    group = Group <$> A.takeTill (== ' ')
 
 data ChatResponse
   = ChatHelpInfo
@@ -92,6 +104,8 @@ data ChatResponse
   | Confirmation Contact
   | ReceivedMessage Contact UTCTime ByteString MsgIntegrity
   | Disconnected Contact
+  | BroadcastMembers Group [Contact]
+  | BroadcastConfirmation Group
   | YesYes
   | ContactError ConnectionErrorType Contact
   | ErrorInput ByteString
@@ -115,9 +129,11 @@ serializeChatResponse _ localTz currentTime = \case
     prependFirst (formatUTCTime utcTime <> " " <> ttyFromContact c) (msgPlain t)
       ++ showIntegrity mi
   Disconnected c -> ["disconnected from " <> ttyContact c <> " - restart chat"]
+  BroadcastMembers g cs -> [ttyGroup g <> ": " <> plain (B.unpack . B.intercalate ", " $ map toBs cs)]
+  BroadcastConfirmation g -> [ttyGroup g <> " ok"]
   YesYes -> ["you got it!"]
   ContactError e c -> case e of
-    UNKNOWN -> ["no contact " <> ttyContact c]
+    NOT_FOUND -> ["no contact " <> ttyContact c]
     DUPLICATE -> ["contact " <> ttyContact c <> " already exists"]
     SIMPLEX -> ["contact " <> ttyContact c <> " did not accept invitation yet"]
   ErrorInput t -> ["invalid input: " <> bPlain t]
@@ -257,7 +273,7 @@ sendToChatTerm ChatClient {outQ} ChatTerminal {outputQ} opts localTz = forever $
 
 sendToAgent :: ChatClient -> ChatTerminal -> AgentClient -> IO ()
 sendToAgent ChatClient {inQ} ct AgentClient {rcvQ} = do
-  atomically $ writeTBQueue rcvQ ("1", "", SUBALL) -- hack for subscribing to all
+  atomically $ writeTBQueue rcvQ $ ATransmission "1" (Conn "") SUBALL -- hack for subscribing to all
   forever . atomically $ do
     cmd <- readTBQueue inQ
     writeTBQueue rcvQ `mapM_` agentTransmission cmd
@@ -274,10 +290,18 @@ sendToAgent ChatClient {inQ} ct AgentClient {rcvQ} = do
       Connect a qInfo -> transmission a $ JOIN qInfo $ ReplyMode On
       DeleteConnection a -> transmission a DEL
       SendMessage a msg -> transmission a $ SEND msg
+      NewBroadcast g -> bTransmission g NEW
+      AddToBroadcast g a -> bTransmission g $ ADD (Conn $ toBs a)
+      RemoveFromBroadcast g a -> bTransmission g $ REM (Conn $ toBs a)
+      DeleteBroadcast g -> bTransmission g DEL
+      ListBroadcast g -> bTransmission g LS
+      BroadcastMessage g msg -> bTransmission g $ SEND msg
       ChatHelp -> Nothing
       MarkdownHelp -> Nothing
-    transmission :: Contact -> ACommand 'Client -> Maybe (ATransmission 'Client)
-    transmission (Contact a) cmd = Just ("1", a, cmd)
+    transmission :: EntityCommand 'Conn_ c => Contact -> ACommand 'Client c -> Maybe (ATransmission 'Client)
+    transmission (Contact a) cmd = Just $ ATransmission "1" (Conn a) cmd
+    bTransmission :: EntityCommand 'Broadcast_ c => Group -> ACommand 'Client c -> Maybe (ATransmission 'Client)
+    bTransmission (Group g) cmd = Just $ ATransmission "1" (Broadcast g) cmd
 
 receiveFromAgent :: ChatClient -> ChatTerminal -> AgentClient -> IO ()
 receiveFromAgent t ct c = forever . atomically $ do
@@ -286,7 +310,12 @@ receiveFromAgent t ct c = forever . atomically $ do
   setActiveContact resp
   where
     chatResponse :: ATransmission 'Agent -> ChatResponse
-    chatResponse (_, a, resp) = case resp of
+    chatResponse (ATransmission _ entity resp) = case entity of
+      Conn a -> connectionResponse a resp
+      Broadcast g -> broadcastResponse g resp
+      _ -> NoChatResponse
+    connectionResponse :: EntityCommand 'Conn_ c => ByteString -> ACommand 'Agent c -> ChatResponse
+    connectionResponse a = \case
       INV qInfo -> Invitation qInfo
       CON -> Connected contact
       END -> Disconnected contact
@@ -297,6 +326,12 @@ receiveFromAgent t ct c = forever . atomically $ do
       ERR e -> ChatError e
       where
         contact = Contact a
+    broadcastResponse :: EntityCommand 'Broadcast_ c => ByteString -> ACommand 'Agent c -> ChatResponse
+    broadcastResponse g = \case
+      MS as -> BroadcastMembers (Group g) $ map (Contact . fromConn) as
+      SENT _ -> NoChatResponse
+      OK -> BroadcastConfirmation $ Group g
+      ERR e -> ChatError e
     setActiveContact :: ChatResponse -> STM ()
     setActiveContact = \case
       Connected a -> setActive ct a
