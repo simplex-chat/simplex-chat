@@ -16,10 +16,13 @@ import System.Console.ANSI.Types
 import System.Terminal hiding (insertChars)
 import Types
 
+data ActiveTo = ActiveNone | ActiveC Contact | ActiveG Group
+  deriving (Eq)
+
 data ChatTerminal = ChatTerminal
   { inputQ :: TBQueue String,
     outputQ :: TBQueue [StyledString],
-    activeContact :: TVar (Maybe Contact),
+    activeTo :: TVar ActiveTo,
     termMode :: TermMode,
     termState :: TVar TerminalState,
     termSize :: Size,
@@ -43,7 +46,7 @@ positionRowColumn wid pos =
       col = pos - row * wid
    in Position {row, col}
 
-updateTermState :: Maybe Contact -> Int -> (Key, Modifiers) -> TerminalState -> TerminalState
+updateTermState :: ActiveTo -> Int -> (Key, Modifiers) -> TerminalState -> TerminalState
 updateTermState ac tw (key, ms) ts@TerminalState {inputString = s, inputPosition = p} = case key of
   CharKey c
     | ms == mempty || ms == shiftKey -> insertCharsWithContact [c]
@@ -75,8 +78,9 @@ updateTermState ac tw (key, ms) ts@TerminalState {inputString = s, inputPosition
     append cs = let s' = s <> cs in (s', length s')
     insert cs = let (b, a) = splitAt p s in (b <> cs <> a, p + length cs)
     contactPrefix = case ac of
-      Just (Contact c) -> "@" <> B.unpack c <> " "
-      Nothing -> ""
+      ActiveNone -> ""
+      ActiveC (Contact c) -> "@" <> B.unpack c <> " "
+      ActiveG (Group g) -> "#" <> B.unpack g <> " "
     backDeleteChar
       | p == 0 || null s = ts
       | p >= length s = ts' (init s, length s - 1)
@@ -116,11 +120,14 @@ styleMessage :: String -> String -> StyledString
 styleMessage time msg = do
   case msg of
     "" -> ""
-    s@('@' : _) -> do
-      let (c, rest) = span (/= ' ') s
-      styleTime time <> " " <> styled (Colored Cyan) c <> markdown rest
+    s@('@' : _) -> sentMessage s
+    s@('#' : _) -> sentMessage s
     s -> markdown s
   where
+    sentMessage :: String -> StyledString
+    sentMessage s =
+      let (c, rest) = span (/= ' ') s
+       in styleTime time <> " " <> styled (Colored Cyan) c <> markdown rest
     markdown :: String -> StyledString
     markdown = styleMarkdownText . T.pack
 
@@ -140,3 +147,6 @@ ttyFromContact (Contact a) = styled (Colored Yellow) $ a <> "> "
 
 ttyGroup :: Group -> StyledString
 ttyGroup (Group g) = styled (Colored Blue) $ "#" <> g
+
+ttyFromGroup :: Group -> Contact -> StyledString
+ttyFromGroup (Group g) (Contact a) = styled (Colored Yellow) $ "#" <> g <> " " <> a <> "> "
