@@ -30,14 +30,14 @@ newChatTerminal :: Natural -> TermMode -> IO ChatTerminal
 newChatTerminal qSize termMode = do
   inputQ <- newTBQueueIO qSize
   outputQ <- newTBQueueIO qSize
-  activeContact <- newTVarIO Nothing
+  activeTo <- newTVarIO ActiveNone
   termSize <- withTerminal . runTerminalT $ getWindowSize
   let lastRow = height termSize - 1
   termState <- newTVarIO newTermState
   termLock <- newTMVarIO ()
   nextMessageRow <- newTVarIO lastRow
   threadDelay 500000 -- this delay is the same as timeout in getTerminalSize
-  return ChatTerminal {inputQ, outputQ, activeContact, termMode, termState, termSize, nextMessageRow, termLock}
+  return ChatTerminal {inputQ, outputQ, activeTo, termMode, termState, termSize, nextMessageRow, termLock}
 
 newTermState :: TerminalState
 newTermState =
@@ -72,7 +72,7 @@ withTermLock ChatTerminal {termLock} action = do
   atomically $ putTMVar termLock ()
 
 receiveFromTTY :: ChatTerminal -> IO ()
-receiveFromTTY ct@ChatTerminal {inputQ, activeContact, termSize, termState} =
+receiveFromTTY ct@ChatTerminal {inputQ, activeTo, termSize, termState} =
   withTerminal . runTerminalT . forever $
     getKey >>= processKey >> withTermLock ct (updateInput ct)
   where
@@ -80,7 +80,7 @@ receiveFromTTY ct@ChatTerminal {inputQ, activeContact, termSize, termState} =
     processKey = \case
       (EnterKey, _) -> submitInput
       key -> atomically $ do
-        ac <- readTVar activeContact
+        ac <- readTVar activeTo
         modifyTVar termState $ updateTermState ac (width termSize) key
 
     submitInput :: MonadTerminal m => m ()
