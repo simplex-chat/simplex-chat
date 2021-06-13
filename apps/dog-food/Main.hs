@@ -29,7 +29,7 @@ import Data.Time.Format (defaultTimeLocale, formatTime)
 import Data.Time.LocalTime
 import Numeric.Natural
 import Simplex.Chat.Markdown
-import Simplex.Messaging.Agent (getSMPAgentClient, runSMPAgentClient)
+import Simplex.Messaging.Agent (getAgentClient, runAgentClient)
 import Simplex.Messaging.Agent.Client (AgentClient (..))
 import Simplex.Messaging.Agent.Env.SQLite
 import Simplex.Messaging.Agent.Protocol
@@ -70,23 +70,11 @@ data ChatCommand
   | Connect Contact SMPQueueInfo
   | DeleteConnection Contact
   | SendMessage Contact ByteString
-  | NewGroup Group
-  | AddToGroup Group Contact
-  | RemoveFromGroup Group Contact
-  | DeleteGroup Group
-  | ListGroup Group
-  | SendGroupMessage Group ByteString
   deriving (Show)
 
 chatCommandP :: Parser ChatCommand
 chatCommandP =
   ("/help" <|> "/h") $> ChatHelp
-    <|> ("/group #" <|> "/g #") *> (NewGroup <$> group)
-    <|> ("/add #" <|> "/a #") *> (AddToGroup <$> group <* A.space <*> contact)
-    <|> ("/remove #" <|> "/rm #") *> (RemoveFromGroup <$> group <* A.space <*> contact)
-    <|> ("/delete #" <|> "/d #") *> (DeleteGroup <$> group)
-    <|> ("/members #" <|> "/ms #") *> (ListGroup <$> group)
-    <|> A.char '#' *> (SendGroupMessage <$> group <* A.space <*> A.takeByteString)
     <|> ("/add " <|> "/a ") *> (AddConnection <$> contact)
     <|> ("/connect " <|> "/c ") *> (Connect <$> contact <* A.space <*> smpQueueInfoP)
     <|> ("/delete " <|> "/d ") *> (DeleteConnection <$> contact)
@@ -94,7 +82,6 @@ chatCommandP =
     <|> ("/markdown" <|> "/m") $> MarkdownHelp
   where
     contact = Contact <$> A.takeTill (== ' ')
-    group = Group <$> A.takeTill (== ' ')
 
 data ChatResponse
   = ChatHelpInfo
@@ -138,8 +125,6 @@ serializeChatResponse _ localTz currentTime = \case
     DUPLICATE -> ["contact " <> ttyContact c <> " already exists"]
     SIMPLEX -> ["contact " <> ttyContact c <> " did not accept invitation yet"]
   GroupError e g -> case e of
-    BCAST B_NOT_FOUND -> ["no group " <> ttyGroup g]
-    BCAST B_DUPLICATE -> ["group " <> ttyGroup g <> " already exists"]
     CONN NOT_FOUND -> ["cannot add unknown contact to the group " <> ttyGroup g]
     CONN DUPLICATE -> ["this contact is already in the group " <> ttyGroup g]
     CONN SIMPLEX -> ["this contact did not not accept invitation yet"]
@@ -245,10 +230,10 @@ welcomeGetOpts = do
 
 dogFoodChat :: ChatClient -> ChatTerminal -> Env -> ChatOpts -> IO ()
 dogFoodChat t ct env opts = do
-  c <- runReaderT getSMPAgentClient env
+  c <- runReaderT getAgentClient env
   localTz <- liftIO getCurrentTimeZone
   raceAny_
-    [ runReaderT (runSMPAgentClient c) env,
+    [ runReaderT (runAgentClient c) env,
       sendToAgent t ct c,
       sendToChatTerm t ct opts localTz,
       receiveFromAgent t ct c,
@@ -283,8 +268,7 @@ sendToChatTerm ChatClient {outQ} ChatTerminal {outputQ} opts localTz = forever $
       atomically . writeTBQueue outputQ $ serializeChatResponse opts localTz currentTime resp
 
 sendToAgent :: ChatClient -> ChatTerminal -> AgentClient -> IO ()
-sendToAgent ChatClient {inQ} ct AgentClient {rcvQ} = do
-  atomically $ writeTBQueue rcvQ $ ATransmission "1" (Conn "") SUBALL -- hack for subscribing to all
+sendToAgent ChatClient {inQ} ct AgentClient {rcvQ} =
   forever . atomically $ do
     cmd <- readTBQueue inQ
     writeTBQueue rcvQ `mapM_` agentTransmission cmd
@@ -293,9 +277,7 @@ sendToAgent ChatClient {inQ} ct AgentClient {rcvQ} = do
     setActiveTo :: ChatCommand -> STM ()
     setActiveTo = \case
       SendMessage a _ -> setActive ct $ ActiveC a
-      SendGroupMessage g _ -> setActive ct $ ActiveG g
       DeleteConnection a -> unsetActive ct $ ActiveC a
-      DeleteGroup g -> unsetActive ct $ ActiveG g
       _ -> pure ()
     agentTransmission :: ChatCommand -> Maybe (ATransmission 'Client)
     agentTransmission = \case
@@ -303,32 +285,19 @@ sendToAgent ChatClient {inQ} ct AgentClient {rcvQ} = do
       Connect a qInfo -> transmission a $ JOIN qInfo $ ReplyMode On
       DeleteConnection a -> transmission a DEL
       SendMessage a msg -> transmission a $ SEND msg
-      NewGroup g -> bTransmission g NEW
-      AddToGroup g a -> bTransmission g $ ADD (Conn $ toBs a)
-      RemoveFromGroup g a -> bTransmission g $ REM (Conn $ toBs a)
-      DeleteGroup g -> bTransmission g DEL
-      ListGroup g -> bTransmission g LS
-      SendGroupMessage g msg -> bTransmission g $ SEND $ serializeGroupMessage g msg
       ChatHelp -> Nothing
       MarkdownHelp -> Nothing
-    transmission :: EntityCommand 'Conn_ c => Contact -> ACommand 'Client c -> Maybe (ATransmission 'Client)
-    transmission (Contact a) cmd = Just $ ATransmission "1" (Conn a) cmd
-    bTransmission :: EntityCommand 'Broadcast_ c => Group -> ACommand 'Client c -> Maybe (ATransmission 'Client)
-    bTransmission (Group g) cmd = Just $ ATransmission "1" (Broadcast g) cmd
+    transmission :: Contact -> ACommand 'Client -> Maybe (ATransmission 'Client)
+    transmission (Contact a) cmd = Just ("1", a, cmd)
 
 receiveFromAgent :: ChatClient -> ChatTerminal -> AgentClient -> IO ()
 receiveFromAgent t ct c = forever . atomically $ do
-  resp <- chatResponse <$> readTBQueue (sndQ c)
+  resp <- chatResponse <$> readTBQueue (subQ c)
   writeTBQueue (outQ t) resp
   setActiveTo resp
   where
     chatResponse :: ATransmission 'Agent -> ChatResponse
-    chatResponse (ATransmission _ entity resp) = case entity of
-      Conn a -> connectionResponse a resp
-      Broadcast g -> broadcastResponse g resp
-      _ -> NoChatResponse
-    connectionResponse :: EntityCommand 'Conn_ c => ByteString -> ACommand 'Agent c -> ChatResponse
-    connectionResponse a = \case
+    chatResponse (_, a, resp) = case resp of
       INV qInfo -> Invitation qInfo
       CON -> Connected contact
       END -> Disconnected contact
@@ -339,18 +308,9 @@ receiveFromAgent t ct c = forever . atomically $ do
       OK -> Confirmation contact
       ERR (CONN e) -> ContactError e contact
       ERR e -> ChatError e
+      _ -> ChatError $ CMD PROHIBITED
       where
         contact = Contact a
-    broadcastResponse :: EntityCommand 'Broadcast_ c => ByteString -> ACommand 'Agent c -> ChatResponse
-    broadcastResponse g = \case
-      MS as -> GroupMembers group $ map (Contact . fromConn) as
-      SENT _ -> NoChatResponse
-      OK -> GroupConfirmation group
-      ERR e@(CONN _) -> GroupError e group
-      ERR e@(BCAST _) -> GroupError e group
-      ERR e -> ChatError e
-      where
-        group = Group g
     setActiveTo :: ChatResponse -> STM ()
     setActiveTo = \case
       Connected a -> setActive ct $ ActiveC a

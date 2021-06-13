@@ -41,9 +41,9 @@ extra-deps:
   - sqlite-simple-0.4.18.0@sha256:3ceea56375c0a3590c814e411a4eb86943f8d31b93b110ca159c90689b6b39e5,3002
   - terminal-0.2.0.0@sha256:de6770ecaae3197c66ac1f0db5a80cf5a5b1d3b64a66a05b50f442de5ad39570,2977
   # - simplexmq-0.3.1@sha256:f247aaff3c16c5d3974a4ab4d5882ab50ac78073110997c0bceb05a74d10a325,6688
-  # - ../simplexmq
-  - github: simplex-chat/simplexmq
-    commit: dffa7a61006aa5c4050c954857aaf1357fe33242
+  - ../simplexmq
+  # - github: simplex-chat/simplexmq
+  #   commit: dffa7a61006aa5c4050c954857aaf1357fe33242
 #
 # extra-deps: []
 

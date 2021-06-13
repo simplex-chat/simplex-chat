@@ -41,6 +41,18 @@ executables:
       - unliftio == 0.2.*
     ghc-options:
       - -threaded
+  
+  simplex-chat:
+    source-dirs: apps/simplex-chat
+    main: Main.hs
+    dependencies:
+      - simplex-chat
+      - file-embed == 0.0.14.*
+      - filepath == 1.4.*
+      - simplexmq == 0.3.*
+      - sqlite-simple == 0.4.*
+    ghc-options:
+      - -threaded
 
 tests:
   simplex-chat-test:

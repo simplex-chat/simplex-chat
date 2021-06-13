@@ -19,19 +19,19 @@ CREATE TABLE contacts (
   contact_status TEXT NOT NULL DEFAULT ''
 );
 
-CREATE TABLE contact_connections {
+CREATE TABLE contact_connections (
   connection_id BLOB NOT NULL PRIMARY KEY,
   contact_id INTEGER NOT NULL REFERENCES contacts ON DELETE RESTRICT,
   conn_level INTEGER NOT NULL DEFAULT 0,
   via_conn BLOB REFERENCES contact_connections (connection_id),
   conn_status TEXT NOT NULL DEFAULT ''
-} WITHOUT ROWID;
+) WITHOUT ROWID;
 
-CREATE TABLE contact_invitations {
+CREATE TABLE contact_invitations (
   invitation_id BLOB NOT NULL PRIMARY KEY,
   contact_id INTEGER NOT NULL REFERENCES contacts ON DELETE RESTRICT,
   invitation_status TEXT NOT NULL DEFAULT ''
-} WITHOUT ROWID;
+) WITHOUT ROWID;
 
 CREATE TABLE groups (
   group_id INTEGER NOT NULL PRIMARY KEY, -- local group ID
@@ -51,8 +51,8 @@ CREATE TABLE group_members ( -- group members, nullable fields are NULL for the 
 ) WITHOUT ROWID;
 
 CREATE TABLE events ( -- messages received by the agent, append only
-  event_id INTEGER NOT NULL PRIMARY KEY
-  message_id INTEGER REFERENCES messages ON DELETE CASCADE
+  event_id INTEGER NOT NULL PRIMARY KEY,
+  message_id INTEGER, -- REFERENCES messages ON DELETE CASCADE,
   agent_id INTEGER NOT NULL, -- internal ID
   external_agent_id INTEGER NOT NULL, -- internal ID
   agent_meta TEXT NOT NULL, -- JSON with timestamps and IDs sent in MSG
@@ -62,7 +62,7 @@ CREATE TABLE events ( -- messages received by the agent, append only
   event_encoding INTEGER NOT NULL, -- format of event_body: 0 - binary, 1 - text utf8, 2 - JSON (utf8)
   content_type TEXT NOT NULL, -- content type - see protocol/types.ts
   event_body BLOB, -- agent message body as sent
-  created_at TEXT NOT NULL DEFAULT datetime('now'),
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
 CREATE TABLE group_events (
@@ -76,29 +76,29 @@ CREATE TABLE group_event_parents (
   event_id INTEGER NOT NULL PRIMARY KEY,
   group_id INTEGER NOT NULL REFERENCES groups,
   parent_event_id INTEGER NOT NULL REFERENCES events (event_id),
-  parent_member_id BLOB NOT NULL
-  parent_event_hash BLOB NOT NULL
+  parent_member_id BLOB NOT NULL,
+  parent_event_hash BLOB NOT NULL,
   FOREIGN KEY (group_id, parent_member_id)
     REFERENCES group_members (group_id, member_id)
 );
 
+CREATE TABLE blobs (
+  blob_id INTEGER NOT NULL PRIMARY KEY,
+  content BLOB NOT NULL
+);
+
 CREATE TABLE messages ( -- mutable messages presented to user
-  message_id INTEGER NOT NULL PRIMARY KEY
-  contact_id INTEGER REFERENCES contacts ON DELETE RESTRICT -- NULL for sent messages
-  group_id INTEGER REFERENCES groups ON DELETE RESTRICT -- only for group messages
+  message_id INTEGER NOT NULL PRIMARY KEY,
+  contact_id INTEGER REFERENCES contacts ON DELETE RESTRICT, -- NULL for sent messages
+  group_id INTEGER REFERENCES groups ON DELETE RESTRICT, -- only for group messages
   deleted INTEGER NOT NULL, -- 1 for deleted
-  msg_type TEXT NOT NULL
-  content_type TEXT NOT NULL
+  msg_type TEXT NOT NULL,
+  content_type TEXT NOT NULL,
   msg_text TEXT NOT NULL, -- textual representation
   msg_props TEXT NOT NULL, -- JSON
   msg_blob_id INTEGER REFERENCES blobs (blob_id) ON DELETE RESTRICT, -- optional binary content
-  created_at TEXT NOT NULL DEFAULT datetime('now'),
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
   created_event_id INTEGER NOT NULL REFERENCES events (event_id) ON DELETE RESTRICT,
   updated_at TEXT,
-  updated_event_id INTEGER REFERENCES events (event_id) ON DELETE RESTRICT,
-);
-
-CREATE TABLE blobs (
-  blob_id INTEGER NOT NULL PRIMARY KEY
-  content BLOB NOT NULL
+  updated_event_id INTEGER REFERENCES events (event_id) ON DELETE RESTRICT
 );
