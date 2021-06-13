@@ -1,3 +1,5 @@
+{-# LANGUAGE DuplicateRecordFields #-}
+
 module Simplex.Chat.Protocol where
 
 import Data.ByteString (ByteString)
