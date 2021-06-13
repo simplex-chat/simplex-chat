@@ -6,6 +6,8 @@ type MemberMessageType =
   | "x.grp.mem.new" // new group member
   | "x.grp.mem.acl" // group member permissions (ACL)
   | "x.grp.mem.leave" // group member left
+  | "x.grp.mem.off" // suspend group member
+  | "x.grp.mem.on" // enable group member
   | "x.grp.mem.del" // group member removed
 
 type ProfileMessageType =
@@ -21,6 +23,7 @@ type OpenConnMessageType =
 
 type ContentMessageType =
   | "x.msg.new" // new message
+  | "x.msg.append" // additional part of the message
   | "x.msg.del" // delete message
   | "x.msg.update" // update message
   | "x.msg.fwd" // forward message
