@@ -50,6 +50,7 @@ executables:
     dependencies:
       - simplex-chat
       - bytestring == 0.10.*
+      - composition == 1.0.*
       - cryptonite == 0.27.*
       - file-embed == 0.0.14.*
       - filepath == 1.4.*
