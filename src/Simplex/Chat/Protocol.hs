@@ -6,6 +6,8 @@ import Data.ByteString (ByteString)
 import Data.Text (Text)
 import Simplex.Messaging.Agent.Protocol (ConnId)
 
+data ChatEvent = GroupEvent | MessageEvent | InfoEvent
+
 data Profile = Profile
   { profileId :: ByteString,
     displayName :: Text
@@ -40,5 +42,3 @@ data Group = Group
     displayName :: Text,
     members :: [GroupMember]
   }
-
-data EventType = ETContent | ETContentUpdate | ETReference | ETProfileUpdate | ETNotification | ETInvitation

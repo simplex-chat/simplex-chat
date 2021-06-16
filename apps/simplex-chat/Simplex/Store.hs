@@ -2,7 +2,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE TemplateHaskell #-}
 
-module Store where
+module Simplex.Store where
 
 import Control.Concurrent.STM
 import Control.Monad (replicateM_)
