@@ -11,7 +11,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding
 import Simplex.Chat.Markdown
-import Styled
+import Simplex.Chat.Styled
 import System.Console.ANSI.Types
 import System.Terminal hiding (insertChars)
 import Types

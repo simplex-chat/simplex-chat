@@ -29,6 +29,7 @@ import Data.Time.Format (defaultTimeLocale, formatTime)
 import Data.Time.LocalTime
 import Numeric.Natural
 import Simplex.Chat.Markdown
+import Simplex.Chat.Styled
 import Simplex.Messaging.Agent (getAgentClient, runAgentClient)
 import Simplex.Messaging.Agent.Client (AgentClient (..))
 import Simplex.Messaging.Agent.Env.SQLite
@@ -36,7 +37,6 @@ import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Client (smpDefaultConfig)
 import Simplex.Messaging.Parsers (parseAll)
 import Simplex.Messaging.Util (raceAny_)
-import Styled
 import System.Console.ANSI.Types
 import System.Directory (getAppUserDataDirectory)
 import Types

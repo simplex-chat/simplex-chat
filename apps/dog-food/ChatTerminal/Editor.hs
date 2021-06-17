@@ -5,7 +5,7 @@ module ChatTerminal.Editor where
 
 import ChatTerminal.Basic
 import ChatTerminal.Core
-import Styled
+import Simplex.Chat.Styled
 import System.Terminal
 import UnliftIO.STM
 

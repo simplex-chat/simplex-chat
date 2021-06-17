@@ -21,7 +21,7 @@ import Control.Monad.IO.Class (liftIO)
 import Data.Time.Format (defaultTimeLocale, formatTime)
 import Data.Time.LocalTime (getZonedTime)
 import Numeric.Natural
-import Styled
+import Simplex.Chat.Styled
 import System.Terminal
 import Types
 import UnliftIO.STM

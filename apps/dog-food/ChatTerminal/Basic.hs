@@ -3,7 +3,7 @@
 module ChatTerminal.Basic where
 
 import Control.Monad.IO.Class (liftIO)
-import Styled
+import Simplex.Chat.Styled
 import System.Console.ANSI.Types
 import System.Exit (exitSuccess)
 import System.Terminal as C
