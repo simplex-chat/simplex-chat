@@ -101,15 +101,14 @@ CREATE TABLE events ( -- messages received by the agent, append only
   event_encoding INTEGER NOT NULL, -- format of event_body: 0 - binary, 1 - text utf8, 2 - JSON (utf8)
   content_type TEXT NOT NULL, -- content type - see protocol/types.ts
   event_body BLOB, -- agent message body as sent
-  group_member_id INTEGER REFERENCES group_members, -- can be NULL for direct messages
   event_hash BLOB NOT NULL,
   integrity TEXT NOT NULL DEFAULT '',
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
-CREATE TABLE profile_events (
+CREATE TABLE contact_profile_events (
   event_id INTEGER NOT NULL UNIQUE REFERENCES events,
-  profile_id INTEGER NOT NULL REFERENCES contact_profiles
+  contact_profile_id INTEGER NOT NULL REFERENCES contact_profiles
 );
 
 CREATE TABLE group_profile_events (
@@ -117,13 +116,16 @@ CREATE TABLE group_profile_events (
   group_profile_id INTEGER NOT NULL REFERENCES group_profiles
 );
 
-CREATE TABLE group_event_parents (
+CREATE TABLE group_events (
   event_id INTEGER NOT NULL UNIQUE REFERENCES events,
+  group_id INTEGER NOT NULL REFERENCES groups ON DELETE RESTRICT,
+  group_member_id INTEGER REFERENCES group_members, -- NULL for current user
+  member_id BLOB, -- shared member ID, unique per group
   parent_event_id INTEGER REFERENCES events (event_id)  ON DELETE CASCADE, -- this can be NULL if received event references another event that's not received yet
   parent_external_msg_id INTEGER REFERENCES events (external_msg_id) ON DELETE CASCADE,
-  group_member_id BLOB, -- shared member ID, unique per group
   parent_group_member_id INTEGER REFERENCES group_members (group_member_id), -- can be NULL if group_member_id is incorrect
-  parent_event_hash BLOB NOT NULL
+  parent_event_hash BLOB NOT NULL,
+  UNIQUE (group_id, member_id)
 );
 
 CREATE TABLE blobs (

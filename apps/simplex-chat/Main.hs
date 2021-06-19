@@ -32,11 +32,12 @@ main = do
 
   hFlush stdout
   ChatTerminal {termSize} <- newChatTerminal
-  -- t <- C.withVirtualTerminal (defaultSettings termSize) $
-  --   \t -> runTerminalT (C.setAlternateScreenBuffer True >> C.flush) t >> pure t
+  pos <- C.withVirtualTerminal (defaultSettings termSize) $
+    \t -> runTerminalT (C.setAlternateScreenBuffer True >> C.putString "a" >> C.flush >> C.getCursorPosition) t
+  print pos
 
-  -- race_ (printEvents t) (updateTerminal t)
-  void . withTerminal . runTerminalT $ chatLayoutDemo >> C.flush >> C.awaitEvent
+-- race_ (printEvents t) (updateTerminal t)
+-- void . withTerminal . runTerminalT $ chatLayoutDemo >> C.flush >> C.awaitEvent
 
 printEvents :: C.VirtualTerminal -> IO ()
 printEvents t = forever $ do
