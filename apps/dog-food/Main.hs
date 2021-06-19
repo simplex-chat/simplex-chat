@@ -27,6 +27,7 @@ import Data.Text.Encoding
 import Data.Time.Clock (DiffTime, UTCTime)
 import Data.Time.Format (defaultTimeLocale, formatTime)
 import Data.Time.LocalTime
+import Notification
 import Numeric.Natural
 import Simplex.Chat.Markdown
 import Simplex.Messaging.Agent (getSMPAgentClient, runSMPAgentClient)
@@ -58,7 +59,9 @@ logCfg = LogConfig {lc_file = Nothing, lc_stderr = True}
 
 data ChatClient = ChatClient
   { inQ :: TBQueue ChatCommand,
-    outQ :: TBQueue ChatResponse
+    outQ :: TBQueue ChatResponse,
+    notifyQ :: TBQueue Notification,
+    displayNotification :: Notification -> IO ()
   }
 
 -- | GroupMessage ChatGroup ByteString
@@ -227,7 +230,7 @@ markdownInfo =
 main :: IO ()
 main = do
   opts@ChatOpts {dbFile, smpServers, termMode} <- welcomeGetOpts
-  t <- atomically $ newChatClient (tbqSize cfg)
+  t <- newChatClient (tbqSize cfg)
   ct <- newChatTerminal (tbqSize cfg) termMode
   -- setLogLevel LogInfo -- LogError
   -- withGlobalLogging logCfg $ do
@@ -253,14 +256,17 @@ dogFoodChat t ct env opts = do
       sendToChatTerm t ct opts localTz,
       receiveFromAgent t ct c,
       receiveFromChatTerm t ct,
+      showNotifications t,
       chatTerminal ct
     ]
 
-newChatClient :: Natural -> STM ChatClient
+newChatClient :: Natural -> IO ChatClient
 newChatClient qSize = do
-  inQ <- newTBQueue qSize
-  outQ <- newTBQueue qSize
-  return ChatClient {inQ, outQ}
+  inQ <- newTBQueueIO qSize
+  outQ <- newTBQueueIO qSize
+  notifyQ <- newTBQueueIO qSize
+  displayNotification <- initializeNotifications
+  return ChatClient {inQ, outQ, notifyQ, displayNotification}
 
 receiveFromChatTerm :: ChatClient -> ChatTerminal -> IO ()
 receiveFromChatTerm t ct = forever $ do
@@ -321,6 +327,7 @@ receiveFromAgent t ct c = forever . atomically $ do
   resp <- chatResponse <$> readTBQueue (sndQ c)
   writeTBQueue (outQ t) resp
   setActiveTo resp
+  sendNotification resp
   where
     chatResponse :: ATransmission 'Agent -> ChatResponse
     chatResponse (ATransmission _ entity resp) = case entity of
@@ -358,6 +365,17 @@ receiveFromAgent t ct c = forever . atomically $ do
       ReceivedGroupMessage g _ _ _ _ -> setActive ct $ ActiveG g
       Disconnected a -> unsetActive ct $ ActiveC a
       _ -> pure ()
+    sendNotification :: ChatResponse -> STM ()
+    sendNotification = \case
+      ReceivedMessage c' _ msg _ -> notify $ Notification ("@" <> toBs c') msg
+      ReceivedGroupMessage g c' _ msg _ -> notify $ Notification ("#" <> fromGroup g <> " @" <> toBs c') msg
+      Disconnected c' -> notify $ Notification ("@" <> toBs c') "disconnected"
+      _ -> pure ()
+    notify :: Notification -> STM ()
+    notify n = writeTBQueue (notifyQ t) n
+
+showNotifications :: ChatClient -> IO ()
+showNotifications t = forever $ atomically (readTBQueue $ notifyQ t) >>= displayNotification t
 
 groupMessageP :: Parser (Group, ByteString)
 groupMessageP =
