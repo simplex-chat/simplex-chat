@@ -6,6 +6,7 @@ module Notification where
 
 import ChatTerminal.Core (safeDecodeUtf8)
 import Control.Monad (void)
+import DBus.Notify (connectSession, summary, body, appName, Body(Text), notify, blankNote)
 import Data.ByteString.Char8 (ByteString)
 import Data.Char (toLower)
 import Data.List (isInfixOf)
@@ -49,4 +50,14 @@ winNotify path Notification {title, text} =
   void $ readCreateProcess (shell "powershell.exe \"... -Text 'Hi'\"") ""
 
 linuxNotify :: Notification -> IO ()
-linuxNotify Notification {title, text} = pure ()
+linuxNotify Notification {title, text} =
+  do
+    client <- connectSession
+    let linuxNtf =
+          linuxNote
+            { summary = T.unpack $ safeDecodeUtf8 title,
+              body = Just $ Text (T.unpack $ safeDecodeUtf8 text)
+            }
+    void $ notify client linuxNtf
+  where
+    linuxNote = blankNote {appName = "simplex-chat"}
