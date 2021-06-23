@@ -23,7 +23,6 @@ data ChatTerminal = ChatTerminal
   { inputQ :: TBQueue String,
     outputQ :: TBQueue [StyledString],
     activeTo :: TVar ActiveTo,
-    termMode :: TermMode,
     termState :: TVar TerminalState,
     termSize :: Size,
     nextMessageRow :: TVar Int,
@@ -138,15 +137,3 @@ safeDecodeUtf8 :: ByteString -> Text
 safeDecodeUtf8 = decodeUtf8With onError
   where
     onError _ _ = Just '?'
-
-ttyContact :: Contact -> StyledString
-ttyContact (Contact a) = styled (Colored Green) a
-
-ttyFromContact :: Contact -> StyledString
-ttyFromContact (Contact a) = styled (Colored Yellow) $ a <> "> "
-
-ttyGroup :: Group -> StyledString
-ttyGroup (Group g) = styled (Colored Blue) $ "#" <> g
-
-ttyFromGroup :: Group -> Contact -> StyledString
-ttyFromGroup (Group g) (Contact a) = styled (Colored Yellow) $ "#" <> g <> " " <> a <> "> "

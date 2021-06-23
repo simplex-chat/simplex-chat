@@ -8,7 +8,7 @@ import UnliftIO (MonadUnliftIO)
 import UnliftIO.STM (TBQueue, atomically, readTBQueue)
 
 chatSubscriber :: MonadUnliftIO m => TBQueue ChatEvent -> m ()
-chatSubscriber chatQ = runEvents chatQ processChatEvent
+chatSubscriber chatQ' = runEvents chatQ' processChatEvent
 
 inputSubscriber :: MonadUnliftIO m => TBQueue InputEvent -> m ()
 inputSubscriber inputQ = runEvents inputQ processInputEvent

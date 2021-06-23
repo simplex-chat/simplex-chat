@@ -3,11 +3,7 @@
 
 module Simplex.View where
 
-import Control.Monad (void)
-import qualified Data.Text as T
-import Simplex.Chat.Markdown
 import Simplex.Chat.Styled
-import Simplex.Terminal (newChatTerminal)
 import System.Console.ANSI.Types
 import System.Terminal
 
