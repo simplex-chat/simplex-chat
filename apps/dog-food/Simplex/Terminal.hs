@@ -4,11 +4,49 @@
 
 module Simplex.Terminal where
 
-import ChatTerminal.Core
 import Simplex.Chat.Styled
 import System.Console.ANSI.Types
 import System.Terminal
+import Types
 import UnliftIO.STM
+
+data ActiveTo = ActiveNone | ActiveC Contact | ActiveG Group
+  deriving (Eq)
+
+data ChatTerminal = ChatTerminal
+  { activeTo :: TVar ActiveTo,
+    termState :: TVar TerminalState,
+    termSize :: Size,
+    nextMessageRow :: TVar Int,
+    termLock :: TMVar ()
+  }
+
+data TerminalState = TerminalState
+  { inputPrompt :: String,
+    inputString :: String,
+    inputPosition :: Int,
+    previousInput :: String
+  }
+
+newChatTerminal :: IO ChatTerminal
+newChatTerminal = do
+  activeTo <- newTVarIO ActiveNone
+  termSize <- withTerminal . runTerminalT $ getWindowSize
+  let lastRow = height termSize - 1
+  termState <- newTVarIO newTermState
+  termLock <- newTMVarIO ()
+  nextMessageRow <- newTVarIO lastRow
+  -- threadDelay 500000 -- this delay is the same as timeout in getTerminalSize
+  return ChatTerminal {activeTo, termState, termSize, nextMessageRow, termLock}
+
+newTermState :: TerminalState
+newTermState =
+  TerminalState
+    { inputString = "",
+      inputPosition = 0,
+      inputPrompt = "> ",
+      previousInput = ""
+    }
 
 withTermLock :: MonadTerminal m => ChatTerminal -> m () -> m ()
 withTermLock ChatTerminal {termLock} action = do
@@ -22,11 +60,11 @@ printToTerminal ct s = withTerminal . runTerminalT . withTermLock ct $ do
   updateInput ct
 
 updateInput :: forall m. MonadTerminal m => ChatTerminal -> m ()
-updateInput ct@ChatTerminal {termSize = Size {height, width}, termState, nextMessageRow} = do
+updateInput ChatTerminal {termSize = Size {height, width}, termState, nextMessageRow} = do
   hideCursor
   ts <- readTVarIO termState
   nmr <- readTVarIO nextMessageRow
-  let ih = inputHeight ts ct
+  let ih = inputHeight ts
       iStart = height - ih
       prompt = inputPrompt ts
       Position {row, col} = positionRowColumn width $ length prompt + inputPosition ts
@@ -47,6 +85,13 @@ updateInput ct@ChatTerminal {termSize = Size {height, width}, termState, nextMes
         setCursorPosition $ Position {row = from, col = 0}
         eraseInLine EraseForward
         clearLines (from + 1) till
+    inputHeight :: TerminalState -> Int
+    inputHeight ts = length (inputPrompt ts <> inputString ts) `div` width + 1
+    positionRowColumn :: Int -> Int -> Position
+    positionRowColumn wid pos =
+      let row = pos `div` wid
+          col = pos - row * wid
+       in Position {row, col}
 
 printMessage :: forall m. MonadTerminal m => ChatTerminal -> [StyledString] -> m ()
 printMessage ChatTerminal {termSize = Size {height, width}, nextMessageRow} msg = do

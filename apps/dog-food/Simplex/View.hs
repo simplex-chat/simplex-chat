@@ -1,3 +1,4 @@
+{-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -6,6 +7,10 @@ module Simplex.View
   ( printToView,
     showInvitation,
     showAgentError,
+    showContactDeleted,
+    showContactConnected,
+    showContactDisconnected,
+    showReceivedMessage,
     ttyContact,
     ttyFromContact,
     ttyGroup,
@@ -13,9 +18,15 @@ module Simplex.View
   )
 where
 
+import ChatTerminal.Core
 import Control.Monad.IO.Unlift
 import Control.Monad.Reader
+import Data.ByteString.Char8 (ByteString)
 import Data.Composition ((.:))
+import qualified Data.Text as T
+import Data.Time.Clock (DiffTime, UTCTime)
+import Data.Time.Format (defaultTimeLocale, formatTime)
+import Data.Time.LocalTime (TimeZone, ZonedTime, getCurrentTimeZone, getZonedTime, localDay, localTimeOfDay, timeOfDayToTime, utcToLocalTime, zonedTimeToLocalTime)
 import Simplex.Chat.Controller
 import Simplex.Chat.Markdown
 import Simplex.Chat.Styled
@@ -24,11 +35,26 @@ import Simplex.Terminal (printToTerminal)
 import System.Console.ANSI.Types
 import Types
 
-showInvitation :: (MonadUnliftIO m, MonadReader ChatController m) => Contact -> SMPQueueInfo -> m ()
+type ChatReader m = (MonadUnliftIO m, MonadReader ChatController m)
+
+showInvitation :: ChatReader m => Contact -> SMPQueueInfo -> m ()
 showInvitation = printToView .: invitation
 
-showAgentError :: (MonadUnliftIO m, MonadReader ChatController m) => Contact -> AgentErrorType -> m ()
+showAgentError :: ChatReader m => Contact -> AgentErrorType -> m ()
 showAgentError = printToView .: agentError
+
+showContactDeleted :: ChatReader m => Contact -> m ()
+showContactDeleted = printToView . contactDeleted
+
+showContactConnected :: ChatReader m => Contact -> m ()
+showContactConnected = printToView . contactConnected
+
+showContactDisconnected :: ChatReader m => Contact -> m ()
+showContactDisconnected = printToView . contactDisconnected
+
+showReceivedMessage :: ChatReader m => Contact -> UTCTime -> ByteString -> MsgIntegrity -> m ()
+showReceivedMessage c utcTime msg mOk =
+  printToView =<< liftIO (receivedMessage c utcTime msg mOk)
 
 invitation :: Contact -> SMPQueueInfo -> [StyledString]
 invitation c qInfo =
@@ -38,6 +64,46 @@ invitation c qInfo =
     "",
     "and ask them to connect: /c <name_for_you> <invitation_above>"
   ]
+
+contactDeleted :: Contact -> [StyledString]
+contactDeleted c = [ttyContact c <> " is deleted"]
+
+contactConnected :: Contact -> [StyledString]
+contactConnected c = [ttyContact c <> " is connected"]
+
+contactDisconnected :: Contact -> [StyledString]
+contactDisconnected c = ["disconnected from " <> ttyContact c <> " - restart chat"]
+
+receivedMessage :: Contact -> UTCTime -> ByteString -> MsgIntegrity -> IO [StyledString]
+receivedMessage c utcTime msg mOk = do
+  t <- formatUTCTime <$> getCurrentTimeZone <*> getZonedTime
+  pure $ prependFirst (t <> " " <> ttyFromContact c) (msgPlain msg) ++ showIntegrity mOk
+  where
+    prependFirst :: StyledString -> [StyledString] -> [StyledString]
+    prependFirst s [] = [s]
+    prependFirst s (s' : ss) = (s <> s') : ss
+    formatUTCTime :: TimeZone -> ZonedTime -> StyledString
+    formatUTCTime localTz currentTime =
+      let localTime = utcToLocalTime localTz utcTime
+          format =
+            if (localDay localTime < localDay (zonedTimeToLocalTime currentTime))
+              && (timeOfDayToTime (localTimeOfDay localTime) > (6 * 60 * 60 :: DiffTime))
+              then "%m-%d" -- if message is from yesterday or before and 6 hours has passed since midnight
+              else "%H:%M"
+       in styleTime $ formatTime defaultTimeLocale format localTime
+    msgPlain :: ByteString -> [StyledString]
+    msgPlain = map styleMarkdownText . T.lines . safeDecodeUtf8
+    showIntegrity :: MsgIntegrity -> [StyledString]
+    showIntegrity MsgOk = []
+    showIntegrity (MsgError err) = msgError $ case err of
+      MsgSkipped fromId toId ->
+        "skipped message ID " <> show fromId
+          <> if fromId == toId then "" else ".." <> show toId
+      MsgBadId msgId -> "unexpected message ID " <> show msgId
+      MsgBadHash -> "incorrect message hash"
+      MsgDuplicate -> "duplicate message ID"
+    msgError :: String -> [StyledString]
+    msgError s = [styled (Colored Red) s]
 
 agentError :: Contact -> AgentErrorType -> [StyledString]
 agentError c = \case
