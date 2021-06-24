@@ -1,7 +1,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Simplex.View where
+module Simplex.Demo where
 
 import Simplex.Chat.Styled
 import System.Console.ANSI.Types
