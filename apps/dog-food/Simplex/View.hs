@@ -11,6 +11,7 @@ module Simplex.View
     showContactConnected,
     showContactDisconnected,
     showReceivedMessage,
+    showSentMessage,
     ttyContact,
     ttyFromContact,
     ttyGroup,
@@ -18,12 +19,13 @@ module Simplex.View
   )
 where
 
-import ChatTerminal.Core
 import Control.Monad.IO.Unlift
 import Control.Monad.Reader
 import Data.ByteString.Char8 (ByteString)
 import Data.Composition ((.:))
+import Data.Text (Text)
 import qualified Data.Text as T
+import Data.Text.Encoding (decodeUtf8With)
 import Data.Time.Clock (DiffTime, UTCTime)
 import Data.Time.Format (defaultTimeLocale, formatTime)
 import Data.Time.LocalTime (TimeZone, ZonedTime, getCurrentTimeZone, getZonedTime, localDay, localTimeOfDay, timeOfDayToTime, utcToLocalTime, zonedTimeToLocalTime)
@@ -53,8 +55,10 @@ showContactDisconnected :: ChatReader m => Contact -> m ()
 showContactDisconnected = printToView . contactDisconnected
 
 showReceivedMessage :: ChatReader m => Contact -> UTCTime -> ByteString -> MsgIntegrity -> m ()
-showReceivedMessage c utcTime msg mOk =
-  printToView =<< liftIO (receivedMessage c utcTime msg mOk)
+showReceivedMessage c utcTime msg mOk = printToView =<< liftIO (receivedMessage c utcTime msg mOk)
+
+showSentMessage :: ChatReader m => Contact -> ByteString -> m ()
+showSentMessage c msg = printToView =<< liftIO (sentMessage c msg)
 
 invitation :: Contact -> SMPQueueInfo -> [StyledString]
 invitation c qInfo =
@@ -79,9 +83,6 @@ receivedMessage c utcTime msg mOk = do
   t <- formatUTCTime <$> getCurrentTimeZone <*> getZonedTime
   pure $ prependFirst (t <> " " <> ttyFromContact c) (msgPlain msg) ++ showIntegrity mOk
   where
-    prependFirst :: StyledString -> [StyledString] -> [StyledString]
-    prependFirst s [] = [s]
-    prependFirst s (s' : ss) = (s <> s') : ss
     formatUTCTime :: TimeZone -> ZonedTime -> StyledString
     formatUTCTime localTz currentTime =
       let localTime = utcToLocalTime localTz utcTime
@@ -91,8 +92,6 @@ receivedMessage c utcTime msg mOk = do
               then "%m-%d" -- if message is from yesterday or before and 6 hours has passed since midnight
               else "%H:%M"
        in styleTime $ formatTime defaultTimeLocale format localTime
-    msgPlain :: ByteString -> [StyledString]
-    msgPlain = map styleMarkdownText . T.lines . safeDecodeUtf8
     showIntegrity :: MsgIntegrity -> [StyledString]
     showIntegrity MsgOk = []
     showIntegrity (MsgError err) = msgError $ case err of
@@ -104,6 +103,18 @@ receivedMessage c utcTime msg mOk = do
       MsgDuplicate -> "duplicate message ID"
     msgError :: String -> [StyledString]
     msgError s = [styled (Colored Red) s]
+
+sentMessage :: Contact -> ByteString -> IO [StyledString]
+sentMessage c msg = do
+  time <- formatTime defaultTimeLocale "%H:%M" <$> getZonedTime
+  pure $ prependFirst (styleTime time <> " " <> ttyToContact c) (msgPlain msg)
+
+prependFirst :: StyledString -> [StyledString] -> [StyledString]
+prependFirst s [] = [s]
+prependFirst s (s' : ss) = (s <> s') : ss
+
+msgPlain :: ByteString -> [StyledString]
+msgPlain = map styleMarkdownText . T.lines . safeDecodeUtf8
 
 agentError :: Contact -> AgentErrorType -> [StyledString]
 agentError c = \case
@@ -119,6 +130,9 @@ printToView s = asks chatTerminal >>= liftIO . (`printToTerminal` s)
 ttyContact :: Contact -> StyledString
 ttyContact (Contact a) = styled (Colored Green) a
 
+ttyToContact :: Contact -> StyledString
+ttyToContact (Contact a) = styled (Colored Cyan) $ a <> " "
+
 ttyFromContact :: Contact -> StyledString
 ttyFromContact (Contact a) = styled (Colored Yellow) $ a <> "> "
 
@@ -127,3 +141,11 @@ ttyGroup (Group g) = styled (Colored Blue) $ "#" <> g
 
 ttyFromGroup :: Group -> Contact -> StyledString
 ttyFromGroup (Group g) (Contact a) = styled (Colored Yellow) $ "#" <> g <> " " <> a <> "> "
+
+styleTime :: String -> StyledString
+styleTime = Styled [SetColor Foreground Vivid Black]
+
+safeDecodeUtf8 :: ByteString -> Text
+safeDecodeUtf8 = decodeUtf8With onError
+  where
+    onError _ _ = Just '?'

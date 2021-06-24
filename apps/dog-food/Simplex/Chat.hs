@@ -49,8 +49,11 @@ inputSubscriber = do
       InputControl _ -> pure ()
       InputCommand s ->
         case parseAll chatCommandP . encodeUtf8 $ T.pack s of
-          Left e -> printToView ["invalid input: " <> plain e]
-          Right cmd ->
+          Left e -> printToView [plain s, "invalid input: " <> plain e]
+          Right cmd -> do
+            case cmd of
+              SendMessage c msg -> showSentMessage c msg
+              _ -> printToView [plain s]
             runExceptT (processChatCommand cmd) >>= \case
               Left (ChatErrorAgent c e) -> showAgentError c e
               _ -> pure ()

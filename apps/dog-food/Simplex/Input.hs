@@ -3,13 +3,10 @@
 
 module Simplex.Input where
 
-import ChatTerminal.Core
 import Control.Monad (forever)
 import Control.Monad.IO.Class (liftIO)
 import qualified Data.ByteString.Char8 as B
 import Data.List (dropWhileEnd)
-import Data.Time.Format (defaultTimeLocale, formatTime)
-import Data.Time.LocalTime (getZonedTime)
 import Simplex.Chat.Controller
 import Simplex.Terminal
 import System.Exit (exitSuccess)
@@ -42,17 +39,11 @@ receiveFromTTY ChatController {inputQ} ct@ChatTerminal {activeTo, termSize, term
         modifyTVar termState $ updateTermState ac (width termSize) key
 
     submitInput :: MonadTerminal m => m ()
-    submitInput = do
-      msg <- atomically $ do
-        ts <- readTVar termState
-        let s = inputString ts
-        writeTVar termState $ ts {inputString = "", inputPosition = 0, previousInput = s}
-        writeTBQueue inputQ $ InputCommand s
-        return s
-      withTermLock ct $ do
-        localTime <- liftIO getZonedTime
-        let localTimeStr = formatTime defaultTimeLocale "%H:%M" localTime
-        printMessage ct [styleMessage localTimeStr msg]
+    submitInput = atomically $ do
+      ts <- readTVar termState
+      let s = inputString ts
+      writeTVar termState $ ts {inputString = "", inputPosition = 0, previousInput = s}
+      writeTBQueue inputQ $ InputCommand s
 
 updateTermState :: ActiveTo -> Int -> (Key, Modifiers) -> TerminalState -> TerminalState
 updateTermState ac tw (key, ms) ts@TerminalState {inputString = s, inputPosition = p} = case key of
