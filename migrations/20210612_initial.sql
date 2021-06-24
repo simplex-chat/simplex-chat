@@ -106,6 +106,8 @@ CREATE TABLE events ( -- messages received by the agent, append only
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+CREATE INDEX events_external_msg_id_index ON events (connection_id, external_msg_id);
+
 CREATE TABLE contact_profile_events (
   event_id INTEGER NOT NULL UNIQUE REFERENCES events,
   contact_profile_id INTEGER NOT NULL REFERENCES contact_profiles
@@ -119,14 +121,21 @@ CREATE TABLE group_profile_events (
 CREATE TABLE group_events (
   event_id INTEGER NOT NULL UNIQUE REFERENCES events,
   group_id INTEGER NOT NULL REFERENCES groups ON DELETE RESTRICT,
-  group_member_id INTEGER REFERENCES group_members, -- NULL for current user
-  member_id BLOB, -- shared member ID, unique per group
-  parent_event_id INTEGER REFERENCES events (event_id)  ON DELETE CASCADE, -- this can be NULL if received event references another event that's not received yet
-  parent_external_msg_id INTEGER REFERENCES events (external_msg_id) ON DELETE CASCADE,
-  parent_group_member_id INTEGER REFERENCES group_members (group_member_id), -- can be NULL if group_member_id is incorrect
-  parent_event_hash BLOB NOT NULL,
-  UNIQUE (group_id, member_id)
+  group_member_id INTEGER REFERENCES group_members -- NULL for current user
 );
+
+CREATE TABLE group_event_parents (
+  group_event_parent_id INTEGER PRIMARY KEY,
+  event_id INTEGER NOT NULL REFERENCES group_events (event_id),
+  parent_group_member_id INTEGER REFERENCES group_members (group_member_id), -- can be NULL if parent_member_id is incorrect
+  parent_member_id BLOB, -- shared member ID, unique per group
+  parent_event_id INTEGER REFERENCES events (event_id) ON DELETE CASCADE, -- this can be NULL if received event references another event that's not received yet
+  parent_external_msg_id INTEGER NOT NULL,
+  parent_event_hash BLOB NOT NULL
+);
+
+CREATE INDEX group_event_parents_parent_external_msg_id_index
+  ON group_event_parents (parent_member_id, parent_external_msg_id);
 
 CREATE TABLE blobs (
   blob_id INTEGER PRIMARY KEY,
