@@ -11,6 +11,7 @@ module Main where
 import ChatOptions
 import Control.Concurrent.STM
 import Control.Logger.Simple
+import Control.Monad.IO.Unlift
 import Control.Monad.Reader
 import Simplex.Chat
 import Simplex.Chat.Controller
@@ -41,11 +42,11 @@ main :: IO ()
 main = do
   ChatOpts {dbFile, smpServers} <- welcomeGetOpts
   ct <- newChatTerminal
-  smpAgent <- getSMPAgentClient cfg {dbFile, smpServers}
-  cc <- atomically $ newChatController smpAgent ct $ tbqSize cfg
+  a <- getSMPAgentClient cfg {dbFile, smpServers}
+  cc <- atomically $ newChatController a ct $ tbqSize cfg
   -- setLogLevel LogInfo -- LogError
   -- withGlobalLogging logCfg $ do
-  dogFoodChat cc ct
+  runReaderT simplexChat cc
 
 welcomeGetOpts :: IO ChatOpts
 welcomeGetOpts = do
@@ -56,8 +57,5 @@ welcomeGetOpts = do
   putStrLn "type \"/help\" or \"/h\" for usage info"
   pure opts
 
-dogFoodChat :: ChatController -> ChatTerminal -> IO ()
-dogFoodChat cc ct =
-  race_
-    (runTerminalInput cc ct)
-    (runReaderT runChatController cc)
+simplexChat :: (MonadUnliftIO m, MonadReader ChatController m) => m ()
+simplexChat = race_ runTerminalInput runChatController

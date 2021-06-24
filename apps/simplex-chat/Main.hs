@@ -7,8 +7,6 @@ import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (race_)
 import Control.Concurrent.STM (readTVarIO, retry)
 import Control.Monad (forever, void)
--- import Control.Monad.IO.Class (liftIO)
--- import Simplex.Keyboard (getKey)
 import Simplex.Store (createStore)
 import Simplex.Terminal (ChatTerminal (..), newChatTerminal)
 import Simplex.View (chatLayoutDemo)
@@ -30,14 +28,14 @@ main :: IO ()
 main = do
   void $ createStore "simplex-chat.db" 4
 
-  hFlush stdout
-  ChatTerminal {termSize} <- newChatTerminal
-  pos <- C.withVirtualTerminal (defaultSettings termSize) $
-    \t -> runTerminalT (C.setAlternateScreenBuffer True >> C.putString "a" >> C.flush >> C.getCursorPosition) t
-  print pos
+  -- hFlush stdout
+  -- ChatTerminal {termSize} <- newChatTerminal
+  -- pos <- C.withVirtualTerminal (defaultSettings termSize) $
+  --   \t -> runTerminalT (C.setAlternateScreenBuffer True >> C.putString "a" >> C.flush >> C.getCursorPosition) t
+  -- print pos
 
--- race_ (printEvents t) (updateTerminal t)
--- void . withTerminal . runTerminalT $ chatLayoutDemo >> C.flush >> C.awaitEvent
+  race_ (printEvents t) (updateTerminal t)
+  void . withTerminal . runTerminalT $ chatLayoutDemo >> C.flush >> C.awaitEvent
 
 printEvents :: C.VirtualTerminal -> IO ()
 printEvents t = forever $ do

@@ -1,10 +1,11 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 
 module Simplex.Input where
 
-import Control.Monad (forever)
-import Control.Monad.IO.Class (liftIO)
+import Control.Monad.IO.Unlift
+import Control.Monad.Reader
 import qualified Data.ByteString.Char8 as B
 import Data.List (dropWhileEnd)
 import Simplex.Chat.Controller
@@ -21,15 +22,16 @@ getKey =
     Right (KeyEvent key ms) -> pure (key, ms)
     _ -> getKey
 
-runTerminalInput :: ChatController -> ChatTerminal -> IO ()
-runTerminalInput cc ct = do
-  withTerminal . runTerminalT $ updateInput ct
-  receiveFromTTY cc ct
+runTerminalInput :: (MonadUnliftIO m, MonadReader ChatController m) => m ()
+runTerminalInput = do
+  ChatController {inputQ, chatTerminal = ct} <- ask
+  liftIO . withTerminal . runTerminalT $ do
+    updateInput ct
+    receiveFromTTY inputQ ct
 
-receiveFromTTY :: ChatController -> ChatTerminal -> IO ()
-receiveFromTTY ChatController {inputQ} ct@ChatTerminal {activeTo, termSize, termState} =
-  withTerminal . runTerminalT . forever $
-    getKey >>= processKey >> withTermLock ct (updateInput ct)
+receiveFromTTY :: MonadTerminal m => TBQueue InputEvent -> ChatTerminal -> m ()
+receiveFromTTY inputQ ct@ChatTerminal {activeTo, termSize, termState} =
+  forever $ getKey >>= processKey >> withTermLock ct (updateInput ct)
   where
     processKey :: MonadTerminal m => (Key, Modifiers) -> m ()
     processKey = \case
