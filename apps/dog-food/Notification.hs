@@ -38,7 +38,7 @@ linuxNotify Notification {title, text} =
   void $ readCreateProcess (shell . T.unpack $ script) ""
   where
     script :: Text
-    script = "notify-send \"" <> safeDecodeUtf8 title <> " " <> safeDecodeUtf8 text <> "\"'"
+    script = "notify-send \"" <> safeDecodeUtf8 title <> "\" \"" <> safeDecodeUtf8 text <> "\""
   {- do -}
   -- client <- connectSession
   -- let linuxNtf =
@@ -85,4 +85,4 @@ winNotify path Notification {title, text} =
   void $ readCreateProcess (shell . T.unpack $ script) ""
   where
     script :: Text
-    script = "powershell.exe \"" <> T.pack path <> " " <> safeDecodeUtf8 title <> " " <> safeDecodeUtf8 text <> "\""
+    script = "powershell.exe \"" <> T.pack path <> " \'" <> safeDecodeUtf8 title <> "\' \'" <> safeDecodeUtf8 text <> "\'\""
