@@ -1,15 +1,12 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
--- {-# LANGUAGE CPP #-}
 
 module Notification where
 
 import ChatTerminal.Core (safeDecodeUtf8)
 import Control.Monad (void)
--- #if defined linux_HOST_OS=1
 -- import DBus.Notify (Body (Text), appName, blankNote, body, connectSession, notify, summary)
--- #endif
 import Data.ByteString.Char8 (ByteString)
 import Data.Char (toLower)
 import Data.List (isInfixOf)
@@ -26,7 +23,6 @@ initializeNotifications :: IO (Notification -> IO ())
 initializeNotifications = case os of
   "darwin" -> pure macNotify
   "mingw32" -> initWinNotify
--- #if defined linux_HOST_OS=1
   "linux" ->
     doesFileExist "/proc/sys/kernel/osrelease" >>= \case
       False -> pure linuxNotify
@@ -35,10 +31,8 @@ initializeNotifications = case os of
         if "wsl" `isInfixOf` map toLower v
           then initWinNotify
           else pure linuxNotify
--- #endif
   _ -> pure . const $ pure ()
   
--- #if defined linux_HOST_OS=1
 linuxNotify :: Notification -> IO ()
 linuxNotify Notification {title, text} = 
   void $ readCreateProcess (shell . T.unpack $ script) ""
@@ -55,7 +49,6 @@ linuxNotify Notification {title, text} =
   -- void $ notify client linuxNtf
   -- where
   --   linuxNote = blankNote {appName = "simplex-chat"}
--- #endif
 
 macNotify :: Notification -> IO ()
 macNotify Notification {title, text} =
