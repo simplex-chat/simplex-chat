@@ -6,7 +6,6 @@ module Notification where
 
 import ChatTerminal.Core (safeDecodeUtf8)
 import Control.Monad (void)
--- import DBus.Notify (Body (Text), appName, blankNote, body, connectSession, notify, summary)
 import Data.ByteString.Char8 (ByteString)
 import Data.Char (toLower)
 import Data.List (isInfixOf)
@@ -39,16 +38,6 @@ linuxNotify Notification {title, text} =
   where
     script :: Text
     script = "notify-send \"" <> safeDecodeUtf8 title <> "\" \"" <> safeDecodeUtf8 text <> "\""
-  {- do -}
-  -- client <- connectSession
-  -- let linuxNtf =
-  --       linuxNote
-  --         { summary = T.unpack $ safeDecodeUtf8 title,
-  --           body = Just $ Text (T.unpack $ safeDecodeUtf8 text)
-  --         }
-  -- void $ notify client linuxNtf
-  -- where
-  --   linuxNote = blankNote {appName = "simplex-chat"}
 
 macNotify :: Notification -> IO ()
 macNotify Notification {title, text} =
