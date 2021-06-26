@@ -23,10 +23,11 @@ import Simplex.Help
 import Simplex.Messaging.Agent
 import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Parsers (parseAll)
+import Simplex.Messaging.Util (raceAny_)
+import Simplex.Notification
 import Simplex.Terminal
 import Simplex.View
 import Types
-import UnliftIO.Async (race_)
 import UnliftIO.STM
 
 data ChatCommand
@@ -39,7 +40,12 @@ data ChatCommand
   deriving (Show)
 
 runChatController :: (MonadUnliftIO m, MonadReader ChatController m) => m ()
-runChatController = race_ inputSubscriber agentSubscriber
+runChatController =
+  raceAny_
+    [ inputSubscriber,
+      agentSubscriber,
+      notificationSubscriber
+    ]
 
 inputSubscriber :: (MonadUnliftIO m, MonadReader ChatController m) => m ()
 inputSubscriber = do
@@ -78,20 +84,29 @@ processChatCommand = \case
 agentSubscriber :: (MonadUnliftIO m, MonadReader ChatController m) => m ()
 agentSubscriber = do
   q <- asks $ subQ . smpAgent
+  nQ <- asks notifyQ
   forever $ do
     (_, a, resp) <- atomically (readTBQueue q)
+    let notify = \text -> atomically $ writeTBQueue nQ Notification {title = "@" <> a, text}
     case resp of
       CON -> do
         showContactConnected $ Contact a
         setActive' $ ActiveC $ Contact a
       END -> do
         showContactDisconnected $ Contact a
+        notify "disconnected"
         unsetActive' $ ActiveC $ Contact a
       MSG {brokerMeta, msgBody, msgIntegrity} -> do
         -- ReceivedMessage contact (snd brokerMeta) msgBody msgIntegrity
         showReceivedMessage (Contact a) (snd brokerMeta) msgBody msgIntegrity
+        notify msgBody
         setActive' $ ActiveC $ Contact a
       _ -> pure ()
+
+notificationSubscriber :: (MonadUnliftIO m, MonadReader ChatController m) => m ()
+notificationSubscriber = do
+  ChatController {notifyQ, sendNotification} <- ask
+  forever $ atomically (readTBQueue notifyQ) >>= liftIO . sendNotification
 
 withAgent :: ChatMonad m => Contact -> (AgentClient -> ExceptT AgentErrorType m a) -> m a
 withAgent c action =

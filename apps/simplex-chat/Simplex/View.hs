@@ -16,6 +16,7 @@ module Simplex.View
     ttyFromContact,
     ttyGroup,
     ttyFromGroup,
+    safeDecodeUtf8,
   )
 where
 
@@ -23,9 +24,7 @@ import Control.Monad.IO.Unlift
 import Control.Monad.Reader
 import Data.ByteString.Char8 (ByteString)
 import Data.Composition ((.:))
-import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Text.Encoding (decodeUtf8With)
 import Data.Time.Clock (DiffTime, UTCTime)
 import Data.Time.Format (defaultTimeLocale, formatTime)
 import Data.Time.LocalTime (TimeZone, ZonedTime, getCurrentTimeZone, getZonedTime, localDay, localTimeOfDay, timeOfDayToTime, utcToLocalTime, zonedTimeToLocalTime)
@@ -34,6 +33,7 @@ import Simplex.Chat.Markdown
 import Simplex.Chat.Styled
 import Simplex.Messaging.Agent.Protocol
 import Simplex.Terminal (printToTerminal)
+import Simplex.Util (safeDecodeUtf8)
 import System.Console.ANSI.Types
 import Types
 
@@ -144,8 +144,3 @@ ttyFromGroup (Group g) (Contact a) = styled (Colored Yellow) $ "#" <> g <> " " <
 
 styleTime :: String -> StyledString
 styleTime = Styled [SetColor Foreground Vivid Black]
-
-safeDecodeUtf8 :: ByteString -> Text
-safeDecodeUtf8 = decodeUtf8With onError
-  where
-    onError _ _ = Just '?'

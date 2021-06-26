@@ -12,6 +12,7 @@ import Control.Monad.Reader
 import Numeric.Natural
 import Simplex.Messaging.Agent (AgentClient)
 import Simplex.Messaging.Agent.Protocol (AgentErrorType)
+import Simplex.Notification
 import Simplex.Terminal
 import Types
 import UnliftIO.STM
@@ -19,7 +20,9 @@ import UnliftIO.STM
 data ChatController = ChatController
   { smpAgent :: AgentClient,
     chatTerminal :: ChatTerminal,
-    inputQ :: TBQueue InputEvent
+    inputQ :: TBQueue InputEvent,
+    notifyQ :: TBQueue Notification,
+    sendNotification :: Notification -> IO ()
   }
 
 data InputEvent = InputCommand String | InputControl Char
@@ -29,10 +32,11 @@ data ChatError = ChatErrorAgent Contact AgentErrorType
 
 type ChatMonad m = (MonadUnliftIO m, MonadReader ChatController m, MonadError ChatError m)
 
-newChatController :: AgentClient -> ChatTerminal -> Natural -> STM ChatController
-newChatController smpAgent chatTerminal qSize = do
+newChatController :: AgentClient -> ChatTerminal -> (Notification -> IO ()) -> Natural -> STM ChatController
+newChatController smpAgent chatTerminal sendNotification qSize = do
   inputQ <- newTBQueue qSize
-  pure ChatController {smpAgent, chatTerminal, inputQ}
+  notifyQ <- newTBQueue qSize
+  pure ChatController {smpAgent, chatTerminal, inputQ, notifyQ, sendNotification}
 
 setActive' :: (MonadUnliftIO m, MonadReader ChatController m) => ActiveTo -> m ()
 setActive' to = asks (activeTo . chatTerminal) >>= atomically . (`writeTVar` to)

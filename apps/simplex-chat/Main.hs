@@ -16,6 +16,7 @@ import Simplex.Input
 import Simplex.Messaging.Agent (getSMPAgentClient)
 import Simplex.Messaging.Agent.Env.SQLite
 import Simplex.Messaging.Client (smpDefaultConfig)
+import Simplex.Notification
 import Simplex.Store (createStore)
 import Simplex.Terminal
 import System.Directory (getAppUserDataDirectory)
@@ -42,7 +43,8 @@ main = do
   void $ createStore "simplex-chat.db" 4
   ct <- newChatTerminal
   a <- getSMPAgentClient cfg {dbFile, smpServers}
-  cc <- atomically $ newChatController a ct $ tbqSize cfg
+  notify <- initializeNotifications
+  cc <- atomically $ newChatController a ct notify $ tbqSize cfg
   -- setLogLevel LogInfo -- LogError
   -- withGlobalLogging logCfg $ do
   runReaderT simplexChat cc

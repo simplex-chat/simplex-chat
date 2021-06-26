@@ -37,6 +37,7 @@ executables:
       - filepath == 1.4.*
       - mtl == 2.2.*
       - optparse-applicative == 0.15.*
+      - process == 1.6.*
       - simple-logger == 0.1.*
       - simplexmq == 0.3.*
       - sqlite-simple == 0.4.*
