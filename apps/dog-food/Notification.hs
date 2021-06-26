@@ -20,34 +20,33 @@ data Notification = Notification {title :: ByteString, text :: ByteString}
 
 initializeNotifications :: IO (Notification -> IO ())
 initializeNotifications = case os of
-  "darwin" -> pure macNotify
+  "darwin" -> pure $ notify macScript
   "mingw32" -> initWinNotify
   "linux" ->
     doesFileExist "/proc/sys/kernel/osrelease" >>= \case
-      False -> pure linuxNotify
+      False -> pure $ notify linuxScript
       True -> do
         v <- readFile "/proc/sys/kernel/osrelease"
         if "wsl" `isInfixOf` map toLower v
           then initWinNotify
-          else pure linuxNotify
+          else pure $ notify linuxScript
   _ -> pure . const $ pure ()
-  
-linuxNotify :: Notification -> IO ()
-linuxNotify Notification {title, text} = 
-  void $ readCreateProcess (shell . T.unpack $ script) ""
-  where
-    script :: Text
-    script = "notify-send \"" <> safeDecodeUtf8 title <> "\" \"" <> safeDecodeUtf8 text <> "\""
 
-macNotify :: Notification -> IO ()
-macNotify Notification {title, text} =
-  void $ readCreateProcess (shell . T.unpack $ script) ""
-  where
-    script :: Text
-    script = "osascript -e 'display notification \"" <> safeDecodeUtf8 text <> "\" with title \"" <> safeDecodeUtf8 title <> "\"'"
+notify :: (Notification -> Text) -> Notification -> IO ()
+notify script notification =
+   void $ readCreateProcess (shell . T.unpack $ script notification) ""
+
+linuxScript :: Notification -> Text
+linuxScript Notification {title, text} = "notify-send \"" <> safeDecodeUtf8 title <> "\" \"" <> safeDecodeUtf8 text <> "\""
+
+macScript :: Notification -> Text
+macScript Notification {title, text} = "osascript -e 'display notification \"" <> safeDecodeUtf8 text <> "\" with title \"" <> safeDecodeUtf8 title <> "\"'"
 
 initWinNotify :: IO (Notification -> IO ())
-initWinNotify = winNotify <$> savePowershellScript
+initWinNotify = notify <$> (winScript <$> savePowershellScript)
+
+winScript :: FilePath -> Notification -> Text
+winScript path Notification {title, text} = "powershell.exe \"" <> T.pack path <> " \'" <> safeDecodeUtf8 title <> "\' \'" <> safeDecodeUtf8 text <> "\'\""
 
 savePowershellScript :: IO FilePath
 savePowershellScript = do
@@ -68,10 +67,3 @@ savePowershellScript = do
     \$Notifier = [Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier(\"PowerShell\")\n\
     \$Notifier.Show($Toast);\n"
   return psScript
-
-winNotify :: FilePath -> Notification -> IO ()
-winNotify path Notification {title, text} =
-  void $ readCreateProcess (shell . T.unpack $ script) ""
-  where
-    script :: Text
-    script = "powershell.exe \"" <> T.pack path <> " \'" <> safeDecodeUtf8 title <> "\' \'" <> safeDecodeUtf8 text <> "\'\""

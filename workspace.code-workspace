@@ -1,0 +1,17 @@
+{
+	"folders": [
+		{
+			"path": "../simplexmq"
+		},
+		{
+			"path": "."
+		},
+		{
+			"path": "../scripts-repo"
+		},
+		{
+			"path": "../../../../mnt/c/Users/NPoberezkin/home/virtualbox/ubuntu/mnt/notifications"
+		}
+	],
+	"settings": {}
+}
