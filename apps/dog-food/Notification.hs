@@ -2,7 +2,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Notification where
+module Notification (Notification (..), initializeNotifications) where
 
 import ChatTerminal.Core (safeDecodeUtf8)
 import Control.Monad (void)
@@ -34,7 +34,7 @@ initializeNotifications = case os of
 
 notify :: (Notification -> Text) -> Notification -> IO ()
 notify script notification =
-   void $ readCreateProcess (shell . T.unpack $ script notification) ""
+  void $ readCreateProcess (shell . T.unpack $ script notification) ""
 
 linuxScript :: Notification -> Text
 linuxScript Notification {title, text} = "notify-send \"" <> safeDecodeUtf8 title <> "\" \"" <> safeDecodeUtf8 text <> "\""
@@ -43,7 +43,7 @@ macScript :: Notification -> Text
 macScript Notification {title, text} = "osascript -e 'display notification \"" <> safeDecodeUtf8 text <> "\" with title \"" <> safeDecodeUtf8 title <> "\"'"
 
 initWinNotify :: IO (Notification -> IO ())
-initWinNotify = notify <$> (winScript <$> savePowershellScript)
+initWinNotify = notify . winScript <$> savePowershellScript
 
 winScript :: FilePath -> Notification -> Text
 winScript path Notification {title, text} = "powershell.exe \"" <> T.pack path <> " \'" <> safeDecodeUtf8 title <> "\' \'" <> safeDecodeUtf8 text <> "\'\""
@@ -52,7 +52,8 @@ savePowershellScript :: IO FilePath
 savePowershellScript = do
   appDir <- getAppUserDataDirectory "simplex"
   let psScript = combine appDir "win-toast-notify.ps1"
-  writeFile psScript
+  writeFile
+    psScript
     "[Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType = WindowsRuntime] > $null\n\
     \$Template = [Windows.UI.Notifications.ToastNotificationManager]::GetTemplateContent([Windows.UI.Notifications.ToastTemplateType]::ToastText02)\n\
     \$RawXml = [xml] $Template.GetXml()\n\
