@@ -31,6 +31,7 @@ cfg =
       connIdBytes = 12,
       tbqSize = 16,
       dbFile = "smp-chat.db",
+      dbPoolSize = 4,
       smpCfg = smpDefaultConfig
     }
 

@@ -1,6 +1,7 @@
 CREATE TABLE contact_profiles ( -- remote user profile
   contact_profile_id INTEGER PRIMARY KEY,
   contact_ref TEXT NOT NULL, -- contact name set by remote user (not unique), this name must not contain spaces
+  display_name TEXT NOT NULL DEFAULT '',
   properties TEXT NOT NULL DEFAULT '{}' -- JSON with contact profile properties
 );
 

@@ -96,9 +96,9 @@ agentSubscriber = do
         showContactDisconnected $ Contact a
         notify "disconnected"
         unsetActive' $ ActiveC $ Contact a
-      MSG {brokerMeta, msgBody, msgIntegrity} -> do
+      MSG MsgMeta {integrity, broker} msgBody -> do
         -- ReceivedMessage contact (snd brokerMeta) msgBody msgIntegrity
-        showReceivedMessage (Contact a) (snd brokerMeta) msgBody msgIntegrity
+        showReceivedMessage (Contact a) (snd broker) msgBody integrity
         notify msgBody
         setActive' $ ActiveC $ Contact a
       _ -> pure ()
