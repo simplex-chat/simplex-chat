@@ -60,17 +60,21 @@ CREATE TABLE contact_invitations (
 CREATE TABLE group_profiles ( -- shared group profiles
   group_profile_id INTEGER PRIMARY KEY,
   group_ref TEXT NOT NULL, -- this name must not contain spaces
+  display_name TEXT NOT NULL DEFAULT '',
   properties TEXT NOT NULL DEFAULT '{}' -- JSON with user or contact profile
 );
 
 CREATE TABLE groups (
   group_id INTEGER PRIMARY KEY, -- local group ID
+  invited_by INTEGER REFERENCES contacts ON DELETE RESTRICT,
+  external_group_id BLOB NOT NULL,
   local_group_ref TEXT NOT NULL UNIQUE, -- local group name without spaces
   local_properties TEXT NOT NULL, -- local JSON group properties
   group_profile_id INTEGER REFERENCES group_profiles, -- shared group profile
   user_group_member_details_id INTEGER NOT NULL
     REFERENCES group_member_details (group_member_details_id) ON DELETE RESTRICT,
-  user_id INTEGER NOT NULL REFERENCES user_id
+  user_id INTEGER NOT NULL REFERENCES user_id,
+  UNIQUE (invited_by, external_group_id)
 );
 
 CREATE TABLE group_members ( -- group members, excluding the local user

@@ -29,6 +29,7 @@ executables:
     main: Main.hs
     dependencies:
       - simplex-chat
+      - aeson == 1.5.*
       - async == 2.2.*
       - bytestring == 0.10.*
       - composition == 1.0.*
