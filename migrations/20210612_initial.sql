@@ -102,6 +102,8 @@ CREATE TABLE events ( -- messages received by the agent, append only
   agent_meta TEXT NOT NULL, -- JSON with timestamps etc. sent in MSG
   connection_id INTEGER NOT NULL REFERENCES connections,
   received INTEGER NOT NULL, -- 0 for received, 1 for sent
+  chat_event_id INTEGER,
+  continuation_of INTEGER, -- references chat_event_id, but can be incorrect
   event_type TEXT NOT NULL, -- event type - see protocol/types.ts
   event_encoding INTEGER NOT NULL, -- format of event_body: 0 - binary, 1 - text utf8, 2 - JSON (utf8)
   content_type TEXT NOT NULL, -- content type - see protocol/types.ts
@@ -112,6 +114,15 @@ CREATE TABLE events ( -- messages received by the agent, append only
 );
 
 CREATE INDEX events_external_msg_id_index ON events (connection_id, external_msg_id);
+
+CREATE TABLE event_body_parts (
+  event_body_part_id INTEGER PRIMARY KEY,
+  event_id REFERENCES events,
+  full_size INTEGER NOT NULL,
+  part_status TEXT, -- full, partial
+  content_type TEXT NOT NULL,
+  event_part BLOB
+);
 
 CREATE TABLE contact_profile_events (
   event_id INTEGER NOT NULL UNIQUE REFERENCES events,
@@ -135,17 +146,12 @@ CREATE TABLE group_event_parents (
   parent_group_member_id INTEGER REFERENCES group_members (group_member_id), -- can be NULL if parent_member_id is incorrect
   parent_member_id BLOB, -- shared member ID, unique per group
   parent_event_id INTEGER REFERENCES events (event_id) ON DELETE CASCADE, -- this can be NULL if received event references another event that's not received yet
-  parent_external_msg_id INTEGER NOT NULL,
+  parent_chat_event_id INTEGER NOT NULL,
   parent_event_hash BLOB NOT NULL
 );
 
-CREATE INDEX group_event_parents_parent_external_msg_id_index
-  ON group_event_parents (parent_member_id, parent_external_msg_id);
-
-CREATE TABLE blobs (
-  blob_id INTEGER PRIMARY KEY,
-  content BLOB NOT NULL
-);
+CREATE INDEX group_event_parents_parent_chat_event_id_index
+  ON group_event_parents (parent_member_id, parent_chat_event_id);
 
 CREATE TABLE messages ( -- mutable messages presented to user
   message_id INTEGER PRIMARY KEY,
@@ -155,8 +161,16 @@ CREATE TABLE messages ( -- mutable messages presented to user
   msg_type TEXT NOT NULL,
   content_type TEXT NOT NULL,
   msg_text TEXT NOT NULL, -- textual representation
-  msg_props TEXT NOT NULL, -- JSON
-  msg_blob_id INTEGER REFERENCES blobs (blob_id) ON DELETE RESTRICT -- optional binary content
+  msg_props TEXT NOT NULL -- JSON
+);
+
+CREATE TABLE message_content (
+  message_content_id INTEGER PRIMARY KEY,
+  message_id INTEGER REFERENCES messages ON DELETE CASCADE,
+  content_type TEXT NOT NULL,
+  content_size INTEGER, -- full expected content size
+  content_status TEXT, -- empty, part, full
+  content BLOB NOT NULL
 );
 
 CREATE TABLE message_events (
