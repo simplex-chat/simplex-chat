@@ -20,6 +20,11 @@ data Contact = Contact
   }
   deriving (Eq, Show)
 
+data Group = Group
+  { groupId :: Int64,
+    localGroupRef :: Text
+  }
+
 data Profile = Profile
   { contactRef :: Text,
     displayName :: Text

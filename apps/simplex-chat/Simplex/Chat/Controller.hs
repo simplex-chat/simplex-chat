@@ -23,7 +23,7 @@ data ChatController = ChatController
   { currentUser :: User,
     smpAgent :: AgentClient,
     chatTerminal :: ChatTerminal,
-    chatQ :: TBQueue ChatMessage,
+    chatQ :: TBQueue ChatTransmission,
     inputQ :: TBQueue InputEvent,
     notifyQ :: TBQueue Notification,
     sendNotification :: Notification -> IO ()

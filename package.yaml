@@ -17,6 +17,7 @@ dependencies:
   - base >= 4.7 && < 5
   - bytestring == 0.10.*
   - containers == 0.6.*
+  - mtl == 2.2.*
   - simplexmq == 0.3.*
   - text == 1.2.*
 

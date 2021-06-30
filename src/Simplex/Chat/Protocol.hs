@@ -6,43 +6,87 @@
 module Simplex.Chat.Protocol where
 
 import Control.Applicative (optional, (<|>))
+import Control.Monad.Except (throwError)
 import Data.Attoparsec.ByteString.Char8 (Parser)
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.Int (Int64)
-import Data.List.NonEmpty (NonEmpty (..))
+import Data.List (findIndex)
 import Data.Text (Text)
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Parsers (base64P)
 
-type ChatTransmission = (MsgMeta, ChatMessage)
+data ChatTransmission = ChatTransmission
+  { agentMsgMeta :: MsgMeta,
+    chatDirection :: ChatDirection,
+    chatMessage :: ChatMessage
+  }
 
-data ChatMessage = DirectChatMsg Contact ContentMsg
+newtype ChatDag = ChatDag ByteString
 
-newtype ContentMsg = NewContentMsg ContentData
+data ChatDirection
+  = ReceivedDirectMessage Contact
+  | SentDirectMessage Contact
+  | ReceivedGroupMessage Group Contact
+  | SentGroupMessage Group
 
-newtype ContentData = ContentText Text
+newtype ChatMsgEvent = XMsgNew MessageType
 
-data RawChatMessage
-  = RawChatMessage
-      { chatMsgId :: Maybe Int64,
-        chatMsgEvent :: ChatMsgEvent,
-        chatMsgParams :: [ByteString],
-        chatMsgBody :: [MsgBodyContent]
-      }
-  | RawChatMsgContinuation
-      { prevChatMsgId :: Int64,
-        continuationId :: Int,
-        continuationData :: ByteString
-      }
-  deriving (Eq, Show)
+data MessageType = MTText | MTImage
 
-data ChatMsgEvent
-  = SimplexChatMsgEvent (NonEmpty ByteString)
-  | ChatMsgEvent NameSpace (NonEmpty ByteString)
-  deriving (Eq, Show)
+toMsgType :: ByteString -> Either ByteString MessageType
+toMsgType = \case
+  "c.text" -> Right MTText
+  "c.image" -> Right MTImage
+  t -> Left $ "invalid message type " <> t
+
+rawMsgType :: MessageType -> ByteString
+rawMsgType = \case
+  MTText -> "c.text"
+  MTImage -> "c.image"
+
+data ChatMessage = ChatMessage
+  { chatMsgId :: Maybe Int64,
+    chatMsgEvent :: ChatMsgEvent,
+    chatMsgBody :: [MsgBodyContent],
+    chatDAGIdx :: Maybe Int
+  }
+
+toChatMessage :: RawChatMessage -> Either ByteString ChatMessage
+toChatMessage RawChatMessage {chatMsgId, chatMsgEvent, chatMsgParams, chatMsgBody} = do
+  body <- mapM toMsgBodyContent chatMsgBody
+  case chatMsgEvent of
+    "x.msg.new" -> case chatMsgParams of
+      [mt] -> do
+        t <- toMsgType mt
+        pure ChatMessage {chatMsgId, chatMsgEvent = XMsgNew t, chatMsgBody = body, chatDAGIdx = findDAG body}
+      _ -> throwError "x.msg.new expects one parameter"
+    _ -> throwError $ "unsupported event " <> chatMsgEvent
+toChatMessage _ = Left "message continuation"
+
+findDAG :: [MsgBodyContent] -> Maybe Int
+findDAG = findIndex $ \MsgBodyContent {contentType = t} -> t == SimplexDAG
+
+validContentTypes :: MessageType -> [MsgBodyContent] -> Either ByteString [MsgBodyContent]
+validContentTypes _ = Right
+
+rawChatMessage :: ChatMessage -> RawChatMessage
+rawChatMessage ChatMessage {chatMsgId, chatMsgEvent = event, chatMsgBody = body} =
+  case event of
+    XMsgNew t ->
+      let chatMsgBody = map rawMsgBodyContent body
+       in RawChatMessage {chatMsgId, chatMsgEvent = "x.msg.new", chatMsgParams = [rawMsgType t], chatMsgBody}
+
+toMsgBodyContent :: RawMsgBodyContent -> Either ByteString MsgBodyContent
+toMsgBodyContent RawMsgBodyContent {contentType, contentHash, contentData} = do
+  cType <- toContentType contentType
+  pure MsgBodyContent {contentType = cType, contentHash, contentData}
+
+rawMsgBodyContent :: MsgBodyContent -> RawMsgBodyContent
+rawMsgBodyContent MsgBodyContent {contentType = t, contentHash, contentData} =
+  RawMsgBodyContent {contentType = rawContentType t, contentHash, contentData}
 
 data MsgBodyContent = MsgBodyContent
   { contentType :: ContentType,
@@ -52,11 +96,66 @@ data MsgBodyContent = MsgBodyContent
   deriving (Eq, Show)
 
 data ContentType
-  = ContentType NameSpace ByteString -- unknown namespace
-  | MimeContentType ByteString -- i. namespace for MIME content type
-  | ChannelContentType ByteString -- c. namespace for SimpleX channel content type
-  | SimplexContentType ByteString -- x. namespace
-  | SimplexDAG -- x.dag content type
+  = SimplexContentType XContentType
+  | MimeContentType MContentType
+  | SimplexDAG
+  deriving (Eq, Show)
+
+data XContentType = CCText | CCImage deriving (Eq, Show)
+
+data MContentType = MCImageJPG | MCImagePNG deriving (Eq, Show)
+
+toContentType :: RawContentType -> Either ByteString ContentType
+toContentType (RawContentType ns cType) = case ns of
+  "x" -> case cType of
+    "text" -> Right $ SimplexContentType CCText
+    "image" -> Right $ SimplexContentType CCImage
+    "dag" -> Right SimplexDAG
+    _ -> err
+  "m" -> case cType of
+    "image/jpg" -> Right $ MimeContentType MCImageJPG
+    "image/png" -> Right $ MimeContentType MCImagePNG
+    _ -> err
+  _ -> err
+  where
+    err = Left $ "invalid content type " <> ns <> "." <> cType
+
+rawContentType :: ContentType -> RawContentType
+rawContentType t = case t of
+  SimplexContentType t' -> RawContentType "x" $ case t' of
+    CCText -> "text"
+    CCImage -> "image"
+  MimeContentType t' -> RawContentType "m" $ case t' of
+    MCImageJPG -> "image/jpg"
+    MCImagePNG -> "image/png"
+  SimplexDAG -> RawContentType "x" "dag"
+
+newtype ContentMsg = NewContentMsg ContentData
+
+newtype ContentData = ContentText Text
+
+data RawChatMessage
+  = RawChatMessage
+      { chatMsgId :: Maybe Int64,
+        chatMsgEvent :: ByteString,
+        chatMsgParams :: [ByteString],
+        chatMsgBody :: [RawMsgBodyContent]
+      }
+  | RawChatMsgContinuation
+      { prevChatMsgId :: Int64,
+        continuationId :: Int,
+        continuationData :: ByteString
+      }
+  deriving (Eq, Show)
+
+data RawMsgBodyContent = RawMsgBodyContent
+  { contentType :: RawContentType,
+    contentHash :: Maybe ByteString,
+    contentData :: MsgBodyPartData
+  }
+  deriving (Eq, Show)
+
+data RawContentType = RawContentType NameSpace ByteString
   deriving (Eq, Show)
 
 type NameSpace = ByteString
@@ -87,46 +186,23 @@ rawChatMessageP = A.char '#' *> chatMsgContP <|> chatMsgP
     chatMsgP :: Parser RawChatMessage
     chatMsgP = do
       chatMsgId <- optional A.decimal <* A.space
-      chatMsgEvent <- chatMsgEventP <* A.space
+      chatMsgEvent <- B.intercalate "." <$> identifier `A.sepBy1'` A.char '.' <* A.space
       chatMsgParams <- A.takeWhile1 (not . A.inClass ", ") `A.sepBy'` A.char ',' <* A.space
       chatMsgBody <- msgBodyContent =<< contentInfo `A.sepBy'` A.char ',' <* A.space
       pure RawChatMessage {chatMsgId, chatMsgEvent, chatMsgParams, chatMsgBody}
-    chatMsgEventP :: Parser ChatMsgEvent
-    chatMsgEventP = do
-      identifier <* A.char '.' >>= \case
-        "x" -> SimplexChatMsgEvent <$> cEvent
-        ns -> ChatMsgEvent ns <$> cEvent
-      where
-        cEvent :: Parser (NonEmpty ByteString)
-        cEvent =
-          identifier `A.sepBy1'` A.char '.' >>= \case
-            [] -> fail "empty chat event"
-            a : as -> pure (a :| as)
     identifier :: Parser ByteString
     identifier = B.cons <$> A.letter_ascii <*> A.takeWhile (\c -> A.isAlpha_ascii c || A.isDigit c)
-    contentInfo :: Parser MsgBodyContent
+    contentInfo :: Parser RawMsgBodyContent
     contentInfo = do
-      contentType <- contentTypeP
+      contentType <- RawContentType <$> identifier <* A.char '.' <*> A.takeTill (A.inClass ":, ")
       contentSize <- A.char ':' *> A.decimal
       contentHash <- optional (A.char ':' *> base64P)
-      pure MsgBodyContent {contentType, contentHash, contentData = MBEmpty contentSize}
-    contentTypeP :: Parser ContentType
-    contentTypeP = do
-      identifier <* A.char '.' >>= \case
-        "i" -> MimeContentType <$> cType
-        "c" -> ChannelContentType <$> cType
-        "x" -> simplexContentType <$> cType
-        ns -> ContentType ns <$> cType
-      where
-        cType = A.takeTill (A.inClass ":, ")
-        simplexContentType = \case
-          "dag" -> SimplexDAG
-          s -> SimplexContentType s
-    msgBodyContent :: [MsgBodyContent] -> Parser [MsgBodyContent]
+      pure RawMsgBodyContent {contentType, contentHash, contentData = MBEmpty contentSize}
+    msgBodyContent :: [RawMsgBodyContent] -> Parser [RawMsgBodyContent]
     msgBodyContent [] = pure []
-    msgBodyContent (p@MsgBodyContent {contentData = MBEmpty size} : ps) = do
+    msgBodyContent (p@RawMsgBodyContent {contentData = MBEmpty size} : ps) = do
       s <- A.take size <* A.space <|> A.takeByteString
       if B.length s == size
-        then (p {contentData = MBFull $ MsgData s} :) <$> msgBodyContent ps
-        else pure $ (if B.null s then p else p {contentData = MBPartial size $ MsgData s}) : ps
+        then ((p {contentData = MBFull $ MsgData s} :: RawMsgBodyContent) :) <$> msgBodyContent ps
+        else pure $ (if B.null s then p else p {contentData = MBPartial size $ MsgData s} :: RawMsgBodyContent) : ps
     msgBodyContent _ = fail "expected contentData = MBEmpty"
