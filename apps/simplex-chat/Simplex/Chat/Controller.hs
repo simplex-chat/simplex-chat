@@ -11,10 +11,10 @@ import Control.Monad.IO.Unlift
 import Control.Monad.Reader
 import Numeric.Natural
 import Simplex.Chat.Protocol
+import Simplex.Chat.Types
 import Simplex.Messaging.Agent (AgentClient)
 import Simplex.Messaging.Agent.Protocol (AgentErrorType)
 import Simplex.Notification
-import Simplex.Store.Types
 import Simplex.Terminal
 import Types
 import UnliftIO.STM

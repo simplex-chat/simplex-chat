@@ -1,6 +1,6 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 
-module Simplex.Store.Types where
+module Simplex.Chat.Types where
 
 import Data.ByteString.Char8 (ByteString)
 import Data.Int (Int64)

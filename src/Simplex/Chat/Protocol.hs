@@ -13,9 +13,9 @@ import qualified Data.ByteString.Char8 as B
 import Data.Int (Int64)
 import Data.List.NonEmpty (NonEmpty (..))
 import Data.Text (Text)
+import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Parsers (base64P)
-import Simplex.Store.Types
 
 type ChatTransmission = (MsgMeta, ChatMessage)
 
@@ -37,17 +37,19 @@ data RawChatMessage
         continuationId :: Int,
         continuationData :: ByteString
       }
+  deriving (Eq, Show)
 
 data ChatMsgEvent
   = SimplexChatMsgEvent (NonEmpty ByteString)
   | ChatMsgEvent NameSpace (NonEmpty ByteString)
+  deriving (Eq, Show)
 
 data MsgBodyContent = MsgBodyContent
   { contentType :: ContentType,
-    contentSize :: Int,
     contentHash :: Maybe ByteString,
     contentData :: MsgBodyPartData
   }
+  deriving (Eq, Show)
 
 data ContentType
   = ContentType NameSpace ByteString -- unknown namespace
@@ -55,6 +57,7 @@ data ContentType
   | ChannelContentType ByteString -- c. namespace for SimpleX channel content type
   | SimplexContentType ByteString -- x. namespace
   | SimplexDAG -- x.dag content type
+  deriving (Eq, Show)
 
 type NameSpace = ByteString
 
@@ -62,13 +65,15 @@ data MsgBodyPartData
   = -- | fully loaded
     MBFull MsgData
   | -- | partially loaded
-    MBPartial MsgData
+    MBPartial Int MsgData
   | -- | not loaded yet
-    MBEmpty
+    MBEmpty Int
+  deriving (Eq, Show)
 
 data MsgData
   = MsgData ByteString
-  | MsgDataRec {recId :: Int64, recSize :: Int}
+  | MsgDataRec {dataId :: Int64, dataSize :: Int}
+  deriving (Eq, Show)
 
 rawChatMessageP :: Parser RawChatMessage
 rawChatMessageP = A.char '#' *> chatMsgContP <|> chatMsgP
@@ -83,7 +88,7 @@ rawChatMessageP = A.char '#' *> chatMsgContP <|> chatMsgP
     chatMsgP = do
       chatMsgId <- optional A.decimal <* A.space
       chatMsgEvent <- chatMsgEventP <* A.space
-      chatMsgParams <- A.takeTill (A.inClass ", ") `A.sepBy'` A.char ',' <* A.space
+      chatMsgParams <- A.takeWhile1 (not . A.inClass ", ") `A.sepBy'` A.char ',' <* A.space
       chatMsgBody <- msgBodyContent =<< contentInfo `A.sepBy'` A.char ',' <* A.space
       pure RawChatMessage {chatMsgId, chatMsgEvent, chatMsgParams, chatMsgBody}
     chatMsgEventP :: Parser ChatMsgEvent
@@ -104,7 +109,7 @@ rawChatMessageP = A.char '#' *> chatMsgContP <|> chatMsgP
       contentType <- contentTypeP
       contentSize <- A.char ':' *> A.decimal
       contentHash <- optional (A.char ':' *> base64P)
-      pure MsgBodyContent {contentType, contentSize, contentHash, contentData = MBEmpty}
+      pure MsgBodyContent {contentType, contentHash, contentData = MBEmpty contentSize}
     contentTypeP :: Parser ContentType
     contentTypeP = do
       identifier <* A.char '.' >>= \case
@@ -119,9 +124,9 @@ rawChatMessageP = A.char '#' *> chatMsgContP <|> chatMsgP
           s -> SimplexContentType s
     msgBodyContent :: [MsgBodyContent] -> Parser [MsgBodyContent]
     msgBodyContent [] = pure []
-    msgBodyContent (p : ps) = do
-      let size = contentSize p
+    msgBodyContent (p@MsgBodyContent {contentData = MBEmpty size} : ps) = do
       s <- A.take size <* A.space <|> A.takeByteString
       if B.length s == size
-        then (p {contentData = MBFull (MsgData s)} :) <$> msgBodyContent ps
-        else pure $ p {contentData = if B.null s then MBEmpty else MBPartial (MsgData s)} : ps
+        then (p {contentData = MBFull $ MsgData s} :) <$> msgBodyContent ps
+        else pure $ (if B.null s then p else p {contentData = MBPartial size $ MsgData s}) : ps
+    msgBodyContent _ = fail "expected contentData = MBEmpty"
