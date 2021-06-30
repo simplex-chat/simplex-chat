@@ -9,10 +9,10 @@ import Control.Monad.Reader
 import qualified Data.ByteString.Char8 as B
 import Data.List (dropWhileEnd)
 import Simplex.Chat.Controller
+import Simplex.Chat.Types
 import Simplex.Terminal
 import System.Exit (exitSuccess)
 import System.Terminal hiding (insertChars)
-import Types
 import UnliftIO.STM
 
 getKey :: MonadTerminal m => m (Key, Modifiers)
@@ -81,7 +81,7 @@ updateTermState ac tw (key, ms) ts@TerminalState {inputString = s, inputPosition
     contactPrefix = case ac of
       ActiveNone -> ""
       ActiveC (Contact c) -> "@" <> B.unpack c <> " "
-      ActiveG (Group g) -> "#" <> B.unpack g <> " "
+    -- ActiveG (Group g) -> "#" <> B.unpack g <> " "
     backDeleteChar
       | p == 0 || null s = ts
       | p >= length s = ts' (init s, length s - 1)

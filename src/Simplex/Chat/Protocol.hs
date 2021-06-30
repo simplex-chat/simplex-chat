@@ -1,7 +1,11 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE StandaloneDeriving #-}
 
 module Simplex.Chat.Protocol where
 
@@ -17,24 +21,41 @@ import Data.Text (Text)
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Parsers (base64P)
+import Simplex.Messaging.Protocol (MsgBody)
+import Simplex.Messaging.Util (bshow)
 
-data ChatTransmission = ChatTransmission
-  { agentMsgMeta :: MsgMeta,
-    chatDirection :: ChatDirection,
-    chatMessage :: ChatMessage
-  }
+data ChatTransmission
+  = ChatTransmission
+      { agentMsgMeta :: MsgMeta,
+        chatDirection :: ChatDirection 'Agent,
+        chatMessage :: ChatMessage
+      }
+  | ChatTransmissionError
+      { agentMsgMeta :: MsgMeta,
+        chatDirection :: ChatDirection 'Agent,
+        msgBody :: MsgBody,
+        msgError :: ByteString
+      }
+  | AgentTransmission
+      { chatDirection :: ChatDirection 'Agent,
+        agentMessage :: ACommand 'Agent
+      }
+  deriving (Eq, Show)
 
-newtype ChatDag = ChatDag ByteString
+data ChatDirection (p :: AParty) where
+  ReceivedDirectMessage :: Contact -> ChatDirection 'Agent
+  SentDirectMessage :: Contact -> ChatDirection 'Client
+  ReceivedGroupMessage :: Group -> Contact -> ChatDirection 'Agent
+  SentGroupMessage :: Group -> ChatDirection 'Client
 
-data ChatDirection
-  = ReceivedDirectMessage Contact
-  | SentDirectMessage Contact
-  | ReceivedGroupMessage Group Contact
-  | SentGroupMessage Group
+deriving instance Eq (ChatDirection p)
+
+deriving instance Show (ChatDirection p)
 
 newtype ChatMsgEvent = XMsgNew MessageType
+  deriving (Eq, Show)
 
-data MessageType = MTText | MTImage
+data MessageType = MTText | MTImage deriving (Eq, Show)
 
 toMsgType :: ByteString -> Either ByteString MessageType
 toMsgType = \case
@@ -53,6 +74,7 @@ data ChatMessage = ChatMessage
     chatMsgBody :: [MsgBodyContent],
     chatDAGIdx :: Maybe Int
   }
+  deriving (Eq, Show)
 
 toChatMessage :: RawChatMessage -> Either ByteString ChatMessage
 toChatMessage RawChatMessage {chatMsgId, chatMsgEvent, chatMsgParams, chatMsgBody} = do
@@ -68,9 +90,6 @@ toChatMessage _ = Left "message continuation"
 
 findDAG :: [MsgBodyContent] -> Maybe Int
 findDAG = findIndex $ \MsgBodyContent {contentType = t} -> t == SimplexDAG
-
-validContentTypes :: MessageType -> [MsgBodyContent] -> Either ByteString [MsgBodyContent]
-validContentTypes _ = Right
 
 rawChatMessage :: ChatMessage -> RawChatMessage
 rawChatMessage ChatMessage {chatMsgId, chatMsgEvent = event, chatMsgBody = body} =
@@ -101,15 +120,15 @@ data ContentType
   | SimplexDAG
   deriving (Eq, Show)
 
-data XContentType = CCText | CCImage deriving (Eq, Show)
+data XContentType = XCText | XCImage deriving (Eq, Show)
 
 data MContentType = MCImageJPG | MCImagePNG deriving (Eq, Show)
 
 toContentType :: RawContentType -> Either ByteString ContentType
 toContentType (RawContentType ns cType) = case ns of
   "x" -> case cType of
-    "text" -> Right $ SimplexContentType CCText
-    "image" -> Right $ SimplexContentType CCImage
+    "text" -> Right $ SimplexContentType XCText
+    "image" -> Right $ SimplexContentType XCImage
     "dag" -> Right SimplexDAG
     _ -> err
   "m" -> case cType of
@@ -123,8 +142,8 @@ toContentType (RawContentType ns cType) = case ns of
 rawContentType :: ContentType -> RawContentType
 rawContentType t = case t of
   SimplexContentType t' -> RawContentType "x" $ case t' of
-    CCText -> "text"
-    CCImage -> "image"
+    XCText -> "text"
+    XCImage -> "image"
   MimeContentType t' -> RawContentType "m" $ case t' of
     MCImageJPG -> "image/jpg"
     MCImagePNG -> "image/png"
@@ -174,6 +193,18 @@ data MsgData
   | MsgDataRec {dataId :: Int64, dataSize :: Int}
   deriving (Eq, Show)
 
+class DataLength a where
+  dataLength :: a -> Int
+
+instance DataLength MsgBodyPartData where
+  dataLength (MBFull d) = dataLength d
+  dataLength (MBPartial l _) = l
+  dataLength (MBEmpty l) = l
+
+instance DataLength MsgData where
+  dataLength (MsgData s) = B.length s
+  dataLength MsgDataRec {dataSize} = dataSize
+
 rawChatMessageP :: Parser RawChatMessage
 rawChatMessageP = A.char '#' *> chatMsgContP <|> chatMsgP
   where
@@ -206,3 +237,24 @@ rawChatMessageP = A.char '#' *> chatMsgContP <|> chatMsgP
         then ((p {contentData = MBFull $ MsgData s} :: RawMsgBodyContent) :) <$> msgBodyContent ps
         else pure $ (if B.null s then p else p {contentData = MBPartial size $ MsgData s} :: RawMsgBodyContent) : ps
     msgBodyContent _ = fail "expected contentData = MBEmpty"
+
+serializeRawChatMessage :: RawChatMessage -> ByteString
+serializeRawChatMessage = \case
+  RawChatMessage {chatMsgId, chatMsgEvent, chatMsgParams, chatMsgBody} ->
+    B.unwords
+      [ maybe "" bshow chatMsgId,
+        chatMsgEvent,
+        B.intercalate "," chatMsgParams,
+        B.unwords $ map serializeContentInfo chatMsgBody,
+        B.unwords $ map serializeContentData chatMsgBody
+      ]
+  RawChatMsgContinuation {prevChatMsgId, continuationId, continuationData} ->
+    bshow prevChatMsgId <> "." <> bshow continuationId <> " " <> continuationData
+
+serializeContentInfo :: RawMsgBodyContent -> ByteString
+serializeContentInfo RawMsgBodyContent {contentType = RawContentType ns cType, contentHash, contentData} =
+  ns <> "." <> cType <> ":" <> bshow (dataLength contentData) <> maybe "" (":" <>) contentHash
+
+serializeContentData :: RawMsgBodyContent -> ByteString
+serializeContentData RawMsgBodyContent {contentData = MBFull (MsgData s)} = s
+serializeContentData _ = ""

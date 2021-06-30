@@ -11,7 +11,9 @@ data User = User
     profile :: Profile
   }
 
-data Contact = Contact
+newtype Contact = Contact {fromContact :: ByteString} deriving (Eq, Show)
+
+data Contact' = Contact'
   { contactId :: Int64,
     localContactRef :: Text,
     profile :: Profile,
@@ -24,6 +26,7 @@ data Group = Group
   { groupId :: Int64,
     localGroupRef :: Text
   }
+  deriving (Eq, Show)
 
 data Profile = Profile
   { contactRef :: Text,

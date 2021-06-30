@@ -16,7 +16,6 @@ import Simplex.Messaging.Agent (AgentClient)
 import Simplex.Messaging.Agent.Protocol (AgentErrorType)
 import Simplex.Notification
 import Simplex.Terminal
-import Types
 import UnliftIO.STM
 
 data ChatController = ChatController
@@ -31,7 +30,7 @@ data ChatController = ChatController
 
 data InputEvent = InputCommand String | InputControl Char
 
-data ChatError = ChatErrorAgent Types.Contact AgentErrorType
+data ChatError = ChatErrorAgent Contact AgentErrorType
   deriving (Show, Exception)
 
 type ChatMonad m = (MonadUnliftIO m, MonadReader ChatController m, MonadError ChatError m)

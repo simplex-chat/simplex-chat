@@ -14,8 +14,8 @@ module Simplex.View
     showSentMessage,
     ttyContact,
     ttyFromContact,
-    ttyGroup,
-    ttyFromGroup,
+    -- ttyGroup,
+    -- ttyFromGroup,
     safeDecodeUtf8,
   )
 where
@@ -31,11 +31,11 @@ import Data.Time.LocalTime (TimeZone, ZonedTime, getCurrentTimeZone, getZonedTim
 import Simplex.Chat.Controller
 import Simplex.Chat.Markdown
 import Simplex.Chat.Styled
+import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Protocol
 import Simplex.Terminal (printToTerminal)
 import Simplex.Util (safeDecodeUtf8)
 import System.Console.ANSI.Types
-import Types
 
 type ChatReader m = (MonadUnliftIO m, MonadReader ChatController m)
 
@@ -136,11 +136,11 @@ ttyToContact (Contact a) = styled (Colored Cyan) $ a <> " "
 ttyFromContact :: Contact -> StyledString
 ttyFromContact (Contact a) = styled (Colored Yellow) $ a <> "> "
 
-ttyGroup :: Group -> StyledString
-ttyGroup (Group g) = styled (Colored Blue) $ "#" <> g
+-- ttyGroup :: Group -> StyledString
+-- ttyGroup (Group g) = styled (Colored Blue) $ "#" <> g
 
-ttyFromGroup :: Group -> Contact -> StyledString
-ttyFromGroup (Group g) (Contact a) = styled (Colored Yellow) $ "#" <> g <> " " <> a <> "> "
+-- ttyFromGroup :: Group -> Contact -> StyledString
+-- ttyFromGroup (Group g) (Contact a) = styled (Colored Yellow) $ "#" <> g <> " " <> a <> "> "
 
 styleTime :: String -> StyledString
 styleTime = Styled [SetColor Foreground Vivid Black]
