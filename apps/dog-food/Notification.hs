@@ -27,7 +27,7 @@ initializeNotifications = case os of
       False -> pure $ notify linuxScript
       True -> do
         v <- readFile "/proc/sys/kernel/osrelease"
-        if "wsl" `isInfixOf` map toLower v
+        if "Microsoft" `isInfixOf` v || "WSL" `isInfixOf` v
           then initWinNotify
           else pure $ notify linuxScript
   _ -> pure . const $ pure ()
