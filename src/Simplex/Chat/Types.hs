@@ -17,11 +17,9 @@ data User = User
     profile :: Profile
   }
 
-newtype Contact = Contact {fromContact :: ByteString} deriving (Eq, Show)
-
 type UserId = Int64
 
-data Contact' = Contact'
+data Contact = Contact
   { contactId :: Int64,
     localContactRef :: ContactRef,
     profile :: Maybe Profile,

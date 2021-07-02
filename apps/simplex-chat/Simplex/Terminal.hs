@@ -10,7 +10,7 @@ import System.Console.ANSI.Types
 import System.Terminal
 import UnliftIO.STM
 
-data ActiveTo = ActiveNone | ActiveC Contact | ActiveC' ContactRef
+data ActiveTo = ActiveNone | ActiveC ContactRef
   deriving (Eq)
 
 data ChatTerminal = ChatTerminal

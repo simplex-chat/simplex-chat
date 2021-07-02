@@ -33,7 +33,13 @@ data ChatController = ChatController
 
 data InputEvent = InputCommand String | InputControl Char
 
-data ChatError = ChatErrorAgent (Maybe Contact) AgentErrorType | ChatErrorStore StoreError
+data ChatError
+  = ChatErrorContact ContactError
+  | ChatErrorAgent ContactRef AgentErrorType
+  | ChatErrorStore StoreError
+  deriving (Show, Exception)
+
+newtype ContactError = CENotFound ContactRef
   deriving (Show, Exception)
 
 type ChatMonad m = (MonadUnliftIO m, MonadReader ChatController m, MonadError ChatError m)

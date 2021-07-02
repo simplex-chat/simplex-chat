@@ -58,7 +58,7 @@ createStore dbFilePath poolSize = createSQLiteStore dbFilePath poolSize migratio
 insertedRowId :: DB.Connection -> IO Int64
 insertedRowId db = fromOnly . head <$> DB.query_ db "SELECT last_insert_rowid();"
 
-createDirectContact :: MonadUnliftIO m => SQLiteStore -> UserId -> ConnId -> Maybe Text -> m Contact'
+createDirectContact :: MonadUnliftIO m => SQLiteStore -> UserId -> ConnId -> Maybe Text -> m Contact
 createDirectContact st userId agentConnId contactRef =
   liftIO . withTransaction st $ \db -> do
     DB.execute db "INSERT INTO connections (user_id, agent_conn_id, conn_status) VALUES (?,?,?);" (userId, agentConnId, ConnNew)
@@ -69,7 +69,7 @@ createDirectContact st userId agentConnId contactRef =
     DB.execute db "INSERT INTO contacts (user_id, local_contact_ref) VALUES (?,?);" (userId, localContactRef)
     contactId <- insertedRowId db
     DB.execute db "INSERT INTO contact_connections (connection_id, contact_id, active) VALUES (?,?,1);" (connId, contactId)
-    pure Contact' {contactId, localContactRef, profile = Nothing, activeConn}
+    pure Contact {contactId, localContactRef, profile = Nothing, activeConn}
 
 deleteContact :: MonadUnliftIO m => SQLiteStore -> UserId -> ContactRef -> m ()
 deleteContact st userId contactRef =
@@ -110,7 +110,7 @@ getContactConnection st userId contactRef =
         [":user_id" := userId, ":contact_ref" := contactRef]
   where
     connection (connRow : _) = Right $ toConnection connRow
-    connection _ = Left SEContactNotFound
+    connection _ = Left $ SEContactNotFound contactRef
 
 getContactConnections :: MonadUnliftIO m => SQLiteStore -> UserId -> ContactRef -> m [Connection]
 getContactConnections st userId contactRef =
@@ -160,7 +160,7 @@ getConnectionChatDirection st userId agentConnId =
   where
     chatDirection :: [ChatDirRow] -> Either StoreError (ChatDirection 'Agent)
     chatDirection [d] = Right $ toChatDirection agentConnId d
-    chatDirection _ = Left SEContactNotFound
+    chatDirection _ = Left SEConnectionNotFound
 
 type ChatDirRow = (Int64, Text, Int64, Int, Maybe Int64, ConnStatus, Maybe Int64, Maybe ContactRef, Maybe Text)
 
@@ -170,7 +170,10 @@ toChatDirection
   (contactId, localContactRef, connId, connLevel, viaContact, connStatus, profileId, contactRef, displayName) =
     let profile = Profile <$> profileId <*> contactRef <*> displayName
         activeConn = Connection {connId, agentConnId, connLevel, viaContact, connStatus}
-     in ReceivedDirectMessage $ Contact' {contactId, localContactRef, profile, activeConn}
+     in ReceivedDirectMessage $ Contact {contactId, localContactRef, profile, activeConn}
 
-data StoreError = SEContactNotFound | SEInternal ByteString
+data StoreError
+  = SEContactNotFound ContactRef
+  | SEConnectionNotFound
+  | SEInternal ByteString
   deriving (Show, Exception)

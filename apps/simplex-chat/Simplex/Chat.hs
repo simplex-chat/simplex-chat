@@ -20,6 +20,7 @@ import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.Functor (($>))
 import Data.List (find)
+import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
@@ -71,8 +72,7 @@ inputSubscriber = do
               SendMessage c msg -> showSentMessage c msg
               _ -> printToView [plain s]
             runExceptT (processChatCommand cmd) >>= \case
-              Left (ChatErrorAgent c e) -> showAgentError c e
-              Left e -> liftIO $ print e
+              Left e -> showChatError e
               _ -> pure ()
 
 processChatCommand :: ChatMonad m => ChatCommand -> m ()
@@ -80,29 +80,30 @@ processChatCommand = \case
   ChatHelp -> printToView chatHelpInfo
   MarkdownHelp -> printToView markdownInfo
   AddContact cRef -> do
-    (connId, qInfo) <- withAgent Nothing createConnection
+    (connId, qInfo) <- withAgent (fromMaybe "" cRef) createConnection
     userId <- asks currentUserId
     contact <- withStore $ \st -> createDirectContact st userId connId cRef
     showInvitation (localContactRef contact) qInfo
   Connect cRef qInfo -> do
     userId <- asks currentUserId
-    connId <- withAgent Nothing (`joinConnection` qInfo)
+    connId <- withAgent (fromMaybe "" cRef) (`joinConnection` qInfo)
     void $ withStore $ \st -> createDirectContact st userId connId cRef
   DeleteContact cRef -> do
     userId <- asks currentUserId
     conns <- withStore $ \st -> getContactConnections st userId cRef
-    withAgent Nothing $ \smp -> forM_ conns $ \Connection {agentConnId} ->
+    withAgent cRef $ \smp -> forM_ conns $ \Connection {agentConnId} ->
       deleteConnection smp agentConnId `catchError` \(_ :: AgentErrorType) -> pure ()
     void $ withStore $ \st -> deleteContact st userId cRef
+    unsetActive $ ActiveC cRef
+    when (null conns) . throwError . ChatErrorContact $ CENotFound cRef
     showContactDeleted cRef
-    unsetActive $ ActiveC' cRef
   SendMessage cRef msg -> do
     userId <- asks currentUserId
-    conn <- withStore $ \st -> getContactConnection st userId cRef
+    Connection {agentConnId} <- withStore $ \st -> getContactConnection st userId cRef
     let body = MsgBodyContent {contentType = SimplexContentType XCText, contentHash = Nothing, contentData = MBFull $ MsgData msg}
         rawMsg = rawChatMessage ChatMessage {chatMsgId = Nothing, chatMsgEvent = XMsgNew MTText, chatMsgBody = [body], chatDAGIdx = Nothing}
-    void . withAgent Nothing $ \smp -> sendMessage smp (agentConnId (conn :: Connection)) $ serializeRawChatMessage rawMsg
-    setActive $ ActiveC' cRef
+    void . withAgent cRef $ \smp -> sendMessage smp agentConnId $ serializeRawChatMessage rawMsg
+    setActive $ ActiveC cRef
 
 agentSubscriber :: (MonadUnliftIO m, MonadReader ChatController m) => m ()
 agentSubscriber = do
@@ -131,7 +132,7 @@ chatSubscriber = do
     atomically (readTBQueue cQ) >>= \case
       ChatTransmission
         { agentMsgMeta = meta,
-          chatDirection = ReceivedDirectMessage Contact' {localContactRef = c},
+          chatDirection = ReceivedDirectMessage Contact {localContactRef = c},
           chatMessage = ChatMessage {chatMsgEvent, chatMsgBody}
         } ->
           case chatMsgEvent of
@@ -141,19 +142,19 @@ chatSubscriber = do
                   let text = safeDecodeUtf8 bs
                   showReceivedMessage c (snd $ broker meta) text (integrity meta)
                   showToast ("@" <> c) text
-                  setActive $ ActiveC' c
+                  setActive $ ActiveC c
                 _ -> pure ()
             _ -> pure ()
-      AgentTransmission {chatDirection = ReceivedDirectMessage Contact' {localContactRef = c}, agentMessage} ->
+      AgentTransmission {chatDirection = ReceivedDirectMessage Contact {localContactRef = c}, agentMessage} ->
         case agentMessage of
           CON -> do
             showContactConnected c
             showToast ("@" <> c) "connected"
-            setActive $ ActiveC' c
+            setActive $ ActiveC c
           END -> do
             showContactDisconnected c
             showToast ("@" <> c) "disconnected"
-            unsetActive $ ActiveC' c
+            unsetActive $ ActiveC c
           _ -> pure ()
       _ -> pure ()
 
@@ -165,7 +166,7 @@ notificationSubscriber = do
   ChatController {notifyQ, sendNotification} <- ask
   forever $ atomically (readTBQueue notifyQ) >>= liftIO . sendNotification
 
-withAgent :: ChatMonad m => Maybe Contact -> (AgentClient -> ExceptT AgentErrorType m a) -> m a
+withAgent :: ChatMonad m => ContactRef -> (AgentClient -> ExceptT AgentErrorType m a) -> m a
 withAgent c action =
   asks smpAgent
     >>= runExceptT . action
@@ -178,13 +179,17 @@ withStore ::
 withStore action = do
   st <- asks chatStore
   runExceptT (action st `E.catch` handleInternal) >>= \case
-    Right c -> return c
-    Left e -> throwError $ ChatErrorStore e
+    Right c -> pure c
+    Left e -> throwError $ storeError e
   where
     -- TODO when parsing exception happens in store, the agent hangs;
     -- changing SQLError to SomeException does not help
     handleInternal :: (MonadError StoreError m') => E.SomeException -> m' a
     handleInternal e = throwError . SEInternal $ bshow e
+    storeError :: StoreError -> ChatError
+    storeError = \case
+      SEContactNotFound c -> ChatErrorContact $ CENotFound c
+      e -> ChatErrorStore e
 
 chatCommandP :: Parser ChatCommand
 chatCommandP =
