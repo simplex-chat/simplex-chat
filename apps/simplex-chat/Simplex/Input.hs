@@ -8,6 +8,7 @@ import Control.Monad.IO.Unlift
 import Control.Monad.Reader
 import qualified Data.ByteString.Char8 as B
 import Data.List (dropWhileEnd)
+import qualified Data.Text as T
 import Simplex.Chat.Controller
 import Simplex.Chat.Types
 import Simplex.Terminal
@@ -81,6 +82,7 @@ updateTermState ac tw (key, ms) ts@TerminalState {inputString = s, inputPosition
     contactPrefix = case ac of
       ActiveNone -> ""
       ActiveC (Contact c) -> "@" <> B.unpack c <> " "
+      ActiveC' c -> "@" <> T.unpack c <> " "
     -- ActiveG (Group g) -> "#" <> B.unpack g <> " "
     backDeleteChar
       | p == 0 || null s = ts

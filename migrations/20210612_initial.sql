@@ -39,14 +39,15 @@ CREATE TABLE connections ( -- all SMP agent connections
   connection_id INTEGER PRIMARY KEY,
   agent_conn_id BLOB NOT NULL UNIQUE,
   conn_level INTEGER NOT NULL DEFAULT 0,
-  via_conn BLOB REFERENCES contact_connections (connection_id),
+  via_contact INTEGER REFERENCES contacts (contact_id),
   conn_status TEXT NOT NULL DEFAULT '',
   user_id INTEGER NOT NULL REFERENCES users
 );
 
 CREATE TABLE contact_connections ( -- connections only for direct messages, many per contact
   connection_id INTEGER NOT NULL UNIQUE REFERENCES connections ON DELETE CASCADE,
-  contact_id INTEGER NOT NULL REFERENCES contacts ON DELETE RESTRICT -- connection must be removed first via the agent
+  contact_id INTEGER REFERENCES contacts ON DELETE RESTRICT, -- connection must be removed first via the agent
+  active INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE TABLE contact_invitations (

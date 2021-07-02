@@ -5,6 +5,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module Simplex.Chat where
 
@@ -21,7 +22,6 @@ import Data.Functor (($>))
 import Data.List (find)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
-import Database.SQLite.Simple (SQLError (..))
 import Simplex.Chat.Controller
 import Simplex.Chat.Protocol
 import Simplex.Chat.Styled (plain)
@@ -43,8 +43,8 @@ data ChatCommand
   | MarkdownHelp
   | AddContact (Maybe ContactRef)
   | Connect (Maybe ContactRef) SMPQueueInfo
-  | DeleteContact Contact
-  | SendMessage Contact ByteString
+  | DeleteContact ContactRef
+  | SendMessage ContactRef ByteString
   deriving (Show)
 
 runChatController :: (MonadUnliftIO m, MonadReader ChatController m) => m ()
@@ -78,24 +78,30 @@ processChatCommand :: ChatMonad m => ChatCommand -> m ()
 processChatCommand = \case
   ChatHelp -> printToView chatHelpInfo
   MarkdownHelp -> printToView markdownInfo
-  AddContact contactRef -> do
-    (connId, qInfo) <- withAgent Nothing (`createConnection` Nothing)
+  AddContact cRef -> do
+    (connId, qInfo) <- withAgent Nothing createConnection
     userId <- asks currentUserId
-    contact <- withStore $ \st -> createDirectContact st userId connId contactRef
-    showInvitation contact qInfo
-  Connect contactRef qInfo -> do
+    contact <- withStore $ \st -> createDirectContact st userId connId cRef
+    showInvitation (localContactRef contact) qInfo
+  Connect cRef qInfo -> do
     userId <- asks currentUserId
-    connId <- withAgent Nothing $ \smp -> joinConnection smp Nothing qInfo
-    void $ withStore $ \st -> createDirectContact st userId connId contactRef
-  DeleteContact c -> do
-    withAgent (Just c) (`deleteConnection` fromContact c)
-    showContactDeleted c
-    unsetActive $ ActiveC c
-  SendMessage c msg -> do
+    connId <- withAgent Nothing (`joinConnection` qInfo)
+    void $ withStore $ \st -> createDirectContact st userId connId cRef
+  DeleteContact cRef -> do
+    userId <- asks currentUserId
+    conns <- withStore $ \st -> getContactConnections st userId cRef
+    withAgent Nothing $ \smp -> forM_ conns $ \Connection {agentConnId} ->
+      deleteConnection smp agentConnId `catchError` \(_ :: AgentErrorType) -> pure ()
+    void $ withStore $ \st -> deleteContact st userId cRef
+    showContactDeleted cRef
+    unsetActive $ ActiveC' cRef
+  SendMessage cRef msg -> do
+    userId <- asks currentUserId
+    conn <- withStore $ \st -> getContactConnection st userId cRef
     let body = MsgBodyContent {contentType = SimplexContentType XCText, contentHash = Nothing, contentData = MBFull $ MsgData msg}
         rawMsg = rawChatMessage ChatMessage {chatMsgId = Nothing, chatMsgEvent = XMsgNew MTText, chatMsgBody = [body], chatDAGIdx = Nothing}
-    void . withAgent (Just c) $ \smp -> sendMessage smp (fromContact c) $ serializeRawChatMessage rawMsg
-    setActive $ ActiveC c
+    void . withAgent Nothing $ \smp -> sendMessage smp (agentConnId (conn :: Connection)) $ serializeRawChatMessage rawMsg
+    setActive $ ActiveC' cRef
 
 agentSubscriber :: (MonadUnliftIO m, MonadReader ChatController m) => m ()
 agentSubscriber = do
@@ -167,18 +173,17 @@ withStore action = do
   where
     -- TODO when parsing exception happens in store, the agent hangs;
     -- changing SQLError to SomeException does not help
-    handleInternal :: (MonadError StoreError m') => SQLError -> m' a
+    handleInternal :: (MonadError StoreError m') => E.SomeException -> m' a
     handleInternal e = throwError . SEInternal $ bshow e
 
 chatCommandP :: Parser ChatCommand
 chatCommandP =
   ("/help" <|> "/h") $> ChatHelp
-    <|> ("/add" <|> "/a") *> (AddContact <$> contactRef)
-    <|> ("/connect" <|> "/c") *> ((Connect <$> contactRef <*> qInfo) <|> (Connect Nothing <$> qInfo))
-    <|> ("/delete " <|> "/d ") *> (DeleteContact <$> contact)
-    <|> A.char '@' *> (SendMessage <$> contact <* A.space <*> A.takeByteString)
+    <|> ("/add" <|> "/a") *> (AddContact <$> optional (A.space *> contactRef))
+    <|> ("/connect" <|> "/c") *> ((Connect <$> optional (A.space *> contactRef) <*> qInfo) <|> (Connect Nothing <$> qInfo))
+    <|> ("/delete " <|> "/d ") *> (DeleteContact <$> contactRef)
+    <|> A.char '@' *> (SendMessage <$> contactRef <*> (A.space *> A.takeByteString))
     <|> ("/markdown" <|> "/m") $> MarkdownHelp
   where
-    contact = Contact <$> A.takeTill (== ' ')
-    contactRef = optional $ A.space *> (safeDecodeUtf8 <$> A.takeTill (== ' '))
+    contactRef = safeDecodeUtf8 <$> A.takeTill (== ' ')
     qInfo = A.space *> smpQueueInfoP

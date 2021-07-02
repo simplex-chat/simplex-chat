@@ -13,7 +13,9 @@ module Simplex.Store
     StoreError (..),
     createStore,
     createDirectContact,
+    deleteContact,
     getContactConnection,
+    getContactConnections,
   )
 where
 
@@ -56,34 +58,78 @@ insertedRowId db = fromOnly . head <$> DB.query_ db "SELECT last_insert_rowid();
 createDirectContact :: MonadUnliftIO m => SQLiteStore -> UserId -> ConnId -> Maybe Text -> m Contact'
 createDirectContact st userId agentConnId contactRef =
   liftIO . withTransaction st $ \db -> do
-    DB.execute db "INSERT INTO connections (user_id, agent_conn_id) VALUES (?,?);" (userId, agentConnId)
+    DB.execute db "INSERT INTO connections (user_id, agent_conn_id, conn_status) VALUES (?,?,?);" (userId, agentConnId, ConnNew)
     connId <- insertedRowId db
-    let activeConn = Connection {connId, agentConnId, connLevel = 0, viaConn = Nothing, connStatus = ConnNew}
+    let activeConn = Connection {connId, agentConnId, connLevel = 0, viaContact = Nothing, connStatus = ConnNew}
     -- TODO support undefined localContactRef (Nothing) - currently it would fail
     let localContactRef = fromMaybe "" contactRef
     DB.execute db "INSERT INTO contacts (user_id, local_contact_ref) VALUES (?,?);" (userId, localContactRef)
     contactId <- insertedRowId db
-    DB.execute db "INSERT INTO contact_connections (connection_id, contact_id) VALUES (?,?);" (connId, contactId)
+    DB.execute db "INSERT INTO contact_connections (connection_id, contact_id, active) VALUES (?,?,1);" (connId, contactId)
     pure Contact' {contactId, localContactRef, profile = Nothing, activeConn}
+
+deleteContact :: MonadUnliftIO m => SQLiteStore -> UserId -> ContactRef -> m ()
+deleteContact st userId contactRef =
+  liftIO . withTransaction st $ \db ->
+    forM_
+      [ [sql|
+          DELETE FROM connections
+          WHERE user_id = :user_id AND connection_id IN (
+            SELECT cc.connection_id
+            FROM contact_connections AS cc
+            JOIN contacts AS cs ON cs.contact_id = cc.contact_id
+            WHERE local_contact_ref = :contact_ref
+          );
+        |],
+        [sql|
+          DELETE FROM contacts
+          WHERE user_id = :user_id AND local_contact_ref = :contact_ref;
+        |]
+      ]
+      $ \q -> DB.executeNamed db q [":user_id" := userId, ":contact_ref" := contactRef]
 
 getContactConnection :: (MonadUnliftIO m, MonadError StoreError m) => SQLiteStore -> UserId -> ContactRef -> m Connection
 getContactConnection st userId contactRef =
-  liftIOEither . withTransaction st $ \db -> do
-    DB.queryNamed
-      db
-      [sql|
-        SELECT c.connection_id, c.agent_conn_id, c.conn_level, c.via_conn, c.conn_status
-        FROM connections AS c
-        JOIN contact_connections AS cc ON cc.connection_id == c.connection_id
-        JOIN contacts AS cs ON cc.contact_id == cs.contact_id
-        WHERE c.user_id = :user_id AND cs.user_id = :user_id AND cs.local_contact_ref == :contact_ref
-        LIMIT 1;
-      |]
-      [":user_id" := userId, ":contact_ref" := contactRef]
-      >>= \case
-        [(connId, agentConnId, connLevel, viaConn, connStatus)] ->
-          pure $ Right Connection {connId, agentConnId, connLevel, viaConn, connStatus}
-        _ -> pure $ Left SEContactNotFound
+  liftIOEither . withTransaction st $ \db ->
+    connection
+      <$> DB.queryNamed
+        db
+        [sql|
+          SELECT c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.conn_status
+          FROM connections AS c
+          JOIN contact_connections AS cc ON cc.connection_id == c.connection_id
+          JOIN contacts AS cs ON cc.contact_id == cs.contact_id
+          WHERE c.user_id = :user_id
+            AND cs.user_id = :user_id
+            AND cs.local_contact_ref == :contact_ref
+            AND cc.active == 1;
+        |]
+        [":user_id" := userId, ":contact_ref" := contactRef]
+  where
+    connection (connRow : _) = Right $ toConnection connRow
+    connection _ = Left SEContactNotFound
+
+getContactConnections :: MonadUnliftIO m => SQLiteStore -> UserId -> ContactRef -> m [Connection]
+getContactConnections st userId contactRef =
+  liftIO . withTransaction st $ \db ->
+    map toConnection
+      <$> DB.queryNamed
+        db
+        [sql|
+          SELECT c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.conn_status
+          FROM connections AS c
+          JOIN contact_connections AS cc ON cc.connection_id == c.connection_id
+          JOIN contacts AS cs ON cc.contact_id == cs.contact_id
+          WHERE c.user_id = :user_id
+            AND cs.user_id = :user_id
+            AND cs.local_contact_ref == :contact_ref
+            AND cc.active == 1;
+        |]
+        [":user_id" := userId, ":contact_ref" := contactRef]
+
+toConnection :: (Int64, ConnId, Int, Maybe Int64, ConnStatus) -> Connection
+toConnection (connId, agentConnId, connLevel, viaContact, connStatus) =
+  Connection {connId, agentConnId, connLevel, viaContact, connStatus}
 
 -- getConnectionContact :: MonadUnliftIO m => SQLiteStore -> UserId -> ConnId -> Maybe Contact'
 -- getConnectionContact st userId connId =

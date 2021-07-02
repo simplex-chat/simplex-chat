@@ -8,6 +8,7 @@ import Data.ByteString.Char8 (ByteString)
 import Data.Int (Int64)
 import Data.Text (Text)
 import Database.SQLite.Simple.FromField (FromField (..))
+import Database.SQLite.Simple.ToField (ToField (..))
 import Simplex.Messaging.Agent.Store.SQLite (fromTextField_)
 
 data User = User
@@ -45,13 +46,17 @@ data Connection = Connection
   { connId :: Int64,
     agentConnId :: ByteString,
     connLevel :: Int,
-    viaConn :: Maybe Int64,
+    viaContact :: Maybe Int64,
     connStatus :: ConnStatus
   }
   deriving (Eq, Show)
 
 data ConnStatus = ConnNew | ConnConfirmed | ConnAccepted | ConnReady
   deriving (Eq, Show)
+
+instance FromField ConnStatus where fromField = fromTextField_ connStatusT
+
+instance ToField ConnStatus where toField = toField . serializeConnStatus
 
 connStatusT :: Text -> Maybe ConnStatus
 connStatusT = \case
@@ -61,7 +66,12 @@ connStatusT = \case
   "READY" -> Just ConnReady
   _ -> Nothing
 
-instance FromField ConnStatus where fromField = fromTextField_ connStatusT
+serializeConnStatus :: ConnStatus -> Text
+serializeConnStatus = \case
+  ConnNew -> "NEW"
+  ConnConfirmed -> "CONF"
+  ConnAccepted -> "ACPT"
+  ConnReady -> "READY"
 
 data NewConnection = NewConnection
   { agentConnId :: ByteString,

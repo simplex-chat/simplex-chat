@@ -39,13 +39,13 @@ import System.Console.ANSI.Types
 
 type ChatReader m = (MonadUnliftIO m, MonadReader ChatController m)
 
-showInvitation :: ChatReader m => Contact' -> SMPQueueInfo -> m ()
+showInvitation :: ChatReader m => ContactRef -> SMPQueueInfo -> m ()
 showInvitation = printToView .: invitation
 
 showAgentError :: ChatReader m => Maybe Contact -> AgentErrorType -> m ()
 showAgentError = printToView .: agentError
 
-showContactDeleted :: ChatReader m => Contact -> m ()
+showContactDeleted :: ChatReader m => ContactRef -> m ()
 showContactDeleted = printToView . contactDeleted
 
 showContactConnected :: ChatReader m => Contact -> m ()
@@ -57,10 +57,10 @@ showContactDisconnected = printToView . contactDisconnected
 showReceivedMessage :: ChatReader m => Contact -> UTCTime -> ByteString -> MsgIntegrity -> m ()
 showReceivedMessage c utcTime msg mOk = printToView =<< liftIO (receivedMessage c utcTime msg mOk)
 
-showSentMessage :: ChatReader m => Contact -> ByteString -> m ()
+showSentMessage :: ChatReader m => ContactRef -> ByteString -> m ()
 showSentMessage c msg = printToView =<< liftIO (sentMessage c msg)
 
-invitation :: Contact' -> SMPQueueInfo -> [StyledString]
+invitation :: ContactRef -> SMPQueueInfo -> [StyledString]
 invitation c qInfo =
   [ "pass this invitation to your contact " <> ttyContact' c <> " (via any channel): ",
     "",
@@ -69,8 +69,8 @@ invitation c qInfo =
     "and ask them to connect: /c <name_for_you> <invitation_above>"
   ]
 
-contactDeleted :: Contact -> [StyledString]
-contactDeleted c = [ttyContact c <> " is deleted"]
+contactDeleted :: ContactRef -> [StyledString]
+contactDeleted c = [ttyContact' c <> " is deleted"]
 
 contactConnected :: Contact -> [StyledString]
 contactConnected c = [ttyContact c <> " is connected"]
@@ -104,10 +104,10 @@ receivedMessage c utcTime msg mOk = do
     msgError :: String -> [StyledString]
     msgError s = [styled (Colored Red) s]
 
-sentMessage :: Contact -> ByteString -> IO [StyledString]
+sentMessage :: ContactRef -> ByteString -> IO [StyledString]
 sentMessage c msg = do
   time <- formatTime defaultTimeLocale "%H:%M" <$> getZonedTime
-  pure $ prependFirst (styleTime time <> " " <> ttyToContact c) (msgPlain msg)
+  pure $ prependFirst (styleTime time <> " " <> ttyToContact' c) (msgPlain msg)
 
 prependFirst :: StyledString -> [StyledString] -> [StyledString]
 prependFirst s [] = [s]
@@ -132,11 +132,14 @@ printToView s = asks chatTerminal >>= liftIO . (`printToTerminal` s)
 ttyContact :: Contact -> StyledString
 ttyContact (Contact a) = styled (Colored Green) a
 
-ttyContact' :: Contact' -> StyledString
-ttyContact' c = styled (Colored Green) $ localContactRef c
+ttyContact' :: ContactRef -> StyledString
+ttyContact' = styled (Colored Green)
 
-ttyToContact :: Contact -> StyledString
-ttyToContact (Contact a) = styled (Colored Cyan) $ a <> " "
+-- ttyToContact :: Contact -> StyledString
+-- ttyToContact (Contact a) = styled (Colored Cyan) $ a <> " "
+
+ttyToContact' :: ContactRef -> StyledString
+ttyToContact' c = styled (Colored Cyan) $ c <> " "
 
 ttyFromContact :: Contact -> StyledString
 ttyFromContact (Contact a) = styled (Colored Yellow) $ a <> "> "
