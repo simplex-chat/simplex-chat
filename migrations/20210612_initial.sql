@@ -31,7 +31,6 @@ CREATE TABLE contacts (
   local_contact_ref TEXT NOT NULL UNIQUE, -- contact name set by local user - must be unique
   local_properties TEXT NOT NULL DEFAULT '{}', -- JSON set by local user
   contact_profile_id INTEGER UNIQUE REFERENCES contact_profiles, -- profile sent by remote contact, NULL for incognito contacts
-  contact_status TEXT NOT NULL DEFAULT '',
   user_id INTEGER NOT NULL REFERENCES users
 );
 
@@ -40,7 +39,7 @@ CREATE TABLE connections ( -- all SMP agent connections
   agent_conn_id BLOB NOT NULL UNIQUE,
   conn_level INTEGER NOT NULL DEFAULT 0,
   via_contact INTEGER REFERENCES contacts (contact_id),
-  conn_status TEXT NOT NULL DEFAULT '',
+  conn_status TEXT NOT NULL,
   user_id INTEGER NOT NULL REFERENCES users
 );
 

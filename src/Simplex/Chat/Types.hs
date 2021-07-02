@@ -9,6 +9,7 @@ import Data.Int (Int64)
 import Data.Text (Text)
 import Database.SQLite.Simple.FromField (FromField (..))
 import Database.SQLite.Simple.ToField (ToField (..))
+import Simplex.Messaging.Agent.Protocol (ConnId)
 import Simplex.Messaging.Agent.Store.SQLite (fromTextField_)
 
 data User = User
@@ -37,14 +38,15 @@ data Group = Group
   deriving (Eq, Show)
 
 data Profile = Profile
-  { contactRef :: ContactRef,
+  { profileId :: Int64,
+    contactRef :: ContactRef,
     displayName :: Text
   }
   deriving (Eq, Show)
 
 data Connection = Connection
   { connId :: Int64,
-    agentConnId :: ByteString,
+    agentConnId :: ConnId,
     connLevel :: Int,
     viaContact :: Maybe Int64,
     connStatus :: ConnStatus

@@ -43,9 +43,9 @@ data ChatTransmission
   deriving (Eq, Show)
 
 data ChatDirection (p :: AParty) where
-  ReceivedDirectMessage :: Contact -> ChatDirection 'Agent
-  SentDirectMessage :: Contact -> ChatDirection 'Client
-  ReceivedGroupMessage :: Group -> Contact -> ChatDirection 'Agent
+  ReceivedDirectMessage :: Contact' -> ChatDirection 'Agent
+  SentDirectMessage :: Contact' -> ChatDirection 'Client
+  ReceivedGroupMessage :: Group -> Contact' -> ChatDirection 'Agent
   SentGroupMessage :: Group -> ChatDirection 'Client
 
 deriving instance Eq (ChatDirection p)

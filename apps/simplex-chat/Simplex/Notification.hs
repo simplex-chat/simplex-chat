@@ -5,18 +5,16 @@
 module Simplex.Notification (Notification (..), initializeNotifications) where
 
 import Control.Monad (void)
-import Data.ByteString.Char8 (ByteString)
 import Data.Char (toLower)
 import Data.List (isInfixOf)
 import Data.Text (Text)
 import qualified Data.Text as T
-import Simplex.Util (safeDecodeUtf8)
 import System.Directory (doesFileExist, getAppUserDataDirectory)
 import System.FilePath (combine)
 import System.Info (os)
 import System.Process (readCreateProcess, shell)
 
-data Notification = Notification {title :: ByteString, text :: ByteString}
+data Notification = Notification {title :: Text, text :: Text}
 
 initializeNotifications :: IO (Notification -> IO ())
 initializeNotifications = case os of
@@ -37,16 +35,16 @@ notify script notification =
   void $ readCreateProcess (shell . T.unpack $ script notification) ""
 
 linuxScript :: Notification -> Text
-linuxScript Notification {title, text} = "notify-send \"" <> safeDecodeUtf8 title <> "\" \"" <> safeDecodeUtf8 text <> "\""
+linuxScript Notification {title, text} = "notify-send \"" <> title <> "\" \"" <> text <> "\""
 
 macScript :: Notification -> Text
-macScript Notification {title, text} = "osascript -e 'display notification \"" <> safeDecodeUtf8 text <> "\" with title \"" <> safeDecodeUtf8 title <> "\"'"
+macScript Notification {title, text} = "osascript -e 'display notification \"" <> text <> "\" with title \"" <> title <> "\"'"
 
 initWinNotify :: IO (Notification -> IO ())
 initWinNotify = notify . winScript <$> savePowershellScript
 
 winScript :: FilePath -> Notification -> Text
-winScript path Notification {title, text} = "powershell.exe \"" <> T.pack path <> " \'" <> safeDecodeUtf8 title <> "\' \'" <> safeDecodeUtf8 text <> "\'\""
+winScript path Notification {title, text} = "powershell.exe \"" <> T.pack path <> " \'" <> title <> "\' \'" <> text <> "\'\""
 
 savePowershellScript :: IO FilePath
 savePowershellScript = do

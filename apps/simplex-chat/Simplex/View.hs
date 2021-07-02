@@ -24,6 +24,7 @@ import Control.Monad.IO.Unlift
 import Control.Monad.Reader
 import Data.ByteString.Char8 (ByteString)
 import Data.Composition ((.:))
+import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (DiffTime, UTCTime)
 import Data.Time.Format (defaultTimeLocale, formatTime)
@@ -48,13 +49,13 @@ showAgentError = printToView .: agentError
 showContactDeleted :: ChatReader m => ContactRef -> m ()
 showContactDeleted = printToView . contactDeleted
 
-showContactConnected :: ChatReader m => Contact -> m ()
+showContactConnected :: ChatReader m => ContactRef -> m ()
 showContactConnected = printToView . contactConnected
 
-showContactDisconnected :: ChatReader m => Contact -> m ()
+showContactDisconnected :: ChatReader m => ContactRef -> m ()
 showContactDisconnected = printToView . contactDisconnected
 
-showReceivedMessage :: ChatReader m => Contact -> UTCTime -> ByteString -> MsgIntegrity -> m ()
+showReceivedMessage :: ChatReader m => ContactRef -> UTCTime -> Text -> MsgIntegrity -> m ()
 showReceivedMessage c utcTime msg mOk = printToView =<< liftIO (receivedMessage c utcTime msg mOk)
 
 showSentMessage :: ChatReader m => ContactRef -> ByteString -> m ()
@@ -72,16 +73,16 @@ invitation c qInfo =
 contactDeleted :: ContactRef -> [StyledString]
 contactDeleted c = [ttyContact' c <> " is deleted"]
 
-contactConnected :: Contact -> [StyledString]
-contactConnected c = [ttyContact c <> " is connected"]
+contactConnected :: ContactRef -> [StyledString]
+contactConnected c = [ttyContact' c <> " is connected"]
 
-contactDisconnected :: Contact -> [StyledString]
-contactDisconnected c = ["disconnected from " <> ttyContact c <> " - restart chat"]
+contactDisconnected :: ContactRef -> [StyledString]
+contactDisconnected c = ["disconnected from " <> ttyContact' c <> " - restart chat"]
 
-receivedMessage :: Contact -> UTCTime -> ByteString -> MsgIntegrity -> IO [StyledString]
+receivedMessage :: ContactRef -> UTCTime -> Text -> MsgIntegrity -> IO [StyledString]
 receivedMessage c utcTime msg mOk = do
   t <- formatUTCTime <$> getCurrentTimeZone <*> getZonedTime
-  pure $ prependFirst (t <> " " <> ttyFromContact c) (msgPlain msg) ++ showIntegrity mOk
+  pure $ prependFirst (t <> " " <> ttyFromContact' c) (msgPlain msg) ++ showIntegrity mOk
   where
     formatUTCTime :: TimeZone -> ZonedTime -> StyledString
     formatUTCTime localTz currentTime =
@@ -107,14 +108,14 @@ receivedMessage c utcTime msg mOk = do
 sentMessage :: ContactRef -> ByteString -> IO [StyledString]
 sentMessage c msg = do
   time <- formatTime defaultTimeLocale "%H:%M" <$> getZonedTime
-  pure $ prependFirst (styleTime time <> " " <> ttyToContact' c) (msgPlain msg)
+  pure $ prependFirst (styleTime time <> " " <> ttyToContact' c) (msgPlain $ safeDecodeUtf8 msg)
 
 prependFirst :: StyledString -> [StyledString] -> [StyledString]
 prependFirst s [] = [s]
 prependFirst s (s' : ss) = (s <> s') : ss
 
-msgPlain :: ByteString -> [StyledString]
-msgPlain = map styleMarkdownText . T.lines . safeDecodeUtf8
+msgPlain :: Text -> [StyledString]
+msgPlain = map styleMarkdownText . T.lines
 
 agentError :: Maybe Contact -> AgentErrorType -> [StyledString]
 agentError = \case
@@ -143,6 +144,9 @@ ttyToContact' c = styled (Colored Cyan) $ c <> " "
 
 ttyFromContact :: Contact -> StyledString
 ttyFromContact (Contact a) = styled (Colored Yellow) $ a <> "> "
+
+ttyFromContact' :: ContactRef -> StyledString
+ttyFromContact' c = styled (Colored Yellow) $ c <> "> "
 
 -- ttyGroup :: Group -> StyledString
 -- ttyGroup (Group g) = styled (Colored Blue) $ "#" <> g

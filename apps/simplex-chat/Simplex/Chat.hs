@@ -20,6 +20,7 @@ import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.Functor (($>))
 import Data.List (find)
+import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Simplex.Chat.Controller
@@ -108,46 +109,55 @@ agentSubscriber = do
   aQ <- asks $ subQ . smpAgent
   cQ <- asks chatQ
   forever $ do
-    (_, a, resp) <- atomically (readTBQueue aQ)
-    let chatDirection = ReceivedDirectMessage $ Contact a
-    case resp of
-      MSG agentMsgMeta msgBody -> do
-        atomically . writeTBQueue cQ $
-          case first B.pack (parseAll rawChatMessageP msgBody) >>= toChatMessage of
-            Right chatMessage -> ChatTransmission {agentMsgMeta, chatDirection, chatMessage}
-            Left msgError -> ChatTransmissionError {agentMsgMeta, chatDirection, msgBody, msgError}
-      agentMessage ->
-        atomically $ writeTBQueue cQ AgentTransmission {chatDirection, agentMessage}
+    (_, agentConnId, resp) <- atomically (readTBQueue aQ)
+    userId <- asks currentUserId
+    runExceptT (withStore $ \st -> getConnectionChatDirection st userId agentConnId) >>= \case
+      -- TODO handle errors
+      Left e -> liftIO $ print e
+      Right chatDirection -> do
+        case resp of
+          MSG agentMsgMeta msgBody -> do
+            atomically . writeTBQueue cQ $
+              case first B.pack (parseAll rawChatMessageP msgBody) >>= toChatMessage of
+                Right chatMessage -> ChatTransmission {agentMsgMeta, chatDirection, chatMessage}
+                Left msgError -> ChatTransmissionError {agentMsgMeta, chatDirection, msgBody, msgError}
+          agentMessage ->
+            atomically $ writeTBQueue cQ AgentTransmission {chatDirection, agentMessage}
 
 chatSubscriber :: (MonadUnliftIO m, MonadReader ChatController m) => m ()
 chatSubscriber = do
   cQ <- asks chatQ
   forever $
     atomically (readTBQueue cQ) >>= \case
-      ChatTransmission {agentMsgMeta = meta, chatDirection = ReceivedDirectMessage c, chatMessage = ChatMessage {chatMsgEvent, chatMsgBody}} ->
-        case chatMsgEvent of
-          XMsgNew MTText -> do
-            case find (isSimplexContentType XCText) chatMsgBody of
-              Just MsgBodyContent {contentData = MBFull (MsgData text)} -> do
-                showReceivedMessage c (snd $ broker meta) text (integrity meta)
-                showToast ("@" <> fromContact c) text
-                setActive $ ActiveC c
-              _ -> pure ()
-          _ -> pure ()
-      AgentTransmission {chatDirection = ReceivedDirectMessage c, agentMessage} ->
+      ChatTransmission
+        { agentMsgMeta = meta,
+          chatDirection = ReceivedDirectMessage Contact' {localContactRef = c},
+          chatMessage = ChatMessage {chatMsgEvent, chatMsgBody}
+        } ->
+          case chatMsgEvent of
+            XMsgNew MTText -> do
+              case find (isSimplexContentType XCText) chatMsgBody of
+                Just MsgBodyContent {contentData = MBFull (MsgData bs)} -> do
+                  let text = safeDecodeUtf8 bs
+                  showReceivedMessage c (snd $ broker meta) text (integrity meta)
+                  showToast ("@" <> c) text
+                  setActive $ ActiveC' c
+                _ -> pure ()
+            _ -> pure ()
+      AgentTransmission {chatDirection = ReceivedDirectMessage Contact' {localContactRef = c}, agentMessage} ->
         case agentMessage of
           CON -> do
             showContactConnected c
-            showToast ("@" <> fromContact c) "connected"
-            setActive $ ActiveC c
+            showToast ("@" <> c) "connected"
+            setActive $ ActiveC' c
           END -> do
             showContactDisconnected c
-            showToast ("@" <> fromContact c) "disconnected"
-            unsetActive $ ActiveC c
+            showToast ("@" <> c) "disconnected"
+            unsetActive $ ActiveC' c
           _ -> pure ()
       _ -> pure ()
 
-showToast :: (MonadUnliftIO m, MonadReader ChatController m) => ByteString -> ByteString -> m ()
+showToast :: (MonadUnliftIO m, MonadReader ChatController m) => Text -> Text -> m ()
 showToast title text = atomically . (`writeTBQueue` Notification {title, text}) =<< asks notifyQ
 
 notificationSubscriber :: (MonadUnliftIO m, MonadReader ChatController m) => m ()

@@ -1,3 +1,4 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
@@ -16,6 +17,7 @@ module Simplex.Store
     deleteContact,
     getContactConnection,
     getContactConnections,
+    getConnectionChatDirection,
   )
 where
 
@@ -33,8 +35,9 @@ import Data.Text.Encoding (decodeUtf8)
 import Database.SQLite.Simple (NamedParam (..), Only (..))
 import qualified Database.SQLite.Simple as DB
 import Database.SQLite.Simple.QQ (sql)
+import Simplex.Chat.Protocol
 import Simplex.Chat.Types
-import Simplex.Messaging.Agent.Protocol (ConnId)
+import Simplex.Messaging.Agent.Protocol (AParty (..), ConnId)
 import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore (..), createSQLiteStore, withTransaction)
 import Simplex.Messaging.Agent.Store.SQLite.Migrations (Migration (..))
 import Simplex.Messaging.Util (liftIOEither)
@@ -131,29 +134,43 @@ toConnection :: (Int64, ConnId, Int, Maybe Int64, ConnStatus) -> Connection
 toConnection (connId, agentConnId, connLevel, viaContact, connStatus) =
   Connection {connId, agentConnId, connLevel, viaContact, connStatus}
 
--- getConnectionContact :: MonadUnliftIO m => SQLiteStore -> UserId -> ConnId -> Maybe Contact'
--- getConnectionContact st userId connId =
---   liftIO . withTransaction st $ \db -> do
---     DB.query
---       db
---       [sql|
---         SELECT c.contact_id, c.local_contact_ref, c.contact_status
+getConnectionChatDirection ::
+  (MonadUnliftIO m, MonadError StoreError m) => SQLiteStore -> UserId -> ConnId -> m (ChatDirection 'Agent)
+getConnectionChatDirection st userId agentConnId =
+  liftIOEither . withTransaction st $ \db ->
+    chatDirection
+      <$> DB.queryNamed
+        db
+        [sql|
+          SELECT
+            cs.contact_id, cs.local_contact_ref,
+            a.connection_id, a.conn_level, a.via_contact, a.conn_status,
+            p.contact_profile_id, p.contact_ref, p.display_name
+          FROM contacts AS cs
+          JOIN contact_connections AS cc ON cs.contact_id = cc.contact_id
+          JOIN contact_connections AS ac ON cs.contact_id = ac.contact_id
+          JOIN connections AS c ON c.connection_id = cc.connection_id
+          JOIN connections AS a ON a.connection_id = ac.connection_id
+          LEFT JOIN contact_profiles AS p ON p.contact_profile_id = cs.contact_profile_id
+          WHERE cs.user_id = :user_id
+            AND c.agent_conn_id = :agent_conn_id
+            AND ac.active = 1
+        |]
+        [":user_id" := userId, ":agent_conn_id" := agentConnId]
+  where
+    chatDirection :: [ChatDirRow] -> Either StoreError (ChatDirection 'Agent)
+    chatDirection [d] = Right $ toChatDirection agentConnId d
+    chatDirection _ = Left SEContactNotFound
 
---         connection_id INTEGER PRIMARY KEY,
---         agent_conn_id BLOB NOT NULL UNIQUE,
---         conn_level INTEGER NOT NULL DEFAULT 0,
---         via_conn BLOB REFERENCES contact_connections (connection_id),
---         conn_status TEXT NOT NULL DEFAULT '',
---         user_id INTEGER NOT NULL REFERENCES users
+type ChatDirRow = (Int64, Text, Int64, Int, Maybe Int64, ConnStatus, Maybe Int64, Maybe ContactRef, Maybe Text)
 
---         FROM contacts AS c
---         JOIN connections AS conns ON c.connection_id ==
---         JOIN contact_connections AS cc ON c.connection_id == conns.connection_id AND c.contact_id == cc.contact_id
---         WHERE conns.user_id = :user_id AND conns.connection_id = :connection_id
---         contact_profile_id INTEGER UNIQUE REFERENCES contact_profiles, -- profile sent by remote contact, NULL for incognito contacts
---         contact_status TEXT NOT NULL DEFAULT '',
---         user_id
---       |]
+toChatDirection :: ConnId -> ChatDirRow -> ChatDirection 'Agent
+toChatDirection
+  agentConnId
+  (contactId, localContactRef, connId, connLevel, viaContact, connStatus, profileId, contactRef, displayName) =
+    let profile = Profile <$> profileId <*> contactRef <*> displayName
+        activeConn = Connection {connId, agentConnId, connLevel, viaContact, connStatus}
+     in ReceivedDirectMessage $ Contact' {contactId, localContactRef, profile, activeConn}
 
 data StoreError = SEContactNotFound | SEInternal ByteString
   deriving (Show, Exception)
