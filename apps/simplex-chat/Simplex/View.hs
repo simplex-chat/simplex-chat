@@ -39,10 +39,10 @@ import System.Console.ANSI.Types
 
 type ChatReader m = (MonadUnliftIO m, MonadReader ChatController m)
 
-showInvitation :: ChatReader m => Contact -> SMPQueueInfo -> m ()
+showInvitation :: ChatReader m => Contact' -> SMPQueueInfo -> m ()
 showInvitation = printToView .: invitation
 
-showAgentError :: ChatReader m => Contact -> AgentErrorType -> m ()
+showAgentError :: ChatReader m => Maybe Contact -> AgentErrorType -> m ()
 showAgentError = printToView .: agentError
 
 showContactDeleted :: ChatReader m => Contact -> m ()
@@ -60,9 +60,9 @@ showReceivedMessage c utcTime msg mOk = printToView =<< liftIO (receivedMessage 
 showSentMessage :: ChatReader m => Contact -> ByteString -> m ()
 showSentMessage c msg = printToView =<< liftIO (sentMessage c msg)
 
-invitation :: Contact -> SMPQueueInfo -> [StyledString]
+invitation :: Contact' -> SMPQueueInfo -> [StyledString]
 invitation c qInfo =
-  [ "pass this invitation to your contact " <> ttyContact c <> " (via any channel): ",
+  [ "pass this invitation to your contact " <> ttyContact' c <> " (via any channel): ",
     "",
     (bPlain . serializeSmpQueueInfo) qInfo,
     "",
@@ -116,19 +116,24 @@ prependFirst s (s' : ss) = (s <> s') : ss
 msgPlain :: ByteString -> [StyledString]
 msgPlain = map styleMarkdownText . T.lines . safeDecodeUtf8
 
-agentError :: Contact -> AgentErrorType -> [StyledString]
-agentError c = \case
-  CONN e -> case e of
-    NOT_FOUND -> ["no contact " <> ttyContact c]
-    DUPLICATE -> ["contact " <> ttyContact c <> " already exists"]
-    SIMPLEX -> ["contact " <> ttyContact c <> " did not accept invitation yet"]
-  e -> ["chat error: " <> plain (show e)]
+agentError :: Maybe Contact -> AgentErrorType -> [StyledString]
+agentError = \case
+  Just c -> \case
+    CONN e -> case e of
+      NOT_FOUND -> ["no contact " <> ttyContact c]
+      DUPLICATE -> ["contact " <> ttyContact c <> " already exists"]
+      SIMPLEX -> ["contact " <> ttyContact c <> " did not accept invitation yet"]
+    e -> ["chat error: " <> plain (show e)]
+  _ -> \e -> ["chat error: " <> plain (show e)]
 
 printToView :: (MonadUnliftIO m, MonadReader ChatController m) => [StyledString] -> m ()
 printToView s = asks chatTerminal >>= liftIO . (`printToTerminal` s)
 
 ttyContact :: Contact -> StyledString
 ttyContact (Contact a) = styled (Colored Green) a
+
+ttyContact' :: Contact' -> StyledString
+ttyContact' c = styled (Colored Green) $ localContactRef c
 
 ttyToContact :: Contact -> StyledString
 ttyToContact (Contact a) = styled (Colored Cyan) $ a <> " "

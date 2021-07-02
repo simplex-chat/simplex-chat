@@ -22,7 +22,7 @@ CREATE TABLE known_servers(
   host TEXT NOT NULL,
   port TEXT NOT NULL,
   key_hash BLOB,
-  user_id INTEGER NOT NULL REFERENCES user_id,
+  user_id INTEGER NOT NULL REFERENCES users,
   UNIQUE (user_id, host, port)
 ) WITHOUT ROWID;
 
@@ -32,7 +32,7 @@ CREATE TABLE contacts (
   local_properties TEXT NOT NULL DEFAULT '{}', -- JSON set by local user
   contact_profile_id INTEGER UNIQUE REFERENCES contact_profiles, -- profile sent by remote contact, NULL for incognito contacts
   contact_status TEXT NOT NULL DEFAULT '',
-  user_id INTEGER NOT NULL REFERENCES user_id
+  user_id INTEGER NOT NULL REFERENCES users
 );
 
 CREATE TABLE connections ( -- all SMP agent connections
@@ -41,7 +41,7 @@ CREATE TABLE connections ( -- all SMP agent connections
   conn_level INTEGER NOT NULL DEFAULT 0,
   via_conn BLOB REFERENCES contact_connections (connection_id),
   conn_status TEXT NOT NULL DEFAULT '',
-  user_id INTEGER NOT NULL REFERENCES user_id
+  user_id INTEGER NOT NULL REFERENCES users
 );
 
 CREATE TABLE contact_connections ( -- connections only for direct messages, many per contact
@@ -73,7 +73,7 @@ CREATE TABLE groups (
   group_profile_id INTEGER REFERENCES group_profiles, -- shared group profile
   user_group_member_details_id INTEGER NOT NULL
     REFERENCES group_member_details (group_member_details_id) ON DELETE RESTRICT,
-  user_id INTEGER NOT NULL REFERENCES user_id,
+  user_id INTEGER NOT NULL REFERENCES users,
   UNIQUE (invited_by, external_group_id)
 );
 

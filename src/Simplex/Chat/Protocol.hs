@@ -89,7 +89,13 @@ toChatMessage RawChatMessage {chatMsgId, chatMsgEvent, chatMsgParams, chatMsgBod
 toChatMessage _ = Left "message continuation"
 
 findDAG :: [MsgBodyContent] -> Maybe Int
-findDAG = findIndex $ \MsgBodyContent {contentType = t} -> t == SimplexDAG
+findDAG = findIndex $ isContentType SimplexDAG
+
+isContentType :: ContentType -> MsgBodyContent -> Bool
+isContentType t MsgBodyContent {contentType = t'} = t == t'
+
+isSimplexContentType :: XContentType -> MsgBodyContent -> Bool
+isSimplexContentType = isContentType . SimplexContentType
 
 rawChatMessage :: ChatMessage -> RawChatMessage
 rawChatMessage ChatMessage {chatMsgId, chatMsgEvent = event, chatMsgBody = body} =

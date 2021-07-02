@@ -19,6 +19,7 @@ dependencies:
   - containers == 0.6.*
   - mtl == 2.2.*
   - simplexmq == 0.3.*
+  - sqlite-simple == 0.4.*
   - text == 1.2.*
 
 library:
