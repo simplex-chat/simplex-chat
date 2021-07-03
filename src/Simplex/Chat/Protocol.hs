@@ -37,7 +37,8 @@ data ChatTransmission
         msgError :: ByteString
       }
   | AgentTransmission
-      { chatDirection :: ChatDirection 'Agent,
+      { agentConnId :: ConnId,
+        chatDirection :: ChatDirection 'Agent,
         agentMessage :: ACommand 'Agent
       }
   deriving (Eq, Show)

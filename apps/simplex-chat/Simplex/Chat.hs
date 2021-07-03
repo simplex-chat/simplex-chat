@@ -86,7 +86,7 @@ processChatCommand = \case
     showInvitation (localContactRef contact) qInfo
   Connect cRef qInfo -> do
     userId <- asks currentUserId
-    connId <- withAgent (fromMaybe "" cRef) (`joinConnection` qInfo)
+    connId <- withAgent (fromMaybe "" cRef) $ \agent -> joinConnection agent qInfo "user profile here"
     void $ withStore $ \st -> createDirectContact st userId connId cRef
   DeleteContact cRef -> do
     userId <- asks currentUserId
@@ -123,7 +123,7 @@ agentSubscriber = do
                 Right chatMessage -> ChatTransmission {agentMsgMeta, chatDirection, chatMessage}
                 Left msgError -> ChatTransmissionError {agentMsgMeta, chatDirection, msgBody, msgError}
           agentMessage ->
-            atomically $ writeTBQueue cQ AgentTransmission {chatDirection, agentMessage}
+            atomically $ writeTBQueue cQ AgentTransmission {agentConnId, chatDirection, agentMessage}
 
 chatSubscriber :: (MonadUnliftIO m, MonadReader ChatController m) => m ()
 chatSubscriber = do
@@ -145,8 +145,11 @@ chatSubscriber = do
                   setActive $ ActiveC c
                 _ -> pure ()
             _ -> pure ()
-      AgentTransmission {chatDirection = ReceivedDirectMessage Contact {localContactRef = c}, agentMessage} ->
+      AgentTransmission {agentConnId, chatDirection = ReceivedDirectMessage Contact {localContactRef = c}, agentMessage} ->
         case agentMessage of
+          CONF confId _ ->
+            -- TODO save profile? Show confirmation?
+            void . runExceptT . withAgent c $ \a -> allowConnection a agentConnId confId "user profile here"
           CON -> do
             showContactConnected c
             showToast ("@" <> c) "connected"
