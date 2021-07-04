@@ -17,7 +17,9 @@ dependencies:
   - base >= 4.7 && < 5
   - bytestring == 0.10.*
   - containers == 0.6.*
+  - mtl == 2.2.*
   - simplexmq == 0.3.*
+  - sqlite-simple == 0.4.*
   - text == 1.2.*
 
 library:
@@ -29,6 +31,7 @@ executables:
     main: Main.hs
     dependencies:
       - simplex-chat
+      - aeson == 1.5.*
       - async == 2.2.*
       - bytestring == 0.10.*
       - composition == 1.0.*

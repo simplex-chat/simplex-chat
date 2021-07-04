@@ -5,12 +5,12 @@
 module Simplex.Terminal where
 
 import Simplex.Chat.Styled
+import Simplex.Chat.Types
 import System.Console.ANSI.Types
 import System.Terminal
-import Types
 import UnliftIO.STM
 
-data ActiveTo = ActiveNone | ActiveC Contact | ActiveG Group
+data ActiveTo = ActiveNone | ActiveC ContactRef
   deriving (Eq)
 
 data ChatTerminal = ChatTerminal

@@ -6,16 +6,12 @@
 module Simplex.View
   ( printToView,
     showInvitation,
-    showAgentError,
+    showChatError,
     showContactDeleted,
     showContactConnected,
     showContactDisconnected,
     showReceivedMessage,
     showSentMessage,
-    ttyContact,
-    ttyFromContact,
-    ttyGroup,
-    ttyFromGroup,
     safeDecodeUtf8,
   )
 where
@@ -24,6 +20,7 @@ import Control.Monad.IO.Unlift
 import Control.Monad.Reader
 import Data.ByteString.Char8 (ByteString)
 import Data.Composition ((.:))
+import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (DiffTime, UTCTime)
 import Data.Time.Format (defaultTimeLocale, formatTime)
@@ -31,36 +28,36 @@ import Data.Time.LocalTime (TimeZone, ZonedTime, getCurrentTimeZone, getZonedTim
 import Simplex.Chat.Controller
 import Simplex.Chat.Markdown
 import Simplex.Chat.Styled
+import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Protocol
 import Simplex.Terminal (printToTerminal)
 import Simplex.Util (safeDecodeUtf8)
 import System.Console.ANSI.Types
-import Types
 
 type ChatReader m = (MonadUnliftIO m, MonadReader ChatController m)
 
-showInvitation :: ChatReader m => Contact -> SMPQueueInfo -> m ()
+showInvitation :: ChatReader m => ContactRef -> SMPQueueInfo -> m ()
 showInvitation = printToView .: invitation
 
-showAgentError :: ChatReader m => Contact -> AgentErrorType -> m ()
-showAgentError = printToView .: agentError
+showChatError :: ChatReader m => ChatError -> m ()
+showChatError = printToView . chatError
 
-showContactDeleted :: ChatReader m => Contact -> m ()
+showContactDeleted :: ChatReader m => ContactRef -> m ()
 showContactDeleted = printToView . contactDeleted
 
-showContactConnected :: ChatReader m => Contact -> m ()
+showContactConnected :: ChatReader m => ContactRef -> m ()
 showContactConnected = printToView . contactConnected
 
-showContactDisconnected :: ChatReader m => Contact -> m ()
+showContactDisconnected :: ChatReader m => ContactRef -> m ()
 showContactDisconnected = printToView . contactDisconnected
 
-showReceivedMessage :: ChatReader m => Contact -> UTCTime -> ByteString -> MsgIntegrity -> m ()
+showReceivedMessage :: ChatReader m => ContactRef -> UTCTime -> Text -> MsgIntegrity -> m ()
 showReceivedMessage c utcTime msg mOk = printToView =<< liftIO (receivedMessage c utcTime msg mOk)
 
-showSentMessage :: ChatReader m => Contact -> ByteString -> m ()
+showSentMessage :: ChatReader m => ContactRef -> ByteString -> m ()
 showSentMessage c msg = printToView =<< liftIO (sentMessage c msg)
 
-invitation :: Contact -> SMPQueueInfo -> [StyledString]
+invitation :: ContactRef -> SMPQueueInfo -> [StyledString]
 invitation c qInfo =
   [ "pass this invitation to your contact " <> ttyContact c <> " (via any channel): ",
     "",
@@ -69,16 +66,16 @@ invitation c qInfo =
     "and ask them to connect: /c <name_for_you> <invitation_above>"
   ]
 
-contactDeleted :: Contact -> [StyledString]
+contactDeleted :: ContactRef -> [StyledString]
 contactDeleted c = [ttyContact c <> " is deleted"]
 
-contactConnected :: Contact -> [StyledString]
+contactConnected :: ContactRef -> [StyledString]
 contactConnected c = [ttyContact c <> " is connected"]
 
-contactDisconnected :: Contact -> [StyledString]
+contactDisconnected :: ContactRef -> [StyledString]
 contactDisconnected c = ["disconnected from " <> ttyContact c <> " - restart chat"]
 
-receivedMessage :: Contact -> UTCTime -> ByteString -> MsgIntegrity -> IO [StyledString]
+receivedMessage :: ContactRef -> UTCTime -> Text -> MsgIntegrity -> IO [StyledString]
 receivedMessage c utcTime msg mOk = do
   t <- formatUTCTime <$> getCurrentTimeZone <*> getZonedTime
   pure $ prependFirst (t <> " " <> ttyFromContact c) (msgPlain msg) ++ showIntegrity mOk
@@ -104,43 +101,48 @@ receivedMessage c utcTime msg mOk = do
     msgError :: String -> [StyledString]
     msgError s = [styled (Colored Red) s]
 
-sentMessage :: Contact -> ByteString -> IO [StyledString]
+sentMessage :: ContactRef -> ByteString -> IO [StyledString]
 sentMessage c msg = do
   time <- formatTime defaultTimeLocale "%H:%M" <$> getZonedTime
-  pure $ prependFirst (styleTime time <> " " <> ttyToContact c) (msgPlain msg)
+  pure $ prependFirst (styleTime time <> " " <> ttyToContact c) (msgPlain $ safeDecodeUtf8 msg)
 
 prependFirst :: StyledString -> [StyledString] -> [StyledString]
 prependFirst s [] = [s]
 prependFirst s (s' : ss) = (s <> s') : ss
 
-msgPlain :: ByteString -> [StyledString]
-msgPlain = map styleMarkdownText . T.lines . safeDecodeUtf8
+msgPlain :: Text -> [StyledString]
+msgPlain = map styleMarkdownText . T.lines
 
-agentError :: Contact -> AgentErrorType -> [StyledString]
-agentError c = \case
-  CONN e -> case e of
-    NOT_FOUND -> ["no contact " <> ttyContact c]
-    DUPLICATE -> ["contact " <> ttyContact c <> " already exists"]
-    SIMPLEX -> ["contact " <> ttyContact c <> " did not accept invitation yet"]
+chatError :: ChatError -> [StyledString]
+chatError = \case
+  ChatErrorContact e -> case e of
+    CENotFound c -> ["no contact " <> ttyContact c]
+  ChatErrorAgent c err -> case err of
+    CONN e -> case e of
+      -- TODO replace with ChatErrorContact errors, these errors should never happen
+      NOT_FOUND -> ["no contact " <> ttyContact c]
+      DUPLICATE -> ["contact " <> ttyContact c <> " already exists"]
+      SIMPLEX -> ["contact " <> ttyContact c <> " did not accept invitation yet"]
+    e -> ["smp agent error: " <> plain (show e)]
   e -> ["chat error: " <> plain (show e)]
 
 printToView :: (MonadUnliftIO m, MonadReader ChatController m) => [StyledString] -> m ()
 printToView s = asks chatTerminal >>= liftIO . (`printToTerminal` s)
 
-ttyContact :: Contact -> StyledString
-ttyContact (Contact a) = styled (Colored Green) a
+ttyContact :: ContactRef -> StyledString
+ttyContact = styled (Colored Green)
 
-ttyToContact :: Contact -> StyledString
-ttyToContact (Contact a) = styled (Colored Cyan) $ a <> " "
+ttyToContact :: ContactRef -> StyledString
+ttyToContact c = styled (Colored Cyan) $ c <> " "
 
-ttyFromContact :: Contact -> StyledString
-ttyFromContact (Contact a) = styled (Colored Yellow) $ a <> "> "
+ttyFromContact :: ContactRef -> StyledString
+ttyFromContact c = styled (Colored Yellow) $ c <> "> "
 
-ttyGroup :: Group -> StyledString
-ttyGroup (Group g) = styled (Colored Blue) $ "#" <> g
+-- ttyGroup :: Group -> StyledString
+-- ttyGroup (Group g) = styled (Colored Blue) $ "#" <> g
 
-ttyFromGroup :: Group -> Contact -> StyledString
-ttyFromGroup (Group g) (Contact a) = styled (Colored Yellow) $ "#" <> g <> " " <> a <> "> "
+-- ttyFromGroup :: Group -> Contact -> StyledString
+-- ttyFromGroup (Group g) (Contact a) = styled (Colored Yellow) $ "#" <> g <> " " <> a <> "> "
 
 styleTime :: String -> StyledString
 styleTime = Styled [SetColor Foreground Vivid Black]

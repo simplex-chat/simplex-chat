@@ -1,6 +1,7 @@
 CREATE TABLE contact_profiles ( -- remote user profile
   contact_profile_id INTEGER PRIMARY KEY,
   contact_ref TEXT NOT NULL, -- contact name set by remote user (not unique), this name must not contain spaces
+  display_name TEXT NOT NULL DEFAULT '',
   properties TEXT NOT NULL DEFAULT '{}' -- JSON with contact profile properties
 );
 
@@ -21,7 +22,7 @@ CREATE TABLE known_servers(
   host TEXT NOT NULL,
   port TEXT NOT NULL,
   key_hash BLOB,
-  user_id INTEGER NOT NULL REFERENCES user_id,
+  user_id INTEGER NOT NULL REFERENCES users,
   UNIQUE (user_id, host, port)
 ) WITHOUT ROWID;
 
@@ -30,22 +31,22 @@ CREATE TABLE contacts (
   local_contact_ref TEXT NOT NULL UNIQUE, -- contact name set by local user - must be unique
   local_properties TEXT NOT NULL DEFAULT '{}', -- JSON set by local user
   contact_profile_id INTEGER UNIQUE REFERENCES contact_profiles, -- profile sent by remote contact, NULL for incognito contacts
-  contact_status TEXT NOT NULL DEFAULT '',
-  user_id INTEGER NOT NULL REFERENCES user_id
+  user_id INTEGER NOT NULL REFERENCES users
 );
 
 CREATE TABLE connections ( -- all SMP agent connections
   connection_id INTEGER PRIMARY KEY,
   agent_conn_id BLOB NOT NULL UNIQUE,
   conn_level INTEGER NOT NULL DEFAULT 0,
-  via_conn BLOB REFERENCES contact_connections (connection_id),
-  conn_status TEXT NOT NULL DEFAULT '',
-  user_id INTEGER NOT NULL REFERENCES user_id
+  via_contact INTEGER REFERENCES contacts (contact_id),
+  conn_status TEXT NOT NULL,
+  user_id INTEGER NOT NULL REFERENCES users
 );
 
 CREATE TABLE contact_connections ( -- connections only for direct messages, many per contact
   connection_id INTEGER NOT NULL UNIQUE REFERENCES connections ON DELETE CASCADE,
-  contact_id INTEGER NOT NULL REFERENCES contacts ON DELETE RESTRICT -- connection must be removed first via the agent
+  contact_id INTEGER REFERENCES contacts ON DELETE RESTRICT, -- connection must be removed first via the agent
+  active INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE TABLE contact_invitations (
@@ -59,17 +60,21 @@ CREATE TABLE contact_invitations (
 CREATE TABLE group_profiles ( -- shared group profiles
   group_profile_id INTEGER PRIMARY KEY,
   group_ref TEXT NOT NULL, -- this name must not contain spaces
+  display_name TEXT NOT NULL DEFAULT '',
   properties TEXT NOT NULL DEFAULT '{}' -- JSON with user or contact profile
 );
 
 CREATE TABLE groups (
   group_id INTEGER PRIMARY KEY, -- local group ID
+  invited_by INTEGER REFERENCES contacts ON DELETE RESTRICT,
+  external_group_id BLOB NOT NULL,
   local_group_ref TEXT NOT NULL UNIQUE, -- local group name without spaces
   local_properties TEXT NOT NULL, -- local JSON group properties
   group_profile_id INTEGER REFERENCES group_profiles, -- shared group profile
   user_group_member_details_id INTEGER NOT NULL
     REFERENCES group_member_details (group_member_details_id) ON DELETE RESTRICT,
-  user_id INTEGER NOT NULL REFERENCES user_id
+  user_id INTEGER NOT NULL REFERENCES users,
+  UNIQUE (invited_by, external_group_id)
 );
 
 CREATE TABLE group_members ( -- group members, excluding the local user
@@ -97,6 +102,8 @@ CREATE TABLE events ( -- messages received by the agent, append only
   agent_meta TEXT NOT NULL, -- JSON with timestamps etc. sent in MSG
   connection_id INTEGER NOT NULL REFERENCES connections,
   received INTEGER NOT NULL, -- 0 for received, 1 for sent
+  chat_event_id INTEGER,
+  continuation_of INTEGER, -- references chat_event_id, but can be incorrect
   event_type TEXT NOT NULL, -- event type - see protocol/types.ts
   event_encoding INTEGER NOT NULL, -- format of event_body: 0 - binary, 1 - text utf8, 2 - JSON (utf8)
   content_type TEXT NOT NULL, -- content type - see protocol/types.ts
@@ -107,6 +114,15 @@ CREATE TABLE events ( -- messages received by the agent, append only
 );
 
 CREATE INDEX events_external_msg_id_index ON events (connection_id, external_msg_id);
+
+CREATE TABLE event_body_parts (
+  event_body_part_id INTEGER PRIMARY KEY,
+  event_id REFERENCES events,
+  full_size INTEGER NOT NULL,
+  part_status TEXT, -- full, partial
+  content_type TEXT NOT NULL,
+  event_part BLOB
+);
 
 CREATE TABLE contact_profile_events (
   event_id INTEGER NOT NULL UNIQUE REFERENCES events,
@@ -130,17 +146,12 @@ CREATE TABLE group_event_parents (
   parent_group_member_id INTEGER REFERENCES group_members (group_member_id), -- can be NULL if parent_member_id is incorrect
   parent_member_id BLOB, -- shared member ID, unique per group
   parent_event_id INTEGER REFERENCES events (event_id) ON DELETE CASCADE, -- this can be NULL if received event references another event that's not received yet
-  parent_external_msg_id INTEGER NOT NULL,
+  parent_chat_event_id INTEGER NOT NULL,
   parent_event_hash BLOB NOT NULL
 );
 
-CREATE INDEX group_event_parents_parent_external_msg_id_index
-  ON group_event_parents (parent_member_id, parent_external_msg_id);
-
-CREATE TABLE blobs (
-  blob_id INTEGER PRIMARY KEY,
-  content BLOB NOT NULL
-);
+CREATE INDEX group_event_parents_parent_chat_event_id_index
+  ON group_event_parents (parent_member_id, parent_chat_event_id);
 
 CREATE TABLE messages ( -- mutable messages presented to user
   message_id INTEGER PRIMARY KEY,
@@ -150,8 +161,16 @@ CREATE TABLE messages ( -- mutable messages presented to user
   msg_type TEXT NOT NULL,
   content_type TEXT NOT NULL,
   msg_text TEXT NOT NULL, -- textual representation
-  msg_props TEXT NOT NULL, -- JSON
-  msg_blob_id INTEGER REFERENCES blobs (blob_id) ON DELETE RESTRICT -- optional binary content
+  msg_props TEXT NOT NULL -- JSON
+);
+
+CREATE TABLE message_content (
+  message_content_id INTEGER PRIMARY KEY,
+  message_id INTEGER REFERENCES messages ON DELETE CASCADE,
+  content_type TEXT NOT NULL,
+  content_size INTEGER, -- full expected content size
+  content_status TEXT, -- empty, part, full
+  content BLOB NOT NULL
 );
 
 CREATE TABLE message_events (
