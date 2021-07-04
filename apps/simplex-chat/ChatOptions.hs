@@ -35,7 +35,7 @@ chatOpts appDir =
           <> value (L.fromList ["smp1.simplex.im#pLdiGvm0jD1CMblnov6Edd/391OrYsShw+RgdfR0ChA="])
       )
   where
-    defaultDbFilePath = combine appDir "smp-chat.db"
+    defaultDbFilePath = combine appDir "simplex"
 
 parseSMPServer :: ReadM (NonEmpty SMPServer)
 parseSMPServer = eitherReader $ parseAll servers . B.pack

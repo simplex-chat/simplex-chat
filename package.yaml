@@ -12,6 +12,7 @@ extra-source-files:
   - README.md
 
 dependencies:
+  - aeson == 1.5.*
   - ansi-terminal == 0.10.*
   - attoparsec == 0.13.*
   - base >= 4.7 && < 5
@@ -21,6 +22,7 @@ dependencies:
   - simplexmq == 0.3.*
   - sqlite-simple == 0.4.*
   - text == 1.2.*
+  - time == 1.9.*
 
 library:
   source-dirs: src

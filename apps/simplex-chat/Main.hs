@@ -42,10 +42,11 @@ main :: IO ()
 main = do
   ChatOpts {dbFile, smpServers} <- welcomeGetOpts
   st <- createStore (dbFile <> ".chat.db") 4
+  user <- getCreateActiveUser st
   ct <- newChatTerminal
   a <- getSMPAgentClient cfg {dbFile = dbFile <> ".agent.db", smpServers}
   notify <- initializeNotifications
-  cc <- atomically $ newChatController a ct st notify $ tbqSize cfg
+  cc <- atomically $ newChatController a ct st user notify $ tbqSize cfg
   -- setLogLevel LogInfo -- LogError
   -- withGlobalLogging logCfg $ do
   runReaderT simplexChat cc
