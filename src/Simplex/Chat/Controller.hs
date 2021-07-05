@@ -13,7 +13,6 @@ import Control.Monad.IO.Unlift
 import Control.Monad.Reader
 import Numeric.Natural
 import Simplex.Chat.Notification
-import Simplex.Chat.Protocol
 import Simplex.Chat.Store (StoreError)
 import Simplex.Chat.Terminal
 import Simplex.Chat.Types
@@ -27,7 +26,6 @@ data ChatController = ChatController
     smpAgent :: AgentClient,
     chatTerminal :: ChatTerminal,
     chatStore :: SQLiteStore,
-    chatQ :: TBQueue ChatTransmission,
     inputQ :: TBQueue InputEvent,
     notifyQ :: TBQueue Notification,
     sendNotification :: Notification -> IO ()
@@ -37,6 +35,7 @@ data InputEvent = InputCommand String | InputControl Char
 
 data ChatError
   = ChatErrorContact ContactError
+  | ChatErrorMessage String
   | ChatErrorAgent AgentErrorType
   | ChatErrorStore StoreError
   deriving (Show, Exception)
@@ -50,8 +49,8 @@ newChatController :: AgentClient -> ChatTerminal -> SQLiteStore -> User -> (Noti
 newChatController smpAgent chatTerminal chatStore currentUser sendNotification qSize = do
   inputQ <- newTBQueue qSize
   notifyQ <- newTBQueue qSize
-  chatQ <- newTBQueue qSize
-  pure ChatController {currentUser, smpAgent, chatTerminal, chatStore, chatQ, inputQ, notifyQ, sendNotification}
+  -- chatQ <- newTBQueue qSize
+  pure ChatController {currentUser, smpAgent, chatTerminal, chatStore, inputQ, notifyQ, sendNotification}
 
 setActive :: (MonadUnliftIO m, MonadReader ChatController m) => ActiveTo -> m ()
 setActive to = asks (activeTo . chatTerminal) >>= atomically . (`writeTVar` to)
