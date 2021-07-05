@@ -1,7 +1,9 @@
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Simplex.Chat.Controller where
 
@@ -21,7 +23,7 @@ import Simplex.Terminal
 import UnliftIO.STM
 
 data ChatController = ChatController
-  { currentUserId :: UserId,
+  { currentUser :: User,
     smpAgent :: AgentClient,
     chatTerminal :: ChatTerminal,
     chatStore :: SQLiteStore,
@@ -35,21 +37,21 @@ data InputEvent = InputCommand String | InputControl Char
 
 data ChatError
   = ChatErrorContact ContactError
-  | ChatErrorAgent ContactRef AgentErrorType
+  | ChatErrorAgent AgentErrorType
   | ChatErrorStore StoreError
   deriving (Show, Exception)
 
-newtype ContactError = CENotFound ContactRef
+data ContactError = CENotFound ContactRef | CEProfile String
   deriving (Show, Exception)
 
 type ChatMonad m = (MonadUnliftIO m, MonadReader ChatController m, MonadError ChatError m)
 
-newChatController :: AgentClient -> ChatTerminal -> SQLiteStore -> (Notification -> IO ()) -> Natural -> STM ChatController
-newChatController smpAgent chatTerminal chatStore sendNotification qSize = do
+newChatController :: AgentClient -> ChatTerminal -> SQLiteStore -> User -> (Notification -> IO ()) -> Natural -> STM ChatController
+newChatController smpAgent chatTerminal chatStore currentUser sendNotification qSize = do
   inputQ <- newTBQueue qSize
   notifyQ <- newTBQueue qSize
   chatQ <- newTBQueue qSize
-  pure ChatController {currentUserId = 1, smpAgent, chatTerminal, chatStore, chatQ, inputQ, notifyQ, sendNotification}
+  pure ChatController {currentUser, smpAgent, chatTerminal, chatStore, chatQ, inputQ, notifyQ, sendNotification}
 
 setActive :: (MonadUnliftIO m, MonadReader ChatController m) => ActiveTo -> m ()
 setActive to = asks (activeTo . chatTerminal) >>= atomically . (`writeTVar` to)

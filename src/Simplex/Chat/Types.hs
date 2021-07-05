@@ -1,30 +1,39 @@
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Simplex.Chat.Types where
 
+import Data.Aeson (FromJSON, ToJSON)
+import qualified Data.Aeson as J
 import Data.ByteString.Char8 (ByteString)
 import Data.Int (Int64)
 import Data.Text (Text)
+import Data.Time.Clock (UTCTime)
 import Database.SQLite.Simple.FromField (FromField (..))
 import Database.SQLite.Simple.ToField (ToField (..))
+import GHC.Generics
 import Simplex.Messaging.Agent.Protocol (ConnId)
 import Simplex.Messaging.Agent.Store.SQLite (fromTextField_)
 
 data User = User
   { userId :: UserId,
-    profile :: Profile
+    localContactRef :: ContactRef,
+    profile :: Profile,
+    activeUser :: Bool
   }
 
 type UserId = Int64
 
-data Contact = Contact
-  { contactId :: Int64,
-    localContactRef :: ContactRef,
-    profile :: Maybe Profile,
-    activeConn :: Connection
-  }
+data Contact
+  = Contact
+      { contactId :: Int64,
+        localContactRef :: ContactRef,
+        profile :: Profile,
+        activeConn :: Connection
+      }
+  | NewContact {activeConn :: Connection}
   deriving (Eq, Show)
 
 type ContactRef = Text
@@ -36,18 +45,24 @@ data Group = Group
   deriving (Eq, Show)
 
 data Profile = Profile
-  { profileId :: Int64,
-    contactRef :: ContactRef,
+  { contactRef :: ContactRef,
     displayName :: Text
   }
-  deriving (Eq, Show)
+  deriving (Generic, Eq, Show)
+
+instance ToJSON Profile where toEncoding = J.genericToEncoding J.defaultOptions
+
+instance FromJSON Profile
 
 data Connection = Connection
   { connId :: Int64,
     agentConnId :: ConnId,
     connLevel :: Int,
     viaContact :: Maybe Int64,
-    connStatus :: ConnStatus
+    connType :: ConnType,
+    connStatus :: ConnStatus,
+    entityId :: Maybe Int64, -- contact or group member ID
+    createdAt :: UTCTime
   }
   deriving (Eq, Show)
 
@@ -60,18 +75,36 @@ instance ToField ConnStatus where toField = toField . serializeConnStatus
 
 connStatusT :: Text -> Maybe ConnStatus
 connStatusT = \case
-  "NEW" -> Just ConnNew
-  "CONF" -> Just ConnConfirmed
-  "ACPT" -> Just ConnAccepted
-  "READY" -> Just ConnReady
+  "new" -> Just ConnNew
+  "confirmed" -> Just ConnConfirmed
+  "accepted" -> Just ConnAccepted
+  "ready" -> Just ConnReady
   _ -> Nothing
 
 serializeConnStatus :: ConnStatus -> Text
 serializeConnStatus = \case
-  ConnNew -> "NEW"
-  ConnConfirmed -> "CONF"
-  ConnAccepted -> "ACPT"
-  ConnReady -> "READY"
+  ConnNew -> "new"
+  ConnConfirmed -> "confirmed"
+  ConnAccepted -> "accepted"
+  ConnReady -> "ready"
+
+data ConnType = ConnContact | ConnMember
+  deriving (Eq, Show)
+
+instance FromField ConnType where fromField = fromTextField_ connTypeT
+
+instance ToField ConnType where toField = toField . serializeConnType
+
+connTypeT :: Text -> Maybe ConnType
+connTypeT = \case
+  "contact" -> Just ConnContact
+  "member" -> Just ConnMember
+  _ -> Nothing
+
+serializeConnType :: ConnType -> Text
+serializeConnType = \case
+  ConnContact -> "contact"
+  ConnMember -> "member"
 
 data NewConnection = NewConnection
   { agentConnId :: ByteString,

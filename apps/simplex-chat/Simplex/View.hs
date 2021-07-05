@@ -19,7 +19,6 @@ where
 import Control.Monad.IO.Unlift
 import Control.Monad.Reader
 import Data.ByteString.Char8 (ByteString)
-import Data.Composition ((.:))
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (DiffTime, UTCTime)
@@ -36,8 +35,8 @@ import System.Console.ANSI.Types
 
 type ChatReader m = (MonadUnliftIO m, MonadReader ChatController m)
 
-showInvitation :: ChatReader m => ContactRef -> SMPQueueInfo -> m ()
-showInvitation = printToView .: invitation
+showInvitation :: ChatReader m => SMPQueueInfo -> m ()
+showInvitation = printToView . invitation
 
 showChatError :: ChatReader m => ChatError -> m ()
 showChatError = printToView . chatError
@@ -57,9 +56,9 @@ showReceivedMessage c utcTime msg mOk = printToView =<< liftIO (receivedMessage 
 showSentMessage :: ChatReader m => ContactRef -> ByteString -> m ()
 showSentMessage c msg = printToView =<< liftIO (sentMessage c msg)
 
-invitation :: ContactRef -> SMPQueueInfo -> [StyledString]
-invitation c qInfo =
-  [ "pass this invitation to your contact " <> ttyContact c <> " (via any channel): ",
+invitation :: SMPQueueInfo -> [StyledString]
+invitation qInfo =
+  [ "pass this invitation to your contact (via another channel): ",
     "",
     (bPlain . serializeSmpQueueInfo) qInfo,
     "",
@@ -117,12 +116,13 @@ chatError :: ChatError -> [StyledString]
 chatError = \case
   ChatErrorContact e -> case e of
     CENotFound c -> ["no contact " <> ttyContact c]
-  ChatErrorAgent c err -> case err of
-    CONN e -> case e of
-      -- TODO replace with ChatErrorContact errors, these errors should never happen
-      NOT_FOUND -> ["no contact " <> ttyContact c]
-      DUPLICATE -> ["contact " <> ttyContact c <> " already exists"]
-      SIMPLEX -> ["contact " <> ttyContact c <> " did not accept invitation yet"]
+    CEProfile s -> ["invalid profile: " <> plain s]
+  ChatErrorAgent err -> case err of
+    -- CONN e -> case e of
+    --   -- TODO replace with ChatErrorContact errors, these errors should never happen
+    --   NOT_FOUND -> ["no contact " <> ttyContact c]
+    --   DUPLICATE -> ["contact " <> ttyContact c <> " already exists"]
+    --   SIMPLEX -> ["contact " <> ttyContact c <> " did not accept invitation yet"]
     e -> ["smp agent error: " <> plain (show e)]
   e -> ["chat error: " <> plain (show e)]
 

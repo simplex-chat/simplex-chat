@@ -1,21 +1,29 @@
 CREATE TABLE contact_profiles ( -- remote user profile
   contact_profile_id INTEGER PRIMARY KEY,
   contact_ref TEXT NOT NULL, -- contact name set by remote user (not unique), this name must not contain spaces
-  display_name TEXT NOT NULL DEFAULT '',
+  display_name TEXT NOT NULL,
   properties TEXT NOT NULL DEFAULT '{}' -- JSON with contact profile properties
 );
 
--- the first record (id = 1) is reserved for the first local user
-INSERT INTO contact_profiles (contact_profile_id, contact_ref) VALUES (1, '');
-
-
 CREATE TABLE users (
   user_id INTEGER PRIMARY KEY,
-  contact_profile_id INTEGER NOT NULL UNIQUE REFERENCES contact_profiles -- user's profile
+  contact_id INTEGER NOT NULL UNIQUE REFERENCES contacts ON DELETE CASCADE
+    DEFERRABLE INITIALLY DEFERRED,
+  active_user INTEGER -- 1 for active user
 );
 
--- the first record (id = 1) is reserved for the first local user
-INSERT INTO users (user_id, contact_profile_id) VALUES (1, 1);
+CREATE TABLE contacts (
+  contact_id INTEGER PRIMARY KEY,
+  contact_profile_id INTEGER UNIQUE REFERENCES contact_profiles, -- NULL if it's an incognito profile
+  local_contact_ref TEXT NOT NULL,
+  lcr_base TEXT NOT NULL,
+  lcr_suffix INTEGER NOT NULL DEFAULT 0,
+  user_id INTEGER NOT NULL REFERENCES users,
+  user INTEGER, -- 1 if this contact is a user
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE (user_id, local_contact_ref) ON CONFLICT FAIL,
+  UNIQUE (user_id, lcr_base, lcr_suffix) ON CONFLICT FAIL
+);
 
 CREATE TABLE known_servers(
   server_id INTEGER PRIMARY KEY,
@@ -26,36 +34,13 @@ CREATE TABLE known_servers(
   UNIQUE (user_id, host, port)
 ) WITHOUT ROWID;
 
-CREATE TABLE contacts (
-  contact_id INTEGER PRIMARY KEY,
-  local_contact_ref TEXT NOT NULL UNIQUE, -- contact name set by local user - must be unique
-  local_properties TEXT NOT NULL DEFAULT '{}', -- JSON set by local user
-  contact_profile_id INTEGER UNIQUE REFERENCES contact_profiles, -- profile sent by remote contact, NULL for incognito contacts
-  user_id INTEGER NOT NULL REFERENCES users
-);
-
-CREATE TABLE connections ( -- all SMP agent connections
-  connection_id INTEGER PRIMARY KEY,
-  agent_conn_id BLOB NOT NULL UNIQUE,
-  conn_level INTEGER NOT NULL DEFAULT 0,
-  via_contact INTEGER REFERENCES contacts (contact_id),
-  conn_status TEXT NOT NULL,
-  user_id INTEGER NOT NULL REFERENCES users
-);
-
-CREATE TABLE contact_connections ( -- connections only for direct messages, many per contact
-  connection_id INTEGER NOT NULL UNIQUE REFERENCES connections ON DELETE CASCADE,
-  contact_id INTEGER REFERENCES contacts ON DELETE RESTRICT, -- connection must be removed first via the agent
-  active INTEGER NOT NULL DEFAULT 0
-);
-
-CREATE TABLE contact_invitations (
-  invitation_id INTEGER PRIMARY KEY,
-  agent_inv_id BLOB UNIQUE,
-  invitation TEXT,
-  contact_id INTEGER NOT NULL REFERENCES contacts ON DELETE RESTRICT,
-  invitation_status TEXT NOT NULL DEFAULT ''
-);
+-- CREATE TABLE contact_invitations (
+--   invitation_id INTEGER PRIMARY KEY,
+--   agent_inv_id BLOB UNIQUE,
+--   invitation TEXT,
+--   contact_id INTEGER NOT NULL REFERENCES contacts ON DELETE RESTRICT,
+--   invitation_status TEXT NOT NULL DEFAULT ''
+-- );
 
 CREATE TABLE group_profiles ( -- shared group profiles
   group_profile_id INTEGER PRIMARY KEY,
@@ -71,8 +56,6 @@ CREATE TABLE groups (
   local_group_ref TEXT NOT NULL UNIQUE, -- local group name without spaces
   local_properties TEXT NOT NULL, -- local JSON group properties
   group_profile_id INTEGER REFERENCES group_profiles, -- shared group profile
-  user_group_member_details_id INTEGER NOT NULL
-    REFERENCES group_member_details (group_member_details_id) ON DELETE RESTRICT,
   user_id INTEGER NOT NULL REFERENCES users,
   UNIQUE (invited_by, external_group_id)
 );
@@ -80,19 +63,25 @@ CREATE TABLE groups (
 CREATE TABLE group_members ( -- group members, excluding the local user
   group_member_id INTEGER PRIMARY KEY,
   group_id INTEGER NOT NULL REFERENCES groups ON DELETE RESTRICT,
-  group_member_details_id INTEGER NOT NULL REFERENCES group_member_details ON DELETE RESTRICT,
-  contact_id INTEGER NOT NULL REFERENCES contacts ON DELETE RESTRICT,
-  connection_id INTEGER UNIQUE REFERENCES connections
-);
-
-CREATE TABLE group_member_details (
-  group_member_details_id INTEGER PRIMARY KEY,
-  group_id INTEGER NOT NULL REFERENCES groups ON DELETE RESTRICT,
   member_id BLOB NOT NULL, -- shared member ID, unique per group
   member_role TEXT NOT NULL DEFAULT '', -- owner, admin, moderator, ''
   member_status TEXT NOT NULL DEFAULT '', -- inv | con | full | off
-  invited_by INTEGER REFERENCES contacts ON DELETE RESTRICT, -- NULL for the members who joined before the current user and for the group creator
+  invited_by INTEGER REFERENCES contacts (contact_id) ON DELETE RESTRICT, -- NULL for the members who joined before the current user and for the group creator
+  contact_id INTEGER NOT NULL REFERENCES contacts ON DELETE RESTRICT,
   UNIQUE (group_id, member_id)
+);
+
+CREATE TABLE connections ( -- all SMP agent connections
+  connection_id INTEGER PRIMARY KEY,
+  agent_conn_id BLOB NOT NULL UNIQUE,
+  conn_level INTEGER NOT NULL DEFAULT 0,
+  via_contact INTEGER REFERENCES contacts (contact_id),
+  conn_status TEXT NOT NULL,
+  conn_type TEXT NOT NULL, -- contact, member
+  contact_id INTEGER REFERENCES contacts ON DELETE RESTRICT,
+  group_member_id INTEGER REFERENCES group_members ON DELETE RESTRICT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  user_id INTEGER NOT NULL REFERENCES users
 );
 
 CREATE TABLE events ( -- messages received by the agent, append only
