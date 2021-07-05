@@ -87,11 +87,11 @@ processChatCommand User {userId, profile} = \case
   MarkdownHelp -> printToView markdownInfo
   AddContact -> do
     (connId, qInfo) <- withAgent createConnection
-    void $ withStore $ \st -> createDirectConnection st userId connId
+    withStore $ \st -> createDirectConnection st userId connId
     showInvitation qInfo
   Connect qInfo -> do
     connId <- withAgent $ \agent -> joinConnection agent qInfo $ LB.toStrict (J.encode profile)
-    void $ withStore $ \st -> createDirectConnection st userId connId
+    withStore $ \st -> createDirectConnection st userId connId
   DeleteContact cRef -> do
     conns <- withStore $ \st -> getContactConnections st userId cRef
     withAgent $ \smp -> forM_ conns $ \Connection {agentConnId} ->
@@ -151,14 +151,16 @@ chatSubscriber = do
       AgentTransmission {agentConnId, chatDirection = ReceivedDirectMessage NewContact {activeConn}, agentMessage} ->
         void . runExceptT $ case agentMessage of
           CONF confId connInfo -> do
-            saveProfile userId activeConn connInfo
+            -- TODO update connection status
+            saveContact userId activeConn connInfo
             withAgent $ \a -> allowConnection a agentConnId confId $ LB.toStrict (J.encode profile)
           INFO connInfo ->
-            saveProfile userId activeConn connInfo
+            saveContact userId activeConn connInfo
           _ -> pure ()
       AgentTransmission {chatDirection = ReceivedDirectMessage Contact {localContactRef = c}, agentMessage} ->
         case agentMessage of
           CON -> do
+            -- TODO update connection status
             showContactConnected c
             showToast ("@" <> c) "connected"
             setActive $ ActiveC c
@@ -169,7 +171,7 @@ chatSubscriber = do
           _ -> pure ()
       _ -> pure ()
   where
-    saveProfile userId activeConn connInfo = do
+    saveContact userId activeConn connInfo = do
       p <- liftEither . first (ChatErrorContact . CEProfile) $ J.eitherDecodeStrict' connInfo
       withStore $ \st -> createDirectContact st userId activeConn p
 

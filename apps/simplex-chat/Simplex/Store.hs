@@ -150,7 +150,7 @@ createDirectContact st userId Connection {connId} Profile {contactRef, displayNa
         Right () -> do
           contactId <- insertedRowId db
           DB.execute db "UPDATE connections SET contact_id = ? WHERE connection_id = ?" (contactId, connId)
-          pure $ Right () -- Contact {contactId, localContactRef = lcr, profile = p, activeConn = c}
+          pure $ Right ()
         Left e
           | DB.sqlError e == DB.ErrorConstraint -> create db profileId (lcrSuffix + 1) (attempts - 1)
           | otherwise -> E.throwIO e
@@ -185,7 +185,6 @@ deleteContact st userId contactRef =
       ]
       $ \q -> DB.executeNamed db q [":user_id" := userId, ":contact_ref" := contactRef]
 
--- TODO update
 getContactConnection ::
   (MonadUnliftIO m, MonadError StoreError m) => SQLiteStore -> UserId -> ContactRef -> m Connection
 getContactConnection st userId contactRef =
@@ -196,20 +195,19 @@ getContactConnection st userId contactRef =
         [sql|
           SELECT c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact,
             c.conn_status, c.conn_type, c.contact_id, c.group_member_id, c.created_at
-          FROM connections AS c
-          JOIN contact_connections AS cc ON cc.connection_id == c.connection_id
-          JOIN contacts AS cs ON cc.contact_id == cs.contact_id
+          FROM connections c
+          JOIN contacts cs ON c.contact_id == cs.contact_id
           WHERE c.user_id = :user_id
             AND cs.user_id = :user_id
             AND cs.local_contact_ref == :contact_ref
-            AND cc.active == 1;
+          ORDER BY c.connection_id DESC
+          LIMIT 1;
         |]
         [":user_id" := userId, ":contact_ref" := contactRef]
   where
     connection (connRow : _) = Right $ toConnection connRow
     connection _ = Left $ SEContactNotFound contactRef
 
--- TODO update
 getContactConnections :: MonadUnliftIO m => SQLiteStore -> UserId -> ContactRef -> m [Connection]
 getContactConnections st userId contactRef =
   liftIO . withTransaction st $ \db ->
@@ -219,9 +217,8 @@ getContactConnections st userId contactRef =
         [sql|
           SELECT c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact,
             c.conn_status, c.conn_type, c.contact_id, c.group_member_id, c.created_at
-          FROM connections AS c
-          JOIN contact_connections AS cc ON cc.connection_id == c.connection_id
-          JOIN contacts AS cs ON cc.contact_id == cs.contact_id
+          FROM connections c
+          JOIN contacts cs ON c.contact_id == cs.contact_id
           WHERE c.user_id = :user_id
             AND cs.user_id = :user_id
             AND cs.local_contact_ref == :contact_ref;
