@@ -3,7 +3,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Simplex.View
+module Simplex.Chat.View
   ( printToView,
     showInvitation,
     showChatError,
@@ -27,10 +27,10 @@ import Data.Time.LocalTime (TimeZone, ZonedTime, getCurrentTimeZone, getZonedTim
 import Simplex.Chat.Controller
 import Simplex.Chat.Markdown
 import Simplex.Chat.Styled
+import Simplex.Chat.Terminal (printToTerminal)
 import Simplex.Chat.Types
+import Simplex.Chat.Util (safeDecodeUtf8)
 import Simplex.Messaging.Agent.Protocol
-import Simplex.Terminal (printToTerminal)
-import Simplex.Util (safeDecodeUtf8)
 import System.Console.ANSI.Types
 
 type ChatReader m = (MonadUnliftIO m, MonadReader ChatController m)

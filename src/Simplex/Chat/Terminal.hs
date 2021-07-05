@@ -2,7 +2,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module Simplex.Terminal where
+module Simplex.Chat.Terminal where
 
 import Simplex.Chat.Styled
 import Simplex.Chat.Types

@@ -27,18 +27,18 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Simplex.Chat.Controller
+import Simplex.Chat.Help
+import Simplex.Chat.Notification
 import Simplex.Chat.Protocol
+import Simplex.Chat.Store
 import Simplex.Chat.Styled (plain)
+import Simplex.Chat.Terminal
 import Simplex.Chat.Types
-import Simplex.Help
+import Simplex.Chat.View
 import Simplex.Messaging.Agent
 import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Parsers (parseAll)
 import Simplex.Messaging.Util (bshow, raceAny_)
-import Simplex.Notification
-import Simplex.Store
-import Simplex.Terminal
-import Simplex.View
 import System.Exit (exitFailure)
 import System.IO (hFlush, stdout)
 import Text.Read (readMaybe)
@@ -207,7 +207,7 @@ getCreateActiveUser st = do
       liftIO $ setActiveUser st (userId user)
       pure user
     selectUser users = do
-      putStrLn "Select user profile: "
+      putStrLn "Select user profile:"
       forM_ (zip [1 ..] users) $ \(n :: Int, user) -> putStrLn $ show n <> " - " <> userStr user
       loop
       where

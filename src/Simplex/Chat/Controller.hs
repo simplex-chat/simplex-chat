@@ -12,14 +12,14 @@ import Control.Monad.Except
 import Control.Monad.IO.Unlift
 import Control.Monad.Reader
 import Numeric.Natural
+import Simplex.Chat.Notification
 import Simplex.Chat.Protocol
+import Simplex.Chat.Store (StoreError)
+import Simplex.Chat.Terminal
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent (AgentClient)
 import Simplex.Messaging.Agent.Protocol (AgentErrorType)
 import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore)
-import Simplex.Notification
-import Simplex.Store (StoreError)
-import Simplex.Terminal
 import UnliftIO.STM
 
 data ChatController = ChatController
