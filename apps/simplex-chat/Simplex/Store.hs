@@ -129,7 +129,11 @@ createDirectContact st userId Connection {connId} Profile {contactRef, displayNa
   liftIOEither . withTransaction st $ \db -> do
     DB.execute db "INSERT INTO contact_profiles (contact_ref, display_name) VALUES (?, ?);" (contactRef, displayName)
     profileId <- insertedRowId db
-    lcrSuffix :: Int <-
+    lcrSuffix <- getLcrSuffix db
+    create db profileId lcrSuffix 20
+  where
+    getLcrSuffix :: DB.Connection -> IO Int
+    getLcrSuffix db =
       maybe 0 ((+ 1) . fromOnly) . listToMaybe
         <$> DB.queryNamed
           db
@@ -140,8 +144,6 @@ createDirectContact st userId Connection {connId} Profile {contactRef, displayNa
             LIMIT 1;
           |]
           [":user_id" := userId, ":contact_ref" := contactRef]
-    create db profileId lcrSuffix 20
-  where
     create :: DB.Connection -> Int64 -> Int -> Int -> IO (Either StoreError ())
     create _ _ _ 0 = pure $ Left SEDuplicateContactRef
     create db profileId lcrSuffix attempts = do
@@ -278,20 +280,6 @@ getConnectionChatDirection st userId agentConnId =
       let profile = Profile {contactRef, displayName}
        in Right Contact {contactId, localContactRef, profile, activeConn = c}
     toContact _ _ _ = Left $ SEInternal "referenced contact not found"
-
--- chatDirection :: [ChatDirRow] -> Either StoreError (ChatDirection 'Agent)
--- chatDirection [d] = Right $ toChatDirection agentConnId d
--- chatDirection _ = Left SEConnectionNotFound agentConnId
-
--- type ChatDirRow = (Int64, Text, Int64, Int, Maybe Int64, ConnStatus, ContactRef, Text)
-
--- toChatDirection :: ConnId -> ChatDirRow -> ChatDirection 'Agent
--- toChatDirection
---   agentConnId
---   (contactId, localContactRef, connId, connLevel, viaContact, connStatus, contactRef, displayName) =
---     let profile = Profile {contactRef, displayName}
---         activeConn = Connection {connId, agentConnId, connLevel, viaContact, connStatus}
---      in ReceivedDirectMessage $ Contact {contactId, localContactRef, profile, activeConn}
 
 data StoreError
   = SEDuplicateContactRef
