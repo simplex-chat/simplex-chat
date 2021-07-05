@@ -185,6 +185,8 @@ deleteContact st userId contactRef =
       ]
       $ \q -> DB.executeNamed db q [":user_id" := userId, ":contact_ref" := contactRef]
 
+-- TODO return the last connection that is ready, not any last connection
+-- requires updating connection status
 getContactConnection ::
   (MonadUnliftIO m, MonadError StoreError m) => SQLiteStore -> UserId -> ContactRef -> m Connection
 getContactConnection st userId contactRef =
