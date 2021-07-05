@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module ChatOptions (getChatOpts, ChatOpts (..)) where
+module Simplex.Chat.Options (getChatOpts, ChatOpts (..)) where
 
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.ByteString.Char8 as B

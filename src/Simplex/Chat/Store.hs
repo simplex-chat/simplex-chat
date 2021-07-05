@@ -9,7 +9,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
 
-module Simplex.Store
+module Simplex.Chat.Store
   ( SQLiteStore,
     StoreError (..),
     createStore,

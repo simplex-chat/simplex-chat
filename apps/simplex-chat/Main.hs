@@ -5,20 +5,20 @@
 
 module Main where
 
-import ChatOptions
-import Control.Concurrent.STM
+import Control.Concurrent.STM (atomically)
 import Control.Logger.Simple
 import Control.Monad.IO.Unlift
 import Control.Monad.Reader
 import Simplex.Chat
 import Simplex.Chat.Controller
-import Simplex.Input
+import Simplex.Chat.Input
+import Simplex.Chat.Notification
+import Simplex.Chat.Options
+import Simplex.Chat.Store (createStore)
+import Simplex.Chat.Terminal
 import Simplex.Messaging.Agent (getSMPAgentClient)
 import Simplex.Messaging.Agent.Env.SQLite
 import Simplex.Messaging.Client (smpDefaultConfig)
-import Simplex.Notification
-import Simplex.Store (createStore)
-import Simplex.Terminal
 import System.Directory (getAppUserDataDirectory)
 import UnliftIO.Async (race_)
 

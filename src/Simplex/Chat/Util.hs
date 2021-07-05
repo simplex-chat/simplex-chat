@@ -1,4 +1,4 @@
-module Simplex.Util where
+module Simplex.Chat.Util where
 
 import Data.ByteString.Char8 (ByteString)
 import Data.Text (Text)

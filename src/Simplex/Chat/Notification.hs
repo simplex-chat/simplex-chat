@@ -2,7 +2,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Simplex.Notification (Notification (..), initializeNotifications) where
+module Simplex.Chat.Notification (Notification (..), initializeNotifications) where
 
 import Control.Monad (void)
 import Data.Char (toLower)

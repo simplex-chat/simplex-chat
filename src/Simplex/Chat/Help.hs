@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Simplex.Help where
+module Simplex.Chat.Help where
 
 import Data.List (intersperse)
 import Simplex.Chat.Markdown
