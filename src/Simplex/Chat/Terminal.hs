@@ -1,13 +1,18 @@
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module Simplex.Chat.Terminal where
 
+import Control.Monad.Catch (MonadMask)
+import Control.Monad.IO.Class (MonadIO)
 import Simplex.Chat.Styled
 import Simplex.Chat.Types
 import System.Console.ANSI.Types
 import System.Terminal
+import System.Terminal.Internal (LocalTerminal, Terminal, VirtualTerminal)
 import UnliftIO.STM
 
 data ActiveTo = ActiveNone | ActiveC ContactRef
@@ -15,6 +20,7 @@ data ActiveTo = ActiveNone | ActiveC ContactRef
 
 data ChatTerminal = ChatTerminal
   { activeTo :: TVar ActiveTo,
+    termDevice :: TerminalDevice,
     termState :: TVar TerminalState,
     termSize :: Size,
     nextMessageRow :: TVar Int,
@@ -28,16 +34,36 @@ data TerminalState = TerminalState
     previousInput :: String
   }
 
-newChatTerminal :: IO ChatTerminal
-newChatTerminal = do
+class Terminal t => WithTerminal t where
+  withTerm :: (MonadIO m, MonadMask m) => t -> (t -> m a) -> m a
+  withVirtualTerm :: (MonadIO m, MonadMask m) => t -> (Maybe VirtualTerminal -> m a) -> m a
+
+data TerminalDevice = forall t. WithTerminal t => TerminalDevice t
+
+instance WithTerminal LocalTerminal where
+  withTerm _ = withTerminal
+  withVirtualTerm _ action = action Nothing
+
+instance WithTerminal VirtualTerminal where
+  withTerm t = ($ t)
+  withVirtualTerm t action = action (Just t)
+
+withChatTerm :: (MonadIO m, MonadMask m) => ChatTerminal -> (forall t. WithTerminal t => TerminalT t m a) -> m a
+withChatTerm ChatTerminal {termDevice = TerminalDevice t} action = withTerm t $ runTerminalT action
+
+withVirtualChatTerm :: ChatTerminal -> (Maybe VirtualTerminal -> IO a) -> IO a
+withVirtualChatTerm ChatTerminal {termDevice = TerminalDevice t} = withVirtualTerm t
+
+newChatTerminal :: WithTerminal t => t -> IO ChatTerminal
+newChatTerminal t = do
   activeTo <- newTVarIO ActiveNone
-  termSize <- withTerminal . runTerminalT $ getWindowSize
+  termSize <- withTerm t . runTerminalT $ getWindowSize
   let lastRow = height termSize - 1
   termState <- newTVarIO newTermState
   termLock <- newTMVarIO ()
   nextMessageRow <- newTVarIO lastRow
   -- threadDelay 500000 -- this delay is the same as timeout in getTerminalSize
-  return ChatTerminal {activeTo, termState, termSize, nextMessageRow, termLock}
+  return ChatTerminal {activeTo, termDevice = TerminalDevice t, termState, termSize, nextMessageRow, termLock}
 
 newTermState :: TerminalState
 newTermState =
@@ -55,9 +81,11 @@ withTermLock ChatTerminal {termLock} action = do
   atomically $ putTMVar termLock ()
 
 printToTerminal :: ChatTerminal -> [StyledString] -> IO ()
-printToTerminal ct s = withTerminal . runTerminalT . withTermLock ct $ do
-  printMessage ct s
-  updateInput ct
+printToTerminal ct s =
+  withChatTerm ct $
+    withTermLock ct $ do
+      printMessage ct s
+      updateInput ct
 
 updateInput :: forall m. MonadTerminal m => ChatTerminal -> m ()
 updateInput ChatTerminal {termSize = Size {height, width}, termState, nextMessageRow} = do
