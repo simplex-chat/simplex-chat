@@ -21,27 +21,7 @@ import Data.Text (Text)
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Parsers (base64P)
-import Simplex.Messaging.Protocol (MsgBody)
 import Simplex.Messaging.Util (bshow)
-
-data ChatTransmission
-  = ChatTransmission
-      { agentMsgMeta :: MsgMeta,
-        chatDirection :: ChatDirection 'Agent,
-        chatMessage :: ChatMessage
-      }
-  | ChatTransmissionError
-      { agentMsgMeta :: MsgMeta,
-        chatDirection :: ChatDirection 'Agent,
-        msgBody :: MsgBody,
-        msgError :: ByteString
-      }
-  | AgentTransmission
-      { agentConnId :: ConnId,
-        chatDirection :: ChatDirection 'Agent,
-        agentMessage :: ACommand 'Agent
-      }
-  deriving (Eq, Show)
 
 data ChatDirection (p :: AParty) where
   ReceivedDirectMessage :: Contact -> ChatDirection 'Agent
@@ -53,16 +33,18 @@ deriving instance Eq (ChatDirection p)
 
 deriving instance Show (ChatDirection p)
 
-newtype ChatMsgEvent = XMsgNew MessageType
+data ChatMsgEvent
+  = XMsgNew MessageType
+  | XInfo
   deriving (Eq, Show)
 
 data MessageType = MTText | MTImage deriving (Eq, Show)
 
-toMsgType :: ByteString -> Either ByteString MessageType
+toMsgType :: ByteString -> Either String MessageType
 toMsgType = \case
   "c.text" -> Right MTText
   "c.image" -> Right MTImage
-  t -> Left $ "invalid message type " <> t
+  t -> Left $ "invalid message type " <> B.unpack t
 
 rawMsgType :: MessageType -> ByteString
 rawMsgType = \case
@@ -77,16 +59,20 @@ data ChatMessage = ChatMessage
   }
   deriving (Eq, Show)
 
-toChatMessage :: RawChatMessage -> Either ByteString ChatMessage
+toChatMessage :: RawChatMessage -> Either String ChatMessage
 toChatMessage RawChatMessage {chatMsgId, chatMsgEvent, chatMsgParams, chatMsgBody} = do
   body <- mapM toMsgBodyContent chatMsgBody
+  let chatDAGIdx = findDAG body
   case chatMsgEvent of
     "x.msg.new" -> case chatMsgParams of
       [mt] -> do
         t <- toMsgType mt
-        pure ChatMessage {chatMsgId, chatMsgEvent = XMsgNew t, chatMsgBody = body, chatDAGIdx = findDAG body}
+        pure ChatMessage {chatMsgId, chatMsgEvent = XMsgNew t, chatMsgBody = body, chatDAGIdx}
       _ -> throwError "x.msg.new expects one parameter"
-    _ -> throwError $ "unsupported event " <> chatMsgEvent
+    "x.info" -> case chatMsgParams of
+      [] -> pure ChatMessage {chatMsgId, chatMsgEvent = XInfo, chatMsgBody = body, chatDAGIdx}
+      _ -> throwError "x.info expects no parameters"
+    _ -> throwError $ "unsupported event " <> B.unpack chatMsgEvent
 toChatMessage _ = Left "message continuation"
 
 findDAG :: [MsgBodyContent] -> Maybe Int
@@ -101,11 +87,12 @@ isSimplexContentType = isContentType . SimplexContentType
 rawChatMessage :: ChatMessage -> RawChatMessage
 rawChatMessage ChatMessage {chatMsgId, chatMsgEvent = event, chatMsgBody = body} =
   case event of
-    XMsgNew t ->
-      let chatMsgBody = map rawMsgBodyContent body
-       in RawChatMessage {chatMsgId, chatMsgEvent = "x.msg.new", chatMsgParams = [rawMsgType t], chatMsgBody}
+    XMsgNew t -> RawChatMessage {chatMsgId, chatMsgEvent = "x.msg.new", chatMsgParams = [rawMsgType t], chatMsgBody}
+    XInfo -> RawChatMessage {chatMsgId, chatMsgEvent = "x.info", chatMsgParams = [], chatMsgBody}
+  where
+    chatMsgBody = map rawMsgBodyContent body
 
-toMsgBodyContent :: RawMsgBodyContent -> Either ByteString MsgBodyContent
+toMsgBodyContent :: RawMsgBodyContent -> Either String MsgBodyContent
 toMsgBodyContent RawMsgBodyContent {contentType, contentHash, contentData} = do
   cType <- toContentType contentType
   pure MsgBodyContent {contentType = cType, contentHash, contentData}
@@ -127,15 +114,16 @@ data ContentType
   | SimplexDAG
   deriving (Eq, Show)
 
-data XContentType = XCText | XCImage deriving (Eq, Show)
+data XContentType = XCText | XCImage | XCJson deriving (Eq, Show)
 
 data MContentType = MCImageJPG | MCImagePNG deriving (Eq, Show)
 
-toContentType :: RawContentType -> Either ByteString ContentType
+toContentType :: RawContentType -> Either String ContentType
 toContentType (RawContentType ns cType) = case ns of
   "x" -> case cType of
     "text" -> Right $ SimplexContentType XCText
     "image" -> Right $ SimplexContentType XCImage
+    "json" -> Right $ SimplexContentType XCJson
     "dag" -> Right SimplexDAG
     _ -> err
   "m" -> case cType of
@@ -144,13 +132,14 @@ toContentType (RawContentType ns cType) = case ns of
     _ -> err
   _ -> err
   where
-    err = Left $ "invalid content type " <> ns <> "." <> cType
+    err = Left . B.unpack $ "invalid content type " <> ns <> "." <> cType
 
 rawContentType :: ContentType -> RawContentType
 rawContentType t = case t of
   SimplexContentType t' -> RawContentType "x" $ case t' of
     XCText -> "text"
     XCImage -> "image"
+    XCJson -> "json"
   MimeContentType t' -> RawContentType "m" $ case t' of
     MCImageJPG -> "image/jpg"
     MCImagePNG -> "image/png"

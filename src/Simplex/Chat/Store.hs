@@ -170,22 +170,25 @@ createDirectContact st userId Connection {connId} Profile {contactRef, displayNa
 
 deleteContact :: MonadUnliftIO m => SQLiteStore -> UserId -> ContactRef -> m ()
 deleteContact st userId contactRef =
-  liftIO . withTransaction st $ \db ->
-    forM_
-      [ [sql|
-          DELETE FROM connections WHERE connection_id IN (
-            SELECT connection_id
-            FROM connections c
-            JOIN contacts cs ON c.contact_id = cs.contact_id
-            WHERE cs.user_id = :user_id AND cs.local_contact_ref = :contact_ref
-          );
-        |],
-        [sql|
-          DELETE FROM contacts
-          WHERE user_id = :user_id AND local_contact_ref = :contact_ref;
-        |]
-      ]
-      $ \q -> DB.executeNamed db q [":user_id" := userId, ":contact_ref" := contactRef]
+  liftIO . withTransaction st $ \db -> do
+    DB.executeNamed
+      db
+      [sql|
+        DELETE FROM connections WHERE connection_id IN (
+          SELECT connection_id
+          FROM connections c
+          JOIN contacts cs ON c.contact_id = cs.contact_id
+          WHERE cs.user_id = :user_id AND cs.local_contact_ref = :contact_ref
+        );
+      |]
+      [":user_id" := userId, ":contact_ref" := contactRef]
+    DB.executeNamed
+      db
+      [sql|
+        DELETE FROM contacts
+        WHERE user_id = :user_id AND local_contact_ref = :contact_ref;
+      |]
+      [":user_id" := userId, ":contact_ref" := contactRef]
 
 -- TODO return the last connection that is ready, not any last connection
 -- requires updating connection status

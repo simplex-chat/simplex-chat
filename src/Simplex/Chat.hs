@@ -1,3 +1,4 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
@@ -18,7 +19,6 @@ import Data.Attoparsec.ByteString.Char8 (Parser)
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.Bifunctor (first)
 import Data.ByteString.Char8 (ByteString)
-import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Functor (($>))
 import Data.List (find)
@@ -59,7 +59,6 @@ runChatController =
   raceAny_
     [ inputSubscriber,
       agentSubscriber,
-      chatSubscriber,
       notificationSubscriber
     ]
 
@@ -77,9 +76,7 @@ inputSubscriber = do
               SendMessage c msg -> showSentMessage c msg
               _ -> printToView [plain s]
             user <- asks currentUser
-            runExceptT (processChatCommand user cmd) >>= \case
-              Left e -> showChatError e
-              _ -> pure ()
+            void . runExceptT $ processChatCommand user cmd `catchError` showChatError
 
 processChatCommand :: ChatMonad m => User -> ChatCommand -> m ()
 processChatCommand User {userId, profile} = \case
@@ -90,7 +87,7 @@ processChatCommand User {userId, profile} = \case
     withStore $ \st -> createDirectConnection st userId connId
     showInvitation qInfo
   Connect qInfo -> do
-    connId <- withAgent $ \agent -> joinConnection agent qInfo $ LB.toStrict (J.encode profile)
+    connId <- withAgent $ \agent -> joinConnection agent qInfo $ encodeProfile profile
     withStore $ \st -> createDirectConnection st userId connId
   DeleteContact cRef -> do
     conns <- withStore $ \st -> getContactConnections st userId cRef
@@ -109,35 +106,22 @@ processChatCommand User {userId, profile} = \case
 
 agentSubscriber :: (MonadUnliftIO m, MonadReader ChatController m) => m ()
 agentSubscriber = do
-  aQ <- asks $ subQ . smpAgent
-  cQ <- asks chatQ
+  q <- asks $ subQ . smpAgent
+  -- cQ <- asks chatQ
   forever $ do
-    (_, agentConnId, resp) <- atomically (readTBQueue aQ)
-    User {userId} <- asks currentUser
-    runExceptT (withStore $ \st -> getConnectionChatDirection st userId agentConnId) >>= \case
-      -- TODO handle errors
-      Left e -> liftIO $ print e
-      Right chatDirection -> do
-        case resp of
-          MSG agentMsgMeta msgBody -> do
-            atomically . writeTBQueue cQ $
-              case first B.pack (parseAll rawChatMessageP msgBody) >>= toChatMessage of
-                Right chatMessage -> ChatTransmission {agentMsgMeta, chatDirection, chatMessage}
-                Left msgError -> ChatTransmissionError {agentMsgMeta, chatDirection, msgBody, msgError}
-          agentMessage ->
-            atomically $ writeTBQueue cQ AgentTransmission {agentConnId, chatDirection, agentMessage}
+    (_, connId, msg) <- atomically $ readTBQueue q
+    user <- asks currentUser
+    -- TODO handle errors properly
+    void . runExceptT $ processAgentMessage user connId msg `catchError` (liftIO . print)
 
-chatSubscriber :: (MonadUnliftIO m, MonadReader ChatController m) => m ()
-chatSubscriber = do
-  cQ <- asks chatQ
-  forever $ do
-    User {userId, profile} <- asks currentUser
-    atomically (readTBQueue cQ) >>= \case
-      ChatTransmission
-        { agentMsgMeta = meta,
-          chatDirection = ReceivedDirectMessage Contact {localContactRef = c},
-          chatMessage = ChatMessage {chatMsgEvent, chatMsgBody}
-        } ->
+processAgentMessage :: forall m. ChatMonad m => User -> ConnId -> ACommand 'Agent -> m ()
+processAgentMessage User {userId, profile} agentConnId agentMessage = do
+  chatDirection <- withStore $ \st -> getConnectionChatDirection st userId agentConnId
+  case chatDirection of
+    ReceivedDirectMessage Contact {localContactRef = c} ->
+      case agentMessage of
+        MSG meta msgBody -> do
+          ChatMessage {chatMsgEvent, chatMsgBody} <- liftEither $ parseChatMessage msgBody
           case chatMsgEvent of
             XMsgNew MTText -> do
               case find (isSimplexContentType XCText) chatMsgBody of
@@ -147,33 +131,50 @@ chatSubscriber = do
                   showToast ("@" <> c) text
                   setActive $ ActiveC c
                 _ -> pure ()
+            XInfo -> pure () -- TODO profile update
             _ -> pure ()
-      AgentTransmission {agentConnId, chatDirection = ReceivedDirectMessage NewContact {activeConn}, agentMessage} ->
-        void . runExceptT $ case agentMessage of
-          CONF confId connInfo -> do
-            -- TODO update connection status
-            saveContact userId activeConn connInfo
-            withAgent $ \a -> allowConnection a agentConnId confId $ LB.toStrict (J.encode profile)
-          INFO connInfo ->
-            saveContact userId activeConn connInfo
-          _ -> pure ()
-      AgentTransmission {chatDirection = ReceivedDirectMessage Contact {localContactRef = c}, agentMessage} ->
-        case agentMessage of
-          CON -> do
-            -- TODO update connection status
-            showContactConnected c
-            showToast ("@" <> c) "connected"
-            setActive $ ActiveC c
-          END -> do
-            showContactDisconnected c
-            showToast ("@" <> c) "disconnected"
-            unsetActive $ ActiveC c
-          _ -> pure ()
-      _ -> pure ()
+        CON -> do
+          -- TODO update connection status
+          showContactConnected c
+          showToast ("@" <> c) "connected"
+          setActive $ ActiveC c
+        END -> do
+          showContactDisconnected c
+          showToast ("@" <> c) "disconnected"
+          unsetActive $ ActiveC c
+        _ -> pure ()
+    ReceivedDirectMessage NewContact {activeConn} ->
+      case agentMessage of
+        CONF confId connInfo -> do
+          -- TODO update connection status
+          saveConnInfo activeConn connInfo
+          withAgent $ \a -> allowConnection a agentConnId confId $ encodeProfile profile
+        INFO connInfo ->
+          saveConnInfo activeConn connInfo
+        _ -> pure ()
+    _ -> pure ()
   where
-    saveContact userId activeConn connInfo = do
-      p <- liftEither . first (ChatErrorContact . CEProfile) $ J.eitherDecodeStrict' connInfo
-      withStore $ \st -> createDirectContact st userId activeConn p
+    parseChatMessage :: ByteString -> Either ChatError ChatMessage
+    parseChatMessage msgBody = first ChatErrorMessage (parseAll rawChatMessageP msgBody >>= toChatMessage)
+
+    saveConnInfo :: Connection -> ConnInfo -> m ()
+    saveConnInfo activeConn connInfo = do
+      ChatMessage {chatMsgEvent, chatMsgBody} <- liftEither $ parseChatMessage connInfo
+      case chatMsgEvent of
+        XInfo ->
+          case find (isSimplexContentType XCJson) chatMsgBody of
+            Just MsgBodyContent {contentData = MBFull (MsgData bs)} -> do
+              p <- liftEither . first (ChatErrorContact . CEProfile) $ J.eitherDecodeStrict' bs
+              withStore $ \st -> createDirectContact st userId activeConn p
+            _ -> pure () -- TODO show/log error?
+        _ -> pure () -- TODO show/log error, other events in SMP confirmation
+
+encodeProfile :: Profile -> ByteString
+encodeProfile profile =
+  let json = LB.toStrict $ J.encode profile
+      body = MsgBodyContent {contentType = SimplexContentType XCJson, contentHash = Nothing, contentData = MBFull $ MsgData json}
+      chatMsg = ChatMessage {chatMsgId = Nothing, chatMsgEvent = XInfo, chatMsgBody = [body], chatDAGIdx = Nothing}
+   in serializeRawChatMessage $ rawChatMessage chatMsg
 
 getCreateActiveUser :: SQLiteStore -> IO User
 getCreateActiveUser st = do
