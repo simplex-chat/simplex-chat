@@ -4,7 +4,9 @@
 module ChatTests where
 
 import ChatClient
+import Control.Concurrent.Async (concurrently_)
 import Control.Concurrent.STM
+import Data.Char (isDigit)
 import Data.List (dropWhileEnd, find, isPrefixOf)
 import Simplex.Chat.Controller
 import Simplex.Chat.Terminal
@@ -25,8 +27,9 @@ testAddContact = describe "add chat contact" $
       alice ##> "/a"
       Just inv <- invitation <$> getWindow alice
       bob ##> ("/c " <> inv)
-      bob <## "alice is connected"
-      alice <## "bob is connected"
+      concurrently_
+        (bob <## "alice is connected")
+        (alice <## "bob is connected")
       alice #> "@bob hello"
       bob <# "alice> hello"
       bob #> "@alice hi"
@@ -52,7 +55,10 @@ cc <## line = (lastOutput <$> getWindow cc) `shouldReturn` line
 cc <# line = (dropTime . lastOutput <$> getWindow cc) `shouldReturn` line
 
 dropTime :: String -> String
-dropTime = drop 6
+dropTime msg = case splitAt 6 msg of
+  ([m, m', ':', s, s', ' '], text) ->
+    if all isDigit [m, m', s, s'] then text else error "invalid time"
+  _ -> error "invalid time"
 
 getWindow :: ChatController -> IO [String]
 getWindow cc = withVirtualChatTerm (chatTerminal cc) $ \case
