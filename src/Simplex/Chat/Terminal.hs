@@ -36,23 +36,17 @@ data TerminalState = TerminalState
 
 class Terminal t => WithTerminal t where
   withTerm :: (MonadIO m, MonadMask m) => t -> (t -> m a) -> m a
-  withVirtualTerm :: (MonadIO m, MonadMask m) => t -> (Maybe VirtualTerminal -> m a) -> m a
 
 data TerminalDevice = forall t. WithTerminal t => TerminalDevice t
 
 instance WithTerminal LocalTerminal where
   withTerm _ = withTerminal
-  withVirtualTerm _ action = action Nothing
 
 instance WithTerminal VirtualTerminal where
   withTerm t = ($ t)
-  withVirtualTerm t action = action (Just t)
 
 withChatTerm :: (MonadIO m, MonadMask m) => ChatTerminal -> (forall t. WithTerminal t => TerminalT t m a) -> m a
 withChatTerm ChatTerminal {termDevice = TerminalDevice t} action = withTerm t $ runTerminalT action
-
-withVirtualChatTerm :: ChatTerminal -> (Maybe VirtualTerminal -> IO a) -> IO a
-withVirtualChatTerm ChatTerminal {termDevice = TerminalDevice t} = withVirtualTerm t
 
 newChatTerminal :: WithTerminal t => t -> IO ChatTerminal
 newChatTerminal t = do

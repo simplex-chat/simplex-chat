@@ -9,7 +9,6 @@ import Control.Concurrent.STM
 import Data.Char (isDigit)
 import Data.List (dropWhileEnd, find, isPrefixOf)
 import Simplex.Chat.Controller
-import Simplex.Chat.Terminal
 import Simplex.Chat.Types (Profile (..))
 import System.Terminal.Internal (VirtualTerminal (..))
 import Test.Hspec
@@ -35,23 +34,23 @@ testAddContact = describe "add chat contact" $
       bob #> "@alice hi"
       alice <# "bob> hi"
 
-(##>) :: ChatController -> String -> IO ()
+(##>) :: TestCC -> String -> IO ()
 (##>) cc cmd = do
   chatCommand cc cmd
   cc <## cmd
 
-(#>) :: ChatController -> String -> IO ()
+(#>) :: TestCC -> String -> IO ()
 (#>) cc cmd = do
   chatCommand cc cmd
   cc <# cmd
 
-chatCommand :: ChatController -> String -> IO ()
-chatCommand cc cmd = atomically $ writeTBQueue (inputQ cc) $ InputCommand cmd
+chatCommand :: TestCC -> String -> IO ()
+chatCommand (TestCC cc _ _) cmd = atomically $ writeTBQueue (inputQ cc) $ InputCommand cmd
 
-(<##) :: ChatController -> String -> Expectation
+(<##) :: TestCC -> String -> Expectation
 cc <## line = (lastOutput <$> getWindow cc) `shouldReturn` line
 
-(<#) :: ChatController -> String -> Expectation
+(<#) :: TestCC -> String -> Expectation
 cc <# line = (dropTime . lastOutput <$> getWindow cc) `shouldReturn` line
 
 dropTime :: String -> String
@@ -60,15 +59,13 @@ dropTime msg = case splitAt 6 msg of
     if all isDigit [m, m', s, s'] then text else error "invalid time"
   _ -> error "invalid time"
 
-getWindow :: ChatController -> IO [String]
-getWindow cc = withVirtualChatTerm (chatTerminal cc) $ \case
-  Just t -> do
-    let w = virtualWindow t
-    win <- readTVarIO w
-    atomically $ do
-      win' <- readTVar w
-      if win' /= win then pure win' else retry
-  Nothing -> error "expected virtual terminal"
+getWindow :: TestCC -> IO [String]
+getWindow (TestCC _ t _) = do
+  let w = virtualWindow t
+  win <- readTVarIO w
+  atomically $ do
+    win' <- readTVar w
+    if win' /= win then pure win' else retry
 
 invitation :: [String] -> Maybe String
 invitation win = dropWhileEnd (== ' ') <$> find ("smp::" `isPrefixOf`) win
