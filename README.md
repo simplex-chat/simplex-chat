@@ -2,7 +2,7 @@
 
 # SimpleX chat
 
-## Federated, private, secure, decentralized
+## Private, secure, decentralized
 
 [![GitHub build](https://github.com/simplex-chat/simplex-chat/workflows/build/badge.svg)](https://github.com/simplex-chat/simplex-chat/actions?query=workflow%3Abuild)
 [![GitHub release](https://img.shields.io/github/v/release/simplex-chat/simplex-chat)](https://github.com/simplex-chat/simplex-chat/releases)
@@ -17,7 +17,9 @@ See [simplex.chat](https://simplex.chat) website for chat demo and the explanati
 
 ## Table of contents
 
-- [Features](#features)
+- [Disclaimer](#disclaimer)
+- [Network topology](#network-topology)
+- [Current features of the terminal chat](#current-features-of-the-terminal-chat)
 - [Installation](#installation)
   - [Download chat client](#download-chat-client)
   - [Build from source](#build-from-source)
@@ -28,10 +30,27 @@ See [simplex.chat](https://simplex.chat) website for chat demo and the explanati
   - [How to use SimpleX chat](#how-to-use-simplex-chat)
   - [Access chat history](#access-chat-history)
 - [Roadmap](#roadmap)
-- [Disclaimer](#disclaimer)
 - [License](#license)
 
-## Features
+## Disclaimer
+
+This is WIP implementation of SimpleX chat that implements a new network topology for asynchronous communication combining the advantages and avoiding the disadvantages of federated and P2P networks.
+
+If you expect a software being reliable most of the time and doing something useful, then this is probably not ready for you yet. We do use it for terminal chat though, and it seems to work most of the time - we would really appreciate if you try it and give us your feedback.
+
+**Please note**: The main differentiation of SimpleX network is the approach to internet message routing rather than encryption; for that reason no sufficient attention was paid to either TCP transport level encryption or to E2E encryption protocols - they are implemented in an ad hoc way based on RSA and AES algorithms. See [SMP protocol](https://github.com/simplex-chat/simplexmq/blob/master/protocol/simplex-messaging.md#appendix-a) on TCP transport encryption protocol (AEAD-GCM scheme, with an AES key negotiation based on RSA key hash known to the client in advance) and [this section](https://github.com/simplex-chat/simplexmq/blob/master/rfcs/2021-01-26-crypto.md#e2e-encryption) on E2E encryption protocol (an ad hoc hybrid scheme a la PGP). These protocols will change in a consumer ready version to something more robust.
+
+## Network topology
+
+SimpleX is a decentralized client-server network that uses redundant, disposable nodes to asynchronously pass the messages via message queues, providing receiver and sender anonymity.
+
+Unlike P2P networks, all messages are passed through one or several (for redundancy) servers, that do not even need to have persistence (in fact, the current [SMP server implementation](https://github.com/simplex-chat/simplexmq#smp-server) uses in-memory message storage,persisting only the queue records) - it provides better metadata protection than P2P designs, as no global participant ID is required, and avoids many [problems of P2P networks](https://github.com/simplex-chat/simplex-chat/blob/master/simplex.md#comparison-with-p2p-messaging-protocols).
+
+Unlike federated networks, the participating server nodes do NOT have records of the users, do NOT communicate with each other, do NOT store messages after they are delivered to the recipients, and there is no way to discover the full list of participating servers - it avoids the problem of metadata visibility that federated networks suffer from and better protects the network, as servers do not communicate with each other. Each server node provides unidirectional "dumb pipes" to the users, that do authorization without authentication (each queue access is authorized with a signature created using two per-queue RSA keys), having no knowledge of the the users or their contacts.
+
+The routing of messages relies on the knowledge of client devices how user contacts and groups map at any given moment of time to these disposable queues on server nodes.
+
+## Current features of the terminal chat
 
 - 1-to-1 chat with multiple people in the same terminal window.
 - Auto-populated recipient name - just type your messages to reply to the sender once the connection is established.
@@ -171,16 +190,18 @@ order by internal_id desc;
 
 ## Roadmap
 
-1. Switch to application level chat protocol. This will allow to separate physical server connection management from logical chat contacts, and to support all common chat functions.
-2. SMP queue redundancy and rotation in SMP agent protocol.
-3. Symmetric groups support in SMP agent protocol, as a foundation for chat groups.
-4. Delivery confirmation in SMP agent protocol.
-5. Multi-agent/device data synchronisation - to use chat on multiple devices.
+The consumer ready system will have these parts implemented:
+
+1. Application level chat protocol. This will allow to separate physical server connection management from logical chat contacts, and to support all common chat functions. Currently in progress in [v4 branch](https://github.com/simplex-chat/simplex-chat/tree/v4)
+2. Symmetric groups support in SMP agent protocol, as a foundation for chat groups.
+3. SMP queue redundancy and rotation in SMP agent protocol.
+4. Message delivery confirmation in SMP agent protocol.
+5. Multi-agent/device data synchronization - to use chat on multiple devices.
 6. Synchronous streams support in SMP and SMP agent protocols, to support file transfer.
-7. Terminal chat UI and mobile apps.
-8. Scripts for simple SMP server deployment to hosting providers: Linode, Digital Ocean and Heroku.
+7. Desktop and mobile apps.
+8. Scripts for simple SMP server deployment to hosting providers: Linode ([done](https://github.com/simplex-chat/simplexmq#deploy-smp-server-on-linode)), Digital Ocean and Heroku.
 9. Public broadcast channels.
-10. Optional public contact/group addresses using DNS to establish connections, but not using it to send and receive messages - in this way you will keep all your contacts and groups even if you lose the control of the domain.
+10. Optional public contact/group addresses using DNS-based contact addresses (like email) to establish connections, but not using it to route messages - in this way you will keep all your contacts and groups even if you lose the control of the domain.
 
 ## Disclaimer
 
