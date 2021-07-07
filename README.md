@@ -40,8 +40,6 @@ If you expect a software being reliable most of the time and doing something use
 
 **Please note:** The main differentiation of SimpleX network is the approach to internet message routing rather than encryption; for that reason no sufficient attention was paid to either TCP transport level encryption or to E2E encryption protocols - they are implemented in an ad hoc way based on RSA and AES algorithms. See [SMP protocol](https://github.com/simplex-chat/simplexmq/blob/master/protocol/simplex-messaging.md#appendix-a) on TCP transport encryption protocol (AEAD-GCM scheme, with an AES key negotiation based on RSA key hash known to the client in advance) and [this section](https://github.com/simplex-chat/simplexmq/blob/master/rfcs/2021-01-26-crypto.md#e2e-encryption) on E2E encryption protocol (an ad hoc hybrid scheme a la PGP). These protocols will change in a consumer ready version to something more robust.
 
-System and protocol security have not been audited yet. As such, it is not advised to use SimpleX chat for high security communications.
-
 ## Network topology
 
 SimpleX is a decentralized client-server network that uses redundant, disposable nodes to asynchronously pass the messages via message queues, providing receiver and sender anonymity.
