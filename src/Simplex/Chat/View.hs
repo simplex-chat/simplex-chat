@@ -133,7 +133,7 @@ ttyContact :: ContactRef -> StyledString
 ttyContact = styled (Colored Green)
 
 ttyToContact :: ContactRef -> StyledString
-ttyToContact c = styled (Colored Cyan) $ c <> " "
+ttyToContact c = styled (Colored Cyan) $ "@" <> c <> " "
 
 ttyFromContact :: ContactRef -> StyledString
 ttyFromContact c = styled (Colored Yellow) $ c <> "> "

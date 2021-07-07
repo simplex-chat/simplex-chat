@@ -5,51 +5,16 @@
 
 module Main where
 
-import Control.Concurrent.STM (atomically)
-import Control.Logger.Simple
-import Control.Monad.IO.Unlift
-import Control.Monad.Reader
 import Simplex.Chat
-import Simplex.Chat.Controller
-import Simplex.Chat.Input
-import Simplex.Chat.Notification
 import Simplex.Chat.Options
-import Simplex.Chat.Store (createStore)
-import Simplex.Chat.Terminal
-import Simplex.Messaging.Agent (getSMPAgentClient)
-import Simplex.Messaging.Agent.Env.SQLite
-import Simplex.Messaging.Client (smpDefaultConfig)
 import System.Directory (getAppUserDataDirectory)
-import UnliftIO.Async (race_)
-
-cfg :: AgentConfig
-cfg =
-  AgentConfig
-    { tcpPort = undefined, -- agent does not listen to TCP
-      smpServers = undefined, -- filled in from options
-      rsaKeySize = 2048 `div` 8,
-      connIdBytes = 12,
-      tbqSize = 16,
-      dbFile = "smp-chat.db",
-      dbPoolSize = 4,
-      smpCfg = smpDefaultConfig
-    }
-
-logCfg :: LogConfig
-logCfg = LogConfig {lc_file = Nothing, lc_stderr = True}
+import System.Terminal (withTerminal)
 
 main :: IO ()
 main = do
-  ChatOpts {dbFile, smpServers} <- welcomeGetOpts
-  st <- createStore (dbFile <> ".chat.db") 4
-  user <- getCreateActiveUser st
-  ct <- newChatTerminal
-  a <- getSMPAgentClient cfg {dbFile = dbFile <> ".agent.db", smpServers}
-  notify <- initializeNotifications
-  cc <- atomically $ newChatController a ct st user notify $ tbqSize cfg
-  -- setLogLevel LogInfo -- LogError
-  -- withGlobalLogging logCfg $ do
-  runReaderT simplexChat cc
+  opts <- welcomeGetOpts
+  t <- withTerminal pure
+  simplexChat opts t
 
 welcomeGetOpts :: IO ChatOpts
 welcomeGetOpts = do
@@ -59,9 +24,6 @@ welcomeGetOpts = do
   putStrLn $ "db: " <> dbFile
   putStrLn "type \"/help\" or \"/h\" for usage info"
   pure opts
-
-simplexChat :: (MonadUnliftIO m, MonadReader ChatController m) => m ()
-simplexChat = race_ runTerminalInput runChatController
 
 -- defaultSettings :: C.Size -> C.VirtualTerminalSettings
 -- defaultSettings size =

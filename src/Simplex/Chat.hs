@@ -11,6 +11,7 @@
 module Simplex.Chat where
 
 import Control.Applicative ((<|>))
+import Control.Logger.Simple
 import Control.Monad.Except
 import Control.Monad.IO.Unlift
 import Control.Monad.Reader
@@ -28,7 +29,9 @@ import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Simplex.Chat.Controller
 import Simplex.Chat.Help
+import Simplex.Chat.Input
 import Simplex.Chat.Notification
+import Simplex.Chat.Options (ChatOpts (..))
 import Simplex.Chat.Protocol
 import Simplex.Chat.Store
 import Simplex.Chat.Styled (plain)
@@ -36,12 +39,15 @@ import Simplex.Chat.Terminal
 import Simplex.Chat.Types
 import Simplex.Chat.View
 import Simplex.Messaging.Agent
+import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..))
 import Simplex.Messaging.Agent.Protocol
+import Simplex.Messaging.Client (smpDefaultConfig)
 import Simplex.Messaging.Parsers (parseAll)
 import Simplex.Messaging.Util (bshow, raceAny_)
 import System.Exit (exitFailure)
 import System.IO (hFlush, stdout)
 import Text.Read (readMaybe)
+import UnliftIO.Async (race_)
 import qualified UnliftIO.Exception as E
 import UnliftIO.STM
 
@@ -53,6 +59,43 @@ data ChatCommand
   | DeleteContact ContactRef
   | SendMessage ContactRef ByteString
   deriving (Show)
+
+cfg :: AgentConfig
+cfg =
+  AgentConfig
+    { tcpPort = undefined, -- agent does not listen to TCP
+      smpServers = undefined, -- filled in from options
+      rsaKeySize = 2048 `div` 8,
+      connIdBytes = 12,
+      tbqSize = 16,
+      dbFile = undefined, -- filled in from options
+      dbPoolSize = 4,
+      smpCfg = smpDefaultConfig
+    }
+
+logCfg :: LogConfig
+logCfg = LogConfig {lc_file = Nothing, lc_stderr = True}
+
+simplexChat :: WithTerminal t => ChatOpts -> t -> IO ()
+simplexChat opts t = do
+  -- setLogLevel LogInfo -- LogError
+  -- withGlobalLogging logCfg $ do
+  initializeNotifications
+    >>= newChatController opts t
+    >>= runSimplexChat
+
+newChatController :: WithTerminal t => ChatOpts -> t -> (Notification -> IO ()) -> IO ChatController
+newChatController ChatOpts {dbFile, smpServers} t sendNotification = do
+  chatStore <- createStore (dbFile <> ".chat.db") 4
+  currentUser <- getCreateActiveUser chatStore
+  chatTerminal <- newChatTerminal t
+  smpAgent <- getSMPAgentClient cfg {dbFile = dbFile <> ".agent.db", smpServers}
+  inputQ <- newTBQueueIO $ tbqSize cfg
+  notifyQ <- newTBQueueIO $ tbqSize cfg
+  pure ChatController {currentUser, smpAgent, chatTerminal, chatStore, inputQ, notifyQ, sendNotification}
+
+runSimplexChat :: ChatController -> IO ()
+runSimplexChat = runReaderT (race_ runTerminalInput runChatController)
 
 runChatController :: (MonadUnliftIO m, MonadReader ChatController m) => m ()
 runChatController =
@@ -107,7 +150,6 @@ processChatCommand User {userId, profile} = \case
 agentSubscriber :: (MonadUnliftIO m, MonadReader ChatController m) => m ()
 agentSubscriber = do
   q <- asks $ subQ . smpAgent
-  -- cQ <- asks chatQ
   forever $ do
     (_, connId, msg) <- atomically $ readTBQueue q
     user <- asks currentUser
@@ -123,14 +165,7 @@ processAgentMessage User {userId, profile} agentConnId agentMessage = do
         MSG meta msgBody -> do
           ChatMessage {chatMsgEvent, chatMsgBody} <- liftEither $ parseChatMessage msgBody
           case chatMsgEvent of
-            XMsgNew MTText -> do
-              case find (isSimplexContentType XCText) chatMsgBody of
-                Just MsgBodyContent {contentData = MBFull (MsgData bs)} -> do
-                  let text = safeDecodeUtf8 bs
-                  showReceivedMessage c (snd $ broker meta) text (integrity meta)
-                  showToast ("@" <> c) text
-                  setActive $ ActiveC c
-                _ -> pure ()
+            XMsgNew MTText -> newTextMessage c meta $ find (isSimplexContentType XCText) chatMsgBody
             XInfo -> pure () -- TODO profile update
             _ -> pure ()
         CON -> do
@@ -154,6 +189,15 @@ processAgentMessage User {userId, profile} agentConnId agentMessage = do
         _ -> pure ()
     _ -> pure ()
   where
+    newTextMessage :: ContactRef -> MsgMeta -> Maybe MsgBodyContent -> m ()
+    newTextMessage c meta = \case
+      Just MsgBodyContent {contentData = MBFull (MsgData bs)} -> do
+        let text = safeDecodeUtf8 bs
+        showReceivedMessage c (snd $ broker meta) text (integrity meta)
+        showToast ("@" <> c) text
+        setActive $ ActiveC c
+      _ -> pure ()
+
     parseChatMessage :: ByteString -> Either ChatError ChatMessage
     parseChatMessage msgBody = first ChatErrorMessage (parseAll rawChatMessageP msgBody >>= toChatMessage)
 

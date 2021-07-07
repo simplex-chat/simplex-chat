@@ -24,9 +24,10 @@ getKey =
 runTerminalInput :: (MonadUnliftIO m, MonadReader ChatController m) => m ()
 runTerminalInput = do
   ChatController {inputQ, chatTerminal = ct} <- ask
-  liftIO . withTerminal . runTerminalT $ do
-    updateInput ct
-    receiveFromTTY inputQ ct
+  liftIO $
+    withChatTerm ct $ do
+      updateInput ct
+      receiveFromTTY inputQ ct
 
 receiveFromTTY :: MonadTerminal m => TBQueue InputEvent -> ChatTerminal -> m ()
 receiveFromTTY inputQ ct@ChatTerminal {activeTo, termSize, termState} =
