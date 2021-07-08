@@ -38,6 +38,8 @@ data Contact
 
 type ContactRef = Text
 
+type GroupRef = Text
+
 data Group = Group
   { groupId :: Int64,
     localGroupRef :: Text

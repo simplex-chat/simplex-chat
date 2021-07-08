@@ -16,10 +16,11 @@ import Control.Monad.Except
 import Control.Monad.IO.Unlift
 import Control.Monad.Reader
 import qualified Data.Aeson as J
-import Data.Attoparsec.ByteString.Char8 (Parser)
+import Data.Attoparsec.ByteString.Char8 (Parser, (<?>))
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.Bifunctor (first)
 import Data.ByteString.Char8 (ByteString)
+import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Functor (($>))
 import Data.List (find)
@@ -58,6 +59,14 @@ data ChatCommand
   | Connect SMPQueueInfo
   | DeleteContact ContactRef
   | SendMessage ContactRef ByteString
+  | NewGroup GroupRef
+  | AddMember GroupRef ContactRef GroupMemberRole
+  | RemoveMember GroupRef ContactRef
+  | MemberRole GroupRef ContactRef GroupMemberRole
+  | LeaveGroup GroupRef
+  | DeleteGroup GroupRef
+  | ListMembers GroupRef
+  | SendGroupMessage GroupRef ByteString
   deriving (Show)
 
 cfg :: AgentConfig
@@ -146,6 +155,14 @@ processChatCommand User {userId, profile} = \case
         rawMsg = rawChatMessage ChatMessage {chatMsgId = Nothing, chatMsgEvent = XMsgNew MTText, chatMsgBody = [body], chatDAGIdx = Nothing}
     void . withAgent $ \smp -> sendMessage smp agentConnId $ serializeRawChatMessage rawMsg
     setActive $ ActiveC cRef
+  NewGroup _gRef -> pure ()
+  AddMember _gRef _cRef _mRole -> pure ()
+  MemberRole _gRef _cRef _mRole -> pure ()
+  RemoveMember _gRef _cRef -> pure ()
+  LeaveGroup _gRef -> pure ()
+  DeleteGroup _gRef -> pure ()
+  ListMembers _gRef -> pure ()
+  SendGroupMessage _gRef _msg -> pure ()
 
 agentSubscriber :: (MonadUnliftIO m, MonadReader ChatController m) => m ()
 agentSubscriber = do
@@ -314,10 +331,23 @@ withStore action = do
 chatCommandP :: Parser ChatCommand
 chatCommandP =
   ("/help" <|> "/h") $> ChatHelp
+    <|> ("/group #" <|> "/g #") *> (NewGroup <$> groupRef)
+    <|> ("/add #" <|> "/a #") *> (AddMember <$> groupRef <* A.space <*> contactRef <* A.space <*> memberRole)
+    <|> ("/remove #" <|> "/rm #") *> (RemoveMember <$> groupRef <* A.space <*> contactRef)
+    <|> ("/delete #" <|> "/d #") *> (DeleteGroup <$> groupRef)
+    <|> ("/members #" <|> "/ms #") *> (ListMembers <$> groupRef)
+    <|> A.char '#' *> (SendGroupMessage <$> groupRef <* A.space <*> A.takeByteString)
     <|> ("/add" <|> "/a") $> AddContact
     <|> ("/connect " <|> "/c ") *> (Connect <$> smpQueueInfoP)
-    <|> ("/delete " <|> "/d ") *> (DeleteContact <$> contactRef)
+    <|> ("/delete @" <|> "/delete " <|> "/d @" <|> "/d ") *> (DeleteContact <$> contactRef)
     <|> A.char '@' *> (SendMessage <$> contactRef <*> (A.space *> A.takeByteString))
     <|> ("/markdown" <|> "/m") $> MarkdownHelp
   where
-    contactRef = safeDecodeUtf8 <$> A.takeTill (== ' ')
+    contactRef = safeDecodeUtf8 <$> (B.cons <$> A.satisfy refChar <*> A.takeTill (== ' '))
+    refChar c = c > ' ' && c /= '#' && c /= '@'
+    groupRef = contactRef
+    memberRole =
+      ("owner" $> GROwner)
+        <|> ("admin" $> GRAdmin)
+        <|> ("normal" $> GRMember)
+        <?> "memberRole"

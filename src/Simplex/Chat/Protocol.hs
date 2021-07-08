@@ -13,6 +13,7 @@ import Control.Applicative (optional, (<|>))
 import Control.Monad.Except (throwError)
 import Data.Attoparsec.ByteString.Char8 (Parser)
 import qualified Data.Attoparsec.ByteString.Char8 as A
+import qualified Data.ByteString.Base64 as B64
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.Int (Int64)
@@ -20,7 +21,7 @@ import Data.List (findIndex)
 import Data.Text (Text)
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Protocol
-import Simplex.Messaging.Parsers (base64P)
+import Simplex.Messaging.Parsers (base64P, parseAll)
 import Simplex.Messaging.Util (bshow)
 
 data ChatDirection (p :: AParty) where
@@ -36,9 +37,31 @@ deriving instance Show (ChatDirection p)
 data ChatMsgEvent
   = XMsgNew MessageType
   | XInfo
+  | XGrpInv InvitationId MemberId GroupMemberRole
+  | XGrpAcpt InvitationId SMPQueueInfo
+  | XGrpMemNew MemberId GroupMemberRole
+  | XGrpMemIntro MemberId GroupMemberRole
   deriving (Eq, Show)
 
+type MemberId = ByteString
+
 data MessageType = MTText | MTImage deriving (Eq, Show)
+
+data GroupMemberRole = GROwner | GRAdmin | GRMember
+  deriving (Eq, Show)
+
+toMemberRole :: ByteString -> Either String GroupMemberRole
+toMemberRole = \case
+  "owner" -> Right GROwner
+  "admin" -> Right GRAdmin
+  "member" -> Right GRMember
+  r -> Left $ "invalid group member role " <> B.unpack r
+
+serializeMemberRole :: GroupMemberRole -> ByteString
+serializeMemberRole = \case
+  GROwner -> "owner"
+  GRAdmin -> "admin"
+  GRMember -> "member"
 
 toMsgType :: ByteString -> Either String MessageType
 toMsgType = \case
@@ -72,6 +95,31 @@ toChatMessage RawChatMessage {chatMsgId, chatMsgEvent, chatMsgParams, chatMsgBod
     "x.info" -> case chatMsgParams of
       [] -> pure ChatMessage {chatMsgId, chatMsgEvent = XInfo, chatMsgBody = body, chatDAGIdx}
       _ -> throwError "x.info expects no parameters"
+    "x.grp.inv" -> case chatMsgParams of
+      [invId', memId', role'] -> do
+        invId <- B64.decode invId'
+        memId <- B64.decode memId'
+        role <- toMemberRole role'
+        pure ChatMessage {chatMsgId, chatMsgEvent = XGrpInv invId memId role, chatMsgBody = body, chatDAGIdx}
+      _ -> throwError "x.grp.inv expects 3 parameters"
+    "x.grp.acpt" -> case chatMsgParams of
+      [invId', qInfo'] -> do
+        invId <- B64.decode invId'
+        qInfo <- parseAll smpQueueInfoP qInfo'
+        pure ChatMessage {chatMsgId, chatMsgEvent = XGrpAcpt invId qInfo, chatMsgBody = body, chatDAGIdx}
+      _ -> throwError "x.grp.acpt expects 2 parameters"
+    "x.grp.mem.new" -> case chatMsgParams of
+      [memId', role'] -> do
+        memId <- B64.decode memId'
+        role <- toMemberRole role'
+        pure ChatMessage {chatMsgId, chatMsgEvent = XGrpMemNew memId role, chatMsgBody = body, chatDAGIdx}
+      _ -> throwError "x.grp.acpt expects 2 parameters"
+    "x.grp.mem.intro" -> case chatMsgParams of
+      [memId', role'] -> do
+        memId <- B64.decode memId'
+        role <- toMemberRole role'
+        pure ChatMessage {chatMsgId, chatMsgEvent = XGrpMemIntro memId role, chatMsgBody = body, chatDAGIdx}
+      _ -> throwError "x.grp.acpt expects 2 parameters"
     _ -> throwError $ "unsupported event " <> B.unpack chatMsgEvent
 toChatMessage _ = Left "message continuation"
 
@@ -89,6 +137,18 @@ rawChatMessage ChatMessage {chatMsgId, chatMsgEvent = event, chatMsgBody = body}
   case event of
     XMsgNew t -> RawChatMessage {chatMsgId, chatMsgEvent = "x.msg.new", chatMsgParams = [rawMsgType t], chatMsgBody}
     XInfo -> RawChatMessage {chatMsgId, chatMsgEvent = "x.info", chatMsgParams = [], chatMsgBody}
+    XGrpInv invId memId role ->
+      let chatMsgParams = [B64.encode invId, B64.encode memId, serializeMemberRole role]
+       in RawChatMessage {chatMsgId, chatMsgEvent = "x.grp.inv", chatMsgParams, chatMsgBody}
+    XGrpAcpt invId qInfo ->
+      let chatMsgParams = [B64.encode invId, serializeSmpQueueInfo qInfo]
+       in RawChatMessage {chatMsgId, chatMsgEvent = "x.grp.acpt", chatMsgParams, chatMsgBody}
+    XGrpMemNew memId role ->
+      let chatMsgParams = [B64.encode memId, serializeMemberRole role]
+       in RawChatMessage {chatMsgId, chatMsgEvent = "x.grp.mem.new", chatMsgParams, chatMsgBody}
+    XGrpMemIntro memId role ->
+      let chatMsgParams = [B64.encode memId, serializeMemberRole role]
+       in RawChatMessage {chatMsgId, chatMsgEvent = "x.grp.mem.intro", chatMsgParams, chatMsgBody}
   where
     chatMsgBody = map rawMsgBodyContent body
 
