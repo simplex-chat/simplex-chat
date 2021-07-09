@@ -56,6 +56,16 @@ instance ToJSON Profile where toEncoding = J.genericToEncoding J.defaultOptions
 
 instance FromJSON Profile
 
+data GroupProfile = GroupProfile
+  { groupRef :: GroupRef,
+    displayName :: Text
+  }
+  deriving (Generic, Eq, Show)
+
+instance ToJSON GroupProfile where toEncoding = J.genericToEncoding J.defaultOptions
+
+instance FromJSON GroupProfile
+
 data Connection = Connection
   { connId :: Int64,
     agentConnId :: ConnId,

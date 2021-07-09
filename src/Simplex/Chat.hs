@@ -15,13 +15,11 @@ import Control.Logger.Simple
 import Control.Monad.Except
 import Control.Monad.IO.Unlift
 import Control.Monad.Reader
-import qualified Data.Aeson as J
 import Data.Attoparsec.ByteString.Char8 (Parser, (<?>))
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.Bifunctor (first)
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
-import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Functor (($>))
 import Data.List (find)
 import Data.Maybe (isJust)
@@ -151,8 +149,8 @@ processChatCommand User {userId, profile} = \case
     showContactDeleted cRef
   SendMessage cRef msg -> do
     Connection {agentConnId} <- withStore $ \st -> getContactConnection st userId cRef
-    let body = MsgBodyContent {contentType = SimplexContentType XCText, contentHash = Nothing, contentData = MBFull $ MsgData msg}
-        rawMsg = rawChatMessage ChatMessage {chatMsgId = Nothing, chatMsgEvent = XMsgNew MTText, chatMsgBody = [body], chatDAGIdx = Nothing}
+    let body = MsgBodyContent {contentType = SimplexContentType XCText, contentData = msg}
+        rawMsg = rawChatMessage ChatMessage {chatMsgId = Nothing, chatMsgEvent = XMsgNew MTText [] [body], chatDAG = Nothing}
     void . withAgent $ \smp -> sendMessage smp agentConnId $ serializeRawChatMessage rawMsg
     setActive $ ActiveC cRef
   NewGroup _gRef -> pure ()
@@ -180,10 +178,10 @@ processAgentMessage User {userId, profile} agentConnId agentMessage = do
     ReceivedDirectMessage Contact {localContactRef = c} ->
       case agentMessage of
         MSG meta msgBody -> do
-          ChatMessage {chatMsgEvent, chatMsgBody} <- liftEither $ parseChatMessage msgBody
+          ChatMessage {chatMsgEvent} <- liftEither $ parseChatMessage msgBody
           case chatMsgEvent of
-            XMsgNew MTText -> newTextMessage c meta $ find (isSimplexContentType XCText) chatMsgBody
-            XInfo -> pure () -- TODO profile update
+            XMsgNew MTText [] body -> newTextMessage c meta $ find (isSimplexContentType XCText) body
+            XInfo _ -> pure () -- TODO profile update
             _ -> pure ()
         CON -> do
           -- TODO update connection status
@@ -208,7 +206,7 @@ processAgentMessage User {userId, profile} agentConnId agentMessage = do
   where
     newTextMessage :: ContactRef -> MsgMeta -> Maybe MsgBodyContent -> m ()
     newTextMessage c meta = \case
-      Just MsgBodyContent {contentData = MBFull (MsgData bs)} -> do
+      Just MsgBodyContent {contentData = bs} -> do
         let text = safeDecodeUtf8 bs
         showReceivedMessage c (snd $ broker meta) text (integrity meta)
         showToast ("@" <> c) text
@@ -220,21 +218,15 @@ processAgentMessage User {userId, profile} agentConnId agentMessage = do
 
     saveConnInfo :: Connection -> ConnInfo -> m ()
     saveConnInfo activeConn connInfo = do
-      ChatMessage {chatMsgEvent, chatMsgBody} <- liftEither $ parseChatMessage connInfo
+      ChatMessage {chatMsgEvent} <- liftEither $ parseChatMessage connInfo
       case chatMsgEvent of
-        XInfo ->
-          case find (isSimplexContentType XCJson) chatMsgBody of
-            Just MsgBodyContent {contentData = MBFull (MsgData bs)} -> do
-              p <- liftEither . first (ChatErrorContact . CEProfile) $ J.eitherDecodeStrict' bs
-              withStore $ \st -> createDirectContact st userId activeConn p
-            _ -> pure () -- TODO show/log error?
+        XInfo p ->
+          withStore $ \st -> createDirectContact st userId activeConn p
         _ -> pure () -- TODO show/log error, other events in SMP confirmation
 
 encodeProfile :: Profile -> ByteString
 encodeProfile profile =
-  let json = LB.toStrict $ J.encode profile
-      body = MsgBodyContent {contentType = SimplexContentType XCJson, contentHash = Nothing, contentData = MBFull $ MsgData json}
-      chatMsg = ChatMessage {chatMsgId = Nothing, chatMsgEvent = XInfo, chatMsgBody = [body], chatDAGIdx = Nothing}
+  let chatMsg = ChatMessage {chatMsgId = Nothing, chatMsgEvent = XInfo profile, chatDAG = Nothing}
    in serializeRawChatMessage $ rawChatMessage chatMsg
 
 getCreateActiveUser :: SQLiteStore -> IO User
