@@ -22,6 +22,7 @@ module Simplex.Chat.Store
     getContactConnection,
     getContactConnections,
     getConnectionChatDirection,
+    createGroup,
   )
 where
 
@@ -284,9 +285,21 @@ getConnectionChatDirection st userId agentConnId =
        in Right Contact {contactId, localContactRef, profile, activeConn = c}
     toContact _ _ _ = Left $ SEInternal "referenced contact not found"
 
+createGroup :: (MonadUnliftIO m, MonadError StoreError m) => SQLiteStore -> UserId -> GroupProfile -> m Group
+createGroup st userId p@GroupProfile {groupRef, displayName} =
+  liftIOEither . checkConstraint SEDuplicateGroupRef . withTransaction st $ \db -> do
+    DB.execute db "INSERT INTO groups (local_group_ref, lgr_base, user_id) VALUES (?, ?, ?);" (groupRef, groupRef, userId)
+    groupId <- insertedRowId db
+    DB.execute db "INSERT INTO group_profiles (group_ref, display_name) VALUES (?, ?);" (groupRef, displayName)
+    profileId <- insertedRowId db
+    DB.execute db "UPDATE groups SET group_profile_id = ? WHERE group_id = ?;" (profileId, groupId)
+    pure $ Right Group {groupId, localGroupRef = groupRef, profile = p}
+
 data StoreError
   = SEDuplicateContactRef
   | SEContactNotFound ContactRef
+  | SEDuplicateGroupRef
+  | SEGroupNotFound GroupRef
   | SEConnectionNotFound ConnId
   | SEInternal ByteString
   deriving (Show, Exception)

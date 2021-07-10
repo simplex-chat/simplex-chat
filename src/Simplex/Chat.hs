@@ -42,12 +42,11 @@ import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..))
 import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Client (smpDefaultConfig)
 import Simplex.Messaging.Parsers (parseAll)
-import Simplex.Messaging.Util (bshow, raceAny_)
+import Simplex.Messaging.Util (raceAny_)
 import System.Exit (exitFailure)
 import System.IO (hFlush, stdout)
 import Text.Read (readMaybe)
 import UnliftIO.Async (race_)
-import qualified UnliftIO.Exception as E
 import UnliftIO.STM
 
 data ChatCommand
@@ -57,7 +56,7 @@ data ChatCommand
   | Connect SMPQueueInfo
   | DeleteContact ContactRef
   | SendMessage ContactRef ByteString
-  | NewGroup GroupRef
+  | NewGroup GroupProfile
   | AddMember GroupRef ContactRef GroupMemberRole
   | RemoveMember GroupRef ContactRef
   | MemberRole GroupRef ContactRef GroupMemberRole
@@ -153,8 +152,11 @@ processChatCommand User {userId, profile} = \case
         rawMsg = rawChatMessage ChatMessage {chatMsgId = Nothing, chatMsgEvent = XMsgNew MTText [] [body], chatDAG = Nothing}
     void . withAgent $ \smp -> sendMessage smp agentConnId $ serializeRawChatMessage rawMsg
     setActive $ ActiveC cRef
-  NewGroup _gRef -> pure ()
+  NewGroup gProfile -> do
+    void $ withStore $ \st -> createGroup st userId gProfile
+    showGroupCreated gProfile
   AddMember _gRef _cRef _mRole -> pure ()
+  -- GroupInvitation {} <- withStore $ \st -> createGroupInvitation st userId gRef cRef mRole
   MemberRole _gRef _cRef _mRole -> pure ()
   RemoveMember _gRef _cRef -> pure ()
   LeaveGroup _gRef -> pure ()
@@ -307,23 +309,20 @@ withStore ::
   m a
 withStore action = do
   st <- asks chatStore
-  runExceptT (action st `E.catch` handleInternal) >>= \case
+  runExceptT (action st) >>= \case
     Right c -> pure c
     Left e -> throwError $ storeError e
   where
-    -- TODO when parsing exception happens in store, the agent hangs;
-    -- changing SQLError to SomeException does not help
-    handleInternal :: (MonadError StoreError m') => E.SomeException -> m' a
-    handleInternal e = throwError . SEInternal $ bshow e
     storeError :: StoreError -> ChatError
     storeError = \case
       SEContactNotFound c -> ChatErrorContact $ CENotFound c
+      SEDuplicateGroupRef -> ChatErrorGroup GEDuplicateGroup
       e -> ChatErrorStore e
 
 chatCommandP :: Parser ChatCommand
 chatCommandP =
   ("/help" <|> "/h") $> ChatHelp
-    <|> ("/group #" <|> "/g #") *> (NewGroup <$> groupRef)
+    <|> ("/group #" <|> "/g #") *> (NewGroup <$> groupProfile)
     <|> ("/add #" <|> "/a #") *> (AddMember <$> groupRef <* A.space <*> contactRef <* A.space <*> memberRole)
     <|> ("/remove #" <|> "/rm #") *> (RemoveMember <$> groupRef <* A.space <*> contactRef)
     <|> ("/delete #" <|> "/d #") *> (DeleteGroup <$> groupRef)
@@ -338,6 +337,10 @@ chatCommandP =
     contactRef = safeDecodeUtf8 <$> (B.cons <$> A.satisfy refChar <*> A.takeTill (== ' '))
     refChar c = c > ' ' && c /= '#' && c /= '@'
     groupRef = contactRef
+    groupProfile = do
+      gRef <- groupRef
+      gName <- safeDecodeUtf8 <$> (A.space *> A.takeByteString) <|> pure ""
+      pure GroupProfile {groupRef = gRef, displayName = if T.null gName then gRef else gName}
     memberRole =
       ("owner" $> GROwner)
         <|> ("admin" $> GRAdmin)

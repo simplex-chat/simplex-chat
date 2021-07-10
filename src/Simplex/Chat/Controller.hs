@@ -33,12 +33,16 @@ data InputEvent = InputCommand String | InputControl Char
 
 data ChatError
   = ChatErrorContact ContactError
+  | ChatErrorGroup GroupError
   | ChatErrorMessage String
   | ChatErrorAgent AgentErrorType
   | ChatErrorStore StoreError
   deriving (Show, Exception)
 
-data ContactError = CENotFound ContactRef | CEProfile String
+newtype ContactError = CENotFound ContactRef
+  deriving (Show, Exception)
+
+data GroupError = GEDuplicateGroup
   deriving (Show, Exception)
 
 type ChatMonad m = (MonadUnliftIO m, MonadReader ChatController m, MonadError ChatError m)

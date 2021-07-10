@@ -42,7 +42,8 @@ type GroupRef = Text
 
 data Group = Group
   { groupId :: Int64,
-    localGroupRef :: Text
+    localGroupRef :: Text,
+    profile :: GroupProfile
   }
   deriving (Eq, Show)
 

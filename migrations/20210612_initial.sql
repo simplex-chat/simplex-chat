@@ -37,18 +37,20 @@ CREATE TABLE known_servers(
 CREATE TABLE group_profiles ( -- shared group profiles
   group_profile_id INTEGER PRIMARY KEY,
   group_ref TEXT NOT NULL, -- this name must not contain spaces
-  display_name TEXT NOT NULL DEFAULT '',
+  display_name TEXT NOT NULL,
   properties TEXT NOT NULL DEFAULT '{}' -- JSON with user or contact profile
 );
 
 CREATE TABLE groups (
   group_id INTEGER PRIMARY KEY, -- local group ID
   invited_by INTEGER REFERENCES contacts ON DELETE RESTRICT,
-  external_group_id BLOB NOT NULL,
-  local_group_ref TEXT NOT NULL UNIQUE, -- local group name without spaces
+  local_group_ref TEXT NOT NULL, -- local group name without spaces
+  lgr_base TEXT NOT NULL,
+  lgr_suffix INTEGER NOT NULL DEFAULT 0,
   group_profile_id INTEGER REFERENCES group_profiles, -- shared group profile
   user_id INTEGER NOT NULL REFERENCES users,
-  UNIQUE (invited_by, external_group_id)
+  UNIQUE (user_id, local_group_ref) ON CONFLICT FAIL,
+  UNIQUE (user_id, lgr_base, lgr_suffix) ON CONFLICT FAIL
 );
 
 CREATE TABLE group_members ( -- group members, excluding the local user
