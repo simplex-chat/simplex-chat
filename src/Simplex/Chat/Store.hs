@@ -23,18 +23,25 @@ module Simplex.Chat.Store
     getContactConnections,
     getConnectionChatDirection,
     createGroup,
+    getGroup,
+    createGroupMember,
   )
 where
 
+import Control.Concurrent.STM (stateTVar)
 import Control.Exception (Exception)
 import qualified Control.Exception as E
 import Control.Monad.Except
 import Control.Monad.IO.Unlift
+import Crypto.Random (ChaChaDRG, randomBytesGenerate)
+import qualified Data.ByteString.Base64 as B64
 import Data.ByteString.Char8 (ByteString)
 import Data.FileEmbed (embedDir, makeRelativeToProject)
 import Data.Function (on)
 import Data.Int (Int64)
 import Data.List (sortBy)
+import Data.List.NonEmpty (NonEmpty (..))
+import qualified Data.List.NonEmpty as L
 import Data.Maybe (listToMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -50,6 +57,7 @@ import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore (..), createSQLiteStore
 import Simplex.Messaging.Agent.Store.SQLite.Migrations (Migration (..))
 import Simplex.Messaging.Util (bshow, liftIOEither, (<$$>))
 import System.FilePath (takeBaseName, takeExtension)
+import UnliftIO.STM
 
 -- | The list of migrations in ascending order by date
 migrations :: [Migration]
@@ -87,7 +95,7 @@ createUser st Profile {contactRef, displayName} activeUser =
       (profileId, contactRef, contactRef, userId)
     contactId <- insertedRowId db
     DB.execute db "UPDATE users SET contact_id = ? WHERE user_id = ?;" (contactId, userId)
-    pure . Right $ toUser (userId, activeUser, contactRef, displayName)
+    pure . Right $ toUser (userId, contactId, activeUser, contactRef, displayName)
 
 getUsers :: SQLiteStore -> IO [User]
 getUsers st =
@@ -96,16 +104,16 @@ getUsers st =
       <$> DB.query_
         db
         [sql|
-          SELECT u.user_id, u.active_user, c.local_contact_ref, p.display_name
+          SELECT u.user_id, u.contact_id, u.active_user, c.local_contact_ref, p.display_name
           FROM users u
           JOIN contacts c ON u.contact_id = c.contact_id
           JOIN contact_profiles p ON c.contact_profile_id = p.contact_profile_id
         |]
 
-toUser :: (UserId, Bool, ContactRef, Text) -> User
-toUser (userId, activeUser, contactRef, displayName) =
+toUser :: (UserId, Int64, Bool, ContactRef, Text) -> User
+toUser (userId, userContactId, activeUser, contactRef, displayName) =
   let profile = Profile {contactRef, displayName}
-   in User {userId, localContactRef = contactRef, profile, activeUser}
+   in User {userId, userContactId, localContactRef = contactRef, profile, activeUser}
 
 setActiveUser :: MonadUnliftIO m => SQLiteStore -> UserId -> m ()
 setActiveUser st userId = do
@@ -216,10 +224,10 @@ getContactConnection st userId contactRef =
     connection (connRow : _) = Right $ toConnection connRow
     connection _ = Left $ SEContactNotFound contactRef
 
-getContactConnections :: MonadUnliftIO m => SQLiteStore -> UserId -> ContactRef -> m [Connection]
+getContactConnections :: (MonadUnliftIO m, MonadError StoreError m) => SQLiteStore -> UserId -> ContactRef -> m [Connection]
 getContactConnections st userId contactRef =
-  liftIO . withTransaction st $ \db ->
-    map toConnection
+  liftIOEither . withTransaction st $ \db ->
+    connections
       <$> DB.queryNamed
         db
         [sql|
@@ -232,6 +240,9 @@ getContactConnections st userId contactRef =
             AND cs.local_contact_ref == :contact_ref;
         |]
         [":user_id" := userId, ":contact_ref" := contactRef]
+  where
+    connections [] = Left $ SEContactNotFound contactRef
+    connections rows = Right $ map toConnection rows
 
 toConnection ::
   (Int64, ConnId, Int, Maybe Int64, ConnStatus, ConnType, Maybe Int64, Maybe Int64, UTCTime) -> Connection
@@ -285,21 +296,138 @@ getConnectionChatDirection st userId agentConnId =
        in Right Contact {contactId, localContactRef, profile, activeConn = c}
     toContact _ _ _ = Left $ SEInternal "referenced contact not found"
 
-createGroup :: (MonadUnliftIO m, MonadError StoreError m) => SQLiteStore -> UserId -> GroupProfile -> m Group
-createGroup st userId p@GroupProfile {groupRef, displayName} =
+createGroup :: (MonadUnliftIO m, MonadError StoreError m) => SQLiteStore -> TVar ChaChaDRG -> User -> GroupProfile -> m Group
+createGroup st gVar User {userId, userContactId, profile} p@GroupProfile {groupRef, displayName} =
   liftIOEither . checkConstraint SEDuplicateGroupRef . withTransaction st $ \db -> do
     DB.execute db "INSERT INTO groups (local_group_ref, lgr_base, user_id) VALUES (?, ?, ?);" (groupRef, groupRef, userId)
     groupId <- insertedRowId db
     DB.execute db "INSERT INTO group_profiles (group_ref, display_name) VALUES (?, ?);" (groupRef, displayName)
     profileId <- insertedRowId db
     DB.execute db "UPDATE groups SET group_profile_id = ? WHERE group_id = ?;" (profileId, groupId)
-    pure $ Right Group {groupId, localGroupRef = groupRef, profile = p}
+    memberId <- randomId gVar 12
+    createMember db groupId userContactId GROwner GSMemReady userContactId memberId
+    groupMemberId <- insertedRowId db
+    let membership =
+          GroupMember
+            { groupMemberId,
+              memberId,
+              memberRole = GROwner,
+              memberStatus = GSMemReady,
+              invitedBy = IBUser,
+              memberProfile = profile,
+              memberContactId = Just userContactId
+            }
+    pure $ Right Group {groupId, localGroupRef = groupRef, groupProfile = p, members = [], membership}
+
+getGroup :: (MonadUnliftIO m, MonadError StoreError m) => SQLiteStore -> User -> GroupRef -> m Group
+getGroup st User {userId, userContactId} localGroupRef =
+  liftIOEither . withTransaction st $ \db -> runExceptT $ do
+    g@Group {groupId} <- getGroup_ db
+    allMembers <- getMembers_ db groupId
+    (members, membership) <- liftEither $ separateUserMember allMembers
+    pure g {members, membership}
+  where
+    getGroup_ :: DB.Connection -> ExceptT StoreError IO Group
+    getGroup_ db = ExceptT $ do
+      toGroup
+        <$> DB.query
+          db
+          [sql|
+              SELECT g.group_id, p.group_ref, p.display_name
+              FROM groups g
+              JOIN group_profiles p ON p.group_profile_id = g.group_profile_id
+              WHERE g.local_group_ref = ? AND g.user_id = ?;
+            |]
+          (localGroupRef, userId)
+    toGroup :: [(Int64, GroupRef, Text)] -> Either StoreError Group
+    toGroup [(groupId, groupRef, displayName)] =
+      let groupProfile = GroupProfile {groupRef, displayName}
+       in Right Group {groupId, localGroupRef, groupProfile, members = undefined, membership = undefined}
+    toGroup _ = Left $ SEGroupNotFound localGroupRef
+    getMembers_ :: DB.Connection -> Int64 -> ExceptT StoreError IO (NonEmpty GroupMember)
+    getMembers_ db groupId = ExceptT $ do
+      maybe (Left SEGroupEmpty) Right . L.nonEmpty . map toGroupMember
+        <$> DB.query
+          db
+          [sql|
+            SELECT
+              m.group_member_id, m.member_id, m.member_role, m.member_status,
+              m.invited_by, m.contact_id, p.contact_ref, p.display_name
+            FROM group_members m
+            JOIN groups g ON g.group_id = m.group_id
+            JOIN contact_profiles p ON p.contact_profile_id = m.contact_profile_id
+            WHERE g.group_id = ?;
+          |]
+          (Only groupId)
+    toGroupMember :: (Int64, ByteString, GroupMemberRole, GroupMemberStatus, Maybe Int64, Maybe Int64, ContactRef, Text) -> GroupMember
+    toGroupMember (groupMemberId, memberId, memberRole, memberStatus, invitedById, memberContactId, contactRef, displayName) =
+      let memberProfile = Profile {contactRef, displayName}
+          invitedBy = maybe IBUnknown (\i -> if i == userContactId then IBUser else IBContact i) invitedById
+       in GroupMember {groupMemberId, memberId, memberRole, memberStatus, invitedBy, memberProfile, memberContactId}
+    separateUserMember :: NonEmpty GroupMember -> Either StoreError ([GroupMember], GroupMember)
+    separateUserMember ms = case L.break ((== Just userContactId) . memberContactId) ms of
+      (b, u : a) -> Right (b <> a, u)
+      _ -> Left SEGroupWithoutUser
+
+createGroupMember :: (MonadUnliftIO m, MonadError StoreError m) => SQLiteStore -> TVar ChaChaDRG -> UserId -> GroupRef -> ContactRef -> GroupMemberRole -> Int64 -> m ByteString
+createGroupMember st gVar userId gRef cRef memberRole invitedBy =
+  liftIOEither . withTransaction st $ \db -> runExceptT $ do
+    groupId <- getId (SEGroupNotFound gRef) $ DB.query db "SELECT group_id FROM groups WHERE user_id = ? AND local_group_ref = ?;" (userId, gRef)
+    contactId <- getId (SEContactNotFound cRef) $ DB.query db "SELECT group_id FROM contacts WHERE user_id = ? AND local_contact_ref = ? AND user != 1;" (userId, gRef)
+    ExceptT $ createWithRandomId gVar $ createMember db groupId contactId memberRole GSMemNew invitedBy
+  where
+    getId :: StoreError -> IO [Only Int64] -> ExceptT StoreError IO Int64
+    getId err action =
+      liftIO action >>= \case
+        [Only rowId] -> pure rowId
+        _ -> throwError err
+
+createMember :: DB.Connection -> Int64 -> Int64 -> GroupMemberRole -> GroupMemberStatus -> Int64 -> ByteString -> IO ()
+createMember db groupId contactId memberRole memberStatus invitedBy memberId =
+  DB.executeNamed
+    db
+    [sql|
+      INSERT INTO group_members
+        ( group_id, member_id, member_role, member_status, invited_by,
+          contact_profile_id, contact_id)
+      VALUES
+        (:group_id,:member_id,:member_role,:member_status,:invited_by,
+          (SELECT contact_profile_id FROM contacts WHERE contact_id = :contact_id),
+          :contact_id)
+    |]
+    [ ":group_id" := groupId,
+      ":member_id" := memberId,
+      ":member_role" := memberRole,
+      ":member_status" := memberStatus,
+      ":invited_by" := invitedBy,
+      ":contact_id" := contactId
+    ]
+
+createWithRandomId :: TVar ChaChaDRG -> (ByteString -> IO ()) -> IO (Either StoreError ByteString)
+createWithRandomId gVar create = tryCreate 3
+  where
+    tryCreate :: Int -> IO (Either StoreError ByteString)
+    tryCreate 0 = pure $ Left SEUniqueID
+    tryCreate n = do
+      id' <- randomId gVar 12
+      E.try (create id') >>= \case
+        Right _ -> pure $ Right id'
+        Left e
+          | DB.sqlError e == DB.ErrorConstraint -> tryCreate (n - 1)
+          | otherwise -> pure . Left . SEInternal $ bshow e
+
+randomId :: TVar ChaChaDRG -> Int -> IO ByteString
+randomId gVar n = B64.encode <$> (atomically . stateTVar gVar $ randomBytesGenerate n)
 
 data StoreError
   = SEDuplicateContactRef
   | SEContactNotFound ContactRef
   | SEDuplicateGroupRef
   | SEGroupNotFound GroupRef
+  | SEGroupEmpty
+  | SEGroupWithoutUser
+  | SEDuplicateGroupMember
   | SEConnectionNotFound ConnId
+  | SEUniqueID
   | SEInternal ByteString
   deriving (Show, Exception)

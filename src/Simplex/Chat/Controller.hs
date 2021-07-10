@@ -10,6 +10,7 @@ import Control.Exception
 import Control.Monad.Except
 import Control.Monad.IO.Unlift
 import Control.Monad.Reader
+import Crypto.Random (ChaChaDRG)
 import Simplex.Chat.Notification
 import Simplex.Chat.Store (StoreError)
 import Simplex.Chat.Terminal
@@ -24,6 +25,7 @@ data ChatController = ChatController
     smpAgent :: AgentClient,
     chatTerminal :: ChatTerminal,
     chatStore :: SQLiteStore,
+    idsDrg :: TVar ChaChaDRG,
     inputQ :: TBQueue InputEvent,
     notifyQ :: TBQueue Notification,
     sendNotification :: Notification -> IO ()
@@ -32,17 +34,9 @@ data ChatController = ChatController
 data InputEvent = InputCommand String | InputControl Char
 
 data ChatError
-  = ChatErrorContact ContactError
-  | ChatErrorGroup GroupError
-  | ChatErrorMessage String
+  = ChatErrorMessage String
   | ChatErrorAgent AgentErrorType
   | ChatErrorStore StoreError
-  deriving (Show, Exception)
-
-newtype ContactError = CENotFound ContactRef
-  deriving (Show, Exception)
-
-data GroupError = GEDuplicateGroup
   deriving (Show, Exception)
 
 type ChatMonad m = (MonadUnliftIO m, MonadReader ChatController m, MonadError ChatError m)

@@ -15,7 +15,8 @@ import Control.Logger.Simple
 import Control.Monad.Except
 import Control.Monad.IO.Unlift
 import Control.Monad.Reader
-import Data.Attoparsec.ByteString.Char8 (Parser, (<?>))
+import Crypto.Random (drgNew)
+import Data.Attoparsec.ByteString.Char8 (Parser)
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.Bifunctor (first)
 import Data.ByteString.Char8 (ByteString)
@@ -96,9 +97,10 @@ newChatController ChatOpts {dbFile, smpServers} t sendNotification = do
   currentUser <- getCreateActiveUser chatStore
   chatTerminal <- newChatTerminal t
   smpAgent <- getSMPAgentClient cfg {dbFile = dbFile <> ".agent.db", smpServers}
+  idsDrg <- newTVarIO =<< drgNew
   inputQ <- newTBQueueIO $ tbqSize cfg
   notifyQ <- newTBQueueIO $ tbqSize cfg
-  pure ChatController {currentUser, smpAgent, chatTerminal, chatStore, inputQ, notifyQ, sendNotification}
+  pure ChatController {currentUser, smpAgent, chatTerminal, chatStore, idsDrg, inputQ, notifyQ, sendNotification}
 
 runSimplexChat :: ChatController -> IO ()
 runSimplexChat = runReaderT (race_ runTerminalInput runChatController)
@@ -128,7 +130,7 @@ inputSubscriber = do
             void . runExceptT $ processChatCommand user cmd `catchError` showChatError
 
 processChatCommand :: ChatMonad m => User -> ChatCommand -> m ()
-processChatCommand User {userId, profile} = \case
+processChatCommand user@User {userId, profile} = \case
   ChatHelp -> printToView chatHelpInfo
   MarkdownHelp -> printToView markdownInfo
   AddContact -> do
@@ -144,7 +146,6 @@ processChatCommand User {userId, profile} = \case
       deleteConnection smp agentConnId `catchError` \(_ :: AgentErrorType) -> pure ()
     withStore $ \st -> deleteContact st userId cRef
     unsetActive $ ActiveC cRef
-    when (null conns) . throwError . ChatErrorContact $ CENotFound cRef
     showContactDeleted cRef
   SendMessage cRef msg -> do
     Connection {agentConnId} <- withStore $ \st -> getContactConnection st userId cRef
@@ -153,10 +154,11 @@ processChatCommand User {userId, profile} = \case
     void . withAgent $ \smp -> sendMessage smp agentConnId $ serializeRawChatMessage rawMsg
     setActive $ ActiveC cRef
   NewGroup gProfile -> do
-    void $ withStore $ \st -> createGroup st userId gProfile
+    gVar <- asks idsDrg
+    void $ withStore $ \st -> createGroup st gVar user gProfile
     showGroupCreated gProfile
   AddMember _gRef _cRef _mRole -> pure ()
-  -- GroupInvitation {} <- withStore $ \st -> createGroupInvitation st userId gRef cRef mRole
+  -- GroupInvitation {} <- withStore $ \st -> createGroupMember st userId gRef cRef mRole
   MemberRole _gRef _cRef _mRole -> pure ()
   RemoveMember _gRef _cRef -> pure ()
   LeaveGroup _gRef -> pure ()
@@ -307,23 +309,16 @@ withStore ::
   ChatMonad m =>
   (forall m'. (MonadUnliftIO m', MonadError StoreError m') => SQLiteStore -> m' a) ->
   m a
-withStore action = do
-  st <- asks chatStore
-  runExceptT (action st) >>= \case
-    Right c -> pure c
-    Left e -> throwError $ storeError e
-  where
-    storeError :: StoreError -> ChatError
-    storeError = \case
-      SEContactNotFound c -> ChatErrorContact $ CENotFound c
-      SEDuplicateGroupRef -> ChatErrorGroup GEDuplicateGroup
-      e -> ChatErrorStore e
+withStore action =
+  asks chatStore
+    >>= runExceptT . action
+    >>= liftEither . first ChatErrorStore
 
 chatCommandP :: Parser ChatCommand
 chatCommandP =
   ("/help" <|> "/h") $> ChatHelp
     <|> ("/group #" <|> "/g #") *> (NewGroup <$> groupProfile)
-    <|> ("/add #" <|> "/a #") *> (AddMember <$> groupRef <* A.space <*> contactRef <* A.space <*> memberRole)
+    <|> ("/add #" <|> "/a #") *> (AddMember <$> groupRef <* A.space <*> contactRef <*> memberRole)
     <|> ("/remove #" <|> "/rm #") *> (RemoveMember <$> groupRef <* A.space <*> contactRef)
     <|> ("/delete #" <|> "/d #") *> (DeleteGroup <$> groupRef)
     <|> ("/members #" <|> "/ms #") *> (ListMembers <$> groupRef)
@@ -342,7 +337,7 @@ chatCommandP =
       gName <- safeDecodeUtf8 <$> (A.space *> A.takeByteString) <|> pure ""
       pure GroupProfile {groupRef = gRef, displayName = if T.null gName then gRef else gName}
     memberRole =
-      ("owner" $> GROwner)
-        <|> ("admin" $> GRAdmin)
-        <|> ("normal" $> GRMember)
-        <?> "memberRole"
+      (" owner" $> GROwner)
+        <|> (" admin" $> GRAdmin)
+        <|> (" normal" $> GRMember)
+        <|> pure GRMember

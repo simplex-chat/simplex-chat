@@ -29,6 +29,7 @@ import Data.Time.Format (defaultTimeLocale, formatTime)
 import Data.Time.LocalTime (TimeZone, ZonedTime, getCurrentTimeZone, getZonedTime, localDay, localTimeOfDay, timeOfDayToTime, utcToLocalTime, zonedTimeToLocalTime)
 import Simplex.Chat.Controller
 import Simplex.Chat.Markdown
+import Simplex.Chat.Store (StoreError (..))
 import Simplex.Chat.Styled
 import Simplex.Chat.Terminal (printToTerminal)
 import Simplex.Chat.Types
@@ -123,10 +124,10 @@ msgPlain = map styleMarkdownText . T.lines
 
 chatError :: ChatError -> [StyledString]
 chatError = \case
-  ChatErrorContact e -> case e of
-    CENotFound c -> ["no contact " <> ttyContact c]
-  ChatErrorGroup e -> case e of
-    GEDuplicateGroup -> ["group with this alias already exists"]
+  ChatErrorStore err -> case err of
+    SEContactNotFound c -> ["no contact " <> ttyContact c]
+    SEDuplicateGroupRef -> ["group with this alias already exists"]
+    e -> ["chat db error: " <> plain (show e)]
   ChatErrorAgent err -> case err of
     -- CONN e -> case e of
     --   -- TODO replace with ChatErrorContact errors, these errors should never happen

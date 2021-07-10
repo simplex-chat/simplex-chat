@@ -69,9 +69,9 @@ refMsgHash = 16*16(OCTET) ; SHA256 of agent message body
 
 ### Group protocol
 
-A -> B: invite to group - `MSG: x.grp.inv G_INV_ID,G_MEM_ID_B,G_MEM_ROLE x.json:NNN <group_profile>`
+A -> B: invite to group - `MSG: x.grp.inv G_MEM_ID_B,G_MEM_ROLE x.json:NNN <group_profile>`
 user B confirms
-B -> A: join group - `MSG: x.grp.acpt G_INV_ID,<invitation>`
+B -> A: join group - `MSG: x.grp.acpt G_MEM_ID_B,<invitation>`
 A -> Bg: establish group connection (A: JOIN, B: LET)
 A -> group (including B)): announce group member: `MSG: N x.grp.mem.new G_MEM_ID_B,G_MEM_ROLE x.json:NNN <B_profile>`
 subsequent messages between A and B are via group connection

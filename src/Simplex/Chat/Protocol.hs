@@ -12,7 +12,6 @@ module Simplex.Chat.Protocol where
 
 import Control.Applicative (optional)
 import Control.Monad ((<=<))
-import Control.Monad.Except (throwError)
 import Data.Aeson (FromJSON, ToJSON)
 import qualified Data.Aeson as J
 import Data.Attoparsec.ByteString.Char8 (Parser)
@@ -42,8 +41,8 @@ deriving instance Show (ChatDirection p)
 data ChatMsgEvent
   = XMsgNew {messageType :: MessageType, files :: [(ContentType, Int)], content :: [MsgBodyContent]}
   | XInfo Profile
-  | XGrpInv InvitationId MemberId GroupMemberRole GroupProfile
-  | XGrpAcpt InvitationId SMPQueueInfo
+  | XGrpInv MemberId GroupMemberRole GroupProfile
+  | XGrpAcpt MemberId SMPQueueInfo
   | XGrpMemNew MemberId GroupMemberRole Profile
   | XGrpMemIntro MemberId GroupMemberRole Profile
   deriving (Eq, Show)
@@ -51,22 +50,6 @@ data ChatMsgEvent
 type MemberId = ByteString
 
 data MessageType = MTText | MTImage deriving (Eq, Show)
-
-data GroupMemberRole = GROwner | GRAdmin | GRMember
-  deriving (Eq, Show)
-
-toMemberRole :: ByteString -> Either String GroupMemberRole
-toMemberRole = \case
-  "owner" -> Right GROwner
-  "admin" -> Right GRAdmin
-  "member" -> Right GRMember
-  r -> Left $ "invalid group member role " <> B.unpack r
-
-serializeMemberRole :: GroupMemberRole -> ByteString
-serializeMemberRole = \case
-  GROwner -> "owner"
-  GRAdmin -> "admin"
-  GRMember -> "member"
 
 toMsgType :: ByteString -> Either String MessageType
 toMsgType = \case
@@ -96,41 +79,32 @@ toChatMessage RawChatMessage {chatMsgId, chatMsgEvent, chatMsgParams, chatMsgBod
         files <- mapM (toContentInfo <=< parseAll contentInfoP) rawFiles
         let msg = XMsgNew {messageType = t, files, content = body}
         pure ChatMessage {chatMsgId, chatMsgEvent = msg, chatDAG}
-      [] -> throwError "x.msg.new expects at least one parameter"
+      [] -> Left "x.msg.new expects at least one parameter"
     "x.info" -> case chatMsgParams of
       [] -> do
         profile <- getJSON body
         pure ChatMessage {chatMsgId, chatMsgEvent = XInfo profile, chatDAG}
-      _ -> throwError "x.info expects no parameters"
-    "x.grp.inv" -> case chatMsgParams of
-      [invId', memId', role'] -> do
-        invId <- B64.decode invId'
-        memId <- B64.decode memId'
-        role <- toMemberRole role'
-        groupProfile <- getJSON body
-        pure ChatMessage {chatMsgId, chatMsgEvent = XGrpInv invId memId role groupProfile, chatDAG}
-      _ -> throwError "x.grp.inv expects 3 parameters"
+      _ -> Left "x.info expects no parameters"
+    "x.grp.inv" -> memberMessage chatMsgParams XGrpInv body chatDAG
     "x.grp.acpt" -> case chatMsgParams of
-      [invId, qInfo] -> do
-        msg <- XGrpAcpt <$> B64.decode invId <*> parseAll smpQueueInfoP qInfo
+      [memId, qInfo] -> do
+        msg <- XGrpAcpt <$> B64.decode memId <*> parseAll smpQueueInfoP qInfo
         pure ChatMessage {chatMsgId, chatMsgEvent = msg, chatDAG}
-      _ -> throwError "x.grp.acpt expects 2 parameters"
-    "x.grp.mem.new" -> case chatMsgParams of
-      [memId, role] -> do
-        msg <- XGrpMemNew <$> B64.decode memId <*> toMemberRole role <*> getJSON body
-        pure ChatMessage {chatMsgId, chatMsgEvent = msg, chatDAG}
-      _ -> throwError "x.grp.acpt expects 2 parameters"
-    "x.grp.mem.intro" -> case chatMsgParams of
-      [memId, role] -> do
-        msg <- XGrpMemIntro <$> B64.decode memId <*> toMemberRole role <*> getJSON body
-        pure ChatMessage {chatMsgId, chatMsgEvent = msg, chatDAG}
-      _ -> throwError "x.grp.acpt expects 2 parameters"
-    _ -> throwError $ "unsupported event " <> B.unpack chatMsgEvent
+      _ -> Left "x.grp.acpt expects 2 parameters"
+    "x.grp.mem.new" -> memberMessage chatMsgParams XGrpMemNew body chatDAG
+    "x.grp.mem.intro" -> memberMessage chatMsgParams XGrpMemIntro body chatDAG
+    _ -> Left $ "unsupported event " <> B.unpack chatMsgEvent
   where
     getDAG :: [MsgBodyContent] -> (Maybe ByteString, [MsgBodyContent])
     getDAG body = case break (isContentType SimplexDAG) body of
       (b, MsgBodyContent SimplexDAG dag : a) -> (Just dag, b <> a)
       _ -> (Nothing, body)
+    memberMessage ::
+      FromJSON a => [ByteString] -> (MemberId -> GroupMemberRole -> a -> ChatMsgEvent) -> [MsgBodyContent] -> Maybe ByteString -> Either String ChatMessage
+    memberMessage [memId, role] mkMsg body chatDAG = do
+      msg <- mkMsg <$> B64.decode memId <*> toMemberRole role <*> getJSON body
+      pure ChatMessage {chatMsgId, chatMsgEvent = msg, chatDAG}
+    memberMessage _ _ _ _ = Left "x.grp.acpt expects 2 parameters"
     toContentInfo :: (RawContentType, Int) -> Either String (ContentType, Int)
     toContentInfo (rawType, size) = (,size) <$> toContentType rawType
     getJSON :: FromJSON a => [MsgBodyContent] -> Either String a
@@ -161,8 +135,8 @@ rawChatMessage ChatMessage {chatMsgId, chatMsgEvent, chatDAG} =
     XInfo profile ->
       let chatMsgBody = rawWithDAG [jsonBody profile]
        in RawChatMessage {chatMsgId, chatMsgEvent = "x.info", chatMsgParams = [], chatMsgBody}
-    XGrpInv invId memId role groupProfile ->
-      let chatMsgParams = [B64.encode invId, B64.encode memId, serializeMemberRole role]
+    XGrpInv memId role groupProfile ->
+      let chatMsgParams = [B64.encode memId, serializeMemberRole role]
           chatMsgBody = rawWithDAG [jsonBody groupProfile]
        in RawChatMessage {chatMsgId, chatMsgEvent = "x.grp.inv", chatMsgParams, chatMsgBody}
     XGrpAcpt invId qInfo ->
