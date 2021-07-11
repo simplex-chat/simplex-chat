@@ -163,8 +163,10 @@ processChatCommand user@User {userId, profile} = \case
     unless (hasPermission GRAdmin $ membership group) $ throwError $ ChatError CEGroupRole
     when (isMember contact group) $ throwError $ ChatError CEContactIsMember
     gVar <- asks idsDrg
+    -- TODO save member connection to DB together with member
+    (_, qInfo) <- withAgent createConnection
     memberId <- withStore $ \st -> createGroupMember st gVar userId (groupId group) (contactId contact) memberRole IBUser
-    let chatMsgEvent = XGrpInv memberId memberRole $ groupProfile group
+    let chatMsgEvent = XGrpInv memberId memberRole qInfo $ groupProfile group
         rawMsg = rawChatMessage ChatMessage {chatMsgId = Nothing, chatMsgEvent, chatDAG = Nothing}
         connId = agentConnId (activeConn contact :: Connection)
     void . withAgent $ \smp -> sendMessage smp connId $ serializeRawChatMessage rawMsg
