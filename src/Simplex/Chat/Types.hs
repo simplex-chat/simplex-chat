@@ -115,7 +115,7 @@ fromBlobField_ p = \case
       Left e -> returnError ConversionFailed f ("couldn't parse field: " ++ e)
   f -> returnError ConversionFailed f "expecting SQLBlob column type"
 
-data GroupMemberStatus = GSMemNew | GSMemInvited | GSMemAccepted | GSMemConnected | GSMemReady
+data GroupMemberStatus = GSMemInvited | GSMemAccepted | GSMemConnected | GSMemReady
   deriving (Eq, Show)
 
 instance FromField GroupMemberStatus where fromField = fromTextField_ memberStatusT
@@ -124,7 +124,6 @@ instance ToField GroupMemberStatus where toField = toField . serializeMemberStat
 
 memberStatusT :: Text -> Maybe GroupMemberStatus
 memberStatusT = \case
-  "new" -> Just GSMemNew
   "invited" -> Just GSMemInvited
   "accepted" -> Just GSMemAccepted
   "connected" -> Just GSMemConnected
@@ -133,7 +132,6 @@ memberStatusT = \case
 
 serializeMemberStatus :: GroupMemberStatus -> Text
 serializeMemberStatus = \case
-  GSMemNew -> "new"
   GSMemInvited -> "invited"
   GSMemAccepted -> "accepted"
   GSMemConnected -> "connected"

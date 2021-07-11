@@ -392,7 +392,7 @@ createGroupMember st gVar userId groupId contactId memberRole invitedBy =
           IBUnknown -> Nothing
           IBContact i -> Just i
           IBUser -> Just userId
-     in createWithRandomId gVar $ createMember_ db groupId contactId memberRole GSMemNew invitedById
+     in createWithRandomId gVar $ createMember_ db groupId contactId memberRole GSMemInvited invitedById
 
 createMember_ :: DB.Connection -> Int64 -> Int64 -> GroupMemberRole -> GroupMemberStatus -> Maybe Int64 -> ByteString -> IO ()
 createMember_ db groupId contactId memberRole memberStatus invitedBy memberId =
