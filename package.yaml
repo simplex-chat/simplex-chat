@@ -16,6 +16,7 @@ dependencies:
   - ansi-terminal == 0.10.*
   - attoparsec == 0.13.*
   - base >= 4.7 && < 5
+  - base64-bytestring >= 1.0 && < 1.3
   - bytestring == 0.10.*
   - containers == 0.6.*
   - directory == 1.3.*

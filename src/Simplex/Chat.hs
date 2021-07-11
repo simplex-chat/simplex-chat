@@ -15,12 +15,11 @@ import Control.Logger.Simple
 import Control.Monad.Except
 import Control.Monad.IO.Unlift
 import Control.Monad.Reader
-import qualified Data.Aeson as J
-import Data.Attoparsec.ByteString.Char8 (Parser)
+import Data.Attoparsec.ByteString.Char8 (Parser, (<?>))
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.Bifunctor (first)
 import Data.ByteString.Char8 (ByteString)
-import qualified Data.ByteString.Lazy.Char8 as LB
+import qualified Data.ByteString.Char8 as B
 import Data.Functor (($>))
 import Data.List (find)
 import Data.Maybe (isJust)
@@ -58,6 +57,14 @@ data ChatCommand
   | Connect SMPQueueInfo
   | DeleteContact ContactRef
   | SendMessage ContactRef ByteString
+  | NewGroup GroupRef
+  | AddMember GroupRef ContactRef GroupMemberRole
+  | RemoveMember GroupRef ContactRef
+  | MemberRole GroupRef ContactRef GroupMemberRole
+  | LeaveGroup GroupRef
+  | DeleteGroup GroupRef
+  | ListMembers GroupRef
+  | SendGroupMessage GroupRef ByteString
   deriving (Show)
 
 cfg :: AgentConfig
@@ -142,10 +149,18 @@ processChatCommand User {userId, profile} = \case
     showContactDeleted cRef
   SendMessage cRef msg -> do
     Connection {agentConnId} <- withStore $ \st -> getContactConnection st userId cRef
-    let body = MsgBodyContent {contentType = SimplexContentType XCText, contentHash = Nothing, contentData = MBFull $ MsgData msg}
-        rawMsg = rawChatMessage ChatMessage {chatMsgId = Nothing, chatMsgEvent = XMsgNew MTText, chatMsgBody = [body], chatDAGIdx = Nothing}
+    let body = MsgBodyContent {contentType = SimplexContentType XCText, contentData = msg}
+        rawMsg = rawChatMessage ChatMessage {chatMsgId = Nothing, chatMsgEvent = XMsgNew MTText [] [body], chatDAG = Nothing}
     void . withAgent $ \smp -> sendMessage smp agentConnId $ serializeRawChatMessage rawMsg
     setActive $ ActiveC cRef
+  NewGroup _gRef -> pure ()
+  AddMember _gRef _cRef _mRole -> pure ()
+  MemberRole _gRef _cRef _mRole -> pure ()
+  RemoveMember _gRef _cRef -> pure ()
+  LeaveGroup _gRef -> pure ()
+  DeleteGroup _gRef -> pure ()
+  ListMembers _gRef -> pure ()
+  SendGroupMessage _gRef _msg -> pure ()
 
 agentSubscriber :: (MonadUnliftIO m, MonadReader ChatController m) => m ()
 agentSubscriber = do
@@ -163,10 +178,10 @@ processAgentMessage User {userId, profile} agentConnId agentMessage = do
     ReceivedDirectMessage Contact {localContactRef = c} ->
       case agentMessage of
         MSG meta msgBody -> do
-          ChatMessage {chatMsgEvent, chatMsgBody} <- liftEither $ parseChatMessage msgBody
+          ChatMessage {chatMsgEvent} <- liftEither $ parseChatMessage msgBody
           case chatMsgEvent of
-            XMsgNew MTText -> newTextMessage c meta $ find (isSimplexContentType XCText) chatMsgBody
-            XInfo -> pure () -- TODO profile update
+            XMsgNew MTText [] body -> newTextMessage c meta $ find (isSimplexContentType XCText) body
+            XInfo _ -> pure () -- TODO profile update
             _ -> pure ()
         CON -> do
           -- TODO update connection status
@@ -191,7 +206,7 @@ processAgentMessage User {userId, profile} agentConnId agentMessage = do
   where
     newTextMessage :: ContactRef -> MsgMeta -> Maybe MsgBodyContent -> m ()
     newTextMessage c meta = \case
-      Just MsgBodyContent {contentData = MBFull (MsgData bs)} -> do
+      Just MsgBodyContent {contentData = bs} -> do
         let text = safeDecodeUtf8 bs
         showReceivedMessage c (snd $ broker meta) text (integrity meta)
         showToast ("@" <> c) text
@@ -203,21 +218,15 @@ processAgentMessage User {userId, profile} agentConnId agentMessage = do
 
     saveConnInfo :: Connection -> ConnInfo -> m ()
     saveConnInfo activeConn connInfo = do
-      ChatMessage {chatMsgEvent, chatMsgBody} <- liftEither $ parseChatMessage connInfo
+      ChatMessage {chatMsgEvent} <- liftEither $ parseChatMessage connInfo
       case chatMsgEvent of
-        XInfo ->
-          case find (isSimplexContentType XCJson) chatMsgBody of
-            Just MsgBodyContent {contentData = MBFull (MsgData bs)} -> do
-              p <- liftEither . first (ChatErrorContact . CEProfile) $ J.eitherDecodeStrict' bs
-              withStore $ \st -> createDirectContact st userId activeConn p
-            _ -> pure () -- TODO show/log error?
+        XInfo p ->
+          withStore $ \st -> createDirectContact st userId activeConn p
         _ -> pure () -- TODO show/log error, other events in SMP confirmation
 
 encodeProfile :: Profile -> ByteString
 encodeProfile profile =
-  let json = LB.toStrict $ J.encode profile
-      body = MsgBodyContent {contentType = SimplexContentType XCJson, contentHash = Nothing, contentData = MBFull $ MsgData json}
-      chatMsg = ChatMessage {chatMsgId = Nothing, chatMsgEvent = XInfo, chatMsgBody = [body], chatDAGIdx = Nothing}
+  let chatMsg = ChatMessage {chatMsgId = Nothing, chatMsgEvent = XInfo profile, chatDAG = Nothing}
    in serializeRawChatMessage $ rawChatMessage chatMsg
 
 getCreateActiveUser :: SQLiteStore -> IO User
@@ -314,10 +323,23 @@ withStore action = do
 chatCommandP :: Parser ChatCommand
 chatCommandP =
   ("/help" <|> "/h") $> ChatHelp
+    <|> ("/group #" <|> "/g #") *> (NewGroup <$> groupRef)
+    <|> ("/add #" <|> "/a #") *> (AddMember <$> groupRef <* A.space <*> contactRef <* A.space <*> memberRole)
+    <|> ("/remove #" <|> "/rm #") *> (RemoveMember <$> groupRef <* A.space <*> contactRef)
+    <|> ("/delete #" <|> "/d #") *> (DeleteGroup <$> groupRef)
+    <|> ("/members #" <|> "/ms #") *> (ListMembers <$> groupRef)
+    <|> A.char '#' *> (SendGroupMessage <$> groupRef <* A.space <*> A.takeByteString)
     <|> ("/add" <|> "/a") $> AddContact
     <|> ("/connect " <|> "/c ") *> (Connect <$> smpQueueInfoP)
-    <|> ("/delete " <|> "/d ") *> (DeleteContact <$> contactRef)
+    <|> ("/delete @" <|> "/delete " <|> "/d @" <|> "/d ") *> (DeleteContact <$> contactRef)
     <|> A.char '@' *> (SendMessage <$> contactRef <*> (A.space *> A.takeByteString))
     <|> ("/markdown" <|> "/m") $> MarkdownHelp
   where
-    contactRef = safeDecodeUtf8 <$> A.takeTill (== ' ')
+    contactRef = safeDecodeUtf8 <$> (B.cons <$> A.satisfy refChar <*> A.takeTill (== ' '))
+    refChar c = c > ' ' && c /= '#' && c /= '@'
+    groupRef = contactRef
+    memberRole =
+      ("owner" $> GROwner)
+        <|> ("admin" $> GRAdmin)
+        <|> ("normal" $> GRMember)
+        <?> "memberRole"

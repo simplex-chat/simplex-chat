@@ -34,14 +34,6 @@ CREATE TABLE known_servers(
   UNIQUE (user_id, host, port)
 ) WITHOUT ROWID;
 
--- CREATE TABLE contact_invitations (
---   invitation_id INTEGER PRIMARY KEY,
---   agent_inv_id BLOB UNIQUE,
---   invitation TEXT,
---   contact_id INTEGER NOT NULL REFERENCES contacts ON DELETE RESTRICT,
---   invitation_status TEXT NOT NULL DEFAULT ''
--- );
-
 CREATE TABLE group_profiles ( -- shared group profiles
   group_profile_id INTEGER PRIMARY KEY,
   group_ref TEXT NOT NULL, -- this name must not contain spaces
@@ -54,7 +46,6 @@ CREATE TABLE groups (
   invited_by INTEGER REFERENCES contacts ON DELETE RESTRICT,
   external_group_id BLOB NOT NULL,
   local_group_ref TEXT NOT NULL UNIQUE, -- local group name without spaces
-  local_properties TEXT NOT NULL, -- local JSON group properties
   group_profile_id INTEGER REFERENCES group_profiles, -- shared group profile
   user_id INTEGER NOT NULL REFERENCES users,
   UNIQUE (invited_by, external_group_id)
@@ -64,7 +55,7 @@ CREATE TABLE group_members ( -- group members, excluding the local user
   group_member_id INTEGER PRIMARY KEY,
   group_id INTEGER NOT NULL REFERENCES groups ON DELETE RESTRICT,
   member_id BLOB NOT NULL, -- shared member ID, unique per group
-  member_role TEXT NOT NULL DEFAULT '', -- owner, admin, moderator, ''
+  member_role TEXT NOT NULL DEFAULT '', -- owner, admin, member
   member_status TEXT NOT NULL DEFAULT '', -- inv | con | full | off
   invited_by INTEGER REFERENCES contacts (contact_id) ON DELETE RESTRICT, -- NULL for the members who joined before the current user and for the group creator
   contact_id INTEGER NOT NULL REFERENCES contacts ON DELETE RESTRICT,
