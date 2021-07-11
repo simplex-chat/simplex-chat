@@ -32,14 +32,12 @@ data User = User
 
 type UserId = Int64
 
-data Contact
-  = Contact
-      { contactId :: Int64,
-        localContactRef :: ContactRef,
-        profile :: Profile,
-        activeConn :: Connection
-      }
-  | NewContact {activeConn :: Connection}
+data Contact = Contact
+  { contactId :: Int64,
+    localContactRef :: ContactRef,
+    profile :: Profile,
+    activeConn :: Connection
+  }
   deriving (Eq, Show)
 
 type ContactRef = Text
@@ -89,8 +87,8 @@ data GroupMember = GroupMember
 data InvitedBy = IBContact Int64 | IBUser | IBUnknown
   deriving (Eq, Show)
 
-data GroupMemberRole = GROwner | GRAdmin | GRMember
-  deriving (Eq, Show)
+data GroupMemberRole = GRMember | GRAdmin | GROwner
+  deriving (Eq, Show, Ord)
 
 instance FromField GroupMemberRole where fromField = fromBlobField_ toMemberRole
 

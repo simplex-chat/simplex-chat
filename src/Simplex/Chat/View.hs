@@ -126,6 +126,7 @@ chatError :: ChatError -> [StyledString]
 chatError = \case
   ChatErrorStore err -> case err of
     SEContactNotFound c -> ["no contact " <> ttyContact c]
+    SEContactNotReady c -> ["contact " <> ttyContact c <> " is not active yet"]
     SEDuplicateGroupRef -> ["group with this alias already exists"]
     e -> ["chat db error: " <> plain (show e)]
   ChatErrorAgent err -> case err of

@@ -19,7 +19,7 @@ module Simplex.Chat.Store
     createDirectConnection,
     createDirectContact,
     deleteContact,
-    getContactConnection,
+    getContact,
     getContactConnections,
     getConnectionChatDirection,
     createGroup,
@@ -201,28 +201,44 @@ deleteContact st userId contactRef =
 
 -- TODO return the last connection that is ready, not any last connection
 -- requires updating connection status
-getContactConnection ::
-  (MonadUnliftIO m, MonadError StoreError m) => SQLiteStore -> UserId -> ContactRef -> m Connection
-getContactConnection st userId contactRef =
-  liftIOEither . withTransaction st $ \db ->
-    connection
-      <$> DB.queryNamed
-        db
-        [sql|
-          SELECT c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact,
-            c.conn_status, c.conn_type, c.contact_id, c.group_member_id, c.created_at
-          FROM connections c
-          JOIN contacts cs ON c.contact_id == cs.contact_id
-          WHERE c.user_id = :user_id
-            AND cs.user_id = :user_id
-            AND cs.local_contact_ref == :contact_ref
-          ORDER BY c.connection_id DESC
-          LIMIT 1;
-        |]
-        [":user_id" := userId, ":contact_ref" := contactRef]
+getContact ::
+  (MonadUnliftIO m, MonadError StoreError m) => SQLiteStore -> UserId -> ContactRef -> m Contact
+getContact st userId localContactRef =
+  liftIOEither . withTransaction st $ \db -> runExceptT $ do
+    c@Contact {contactId} <- getContact_ db
+    activeConn <- getConnection_ db contactId
+    pure $ c {activeConn}
   where
+    getContact_ db = ExceptT $ do
+      toContact
+        <$> DB.query
+          db
+          [sql|
+            SELECT c.contact_id, p.contact_ref, p.display_name
+            FROM contacts c
+            JOIN contact_profiles p ON c.contact_profile_id = p.contact_profile_id
+            WHERE c.user_id = ? AND c.local_contact_ref = ? AND c.user IS NULL;
+          |]
+          (userId, localContactRef)
+    getConnection_ db contactId = ExceptT $ do
+      connection
+        <$> DB.queryNamed
+          db
+          [sql|
+            SELECT c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact,
+              c.conn_status, c.conn_type, c.contact_id, c.group_member_id, c.created_at
+            FROM connections c
+            WHERE c.user_id = :user_id AND c.contact_id == :contact_id
+            ORDER BY c.connection_id DESC
+            LIMIT 1;
+          |]
+          [":user_id" := userId, ":contact_id" := contactId]
+    toContact [(contactId, contactRef, displayName)] =
+      let profile = Profile {contactRef, displayName}
+       in Right Contact {contactId, localContactRef, profile, activeConn = undefined}
+    toContact _ = Left $ SEContactNotFound localContactRef
     connection (connRow : _) = Right $ toConnection connRow
-    connection _ = Left $ SEContactNotFound contactRef
+    connection _ = Left $ SEContactNotReady localContactRef
 
 getContactConnections :: (MonadUnliftIO m, MonadError StoreError m) => SQLiteStore -> UserId -> ContactRef -> m [Connection]
 getContactConnections st userId contactRef =
@@ -258,16 +274,16 @@ getConnectionChatDirection ::
   (MonadUnliftIO m, MonadError StoreError m) => SQLiteStore -> UserId -> ConnId -> m (ChatDirection 'Agent)
 getConnectionChatDirection st userId agentConnId =
   liftIOEither . withTransaction st $ \db -> do
-    getConnection db >>= \case
+    getConnection_ db >>= \case
       Left e -> pure $ Left e
       Right c@Connection {connType, entityId} -> case connType of
         ConnMember -> pure . Left $ SEInternal "group members not supported yet"
         ConnContact ->
           ReceivedDirectMessage <$$> case entityId of
-            Nothing -> pure $ Right NewContact {activeConn = c}
-            Just cId -> getContact db cId c
+            Nothing -> pure . Right $ CConnection c
+            Just cId -> getContact_ db cId c
   where
-    getConnection db =
+    getConnection_ db =
       connection
         <$> DB.query
           db
@@ -280,7 +296,7 @@ getConnectionChatDirection st userId agentConnId =
           (userId, agentConnId)
     connection (connRow : _) = Right $ toConnection connRow
     connection _ = Left $ SEConnectionNotFound agentConnId
-    getContact db contactId c =
+    getContact_ db contactId c =
       toContact contactId c
         <$> DB.query
           db
@@ -293,7 +309,7 @@ getConnectionChatDirection st userId agentConnId =
           (userId, contactId)
     toContact contactId c [(localContactRef, contactRef, displayName)] =
       let profile = Profile {contactRef, displayName}
-       in Right Contact {contactId, localContactRef, profile, activeConn = c}
+       in Right $ CContact Contact {contactId, localContactRef, profile, activeConn = c}
     toContact _ _ _ = Left $ SEInternal "referenced contact not found"
 
 createGroup :: (MonadUnliftIO m, MonadError StoreError m) => SQLiteStore -> TVar ChaChaDRG -> User -> GroupProfile -> m Group
@@ -305,7 +321,7 @@ createGroup st gVar User {userId, userContactId, profile} p@GroupProfile {groupR
     profileId <- insertedRowId db
     DB.execute db "UPDATE groups SET group_profile_id = ? WHERE group_id = ?;" (profileId, groupId)
     memberId <- randomId gVar 12
-    createMember db groupId userContactId GROwner GSMemReady userContactId memberId
+    createMember_ db groupId userContactId GROwner GSMemReady (Just userContactId) memberId
     groupMemberId <- insertedRowId db
     let membership =
           GroupMember
@@ -369,21 +385,17 @@ getGroup st User {userId, userContactId} localGroupRef =
       (b, u : a) -> Right (b <> a, u)
       _ -> Left SEGroupWithoutUser
 
-createGroupMember :: (MonadUnliftIO m, MonadError StoreError m) => SQLiteStore -> TVar ChaChaDRG -> UserId -> GroupRef -> ContactRef -> GroupMemberRole -> Int64 -> m ByteString
-createGroupMember st gVar userId gRef cRef memberRole invitedBy =
-  liftIOEither . withTransaction st $ \db -> runExceptT $ do
-    groupId <- getId (SEGroupNotFound gRef) $ DB.query db "SELECT group_id FROM groups WHERE user_id = ? AND local_group_ref = ?;" (userId, gRef)
-    contactId <- getId (SEContactNotFound cRef) $ DB.query db "SELECT group_id FROM contacts WHERE user_id = ? AND local_contact_ref = ? AND user != 1;" (userId, gRef)
-    ExceptT $ createWithRandomId gVar $ createMember db groupId contactId memberRole GSMemNew invitedBy
-  where
-    getId :: StoreError -> IO [Only Int64] -> ExceptT StoreError IO Int64
-    getId err action =
-      liftIO action >>= \case
-        [Only rowId] -> pure rowId
-        _ -> throwError err
+createGroupMember :: (MonadUnliftIO m, MonadError StoreError m) => SQLiteStore -> TVar ChaChaDRG -> UserId -> Int64 -> Int64 -> GroupMemberRole -> InvitedBy -> m ByteString
+createGroupMember st gVar userId groupId contactId memberRole invitedBy =
+  liftIOEither . withTransaction st $ \db ->
+    let invitedById = case invitedBy of
+          IBUnknown -> Nothing
+          IBContact i -> Just i
+          IBUser -> Just userId
+     in createWithRandomId gVar $ createMember_ db groupId contactId memberRole GSMemNew invitedById
 
-createMember :: DB.Connection -> Int64 -> Int64 -> GroupMemberRole -> GroupMemberStatus -> Int64 -> ByteString -> IO ()
-createMember db groupId contactId memberRole memberStatus invitedBy memberId =
+createMember_ :: DB.Connection -> Int64 -> Int64 -> GroupMemberRole -> GroupMemberStatus -> Maybe Int64 -> ByteString -> IO ()
+createMember_ db groupId contactId memberRole memberStatus invitedBy memberId =
   DB.executeNamed
     db
     [sql|
@@ -422,6 +434,7 @@ randomId gVar n = B64.encode <$> (atomically . stateTVar gVar $ randomBytesGener
 data StoreError
   = SEDuplicateContactRef
   | SEContactNotFound ContactRef
+  | SEContactNotReady ContactRef
   | SEDuplicateGroupRef
   | SEGroupNotFound GroupRef
   | SEGroupEmpty

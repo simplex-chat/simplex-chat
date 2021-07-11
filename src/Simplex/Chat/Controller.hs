@@ -34,10 +34,13 @@ data ChatController = ChatController
 data InputEvent = InputCommand String | InputControl Char
 
 data ChatError
-  = ChatErrorMessage String
+  = ChatError ChatErrorType
+  | ChatErrorMessage String
   | ChatErrorAgent AgentErrorType
   | ChatErrorStore StoreError
   deriving (Show, Exception)
+
+data ChatErrorType = CEGroupRole | CEContactIsMember deriving (Show, Exception)
 
 type ChatMonad m = (MonadUnliftIO m, MonadReader ChatController m, MonadError ChatError m)
 

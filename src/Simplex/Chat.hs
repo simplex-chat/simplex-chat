@@ -148,23 +148,37 @@ processChatCommand user@User {userId, profile} = \case
     unsetActive $ ActiveC cRef
     showContactDeleted cRef
   SendMessage cRef msg -> do
-    Connection {agentConnId} <- withStore $ \st -> getContactConnection st userId cRef
+    contact <- withStore $ \st -> getContact st userId cRef
     let body = MsgBodyContent {contentType = SimplexContentType XCText, contentData = msg}
         rawMsg = rawChatMessage ChatMessage {chatMsgId = Nothing, chatMsgEvent = XMsgNew MTText [] [body], chatDAG = Nothing}
-    void . withAgent $ \smp -> sendMessage smp agentConnId $ serializeRawChatMessage rawMsg
+        connId = agentConnId (activeConn contact :: Connection)
+    void . withAgent $ \smp -> sendMessage smp connId $ serializeRawChatMessage rawMsg
     setActive $ ActiveC cRef
   NewGroup gProfile -> do
     gVar <- asks idsDrg
     void $ withStore $ \st -> createGroup st gVar user gProfile
     showGroupCreated gProfile
-  AddMember _gRef _cRef _mRole -> pure ()
-  -- GroupInvitation {} <- withStore $ \st -> createGroupMember st userId gRef cRef mRole
+  AddMember gRef cRef memberRole -> do
+    (group, contact) <- withStore $ \st -> (,) <$> getGroup st user gRef <*> getContact st userId cRef
+    unless (hasPermission GRAdmin $ membership group) $ throwError $ ChatError CEGroupRole
+    when (isMember contact group) $ throwError $ ChatError CEContactIsMember
+    gVar <- asks idsDrg
+    memberId <- withStore $ \st -> createGroupMember st gVar userId (groupId group) (contactId contact) memberRole IBUser
+    let chatMsgEvent = XGrpInv memberId memberRole $ groupProfile group
+        rawMsg = rawChatMessage ChatMessage {chatMsgId = Nothing, chatMsgEvent, chatDAG = Nothing}
+        connId = agentConnId (activeConn contact :: Connection)
+    void . withAgent $ \smp -> sendMessage smp connId $ serializeRawChatMessage rawMsg
   MemberRole _gRef _cRef _mRole -> pure ()
   RemoveMember _gRef _cRef -> pure ()
   LeaveGroup _gRef -> pure ()
   DeleteGroup _gRef -> pure ()
   ListMembers _gRef -> pure ()
   SendGroupMessage _gRef _msg -> pure ()
+  where
+    hasPermission :: GroupMemberRole -> GroupMember -> Bool
+    hasPermission role GroupMember {memberRole} = memberRole >= role
+    isMember :: Contact -> Group -> Bool
+    isMember Contact {contactId} Group {members} = isJust $ find ((== Just contactId) . memberContactId) members
 
 agentSubscriber :: (MonadUnliftIO m, MonadReader ChatController m) => m ()
 agentSubscriber = do
@@ -179,7 +193,7 @@ processAgentMessage :: forall m. ChatMonad m => User -> ConnId -> ACommand 'Agen
 processAgentMessage User {userId, profile} agentConnId agentMessage = do
   chatDirection <- withStore $ \st -> getConnectionChatDirection st userId agentConnId
   case chatDirection of
-    ReceivedDirectMessage Contact {localContactRef = c} ->
+    ReceivedDirectMessage (CContact Contact {localContactRef = c}) ->
       case agentMessage of
         MSG meta msgBody -> do
           ChatMessage {chatMsgEvent} <- liftEither $ parseChatMessage msgBody
@@ -197,14 +211,14 @@ processAgentMessage User {userId, profile} agentConnId agentMessage = do
           showToast ("@" <> c) "disconnected"
           unsetActive $ ActiveC c
         _ -> pure ()
-    ReceivedDirectMessage NewContact {activeConn} ->
+    ReceivedDirectMessage (CConnection conn) ->
       case agentMessage of
         CONF confId connInfo -> do
           -- TODO update connection status
-          saveConnInfo activeConn connInfo
+          saveConnInfo conn connInfo
           withAgent $ \a -> allowConnection a agentConnId confId $ encodeProfile profile
         INFO connInfo ->
-          saveConnInfo activeConn connInfo
+          saveConnInfo conn connInfo
         _ -> pure ()
     _ -> pure ()
   where
