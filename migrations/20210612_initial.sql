@@ -19,7 +19,7 @@ CREATE TABLE contacts (
   lcr_base TEXT NOT NULL,
   lcr_suffix INTEGER NOT NULL DEFAULT 0,
   user_id INTEGER NOT NULL REFERENCES users,
-  user INTEGER, -- 1 if this contact is a user
+  is_user INTEGER NOT NULL DEFAULT 0, -- 1 if this contact is a user
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   UNIQUE (user_id, local_contact_ref) ON CONFLICT FAIL,
   UNIQUE (user_id, lcr_base, lcr_suffix) ON CONFLICT FAIL

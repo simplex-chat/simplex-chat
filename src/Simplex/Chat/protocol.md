@@ -71,13 +71,13 @@ refMsgHash = 16*16(OCTET) ; SHA256 of agent message body
 
 #### Add group member
 
-A -> B: invite to group - `MSG: x.grp.inv G_MEM_ID_B,G_MEM_ROLE,<invitation> x.json:NNN <group_profile>`
+A -> B: invite to group - `MSG: x.grp.inv G_MEM_ID_A,G_MEM_ROLE_A,G_MEM_ID_B,G_MEM_ROLE_B,<invitation> x.json:NNN <group_profile>`
 user B confirms
 B -> A: establish group connection (B: JOIN, A: LET)
 B -> Ag: join group - `in SMP confirmation: x.grp.acpt G_MEM_ID_B`
-A -> group (including B)): announce group member: `MSG: N x.grp.mem.new G_MEM_ID_B,G_MEM_ROLE x.json:NNN <B_profile>`
+A -> group (including B)): announce group member: `MSG: N x.grp.mem.new G_MEM_ID_B,G_MEM_ROLE_B x.json:NNN <B_profile>`
 subsequent messages between A and B are via group connection
-A -> Bg: intro member - `MSG: x.grp.mem.intro G_MEM_ID_M,G_MEM_ROLE x.json:NNN <M_profile>`
+A -> Bg: intro member - `MSG: x.grp.mem.intro G_MEM_ID_M,G_MEM_ROLE_M x.json:NNN <M_profile>`
 B -> Ag: inv for mem - `MSG: x.grp.mem.inv G_MEM_ID_M,<gr_invitation>,<dm_invitation>,<probe>`
 M is an existing member, messages are via group connection
 A -> Mg: fwd inv - `MSG: x.grp.mem.fwd G_MEM_ID_B,<gr_invitation>,<dm_invitation>,<probe>`

@@ -42,15 +42,22 @@ data ConnContact = CContact Contact | CConnection Connection
   deriving (Eq, Show)
 
 data ChatMsgEvent
-  = XMsgNew {messageType :: MessageType, files :: [(ContentType, Int)], content :: [MsgBodyContent]}
+  = XMsgNew
+      { messageType :: MessageType,
+        files :: [(ContentType, Int)],
+        content :: [MsgBodyContent]
+      }
   | XInfo Profile
-  | XGrpInv MemberId GroupMemberRole SMPQueueInfo GroupProfile
+  | XGrpInv
+      { fromMember :: (MemberId, GroupMemberRole),
+        invitedMember :: (MemberId, GroupMemberRole),
+        queueInfo :: SMPQueueInfo,
+        groupProfile :: GroupProfile
+      }
   | XGrpAcpt MemberId
   | XGrpMemNew MemberId GroupMemberRole Profile
   | XGrpMemIntro MemberId GroupMemberRole Profile
   deriving (Eq, Show)
-
-type MemberId = ByteString
 
 data MessageType = MTText | MTImage deriving (Eq, Show)
 
@@ -89,10 +96,12 @@ toChatMessage RawChatMessage {chatMsgId, chatMsgEvent, chatMsgParams, chatMsgBod
         pure ChatMessage {chatMsgId, chatMsgEvent = XInfo profile, chatDAG}
       _ -> Left "x.info expects no parameters"
     "x.grp.inv" -> case chatMsgParams of
-      [memId, role, qInfo] -> do
-        msg <- XGrpInv <$> B64.decode memId <*> toMemberRole role <*> parseAll smpQueueInfoP qInfo <*> getJSON body
+      [fromMemId, fromRole, memId, role, qInfo] -> do
+        fromMember <- (,) <$> B64.decode fromMemId <*> toMemberRole fromRole
+        invitedMember <- (,) <$> B64.decode memId <*> toMemberRole role
+        msg <- XGrpInv fromMember invitedMember <$> parseAll smpQueueInfoP qInfo <*> getJSON body
         pure ChatMessage {chatMsgId, chatMsgEvent = msg, chatDAG}
-      _ -> Left "message expects 3 parameters"
+      _ -> Left "x.grp.inv expects 5 parameters"
     "x.grp.acpt" -> case chatMsgParams of
       [memId] -> do
         msg <- XGrpAcpt <$> B64.decode memId
@@ -142,8 +151,14 @@ rawChatMessage ChatMessage {chatMsgId, chatMsgEvent, chatDAG} =
     XInfo profile ->
       let chatMsgBody = rawWithDAG [jsonBody profile]
        in RawChatMessage {chatMsgId, chatMsgEvent = "x.info", chatMsgParams = [], chatMsgBody}
-    XGrpInv memId role qInfo groupProfile ->
-      let chatMsgParams = [B64.encode memId, serializeMemberRole role, serializeSmpQueueInfo qInfo]
+    XGrpInv (fromMemId, fromRole) (memId, role) qInfo groupProfile ->
+      let chatMsgParams =
+            [ B64.encode fromMemId,
+              serializeMemberRole fromRole,
+              B64.encode memId,
+              serializeMemberRole role,
+              serializeSmpQueueInfo qInfo
+            ]
           chatMsgBody = rawWithDAG [jsonBody groupProfile]
        in RawChatMessage {chatMsgId, chatMsgEvent = "x.grp.inv", chatMsgParams, chatMsgBody}
     XGrpAcpt memId ->

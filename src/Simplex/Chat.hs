@@ -138,12 +138,12 @@ processChatCommand user@User {userId, profile} = \case
     withStore $ \st -> createDirectConnection st userId connId
     showInvitation qInfo
   Connect qInfo -> do
-    connId <- withAgent $ \agent -> joinConnection agent qInfo $ encodeProfile profile
+    connId <- withAgent $ \a -> joinConnection a qInfo $ encodeProfile profile
     withStore $ \st -> createDirectConnection st userId connId
   DeleteContact cRef -> do
     conns <- withStore $ \st -> getContactConnections st userId cRef
-    withAgent $ \smp -> forM_ conns $ \Connection {agentConnId} ->
-      deleteConnection smp agentConnId `catchError` \(_ :: AgentErrorType) -> pure ()
+    withAgent $ \a -> forM_ conns $ \Connection {agentConnId} ->
+      deleteConnection a agentConnId `catchError` \(_ :: AgentErrorType) -> pure ()
     withStore $ \st -> deleteContact st userId cRef
     unsetActive $ ActiveC cRef
     showContactDeleted cRef
@@ -151,25 +151,27 @@ processChatCommand user@User {userId, profile} = \case
     contact <- withStore $ \st -> getContact st userId cRef
     let body = MsgBodyContent {contentType = SimplexContentType XCText, contentData = msg}
         rawMsg = rawChatMessage ChatMessage {chatMsgId = Nothing, chatMsgEvent = XMsgNew MTText [] [body], chatDAG = Nothing}
-        connId = agentConnId (activeConn contact :: Connection)
-    void . withAgent $ \smp -> sendMessage smp connId $ serializeRawChatMessage rawMsg
+        connId = contactConnId contact
+    void . withAgent $ \a -> sendMessage a connId $ serializeRawChatMessage rawMsg
     setActive $ ActiveC cRef
   NewGroup gProfile -> do
     gVar <- asks idsDrg
-    void $ withStore $ \st -> createGroup st gVar user gProfile
+    void $ withStore $ \st -> createNewGroup st gVar user gProfile
     showGroupCreated gProfile
-  AddMember gRef cRef memberRole -> do
+  AddMember gRef cRef memRole -> do
     (group, contact) <- withStore $ \st -> (,) <$> getGroup st user gRef <*> getContact st userId cRef
-    unless (hasPermission GRAdmin $ membership group) $ throwError $ ChatError CEGroupRole
-    when (isMember contact group) $ throwError $ ChatError CEContactIsMember
+    let Group {groupId, groupProfile, membership, members} = group
+        userRole = memberRole membership
+        userMemberId = memberId membership
+    when (userRole < GRAdmin || userRole < memRole) $ throwError $ ChatError CEGroupRole
+    when (isMember contact members) $ throwError $ ChatError CEGroupDuplicateMember
     gVar <- asks idsDrg
-    -- TODO save member connection to DB together with member
-    (_, qInfo) <- withAgent createConnection
-    memberId <- withStore $ \st -> createGroupMember st gVar userId (groupId group) (contactId contact) memberRole IBUser
-    let chatMsgEvent = XGrpInv memberId memberRole qInfo $ groupProfile group
+    (agentConnId, qInfo) <- withAgent createConnection
+    memberId <- withStore $ \st -> createGroupMember st gVar user groupId (contactId contact) memRole IBUser agentConnId
+    let chatMsgEvent = XGrpInv (userMemberId, userRole) (memberId, memRole) qInfo groupProfile
         rawMsg = rawChatMessage ChatMessage {chatMsgId = Nothing, chatMsgEvent, chatDAG = Nothing}
-        connId = agentConnId (activeConn contact :: Connection)
-    void . withAgent $ \smp -> sendMessage smp connId $ serializeRawChatMessage rawMsg
+        connId = contactConnId contact
+    void . withAgent $ \a -> sendMessage a connId $ serializeRawChatMessage rawMsg
   MemberRole _gRef _cRef _mRole -> pure ()
   RemoveMember _gRef _cRef -> pure ()
   LeaveGroup _gRef -> pure ()
@@ -177,10 +179,8 @@ processChatCommand user@User {userId, profile} = \case
   ListMembers _gRef -> pure ()
   SendGroupMessage _gRef _msg -> pure ()
   where
-    hasPermission :: GroupMemberRole -> GroupMember -> Bool
-    hasPermission role GroupMember {memberRole} = memberRole >= role
-    isMember :: Contact -> Group -> Bool
-    isMember Contact {contactId} Group {members} = isJust $ find ((== Just contactId) . memberContactId) members
+    isMember :: Contact -> [(GroupMember, Connection)] -> Bool
+    isMember Contact {contactId} members = isJust $ find ((== Just contactId) . memberContactId . fst) members
 
 agentSubscriber :: (MonadUnliftIO m, MonadReader ChatController m) => m ()
 agentSubscriber = do
@@ -195,13 +195,14 @@ processAgentMessage :: forall m. ChatMonad m => User -> ConnId -> ACommand 'Agen
 processAgentMessage User {userId, profile} agentConnId agentMessage = do
   chatDirection <- withStore $ \st -> getConnectionChatDirection st userId agentConnId
   case chatDirection of
-    ReceivedDirectMessage (CContact Contact {localContactRef = c}) ->
+    ReceivedDirectMessage (CContact ct@Contact {localContactRef = c}) ->
       case agentMessage of
         MSG meta msgBody -> do
           ChatMessage {chatMsgEvent} <- liftEither $ parseChatMessage msgBody
           case chatMsgEvent of
             XMsgNew MTText [] body -> newTextMessage c meta $ find (isSimplexContentType XCText) body
             XInfo _ -> pure () -- TODO profile update
+            XGrpInv fromMem invMem qInfo groupProfile -> groupInvitation ct fromMem invMem qInfo groupProfile
             _ -> pure ()
         CON -> do
           -- TODO update connection status
@@ -232,6 +233,11 @@ processAgentMessage User {userId, profile} agentConnId agentMessage = do
         showToast ("@" <> c) text
         setActive $ ActiveC c
       _ -> pure ()
+
+    groupInvitation :: Contact -> (MemberId, GroupMemberRole) -> (MemberId, GroupMemberRole) -> SMPQueueInfo -> GroupProfile -> m ()
+    groupInvitation _ct (fromMemId, fromRole) (memId, memRole) _qInfo _groupProfile = do
+      when (fromRole < GRAdmin || fromRole < memRole) $ throwError $ ChatError CEGroupRole
+      when (fromMemId == memId) $ throwError $ ChatError CEGroupDuplicateMember
 
     parseChatMessage :: ByteString -> Either ChatError ChatMessage
     parseChatMessage msgBody = first ChatErrorMessage (parseAll rawChatMessageP msgBody >>= toChatMessage)

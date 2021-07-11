@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Simplex.Chat.Types where
@@ -40,6 +41,9 @@ data Contact = Contact
   }
   deriving (Eq, Show)
 
+contactConnId :: Contact -> ConnId
+contactConnId Contact {activeConn = Connection {agentConnId}} = agentConnId
+
 type ContactRef = Text
 
 type GroupRef = Text
@@ -48,7 +52,7 @@ data Group = Group
   { groupId :: Int64,
     localGroupRef :: Text,
     groupProfile :: GroupProfile,
-    members :: [GroupMember],
+    members :: [(GroupMember, Connection)],
     membership :: GroupMember
   }
   deriving (Eq, Show)
@@ -75,7 +79,7 @@ instance FromJSON GroupProfile
 
 data GroupMember = GroupMember
   { groupMemberId :: Int64,
-    memberId :: ByteString,
+    memberId :: MemberId,
     memberRole :: GroupMemberRole,
     memberStatus :: GroupMemberStatus,
     invitedBy :: InvitedBy,
@@ -84,8 +88,22 @@ data GroupMember = GroupMember
   }
   deriving (Eq, Show)
 
+type MemberId = ByteString
+
 data InvitedBy = IBContact Int64 | IBUser | IBUnknown
   deriving (Eq, Show)
+
+toInvitedBy :: Int64 -> Maybe Int64 -> InvitedBy
+toInvitedBy userCtId (Just ctId)
+  | userCtId == ctId = IBUser
+  | otherwise = IBContact ctId
+toInvitedBy _ Nothing = IBUnknown
+
+fromInvitedBy :: Int64 -> InvitedBy -> Maybe Int64
+fromInvitedBy userCtId = \case
+  IBUnknown -> Nothing
+  IBContact ctId -> Just ctId
+  IBUser -> Just userCtId
 
 data GroupMemberRole = GRMember | GRAdmin | GROwner
   deriving (Eq, Show, Ord)
