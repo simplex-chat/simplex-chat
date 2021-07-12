@@ -48,12 +48,7 @@ data ChatMsgEvent
         content :: [MsgBodyContent]
       }
   | XInfo Profile
-  | XGrpInv
-      { fromMember :: (MemberId, GroupMemberRole),
-        invitedMember :: (MemberId, GroupMemberRole),
-        queueInfo :: SMPQueueInfo,
-        groupProfile :: GroupProfile
-      }
+  | XGrpInv GroupInvitation
   | XGrpAcpt MemberId
   | XGrpMemNew MemberId GroupMemberRole Profile
   | XGrpMemIntro MemberId GroupMemberRole Profile
@@ -99,8 +94,8 @@ toChatMessage RawChatMessage {chatMsgId, chatMsgEvent, chatMsgParams, chatMsgBod
       [fromMemId, fromRole, memId, role, qInfo] -> do
         fromMember <- (,) <$> B64.decode fromMemId <*> toMemberRole fromRole
         invitedMember <- (,) <$> B64.decode memId <*> toMemberRole role
-        msg <- XGrpInv fromMember invitedMember <$> parseAll smpQueueInfoP qInfo <*> getJSON body
-        pure ChatMessage {chatMsgId, chatMsgEvent = msg, chatDAG}
+        inv <- GroupInvitation fromMember invitedMember <$> parseAll smpQueueInfoP qInfo <*> getJSON body
+        pure ChatMessage {chatMsgId, chatMsgEvent = XGrpInv inv, chatDAG}
       _ -> Left "x.grp.inv expects 5 parameters"
     "x.grp.acpt" -> case chatMsgParams of
       [memId] -> do
@@ -151,7 +146,7 @@ rawChatMessage ChatMessage {chatMsgId, chatMsgEvent, chatDAG} =
     XInfo profile ->
       let chatMsgBody = rawWithDAG [jsonBody profile]
        in RawChatMessage {chatMsgId, chatMsgEvent = "x.info", chatMsgParams = [], chatMsgBody}
-    XGrpInv (fromMemId, fromRole) (memId, role) qInfo groupProfile ->
+    XGrpInv (GroupInvitation (fromMemId, fromRole) (memId, role) qInfo groupProfile) ->
       let chatMsgParams =
             [ B64.encode fromMemId,
               serializeMemberRole fromRole,

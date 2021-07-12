@@ -167,8 +167,8 @@ processChatCommand user@User {userId, profile} = \case
     when (isMember contact members) $ throwError $ ChatError CEGroupDuplicateMember
     gVar <- asks idsDrg
     (agentConnId, qInfo) <- withAgent createConnection
-    memberId <- withStore $ \st -> createGroupMember st gVar user groupId (contactId contact) memRole IBUser agentConnId
-    let chatMsgEvent = XGrpInv (userMemberId, userRole) (memberId, memRole) qInfo groupProfile
+    GroupMember {memberId} <- withStore $ \st -> createGroupMember st gVar user groupId contact memRole agentConnId
+    let chatMsgEvent = XGrpInv $ GroupInvitation (userMemberId, userRole) (memberId, memRole) qInfo groupProfile
         rawMsg = rawChatMessage ChatMessage {chatMsgId = Nothing, chatMsgEvent, chatDAG = Nothing}
         connId = contactConnId contact
     void . withAgent $ \a -> sendMessage a connId $ serializeRawChatMessage rawMsg
@@ -202,7 +202,7 @@ processAgentMessage User {userId, profile} agentConnId agentMessage = do
           case chatMsgEvent of
             XMsgNew MTText [] body -> newTextMessage c meta $ find (isSimplexContentType XCText) body
             XInfo _ -> pure () -- TODO profile update
-            XGrpInv fromMem invMem qInfo groupProfile -> groupInvitation ct fromMem invMem qInfo groupProfile
+            XGrpInv gInv -> groupInvitation ct gInv
             _ -> pure ()
         CON -> do
           -- TODO update connection status
@@ -234,8 +234,8 @@ processAgentMessage User {userId, profile} agentConnId agentMessage = do
         setActive $ ActiveC c
       _ -> pure ()
 
-    groupInvitation :: Contact -> (MemberId, GroupMemberRole) -> (MemberId, GroupMemberRole) -> SMPQueueInfo -> GroupProfile -> m ()
-    groupInvitation _ct (fromMemId, fromRole) (memId, memRole) _qInfo _groupProfile = do
+    groupInvitation :: Contact -> GroupInvitation -> m ()
+    groupInvitation _ct (GroupInvitation (fromMemId, fromRole) (memId, memRole) _qInfo _groupProfile) = do
       when (fromRole < GRAdmin || fromRole < memRole) $ throwError $ ChatError CEGroupRole
       when (fromMemId == memId) $ throwError $ ChatError CEGroupDuplicateMember
 

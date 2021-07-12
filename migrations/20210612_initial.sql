@@ -61,6 +61,7 @@ CREATE TABLE groups (
   user_id INTEGER NOT NULL REFERENCES users,
   local_display_name TEXT NOT NULL, -- local group name without spaces
   group_profile_id INTEGER REFERENCES group_profiles, -- shared group profile
+  inv_queue_info BLOB,
   FOREIGN KEY (user_id, local_display_name)
     REFERENCES display_names (user_id, local_display_name)
     ON DELETE RESTRICT,

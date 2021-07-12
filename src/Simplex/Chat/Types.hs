@@ -20,8 +20,20 @@ import Database.SQLite.Simple.Internal (Field (..))
 import Database.SQLite.Simple.Ok (Ok (Ok))
 import Database.SQLite.Simple.ToField (ToField (..))
 import GHC.Generics
-import Simplex.Messaging.Agent.Protocol (ConnId)
+import Simplex.Messaging.Agent.Protocol (ConnId, SMPQueueInfo)
 import Simplex.Messaging.Agent.Store.SQLite (fromTextField_)
+
+class IsContact a where
+  contactId' :: a -> Int64
+  profile' :: a -> Profile
+
+instance IsContact User where
+  contactId' = userContactId
+  profile' = profile
+
+instance IsContact Contact where
+  contactId' = contactId
+  profile' = profile
 
 data User = User
   { userId :: UserId,
@@ -76,6 +88,16 @@ data GroupProfile = GroupProfile
 instance ToJSON GroupProfile where toEncoding = J.genericToEncoding J.defaultOptions
 
 instance FromJSON GroupProfile
+
+data GroupInvitation = GroupInvitation
+  { fromMember :: MemberInfo,
+    invitedMember :: MemberInfo,
+    queueInfo :: SMPQueueInfo,
+    groupProfile :: GroupProfile
+  }
+  deriving (Eq, Show)
+
+type MemberInfo = (MemberId, GroupMemberRole)
 
 data GroupMember = GroupMember
   { groupMemberId :: Int64,
