@@ -82,7 +82,7 @@ contactDisconnected :: ContactRef -> [StyledString]
 contactDisconnected c = ["disconnected from " <> ttyContact c <> " - restart chat"]
 
 groupCreated :: GroupProfile -> [StyledString]
-groupCreated GroupProfile {groupRef, displayName} = ["group " <> ttyGroup groupRef <> " (" <> plain displayName <> ") is created"]
+groupCreated GroupProfile {groupRef, fullName} = ["group " <> ttyGroup groupRef <> " (" <> plain fullName <> ") is created"]
 
 receivedMessage :: ContactRef -> UTCTime -> Text -> MsgIntegrity -> IO [StyledString]
 receivedMessage c utcTime msg mOk = do

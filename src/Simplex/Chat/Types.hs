@@ -59,7 +59,7 @@ data Group = Group
 
 data Profile = Profile
   { contactRef :: ContactRef,
-    displayName :: Text
+    fullName :: Text
   }
   deriving (Generic, Eq, Show)
 
@@ -69,7 +69,7 @@ instance FromJSON Profile
 
 data GroupProfile = GroupProfile
   { groupRef :: GroupRef,
-    displayName :: Text
+    fullName :: Text
   }
   deriving (Generic, Eq, Show)
 

@@ -268,17 +268,17 @@ getCreateActiveUser st = do
     newUser = do
       putStrLn
         "No user profiles found, it will be created now.\n\
-        \Please choose your alias and your profile name.\n\
+        \Please choose your display name and your full name.\n\
         \They will be sent to your contacts when you connect.\n\
         \They are only stored on your device and you can change them later."
       loop
       where
         loop = do
           contactRef <- getContactRef
-          displayName <- T.pack <$> getWithPrompt "profile name (optional)"
-          liftIO (runExceptT $ createUser st Profile {contactRef, displayName} True) >>= \case
+          fullName <- T.pack <$> getWithPrompt "full name (optional)"
+          liftIO (runExceptT $ createUser st Profile {contactRef, fullName} True) >>= \case
             Left SEDuplicateContactRef -> do
-              putStrLn "chosen alias already used by another profile on this device, choose another one"
+              putStrLn "chosen display name is already used by another profile on this device, choose another one"
               loop
             Left e -> putStrLn ("database error " <> show e) >> exitFailure
             Right user -> pure user
@@ -302,13 +302,13 @@ getCreateActiveUser st = do
                 liftIO $ setActiveUser st (userId user)
                 pure user
     userStr :: User -> String
-    userStr User {localContactRef, profile = Profile {displayName}} =
-      T.unpack $ localContactRef <> if T.null displayName then "" else " (" <> displayName <> ")"
+    userStr User {localContactRef, profile = Profile {fullName}} =
+      T.unpack $ localContactRef <> if T.null fullName then "" else " (" <> fullName <> ")"
     getContactRef :: IO ContactRef
     getContactRef = do
-      contactRef <- getWithPrompt "alias (no spaces)"
+      contactRef <- getWithPrompt "display name (no spaces)"
       if null contactRef || isJust (find (== ' ') contactRef)
-        then putStrLn "alias has space(s), choose another one" >> getContactRef
+        then putStrLn "display name has space(s), choose another one" >> getContactRef
         else pure $ T.pack contactRef
     getWithPrompt :: String -> IO String
     getWithPrompt s = putStr (s <> ": ") >> hFlush stdout >> getLine
@@ -357,7 +357,7 @@ chatCommandP =
     groupProfile = do
       gRef <- groupRef
       gName <- safeDecodeUtf8 <$> (A.space *> A.takeByteString) <|> pure ""
-      pure GroupProfile {groupRef = gRef, displayName = if T.null gName then gRef else gName}
+      pure GroupProfile {groupRef = gRef, fullName = if T.null gName then gRef else gName}
     memberRole =
       (" owner" $> GROwner)
         <|> (" admin" $> GRAdmin)

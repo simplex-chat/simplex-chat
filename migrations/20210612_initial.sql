@@ -1,7 +1,7 @@
 CREATE TABLE contact_profiles ( -- remote user profile
   contact_profile_id INTEGER PRIMARY KEY,
   contact_ref TEXT NOT NULL, -- contact name set by remote user (not unique), this name must not contain spaces
-  display_name TEXT NOT NULL,
+  full_name TEXT NOT NULL,
   properties TEXT NOT NULL DEFAULT '{}' -- JSON with contact profile properties
 );
 
@@ -25,6 +25,7 @@ CREATE TABLE display_names (
 CREATE TABLE contacts (
   contact_id INTEGER PRIMARY KEY,
   contact_profile_id INTEGER UNIQUE REFERENCES contact_profiles, -- NULL if it's an incognito profile
+  -- display_name_id INTEGER NOT NULL REFERENCES display_names,
   local_contact_ref TEXT NOT NULL,
   lcr_base TEXT NOT NULL,
   lcr_suffix INTEGER NOT NULL DEFAULT 0,
@@ -33,6 +34,7 @@ CREATE TABLE contacts (
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   UNIQUE (user_id, local_contact_ref) ON CONFLICT FAIL,
   UNIQUE (user_id, lcr_base, lcr_suffix) ON CONFLICT FAIL
+  -- UNIQUE (user_id, display_name_id)
 );
 
 CREATE TABLE known_servers(
@@ -47,7 +49,7 @@ CREATE TABLE known_servers(
 CREATE TABLE group_profiles ( -- shared group profiles
   group_profile_id INTEGER PRIMARY KEY,
   group_ref TEXT NOT NULL, -- this name must not contain spaces
-  display_name TEXT NOT NULL,
+  full_name TEXT NOT NULL,
   properties TEXT NOT NULL DEFAULT '{}' -- JSON with user or contact profile
 );
 

@@ -13,10 +13,10 @@ import System.Terminal.Internal (VirtualTerminal (..))
 import Test.Hspec
 
 aliceProfile :: Profile
-aliceProfile = Profile {contactRef = "alice", displayName = "Alice"}
+aliceProfile = Profile {contactRef = "alice", fullName = "Alice"}
 
 bobProfile :: Profile
-bobProfile = Profile {contactRef = "bob", displayName = "Bob"}
+bobProfile = Profile {contactRef = "bob", fullName = "Bob"}
 
 testAddContact :: Spec
 testAddContact = describe "add chat contact" $

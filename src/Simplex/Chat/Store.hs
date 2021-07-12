@@ -84,9 +84,9 @@ insertedRowId :: DB.Connection -> IO Int64
 insertedRowId db = fromOnly . head <$> DB.query_ db "SELECT last_insert_rowid()"
 
 createUser :: (MonadUnliftIO m, MonadError StoreError m) => SQLiteStore -> Profile -> Bool -> m User
-createUser st Profile {contactRef, displayName} activeUser =
+createUser st Profile {contactRef, fullName} activeUser =
   liftIOEither . checkConstraint SEDuplicateContactRef . withTransaction st $ \db -> do
-    DB.execute db "INSERT INTO contact_profiles (contact_ref, display_name) VALUES (?, ?)" (contactRef, displayName)
+    DB.execute db "INSERT INTO contact_profiles (contact_ref, full_name) VALUES (?, ?)" (contactRef, fullName)
     profileId <- insertedRowId db
     DB.execute db "INSERT INTO users (contact_id, active_user) VALUES (0, ?)" (Only activeUser)
     userId <- insertedRowId db
@@ -96,7 +96,7 @@ createUser st Profile {contactRef, displayName} activeUser =
       (profileId, contactRef, contactRef, userId, True)
     contactId <- insertedRowId db
     DB.execute db "UPDATE users SET contact_id = ? WHERE user_id = ?" (contactId, userId)
-    pure . Right $ toUser (userId, contactId, activeUser, contactRef, displayName)
+    pure . Right $ toUser (userId, contactId, activeUser, contactRef, fullName)
 
 getUsers :: SQLiteStore -> IO [User]
 getUsers st =
@@ -105,15 +105,15 @@ getUsers st =
       <$> DB.query_
         db
         [sql|
-          SELECT u.user_id, u.contact_id, u.active_user, c.local_contact_ref, p.display_name
+          SELECT u.user_id, u.contact_id, u.active_user, c.local_contact_ref, p.full_name
           FROM users u
           JOIN contacts c ON u.contact_id = c.contact_id
           JOIN contact_profiles p ON c.contact_profile_id = p.contact_profile_id
         |]
 
 toUser :: (UserId, Int64, Bool, ContactRef, Text) -> User
-toUser (userId, userContactId, activeUser, contactRef, displayName) =
-  let profile = Profile {contactRef, displayName}
+toUser (userId, userContactId, activeUser, contactRef, fullName) =
+  let profile = Profile {contactRef, fullName}
    in User {userId, userContactId, localContactRef = contactRef, profile, activeUser}
 
 setActiveUser :: MonadUnliftIO m => SQLiteStore -> UserId -> m ()
@@ -135,9 +135,9 @@ createDirectConnection st userId agentConnId =
 
 createDirectContact ::
   (MonadUnliftIO m, MonadError StoreError m) => SQLiteStore -> UserId -> Connection -> Profile -> m ()
-createDirectContact st userId Connection {connId} Profile {contactRef, displayName} =
+createDirectContact st userId Connection {connId} Profile {contactRef, fullName} =
   liftIOEither . withTransaction st $ \db -> do
-    DB.execute db "INSERT INTO contact_profiles (contact_ref, display_name) VALUES (?, ?)" (contactRef, displayName)
+    DB.execute db "INSERT INTO contact_profiles (contact_ref, full_name) VALUES (?, ?)" (contactRef, fullName)
     profileId <- insertedRowId db
     lcrSuffix <- getLcrSuffix db
     create db profileId lcrSuffix 20
@@ -215,7 +215,7 @@ getContact st userId localContactRef =
         <$> DB.queryNamed
           db
           [sql|
-            SELECT c.contact_id, p.contact_ref, p.display_name
+            SELECT c.contact_id, p.contact_ref, p.full_name
             FROM contacts c
             JOIN contact_profiles p ON c.contact_profile_id = p.contact_profile_id
             WHERE c.user_id = :user_id AND c.local_contact_ref = :local_contact_ref AND c.is_user = :is_user
@@ -234,8 +234,8 @@ getContact st userId localContactRef =
             LIMIT 1
           |]
           [":user_id" := userId, ":contact_id" := contactId]
-    toContact [(contactId, contactRef, displayName)] =
-      let profile = Profile {contactRef, displayName}
+    toContact [(contactId, contactRef, fullName)] =
+      let profile = Profile {contactRef, fullName}
        in Right Contact {contactId, localContactRef, profile, activeConn = undefined}
     toContact _ = Left $ SEContactNotFound localContactRef
     connection (connRow : _) = Right $ toConnection connRow
@@ -303,25 +303,25 @@ getConnectionChatDirection st userId agentConnId =
         <$> DB.query
           db
           [sql|
-            SELECT c.local_contact_ref, p.contact_ref, p.display_name
+            SELECT c.local_contact_ref, p.contact_ref, p.full_name
             FROM contacts c
             JOIN contact_profiles p ON c.contact_profile_id = p.contact_profile_id
             WHERE c.user_id = ? AND c.contact_id = ?
           |]
           (userId, contactId)
-    toContact contactId c [(localContactRef, contactRef, displayName)] =
-      let profile = Profile {contactRef, displayName}
+    toContact contactId c [(localContactRef, contactRef, fullName)] =
+      let profile = Profile {contactRef, fullName}
        in Right $ CContact Contact {contactId, localContactRef, profile, activeConn = c}
     toContact _ _ _ = Left $ SEInternal "referenced contact not found"
 
 -- | creates completely new group with a single member - the current user
 createNewGroup :: (MonadUnliftIO m, MonadError StoreError m) => SQLiteStore -> TVar ChaChaDRG -> User -> GroupProfile -> m Group
-createNewGroup st gVar User {userId, userContactId, profile} p@GroupProfile {groupRef, displayName} =
+createNewGroup st gVar User {userId, userContactId, profile} p@GroupProfile {groupRef, fullName} =
   liftIOEither . checkConstraint SEDuplicateGroupRef . withTransaction st $ \db -> do
     -- group inserted before profile to ensure its local_group_ref is unique
     DB.execute db "INSERT INTO groups (local_group_ref, lgr_base, user_id) VALUES (?, ?, ?)" (groupRef, groupRef, userId)
     groupId <- insertedRowId db
-    DB.execute db "INSERT INTO group_profiles (group_ref, display_name) VALUES (?, ?)" (groupRef, displayName)
+    DB.execute db "INSERT INTO group_profiles (group_ref, full_name) VALUES (?, ?)" (groupRef, fullName)
     profileId <- insertedRowId db
     DB.execute db "UPDATE groups SET group_profile_id = ? WHERE group_id = ?" (profileId, groupId)
     memberId <- randomId gVar 12
@@ -341,9 +341,9 @@ createNewGroup st gVar User {userId, userContactId, profile} p@GroupProfile {gro
 
 -- | creates a new group record for the group the current user was invited to
 createGroup :: (MonadUnliftIO m, MonadError StoreError m) => SQLiteStore -> TVar ChaChaDRG -> User -> Contact -> GroupProfile -> m Group
-createGroup st gVar User {userId, userContactId, profile} contact p@GroupProfile {groupRef, displayName} =
+createGroup st gVar User {userId, userContactId, profile} contact p@GroupProfile {groupRef, fullName} =
   liftIOEither . withTransaction st $ \db -> do
-    DB.execute db "INSERT INTO group_profiles (group_ref, display_name) VALUES (?, ?)" (groupRef, displayName)
+    DB.execute db "INSERT INTO group_profiles (group_ref, full_name) VALUES (?, ?)" (groupRef, fullName)
     profileId <- insertedRowId db
     lgrSuffix <- getLgrSuffix db
     group <- create db profileId lgrSuffix 20
@@ -414,15 +414,15 @@ getGroup st User {userId, userContactId} localGroupRef =
         <$> DB.query
           db
           [sql|
-            SELECT g.group_id, p.group_ref, p.display_name
+            SELECT g.group_id, p.group_ref, p.full_name
             FROM groups g
             JOIN group_profiles p ON p.group_profile_id = g.group_profile_id
             WHERE g.local_group_ref = ? AND g.user_id = ?
           |]
           (localGroupRef, userId)
     toGroup :: [(Int64, GroupRef, Text)] -> Either StoreError Group
-    toGroup [(groupId, groupRef, displayName)] =
-      let groupProfile = GroupProfile {groupRef, displayName}
+    toGroup [(groupId, groupRef, fullName)] =
+      let groupProfile = GroupProfile {groupRef, fullName}
        in Right Group {groupId, localGroupRef, groupProfile, members = undefined, membership = undefined}
     toGroup _ = Left $ SEGroupNotFound localGroupRef
     getMembers_ :: DB.Connection -> Int64 -> ExceptT StoreError IO [(GroupMember, Connection)]
@@ -433,7 +433,7 @@ getGroup st User {userId, userContactId} localGroupRef =
           [sql|
             SELECT
               m.group_member_id, m.member_id, m.member_role, m.member_status,
-              m.invited_by, m.contact_id, p.contact_ref, p.display_name,
+              m.invited_by, m.contact_id, p.contact_ref, p.full_name,
               c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact,
               c.conn_status, c.conn_type, c.contact_id, c.group_member_id, c.created_at
             FROM group_members m
@@ -453,7 +453,7 @@ getGroup st User {userId, userContactId} localGroupRef =
           [sql|
             SELECT
               m.group_member_id, m.member_id, m.member_role, m.member_status,
-              m.invited_by, m.contact_id, p.contact_ref, p.display_name
+              m.invited_by, m.contact_id, p.contact_ref, p.full_name
             FROM group_members m
             JOIN groups g ON g.group_id = m.group_id
             JOIN contact_profiles p ON p.contact_profile_id = m.contact_profile_id
@@ -463,8 +463,8 @@ getGroup st User {userId, userContactId} localGroupRef =
     toContactMember :: (GroupMemberRow :. ConnectionRow) -> (GroupMember, Connection)
     toContactMember (memberRow :. connRow) = (toGroupMember memberRow, toConnection connRow)
     toGroupMember :: GroupMemberRow -> GroupMember
-    toGroupMember (groupMemberId, memberId, memberRole, memberStatus, invitedById, memberContactId, contactRef, displayName) =
-      let memberProfile = Profile {contactRef, displayName}
+    toGroupMember (groupMemberId, memberId, memberRole, memberStatus, invitedById, memberContactId, contactRef, fullName) =
+      let memberProfile = Profile {contactRef, fullName}
           invitedBy = toInvitedBy userContactId invitedById
        in GroupMember {groupMemberId, memberId, memberRole, memberStatus, invitedBy, memberProfile, memberContactId}
     userMember :: [GroupMemberRow] -> Either StoreError GroupMember
