@@ -45,19 +45,19 @@ showInvitation = printToView . invitation
 showChatError :: ChatReader m => ChatError -> m ()
 showChatError = printToView . chatError
 
-showContactDeleted :: ChatReader m => ContactRef -> m ()
+showContactDeleted :: ChatReader m => ContactName -> m ()
 showContactDeleted = printToView . contactDeleted
 
-showContactConnected :: ChatReader m => ContactRef -> m ()
+showContactConnected :: ChatReader m => ContactName -> m ()
 showContactConnected = printToView . contactConnected
 
-showContactDisconnected :: ChatReader m => ContactRef -> m ()
+showContactDisconnected :: ChatReader m => ContactName -> m ()
 showContactDisconnected = printToView . contactDisconnected
 
-showReceivedMessage :: ChatReader m => ContactRef -> UTCTime -> Text -> MsgIntegrity -> m ()
+showReceivedMessage :: ChatReader m => ContactName -> UTCTime -> Text -> MsgIntegrity -> m ()
 showReceivedMessage c utcTime msg mOk = printToView =<< liftIO (receivedMessage c utcTime msg mOk)
 
-showSentMessage :: ChatReader m => ContactRef -> ByteString -> m ()
+showSentMessage :: ChatReader m => ContactName -> ByteString -> m ()
 showSentMessage c msg = printToView =<< liftIO (sentMessage c msg)
 
 showGroupCreated :: ChatReader m => GroupProfile -> m ()
@@ -72,19 +72,19 @@ invitation qInfo =
     "and ask them to connect: /c <name_for_you> <invitation_above>"
   ]
 
-contactDeleted :: ContactRef -> [StyledString]
+contactDeleted :: ContactName -> [StyledString]
 contactDeleted c = [ttyContact c <> " is deleted"]
 
-contactConnected :: ContactRef -> [StyledString]
+contactConnected :: ContactName -> [StyledString]
 contactConnected c = [ttyContact c <> " is connected"]
 
-contactDisconnected :: ContactRef -> [StyledString]
+contactDisconnected :: ContactName -> [StyledString]
 contactDisconnected c = ["disconnected from " <> ttyContact c <> " - restart chat"]
 
 groupCreated :: GroupProfile -> [StyledString]
-groupCreated GroupProfile {groupRef, fullName} = ["group " <> ttyGroup groupRef <> " (" <> plain fullName <> ") is created"]
+groupCreated GroupProfile {displayName, fullName} = ["group " <> ttyGroup displayName <> " (" <> plain fullName <> ") is created"]
 
-receivedMessage :: ContactRef -> UTCTime -> Text -> MsgIntegrity -> IO [StyledString]
+receivedMessage :: ContactName -> UTCTime -> Text -> MsgIntegrity -> IO [StyledString]
 receivedMessage c utcTime msg mOk = do
   t <- formatUTCTime <$> getCurrentTimeZone <*> getZonedTime
   pure $ prependFirst (t <> " " <> ttyFromContact c) (msgPlain msg) ++ showIntegrity mOk
@@ -110,7 +110,7 @@ receivedMessage c utcTime msg mOk = do
     msgError :: String -> [StyledString]
     msgError s = [styled (Colored Red) s]
 
-sentMessage :: ContactRef -> ByteString -> IO [StyledString]
+sentMessage :: ContactName -> ByteString -> IO [StyledString]
 sentMessage c msg = do
   time <- formatTime defaultTimeLocale "%H:%M" <$> getZonedTime
   pure $ prependFirst (styleTime time <> " " <> ttyToContact c) (msgPlain $ safeDecodeUtf8 msg)
@@ -125,9 +125,9 @@ msgPlain = map styleMarkdownText . T.lines
 chatError :: ChatError -> [StyledString]
 chatError = \case
   ChatErrorStore err -> case err of
+    SEDuplicateName -> ["this display name is already used by user, contact or group"]
     SEContactNotFound c -> ["no contact " <> ttyContact c]
     SEContactNotReady c -> ["contact " <> ttyContact c <> " is not active yet"]
-    SEDuplicateGroupRef -> ["group with this alias already exists"]
     e -> ["chat db error: " <> plain (show e)]
   ChatErrorAgent err -> case err of
     -- CONN e -> case e of
@@ -141,16 +141,16 @@ chatError = \case
 printToView :: (MonadUnliftIO m, MonadReader ChatController m) => [StyledString] -> m ()
 printToView s = asks chatTerminal >>= liftIO . (`printToTerminal` s)
 
-ttyContact :: ContactRef -> StyledString
+ttyContact :: ContactName -> StyledString
 ttyContact = styled (Colored Green)
 
-ttyToContact :: ContactRef -> StyledString
+ttyToContact :: ContactName -> StyledString
 ttyToContact c = styled (Colored Cyan) $ "@" <> c <> " "
 
-ttyFromContact :: ContactRef -> StyledString
+ttyFromContact :: ContactName -> StyledString
 ttyFromContact c = styled (Colored Yellow) $ c <> "> "
 
-ttyGroup :: GroupRef -> StyledString
+ttyGroup :: GroupName -> StyledString
 ttyGroup g = styled (Colored Blue) $ "#" <> g
 
 -- ttyFromGroup :: Group -> Contact -> StyledString

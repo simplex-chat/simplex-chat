@@ -13,10 +13,10 @@ import System.Terminal.Internal (VirtualTerminal (..))
 import Test.Hspec
 
 aliceProfile :: Profile
-aliceProfile = Profile {contactRef = "alice", fullName = "Alice"}
+aliceProfile = Profile {displayName = "alice", fullName = "Alice"}
 
 bobProfile :: Profile
-bobProfile = Profile {contactRef = "bob", fullName = "Bob"}
+bobProfile = Profile {displayName = "bob", fullName = "Bob"}
 
 testAddContact :: Spec
 testAddContact = describe "add chat contact" $
@@ -32,7 +32,7 @@ testAddContact = describe "add chat contact" $
       bob <# "alice> hello"
       bob #> "@alice hi"
       alice <# "bob> hi"
-      -- testing adding the same contact one more time - local name will be different
+      -- test adding the same contact one more time - local name will be different
       alice ##> "/a"
       Just inv' <- invitation <$> getWindow alice
       bob ##> ("/c " <> inv')
@@ -43,6 +43,11 @@ testAddContact = describe "add chat contact" $
       bob <# "alice_1> hello"
       bob #> "@alice_1 hi"
       alice <# "bob_1> hi"
+      -- test deleting contact
+      alice ##> "/d bob_1"
+      alice <## "bob_1 is deleted"
+      chatCommand alice "@bob_1 hey"
+      alice <## "no contact bob_1"
 
 (##>) :: TestCC -> String -> IO ()
 (##>) cc cmd = do
