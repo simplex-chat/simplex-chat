@@ -19,7 +19,7 @@ CREATE TABLE contacts (
   lcr_base TEXT NOT NULL,
   lcr_suffix INTEGER NOT NULL DEFAULT 0,
   user_id INTEGER NOT NULL REFERENCES users,
-  user INTEGER, -- 1 if this contact is a user
+  is_user INTEGER NOT NULL DEFAULT 0, -- 1 if this contact is a user
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   UNIQUE (user_id, local_contact_ref) ON CONFLICT FAIL,
   UNIQUE (user_id, lcr_base, lcr_suffix) ON CONFLICT FAIL
@@ -37,18 +37,19 @@ CREATE TABLE known_servers(
 CREATE TABLE group_profiles ( -- shared group profiles
   group_profile_id INTEGER PRIMARY KEY,
   group_ref TEXT NOT NULL, -- this name must not contain spaces
-  display_name TEXT NOT NULL DEFAULT '',
+  display_name TEXT NOT NULL,
   properties TEXT NOT NULL DEFAULT '{}' -- JSON with user or contact profile
 );
 
 CREATE TABLE groups (
   group_id INTEGER PRIMARY KEY, -- local group ID
-  invited_by INTEGER REFERENCES contacts ON DELETE RESTRICT,
-  external_group_id BLOB NOT NULL,
-  local_group_ref TEXT NOT NULL UNIQUE, -- local group name without spaces
+  local_group_ref TEXT NOT NULL, -- local group name without spaces
+  lgr_base TEXT NOT NULL,
+  lgr_suffix INTEGER NOT NULL DEFAULT 0,
   group_profile_id INTEGER REFERENCES group_profiles, -- shared group profile
   user_id INTEGER NOT NULL REFERENCES users,
-  UNIQUE (invited_by, external_group_id)
+  UNIQUE (user_id, local_group_ref) ON CONFLICT FAIL,
+  UNIQUE (user_id, lgr_base, lgr_suffix) ON CONFLICT FAIL
 );
 
 CREATE TABLE group_members ( -- group members, excluding the local user
@@ -56,10 +57,20 @@ CREATE TABLE group_members ( -- group members, excluding the local user
   group_id INTEGER NOT NULL REFERENCES groups ON DELETE RESTRICT,
   member_id BLOB NOT NULL, -- shared member ID, unique per group
   member_role TEXT NOT NULL DEFAULT '', -- owner, admin, member
-  member_status TEXT NOT NULL DEFAULT '', -- inv | con | full | off
+  member_status TEXT NOT NULL DEFAULT '', -- new, invited, accepted, connected, ready
   invited_by INTEGER REFERENCES contacts (contact_id) ON DELETE RESTRICT, -- NULL for the members who joined before the current user and for the group creator
-  contact_id INTEGER NOT NULL REFERENCES contacts ON DELETE RESTRICT,
-  UNIQUE (group_id, member_id)
+  contact_profile_id INTEGER NOT NULL REFERENCES contact_profiles ON DELETE RESTRICT,
+  contact_id INTEGER REFERENCES contacts ON DELETE RESTRICT,
+  UNIQUE (group_id, member_id),
+  UNIQUE (group_id, contact_id)
+);
+
+CREATE TABLE group_member_intros (
+  group_member_intro_id INTEGER PRIMARY KEY,
+  group_member_id INTEGER NOT NULL REFERENCES group_members ON DELETE CASCADE,
+  to_group_member_id INTEGER NOT NULL REFERENCES group_members (group_member_id) ON DELETE CASCADE,
+  intro_status TEXT NOT NULL DEFAULT '', -- new, intro, inv, fwd, con
+  UNIQUE (group_member_id, to_group_member_id)
 );
 
 CREATE TABLE connections ( -- all SMP agent connections
@@ -68,7 +79,7 @@ CREATE TABLE connections ( -- all SMP agent connections
   conn_level INTEGER NOT NULL DEFAULT 0,
   via_contact INTEGER REFERENCES contacts (contact_id),
   conn_status TEXT NOT NULL,
-  conn_type TEXT NOT NULL, -- contact, member
+  conn_type TEXT NOT NULL, -- contact, member, member_direct
   contact_id INTEGER REFERENCES contacts ON DELETE RESTRICT,
   group_member_id INTEGER REFERENCES group_members ON DELETE RESTRICT,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),

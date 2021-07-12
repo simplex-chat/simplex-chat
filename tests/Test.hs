@@ -10,5 +10,5 @@ main = do
   hspec $ do
     describe "SimpleX chat markdown" markdownTests
     describe "SimpleX chat protocol" protocolTests
-    describe "SimpleX chat client" testAddContact
+    xdescribe "SimpleX chat client" testAddContact
   removeDirectoryRecursive "tests/tmp"

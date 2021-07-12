@@ -1,6 +1,8 @@
 {-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Simplex.Chat.View
@@ -12,6 +14,7 @@ module Simplex.Chat.View
     showContactDisconnected,
     showReceivedMessage,
     showSentMessage,
+    showGroupCreated,
     safeDecodeUtf8,
   )
 where
@@ -26,6 +29,7 @@ import Data.Time.Format (defaultTimeLocale, formatTime)
 import Data.Time.LocalTime (TimeZone, ZonedTime, getCurrentTimeZone, getZonedTime, localDay, localTimeOfDay, timeOfDayToTime, utcToLocalTime, zonedTimeToLocalTime)
 import Simplex.Chat.Controller
 import Simplex.Chat.Markdown
+import Simplex.Chat.Store (StoreError (..))
 import Simplex.Chat.Styled
 import Simplex.Chat.Terminal (printToTerminal)
 import Simplex.Chat.Types
@@ -56,11 +60,14 @@ showReceivedMessage c utcTime msg mOk = printToView =<< liftIO (receivedMessage 
 showSentMessage :: ChatReader m => ContactRef -> ByteString -> m ()
 showSentMessage c msg = printToView =<< liftIO (sentMessage c msg)
 
+showGroupCreated :: ChatReader m => GroupProfile -> m ()
+showGroupCreated = printToView . groupCreated
+
 invitation :: SMPQueueInfo -> [StyledString]
 invitation qInfo =
   [ "pass this invitation to your contact (via another channel): ",
     "",
-    (bPlain . serializeSmpQueueInfo) qInfo,
+    (plain . serializeSmpQueueInfo) qInfo,
     "",
     "and ask them to connect: /c <name_for_you> <invitation_above>"
   ]
@@ -73,6 +80,9 @@ contactConnected c = [ttyContact c <> " is connected"]
 
 contactDisconnected :: ContactRef -> [StyledString]
 contactDisconnected c = ["disconnected from " <> ttyContact c <> " - restart chat"]
+
+groupCreated :: GroupProfile -> [StyledString]
+groupCreated GroupProfile {groupRef, displayName} = ["group " <> ttyGroup groupRef <> " (" <> plain displayName <> ") is created"]
 
 receivedMessage :: ContactRef -> UTCTime -> Text -> MsgIntegrity -> IO [StyledString]
 receivedMessage c utcTime msg mOk = do
@@ -114,9 +124,11 @@ msgPlain = map styleMarkdownText . T.lines
 
 chatError :: ChatError -> [StyledString]
 chatError = \case
-  ChatErrorContact e -> case e of
-    CENotFound c -> ["no contact " <> ttyContact c]
-    CEProfile s -> ["invalid profile: " <> plain s]
+  ChatErrorStore err -> case err of
+    SEContactNotFound c -> ["no contact " <> ttyContact c]
+    SEContactNotReady c -> ["contact " <> ttyContact c <> " is not active yet"]
+    SEDuplicateGroupRef -> ["group with this alias already exists"]
+    e -> ["chat db error: " <> plain (show e)]
   ChatErrorAgent err -> case err of
     -- CONN e -> case e of
     --   -- TODO replace with ChatErrorContact errors, these errors should never happen
@@ -138,8 +150,8 @@ ttyToContact c = styled (Colored Cyan) $ "@" <> c <> " "
 ttyFromContact :: ContactRef -> StyledString
 ttyFromContact c = styled (Colored Yellow) $ c <> "> "
 
--- ttyGroup :: Group -> StyledString
--- ttyGroup (Group g) = styled (Colored Blue) $ "#" <> g
+ttyGroup :: GroupRef -> StyledString
+ttyGroup g = styled (Colored Blue) $ "#" <> g
 
 -- ttyFromGroup :: Group -> Contact -> StyledString
 -- ttyFromGroup (Group g) (Contact a) = styled (Colored Yellow) $ "#" <> g <> " " <> a <> "> "

@@ -3,7 +3,6 @@
 
 module Simplex.Chat.Styled
   ( StyledString (..),
-    bPlain,
     plain,
     styleMarkdown,
     styleMarkdownText,
@@ -28,12 +27,6 @@ instance Monoid StyledString where mempty = plain ""
 
 instance IsString StyledString where fromString = plain
 
-plain :: String -> StyledString
-plain = Styled []
-
-bPlain :: ByteString -> StyledString
-bPlain = Styled [] . B.unpack
-
 styleMarkdownText :: Text -> StyledString
 styleMarkdownText = styleMarkdown . parseMarkdown
 
@@ -48,12 +41,19 @@ wrap c s = plain [c] <> s <> plain [c]
 
 class StyledFormat a where
   styled :: Format -> a -> StyledString
+  plain :: a -> StyledString
 
-instance StyledFormat String where styled = Styled . sgr
+instance StyledFormat String where
+  styled = Styled . sgr
+  plain = Styled []
 
-instance StyledFormat ByteString where styled f = styled f . B.unpack
+instance StyledFormat ByteString where
+  styled f = styled f . B.unpack
+  plain = Styled [] . B.unpack
 
-instance StyledFormat Text where styled f = styled f . T.unpack
+instance StyledFormat Text where
+  styled f = styled f . T.unpack
+  plain = Styled [] . T.unpack
 
 sgr :: Format -> [SGR]
 sgr = \case

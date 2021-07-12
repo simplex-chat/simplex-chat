@@ -20,7 +20,7 @@ bobProfile = Profile {contactRef = "bob", displayName = "Bob"}
 
 testAddContact :: Spec
 testAddContact = describe "add chat contact" $
-  xit "add contact and send/receive message" $
+  it "add contact and send/receive message" $
     testChat2 aliceProfile bobProfile $ \alice bob -> do
       alice ##> "/a"
       Just inv <- invitation <$> getWindow alice
