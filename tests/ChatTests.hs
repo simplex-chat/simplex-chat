@@ -6,7 +6,7 @@ import ChatClient
 import Control.Concurrent.Async (concurrently_)
 import Control.Concurrent.STM
 import Data.Char (isDigit)
-import Data.List (dropWhileEnd, find, isPrefixOf)
+import Data.List (dropWhileEnd, isPrefixOf)
 import Simplex.Chat.Controller
 import Simplex.Chat.Types (Profile (..))
 import System.Terminal.Internal (VirtualTerminal (..))
@@ -32,6 +32,17 @@ testAddContact = describe "add chat contact" $
       bob <# "alice> hello"
       bob #> "@alice hi"
       alice <# "bob> hi"
+      -- testing adding the same contact one more time - local name will be different
+      alice ##> "/a"
+      Just inv' <- invitation <$> getWindow alice
+      bob ##> ("/c " <> inv')
+      concurrently_
+        (bob <## "alice_1 is connected")
+        (alice <## "bob_1 is connected")
+      alice #> "@bob_1 hello"
+      bob <# "alice_1> hello"
+      bob #> "@alice_1 hi"
+      alice <# "bob_1> hi"
 
 (##>) :: TestCC -> String -> IO ()
 (##>) cc cmd = do
@@ -67,7 +78,11 @@ getWindow (TestCC _ t _) = do
     if win' /= win then pure win' else retry
 
 invitation :: [String] -> Maybe String
-invitation win = dropWhileEnd (== ' ') <$> find ("smp::" `isPrefixOf`) win
+invitation win = lastMaybe $ map (dropWhileEnd (== ' ')) $ filter ("smp::" `isPrefixOf`) win
 
 lastOutput :: [String] -> String
 lastOutput win = dropWhileEnd (== ' ') $ win !! (length win - 2) -- (- 2) to exclude prompt
+
+lastMaybe :: [a] -> Maybe a
+lastMaybe [] = Nothing
+lastMaybe xs = Just $ last xs

@@ -8,6 +8,7 @@
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeOperators #-}
 
 module Simplex.Chat.Store
@@ -512,6 +513,53 @@ createMember_ db groupId contactId memberRole memberStatus invitedBy memberId =
       ":contact_id" := contactId
     ]
 
+insertDisplayName_ :: DB.Connection -> UserId -> Text -> IO (Either StoreError Int64)
+insertDisplayName_ db userId localDisplayName = checkConstraint SEDuplicateName $ do
+  DB.execute
+    db
+    [sql|
+      INSERT INTO display_names
+        (local_display_name, ldn_base, user_id) VALUES (?,?,?)
+    |]
+    (localDisplayName, localDisplayName, userId)
+  Right <$> insertedRowId db
+
+-- | Saves unique local display name based on passed displayName, suffixed with _N if required.
+-- This function should be called inside transaction.
+createUniqueDisplayName :: DB.Connection -> UserId -> Text -> IO (Either StoreError (Text, Int64))
+createUniqueDisplayName db userId displayName = getLdnSuffix >>= (`createName` 20)
+  where
+    getLdnSuffix :: IO Int
+    getLdnSuffix =
+      maybe 0 ((+ 1) . fromOnly) . listToMaybe
+        <$> DB.queryNamed
+          db
+          [sql|
+            SELECT ldn_suffix FROM display_names
+            WHERE user_id = :user_id AND ldn_base = :display_name
+            ORDER BY ldn_suffix DESC
+            LIMIT 1
+          |]
+          [":user_id" := userId, ":display_name" := displayName]
+    createName :: Int -> Int -> IO (Either StoreError (Text, Int64))
+    createName _ 0 = pure $ Left SEDuplicateName
+    createName ldnSuffix attempts = do
+      let ldn = displayName <> (if ldnSuffix == 0 then "" else T.pack $ '_' : show ldnSuffix)
+      E.try (insertName ldn) >>= \case
+        Right () -> Right . (ldn,) <$> insertedRowId db
+        Left e
+          | DB.sqlError e == DB.ErrorConstraint -> createName (ldnSuffix + 1) (attempts - 1)
+          | otherwise -> E.throwIO e
+      where
+        insertName ldn =
+          DB.execute
+            db
+            [sql|
+              INSERT INTO display_names
+                (local_display_name, ldn_base, ldn_suffix, user_id) VALUES (?, ?, ?, ?)
+            |]
+            (ldn, displayName, ldnSuffix, userId)
+
 createWithRandomId :: TVar ChaChaDRG -> (ByteString -> IO ()) -> IO (Either StoreError ByteString)
 createWithRandomId gVar create = tryCreate 3
   where
@@ -529,7 +577,8 @@ randomId :: TVar ChaChaDRG -> Int -> IO ByteString
 randomId gVar n = B64.encode <$> (atomically . stateTVar gVar $ randomBytesGenerate n)
 
 data StoreError
-  = SEDuplicateContactRef
+  = SEDuplicateName
+  | SEDuplicateContactRef
   | SEContactNotFound ContactRef
   | SEContactNotReady ContactRef
   | SEDuplicateGroupRef

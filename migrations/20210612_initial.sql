@@ -12,6 +12,16 @@ CREATE TABLE users (
   active_user INTEGER -- 1 for active user
 );
 
+CREATE TABLE display_names (
+  display_name_id INTEGER PRIMARY KEY,
+  local_display_name TEXT NOT NULL,
+  ldn_base TEXT NOT NULL,
+  ldn_suffix INTEGER NOT NULL DEFAULT 0,
+  user_id INTEGER NOT NULL REFERENCES users,
+  UNIQUE (user_id, local_display_name) ON CONFLICT FAIL,
+  UNIQUE (user_id, ldn_base, ldn_suffix) ON CONFLICT FAIL
+);
+
 CREATE TABLE contacts (
   contact_id INTEGER PRIMARY KEY,
   contact_profile_id INTEGER UNIQUE REFERENCES contact_profiles, -- NULL if it's an incognito profile
