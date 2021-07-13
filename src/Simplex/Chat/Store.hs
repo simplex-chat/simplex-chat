@@ -298,7 +298,7 @@ createNewGroup st gVar user groupProfile =
     DB.execute db "INSERT INTO groups (local_display_name, user_id, group_profile_id) VALUES (?, ?, ?)" (displayName, uId, profileId)
     groupId <- insertedRowId db
     memberId <- randomId gVar 12
-    membership <- createContactMember_ db user groupId user (memberId, GROwner) GSMemReady IBUser
+    membership <- createContactMember_ db user groupId user (memberId, GROwner) GSMemFull IBUser
     pure $ Right Group {groupId, localDisplayName = displayName, groupProfile, members = [], membership}
 
 -- | creates a new group record for the group the current user was invited to
@@ -313,7 +313,7 @@ createGroupInvitation st user contact GroupInvitation {fromMember, invitedMember
       profileId <- insertedRowId db
       DB.execute db "INSERT INTO groups (group_profile_id, local_display_name, inv_queue_info, user_id) VALUES (?, ?, ?, ?)" (profileId, localDisplayName, queueInfo, uId)
       groupId <- insertedRowId db
-      member <- createContactMember_ db user groupId contact fromMember GSMemReady IBUnknown
+      member <- createContactMember_ db user groupId contact fromMember GSMemFull IBUnknown
       membership <- createContactMember_ db user groupId user invitedMember GSMemInvited (IBContact $ contactId contact)
       pure Group {groupId, localDisplayName, groupProfile, members = [(member, activeConn contact)], membership}
 

@@ -40,7 +40,12 @@ data ChatError
   | ChatErrorStore StoreError
   deriving (Show, Exception)
 
-data ChatErrorType = CEGroupRole | CEGroupDuplicateMember deriving (Show, Exception)
+data ChatErrorType
+  = CEGroupRole
+  | CEGroupDuplicateMember ContactName
+  | CEGroupDuplicateMemberId
+  | CEGroupMemberNotReady
+  deriving (Show, Exception)
 
 type ChatMonad m = (MonadUnliftIO m, MonadReader ChatController m, MonadError ChatError m)
 

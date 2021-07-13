@@ -155,8 +155,13 @@ fromBlobField_ p = \case
       Left e -> returnError ConversionFailed f ("couldn't parse field: " ++ e)
   f -> returnError ConversionFailed f "expecting SQLBlob column type"
 
-data GroupMemberStatus = GSMemInvited | GSMemAccepted | GSMemConnected | GSMemReady
-  deriving (Eq, Show)
+data GroupMemberStatus
+  = GSMemInvited -- member received (or sent to) invitation
+  | GSMemAccepted -- member accepted invitation
+  | GSMemConnected -- member created the group connection with the inviting member
+  | GSMemReady -- member connections are forwarded to all previous members
+  | GSMemFull -- member created group connections with all previous members
+  deriving (Eq, Show, Ord)
 
 instance FromField GroupMemberStatus where fromField = fromTextField_ memberStatusT
 
@@ -168,6 +173,7 @@ memberStatusT = \case
   "accepted" -> Just GSMemAccepted
   "connected" -> Just GSMemConnected
   "ready" -> Just GSMemReady
+  "full" -> Just GSMemFull
   _ -> Nothing
 
 serializeMemberStatus :: GroupMemberStatus -> Text
@@ -176,6 +182,7 @@ serializeMemberStatus = \case
   GSMemAccepted -> "accepted"
   GSMemConnected -> "connected"
   GSMemReady -> "ready"
+  GSMemFull -> "full"
 
 data Connection = Connection
   { connId :: Int64,
