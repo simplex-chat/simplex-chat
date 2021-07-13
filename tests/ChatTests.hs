@@ -66,7 +66,9 @@ testGroup =
       alice <## "use /a #team <name> to add members"
       alice ##> "/a #team bob admin"
       alice <## "invitation to join the group #team sent to bob"
-      bob <## "use /join #team to accept"
+      bob <## "use /j #team to accept"
+      bob ##> "/j #team"
+      alice <## "hello"
 
 connectUsers :: TestCC -> TestCC -> IO ()
 connectUsers cc1 cc2 = do

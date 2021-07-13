@@ -64,7 +64,7 @@ data Group = Group
   { groupId :: Int64,
     localDisplayName :: GroupName,
     groupProfile :: GroupProfile,
-    members :: [(GroupMember, Connection)],
+    members :: [(GroupMember, Maybe Connection)],
     membership :: GroupMember
   }
   deriving (Eq, Show)
@@ -92,6 +92,14 @@ instance FromJSON GroupProfile
 data GroupInvitation = GroupInvitation
   { fromMember :: MemberInfo,
     invitedMember :: MemberInfo,
+    queueInfo :: SMPQueueInfo,
+    groupProfile :: GroupProfile
+  }
+  deriving (Eq, Show)
+
+data ReceivedGroupInvitation = ReceivedGroupInvitation
+  { fromMember :: GroupMember,
+    invitedMember :: GroupMember,
     queueInfo :: SMPQueueInfo,
     groupProfile :: GroupProfile
   }

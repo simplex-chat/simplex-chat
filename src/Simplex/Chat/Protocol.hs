@@ -30,9 +30,9 @@ import Simplex.Messaging.Util (bshow)
 
 data ChatDirection (p :: AParty) where
   ReceivedDirectMessage :: ConnContact -> ChatDirection 'Agent
-  SentDirectMessage :: ConnContact -> ChatDirection 'Client
-  ReceivedGroupMessage :: Group -> ConnContact -> ChatDirection 'Agent
-  SentGroupMessage :: Group -> ChatDirection 'Client
+  SentDirectMessage :: Contact -> ChatDirection 'Client
+  ReceivedGroupMessage :: GroupName -> GroupMember -> ChatDirection 'Agent
+  SentGroupMessage :: GroupName -> ChatDirection 'Client
 
 deriving instance Eq (ChatDirection p)
 

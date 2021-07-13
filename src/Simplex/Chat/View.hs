@@ -78,7 +78,7 @@ invitation qInfo =
     "",
     (plain . serializeSmpQueueInfo) qInfo,
     "",
-    "and ask them to connect: " <> highlight "/c <invitation_above>"
+    "and ask them to connect: " <> highlight' "/c <invitation_above>"
   ]
 
 contactDeleted :: ContactName -> [StyledString]
@@ -93,7 +93,7 @@ contactDisconnected c = ["disconnected from " <> ttyContact c <> " - restart cha
 groupCreated :: Group -> [StyledString]
 groupCreated g@Group {localDisplayName} =
   [ "group " <> ttyFullGroup g <> " is created",
-    "use " <> highlight ("/a #" <> T.unpack localDisplayName <> " <name>") <> " to add members"
+    "use " <> highlight ("/a #" <> localDisplayName <> " <name>") <> " to add members"
   ]
 
 sentGroupInvitation :: Group -> ContactName -> [StyledString]
@@ -102,7 +102,7 @@ sentGroupInvitation g c = ["invitation to join the group " <> ttyFullGroup g <> 
 receivedGroupInvitation :: Group -> ContactName -> [StyledString]
 receivedGroupInvitation g@Group {localDisplayName} c =
   [ ttyContact c <> " invites you to join the group " <> ttyFullGroup g,
-    "use " <> highlight ("/join #" <> T.unpack localDisplayName) <> " to accept"
+    "use " <> highlight ("/j #" <> localDisplayName) <> " to accept"
   ]
 
 receivedMessage :: ContactName -> UTCTime -> Text -> MsgIntegrity -> IO [StyledString]
@@ -149,13 +149,16 @@ chatError = \case
     CEGroupDuplicateMember c -> ["contact " <> ttyContact c <> " is already in the group"]
     CEGroupDuplicateMemberId -> ["cannot add member - duplicate member ID"]
     CEGroupRole -> ["insufficient role for this group command"]
+    CEGroupNotJoined g -> ["you did not join this group, use " <> highlight ("/join #" <> g)]
     CEGroupMemberNotReady -> ["you cannot invite other members yet, try later"]
+    CEGroupInternal s -> ["chat group bug: " <> plain s]
   -- e -> ["chat error: " <> plain (show e)]
   ChatErrorStore err -> case err of
     SEDuplicateName -> ["this display name is already used by user, contact or group"]
     SEContactNotFound c -> ["no contact " <> ttyContact c]
     SEContactNotReady c -> ["contact " <> ttyContact c <> " is not active yet"]
     SEGroupNotFound g -> ["no group " <> ttyGroup g]
+    SEGroupAlreadyJoined -> ["you already joined this group"]
     e -> ["chat db error: " <> plain (show e)]
   ChatErrorAgent err -> case err of
     -- CONN e -> case e of
@@ -194,8 +197,11 @@ optFullName localDisplayName fullName
   | localDisplayName == fullName = ""
   | otherwise = plain (" (" <> fullName <> ")")
 
-highlight :: String -> StyledString
+highlight :: StyledFormat a => a -> StyledString
 highlight = styled (Colored Cyan)
+
+highlight' :: String -> StyledString
+highlight' = highlight
 
 -- ttyFromGroup :: Group -> Contact -> StyledString
 -- ttyFromGroup (Group g) (Contact a) = styled (Colored Yellow) $ "#" <> g <> " " <> a <> "> "
