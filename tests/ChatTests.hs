@@ -68,7 +68,9 @@ testGroup =
       alice <## "invitation to join the group #team sent to bob"
       bob <## "use /j #team to accept"
       bob ##> "/j #team"
-      alice <## "hello"
+      concurrently_
+        (alice <## "bob joined the group #team")
+        (bob <## "you joined the group #team")
 
 connectUsers :: TestCC -> TestCC -> IO ()
 connectUsers cc1 cc2 = do

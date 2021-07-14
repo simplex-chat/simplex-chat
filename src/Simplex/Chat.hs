@@ -23,7 +23,7 @@ import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.Functor (($>))
 import Data.List (find)
-import Data.Maybe (isJust)
+import Data.Maybe (isJust, isNothing)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
@@ -240,20 +240,34 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
             _ -> pure () -- TODO show/log error, other events in SMP confirmation
         CON -> do
           Group {membership, members} <- withStore $ \st -> getGroup st user gName
+          -- TODO because the contact is not created instantly, if the member is not created from contact,
+          -- it should still have a unique local display name.
+          -- If it is created from contact it can still be duplicated on the member (and match the contact)
           case invitedBy m of
             IBUser -> do
               -- sender was invited by the current user
               withStore $ \st -> updateGroupMemberStatus st userId (groupMemberId m) GSMemConnected
               sendGroupMessage members $ XGrpMemNew (memberId m) (memberRole m) (memberProfile m)
-              forM_ (filter (const True) . map fst $ members) $ \m' ->
+              showConnectedGroupMember gName $ displayName (memberProfile m :: Profile)
+              forM_ (filter (\m' -> memberStatus m' >= GSMemConnected) . map fst $ members) $ \m' ->
                 sendDirectMessage agentConnId $ XGrpMemIntro (memberId m') (memberRole m') (memberProfile m')
             _ -> do
               if Just (invitedBy membership) == (IBContact <$> memberContactId m)
                 then do
                   -- sender invited the current user
                   withStore $ \st -> updateGroupMemberStatus st userId (groupMemberId m) GSMemConnected
+                  showUserConnectedToGroup gName
                   pure ()
-                else pure ()
+                else do
+                  showConnectedGroupMember gName $ displayName (memberProfile m :: Profile)
+        MSG meta msgBody -> do
+          ChatMessage {chatMsgEvent} <- liftEither $ parseChatMessage msgBody
+          case chatMsgEvent of
+            XGrpMemNew memId memRole memProfile -> do
+              Group {membership, members} <- withStore $ \st -> getGroup st user gName
+              when (memberId membership /= memId && isNothing (find ((== memId) . memberId . fst) members)) $
+                withStore $ \st -> pure () -- add new member as GSMemAccepted
+            _ -> pure ()
         _ -> pure ()
   where
     newTextMessage :: ContactName -> MsgMeta -> Maybe MsgBodyContent -> m ()

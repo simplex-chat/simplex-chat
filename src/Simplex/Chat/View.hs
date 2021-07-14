@@ -17,6 +17,8 @@ module Simplex.Chat.View
     showGroupCreated,
     showSentGroupInvitation,
     showReceivedGroupInvitation,
+    showConnectedGroupMember,
+    showUserConnectedToGroup,
     safeDecodeUtf8,
   )
 where
@@ -72,6 +74,12 @@ showSentGroupInvitation = printToView .: sentGroupInvitation
 showReceivedGroupInvitation :: ChatReader m => Group -> ContactName -> m ()
 showReceivedGroupInvitation = printToView .: receivedGroupInvitation
 
+showConnectedGroupMember :: ChatReader m => GroupName -> ContactName -> m ()
+showConnectedGroupMember = printToView .: connectedGroupMember
+
+showUserConnectedToGroup :: ChatReader m => GroupName -> m ()
+showUserConnectedToGroup = printToView . userConnectedToGroup
+
 invitation :: SMPQueueInfo -> [StyledString]
 invitation qInfo =
   [ "pass this invitation to your contact (via another channel): ",
@@ -104,6 +112,12 @@ receivedGroupInvitation g@Group {localDisplayName} c =
   [ ttyContact c <> " invites you to join the group " <> ttyFullGroup g,
     "use " <> highlight ("/j #" <> localDisplayName) <> " to accept"
   ]
+
+connectedGroupMember :: GroupName -> ContactName -> [StyledString]
+connectedGroupMember g c = [ttyContact c <> " joined the group " <> ttyGroup g]
+
+userConnectedToGroup :: GroupName -> [StyledString]
+userConnectedToGroup g = ["you joined the group " <> ttyGroup g]
 
 receivedMessage :: ContactName -> UTCTime -> Text -> MsgIntegrity -> IO [StyledString]
 receivedMessage c utcTime msg mOk = do

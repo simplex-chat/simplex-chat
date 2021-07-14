@@ -73,8 +73,8 @@ CREATE TABLE group_members ( -- group members, excluding the local user
   group_member_id INTEGER PRIMARY KEY,
   group_id INTEGER NOT NULL REFERENCES groups ON DELETE RESTRICT,
   member_id BLOB NOT NULL, -- shared member ID, unique per group
-  member_role TEXT NOT NULL DEFAULT '', -- owner, admin, member
-  member_status TEXT NOT NULL DEFAULT '', -- new, invited, accepted, connected, ready
+  member_role TEXT NOT NULL, -- owner, admin, member
+  member_status TEXT NOT NULL, -- new, invited, accepted, connected, ready
   invited_by INTEGER REFERENCES contacts (contact_id) ON DELETE RESTRICT, -- NULL for the members who joined before the current user and for the group creator
   contact_profile_id INTEGER NOT NULL REFERENCES contact_profiles ON DELETE RESTRICT,
   contact_id INTEGER REFERENCES contacts ON DELETE RESTRICT,
