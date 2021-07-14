@@ -1,7 +1,7 @@
 CREATE TABLE contact_profiles ( -- remote user profile
   contact_profile_id INTEGER PRIMARY KEY,
-  contact_ref TEXT NOT NULL, -- contact name set by remote user (not unique), this name must not contain spaces
-  display_name TEXT NOT NULL,
+  display_name TEXT NOT NULL, -- contact name set by remote user (not unique), this name must not contain spaces
+  full_name TEXT NOT NULL,
   properties TEXT NOT NULL DEFAULT '{}' -- JSON with contact profile properties
 );
 
@@ -9,20 +9,35 @@ CREATE TABLE users (
   user_id INTEGER PRIMARY KEY,
   contact_id INTEGER NOT NULL UNIQUE REFERENCES contacts ON DELETE CASCADE
     DEFERRABLE INITIALLY DEFERRED,
-  active_user INTEGER -- 1 for active user
+  local_display_name TEXT NOT NULL UNIQUE,
+  active_user INTEGER NOT NULL DEFAULT 0, -- 1 for active user
+  FOREIGN KEY (user_id, local_display_name)
+    REFERENCES display_names (user_id, local_display_name)
+    ON DELETE RESTRICT
+    DEFERRABLE INITIALLY DEFERRED
 );
+
+CREATE TABLE display_names (
+  user_id INTEGER NOT NULL REFERENCES users,
+  local_display_name TEXT NOT NULL,
+  ldn_base TEXT NOT NULL,
+  ldn_suffix INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (user_id, local_display_name) ON CONFLICT FAIL,
+  UNIQUE (user_id, ldn_base, ldn_suffix) ON CONFLICT FAIL
+) WITHOUT ROWID;
 
 CREATE TABLE contacts (
   contact_id INTEGER PRIMARY KEY,
-  contact_profile_id INTEGER UNIQUE REFERENCES contact_profiles, -- NULL if it's an incognito profile
-  local_contact_ref TEXT NOT NULL,
-  lcr_base TEXT NOT NULL,
-  lcr_suffix INTEGER NOT NULL DEFAULT 0,
+  contact_profile_id INTEGER REFERENCES contact_profiles, -- NULL if it's an incognito profile
   user_id INTEGER NOT NULL REFERENCES users,
+  local_display_name TEXT NOT NULL,
   is_user INTEGER NOT NULL DEFAULT 0, -- 1 if this contact is a user
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
-  UNIQUE (user_id, local_contact_ref) ON CONFLICT FAIL,
-  UNIQUE (user_id, lcr_base, lcr_suffix) ON CONFLICT FAIL
+  FOREIGN KEY (user_id, local_display_name)
+    REFERENCES display_names (user_id, local_display_name)
+    ON DELETE RESTRICT,
+  UNIQUE (user_id, local_display_name),
+  UNIQUE (user_id, contact_profile_id)
 );
 
 CREATE TABLE known_servers(
@@ -36,20 +51,21 @@ CREATE TABLE known_servers(
 
 CREATE TABLE group_profiles ( -- shared group profiles
   group_profile_id INTEGER PRIMARY KEY,
-  group_ref TEXT NOT NULL, -- this name must not contain spaces
-  display_name TEXT NOT NULL,
+  display_name TEXT NOT NULL, -- this name must not contain spaces
+  full_name TEXT NOT NULL,
   properties TEXT NOT NULL DEFAULT '{}' -- JSON with user or contact profile
 );
 
 CREATE TABLE groups (
   group_id INTEGER PRIMARY KEY, -- local group ID
-  local_group_ref TEXT NOT NULL, -- local group name without spaces
-  lgr_base TEXT NOT NULL,
-  lgr_suffix INTEGER NOT NULL DEFAULT 0,
-  group_profile_id INTEGER REFERENCES group_profiles, -- shared group profile
   user_id INTEGER NOT NULL REFERENCES users,
-  UNIQUE (user_id, local_group_ref) ON CONFLICT FAIL,
-  UNIQUE (user_id, lgr_base, lgr_suffix) ON CONFLICT FAIL
+  local_display_name TEXT NOT NULL, -- local group name without spaces
+  group_profile_id INTEGER REFERENCES group_profiles, -- shared group profile
+  FOREIGN KEY (user_id, local_display_name)
+    REFERENCES display_names (user_id, local_display_name)
+    ON DELETE RESTRICT,
+  UNIQUE (user_id, local_display_name),
+  UNIQUE (user_id, group_profile_id)
 );
 
 CREATE TABLE group_members ( -- group members, excluding the local user

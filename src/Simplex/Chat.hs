@@ -55,16 +55,16 @@ data ChatCommand
   | MarkdownHelp
   | AddContact
   | Connect SMPQueueInfo
-  | DeleteContact ContactRef
-  | SendMessage ContactRef ByteString
+  | DeleteContact ContactName
+  | SendMessage ContactName ByteString
   | NewGroup GroupProfile
-  | AddMember GroupRef ContactRef GroupMemberRole
-  | RemoveMember GroupRef ContactRef
-  | MemberRole GroupRef ContactRef GroupMemberRole
-  | LeaveGroup GroupRef
-  | DeleteGroup GroupRef
-  | ListMembers GroupRef
-  | SendGroupMessage GroupRef ByteString
+  | AddMember GroupName ContactName GroupMemberRole
+  | RemoveMember GroupName ContactName
+  | MemberRole GroupName ContactName GroupMemberRole
+  | LeaveGroup GroupName
+  | DeleteGroup GroupName
+  | ListMembers GroupName
+  | SendGroupMessage GroupName ByteString
   deriving (Show)
 
 cfg :: AgentConfig
@@ -195,7 +195,7 @@ processAgentMessage :: forall m. ChatMonad m => User -> ConnId -> ACommand 'Agen
 processAgentMessage User {userId, profile} agentConnId agentMessage = do
   chatDirection <- withStore $ \st -> getConnectionChatDirection st userId agentConnId
   case chatDirection of
-    ReceivedDirectMessage (CContact ct@Contact {localContactRef = c}) ->
+    ReceivedDirectMessage (CContact ct@Contact {localDisplayName = c}) ->
       case agentMessage of
         MSG meta msgBody -> do
           ChatMessage {chatMsgEvent} <- liftEither $ parseChatMessage msgBody
@@ -225,7 +225,7 @@ processAgentMessage User {userId, profile} agentConnId agentMessage = do
         _ -> pure ()
     _ -> pure ()
   where
-    newTextMessage :: ContactRef -> MsgMeta -> Maybe MsgBodyContent -> m ()
+    newTextMessage :: ContactName -> MsgMeta -> Maybe MsgBodyContent -> m ()
     newTextMessage c meta = \case
       Just MsgBodyContent {contentData = bs} -> do
         let text = safeDecodeUtf8 bs
@@ -268,17 +268,17 @@ getCreateActiveUser st = do
     newUser = do
       putStrLn
         "No user profiles found, it will be created now.\n\
-        \Please choose your alias and your profile name.\n\
+        \Please choose your display name and your full name.\n\
         \They will be sent to your contacts when you connect.\n\
         \They are only stored on your device and you can change them later."
       loop
       where
         loop = do
-          contactRef <- getContactRef
-          displayName <- T.pack <$> getWithPrompt "profile name (optional)"
-          liftIO (runExceptT $ createUser st Profile {contactRef, displayName} True) >>= \case
-            Left SEDuplicateContactRef -> do
-              putStrLn "chosen alias already used by another profile on this device, choose another one"
+          displayName <- getContactName
+          fullName <- T.pack <$> getWithPrompt "full name (optional)"
+          liftIO (runExceptT $ createUser st Profile {displayName, fullName} True) >>= \case
+            Left SEDuplicateName -> do
+              putStrLn "chosen display name is already used by another profile on this device, choose another one"
               loop
             Left e -> putStrLn ("database error " <> show e) >> exitFailure
             Right user -> pure user
@@ -302,14 +302,14 @@ getCreateActiveUser st = do
                 liftIO $ setActiveUser st (userId user)
                 pure user
     userStr :: User -> String
-    userStr User {localContactRef, profile = Profile {displayName}} =
-      T.unpack $ localContactRef <> if T.null displayName then "" else " (" <> displayName <> ")"
-    getContactRef :: IO ContactRef
-    getContactRef = do
-      contactRef <- getWithPrompt "alias (no spaces)"
-      if null contactRef || isJust (find (== ' ') contactRef)
-        then putStrLn "alias has space(s), choose another one" >> getContactRef
-        else pure $ T.pack contactRef
+    userStr User {localDisplayName, profile = Profile {fullName}} =
+      T.unpack $ localDisplayName <> if T.null fullName then "" else " (" <> fullName <> ")"
+    getContactName :: IO ContactName
+    getContactName = do
+      displayName <- getWithPrompt "display name (no spaces)"
+      if null displayName || isJust (find (== ' ') displayName)
+        then putStrLn "display name has space(s), choose another one" >> getContactName
+        else pure $ T.pack displayName
     getWithPrompt :: String -> IO String
     getWithPrompt s = putStr (s <> ": ") >> hFlush stdout >> getLine
 
@@ -340,24 +340,23 @@ chatCommandP :: Parser ChatCommand
 chatCommandP =
   ("/help" <|> "/h") $> ChatHelp
     <|> ("/group #" <|> "/g #") *> (NewGroup <$> groupProfile)
-    <|> ("/add #" <|> "/a #") *> (AddMember <$> groupRef <* A.space <*> contactRef <*> memberRole)
-    <|> ("/remove #" <|> "/rm #") *> (RemoveMember <$> groupRef <* A.space <*> contactRef)
-    <|> ("/delete #" <|> "/d #") *> (DeleteGroup <$> groupRef)
-    <|> ("/members #" <|> "/ms #") *> (ListMembers <$> groupRef)
-    <|> A.char '#' *> (SendGroupMessage <$> groupRef <* A.space <*> A.takeByteString)
+    <|> ("/add #" <|> "/a #") *> (AddMember <$> displayName <* A.space <*> displayName <*> memberRole)
+    <|> ("/remove #" <|> "/rm #") *> (RemoveMember <$> displayName <* A.space <*> displayName)
+    <|> ("/delete #" <|> "/d #") *> (DeleteGroup <$> displayName)
+    <|> ("/members #" <|> "/ms #") *> (ListMembers <$> displayName)
+    <|> A.char '#' *> (SendGroupMessage <$> displayName <* A.space <*> A.takeByteString)
     <|> ("/add" <|> "/a") $> AddContact
     <|> ("/connect " <|> "/c ") *> (Connect <$> smpQueueInfoP)
-    <|> ("/delete @" <|> "/delete " <|> "/d @" <|> "/d ") *> (DeleteContact <$> contactRef)
-    <|> A.char '@' *> (SendMessage <$> contactRef <*> (A.space *> A.takeByteString))
+    <|> ("/delete @" <|> "/delete " <|> "/d @" <|> "/d ") *> (DeleteContact <$> displayName)
+    <|> A.char '@' *> (SendMessage <$> displayName <*> (A.space *> A.takeByteString))
     <|> ("/markdown" <|> "/m") $> MarkdownHelp
   where
-    contactRef = safeDecodeUtf8 <$> (B.cons <$> A.satisfy refChar <*> A.takeTill (== ' '))
+    displayName = safeDecodeUtf8 <$> (B.cons <$> A.satisfy refChar <*> A.takeTill (== ' '))
     refChar c = c > ' ' && c /= '#' && c /= '@'
-    groupRef = contactRef
     groupProfile = do
-      gRef <- groupRef
+      gRef <- displayName
       gName <- safeDecodeUtf8 <$> (A.space *> A.takeByteString) <|> pure ""
-      pure GroupProfile {groupRef = gRef, displayName = if T.null gName then gRef else gName}
+      pure GroupProfile {displayName = gRef, fullName = if T.null gName then gRef else gName}
     memberRole =
       (" owner" $> GROwner)
         <|> (" admin" $> GRAdmin)

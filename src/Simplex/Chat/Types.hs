@@ -26,7 +26,7 @@ import Simplex.Messaging.Agent.Store.SQLite (fromTextField_)
 data User = User
   { userId :: UserId,
     userContactId :: Int64,
-    localContactRef :: ContactRef,
+    localDisplayName :: ContactName,
     profile :: Profile,
     activeUser :: Bool
   }
@@ -35,7 +35,7 @@ type UserId = Int64
 
 data Contact = Contact
   { contactId :: Int64,
-    localContactRef :: ContactRef,
+    localDisplayName :: ContactName,
     profile :: Profile,
     activeConn :: Connection
   }
@@ -44,13 +44,13 @@ data Contact = Contact
 contactConnId :: Contact -> ConnId
 contactConnId Contact {activeConn = Connection {agentConnId}} = agentConnId
 
-type ContactRef = Text
+type ContactName = Text
 
-type GroupRef = Text
+type GroupName = Text
 
 data Group = Group
   { groupId :: Int64,
-    localGroupRef :: Text,
+    localDisplayName :: GroupName,
     groupProfile :: GroupProfile,
     members :: [(GroupMember, Connection)],
     membership :: GroupMember
@@ -58,8 +58,8 @@ data Group = Group
   deriving (Eq, Show)
 
 data Profile = Profile
-  { contactRef :: ContactRef,
-    displayName :: Text
+  { displayName :: ContactName,
+    fullName :: Text
   }
   deriving (Generic, Eq, Show)
 
@@ -68,8 +68,8 @@ instance ToJSON Profile where toEncoding = J.genericToEncoding J.defaultOptions
 instance FromJSON Profile
 
 data GroupProfile = GroupProfile
-  { groupRef :: GroupRef,
-    displayName :: Text
+  { displayName :: GroupName,
+    fullName :: Text
   }
   deriving (Generic, Eq, Show)
 
