@@ -140,10 +140,10 @@ createDirectConnection st userId agentConnId =
 createDirectContact :: StoreMonad m => SQLiteStore -> UserId -> Connection -> Profile -> m ()
 createDirectContact st userId Connection {connId} Profile {displayName, fullName} =
   liftIOEither . withTransaction st $ \db ->
-    withLocalDisplayName db userId displayName $ \localDisplayName' -> do
+    withLocalDisplayName db userId displayName $ \ldn -> do
       DB.execute db "INSERT INTO contact_profiles (display_name, full_name) VALUES (?, ?)" (displayName, fullName)
       profileId <- insertedRowId db
-      DB.execute db "INSERT INTO contacts (contact_profile_id, local_display_name, user_id) VALUES (?, ?, ?)" (profileId, localDisplayName', userId)
+      DB.execute db "INSERT INTO contacts (contact_profile_id, local_display_name, user_id) VALUES (?, ?, ?)" (profileId, ldn, userId)
       contactId <- insertedRowId db
       DB.execute db "UPDATE connections SET contact_id = ? WHERE connection_id = ?" (contactId, connId)
 
@@ -309,8 +309,8 @@ getConnectionChatDirection st User {userId, userContactId} agentConnId =
           [sql|
             SELECT
               g.local_display_name,
-              m.group_member_id, m.member_id, m.member_role, m.member_status,
-              m.invited_by, m.contact_id, p.display_name, p.full_name
+              m.group_member_id, m.member_id, m.member_role, m.member_category, m.member_status,
+              m.invited_by, m.local_display_name, m.contact_id, p.display_name, p.full_name
             FROM group_members m
             JOIN contact_profiles p ON p.contact_profile_id = m.contact_profile_id
             JOIN groups g ON g.group_id = m.group_id
@@ -333,7 +333,7 @@ createNewGroup st gVar user groupProfile =
     DB.execute db "INSERT INTO groups (local_display_name, user_id, group_profile_id) VALUES (?, ?, ?)" (displayName, uId, profileId)
     groupId <- insertedRowId db
     memberId <- randomId gVar 12
-    membership <- createContactMember_ db user groupId user (memberId, GROwner) GSMemFull IBUser
+    membership <- createContactMember_ db user groupId user (memberId, GROwner) GCUserMember GSMemCreator IBUser
     pure $ Right Group {groupId, localDisplayName = displayName, groupProfile, members = [], membership}
 
 -- | creates a new group record for the group the current user was invited to
@@ -348,8 +348,8 @@ createGroupInvitation st user contact GroupInvitation {fromMember, invitedMember
       profileId <- insertedRowId db
       DB.execute db "INSERT INTO groups (group_profile_id, local_display_name, inv_queue_info, user_id) VALUES (?, ?, ?, ?)" (profileId, localDisplayName, queueInfo, uId)
       groupId <- insertedRowId db
-      member <- createContactMember_ db user groupId contact fromMember GSMemFull IBUnknown
-      membership <- createContactMember_ db user groupId user invitedMember GSMemInvited (IBContact $ contactId contact)
+      member <- createContactMember_ db user groupId contact fromMember GCHostMember GSMemInvited IBUnknown
+      membership <- createContactMember_ db user groupId user invitedMember GCUserMember GSMemInvited (IBContact $ contactId contact)
       pure Group {groupId, localDisplayName, groupProfile, members = [(member, Nothing)], membership}
 
 -- TODO return the last connection that is ready, not any last connection
@@ -389,8 +389,8 @@ getGroup_ db User {userId, userContactId} localDisplayName = do
           db
           [sql|
             SELECT
-              m.group_member_id, m.member_id, m.member_role, m.member_status,
-              m.invited_by, m.contact_id, p.display_name, p.full_name,
+              m.group_member_id, m.member_id, m.member_role, m.member_category, m.member_status,
+              m.invited_by, m.local_display_name, m.contact_id, p.display_name, p.full_name,
               c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact,
               c.conn_status, c.conn_type, c.contact_id, c.group_member_id, c.created_at
             FROM group_members m
@@ -398,11 +398,11 @@ getGroup_ db User {userId, userContactId} localDisplayName = do
             LEFT JOIN connections c ON c.connection_id = (
               SELECT max(cc.connection_id)
               FROM connections cc
-              where cc.group_member_id = c.group_member_id
+              where cc.group_member_id = m.group_member_id
             )
-            WHERE m.group_id = ?
+            WHERE m.group_id = ? AND m.user_id = ?
           |]
-          (Only groupId)
+          (groupId, userId)
     toContactMember :: (GroupMemberRow :. MaybeConnectionRow) -> (GroupMember, Maybe Connection)
     toContactMember (memberRow :. connRow) = (toGroupMember userContactId memberRow, toMaybeConnection connRow)
     splitUserMember_ :: [(GroupMember, Maybe Connection)] -> Either StoreError ([(GroupMember, Maybe Connection)], GroupMember)
@@ -426,19 +426,19 @@ getGroupInvitation st user localDisplayName =
     findFromContact (IBContact contactId) = find (\(m, _) -> memberContactId m == Just contactId)
     findFromContact _ = const Nothing
 
-type GroupMemberRow = (Int64, ByteString, GroupMemberRole, GroupMemberStatus, Maybe Int64, Maybe Int64, ContactName, Text)
+type GroupMemberRow = (Int64, ByteString, GroupMemberRole, GroupMemberCategory, GroupMemberStatus, Maybe Int64, ContactName, Maybe Int64, ContactName, Text)
 
 toGroupMember :: Int64 -> GroupMemberRow -> GroupMember
-toGroupMember userContactId (groupMemberId, memberId, memberRole, memberStatus, invitedById, memberContactId, displayName, fullName) =
+toGroupMember userContactId (groupMemberId, memberId, memberRole, memberCategory, memberStatus, invitedById, localDisplayName, memberContactId, displayName, fullName) =
   let memberProfile = Profile {displayName, fullName}
       invitedBy = toInvitedBy userContactId invitedById
-   in GroupMember {groupMemberId, memberId, memberRole, memberStatus, invitedBy, memberProfile, memberContactId}
+   in GroupMember {groupMemberId, memberId, memberRole, memberCategory, memberStatus, invitedBy, localDisplayName, memberProfile, memberContactId}
 
 createGroupMember :: StoreMonad m => SQLiteStore -> TVar ChaChaDRG -> User -> Int64 -> Contact -> GroupMemberRole -> ConnId -> m GroupMember
 createGroupMember st gVar user groupId contact memberRole agentConnId =
   liftIOEither . withTransaction st $ \db ->
     createWithRandomId gVar $ \memId -> do
-      member <- createContactMember_ db user groupId contact (memId, memberRole) GSMemInvited IBUser
+      member <- createContactMember_ db user groupId contact (memId, memberRole) GCInviteeMember GSMemInvited IBUser
       groupMemberId <- insertedRowId db
       createMemberConnection_ db (userId user) groupMemberId agentConnId
       pure member
@@ -460,31 +460,36 @@ createMemberConnection_ db userId groupMemberId agentConnId =
     |]
     (userId, agentConnId, ConnNew, ConnMember, groupMemberId)
 
-createContactMember_ :: IsContact a => DB.Connection -> User -> Int64 -> a -> MemberInfo -> GroupMemberStatus -> InvitedBy -> IO GroupMember
-createContactMember_ db User {userContactId} groupId userOrContact (memberId, memberRole) memberStatus invitedBy = do
+createContactMember_ :: IsContact a => DB.Connection -> User -> Int64 -> a -> MemberInfo -> GroupMemberCategory -> GroupMemberStatus -> InvitedBy -> IO GroupMember
+createContactMember_ db User {userId, userContactId} groupId userOrContact (memberId, memberRole) memberCategory memberStatus invitedBy = do
   insertMember_
   groupMemberId <- insertedRowId db
   let memberProfile = profile' userOrContact
       memberContactId = Just $ contactId' userOrContact
-  pure GroupMember {groupMemberId, memberId, memberRole, memberStatus, invitedBy, memberProfile, memberContactId}
+      localDisplayName = localDisplayName' userOrContact
+  pure GroupMember {groupMemberId, memberId, memberRole, memberCategory, memberStatus, invitedBy, localDisplayName, memberProfile, memberContactId}
   where
     insertMember_ =
       DB.executeNamed
         db
         [sql|
           INSERT INTO group_members
-            ( group_id, member_id, member_role, member_status, invited_by,
-              contact_profile_id, contact_id)
+            ( group_id, member_id, member_role, member_category, member_status, invited_by,
+              user_id, local_display_name, contact_profile_id, contact_id)
           VALUES
-            (:group_id,:member_id,:member_role,:member_status,:invited_by,
+            (:group_id,:member_id,:member_role,:member_category,:member_status,:invited_by,
+             :user_id,:local_display_name,
               (SELECT contact_profile_id FROM contacts WHERE contact_id = :contact_id),
               :contact_id)
         |]
         [ ":group_id" := groupId,
           ":member_id" := memberId,
           ":member_role" := memberRole,
+          ":member_category" := memberCategory,
           ":member_status" := memberStatus,
           ":invited_by" := fromInvitedBy userContactId invitedBy,
+          ":user_id" := userId,
+          ":local_display_name" := localDisplayName' userOrContact,
           ":contact_id" := contactId' userOrContact
         ]
 

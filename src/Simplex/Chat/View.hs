@@ -162,9 +162,10 @@ chatError = \case
   ChatError err -> case err of
     CEGroupDuplicateMember c -> ["contact " <> ttyContact c <> " is already in the group"]
     CEGroupDuplicateMemberId -> ["cannot add member - duplicate member ID"]
-    CEGroupRole -> ["insufficient role for this group command"]
+    CEGroupUserRole -> ["you have insufficient permissions for this group command"]
+    CEGroupContactRole c -> ["contact " <> ttyContact c <> " has insufficient permissions for this group action"]
     CEGroupNotJoined g -> ["you did not join this group, use " <> highlight ("/join #" <> g)]
-    CEGroupMemberNotReady -> ["you cannot invite other members yet, try later"]
+    CEGroupMemberNotActive -> ["you cannot invite other members yet, try later"]
     CEGroupInternal s -> ["chat group bug: " <> plain s]
   -- e -> ["chat error: " <> plain (show e)]
   ChatErrorStore err -> case err of

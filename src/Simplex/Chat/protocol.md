@@ -92,7 +92,7 @@ B -> Ag: connected to M: `MSG: x.grp.mem.con G_MEM_ID_M`
 M -> Ag: connected to M: `MSG: x.grp.mem.con G_MEM_ID_B`
 
 once all members connected
-A -> group: `MSG: N x.grp.mem.ok G_MEM_ID_B`
+A -> group: `MSG: N x.grp.mem.all G_MEM_ID_B`
 
 #### Send group message
 

@@ -162,10 +162,10 @@ processChatCommand user@User {userId, profile} = \case
     let Group {groupId, groupProfile, membership, members} = group
         userRole = memberRole membership
         userMemberId = memberId membership
-    when (userRole < GRAdmin || userRole < memRole) $ throwError $ ChatError CEGroupRole
+    when (userRole < GRAdmin || userRole < memRole) $ throwError $ ChatError CEGroupUserRole
     when (isMember contact members) . throwError . ChatError $ CEGroupDuplicateMember cName
     when (memberStatus membership == GSMemInvited) . throwError . ChatError $ CEGroupNotJoined gName
-    when (memberStatus membership < GSMemReady) . throwError . ChatError $ CEGroupMemberNotReady
+    unless (memberActive membership) . throwError . ChatError $ CEGroupMemberNotActive
     gVar <- asks idsDrg
     (agentConnId, qInfo) <- withAgent createConnection
     GroupMember {memberId} <- withStore $ \st -> createGroupMember st gVar user groupId contact memRole agentConnId
@@ -239,27 +239,20 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
               | otherwise -> pure () -- TODO error not matching member ID
             _ -> pure () -- TODO show/log error, other events in SMP confirmation
         CON -> do
-          Group {membership, members} <- withStore $ \st -> getGroup st user gName
-          -- TODO because the contact is not created instantly, if the member is not created from contact,
-          -- it should still have a unique local display name.
-          -- If it is created from contact it can still be duplicated on the member (and match the contact)
-          case invitedBy m of
-            IBUser -> do
-              -- sender was invited by the current user
+          Group {members} <- withStore $ \st -> getGroup st user gName
+          case memberCategory m of
+            GCInviteeMember -> do
               withStore $ \st -> updateGroupMemberStatus st userId (groupMemberId m) GSMemConnected
               sendGroupMessage members $ XGrpMemNew (memberId m) (memberRole m) (memberProfile m)
               showConnectedGroupMember gName $ displayName (memberProfile m :: Profile)
-              forM_ (filter (\m' -> memberStatus m' >= GSMemConnected) . map fst $ members) $ \m' ->
+              forM_ (filter memberActive . map fst $ members) $ \m' ->
                 sendDirectMessage agentConnId $ XGrpMemIntro (memberId m') (memberRole m') (memberProfile m')
+            GCHostMember -> do
+              withStore $ \st -> updateGroupMemberStatus st userId (groupMemberId m) GSMemConnected
+              showUserConnectedToGroup gName
+              pure ()
             _ -> do
-              if Just (invitedBy membership) == (IBContact <$> memberContactId m)
-                then do
-                  -- sender invited the current user
-                  withStore $ \st -> updateGroupMemberStatus st userId (groupMemberId m) GSMemConnected
-                  showUserConnectedToGroup gName
-                  pure ()
-                else do
-                  showConnectedGroupMember gName $ displayName (memberProfile m :: Profile)
+              showConnectedGroupMember gName $ displayName (memberProfile m :: Profile)
         MSG meta msgBody -> do
           ChatMessage {chatMsgEvent} <- liftEither $ parseChatMessage msgBody
           case chatMsgEvent of
@@ -281,7 +274,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
 
     saveGroupInvitation :: Contact -> GroupInvitation -> m ()
     saveGroupInvitation ct@Contact {localDisplayName} inv@(GroupInvitation (fromMemId, fromRole) (memId, memRole) _ _) = do
-      when (fromRole < GRAdmin || fromRole < memRole) $ throwError $ ChatError CEGroupRole
+      when (fromRole < GRAdmin || fromRole < memRole) . throwError . ChatError $ CEGroupContactRole localDisplayName
       when (fromMemId == memId) $ throwError $ ChatError CEGroupDuplicateMemberId
       group <- withStore $ \st -> createGroupInvitation st user ct inv
       showReceivedGroupInvitation group localDisplayName
