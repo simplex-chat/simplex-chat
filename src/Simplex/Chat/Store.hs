@@ -32,6 +32,7 @@ module Simplex.Chat.Store
     createGroupMember,
     createMemberConnection,
     updateGroupMemberStatus,
+    createIntroductions,
   )
 where
 
@@ -450,6 +451,9 @@ createMemberConnection st userId groupMemberId agentConnId =
 updateGroupMemberStatus :: MonadUnliftIO m => SQLiteStore -> UserId -> Int64 -> GroupMemberStatus -> m ()
 updateGroupMemberStatus _st _userId _groupMemberId _memberStatus = pure ()
 
+createIntroductions :: MonadUnliftIO m => SQLiteStore -> GroupMember -> m [MemberId]
+createIntroductions _st _m = pure []
+
 createMemberConnection_ :: DB.Connection -> UserId -> Int64 -> ConnId -> IO ()
 createMemberConnection_ db userId groupMemberId agentConnId =
   DB.execute
@@ -460,7 +464,7 @@ createMemberConnection_ db userId groupMemberId agentConnId =
     |]
     (userId, agentConnId, ConnNew, ConnMember, groupMemberId)
 
-createContactMember_ :: IsContact a => DB.Connection -> User -> Int64 -> a -> MemberInfo -> GroupMemberCategory -> GroupMemberStatus -> InvitedBy -> IO GroupMember
+createContactMember_ :: IsContact a => DB.Connection -> User -> Int64 -> a -> (MemberId, GroupMemberRole) -> GroupMemberCategory -> GroupMemberStatus -> InvitedBy -> IO GroupMember
 createContactMember_ db User {userId, userContactId} groupId userOrContact (memberId, memberRole) memberCategory memberStatus invitedBy = do
   insertMember_
   groupMemberId <- insertedRowId db

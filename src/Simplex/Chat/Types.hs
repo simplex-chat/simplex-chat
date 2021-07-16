@@ -93,12 +93,24 @@ instance ToJSON GroupProfile where toEncoding = J.genericToEncoding J.defaultOpt
 instance FromJSON GroupProfile
 
 data GroupInvitation = GroupInvitation
-  { fromMember :: MemberInfo,
-    invitedMember :: MemberInfo,
+  { fromMember :: (MemberId, GroupMemberRole),
+    invitedMember :: (MemberId, GroupMemberRole),
     queueInfo :: SMPQueueInfo,
     groupProfile :: GroupProfile
   }
   deriving (Eq, Show)
+
+data IntroInvitation = IntroInvitation
+  { groupQueue :: SMPQueueInfo,
+    directQueue :: SMPQueueInfo
+  }
+  deriving (Eq, Show)
+
+data MemberInfo = MemberInfo MemberId GroupMemberRole Profile
+  deriving (Eq, Show)
+
+memberInfo :: GroupMember -> MemberInfo
+memberInfo m = MemberInfo (memberId m) (memberRole m) (memberProfile m)
 
 data ReceivedGroupInvitation = ReceivedGroupInvitation
   { fromMember :: GroupMember,
@@ -107,8 +119,6 @@ data ReceivedGroupInvitation = ReceivedGroupInvitation
     groupProfile :: GroupProfile
   }
   deriving (Eq, Show)
-
-type MemberInfo = (MemberId, GroupMemberRole)
 
 data GroupMember = GroupMember
   { groupMemberId :: Int64,

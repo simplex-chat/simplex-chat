@@ -42,19 +42,30 @@ data ConnContact = CContact Contact | CConnection Connection
   deriving (Eq, Show)
 
 data ChatMsgEvent
-  = XMsgNew
-      { messageType :: MessageType,
-        files :: [(ContentType, Int)],
-        content :: [MsgBodyContent]
-      }
+  = XMsgNew MsgContent
   | XInfo Profile
   | XGrpInv GroupInvitation
   | XGrpAcpt MemberId
-  | XGrpMemNew MemberId GroupMemberRole Profile
-  | XGrpMemIntro MemberId GroupMemberRole Profile
+  | XGrpMemNew MemberInfo [MemberId]
+  | XGrpMemIntro MemberInfo
+  | XGrpMemInv MemberId IntroInvitation
+  | XGrpMemFwd MemberInfo IntroInvitation
+  | XGrpMemInfo MemberInfo
+  | XGrpMemCon MemberId
+  | XGrpMemConAll MemberId
+  | XInfoProbe ByteString
+  | XInfoProbeCheck MemberId ByteString
+  | XInfoProbeOk MemberId ByteString
   deriving (Eq, Show)
 
 data MessageType = MTText | MTImage deriving (Eq, Show)
+
+data MsgContent = MsgContent
+  { messageType :: MessageType,
+    files :: [(ContentType, Int)],
+    content :: [MsgContentBody]
+  }
+  deriving (Eq, Show)
 
 toMsgType :: ByteString -> Either String MessageType
 toMsgType = \case
@@ -82,7 +93,7 @@ toChatMessage RawChatMessage {chatMsgId, chatMsgEvent, chatMsgParams, chatMsgBod
       mt : rawFiles -> do
         t <- toMsgType mt
         files <- mapM (toContentInfo <=< parseAll contentInfoP) rawFiles
-        let msg = XMsgNew {messageType = t, files, content = body}
+        let msg = XMsgNew $ MsgContent {messageType = t, files, content = body}
         pure ChatMessage {chatMsgId, chatMsgEvent = msg, chatDAG}
       [] -> Left "x.msg.new expects at least one parameter"
     "x.info" -> case chatMsgParams of
@@ -102,93 +113,112 @@ toChatMessage RawChatMessage {chatMsgId, chatMsgEvent, chatMsgParams, chatMsgBod
         msg <- XGrpAcpt <$> B64.decode memId
         pure ChatMessage {chatMsgId, chatMsgEvent = msg, chatDAG}
       _ -> Left "x.grp.acpt expects one parameter"
-    "x.grp.mem.new" -> memberMessage chatMsgParams XGrpMemNew body chatDAG
+    -- TODO x.grp.mem.new is incorrect
+    "x.grp.mem.new" -> memberMessage chatMsgParams (`XGrpMemNew` []) body chatDAG
     "x.grp.mem.intro" -> memberMessage chatMsgParams XGrpMemIntro body chatDAG
     _ -> Left $ "unsupported event " <> B.unpack chatMsgEvent
   where
-    getDAG :: [MsgBodyContent] -> (Maybe ByteString, [MsgBodyContent])
+    getDAG :: [MsgContentBody] -> (Maybe ByteString, [MsgContentBody])
     getDAG body = case break (isContentType SimplexDAG) body of
-      (b, MsgBodyContent SimplexDAG dag : a) -> (Just dag, b <> a)
+      (b, MsgContentBody SimplexDAG dag : a) -> (Just dag, b <> a)
       _ -> (Nothing, body)
     memberMessage ::
-      FromJSON a => [ByteString] -> (MemberId -> GroupMemberRole -> a -> ChatMsgEvent) -> [MsgBodyContent] -> Maybe ByteString -> Either String ChatMessage
+      [ByteString] -> (MemberInfo -> ChatMsgEvent) -> [MsgContentBody] -> Maybe ByteString -> Either String ChatMessage
     memberMessage [memId, role] mkMsg body chatDAG = do
-      msg <- mkMsg <$> B64.decode memId <*> toMemberRole role <*> getJSON body
+      msg <- mkMsg <$> (MemberInfo <$> B64.decode memId <*> toMemberRole role <*> getJSON body)
       pure ChatMessage {chatMsgId, chatMsgEvent = msg, chatDAG}
     memberMessage _ _ _ _ = Left "message expects 2 parameters"
     toContentInfo :: (RawContentType, Int) -> Either String (ContentType, Int)
     toContentInfo (rawType, size) = (,size) <$> toContentType rawType
-    getJSON :: FromJSON a => [MsgBodyContent] -> Either String a
+    getJSON :: FromJSON a => [MsgContentBody] -> Either String a
     getJSON = J.eitherDecodeStrict' <=< getSimplexContentType XCJson
 
-isContentType :: ContentType -> MsgBodyContent -> Bool
-isContentType t MsgBodyContent {contentType = t'} = t == t'
+isContentType :: ContentType -> MsgContentBody -> Bool
+isContentType t MsgContentBody {contentType = t'} = t == t'
 
-isSimplexContentType :: XContentType -> MsgBodyContent -> Bool
+isSimplexContentType :: XContentType -> MsgContentBody -> Bool
 isSimplexContentType = isContentType . SimplexContentType
 
-getContentType :: ContentType -> [MsgBodyContent] -> Either String ByteString
+getContentType :: ContentType -> [MsgContentBody] -> Either String ByteString
 getContentType t body = case find (isContentType t) body of
-  Just MsgBodyContent {contentData} -> Right contentData
+  Just MsgContentBody {contentData} -> Right contentData
   Nothing -> Left "no required content type"
 
-getSimplexContentType :: XContentType -> [MsgBodyContent] -> Either String ByteString
+getSimplexContentType :: XContentType -> [MsgContentBody] -> Either String ByteString
 getSimplexContentType = getContentType . SimplexContentType
 
 rawChatMessage :: ChatMessage -> RawChatMessage
 rawChatMessage ChatMessage {chatMsgId, chatMsgEvent, chatDAG} =
   case chatMsgEvent of
-    XMsgNew {messageType = t, files, content} ->
+    XMsgNew MsgContent {messageType = t, files, content} ->
       let rawFiles = map (serializeContentInfo . rawContentInfo) files
-          chatMsgParams = rawMsgType t : rawFiles
-          chatMsgBody = rawWithDAG content
-       in RawChatMessage {chatMsgId, chatMsgEvent = "x.msg.new", chatMsgParams, chatMsgBody}
+       in rawChatMsg "x.msg.new" (rawMsgType t : rawFiles) content
     XInfo profile ->
-      let chatMsgBody = rawWithDAG [jsonBody profile]
-       in RawChatMessage {chatMsgId, chatMsgEvent = "x.info", chatMsgParams = [], chatMsgBody}
+      rawChatMsg "x.info" [] [jsonBody profile]
     XGrpInv (GroupInvitation (fromMemId, fromRole) (memId, role) qInfo groupProfile) ->
-      let chatMsgParams =
+      let params =
             [ B64.encode fromMemId,
               serializeMemberRole fromRole,
               B64.encode memId,
               serializeMemberRole role,
               serializeSmpQueueInfo qInfo
             ]
-          chatMsgBody = rawWithDAG [jsonBody groupProfile]
-       in RawChatMessage {chatMsgId, chatMsgEvent = "x.grp.inv", chatMsgParams, chatMsgBody}
+       in rawChatMsg "x.grp.inv" params [jsonBody groupProfile]
     XGrpAcpt memId ->
-      let chatMsgParams = [B64.encode memId]
-       in RawChatMessage {chatMsgId, chatMsgEvent = "x.grp.acpt", chatMsgParams, chatMsgBody = []}
-    XGrpMemNew memId role profile ->
-      let chatMsgParams = [B64.encode memId, serializeMemberRole role]
-          chatMsgBody = rawWithDAG [jsonBody profile]
-       in RawChatMessage {chatMsgId, chatMsgEvent = "x.grp.mem.new", chatMsgParams, chatMsgBody}
-    XGrpMemIntro memId role profile ->
-      let chatMsgParams = [B64.encode memId, serializeMemberRole role]
-          chatMsgBody = rawWithDAG [jsonBody profile]
-       in RawChatMessage {chatMsgId, chatMsgEvent = "x.grp.mem.intro", chatMsgParams, chatMsgBody}
+      rawChatMsg "x.grp.acpt" [B64.encode memId] []
+    XGrpMemNew (MemberInfo memId role profile) mIds ->
+      let params = (B64.encode memId : serializeMemberRole role : map B64.encode mIds)
+       in rawChatMsg "x.grp.mem.new" params [jsonBody profile]
+    XGrpMemIntro (MemberInfo memId role profile) ->
+      rawChatMsg "x.grp.mem.intro" [B64.encode memId, serializeMemberRole role] [jsonBody profile]
+    XGrpMemInv memId IntroInvitation {groupQueue, directQueue} ->
+      let params = [B64.encode memId, serializeSmpQueueInfo groupQueue, serializeSmpQueueInfo directQueue]
+       in rawChatMsg "x.grp.mem.inv" params []
+    XGrpMemFwd (MemberInfo memId role profile) IntroInvitation {groupQueue, directQueue} ->
+      let params =
+            [ B64.encode memId,
+              serializeMemberRole role,
+              serializeSmpQueueInfo groupQueue,
+              serializeSmpQueueInfo directQueue
+            ]
+       in rawChatMsg "x.grp.mem.fwd" params [jsonBody profile]
+    XGrpMemInfo (MemberInfo memId role profile) ->
+      rawChatMsg "x.grp.mem.info" [B64.encode memId, serializeMemberRole role] [jsonBody profile]
+    XGrpMemCon memId ->
+      rawChatMsg "x.grp.mem.con" [B64.encode memId] []
+    XGrpMemConAll memId ->
+      rawChatMsg "x.grp.mem.con.all" [B64.encode memId] []
+    XInfoProbe probe ->
+      rawChatMsg "x.info.probe" [B64.encode probe] []
+    XInfoProbeCheck memId probeHash ->
+      rawChatMsg "x.info.probe.check" [B64.encode memId, B64.encode probeHash] []
+    XInfoProbeOk memId probe ->
+      rawChatMsg "x.info.probe.ok" [B64.encode memId, B64.encode probe] []
   where
     rawContentInfo :: (ContentType, Int) -> (RawContentType, Int)
     rawContentInfo (t, size) = (rawContentType t, size)
-    jsonBody :: ToJSON a => a -> MsgBodyContent
+    jsonBody :: ToJSON a => a -> MsgContentBody
     jsonBody x =
       let json = LB.toStrict $ J.encode x
-       in MsgBodyContent {contentType = SimplexContentType XCJson, contentData = json}
-    rawWithDAG :: [MsgBodyContent] -> [RawMsgBodyContent]
+       in MsgContentBody {contentType = SimplexContentType XCJson, contentData = json}
+    rawChatMsg :: ByteString -> [ByteString] -> [MsgContentBody] -> RawChatMessage
+    rawChatMsg event chatMsgParams body =
+      RawChatMessage {chatMsgId, chatMsgEvent = event, chatMsgParams, chatMsgBody = rawWithDAG body}
+    rawWithDAG :: [MsgContentBody] -> [RawMsgBodyContent]
     rawWithDAG body = map rawMsgBodyContent $ case chatDAG of
       Nothing -> body
-      Just dag -> MsgBodyContent {contentType = SimplexDAG, contentData = dag} : body
+      Just dag -> MsgContentBody {contentType = SimplexDAG, contentData = dag} : body
 
-toMsgBodyContent :: RawMsgBodyContent -> Either String MsgBodyContent
+toMsgBodyContent :: RawMsgBodyContent -> Either String MsgContentBody
 toMsgBodyContent RawMsgBodyContent {contentType, contentData} = do
   cType <- toContentType contentType
-  pure MsgBodyContent {contentType = cType, contentData}
+  pure MsgContentBody {contentType = cType, contentData}
 
-rawMsgBodyContent :: MsgBodyContent -> RawMsgBodyContent
-rawMsgBodyContent MsgBodyContent {contentType = t, contentData} =
+rawMsgBodyContent :: MsgContentBody -> RawMsgBodyContent
+rawMsgBodyContent MsgContentBody {contentType = t, contentData} =
   RawMsgBodyContent {contentType = rawContentType t, contentData}
 
-data MsgBodyContent = MsgBodyContent
+data MsgContentBody = MsgContentBody
   { contentType :: ContentType,
     contentData :: ByteString
   }

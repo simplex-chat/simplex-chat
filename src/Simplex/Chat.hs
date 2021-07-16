@@ -150,7 +150,7 @@ processChatCommand user@User {userId, profile} = \case
     showContactDeleted cName
   SendMessage cName msg -> do
     contact <- withStore $ \st -> getContact st userId cName
-    let msgEvent = XMsgNew MTText [] [MsgBodyContent {contentType = SimplexContentType XCText, contentData = msg}]
+    let msgEvent = XMsgNew $ MsgContent MTText [] [MsgContentBody {contentType = SimplexContentType XCText, contentData = msg}]
     sendDirectMessage (contactConnId contact) msgEvent
     setActive $ ActiveC cName
   NewGroup gProfile -> do
@@ -204,7 +204,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
         MSG meta msgBody -> do
           ChatMessage {chatMsgEvent} <- liftEither $ parseChatMessage msgBody
           case chatMsgEvent of
-            XMsgNew MTText [] body -> newTextMessage c meta $ find (isSimplexContentType XCText) body
+            XMsgNew (MsgContent MTText [] body) -> newTextMessage c meta $ find (isSimplexContentType XCText) body
             XInfo _ -> pure () -- TODO profile update
             XGrpInv gInv -> saveGroupInvitation ct gInv
             _ -> pure ()
@@ -231,41 +231,69 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
       case agentMessage of
         CONF confId connInfo -> do
           ChatMessage {chatMsgEvent} <- liftEither $ parseChatMessage connInfo
-          case chatMsgEvent of
-            XGrpAcpt memId
-              | memId == memberId m -> do
-                withStore $ \st -> updateGroupMemberStatus st userId (groupMemberId m) GSMemAccepted
-                withAgent $ \a -> allowConnection a agentConnId confId ""
-              | otherwise -> pure () -- TODO error not matching member ID
-            _ -> pure () -- TODO show/log error, other events in SMP confirmation
-        CON -> do
-          Group {members} <- withStore $ \st -> getGroup st user gName
           case memberCategory m of
             GCInviteeMember -> do
-              withStore $ \st -> updateGroupMemberStatus st userId (groupMemberId m) GSMemConnected
-              sendGroupMessage members $ XGrpMemNew (memberId m) (memberRole m) (memberProfile m)
-              showConnectedGroupMember gName $ displayName (memberProfile m :: Profile)
-              forM_ (filter memberActive . map fst $ members) $ \m' ->
-                sendDirectMessage agentConnId $ XGrpMemIntro (memberId m') (memberRole m') (memberProfile m')
+              case chatMsgEvent of
+                XGrpAcpt memId
+                  | memId == memberId m -> do
+                    withStore $ \st -> updateGroupMemberStatus st userId (groupMemberId m) GSMemAccepted
+                    withAgent $ \a -> allowConnection a agentConnId confId ""
+                  | otherwise -> pure () -- TODO error not matching member ID
+                _ -> pure () -- TODO show/log error, other events in SMP confirmation
+            GCPreMember -> do
+              -- TODO this member should send `x.grp.mem.info` in SMP confirmation
+              -- user can compare role with the previously sent by host and only accept if they match
+              pure ()
             GCHostMember -> do
-              withStore $ \st -> updateGroupMemberStatus st userId (groupMemberId m) GSMemConnected
+              -- implementation error (Host member should not be sent an SMP queue invitation) - log
+              pure ()
+            GCPostMember -> do
+              -- implementation error (Post member should not be sent an SMP queue invitation from Pre member) - log
+              pure ()
+            GCUserMember -> do
+              -- TODO implementation error - log
+              pure ()
+        CON -> do
+          Group {members} <- withStore $ \st -> getGroup st user gName
+          withStore $ \st -> updateGroupMemberStatus st userId (groupMemberId m) GSMemConnected
+          case memberCategory m of
+            GCInviteeMember -> do
+              -- TODO createIntroductions should create pending intros for all "known" members
+              -- but only members that are already connected should be sent in XGrpMemNew, so possibly
+              -- createIntroductions should return [GroupMember] and here it would be filtered and sorted
+              showConnectedGroupMember gName $ displayName (memberProfile m :: Profile)
+              mIds <- withStore $ \st -> createIntroductions st m
+              sendGroupMessage members . (`XGrpMemNew` mIds) $ memberInfo m
+              forM_ (filter memberActive . map fst $ members) $ \m' ->
+                sendDirectMessage agentConnId . XGrpMemIntro $ memberInfo m'
+            GCPreMember -> do
+              -- TODO send probe and decide whether to use existing contact connection or the new contact connection
+              -- TODO notify member who forwarded introduction - question - where it is stored? There is via_contact but probably there should be via_member in group_members table
+              showConnectedGroupMember gName $ displayName (memberProfile m :: Profile)
+              pure ()
+            GCPostMember -> do
+              -- TODO notify member who forwarded introduction - question - where it is stored? There is via_contact but probably there should be via_member in group_members table
+              showConnectedGroupMember gName $ displayName (memberProfile m :: Profile)
+              pure ()
+            GCHostMember -> do
               showUserConnectedToGroup gName
               pure ()
-            _ -> do
-              showConnectedGroupMember gName $ displayName (memberProfile m :: Profile)
+            GCUserMember -> do
+              -- TODO implementation error - log
+              pure ()
         MSG meta msgBody -> do
           ChatMessage {chatMsgEvent} <- liftEither $ parseChatMessage msgBody
           case chatMsgEvent of
-            XGrpMemNew memId memRole memProfile -> do
+            XGrpMemNew (MemberInfo memId memRole memProfile) _mIds -> do
               Group {membership, members} <- withStore $ \st -> getGroup st user gName
               when (memberId membership /= memId && isNothing (find ((== memId) . memberId . fst) members)) $
                 withStore $ \st -> pure () -- add new member as GSMemAccepted
             _ -> pure ()
         _ -> pure ()
   where
-    newTextMessage :: ContactName -> MsgMeta -> Maybe MsgBodyContent -> m ()
+    newTextMessage :: ContactName -> MsgMeta -> Maybe MsgContentBody -> m ()
     newTextMessage c meta = \case
-      Just MsgBodyContent {contentData = bs} -> do
+      Just MsgContentBody {contentData = bs} -> do
         let text = safeDecodeUtf8 bs
         showReceivedMessage c (snd $ broker meta) text (integrity meta)
         showToast ("@" <> c) text
