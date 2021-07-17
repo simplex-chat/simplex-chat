@@ -213,8 +213,8 @@ data GroupMemberStatus
   | GSMemIntroduced -- user received x.grp.mem.intro for this member (only with GCPreMember)
   | GSMemInvited -- member sent or received invitation
   | GSMemAccepted -- member accepted invitation (only User and Invitee)
-  | GSMemConnected -- member created the group connection with the inviting member
   | GSMemAnnounced -- host announced (x.grp.mem.new) a member (User, Invitee and PostMember) to the group - at this point this member can send messages and invite other members (if they have sufficient permissions)
+  | GSMemConnected -- member created the group connection with the inviting member
   | GSMemComplete -- host confirmed (x.grp.mem.all) that a member (User, Invitee and PostMember) created group connections with all previous members
   | GSMemCreator -- user member that created the group (only GCUserMember)
   deriving (Eq, Show, Ord)
@@ -230,8 +230,8 @@ memberActive m = case memberStatus m of
   GSMemIntroduced -> False
   GSMemInvited -> False
   GSMemAccepted -> False
+  GSMemAnnounced -> memberCategory m == GCUserMember
   GSMemConnected -> True
-  GSMemAnnounced -> True
   GSMemComplete -> True
   GSMemCreator -> True
 

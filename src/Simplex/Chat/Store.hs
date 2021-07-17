@@ -29,9 +29,10 @@ module Simplex.Chat.Store
     createGroupInvitation,
     getGroup,
     getGroupInvitation,
-    createGroupMember,
+    createContactGroupMember,
     createMemberConnection,
     updateGroupMemberStatus,
+    createNewGroupMember,
     createIntroductions,
   )
 where
@@ -435,8 +436,8 @@ toGroupMember userContactId (groupMemberId, memberId, memberRole, memberCategory
       invitedBy = toInvitedBy userContactId invitedById
    in GroupMember {groupMemberId, memberId, memberRole, memberCategory, memberStatus, invitedBy, localDisplayName, memberProfile, memberContactId}
 
-createGroupMember :: StoreMonad m => SQLiteStore -> TVar ChaChaDRG -> User -> Int64 -> Contact -> GroupMemberRole -> ConnId -> m GroupMember
-createGroupMember st gVar user groupId contact memberRole agentConnId =
+createContactGroupMember :: StoreMonad m => SQLiteStore -> TVar ChaChaDRG -> User -> Int64 -> Contact -> GroupMemberRole -> ConnId -> m GroupMember
+createContactGroupMember st gVar user groupId contact memberRole agentConnId =
   liftIOEither . withTransaction st $ \db ->
     createWithRandomId gVar $ \memId -> do
       member <- createContactMember_ db user groupId contact (memId, memberRole) GCInviteeMember GSMemInvited IBUser
@@ -450,6 +451,10 @@ createMemberConnection st userId groupMemberId agentConnId =
 
 updateGroupMemberStatus :: MonadUnliftIO m => SQLiteStore -> UserId -> Int64 -> GroupMemberStatus -> m ()
 updateGroupMemberStatus _st _userId _groupMemberId _memberStatus = pure ()
+
+-- | add new member as GSMemAnnounced
+createNewGroupMember :: StoreMonad m => SQLiteStore -> UserId -> GroupMember -> MemberInfo -> GroupMemberStatus -> m GroupMember
+createNewGroupMember _st _userId _hostMember _newMemberInfo _memberStatus = pure GroupMember {}
 
 createIntroductions :: MonadUnliftIO m => SQLiteStore -> GroupMember -> m [MemberId]
 createIntroductions _st _m = pure []

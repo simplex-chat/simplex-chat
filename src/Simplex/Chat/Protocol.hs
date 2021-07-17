@@ -100,7 +100,9 @@ toChatMessage RawChatMessage {chatMsgId, chatMsgEvent, chatMsgParams, chatMsgBod
     ("x.grp.inv", [fromMemId, fromRole, memId, role, qInfo]) -> do
       fromMem <- (,) <$> B64.decode fromMemId <*> toMemberRole fromRole
       invitedMem <- (,) <$> B64.decode memId <*> toMemberRole role
-      chatMsg . XGrpInv =<< GroupInvitation fromMem invitedMem <$> parseAll smpQueueInfoP qInfo <*> getJSON body
+      groupQInfo <- parseAll smpQueueInfoP qInfo
+      profile <- getJSON body
+      chatMsg . XGrpInv $ GroupInvitation fromMem invitedMem groupQInfo profile
     ("x.grp.acpt", [memId]) ->
       chatMsg . XGrpAcpt =<< B64.decode memId
     ("x.grp.mem.new", memId : role : memIds) -> do

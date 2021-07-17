@@ -168,7 +168,7 @@ processChatCommand user@User {userId, profile} = \case
     unless (memberActive membership) . throwError . ChatError $ CEGroupMemberNotActive
     gVar <- asks idsDrg
     (agentConnId, qInfo) <- withAgent createConnection
-    GroupMember {memberId} <- withStore $ \st -> createGroupMember st gVar user groupId contact memRole agentConnId
+    GroupMember {memberId} <- withStore $ \st -> createContactGroupMember st gVar user groupId contact memRole agentConnId
     let msg = XGrpInv $ GroupInvitation (userMemberId, userRole) (memberId, memRole) qInfo groupProfile
     sendDirectMessage (contactConnId contact) msg
     showSentGroupInvitation group cName
@@ -240,18 +240,10 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
                     withAgent $ \a -> allowConnection a agentConnId confId ""
                   | otherwise -> pure () -- TODO error not matching member ID
                 _ -> pure () -- TODO show/log error, other events in SMP confirmation
-            GCPreMember -> do
+            _ -> do
               -- TODO this member should send `x.grp.mem.info` in SMP confirmation
               -- user can compare role with the previously sent by host and only accept if they match
-              pure ()
-            GCHostMember -> do
-              -- implementation error (Host member should not be sent an SMP queue invitation) - log
-              pure ()
-            GCPostMember -> do
-              -- implementation error (Post member should not be sent an SMP queue invitation from Pre member) - log
-              pure ()
-            GCUserMember -> do
-              -- TODO implementation error - log
+              -- TODO unsolved problem is how to manage role updates that can happen concurrently with introductions
               pure ()
         CON -> do
           Group {members} <- withStore $ \st -> getGroup st user gName
@@ -284,13 +276,72 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
         MSG meta msgBody -> do
           ChatMessage {chatMsgEvent} <- liftEither $ parseChatMessage msgBody
           case chatMsgEvent of
-            XGrpMemNew (MemberInfo memId memRole memProfile) _mIds -> do
-              Group {membership, members} <- withStore $ \st -> getGroup st user gName
-              when (memberId membership /= memId && isNothing (find ((== memId) . memberId . fst) members)) $
-                withStore $ \st -> pure () -- add new member as GSMemAccepted
+            XGrpMemNew memInfo@(MemberInfo memId _ _) _mIds -> do
+              group@Group {membership} <- withStore $ \st -> getGroup st user gName
+              case memberCategory m of
+                GCHostMember -> do
+                  -- TODO add listed members to some list of expected members - group_members table is not very good as it will make many fields nullable
+                  -- TODO maybe we should not set user to GSMemAnnounced to avoid inconsistency when for other member it means not connected yet...
+                  -- (currently user is GSMemConnected)
+                  when (memberId membership == memId) $
+                    withStore $ \st -> updateGroupMemberStatus st userId (groupMemberId membership) GSMemAnnounced
+                _ ->
+                  if isMember memId group
+                    then messageError "x.grp.mem.new error: member already exists"
+                    else withStore $ \st -> void $ createNewGroupMember st userId m memInfo GSMemAnnounced
+            -- TODO check if the members invited by user are in the list of connected (_mIds)
+            -- TODO if not - create pending introductions of the new member to skipped members that user introduced
+
+            XGrpMemIntro memInfo@(MemberInfo memId _ _) ->
+              case memberCategory m of
+                GCHostMember -> do
+                  group <- withStore $ \st -> getGroup st user gName
+                  if isMember memId group
+                    then messageWarning "x.grp.mem.intro ignored: member already exists"
+                    else do
+                      newMember <- withStore $ \st -> createNewGroupMember st userId m memInfo GSMemIntroduced
+                      (groupConnId, groupQueue) <- withAgent createConnection
+                      -- TODO save sent invitation with a member
+                      withStore $ \st -> createMemberConnection st userId (groupMemberId newMember) groupConnId
+                      (directConnId, directQueue) <- withAgent createConnection
+                      -- TODO create direct connection for a member
+                      -- currently there is no way to link this connection to a member without contact
+                      let msg = XGrpMemInv memId IntroInvitation {groupQueue, directQueue}
+                      sendDirectMessage agentConnId msg
+                      withStore $ \st -> updateGroupMemberStatus st userId (groupMemberId newMember) GSMemInvited
+                _ -> messageError "x.grp.mem.intro can be only sent by host member"
+            XGrpMemInv memId introInv ->
+              case memberCategory m of
+                GCInviteeMember -> do
+                  -- TODO update introduction status and save 2 queueInfos from introInv
+                  let memberConnId = "" -- TODO get connection ID of the member for whom introInv is sent.
+                      memInfo = MemberInfo {} -- TODO member info for the same member
+                      msg = XGrpMemFwd memInfo introInv
+                  sendDirectMessage memberConnId msg
+                _ -> messageError "x.grp.mem.inv can be only sent by invitee member"
+            XGrpMemFwd memInfo introInv@IntroInvitation {groupQueue, directQueue} -> do
+              let (member, conn) = (GroupMember {}, Connection {}) -- TODO get member and connection in relation to whom introInv is sent (based on memberId in MemberInfo)
+              -- TODO add 2 queueInfos from introInv to member
+              withStore $ \st -> updateGroupMemberStatus st userId (groupMemberId member) GSMemInvited
+              groupConnId <- withAgent $ \a -> joinConnection a groupQueue . directMessage $ XInfo profile
+              withStore $ \st -> createMemberConnection st userId (groupMemberId member) groupConnId
+              directConnId <- withAgent $ \a -> joinConnection a directQueue . directMessage $ XInfo profile
+              -- TODO create direct connection for a member
+              -- currently there is no way to link this connection to a member without contact
+              pure ()
             _ -> pure ()
         _ -> pure ()
   where
+    isMember :: MemberId -> Group -> Bool
+    isMember memId Group {membership, members} =
+      memberId membership == memId || isJust (find ((== memId) . memberId . fst) members)
+
+    messageWarning :: Text -> m ()
+    messageWarning _ = pure ()
+
+    messageError :: Text -> m ()
+    messageError _ = pure ()
+
     newTextMessage :: ContactName -> MsgMeta -> Maybe MsgContentBody -> m ()
     newTextMessage c meta = \case
       Just MsgContentBody {contentData = bs} -> do
