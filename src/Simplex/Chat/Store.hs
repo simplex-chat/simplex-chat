@@ -668,16 +668,6 @@ createIntroToMemberContact st userId GroupMember {memberContactId = viaContactId
     contactId <- createMemberContact_ db directConnId
     updateMember_ db contactId
   where
-    updateMember_ :: DB.Connection -> Int64 -> IO ()
-    updateMember_ db contactId =
-      DB.executeNamed
-        db
-        [sql|
-          UPDATE group_members
-          SET contact_id = :contact_id
-          WHERE group_member_id = :group_member_id
-        |]
-        [":contact_id" := contactId, ":group_member_id" := groupMemberId]
     createMemberContact_ :: DB.Connection -> Int64 -> IO Int64
     createMemberContact_ db connId = do
       DB.executeNamed
@@ -697,6 +687,16 @@ createIntroToMemberContact st userId GroupMember {memberContactId = viaContactId
       contactId <- insertedRowId db
       DB.execute db "UPDATE connections SET contact_id = ? WHERE connection_id = ?" (contactId, connId)
       pure contactId
+    updateMember_ :: DB.Connection -> Int64 -> IO ()
+    updateMember_ db contactId =
+      DB.executeNamed
+        db
+        [sql|
+          UPDATE group_members
+          SET contact_id = :contact_id
+          WHERE group_member_id = :group_member_id
+        |]
+        [":contact_id" := contactId, ":group_member_id" := groupMemberId]
 
 createMemberConnection_ :: DB.Connection -> UserId -> Int64 -> ConnId -> Maybe Int64 -> Int -> IO Connection
 createMemberConnection_ db userId groupMemberId agentConnId viaContact connLevel = do

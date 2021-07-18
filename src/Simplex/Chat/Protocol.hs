@@ -56,6 +56,7 @@ data ChatMsgEvent
   | XInfoProbe ByteString
   | XInfoProbeCheck MemberId ByteString
   | XInfoProbeOk MemberId ByteString
+  | XOk
   deriving (Eq, Show)
 
 data MessageType = MTText | MTImage deriving (Eq, Show)
@@ -125,6 +126,8 @@ toChatMessage RawChatMessage {chatMsgId, chatMsgEvent, chatMsgParams, chatMsgBod
       chatMsg =<< (XInfoProbeCheck <$> B64.decode memId <*> B64.decode probeHash)
     ("x.info.probe.ok", [memId, probe]) -> do
       chatMsg =<< (XInfoProbeOk <$> B64.decode memId <*> B64.decode probe)
+    ("x.ok", []) ->
+      chatMsg XOk
     _ -> Left $ "bad syntax or unsupported event " <> B.unpack chatMsgEvent
   where
     getDAG :: [MsgContentBody] -> (Maybe ByteString, [MsgContentBody])
@@ -201,6 +204,8 @@ rawChatMessage ChatMessage {chatMsgId, chatMsgEvent, chatDAG} =
       rawMsg "x.info.probe.check" [B64.encode memId, B64.encode probeHash] []
     XInfoProbeOk memId probe ->
       rawMsg "x.info.probe.ok" [B64.encode memId, B64.encode probe] []
+    XOk ->
+      rawMsg "x.ok" [] []
   where
     rawMsg :: ByteString -> [ByteString] -> [MsgContentBody] -> RawChatMessage
     rawMsg event chatMsgParams body =

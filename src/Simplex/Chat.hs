@@ -215,12 +215,27 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
             XInfo _ -> pure () -- TODO profile update
             XGrpInv gInv -> processGroupInvitation ct gInv
             _ -> pure ()
-        CONF confId _connInfo -> do
+        CONF confId connInfo -> do
           -- TODO update connection status
           -- confirming direct connection with a member
           -- liftIO $ putStrLn "CONFirmed contact"
           -- liftIO $ print ct
-          withAgent $ \a -> allowConnection a agentConnId confId ""
+          ChatMessage {chatMsgEvent} <- liftEither $ parseChatMessage connInfo
+          case chatMsgEvent of
+            XGrpMemInfo _memId _memProfile -> do
+              -- TODO check member ID
+              -- TODO update member profile
+              withAgent $ \a -> allowConnection a agentConnId confId $ directMessage XOk
+            _ -> messageError "CONF from member must have x.grp.mem.info"
+        INFO connInfo -> do
+          ChatMessage {chatMsgEvent} <- liftEither $ parseChatMessage connInfo
+          case chatMsgEvent of
+            XGrpMemInfo _memId _memProfile -> do
+              -- TODO check member ID
+              -- TODO update member profile
+              pure ()
+            XOk -> pure ()
+            _ -> messageError "INFO from member must have x.grp.mem.info or x.ok"
         CON -> do
           -- TODO update connection status
           showContactConnected ct
@@ -247,24 +262,38 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
         CONF confId connInfo -> do
           -- liftIO $ putStrLn "CONFirmed member"
           -- liftIO $ print m
+          ChatMessage {chatMsgEvent} <- liftEither $ parseChatMessage connInfo
           case memberCategory m of
-            GCInviteeMember -> do
-              ChatMessage {chatMsgEvent} <- liftEither $ parseChatMessage connInfo
+            GCInviteeMember ->
               case chatMsgEvent of
                 XGrpAcpt memId
                   | memId == memberId m -> do
                     withStore $ \st -> updateGroupMemberStatus st userId (groupMemberId m) GSMemAccepted
-                    withAgent $ \a -> allowConnection a agentConnId confId ""
+                    withAgent $ \a -> allowConnection a agentConnId confId $ directMessage XOk
                   | otherwise -> messageError "x.grp.acpt: memberId is different from expected"
                 _ -> messageError "CONF from invited member must have x.grp.acpt"
-            _ -> do
-              -- TODO this member should send `x.grp.mem.info` in SMP confirmation
-              -- user can compare role with the previously sent by host and only accept if they match
-              withAgent $ \a -> allowConnection a agentConnId confId ""
-        INFO _connInfo -> do
-          -- TODO update profile info
+            _ ->
+              case chatMsgEvent of
+                XGrpMemInfo memId _memProfile
+                  | memId == memberId m -> do
+                    -- TODO update member profile
+                    Group {membership} <- withStore $ \st -> getGroup st user gName
+                    let msg = XGrpMemInfo (memberId membership) profile
+                    withAgent $ \a -> allowConnection a agentConnId confId $ directMessage msg
+                  | otherwise -> messageError "x.grp.mem.info: memberId is different from expected"
+                _ -> messageError "CONF from member must have x.grp.mem.info"
+        INFO connInfo -> do
           -- liftIO $ putStrLn "INFO of member"
-          -- liftIO $ print _connInfo
+          -- liftIO $ print connInfo
+          ChatMessage {chatMsgEvent} <- liftEither $ parseChatMessage connInfo
+          case chatMsgEvent of
+            XGrpMemInfo memId _memProfile
+              | memId == memberId m -> do
+                -- TODO update member profile
+                pure ()
+              | otherwise -> messageError "x.grp.mem.info: memberId is different from expected"
+            XOk -> pure ()
+            _ -> messageError "INFO from member must have x.grp.mem.info"
           pure ()
         CON -> do
           -- liftIO $ putStrLn "CONnected to"
@@ -317,6 +346,8 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
                       (groupConnId, groupQInfo) <- withAgent createConnection
                       (directConnId, directQInfo) <- withAgent createConnection
                       newMember <- withStore $ \st -> createIntroReMember st user group m memInfo groupConnId directConnId
+                      liftIO $ putStrLn "created re member from introduction"
+                      liftIO $ print newMember
                       let msg = XGrpMemInv memId IntroInvitation {groupQInfo, directQInfo}
                       sendDirectMessage agentConnId msg
                       withStore $ \st -> updateGroupMemberStatus st userId (groupMemberId newMember) GSMemIntroInvited
@@ -336,17 +367,20 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
                           withStore $ \st -> updateIntroStatus st intro GMIntroInvForwarded
                 _ -> messageError "x.grp.mem.inv can be only sent by invitee member"
             XGrpMemFwd memInfo@(MemberInfo memId _ _) introInv@IntroInvitation {groupQInfo, directQInfo} -> do
-              group <- withStore $ \st -> getGroup st user gName
+              group@Group {membership} <- withStore $ \st -> getGroup st user gName
               toMember <- case find ((== memId) . memberId) $ members group of
                 -- TODO if the missed messages are correctly sent as soon as there is connection before anything else is sent
                 -- the situation when member does not exist is an error
                 -- member receiving x.grp.mem.fwd should have also received x.grp.mem.new prior to that.
                 -- For now, this branch compensates for the lack of delayed message delivery.
                 Nothing -> withStore $ \st -> createNewGroupMember st user group memInfo GCPostMember GSMemAnnounced
-                Just m' -> pure m'
+                Just m' -> liftIO (putStrLn "XGrpMemFwd: member exists!") >> pure m'
+              liftIO $ putStrLn "received forwarded invitation from Post member"
+              liftIO $ print toMember
               withStore $ \st -> saveMemberInvitation st toMember introInv
-              groupConnId <- withAgent $ \a -> joinConnection a groupQInfo . directMessage $ XInfo profile
-              directConnId <- withAgent $ \a -> joinConnection a directQInfo . directMessage $ XInfo profile
+              let msg = XGrpMemInfo (memberId membership) profile
+              groupConnId <- withAgent $ \a -> joinConnection a groupQInfo $ directMessage msg
+              directConnId <- withAgent $ \a -> joinConnection a directQInfo $ directMessage msg
               withStore $ \st -> createIntroToMemberContact st userId m toMember groupConnId directConnId
             _ -> messageError $ "unsupported message: " <> T.pack (show chatMsgEvent)
         _ -> messageError $ "unsupported agent event: " <> T.pack (show agentMessage)
