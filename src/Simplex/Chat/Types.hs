@@ -67,7 +67,7 @@ data Group = Group
   { groupId :: Int64,
     localDisplayName :: GroupName,
     groupProfile :: GroupProfile,
-    members :: [(GroupMember, Maybe Connection)],
+    members :: [GroupMember],
     membership :: GroupMember
   }
   deriving (Eq, Show)
@@ -101,8 +101,8 @@ data GroupInvitation = GroupInvitation
   deriving (Eq, Show)
 
 data IntroInvitation = IntroInvitation
-  { groupQueue :: SMPQueueInfo,
-    directQueue :: SMPQueueInfo
+  { groupQInfo :: SMPQueueInfo,
+    directQInfo :: SMPQueueInfo
   }
   deriving (Eq, Show)
 
@@ -129,9 +129,20 @@ data GroupMember = GroupMember
     invitedBy :: InvitedBy,
     localDisplayName :: ContactName,
     memberProfile :: Profile,
-    memberContactId :: Maybe Int64
+    memberContactId :: Maybe Int64,
+    activeConn :: Maybe Connection
   }
   deriving (Eq, Show)
+
+data NewGroupMember = NewGroupMember
+  { memInfo :: MemberInfo,
+    memCategory :: GroupMemberCategory,
+    memStatus :: GroupMemberStatus,
+    memInvitedBy :: InvitedBy,
+    localDisplayName :: ContactName,
+    memProfileId :: Int64,
+    memContactId :: Maybe Int64
+  }
 
 type MemberId = ByteString
 
@@ -210,10 +221,11 @@ serializeMemberCategory = \case
 data GroupMemberStatus
   = GSMemRemoved -- member who was removed from the group
   | GSMemLeft -- member who left the group
+  | GSMemInvited -- member is sent to or received invitation to join the group
   | GSMemIntroduced -- user received x.grp.mem.intro for this member (only with GCPreMember)
-  | GSMemInvited -- member sent or received invitation
+  | GSMemIntroInvited -- member is sent to or received from intro invitation
   | GSMemAccepted -- member accepted invitation (only User and Invitee)
-  | GSMemAnnounced -- host announced (x.grp.mem.new) a member (User, Invitee and PostMember) to the group - at this point this member can send messages and invite other members (if they have sufficient permissions)
+  | GSMemAnnounced -- host announced (x.grp.mem.new) a member (Invitee and PostMember) to the group - at this point this member can send messages and invite other members (if they have sufficient permissions)
   | GSMemConnected -- member created the group connection with the inviting member
   | GSMemComplete -- host confirmed (x.grp.mem.all) that a member (User, Invitee and PostMember) created group connections with all previous members
   | GSMemCreator -- user member that created the group (only GCUserMember)
@@ -227,38 +239,54 @@ memberActive :: GroupMember -> Bool
 memberActive m = case memberStatus m of
   GSMemRemoved -> False
   GSMemLeft -> False
-  GSMemIntroduced -> False
   GSMemInvited -> False
+  GSMemIntroduced -> False
+  GSMemIntroInvited -> False
   GSMemAccepted -> False
-  GSMemAnnounced -> memberCategory m == GCUserMember
+  GSMemAnnounced -> False
+  GSMemConnected -> True
+  GSMemComplete -> True
+  GSMemCreator -> True
+
+memberCurrent :: GroupMember -> Bool
+memberCurrent m = case memberStatus m of
+  GSMemRemoved -> False
+  GSMemLeft -> False
+  GSMemInvited -> False
+  GSMemIntroduced -> True
+  GSMemIntroInvited -> True
+  GSMemAccepted -> True
+  GSMemAnnounced -> True
   GSMemConnected -> True
   GSMemComplete -> True
   GSMemCreator -> True
 
 memberStatusT :: Text -> Maybe GroupMemberStatus
 memberStatusT = \case
-  "creator" -> Just GSMemCreator
   "removed" -> Just GSMemRemoved
   "left" -> Just GSMemLeft
-  "introduced" -> Just GSMemIntroduced
   "invited" -> Just GSMemInvited
+  "introduced" -> Just GSMemIntroduced
+  "intro-inv" -> Just GSMemIntroInvited
   "accepted" -> Just GSMemAccepted
-  "connected" -> Just GSMemConnected
   "announced" -> Just GSMemAnnounced
+  "connected" -> Just GSMemConnected
   "complete" -> Just GSMemComplete
+  "creator" -> Just GSMemCreator
   _ -> Nothing
 
 serializeMemberStatus :: GroupMemberStatus -> Text
 serializeMemberStatus = \case
-  GSMemCreator -> "creator"
   GSMemRemoved -> "removed"
   GSMemLeft -> "left"
-  GSMemIntroduced -> "introduced"
   GSMemInvited -> "invited"
+  GSMemIntroduced -> "introduced"
+  GSMemIntroInvited -> "intro-inv"
   GSMemAccepted -> "accepted"
-  GSMemConnected -> "connected"
   GSMemAnnounced -> "announced"
+  GSMemConnected -> "connected"
   GSMemComplete -> "complete"
+  GSMemCreator -> "creator"
 
 data Connection = Connection
   { connId :: Int64,
@@ -317,3 +345,45 @@ data NewConnection = NewConnection
     connLevel :: Int,
     viaConn :: Maybe Int64
   }
+
+data GroupMemberIntro = GroupMemberIntro
+  { introId :: Int64,
+    reMember :: GroupMember,
+    toMember :: GroupMember,
+    introStatus :: GroupMemberIntroStatus,
+    introInvitation :: Maybe IntroInvitation
+  }
+
+data GroupMemberIntroStatus
+  = GMIntroPending
+  | GMIntroSent
+  | GMIntroInvReceived
+  | GMIntroInvForwarded
+  | GMIntroReConnected
+  | GMIntroToConnected
+  | GMIntroConnected
+
+instance FromField GroupMemberIntroStatus where fromField = fromTextField_ introStatusT
+
+instance ToField GroupMemberIntroStatus where toField = toField . serializeIntroStatus
+
+introStatusT :: Text -> Maybe GroupMemberIntroStatus
+introStatusT = \case
+  "new" -> Just GMIntroPending
+  "sent" -> Just GMIntroSent
+  "rcv" -> Just GMIntroInvReceived
+  "fwd" -> Just GMIntroInvForwarded
+  "re-con" -> Just GMIntroReConnected
+  "to-con" -> Just GMIntroToConnected
+  "con" -> Just GMIntroConnected
+  _ -> Nothing
+
+serializeIntroStatus :: GroupMemberIntroStatus -> Text
+serializeIntroStatus = \case
+  GMIntroPending -> "new"
+  GMIntroSent -> "sent"
+  GMIntroInvReceived -> "rcv"
+  GMIntroInvForwarded -> "fwd"
+  GMIntroReConnected -> "re-con"
+  GMIntroToConnected -> "to-con"
+  GMIntroConnected -> "con"

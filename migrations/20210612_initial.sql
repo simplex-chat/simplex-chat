@@ -80,6 +80,8 @@ CREATE TABLE group_members ( -- group members, excluding the local user
   member_category TEXT NOT NULL, -- see GroupMemberCategory
   member_status TEXT NOT NULL, -- see GroupMemberStatus
   invited_by INTEGER REFERENCES contacts (contact_id) ON DELETE RESTRICT, -- NULL for the members who joined before the current user and for the group creator
+  group_queue_info BLOB,
+  direct_queue_info BLOB,
   user_id INTEGER NOT NULL REFERENCES users,
   local_display_name TEXT NOT NULL, -- should be the same as contact
   contact_profile_id INTEGER NOT NULL REFERENCES contact_profiles ON DELETE RESTRICT,
@@ -95,10 +97,12 @@ CREATE TABLE group_members ( -- group members, excluding the local user
 
 CREATE TABLE group_member_intros (
   group_member_intro_id INTEGER PRIMARY KEY,
-  group_member_id INTEGER NOT NULL REFERENCES group_members ON DELETE CASCADE,
+  re_group_member_id INTEGER NOT NULL REFERENCES group_members (group_member_id) ON DELETE CASCADE,
   to_group_member_id INTEGER NOT NULL REFERENCES group_members (group_member_id) ON DELETE CASCADE,
-  intro_status TEXT NOT NULL DEFAULT '', -- new, intro, inv, fwd, con
-  UNIQUE (group_member_id, to_group_member_id)
+  group_queue_info BLOB,
+  direct_queue_info BLOB,
+  intro_status TEXT NOT NULL, -- see GroupMemberIntroStatus
+  UNIQUE (re_group_member_id, to_group_member_id)
 );
 
 CREATE TABLE connections ( -- all SMP agent connections

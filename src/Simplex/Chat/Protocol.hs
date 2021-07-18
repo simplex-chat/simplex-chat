@@ -46,11 +46,11 @@ data ChatMsgEvent
   | XInfo Profile
   | XGrpInv GroupInvitation
   | XGrpAcpt MemberId
-  | XGrpMemNew MemberInfo [MemberId]
+  | XGrpMemNew MemberInfo
   | XGrpMemIntro MemberInfo
   | XGrpMemInv MemberId IntroInvitation
   | XGrpMemFwd MemberInfo IntroInvitation
-  | XGrpMemInfo MemberInfo
+  | XGrpMemInfo MemberId Profile
   | XGrpMemCon MemberId
   | XGrpMemConAll MemberId
   | XInfoProbe ByteString
@@ -105,16 +105,16 @@ toChatMessage RawChatMessage {chatMsgId, chatMsgEvent, chatMsgParams, chatMsgBod
       chatMsg . XGrpInv $ GroupInvitation fromMem invitedMem groupQInfo profile
     ("x.grp.acpt", [memId]) ->
       chatMsg . XGrpAcpt =<< B64.decode memId
-    ("x.grp.mem.new", memId : role : memIds) -> do
-      chatMsg =<< (XGrpMemNew <$> toMemberInfo memId role body <*> mapM B64.decode memIds)
+    ("x.grp.mem.new", [memId, role]) -> do
+      chatMsg . XGrpMemNew =<< toMemberInfo memId role body
     ("x.grp.mem.intro", [memId, role]) ->
       chatMsg . XGrpMemIntro =<< toMemberInfo memId role body
     ("x.grp.mem.inv", [memId, groupQInfo, directQInfo]) ->
       chatMsg =<< (XGrpMemInv <$> B64.decode memId <*> toIntroInv groupQInfo directQInfo)
     ("x.grp.mem.fwd", [memId, role, groupQInfo, directQInfo]) -> do
       chatMsg =<< (XGrpMemFwd <$> toMemberInfo memId role body <*> toIntroInv groupQInfo directQInfo)
-    ("x.grp.mem.info", [memId, role]) ->
-      chatMsg . XGrpMemInfo =<< toMemberInfo memId role body
+    ("x.grp.mem.info", [memId]) ->
+      chatMsg =<< (XGrpMemInfo <$> B64.decode memId <*> getJSON body)
     ("x.grp.mem.con", [memId]) ->
       chatMsg . XGrpMemCon =<< B64.decode memId
     ("x.grp.mem.con.all", [memId]) ->
@@ -173,24 +173,24 @@ rawChatMessage ChatMessage {chatMsgId, chatMsgEvent, chatDAG} =
        in rawMsg "x.grp.inv" params [jsonBody groupProfile]
     XGrpAcpt memId ->
       rawMsg "x.grp.acpt" [B64.encode memId] []
-    XGrpMemNew (MemberInfo memId role profile) mIds ->
-      let params = (B64.encode memId : serializeMemberRole role : map B64.encode mIds)
+    XGrpMemNew (MemberInfo memId role profile) ->
+      let params = [B64.encode memId, serializeMemberRole role]
        in rawMsg "x.grp.mem.new" params [jsonBody profile]
     XGrpMemIntro (MemberInfo memId role profile) ->
       rawMsg "x.grp.mem.intro" [B64.encode memId, serializeMemberRole role] [jsonBody profile]
-    XGrpMemInv memId IntroInvitation {groupQueue, directQueue} ->
-      let params = [B64.encode memId, serializeSmpQueueInfo groupQueue, serializeSmpQueueInfo directQueue]
+    XGrpMemInv memId IntroInvitation {groupQInfo, directQInfo} ->
+      let params = [B64.encode memId, serializeSmpQueueInfo groupQInfo, serializeSmpQueueInfo directQInfo]
        in rawMsg "x.grp.mem.inv" params []
-    XGrpMemFwd (MemberInfo memId role profile) IntroInvitation {groupQueue, directQueue} ->
+    XGrpMemFwd (MemberInfo memId role profile) IntroInvitation {groupQInfo, directQInfo} ->
       let params =
             [ B64.encode memId,
               serializeMemberRole role,
-              serializeSmpQueueInfo groupQueue,
-              serializeSmpQueueInfo directQueue
+              serializeSmpQueueInfo groupQInfo,
+              serializeSmpQueueInfo directQInfo
             ]
        in rawMsg "x.grp.mem.fwd" params [jsonBody profile]
-    XGrpMemInfo (MemberInfo memId role profile) ->
-      rawMsg "x.grp.mem.info" [B64.encode memId, serializeMemberRole role] [jsonBody profile]
+    XGrpMemInfo memId profile ->
+      rawMsg "x.grp.mem.info" [B64.encode memId] [jsonBody profile]
     XGrpMemCon memId ->
       rawMsg "x.grp.mem.con" [B64.encode memId] []
     XGrpMemConAll memId ->

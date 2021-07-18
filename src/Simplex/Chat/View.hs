@@ -209,7 +209,7 @@ ttyFullGroup Group {localDisplayName, groupProfile = GroupProfile {fullName}} =
 
 optFullName :: Text -> Text -> StyledString
 optFullName localDisplayName fullName
-  | localDisplayName == fullName = ""
+  | T.null fullName || localDisplayName == fullName = ""
   | otherwise = plain (" (" <> fullName <> ")")
 
 highlight :: StyledFormat a => a -> StyledString
