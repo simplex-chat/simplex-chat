@@ -13,7 +13,9 @@ module Simplex.Chat.View
     showContactConnected,
     showContactDisconnected,
     showReceivedMessage,
+    showReceivedGroupMessage,
     showSentMessage,
+    showSentGroupMessage,
     showGroupCreated,
     showSentGroupInvitation,
     showReceivedGroupInvitation,
@@ -60,10 +62,22 @@ showContactDisconnected :: ChatReader m => ContactName -> m ()
 showContactDisconnected = printToView . contactDisconnected
 
 showReceivedMessage :: ChatReader m => ContactName -> UTCTime -> Text -> MsgIntegrity -> m ()
-showReceivedMessage c utcTime msg mOk = printToView =<< liftIO (receivedMessage c utcTime msg mOk)
+showReceivedMessage = showReceivedMessage_ . ttyFromContact
+
+showReceivedGroupMessage :: ChatReader m => GroupName -> ContactName -> UTCTime -> Text -> MsgIntegrity -> m ()
+showReceivedGroupMessage = showReceivedMessage_ .: ttyFromGroup
+
+showReceivedMessage_ :: ChatReader m => StyledString -> UTCTime -> Text -> MsgIntegrity -> m ()
+showReceivedMessage_ from utcTime msg mOk = printToView =<< liftIO (receivedMessage from utcTime msg mOk)
 
 showSentMessage :: ChatReader m => ContactName -> ByteString -> m ()
-showSentMessage c msg = printToView =<< liftIO (sentMessage c msg)
+showSentMessage = showSentMessage_ . ttyToContact
+
+showSentGroupMessage :: ChatReader m => GroupName -> ByteString -> m ()
+showSentGroupMessage = showSentMessage_ . ttyToGroup
+
+showSentMessage_ :: ChatReader m => StyledString -> ByteString -> m ()
+showSentMessage_ to msg = printToView =<< liftIO (sentMessage to msg)
 
 showGroupCreated :: ChatReader m => Group -> m ()
 showGroupCreated = printToView . groupCreated
@@ -119,10 +133,10 @@ connectedGroupMember g c = [ttyContact c <> " joined the group " <> ttyGroup g]
 userConnectedToGroup :: GroupName -> [StyledString]
 userConnectedToGroup g = ["you joined the group " <> ttyGroup g]
 
-receivedMessage :: ContactName -> UTCTime -> Text -> MsgIntegrity -> IO [StyledString]
-receivedMessage c utcTime msg mOk = do
+receivedMessage :: StyledString -> UTCTime -> Text -> MsgIntegrity -> IO [StyledString]
+receivedMessage from utcTime msg mOk = do
   t <- formatUTCTime <$> getCurrentTimeZone <*> getZonedTime
-  pure $ prependFirst (t <> " " <> ttyFromContact c) (msgPlain msg) ++ showIntegrity mOk
+  pure $ prependFirst (t <> " " <> from) (msgPlain msg) ++ showIntegrity mOk
   where
     formatUTCTime :: TimeZone -> ZonedTime -> StyledString
     formatUTCTime localTz currentTime =
@@ -145,10 +159,10 @@ receivedMessage c utcTime msg mOk = do
     msgError :: String -> [StyledString]
     msgError s = [styled (Colored Red) s]
 
-sentMessage :: ContactName -> ByteString -> IO [StyledString]
-sentMessage c msg = do
+sentMessage :: StyledString -> ByteString -> IO [StyledString]
+sentMessage to msg = do
   time <- formatTime defaultTimeLocale "%H:%M" <$> getZonedTime
-  pure $ prependFirst (styleTime time <> " " <> ttyToContact c) (msgPlain $ safeDecodeUtf8 msg)
+  pure $ prependFirst (styleTime time <> " " <> to) (msgPlain $ safeDecodeUtf8 msg)
 
 prependFirst :: StyledString -> [StyledString] -> [StyledString]
 prependFirst s [] = [s]
@@ -207,6 +221,12 @@ ttyFullGroup :: Group -> StyledString
 ttyFullGroup Group {localDisplayName, groupProfile = GroupProfile {fullName}} =
   ttyGroup localDisplayName <> optFullName localDisplayName fullName
 
+ttyFromGroup :: GroupName -> ContactName -> StyledString
+ttyFromGroup g c = styled (Colored Yellow) $ "#" <> g <> " " <> c <> "> "
+
+ttyToGroup :: GroupName -> StyledString
+ttyToGroup g = styled (Colored Blue) $ "#" <> g <> " "
+
 optFullName :: Text -> Text -> StyledString
 optFullName localDisplayName fullName
   | T.null fullName || localDisplayName == fullName = ""
@@ -217,9 +237,6 @@ highlight = styled (Colored Cyan)
 
 highlight' :: String -> StyledString
 highlight' = highlight
-
--- ttyFromGroup :: Group -> Contact -> StyledString
--- ttyFromGroup (Group g) (Contact a) = styled (Colored Yellow) $ "#" <> g <> " " <> a <> "> "
 
 styleTime :: String -> StyledString
 styleTime = Styled [SetColor Foreground Vivid Black]

@@ -134,6 +134,11 @@ data GroupMember = GroupMember
   }
   deriving (Eq, Show)
 
+memberConnId :: GroupMember -> Maybe ConnId
+memberConnId GroupMember {activeConn} = case activeConn of
+  Just Connection {agentConnId} -> Just agentConnId
+  Nothing -> Nothing
+
 data NewGroupMember = NewGroupMember
   { memInfo :: MemberInfo,
     memCategory :: GroupMemberCategory,

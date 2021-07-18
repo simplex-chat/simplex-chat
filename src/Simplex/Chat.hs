@@ -126,6 +126,7 @@ inputSubscriber = do
           Right cmd -> do
             case cmd of
               SendMessage c msg -> showSentMessage c msg
+              SendGroupMessage g msg -> showSentGroupMessage g msg
               _ -> printToView [plain s]
             user <- asks currentUser
             void . runExceptT $ processChatCommand user cmd `catchError` showChatError
@@ -176,12 +177,18 @@ processChatCommand user@User {userId, profile} = \case
     ReceivedGroupInvitation {fromMember, invitedMember, queueInfo} <- withStore $ \st -> getGroupInvitation st user gName
     agentConnId <- withAgent $ \a -> joinConnection a queueInfo . directMessage . XGrpAcpt $ memberId invitedMember
     withStore $ \st -> createMemberConnection st userId (groupMemberId fromMember) agentConnId
-  MemberRole _gRef _cRef _mRole -> pure ()
-  RemoveMember _gRef _cRef -> pure ()
-  LeaveGroup _gRef -> pure ()
-  DeleteGroup _gRef -> pure ()
-  ListMembers _gRef -> pure ()
-  SendGroupMessage _gRef _msg -> pure ()
+  MemberRole _gName _cName _mRole -> pure ()
+  RemoveMember _gName _cName -> pure ()
+  LeaveGroup _gName -> pure ()
+  DeleteGroup _gName -> pure ()
+  ListMembers _gName -> pure ()
+  SendGroupMessage gName msg -> do
+    -- TODO save sent messages
+    -- TODO save pending message delivery for members without connections
+    Group {members} <- withStore $ \st -> getGroup st user gName
+    let msgEvent = XMsgNew $ MsgContent MTText [] [MsgContentBody {contentType = SimplexContentType XCText, contentData = msg}]
+    forM_ members $ traverse (`sendDirectMessage` msgEvent) . memberConnId
+    setActive $ ActiveG gName
   where
     isMember :: Contact -> [GroupMember] -> Bool
     isMember Contact {contactId} members = isJust $ find ((== Just contactId) . memberContactId) members
@@ -286,9 +293,11 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
             GCUserMember -> do
               -- TODO implementation error - log
               pure ()
-        MSG _meta msgBody -> do
+        MSG meta msgBody -> do
           ChatMessage {chatMsgEvent} <- liftEither $ parseChatMessage msgBody
           case chatMsgEvent of
+            XMsgNew (MsgContent MTText [] body) ->
+              newGroupTextMessage gName m meta $ find (isSimplexContentType XCText) body
             XGrpMemNew memInfo@(MemberInfo memId memRole _) -> do
               group@Group {membership} <- withStore $ \st -> getGroup st user gName
               case memberCategory m of
@@ -350,7 +359,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
     messageWarning _ = pure ()
 
     messageError :: Text -> m ()
-    messageError _ = pure ()
+    messageError = liftIO . print
 
     newTextMessage :: ContactName -> MsgMeta -> Maybe MsgContentBody -> m ()
     newTextMessage c meta = \case
@@ -359,7 +368,16 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
         showReceivedMessage c (snd $ broker meta) text (integrity meta)
         showToast ("@" <> c) text
         setActive $ ActiveC c
-      _ -> pure ()
+      _ -> messageError "x.msg.new: no expected message body"
+
+    newGroupTextMessage :: GroupName -> GroupMember -> MsgMeta -> Maybe MsgContentBody -> m ()
+    newGroupTextMessage gName GroupMember {localDisplayName = c} meta = \case
+      Just MsgContentBody {contentData = bs} -> do
+        let text = safeDecodeUtf8 bs
+        showReceivedGroupMessage gName c (snd $ broker meta) text (integrity meta)
+        showToast ("#" <> gName <> "@" <> c) text
+        setActive $ ActiveG gName
+      _ -> messageError "x.msg.new: no expected message body"
 
     processGroupInvitation :: Contact -> GroupInvitation -> m ()
     processGroupInvitation ct@Contact {localDisplayName} inv@(GroupInvitation (fromMemId, fromRole) (memId, memRole) _ _) = do
