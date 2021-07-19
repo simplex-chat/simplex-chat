@@ -448,7 +448,7 @@ getGroupInvitation st user localDisplayName =
     when (memberStatus membership /= GSMemInvited) $ throwError SEGroupAlreadyJoined
     case (qInfo, findFromContact (invitedBy membership) members) of
       (Just queueInfo, Just fromMember) ->
-        pure ReceivedGroupInvitation {fromMember, invitedMember = membership, queueInfo, groupProfile}
+        pure ReceivedGroupInvitation {fromMember, userMember = membership, queueInfo, groupProfile}
       _ -> throwError SEGroupInvitationNotFound
   where
     findFromContact :: InvitedBy -> [GroupMember] -> Maybe GroupMember

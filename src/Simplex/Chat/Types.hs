@@ -114,7 +114,7 @@ memberInfo m = MemberInfo (memberId m) (memberRole m) (memberProfile m)
 
 data ReceivedGroupInvitation = ReceivedGroupInvitation
   { fromMember :: GroupMember,
-    invitedMember :: GroupMember,
+    userMember :: GroupMember,
     queueInfo :: SMPQueueInfo,
     groupProfile :: GroupProfile
   }

@@ -174,9 +174,12 @@ processChatCommand user@User {userId, profile} = \case
     sendDirectMessage (contactConnId contact) msg
     showSentGroupInvitation group cName
   JoinGroup gName -> do
-    ReceivedGroupInvitation {fromMember, invitedMember, queueInfo} <- withStore $ \st -> getGroupInvitation st user gName
-    agentConnId <- withAgent $ \a -> joinConnection a queueInfo . directMessage . XGrpAcpt $ memberId invitedMember
-    withStore $ \st -> createMemberConnection st userId (groupMemberId fromMember) agentConnId
+    ReceivedGroupInvitation {fromMember, userMember, queueInfo} <- withStore $ \st -> getGroupInvitation st user gName
+    agentConnId <- withAgent $ \a -> joinConnection a queueInfo . directMessage . XGrpAcpt $ memberId userMember
+    withStore $ \st -> do
+      createMemberConnection st userId (groupMemberId fromMember) agentConnId
+      updateGroupMemberStatus st userId (groupMemberId fromMember) GSMemAccepted
+      updateGroupMemberStatus st userId (groupMemberId userMember) GSMemAccepted
   MemberRole _gName _cName _mRole -> pure ()
   RemoveMember _gName _cName -> pure ()
   LeaveGroup _gName -> pure ()
@@ -187,7 +190,7 @@ processChatCommand user@User {userId, profile} = \case
     -- TODO save pending message delivery for members without connections
     Group {members} <- withStore $ \st -> getGroup st user gName
     let msgEvent = XMsgNew $ MsgContent MTText [] [MsgContentBody {contentType = SimplexContentType XCText, contentData = msg}]
-    forM_ members $ traverse (`sendDirectMessage` msgEvent) . memberConnId
+    sendGroupMessage members msgEvent
     setActive $ ActiveG gName
   where
     isMember :: Contact -> [GroupMember] -> Bool
@@ -218,8 +221,6 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
         CONF confId connInfo -> do
           -- TODO update connection status
           -- confirming direct connection with a member
-          -- liftIO $ putStrLn "CONFirmed contact"
-          -- liftIO $ print ct
           ChatMessage {chatMsgEvent} <- liftEither $ parseChatMessage connInfo
           case chatMsgEvent of
             XGrpMemInfo _memId _memProfile -> do
@@ -239,29 +240,28 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
         CON -> do
           -- TODO update connection status
           showContactConnected ct
-          showToast ("@" <> c) "connected"
+          showToast (c <> "> ") "connected"
           setActive $ ActiveC c
         END -> do
           showContactDisconnected c
-          showToast ("@" <> c) "disconnected"
+          showToast (c <> "> ") "disconnected"
           unsetActive $ ActiveC c
         _ -> messageError $ "unexpected agent event: " <> T.pack (show agentMessage)
     ReceivedDirectMessage (CConnection conn) ->
       case agentMessage of
         CONF confId connInfo -> do
           -- TODO update connection status
-          -- liftIO $ putStrLn "CONFirmed connection"
-          -- liftIO $ print conn
           saveConnInfo conn connInfo
           withAgent $ \a -> allowConnection a agentConnId confId . directMessage $ XInfo profile
         INFO connInfo ->
           saveConnInfo conn connInfo
+        CON -> do
+          -- TODO update connection status
+          pure ()
         _ -> messageError $ "unsupported agent event: " <> T.pack (show agentMessage)
     ReceivedGroupMessage gName m ->
       case agentMessage of
         CONF confId connInfo -> do
-          -- liftIO $ putStrLn "CONFirmed member"
-          -- liftIO $ print m
           ChatMessage {chatMsgEvent} <- liftEither $ parseChatMessage connInfo
           case memberCategory m of
             GCInviteeMember ->
@@ -283,8 +283,6 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
                   | otherwise -> messageError "x.grp.mem.info: memberId is different from expected"
                 _ -> messageError "CONF from member must have x.grp.mem.info"
         INFO connInfo -> do
-          -- liftIO $ putStrLn "INFO of member"
-          -- liftIO $ print connInfo
           ChatMessage {chatMsgEvent} <- liftEither $ parseChatMessage connInfo
           case chatMsgEvent of
             XGrpMemInfo memId _memProfile
@@ -296,10 +294,10 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
             _ -> messageError "INFO from member must have x.grp.mem.info"
           pure ()
         CON -> do
-          -- liftIO $ putStrLn "CONnected to"
-          -- liftIO $ print m
-          group@Group {members} <- withStore $ \st -> getGroup st user gName
-          withStore $ \st -> updateGroupMemberStatus st userId (groupMemberId m) GSMemConnected
+          group@Group {members, membership} <- withStore $ \st -> getGroup st user gName
+          withStore $ \st -> do
+            updateGroupMemberStatus st userId (groupMemberId m) GSMemConnected
+            updateGroupMemberStatus st userId (groupMemberId membership) GSMemConnected
           -- TODO forward any pending (GMIntroInvReceived) introductions
           case memberCategory m of
             GCHostMember -> showUserConnectedToGroup gName
@@ -314,28 +312,22 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
               -- TODO send probe and decide whether to use existing contact connection or the new contact connection
               -- TODO notify member who forwarded introduction - question - where it is stored? There is via_contact but probably there should be via_member in group_members table
               showConnectedGroupMember gName $ displayName (memberProfile m :: Profile)
-              pure ()
             GCPostMember -> do
               -- TODO notify member who forwarded introduction - question - where it is stored? There is via_contact but probably there should be via_member in group_members table
               showConnectedGroupMember gName $ displayName (memberProfile m :: Profile)
-              pure ()
-            GCUserMember -> do
-              -- TODO implementation error - log
-              pure ()
+            GCUserMember ->
+              messageError "implementation error - CON received from User member"
         MSG meta msgBody -> do
           ChatMessage {chatMsgEvent} <- liftEither $ parseChatMessage msgBody
           case chatMsgEvent of
             XMsgNew (MsgContent MTText [] body) ->
               newGroupTextMessage gName m meta $ find (isSimplexContentType XCText) body
-            XGrpMemNew memInfo@(MemberInfo memId memRole _) -> do
+            XGrpMemNew memInfo@(MemberInfo memId _ _) -> do
               group@Group {membership} <- withStore $ \st -> getGroup st user gName
-              case memberCategory m of
-                GCHostMember -> do
-                  unless (memberId membership == memId && memberRole membership == memRole) $
-                    messageError "x.grp.mem.new error: memberId or role is different from user's"
-                _
-                  | isMember memId group -> messageError "x.grp.mem.new error: member already exists"
-                  | otherwise -> withStore $ \st -> void $ createNewGroupMember st user group memInfo GCPostMember GSMemAnnounced
+              when (memberId membership /= memId) $
+                if isMember memId group
+                  then messageError "x.grp.mem.new error: member already exists"
+                  else withStore $ \st -> void $ createNewGroupMember st user group memInfo GCPostMember GSMemAnnounced
             XGrpMemIntro memInfo@(MemberInfo memId _ _) ->
               case memberCategory m of
                 GCHostMember -> do
@@ -346,8 +338,6 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
                       (groupConnId, groupQInfo) <- withAgent createConnection
                       (directConnId, directQInfo) <- withAgent createConnection
                       newMember <- withStore $ \st -> createIntroReMember st user group m memInfo groupConnId directConnId
-                      liftIO $ putStrLn "created re member from introduction"
-                      liftIO $ print newMember
                       let msg = XGrpMemInv memId IntroInvitation {groupQInfo, directQInfo}
                       sendDirectMessage agentConnId msg
                       withStore $ \st -> updateGroupMemberStatus st userId (groupMemberId newMember) GSMemIntroInvited
@@ -374,9 +364,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
                 -- member receiving x.grp.mem.fwd should have also received x.grp.mem.new prior to that.
                 -- For now, this branch compensates for the lack of delayed message delivery.
                 Nothing -> withStore $ \st -> createNewGroupMember st user group memInfo GCPostMember GSMemAnnounced
-                Just m' -> liftIO (putStrLn "XGrpMemFwd: member exists!") >> pure m'
-              liftIO $ putStrLn "received forwarded invitation from Post member"
-              liftIO $ print toMember
+                Just m' -> pure m'
               withStore $ \st -> saveMemberInvitation st toMember introInv
               let msg = XGrpMemInfo (memberId membership) profile
               groupConnId <- withAgent $ \a -> joinConnection a groupQInfo $ directMessage msg
@@ -390,7 +378,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
       memberId membership == memId || isJust (find ((== memId) . memberId) members)
 
     messageWarning :: Text -> m ()
-    messageWarning _ = pure ()
+    messageWarning = liftIO . print
 
     messageError :: Text -> m ()
     messageError = liftIO . print
@@ -400,7 +388,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
       Just MsgContentBody {contentData = bs} -> do
         let text = safeDecodeUtf8 bs
         showReceivedMessage c (snd $ broker meta) text (integrity meta)
-        showToast ("@" <> c) text
+        showToast (c <> "> ") text
         setActive $ ActiveC c
       _ -> messageError "x.msg.new: no expected message body"
 
@@ -409,7 +397,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
       Just MsgContentBody {contentData = bs} -> do
         let text = safeDecodeUtf8 bs
         showReceivedGroupMessage gName c (snd $ broker meta) text (integrity meta)
-        showToast ("#" <> gName <> "@" <> c) text
+        showToast ("#" <> gName <> " " <> c <> "> ") text
         setActive $ ActiveG gName
       _ -> messageError "x.msg.new: no expected message body"
 
@@ -441,7 +429,10 @@ directMessage chatMsgEvent =
     rawChatMessage ChatMessage {chatMsgId = Nothing, chatMsgEvent, chatDAG = Nothing}
 
 sendGroupMessage :: ChatMonad m => [GroupMember] -> ChatMsgEvent -> m ()
-sendGroupMessage _members _chatMsgEvent = pure ()
+sendGroupMessage members chatMsgEvent = do
+  let msg = directMessage chatMsgEvent
+  withAgent $ \a ->
+    forM_ members $ traverse (\connId -> sendMessage a connId msg) . memberConnId
 
 getCreateActiveUser :: SQLiteStore -> IO User
 getCreateActiveUser st = do
@@ -527,9 +518,9 @@ withStore action =
 chatCommandP :: Parser ChatCommand
 chatCommandP =
   ("/help" <|> "/h") $> ChatHelp
-    <|> ("/group #" <|> "/g #") *> (NewGroup <$> groupProfile)
-    <|> ("/add #" <|> "/a #") *> (AddMember <$> displayName <* A.space <*> displayName <*> memberRole)
-    <|> ("/join #" <|> "/j #") *> (JoinGroup <$> displayName)
+    <|> ("/group #" <|> "/group " <|> "/g #" <|> "/g ") *> (NewGroup <$> groupProfile)
+    <|> ("/add #" <|> "/add " <|> "/a #" <|> "/a ") *> (AddMember <$> displayName <* A.space <*> displayName <*> memberRole)
+    <|> ("/join #" <|> "/join " <|> "/j #" <|> "/j ") *> (JoinGroup <$> displayName)
     <|> ("/remove #" <|> "/rm #") *> (RemoveMember <$> displayName <* A.space <*> displayName)
     <|> ("/delete #" <|> "/d #") *> (DeleteGroup <$> displayName)
     <|> ("/members #" <|> "/ms #") *> (ListMembers <$> displayName)
