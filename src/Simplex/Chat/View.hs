@@ -19,8 +19,10 @@ module Simplex.Chat.View
     showGroupCreated,
     showSentGroupInvitation,
     showReceivedGroupInvitation,
-    showConnectedGroupMember,
-    showUserConnectedToGroup,
+    showJoinedGroupMember,
+    showUserJoinedGroup,
+    showJoinedGroupMemberConnecting,
+    showConnectedToGroupMember,
     safeDecodeUtf8,
   )
 where
@@ -28,7 +30,7 @@ where
 import Control.Monad.IO.Unlift
 import Control.Monad.Reader
 import Data.ByteString.Char8 (ByteString)
-import Data.Composition ((.:))
+import Data.Composition ((.:), (.:.))
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (DiffTime, UTCTime)
@@ -85,14 +87,20 @@ showGroupCreated = printToView . groupCreated
 showSentGroupInvitation :: ChatReader m => Group -> ContactName -> m ()
 showSentGroupInvitation = printToView .: sentGroupInvitation
 
-showReceivedGroupInvitation :: ChatReader m => Group -> ContactName -> m ()
-showReceivedGroupInvitation = printToView .: receivedGroupInvitation
+showReceivedGroupInvitation :: ChatReader m => Group -> ContactName -> GroupMemberRole -> m ()
+showReceivedGroupInvitation = printToView .:. receivedGroupInvitation
 
-showConnectedGroupMember :: ChatReader m => GroupName -> ContactName -> m ()
-showConnectedGroupMember = printToView .: connectedGroupMember
+showJoinedGroupMember :: ChatReader m => GroupName -> GroupMember -> m ()
+showJoinedGroupMember = printToView .: joinedGroupMember
 
-showUserConnectedToGroup :: ChatReader m => GroupName -> m ()
-showUserConnectedToGroup = printToView . userConnectedToGroup
+showUserJoinedGroup :: ChatReader m => GroupName -> m ()
+showUserJoinedGroup = printToView . userJoinedGroup
+
+showJoinedGroupMemberConnecting :: ChatReader m => GroupName -> GroupMember -> GroupMember -> m ()
+showJoinedGroupMemberConnecting = printToView .:. joinedGroupMemberConnecting
+
+showConnectedToGroupMember :: ChatReader m => GroupName -> GroupMember -> m ()
+showConnectedToGroupMember = printToView .: connectedToGroupMember
 
 invitation :: SMPQueueInfo -> [StyledString]
 invitation qInfo =
@@ -115,23 +123,29 @@ contactDisconnected c = ["disconnected from " <> ttyContact c <> " - restart cha
 groupCreated :: Group -> [StyledString]
 groupCreated g@Group {localDisplayName} =
   [ "group " <> ttyFullGroup g <> " is created",
-    "use " <> highlight ("/a #" <> localDisplayName <> " <name>") <> " to add members"
+    "use " <> highlight ("/a " <> localDisplayName <> " <name>") <> " to add members"
   ]
 
 sentGroupInvitation :: Group -> ContactName -> [StyledString]
 sentGroupInvitation g c = ["invitation to join the group " <> ttyFullGroup g <> " sent to " <> ttyContact c]
 
-receivedGroupInvitation :: Group -> ContactName -> [StyledString]
-receivedGroupInvitation g@Group {localDisplayName} c =
-  [ ttyContact c <> " invites you to join the group " <> ttyFullGroup g,
-    "use " <> highlight ("/j #" <> localDisplayName) <> " to accept"
+receivedGroupInvitation :: Group -> ContactName -> GroupMemberRole -> [StyledString]
+receivedGroupInvitation g@Group {localDisplayName} c role =
+  [ ttyFullGroup g <> ": " <> ttyContact c <> " invites you to join the group as " <> plain (serializeMemberRole role),
+    "use " <> highlight ("/j " <> localDisplayName) <> " to accept"
   ]
 
-connectedGroupMember :: GroupName -> ContactName -> [StyledString]
-connectedGroupMember g c = [ttyContact c <> " joined the group " <> ttyGroup g]
+joinedGroupMember :: GroupName -> GroupMember -> [StyledString]
+joinedGroupMember g m = [ttyGroup g <> ": " <> ttyMember m <> " joined the group "]
 
-userConnectedToGroup :: GroupName -> [StyledString]
-userConnectedToGroup g = ["you joined the group " <> ttyGroup g]
+userJoinedGroup :: GroupName -> [StyledString]
+userJoinedGroup g = [ttyGroup g <> ": you joined the group"]
+
+joinedGroupMemberConnecting :: GroupName -> GroupMember -> GroupMember -> [StyledString]
+joinedGroupMemberConnecting g host m = [ttyGroup g <> ": " <> ttyMember host <> " added " <> ttyFullMember m <> " to the group (connecting...)"]
+
+connectedToGroupMember :: GroupName -> GroupMember -> [StyledString]
+connectedToGroupMember g m = [ttyGroup g <> ": you are connected to member " <> ttyMember m]
 
 receivedMessage :: StyledString -> UTCTime -> Text -> MsgIntegrity -> IO [StyledString]
 receivedMessage from utcTime msg mOk = do
@@ -206,7 +220,17 @@ ttyContact = styled (Colored Green)
 
 ttyFullContact :: Contact -> StyledString
 ttyFullContact Contact {localDisplayName, profile = Profile {fullName}} =
-  ttyContact localDisplayName <> optFullName localDisplayName fullName
+  ttyFullName localDisplayName fullName
+
+ttyMember :: GroupMember -> StyledString
+ttyMember GroupMember {localDisplayName} = ttyContact localDisplayName
+
+ttyFullMember :: GroupMember -> StyledString
+ttyFullMember GroupMember {localDisplayName, memberProfile = Profile {fullName}} =
+  ttyFullName localDisplayName fullName
+
+ttyFullName :: ContactName -> Text -> StyledString
+ttyFullName c fullName = ttyContact c <> optFullName c fullName
 
 ttyToContact :: ContactName -> StyledString
 ttyToContact c = styled (Colored Cyan) $ "@" <> c <> " "
@@ -227,7 +251,7 @@ ttyFromGroup g c = styled (Colored Yellow) $ "#" <> g <> " " <> c <> "> "
 ttyToGroup :: GroupName -> StyledString
 ttyToGroup g = styled (Colored Blue) $ "#" <> g <> " "
 
-optFullName :: Text -> Text -> StyledString
+optFullName :: ContactName -> Text -> StyledString
 optFullName localDisplayName fullName
   | T.null fullName || localDisplayName == fullName = ""
   | otherwise = plain (" (" <> fullName <> ")")

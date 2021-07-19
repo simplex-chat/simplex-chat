@@ -191,7 +191,7 @@ fromBlobField_ p = \case
   f@(Field (SQLBlob b) _) ->
     case p b of
       Right k -> Ok k
-      Left e -> returnError ConversionFailed f ("couldn't parse field: " ++ e)
+      Left e -> returnError ConversionFailed f ("could not parse field: " ++ e)
   f -> returnError ConversionFailed f "expecting SQLBlob column type"
 
 data GroupMemberCategory

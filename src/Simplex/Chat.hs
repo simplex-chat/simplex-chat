@@ -300,9 +300,9 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
             updateGroupMemberStatus st userId (groupMemberId membership) GSMemConnected
           -- TODO forward any pending (GMIntroInvReceived) introductions
           case memberCategory m of
-            GCHostMember -> showUserConnectedToGroup gName
+            GCHostMember -> showUserJoinedGroup gName
             GCInviteeMember -> do
-              showConnectedGroupMember gName $ displayName (memberProfile m :: Profile)
+              showJoinedGroupMember gName m
               intros <- withStore $ \st -> createIntroductions st group m
               sendGroupMessage members . XGrpMemNew $ memberInfo m
               forM_ intros $ \intro -> do
@@ -311,10 +311,10 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
             GCPreMember -> do
               -- TODO send probe and decide whether to use existing contact connection or the new contact connection
               -- TODO notify member who forwarded introduction - question - where it is stored? There is via_contact but probably there should be via_member in group_members table
-              showConnectedGroupMember gName $ displayName (memberProfile m :: Profile)
+              showConnectedToGroupMember gName m
             GCPostMember -> do
               -- TODO notify member who forwarded introduction - question - where it is stored? There is via_contact but probably there should be via_member in group_members table
-              showConnectedGroupMember gName $ displayName (memberProfile m :: Profile)
+              showConnectedToGroupMember gName m
             GCUserMember ->
               messageError "implementation error - CON received from User member"
         MSG meta msgBody -> do
@@ -327,7 +327,9 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
               when (memberId membership /= memId) $
                 if isMember memId group
                   then messageError "x.grp.mem.new error: member already exists"
-                  else withStore $ \st -> void $ createNewGroupMember st user group memInfo GCPostMember GSMemAnnounced
+                  else do
+                    newMember <- withStore $ \st -> createNewGroupMember st user group memInfo GCPostMember GSMemAnnounced
+                    showJoinedGroupMemberConnecting gName m newMember
             XGrpMemIntro memInfo@(MemberInfo memId _ _) ->
               case memberCategory m of
                 GCHostMember -> do
@@ -406,7 +408,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
       when (fromRole < GRAdmin || fromRole < memRole) . throwError . ChatError $ CEGroupContactRole localDisplayName
       when (fromMemId == memId) $ throwError $ ChatError CEGroupDuplicateMemberId
       group <- withStore $ \st -> createGroupInvitation st user ct inv
-      showReceivedGroupInvitation group localDisplayName
+      showReceivedGroupInvitation group localDisplayName memRole
 
     parseChatMessage :: ByteString -> Either ChatError ChatMessage
     parseChatMessage msgBody = first ChatErrorMessage (parseAll rawChatMessageP msgBody >>= toChatMessage)
@@ -541,4 +543,4 @@ chatCommandP =
       (" owner" $> GROwner)
         <|> (" admin" $> GRAdmin)
         <|> (" normal" $> GRMember)
-        <|> pure GRMember
+        <|> pure GRAdmin
