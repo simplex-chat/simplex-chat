@@ -25,6 +25,7 @@ module Simplex.Chat.Store
     getContact,
     getContactConnections,
     getConnectionChatDirection,
+    updateConnectionStatus,
     createNewGroup,
     createGroupInvitation,
     getGroup,
@@ -283,11 +284,11 @@ getConnectionChatDirection st User {userId, userContactId} agentConnId =
       ConnMember ->
         case entityId of
           Nothing -> throwError $ SEInternal "group member without connection"
-          Just groupMemberId -> uncurry ReceivedGroupMessage <$> getGroupAndMember_ db groupMemberId
+          Just groupMemberId -> uncurry (ReceivedGroupMessage c) <$> getGroupAndMember_ db groupMemberId c
       ConnContact ->
-        ReceivedDirectMessage <$> case entityId of
-          Nothing -> pure $ CConnection c
-          Just contactId -> CContact <$> getContact_ db contactId c
+        case entityId of
+          Nothing -> pure $ ReceivedDMConnection c
+          Just contactId -> ReceivedDMContact <$> getContact_ db contactId c
   where
     getConnection_ :: DB.Connection -> ExceptT StoreError IO Connection
     getConnection_ db = ExceptT $ do
@@ -317,37 +318,36 @@ getConnectionChatDirection st User {userId, userContactId} agentConnId =
           |]
           (userId, contactId)
     toContact :: Int64 -> Connection -> [(ContactName, Text, Text)] -> Either StoreError Contact
-    toContact contactId c [(localDisplayName, displayName, fullName)] =
+    toContact contactId activeConn [(localDisplayName, displayName, fullName)] =
       let profile = Profile {displayName, fullName}
-       in Right $ Contact {contactId, localDisplayName, profile, activeConn = c}
+       in Right $ Contact {contactId, localDisplayName, profile, activeConn}
     toContact _ _ _ = Left $ SEInternal "referenced contact not found"
-    getGroupAndMember_ :: DB.Connection -> Int64 -> ExceptT StoreError IO (GroupName, GroupMember)
-    getGroupAndMember_ db groupMemberId = ExceptT $ do
-      toGroupAndMember
+    getGroupAndMember_ :: DB.Connection -> Int64 -> Connection -> ExceptT StoreError IO (GroupName, GroupMember)
+    getGroupAndMember_ db groupMemberId c = ExceptT $ do
+      toGroupAndMember c
         <$> DB.query
           db
           [sql|
             SELECT
               g.local_display_name,
               m.group_member_id, m.member_id, m.member_role, m.member_category, m.member_status,
-              m.invited_by, m.local_display_name, m.contact_id, p.display_name, p.full_name,
-              c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact,
-              c.conn_status, c.conn_type, c.contact_id, c.group_member_id, c.created_at
+              m.invited_by, m.local_display_name, m.contact_id, p.display_name, p.full_name
             FROM group_members m
             JOIN contact_profiles p ON p.contact_profile_id = m.contact_profile_id
             JOIN groups g ON g.group_id = m.group_id
-            LEFT JOIN connections c ON c.connection_id = (
-              SELECT max(cc.connection_id)
-              FROM connections cc
-              where cc.group_member_id = m.group_member_id
-            )
             WHERE m.group_member_id = ?
           |]
           (Only groupMemberId)
-    toGroupAndMember :: [Only GroupName :. GroupMemberRow :. MaybeConnectionRow] -> Either StoreError (GroupName, GroupMember)
-    toGroupAndMember [Only groupName :. memberRow :. connRow] =
-      Right (groupName, (toGroupMember userContactId memberRow :: GroupMember) {activeConn = toMaybeConnection connRow})
-    toGroupAndMember _ = Left $ SEInternal "referenced group member not found"
+    toGroupAndMember :: Connection -> [Only GroupName :. GroupMemberRow] -> Either StoreError (GroupName, GroupMember)
+    toGroupAndMember c [Only groupName :. memberRow] =
+      let member = toGroupMember userContactId memberRow
+       in Right (groupName, (member :: GroupMember) {activeConn = Just c})
+    toGroupAndMember _ _ = Left $ SEInternal "referenced group member not found"
+
+updateConnectionStatus :: MonadUnliftIO m => SQLiteStore -> Connection -> ConnStatus -> m ()
+updateConnectionStatus st Connection {connId} connStatus =
+  liftIO . withTransaction st $ \db ->
+    DB.execute db "UPDATE connections SET conn_status = ? WHERE connection_id = ?" (connId, connStatus)
 
 -- | creates completely new group with a single member - the current user
 createNewGroup :: StoreMonad m => SQLiteStore -> TVar ChaChaDRG -> User -> GroupProfile -> m Group

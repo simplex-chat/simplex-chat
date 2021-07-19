@@ -29,17 +29,15 @@ import Simplex.Messaging.Parsers (parseAll)
 import Simplex.Messaging.Util (bshow)
 
 data ChatDirection (p :: AParty) where
-  ReceivedDirectMessage :: ConnContact -> ChatDirection 'Agent
+  ReceivedDMConnection :: Connection -> ChatDirection 'Agent
+  ReceivedDMContact :: Contact -> ChatDirection 'Agent
   SentDirectMessage :: Contact -> ChatDirection 'Client
-  ReceivedGroupMessage :: GroupName -> GroupMember -> ChatDirection 'Agent
+  ReceivedGroupMessage :: Connection -> GroupName -> GroupMember -> ChatDirection 'Agent
   SentGroupMessage :: GroupName -> ChatDirection 'Client
 
 deriving instance Eq (ChatDirection p)
 
 deriving instance Show (ChatDirection p)
-
-data ConnContact = CContact Contact | CConnection Connection
-  deriving (Eq, Show)
 
 data ChatMsgEvent
   = XMsgNew MsgContent

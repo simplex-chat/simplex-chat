@@ -305,7 +305,19 @@ data Connection = Connection
   }
   deriving (Eq, Show)
 
-data ConnStatus = ConnNew | ConnConfirmed | ConnAccepted | ConnReady
+data ConnStatus
+  = -- | connection is created by initiating party with agent NEW command (createConnection)
+    ConnNew
+  | -- | connection is joined by joining party with agent JOIN command (joinConnection)
+    ConnJoined
+  | -- | initiating party received CONF notification (to be renamed to REQ)
+    ConnRequested
+  | -- | initiating party accepted connection with agent LET command (to be renamed to ACPT) (allowConnection)
+    ConnAccepted
+  | -- | connection can be sent messages to (after joining party received INFO notification)
+    ConnSndReady
+  | -- | connection is ready for both parties to send and receive messages
+    ConnReady
   deriving (Eq, Show)
 
 instance FromField ConnStatus where fromField = fromTextField_ connStatusT
@@ -315,16 +327,20 @@ instance ToField ConnStatus where toField = toField . serializeConnStatus
 connStatusT :: Text -> Maybe ConnStatus
 connStatusT = \case
   "new" -> Just ConnNew
-  "confirmed" -> Just ConnConfirmed
+  "joined" -> Just ConnJoined
+  "requested" -> Just ConnRequested
   "accepted" -> Just ConnAccepted
+  "snd-ready" -> Just ConnSndReady
   "ready" -> Just ConnReady
   _ -> Nothing
 
 serializeConnStatus :: ConnStatus -> Text
 serializeConnStatus = \case
   ConnNew -> "new"
-  ConnConfirmed -> "confirmed"
+  ConnJoined -> "joined"
+  ConnRequested -> "requested"
   ConnAccepted -> "accepted"
+  ConnSndReady -> "snd-ready"
   ConnReady -> "ready"
 
 data ConnType = ConnContact | ConnMember

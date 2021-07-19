@@ -249,7 +249,7 @@ ttyFromGroup :: GroupName -> ContactName -> StyledString
 ttyFromGroup g c = styled (Colored Yellow) $ "#" <> g <> " " <> c <> "> "
 
 ttyToGroup :: GroupName -> StyledString
-ttyToGroup g = styled (Colored Blue) $ "#" <> g <> " "
+ttyToGroup g = styled (Colored Cyan) $ "#" <> g <> " "
 
 optFullName :: ContactName -> Text -> StyledString
 optFullName localDisplayName fullName

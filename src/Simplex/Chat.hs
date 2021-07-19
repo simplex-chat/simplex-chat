@@ -173,6 +173,7 @@ processChatCommand user@User {userId, profile} = \case
     let msg = XGrpInv $ GroupInvitation (userMemberId, userRole) (memberId, memRole) qInfo groupProfile
     sendDirectMessage (contactConnId contact) msg
     showSentGroupInvitation group cName
+    setActive $ ActiveG gName
   JoinGroup gName -> do
     ReceivedGroupInvitation {fromMember, userMember, queueInfo} <- withStore $ \st -> getGroupInvitation st user gName
     agentConnId <- withAgent $ \a -> joinConnection a queueInfo . directMessage . XGrpAcpt $ memberId userMember
@@ -209,7 +210,7 @@ processAgentMessage :: forall m. ChatMonad m => User -> ConnId -> ACommand 'Agen
 processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
   chatDirection <- withStore $ \st -> getConnectionChatDirection st user agentConnId
   case chatDirection of
-    ReceivedDirectMessage (CContact ct@Contact {localDisplayName = c}) ->
+    ReceivedDMContact ct@Contact {localDisplayName = c, activeConn} ->
       case agentMessage of
         MSG meta msgBody -> do
           ChatMessage {chatMsgEvent} <- liftEither $ parseChatMessage msgBody
@@ -219,16 +220,17 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
             XGrpInv gInv -> processGroupInvitation ct gInv
             _ -> pure ()
         CONF confId connInfo -> do
-          -- TODO update connection status
           -- confirming direct connection with a member
+          withStore $ \st -> updateConnectionStatus st activeConn ConnRequested
           ChatMessage {chatMsgEvent} <- liftEither $ parseChatMessage connInfo
           case chatMsgEvent of
             XGrpMemInfo _memId _memProfile -> do
               -- TODO check member ID
               -- TODO update member profile
-              withAgent $ \a -> allowConnection a agentConnId confId $ directMessage XOk
+              acceptAgentConnection activeConn confId XOk
             _ -> messageError "CONF from member must have x.grp.mem.info"
         INFO connInfo -> do
+          withStore $ \st -> updateConnectionStatus st activeConn ConnSndReady
           ChatMessage {chatMsgEvent} <- liftEither $ parseChatMessage connInfo
           case chatMsgEvent of
             XGrpMemInfo _memId _memProfile -> do
@@ -238,7 +240,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
             XOk -> pure ()
             _ -> messageError "INFO from member must have x.grp.mem.info or x.ok"
         CON -> do
-          -- TODO update connection status
+          withStore $ \st -> updateConnectionStatus st activeConn ConnReady
           showContactConnected ct
           showToast (c <> "> ") "connected"
           setActive $ ActiveC c
@@ -247,21 +249,22 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
           showToast (c <> "> ") "disconnected"
           unsetActive $ ActiveC c
         _ -> messageError $ "unexpected agent event: " <> T.pack (show agentMessage)
-    ReceivedDirectMessage (CConnection conn) ->
+    ReceivedDMConnection conn ->
       case agentMessage of
         CONF confId connInfo -> do
-          -- TODO update connection status
+          withStore $ \st -> updateConnectionStatus st conn ConnRequested
           saveConnInfo conn connInfo
-          withAgent $ \a -> allowConnection a agentConnId confId . directMessage $ XInfo profile
-        INFO connInfo ->
+          acceptAgentConnection conn confId $ XInfo profile
+        INFO connInfo -> do
+          withStore $ \st -> updateConnectionStatus st conn ConnSndReady
           saveConnInfo conn connInfo
-        CON -> do
-          -- TODO update connection status
-          pure ()
+        CON ->
+          withStore $ \st -> updateConnectionStatus st conn ConnReady
         _ -> messageError $ "unsupported agent event: " <> T.pack (show agentMessage)
-    ReceivedGroupMessage gName m ->
+    ReceivedGroupMessage conn gName m ->
       case agentMessage of
         CONF confId connInfo -> do
+          withStore $ \st -> updateConnectionStatus st conn ConnRequested
           ChatMessage {chatMsgEvent} <- liftEither $ parseChatMessage connInfo
           case memberCategory m of
             GCInviteeMember ->
@@ -269,7 +272,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
                 XGrpAcpt memId
                   | memId == memberId m -> do
                     withStore $ \st -> updateGroupMemberStatus st userId (groupMemberId m) GSMemAccepted
-                    withAgent $ \a -> allowConnection a agentConnId confId $ directMessage XOk
+                    acceptAgentConnection conn confId XOk
                   | otherwise -> messageError "x.grp.acpt: memberId is different from expected"
                 _ -> messageError "CONF from invited member must have x.grp.acpt"
             _ ->
@@ -278,11 +281,11 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
                   | memId == memberId m -> do
                     -- TODO update member profile
                     Group {membership} <- withStore $ \st -> getGroup st user gName
-                    let msg = XGrpMemInfo (memberId membership) profile
-                    withAgent $ \a -> allowConnection a agentConnId confId $ directMessage msg
+                    acceptAgentConnection conn confId $ XGrpMemInfo (memberId membership) profile
                   | otherwise -> messageError "x.grp.mem.info: memberId is different from expected"
                 _ -> messageError "CONF from member must have x.grp.mem.info"
         INFO connInfo -> do
+          withStore $ \st -> updateConnectionStatus st conn ConnSndReady
           ChatMessage {chatMsgEvent} <- liftEither $ parseChatMessage connInfo
           case chatMsgEvent of
             XGrpMemInfo memId _memProfile
@@ -296,11 +299,14 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
         CON -> do
           group@Group {members, membership} <- withStore $ \st -> getGroup st user gName
           withStore $ \st -> do
+            updateConnectionStatus st conn ConnReady
             updateGroupMemberStatus st userId (groupMemberId m) GSMemConnected
             updateGroupMemberStatus st userId (groupMemberId membership) GSMemConnected
           -- TODO forward any pending (GMIntroInvReceived) introductions
           case memberCategory m of
-            GCHostMember -> showUserJoinedGroup gName
+            GCHostMember -> do
+              showUserJoinedGroup gName
+              setActive $ ActiveG gName
             GCInviteeMember -> do
               showJoinedGroupMember gName m
               intros <- withStore $ \st -> createIntroductions st group m
@@ -433,8 +439,15 @@ directMessage chatMsgEvent =
 sendGroupMessage :: ChatMonad m => [GroupMember] -> ChatMsgEvent -> m ()
 sendGroupMessage members chatMsgEvent = do
   let msg = directMessage chatMsgEvent
+  -- TODO once scheduled delivery is implemented memberActive should be changed to memberCurrent
   withAgent $ \a ->
-    forM_ members $ traverse (\connId -> sendMessage a connId msg) . memberConnId
+    forM_ (filter memberActive members) $
+      traverse (\connId -> sendMessage a connId msg) . memberConnId
+
+acceptAgentConnection :: ChatMonad m => Connection -> ConfirmationId -> ChatMsgEvent -> m ()
+acceptAgentConnection conn@Connection {agentConnId} confId msg = do
+  withAgent $ \a -> allowConnection a agentConnId confId $ directMessage msg
+  withStore $ \st -> updateConnectionStatus st conn ConnAccepted
 
 getCreateActiveUser :: SQLiteStore -> IO User
 getCreateActiveUser st = do
