@@ -77,7 +77,7 @@ cfg =
       connIdBytes = 12,
       tbqSize = 16,
       dbFile = undefined, -- filled in from options
-      dbPoolSize = 4,
+      dbPoolSize = 1,
       smpCfg = smpDefaultConfig
     }
 
@@ -94,7 +94,7 @@ simplexChat opts t =
 
 newChatController :: WithTerminal t => ChatOpts -> t -> (Notification -> IO ()) -> IO ChatController
 newChatController ChatOpts {dbFile, smpServers} t sendNotification = do
-  chatStore <- createStore (dbFile <> ".chat.db") 4
+  chatStore <- createStore (dbFile <> ".chat.db") 1
   currentUser <- getCreateActiveUser chatStore
   chatTerminal <- newChatTerminal t
   smpAgent <- getSMPAgentClient cfg {dbFile = dbFile <> ".agent.db", smpServers}
@@ -241,9 +241,13 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
             _ -> messageError "INFO from member must have x.grp.mem.info or x.ok"
         CON -> do
           withStore $ \st -> updateConnectionStatus st activeConn ConnReady
-          showContactConnected ct
-          showToast (c <> "> ") "connected"
-          setActive $ ActiveC c
+          withStore (\st -> getViaGroupMember st user ct) >>= \case
+            Nothing -> do
+              showContactConnected ct
+              setActive $ ActiveC c
+              showToast (c <> "> ") "connected"
+            Just (gName, m) ->
+              when (memberIsReady m) $ notifyMemberConnected gName m
         END -> do
           showContactDisconnected c
           showToast (c <> "> ") "disconnected"
@@ -307,22 +311,25 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
             GCHostMember -> do
               showUserJoinedGroup gName
               setActive $ ActiveG gName
+              showToast ("#" <> gName) "you are connected to group"
             GCInviteeMember -> do
               showJoinedGroupMember gName m
+              setActive $ ActiveG gName
+              showToast ("#" <> gName) $ "member " <> localDisplayName (m :: GroupMember) <> " is connected"
               intros <- withStore $ \st -> createIntroductions st group m
               sendGroupMessage members . XGrpMemNew $ memberInfo m
               forM_ intros $ \intro -> do
                 sendDirectMessage agentConnId . XGrpMemIntro . memberInfo $ reMember intro
                 withStore $ \st -> updateIntroStatus st intro GMIntroSent
-            GCPreMember -> do
+            _ -> do
               -- TODO send probe and decide whether to use existing contact connection or the new contact connection
               -- TODO notify member who forwarded introduction - question - where it is stored? There is via_contact but probably there should be via_member in group_members table
-              showConnectedToGroupMember gName m
-            GCPostMember -> do
-              -- TODO notify member who forwarded introduction - question - where it is stored? There is via_contact but probably there should be via_member in group_members table
-              showConnectedToGroupMember gName m
-            GCUserMember ->
-              messageError "implementation error - CON received from User member"
+              withStore (\st -> getViaGroupContact st user m) >>= \case
+                Nothing -> do
+                  notifyMemberConnected gName m
+                  messageError "implementation error: connected member does not have contact"
+                Just ct ->
+                  when (contactIsReady ct) $ notifyMemberConnected gName m
         MSG meta msgBody -> do
           ChatMessage {chatMsgEvent} <- liftEither $ parseChatMessage msgBody
           case chatMsgEvent of
@@ -384,6 +391,18 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
     isMember :: MemberId -> Group -> Bool
     isMember memId Group {membership, members} =
       memberId membership == memId || isJust (find ((== memId) . memberId) members)
+
+    contactIsReady :: Contact -> Bool
+    contactIsReady Contact {activeConn} = connStatus activeConn == ConnReady
+
+    memberIsReady :: GroupMember -> Bool
+    memberIsReady GroupMember {activeConn} = maybe False ((== ConnReady) . connStatus) activeConn
+
+    notifyMemberConnected :: GroupName -> GroupMember -> m ()
+    notifyMemberConnected gName m@GroupMember {localDisplayName} = do
+      showConnectedToGroupMember gName m
+      setActive $ ActiveG gName
+      showToast ("#" <> gName) $ "member " <> localDisplayName <> " is connected"
 
     messageWarning :: Text -> m ()
     messageWarning = liftIO . print

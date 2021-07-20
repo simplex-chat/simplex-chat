@@ -33,6 +33,7 @@ CREATE TABLE contacts (
   user_id INTEGER NOT NULL REFERENCES users,
   local_display_name TEXT NOT NULL,
   is_user INTEGER NOT NULL DEFAULT 0, -- 1 if this contact is a user
+  via_group INTEGER REFERENCES groups (group_id) ON DELETE SET NULL,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   FOREIGN KEY (user_id, local_display_name)
     REFERENCES display_names (user_id, local_display_name)

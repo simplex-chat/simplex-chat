@@ -40,6 +40,8 @@ module Simplex.Chat.Store
     createIntroReMember,
     createIntroToMemberContact,
     saveMemberInvitation,
+    getViaGroupMember,
+    getViaGroupContact,
   )
 where
 
@@ -156,14 +158,14 @@ createDirectContact :: StoreMonad m => SQLiteStore -> UserId -> Connection -> Pr
 createDirectContact st userId Connection {connId} profile =
   void $
     liftIOEither . withTransaction st $ \db ->
-      createContact_ db userId connId profile
+      createContact_ db userId connId profile Nothing
 
-createContact_ :: DB.Connection -> UserId -> Int64 -> Profile -> IO (Either StoreError (Text, Int64, Int64))
-createContact_ db userId connId Profile {displayName, fullName} =
+createContact_ :: DB.Connection -> UserId -> Int64 -> Profile -> Maybe Int64 -> IO (Either StoreError (Text, Int64, Int64))
+createContact_ db userId connId Profile {displayName, fullName} viaGroup =
   withLocalDisplayName db userId displayName $ \ldn -> do
     DB.execute db "INSERT INTO contact_profiles (display_name, full_name) VALUES (?, ?)" (displayName, fullName)
     profileId <- insertedRowId db
-    DB.execute db "INSERT INTO contacts (contact_profile_id, local_display_name, user_id) VALUES (?, ?, ?)" (profileId, ldn, userId)
+    DB.execute db "INSERT INTO contacts (contact_profile_id, local_display_name, user_id, via_group) VALUES (?,?,?,?)" (profileId, ldn, userId, viaGroup)
     contactId <- insertedRowId db
     DB.execute db "UPDATE connections SET contact_id = ? WHERE connection_id = ?" (contactId, connId)
     pure (ldn, contactId, profileId)
@@ -199,25 +201,27 @@ deleteContact st userId displayName =
 
 -- TODO return the last connection that is ready, not any last connection
 -- requires updating connection status
-getContact ::
-  StoreMonad m => SQLiteStore -> UserId -> ContactName -> m Contact
+getContact :: StoreMonad m => SQLiteStore -> UserId -> ContactName -> m Contact
+-- TODO merge contact and connection?
 getContact st userId localDisplayName =
   liftIOEither . withTransaction st $ \db -> runExceptT $ do
     c@Contact {contactId} <- getContact_ db
     activeConn <- getConnection_ db contactId
     pure $ (c :: Contact) {activeConn}
   where
+    getContact_ :: DB.Connection -> ExceptT StoreError IO Contact
     getContact_ db = ExceptT $ do
       toContact
         <$> DB.queryNamed
           db
           [sql|
-            SELECT c.contact_id, p.display_name, p.full_name
+            SELECT c.contact_id, p.display_name, p.full_name, c.via_group
             FROM contacts c
             JOIN contact_profiles p ON c.contact_profile_id = p.contact_profile_id
             WHERE c.user_id = :user_id AND c.local_display_name = :local_display_name AND c.is_user = :is_user
           |]
           [":user_id" := userId, ":local_display_name" := localDisplayName, ":is_user" := False]
+    getConnection_ :: DB.Connection -> Int64 -> ExceptT StoreError IO Connection
     getConnection_ db contactId = ExceptT $ do
       connection
         <$> DB.queryNamed
@@ -231,10 +235,12 @@ getContact st userId localDisplayName =
             LIMIT 1
           |]
           [":user_id" := userId, ":contact_id" := contactId]
-    toContact [(contactId, displayName, fullName)] =
+    toContact :: [(Int64, Text, Text, Maybe Int64)] -> Either StoreError Contact
+    toContact [(contactId, displayName, fullName, viaGroup)] =
       let profile = Profile {displayName, fullName}
-       in Right Contact {contactId, localDisplayName, profile, activeConn = undefined}
+       in Right Contact {contactId, localDisplayName, profile, activeConn = undefined, viaGroup}
     toContact _ = Left $ SEContactNotFound localDisplayName
+    connection :: [ConnectionRow] -> Either StoreError Connection
     connection (connRow : _) = Right $ toConnection connRow
     connection _ = Left $ SEContactNotReady localDisplayName
 
@@ -311,16 +317,16 @@ getConnectionChatDirection st User {userId, userContactId} agentConnId =
         <$> DB.query
           db
           [sql|
-            SELECT c.local_display_name, p.display_name, p.full_name
+            SELECT c.local_display_name, p.display_name, p.full_name, c.via_group
             FROM contacts c
             JOIN contact_profiles p ON c.contact_profile_id = p.contact_profile_id
             WHERE c.user_id = ? AND c.contact_id = ?
           |]
           (userId, contactId)
-    toContact :: Int64 -> Connection -> [(ContactName, Text, Text)] -> Either StoreError Contact
-    toContact contactId activeConn [(localDisplayName, displayName, fullName)] =
+    toContact :: Int64 -> Connection -> [(ContactName, Text, Text, Maybe Int64)] -> Either StoreError Contact
+    toContact contactId activeConn [(localDisplayName, displayName, fullName, viaGroup)] =
       let profile = Profile {displayName, fullName}
-       in Right $ Contact {contactId, localDisplayName, profile, activeConn}
+       in Right $ Contact {contactId, localDisplayName, profile, activeConn, viaGroup}
     toContact _ _ _ = Left $ SEInternal "referenced contact not found"
     getGroupAndMember_ :: DB.Connection -> Int64 -> Connection -> ExceptT StoreError IO (GroupName, GroupMember)
     getGroupAndMember_ db groupMemberId c = ExceptT $ do
@@ -347,7 +353,7 @@ getConnectionChatDirection st User {userId, userContactId} agentConnId =
 updateConnectionStatus :: MonadUnliftIO m => SQLiteStore -> Connection -> ConnStatus -> m ()
 updateConnectionStatus st Connection {connId} connStatus =
   liftIO . withTransaction st $ \db ->
-    DB.execute db "UPDATE connections SET conn_status = ? WHERE connection_id = ?" (connId, connStatus)
+    DB.execute db "UPDATE connections SET conn_status = ? WHERE connection_id = ?" (connStatus, connId)
 
 -- | creates completely new group with a single member - the current user
 createNewGroup :: StoreMonad m => SQLiteStore -> TVar ChaChaDRG -> User -> GroupProfile -> m Group
@@ -643,7 +649,7 @@ createIntroReMember st user@User {userId} group _host@GroupMember {memberContact
   liftIOEither . withTransaction st $ \db -> runExceptT $ do
     let cLevel = 1 + maybe 0 (connLevel :: Connection -> Int) activeConn
     Connection {connId = directConnId} <- liftIO $ createConnection_ db userId directAgentConnId memberContactId cLevel
-    (localDisplayName, contactId, memProfileId) <- ExceptT $ createContact_ db userId directConnId memberProfile
+    (localDisplayName, contactId, memProfileId) <- ExceptT $ createContact_ db userId directConnId memberProfile (Just $ groupId group)
     liftIO $ do
       let newMember =
             NewGroupMember
@@ -673,12 +679,10 @@ createIntroToMemberContact st userId GroupMember {memberContactId = viaContactId
       DB.executeNamed
         db
         [sql|
-          INSERT INTO contacts (contact_profile_id, local_display_name, user_id)
-          VALUES ((
-            SELECT contact_profile_id
-            FROM group_members
-            WHERE group_member_id = :group_member_id
-          ), :local_display_name, :user_id)
+          INSERT INTO contacts (contact_profile_id, via_group, local_display_name, user_id)
+          SELECT contact_profile_id, group_id, :local_display_name, :user_id
+          FROM group_members
+          WHERE group_member_id = :group_member_id
         |]
         [ ":group_member_id" := groupMemberId,
           ":local_display_name" := localDisplayName,
@@ -743,6 +747,69 @@ createContactMember_ db User {userId, userContactId} groupId userOrContact (memb
           ":local_display_name" := localDisplayName' userOrContact,
           ":contact_id" := contactId' userOrContact
         ]
+
+getViaGroupMember :: MonadUnliftIO m => SQLiteStore -> User -> Contact -> m (Maybe (GroupName, GroupMember))
+getViaGroupMember st User {userId, userContactId} Contact {contactId} =
+  liftIO . withTransaction st $ \db ->
+    toGroupAndMember
+      <$> DB.query
+        db
+        [sql|
+          SELECT
+            g.local_display_name,
+            m.group_member_id, m.member_id, m.member_role, m.member_category, m.member_status,
+            m.invited_by, m.local_display_name, m.contact_id, p.display_name, p.full_name,
+            c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact,
+            c.conn_status, c.conn_type, c.contact_id, c.group_member_id, c.created_at
+          FROM group_members m
+          JOIN contacts ct ON ct.contact_id = m.contact_id
+          JOIN contact_profiles p ON p.contact_profile_id = m.contact_profile_id
+          JOIN groups g ON g.group_id = m.group_id AND g.group_id = ct.via_group
+          LEFT JOIN connections c ON c.connection_id = (
+            SELECT max(cc.connection_id)
+            FROM connections cc
+            where cc.group_member_id = m.group_member_id
+          )
+          WHERE ct.user_id = ? AND ct.contact_id = ?
+        |]
+        (userId, contactId)
+  where
+    toGroupAndMember :: [Only GroupName :. GroupMemberRow :. MaybeConnectionRow] -> Maybe (GroupName, GroupMember)
+    toGroupAndMember [Only groupName :. memberRow :. connRow] =
+      let member = toGroupMember userContactId memberRow
+       in Just (groupName, (member :: GroupMember) {activeConn = toMaybeConnection connRow})
+    toGroupAndMember _ = Nothing
+
+getViaGroupContact :: MonadUnliftIO m => SQLiteStore -> User -> GroupMember -> m (Maybe Contact)
+getViaGroupContact st User {userId} GroupMember {groupMemberId} =
+  liftIO . withTransaction st $ \db ->
+    toContact
+      <$> DB.query
+        db
+        [sql|
+          SELECT
+            ct.contact_id, ct.local_display_name, p.display_name, p.full_name, ct.via_group,
+            c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact,
+            c.conn_status, c.conn_type, c.contact_id, c.group_member_id, c.created_at
+          FROM contacts ct
+          JOIN contact_profiles p ON ct.contact_profile_id = p.contact_profile_id
+          JOIN connections c ON c.connection_id = (
+            SELECT max(cc.connection_id)
+            FROM connections cc
+            where cc.contact_id = ct.contact_id
+          )
+          JOIN groups g ON g.group_id = ct.via_group
+          JOIN group_members m ON m.group_id = g.group_id AND m.contact_id = ct.contact_id
+          WHERE ct.user_id = ? AND m.group_member_id = ?
+        |]
+        (userId, groupMemberId)
+  where
+    toContact :: [(Int64, ContactName, Text, Text, Maybe Int64) :. ConnectionRow] -> Maybe Contact
+    toContact [(contactId, localDisplayName, displayName, fullName, viaGroup) :. connRow] =
+      let profile = Profile {displayName, fullName}
+          activeConn = toConnection connRow
+       in Just Contact {contactId, localDisplayName, profile, activeConn, viaGroup}
+    toContact _ = Nothing
 
 -- | Saves unique local display name based on passed displayName, suffixed with _N if required.
 -- This function should be called inside transaction.

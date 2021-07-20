@@ -145,7 +145,13 @@ joinedGroupMemberConnecting :: GroupName -> GroupMember -> GroupMember -> [Style
 joinedGroupMemberConnecting g host m = [ttyGroup g <> ": " <> ttyMember host <> " added " <> ttyFullMember m <> " to the group (connecting...)"]
 
 connectedToGroupMember :: GroupName -> GroupMember -> [StyledString]
-connectedToGroupMember g m = [ttyGroup g <> ": you are connected to member " <> ttyMember m]
+connectedToGroupMember g m = [ttyGroup g <> ": " <> connectedMember m <> " is connected"]
+
+connectedMember :: GroupMember -> StyledString
+connectedMember m = case memberCategory m of
+  GCPreMember -> "member " <> ttyFullMember m
+  GCPostMember -> "new member " <> ttyMember m -- without fullName as as it was shown in joinedGroupMemberConnecting
+  _ -> "member " <> ttyMember m -- these case is not used
 
 receivedMessage :: StyledString -> UTCTime -> Text -> MsgIntegrity -> IO [StyledString]
 receivedMessage from utcTime msg mOk = do

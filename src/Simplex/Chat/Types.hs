@@ -52,7 +52,8 @@ data Contact = Contact
   { contactId :: Int64,
     localDisplayName :: ContactName,
     profile :: Profile,
-    activeConn :: Connection
+    activeConn :: Connection,
+    viaGroup :: Maybe Int64
   }
   deriving (Eq, Show)
 
