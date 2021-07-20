@@ -7,6 +7,7 @@ module ChatClient where
 
 import Control.Concurrent.Async
 import Control.Concurrent.STM (retry)
+import Control.Exception (bracket_)
 import Control.Monad.Except
 import Simplex.Chat
 import Simplex.Chat.Controller (ChatController (..))
@@ -48,12 +49,14 @@ virtualSimplexChat dbFile profile = do
   pure (TestCC cc t a)
 
 testChatN :: [Profile] -> ([TestCC] -> IO ()) -> IO ()
-testChatN ps test = do
-  createDirectoryIfMissing False "tests/tmp"
-  let envs = zip ps $ map ((testDBPrefix <>) . show) [(1 :: Int) ..]
-  tcs <- getTestCCs envs []
-  test tcs
-  removeDirectoryRecursive "tests/tmp"
+testChatN ps test =
+  bracket_
+    (createDirectoryIfMissing False "tests/tmp")
+    (removeDirectoryRecursive "tests/tmp")
+    $ do
+      let envs = zip ps $ map ((testDBPrefix <>) . show) [(1 :: Int) ..]
+      tcs <- getTestCCs envs []
+      test tcs
   where
     getTestCCs [] tcs = pure tcs
     getTestCCs ((p, db) : envs') tcs = (:) <$> virtualSimplexChat db p <*> getTestCCs envs' tcs

@@ -106,6 +106,10 @@ testGroup =
       concurrently_
         (alice <# "#team cath> hey")
         (bob <# "#team cath> hey")
+      bob #> "@cath hello cath"
+      cath <# "bob> hello cath"
+      cath #> "@bob hello bob"
+      bob <# "cath> hello bob"
 
 testGroup2 :: IO ()
 testGroup2 =
@@ -178,6 +182,18 @@ testGroup2 =
           bob <# "#club dan> how is it going?",
           cath <# "#club dan> how is it going?"
         ]
+      bob #> "@cath hi cath"
+      cath <# "bob> hi cath"
+      cath #> "@bob hi bob"
+      bob <# "cath> hi bob"
+      dan #> "@cath hey cath"
+      cath <# "dan> hey cath"
+      cath #> "@dan hey dan"
+      dan <# "cath> hey dan"
+      dan #> "@alice_1 hi alice"
+      alice <# "dan_1> hi alice"
+      alice #> "@dan_1 hello dan"
+      dan <# "alice_1> hello dan"
 
 connectUsers :: TestCC -> TestCC -> IO ()
 connectUsers cc1 cc2 = do
