@@ -292,9 +292,9 @@ getConnectionChatDirection st User {userId, userContactId} agentConnId =
           Nothing -> throwError $ SEInternal "group member without connection"
           Just groupMemberId -> uncurry (ReceivedGroupMessage c) <$> getGroupAndMember_ db groupMemberId c
       ConnContact ->
-        case entityId of
-          Nothing -> pure $ ReceivedDMConnection c
-          Just contactId -> ReceivedDMContact <$> getContact_ db contactId c
+        ReceivedDirectMessage c <$> case entityId of
+          Nothing -> pure Nothing
+          Just contactId -> Just <$> getContact_ db contactId c
   where
     getConnection_ :: DB.Connection -> ExceptT StoreError IO Connection
     getConnection_ db = ExceptT $ do

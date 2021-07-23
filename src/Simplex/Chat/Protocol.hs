@@ -29,8 +29,9 @@ import Simplex.Messaging.Parsers (parseAll)
 import Simplex.Messaging.Util (bshow)
 
 data ChatDirection (p :: AParty) where
-  ReceivedDMConnection :: Connection -> ChatDirection 'Agent
-  ReceivedDMContact :: Contact -> ChatDirection 'Agent
+  -- ReceivedDMConnection :: Connection -> ChatDirection 'Agent
+  -- ReceivedDMContact :: Contact -> ChatDirection 'Agent
+  ReceivedDirectMessage :: Connection -> Maybe Contact -> ChatDirection 'Agent
   SentDirectMessage :: Contact -> ChatDirection 'Client
   ReceivedGroupMessage :: Connection -> GroupName -> GroupMember -> ChatDirection 'Agent
   SentGroupMessage :: GroupName -> ChatDirection 'Client
@@ -38,6 +39,11 @@ data ChatDirection (p :: AParty) where
 deriving instance Eq (ChatDirection p)
 
 deriving instance Show (ChatDirection p)
+
+fromConnection :: ChatDirection 'Agent -> Connection
+fromConnection = \case
+  ReceivedDirectMessage conn _ -> conn
+  ReceivedGroupMessage conn _ _ -> conn
 
 data ChatMsgEvent
   = XMsgNew MsgContent
