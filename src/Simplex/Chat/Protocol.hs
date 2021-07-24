@@ -29,8 +29,6 @@ import Simplex.Messaging.Parsers (parseAll)
 import Simplex.Messaging.Util (bshow)
 
 data ChatDirection (p :: AParty) where
-  -- ReceivedDMConnection :: Connection -> ChatDirection 'Agent
-  -- ReceivedDMContact :: Contact -> ChatDirection 'Agent
   ReceivedDirectMessage :: Connection -> Maybe Contact -> ChatDirection 'Agent
   SentDirectMessage :: Contact -> ChatDirection 'Client
   ReceivedGroupMessage :: Connection -> GroupName -> GroupMember -> ChatDirection 'Agent
