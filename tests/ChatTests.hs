@@ -75,15 +75,17 @@ testGroup =
       -- TODO this occasionally fails in case getWindow is run before the command above is printed
       alice <## "use /a team <name> to add members"
       alice ##> "/a team bob"
-      alice <## "invitation to join the group #team sent to bob"
-      bob <## "use /j team to accept"
+      concurrently_
+        (alice <## "invitation to join the group #team sent to bob")
+        (bob <## "use /j team to accept")
       bob ##> "/j team"
       concurrently_
         (alice <## "#team: bob joined the group")
         (bob <## "#team: you joined the group")
       alice ##> "/a team cath"
-      alice <## "invitation to join the group #team sent to cath"
-      cath <## "use /j team to accept"
+      concurrently_
+        (alice <## "invitation to join the group #team sent to cath")
+        (cath <## "use /j team to accept")
       cath ##> "/j team"
       concurrentlyN_
         [ alice <## "#team: cath joined the group",
@@ -123,11 +125,13 @@ testGroup2 =
       -- TODO this occasionally fails in case getWindow is run before the command above is printed
       alice <## "use /a club <name> to add members"
       alice ##> "/a club bob"
-      alice <## "invitation to join the group #club sent to bob"
-      bob <## "use /j club to accept"
+      concurrently_
+        (alice <## "invitation to join the group #club sent to bob")
+        (bob <## "use /j club to accept")
       alice ##> "/a club cath"
-      alice <## "invitation to join the group #club sent to cath"
-      cath <## "use /j club to accept"
+      concurrently_
+        (alice <## "invitation to join the group #club sent to cath")
+        (cath <## "use /j club to accept")
       bob ##> "/j club"
       concurrently_
         (alice <## "#club: bob joined the group")
@@ -143,8 +147,9 @@ testGroup2 =
             bob <## "#club: new member cath is connected"
         ]
       bob ##> "/a club dan"
-      bob <## "invitation to join the group #club sent to dan"
-      dan <## "use /j club to accept"
+      concurrently_
+        (bob <## "invitation to join the group #club sent to dan")
+        (dan <## "use /j club to accept")
       dan ##> "/j club"
       concurrentlyN_
         [ bob <## "#club: dan joined the group",
