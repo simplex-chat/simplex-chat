@@ -5,7 +5,6 @@
 module Simplex.Chat.Notification (Notification (..), initializeNotifications) where
 
 import Control.Monad (void)
-import Data.Char (toLower)
 import Data.List (isInfixOf)
 import Data.Text (Text)
 import qualified Data.Text as T

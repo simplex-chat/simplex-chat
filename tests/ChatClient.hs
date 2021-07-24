@@ -7,6 +7,7 @@ module ChatClient where
 
 import Control.Concurrent.Async
 import Control.Concurrent.STM (retry)
+import Control.Exception (bracket_)
 import Control.Monad.Except
 import Simplex.Chat
 import Simplex.Chat.Controller (ChatController (..))
@@ -17,11 +18,8 @@ import System.Directory (createDirectoryIfMissing, removeDirectoryRecursive)
 import qualified System.Terminal as C
 import System.Terminal.Internal (VirtualTerminal, VirtualTerminalSettings (..), withVirtualTerminal)
 
-testDB1 :: FilePath
-testDB1 = "tests/tmp/test1"
-
-testDB2 :: FilePath
-testDB2 = "tests/tmp/test2"
+testDBPrefix :: FilePath
+testDBPrefix = "tests/tmp/test"
 
 opts :: ChatOpts
 opts =
@@ -50,10 +48,39 @@ virtualSimplexChat dbFile profile = do
   a <- async $ runSimplexChat cc
   pure (TestCC cc t a)
 
+testChatN :: [Profile] -> ([TestCC] -> IO ()) -> IO ()
+testChatN ps test =
+  bracket_
+    (createDirectoryIfMissing False "tests/tmp")
+    (removeDirectoryRecursive "tests/tmp")
+    $ do
+      let envs = zip ps $ map ((testDBPrefix <>) . show) [(1 :: Int) ..]
+      tcs <- getTestCCs envs []
+      test tcs
+  where
+    getTestCCs [] tcs = pure tcs
+    getTestCCs ((p, db) : envs') tcs = (:) <$> virtualSimplexChat db p <*> getTestCCs envs' tcs
+
 testChat2 :: Profile -> Profile -> (TestCC -> TestCC -> IO ()) -> IO ()
-testChat2 p1 p2 test = do
-  createDirectoryIfMissing False "tests/tmp"
-  tc1 <- virtualSimplexChat testDB1 p1
-  tc2 <- virtualSimplexChat testDB2 p2
-  test tc1 tc2
-  removeDirectoryRecursive "tests/tmp"
+testChat2 p1 p2 test = testChatN [p1, p2] test_
+  where
+    test_ :: [TestCC] -> IO ()
+    test_ [tc1, tc2] = test tc1 tc2
+    test_ _ = error "expected 2 chat clients"
+
+testChat3 :: Profile -> Profile -> Profile -> (TestCC -> TestCC -> TestCC -> IO ()) -> IO ()
+testChat3 p1 p2 p3 test = testChatN [p1, p2, p3] test_
+  where
+    test_ :: [TestCC] -> IO ()
+    test_ [tc1, tc2, tc3] = test tc1 tc2 tc3
+    test_ _ = error "expected 3 chat clients"
+
+testChat4 :: Profile -> Profile -> Profile -> Profile -> (TestCC -> TestCC -> TestCC -> TestCC -> IO ()) -> IO ()
+testChat4 p1 p2 p3 p4 test = testChatN [p1, p2, p3, p4] test_
+  where
+    test_ :: [TestCC] -> IO ()
+    test_ [tc1, tc2, tc3, tc4] = test tc1 tc2 tc3 tc4
+    test_ _ = error "expected 4 chat clients"
+
+concurrentlyN_ :: [IO a] -> IO ()
+concurrentlyN_ = mapConcurrently_ id
