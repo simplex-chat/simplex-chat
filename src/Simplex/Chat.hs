@@ -45,7 +45,7 @@ import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Client (smpDefaultConfig)
 import Simplex.Messaging.Parsers (parseAll)
 import Simplex.Messaging.Util (raceAny_)
-import System.Exit (exitFailure)
+import System.Exit (exitFailure, exitSuccess)
 import System.IO (hFlush, stdout)
 import Text.Read (readMaybe)
 import UnliftIO.Async (race_)
@@ -67,6 +67,7 @@ data ChatCommand
   | DeleteGroup GroupName
   | ListMembers GroupName
   | SendGroupMessage GroupName ByteString
+  | QuitChat
   deriving (Show)
 
 cfg :: AgentConfig
@@ -186,7 +187,9 @@ processChatCommand user@User {userId, profile} = \case
   RemoveMember _gName _cName -> pure ()
   LeaveGroup _gName -> pure ()
   DeleteGroup _gName -> pure ()
-  ListMembers _gName -> pure ()
+  ListMembers gName -> do
+    group <- withStore $ \st -> getGroup st user gName
+    showGroupMembers group
   SendGroupMessage gName msg -> do
     -- TODO save sent messages
     -- TODO save pending message delivery for members without connections
@@ -194,6 +197,7 @@ processChatCommand user@User {userId, profile} = \case
     let msgEvent = XMsgNew $ MsgContent MTText [] [MsgContentBody {contentType = SimplexContentType XCText, contentData = msg}]
     sendGroupMessage members msgEvent
     setActive $ ActiveG gName
+  QuitChat -> liftIO exitSuccess
   where
     isMember :: Contact -> [GroupMember] -> Bool
     isMember Contact {contactId} members = isJust $ find ((== Just contactId) . memberContactId) members
@@ -342,7 +346,8 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
         group@Group {members, membership} <- withStore $ \st -> getGroup st user gName
         withStore $ \st -> do
           updateGroupMemberStatus st userId (groupMemberId m) GSMemConnected
-          updateGroupMemberStatus st userId (groupMemberId membership) GSMemConnected
+          unless (memberActive membership) $
+            updateGroupMemberStatus st userId (groupMemberId membership) GSMemConnected
         -- TODO forward any pending (GMIntroInvReceived) introductions
         case memberCategory m of
           GCHostMember -> do
@@ -597,13 +602,14 @@ chatCommandP =
     <|> ("/join #" <|> "/join " <|> "/j #" <|> "/j ") *> (JoinGroup <$> displayName)
     <|> ("/remove #" <|> "/rm #") *> (RemoveMember <$> displayName <* A.space <*> displayName)
     <|> ("/delete #" <|> "/d #") *> (DeleteGroup <$> displayName)
-    <|> ("/members #" <|> "/ms #") *> (ListMembers <$> displayName)
+    <|> ("/members #" <|> "/members " <|> "/ms #" <|> "/ms ") *> (ListMembers <$> displayName)
     <|> A.char '#' *> (SendGroupMessage <$> displayName <* A.space <*> A.takeByteString)
     <|> ("/add" <|> "/a") $> AddContact
     <|> ("/connect " <|> "/c ") *> (Connect <$> smpQueueInfoP)
     <|> ("/delete @" <|> "/delete " <|> "/d @" <|> "/d ") *> (DeleteContact <$> displayName)
     <|> A.char '@' *> (SendMessage <$> displayName <*> (A.space *> A.takeByteString))
     <|> ("/markdown" <|> "/m") $> MarkdownHelp
+    <|> ("/quit" <|> "/q") $> QuitChat
   where
     displayName = safeDecodeUtf8 <$> (B.cons <$> A.satisfy refChar <*> A.takeTill (== ' '))
     refChar c = c > ' ' && c /= '#' && c /= '@'
