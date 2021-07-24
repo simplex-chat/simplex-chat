@@ -9,7 +9,7 @@ import Data.Char (toLower)
 import Data.List (isInfixOf)
 import Data.Text (Text)
 import qualified Data.Text as T
-import System.Directory (doesFileExist, getAppUserDataDirectory)
+import System.Directory (createDirectoryIfMissing, doesFileExist, getAppUserDataDirectory)
 import System.FilePath (combine)
 import System.Info (os)
 import System.Process (readCreateProcess, shell)
@@ -25,7 +25,7 @@ initializeNotifications = case os of
       False -> pure $ notify linuxScript
       True -> do
         v <- readFile "/proc/sys/kernel/osrelease"
-        if "wsl" `isInfixOf` map toLower v
+        if "Microsoft" `isInfixOf` v || "WSL" `isInfixOf` v
           then initWinNotify
           else pure $ notify linuxScript
   _ -> pure . const $ pure ()
@@ -49,6 +49,7 @@ winScript path Notification {title, text} = "powershell.exe \"" <> T.pack path <
 savePowershellScript :: IO FilePath
 savePowershellScript = do
   appDir <- getAppUserDataDirectory "simplex"
+  createDirectoryIfMissing False appDir
   let psScript = combine appDir "win-toast-notify.ps1"
   writeFile
     psScript
