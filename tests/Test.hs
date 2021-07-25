@@ -8,4 +8,4 @@ main = do
   hspec $ do
     describe "SimpleX chat markdown" markdownTests
     describe "SimpleX chat protocol" protocolTests
-    xdescribe "SimpleX chat client" chatTests
+    describe "SimpleX chat client" chatTests

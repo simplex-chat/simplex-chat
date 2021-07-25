@@ -44,6 +44,13 @@ module Simplex.Chat.Store
     saveMemberInvitation,
     getViaGroupMember,
     getViaGroupContact,
+    getExistingContacts,
+    randomBytes,
+    createSentProbe,
+    createSentProbeHash,
+    matchReceivedProbe,
+    matchReceivedProbeHash,
+    matchSentProbe,
   )
 where
 
@@ -73,6 +80,7 @@ import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Protocol (AParty (..), ConnId, SMPQueueInfo)
 import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore (..), createSQLiteStore, withTransaction)
 import Simplex.Messaging.Agent.Store.SQLite.Migrations (Migration (..))
+import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Util (bshow, liftIOEither)
 import System.FilePath (takeBaseName, takeExtension)
 import UnliftIO.STM
@@ -293,6 +301,102 @@ toMaybeConnection (Just connId, Just agentConnId, Just connLevel, viaContact, Ju
   Just $ toConnection (connId, agentConnId, connLevel, viaContact, connStatus, connType, contactId, groupMemberId, createdAt)
 toMaybeConnection _ = Nothing
 
+getExistingContacts :: MonadUnliftIO m => SQLiteStore -> UserId -> Contact -> m [Contact]
+getExistingContacts st userId Contact {contactId, profile = Profile {displayName, fullName}} =
+  liftIO . withTransaction st $ \db -> do
+    contactNames <-
+      map fromOnly
+        <$> DB.queryNamed
+          db
+          [sql|
+            SELECT ct.local_display_name
+            FROM contacts ct
+            JOIN contact_profiles p ON ct.contact_profile_id = p.contact_profile_id
+            WHERE ct.user_id = :user_id AND ct.contact_id != :contact_id
+              AND p.display_name = :display_name AND p.full_name = :full_name
+          |]
+          [ ":user_id" := userId,
+            ":contact_id" := contactId,
+            ":display_name" := displayName,
+            ":full_name" := fullName
+          ]
+    rights <$> mapM (runExceptT . getContact_ db userId) contactNames
+
+createSentProbe :: StoreMonad m => SQLiteStore -> TVar ChaChaDRG -> UserId -> Contact -> m (ByteString, Int64)
+createSentProbe st gVar userId _to@Contact {contactId} =
+  liftIOEither . withTransaction st $ \db ->
+    createWithRandomBytes 32 gVar $ \probe -> do
+      DB.execute db "INSERT INTO sent_probes (contact_id, probe, user_id) VALUES (?,?,?)" (contactId, probe, userId)
+      (probe,) <$> insertedRowId db
+
+createSentProbeHash :: MonadUnliftIO m => SQLiteStore -> UserId -> Int64 -> Contact -> m ()
+createSentProbeHash st userId probeId _to@Contact {contactId} =
+  liftIO . withTransaction st $ \db ->
+    DB.execute db "INSERT INTO sent_probe_hashes (sent_probe_id, contact_id, user_id) VALUES (?,?,?)" (probeId, contactId, userId)
+
+matchReceivedProbe :: MonadUnliftIO m => SQLiteStore -> UserId -> Contact -> ByteString -> m (Maybe Contact)
+matchReceivedProbe st userId _from@Contact {contactId} probe =
+  liftIO . withTransaction st $ \db -> do
+    let probeHash = C.sha256Hash probe
+    contactNames <-
+      map fromOnly
+        <$> DB.query
+          db
+          [sql|
+            SELECT c.local_display_name
+            FROM contacts c
+            JOIN received_probes r ON r.contact_id = c.contact_id
+            WHERE c.user_id = ? AND r.probe_hash = ? AND r.probe IS NULL
+          |]
+          (userId, probeHash)
+    DB.execute db "INSERT INTO received_probes (contact_id, probe, probe_hash, user_id) VALUES (?,?,?,?)" (contactId, probe, probeHash, userId)
+    case contactNames of
+      [] -> pure Nothing
+      cName : _ ->
+        either (const Nothing) Just
+          <$> runExceptT (getContact_ db userId cName)
+
+matchReceivedProbeHash :: MonadUnliftIO m => SQLiteStore -> UserId -> Contact -> ByteString -> m (Maybe (Contact, ByteString))
+matchReceivedProbeHash st userId _from@Contact {contactId} probeHash =
+  liftIO . withTransaction st $ \db -> do
+    namesAndProbes <-
+      DB.query
+        db
+        [sql|
+          SELECT c.local_display_name, r.probe
+          FROM contacts c
+          JOIN received_probes r ON r.contact_id = c.contact_id
+          WHERE c.user_id = ? AND r.probe_hash = ? AND r.probe IS NOT NULL
+        |]
+        (userId, probeHash)
+    DB.execute db "INSERT INTO received_probes (contact_id, probe_hash, user_id) VALUES (?,?,?)" (contactId, probeHash, userId)
+    case namesAndProbes of
+      [] -> pure Nothing
+      (cName, probe) : _ ->
+        either (const Nothing) (Just . (,probe))
+          <$> runExceptT (getContact_ db userId cName)
+
+matchSentProbe :: MonadUnliftIO m => SQLiteStore -> UserId -> Contact -> ByteString -> m (Maybe Contact)
+matchSentProbe st userId _from@Contact {contactId} probe =
+  liftIO . withTransaction st $ \db -> do
+    contactNames <-
+      map fromOnly
+        <$> DB.query
+          db
+          [sql|
+            SELECT c.local_display_name
+            FROM contacts c
+            JOIN sent_probe_hashes h ON h.contact_id = c.contact_id
+            JOIN sent_probes s ON h.sent_probe_id = s.sent_probe_id
+            WHERE c.user_id = ? AND s.probe = ? AND s.contact_id = ?
+          |]
+          (userId, probe, contactId)
+    case contactNames of
+      [] -> pure Nothing
+      cName : _ ->
+        either (const Nothing) Just
+          <$> runExceptT (getContact_ db userId cName)
+
 getConnectionChatDirection :: StoreMonad m => SQLiteStore -> User -> ConnId -> m (ChatDirection 'Agent)
 getConnectionChatDirection st User {userId, userContactId} agentConnId =
   liftIOEither . withTransaction st $ \db -> runExceptT $ do
@@ -377,7 +481,7 @@ createNewGroup st gVar user groupProfile =
     profileId <- insertedRowId db
     DB.execute db "INSERT INTO groups (local_display_name, user_id, group_profile_id) VALUES (?, ?, ?)" (displayName, uId, profileId)
     groupId <- insertedRowId db
-    memberId <- randomId gVar 12
+    memberId <- randomBytes gVar 12
     membership <- createContactMember_ db user groupId user (memberId, GROwner) GCUserMember GSMemCreator IBUser
     pure $ Right Group {groupId, localDisplayName = displayName, groupProfile, members = [], membership}
 
@@ -865,20 +969,23 @@ withLocalDisplayName db userId displayName action = getLdnSuffix >>= (`tryCreate
             (ldn, displayName, ldnSuffix, userId)
 
 createWithRandomId :: forall a. TVar ChaChaDRG -> (ByteString -> IO a) -> IO (Either StoreError a)
-createWithRandomId gVar create = tryCreate 3
+createWithRandomId = createWithRandomBytes 12
+
+createWithRandomBytes :: forall a. Int -> TVar ChaChaDRG -> (ByteString -> IO a) -> IO (Either StoreError a)
+createWithRandomBytes size gVar create = tryCreate 3
   where
     tryCreate :: Int -> IO (Either StoreError a)
     tryCreate 0 = pure $ Left SEUniqueID
     tryCreate n = do
-      id' <- randomId gVar 12
+      id' <- randomBytes gVar size
       E.try (create id') >>= \case
         Right x -> pure $ Right x
         Left e
           | DB.sqlError e == DB.ErrorConstraint -> tryCreate (n - 1)
           | otherwise -> pure . Left . SEInternal $ bshow e
 
-randomId :: TVar ChaChaDRG -> Int -> IO ByteString
-randomId gVar n = B64.encode <$> (atomically . stateTVar gVar $ randomBytesGenerate n)
+randomBytes :: TVar ChaChaDRG -> Int -> IO ByteString
+randomBytes gVar n = B64.encode <$> (atomically . stateTVar gVar $ randomBytesGenerate n)
 
 data StoreError
   = SEDuplicateName

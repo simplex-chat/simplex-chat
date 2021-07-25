@@ -56,8 +56,8 @@ data ChatMsgEvent
   | XGrpMemCon MemberId
   | XGrpMemConAll MemberId
   | XInfoProbe ByteString
-  | XInfoProbeCheck MemberId ByteString
-  | XInfoProbeOk MemberId ByteString
+  | XInfoProbeCheck ByteString
+  | XInfoProbeOk ByteString
   | XOk
   deriving (Eq, Show)
 
@@ -124,10 +124,10 @@ toChatMessage RawChatMessage {chatMsgId, chatMsgEvent, chatMsgParams, chatMsgBod
       chatMsg . XGrpMemConAll =<< B64.decode memId
     ("x.info.probe", [probe]) -> do
       chatMsg . XInfoProbe =<< B64.decode probe
-    ("x.info.probe.check", [memId, probeHash]) -> do
-      chatMsg =<< (XInfoProbeCheck <$> B64.decode memId <*> B64.decode probeHash)
-    ("x.info.probe.ok", [memId, probe]) -> do
-      chatMsg =<< (XInfoProbeOk <$> B64.decode memId <*> B64.decode probe)
+    ("x.info.probe.check", [probeHash]) -> do
+      chatMsg =<< (XInfoProbeCheck <$> B64.decode probeHash)
+    ("x.info.probe.ok", [probe]) -> do
+      chatMsg =<< (XInfoProbeOk <$> B64.decode probe)
     ("x.ok", []) ->
       chatMsg XOk
     _ -> Left $ "bad syntax or unsupported event " <> B.unpack chatMsgEvent
@@ -202,10 +202,10 @@ rawChatMessage ChatMessage {chatMsgId, chatMsgEvent, chatDAG} =
       rawMsg "x.grp.mem.con.all" [B64.encode memId] []
     XInfoProbe probe ->
       rawMsg "x.info.probe" [B64.encode probe] []
-    XInfoProbeCheck memId probeHash ->
-      rawMsg "x.info.probe.check" [B64.encode memId, B64.encode probeHash] []
-    XInfoProbeOk memId probe ->
-      rawMsg "x.info.probe.ok" [B64.encode memId, B64.encode probe] []
+    XInfoProbeCheck probeHash ->
+      rawMsg "x.info.probe.check" [B64.encode probeHash] []
+    XInfoProbeOk probe ->
+      rawMsg "x.info.probe.ok" [B64.encode probe] []
     XOk ->
       rawMsg "x.ok" [] []
   where
