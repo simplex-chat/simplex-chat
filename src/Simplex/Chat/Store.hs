@@ -399,7 +399,7 @@ matchSentProbe st userId _from@Contact {contactId} probe =
           <$> runExceptT (getContact_ db userId cName)
 
 mergeContactRecords :: MonadUnliftIO m => SQLiteStore -> UserId -> Contact -> Contact -> m ()
-mergeContactRecords st userId Contact {contactId = toContactId} Contact {contactId = fromContactId} =
+mergeContactRecords st userId Contact {contactId = toContactId} Contact {contactId = fromContactId, localDisplayName} =
   liftIO . withTransaction st $ \db -> do
     DB.execute db "UPDATE connections SET contact_id = ? WHERE contact_id = ? AND user_id = ?" (toContactId, fromContactId, userId)
     DB.execute db "UPDATE connections SET via_contact = ? WHERE via_contact = ? AND user_id = ?" (toContactId, fromContactId, userId)
@@ -419,7 +419,8 @@ mergeContactRecords st userId Contact {contactId = toContactId} Contact {contact
         ":from_contact_id" := fromContactId,
         ":user_id" := userId
       ]
-    DB.execute db "DELETE FROM contacts WHERE contact_id = ?" (Only fromContactId)
+    DB.execute db "DELETE FROM contacts WHERE contact_id = ? AND user_id = ?" (fromContactId, userId)
+    DB.execute db "DELETE FROM display_names WHERE local_display_name = ? AND user_id = ?" (localDisplayName, userId)
 
 getConnectionChatDirection :: StoreMonad m => SQLiteStore -> User -> ConnId -> m (ChatDirection 'Agent)
 getConnectionChatDirection st User {userId, userContactId} agentConnId =
