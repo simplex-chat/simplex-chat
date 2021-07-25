@@ -51,6 +51,7 @@ module Simplex.Chat.Store
     matchReceivedProbe,
     matchReceivedProbeHash,
     matchSentProbe,
+    mergeContactRecords,
   )
 where
 
@@ -386,9 +387,9 @@ matchSentProbe st userId _from@Contact {contactId} probe =
           [sql|
             SELECT c.local_display_name
             FROM contacts c
-            JOIN sent_probe_hashes h ON h.contact_id = c.contact_id
-            JOIN sent_probes s ON h.sent_probe_id = s.sent_probe_id
-            WHERE c.user_id = ? AND s.probe = ? AND s.contact_id = ?
+            JOIN sent_probes s ON s.contact_id = c.contact_id
+            JOIN sent_probe_hashes h ON h.sent_probe_id = s.sent_probe_id
+            WHERE c.user_id = ? AND s.probe = ? AND h.contact_id = ?
           |]
           (userId, probe, contactId)
     case contactNames of
@@ -396,6 +397,29 @@ matchSentProbe st userId _from@Contact {contactId} probe =
       cName : _ ->
         either (const Nothing) Just
           <$> runExceptT (getContact_ db userId cName)
+
+mergeContactRecords :: MonadUnliftIO m => SQLiteStore -> UserId -> Contact -> Contact -> m ()
+mergeContactRecords st userId Contact {contactId = toContactId} Contact {contactId = fromContactId} =
+  liftIO . withTransaction st $ \db -> do
+    DB.execute db "UPDATE connections SET contact_id = ? WHERE contact_id = ? AND user_id = ?" (toContactId, fromContactId, userId)
+    DB.execute db "UPDATE connections SET via_contact = ? WHERE via_contact = ? AND user_id = ?" (toContactId, fromContactId, userId)
+    DB.execute db "UPDATE group_members SET invited_by = ? WHERE invited_by = ? AND user_id = ?" (toContactId, fromContactId, userId)
+    DB.execute db "UPDATE messages SET contact_id = ? WHERE contact_id = ?" (toContactId, fromContactId)
+    DB.executeNamed
+      db
+      [sql|
+        UPDATE group_members
+        SET contact_id = :to_contact_id,
+            local_display_name = (SELECT local_display_name FROM contacts WHERE contact_id = :to_contact_id),
+            contact_profile_id = (SELECT contact_profile_id FROM contacts WHERE contact_id = :to_contact_id)
+        WHERE contact_id = :from_contact_id
+          AND user_id = :user_id
+      |]
+      [ ":to_contact_id" := toContactId,
+        ":from_contact_id" := fromContactId,
+        ":user_id" := userId
+      ]
+    DB.execute db "DELETE FROM contacts WHERE contact_id = ?" (Only fromContactId)
 
 getConnectionChatDirection :: StoreMonad m => SQLiteStore -> User -> ConnId -> m (ChatDirection 'Agent)
 getConnectionChatDirection st User {userId, userContactId} agentConnId =

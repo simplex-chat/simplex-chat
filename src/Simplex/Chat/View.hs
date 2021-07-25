@@ -28,6 +28,7 @@ module Simplex.Chat.View
     showJoinedGroupMemberConnecting,
     showConnectedToGroupMember,
     showGroupMembers,
+    showContactsMerged,
     safeDecodeUtf8,
   )
 where
@@ -122,6 +123,9 @@ showConnectedToGroupMember = printToView .: connectedToGroupMember
 showGroupMembers :: ChatReader m => Group -> m ()
 showGroupMembers = printToView . groupMembers
 
+showContactsMerged :: ChatReader m => Contact -> Contact -> m ()
+showContactsMerged = printToView .: contactsMerged
+
 invitation :: SMPQueueInfo -> [StyledString]
 invitation qInfo =
   [ "pass this invitation to your contact (via another channel): ",
@@ -204,6 +208,12 @@ groupMembers Group {membership, members} = map groupMember . filter (not . remov
       GSMemComplete -> "connected"
       GSMemCreator -> "created group"
       _ -> ""
+
+contactsMerged :: Contact -> Contact -> [StyledString]
+contactsMerged _to@Contact {localDisplayName = c1} _from@Contact {localDisplayName = c2} =
+  [ "contact " <> ttyContact c2 <> " is merged into " <> ttyContact c1,
+    "use " <> ttyToContact c1 <> highlight' "<message>" <> " to send messages"
+  ]
 
 receivedMessage :: StyledString -> UTCTime -> Text -> MsgIntegrity -> IO [StyledString]
 receivedMessage from utcTime msg mOk = do

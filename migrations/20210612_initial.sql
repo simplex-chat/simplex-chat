@@ -47,7 +47,7 @@ CREATE TABLE contacts (
 
 CREATE TABLE sent_probes (
   sent_probe_id INTEGER PRIMARY KEY,
-  contact_id INTEGER NOT NULL UNIQUE REFERENCES contacts,
+  contact_id INTEGER NOT NULL UNIQUE REFERENCES contacts ON DELETE CASCADE,
   probe BLOB NOT NULL,
   user_id INTEGER NOT NULL REFERENCES users,
   UNIQUE (user_id, probe)

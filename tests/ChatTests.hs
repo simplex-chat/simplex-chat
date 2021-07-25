@@ -155,10 +155,15 @@ testGroup2 =
         [ bob <## "#club: dan joined the group",
           do
             dan <## "#club: you joined the group"
-            dan <### ["#club: member alice_1 (Alice) is connected", "#club: member cath (Catherine) is connected"],
+            dan
+              <### [ "#club: member alice_1 (Alice) is connected",
+                     "#club: member cath (Catherine) is connected",
+                     "use @alice <message> to send messages"
+                   ],
           do
             alice <## "#club: bob added dan_1 (Daniel) to the group (connecting...)"
-            alice <## "#club: new member dan_1 is connected",
+            alice <## "#club: new member dan_1 is connected"
+            alice <## "use @dan <message> to send messages",
           do
             cath <## "#club: bob added dan (Daniel) to the group (connecting...)"
             cath <## "#club: new member dan is connected"
@@ -167,7 +172,7 @@ testGroup2 =
       concurrentlyN_
         [ bob <# "#club alice> hello",
           cath <# "#club alice> hello",
-          dan <# "#club alice_1> hello"
+          dan <# "#club alice> hello"
         ]
       bob #> "#club hi there"
       concurrentlyN_
@@ -183,7 +188,7 @@ testGroup2 =
         ]
       dan #> "#club how is it going?"
       concurrentlyN_
-        [ alice <# "#club dan_1> how is it going?",
+        [ alice <# "#club dan> how is it going?",
           bob <# "#club dan> how is it going?",
           cath <# "#club dan> how is it going?"
         ]
@@ -195,10 +200,10 @@ testGroup2 =
       cath <# "dan> hey cath"
       cath #> "@dan hey dan"
       dan <# "cath> hey dan"
-      dan #> "@alice_1 hi alice"
-      alice <# "dan_1> hi alice"
-      alice #> "@dan_1 hello dan"
-      dan <# "alice_1> hello dan"
+      dan #> "@alice hi alice"
+      alice <# "dan> hi alice"
+      alice #> "@dan hello dan"
+      dan <# "alice> hello dan"
 
 connectUsers :: TestCC -> TestCC -> IO ()
 connectUsers cc1 cc2 = do

@@ -445,15 +445,17 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
     xInfoProbe :: Contact -> ByteString -> m ()
     xInfoProbe c2 probe = do
       r <- withStore $ \st -> matchReceivedProbe st userId c2 probe
-      forM_ r $ \c1 -> do
-        sendDirectMessage (contactConnId c1) $ XInfoProbeOk probe
-        mergeContacts c1 c2
+      forM_ r $ \c1 -> probeMatch c1 c2 probe
 
     xInfoProbeCheck :: Contact -> ByteString -> m ()
     xInfoProbeCheck c1 probeHash = do
       r <- withStore $ \st -> matchReceivedProbeHash st userId c1 probeHash
-      forM_ r $ \(c2, probe) -> do
-        sendDirectMessage (contactConnId c2) $ XInfoProbeOk probe
+      forM_ r $ \(c2, probe) -> probeMatch c1 c2 probe
+
+    probeMatch :: Contact -> Contact -> ByteString -> m ()
+    probeMatch c1@Contact {profile = p1} c2@Contact {profile = p2} probe =
+      when (p1 == p2) $ do
+        sendDirectMessage (contactConnId c1) $ XInfoProbeOk probe
         mergeContacts c1 c2
 
     xInfoProbeOk :: Contact -> ByteString -> m ()
@@ -462,7 +464,9 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
       forM_ r $ \c2 -> mergeContacts c1 c2
 
     mergeContacts :: Contact -> Contact -> m ()
-    mergeContacts _toContact _fromContact = pure ()
+    mergeContacts to from = do
+      withStore $ \st -> mergeContactRecords st userId to from
+      showContactsMerged to from
 
     parseChatMessage :: ByteString -> Either ChatError ChatMessage
     parseChatMessage msgBody = first ChatErrorMessage (parseAll rawChatMessageP msgBody >>= toChatMessage)
