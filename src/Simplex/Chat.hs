@@ -7,6 +7,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TupleSections #-}
 
 module Simplex.Chat where
 
@@ -23,7 +24,7 @@ import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.Functor (($>))
 import Data.List (find)
-import Data.Maybe (isJust)
+import Data.Maybe (isJust, mapMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
@@ -200,11 +201,31 @@ processChatCommand user@User {userId, profile} = \case
 agentSubscriber :: (MonadUnliftIO m, MonadReader ChatController m) => m ()
 agentSubscriber = do
   q <- asks $ subQ . smpAgent
+  subscribeUserConnections
   forever $ do
     (_, connId, msg) <- atomically $ readTBQueue q
     user <- asks currentUser
     -- TODO handle errors properly
     void . runExceptT $ processAgentMessage user connId msg `catchError` (liftIO . print)
+
+subscribeUserConnections :: (MonadUnliftIO m, MonadReader ChatController m) => m ()
+subscribeUserConnections = void . runExceptT $ do
+  user <- asks currentUser
+  subscribeContacts user
+  subscribeGroups user
+  where
+    subscribeContacts user = do
+      contacts <- withStore (`getUserContacts` user)
+      forM_ contacts $ \ct@Contact {localDisplayName = c} ->
+        (subscribe (contactConnId ct) >> showContactSubscribed c) `catchError` showContactSubError c
+    subscribeGroups user = do
+      groups <- filter (not . null . members) <$> withStore (`getUserGroups` user)
+      forM_ groups $ \Group {members, localDisplayName = g} -> do
+        let connectedMembers = mapMaybe (\m -> (m,) <$> memberConnId m) members
+        forM_ connectedMembers $ \(GroupMember {localDisplayName = c}, cId) ->
+          subscribe cId `catchError` showMemberSubError g c
+        showGroupSubscribed g
+    subscribe cId = withAgent (`subscribeConnection` cId)
 
 processAgentMessage :: forall m. ChatMonad m => User -> ConnId -> ACommand 'Agent -> m ()
 processAgentMessage user@User {userId, profile} agentConnId agentMessage = do

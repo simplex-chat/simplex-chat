@@ -23,12 +23,14 @@ module Simplex.Chat.Store
     createDirectContact,
     deleteContact,
     getContact,
+    getUserContacts,
     getContactConnections,
     getConnectionChatDirection,
     updateConnectionStatus,
     createNewGroup,
     createGroupInvitation,
     getGroup,
+    getUserGroups,
     getGroupInvitation,
     createContactGroupMember,
     createMemberConnection,
@@ -53,6 +55,7 @@ import Control.Monad.IO.Unlift
 import Crypto.Random (ChaChaDRG, randomBytesGenerate)
 import qualified Data.ByteString.Base64 as B64
 import Data.ByteString.Char8 (ByteString)
+import Data.Either (rights)
 import Data.FileEmbed (embedDir, makeRelativeToProject)
 import Data.Function (on)
 import Data.Int (Int64)
@@ -199,18 +202,20 @@ deleteContact st userId displayName =
       |]
       [":user_id" := userId, ":display_name" := displayName]
 
+getContact :: StoreMonad m => SQLiteStore -> UserId -> ContactName -> m Contact
+getContact st userId localDisplayName =
+  liftIOEither . withTransaction st $ \db -> runExceptT $ getContact_ db userId localDisplayName
+
 -- TODO return the last connection that is ready, not any last connection
 -- requires updating connection status
-getContact :: StoreMonad m => SQLiteStore -> UserId -> ContactName -> m Contact
--- TODO merge contact and connection?
-getContact st userId localDisplayName =
-  liftIOEither . withTransaction st $ \db -> runExceptT $ do
-    c@Contact {contactId} <- getContact_ db
-    activeConn <- getConnection_ db contactId
-    pure $ (c :: Contact) {activeConn}
+getContact_ :: DB.Connection -> UserId -> ContactName -> ExceptT StoreError IO Contact
+getContact_ db userId localDisplayName = do
+  c@Contact {contactId} <- getContactRec_
+  activeConn <- getConnection_ contactId
+  pure $ (c :: Contact) {activeConn}
   where
-    getContact_ :: DB.Connection -> ExceptT StoreError IO Contact
-    getContact_ db = ExceptT $ do
+    getContactRec_ :: ExceptT StoreError IO Contact
+    getContactRec_ = ExceptT $ do
       toContact
         <$> DB.queryNamed
           db
@@ -221,8 +226,8 @@ getContact st userId localDisplayName =
             WHERE c.user_id = :user_id AND c.local_display_name = :local_display_name AND c.is_user = :is_user
           |]
           [":user_id" := userId, ":local_display_name" := localDisplayName, ":is_user" := False]
-    getConnection_ :: DB.Connection -> Int64 -> ExceptT StoreError IO Connection
-    getConnection_ db contactId = ExceptT $ do
+    getConnection_ :: Int64 -> ExceptT StoreError IO Connection
+    getConnection_ contactId = ExceptT $ do
       connection
         <$> DB.queryNamed
           db
@@ -243,6 +248,12 @@ getContact st userId localDisplayName =
     connection :: [ConnectionRow] -> Either StoreError Connection
     connection (connRow : _) = Right $ toConnection connRow
     connection _ = Left $ SEContactNotReady localDisplayName
+
+getUserContacts :: MonadUnliftIO m => SQLiteStore -> User -> m [Contact]
+getUserContacts st User {userId} =
+  liftIO . withTransaction st $ \db -> do
+    contactNames <- liftIO $ map fromOnly <$> DB.query db "SELECT local_display_name FROM contacts WHERE user_id = ?" (Only userId)
+    rights <$> mapM (runExceptT . getContact_ db userId) contactNames
 
 getContactConnections :: StoreMonad m => SQLiteStore -> UserId -> ContactName -> m [Connection]
 getContactConnections st userId displayName =
@@ -294,7 +305,7 @@ getConnectionChatDirection st User {userId, userContactId} agentConnId =
       ConnContact ->
         ReceivedDirectMessage c <$> case entityId of
           Nothing -> pure Nothing
-          Just contactId -> Just <$> getContact_ db contactId c
+          Just contactId -> Just <$> getContactRec_ db contactId c
   where
     getConnection_ :: DB.Connection -> ExceptT StoreError IO Connection
     getConnection_ db = ExceptT $ do
@@ -311,8 +322,8 @@ getConnectionChatDirection st User {userId, userContactId} agentConnId =
     connection :: [ConnectionRow] -> Either StoreError Connection
     connection (connRow : _) = Right $ toConnection connRow
     connection _ = Left $ SEConnectionNotFound agentConnId
-    getContact_ :: DB.Connection -> Int64 -> Connection -> ExceptT StoreError IO Contact
-    getContact_ db contactId c = ExceptT $ do
+    getContactRec_ :: DB.Connection -> Int64 -> Connection -> ExceptT StoreError IO Contact
+    getContactRec_ db contactId c = ExceptT $ do
       toContact contactId c
         <$> DB.query
           db
@@ -446,6 +457,12 @@ getGroup_ db User {userId, userContactId} localDisplayName = do
        in case a of
             [] -> Left SEGroupWithoutUser
             u : ms -> Right (b <> ms, u)
+
+getUserGroups :: MonadUnliftIO m => SQLiteStore -> User -> m [Group]
+getUserGroups st user =
+  liftIO . withTransaction st $ \db -> do
+    groupNames <- liftIO $ map fromOnly <$> DB.query db "SELECT local_display_name FROM groups WHERE user_id = ?" (Only $ userId user)
+    map fst . rights <$> mapM (runExceptT . getGroup_ db user) groupNames
 
 getGroupInvitation :: StoreMonad m => SQLiteStore -> User -> GroupName -> m ReceivedGroupInvitation
 getGroupInvitation st user localDisplayName =

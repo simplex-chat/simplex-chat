@@ -12,6 +12,10 @@ module Simplex.Chat.View
     showContactDeleted,
     showContactConnected,
     showContactDisconnected,
+    showContactSubscribed,
+    showContactSubError,
+    showGroupSubscribed,
+    showMemberSubError,
     showReceivedMessage,
     showReceivedGroupMessage,
     showSentMessage,
@@ -62,6 +66,18 @@ showContactConnected = printToView . contactConnected
 
 showContactDisconnected :: ChatReader m => ContactName -> m ()
 showContactDisconnected = printToView . contactDisconnected
+
+showContactSubscribed :: ChatReader m => ContactName -> m ()
+showContactSubscribed = printToView . contactSubscribed
+
+showContactSubError :: ChatReader m => ContactName -> ChatError -> m ()
+showContactSubError = printToView .: contactSubError
+
+showGroupSubscribed :: ChatReader m => GroupName -> m ()
+showGroupSubscribed = printToView . groupSubscribed
+
+showMemberSubError :: ChatReader m => GroupName -> ContactName -> ChatError -> m ()
+showMemberSubError = printToView .:. memberSubError
 
 showReceivedMessage :: ChatReader m => ContactName -> UTCTime -> Text -> MsgIntegrity -> m ()
 showReceivedMessage = showReceivedMessage_ . ttyFromContact
@@ -119,6 +135,18 @@ contactConnected ct = [ttyFullContact ct <> " is connected"]
 
 contactDisconnected :: ContactName -> [StyledString]
 contactDisconnected c = ["disconnected from " <> ttyContact c <> " - restart chat"]
+
+contactSubscribed :: ContactName -> [StyledString]
+contactSubscribed c = [ttyContact c <> " is active"]
+
+contactSubError :: ContactName -> ChatError -> [StyledString]
+contactSubError c e = ["contact " <> ttyContact c <> " error: " <> plain (show e)]
+
+groupSubscribed :: GroupName -> [StyledString]
+groupSubscribed g = [ttyGroup g <> " is active"]
+
+memberSubError :: GroupName -> ContactName -> ChatError -> [StyledString]
+memberSubError g c e = [ttyGroup g <> " member " <> ttyContact c <> " error: " <> plain (show e)]
 
 groupCreated :: Group -> [StyledString]
 groupCreated g@Group {localDisplayName} =
