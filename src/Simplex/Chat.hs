@@ -162,12 +162,13 @@ processChatCommand user@User {userId, profile} = \case
     group <- withStore $ \st -> createNewGroup st gVar user gProfile
     showGroupCreated group
   AddMember gName cName memRole -> do
+    -- TODO currently it not possible to re-add contact that was removed from or left the group
     (group, contact) <- withStore $ \st -> (,) <$> getGroup st user gName <*> getContact st userId cName
     let Group {groupId, groupProfile, membership, members} = group
         userRole = memberRole membership
         userMemberId = memberId membership
     when (userRole < GRAdmin || userRole < memRole) $ throwError $ ChatError CEGroupUserRole
-    when (isMember contact members) . throwError . ChatError $ CEGroupDuplicateMember cName
+    when (isContactMember contact members) . throwError . ChatError $ CEGroupDuplicateMember cName
     when (memberStatus membership == GSMemInvited) . throwError . ChatError $ CEGroupNotJoined gName
     unless (memberActive membership) . throwError . ChatError $ CEGroupMemberNotActive
     gVar <- asks idsDrg
@@ -181,11 +182,21 @@ processChatCommand user@User {userId, profile} = \case
     ReceivedGroupInvitation {fromMember, userMember, queueInfo} <- withStore $ \st -> getGroupInvitation st user gName
     agentConnId <- withAgent $ \a -> joinConnection a queueInfo . directMessage . XGrpAcpt $ memberId userMember
     withStore $ \st -> do
-      createMemberConnection st userId (groupMemberId fromMember) agentConnId
-      updateGroupMemberStatus st userId (groupMemberId fromMember) GSMemAccepted
-      updateGroupMemberStatus st userId (groupMemberId userMember) GSMemAccepted
+      createMemberConnection st userId fromMember agentConnId
+      updateGroupMemberStatus st userId fromMember GSMemAccepted
+      updateGroupMemberStatus st userId userMember GSMemAccepted
   MemberRole _gName _cName _mRole -> pure ()
-  RemoveMember _gName _cName -> pure ()
+  RemoveMember gName cName -> do
+    Group {membership, members} <- withStore $ \st -> getGroup st user gName
+    case find ((== cName) . (localDisplayName :: GroupMember -> ContactName)) members of
+      Nothing -> throwError . ChatError $ CEGroupMemberNotFound cName
+      Just member -> do
+        let userRole = memberRole membership
+        when (userRole < GRAdmin || userRole < memberRole member) $ throwError $ ChatError CEGroupUserRole
+        sendGroupMessage members . XGrpMemDel $ memberId member
+        deleteMemberConnection member
+        withStore $ \st -> updateGroupMemberStatus st userId member GSMemRemoved
+        showDeletedMember gName Nothing (Just member)
   LeaveGroup _gName -> pure ()
   DeleteGroup _gName -> pure ()
   ListMembers gName -> do
@@ -200,8 +211,8 @@ processChatCommand user@User {userId, profile} = \case
     setActive $ ActiveG gName
   QuitChat -> liftIO exitSuccess
   where
-    isMember :: Contact -> [GroupMember] -> Bool
-    isMember Contact {contactId} members = isJust $ find ((== Just contactId) . memberContactId) members
+    isContactMember :: Contact -> [GroupMember] -> Bool
+    isContactMember Contact {contactId} members = isJust $ find ((== Just contactId) . memberContactId) members
 
 agentSubscriber :: (MonadUnliftIO m, MonadReader ChatController m) => m ()
 agentSubscriber = do
@@ -324,7 +335,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
             case chatMsgEvent of
               XGrpAcpt memId
                 | memId == memberId m -> do
-                  withStore $ \st -> updateGroupMemberStatus st userId (groupMemberId m) GSMemAccepted
+                  withStore $ \st -> updateGroupMemberStatus st userId m GSMemAccepted
                   acceptAgentConnection conn confId XOk
                 | otherwise -> messageError "x.grp.acpt: memberId is different from expected"
               _ -> messageError "CONF from invited member must have x.grp.acpt"
@@ -351,9 +362,9 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
       CON -> do
         group@Group {members, membership} <- withStore $ \st -> getGroup st user gName
         withStore $ \st -> do
-          updateGroupMemberStatus st userId (groupMemberId m) GSMemConnected
+          updateGroupMemberStatus st userId m GSMemConnected
           unless (memberActive membership) $
-            updateGroupMemberStatus st userId (groupMemberId membership) GSMemConnected
+            updateGroupMemberStatus st userId membership GSMemConnected
         -- TODO forward any pending (GMIntroInvReceived) introductions
         case memberCategory m of
           GCHostMember -> do
@@ -389,6 +400,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
           XGrpMemIntro memInfo -> xGrpMemIntro gName m memInfo
           XGrpMemInv memId introInv -> xGrpMemInv gName m memId introInv
           XGrpMemFwd memInfo introInv -> xGrpMemFwd gName m memInfo introInv
+          XGrpMemDel memId -> xGrpMemDel gName m memId
           _ -> messageError $ "unsupported message: " <> T.pack (show chatMsgEvent)
       _ -> messageError $ "unsupported agent event: " <> T.pack (show agentMsg)
 
@@ -503,7 +515,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
               newMember <- withStore $ \st -> createIntroReMember st user group m memInfo groupConnId directConnId
               let msg = XGrpMemInv memId IntroInvitation {groupQInfo, directQInfo}
               sendDirectMessage agentConnId msg
-              withStore $ \st -> updateGroupMemberStatus st userId (groupMemberId newMember) GSMemIntroInvited
+              withStore $ \st -> updateGroupMemberStatus st userId newMember GSMemIntroInvited
         _ -> messageError "x.grp.mem.intro can be only sent by host member"
 
     xGrpMemInv :: GroupName -> GroupMember -> MemberId -> IntroInvitation -> m ()
@@ -537,6 +549,31 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
       groupConnId <- withAgent $ \a -> joinConnection a groupQInfo $ directMessage msg
       directConnId <- withAgent $ \a -> joinConnection a directQInfo $ directMessage msg
       withStore $ \st -> createIntroToMemberContact st userId m toMember groupConnId directConnId
+
+    xGrpMemDel :: GroupName -> GroupMember -> MemberId -> m ()
+    xGrpMemDel gName m memId = do
+      Group {membership, members} <- withStore $ \st -> getGroup st user gName
+      if memberId membership == memId
+        then do
+          mapM_ deleteMemberConnection members
+          withStore $ \st -> updateGroupMemberStatus st userId membership GSMemRemoved
+          showDeletedMemberUser gName m
+        else case find ((== memId) . memberId) members of
+          Nothing -> messageError "x.grp.mem.del with unknown member ID"
+          Just member -> do
+            let mRole = memberRole m
+            if (mRole < GRAdmin || mRole < memberRole member)
+              then messageError "x.grp.mem.del with insufficient member permissions"
+              else do
+                deleteMemberConnection member
+                withStore $ \st -> updateGroupMemberStatus st userId m GSMemRemoved
+                showDeletedMember gName (Just m) (Just member)
+
+deleteMemberConnection :: ChatMonad m => GroupMember -> m ()
+deleteMemberConnection m = do
+  User {userId} <- asks currentUser
+  withAgent $ forM_ (memberConnId m) . deleteConnection
+  withStore $ \st -> deleteGroupMemberConnection st userId m
 
 sendDirectMessage :: ChatMonad m => ConnId -> ChatMsgEvent -> m ()
 sendDirectMessage agentConnId chatMsgEvent =

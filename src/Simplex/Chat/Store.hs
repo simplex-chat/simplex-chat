@@ -36,6 +36,7 @@ module Simplex.Chat.Store
     createMemberConnection,
     updateGroupMemberStatus,
     createNewGroupMember,
+    deleteGroupMemberConnection,
     createIntroductions,
     updateIntroStatus,
     saveIntroInvitation,
@@ -624,13 +625,13 @@ createContactGroupMember st gVar user groupId contact memberRole agentConnId =
       void $ createMemberConnection_ db (userId user) groupMemberId agentConnId Nothing 0
       pure member
 
-createMemberConnection :: MonadUnliftIO m => SQLiteStore -> UserId -> Int64 -> ConnId -> m ()
-createMemberConnection st userId groupMemberId agentConnId =
+createMemberConnection :: MonadUnliftIO m => SQLiteStore -> UserId -> GroupMember -> ConnId -> m ()
+createMemberConnection st userId GroupMember {groupMemberId} agentConnId =
   liftIO . withTransaction st $ \db ->
     void $ createMemberConnection_ db userId groupMemberId agentConnId Nothing 0
 
-updateGroupMemberStatus :: MonadUnliftIO m => SQLiteStore -> UserId -> Int64 -> GroupMemberStatus -> m ()
-updateGroupMemberStatus st userId groupMemberId memberStatus =
+updateGroupMemberStatus :: MonadUnliftIO m => SQLiteStore -> UserId -> GroupMember -> GroupMemberStatus -> m ()
+updateGroupMemberStatus st userId GroupMember {groupMemberId} memberStatus =
   liftIO . withTransaction st $ \db ->
     DB.executeNamed
       db
@@ -700,6 +701,14 @@ createNewMember_
           memberContactId,
           activeConn = Nothing
         }
+
+deleteGroupMemberConnection :: MonadUnliftIO m => SQLiteStore -> UserId -> GroupMember -> m ()
+deleteGroupMemberConnection st userId m =
+  liftIO . withTransaction st $ \db -> deleteGroupMemberConnection_ db userId m
+
+deleteGroupMemberConnection_ :: DB.Connection -> UserId -> GroupMember -> IO ()
+deleteGroupMemberConnection_ db userId GroupMember {groupMemberId} =
+  DB.execute db "DELETE FROM connections WHERE user_id = ? AND group_member_id = ?" (userId, groupMemberId)
 
 createIntroductions :: MonadUnliftIO m => SQLiteStore -> Group -> GroupMember -> m [GroupMemberIntro]
 createIntroductions st Group {members} toMember = do

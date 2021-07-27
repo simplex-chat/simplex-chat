@@ -27,6 +27,8 @@ module Simplex.Chat.View
     showUserJoinedGroup,
     showJoinedGroupMemberConnecting,
     showConnectedToGroupMember,
+    showDeletedMember,
+    showDeletedMemberUser,
     showGroupMembers,
     showContactsMerged,
     safeDecodeUtf8,
@@ -120,6 +122,12 @@ showJoinedGroupMemberConnecting = printToView .:. joinedGroupMemberConnecting
 showConnectedToGroupMember :: ChatReader m => GroupName -> GroupMember -> m ()
 showConnectedToGroupMember = printToView .: connectedToGroupMember
 
+showDeletedMember :: ChatReader m => GroupName -> Maybe GroupMember -> Maybe GroupMember -> m ()
+showDeletedMember = printToView .:. deletedMember
+
+showDeletedMemberUser :: ChatReader m => GroupName -> GroupMember -> m ()
+showDeletedMemberUser = printToView .: deletedMemberUser
+
 showGroupMembers :: ChatReader m => Group -> m ()
 showGroupMembers = printToView . groupMembers
 
@@ -182,6 +190,19 @@ joinedGroupMemberConnecting g host m = [ttyGroup g <> ": " <> ttyMember host <> 
 
 connectedToGroupMember :: GroupName -> GroupMember -> [StyledString]
 connectedToGroupMember g m = [ttyGroup g <> ": " <> connectedMember m <> " is connected"]
+
+deletedMember :: GroupName -> Maybe GroupMember -> Maybe GroupMember -> [StyledString]
+deletedMember g by c = [ttyGroup g <> ": " <> contactOrUser by <> " removed " <> contactOrUser c <> " from the group"]
+  where
+    contactOrUser :: Maybe GroupMember -> StyledString
+    contactOrUser = maybe "you" ttyMember
+
+deletedMemberUser :: GroupName -> GroupMember -> [StyledString]
+deletedMemberUser g by =
+  deletedMember g (Just by) Nothing
+    <> [ "messages are saved, but you cannot send messages or add members",
+         "use " <> highlight ("/d #" <> g) <> " to remove the group"
+       ]
 
 connectedMember :: GroupMember -> StyledString
 connectedMember m = case memberCategory m of
@@ -262,6 +283,7 @@ chatError = \case
     CEGroupContactRole c -> ["contact " <> ttyContact c <> " has insufficient permissions for this group action"]
     CEGroupNotJoined g -> ["you did not join this group, use " <> highlight ("/join #" <> g)]
     CEGroupMemberNotActive -> ["you cannot invite other members yet, try later"]
+    CEGroupMemberNotFound c -> ["contact " <> ttyContact c <> " is not a group member"]
     CEGroupInternal s -> ["chat group bug: " <> plain s]
   -- e -> ["chat error: " <> plain (show e)]
   ChatErrorStore err -> case err of
