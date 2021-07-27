@@ -44,7 +44,7 @@ module Simplex.Chat.Store
     saveMemberInvitation,
     getViaGroupMember,
     getViaGroupContact,
-    getExistingContacts,
+    getMatchingContacts,
     randomBytes,
     createSentProbe,
     createSentProbeHash,
@@ -302,8 +302,8 @@ toMaybeConnection (Just connId, Just agentConnId, Just connLevel, viaContact, Ju
   Just $ toConnection (connId, agentConnId, connLevel, viaContact, connStatus, connType, contactId, groupMemberId, createdAt)
 toMaybeConnection _ = Nothing
 
-getExistingContacts :: MonadUnliftIO m => SQLiteStore -> UserId -> Contact -> m [Contact]
-getExistingContacts st userId Contact {contactId, profile = Profile {displayName, fullName}} =
+getMatchingContacts :: MonadUnliftIO m => SQLiteStore -> UserId -> Contact -> m [Contact]
+getMatchingContacts st userId Contact {contactId, profile = Profile {displayName, fullName}} =
   liftIO . withTransaction st $ \db -> do
     contactNames <-
       map fromOnly

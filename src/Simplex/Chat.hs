@@ -308,7 +308,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
             Just (gName, m) ->
               when (memberIsReady m) $ do
                 notifyMemberConnected gName m
-                when (memberCategory m == GCPreMember) $ probeExistingContacts ct
+                when (memberCategory m == GCPreMember) $ probeMatchingContacts ct
         END -> do
           showContactDisconnected c
           showToast (c <> "> ") "disconnected"
@@ -379,7 +379,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
               Just ct ->
                 when (contactIsReady ct) $ do
                   notifyMemberConnected gName m
-                  when (memberCategory m == GCPreMember) $ probeExistingContacts ct
+                  when (memberCategory m == GCPreMember) $ probeMatchingContacts ct
       MSG meta msgBody -> do
         ChatMessage {chatMsgEvent} <- liftEither $ parseChatMessage msgBody
         case chatMsgEvent of
@@ -398,12 +398,12 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
       setActive $ ActiveG gName
       showToast ("#" <> gName) $ "member " <> localDisplayName <> " is connected"
 
-    probeExistingContacts :: Contact -> m ()
-    probeExistingContacts ct = do
+    probeMatchingContacts :: Contact -> m ()
+    probeMatchingContacts ct = do
       gVar <- asks idsDrg
       (probe, probeId) <- withStore $ \st -> createSentProbe st gVar userId ct
       sendDirectMessage (contactConnId ct) $ XInfoProbe probe
-      cs <- withStore (\st -> getExistingContacts st userId ct)
+      cs <- withStore (\st -> getMatchingContacts st userId ct)
       let probeHash = C.sha256Hash probe
       forM_ cs $ \c -> sendProbeHash c probeHash probeId `catchError` const (pure ())
       where
