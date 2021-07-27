@@ -43,9 +43,10 @@ import Simplex.Messaging.Agent
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..))
 import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Client (smpDefaultConfig)
+import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Parsers (parseAll)
 import Simplex.Messaging.Util (raceAny_)
-import System.Exit (exitFailure)
+import System.Exit (exitFailure, exitSuccess)
 import System.IO (hFlush, stdout)
 import Text.Read (readMaybe)
 import UnliftIO.Async (race_)
@@ -67,6 +68,7 @@ data ChatCommand
   | DeleteGroup GroupName
   | ListMembers GroupName
   | SendGroupMessage GroupName ByteString
+  | QuitChat
   deriving (Show)
 
 cfg :: AgentConfig
@@ -186,7 +188,9 @@ processChatCommand user@User {userId, profile} = \case
   RemoveMember _gName _cName -> pure ()
   LeaveGroup _gName -> pure ()
   DeleteGroup _gName -> pure ()
-  ListMembers _gName -> pure ()
+  ListMembers gName -> do
+    group <- withStore $ \st -> getGroup st user gName
+    showGroupMembers group
   SendGroupMessage gName msg -> do
     -- TODO save sent messages
     -- TODO save pending message delivery for members without connections
@@ -194,6 +198,7 @@ processChatCommand user@User {userId, profile} = \case
     let msgEvent = XMsgNew $ MsgContent MTText [] [MsgContentBody {contentType = SimplexContentType XCText, contentData = msg}]
     sendGroupMessage members msgEvent
     setActive $ ActiveG gName
+  QuitChat -> liftIO exitSuccess
   where
     isMember :: Contact -> [GroupMember] -> Bool
     isMember Contact {contactId} members = isJust $ find ((== Just contactId) . memberContactId) members
@@ -272,6 +277,9 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
             XMsgNew (MsgContent MTText [] body) -> newTextMessage c meta $ find (isSimplexContentType XCText) body
             XInfo _ -> pure () -- TODO profile update
             XGrpInv gInv -> processGroupInvitation ct gInv
+            XInfoProbe probe -> xInfoProbe ct probe
+            XInfoProbeCheck probeHash -> xInfoProbeCheck ct probeHash
+            XInfoProbeOk probe -> xInfoProbeOk ct probe
             _ -> pure ()
         CONF confId connInfo -> do
           -- confirming direct connection with a member
@@ -298,7 +306,9 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
               setActive $ ActiveC c
               showToast (c <> "> ") "connected"
             Just (gName, m) ->
-              when (memberIsReady m) $ notifyMemberConnected gName m
+              when (memberIsReady m) $ do
+                notifyMemberConnected gName m
+                when (memberCategory m == GCPreMember) $ probeMatchingContacts ct
         END -> do
           showContactDisconnected c
           showToast (c <> "> ") "disconnected"
@@ -342,7 +352,8 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
         group@Group {members, membership} <- withStore $ \st -> getGroup st user gName
         withStore $ \st -> do
           updateGroupMemberStatus st userId (groupMemberId m) GSMemConnected
-          updateGroupMemberStatus st userId (groupMemberId membership) GSMemConnected
+          unless (memberActive membership) $
+            updateGroupMemberStatus st userId (groupMemberId membership) GSMemConnected
         -- TODO forward any pending (GMIntroInvReceived) introductions
         case memberCategory m of
           GCHostMember -> do
@@ -366,7 +377,9 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
                 notifyMemberConnected gName m
                 messageError "implementation error: connected member does not have contact"
               Just ct ->
-                when (contactIsReady ct) $ notifyMemberConnected gName m
+                when (contactIsReady ct) $ do
+                  notifyMemberConnected gName m
+                  when (memberCategory m == GCPreMember) $ probeMatchingContacts ct
       MSG meta msgBody -> do
         ChatMessage {chatMsgEvent} <- liftEither $ parseChatMessage msgBody
         case chatMsgEvent of
@@ -384,6 +397,19 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
       showConnectedToGroupMember gName m
       setActive $ ActiveG gName
       showToast ("#" <> gName) $ "member " <> localDisplayName <> " is connected"
+
+    probeMatchingContacts :: Contact -> m ()
+    probeMatchingContacts ct = do
+      gVar <- asks idsDrg
+      (probe, probeId) <- withStore $ \st -> createSentProbe st gVar userId ct
+      sendDirectMessage (contactConnId ct) $ XInfoProbe probe
+      cs <- withStore (\st -> getMatchingContacts st userId ct)
+      let probeHash = C.sha256Hash probe
+      forM_ cs $ \c -> sendProbeHash c probeHash probeId `catchError` const (pure ())
+      where
+        sendProbeHash c probeHash probeId = do
+          sendDirectMessage (contactConnId c) $ XInfoProbeCheck probeHash
+          withStore $ \st -> createSentProbeHash st userId probeId c
 
     messageWarning :: Text -> m ()
     messageWarning = liftIO . print
@@ -415,6 +441,32 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
       when (fromMemId == memId) $ throwError $ ChatError CEGroupDuplicateMemberId
       group <- withStore $ \st -> createGroupInvitation st user ct inv
       showReceivedGroupInvitation group localDisplayName memRole
+
+    xInfoProbe :: Contact -> ByteString -> m ()
+    xInfoProbe c2 probe = do
+      r <- withStore $ \st -> matchReceivedProbe st userId c2 probe
+      forM_ r $ \c1 -> probeMatch c1 c2 probe
+
+    xInfoProbeCheck :: Contact -> ByteString -> m ()
+    xInfoProbeCheck c1 probeHash = do
+      r <- withStore $ \st -> matchReceivedProbeHash st userId c1 probeHash
+      forM_ r $ \(c2, probe) -> probeMatch c1 c2 probe
+
+    probeMatch :: Contact -> Contact -> ByteString -> m ()
+    probeMatch c1@Contact {profile = p1} c2@Contact {profile = p2} probe =
+      when (p1 == p2) $ do
+        sendDirectMessage (contactConnId c1) $ XInfoProbeOk probe
+        mergeContacts c1 c2
+
+    xInfoProbeOk :: Contact -> ByteString -> m ()
+    xInfoProbeOk c1 probe = do
+      r <- withStore $ \st -> matchSentProbe st userId c1 probe
+      forM_ r $ \c2 -> mergeContacts c1 c2
+
+    mergeContacts :: Contact -> Contact -> m ()
+    mergeContacts to from = do
+      withStore $ \st -> mergeContactRecords st userId to from
+      showContactsMerged to from
 
     parseChatMessage :: ByteString -> Either ChatError ChatMessage
     parseChatMessage msgBody = first ChatErrorMessage (parseAll rawChatMessageP msgBody >>= toChatMessage)
@@ -597,13 +649,14 @@ chatCommandP =
     <|> ("/join #" <|> "/join " <|> "/j #" <|> "/j ") *> (JoinGroup <$> displayName)
     <|> ("/remove #" <|> "/rm #") *> (RemoveMember <$> displayName <* A.space <*> displayName)
     <|> ("/delete #" <|> "/d #") *> (DeleteGroup <$> displayName)
-    <|> ("/members #" <|> "/ms #") *> (ListMembers <$> displayName)
+    <|> ("/members #" <|> "/members " <|> "/ms #" <|> "/ms ") *> (ListMembers <$> displayName)
     <|> A.char '#' *> (SendGroupMessage <$> displayName <* A.space <*> A.takeByteString)
     <|> ("/add" <|> "/a") $> AddContact
     <|> ("/connect " <|> "/c ") *> (Connect <$> smpQueueInfoP)
     <|> ("/delete @" <|> "/delete " <|> "/d @" <|> "/d ") *> (DeleteContact <$> displayName)
     <|> A.char '@' *> (SendMessage <$> displayName <*> (A.space *> A.takeByteString))
     <|> ("/markdown" <|> "/m") $> MarkdownHelp
+    <|> ("/quit" <|> "/q") $> QuitChat
   where
     displayName = safeDecodeUtf8 <$> (B.cons <$> A.satisfy refChar <*> A.takeTill (== ' '))
     refChar c = c > ' ' && c /= '#' && c /= '@'

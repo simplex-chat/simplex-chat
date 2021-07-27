@@ -5,6 +5,8 @@ CREATE TABLE contact_profiles ( -- remote user profile
   properties TEXT NOT NULL DEFAULT '{}' -- JSON with contact profile properties
 );
 
+CREATE INDEX contact_profiles_index ON contact_profiles (display_name, full_name);
+
 CREATE TABLE users (
   user_id INTEGER PRIMARY KEY,
   contact_id INTEGER NOT NULL UNIQUE REFERENCES contacts ON DELETE CASCADE
@@ -41,6 +43,30 @@ CREATE TABLE contacts (
     ON UPDATE CASCADE,
   UNIQUE (user_id, local_display_name),
   UNIQUE (user_id, contact_profile_id)
+);
+
+CREATE TABLE sent_probes (
+  sent_probe_id INTEGER PRIMARY KEY,
+  contact_id INTEGER NOT NULL UNIQUE REFERENCES contacts ON DELETE CASCADE,
+  probe BLOB NOT NULL,
+  user_id INTEGER NOT NULL REFERENCES users,
+  UNIQUE (user_id, probe)
+);
+
+CREATE TABLE sent_probe_hashes (
+  sent_probe_hash_id INTEGER PRIMARY KEY,
+  sent_probe_id INTEGER NOT NULL REFERENCES sent_probes ON DELETE CASCADE,
+  contact_id INTEGER NOT NULL REFERENCES contacts ON DELETE CASCADE,
+  user_id INTEGER NOT NULL REFERENCES users,
+  UNIQUE (sent_probe_id, contact_id)
+);
+
+CREATE TABLE received_probes (
+  received_probe_id INTEGER PRIMARY KEY,
+  contact_id INTEGER NOT NULL REFERENCES contacts ON DELETE CASCADE,
+  probe BLOB,
+  probe_hash BLOB NOT NULL,
+  user_id INTEGER NOT NULL REFERENCES users
 );
 
 CREATE TABLE known_servers(

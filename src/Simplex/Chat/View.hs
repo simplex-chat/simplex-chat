@@ -27,6 +27,8 @@ module Simplex.Chat.View
     showUserJoinedGroup,
     showJoinedGroupMemberConnecting,
     showConnectedToGroupMember,
+    showGroupMembers,
+    showContactsMerged,
     safeDecodeUtf8,
   )
 where
@@ -118,6 +120,12 @@ showJoinedGroupMemberConnecting = printToView .:. joinedGroupMemberConnecting
 showConnectedToGroupMember :: ChatReader m => GroupName -> GroupMember -> m ()
 showConnectedToGroupMember = printToView .: connectedToGroupMember
 
+showGroupMembers :: ChatReader m => Group -> m ()
+showGroupMembers = printToView . groupMembers
+
+showContactsMerged :: ChatReader m => Contact -> Contact -> m ()
+showContactsMerged = printToView .: contactsMerged
+
 invitation :: SMPQueueInfo -> [StyledString]
 invitation qInfo =
   [ "pass this invitation to your contact (via another channel): ",
@@ -180,6 +188,32 @@ connectedMember m = case memberCategory m of
   GCPreMember -> "member " <> ttyFullMember m
   GCPostMember -> "new member " <> ttyMember m -- without fullName as as it was shown in joinedGroupMemberConnecting
   _ -> "member " <> ttyMember m -- these case is not used
+
+groupMembers :: Group -> [StyledString]
+groupMembers Group {membership, members} = map groupMember . filter (not . removedOrLeft) $ membership : members
+  where
+    removedOrLeft m = let s = memberStatus m in s == GSMemRemoved || s == GSMemLeft
+    groupMember m = ttyFullMember m <> ": " <> role m <> ", " <> category m <> status m
+    role = plain . serializeMemberRole . memberRole
+    category m = case memberCategory m of
+      GCUserMember -> "you, "
+      GCInviteeMember -> "invited, "
+      GCHostMember -> "host, "
+      _ -> ""
+    status m = case memberStatus m of
+      GSMemRemoved -> "removed"
+      GSMemLeft -> "left"
+      GSMemInvited -> "not yet joined"
+      GSMemConnected -> "connected"
+      GSMemComplete -> "connected"
+      GSMemCreator -> "created group"
+      _ -> ""
+
+contactsMerged :: Contact -> Contact -> [StyledString]
+contactsMerged _to@Contact {localDisplayName = c1} _from@Contact {localDisplayName = c2} =
+  [ "contact " <> ttyContact c2 <> " is merged into " <> ttyContact c1,
+    "use " <> ttyToContact c1 <> highlight' "<message>" <> " to send messages"
+  ]
 
 receivedMessage :: StyledString -> UTCTime -> Text -> MsgIntegrity -> IO [StyledString]
 receivedMessage from utcTime msg mOk = do
