@@ -28,7 +28,7 @@ initializeNotifications = case os of
       True -> do
         v <- readFile "/proc/sys/kernel/osrelease"
         if "Microsoft" `isInfixOf` v || "WSL" `isInfixOf` v
-          then initWinNotify
+          then initWslNotify
           else pure $ notify linuxScript
   _ -> pure . const $ pure ()
 
@@ -42,11 +42,41 @@ linuxScript Notification {title, text} = "notify-send \"" <> safeDecodeUtf8 titl
 macScript :: Notification -> Text
 macScript Notification {title, text} = "osascript -e 'display notification \"" <> safeDecodeUtf8 text <> "\" with title \"" <> safeDecodeUtf8 title <> "\"'"
 
+initWslNotify :: IO (Notification -> IO ())
+initWslNotify = notify . wslScript <$> savePowershellScript
+
+wslScript :: FilePath -> Notification -> Text
+wslScript path Notification {title, text} = "powershell.exe \"" <> T.pack path <> " \\\"" <> wslEscape (safeDecodeUtf8 title) <> "\\\" \\\"" <> wslEscape (safeDecodeUtf8 text) <> "\\\"\""
+
+wslEscape :: Text -> Text
+wslEscape text = do
+  T.concatMap
+    ( \c ->
+        case c of
+          '`' -> "\\`\\`"
+          '\\' -> "\\\\"
+          '"' -> "\\`\\\""
+          _ -> T.singleton c
+    )
+    text
+
 initWinNotify :: IO (Notification -> IO ())
 initWinNotify = notify . winScript <$> savePowershellScript
 
 winScript :: FilePath -> Notification -> Text
-winScript path Notification {title, text} = "powershell.exe \"" <> T.pack path <> " \'" <> safeDecodeUtf8 title <> "\' \'" <> safeDecodeUtf8 text <> "\'\""
+winScript path Notification {title, text} = "powershell.exe \"" <> T.pack path <> " `\"" <> winEscape (safeDecodeUtf8 title) <> "`\" `\"" <> winEscape (safeDecodeUtf8 text) <> "`\"\""
+
+winEscape :: Text -> Text
+winEscape text = do
+  T.concatMap
+    ( \c ->
+        case c of
+          '`' -> "\\`\\`"
+          '\\' -> "\\\\"
+          '"' -> "\\`\\\""
+          _ -> T.singleton c
+    )
+    text
 
 savePowershellScript :: IO FilePath
 savePowershellScript = do
