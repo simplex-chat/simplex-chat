@@ -37,7 +37,17 @@ notify script notification =
   void $ readCreateProcess (shell . T.unpack $ script notification) ""
 
 linuxScript :: Notification -> Text
-linuxScript Notification {title, text} = "notify-send \"" <> safeDecodeUtf8 title <> "\" \"" <> safeDecodeUtf8 text <> "\""
+linuxScript Notification {title, text} = "notify-send '" <> linuxEscape (safeDecodeUtf8 title) <> "' '" <> linuxEscape (safeDecodeUtf8 text) <> "'"
+
+linuxEscape :: Text -> Text
+linuxEscape text = do
+  T.concatMap
+    ( \c ->
+        case c of
+          '\'' -> "'\\''"
+          _ -> T.singleton c
+    )
+    text
 
 macScript :: Notification -> Text
 macScript Notification {title, text} = "osascript -e 'display notification \"" <> safeDecodeUtf8 text <> "\" with title \"" <> safeDecodeUtf8 title <> "\"'"
