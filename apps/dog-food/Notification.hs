@@ -7,7 +7,6 @@ module Notification (Notification (..), initializeNotifications) where
 import ChatTerminal.Core (safeDecodeUtf8)
 import Control.Monad (void)
 import Data.ByteString.Char8 (ByteString)
-import Data.Char (toLower)
 import Data.List (isInfixOf)
 import qualified Data.Map as Map
 import Data.Text (Text)
