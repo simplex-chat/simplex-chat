@@ -8,7 +8,8 @@ import ChatTerminal.Core (safeDecodeUtf8)
 import Control.Monad (void)
 import Data.ByteString.Char8 (ByteString)
 import Data.List (isInfixOf)
-import qualified Data.Map as Map
+import Data.Map (Map, fromList, lookup)
+import qualified Data.Map as M
 import Data.Text (Text)
 import qualified Data.Text as T
 import System.Directory (createDirectoryIfMissing, doesFileExist, getAppUserDataDirectory)
@@ -40,13 +41,13 @@ linuxScript :: Notification -> Text
 linuxScript Notification {title, text} = "notify-send '" <> linuxEscape (safeDecodeUtf8 title) <> "' '" <> linuxEscape (safeDecodeUtf8 text) <> "'"
 
 linuxEscape :: Text -> Text
-linuxEscape text = replaceAll text $ Map.fromList [('\'', "'\\''")]
+linuxEscape text = replaceAll text $ fromList [('\'', "'\\''")]
 
 macScript :: Notification -> Text
 macScript Notification {title, text} = "osascript -e 'display notification \"" <> macEscape (safeDecodeUtf8 text) <> "\" with title \"" <> macEscape (safeDecodeUtf8 title) <> "\"'"
 
 macEscape :: Text -> Text
-macEscape text = replaceAll text $ Map.fromList [('"', "\\\"")]
+macEscape text = replaceAll text $ fromList [('"', "\\\"")]
 
 initWslNotify :: IO (Notification -> IO ())
 initWslNotify = notify . wslScript <$> savePowershellScript
@@ -55,7 +56,7 @@ wslScript :: FilePath -> Notification -> Text
 wslScript path Notification {title, text} = "powershell.exe \"" <> T.pack path <> " \\\"" <> wslEscape (safeDecodeUtf8 title) <> "\\\" \\\"" <> wslEscape (safeDecodeUtf8 text) <> "\\\"\""
 
 wslEscape :: Text -> Text
-wslEscape text = replaceAll text $ Map.fromList [('`', "\\`\\`"), ('\\', "\\\\"), ('"', "\\`\\\"")]
+wslEscape text = replaceAll text $ fromList [('`', "\\`\\`"), ('\\', "\\\\"), ('"', "\\`\\\"")]
 
 initWinNotify :: IO (Notification -> IO ())
 initWinNotify = notify . winScript <$> savePowershellScript
@@ -64,14 +65,14 @@ winScript :: FilePath -> Notification -> Text
 winScript path Notification {title, text} = "powershell.exe \"" <> T.pack path <> " '" <> winRemoveQuotes (safeDecodeUtf8 title) <> "' '" <> winRemoveQuotes (safeDecodeUtf8 text) <> "'\""
 
 winRemoveQuotes :: Text -> Text
-winRemoveQuotes text = replaceAll text $ Map.fromList [('`', ""), ('\'', ""), ('"', "")]
+winRemoveQuotes text = replaceAll text $ fromList [('`', ""), ('\'', ""), ('"', "")]
 
-replaceAll :: Text -> Map.Map Char Text -> Text
+replaceAll :: Text -> Map Char Text -> Text
 replaceAll text rules = do
   T.concatMap
     ( \c ->
-        case Map.lookup c rules of
-          Just r -> r
+        case M.lookup c rules of
+          Just t -> t
           Nothing -> T.singleton c
     )
     text
