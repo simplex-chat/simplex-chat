@@ -9,6 +9,7 @@ import Control.Monad (void)
 import Data.ByteString.Char8 (ByteString)
 import Data.Char (toLower)
 import Data.List (isInfixOf)
+import qualified Data.Map as Map
 import Data.Text (Text)
 import qualified Data.Text as T
 import System.Directory (createDirectoryIfMissing, doesFileExist, getAppUserDataDirectory)
@@ -40,27 +41,13 @@ linuxScript :: Notification -> Text
 linuxScript Notification {title, text} = "notify-send '" <> linuxEscape (safeDecodeUtf8 title) <> "' '" <> linuxEscape (safeDecodeUtf8 text) <> "'"
 
 linuxEscape :: Text -> Text
-linuxEscape text = do
-  T.concatMap
-    ( \c ->
-        case c of
-          '\'' -> "'\\''"
-          _ -> T.singleton c
-    )
-    text
+linuxEscape text = replaceAll text $ Map.fromList [('\'', "'\\''")]
 
 macScript :: Notification -> Text
 macScript Notification {title, text} = "osascript -e 'display notification \"" <> macEscape (safeDecodeUtf8 text) <> "\" with title \"" <> macEscape (safeDecodeUtf8 title) <> "\"'"
 
 macEscape :: Text -> Text
-macEscape text = do
-  T.concatMap
-    ( \c ->
-        case c of
-          '"' -> "\\\""
-          _ -> T.singleton c
-    )
-    text
+macEscape text = replaceAll text $ Map.fromList [('"', "\\\"")]
 
 initWslNotify :: IO (Notification -> IO ())
 initWslNotify = notify . wslScript <$> savePowershellScript
@@ -69,16 +56,7 @@ wslScript :: FilePath -> Notification -> Text
 wslScript path Notification {title, text} = "powershell.exe \"" <> T.pack path <> " \\\"" <> wslEscape (safeDecodeUtf8 title) <> "\\\" \\\"" <> wslEscape (safeDecodeUtf8 text) <> "\\\"\""
 
 wslEscape :: Text -> Text
-wslEscape text = do
-  T.concatMap
-    ( \c ->
-        case c of
-          '`' -> "\\`\\`"
-          '\\' -> "\\\\"
-          '"' -> "\\`\\\""
-          _ -> T.singleton c
-    )
-    text
+wslEscape text = replaceAll text $ Map.fromList [('`', "\\`\\`"), ('\\', "\\\\"), ('"', "\\`\\\"")]
 
 initWinNotify :: IO (Notification -> IO ())
 initWinNotify = notify . winScript <$> savePowershellScript
@@ -87,14 +65,15 @@ winScript :: FilePath -> Notification -> Text
 winScript path Notification {title, text} = "powershell.exe \"" <> T.pack path <> " '" <> winRemoveQuotes (safeDecodeUtf8 title) <> "' '" <> winRemoveQuotes (safeDecodeUtf8 text) <> "'\""
 
 winRemoveQuotes :: Text -> Text
-winRemoveQuotes text = do
+winRemoveQuotes text = replaceAll text $ Map.fromList [('`', ""), ('\'', ""), ('"', "")]
+
+replaceAll :: Text -> Map.Map Char Text -> Text
+replaceAll text rules = do
   T.concatMap
     ( \c ->
-        case c of
-          '`' -> ""
-          '\'' -> ""
-          '"' -> ""
-          _ -> T.singleton c
+        case Map.lookup c rules of
+          Just r -> r
+          Nothing -> T.singleton c
     )
     text
 
