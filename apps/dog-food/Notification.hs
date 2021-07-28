@@ -64,16 +64,16 @@ initWinNotify :: IO (Notification -> IO ())
 initWinNotify = notify . winScript <$> savePowershellScript
 
 winScript :: FilePath -> Notification -> Text
-winScript path Notification {title, text} = "powershell.exe \"" <> T.pack path <> " `\"" <> winEscape (safeDecodeUtf8 title) <> "`\" `\"" <> winEscape (safeDecodeUtf8 text) <> "`\"\""
+winScript path Notification {title, text} = "powershell.exe \"" <> T.pack path <> " '" <> winRemoveQuotes (safeDecodeUtf8 title) <> "' '" <> winRemoveQuotes (safeDecodeUtf8 text) <> "'\""
 
-winEscape :: Text -> Text
-winEscape text = do
+winRemoveQuotes :: Text -> Text
+winRemoveQuotes text = do
   T.concatMap
     ( \c ->
         case c of
-          '`' -> "\\`\\`"
-          '\\' -> "\\\\"
-          '"' -> "\\`\\\""
+          '`' -> ""
+          '\'' -> ""
+          '"' -> ""
           _ -> T.singleton c
     )
     text
