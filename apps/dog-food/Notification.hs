@@ -50,7 +50,17 @@ linuxEscape text = do
     text
 
 macScript :: Notification -> Text
-macScript Notification {title, text} = "osascript -e 'display notification \"" <> safeDecodeUtf8 text <> "\" with title \"" <> safeDecodeUtf8 title <> "\"'"
+macScript Notification {title, text} = "osascript -e 'display notification \"" <> macEscape (safeDecodeUtf8 text) <> "\" with title \"" <> macEscape (safeDecodeUtf8 title) <> "\"'"
+
+macEscape :: Text -> Text
+macEscape text = do
+  T.concatMap
+    ( \c ->
+        case c of
+          '"' -> "\\\""
+          _ -> T.singleton c
+    )
+    text
 
 initWslNotify :: IO (Notification -> IO ())
 initWslNotify = notify . wslScript <$> savePowershellScript
