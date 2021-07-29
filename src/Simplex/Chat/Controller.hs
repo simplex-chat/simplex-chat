@@ -47,6 +47,7 @@ data ChatErrorType
   | CEGroupDuplicateMemberId
   | CEGroupNotJoined GroupName
   | CEGroupMemberNotActive
+  | CEGroupMemberUserRemoved
   | CEGroupMemberNotFound ContactName
   | CEGroupInternal String
   deriving (Show, Exception)

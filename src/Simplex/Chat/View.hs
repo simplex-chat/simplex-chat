@@ -15,6 +15,8 @@ module Simplex.Chat.View
     showContactSubscribed,
     showContactSubError,
     showGroupSubscribed,
+    showGroupEmpty,
+    showGroupRemoved,
     showMemberSubError,
     showReceivedMessage,
     showReceivedGroupMessage,
@@ -29,6 +31,8 @@ module Simplex.Chat.View
     showConnectedToGroupMember,
     showDeletedMember,
     showDeletedMemberUser,
+    showLeftMemberUser,
+    showLeftMember,
     showGroupMembers,
     showContactsMerged,
     safeDecodeUtf8,
@@ -80,6 +84,12 @@ showContactSubError = printToView .: contactSubError
 showGroupSubscribed :: ChatReader m => GroupName -> m ()
 showGroupSubscribed = printToView . groupSubscribed
 
+showGroupEmpty :: ChatReader m => GroupName -> m ()
+showGroupEmpty = printToView . groupEmpty
+
+showGroupRemoved :: ChatReader m => GroupName -> m ()
+showGroupRemoved = printToView . groupRemoved
+
 showMemberSubError :: ChatReader m => GroupName -> ContactName -> ChatError -> m ()
 showMemberSubError = printToView .:. memberSubError
 
@@ -128,6 +138,12 @@ showDeletedMember = printToView .:. deletedMember
 showDeletedMemberUser :: ChatReader m => GroupName -> GroupMember -> m ()
 showDeletedMemberUser = printToView .: deletedMemberUser
 
+showLeftMemberUser :: ChatReader m => GroupName -> m ()
+showLeftMemberUser = printToView . leftMemberUser
+
+showLeftMember :: ChatReader m => GroupName -> GroupMember -> m ()
+showLeftMember = printToView .: leftMember
+
 showGroupMembers :: ChatReader m => Group -> m ()
 showGroupMembers = printToView . groupMembers
 
@@ -144,22 +160,28 @@ invitation qInfo =
   ]
 
 contactDeleted :: ContactName -> [StyledString]
-contactDeleted c = [ttyContact c <> " is deleted"]
+contactDeleted c = [ttyContact c <> ": contact is deleted"]
 
 contactConnected :: Contact -> [StyledString]
-contactConnected ct = [ttyFullContact ct <> " is connected"]
+contactConnected ct = [ttyFullContact ct <> ": contact is connected"]
 
 contactDisconnected :: ContactName -> [StyledString]
-contactDisconnected c = ["disconnected from " <> ttyContact c <> " - restart chat"]
+contactDisconnected c = [ttyContact c <> ": contact is disconnected - restart chat"]
 
 contactSubscribed :: ContactName -> [StyledString]
-contactSubscribed c = [ttyContact c <> " is active"]
+contactSubscribed c = [ttyContact c <> ": contact is active"]
 
 contactSubError :: ContactName -> ChatError -> [StyledString]
-contactSubError c e = ["contact " <> ttyContact c <> " error: " <> plain (show e)]
+contactSubError c e = [ttyContact c <> ": contact error " <> plain (show e)]
 
 groupSubscribed :: GroupName -> [StyledString]
-groupSubscribed g = [ttyGroup g <> " is active"]
+groupSubscribed g = [ttyGroup g <> ": group is active"]
+
+groupEmpty :: GroupName -> [StyledString]
+groupEmpty g = [ttyGroup g <> ": group is empty"]
+
+groupRemoved :: GroupName -> [StyledString]
+groupRemoved g = [ttyGroup g <> ": you left (or are removed from) the group"]
 
 memberSubError :: GroupName -> ContactName -> ChatError -> [StyledString]
 memberSubError g c e = [ttyGroup g <> " member " <> ttyContact c <> " error: " <> plain (show e)]
@@ -192,17 +214,25 @@ connectedToGroupMember :: GroupName -> GroupMember -> [StyledString]
 connectedToGroupMember g m = [ttyGroup g <> ": " <> connectedMember m <> " is connected"]
 
 deletedMember :: GroupName -> Maybe GroupMember -> Maybe GroupMember -> [StyledString]
-deletedMember g by c = [ttyGroup g <> ": " <> contactOrUser by <> " removed " <> contactOrUser c <> " from the group"]
-  where
-    contactOrUser :: Maybe GroupMember -> StyledString
-    contactOrUser = maybe "you" ttyMember
+deletedMember g by m = [ttyGroup g <> ": " <> memberOrUser by <> " removed " <> memberOrUser m <> " from the group"]
 
 deletedMemberUser :: GroupName -> GroupMember -> [StyledString]
-deletedMemberUser g by =
-  deletedMember g (Just by) Nothing
-    <> [ "messages are saved, but you cannot send messages or add members",
-         "use " <> highlight ("/d #" <> g) <> " to remove the group"
-       ]
+deletedMemberUser g by = deletedMember g (Just by) Nothing <> groupPreserved g
+
+leftMemberUser :: GroupName -> [StyledString]
+leftMemberUser g = leftMember_ g Nothing <> groupPreserved g
+
+leftMember :: GroupName -> GroupMember -> [StyledString]
+leftMember g m = leftMember_ g (Just m)
+
+leftMember_ :: GroupName -> Maybe GroupMember -> [StyledString]
+leftMember_ g m = [ttyGroup g <> ": " <> memberOrUser m <> " left the group"]
+
+groupPreserved :: GroupName -> [StyledString]
+groupPreserved g = ["use " <> highlight ("/d #" <> g) <> " to delete the group"]
+
+memberOrUser :: Maybe GroupMember -> StyledString
+memberOrUser = maybe "you" ttyMember
 
 connectedMember :: GroupMember -> StyledString
 connectedMember m = case memberCategory m of
@@ -283,6 +313,7 @@ chatError = \case
     CEGroupContactRole c -> ["contact " <> ttyContact c <> " has insufficient permissions for this group action"]
     CEGroupNotJoined g -> ["you did not join this group, use " <> highlight ("/join #" <> g)]
     CEGroupMemberNotActive -> ["you cannot invite other members yet, try later"]
+    CEGroupMemberUserRemoved -> ["you are no longer the member of the group"]
     CEGroupMemberNotFound c -> ["contact " <> ttyContact c <> " is not a group member"]
     CEGroupInternal s -> ["chat group bug: " <> plain s]
   -- e -> ["chat error: " <> plain (show e)]
@@ -293,13 +324,7 @@ chatError = \case
     SEGroupNotFound g -> ["no group " <> ttyGroup g]
     SEGroupAlreadyJoined -> ["you already joined this group"]
     e -> ["chat db error: " <> plain (show e)]
-  ChatErrorAgent err -> case err of
-    -- CONN e -> case e of
-    --   -- TODO replace with ChatErrorContact errors, these errors should never happen
-    --   NOT_FOUND -> ["no contact " <> ttyContact c]
-    --   DUPLICATE -> ["contact " <> ttyContact c <> " already exists"]
-    --   SIMPLEX -> ["contact " <> ttyContact c <> " did not accept invitation yet"]
-    e -> ["smp agent error: " <> plain (show e)]
+  ChatErrorAgent e -> ["smp agent error: " <> plain (show e)]
   ChatErrorMessage e -> ["chat message error: " <> plain (show e)]
 
 printToView :: (MonadUnliftIO m, MonadReader ChatController m) => [StyledString] -> m ()

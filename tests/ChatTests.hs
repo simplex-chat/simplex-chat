@@ -1,5 +1,6 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE PostfixOperators #-}
 
 module ChatTests where
 
@@ -12,6 +13,7 @@ import qualified Data.Text as T
 import Simplex.Chat.Controller
 import Simplex.Chat.Types (Profile (..), User (..))
 import System.Terminal.Internal (VirtualTerminal (..))
+import System.Timeout (timeout)
 import Test.Hspec
 
 aliceProfile :: Profile
@@ -38,30 +40,30 @@ testAddContact :: IO ()
 testAddContact =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
-      alice ##> "/a"
+      alice ##> "/c"
       Just inv <- invitation <$> getWindow alice
       bob ##> ("/c " <> inv)
       concurrently_
-        (bob <## "alice (Alice) is connected")
-        (alice <## "bob (Bob) is connected")
+        (bob <## "alice (Alice): contact is connected")
+        (alice <## "bob (Bob): contact is connected")
       alice #> "@bob hello"
       bob <# "alice> hello"
       bob #> "@alice hi"
       alice <# "bob> hi"
       -- test adding the same contact one more time - local name will be different
-      alice ##> "/a"
+      alice ##> "/c"
       Just inv' <- invitation <$> getWindow alice
       bob ##> ("/c " <> inv')
       concurrently_
-        (bob <## "alice_1 (Alice) is connected")
-        (alice <## "bob_1 (Bob) is connected")
+        (bob <## "alice_1 (Alice): contact is connected")
+        (alice <## "bob_1 (Bob): contact is connected")
       alice #> "@bob_1 hello"
       bob <# "alice_1> hello"
       bob #> "@alice_1 hi"
       alice <# "bob_1> hi"
       -- test deleting contact
       alice ##> "/d bob_1"
-      alice <## "bob_1 is deleted"
+      alice <## "bob_1: contact is deleted"
       alice #:> "@bob_1 hey"
       alice <## "no contact bob_1"
 
@@ -108,10 +110,25 @@ testGroup =
       concurrently_
         (alice <# "#team cath> hey")
         (bob <# "#team cath> hey")
-      bob #> "@cath hello cath"
-      cath <# "bob> hello cath"
-      cath #> "@bob hello bob"
-      bob <# "cath> hello bob"
+      bob <##> cath
+      -- remove member
+      bob ##> "/rm team cath"
+      concurrentlyN_
+        [ bob <## "#team: you removed cath from the group",
+          alice <## "#team: bob removed cath from the group",
+          cath <## "use /d #team to delete the group"
+        ]
+      bob #> "#team hi"
+      concurrently_
+        (alice <# "#team bob> hi")
+        (cath </)
+      alice #> "#team hello"
+      concurrently_
+        (bob <# "#team alice> hello")
+        (cath </)
+      cath #:> "#team hello"
+      cath <## "you are no longer the member of the group"
+      bob <##> cath
 
 testGroup2 :: IO ()
 testGroup2 =
@@ -192,44 +209,94 @@ testGroup2 =
           bob <# "#club dan> how is it going?",
           cath <# "#club dan> how is it going?"
         ]
-      bob #> "@cath hi cath"
-      cath <# "bob> hi cath"
-      cath #> "@bob hi bob"
-      bob <# "cath> hi bob"
-      dan #> "@cath hey cath"
-      cath <# "dan> hey cath"
-      cath #> "@dan hey dan"
-      dan <# "cath> hey dan"
-      dan #> "@alice hi alice"
-      alice <# "dan> hi alice"
-      alice #> "@dan hello dan"
-      dan <# "alice> hello dan"
+      bob <##> cath
+      dan <##> cath
+      dan <##> alice
+      -- remove member
+      cath ##> "/rm club dan"
+      concurrentlyN_
+        [ cath <## "#club: you removed dan from the group",
+          alice <## "#club: cath removed dan from the group",
+          bob <## "#club: cath removed dan from the group",
+          dan <## "use /d #club to delete the group"
+        ]
+      alice #> "#club hello"
+      concurrentlyN_
+        [ bob <# "#club alice> hello",
+          cath <# "#club alice> hello",
+          (dan </)
+        ]
+      bob #> "#club hi there"
+      concurrentlyN_
+        [ alice <# "#club bob> hi there",
+          cath <# "#club bob> hi there",
+          (dan </)
+        ]
+      cath #> "#club hey"
+      concurrentlyN_
+        [ alice <# "#club cath> hey",
+          bob <# "#club cath> hey",
+          (dan </)
+        ]
+      dan #:> "#club how is it going?"
+      dan <## "you are no longer the member of the group"
+      dan <##> cath
+      dan <##> alice
+      -- member leaves
+      bob ##> "/l club"
+      concurrentlyN_
+        [ bob <## "use /d #club to delete the group",
+          alice <## "#club: bob left the group",
+          cath <## "#club: bob left the group"
+        ]
+      alice #> "#club hello"
+      concurrently_
+        (cath <# "#club alice> hello")
+        (bob </)
+      cath #> "#club hey"
+      concurrently_
+        (alice <# "#club cath> hey")
+        (bob </)
+      bob #:> "#club how is it going?"
+      bob <## "you are no longer the member of the group"
+      bob <##> cath
+      bob <##> alice
 
 connectUsers :: TestCC -> TestCC -> IO ()
 connectUsers cc1 cc2 = do
-  cc1 ##> "/a"
+  cc1 ##> "/c"
   Just inv <- invitation <$> getWindow cc1
   cc2 ##> ("/c " <> inv)
   concurrently_
-    (cc2 <## (showName cc1 <> " is connected"))
-    (cc1 <## (showName cc2 <> " is connected"))
+    (cc2 <## (showName cc1 <> ": contact is connected"))
+    (cc1 <## (showName cc2 <> ": contact is connected"))
   where
     showName :: TestCC -> String
     showName (TestCC ChatController {currentUser = User {localDisplayName, profile = Profile {fullName}}} _ _) =
       T.unpack $ localDisplayName <> " (" <> fullName <> ")"
 
+-- | test sending direct messages
+(<##>) :: TestCC -> TestCC -> IO ()
+cc1 <##> cc2 = do
+  cc1 #> ("@" <> name cc2 <> " hi")
+  cc2 <# (name cc1 <> "> hi")
+  cc2 #> ("@" <> name cc1 <> " hey")
+  cc1 <# (name cc2 <> "> hey")
+  where
+    name (TestCC ChatController {currentUser = User {localDisplayName}} _ _) = T.unpack localDisplayName
+
 (##>) :: TestCC -> String -> IO ()
-(##>) cc cmd = do
+cc ##> cmd = do
   cc #:> cmd
   cc <## cmd
 
 (#>) :: TestCC -> String -> IO ()
-(#>) cc cmd = do
+cc #> cmd = do
   cc #:> cmd
   cc <# cmd
 
 (#:>) :: TestCC -> String -> IO ()
-(#:>) (TestCC cc _ _) cmd = atomically $ writeTBQueue (inputQ cc) $ InputCommand cmd
+(TestCC cc _ _) #:> cmd = atomically $ writeTBQueue (inputQ cc) $ InputCommand cmd
 
 (<##) :: TestCC -> String -> Expectation
 cc <## line = (lastOutput <$> getWindow cc) `shouldReturn` line
@@ -245,6 +312,9 @@ cc <### ls = do
 (<#) :: TestCC -> String -> Expectation
 cc <# line = (dropTime . lastOutput <$> getWindow cc) `shouldReturn` line
 
+(</) :: TestCC -> Expectation
+(</) cc = timeout 500000 (getWindow cc) `shouldReturn` Nothing
+
 dropTime :: String -> String
 dropTime msg = case splitAt 6 msg of
   ([m, m', ':', s, s', ' '], text) ->
@@ -255,6 +325,7 @@ getWindow :: TestCC -> IO [String]
 getWindow (TestCC _ t _) = do
   let w = virtualWindow t
   win <- readTVarIO w
+  -- TODO to debug - putStrLn (lastOutput win') - before returning it
   atomically $ do
     win' <- readTVar w
     if win' /= win then pure win' else retry

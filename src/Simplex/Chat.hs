@@ -197,7 +197,12 @@ processChatCommand user@User {userId, profile} = \case
         deleteMemberConnection member
         withStore $ \st -> updateGroupMemberStatus st userId member GSMemRemoved
         showDeletedMember gName Nothing (Just member)
-  LeaveGroup _gName -> pure ()
+  LeaveGroup gName -> do
+    Group {membership, members} <- withStore $ \st -> getGroup st user gName
+    sendGroupMessage members XGrpLeave
+    mapM_ deleteMemberConnection members
+    withStore $ \st -> updateGroupMemberStatus st userId membership GSMemLeft
+    showLeftMemberUser gName
   DeleteGroup _gName -> pure ()
   ListMembers gName -> do
     group <- withStore $ \st -> getGroup st user gName
@@ -205,7 +210,8 @@ processChatCommand user@User {userId, profile} = \case
   SendGroupMessage gName msg -> do
     -- TODO save sent messages
     -- TODO save pending message delivery for members without connections
-    Group {members} <- withStore $ \st -> getGroup st user gName
+    Group {members, membership} <- withStore $ \st -> getGroup st user gName
+    unless (memberActive membership) . throwError . ChatError $ CEGroupMemberUserRemoved
     let msgEvent = XMsgNew $ MsgContent MTText [] [MsgContentBody {contentType = SimplexContentType XCText, contentData = msg}]
     sendGroupMessage members msgEvent
     setActive $ ActiveG gName
@@ -235,12 +241,18 @@ subscribeUserConnections = void . runExceptT $ do
       forM_ contacts $ \ct@Contact {localDisplayName = c} ->
         (subscribe (contactConnId ct) >> showContactSubscribed c) `catchError` showContactSubError c
     subscribeGroups user = do
-      groups <- filter (not . null . members) <$> withStore (`getUserGroups` user)
-      forM_ groups $ \Group {members, localDisplayName = g} -> do
+      groups <- withStore (`getUserGroups` user)
+      forM_ groups $ \Group {members, membership, localDisplayName = g} -> do
         let connectedMembers = mapMaybe (\m -> (m,) <$> memberConnId m) members
-        forM_ connectedMembers $ \(GroupMember {localDisplayName = c}, cId) ->
-          subscribe cId `catchError` showMemberSubError g c
-        showGroupSubscribed g
+        if null connectedMembers
+          then
+            if memberActive membership
+              then showGroupEmpty g
+              else showGroupRemoved g
+          else do
+            forM_ connectedMembers $ \(GroupMember {localDisplayName = c}, cId) ->
+              subscribe cId `catchError` showMemberSubError g c
+            showGroupSubscribed g
     subscribe cId = withAgent (`subscribeConnection` cId)
 
 processAgentMessage :: forall m. ChatMonad m => User -> ConnId -> ACommand 'Agent -> m ()
@@ -401,6 +413,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
           XGrpMemInv memId introInv -> xGrpMemInv gName m memId introInv
           XGrpMemFwd memInfo introInv -> xGrpMemFwd gName m memInfo introInv
           XGrpMemDel memId -> xGrpMemDel gName m memId
+          XGrpLeave -> xGrpLeave gName m
           _ -> messageError $ "unsupported message: " <> T.pack (show chatMsgEvent)
       _ -> messageError $ "unsupported agent event: " <> T.pack (show agentMsg)
 
@@ -462,7 +475,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
     xInfoProbeCheck :: Contact -> ByteString -> m ()
     xInfoProbeCheck c1 probeHash = do
       r <- withStore $ \st -> matchReceivedProbeHash st userId c1 probeHash
-      forM_ r $ \(c2, probe) -> probeMatch c1 c2 probe
+      forM_ r . uncurry $ probeMatch c1
 
     probeMatch :: Contact -> Contact -> ByteString -> m ()
     probeMatch c1@Contact {profile = p1} c2@Contact {profile = p2} probe =
@@ -562,12 +575,18 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
           Nothing -> messageError "x.grp.mem.del with unknown member ID"
           Just member -> do
             let mRole = memberRole m
-            if (mRole < GRAdmin || mRole < memberRole member)
+            if mRole < GRAdmin || mRole < memberRole member
               then messageError "x.grp.mem.del with insufficient member permissions"
               else do
                 deleteMemberConnection member
-                withStore $ \st -> updateGroupMemberStatus st userId m GSMemRemoved
+                withStore $ \st -> updateGroupMemberStatus st userId member GSMemRemoved
                 showDeletedMember gName (Just m) (Just member)
+
+    xGrpLeave :: GroupName -> GroupMember -> m ()
+    xGrpLeave gName m = do
+      deleteMemberConnection m
+      withStore $ \st -> updateGroupMemberStatus st userId m GSMemLeft
+      showLeftMember gName m
 
 deleteMemberConnection :: ChatMonad m => GroupMember -> m ()
 deleteMemberConnection m = do
@@ -684,12 +703,13 @@ chatCommandP =
     <|> ("/group #" <|> "/group " <|> "/g #" <|> "/g ") *> (NewGroup <$> groupProfile)
     <|> ("/add #" <|> "/add " <|> "/a #" <|> "/a ") *> (AddMember <$> displayName <* A.space <*> displayName <*> memberRole)
     <|> ("/join #" <|> "/join " <|> "/j #" <|> "/j ") *> (JoinGroup <$> displayName)
-    <|> ("/remove #" <|> "/rm #") *> (RemoveMember <$> displayName <* A.space <*> displayName)
+    <|> ("/remove #" <|> "/remove " <|> "/rm #" <|> "/rm ") *> (RemoveMember <$> displayName <* A.space <*> displayName)
+    <|> ("/leave #" <|> "/leave " <|> "/l #" <|> "/l ") *> (LeaveGroup <$> displayName)
     <|> ("/delete #" <|> "/d #") *> (DeleteGroup <$> displayName)
     <|> ("/members #" <|> "/members " <|> "/ms #" <|> "/ms ") *> (ListMembers <$> displayName)
     <|> A.char '#' *> (SendGroupMessage <$> displayName <* A.space <*> A.takeByteString)
-    <|> ("/add" <|> "/a") $> AddContact
     <|> ("/connect " <|> "/c ") *> (Connect <$> smpQueueInfoP)
+    <|> ("/connect" <|> "/c") $> AddContact
     <|> ("/delete @" <|> "/delete " <|> "/d @" <|> "/d ") *> (DeleteContact <$> displayName)
     <|> A.char '@' *> (SendMessage <$> displayName <*> (A.space *> A.takeByteString))
     <|> ("/markdown" <|> "/m") $> MarkdownHelp
