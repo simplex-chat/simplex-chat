@@ -227,6 +227,7 @@ serializeMemberCategory = \case
 data GroupMemberStatus
   = GSMemRemoved -- member who was removed from the group
   | GSMemLeft -- member who left the group
+  | GSMemGroupDeleted -- user member of the deleted group
   | GSMemInvited -- member is sent to or received invitation to join the group
   | GSMemIntroduced -- user received x.grp.mem.intro for this member (only with GCPreMember)
   | GSMemIntroInvited -- member is sent to or received from intro invitation
@@ -245,6 +246,7 @@ memberActive :: GroupMember -> Bool
 memberActive m = case memberStatus m of
   GSMemRemoved -> False
   GSMemLeft -> False
+  GSMemGroupDeleted -> False
   GSMemInvited -> False
   GSMemIntroduced -> False
   GSMemIntroInvited -> False
@@ -258,6 +260,7 @@ memberCurrent :: GroupMember -> Bool
 memberCurrent m = case memberStatus m of
   GSMemRemoved -> False
   GSMemLeft -> False
+  GSMemGroupDeleted -> False
   GSMemInvited -> False
   GSMemIntroduced -> True
   GSMemIntroInvited -> True
@@ -271,6 +274,7 @@ memberStatusT :: Text -> Maybe GroupMemberStatus
 memberStatusT = \case
   "removed" -> Just GSMemRemoved
   "left" -> Just GSMemLeft
+  "deleted" -> Just GSMemGroupDeleted
   "invited" -> Just GSMemInvited
   "introduced" -> Just GSMemIntroduced
   "intro-inv" -> Just GSMemIntroInvited
@@ -285,6 +289,7 @@ serializeMemberStatus :: GroupMemberStatus -> Text
 serializeMemberStatus = \case
   GSMemRemoved -> "removed"
   GSMemLeft -> "left"
+  GSMemGroupDeleted -> "deleted"
   GSMemInvited -> "invited"
   GSMemIntroduced -> "introduced"
   GSMemIntroInvited -> "intro-inv"

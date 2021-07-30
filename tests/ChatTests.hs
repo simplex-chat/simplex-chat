@@ -35,6 +35,7 @@ chatTests = do
   describe "chat groups" $ do
     it "add contacts, create group and send/receive messages" testGroup
     it "create and join group with 4 members" testGroup2
+    it "create and delete group" testGroupDelete
 
 testAddContact :: IO ()
 testAddContact =
@@ -262,6 +263,23 @@ testGroup2 =
       bob <##> cath
       bob <##> alice
 
+testGroupDelete :: IO ()
+testGroupDelete =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+      -- remove member
+      alice ##> "/d #team"
+      concurrentlyN_
+        [ alice <## "#team: you deleted the group",
+          bob <## "use /d #team to delete the local copy of the group",
+          cath <## "use /d #team to delete the local copy of the group"
+        ]
+      bob #:> "/d #team"
+      bob <## "#team: you deleted the group"
+      cath #:> "#team hi"
+      cath <## "you are no longer the member of the group"
+
 connectUsers :: TestCC -> TestCC -> IO ()
 connectUsers cc1 cc2 = do
   cc1 ##> "/c"
@@ -270,10 +288,43 @@ connectUsers cc1 cc2 = do
   concurrently_
     (cc2 <## (showName cc1 <> ": contact is connected"))
     (cc1 <## (showName cc2 <> ": contact is connected"))
+
+showName :: TestCC -> String
+showName (TestCC ChatController {currentUser = User {localDisplayName, profile = Profile {fullName}}} _ _) =
+  T.unpack $ localDisplayName <> " (" <> fullName <> ")"
+
+createGroup3 :: String -> TestCC -> TestCC -> TestCC -> IO ()
+createGroup3 gName cc1 cc2 cc3 = do
+  connectUsers cc1 cc2
+  connectUsers cc1 cc3
+  cc1 #:> ("/g " <> gName)
+  cc1 <## ("use /a " <> gName <> " <name> to add members")
+  cc1 ##> ("/a team " <> name cc2)
+  concurrently_
+    (cc1 <## ("invitation to join the group #" <> gName <> " sent to " <> name cc2))
+    (cc2 <## ("use /j " <> gName <> " to accept"))
+  cc2 ##> ("/j " <> gName)
+  concurrently_
+    (cc1 <## ("#" <> gName <> ": " <> name cc2 <> " joined the group"))
+    (cc2 <## ("#" <> gName <> ": you joined the group"))
+  cc1 ##> ("/a team " <> name cc3)
+  concurrently_
+    (cc1 <## ("invitation to join the group #" <> gName <> " sent to " <> name cc3))
+    (cc3 <## ("use /j " <> gName <> " to accept"))
+  cc3 ##> ("/j " <> gName)
+  concurrentlyN_
+    [ cc1 <## ("#" <> gName <> ": " <> name cc3 <> " joined the group"),
+      do
+        cc3 <## ("#" <> gName <> ": you joined the group")
+        cc3 <## ("#" <> gName <> ": member " <> showName cc2 <> " is connected"),
+      do
+        cc2 <## ("#" <> gName <> ": alice added " <> showName cc3 <> " to the group (connecting...)")
+        cc2 <## ("#" <> gName <> ": new member " <> name cc3 <> " is connected")
+    ]
   where
-    showName :: TestCC -> String
-    showName (TestCC ChatController {currentUser = User {localDisplayName, profile = Profile {fullName}}} _ _) =
-      T.unpack $ localDisplayName <> " (" <> fullName <> ")"
+    name :: TestCC -> String
+    name (TestCC ChatController {currentUser = User {localDisplayName}} _ _) =
+      T.unpack localDisplayName
 
 -- | test sending direct messages
 (<##>) :: TestCC -> TestCC -> IO ()

@@ -23,6 +23,8 @@ module Simplex.Chat.View
     showSentMessage,
     showSentGroupMessage,
     showGroupCreated,
+    showGroupDeletedUser,
+    showGroupDeleted,
     showSentGroupInvitation,
     showReceivedGroupInvitation,
     showJoinedGroupMember,
@@ -114,6 +116,12 @@ showSentMessage_ to msg = printToView =<< liftIO (sentMessage to msg)
 showGroupCreated :: ChatReader m => Group -> m ()
 showGroupCreated = printToView . groupCreated
 
+showGroupDeletedUser :: ChatReader m => GroupName -> m ()
+showGroupDeletedUser = printToView . groupDeletedUser
+
+showGroupDeleted :: ChatReader m => GroupName -> GroupMember -> m ()
+showGroupDeleted = printToView .: groupDeleted
+
 showSentGroupInvitation :: ChatReader m => Group -> ContactName -> m ()
 showSentGroupInvitation = printToView .: sentGroupInvitation
 
@@ -181,7 +189,7 @@ groupEmpty :: GroupName -> [StyledString]
 groupEmpty g = [ttyGroup g <> ": group is empty"]
 
 groupRemoved :: GroupName -> [StyledString]
-groupRemoved g = [ttyGroup g <> ": you left (or are removed from) the group"]
+groupRemoved g = [ttyGroup g <> ": you are no longer a member or group deleted"]
 
 memberSubError :: GroupName -> ContactName -> ChatError -> [StyledString]
 memberSubError g c e = [ttyGroup g <> " member " <> ttyContact c <> " error: " <> plain (show e)]
@@ -191,6 +199,15 @@ groupCreated g@Group {localDisplayName} =
   [ "group " <> ttyFullGroup g <> " is created",
     "use " <> highlight ("/a " <> localDisplayName <> " <name>") <> " to add members"
   ]
+
+groupDeletedUser :: GroupName -> [StyledString]
+groupDeletedUser g = groupDeleted_ g Nothing
+
+groupDeleted :: GroupName -> GroupMember -> [StyledString]
+groupDeleted g m = groupDeleted_ g (Just m) <> ["use " <> highlight ("/d #" <> g) <> " to delete the local copy of the group"]
+
+groupDeleted_ :: GroupName -> Maybe GroupMember -> [StyledString]
+groupDeleted_ g m = [ttyGroup g <> ": " <> memberOrUser m <> " deleted the group"]
 
 sentGroupInvitation :: Group -> ContactName -> [StyledString]
 sentGroupInvitation g c = ["invitation to join the group " <> ttyFullGroup g <> " sent to " <> ttyContact c]

@@ -203,7 +203,17 @@ processChatCommand user@User {userId, profile} = \case
     mapM_ deleteMemberConnection members
     withStore $ \st -> updateGroupMemberStatus st userId membership GSMemLeft
     showLeftMemberUser gName
-  DeleteGroup _gName -> pure ()
+  DeleteGroup gName -> do
+    g@Group {membership, members} <- withStore $ \st -> getGroup st user gName
+    let s = memberStatus membership
+        canDelete =
+          memberRole membership == GROwner
+            || (s == GSMemRemoved || s == GSMemLeft || s == GSMemGroupDeleted)
+    unless canDelete . throwError $ ChatError CEGroupUserRole
+    when (memberActive membership) $ sendGroupMessage members XGrpDel
+    mapM_ deleteMemberConnection members
+    withStore $ \st -> deleteGroup st user g
+    showGroupDeletedUser gName
   ListMembers gName -> do
     group <- withStore $ \st -> getGroup st user gName
     showGroupMembers group
@@ -414,6 +424,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
           XGrpMemFwd memInfo introInv -> xGrpMemFwd gName m memInfo introInv
           XGrpMemDel memId -> xGrpMemDel gName m memId
           XGrpLeave -> xGrpLeave gName m
+          XGrpDel -> xGrpDel gName m
           _ -> messageError $ "unsupported message: " <> T.pack (show chatMsgEvent)
       _ -> messageError $ "unsupported agent event: " <> T.pack (show agentMsg)
 
@@ -587,6 +598,16 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
       deleteMemberConnection m
       withStore $ \st -> updateGroupMemberStatus st userId m GSMemLeft
       showLeftMember gName m
+
+    xGrpDel :: GroupName -> GroupMember -> m ()
+    xGrpDel gName m = do
+      when (memberRole m /= GROwner) . throwError $ ChatError CEGroupUserRole
+      ms <- withStore $ \st -> do
+        Group {members, membership} <- getGroup st user gName
+        updateGroupMemberStatus st userId membership GSMemGroupDeleted
+        pure members
+      mapM_ deleteMemberConnection ms
+      showGroupDeleted gName m
 
 deleteMemberConnection :: ChatMonad m => GroupMember -> m ()
 deleteMemberConnection m = do

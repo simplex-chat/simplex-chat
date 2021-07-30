@@ -30,6 +30,7 @@ module Simplex.Chat.Store
     createNewGroup,
     createGroupInvitation,
     getGroup,
+    deleteGroup,
     getUserGroups,
     getGroupInvitation,
     createContactGroupMember,
@@ -587,6 +588,14 @@ getGroup_ db User {userId, userContactId} localDisplayName = do
        in case a of
             [] -> Left SEGroupWithoutUser
             u : ms -> Right (b <> ms, u)
+
+deleteGroup :: MonadUnliftIO m => SQLiteStore -> User -> Group -> m ()
+deleteGroup st User {userId} Group {groupId, members, localDisplayName} =
+  liftIO . withTransaction st $ \db -> do
+    forM_ members $ \m -> DB.execute db "DELETE FROM connections WHERE user_id = ? AND group_member_id = ?" (userId, groupMemberId m)
+    DB.execute db "DELETE FROM group_members WHERE user_id = ? AND group_id = ?" (userId, groupId)
+    DB.execute db "DELETE FROM groups WHERE user_id = ? AND group_id = ?" (userId, groupId)
+    DB.execute db "DELETE FROM display_names WHERE user_id = ? AND local_display_name = ?" (userId, localDisplayName)
 
 getUserGroups :: MonadUnliftIO m => SQLiteStore -> User -> m [Group]
 getUserGroups st user =
