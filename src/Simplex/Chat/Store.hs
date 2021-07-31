@@ -21,6 +21,7 @@ module Simplex.Chat.Store
     setActiveUser,
     createDirectConnection,
     createDirectContact,
+    getContactGroupNames,
     deleteContact,
     getContact,
     getUserContacts,
@@ -183,6 +184,20 @@ createContact_ db userId connId Profile {displayName, fullName} viaGroup =
     contactId <- insertedRowId db
     DB.execute db "UPDATE connections SET contact_id = ? WHERE connection_id = ?" (contactId, connId)
     pure (ldn, contactId, profileId)
+
+getContactGroupNames :: MonadUnliftIO m => SQLiteStore -> UserId -> ContactName -> m [GroupName]
+getContactGroupNames st userId displayName =
+  liftIO . withTransaction st $ \db -> do
+    map fromOnly
+      <$> DB.query
+        db
+        [sql|
+          SELECT DISTINCT g.local_display_name
+          FROM groups g
+          JOIN group_members m ON m.group_id = g.group_id
+          WHERE g.user_id = ? AND m.local_display_name = ?
+        |]
+        (userId, displayName)
 
 deleteContact :: MonadUnliftIO m => SQLiteStore -> UserId -> ContactName -> m ()
 deleteContact st userId displayName =

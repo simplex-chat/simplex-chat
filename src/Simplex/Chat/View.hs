@@ -10,6 +10,7 @@ module Simplex.Chat.View
     showInvitation,
     showChatError,
     showContactDeleted,
+    showContactGroups,
     showContactConnected,
     showContactDisconnected,
     showContactSubscribed,
@@ -70,6 +71,9 @@ showChatError = printToView . chatError
 
 showContactDeleted :: ChatReader m => ContactName -> m ()
 showContactDeleted = printToView . contactDeleted
+
+showContactGroups :: ChatReader m => ContactName -> [GroupName] -> m ()
+showContactGroups = printToView .: contactGroups
 
 showContactConnected :: ChatReader m => Contact -> m ()
 showContactConnected = printToView . contactConnected
@@ -169,6 +173,14 @@ invitation qInfo =
 
 contactDeleted :: ContactName -> [StyledString]
 contactDeleted c = [ttyContact c <> ": contact is deleted"]
+
+contactGroups :: ContactName -> [GroupName] -> [StyledString]
+contactGroups c gNames = [ttyContact c <> ": contact cannot be deleted, it is a member of the group(s) " <> ttyGroups gNames]
+  where
+    ttyGroups :: [GroupName] -> StyledString
+    ttyGroups [] = ""
+    ttyGroups [g] = ttyGroup g
+    ttyGroups (g : gs) = ttyGroup g <> ", " <> ttyGroups gs
 
 contactConnected :: Contact -> [StyledString]
 contactConnected ct = [ttyFullContact ct <> ": contact is connected"]

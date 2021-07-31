@@ -145,13 +145,16 @@ processChatCommand user@User {userId, profile} = \case
   Connect qInfo -> do
     connId <- withAgent $ \a -> joinConnection a qInfo . directMessage $ XInfo profile
     withStore $ \st -> createDirectConnection st userId connId
-  DeleteContact cName -> do
-    conns <- withStore $ \st -> getContactConnections st userId cName
-    withAgent $ \a -> forM_ conns $ \Connection {agentConnId} ->
-      deleteConnection a agentConnId `catchError` \(_ :: AgentErrorType) -> pure ()
-    withStore $ \st -> deleteContact st userId cName
-    unsetActive $ ActiveC cName
-    showContactDeleted cName
+  DeleteContact cName ->
+    withStore (\st -> getContactGroupNames st userId cName) >>= \case
+      [] -> do
+        conns <- withStore $ \st -> getContactConnections st userId cName
+        withAgent $ \a -> forM_ conns $ \Connection {agentConnId} ->
+          deleteConnection a agentConnId `catchError` \(_ :: AgentErrorType) -> pure ()
+        withStore $ \st -> deleteContact st userId cName
+        unsetActive $ ActiveC cName
+        showContactDeleted cName
+      gs -> showContactGroups cName gs
   SendMessage cName msg -> do
     contact <- withStore $ \st -> getContact st userId cName
     let msgEvent = XMsgNew $ MsgContent MTText [] [MsgContentBody {contentType = SimplexContentType XCText, contentData = msg}]
