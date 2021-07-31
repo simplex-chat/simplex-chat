@@ -117,9 +117,7 @@ CREATE TABLE group_members ( -- group members, excluding the local user
     REFERENCES display_names (user_id, local_display_name)
     ON DELETE RESTRICT
     ON UPDATE CASCADE,
-  UNIQUE (group_id, member_id),
-  UNIQUE (group_id, contact_id),
-  UNIQUE (group_id, local_display_name)
+  UNIQUE (group_id, member_id)
 );
 
 CREATE TABLE group_member_intros (

@@ -126,7 +126,7 @@ showGroupDeletedUser = printToView . groupDeletedUser
 showGroupDeleted :: ChatReader m => GroupName -> GroupMember -> m ()
 showGroupDeleted = printToView .: groupDeleted
 
-showSentGroupInvitation :: ChatReader m => Group -> ContactName -> m ()
+showSentGroupInvitation :: ChatReader m => GroupName -> ContactName -> m ()
 showSentGroupInvitation = printToView .: sentGroupInvitation
 
 showReceivedGroupInvitation :: ChatReader m => Group -> ContactName -> GroupMemberRole -> m ()
@@ -221,8 +221,8 @@ groupDeleted g m = groupDeleted_ g (Just m) <> ["use " <> highlight ("/d #" <> g
 groupDeleted_ :: GroupName -> Maybe GroupMember -> [StyledString]
 groupDeleted_ g m = [ttyGroup g <> ": " <> memberOrUser m <> " deleted the group"]
 
-sentGroupInvitation :: Group -> ContactName -> [StyledString]
-sentGroupInvitation g c = ["invitation to join the group " <> ttyFullGroup g <> " sent to " <> ttyContact c]
+sentGroupInvitation :: GroupName -> ContactName -> [StyledString]
+sentGroupInvitation g c = ["invitation to join the group " <> ttyGroup g <> " sent to " <> ttyContact c]
 
 receivedGroupInvitation :: Group -> ContactName -> GroupMemberRole -> [StyledString]
 receivedGroupInvitation g@Group {localDisplayName} c role =

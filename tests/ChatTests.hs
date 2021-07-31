@@ -36,6 +36,7 @@ chatTests = do
     it "add contacts, create group and send/receive messages" testGroup
     it "create and join group with 4 members" testGroup2
     it "create and delete group" testGroupDelete
+    it "remove contact from group and add again" testGroupRemoveAdd
 
 testAddContact :: IO ()
 testAddContact =
@@ -268,7 +269,6 @@ testGroupDelete =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup3 "team" alice bob cath
-      -- remove member
       alice ##> "/d #team"
       concurrentlyN_
         [ alice <## "#team: you deleted the group",
@@ -279,6 +279,45 @@ testGroupDelete =
       bob <## "#team: you deleted the group"
       cath #:> "#team hi"
       cath <## "you are no longer the member of the group"
+
+testGroupRemoveAdd :: IO ()
+testGroupRemoveAdd =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+      -- remove member
+      alice ##> "/rm team bob"
+      concurrentlyN_
+        [ alice <## "#team: you removed bob from the group",
+          bob <## "use /d #team to delete the group",
+          cath <## "#team: alice removed bob from the group"
+        ]
+      alice ##> "/a team bob"
+      bob <## "use /j team_1 to accept"
+      bob ##> "/j team_1"
+      concurrentlyN_
+        [ alice <## "#team: bob joined the group",
+          do
+            bob <## "#team_1: you joined the group"
+            bob <## "#team_1: member cath_1 (Catherine) is connected"
+            bob <## "use @cath <message> to send messages",
+          do
+            cath <## "#team: alice added bob_1 (Bob) to the group (connecting...)"
+            cath <## "#team: new member bob_1 is connected"
+            cath <## "use @bob <message> to send messages"
+        ]
+      alice #> "#team hi"
+      concurrently_
+        (bob <# "#team_1 alice> hi")
+        (cath <# "#team alice> hi")
+      bob #> "#team_1 hey"
+      concurrently_
+        (alice <# "#team bob> hey")
+        (cath <# "#team bob> hey")
+      cath #> "#team hello"
+      concurrently_
+        (alice <# "#team cath> hello")
+        (bob <# "#team_1 cath> hello")
 
 connectUsers :: TestCC -> TestCC -> IO ()
 connectUsers cc1 cc2 = do

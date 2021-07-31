@@ -165,21 +165,20 @@ processChatCommand user@User {userId, profile} = \case
     group <- withStore $ \st -> createNewGroup st gVar user gProfile
     showGroupCreated group
   AddMember gName cName memRole -> do
-    -- TODO currently it not possible to re-add contact that was removed from or left the group
     (group, contact) <- withStore $ \st -> (,) <$> getGroup st user gName <*> getContact st userId cName
     let Group {groupId, groupProfile, membership, members} = group
         userRole = memberRole membership
         userMemberId = memberId membership
-    when (userRole < GRAdmin || userRole < memRole) $ throwError $ ChatError CEGroupUserRole
-    when (isContactMember contact members) . throwError . ChatError $ CEGroupDuplicateMember cName
-    when (memberStatus membership == GSMemInvited) . throwError . ChatError $ CEGroupNotJoined gName
-    unless (memberActive membership) . throwError . ChatError $ CEGroupMemberNotActive
+    when (userRole < GRAdmin || userRole < memRole) $ chatError CEGroupUserRole
+    when (memberStatus membership == GSMemInvited) $ chatError (CEGroupNotJoined gName)
+    unless (memberActive membership) $ chatError CEGroupMemberNotActive
+    when (isJust $ contactMember contact members) $ chatError (CEGroupDuplicateMember cName)
     gVar <- asks idsDrg
     (agentConnId, qInfo) <- withAgent createConnection
     GroupMember {memberId} <- withStore $ \st -> createContactGroupMember st gVar user groupId contact memRole agentConnId
     let msg = XGrpInv $ GroupInvitation (userMemberId, userRole) (memberId, memRole) qInfo groupProfile
     sendDirectMessage (contactConnId contact) msg
-    showSentGroupInvitation group cName
+    showSentGroupInvitation gName cName
     setActive $ ActiveG gName
   JoinGroup gName -> do
     ReceivedGroupInvitation {fromMember, userMember, queueInfo} <- withStore $ \st -> getGroupInvitation st user gName
@@ -192,10 +191,10 @@ processChatCommand user@User {userId, profile} = \case
   RemoveMember gName cName -> do
     Group {membership, members} <- withStore $ \st -> getGroup st user gName
     case find ((== cName) . (localDisplayName :: GroupMember -> ContactName)) members of
-      Nothing -> throwError . ChatError $ CEGroupMemberNotFound cName
+      Nothing -> chatError $ CEGroupMemberNotFound cName
       Just member -> do
         let userRole = memberRole membership
-        when (userRole < GRAdmin || userRole < memberRole member) $ throwError $ ChatError CEGroupUserRole
+        when (userRole < GRAdmin || userRole < memberRole member) $ chatError CEGroupUserRole
         sendGroupMessage members . XGrpMemDel $ memberId member
         deleteMemberConnection member
         withStore $ \st -> updateGroupMemberStatus st userId member GSMemRemoved
@@ -212,7 +211,7 @@ processChatCommand user@User {userId, profile} = \case
         canDelete =
           memberRole membership == GROwner
             || (s == GSMemRemoved || s == GSMemLeft || s == GSMemGroupDeleted)
-    unless canDelete . throwError $ ChatError CEGroupUserRole
+    unless canDelete $ chatError CEGroupUserRole
     when (memberActive membership) $ sendGroupMessage members XGrpDel
     mapM_ deleteMemberConnection members
     withStore $ \st -> deleteGroup st user g
@@ -224,14 +223,16 @@ processChatCommand user@User {userId, profile} = \case
     -- TODO save sent messages
     -- TODO save pending message delivery for members without connections
     Group {members, membership} <- withStore $ \st -> getGroup st user gName
-    unless (memberActive membership) . throwError . ChatError $ CEGroupMemberUserRemoved
+    unless (memberActive membership) $ chatError CEGroupMemberUserRemoved
     let msgEvent = XMsgNew $ MsgContent MTText [] [MsgContentBody {contentType = SimplexContentType XCText, contentData = msg}]
     sendGroupMessage members msgEvent
     setActive $ ActiveG gName
   QuitChat -> liftIO exitSuccess
   where
-    isContactMember :: Contact -> [GroupMember] -> Bool
-    isContactMember Contact {contactId} members = isJust $ find ((== Just contactId) . memberContactId) members
+    contactMember :: Contact -> [GroupMember] -> Maybe GroupMember
+    contactMember Contact {contactId} =
+      find $ \GroupMember {memberContactId = cId, memberStatus = s} ->
+        cId == Just contactId && s /= GSMemRemoved && s /= GSMemLeft
 
 agentSubscriber :: (MonadUnliftIO m, MonadReader ChatController m) => m ()
 agentSubscriber = do
@@ -476,8 +477,8 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
 
     processGroupInvitation :: Contact -> GroupInvitation -> m ()
     processGroupInvitation ct@Contact {localDisplayName} inv@(GroupInvitation (fromMemId, fromRole) (memId, memRole) _ _) = do
-      when (fromRole < GRAdmin || fromRole < memRole) . throwError . ChatError $ CEGroupContactRole localDisplayName
-      when (fromMemId == memId) $ throwError $ ChatError CEGroupDuplicateMemberId
+      when (fromRole < GRAdmin || fromRole < memRole) $ chatError (CEGroupContactRole localDisplayName)
+      when (fromMemId == memId) $ chatError CEGroupDuplicateMemberId
       group <- withStore $ \st -> createGroupInvitation st user ct inv
       showReceivedGroupInvitation group localDisplayName memRole
 
@@ -604,13 +605,16 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
 
     xGrpDel :: GroupName -> GroupMember -> m ()
     xGrpDel gName m = do
-      when (memberRole m /= GROwner) . throwError $ ChatError CEGroupUserRole
+      when (memberRole m /= GROwner) $ chatError CEGroupUserRole
       ms <- withStore $ \st -> do
         Group {members, membership} <- getGroup st user gName
         updateGroupMemberStatus st userId membership GSMemGroupDeleted
         pure members
       mapM_ deleteMemberConnection ms
       showGroupDeleted gName m
+
+chatError :: ChatMonad m => ChatErrorType -> m ()
+chatError = throwError . ChatError
 
 deleteMemberConnection :: ChatMonad m => GroupMember -> m ()
 deleteMemberConnection m = do

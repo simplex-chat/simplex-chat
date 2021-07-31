@@ -655,7 +655,7 @@ createMemberConnection st userId GroupMember {groupMemberId} agentConnId =
     void $ createMemberConnection_ db userId groupMemberId agentConnId Nothing 0
 
 updateGroupMemberStatus :: MonadUnliftIO m => SQLiteStore -> UserId -> GroupMember -> GroupMemberStatus -> m ()
-updateGroupMemberStatus st userId GroupMember {groupMemberId} memberStatus =
+updateGroupMemberStatus st userId GroupMember {groupMemberId} memStatus =
   liftIO . withTransaction st $ \db ->
     DB.executeNamed
       db
@@ -666,7 +666,7 @@ updateGroupMemberStatus st userId GroupMember {groupMemberId} memberStatus =
       |]
       [ ":user_id" := userId,
         ":group_member_id" := groupMemberId,
-        ":member_status" := memberStatus
+        ":member_status" := memStatus
       ]
 
 -- | add new member with profile
