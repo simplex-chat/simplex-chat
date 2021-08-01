@@ -28,6 +28,7 @@ import Data.Maybe (isJust, mapMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
+import Numeric.Natural
 import Simplex.Chat.Controller
 import Simplex.Chat.Help
 import Simplex.Chat.Input
@@ -40,9 +41,8 @@ import Simplex.Chat.Terminal
 import Simplex.Chat.Types
 import Simplex.Chat.View
 import Simplex.Messaging.Agent
-import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..))
+import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), defaultAgentConfig)
 import Simplex.Messaging.Agent.Protocol
-import Simplex.Messaging.Client (smpDefaultConfig)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Parsers (parseAll)
 import Simplex.Messaging.Util (raceAny_)
@@ -71,39 +71,46 @@ data ChatCommand
   | QuitChat
   deriving (Show)
 
-cfg :: AgentConfig
-cfg =
-  AgentConfig
-    { tcpPort = undefined, -- agent does not listen to TCP
-      smpServers = undefined, -- filled in from options
-      rsaKeySize = 2048 `div` 8,
-      connIdBytes = 12,
-      tbqSize = 16,
-      dbFile = undefined, -- filled in from options
+data ChatConfig = ChatConfig
+  { agentConfig :: AgentConfig,
+    dbPoolSize :: Int,
+    tbqSize :: Natural
+  }
+
+defaultChatConfig :: ChatConfig
+defaultChatConfig =
+  ChatConfig
+    { agentConfig =
+        defaultAgentConfig
+          { tcpPort = undefined, -- agent does not listen to TCP
+            smpServers = undefined, -- filled in from options
+            dbFile = undefined, -- filled in from options
+            dbPoolSize = 1
+          },
       dbPoolSize = 1,
-      smpCfg = smpDefaultConfig
+      tbqSize = 16
     }
 
 logCfg :: LogConfig
 logCfg = LogConfig {lc_file = Nothing, lc_stderr = True}
 
-simplexChat :: WithTerminal t => ChatOpts -> t -> IO ()
-simplexChat opts t =
+simplexChat :: WithTerminal t => ChatConfig -> ChatOpts -> t -> IO ()
+simplexChat cfg opts t =
   -- setLogLevel LogInfo -- LogError
   -- withGlobalLogging logCfg $ do
   initializeNotifications
-    >>= newChatController opts t
+    >>= newChatController cfg opts t
     >>= runSimplexChat
 
-newChatController :: WithTerminal t => ChatOpts -> t -> (Notification -> IO ()) -> IO ChatController
-newChatController ChatOpts {dbFile, smpServers} t sendNotification = do
-  chatStore <- createStore (dbFile <> ".chat.db") 1
+newChatController :: WithTerminal t => ChatConfig -> ChatOpts -> t -> (Notification -> IO ()) -> IO ChatController
+newChatController ChatConfig {agentConfig = cfg, dbPoolSize, tbqSize} ChatOpts {dbFile, smpServers} t sendNotification = do
+  chatStore <- createStore (dbFile <> ".chat.db") dbPoolSize
   currentUser <- getCreateActiveUser chatStore
   chatTerminal <- newChatTerminal t
   smpAgent <- getSMPAgentClient cfg {dbFile = dbFile <> ".agent.db", smpServers}
   idsDrg <- newTVarIO =<< drgNew
-  inputQ <- newTBQueueIO $ tbqSize cfg
-  notifyQ <- newTBQueueIO $ tbqSize cfg
+  inputQ <- newTBQueueIO tbqSize
+  notifyQ <- newTBQueueIO tbqSize
   pure ChatController {currentUser, smpAgent, chatTerminal, chatStore, idsDrg, inputQ, notifyQ, sendNotification}
 
 runSimplexChat :: ChatController -> IO ()
