@@ -8,7 +8,7 @@ import ChatClient
 import Control.Concurrent.Async (concurrently_)
 import Control.Concurrent.STM
 import Data.Char (isDigit)
-import Data.List (dropWhileEnd, isPrefixOf)
+import Data.List (dropWhileEnd, intercalate, isPrefixOf)
 import qualified Data.Text as T
 import Simplex.Chat.Controller
 import Simplex.Chat.Types (Profile (..), User (..))
@@ -36,7 +36,7 @@ chatTests = do
     it "add contacts, create group and send/receive messages" testGroup
     it "create and join group with 4 members" testGroup2
     it "create and delete group" testGroupDelete
-    it "remove contact from group and add again" testGroupRemoveAdd
+    fit "remove contact from group and add again" testGroupRemoveAdd
 
 testAddContact :: IO ()
 testAddContact =
@@ -77,11 +77,11 @@ testGroup =
       connectUsers alice cath
       alice #:> "/g team"
       -- TODO this occasionally fails in case getWindow is run before the command above is printed
-      alice <## "use /a team <name> to add members"
+      alice <## "group #team is created\nuse /a team <name> to add members"
       alice ##> "/a team bob"
       concurrently_
         (alice <## "invitation to join the group #team sent to bob")
-        (bob <## "use /j team to accept")
+        (bob <## "#team: alice invites you to join the group as admin\nuse /j team to accept")
       bob ##> "/j team"
       concurrently_
         (alice <## "#team: bob joined the group")
@@ -89,7 +89,7 @@ testGroup =
       alice ##> "/a team cath"
       concurrently_
         (alice <## "invitation to join the group #team sent to cath")
-        (cath <## "use /j team to accept")
+        (cath <## "#team: alice invites you to join the group as admin\nuse /j team to accept")
       cath ##> "/j team"
       concurrentlyN_
         [ alice <## "#team: cath joined the group",
@@ -118,7 +118,7 @@ testGroup =
       concurrentlyN_
         [ bob <## "#team: you removed cath from the group",
           alice <## "#team: bob removed cath from the group",
-          cath <## "use /d #team to delete the group"
+          cath <## "#team: bob removed you from the group\nuse /d #team to delete the group"
         ]
       bob #> "#team hi"
       concurrently_
@@ -142,15 +142,15 @@ testGroup2 =
       connectUsers alice dan
       alice #:> "/g club"
       -- TODO this occasionally fails in case getWindow is run before the command above is printed
-      alice <## "use /a club <name> to add members"
+      alice <## "group #club is created\nuse /a club <name> to add members"
       alice ##> "/a club bob"
       concurrently_
         (alice <## "invitation to join the group #club sent to bob")
-        (bob <## "use /j club to accept")
+        (bob <## "#club: alice invites you to join the group as admin\nuse /j club to accept")
       alice ##> "/a club cath"
       concurrently_
         (alice <## "invitation to join the group #club sent to cath")
-        (cath <## "use /j club to accept")
+        (cath <## "#club: alice invites you to join the group as admin\nuse /j club to accept")
       bob ##> "/j club"
       concurrently_
         (alice <## "#club: bob joined the group")
@@ -168,21 +168,18 @@ testGroup2 =
       bob ##> "/a club dan"
       concurrently_
         (bob <## "invitation to join the group #club sent to dan")
-        (dan <## "use /j club to accept")
+        (dan <## "#club: bob invites you to join the group as admin\nuse /j club to accept")
       dan ##> "/j club"
       concurrentlyN_
         [ bob <## "#club: dan joined the group",
           do
             dan <## "#club: you joined the group"
-            dan
-              <### [ "#club: member alice_1 (Alice) is connected",
-                     "#club: member cath (Catherine) is connected",
-                     "use @alice <message> to send messages"
-                   ],
+            dan <### ["#club: member alice_1 (Alice) is connected", "#club: member cath (Catherine) is connected"]
+            dan <## "contact alice_1 is merged into alice\nuse @alice <message> to send messages",
           do
             alice <## "#club: bob added dan_1 (Daniel) to the group (connecting...)"
             alice <## "#club: new member dan_1 is connected"
-            alice <## "use @dan <message> to send messages",
+            alice <## "contact dan_1 is merged into dan\nuse @dan <message> to send messages",
           do
             cath <## "#club: bob added dan (Daniel) to the group (connecting...)"
             cath <## "#club: new member dan is connected"
@@ -220,7 +217,7 @@ testGroup2 =
         [ cath <## "#club: you removed dan from the group",
           alice <## "#club: cath removed dan from the group",
           bob <## "#club: cath removed dan from the group",
-          dan <## "use /d #club to delete the group"
+          dan <## "#club: cath removed you from the group\nuse /d #club to delete the group"
         ]
       alice #> "#club hello"
       concurrentlyN_
@@ -247,7 +244,7 @@ testGroup2 =
       -- member leaves
       bob ##> "/l club"
       concurrentlyN_
-        [ bob <## "use /d #club to delete the group",
+        [ bob <## "#club: you left the group\nuse /d #club to delete the group",
           alice <## "#club: bob left the group",
           cath <## "#club: bob left the group"
         ]
@@ -272,8 +269,8 @@ testGroupDelete =
       alice ##> "/d #team"
       concurrentlyN_
         [ alice <## "#team: you deleted the group",
-          bob <## "use /d #team to delete the local copy of the group",
-          cath <## "use /d #team to delete the local copy of the group"
+          bob <## "#team: alice deleted the group\nuse /d #team to delete the local copy of the group",
+          cath <## "#team: alice deleted the group\nuse /d #team to delete the local copy of the group"
         ]
       bob #:> "/d #team"
       bob <## "#team: you deleted the group"
@@ -289,22 +286,22 @@ testGroupRemoveAdd =
       alice ##> "/rm team bob"
       concurrentlyN_
         [ alice <## "#team: you removed bob from the group",
-          bob <## "use /d #team to delete the group",
+          bob <## "#team: alice removed you from the group\nuse /d #team to delete the group",
           cath <## "#team: alice removed bob from the group"
         ]
       alice ##> "/a team bob"
-      bob <## "use /j team_1 to accept"
+      bob <## "#team_1 (team): alice invites you to join the group as admin\nuse /j team_1 to accept"
       bob ##> "/j team_1"
       concurrentlyN_
         [ alice <## "#team: bob joined the group",
           do
             bob <## "#team_1: you joined the group"
             bob <## "#team_1: member cath_1 (Catherine) is connected"
-            bob <## "use @cath <message> to send messages",
+            bob <## "contact cath_1 is merged into cath\nuse @cath <message> to send messages",
           do
             cath <## "#team: alice added bob_1 (Bob) to the group (connecting...)"
             cath <## "#team: new member bob_1 is connected"
-            cath <## "use @bob <message> to send messages"
+            cath <## "contact bob_1 is merged into bob\nuse @bob <message> to send messages"
         ]
       alice #> "#team hi"
       concurrently_
@@ -389,18 +386,22 @@ cc #> cmd = do
 (TestCC cc _ _) #:> cmd = atomically $ writeTBQueue (inputQ cc) $ InputCommand cmd
 
 (<##) :: TestCC -> String -> Expectation
-cc <## line = (lastOutput <$> getWindow cc) `shouldReturn` line
+cc <## line =
+  let n = length $ lines line
+   in (lastOutput n <$> getWindow cc) `shouldReturn` line
 
 (<###) :: TestCC -> [String] -> Expectation
 _ <### [] = pure ()
 cc <### ls = do
-  line <- lastOutput <$> getWindow cc
+  line <- lastOutput 1 <$> getWindow cc
   if line `elem` ls
     then cc <### filter (/= line) ls
     else error $ "unexpected output: " <> line
 
 (<#) :: TestCC -> String -> Expectation
-cc <# line = (dropTime . lastOutput <$> getWindow cc) `shouldReturn` line
+cc <# line =
+  let n = length $ lines line
+   in (dropTime . lastOutput n <$> getWindow cc) `shouldReturn` line
 
 (</) :: TestCC -> Expectation
 (</) cc = timeout 500000 (getWindow cc) `shouldReturn` Nothing
@@ -415,16 +416,18 @@ getWindow :: TestCC -> IO [String]
 getWindow (TestCC _ t _) = do
   let w = virtualWindow t
   win <- readTVarIO w
-  -- TODO to debug - putStrLn (lastOutput win') - before returning it
-  atomically $ do
+  -- TODO to debug - putStrLn (lastOutput 1 win') - before returning it
+  r <- atomically $ do
     win' <- readTVar w
     if win' /= win then pure win' else retry
+  putStrLn $ lastOutput 1 r
+  pure r
 
 invitation :: [String] -> Maybe String
 invitation win = lastMaybe $ map (dropWhileEnd (== ' ')) $ filter ("smp::" `isPrefixOf`) win
 
-lastOutput :: [String] -> String
-lastOutput win = dropWhileEnd (== ' ') $ win !! (length win - 2) -- (- 2) to exclude prompt
+lastOutput :: Int -> [String] -> String
+lastOutput n win = intercalate "\n" $ map (dropWhileEnd (== ' ')) $ take n $ drop (length win - n - 1) win -- - 1 to exclude prompt
 
 lastMaybe :: [a] -> Maybe a
 lastMaybe [] = Nothing
