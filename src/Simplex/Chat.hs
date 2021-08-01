@@ -299,7 +299,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
 
     agentMsgConnStatus :: ACommand 'Agent -> Maybe ConnStatus
     agentMsgConnStatus = \case
-      CONF _ _ -> Just ConnRequested
+      REQ _ _ -> Just ConnRequested
       INFO _ -> Just ConnSndReady
       CON -> Just ConnReady
       _ -> Nothing
@@ -307,7 +307,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
     processDirectMessage :: ACommand 'Agent -> Connection -> Maybe Contact -> m ()
     processDirectMessage agentMsg conn = \case
       Nothing -> case agentMsg of
-        CONF confId connInfo -> do
+        REQ confId connInfo -> do
           saveConnInfo conn connInfo
           acceptAgentConnection conn confId $ XInfo profile
         INFO connInfo ->
@@ -325,7 +325,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
             XInfoProbeCheck probeHash -> xInfoProbeCheck ct probeHash
             XInfoProbeOk probe -> xInfoProbeOk ct probe
             _ -> pure ()
-        CONF confId connInfo -> do
+        REQ confId connInfo -> do
           -- confirming direct connection with a member
           ChatMessage {chatMsgEvent} <- liftEither $ parseChatMessage connInfo
           case chatMsgEvent of
@@ -333,7 +333,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
               -- TODO check member ID
               -- TODO update member profile
               acceptAgentConnection conn confId XOk
-            _ -> messageError "CONF from member must have x.grp.mem.info"
+            _ -> messageError "REQ from member must have x.grp.mem.info"
         INFO connInfo -> do
           ChatMessage {chatMsgEvent} <- liftEither $ parseChatMessage connInfo
           case chatMsgEvent of
@@ -361,7 +361,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
 
     processGroupMessage :: ACommand 'Agent -> Connection -> GroupName -> GroupMember -> m ()
     processGroupMessage agentMsg conn gName m = case agentMsg of
-      CONF confId connInfo -> do
+      REQ confId connInfo -> do
         ChatMessage {chatMsgEvent} <- liftEither $ parseChatMessage connInfo
         case memberCategory m of
           GCInviteeMember ->
@@ -371,7 +371,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
                   withStore $ \st -> updateGroupMemberStatus st userId m GSMemAccepted
                   acceptAgentConnection conn confId XOk
                 | otherwise -> messageError "x.grp.acpt: memberId is different from expected"
-              _ -> messageError "CONF from invited member must have x.grp.acpt"
+              _ -> messageError "REQ from invited member must have x.grp.acpt"
           _ ->
             case chatMsgEvent of
               XGrpMemInfo memId _memProfile
@@ -380,7 +380,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
                   Group {membership} <- withStore $ \st -> getGroup st user gName
                   acceptAgentConnection conn confId $ XGrpMemInfo (memberId membership) profile
                 | otherwise -> messageError "x.grp.mem.info: memberId is different from expected"
-              _ -> messageError "CONF from member must have x.grp.mem.info"
+              _ -> messageError "REQ from member must have x.grp.mem.info"
       INFO connInfo -> do
         ChatMessage {chatMsgEvent} <- liftEither $ parseChatMessage connInfo
         case chatMsgEvent of
@@ -648,7 +648,7 @@ sendGroupMessage members chatMsgEvent = do
 
 acceptAgentConnection :: ChatMonad m => Connection -> ConfirmationId -> ChatMsgEvent -> m ()
 acceptAgentConnection conn@Connection {agentConnId} confId msg = do
-  withAgent $ \a -> allowConnection a agentConnId confId $ directMessage msg
+  withAgent $ \a -> acceptConnection a agentConnId confId $ directMessage msg
   withStore $ \st -> updateConnectionStatus st conn ConnAccepted
 
 getCreateActiveUser :: SQLiteStore -> IO User
