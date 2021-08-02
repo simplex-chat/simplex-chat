@@ -14,7 +14,7 @@ chatHelpInfo =
     [ highlight "Using Simplex chat prototype.",
       "Follow these steps to set up a connection:",
       "",
-      Markdown (Colored Green) "Step 1: " <> highlight "/add" <> " -- Alice adds a contact.",
+      Markdown (Colored Green) "Step 1: " <> highlight "/connect" <> " -- Alice adds a contact.",
       indent <> "Alice should send the invitation printed by the /add command",
       indent <> "to her contact, Bob, out-of-band, via any trusted channel.",
       "",

@@ -91,8 +91,8 @@ M -> B: establish direct connection (M: JOIN, B: LET)
 M -> Bg: confirm profile and role - `CONF: x.grp.mem.info G_MEM_ID_M,G_MEM_ROLE x.json:NNN <M_profile>`
 B -> Mg: send profile probe - `MSG: x.info.probe <probe>` - it should always be send, even when there is no profile match.
 if M is a known contact (profile match) send probe to M:
-  B -> M (via old DM conn): profile match probe: `MSG: x.info.probe.check G_MEM_ID_B,<probe_hash>`
-  M -> B (via old DM conn): probe confirm: `MSG: x.info.probe.ok G_MEM_ID_M,<probe>`
+  B -> M (via old DM conn): profile match probe: `MSG: x.info.probe.check <probe_hash>`
+  M -> B (via old DM conn): probe confirm: `MSG: x.info.probe.ok <probe>`
   link to the same contact
 B -> Ag: connected to M: `MSG: x.grp.mem.con G_MEM_ID_M`
 M -> Ag: connected to M: `MSG: x.grp.mem.con G_MEM_ID_B`
@@ -102,7 +102,9 @@ A -> group: `MSG: N x.grp.mem.con.all G_MEM_ID_B`
 
 #### Send group message
 
-`MSG: N x.msg.new G_MEM_ROLE,<invitation> x.json:NNN <group_profile>`
+Example:
+
+`MSG: N x.msg.new c.text x.text:5 hello `
 
 #### Group member statuses
 

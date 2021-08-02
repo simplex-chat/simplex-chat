@@ -55,6 +55,9 @@ data ChatMsgEvent
   | XGrpMemInfo MemberId Profile
   | XGrpMemCon MemberId
   | XGrpMemConAll MemberId
+  | XGrpMemDel MemberId
+  | XGrpLeave
+  | XGrpDel
   | XInfoProbe ByteString
   | XInfoProbeCheck ByteString
   | XInfoProbeOk ByteString
@@ -122,6 +125,12 @@ toChatMessage RawChatMessage {chatMsgId, chatMsgEvent, chatMsgParams, chatMsgBod
       chatMsg . XGrpMemCon =<< B64.decode memId
     ("x.grp.mem.con.all", [memId]) ->
       chatMsg . XGrpMemConAll =<< B64.decode memId
+    ("x.grp.mem.del", [memId]) ->
+      chatMsg . XGrpMemDel =<< B64.decode memId
+    ("x.grp.leave", []) ->
+      chatMsg XGrpLeave
+    ("x.grp.del", []) ->
+      chatMsg XGrpDel
     ("x.info.probe", [probe]) -> do
       chatMsg . XInfoProbe =<< B64.decode probe
     ("x.info.probe.check", [probeHash]) -> do
@@ -200,6 +209,12 @@ rawChatMessage ChatMessage {chatMsgId, chatMsgEvent, chatDAG} =
       rawMsg "x.grp.mem.con" [B64.encode memId] []
     XGrpMemConAll memId ->
       rawMsg "x.grp.mem.con.all" [B64.encode memId] []
+    XGrpMemDel memId ->
+      rawMsg "x.grp.mem.del" [B64.encode memId] []
+    XGrpLeave ->
+      rawMsg "x.grp.leave" [] []
+    XGrpDel ->
+      rawMsg "x.grp.del" [] []
     XInfoProbe probe ->
       rawMsg "x.info.probe" [B64.encode probe] []
     XInfoProbeCheck probeHash ->

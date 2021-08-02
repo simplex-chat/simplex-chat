@@ -21,6 +21,7 @@ module Simplex.Chat.Store
     setActiveUser,
     createDirectConnection,
     createDirectContact,
+    getContactGroupNames,
     deleteContact,
     getContact,
     getUserContacts,
@@ -30,12 +31,14 @@ module Simplex.Chat.Store
     createNewGroup,
     createGroupInvitation,
     getGroup,
+    deleteGroup,
     getUserGroups,
     getGroupInvitation,
     createContactGroupMember,
     createMemberConnection,
     updateGroupMemberStatus,
     createNewGroupMember,
+    deleteGroupMemberConnection,
     createIntroductions,
     updateIntroStatus,
     saveIntroInvitation,
@@ -181,6 +184,20 @@ createContact_ db userId connId Profile {displayName, fullName} viaGroup =
     contactId <- insertedRowId db
     DB.execute db "UPDATE connections SET contact_id = ? WHERE connection_id = ?" (contactId, connId)
     pure (ldn, contactId, profileId)
+
+getContactGroupNames :: MonadUnliftIO m => SQLiteStore -> UserId -> ContactName -> m [GroupName]
+getContactGroupNames st userId displayName =
+  liftIO . withTransaction st $ \db -> do
+    map fromOnly
+      <$> DB.query
+        db
+        [sql|
+          SELECT DISTINCT g.local_display_name
+          FROM groups g
+          JOIN group_members m ON m.group_id = g.group_id
+          WHERE g.user_id = ? AND m.local_display_name = ?
+        |]
+        (userId, displayName)
 
 deleteContact :: MonadUnliftIO m => SQLiteStore -> UserId -> ContactName -> m ()
 deleteContact st userId displayName =
@@ -587,6 +604,14 @@ getGroup_ db User {userId, userContactId} localDisplayName = do
             [] -> Left SEGroupWithoutUser
             u : ms -> Right (b <> ms, u)
 
+deleteGroup :: MonadUnliftIO m => SQLiteStore -> User -> Group -> m ()
+deleteGroup st User {userId} Group {groupId, members, localDisplayName} =
+  liftIO . withTransaction st $ \db -> do
+    forM_ members $ \m -> DB.execute db "DELETE FROM connections WHERE user_id = ? AND group_member_id = ?" (userId, groupMemberId m)
+    DB.execute db "DELETE FROM group_members WHERE user_id = ? AND group_id = ?" (userId, groupId)
+    DB.execute db "DELETE FROM groups WHERE user_id = ? AND group_id = ?" (userId, groupId)
+    DB.execute db "DELETE FROM display_names WHERE user_id = ? AND local_display_name = ?" (userId, localDisplayName)
+
 getUserGroups :: MonadUnliftIO m => SQLiteStore -> User -> m [Group]
 getUserGroups st user =
   liftIO . withTransaction st $ \db -> do
@@ -624,13 +649,13 @@ createContactGroupMember st gVar user groupId contact memberRole agentConnId =
       void $ createMemberConnection_ db (userId user) groupMemberId agentConnId Nothing 0
       pure member
 
-createMemberConnection :: MonadUnliftIO m => SQLiteStore -> UserId -> Int64 -> ConnId -> m ()
-createMemberConnection st userId groupMemberId agentConnId =
+createMemberConnection :: MonadUnliftIO m => SQLiteStore -> UserId -> GroupMember -> ConnId -> m ()
+createMemberConnection st userId GroupMember {groupMemberId} agentConnId =
   liftIO . withTransaction st $ \db ->
     void $ createMemberConnection_ db userId groupMemberId agentConnId Nothing 0
 
-updateGroupMemberStatus :: MonadUnliftIO m => SQLiteStore -> UserId -> Int64 -> GroupMemberStatus -> m ()
-updateGroupMemberStatus st userId groupMemberId memberStatus =
+updateGroupMemberStatus :: MonadUnliftIO m => SQLiteStore -> UserId -> GroupMember -> GroupMemberStatus -> m ()
+updateGroupMemberStatus st userId GroupMember {groupMemberId} memStatus =
   liftIO . withTransaction st $ \db ->
     DB.executeNamed
       db
@@ -641,7 +666,7 @@ updateGroupMemberStatus st userId groupMemberId memberStatus =
       |]
       [ ":user_id" := userId,
         ":group_member_id" := groupMemberId,
-        ":member_status" := memberStatus
+        ":member_status" := memStatus
       ]
 
 -- | add new member with profile
@@ -700,6 +725,14 @@ createNewMember_
           memberContactId,
           activeConn = Nothing
         }
+
+deleteGroupMemberConnection :: MonadUnliftIO m => SQLiteStore -> UserId -> GroupMember -> m ()
+deleteGroupMemberConnection st userId m =
+  liftIO . withTransaction st $ \db -> deleteGroupMemberConnection_ db userId m
+
+deleteGroupMemberConnection_ :: DB.Connection -> UserId -> GroupMember -> IO ()
+deleteGroupMemberConnection_ db userId GroupMember {groupMemberId} =
+  DB.execute db "DELETE FROM connections WHERE user_id = ? AND group_member_id = ?" (userId, groupMemberId)
 
 createIntroductions :: MonadUnliftIO m => SQLiteStore -> Group -> GroupMember -> m [GroupMemberIntro]
 createIntroductions st Group {members} toMember = do

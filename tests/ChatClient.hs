@@ -14,6 +14,7 @@ import Simplex.Chat.Controller (ChatController (..))
 import Simplex.Chat.Options
 import Simplex.Chat.Store
 import Simplex.Chat.Types (Profile)
+import Simplex.Messaging.Agent.Env.SQLite
 import System.Directory (createDirectoryIfMissing, removeDirectoryRecursive)
 import qualified System.Terminal as C
 import System.Terminal.Internal (VirtualTerminal, VirtualTerminalSettings (..), withVirtualTerminal)
@@ -39,12 +40,22 @@ termSettings =
 
 data TestCC = TestCC ChatController VirtualTerminal (Async ())
 
+aCfg :: AgentConfig
+aCfg = agentConfig defaultChatConfig
+
+cfg :: ChatConfig
+cfg =
+  defaultChatConfig
+    { agentConfig =
+        aCfg {retryInterval = (retryInterval aCfg) {initialInterval = 50000}}
+    }
+
 virtualSimplexChat :: FilePath -> Profile -> IO TestCC
 virtualSimplexChat dbFile profile = do
   st <- createStore (dbFile <> ".chat.db") 1
   void . runExceptT $ createUser st profile True
   t <- withVirtualTerminal termSettings pure
-  cc <- newChatController opts {dbFile} t . const $ pure () -- no notifications
+  cc <- newChatController cfg opts {dbFile} t . const $ pure () -- no notifications
   a <- async $ runSimplexChat cc
   pure (TestCC cc t a)
 

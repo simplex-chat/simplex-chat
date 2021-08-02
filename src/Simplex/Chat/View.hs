@@ -10,23 +10,32 @@ module Simplex.Chat.View
     showInvitation,
     showChatError,
     showContactDeleted,
+    showContactGroups,
     showContactConnected,
     showContactDisconnected,
     showContactSubscribed,
     showContactSubError,
     showGroupSubscribed,
+    showGroupEmpty,
+    showGroupRemoved,
     showMemberSubError,
     showReceivedMessage,
     showReceivedGroupMessage,
     showSentMessage,
     showSentGroupMessage,
     showGroupCreated,
+    showGroupDeletedUser,
+    showGroupDeleted,
     showSentGroupInvitation,
     showReceivedGroupInvitation,
     showJoinedGroupMember,
     showUserJoinedGroup,
     showJoinedGroupMemberConnecting,
     showConnectedToGroupMember,
+    showDeletedMember,
+    showDeletedMemberUser,
+    showLeftMemberUser,
+    showLeftMember,
     showGroupMembers,
     showContactsMerged,
     safeDecodeUtf8,
@@ -63,6 +72,9 @@ showChatError = printToView . chatError
 showContactDeleted :: ChatReader m => ContactName -> m ()
 showContactDeleted = printToView . contactDeleted
 
+showContactGroups :: ChatReader m => ContactName -> [GroupName] -> m ()
+showContactGroups = printToView .: contactGroups
+
 showContactConnected :: ChatReader m => Contact -> m ()
 showContactConnected = printToView . contactConnected
 
@@ -77,6 +89,12 @@ showContactSubError = printToView .: contactSubError
 
 showGroupSubscribed :: ChatReader m => GroupName -> m ()
 showGroupSubscribed = printToView . groupSubscribed
+
+showGroupEmpty :: ChatReader m => GroupName -> m ()
+showGroupEmpty = printToView . groupEmpty
+
+showGroupRemoved :: ChatReader m => GroupName -> m ()
+showGroupRemoved = printToView . groupRemoved
 
 showMemberSubError :: ChatReader m => GroupName -> ContactName -> ChatError -> m ()
 showMemberSubError = printToView .:. memberSubError
@@ -102,7 +120,13 @@ showSentMessage_ to msg = printToView =<< liftIO (sentMessage to msg)
 showGroupCreated :: ChatReader m => Group -> m ()
 showGroupCreated = printToView . groupCreated
 
-showSentGroupInvitation :: ChatReader m => Group -> ContactName -> m ()
+showGroupDeletedUser :: ChatReader m => GroupName -> m ()
+showGroupDeletedUser = printToView . groupDeletedUser
+
+showGroupDeleted :: ChatReader m => GroupName -> GroupMember -> m ()
+showGroupDeleted = printToView .: groupDeleted
+
+showSentGroupInvitation :: ChatReader m => GroupName -> ContactName -> m ()
 showSentGroupInvitation = printToView .: sentGroupInvitation
 
 showReceivedGroupInvitation :: ChatReader m => Group -> ContactName -> GroupMemberRole -> m ()
@@ -120,6 +144,18 @@ showJoinedGroupMemberConnecting = printToView .:. joinedGroupMemberConnecting
 showConnectedToGroupMember :: ChatReader m => GroupName -> GroupMember -> m ()
 showConnectedToGroupMember = printToView .: connectedToGroupMember
 
+showDeletedMember :: ChatReader m => GroupName -> Maybe GroupMember -> Maybe GroupMember -> m ()
+showDeletedMember = printToView .:. deletedMember
+
+showDeletedMemberUser :: ChatReader m => GroupName -> GroupMember -> m ()
+showDeletedMemberUser = printToView .: deletedMemberUser
+
+showLeftMemberUser :: ChatReader m => GroupName -> m ()
+showLeftMemberUser = printToView . leftMemberUser
+
+showLeftMember :: ChatReader m => GroupName -> GroupMember -> m ()
+showLeftMember = printToView .: leftMember
+
 showGroupMembers :: ChatReader m => Group -> m ()
 showGroupMembers = printToView . groupMembers
 
@@ -136,22 +172,36 @@ invitation qInfo =
   ]
 
 contactDeleted :: ContactName -> [StyledString]
-contactDeleted c = [ttyContact c <> " is deleted"]
+contactDeleted c = [ttyContact c <> ": contact is deleted"]
+
+contactGroups :: ContactName -> [GroupName] -> [StyledString]
+contactGroups c gNames = [ttyContact c <> ": contact cannot be deleted, it is a member of the group(s) " <> ttyGroups gNames]
+  where
+    ttyGroups :: [GroupName] -> StyledString
+    ttyGroups [] = ""
+    ttyGroups [g] = ttyGroup g
+    ttyGroups (g : gs) = ttyGroup g <> ", " <> ttyGroups gs
 
 contactConnected :: Contact -> [StyledString]
-contactConnected ct = [ttyFullContact ct <> " is connected"]
+contactConnected ct = [ttyFullContact ct <> ": contact is connected"]
 
 contactDisconnected :: ContactName -> [StyledString]
-contactDisconnected c = ["disconnected from " <> ttyContact c <> " - restart chat"]
+contactDisconnected c = [ttyContact c <> ": contact is disconnected - restart chat"]
 
 contactSubscribed :: ContactName -> [StyledString]
-contactSubscribed c = [ttyContact c <> " is active"]
+contactSubscribed c = [ttyContact c <> ": contact is active"]
 
 contactSubError :: ContactName -> ChatError -> [StyledString]
-contactSubError c e = ["contact " <> ttyContact c <> " error: " <> plain (show e)]
+contactSubError c e = [ttyContact c <> ": contact error " <> plain (show e)]
 
 groupSubscribed :: GroupName -> [StyledString]
-groupSubscribed g = [ttyGroup g <> " is active"]
+groupSubscribed g = [ttyGroup g <> ": group is active"]
+
+groupEmpty :: GroupName -> [StyledString]
+groupEmpty g = [ttyGroup g <> ": group is empty"]
+
+groupRemoved :: GroupName -> [StyledString]
+groupRemoved g = [ttyGroup g <> ": you are no longer a member or group deleted"]
 
 memberSubError :: GroupName -> ContactName -> ChatError -> [StyledString]
 memberSubError g c e = [ttyGroup g <> " member " <> ttyContact c <> " error: " <> plain (show e)]
@@ -162,8 +212,17 @@ groupCreated g@Group {localDisplayName} =
     "use " <> highlight ("/a " <> localDisplayName <> " <name>") <> " to add members"
   ]
 
-sentGroupInvitation :: Group -> ContactName -> [StyledString]
-sentGroupInvitation g c = ["invitation to join the group " <> ttyFullGroup g <> " sent to " <> ttyContact c]
+groupDeletedUser :: GroupName -> [StyledString]
+groupDeletedUser g = groupDeleted_ g Nothing
+
+groupDeleted :: GroupName -> GroupMember -> [StyledString]
+groupDeleted g m = groupDeleted_ g (Just m) <> ["use " <> highlight ("/d #" <> g) <> " to delete the local copy of the group"]
+
+groupDeleted_ :: GroupName -> Maybe GroupMember -> [StyledString]
+groupDeleted_ g m = [ttyGroup g <> ": " <> memberOrUser m <> " deleted the group"]
+
+sentGroupInvitation :: GroupName -> ContactName -> [StyledString]
+sentGroupInvitation g c = ["invitation to join the group " <> ttyGroup g <> " sent to " <> ttyContact c]
 
 receivedGroupInvitation :: Group -> ContactName -> GroupMemberRole -> [StyledString]
 receivedGroupInvitation g@Group {localDisplayName} c role =
@@ -182,6 +241,27 @@ joinedGroupMemberConnecting g host m = [ttyGroup g <> ": " <> ttyMember host <> 
 
 connectedToGroupMember :: GroupName -> GroupMember -> [StyledString]
 connectedToGroupMember g m = [ttyGroup g <> ": " <> connectedMember m <> " is connected"]
+
+deletedMember :: GroupName -> Maybe GroupMember -> Maybe GroupMember -> [StyledString]
+deletedMember g by m = [ttyGroup g <> ": " <> memberOrUser by <> " removed " <> memberOrUser m <> " from the group"]
+
+deletedMemberUser :: GroupName -> GroupMember -> [StyledString]
+deletedMemberUser g by = deletedMember g (Just by) Nothing <> groupPreserved g
+
+leftMemberUser :: GroupName -> [StyledString]
+leftMemberUser g = leftMember_ g Nothing <> groupPreserved g
+
+leftMember :: GroupName -> GroupMember -> [StyledString]
+leftMember g m = leftMember_ g (Just m)
+
+leftMember_ :: GroupName -> Maybe GroupMember -> [StyledString]
+leftMember_ g m = [ttyGroup g <> ": " <> memberOrUser m <> " left the group"]
+
+groupPreserved :: GroupName -> [StyledString]
+groupPreserved g = ["use " <> highlight ("/d #" <> g) <> " to delete the group"]
+
+memberOrUser :: Maybe GroupMember -> StyledString
+memberOrUser = maybe "you" ttyMember
 
 connectedMember :: GroupMember -> StyledString
 connectedMember m = case memberCategory m of
@@ -262,6 +342,8 @@ chatError = \case
     CEGroupContactRole c -> ["contact " <> ttyContact c <> " has insufficient permissions for this group action"]
     CEGroupNotJoined g -> ["you did not join this group, use " <> highlight ("/join #" <> g)]
     CEGroupMemberNotActive -> ["you cannot invite other members yet, try later"]
+    CEGroupMemberUserRemoved -> ["you are no longer the member of the group"]
+    CEGroupMemberNotFound c -> ["contact " <> ttyContact c <> " is not a group member"]
     CEGroupInternal s -> ["chat group bug: " <> plain s]
   -- e -> ["chat error: " <> plain (show e)]
   ChatErrorStore err -> case err of
@@ -271,13 +353,7 @@ chatError = \case
     SEGroupNotFound g -> ["no group " <> ttyGroup g]
     SEGroupAlreadyJoined -> ["you already joined this group"]
     e -> ["chat db error: " <> plain (show e)]
-  ChatErrorAgent err -> case err of
-    -- CONN e -> case e of
-    --   -- TODO replace with ChatErrorContact errors, these errors should never happen
-    --   NOT_FOUND -> ["no contact " <> ttyContact c]
-    --   DUPLICATE -> ["contact " <> ttyContact c <> " already exists"]
-    --   SIMPLEX -> ["contact " <> ttyContact c <> " did not accept invitation yet"]
-    e -> ["smp agent error: " <> plain (show e)]
+  ChatErrorAgent e -> ["smp agent error: " <> plain (show e)]
   ChatErrorMessage e -> ["chat message error: " <> plain (show e)]
 
 printToView :: (MonadUnliftIO m, MonadReader ChatController m) => [StyledString] -> m ()
