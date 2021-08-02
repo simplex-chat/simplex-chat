@@ -28,7 +28,8 @@ data ChatController = ChatController
     idsDrg :: TVar ChaChaDRG,
     inputQ :: TBQueue InputEvent,
     notifyQ :: TBQueue Notification,
-    sendNotification :: Notification -> IO ()
+    sendNotification :: Notification -> IO (),
+    chatLock :: TMVar ()
   }
 
 data InputEvent = InputCommand String | InputControl Char

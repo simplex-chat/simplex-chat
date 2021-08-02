@@ -334,8 +334,8 @@ createGroup3 gName cc1 cc2 cc3 = do
   connectUsers cc1 cc2
   connectUsers cc1 cc3
   cc1 #:> ("/g " <> gName)
-  cc1 <## ("use /a " <> gName <> " <name> to add members")
-  cc1 ##> ("/a team " <> name cc2)
+  cc1 <## ("group #" <> gName <> " is created\nuse /a " <> gName <> " <name> to add members")
+  cc1 ##> ("/a " <> gName <> " " <> name cc2)
   concurrently_
     (cc1 <## ("invitation to join the group #" <> gName <> " sent to " <> name cc2))
     (cc2 <## ("use /j " <> gName <> " to accept"))
@@ -343,7 +343,7 @@ createGroup3 gName cc1 cc2 cc3 = do
   concurrently_
     (cc1 <## ("#" <> gName <> ": " <> name cc2 <> " joined the group"))
     (cc2 <## ("#" <> gName <> ": you joined the group"))
-  cc1 ##> ("/a team " <> name cc3)
+  cc1 ##> ("/a " <> gName <> " " <> name cc3)
   concurrently_
     (cc1 <## ("invitation to join the group #" <> gName <> " sent to " <> name cc3))
     (cc3 <## ("use /j " <> gName <> " to accept"))
