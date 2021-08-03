@@ -1,32 +1,43 @@
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeApplications #-}
 
 module ChatClient where
 
+import Control.Concurrent (ThreadId, forkIOWithUnmask, killThread)
 import Control.Concurrent.Async
-import Control.Concurrent.STM (retry)
-import Control.Exception (bracket_)
+import Control.Concurrent.STM
+import Control.Exception (bracket, bracket_)
 import Control.Monad.Except
+import Network.Socket
 import Simplex.Chat
 import Simplex.Chat.Controller (ChatController (..))
 import Simplex.Chat.Options
 import Simplex.Chat.Store
 import Simplex.Chat.Types (Profile)
 import Simplex.Messaging.Agent.Env.SQLite
+import Simplex.Messaging.Server (runSMPServerBlocking)
+import Simplex.Messaging.Server.Env.STM
+import Simplex.Messaging.Transport
 import System.Directory (createDirectoryIfMissing, removeDirectoryRecursive)
 import qualified System.Terminal as C
 import System.Terminal.Internal (VirtualTerminal, VirtualTerminalSettings (..), withVirtualTerminal)
+import System.Timeout (timeout)
 
 testDBPrefix :: FilePath
 testDBPrefix = "tests/tmp/test"
+
+serverPort :: ServiceName
+serverPort = "5000"
 
 opts :: ChatOpts
 opts =
   ChatOpts
     { dbFile = undefined,
-      smpServers = ["localhost:5223"]
+      smpServers = ["localhost:5000"]
     }
 
 termSettings :: VirtualTerminalSettings
@@ -95,3 +106,59 @@ testChat4 p1 p2 p3 p4 test = testChatN [p1, p2, p3, p4] test_
 
 concurrentlyN_ :: [IO a] -> IO ()
 concurrentlyN_ = mapConcurrently_ id
+
+serverCfg :: ServerConfig
+serverCfg =
+  ServerConfig
+    { transports = [(serverPort, transport @TCP)],
+      tbqSize = 1,
+      queueIdBytes = 12,
+      msgIdBytes = 6,
+      storeLog = Nothing,
+      serverPrivateKey =
+        -- full RSA private key (only for tests)
+        "MIIFIwIBAAKCAQEArZyrri/NAwt5buvYjwu+B/MQeJUszDBpRgVqNddlI9kNwDXu\
+        \kaJ8chEhrtaUgXeSWGooWwqjXEUQE6RVbCC6QVo9VEBSP4xFwVVd9Fj7OsgfcXXh\
+        \AqWxfctDcBZQ5jTUiJpdBc+Vz2ZkumVNl0W+j9kWm9nfkMLQj8c0cVSDxz4OKpZb\
+        \qFuj0uzHkis7e7wsrKSKWLPg3M5ZXPZM1m9qn7SfJzDRDfJifamxWI7uz9XK2+Dp\
+        \NkUQlGQgFJEv1cKN88JAwIqZ1s+TAQMQiB+4QZ2aNfSqGEzRJN7FMCKRK7pM0A9A\
+        \PCnijyuImvKFxTdk8Bx1q+XNJzsY6fBrLWJZ+QKBgQCySG4tzlcEm+tOVWRcwrWh\
+        \6zsczGZp9mbf9c8itRx6dlldSYuDG1qnddL70wuAZF2AgS1JZgvcRZECoZRoWP5q\
+        \Kq2wvpTIYjFPpC39lxgUoA/DXKVKZZdan+gwaVPAPT54my1CS32VrOiAY4gVJ3LJ\
+        \Mn1/FqZXUFQA326pau3loQKCAQEAoljmJMp88EZoy3HlHUbOjl5UEhzzVsU1TnQi\
+        \QmPm+aWRe2qelhjW4aTvSVE5mAUJsN6UWTeMf4uvM69Z9I5pfw2pEm8x4+GxRibY\
+        \iiwF2QNaLxxmzEHm1zQQPTgb39o8mgklhzFPill0JsnL3f6IkVwjFJofWSmpqEGs\
+        \dFSMRSXUTVXh1p/o7QZrhpwO/475iWKVS7o48N/0Xp513re3aXw+DRNuVnFEaBIe\
+        \TLvWM9Czn16ndAu1HYiTBuMvtRbAWnGZxU8ewzF4wlWK5tdIL5PTJDd1VhZJAKtB\
+        \npDvJpwxzKmjAhcTmjx0ckMIWtdVaOVm/2gWCXDty2FEdg7koQKBgQDOUUguJ/i7\
+        \q0jldWYRnVkotKnpInPdcEaodrehfOqYEHnvro9xlS6OeAS4Vz5AdH45zQ/4J3bV\
+        \2cH66tNr18ebM9nL//t5G69i89R9W7szyUxCI3LmAIdi3oSEbmz5GQBaw4l6h9Wi\
+        \n4FmFQaAXZrjQfO2qJcAHvWRsMp2pmqAGwKBgQDXaza0DRsKWywWznsHcmHa0cx8\
+        \I4jxqGaQmLO7wBJRP1NSFrywy1QfYrVX9CTLBK4V3F0PCgZ01Qv94751CzN43TgF\
+        \ebd/O9r5NjNTnOXzdWqETbCffLGd6kLgCMwPQWpM9ySVjXHWCGZsRAnF2F6M1O32\
+        \43StIifvwJQFqSM3ewKBgCaW6y7sRY90Ua7283RErezd9EyT22BWlDlACrPu3FNC\
+        \LtBf1j43uxBWBQrMLsHe2GtTV0xt9m0MfwZsm2gSsXcm4Xi4DJgfN+Z7rIlyy9UY\
+        \PCDSdZiU1qSr+NrffDrXlfiAM1cUmCdUX7eKjp/ltkUHNaOGfSn5Pdr3MkAiD/Hf\
+        \AoGBAKIdKCuOwuYlwjS9J+IRGuSSM4o+OxQdwGmcJDTCpyWb5dEk68e7xKIna3zf\
+        \jc+H+QdMXv1nkRK9bZgYheXczsXaNZUSTwpxaEldzVD3hNvsXSgJRy9fqHwA4PBq\
+        \vqiBHoO3RNbqg+2rmTMfDuXreME3S955ZiPZm4Z+T8Hj52mPAoGAQm5QH/gLFtY5\
+        \+znqU/0G8V6BKISCQMxbbmTQVcTgGySrP2gVd+e4MWvUttaZykhWqs8rpr7mgpIY\
+        \hul7Swx0SHFN3WpXu8uj+B6MLpRcCbDHO65qU4kQLs+IaXXsuuTjMvJ5LwjkZVrQ\
+        \TmKzSAw7iVWwEUZR/PeiEKazqrpp9VU="
+    }
+
+withSmpServer :: IO a -> IO a
+withSmpServer = serverBracket (`runSMPServerBlocking` serverCfg) (pure ()) . const
+
+serverBracket :: (TMVar Bool -> IO ()) -> IO () -> (ThreadId -> IO a) -> IO a
+serverBracket process afterProcess f = do
+  started <- newEmptyTMVarIO
+  bracket
+    (forkIOWithUnmask ($ process started))
+    (\t -> killThread t >> afterProcess >> waitFor started "stop")
+    (\t -> waitFor started "start" >> f t)
+  where
+    waitFor started s =
+      5000000 `timeout` atomically (takeTMVar started) >>= \case
+        Nothing -> error $ "server did not " <> s
+        _ -> pure ()
