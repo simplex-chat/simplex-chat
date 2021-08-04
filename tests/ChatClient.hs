@@ -12,6 +12,7 @@ import Control.Concurrent.Async
 import Control.Concurrent.STM
 import Control.Exception (bracket, bracket_)
 import Control.Monad.Except
+import Data.List (dropWhileEnd)
 import Network.Socket
 import Simplex.Chat
 import Simplex.Chat.Controller (ChatController (..))
@@ -24,7 +25,7 @@ import Simplex.Messaging.Server.Env.STM
 import Simplex.Messaging.Transport
 import System.Directory (createDirectoryIfMissing, removeDirectoryRecursive)
 import qualified System.Terminal as C
-import System.Terminal.Internal (VirtualTerminal, VirtualTerminalSettings (..), withVirtualTerminal)
+import System.Terminal.Internal (VirtualTerminal (..), VirtualTerminalSettings (..), withVirtualTerminal)
 import System.Timeout (timeout)
 
 testDBPrefix :: FilePath
@@ -49,7 +50,13 @@ termSettings =
       virtualInterrupt = retry
     }
 
-data TestCC = TestCC ChatController VirtualTerminal (Async ())
+data TestCC = TestCC
+  { chatController :: ChatController,
+    virtualTerminal :: VirtualTerminal,
+    chatAsync :: Async (),
+    termAsync :: Async (),
+    termQ :: TQueue [String]
+  }
 
 aCfg :: AgentConfig
 aCfg = agentConfig defaultChatConfig
@@ -67,8 +74,34 @@ virtualSimplexChat dbFile profile = do
   void . runExceptT $ createUser st profile True
   t <- withVirtualTerminal termSettings pure
   cc <- newChatController cfg opts {dbFile} t . const $ pure () -- no notifications
-  a <- async $ runSimplexChat cc
-  pure (TestCC cc t a)
+  chatAsync <- async $ runSimplexChat cc
+  termQ <- newTQueueIO
+  termAsync <- async $ readTerminalOutput t termQ
+  pure TestCC {chatController = cc, virtualTerminal = t, chatAsync, termAsync, termQ}
+
+readTerminalOutput :: VirtualTerminal -> TQueue [String] -> IO ()
+readTerminalOutput t termQ = do
+  let w = virtualWindow t
+  winVar <- atomically $ newTVar . init =<< readTVar w
+  forever . atomically $ do
+    win <- readTVar winVar
+    win' <- init <$> readTVar w
+    if win' == win
+      then retry
+      else do
+        let diff = getDiff win' win
+        writeTQueue termQ diff
+        writeTVar winVar win'
+        pure diff
+  where
+    getDiff :: [String] -> [String] -> [String]
+    getDiff win win' = getDiff_ 1 (length win) win win'
+    getDiff_ :: Int -> Int -> [String] -> [String] -> [String]
+    getDiff_ n len win' win =
+      let diff = drop (len - n) win'
+       in if drop n win <> diff == win'
+            then map (dropWhileEnd (== ' ')) diff
+            else getDiff_ (n + 1) len win' win
 
 testChatN :: [Profile] -> ([TestCC] -> IO ()) -> IO ()
 testChatN ps test =
