@@ -43,7 +43,7 @@ testAddContact =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
       alice ##> "/c"
-      Just inv <- invitation <$> getOutput alice
+      inv <- getInvitation alice
       bob ##> ("/c " <> inv)
       concurrently_
         (bob <## "alice (Alice): contact is connected")
@@ -54,7 +54,7 @@ testAddContact =
       alice <# "bob> hi"
       -- test adding the same contact one more time - local name will be different
       alice ##> "/c"
-      Just inv' <- invitation <$> getOutput alice
+      inv' <- getInvitation alice
       bob ##> ("/c " <> inv')
       concurrently_
         (bob <## "alice_1 (Alice): contact is connected")
@@ -355,7 +355,7 @@ testGroupRemoveAdd =
 connectUsers :: TestCC -> TestCC -> IO ()
 connectUsers cc1 cc2 = do
   cc1 ##> "/c"
-  Just inv <- invitation <$> getOutput cc1
+  inv <- getInvitation cc1
   cc2 ##> ("/c " <> inv)
   concurrently_
     (cc2 <## (showName cc1 <> ": contact is connected"))
@@ -459,9 +459,11 @@ getOutputLine TestCC {termQ} =
       [l] -> pure l
       l : ls -> unGetTQueue termQ ls >> pure l
 
-invitation :: [String] -> Maybe String
-invitation = lastMaybe . filter ("smp::" `isPrefixOf`)
-
-lastMaybe :: [a] -> Maybe a
-lastMaybe [] = Nothing
-lastMaybe xs = Just $ last xs
+getInvitation :: TestCC -> IO String
+getInvitation cc = do
+  cc <## "pass this invitation to your contact (via another channel):"
+  cc <## ""
+  inv <- getOutputLine cc
+  cc <## ""
+  cc <## "and ask them to connect: /c <invitation_above>"
+  pure inv
