@@ -9,7 +9,6 @@ import ChatClient
 import Control.Concurrent.Async (concurrently_)
 import Control.Concurrent.STM
 import Data.Char (isDigit)
-import Data.List (isPrefixOf)
 import qualified Data.Text as T
 import Simplex.Chat.Controller
 import Simplex.Chat.Types (Profile (..), User (..))
