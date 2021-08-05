@@ -50,6 +50,7 @@ import System.Exit (exitFailure, exitSuccess)
 import System.IO (hFlush, stdout)
 import Text.Read (readMaybe)
 import UnliftIO.Async (race_)
+import qualified UnliftIO.Exception as E
 import UnliftIO.STM
 
 data ChatCommand
@@ -111,7 +112,8 @@ newChatController ChatConfig {agentConfig = cfg, dbPoolSize, tbqSize} ChatOpts {
   idsDrg <- newTVarIO =<< drgNew
   inputQ <- newTBQueueIO tbqSize
   notifyQ <- newTBQueueIO tbqSize
-  pure ChatController {currentUser, smpAgent, chatTerminal, chatStore, idsDrg, inputQ, notifyQ, sendNotification}
+  chatLock <- newTMVarIO ()
+  pure ChatController {currentUser, smpAgent, chatTerminal, chatStore, idsDrg, inputQ, notifyQ, sendNotification, chatLock}
 
 runSimplexChat :: ChatController -> IO ()
 runSimplexChat = runReaderT (race_ runTerminalInput runChatController)
@@ -124,9 +126,16 @@ runChatController =
       notificationSubscriber
     ]
 
+withLock :: MonadUnliftIO m => TMVar () -> m () -> m ()
+withLock lock =
+  E.bracket_
+    (void . atomically $ takeTMVar lock)
+    (atomically $ putTMVar lock ())
+
 inputSubscriber :: (MonadUnliftIO m, MonadReader ChatController m) => m ()
 inputSubscriber = do
   q <- asks inputQ
+  l <- asks chatLock
   forever $
     atomically (readTBQueue q) >>= \case
       InputControl _ -> pure ()
@@ -139,7 +148,8 @@ inputSubscriber = do
               SendGroupMessage g msg -> showSentGroupMessage g msg
               _ -> printToView [plain s]
             user <- asks currentUser
-            void . runExceptT $ processChatCommand user cmd `catchError` showChatError
+            withLock l . void . runExceptT $
+              processChatCommand user cmd `catchError` showChatError
 
 processChatCommand :: ChatMonad m => User -> ChatCommand -> m ()
 processChatCommand user@User {userId, profile} = \case
@@ -244,12 +254,14 @@ processChatCommand user@User {userId, profile} = \case
 agentSubscriber :: (MonadUnliftIO m, MonadReader ChatController m) => m ()
 agentSubscriber = do
   q <- asks $ subQ . smpAgent
+  l <- asks chatLock
   subscribeUserConnections
   forever $ do
     (_, connId, msg) <- atomically $ readTBQueue q
     user <- asks currentUser
     -- TODO handle errors properly
-    void . runExceptT $ processAgentMessage user connId msg `catchError` (liftIO . print)
+    withLock l . void . runExceptT $
+      processAgentMessage user connId msg `catchError` (liftIO . print)
 
 subscribeUserConnections :: (MonadUnliftIO m, MonadReader ChatController m) => m ()
 subscribeUserConnections = void . runExceptT $ do

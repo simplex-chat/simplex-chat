@@ -58,6 +58,7 @@ tests:
       - simplex-chat
       - async == 2.2.*
       - hspec == 2.7.*
+      - network == 3.1.*
       - stm == 2.5.*
 
 ghc-options:
