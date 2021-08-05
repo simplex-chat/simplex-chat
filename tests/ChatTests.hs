@@ -36,7 +36,7 @@ chatTests = do
     it "add contacts, create group and send/receive messages" testGroup
     it "create and join group with 4 members" testGroup2
     it "create and delete group" testGroupDelete
-    fit "remove contact from group and add again" testGroupRemoveAdd
+    it "remove contact from group and add again" testGroupRemoveAdd
 
 testAddContact :: IO ()
 testAddContact =
@@ -417,11 +417,9 @@ getWindow (TestCC _ t _) = do
   let w = virtualWindow t
   win <- readTVarIO w
   -- TODO to debug - putStrLn (lastOutput 1 win') - before returning it
-  r <- atomically $ do
+  atomically $ do
     win' <- readTVar w
     if win' /= win then pure win' else retry
-  putStrLn $ lastOutput 1 r
-  pure r
 
 invitation :: [String] -> Maybe String
 invitation win = lastMaybe $ map (dropWhileEnd (== ' ')) $ filter ("smp::" `isPrefixOf`) win
