@@ -425,21 +425,21 @@ send :: TestCC -> String -> IO ()
 send TestCC {chatController = cc} cmd = atomically $ writeTBQueue (inputQ cc) $ InputCommand cmd
 
 (<##) :: TestCC -> String -> Expectation
-cc <## line = getOutputLine cc `shouldReturn` line
+cc <## line = getTermLine cc `shouldReturn` line
 
 (<###) :: TestCC -> [String] -> Expectation
 _ <### [] = pure ()
 cc <### ls = do
-  line <- getOutputLine cc
+  line <- getTermLine cc
   if line `elem` ls
     then cc <### filter (/= line) ls
     else error $ "unexpected output: " <> line
 
 (<#) :: TestCC -> String -> Expectation
-cc <# line = (dropTime <$> getOutputLine cc) `shouldReturn` line
+cc <# line = (dropTime <$> getTermLine cc) `shouldReturn` line
 
 (</) :: TestCC -> Expectation
-(</) cc = timeout 500000 (getOutput cc) `shouldReturn` Nothing
+(</) cc = timeout 500000 (getTermLine cc) `shouldReturn` Nothing
 
 dropTime :: String -> String
 dropTime msg = case splitAt 6 msg of
@@ -447,22 +447,14 @@ dropTime msg = case splitAt 6 msg of
     if all isDigit [m, m', s, s'] then text else error "invalid time"
   _ -> error "invalid time"
 
-getOutput :: TestCC -> IO [String]
-getOutput = atomically . readTQueue . termQ
-
-getOutputLine :: TestCC -> IO String
-getOutputLine TestCC {termQ} =
-  atomically $
-    readTQueue termQ >>= \case
-      [] -> error "empty list"
-      [l] -> pure l
-      l : ls -> unGetTQueue termQ ls >> pure l
+getTermLine :: TestCC -> IO String
+getTermLine = atomically . readTQueue . termQ
 
 getInvitation :: TestCC -> IO String
 getInvitation cc = do
   cc <## "pass this invitation to your contact (via another channel):"
   cc <## ""
-  inv <- getOutputLine cc
+  inv <- getTermLine cc
   cc <## ""
   cc <## "and ask them to connect: /c <invitation_above>"
   pure inv

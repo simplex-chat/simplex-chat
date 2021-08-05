@@ -55,7 +55,7 @@ data TestCC = TestCC
     virtualTerminal :: VirtualTerminal,
     chatAsync :: Async (),
     termAsync :: Async (),
-    termQ :: TQueue [String]
+    termQ :: TQueue String
   }
 
 aCfg :: AgentConfig
@@ -79,7 +79,7 @@ virtualSimplexChat dbFile profile = do
   termAsync <- async $ readTerminalOutput t termQ
   pure TestCC {chatController = cc, virtualTerminal = t, chatAsync, termAsync, termQ}
 
-readTerminalOutput :: VirtualTerminal -> TQueue [String] -> IO ()
+readTerminalOutput :: VirtualTerminal -> TQueue String -> IO ()
 readTerminalOutput t termQ = do
   let w = virtualWindow t
   winVar <- atomically $ newTVar . init =<< readTVar w
@@ -90,9 +90,8 @@ readTerminalOutput t termQ = do
       then retry
       else do
         let diff = getDiff win' win
-        writeTQueue termQ diff
+        forM_ diff $ writeTQueue termQ
         writeTVar winVar win'
-        pure diff
   where
     getDiff :: [String] -> [String] -> [String]
     getDiff win win' = getDiff_ 1 (length win) win win'
