@@ -6,6 +6,9 @@ module Simplex.Chat.Notification (Notification (..), initializeNotifications) wh
 
 import Control.Monad (void)
 import Data.List (isInfixOf)
+import Data.Map (Map, fromList)
+import qualified Data.Map as M
+import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import System.Directory (createDirectoryIfMissing, doesFileExist, getAppUserDataDirectory)
@@ -25,7 +28,7 @@ initializeNotifications = case os of
       True -> do
         v <- readFile "/proc/sys/kernel/osrelease"
         if "Microsoft" `isInfixOf` v || "WSL" `isInfixOf` v
-          then initWinNotify
+          then initWslNotify
           else pure $ notify linuxScript
   _ -> pure . const $ pure ()
 
@@ -34,16 +37,37 @@ notify script notification =
   void $ readCreateProcess (shell . T.unpack $ script notification) ""
 
 linuxScript :: Notification -> Text
-linuxScript Notification {title, text} = "notify-send \"" <> title <> "\" \"" <> text <> "\""
+linuxScript Notification {title, text} = "notify-send '" <> linuxEscape title <> "' '" <> linuxEscape text <> "'"
+
+linuxEscape :: Text -> Text
+linuxEscape = replaceAll $ fromList [('\'', "'\\''")]
 
 macScript :: Notification -> Text
-macScript Notification {title, text} = "osascript -e 'display notification \"" <> text <> "\" with title \"" <> title <> "\"'"
+macScript Notification {title, text} = "osascript -e 'display notification \"" <> macEscape text <> "\" with title \"" <> macEscape title <> "\"'"
+
+macEscape :: Text -> Text
+macEscape = replaceAll $ fromList [('"', "\\\"")]
+
+initWslNotify :: IO (Notification -> IO ())
+initWslNotify = notify . wslScript <$> savePowershellScript
+
+wslScript :: FilePath -> Notification -> Text
+wslScript path Notification {title, text} = "powershell.exe \"" <> T.pack path <> " \\\"" <> wslEscape title <> "\\\" \\\"" <> wslEscape text <> "\\\"\""
+
+wslEscape :: Text -> Text
+wslEscape = replaceAll $ fromList [('`', "\\`\\`"), ('\\', "\\\\"), ('"', "\\`\\\"")]
 
 initWinNotify :: IO (Notification -> IO ())
 initWinNotify = notify . winScript <$> savePowershellScript
 
 winScript :: FilePath -> Notification -> Text
-winScript path Notification {title, text} = "powershell.exe \"" <> T.pack path <> " \'" <> title <> "\' \'" <> text <> "\'\""
+winScript path Notification {title, text} = "powershell.exe \"" <> T.pack path <> " '" <> winRemoveQuotes title <> "' '" <> winRemoveQuotes text <> "'\""
+
+winRemoveQuotes :: Text -> Text
+winRemoveQuotes = replaceAll $ fromList [('`', ""), ('\'', ""), ('"', "")]
+
+replaceAll :: Map Char Text -> Text -> Text
+replaceAll rules = T.concatMap $ \c -> T.singleton c `fromMaybe` M.lookup c rules
 
 savePowershellScript :: IO FilePath
 savePowershellScript = do
