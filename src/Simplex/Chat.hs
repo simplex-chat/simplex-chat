@@ -289,7 +289,7 @@ subscribeUserConnections = void . runExceptT $ do
     subscribe cId = withAgent (`subscribeConnection` cId)
 
 processAgentMessage :: forall m. ChatMonad m => User -> ConnId -> ACommand 'Agent -> m ()
-processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
+processAgentMessage user@User {userId, profile} agentConnId agentMessage = unless (sent agentMessage) $ do
   chatDirection <- withStore $ \st -> getConnectionChatDirection st user agentConnId
   forM_ (agentMsgConnStatus agentMessage) $ \status ->
     withStore $ \st -> updateConnectionStatus st (fromConnection chatDirection) status
@@ -299,6 +299,10 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
     ReceivedGroupMessage conn gName m ->
       processGroupMessage agentMessage conn gName m
   where
+    sent :: ACommand 'Agent -> Bool
+    sent SENT {} = True
+    sent _ = False
+
     isMember :: MemberId -> Group -> Bool
     isMember memId Group {membership, members} =
       memberId membership == memId || isJust (find ((== memId) . memberId) members)
@@ -324,8 +328,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
           acceptAgentConnection conn confId $ XInfo profile
         INFO connInfo ->
           saveConnInfo conn connInfo
-        CON -> pure ()
-        _ -> messageError $ "unsupported agent event: " <> T.pack (show agentMsg)
+        _ -> pure ()
       Just ct@Contact {localDisplayName = c} -> case agentMsg of
         MSG meta msgBody -> do
           ChatMessage {chatMsgEvent} <- liftEither $ parseChatMessage msgBody
@@ -366,10 +369,17 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
                 notifyMemberConnected gName m
                 when (memberCategory m == GCPreMember) $ probeMatchingContacts ct
         END -> do
+          showContactAnotherClient c
+          showToast (c <> "> ") "connected to another client"
+          unsetActive $ ActiveC c
+        DOWN -> do
           showContactDisconnected c
           showToast (c <> "> ") "disconnected"
-          unsetActive $ ActiveC c
-        _ -> messageError $ "unexpected agent event: " <> T.pack (show agentMsg)
+        UP -> do
+          showContactSubscribed c
+          showToast (c <> "> ") "is active"
+          setActive $ ActiveC c
+        _ -> pure ()
 
     processGroupMessage :: ACommand 'Agent -> Connection -> GroupName -> GroupMember -> m ()
     processGroupMessage agentMsg conn gName m = case agentMsg of
@@ -449,7 +459,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
           XGrpLeave -> xGrpLeave gName m
           XGrpDel -> xGrpDel gName m
           _ -> messageError $ "unsupported message: " <> T.pack (show chatMsgEvent)
-      _ -> messageError $ "unsupported agent event: " <> T.pack (show agentMsg)
+      _ -> pure ()
 
     notifyMemberConnected :: GroupName -> GroupMember -> m ()
     notifyMemberConnected gName m@GroupMember {localDisplayName} = do
@@ -636,10 +646,11 @@ chatError :: ChatMonad m => ChatErrorType -> m ()
 chatError = throwError . ChatError
 
 deleteMemberConnection :: ChatMonad m => GroupMember -> m ()
-deleteMemberConnection m = do
-  User {userId} <- asks currentUser
-  withAgent $ forM_ (memberConnId m) . deleteConnection
-  withStore $ \st -> deleteGroupMemberConnection st userId m
+deleteMemberConnection m@GroupMember {activeConn} = do
+  -- User {userId} <- asks currentUser
+  withAgent $ forM_ (memberConnId m) . suspendConnection
+  -- withStore $ \st -> deleteGroupMemberConnection st userId m
+  forM_ activeConn $ \conn -> withStore $ \st -> updateConnectionStatus st conn ConnDeleted
 
 sendDirectMessage :: ChatMonad m => ConnId -> ChatMsgEvent -> m ()
 sendDirectMessage agentConnId chatMsgEvent =

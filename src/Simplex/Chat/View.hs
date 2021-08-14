@@ -13,6 +13,7 @@ module Simplex.Chat.View
     showContactGroups,
     showContactConnected,
     showContactDisconnected,
+    showContactAnotherClient,
     showContactSubscribed,
     showContactSubError,
     showGroupSubscribed,
@@ -80,6 +81,9 @@ showContactConnected = printToView . contactConnected
 
 showContactDisconnected :: ChatReader m => ContactName -> m ()
 showContactDisconnected = printToView . contactDisconnected
+
+showContactAnotherClient :: ChatReader m => ContactName -> m ()
+showContactAnotherClient = printToView . contactAnotherClient
 
 showContactSubscribed :: ChatReader m => ContactName -> m ()
 showContactSubscribed = printToView . contactSubscribed
@@ -186,7 +190,10 @@ contactConnected :: Contact -> [StyledString]
 contactConnected ct = [ttyFullContact ct <> ": contact is connected"]
 
 contactDisconnected :: ContactName -> [StyledString]
-contactDisconnected c = [ttyContact c <> ": contact is disconnected - restart chat"]
+contactDisconnected c = [ttyContact c <> ": contact is disconnected (messages will be queued)"]
+
+contactAnotherClient :: ContactName -> [StyledString]
+contactAnotherClient c = [ttyContact c <> ": contact is connected to another client"]
 
 contactSubscribed :: ContactName -> [StyledString]
 contactSubscribed c = [ttyContact c <> ": contact is active"]
