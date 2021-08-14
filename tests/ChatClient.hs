@@ -20,6 +20,7 @@ import Simplex.Chat.Options
 import Simplex.Chat.Store
 import Simplex.Chat.Types (Profile)
 import Simplex.Messaging.Agent.Env.SQLite
+import Simplex.Messaging.Agent.RetryInterval
 import Simplex.Messaging.Server (runSMPServerBlocking)
 import Simplex.Messaging.Server.Env.STM
 import Simplex.Messaging.Transport

@@ -324,6 +324,8 @@ data ConnStatus
     ConnSndReady
   | -- | connection is ready for both parties to send and receive messages
     ConnReady
+  | -- | connection deleted
+    ConnDeleted
   deriving (Eq, Show)
 
 instance FromField ConnStatus where fromField = fromTextField_ connStatusT
@@ -338,6 +340,7 @@ connStatusT = \case
   "accepted" -> Just ConnAccepted
   "snd-ready" -> Just ConnSndReady
   "ready" -> Just ConnReady
+  "deleted" -> Just ConnDeleted
   _ -> Nothing
 
 serializeConnStatus :: ConnStatus -> Text
@@ -348,6 +351,7 @@ serializeConnStatus = \case
   ConnAccepted -> "accepted"
   ConnSndReady -> "snd-ready"
   ConnReady -> "ready"
+  ConnDeleted -> "deleted"
 
 data ConnType = ConnContact | ConnMember
   deriving (Eq, Show)
