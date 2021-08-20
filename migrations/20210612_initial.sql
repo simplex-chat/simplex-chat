@@ -216,7 +216,7 @@ CREATE INDEX messages_agent_msg_id_index ON messages (connection_id, agent_msg_i
 CREATE INDEX messages_external_msg_id_index ON messages (connection_id, external_msg_id);
 
 CREATE TABLE contact_profile_messages (
-  event_id INTEGER NOT NULL UNIQUE REFERENCES events,
+  message_id INTEGER NOT NULL UNIQUE REFERENCES messages,
   contact_profile_id INTEGER NOT NULL REFERENCES contact_profiles
 );
 
@@ -228,13 +228,13 @@ CREATE TABLE group_profile_messages (
 CREATE TABLE direct_messages (
   message_id INTEGER NOT NULL UNIQUE REFERENCES messages,
   contact_id INTEGER NOT NULL REFERENCES contacts ON DELETE RESTRICT,
-  item_sent INTEGER -- 1 for sent, 0 for received
+  msg_sent INTEGER -- 1 for sent, 0 for received
 );
 
 CREATE TABLE direct_msg_delivery_events (
   direct_msg_delivery_event_id INTEGER PRIMARY KEY,
   message_id INTEGER NOT NULL UNIQUE REFERENCES messages,
-  delivery_status TEXT NOT NULL DEFAULT 'pending', -- agent, sent, received, read
+  delivery_status TEXT NOT NULL DEFAULT 'pending', -- pending, agent, sent, received, read
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   UNIQUE (message_id, delivery_status)
 );
@@ -249,7 +249,7 @@ CREATE TABLE group_msg_delivery_events (
   group_msg_delivery_event_id INTEGER PRIMARY KEY,
   group_member_id INTEGER NOT NULL REFERENCES group_members,
   message_id INTEGER NOT NULL UNIQUE REFERENCES messages,
-  delivery_status TEXT NOT NULL DEFAULT 'pending', -- pending, agent, sent, received, read
+  delivery_status TEXT NOT NULL DEFAULT 'pending', -- agent, sent, received, read
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   UNIQUE (group_member_id, message_id, delivery_status)
 );
@@ -296,7 +296,7 @@ CREATE TABLE chat_item_content (
   content BLOB NOT NULL
 );
 
-CREATE TABLE chat_item_events (
-  event_id INTEGER NOT NULL UNIQUE REFERENCES events,
+CREATE TABLE chat_item_messages (
+  message_id INTEGER NOT NULL UNIQUE REFERENCES messages,
   chat_item_id INTEGER NOT NULL REFERENCES chat_items
 );
