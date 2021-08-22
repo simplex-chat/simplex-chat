@@ -24,6 +24,8 @@ module Simplex.Chat.Store
     getContactGroupNames,
     deleteContact,
     getContact,
+    updateUserProfile,
+    updateContactProfile,
     getUserContacts,
     getContactConnections,
     getConnectionChatDirection,
@@ -69,6 +71,7 @@ import Data.ByteString.Char8 (ByteString)
 import Data.Either (rights)
 import Data.FileEmbed (embedDir, makeRelativeToProject)
 import Data.Function (on)
+import Data.Functor (($>))
 import Data.Int (Int64)
 import Data.List (find, sortBy)
 import Data.Maybe (listToMaybe)
@@ -231,6 +234,58 @@ deleteContact st userId displayName =
 getContact :: StoreMonad m => SQLiteStore -> UserId -> ContactName -> m Contact
 getContact st userId localDisplayName =
   liftIOEither . withTransaction st $ \db -> runExceptT $ getContact_ db userId localDisplayName
+
+updateUserProfile :: StoreMonad m => SQLiteStore -> User -> Profile -> m User
+updateUserProfile st u@User {userId, userContactId, localDisplayName, profile = Profile {displayName}} p'@Profile {displayName = newName}
+  | displayName == newName =
+    liftIO . withTransaction st $ \db ->
+      updateContactProfile_ db userId userContactId p' $> (u :: User) {profile = p'}
+  | otherwise =
+    liftIOEither . checkConstraint SEDuplicateName . withTransaction st $ \db -> do
+      DB.execute db "UPDATE users SET local_display_name = ? WHERE user_id = ?" (newName, userId)
+      DB.execute db "INSERT INTO display_names (local_display_name, ldn_base, user_id) VALUES (?, ?, ?)" (newName, newName, userId)
+      updateContactProfile_ db userId userContactId p'
+      updateContact_ db userId userContactId localDisplayName newName
+      pure . Right $ (u :: User) {localDisplayName = newName, profile = p'}
+
+updateContactProfile :: StoreMonad m => SQLiteStore -> UserId -> Contact -> Profile -> m Contact
+updateContactProfile st userId c@Contact {contactId, localDisplayName, profile = Profile {displayName}} p'@Profile {displayName = newName}
+  | displayName == newName =
+    liftIO . withTransaction st $ \db ->
+      updateContactProfile_ db userId contactId p' $> (c :: Contact) {profile = p'}
+  | otherwise =
+    liftIOEither . withTransaction st $ \db ->
+      withLocalDisplayName db userId newName $ \ldn -> do
+        updateContactProfile_ db userId contactId p'
+        updateContact_ db userId contactId localDisplayName ldn
+        pure $ (c :: Contact) {localDisplayName = ldn, profile = p'}
+
+updateContactProfile_ :: DB.Connection -> UserId -> Int64 -> Profile -> IO ()
+updateContactProfile_ db userId contactId Profile {displayName, fullName} =
+  DB.executeNamed
+    db
+    [sql|
+      UPDATE contact_profiles
+      SET display_name = :display_name,
+          full_name = :full_name
+      WHERE contact_profile_id IN (
+        SELECT contact_profile_id
+        FROM contacts
+        WHERE user_id = :user_id
+          AND contact_id = :contact_id
+      )
+    |]
+    [ ":display_name" := displayName,
+      ":full_name" := fullName,
+      ":user_id" := userId,
+      ":contact_id" := contactId
+    ]
+
+updateContact_ :: DB.Connection -> UserId -> Int64 -> ContactName -> ContactName -> IO ()
+updateContact_ db userId contactId displayName newName = do
+  DB.execute db "UPDATE contacts SET local_display_name = ? WHERE user_id = ? AND contact_id = ?" (newName, userId, contactId)
+  DB.execute db "UPDATE group_members SET local_display_name = ? WHERE user_id = ? AND contact_id = ?" (newName, userId, contactId)
+  DB.execute db "DELETE FROM display_names WHERE local_display_name = ? AND user_id = ?" (displayName, userId)
 
 -- TODO return the last connection that is ready, not any last connection
 -- requires updating connection status

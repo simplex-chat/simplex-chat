@@ -21,7 +21,7 @@ import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore)
 import UnliftIO.STM
 
 data ChatController = ChatController
-  { currentUser :: User,
+  { currentUser :: TVar User,
     smpAgent :: AgentClient,
     chatTerminal :: ChatTerminal,
     chatStore :: SQLiteStore,

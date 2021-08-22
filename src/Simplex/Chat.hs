@@ -6,6 +6,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
 
@@ -69,6 +70,8 @@ data ChatCommand
   | DeleteGroup GroupName
   | ListMembers GroupName
   | SendGroupMessage GroupName ByteString
+  | UpdateProfile Profile
+  | ShowProfile
   | QuitChat
   deriving (Show)
 
@@ -106,14 +109,14 @@ simplexChat cfg opts t =
 newChatController :: WithTerminal t => ChatConfig -> ChatOpts -> t -> (Notification -> IO ()) -> IO ChatController
 newChatController ChatConfig {agentConfig = cfg, dbPoolSize, tbqSize} ChatOpts {dbFile, smpServers} t sendNotification = do
   chatStore <- createStore (dbFile <> ".chat.db") dbPoolSize
-  currentUser <- getCreateActiveUser chatStore
+  currentUser <- newTVarIO =<< getCreateActiveUser chatStore
   chatTerminal <- newChatTerminal t
   smpAgent <- getSMPAgentClient cfg {dbFile = dbFile <> ".agent.db", smpServers}
   idsDrg <- newTVarIO =<< drgNew
   inputQ <- newTBQueueIO tbqSize
   notifyQ <- newTBQueueIO tbqSize
   chatLock <- newTMVarIO ()
-  pure ChatController {currentUser, smpAgent, chatTerminal, chatStore, idsDrg, inputQ, notifyQ, sendNotification, chatLock}
+  pure ChatController {..}
 
 runSimplexChat :: ChatController -> IO ()
 runSimplexChat = runReaderT (race_ runTerminalInput runChatController)
@@ -147,7 +150,7 @@ inputSubscriber = do
               SendMessage c msg -> showSentMessage c msg
               SendGroupMessage g msg -> showSentGroupMessage g msg
               _ -> printToView [plain s]
-            user <- asks currentUser
+            user <- readTVarIO =<< asks currentUser
             withLock l . void . runExceptT $
               processChatCommand user cmd `catchError` showChatError
 
@@ -244,6 +247,13 @@ processChatCommand user@User {userId, profile} = \case
     let msgEvent = XMsgNew $ MsgContent MTText [] [MsgContentBody {contentType = SimplexContentType XCText, contentData = msg}]
     sendGroupMessage members msgEvent
     setActive $ ActiveG gName
+  UpdateProfile p -> unless (p == profile) $ do
+    user' <- withStore $ \st -> updateUserProfile st user p
+    asks currentUser >>= atomically . (`writeTVar` user')
+    contacts <- withStore (`getUserContacts` user)
+    forM_ contacts $ \ct -> sendDirectMessage (contactConnId ct) $ XInfo p
+    showUserProfileUpdated user user'
+  ShowProfile -> showUserProfile profile
   QuitChat -> liftIO exitSuccess
   where
     contactMember :: Contact -> [GroupMember] -> Maybe GroupMember
@@ -258,14 +268,14 @@ agentSubscriber = do
   subscribeUserConnections
   forever $ do
     (_, connId, msg) <- atomically $ readTBQueue q
-    user <- asks currentUser
+    user <- readTVarIO =<< asks currentUser
     -- TODO handle errors properly
     withLock l . void . runExceptT $
       processAgentMessage user connId msg `catchError` (liftIO . print)
 
 subscribeUserConnections :: (MonadUnliftIO m, MonadReader ChatController m) => m ()
 subscribeUserConnections = void . runExceptT $ do
-  user <- asks currentUser
+  user <- readTVarIO =<< asks currentUser
   subscribeContacts user
   subscribeGroups user
   where
@@ -334,7 +344,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = unles
           ChatMessage {chatMsgEvent} <- liftEither $ parseChatMessage msgBody
           case chatMsgEvent of
             XMsgNew (MsgContent MTText [] body) -> newTextMessage c meta $ find (isSimplexContentType XCText) body
-            XInfo _ -> pure () -- TODO profile update
+            XInfo p -> xInfo ct p
             XGrpInv gInv -> processGroupInvitation ct gInv
             XInfoProbe probe -> xInfoProbe ct probe
             XInfoProbeCheck probeHash -> xInfoProbeCheck ct probeHash
@@ -510,6 +520,11 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = unles
       when (fromMemId == memId) $ chatError CEGroupDuplicateMemberId
       group <- withStore $ \st -> createGroupInvitation st user ct inv
       showReceivedGroupInvitation group localDisplayName memRole
+
+    xInfo :: Contact -> Profile -> m ()
+    xInfo c@Contact {profile = p} p' = unless (p == p') $ do
+      c' <- withStore $ \st -> updateContactProfile st userId c p'
+      showContactUpdated c c'
 
     xInfoProbe :: Contact -> ByteString -> m ()
     xInfoProbe c2 probe = do
@@ -722,7 +737,7 @@ getCreateActiveUser st = do
                 pure user
     userStr :: User -> String
     userStr User {localDisplayName, profile = Profile {fullName}} =
-      T.unpack $ localDisplayName <> if T.null fullName then "" else " (" <> fullName <> ")"
+      T.unpack $ localDisplayName <> if T.null fullName || localDisplayName == fullName then "" else " (" <> fullName <> ")"
     getContactName :: IO ContactName
     getContactName = do
       displayName <- getWithPrompt "display name (no spaces)"
@@ -771,14 +786,23 @@ chatCommandP =
     <|> ("/delete @" <|> "/delete " <|> "/d @" <|> "/d ") *> (DeleteContact <$> displayName)
     <|> A.char '@' *> (SendMessage <$> displayName <*> (A.space *> A.takeByteString))
     <|> ("/markdown" <|> "/m") $> MarkdownHelp
+    <|> ("/profile " <|> "/p ") *> (UpdateProfile <$> userProfile)
+    <|> ("/profile" <|> "/p") $> ShowProfile
     <|> ("/quit" <|> "/q") $> QuitChat
   where
     displayName = safeDecodeUtf8 <$> (B.cons <$> A.satisfy refChar <*> A.takeTill (== ' '))
     refChar c = c > ' ' && c /= '#' && c /= '@'
+    userProfile = do
+      cName <- displayName
+      fullName <- fullNameP cName
+      pure Profile {displayName = cName, fullName}
     groupProfile = do
       gName <- displayName
-      fullName' <- safeDecodeUtf8 <$> (A.space *> A.takeByteString) <|> pure ""
-      pure GroupProfile {displayName = gName, fullName = if T.null fullName' then gName else fullName'}
+      fullName <- fullNameP gName
+      pure GroupProfile {displayName = gName, fullName}
+    fullNameP name = do
+      n <- (A.space *> A.takeByteString) <|> pure ""
+      pure $ if B.null n then name else safeDecodeUtf8 n
     memberRole =
       (" owner" $> GROwner)
         <|> (" admin" $> GRAdmin)

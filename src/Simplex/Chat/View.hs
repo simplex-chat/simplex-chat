@@ -39,6 +39,9 @@ module Simplex.Chat.View
     showLeftMember,
     showGroupMembers,
     showContactsMerged,
+    showUserProfile,
+    showUserProfileUpdated,
+    showContactUpdated,
     safeDecodeUtf8,
   )
 where
@@ -165,6 +168,15 @@ showGroupMembers = printToView . groupMembers
 
 showContactsMerged :: ChatReader m => Contact -> Contact -> m ()
 showContactsMerged = printToView .: contactsMerged
+
+showUserProfile :: ChatReader m => Profile -> m ()
+showUserProfile = printToView . userProfile
+
+showUserProfileUpdated :: ChatReader m => User -> User -> m ()
+showUserProfileUpdated = printToView .: userProfileUpdated
+
+showContactUpdated :: ChatReader m => Contact -> Contact -> m ()
+showContactUpdated = printToView .: contactUpdated
 
 invitation :: SMPQueueInfo -> [StyledString]
 invitation qInfo =
@@ -301,6 +313,36 @@ contactsMerged _to@Contact {localDisplayName = c1} _from@Contact {localDisplayNa
   [ "contact " <> ttyContact c2 <> " is merged into " <> ttyContact c1,
     "use " <> ttyToContact c1 <> highlight' "<message>" <> " to send messages"
   ]
+
+userProfile :: Profile -> [StyledString]
+userProfile Profile {displayName, fullName} =
+  [ "user profile: " <> ttyFullName displayName fullName,
+    "use " <> highlight' "/p <display name>[ <full name>]" <> " to change it",
+    "(the updated profile will be sent to all your contacts)"
+  ]
+
+userProfileUpdated :: User -> User -> [StyledString]
+userProfileUpdated
+  User {localDisplayName = n, profile = Profile {fullName}}
+  User {localDisplayName = n', profile = Profile {fullName = fullName'}}
+    | n == n' && fullName == fullName' = []
+    | n == n' = ["user full name " <> (if T.null fullName' || fullName' == n' then "removed" else "changed to " <> plain fullName') <> notified]
+    | otherwise = ["user profile is changed to " <> ttyFullName n' fullName' <> notified]
+    where
+      notified = " (your contacts are notified)"
+
+contactUpdated :: Contact -> Contact -> [StyledString]
+contactUpdated
+  Contact {localDisplayName = n, profile = Profile {fullName}}
+  Contact {localDisplayName = n', profile = Profile {fullName = fullName'}}
+    | n == n' && fullName == fullName' = []
+    | n == n' = ["contact " <> ttyContact n <> fullNameUpdate]
+    | otherwise =
+      [ "contact " <> ttyContact n <> " changed to " <> ttyFullName n' fullName',
+        "use " <> ttyToContact n' <> highlight' "<message>" <> " to send messages"
+      ]
+    where
+      fullNameUpdate = if T.null fullName' || fullName' == n' then " removed full name" else " updated full name: " <> plain fullName'
 
 receivedMessage :: StyledString -> UTCTime -> Text -> MsgIntegrity -> IO [StyledString]
 receivedMessage from utcTime msg mOk = do
