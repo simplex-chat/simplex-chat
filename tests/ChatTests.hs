@@ -35,6 +35,8 @@ chatTests = do
     it "create and join group with 4 members" testGroup2
     it "create and delete group" testGroupDelete
     it "remove contact from group and add again" testGroupRemoveAdd
+  describe "user profiles" $
+    it "update user profiles and notify contacts" testUpdateProfile
 
 testAddContact :: IO ()
 testAddContact =
@@ -350,65 +352,116 @@ testGroupRemoveAdd =
         (alice <# "#team cath> hello")
         (bob <# "#team_1 cath> hello")
 
+testUpdateProfile :: IO ()
+testUpdateProfile =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+      alice ##> "/p"
+      alice <## "user profile: alice (Alice)"
+      alice <## "use /p <display name>[ <full name>] to change it"
+      alice <## "(the updated profile will be sent to all your contacts)"
+      alice ##> "/p alice"
+      concurrentlyN_
+        [ alice <## "user full name removed (your contacts are notified)",
+          bob <## "contact alice removed full name",
+          cath <## "contact alice removed full name"
+        ]
+      alice ##> "/p alice Alice Jones"
+      concurrentlyN_
+        [ alice <## "user full name changed to Alice Jones (your contacts are notified)",
+          bob <## "contact alice updated full name: Alice Jones",
+          cath <## "contact alice updated full name: Alice Jones"
+        ]
+      cath ##> "/p cate"
+      concurrentlyN_
+        [ cath <## "user profile is changed to cate (your contacts are notified)",
+          do
+            alice <## "contact cath changed to cate"
+            alice <## "use @cate <message> to send messages",
+          do
+            bob <## "contact cath changed to cate"
+            bob <## "use @cate <message> to send messages"
+        ]
+      cath ##> "/p cat Cate"
+      concurrentlyN_
+        [ cath <## "user profile is changed to cat (Cate) (your contacts are notified)",
+          do
+            alice <## "contact cate changed to cat (Cate)"
+            alice <## "use @cat <message> to send messages",
+          do
+            bob <## "contact cate changed to cat (Cate)"
+            bob <## "use @cat <message> to send messages"
+        ]
+
 connectUsers :: TestCC -> TestCC -> IO ()
 connectUsers cc1 cc2 = do
+  name1 <- showName cc1
+  name2 <- showName cc2
   cc1 ##> "/c"
   inv <- getInvitation cc1
   cc2 ##> ("/c " <> inv)
   concurrently_
-    (cc2 <## (showName cc1 <> ": contact is connected"))
-    (cc1 <## (showName cc2 <> ": contact is connected"))
+    (cc2 <## (name1 <> ": contact is connected"))
+    (cc1 <## (name2 <> ": contact is connected"))
 
-showName :: TestCC -> String
-showName (TestCC ChatController {currentUser = User {localDisplayName, profile = Profile {fullName}}} _ _ _ _) =
-  T.unpack $ localDisplayName <> " (" <> fullName <> ")"
+showName :: TestCC -> IO String
+showName (TestCC ChatController {currentUser} _ _ _ _) = do
+  User {localDisplayName, profile = Profile {fullName}} <- readTVarIO currentUser
+  pure . T.unpack $ localDisplayName <> " (" <> fullName <> ")"
 
 createGroup3 :: String -> TestCC -> TestCC -> TestCC -> IO ()
 createGroup3 gName cc1 cc2 cc3 = do
   connectUsers cc1 cc2
   connectUsers cc1 cc3
+  name2 <- userName cc2
+  name3 <- userName cc3
+  sName2 <- showName cc2
+  sName3 <- showName cc3
   cc1 ##> ("/g " <> gName)
   cc1 <## ("group #" <> gName <> " is created")
   cc1 <## ("use /a " <> gName <> " <name> to add members")
   addMember cc2
   cc2 ##> ("/j " <> gName)
   concurrently_
-    (cc1 <## ("#" <> gName <> ": " <> name cc2 <> " joined the group"))
+    (cc1 <## ("#" <> gName <> ": " <> name2 <> " joined the group"))
     (cc2 <## ("#" <> gName <> ": you joined the group"))
   addMember cc3
   cc3 ##> ("/j " <> gName)
   concurrentlyN_
-    [ cc1 <## ("#" <> gName <> ": " <> name cc3 <> " joined the group"),
+    [ cc1 <## ("#" <> gName <> ": " <> name3 <> " joined the group"),
       do
         cc3 <## ("#" <> gName <> ": you joined the group")
-        cc3 <## ("#" <> gName <> ": member " <> showName cc2 <> " is connected"),
+        cc3 <## ("#" <> gName <> ": member " <> sName2 <> " is connected"),
       do
-        cc2 <## ("#" <> gName <> ": alice added " <> showName cc3 <> " to the group (connecting...)")
-        cc2 <## ("#" <> gName <> ": new member " <> name cc3 <> " is connected")
+        cc2 <## ("#" <> gName <> ": alice added " <> sName3 <> " to the group (connecting...)")
+        cc2 <## ("#" <> gName <> ": new member " <> name3 <> " is connected")
     ]
   where
     addMember :: TestCC -> IO ()
     addMember mem = do
-      cc1 ##> ("/a " <> gName <> " " <> name mem)
+      name1 <- userName cc1
+      memName <- userName mem
+      cc1 ##> ("/a " <> gName <> " " <> memName)
       concurrentlyN_
-        [ cc1 <## ("invitation to join the group #" <> gName <> " sent to " <> name mem),
+        [ cc1 <## ("invitation to join the group #" <> gName <> " sent to " <> memName),
           do
-            mem <## ("#" <> gName <> ": " <> name cc1 <> " invites you to join the group as admin")
+            mem <## ("#" <> gName <> ": " <> name1 <> " invites you to join the group as admin")
             mem <## ("use /j " <> gName <> " to accept")
         ]
-    name :: TestCC -> String
-    name (TestCC ChatController {currentUser = User {localDisplayName}} _ _ _ _) =
-      T.unpack localDisplayName
 
 -- | test sending direct messages
 (<##>) :: TestCC -> TestCC -> IO ()
 cc1 <##> cc2 = do
-  cc1 #> ("@" <> name cc2 <> " hi")
-  cc2 <# (name cc1 <> "> hi")
-  cc2 #> ("@" <> name cc1 <> " hey")
-  cc1 <# (name cc2 <> "> hey")
-  where
-    name (TestCC ChatController {currentUser = User {localDisplayName}} _ _ _ _) = T.unpack localDisplayName
+  name1 <- userName cc1
+  name2 <- userName cc2
+  cc1 #> ("@" <> name2 <> " hi")
+  cc2 <# (name1 <> "> hi")
+  cc2 #> ("@" <> name1 <> " hey")
+  cc1 <# (name2 <> "> hey")
+
+userName :: TestCC -> IO [Char]
+userName (TestCC ChatController {currentUser} _ _ _ _) = T.unpack . localDisplayName <$> readTVarIO currentUser
 
 (##>) :: TestCC -> String -> IO ()
 cc ##> cmd = do
