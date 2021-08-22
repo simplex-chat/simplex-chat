@@ -362,25 +362,37 @@ testUpdateProfile =
       alice <## "use /p <display name>[ <full name>] to change it"
       alice <## "(the updated profile will be sent to all your contacts)"
       alice ##> "/p alice"
-      alice <## "user full name removed (your contacts are notified)"
-      bob <## "contact alice removed full name"
-      cath <## "contact alice removed full name"
+      concurrentlyN_
+        [ alice <## "user full name removed (your contacts are notified)",
+          bob <## "contact alice removed full name",
+          cath <## "contact alice removed full name"
+        ]
       alice ##> "/p alice Alice Jones"
-      alice <## "user full name changed to Alice Jones (your contacts are notified)"
-      bob <## "contact alice updated full name: Alice Jones"
-      cath <## "contact alice updated full name: Alice Jones"
+      concurrentlyN_
+        [ alice <## "user full name changed to Alice Jones (your contacts are notified)",
+          bob <## "contact alice updated full name: Alice Jones",
+          cath <## "contact alice updated full name: Alice Jones"
+        ]
       cath ##> "/p cate"
-      cath <## "user profile is changed to cate (your contacts are notified)"
-      alice <## "contact cath changed to cate"
-      alice <## "use @cate <message> to send messages"
-      bob <## "contact cath changed to cate"
-      bob <## "use @cate <message> to send messages"
+      concurrentlyN_
+        [ cath <## "user profile is changed to cate (your contacts are notified)",
+          do
+            alice <## "contact cath changed to cate"
+            alice <## "use @cate <message> to send messages",
+          do
+            bob <## "contact cath changed to cate"
+            bob <## "use @cate <message> to send messages"
+        ]
       cath ##> "/p cat Cate"
-      cath <## "user profile is changed to cat (Cate) (your contacts are notified)"
-      alice <## "contact cate changed to cat (Cate)"
-      alice <## "use @cat <message> to send messages"
-      bob <## "contact cate changed to cat (Cate)"
-      bob <## "use @cat <message> to send messages"
+      concurrentlyN_
+        [ cath <## "user profile is changed to cat (Cate) (your contacts are notified)",
+          do
+            alice <## "contact cate changed to cat (Cate)"
+            alice <## "use @cat <message> to send messages",
+          do
+            bob <## "contact cate changed to cat (Cate)"
+            bob <## "use @cat <message> to send messages"
+        ]
 
 connectUsers :: TestCC -> TestCC -> IO ()
 connectUsers cc1 cc2 = do
@@ -389,8 +401,9 @@ connectUsers cc1 cc2 = do
   cc1 ##> "/c"
   inv <- getInvitation cc1
   cc2 ##> ("/c " <> inv)
-  cc2 <## (name1 <> ": contact is connected")
-  cc1 <## (name2 <> ": contact is connected")
+  concurrently_
+    (cc2 <## (name1 <> ": contact is connected"))
+    (cc1 <## (name2 <> ": contact is connected"))
 
 showName :: TestCC -> IO String
 showName (TestCC ChatController {currentUser} _ _ _ _) = do
