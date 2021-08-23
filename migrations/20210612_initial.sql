@@ -130,6 +130,51 @@ CREATE TABLE group_member_intros (
   UNIQUE (re_group_member_id, to_group_member_id)
 );
 
+CREATE TABLE files (
+  file_id INTEGER PRIMARY KEY,
+  contact_id INTEGER REFERENCES contacts ON DELETE RESTRICT,
+  group_id INTEGER REFERENCES groups ON DELETE RESTRICT,
+  local_file_name TEXT NOT NULL,
+  lfn_base TEXT NOT NULL,
+  lfn_suffix INTEGER NOT NULL DEFAULT 0,
+  file_size INTEGER NOT NULL,
+  file_path TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  user_id INTEGER NOT NULL REFERENCES users,
+  UNIQUE (user_id, local_file_name)
+);
+
+CREATE TABLE snd_files (
+  snd_file_id INTEGER PRIMARY KEY,
+  file_id INTEGER NOT NULL REFERENCES files ON DELETE RESTRICT,
+  file_status TEXT NOT NULL, -- created, accepted, completed
+  group_member_id INTEGER REFERENCES group_members ON DELETE RESTRICT,
+  connection_id INTEGER NOT NULL REFERENCES connections ON DELETE RESTRICT
+);
+
+CREATE TABLE rcv_files (
+  rcv_file_id INTEGER PRIMARY KEY,
+  file_id INTEGER NOT NULL REFERENCES files ON DELETE RESTRICT,
+  file_status TEXT NOT NULL, -- created, accepted, completed
+  file_queue_info BLOB
+);
+
+CREATE TABLE snd_file_chunks (
+  snd_file_id INTEGER NOT NULL REFERENCES snd_files,
+  chunk_number INTEGER NOT NULL,
+  chunk_agent_msg_id INTEGER NOT NULL,
+  chunk_sent INTEGER NOT NULL DEFAULT 0, -- 0 (sent to agent), 1 (sent to server)
+  PRIMARY KEY (snd_file_id, chunk_number)
+);
+
+CREATE TABLE rcv_file_chunks (
+  rcv_file_id INTEGER NOT NULL REFERENCES rcv_files,
+  chunk_number INTEGER NOT NULL,
+  chunk_agent_msg_id INTEGER NOT NULL,
+  chunk_stored INTEGER NOT NULL DEFAULT 0, -- 0 (received), 1 (appended to file)
+  PRIMARY KEY (rcv_file_id, chunk_number)
+);
+
 CREATE TABLE connections ( -- all SMP agent connections
   connection_id INTEGER PRIMARY KEY,
   agent_conn_id BLOB NOT NULL UNIQUE,
@@ -139,6 +184,7 @@ CREATE TABLE connections ( -- all SMP agent connections
   conn_type TEXT NOT NULL, -- contact, member, member_direct
   contact_id INTEGER REFERENCES contacts ON DELETE RESTRICT,
   group_member_id INTEGER REFERENCES group_members ON DELETE RESTRICT,
+  rcv_file_id INTEGER REFERENCES rcv_files ON DELETE RESTRICT,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   user_id INTEGER NOT NULL REFERENCES users
 );

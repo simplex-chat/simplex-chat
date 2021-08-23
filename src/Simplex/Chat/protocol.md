@@ -65,6 +65,7 @@ refMsgHash = 16*16(OCTET) ; SHA256 of agent message body
 ' x.grp.mem.inv 23456,234 x.text:NNN <invitation> '
 ' x.grp.mem.req 23456,123 x.json:NNN {...} '
 ' x.grp.mem.direct.inv 23456,234 x.text:NNN <invitation>  '
+' x.file name,size x.text:NNN <invitation> '
 ```
 
 ### Group protocol

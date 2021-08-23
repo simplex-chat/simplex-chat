@@ -33,6 +33,7 @@ data ChatDirection (p :: AParty) where
   SentDirectMessage :: Contact -> ChatDirection 'Client
   ReceivedGroupMessage :: Connection -> GroupName -> GroupMember -> ChatDirection 'Agent
   SentGroupMessage :: GroupName -> ChatDirection 'Client
+  ReceivedFileChunk :: Connection -> FileTransfer -> ChatDirection 'Agent
 
 deriving instance Eq (ChatDirection p)
 
@@ -42,6 +43,7 @@ fromConnection :: ChatDirection 'Agent -> Connection
 fromConnection = \case
   ReceivedDirectMessage conn _ -> conn
   ReceivedGroupMessage conn _ _ -> conn
+  ReceivedFileChunk conn _ -> conn
 
 data ChatMsgEvent
   = XMsgNew MsgContent

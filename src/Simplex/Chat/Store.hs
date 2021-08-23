@@ -314,7 +314,7 @@ getContact_ db userId localDisplayName = do
           db
           [sql|
             SELECT c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact,
-              c.conn_status, c.conn_type, c.contact_id, c.group_member_id, c.created_at
+              c.conn_status, c.conn_type, c.contact_id, c.group_member_id, c.rcv_file_id, c.created_at
             FROM connections c
             WHERE c.user_id = :user_id AND c.contact_id == :contact_id
             ORDER BY c.connection_id DESC
@@ -344,7 +344,7 @@ getContactConnections st userId displayName =
         db
         [sql|
           SELECT c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact,
-            c.conn_status, c.conn_type, c.contact_id, c.group_member_id, c.created_at
+            c.conn_status, c.conn_type, c.contact_id, c.group_member_id, c.rcv_file_id, c.created_at
           FROM connections c
           JOIN contacts cs ON c.contact_id == cs.contact_id
           WHERE c.user_id = :user_id
@@ -356,22 +356,23 @@ getContactConnections st userId displayName =
     connections [] = Left $ SEContactNotFound displayName
     connections rows = Right $ map toConnection rows
 
-type ConnectionRow = (Int64, ConnId, Int, Maybe Int64, ConnStatus, ConnType, Maybe Int64, Maybe Int64, UTCTime)
+type ConnectionRow = (Int64, ConnId, Int, Maybe Int64, ConnStatus, ConnType, Maybe Int64, Maybe Int64, Maybe Int64, UTCTime)
 
-type MaybeConnectionRow = (Maybe Int64, Maybe ConnId, Maybe Int, Maybe Int64, Maybe ConnStatus, Maybe ConnType, Maybe Int64, Maybe Int64, Maybe UTCTime)
+type MaybeConnectionRow = (Maybe Int64, Maybe ConnId, Maybe Int, Maybe Int64, Maybe ConnStatus, Maybe ConnType, Maybe Int64, Maybe Int64, Maybe Int64, Maybe UTCTime)
 
 toConnection :: ConnectionRow -> Connection
-toConnection (connId, agentConnId, connLevel, viaContact, connStatus, connType, contactId, groupMemberId, createdAt) =
+toConnection (connId, agentConnId, connLevel, viaContact, connStatus, connType, contactId, groupMemberId, fileId, createdAt) =
   let entityId = entityId_ connType
    in Connection {connId, agentConnId, connLevel, viaContact, connStatus, connType, entityId, createdAt}
   where
     entityId_ :: ConnType -> Maybe Int64
     entityId_ ConnContact = contactId
     entityId_ ConnMember = groupMemberId
+    entityId_ ConnFile = fileId
 
 toMaybeConnection :: MaybeConnectionRow -> Maybe Connection
-toMaybeConnection (Just connId, Just agentConnId, Just connLevel, viaContact, Just connStatus, Just connType, contactId, groupMemberId, Just createdAt) =
-  Just $ toConnection (connId, agentConnId, connLevel, viaContact, connStatus, connType, contactId, groupMemberId, createdAt)
+toMaybeConnection (Just connId, Just agentConnId, Just connLevel, viaContact, Just connStatus, Just connType, contactId, groupMemberId, fileId, Just createdAt) =
+  Just $ toConnection (connId, agentConnId, connLevel, viaContact, connStatus, connType, contactId, groupMemberId, fileId, createdAt)
 toMaybeConnection _ = Nothing
 
 getMatchingContacts :: MonadUnliftIO m => SQLiteStore -> UserId -> Contact -> m [Contact]
@@ -507,6 +508,7 @@ getConnectionChatDirection st User {userId, userContactId} agentConnId =
         ReceivedDirectMessage c <$> case entityId of
           Nothing -> pure Nothing
           Just contactId -> Just <$> getContactRec_ db contactId c
+      ConnFile -> throwError $ SEInternal "TODO support files"
   where
     getConnection_ :: DB.Connection -> ExceptT StoreError IO Connection
     getConnection_ db = ExceptT $ do
@@ -515,7 +517,7 @@ getConnectionChatDirection st User {userId, userContactId} agentConnId =
           db
           [sql|
             SELECT connection_id, agent_conn_id, conn_level, via_contact,
-              conn_status, conn_type, contact_id, group_member_id, created_at
+              conn_status, conn_type, contact_id, group_member_id, rcv_file_id, created_at
             FROM connections
             WHERE user_id = ? AND agent_conn_id = ?
           |]
@@ -638,7 +640,7 @@ getGroup_ db User {userId, userContactId} localDisplayName = do
               m.group_member_id, m.member_id, m.member_role, m.member_category, m.member_status,
               m.invited_by, m.local_display_name, m.contact_id, p.display_name, p.full_name,
               c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact,
-              c.conn_status, c.conn_type, c.contact_id, c.group_member_id, c.created_at
+              c.conn_status, c.conn_type, c.contact_id, c.group_member_id, c.rcv_file_id, c.created_at
             FROM group_members m
             JOIN contact_profiles p ON p.contact_profile_id = m.contact_profile_id
             LEFT JOIN connections c ON c.connection_id = (
@@ -994,7 +996,7 @@ getViaGroupMember st User {userId, userContactId} Contact {contactId} =
             m.group_member_id, m.member_id, m.member_role, m.member_category, m.member_status,
             m.invited_by, m.local_display_name, m.contact_id, p.display_name, p.full_name,
             c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact,
-            c.conn_status, c.conn_type, c.contact_id, c.group_member_id, c.created_at
+            c.conn_status, c.conn_type, c.contact_id, c.group_member_id, c.rcv_file_id, c.created_at
           FROM group_members m
           JOIN contacts ct ON ct.contact_id = m.contact_id
           JOIN contact_profiles p ON p.contact_profile_id = m.contact_profile_id
@@ -1024,7 +1026,7 @@ getViaGroupContact st User {userId} GroupMember {groupMemberId} =
           SELECT
             ct.contact_id, ct.local_display_name, p.display_name, p.full_name, ct.via_group,
             c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact,
-            c.conn_status, c.conn_type, c.contact_id, c.group_member_id, c.created_at
+            c.conn_status, c.conn_type, c.contact_id, c.group_member_id, c.rcv_file_id, c.created_at
           FROM contacts ct
           JOIN contact_profiles p ON ct.contact_profile_id = p.contact_profile_id
           JOIN connections c ON c.connection_id = (

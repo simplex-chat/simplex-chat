@@ -70,6 +70,9 @@ data ChatCommand
   | DeleteGroup GroupName
   | ListMembers GroupName
   | SendGroupMessage GroupName ByteString
+  | SendFile ContactName FilePath
+  | SendGroupFile GroupName FilePath
+  | ReceiveFile Text
   | UpdateProfile Profile
   | ShowProfile
   | QuitChat
@@ -247,6 +250,9 @@ processChatCommand user@User {userId, profile} = \case
     let msgEvent = XMsgNew $ MsgContent MTText [] [MsgContentBody {contentType = SimplexContentType XCText, contentData = msg}]
     sendGroupMessage members msgEvent
     setActive $ ActiveG gName
+  SendFile _cName _file -> pure ()
+  SendGroupFile _gName _file -> pure ()
+  ReceiveFile _fName -> pure ()
   UpdateProfile p -> unless (p == profile) $ do
     user' <- withStore $ \st -> updateUserProfile st user p
     asks currentUser >>= atomically . (`writeTVar` user')
@@ -308,6 +314,8 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = unles
       processDirectMessage agentMessage conn maybeContact
     ReceivedGroupMessage conn gName m ->
       processGroupMessage agentMessage conn gName m
+    ReceivedFileChunk conn f ->
+      processFileChunk agentMessage conn f
   where
     sent :: ACommand 'Agent -> Bool
     sent SENT {} = True
@@ -469,6 +477,14 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = unles
           XGrpLeave -> xGrpLeave gName m
           XGrpDel -> xGrpDel gName m
           _ -> messageError $ "unsupported message: " <> T.pack (show chatMsgEvent)
+      _ -> pure ()
+
+    processFileChunk :: ACommand 'Agent -> Connection -> FileTransfer -> m ()
+    processFileChunk agentMsg conn f = case agentMsg of
+      REQ confId connInfo -> pure ()
+      INFO connInfo -> pure ()
+      CON -> pure ()
+      MSG meta msgBody -> pure ()
       _ -> pure ()
 
     notifyMemberConnected :: GroupName -> GroupMember -> m ()
@@ -785,6 +801,9 @@ chatCommandP =
     <|> ("/connect" <|> "/c") $> AddContact
     <|> ("/delete @" <|> "/delete " <|> "/d @" <|> "/d ") *> (DeleteContact <$> displayName)
     <|> A.char '@' *> (SendMessage <$> displayName <*> (A.space *> A.takeByteString))
+    <|> ("/file #" <|> "/f #") *> (SendGroupFile <$> displayName <* A.space <*> filePath)
+    <|> ("/file @" <|> "/f @" <|> "/file " <|> "/f ") *> (SendFile <$> displayName <* A.space <*> filePath)
+    <|> ("/receive " <|> "/rf ") *> (ReceiveFile <$> fileName)
     <|> ("/markdown" <|> "/m") $> MarkdownHelp
     <|> ("/profile " <|> "/p ") *> (UpdateProfile <$> userProfile)
     <|> ("/profile" <|> "/p") $> ShowProfile
@@ -803,6 +822,8 @@ chatCommandP =
     fullNameP name = do
       n <- (A.space *> A.takeByteString) <|> pure ""
       pure $ if B.null n then name else safeDecodeUtf8 n
+    filePath = T.unpack . safeDecodeUtf8 <$> A.takeByteString
+    fileName = safeDecodeUtf8 <$> A.takeTill (== ' ')
     memberRole =
       (" owner" $> GROwner)
         <|> (" admin" $> GRAdmin)

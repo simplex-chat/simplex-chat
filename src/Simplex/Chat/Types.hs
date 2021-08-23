@@ -299,6 +299,12 @@ serializeMemberStatus = \case
   GSMemComplete -> "complete"
   GSMemCreator -> "creator"
 
+data FileTransfer = FileTransfer
+  { fileId :: Int64,
+    agentConnId :: ConnId
+  }
+  deriving (Eq, Show)
+
 data Connection = Connection
   { connId :: Int64,
     agentConnId :: ConnId,
@@ -306,7 +312,7 @@ data Connection = Connection
     viaContact :: Maybe Int64,
     connType :: ConnType,
     connStatus :: ConnStatus,
-    entityId :: Maybe Int64, -- contact or group member ID
+    entityId :: Maybe Int64, -- contact, group member or file ID
     createdAt :: UTCTime
   }
   deriving (Eq, Show)
@@ -353,7 +359,7 @@ serializeConnStatus = \case
   ConnReady -> "ready"
   ConnDeleted -> "deleted"
 
-data ConnType = ConnContact | ConnMember
+data ConnType = ConnContact | ConnMember | ConnFile
   deriving (Eq, Show)
 
 instance FromField ConnType where fromField = fromTextField_ connTypeT
@@ -364,12 +370,14 @@ connTypeT :: Text -> Maybe ConnType
 connTypeT = \case
   "contact" -> Just ConnContact
   "member" -> Just ConnMember
+  "file" -> Just ConnFile
   _ -> Nothing
 
 serializeConnType :: ConnType -> Text
 serializeConnType = \case
   ConnContact -> "contact"
   ConnMember -> "member"
+  ConnFile -> "file"
 
 data NewConnection = NewConnection
   { agentConnId :: ByteString,
