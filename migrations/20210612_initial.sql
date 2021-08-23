@@ -134,14 +134,11 @@ CREATE TABLE files (
   file_id INTEGER PRIMARY KEY,
   contact_id INTEGER REFERENCES contacts ON DELETE RESTRICT,
   group_id INTEGER REFERENCES groups ON DELETE RESTRICT,
-  local_file_name TEXT NOT NULL,
-  lfn_base TEXT NOT NULL,
-  lfn_suffix INTEGER NOT NULL DEFAULT 0,
-  file_size INTEGER NOT NULL,
+  file_name TEXT NOT NULL,
   file_path TEXT,
+  file_size INTEGER NOT NULL,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
-  user_id INTEGER NOT NULL REFERENCES users,
-  UNIQUE (user_id, local_file_name)
+  user_id INTEGER NOT NULL REFERENCES users
 );
 
 CREATE TABLE snd_files (
@@ -181,7 +178,7 @@ CREATE TABLE connections ( -- all SMP agent connections
   conn_level INTEGER NOT NULL DEFAULT 0,
   via_contact INTEGER REFERENCES contacts (contact_id),
   conn_status TEXT NOT NULL,
-  conn_type TEXT NOT NULL, -- contact, member, member_direct
+  conn_type TEXT NOT NULL, -- contact, member, rcv_file, snd_file
   contact_id INTEGER REFERENCES contacts ON DELETE RESTRICT,
   group_member_id INTEGER REFERENCES group_members ON DELETE RESTRICT,
   rcv_file_id INTEGER REFERENCES rcv_files ON DELETE RESTRICT,

@@ -305,6 +305,32 @@ data FileTransfer = FileTransfer
   }
   deriving (Eq, Show)
 
+data FileInvitation = FileInvitation
+  { fileName :: String,
+    fileSize :: Integer,
+    fileQInfo :: SMPQueueInfo
+  }
+  deriving (Eq, Show)
+
+data FileStatus = FSNew | FSAccepted | FSCompleted
+
+instance FromField FileStatus where fromField = fromTextField_ fileStatusT
+
+instance ToField FileStatus where toField = toField . serializeFileStatus
+
+fileStatusT :: Text -> Maybe FileStatus
+fileStatusT = \case
+  "new" -> Just FSNew
+  "accepted" -> Just FSAccepted
+  "completed" -> Just FSCompleted
+  _ -> Nothing
+
+serializeFileStatus :: FileStatus -> Text
+serializeFileStatus = \case
+  FSNew -> "new"
+  FSAccepted -> "accepted"
+  FSCompleted -> "completed"
+
 data Connection = Connection
   { connId :: Int64,
     agentConnId :: ConnId,
@@ -359,7 +385,7 @@ serializeConnStatus = \case
   ConnReady -> "ready"
   ConnDeleted -> "deleted"
 
-data ConnType = ConnContact | ConnMember | ConnFile
+data ConnType = ConnContact | ConnMember | ConnSndFile | ConnRcvFile
   deriving (Eq, Show)
 
 instance FromField ConnType where fromField = fromTextField_ connTypeT
@@ -370,14 +396,16 @@ connTypeT :: Text -> Maybe ConnType
 connTypeT = \case
   "contact" -> Just ConnContact
   "member" -> Just ConnMember
-  "file" -> Just ConnFile
+  "snd_file" -> Just ConnSndFile
+  "rcv_file" -> Just ConnRcvFile
   _ -> Nothing
 
 serializeConnType :: ConnType -> Text
 serializeConnType = \case
   ConnContact -> "contact"
   ConnMember -> "member"
-  ConnFile -> "file"
+  ConnSndFile -> "snd_file"
+  ConnRcvFile -> "rcv_file"
 
 data NewConnection = NewConnection
   { agentConnId :: ByteString,

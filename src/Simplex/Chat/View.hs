@@ -24,6 +24,7 @@ module Simplex.Chat.View
     showReceivedGroupMessage,
     showSentMessage,
     showSentGroupMessage,
+    showSentFileInvitation,
     showGroupCreated,
     showGroupDeletedUser,
     showGroupDeleted,
@@ -50,6 +51,7 @@ import Control.Monad.IO.Unlift
 import Control.Monad.Reader
 import Data.ByteString.Char8 (ByteString)
 import Data.Composition ((.:), (.:.))
+import Data.Int (Int64)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (DiffTime, UTCTime)
@@ -123,6 +125,9 @@ showSentGroupMessage = showSentMessage_ . ttyToGroup
 
 showSentMessage_ :: ChatReader m => StyledString -> ByteString -> m ()
 showSentMessage_ to msg = printToView =<< liftIO (sentMessage to msg)
+
+showSentFileInvitation :: ChatReader m => ContactName -> Int64 -> m ()
+showSentFileInvitation = printToView .: sentFileInvitation
 
 showGroupCreated :: ChatReader m => Group -> m ()
 showGroupCreated = printToView . groupCreated
@@ -382,6 +387,9 @@ prependFirst s (s' : ss) = (s <> s') : ss
 msgPlain :: Text -> [StyledString]
 msgPlain = map styleMarkdownText . T.lines
 
+sentFileInvitation :: ContactName -> Int64 -> [StyledString]
+sentFileInvitation cName fileId = ["file " <> plain (show fileId) <> " sent to " <> ttyContact cName]
+
 chatError :: ChatError -> [StyledString]
 chatError = \case
   ChatError err -> case err of
@@ -394,6 +402,7 @@ chatError = \case
     CEGroupMemberUserRemoved -> ["you are no longer the member of the group"]
     CEGroupMemberNotFound c -> ["contact " <> ttyContact c <> " is not a group member"]
     CEGroupInternal s -> ["chat group bug: " <> plain s]
+    CEFileNotFound f -> ["file not found: " <> plain f]
   -- e -> ["chat error: " <> plain (show e)]
   ChatErrorStore err -> case err of
     SEDuplicateName -> ["this display name is already used by user, contact or group"]

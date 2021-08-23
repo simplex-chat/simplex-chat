@@ -51,6 +51,7 @@ data ChatErrorType
   | CEGroupMemberUserRemoved
   | CEGroupMemberNotFound ContactName
   | CEGroupInternal String
+  | CEFileNotFound String
   deriving (Show, Exception)
 
 type ChatMonad m = (MonadUnliftIO m, MonadReader ChatController m, MonadError ChatError m)

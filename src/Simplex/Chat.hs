@@ -48,9 +48,11 @@ import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Parsers (parseAll)
 import Simplex.Messaging.Util (raceAny_)
 import System.Exit (exitFailure, exitSuccess)
+import System.FilePath (takeFileName)
 import System.IO (hFlush, stdout)
 import Text.Read (readMaybe)
 import UnliftIO.Async (race_)
+import UnliftIO.Directory (doesFileExist, getFileSize)
 import qualified UnliftIO.Exception as E
 import UnliftIO.STM
 
@@ -250,7 +252,16 @@ processChatCommand user@User {userId, profile} = \case
     let msgEvent = XMsgNew $ MsgContent MTText [] [MsgContentBody {contentType = SimplexContentType XCText, contentData = msg}]
     sendGroupMessage members msgEvent
     setActive $ ActiveG gName
-  SendFile _cName _file -> pure ()
+  SendFile cName f -> do
+    exists <- doesFileExist f
+    unless exists . chatError $ CEFileNotFound f
+    contact@Contact {contactId} <- withStore $ \st -> getContact st userId cName
+    (agentConnId, fileQInfo) <- withAgent createConnection
+    fileSize <- getFileSize f
+    let fileInv = FileInvitation {fileName = takeFileName f, fileSize, fileQInfo}
+    fileId <- withStore $ \st -> createFileTransfer st userId contactId f fileInv agentConnId
+    sendDirectMessage (contactConnId contact) $ XFile fileInv
+    showSentFileInvitation cName fileId
   SendGroupFile _gName _file -> pure ()
   ReceiveFile _fName -> pure ()
   UpdateProfile p -> unless (p == profile) $ do

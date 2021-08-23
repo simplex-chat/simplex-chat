@@ -57,6 +57,7 @@ module Simplex.Chat.Store
     matchReceivedProbeHash,
     matchSentProbe,
     mergeContactRecords,
+    createFileTransfer,
   )
 where
 
@@ -361,18 +362,19 @@ type ConnectionRow = (Int64, ConnId, Int, Maybe Int64, ConnStatus, ConnType, May
 type MaybeConnectionRow = (Maybe Int64, Maybe ConnId, Maybe Int, Maybe Int64, Maybe ConnStatus, Maybe ConnType, Maybe Int64, Maybe Int64, Maybe Int64, Maybe UTCTime)
 
 toConnection :: ConnectionRow -> Connection
-toConnection (connId, agentConnId, connLevel, viaContact, connStatus, connType, contactId, groupMemberId, fileId, createdAt) =
+toConnection (connId, agentConnId, connLevel, viaContact, connStatus, connType, contactId, groupMemberId, rcvFileId, createdAt) =
   let entityId = entityId_ connType
    in Connection {connId, agentConnId, connLevel, viaContact, connStatus, connType, entityId, createdAt}
   where
     entityId_ :: ConnType -> Maybe Int64
     entityId_ ConnContact = contactId
     entityId_ ConnMember = groupMemberId
-    entityId_ ConnFile = fileId
+    entityId_ ConnRcvFile = rcvFileId
+    entityId_ ConnSndFile = Nothing
 
 toMaybeConnection :: MaybeConnectionRow -> Maybe Connection
-toMaybeConnection (Just connId, Just agentConnId, Just connLevel, viaContact, Just connStatus, Just connType, contactId, groupMemberId, fileId, Just createdAt) =
-  Just $ toConnection (connId, agentConnId, connLevel, viaContact, connStatus, connType, contactId, groupMemberId, fileId, createdAt)
+toMaybeConnection (Just connId, Just agentConnId, Just connLevel, viaContact, Just connStatus, Just connType, contactId, groupMemberId, rcvFileId, Just createdAt) =
+  Just $ toConnection (connId, agentConnId, connLevel, viaContact, connStatus, connType, contactId, groupMemberId, rcvFileId, createdAt)
 toMaybeConnection _ = Nothing
 
 getMatchingContacts :: MonadUnliftIO m => SQLiteStore -> UserId -> Contact -> m [Contact]
@@ -508,7 +510,8 @@ getConnectionChatDirection st User {userId, userContactId} agentConnId =
         ReceivedDirectMessage c <$> case entityId of
           Nothing -> pure Nothing
           Just contactId -> Just <$> getContactRec_ db contactId c
-      ConnFile -> throwError $ SEInternal "TODO support files"
+      ConnRcvFile -> throwError $ SEInternal "TODO support files"
+      ConnSndFile -> throwError $ SEInternal "TODO support files"
   where
     getConnection_ :: DB.Connection -> ExceptT StoreError IO Connection
     getConnection_ db = ExceptT $ do
@@ -1046,6 +1049,30 @@ getViaGroupContact st User {userId} GroupMember {groupMemberId} =
           activeConn = toConnection connRow
        in Just Contact {contactId, localDisplayName, profile, activeConn, viaGroup}
     toContact _ = Nothing
+
+createFileTransfer :: MonadUnliftIO m => SQLiteStore -> UserId -> Int64 -> FilePath -> FileInvitation -> ConnId -> m Int64
+createFileTransfer st userId contactId filePath FileInvitation {fileName, fileSize, fileQInfo} agentConnId =
+  liftIO . withTransaction st $ \db -> do
+    DB.execute db "INSERT INTO files (user_id, contact_id, file_name, file_path, file_size) VALUES (?, ?, ?, ?, ?)" (userId, contactId, fileName, filePath, fileSize)
+    fileId <- insertedRowId db
+    Connection {connId} <- createSndFileConnection_ db userId fileId agentConnId
+    DB.execute db "INSERT INTO (file_id, file_status, connection_id) VALUES (?, ?, ?)" (fileId, FSNew, connId)
+    pure fileId
+
+createSndFileConnection_ :: DB.Connection -> UserId -> Int64 -> ConnId -> IO Connection
+createSndFileConnection_ db userId fileId agentConnId = do
+  createdAt <- getCurrentTime
+  let connType = ConnSndFile
+      connStatus = ConnNew
+  DB.execute
+    db
+    [sql|
+      INSERT INTO connections
+        (user_id, agent_conn_id, conn_status, conn_type, file_id, created_at) VALUES (?,?,?,?,?,?);
+    |]
+    (userId, agentConnId, connStatus, connType, fileId, createdAt)
+  connId <- insertedRowId db
+  pure Connection {connId, agentConnId, connType, entityId = Just fileId, viaContact = Nothing, connLevel = 0, connStatus, createdAt}
 
 -- | Saves unique local display name based on passed displayName, suffixed with _N if required.
 -- This function should be called inside transaction.

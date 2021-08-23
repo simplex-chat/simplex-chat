@@ -23,7 +23,10 @@ import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Int (Int64)
 import Data.List (find)
 import Data.Text (Text)
+import qualified Data.Text as T
+import Data.Text.Encoding (encodeUtf8)
 import Simplex.Chat.Types
+import Simplex.Chat.Util (safeDecodeUtf8)
 import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Parsers (parseAll)
 import Simplex.Messaging.Util (bshow)
@@ -47,6 +50,7 @@ fromConnection = \case
 
 data ChatMsgEvent
   = XMsgNew MsgContent
+  | XFile FileInvitation
   | XInfo Profile
   | XGrpInv GroupInvitation
   | XGrpAcpt MemberId
@@ -102,6 +106,11 @@ toChatMessage RawChatMessage {chatMsgId, chatMsgEvent, chatMsgParams, chatMsgBod
       t <- toMsgType mt
       files <- mapM (toContentInfo <=< parseAll contentInfoP) rawFiles
       chatMsg . XMsgNew $ MsgContent {messageType = t, files, content = body}
+    ("x.file", [name, size, qInfo]) -> do
+      let fileName = T.unpack $ safeDecodeUtf8 name
+      fileSize <- parseAll A.decimal size
+      fileQInfo <- parseAll smpQueueInfoP qInfo
+      chatMsg . XFile $ FileInvitation {fileName, fileSize, fileQInfo}
     ("x.info", []) -> do
       profile <- getJSON body
       chatMsg $ XInfo profile
@@ -176,6 +185,8 @@ rawChatMessage ChatMessage {chatMsgId, chatMsgEvent, chatDAG} =
     XMsgNew MsgContent {messageType = t, files, content} ->
       let rawFiles = map (serializeContentInfo . rawContentInfo) files
        in rawMsg "x.msg.new" (rawMsgType t : rawFiles) content
+    XFile FileInvitation {fileName, fileSize, fileQInfo} ->
+      rawMsg "x.file" [encodeUtf8 $ T.pack fileName, bshow fileSize, serializeSmpQueueInfo fileQInfo] []
     XInfo profile ->
       rawMsg "x.info" [] [jsonBody profile]
     XGrpInv (GroupInvitation (fromMemId, fromRole) (memId, role) qInfo groupProfile) ->
