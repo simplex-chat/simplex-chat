@@ -7,6 +7,7 @@ module Simplex.Chat.Styled
     styleMarkdown,
     styleMarkdownText,
     sLength,
+    sShow,
   )
 where
 
@@ -53,6 +54,9 @@ instance StyledFormat ByteString where
 instance StyledFormat Text where
   styled f = styled f . T.unpack
   plain = Styled [] . T.unpack
+
+sShow :: Show a => a -> StyledString
+sShow = plain . show
 
 sgr :: Format -> [SGR]
 sgr = \case

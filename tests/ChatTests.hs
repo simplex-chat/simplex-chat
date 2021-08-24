@@ -359,7 +359,7 @@ testUpdateProfile =
       createGroup3 "team" alice bob cath
       alice ##> "/p"
       alice <## "user profile: alice (Alice)"
-      alice <## "use /p <display name>[ <full name>] to change it"
+      alice <## "use /p <display name> [<full name>] to change it"
       alice <## "(the updated profile will be sent to all your contacts)"
       alice ##> "/p alice"
       concurrentlyN_

@@ -259,9 +259,9 @@ processChatCommand user@User {userId, profile} = \case
     (agentConnId, fileQInfo) <- withAgent createConnection
     fileSize <- getFileSize f
     let fileInv = FileInvitation {fileName = takeFileName f, fileSize, fileQInfo}
-    fileId <- withStore $ \st -> createFileTransfer st userId contactId f fileInv agentConnId
+    f <- withStore $ \st -> createSndFileTransfer st userId contactId f fileInv agentConnId
     sendDirectMessage (contactConnId contact) $ XFile fileInv
-    showSentFileInvitation cName fileId
+    showSentFileInvitation cName f
   SendGroupFile _gName _file -> pure ()
   ReceiveFile _fName -> pure ()
   UpdateProfile p -> unless (p == profile) $ do
@@ -363,6 +363,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = unles
           ChatMessage {chatMsgEvent} <- liftEither $ parseChatMessage msgBody
           case chatMsgEvent of
             XMsgNew (MsgContent MTText [] body) -> newTextMessage c meta $ find (isSimplexContentType XCText) body
+            XFile fInv -> processFileInvitation ct fInv
             XInfo p -> xInfo ct p
             XGrpInv gInv -> processGroupInvitation ct gInv
             XInfoProbe probe -> xInfoProbe ct probe
@@ -490,7 +491,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = unles
           _ -> messageError $ "unsupported message: " <> T.pack (show chatMsgEvent)
       _ -> pure ()
 
-    processFileChunk :: ACommand 'Agent -> Connection -> FileTransfer -> m ()
+    processFileChunk :: ACommand 'Agent -> Connection -> RcvFileTransfer -> m ()
     processFileChunk agentMsg conn f = case agentMsg of
       REQ confId connInfo -> pure ()
       INFO connInfo -> pure ()
@@ -540,6 +541,11 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = unles
         showToast ("#" <> gName <> " " <> c <> "> ") text
         setActive $ ActiveG gName
       _ -> messageError "x.msg.new: no expected message body"
+
+    processFileInvitation :: Contact -> FileInvitation -> m ()
+    processFileInvitation Contact {contactId, localDisplayName = c} fInv = do
+      f <- withStore $ \st -> createRcvFileTransfer st userId contactId fInv
+      showReceivedFileInvitation c f
 
     processGroupInvitation :: Contact -> GroupInvitation -> m ()
     processGroupInvitation ct@Contact {localDisplayName} inv@(GroupInvitation (fromMemId, fromRole) (memId, memRole) _ _) = do
@@ -814,7 +820,7 @@ chatCommandP =
     <|> A.char '@' *> (SendMessage <$> displayName <*> (A.space *> A.takeByteString))
     <|> ("/file #" <|> "/f #") *> (SendGroupFile <$> displayName <* A.space <*> filePath)
     <|> ("/file @" <|> "/f @" <|> "/file " <|> "/f ") *> (SendFile <$> displayName <* A.space <*> filePath)
-    <|> ("/receive " <|> "/rf ") *> (ReceiveFile <$> fileName)
+    <|> ("/receive " <|> "/fr ") *> (ReceiveFile <$> fileName)
     <|> ("/markdown" <|> "/m") $> MarkdownHelp
     <|> ("/profile " <|> "/p ") *> (UpdateProfile <$> userProfile)
     <|> ("/profile" <|> "/p") $> ShowProfile

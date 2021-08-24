@@ -36,7 +36,7 @@ data ChatDirection (p :: AParty) where
   SentDirectMessage :: Contact -> ChatDirection 'Client
   ReceivedGroupMessage :: Connection -> GroupName -> GroupMember -> ChatDirection 'Agent
   SentGroupMessage :: GroupName -> ChatDirection 'Client
-  ReceivedFileChunk :: Connection -> FileTransfer -> ChatDirection 'Agent
+  ReceivedFileChunk :: Connection -> RcvFileTransfer -> ChatDirection 'Agent
 
 deriving instance Eq (ChatDirection p)
 

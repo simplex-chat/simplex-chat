@@ -299,9 +299,13 @@ serializeMemberStatus = \case
   GSMemComplete -> "complete"
   GSMemCreator -> "creator"
 
-data FileTransfer = FileTransfer
+data SndFileTransfer = SndFileTransfer
   { fileId :: Int64,
-    agentConnId :: ConnId
+    fileName :: String,
+    filePath :: String,
+    fileSize :: Integer,
+    agentConnId :: ConnId,
+    fileStatus :: FileStatus
   }
   deriving (Eq, Show)
 
@@ -312,7 +316,15 @@ data FileInvitation = FileInvitation
   }
   deriving (Eq, Show)
 
-data FileStatus = FSNew | FSAccepted | FSCompleted
+data RcvFileTransfer = RcvFileTransfer
+  { fileId :: Int64,
+    fileInvitation :: FileInvitation,
+    agentConnId :: Maybe ConnId,
+    fileStatus :: FileStatus
+  }
+  deriving (Eq, Show)
+
+data FileStatus = FSNew | FSAccepted | FSCompleted deriving (Eq, Show)
 
 instance FromField FileStatus where fromField = fromTextField_ fileStatusT
 

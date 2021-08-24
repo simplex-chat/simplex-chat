@@ -25,6 +25,7 @@ module Simplex.Chat.View
     showSentMessage,
     showSentGroupMessage,
     showSentFileInvitation,
+    showReceivedFileInvitation,
     showGroupCreated,
     showGroupDeletedUser,
     showGroupDeleted,
@@ -51,12 +52,12 @@ import Control.Monad.IO.Unlift
 import Control.Monad.Reader
 import Data.ByteString.Char8 (ByteString)
 import Data.Composition ((.:), (.:.))
-import Data.Int (Int64)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (DiffTime, UTCTime)
 import Data.Time.Format (defaultTimeLocale, formatTime)
 import Data.Time.LocalTime (TimeZone, ZonedTime, getCurrentTimeZone, getZonedTime, localDay, localTimeOfDay, timeOfDayToTime, utcToLocalTime, zonedTimeToLocalTime)
+import Numeric (showFFloat)
 import Simplex.Chat.Controller
 import Simplex.Chat.Markdown
 import Simplex.Chat.Store (StoreError (..))
@@ -126,8 +127,11 @@ showSentGroupMessage = showSentMessage_ . ttyToGroup
 showSentMessage_ :: ChatReader m => StyledString -> ByteString -> m ()
 showSentMessage_ to msg = printToView =<< liftIO (sentMessage to msg)
 
-showSentFileInvitation :: ChatReader m => ContactName -> Int64 -> m ()
+showSentFileInvitation :: ChatReader m => ContactName -> SndFileTransfer -> m ()
 showSentFileInvitation = printToView .: sentFileInvitation
+
+showReceivedFileInvitation :: ChatReader m => ContactName -> RcvFileTransfer -> m ()
+showReceivedFileInvitation = printToView .: receivedFileInvitation
 
 showGroupCreated :: ChatReader m => Group -> m ()
 showGroupCreated = printToView . groupCreated
@@ -216,7 +220,7 @@ contactSubscribed :: ContactName -> [StyledString]
 contactSubscribed c = [ttyContact c <> ": contact is active"]
 
 contactSubError :: ContactName -> ChatError -> [StyledString]
-contactSubError c e = [ttyContact c <> ": contact error " <> plain (show e)]
+contactSubError c e = [ttyContact c <> ": contact error " <> sShow e]
 
 groupSubscribed :: GroupName -> [StyledString]
 groupSubscribed g = [ttyGroup g <> ": group is active"]
@@ -228,7 +232,7 @@ groupRemoved :: GroupName -> [StyledString]
 groupRemoved g = [ttyGroup g <> ": you are no longer a member or group deleted"]
 
 memberSubError :: GroupName -> ContactName -> ChatError -> [StyledString]
-memberSubError g c e = [ttyGroup g <> " member " <> ttyContact c <> " error: " <> plain (show e)]
+memberSubError g c e = [ttyGroup g <> " member " <> ttyContact c <> " error: " <> sShow e]
 
 groupCreated :: Group -> [StyledString]
 groupCreated g@Group {localDisplayName} =
@@ -322,7 +326,7 @@ contactsMerged _to@Contact {localDisplayName = c1} _from@Contact {localDisplayNa
 userProfile :: Profile -> [StyledString]
 userProfile Profile {displayName, fullName} =
   [ "user profile: " <> ttyFullName displayName fullName,
-    "use " <> highlight' "/p <display name>[ <full name>]" <> " to change it",
+    "use " <> highlight' "/p <display name> [<full name>]" <> " to change it",
     "(the updated profile will be sent to all your contacts)"
   ]
 
@@ -387,8 +391,30 @@ prependFirst s (s' : ss) = (s <> s') : ss
 msgPlain :: Text -> [StyledString]
 msgPlain = map styleMarkdownText . T.lines
 
-sentFileInvitation :: ContactName -> Int64 -> [StyledString]
-sentFileInvitation cName fileId = ["file " <> plain (show fileId) <> " sent to " <> ttyContact cName]
+sentFileInvitation :: ContactName -> SndFileTransfer -> [StyledString]
+sentFileInvitation cName SndFileTransfer {fileId, fileName} =
+  [ "sending file " <> sShow fileName <> " to " <> ttyContact cName <> " ...",
+    "use " <> highlight ("/fc " <> show fileId) <> " to cancel sending"
+  ]
+
+receivedFileInvitation :: ContactName -> RcvFileTransfer -> [StyledString]
+receivedFileInvitation c RcvFileTransfer {fileId, fileInvitation = FileInvitation {fileName, fileSize}} =
+  [ ttyContact c <> " wants to send you the file " <> plain fileName <> " (" <> plain (humanReadableSize fileSize) <> ")",
+    "use " <> highlight ("/fr " <> show fileId <> " [<dir>/ | <path>]") <> " to receive it"
+  ]
+
+humanReadableSize :: Integer -> String
+humanReadableSize size
+  | size < kB = byteSize
+  | size < mB = hrSize kB "KiB"
+  | size < gB = hrSize mB "MiB"
+  | otherwise = hrSize gB "GiB"
+  where
+    byteSize = show size <> " bytes"
+    hrSize sB name = unwords [showFFloat (Just 1) (fromIntegral size / (fromIntegral sB :: Double)) "", name, "/", byteSize]
+    kB = 1024
+    mB = kB * 1024
+    gB = mB * 1024
 
 chatError :: ChatError -> [StyledString]
 chatError = \case
@@ -403,16 +429,16 @@ chatError = \case
     CEGroupMemberNotFound c -> ["contact " <> ttyContact c <> " is not a group member"]
     CEGroupInternal s -> ["chat group bug: " <> plain s]
     CEFileNotFound f -> ["file not found: " <> plain f]
-  -- e -> ["chat error: " <> plain (show e)]
+  -- e -> ["chat error: " <> sShow e]
   ChatErrorStore err -> case err of
     SEDuplicateName -> ["this display name is already used by user, contact or group"]
     SEContactNotFound c -> ["no contact " <> ttyContact c]
     SEContactNotReady c -> ["contact " <> ttyContact c <> " is not active yet"]
     SEGroupNotFound g -> ["no group " <> ttyGroup g]
     SEGroupAlreadyJoined -> ["you already joined this group"]
-    e -> ["chat db error: " <> plain (show e)]
-  ChatErrorAgent e -> ["smp agent error: " <> plain (show e)]
-  ChatErrorMessage e -> ["chat message error: " <> plain (show e)]
+    e -> ["chat db error: " <> sShow e]
+  ChatErrorAgent e -> ["smp agent error: " <> sShow e]
+  ChatErrorMessage e -> ["chat message error: " <> sShow e]
 
 printToView :: (MonadUnliftIO m, MonadReader ChatController m) => [StyledString] -> m ()
 printToView s = asks chatTerminal >>= liftIO . (`printToTerminal` s)
