@@ -36,7 +36,8 @@ data ChatDirection (p :: AParty) where
   SentDirectMessage :: Contact -> ChatDirection 'Client
   ReceivedGroupMessage :: Connection -> GroupName -> GroupMember -> ChatDirection 'Agent
   SentGroupMessage :: GroupName -> ChatDirection 'Client
-  ReceivedFileChunk :: Connection -> RcvFileTransfer -> ChatDirection 'Agent
+  RcvFileConnection :: Connection -> RcvFileTransfer -> ChatDirection 'Agent
+  SndFileConnection :: Connection -> SndFileTransfer -> ChatDirection 'Agent
 
 deriving instance Eq (ChatDirection p)
 
@@ -46,11 +47,13 @@ fromConnection :: ChatDirection 'Agent -> Connection
 fromConnection = \case
   ReceivedDirectMessage conn _ -> conn
   ReceivedGroupMessage conn _ _ -> conn
-  ReceivedFileChunk conn _ -> conn
+  RcvFileConnection conn _ -> conn
+  SndFileConnection conn _ -> conn
 
 data ChatMsgEvent
   = XMsgNew MsgContent
   | XFile FileInvitation
+  | XFileAcpt String
   | XInfo Profile
   | XGrpInv GroupInvitation
   | XGrpAcpt MemberId
@@ -111,6 +114,8 @@ toChatMessage RawChatMessage {chatMsgId, chatMsgEvent, chatMsgParams, chatMsgBod
       fileSize <- parseAll A.decimal size
       fileQInfo <- parseAll smpQueueInfoP qInfo
       chatMsg . XFile $ FileInvitation {fileName, fileSize, fileQInfo}
+    ("x.file.acpt", [name]) ->
+      chatMsg . XFileAcpt . T.unpack $ safeDecodeUtf8 name
     ("x.info", []) -> do
       profile <- getJSON body
       chatMsg $ XInfo profile
@@ -187,6 +192,8 @@ rawChatMessage ChatMessage {chatMsgId, chatMsgEvent, chatDAG} =
        in rawMsg "x.msg.new" (rawMsgType t : rawFiles) content
     XFile FileInvitation {fileName, fileSize, fileQInfo} ->
       rawMsg "x.file" [encodeUtf8 $ T.pack fileName, bshow fileSize, serializeSmpQueueInfo fileQInfo] []
+    XFileAcpt fileName ->
+      rawMsg "x.file.acpt" [encodeUtf8 $ T.pack fileName] []
     XInfo profile ->
       rawMsg "x.info" [] [jsonBody profile]
     XGrpInv (GroupInvitation (fromMemId, fromRole) (memId, role) qInfo groupProfile) ->

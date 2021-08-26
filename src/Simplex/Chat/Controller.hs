@@ -52,6 +52,9 @@ data ChatErrorType
   | CEGroupMemberNotFound ContactName
   | CEGroupInternal String
   | CEFileNotFound String
+  | CEFileAlreadyReceiving String
+  | CEFileAlreadyExists FilePath
+  | CEFileWrite FilePath SomeException
   deriving (Show, Exception)
 
 type ChatMonad m = (MonadUnliftIO m, MonadReader ChatController m, MonadError ChatError m)

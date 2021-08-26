@@ -26,6 +26,7 @@ module Simplex.Chat.View
     showSentGroupMessage,
     showSentFileInvitation,
     showReceivedFileInvitation,
+    showRcvFileAccepted,
     showGroupCreated,
     showGroupDeletedUser,
     showGroupDeleted,
@@ -52,6 +53,7 @@ import Control.Monad.IO.Unlift
 import Control.Monad.Reader
 import Data.ByteString.Char8 (ByteString)
 import Data.Composition ((.:), (.:.))
+import Data.Int (Int64)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (DiffTime, UTCTime)
@@ -132,6 +134,9 @@ showSentFileInvitation = printToView .: sentFileInvitation
 
 showReceivedFileInvitation :: ChatReader m => ContactName -> RcvFileTransfer -> m ()
 showReceivedFileInvitation = printToView .: receivedFileInvitation
+
+showRcvFileAccepted :: ChatReader m => Int64 -> FilePath -> m ()
+showRcvFileAccepted = printToView .: rcvFileAccepted
 
 showGroupCreated :: ChatReader m => Group -> m ()
 showGroupCreated = printToView . groupCreated
@@ -403,6 +408,9 @@ receivedFileInvitation c RcvFileTransfer {fileId, fileInvitation = FileInvitatio
     "use " <> highlight ("/fr " <> show fileId <> " [<dir>/ | <path>]") <> " to receive it"
   ]
 
+rcvFileAccepted :: Int64 -> FilePath -> [StyledString]
+rcvFileAccepted fileId filePath = ["saving file " <> sShow fileId <> " to " <> plain filePath]
+
 humanReadableSize :: Integer -> String
 humanReadableSize size
   | size < kB = byteSize
@@ -429,6 +437,9 @@ chatError = \case
     CEGroupMemberNotFound c -> ["contact " <> ttyContact c <> " is not a group member"]
     CEGroupInternal s -> ["chat group bug: " <> plain s]
     CEFileNotFound f -> ["file not found: " <> plain f]
+    CEFileAlreadyReceiving f -> ["file is already accepted: " <> plain f]
+    CEFileAlreadyExists f -> ["file already exists: " <> plain f]
+    CEFileWrite f e -> ["cannot write file " <> plain f, sShow e]
   -- e -> ["chat error: " <> sShow e]
   ChatErrorStore err -> case err of
     SEDuplicateName -> ["this display name is already used by user, contact or group"]
@@ -436,6 +447,7 @@ chatError = \case
     SEContactNotReady c -> ["contact " <> ttyContact c <> " is not active yet"]
     SEGroupNotFound g -> ["no group " <> ttyGroup g]
     SEGroupAlreadyJoined -> ["you already joined this group"]
+    SERcvFileNotFound fileId -> ["file " <> sShow fileId <> " not found"]
     e -> ["chat db error: " <> sShow e]
   ChatErrorAgent e -> ["smp agent error: " <> sShow e]
   ChatErrorMessage e -> ["chat message error: " <> sShow e]

@@ -145,6 +145,7 @@ serverCfg =
   ServerConfig
     { transports = [(serverPort, transport @TCP)],
       tbqSize = 1,
+      msgQueueQuota = 4,
       queueIdBytes = 12,
       msgIdBytes = 6,
       storeLog = Nothing,

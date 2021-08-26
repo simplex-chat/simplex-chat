@@ -319,12 +319,19 @@ data FileInvitation = FileInvitation
 data RcvFileTransfer = RcvFileTransfer
   { fileId :: Int64,
     fileInvitation :: FileInvitation,
-    agentConnId :: Maybe ConnId,
-    fileStatus :: FileStatus
+    fileProgress :: RcvFileProgress
   }
   deriving (Eq, Show)
 
-data FileStatus = FSNew | FSAccepted | FSCompleted deriving (Eq, Show)
+data RcvFileProgress
+  = FPNew
+  | RcvFileProgress
+      { filePath :: FilePath,
+        agentConnId :: ConnId
+      }
+  deriving (Eq, Show)
+
+data FileStatus = FSNew | FSAccepted | FSConnected | FSSent deriving (Eq, Show)
 
 instance FromField FileStatus where fromField = fromTextField_ fileStatusT
 
@@ -334,14 +341,18 @@ fileStatusT :: Text -> Maybe FileStatus
 fileStatusT = \case
   "new" -> Just FSNew
   "accepted" -> Just FSAccepted
-  "completed" -> Just FSCompleted
+  "connected" -> Just FSConnected
+  "sent" -> Just FSSent
   _ -> Nothing
 
 serializeFileStatus :: FileStatus -> Text
 serializeFileStatus = \case
   FSNew -> "new"
   FSAccepted -> "accepted"
-  FSCompleted -> "completed"
+  FSConnected -> "connected"
+  FSSent -> "sent"
+
+data RcvChunkStatus = RcvChunkOk | RcvChunkFinal | RcvChunkDuplicate | RcvChunkError
 
 data Connection = Connection
   { connId :: Int64,
