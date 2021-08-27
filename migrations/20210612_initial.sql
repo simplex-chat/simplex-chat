@@ -137,31 +137,35 @@ CREATE TABLE files (
   file_name TEXT NOT NULL,
   file_path TEXT,
   file_size INTEGER NOT NULL,
+  chunk_size INTEGER NOT NULL,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   user_id INTEGER NOT NULL REFERENCES users
 );
 
 CREATE TABLE snd_files (
-  file_id INTEGER PRIMARY KEY REFERENCES files ON DELETE RESTRICT,
-  file_status TEXT NOT NULL, -- created, accepted, completed
+  file_id INTEGER NOT NULL REFERENCES files ON DELETE RESTRICT,
+  connection_id INTEGER NOT NULL REFERENCES connections ON DELETE RESTRICT,
+  file_status TEXT NOT NULL, -- new, accepted, connected, completed
   group_member_id INTEGER REFERENCES group_members ON DELETE RESTRICT,
-  connection_id INTEGER NOT NULL REFERENCES connections ON DELETE RESTRICT
-);
+  PRIMARY KEY (file_id, connection_id)
+) WITHOUT ROWID;
 
 CREATE TABLE rcv_files (
   file_id INTEGER PRIMARY KEY REFERENCES files ON DELETE RESTRICT,
-  file_status TEXT NOT NULL, -- created, accepted, completed
+  file_status TEXT NOT NULL, -- new, accepted, connected, completed
   group_member_id INTEGER REFERENCES group_members ON DELETE RESTRICT,
   file_queue_info BLOB
 );
 
 CREATE TABLE snd_file_chunks (
-  file_id INTEGER NOT NULL REFERENCES snd_files,
+  file_id INTEGER NOT NULL,
+  connection_id INTEGER NOT NULL,
   chunk_number INTEGER NOT NULL,
   chunk_agent_msg_id INTEGER,
   chunk_sent INTEGER NOT NULL DEFAULT 0, -- 0 (sent to agent), 1 (sent to server)
-  PRIMARY KEY (file_id, chunk_number)
-);
+  FOREIGN KEY (file_id, connection_id) REFERENCES snd_files ON DELETE CASCADE,
+  PRIMARY KEY (file_id, connection_id, chunk_number)
+) WITHOUT ROWID;
 
 CREATE TABLE rcv_file_chunks (
   file_id INTEGER NOT NULL REFERENCES rcv_files,
@@ -169,7 +173,7 @@ CREATE TABLE rcv_file_chunks (
   chunk_agent_msg_id INTEGER NOT NULL,
   chunk_stored INTEGER NOT NULL DEFAULT 0, -- 0 (received), 1 (appended to file)
   PRIMARY KEY (file_id, chunk_number)
-);
+) WITHOUT ROWID;
 
 CREATE TABLE connections ( -- all SMP agent connections
   connection_id INTEGER PRIMARY KEY,
@@ -180,10 +184,14 @@ CREATE TABLE connections ( -- all SMP agent connections
   conn_type TEXT NOT NULL, -- contact, member, rcv_file, snd_file
   contact_id INTEGER REFERENCES contacts ON DELETE RESTRICT,
   group_member_id INTEGER REFERENCES group_members ON DELETE RESTRICT,
-  snd_file_id INTEGER REFERENCES snd_files (file_id) ON DELETE RESTRICT,
+  snd_file_id INTEGER,
   rcv_file_id INTEGER REFERENCES rcv_files (file_id) ON DELETE RESTRICT,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
-  user_id INTEGER NOT NULL REFERENCES users
+  user_id INTEGER NOT NULL REFERENCES users,
+  FOREIGN KEY (snd_file_id, connection_id)
+    REFERENCES snd_files (file_id, connection_id)
+    ON DELETE RESTRICT
+    DEFERRABLE INITIALLY DEFERRED
 );
 
 CREATE TABLE events ( -- messages received by the agent, append only

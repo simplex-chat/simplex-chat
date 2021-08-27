@@ -304,7 +304,8 @@ data SndFileTransfer = SndFileTransfer
     fileName :: String,
     filePath :: String,
     fileSize :: Integer,
-    agentConnId :: ConnId,
+    chunkSize :: Integer,
+    connId :: Int64,
     fileStatus :: FileStatus
   }
   deriving (Eq, Show)
@@ -319,7 +320,8 @@ data FileInvitation = FileInvitation
 data RcvFileTransfer = RcvFileTransfer
   { fileId :: Int64,
     fileInvitation :: FileInvitation,
-    fileProgress :: RcvFileProgress
+    fileProgress :: RcvFileProgress,
+    chunkSize :: Integer
   }
   deriving (Eq, Show)
 
@@ -327,7 +329,7 @@ data RcvFileProgress
   = FPNew
   | RcvFileProgress
       { filePath :: FilePath,
-        agentConnId :: ConnId
+        connId :: Int64
       }
   deriving (Eq, Show)
 
@@ -353,6 +355,7 @@ serializeFileStatus = \case
   FSSent -> "sent"
 
 data RcvChunkStatus = RcvChunkOk | RcvChunkFinal | RcvChunkDuplicate | RcvChunkError
+  deriving (Eq, Show)
 
 data Connection = Connection
   { connId :: Int64,

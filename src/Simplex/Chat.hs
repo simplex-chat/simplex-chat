@@ -30,7 +30,6 @@ import Data.Maybe (isJust, mapMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
-import Numeric.Natural
 import Simplex.Chat.Controller
 import Simplex.Chat.Help
 import Simplex.Chat.Input
@@ -56,7 +55,7 @@ import Text.Read (readMaybe)
 import UnliftIO.Async (race_)
 import UnliftIO.Directory (doesDirectoryExist, doesFileExist, getFileSize, getTemporaryDirectory)
 import qualified UnliftIO.Exception as E
-import UnliftIO.IO (withFile)
+import UnliftIO.IO (SeekMode (..), hSeek, withFile)
 import UnliftIO.STM
 
 data ChatCommand
@@ -83,12 +82,6 @@ data ChatCommand
   | QuitChat
   deriving (Show)
 
-data ChatConfig = ChatConfig
-  { agentConfig :: AgentConfig,
-    dbPoolSize :: Int,
-    tbqSize :: Natural
-  }
-
 defaultChatConfig :: ChatConfig
 defaultChatConfig =
   ChatConfig
@@ -100,7 +93,8 @@ defaultChatConfig =
             dbPoolSize = 1
           },
       dbPoolSize = 1,
-      tbqSize = 16
+      tbqSize = 16,
+      fileChunkSize = 3000
     }
 
 logCfg :: LogConfig
@@ -115,7 +109,7 @@ simplexChat cfg opts t =
     >>= runSimplexChat
 
 newChatController :: WithTerminal t => ChatConfig -> ChatOpts -> t -> (Notification -> IO ()) -> IO ChatController
-newChatController ChatConfig {agentConfig = cfg, dbPoolSize, tbqSize} ChatOpts {dbFile, smpServers} t sendNotification = do
+newChatController config@ChatConfig {agentConfig = cfg, dbPoolSize, tbqSize} ChatOpts {dbFile, smpServers} t sendNotification = do
   chatStore <- createStore (dbFile <> ".chat.db") dbPoolSize
   currentUser <- newTVarIO =<< getCreateActiveUser chatStore
   chatTerminal <- newChatTerminal t
@@ -261,7 +255,8 @@ processChatCommand user@User {userId, profile} = \case
     (agentConnId, fileQInfo) <- withAgent createConnection
     fileSize <- getFileSize f
     let fileInv = FileInvitation {fileName = takeFileName f, fileSize, fileQInfo}
-    ft <- withStore $ \st -> createSndFileTransfer st userId contactId f fileInv agentConnId
+    chSize <- asks $ fileChunkSize . config
+    ft <- withStore $ \st -> createSndFileTransfer st userId contactId f fileInv agentConnId chSize
     sendDirectMessage (contactConnId contact) $ XFile fileInv
     showSentFileInvitation cName ft
   SendGroupFile _gName _file -> pure ()
@@ -301,6 +296,7 @@ processChatCommand user@User {userId, profile} = \case
     uniqueCombine :: FilePath -> String -> m FilePath
     uniqueCombine filePath fileName = tryCombine (0 :: Int)
       where
+        -- TODO append _N to the name, not to the extension
         tryCombine n =
           let f = filePath `combine` (fileName <> if n == 0 then "" else "_" <> show n)
            in ifM (doesFileExist f) (tryCombine $ n + 1) (pure f)
@@ -343,7 +339,7 @@ subscribeUserConnections = void . runExceptT $ do
     subscribe cId = withAgent (`subscribeConnection` cId)
 
 processAgentMessage :: forall m. ChatMonad m => User -> ConnId -> ACommand 'Agent -> m ()
-processAgentMessage user@User {userId, profile} agentConnId agentMessage = unless (sent agentMessage) $ do
+processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
   chatDirection <- withStore $ \st -> getConnectionChatDirection st user agentConnId
   forM_ (agentMsgConnStatus agentMessage) $ \status ->
     withStore $ \st -> updateConnectionStatus st (fromConnection chatDirection) status
@@ -357,10 +353,6 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = unles
     SndFileConnection conn ft ->
       processSndFileConn agentMessage conn ft
   where
-    sent :: ACommand 'Agent -> Bool
-    sent SENT {} = True
-    sent _ = False
-
     isMember :: MemberId -> Group -> Bool
     isMember memId Group {membership, members} =
       memberId membership == memId || isJust (find ((== memId) . memberId) members)
@@ -528,17 +520,17 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = unles
           case chatMsgEvent of
             XFileAcpt name
               | name == fileName -> do
-                withStore $ \st -> updateSndFileStatus st userId ft FSAccepted
+                withStore $ \st -> updateSndFileStatus st ft FSAccepted
                 acceptAgentConnection conn confId XOk
               | otherwise -> messageError "x.file.acpt: fileName is different from expected"
             _ -> messageError "REQ from file connection must have x.file.acpt"
         CON -> do
-          withStore $ \st -> updateSndFileStatus st userId ft FSConnected
+          withStore $ \st -> updateSndFileStatus st ft FSConnected
           -- TODO
           liftIO $ putStrLn $ "About to send the file " <> show fileId
           sendFileChunk conn ft
         SENT msgId -> do
-          withStore $ \st -> updateSndFileChunkSent st userId ft msgId
+          withStore $ \st -> updateSndFileChunkSent st ft msgId
           sendFileChunk conn ft
         MERR _ _ -> do
           -- TODO cancel sending file
@@ -547,43 +539,56 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = unles
 
     sendFileChunk :: Connection -> SndFileTransfer -> m ()
     sendFileChunk Connection {agentConnId = cId} ft@SndFileTransfer {fileId} =
-      withStore (\st -> createSndFileChunk st userId ft) >>= \case
+      withStore (`createSndFileChunk` ft) >>= \case
         Just chunkNo -> do
           bytes <- readFileChunk ft chunkNo
-          msgId <- withAgent $ \a -> sendMessage a cId $ bshow chunkNo <> " " <> bytes
-          withStore $ \st -> updateSndFileChunkMsg st userId ft msgId
+          msgId <- withAgent $ \a -> sendMessage a cId $ serializeFileChunk chunkNo bytes
+          withStore $ \st -> updateSndFileChunkMsg st ft chunkNo msgId
         Nothing -> do
-          withStore $ \st -> updateSndFileStatus st userId ft FSSent
+          withStore $ \st -> updateSndFileStatus st ft FSSent
           -- TODO
           liftIO $ putStrLn $ "completed sending the file " <> show fileId
 
     readFileChunk :: SndFileTransfer -> Integer -> m ByteString
-    readFileChunk ft chunkNo = pure ""
+    readFileChunk SndFileTransfer {filePath, chunkSize} chunkNo = do
+      -- TODO handle errors
+      withFile filePath ReadMode $ \h -> do
+        hSeek h AbsoluteSeek $ chunkNo * chunkSize
+        liftIO . B.hGet h $ fromInteger chunkSize
 
     processRcvFileConn :: ACommand 'Agent -> Connection -> RcvFileTransfer -> m ()
-    processRcvFileConn agentMsg conn ft@RcvFileTransfer {fileId, fileInvitation = FileInvitation {fileName}} =
+    processRcvFileConn agentMsg _conn ft@RcvFileTransfer {fileId} =
       case agentMsg of
         CON -> do
-          withStore $ \st -> updateRcvFileStatus st userId ft FSConnected
+          withStore $ \st -> updateRcvFileStatus st ft FSConnected
           liftIO $ putStrLn $ "About to receive the file " <> show fileId
         MSG MsgMeta {recipient = (msgId, _)} msgBody -> do
           -- TODO check integrity and abort transfer if violated
           (chunkNo, chunk) <- parseFileChunk msgBody
-          withStore (\st -> createRcvFileChunk st userId ft chunkNo msgId) >>= \case
+          withStore (\st -> createRcvFileChunk st ft chunkNo msgId) >>= \case
             RcvChunkOk -> appendFileChunk ft chunk
             RcvChunkFinal -> do
               appendFileChunk ft chunk
-              withStore $ \st -> updateRcvFileStatus st userId ft FSSent
+              withStore $ \st -> updateRcvFileStatus st ft FSSent
               liftIO $ putStrLn $ "Completed receiving the file " <> show fileId
             RcvChunkDuplicate -> pure ()
             RcvChunkError -> pure () -- TODO abort file transfer
         _ -> pure ()
 
     parseFileChunk :: ByteString -> m (Integer, ByteString)
-    parseFileChunk msg = pure (0, "")
+    parseFileChunk msg =
+      liftEither . first (ChatError . CEFileRcvChunk) $
+        parseAll ((,) <$> A.decimal <* A.space <*> A.takeByteString) msg
+
+    serializeFileChunk :: Integer -> ByteString -> ByteString
+    serializeFileChunk chunkNo bytes = bshow chunkNo <> " " <> bytes
 
     appendFileChunk :: RcvFileTransfer -> ByteString -> m ()
-    appendFileChunk ft chunk = pure ()
+    appendFileChunk RcvFileTransfer {fileProgress = RcvFileProgress {filePath}, chunkSize} chunk =
+      -- TODO compare chunk size with expected
+      withFile filePath AppendMode $ \h ->
+        liftIO $ B.hPut h chunk
+    appendFileChunk _ _ = chatError $ CEFileInternal "received file state not in progress"
 
     notifyMemberConnected :: GroupName -> GroupMember -> m ()
     notifyMemberConnected gName m@GroupMember {localDisplayName} = do
@@ -630,7 +635,9 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = unles
 
     processFileInvitation :: Contact -> FileInvitation -> m ()
     processFileInvitation Contact {contactId, localDisplayName = c} fInv = do
-      ft <- withStore $ \st -> createRcvFileTransfer st userId contactId fInv
+      -- TODO chunk size has to be sent as part of invitation
+      chSize <- asks $ fileChunkSize . config
+      ft <- withStore $ \st -> createRcvFileTransfer st userId contactId fInv chSize
       showReceivedFileInvitation c ft
 
     processGroupInvitation :: Contact -> GroupInvitation -> m ()

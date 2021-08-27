@@ -15,7 +15,7 @@ import Control.Monad.Except
 import Data.List (dropWhileEnd)
 import Network.Socket
 import Simplex.Chat
-import Simplex.Chat.Controller (ChatController (..))
+import Simplex.Chat.Controller (ChatConfig (..), ChatController (..))
 import Simplex.Chat.Options
 import Simplex.Chat.Store
 import Simplex.Chat.Types (Profile)

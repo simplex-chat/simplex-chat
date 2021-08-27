@@ -440,6 +440,8 @@ chatError = \case
     CEFileAlreadyReceiving f -> ["file is already accepted: " <> plain f]
     CEFileAlreadyExists f -> ["file already exists: " <> plain f]
     CEFileWrite f e -> ["cannot write file " <> plain f, sShow e]
+    CEFileInternal e -> ["file error: " <> plain e]
+    CEFileRcvChunk e -> ["file reception error: " <> plain e]
   -- e -> ["chat error: " <> sShow e]
   ChatErrorStore err -> case err of
     SEDuplicateName -> ["this display name is already used by user, contact or group"]

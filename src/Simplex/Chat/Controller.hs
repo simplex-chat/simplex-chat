@@ -11,14 +11,23 @@ import Control.Monad.Except
 import Control.Monad.IO.Unlift
 import Control.Monad.Reader
 import Crypto.Random (ChaChaDRG)
+import Numeric.Natural
 import Simplex.Chat.Notification
 import Simplex.Chat.Store (StoreError)
 import Simplex.Chat.Terminal
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent (AgentClient)
+import Simplex.Messaging.Agent.Env.SQLite (AgentConfig)
 import Simplex.Messaging.Agent.Protocol (AgentErrorType)
 import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore)
 import UnliftIO.STM
+
+data ChatConfig = ChatConfig
+  { agentConfig :: AgentConfig,
+    dbPoolSize :: Int,
+    tbqSize :: Natural,
+    fileChunkSize :: Integer
+  }
 
 data ChatController = ChatController
   { currentUser :: TVar User,
@@ -29,7 +38,8 @@ data ChatController = ChatController
     inputQ :: TBQueue InputEvent,
     notifyQ :: TBQueue Notification,
     sendNotification :: Notification -> IO (),
-    chatLock :: TMVar ()
+    chatLock :: TMVar (),
+    config :: ChatConfig
   }
 
 data InputEvent = InputCommand String | InputControl Char
@@ -55,6 +65,8 @@ data ChatErrorType
   | CEFileAlreadyReceiving String
   | CEFileAlreadyExists FilePath
   | CEFileWrite FilePath SomeException
+  | CEFileRcvChunk String
+  | CEFileInternal String
   deriving (Show, Exception)
 
 type ChatMonad m = (MonadUnliftIO m, MonadReader ChatController m, MonadError ChatError m)
