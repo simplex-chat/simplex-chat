@@ -94,7 +94,7 @@ defaultChatConfig =
           },
       dbPoolSize = 1,
       tbqSize = 16,
-      fileChunkSize = 3000
+      fileChunkSize = 2950
     }
 
 logCfg :: LogConfig
@@ -532,7 +532,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
         SENT msgId -> do
           withStore $ \st -> updateSndFileChunkSent st ft msgId
           sendFileChunk conn ft
-        MERR _ _ -> do
+        MERR {} -> do
           -- TODO cancel sending file
           pure ()
         _ -> pure ()
@@ -553,7 +553,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
     readFileChunk SndFileTransfer {filePath, chunkSize} chunkNo = do
       -- TODO handle errors
       withFile filePath ReadMode $ \h -> do
-        hSeek h AbsoluteSeek $ chunkNo * chunkSize
+        hSeek h AbsoluteSeek $ (chunkNo - 1) * chunkSize
         liftIO . B.hGet h $ fromInteger chunkSize
 
     processRcvFileConn :: ACommand 'Agent -> Connection -> RcvFileTransfer -> m ()
