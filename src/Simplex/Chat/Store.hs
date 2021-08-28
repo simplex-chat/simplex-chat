@@ -27,6 +27,7 @@ module Simplex.Chat.Store
     updateUserProfile,
     updateContactProfile,
     getUserContacts,
+    getPendingConnections,
     getContactConnections,
     getConnectionChatDirection,
     updateConnectionStatus,
@@ -335,6 +336,22 @@ getUserContacts st User {userId} =
   liftIO . withTransaction st $ \db -> do
     contactNames <- liftIO $ map fromOnly <$> DB.query db "SELECT local_display_name FROM contacts WHERE user_id = ?" (Only userId)
     rights <$> mapM (runExceptT . getContact_ db userId) contactNames
+
+getPendingConnections :: MonadUnliftIO m => SQLiteStore -> User -> m [Connection]
+getPendingConnections st User {userId} =
+  liftIO . withTransaction st $ \db ->
+    map toConnection
+      <$> DB.queryNamed
+        db
+        [sql|
+          SELECT c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact,
+            c.conn_status, c.conn_type, c.contact_id, c.group_member_id, c.created_at
+          FROM connections c
+          WHERE c.user_id = :user_id
+            AND c.conn_type = :conn_type
+            AND c.contact_id IS NULL
+        |]
+        [":user_id" := userId, ":conn_type" := ConnContact]
 
 getContactConnections :: StoreMonad m => SQLiteStore -> UserId -> ContactName -> m [Connection]
 getContactConnections st userId displayName =

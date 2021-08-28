@@ -278,6 +278,7 @@ subscribeUserConnections = void . runExceptT $ do
   user <- readTVarIO =<< asks currentUser
   subscribeContacts user
   subscribeGroups user
+  subscribePendingConnections user
   where
     subscribeContacts user = do
       contacts <- withStore (`getUserContacts` user)
@@ -296,6 +297,10 @@ subscribeUserConnections = void . runExceptT $ do
             forM_ connectedMembers $ \(GroupMember {localDisplayName = c}, cId) ->
               subscribe cId `catchError` showMemberSubError g c
             showGroupSubscribed g
+    subscribePendingConnections user = do
+      connections <- withStore (`getPendingConnections` user)
+      forM_ connections $ \Connection {agentConnId} ->
+        subscribe agentConnId `catchError` \_ -> pure ()
     subscribe cId = withAgent (`subscribeConnection` cId)
 
 processAgentMessage :: forall m. ChatMonad m => User -> ConnId -> ACommand 'Agent -> m ()
