@@ -348,10 +348,10 @@ getPendingConnections st User {userId} =
             c.conn_status, c.conn_type, c.contact_id, c.group_member_id, c.created_at
           FROM connections c
           WHERE c.user_id = :user_id
-            AND c.conn_type = 'contact'
+            AND c.conn_type = :conn_type
             AND c.contact_id IS NULL
         |]
-        [":user_id" := userId]
+        [":user_id" := userId, ":conn_type" := ConnContact]
 
 getContactConnections :: StoreMonad m => SQLiteStore -> UserId -> ContactName -> m [Connection]
 getContactConnections st userId displayName =
