@@ -300,7 +300,7 @@ subscribeUserConnections = void . runExceptT $ do
     subscribePendingConnections user = do
       connections <- withStore (`getPendingConnections` user)
       forM_ connections $ \Connection {agentConnId} ->
-        subscribe agentConnId `catchError` (\_ -> liftIO $ pure ())
+        subscribe agentConnId `catchError` \_ -> liftIO $ pure ()
     subscribe cId = withAgent (`subscribeConnection` cId)
 
 processAgentMessage :: forall m. ChatMonad m => User -> ConnId -> ACommand 'Agent -> m ()
