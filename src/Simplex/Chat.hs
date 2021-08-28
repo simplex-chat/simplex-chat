@@ -276,9 +276,14 @@ agentSubscriber = do
 subscribeUserConnections :: (MonadUnliftIO m, MonadReader ChatController m) => m ()
 subscribeUserConnections = void . runExceptT $ do
   user <- readTVarIO =<< asks currentUser
+  subscribeNonActivatedConnections user
   subscribeContacts user
   subscribeGroups user
   where
+    subscribeNonActivatedConnections user = do
+      connections <- withStore (`getNullContactConnections` user)
+      forM_ connections $ \conn ->
+        subscribe (agentConnId (conn :: Connection))
     subscribeContacts user = do
       contacts <- withStore (`getUserContacts` user)
       forM_ contacts $ \ct@Contact {localDisplayName = c} ->
