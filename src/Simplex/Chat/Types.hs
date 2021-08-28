@@ -306,6 +306,7 @@ data SndFileTransfer = SndFileTransfer
     fileSize :: Integer,
     chunkSize :: Integer,
     connId :: Int64,
+    agentConnId :: ConnId,
     fileStatus :: FileStatus
   }
   deriving (Eq, Show)
@@ -327,13 +328,18 @@ data RcvFileTransfer = RcvFileTransfer
 
 data RcvFileProgress
   = FPNew
+  | FPComplete
+  | FPCancelled
   | RcvFileProgress
       { filePath :: FilePath,
-        connId :: Int64
+        connId :: Int64,
+        agentConnId :: ConnId
       }
   deriving (Eq, Show)
 
-data FileStatus = FSNew | FSAccepted | FSConnected | FSSent deriving (Eq, Show)
+data FileTransfer = FTSnd [SndFileTransfer] | FTRcv RcvFileTransfer
+
+data FileStatus = FSNew | FSAccepted | FSConnected | FSComplete | FSCancelled deriving (Eq, Show)
 
 instance FromField FileStatus where fromField = fromTextField_ fileStatusT
 
@@ -344,7 +350,8 @@ fileStatusT = \case
   "new" -> Just FSNew
   "accepted" -> Just FSAccepted
   "connected" -> Just FSConnected
-  "sent" -> Just FSSent
+  "complete" -> Just FSComplete
+  "cancelled" -> Just FSCancelled
   _ -> Nothing
 
 serializeFileStatus :: FileStatus -> Text
@@ -352,7 +359,8 @@ serializeFileStatus = \case
   FSNew -> "new"
   FSAccepted -> "accepted"
   FSConnected -> "connected"
-  FSSent -> "sent"
+  FSComplete -> "complete"
+  FSCancelled -> "cancelled"
 
 data RcvChunkStatus = RcvChunkOk | RcvChunkFinal | RcvChunkDuplicate | RcvChunkError
   deriving (Eq, Show)

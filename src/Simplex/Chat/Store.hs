@@ -68,6 +68,7 @@ module Simplex.Chat.Store
     acceptRcvFileTransfer,
     updateRcvFileStatus,
     createRcvFileChunk,
+    getFileTransfer,
   )
 where
 
@@ -99,7 +100,7 @@ import Simplex.Messaging.Agent.Protocol (AParty (..), AgentMsgId, ConnId, SMPQue
 import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore (..), createSQLiteStore, withTransaction)
 import Simplex.Messaging.Agent.Store.SQLite.Migrations (Migration (..))
 import qualified Simplex.Messaging.Crypto as C
-import Simplex.Messaging.Util (bshow, liftIOEither)
+import Simplex.Messaging.Util (bshow, liftIOEither, (<$$>))
 import System.FilePath (takeBaseName, takeExtension)
 import UnliftIO.STM
 
@@ -520,8 +521,8 @@ getConnectionChatDirection st User {userId, userContactId} agentConnId =
         case connType of
           ConnMember -> uncurry (ReceivedGroupMessage c) <$> getGroupAndMember_ db entId c
           ConnContact -> ReceivedDirectMessage c . Just <$> getContactRec_ db entId c
-          ConnSndFile -> SndFileConnection c <$> (sndFileTransfer_ entId c =<< liftIO (getSndFileTransfer_ db entId c))
-          ConnRcvFile -> RcvFileConnection c <$> (rcvFileTransfer_ entId c =<< liftIO (getRcvFileTransfer_ db entId))
+          ConnSndFile -> SndFileConnection c <$> getConnSndFileTransfer_ db entId c
+          ConnRcvFile -> RcvFileConnection c <$> ExceptT (getRcvFileTransfer_ db userId entId)
   where
     getConnection_ :: DB.Connection -> ExceptT StoreError IO Connection
     getConnection_ db = ExceptT $ do
@@ -576,44 +577,22 @@ getConnectionChatDirection st User {userId, userContactId} agentConnId =
       let member = toGroupMember userContactId memberRow
        in Right (groupName, (member :: GroupMember) {activeConn = Just c})
     toGroupAndMember _ _ = Left $ SEInternal "referenced group member not found"
-    getSndFileTransfer_ :: DB.Connection -> Int64 -> Connection -> IO [(FileStatus, String, Integer, Integer, FilePath)]
-    getSndFileTransfer_ db fileId Connection {connId} =
-      DB.query
-        db
-        [sql|
-          SELECT s.file_status, f.file_name, f.file_size, f.chunk_size, f.file_path
-          FROM snd_files s
-          JOIN files f USING (file_id)
-          WHERE f.user_id = ? AND f.file_id = ? AND s.connection_id = ?
-        |]
-        (userId, fileId, connId)
-
-    sndFileTransfer_ :: Int64 -> Connection -> [(FileStatus, String, Integer, Integer, FilePath)] -> ExceptT StoreError IO SndFileTransfer
-    sndFileTransfer_ fileId Connection {connId} [(fileStatus, fileName, fileSize, chunkSize, filePath)] = pure SndFileTransfer {..}
-    sndFileTransfer_ fileId _ _ = throwError $ SESndFileNotFound fileId
-    getRcvFileTransfer_ :: DB.Connection -> Int64 -> IO [(FileStatus, SMPQueueInfo, String, Integer, Integer, Maybe FilePath)]
-    getRcvFileTransfer_ db fileId =
-      DB.query
-        db
-        [sql|
-          SELECT r.file_status, r.file_queue_info, f.file_name,
-            f.file_size, f.chunk_size, f.file_path
-          FROM rcv_files r
-          JOIN files f USING (file_id)
-          WHERE f.user_id = ? AND f.file_id = ?
-        |]
-        (userId, fileId)
-    rcvFileTransfer_ :: Int64 -> Connection -> [(FileStatus, SMPQueueInfo, String, Integer, Integer, Maybe FilePath)] -> ExceptT StoreError IO RcvFileTransfer
-    rcvFileTransfer_ fileId Connection {connId} [(fileStatus, fileQInfo, fileName, fileSize, chunkSize, filePath_)] =
-      let fileInvitation = FileInvitation {fileName, fileSize, fileQInfo}
-       in case fileStatus of
-            FSNew -> pure RcvFileTransfer {fileId, fileProgress = FPNew, fileInvitation, chunkSize}
-            _ -> case filePath_ of
-              Just filePath ->
-                let fileProgress = RcvFileProgress {filePath, connId}
-                 in pure RcvFileTransfer {fileId, fileProgress, fileInvitation, chunkSize}
-              _ -> throwError $ SERcvFileInvalid fileId
-    rcvFileTransfer_ fileId _ _ = throwError $ SERcvFileNotFound fileId
+    getConnSndFileTransfer_ :: DB.Connection -> Int64 -> Connection -> ExceptT StoreError IO SndFileTransfer
+    getConnSndFileTransfer_ db fileId Connection {connId} =
+      ExceptT $
+        sndFileTransfer_ fileId connId
+          <$> DB.query
+            db
+            [sql|
+              SELECT s.file_status, f.file_name, f.file_size, f.chunk_size, f.file_path
+              FROM snd_files s
+              JOIN files f USING (file_id)
+              WHERE f.user_id = ? AND f.file_id = ? AND s.connection_id = ?
+            |]
+            (userId, fileId, connId)
+    sndFileTransfer_ :: Int64 -> Int64 -> [(FileStatus, String, Integer, Integer, FilePath)] -> Either StoreError SndFileTransfer
+    sndFileTransfer_ fileId connId [(fileStatus, fileName, fileSize, chunkSize, filePath)] = Right SndFileTransfer {..}
+    sndFileTransfer_ fileId _ _ = Left $ SESndFileNotFound fileId
 
 updateConnectionStatus :: MonadUnliftIO m => SQLiteStore -> Connection -> ConnStatus -> m ()
 updateConnectionStatus st Connection {connId} connStatus =
@@ -1104,8 +1083,9 @@ createSndFileTransfer st userId contactId filePath FileInvitation {fileName, fil
     DB.execute db "INSERT INTO files (user_id, contact_id, file_name, file_path, file_size, chunk_size) VALUES (?, ?, ?, ?, ?, ?)" (userId, contactId, fileName, filePath, fileSize, chunkSize)
     fileId <- insertedRowId db
     Connection {connId} <- createSndFileConnection_ db userId fileId agentConnId
-    DB.execute db "INSERT INTO snd_files (file_id, file_status, connection_id) VALUES (?, ?, ?)" (fileId, FSNew, connId)
-    pure SndFileTransfer {fileId, fileName, filePath, fileSize, chunkSize, connId, fileStatus = FSNew}
+    let fileStatus = FSNew
+    DB.execute db "INSERT INTO snd_files (file_id, file_status, connection_id) VALUES (?, ?, ?)" (fileId, fileStatus, connId)
+    pure SndFileTransfer {..}
 
 createSndFileConnection_ :: DB.Connection -> UserId -> Int64 -> ConnId -> IO Connection
 createSndFileConnection_ db userId fileId agentConnId = do
@@ -1178,32 +1158,38 @@ createRcvFileTransfer st userId contactId f@FileInvitation {fileName, fileSize, 
 getRcvFileTransfer :: StoreMonad m => SQLiteStore -> UserId -> Int64 -> m RcvFileTransfer
 getRcvFileTransfer st userId fileId =
   liftIOEither . withTransaction st $ \db ->
-    runExceptT $
-      liftIO (getRctFileTransfer_ db) >>= rcvFileTransfer
-  where
-    getRctFileTransfer_ db =
-      DB.query
-        db
-        [sql|
+    getRcvFileTransfer_ db userId fileId
+
+getRcvFileTransfer_ :: DB.Connection -> UserId -> Int64 -> IO (Either StoreError RcvFileTransfer)
+getRcvFileTransfer_ db userId fileId =
+  rcvFileTransfer
+    <$> DB.query
+      db
+      [sql|
           SELECT r.file_status, r.file_queue_info, f.file_name,
-            f.file_size, f.chunk_size, f.file_path, c.connection_id
+            f.file_size, f.chunk_size, f.file_path, c.connection_id, c.agent_conn_id
           FROM rcv_files r
           JOIN files f USING (file_id)
           LEFT JOIN connections c ON r.file_id = c.rcv_file_id
           WHERE f.user_id = ? AND f.file_id = ?
         |]
-        (userId, fileId)
-    rcvFileTransfer :: [(FileStatus, SMPQueueInfo, String, Integer, Integer, Maybe FilePath, Maybe Int64)] -> ExceptT StoreError IO RcvFileTransfer
-    rcvFileTransfer [(fileStatus, fileQInfo, fileName, fileSize, chunkSize, filePath_, connId_)] =
-      let fileInvitation = FileInvitation {fileName, fileSize, fileQInfo}
+      (userId, fileId)
+  where
+    rcvFileTransfer ::
+      [(FileStatus, SMPQueueInfo, String, Integer, Integer, Maybe FilePath, Maybe Int64, Maybe ConnId)] ->
+      Either StoreError RcvFileTransfer
+    rcvFileTransfer [(fileStatus, fileQInfo, fileName, fileSize, chunkSize, filePath_, connId_, agentConnId_)] =
+      let fileInv = FileInvitation {fileName, fileSize, fileQInfo}
        in case fileStatus of
-            FSNew -> pure RcvFileTransfer {fileId, fileProgress = FPNew, fileInvitation, chunkSize}
-            _ -> case (filePath_, connId_) of
-              (Just filePath, Just connId) ->
-                let fileProgress = RcvFileProgress {filePath, connId}
-                 in pure RcvFileTransfer {fileId, fileProgress, fileInvitation, chunkSize}
-              _ -> throwError $ SERcvFileInvalid fileId
-    rcvFileTransfer _ = throwError $ SERcvFileNotFound fileId
+            FSNew -> ft fileInv FPNew
+            FSComplete -> ft fileInv FPComplete
+            FSCancelled -> ft fileInv FPCancelled
+            _ -> case (filePath_, connId_, agentConnId_) of
+              (Just filePath, Just connId, Just agentConnId) -> ft fileInv RcvFileProgress {filePath, connId, agentConnId}
+              _ -> Left $ SERcvFileInvalid fileId
+      where
+        ft fileInvitation fileProgress = Right RcvFileTransfer {fileId, fileInvitation, fileProgress, chunkSize}
+    rcvFileTransfer _ = Left $ SERcvFileNotFound fileId
 
 acceptRcvFileTransfer :: StoreMonad m => SQLiteStore -> UserId -> Int64 -> ConnId -> FilePath -> m ()
 acceptRcvFileTransfer st userId fileId agentConnId filePath =
@@ -1240,6 +1226,45 @@ createRcvFileChunk st RcvFileTransfer {fileId, fileInvitation = FileInvitation {
                       then RcvChunkFinal
                       else RcvChunkOk
           | otherwise -> RcvChunkError
+
+getFileTransfer :: StoreMonad m => SQLiteStore -> UserId -> Int64 -> m FileTransfer
+getFileTransfer st userId fileId =
+  liftIOEither . withTransaction st $ \db -> do
+    fileTransfer db
+      =<< DB.query
+        db
+        [sql|
+          SELECT s.file_id, r.file_id
+          FROM files f
+          LEFT JOIN snd_files s ON s.file_id = f.file_id
+          LEFT JOIN rcv_files r ON r.file_id = f.file_id
+          WHERE user_id = ? AND f.file_id = ?
+        |]
+        (userId, fileId)
+  where
+    fileTransfer :: DB.Connection -> [(Maybe Int64, Maybe Int64)] -> IO (Either StoreError FileTransfer)
+    fileTransfer db [(Nothing, Just _)] = FTRcv <$$> getRcvFileTransfer_ db userId fileId
+    fileTransfer db ((Just _, Nothing) : _) = FTSnd <$$> getSndFileTransfers_ db userId fileId
+    fileTransfer _ _ = pure . Left $ SEFileNotFound fileId
+
+getSndFileTransfers_ :: DB.Connection -> UserId -> Int64 -> IO (Either StoreError [SndFileTransfer])
+getSndFileTransfers_ db userId fileId =
+  sndFileTransfers
+    <$> DB.query
+      db
+      [sql|
+        SELECT s.file_status, f.file_name, f.file_size, f.chunk_size, f.file_path, s.connection_id, c.agent_conn_id
+        FROM snd_files s
+        JOIN files f USING (file_id)
+        JOIN connections c USING (connection_id)
+        WHERE f.user_id = ? AND f.file_id = ?
+      |]
+      (userId, fileId)
+  where
+    sndFileTransfers :: [(FileStatus, String, Integer, Integer, FilePath, Int64, ConnId)] -> Either StoreError [SndFileTransfer]
+    sndFileTransfers [] = Left $ SESndFileNotFound fileId
+    sndFileTransfers fts = Right $ map sndFileTransfer fts
+    sndFileTransfer (fileStatus, fileName, fileSize, chunkSize, filePath, connId, agentConnId) = SndFileTransfer {..}
 
 -- | Saves unique local display name based on passed displayName, suffixed with _N if required.
 -- This function should be called inside transaction.
@@ -1307,6 +1332,7 @@ data StoreError
   | SEGroupInvitationNotFound
   | SESndFileNotFound Int64
   | SERcvFileNotFound Int64
+  | SEFileNotFound Int64
   | SERcvFileInvalid Int64
   | SEConnectionNotFound ConnId
   | SEIntroNotFound

@@ -13,6 +13,7 @@
 module Simplex.Chat where
 
 import Control.Applicative (optional, (<|>))
+import Control.Concurrent.STM (stateTVar)
 import Control.Logger.Simple
 import Control.Monad.Except
 import Control.Monad.IO.Unlift
@@ -26,6 +27,8 @@ import qualified Data.ByteString.Char8 as B
 import Data.Functor (($>))
 import Data.Int (Int64)
 import Data.List (find)
+import Data.Map.Strict (Map)
+import qualified Data.Map.Strict as M
 import Data.Maybe (isJust, mapMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -47,15 +50,16 @@ import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), defaultAgentConfig)
 import Simplex.Messaging.Agent.Protocol
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Parsers (parseAll)
+import qualified Simplex.Messaging.Protocol as SMP
 import Simplex.Messaging.Util (bshow, raceAny_)
 import System.Exit (exitFailure, exitSuccess)
-import System.FilePath (combine, takeFileName)
-import System.IO (IOMode (..), hFlush, stdout)
+import System.FilePath (combine, splitExtensions, takeFileName)
+import System.IO (Handle, IOMode (..), SeekMode (..), hFlush, openFile, stdout)
 import Text.Read (readMaybe)
 import UnliftIO.Async (race_)
 import UnliftIO.Directory (doesDirectoryExist, doesFileExist, getFileSize, getTemporaryDirectory)
 import qualified UnliftIO.Exception as E
-import UnliftIO.IO (SeekMode (..), hSeek, withFile)
+import UnliftIO.IO (hClose, hSeek, hTell, withFile)
 import UnliftIO.STM
 
 data ChatCommand
@@ -77,6 +81,7 @@ data ChatCommand
   | SendFile ContactName FilePath
   | SendGroupFile GroupName FilePath
   | ReceiveFile Int64 (Maybe FilePath)
+  | CancelFile Int64
   | UpdateProfile Profile
   | ShowProfile
   | QuitChat
@@ -94,7 +99,7 @@ defaultChatConfig =
           },
       dbPoolSize = 1,
       tbqSize = 16,
-      fileChunkSize = 2950
+      fileChunkSize = 7050
     }
 
 logCfg :: LogConfig
@@ -118,6 +123,8 @@ newChatController config@ChatConfig {agentConfig = cfg, dbPoolSize, tbqSize} Cha
   inputQ <- newTBQueueIO tbqSize
   notifyQ <- newTBQueueIO tbqSize
   chatLock <- newTMVarIO ()
+  sndFiles <- newTVarIO M.empty
+  rcvFiles <- newTVarIO M.empty
   pure ChatController {..}
 
 runSimplexChat :: ChatController -> IO ()
@@ -259,6 +266,7 @@ processChatCommand user@User {userId, profile} = \case
     ft <- withStore $ \st -> createSndFileTransfer st userId contactId f fileInv agentConnId chSize
     sendDirectMessage (contactConnId contact) $ XFile fileInv
     showSentFileInvitation cName ft
+    setActive $ ActiveC cName
   SendGroupFile _gName _file -> pure ()
   ReceiveFile fileId filePath_ -> do
     RcvFileTransfer {fileInvitation = FileInvitation {fileName, fileQInfo}, fileProgress} <- withStore $ \st -> getRcvFileTransfer st userId fileId
@@ -268,6 +276,14 @@ processChatCommand user@User {userId, profile} = \case
     withStore $ \st -> acceptRcvFileTransfer st userId fileId agentConnId filePath
     -- TODO include file sender in the message
     showRcvFileAccepted fileId filePath
+  CancelFile fileId ->
+    withStore (\st -> getFileTransfer st userId fileId) >>= \case
+      FTSnd fts -> do
+        mapM_ cancelSndFileTransfer fts
+        showSndFileCancelled fileId
+      FTRcv ft -> do
+        cancelRcvFileTransfer ft
+        showRcvFileCancelled fileId
   UpdateProfile p -> unless (p == profile) $ do
     user' <- withStore $ \st -> updateUserProfile st user p
     asks currentUser >>= atomically . (`writeTVar` user')
@@ -296,9 +312,10 @@ processChatCommand user@User {userId, profile} = \case
     uniqueCombine :: FilePath -> String -> m FilePath
     uniqueCombine filePath fileName = tryCombine (0 :: Int)
       where
-        -- TODO append _N to the name, not to the extension
         tryCombine n =
-          let f = filePath `combine` (fileName <> if n == 0 then "" else "_" <> show n)
+          let (name, ext) = splitExtensions fileName
+              suffix = if n == 0 then "" else "_" <> show n
+              f = filePath `combine` (name <> suffix <> ext)
            in ifM (doesFileExist f) (tryCombine $ n + 1) (pure f)
 
 agentSubscriber :: (MonadUnliftIO m, MonadReader ChatController m) => m ()
@@ -311,7 +328,7 @@ agentSubscriber = do
     user <- readTVarIO =<< asks currentUser
     -- TODO handle errors properly
     withLock l . void . runExceptT $
-      processAgentMessage user connId msg `catchError` (liftIO . print)
+      processAgentMessage user connId msg `catchError` showChatError
 
 subscribeUserConnections :: (MonadUnliftIO m, MonadReader ChatController m) => m ()
 subscribeUserConnections = void . runExceptT $ do
@@ -513,7 +530,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
       _ -> pure ()
 
     processSndFileConn :: ACommand 'Agent -> Connection -> SndFileTransfer -> m ()
-    processSndFileConn agentMsg conn ft@SndFileTransfer {fileId, fileName} =
+    processSndFileConn agentMsg conn ft@SndFileTransfer {fileId, fileName, fileStatus} =
       case agentMsg of
         REQ confId connInfo -> do
           ChatMessage {chatMsgEvent} <- liftEither $ parseChatMessage connInfo
@@ -530,10 +547,12 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
           sendFileChunk conn ft
         SENT msgId -> do
           withStore $ \st -> updateSndFileChunkSent st ft msgId
-          sendFileChunk conn ft
-        MERR {} -> do
-          -- TODO cancel sending file
-          pure ()
+          unless (fileStatus == FSCancelled) $ sendFileChunk conn ft
+        MERR _ err -> do
+          cancelSndFileTransfer ft
+          case err of
+            SMP SMP.AUTH -> showSndFileRcvCancelled fileId
+            _ -> chatError $ CEFileSend fileId err
         _ -> pure ()
 
     sendFileChunk :: Connection -> SndFileTransfer -> m ()
@@ -544,33 +563,63 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
           msgId <- withAgent $ \a -> sendMessage a cId $ serializeFileChunk chunkNo bytes
           withStore $ \st -> updateSndFileChunkMsg st ft chunkNo msgId
         Nothing -> do
-          withStore $ \st -> updateSndFileStatus st ft FSSent
+          withStore $ \st -> updateSndFileStatus st ft FSComplete
           showSndFileComplete fileId
+          closeFileHandle fileId sndFiles
+          withAgent (`deleteConnection` agentConnId)
 
     readFileChunk :: SndFileTransfer -> Integer -> m ByteString
-    readFileChunk SndFileTransfer {filePath, chunkSize} chunkNo = do
-      -- TODO handle errors
-      withFile filePath ReadMode $ \h -> do
-        hSeek h AbsoluteSeek $ (chunkNo - 1) * chunkSize
-        liftIO . B.hGet h $ fromInteger chunkSize
+    readFileChunk SndFileTransfer {fileId, filePath, chunkSize} chunkNo =
+      read_ `E.catch` (chatError . CEFileRead filePath)
+      where
+        read_ = do
+          h <- getFileHandle fileId filePath sndFiles ReadMode
+          pos <- hTell h
+          let pos' = (chunkNo - 1) * chunkSize
+          when (pos /= pos') $ hSeek h AbsoluteSeek pos'
+          liftIO . B.hGet h $ fromInteger chunkSize
+
+    getFileHandle :: Int64 -> FilePath -> (ChatController -> TVar (Map Int64 Handle)) -> IOMode -> m Handle
+    getFileHandle fileId filePath files ioMode = do
+      fs <- asks files
+      h_ <- M.lookup fileId <$> readTVarIO fs
+      maybe (newHandle fs) pure h_
+      where
+        newHandle fs = do
+          -- TODO handle errors
+          h <- liftIO (openFile filePath ioMode)
+          atomically . modifyTVar fs $ M.insert fileId h
+          pure h
 
     processRcvFileConn :: ACommand 'Agent -> Connection -> RcvFileTransfer -> m ()
-    processRcvFileConn agentMsg _conn ft@RcvFileTransfer {fileId} =
+    processRcvFileConn agentMsg _conn ft@RcvFileTransfer {fileId, chunkSize} =
       case agentMsg of
         CON -> do
           withStore $ \st -> updateRcvFileStatus st ft FSConnected
           showRcvFileStart fileId
         MSG MsgMeta {recipient = (msgId, _)} msgBody -> do
           -- TODO check integrity and abort transfer if violated
-          (chunkNo, chunk) <- parseFileChunk msgBody
-          withStore (\st -> createRcvFileChunk st ft chunkNo msgId) >>= \case
-            RcvChunkOk -> appendFileChunk ft chunk
-            RcvChunkFinal -> do
-              appendFileChunk ft chunk
-              withStore $ \st -> updateRcvFileStatus st ft FSSent
-              showRcvFileComplete fileId
-            RcvChunkDuplicate -> pure ()
-            RcvChunkError -> pure () -- TODO abort file transfer
+          parseFileChunk msgBody >>= \case
+            (0, _) -> do
+              cancelRcvFileTransfer ft
+              showRcvFileSndCancelled fileId
+            (chunkNo, chunk) ->
+              withStore (\st -> createRcvFileChunk st ft chunkNo msgId) >>= \case
+                RcvChunkOk ->
+                  if B.length chunk /= fromInteger chunkSize
+                    then badRcvFileChunk ft "incorrect chunk size"
+                    else appendFileChunk ft chunk
+                RcvChunkFinal ->
+                  if B.length chunk > fromInteger chunkSize
+                    then badRcvFileChunk ft "incorrect chunk size"
+                    else do
+                      appendFileChunk ft chunk
+                      withStore $ \st -> updateRcvFileStatus st ft FSComplete
+                      showRcvFileComplete fileId
+                      closeFileHandle fileId rcvFiles
+                      withAgent (`deleteConnection` agentConnId)
+                RcvChunkDuplicate -> pure ()
+                RcvChunkError -> badRcvFileChunk ft "incorrect chunk number"
         _ -> pure ()
 
     parseFileChunk :: ByteString -> m (Integer, ByteString)
@@ -582,11 +631,20 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
     serializeFileChunk chunkNo bytes = bshow chunkNo <> " " <> bytes
 
     appendFileChunk :: RcvFileTransfer -> ByteString -> m ()
-    appendFileChunk RcvFileTransfer {fileProgress = RcvFileProgress {filePath}, chunkSize} chunk =
-      -- TODO compare chunk size with expected
-      withFile filePath AppendMode $ \h ->
-        liftIO $ B.hPut h chunk
-    appendFileChunk _ _ = chatError $ CEFileInternal "received file state not in progress"
+    appendFileChunk RcvFileTransfer {fileId, fileProgress} chunk =
+      case fileProgress of
+        RcvFileProgress {filePath} -> append_ filePath `E.catch` (chatError . CEFileWrite filePath)
+        FPCancelled -> pure ()
+        _ -> chatError $ CEFileInternal "receiving file transfer not in progress"
+      where
+        append_ fPath = do
+          h <- getFileHandle fileId fPath rcvFiles AppendMode
+          liftIO $ B.hPut h chunk
+
+    badRcvFileChunk :: RcvFileTransfer -> String -> m ()
+    badRcvFileChunk ft err = do
+      cancelRcvFileTransfer ft
+      chatError $ CEFileRcvChunk err
 
     notifyMemberConnected :: GroupName -> GroupMember -> m ()
     notifyMemberConnected gName m@GroupMember {localDisplayName} = do
@@ -608,10 +666,10 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
           withStore $ \st -> createSentProbeHash st userId probeId c
 
     messageWarning :: Text -> m ()
-    messageWarning = liftIO . print
+    messageWarning = showMessageError "warning"
 
     messageError :: Text -> m ()
-    messageError = liftIO . print
+    messageError = showMessageError "error"
 
     newTextMessage :: ContactName -> MsgMeta -> Maybe MsgContentBody -> m ()
     newTextMessage c meta = \case
@@ -637,6 +695,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
       chSize <- asks $ fileChunkSize . config
       ft <- withStore $ \st -> createRcvFileTransfer st userId contactId fInv chSize
       showReceivedFileInvitation c ft
+      setActive $ ActiveC c
 
     processGroupInvitation :: Contact -> GroupInvitation -> m ()
     processGroupInvitation ct@Contact {localDisplayName} inv@(GroupInvitation (fromMemId, fromRole) (memId, memRole) _ _) = do
@@ -781,6 +840,28 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
       mapM_ deleteMemberConnection ms
       showGroupDeleted gName m
 
+cancelRcvFileTransfer :: ChatMonad m => RcvFileTransfer -> m ()
+cancelRcvFileTransfer ft@RcvFileTransfer {fileId, fileProgress} = do
+  closeFileHandle fileId rcvFiles
+  withStore $ \st -> updateRcvFileStatus st ft FSCancelled
+  case fileProgress of
+    RcvFileProgress {agentConnId} -> withAgent (`suspendConnection` agentConnId)
+    _ -> pure ()
+
+cancelSndFileTransfer :: ChatMonad m => SndFileTransfer -> m ()
+cancelSndFileTransfer ft@SndFileTransfer {agentConnId, fileStatus} =
+  unless (fileStatus == FSCancelled || fileStatus == FSComplete) $ do
+    withStore $ \st -> updateSndFileStatus st ft FSCancelled
+    withAgent $ \a -> do
+      void $ sendMessage a agentConnId "0 "
+      suspendConnection a agentConnId
+
+closeFileHandle :: ChatMonad m => Int64 -> (ChatController -> TVar (Map Int64 Handle)) -> m ()
+closeFileHandle fileId files = do
+  fs <- asks files
+  h_ <- atomically . stateTVar fs $ \m -> (M.lookup fileId m, M.delete fileId m)
+  mapM_ hClose h_ `E.catch` \(_ :: E.SomeException) -> pure ()
+
 chatError :: ChatMonad m => ChatErrorType -> m a
 chatError = throwError . ChatError
 
@@ -912,6 +993,7 @@ chatCommandP =
     <|> ("/file #" <|> "/f #") *> (SendGroupFile <$> displayName <* A.space <*> filePath)
     <|> ("/file @" <|> "/f @" <|> "/file " <|> "/f ") *> (SendFile <$> displayName <* A.space <*> filePath)
     <|> ("/receive " <|> "/fr ") *> (ReceiveFile <$> A.decimal <*> optional (A.space *> filePath))
+    <|> ("/cancel " <|> "/fc ") *> (CancelFile <$> A.decimal)
     <|> ("/markdown" <|> "/m") $> MarkdownHelp
     <|> ("/profile " <|> "/p ") *> (UpdateProfile <$> userProfile)
     <|> ("/profile" <|> "/p") $> ShowProfile

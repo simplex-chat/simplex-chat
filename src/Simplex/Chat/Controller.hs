@@ -11,6 +11,8 @@ import Control.Monad.Except
 import Control.Monad.IO.Unlift
 import Control.Monad.Reader
 import Crypto.Random (ChaChaDRG)
+import Data.Int (Int64)
+import Data.Map.Strict (Map)
 import Numeric.Natural
 import Simplex.Chat.Notification
 import Simplex.Chat.Store (StoreError)
@@ -20,6 +22,7 @@ import Simplex.Messaging.Agent (AgentClient)
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig)
 import Simplex.Messaging.Agent.Protocol (AgentErrorType)
 import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore)
+import System.IO (Handle)
 import UnliftIO.STM
 
 data ChatConfig = ChatConfig
@@ -39,6 +42,8 @@ data ChatController = ChatController
     notifyQ :: TBQueue Notification,
     sendNotification :: Notification -> IO (),
     chatLock :: TMVar (),
+    sndFiles :: TVar (Map Int64 Handle),
+    rcvFiles :: TVar (Map Int64 Handle),
     config :: ChatConfig
   }
 
@@ -64,7 +69,9 @@ data ChatErrorType
   | CEFileNotFound String
   | CEFileAlreadyReceiving String
   | CEFileAlreadyExists FilePath
+  | CEFileRead FilePath SomeException
   | CEFileWrite FilePath SomeException
+  | CEFileSend Int64 AgentErrorType
   | CEFileRcvChunk String
   | CEFileInternal String
   deriving (Show, Exception)
