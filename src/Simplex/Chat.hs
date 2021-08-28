@@ -526,8 +526,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
             _ -> messageError "REQ from file connection must have x.file.acpt"
         CON -> do
           withStore $ \st -> updateSndFileStatus st ft FSConnected
-          -- TODO
-          liftIO $ putStrLn $ "About to send the file " <> show fileId
+          showSndFileStart fileId
           sendFileChunk conn ft
         SENT msgId -> do
           withStore $ \st -> updateSndFileChunkSent st ft msgId
@@ -546,8 +545,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
           withStore $ \st -> updateSndFileChunkMsg st ft chunkNo msgId
         Nothing -> do
           withStore $ \st -> updateSndFileStatus st ft FSSent
-          -- TODO
-          liftIO $ putStrLn $ "completed sending the file " <> show fileId
+          showSndFileComplete fileId
 
     readFileChunk :: SndFileTransfer -> Integer -> m ByteString
     readFileChunk SndFileTransfer {filePath, chunkSize} chunkNo = do
@@ -561,7 +559,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
       case agentMsg of
         CON -> do
           withStore $ \st -> updateRcvFileStatus st ft FSConnected
-          liftIO $ putStrLn $ "About to receive the file " <> show fileId
+          showRcvFileStart fileId
         MSG MsgMeta {recipient = (msgId, _)} msgBody -> do
           -- TODO check integrity and abort transfer if violated
           (chunkNo, chunk) <- parseFileChunk msgBody
@@ -570,7 +568,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
             RcvChunkFinal -> do
               appendFileChunk ft chunk
               withStore $ \st -> updateRcvFileStatus st ft FSSent
-              liftIO $ putStrLn $ "Completed receiving the file " <> show fileId
+              showRcvFileComplete fileId
             RcvChunkDuplicate -> pure ()
             RcvChunkError -> pure () -- TODO abort file transfer
         _ -> pure ()

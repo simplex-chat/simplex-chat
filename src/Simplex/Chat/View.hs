@@ -25,8 +25,12 @@ module Simplex.Chat.View
     showSentMessage,
     showSentGroupMessage,
     showSentFileInvitation,
+    showSndFileStart,
+    showSndFileComplete,
     showReceivedFileInvitation,
     showRcvFileAccepted,
+    showRcvFileStart,
+    showRcvFileComplete,
     showGroupCreated,
     showGroupDeletedUser,
     showGroupDeleted,
@@ -132,11 +136,23 @@ showSentMessage_ to msg = printToView =<< liftIO (sentMessage to msg)
 showSentFileInvitation :: ChatReader m => ContactName -> SndFileTransfer -> m ()
 showSentFileInvitation = printToView .: sentFileInvitation
 
+showSndFileStart :: ChatReader m => Int64 -> m ()
+showSndFileStart = printToView . sndFileStart
+
+showSndFileComplete :: ChatReader m => Int64 -> m ()
+showSndFileComplete = printToView . sndFileComplete
+
 showReceivedFileInvitation :: ChatReader m => ContactName -> RcvFileTransfer -> m ()
 showReceivedFileInvitation = printToView .: receivedFileInvitation
 
 showRcvFileAccepted :: ChatReader m => Int64 -> FilePath -> m ()
 showRcvFileAccepted = printToView .: rcvFileAccepted
+
+showRcvFileStart :: ChatReader m => Int64 -> m ()
+showRcvFileStart = printToView . rcvFileStart
+
+showRcvFileComplete :: ChatReader m => Int64 -> m ()
+showRcvFileComplete = printToView . rcvFileComplete
 
 showGroupCreated :: ChatReader m => Group -> m ()
 showGroupCreated = printToView . groupCreated
@@ -398,9 +414,15 @@ msgPlain = map styleMarkdownText . T.lines
 
 sentFileInvitation :: ContactName -> SndFileTransfer -> [StyledString]
 sentFileInvitation cName SndFileTransfer {fileId, fileName} =
-  [ "sending file " <> sShow fileName <> " to " <> ttyContact cName <> " ...",
+  [ "sent file offer: " <> sShow fileName <> " to " <> ttyContact cName,
     "use " <> highlight ("/fc " <> show fileId) <> " to cancel sending"
   ]
+
+sndFileStart :: Int64 -> [StyledString]
+sndFileStart fileId = ["started sending the file " <> sShow fileId]
+
+sndFileComplete :: Int64 -> [StyledString]
+sndFileComplete fileId = ["completed sending the file " <> sShow fileId]
 
 receivedFileInvitation :: ContactName -> RcvFileTransfer -> [StyledString]
 receivedFileInvitation c RcvFileTransfer {fileId, fileInvitation = FileInvitation {fileName, fileSize}} =
@@ -410,6 +432,12 @@ receivedFileInvitation c RcvFileTransfer {fileId, fileInvitation = FileInvitatio
 
 rcvFileAccepted :: Int64 -> FilePath -> [StyledString]
 rcvFileAccepted fileId filePath = ["saving file " <> sShow fileId <> " to " <> plain filePath]
+
+rcvFileStart :: Int64 -> [StyledString]
+rcvFileStart fileId = ["started receiving the file " <> sShow fileId]
+
+rcvFileComplete :: Int64 -> [StyledString]
+rcvFileComplete fileId = ["completed receiving the file " <> sShow fileId]
 
 humanReadableSize :: Integer -> String
 humanReadableSize size
