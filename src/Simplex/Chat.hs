@@ -338,6 +338,7 @@ subscribeUserConnections = void . runExceptT $ do
   user <- readTVarIO =<< asks currentUser
   subscribeContacts user
   subscribeGroups user
+  subscribeFiles user
   subscribePendingConnections user
   where
     subscribeContacts user = do
@@ -357,6 +358,20 @@ subscribeUserConnections = void . runExceptT $ do
             forM_ connectedMembers $ \(GroupMember {localDisplayName = c}, cId) ->
               subscribe cId `catchError` showMemberSubError g c
             showGroupSubscribed g
+    subscribeFiles user = do
+      withStore (`getLiveSndFileTransfers` user) >>= mapM_ subscribeSndFile
+      withStore (`getLiveRcvFileTransfers` user) >>= mapM_ subscribeRcvFile
+      where
+        subscribeSndFile ft@SndFileTransfer {agentConnId} =
+          subscribe agentConnId `catchError` showSndFileSubError ft
+        subscribeRcvFile ft@RcvFileTransfer {fileStatus} =
+          case fileStatus of
+            RFSAccepted fInfo -> subscribeConn fInfo
+            RFSConnected fInfo -> subscribeConn fInfo
+            _ -> pure ()
+          where
+            subscribeConn RcvFileInfo {agentConnId} =
+              subscribe agentConnId `catchError` showRcvFileSubError ft
     subscribePendingConnections user = do
       connections <- withStore (`getPendingConnections` user)
       forM_ connections $ \Connection {agentConnId} ->

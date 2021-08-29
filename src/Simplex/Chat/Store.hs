@@ -28,6 +28,8 @@ module Simplex.Chat.Store
     updateUserProfile,
     updateContactProfile,
     getUserContacts,
+    getLiveRcvFileTransfers,
+    getLiveSndFileTransfers,
     getPendingConnections,
     getContactConnections,
     getConnectionChatDirection,
@@ -348,8 +350,43 @@ getContact_ db userId localDisplayName = do
 getUserContacts :: MonadUnliftIO m => SQLiteStore -> User -> m [Contact]
 getUserContacts st User {userId} =
   liftIO . withTransaction st $ \db -> do
-    contactNames <- liftIO $ map fromOnly <$> DB.query db "SELECT local_display_name FROM contacts WHERE user_id = ?" (Only userId)
+    contactNames <- map fromOnly <$> DB.query db "SELECT local_display_name FROM contacts WHERE user_id = ?" (Only userId)
     rights <$> mapM (runExceptT . getContact_ db userId) contactNames
+
+getLiveRcvFileTransfers :: MonadUnliftIO m => SQLiteStore -> User -> m [RcvFileTransfer]
+getLiveRcvFileTransfers st User {userId} =
+  liftIO . withTransaction st $ \db -> do
+    fileIds :: [Int64] <-
+      map fromOnly
+        <$> DB.query
+          db
+          [sql|
+            SELECT f.file_id
+            FROM files f
+            JOIN rcv_files r
+            WHERE f.user_id = ? AND r.file_status IN (?, ?)
+          |]
+          (userId, FSAccepted, FSConnected)
+    rights <$> mapM (getRcvFileTransfer_ db userId) fileIds
+
+getLiveSndFileTransfers :: MonadUnliftIO m => SQLiteStore -> User -> m [SndFileTransfer]
+getLiveSndFileTransfers st User {userId} =
+  liftIO . withTransaction st $ \db -> do
+    fileIds :: [Int64] <-
+      map fromOnly
+        <$> DB.query
+          db
+          [sql|
+            SELECT DISTINCT f.file_id
+            FROM files f
+            JOIN snd_files s
+            WHERE f.user_id = ? AND s.file_status IN (?, ?, ?)
+          |]
+          (userId, FSNew, FSAccepted, FSConnected)
+    concatMap (filter liveTransfer) . rights <$> mapM (getSndFileTransfers_ db userId) fileIds
+  where
+    liveTransfer :: SndFileTransfer -> Bool
+    liveTransfer SndFileTransfer {fileStatus} = fileStatus `elem` [FSNew, FSAccepted, FSConnected]
 
 getPendingConnections :: MonadUnliftIO m => SQLiteStore -> User -> m [Connection]
 getPendingConnections st User {userId} =
@@ -1219,6 +1256,7 @@ acceptRcvFileTransfer st userId fileId agentConnId filePath =
   liftIO . withTransaction st $ \db -> do
     DB.execute db "UPDATE files SET file_path = ? WHERE user_id = ? AND file_id = ?" (filePath, userId, fileId)
     DB.execute db "UPDATE rcv_files SET file_status = ? WHERE file_id = ?" (FSAccepted, fileId)
+
     DB.execute db "INSERT INTO connections (agent_conn_id, conn_status, conn_type, rcv_file_id, user_id) VALUES (?, ?, ?, ?, ?)" (agentConnId, ConnJoined, ConnRcvFile, fileId, userId)
 
 updateRcvFileStatus :: MonadUnliftIO m => SQLiteStore -> RcvFileTransfer -> FileStatus -> m ()

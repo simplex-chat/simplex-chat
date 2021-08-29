@@ -36,6 +36,8 @@ module Simplex.Chat.View
     showRcvFileCancelled,
     showRcvFileSndCancelled,
     showFileTransferStatus,
+    showSndFileSubError,
+    showRcvFileSubError,
     showGroupCreated,
     showGroupDeletedUser,
     showGroupDeleted,
@@ -174,6 +176,12 @@ showRcvFileSndCancelled = printToView . rcvFileSndCancelled
 
 showFileTransferStatus :: ChatReader m => (FileTransfer, [Integer]) -> m ()
 showFileTransferStatus = printToView . fileTransferStatus
+
+showSndFileSubError :: ChatReader m => SndFileTransfer -> ChatError -> m ()
+showSndFileSubError = printToView .: sndFileSubError
+
+showRcvFileSubError :: ChatReader m => RcvFileTransfer -> ChatError -> m ()
+showRcvFileSubError = printToView .: rcvFileSubError
 
 showGroupCreated :: ChatReader m => Group -> m ()
 showGroupCreated = printToView . groupCreated
@@ -514,6 +522,14 @@ fileTransferStatus (FTRcv RcvFileTransfer {fileId, fileInvitation = FileInvitati
 fileProgress :: [Integer] -> Integer -> Integer -> StyledString
 fileProgress chunksNum chunkSize fileSize =
   sShow (sum chunksNum * chunkSize * 100 `div` fileSize) <> "% of " <> humanReadableSize fileSize
+
+sndFileSubError :: SndFileTransfer -> ChatError -> [StyledString]
+sndFileSubError SndFileTransfer {fileId, fileName} e =
+  ["sent file " <> sShow fileId <> " (" <> plain fileName <> ") error: " <> sShow e]
+
+rcvFileSubError :: RcvFileTransfer -> ChatError -> [StyledString]
+rcvFileSubError RcvFileTransfer {fileId, fileInvitation = FileInvitation {fileName}} e =
+  ["received file " <> sShow fileId <> " (" <> plain fileName <> ") error: " <> sShow e]
 
 chatError :: ChatError -> [StyledString]
 chatError = \case
