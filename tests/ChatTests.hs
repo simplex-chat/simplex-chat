@@ -5,7 +5,6 @@
 module ChatTests where
 
 import ChatClient
-import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
 import Control.Concurrent.STM
 import qualified Data.ByteString as B
@@ -13,6 +12,8 @@ import Data.Char (isDigit)
 import qualified Data.Text as T
 import Simplex.Chat.Controller
 import Simplex.Chat.Types (Profile (..), User (..))
+import Simplex.Chat.Util (unlessM)
+import System.Directory (doesFileExist)
 import System.Timeout (timeout)
 import Test.Hspec
 
@@ -444,9 +445,8 @@ testFileRcvCancel =
       connectUsers alice bob
       startFileTransfer alice bob
       bob ##> "/fs 1"
-      status <- getTermLine bob
-      status `shouldStartWith` "received file transfer progress:"
-      threadDelay 50000
+      getTermLine bob >>= (`shouldStartWith` "received file transfer progress:")
+      waitFileExists "./tests/tmp/test.jpg"
       bob ##> "/fc 1"
       concurrentlyN_
         [ do
@@ -459,6 +459,8 @@ testFileRcvCancel =
             alice <## "sent file transfer is cancelled"
         ]
       checkPartialTransfer
+  where
+    waitFileExists f = unlessM (doesFileExist f) $ waitFileExists f
 
 startFileTransfer :: TestCC -> TestCC -> IO ()
 startFileTransfer alice bob = do
@@ -475,7 +477,6 @@ startFileTransfer alice bob = do
 
 checkPartialTransfer :: IO ()
 checkPartialTransfer = do
-  putStrLn "checkPartialTransfer"
   src <- B.readFile "./tests/fixtures/test.jpg"
   dest <- B.readFile "./tests/tmp/test.jpg"
   B.unpack src `shouldStartWith` B.unpack dest
