@@ -28,8 +28,10 @@ module Simplex.Chat.Store
     updateUserProfile,
     updateContactProfile,
     getUserContacts,
-    getLiveRcvFileTransfers,
     getLiveSndFileTransfers,
+    getLiveRcvFileTransfers,
+    getPendingSndChunks,
+    getPendingRcvChunks,
     getPendingConnections,
     getContactConnections,
     getConnectionChatDirection,
@@ -353,22 +355,6 @@ getUserContacts st User {userId} =
     contactNames <- map fromOnly <$> DB.query db "SELECT local_display_name FROM contacts WHERE user_id = ?" (Only userId)
     rights <$> mapM (runExceptT . getContact_ db userId) contactNames
 
-getLiveRcvFileTransfers :: MonadUnliftIO m => SQLiteStore -> User -> m [RcvFileTransfer]
-getLiveRcvFileTransfers st User {userId} =
-  liftIO . withTransaction st $ \db -> do
-    fileIds :: [Int64] <-
-      map fromOnly
-        <$> DB.query
-          db
-          [sql|
-            SELECT f.file_id
-            FROM files f
-            JOIN rcv_files r
-            WHERE f.user_id = ? AND r.file_status IN (?, ?)
-          |]
-          (userId, FSAccepted, FSConnected)
-    rights <$> mapM (getRcvFileTransfer_ db userId) fileIds
-
 getLiveSndFileTransfers :: MonadUnliftIO m => SQLiteStore -> User -> m [SndFileTransfer]
 getLiveSndFileTransfers st User {userId} =
   liftIO . withTransaction st $ \db -> do
@@ -387,6 +373,49 @@ getLiveSndFileTransfers st User {userId} =
   where
     liveTransfer :: SndFileTransfer -> Bool
     liveTransfer SndFileTransfer {fileStatus} = fileStatus `elem` [FSNew, FSAccepted, FSConnected]
+
+getLiveRcvFileTransfers :: MonadUnliftIO m => SQLiteStore -> User -> m [RcvFileTransfer]
+getLiveRcvFileTransfers st User {userId} =
+  liftIO . withTransaction st $ \db -> do
+    fileIds :: [Int64] <-
+      map fromOnly
+        <$> DB.query
+          db
+          [sql|
+            SELECT f.file_id
+            FROM files f
+            JOIN rcv_files r
+            WHERE f.user_id = ? AND r.file_status IN (?, ?)
+          |]
+          (userId, FSAccepted, FSConnected)
+    rights <$> mapM (getRcvFileTransfer_ db userId) fileIds
+
+getPendingSndChunks :: MonadUnliftIO m => SQLiteStore -> Int64 -> Int64 -> m [Integer]
+getPendingSndChunks st fileId connId =
+  liftIO . withTransaction st $ \db ->
+    map fromOnly
+      <$> DB.query
+        db
+        [sql|
+          SELECT chunk_number
+          FROM snd_file_chunks
+          WHERE file_id = ? AND connection_id = ? AND chunk_agent_msg_id IS NULL
+          ORDER BY chunk_number
+        |]
+        (fileId, connId)
+
+getPendingRcvChunks :: MonadUnliftIO m => SQLiteStore -> Int64 -> m [(Integer, ByteString)]
+getPendingRcvChunks st fileId =
+  liftIO . withTransaction st $ \db ->
+    DB.query
+      db
+      [sql|
+        SELECT chunk_number, chunk_body
+        FROM rcv_file_chunks
+        WHERE file_id = ? AND chunk_stored = 0 AND chunk_body IS NOT NULL
+        ORDER BY chunk_number
+      |]
+      (Only fileId)
 
 getPendingConnections :: MonadUnliftIO m => SQLiteStore -> User -> m [Connection]
 getPendingConnections st User {userId} =
@@ -1264,16 +1293,16 @@ updateRcvFileStatus st RcvFileTransfer {fileId} status =
   liftIO . withTransaction st $ \db ->
     DB.execute db "UPDATE rcv_files SET file_status = ? WHERE file_id = ?" (status, fileId)
 
-createRcvFileChunk :: MonadUnliftIO m => SQLiteStore -> RcvFileTransfer -> Integer -> AgentMsgId -> m RcvChunkStatus
-createRcvFileChunk st RcvFileTransfer {fileId, fileInvitation = FileInvitation {fileSize}, chunkSize} chunkNo msgId =
+createRcvFileChunk :: MonadUnliftIO m => SQLiteStore -> RcvFileTransfer -> Integer -> AgentMsgId -> ByteString -> m RcvChunkStatus
+createRcvFileChunk st RcvFileTransfer {fileId, fileInvitation = FileInvitation {fileSize}, chunkSize} chunkNo msgId chunk =
   liftIO . withTransaction st $ \db -> do
     status <- getLastChunkNo db
-    when (status == RcvChunkOk || status == RcvChunkFinal) $
-      DB.execute db "INSERT INTO rcv_file_chunks (file_id, chunk_number, chunk_agent_msg_id) VALUES (?, ?, ?)" (fileId, chunkNo, msgId)
+    unless (status == RcvChunkError) $
+      DB.execute db "INSERT OR REPLACE INTO rcv_file_chunks (file_id, chunk_number, chunk_agent_msg_id, chunk_body) VALUES (?, ?, ?, ?)" (fileId, chunkNo, msgId, chunk)
     pure status
   where
     getLastChunkNo db = do
-      ns <- DB.query db "SELECT chunk_number FROM rcv_file_chunks WHERE file_id = ? ORDER BY chunk_number DESC LIMIT 1" (Only fileId)
+      ns <- DB.query db "SELECT chunk_number FROM rcv_file_chunks WHERE file_id = ? AND chunk_stored = 1 ORDER BY chunk_number DESC LIMIT 1" (Only fileId)
       pure $ case map fromOnly ns of
         [] -> if chunkNo == 1 then RcvChunkOk else RcvChunkError
         n : _
@@ -1295,7 +1324,7 @@ updatedRcvFileChunkStored st RcvFileTransfer {fileId} chunkNo =
       db
       [sql|
         UPDATE rcv_file_chunks
-        SET chunk_stored = 1
+        SET chunk_stored = 1, chunk_body = NULL
         WHERE file_id = ? AND chunk_number = ?
       |]
       (fileId, chunkNo)
