@@ -441,7 +441,7 @@ msgPlain = map styleMarkdownText . T.lines
 
 sentFileInvitation :: ContactName -> SndFileTransfer -> [StyledString]
 sentFileInvitation cName SndFileTransfer {fileId, fileName} =
-  [ "sent file offer: " <> sShow fileName <> " to " <> ttyContact cName,
+  [ "offered to send the file " <> plain fileName <> " to " <> ttyContact cName,
     "use " <> highlight ("/fc " <> show fileId) <> " to cancel sending"
   ]
 
@@ -508,8 +508,8 @@ fileTransferStatus (FTRcv RcvFileTransfer {fileId, fileInvitation = FileInvitati
       RFSNew -> "is not accepted yet, use " <> highlight ("/fr " <> show fileId) <> " to receive file"
       RFSAccepted _ -> "just started"
       RFSConnected _ -> "progress: " <> fileProgress chunksNum chunkSize fileSize
-      RFSComplete RcvFileInfo {filePath} -> "is complete, path: " <> sShow filePath
-      RFSCancelled RcvFileInfo {filePath} -> "is cancelled, received part path: " <> sShow filePath
+      RFSComplete RcvFileInfo {filePath} -> "is complete, path: " <> plain filePath
+      RFSCancelled RcvFileInfo {filePath} -> "is cancelled, received part path: " <> plain filePath
 
 fileProgress :: [Integer] -> Integer -> Integer -> StyledString
 fileProgress chunksNum chunkSize fileSize =

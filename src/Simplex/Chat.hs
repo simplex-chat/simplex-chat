@@ -554,7 +554,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
         MERR _ err -> do
           cancelSndFileTransfer ft
           case err of
-            SMP SMP.AUTH -> showSndFileRcvCancelled fileId
+            SMP SMP.AUTH -> unless (fileStatus == FSCancelled) $ showSndFileRcvCancelled fileId
             _ -> chatError $ CEFileSend fileId err
         _ -> pure ()
 
