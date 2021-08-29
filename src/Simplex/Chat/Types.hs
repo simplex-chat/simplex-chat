@@ -321,20 +321,24 @@ data FileInvitation = FileInvitation
 data RcvFileTransfer = RcvFileTransfer
   { fileId :: Int64,
     fileInvitation :: FileInvitation,
-    fileProgress :: RcvFileProgress,
+    fileStatus :: RcvFileStatus,
     chunkSize :: Integer
   }
   deriving (Eq, Show)
 
-data RcvFileProgress
-  = FPNew
-  | FPComplete
-  | FPCancelled
-  | RcvFileProgress
-      { filePath :: FilePath,
-        connId :: Int64,
-        agentConnId :: ConnId
-      }
+data RcvFileStatus
+  = RFSNew
+  | RFSAccepted RcvFileInfo
+  | RFSConnected RcvFileInfo
+  | RFSComplete RcvFileInfo
+  | RFSCancelled RcvFileInfo
+  deriving (Eq, Show)
+
+data RcvFileInfo = RcvFileInfo
+  { filePath :: FilePath,
+    connId :: Int64,
+    agentConnId :: ConnId
+  }
   deriving (Eq, Show)
 
 data FileTransfer = FTSnd [SndFileTransfer] | FTRcv RcvFileTransfer

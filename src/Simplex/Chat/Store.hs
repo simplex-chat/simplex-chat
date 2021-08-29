@@ -68,7 +68,9 @@ module Simplex.Chat.Store
     acceptRcvFileTransfer,
     updateRcvFileStatus,
     createRcvFileChunk,
+    updatedRcvFileChunkStored,
     getFileTransfer,
+    getFileTransferProgress,
   )
 where
 
@@ -1153,7 +1155,7 @@ createRcvFileTransfer st userId contactId f@FileInvitation {fileName, fileSize, 
     DB.execute db "INSERT INTO files (user_id, contact_id, file_name, file_size, chunk_size) VALUES (?, ?, ?, ?, ?)" (userId, contactId, fileName, fileSize, chunkSize)
     fileId <- insertedRowId db
     DB.execute db "INSERT INTO rcv_files (file_id, file_status, file_queue_info) VALUES (?, ?, ?)" (fileId, FSNew, fileQInfo)
-    pure RcvFileTransfer {fileId, fileInvitation = f, fileProgress = FPNew, chunkSize}
+    pure RcvFileTransfer {fileId, fileInvitation = f, fileStatus = RFSNew, chunkSize}
 
 getRcvFileTransfer :: StoreMonad m => SQLiteStore -> UserId -> Int64 -> m RcvFileTransfer
 getRcvFileTransfer st userId fileId =
@@ -1178,17 +1180,21 @@ getRcvFileTransfer_ db userId fileId =
     rcvFileTransfer ::
       [(FileStatus, SMPQueueInfo, String, Integer, Integer, Maybe FilePath, Maybe Int64, Maybe ConnId)] ->
       Either StoreError RcvFileTransfer
-    rcvFileTransfer [(fileStatus, fileQInfo, fileName, fileSize, chunkSize, filePath_, connId_, agentConnId_)] =
+    rcvFileTransfer [(fileStatus', fileQInfo, fileName, fileSize, chunkSize, filePath_, connId_, agentConnId_)] =
       let fileInv = FileInvitation {fileName, fileSize, fileQInfo}
-       in case fileStatus of
-            FSNew -> ft fileInv FPNew
-            FSComplete -> ft fileInv FPComplete
-            FSCancelled -> ft fileInv FPCancelled
-            _ -> case (filePath_, connId_, agentConnId_) of
-              (Just filePath, Just connId, Just agentConnId) -> ft fileInv RcvFileProgress {filePath, connId, agentConnId}
-              _ -> Left $ SERcvFileInvalid fileId
+          fileInfo = (filePath_, connId_, agentConnId_)
+       in case fileStatus' of
+            FSNew -> Right RcvFileTransfer {fileId, fileInvitation = fileInv, fileStatus = RFSNew, chunkSize}
+            FSAccepted -> ft fileInv RFSAccepted fileInfo
+            FSConnected -> ft fileInv RFSConnected fileInfo
+            FSComplete -> ft fileInv RFSComplete fileInfo
+            FSCancelled -> ft fileInv RFSCancelled fileInfo
       where
-        ft fileInvitation fileProgress = Right RcvFileTransfer {fileId, fileInvitation, fileProgress, chunkSize}
+        ft fileInvitation rfs = \case
+          (Just filePath, Just connId, Just agentConnId) ->
+            let fileStatus = rfs RcvFileInfo {filePath, connId, agentConnId}
+             in Right RcvFileTransfer {..}
+          _ -> Left $ SERcvFileInvalid fileId
     rcvFileTransfer _ = Left $ SERcvFileNotFound fileId
 
 acceptRcvFileTransfer :: StoreMonad m => SQLiteStore -> UserId -> Int64 -> ConnId -> FilePath -> m ()
@@ -1227,25 +1233,50 @@ createRcvFileChunk st RcvFileTransfer {fileId, fileInvitation = FileInvitation {
                       else RcvChunkOk
           | otherwise -> RcvChunkError
 
+updatedRcvFileChunkStored :: MonadUnliftIO m => SQLiteStore -> RcvFileTransfer -> Integer -> m ()
+updatedRcvFileChunkStored st RcvFileTransfer {fileId} chunkNo =
+  liftIO . withTransaction st $ \db ->
+    DB.execute
+      db
+      [sql|
+        UPDATE rcv_file_chunks
+        SET chunk_stored = 1
+        WHERE file_id = ? AND chunk_number = ?
+      |]
+      (fileId, chunkNo)
+
 getFileTransfer :: StoreMonad m => SQLiteStore -> UserId -> Int64 -> m FileTransfer
 getFileTransfer st userId fileId =
-  liftIOEither . withTransaction st $ \db -> do
-    fileTransfer db
-      =<< DB.query
-        db
-        [sql|
-          SELECT s.file_id, r.file_id
-          FROM files f
-          LEFT JOIN snd_files s ON s.file_id = f.file_id
-          LEFT JOIN rcv_files r ON r.file_id = f.file_id
-          WHERE user_id = ? AND f.file_id = ?
-        |]
-        (userId, fileId)
+  liftIOEither . withTransaction st $ \db ->
+    getFileTransfer_ db userId fileId
+
+getFileTransferProgress :: StoreMonad m => SQLiteStore -> UserId -> Int64 -> m (FileTransfer, [Integer])
+getFileTransferProgress st userId fileId =
+  liftIOEither . withTransaction st $ \db -> runExceptT $ do
+    ft <- ExceptT $ getFileTransfer_ db userId fileId
+    liftIO $
+      (ft,) . map fromOnly <$> case ft of
+        FTSnd _ -> DB.query db "SELECT COUNT(*) FROM snd_file_chunks WHERE file_id = ? and chunk_sent = 1 GROUP BY connection_id" (Only fileId)
+        FTRcv _ -> DB.query db "SELECT COUNT(*) FROM rcv_file_chunks WHERE file_id = ? AND chunk_stored = 1" (Only fileId)
+
+getFileTransfer_ :: DB.Connection -> UserId -> Int64 -> IO (Either StoreError FileTransfer)
+getFileTransfer_ db userId fileId =
+  fileTransfer
+    =<< DB.query
+      db
+      [sql|
+        SELECT s.file_id, r.file_id
+        FROM files f
+        LEFT JOIN snd_files s ON s.file_id = f.file_id
+        LEFT JOIN rcv_files r ON r.file_id = f.file_id
+        WHERE user_id = ? AND f.file_id = ?
+      |]
+      (userId, fileId)
   where
-    fileTransfer :: DB.Connection -> [(Maybe Int64, Maybe Int64)] -> IO (Either StoreError FileTransfer)
-    fileTransfer db [(Nothing, Just _)] = FTRcv <$$> getRcvFileTransfer_ db userId fileId
-    fileTransfer db ((Just _, Nothing) : _) = FTSnd <$$> getSndFileTransfers_ db userId fileId
-    fileTransfer _ _ = pure . Left $ SEFileNotFound fileId
+    fileTransfer :: [(Maybe Int64, Maybe Int64)] -> IO (Either StoreError FileTransfer)
+    fileTransfer ((Just _, Nothing) : _) = FTSnd <$$> getSndFileTransfers_ db userId fileId
+    fileTransfer [(Nothing, Just _)] = FTRcv <$$> getRcvFileTransfer_ db userId fileId
+    fileTransfer _ = pure . Left $ SEFileNotFound fileId
 
 getSndFileTransfers_ :: DB.Connection -> UserId -> Int64 -> IO (Either StoreError [SndFileTransfer])
 getSndFileTransfers_ db userId fileId =

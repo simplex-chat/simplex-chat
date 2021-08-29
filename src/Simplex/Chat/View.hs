@@ -35,6 +35,7 @@ module Simplex.Chat.View
     showRcvFileComplete,
     showRcvFileCancelled,
     showRcvFileSndCancelled,
+    showFileTransferStatus,
     showGroupCreated,
     showGroupDeletedUser,
     showGroupDeleted,
@@ -170,6 +171,9 @@ showRcvFileCancelled = printToView . rcvFileCancelled
 
 showRcvFileSndCancelled :: ChatReader m => Int64 -> m ()
 showRcvFileSndCancelled = printToView . rcvFileSndCancelled
+
+showFileTransferStatus :: ChatReader m => (FileTransfer, [Integer]) -> m ()
+showFileTransferStatus = printToView . fileTransferStatus
 
 showGroupCreated :: ChatReader m => Group -> m ()
 showGroupCreated = printToView . groupCreated
@@ -455,9 +459,21 @@ sndFileRcvCancelled fileId = ["recipient cancelled receiving the file " <> sShow
 
 receivedFileInvitation :: ContactName -> RcvFileTransfer -> [StyledString]
 receivedFileInvitation c RcvFileTransfer {fileId, fileInvitation = FileInvitation {fileName, fileSize}} =
-  [ ttyContact c <> " wants to send you the file " <> plain fileName <> " (" <> plain (humanReadableSize fileSize) <> ")",
+  [ ttyContact c <> " wants to send you the file " <> plain fileName <> " (" <> humanReadableSize fileSize <> " / " <> sShow fileSize <> " bytes)",
     "use " <> highlight ("/fr " <> show fileId <> " [<dir>/ | <path>]") <> " to receive it"
   ]
+
+humanReadableSize :: Integer -> StyledString
+humanReadableSize size
+  | size < kB = sShow size <> " bytes"
+  | size < mB = hrSize kB "KiB"
+  | size < gB = hrSize mB "MiB"
+  | otherwise = hrSize gB "GiB"
+  where
+    hrSize sB name = plain $ unwords [showFFloat (Just 1) (fromIntegral size / (fromIntegral sB :: Double)) "", name]
+    kB = 1024
+    mB = kB * 1024
+    gB = mB * 1024
 
 rcvFileAccepted :: Int64 -> FilePath -> [StyledString]
 rcvFileAccepted fileId filePath = ["saving file " <> sShow fileId <> " to " <> plain filePath]
@@ -474,18 +490,30 @@ rcvFileCancelled fileId = ["cancelled receiving the file " <> sShow fileId]
 rcvFileSndCancelled :: Int64 -> [StyledString]
 rcvFileSndCancelled fileId = ["sender cancelled sending the file " <> sShow fileId]
 
-humanReadableSize :: Integer -> String
-humanReadableSize size
-  | size < kB = byteSize
-  | size < mB = hrSize kB "KiB"
-  | size < gB = hrSize mB "MiB"
-  | otherwise = hrSize gB "GiB"
+fileTransferStatus :: (FileTransfer, [Integer]) -> [StyledString]
+fileTransferStatus (FTSnd [SndFileTransfer {fileStatus, fileSize, chunkSize}], chunksNum) =
+  ["sent file transfer " <> sndStatus]
   where
-    byteSize = show size <> " bytes"
-    hrSize sB name = unwords [showFFloat (Just 1) (fromIntegral size / (fromIntegral sB :: Double)) "", name, "/", byteSize]
-    kB = 1024
-    mB = kB * 1024
-    gB = mB * 1024
+    sndStatus = case fileStatus of
+      FSNew -> "is not accepted yet"
+      FSAccepted -> "just started"
+      FSConnected -> "progress: " <> fileProgress chunksNum chunkSize fileSize
+      FSComplete -> "is complete"
+      FSCancelled -> "is cancelled"
+fileTransferStatus (FTSnd _fts, _chunks) = [] -- TODO group transfer
+fileTransferStatus (FTRcv RcvFileTransfer {fileId, fileInvitation = FileInvitation {fileSize}, fileStatus, chunkSize}, chunksNum) =
+  ["received file transfer " <> rcvStatus]
+  where
+    rcvStatus = case fileStatus of
+      RFSNew -> "is not accepted yet, use " <> highlight ("/fr " <> show fileId) <> " to receive file"
+      RFSAccepted _ -> "just started"
+      RFSConnected _ -> "progress: " <> fileProgress chunksNum chunkSize fileSize
+      RFSComplete RcvFileInfo {filePath} -> "is complete, path: " <> sShow filePath
+      RFSCancelled RcvFileInfo {filePath} -> "is cancelled, received part path: " <> sShow filePath
+
+fileProgress :: [Integer] -> Integer -> Integer -> StyledString
+fileProgress chunksNum chunkSize fileSize =
+  sShow (sum chunksNum * chunkSize * 100 `div` fileSize) <> "% of " <> humanReadableSize fileSize
 
 chatError :: ChatError -> [StyledString]
 chatError = \case

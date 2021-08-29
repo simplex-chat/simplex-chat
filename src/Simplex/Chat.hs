@@ -82,6 +82,7 @@ data ChatCommand
   | SendGroupFile GroupName FilePath
   | ReceiveFile Int64 (Maybe FilePath)
   | CancelFile Int64
+  | FileStatus Int64
   | UpdateProfile Profile
   | ShowProfile
   | QuitChat
@@ -269,8 +270,8 @@ processChatCommand user@User {userId, profile} = \case
     setActive $ ActiveC cName
   SendGroupFile _gName _file -> pure ()
   ReceiveFile fileId filePath_ -> do
-    RcvFileTransfer {fileInvitation = FileInvitation {fileName, fileQInfo}, fileProgress} <- withStore $ \st -> getRcvFileTransfer st userId fileId
-    unless (fileProgress == FPNew) . chatError $ CEFileAlreadyReceiving fileName
+    RcvFileTransfer {fileInvitation = FileInvitation {fileName, fileQInfo}, fileStatus} <- withStore $ \st -> getRcvFileTransfer st userId fileId
+    unless (fileStatus == RFSNew) . chatError $ CEFileAlreadyReceiving fileName
     agentConnId <- withAgent $ \a -> joinConnection a fileQInfo . directMessage $ XFileAcpt fileName
     filePath <- getRcvFilePath filePath_ fileName
     withStore $ \st -> acceptRcvFileTransfer st userId fileId agentConnId filePath
@@ -284,6 +285,8 @@ processChatCommand user@User {userId, profile} = \case
       FTRcv ft -> do
         cancelRcvFileTransfer ft
         showRcvFileCancelled fileId
+  FileStatus fileId ->
+    withStore (\st -> getFileTransferProgress st userId fileId) >>= showFileTransferStatus
   UpdateProfile p -> unless (p == profile) $ do
     user' <- withStore $ \st -> updateUserProfile st user p
     asks currentUser >>= atomically . (`writeTVar` user')
@@ -608,13 +611,17 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
                 RcvChunkOk ->
                   if B.length chunk /= fromInteger chunkSize
                     then badRcvFileChunk ft "incorrect chunk size"
-                    else appendFileChunk ft chunk
+                    else do
+                      appendFileChunk ft chunk
+                      withStore $ \st -> updatedRcvFileChunkStored st ft chunkNo
                 RcvChunkFinal ->
                   if B.length chunk > fromInteger chunkSize
                     then badRcvFileChunk ft "incorrect chunk size"
                     else do
                       appendFileChunk ft chunk
-                      withStore $ \st -> updateRcvFileStatus st ft FSComplete
+                      withStore $ \st -> do
+                        updatedRcvFileChunkStored st ft chunkNo
+                        updateRcvFileStatus st ft FSComplete
                       showRcvFileComplete fileId
                       closeFileHandle fileId rcvFiles
                       withAgent (`deleteConnection` agentConnId)
@@ -631,10 +638,10 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
     serializeFileChunk chunkNo bytes = bshow chunkNo <> " " <> bytes
 
     appendFileChunk :: RcvFileTransfer -> ByteString -> m ()
-    appendFileChunk RcvFileTransfer {fileId, fileProgress} chunk =
-      case fileProgress of
-        RcvFileProgress {filePath} -> append_ filePath `E.catch` (chatError . CEFileWrite filePath)
-        FPCancelled -> pure ()
+    appendFileChunk RcvFileTransfer {fileId, fileStatus} chunk =
+      case fileStatus of
+        RFSConnected RcvFileInfo {filePath} -> append_ filePath `E.catch` (chatError . CEFileWrite filePath)
+        RFSCancelled _ -> pure ()
         _ -> chatError $ CEFileInternal "receiving file transfer not in progress"
       where
         append_ fPath = do
@@ -841,11 +848,12 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
       showGroupDeleted gName m
 
 cancelRcvFileTransfer :: ChatMonad m => RcvFileTransfer -> m ()
-cancelRcvFileTransfer ft@RcvFileTransfer {fileId, fileProgress} = do
+cancelRcvFileTransfer ft@RcvFileTransfer {fileId, fileStatus} = do
   closeFileHandle fileId rcvFiles
   withStore $ \st -> updateRcvFileStatus st ft FSCancelled
-  case fileProgress of
-    RcvFileProgress {agentConnId} -> withAgent (`suspendConnection` agentConnId)
+  case fileStatus of
+    RFSAccepted RcvFileInfo {agentConnId} -> withAgent (`suspendConnection` agentConnId)
+    RFSConnected RcvFileInfo {agentConnId} -> withAgent (`suspendConnection` agentConnId)
     _ -> pure ()
 
 cancelSndFileTransfer :: ChatMonad m => SndFileTransfer -> m ()
@@ -991,9 +999,10 @@ chatCommandP =
     <|> ("/delete @" <|> "/delete " <|> "/d @" <|> "/d ") *> (DeleteContact <$> displayName)
     <|> A.char '@' *> (SendMessage <$> displayName <*> (A.space *> A.takeByteString))
     <|> ("/file #" <|> "/f #") *> (SendGroupFile <$> displayName <* A.space <*> filePath)
-    <|> ("/file @" <|> "/f @" <|> "/file " <|> "/f ") *> (SendFile <$> displayName <* A.space <*> filePath)
-    <|> ("/receive " <|> "/fr ") *> (ReceiveFile <$> A.decimal <*> optional (A.space *> filePath))
-    <|> ("/cancel " <|> "/fc ") *> (CancelFile <$> A.decimal)
+    <|> ("/file @" <|> "/file " <|> "/f @" <|> "/f ") *> (SendFile <$> displayName <* A.space <*> filePath)
+    <|> ("/file_receive " <|> "/fr ") *> (ReceiveFile <$> A.decimal <*> optional (A.space *> filePath))
+    <|> ("/file_cancel " <|> "/fc ") *> (CancelFile <$> A.decimal)
+    <|> ("/file_status " <|> "/fs ") *> (FileStatus <$> A.decimal)
     <|> ("/markdown" <|> "/m") $> MarkdownHelp
     <|> ("/profile " <|> "/p ") *> (UpdateProfile <$> userProfile)
     <|> ("/profile" <|> "/p") $> ShowProfile
