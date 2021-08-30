@@ -264,19 +264,19 @@ contactConnected :: Contact -> [StyledString]
 contactConnected ct = [ttyFullContact ct <> ": contact is connected"]
 
 contactDisconnected :: ContactName -> [StyledString]
-contactDisconnected c = [ttyContact c <> ": contact is disconnected (messages will be queued)"]
+contactDisconnected c = [ttyContact c <> ": disconnected from server (messages will be queued)"]
 
 contactAnotherClient :: ContactName -> [StyledString]
 contactAnotherClient c = [ttyContact c <> ": contact is connected to another client"]
 
 contactSubscribed :: ContactName -> [StyledString]
-contactSubscribed c = [ttyContact c <> ": contact is active"]
+contactSubscribed c = [ttyContact c <> ": connected to server"]
 
 contactSubError :: ContactName -> ChatError -> [StyledString]
 contactSubError c e = [ttyContact c <> ": contact error " <> sShow e]
 
 groupSubscribed :: GroupName -> [StyledString]
-groupSubscribed g = [ttyGroup g <> ": group is active"]
+groupSubscribed g = [ttyGroup g <> ": connected to server(s)"]
 
 groupEmpty :: GroupName -> [StyledString]
 groupEmpty g = [ttyGroup g <> ": group is empty"]

@@ -429,9 +429,11 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
           acceptAgentConnection conn confId $ XInfo profile
         INFO connInfo ->
           saveConnInfo conn connInfo
+        MSG meta _ ->
+          withAckMessage agentConnId meta $ pure ()
         _ -> pure ()
       Just ct@Contact {localDisplayName = c} -> case agentMsg of
-        MSG meta msgBody -> do
+        MSG meta msgBody -> withAckMessage agentConnId meta $ do
           ChatMessage {chatMsgEvent} <- liftEither $ parseChatMessage msgBody
           case chatMsgEvent of
             XMsgNew (MsgContent MTText [] body) -> newTextMessage c meta $ find (isSimplexContentType XCText) body
@@ -548,7 +550,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
                 when (contactIsReady ct) $ do
                   notifyMemberConnected gName m
                   when (memberCategory m == GCPreMember) $ probeMatchingContacts ct
-      MSG meta msgBody -> do
+      MSG meta msgBody -> withAckMessage agentConnId meta $ do
         ChatMessage {chatMsgEvent} <- liftEither $ parseChatMessage msgBody
         case chatMsgEvent of
           XMsgNew (MsgContent MTText [] body) ->
@@ -587,6 +589,8 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
           case err of
             SMP SMP.AUTH -> unless (fileStatus == FSCancelled) $ showSndFileRcvCancelled fileId
             _ -> chatError $ CEFileSend fileId err
+        MSG meta _ ->
+          withAckMessage agentConnId meta $ pure ()
         _ -> pure ()
 
     processRcvFileConn :: ACommand 'Agent -> Connection -> RcvFileTransfer -> m ()
@@ -595,7 +599,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
         CON -> do
           withStore $ \st -> updateRcvFileStatus st ft FSConnected
           showRcvFileStart fileId
-        MSG MsgMeta {recipient = (msgId, _)} msgBody -> do
+        MSG meta@MsgMeta {recipient = (msgId, _)} msgBody -> withAckMessage agentConnId meta $ do
           -- TODO check integrity and abort transfer if violated
           parseFileChunk msgBody >>= \case
             (0, _) -> do
@@ -620,6 +624,10 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
                 RcvChunkDuplicate -> pure ()
                 RcvChunkError -> badRcvFileChunk ft $ "incorrect chunk number " <> show chunkNo
         _ -> pure ()
+
+    withAckMessage :: ConnId -> MsgMeta -> m () -> m ()
+    withAckMessage cId MsgMeta {recipient = (msgId, _)} action =
+      action `E.finally` withAgent (\a -> ackMessage a cId msgId `catchError` \_ -> pure ())
 
     badRcvFileChunk :: RcvFileTransfer -> String -> m ()
     badRcvFileChunk ft@RcvFileTransfer {fileStatus} err =
