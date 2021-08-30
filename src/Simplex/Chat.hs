@@ -57,6 +57,7 @@ import System.FilePath (combine, splitExtensions, takeFileName)
 import System.IO (Handle, IOMode (..), SeekMode (..), hFlush, openFile, stdout)
 import Text.Read (readMaybe)
 import UnliftIO.Async (race_)
+import UnliftIO.Concurrent (forkIO, threadDelay)
 import UnliftIO.Directory (doesDirectoryExist, doesFileExist, getFileSize, getTemporaryDirectory)
 import qualified UnliftIO.Exception as E
 import UnliftIO.IO (hClose, hSeek, hTell, withFile)
@@ -338,7 +339,7 @@ subscribeUserConnections = void . runExceptT $ do
   user <- readTVarIO =<< asks currentUser
   subscribeContacts user
   subscribeGroups user
-  -- subscribeFiles user
+  subscribeFiles user
   subscribePendingConnections user
   where
     subscribeContacts user = do
@@ -362,11 +363,14 @@ subscribeUserConnections = void . runExceptT $ do
       withStore (`getLiveSndFileTransfers` user) >>= mapM_ subscribeSndFile
       withStore (`getLiveRcvFileTransfers` user) >>= mapM_ subscribeRcvFile
       where
-        subscribeSndFile ft@SndFileTransfer {fileId, connId, agentConnId} = do
+        subscribeSndFile ft@SndFileTransfer {fileId, agentConnId} = do
           subscribe agentConnId `catchError` showSndFileSubError ft
-          chunkNos <- withStore $ \st -> getPendingSndChunks st fileId connId
-          forM_ chunkNos $ sendFileChunkNo ft
-        -- when (null chunkNos) $ sendFileChunk ft
+          void . forkIO $ do
+            threadDelay 1000000
+            l <- asks chatLock
+            a <- asks smpAgent
+            unlessM (isFileActive fileId sndFiles) . withAgentLock a . withLock l $
+              sendFileChunk ft
         subscribeRcvFile ft@RcvFileTransfer {fileId, fileStatus, chunkSize} =
           case fileStatus of
             RFSAccepted fInfo -> resume fInfo
@@ -377,6 +381,7 @@ subscribeUserConnections = void . runExceptT $ do
               subscribe agentConnId `catchError` showRcvFileSubError ft
               size <- getFileSize filePath `E.catch` \(_ :: E.SomeException) -> pure 0
               chunks <- filter ((> size) . (* chunkSize) . fst) <$> withStore (`getPendingRcvChunks` fileId)
+              -- liftIO $ print $ map (show . fst) chunks
               forM_ chunks . uncurry $ appendFileChunk ft
     subscribePendingConnections user = do
       connections <- withStore (`getPendingConnections` user)
@@ -596,7 +601,8 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
             (0, _) -> do
               cancelRcvFileTransfer ft
               showRcvFileSndCancelled fileId
-            (chunkNo, chunk) ->
+            (chunkNo, chunk) -> do
+              -- liftIO $ putStrLn $ "received chunk " <> show chunkNo
               withStore (\st -> createRcvFileChunk st ft chunkNo msgId chunk) >>= \case
                 RcvChunkOk ->
                   if B.length chunk /= fromInteger chunkSize
@@ -612,13 +618,16 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
                       closeFileHandle fileId rcvFiles
                       withAgent (`deleteConnection` agentConnId)
                 RcvChunkDuplicate -> pure ()
-                RcvChunkError -> badRcvFileChunk ft "incorrect chunk number"
+                RcvChunkError -> badRcvFileChunk ft $ "incorrect chunk number " <> show chunkNo
         _ -> pure ()
 
     badRcvFileChunk :: RcvFileTransfer -> String -> m ()
-    badRcvFileChunk ft err = do
-      cancelRcvFileTransfer ft
-      chatError $ CEFileRcvChunk err
+    badRcvFileChunk ft@RcvFileTransfer {fileStatus} err =
+      case fileStatus of
+        RFSCancelled _ -> pure ()
+        _ -> do
+          cancelRcvFileTransfer ft
+          chatError $ CEFileRcvChunk err
 
     notifyMemberConnected :: GroupName -> GroupMember -> m ()
     notifyMemberConnected gName m@GroupMember {localDisplayName} = do
@@ -826,9 +835,12 @@ sendFileChunk ft@SndFileTransfer {fileId, agentConnId} =
 
 sendFileChunkNo :: ChatMonad m => SndFileTransfer -> Integer -> m ()
 sendFileChunkNo ft@SndFileTransfer {agentConnId} chunkNo = do
+  -- liftIO $ putStrLn $ "sending chunk " <> show chunkNo
   bytes <- readFileChunk ft chunkNo
   msgId <- withAgent $ \a -> sendMessage a agentConnId $ serializeFileChunk chunkNo bytes
   withStore $ \st -> updateSndFileChunkMsg st ft chunkNo msgId
+
+-- liftIO $ putStrLn $ "sent chunk " <> show chunkNo
 
 readFileChunk :: ChatMonad m => SndFileTransfer -> Integer -> m ByteString
 readFileChunk SndFileTransfer {fileId, filePath, chunkSize} chunkNo =
@@ -852,15 +864,18 @@ serializeFileChunk chunkNo bytes = bshow chunkNo <> " " <> bytes
 appendFileChunk :: ChatMonad m => RcvFileTransfer -> Integer -> ByteString -> m ()
 appendFileChunk ft@RcvFileTransfer {fileId, fileStatus} chunkNo chunk =
   case fileStatus of
-    RFSConnected RcvFileInfo {filePath} -> append_ filePath `E.catch` (chatError . CEFileWrite filePath)
+    RFSConnected RcvFileInfo {filePath} -> append_ filePath
     RFSCancelled _ -> pure ()
     _ -> chatError $ CEFileInternal "receiving file transfer not in progress"
   where
-    append_ fPath =
-      E.bracket_
-        (liftIO . (`B.hPut` chunk) =<< getFileHandle fileId fPath rcvFiles AppendMode)
-        (withStore $ \st -> updatedRcvFileChunkStored st ft chunkNo)
-        (pure ())
+    append_ fPath = do
+      h <- getFileHandle fileId fPath rcvFiles AppendMode
+      E.try (liftIO $ B.hPut h chunk >> hFlush h) >>= \case
+        Left e -> chatError $ CEFileWrite fPath e
+        Right () -> do
+          withStore $ \st -> updatedRcvFileChunkStored st ft chunkNo
+
+-- liftIO $ putStrLn $ "appended chunk " <> show chunkNo
 
 getFileHandle :: ChatMonad m => Int64 -> FilePath -> (ChatController -> TVar (Map Int64 Handle)) -> IOMode -> m Handle
 getFileHandle fileId filePath files ioMode = do
@@ -873,6 +888,11 @@ getFileHandle fileId filePath files ioMode = do
       h <- liftIO (openFile filePath ioMode)
       atomically . modifyTVar fs $ M.insert fileId h
       pure h
+
+isFileActive :: ChatMonad m => Int64 -> (ChatController -> TVar (Map Int64 Handle)) -> m Bool
+isFileActive fileId files = do
+  fs <- asks files
+  isJust . M.lookup fileId <$> readTVarIO fs
 
 cancelRcvFileTransfer :: ChatMonad m => RcvFileTransfer -> m ()
 cancelRcvFileTransfer ft@RcvFileTransfer {fileId, fileStatus} = do

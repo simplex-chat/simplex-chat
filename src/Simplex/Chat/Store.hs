@@ -1200,12 +1200,12 @@ createSndFileChunk st SndFileTransfer {fileId, connId, fileSize, chunkSize} =
     pure chunkNo
   where
     getLastChunkNo db = do
-      ns <- DB.query db "SELECT chunk_number FROM snd_file_chunks WHERE file_id = ? AND connection_id = ? ORDER BY chunk_number DESC LIMIT 1" (fileId, connId)
+      ns <- DB.query db "SELECT chunk_number FROM snd_file_chunks WHERE file_id = ? AND connection_id = ? AND chunk_sent = 1 ORDER BY chunk_number DESC LIMIT 1" (fileId, connId)
       pure $ case map fromOnly ns of
         [] -> Just 1
         n : _ -> if n * chunkSize >= fileSize then Nothing else Just (n + 1)
     insertChunk db = \case
-      Just chunkNo -> DB.execute db "INSERT INTO snd_file_chunks (file_id, connection_id, chunk_number) VALUES (?, ?, ?)" (fileId, connId, chunkNo)
+      Just chunkNo -> DB.execute db "INSERT OR REPLACE INTO snd_file_chunks (file_id, connection_id, chunk_number) VALUES (?, ?, ?)" (fileId, connId, chunkNo)
       Nothing -> pure ()
 
 updateSndFileChunkMsg :: MonadUnliftIO m => SQLiteStore -> SndFileTransfer -> Integer -> AgentMsgId -> m ()
@@ -1302,7 +1302,7 @@ createRcvFileChunk st RcvFileTransfer {fileId, fileInvitation = FileInvitation {
     pure status
   where
     getLastChunkNo db = do
-      ns <- DB.query db "SELECT chunk_number FROM rcv_file_chunks WHERE file_id = ? AND chunk_stored = 1 ORDER BY chunk_number DESC LIMIT 1" (Only fileId)
+      ns <- DB.query db "SELECT chunk_number FROM rcv_file_chunks WHERE file_id = ? ORDER BY chunk_number DESC LIMIT 1" (Only fileId)
       pure $ case map fromOnly ns of
         [] -> if chunkNo == 1 then RcvChunkOk else RcvChunkError
         n : _
