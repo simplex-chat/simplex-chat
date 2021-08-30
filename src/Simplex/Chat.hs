@@ -149,6 +149,7 @@ inputSubscriber :: (MonadUnliftIO m, MonadReader ChatController m) => m ()
 inputSubscriber = do
   q <- asks inputQ
   l <- asks chatLock
+  a <- asks smpAgent
   forever $
     atomically (readTBQueue q) >>= \case
       InputControl _ -> pure ()
@@ -161,7 +162,7 @@ inputSubscriber = do
               SendGroupMessage g msg -> showSentGroupMessage g msg
               _ -> printToView [plain s]
             user <- readTVarIO =<< asks currentUser
-            withLock l . void . runExceptT $
+            withAgentLock a . withLock l . void . runExceptT $
               processChatCommand user cmd `catchError` showChatError
 
 processChatCommand :: forall m. ChatMonad m => User -> ChatCommand -> m ()
