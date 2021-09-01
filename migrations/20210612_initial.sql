@@ -171,7 +171,6 @@ CREATE TABLE rcv_file_chunks (
   file_id INTEGER NOT NULL REFERENCES rcv_files,
   chunk_number INTEGER NOT NULL,
   chunk_agent_msg_id INTEGER NOT NULL,
-  chunk_body BLOB,
   chunk_stored INTEGER NOT NULL DEFAULT 0, -- 0 (received), 1 (appended to file)
   PRIMARY KEY (file_id, chunk_number)
 ) WITHOUT ROWID;
