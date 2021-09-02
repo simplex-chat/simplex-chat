@@ -101,7 +101,7 @@ defaultChatConfig =
           },
       dbPoolSize = 1,
       tbqSize = 16,
-      fileChunkSize = 2900
+      fileChunkSize = 7050
     }
 
 logCfg :: LogConfig

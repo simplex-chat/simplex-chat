@@ -149,6 +149,7 @@ serverCfg =
       queueIdBytes = 12,
       msgIdBytes = 6,
       storeLog = Nothing,
+      blockSize = 4096,
       serverPrivateKey =
         -- full RSA private key (only for tests)
         "MIIFIwIBAAKCAQEArZyrri/NAwt5buvYjwu+B/MQeJUszDBpRgVqNddlI9kNwDXu\
