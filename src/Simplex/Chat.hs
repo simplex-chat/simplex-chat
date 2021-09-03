@@ -606,13 +606,17 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
         CON -> do
           withStore $ \st -> updateRcvFileStatus st ft FSConnected
           showRcvFileStart fileId
-        MSG meta@MsgMeta {recipient = (msgId, _)} msgBody -> withAckMessage agentConnId meta $ do
-          -- TODO check integrity and abort transfer if violated
+        MSG meta@MsgMeta {recipient = (msgId, _), integrity} msgBody -> withAckMessage agentConnId meta $ do
           parseFileChunk msgBody >>= \case
             (0, _) -> do
               cancelRcvFileTransfer ft
               showRcvFileSndCancelled fileId
             (chunkNo, chunk) -> do
+              case integrity of
+                MsgOk -> pure ()
+                MsgError MsgDuplicate -> pure () -- TODO remove once agent removes duplicates
+                MsgError e ->
+                  badRcvFileChunk ft $ "invalid file chunk number " <> show chunkNo <> ": " <> show e
               withStore (\st -> createRcvFileChunk st ft chunkNo msgId) >>= \case
                 RcvChunkOk ->
                   if B.length chunk /= fromInteger chunkSize
