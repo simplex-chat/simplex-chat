@@ -374,14 +374,15 @@ subscribeUserConnections = void . runExceptT $ do
       withStore (`getLiveSndFileTransfers` user) >>= mapM_ subscribeSndFile
       withStore (`getLiveRcvFileTransfers` user) >>= mapM_ subscribeRcvFile
       where
-        subscribeSndFile ft@SndFileTransfer {fileId, agentConnId} = do
+        subscribeSndFile ft@SndFileTransfer {fileId, fileStatus, agentConnId} = do
           subscribe agentConnId `catchError` showSndFileSubError ft
           void . forkIO $ do
             threadDelay 1000000
             l <- asks chatLock
             a <- asks smpAgent
-            unlessM (isFileActive fileId sndFiles) . withAgentLock a . withLock l $
-              sendFileChunk ft
+            unless (fileStatus == FSNew) . unlessM (isFileActive fileId sndFiles) $
+              withAgentLock a . withLock l $
+                sendFileChunk ft
         subscribeRcvFile ft@RcvFileTransfer {fileStatus} =
           case fileStatus of
             RFSAccepted fInfo -> resume fInfo
