@@ -275,7 +275,7 @@ processChatCommand user@User {userId, profile} = \case
     RcvFileTransfer {fileInvitation = FileInvitation {fileName, fileQInfo}, fileStatus} <- withStore $ \st -> getRcvFileTransfer st userId fileId
     unless (fileStatus == RFSNew) . chatError $ CEFileAlreadyReceiving fileName
     agentConnId <- withAgent $ \a -> joinConnection a fileQInfo . directMessage $ XFileAcpt fileName
-    filePath <- getRcvFilePath filePath_ fileName
+    filePath <- getRcvFilePath fileId filePath_ fileName
     withStore $ \st -> acceptRcvFileTransfer st userId fileId agentConnId filePath
     -- TODO include file sender in the message
     showRcvFileAccepted fileId filePath
@@ -302,26 +302,29 @@ processChatCommand user@User {userId, profile} = \case
     contactMember Contact {contactId} =
       find $ \GroupMember {memberContactId = cId, memberStatus = s} ->
         cId == Just contactId && s /= GSMemRemoved && s /= GSMemLeft
-    getRcvFilePath :: Maybe FilePath -> String -> m FilePath
-    getRcvFilePath filePath fileName = case filePath of
+    getRcvFilePath :: Int64 -> Maybe FilePath -> String -> m FilePath
+    getRcvFilePath fileId filePath fileName = case filePath of
       Nothing -> do
         dir <- (`combine` "Downloads") <$> getHomeDirectory
         ifM (doesDirectoryExist dir) (pure dir) getTemporaryDirectory
           >>= (`uniqueCombine` fileName)
-          >>= emptyFile
+          >>= createEmptyFile
       Just fPath ->
         ifM
           (doesDirectoryExist fPath)
-          (fPath `uniqueCombine` fileName >>= emptyFile)
+          (fPath `uniqueCombine` fileName >>= createEmptyFile)
           $ ifM
             (doesFileExist fPath)
             (chatError $ CEFileAlreadyExists fPath)
-            (emptyFile fPath)
-    emptyFile :: FilePath -> m FilePath
-    emptyFile fPath = do
-      liftIO (writeFile fPath "")
-        `E.catch` (chatError . CEFileWrite fPath)
-      pure fPath
+            (createEmptyFile fPath)
+      where
+        createEmptyFile :: FilePath -> m FilePath
+        createEmptyFile fPath = emptyFile fPath `E.catch` (chatError . CEFileWrite fPath)
+        emptyFile :: FilePath -> m FilePath
+        emptyFile fPath = do
+          h <- getFileHandle fileId fPath rcvFiles AppendMode
+          liftIO $ B.hPut h "" >> hFlush h
+          pure fPath
     uniqueCombine :: FilePath -> String -> m FilePath
     uniqueCombine filePath fileName = tryCombine (0 :: Int)
       where
