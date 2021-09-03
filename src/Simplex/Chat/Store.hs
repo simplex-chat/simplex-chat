@@ -410,12 +410,12 @@ getPendingConnections st User {userId} =
       <$> DB.queryNamed
         db
         [sql|
-          SELECT c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact,
-            c.conn_status, c.conn_type, c.contact_id, c.group_member_id, c.created_at
-          FROM connections c
-          WHERE c.user_id = :user_id
-            AND c.conn_type = :conn_type
-            AND c.contact_id IS NULL
+          SELECT connection_id, agent_conn_id, conn_level, via_contact,
+            conn_status, conn_type, contact_id, group_member_id, snd_file_id, rcv_file_id, created_at
+          FROM connections
+          WHERE user_id = :user_id
+            AND conn_type = :conn_type
+            AND contact_id IS NULL
         |]
         [":user_id" := userId, ":conn_type" := ConnContact]
 
