@@ -58,9 +58,9 @@ import System.IO (Handle, IOMode (..), SeekMode (..), hFlush, openFile, stdout)
 import Text.Read (readMaybe)
 import UnliftIO.Async (race_)
 import UnliftIO.Concurrent (forkIO, threadDelay)
-import UnliftIO.Directory (doesDirectoryExist, doesFileExist, getFileSize, getTemporaryDirectory)
+import UnliftIO.Directory (doesDirectoryExist, doesFileExist, getFileSize, getHomeDirectory, getTemporaryDirectory)
 import qualified UnliftIO.Exception as E
-import UnliftIO.IO (hClose, hSeek, hTell, withFile)
+import UnliftIO.IO (hClose, hSeek, hTell)
 import UnliftIO.STM
 
 data ChatCommand
@@ -304,16 +304,24 @@ processChatCommand user@User {userId, profile} = \case
         cId == Just contactId && s /= GSMemRemoved && s /= GSMemLeft
     getRcvFilePath :: Maybe FilePath -> String -> m FilePath
     getRcvFilePath filePath fileName = case filePath of
-      Nothing -> getTemporaryDirectory >>= (`uniqueCombine` fileName)
+      Nothing -> do
+        dir <- (`combine` "Downloads") <$> getHomeDirectory
+        ifM (doesDirectoryExist dir) (pure dir) getTemporaryDirectory
+          >>= (`uniqueCombine` fileName)
+          >>= emptyFile
       Just fPath ->
         ifM
           (doesDirectoryExist fPath)
-          (fPath `uniqueCombine` fileName)
+          (fPath `uniqueCombine` fileName >>= emptyFile)
           $ ifM
             (doesFileExist fPath)
             (chatError $ CEFileAlreadyExists fPath)
-            $ withFile fPath WriteMode (\_ -> pure fPath)
-              `E.catch` (chatError . CEFileWrite fPath)
+            (emptyFile fPath)
+    emptyFile :: FilePath -> m FilePath
+    emptyFile fPath = do
+      liftIO (writeFile fPath "")
+        `E.catch` (chatError . CEFileWrite fPath)
+      pure fPath
     uniqueCombine :: FilePath -> String -> m FilePath
     uniqueCombine filePath fileName = tryCombine (0 :: Int)
       where
