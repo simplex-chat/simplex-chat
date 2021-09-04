@@ -410,10 +410,10 @@ testFileTransfer =
       concurrentlyN_
         [ do
             bob #> "@alice receiving here..."
-            bob <## "completed receiving the file 1",
+            bob <## "completed receiving file 1 (test.jpg) from alice",
           do
             alice <# "bob> receiving here..."
-            alice <## "completed sending the file 1"
+            alice <## "completed sending file 1 (test.jpg) to bob"
         ]
       src <- B.readFile "./tests/fixtures/test.jpg"
       dest <- B.readFile "./tests/tmp/test.jpg"
@@ -428,11 +428,11 @@ testFileSndCancel =
       alice ##> "/fc 1"
       concurrentlyN_
         [ do
-            alice <## "cancelled sending the file 1"
+            alice <## "cancelled sending file 1 (test.jpg) to bob"
             alice ##> "/fs 1"
             alice <## "sent file transfer is cancelled",
           do
-            bob <## "sender cancelled sending the file 1"
+            bob <## "alice cancelled sending file 1 (test.jpg)"
             bob ##> "/fs 1"
             bob <## "received file transfer is cancelled, received part path: ./tests/tmp/test.jpg"
         ]
@@ -450,11 +450,11 @@ testFileRcvCancel =
       bob ##> "/fc 1"
       concurrentlyN_
         [ do
-            bob <## "cancelled receiving the file 1"
+            bob <## "cancelled receiving file 1 (test.jpg) from alice"
             bob ##> "/fs 1"
             bob <## "received file transfer is cancelled, received part path: ./tests/tmp/test.jpg",
           do
-            alice <## "recipient cancelled receiving the file 1"
+            alice <## "bob cancelled receiving file 1 (test.jpg)"
             alice ##> "/fs 1"
             alice <## "sent file transfer is cancelled"
         ]
@@ -464,16 +464,15 @@ testFileRcvCancel =
 
 startFileTransfer :: TestCC -> TestCC -> IO ()
 startFileTransfer alice bob = do
-  alice ##> "/f bob ./tests/fixtures/test.jpg"
-  alice <## "offered to send the file test.jpg to bob"
+  alice #> "/f @bob ./tests/fixtures/test.jpg"
   alice <## "use /fc 1 to cancel sending"
-  bob <## "alice wants to send you the file test.jpg (136.5 KiB / 139737 bytes)"
+  bob <# "alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
   bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
   bob ##> "/fr 1 ./tests/tmp"
-  bob <## "saving file 1 to ./tests/tmp/test.jpg"
+  bob <## "saving file 1 from alice to ./tests/tmp/test.jpg"
   concurrently_
-    (bob <## "started receiving the file 1")
-    (alice <## "started sending the file 1")
+    (bob <## "started receiving file 1 (test.jpg) from alice")
+    (alice <## "started sending file 1 (test.jpg) to bob")
 
 checkPartialTransfer :: IO ()
 checkPartialTransfer = do

@@ -161,6 +161,7 @@ inputSubscriber = do
             case cmd of
               SendMessage c msg -> showSentMessage c msg
               SendGroupMessage g msg -> showSentGroupMessage g msg
+              SendFile c f -> showSentFileInvitation c f
               _ -> printToView [plain s]
             user <- readTVarIO =<< asks currentUser
             withAgentLock a . withLock l . void . runExceptT $
@@ -261,32 +262,33 @@ processChatCommand user@User {userId, profile} = \case
     setActive $ ActiveG gName
   SendFile cName f -> do
     unlessM (doesFileExist f) . chatError $ CEFileNotFound f
-    contact@Contact {contactId} <- withStore $ \st -> getContact st userId cName
+    contact <- withStore $ \st -> getContact st userId cName
     (agentConnId, fileQInfo) <- withAgent createConnection
     fileSize <- getFileSize f
     let fileInv = FileInvitation {fileName = takeFileName f, fileSize, fileQInfo}
     chSize <- asks $ fileChunkSize . config
-    ft <- withStore $ \st -> createSndFileTransfer st userId contactId f fileInv agentConnId chSize
+    ft <- withStore $ \st -> createSndFileTransfer st userId (CMContact contact) f fileInv agentConnId chSize
     sendDirectMessage (contactConnId contact) $ XFile fileInv
-    showSentFileInvitation cName ft
+    showSentFileInfo ft
     setActive $ ActiveC cName
   SendGroupFile _gName _file -> pure ()
   ReceiveFile fileId filePath_ -> do
-    RcvFileTransfer {fileInvitation = FileInvitation {fileName, fileQInfo}, fileStatus} <- withStore $ \st -> getRcvFileTransfer st userId fileId
+    ft@RcvFileTransfer {fileInvitation = FileInvitation {fileName, fileQInfo}, fileStatus} <- withStore $ \st -> getRcvFileTransfer st userId fileId
     unless (fileStatus == RFSNew) . chatError $ CEFileAlreadyReceiving fileName
     agentConnId <- withAgent $ \a -> joinConnection a fileQInfo . directMessage $ XFileAcpt fileName
     filePath <- getRcvFilePath fileId filePath_ fileName
     withStore $ \st -> acceptRcvFileTransfer st userId fileId agentConnId filePath
     -- TODO include file sender in the message
-    showRcvFileAccepted fileId filePath
+    showRcvFileAccepted ft filePath
   CancelFile fileId ->
     withStore (\st -> getFileTransfer st userId fileId) >>= \case
-      FTSnd fts -> do
-        mapM_ cancelSndFileTransfer fts
-        showSndFileCancelled fileId
+      FTSnd fts ->
+        forM_ fts $ \ft -> do
+          cancelSndFileTransfer ft
+          showSndFileCancelled ft
       FTRcv ft -> do
         cancelRcvFileTransfer ft
-        showRcvFileCancelled fileId
+        showRcvFileCancelled ft
   FileStatus fileId ->
     withStore (\st -> getFileTransferProgress st userId fileId) >>= showFileTransferStatus
   UpdateProfile p -> unless (p == profile) $ do
@@ -445,7 +447,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
           ChatMessage {chatMsgEvent} <- liftEither $ parseChatMessage msgBody
           case chatMsgEvent of
             XMsgNew (MsgContent MTText [] body) -> newTextMessage c meta $ find (isSimplexContentType XCText) body
-            XFile fInv -> processFileInvitation ct fInv
+            XFile fInv -> processFileInvitation ct meta fInv
             XInfo p -> xInfo ct p
             XGrpInv gInv -> processGroupInvitation ct gInv
             XInfoProbe probe -> xInfoProbe ct probe
@@ -587,7 +589,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
             _ -> messageError "REQ from file connection must have x.file.acpt"
         CON -> do
           withStore $ \st -> updateSndFileStatus st ft FSConnected
-          showSndFileStart fileId
+          showSndFileStart ft
           sendFileChunk ft
         SENT msgId -> do
           withStore $ \st -> updateSndFileChunkSent st ft msgId
@@ -595,7 +597,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
         MERR _ err -> do
           cancelSndFileTransfer ft
           case err of
-            SMP SMP.AUTH -> unless (fileStatus == FSCancelled) $ showSndFileRcvCancelled fileId
+            SMP SMP.AUTH -> unless (fileStatus == FSCancelled) $ showSndFileRcvCancelled ft
             _ -> chatError $ CEFileSend fileId err
         MSG meta _ ->
           withAckMessage agentConnId meta $ pure ()
@@ -606,12 +608,12 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
       case agentMsg of
         CON -> do
           withStore $ \st -> updateRcvFileStatus st ft FSConnected
-          showRcvFileStart fileId
+          showRcvFileStart ft
         MSG meta@MsgMeta {recipient = (msgId, _), integrity} msgBody -> withAckMessage agentConnId meta $ do
           parseFileChunk msgBody >>= \case
             (0, _) -> do
               cancelRcvFileTransfer ft
-              showRcvFileSndCancelled fileId
+              showRcvFileSndCancelled ft
             (chunkNo, chunk) -> do
               case integrity of
                 MsgOk -> pure ()
@@ -629,7 +631,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
                     else do
                       appendFileChunk ft chunkNo chunk
                       withStore $ \st -> updateRcvFileStatus st ft FSComplete
-                      showRcvFileComplete fileId
+                      showRcvFileComplete ft
                       closeFileHandle fileId rcvFiles
                       withAgent (`deleteConnection` agentConnId)
                 RcvChunkDuplicate -> pure ()
@@ -677,7 +679,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
     newTextMessage c meta = \case
       Just MsgContentBody {contentData = bs} -> do
         let text = safeDecodeUtf8 bs
-        showReceivedMessage c (snd $ broker meta) text (integrity meta)
+        showReceivedMessage c (snd $ broker meta) (msgPlain text) (integrity meta)
         showToast (c <> "> ") text
         setActive $ ActiveC c
       _ -> messageError "x.msg.new: no expected message body"
@@ -686,17 +688,17 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
     newGroupTextMessage gName GroupMember {localDisplayName = c} meta = \case
       Just MsgContentBody {contentData = bs} -> do
         let text = safeDecodeUtf8 bs
-        showReceivedGroupMessage gName c (snd $ broker meta) text (integrity meta)
+        showReceivedGroupMessage gName c (snd $ broker meta) (msgPlain text) (integrity meta)
         showToast ("#" <> gName <> " " <> c <> "> ") text
         setActive $ ActiveG gName
       _ -> messageError "x.msg.new: no expected message body"
 
-    processFileInvitation :: Contact -> FileInvitation -> m ()
-    processFileInvitation Contact {contactId, localDisplayName = c} fInv = do
+    processFileInvitation :: Contact -> MsgMeta -> FileInvitation -> m ()
+    processFileInvitation contact@Contact {localDisplayName = c} meta fInv = do
       -- TODO chunk size has to be sent as part of invitation
       chSize <- asks $ fileChunkSize . config
-      ft <- withStore $ \st -> createRcvFileTransfer st userId contactId fInv chSize
-      showReceivedFileInvitation c ft
+      ft <- withStore $ \st -> createRcvFileTransfer st userId (CMContact contact) fInv chSize
+      showReceivedMessage c (snd $ broker meta) (receivedFileInvitation ft) (integrity meta)
       setActive $ ActiveC c
 
     processGroupInvitation :: Contact -> GroupInvitation -> m ()
@@ -849,7 +851,7 @@ sendFileChunk ft@SndFileTransfer {fileId, fileStatus, agentConnId} =
       Just chunkNo -> sendFileChunkNo ft chunkNo
       Nothing -> do
         withStore $ \st -> updateSndFileStatus st ft FSComplete
-        showSndFileComplete fileId
+        showSndFileComplete ft
         closeFileHandle fileId sndFiles
         withAgent (`deleteConnection` agentConnId)
 

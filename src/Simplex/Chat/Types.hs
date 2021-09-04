@@ -23,19 +23,28 @@ import GHC.Generics
 import Simplex.Messaging.Agent.Protocol (ConnId, SMPQueueInfo)
 import Simplex.Messaging.Agent.Store.SQLite (fromTextField_)
 
-class IsContact a where
+class IsContactOrMember a where
+  localDisplayName' :: a -> ContactName
+
+class IsContactOrMember a => IsContact a where
   contactId' :: a -> Int64
   profile' :: a -> Profile
-  localDisplayName' :: a -> ContactName
+
+instance IsContactOrMember User where
+  localDisplayName' = localDisplayName
 
 instance IsContact User where
   contactId' = userContactId
   profile' = profile
+
+instance IsContactOrMember Contact where
   localDisplayName' = localDisplayName
 
 instance IsContact Contact where
   contactId' = contactId
   profile' = profile
+
+instance IsContactOrMember GroupMember where
   localDisplayName' = localDisplayName
 
 data User = User
@@ -123,6 +132,7 @@ data ReceivedGroupInvitation = ReceivedGroupInvitation
 
 data GroupMember = GroupMember
   { groupMemberId :: Int64,
+    groupId :: Int64,
     memberId :: MemberId,
     memberRole :: GroupMemberRole,
     memberCategory :: GroupMemberCategory,
@@ -139,6 +149,18 @@ memberConnId :: GroupMember -> Maybe ConnId
 memberConnId GroupMember {activeConn} = case activeConn of
   Just Connection {agentConnId} -> Just agentConnId
   Nothing -> Nothing
+
+data ContactOrMember = CMContact Contact | CMMember GroupMember
+
+instance IsContactOrMember ContactOrMember where
+  localDisplayName' = \case
+    CMContact c -> localDisplayName' c
+    CMMember m -> localDisplayName' m
+
+contactOrMemberIds :: ContactOrMember -> (Maybe Int64, Maybe Int64, Maybe Int64)
+contactOrMemberIds = \case
+  CMContact Contact {contactId} -> (Just contactId, Nothing, Nothing)
+  CMMember GroupMember {groupId, groupMemberId} -> (Nothing, Just groupId, Just groupMemberId)
 
 data NewGroupMember = NewGroupMember
   { memInfo :: MemberInfo,
@@ -305,6 +327,7 @@ data SndFileTransfer = SndFileTransfer
     filePath :: String,
     fileSize :: Integer,
     chunkSize :: Integer,
+    recipientDisplayName :: ContactName,
     connId :: Int64,
     agentConnId :: ConnId,
     fileStatus :: FileStatus
@@ -322,6 +345,7 @@ data RcvFileTransfer = RcvFileTransfer
   { fileId :: Int64,
     fileInvitation :: FileInvitation,
     fileStatus :: RcvFileStatus,
+    senderDisplayName :: ContactName,
     chunkSize :: Integer
   }
   deriving (Eq, Show)
