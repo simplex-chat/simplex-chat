@@ -65,6 +65,8 @@ import UnliftIO.STM
 
 data ChatCommand
   = ChatHelp
+  | FilesHelp
+  | GroupsHelp
   | MarkdownHelp
   | AddContact
   | Connect SMPQueueInfo
@@ -169,6 +171,8 @@ inputSubscriber = do
 processChatCommand :: forall m. ChatMonad m => User -> ChatCommand -> m ()
 processChatCommand user@User {userId, profile} = \case
   ChatHelp -> printToView chatHelpInfo
+  FilesHelp -> printToView filesHelpInfo
+  GroupsHelp -> printToView groupsHelpInfo
   MarkdownHelp -> printToView markdownInfo
   AddContact -> do
     (connId, qInfo) <- withAgent createConnection
@@ -1046,7 +1050,9 @@ withStore action =
 
 chatCommandP :: Parser ChatCommand
 chatCommandP =
-  ("/help" <|> "/h") $> ChatHelp
+  ("/help_files" <|> "/help_file" <|> "/hf") $> FilesHelp
+    <|> ("/help_groups" <|> "/help_group" <|> "/hg") $> GroupsHelp
+    <|> ("/help" <|> "/h") $> ChatHelp
     <|> ("/group #" <|> "/group " <|> "/g #" <|> "/g ") *> (NewGroup <$> groupProfile)
     <|> ("/add #" <|> "/add " <|> "/a #" <|> "/a ") *> (AddMember <$> displayName <* A.space <*> displayName <*> memberRole)
     <|> ("/join #" <|> "/join " <|> "/j #" <|> "/j ") *> (JoinGroup <$> displayName)
