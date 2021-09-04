@@ -63,6 +63,7 @@ module Simplex.Chat.Store
     matchSentProbe,
     mergeContactRecords,
     createSndFileTransfer,
+    createSndGroupFileTransfer,
     updateSndFileStatus,
     createSndFileChunk,
     updateSndFileChunkMsg,
@@ -108,7 +109,7 @@ import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore (..), createSQLiteStore
 import Simplex.Messaging.Agent.Store.SQLite.Migrations (Migration (..))
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Util (bshow, liftIOEither, (<$$>))
-import System.FilePath (takeBaseName, takeExtension)
+import System.FilePath (takeBaseName, takeExtension, takeFileName)
 import UnliftIO.STM
 
 -- | The list of migrations in ascending order by date
@@ -1157,6 +1158,17 @@ createSndFileTransfer st userId cm filePath FileInvitation {fileName, fileSize} 
     let fileStatus = FSNew
     DB.execute db "INSERT INTO snd_files (file_id, file_status, connection_id, group_member_id) VALUES (?, ?, ?, ?)" (fileId, fileStatus, connId, mId)
     pure SndFileTransfer {..}
+
+createSndGroupFileTransfer :: MonadUnliftIO m => SQLiteStore -> UserId -> Group -> [(GroupMember, ConnId, FileInvitation)] -> FilePath -> Integer -> Integer -> m Int64
+createSndGroupFileTransfer st userId Group {groupId} ms filePath fileSize chunkSize =
+  liftIO . withTransaction st $ \db -> do
+    let fileName = takeFileName filePath
+    DB.execute db "INSERT INTO files (user_id, group_id, file_name, file_path, file_size, chunk_size) VALUES (?, ?, ?, ?, ?, ?)" (userId, groupId, fileName, filePath, fileSize, chunkSize)
+    fileId <- insertedRowId db
+    forM_ ms $ \(GroupMember {groupMemberId}, agentConnId, _) -> do
+      Connection {connId} <- createSndFileConnection_ db userId fileId agentConnId
+      DB.execute db "INSERT INTO snd_files (file_id, file_status, connection_id, group_member_id) VALUES (?, ?, ?, ?)" (fileId, FSNew, connId, groupMemberId)
+    pure fileId
 
 createSndFileConnection_ :: DB.Connection -> UserId -> Int64 -> ConnId -> IO Connection
 createSndFileConnection_ db userId fileId agentConnId = do

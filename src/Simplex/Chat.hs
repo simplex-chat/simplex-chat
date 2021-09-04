@@ -261,24 +261,34 @@ processChatCommand user@User {userId, profile} = \case
     sendGroupMessage members msgEvent
     setActive $ ActiveG gName
   SendFile cName f -> do
-    unlessM (doesFileExist f) . chatError $ CEFileNotFound f
+    (fileSize, chSize) <- checkSndFile f
     contact <- withStore $ \st -> getContact st userId cName
     (agentConnId, fileQInfo) <- withAgent createConnection
-    fileSize <- getFileSize f
     let fileInv = FileInvitation {fileName = takeFileName f, fileSize, fileQInfo}
-    chSize <- asks $ fileChunkSize . config
-    ft <- withStore $ \st -> createSndFileTransfer st userId (CMContact contact) f fileInv agentConnId chSize
+    SndFileTransfer {fileId} <- withStore $ \st ->
+      createSndFileTransfer st userId (CMContact contact) f fileInv agentConnId chSize
     sendDirectMessage (contactConnId contact) $ XFile fileInv
-    showSentFileInfo ft
+    showSentFileInfo fileId
     setActive $ ActiveC cName
-  SendGroupFile _gName _file -> pure ()
+  SendGroupFile gName f -> do
+    (fileSize, chSize) <- checkSndFile f
+    group@Group {members, membership} <- withStore $ \st -> getGroup st user gName
+    unless (memberActive membership) $ chatError CEGroupMemberUserRemoved
+    let fileName = takeFileName f
+    ms <- forM (filter memberActive members) $ \m -> do
+      (connId, fileQInfo) <- withAgent createConnection
+      pure (m, connId, FileInvitation {fileName, fileSize, fileQInfo})
+    fileId <- withStore $ \st -> createSndGroupFileTransfer st userId group ms f fileSize chSize
+    forM_ ms $ \(m, _, fileInv) ->
+      traverse (`sendDirectMessage` XFile fileInv) $ memberConnId m
+    showSentFileInfo fileId
+    setActive $ ActiveG gName
   ReceiveFile fileId filePath_ -> do
     ft@RcvFileTransfer {fileInvitation = FileInvitation {fileName, fileQInfo}, fileStatus} <- withStore $ \st -> getRcvFileTransfer st userId fileId
     unless (fileStatus == RFSNew) . chatError $ CEFileAlreadyReceiving fileName
     agentConnId <- withAgent $ \a -> joinConnection a fileQInfo . directMessage $ XFileAcpt fileName
     filePath <- getRcvFilePath fileId filePath_ fileName
     withStore $ \st -> acceptRcvFileTransfer st userId fileId agentConnId filePath
-    -- TODO include file sender in the message
     showRcvFileAccepted ft filePath
   CancelFile fileId ->
     withStore (\st -> getFileTransfer st userId fileId) >>= \case
@@ -304,6 +314,10 @@ processChatCommand user@User {userId, profile} = \case
     contactMember Contact {contactId} =
       find $ \GroupMember {memberContactId = cId, memberStatus = s} ->
         cId == Just contactId && s /= GSMemRemoved && s /= GSMemLeft
+    checkSndFile :: FilePath -> m (Integer, Integer)
+    checkSndFile f = do
+      unlessM (doesFileExist f) . chatError $ CEFileNotFound f
+      (,) <$> getFileSize f <*> asks (fileChunkSize . config)
     getRcvFilePath :: Int64 -> Maybe FilePath -> String -> m FilePath
     getRcvFilePath fileId filePath fileName = case filePath of
       Nothing -> do

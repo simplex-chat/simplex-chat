@@ -149,7 +149,7 @@ showSentFileInvitation = showSentFileInvitation_ . ttyToContact
 showSentFileInvitation_ :: ChatReader m => StyledString -> FilePath -> m ()
 showSentFileInvitation_ to filePath = printToView =<< liftIO (sentFileInvitation to filePath)
 
-showSentFileInfo :: ChatReader m => SndFileTransfer -> m ()
+showSentFileInfo :: ChatReader m => Int64 -> m ()
 showSentFileInfo = printToView . sentFileInfo
 
 showSndFileStart :: ChatReader m => SndFileTransfer -> m ()
@@ -458,8 +458,8 @@ prependFirst s (s' : ss) = (s <> s') : ss
 msgPlain :: Text -> [StyledString]
 msgPlain = map styleMarkdownText . T.lines
 
-sentFileInfo :: SndFileTransfer -> [StyledString]
-sentFileInfo SndFileTransfer {fileId} =
+sentFileInfo :: Int64 -> [StyledString]
+sentFileInfo fileId =
   ["use " <> highlight ("/fc " <> show fileId) <> " to cancel sending"]
 
 sndFileStart :: SndFileTransfer -> [StyledString]
