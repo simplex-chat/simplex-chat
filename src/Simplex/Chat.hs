@@ -65,6 +65,8 @@ import UnliftIO.STM
 
 data ChatCommand
   = ChatHelp
+  | FilesHelp
+  | GroupsHelp
   | MarkdownHelp
   | AddContact
   | Connect SMPQueueInfo
@@ -169,6 +171,8 @@ inputSubscriber = do
 processChatCommand :: forall m. ChatMonad m => User -> ChatCommand -> m ()
 processChatCommand user@User {userId, profile} = \case
   ChatHelp -> printToView chatHelpInfo
+  FilesHelp -> printToView filesHelpInfo
+  GroupsHelp -> printToView groupsHelpInfo
   MarkdownHelp -> printToView markdownInfo
   AddContact -> do
     (connId, qInfo) <- withAgent createConnection
@@ -1046,7 +1050,9 @@ withStore action =
 
 chatCommandP :: Parser ChatCommand
 chatCommandP =
-  ("/help" <|> "/h") $> ChatHelp
+  ("/help files" <|> "/help file" <|> "/hf") $> FilesHelp
+    <|> ("/help groups" <|> "/help group" <|> "/hg") $> GroupsHelp
+    <|> ("/help" <|> "/h") $> ChatHelp
     <|> ("/group #" <|> "/group " <|> "/g #" <|> "/g ") *> (NewGroup <$> groupProfile)
     <|> ("/add #" <|> "/add " <|> "/a #" <|> "/a ") *> (AddMember <$> displayName <* A.space <*> displayName <*> memberRole)
     <|> ("/join #" <|> "/join " <|> "/j #" <|> "/j ") *> (JoinGroup <$> displayName)
@@ -1061,9 +1067,9 @@ chatCommandP =
     <|> A.char '@' *> (SendMessage <$> displayName <*> (A.space *> A.takeByteString))
     <|> ("/file #" <|> "/f #") *> (SendGroupFile <$> displayName <* A.space <*> filePath)
     <|> ("/file @" <|> "/file " <|> "/f @" <|> "/f ") *> (SendFile <$> displayName <* A.space <*> filePath)
-    <|> ("/file_receive " <|> "/fr ") *> (ReceiveFile <$> A.decimal <*> optional (A.space *> filePath))
-    <|> ("/file_cancel " <|> "/fc ") *> (CancelFile <$> A.decimal)
-    <|> ("/file_status " <|> "/fs ") *> (FileStatus <$> A.decimal)
+    <|> ("/freceive " <|> "/fr ") *> (ReceiveFile <$> A.decimal <*> optional (A.space *> filePath))
+    <|> ("/fcancel " <|> "/fc ") *> (CancelFile <$> A.decimal)
+    <|> ("/fstatus " <|> "/fs ") *> (FileStatus <$> A.decimal)
     <|> ("/markdown" <|> "/m") $> MarkdownHelp
     <|> ("/profile " <|> "/p ") *> (UpdateProfile <$> userProfile)
     <|> ("/profile" <|> "/p") $> ShowProfile
@@ -1086,5 +1092,5 @@ chatCommandP =
     memberRole =
       (" owner" $> GROwner)
         <|> (" admin" $> GRAdmin)
-        <|> (" normal" $> GRMember)
+        <|> (" member" $> GRMember)
         <|> pure GRAdmin
