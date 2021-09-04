@@ -30,6 +30,7 @@ module Simplex.Chat.View
     showSndFileStart,
     showSndFileComplete,
     showSndFileCancelled,
+    showSndGroupFileCancelled,
     showSndFileRcvCancelled,
     receivedFileInvitation,
     showRcvFileAccepted,
@@ -166,6 +167,9 @@ showSndFileComplete = printToView . sndFileComplete
 
 showSndFileCancelled :: ChatReader m => SndFileTransfer -> m ()
 showSndFileCancelled = printToView . sndFileCancelled
+
+showSndGroupFileCancelled :: ChatReader m => [SndFileTransfer] -> m ()
+showSndGroupFileCancelled = printToView . sndGroupFileCancelled
 
 showSndFileRcvCancelled :: ChatReader m => SndFileTransfer -> m ()
 showSndFileRcvCancelled = printToView . sndFileRcvCancelled
@@ -477,6 +481,12 @@ sndFileComplete = sendingFile_ "completed"
 sndFileCancelled :: SndFileTransfer -> [StyledString]
 sndFileCancelled = sendingFile_ "cancelled"
 
+sndGroupFileCancelled :: [SndFileTransfer] -> [StyledString]
+sndGroupFileCancelled fts =
+  case filter (\SndFileTransfer {fileStatus = s} -> s /= FSCancelled && s /= FSComplete) fts of
+    [] -> ["sending file can't be cancelled"]
+    ts@(ft : _) -> ["cancelled sending " <> sndFile ft <> " to " <> listMembers ts]
+
 sendingFile_ :: StyledString -> SndFileTransfer -> [StyledString]
 sendingFile_ status ft@SndFileTransfer {recipientDisplayName = c} =
   [status <> " sending " <> sndFile ft <> " to " <> ttyContact c]
@@ -553,7 +563,6 @@ fileTransferStatus (FTSnd fts@(ft : _), chunksNum) =
     membersTransferStatus [] = []
     membersTransferStatus ts@(SndFileTransfer {fileStatus, fileSize, chunkSize} : _) = [sndStatus <> ": " <> listMembers ts]
       where
-        listMembers = mconcat . intersperse ", " . map (ttyContact . recipientDisplayName)
         sndStatus = case fileStatus of
           FSNew -> "not accepted"
           FSAccepted -> "just started"
@@ -569,6 +578,9 @@ fileTransferStatus (FTRcv ft@RcvFileTransfer {fileId, fileInvitation = FileInvit
       RFSConnected _ -> "progress " <> fileProgress chunksNum chunkSize fileSize
       RFSComplete RcvFileInfo {filePath} -> "complete, path: " <> plain filePath
       RFSCancelled RcvFileInfo {filePath} -> "cancelled, received part path: " <> plain filePath
+
+listMembers :: [SndFileTransfer] -> StyledString
+listMembers = mconcat . intersperse ", " . map (ttyContact . recipientDisplayName)
 
 fileProgress :: [Integer] -> Integer -> Integer -> StyledString
 fileProgress chunksNum chunkSize fileSize =

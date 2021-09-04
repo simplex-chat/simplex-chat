@@ -68,6 +68,7 @@ module Simplex.Chat.Store
     createSndFileChunk,
     updateSndFileChunkMsg,
     updateSndFileChunkSent,
+    deleteSndFileChunks,
     createRcvFileTransfer,
     createRcvGroupFileTransfer,
     getRcvFileTransfer,
@@ -75,6 +76,7 @@ module Simplex.Chat.Store
     updateRcvFileStatus,
     createRcvFileChunk,
     updatedRcvFileChunkStored,
+    deleteRcvFileChunks,
     getFileTransfer,
     getFileTransferProgress,
   )
@@ -1228,6 +1230,11 @@ updateSndFileChunkSent st SndFileTransfer {fileId, connId} msgId =
       |]
       (fileId, connId, msgId)
 
+deleteSndFileChunks :: MonadUnliftIO m => SQLiteStore -> SndFileTransfer -> m ()
+deleteSndFileChunks st SndFileTransfer {fileId, connId} =
+  liftIO . withTransaction st $ \db ->
+    DB.execute db "DELETE FROM snd_file_chunks WHERE file_id = ? AND connection_id = ?" (fileId, connId)
+
 createRcvFileTransfer :: MonadUnliftIO m => SQLiteStore -> UserId -> Contact -> FileInvitation -> Integer -> m RcvFileTransfer
 createRcvFileTransfer st userId Contact {contactId, localDisplayName = c} f@FileInvitation {fileName, fileSize, fileQInfo} chunkSize =
   liftIO . withTransaction st $ \db -> do
@@ -1338,6 +1345,11 @@ updatedRcvFileChunkStored st RcvFileTransfer {fileId} chunkNo =
         WHERE file_id = ? AND chunk_number = ?
       |]
       (fileId, chunkNo)
+
+deleteRcvFileChunks :: MonadUnliftIO m => SQLiteStore -> RcvFileTransfer -> m ()
+deleteRcvFileChunks st RcvFileTransfer {fileId} =
+  liftIO . withTransaction st $ \db ->
+    DB.execute db "DELETE FROM rcv_file_chunks WHERE file_id = ?" (Only fileId)
 
 getFileTransfer :: StoreMonad m => SQLiteStore -> UserId -> Int64 -> m FileTransfer
 getFileTransfer st userId fileId =

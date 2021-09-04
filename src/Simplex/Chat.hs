@@ -51,7 +51,7 @@ import Simplex.Messaging.Agent.Protocol
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Parsers (parseAll)
 import qualified Simplex.Messaging.Protocol as SMP
-import Simplex.Messaging.Util (bshow, raceAny_)
+import Simplex.Messaging.Util (bshow, raceAny_, tryError)
 import System.Exit (exitFailure, exitSuccess)
 import System.FilePath (combine, splitExtensions, takeFileName)
 import System.IO (Handle, IOMode (..), SeekMode (..), hFlush, openFile, stdout)
@@ -287,16 +287,19 @@ processChatCommand user@User {userId, profile} = \case
   ReceiveFile fileId filePath_ -> do
     ft@RcvFileTransfer {fileInvitation = FileInvitation {fileName, fileQInfo}, fileStatus} <- withStore $ \st -> getRcvFileTransfer st userId fileId
     unless (fileStatus == RFSNew) . chatError $ CEFileAlreadyReceiving fileName
-    agentConnId <- withAgent $ \a -> joinConnection a fileQInfo . directMessage $ XFileAcpt fileName
-    filePath <- getRcvFilePath fileId filePath_ fileName
-    withStore $ \st -> acceptRcvFileTransfer st userId fileId agentConnId filePath
-    showRcvFileAccepted ft filePath
+    tryError (withAgent $ \a -> joinConnection a fileQInfo . directMessage $ XFileAcpt fileName) >>= \case
+      Right agentConnId -> do
+        filePath <- getRcvFilePath fileId filePath_ fileName
+        withStore $ \st -> acceptRcvFileTransfer st userId fileId agentConnId filePath
+        showRcvFileAccepted ft filePath
+      Left (ChatErrorAgent (SMP SMP.AUTH)) -> showRcvFileSndCancelled ft
+      Left (ChatErrorAgent (CONN DUPLICATE)) -> showRcvFileSndCancelled ft
+      Left e -> throwError e
   CancelFile fileId ->
     withStore (\st -> getFileTransfer st userId fileId) >>= \case
-      FTSnd fts ->
-        forM_ fts $ \ft -> do
-          cancelSndFileTransfer ft
-          showSndFileCancelled ft
+      FTSnd fts -> do
+        forM_ fts $ \ft -> cancelSndFileTransfer ft
+        showSndGroupFileCancelled fts
       FTRcv ft -> do
         cancelRcvFileTransfer ft
         showRcvFileCancelled ft
@@ -646,7 +649,9 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
                     then badRcvFileChunk ft "incorrect chunk size"
                     else do
                       appendFileChunk ft chunkNo chunk
-                      withStore $ \st -> updateRcvFileStatus st ft FSComplete
+                      withStore $ \st -> do
+                        updateRcvFileStatus st ft FSComplete
+                        deleteRcvFileChunks st ft
                       showRcvFileComplete ft
                       closeFileHandle fileId rcvFiles
                       withAgent (`deleteConnection` agentConnId)
@@ -873,7 +878,9 @@ sendFileChunk ft@SndFileTransfer {fileId, fileStatus, agentConnId} =
     withStore (`createSndFileChunk` ft) >>= \case
       Just chunkNo -> sendFileChunkNo ft chunkNo
       Nothing -> do
-        withStore $ \st -> updateSndFileStatus st ft FSComplete
+        withStore $ \st -> do
+          updateSndFileStatus st ft FSComplete
+          deleteSndFileChunks st ft
         showSndFileComplete ft
         closeFileHandle fileId sndFiles
         withAgent (`deleteConnection` agentConnId)
@@ -936,7 +943,9 @@ isFileActive fileId files = do
 cancelRcvFileTransfer :: ChatMonad m => RcvFileTransfer -> m ()
 cancelRcvFileTransfer ft@RcvFileTransfer {fileId, fileStatus} = do
   closeFileHandle fileId rcvFiles
-  withStore $ \st -> updateRcvFileStatus st ft FSCancelled
+  withStore $ \st -> do
+    updateRcvFileStatus st ft FSCancelled
+    deleteRcvFileChunks st ft
   case fileStatus of
     RFSAccepted RcvFileInfo {agentConnId} -> withAgent (`suspendConnection` agentConnId)
     RFSConnected RcvFileInfo {agentConnId} -> withAgent (`suspendConnection` agentConnId)
@@ -945,9 +954,11 @@ cancelRcvFileTransfer ft@RcvFileTransfer {fileId, fileStatus} = do
 cancelSndFileTransfer :: ChatMonad m => SndFileTransfer -> m ()
 cancelSndFileTransfer ft@SndFileTransfer {agentConnId, fileStatus} =
   unless (fileStatus == FSCancelled || fileStatus == FSComplete) $ do
-    withStore $ \st -> updateSndFileStatus st ft FSCancelled
+    withStore $ \st -> do
+      updateSndFileStatus st ft FSCancelled
+      deleteSndFileChunks st ft
     withAgent $ \a -> do
-      void $ sendMessage a agentConnId "0 "
+      void (sendMessage a agentConnId "0 ") `catchError` \_ -> pure ()
       suspendConnection a agentConnId
 
 closeFileHandle :: ChatMonad m => Int64 -> (ChatController -> TVar (Map Int64 Handle)) -> m ()
