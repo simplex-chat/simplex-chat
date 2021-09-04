@@ -68,7 +68,9 @@ import Control.Monad.IO.Unlift
 import Control.Monad.Reader
 import Data.ByteString.Char8 (ByteString)
 import Data.Composition ((.:), (.:.))
+import Data.Function (on)
 import Data.Int (Int64)
+import Data.List (groupBy, intersperse, sortOn)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (DiffTime, UTCTime)
@@ -532,25 +534,41 @@ fileTransfer :: Int64 -> String -> StyledString
 fileTransfer fileId fileName = "file " <> sShow fileId <> " (" <> ttyFilePath fileName <> ")"
 
 fileTransferStatus :: (FileTransfer, [Integer]) -> [StyledString]
-fileTransferStatus (FTSnd [SndFileTransfer {fileStatus, fileSize, chunkSize}], chunksNum) =
-  ["sent file transfer " <> sndStatus]
+fileTransferStatus (FTSnd [ft@SndFileTransfer {fileStatus, fileSize, chunkSize}], chunksNum) =
+  ["sending " <> sndFile ft <> " " <> sndStatus]
   where
     sndStatus = case fileStatus of
-      FSNew -> "is not accepted yet"
+      FSNew -> "not accepted yet"
       FSAccepted -> "just started"
-      FSConnected -> "progress: " <> fileProgress chunksNum chunkSize fileSize
-      FSComplete -> "is complete"
-      FSCancelled -> "is cancelled"
-fileTransferStatus (FTSnd _fts, _chunks) = [] -- TODO group transfer
-fileTransferStatus (FTRcv RcvFileTransfer {fileId, fileInvitation = FileInvitation {fileSize}, fileStatus, chunkSize}, chunksNum) =
-  ["received file transfer " <> rcvStatus]
+      FSConnected -> "progress " <> fileProgress chunksNum chunkSize fileSize
+      FSComplete -> "complete"
+      FSCancelled -> "cancelled"
+fileTransferStatus (FTSnd [], _) = ["no file transfers (empty group)"]
+fileTransferStatus (FTSnd fts@(ft : _), chunksNum) =
+  case concatMap membersTransferStatus $ groupBy ((==) `on` fs) $ sortOn fs fts of
+    [membersStatus] -> ["sending " <> sndFile ft <> " " <> membersStatus]
+    membersStatuses -> ("sending " <> sndFile ft <> ": ") : map ("  " <>) membersStatuses
+  where
+    fs = fileStatus :: SndFileTransfer -> FileStatus
+    membersTransferStatus [] = []
+    membersTransferStatus ts@(SndFileTransfer {fileStatus, fileSize, chunkSize} : _) = [sndStatus <> ": " <> listMembers ts]
+      where
+        listMembers = mconcat . intersperse ", " . map (ttyContact . recipientDisplayName)
+        sndStatus = case fileStatus of
+          FSNew -> "not accepted"
+          FSAccepted -> "just started"
+          FSConnected -> "in progress (" <> sShow (sum chunksNum * chunkSize * 100 `div` (toInteger (length chunksNum) * fileSize)) <> "%)"
+          FSComplete -> "complete"
+          FSCancelled -> "cancelled"
+fileTransferStatus (FTRcv ft@RcvFileTransfer {fileId, fileInvitation = FileInvitation {fileSize}, fileStatus, chunkSize}, chunksNum) =
+  ["receiving " <> rcvFile ft <> " " <> rcvStatus]
   where
     rcvStatus = case fileStatus of
-      RFSNew -> "is not accepted yet, use " <> highlight ("/fr " <> show fileId) <> " to receive file"
+      RFSNew -> "not accepted yet, use " <> highlight ("/fr " <> show fileId) <> " to receive file"
       RFSAccepted _ -> "just started"
-      RFSConnected _ -> "progress: " <> fileProgress chunksNum chunkSize fileSize
-      RFSComplete RcvFileInfo {filePath} -> "is complete, path: " <> plain filePath
-      RFSCancelled RcvFileInfo {filePath} -> "is cancelled, received part path: " <> plain filePath
+      RFSConnected _ -> "progress " <> fileProgress chunksNum chunkSize fileSize
+      RFSComplete RcvFileInfo {filePath} -> "complete, path: " <> plain filePath
+      RFSCancelled RcvFileInfo {filePath} -> "cancelled, received part path: " <> plain filePath
 
 fileProgress :: [Integer] -> Integer -> Integer -> StyledString
 fileProgress chunksNum chunkSize fileSize =
@@ -640,7 +658,7 @@ ttyToGroup :: GroupName -> StyledString
 ttyToGroup g = styled (Colored Cyan) $ "#" <> g <> " "
 
 ttyFilePath :: FilePath -> StyledString
-ttyFilePath = Styled [SetColor Foreground Dull Green]
+ttyFilePath = plain
 
 optFullName :: ContactName -> Text -> StyledString
 optFullName localDisplayName fullName
