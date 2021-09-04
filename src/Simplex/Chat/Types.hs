@@ -23,28 +23,19 @@ import GHC.Generics
 import Simplex.Messaging.Agent.Protocol (ConnId, SMPQueueInfo)
 import Simplex.Messaging.Agent.Store.SQLite (fromTextField_)
 
-class IsContactOrMember a where
-  localDisplayName' :: a -> ContactName
-
-class IsContactOrMember a => IsContact a where
+class IsContact a where
   contactId' :: a -> Int64
   profile' :: a -> Profile
-
-instance IsContactOrMember User where
-  localDisplayName' = localDisplayName
+  localDisplayName' :: a -> ContactName
 
 instance IsContact User where
   contactId' = userContactId
   profile' = profile
-
-instance IsContactOrMember Contact where
   localDisplayName' = localDisplayName
 
 instance IsContact Contact where
   contactId' = contactId
   profile' = profile
-
-instance IsContactOrMember GroupMember where
   localDisplayName' = localDisplayName
 
 data User = User
@@ -149,18 +140,6 @@ memberConnId :: GroupMember -> Maybe ConnId
 memberConnId GroupMember {activeConn} = case activeConn of
   Just Connection {agentConnId} -> Just agentConnId
   Nothing -> Nothing
-
-data ContactOrMember = CMContact Contact | CMMember GroupMember
-
-instance IsContactOrMember ContactOrMember where
-  localDisplayName' = \case
-    CMContact c -> localDisplayName' c
-    CMMember m -> localDisplayName' m
-
-contactOrMemberIds :: ContactOrMember -> (Maybe Int64, Maybe Int64, Maybe Int64)
-contactOrMemberIds = \case
-  CMContact Contact {contactId} -> (Just contactId, Nothing, Nothing)
-  CMMember GroupMember {groupId, groupMemberId} -> (Nothing, Just groupId, Just groupMemberId)
 
 data NewGroupMember = NewGroupMember
   { memInfo :: MemberInfo,

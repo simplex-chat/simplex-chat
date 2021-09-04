@@ -69,6 +69,7 @@ module Simplex.Chat.Store
     updateSndFileChunkMsg,
     updateSndFileChunkSent,
     createRcvFileTransfer,
+    createRcvGroupFileTransfer,
     getRcvFileTransfer,
     acceptRcvFileTransfer,
     updateRcvFileStatus,
@@ -1146,17 +1147,14 @@ getViaGroupContact st User {userId} GroupMember {groupMemberId} =
        in Just Contact {contactId, localDisplayName, profile, activeConn, viaGroup}
     toContact _ = Nothing
 
-createSndFileTransfer :: MonadUnliftIO m => SQLiteStore -> UserId -> ContactOrMember -> FilePath -> FileInvitation -> ConnId -> Integer -> m SndFileTransfer
-createSndFileTransfer st userId cm filePath FileInvitation {fileName, fileSize} agentConnId chunkSize =
-  -- Contact {contactId, localDisplayName = recipientDisplayName}
+createSndFileTransfer :: MonadUnliftIO m => SQLiteStore -> UserId -> Contact -> FilePath -> FileInvitation -> ConnId -> Integer -> m SndFileTransfer
+createSndFileTransfer st userId Contact {contactId, localDisplayName = recipientDisplayName} filePath FileInvitation {fileName, fileSize} agentConnId chunkSize =
   liftIO . withTransaction st $ \db -> do
-    let (cId, gId, mId) = contactOrMemberIds cm
-        recipientDisplayName = localDisplayName' cm
-    DB.execute db "INSERT INTO files (user_id, contact_id, group_id, file_name, file_path, file_size, chunk_size) VALUES (?, ?, ?, ?, ?, ?, ?)" (userId, cId, gId, fileName, filePath, fileSize, chunkSize)
+    DB.execute db "INSERT INTO files (user_id, contact_id, file_name, file_path, file_size, chunk_size) VALUES (?, ?, ?, ?, ?, ?)" (userId, contactId, fileName, filePath, fileSize, chunkSize)
     fileId <- insertedRowId db
     Connection {connId} <- createSndFileConnection_ db userId fileId agentConnId
     let fileStatus = FSNew
-    DB.execute db "INSERT INTO snd_files (file_id, file_status, connection_id, group_member_id) VALUES (?, ?, ?, ?)" (fileId, fileStatus, connId, mId)
+    DB.execute db "INSERT INTO snd_files (file_id, file_status, connection_id) VALUES (?, ?, ?)" (fileId, fileStatus, connId)
     pure SndFileTransfer {..}
 
 createSndGroupFileTransfer :: MonadUnliftIO m => SQLiteStore -> UserId -> Group -> [(GroupMember, ConnId, FileInvitation)] -> FilePath -> Integer -> Integer -> m Int64
@@ -1230,15 +1228,21 @@ updateSndFileChunkSent st SndFileTransfer {fileId, connId} msgId =
       |]
       (fileId, connId, msgId)
 
-createRcvFileTransfer :: MonadUnliftIO m => SQLiteStore -> UserId -> ContactOrMember -> FileInvitation -> Integer -> m RcvFileTransfer
-createRcvFileTransfer st userId cm f@FileInvitation {fileName, fileSize, fileQInfo} chunkSize =
-  -- Contact {contactId, localDisplayName = senderDisplayName}
+createRcvFileTransfer :: MonadUnliftIO m => SQLiteStore -> UserId -> Contact -> FileInvitation -> Integer -> m RcvFileTransfer
+createRcvFileTransfer st userId Contact {contactId, localDisplayName = c} f@FileInvitation {fileName, fileSize, fileQInfo} chunkSize =
   liftIO . withTransaction st $ \db -> do
-    let (cId, gId, mId) = contactOrMemberIds cm
-    DB.execute db "INSERT INTO files (user_id, contact_id, group_id, file_name, file_size, chunk_size) VALUES (?, ?, ?, ?, ?, ?)" (userId, cId, gId, fileName, fileSize, chunkSize)
+    DB.execute db "INSERT INTO files (user_id, contact_id, file_name, file_size, chunk_size) VALUES (?, ?, ?, ?, ?)" (userId, contactId, fileName, fileSize, chunkSize)
     fileId <- insertedRowId db
-    DB.execute db "INSERT INTO rcv_files (file_id, file_status, file_queue_info, group_member_id) VALUES (?, ?, ?, ?)" (fileId, FSNew, fileQInfo, mId)
-    pure RcvFileTransfer {fileId, fileInvitation = f, fileStatus = RFSNew, senderDisplayName = localDisplayName' cm, chunkSize}
+    DB.execute db "INSERT INTO rcv_files (file_id, file_status, file_queue_info) VALUES (?, ?, ?)" (fileId, FSNew, fileQInfo)
+    pure RcvFileTransfer {fileId, fileInvitation = f, fileStatus = RFSNew, senderDisplayName = c, chunkSize}
+
+createRcvGroupFileTransfer :: MonadUnliftIO m => SQLiteStore -> UserId -> GroupMember -> FileInvitation -> Integer -> m RcvFileTransfer
+createRcvGroupFileTransfer st userId GroupMember {groupId, groupMemberId, localDisplayName = c} f@FileInvitation {fileName, fileSize, fileQInfo} chunkSize =
+  liftIO . withTransaction st $ \db -> do
+    DB.execute db "INSERT INTO files (user_id, group_id, file_name, file_size, chunk_size) VALUES (?, ?, ?, ?, ?)" (userId, groupId, fileName, fileSize, chunkSize)
+    fileId <- insertedRowId db
+    DB.execute db "INSERT INTO rcv_files (file_id, file_status, file_queue_info, group_member_id) VALUES (?, ?, ?, ?)" (fileId, FSNew, fileQInfo, groupMemberId)
+    pure RcvFileTransfer {fileId, fileInvitation = f, fileStatus = RFSNew, senderDisplayName = c, chunkSize}
 
 getRcvFileTransfer :: StoreMonad m => SQLiteStore -> UserId -> Int64 -> m RcvFileTransfer
 getRcvFileTransfer st userId fileId =

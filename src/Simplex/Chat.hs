@@ -162,6 +162,7 @@ inputSubscriber = do
               SendMessage c msg -> showSentMessage c msg
               SendGroupMessage g msg -> showSentGroupMessage g msg
               SendFile c f -> showSentFileInvitation c f
+              SendGroupFile g f -> showSentGroupFileInvitation g f
               _ -> printToView [plain s]
             user <- readTVarIO =<< asks currentUser
             withAgentLock a . withLock l . void . runExceptT $
@@ -266,7 +267,7 @@ processChatCommand user@User {userId, profile} = \case
     (agentConnId, fileQInfo) <- withAgent createConnection
     let fileInv = FileInvitation {fileName = takeFileName f, fileSize, fileQInfo}
     SndFileTransfer {fileId} <- withStore $ \st ->
-      createSndFileTransfer st userId (CMContact contact) f fileInv agentConnId chSize
+      createSndFileTransfer st userId contact f fileInv agentConnId chSize
     sendDirectMessage (contactConnId contact) $ XFile fileInv
     showSentFileInfo fileId
     setActive $ ActiveC cName
@@ -579,6 +580,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
         case chatMsgEvent of
           XMsgNew (MsgContent MTText [] body) ->
             newGroupTextMessage gName m meta $ find (isSimplexContentType XCText) body
+          XFile fInv -> processGroupFileInvitation gName m meta fInv
           XGrpMemNew memInfo -> xGrpMemNew gName m memInfo
           XGrpMemIntro memInfo -> xGrpMemIntro gName m memInfo
           XGrpMemInv memId introInv -> xGrpMemInv gName m memId introInv
@@ -711,9 +713,16 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
     processFileInvitation contact@Contact {localDisplayName = c} meta fInv = do
       -- TODO chunk size has to be sent as part of invitation
       chSize <- asks $ fileChunkSize . config
-      ft <- withStore $ \st -> createRcvFileTransfer st userId (CMContact contact) fInv chSize
+      ft <- withStore $ \st -> createRcvFileTransfer st userId contact fInv chSize
       showReceivedMessage c (snd $ broker meta) (receivedFileInvitation ft) (integrity meta)
       setActive $ ActiveC c
+
+    processGroupFileInvitation :: GroupName -> GroupMember -> MsgMeta -> FileInvitation -> m ()
+    processGroupFileInvitation gName m@GroupMember {localDisplayName = c} meta fInv = do
+      chSize <- asks $ fileChunkSize . config
+      ft <- withStore $ \st -> createRcvGroupFileTransfer st userId m fInv chSize
+      showReceivedGroupMessage gName c (snd $ broker meta) (receivedFileInvitation ft) (integrity meta)
+      setActive $ ActiveG gName
 
     processGroupInvitation :: Contact -> GroupInvitation -> m ()
     processGroupInvitation ct@Contact {localDisplayName} inv@(GroupInvitation (fromMemId, fromRole) (memId, memRole) _ _) = do

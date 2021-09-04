@@ -44,6 +44,7 @@ chatTests = do
     it "send and receive file" testFileTransfer
     it "sender cancelled file transfer" testFileSndCancel
     it "recipient cancelled file transfer" testFileRcvCancel
+    it "send and receive file to group" testGroupFileTransfer
 
 testAddContact :: IO ()
 testAddContact =
@@ -461,6 +462,37 @@ testFileRcvCancel =
       checkPartialTransfer
   where
     waitFileExists f = unlessM (doesFileExist f) $ waitFileExists f
+
+testGroupFileTransfer :: IO ()
+testGroupFileTransfer =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+      alice #> "/f #team ./tests/fixtures/test.jpg"
+      alice <## "use /fc 1 to cancel sending"
+      concurrentlyN_
+        [ do
+            bob <# "#team alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
+            bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+            bob ##> "/fr 1 ./tests/tmp/test_1.jpg"
+            bob <## "saving file 1 from alice to ./tests/tmp/test_1.jpg",
+          do
+            cath <# "#team alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
+            cath <## "use /fr 1 [<dir>/ | <path>] to receive it"
+            cath ##> "/fr 1 ./tests/tmp/test_2.jpg"
+            cath <## "saving file 1 from alice to ./tests/tmp/test_2.jpg"
+        ]
+      concurrentlyN_
+        [ do
+            alice <### ["started sending file 1 (test.jpg) to bob", "started sending file 1 (test.jpg) to cath"]
+            alice <### ["completed sending file 1 (test.jpg) to bob", "completed sending file 1 (test.jpg) to cath"],
+          do
+            bob <## "started receiving file 1 (test.jpg) from alice"
+            bob <## "completed receiving file 1 (test.jpg) from alice",
+          do
+            cath <## "started receiving file 1 (test.jpg) from alice"
+            cath <## "completed receiving file 1 (test.jpg) from alice"
+        ]
 
 startFileTransfer :: TestCC -> TestCC -> IO ()
 startFileTransfer alice bob = do

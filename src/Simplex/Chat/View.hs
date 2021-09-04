@@ -25,6 +25,7 @@ module Simplex.Chat.View
     showSentMessage,
     showSentGroupMessage,
     showSentFileInvitation,
+    showSentGroupFileInvitation,
     showSentFileInfo,
     showSndFileStart,
     showSndFileComplete,
@@ -145,6 +146,9 @@ showSentMessage_ to msg = printToView =<< liftIO (sentMessage to msg)
 
 showSentFileInvitation :: ChatReader m => ContactName -> FilePath -> m ()
 showSentFileInvitation = showSentFileInvitation_ . ttyToContact
+
+showSentGroupFileInvitation :: ChatReader m => GroupName -> FilePath -> m ()
+showSentGroupFileInvitation = showSentFileInvitation_ . ttyToGroup
 
 showSentFileInvitation_ :: ChatReader m => StyledString -> FilePath -> m ()
 showSentFileInvitation_ to filePath = printToView =<< liftIO (sentFileInvitation to filePath)
