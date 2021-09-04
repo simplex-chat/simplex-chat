@@ -15,7 +15,7 @@ import Control.Monad.Except
 import Data.List (dropWhileEnd)
 import Network.Socket
 import Simplex.Chat
-import Simplex.Chat.Controller (ChatController (..))
+import Simplex.Chat.Controller (ChatConfig (..), ChatController (..))
 import Simplex.Chat.Options
 import Simplex.Chat.Store
 import Simplex.Chat.Types (Profile)
@@ -145,9 +145,11 @@ serverCfg =
   ServerConfig
     { transports = [(serverPort, transport @TCP)],
       tbqSize = 1,
+      msgQueueQuota = 4,
       queueIdBytes = 12,
       msgIdBytes = 6,
       storeLog = Nothing,
+      blockSize = 4096,
       serverPrivateKey =
         -- full RSA private key (only for tests)
         "MIIFIwIBAAKCAQEArZyrri/NAwt5buvYjwu+B/MQeJUszDBpRgVqNddlI9kNwDXu\

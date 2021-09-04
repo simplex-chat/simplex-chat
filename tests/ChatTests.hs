@@ -7,10 +7,13 @@ module ChatTests where
 import ChatClient
 import Control.Concurrent.Async (concurrently_)
 import Control.Concurrent.STM
+import qualified Data.ByteString as B
 import Data.Char (isDigit)
 import qualified Data.Text as T
 import Simplex.Chat.Controller
 import Simplex.Chat.Types (Profile (..), User (..))
+import Simplex.Chat.Util (unlessM)
+import System.Directory (doesFileExist)
 import System.Timeout (timeout)
 import Test.Hspec
 
@@ -37,6 +40,10 @@ chatTests = do
     it "remove contact from group and add again" testGroupRemoveAdd
   describe "user profiles" $
     it "update user profiles and notify contacts" testUpdateProfile
+  describe "sending and receiving files" $ do
+    it "send and receive file" testFileTransfer
+    it "sender cancelled file transfer" testFileSndCancel
+    it "recipient cancelled file transfer" testFileRcvCancel
 
 testAddContact :: IO ()
 testAddContact =
@@ -359,7 +366,7 @@ testUpdateProfile =
       createGroup3 "team" alice bob cath
       alice ##> "/p"
       alice <## "user profile: alice (Alice)"
-      alice <## "use /p <display name>[ <full name>] to change it"
+      alice <## "use /p <display name> [<full name>] to change it"
       alice <## "(the updated profile will be sent to all your contacts)"
       alice ##> "/p alice"
       concurrentlyN_
@@ -393,6 +400,87 @@ testUpdateProfile =
             bob <## "contact cate changed to cat (Cate)"
             bob <## "use @cat <message> to send messages"
         ]
+
+testFileTransfer :: IO ()
+testFileTransfer =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+      startFileTransfer alice bob
+      concurrentlyN_
+        [ do
+            bob #> "@alice receiving here..."
+            bob <## "completed receiving the file 1",
+          do
+            alice <# "bob> receiving here..."
+            alice <## "completed sending the file 1"
+        ]
+      src <- B.readFile "./tests/fixtures/test.jpg"
+      dest <- B.readFile "./tests/tmp/test.jpg"
+      dest `shouldBe` src
+
+testFileSndCancel :: IO ()
+testFileSndCancel =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+      startFileTransfer alice bob
+      alice ##> "/fc 1"
+      concurrentlyN_
+        [ do
+            alice <## "cancelled sending the file 1"
+            alice ##> "/fs 1"
+            alice <## "sent file transfer is cancelled",
+          do
+            bob <## "sender cancelled sending the file 1"
+            bob ##> "/fs 1"
+            bob <## "received file transfer is cancelled, received part path: ./tests/tmp/test.jpg"
+        ]
+      checkPartialTransfer
+
+testFileRcvCancel :: IO ()
+testFileRcvCancel =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+      startFileTransfer alice bob
+      bob ##> "/fs 1"
+      getTermLine bob >>= (`shouldStartWith` "received file transfer progress:")
+      waitFileExists "./tests/tmp/test.jpg"
+      bob ##> "/fc 1"
+      concurrentlyN_
+        [ do
+            bob <## "cancelled receiving the file 1"
+            bob ##> "/fs 1"
+            bob <## "received file transfer is cancelled, received part path: ./tests/tmp/test.jpg",
+          do
+            alice <## "recipient cancelled receiving the file 1"
+            alice ##> "/fs 1"
+            alice <## "sent file transfer is cancelled"
+        ]
+      checkPartialTransfer
+  where
+    waitFileExists f = unlessM (doesFileExist f) $ waitFileExists f
+
+startFileTransfer :: TestCC -> TestCC -> IO ()
+startFileTransfer alice bob = do
+  alice ##> "/f bob ./tests/fixtures/test.jpg"
+  alice <## "offered to send the file test.jpg to bob"
+  alice <## "use /fc 1 to cancel sending"
+  bob <## "alice wants to send you the file test.jpg (136.5 KiB / 139737 bytes)"
+  bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+  bob ##> "/fr 1 ./tests/tmp"
+  bob <## "saving file 1 to ./tests/tmp/test.jpg"
+  concurrently_
+    (bob <## "started receiving the file 1")
+    (alice <## "started sending the file 1")
+
+checkPartialTransfer :: IO ()
+checkPartialTransfer = do
+  src <- B.readFile "./tests/fixtures/test.jpg"
+  dest <- B.readFile "./tests/tmp/test.jpg"
+  B.unpack src `shouldStartWith` B.unpack dest
+  B.length src > B.length dest `shouldBe` True
 
 connectUsers :: TestCC -> TestCC -> IO ()
 connectUsers cc1 cc2 = do

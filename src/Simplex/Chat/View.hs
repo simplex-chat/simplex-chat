@@ -24,6 +24,20 @@ module Simplex.Chat.View
     showReceivedGroupMessage,
     showSentMessage,
     showSentGroupMessage,
+    showSentFileInvitation,
+    showSndFileStart,
+    showSndFileComplete,
+    showSndFileCancelled,
+    showSndFileRcvCancelled,
+    showReceivedFileInvitation,
+    showRcvFileAccepted,
+    showRcvFileStart,
+    showRcvFileComplete,
+    showRcvFileCancelled,
+    showRcvFileSndCancelled,
+    showFileTransferStatus,
+    showSndFileSubError,
+    showRcvFileSubError,
     showGroupCreated,
     showGroupDeletedUser,
     showGroupDeleted,
@@ -42,6 +56,7 @@ module Simplex.Chat.View
     showUserProfile,
     showUserProfileUpdated,
     showContactUpdated,
+    showMessageError,
     safeDecodeUtf8,
   )
 where
@@ -50,11 +65,13 @@ import Control.Monad.IO.Unlift
 import Control.Monad.Reader
 import Data.ByteString.Char8 (ByteString)
 import Data.Composition ((.:), (.:.))
+import Data.Int (Int64)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (DiffTime, UTCTime)
 import Data.Time.Format (defaultTimeLocale, formatTime)
 import Data.Time.LocalTime (TimeZone, ZonedTime, getCurrentTimeZone, getZonedTime, localDay, localTimeOfDay, timeOfDayToTime, utcToLocalTime, zonedTimeToLocalTime)
+import Numeric (showFFloat)
 import Simplex.Chat.Controller
 import Simplex.Chat.Markdown
 import Simplex.Chat.Store (StoreError (..))
@@ -124,6 +141,48 @@ showSentGroupMessage = showSentMessage_ . ttyToGroup
 showSentMessage_ :: ChatReader m => StyledString -> ByteString -> m ()
 showSentMessage_ to msg = printToView =<< liftIO (sentMessage to msg)
 
+showSentFileInvitation :: ChatReader m => ContactName -> SndFileTransfer -> m ()
+showSentFileInvitation = printToView .: sentFileInvitation
+
+showSndFileStart :: ChatReader m => Int64 -> m ()
+showSndFileStart = printToView . sndFileStart
+
+showSndFileComplete :: ChatReader m => Int64 -> m ()
+showSndFileComplete = printToView . sndFileComplete
+
+showSndFileCancelled :: ChatReader m => Int64 -> m ()
+showSndFileCancelled = printToView . sndFileCancelled
+
+showSndFileRcvCancelled :: ChatReader m => Int64 -> m ()
+showSndFileRcvCancelled = printToView . sndFileRcvCancelled
+
+showReceivedFileInvitation :: ChatReader m => ContactName -> RcvFileTransfer -> m ()
+showReceivedFileInvitation = printToView .: receivedFileInvitation
+
+showRcvFileAccepted :: ChatReader m => Int64 -> FilePath -> m ()
+showRcvFileAccepted = printToView .: rcvFileAccepted
+
+showRcvFileStart :: ChatReader m => Int64 -> m ()
+showRcvFileStart = printToView . rcvFileStart
+
+showRcvFileComplete :: ChatReader m => Int64 -> m ()
+showRcvFileComplete = printToView . rcvFileComplete
+
+showRcvFileCancelled :: ChatReader m => Int64 -> m ()
+showRcvFileCancelled = printToView . rcvFileCancelled
+
+showRcvFileSndCancelled :: ChatReader m => Int64 -> m ()
+showRcvFileSndCancelled = printToView . rcvFileSndCancelled
+
+showFileTransferStatus :: ChatReader m => (FileTransfer, [Integer]) -> m ()
+showFileTransferStatus = printToView . fileTransferStatus
+
+showSndFileSubError :: ChatReader m => SndFileTransfer -> ChatError -> m ()
+showSndFileSubError = printToView .: sndFileSubError
+
+showRcvFileSubError :: ChatReader m => RcvFileTransfer -> ChatError -> m ()
+showRcvFileSubError = printToView .: rcvFileSubError
+
 showGroupCreated :: ChatReader m => Group -> m ()
 showGroupCreated = printToView . groupCreated
 
@@ -178,6 +237,9 @@ showUserProfileUpdated = printToView .: userProfileUpdated
 showContactUpdated :: ChatReader m => Contact -> Contact -> m ()
 showContactUpdated = printToView .: contactUpdated
 
+showMessageError :: ChatReader m => Text -> Text -> m ()
+showMessageError = printToView .: messageError
+
 invitation :: SMPQueueInfo -> [StyledString]
 invitation qInfo =
   [ "pass this invitation to your contact (via another channel): ",
@@ -202,19 +264,19 @@ contactConnected :: Contact -> [StyledString]
 contactConnected ct = [ttyFullContact ct <> ": contact is connected"]
 
 contactDisconnected :: ContactName -> [StyledString]
-contactDisconnected c = [ttyContact c <> ": contact is disconnected (messages will be queued)"]
+contactDisconnected c = [ttyContact c <> ": disconnected from server (messages will be queued)"]
 
 contactAnotherClient :: ContactName -> [StyledString]
 contactAnotherClient c = [ttyContact c <> ": contact is connected to another client"]
 
 contactSubscribed :: ContactName -> [StyledString]
-contactSubscribed c = [ttyContact c <> ": contact is active"]
+contactSubscribed c = [ttyContact c <> ": connected to server"]
 
 contactSubError :: ContactName -> ChatError -> [StyledString]
-contactSubError c e = [ttyContact c <> ": contact error " <> plain (show e)]
+contactSubError c e = [ttyContact c <> ": contact error " <> sShow e]
 
 groupSubscribed :: GroupName -> [StyledString]
-groupSubscribed g = [ttyGroup g <> ": group is active"]
+groupSubscribed g = [ttyGroup g <> ": connected to server(s)"]
 
 groupEmpty :: GroupName -> [StyledString]
 groupEmpty g = [ttyGroup g <> ": group is empty"]
@@ -223,7 +285,7 @@ groupRemoved :: GroupName -> [StyledString]
 groupRemoved g = [ttyGroup g <> ": you are no longer a member or group deleted"]
 
 memberSubError :: GroupName -> ContactName -> ChatError -> [StyledString]
-memberSubError g c e = [ttyGroup g <> " member " <> ttyContact c <> " error: " <> plain (show e)]
+memberSubError g c e = [ttyGroup g <> " member " <> ttyContact c <> " error: " <> sShow e]
 
 groupCreated :: Group -> [StyledString]
 groupCreated g@Group {localDisplayName} =
@@ -317,7 +379,7 @@ contactsMerged _to@Contact {localDisplayName = c1} _from@Contact {localDisplayNa
 userProfile :: Profile -> [StyledString]
 userProfile Profile {displayName, fullName} =
   [ "user profile: " <> ttyFullName displayName fullName,
-    "use " <> highlight' "/p <display name>[ <full name>]" <> " to change it",
+    "use " <> highlight' "/p <display name> [<full name>]" <> " to change it",
     "(the updated profile will be sent to all your contacts)"
   ]
 
@@ -343,6 +405,9 @@ contactUpdated
       ]
     where
       fullNameUpdate = if T.null fullName' || fullName' == n' then " removed full name" else " updated full name: " <> plain fullName'
+
+messageError :: Text -> Text -> [StyledString]
+messageError prefix err = [plain prefix <> ": " <> plain err]
 
 receivedMessage :: StyledString -> UTCTime -> Text -> MsgIntegrity -> IO [StyledString]
 receivedMessage from utcTime msg mOk = do
@@ -382,6 +447,90 @@ prependFirst s (s' : ss) = (s <> s') : ss
 msgPlain :: Text -> [StyledString]
 msgPlain = map styleMarkdownText . T.lines
 
+sentFileInvitation :: ContactName -> SndFileTransfer -> [StyledString]
+sentFileInvitation cName SndFileTransfer {fileId, fileName} =
+  [ "offered to send the file " <> plain fileName <> " to " <> ttyContact cName,
+    "use " <> highlight ("/fc " <> show fileId) <> " to cancel sending"
+  ]
+
+sndFileStart :: Int64 -> [StyledString]
+sndFileStart fileId = ["started sending the file " <> sShow fileId]
+
+sndFileComplete :: Int64 -> [StyledString]
+sndFileComplete fileId = ["completed sending the file " <> sShow fileId]
+
+sndFileCancelled :: Int64 -> [StyledString]
+sndFileCancelled fileId = ["cancelled sending the file " <> sShow fileId]
+
+sndFileRcvCancelled :: Int64 -> [StyledString]
+sndFileRcvCancelled fileId = ["recipient cancelled receiving the file " <> sShow fileId]
+
+receivedFileInvitation :: ContactName -> RcvFileTransfer -> [StyledString]
+receivedFileInvitation c RcvFileTransfer {fileId, fileInvitation = FileInvitation {fileName, fileSize}} =
+  [ ttyContact c <> " wants to send you the file " <> plain fileName <> " (" <> humanReadableSize fileSize <> " / " <> sShow fileSize <> " bytes)",
+    "use " <> highlight ("/fr " <> show fileId <> " [<dir>/ | <path>]") <> " to receive it"
+  ]
+
+humanReadableSize :: Integer -> StyledString
+humanReadableSize size
+  | size < kB = sShow size <> " bytes"
+  | size < mB = hrSize kB "KiB"
+  | size < gB = hrSize mB "MiB"
+  | otherwise = hrSize gB "GiB"
+  where
+    hrSize sB name = plain $ unwords [showFFloat (Just 1) (fromIntegral size / (fromIntegral sB :: Double)) "", name]
+    kB = 1024
+    mB = kB * 1024
+    gB = mB * 1024
+
+rcvFileAccepted :: Int64 -> FilePath -> [StyledString]
+rcvFileAccepted fileId filePath = ["saving file " <> sShow fileId <> " to " <> plain filePath]
+
+rcvFileStart :: Int64 -> [StyledString]
+rcvFileStart fileId = ["started receiving the file " <> sShow fileId]
+
+rcvFileComplete :: Int64 -> [StyledString]
+rcvFileComplete fileId = ["completed receiving the file " <> sShow fileId]
+
+rcvFileCancelled :: Int64 -> [StyledString]
+rcvFileCancelled fileId = ["cancelled receiving the file " <> sShow fileId]
+
+rcvFileSndCancelled :: Int64 -> [StyledString]
+rcvFileSndCancelled fileId = ["sender cancelled sending the file " <> sShow fileId]
+
+fileTransferStatus :: (FileTransfer, [Integer]) -> [StyledString]
+fileTransferStatus (FTSnd [SndFileTransfer {fileStatus, fileSize, chunkSize}], chunksNum) =
+  ["sent file transfer " <> sndStatus]
+  where
+    sndStatus = case fileStatus of
+      FSNew -> "is not accepted yet"
+      FSAccepted -> "just started"
+      FSConnected -> "progress: " <> fileProgress chunksNum chunkSize fileSize
+      FSComplete -> "is complete"
+      FSCancelled -> "is cancelled"
+fileTransferStatus (FTSnd _fts, _chunks) = [] -- TODO group transfer
+fileTransferStatus (FTRcv RcvFileTransfer {fileId, fileInvitation = FileInvitation {fileSize}, fileStatus, chunkSize}, chunksNum) =
+  ["received file transfer " <> rcvStatus]
+  where
+    rcvStatus = case fileStatus of
+      RFSNew -> "is not accepted yet, use " <> highlight ("/fr " <> show fileId) <> " to receive file"
+      RFSAccepted _ -> "just started"
+      RFSConnected _ -> "progress: " <> fileProgress chunksNum chunkSize fileSize
+      RFSComplete RcvFileInfo {filePath} -> "is complete, path: " <> plain filePath
+      RFSCancelled RcvFileInfo {filePath} -> "is cancelled, received part path: " <> plain filePath
+
+fileProgress :: [Integer] -> Integer -> Integer -> StyledString
+fileProgress chunksNum chunkSize fileSize =
+  sShow (sum chunksNum * chunkSize * 100 `div` fileSize) <> "% of " <> humanReadableSize fileSize
+
+sndFileSubError :: SndFileTransfer -> ChatError -> [StyledString]
+sndFileSubError SndFileTransfer {fileId, fileName} e =
+  ["sent file " <> sShow fileId <> " (" <> plain fileName <> ") error: " <> sShow e]
+
+rcvFileSubError :: RcvFileTransfer -> ChatError -> [StyledString]
+rcvFileSubError RcvFileTransfer {fileId, fileInvitation = FileInvitation {fileName}} e =
+  ["received file " <> sShow fileId <> " (" <> plain fileName <> ") error: " <> sShow e]
+
 chatError :: ChatError -> [StyledString]
 chatError = \case
   ChatError err -> case err of
@@ -394,16 +543,29 @@ chatError = \case
     CEGroupMemberUserRemoved -> ["you are no longer the member of the group"]
     CEGroupMemberNotFound c -> ["contact " <> ttyContact c <> " is not a group member"]
     CEGroupInternal s -> ["chat group bug: " <> plain s]
-  -- e -> ["chat error: " <> plain (show e)]
+    CEFileNotFound f -> ["file not found: " <> plain f]
+    CEFileAlreadyReceiving f -> ["file is already accepted: " <> plain f]
+    CEFileAlreadyExists f -> ["file already exists: " <> plain f]
+    CEFileRead f e -> ["cannot read file " <> plain f, sShow e]
+    CEFileWrite f e -> ["cannot write file " <> plain f, sShow e]
+    CEFileSend fileId e -> ["error sending file " <> sShow fileId <> ": " <> sShow e]
+    CEFileRcvChunk e -> ["error receiving file: " <> plain e]
+    CEFileInternal e -> ["file error: " <> plain e]
+  -- e -> ["chat error: " <> sShow e]
   ChatErrorStore err -> case err of
     SEDuplicateName -> ["this display name is already used by user, contact or group"]
     SEContactNotFound c -> ["no contact " <> ttyContact c]
     SEContactNotReady c -> ["contact " <> ttyContact c <> " is not active yet"]
     SEGroupNotFound g -> ["no group " <> ttyGroup g]
     SEGroupAlreadyJoined -> ["you already joined this group"]
-    e -> ["chat db error: " <> plain (show e)]
-  ChatErrorAgent e -> ["smp agent error: " <> plain (show e)]
-  ChatErrorMessage e -> ["chat message error: " <> plain (show e)]
+    SEFileNotFound fileId -> fileNotFound fileId
+    SESndFileNotFound fileId -> fileNotFound fileId
+    SERcvFileNotFound fileId -> fileNotFound fileId
+    e -> ["chat db error: " <> sShow e]
+  ChatErrorAgent e -> ["smp agent error: " <> sShow e]
+  ChatErrorMessage e -> ["chat message error: " <> sShow e]
+  where
+    fileNotFound fileId = ["file " <> sShow fileId <> " not found"]
 
 printToView :: (MonadUnliftIO m, MonadReader ChatController m) => [StyledString] -> m ()
 printToView s = asks chatTerminal >>= liftIO . (`printToTerminal` s)
