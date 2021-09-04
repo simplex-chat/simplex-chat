@@ -30,7 +30,7 @@ chatHelpInfo :: [StyledString]
 chatHelpInfo =
   map
     styleMarkdown
-    [ highlight "Using Simplex chat prototype.",
+    [ highlight "Using SimpleX chat prototype",
       "Follow these steps to set up a connection:",
       "",
       green "Step 1: " <> highlight "/connect" <> " - Alice adds a contact.",
@@ -45,17 +45,22 @@ chatHelpInfo =
       indent <> highlight "@bob Hello, Bob!" <> " - Alice messages Bob (assuming Bob has display name 'bob').",
       indent <> highlight "@alice Hey, Alice!" <> " - Bob replies to Alice.",
       "",
-      "Simplex chat supports " <> green "file transfer" <> " and " <> green "groups" <> " functionality:",
-      indent <> highlight "/help_files      " <> " - show file transfer help.",
-      indent <> highlight "/help_groups     " <> " - show groups help.",
+      green "To send file:",
+      indent <> highlight "/file bob ./photo.jpg" <> " - Alice sends file to Bob",
+      indent <> "File commands: " <> highlight "/help files",
+      "",
+      green "To create group:",
+      indent <> highlight "/group team" <> " - create group #team",
+      indent <> "Group commands: " <> highlight "/help groups",
       "",
       green "Other commands:",
-      indent <> highlight "/delete <contact>" <> " - delete contact and all messages with them.",
-      indent <> highlight "/profile         " <> " - show / update user profile.",
-      indent <> highlight "/markdown        " <> " - show supported markdown syntax.",
-      indent <> highlight "/quit            " <> " - quit chat.",
+      indent <> highlight "/profile         " <> " - show user profile",
+      indent <> highlight "/profile <name> [<full_name>]" <> " - update user profile",
+      indent <> highlight "/delete <contact>" <> " - delete contact and all messages with them",
+      indent <> highlight "/markdown        " <> " - show supported markdown syntax",
+      indent <> highlight "/quit            " <> " - quit chat",
       "",
-      "The commands may be abbreviated to a single letter (first letters): " <> listHighlight ["/c", "/d", "/p", "/h", "/hf", "/hg"] <> ", etc."
+      "The commands may be abbreviated to a single letter: " <> listHighlight ["/c", "/f", "/g", "/p", "/h"] <> ", etc."
     ]
 
 filesHelpInfo :: [StyledString]
@@ -65,9 +70,11 @@ filesHelpInfo =
     [ green "File transfer commands:",
       indent <> highlight "/file @<contact> <file_path>         " <> " - send file to contact.",
       indent <> highlight "/file #<group> <file_path>           " <> " - send file to group.",
-      indent <> highlight "/file_receive <file_id> [<file_path>]" <> " - accept to receive file.",
-      indent <> highlight "/file_cancel <file_id>               " <> " - cancel sending file.",
-      indent <> highlight "/file_status <file_id>               " <> " - show file transfer status."
+      indent <> highlight "/freceive <file_id> [<file_path>]" <> " - accept to receive file.",
+      indent <> highlight "/fcancel <file_id>               " <> " - cancel sending file.",
+      indent <> highlight "/fstatus <file_id>               " <> " - show file transfer status.",
+      "",
+      "The commands may be abbreviated: " <> listHighlight ["/f", "/fr", "/fc", "/fs"]
     ]
 
 groupsHelpInfo :: [StyledString]
@@ -75,14 +82,16 @@ groupsHelpInfo =
   map
     styleMarkdown
     [ green "Group management commands:",
-      indent <> highlight "/group <group> [<full_name>]   " <> " - create group.",
-      indent <> highlight "/add <group> <contact> [<role>]" <> " - add contact to group as a member, roles: " <> listHighlight ["owner", "admin", "normal"] <> ".",
-      indent <> highlight "/join <group>                  " <> " - accept group invitation.",
-      indent <> highlight "/remove <group> <member>       " <> " - remove member from group.",
-      indent <> highlight "/leave <group>                 " <> " - leave group.",
-      indent <> highlight "/delete <group>                " <> " - delete group.",
-      indent <> highlight "/members <group>               " <> " - list group members.",
-      indent <> highlight "#<group> <message>             " <> " - send message to group."
+      indent <> highlight "/group <group> [<full_name>]   " <> " - create group",
+      indent <> highlight "/add <group> <contact> [<role>]" <> " - add contact to group as a member, roles: " <> listHighlight ["owner", "admin", "normal"],
+      indent <> highlight "/join <group>                  " <> " - accept group invitation",
+      indent <> highlight "/remove <group> <member>       " <> " - remove member from group",
+      indent <> highlight "/leave <group>                 " <> " - leave group",
+      indent <> highlight "/delete <group>                " <> " - delete group",
+      indent <> highlight "/members <group>               " <> " - list group members",
+      indent <> highlight "#<group> <message>             " <> " - send message to group",
+      "",
+      "The commands may be abbreviated: " <> listHighlight ["/g", "/a", "/j", "/rm", "/l", "/d", "/ms"]
     ]
 
 markdownInfo :: [StyledString]
