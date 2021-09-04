@@ -1092,5 +1092,5 @@ chatCommandP =
     memberRole =
       (" owner" $> GROwner)
         <|> (" admin" $> GRAdmin)
-        <|> (" normal" $> GRMember)
+        <|> (" member" $> GRMember)
         <|> pure GRAdmin

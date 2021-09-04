@@ -68,8 +68,8 @@ filesHelpInfo =
   map
     styleMarkdown
     [ green "File transfer commands:",
-      indent <> highlight "/file @<contact> <file_path>         " <> " - send file to contact.",
-      indent <> highlight "/file #<group> <file_path>           " <> " - send file to group.",
+      indent <> highlight "/file @<contact> <file_path>     " <> " - send file to contact.",
+      indent <> highlight "/file #<group> <file_path>       " <> " - send file to group.",
       indent <> highlight "/freceive <file_id> [<file_path>]" <> " - accept to receive file.",
       indent <> highlight "/fcancel <file_id>               " <> " - cancel sending file.",
       indent <> highlight "/fstatus <file_id>               " <> " - show file transfer status.",
@@ -83,7 +83,7 @@ groupsHelpInfo =
     styleMarkdown
     [ green "Group management commands:",
       indent <> highlight "/group <group> [<full_name>]   " <> " - create group",
-      indent <> highlight "/add <group> <contact> [<role>]" <> " - add contact to group as a member, roles: " <> listHighlight ["owner", "admin", "normal"],
+      indent <> highlight "/add <group> <contact> [<role>]" <> " - add contact to group, roles: " <> highlight "owner" <> ", " <> highlight "admin" <> " (default), " <> highlight "member",
       indent <> highlight "/join <group>                  " <> " - accept group invitation",
       indent <> highlight "/remove <group> <member>       " <> " - remove member from group",
       indent <> highlight "/leave <group>                 " <> " - leave group",
