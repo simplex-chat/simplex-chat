@@ -71,7 +71,7 @@ filesHelpInfo =
       indent <> highlight "/file @<contact> <file_path>     " <> " - send file to contact.",
       indent <> highlight "/file #<group> <file_path>       " <> " - send file to group.",
       indent <> highlight "/freceive <file_id> [<file_path>]" <> " - accept to receive file.",
-      indent <> highlight "/fcancel <file_id>               " <> " - cancel sending file.",
+      indent <> highlight "/fcancel <file_id>               " <> " - cancel sending / receiving file.",
       indent <> highlight "/fstatus <file_id>               " <> " - show file transfer status.",
       "",
       "The commands may be abbreviated: " <> listHighlight ["/f", "/fr", "/fc", "/fs"]
