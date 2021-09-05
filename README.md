@@ -30,7 +30,7 @@ See [simplex.chat](https://simplex.chat) website for chat demo and the explanati
 - [Usage](#usage)
   - [Running the chat client](#running-the-chat-client)
   - [How to use SimpleX chat](#how-to-use-simplex-chat)
-  - [File Transfer and Groups](#file-transfer-and-groups)
+  - [File transfer and groups](#file-transfer-and-groups)
   - [Access chat history](#access-chat-history)
 - [Roadmap](#roadmap)
 - [License](#license)
@@ -172,7 +172,7 @@ They would then use `@<name> <message>` commands to send messages. One may also 
 
 Use `/help` in chat to see the list of available commands.
 
-### File Transfer and Groups
+### File transfer and groups
 
 New in v0.4 is support for file transfers and groups functionality.
 
