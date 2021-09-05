@@ -123,6 +123,7 @@ data ReceivedGroupInvitation = ReceivedGroupInvitation
 
 data GroupMember = GroupMember
   { groupMemberId :: Int64,
+    groupId :: Int64,
     memberId :: MemberId,
     memberRole :: GroupMemberRole,
     memberCategory :: GroupMemberCategory,
@@ -305,6 +306,7 @@ data SndFileTransfer = SndFileTransfer
     filePath :: String,
     fileSize :: Integer,
     chunkSize :: Integer,
+    recipientDisplayName :: ContactName,
     connId :: Int64,
     agentConnId :: ConnId,
     fileStatus :: FileStatus
@@ -322,6 +324,7 @@ data RcvFileTransfer = RcvFileTransfer
   { fileId :: Int64,
     fileInvitation :: FileInvitation,
     fileStatus :: RcvFileStatus,
+    senderDisplayName :: ContactName,
     chunkSize :: Integer
   }
   deriving (Eq, Show)
@@ -343,7 +346,7 @@ data RcvFileInfo = RcvFileInfo
 
 data FileTransfer = FTSnd [SndFileTransfer] | FTRcv RcvFileTransfer
 
-data FileStatus = FSNew | FSAccepted | FSConnected | FSComplete | FSCancelled deriving (Eq, Show)
+data FileStatus = FSNew | FSAccepted | FSConnected | FSComplete | FSCancelled deriving (Eq, Ord, Show)
 
 instance FromField FileStatus where fromField = fromTextField_ fileStatusT
 

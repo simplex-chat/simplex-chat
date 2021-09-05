@@ -44,6 +44,7 @@ chatTests = do
     it "send and receive file" testFileTransfer
     it "sender cancelled file transfer" testFileSndCancel
     it "recipient cancelled file transfer" testFileRcvCancel
+    it "send and receive file to group" testGroupFileTransfer
 
 testAddContact :: IO ()
 testAddContact =
@@ -410,10 +411,10 @@ testFileTransfer =
       concurrentlyN_
         [ do
             bob #> "@alice receiving here..."
-            bob <## "completed receiving the file 1",
+            bob <## "completed receiving file 1 (test.jpg) from alice",
           do
             alice <# "bob> receiving here..."
-            alice <## "completed sending the file 1"
+            alice <## "completed sending file 1 (test.jpg) to bob"
         ]
       src <- B.readFile "./tests/fixtures/test.jpg"
       dest <- B.readFile "./tests/tmp/test.jpg"
@@ -428,13 +429,13 @@ testFileSndCancel =
       alice ##> "/fc 1"
       concurrentlyN_
         [ do
-            alice <## "cancelled sending the file 1"
+            alice <## "cancelled sending file 1 (test.jpg) to bob"
             alice ##> "/fs 1"
-            alice <## "sent file transfer is cancelled",
+            alice <## "sending file 1 (test.jpg) cancelled",
           do
-            bob <## "sender cancelled sending the file 1"
+            bob <## "alice cancelled sending file 1 (test.jpg)"
             bob ##> "/fs 1"
-            bob <## "received file transfer is cancelled, received part path: ./tests/tmp/test.jpg"
+            bob <## "receiving file 1 (test.jpg) cancelled, received part path: ./tests/tmp/test.jpg"
         ]
       checkPartialTransfer
 
@@ -445,35 +446,77 @@ testFileRcvCancel =
       connectUsers alice bob
       startFileTransfer alice bob
       bob ##> "/fs 1"
-      getTermLine bob >>= (`shouldStartWith` "received file transfer progress:")
+      getTermLine bob >>= (`shouldStartWith` "receiving file 1 (test.jpg) progress")
       waitFileExists "./tests/tmp/test.jpg"
       bob ##> "/fc 1"
       concurrentlyN_
         [ do
-            bob <## "cancelled receiving the file 1"
+            bob <## "cancelled receiving file 1 (test.jpg) from alice"
             bob ##> "/fs 1"
-            bob <## "received file transfer is cancelled, received part path: ./tests/tmp/test.jpg",
+            bob <## "receiving file 1 (test.jpg) cancelled, received part path: ./tests/tmp/test.jpg",
           do
-            alice <## "recipient cancelled receiving the file 1"
+            alice <## "bob cancelled receiving file 1 (test.jpg)"
             alice ##> "/fs 1"
-            alice <## "sent file transfer is cancelled"
+            alice <## "sending file 1 (test.jpg) cancelled"
         ]
       checkPartialTransfer
   where
     waitFileExists f = unlessM (doesFileExist f) $ waitFileExists f
 
+testGroupFileTransfer :: IO ()
+testGroupFileTransfer =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+      alice #> "/f #team ./tests/fixtures/test.jpg"
+      alice <## "use /fc 1 to cancel sending"
+      concurrentlyN_
+        [ do
+            bob <# "#team alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
+            bob <## "use /fr 1 [<dir>/ | <path>] to receive it",
+          do
+            cath <# "#team alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
+            cath <## "use /fr 1 [<dir>/ | <path>] to receive it"
+        ]
+      alice ##> "/fs 1"
+      getTermLine alice >>= (`shouldStartWith` "sending file 1 (test.jpg) not accepted")
+      bob ##> "/fr 1 ./tests/tmp/"
+      bob <## "saving file 1 from alice to ./tests/tmp/test.jpg"
+      concurrentlyN_
+        [ do
+            alice <## "started sending file 1 (test.jpg) to bob"
+            alice <## "completed sending file 1 (test.jpg) to bob"
+            alice ##> "/fs 1"
+            alice <## "sending file 1 (test.jpg):"
+            alice <### ["  complete: bob", "  not accepted: cath"],
+          do
+            bob <## "started receiving file 1 (test.jpg) from alice"
+            bob <## "completed receiving file 1 (test.jpg) from alice"
+        ]
+      cath ##> "/fr 1 ./tests/tmp/"
+      cath <## "saving file 1 from alice to ./tests/tmp/test_1.jpg"
+      concurrentlyN_
+        [ do
+            alice <## "started sending file 1 (test.jpg) to cath"
+            alice <## "completed sending file 1 (test.jpg) to cath"
+            alice ##> "/fs 1"
+            getTermLine alice >>= (`shouldStartWith` "sending file 1 (test.jpg) complete"),
+          do
+            cath <## "started receiving file 1 (test.jpg) from alice"
+            cath <## "completed receiving file 1 (test.jpg) from alice"
+        ]
+
 startFileTransfer :: TestCC -> TestCC -> IO ()
 startFileTransfer alice bob = do
-  alice ##> "/f bob ./tests/fixtures/test.jpg"
-  alice <## "offered to send the file test.jpg to bob"
+  alice #> "/f @bob ./tests/fixtures/test.jpg"
   alice <## "use /fc 1 to cancel sending"
-  bob <## "alice wants to send you the file test.jpg (136.5 KiB / 139737 bytes)"
+  bob <# "alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
   bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
   bob ##> "/fr 1 ./tests/tmp"
-  bob <## "saving file 1 to ./tests/tmp/test.jpg"
+  bob <## "saving file 1 from alice to ./tests/tmp/test.jpg"
   concurrently_
-    (bob <## "started receiving the file 1")
-    (alice <## "started sending the file 1")
+    (bob <## "started receiving file 1 (test.jpg) from alice")
+    (alice <## "started sending file 1 (test.jpg) to bob")
 
 checkPartialTransfer :: IO ()
 checkPartialTransfer = do

@@ -25,11 +25,14 @@ module Simplex.Chat.View
     showSentMessage,
     showSentGroupMessage,
     showSentFileInvitation,
+    showSentGroupFileInvitation,
+    showSentFileInfo,
     showSndFileStart,
     showSndFileComplete,
     showSndFileCancelled,
+    showSndGroupFileCancelled,
     showSndFileRcvCancelled,
-    showReceivedFileInvitation,
+    receivedFileInvitation,
     showRcvFileAccepted,
     showRcvFileStart,
     showRcvFileComplete,
@@ -58,6 +61,7 @@ module Simplex.Chat.View
     showContactUpdated,
     showMessageError,
     safeDecodeUtf8,
+    msgPlain,
   )
 where
 
@@ -65,7 +69,9 @@ import Control.Monad.IO.Unlift
 import Control.Monad.Reader
 import Data.ByteString.Char8 (ByteString)
 import Data.Composition ((.:), (.:.))
+import Data.Function (on)
 import Data.Int (Int64)
+import Data.List (groupBy, intersperse, sortOn)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (DiffTime, UTCTime)
@@ -123,13 +129,13 @@ showGroupRemoved = printToView . groupRemoved
 showMemberSubError :: ChatReader m => GroupName -> ContactName -> ChatError -> m ()
 showMemberSubError = printToView .:. memberSubError
 
-showReceivedMessage :: ChatReader m => ContactName -> UTCTime -> Text -> MsgIntegrity -> m ()
+showReceivedMessage :: ChatReader m => ContactName -> UTCTime -> [StyledString] -> MsgIntegrity -> m ()
 showReceivedMessage = showReceivedMessage_ . ttyFromContact
 
-showReceivedGroupMessage :: ChatReader m => GroupName -> ContactName -> UTCTime -> Text -> MsgIntegrity -> m ()
+showReceivedGroupMessage :: ChatReader m => GroupName -> ContactName -> UTCTime -> [StyledString] -> MsgIntegrity -> m ()
 showReceivedGroupMessage = showReceivedMessage_ .: ttyFromGroup
 
-showReceivedMessage_ :: ChatReader m => StyledString -> UTCTime -> Text -> MsgIntegrity -> m ()
+showReceivedMessage_ :: ChatReader m => StyledString -> UTCTime -> [StyledString] -> MsgIntegrity -> m ()
 showReceivedMessage_ from utcTime msg mOk = printToView =<< liftIO (receivedMessage from utcTime msg mOk)
 
 showSentMessage :: ChatReader m => ContactName -> ByteString -> m ()
@@ -141,37 +147,46 @@ showSentGroupMessage = showSentMessage_ . ttyToGroup
 showSentMessage_ :: ChatReader m => StyledString -> ByteString -> m ()
 showSentMessage_ to msg = printToView =<< liftIO (sentMessage to msg)
 
-showSentFileInvitation :: ChatReader m => ContactName -> SndFileTransfer -> m ()
-showSentFileInvitation = printToView .: sentFileInvitation
+showSentFileInvitation :: ChatReader m => ContactName -> FilePath -> m ()
+showSentFileInvitation = showSentFileInvitation_ . ttyToContact
 
-showSndFileStart :: ChatReader m => Int64 -> m ()
+showSentGroupFileInvitation :: ChatReader m => GroupName -> FilePath -> m ()
+showSentGroupFileInvitation = showSentFileInvitation_ . ttyToGroup
+
+showSentFileInvitation_ :: ChatReader m => StyledString -> FilePath -> m ()
+showSentFileInvitation_ to filePath = printToView =<< liftIO (sentFileInvitation to filePath)
+
+showSentFileInfo :: ChatReader m => Int64 -> m ()
+showSentFileInfo = printToView . sentFileInfo
+
+showSndFileStart :: ChatReader m => SndFileTransfer -> m ()
 showSndFileStart = printToView . sndFileStart
 
-showSndFileComplete :: ChatReader m => Int64 -> m ()
+showSndFileComplete :: ChatReader m => SndFileTransfer -> m ()
 showSndFileComplete = printToView . sndFileComplete
 
-showSndFileCancelled :: ChatReader m => Int64 -> m ()
+showSndFileCancelled :: ChatReader m => SndFileTransfer -> m ()
 showSndFileCancelled = printToView . sndFileCancelled
 
-showSndFileRcvCancelled :: ChatReader m => Int64 -> m ()
+showSndGroupFileCancelled :: ChatReader m => [SndFileTransfer] -> m ()
+showSndGroupFileCancelled = printToView . sndGroupFileCancelled
+
+showSndFileRcvCancelled :: ChatReader m => SndFileTransfer -> m ()
 showSndFileRcvCancelled = printToView . sndFileRcvCancelled
 
-showReceivedFileInvitation :: ChatReader m => ContactName -> RcvFileTransfer -> m ()
-showReceivedFileInvitation = printToView .: receivedFileInvitation
-
-showRcvFileAccepted :: ChatReader m => Int64 -> FilePath -> m ()
+showRcvFileAccepted :: ChatReader m => RcvFileTransfer -> FilePath -> m ()
 showRcvFileAccepted = printToView .: rcvFileAccepted
 
-showRcvFileStart :: ChatReader m => Int64 -> m ()
+showRcvFileStart :: ChatReader m => RcvFileTransfer -> m ()
 showRcvFileStart = printToView . rcvFileStart
 
-showRcvFileComplete :: ChatReader m => Int64 -> m ()
+showRcvFileComplete :: ChatReader m => RcvFileTransfer -> m ()
 showRcvFileComplete = printToView . rcvFileComplete
 
-showRcvFileCancelled :: ChatReader m => Int64 -> m ()
+showRcvFileCancelled :: ChatReader m => RcvFileTransfer -> m ()
 showRcvFileCancelled = printToView . rcvFileCancelled
 
-showRcvFileSndCancelled :: ChatReader m => Int64 -> m ()
+showRcvFileSndCancelled :: ChatReader m => RcvFileTransfer -> m ()
 showRcvFileSndCancelled = printToView . rcvFileSndCancelled
 
 showFileTransferStatus :: ChatReader m => (FileTransfer, [Integer]) -> m ()
@@ -409,10 +424,10 @@ contactUpdated
 messageError :: Text -> Text -> [StyledString]
 messageError prefix err = [plain prefix <> ": " <> plain err]
 
-receivedMessage :: StyledString -> UTCTime -> Text -> MsgIntegrity -> IO [StyledString]
+receivedMessage :: StyledString -> UTCTime -> [StyledString] -> MsgIntegrity -> IO [StyledString]
 receivedMessage from utcTime msg mOk = do
   t <- formatUTCTime <$> getCurrentTimeZone <*> getZonedTime
-  pure $ prependFirst (t <> " " <> from) (msgPlain msg) ++ showIntegrity mOk
+  pure $ prependFirst (t <> " " <> from) msg ++ showIntegrity mOk
   where
     formatUTCTime :: TimeZone -> ZonedTime -> StyledString
     formatUTCTime localTz currentTime =
@@ -436,9 +451,15 @@ receivedMessage from utcTime msg mOk = do
     msgError s = [styled (Colored Red) s]
 
 sentMessage :: StyledString -> ByteString -> IO [StyledString]
-sentMessage to msg = do
+sentMessage to msg = sendWithTime_ to . msgPlain $ safeDecodeUtf8 msg
+
+sentFileInvitation :: StyledString -> FilePath -> IO [StyledString]
+sentFileInvitation to f = sendWithTime_ ("/f " <> to) [ttyFilePath f]
+
+sendWithTime_ :: StyledString -> [StyledString] -> IO [StyledString]
+sendWithTime_ to styledMsg = do
   time <- formatTime defaultTimeLocale "%H:%M" <$> getZonedTime
-  pure $ prependFirst (styleTime time <> " " <> to) (msgPlain $ safeDecodeUtf8 msg)
+  pure $ prependFirst (styleTime time <> " " <> to) styledMsg
 
 prependFirst :: StyledString -> [StyledString] -> [StyledString]
 prependFirst s [] = [s]
@@ -447,27 +468,39 @@ prependFirst s (s' : ss) = (s <> s') : ss
 msgPlain :: Text -> [StyledString]
 msgPlain = map styleMarkdownText . T.lines
 
-sentFileInvitation :: ContactName -> SndFileTransfer -> [StyledString]
-sentFileInvitation cName SndFileTransfer {fileId, fileName} =
-  [ "offered to send the file " <> plain fileName <> " to " <> ttyContact cName,
-    "use " <> highlight ("/fc " <> show fileId) <> " to cancel sending"
-  ]
+sentFileInfo :: Int64 -> [StyledString]
+sentFileInfo fileId =
+  ["use " <> highlight ("/fc " <> show fileId) <> " to cancel sending"]
 
-sndFileStart :: Int64 -> [StyledString]
-sndFileStart fileId = ["started sending the file " <> sShow fileId]
+sndFileStart :: SndFileTransfer -> [StyledString]
+sndFileStart = sendingFile_ "started"
 
-sndFileComplete :: Int64 -> [StyledString]
-sndFileComplete fileId = ["completed sending the file " <> sShow fileId]
+sndFileComplete :: SndFileTransfer -> [StyledString]
+sndFileComplete = sendingFile_ "completed"
 
-sndFileCancelled :: Int64 -> [StyledString]
-sndFileCancelled fileId = ["cancelled sending the file " <> sShow fileId]
+sndFileCancelled :: SndFileTransfer -> [StyledString]
+sndFileCancelled = sendingFile_ "cancelled"
 
-sndFileRcvCancelled :: Int64 -> [StyledString]
-sndFileRcvCancelled fileId = ["recipient cancelled receiving the file " <> sShow fileId]
+sndGroupFileCancelled :: [SndFileTransfer] -> [StyledString]
+sndGroupFileCancelled fts =
+  case filter (\SndFileTransfer {fileStatus = s} -> s /= FSCancelled && s /= FSComplete) fts of
+    [] -> ["sending file can't be cancelled"]
+    ts@(ft : _) -> ["cancelled sending " <> sndFile ft <> " to " <> listMembers ts]
 
-receivedFileInvitation :: ContactName -> RcvFileTransfer -> [StyledString]
-receivedFileInvitation c RcvFileTransfer {fileId, fileInvitation = FileInvitation {fileName, fileSize}} =
-  [ ttyContact c <> " wants to send you the file " <> plain fileName <> " (" <> humanReadableSize fileSize <> " / " <> sShow fileSize <> " bytes)",
+sendingFile_ :: StyledString -> SndFileTransfer -> [StyledString]
+sendingFile_ status ft@SndFileTransfer {recipientDisplayName = c} =
+  [status <> " sending " <> sndFile ft <> " to " <> ttyContact c]
+
+sndFileRcvCancelled :: SndFileTransfer -> [StyledString]
+sndFileRcvCancelled ft@SndFileTransfer {recipientDisplayName = c} =
+  [ttyContact c <> " cancelled receiving " <> sndFile ft]
+
+sndFile :: SndFileTransfer -> StyledString
+sndFile SndFileTransfer {fileId, fileName} = fileTransfer fileId fileName
+
+receivedFileInvitation :: RcvFileTransfer -> [StyledString]
+receivedFileInvitation RcvFileTransfer {fileId, fileInvitation = FileInvitation {fileName, fileSize}} =
+  [ "sends file " <> ttyFilePath fileName <> " (" <> humanReadableSize fileSize <> " / " <> sShow fileSize <> " bytes)",
     "use " <> highlight ("/fr " <> show fileId <> " [<dir>/ | <path>]") <> " to receive it"
   ]
 
@@ -483,41 +516,71 @@ humanReadableSize size
     mB = kB * 1024
     gB = mB * 1024
 
-rcvFileAccepted :: Int64 -> FilePath -> [StyledString]
-rcvFileAccepted fileId filePath = ["saving file " <> sShow fileId <> " to " <> plain filePath]
+rcvFileAccepted :: RcvFileTransfer -> FilePath -> [StyledString]
+rcvFileAccepted RcvFileTransfer {fileId, senderDisplayName = c} filePath =
+  ["saving file " <> sShow fileId <> " from " <> ttyContact c <> " to " <> plain filePath]
 
-rcvFileStart :: Int64 -> [StyledString]
-rcvFileStart fileId = ["started receiving the file " <> sShow fileId]
+rcvFileStart :: RcvFileTransfer -> [StyledString]
+rcvFileStart = receivingFile_ "started"
 
-rcvFileComplete :: Int64 -> [StyledString]
-rcvFileComplete fileId = ["completed receiving the file " <> sShow fileId]
+rcvFileComplete :: RcvFileTransfer -> [StyledString]
+rcvFileComplete = receivingFile_ "completed"
 
-rcvFileCancelled :: Int64 -> [StyledString]
-rcvFileCancelled fileId = ["cancelled receiving the file " <> sShow fileId]
+rcvFileCancelled :: RcvFileTransfer -> [StyledString]
+rcvFileCancelled = receivingFile_ "cancelled"
 
-rcvFileSndCancelled :: Int64 -> [StyledString]
-rcvFileSndCancelled fileId = ["sender cancelled sending the file " <> sShow fileId]
+receivingFile_ :: StyledString -> RcvFileTransfer -> [StyledString]
+receivingFile_ status ft@RcvFileTransfer {senderDisplayName = c} =
+  [status <> " receiving " <> rcvFile ft <> " from " <> ttyContact c]
+
+rcvFileSndCancelled :: RcvFileTransfer -> [StyledString]
+rcvFileSndCancelled ft@RcvFileTransfer {senderDisplayName = c} =
+  [ttyContact c <> " cancelled sending " <> rcvFile ft]
+
+rcvFile :: RcvFileTransfer -> StyledString
+rcvFile RcvFileTransfer {fileId, fileInvitation = FileInvitation {fileName}} = fileTransfer fileId fileName
+
+fileTransfer :: Int64 -> String -> StyledString
+fileTransfer fileId fileName = "file " <> sShow fileId <> " (" <> ttyFilePath fileName <> ")"
 
 fileTransferStatus :: (FileTransfer, [Integer]) -> [StyledString]
-fileTransferStatus (FTSnd [SndFileTransfer {fileStatus, fileSize, chunkSize}], chunksNum) =
-  ["sent file transfer " <> sndStatus]
+fileTransferStatus (FTSnd [ft@SndFileTransfer {fileStatus, fileSize, chunkSize}], chunksNum) =
+  ["sending " <> sndFile ft <> " " <> sndStatus]
   where
     sndStatus = case fileStatus of
-      FSNew -> "is not accepted yet"
+      FSNew -> "not accepted yet"
       FSAccepted -> "just started"
-      FSConnected -> "progress: " <> fileProgress chunksNum chunkSize fileSize
-      FSComplete -> "is complete"
-      FSCancelled -> "is cancelled"
-fileTransferStatus (FTSnd _fts, _chunks) = [] -- TODO group transfer
-fileTransferStatus (FTRcv RcvFileTransfer {fileId, fileInvitation = FileInvitation {fileSize}, fileStatus, chunkSize}, chunksNum) =
-  ["received file transfer " <> rcvStatus]
+      FSConnected -> "progress " <> fileProgress chunksNum chunkSize fileSize
+      FSComplete -> "complete"
+      FSCancelled -> "cancelled"
+fileTransferStatus (FTSnd [], _) = ["no file transfers (empty group)"]
+fileTransferStatus (FTSnd fts@(ft : _), chunksNum) =
+  case concatMap membersTransferStatus $ groupBy ((==) `on` fs) $ sortOn fs fts of
+    [membersStatus] -> ["sending " <> sndFile ft <> " " <> membersStatus]
+    membersStatuses -> ("sending " <> sndFile ft <> ": ") : map ("  " <>) membersStatuses
+  where
+    fs = fileStatus :: SndFileTransfer -> FileStatus
+    membersTransferStatus [] = []
+    membersTransferStatus ts@(SndFileTransfer {fileStatus, fileSize, chunkSize} : _) = [sndStatus <> ": " <> listMembers ts]
+      where
+        sndStatus = case fileStatus of
+          FSNew -> "not accepted"
+          FSAccepted -> "just started"
+          FSConnected -> "in progress (" <> sShow (sum chunksNum * chunkSize * 100 `div` (toInteger (length chunksNum) * fileSize)) <> "%)"
+          FSComplete -> "complete"
+          FSCancelled -> "cancelled"
+fileTransferStatus (FTRcv ft@RcvFileTransfer {fileId, fileInvitation = FileInvitation {fileSize}, fileStatus, chunkSize}, chunksNum) =
+  ["receiving " <> rcvFile ft <> " " <> rcvStatus]
   where
     rcvStatus = case fileStatus of
-      RFSNew -> "is not accepted yet, use " <> highlight ("/fr " <> show fileId) <> " to receive file"
+      RFSNew -> "not accepted yet, use " <> highlight ("/fr " <> show fileId) <> " to receive file"
       RFSAccepted _ -> "just started"
-      RFSConnected _ -> "progress: " <> fileProgress chunksNum chunkSize fileSize
-      RFSComplete RcvFileInfo {filePath} -> "is complete, path: " <> plain filePath
-      RFSCancelled RcvFileInfo {filePath} -> "is cancelled, received part path: " <> plain filePath
+      RFSConnected _ -> "progress " <> fileProgress chunksNum chunkSize fileSize
+      RFSComplete RcvFileInfo {filePath} -> "complete, path: " <> plain filePath
+      RFSCancelled RcvFileInfo {filePath} -> "cancelled, received part path: " <> plain filePath
+
+listMembers :: [SndFileTransfer] -> StyledString
+listMembers = mconcat . intersperse ", " . map (ttyContact . recipientDisplayName)
 
 fileProgress :: [Integer] -> Integer -> Integer -> StyledString
 fileProgress chunksNum chunkSize fileSize =
@@ -605,6 +668,9 @@ ttyFromGroup g c = styled (Colored Yellow) $ "#" <> g <> " " <> c <> "> "
 
 ttyToGroup :: GroupName -> StyledString
 ttyToGroup g = styled (Colored Cyan) $ "#" <> g <> " "
+
+ttyFilePath :: FilePath -> StyledString
+ttyFilePath = plain
 
 optFullName :: ContactName -> Text -> StyledString
 optFullName localDisplayName fullName
