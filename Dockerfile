@@ -7,4 +7,4 @@ WORKDIR /project
 RUN stack install
 
 FROM scratch AS export-stage
-COPY --from=build-stage /root/.local/bin/dog-food /
+COPY --from=build-stage /root/.local/bin/simplex-chat /

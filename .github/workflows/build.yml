@@ -50,24 +50,24 @@ jobs:
           - os: ubuntu-20.04
             cache_path: ~/.stack
             stack_args: "--test"
-            artifact_rel_path: /bin/dog-food
-            asset_name: dog-food-ubuntu-20_04-x86-64
+            artifact_rel_path: /bin/simplex-chat
+            asset_name: simplex-chat-ubuntu-20_04-x86-64
           - os: ubuntu-18.04
             cache_path: ~/.stack
             stack_args: "--test"
-            artifact_rel_path: /bin/dog-food
-            asset_name: dog-food-ubuntu-18_04-x86-64
+            artifact_rel_path: /bin/simplex-chat
+            asset_name: simplex-chat-ubuntu-18_04-x86-64
           - os: macos-latest
             cache_path: ~/.stack
             stack_args: "--test"
-            artifact_rel_path: /bin/dog-food
-            asset_name: dog-food-macos-x86-64
+            artifact_rel_path: /bin/simplex-chat
+            asset_name: simplex-chat-macos-x86-64
           # TODO enable tests for windows once fixed (remove stack_args altogether)
           - os: windows-latest
             cache_path: C:/sr
             stack_args: ""
-            artifact_rel_path: /bin/dog-food.exe
-            asset_name: dog-food-windows-x86-64
+            artifact_rel_path: /bin/simplex-chat.exe
+            asset_name: simplex-chat-windows-x86-64
     steps:
       - name: Clone project
         uses: actions/checkout@v2

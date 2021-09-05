@@ -9,9 +9,11 @@
 
 The motivation for SimpleX chat is [presented here](./simplex.md).
 
-SimpleX chat prototype is a thin terminal UI on top of [SimpleXMQ](https://github.com/simplex-chat/simplexmq) message broker that uses [SMP protocols](https://github.com/simplex-chat/simplexmq/blob/master/protocol).
+SimpleX chat prototype is a thin terminal UI on top of [SimpleXMQ](https://github.com/simplex-chat/simplexmq) message broker that uses [SMP protocols](https://github.com/simplex-chat/simplexmq/blob/master/protocol), implementing direct and group messaging and file transfer.
 
 See [simplex.chat](https://simplex.chat) website for chat demo and the explanations of the system and how SMP protocol works.
+
+<!-- TODO update gif -->
 
 ![simplex-chat](./images/simplex-chat.gif)
 
@@ -28,6 +30,7 @@ See [simplex.chat](https://simplex.chat) website for chat demo and the explanati
 - [Usage](#usage)
   - [Running the chat client](#running-the-chat-client)
   - [How to use SimpleX chat](#how-to-use-simplex-chat)
+  - [File Transfer and Groups](#file-transfer-and-groups)
   - [Access chat history](#access-chat-history)
 - [Roadmap](#roadmap)
 - [License](#license)
@@ -62,7 +65,7 @@ The routing of messages relies on the knowledge of client devices how user conta
 - Authentication of each command/message by SMP servers with automatically generated RSA key pairs.
 - TCP transport encryption using SMP transport protocol.
 
-RSA keys are not used as identity, they are randomly generated for each contact. 2048 bit keys are used, it can be changed to 4096-bit in code via [rsaKeySize setting](https://github.com/simplex-chat/simplex-chat/blob/master/apps/dog-food/Main.hs).
+RSA keys are not used as identity, they are randomly generated for each contact.
 
 ## Installation
 
@@ -74,7 +77,7 @@ Download the chat binary for your system from the [latest stable release](https:
 
 ```sh
 chmod +x <binary>
-mv <binary> ~/.local/bin/dog-food
+mv <binary> ~/.local/bin/simplex-chat
 ```
 
 (or any other preferred location on PATH).
@@ -84,7 +87,7 @@ On MacOS you also need to [allow Gatekeeper to run it](https://support.apple.com
 #### Windows
 
 ```sh
-move <binary> %APPDATA%/local/bin/dog-food.exe
+move <binary> %APPDATA%/local/bin/simplex-chat.exe
 ```
 
 ### Build from source
@@ -121,53 +124,65 @@ $ stack install
 
 ### Running the chat client
 
-To start the chat client, run `dog-food` (as in [eating your own dog food](https://en.wikipedia.org/wiki/Eating_your_own_dog_food)) from the terminal.
+To start the chat client, run `simplex-chat` from the terminal.
 
-By default, app data directory is created in the home directory (`~/.simplex`, or `%APPDATA%/simplex` on Windows), and SQLite database file `smp-chat.db` is initialized in it.
+By default, app data directory is created in the home directory (`~/.simplex`, or `%APPDATA%/simplex` on Windows), and two SQLite database files `simplex.chat.db` and `simplex.agent.db` - for chat client and agent respectively - are initialized in it.
 
-The default SMP server is `smp1.simplex.im#pLdiGvm0jD1CMblnov6Edd/391OrYsShw+RgdfR0ChA=` (base-64 encoded string after server host is the transport key digest) - it is pre-configured in the app.
-
-To specify a different file path for the chat database use `-d` command line option:
+To specify a different file path prefix for the database files use `-d` command line option:
 
 ```shell
-$ dog-food -d my-chat.db
+$ simplex-chat -d alice
 ```
+
+Running above, for example, would create `alice.chat.db` and `alice.agent.db` database files in current directory. Client's database is dependent on specific agent database, so it wouldn't make sense to mix them with different installation's database files.
+
+The default SMP server is `smp1.simplex.im#pLdiGvm0jD1CMblnov6Edd/391OrYsShw+RgdfR0ChA=` (base-64 encoded string after server host is the transport key digest) - it is pre-configured in the app.
 
 If you deployed your own SMP server(s) you can configure client via `-s` option:
 
 ```shell
-$ dog-food -s smp.example.com:5223#KXNE1m2E1m0lm92WGKet9CL6+lO742Vy5G6nsrkvgs8=
+$ simplex-chat -s smp.example.com:5223#KXNE1m2E1m0lm92WGKet9CL6+lO742Vy5G6nsrkvgs8=
 ```
 
 The base-64 encoded string in server address is the digest of RSA transport handshake key that the server will generate on the first run and output its digest.
 
 You can still talk to people using default or any other server - it only affects the location of the message queue when you initiate the connection (and the reply queue can be on another server, as set by the other party's client).
 
-Run `dog-food --help` to see all available options.
+Run `simplex-chat --help` to see all available options.
 
 ### How to use SimpleX chat
 
+Once you have started the chat, you will be prompted to specify your "display name" and "full name" as part of creation of your local user profile. Your display name is just a way for your contacts to refer to you - it is not unique and does not serve as a global identity (duplicate display names are postfixed to be unique on client). Full name is optional and is just another alias to be printed next to your display name.
+
 This diagram shows how to connect and message a contact:
+
+<!-- TODO fix commands in image -->
 
 <div align="center">
   <img align="center" src="images/how-to-use-simplex.svg">
 </div>
 
-Once you have started the chat, use `/add <name1>` to create a new connection and generate an invitation (`<name1>` is any name you want to use for that contact). The add command will output an invitation. Send this invitation to your contact via any other channel.
+Once you've set up your local profile, use `/connect` to create a new connection and generate an invitation. The `connect` command will output an invitation. Send this invitation to your contact via any other channel.
 
 The invitation has the format `smp::<server>::<queue_id>::<rsa_public_key_for_this_queue_only>`. The invitation can only be used once and even if this is intercepted, the attacker would not be able to use it to send you the messages via this queue once your contact confirms that the connection is established.
 
-The contact who received the invitation should use `/connect <name2> <invitation>` to accept the connection (`<name2>` is any name that the accepting contact wants to use for you).
-
-Once the contact has used the `/connect` command, a connection is established and both parties are notified.
+The contact who received the invitation should use `/connect <invitation>` to accept the connection. This establishes the connection, and both parties are notified.
 
 They would then use `@<name> <message>` commands to send messages. One may also press Space or just start typing a message to send a message to the contact that was the last.
 
-If your contact is disconnected, restart the chat client - it may happen if you lose internet connection.
-
 Use `/help` in chat to see the list of available commands.
 
+### File Transfer and Groups
+
+New in v0.4 is support for file transfers and groups functionality.
+
+You can initiate file transfer to your contact by running `/file @<contact> <file_path>`, after which he would be able to asynchronously accept it. For checking the status of a file transfer use `/fstatus <file_id>`. See `/help files` for other commands.
+
+To create a group use `/group <group>` command - afterwards you can add your contacts to it and you can exchange messages with `#<group> <message>` commands. See more group related commands with `/help groups`. You can also initialize a file transfer to a group by running `/file #<group> <file_path>`.
+
 ### Access chat history
+
+<!-- TODO update -->
 
 SimpleX chat stores all your contacts and conversations in a local database file, making it private and portable by design, fully owned and controlled by you.
 
