@@ -152,7 +152,7 @@ Run `simplex-chat --help` to see all available options.
 
 ### How to use SimpleX chat
 
-Once you have started the chat, you will be prompted to specify your "display name" and an optional "full name" as part of creation of your local user profile. Your display name is an alias for your contacts to refer to you by - it is not unique and does not serve as a global identity. In case different contacts used the same display name, the chat client adds a numeric suffix to their local display names.
+Once you have started the chat, you will be prompted to specify your "display name" and an optional "full name" as part of creation of your local user profile. Your display name is an alias for your contacts to refer to you by - it is not unique and does not serve as a global identity. In case different contacts chose the same display name, the chat client adds a numeric suffix to their local display names.
 
 This diagram shows how to connect and message a contact:
 
