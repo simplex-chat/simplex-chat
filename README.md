@@ -13,9 +13,9 @@ SimpleX chat prototype is a thin terminal UI on top of [SimpleXMQ](https://githu
 
 See [simplex.chat](https://simplex.chat) website for chat demo and the explanations of the system and how SMP protocol works.
 
-<!-- TODO update gif -->
-
 ![simplex-chat](./images/simplex-chat.gif)
+
+(Video is for the previous version, a new video will be added soon)
 
 ## Table of contents
 
@@ -134,7 +134,7 @@ To specify a different file path prefix for the database files use `-d` command 
 $ simplex-chat -d alice
 ```
 
-Running above, for example, would create `alice.chat.db` and `alice.agent.db` database files in current directory. Client's database is dependent on specific agent database, so it wouldn't make sense to mix them with different installation's database files.
+Running above, for example, would create `alice.chat.db` and `alice.agent.db` database files in current directory.
 
 The default SMP server is `smp1.simplex.im#pLdiGvm0jD1CMblnov6Edd/391OrYsShw+RgdfR0ChA=` (base-64 encoded string after server host is the transport key digest) - it is pre-configured in the app.
 
@@ -152,7 +152,7 @@ Run `simplex-chat --help` to see all available options.
 
 ### How to use SimpleX chat
 
-Once you have started the chat, you will be prompted to specify your "display name" and "full name" as part of creation of your local user profile. Your display name is just a way for your contacts to refer to you - it is not unique and does not serve as a global identity (duplicate display names are postfixed to be unique on client). Full name is optional and is just another alias to be printed next to your display name.
+Once you have started the chat, you will be prompted to specify your "display name" and an optional "full name" as part of creation of your local user profile. Your display name is an alias for your contacts to refer to you by - it is not unique and does not serve as a global identity. In case different contacts used the same display name, the chat client adds a numeric suffix to their local display names.
 
 This diagram shows how to connect and message a contact:
 
@@ -162,13 +162,13 @@ This diagram shows how to connect and message a contact:
   <img align="center" src="images/how-to-use-simplex.svg">
 </div>
 
-Once you've set up your local profile, use `/connect` to create a new connection and generate an invitation. The `connect` command will output an invitation. Send this invitation to your contact via any other channel.
+Once you've set up your local profile, enter `/c` (for `/connect`) to create a new connection and generate an invitation. Send this invitation to your contact via any other channel.
 
 The invitation has the format `smp::<server>::<queue_id>::<rsa_public_key_for_this_queue_only>`. The invitation can only be used once and even if this is intercepted, the attacker would not be able to use it to send you the messages via this queue once your contact confirms that the connection is established.
 
-The contact who received the invitation should use `/connect <invitation>` to accept the connection. This establishes the connection, and both parties are notified.
+The contact who received the invitation should enter `/c <invitation>` to accept the connection. This establishes the connection, and both parties are notified.
 
-They would then use `@<name> <message>` commands to send messages. One may also press Space or just start typing a message to send a message to the contact that was the last.
+They would then use `@<name> <message>` commands to send messages. You may also just start typing a message to send it to the contact that was the last.
 
 Use `/help` in chat to see the list of available commands.
 
@@ -176,13 +176,13 @@ Use `/help` in chat to see the list of available commands.
 
 New in v0.4 is support for file transfers and groups functionality.
 
-You can initiate file transfer to your contact by running `/file @<contact> <file_path>`, after which he would be able to asynchronously accept it. For checking the status of a file transfer use `/fstatus <file_id>`. See `/help files` for other commands.
+You can initiate file transfer to your contact by running `/f @<contact> <file_path>` (`/f` for `/file`), after which he would be able to asynchronously accept it. For checking the status of a file transfer use `/fs <file_id>`. See `/help files` for other commands.
 
-To create a group use `/group <group>` command - afterwards you can add your contacts to it and you can exchange messages with `#<group> <message>` commands. See more group related commands with `/help groups`. You can also initialize a file transfer to a group by running `/file #<group> <file_path>`.
+To create a group enter `/g <group>` command (`/g` for `/group`) - afterwards you can add your contacts to it and you can exchange messages using `#<group> <message>` commands. See more group related commands with `/help groups`. You can also initialize a file transfer to a group by running `/f #<group> <file_path>`.
 
 ### Access chat history
 
-<!-- TODO update -->
+🚧 **Section currently out of date - will be updated soon** 🏗
 
 SimpleX chat stores all your contacts and conversations in a local database file, making it private and portable by design, fully owned and controlled by you.
 
@@ -207,14 +207,14 @@ order by internal_id desc;
 
 The consumer ready system will have these parts implemented:
 
-1. Application level chat protocol. This will allow to separate physical server connection management from logical chat contacts, and to support all common chat functions. Currently in progress in [v4 branch](https://github.com/simplex-chat/simplex-chat/tree/v4).
-2. Symmetric groups support in SMP agent protocol, as a foundation for chat groups.
+1. Application level chat protocol. This will allow to separate physical server connection management from logical chat contacts, and to support all common chat functions. ([Done](https://github.com/simplex-chat/simplex-chat/pull/65)) <!-- TODO link to release -->
+2. Symmetric groups support in SMP agent protocol, as a foundation for chat groups. ([Done as part of application protocol](#file-transfer-and-groups))
 3. SMP queue redundancy and rotation in SMP agent protocol.
 4. Message delivery confirmation in SMP agent protocol.
 5. Multi-agent/device data synchronization - to use chat on multiple devices.
-6. Synchronous streams support in SMP and SMP agent protocols, to support file transfer.
+6. Synchronous streams support in SMP and SMP agent protocols, to support file transfer. ([File transfer supported as part of application protocol](#file-transfer-and-groups))
 7. Desktop and mobile apps.
-8. Scripts for simple SMP server deployment to hosting providers: Linode ([done](https://github.com/simplex-chat/simplexmq#deploy-smp-server-on-linode)), Digital Ocean and Heroku.
+8. Scripts for simple SMP server deployment to hosting providers: Linode ([done](https://github.com/simplex-chat/simplexmq#deploy-smp-server-on-linode)), Digital Ocean ([done](https://github.com/simplex-chat/simplexmq#deploy-smp-server-on-digitalocean)) and Heroku.
 9. Public broadcast channels.
 10. Optional public contact/group addresses using DNS-based contact addresses (like email) to establish connections, but not using it to route messages - in this way you will keep all your contacts and groups even if you lose the control of the domain.
 
