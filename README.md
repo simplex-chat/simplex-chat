@@ -55,7 +55,7 @@ The routing of messages relies on the knowledge of client devices how user conta
 
 ## Current features of the terminal chat
 
-- 1-to-1 chat with multiple people in the same terminal window.
+- Direct and group messaging and file transfer.
 - Auto-populated recipient name - just type your messages to reply to the sender once the connection is established.
 - Demo SMP server available at `smp1.simplex.im:5223` - you can deploy your own server (`smp-server` executable in [simplexmq](https://github.com/simplex-chat/simplexmq) repo).
 - No global identity or any names visible to the server(s), ensuring full privacy of your contacts and conversations.
