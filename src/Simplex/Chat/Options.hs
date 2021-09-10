@@ -31,8 +31,8 @@ chatOpts appDir =
       ( long "server"
           <> short 's'
           <> metavar "SERVER"
-          <> help "SMP server(s) to use (smp1.simplex.im#pLdiGvm0jD1CMblnov6Edd/391OrYsShw+RgdfR0ChA=)"
-          <> value (L.fromList ["smp1.simplex.im#pLdiGvm0jD1CMblnov6Edd/391OrYsShw+RgdfR0ChA="])
+          <> help "SMP server(s) to use (smp2.simplex.im#z5W2QLQ1Br3Yd6CoWg7bIq1bHdwK7Y8bEiEXBs/WfAg=)"
+          <> value (L.fromList ["smp2.simplex.im#z5W2QLQ1Br3Yd6CoWg7bIq1bHdwK7Y8bEiEXBs/WfAg="])
       )
   where
     defaultDbFilePath = combine appDir "simplex"
