@@ -7,7 +7,7 @@
 [![GitHub build](https://github.com/simplex-chat/simplex-chat/workflows/build/badge.svg)](https://github.com/simplex-chat/simplex-chat/actions?query=workflow%3Abuild)
 [![GitHub release](https://img.shields.io/github/v/release/simplex-chat/simplex-chat)](https://github.com/simplex-chat/simplex-chat/releases)
 
-> **New in v0.4 is support for file transfers and groups functionality! ([See details below](#file-transfer))**
+> **NEW in v0.4: [groups](#groups) and [sending files](#sending-files)!**
 
 The motivation for SimpleX chat is [presented here](./simplex.md).
 
@@ -21,7 +21,7 @@ See [simplex.chat](https://simplex.chat) website for chat demo and the explanati
 
 - [Disclaimer](#disclaimer)
 - [Network topology](#network-topology)
-- [The features of the terminal chat](#the-features-of-the-terminal-chat)
+- [Terminal chat features](#terminal-chat-features)
 - [Installation](#installation)
   - [Download chat client](#download-chat-client)
   - [Build from source](#build-from-source)
@@ -30,10 +30,10 @@ See [simplex.chat](https://simplex.chat) website for chat demo and the explanati
 - [Usage](#usage)
   - [Running the chat client](#running-the-chat-client)
   - [How to use SimpleX chat](#how-to-use-simplex-chat)
-  - [Sending files](#sending-files)
   - [Groups](#groups)
+  - [Sending files](#sending-files)
   - [Access chat history](#access-chat-history)
-- [Roadmap](#roadmap)
+- [Future roadmap](#future-roadmap)
 - [License](#license)
 
 ## Disclaimer
@@ -54,7 +54,7 @@ Unlike federated networks, the participating server nodes do NOT have records of
 
 The routing of messages relies on the knowledge of client devices how user contacts and groups map at any given moment of time to these disposable queues on server nodes.
 
-## The features of the terminal chat
+## Terminal chat features
 
 - 1-to-1 chat with multiple people in the same terminal window.
 - Group messaging.
@@ -160,7 +160,7 @@ Once you have started the chat, you will be prompted to specify your "display na
 This diagram shows how to connect and message a contact:
 
 <div align="center">
-  <img align="center" src="images/how-to-use-simplex.png">
+  <img align="center" src="images/how-to-use-simplex.svg">
 </div>
 
 Once you've set up your local profile, enter `/c` (for `/connect`) to create a new connection and generate an invitation. Send this invitation to your contact via any other channel.
@@ -173,21 +173,21 @@ They would then use `@<name> <message>` commands to send messages. You may also 
 
 Use `/help` in chat to see the list of available commands.
 
-### Sending files
-
-You can send a file to your contact with `/f @<contact> <file_path>` - the recipient will have to accept it before it is sent. See `/help files` for other commands.
-
-![simplex-chat](./images/file-transfer.gif)
-
 ### Groups
 
-To create a group use `/g <group>`, the add contacts to it with `/a <group> <name>`and send messages with `#<group> <message>`. See `/help groups` for other commands.
+To create a group use `/g <group>`, the add contacts to it with `/a <group> <name>`and send messages with `#<group> <message>`. Use `/help groups` for other commands.
 
 ![simplex-chat](./images/groups.gif)
 
-You can also send a file to a group with `/f #<group> <file_path>`.
+> **Please note**: the groups are not stored on any server, they are maintained as a list of members in the app database to whom the messages will be sent.
 
-__Please note__: the groups are not stored on any server, they are maintained as a list of members in the app database to whom the messages will be sent.
+### Sending files
+
+You can send a file to your contact with `/f @<contact> <file_path>` - the recipient will have to accept it before it is sent. Use `/help files` for other commands.
+
+![simplex-chat](./images/file-transfer.gif)
+
+You can send files to a group with `/f #<group> <file_path>`.
 
 ### Access chat history
 
@@ -212,20 +212,18 @@ order by internal_id desc;
 
 > **Please note:** SQLite foreign key constraints are disabled by default, and must be **[enabled separately for each database connection](https://sqlite.org/foreignkeys.html#fk_enable)**. The latter can be achieved by running `PRAGMA foreign_keys = ON;` command on an open database connection. By running data altering queries without enabling foreign keys prior to that, you may risk putting your database in an inconsistent state.
 
-## Roadmap
+## Future roadmap
 
-The consumer ready system will have these parts implemented:
-
-1. Application level chat protocol. This will allow to separate physical server connection management from logical chat contacts, and to support all common chat functions. ([Done](https://github.com/simplex-chat/simplex-chat/pull/65)) <!-- TODO link to release -->
-2. Symmetric groups support in SMP agent protocol, as a foundation for chat groups. ([Done as part of application protocol](#file-transfer-and-groups))
-3. SMP queue redundancy and rotation in SMP agent protocol.
-4. Message delivery confirmation in SMP agent protocol.
-5. Multi-agent/device data synchronization - to use chat on multiple devices.
-6. Synchronous streams support in SMP and SMP agent protocols, to support file transfer. ([File transfer supported as part of application protocol](#file-transfer-and-groups))
-7. Desktop and mobile apps.
-8. Scripts for simple SMP server deployment to hosting providers: Linode ([done](https://github.com/simplex-chat/simplexmq#deploy-smp-server-on-linode)), Digital Ocean ([done](https://github.com/simplex-chat/simplexmq#deploy-smp-server-on-digitalocean)) and Heroku.
-9. Public broadcast channels.
-10. Optional public contact/group addresses using DNS-based contact addresses (like email) to establish connections, but not using it to route messages - in this way you will keep all your contacts and groups even if you lose the control of the domain.
+1. Mobile and desktop apps (in progress).
+2. SMP protocol improvements:
+  - SMP queue redundancy and rotation.
+  - Message delivery confirmation.
+  - Support multiple devices.
+3. Privacy-preserving identity server for optional DNS-based contact/group addresses to simplify connection and discovery, but not used to deliver messages:
+  - keep all your contacts and groups even if you lose the domain.
+  - the server doesn't have information about your contacts and groups.
+4. Media server to optimize sending large files to groups.
+5. Channels server for large groups and broadcast channels.
 
 ## License
 
