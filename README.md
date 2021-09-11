@@ -7,15 +7,15 @@
 [![GitHub build](https://github.com/simplex-chat/simplex-chat/workflows/build/badge.svg)](https://github.com/simplex-chat/simplex-chat/actions?query=workflow%3Abuild)
 [![GitHub release](https://img.shields.io/github/v/release/simplex-chat/simplex-chat)](https://github.com/simplex-chat/simplex-chat/releases)
 
+> **New in v0.4 is support for file transfers and groups functionality! (See details below)**
+
 The motivation for SimpleX chat is [presented here](./simplex.md).
 
-SimpleX chat prototype is a thin terminal UI on top of [SimpleXMQ](https://github.com/simplex-chat/simplexmq) message broker that uses [SMP protocols](https://github.com/simplex-chat/simplexmq/blob/master/protocol), implementing direct and group messaging and file transfer.
+SimpleX chat prototype is a thin terminal UI on top of [SimpleXMQ](https://github.com/simplex-chat/simplexmq) message broker that uses [SMP protocols](https://github.com/simplex-chat/simplexmq/blob/master/protocol).
 
 See [simplex.chat](https://simplex.chat) website for chat demo and the explanations of the system and how SMP protocol works.
 
-![simplex-chat](./images/simplex-chat.gif)
-
-(Video is for the previous version, a new video will be added soon)
+![simplex-chat](./images/connection.gif)
 
 ## Table of contents
 
@@ -30,7 +30,8 @@ See [simplex.chat](https://simplex.chat) website for chat demo and the explanati
 - [Usage](#usage)
   - [Running the chat client](#running-the-chat-client)
   - [How to use SimpleX chat](#how-to-use-simplex-chat)
-  - [File transfer and groups](#file-transfer-and-groups)
+  - [File transfer](#file-transfer)
+  - [Groups](#groups)
   - [Access chat history](#access-chat-history)
 - [Roadmap](#roadmap)
 - [License](#license)
@@ -156,10 +157,8 @@ Once you have started the chat, you will be prompted to specify your "display na
 
 This diagram shows how to connect and message a contact:
 
-<!-- TODO fix commands in image -->
-
 <div align="center">
-  <img align="center" src="images/how-to-use-simplex.svg">
+  <img align="center" src="images/how-to-use-simplex.png">
 </div>
 
 Once you've set up your local profile, enter `/c` (for `/connect`) to create a new connection and generate an invitation. Send this invitation to your contact via any other channel.
@@ -172,13 +171,17 @@ They would then use `@<name> <message>` commands to send messages. You may also 
 
 Use `/help` in chat to see the list of available commands.
 
-### File transfer and groups
-
-New in v0.4 is support for file transfers and groups functionality.
+### File transfer
 
 You can initiate file transfer to your contact by running `/f @<contact> <file_path>` (`/f` for `/file`), after which he would be able to asynchronously accept it. For checking the status of a file transfer use `/fs <file_id>`. See `/help files` for other commands.
 
+![simplex-chat](./images/file-transfer.gif)
+
+### Groups
+
 To create a group enter `/g <group>` command (`/g` for `/group`) - afterwards you can add your contacts to it and you can exchange messages using `#<group> <message>` commands. See more group related commands with `/help groups`. You can also initialize a file transfer to a group by running `/f #<group> <file_path>`.
+
+![simplex-chat](./images/groups.gif)
 
 ### Access chat history
 
