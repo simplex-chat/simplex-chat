@@ -1,5 +1,5 @@
 name: simplex-chat
-version: 0.3.1
+version: 0.4.0
 #synopsis:
 #description:
 homepage: https://github.com/simplex-chat/simplex-chat#readme
@@ -29,7 +29,7 @@ dependencies:
   - optparse-applicative == 0.15.*
   - process == 1.6.*
   - simple-logger == 0.1.*
-  - simplexmq == 0.3.*
+  - simplexmq == 0.4.*
   - sqlite-simple == 0.4.*
   - stm == 2.5.*
   - terminal == 0.2.*
