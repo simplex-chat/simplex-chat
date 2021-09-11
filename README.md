@@ -58,7 +58,7 @@ The routing of messages relies on the knowledge of client devices how user conta
 
 - Direct and group messaging and file transfer.
 - Auto-populated recipient name - just type your messages to reply to the sender once the connection is established.
-- Demo SMP server available at `smp1.simplex.im:5223` - you can deploy your own server (`smp-server` executable in [simplexmq](https://github.com/simplex-chat/simplexmq) repo).
+- Demo SMP servers available and pre-configured in the app - or you can [deploy your own server](https://github.com/simplex-chat/simplexmq#using-smp-server-and-smp-agent).
 - No global identity or any names visible to the server(s), ensuring full privacy of your contacts and conversations.
 - E2E encryption, with RSA public key that has to be passed out-of-band (see [How to use SimpleX chat](#how-to-use-simplex-chat)).
 - Message signing and verification with automatically generated RSA keys.
@@ -137,7 +137,7 @@ $ simplex-chat -d alice
 
 Running above, for example, would create `alice.chat.db` and `alice.agent.db` database files in current directory.
 
-The default SMP server is `smp1.simplex.im#pLdiGvm0jD1CMblnov6Edd/391OrYsShw+RgdfR0ChA=` (base-64 encoded string after server host is the transport key digest) - it is pre-configured in the app.
+Default SMP servers are `smp2.simplex.im#z5W2QLQ1Br3Yd6CoWg7bIq1bHdwK7Y8bEiEXBs/WfAg=` (UK) and `smp3.simplex.im#nxc7HnrnM8dOKgkMp008ub/9o9LXJlxlMrMpR+mfMQw=` (California) - they are pre-configured in the app. Base-64 encoded string after server host is the transport key digest.
 
 If you deployed your own SMP server(s) you can configure client via `-s` option:
 
