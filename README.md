@@ -185,7 +185,7 @@ To create a group enter `/g <group>` command (`/g` for `/group`) - afterwards yo
 
 ### Access chat history
 
-🚧 **Section currently out of date - will be updated soon** 🏗
+> 🚧 **Section currently out of date - will be updated soon** 🏗
 
 SimpleX chat stores all your contacts and conversations in a local database file, making it private and portable by design, fully owned and controlled by you.
 
