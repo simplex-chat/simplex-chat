@@ -7,7 +7,7 @@
 [![GitHub build](https://github.com/simplex-chat/simplex-chat/workflows/build/badge.svg)](https://github.com/simplex-chat/simplex-chat/actions?query=workflow%3Abuild)
 [![GitHub release](https://img.shields.io/github/v/release/simplex-chat/simplex-chat)](https://github.com/simplex-chat/simplex-chat/releases)
 
-> **New in v0.4 is support for file transfers and groups functionality! (See details below)**
+> **New in v0.4 is support for file transfers and groups functionality! ([See details below](#file-transfer))**
 
 The motivation for SimpleX chat is [presented here](./simplex.md).
 
