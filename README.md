@@ -21,7 +21,7 @@ See [simplex.chat](https://simplex.chat) website for chat demo and the explanati
 
 - [Disclaimer](#disclaimer)
 - [Network topology](#network-topology)
-- [Current features of the terminal chat](#current-features-of-the-terminal-chat)
+- [The features of the terminal chat](#the-features-of-the-terminal-chat)
 - [Installation](#installation)
   - [Download chat client](#download-chat-client)
   - [Build from source](#build-from-source)
@@ -30,7 +30,7 @@ See [simplex.chat](https://simplex.chat) website for chat demo and the explanati
 - [Usage](#usage)
   - [Running the chat client](#running-the-chat-client)
   - [How to use SimpleX chat](#how-to-use-simplex-chat)
-  - [File transfer](#file-transfer)
+  - [Sending files](#sending-files)
   - [Groups](#groups)
   - [Access chat history](#access-chat-history)
 - [Roadmap](#roadmap)
@@ -54,9 +54,11 @@ Unlike federated networks, the participating server nodes do NOT have records of
 
 The routing of messages relies on the knowledge of client devices how user contacts and groups map at any given moment of time to these disposable queues on server nodes.
 
-## Current features of the terminal chat
+## The features of the terminal chat
 
-- Direct and group messaging and file transfer.
+- 1-to-1 chat with multiple people in the same terminal window.
+- Group messaging.
+- Sending files to contacts and groups.
 - Auto-populated recipient name - just type your messages to reply to the sender once the connection is established.
 - Demo SMP servers available and pre-configured in the app - or you can [deploy your own server](https://github.com/simplex-chat/simplexmq#using-smp-server-and-smp-agent).
 - No global identity or any names visible to the server(s), ensuring full privacy of your contacts and conversations.
@@ -127,7 +129,7 @@ $ stack install
 
 To start the chat client, run `simplex-chat` from the terminal.
 
-By default, app data directory is created in the home directory (`~/.simplex`, or `%APPDATA%/simplex` on Windows), and two SQLite database files `simplex.chat.db` and `simplex.agent.db` - for chat client and agent respectively - are initialized in it.
+By default, app data directory is created in the home directory (`~/.simplex`, or `%APPDATA%/simplex` on Windows), and two SQLite database files `simplex.chat.db` and `simplex.agent.db` are initialized in it.
 
 To specify a different file path prefix for the database files use `-d` command line option:
 
@@ -137,7 +139,7 @@ $ simplex-chat -d alice
 
 Running above, for example, would create `alice.chat.db` and `alice.agent.db` database files in current directory.
 
-Default SMP servers are `smp2.simplex.im#z5W2QLQ1Br3Yd6CoWg7bIq1bHdwK7Y8bEiEXBs/WfAg=` (UK) and `smp3.simplex.im#nxc7HnrnM8dOKgkMp008ub/9o9LXJlxlMrMpR+mfMQw=` (California) - they are pre-configured in the app. Base-64 encoded string after server host is the transport key digest.
+Default SMP servers are hosted on Linode (London, UK and Fremont, CA) - they are [pre-configured in the app](https://github.com/simplex-chat/simplex-chat/blob/master/src/Simplex/Chat/Options.hs#L40). Base-64 encoded string after server host is the transport key digest.
 
 If you deployed your own SMP server(s) you can configure client via `-s` option:
 
@@ -149,11 +151,11 @@ The base-64 encoded string in server address is the digest of RSA transport hand
 
 You can still talk to people using default or any other server - it only affects the location of the message queue when you initiate the connection (and the reply queue can be on another server, as set by the other party's client).
 
-Run `simplex-chat --help` to see all available options.
+Run `simplex-chat -h` to see all available options.
 
 ### How to use SimpleX chat
 
-Once you have started the chat, you will be prompted to specify your "display name" and an optional "full name" as part of creation of your local user profile. Your display name is an alias for your contacts to refer to you by - it is not unique and does not serve as a global identity. In case different contacts chose the same display name, the chat client adds a numeric suffix to their local display names.
+Once you have started the chat, you will be prompted to specify your "display name" and an optional "full name" to create a local chat profile. Your display name is an alias for your contacts to refer to you by - it is not unique and does not serve as a global identity. In case different contacts chose the same display name, the chat client adds a numeric suffix to their local display names.
 
 This diagram shows how to connect and message a contact:
 
@@ -171,17 +173,21 @@ They would then use `@<name> <message>` commands to send messages. You may also 
 
 Use `/help` in chat to see the list of available commands.
 
-### File transfer
+### Sending files
 
-You can initiate file transfer to your contact by running `/f @<contact> <file_path>` (`/f` for `/file`), after which he would be able to asynchronously accept it. For checking the status of a file transfer use `/fs <file_id>`. See `/help files` for other commands.
+You can send a file to your contact with `/f @<contact> <file_path>` - the recipient will have to accept it before it is sent. See `/help files` for other commands.
 
 ![simplex-chat](./images/file-transfer.gif)
 
 ### Groups
 
-To create a group enter `/g <group>` command (`/g` for `/group`) - afterwards you can add your contacts to it and you can exchange messages using `#<group> <message>` commands. See more group related commands with `/help groups`. You can also initialize a file transfer to a group by running `/f #<group> <file_path>`.
+To create a group use `/g <group>`, the add contacts to it with `/a <group> <name>`and send messages with `#<group> <message>`. See `/help groups` for other commands.
 
 ![simplex-chat](./images/groups.gif)
+
+You can also send a file to a group with `/f #<group> <file_path>`.
+
+__Please note__: the groups are not stored on any server, they are maintained as a list of members in the app database to whom the messages will be sent.
 
 ### Access chat history
 
