@@ -33,13 +33,12 @@ chatOpts appDir =
           <> metavar "SERVER"
           <> help
             ( "SMP server(s) to use"
-                <> "\n(smp2.simplex.im#z5W2QLQ1Br3Yd6CoWg7bIq1bHdwK7Y8bEiEXBs/WfAg=,"
-                <> "\nsmp3.simplex.im#nxc7HnrnM8dOKgkMp008ub/9o9LXJlxlMrMpR+mfMQw=)"
+                <> "\n(smp2.simplex.im,smp3.simplex.im)"
             )
           <> value
             ( L.fromList
-                [ "smp2.simplex.im#z5W2QLQ1Br3Yd6CoWg7bIq1bHdwK7Y8bEiEXBs/WfAg=",
-                  "smp3.simplex.im#nxc7HnrnM8dOKgkMp008ub/9o9LXJlxlMrMpR+mfMQw="
+                [ "smp2.simplex.im#z5W2QLQ1Br3Yd6CoWg7bIq1bHdwK7Y8bEiEXBs/WfAg=", -- London, UK
+                  "smp3.simplex.im#nxc7HnrnM8dOKgkMp008ub/9o9LXJlxlMrMpR+mfMQw=" -- Fremont, CA
                 ]
             )
       )

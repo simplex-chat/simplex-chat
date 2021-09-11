@@ -40,10 +40,10 @@ extra-deps:
   - simple-logger-0.1.0@sha256:be8ede4bd251a9cac776533bae7fb643369ebd826eb948a9a18df1a8dd252ff8,1079
   - sqlite-simple-0.4.18.0@sha256:3ceea56375c0a3590c814e411a4eb86943f8d31b93b110ca159c90689b6b39e5,3002
   - terminal-0.2.0.0@sha256:de6770ecaae3197c66ac1f0db5a80cf5a5b1d3b64a66a05b50f442de5ad39570,2977
-  # - simplexmq-0.3.1@sha256:f247aaff3c16c5d3974a4ab4d5882ab50ac78073110997c0bceb05a74d10a325,6688
+  - simplexmq-0.4.1@sha256:3a1bc40d85e4e398458e5b9b79757e0af4fe27b8ef44eb3157f7f1e07412a8e8,7640
   # - ../simplexmq
-  - github: simplex-chat/simplexmq
-    commit: e07bedac0e59346f076d71635ce6cd25de67ca7e
+  # - github: simplex-chat/simplexmq
+  #   commit: 35e6593581e68f7b444e0f8f4fb6a2e2cc59a5ea
 #
 # extra-deps: []
 
