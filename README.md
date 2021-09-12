@@ -9,7 +9,7 @@
 
 > **NEW in v0.4: [groups](#groups) and [sending files](#sending-files)!**
 
-The motivation for SimpleX chat is [presented here](./simplex.md).
+Motivation for SimpleX chat is [presented here](./simplex.md).
 
 SimpleX chat prototype is a thin terminal UI on top of [SimpleXMQ](https://github.com/simplex-chat/simplexmq) message broker that uses [SMP protocols](https://github.com/simplex-chat/simplexmq/blob/master/protocol).
 
@@ -52,7 +52,7 @@ Unlike P2P networks, all messages are passed through one or several (for redunda
 
 Unlike federated networks, the participating server nodes do NOT have records of the users, do NOT communicate with each other, do NOT store messages after they are delivered to the recipients, and there is no way to discover the full list of participating servers - it avoids the problem of metadata visibility that federated networks suffer from and better protects the network, as servers do not communicate with each other. Each server node provides unidirectional "dumb pipes" to the users, that do authorization without authentication, having no knowledge of the the users or their contacts. Each queue is assigned two RSA keys - one for receiver and one for sender - and each queue access is authorized with a signature created using a respective key's private counterpart.
 
-The routing of messages relies on the knowledge of client devices how user contacts and groups map at any given moment of time to these disposable queues on server nodes.
+Routing of messages relies on the knowledge of client devices how user contacts and groups map at any given moment of time to these disposable queues on server nodes.
 
 ## Terminal chat features
 
@@ -175,17 +175,17 @@ Use `/help` in chat to see the list of available commands.
 
 ### Groups
 
-To create a group use `/g <group>`, the add contacts to it with `/a <group> <name>`and send messages with `#<group> <message>`. Use `/help groups` for other commands.
+To create a group use `/g <group>`, then add contacts to it with `/a <group> <name>`and send messages with `#<group> <message>`. Use `/help groups` for other commands.
 
 ![simplex-chat](./images/groups.gif)
 
-> **Please note**: the groups are not stored on any server, they are maintained as a list of members in the app database to whom the messages will be sent.
+> **Please note**: groups are not stored on any server, they are maintained as a list of members in the app database to whom the messages will be sent.
 
 ### Sending files
 
 You can send a file to your contact with `/f @<contact> <file_path>` - the recipient will have to accept it before it is sent. Use `/help files` for other commands.
 
-![simplex-chat](./images/file-transfer.gif)
+![simplex-chat](./images/files.gif)
 
 You can send files to a group with `/f #<group> <file_path>`.
 
@@ -216,12 +216,12 @@ order by internal_id desc;
 
 1. Mobile and desktop apps (in progress).
 2. SMP protocol improvements:
-  - SMP queue redundancy and rotation.
-  - Message delivery confirmation.
-  - Support multiple devices.
+    - SMP queue redundancy and rotation.
+    - Message delivery confirmation.
+    - Support multiple devices.
 3. Privacy-preserving identity server for optional DNS-based contact/group addresses to simplify connection and discovery, but not used to deliver messages:
-  - keep all your contacts and groups even if you lose the domain.
-  - the server doesn't have information about your contacts and groups.
+    - keep all your contacts and groups even if you lose the domain.
+    - the server doesn't have information about your contacts and groups.
 4. Media server to optimize sending large files to groups.
 5. Channels server for large groups and broadcast channels.
 
