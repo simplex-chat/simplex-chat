@@ -179,7 +179,7 @@ To create a group use `/g <group>`, then add contacts to it with `/a <group> <na
 
 ![simplex-chat](./images/groups.gif)
 
-> **Please note**: groups are not stored on any server, they are maintained as a list of members in the app database to whom the messages will be sent.
+> **Please note**: the groups are not stored on any server, they are maintained as a list of members in the app database to whom the messages will be sent.
 
 ### Sending files
 
