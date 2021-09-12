@@ -175,7 +175,7 @@ Use `/help` in chat to see the list of available commands.
 
 ### Groups
 
-To create a group use `/g <group>`, the add contacts to it with `/a <group> <name>`and send messages with `#<group> <message>`. Use `/help groups` for other commands.
+To create a group use `/g <group>`, then add contacts to it with `/a <group> <name>`and send messages with `#<group> <message>`. Use `/help groups` for other commands.
 
 ![simplex-chat](./images/groups.gif)
 
@@ -185,7 +185,7 @@ To create a group use `/g <group>`, the add contacts to it with `/a <group> <nam
 
 You can send a file to your contact with `/f @<contact> <file_path>` - the recipient will have to accept it before it is sent. Use `/help files` for other commands.
 
-![simplex-chat](./images/file-transfer.gif)
+![simplex-chat](./images/files.gif)
 
 You can send files to a group with `/f #<group> <file_path>`.
 
@@ -216,12 +216,12 @@ order by internal_id desc;
 
 1. Mobile and desktop apps (in progress).
 2. SMP protocol improvements:
-  - SMP queue redundancy and rotation.
-  - Message delivery confirmation.
-  - Support multiple devices.
+    - SMP queue redundancy and rotation.
+    - Message delivery confirmation.
+    - Support multiple devices.
 3. Privacy-preserving identity server for optional DNS-based contact/group addresses to simplify connection and discovery, but not used to deliver messages:
-  - keep all your contacts and groups even if you lose the domain.
-  - the server doesn't have information about your contacts and groups.
+    - keep all your contacts and groups even if you lose the domain.
+    - the server doesn't have information about your contacts and groups.
 4. Media server to optimize sending large files to groups.
 5. Channels server for large groups and broadcast channels.
 
