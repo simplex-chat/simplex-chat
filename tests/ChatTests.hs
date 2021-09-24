@@ -42,6 +42,7 @@ chatTests = do
     it "update user profiles and notify contacts" testUpdateProfile
   describe "sending and receiving files" $ do
     it "send and receive file" testFileTransfer
+    it "send and receive a small file" testSmallFileTransfer
     it "sender cancelled file transfer" testFileSndCancel
     it "recipient cancelled file transfer" testFileRcvCancel
     it "send and receive file to group" testGroupFileTransfer
@@ -418,6 +419,29 @@ testFileTransfer =
         ]
       src <- B.readFile "./tests/fixtures/test.jpg"
       dest <- B.readFile "./tests/tmp/test.jpg"
+      dest `shouldBe` src
+
+testSmallFileTransfer :: IO ()
+testSmallFileTransfer =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+      alice #> "/f @bob ./tests/fixtures/test.txt"
+      alice <## "use /fc 1 to cancel sending"
+      bob <# "alice> sends file test.txt (11 bytes / 11 bytes)"
+      bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+      bob ##> "/fr 1 ./tests/tmp"
+      bob <## "saving file 1 from alice to ./tests/tmp/test.txt"
+      concurrentlyN_
+        [ do
+            bob <## "started receiving file 1 (test.txt) from alice"
+            bob <## "completed receiving file 1 (test.txt) from alice",
+          do
+            alice <## "started sending file 1 (test.txt) to bob"
+            alice <## "completed sending file 1 (test.txt) to bob"
+        ]
+      src <- B.readFile "./tests/fixtures/test.txt"
+      dest <- B.readFile "./tests/tmp/test.txt"
       dest `shouldBe` src
 
 testFileSndCancel :: IO ()
