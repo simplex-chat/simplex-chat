@@ -1321,7 +1321,12 @@ createRcvFileChunk st RcvFileTransfer {fileId, fileInvitation = FileInvitation {
     getLastChunkNo db = do
       ns <- DB.query db "SELECT chunk_number FROM rcv_file_chunks WHERE file_id = ? ORDER BY chunk_number DESC LIMIT 1" (Only fileId)
       pure $ case map fromOnly ns of
-        [] -> if chunkNo == 1 then RcvChunkOk else RcvChunkError
+        []
+          | chunkNo == 1 ->
+            if chunkSize >= fileSize
+              then RcvChunkFinal
+              else RcvChunkOk
+          | otherwise -> RcvChunkError
         n : _
           | chunkNo == n -> RcvChunkDuplicate
           | chunkNo == n + 1 ->
