@@ -1,9 +1,11 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module Simplex.Chat.Notification (Notification (..), initializeNotifications) where
 
+import Control.Exception
 import Control.Monad (void)
 import Data.List (isInfixOf)
 import Data.Map (Map, fromList)
@@ -19,18 +21,22 @@ import System.Process (readCreateProcess, shell)
 data Notification = Notification {title :: Text, text :: Text}
 
 initializeNotifications :: IO (Notification -> IO ())
-initializeNotifications = case os of
-  "darwin" -> pure $ notify macScript
-  "mingw32" -> initWinNotify
-  "linux" ->
-    doesFileExist "/proc/sys/kernel/osrelease" >>= \case
-      False -> pure $ notify linuxScript
-      True -> do
-        v <- readFile "/proc/sys/kernel/osrelease"
-        if "Microsoft" `isInfixOf` v || "WSL" `isInfixOf` v
-          then initWslNotify
-          else pure $ notify linuxScript
-  _ -> pure . const $ pure ()
+initializeNotifications =
+  hideException <$> case os of
+    "darwin" -> pure $ notify macScript
+    "mingw32" -> initWinNotify
+    "linux" ->
+      doesFileExist "/proc/sys/kernel/osrelease" >>= \case
+        False -> pure $ notify linuxScript
+        True -> do
+          v <- readFile "/proc/sys/kernel/osrelease"
+          if "Microsoft" `isInfixOf` v || "WSL" `isInfixOf` v
+            then initWslNotify
+            else pure $ notify linuxScript
+    _ -> pure . const $ pure ()
+
+hideException :: (a -> IO ()) -> (a -> IO ())
+hideException f a = f a `catch` \(_ :: SomeException) -> pure ()
 
 notify :: (Notification -> Text) -> Notification -> IO ()
 notify script notification =
@@ -46,7 +52,7 @@ macScript :: Notification -> Text
 macScript Notification {title, text} = "osascript -e 'display notification \"" <> macEscape text <> "\" with title \"" <> macEscape title <> "\"'"
 
 macEscape :: Text -> Text
-macEscape = replaceAll $ fromList [('"', "\\\"")]
+macEscape = replaceAll $ fromList [('"', "\\\""), ('\'', "")]
 
 initWslNotify :: IO (Notification -> IO ())
 initWslNotify = notify . wslScript <$> savePowershellScript
