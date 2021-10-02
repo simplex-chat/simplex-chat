@@ -74,6 +74,7 @@ jobs:
 
       - name: Setup Stack
         uses: haskell/actions/setup@v1
+        working-directory: ./haskell
         with:
           ghc-version: '8.8.4'
           enable-stack: true
@@ -81,12 +82,14 @@ jobs:
 
       - name: Cache dependencies
         uses: actions/cache@v2
+        working-directory: ./haskell
         with:
           path: ${{ matrix.cache_path }}
           key: ${{ matrix.os }}-${{ hashFiles('stack.yaml') }}
 
       - name: Build & test
         id: build_test
+        working-directory: ./haskell
         run: |
           stack build ${{ matrix.stack_args }}
           echo "::set-output name=LOCAL_INSTALL_ROOT::$(stack path --local-install-root)"
@@ -94,6 +97,7 @@ jobs:
       - name: Upload binaries to release
         if: startsWith(github.ref, 'refs/tags/v')
         uses: svenstaro/upload-release-action@v2
+        working-directory: ./haskell
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: ${{ steps.build_test.outputs.LOCAL_INSTALL_ROOT }}${{ matrix.artifact_rel_path }}
