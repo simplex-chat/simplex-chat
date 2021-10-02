@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - master
-      - v4
+      - v5
     tags:
       - "v*"
   pull_request:
@@ -87,6 +87,7 @@ jobs:
 
       - name: Build & test
         id: build_test
+        working-directory: ./haskell
         run: |
           stack build ${{ matrix.stack_args }}
           echo "::set-output name=LOCAL_INSTALL_ROOT::$(stack path --local-install-root)"
