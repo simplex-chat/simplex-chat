@@ -7,6 +7,9 @@ on:
       - v5
     tags:
       - "v*"
+    paths:
+      - haskell/**
+      - .github/workflows/build_haskell.yml
   pull_request:
 
 jobs:

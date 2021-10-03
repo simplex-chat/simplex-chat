@@ -1,0 +1,44 @@
+include: package:lints/recommended.yaml
+
+linter:
+  rules:
+    prefer_double_quotes: true
+    constant_identifier_names: false
+    always_declare_return_types: true   
+    avoid_dynamic_calls: true
+    avoid_empty_else: true
+    avoid_relative_lib_imports: true
+    avoid_shadowing_type_parameters: true
+    avoid_slow_async_io: true
+    avoid_types_as_parameter_names: true
+    await_only_futures: true
+    camel_case_extensions: true
+    camel_case_types: true
+    cancel_subscriptions: true
+    curly_braces_in_flow_control_structures: true
+    directives_ordering: true
+    empty_catches: true
+    hash_and_equals: true
+    iterable_contains_unrelated_type: true
+    list_remove_unrelated_type: true
+    no_adjacent_strings_in_list: true
+    no_duplicate_case_values: true
+    package_api_docs: true
+    package_prefixed_library_names: true
+    prefer_generic_function_type_aliases: true
+    prefer_is_empty: true
+    prefer_is_not_empty: true
+    prefer_iterable_whereType: true
+    prefer_typing_uninitialized_variables: true
+    sort_child_properties_last: true
+    test_types_in_equals: true
+    throw_in_finally: true
+    unawaited_futures: true
+    unnecessary_import: true
+    unnecessary_null_aware_assignments: true
+    unnecessary_statements: true
+    unnecessary_type_check: true
+    unrelated_type_equality_checks: true
+    unsafe_html: true
+    use_full_hex_values_for_flutter_colors: true
+    valid_regexps: true 
