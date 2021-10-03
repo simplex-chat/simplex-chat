@@ -29,14 +29,14 @@ Uint8List concatN(List<Uint8List> bs) {
   return a;
 }
 
-final char_space = " ".codeUnitAt(0);
-final char_equal = "=".codeUnitAt(0);
+final charSpace = " ".codeUnitAt(0);
+final charEqual = "=".codeUnitAt(0);
 final empty = Uint8List(0);
 
 Uint8List unwords(Uint8List b1, Uint8List b2) {
   final a = Uint8List(b1.length + b2.length + 1);
   a.setAll(0, b1);
-  a[b1.length] = char_space;
+  a[b1.length] = charSpace;
   a.setAll(b1.length + 1, b2);
   return a;
 }
@@ -54,7 +54,7 @@ Uint8List unwordsN(List<Uint8List> bs) {
     final b = bs[i];
     a.setAll(offset, b);
     offset += b.length;
-    a[offset++] = char_space;
+    a[offset++] = charSpace;
   }
   a.setAll(offset, bs[i]);
   return a;
@@ -89,8 +89,8 @@ Uint8List encode64(Uint8List a) {
     b64[j++] = _base64chars[e2 & 63];
   }
 
-  if (len % 3 != 0) b64[b64len - 1] = char_equal;
-  if (len % 3 == 1) b64[b64len - 2] = char_equal;
+  if (len % 3 != 0) b64[b64len - 1] = charEqual;
+  if (len % 3 == 1) b64[b64len - 2] = charEqual;
 
   return b64;
 }
@@ -100,10 +100,10 @@ Uint8List? decode64(Uint8List b64) {
   if (len % 4 != 0) return null;
   int bLen = (len * 3) >> 2;
 
-  if (b64[len - 1] == char_equal) {
+  if (b64[len - 1] == charEqual) {
     len--;
     bLen--;
-    if (b64[len - 1] == char_equal) {
+    if (b64[len - 1] == charEqual) {
       len--;
       bLen--;
     }

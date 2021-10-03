@@ -1,15 +1,15 @@
 import "dart:typed_data";
-import "package:test/test.dart";
 import "package:simplexmq/src/buffer.dart";
 import "package:simplexmq/src/protocol.dart";
+import "package:test/test.dart";
 
 void main() {
   group("Parsing & serializing SMP commands", () {
     group("valid commands", () {
-      parseSerialize(SMPCommand cmd) => () {
+      Null Function() parseSerialize(SMPCommand cmd) => () {
             final s = cmd.serialize();
             expect(parseSMPCommand(s)?.serialize(), s);
-            expect(parseSMPCommand(concat(s, Uint8List.fromList([char_space]))),
+            expect(parseSMPCommand(concat(s, Uint8List.fromList([charSpace]))),
                 null);
           };
 
@@ -29,15 +29,15 @@ void main() {
       test("END", parseSerialize(END()));
       test("OK", parseSerialize(OK()));
       test("ERR", parseSerialize(ERR(ErrorType.AUTH)));
-      test("ERR CMD", parseSerialize(ERR.CMD(CmdErrorType.SYNTAX)));
+      test("ERR CMD", parseSerialize(ERR.cmd(CmdErrorType.SYNTAX)));
       test("PONG", parseSerialize(PONG()));
     });
 
     group("invalid commands", () {
-      parseFailure(String s) =>
+      void Function() parseFailure(String s) =>
           () => expect(parseSMPCommand(encodeAscii(s)), null);
 
-      parseSuccess(String s) =>
+      void Function() parseSuccess(String s) =>
           () => expect(parseSMPCommand(encodeAscii(s)) is SMPCommand, true);
 
       group("NEW", () {

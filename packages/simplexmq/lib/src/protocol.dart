@@ -31,37 +31,37 @@ final Uint8List cERR = encodeAscii("ERR");
 final Uint8List cPONG = encodeAscii("PONG");
 
 enum SMPCmdTag {
-  cNEW,
-  cSUB,
-  cKEY,
-  cACK,
-  cOFF,
-  cDEL,
-  cSEND,
-  cPING,
-  cIDS,
-  cMSG,
-  cEND,
-  cOK,
-  cERR,
-  cPONG,
+  NEW,
+  SUB,
+  KEY,
+  ACK,
+  OFF,
+  DEL,
+  SEND,
+  PING,
+  IDS,
+  MSG,
+  END,
+  OK,
+  ERR,
+  PONG,
 }
 
 final BinaryTags<SMPCmdTag> smpCmdTags = {
-  SMPCmdTag.cNEW: cNEW,
-  SMPCmdTag.cSUB: cSUB,
-  SMPCmdTag.cKEY: cKEY,
-  SMPCmdTag.cACK: cACK,
-  SMPCmdTag.cOFF: cOFF,
-  SMPCmdTag.cDEL: cDEL,
-  SMPCmdTag.cSEND: cSEND,
-  SMPCmdTag.cPING: cPING,
-  SMPCmdTag.cIDS: cIDS,
-  SMPCmdTag.cMSG: cMSG,
-  SMPCmdTag.cEND: cEND,
-  SMPCmdTag.cOK: cOK,
-  SMPCmdTag.cERR: cERR,
-  SMPCmdTag.cPONG: cPONG,
+  SMPCmdTag.NEW: cNEW,
+  SMPCmdTag.SUB: cSUB,
+  SMPCmdTag.KEY: cKEY,
+  SMPCmdTag.ACK: cACK,
+  SMPCmdTag.OFF: cOFF,
+  SMPCmdTag.DEL: cDEL,
+  SMPCmdTag.SEND: cSEND,
+  SMPCmdTag.PING: cPING,
+  SMPCmdTag.IDS: cIDS,
+  SMPCmdTag.MSG: cMSG,
+  SMPCmdTag.END: cEND,
+  SMPCmdTag.OK: cOK,
+  SMPCmdTag.ERR: cERR,
+  SMPCmdTag.PONG: cPONG,
 };
 
 class NEW extends ClientCommand {
@@ -174,7 +174,7 @@ class ERR extends BrokerCommand {
       : cmdErr = err == ErrorType.CMD
             ? throw ArgumentError("CMD error should be created with ERR.CMD")
             : null;
-  ERR.CMD(this.cmdErr) : err = ErrorType.CMD;
+  ERR.cmd(this.cmdErr) : err = ErrorType.CMD;
   @override
   Uint8List serialize() {
     final _err = errorTags[err]!;
@@ -190,34 +190,34 @@ class PONG extends BrokerCommand {
 }
 
 final Map<SMPCmdTag, SMPCommand? Function(Parser p)> smpCmdParsers = {
-  SMPCmdTag.cNEW: (p) {
+  SMPCmdTag.NEW: (p) {
     p.space();
     final key = pubKeyP(p);
     if (key != null) return NEW(key);
   },
-  SMPCmdTag.cSUB: (_) => SUB(),
-  SMPCmdTag.cKEY: (p) {
+  SMPCmdTag.SUB: (_) => SUB(),
+  SMPCmdTag.KEY: (p) {
     p.space();
     final key = pubKeyP(p);
     if (key != null) return KEY(key);
   },
-  SMPCmdTag.cACK: (_) => ACK(),
-  SMPCmdTag.cOFF: (_) => OFF(),
-  SMPCmdTag.cDEL: (_) => DEL(),
-  SMPCmdTag.cSEND: (p) {
+  SMPCmdTag.ACK: (_) => ACK(),
+  SMPCmdTag.OFF: (_) => OFF(),
+  SMPCmdTag.DEL: (_) => DEL(),
+  SMPCmdTag.SEND: (p) {
     p.space();
     final msg = messageP(p);
     if (msg != null) return SEND(msg);
   },
-  SMPCmdTag.cPING: (_) => PING(),
-  SMPCmdTag.cIDS: (p) {
+  SMPCmdTag.PING: (_) => PING(),
+  SMPCmdTag.IDS: (p) {
     p.space();
     final rId = p.base64();
     p.space();
     final sId = p.base64();
     if (rId != null && sId != null) return IDS(rId, sId);
   },
-  SMPCmdTag.cMSG: (p) {
+  SMPCmdTag.MSG: (p) {
     p.space();
     final msgId = p.base64();
     p.space();
@@ -226,20 +226,20 @@ final Map<SMPCmdTag, SMPCommand? Function(Parser p)> smpCmdParsers = {
     final msg = messageP(p);
     if (msgId != null && ts != null && msg != null) return MSG(msgId, ts, msg);
   },
-  SMPCmdTag.cEND: (_) => END(),
-  SMPCmdTag.cOK: (_) => OK(),
-  SMPCmdTag.cERR: (p) {
+  SMPCmdTag.END: (_) => END(),
+  SMPCmdTag.OK: (_) => OK(),
+  SMPCmdTag.ERR: (p) {
     p.space();
     final err = p.someStr(errorTags);
     if (err == ErrorType.CMD) {
       p.space();
       final cmdErr = p.someStr(cmdErrorTags);
-      if (cmdErr != null) return ERR.CMD(cmdErr);
+      if (cmdErr != null) return ERR.cmd(cmdErr);
     } else if (err != null) {
       return ERR(err);
     }
   },
-  SMPCmdTag.cPONG: (_) => PONG(),
+  SMPCmdTag.PONG: (_) => PONG(),
 };
 
 SMPCommand? smpCommandP(Parser p) {

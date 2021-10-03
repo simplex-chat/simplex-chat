@@ -1,6 +1,6 @@
-import "package:test/test.dart";
 import "dart:typed_data";
 import "package:simplexmq/src/buffer.dart";
+import "package:test/test.dart";
 
 final hello123 = Uint8List.fromList([104, 101, 108, 108, 111, 49, 50, 51]);
 

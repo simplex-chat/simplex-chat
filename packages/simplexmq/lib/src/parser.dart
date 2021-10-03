@@ -5,14 +5,14 @@ typedef BinaryTags<T> = Map<T, Uint8List>;
 
 int cc(String c) => c.codeUnitAt(0);
 
-final char_0 = cc("0");
-final char_9 = cc("9");
-final char_a = cc("a");
-final char_z = cc("z");
-final char_A = cc("A");
-final char_Z = cc("Z");
-final char_plus = cc("+");
-final char_slash = cc("/");
+final char0 = cc("0");
+final char9 = cc("9");
+final charLowerA = cc("a");
+final charLowerZ = cc("z");
+final charUpperA = cc("A");
+final charUpperZ = cc("Z");
+final charPlus = cc("+");
+final charSlash = cc("/");
 
 class Parser {
   final Uint8List _s;
@@ -54,7 +54,7 @@ class Parser {
 
   // takes the non-empty word until the first space or until the end of the string
   Uint8List? word() => _run(() {
-        int pos = _s.indexOf(char_space, _pos);
+        int pos = _s.indexOf(charSpace, _pos);
         if (pos == -1) pos = _s.length;
         if (pos <= _pos) return null;
         final res = _s.sublist(_pos, pos);
@@ -72,7 +72,7 @@ class Parser {
 
   // takes space
   bool? space() => _run(() {
-        if (_s[_pos] == char_space) {
+        if (_s[_pos] == charSpace) {
           _pos++;
           return true;
         }
@@ -84,7 +84,7 @@ class Parser {
         int n = 0;
         for (int i = 0; i < s.length; i++) {
           n *= 10;
-          n += s[i] - char_0;
+          n += s[i] - char0;
         }
         return n;
       });
@@ -97,7 +97,7 @@ class Parser {
   // takes base-64 encoded string and returns decoded binary
   Uint8List? base64() => _run(() {
         bool tryCharEqual() {
-          final ok = _pos < _s.length && _s[_pos] == char_equal;
+          final ok = _pos < _s.length && _s[_pos] == charEqual;
           if (ok) _pos++;
           return ok;
         }
@@ -106,7 +106,7 @@ class Parser {
         int c;
         do {
           c = _s[_pos];
-        } while ((isAlphaNum(c) || c == char_plus || c == char_slash) &&
+        } while ((isAlphaNum(c) || c == charPlus || c == charSlash) &&
             ++_pos < _s.length);
 
         if (tryCharEqual()) tryCharEqual();
@@ -128,9 +128,9 @@ class Parser {
       });
 }
 
-bool isDigit(int c) => c >= char_0 && c <= char_9;
+bool isDigit(int c) => c >= char0 && c <= char9;
 
 bool isAlphaNum(int c) =>
-    (c >= char_0 && c <= char_9) ||
-    (c >= char_a && c <= char_z) ||
-    (c >= char_A && c <= char_Z);
+    (c >= char0 && c <= char9) ||
+    (c >= charLowerA && c <= charLowerZ) ||
+    (c >= charUpperA && c <= charUpperZ);
