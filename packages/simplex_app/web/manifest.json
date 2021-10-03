@@ -1,6 +1,6 @@
 {
-    "name": "simplex_app",
-    "short_name": "simplex_app",
+    "name": "simplex_chat",
+    "short_name": "simplex_chat",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

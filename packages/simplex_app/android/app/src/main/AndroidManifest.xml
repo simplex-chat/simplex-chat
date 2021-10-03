@@ -1,7 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.example.simplex_app">
+    package="chat.simplex.app">
    <application
-        android:label="simplex_app"
+        android:label="simplex_chat"
         android:icon="@mipmap/ic_launcher">
         <activity
             android:name=".MainActivity"
