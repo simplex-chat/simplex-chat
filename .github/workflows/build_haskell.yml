@@ -11,6 +11,9 @@ on:
       - haskell/**
       - .github/workflows/build_haskell.yml
   pull_request:
+    paths:
+      - haskell/**
+      - .github/workflows/build_haskell.yml
 
 jobs:
   prepare-release:
