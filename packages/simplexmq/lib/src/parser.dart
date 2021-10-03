@@ -21,6 +21,7 @@ class Parser {
   Parser(this._s);
 
   bool get fail => _fail;
+  bool get end => _pos >= _s.length;
 
   // only calls `parse` if the parser did not previously fail
   T? _run<T>(T? Function() parse) {
@@ -125,8 +126,6 @@ class Parser {
         }
         return null;
       });
-
-  bool get end => _pos >= _s.length;
 }
 
 bool isDigit(int c) => c >= char_0 && c <= char_9;
