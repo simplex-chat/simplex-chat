@@ -65,7 +65,7 @@ class Parser {
   }
 
   bool? str(Uint8List s) => _run(() {
-        for (var i = 0, j = _pos; i < s.length; i++, j++) {
+        for (int i = 0, j = _pos; i < s.length; i++, j++) {
           if (s[i] != _s[j]) return null;
         }
         _pos += s.length;
@@ -84,7 +84,7 @@ class Parser {
         final s = takeWhile1(isDigit);
         if (s == null) return null;
         int n = 0;
-        for (var i = 0; i < s.length; i++) {
+        for (int i = 0; i < s.length; i++) {
           n *= 10;
           n += s[i] - char_0;
         }
@@ -120,7 +120,7 @@ class Parser {
         outer:
         for (final t in ts.entries) {
           final s = t.value;
-          for (var i = 0, j = _pos; i < s.length; i++, j++) {
+          for (int i = 0, j = _pos; i < s.length; i++, j++) {
             if (s[i] != _s[j]) continue outer;
           }
           _pos += s.length;

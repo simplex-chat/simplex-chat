@@ -12,7 +12,7 @@ Uint8List concat(Uint8List b1, Uint8List b2) {
 }
 
 T fold<T, E>(List<E> xs, T Function(T, E) combine, T initial) {
-  var res = initial;
+  T res = initial;
   for (final x in xs) {
     res = combine(res, x);
   }
@@ -42,14 +42,14 @@ Uint8List unwords(Uint8List b1, Uint8List b2) {
 }
 
 Uint8List unwordsN(List<Uint8List> bs) {
-  var i = bs.length;
-  var size = bs.length - 1;
+  int i = bs.length;
+  int size = bs.length - 1;
   while (i > 0) {
     size += bs[--i].length;
   }
   final a = Uint8List(size);
 
-  var offset = 0;
+  int offset = 0;
   for (i = 0; i < bs.length - 1; i++) {
     final b = bs[i];
     a.setAll(offset, b);
@@ -66,7 +66,7 @@ final _base64chars = Uint8List.fromList(
 
 List<int?> __base64lookup() {
   final a = List<int?>.filled(256, null);
-  for (var i = 0; i < _base64chars.length; i++) {
+  for (int i = 0; i < _base64chars.length; i++) {
     a[_base64chars[i]] = i;
   }
   return a;
@@ -79,8 +79,8 @@ Uint8List encode64(Uint8List a) {
   final b64len = (len / 3).ceil() * 4;
   final b64 = Uint8List(b64len);
 
-  var j = 0;
-  for (var i = 0; i < len; i += 3) {
+  int j = 0;
+  for (int i = 0; i < len; i += 3) {
     final e1 = i + 1 < len ? a[i + 1] : 0;
     final e2 = i + 2 < len ? a[i + 2] : 0;
     b64[j++] = _base64chars[a[i] >> 2];
@@ -96,9 +96,9 @@ Uint8List encode64(Uint8List a) {
 }
 
 Uint8List? decode64(Uint8List b64) {
-  var len = b64.length;
+  int len = b64.length;
   if (len % 4 != 0) return null;
-  var bLen = (len * 3) >> 2;
+  int bLen = (len * 3) >> 2;
 
   if (b64[len - 1] == char_equal) {
     len--;
@@ -111,8 +111,8 @@ Uint8List? decode64(Uint8List b64) {
 
   final bytes = Uint8List(bLen);
 
-  var i = 0;
-  var pos = 0;
+  int i = 0;
+  int pos = 0;
   while (i < len) {
     final enc1 = _base64lookup[b64[i++]];
     final enc2 = i < len ? _base64lookup[b64[i++]] : 0;
@@ -122,7 +122,7 @@ Uint8List? decode64(Uint8List b64) {
       return null;
     }
     bytes[pos++] = (enc1 << 2) | (enc2 >> 4);
-    var p = pos++;
+    int p = pos++;
     if (p < bLen) bytes[p] = ((enc2 & 15) << 4) | (enc3 >> 2);
     p = pos++;
     if (p < bLen) bytes[p] = ((enc3 & 3) << 6) | (enc4 & 63);
