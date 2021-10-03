@@ -53,15 +53,11 @@ class Parser {
 
   // takes the non-empty word until the first space or until the end of the string
   Uint8List? word() => _run(() {
-        final pos = _s.indexOf(char_space, _pos);
-        Uint8List? res;
-        if (pos > _pos) {
-          res = _s.sublist(_pos, pos);
-          _pos = pos;
-        } else if (pos == -1) {
-          res = _s.sublist(_pos);
-          _pos = _s.length;
-        }
+        int pos = _s.indexOf(char_space, _pos);
+        if (pos == -1) pos = _s.length;
+        if (pos <= _pos) return null;
+        final res = _s.sublist(_pos, pos);
+        _pos = pos;
         return res;
       });
 
