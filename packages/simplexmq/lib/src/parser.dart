@@ -22,6 +22,7 @@ class Parser {
 
   bool get fail => _fail;
 
+  // only calls `parse` if the parser did not previously fail
   T? _run<T>(T? Function() parse) {
     if (_fail || _pos >= _s.length) {
       _fail = true;
@@ -33,36 +34,36 @@ class Parser {
   }
 
   // takes a required number of bytes
-  Uint8List? take(int len) {
-    final end = _pos + len;
-    if (end > _s.length) return null;
-    final res = _s.sublist(_pos, end);
-    _pos = end;
-    return res;
-  }
+  Uint8List? take(int len) => _run(() {
+        final end = _pos + len;
+        if (end > _s.length) return null;
+        final res = _s.sublist(_pos, end);
+        _pos = end;
+        return res;
+      });
 
   // takes chars (> 0) while condition is true; function isAlphaNum or isDigit can be used
-  Uint8List? takeWhile1(bool Function(int) f) {
-    final pos = _pos;
-    while (f(_s[_pos])) {
-      _pos++;
-    }
-    return _pos > pos ? _s.sublist(pos, _pos) : null;
-  }
+  Uint8List? takeWhile1(bool Function(int) f) => _run(() {
+        final pos = _pos;
+        while (f(_s[_pos])) {
+          _pos++;
+        }
+        return _pos > pos ? _s.sublist(pos, _pos) : null;
+      });
 
-  // takes the word (possibly empty) until the first space or until the end of the string
-  Uint8List word() {
-    final pos = _s.indexOf(char_space, _pos);
-    Uint8List res;
-    if (pos >= _pos) {
-      res = _s.sublist(_pos, pos);
-      _pos = pos;
-    } else {
-      res = _s.sublist(_pos);
-      _pos = _s.length;
-    }
-    return res;
-  }
+  // takes the non-empty word until the first space or until the end of the string
+  Uint8List? word() => _run(() {
+        final pos = _s.indexOf(char_space, _pos);
+        Uint8List? res;
+        if (pos > _pos) {
+          res = _s.sublist(_pos, pos);
+          _pos = pos;
+        } else if (pos == -1) {
+          res = _s.sublist(_pos);
+          _pos = _s.length;
+        }
+        return res;
+      });
 
   bool? str(Uint8List s) => _run(() {
         for (int i = 0, j = _pos; i < s.length; i++, j++) {
@@ -93,7 +94,7 @@ class Parser {
 
   DateTime? datetime() => _run(() {
         final s = word();
-        if (s.isNotEmpty) return DateTime.tryParse(decodeAscii(s));
+        if (s != null) return DateTime.tryParse(decodeAscii(s));
       });
 
   // takes base-64 encoded string and returns decoded binary
