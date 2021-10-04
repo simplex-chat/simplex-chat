@@ -92,7 +92,7 @@ On MacOS you also need to [allow Gatekeeper to run it](https://support.apple.com
 
 ##### Troubleshooting on Unix
 
-If you get `simplex-chat: command not found` when executing the downloaded binary, you need to add the directory containing it to the [`PATH` variable](https://man7.org/linux/man-pages/man7/environ.7.html) (find "PATH" in page). To permanently modify `PATH` for future sessions, put `PATH="$PATH:/path/to/dir"` in `~/.profile`, or in `~/.bash_profile` if that's what you have. See [this answer](https://unix.stackexchange.com/a/26059) for the detailed explanation on the appropriate place to define environment variables for `bash` and other shells.
+If you get `simplex-chat: command not found` when executing the downloaded binary, you need to add the directory containing it to the [`PATH` variable](https://man7.org/linux/man-pages/man7/environ.7.html) (find "PATH" in page). To modify `PATH` for future sessions, put `PATH="$PATH:/path/to/dir"` in `~/.profile`, or in `~/.bash_profile` if that's what you have. See [this answer](https://unix.stackexchange.com/a/26059) for the detailed explanation on the appropriate place to define environment variables for `bash` and other shells.
 
 For example, if you followed the previous instructions, open `~/.profile` for editing:
 
