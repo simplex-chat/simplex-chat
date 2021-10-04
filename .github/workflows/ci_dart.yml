@@ -1,0 +1,32 @@
+name: Run CI
+on:
+  push:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 0 * * 0'  # every sunday at midnight
+
+jobs:
+  test:
+    name: Test on ${{ matrix.os }} / ${{ matrix.flutter }}
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: packages/repo_support
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        flutter: [stable, beta, dev]
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-java@v1
+        with:
+          java-version: '12.x'
+      - uses: subosito/flutter-action@v1
+        with:
+          channel: ${{ matrix.flutter }}
+      - run: flutter --version
+      - run: flutter upgrade
+      - run: dart --version
+      - run: dart pub get
+      - run: dart run tool/run_ci.dart
