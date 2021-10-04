@@ -109,7 +109,7 @@ PATH="$PATH:$HOME/.local/bin"
 Note that this will not automatically update your `PATH` for the remainder of the session. To do this, you should run:
 
 ```sh
-`source ~/.profile`
+source ~/.profile
 ```
 
 Or restart your terminal to start a new session.
