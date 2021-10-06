@@ -14,7 +14,7 @@ linter:
     await_only_futures: true
     camel_case_extensions: true
     camel_case_types: true
-    cancel_subscriptions: true
+    # cancel_subscriptions: true
     curly_braces_in_flow_control_structures: true
     directives_ordering: true
     empty_catches: true
