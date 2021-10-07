@@ -1,14 +1,21 @@
 name: simplexmq_io
 description: A starting point for Dart libraries or applications.
 version: 1.0.0
-# homepage: https://www.example.com
+publish_to: none
 
 environment:
   sdk: '>=2.14.0 <3.0.0'
 
+dependencies:
+  simplexmq:
+    git:
+      url: git://github.com/simplex-chat/simplex-chat
+      path: packages/simplexmq
+      ref: ep/socket-transport
 
-# dependencies:
-#   path: ^1.8.0
+dependency_overrides:
+  simplexmq:
+    path: ../simplexmq
 
 dev_dependencies:
   lints: ^1.0.0
