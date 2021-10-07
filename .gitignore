@@ -76,7 +76,9 @@ stack.yaml.lock
 .packages
 .pub-cache/
 .pub/
-/build/
+build/
+# Default behavior, only keep it for apps
+pubspec.lock
 
 # Web
 lib/generated_plugin_registrant.dart
@@ -91,3 +93,4 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+

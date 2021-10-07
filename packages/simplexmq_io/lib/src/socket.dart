@@ -3,10 +3,7 @@ import "dart:collection";
 import "dart:io";
 import "dart:typed_data";
 
-abstract class Transport {
-  Future<Uint8List> read(int n);
-  Future<void> write(Uint8List data);
-}
+import "package:simplexmq/simplexmq.dart";
 
 class _STReaders {
   final Completer<Uint8List> completer = Completer();
@@ -17,7 +14,9 @@ class _STReaders {
 class SocketTransport implements Transport {
   final Socket _socket;
   late final StreamSubscription _subscription;
+  // ignore: unused_field
   final Duration _timeout;
+
   final int _bufferSize;
   Uint8List _buffer = Uint8List(0);
   final ListQueue<_STReaders> _readers = ListQueue(16);
@@ -28,8 +27,9 @@ class SocketTransport implements Transport {
       int bufferSize = 16384}) async {
     final socket = await Socket.connect(host, port, timeout: timeout);
     final t = SocketTransport._new(socket, timeout, bufferSize);
-    final subscription =
-        socket.listen(t._onData, onError: t._finalize, onDone: t._finalize);
+    // ignore: cancel_subscriptions
+    final subscription = socket.listen(t._onData,
+        onError: (Object e) => t._finalize, onDone: t._finalize);
     t._subscription = subscription;
     return t;
   }
@@ -53,7 +53,10 @@ class SocketTransport implements Transport {
   }
 
   void _onData(Uint8List data) {
-    _buffer.addAll(data);
+    _buffer = Uint8List.fromList([
+      ..._buffer,
+      ...data
+    ]); // TODO not efficient but previous code did not work.
     while (_readers.isNotEmpty && _readers.first.size <= _buffer.length) {
       final r = _readers.removeFirst();
       final d = _buffer.sublist(0, r.size);
@@ -75,5 +78,10 @@ class SocketTransport implements Transport {
       final r = _readers.removeFirst();
       r.completer.completeError(Exception("socket closed"));
     }
+  }
+
+  /// Allow closing the client transport.
+  void close() {
+    _finalize();
   }
 }

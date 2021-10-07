@@ -4,5 +4,4 @@
 library simplexmq;
 
 export "src/protocol.dart";
-
-// TODO: Export any libraries intended for clients of this package.
+export "src/transport.dart" show Transport;
