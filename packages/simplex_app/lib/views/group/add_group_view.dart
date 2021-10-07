@@ -3,122 +3,98 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:simplex_chat/constants.dart';
-import 'package:simplex_chat/views/home/home_view.dart';
 import 'package:simplex_chat/widgets/customTextField.dart';
 
-class SetupProfileView extends StatefulWidget {
-  const SetupProfileView({Key? key}) : super(key: key);
+class AddGroupView extends StatefulWidget {
+  const AddGroupView({Key? key}) : super(key: key);
 
   @override
-  _SetupProfileViewState createState() => _SetupProfileViewState();
+  _AddGroupViewState createState() => _AddGroupViewState();
 }
 
-class _SetupProfileViewState extends State<SetupProfileView> {
-  final _formKey = GlobalKey<FormState>();
-  // controllers
-  final TextEditingController _displayNameController = TextEditingController();
-  final TextEditingController _fullNameController = TextEditingController();
+class _AddGroupViewState extends State<AddGroupView> {
+  final _displayNameController = TextEditingController();
 
   @override
   void dispose() {
     _displayNameController.dispose();
-    _fullNameController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: GestureDetector(
-        onTap: () => FocusScope.of(context).unfocus(),
-        child: SafeArea(
-          child: SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.all(12.0),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: BackButton(
-                        onPressed: () => Navigator.pop(context),
-                      ),
-                    ),
-                    Center(child: UserProfilePic()),
-                    const SizedBox(height: 25.0),
-                    const Text('Display Name', style: kSmallHeadingStyle),
-                    const SizedBox(height: 10.0),
-                    CustomTextField(
-                      textEditingController: _displayNameController,
-                      textInputType: TextInputType.name,
-                      hintText: 'e.g John',
-                      validatorFtn: (value) {
-                        if (value!.isEmpty) {
-                          return "Display name cannot be empty!";
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 25.0),
-                    const Text('Full Name', style: kSmallHeadingStyle),
-                    const SizedBox(height: 10.0),
-                    CustomTextField(
-                      textEditingController: _fullNameController,
-                      textInputType: TextInputType.name,
-                      hintText: 'e.g John Doe',
-                      validatorFtn: (value) {
-                        if (value!.isEmpty) {
-                          return "Full name cannot be empty!";
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 25.0),
-                    const Text(
-                      'Your display name is what your contact will know you :)',
-                      style: TextStyle(letterSpacing: 1.2),
-                    )
-                  ],
-                ),
+    return GestureDetector(
+      onTap: () => FocusScope.of(context).unfocus(),
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('New Group'),
+        ),
+        body: Padding(
+          padding: const EdgeInsets.all(12.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const SizedBox(height: 10.0),
+              Center(
+                child: GroupDP(),
               ),
-            ),
+              const SizedBox(height: 25.0),
+              const Text('Group Name', style: kSmallHeadingStyle),
+              const SizedBox(height: 10.0),
+              CustomTextField(
+                textEditingController: _displayNameController,
+                textInputType: TextInputType.name,
+                hintText: 'e.g College friends',
+                validatorFtn: (value) {
+                  if (value!.isEmpty) {
+                    return "Group name cannot be empty!";
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 10.0),
+              ListTile(
+                leading: const Icon(Icons.person_add),
+                title: const Text('Add a member'),
+                onTap: () {},
+              ),
+              const Divider(height: 30.0),
+              ListTile(
+                  leading: CircleAvatar(
+                    backgroundImage: AssetImage('assets/dp.png'),
+                  ),
+                  title: const Text('You'),
+                  trailing: const Text(
+                    'Owner',
+                    style: TextStyle(color: Colors.grey, fontSize: 12.0),
+                  )),
+            ],
           ),
         ),
-      ),
-      floatingActionButton: Visibility(
-        visible: MediaQuery.of(context).viewInsets.bottom == 0,
-        child: FloatingActionButton(
-          heroTag: 'setup',
-          onPressed: () {
-            if (_formKey.currentState!.validate()) {
+        floatingActionButton: Visibility(
+          visible: MediaQuery.of(context).viewInsets.bottom == 0,
+          child: FloatingActionButton(
+            heroTag: 'setup',
+            onPressed: () {
               FocusScope.of(context).unfocus();
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => HomeView(
-                    maxSlide: MediaQuery.of(context).size.width * 0.82,
-                  ),
-                ),
-              );
-            }
-          },
-          child: const Icon(Icons.check),
+              Navigator.pop(context);
+            },
+            child: const Icon(Icons.check),
+          ),
         ),
       ),
     );
   }
 }
 
-class UserProfilePic extends StatefulWidget {
-  const UserProfilePic({Key? key}) : super(key: key);
+class GroupDP extends StatefulWidget {
+  const GroupDP({Key? key}) : super(key: key);
 
   @override
-  _UserProfilePicState createState() => _UserProfilePicState();
+  _GroupDPState createState() => _GroupDPState();
 }
 
-class _UserProfilePicState extends State<UserProfilePic> {
+class _GroupDPState extends State<GroupDP> {
   // Image Picker --> DP properties
   final imgPicker = ImagePicker();
   File? image;
@@ -127,9 +103,13 @@ class _UserProfilePicState extends State<UserProfilePic> {
   bool _imageUploaded = false;
 
   // image buttons options
-  final _dpBtnText = ["Gallery", "Camera"];
-  final _dpBtnColors = [Colors.purple, Colors.green];
-  final _dpBtnIcons = [Icons.photo_rounded, Icons.camera_alt_rounded];
+  final _dpBtnText = ["Remove", "Gallery", "Camera"];
+  final _dpBtnColors = [Colors.red, Colors.purple, Colors.green];
+  final _dpBtnIcons = [
+    Icons.delete,
+    Icons.photo_rounded,
+    Icons.camera_alt_rounded
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -207,15 +187,18 @@ class _UserProfilePicState extends State<UserProfilePic> {
             const SizedBox(height: 15.0),
             Row(
                 children: List.generate(
-              2,
+              3,
               (index) => Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   MaterialButton(
                     color: _dpBtnColors.map((e) => e).elementAt(index),
                     shape: CircleBorder(),
-                    onPressed:
-                        index == 0 ? () => _galleryPic() : () => _cameraPic(),
+                    onPressed: index == 0
+                        ? () => _removePic()
+                        : index == 1
+                            ? () => _galleryPic()
+                            : () => _cameraPic(),
                     child: Icon(
                       _dpBtnIcons.map((e) => e).elementAt(index),
                       color: Colors.white,
@@ -232,6 +215,14 @@ class _UserProfilePicState extends State<UserProfilePic> {
         ),
       ),
     );
+  }
+
+  void _removePic() {
+    setState(() {
+      _imageUploaded = false;
+      image = null;
+    });
+    Navigator.pop(context);
   }
 
   void _cameraPic() async {
