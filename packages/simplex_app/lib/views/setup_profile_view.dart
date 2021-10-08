@@ -133,7 +133,7 @@ class _UserProfilePicState extends State<UserProfilePic> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return SizedBox(
       height: 180.0,
       width: 180.0,
       child: Stack(

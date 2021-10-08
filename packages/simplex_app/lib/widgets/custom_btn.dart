@@ -7,7 +7,8 @@ class CustomButton extends StatelessWidget {
     @required this.onPressed,
     @required this.color,
     @required this.child,
-  });
+    Key? key
+  }): super(key: key);
   final double? width;
   final double? height;
   final void Function()? onPressed;

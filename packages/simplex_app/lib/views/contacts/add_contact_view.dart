@@ -51,7 +51,7 @@ class _AddContactViewState extends State<AddContactView> {
               },
             ),
             onPressed: () async {
-              _qrViewController?.toggleFlash();
+              await _qrViewController?.toggleFlash();
               setState(() {});
             },
           ),
@@ -63,13 +63,13 @@ class _AddContactViewState extends State<AddContactView> {
               },
             ),
             onPressed: () async {
-              _qrViewController?.flipCamera();
+              await _qrViewController?.flipCamera();
               setState(() {});
             },
           ),
         ],
       ),
-      body: Container(
+      body: SizedBox(
         height: MediaQuery.of(context).size.height,
         child: Stack(
           children: [
@@ -107,7 +107,7 @@ class _AddContactViewState extends State<AddContactView> {
         controller.scannedDataStream.listen((scanData) {
           setState(() async {
             result = scanData;
-            controller.pauseCamera();
+            await controller.pauseCamera();
             if (result != null) {
               await Navigator.push(
                 context,
@@ -117,7 +117,7 @@ class _AddContactViewState extends State<AddContactView> {
                   ),
                 ),
               );
-              controller.resumeCamera();
+              await controller.resumeCamera();
             }
           });
         });

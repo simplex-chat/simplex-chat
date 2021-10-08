@@ -113,7 +113,7 @@ class _GroupDPState extends State<GroupDP> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return SizedBox(
       height: 180.0,
       width: 180.0,
       child: Stack(

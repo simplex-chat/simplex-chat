@@ -63,7 +63,7 @@ class _HomeViewWidgetState extends State<HomeViewWidget> {
                 ),
                 const SizedBox(height: 10.0),
                 !_haveConnections
-                    ? Container(
+                    ? SizedBox(
                         height: MediaQuery.of(context).size.height * 0.7,
                         child: Center(
                           child: Column(
