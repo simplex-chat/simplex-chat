@@ -4,7 +4,7 @@ include: package:flutter_lints/flutter.yaml
 linter:
   # https://dart-lang.github.io/linter/lints/index.html.
   rules:
-    prefer_double_quotes: true
+    prefer_single_quotes: true
     always_declare_return_types: true   
     avoid_dynamic_calls: true
     avoid_empty_else: true

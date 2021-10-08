@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:simplex_chat/constants.dart';
 import 'package:simplex_chat/views/home/home_view.dart';
-import 'package:simplex_chat/widgets/customTextField.dart';
+import 'package:simplex_chat/widgets/custom_text_field.dart';
 
 class SetupProfileView extends StatefulWidget {
   const SetupProfileView({Key? key}) : super(key: key);
@@ -46,7 +46,7 @@ class _SetupProfileViewState extends State<SetupProfileView> {
                         onPressed: () => Navigator.pop(context),
                       ),
                     ),
-                    Center(child: UserProfilePic()),
+                    const Center(child: UserProfilePic()),
                     const SizedBox(height: 25.0),
                     const Text('Display Name', style: kSmallHeadingStyle),
                     const SizedBox(height: 10.0),
@@ -56,7 +56,7 @@ class _SetupProfileViewState extends State<SetupProfileView> {
                       hintText: 'e.g John',
                       validatorFtn: (value) {
                         if (value!.isEmpty) {
-                          return "Display name cannot be empty!";
+                          return 'Display name cannot be empty!';
                         }
                         return null;
                       },
@@ -70,7 +70,7 @@ class _SetupProfileViewState extends State<SetupProfileView> {
                       hintText: 'e.g John Doe',
                       validatorFtn: (value) {
                         if (value!.isEmpty) {
-                          return "Full name cannot be empty!";
+                          return 'Full name cannot be empty!';
                         }
                         return null;
                       },
@@ -122,12 +122,12 @@ class _UserProfilePicState extends State<UserProfilePic> {
   // Image Picker --> DP properties
   final imgPicker = ImagePicker();
   File? image;
-  String photoUrl = "";
+  String photoUrl = '';
   bool _uploading = false;
   bool _imageUploaded = false;
 
   // image buttons options
-  final _dpBtnText = ["Gallery", "Camera"];
+  final _dpBtnText = ['Gallery', 'Camera'];
   final _dpBtnColors = [Colors.purple, Colors.green];
   final _dpBtnIcons = [Icons.photo_rounded, Icons.camera_alt_rounded];
 
@@ -143,7 +143,7 @@ class _UserProfilePicState extends State<UserProfilePic> {
                   radius: 100.0,
                   backgroundImage: FileImage(image!),
                 )
-              : CircleAvatar(
+              : const CircleAvatar(
                   radius: 100.0,
                   backgroundImage: AssetImage('assets/dp.png'),
                 ),
@@ -156,7 +156,7 @@ class _UserProfilePicState extends State<UserProfilePic> {
               mini: true,
               onPressed: _updateProfilePic,
               child: _uploading
-                  ? SizedBox(
+                  ? const SizedBox(
                       height: 18.0,
                       width: 18.0,
                       child: CircularProgressIndicator(
@@ -177,7 +177,7 @@ class _UserProfilePicState extends State<UserProfilePic> {
 
   void _updateProfilePic() {
     showModalBottomSheet(
-      shape: RoundedRectangleBorder(
+      shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.only(
           topLeft: Radius.circular(10.0),
           topRight: Radius.circular(10.0),
@@ -197,10 +197,10 @@ class _UserProfilePicState extends State<UserProfilePic> {
               width: 50.0,
             ),
             const SizedBox(height: 20.0),
-            Align(
+            const Align(
               alignment: Alignment.centerLeft,
               child: Text(
-                " Profile photo",
+                ' Profile photo',
                 style: kHeadingStyle,
               ),
             ),
@@ -213,7 +213,7 @@ class _UserProfilePicState extends State<UserProfilePic> {
                 children: [
                   MaterialButton(
                     color: _dpBtnColors.map((e) => e).elementAt(index),
-                    shape: CircleBorder(),
+                    shape: const CircleBorder(),
                     onPressed:
                         index == 0 ? () => _galleryPic() : () => _cameraPic(),
                     child: Icon(
@@ -259,7 +259,7 @@ class _UserProfilePicState extends State<UserProfilePic> {
 
       Navigator.pop(context);
     } catch (e) {
-      throw e;
+      rethrow;
     }
   }
 
@@ -288,7 +288,7 @@ class _UserProfilePicState extends State<UserProfilePic> {
 
       Navigator.pop(context);
     } catch (e) {
-      throw e;
+      rethrow;
     }
   }
 }

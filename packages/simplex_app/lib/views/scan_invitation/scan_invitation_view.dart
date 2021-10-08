@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:simplex_chat/constants.dart';
-import 'package:simplex_chat/widgets/customBtn.dart';
 import 'package:share/share.dart';
+import 'package:simplex_chat/constants.dart';
+import 'package:simplex_chat/widgets/custom_btn.dart';
 
 class ScanInvitationView extends StatelessWidget {
   const ScanInvitationView({Key? key}) : super(key: key);
@@ -45,10 +45,10 @@ class ScanInvitationView extends StatelessWidget {
                 color: kPrimaryColor,
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.share, color: Colors.white),
-                    const SizedBox(width: 8.0),
-                    const Text(
+                  children: const [
+                    Icon(Icons.share, color: Colors.white),
+                    SizedBox(width: 8.0),
+                    Text(
                       'Share',
                       style: TextStyle(color: Colors.white),
                     ),
@@ -69,7 +69,7 @@ class ScanInvitationView extends StatelessWidget {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            CircleAvatar(
+            const CircleAvatar(
               backgroundImage: AssetImage('assets/dp.png'),
               radius: 70,
             ),

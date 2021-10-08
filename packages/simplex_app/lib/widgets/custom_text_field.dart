@@ -44,7 +44,7 @@ class CustomTextField extends StatefulWidget {
 }
 
 class _CustomTextFieldState extends State<CustomTextField> {
-  FocusNode _node = FocusNode();
+  final FocusNode _node = FocusNode();
 
   @override
   void dispose() {
@@ -72,15 +72,15 @@ class _CustomTextFieldState extends State<CustomTextField> {
           hintStyle: Theme.of(context).textTheme.caption,
           fillColor: Colors.grey[200],
           filled: true,
-          enabledBorder: OutlineInputBorder(
+          enabledBorder: const OutlineInputBorder(
               borderSide: BorderSide(color: Colors.transparent)),
-          focusedBorder: OutlineInputBorder(
+          focusedBorder: const OutlineInputBorder(
             borderSide: BorderSide(color: Colors.transparent),
           ),
-          errorBorder: OutlineInputBorder(
+          errorBorder: const OutlineInputBorder(
             borderSide: BorderSide(color: Colors.red),
           ),
-          focusedErrorBorder: OutlineInputBorder(
+          focusedErrorBorder: const OutlineInputBorder(
             borderSide: BorderSide(color: Colors.red),
           ),
         ),

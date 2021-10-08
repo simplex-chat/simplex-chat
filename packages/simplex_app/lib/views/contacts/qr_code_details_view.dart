@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
 import 'package:simplex_chat/constants.dart';
-import 'package:simplex_chat/widgets/customBtn.dart';
+import 'package:simplex_chat/widgets/custom_btn.dart';
 
 class QRCodeDetailsView extends StatelessWidget {
   final Barcode? barcode;
@@ -20,7 +20,7 @@ class QRCodeDetailsView extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            CircleAvatar(
+            const CircleAvatar(
               backgroundImage: AssetImage('assets/dp.png'),
               radius: 90,
             ),

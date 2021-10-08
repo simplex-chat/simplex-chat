@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:simplex_chat/animations/bottomAnimation.dart';
+import 'package:simplex_chat/animations/bottom_animation.dart';
 import 'package:simplex_chat/app_routes.dart';
 import 'package:simplex_chat/constants.dart';
 
 class HomeViewWidget extends StatefulWidget {
-  HomeViewWidget({Key? key}) : super(key: key);
+  const HomeViewWidget({Key? key}) : super(key: key);
 
   @override
   _HomeViewWidgetState createState() => _HomeViewWidgetState();
@@ -68,15 +68,15 @@ class _HomeViewWidgetState extends State<HomeViewWidget> {
                         child: Center(
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Text(
+                            children: const [
+                              Text(
                                 "You don't have any conversation yet!",
                                 style: kMediumHeadingStyle,
                                 textAlign: TextAlign.center,
                               ),
-                              const SizedBox(height: 8.0),
-                              const Text(
-                                "Click the icon below to add a contact",
+                              SizedBox(height: 8.0),
+                              Text(
+                                'Click the icon below to add a contact',
                                 textAlign: TextAlign.center,
                               ),
                             ],
@@ -89,7 +89,7 @@ class _HomeViewWidgetState extends State<HomeViewWidget> {
                           _userNames.length,
                           (index) => WidgetAnimator(
                             child: ListTile(
-                              leading: CircleAvatar(
+                              leading: const CircleAvatar(
                                 backgroundImage: AssetImage('assets/dp.png'),
                               ),
                               title: Text(_userNames[index]),
@@ -114,7 +114,7 @@ class _HomeViewWidgetState extends State<HomeViewWidget> {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(5.0),
         ),
-        offset: Offset(-10, -180),
+        offset: const Offset(-10, -180),
         onSelected: (value) {
           if (value == _options[0]) {
             Navigator.pushNamed(context, AppRoutes.addContact);
@@ -132,10 +132,10 @@ class _HomeViewWidgetState extends State<HomeViewWidget> {
               ),
             )
             .toList(),
-        child: FloatingActionButton(
+        child: const FloatingActionButton(
           heroTag: 'connect',
           onPressed: null,
-          child: const Icon(
+          child: Icon(
             Icons.person_add,
           ),
         ),
@@ -200,16 +200,16 @@ class _HomeViewWidgetState extends State<HomeViewWidget> {
           actions: [
             InkWell(
               onTap: () => Navigator.pop(context),
-              child: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: const Icon(Icons.check, color: Colors.green),
+              child: const Padding(
+                padding: EdgeInsets.all(8.0),
+                child: Icon(Icons.check, color: Colors.green),
               ),
             ),
             InkWell(
               onTap: () => Navigator.pop(context),
-              child: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: const Icon(Icons.cancel_outlined, color: Colors.red),
+              child: const Padding(
+                padding: EdgeInsets.all(8.0),
+                child: Icon(Icons.cancel_outlined, color: Colors.red),
               ),
             )
           ],
@@ -247,16 +247,16 @@ class _HomeViewWidgetState extends State<HomeViewWidget> {
           actions: [
             InkWell(
               onTap: () => Navigator.pop(context),
-              child: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: const Icon(Icons.check, color: Colors.green),
+              child: const Padding(
+                padding: EdgeInsets.all(8.0),
+                child: Icon(Icons.check, color: Colors.green),
               ),
             ),
             InkWell(
               onTap: () => Navigator.pop(context),
-              child: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: const Icon(Icons.cancel_outlined, color: Colors.red),
+              child: const Padding(
+                padding: EdgeInsets.all(8.0),
+                child: Icon(Icons.cancel_outlined, color: Colors.red),
               ),
             )
           ],

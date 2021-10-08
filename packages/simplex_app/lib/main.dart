@@ -4,8 +4,8 @@ import 'package:simplex_chat/constants.dart';
 import 'package:simplex_chat/custom_scroll_behavior.dart';
 import 'package:simplex_chat/views/contacts/add_contact_view.dart';
 import 'package:simplex_chat/views/group/add_group_view.dart';
-import 'package:simplex_chat/views/onBoarding/intro_view.dart';
-import 'package:simplex_chat/views/scanInvitation/scan_invitation_view.dart';
+import 'package:simplex_chat/views/onboarding/intro_view.dart';
+import 'package:simplex_chat/views/scan_invitation/scan_invitation_view.dart';
 import 'package:simplex_chat/views/setup_profile_view.dart';
 
 void main() {
@@ -28,17 +28,17 @@ class MyApp extends StatelessWidget {
       ),
       builder: (context, widget) {
         return ScrollConfiguration(
-          behavior: ScrollBehaviorModified(),
+          behavior: const ScrollBehaviorModified(),
           child: widget!,
         );
       },
       initialRoute: AppRoutes.intro,
       routes: <String, WidgetBuilder>{
-        AppRoutes.intro: (_) => IntroView(),
-        AppRoutes.setupProfile: (_) => SetupProfileView(),
-        AppRoutes.addContact: (_) => AddContactView(),
-        AppRoutes.scanInvitation: (_) => ScanInvitationView(),
-        AppRoutes.addGroup: (_) => AddGroupView(),
+        AppRoutes.intro: (_) => const IntroView(),
+        AppRoutes.setupProfile: (_) => const SetupProfileView(),
+        AppRoutes.addContact: (_) => const AddContactView(),
+        AppRoutes.scanInvitation: (_) => const ScanInvitationView(),
+        AppRoutes.addGroup: (_) => const AddGroupView(),
       },
     );
   }

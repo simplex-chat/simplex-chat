@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:simplex_chat/constants.dart';
-import 'package:simplex_chat/widgets/customTextField.dart';
+import 'package:simplex_chat/widgets/custom_text_field.dart';
 
 class AddGroupView extends StatefulWidget {
   const AddGroupView({Key? key}) : super(key: key);
@@ -35,7 +35,7 @@ class _AddGroupViewState extends State<AddGroupView> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const SizedBox(height: 10.0),
-              Center(
+              const Center(
                 child: GroupDP(),
               ),
               const SizedBox(height: 25.0),
@@ -47,7 +47,7 @@ class _AddGroupViewState extends State<AddGroupView> {
                 hintText: 'e.g College friends',
                 validatorFtn: (value) {
                   if (value!.isEmpty) {
-                    return "Group name cannot be empty!";
+                    return 'Group name cannot be empty!';
                   }
                   return null;
                 },
@@ -59,12 +59,12 @@ class _AddGroupViewState extends State<AddGroupView> {
                 onTap: () {},
               ),
               const Divider(height: 30.0),
-              ListTile(
+              const ListTile(
                   leading: CircleAvatar(
                     backgroundImage: AssetImage('assets/dp.png'),
                   ),
-                  title: const Text('You'),
-                  trailing: const Text(
+                  title: Text('You'),
+                  trailing: Text(
                     'Owner',
                     style: TextStyle(color: Colors.grey, fontSize: 12.0),
                   )),
@@ -98,12 +98,12 @@ class _GroupDPState extends State<GroupDP> {
   // Image Picker --> DP properties
   final imgPicker = ImagePicker();
   File? image;
-  String photoUrl = "";
+  String photoUrl = '';
   bool _uploading = false;
   bool _imageUploaded = false;
 
   // image buttons options
-  final _dpBtnText = ["Remove", "Gallery", "Camera"];
+  final _dpBtnText = ['Remove', 'Gallery', 'Camera'];
   final _dpBtnColors = [Colors.red, Colors.purple, Colors.green];
   final _dpBtnIcons = [
     Icons.delete,
@@ -123,7 +123,7 @@ class _GroupDPState extends State<GroupDP> {
                   radius: 100.0,
                   backgroundImage: FileImage(image!),
                 )
-              : CircleAvatar(
+              : const CircleAvatar(
                   radius: 100.0,
                   backgroundImage: AssetImage('assets/dp.png'),
                 ),
@@ -136,7 +136,7 @@ class _GroupDPState extends State<GroupDP> {
               mini: true,
               onPressed: _updateProfilePic,
               child: _uploading
-                  ? SizedBox(
+                  ? const SizedBox(
                       height: 18.0,
                       width: 18.0,
                       child: CircularProgressIndicator(
@@ -157,7 +157,7 @@ class _GroupDPState extends State<GroupDP> {
 
   void _updateProfilePic() {
     showModalBottomSheet(
-      shape: RoundedRectangleBorder(
+      shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.only(
           topLeft: Radius.circular(10.0),
           topRight: Radius.circular(10.0),
@@ -177,10 +177,10 @@ class _GroupDPState extends State<GroupDP> {
               width: 50.0,
             ),
             const SizedBox(height: 20.0),
-            Align(
+            const Align(
               alignment: Alignment.centerLeft,
               child: Text(
-                " Profile photo",
+                ' Profile photo',
                 style: kHeadingStyle,
               ),
             ),
@@ -193,7 +193,7 @@ class _GroupDPState extends State<GroupDP> {
                 children: [
                   MaterialButton(
                     color: _dpBtnColors.map((e) => e).elementAt(index),
-                    shape: CircleBorder(),
+                    shape: const CircleBorder(),
                     onPressed: index == 0
                         ? () => _removePic()
                         : index == 1
@@ -250,7 +250,7 @@ class _GroupDPState extends State<GroupDP> {
 
       Navigator.pop(context);
     } catch (e) {
-      throw e;
+      rethrow;
     }
   }
 
@@ -279,7 +279,7 @@ class _GroupDPState extends State<GroupDP> {
 
       Navigator.pop(context);
     } catch (e) {
-      throw e;
+      rethrow;
     }
   }
 }

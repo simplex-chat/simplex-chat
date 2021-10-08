@@ -76,7 +76,7 @@ stack.yaml.lock
 .packages
 .pub-cache/
 .pub/
-/build/
+build/
 
 # Web
 lib/generated_plugin_registrant.dart

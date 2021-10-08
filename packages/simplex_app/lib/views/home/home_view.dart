@@ -1,6 +1,6 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'dart:math' as math;
 
 import 'package:simplex_chat/views/home/drawer.dart';
 import 'package:simplex_chat/views/home/home_view_widget.dart';
@@ -28,7 +28,7 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
   void initState() {
     super.initState();
     animationController =
-        AnimationController(vsync: this, duration: Duration(milliseconds: 250));
+        AnimationController(vsync: this, duration: const Duration(milliseconds: 250));
   }
 
   @override
@@ -55,7 +55,7 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
                         ..rotateY(
                             math.pi / 2 * (1 - animationController!.value)),
                       alignment: Alignment.centerRight,
-                      child: MyDrawer(),
+                      child: const MyDrawer(),
                     ),
                   ),
                   Transform.translate(
@@ -66,7 +66,7 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
                           ..setEntry(3, 2, 0.001)
                           ..rotateY(-math.pi / 2 * animationController!.value),
                         alignment: Alignment.centerLeft,
-                        child: HomeViewWidget()),
+                        child: const HomeViewWidget()),
                   ),
                   Positioned(
                     top: MediaQuery.of(context).padding.top,

@@ -47,7 +47,7 @@ class _AddContactViewState extends State<AddContactView> {
                       ? Icons.flash_on
                       : Icons.flash_off);
                 }
-                return Icon(Icons.flash_off);
+                return const Icon(Icons.flash_off);
               },
             ),
             onPressed: () async {
@@ -59,7 +59,7 @@ class _AddContactViewState extends State<AddContactView> {
             icon: FutureBuilder(
               future: _qrViewController?.getCameraInfo(),
               builder: (context, snapshot) {
-                return Icon(Icons.camera_alt);
+                return const Icon(Icons.camera_alt);
               },
             ),
             onPressed: () async {
@@ -103,7 +103,7 @@ class _AddContactViewState extends State<AddContactView> {
     return QRView(
       key: qrKey,
       onQRViewCreated: (QRViewController controller) {
-        this._qrViewController = controller;
+        _qrViewController = controller;
         controller.scannedDataStream.listen((scanData) {
           setState(() async {
             result = scanData;

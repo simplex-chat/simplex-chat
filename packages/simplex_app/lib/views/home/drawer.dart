@@ -38,7 +38,7 @@ class MyDrawer extends StatelessWidget {
                 subtitle: const Text('Get in touch with numbers!'),
                 onTap: () {},
               ),
-              Spacer(),
+              const Spacer(),
               ListTile(
                 leading: const Icon(Icons.exit_to_app_rounded),
                 title: const Text('Logout'),
