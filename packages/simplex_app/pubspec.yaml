@@ -45,6 +45,9 @@ dependencies:
   image_picker: ^0.7.5+3
   file_picker: ^3.0.2+2
 
+  # for local storage
+  shared_preferences: ^2.0.8
+
   # share
   share: ^2.0.4
 
