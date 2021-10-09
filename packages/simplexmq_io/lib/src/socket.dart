@@ -53,10 +53,10 @@ class SocketTransport implements Transport {
   }
 
   void _onData(Uint8List data) {
-    _buffer = Uint8List.fromList([
-      ..._buffer,
-      ...data
-    ]); // TODO not efficient but previous code did not work.
+    final b = Uint8List(_buffer.length + data.length);
+    b.setAll(0, _buffer);
+    b.setAll(_buffer.length, data);
+    _buffer = b;
     while (_readers.isNotEmpty && _readers.first.size <= _buffer.length) {
       final r = _readers.removeFirst();
       final d = _buffer.sublist(0, r.size);
