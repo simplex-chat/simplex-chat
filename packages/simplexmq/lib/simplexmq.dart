@@ -3,5 +3,5 @@
 /// More dartdocs go here.
 library simplexmq;
 
-export "src/protocol.dart";
-export "src/transport.dart" show Transport;
+export 'src/protocol.dart';
+export 'src/transport.dart' show Transport;

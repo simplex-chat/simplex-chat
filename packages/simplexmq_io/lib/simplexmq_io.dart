@@ -1,3 +1,3 @@
 library simplexmq_io;
 
-export "src/socket.dart";
+export 'src/socket.dart';

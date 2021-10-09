@@ -2,7 +2,7 @@ include: package:lints/recommended.yaml
 
 linter:
   rules:
-    prefer_double_quotes: true
+    prefer_single_quotes: true
     constant_identifier_names: false
     always_declare_return_types: true   
     avoid_dynamic_calls: true

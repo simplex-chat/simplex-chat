@@ -1,6 +1,6 @@
-import "dart:typed_data";
-import "buffer.dart";
-import "parser.dart";
+import 'dart:typed_data';
+import 'buffer.dart';
+import 'parser.dart';
 
 abstract class SMPCommand {
   Uint8List serialize();
@@ -10,25 +10,25 @@ abstract class ClientCommand extends SMPCommand {}
 
 abstract class BrokerCommand extends SMPCommand {}
 
-final rsaPrefix = encodeAscii("rsa:");
+final rsaPrefix = encodeAscii('rsa:');
 
 Uint8List serializePubKey(Uint8List rcvPubKey) =>
     concat(rsaPrefix, encode64(rcvPubKey));
 
-final Uint8List cNEW = encodeAscii("NEW");
-final Uint8List cSUB = encodeAscii("SUB");
-final Uint8List cKEY = encodeAscii("KEY");
-final Uint8List cACK = encodeAscii("ACK");
-final Uint8List cOFF = encodeAscii("OFF");
-final Uint8List cDEL = encodeAscii("DEL");
-final Uint8List cSEND = encodeAscii("SEND");
-final Uint8List cPING = encodeAscii("PING");
-final Uint8List cIDS = encodeAscii("IDS");
-final Uint8List cMSG = encodeAscii("MSG");
-final Uint8List cEND = encodeAscii("END");
-final Uint8List cOK = encodeAscii("OK");
-final Uint8List cERR = encodeAscii("ERR");
-final Uint8List cPONG = encodeAscii("PONG");
+final Uint8List cNEW = encodeAscii('NEW');
+final Uint8List cSUB = encodeAscii('SUB');
+final Uint8List cKEY = encodeAscii('KEY');
+final Uint8List cACK = encodeAscii('ACK');
+final Uint8List cOFF = encodeAscii('OFF');
+final Uint8List cDEL = encodeAscii('DEL');
+final Uint8List cSEND = encodeAscii('SEND');
+final Uint8List cPING = encodeAscii('PING');
+final Uint8List cIDS = encodeAscii('IDS');
+final Uint8List cMSG = encodeAscii('MSG');
+final Uint8List cEND = encodeAscii('END');
+final Uint8List cOK = encodeAscii('OK');
+final Uint8List cERR = encodeAscii('ERR');
+final Uint8List cPONG = encodeAscii('PONG');
 
 enum SMPCmdTag {
   NEW,
@@ -148,23 +148,23 @@ class OK extends BrokerCommand {
 enum ErrorType { BLOCK, CMD, AUTH, QUOTA, NO_MSG, INTERNAL }
 
 final BinaryTags<ErrorType> errorTags = {
-  ErrorType.BLOCK: encodeAscii("BLOCK"),
-  ErrorType.CMD: encodeAscii("CMD"),
-  ErrorType.AUTH: encodeAscii("AUTH"),
-  ErrorType.QUOTA: encodeAscii("QUOTA"),
-  ErrorType.NO_MSG: encodeAscii("NO_MSG"),
-  ErrorType.INTERNAL: encodeAscii("INTERNAL"),
+  ErrorType.BLOCK: encodeAscii('BLOCK'),
+  ErrorType.CMD: encodeAscii('CMD'),
+  ErrorType.AUTH: encodeAscii('AUTH'),
+  ErrorType.QUOTA: encodeAscii('QUOTA'),
+  ErrorType.NO_MSG: encodeAscii('NO_MSG'),
+  ErrorType.INTERNAL: encodeAscii('INTERNAL'),
 };
 
 enum CmdErrorType { PROHIBITED, KEY_SIZE, SYNTAX, NO_AUTH, HAS_AUTH, NO_QUEUE }
 
 final BinaryTags<CmdErrorType> cmdErrorTags = {
-  CmdErrorType.PROHIBITED: encodeAscii("PROHIBITED"),
-  CmdErrorType.KEY_SIZE: encodeAscii("KEY_SIZE"),
-  CmdErrorType.SYNTAX: encodeAscii("SYNTAX"),
-  CmdErrorType.NO_AUTH: encodeAscii("NO_AUTH"),
-  CmdErrorType.HAS_AUTH: encodeAscii("HAS_AUTH"),
-  CmdErrorType.NO_QUEUE: encodeAscii("NO_QUEUE"),
+  CmdErrorType.PROHIBITED: encodeAscii('PROHIBITED'),
+  CmdErrorType.KEY_SIZE: encodeAscii('KEY_SIZE'),
+  CmdErrorType.SYNTAX: encodeAscii('SYNTAX'),
+  CmdErrorType.NO_AUTH: encodeAscii('NO_AUTH'),
+  CmdErrorType.HAS_AUTH: encodeAscii('HAS_AUTH'),
+  CmdErrorType.NO_QUEUE: encodeAscii('NO_QUEUE'),
 };
 
 class ERR extends BrokerCommand {
@@ -172,7 +172,7 @@ class ERR extends BrokerCommand {
   final CmdErrorType? cmdErr;
   ERR(this.err)
       : cmdErr = err == ErrorType.CMD
-            ? throw ArgumentError("CMD error should be created with ERR.CMD")
+            ? throw ArgumentError('CMD error should be created with ERR.CMD')
             : null;
   ERR.cmd(this.cmdErr) : err = ErrorType.CMD;
   @override
