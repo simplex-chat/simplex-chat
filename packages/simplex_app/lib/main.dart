@@ -18,14 +18,15 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = ThemeData(
+      primarySwatch: Colors.teal,
+      primaryColor: kPrimaryColor,
+    );
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'SimpleX Chat',
-      theme: ThemeData(
-        primaryColor: kPrimaryColor,
-        colorScheme: ColorScheme.fromSwatch(
-          primarySwatch: Colors.teal,
-        ).copyWith(secondary: kPrimaryColor),
+      theme: theme.copyWith(
+        colorScheme: theme.colorScheme.copyWith(secondary: kPrimaryColor),
       ),
       builder: (context, widget) {
         return ScrollConfiguration(
