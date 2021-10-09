@@ -1,7 +1,7 @@
 name: simplexmq
 description: A starting point for Dart libraries or applications.
 version: 0.0.1
-# homepage: https://www.example.com
+publish_to: none
 
 environment:
   sdk: '>=2.14.0 <3.0.0'
