@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:simplex_chat/animations/bottom_animation.dart';
 import 'package:simplex_chat/app_routes.dart';
 import 'package:simplex_chat/constants.dart';
+import 'package:simplex_chat/model/contact.dart';
+import 'package:simplex_chat/views/conversation/conversation_view.dart';
 
 class HomeViewWidget extends StatefulWidget {
   const HomeViewWidget({Key? key}) : super(key: key);
@@ -12,8 +15,9 @@ class HomeViewWidget extends StatefulWidget {
 }
 
 class _HomeViewWidgetState extends State<HomeViewWidget> {
-  bool _haveConnections = false;
   bool? _eraseMedia = false;
+
+  List<Contact> _contactsList = []; // for storing contacts
 
   final List<String> _options = [
     'Add contact',
@@ -21,21 +25,36 @@ class _HomeViewWidgetState extends State<HomeViewWidget> {
     'New group',
   ];
 
-  final List<String> _userNames = [
-    'Bob',
-    'John',
-    'Alice',
-    'Arya',
-    'Maria',
-  ];
+  // delete a contact
+  void _deleteContact(Contact contact) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _contactsList.remove(contact);
+    });
+    await prefs.setString('contacts', Contact.encode(_contactsList));
+    var snackBar = SnackBar(
+      backgroundColor: Colors.red,
+      content: Text('${contact.name} deleted!'),
+    );
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(snackBar);
+  }
 
-  final List<String> _lastMsg = [
-    'Okay!',
-    'Hey there!',
-    'Will get back to you.',
-    'Hi',
-    'Okay got it',
-  ];
+  // getting data from local storage FOR NOW!!
+  void _getContacts() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    final String? _contacts = prefs.getString('contacts');
+    setState(() {
+      _contactsList = List.from(Contact.decode(_contacts));
+    });
+  }
+
+  @override
+  void initState() {
+    _getContacts();
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -50,11 +69,7 @@ class _HomeViewWidgetState extends State<HomeViewWidget> {
                 Align(
                   alignment: Alignment.centerRight,
                   child: GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _haveConnections = !_haveConnections;
-                      });
-                    },
+                    onTap: _addNewContacts,
                     child: SvgPicture.asset(
                       'assets/logo.svg',
                       height: 40.0,
@@ -62,7 +77,7 @@ class _HomeViewWidgetState extends State<HomeViewWidget> {
                   ),
                 ),
                 const SizedBox(height: 10.0),
-                !_haveConnections
+                _contactsList.isEmpty
                     ? SizedBox(
                         height: MediaQuery.of(context).size.height * 0.7,
                         child: Center(
@@ -86,21 +101,29 @@ class _HomeViewWidgetState extends State<HomeViewWidget> {
                     : ListView(
                         shrinkWrap: true,
                         children: List.generate(
-                          _userNames.length,
+                          _contactsList.length,
                           (index) => WidgetAnimator(
                             child: ListTile(
                               leading: const CircleAvatar(
                                 backgroundImage: AssetImage('assets/dp.png'),
                               ),
-                              title: Text(_userNames[index]),
-                              subtitle: Text(_lastMsg[index]),
-                              trailing: const Text(
-                                'Just now',
-                                style:
-                                    TextStyle(color: Colors.grey, fontSize: 12),
+                              title: Text(_contactsList[index].name!),
+                              subtitle: Text(_contactsList[index].msg!),
+                              trailing: Text(
+                                _contactsList[index].msgTime!,
+                                style: const TextStyle(
+                                    fontSize: 11, color: Colors.grey),
                               ),
-                              onTap: () {},
-                              onLongPress: _conversationOptions,
+                              onTap: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => ConversationView(
+                                    contact: _contactsList[index],
+                                  ),
+                                ),
+                              ),
+                              onLongPress: () =>
+                                  _conversationOptions(_contactsList[index]),
                             ),
                           ),
                         ),
@@ -143,7 +166,7 @@ class _HomeViewWidgetState extends State<HomeViewWidget> {
     );
   }
 
-  void _conversationOptions() {
+  void _conversationOptions(Contact contact) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -153,7 +176,7 @@ class _HomeViewWidgetState extends State<HomeViewWidget> {
             TextButton(
                 onPressed: () {
                   Navigator.pop(context);
-                  _deleteConversation();
+                  _deleteConversation(contact);
                 },
                 child: const Text(
                   'Delete Conversation',
@@ -171,7 +194,7 @@ class _HomeViewWidgetState extends State<HomeViewWidget> {
     );
   }
 
-  void _deleteConversation() {
+  void _deleteConversation(Contact contact) {
     showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
@@ -199,7 +222,10 @@ class _HomeViewWidgetState extends State<HomeViewWidget> {
           ),
           actions: [
             InkWell(
-              onTap: () => Navigator.pop(context),
+              onTap: () {
+                _deleteContact(contact);
+                Navigator.pop(context);
+              },
               child: const Padding(
                 padding: EdgeInsets.all(8.0),
                 child: Icon(Icons.check, color: Colors.green),
@@ -263,5 +289,45 @@ class _HomeViewWidgetState extends State<HomeViewWidget> {
         ),
       ),
     );
+  }
+
+  // dummy ftn for loading new contacts
+  void _addNewContacts() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+
+    List<Contact> _localList = [];
+    _localList = List.from(Contact.decode(prefs.getString('contacts')));
+
+    List<Contact> _newList = [
+      Contact(
+        name: 'Harry',
+        msg: 'Hello!',
+        msgTime: 'Just now',
+      ),
+      Contact(
+        name: 'Ayesha',
+        msg: 'OK!',
+        msgTime: 'Just now',
+      ),
+      Contact(
+        name: 'Larry',
+        msg: 'Yep, Already done!',
+        msgTime: 'Just now',
+      ),
+    ];
+    _newList = _localList + _newList;
+
+    // dummy ftn for filling the list
+    final String _newContacts = Contact.encode(_newList);
+
+    await prefs.setString('contacts', _newContacts);
+    _getContacts();
+    const snackBar = SnackBar(
+      backgroundColor: Colors.green,
+      content: Text('New contacts loaded!'),
+    );
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(snackBar);
   }
 }
