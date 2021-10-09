@@ -5,7 +5,7 @@ import 'package:simplex_chat/custom_scroll_behavior.dart';
 import 'package:simplex_chat/views/contacts/add_contact_view.dart';
 import 'package:simplex_chat/views/group/add_group_view.dart';
 import 'package:simplex_chat/views/onboarding/intro_view.dart';
-import 'package:simplex_chat/views/scan_invitation/scan_invitation_view.dart';
+import 'package:simplex_chat/views/scanInvitation/scan_invitation_view.dart';
 import 'package:simplex_chat/views/setup_profile_view.dart';
 
 void main() {
@@ -22,9 +22,10 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'SimpleX Chat',
       theme: ThemeData(
-        primarySwatch: Colors.teal,
         primaryColor: kPrimaryColor,
-        accentColor: kPrimaryColor,
+        colorScheme: ColorScheme.fromSwatch(
+          primarySwatch: Colors.teal,
+        ).copyWith(secondary: kPrimaryColor),
       ),
       builder: (context, widget) {
         return ScrollConfiguration(
