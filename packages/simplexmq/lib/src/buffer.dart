@@ -1,4 +1,4 @@
-import "dart:typed_data";
+import 'dart:typed_data';
 
 Uint8List encodeAscii(String s) => Uint8List.fromList(s.codeUnits);
 
@@ -29,8 +29,8 @@ Uint8List concatN(List<Uint8List> bs) {
   return a;
 }
 
-final charSpace = " ".codeUnitAt(0);
-final charEqual = "=".codeUnitAt(0);
+final charSpace = ' '.codeUnitAt(0);
+final charEqual = '='.codeUnitAt(0);
 final empty = Uint8List(0);
 
 Uint8List unwords(Uint8List b1, Uint8List b2) {
@@ -61,7 +61,7 @@ Uint8List unwordsN(List<Uint8List> bs) {
 }
 
 final _base64chars = Uint8List.fromList(
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+    'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
         .codeUnits);
 
 List<int?> __base64lookup() {

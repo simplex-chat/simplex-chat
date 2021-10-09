@@ -1,9 +1,9 @@
-import "dart:async";
-import "dart:collection";
-import "dart:io";
-import "dart:typed_data";
+import 'dart:async';
+import 'dart:collection';
+import 'dart:io';
+import 'dart:typed_data';
 
-import "package:simplexmq/simplexmq.dart";
+import 'package:simplexmq/simplexmq.dart';
 
 class _STReaders {
   final Completer<Uint8List> completer = Completer();
@@ -76,7 +76,7 @@ class SocketTransport implements Transport {
     _socket.destroy();
     while (_readers.isNotEmpty) {
       final r = _readers.removeFirst();
-      r.completer.completeError(Exception("socket closed"));
+      r.completer.completeError(Exception('socket closed'));
     }
   }
 

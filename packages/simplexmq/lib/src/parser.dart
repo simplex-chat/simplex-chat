@@ -1,18 +1,18 @@
-import "dart:typed_data";
-import "buffer.dart";
+import 'dart:typed_data';
+import 'buffer.dart';
 
 typedef BinaryTags<T> = Map<T, Uint8List>;
 
 int cc(String c) => c.codeUnitAt(0);
 
-final char0 = cc("0");
-final char9 = cc("9");
-final charLowerA = cc("a");
-final charLowerZ = cc("z");
-final charUpperA = cc("A");
-final charUpperZ = cc("Z");
-final charPlus = cc("+");
-final charSlash = cc("/");
+final char0 = cc('0');
+final char9 = cc('9');
+final charLowerA = cc('a');
+final charLowerZ = cc('z');
+final charUpperA = cc('A');
+final charUpperZ = cc('Z');
+final charPlus = cc('+');
+final charSlash = cc('/');
 
 class Parser {
   final Uint8List _s;
