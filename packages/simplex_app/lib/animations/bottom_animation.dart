@@ -6,7 +6,7 @@ class Animator extends StatefulWidget {
   final Widget child;
   final Duration time;
 
-  const Animator(this.child, this.time, {Key? key}): super(key: key);
+  const Animator(this.child, this.time, {Key? key}) : super(key: key);
 
   @override
   _AnimatorState createState() => _AnimatorState();
@@ -21,8 +21,8 @@ class _AnimatorState extends State<Animator>
   @override
   void initState() {
     super.initState();
-    animationController =
-        AnimationController(duration: const Duration(milliseconds: 290), vsync: this);
+    animationController = AnimationController(
+        duration: const Duration(milliseconds: 290), vsync: this);
     animation =
         CurvedAnimation(parent: animationController!, curve: Curves.easeInOut);
     timer = Timer(widget.time, animationController!.forward);
@@ -69,7 +69,7 @@ Duration wait() {
 class WidgetAnimator extends StatelessWidget {
   final Widget? child;
 
-  const WidgetAnimator({this.child, Key? key}): super(key: key);
+  const WidgetAnimator({this.child, Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
