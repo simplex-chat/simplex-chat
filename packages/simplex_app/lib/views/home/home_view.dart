@@ -1,12 +1,13 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
+import 'package:simplex_chat/constants.dart';
 import 'package:simplex_chat/providers/drawer_providers.dart';
+import 'package:simplex_chat/views/contacts/contacts_view.dart';
 import 'package:simplex_chat/views/group/group_view.dart';
-
 import 'package:simplex_chat/views/home/drawer.dart';
-import 'package:simplex_chat/views/home/home_view_widget.dart';
 import 'package:simplex_chat/views/invitations/invitation_view.dart';
 
 class HomeView extends StatefulWidget {
@@ -26,7 +27,7 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
 
   // views
   final List<Widget> _views = [
-    const HomeViewWidget(),
+    const ContactsView(),
     const Invitations(),
     const GroupView(),
   ];
@@ -34,6 +35,7 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
+
     animationController = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 250));
   }
@@ -41,64 +43,69 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     final _drawerProviders = Provider.of<DrawerProvider>(context);
-    return GestureDetector(
-      onHorizontalDragStart: _onDragStart,
-      onHorizontalDragUpdate: _onDragUpdate,
-      onHorizontalDragEnd: _onDragEnd,
-      behavior: HitTestBehavior.translucent,
-      child: AnimatedBuilder(
-        animation: animationController!,
-        builder: (context, _) {
-          return Material(
-            color: Colors.white70,
-            child: SafeArea(
-              child: Stack(
-                children: [
-                  Transform.translate(
-                    offset: Offset(
-                        widget.maxSlide! * (animationController!.value - 1), 0),
-                    child: Transform(
-                      transform: Matrix4.identity()
-                        ..setEntry(3, 2, 0.001)
-                        ..rotateY(
-                            math.pi / 2 * (1 - animationController!.value)),
-                      alignment: Alignment.centerRight,
-                      child: MyDrawer(
-                        animationController: animationController,
-                      ),
-                    ),
-                  ),
-                  Transform.translate(
-                    offset: Offset(
-                        widget.maxSlide! * animationController!.value, 0),
-                    child: Transform(
+    return WillPopScope(
+      onWillPop: _onWillPop,
+      child: GestureDetector(
+        onHorizontalDragStart: _onDragStart,
+        onHorizontalDragUpdate: _onDragUpdate,
+        onHorizontalDragEnd: _onDragEnd,
+        behavior: HitTestBehavior.translucent,
+        child: AnimatedBuilder(
+          animation: animationController!,
+          builder: (context, _) {
+            return Material(
+              color: Colors.white70,
+              child: SafeArea(
+                child: Stack(
+                  children: [
+                    Transform.translate(
+                      offset: Offset(
+                          widget.maxSlide! * (animationController!.value - 1),
+                          0),
+                      child: Transform(
                         transform: Matrix4.identity()
                           ..setEntry(3, 2, 0.001)
-                          ..rotateY(-math.pi / 2 * animationController!.value),
-                        alignment: Alignment.centerLeft,
-                        child: _views[_drawerProviders.currentIndex]),
-                  ),
-                  Positioned(
-                    top: MediaQuery.of(context).padding.top,
-                    left: MediaQuery.of(context).size.width * 0.03 +
-                        animationController!.value * widget.maxSlide!,
-                    child: InkWell(
-                      onTap: () {
-                        _drawerProviders.toggle(animationController);
-                      },
-                      child: Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: SvgPicture.asset(
-                          'assets/menu.svg',
+                          ..rotateY(
+                              math.pi / 2 * (1 - animationController!.value)),
+                        alignment: Alignment.centerRight,
+                        child: MyDrawer(
+                          animationController: animationController,
                         ),
                       ),
                     ),
-                  ),
-                ],
+                    Transform.translate(
+                      offset: Offset(
+                          widget.maxSlide! * animationController!.value, 0),
+                      child: Transform(
+                          transform: Matrix4.identity()
+                            ..setEntry(3, 2, 0.001)
+                            ..rotateY(
+                                -math.pi / 2 * animationController!.value),
+                          alignment: Alignment.centerLeft,
+                          child: _views[_drawerProviders.currentIndex]),
+                    ),
+                    Positioned(
+                      top: MediaQuery.of(context).padding.top,
+                      left: MediaQuery.of(context).size.width * 0.03 +
+                          animationController!.value * widget.maxSlide!,
+                      child: InkWell(
+                        onTap: () {
+                          _drawerProviders.toggle(animationController);
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: SvgPicture.asset(
+                            'assets/menu.svg',
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }
@@ -132,5 +139,31 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
     } else {
       animationController!.forward();
     }
+  }
+
+  Future<bool> _onWillPop() async {
+    return (await showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Exit Application', style: kMediumHeadingStyle),
+            content: const Text('Are You Sure?'),
+            actions: <Widget>[
+              TextButton(
+                child: const Text(
+                  'Yes',
+                  style: TextStyle(
+                    color: Colors.red,
+                  ),
+                ),
+                onPressed: () => SystemNavigator.pop(),
+              ),
+              TextButton(
+                child: const Text('No'),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+            ],
+          ),
+        )) ??
+        false;
   }
 }

@@ -1,21 +1,21 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:simplex_chat/animations/bottom_animation.dart';
 import 'package:simplex_chat/app_routes.dart';
 import 'package:simplex_chat/constants.dart';
 import 'package:simplex_chat/model/contact.dart';
-import 'package:simplex_chat/model/group.dart';
 import 'package:simplex_chat/views/conversation/conversation_view.dart';
 
-class HomeViewWidget extends StatefulWidget {
-  const HomeViewWidget({Key? key}) : super(key: key);
+class ContactsView extends StatefulWidget {
+  const ContactsView({Key? key}) : super(key: key);
 
   @override
-  _HomeViewWidgetState createState() => _HomeViewWidgetState();
+  _ContactsViewState createState() => _ContactsViewState();
 }
 
-class _HomeViewWidgetState extends State<HomeViewWidget> {
+class _ContactsViewState extends State<ContactsView> {
   bool? _eraseMedia = false;
 
   List<Contact> _contactsList = []; // for storing contacts
@@ -50,8 +50,20 @@ class _HomeViewWidgetState extends State<HomeViewWidget> {
     });
   }
 
+  String? _photo;
+  String? _displayName;
+
+  void _getUserData() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _displayName = prefs.getString('displayName');
+      _photo = prefs.getString('photo$_displayName');
+    });
+  }
+
   @override
   void initState() {
+    _getUserData();
     _getContacts();
     super.initState();
   }
@@ -66,15 +78,23 @@ class _HomeViewWidgetState extends State<HomeViewWidget> {
           child: Center(
             child: Column(
               children: [
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: GestureDetector(
-                    onTap: _addNewContacts,
-                    child: SvgPicture.asset(
-                      'assets/logo.svg',
-                      height: 40.0,
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text('Hi! $_displayName', style: kSmallHeadingStyle),
+                        const Text('Good day!'),
+                      ],
                     ),
-                  ),
+                    const SizedBox(width: 10.0),
+                    CircleAvatar(
+                      backgroundImage: _photo == null
+                          ? const AssetImage('assets/dp.png') as ImageProvider
+                          : FileImage(File(_photo!)),
+                    )
+                  ],
                 ),
                 const SizedBox(height: 15.0),
                 Row(
@@ -129,7 +149,7 @@ class _HomeViewWidgetState extends State<HomeViewWidget> {
                                 context,
                                 MaterialPageRoute(
                                   builder: (_) => ConversationView(
-                                    contact: _contactsList[index],
+                                    name: _contactsList[index].name,
                                   ),
                                 ),
                               ),

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:simplex_chat/constants.dart';
+import 'package:simplex_chat/model/contact.dart';
 import 'package:simplex_chat/model/group.dart';
 import 'package:simplex_chat/widgets/custom_text_field.dart';
 
@@ -15,10 +16,30 @@ class AddGroupView extends StatefulWidget {
 }
 
 class _AddGroupViewState extends State<AddGroupView> {
+  bool _addMember = false;
+  List<Contact> _contactsList = []; // for storing contacts
+
+  final List _members = [];
+
   final _formKey = GlobalKey<FormState>();
 
   final _displayNameController = TextEditingController();
   final _descController = TextEditingController();
+
+  // getting data from local storage FOR NOW!!
+  void _getContacts() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    final String? _contacts = prefs.getString('contacts');
+    setState(() {
+      _contactsList = List.from(Contact.decode(_contacts));
+    });
+  }
+
+  @override
+  void initState() {
+    _getContacts();
+    super.initState();
+  }
 
   @override
   void dispose() {
@@ -73,18 +94,77 @@ class _AddGroupViewState extends State<AddGroupView> {
                     hintText: 'e.g Friends from UK',
                   ),
                   const SizedBox(height: 10.0),
+                  _members.isNotEmpty
+                      ? const Text('Members Added')
+                      : Container(),
+                  SizedBox(height: _members.isNotEmpty ? 10.0 : 0.0),
+                  _members.isNotEmpty
+                      ? SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                              children: List.generate(
+                            _members.length,
+                            (index) => Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 5.0),
+                              child: InkWell(
+                                onTap: () {
+                                  setState(() {
+                                    _members.remove(_members[index]);
+                                  });
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.all(7.0),
+                                  decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(10.0),
+                                      color: Colors.grey.withAlpha(100)),
+                                  child: Text(_members[index]),
+                                ),
+                              ),
+                            ),
+                          )),
+                        )
+                      : Container(),
+                  SizedBox(height: _members.isNotEmpty ? 10.0 : 0.0),
                   ListTile(
                     leading: const Icon(Icons.person_add),
                     title: const Text('Add a member'),
-                    onTap: () {},
+                    onTap: () {
+                      setState(() {
+                        _addMember = !_addMember;
+                      });
+                    },
                   ),
+                  SizedBox(height: _addMember ? 10.0 : 0.0),
+                  _addMember ? const Text('Contacts Available') : Container(),
+                  SizedBox(height: _addMember ? 10.0 : 0.0),
+                  _addMember
+                      ? ListView(
+                          physics: const NeverScrollableScrollPhysics(),
+                          shrinkWrap: true,
+                          children: List.generate(
+                            _contactsList.length,
+                            (index) => ListTile(
+                              leading: const CircleAvatar(
+                                backgroundImage: AssetImage('assets/dp.png'),
+                              ),
+                              title: Text(_contactsList[index].name!),
+                              onTap: () {
+                                setState(() {
+                                  _members.add(_contactsList[index].name!);
+                                });
+                              },
+                            ),
+                          ),
+                        )
+                      : Container(),
                   const Divider(height: 30.0),
                   const ListTile(
                       leading: CircleAvatar(
                         backgroundImage: AssetImage('assets/dp.png'),
                       ),
                       title: Text('You'),
-                      trailing: Text(
+                      subtitle: Text(
                         'Owner',
                         style: TextStyle(color: Colors.grey, fontSize: 12.0),
                       )),
@@ -123,7 +203,7 @@ class _AddGroupViewState extends State<AddGroupView> {
       Group(
         groupName: name,
         groupDescription: desc,
-        members: <String>[],
+        members: _members,
       ),
     ];
     _groups = _localList + _groups;

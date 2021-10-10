@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:simplex_chat/model/contact.dart';
 import 'package:simplex_chat/widgets/message_bubble.dart';
 
 class ConversationView extends StatefulWidget {
-  final Contact? contact;
-  const ConversationView({Key? key, @required this.contact}) : super(key: key);
+  final String? name;
+  const ConversationView({Key? key, @required this.name}) : super(key: key);
 
   @override
   _ConversationViewState createState() => _ConversationViewState();
@@ -43,7 +42,7 @@ class _ConversationViewState extends State<ConversationView> {
       onTap: () => FocusScope.of(context).unfocus(),
       child: Scaffold(
         appBar: AppBar(
-          title: Text('${widget.contact!.name}'),
+          title: Text('${widget.name}'),
         ),
         body: Column(
           children: [

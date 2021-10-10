@@ -121,6 +121,13 @@ class _GroupViewState extends State<GroupView> {
                             style: const TextStyle(
                                 fontSize: 11, color: Colors.grey),
                           ),
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => ConversationView(
+                                  name: _groupList[index].groupName),
+                            ),
+                          ),
                           onLongPress: () =>
                               _conversationOptions(_groupList[index]),
                         ),

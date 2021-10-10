@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:simplex_chat/constants.dart';
 import 'package:simplex_chat/views/home/home_view.dart';
 import 'package:simplex_chat/widgets/custom_text_field.dart';
@@ -18,6 +19,18 @@ class _SetupProfileViewState extends State<SetupProfileView> {
   // controllers
   final TextEditingController _displayNameController = TextEditingController();
   final TextEditingController _fullNameController = TextEditingController();
+
+  // Image Picker --> DP properties
+  final imgPicker = ImagePicker();
+  File? image;
+  String photoUrl = '';
+  bool _uploading = false;
+  bool _imageUploaded = false;
+
+  // image buttons options
+  final _dpBtnText = ['Gallery', 'Camera'];
+  final _dpBtnColors = [Colors.purple, Colors.green];
+  final _dpBtnIcons = [Icons.photo_rounded, Icons.camera_alt_rounded];
 
   @override
   void dispose() {
@@ -40,13 +53,50 @@ class _SetupProfileViewState extends State<SetupProfileView> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: BackButton(
-                        onPressed: () => Navigator.pop(context),
+                    const SizedBox(height: 30),
+                    Center(
+                        child: SizedBox(
+                      height: 180.0,
+                      width: 180.0,
+                      child: Stack(
+                        children: [
+                          _imageUploaded
+                              ? CircleAvatar(
+                                  radius: 100.0,
+                                  backgroundImage: FileImage(image!),
+                                )
+                              : const CircleAvatar(
+                                  radius: 100.0,
+                                  backgroundImage: AssetImage('assets/dp.png'),
+                                ),
+                          Positioned(
+                            right: 0,
+                            bottom: 0,
+                            child: FloatingActionButton(
+                              backgroundColor: kSecondaryColor,
+                              elevation: 2.0,
+                              mini: true,
+                              onPressed: _updateProfilePic,
+                              child: _uploading
+                                  ? const SizedBox(
+                                      height: 18.0,
+                                      width: 18.0,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2.0,
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                                Colors.white),
+                                      ),
+                                    )
+                                  : const Icon(
+                                      Icons.add_a_photo,
+                                      size: 20,
+                                    ),
+                            ),
+                          )
+                        ],
                       ),
-                    ),
-                    const Center(child: UserProfilePic()),
+                    )),
                     const SizedBox(height: 25.0),
                     const Text('Display Name', style: kSmallHeadingStyle),
                     const SizedBox(height: 10.0),
@@ -91,10 +141,13 @@ class _SetupProfileViewState extends State<SetupProfileView> {
         visible: MediaQuery.of(context).viewInsets.bottom == 0,
         child: FloatingActionButton(
           heroTag: 'setup',
-          onPressed: () {
+          onPressed: () async {
             if (_formKey.currentState!.validate()) {
               FocusScope.of(context).unfocus();
-              Navigator.push(
+
+              await _createProfile();
+
+              await Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (_) => HomeView(
@@ -102,6 +155,10 @@ class _SetupProfileViewState extends State<SetupProfileView> {
                   ),
                 ),
               );
+
+              _displayNameController.clear();
+              _fullNameController.clear();
+              image = null;
             }
           },
           child: const Icon(Icons.check),
@@ -109,70 +166,16 @@ class _SetupProfileViewState extends State<SetupProfileView> {
       ),
     );
   }
-}
 
-class UserProfilePic extends StatefulWidget {
-  const UserProfilePic({Key? key}) : super(key: key);
+  // create profile and store in local
+  Future<void> _createProfile() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString('displayName', _displayNameController.text.trim());
+    await prefs.setString('fullName', _fullNameController.text.trim());
+    await prefs.setString(
+        'photo${_displayNameController.text.trim()}', photoUrl);
 
-  @override
-  _UserProfilePicState createState() => _UserProfilePicState();
-}
-
-class _UserProfilePicState extends State<UserProfilePic> {
-  // Image Picker --> DP properties
-  final imgPicker = ImagePicker();
-  File? image;
-  String photoUrl = '';
-  bool _uploading = false;
-  bool _imageUploaded = false;
-
-  // image buttons options
-  final _dpBtnText = ['Gallery', 'Camera'];
-  final _dpBtnColors = [Colors.purple, Colors.green];
-  final _dpBtnIcons = [Icons.photo_rounded, Icons.camera_alt_rounded];
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 180.0,
-      width: 180.0,
-      child: Stack(
-        children: [
-          _imageUploaded
-              ? CircleAvatar(
-                  radius: 100.0,
-                  backgroundImage: FileImage(image!),
-                )
-              : const CircleAvatar(
-                  radius: 100.0,
-                  backgroundImage: AssetImage('assets/dp.png'),
-                ),
-          Positioned(
-            right: 0,
-            bottom: 0,
-            child: FloatingActionButton(
-              backgroundColor: kSecondaryColor,
-              elevation: 2.0,
-              mini: true,
-              onPressed: _updateProfilePic,
-              child: _uploading
-                  ? const SizedBox(
-                      height: 18.0,
-                      width: 18.0,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2.0,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                      ),
-                    )
-                  : const Icon(
-                      Icons.add_a_photo,
-                      size: 20,
-                    ),
-            ),
-          )
-        ],
-      ),
-    );
+    debugPrint(prefs.getString('photo'));
   }
 
   void _updateProfilePic() {
@@ -250,6 +253,7 @@ class _UserProfilePicState extends State<UserProfilePic> {
         setState(() {
           _uploading = false;
           _imageUploaded = true;
+          photoUrl = file.path;
         });
       } else {
         setState(() {
@@ -279,6 +283,7 @@ class _UserProfilePicState extends State<UserProfilePic> {
         setState(() {
           _uploading = false;
           _imageUploaded = true;
+          photoUrl = file.path;
         });
       } else {
         setState(() {

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:simplex_chat/app_routes.dart';
 import 'package:simplex_chat/constants.dart';
 import 'package:simplex_chat/providers/drawer_providers.dart';
 
@@ -123,12 +125,26 @@ class MyDrawer extends StatelessWidget {
                 leading: const Icon(Icons.exit_to_app_rounded),
                 title: const Text('Logout'),
                 subtitle: const Text('Good bye! See you soon :)'),
-                onTap: () => Navigator.pop(context),
+                onTap: () => _logout(context),
               ),
             ],
           ),
         ),
       ),
     );
+  }
+
+  void _logout(BuildContext context) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+
+    await Navigator.pushNamedAndRemoveUntil(
+      context,
+      AppRoutes.setupProfile,
+      (route) => route.settings.name == AppRoutes.setupProfile ? true : false,
+    );
+    String? _name = prefs.getString('displayName');
+    await prefs.remove('displayName');
+    await prefs.remove('fullName');
+    await prefs.remove('photo$_name');
   }
 }
