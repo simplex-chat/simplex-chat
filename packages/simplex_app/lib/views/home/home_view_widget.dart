@@ -5,6 +5,7 @@ import 'package:simplex_chat/animations/bottom_animation.dart';
 import 'package:simplex_chat/app_routes.dart';
 import 'package:simplex_chat/constants.dart';
 import 'package:simplex_chat/model/contact.dart';
+import 'package:simplex_chat/model/group.dart';
 import 'package:simplex_chat/views/conversation/conversation_view.dart';
 
 class HomeViewWidget extends StatefulWidget {
@@ -22,7 +23,6 @@ class _HomeViewWidgetState extends State<HomeViewWidget> {
   final List<String> _options = [
     'Add contact',
     'Scan invitation',
-    'New group',
   ];
 
   // delete a contact
@@ -76,7 +76,18 @@ class _HomeViewWidgetState extends State<HomeViewWidget> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 10.0),
+                const SizedBox(height: 15.0),
+                Row(
+                  children: const [
+                    Icon(Icons.chat, color: kPrimaryColor),
+                    SizedBox(width: 8.0),
+                    Text(
+                      'Chats',
+                      style: kHeadingStyle,
+                    )
+                  ],
+                ),
+                const SizedBox(height: 5.0),
                 _contactsList.isEmpty
                     ? SizedBox(
                         height: MediaQuery.of(context).size.height * 0.7,
@@ -137,14 +148,12 @@ class _HomeViewWidgetState extends State<HomeViewWidget> {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(5.0),
         ),
-        offset: const Offset(-10, -180),
+        offset: const Offset(-10, -120),
         onSelected: (value) {
           if (value == _options[0]) {
             Navigator.pushNamed(context, AppRoutes.addContact);
-          } else if (value == _options[1]) {
-            Navigator.pushNamed(context, AppRoutes.scanInvitation);
           } else {
-            Navigator.pushNamed(context, AppRoutes.addGroup);
+            Navigator.pushNamed(context, AppRoutes.scanInvitation);
           }
         },
         itemBuilder: (context) => _options

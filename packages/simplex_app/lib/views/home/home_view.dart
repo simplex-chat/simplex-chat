@@ -1,9 +1,13 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:provider/provider.dart';
+import 'package:simplex_chat/providers/drawer_providers.dart';
+import 'package:simplex_chat/views/group/group_view.dart';
 
 import 'package:simplex_chat/views/home/drawer.dart';
 import 'package:simplex_chat/views/home/home_view_widget.dart';
+import 'package:simplex_chat/views/invitations/invitation_view.dart';
 
 class HomeView extends StatefulWidget {
   final double? maxSlide;
@@ -20,9 +24,12 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
   AnimationController? animationController;
   bool? _canBeDragged;
 
-  void toggle() => animationController!.isDismissed
-      ? animationController!.forward()
-      : animationController!.reverse();
+  // views
+  final List<Widget> _views = [
+    const HomeViewWidget(),
+    const Invitations(),
+    const GroupView(),
+  ];
 
   @override
   void initState() {
@@ -33,6 +40,7 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
+    final _drawerProviders = Provider.of<DrawerProvider>(context);
     return GestureDetector(
       onHorizontalDragStart: _onDragStart,
       onHorizontalDragUpdate: _onDragUpdate,
@@ -55,7 +63,9 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
                         ..rotateY(
                             math.pi / 2 * (1 - animationController!.value)),
                       alignment: Alignment.centerRight,
-                      child: const MyDrawer(),
+                      child: MyDrawer(
+                        animationController: animationController,
+                      ),
                     ),
                   ),
                   Transform.translate(
@@ -66,14 +76,16 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
                           ..setEntry(3, 2, 0.001)
                           ..rotateY(-math.pi / 2 * animationController!.value),
                         alignment: Alignment.centerLeft,
-                        child: const HomeViewWidget()),
+                        child: _views[_drawerProviders.currentIndex]),
                   ),
                   Positioned(
                     top: MediaQuery.of(context).padding.top,
                     left: MediaQuery.of(context).size.width * 0.03 +
                         animationController!.value * widget.maxSlide!,
                     child: InkWell(
-                      onTap: toggle,
+                      onTap: () {
+                        _drawerProviders.toggle(animationController);
+                      },
                       child: Padding(
                         padding: const EdgeInsets.all(8.0),
                         child: SvgPicture.asset(
