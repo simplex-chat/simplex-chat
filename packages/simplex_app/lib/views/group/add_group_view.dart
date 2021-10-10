@@ -2,7 +2,9 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:simplex_chat/constants.dart';
+import 'package:simplex_chat/model/group.dart';
 import 'package:simplex_chat/widgets/custom_text_field.dart';
 
 class AddGroupView extends StatefulWidget {
@@ -13,11 +15,15 @@ class AddGroupView extends StatefulWidget {
 }
 
 class _AddGroupViewState extends State<AddGroupView> {
+  final _formKey = GlobalKey<FormState>();
+
   final _displayNameController = TextEditingController();
+  final _descController = TextEditingController();
 
   @override
   void dispose() {
     _displayNameController.dispose();
+    _descController.dispose();
     super.dispose();
   }
 
@@ -27,63 +33,112 @@ class _AddGroupViewState extends State<AddGroupView> {
       onTap: () => FocusScope.of(context).unfocus(),
       child: Scaffold(
         appBar: AppBar(
+          leading: BackButton(
+            onPressed: () => Navigator.of(context).pop(false),
+          ),
           title: const Text('New Group'),
         ),
-        body: Padding(
-          padding: const EdgeInsets.all(12.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const SizedBox(height: 10.0),
-              const Center(
-                child: GroupDP(),
-              ),
-              const SizedBox(height: 25.0),
-              const Text('Group Name', style: kSmallHeadingStyle),
-              const SizedBox(height: 10.0),
-              CustomTextField(
-                textEditingController: _displayNameController,
-                textInputType: TextInputType.name,
-                hintText: 'e.g College friends',
-                validatorFtn: (value) {
-                  if (value!.isEmpty) {
-                    return 'Group name cannot be empty!';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 10.0),
-              ListTile(
-                leading: const Icon(Icons.person_add),
-                title: const Text('Add a member'),
-                onTap: () {},
-              ),
-              const Divider(height: 30.0),
-              const ListTile(
-                  leading: CircleAvatar(
-                    backgroundImage: AssetImage('assets/dp.png'),
+        body: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(12.0),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const SizedBox(height: 10.0),
+                  const Center(
+                    child: GroupDP(),
                   ),
-                  title: Text('You'),
-                  trailing: Text(
-                    'Owner',
-                    style: TextStyle(color: Colors.grey, fontSize: 12.0),
-                  )),
-            ],
+                  const SizedBox(height: 25.0),
+                  const Text('Group Name', style: kSmallHeadingStyle),
+                  const SizedBox(height: 10.0),
+                  CustomTextField(
+                    textEditingController: _displayNameController,
+                    textInputType: TextInputType.name,
+                    hintText: 'e.g College friends',
+                    validatorFtn: (value) {
+                      if (value!.isEmpty) {
+                        return 'Group name cannot be empty!';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 10.0),
+                  const Text('Group Description', style: kSmallHeadingStyle),
+                  const SizedBox(height: 10.0),
+                  CustomTextField(
+                    textEditingController: _descController,
+                    textInputType: TextInputType.text,
+                    hintText: 'e.g Friends from UK',
+                  ),
+                  const SizedBox(height: 10.0),
+                  ListTile(
+                    leading: const Icon(Icons.person_add),
+                    title: const Text('Add a member'),
+                    onTap: () {},
+                  ),
+                  const Divider(height: 30.0),
+                  const ListTile(
+                      leading: CircleAvatar(
+                        backgroundImage: AssetImage('assets/dp.png'),
+                      ),
+                      title: Text('You'),
+                      trailing: Text(
+                        'Owner',
+                        style: TextStyle(color: Colors.grey, fontSize: 12.0),
+                      )),
+                ],
+              ),
+            ),
           ),
         ),
         floatingActionButton: Visibility(
           visible: MediaQuery.of(context).viewInsets.bottom == 0,
           child: FloatingActionButton(
             heroTag: 'setup',
-            onPressed: () {
-              FocusScope.of(context).unfocus();
-              Navigator.pop(context);
+            onPressed: () async {
+              if (_formKey.currentState!.validate()) {
+                FocusScope.of(context).unfocus();
+                _addNewGroup(_displayNameController.text.trim(),
+                    _descController.text.trim());
+                _descController.clear();
+                _displayNameController.clear();
+                Navigator.of(context).pop(true);
+              }
             },
             child: const Icon(Icons.check),
           ),
         ),
       ),
     );
+  }
+
+  void _addNewGroup(String name, String desc) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    List<Group> _localList = [];
+    _localList = List.from(Group.decode(prefs.getString('groups')));
+
+    List<Group> _groups = [
+      Group(
+        groupName: name,
+        groupDescription: desc,
+        members: <String>[],
+      ),
+    ];
+    _groups = _localList + _groups;
+
+    final String _newGroups = Group.encode(_groups);
+
+    await prefs.setString('groups', _newGroups);
+
+    var snackBar = SnackBar(
+      backgroundColor: Colors.green,
+      content: Text('$name added!'),
+    );
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(snackBar);
   }
 }
 
