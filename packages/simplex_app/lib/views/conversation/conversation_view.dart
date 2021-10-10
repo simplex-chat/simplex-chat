@@ -97,7 +97,7 @@ class _ConversationViewState extends State<ConversationView> {
                   const SizedBox(width: 15.0),
                   InkWell(
                     onTap: () async {
-                      if (_messageFieldController.text != "") {
+                      if (_messageFieldController.text != '') {
                         setState(() {
                           _chatMessages.add(MessageBubble(
                             isUser: true,
