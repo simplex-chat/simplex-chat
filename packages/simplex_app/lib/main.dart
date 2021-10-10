@@ -9,6 +9,7 @@ import 'package:simplex_chat/views/group/add_group_view.dart';
 import 'package:simplex_chat/views/onboarding/intro_view.dart';
 import 'package:simplex_chat/views/scanInvitation/scan_invitation_view.dart';
 import 'package:simplex_chat/views/setup_profile_view.dart';
+import 'package:simplex_chat/views/splash_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -41,8 +42,9 @@ class MyApp extends StatelessWidget {
               child: widget!,
             );
           },
-          initialRoute: AppRoutes.intro,
+          initialRoute: AppRoutes.splash,
           routes: <String, WidgetBuilder>{
+            AppRoutes.splash: (_) => const SplashScreen(),
             AppRoutes.intro: (_) => const IntroView(),
             AppRoutes.setupProfile: (_) => const SetupProfileView(),
             AppRoutes.addContact: (_) => const AddContactView(),
