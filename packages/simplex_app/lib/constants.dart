@@ -9,11 +9,13 @@ const TextStyle kHeadingStyle = TextStyle(
   fontSize: 28.0,
   fontWeight: FontWeight.bold,
   letterSpacing: 1.3,
+  color: kPrimaryColor,
 );
 
 const TextStyle kMediumHeadingStyle = TextStyle(
   fontSize: 20.0,
   fontWeight: FontWeight.w500,
+  color: kPrimaryColor,
 );
 
 const TextStyle kSmallHeadingStyle = TextStyle(
