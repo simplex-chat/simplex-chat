@@ -4,7 +4,7 @@ import 'package:simplex_chat/constants.dart';
 import 'package:simplex_chat/widgets/custom_btn.dart';
 
 class ScanInvitationView extends StatelessWidget {
-  const ScanInvitationView({Key? key}) : super(key: key);
+  const ScanInvitationView({Key key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {

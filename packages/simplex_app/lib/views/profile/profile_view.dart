@@ -4,17 +4,16 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:simplex_chat/constants.dart';
-import 'package:simplex_chat/views/home/home_view.dart';
 import 'package:simplex_chat/widgets/custom_text_field.dart';
 
-class SetupProfileView extends StatefulWidget {
-  const SetupProfileView({Key key}) : super(key: key);
+class ProfileView extends StatefulWidget {
+  const ProfileView({Key key}) : super(key: key);
 
   @override
-  _SetupProfileViewState createState() => _SetupProfileViewState();
+  _ProfileViewState createState() => _ProfileViewState();
 }
 
-class _SetupProfileViewState extends State<SetupProfileView> {
+class _ProfileViewState extends State<ProfileView> {
   final _formKey = GlobalKey<FormState>();
   // controllers
   final TextEditingController _displayNameController = TextEditingController();
@@ -23,14 +22,37 @@ class _SetupProfileViewState extends State<SetupProfileView> {
   // Image Picker --> DP properties
   final imgPicker = ImagePicker();
   File image;
-  String photoUrl = '';
+  String _photo = '';
   bool _uploading = false;
-  bool _imageUploaded = false;
 
   // image buttons options
-  final _dpBtnText = ['Gallery', 'Camera'];
-  final _dpBtnColors = [Colors.purple, Colors.green];
-  final _dpBtnIcons = [Icons.photo_rounded, Icons.camera_alt_rounded];
+  final _dpBtnText = ['Remove', 'Gallery', 'Camera'];
+  final _dpBtnColors = [Colors.red, Colors.purple, Colors.green];
+  final _dpBtnIcons = [
+    Icons.delete,
+    Icons.photo_rounded,
+    Icons.camera_alt_rounded
+  ];
+
+  String _displayName = '';
+  String _fullName = '';
+
+  void _getUserData() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _fullName = prefs.getString('fullName');
+      _displayName = prefs.getString('displayName');
+      _photo = prefs.getString('photo$_displayName');
+    });
+    _displayNameController.text = _displayName;
+    if (_fullName != null) _fullNameController.text = _fullName;
+  }
+
+  @override
+  void initState() {
+    _getUserData();
+    super.initState();
+  }
 
   @override
   void dispose() {
@@ -60,10 +82,10 @@ class _SetupProfileViewState extends State<SetupProfileView> {
                       width: 180.0,
                       child: Stack(
                         children: [
-                          _imageUploaded
+                          _photo != ''
                               ? CircleAvatar(
                                   radius: 100.0,
-                                  backgroundImage: FileImage(image),
+                                  backgroundImage: FileImage(File(_photo)),
                                 )
                               : const CircleAvatar(
                                   radius: 100.0,
@@ -138,21 +160,15 @@ class _SetupProfileViewState extends State<SetupProfileView> {
           onPressed: () async {
             if (_formKey.currentState.validate()) {
               FocusScope.of(context).unfocus();
-
               await _createProfile();
-
-              await Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => HomeView(
-                    maxSlide: MediaQuery.of(context).size.width * 0.82,
-                  ),
-                ),
+              const snackBar = SnackBar(
+                backgroundColor: Colors.green,
+                content: Text('Profile updated!'),
               );
 
-              _displayNameController.clear();
-              _fullNameController.clear();
-              image = null;
+              ScaffoldMessenger.of(context)
+                ..hideCurrentSnackBar()
+                ..showSnackBar(snackBar);
             }
           },
           child: const Icon(Icons.check),
@@ -166,8 +182,7 @@ class _SetupProfileViewState extends State<SetupProfileView> {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setString('displayName', _displayNameController.text.trim());
     await prefs.setString('fullName', _fullNameController.text.trim());
-    await prefs.setString(
-        'photo${_displayNameController.text.trim()}', photoUrl);
+    await prefs.setString('photo${_displayNameController.text.trim()}', _photo);
 
     debugPrint(prefs.getString('photo'));
   }
@@ -204,15 +219,18 @@ class _SetupProfileViewState extends State<SetupProfileView> {
             const SizedBox(height: 15.0),
             Row(
                 children: List.generate(
-              2,
+              3,
               (index) => Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   MaterialButton(
                     color: _dpBtnColors.map((e) => e).elementAt(index),
                     shape: const CircleBorder(),
-                    onPressed:
-                        index == 0 ? () => _galleryPic() : () => _cameraPic(),
+                    onPressed: index == 0
+                        ? () => _removePic()
+                        : index == 1
+                            ? () => _galleryPic()
+                            : () => _cameraPic(),
                     child: Icon(
                       _dpBtnIcons.map((e) => e).elementAt(index),
                       color: Colors.white,
@@ -231,6 +249,14 @@ class _SetupProfileViewState extends State<SetupProfileView> {
     );
   }
 
+  void _removePic() {
+    setState(() {
+      image = null;
+      _photo = '';
+    });
+    Navigator.pop(context);
+  }
+
   void _cameraPic() async {
     try {
       setState(() {
@@ -246,8 +272,7 @@ class _SetupProfileViewState extends State<SetupProfileView> {
         image = File(file.path);
         setState(() {
           _uploading = false;
-          _imageUploaded = true;
-          photoUrl = file.path;
+          _photo = file.path;
         });
       } else {
         setState(() {
@@ -277,8 +302,7 @@ class _SetupProfileViewState extends State<SetupProfileView> {
         image = File(file.path);
         setState(() {
           _uploading = false;
-          _imageUploaded = true;
-          photoUrl = file.path;
+          _photo = file.path;
         });
       } else {
         setState(() {

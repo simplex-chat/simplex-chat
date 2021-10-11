@@ -7,19 +7,17 @@ import 'package:simplex_chat/constants.dart';
 import 'package:simplex_chat/providers/drawer_providers.dart';
 
 class MyDrawer extends StatelessWidget {
-  final AnimationController? animationController;
-  const MyDrawer({Key? key, this.animationController}) : super(key: key);
+  const MyDrawer({Key key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     final _drawerProviders = Provider.of<DrawerProvider>(context);
     return SizedBox(
       width: MediaQuery.of(context).size.width * 0.82,
-      child: Material(
-        color: Colors.white,
-        child: Padding(
-          padding: const EdgeInsets.all(10.0),
-          child: Column(
+      child: Padding(
+        padding: const EdgeInsets.all(10.0),
+        child: Builder(builder: (context) {
+          return Column(
             children: [
               const SizedBox(height: 30.0),
               SvgPicture.asset(
@@ -32,30 +30,22 @@ class MyDrawer extends StatelessWidget {
                     ? kPrimaryColor
                     : Colors.transparent,
                 leading: Icon(
-                  Icons.contact_phone,
+                  Icons.person,
                   color: _drawerProviders.currentIndex == 0
                       ? Colors.white
                       : Colors.grey,
                 ),
                 title: Text(
-                  'Your contacts',
+                  'Your Profile',
                   style: TextStyle(
                     color: _drawerProviders.currentIndex == 0
                         ? Colors.white
                         : Colors.black,
                   ),
                 ),
-                subtitle: Text(
-                  'Start a conversation right away!',
-                  style: TextStyle(
-                    color: _drawerProviders.currentIndex == 0
-                        ? Colors.white
-                        : Colors.grey,
-                  ),
-                ),
                 onTap: () {
                   _drawerProviders.currentIndex = 0;
-                  _drawerProviders.toggle(animationController);
+                  Navigator.pop(context);
                 },
               ),
               ListTile(
@@ -63,30 +53,22 @@ class MyDrawer extends StatelessWidget {
                     ? kPrimaryColor
                     : Colors.transparent,
                 leading: Icon(
-                  Icons.insert_invitation,
+                  Icons.contact_phone,
                   color: _drawerProviders.currentIndex == 1
                       ? Colors.white
                       : Colors.grey,
                 ),
                 title: Text(
-                  'Invitations',
+                  'Your contacts',
                   style: TextStyle(
                     color: _drawerProviders.currentIndex == 1
                         ? Colors.white
                         : Colors.black,
                   ),
                 ),
-                subtitle: Text(
-                  'Increase your contact circle!',
-                  style: TextStyle(
-                    color: _drawerProviders.currentIndex == 1
-                        ? Colors.white
-                        : Colors.grey,
-                  ),
-                ),
                 onTap: () {
                   _drawerProviders.currentIndex = 1;
-                  _drawerProviders.toggle(animationController);
+                  Navigator.pop(context);
                 },
               ),
               ListTile(
@@ -94,47 +76,62 @@ class MyDrawer extends StatelessWidget {
                     ? kPrimaryColor
                     : Colors.transparent,
                 leading: Icon(
-                  Icons.group,
+                  Icons.insert_invitation,
                   color: _drawerProviders.currentIndex == 2
                       ? Colors.white
                       : Colors.grey,
                 ),
                 title: Text(
-                  'Your groups',
+                  'Invitations',
                   style: TextStyle(
                     color: _drawerProviders.currentIndex == 2
                         ? Colors.white
                         : Colors.black,
                   ),
                 ),
-                subtitle: Text(
-                  'Get in touch with numbers!',
+                onTap: () {
+                  _drawerProviders.currentIndex = 2;
+                  Navigator.pop(context);
+                },
+              ),
+              ListTile(
+                tileColor: _drawerProviders.currentIndex == 3
+                    ? kPrimaryColor
+                    : Colors.transparent,
+                leading: Icon(
+                  Icons.group,
+                  color: _drawerProviders.currentIndex == 3
+                      ? Colors.white
+                      : Colors.grey,
+                ),
+                title: Text(
+                  'Your groups',
                   style: TextStyle(
-                    color: _drawerProviders.currentIndex == 2
+                    color: _drawerProviders.currentIndex == 3
                         ? Colors.white
-                        : Colors.grey,
+                        : Colors.black,
                   ),
                 ),
                 onTap: () {
-                  _drawerProviders.currentIndex = 2;
-                  _drawerProviders.toggle(animationController);
+                  _drawerProviders.currentIndex = 3;
+                  Navigator.pop(context);
                 },
               ),
               const Spacer(),
               ListTile(
-                leading: const Icon(Icons.exit_to_app_rounded),
-                title: const Text('Logout'),
-                subtitle: const Text('Good bye! See you soon :)'),
-                onTap: () => _logout(context),
+                leading: const Icon(Icons.refresh),
+                title: const Text('Switch Profile'),
+                subtitle: const Text('*Not supported yet!*'),
+                onTap: () => _switchProfile(context),
               ),
             ],
-          ),
-        ),
+          );
+        }),
       ),
     );
   }
 
-  void _logout(BuildContext context) async {
+  void _switchProfile(BuildContext context) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
 
     await Navigator.pushNamedAndRemoveUntil(
@@ -142,7 +139,7 @@ class MyDrawer extends StatelessWidget {
       AppRoutes.setupProfile,
       (route) => route.settings.name == AppRoutes.setupProfile ? true : false,
     );
-    String? _name = prefs.getString('displayName');
+    String _name = prefs.getString('displayName');
     await prefs.remove('displayName');
     await prefs.remove('fullName');
     await prefs.remove('photo$_name');

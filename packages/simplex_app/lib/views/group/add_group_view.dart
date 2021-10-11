@@ -9,34 +9,61 @@ import 'package:simplex_chat/model/group.dart';
 import 'package:simplex_chat/widgets/custom_text_field.dart';
 
 class AddGroupView extends StatefulWidget {
-  const AddGroupView({Key? key}) : super(key: key);
+  const AddGroupView({Key key}) : super(key: key);
 
   @override
   _AddGroupViewState createState() => _AddGroupViewState();
 }
 
 class _AddGroupViewState extends State<AddGroupView> {
-  bool _addMember = false;
-  List<Contact> _contactsList = []; // for storing contacts
+  // Image Picker --> DP properties
+  final imgPicker = ImagePicker();
+  File image;
+  String _groupPhotoPath = '';
+  bool _uploading = false;
+  bool _imageUploaded = false;
 
   final List _members = [];
-
   final _formKey = GlobalKey<FormState>();
-
   final _displayNameController = TextEditingController();
   final _descController = TextEditingController();
 
-  // getting data from local storage FOR NOW!!
+  bool _addMember = false;
+  List<Contact> _contactsList = []; // for storing contacts
+
+  // image buttons options
+  final _dpBtnText = ['Remove', 'Gallery', 'Camera'];
+  final _dpBtnColors = [Colors.red, Colors.purple, Colors.green];
+  final _dpBtnIcons = [
+    Icons.delete,
+    Icons.photo_rounded,
+    Icons.camera_alt_rounded
+  ];
+
+  // getting data from local storage FOR NOW
   void _getContacts() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    final String? _contacts = prefs.getString('contacts');
+    final String _contacts = prefs.getString('contacts');
     setState(() {
       _contactsList = List.from(Contact.decode(_contacts));
     });
   }
 
+  String _userPhotoPath = '';
+  void _getUserPhoto() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String _photo = prefs.getString('photo${prefs.getString('displayName')}');
+    if (_photo != null) {
+      setState(() {
+        _userPhotoPath = _photo;
+      });
+    }
+    debugPrint(_userPhotoPath);
+  }
+
   @override
   void initState() {
+    _getUserPhoto();
     _getContacts();
     super.initState();
   }
@@ -68,8 +95,50 @@ class _AddGroupViewState extends State<AddGroupView> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   const SizedBox(height: 10.0),
-                  const Center(
-                    child: GroupDP(),
+                  Center(
+                    child: SizedBox(
+                      height: 180.0,
+                      width: 180.0,
+                      child: Stack(
+                        children: [
+                          _imageUploaded
+                              ? CircleAvatar(
+                                  radius: 100.0,
+                                  backgroundImage:
+                                      FileImage(File(_groupPhotoPath)),
+                                )
+                              : const CircleAvatar(
+                                  radius: 100.0,
+                                  backgroundImage: AssetImage('assets/dp.png'),
+                                ),
+                          Positioned(
+                            right: 0,
+                            bottom: 0,
+                            child: FloatingActionButton(
+                              backgroundColor: kSecondaryColor,
+                              elevation: 2.0,
+                              mini: true,
+                              onPressed: _updateProfilePic,
+                              child: _uploading
+                                  ? const SizedBox(
+                                      height: 18.0,
+                                      width: 18.0,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2.0,
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                                Colors.white),
+                                      ),
+                                    )
+                                  : const Icon(
+                                      Icons.add_a_photo,
+                                      size: 20,
+                                    ),
+                            ),
+                          )
+                        ],
+                      ),
+                    ),
                   ),
                   const SizedBox(height: 25.0),
                   const Text('Group Name', style: kSmallHeadingStyle),
@@ -79,8 +148,8 @@ class _AddGroupViewState extends State<AddGroupView> {
                     textInputType: TextInputType.name,
                     hintText: 'e.g College friends',
                     validatorFtn: (value) {
-                      if (value!.isEmpty) {
-                        return 'Group name cannot be empty!';
+                      if (value.isEmpty) {
+                        return 'Group name cannot be empty';
                       }
                       return null;
                     },
@@ -148,10 +217,10 @@ class _AddGroupViewState extends State<AddGroupView> {
                               leading: const CircleAvatar(
                                 backgroundImage: AssetImage('assets/dp.png'),
                               ),
-                              title: Text(_contactsList[index].name!),
+                              title: Text(_contactsList[index].name),
                               onTap: () {
                                 setState(() {
-                                  _members.add(_contactsList[index].name!);
+                                  _members.add(_contactsList[index].name);
                                 });
                               },
                             ),
@@ -159,12 +228,14 @@ class _AddGroupViewState extends State<AddGroupView> {
                         )
                       : Container(),
                   const Divider(height: 30.0),
-                  const ListTile(
+                  ListTile(
                       leading: CircleAvatar(
-                        backgroundImage: AssetImage('assets/dp.png'),
+                        backgroundImage: _userPhotoPath == ''
+                            ? const AssetImage('assets/dp.png') as ImageProvider
+                            : FileImage(File(_userPhotoPath)),
                       ),
-                      title: Text('You'),
-                      subtitle: Text(
+                      title: const Text('You'),
+                      subtitle: const Text(
                         'Owner',
                         style: TextStyle(color: Colors.grey, fontSize: 12.0),
                       )),
@@ -178,9 +249,11 @@ class _AddGroupViewState extends State<AddGroupView> {
           child: FloatingActionButton(
             heroTag: 'setup',
             onPressed: () async {
-              if (_formKey.currentState!.validate()) {
+              if (_formKey.currentState.validate()) {
                 FocusScope.of(context).unfocus();
-                _addNewGroup(_displayNameController.text.trim(),
+                _addNewGroup(
+                    _groupPhotoPath,
+                    _displayNameController.text.trim(),
                     _descController.text.trim());
                 _descController.clear();
                 _displayNameController.clear();
@@ -190,102 +263,6 @@ class _AddGroupViewState extends State<AddGroupView> {
             child: const Icon(Icons.check),
           ),
         ),
-      ),
-    );
-  }
-
-  void _addNewGroup(String name, String desc) async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    List<Group> _localList = [];
-    _localList = List.from(Group.decode(prefs.getString('groups')));
-
-    List<Group> _groups = [
-      Group(
-        groupName: name,
-        groupDescription: desc,
-        members: _members,
-      ),
-    ];
-    _groups = _localList + _groups;
-
-    final String _newGroups = Group.encode(_groups);
-
-    await prefs.setString('groups', _newGroups);
-
-    var snackBar = SnackBar(
-      backgroundColor: Colors.green,
-      content: Text('$name added!'),
-    );
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(snackBar);
-  }
-}
-
-class GroupDP extends StatefulWidget {
-  const GroupDP({Key? key}) : super(key: key);
-
-  @override
-  _GroupDPState createState() => _GroupDPState();
-}
-
-class _GroupDPState extends State<GroupDP> {
-  // Image Picker --> DP properties
-  final imgPicker = ImagePicker();
-  File? image;
-  String photoUrl = '';
-  bool _uploading = false;
-  bool _imageUploaded = false;
-
-  // image buttons options
-  final _dpBtnText = ['Remove', 'Gallery', 'Camera'];
-  final _dpBtnColors = [Colors.red, Colors.purple, Colors.green];
-  final _dpBtnIcons = [
-    Icons.delete,
-    Icons.photo_rounded,
-    Icons.camera_alt_rounded
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 180.0,
-      width: 180.0,
-      child: Stack(
-        children: [
-          _imageUploaded
-              ? CircleAvatar(
-                  radius: 100.0,
-                  backgroundImage: FileImage(image!),
-                )
-              : const CircleAvatar(
-                  radius: 100.0,
-                  backgroundImage: AssetImage('assets/dp.png'),
-                ),
-          Positioned(
-            right: 0,
-            bottom: 0,
-            child: FloatingActionButton(
-              backgroundColor: kSecondaryColor,
-              elevation: 2.0,
-              mini: true,
-              onPressed: _updateProfilePic,
-              child: _uploading
-                  ? const SizedBox(
-                      height: 18.0,
-                      width: 18.0,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2.0,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                      ),
-                    )
-                  : const Icon(
-                      Icons.add_a_photo,
-                      size: 20,
-                    ),
-            ),
-          )
-        ],
       ),
     );
   }
@@ -356,6 +333,7 @@ class _GroupDPState extends State<GroupDP> {
     setState(() {
       _imageUploaded = false;
       image = null;
+      _groupPhotoPath = '';
     });
     Navigator.pop(context);
   }
@@ -376,6 +354,7 @@ class _GroupDPState extends State<GroupDP> {
         setState(() {
           _uploading = false;
           _imageUploaded = true;
+          _groupPhotoPath = file.path;
         });
       } else {
         setState(() {
@@ -405,6 +384,7 @@ class _GroupDPState extends State<GroupDP> {
         setState(() {
           _uploading = false;
           _imageUploaded = true;
+          _groupPhotoPath = file.path;
         });
       } else {
         setState(() {
@@ -416,5 +396,35 @@ class _GroupDPState extends State<GroupDP> {
     } catch (e) {
       rethrow;
     }
+  }
+
+  void _addNewGroup(String photo, String name, String desc) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    List<Group> _localList = [];
+    final String _local = prefs.getString('groups');
+    if (_local != null) {
+      _localList = List.from(Group.decode(_local));
+    }
+    List<Group> _groups = [
+      Group(
+        photoPath: _groupPhotoPath,
+        groupName: name,
+        groupDescription: desc,
+        members: _members,
+      ),
+    ];
+    _groups = _localList + _groups;
+
+    final String _newGroups = Group.encode(_groups);
+
+    await prefs.setString('groups', _newGroups);
+
+    var snackBar = SnackBar(
+      backgroundColor: Colors.green,
+      content: Text('$name added'),
+    );
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(snackBar);
   }
 }

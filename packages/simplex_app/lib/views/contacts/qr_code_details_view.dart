@@ -4,9 +4,9 @@ import 'package:simplex_chat/constants.dart';
 import 'package:simplex_chat/widgets/custom_btn.dart';
 
 class QRCodeDetailsView extends StatelessWidget {
-  final Barcode? barcode;
+  final Barcode barcode;
   const QRCodeDetailsView({
-    Key? key,
+    Key key,
     this.barcode,
   }) : super(key: key);
 
@@ -26,7 +26,7 @@ class QRCodeDetailsView extends StatelessWidget {
             ),
             const SizedBox(height: 30.0),
             Text(
-              barcode!.code,
+              barcode.code,
               style: kMediumHeadingStyle,
               textAlign: TextAlign.center,
             ),

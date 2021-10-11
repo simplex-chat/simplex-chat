@@ -4,7 +4,7 @@ import 'package:simplex_chat/app_routes.dart';
 import 'package:simplex_chat/constants.dart';
 
 class IntroView extends StatelessWidget {
-  const IntroView({Key? key}) : super(key: key);
+  const IntroView({Key key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {

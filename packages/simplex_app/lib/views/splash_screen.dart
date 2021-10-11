@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:progress_indicators/progress_indicators.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:simplex_chat/animations/entrance_fader.dart';
+import 'package:simplex_chat/app_routes.dart';
 import 'package:simplex_chat/constants.dart';
-import 'package:simplex_chat/views/home/home_view.dart';
-import 'package:simplex_chat/views/onBoarding/intro_view.dart';
 
 class SplashScreen extends StatefulWidget {
-  const SplashScreen({Key? key}) : super(key: key);
+  const SplashScreen({Key key}) : super(key: key);
 
   @override
   _SplashScreenState createState() => _SplashScreenState();
@@ -16,19 +14,11 @@ class SplashScreen extends StatefulWidget {
 
 class _SplashScreenState extends State<SplashScreen> {
   // logincheck
-  void _loginCheck() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    String? _name = prefs.getString('displayName');
+  void _loginCheck() {
     Future.delayed(const Duration(seconds: 4), () {
-      Navigator.push(
+      Navigator.pushNamed(
         context,
-        MaterialPageRoute(
-          builder: (_) => _name == null
-              ? const IntroView()
-              : HomeView(
-                  maxSlide: MediaQuery.of(context).size.width * 0.82,
-                ),
-        ),
+        AppRoutes.intro,
       );
     });
   }

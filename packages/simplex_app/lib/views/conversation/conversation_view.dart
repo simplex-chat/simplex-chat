@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:simplex_chat/widgets/message_bubble.dart';
 
 class ConversationView extends StatefulWidget {
-  final String? name;
-  const ConversationView({Key? key, @required this.name}) : super(key: key);
+  final String name;
+  const ConversationView({Key key, @required this.name}) : super(key: key);
 
   @override
   _ConversationViewState createState() => _ConversationViewState();
@@ -13,17 +13,17 @@ class _ConversationViewState extends State<ConversationView> {
   final ScrollController _scrollController = ScrollController();
   final TextEditingController _messageFieldController = TextEditingController();
 
-  FocusNode? _focus;
+  FocusNode _focus;
   bool _fieldEnabled = false;
   final List<Widget> _chatMessages = [];
 
   @override
   void initState() {
     _focus = FocusNode();
-    _focus!.addListener(() {
-      debugPrint('FOCUS ${_focus!.hasFocus}');
-      _fieldEnabled = _focus!.hasFocus;
-      debugPrint('MESSAGE ENABLED! $_fieldEnabled');
+    _focus.addListener(() {
+      debugPrint('FOCUS ${_focus.hasFocus}');
+      _fieldEnabled = _focus.hasFocus;
+      debugPrint('MESSAGE ENABLED $_fieldEnabled');
     });
     super.initState();
   }
@@ -32,7 +32,7 @@ class _ConversationViewState extends State<ConversationView> {
   void dispose() {
     _messageFieldController.dispose();
     _scrollController.dispose();
-    _focus!.dispose();
+    _focus.dispose();
     super.dispose();
   }
 
@@ -42,7 +42,7 @@ class _ConversationViewState extends State<ConversationView> {
       onTap: () => FocusScope.of(context).unfocus(),
       child: Scaffold(
         appBar: AppBar(
-          title: Text('${widget.name}'),
+          title: Text(widget.name),
         ),
         body: Column(
           children: [
@@ -50,7 +50,7 @@ class _ConversationViewState extends State<ConversationView> {
               child: Container(
                 child: _chatMessages.isEmpty
                     ? const Center(
-                        child: Text('Send a message to get started!'),
+                        child: Text('Send a message to get started'),
                       )
                     : SingleChildScrollView(
                         controller: _scrollController,
@@ -96,7 +96,7 @@ class _ConversationViewState extends State<ConversationView> {
                   const SizedBox(width: 15.0),
                   InkWell(
                     onTap: () async {
-                      if (_messageFieldController.text != '') {
+                      if (_messageFieldController.text == '') {
                         setState(() {
                           _chatMessages.add(MessageBubble(
                             isUser: true,
@@ -105,7 +105,7 @@ class _ConversationViewState extends State<ConversationView> {
                           ));
                         });
                         _messageFieldController.clear();
-                        _focus!.unfocus();
+                        _focus.unfocus();
                       }
                     },
                     child: const Icon(Icons.send_rounded,

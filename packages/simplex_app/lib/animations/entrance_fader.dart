@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 class EntranceFader extends StatefulWidget {
   /// Child to be animated on entrance
-  final Widget? child;
+  final Widget child;
 
   /// Delay after which the animation will start
   final Duration delay;
@@ -14,7 +14,7 @@ class EntranceFader extends StatefulWidget {
   final Offset offset;
 
   const EntranceFader({
-    Key? key,
+    Key key,
     this.child,
     this.delay = const Duration(milliseconds: 0),
     this.duration = const Duration(milliseconds: 400),
@@ -29,39 +29,39 @@ class EntranceFader extends StatefulWidget {
 
 class EntranceFaderState extends State<EntranceFader>
     with SingleTickerProviderStateMixin {
-  AnimationController? _controller;
-  Animation? _dxAnimation;
-  Animation? _dyAnimation;
+  AnimationController _controller;
+  Animation _dxAnimation;
+  Animation _dyAnimation;
 
   @override
   void initState() {
     super.initState();
     _controller = AnimationController(vsync: this, duration: widget.duration);
     _dxAnimation =
-        Tween(begin: widget.offset.dx, end: 0.0).animate(_controller!);
+        Tween(begin: widget.offset.dx, end: 0.0).animate(_controller);
     _dyAnimation =
-        Tween(begin: widget.offset.dy, end: 0.0).animate(_controller!);
+        Tween(begin: widget.offset.dy, end: 0.0).animate(_controller);
     Future.delayed(widget.delay, () {
       if (mounted) {
-        _controller!.forward();
+        _controller.forward();
       }
     });
   }
 
   @override
   void dispose() {
-    _controller!.dispose();
+    _controller.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: _controller!,
+      animation: _controller,
       builder: (context, child) => Opacity(
-        opacity: _controller!.value,
+        opacity: _controller.value,
         child: Transform.translate(
-          offset: Offset(_dxAnimation!.value, _dyAnimation!.value),
+          offset: Offset(_dxAnimation.value, _dyAnimation.value),
           child: widget.child,
         ),
       ),

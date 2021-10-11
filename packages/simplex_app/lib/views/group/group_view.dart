@@ -1,5 +1,6 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:simplex_chat/animations/bottom_animation.dart';
 import 'package:simplex_chat/app_routes.dart';
@@ -8,14 +9,14 @@ import 'package:simplex_chat/model/group.dart';
 import 'package:simplex_chat/views/conversation/conversation_view.dart';
 
 class GroupView extends StatefulWidget {
-  const GroupView({Key? key}) : super(key: key);
+  const GroupView({Key key}) : super(key: key);
 
   @override
   State<GroupView> createState() => _GroupViewState();
 }
 
 class _GroupViewState extends State<GroupView> {
-  bool? _eraseMedia = false;
+  bool _eraseMedia = false;
   final List<String> _options = [
     'Add group',
     'Scan invitation',
@@ -42,14 +43,28 @@ class _GroupViewState extends State<GroupView> {
   // getting data from local storage FOR NOW!!
   void _getGroups() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    final String? _groups = prefs.getString('groups');
+    final String _groups = prefs.getString('groups');
+    if (_groups != null) {
+      setState(() {
+        _groupList = List.from(Group.decode(_groups));
+      });
+    }
+  }
+
+  String _photo = '';
+  String _displayName = '';
+
+  void _getUserData() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
-      _groupList = List.from(Group.decode(_groups));
+      _displayName = prefs.getString('displayName');
+      _photo = prefs.getString('photo$_displayName');
     });
   }
 
   @override
   void initState() {
+    _getUserData();
     _getGroups();
     super.initState();
   }
@@ -62,15 +77,23 @@ class _GroupViewState extends State<GroupView> {
         padding: const EdgeInsets.symmetric(horizontal: 15.0, vertical: 20.0),
         child: Column(
           children: [
-            Align(
-              alignment: Alignment.centerRight,
-              child: GestureDetector(
-                onTap: _addNewGroups,
-                child: SvgPicture.asset(
-                  'assets/logo.svg',
-                  height: 40.0,
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text('Hi! $_displayName', style: kSmallHeadingStyle),
+                    const Text('Good day!'),
+                  ],
                 ),
-              ),
+                const SizedBox(width: 10.0),
+                CircleAvatar(
+                  backgroundImage: _photo.isEmpty
+                      ? const AssetImage('assets/dp.png') as ImageProvider
+                      : FileImage(File(_photo)),
+                ),
+              ],
             ),
             const SizedBox(height: 15.0),
             Row(
@@ -111,11 +134,14 @@ class _GroupViewState extends State<GroupView> {
                       _groupList.length,
                       (index) => WidgetAnimator(
                         child: ListTile(
-                          leading: const CircleAvatar(
-                            backgroundImage: AssetImage('assets/dp.png'),
+                          leading: CircleAvatar(
+                            backgroundImage: _groupList[index].photoPath == ''
+                                ? const AssetImage('assets/dp.png')
+                                    as ImageProvider
+                                : FileImage(File(_groupList[index].photoPath)),
                           ),
-                          title: Text(_groupList[index].groupName!),
-                          subtitle: Text(_groupList[index].groupDescription!),
+                          title: Text(_groupList[index].groupName),
+                          subtitle: Text(_groupList[index].groupDescription),
                           trailing: Text(
                             'Members: ${_groupList[index].members.length}',
                             style: const TextStyle(
@@ -296,10 +322,14 @@ class _GroupViewState extends State<GroupView> {
   }
 
   // dummy ftn for loading new contacts
+  // ignore: unused_element
   void _addNewGroups() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     List<Group> _localList = [];
-    _localList = List.from(Group.decode(prefs.getString('groups')));
+    final String _local = prefs.getString('groups');
+    if (_local != null) {
+      _localList = List.from(Group.decode(_local));
+    }
 
     List<Group> _groups = [
       Group(

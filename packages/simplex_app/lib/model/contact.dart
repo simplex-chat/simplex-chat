@@ -1,9 +1,9 @@
 import 'dart:convert';
 
 class Contact {
-  final String? name;
-  final String? msg;
-  final String? msgTime;
+  final String name;
+  final String msg;
+  final String msgTime;
 
   Contact({this.name, this.msg, this.msgTime});
 
@@ -26,8 +26,8 @@ class Contact {
             .toList(),
       );
 
-  static List<Contact> decode(String? contacts) =>
-      (json.decode(contacts!) as List<dynamic>)
+  static List<Contact> decode(String contacts) =>
+      (json.decode(contacts) as List<dynamic>)
           .map<Contact>((item) => Contact.fromJson(item))
           .toList();
 }

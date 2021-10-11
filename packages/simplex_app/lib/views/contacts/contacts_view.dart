@@ -9,14 +9,14 @@ import 'package:simplex_chat/model/contact.dart';
 import 'package:simplex_chat/views/conversation/conversation_view.dart';
 
 class ContactsView extends StatefulWidget {
-  const ContactsView({Key? key}) : super(key: key);
+  const ContactsView({Key key}) : super(key: key);
 
   @override
   _ContactsViewState createState() => _ContactsViewState();
 }
 
 class _ContactsViewState extends State<ContactsView> {
-  bool? _eraseMedia = false;
+  bool _eraseMedia = false;
 
   List<Contact> _contactsList = []; // for storing contacts
 
@@ -44,14 +44,16 @@ class _ContactsViewState extends State<ContactsView> {
   // getting data from local storage FOR NOW!!
   void _getContacts() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    final String? _contacts = prefs.getString('contacts');
-    setState(() {
-      _contactsList = List.from(Contact.decode(_contacts));
-    });
+    final String _contacts = prefs.getString('contacts');
+    if (_contacts != null) {
+      setState(() {
+        _contactsList = List.from(Contact.decode(_contacts));
+      });
+    }
   }
 
-  String? _photo;
-  String? _displayName;
+  String _photo = '';
+  String _displayName = '';
 
   void _getUserData() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -89,10 +91,13 @@ class _ContactsViewState extends State<ContactsView> {
                       ],
                     ),
                     const SizedBox(width: 10.0),
-                    CircleAvatar(
-                      backgroundImage: _photo == null
-                          ? const AssetImage('assets/dp.png') as ImageProvider
-                          : FileImage(File(_photo!)),
+                    GestureDetector(
+                      onTap: _addNewContacts,
+                      child: CircleAvatar(
+                        backgroundImage: _photo.isEmpty
+                            ? const AssetImage('assets/dp.png') as ImageProvider
+                            : FileImage(File(_photo)),
+                      ),
                     )
                   ],
                 ),
@@ -138,10 +143,10 @@ class _ContactsViewState extends State<ContactsView> {
                               leading: const CircleAvatar(
                                 backgroundImage: AssetImage('assets/dp.png'),
                               ),
-                              title: Text(_contactsList[index].name!),
-                              subtitle: Text(_contactsList[index].msg!),
+                              title: Text(_contactsList[index].name),
+                              subtitle: Text(_contactsList[index].msg),
                               trailing: Text(
-                                _contactsList[index].msgTime!,
+                                _contactsList[index].msgTime,
                                 style: const TextStyle(
                                     fontSize: 11, color: Colors.grey),
                               ),
@@ -171,9 +176,9 @@ class _ContactsViewState extends State<ContactsView> {
         offset: const Offset(-10, -120),
         onSelected: (value) {
           if (value == _options[0]) {
-            Navigator.pushNamed(context, AppRoutes.addContact);
-          } else {
             Navigator.pushNamed(context, AppRoutes.scanInvitation);
+          } else {
+            Navigator.pushNamed(context, AppRoutes.addContact);
           }
         },
         itemBuilder: (context) => _options
@@ -325,7 +330,10 @@ class _ContactsViewState extends State<ContactsView> {
     SharedPreferences prefs = await SharedPreferences.getInstance();
 
     List<Contact> _localList = [];
-    _localList = List.from(Contact.decode(prefs.getString('contacts')));
+    final String _local = prefs.getString('contacts');
+    if (_local != null) {
+      _localList = List.from(Contact.decode(_local));
+    }
 
     List<Contact> _newList = [
       Contact(

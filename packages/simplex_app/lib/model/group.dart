@@ -1,14 +1,20 @@
 import 'dart:convert';
 
 class Group {
-  final String? groupName;
-  final String? groupDescription;
+  final String photoPath;
+  final String groupName;
+  final String groupDescription;
   final List<dynamic> members;
 
-  Group({this.groupName, this.groupDescription, this.members = const []});
+  Group(
+      {this.groupName,
+      this.photoPath,
+      this.groupDescription,
+      this.members = const []});
 
   factory Group.fromJson(Map<String, dynamic> json) {
     return Group(
+      photoPath: json['gPhoto'],
       groupName: json['gName'],
       groupDescription: json['desc'],
       members: json['contacts'],
@@ -17,6 +23,7 @@ class Group {
 
   static Map<String, dynamic> toJson(Group group) {
     return {
+      'gPhoto': group.photoPath,
       'gName': group.groupName,
       'desc': group.groupDescription,
       'contacts': group.members,
@@ -29,8 +36,8 @@ class Group {
             .toList(),
       );
 
-  static List<Group> decode(String? groups) =>
-      (json.decode(groups!) as List<dynamic>)
+  static List<Group> decode(String groups) =>
+      (json.decode(groups) as List<dynamic>)
           .map<Group>((item) => Group.fromJson(item))
           .toList();
 }

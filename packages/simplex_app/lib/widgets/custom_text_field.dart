@@ -1,27 +1,27 @@
 import 'package:flutter/material.dart';
 
 class CustomTextField extends StatefulWidget {
-  final TextEditingController? textEditingController;
-  final TextInputType? textInputType;
-  final FocusNode? node;
+  final TextEditingController textEditingController;
+  final TextInputType textInputType;
+  final FocusNode node;
 
-  final String? hintText;
-  final bool? isPassword;
-  final IconData? icon;
-  final Color? iconColor;
-  final Color? passIconColor;
+  final String hintText;
+  final bool isPassword;
+  final IconData icon;
+  final Color iconColor;
+  final Color passIconColor;
 
-  final IconData? trailing;
-  final void Function()? trailingCallBack;
+  final IconData trailing;
+  final void Function() trailingCallBack;
 
-  final Function(String)? onChangeFtn;
-  final void Function()? onEditComplete;
-  final String? Function(String?)? validatorFtn;
-  final Function(String)? onFieldSubmit;
-  final String? errorText;
+  final Function(String) onChangeFtn;
+  final void Function() onEditComplete;
+  final String Function(String) validatorFtn;
+  final Function(String) onFieldSubmit;
+  final String errorText;
 
   const CustomTextField({
-    Key? key,
+    Key key,
     @required this.textEditingController,
     @required this.textInputType,
     this.trailing,
