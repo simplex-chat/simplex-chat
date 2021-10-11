@@ -154,7 +154,7 @@ class _ContactsViewState extends State<ContactsView> {
                                 context,
                                 MaterialPageRoute(
                                   builder: (_) => ConversationView(
-                                    name: _contactsList[index].name,
+                                    contact: _contactsList[index],
                                   ),
                                 ),
                               ),
