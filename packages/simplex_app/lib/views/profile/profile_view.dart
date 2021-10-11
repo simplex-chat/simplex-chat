@@ -153,26 +153,23 @@ class _ProfileViewState extends State<ProfileView> {
           ),
         ),
       ),
-      floatingActionButton: Visibility(
-        visible: MediaQuery.of(context).viewInsets.bottom == 0,
-        child: FloatingActionButton(
-          heroTag: 'setup',
-          onPressed: () async {
-            if (_formKey.currentState.validate()) {
-              FocusScope.of(context).unfocus();
-              await _createProfile();
-              const snackBar = SnackBar(
-                backgroundColor: Colors.green,
-                content: Text('Profile updated!'),
-              );
+      floatingActionButton: FloatingActionButton(
+        heroTag: 'save',
+        onPressed: () async {
+          if (_formKey.currentState.validate()) {
+            FocusManager.instance.primaryFocus.unfocus();
+            await _createProfile();
+            const snackBar = SnackBar(
+              backgroundColor: Colors.green,
+              content: Text('Profile updated!'),
+            );
 
-              ScaffoldMessenger.of(context)
-                ..hideCurrentSnackBar()
-                ..showSnackBar(snackBar);
-            }
-          },
-          child: const Icon(Icons.check),
-        ),
+            ScaffoldMessenger.of(context)
+              ..hideCurrentSnackBar()
+              ..showSnackBar(snackBar);
+          }
+        },
+        child: const Icon(Icons.check),
       ),
     );
   }
