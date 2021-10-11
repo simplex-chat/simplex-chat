@@ -19,7 +19,8 @@ class _GroupViewState extends State<GroupView> {
   bool _eraseMedia = false;
   final List<String> _options = [
     'Add group',
-    'Scan invitation',
+    'Scan a Group',
+    'Invitation',
   ];
 
   List<Group> _groupList = [];
@@ -147,13 +148,18 @@ class _GroupViewState extends State<GroupView> {
                             style: const TextStyle(
                                 fontSize: 11, color: Colors.grey),
                           ),
-                          onTap: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => ConversationView(
-                                  name: _groupList[index].groupName),
-                            ),
-                          ),
+                          onTap: () async {
+                            var value = await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    ConversationView(group: _groupList[index]),
+                              ),
+                            );
+                            if (value) {
+                              _getGroups();
+                            }
+                          },
                           onLongPress: () =>
                               _conversationOptions(_groupList[index]),
                         ),
@@ -167,13 +173,15 @@ class _GroupViewState extends State<GroupView> {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(5.0),
         ),
-        offset: const Offset(-10, -120),
+        offset: const Offset(-10, -150),
         onSelected: (value) async {
           if (value == _options[0]) {
             var value = await Navigator.pushNamed(context, AppRoutes.addGroup);
             if (value == true) {
               _getGroups();
             }
+          } else if (value == _options[1]) {
+            await Navigator.pushNamed(context, AppRoutes.addContact);
           } else {
             await Navigator.pushNamed(context, AppRoutes.scanInvitation);
           }
