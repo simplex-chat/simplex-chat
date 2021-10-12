@@ -2,21 +2,32 @@ import 'dart:convert';
 
 class Contact {
   final String name;
-  final String msg;
-  final String msgTime;
+  final String subtitle;
+  final String photo;
+  final bool isGroup;
 
-  Contact({this.name, this.msg, this.msgTime});
+  Contact({
+    this.name,
+    this.subtitle,
+    this.photo = '',
+    this.isGroup = false,
+  });
 
   factory Contact.fromJson(Map<String, dynamic> json) {
     return Contact(
-        name: json['name'], msg: json['msg'], msgTime: json['msgTime']);
+      name: json['name'],
+      subtitle: json['subtitle'],
+      photo: json['photo'],
+      isGroup: json['isGroup'],
+    );
   }
 
   static Map<String, dynamic> toJson(Contact contact) {
     return {
       'name': contact.name,
-      'msg': contact.msg,
-      'msgTime': contact.msgTime,
+      'subtitle': contact.subtitle,
+      'photo': contact.photo,
+      'isGroup': false,
     };
   }
 

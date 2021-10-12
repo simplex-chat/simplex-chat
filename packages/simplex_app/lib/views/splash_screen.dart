@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:progress_indicators/progress_indicators.dart';
 import 'package:simplex_chat/animations/entrance_fader.dart';
 import 'package:simplex_chat/app_routes.dart';
@@ -13,8 +12,8 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
-  // logincheck
-  void _loginCheck() {
+  // delay on splash screen
+  void _splashDelay() {
     Future.delayed(const Duration(seconds: 4), () {
       Navigator.pushNamed(
         context,
@@ -25,7 +24,7 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   void initState() {
-    _loginCheck();
+    _splashDelay();
     super.initState();
   }
 
@@ -38,14 +37,14 @@ class _SplashScreenState extends State<SplashScreen> {
           children: [
             EntranceFader(
               duration: const Duration(seconds: 1),
-              offset: const Offset(0, 20),
-              child: SvgPicture.asset(
-                'assets/logo.svg',
-                height: 70,
+              offset: const Offset(0, 15),
+              child: Image.asset(
+                'assets/simpleX.png',
+                height: 150,
               ),
             ),
             EntranceFader(
-              offset: const Offset(0, 00),
+              offset: const Offset(0, 0),
               duration: const Duration(seconds: 1),
               delay: const Duration(seconds: 1),
               child: JumpingDotsProgressIndicator(

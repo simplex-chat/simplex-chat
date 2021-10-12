@@ -60,6 +60,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
       width: width * 0.89,
       decoration: BoxDecoration(borderRadius: BorderRadius.circular(8.0)),
       child: TextFormField(
+        textCapitalization: TextCapitalization.sentences,
         controller: widget.textEditingController,
         textInputAction: TextInputAction.done,
         keyboardType: widget.textInputType,

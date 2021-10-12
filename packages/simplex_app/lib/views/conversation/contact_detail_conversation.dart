@@ -10,21 +10,24 @@ class ContactDetailsConversation extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        centerTitle: true,
         title: Text(contact.name),
       ),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const CircleAvatar(
-              radius: 65,
-              backgroundImage: AssetImage('assets/dp.png'),
-            ),
-            const SizedBox(height: 15.0),
-            const Text('Display Name', style: kMediumHeadingStyle),
-            Text(contact.name),
-          ],
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const CircleAvatar(
+                radius: 65,
+                backgroundImage: AssetImage('assets/dp.png'),
+              ),
+              const SizedBox(height: 15.0),
+              const Text('Display Name', style: kMediumHeadingStyle),
+              Text(contact.name),
+            ],
+          ),
         ),
       ),
     );

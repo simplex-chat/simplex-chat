@@ -62,7 +62,8 @@ class _GroupDetailsConversationState extends State<GroupDetailsConversation> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.group.groupName),
+        centerTitle: true,
+        title: Text(widget.group.name),
       ),
       body: SingleChildScrollView(
         child: Padding(
@@ -73,14 +74,14 @@ class _GroupDetailsConversationState extends State<GroupDetailsConversation> {
               Center(
                 child: CircleAvatar(
                   radius: 70,
-                  backgroundImage: widget.group.photoPath == ''
+                  backgroundImage: widget.group.photo == ''
                       ? const AssetImage('assets/dp.png')
-                      : FileImage(File(widget.group.photoPath)),
+                      : FileImage(File(widget.group.photo)),
                 ),
               ),
               const SizedBox(height: 25.0),
               const Text('Group Name', style: kMediumHeadingStyle),
-              Text(widget.group.groupName),
+              Text(widget.group.name),
               const Divider(),
               ListTile(
                 leading: const Icon(Icons.person_add),
@@ -197,14 +198,14 @@ class _GroupDetailsConversationState extends State<GroupDetailsConversation> {
     int index = 0;
 
     index = _groupList
-        .indexWhere((group) => group.groupName == widget.group.groupName);
+        .indexWhere((group) => group.name == widget.group.name);
 
     // add the full _members list to the group
     Group _updatedGroup = Group(
-      groupName: widget.group.groupName,
-      groupDescription: widget.group.groupDescription,
+      name: widget.group.name,
+      subtitle: widget.group.subtitle,
       members: _members,
-      photoPath: widget.group.photoPath,
+      photo: widget.group.photo,
     );
 
     // put it in updated group local list
@@ -235,13 +236,13 @@ class _GroupDetailsConversationState extends State<GroupDetailsConversation> {
     int index = 0;
 
     index = _groupList
-        .indexWhere((group) => group.groupName == widget.group.groupName);
+        .indexWhere((group) => group.name == widget.group.name);
 
     // new instance of group (updated)
     Group _updatedGroup = Group(
-      groupName: widget.group.groupName,
-      groupDescription: widget.group.groupDescription,
-      photoPath: widget.group.photoPath,
+      name: widget.group.name,
+      subtitle: widget.group.subtitle,
+      photo: widget.group.photo,
       members: _members,
     );
 

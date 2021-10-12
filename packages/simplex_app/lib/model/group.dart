@@ -1,32 +1,37 @@
 import 'dart:convert';
 
 class Group {
-  final String photoPath;
-  final String groupName;
-  final String groupDescription;
+  final String name;
+  final String subtitle;
+  final String photo;
   final List<dynamic> members;
+  final bool isGroup;
 
-  Group(
-      {this.groupName,
-      this.photoPath,
-      this.groupDescription,
-      this.members = const []});
+  Group({
+    this.name,
+    this.subtitle,
+    this.photo = '',
+    this.isGroup = true,
+    this.members = const [],
+  });
 
   factory Group.fromJson(Map<String, dynamic> json) {
     return Group(
-      photoPath: json['gPhoto'],
-      groupName: json['gName'],
-      groupDescription: json['desc'],
-      members: json['contacts'],
+      name: json['name'],
+      subtitle: json['subtitle'],
+      photo: json['photo'],
+      isGroup: json['isGroup'],
+      members: json['members'],
     );
   }
 
   static Map<String, dynamic> toJson(Group group) {
     return {
-      'gPhoto': group.photoPath,
-      'gName': group.groupName,
-      'desc': group.groupDescription,
-      'contacts': group.members,
+      'name': group.name,
+      'subtitle': group.subtitle,
+      'photo': group.photo,
+      'isGroup': true,
+      'members': group.members,
     };
   }
 

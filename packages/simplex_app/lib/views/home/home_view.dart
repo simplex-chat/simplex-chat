@@ -4,8 +4,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 import 'package:simplex_chat/constants.dart';
 import 'package:simplex_chat/providers/drawer_providers.dart';
-import 'package:simplex_chat/views/contacts/contacts_view.dart';
-import 'package:simplex_chat/views/group/group_view.dart';
+import 'package:simplex_chat/views/contacts/conversations.dart';
 import 'package:simplex_chat/views/home/drawer.dart';
 import 'package:simplex_chat/views/invitations/invitation_view.dart';
 import 'package:simplex_chat/views/profile/profile_view.dart';
@@ -22,9 +21,8 @@ class _HomeViewState extends State<HomeView> {
   // views
   final List<Widget> _views = [
     const ProfileView(),
-    const ContactsView(),
+    const Conversations(),
     const Invitations(),
-    const GroupView(),
   ];
 
   @override
@@ -44,15 +42,25 @@ class _HomeViewState extends State<HomeView> {
                 Positioned(
                   top: MediaQuery.of(context).size.height * 0.03,
                   left: MediaQuery.of(context).size.width * 0.03,
-                  child: InkWell(
-                    onTap: () {
-                      Scaffold.of(context).openDrawer();
-                    },
-                    child: Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: SvgPicture.asset('assets/menu.svg'),
-                    ),
-                  ),
+                  child: _drawerProviders.currentIndex == 0
+                      ? InkWell(
+                          onTap: () {
+                            _drawerProviders.currentIndex = 1;
+                          },
+                          child: const Padding(
+                            padding: EdgeInsets.all(8.0),
+                            child: Icon(Icons.arrow_back),
+                          ),
+                        )
+                      : InkWell(
+                          onTap: () {
+                            Scaffold.of(context).openDrawer();
+                          },
+                          child: Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: SvgPicture.asset('assets/menu.svg'),
+                          ),
+                        ),
                 ),
               ],
             );

@@ -1,45 +1,39 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:simplex_chat/animations/bottom_animation.dart';
 import 'package:simplex_chat/app_routes.dart';
 import 'package:simplex_chat/constants.dart';
 import 'package:simplex_chat/model/contact.dart';
+import 'package:simplex_chat/model/group.dart';
+import 'package:simplex_chat/providers/drawer_providers.dart';
 import 'package:simplex_chat/views/conversation/conversation_view.dart';
 
-class ContactsView extends StatefulWidget {
-  const ContactsView({Key key}) : super(key: key);
+class Conversations extends StatefulWidget {
+  const Conversations({Key key}) : super(key: key);
 
   @override
-  _ContactsViewState createState() => _ContactsViewState();
+  _ConversationsState createState() => _ConversationsState();
 }
 
-class _ContactsViewState extends State<ContactsView> {
+class _ConversationsState extends State<Conversations> {
   bool _eraseMedia = false;
 
+  String _photo = '';
+  String _displayName = '';
+
+  List<dynamic> _conversations = [];
+
   List<Contact> _contactsList = []; // for storing contacts
+  List<Group> _groupList = []; // for storing groups
 
   final List<String> _options = [
     'Add contact',
     'Scan invitation',
+    'Add group',
   ];
-
-  // delete a contact
-  void _deleteContact(Contact contact) async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _contactsList.remove(contact);
-    });
-    await prefs.setString('contacts', Contact.encode(_contactsList));
-    var snackBar = SnackBar(
-      backgroundColor: Colors.red,
-      content: Text('${contact.name} deleted!'),
-    );
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(snackBar);
-  }
 
   // getting data from local storage FOR NOW!!
   void _getContacts() async {
@@ -52,8 +46,18 @@ class _ContactsViewState extends State<ContactsView> {
     }
   }
 
-  String _photo = '';
-  String _displayName = '';
+  // getting data from local storage FOR NOW!!
+  void _getGroups() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    final String _groups = prefs.getString('groups');
+    if (_groups != null) {
+      setState(() {
+        _groupList = List.from(Group.decode(_groups));
+      });
+    }
+
+    _gettingGroupContactsChats();
+  }
 
   void _getUserData() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -63,15 +67,24 @@ class _ContactsViewState extends State<ContactsView> {
     });
   }
 
+  void _gettingGroupContactsChats() {
+    setState(() {
+      _conversations = List.from(_contactsList);
+      _conversations = _conversations + _groupList;
+    });
+  }
+
   @override
   void initState() {
     _getUserData();
     _getContacts();
+    _getGroups();
     super.initState();
   }
 
   @override
   Widget build(BuildContext context) {
+    final _drawerProviders = Provider.of<DrawerProvider>(context);
     return Scaffold(
       backgroundColor: Colors.white,
       body: SingleChildScrollView(
@@ -83,16 +96,21 @@ class _ContactsViewState extends State<ContactsView> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text('Hi! $_displayName', style: kSmallHeadingStyle),
-                        const Text('Good day!'),
-                      ],
+                    GestureDetector(
+                      onTap: _addNewContacts,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text('Hi! $_displayName', style: kSmallHeadingStyle),
+                          const Text('Good day!'),
+                        ],
+                      ),
                     ),
                     const SizedBox(width: 10.0),
                     GestureDetector(
-                      onTap: _addNewContacts,
+                      onTap: () {
+                        _drawerProviders.currentIndex = 0;
+                      },
                       child: CircleAvatar(
                         backgroundImage: _photo.isEmpty
                             ? const AssetImage('assets/dp.png') as ImageProvider
@@ -107,7 +125,7 @@ class _ContactsViewState extends State<ContactsView> {
                     Icon(Icons.chat, color: kPrimaryColor),
                     SizedBox(width: 8.0),
                     Text(
-                      'Chats',
+                      'Conversations',
                       style: kHeadingStyle,
                     )
                   ],
@@ -137,29 +155,49 @@ class _ContactsViewState extends State<ContactsView> {
                     : ListView(
                         shrinkWrap: true,
                         children: List.generate(
-                          _contactsList.length,
+                          _conversations.length,
                           (index) => WidgetAnimator(
                             child: ListTile(
-                              leading: const CircleAvatar(
-                                backgroundImage: AssetImage('assets/dp.png'),
+                              leading: CircleAvatar(
+                                backgroundImage:
+                                    // ignore: avoid_dynamic_calls
+                                    _conversations[index].photo == ''
+                                        ? const AssetImage('assets/dp.png')
+                                            as ImageProvider
+                                        : FileImage(
+                                            // ignore: avoid_dynamic_calls
+                                            File(_conversations[index].photo)),
                               ),
-                              title: Text(_contactsList[index].name),
-                              subtitle: Text(_contactsList[index].msg),
-                              trailing: Text(
-                                _contactsList[index].msgTime,
-                                style: const TextStyle(
-                                    fontSize: 11, color: Colors.grey),
+                              // ignore: avoid_dynamic_calls
+                              title: Text(_conversations[index].name),
+                              // ignore: avoid_dynamic_calls
+                              subtitle: Text(_conversations[index].subtitle),
+                              // ignore: avoid_dynamic_calls
+                              trailing: Icon(
+                                // ignore: avoid_dynamic_calls
+                                _conversations[index].isGroup
+                                    ? Icons.group
+                                    : Icons.person,
+                                size: 18,
+                                color: Colors.grey[400],
                               ),
-                              onTap: () => Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => ConversationView(
-                                    contact: _contactsList[index],
+                              onTap: () async {
+                                var value = await Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => ConversationView(
+                                      data: _conversations[index],
+                                    ),
                                   ),
-                                ),
-                              ),
+                                );
+                                value ??= false;
+                                if (value) {
+                                  _getContacts();
+                                  _getGroups();
+                                }
+                              },
                               onLongPress: () =>
-                                  _conversationOptions(_contactsList[index]),
+                                  _conversationOptions(_conversations[index]),
                             ),
                           ),
                         ),
@@ -173,12 +211,17 @@ class _ContactsViewState extends State<ContactsView> {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(5.0),
         ),
-        offset: const Offset(-10, -120),
-        onSelected: (value) {
+        offset: const Offset(-10, -155),
+        onSelected: (value) async {
           if (value == _options[0]) {
-            Navigator.pushNamed(context, AppRoutes.scanInvitation);
+            await Navigator.pushNamed(context, AppRoutes.scanInvitation);
+          } else if (value == _options[1]) {
+            await Navigator.pushNamed(context, AppRoutes.addContact);
           } else {
-            Navigator.pushNamed(context, AppRoutes.addContact);
+            var value = await Navigator.pushNamed(context, AppRoutes.addGroup);
+            if (value) {
+              _getGroups();
+            }
           }
         },
         itemBuilder: (context) => _options
@@ -200,7 +243,39 @@ class _ContactsViewState extends State<ContactsView> {
     );
   }
 
-  void _conversationOptions(Contact contact) {
+  // delete a contact
+  void _deleteContact(Contact contact) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _contactsList.remove(contact);
+    });
+    await prefs.setString('contacts', Contact.encode(_contactsList));
+    var snackBar = SnackBar(
+      backgroundColor: Colors.red,
+      content: Text('${contact.name} deleted!'),
+    );
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(snackBar);
+  }
+
+  // delete a group
+  void _deleteGroup(Group group) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _groupList.remove(group);
+    });
+    await prefs.setString('groups', Group.encode(_groupList));
+    var snackBar = SnackBar(
+      backgroundColor: Colors.red,
+      content: Text('${group.name} deleted!'),
+    );
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(snackBar);
+  }
+
+  void _conversationOptions(var chat) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -210,7 +285,7 @@ class _ContactsViewState extends State<ContactsView> {
             TextButton(
                 onPressed: () {
                   Navigator.pop(context);
-                  _deleteConversation(contact);
+                  _deleteConversation(chat);
                 },
                 child: const Text(
                   'Delete Conversation',
@@ -228,7 +303,7 @@ class _ContactsViewState extends State<ContactsView> {
     );
   }
 
-  void _deleteConversation(Contact contact) {
+  void _deleteConversation(var chat) {
     showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
@@ -256,10 +331,18 @@ class _ContactsViewState extends State<ContactsView> {
           ),
           actions: [
             InkWell(
-              onTap: () {
-                _deleteContact(contact);
-                Navigator.pop(context);
-              },
+              // ignore: avoid_dynamic_calls
+              onTap: chat.isGroup
+                  ? () {
+                      _deleteGroup(chat);
+                      _conversations.remove(chat);
+                      Navigator.pop(context);
+                    }
+                  : () {
+                      _deleteContact(chat);
+                      _conversations.remove(chat);
+                      Navigator.pop(context);
+                    },
               child: const Padding(
                 padding: EdgeInsets.all(8.0),
                 child: Icon(Icons.check, color: Colors.green),
@@ -329,6 +412,7 @@ class _ContactsViewState extends State<ContactsView> {
   void _addNewContacts() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
 
+    // adding dummy contact
     List<Contact> _localList = [];
     final String _local = prefs.getString('contacts');
     if (_local != null) {
@@ -338,18 +422,7 @@ class _ContactsViewState extends State<ContactsView> {
     List<Contact> _newList = [
       Contact(
         name: 'Harry',
-        msg: 'Hello!',
-        msgTime: 'Just now',
-      ),
-      Contact(
-        name: 'Ayesha',
-        msg: 'OK!',
-        msgTime: 'Just now',
-      ),
-      Contact(
-        name: 'Larry',
-        msg: 'Yep, Already done!',
-        msgTime: 'Just now',
+        subtitle: 'Hello!',
       ),
     ];
     _newList = _localList + _newList;
@@ -358,7 +431,29 @@ class _ContactsViewState extends State<ContactsView> {
     final String _newContacts = Contact.encode(_newList);
 
     await prefs.setString('contacts', _newContacts);
+
+    // adding dummy contact
+    List<Group> _localListGroup = [];
+    final String _localGroups = prefs.getString('groups');
+    if (_local != null) {
+      _localListGroup = List.from(Group.decode(_localGroups));
+    }
+
+    List<Group> _newGroups = [
+      Group(
+          name: 'College Friends',
+          subtitle: 'Lovely people',
+          members: ['Alice', 'James', 'Rio']),
+    ];
+    _newGroups = _localListGroup + _newGroups;
+
+    // dummy ftn for filling the list
+    final String _newGroup = Group.encode(_newGroups);
+
+    await prefs.setString('groups', _newGroup);
+
     _getContacts();
+    _getGroups();
     const snackBar = SnackBar(
       backgroundColor: Colors.green,
       content: Text('New contacts loaded!'),

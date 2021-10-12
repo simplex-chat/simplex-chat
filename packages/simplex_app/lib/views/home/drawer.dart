@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:simplex_chat/app_routes.dart';
@@ -20,46 +19,23 @@ class MyDrawer extends StatelessWidget {
           return Column(
             children: [
               const SizedBox(height: 30.0),
-              SvgPicture.asset(
-                'assets/logo.svg',
-                height: 50.0,
+              Image.asset(
+                'assets/simpleX.png',
+                height: 85.0,
               ),
               const Divider(height: 50.0),
-              ListTile(
-                tileColor: _drawerProviders.currentIndex == 0
-                    ? kPrimaryColor
-                    : Colors.transparent,
-                leading: Icon(
-                  Icons.person,
-                  color: _drawerProviders.currentIndex == 0
-                      ? Colors.white
-                      : Colors.grey,
-                ),
-                title: Text(
-                  'Your Profile',
-                  style: TextStyle(
-                    color: _drawerProviders.currentIndex == 0
-                        ? Colors.white
-                        : Colors.black,
-                  ),
-                ),
-                onTap: () {
-                  _drawerProviders.currentIndex = 0;
-                  Navigator.pop(context);
-                },
-              ),
               ListTile(
                 tileColor: _drawerProviders.currentIndex == 1
                     ? kPrimaryColor
                     : Colors.transparent,
                 leading: Icon(
-                  Icons.contact_phone,
+                  Icons.chat,
                   color: _drawerProviders.currentIndex == 1
                       ? Colors.white
                       : Colors.grey,
                 ),
                 title: Text(
-                  'Your contacts',
+                  'Conversations',
                   style: TextStyle(
                     color: _drawerProviders.currentIndex == 1
                         ? Colors.white
@@ -95,33 +71,21 @@ class MyDrawer extends StatelessWidget {
                 },
               ),
               ListTile(
-                tileColor: _drawerProviders.currentIndex == 3
-                    ? kPrimaryColor
-                    : Colors.transparent,
-                leading: Icon(
-                  Icons.group,
-                  color: _drawerProviders.currentIndex == 3
-                      ? Colors.white
-                      : Colors.grey,
+                leading: const Icon(
+                  Icons.settings,
+                  color: Colors.grey,
                 ),
-                title: Text(
-                  'Your groups',
-                  style: TextStyle(
-                    color: _drawerProviders.currentIndex == 3
-                        ? Colors.white
-                        : Colors.black,
-                  ),
-                ),
-                onTap: () {
-                  _drawerProviders.currentIndex = 3;
-                  Navigator.pop(context);
-                },
+                title: const Text('Settings'),
+                onTap: () {},
               ),
               const Spacer(),
               ListTile(
                 leading: const Icon(Icons.refresh),
                 title: const Text('Switch Profile'),
-                subtitle: const Text('*Not supported yet!*'),
+                subtitle: const Text(
+                  'Not supported yet!',
+                  style: TextStyle(fontStyle: FontStyle.italic),
+                ),
                 onTap: () => _switchProfile(context),
               ),
             ],
@@ -134,11 +98,8 @@ class MyDrawer extends StatelessWidget {
   void _switchProfile(BuildContext context) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
 
-    await Navigator.pushNamedAndRemoveUntil(
-      context,
-      AppRoutes.setupProfile,
-      (route) => route.settings.name == AppRoutes.setupProfile ? true : false,
-    );
+    int _count = 0;
+    Navigator.of(context).popUntil((route) => _count++ >= 2);
     String _name = prefs.getString('displayName');
     await prefs.remove('displayName');
     await prefs.remove('fullName');

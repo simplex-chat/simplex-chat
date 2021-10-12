@@ -252,7 +252,6 @@ class _AddGroupViewState extends State<AddGroupView> {
               if (_formKey.currentState.validate()) {
                 FocusScope.of(context).unfocus();
                 _addNewGroup(
-                    _groupPhotoPath,
                     _displayNameController.text.trim(),
                     _descController.text.trim());
                 _descController.clear();
@@ -398,7 +397,7 @@ class _AddGroupViewState extends State<AddGroupView> {
     }
   }
 
-  void _addNewGroup(String photo, String name, String desc) async {
+  void _addNewGroup(String name, String desc) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     List<Group> _localList = [];
     final String _local = prefs.getString('groups');
@@ -407,12 +406,13 @@ class _AddGroupViewState extends State<AddGroupView> {
     }
     List<Group> _groups = [
       Group(
-        photoPath: _groupPhotoPath,
-        groupName: name,
-        groupDescription: desc,
+        name: name,
+        photo: _groupPhotoPath,
+        subtitle: desc,
         members: _members,
       ),
     ];
+    debugPrint(_groups[0].isGroup.toString());
     _groups = _localList + _groups;
 
     final String _newGroups = Group.encode(_groups);

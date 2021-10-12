@@ -1,16 +1,13 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:simplex_chat/model/contact.dart';
-import 'package:simplex_chat/model/group.dart';
 import 'package:simplex_chat/views/conversation/contact_detail_conversation.dart';
 import 'package:simplex_chat/views/conversation/group_detail_conversation.dart';
 import 'package:simplex_chat/widgets/message_bubble.dart';
 
 class ConversationView extends StatefulWidget {
-  final Contact contact;
-  final Group group;
-  const ConversationView({Key key, this.contact, this.group}) : super(key: key);
+  final data;
+  const ConversationView({Key key, this.data}) : super(key: key);
 
   @override
   _ConversationViewState createState() => _ConversationViewState();
@@ -49,45 +46,72 @@ class _ConversationViewState extends State<ConversationView> {
       onTap: () => FocusScope.of(context).unfocus(),
       child: Scaffold(
         appBar: AppBar(
-          leading: InkWell(
-            onTap: () => Navigator.of(context).pop(true),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.arrow_back),
-                const SizedBox(width: 8.0),
-                CircleAvatar(
-                    backgroundImage: widget.contact == null
-                        ? widget.group.photoPath == ''
-                            ? const AssetImage('assets/dp.png')
-                            : FileImage(
-                                File(widget.group.photoPath),
-                              )
-                        : const AssetImage('assets/dp.png')),
-              ],
+          leading: BackButton(
+            onPressed: () => Navigator.of(context).pop(true),
+          ),
+          leadingWidth: MediaQuery.of(context).size.width * 0.085,
+          title: InkWell(
+            // ignore: avoid_dynamic_calls
+            onTap: widget.data.isGroup
+                ? () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => GroupDetailsConversation(
+                          group: widget.data,
+                        ),
+                      ),
+                    );
+                  }
+                : () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ContactDetailsConversation(
+                          contact: widget.data,
+                        ),
+                      ),
+                    );
+                  },
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8.0),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 15,
+                    // ignore: avoid_dynamic_calls
+                    backgroundImage: widget.data.photo == ''
+                        ? const AssetImage('assets/dp.png')
+                        : FileImage(
+                            // ignore: avoid_dynamic_calls
+                            File(widget.data.photo),
+                          ),
+                  ),
+                  const SizedBox(width: 10.0),
+                  Text(
+                    // ignore: avoid_dynamic_calls
+                    widget.data.name,
+                  ),
+                ],
+              ),
             ),
           ),
-          leadingWidth: MediaQuery.of(context).size.width * 0.2,
-          title: Text(widget.contact != null
-              ? widget.contact.name
-              : widget.group.groupName),
           actions: [
             IconButton(
-              onPressed: widget.contact != null
-                  ? () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (_) => ContactDetailsConversation(
-                                contact: widget.contact,
-                              )))
-                  : () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (_) => GroupDetailsConversation(
-                                group: widget.group,
-                              ))),
-              icon: const Icon(Icons.info),
-            ),
+              onPressed: () {
+                setState(() {
+                  _chatMessages.add(MessageBubble(
+                    isUser: false,
+                    // ignore: avoid_dynamic_calls
+                    sender: widget.data.name,
+                    text: 'Hey there! How is it going?',
+                  ));
+                });
+              },
+              icon: const Icon(
+                Icons.message,
+              ),
+            )
           ],
         ),
         body: Column(
@@ -139,10 +163,10 @@ class _ConversationViewState extends State<ConversationView> {
                       ),
                     ),
                   )),
-                  const SizedBox(width: 15.0),
-                  InkWell(
-                    onTap: () async {
-                      if (_messageFieldController.text == '') {
+                  const SizedBox(width: 4.0),
+                  IconButton(
+                    onPressed: () {
+                      if (_messageFieldController.text.isNotEmpty) {
                         setState(() {
                           _chatMessages.add(MessageBubble(
                             isUser: true,
@@ -154,7 +178,7 @@ class _ConversationViewState extends State<ConversationView> {
                         _focus.unfocus();
                       }
                     },
-                    child: const Icon(Icons.send_rounded,
+                    icon: const Icon(Icons.send_rounded,
                         size: 25.0, color: Colors.teal),
                   ),
                 ],

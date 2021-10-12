@@ -72,7 +72,7 @@ class _InvitationsState extends State<Invitations> {
               child: const Center(
                 child: Text(
                   "You don't have any invitations yet!",
-                  style: kMediumHeadingStyle,
+                  style: kSmallHeadingStyle,
                   textAlign: TextAlign.center,
                 ),
               ),
