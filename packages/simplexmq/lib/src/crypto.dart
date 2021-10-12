@@ -1,29 +1,30 @@
 import 'dart:math' show Random;
 import 'dart:typed_data';
 import 'package:pointycastle/api.dart';
+import 'package:pointycastle/asymmetric/api.dart';
+import 'package:pointycastle/asymmetric/oaep.dart';
+import 'package:pointycastle/asymmetric/rsa.dart';
 import 'package:pointycastle/block/aes_fast.dart';
 import 'package:pointycastle/block/modes/gcm.dart';
-// import 'package:pointycastle/random/fortuna_random.dart';
-
-// import 'package:pointycastle/key_generators/rsa_key_generator.dart';
-// import 'package:pointycastle/signers/rsa_signer.dart';
-// import 'package:pointycastle/asymmetric/oaep.dart';
+import 'package:pointycastle/key_generators/api.dart';
+import 'package:pointycastle/key_generators/rsa_key_generator.dart';
+import 'package:pointycastle/random/fortuna_random.dart';
 
 class AESKey {
-  late final Uint8List _key;
+  final Uint8List _key;
   AESKey._make(this._key);
-  factory AESKey.random([bool secure = false]) {
-    return AESKey._make((secure ? secureRandomBytes : pseudoRandomBytes)(32));
-  }
+
+  static AESKey random([bool secure = false]) =>
+      AESKey._make((secure ? secureRandomBytes : pseudoRandomBytes)(32));
+
+  static AESKey decode(Uint8List rawKey) => AESKey._make(rawKey);
+
+  Uint8List encode() => _key;
 }
 
 Uint8List randomIV() {
   return pseudoRandomBytes(16);
 }
-
-// FortunaRandom _secureFortunaRandom() {
-//   return FortunaRandom()..seed(KeyParameter(secureRandomBytes(32)));
-// }
 
 Uint8List secureRandomBytes(int len) {
   return _randomBytes(len, Random.secure());
@@ -62,4 +63,31 @@ Uint8List decryptAES(AESKey key, Uint8List iv, Uint8List encryptedAndTag) {
 GCMBlockCipher _makeGCMCipher(AESKey key, Uint8List iv, bool encrypt) {
   return GCMBlockCipher(AESFastEngine())
     ..init(encrypt, AEADParameters(KeyParameter(key._key), 128, iv, empty));
+}
+
+FortunaRandom _secureFortunaRandom() {
+  return FortunaRandom()..seed(KeyParameter(secureRandomBytes(32)));
+}
+
+AsymmetricKeyPair<RSAPublicKey, RSAPrivateKey> generateRSAkeyPair(
+    [int bitLength = 2048]) {
+  final keyGen = RSAKeyGenerator()
+    ..init(ParametersWithRandom(
+        RSAKeyGeneratorParameters(BigInt.parse('65537'), bitLength, 64),
+        _secureFortunaRandom()));
+  final pair = keyGen.generateKeyPair();
+  return AsymmetricKeyPair<RSAPublicKey, RSAPrivateKey>(
+      pair.publicKey as RSAPublicKey, pair.privateKey as RSAPrivateKey);
+}
+
+Uint8List encryptOAEP(RSAPublicKey key, Uint8List data) {
+  final oaep = OAEPEncoding(RSAEngine())
+    ..init(true, PublicKeyParameter<RSAPublicKey>(key));
+  return oaep.process(data);
+}
+
+Uint8List decryptOAEP(RSAPrivateKey key, Uint8List data) {
+  final oaep = OAEPEncoding(RSAEngine())
+    ..init(false, PrivateKeyParameter<RSAPrivateKey>(key));
+  return oaep.process(data);
 }

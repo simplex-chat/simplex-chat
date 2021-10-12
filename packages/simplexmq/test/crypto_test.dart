@@ -15,4 +15,15 @@ void main() {
           'hello' + List.filled(32 - 'hello'.length, '#').join());
     });
   });
+
+  group('RSA-OAEP encryption', () {
+    test('encrypt and decrypt', () {
+      final keyPair = generateRSAkeyPair();
+      final data = encodeAscii('hello there');
+      final cipherText = encryptOAEP(keyPair.publicKey, data);
+      expect(cipherText.length, 2048 ~/ 8);
+      final decrypted = decryptOAEP(keyPair.privateKey, cipherText);
+      expect(decodeAscii(decrypted), 'hello there');
+    });
+  });
 }
