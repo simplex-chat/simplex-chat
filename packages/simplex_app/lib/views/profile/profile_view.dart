@@ -7,7 +7,7 @@ import 'package:simplex_chat/constants.dart';
 import 'package:simplex_chat/widgets/custom_text_field.dart';
 
 class ProfileView extends StatefulWidget {
-  const ProfileView({Key key}) : super(key: key);
+  const ProfileView({Key? key}) : super(key: key);
 
   @override
   _ProfileViewState createState() => _ProfileViewState();
@@ -21,8 +21,8 @@ class _ProfileViewState extends State<ProfileView> {
 
   // Image Picker --> DP properties
   final imgPicker = ImagePicker();
-  File image;
-  String _photo = '';
+  File? image;
+  String? _photo = '';
   bool _uploading = false;
 
   // image buttons options
@@ -34,8 +34,8 @@ class _ProfileViewState extends State<ProfileView> {
     Icons.camera_alt_rounded
   ];
 
-  String _displayName = '';
-  String _fullName = '';
+  String? _displayName = '';
+  String? _fullName = '';
 
   void _getUserData() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -44,8 +44,8 @@ class _ProfileViewState extends State<ProfileView> {
       _displayName = prefs.getString('displayName');
       _photo = prefs.getString('photo$_displayName');
     });
-    _displayNameController.text = _displayName;
-    if (_fullName != null) _fullNameController.text = _fullName;
+    _displayNameController.text = _displayName!;
+    if (_fullName != null) _fullNameController.text = _fullName!;
   }
 
   @override
@@ -85,7 +85,7 @@ class _ProfileViewState extends State<ProfileView> {
                           _photo != ''
                               ? CircleAvatar(
                                   radius: 100.0,
-                                  backgroundImage: FileImage(File(_photo)),
+                                  backgroundImage: FileImage(File(_photo!)),
                                 )
                               : const CircleAvatar(
                                   radius: 100.0,
@@ -127,7 +127,7 @@ class _ProfileViewState extends State<ProfileView> {
                       textInputType: TextInputType.name,
                       hintText: 'e.g John',
                       validatorFtn: (value) {
-                        if (value.isEmpty) {
+                        if (value!.isEmpty) {
                           return 'Display name cannot be empty';
                         }
                         return null;
@@ -156,8 +156,8 @@ class _ProfileViewState extends State<ProfileView> {
       floatingActionButton: FloatingActionButton(
         heroTag: 'save',
         onPressed: () async {
-          if (_formKey.currentState.validate()) {
-            FocusManager.instance.primaryFocus.unfocus();
+          if (_formKey.currentState!.validate()) {
+            FocusManager.instance.primaryFocus!.unfocus();
             await _createProfile();
             const snackBar = SnackBar(
               backgroundColor: Colors.green,
@@ -179,7 +179,7 @@ class _ProfileViewState extends State<ProfileView> {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setString('displayName', _displayNameController.text.trim());
     await prefs.setString('fullName', _fullNameController.text.trim());
-    await prefs.setString('photo${_displayNameController.text.trim()}', _photo);
+    await prefs.setString('photo${_displayNameController.text.trim()}', _photo!);
 
     debugPrint(prefs.getString('photo'));
   }

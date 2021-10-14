@@ -1,28 +1,23 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:simplex_chat/animations/bottom_animation.dart';
 import 'package:simplex_chat/app_routes.dart';
 import 'package:simplex_chat/constants.dart';
 import 'package:simplex_chat/model/contact.dart';
 import 'package:simplex_chat/model/group.dart';
-import 'package:simplex_chat/providers/drawer_providers.dart';
 import 'package:simplex_chat/views/conversation/conversation_view.dart';
 
 class Conversations extends StatefulWidget {
-  const Conversations({Key key}) : super(key: key);
+  const Conversations({Key? key}) : super(key: key);
 
   @override
   _ConversationsState createState() => _ConversationsState();
 }
 
 class _ConversationsState extends State<Conversations> {
-  bool _eraseMedia = false;
-
-  String _photo = '';
-  String _displayName = '';
+  bool? _eraseMedia = false;
 
   List<dynamic> _conversations = [];
 
@@ -38,7 +33,7 @@ class _ConversationsState extends State<Conversations> {
   // getting data from local storage FOR NOW!!
   void _getContacts() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    final String _contacts = prefs.getString('contacts');
+    final String? _contacts = prefs.getString('contacts');
     if (_contacts != null) {
       setState(() {
         _contactsList = List.from(Contact.decode(_contacts));
@@ -49,7 +44,7 @@ class _ConversationsState extends State<Conversations> {
   // getting data from local storage FOR NOW!!
   void _getGroups() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    final String _groups = prefs.getString('groups');
+    final String? _groups = prefs.getString('groups');
     if (_groups != null) {
       setState(() {
         _groupList = List.from(Group.decode(_groups));
@@ -57,14 +52,6 @@ class _ConversationsState extends State<Conversations> {
     }
 
     _gettingGroupContactsChats();
-  }
-
-  void _getUserData() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _displayName = prefs.getString('displayName');
-      _photo = prefs.getString('photo$_displayName');
-    });
   }
 
   void _gettingGroupContactsChats() {
@@ -76,7 +63,6 @@ class _ConversationsState extends State<Conversations> {
 
   @override
   void initState() {
-    _getUserData();
     _getContacts();
     _getGroups();
     super.initState();
@@ -84,7 +70,6 @@ class _ConversationsState extends State<Conversations> {
 
   @override
   Widget build(BuildContext context) {
-    final _drawerProviders = Provider.of<DrawerProvider>(context);
     return Scaffold(
       backgroundColor: Colors.white,
       body: SingleChildScrollView(
@@ -93,42 +78,19 @@ class _ConversationsState extends State<Conversations> {
           child: Center(
             child: Column(
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    GestureDetector(
-                      onTap: _addNewContacts,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Text('Hi! $_displayName', style: kSmallHeadingStyle),
-                          const Text('Good day!'),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 10.0),
-                    GestureDetector(
-                      onTap: () {
-                        _drawerProviders.currentIndex = 0;
-                      },
-                      child: CircleAvatar(
-                        backgroundImage: _photo.isEmpty
-                            ? const AssetImage('assets/dp.png') as ImageProvider
-                            : FileImage(File(_photo)),
-                      ),
-                    )
-                  ],
-                ),
-                const SizedBox(height: 15.0),
-                Row(
-                  children: const [
-                    Icon(Icons.chat, color: kPrimaryColor),
-                    SizedBox(width: 8.0),
-                    Text(
-                      'Conversations',
-                      style: kHeadingStyle,
-                    )
-                  ],
+                const SizedBox(height: 40.0),
+                GestureDetector(
+                  onTap: _addNewContacts,
+                  child: Row(
+                    children: const [
+                      Icon(Icons.chat, color: kPrimaryColor),
+                      SizedBox(width: 8.0),
+                      Text(
+                        'Conversations',
+                        style: kHeadingStyle,
+                      )
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 5.0),
                 _contactsList.isEmpty
@@ -219,7 +181,7 @@ class _ConversationsState extends State<Conversations> {
             await Navigator.pushNamed(context, AppRoutes.addContact);
           } else {
             var value = await Navigator.pushNamed(context, AppRoutes.addGroup);
-            if (value) {
+            if (value == true) {
               _getGroups();
             }
           }
@@ -414,7 +376,7 @@ class _ConversationsState extends State<Conversations> {
 
     // adding dummy contact
     List<Contact> _localList = [];
-    final String _local = prefs.getString('contacts');
+    final String? _local = prefs.getString('contacts');
     if (_local != null) {
       _localList = List.from(Contact.decode(_local));
     }
@@ -434,9 +396,9 @@ class _ConversationsState extends State<Conversations> {
 
     // adding dummy contact
     List<Group> _localListGroup = [];
-    final String _localGroups = prefs.getString('groups');
+    final String? _localGroups = prefs.getString('groups');
     if (_local != null) {
-      _localListGroup = List.from(Group.decode(_localGroups));
+      _localListGroup = List.from(Group.decode(_localGroups!));
     }
 
     List<Group> _newGroups = [

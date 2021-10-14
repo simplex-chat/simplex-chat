@@ -5,7 +5,7 @@ import 'package:qr_code_scanner/qr_code_scanner.dart';
 import 'package:simplex_chat/views/contacts/qr_code_details_view.dart';
 
 class AddContactView extends StatefulWidget {
-  const AddContactView({Key key}) : super(key: key);
+  const AddContactView({Key? key}) : super(key: key);
 
   @override
   _AddContactViewState createState() => _AddContactViewState();
@@ -13,16 +13,16 @@ class AddContactView extends StatefulWidget {
 
 class _AddContactViewState extends State<AddContactView> {
   final qrKey = GlobalKey(debugLabel: 'qr');
-  QRViewController _qrViewController;
-  Barcode result;
+  QRViewController? _qrViewController;
+  Barcode? result;
 
   @override
   void reassemble() {
     super.reassemble();
     if (Platform.isAndroid) {
-      _qrViewController.pauseCamera();
+      _qrViewController!.pauseCamera();
     } else if (Platform.isIOS) {
-      _qrViewController.resumeCamera();
+      _qrViewController!.resumeCamera();
     }
   }
 
@@ -113,7 +113,7 @@ class _AddContactViewState extends State<AddContactView> {
                 context,
                 MaterialPageRoute(
                   builder: (_) => QRCodeDetailsView(
-                    barcode: result,
+                    barcode: result!,
                   ),
                 ),
               );

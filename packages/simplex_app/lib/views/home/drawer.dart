@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:simplex_chat/app_routes.dart';
 import 'package:simplex_chat/constants.dart';
 import 'package:simplex_chat/providers/drawer_providers.dart';
 
 class MyDrawer extends StatelessWidget {
-  const MyDrawer({Key key}) : super(key: key);
+  const MyDrawer({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -100,7 +99,7 @@ class MyDrawer extends StatelessWidget {
 
     int _count = 0;
     Navigator.of(context).popUntil((route) => _count++ >= 2);
-    String _name = prefs.getString('displayName');
+    String? _name = prefs.getString('displayName');
     await prefs.remove('displayName');
     await prefs.remove('fullName');
     await prefs.remove('photo$_name');

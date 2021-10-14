@@ -17,7 +17,7 @@ void main() {
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({Key key}) : super(key: key);
+  const MyApp({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -38,7 +38,7 @@ class MyApp extends StatelessWidget {
           ),
           builder: (context, widget) {
             return ScrollConfiguration(
-                behavior: const ScrollBehaviorModified(), child: widget);
+                behavior: const ScrollBehaviorModified(), child: widget!);
           },
           initialRoute: AppRoutes.splash,
           routes: <String, WidgetBuilder>{

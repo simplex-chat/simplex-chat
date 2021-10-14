@@ -8,7 +8,8 @@ import 'package:simplex_chat/model/group.dart';
 
 class GroupDetailsConversation extends StatefulWidget {
   final Group group;
-  const GroupDetailsConversation({Key key, this.group}) : super(key: key);
+  const GroupDetailsConversation({Key? key, required this.group})
+      : super(key: key);
 
   @override
   _GroupDetailsConversationState createState() =>
@@ -33,7 +34,7 @@ class _GroupDetailsConversationState extends State<GroupDetailsConversation> {
   // getting groups
   void _getGroups() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    final String _groups = prefs.getString('groups');
+    final String? _groups = prefs.getString('groups');
     if (_groups != null) {
       setState(() {
         _groupList = List.from(Group.decode(_groups));
@@ -44,9 +45,9 @@ class _GroupDetailsConversationState extends State<GroupDetailsConversation> {
   // getting data from local storage FOR NOW
   void _getContacts() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    final String _contacts = prefs.getString('contacts');
+    final String? _contacts = prefs.getString('contacts');
     setState(() {
-      _contactsList = List.from(Contact.decode(_contacts));
+      _contactsList = List.from(Contact.decode(_contacts!));
     });
   }
 
@@ -75,7 +76,7 @@ class _GroupDetailsConversationState extends State<GroupDetailsConversation> {
                 child: CircleAvatar(
                   radius: 70,
                   backgroundImage: widget.group.photo == ''
-                      ? const AssetImage('assets/dp.png')
+                      ? const AssetImage('assets/dp.png') as ImageProvider
                       : FileImage(File(widget.group.photo)),
                 ),
               ),
@@ -197,8 +198,7 @@ class _GroupDetailsConversationState extends State<GroupDetailsConversation> {
     // get index of group in local
     int index = 0;
 
-    index = _groupList
-        .indexWhere((group) => group.name == widget.group.name);
+    index = _groupList.indexWhere((group) => group.name == widget.group.name);
 
     // add the full _members list to the group
     Group _updatedGroup = Group(
@@ -235,8 +235,7 @@ class _GroupDetailsConversationState extends State<GroupDetailsConversation> {
     // get index of group in local
     int index = 0;
 
-    index = _groupList
-        .indexWhere((group) => group.name == widget.group.name);
+    index = _groupList.indexWhere((group) => group.name == widget.group.name);
 
     // new instance of group (updated)
     Group _updatedGroup = Group(

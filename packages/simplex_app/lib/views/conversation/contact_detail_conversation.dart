@@ -4,7 +4,8 @@ import 'package:simplex_chat/model/contact.dart';
 
 class ContactDetailsConversation extends StatelessWidget {
   final Contact contact;
-  const ContactDetailsConversation({Key key, this.contact}) : super(key: key);
+  const ContactDetailsConversation({Key? key, required this.contact})
+      : super(key: key);
 
   @override
   Widget build(BuildContext context) {

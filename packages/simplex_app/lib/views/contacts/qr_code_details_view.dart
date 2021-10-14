@@ -6,8 +6,8 @@ import 'package:simplex_chat/widgets/custom_btn.dart';
 class QRCodeDetailsView extends StatelessWidget {
   final Barcode barcode;
   const QRCodeDetailsView({
-    Key key,
-    this.barcode,
+    Key? key,
+    required this.barcode,
   }) : super(key: key);
 
   @override

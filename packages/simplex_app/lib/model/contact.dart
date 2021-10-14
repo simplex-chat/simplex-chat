@@ -7,8 +7,8 @@ class Contact {
   final bool isGroup;
 
   Contact({
-    this.name,
-    this.subtitle,
+    required this.name,
+    required this.subtitle,
     this.photo = '',
     this.isGroup = false,
   });

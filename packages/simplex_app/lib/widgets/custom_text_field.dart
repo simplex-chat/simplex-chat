@@ -3,40 +3,17 @@ import 'package:flutter/material.dart';
 class CustomTextField extends StatefulWidget {
   final TextEditingController textEditingController;
   final TextInputType textInputType;
-  final FocusNode node;
 
   final String hintText;
-  final bool isPassword;
-  final IconData icon;
-  final Color iconColor;
-  final Color passIconColor;
 
-  final IconData trailing;
-  final void Function() trailingCallBack;
-
-  final Function(String) onChangeFtn;
-  final void Function() onEditComplete;
-  final String Function(String) validatorFtn;
-  final Function(String) onFieldSubmit;
-  final String errorText;
+  final String? Function(String?)? validatorFtn;
 
   const CustomTextField({
-    Key key,
-    @required this.textEditingController,
-    @required this.textInputType,
-    this.trailing,
-    this.trailingCallBack,
-    this.node,
-    @required this.hintText,
-    this.icon,
-    this.iconColor,
-    this.passIconColor,
-    this.isPassword = false,
-    this.onChangeFtn,
-    this.onEditComplete,
+    Key? key,
+    required this.textEditingController,
+    required this.textInputType,
+    required this.hintText,
     this.validatorFtn,
-    this.onFieldSubmit,
-    this.errorText,
   }) : super(key: key);
 
   @override
@@ -64,10 +41,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
         controller: widget.textEditingController,
         textInputAction: TextInputAction.done,
         keyboardType: widget.textInputType,
-        onChanged: widget.onChangeFtn,
-        onEditingComplete: widget.onEditComplete,
         decoration: InputDecoration(
-          errorText: widget.errorText,
           contentPadding: const EdgeInsets.symmetric(horizontal: 15.0),
           hintText: widget.hintText,
           hintStyle: Theme.of(context).textTheme.caption,
@@ -86,7 +60,6 @@ class _CustomTextFieldState extends State<CustomTextField> {
           ),
         ),
         validator: widget.validatorFtn,
-        onFieldSubmitted: widget.onFieldSubmit,
       ),
     );
   }

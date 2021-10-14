@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 
 class CustomButton extends StatelessWidget {
   const CustomButton(
-      {@required this.width,
-      @required this.height,
-      @required this.onPressed,
-      @required this.color,
-      @required this.child,
-      Key key})
+      {required this.width,
+      required this.height,
+      required this.onPressed,
+      required this.color,
+      required this.child,
+      Key? key})
       : super(key: key);
   final double width;
   final double height;

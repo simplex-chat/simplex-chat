@@ -5,7 +5,7 @@ import 'package:simplex_chat/app_routes.dart';
 import 'package:simplex_chat/constants.dart';
 
 class SplashScreen extends StatefulWidget {
-  const SplashScreen({Key key}) : super(key: key);
+  const SplashScreen({Key? key}) : super(key: key);
 
   @override
   _SplashScreenState createState() => _SplashScreenState();

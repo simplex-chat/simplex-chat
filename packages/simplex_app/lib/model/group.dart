@@ -8,8 +8,8 @@ class Group {
   final bool isGroup;
 
   Group({
-    this.name,
-    this.subtitle,
+    required this.name,
+    required this.subtitle,
     this.photo = '',
     this.isGroup = true,
     this.members = const [],

@@ -3,10 +3,10 @@ import 'package:simplex_chat/constants.dart';
 
 class MessageBubble extends StatefulWidget {
   const MessageBubble({
-    Key key,
-    this.sender,
-    this.text,
-    this.isUser,
+    Key? key,
+    required this.sender,
+    required this.text,
+    required this.isUser,
   }) : super(key: key);
   final String sender;
   final String text;

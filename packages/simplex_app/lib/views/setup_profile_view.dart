@@ -8,7 +8,7 @@ import 'package:simplex_chat/views/home/home_view.dart';
 import 'package:simplex_chat/widgets/custom_text_field.dart';
 
 class SetupProfileView extends StatefulWidget {
-  const SetupProfileView({Key key}) : super(key: key);
+  const SetupProfileView({Key? key}) : super(key: key);
 
   @override
   _SetupProfileViewState createState() => _SetupProfileViewState();
@@ -22,7 +22,7 @@ class _SetupProfileViewState extends State<SetupProfileView> {
 
   // Image Picker --> DP properties
   final imgPicker = ImagePicker();
-  File image;
+  File? image;
   String photoUrl = '';
   bool _uploading = false;
   bool _imageUploaded = false;
@@ -63,7 +63,7 @@ class _SetupProfileViewState extends State<SetupProfileView> {
                           _imageUploaded
                               ? CircleAvatar(
                                   radius: 100.0,
-                                  backgroundImage: FileImage(image),
+                                  backgroundImage: FileImage(image!),
                                 )
                               : const CircleAvatar(
                                   radius: 100.0,
@@ -105,7 +105,7 @@ class _SetupProfileViewState extends State<SetupProfileView> {
                       textInputType: TextInputType.name,
                       hintText: 'e.g John',
                       validatorFtn: (value) {
-                        if (value.isEmpty) {
+                        if (value!.isEmpty) {
                           return 'Display name cannot be empty';
                         }
                         return null;
@@ -136,7 +136,7 @@ class _SetupProfileViewState extends State<SetupProfileView> {
         child: FloatingActionButton(
           heroTag: 'setup',
           onPressed: () async {
-            if (_formKey.currentState.validate()) {
+            if (_formKey.currentState!.validate()) {
               FocusScope.of(context).unfocus();
 
               await _createProfile();

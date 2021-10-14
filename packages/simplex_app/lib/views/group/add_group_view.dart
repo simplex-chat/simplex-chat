@@ -9,7 +9,7 @@ import 'package:simplex_chat/model/group.dart';
 import 'package:simplex_chat/widgets/custom_text_field.dart';
 
 class AddGroupView extends StatefulWidget {
-  const AddGroupView({Key key}) : super(key: key);
+  const AddGroupView({Key? key}) : super(key: key);
 
   @override
   _AddGroupViewState createState() => _AddGroupViewState();
@@ -18,7 +18,7 @@ class AddGroupView extends StatefulWidget {
 class _AddGroupViewState extends State<AddGroupView> {
   // Image Picker --> DP properties
   final imgPicker = ImagePicker();
-  File image;
+  File? image;
   String _groupPhotoPath = '';
   bool _uploading = false;
   bool _imageUploaded = false;
@@ -43,16 +43,16 @@ class _AddGroupViewState extends State<AddGroupView> {
   // getting data from local storage FOR NOW
   void _getContacts() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    final String _contacts = prefs.getString('contacts');
+    final String? _contacts = prefs.getString('contacts');
     setState(() {
-      _contactsList = List.from(Contact.decode(_contacts));
+      _contactsList = List.from(Contact.decode(_contacts!));
     });
   }
 
   String _userPhotoPath = '';
   void _getUserPhoto() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    String _photo = prefs.getString('photo${prefs.getString('displayName')}');
+    String? _photo = prefs.getString('photo${prefs.getString('displayName')}');
     if (_photo != null) {
       setState(() {
         _userPhotoPath = _photo;
@@ -147,8 +147,8 @@ class _AddGroupViewState extends State<AddGroupView> {
                     textEditingController: _displayNameController,
                     textInputType: TextInputType.name,
                     hintText: 'e.g College friends',
-                    validatorFtn: (value) {
-                      if (value.isEmpty) {
+                    validatorFtn: (String? value) {
+                      if (value!.isEmpty) {
                         return 'Group name cannot be empty';
                       }
                       return null;
@@ -249,10 +249,9 @@ class _AddGroupViewState extends State<AddGroupView> {
           child: FloatingActionButton(
             heroTag: 'setup',
             onPressed: () async {
-              if (_formKey.currentState.validate()) {
+              if (_formKey.currentState!.validate()) {
                 FocusScope.of(context).unfocus();
-                _addNewGroup(
-                    _displayNameController.text.trim(),
+                _addNewGroup(_displayNameController.text.trim(),
                     _descController.text.trim());
                 _descController.clear();
                 _displayNameController.clear();
@@ -400,7 +399,7 @@ class _AddGroupViewState extends State<AddGroupView> {
   void _addNewGroup(String name, String desc) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     List<Group> _localList = [];
-    final String _local = prefs.getString('groups');
+    final String? _local = prefs.getString('groups');
     if (_local != null) {
       _localList = List.from(Group.decode(_local));
     }
