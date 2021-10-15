@@ -12,6 +12,7 @@ class AddContactView extends StatefulWidget {
 }
 
 class _AddContactViewState extends State<AddContactView> {
+  bool? _dontShow = false;
   final qrKey = GlobalKey(debugLabel: 'qr');
   QRViewController? _qrViewController;
   Barcode? result;
@@ -24,6 +25,63 @@ class _AddContactViewState extends State<AddContactView> {
     } else if (Platform.isIOS) {
       _qrViewController!.resumeCamera();
     }
+  }
+
+  // alert dialgoue
+  void _initialWarning() {
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Text('Are you Sure?'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('Your profile will be sent to your contact!'),
+              const SizedBox(height: 15.0),
+              Row(
+                children: [
+                  Checkbox(
+                      value: _dontShow,
+                      onChanged: (value) {
+                        setState(() {
+                          _dontShow = value;
+                        });
+                      }),
+                  const Text("Don't ask again")
+                ],
+              ),
+            ],
+          ),
+          actions: [
+            InkWell(
+              onTap: () => Navigator.pop(context),
+              child: const Padding(
+                padding: EdgeInsets.all(8.0),
+                child: Icon(Icons.check, color: Colors.green),
+              ),
+            ),
+            InkWell(
+              onTap: () => Navigator.pop(context),
+              child: const Padding(
+                padding: EdgeInsets.all(8.0),
+                child: Icon(Icons.cancel_outlined, color: Colors.red),
+              ),
+            )
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _intiBox() {
+    Future.delayed(const Duration(seconds: 1), _initialWarning);
+  }
+
+  @override
+  void initState() {
+    _intiBox();
+    super.initState();
   }
 
   @override
@@ -74,7 +132,16 @@ class _AddContactViewState extends State<AddContactView> {
         child: Stack(
           children: [
             Center(
-              child: _qrViewBuild(),
+              child: GestureDetector(
+                  onTap: () => Navigator.of(context).pop(true),
+                  child: _qrViewBuild()),
+            ),
+            const Center(
+              child: Text(
+                'Tap Here!',
+                style:
+                    TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              ),
             ),
             Positioned(
               top: MediaQuery.of(context).size.height * 0.15,

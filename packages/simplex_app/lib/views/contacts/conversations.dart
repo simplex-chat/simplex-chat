@@ -71,6 +71,22 @@ class _ConversationsState extends State<Conversations> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        elevation: 0.0,
+        backgroundColor: Colors.transparent,
+        leadingWidth: 30,
+        title: InkWell(
+          onTap: _addNewContacts,
+          child: const Padding(
+            padding: EdgeInsets.all(8.0),
+            child: Icon(
+              Icons.bug_report,
+              color: Colors.grey,
+              size: 22.0,
+            ),
+          ),
+        ),
+      ),
       backgroundColor: Colors.white,
       body: SingleChildScrollView(
         child: Padding(
@@ -78,21 +94,7 @@ class _ConversationsState extends State<Conversations> {
           child: Center(
             child: Column(
               children: [
-                const SizedBox(height: 40.0),
-                GestureDetector(
-                  onTap: _addNewContacts,
-                  child: Row(
-                    children: const [
-                      Icon(Icons.chat, color: kPrimaryColor),
-                      SizedBox(width: 8.0),
-                      Text(
-                        'Conversations',
-                        style: kHeadingStyle,
-                      )
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 5.0),
+                const SizedBox(height: 10.0),
                 _contactsList.isEmpty
                     ? SizedBox(
                         height: MediaQuery.of(context).size.height * 0.7,
@@ -128,12 +130,14 @@ class _ConversationsState extends State<Conversations> {
                                             as ImageProvider
                                         : FileImage(
                                             // ignore: avoid_dynamic_calls
-                                            File(_conversations[index].photo)),
+                                            File(_conversations[index].photo ??
+                                                '')),
                               ),
                               // ignore: avoid_dynamic_calls
-                              title: Text(_conversations[index].name),
-                              // ignore: avoid_dynamic_calls
-                              subtitle: Text(_conversations[index].subtitle),
+                              title: Text(_conversations[index].name ?? ''),
+                              subtitle:
+                                  // ignore: avoid_dynamic_calls
+                                  Text(_conversations[index].subtitle ?? ''),
                               // ignore: avoid_dynamic_calls
                               trailing: Icon(
                                 // ignore: avoid_dynamic_calls
@@ -178,7 +182,12 @@ class _ConversationsState extends State<Conversations> {
           if (value == _options[0]) {
             await Navigator.pushNamed(context, AppRoutes.scanInvitation);
           } else if (value == _options[1]) {
-            await Navigator.pushNamed(context, AppRoutes.addContact);
+            var value =
+                await Navigator.pushNamed(context, AppRoutes.addContact);
+            value ??= false;
+            if (value == true) {
+              _addNewMember();
+            }
           } else {
             var value = await Navigator.pushNamed(context, AppRoutes.addGroup);
             if (value == true) {
@@ -419,6 +428,40 @@ class _ConversationsState extends State<Conversations> {
     const snackBar = SnackBar(
       backgroundColor: Colors.green,
       content: Text('New contacts loaded!'),
+    );
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(snackBar);
+  }
+
+  void _addNewMember() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    // adding dummy contact
+    List<Contact> _localList = [];
+    final String? _local = prefs.getString('contacts');
+    if (_local != null) {
+      _localList = List.from(Contact.decode(_local));
+    }
+
+    List<Contact> _newList = [
+      Contact(
+        name: 'Bob',
+        subtitle: 'You and Bob are connected now!',
+      ),
+    ];
+    _newList = _localList + _newList;
+
+    // dummy ftn for filling the list
+    final String _newContacts = Contact.encode(_newList);
+
+    await prefs.setString('contacts', _newContacts);
+
+    _getContacts();
+    _getGroups();
+
+    const snackBar = SnackBar(
+      backgroundColor: Colors.green,
+      content: Text('New connection added!'),
     );
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
