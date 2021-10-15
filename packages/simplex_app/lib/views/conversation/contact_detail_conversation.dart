@@ -12,7 +12,7 @@ class ContactDetailsConversation extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         centerTitle: true,
-        title: Text(contact.name),
+        title: Text(contact.name!),
       ),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
@@ -26,7 +26,7 @@ class ContactDetailsConversation extends StatelessWidget {
               ),
               const SizedBox(height: 15.0),
               const Text('Display Name', style: kMediumHeadingStyle),
-              Text(contact.name),
+              Text(contact.name!),
             ],
           ),
         ),

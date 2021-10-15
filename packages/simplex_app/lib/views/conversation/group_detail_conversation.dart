@@ -27,7 +27,7 @@ class _GroupDetailsConversationState extends State<GroupDetailsConversation> {
   // getting all members of group
   void _getMembers() {
     setState(() {
-      _members = List.from(widget.group.members);
+      _members = List.from(widget.group.members!);
     });
   }
 
@@ -64,7 +64,7 @@ class _GroupDetailsConversationState extends State<GroupDetailsConversation> {
     return Scaffold(
       appBar: AppBar(
         centerTitle: true,
-        title: Text(widget.group.name),
+        title: Text(widget.group.name!),
       ),
       body: SingleChildScrollView(
         child: Padding(
@@ -77,12 +77,12 @@ class _GroupDetailsConversationState extends State<GroupDetailsConversation> {
                   radius: 70,
                   backgroundImage: widget.group.photo == ''
                       ? const AssetImage('assets/dp.png') as ImageProvider
-                      : FileImage(File(widget.group.photo)),
+                      : FileImage(File(widget.group.photo!)),
                 ),
               ),
               const SizedBox(height: 25.0),
               const Text('Group Name', style: kMediumHeadingStyle),
-              Text(widget.group.name),
+              Text(widget.group.name!),
               const Divider(),
               ListTile(
                 leading: const Icon(Icons.person_add),
@@ -137,7 +137,7 @@ class _GroupDetailsConversationState extends State<GroupDetailsConversation> {
                           leading: const CircleAvatar(
                             backgroundImage: AssetImage('assets/dp.png'),
                           ),
-                          title: Text(_contactsList[index].name),
+                          title: Text(_contactsList[index].name!),
                           onTap: () {
                             setState(() {
                               _newMembers.add(_contactsList[index].name);

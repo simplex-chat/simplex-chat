@@ -104,7 +104,14 @@ class _ConversationViewState extends State<ConversationView> {
                   _chatMessages.add(MessageBubble(
                     isUser: false,
                     // ignore: avoid_dynamic_calls
-                    sender: widget.data.name,
+                    sender: widget.data.isGroup
+                        // ignore: avoid_dynamic_calls
+                        ? widget.data.members.length == 0
+                            ? 'some person'
+                            // ignore: avoid_dynamic_calls
+                            : widget.data.members[0]
+                        // ignore: avoid_dynamic_calls
+                        : widget.data.name,
                     text: 'Hey there! How is it going?',
                   ));
                 });
@@ -137,6 +144,7 @@ class _ConversationViewState extends State<ConversationView> {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  const SizedBox(width: 10.0),
                   Expanded(
                       child: SizedBox(
                     height: 45.0,
@@ -155,16 +163,19 @@ class _ConversationViewState extends State<ConversationView> {
                         hintStyle: Theme.of(context).textTheme.caption,
                         fillColor: Colors.grey[200],
                         filled: true,
-                        enabledBorder: const OutlineInputBorder(
-                          borderSide: BorderSide(color: Colors.transparent),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(360),
+                          borderSide:
+                              const BorderSide(color: Colors.transparent),
                         ),
-                        focusedBorder: const OutlineInputBorder(
-                          borderSide: BorderSide(color: Colors.transparent),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(360),
+                          borderSide:
+                              const BorderSide(color: Colors.transparent),
                         ),
                       ),
                     ),
                   )),
-                  const SizedBox(width: 4.0),
                   IconButton(
                     onPressed: () {
                       if (_messageFieldController.text.isNotEmpty) {
@@ -185,6 +196,9 @@ class _ConversationViewState extends State<ConversationView> {
                 ],
               ),
             ),
+            SizedBox(
+              height: MediaQuery.of(context).size.height * 0.02,
+            )
           ],
         ),
       ),
