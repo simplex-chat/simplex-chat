@@ -83,7 +83,10 @@ class ScanInvitationView extends StatelessWidget {
             CustomButton(
               width: 200,
               height: 40,
-              onPressed: () => Navigator.pop(context),
+              onPressed: () {
+                int _count = 0;
+                Navigator.popUntil(context, (route) => _count++ >= 2);
+              },
               color: kPrimaryColor,
               child: const Text(
                 'Confirm',
@@ -94,7 +97,10 @@ class ScanInvitationView extends StatelessWidget {
             CustomButton(
               width: 200,
               height: 40,
-              onPressed: () => Navigator.pop(context),
+              onPressed: () {
+                int _count = 0;
+                Navigator.popUntil(context, (route) => _count++ >= 2);
+              },
               color: kSecondaryColor,
               child: const Text(
                 'Ignore',

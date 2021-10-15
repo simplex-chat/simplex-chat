@@ -217,7 +217,7 @@ class _AddGroupViewState extends State<AddGroupView> {
                               leading: const CircleAvatar(
                                 backgroundImage: AssetImage('assets/dp.png'),
                               ),
-                              title: Text(_contactsList[index].name),
+                              title: Text(_contactsList[index].name!),
                               onTap: () {
                                 setState(() {
                                   _members.add(_contactsList[index].name);

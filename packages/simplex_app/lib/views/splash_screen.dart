@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:progress_indicators/progress_indicators.dart';
 import 'package:simplex_chat/animations/entrance_fader.dart';
 import 'package:simplex_chat/app_routes.dart';
@@ -38,9 +39,9 @@ class _SplashScreenState extends State<SplashScreen> {
             EntranceFader(
               duration: const Duration(seconds: 1),
               offset: const Offset(0, 15),
-              child: Image.asset(
-                'assets/simpleX.png',
-                height: 150,
+              child: SvgPicture.asset(
+                'assets/logo.svg',
+                height: 85,
               ),
             ),
             EntranceFader(

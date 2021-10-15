@@ -70,49 +70,99 @@ class _HomeViewState extends State<HomeView> {
                           },
                           child: const Padding(
                             padding: EdgeInsets.all(8.0),
-                            child: Icon(Icons.arrow_back),
+                            child: Icon(Icons.arrow_back, color: kPrimaryColor),
                           ),
                         ),
                       )
-                    : Padding(
-                        padding: const EdgeInsets.all(10.0),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            InkWell(
-                              onTap: () {
-                                Scaffold.of(context).openDrawer();
-                              },
-                              child: Padding(
-                                padding: const EdgeInsets.all(8.0),
-                                child: SvgPicture.asset('assets/menu.svg'),
-                              ),
-                            ),
-                            const Spacer(),
-                            Column(
+                    : _drawerProviders.currentIndex == 2
+                        ? Padding(
+                            padding: const EdgeInsets.all(10.0),
+                            child: Row(
                               mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.end,
                               children: [
-                                Text('Hi! $_displayName',
-                                    style: kSmallHeadingStyle),
-                                const Text('Good day!'),
+                                InkWell(
+                                  onTap: () {
+                                    _drawerProviders.currentIndex = 1;
+                                  },
+                                  child: const Padding(
+                                      padding: EdgeInsets.all(8.0),
+                                      child: Icon(Icons.arrow_back,
+                                          color: kPrimaryColor)),
+                                ),
+                                const Spacer(),
+                                InkWell(
+                                    onTap: () {},
+                                    child: const Padding(
+                                      padding: EdgeInsets.all(8.0),
+                                      child: Icon(
+                                        Icons.bug_report,
+                                        color: Colors.grey,
+                                      ),
+                                    )),
+                                const SizedBox(width: 10.0),
+                                Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    Text('Hi! $_displayName',
+                                        style: kSmallHeadingStyle),
+                                    const Text('Good day!'),
+                                  ],
+                                ),
+                                const SizedBox(width: 10.0),
+                                GestureDetector(
+                                  onTap: () {
+                                    _drawerProviders.currentIndex = 0;
+                                  },
+                                  child: CircleAvatar(
+                                    backgroundImage: _photo!.isEmpty
+                                        ? const AssetImage('assets/dp.png')
+                                            as ImageProvider
+                                        : FileImage(File(_photo!)),
+                                  ),
+                                )
                               ],
                             ),
-                            const SizedBox(width: 10.0),
-                            GestureDetector(
-                              onTap: () {
-                                _drawerProviders.currentIndex = 0;
-                              },
-                              child: CircleAvatar(
-                                backgroundImage: _photo!.isEmpty
-                                    ? const AssetImage('assets/dp.png')
-                                        as ImageProvider
-                                    : FileImage(File(_photo!)),
-                              ),
-                            )
-                          ],
-                        ),
-                      ),
+                          )
+                        : Padding(
+                            padding: const EdgeInsets.all(10.0),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                InkWell(
+                                  onTap: () {
+                                    Scaffold.of(context).openDrawer();
+                                  },
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(8.0),
+                                    child: SvgPicture.asset('assets/menu.svg'),
+                                  ),
+                                ),
+                                const Spacer(),
+                                Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    Text('Hi! $_displayName',
+                                        style: kSmallHeadingStyle),
+                                    const Text('Good day!'),
+                                  ],
+                                ),
+                                const SizedBox(width: 10.0),
+                                GestureDetector(
+                                  onTap: () {
+                                    _drawerProviders.currentIndex = 0;
+                                  },
+                                  child: CircleAvatar(
+                                    backgroundImage: _photo!.isEmpty
+                                        ? const AssetImage('assets/dp.png')
+                                            as ImageProvider
+                                        : FileImage(File(_photo!)),
+                                  ),
+                                )
+                              ],
+                            ),
+                          ),
               ],
             );
           }),

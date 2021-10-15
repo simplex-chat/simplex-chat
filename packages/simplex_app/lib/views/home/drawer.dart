@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:simplex_chat/constants.dart';
@@ -18,64 +19,18 @@ class MyDrawer extends StatelessWidget {
           return Column(
             children: [
               const SizedBox(height: 30.0),
-              Image.asset(
-                'assets/simpleX.png',
-                height: 85.0,
+              SvgPicture.asset(
+                'assets/logo.svg',
+                height: 55.0,
               ),
-              const Divider(height: 50.0),
+              const Divider(height: 30.0),
               ListTile(
-                tileColor: _drawerProviders.currentIndex == 1
-                    ? kPrimaryColor
-                    : Colors.transparent,
-                leading: Icon(
-                  Icons.chat,
-                  color: _drawerProviders.currentIndex == 1
-                      ? Colors.white
-                      : Colors.grey,
-                ),
-                title: Text(
-                  'Conversations',
-                  style: TextStyle(
-                    color: _drawerProviders.currentIndex == 1
-                        ? Colors.white
-                        : Colors.black,
-                  ),
-                ),
-                onTap: () {
-                  _drawerProviders.currentIndex = 1;
-                  Navigator.pop(context);
-                },
-              ),
-              ListTile(
-                tileColor: _drawerProviders.currentIndex == 2
-                    ? kPrimaryColor
-                    : Colors.transparent,
-                leading: Icon(
-                  Icons.insert_invitation,
-                  color: _drawerProviders.currentIndex == 2
-                      ? Colors.white
-                      : Colors.grey,
-                ),
-                title: Text(
-                  'Invitations',
-                  style: TextStyle(
-                    color: _drawerProviders.currentIndex == 2
-                        ? Colors.white
-                        : Colors.black,
-                  ),
-                ),
+                leading: const Icon(Icons.insert_invitation),
+                title: const Text('Invitations'),
                 onTap: () {
                   _drawerProviders.currentIndex = 2;
                   Navigator.pop(context);
                 },
-              ),
-              ListTile(
-                leading: const Icon(
-                  Icons.settings,
-                  color: Colors.grey,
-                ),
-                title: const Text('Settings'),
-                onTap: () {},
               ),
               const Spacer(),
               ListTile(
