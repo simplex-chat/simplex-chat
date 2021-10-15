@@ -1,11 +1,11 @@
 import 'dart:convert';
 
 class Group {
-  final String name;
-  final String subtitle;
-  final String photo;
-  final List<dynamic> members;
-  final bool isGroup;
+  final String? name;
+  final String? subtitle;
+  final String? photo;
+  final List<dynamic>? members;
+  final bool? isGroup;
 
   Group({
     required this.name,

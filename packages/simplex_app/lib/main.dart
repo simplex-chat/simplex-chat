@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:simplex_chat/app_routes.dart';
@@ -6,7 +7,7 @@ import 'package:simplex_chat/custom_scroll_behavior.dart';
 import 'package:simplex_chat/providers/drawer_providers.dart';
 import 'package:simplex_chat/views/contacts/add_contact_view.dart';
 import 'package:simplex_chat/views/group/add_group_view.dart';
-import 'package:simplex_chat/views/on_boarding/intro_view.dart';
+import 'package:simplex_chat/views/onboarding/intro_view.dart';
 import 'package:simplex_chat/views/scan_invitation/scan_invitation_view.dart';
 import 'package:simplex_chat/views/setup_profile_view.dart';
 import 'package:simplex_chat/views/splash_screen.dart';

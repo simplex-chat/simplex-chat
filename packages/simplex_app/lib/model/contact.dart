@@ -1,10 +1,10 @@
 import 'dart:convert';
 
 class Contact {
-  final String name;
-  final String subtitle;
-  final String photo;
-  final bool isGroup;
+  final String? name;
+  final String? subtitle;
+  final String? photo;
+  final bool? isGroup;
 
   Contact({
     required this.name,
