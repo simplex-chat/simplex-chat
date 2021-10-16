@@ -6,9 +6,9 @@ publish_to: none
 environment:
   sdk: '>=2.14.0 <3.0.0'
 
-
-# dependencies:
-#   path: ^1.8.0
+dependencies:
+  asn1lib: ^1.0.2
+  pointycastle: ^3.3.4
 
 dev_dependencies:
   lints: ^1.0.0
