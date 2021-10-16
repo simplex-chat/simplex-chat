@@ -20,16 +20,16 @@ class SocketTransport implements Transport {
   final int _bufferSize;
   Uint8List _buffer = Uint8List(0);
   final ListQueue<_STReaders> _readers = ListQueue(16);
-  SocketTransport._new(this._socket, this._timeout, this._bufferSize);
+  SocketTransport._(this._socket, this._timeout, this._bufferSize);
 
   static Future<SocketTransport> connect(String host, int port,
       {Duration timeout = const Duration(seconds: 1),
       int bufferSize = 16384}) async {
     final socket = await Socket.connect(host, port, timeout: timeout);
-    final t = SocketTransport._new(socket, timeout, bufferSize);
+    final t = SocketTransport._(socket, timeout, bufferSize);
     // ignore: cancel_subscriptions
     final subscription = socket.listen(t._onData,
-        onError: (Object e) => t._finalize, onDone: t._finalize);
+        onError: (Object e) => t.close, onDone: t.close);
     t._subscription = subscription;
     return t;
   }
@@ -71,17 +71,13 @@ class SocketTransport implements Transport {
     }
   }
 
-  void _finalize() {
+  /// Close the client transport
+  void close() {
     _subscription.cancel();
     _socket.destroy();
     while (_readers.isNotEmpty) {
       final r = _readers.removeFirst();
       r.completer.completeError(Exception('socket closed'));
     }
-  }
-
-  /// Allow closing the client transport.
-  void close() {
-    _finalize();
   }
 }

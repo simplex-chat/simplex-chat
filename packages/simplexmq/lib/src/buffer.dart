@@ -130,3 +130,15 @@ Uint8List? decode64(Uint8List b64) {
 
   return bytes;
 }
+
+Uint8List encodeInt32(int n) {
+  final data = Uint8List(4);
+  ByteData.sublistView(data).setInt32(0, n);
+  return data;
+}
+
+Uint8List encodeInt16(int n) {
+  final data = Uint8List(2);
+  ByteData.sublistView(data).setInt16(0, n);
+  return data;
+}

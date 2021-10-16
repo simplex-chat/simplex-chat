@@ -19,7 +19,7 @@ class AESKey {
 
   static AESKey decode(Uint8List rawKey) => AESKey._make(rawKey);
 
-  Uint8List encode() => _key;
+  Uint8List get bytes => _key;
 }
 
 Uint8List randomIV() {

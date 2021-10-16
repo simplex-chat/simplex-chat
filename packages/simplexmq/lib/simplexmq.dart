@@ -4,4 +4,4 @@
 library simplexmq;
 
 export 'src/protocol.dart';
-export 'src/transport.dart' show Transport;
+export 'src/transport.dart' show Transport, SMPTransportClient;
