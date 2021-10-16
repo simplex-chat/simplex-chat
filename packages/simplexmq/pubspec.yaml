@@ -9,7 +9,6 @@ environment:
 dependencies:
   asn1lib: ^1.0.2
   pointycastle: ^3.3.4
-  ssh_key: ^0.7.1
 
 dev_dependencies:
   lints: ^1.0.0
