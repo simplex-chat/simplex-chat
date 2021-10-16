@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 import 'package:asn1lib/asn1lib.dart';
-import 'package:pointycastle/asymmetric/api.dart' as pc;
+import 'package:pointycastle/asymmetric/api.dart'
+    show RSAPublicKey, RSAPrivateKey;
 
 const _rsaOid = '1.2.840.113549.1.1.1';
 final _asnRsaOid = ASN1ObjectIdentifier.fromComponentString(_rsaOid);
@@ -20,19 +21,19 @@ void _assertRsaAlgorithm(ASN1Sequence seq) {
 }
 
 /// Decodes binary PKCS1 to [RSAPublicKey]
-pc.RSAPublicKey decodeRsaPubKeyPKCS1(Uint8List bytes) {
+RSAPublicKey decodeRsaPubKeyPKCS1(Uint8List bytes) {
   final els = ASN1Sequence.fromBytes(bytes).elements;
   if (els.length != 2 || els[0] is! ASN1Integer || els[1] is! ASN1Integer) {
     throw Exception('Invalid PKCS1 encoding');
   }
-  return pc.RSAPublicKey(
+  return RSAPublicKey(
     (els[0] as ASN1Integer).valueAsBigInteger!,
     (els[1] as ASN1Integer).valueAsBigInteger!,
   );
 }
 
 /// Decodes binary SPKI to [RSAPublicKey]
-pc.RSAPublicKey decodeRsaPubKey(Uint8List bytes) {
+RSAPublicKey decodeRsaPubKey(Uint8List bytes) {
   final els = ASN1Sequence.fromBytes(bytes).elements;
   if (els.length != 2 || els[1] is! ASN1BitString || els[0] is! ASN1Sequence) {
     throw Exception('Invalid SPKI structure');
@@ -42,23 +43,23 @@ pc.RSAPublicKey decodeRsaPubKey(Uint8List bytes) {
 }
 
 /// Encodes [key] as binary PKCS1
-Uint8List encodeRsaPubKeyPKCS1(pc.RSAPublicKey key) =>
+Uint8List encodeRsaPubKeyPKCS1(RSAPublicKey key) =>
     _asn1Sequence([ASN1Integer(key.modulus!), ASN1Integer(key.publicExponent!)])
         .encodedBytes;
 
 /// Encodes [key] as binary SPKI
-Uint8List encodeRsaPubKey(pc.RSAPublicKey key) => _asn1Sequence([
+Uint8List encodeRsaPubKey(RSAPublicKey key) => _asn1Sequence([
       _asn1Sequence([_asnRsaOid, _asn1Null]),
       ASN1BitString(encodeRsaPubKeyPKCS1(key))
     ]).encodedBytes;
 
 /// Decodes binary PKCS1 to [RSAPrivateKey]
-pc.RSAPrivateKey decodeRsaPrivKeyPKCS1(Uint8List bytes) {
+RSAPrivateKey decodeRsaPrivKeyPKCS1(Uint8List bytes) {
   final els = ASN1Sequence.fromBytes(bytes).elements;
   if (els.length != 9 || els.any((el) => el is! ASN1Integer)) {
     throw Exception('Invalid PKCS1 encoding');
   }
-  return pc.RSAPrivateKey(
+  return RSAPrivateKey(
       (els[1] as ASN1Integer).valueAsBigInteger!,
       (els[3] as ASN1Integer).valueAsBigInteger!,
       (els[4] as ASN1Integer).valueAsBigInteger!,
@@ -66,7 +67,7 @@ pc.RSAPrivateKey decodeRsaPrivKeyPKCS1(Uint8List bytes) {
 }
 
 /// Decodes binary PKCS8 to [RSAPrivateKey]
-pc.RSAPrivateKey decodeRsaPrivKey(Uint8List bytes) {
+RSAPrivateKey decodeRsaPrivKey(Uint8List bytes) {
   final els = ASN1Sequence.fromBytes(bytes).elements;
   if (els.length != 3 ||
       els[1] is! ASN1Sequence ||
@@ -80,7 +81,7 @@ pc.RSAPrivateKey decodeRsaPrivKey(Uint8List bytes) {
 final _asnZero = ASN1Integer(BigInt.from(0));
 
 /// Encodes [key] as PKCS1 binary
-Uint8List encodeRsaPrivKeyPKCS1(pc.RSAPrivateKey key) {
+Uint8List encodeRsaPrivKeyPKCS1(RSAPrivateKey key) {
   final d = key.privateExponent!;
   final p = key.p!;
   final q = key.q!;
@@ -101,7 +102,7 @@ Uint8List encodeRsaPrivKeyPKCS1(pc.RSAPrivateKey key) {
 }
 
 /// Encodes [key] as PKCS8 binary
-Uint8List encodeRsaPrivKey(pc.RSAPrivateKey key) => _asn1Sequence([
+Uint8List encodeRsaPrivKey(RSAPrivateKey key) => _asn1Sequence([
       _asnZero,
       _asn1Sequence([_asnRsaOid, _asn1Null]),
       ASN1OctetString(encodeRsaPrivKeyPKCS1(key))
