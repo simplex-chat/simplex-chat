@@ -90,16 +90,6 @@ class _HomeViewState extends State<HomeView> {
                                           color: kPrimaryColor)),
                                 ),
                                 const Spacer(),
-                                InkWell(
-                                    onTap: () {},
-                                    child: const Padding(
-                                      padding: EdgeInsets.all(8.0),
-                                      child: Icon(
-                                        Icons.bug_report,
-                                        color: Colors.grey,
-                                      ),
-                                    )),
-                                const SizedBox(width: 10.0),
                                 Column(
                                   mainAxisSize: MainAxisSize.min,
                                   crossAxisAlignment: CrossAxisAlignment.end,
