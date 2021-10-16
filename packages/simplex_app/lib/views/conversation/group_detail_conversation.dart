@@ -6,6 +6,8 @@ import 'package:simplex_chat/constants.dart';
 import 'package:simplex_chat/model/contact.dart';
 import 'package:simplex_chat/model/group.dart';
 
+enum MemberSetting { owner, admin, member }
+
 class GroupDetailsConversation extends StatefulWidget {
   final Group group;
   const GroupDetailsConversation({Key? key, required this.group})
@@ -17,6 +19,8 @@ class GroupDetailsConversation extends StatefulWidget {
 }
 
 class _GroupDetailsConversationState extends State<GroupDetailsConversation> {
+  MemberSetting _memberSetting = MemberSetting.member;
+
   bool _addMember = false;
   List<Contact> _contactsList = []; // for storing contacts
   List _newMembers = [];
@@ -157,13 +161,10 @@ class _GroupDetailsConversationState extends State<GroupDetailsConversation> {
                   ),
                   title: Text(_members[i]),
                   trailing: InkWell(
-                    onTap: () => _removeMember(_members[i]),
+                    onTap: () => _memberSettings(_members[i]),
                     child: const Padding(
                       padding: EdgeInsets.all(8.0),
-                      child: Icon(
-                        Icons.delete,
-                        color: Colors.red,
-                      ),
+                      child: Icon(Icons.settings),
                     ),
                   ),
                 )
@@ -177,6 +178,75 @@ class _GroupDetailsConversationState extends State<GroupDetailsConversation> {
               onPressed: _addNewMembers,
               child: const Icon(Icons.check),
             ),
+    );
+  }
+
+  void _memberSettings(String contact) {
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Spacer(),
+                  const Expanded(child: Text('Owner')),
+                  Radio(
+                      value: MemberSetting.owner,
+                      groupValue: _memberSetting,
+                      onChanged: (MemberSetting? value) {
+                        setState(() {
+                          _memberSetting = value!;
+                        });
+                      }),
+                  const Spacer(),
+                ],
+              ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Spacer(),
+                  const Expanded(child: Text('Admin')),
+                  Radio(
+                      groupValue: _memberSetting,
+                      value: MemberSetting.admin,
+                      onChanged: (MemberSetting? value) {
+                        setState(() {
+                          _memberSetting = value!;
+                        });
+                      }),
+                  const Spacer(),
+                ],
+              ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Spacer(),
+                  const Expanded(child: Text('Member')),
+                  Radio(
+                      groupValue: _memberSetting,
+                      value: MemberSetting.member,
+                      onChanged: (MemberSetting? value) {
+                        setState(() {
+                          _memberSetting = value!;
+                        });
+                      }),
+                  const Spacer(),
+                ],
+              ),
+              const Divider(),
+              TextButton(
+                onPressed: () => _removeMember(contact),
+                child: const Text('Remove from group',
+                    style: TextStyle(color: Colors.red)),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -220,6 +290,8 @@ class _GroupDetailsConversationState extends State<GroupDetailsConversation> {
 
   void _removeMember(String contact) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
+
+    Navigator.pop(context);
 
     // remove the current member
     setState(() {
