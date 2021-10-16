@@ -1,4 +1,3 @@
-import 'package:pointycastle/pointycastle.dart';
 import 'package:simplexmq/src/buffer.dart';
 import 'package:simplexmq/src/rsa_keys.dart';
 import 'package:test/test.dart';
