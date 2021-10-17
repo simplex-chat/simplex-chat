@@ -5,6 +5,10 @@ import 'package:simplex_chat/views/conversation/contact_detail_conversation.dart
 import 'package:simplex_chat/views/conversation/group_detail_conversation.dart';
 import 'package:simplex_chat/widgets/message_bubble.dart';
 
+/// View the details of group by tapping the [appBar]
+/// Viwe the details of chat by tapping the [appBar]
+/// Generate [Fake Messages] by tapping the [Message Icon]
+
 class ConversationView extends StatefulWidget {
   // ignore: prefer_typing_uninitialized_variables
   final data;

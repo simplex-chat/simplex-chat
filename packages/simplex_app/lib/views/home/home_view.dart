@@ -12,6 +12,8 @@ import 'package:simplex_chat/views/home/drawer.dart';
 import 'package:simplex_chat/views/invitations/invitation_view.dart';
 import 'package:simplex_chat/views/profile/profile_view.dart';
 
+/// Generate [Fake Contacts] by tapping the [Bug Icon]
+
 class HomeView extends StatefulWidget {
   final double maxSlide;
   const HomeView({Key? key, required this.maxSlide}) : super(key: key);

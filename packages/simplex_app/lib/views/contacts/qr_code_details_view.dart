@@ -3,6 +3,8 @@ import 'package:qr_code_scanner/qr_code_scanner.dart';
 import 'package:simplex_chat/constants.dart';
 import 'package:simplex_chat/widgets/custom_btn.dart';
 
+/// Tap in the middle of QR Code to see the flow of contact being added in the Chat View
+
 class QRCodeDetailsView extends StatelessWidget {
   final Barcode barcode;
   const QRCodeDetailsView({

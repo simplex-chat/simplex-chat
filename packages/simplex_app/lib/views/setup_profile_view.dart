@@ -161,7 +161,7 @@ class _SetupProfileViewState extends State<SetupProfileView> {
     );
   }
 
-  // create profile and store in local
+  // create profile and save the data locally to access across the app
   Future<void> _createProfile() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setString('displayName', _displayNameController.text.trim());

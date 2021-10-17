@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:simplex_chat/constants.dart';
 import 'package:simplex_chat/providers/drawer_providers.dart';
 
 class MyDrawer extends StatelessWidget {
@@ -49,6 +48,7 @@ class MyDrawer extends StatelessWidget {
     );
   }
 
+  // remove the locally stored user data
   void _switchProfile(BuildContext context) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
 

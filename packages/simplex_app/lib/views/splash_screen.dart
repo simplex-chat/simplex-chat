@@ -39,10 +39,7 @@ class _SplashScreenState extends State<SplashScreen> {
             EntranceFader(
               duration: const Duration(seconds: 1),
               offset: const Offset(0, 15),
-              child: SvgPicture.asset(
-                'assets/logo.svg',
-                height: 85,
-              ),
+              child: SvgPicture.asset('assets/logo.svg', height: 85),
             ),
             EntranceFader(
               offset: const Offset(0, 0),
