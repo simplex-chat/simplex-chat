@@ -179,7 +179,8 @@ class _ProfileViewState extends State<ProfileView> {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setString('displayName', _displayNameController.text.trim());
     await prefs.setString('fullName', _fullNameController.text.trim());
-    await prefs.setString('photo${_displayNameController.text.trim()}', _photo!);
+    await prefs.setString(
+        'photo${_displayNameController.text.trim()}', _photo!);
 
     debugPrint(prefs.getString('photo'));
   }

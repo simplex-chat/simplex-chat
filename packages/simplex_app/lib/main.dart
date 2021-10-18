@@ -12,7 +12,6 @@ import 'package:simplex_chat/views/scan_invitation/scan_invitation_view.dart';
 import 'package:simplex_chat/views/setup_profile_view.dart';
 import 'package:simplex_chat/views/splash_screen.dart';
 
-
 /// Basic Structure is setup on [Providers]
 /// Navigations are [namedRoutes]
 
