@@ -1,6 +1,12 @@
-// import 'package:simplexmq_io/simplexmq_io.dart';
+import 'dart:io';
 
-// void main() {
-//   var awesome = Awesome();
-//   print('awesome: ${awesome.isAwesome}');
-// }
+void main() {
+  ServerSocket.bind('localhost', 8080)
+      .then((server) => server.listen((Socket socket) {
+            print('New client connection');
+            socket.listen((List<int> data) {
+              String result = String.fromCharCodes(data);
+              print(result);
+            });
+          }));
+}

@@ -8,6 +8,7 @@ import 'rsa_keys.dart';
 abstract class Transport {
   Future<Uint8List> read(int n);
   Future<void> write(Uint8List data);
+  Future<void> close();
 }
 
 Stream<Uint8List> blockStream(Transport t, int blockSize) async* {
@@ -68,6 +69,10 @@ class SMPTransportClient {
     return _clientHandshake(conn, keyHash, blockSize);
   }
 
+  Future<void> close() {
+    return _conn.close();
+  }
+
   static Future<SMPTransportClient> _clientHandshake(
       Transport conn, Uint8List? keyHash, int? blkSize) async {
     final srv = await _getHeaderAndPublicKey_1_2(conn, keyHash);
@@ -108,8 +113,11 @@ class SMPTransportClient {
     return ServerHeader(blockSize, keySize);
   }
 
-  Future<void> _sendEncryptedKeys_4(RSAPublicKey serverKey) =>
-      _conn.write(encryptOAEP(serverKey, _clientHeader()));
+  Future<void> _sendEncryptedKeys_4(RSAPublicKey serverKey) async {
+    final header = encryptOAEP(serverKey, _clientHeader());
+    // print(header);
+    await _conn.write(header);
+  }
 
   Uint8List _clientHeader() => concatN([
         encodeInt32(blockSize),

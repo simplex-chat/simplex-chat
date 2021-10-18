@@ -23,7 +23,7 @@ class SocketTransport implements Transport {
   SocketTransport._(this._socket, this._timeout, this._bufferSize);
 
   static Future<SocketTransport> connect(String host, int port,
-      {Duration timeout = const Duration(seconds: 1),
+      {Duration timeout = const Duration(seconds: 4),
       int bufferSize = 16384}) async {
     final socket = await Socket.connect(host, port, timeout: timeout);
     final t = SocketTransport._(socket, timeout, bufferSize);
@@ -35,7 +35,7 @@ class SocketTransport implements Transport {
   }
 
   @override
-  Future<Uint8List> read(int n) async {
+  Future<Uint8List> read(int n) {
     if (_readers.isEmpty && _buffer.length >= n) {
       final data = _buffer.sublist(0, n);
       _buffer = _buffer.sublist(n);
@@ -72,8 +72,9 @@ class SocketTransport implements Transport {
   }
 
   /// Close the client transport
-  void close() {
-    _subscription.cancel();
+  @override
+  Future<void> close() async {
+    await _subscription.cancel();
     _socket.destroy();
     while (_readers.isNotEmpty) {
       final r = _readers.removeFirst();
