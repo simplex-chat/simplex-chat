@@ -77,6 +77,7 @@ class _AddGroupViewState extends State<AddGroupView> {
 
   @override
   Widget build(BuildContext context) {
+    Size _size = MediaQuery.of(context).size;
     return GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),
       child: Scaffold(
@@ -94,7 +95,7 @@ class _AddGroupViewState extends State<AddGroupView> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const SizedBox(height: 10.0),
+                  SizedBox(height: _size.height * 0.012),
                   Center(
                     child: SizedBox(
                       height: 180.0,
@@ -103,13 +104,14 @@ class _AddGroupViewState extends State<AddGroupView> {
                         children: [
                           _imageUploaded
                               ? CircleAvatar(
-                                  radius: 100.0,
+                                  radius: _size.height * 0.12,
                                   backgroundImage:
                                       FileImage(File(_groupPhotoPath)),
                                 )
-                              : const CircleAvatar(
-                                  radius: 100.0,
-                                  backgroundImage: AssetImage('assets/dp.png'),
+                              : CircleAvatar(
+                                  radius: _size.height * 0.12,
+                                  backgroundImage:
+                                      const AssetImage('assets/dp.png'),
                                 ),
                           Positioned(
                             right: 0,
@@ -140,9 +142,9 @@ class _AddGroupViewState extends State<AddGroupView> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 25.0),
+                  SizedBox(height: _size.height * 0.03),
                   const Text('Group Name', style: kSmallHeadingStyle),
-                  const SizedBox(height: 10.0),
+                  SizedBox(height: _size.height * 0.012),
                   CustomTextField(
                     textEditingController: _displayNameController,
                     textInputType: TextInputType.name,
@@ -154,15 +156,15 @@ class _AddGroupViewState extends State<AddGroupView> {
                       return null;
                     },
                   ),
-                  const SizedBox(height: 10.0),
+                  SizedBox(height: _size.height * 0.012),
                   const Text('Group Description', style: kSmallHeadingStyle),
-                  const SizedBox(height: 10.0),
+                  SizedBox(height: _size.height * 0.012),
                   CustomTextField(
                     textEditingController: _descController,
                     textInputType: TextInputType.text,
                     hintText: 'e.g Friends from UK',
                   ),
-                  const SizedBox(height: 10.0),
+                  SizedBox(height: _size.height * 0.012),
                   _members.isNotEmpty
                       ? const Text('Members Added')
                       : Container(),
@@ -194,7 +196,8 @@ class _AddGroupViewState extends State<AddGroupView> {
                           )),
                         )
                       : Container(),
-                  SizedBox(height: _members.isNotEmpty ? 10.0 : 0.0),
+                  SizedBox(
+                      height: _members.isNotEmpty ? _size.height * 0.012 : 0.0),
                   ListTile(
                     leading: const Icon(Icons.person_add),
                     title: const Text('Add a member'),
@@ -204,9 +207,9 @@ class _AddGroupViewState extends State<AddGroupView> {
                       });
                     },
                   ),
-                  SizedBox(height: _addMember ? 10.0 : 0.0),
+                  SizedBox(height: _addMember ? _size.height * 0.012 : 0.0),
                   _addMember ? const Text('Contacts Available') : Container(),
-                  SizedBox(height: _addMember ? 10.0 : 0.0),
+                  SizedBox(height: _addMember ? _size.height * 0.012 : 0.0),
                   _addMember
                       ? ListView(
                           physics: const NeverScrollableScrollPhysics(),
@@ -227,7 +230,7 @@ class _AddGroupViewState extends State<AddGroupView> {
                           ),
                         )
                       : Container(),
-                  const Divider(height: 30.0),
+                  Divider(height: _size.height * 0.035),
                   ListTile(
                       leading: CircleAvatar(
                         backgroundImage: _userPhotoPath == ''

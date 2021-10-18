@@ -8,6 +8,7 @@ class ScanInvitationView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    Size _size = MediaQuery.of(context).size;
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -24,23 +25,23 @@ class ScanInvitationView extends StatelessWidget {
                 style: kMediumHeadingStyle,
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 25.0),
+              SizedBox(height: _size.height * 0.04),
               GestureDetector(
                 onTap: () => _showConnection(context),
                 child: Image.asset(
                   'assets/code.png',
                 ),
               ),
-              const SizedBox(height: 25.0),
+              SizedBox(height: _size.height * 0.04),
               const Text(
                 'If you cannot share your QR Code, send the invitation via a trusted method.',
                 style: kMediumHeadingStyle,
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 30.0),
+              SizedBox(height: _size.height * 0.04),
               CustomButton(
-                width: 200.0,
-                height: 45.0,
+                width: _size.width * 0.5,
+                height: _size.height * 0.055,
                 onPressed: _shareLink,
                 color: kPrimaryColor,
                 child: Row(
@@ -63,29 +64,31 @@ class ScanInvitationView extends StatelessWidget {
   }
 
   void _showConnection(BuildContext context) {
+    Size _size = MediaQuery.of(context).size;
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const CircleAvatar(
-              backgroundImage: AssetImage('assets/dp.png'),
-              radius: 70,
+            CircleAvatar(
+              backgroundImage: const AssetImage('assets/dp.png'),
+              radius: _size.height * 0.085,
             ),
-            const SizedBox(height: 30.0),
+            SizedBox(height: _size.height * 0.045),
             const Text(
               'Bob wants to connect with you!',
               style: kMediumHeadingStyle,
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 30.0),
+            SizedBox(height: _size.height * 0.045),
             CustomButton(
-              width: 200,
-              height: 40,
+              width: _size.width * 0.5,
+              height: _size.height * 0.055,
               onPressed: () {
-                int _count = 0;
-                Navigator.popUntil(context, (route) => _count++ >= 2);
+                // work around for now
+                Navigator.pop(context);
+                Navigator.of(context).pop(true);
               },
               color: kPrimaryColor,
               child: const Text(
@@ -93,10 +96,10 @@ class ScanInvitationView extends StatelessWidget {
                 style: TextStyle(color: Colors.white),
               ),
             ),
-            const SizedBox(height: 10.0),
+            SizedBox(height: _size.height * 0.013),
             CustomButton(
-              width: 200,
-              height: 40,
+              width: _size.width * 0.5,
+              height: _size.height * 0.055,
               onPressed: () {
                 int _count = 0;
                 Navigator.popUntil(context, (route) => _count++ >= 2);
@@ -107,8 +110,6 @@ class ScanInvitationView extends StatelessWidget {
                 style: TextStyle(color: Colors.white),
               ),
             ),
-            const SizedBox(height: 20.0),
-            const Text('Invitation was sent HH:MM')
           ],
         ),
       ),

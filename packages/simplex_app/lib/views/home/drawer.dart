@@ -10,41 +10,38 @@ class MyDrawer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final _drawerProviders = Provider.of<DrawerProvider>(context);
-    return SizedBox(
-      width: MediaQuery.of(context).size.width * 0.82,
-      child: Padding(
-        padding: const EdgeInsets.all(10.0),
-        child: Builder(builder: (context) {
-          return Column(
-            children: [
-              const SizedBox(height: 30.0),
-              SvgPicture.asset(
-                'assets/logo.svg',
-                height: 55.0,
+    return Padding(
+      padding: const EdgeInsets.all(10.0),
+      child: Builder(builder: (context) {
+        return Column(
+          children: [
+            const SizedBox(height: 30.0),
+            SvgPicture.asset(
+              'assets/logo.svg',
+              height: 55.0,
+            ),
+            const Divider(height: 30.0),
+            ListTile(
+              leading: const Icon(Icons.insert_invitation),
+              title: const Text('Invitations'),
+              onTap: () {
+                _drawerProviders.currentIndex = 2;
+                Navigator.pop(context);
+              },
+            ),
+            const Spacer(),
+            ListTile(
+              leading: const Icon(Icons.refresh),
+              title: const Text('Switch Profile'),
+              subtitle: const Text(
+                'Not supported yet!',
+                style: TextStyle(fontStyle: FontStyle.italic),
               ),
-              const Divider(height: 30.0),
-              ListTile(
-                leading: const Icon(Icons.insert_invitation),
-                title: const Text('Invitations'),
-                onTap: () {
-                  _drawerProviders.currentIndex = 2;
-                  Navigator.pop(context);
-                },
-              ),
-              const Spacer(),
-              ListTile(
-                leading: const Icon(Icons.refresh),
-                title: const Text('Switch Profile'),
-                subtitle: const Text(
-                  'Not supported yet!',
-                  style: TextStyle(fontStyle: FontStyle.italic),
-                ),
-                onTap: () => _switchProfile(context),
-              ),
-            ],
-          );
-        }),
-      ),
+              onTap: () => _switchProfile(context),
+            ),
+          ],
+        );
+      }),
     );
   }
 

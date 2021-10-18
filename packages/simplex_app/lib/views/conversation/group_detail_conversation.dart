@@ -182,6 +182,7 @@ class _GroupDetailsConversationState extends State<GroupDetailsConversation> {
   }
 
   void _memberSettings(String contact) {
+    Size _size = MediaQuery.of(context).size;
     showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
@@ -192,7 +193,7 @@ class _GroupDetailsConversationState extends State<GroupDetailsConversation> {
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Spacer(),
+                  SizedBox(width: _size.width * 0.15),
                   const Expanded(child: Text('Owner')),
                   Radio(
                       value: MemberSetting.owner,
@@ -202,13 +203,13 @@ class _GroupDetailsConversationState extends State<GroupDetailsConversation> {
                           _memberSetting = value!;
                         });
                       }),
-                  const Spacer(),
+                  SizedBox(width: _size.width * 0.15),
                 ],
               ),
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Spacer(),
+                  SizedBox(width: _size.width * 0.15),
                   const Expanded(child: Text('Admin')),
                   Radio(
                       groupValue: _memberSetting,
@@ -218,13 +219,13 @@ class _GroupDetailsConversationState extends State<GroupDetailsConversation> {
                           _memberSetting = value!;
                         });
                       }),
-                  const Spacer(),
+                  SizedBox(width: _size.width * 0.15),
                 ],
               ),
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Spacer(),
+                  SizedBox(width: _size.width * 0.15),
                   const Expanded(child: Text('Member')),
                   Radio(
                       groupValue: _memberSetting,
@@ -234,7 +235,7 @@ class _GroupDetailsConversationState extends State<GroupDetailsConversation> {
                           _memberSetting = value!;
                         });
                       }),
-                  const Spacer(),
+                  SizedBox(width: _size.width * 0.15),
                 ],
               ),
               const Divider(),

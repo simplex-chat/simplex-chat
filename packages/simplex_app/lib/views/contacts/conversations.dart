@@ -180,17 +180,23 @@ class _ConversationsState extends State<Conversations> {
         offset: const Offset(-10, -155),
         onSelected: (value) async {
           if (value == _options[0]) {
-            await Navigator.pushNamed(context, AppRoutes.scanInvitation);
+            var newMember =
+                await Navigator.pushNamed(context, AppRoutes.scanInvitation);
+            newMember ??= false;
+            if (newMember == true) {
+              _addNewMember();
+            }
           } else if (value == _options[1]) {
-            var value =
+            var newMember =
                 await Navigator.pushNamed(context, AppRoutes.addContact);
-            value ??= false;
-            if (value == true) {
+            newMember ??= false;
+            if (newMember == true) {
               _addNewMember();
             }
           } else {
-            var value = await Navigator.pushNamed(context, AppRoutes.addGroup);
-            if (value == true) {
+            var newGroup =
+                await Navigator.pushNamed(context, AppRoutes.addGroup);
+            if (newGroup == true) {
               _getGroups();
             }
           }

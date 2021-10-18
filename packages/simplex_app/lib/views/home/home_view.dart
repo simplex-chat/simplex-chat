@@ -53,9 +53,7 @@ class _HomeViewState extends State<HomeView> {
     return WillPopScope(
       onWillPop: _onWillPop,
       child: Scaffold(
-        drawer: const Drawer(
-          child: MyDrawer(),
-        ),
+        drawer: const Drawer(child: MyDrawer()),
         body: SafeArea(
           child: Builder(builder: (context) {
             return Stack(

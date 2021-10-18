@@ -63,6 +63,7 @@ class _ProfileViewState extends State<ProfileView> {
 
   @override
   Widget build(BuildContext context) {
+    Size _size = MediaQuery.of(context).size;
     return Scaffold(
       body: GestureDetector(
         onTap: () => FocusScope.of(context).unfocus(),
@@ -75,7 +76,7 @@ class _ProfileViewState extends State<ProfileView> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const SizedBox(height: 30),
+                    SizedBox(height: _size.height * 0.05),
                     Center(
                         child: SizedBox(
                       height: 180.0,
@@ -119,7 +120,7 @@ class _ProfileViewState extends State<ProfileView> {
                         ],
                       ),
                     )),
-                    const SizedBox(height: 25.0),
+                    SizedBox(height: _size.height * 0.035),
                     const Text('Display Name', style: kSmallHeadingStyle),
                     const SizedBox(height: 10.0),
                     CustomTextField(
@@ -133,15 +134,15 @@ class _ProfileViewState extends State<ProfileView> {
                         return null;
                       },
                     ),
-                    const SizedBox(height: 25.0),
+                    SizedBox(height: _size.height * 0.035),
                     const Text('Full Name', style: kSmallHeadingStyle),
-                    const SizedBox(height: 10.0),
+                    SizedBox(height: _size.height * 0.012),
                     CustomTextField(
                       textEditingController: _fullNameController,
                       textInputType: TextInputType.name,
                       hintText: 'e.g John Doe',
                     ),
-                    const SizedBox(height: 25.0),
+                    SizedBox(height: _size.height * 0.035),
                     const Text(
                       'Your display name is what your contact will know you :)',
                       style: TextStyle(letterSpacing: 1.2),
@@ -186,6 +187,7 @@ class _ProfileViewState extends State<ProfileView> {
   }
 
   void _updateProfilePic() {
+    Size _size = MediaQuery.of(context).size;
     showModalBottomSheet(
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.only(
@@ -206,7 +208,7 @@ class _ProfileViewState extends State<ProfileView> {
               height: 7.0,
               width: 50.0,
             ),
-            const SizedBox(height: 20.0),
+            SizedBox(height: _size.height * 0.025),
             const Align(
               alignment: Alignment.centerLeft,
               child: Text(
@@ -214,7 +216,7 @@ class _ProfileViewState extends State<ProfileView> {
                 style: kHeadingStyle,
               ),
             ),
-            const SizedBox(height: 15.0),
+            SizedBox(height: _size.height * 0.015),
             Row(
                 children: List.generate(
               3,

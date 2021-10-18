@@ -121,7 +121,7 @@ class _ConversationViewState extends State<ConversationView> {
                 });
               },
               icon: const Icon(
-                Icons.message,
+                Icons.bug_report,
               ),
             )
           ],
