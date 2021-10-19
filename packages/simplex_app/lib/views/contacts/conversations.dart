@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:simplex_chat/animations/bottom_animation.dart';
@@ -32,6 +33,7 @@ class _ConversationsState extends State<Conversations> {
 
   // getting data from local storage FOR NOW!!
   void _getContacts() async {
+    debugPrint('Getting contacts!');
     SharedPreferences prefs = await SharedPreferences.getInstance();
     final String? _contacts = prefs.getString('contacts');
     if (_contacts != null) {
@@ -43,6 +45,7 @@ class _ConversationsState extends State<Conversations> {
 
   // getting data from local storage FOR NOW!!
   void _getGroups() async {
+    debugPrint('Getting groups!');
     SharedPreferences prefs = await SharedPreferences.getInstance();
     final String? _groups = prefs.getString('groups');
     if (_groups != null) {
@@ -55,6 +58,7 @@ class _ConversationsState extends State<Conversations> {
   }
 
   void _gettingGroupContactsChats() {
+    debugPrint('Merging!');
     setState(() {
       _conversations = List.from(_contactsList);
       _conversations = _conversations + _groupList;
@@ -188,8 +192,8 @@ class _ConversationsState extends State<Conversations> {
               _addNewMember();
             }
           } else if (value == _options[1]) {
-            var newMember =
-                await Navigator.pushNamed(context, AppRoutes.addContact);
+            var newMember = await Navigator.pushNamed(context,
+                kIsWeb ? AppRoutes.addContactWeb : AppRoutes.addContact);
             newMember ??= false;
             if (newMember == true) {
               _addNewMember();
@@ -432,6 +436,7 @@ class _ConversationsState extends State<Conversations> {
 
     _getContacts();
     _getGroups();
+
     const snackBar = SnackBar(
       backgroundColor: Colors.green,
       content: Text('New contacts loaded!'),

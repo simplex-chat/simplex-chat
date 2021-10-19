@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:simplex_chat/app_routes.dart';
 import 'package:simplex_chat/constants.dart';
 import 'package:simplex_chat/views/home/home_view.dart';
 import 'package:simplex_chat/widgets/custom_text_field.dart';
@@ -62,10 +63,12 @@ class _SetupProfileViewState extends State<SetupProfileView> {
                         children: [
                           _imageUploaded
                               ? CircleAvatar(
+                                  backgroundColor: Colors.white,
                                   radius: 100.0,
                                   backgroundImage: FileImage(image!),
                                 )
                               : const CircleAvatar(
+                                  backgroundColor: Colors.white,
                                   radius: 100.0,
                                   backgroundImage: AssetImage('assets/dp.png'),
                                 ),
@@ -141,14 +144,7 @@ class _SetupProfileViewState extends State<SetupProfileView> {
 
               await _createProfile();
 
-              await Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => HomeView(
-                    maxSlide: MediaQuery.of(context).size.width * 0.82,
-                  ),
-                ),
-              );
+              await Navigator.pushNamed(context, AppRoutes.home);
 
               _displayNameController.clear();
               _fullNameController.clear();

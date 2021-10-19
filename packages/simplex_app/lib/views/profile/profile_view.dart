@@ -85,10 +85,12 @@ class _ProfileViewState extends State<ProfileView> {
                         children: [
                           _photo != ''
                               ? CircleAvatar(
+                                  backgroundColor: Colors.white,
                                   radius: 100.0,
                                   backgroundImage: FileImage(File(_photo!)),
                                 )
                               : const CircleAvatar(
+                                  backgroundColor: Colors.white,
                                   radius: 100.0,
                                   backgroundImage: AssetImage('assets/dp.png'),
                                 ),

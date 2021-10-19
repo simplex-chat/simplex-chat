@@ -15,8 +15,7 @@ import 'package:simplex_chat/views/profile/profile_view.dart';
 /// Generate [Fake Contacts] by tapping the [Bug Icon]
 
 class HomeView extends StatefulWidget {
-  final double maxSlide;
-  const HomeView({Key? key, required this.maxSlide}) : super(key: key);
+  const HomeView({Key? key}) : super(key: key);
 
   @override
   _HomeViewState createState() => _HomeViewState();
@@ -105,6 +104,7 @@ class _HomeViewState extends State<HomeView> {
                                     _drawerProviders.currentIndex = 0;
                                   },
                                   child: CircleAvatar(
+                                    backgroundColor: Colors.white,
                                     backgroundImage: _photo!.isEmpty
                                         ? const AssetImage('assets/dp.png')
                                             as ImageProvider

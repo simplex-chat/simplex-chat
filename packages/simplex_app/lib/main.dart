@@ -6,17 +6,21 @@ import 'package:simplex_chat/constants.dart';
 import 'package:simplex_chat/custom_scroll_behavior.dart';
 import 'package:simplex_chat/providers/drawer_providers.dart';
 import 'package:simplex_chat/views/contacts/add_contact_view.dart';
+import 'package:simplex_chat/views/contacts/add_contact_web.dart';
 import 'package:simplex_chat/views/group/add_group_view.dart';
+import 'package:simplex_chat/views/home/home_view.dart';
 import 'package:simplex_chat/views/onboarding/intro_view.dart';
 import 'package:simplex_chat/views/scan_invitation/scan_invitation_view.dart';
 import 'package:simplex_chat/views/setup_profile_view.dart';
 import 'package:simplex_chat/views/splash_screen.dart';
+import 'package:url_strategy/url_strategy.dart';
 
 /// Basic Structure is setup on [Providers]
 /// Navigations are [namedRoutes]
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
+  setPathUrlStrategy();
   runApp(const MyApp());
 }
 
@@ -50,7 +54,9 @@ class MyApp extends StatelessWidget {
             AppRoutes.splash: (_) => const SplashScreen(),
             AppRoutes.intro: (_) => const IntroView(),
             AppRoutes.setupProfile: (_) => const SetupProfileView(),
+            AppRoutes.home: (_) => const HomeView(),
             AppRoutes.addContact: (_) => const AddContactView(),
+            AppRoutes.addContactWeb: (_) => const AddContactWeb(),
             AppRoutes.scanInvitation: (_) => const ScanInvitationView(),
             AppRoutes.addGroup: (_) => const AddGroupView(),
           },

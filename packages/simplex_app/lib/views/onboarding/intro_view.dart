@@ -20,7 +20,7 @@ class IntroView extends StatelessWidget {
                 'assets/logo.svg',
                 height: 80.0,
               ),
-              const SizedBox(height: 50.0),
+              SizedBox(height: MediaQuery.of(context).size.height * 0.05),
               const Text(
                 'Complete your profile to begin using SimpleX. Your profile is local to your device and will help identify you to your connections.',
                 style: kMediumHeadingStyle,
