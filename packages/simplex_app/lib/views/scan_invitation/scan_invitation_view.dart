@@ -30,6 +30,7 @@ class ScanInvitationView extends StatelessWidget {
                 onTap: () => _showConnection(context),
                 child: Image.asset(
                   'assets/code.png',
+                  height: _size.height * 0.3
                 ),
               ),
               SizedBox(height: _size.height * 0.04),

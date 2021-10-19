@@ -176,15 +176,7 @@ class _AddContactViewState extends State<AddContactView> {
             result = scanData;
             await controller.pauseCamera();
             if (result != null) {
-              await Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => QRCodeDetailsView(
-                    barcode: result!,
-                  ),
-                ),
-              );
-              await controller.resumeCamera();
+              Navigator.of(context).pop(true);
             }
           });
         });
