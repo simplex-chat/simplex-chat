@@ -39,6 +39,7 @@ class MyApp extends StatelessWidget {
           title: 'SimpleX Chat',
           theme: theme.copyWith(
             colorScheme: theme.colorScheme.copyWith(secondary: kPrimaryColor),
+            primaryColorLight: Colors.white,
           ),
           builder: (context, widget) {
             return ScrollConfiguration(

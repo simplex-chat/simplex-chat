@@ -1,8 +1,5 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
-import 'package:simplex_chat/views/contacts/qr_code_details_view.dart';
 
 class AddContactView extends StatefulWidget {
   const AddContactView({Key? key}) : super(key: key);
@@ -16,16 +13,6 @@ class _AddContactViewState extends State<AddContactView> {
   final qrKey = GlobalKey(debugLabel: 'qr');
   QRViewController? _qrViewController;
   Barcode? result;
-
-  @override
-  void reassemble() {
-    super.reassemble();
-    if (Platform.isAndroid) {
-      _qrViewController!.pauseCamera();
-    } else if (Platform.isIOS) {
-      _qrViewController!.resumeCamera();
-    }
-  }
 
   // alert dialgoue
   void _initialWarning() {
@@ -174,7 +161,7 @@ class _AddContactViewState extends State<AddContactView> {
         controller.scannedDataStream.listen((scanData) {
           setState(() async {
             result = scanData;
-            await controller.pauseCamera();
+            await controller.stopCamera();
             if (result != null) {
               Navigator.of(context).pop(true);
             }

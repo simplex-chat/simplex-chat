@@ -117,6 +117,7 @@ class _ConversationsState extends State<Conversations> {
                         ),
                       )
                     : ListView(
+                        physics: const NeverScrollableScrollPhysics(),
                         shrinkWrap: true,
                         children: List.generate(
                           _conversations.length,

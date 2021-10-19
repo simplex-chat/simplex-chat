@@ -28,10 +28,8 @@ class ScanInvitationView extends StatelessWidget {
               SizedBox(height: _size.height * 0.04),
               GestureDetector(
                 onTap: () => _showConnection(context),
-                child: Image.asset(
-                  'assets/code.png',
-                  height: _size.height * 0.3
-                ),
+                child:
+                    Image.asset('assets/code.png', height: _size.height * 0.3),
               ),
               SizedBox(height: _size.height * 0.04),
               const Text(
