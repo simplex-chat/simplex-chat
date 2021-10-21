@@ -36,7 +36,6 @@ Uint8List pseudoRandomBytes(int len) {
   return _randomBytes(len, sessionSeed);
 }
 
-// len should be divisible by 4
 Uint8List _randomBytes(int len, Random seedSource) {
   final bytes = Uint8List(len);
   for (int i = 0; i < len; i++) {
@@ -81,13 +80,13 @@ AsymmetricKeyPair<RSAPublicKey, RSAPrivateKey> generateRSAkeyPair(
 }
 
 Uint8List encryptOAEP(RSAPublicKey key, Uint8List data) {
-  final oaep = OAEPEncoding(RSAEngine())
+  final oaep = OAEPEncoding.withSHA256(RSAEngine())
     ..init(true, PublicKeyParameter<RSAPublicKey>(key));
   return oaep.process(data);
 }
 
 Uint8List decryptOAEP(RSAPrivateKey key, Uint8List data) {
-  final oaep = OAEPEncoding(RSAEngine())
+  final oaep = OAEPEncoding.withSHA256(RSAEngine())
     ..init(false, PrivateKeyParameter<RSAPrivateKey>(key));
   return oaep.process(data);
 }

@@ -115,7 +115,6 @@ class SMPTransportClient {
 
   Future<void> _sendEncryptedKeys_4(RSAPublicKey serverKey) async {
     final header = encryptOAEP(serverKey, _clientHeader());
-    // print(header);
     await _conn.write(header);
   }
 

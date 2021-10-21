@@ -8,7 +8,12 @@ environment:
 
 dependencies:
   asn1lib: ^1.0.2
-  pointycastle: ^3.3.4
+  pointycastle:
+    git:
+      url: git@github.com:simplex-chat/pc-dart.git
+      ref: nullsafety
+
+  # pointycastle: ^3.3.4
 
 dev_dependencies:
   lints: ^1.0.0

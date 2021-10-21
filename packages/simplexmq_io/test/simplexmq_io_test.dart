@@ -12,7 +12,7 @@ void main() {
   group('transport', () {
     Future<ServerSocket> startServer(
         void Function(Socket client) handleConnection) async {
-      var server = await ServerSocket.bind(localhost, 5223);
+      var server = await ServerSocket.bind(localhost, 8080);
       server.listen(handleConnection);
       return server;
     }
@@ -21,14 +21,13 @@ void main() {
       var completer = Completer<Uint8List>();
 
       var server = await startServer((Socket client) {
-        print('client connected');
         client.listen(
           (Uint8List data) async {
             completer.complete(data);
           },
         );
       });
-      var transport = await SocketTransport.connect(localhost, 5223);
+      var transport = await SocketTransport.connect(localhost, 8080);
       await transport.write(Uint8List.fromList([1, 2, 3]));
 
       expect(await completer.future, [1, 2, 3]);
