@@ -142,3 +142,13 @@ Uint8List encodeInt16(int n) {
   ByteData.sublistView(data).setInt16(0, n);
   return data;
 }
+
+extension EqualUint8List on Uint8List {
+  bool equal(Uint8List b) {
+    if (length != b.length) return false;
+    for (int i = 0; i < length; i++) {
+      if (this[i] != b[i]) return false;
+    }
+    return true;
+  }
+}

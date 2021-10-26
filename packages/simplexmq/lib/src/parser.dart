@@ -13,6 +13,7 @@ final charUpperA = cc('A');
 final charUpperZ = cc('Z');
 final charPlus = cc('+');
 final charSlash = cc('/');
+final charDot = cc('.');
 
 class Parser {
   final Uint8List _s;
@@ -68,6 +69,14 @@ class Parser {
         }
         _pos += s.length;
         return true;
+      });
+
+  // takes the passed char
+  bool? char(int c) => _run(() {
+        if (_s[_pos] == c) {
+          _pos++;
+          return true;
+        }
       });
 
   // takes space

@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'dart:typed_data';
 import 'package:pointycastle/asymmetric/api.dart';
+import 'package:pointycastle/digests/sha256.dart';
 import 'buffer.dart';
 import 'crypto.dart';
+import 'parser.dart';
 import 'rsa_keys.dart';
 
 abstract class Transport {
@@ -51,7 +53,7 @@ class ServerHandshake {
 
 typedef SMPVersion = List<int>;
 
-// SMPVersion _currentSMPVersion = const [0, 4, 1, 0];
+SMPVersion _currentSMPVersion = const [0, 4, 1, 0];
 const int _serverHeaderSize = 8;
 const int _binaryRsaTransport = 0;
 const int _transportBlockSize = 4096;
@@ -96,7 +98,8 @@ class SMPTransportClient {
   }
 
   static void validateKeyHash_2(Uint8List rawKey, Uint8List keyHash) {
-    // todo
+    if (keyHash.equal(SHA256Digest().process(rawKey))) return;
+    throw Exception('smp handshake error: bad key hash');
   }
 
   static ServerHeader parseServerHeader(Uint8List a) {
@@ -129,10 +132,33 @@ class SMPTransportClient {
       _parseSMPVersion(await _readEncrypted());
 
   static SMPVersion _parseSMPVersion(Uint8List block) {
-    return [];
+    final p = Parser(block);
+    final SMPVersion version = [0, 0, 0, 0];
+    void setVer(int i, int? v) {
+      if (v == null || p.fail) {
+        throw Exception('smp handshake error: bad version format');
+      }
+      version[i] = v;
+    }
+
+    for (var i = 0; i < 3; i++) {
+      final v = p.decimal();
+      p.char(charDot);
+      setVer(i, v);
+    }
+    final v = p.decimal();
+    p.space();
+    setVer(3, v);
+    return version;
   }
 
-  static void _checkVersion(SMPVersion version) {}
+  static void _checkVersion(SMPVersion srvVersion) {
+    final s0 = srvVersion[0];
+    final c0 = _currentSMPVersion[0];
+    if (s0 > c0 || (s0 == c0 && srvVersion[1] > _currentSMPVersion[1])) {
+      throw Exception('smp handshake error: incompatible server version');
+    }
+  }
 
   Future<Uint8List> _readEncrypted() async {
     final block = await _conn.read(blockSize);
