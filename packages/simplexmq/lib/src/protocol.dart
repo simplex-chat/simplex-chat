@@ -174,7 +174,7 @@ class ERR extends BrokerCommand {
       : cmdErr = err == ErrorType.CMD
             ? throw ArgumentError('CMD error should be created with ERR.CMD')
             : null;
-  ERR.cmd(this.cmdErr) : err = ErrorType.CMD;
+  ERR.cmd(CmdErrorType this.cmdErr) : err = ErrorType.CMD;
   @override
   Uint8List serialize() {
     final _err = errorTags[err]!;

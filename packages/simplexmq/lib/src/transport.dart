@@ -5,22 +5,13 @@ import 'package:pointycastle/digests/sha256.dart';
 import 'buffer.dart';
 import 'crypto.dart';
 import 'parser.dart';
+import 'protocol.dart';
 import 'rsa_keys.dart';
 
 abstract class Transport {
   Future<Uint8List> read(int n);
   Future<void> write(Uint8List data);
   Future<void> close();
-}
-
-Stream<Uint8List> blockStream(Transport t, int blockSize) async* {
-  try {
-    while (true) {
-      yield await t.read(blockSize);
-    }
-  } catch (e) {
-    return;
-  }
 }
 
 class SMPServer {
@@ -59,11 +50,63 @@ const int _binaryRsaTransport = 0;
 const int _transportBlockSize = 4096;
 const int _maxTransportBlockSize = 65536;
 
+class _Request {
+  final Uint8List queueId;
+  final Completer<BrokerResponse> completer = Completer();
+  _Request(this.queueId);
+}
+
+class Either<L, R> {
+  final L? left;
+  final R? right;
+  Either.left(L this.left) : right = null;
+  Either.right(R this.right) : left = null;
+}
+
+enum ClientErrorType { SMPServerError, SMPResponseError, SMPUnexpectedResponse }
+
+class BrokerResponse {
+  final BrokerCommand? command;
+  final ClientErrorType? errorType;
+  final ERR? error;
+  BrokerResponse(BrokerCommand this.command)
+      : errorType = null,
+        error = null;
+  BrokerResponse.error(ClientErrorType this.errorType, this.error)
+      : command = null;
+}
+
+class ClientTransmission {
+  final String corrId;
+  final Uint8List queueId;
+  final ClientCommand command;
+  ClientTransmission(this.corrId, this.queueId, this.command);
+
+  Uint8List serialize() =>
+      unwordsN([encodeAscii(corrId), encode64(queueId), command.serialize()]);
+}
+
+class BrokerTransmission {
+  final String corrId;
+  final Uint8List queueId;
+  final BrokerCommand? command;
+  final ERR? error;
+  BrokerTransmission(this.corrId, this.queueId, BrokerCommand this.command)
+      : error = null;
+  BrokerTransmission.error(this.corrId, this.queueId, ERR this.error)
+      : command = null;
+}
+
+final badBlock = BrokerTransmission.error('', empty, ERR(ErrorType.BLOCK));
+
 class SMPTransportClient {
   final Transport _conn;
   final _sndKey = SessionKey.create();
   final _rcvKey = SessionKey.create();
   final int blockSize;
+  int _corrId = 0;
+  bool _messageStreamCreated = false;
+  final Map<String, _Request> _sentCommands = {};
   SMPTransportClient._(this._conn, this.blockSize);
 
   static Future<SMPTransportClient> connect(Transport conn,
@@ -73,6 +116,92 @@ class SMPTransportClient {
 
   Future<void> close() {
     return _conn.close();
+  }
+
+  Future<BrokerResponse> sendSMPCommand(
+      RSAPrivateKey? key, Uint8List queueId, ClientCommand cmd) async {
+    final corrId = (++_corrId).toString();
+    final t = ClientTransmission(corrId, queueId, cmd).serialize();
+    final sig = key == null ? empty : encode64(signPSS(key, t));
+    final data = unwordsN([sig, t, empty]);
+    final r = _sentCommands[corrId] = _Request(queueId);
+    await _writeEncrypted(data);
+    print('block sent');
+    return r.completer.future;
+  }
+
+  Stream<BrokerTransmission> messageStream() {
+    if (_messageStreamCreated) {
+      throw Exception('message stream already created');
+    }
+    _messageStreamCreated = true;
+    return _messageStream();
+  }
+
+  Stream<BrokerTransmission> _messageStream() async* {
+    try {
+      while (true) {
+        final block = await _readEncrypted();
+        final t = _parseBrokerTransmission(block);
+        print('block received');
+        print(t);
+        if (t.corrId == '') {
+          yield t;
+        } else {
+          final r = _sentCommands.remove(t.corrId);
+          if (r == null) {
+            yield t;
+          } else {
+            final cmd = t.command;
+            r.completer.complete(r.queueId.equal(t.queueId)
+                ? cmd == null
+                    ? BrokerResponse.error(
+                        ClientErrorType.SMPResponseError, t.error)
+                    : cmd is ERR
+                        ? BrokerResponse.error(
+                            ClientErrorType.SMPServerError, cmd)
+                        : BrokerResponse(cmd)
+                : BrokerResponse.error(
+                    ClientErrorType.SMPUnexpectedResponse, null));
+          }
+        }
+      }
+    } catch (e) {
+      return;
+    }
+  }
+
+  static BrokerTransmission _parseBrokerTransmission(Uint8List s) {
+    final p = Parser(s);
+    p.space();
+    final cId = p.word();
+    p.space();
+    final queueId = p.tryParse((p) => p.base64()) ?? empty;
+    p.space();
+    if (p.fail || cId == null) return badBlock;
+    final corrId = decodeAscii(cId);
+    final command = smpCommandP(p);
+    if (command == null) {
+      return BrokerTransmission.error(
+          corrId, queueId, ERR.cmd(CmdErrorType.SYNTAX));
+    }
+    if (command is! BrokerCommand) {
+      return BrokerTransmission.error(
+          corrId, queueId, ERR.cmd(CmdErrorType.PROHIBITED));
+    }
+    final qErr = _tQueueError(queueId, command);
+    if (qErr != null) {
+      return BrokerTransmission.error(corrId, queueId, ERR.cmd(qErr));
+    }
+    return BrokerTransmission(corrId, queueId, command);
+  }
+
+  static CmdErrorType? _tQueueError(Uint8List queueId, BrokerCommand cmd) {
+    if (cmd is IDS || cmd is PONG) {
+      if (queueId.isNotEmpty) return CmdErrorType.HAS_AUTH;
+    } else if (cmd is! ERR && queueId.isEmpty) {
+      return CmdErrorType.NO_QUEUE;
+    }
   }
 
   static Future<SMPTransportClient> _clientHandshake(
@@ -164,6 +293,12 @@ class SMPTransportClient {
     final block = await _conn.read(blockSize);
     final iv = _nextIV(_rcvKey);
     return decryptAES(_rcvKey.aesKey, iv, block);
+  }
+
+  Future<void> _writeEncrypted(Uint8List data) {
+    final iv = _nextIV(_sndKey);
+    final block = encryptAES(_sndKey.aesKey, iv, blockSize, data);
+    return _conn.write(block);
   }
 
   static Uint8List _nextIV(SessionKey sk) {

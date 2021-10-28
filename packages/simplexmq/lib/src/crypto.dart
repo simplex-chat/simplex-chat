@@ -6,9 +6,12 @@ import 'package:pointycastle/asymmetric/oaep.dart';
 import 'package:pointycastle/asymmetric/rsa.dart';
 import 'package:pointycastle/block/aes_fast.dart';
 import 'package:pointycastle/block/modes/gcm.dart';
+import 'package:pointycastle/digests/sha256.dart';
 import 'package:pointycastle/key_generators/api.dart';
 import 'package:pointycastle/key_generators/rsa_key_generator.dart';
 import 'package:pointycastle/random/fortuna_random.dart';
+import 'package:pointycastle/signers/rsa_signer.dart';
+import 'buffer.dart' show empty;
 
 class AESKey {
   final Uint8List _key;
@@ -44,7 +47,6 @@ Uint8List _randomBytes(int len, Random seedSource) {
   return bytes;
 }
 
-final empty = Uint8List(0);
 final paddingByte = '#'.codeUnitAt(0);
 
 Uint8List encryptAES(AESKey key, Uint8List iv, int padTo, Uint8List data) {
@@ -89,4 +91,20 @@ Uint8List decryptOAEP(RSAPrivateKey key, Uint8List data) {
   final oaep = OAEPEncoding.withSHA256(RSAEngine())
     ..init(false, PrivateKeyParameter<RSAPrivateKey>(key));
   return oaep.process(data);
+}
+
+Uint8List signPSS(RSAPrivateKey privateKey, Uint8List data) {
+  final signer = RSASigner(SHA256Digest(), '0609608648016503040201')
+    ..init(true, PrivateKeyParameter<RSAPrivateKey>(privateKey));
+  return signer.generateSignature(data).bytes;
+}
+
+bool verifyPSS(RSAPublicKey publicKey, Uint8List data, Uint8List sig) {
+  final verifier = RSASigner(SHA256Digest(), '0609608648016503040201')
+    ..init(false, PublicKeyParameter<RSAPublicKey>(publicKey));
+  try {
+    return verifier.verifySignature(data, RSASignature(sig));
+  } on ArgumentError {
+    return false;
+  }
 }

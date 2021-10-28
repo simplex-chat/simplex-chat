@@ -17,6 +17,7 @@ final charDot = cc('.');
 
 class Parser {
   final Uint8List _s;
+  final List<int> _positions = [];
   int _pos = 0;
   bool _fail = false;
   Parser(this._s);
@@ -33,6 +34,20 @@ class Parser {
     final res = parse();
     if (res == null) _fail = true;
     return res;
+  }
+
+  T? tryParse<T>(T? Function(Parser p) parse) {
+    if (_fail || _pos >= _s.length) {
+      _fail = true;
+      return null;
+    }
+    _positions.add(_pos);
+    final res = parse(this);
+    final prevPos = _positions.removeLast();
+    if (res == null) {
+      _pos = prevPos;
+      _fail = false;
+    }
   }
 
   // takes a required number of bytes
