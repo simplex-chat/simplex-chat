@@ -19,7 +19,7 @@ void main() {
       final conn1 = await SocketTransport.connect('localhost', 5223);
       final alice = await SMPTransportClient.connect(conn1, keyHash: keyHash);
       final aliceKeys = generateRSAkeyPair();
-      final rcvKeyStr = encode64(encodeRsaPubKey(aliceKeys.publicKey));
+      final rcvKeyBytes = encodeRsaPubKey(aliceKeys.publicKey);
 
       // final conn2 = await SocketTransport.connect('localhost', 5223);
       // final bob = await SMPTransportClient.connect(conn2, keyHash: keyHash);
@@ -29,7 +29,7 @@ void main() {
       // print('we are here');
 
       final resp = await alice.sendSMPCommand(
-          aliceKeys.privateKey, empty, NEW(rcvKeyStr));
+          aliceKeys.privateKey, empty, NEW(rcvKeyBytes));
       print(resp);
     });
     // });

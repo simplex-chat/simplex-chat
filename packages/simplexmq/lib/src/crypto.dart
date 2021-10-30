@@ -10,8 +10,8 @@ import 'package:pointycastle/digests/sha256.dart';
 import 'package:pointycastle/key_generators/api.dart';
 import 'package:pointycastle/key_generators/rsa_key_generator.dart';
 import 'package:pointycastle/random/fortuna_random.dart';
-import 'package:pointycastle/signers/rsa_signer.dart';
-import 'buffer.dart' show empty;
+import 'package:pointycastle/signers/pss_signer.dart';
+import 'buffer.dart';
 
 class AESKey {
   final Uint8List _key;
@@ -25,19 +25,13 @@ class AESKey {
   Uint8List get bytes => _key;
 }
 
-Uint8List randomIV() {
-  return pseudoRandomBytes(16);
-}
+Uint8List randomIV() => pseudoRandomBytes(16);
 
-Uint8List secureRandomBytes(int len) {
-  return _randomBytes(len, Random.secure());
-}
+Uint8List secureRandomBytes(int len) => _randomBytes(len, Random.secure());
 
 final sessionSeed = Random.secure();
 
-Uint8List pseudoRandomBytes(int len) {
-  return _randomBytes(len, sessionSeed);
-}
+Uint8List pseudoRandomBytes(int len) => _randomBytes(len, sessionSeed);
 
 Uint8List _randomBytes(int len, Random seedSource) {
   final bytes = Uint8List(len);
@@ -49,7 +43,11 @@ Uint8List _randomBytes(int len, Random seedSource) {
 
 final paddingByte = '#'.codeUnitAt(0);
 
-Uint8List encryptAES(AESKey key, Uint8List iv, int padTo, Uint8List data) {
+const int _macBytes = 16;
+const int _macBits = _macBytes * 8;
+
+Uint8List encryptAES(AESKey key, Uint8List iv, int blockSize, Uint8List data) {
+  final padTo = blockSize - _macBytes;
   if (data.length >= padTo) throw ArgumentError('large message');
   final padded = Uint8List(padTo);
   padded.setAll(0, data);
@@ -57,18 +55,16 @@ Uint8List encryptAES(AESKey key, Uint8List iv, int padTo, Uint8List data) {
   return _makeGCMCipher(key, iv, true).process(padded);
 }
 
-Uint8List decryptAES(AESKey key, Uint8List iv, Uint8List encryptedAndTag) {
-  return _makeGCMCipher(key, iv, false).process(encryptedAndTag);
-}
+Uint8List decryptAES(AESKey key, Uint8List iv, Uint8List encryptedAndTag) =>
+    _makeGCMCipher(key, iv, false).process(encryptedAndTag);
 
-GCMBlockCipher _makeGCMCipher(AESKey key, Uint8List iv, bool encrypt) {
-  return GCMBlockCipher(AESFastEngine())
-    ..init(encrypt, AEADParameters(KeyParameter(key._key), 128, iv, empty));
-}
+GCMBlockCipher _makeGCMCipher(AESKey key, Uint8List iv, bool encrypt) =>
+    GCMBlockCipher(AESFastEngine())
+      ..init(
+          encrypt, AEADParameters(KeyParameter(key._key), _macBits, iv, empty));
 
-FortunaRandom _secureFortunaRandom() {
-  return FortunaRandom()..seed(KeyParameter(secureRandomBytes(32)));
-}
+FortunaRandom _secureFortunaRandom() =>
+    FortunaRandom()..seed(KeyParameter(secureRandomBytes(32)));
 
 AsymmetricKeyPair<RSAPublicKey, RSAPrivateKey> generateRSAkeyPair(
     [int bitLength = 2048]) {
@@ -81,30 +77,30 @@ AsymmetricKeyPair<RSAPublicKey, RSAPrivateKey> generateRSAkeyPair(
       pair.publicKey as RSAPublicKey, pair.privateKey as RSAPrivateKey);
 }
 
-Uint8List encryptOAEP(RSAPublicKey key, Uint8List data) {
-  final oaep = OAEPEncoding.withSHA256(RSAEngine())
-    ..init(true, PublicKeyParameter<RSAPublicKey>(key));
-  return oaep.process(data);
-}
+Uint8List encryptOAEP(RSAPublicKey key, Uint8List data) =>
+    _oaep(true, PublicKeyParameter<RSAPublicKey>(key)).process(data);
 
-Uint8List decryptOAEP(RSAPrivateKey key, Uint8List data) {
-  final oaep = OAEPEncoding.withSHA256(RSAEngine())
-    ..init(false, PrivateKeyParameter<RSAPrivateKey>(key));
-  return oaep.process(data);
-}
+Uint8List decryptOAEP(RSAPrivateKey key, Uint8List data) =>
+    _oaep(false, PrivateKeyParameter<RSAPrivateKey>(key)).process(data);
 
-Uint8List signPSS(RSAPrivateKey privateKey, Uint8List data) {
-  final signer = RSASigner(SHA256Digest(), '0609608648016503040201')
-    ..init(true, PrivateKeyParameter<RSAPrivateKey>(privateKey));
-  return signer.generateSignature(data).bytes;
-}
+OAEPEncoding _oaep(bool encrypt, AsymmetricKeyParameter keyParam) =>
+    OAEPEncoding.withSHA256(RSAEngine())..init(encrypt, keyParam);
+
+Uint8List signPSS(RSAPrivateKey privateKey, Uint8List data) =>
+    _pss(true, PrivateKeyParameter<RSAPrivateKey>(privateKey))
+        .generateSignature(data)
+        .bytes;
 
 bool verifyPSS(RSAPublicKey publicKey, Uint8List data, Uint8List sig) {
-  final verifier = RSASigner(SHA256Digest(), '0609608648016503040201')
-    ..init(false, PublicKeyParameter<RSAPublicKey>(publicKey));
   try {
-    return verifier.verifySignature(data, RSASignature(sig));
+    return _pss(false, PublicKeyParameter<RSAPublicKey>(publicKey))
+        .verifySignature(data, PSSSignature(sig));
   } on ArgumentError {
     return false;
   }
 }
+
+PSSSigner _pss(bool sign, AsymmetricKeyParameter keyParam) => PSSSigner(
+    RSAEngine(), SHA256Digest(), SHA256Digest())
+  ..init(sign,
+      ParametersWithSaltConfiguration(keyParam, _secureFortunaRandom(), 32));

@@ -291,6 +291,7 @@ class SMPTransportClient {
 
   Future<Uint8List> _readEncrypted() async {
     final block = await _conn.read(blockSize);
+    print('encrypted received');
     final iv = _nextIV(_rcvKey);
     return decryptAES(_rcvKey.aesKey, iv, block);
   }
