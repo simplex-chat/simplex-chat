@@ -1,8 +1,4 @@
-
-struct Message {
-    char* message;
-    long date;
-}
+#include "protocol.h"
 
 extern void commandSend(Message m) {
 

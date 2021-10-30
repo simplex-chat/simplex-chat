@@ -14,6 +14,8 @@
 		5CBF96BA272D9CAA0021E76D /* SimpleX_ChatTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CBF96B9272D9CAA0021E76D /* SimpleX_ChatTests.swift */; };
 		5CBF96C4272D9CAA0021E76D /* SimpleX_ChatUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CBF96C3272D9CAA0021E76D /* SimpleX_ChatUITests.swift */; };
 		5CBF96C6272D9CAA0021E76D /* SimpleX_ChatUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CBF96C5272D9CAA0021E76D /* SimpleX_ChatUITestsLaunchTests.swift */; };
+		5CBF96D3272DA0520021E76D /* Messages.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CBF96D2272DA0520021E76D /* Messages.swift */; };
+		5CBF96D9272DA0CD0021E76D /* protocol.c in Sources */ = {isa = PBXBuildFile; fileRef = 5CBF96D8272DA0CD0021E76D /* protocol.c */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -44,6 +46,9 @@
 		5CBF96BF272D9CAA0021E76D /* SimpleX ChatUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "SimpleX ChatUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		5CBF96C3272D9CAA0021E76D /* SimpleX_ChatUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimpleX_ChatUITests.swift; sourceTree = "<group>"; };
 		5CBF96C5272D9CAA0021E76D /* SimpleX_ChatUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimpleX_ChatUITestsLaunchTests.swift; sourceTree = "<group>"; };
+		5CBF96D2272DA0520021E76D /* Messages.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Messages.swift; sourceTree = "<group>"; };
+		5CBF96D7272DA0CD0021E76D /* protocol.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = protocol.h; sourceTree = "<group>"; };
+		5CBF96D8272DA0CD0021E76D /* protocol.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = protocol.c; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -98,6 +103,8 @@
 				5CBF96AA272D9CA60021E76D /* ContentView.swift */,
 				5CBF96AC272D9CA90021E76D /* Assets.xcassets */,
 				5CBF96AE272D9CA90021E76D /* Preview Content */,
+				5CBF96D2272DA0520021E76D /* Messages.swift */,
+				5CBF96D4272DA0CD0021E76D /* chat */,
 			);
 			path = "SimpleX Chat";
 			sourceTree = "<group>";
@@ -125,6 +132,32 @@
 				5CBF96C5272D9CAA0021E76D /* SimpleX_ChatUITestsLaunchTests.swift */,
 			);
 			path = "SimpleX ChatUITests";
+			sourceTree = "<group>";
+		};
+		5CBF96D4272DA0CD0021E76D /* chat */ = {
+			isa = PBXGroup;
+			children = (
+				5CBF96D5272DA0CD0021E76D /* tests */,
+				5CBF96D6272DA0CD0021E76D /* src */,
+			);
+			name = chat;
+			path = ../../chat;
+			sourceTree = "<group>";
+		};
+		5CBF96D5272DA0CD0021E76D /* tests */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = tests;
+			sourceTree = "<group>";
+		};
+		5CBF96D6272DA0CD0021E76D /* src */ = {
+			isa = PBXGroup;
+			children = (
+				5CBF96D7272DA0CD0021E76D /* protocol.h */,
+				5CBF96D8272DA0CD0021E76D /* protocol.c */,
+			);
+			path = src;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -258,6 +291,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				5CBF96AB272D9CA60021E76D /* ContentView.swift in Sources */,
+				5CBF96D9272DA0CD0021E76D /* protocol.c in Sources */,
+				5CBF96D3272DA0520021E76D /* Messages.swift in Sources */,
 				5CBF96A9272D9CA60021E76D /* SimpleX_ChatApp.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
