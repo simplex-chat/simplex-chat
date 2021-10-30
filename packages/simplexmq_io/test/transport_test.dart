@@ -21,19 +21,18 @@ void main() {
       final aliceMessages = alice.messageStream();
       final aliceKeys = generateRSAkeyPair();
       final rcvKeyBytes = encodeRsaPubKey(aliceKeys.publicKey);
+      // input stream is not processed without the call to listen()
+      aliceMessages.listen((_) {});
 
       // final conn2 = await SocketTransport.connect('localhost', 5223);
       // final bob = await SMPTransportClient.connect(conn2, keyHash: keyHash);
       // final bobKeys = generateRSAkeyPair();
       // final sndKeyStr = encode64(encodeRsaPubKey(bobKeys.publicKey));
 
-      // input stream is not processed without this listen
-      aliceMessages.listen((_) {});
-
       final resp = await alice.sendSMPCommand(
           aliceKeys.privateKey, empty, NEW(rcvKeyBytes));
       expect(resp.command is IDS, true);
     });
-  });
-  // }, skip: 'requires SMP server on port 5223');
+    // });
+  }, skip: 'requires SMP server on port 5223');
 }
