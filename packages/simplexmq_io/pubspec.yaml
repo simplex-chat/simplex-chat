@@ -11,7 +11,7 @@ dependencies:
     git:
       url: git://github.com/simplex-chat/simplex-chat
       path: packages/simplexmq
-      ref: ep/socket-transport
+      ref: ep/smp-client
 
 dependency_overrides:
   simplexmq:
