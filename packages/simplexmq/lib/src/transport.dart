@@ -126,7 +126,6 @@ class SMPTransportClient {
     final data = unwordsN([sig, t, empty]);
     final r = _sentCommands[corrId] = _Request(queueId);
     await _writeEncrypted(data);
-    print('block sent');
     return r.completer.future;
   }
 
@@ -143,8 +142,6 @@ class SMPTransportClient {
       while (true) {
         final block = await _readEncrypted();
         final t = _parseBrokerTransmission(block);
-        print('block received');
-        print(t);
         if (t.corrId == '') {
           yield t;
         } else {
@@ -291,14 +288,13 @@ class SMPTransportClient {
 
   Future<Uint8List> _readEncrypted() async {
     final block = await _conn.read(blockSize);
-    print('encrypted received');
     final iv = _nextIV(_rcvKey);
     return decryptAES(_rcvKey.aesKey, iv, block);
   }
 
   Future<void> _writeEncrypted(Uint8List data) {
     final iv = _nextIV(_sndKey);
-    final block = encryptAES(_sndKey.aesKey, iv, blockSize, data);
+    final block = encryptAES(_sndKey.aesKey, iv, blockSize - 16, data);
     return _conn.write(block);
   }
 

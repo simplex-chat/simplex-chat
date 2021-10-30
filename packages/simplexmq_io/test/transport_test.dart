@@ -18,6 +18,7 @@ void main() {
     test('should create SMP queue and send message', () async {
       final conn1 = await SocketTransport.connect('localhost', 5223);
       final alice = await SMPTransportClient.connect(conn1, keyHash: keyHash);
+      final aliceMessages = alice.messageStream();
       final aliceKeys = generateRSAkeyPair();
       final rcvKeyBytes = encodeRsaPubKey(aliceKeys.publicKey);
 
@@ -26,12 +27,13 @@ void main() {
       // final bobKeys = generateRSAkeyPair();
       // final sndKeyStr = encode64(encodeRsaPubKey(bobKeys.publicKey));
 
-      // print('we are here');
+      // input stream is not processed without this listen
+      aliceMessages.listen((_) {});
 
       final resp = await alice.sendSMPCommand(
           aliceKeys.privateKey, empty, NEW(rcvKeyBytes));
-      print(resp);
+      expect(resp.command is IDS, true);
     });
-    // });
-  }, skip: 'requires SMP server on port 5223');
+  });
+  // }, skip: 'requires SMP server on port 5223');
 }

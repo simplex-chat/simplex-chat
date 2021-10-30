@@ -43,11 +43,7 @@ Uint8List _randomBytes(int len, Random seedSource) {
 
 final paddingByte = '#'.codeUnitAt(0);
 
-const int _macBytes = 16;
-const int _macBits = _macBytes * 8;
-
-Uint8List encryptAES(AESKey key, Uint8List iv, int blockSize, Uint8List data) {
-  final padTo = blockSize - _macBytes;
+Uint8List encryptAES(AESKey key, Uint8List iv, int padTo, Uint8List data) {
   if (data.length >= padTo) throw ArgumentError('large message');
   final padded = Uint8List(padTo);
   padded.setAll(0, data);
@@ -60,8 +56,7 @@ Uint8List decryptAES(AESKey key, Uint8List iv, Uint8List encryptedAndTag) =>
 
 GCMBlockCipher _makeGCMCipher(AESKey key, Uint8List iv, bool encrypt) =>
     GCMBlockCipher(AESFastEngine())
-      ..init(
-          encrypt, AEADParameters(KeyParameter(key._key), _macBits, iv, empty));
+      ..init(encrypt, AEADParameters(KeyParameter(key._key), 128, iv, empty));
 
 FortunaRandom _secureFortunaRandom() =>
     FortunaRandom()..seed(KeyParameter(secureRandomBytes(32)));
