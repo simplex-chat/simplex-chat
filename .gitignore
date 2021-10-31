@@ -49,3 +49,9 @@ stack.yaml.lock
 # chat database
 *.db
 *.db.bak
+packages/android/.idea
+packages/chat/.idea
+packages/chat/build
+packages/chat/Testing
+packages/ios/SimpleX Chat.xcodeproj/project.xcworkspace/xcuserdata
+packages/ios/SimpleX Chat.xcodeproj/xcuserdata

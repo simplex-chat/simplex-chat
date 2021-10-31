@@ -9,6 +9,10 @@ cmake_minimum_required(VERSION 3.10.2)
 
 project("app")
 
+include_directories(include)
+
+add_subdirectory( ../../../../../chat/src build/src )
+
 # Creates and names a library, sets it as either STATIC
 # or SHARED, and provides the relative paths to its source code.
 # You can define multiple libraries, and CMake builds them for you.
@@ -45,4 +49,6 @@ target_link_libraries( # Specifies the target library.
 
         # Links the target library to the log library
         # included in the NDK.
-        ${log-lib})
+        ${log-lib}
+
+        SimpleXChatLib)

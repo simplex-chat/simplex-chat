@@ -1,10 +1,15 @@
 #include <jni.h>
 #include <string>
 
+#include "../../../../../chat/include/protocol.h"
+
 extern "C" JNIEXPORT jstring JNICALL
-Java_chat_simplex_app_MainActivity_stringFromJNI(
+Java_chat_simplex_app_Protocol_executeCommand(
         JNIEnv* env,
-        jobject /* this */) {
-    std::string hello = "Hello from C++";
-    return env->NewStringUTF(hello.c_str());
+        jclass clazz,
+        jstring command) {
+    const char *utf8command = env->GetStringUTFChars(command, JNI_FALSE);
+    jstring result = env->NewStringUTF(executeCommand(utf8command));
+    env->ReleaseStringUTFChars(command, utf8command);
+    return result;
 }

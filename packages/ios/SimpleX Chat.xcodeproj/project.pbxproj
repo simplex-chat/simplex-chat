@@ -14,8 +14,9 @@
 		5CBF96BA272D9CAA0021E76D /* SimpleX_ChatTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CBF96B9272D9CAA0021E76D /* SimpleX_ChatTests.swift */; };
 		5CBF96C4272D9CAA0021E76D /* SimpleX_ChatUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CBF96C3272D9CAA0021E76D /* SimpleX_ChatUITests.swift */; };
 		5CBF96C6272D9CAA0021E76D /* SimpleX_ChatUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CBF96C5272D9CAA0021E76D /* SimpleX_ChatUITestsLaunchTests.swift */; };
-		5CBF96D3272DA0520021E76D /* Messages.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CBF96D2272DA0520021E76D /* Messages.swift */; };
-		5CBF96D9272DA0CD0021E76D /* protocol.c in Sources */ = {isa = PBXBuildFile; fileRef = 5CBF96D8272DA0CD0021E76D /* protocol.c */; };
+		843E324A272EB3B800348BAB /* MessageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 843E3249272EB3B800348BAB /* MessageView.swift */; };
+		843E324C272F04F100348BAB /* protocol.h in Headers */ = {isa = PBXBuildFile; fileRef = 843E324B272F04F100348BAB /* protocol.h */; };
+		843E324E272F04FA00348BAB /* protocol.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 843E324D272F04FA00348BAB /* protocol.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -46,9 +47,10 @@
 		5CBF96BF272D9CAA0021E76D /* SimpleX ChatUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "SimpleX ChatUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		5CBF96C3272D9CAA0021E76D /* SimpleX_ChatUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimpleX_ChatUITests.swift; sourceTree = "<group>"; };
 		5CBF96C5272D9CAA0021E76D /* SimpleX_ChatUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimpleX_ChatUITestsLaunchTests.swift; sourceTree = "<group>"; };
-		5CBF96D2272DA0520021E76D /* Messages.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Messages.swift; sourceTree = "<group>"; };
-		5CBF96D7272DA0CD0021E76D /* protocol.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = protocol.h; sourceTree = "<group>"; };
-		5CBF96D8272DA0CD0021E76D /* protocol.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = protocol.c; sourceTree = "<group>"; };
+		843E3243272EADA200348BAB /* SimpleX Chat-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "SimpleX Chat-Bridging-Header.h"; sourceTree = "<group>"; };
+		843E3249272EB3B800348BAB /* MessageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageView.swift; sourceTree = "<group>"; };
+		843E324B272F04F100348BAB /* protocol.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = protocol.h; path = ../../../chat/include/protocol.h; sourceTree = "<group>"; };
+		843E324D272F04FA00348BAB /* protocol.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = protocol.cpp; path = ../../../chat/src/protocol.cpp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -83,6 +85,7 @@
 				5CBF96B8272D9CAA0021E76D /* SimpleX ChatTests */,
 				5CBF96C2272D9CAA0021E76D /* SimpleX ChatUITests */,
 				5CBF96A6272D9CA60021E76D /* Products */,
+				843E3205272EA78D00348BAB /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -101,10 +104,11 @@
 			children = (
 				5CBF96A8272D9CA60021E76D /* SimpleX_ChatApp.swift */,
 				5CBF96AA272D9CA60021E76D /* ContentView.swift */,
+				843E3249272EB3B800348BAB /* MessageView.swift */,
 				5CBF96AC272D9CA90021E76D /* Assets.xcassets */,
 				5CBF96AE272D9CA90021E76D /* Preview Content */,
-				5CBF96D2272DA0520021E76D /* Messages.swift */,
-				5CBF96D4272DA0CD0021E76D /* chat */,
+				843E3246272EAEA900348BAB /* ChatLib */,
+				843E3243272EADA200348BAB /* SimpleX Chat-Bridging-Header.h */,
 			);
 			path = "SimpleX Chat";
 			sourceTree = "<group>";
@@ -134,39 +138,41 @@
 			path = "SimpleX ChatUITests";
 			sourceTree = "<group>";
 		};
-		5CBF96D4272DA0CD0021E76D /* chat */ = {
+		843E3205272EA78D00348BAB /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				5CBF96D5272DA0CD0021E76D /* tests */,
-				5CBF96D6272DA0CD0021E76D /* src */,
 			);
-			name = chat;
-			path = ../../chat;
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
-		5CBF96D5272DA0CD0021E76D /* tests */ = {
+		843E3246272EAEA900348BAB /* ChatLib */ = {
 			isa = PBXGroup;
 			children = (
+				843E324B272F04F100348BAB /* protocol.h */,
+				843E324D272F04FA00348BAB /* protocol.cpp */,
 			);
-			path = tests;
-			sourceTree = "<group>";
-		};
-		5CBF96D6272DA0CD0021E76D /* src */ = {
-			isa = PBXGroup;
-			children = (
-				5CBF96D7272DA0CD0021E76D /* protocol.h */,
-				5CBF96D8272DA0CD0021E76D /* protocol.c */,
-			);
-			path = src;
+			path = ChatLib;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
+
+/* Begin PBXHeadersBuildPhase section */
+		843E31EA272DA43500348BAB /* Headers */ = {
+			isa = PBXHeadersBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				843E324C272F04F100348BAB /* protocol.h in Headers */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXHeadersBuildPhase section */
 
 /* Begin PBXNativeTarget section */
 		5CBF96A4272D9CA60021E76D /* SimpleX Chat */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 5CBF96C9272D9CAA0021E76D /* Build configuration list for PBXNativeTarget "SimpleX Chat" */;
 			buildPhases = (
+				843E31EA272DA43500348BAB /* Headers */,
 				5CBF96A1272D9CA60021E76D /* Sources */,
 				5CBF96A2272D9CA60021E76D /* Frameworks */,
 				5CBF96A3272D9CA60021E76D /* Resources */,
@@ -223,11 +229,12 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 1310;
+				LastSwiftUpdateCheck = 1300;
 				LastUpgradeCheck = 1310;
 				TargetAttributes = {
 					5CBF96A4272D9CA60021E76D = {
 						CreatedOnToolsVersion = 13.1;
+						LastSwiftMigration = 1300;
 					};
 					5CBF96B4272D9CAA0021E76D = {
 						CreatedOnToolsVersion = 13.1;
@@ -290,10 +297,10 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				843E324A272EB3B800348BAB /* MessageView.swift in Sources */,
 				5CBF96AB272D9CA60021E76D /* ContentView.swift in Sources */,
-				5CBF96D9272DA0CD0021E76D /* protocol.c in Sources */,
-				5CBF96D3272DA0520021E76D /* Messages.swift in Sources */,
 				5CBF96A9272D9CA60021E76D /* SimpleX_ChatApp.swift in Sources */,
+				843E324E272F04FA00348BAB /* protocol.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -451,6 +458,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"SimpleX Chat/Preview Content\"";
@@ -470,6 +478,8 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "chat.simplex.SimpleX-Chat";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = "SimpleX Chat/SimpleX Chat-Bridging-Header.h";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -480,6 +490,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"SimpleX Chat/Preview Content\"";
@@ -499,6 +510,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "chat.simplex.SimpleX-Chat";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = "SimpleX Chat/SimpleX Chat-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
