@@ -91,7 +91,7 @@ import System.Console.ANSI.Types
 
 type ChatReader m = (MonadUnliftIO m, MonadReader ChatController m)
 
-versionNumber :: Text
+versionNumber :: String
 versionNumber = "0.4.2"
 
 showInvitation :: ChatReader m => SMPQueueInfo -> m ()
@@ -691,7 +691,4 @@ styleTime :: String -> StyledString
 styleTime = Styled [SetColor Foreground Vivid Black]
 
 clientVersionInfo :: [StyledString]
-clientVersionInfo =
-  map
-    styleMarkdown
-    [ "Current version: " <> highlight "v" <> highlight versionNumber]
+clientVersionInfo = [ "Current version: " <> highlight' "v" <> highlight' versionNumber]
