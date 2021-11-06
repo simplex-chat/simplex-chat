@@ -62,6 +62,7 @@ module Simplex.Chat.View
     showMessageError,
     safeDecodeUtf8,
     msgPlain,
+    clientVersionInfo,
   )
 where
 
@@ -89,6 +90,9 @@ import Simplex.Messaging.Agent.Protocol
 import System.Console.ANSI.Types
 
 type ChatReader m = (MonadUnliftIO m, MonadReader ChatController m)
+
+versionNumber :: Text
+versionNumber = "0.4.2"
 
 showInvitation :: ChatReader m => SMPQueueInfo -> m ()
 showInvitation = printToView . invitation
@@ -685,3 +689,9 @@ highlight' = highlight
 
 styleTime :: String -> StyledString
 styleTime = Styled [SetColor Foreground Vivid Black]
+
+clientVersionInfo :: [StyledString]
+clientVersionInfo =
+  map
+    styleMarkdown
+    [ "Current version: " <> highlight "v" <> highlight versionNumber]

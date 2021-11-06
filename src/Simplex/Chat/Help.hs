@@ -58,6 +58,7 @@ chatHelpInfo =
       indent <> highlight "/profile <name> [<full_name>]" <> " - update user profile",
       indent <> highlight "/delete <contact>" <> " - delete contact and all messages with them",
       indent <> highlight "/markdown        " <> " - show supported markdown syntax",
+      indent <> highlight "/version         " <> " - show SimpleX client version" ,
       indent <> highlight "/quit            " <> " - quit chat",
       "",
       "The commands may be abbreviated to a single letter: " <> listHighlight ["/c", "/f", "/g", "/p", "/h"] <> ", etc."
