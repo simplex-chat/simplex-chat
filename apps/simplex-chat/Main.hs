@@ -7,6 +7,7 @@ module Main where
 
 import Simplex.Chat
 import Simplex.Chat.Options
+import Simplex.Chat.Controller (versionNumber)
 import System.Directory (getAppUserDataDirectory)
 import System.Terminal (withTerminal)
 
@@ -20,7 +21,7 @@ welcomeGetOpts :: IO ChatOpts
 welcomeGetOpts = do
   appDir <- getAppUserDataDirectory "simplex"
   opts@ChatOpts {dbFile} <- getChatOpts appDir
-  putStrLn "SimpleX chat prototype v0.4.0"
+  putStrLn $ "SimpleX chat prototype v" ++ versionNumber
   putStrLn $ "db: " <> dbFile <> ".chat.db, " <> dbFile <> ".agent.db"
   putStrLn "type \"/help\" or \"/h\" for usage info"
   pure opts

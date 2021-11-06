@@ -91,9 +91,6 @@ import System.Console.ANSI.Types
 
 type ChatReader m = (MonadUnliftIO m, MonadReader ChatController m)
 
-versionNumber :: String
-versionNumber = "0.4.2"
-
 showInvitation :: ChatReader m => SMPQueueInfo -> m ()
 showInvitation = printToView . invitation
 
