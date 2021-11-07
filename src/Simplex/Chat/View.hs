@@ -62,6 +62,7 @@ module Simplex.Chat.View
     showMessageError,
     safeDecodeUtf8,
     msgPlain,
+    clientVersionInfo,
   )
 where
 
@@ -685,3 +686,6 @@ highlight' = highlight
 
 styleTime :: String -> StyledString
 styleTime = Styled [SetColor Foreground Vivid Black]
+
+clientVersionInfo :: [StyledString]
+clientVersionInfo = [plain $ "SimpleX Chat v" <> versionNumber]
