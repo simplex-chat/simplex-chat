@@ -1,6 +1,6 @@
 # SimpleX Chat
 
-## Individual Contributor License Agreement v1.0.0
+## Individual Contributor License Agreement v1.1
 
 Thank you for your interest in contributing to open source software projects ("Projects") made available by SimpleX Chat or its affiliates ("SimpleX"). This Individual Contributor License Agreement ("Agreement") sets out the terms governing any source code, bug fixes, configuration changes, tools, specifications, documentation, data, materials, feedback, information or other works of authorship that you submit or have submitted, in any form and in any manner, to SimpleX in respect of any of the Projects (collectively "Contributions"). If you have any questions regarding this Agreement, please contact chat@simplex.chat.
 
