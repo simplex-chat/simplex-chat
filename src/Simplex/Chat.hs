@@ -89,6 +89,7 @@ data ChatCommand
   | UpdateProfile Profile
   | ShowProfile
   | QuitChat
+  | ShowVersion
   deriving (Show)
 
 defaultChatConfig :: ChatConfig
@@ -317,6 +318,7 @@ processChatCommand user@User {userId, profile} = \case
     showUserProfileUpdated user user'
   ShowProfile -> showUserProfile profile
   QuitChat -> liftIO exitSuccess
+  ShowVersion -> printToView clientVersionInfo
   where
     contactMember :: Contact -> [GroupMember] -> Maybe GroupMember
     contactMember Contact {contactId} =
@@ -1110,6 +1112,7 @@ chatCommandP =
     <|> ("/profile " <|> "/p ") *> (UpdateProfile <$> userProfile)
     <|> ("/profile" <|> "/p") $> ShowProfile
     <|> ("/quit" <|> "/q") $> QuitChat
+    <|> ("/version" <|> "/v") $> ShowVersion
   where
     displayName = safeDecodeUtf8 <$> (B.cons <$> A.satisfy refChar <*> A.takeTill (== ' '))
     refChar c = c > ' ' && c /= '#' && c /= '@'
