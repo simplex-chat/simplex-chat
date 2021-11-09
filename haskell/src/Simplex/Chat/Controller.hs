@@ -25,6 +25,9 @@ import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore)
 import System.IO (Handle)
 import UnliftIO.STM
 
+versionNumber :: String
+versionNumber = "0.4.2"
+
 data ChatConfig = ChatConfig
   { agentConfig :: AgentConfig,
     dbPoolSize :: Int,
