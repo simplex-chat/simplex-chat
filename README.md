@@ -24,6 +24,9 @@ See [simplex.chat](https://simplex.chat) website for chat demo and the explanati
 - [Terminal chat features](#terminal-chat-features)
 - [Installation](#installation)
   - [Download chat client](#download-chat-client)
+    - [Linux and MacOS](#linux-and-macos)
+      - [Troubleshooting on Unix](#troubleshooting-on-unix)
+    - [Windows](#windows)
   - [Build from source](#build-from-source)
     - [Using Docker](#using-docker)
     - [Using Haskell stack](#using-haskell-stack)
@@ -83,9 +86,33 @@ chmod +x <binary>
 mv <binary> ~/.local/bin/simplex-chat
 ```
 
-(or any other preferred location on PATH).
+(or any other preferred location on `PATH`).
 
 On MacOS you also need to [allow Gatekeeper to run it](https://support.apple.com/en-us/HT202491).
+
+##### Troubleshooting on Unix
+
+If you get `simplex-chat: command not found` when executing the downloaded binary, you need to add the directory containing it to the [`PATH` variable](https://man7.org/linux/man-pages/man7/environ.7.html) (find "PATH" in page). To modify `PATH` for future sessions, put `PATH="$PATH:/path/to/dir"` in `~/.profile`, or in `~/.bash_profile` if that's what you have. See [this answer](https://unix.stackexchange.com/a/26059) for the detailed explanation on the appropriate place to define environment variables for `bash` and other shells.
+
+For example, if you followed the previous instructions, open `~/.profile` for editing:
+
+```sh
+vi ~/.profile
+```
+
+And add the following line to the end:
+
+```sh
+PATH="$PATH:$HOME/.local/bin"
+```
+
+Note that this will not automatically update your `PATH` for the remainder of the session. To do this, you should run:
+
+```sh
+source ~/.profile
+```
+
+Or restart your terminal to start a new session.
 
 #### Windows
 
@@ -105,7 +132,7 @@ $ cd simplex-chat
 $ DOCKER_BUILDKIT=1 docker build --output ~/.local/bin .
 ```
 
-> **Please note:** If you encounter ``version `GLIBC_2.28' not found`` error, rebuild it with `haskell:8.8.4-stretch` base image (change it in your local [Dockerfile](Dockerfile)).
+> **Please note:** If you encounter ``version `GLIBC_2.28' not found`` error, rebuild it with `haskell:8.10.4-stretch` base image (change it in your local [Dockerfile](Dockerfile)).
 
 #### Using Haskell stack
 
@@ -127,7 +154,7 @@ $ stack install
 
 ### Running the chat client
 
-To start the chat client, run `simplex-chat` from the terminal.
+To start the chat client, run `simplex-chat` from the terminal. If you get `simplex-chat: command not found`, see [Troubleshooting on Unix](#troubleshooting-on-unix).
 
 By default, app data directory is created in the home directory (`~/.simplex`, or `%APPDATA%/simplex` on Windows), and two SQLite database files `simplex.chat.db` and `simplex.agent.db` are initialized in it.
 
