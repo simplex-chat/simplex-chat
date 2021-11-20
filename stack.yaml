@@ -17,7 +17,7 @@
 #
 # resolver: ./custom-snapshot.yaml
 # resolver: https://example.com/snapshots/2018-01-01.yaml
-resolver: lts-17.12
+resolver: lts-18.17
 
 # User packages to be built.
 # Various formats can be used as shown in the example below.
@@ -40,10 +40,10 @@ extra-deps:
   - simple-logger-0.1.0@sha256:be8ede4bd251a9cac776533bae7fb643369ebd826eb948a9a18df1a8dd252ff8,1079
   - sqlite-simple-0.4.18.0@sha256:3ceea56375c0a3590c814e411a4eb86943f8d31b93b110ca159c90689b6b39e5,3002
   - terminal-0.2.0.0@sha256:de6770ecaae3197c66ac1f0db5a80cf5a5b1d3b64a66a05b50f442de5ad39570,2977
-  - simplexmq-0.4.1@sha256:3a1bc40d85e4e398458e5b9b79757e0af4fe27b8ef44eb3157f7f1e07412a8e8,7640
+  # - simplexmq-0.4.1@sha256:3a1bc40d85e4e398458e5b9b79757e0af4fe27b8ef44eb3157f7f1e07412a8e8,7640
   # - ../simplexmq
-  # - github: simplex-chat/simplexmq
-  #   commit: 35e6593581e68f7b444e0f8f4fb6a2e2cc59a5ea
+  - github: simplex-chat/simplexmq
+    commit: eb941f743511aad61bc0396a68dfe1d74060b0dd
 #
 # extra-deps: []
 
