@@ -1,7 +1,6 @@
 VERSION="v0.4.2"
 APP_NAME="simplex-chat"
-TARGET_DIR="$HOME/.local/bin"
-
+TARGET_DIR="$HOME/bin"
 PLATFORM="$(uname)"
 
 if [ $PLATFORM == "Darwin" ]; then
@@ -15,8 +14,6 @@ fi
 
 [ ! -d $TARGET_DIR ] && mkdir -p $TARGET_DIR
 
-wget -O $TARGET_DIR/simplex-chat "https://github.com/$APP_NAME/$APP_NAME/releases/download/$VERSION/$PLATFORM" && chmod +x $TARGET_DIR/simplex-chat
+wget -O $TARGET_DIR/$APP_NAME "https://github.com/$APP_NAME/$APP_NAME/releases/download/$VERSION/$PLATFORM" && chmod +x $TARGET_DIR/$APP_NAME
 
-echo "export PATH=\$PATH:$TARGET_DIR" >>$HOME/.profile
-
-echo "simplex-chat is installed, source your .profile or open a new shell"
+echo "$APP_NAME was installed sucesfully!"
