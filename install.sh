@@ -2,18 +2,18 @@ VERSION="v0.4.2"
 APP_NAME="simplex-chat"
 
 ######################
-PLATAFORM=""
+PLATFORM="$(uname)"
 
-if [ "$(uname)" == "Darwin" ]; then
-	PLATAFORM="macos-x86-64"
-elif [ "$(uname)" == "Linux" ]; then
-	PLATAFORM="ubuntu-20_04-x86-64"
+if [ $PLATFORM == "Darwin" ]; then
+	PLATFORM="macos-x86-64"
+elif [ $PLATFORM == "Linux" ]; then
+	PLATFORM="ubuntu-20_04-x86-64"
 else
 	echo "Your platform is not suported, try with macos/linux."
 	exit 1
 fi
 
-PLATAFORM_BIN="$APP_NAME-$PLATAFORM"
+PLATFORM_BIN="$APP_NAME-$PLATFORM"
 ######################
 
 ######################
@@ -35,7 +35,7 @@ TARGET_DIR="$HOME/.local/bin"
 [ ! -d $TARGET_DIR ] && mkdir -p $TARGET_DIR
 
 # Build the url
-URL="https://github.com/$APP_NAME/$APP_NAME/releases/download/$VERSION/$PLATAFORM_BIN"
+URL="https://github.com/$APP_NAME/$APP_NAME/releases/download/$VERSION/$PLATFORM"
 
 # Download the binary and make it executable
 wget -O $TARGET_DIR/simplex-chat $URL && chmod +x $TARGET_DIR/simplex-chat
