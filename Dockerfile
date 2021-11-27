@@ -4,7 +4,7 @@ FROM haskell:8.10.4 AS build-stage
 # FROM haskell:8.10.4-stretch AS build-stage
 COPY . /project
 WORKDIR /project
-RUN stack install
+RUN stack install --install-ghc
 
 FROM scratch AS export-stage
 COPY --from=build-stage /root/.local/bin/simplex-chat /
