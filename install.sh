@@ -32,8 +32,8 @@ fi
 ######################
 
 # Check if the directory exists
-SIMPLEX_CHAT_DIR="$HOME/.config/$SIMPLEX_CHAT"
-[ ! -d $SIMPLEX_CHAT_DIR ] && mkdir -p $SIMPLEX_CHAT_DIR
+TARGET_DIR="$HOME/.local/bin"
+[ ! -d $TARGET_DIR ] && mkdir -p $TARGET_DIR
 
 # Build the url
 URL="https://github.com/$SIMPLEX_CHAT/$SIMPLEX_CHAT/releases/download/$VERSION/$PLATAFORM_BIN"
