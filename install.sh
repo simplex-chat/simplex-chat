@@ -1,6 +1,5 @@
-# Constants
 VERSION="v0.4.2"
-SIMPLEX_CHAT="simplex-chat"
+APP_NAME="simplex-chat"
 
 ######################
 PLATAFORM=""
@@ -14,7 +13,7 @@ else
 	exit 1
 fi
 
-PLATAFORM_BIN="$SIMPLEX_CHAT-$PLATAFORM"
+PLATAFORM_BIN="$APP_NAME-$PLATAFORM"
 ######################
 
 ######################
@@ -36,13 +35,13 @@ TARGET_DIR="$HOME/.local/bin"
 [ ! -d $TARGET_DIR ] && mkdir -p $TARGET_DIR
 
 # Build the url
-URL="https://github.com/$SIMPLEX_CHAT/$SIMPLEX_CHAT/releases/download/$VERSION/$PLATAFORM_BIN"
+URL="https://github.com/$APP_NAME/$APP_NAME/releases/download/$VERSION/$PLATAFORM_BIN"
 
 # Download the binary and make it executable
-wget -O $SIMPLEX_CHAT_DIR/simplex-chat $URL && chmod +x $SIMPLEX_CHAT_DIR/simplex-chat
+wget -O $TARGET_DIR/simplex-chat $URL && chmod +x $TARGET_DIR/simplex-chat
 
 # Export the path to the binary
-echo "export PATH=\$PATH:$SIMPLEX_CHAT_DIR" >>$HOME/$FILE_TO_EXPORT
+echo "export PATH=\$PATH:$TARGET_DIR" >>$HOME/$FILE_TO_EXPORT
 
 # Exit message with instructions
 echo "simplex-chat is installed, source your $FILE_TO_EXPORT or open a new shell"
