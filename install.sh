@@ -1,4 +1,4 @@
-VERSION="v0.4.2"
+VERSION="0.4.2"
 APP_NAME="simplex-chat"
 TARGET_DIR="$HOME/bin"
 PLATFORM="$(uname)"
@@ -14,6 +14,6 @@ fi
 
 [ ! -d $TARGET_DIR ] && mkdir -p $TARGET_DIR
 
-wget -O $TARGET_DIR/$APP_NAME "https://github.com/$APP_NAME/$APP_NAME/releases/download/$VERSION/$PLATFORM" && chmod +x $TARGET_DIR/$APP_NAME
+wget -O $TARGET_DIR/$APP_NAME "https://github.com/$APP_NAME/$APP_NAME/releases/download/v$VERSION/$PLATFORM" && chmod +x $TARGET_DIR/$APP_NAME
 
 echo "$APP_NAME was installed sucesfully!"
