@@ -1,4 +1,3 @@
-VERSION="0.4.2"
 APP_NAME="simplex-chat"
 TARGET_DIR="$HOME/bin"
 PLATFORM="$(uname)"
