@@ -15,6 +15,6 @@ fi
 
 [ ! -d $TARGET_DIR ] && mkdir -p $TARGET_DIR
 
-wget -O $TARGET_DIR/$APP_NAME "https://github.com/$APP_NAME/$APP_NAME/releases/download/v$VERSION/$PLATFORM" && chmod +x $TARGET_DIR/$APP_NAME
+wget -O $TARGET_DIR/$APP_NAME "https://github.com/$APP_NAME/$APP_NAME/releases/latest/download/$APP_NAME-$PLATFORM" && chmod +x $TARGET_DIR/$APP_NAME
 
 echo "$APP_NAME was installed sucesfully!"
