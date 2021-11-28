@@ -82,7 +82,7 @@ RSA keys are not used as identity, they are randomly generated for each contact.
 
 To **install** or **update** `simplex-chat`, you should run the install script. To do that, use the following cURL or Wget command:
 
-```
+```sh
 curl -o- https://raw.githubusercontent.com/simplex-chat/simplex-chat/master/install.sh | bash
 ```
 
