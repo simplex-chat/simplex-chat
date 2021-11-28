@@ -18,3 +18,4 @@ fi
 wget -O $TARGET_DIR/$APP_NAME "https://github.com/$APP_NAME/$APP_NAME/releases/latest/download/$APP_NAME-$PLATFORM" && chmod +x $TARGET_DIR/$APP_NAME
 
 echo "$APP_NAME was installed sucesfully!"
+echo "Type simplex-chat in your terminal to run it"
