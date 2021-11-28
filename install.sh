@@ -8,7 +8,8 @@ if [ $PLATFORM == "Darwin" ]; then
 elif [ $PLATFORM == "Linux" ]; then
 	PLATFORM="ubuntu-20_04-x86-64"
 else
-	echo "Your platform is not suported, try with macos/linux."
+	echo "Scripted installation on your platform is not supported."
+	echo "See compiled binaries in the latest release: https://github.com/simplex-chat/simplex-chat/releases/latest
 	exit 1
 fi
 
