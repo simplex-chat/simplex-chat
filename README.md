@@ -77,9 +77,22 @@ RSA keys are not used as identity, they are randomly generated for each contact.
 
 ### Download chat client
 
-Download the chat binary for your system from the [latest stable release](https://github.com/simplex-chat/simplex-chat/releases) and make it executable as shown below.
 
 #### Linux and MacOS
+
+To **install** or **update** `simplex-chat`, you should run the install script. To do that, use the following cURL or Wget command:
+
+```sh
+curl -o- https://raw.githubusercontent.com/simplex-chat/simplex-chat/master/install.sh | bash
+```
+
+```sh
+wget -qO- https://raw.githubusercontent.com/simplex-chat/simplex-chat/master/install.sh | bash
+```
+
+Once the chat client downloads, you can run it with `simplex-chat` command in your terminal.
+
+Alternatively, you can manually download the chat binary for your system from the [latest stable release](https://github.com/simplex-chat/simplex-chat/releases) and make it executable as shown below.
 
 ```sh
 chmod +x <binary>
@@ -132,7 +145,7 @@ $ cd simplex-chat
 $ DOCKER_BUILDKIT=1 docker build --output ~/.local/bin .
 ```
 
-> **Please note:** If you encounter ``version `GLIBC_2.28' not found`` error, rebuild it with `haskell:8.10.4-stretch` base image (change it in your local [Dockerfile](Dockerfile)).
+> **Please note:** If you encounter `` version `GLIBC_2.28' not found `` error, rebuild it with `haskell:8.10.4-stretch` base image (change it in your local [Dockerfile](Dockerfile)).
 
 #### Using Haskell stack
 
@@ -245,12 +258,12 @@ order by internal_id desc;
 
 1. Mobile and desktop apps (in progress).
 2. SMP protocol improvements:
-    - SMP queue redundancy and rotation.
-    - Message delivery confirmation.
-    - Support multiple devices.
+   - SMP queue redundancy and rotation.
+   - Message delivery confirmation.
+   - Support multiple devices.
 3. Privacy-preserving identity server for optional DNS-based contact/group addresses to simplify connection and discovery, but not used to deliver messages:
-    - keep all your contacts and groups even if you lose the domain.
-    - the server doesn't have information about your contacts and groups.
+   - keep all your contacts and groups even if you lose the domain.
+   - the server doesn't have information about your contacts and groups.
 4. Media server to optimize sending large files to groups.
 5. Channels server for large groups and broadcast channels.
 
