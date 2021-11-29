@@ -90,7 +90,7 @@ curl -o- https://raw.githubusercontent.com/simplex-chat/simplex-chat/master/inst
 wget -qO- https://raw.githubusercontent.com/simplex-chat/simplex-chat/master/install.sh | bash
 ```
 
-Download the chat binary for your system from the [latest stable release](https://github.com/simplex-chat/simplex-chat/releases) and make it executable as shown below.
+Alternatively, you can manually download the chat binary for your system from the [latest stable release](https://github.com/simplex-chat/simplex-chat/releases) and make it executable as shown below.
 
 ```sh
 chmod +x <binary>
