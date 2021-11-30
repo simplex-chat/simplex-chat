@@ -41,8 +41,7 @@
 curl -o- https://raw.githubusercontent.com/simplex-chat/simplex-chat/master/install.sh | bash
 ```
 
-<!-- [![GitHub build](https://github.com/simplex-chat/simplex-chat/workflows/build/badge.svg)](https://github.com/simplex-chat/simplex-chat/actions?query=workflow%3Abuild)
-[![GitHub release](https://img.shields.io/github/v/release/simplex-chat/simplex-chat)](https://github.com/simplex-chat/simplex-chat/releases) -->
+### Welcome word
 
 We are working hard to create the most secure and private chat in the world - open source, decentralized, and without the need for global identities of any kind. If you believe in the project and would like to support it, you can do so in following ways:
 
@@ -58,6 +57,8 @@ We are working hard to create the most secure and private chat in the world - op
 
 We appreciate all the help from our contributors, thank you!
 
+![simplex-chat](./images/connection.gif)
+
 > **NEW in v0.4: [groups](#groups) and [sending files](#sending-files)!**
 
 The motivation for SimpleX chat is [presented here](./simplex.md).
@@ -65,8 +66,6 @@ The motivation for SimpleX chat is [presented here](./simplex.md).
 SimpleX chat prototype is a thin terminal UI on top of [SimpleXMQ](https://github.com/simplex-chat/simplexmq) message broker that uses [SMP protocols](https://github.com/simplex-chat/simplexmq/blob/master/protocol).
 
 See [simplex.chat](https://simplex.chat) website for chat demo and the explanations of the system and how SMP protocol works.
-
-![simplex-chat](./images/connection.gif)
 
 ## Table of contents
 
