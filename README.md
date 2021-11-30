@@ -25,7 +25,7 @@ curl -o- https://raw.githubusercontent.com/simplex-chat/simplex-chat/master/inst
 
 ### Welcome word
 
-**We are working hard to create the most secure and user privacy focused chat in the world** - open source, decentralized, and without the need for global identities of any kind. If you believe in the project and would like to support it, you can do so in following ways:
+**We are building the most private and secure chat in the world** - open-source, decentralized, and without global identities of any kind. If you would like to support it, you can do so in the following ways:
 
 - 🌟 **Give the project a star on GitHub** - it's a great feedback we're on the right track and helps us raise the visibility of the project.
 
