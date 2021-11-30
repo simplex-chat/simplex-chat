@@ -1,11 +1,62 @@
-<img align="right" src="images/logo.svg" alt="SimpleX logo" height="90">
+<p align="center">
+  <img
+    width="400"
+    src="images/logo.svg"
+    alt="SimpleX chat - Private, Secure, Decentralized"
+  />
+</p>
 
-# SimpleX chat
+<h1 align="center">
+  SimpleX chat
+</h1>
 
-## Private, secure, decentralized
+<h2 align="center">
+  Private, secure, decentralized
+</h2>
 
-[![GitHub build](https://github.com/simplex-chat/simplex-chat/workflows/build/badge.svg)](https://github.com/simplex-chat/simplex-chat/actions?query=workflow%3Abuild)
-[![GitHub release](https://img.shields.io/github/v/release/simplex-chat/simplex-chat)](https://github.com/simplex-chat/simplex-chat/releases)
+<p align="center">
+  <a href="https://github.com/simplex-chat/simplex-chat/actions?query=workflow%3Abuild"
+    ><img
+      src="https://github.com/simplex-chat/simplex-chat/workflows/build/badge.svg"
+      alt="GitHub build"
+  /></a>
+  <a href="https://github.com/simplex-chat/simplex-chat/releases"
+    ><img
+      src="https://img.shields.io/github/v/release/simplex-chat/simplex-chat"
+      alt="GitHub release"
+  /></a>
+</p>
+
+<p align="center">
+  <a href="https://simplex.chat/">Website</a>
+  ·
+  <a href="#🚀-installation">Installation</a>
+  ·
+  <a href="https://github.com/simplex-chat/simplexmq/blob/master/protocol/agent-protocol.md">Protocol</a>
+</p>
+
+### Quick installation
+
+```sh
+curl -o- https://raw.githubusercontent.com/simplex-chat/simplex-chat/master/install.sh | bash
+```
+
+<!-- [![GitHub build](https://github.com/simplex-chat/simplex-chat/workflows/build/badge.svg)](https://github.com/simplex-chat/simplex-chat/actions?query=workflow%3Abuild)
+[![GitHub release](https://img.shields.io/github/v/release/simplex-chat/simplex-chat)](https://github.com/simplex-chat/simplex-chat/releases) -->
+
+We are working hard to create the most secure and private chat in the world - open source, decentralized, and without the need for global identities of any kind. If you believe in the project and would like to support it, you can do so in following ways:
+
+- 🌟 Give the project a star  on GitHub! It's a great feedback we're on the right track and helps us raise the visibility of the project.
+
+- Install the chat and try it out - if you run into a bug you may help us out by [raising an issue](https://github.com/simplex-chat/simplex-chat/issues).
+
+- Terminal chat is a [prototype](#disclaimer) and our playground for testing out the protocol - but if you like it you can spread the word and invite your friends for some fun chatting inside your terminal. For example, we've been using it right inside our IDEs 👨‍💻
+
+- Donate via [opencollective](https://opencollective.com/simplex-chat) - no matter the size, we appreciate every donation!
+
+- Make a contribution to the project - we're constantly moving the project forward and there are always lots of things to do.
+
+We appreciate all the help from our contributors, thank you!
 
 > **NEW in v0.4: [groups](#groups) and [sending files](#sending-files)!**
 
@@ -22,7 +73,7 @@ See [simplex.chat](https://simplex.chat) website for chat demo and the explanati
 - [Disclaimer](#disclaimer)
 - [Network topology](#network-topology)
 - [Terminal chat features](#terminal-chat-features)
-- [Installation](#installation)
+- [Installation](#🚀-installation)
   - [Download chat client](#download-chat-client)
     - [Linux and MacOS](#linux-and-macos)
       - [Troubleshooting on Unix](#troubleshooting-on-unix)
@@ -73,7 +124,9 @@ The routing of messages relies on the knowledge of client devices how user conta
 
 RSA keys are not used as identity, they are randomly generated for each contact.
 
-## Installation
+<a name="🚀-installation"></a>
+
+## 🚀 Installation
 
 ### Download chat client
 
