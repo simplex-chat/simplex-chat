@@ -33,7 +33,7 @@ curl -o- https://raw.githubusercontent.com/simplex-chat/simplex-chat/master/inst
 
 - **Spread the word** - terminal chat is an [early-stage product](#disclaimer) while we stabilize the protocol - you can invite your friends for some fun chatting inside your terminal. We're using it right inside our IDEs as we are coding it 👨‍💻
 
-- **Make a donation** via [opencollective](https://opencollective.com/simplex-chat) - no matter the size, we appreciate every donation!
+- **Make a donation** via [opencollective](https://opencollective.com/simplex-chat) - the amount doesn't matter, we appreciate any donation!
 
 - **Make a contribution to the project** - we're constantly moving the project forward and there are always lots of things to do.
 
