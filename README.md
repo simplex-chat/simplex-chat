@@ -1,39 +1,21 @@
-<p align="center">
-  <img
-    width="400"
-    src="images/logo.svg"
-    alt="SimpleX chat - Private, Secure, Decentralized"
-  />
-</p>
+<img align="right" src="images/logo.svg" alt="SimpleX logo" height="90">
 
-<h1 align="center">
-  SimpleX chat
-</h1>
+# SimpleX chat
 
-<h2 align="center">
-  Private, secure, decentralized
-</h2>
+## Private, secure, decentralized
 
-<p align="center">
-  <a href="https://github.com/simplex-chat/simplex-chat/actions?query=workflow%3Abuild"
-    ><img
-      src="https://github.com/simplex-chat/simplex-chat/workflows/build/badge.svg"
-      alt="GitHub build"
-  /></a>
-  <a href="https://github.com/simplex-chat/simplex-chat/releases"
-    ><img
-      src="https://img.shields.io/github/v/release/simplex-chat/simplex-chat"
-      alt="GitHub release"
-  /></a>
-</p>
+[![GitHub build](https://github.com/simplex-chat/simplex-chat/workflows/build/badge.svg)](https://github.com/simplex-chat/simplex-chat/actions?query=workflow%3Abuild)
+[![GitHub release](https://img.shields.io/github/v/release/simplex-chat/simplex-chat)](https://github.com/simplex-chat/simplex-chat/releases)
 
-<p align="center">
-  <a href="https://simplex.chat/">Website</a>
-  ·
-  <a href="#🚀-installation">Installation</a>
-  ·
-  <a href="https://github.com/simplex-chat/simplexmq/blob/master/protocol/agent-protocol.md">Protocol</a>
-</p>
+> **NEW in v0.4: [groups](#groups) and [sending files](#sending-files)!**
+
+The motivation for SimpleX chat is [presented here](./simplex.md).
+
+SimpleX chat prototype is a thin terminal UI on top of [SimpleXMQ](https://github.com/simplex-chat/simplexmq) message broker that uses [SMP protocols](https://github.com/simplex-chat/simplexmq/blob/master/protocol).
+
+See [simplex.chat](https://simplex.chat) website for chat demo and the explanations of the system and how SMP protocol works.
+
+![simplex-chat](./images/connection.gif)
 
 ### Quick installation
 
@@ -56,16 +38,6 @@ We are working hard to create the most secure and private chat in the world - op
 - Make a contribution to the project - we're constantly moving the project forward and there are always lots of things to do.
 
 We appreciate all the help from our contributors, thank you!
-
-![simplex-chat](./images/connection.gif)
-
-> **NEW in v0.4: [groups](#groups) and [sending files](#sending-files)!**
-
-The motivation for SimpleX chat is [presented here](./simplex.md).
-
-SimpleX chat prototype is a thin terminal UI on top of [SimpleXMQ](https://github.com/simplex-chat/simplexmq) message broker that uses [SMP protocols](https://github.com/simplex-chat/simplexmq/blob/master/protocol).
-
-See [simplex.chat](https://simplex.chat) website for chat demo and the explanations of the system and how SMP protocol works.
 
 ## Table of contents
 
