@@ -27,15 +27,15 @@ curl -o- https://raw.githubusercontent.com/simplex-chat/simplex-chat/master/inst
 
 We are working hard to create the most secure and user privacy focused chat in the world - open source, decentralized, and without the need for global identities of any kind. If you believe in the project and would like to support it, you can do so in following ways:
 
-- 🌟 Give the project a star  on GitHub! It's a great feedback we're on the right track and helps us raise the visibility of the project.
+- 🌟 **Give the project a star on GitHub** - it's a great feedback we're on the right track and helps us raise the visibility of the project.
 
-- Install the chat and try it out - if you run into a bug you may help us out by [raising an issue](https://github.com/simplex-chat/simplex-chat/issues).
+- **Install the chat and try it out** - if you run into a bug you may help us out by [raising an issue](https://github.com/simplex-chat/simplex-chat/issues).
 
-- Terminal chat is a [prototype](#disclaimer) and our playground for testing out the protocol - but if you like it you can spread the word and invite your friends for some fun chatting inside your terminal. For example, we've been using it right inside our IDEs 👨‍💻
+- **Spread the word** - terminal chat is a [prototype](#disclaimer) and our playground for testing out the protocol, but if you like it you can invite your friends for some fun chatting inside your terminal. For example, we've been using it right inside our IDEs 👨‍💻
 
-- Donate via [opencollective](https://opencollective.com/simplex-chat) - no matter the size, we appreciate every donation!
+- **Donate via [opencollective](https://opencollective.com/simplex-chat)** - no matter the size, we appreciate every donation!
 
-- Make a contribution to the project - we're constantly moving the project forward and there are always lots of things to do.
+- **Make a contribution to the project** - we're constantly moving the project forward and there are always lots of things to do.
 
 We appreciate all the help from our contributors, thank you!
 
