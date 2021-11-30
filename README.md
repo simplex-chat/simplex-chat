@@ -15,14 +15,36 @@ SimpleX chat prototype is a thin terminal UI on top of [SimpleXMQ](https://githu
 
 See [simplex.chat](https://simplex.chat) website for chat demo and the explanations of the system and how SMP protocol works.
 
+### Quick installation
+
+```sh
+curl -o- https://raw.githubusercontent.com/simplex-chat/simplex-chat/master/install.sh | bash
+```
+
 ![simplex-chat](./images/connection.gif)
+
+### Welcome word
+
+**We are building the most private and secure chat in the world** - open-source, decentralized, and without global identities of any kind. If you would like to support it, you can do so in the following ways:
+
+- 🌟 **Star it on GitHub** - it's a great feedback you like it and helps us raise the visibility of the project.
+
+- **Install the chat and try using it** - if you spot a bug it would help a lot if you could [raise an issue](https://github.com/simplex-chat/simplex-chat/issues).
+
+- **Spread the word** - terminal chat is an [early-stage product](#disclaimer) while we stabilize the protocol - you can invite your friends for some fun chatting inside your terminal. We're using it right inside our IDEs as we are coding it 👨‍💻
+
+- **Make a donation** via [opencollective](https://opencollective.com/simplex-chat) - the amount doesn't matter, we appreciate any donation!
+
+- **Make a contribution to the project** - we're constantly moving the project forward and there are always lots of things to do.
+
+We appreciate all the help from our contributors, thank you!
 
 ## Table of contents
 
 - [Disclaimer](#disclaimer)
 - [Network topology](#network-topology)
 - [Terminal chat features](#terminal-chat-features)
-- [Installation](#installation)
+- [Installation](#🚀-installation)
   - [Download chat client](#download-chat-client)
     - [Linux and MacOS](#linux-and-macos)
       - [Troubleshooting on Unix](#troubleshooting-on-unix)
@@ -73,7 +95,9 @@ The routing of messages relies on the knowledge of client devices how user conta
 
 RSA keys are not used as identity, they are randomly generated for each contact.
 
-## Installation
+<a name="🚀-installation"></a>
+
+## 🚀 Installation
 
 ### Download chat client
 
