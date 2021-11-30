@@ -29,7 +29,7 @@ curl -o- https://raw.githubusercontent.com/simplex-chat/simplex-chat/master/inst
 
 - 🌟 **Star it on GitHub** - it's a great feedback you like it and helps us raise the visibility of the project.
 
-- **Install the chat and try it out** - if you find a bug you may help us out by [raising an issue](https://github.com/simplex-chat/simplex-chat/issues).
+- **Install the chat and try using it** - if you spot a bug it would help a lot if you could [raise an issue](https://github.com/simplex-chat/simplex-chat/issues).
 
 - **Spread the word** - terminal chat is a [prototype](#disclaimer) and our playground for testing out the protocol, but if you like it you can invite your friends for some fun chatting inside your terminal. For example, we've been using it right inside our IDEs 👨‍💻
 
