@@ -15,13 +15,13 @@ SimpleX chat prototype is a thin terminal UI on top of [SimpleXMQ](https://githu
 
 See [simplex.chat](https://simplex.chat) website for chat demo and the explanations of the system and how SMP protocol works.
 
-![simplex-chat](./images/connection.gif)
-
 ### Quick installation
 
 ```sh
 curl -o- https://raw.githubusercontent.com/simplex-chat/simplex-chat/master/install.sh | bash
 ```
+
+![simplex-chat](./images/connection.gif)
 
 ### Welcome word
 
