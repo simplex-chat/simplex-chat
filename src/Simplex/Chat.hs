@@ -69,7 +69,7 @@ data ChatCommand
   | GroupsHelp
   | MarkdownHelp
   | AddContact
-  | Connect SMPQueueInfo
+  | Connect ConnectionRequest
   | DeleteContact ContactName
   | SendMessage ContactName ByteString
   | NewGroup GroupProfile
@@ -178,11 +178,11 @@ processChatCommand user@User {userId, profile} = \case
   GroupsHelp -> printToView groupsHelpInfo
   MarkdownHelp -> printToView markdownInfo
   AddContact -> do
-    (connId, qInfo) <- withAgent createConnection
+    (connId, cReq) <- withAgent createConnection
     withStore $ \st -> createDirectConnection st userId connId
-    showInvitation qInfo
-  Connect qInfo -> do
-    connId <- withAgent $ \a -> joinConnection a qInfo . directMessage $ XInfo profile
+    showInvitation cReq
+  Connect cReq -> do
+    connId <- withAgent $ \a -> joinConnection a cReq . directMessage $ XInfo profile
     withStore $ \st -> createDirectConnection st userId connId
   DeleteContact cName ->
     withStore (\st -> getContactGroupNames st userId cName) >>= \case
@@ -213,15 +213,15 @@ processChatCommand user@User {userId, profile} = \case
     unless (memberActive membership) $ chatError CEGroupMemberNotActive
     when (isJust $ contactMember contact members) $ chatError (CEGroupDuplicateMember cName)
     gVar <- asks idsDrg
-    (agentConnId, qInfo) <- withAgent createConnection
+    (agentConnId, cReq) <- withAgent createConnection
     GroupMember {memberId} <- withStore $ \st -> createContactGroupMember st gVar user groupId contact memRole agentConnId
-    let msg = XGrpInv $ GroupInvitation (userMemberId, userRole) (memberId, memRole) qInfo groupProfile
+    let msg = XGrpInv $ GroupInvitation (userMemberId, userRole) (memberId, memRole) cReq groupProfile
     sendDirectMessage (contactConnId contact) msg
     showSentGroupInvitation gName cName
     setActive $ ActiveG gName
   JoinGroup gName -> do
-    ReceivedGroupInvitation {fromMember, userMember, queueInfo} <- withStore $ \st -> getGroupInvitation st user gName
-    agentConnId <- withAgent $ \a -> joinConnection a queueInfo . directMessage . XGrpAcpt $ memberId userMember
+    ReceivedGroupInvitation {fromMember, userMember, connRequest} <- withStore $ \st -> getGroupInvitation st user gName
+    agentConnId <- withAgent $ \a -> joinConnection a connRequest . directMessage . XGrpAcpt $ memberId userMember
     withStore $ \st -> do
       createMemberConnection st userId fromMember agentConnId
       updateGroupMemberStatus st userId fromMember GSMemAccepted
@@ -269,8 +269,8 @@ processChatCommand user@User {userId, profile} = \case
   SendFile cName f -> do
     (fileSize, chSize) <- checkSndFile f
     contact <- withStore $ \st -> getContact st userId cName
-    (agentConnId, fileQInfo) <- withAgent createConnection
-    let fileInv = FileInvitation {fileName = takeFileName f, fileSize, fileQInfo}
+    (agentConnId, fileConnReq) <- withAgent createConnection
+    let fileInv = FileInvitation {fileName = takeFileName f, fileSize, fileConnReq}
     SndFileTransfer {fileId} <- withStore $ \st ->
       createSndFileTransfer st userId contact f fileInv agentConnId chSize
     sendDirectMessage (contactConnId contact) $ XFile fileInv
@@ -282,17 +282,17 @@ processChatCommand user@User {userId, profile} = \case
     unless (memberActive membership) $ chatError CEGroupMemberUserRemoved
     let fileName = takeFileName f
     ms <- forM (filter memberActive members) $ \m -> do
-      (connId, fileQInfo) <- withAgent createConnection
-      pure (m, connId, FileInvitation {fileName, fileSize, fileQInfo})
+      (connId, fileConnReq) <- withAgent createConnection
+      pure (m, connId, FileInvitation {fileName, fileSize, fileConnReq})
     fileId <- withStore $ \st -> createSndGroupFileTransfer st userId group ms f fileSize chSize
     forM_ ms $ \(m, _, fileInv) ->
       traverse (`sendDirectMessage` XFile fileInv) $ memberConnId m
     showSentFileInfo fileId
     setActive $ ActiveG gName
   ReceiveFile fileId filePath_ -> do
-    ft@RcvFileTransfer {fileInvitation = FileInvitation {fileName, fileQInfo}, fileStatus} <- withStore $ \st -> getRcvFileTransfer st userId fileId
+    ft@RcvFileTransfer {fileInvitation = FileInvitation {fileName, fileConnReq}, fileStatus} <- withStore $ \st -> getRcvFileTransfer st userId fileId
     unless (fileStatus == RFSNew) . chatError $ CEFileAlreadyReceiving fileName
-    tryError (withAgent $ \a -> joinConnection a fileQInfo . directMessage $ XFileAcpt fileName) >>= \case
+    tryError (withAgent $ \a -> joinConnection a fileConnReq . directMessage $ XFileAcpt fileName) >>= \case
       Right agentConnId -> do
         filePath <- getRcvFilePath fileId filePath_ fileName
         withStore $ \st -> acceptRcvFileTransfer st userId fileId agentConnId filePath
@@ -803,10 +803,10 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
           if isMember memId group
             then messageWarning "x.grp.mem.intro ignored: member already exists"
             else do
-              (groupConnId, groupQInfo) <- withAgent createConnection
-              (directConnId, directQInfo) <- withAgent createConnection
+              (groupConnId, groupConnReq) <- withAgent createConnection
+              (directConnId, directConnReq) <- withAgent createConnection
               newMember <- withStore $ \st -> createIntroReMember st user group m memInfo groupConnId directConnId
-              let msg = XGrpMemInv memId IntroInvitation {groupQInfo, directQInfo}
+              let msg = XGrpMemInv memId IntroInvitation {groupConnReq, directConnReq}
               sendDirectMessage agentConnId msg
               withStore $ \st -> updateGroupMemberStatus st userId newMember GSMemIntroInvited
         _ -> messageError "x.grp.mem.intro can be only sent by host member"
@@ -828,7 +828,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
         _ -> messageError "x.grp.mem.inv can be only sent by invitee member"
 
     xGrpMemFwd :: GroupName -> GroupMember -> MemberInfo -> IntroInvitation -> m ()
-    xGrpMemFwd gName m memInfo@(MemberInfo memId _ _) introInv@IntroInvitation {groupQInfo, directQInfo} = do
+    xGrpMemFwd gName m memInfo@(MemberInfo memId _ _) introInv@IntroInvitation {groupConnReq, directConnReq} = do
       group@Group {membership} <- withStore $ \st -> getGroup st user gName
       toMember <- case find ((== memId) . memberId) $ members group of
         -- TODO if the missed messages are correctly sent as soon as there is connection before anything else is sent
@@ -839,8 +839,8 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
         Just m' -> pure m'
       withStore $ \st -> saveMemberInvitation st toMember introInv
       let msg = XGrpMemInfo (memberId membership) profile
-      groupConnId <- withAgent $ \a -> joinConnection a groupQInfo $ directMessage msg
-      directConnId <- withAgent $ \a -> joinConnection a directQInfo $ directMessage msg
+      groupConnId <- withAgent $ \a -> joinConnection a groupConnReq $ directMessage msg
+      directConnId <- withAgent $ \a -> joinConnection a directConnReq $ directMessage msg
       withStore $ \st -> createIntroToMemberContact st userId m toMember groupConnId directConnId
 
     xGrpMemDel :: GroupName -> GroupMember -> MemberId -> m ()
@@ -1099,7 +1099,7 @@ chatCommandP =
     <|> ("/delete #" <|> "/d #") *> (DeleteGroup <$> displayName)
     <|> ("/members #" <|> "/members " <|> "/ms #" <|> "/ms ") *> (ListMembers <$> displayName)
     <|> A.char '#' *> (SendGroupMessage <$> displayName <* A.space <*> A.takeByteString)
-    <|> ("/connect " <|> "/c ") *> (Connect <$> smpQueueInfoP)
+    <|> ("/connect " <|> "/c ") *> (Connect <$> connReqP)
     <|> ("/connect" <|> "/c") $> AddContact
     <|> ("/delete @" <|> "/delete " <|> "/d @" <|> "/d ") *> (DeleteContact <$> displayName)
     <|> A.char '@' *> (SendMessage <$> displayName <*> (A.space *> A.takeByteString))

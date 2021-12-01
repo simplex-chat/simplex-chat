@@ -91,8 +91,8 @@ import System.Console.ANSI.Types
 
 type ChatReader m = (MonadUnliftIO m, MonadReader ChatController m)
 
-showInvitation :: ChatReader m => SMPQueueInfo -> m ()
-showInvitation = printToView . invitation
+showInvitation :: ChatReader m => ConnectionRequest -> m ()
+showInvitation = printToView . connReq
 
 showChatError :: ChatReader m => ChatError -> m ()
 showChatError = printToView . chatError
@@ -256,11 +256,11 @@ showContactUpdated = printToView .: contactUpdated
 showMessageError :: ChatReader m => Text -> Text -> m ()
 showMessageError = printToView .: messageError
 
-invitation :: SMPQueueInfo -> [StyledString]
-invitation qInfo =
-  [ "pass this invitation to your contact (via another channel): ",
+connReq :: ConnectionRequest -> [StyledString]
+connReq cReq =
+  [ "pass this connection link to your contact (via another channel): ",
     "",
-    (plain . serializeSmpQueueInfo) qInfo,
+    (plain . serializeConnReq) cReq,
     "",
     "and ask them to connect: " <> highlight' "/c <invitation_above>"
   ]
