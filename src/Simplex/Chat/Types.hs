@@ -20,7 +20,7 @@ import Database.SQLite.Simple.Internal (Field (..))
 import Database.SQLite.Simple.Ok (Ok (Ok))
 import Database.SQLite.Simple.ToField (ToField (..))
 import GHC.Generics
-import Simplex.Messaging.Agent.Protocol (ConnId, SMPQueueInfo)
+import Simplex.Messaging.Agent.Protocol (ConnId, ConnectionRequest)
 import Simplex.Messaging.Agent.Store.SQLite (fromTextField_)
 
 class IsContact a where
@@ -96,14 +96,14 @@ instance FromJSON GroupProfile
 data GroupInvitation = GroupInvitation
   { fromMember :: (MemberId, GroupMemberRole),
     invitedMember :: (MemberId, GroupMemberRole),
-    queueInfo :: SMPQueueInfo,
+    connRequest :: ConnectionRequest,
     groupProfile :: GroupProfile
   }
   deriving (Eq, Show)
 
 data IntroInvitation = IntroInvitation
-  { groupQInfo :: SMPQueueInfo,
-    directQInfo :: SMPQueueInfo
+  { groupConnReq :: ConnectionRequest,
+    directConnReq :: ConnectionRequest
   }
   deriving (Eq, Show)
 
@@ -116,7 +116,7 @@ memberInfo m = MemberInfo (memberId m) (memberRole m) (memberProfile m)
 data ReceivedGroupInvitation = ReceivedGroupInvitation
   { fromMember :: GroupMember,
     userMember :: GroupMember,
-    queueInfo :: SMPQueueInfo,
+    connRequest :: ConnectionRequest,
     groupProfile :: GroupProfile
   }
   deriving (Eq, Show)
@@ -316,7 +316,7 @@ data SndFileTransfer = SndFileTransfer
 data FileInvitation = FileInvitation
   { fileName :: String,
     fileSize :: Integer,
-    fileQInfo :: SMPQueueInfo
+    fileConnReq :: ConnectionRequest
   }
   deriving (Eq, Show)
 

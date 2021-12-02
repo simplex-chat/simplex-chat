@@ -659,7 +659,7 @@ getTermLine = atomically . readTQueue . termQ
 
 getInvitation :: TestCC -> IO String
 getInvitation cc = do
-  cc <## "pass this invitation to your contact (via another channel):"
+  cc <## "pass this connection link to your contact (via another channel):"
   cc <## ""
   inv <- getTermLine cc
   cc <## ""

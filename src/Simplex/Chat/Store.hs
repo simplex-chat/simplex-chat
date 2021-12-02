@@ -107,7 +107,7 @@ import qualified Database.SQLite.Simple as DB
 import Database.SQLite.Simple.QQ (sql)
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
-import Simplex.Messaging.Agent.Protocol (AParty (..), AgentMsgId, ConnId, SMPQueueInfo)
+import Simplex.Messaging.Agent.Protocol (AParty (..), AgentMsgId, ConnId, ConnectionRequest)
 import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore (..), createSQLiteStore, withTransaction)
 import Simplex.Messaging.Agent.Store.SQLite.Migrations (Migration (..))
 import qualified Simplex.Messaging.Crypto as C
@@ -698,14 +698,14 @@ createNewGroup st gVar user groupProfile =
 -- | creates a new group record for the group the current user was invited to
 createGroupInvitation ::
   StoreMonad m => SQLiteStore -> User -> Contact -> GroupInvitation -> m Group
-createGroupInvitation st user contact GroupInvitation {fromMember, invitedMember, queueInfo, groupProfile} =
+createGroupInvitation st user contact GroupInvitation {fromMember, invitedMember, connRequest, groupProfile} =
   liftIOEither . withTransaction st $ \db -> do
     let GroupProfile {displayName, fullName} = groupProfile
         uId = userId user
     withLocalDisplayName db uId displayName $ \localDisplayName -> do
       DB.execute db "INSERT INTO group_profiles (display_name, full_name) VALUES (?, ?)" (displayName, fullName)
       profileId <- insertedRowId db
-      DB.execute db "INSERT INTO groups (group_profile_id, local_display_name, inv_queue_info, user_id) VALUES (?, ?, ?, ?)" (profileId, localDisplayName, queueInfo, uId)
+      DB.execute db "INSERT INTO groups (group_profile_id, local_display_name, inv_queue_info, user_id) VALUES (?, ?, ?, ?)" (profileId, localDisplayName, connRequest, uId)
       groupId <- insertedRowId db
       member <- createContactMember_ db user groupId contact fromMember GCHostMember GSMemInvited IBUnknown
       membership <- createContactMember_ db user groupId user invitedMember GCUserMember GSMemInvited (IBContact $ contactId contact)
@@ -717,14 +717,14 @@ getGroup :: StoreMonad m => SQLiteStore -> User -> GroupName -> m Group
 getGroup st user localDisplayName =
   liftIOEither . withTransaction st $ \db -> runExceptT $ fst <$> getGroup_ db user localDisplayName
 
-getGroup_ :: DB.Connection -> User -> GroupName -> ExceptT StoreError IO (Group, Maybe SMPQueueInfo)
+getGroup_ :: DB.Connection -> User -> GroupName -> ExceptT StoreError IO (Group, Maybe ConnectionRequest)
 getGroup_ db User {userId, userContactId} localDisplayName = do
-  (g@Group {groupId}, qInfo) <- getGroupRec_
+  (g@Group {groupId}, cReq) <- getGroupRec_
   allMembers <- getMembers_ groupId
   (members, membership) <- liftEither $ splitUserMember_ allMembers
-  pure (g {members, membership}, qInfo)
+  pure (g {members, membership}, cReq)
   where
-    getGroupRec_ :: ExceptT StoreError IO (Group, Maybe SMPQueueInfo)
+    getGroupRec_ :: ExceptT StoreError IO (Group, Maybe ConnectionRequest)
     getGroupRec_ = ExceptT $ do
       toGroup
         <$> DB.query
@@ -736,10 +736,10 @@ getGroup_ db User {userId, userContactId} localDisplayName = do
             WHERE g.local_display_name = ? AND g.user_id = ?
           |]
           (localDisplayName, userId)
-    toGroup :: [(Int64, GroupName, Text, Maybe SMPQueueInfo)] -> Either StoreError (Group, Maybe SMPQueueInfo)
-    toGroup [(groupId, displayName, fullName, qInfo)] =
+    toGroup :: [(Int64, GroupName, Text, Maybe ConnectionRequest)] -> Either StoreError (Group, Maybe ConnectionRequest)
+    toGroup [(groupId, displayName, fullName, cReq)] =
       let groupProfile = GroupProfile {displayName, fullName}
-       in Right (Group {groupId, localDisplayName, groupProfile, members = undefined, membership = undefined}, qInfo)
+       in Right (Group {groupId, localDisplayName, groupProfile, members = undefined, membership = undefined}, cReq)
     toGroup _ = Left $ SEGroupNotFound localDisplayName
     getMembers_ :: Int64 -> ExceptT StoreError IO [GroupMember]
     getMembers_ groupId = ExceptT $ do
@@ -789,11 +789,11 @@ getUserGroups st user =
 getGroupInvitation :: StoreMonad m => SQLiteStore -> User -> GroupName -> m ReceivedGroupInvitation
 getGroupInvitation st user localDisplayName =
   liftIOEither . withTransaction st $ \db -> runExceptT $ do
-    (Group {membership, members, groupProfile}, qInfo) <- getGroup_ db user localDisplayName
+    (Group {membership, members, groupProfile}, cReq) <- getGroup_ db user localDisplayName
     when (memberStatus membership /= GSMemInvited) $ throwError SEGroupAlreadyJoined
-    case (qInfo, findFromContact (invitedBy membership) members) of
-      (Just queueInfo, Just fromMember) ->
-        pure ReceivedGroupInvitation {fromMember, userMember = membership, queueInfo, groupProfile}
+    case (cReq, findFromContact (invitedBy membership) members) of
+      (Just connRequest, Just fromMember) ->
+        pure ReceivedGroupInvitation {fromMember, userMember = membership, connRequest, groupProfile}
       _ -> throwError SEGroupInvitationNotFound
   where
     findFromContact :: InvitedBy -> [GroupMember] -> Maybe GroupMember
@@ -939,14 +939,14 @@ saveIntroInvitation st reMember toMember introInv = do
           WHERE group_member_intro_id = :intro_id
         |]
         [ ":intro_status" := GMIntroInvReceived,
-          ":group_queue_info" := groupQInfo introInv,
-          ":direct_queue_info" := directQInfo introInv,
+          ":group_queue_info" := groupConnReq introInv,
+          ":direct_queue_info" := directConnReq introInv,
           ":intro_id" := introId intro
         ]
     pure intro {introInvitation = Just introInv, introStatus = GMIntroInvReceived}
 
 saveMemberInvitation :: StoreMonad m => SQLiteStore -> GroupMember -> IntroInvitation -> m ()
-saveMemberInvitation st GroupMember {groupMemberId} IntroInvitation {groupQInfo, directQInfo} =
+saveMemberInvitation st GroupMember {groupMemberId} IntroInvitation {groupConnReq, directConnReq} =
   liftIO . withTransaction st $ \db ->
     DB.executeNamed
       db
@@ -958,8 +958,8 @@ saveMemberInvitation st GroupMember {groupMemberId} IntroInvitation {groupQInfo,
         WHERE group_member_id = :group_member_id
       |]
       [ ":member_status" := GSMemIntroInvited,
-        ":group_queue_info" := groupQInfo,
-        ":direct_queue_info" := directQInfo,
+        ":group_queue_info" := groupConnReq,
+        ":direct_queue_info" := directConnReq,
         ":group_member_id" := groupMemberId
       ]
 
@@ -975,9 +975,9 @@ getIntroduction_ db reMember toMember = ExceptT $ do
       |]
       (groupMemberId reMember, groupMemberId toMember)
   where
-    toIntro :: [(Int64, Maybe SMPQueueInfo, Maybe SMPQueueInfo, GroupMemberIntroStatus)] -> Either StoreError GroupMemberIntro
-    toIntro [(introId, groupQInfo, directQInfo, introStatus)] =
-      let introInvitation = IntroInvitation <$> groupQInfo <*> directQInfo
+    toIntro :: [(Int64, Maybe ConnectionRequest, Maybe ConnectionRequest, GroupMemberIntroStatus)] -> Either StoreError GroupMemberIntro
+    toIntro [(introId, groupConnReq, directConnReq, introStatus)] =
+      let introInvitation = IntroInvitation <$> groupConnReq <*> directConnReq
        in Right GroupMemberIntro {introId, reMember, toMember, introStatus, introInvitation}
     toIntro _ = Left SEIntroNotFound
 
@@ -1236,19 +1236,19 @@ deleteSndFileChunks st SndFileTransfer {fileId, connId} =
     DB.execute db "DELETE FROM snd_file_chunks WHERE file_id = ? AND connection_id = ?" (fileId, connId)
 
 createRcvFileTransfer :: MonadUnliftIO m => SQLiteStore -> UserId -> Contact -> FileInvitation -> Integer -> m RcvFileTransfer
-createRcvFileTransfer st userId Contact {contactId, localDisplayName = c} f@FileInvitation {fileName, fileSize, fileQInfo} chunkSize =
+createRcvFileTransfer st userId Contact {contactId, localDisplayName = c} f@FileInvitation {fileName, fileSize, fileConnReq} chunkSize =
   liftIO . withTransaction st $ \db -> do
     DB.execute db "INSERT INTO files (user_id, contact_id, file_name, file_size, chunk_size) VALUES (?, ?, ?, ?, ?)" (userId, contactId, fileName, fileSize, chunkSize)
     fileId <- insertedRowId db
-    DB.execute db "INSERT INTO rcv_files (file_id, file_status, file_queue_info) VALUES (?, ?, ?)" (fileId, FSNew, fileQInfo)
+    DB.execute db "INSERT INTO rcv_files (file_id, file_status, file_queue_info) VALUES (?, ?, ?)" (fileId, FSNew, fileConnReq)
     pure RcvFileTransfer {fileId, fileInvitation = f, fileStatus = RFSNew, senderDisplayName = c, chunkSize}
 
 createRcvGroupFileTransfer :: MonadUnliftIO m => SQLiteStore -> UserId -> GroupMember -> FileInvitation -> Integer -> m RcvFileTransfer
-createRcvGroupFileTransfer st userId GroupMember {groupId, groupMemberId, localDisplayName = c} f@FileInvitation {fileName, fileSize, fileQInfo} chunkSize =
+createRcvGroupFileTransfer st userId GroupMember {groupId, groupMemberId, localDisplayName = c} f@FileInvitation {fileName, fileSize, fileConnReq} chunkSize =
   liftIO . withTransaction st $ \db -> do
     DB.execute db "INSERT INTO files (user_id, group_id, file_name, file_size, chunk_size) VALUES (?, ?, ?, ?, ?)" (userId, groupId, fileName, fileSize, chunkSize)
     fileId <- insertedRowId db
-    DB.execute db "INSERT INTO rcv_files (file_id, file_status, file_queue_info, group_member_id) VALUES (?, ?, ?, ?)" (fileId, FSNew, fileQInfo, groupMemberId)
+    DB.execute db "INSERT INTO rcv_files (file_id, file_status, file_queue_info, group_member_id) VALUES (?, ?, ?, ?)" (fileId, FSNew, fileConnReq, groupMemberId)
     pure RcvFileTransfer {fileId, fileInvitation = f, fileStatus = RFSNew, senderDisplayName = c, chunkSize}
 
 getRcvFileTransfer :: StoreMonad m => SQLiteStore -> UserId -> Int64 -> m RcvFileTransfer
@@ -1275,10 +1275,10 @@ getRcvFileTransfer_ db userId fileId =
       (userId, fileId)
   where
     rcvFileTransfer ::
-      [(FileStatus, SMPQueueInfo, String, Integer, Integer, Maybe ContactName, Maybe ContactName, Maybe FilePath, Maybe Int64, Maybe ConnId)] ->
+      [(FileStatus, ConnectionRequest, String, Integer, Integer, Maybe ContactName, Maybe ContactName, Maybe FilePath, Maybe Int64, Maybe ConnId)] ->
       Either StoreError RcvFileTransfer
-    rcvFileTransfer [(fileStatus', fileQInfo, fileName, fileSize, chunkSize, contactName_, memberName_, filePath_, connId_, agentConnId_)] =
-      let fileInv = FileInvitation {fileName, fileSize, fileQInfo}
+    rcvFileTransfer [(fileStatus', fileConnReq, fileName, fileSize, chunkSize, contactName_, memberName_, filePath_, connId_, agentConnId_)] =
+      let fileInv = FileInvitation {fileName, fileSize, fileConnReq}
           fileInfo = (filePath_, connId_, agentConnId_)
        in case contactName_ <|> memberName_ of
             Nothing -> Left $ SERcvFileInvalid fileId
