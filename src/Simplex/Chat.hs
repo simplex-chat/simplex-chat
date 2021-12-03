@@ -178,7 +178,7 @@ processChatCommand user@User {userId, profile} = \case
   GroupsHelp -> printToView groupsHelpInfo
   MarkdownHelp -> printToView markdownInfo
   AddContact -> do
-    (connId, cReq) <- withAgent createConnection
+    (connId, cReq) <- withAgent (`createConnection` CMInvitation)
     withStore $ \st -> createDirectConnection st userId connId
     showInvitation cReq
   Connect cReq -> do
@@ -213,7 +213,7 @@ processChatCommand user@User {userId, profile} = \case
     unless (memberActive membership) $ chatError CEGroupMemberNotActive
     when (isJust $ contactMember contact members) $ chatError (CEGroupDuplicateMember cName)
     gVar <- asks idsDrg
-    (agentConnId, cReq) <- withAgent createConnection
+    (agentConnId, cReq) <- withAgent (`createConnection` CMInvitation)
     GroupMember {memberId} <- withStore $ \st -> createContactGroupMember st gVar user groupId contact memRole agentConnId
     let msg = XGrpInv $ GroupInvitation (userMemberId, userRole) (memberId, memRole) cReq groupProfile
     sendDirectMessage (contactConnId contact) msg
@@ -269,7 +269,7 @@ processChatCommand user@User {userId, profile} = \case
   SendFile cName f -> do
     (fileSize, chSize) <- checkSndFile f
     contact <- withStore $ \st -> getContact st userId cName
-    (agentConnId, fileConnReq) <- withAgent createConnection
+    (agentConnId, fileConnReq) <- withAgent (`createConnection` CMInvitation)
     let fileInv = FileInvitation {fileName = takeFileName f, fileSize, fileConnReq}
     SndFileTransfer {fileId} <- withStore $ \st ->
       createSndFileTransfer st userId contact f fileInv agentConnId chSize
@@ -282,7 +282,7 @@ processChatCommand user@User {userId, profile} = \case
     unless (memberActive membership) $ chatError CEGroupMemberUserRemoved
     let fileName = takeFileName f
     ms <- forM (filter memberActive members) $ \m -> do
-      (connId, fileConnReq) <- withAgent createConnection
+      (connId, fileConnReq) <- withAgent (`createConnection` CMInvitation)
       pure (m, connId, FileInvitation {fileName, fileSize, fileConnReq})
     fileId <- withStore $ \st -> createSndGroupFileTransfer st userId group ms f fileSize chSize
     forM_ ms $ \(m, _, fileInv) ->
@@ -450,7 +450,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
 
     agentMsgConnStatus :: ACommand 'Agent -> Maybe ConnStatus
     agentMsgConnStatus = \case
-      REQ _ _ -> Just ConnRequested
+      REQ {} -> Just ConnRequested
       INFO _ -> Just ConnSndReady
       CON -> Just ConnReady
       _ -> Nothing
@@ -458,7 +458,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
     processDirectMessage :: ACommand 'Agent -> Connection -> Maybe Contact -> m ()
     processDirectMessage agentMsg conn = \case
       Nothing -> case agentMsg of
-        REQ confId connInfo -> do
+        REQ cMode confId connInfo -> do
           saveConnInfo conn connInfo
           acceptAgentConnection conn confId $ XInfo profile
         INFO connInfo ->
@@ -478,7 +478,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
             XInfoProbeCheck probeHash -> xInfoProbeCheck ct probeHash
             XInfoProbeOk probe -> xInfoProbeOk ct probe
             _ -> pure ()
-        REQ confId connInfo -> do
+        REQ cMode confId connInfo -> do
           -- confirming direct connection with a member
           ChatMessage {chatMsgEvent} <- liftEither $ parseChatMessage connInfo
           case chatMsgEvent of
@@ -521,7 +521,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
 
     processGroupMessage :: ACommand 'Agent -> Connection -> GroupName -> GroupMember -> m ()
     processGroupMessage agentMsg conn gName m = case agentMsg of
-      REQ confId connInfo -> do
+      REQ cMode confId connInfo -> do
         ChatMessage {chatMsgEvent} <- liftEither $ parseChatMessage connInfo
         case memberCategory m of
           GCInviteeMember ->
@@ -603,7 +603,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
     processSndFileConn :: ACommand 'Agent -> Connection -> SndFileTransfer -> m ()
     processSndFileConn agentMsg conn ft@SndFileTransfer {fileId, fileName, fileStatus} =
       case agentMsg of
-        REQ confId connInfo -> do
+        REQ cMode confId connInfo -> do
           ChatMessage {chatMsgEvent} <- liftEither $ parseChatMessage connInfo
           case chatMsgEvent of
             XFileAcpt name
@@ -803,8 +803,8 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
           if isMember memId group
             then messageWarning "x.grp.mem.intro ignored: member already exists"
             else do
-              (groupConnId, groupConnReq) <- withAgent createConnection
-              (directConnId, directConnReq) <- withAgent createConnection
+              (groupConnId, groupConnReq) <- withAgent (`createConnection` CMInvitation)
+              (directConnId, directConnReq) <- withAgent (`createConnection` CMInvitation)
               newMember <- withStore $ \st -> createIntroReMember st user group m memInfo groupConnId directConnId
               let msg = XGrpMemInv memId IntroInvitation {groupConnReq, directConnReq}
               sendDirectMessage agentConnId msg
@@ -1002,7 +1002,7 @@ sendGroupMessage members chatMsgEvent = do
 
 acceptAgentConnection :: ChatMonad m => Connection -> ConfirmationId -> ChatMsgEvent -> m ()
 acceptAgentConnection conn@Connection {agentConnId} confId msg = do
-  withAgent $ \a -> acceptConnection a agentConnId confId $ directMessage msg
+  withAgent $ \a -> acceptConnection a agentConnId CMInvitation confId $ directMessage msg
   withStore $ \st -> updateConnectionStatus st conn ConnAccepted
 
 getCreateActiveUser :: SQLiteStore -> IO User
