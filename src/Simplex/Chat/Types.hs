@@ -1,3 +1,4 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE LambdaCase #-}
@@ -20,7 +21,7 @@ import Database.SQLite.Simple.Internal (Field (..))
 import Database.SQLite.Simple.Ok (Ok (Ok))
 import Database.SQLite.Simple.ToField (ToField (..))
 import GHC.Generics
-import Simplex.Messaging.Agent.Protocol (ConnId, ConnectionRequest)
+import Simplex.Messaging.Agent.Protocol (ConnId, ConnectionMode (..), ConnectionRequest)
 import Simplex.Messaging.Agent.Store.SQLite (fromTextField_)
 
 class IsContact a where
@@ -96,14 +97,14 @@ instance FromJSON GroupProfile
 data GroupInvitation = GroupInvitation
   { fromMember :: (MemberId, GroupMemberRole),
     invitedMember :: (MemberId, GroupMemberRole),
-    connRequest :: ConnectionRequest,
+    connRequest :: ConnReqInvitation,
     groupProfile :: GroupProfile
   }
   deriving (Eq, Show)
 
 data IntroInvitation = IntroInvitation
-  { groupConnReq :: ConnectionRequest,
-    directConnReq :: ConnectionRequest
+  { groupConnReq :: ConnReqInvitation,
+    directConnReq :: ConnReqInvitation
   }
   deriving (Eq, Show)
 
@@ -116,7 +117,7 @@ memberInfo m = MemberInfo (memberId m) (memberRole m) (memberProfile m)
 data ReceivedGroupInvitation = ReceivedGroupInvitation
   { fromMember :: GroupMember,
     userMember :: GroupMember,
-    connRequest :: ConnectionRequest,
+    connRequest :: ConnReqInvitation,
     groupProfile :: GroupProfile
   }
   deriving (Eq, Show)
@@ -316,7 +317,7 @@ data SndFileTransfer = SndFileTransfer
 data FileInvitation = FileInvitation
   { fileName :: String,
     fileSize :: Integer,
-    fileConnReq :: ConnectionRequest
+    fileConnReq :: ConnReqInvitation
   }
   deriving (Eq, Show)
 
@@ -371,6 +372,8 @@ serializeFileStatus = \case
 
 data RcvChunkStatus = RcvChunkOk | RcvChunkFinal | RcvChunkDuplicate | RcvChunkError
   deriving (Eq, Show)
+
+type ConnReqInvitation = ConnectionRequest 'CMInvitation
 
 data Connection = Connection
   { connId :: Int64,

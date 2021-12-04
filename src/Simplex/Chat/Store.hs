@@ -107,7 +107,7 @@ import qualified Database.SQLite.Simple as DB
 import Database.SQLite.Simple.QQ (sql)
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
-import Simplex.Messaging.Agent.Protocol (AParty (..), AgentMsgId, ConnId, ConnectionRequest)
+import Simplex.Messaging.Agent.Protocol (AParty (..), AgentMsgId, ConnId)
 import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore (..), createSQLiteStore, withTransaction)
 import Simplex.Messaging.Agent.Store.SQLite.Migrations (Migration (..))
 import qualified Simplex.Messaging.Crypto as C
@@ -717,14 +717,14 @@ getGroup :: StoreMonad m => SQLiteStore -> User -> GroupName -> m Group
 getGroup st user localDisplayName =
   liftIOEither . withTransaction st $ \db -> runExceptT $ fst <$> getGroup_ db user localDisplayName
 
-getGroup_ :: DB.Connection -> User -> GroupName -> ExceptT StoreError IO (Group, Maybe ConnectionRequest)
+getGroup_ :: DB.Connection -> User -> GroupName -> ExceptT StoreError IO (Group, Maybe ConnReqInvitation)
 getGroup_ db User {userId, userContactId} localDisplayName = do
   (g@Group {groupId}, cReq) <- getGroupRec_
   allMembers <- getMembers_ groupId
   (members, membership) <- liftEither $ splitUserMember_ allMembers
   pure (g {members, membership}, cReq)
   where
-    getGroupRec_ :: ExceptT StoreError IO (Group, Maybe ConnectionRequest)
+    getGroupRec_ :: ExceptT StoreError IO (Group, Maybe ConnReqInvitation)
     getGroupRec_ = ExceptT $ do
       toGroup
         <$> DB.query
@@ -736,7 +736,7 @@ getGroup_ db User {userId, userContactId} localDisplayName = do
             WHERE g.local_display_name = ? AND g.user_id = ?
           |]
           (localDisplayName, userId)
-    toGroup :: [(Int64, GroupName, Text, Maybe ConnectionRequest)] -> Either StoreError (Group, Maybe ConnectionRequest)
+    toGroup :: [(Int64, GroupName, Text, Maybe ConnReqInvitation)] -> Either StoreError (Group, Maybe ConnReqInvitation)
     toGroup [(groupId, displayName, fullName, cReq)] =
       let groupProfile = GroupProfile {displayName, fullName}
        in Right (Group {groupId, localDisplayName, groupProfile, members = undefined, membership = undefined}, cReq)
@@ -975,7 +975,7 @@ getIntroduction_ db reMember toMember = ExceptT $ do
       |]
       (groupMemberId reMember, groupMemberId toMember)
   where
-    toIntro :: [(Int64, Maybe ConnectionRequest, Maybe ConnectionRequest, GroupMemberIntroStatus)] -> Either StoreError GroupMemberIntro
+    toIntro :: [(Int64, Maybe ConnReqInvitation, Maybe ConnReqInvitation, GroupMemberIntroStatus)] -> Either StoreError GroupMemberIntro
     toIntro [(introId, groupConnReq, directConnReq, introStatus)] =
       let introInvitation = IntroInvitation <$> groupConnReq <*> directConnReq
        in Right GroupMemberIntro {introId, reMember, toMember, introStatus, introInvitation}
@@ -1275,7 +1275,7 @@ getRcvFileTransfer_ db userId fileId =
       (userId, fileId)
   where
     rcvFileTransfer ::
-      [(FileStatus, ConnectionRequest, String, Integer, Integer, Maybe ContactName, Maybe ContactName, Maybe FilePath, Maybe Int64, Maybe ConnId)] ->
+      [(FileStatus, ConnReqInvitation, String, Integer, Integer, Maybe ContactName, Maybe ContactName, Maybe FilePath, Maybe Int64, Maybe ConnId)] ->
       Either StoreError RcvFileTransfer
     rcvFileTransfer [(fileStatus', fileConnReq, fileName, fileSize, chunkSize, contactName_, memberName_, filePath_, connId_, agentConnId_)] =
       let fileInv = FileInvitation {fileName, fileSize, fileConnReq}

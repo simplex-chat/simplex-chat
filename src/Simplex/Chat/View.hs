@@ -91,7 +91,7 @@ import System.Console.ANSI.Types
 
 type ChatReader m = (MonadUnliftIO m, MonadReader ChatController m)
 
-showInvitation :: ChatReader m => ConnectionRequest -> m ()
+showInvitation :: ChatReader m => ConnReqInvitation -> m ()
 showInvitation = printToView . connReq
 
 showChatError :: ChatReader m => ChatError -> m ()
@@ -256,11 +256,11 @@ showContactUpdated = printToView .: contactUpdated
 showMessageError :: ChatReader m => Text -> Text -> m ()
 showMessageError = printToView .: messageError
 
-connReq :: ConnectionRequest -> [StyledString]
+connReq :: ConnReqInvitation -> [StyledString]
 connReq cReq =
   [ "pass this connection link to your contact (via another channel): ",
     "",
-    (plain . serializeConnReq) cReq,
+    (plain . serializeConnReq') cReq,
     "",
     "and ask them to connect: " <> highlight' "/c <invitation_above>"
   ]
