@@ -69,8 +69,13 @@ data ChatCommand
   | GroupsHelp
   | MarkdownHelp
   | AddContact
-  | Connect ConnReqInvitation
+  | Connect AConnectionRequest
   | DeleteContact ContactName
+  | CreateMyContactLink
+  | DeleteMyContactLink
+  | ShowMyContactLink
+  | AcceptContact ContactName
+  | RejectContact ContactName
   | SendMessage ContactName ByteString
   | NewGroup GroupProfile
   | AddMember GroupName ContactName GroupMemberRole
@@ -181,9 +186,7 @@ processChatCommand user@User {userId, profile} = \case
     (connId, cReq) <- withAgent (`createConnection` SCMInvitation)
     withStore $ \st -> createDirectConnection st userId connId
     showInvitation cReq
-  Connect cReq -> do
-    connId <- withAgent $ \a -> joinConnection a cReq . directMessage $ XInfo profile
-    withStore $ \st -> createDirectConnection st userId connId
+  Connect (ACR _ cReq) -> acceptAgentConnection user cReq
   DeleteContact cName ->
     withStore (\st -> getContactGroupNames st userId cName) >>= \case
       [] -> do
@@ -194,6 +197,22 @@ processChatCommand user@User {userId, profile} = \case
         unsetActive $ ActiveC cName
         showContactDeleted cName
       gs -> showContactGroups cName gs
+  CreateMyContactLink -> do
+    (connId, cReq) <- withAgent (`createConnection` SCMContact)
+    withStore $ \st -> createUserContactLink st userId connId cReq
+    showCreatedUserContactLink cReq
+  DeleteMyContactLink -> do
+    withStore $ \st -> deleteUserContactLink st userId
+    showDeletedUserContactLink
+  ShowMyContactLink -> do
+    cReq <- withStore $ \st -> getUserContactLink st userId
+    showUserContactLink cReq
+  AcceptContact cName -> do
+    cReq <- withStore $ \st -> getUserContactRequest st userId cName
+    acceptAgentConnection user cReq
+  RejectContact cName -> do
+    -- TODO RJCT request via the agent
+    withStore $ \st -> deleteUserContactRequest st userId cName
   SendMessage cName msg -> do
     contact <- withStore $ \st -> getContact st userId cName
     let msgEvent = XMsgNew $ MsgContent MTText [] [MsgContentBody {contentType = SimplexContentType XCText, contentData = msg}]
@@ -437,6 +456,8 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
       processRcvFileConn agentMessage conn ft
     SndFileConnection conn ft ->
       processSndFileConn agentMessage conn ft
+    UserContactConnection conn uc ->
+      processUserContactRequest agentMessage conn uc
   where
     isMember :: MemberId -> Group -> Bool
     isMember memId Group {membership, members} =
@@ -664,6 +685,17 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
                 RcvChunkDuplicate -> pure ()
                 RcvChunkError -> badRcvFileChunk ft $ "incorrect chunk number " <> show chunkNo
         _ -> pure ()
+
+    processUserContactRequest :: ACommand 'Agent -> Connection -> UserContact -> m ()
+    processUserContactRequest agentMsg _conn UserContact {userContactId} = case agentMsg of
+      REQ invId connInfo -> do
+        ChatMessage {chatMsgEvent} <- liftEither $ parseChatMessage connInfo
+        case chatMsgEvent of
+          XContact p _ ->
+            withStore $ \st -> createUserContactRequest st userId userContactId invId p
+          -- TODO show/log error, other events in contact request
+          _ -> pure ()
+      _ -> pure ()
 
     withAckMessage :: ConnId -> MsgMeta -> m () -> m ()
     withAckMessage cId MsgMeta {recipient = (msgId, _)} action =
@@ -1005,6 +1037,11 @@ allowAgentConnection conn@Connection {agentConnId} confId msg = do
   withAgent $ \a -> allowConnection a agentConnId confId $ directMessage msg
   withStore $ \st -> updateConnectionStatus st conn ConnAccepted
 
+acceptAgentConnection :: ChatMonad m => User -> ConnectionRequest c -> m ()
+acceptAgentConnection User {userId, profile} cReq = do
+  connId <- withAgent $ \a -> joinConnection a cReq . directMessage $ XInfo profile
+  withStore $ \st -> createDirectConnection st userId connId
+
 getCreateActiveUser :: SQLiteStore -> IO User
 getCreateActiveUser st = do
   user <-
@@ -1099,7 +1136,7 @@ chatCommandP =
     <|> ("/delete #" <|> "/d #") *> (DeleteGroup <$> displayName)
     <|> ("/members #" <|> "/members " <|> "/ms #" <|> "/ms ") *> (ListMembers <$> displayName)
     <|> A.char '#' *> (SendGroupMessage <$> displayName <* A.space <*> A.takeByteString)
-    <|> ("/connect " <|> "/c ") *> (Connect <$> connReqP')
+    <|> ("/connect " <|> "/c ") *> (Connect <$> connReqP)
     <|> ("/connect" <|> "/c") $> AddContact
     <|> ("/delete @" <|> "/delete " <|> "/d @" <|> "/d ") *> (DeleteContact <$> displayName)
     <|> A.char '@' *> (SendMessage <$> displayName <*> (A.space *> A.takeByteString))
@@ -1111,7 +1148,7 @@ chatCommandP =
     <|> ("/markdown" <|> "/m") $> MarkdownHelp
     <|> ("/profile " <|> "/p ") *> (UpdateProfile <$> userProfile)
     <|> ("/profile" <|> "/p") $> ShowProfile
-    <|> ("/quit" <|> "/q") $> QuitChat
+    <|> ("/quit" <|> "/q" <|> "/exit") $> QuitChat
     <|> ("/version" <|> "/v") $> ShowVersion
   where
     displayName = safeDecodeUtf8 <$> (B.cons <$> A.satisfy refChar <*> A.takeTill (== ' '))

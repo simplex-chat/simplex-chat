@@ -16,6 +16,9 @@ module Simplex.Chat.View
     showContactAnotherClient,
     showContactSubscribed,
     showContactSubError,
+    showCreatedUserContactLink,
+    showDeletedUserContactLink,
+    showUserContactLink,
     showGroupSubscribed,
     showGroupEmpty,
     showGroupRemoved,
@@ -117,6 +120,15 @@ showContactSubscribed = printToView . contactSubscribed
 
 showContactSubError :: ChatReader m => ContactName -> ChatError -> m ()
 showContactSubError = printToView .: contactSubError
+
+showCreatedUserContactLink :: ChatReader m => ConnReqContact -> m ()
+showCreatedUserContactLink = printToView . createdUserContactLink
+
+showDeletedUserContactLink :: ChatReader m => m ()
+showDeletedUserContactLink = printToView deletedUserContactLink
+
+showUserContactLink :: ChatReader m => ConnReqContact -> m ()
+showUserContactLink = printToView . myContactLink
 
 showGroupSubscribed :: ChatReader m => GroupName -> m ()
 showGroupSubscribed = printToView . groupSubscribed
@@ -290,6 +302,15 @@ contactSubscribed c = [ttyContact c <> ": connected to server"]
 
 contactSubError :: ContactName -> ChatError -> [StyledString]
 contactSubError c e = [ttyContact c <> ": contact error " <> sShow e]
+
+createdUserContactLink :: ConnReqContact -> [StyledString]
+createdUserContactLink cReq = []
+
+deletedUserContactLink :: [StyledString]
+deletedUserContactLink = []
+
+myContactLink :: ConnReqContact -> [StyledString]
+myContactLink cReq = []
 
 groupSubscribed :: GroupName -> [StyledString]
 groupSubscribed g = [ttyGroup g <> ": connected to server(s)"]

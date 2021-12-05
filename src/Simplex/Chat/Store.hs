@@ -28,6 +28,12 @@ module Simplex.Chat.Store
     updateUserProfile,
     updateContactProfile,
     getUserContacts,
+    createUserContactLink,
+    deleteUserContactLink,
+    getUserContactLink,
+    createUserContactRequest,
+    getUserContactRequest,
+    deleteUserContactRequest,
     getLiveSndFileTransfers,
     getLiveRcvFileTransfers,
     getPendingSndChunks,
@@ -107,7 +113,7 @@ import qualified Database.SQLite.Simple as DB
 import Database.SQLite.Simple.QQ (sql)
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
-import Simplex.Messaging.Agent.Protocol (AParty (..), AgentMsgId, ConnId)
+import Simplex.Messaging.Agent.Protocol (AParty (..), AgentMsgId, ConnId, InvitationId)
 import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore (..), createSQLiteStore, withTransaction)
 import Simplex.Messaging.Agent.Store.SQLite.Migrations (Migration (..))
 import qualified Simplex.Messaging.Crypto as C
@@ -337,7 +343,7 @@ getContact_ db userId localDisplayName = do
           db
           [sql|
             SELECT c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact,
-              c.conn_status, c.conn_type, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.created_at
+              c.conn_status, c.conn_type, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at
             FROM connections c
             WHERE c.user_id = :user_id AND c.contact_id == :contact_id
             ORDER BY c.connection_id DESC
@@ -358,6 +364,24 @@ getUserContacts st User {userId} =
   liftIO . withTransaction st $ \db -> do
     contactNames <- map fromOnly <$> DB.query db "SELECT local_display_name FROM contacts WHERE user_id = ?" (Only userId)
     rights <$> mapM (runExceptT . getContact_ db userId) contactNames
+
+createUserContactLink :: StoreMonad m => SQLiteStore -> UserId -> ConnId -> ConnReqContact -> m ()
+createUserContactLink st userId connId cReq = throwError SEDuplicateContactLink
+
+deleteUserContactLink :: StoreMonad m => SQLiteStore -> UserId -> m ()
+deleteUserContactLink st userId = pure ()
+
+getUserContactLink :: StoreMonad m => SQLiteStore -> UserId -> m ConnReqContact
+getUserContactLink st userId = throwError SEContactLinkNotFound
+
+createUserContactRequest :: StoreMonad m => SQLiteStore -> UserId -> Int64 -> InvitationId -> Profile -> m ()
+createUserContactRequest st userId userContactId invId profile = pure ()
+
+getUserContactRequest :: StoreMonad m => SQLiteStore -> UserId -> ContactName -> m ConnReqInvitation
+getUserContactRequest st userId cName = throwError $ SEContactRequestNotFound cName
+
+deleteUserContactRequest :: StoreMonad m => SQLiteStore -> UserId -> ContactName -> m ()
+deleteUserContactRequest st userId cName = pure ()
 
 getLiveSndFileTransfers :: MonadUnliftIO m => SQLiteStore -> User -> m [SndFileTransfer]
 getLiveSndFileTransfers st User {userId} =
@@ -416,7 +440,7 @@ getPendingConnections st User {userId} =
         db
         [sql|
           SELECT connection_id, agent_conn_id, conn_level, via_contact,
-            conn_status, conn_type, contact_id, group_member_id, snd_file_id, rcv_file_id, created_at
+            conn_status, conn_type, contact_id, group_member_id, snd_file_id, rcv_file_id, user_contact_link_id, created_at
           FROM connections
           WHERE user_id = :user_id
             AND conn_type = :conn_type
@@ -432,7 +456,7 @@ getContactConnections st userId displayName =
         db
         [sql|
           SELECT c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact,
-            c.conn_status, c.conn_type, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.created_at
+            c.conn_status, c.conn_type, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at
           FROM connections c
           JOIN contacts cs ON c.contact_id == cs.contact_id
           WHERE c.user_id = :user_id
@@ -444,12 +468,12 @@ getContactConnections st userId displayName =
     connections [] = Left $ SEContactNotFound displayName
     connections rows = Right $ map toConnection rows
 
-type ConnectionRow = (Int64, ConnId, Int, Maybe Int64, ConnStatus, ConnType, Maybe Int64, Maybe Int64, Maybe Int64, Maybe Int64, UTCTime)
+type ConnectionRow = (Int64, ConnId, Int, Maybe Int64, ConnStatus, ConnType, Maybe Int64, Maybe Int64, Maybe Int64, Maybe Int64, Maybe Int64, UTCTime)
 
-type MaybeConnectionRow = (Maybe Int64, Maybe ConnId, Maybe Int, Maybe Int64, Maybe ConnStatus, Maybe ConnType, Maybe Int64, Maybe Int64, Maybe Int64, Maybe Int64, Maybe UTCTime)
+type MaybeConnectionRow = (Maybe Int64, Maybe ConnId, Maybe Int, Maybe Int64, Maybe ConnStatus, Maybe ConnType, Maybe Int64, Maybe Int64, Maybe Int64, Maybe Int64, Maybe Int64, Maybe UTCTime)
 
 toConnection :: ConnectionRow -> Connection
-toConnection (connId, agentConnId, connLevel, viaContact, connStatus, connType, contactId, groupMemberId, sndFileId, rcvFileId, createdAt) =
+toConnection (connId, agentConnId, connLevel, viaContact, connStatus, connType, contactId, groupMemberId, sndFileId, rcvFileId, userContactLinkId, createdAt) =
   let entityId = entityId_ connType
    in Connection {connId, agentConnId, connLevel, viaContact, connStatus, connType, entityId, createdAt}
   where
@@ -458,10 +482,11 @@ toConnection (connId, agentConnId, connLevel, viaContact, connStatus, connType, 
     entityId_ ConnMember = groupMemberId
     entityId_ ConnRcvFile = rcvFileId
     entityId_ ConnSndFile = sndFileId
+    entityId_ ConnUserContact = userContactLinkId
 
 toMaybeConnection :: MaybeConnectionRow -> Maybe Connection
-toMaybeConnection (Just connId, Just agentConnId, Just connLevel, viaContact, Just connStatus, Just connType, contactId, groupMemberId, sndFileId, rcvFileId, Just createdAt) =
-  Just $ toConnection (connId, agentConnId, connLevel, viaContact, connStatus, connType, contactId, groupMemberId, sndFileId, rcvFileId, createdAt)
+toMaybeConnection (Just connId, Just agentConnId, Just connLevel, viaContact, Just connStatus, Just connType, contactId, groupMemberId, sndFileId, rcvFileId, userContactLinkId, Just createdAt) =
+  Just $ toConnection (connId, agentConnId, connLevel, viaContact, connStatus, connType, contactId, groupMemberId, sndFileId, rcvFileId, userContactLinkId, createdAt)
 toMaybeConnection _ = Nothing
 
 getMatchingContacts :: MonadUnliftIO m => SQLiteStore -> UserId -> Contact -> m [Contact]
@@ -599,6 +624,7 @@ getConnectionChatDirection st User {userId, userContactId} agentConnId =
           ConnContact -> ReceivedDirectMessage c . Just <$> getContactRec_ db entId c
           ConnSndFile -> SndFileConnection c <$> getConnSndFileTransfer_ db entId c
           ConnRcvFile -> RcvFileConnection c <$> ExceptT (getRcvFileTransfer_ db userId entId)
+          ConnUserContact -> pure $ UserContactConnection c UserContact {}
   where
     getConnection_ :: DB.Connection -> ExceptT StoreError IO Connection
     getConnection_ db = ExceptT $ do
@@ -607,7 +633,7 @@ getConnectionChatDirection st User {userId, userContactId} agentConnId =
           db
           [sql|
             SELECT connection_id, agent_conn_id, conn_level, via_contact,
-              conn_status, conn_type, contact_id, group_member_id, snd_file_id, rcv_file_id, created_at
+              conn_status, conn_type, contact_id, group_member_id, snd_file_id, rcv_file_id, user_contact_link_id, created_at
             FROM connections
             WHERE user_id = ? AND agent_conn_id = ?
           |]
@@ -751,7 +777,7 @@ getGroup_ db User {userId, userContactId} localDisplayName = do
               m.group_member_id, m.group_id, m.member_id, m.member_role, m.member_category, m.member_status,
               m.invited_by, m.local_display_name, m.contact_id, p.display_name, p.full_name,
               c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact,
-              c.conn_status, c.conn_type, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.created_at
+              c.conn_status, c.conn_type, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at
             FROM group_members m
             JOIN contact_profiles p ON p.contact_profile_id = m.contact_profile_id
             LEFT JOIN connections c ON c.connection_id = (
@@ -1098,7 +1124,7 @@ getViaGroupMember st User {userId, userContactId} Contact {contactId} =
             m.group_member_id, m.group_id, m.member_id, m.member_role, m.member_category, m.member_status,
             m.invited_by, m.local_display_name, m.contact_id, p.display_name, p.full_name,
             c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact,
-            c.conn_status, c.conn_type, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.created_at
+            c.conn_status, c.conn_type, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at
           FROM group_members m
           JOIN contacts ct ON ct.contact_id = m.contact_id
           JOIN contact_profiles p ON p.contact_profile_id = m.contact_profile_id
@@ -1128,7 +1154,7 @@ getViaGroupContact st User {userId} GroupMember {groupMemberId} =
           SELECT
             ct.contact_id, ct.local_display_name, p.display_name, p.full_name, ct.via_group,
             c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact,
-            c.conn_status, c.conn_type, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.created_at
+            c.conn_status, c.conn_type, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at
           FROM contacts ct
           JOIN contact_profiles p ON ct.contact_profile_id = p.contact_profile_id
           JOIN connections c ON c.connection_id = (
@@ -1473,6 +1499,9 @@ data StoreError
   = SEDuplicateName
   | SEContactNotFound ContactName
   | SEContactNotReady ContactName
+  | SEDuplicateContactLink
+  | SEContactLinkNotFound
+  | SEContactRequestNotFound ContactName
   | SEGroupNotFound GroupName
   | SEGroupWithoutUser
   | SEDuplicateGroupMember
