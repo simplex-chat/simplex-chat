@@ -17,7 +17,7 @@ fi
 [ ! -d $TARGET_DIR ] && mkdir -p $TARGET_DIR
 
 if [ -n "$(command -v curl)" ]; then
-	curl -o $TARGET_DIR/$APP_NAME "https://github.com/$APP_NAME/$APP_NAME/releases/latest/download/$APP_NAME-$PLATFORM"
+	curl -L -o $TARGET_DIR/$APP_NAME "https://github.com/$APP_NAME/$APP_NAME/releases/latest/download/$APP_NAME-$PLATFORM"
 elif [ -n "$(command -v wget)" ]; then
 	wget -O $TARGET_DIR/$APP_NAME "https://github.com/$APP_NAME/$APP_NAME/releases/latest/download/$APP_NAME-$PLATFORM"
 else
