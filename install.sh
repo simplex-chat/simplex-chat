@@ -21,7 +21,7 @@ if [ -n "$(command -v curl)" ]; then
 elif [ -n "$(command -v wget)" ]; then
 	wget -O $TARGET_DIR/$APP_NAME "https://github.com/$APP_NAME/$APP_NAME/releases/latest/download/$APP_NAME-$PLATFORM"
 else
-  echo "Cannot download simplex-chat - please install curl or wget"
+	echo "Cannot download simplex-chat - please install curl or wget"
 	exit 1
 fi
 
