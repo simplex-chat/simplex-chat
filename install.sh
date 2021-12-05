@@ -1,3 +1,5 @@
+set -eu
+
 APP_NAME="simplex-chat"
 TARGET_DIR="$HOME/.local/bin"
 PLATFORM="$(uname)"
@@ -14,11 +16,20 @@ fi
 
 [ ! -d $TARGET_DIR ] && mkdir -p $TARGET_DIR
 
-wget -O $TARGET_DIR/$APP_NAME "https://github.com/$APP_NAME/$APP_NAME/releases/latest/download/$APP_NAME-$PLATFORM" && chmod +x $TARGET_DIR/$APP_NAME
+if [ -n "$(command -v curl)" ]; then
+	curl -o $TARGET_DIR/$APP_NAME "https://github.com/$APP_NAME/$APP_NAME/releases/latest/download/$APP_NAME-$PLATFORM"
+elif [ -n "$(command -v wget)" ]; then
+	wget -O $TARGET_DIR/$APP_NAME "https://github.com/$APP_NAME/$APP_NAME/releases/latest/download/$APP_NAME-$PLATFORM"
+else
+  echo "Cannot download simplex-chat - please install curl or wget"
+	exit 1
+fi
+
+chmod +x $TARGET_DIR/$APP_NAME
 
 echo "$APP_NAME installed sucesfully!"
 
-if [ -z "$(which simplex-chat)" ]; then
+if [ -z "$(command -v simplex-chat)" ]; then
 	if [ -n "$($SHELL -c 'echo $ZSH_VERSION')" ]; then
 		SHELL_FILE="$HOME/.zshrc"
 	elif [ -n "$($SHELL -c 'echo $BASH_VERSION')" ]; then
