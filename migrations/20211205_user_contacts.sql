@@ -1,15 +1,16 @@
 CREATE TABLE user_contact_links (
   user_contact_link_id INTEGER PRIMARY KEY,
   conn_req_contact BLOB NOT NULL,
+  local_display_name TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
   user_id INTEGER NOT NULL REFERENCES users,
-  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  UNIQUE (user_id, local_display_name)
 );
 
 CREATE TABLE contact_requests (
   contact_request_id INTEGER PRIMARY KEY,
   user_contact_link_id INTEGER NOT NULL REFERENCES user_contact_links,
   agent_invitation_id  BLOB NOT NULL,
-  conn_req_invitation BLOB NOT NULL,
   contact_profile_id INTEGER REFERENCES contact_profiles, -- NULL if it's an incognito profile
   local_display_name TEXT NOT NULL,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),

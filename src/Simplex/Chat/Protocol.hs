@@ -202,7 +202,7 @@ getContentType t body = case find (isContentType t) body of
 extractContentType :: ContentType -> [MsgContentBody] -> Either String (ByteString, [MsgContentBody])
 extractContentType t body = case findIndex (isContentType t) body of
   Just i -> case splitAt i body of
-    (b, (el : a)) -> Right (contentData (el :: MsgContentBody), b ++ a)
+    (b, el : a) -> Right (contentData (el :: MsgContentBody), b ++ a)
     (_, []) -> Left "no required content type" -- this can only happen if findIndex returns incorrect result
   Nothing -> Left "no required content type"
 

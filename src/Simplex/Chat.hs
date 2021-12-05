@@ -186,7 +186,9 @@ processChatCommand user@User {userId, profile} = \case
     (connId, cReq) <- withAgent (`createConnection` SCMInvitation)
     withStore $ \st -> createDirectConnection st userId connId
     showInvitation cReq
-  Connect (ACR _ cReq) -> acceptAgentConnection user cReq
+  Connect (ACR _ cReq) -> do
+    connId <- withAgent $ \a -> joinConnection a cReq . directMessage $ XInfo profile
+    withStore $ \st -> createDirectConnection st userId connId
   DeleteContact cName ->
     withStore (\st -> getContactGroupNames st userId cName) >>= \case
       [] -> do
@@ -208,8 +210,9 @@ processChatCommand user@User {userId, profile} = \case
     cReq <- withStore $ \st -> getUserContactLink st userId
     showUserContactLink cReq
   AcceptContact cName -> do
-    cReq <- withStore $ \st -> getUserContactRequest st userId cName
-    acceptAgentConnection user cReq
+    invId <- withStore $ \st -> getUserContactRequest st userId cName
+    connId <- withAgent $ \a -> acceptContact a invId . directMessage $ XInfo profile
+    withStore $ \st -> createDirectConnection st userId connId
   RejectContact cName -> do
     -- TODO RJCT request via the agent
     withStore $ \st -> deleteUserContactRequest st userId cName
@@ -1036,11 +1039,6 @@ allowAgentConnection :: ChatMonad m => Connection -> ConfirmationId -> ChatMsgEv
 allowAgentConnection conn@Connection {agentConnId} confId msg = do
   withAgent $ \a -> allowConnection a agentConnId confId $ directMessage msg
   withStore $ \st -> updateConnectionStatus st conn ConnAccepted
-
-acceptAgentConnection :: ChatMonad m => User -> ConnectionRequest c -> m ()
-acceptAgentConnection User {userId, profile} cReq = do
-  connId <- withAgent $ \a -> joinConnection a cReq . directMessage $ XInfo profile
-  withStore $ \st -> createDirectConnection st userId connId
 
 getCreateActiveUser :: SQLiteStore -> IO User
 getCreateActiveUser st = do
