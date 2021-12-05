@@ -29,11 +29,13 @@ module Simplex.Chat.Store
     updateContactProfile,
     getUserContacts,
     createUserContactLink,
+    getUserContactLinkConnections,
     deleteUserContactLink,
     getUserContactLink,
-    createUserContactRequest,
-    getUserContactRequest,
-    deleteUserContactRequest,
+    createContactRequest,
+    getContactRequest,
+    deleteContactRequest,
+    createAcceptedContact,
     getLiveSndFileTransfers,
     getLiveRcvFileTransfers,
     getPendingSndChunks,
@@ -393,14 +395,45 @@ getUserContacts st User {userId} =
 createUserContactLink :: StoreMonad m => SQLiteStore -> UserId -> ConnId -> ConnReqContact -> m ()
 createUserContactLink st userId agentConnId cReq =
   liftIOEither . checkConstraint SEDuplicateContactLink . withTransaction st $ \db -> do
-    DB.execute db "INSERT INTO user_contact_links (conn_req_contact, user_id) VALUES (?, ?)" (userId, cReq)
+    DB.execute db "INSERT INTO user_contact_links (user_id, conn_req_contact) VALUES (?, ?)" (userId, cReq)
     userContactLinkId <- insertedRowId db
     Right () <$ createConnection_ db userId ConnUserContact (Just userContactLinkId) agentConnId Nothing 0
 
+getUserContactLinkConnections :: StoreMonad m => SQLiteStore -> UserId -> m [Connection]
+getUserContactLinkConnections st userId =
+  liftIOEither . withTransaction st $ \db ->
+    connections
+      <$> DB.queryNamed
+        db
+        [sql|
+          SELECT c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact,
+            c.conn_status, c.conn_type, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at
+          FROM connections c
+          JOIN user_contact_links uc ON c.user_contact_link_id == uc.user_contact_link_id
+          WHERE c.user_id = :user_id
+            AND uc.user_id = :user_id
+            AND uc.local_display_name = ''
+        |]
+        [":user_id" := userId]
+  where
+    connections [] = Left SEUserContactLinkNotFound
+    connections rows = Right $ map toConnection rows
+
 deleteUserContactLink :: MonadUnliftIO m => SQLiteStore -> UserId -> m ()
 deleteUserContactLink st userId =
-  liftIO . withTransaction st $ \db ->
-    DB.execute db "DELETE FROM user_contact_links WHERE user_id = ? AND local_display_name IS NULL" (Only userId)
+  liftIO . withTransaction st $ \db -> do
+    DB.execute
+      db
+      [sql|
+        DELETE FROM connections WHERE connection_id IN (
+          SELECT connection_id
+          FROM connections c
+          JOIN user_contact_links uc USING (user_contact_link_id)
+          WHERE uc.user_id = ? AND uc.local_display_name = ''
+        )
+      |]
+      (Only userId)
+    DB.execute db "DELETE FROM user_contact_links WHERE user_id = ? AND local_display_name = ''" (Only userId)
 
 getUserContactLink :: StoreMonad m => SQLiteStore -> UserId -> m ConnReqContact
 getUserContactLink st userId =
@@ -412,15 +445,15 @@ getUserContactLink st userId =
           SELECT conn_req_contact
           FROM user_contact_links
           WHERE user_id = ?
-            AND local_display_name IS NULL
+            AND local_display_name = ''
         |]
         (Only userId)
   where
     connReq [Only cReq] = Right cReq
-    connReq _ = Left SEContactLinkNotFound
+    connReq _ = Left SEUserContactLinkNotFound
 
-createUserContactRequest :: StoreMonad m => SQLiteStore -> UserId -> Int64 -> InvitationId -> Profile -> m ()
-createUserContactRequest st userId userContactId invId Profile {displayName, fullName} =
+createContactRequest :: StoreMonad m => SQLiteStore -> UserId -> Int64 -> InvitationId -> Profile -> m ContactName
+createContactRequest st userId userContactId invId Profile {displayName, fullName} =
   liftIOEither . withTransaction st $ \db ->
     withLocalDisplayName db userId displayName $ \ldn -> do
       DB.execute db "INSERT INTO contact_profiles (display_name, full_name) VALUES (?, ?)" (displayName, fullName)
@@ -432,28 +465,38 @@ createUserContactRequest st userId userContactId invId Profile {displayName, ful
           (user_contact_link_id, agent_invitation_id, contact_profile_id, local_display_name, user_id) VALUES (?,?,?,?,?)
         |]
         (userContactId, invId, profileId, ldn, userId)
+      pure ldn
 
-getUserContactRequest :: StoreMonad m => SQLiteStore -> UserId -> ContactName -> m InvitationId
-getUserContactRequest st userId localDisplayName =
+getContactRequest :: StoreMonad m => SQLiteStore -> UserId -> ContactName -> m (InvitationId, Int64)
+getContactRequest st userId localDisplayName =
   liftIOEither . withTransaction st $ \db ->
-    invitationId
+    contactReq
       <$> DB.query
         db
         [sql|
-          SELECT agent_invitation_id
+          SELECT agent_invitation_id, contact_profile_id
           FROM contact_requests
           WHERE user_id = ?
             AND local_display_name = ?
         |]
         (userId, localDisplayName)
   where
-    invitationId [Only invId] = Right invId
-    invitationId _ = Left $ SEContactRequestNotFound localDisplayName
+    contactReq [(invId, profileId)] = Right (invId, profileId)
+    contactReq _ = Left $ SEContactRequestNotFound localDisplayName
 
-deleteUserContactRequest :: MonadUnliftIO m => SQLiteStore -> UserId -> ContactName -> m ()
-deleteUserContactRequest st userId localDisplayName =
-  liftIO . withTransaction st $ \db ->
+deleteContactRequest :: MonadUnliftIO m => SQLiteStore -> UserId -> ContactName -> m ()
+deleteContactRequest st userId localDisplayName =
+  liftIO . withTransaction st $ \db -> do
     DB.execute db "DELETE FROM contact_requests WHERE user_id = ? AND local_display_name = ?" (userId, localDisplayName)
+    DB.execute db "DELETE FROM display_names WHERE user_id = ? AND local_display_name = ?" (userId, localDisplayName)
+
+createAcceptedContact :: MonadUnliftIO m => SQLiteStore -> UserId -> ConnId -> ContactName -> Int64 -> m ()
+createAcceptedContact st userId agentConnId localDisplayName profileId =
+  liftIO . withTransaction st $ \db -> do
+    DB.execute db "DELETE FROM contact_requests WHERE user_id = ? AND local_display_name = ?" (userId, localDisplayName)
+    DB.execute db "INSERT INTO contacts (user_id, local_display_name, contact_profile_id) VALUES (?,?,?)" (userId, localDisplayName, profileId)
+    contactId <- insertedRowId db
+    void $ createConnection_ db userId ConnContact (Just contactId) agentConnId Nothing 0
 
 getLiveSndFileTransfers :: MonadUnliftIO m => SQLiteStore -> User -> m [SndFileTransfer]
 getLiveSndFileTransfers st User {userId} =
@@ -696,7 +739,7 @@ getConnectionChatDirection st User {userId, userContactId} agentConnId =
           ConnContact -> ReceivedDirectMessage c . Just <$> getContactRec_ db entId c
           ConnSndFile -> SndFileConnection c <$> getConnSndFileTransfer_ db entId c
           ConnRcvFile -> RcvFileConnection c <$> ExceptT (getRcvFileTransfer_ db userId entId)
-          ConnUserContact -> pure $ UserContactConnection c UserContact {}
+          ConnUserContact -> UserContactConnection c <$> getUserContact_ db entId
   where
     getConnection_ :: DB.Connection -> ExceptT StoreError IO Connection
     getConnection_ db = ExceptT $ do
@@ -772,6 +815,21 @@ getConnectionChatDirection st User {userId, userContactId} agentConnId =
         Just recipientDisplayName -> Right SndFileTransfer {..}
         Nothing -> Left $ SESndFileInvalid fileId
     sndFileTransfer_ fileId _ _ = Left $ SESndFileNotFound fileId
+    getUserContact_ :: DB.Connection -> Int64 -> ExceptT StoreError IO UserContact
+    getUserContact_ db userContactLinkId = ExceptT $ do
+      userContact_
+        <$> DB.query
+          db
+          [sql|
+            SELECT conn_req_contact
+            FROM user_contact_links
+            WHERE user_id = ? AND user_contact_link_id = ?
+          |]
+          (userId, userContactLinkId)
+      where
+        userContact_ :: [Only ConnReqContact] -> Either StoreError UserContact
+        userContact_ [Only cReq] = Right UserContact {userContactLinkId, connReqContact = cReq}
+        userContact_ _ = Left SEUserContactLinkNotFound
 
 updateConnectionStatus :: MonadUnliftIO m => SQLiteStore -> Connection -> ConnStatus -> m ()
 updateConnectionStatus st Connection {connId} connStatus =
@@ -1551,7 +1609,7 @@ data StoreError
   | SEContactNotFound ContactName
   | SEContactNotReady ContactName
   | SEDuplicateContactLink
-  | SEContactLinkNotFound
+  | SEUserContactLinkNotFound
   | SEContactRequestNotFound ContactName
   | SEGroupNotFound GroupName
   | SEGroupWithoutUser

@@ -62,7 +62,7 @@ contactConnId :: Contact -> ConnId
 contactConnId Contact {activeConn = Connection {agentConnId}} = agentConnId
 
 data UserContact = UserContact
-  { userContactId :: Int64,
+  { userContactLinkId :: Int64,
     connReqContact :: ConnReqContact
   }
   deriving (Eq, Show)

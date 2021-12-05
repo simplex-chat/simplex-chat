@@ -1,7 +1,7 @@
 CREATE TABLE user_contact_links (
   user_contact_link_id INTEGER PRIMARY KEY,
   conn_req_contact BLOB NOT NULL,
-  local_display_name TEXT,
+  local_display_name TEXT NOT NULL DEFAULT '',
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   user_id INTEGER NOT NULL REFERENCES users,
   UNIQUE (user_id, local_display_name)
@@ -9,7 +9,7 @@ CREATE TABLE user_contact_links (
 
 CREATE TABLE contact_requests (
   contact_request_id INTEGER PRIMARY KEY,
-  user_contact_link_id INTEGER NOT NULL REFERENCES user_contact_links,
+  user_contact_link_id INTEGER NOT NULL REFERENCES user_contact_links ON DELETE CASCADE,
   agent_invitation_id  BLOB NOT NULL,
   contact_profile_id INTEGER REFERENCES contact_profiles, -- NULL if it's an incognito profile
   local_display_name TEXT NOT NULL,

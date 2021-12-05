@@ -71,9 +71,9 @@ data ChatCommand
   | AddContact
   | Connect AConnectionRequest
   | DeleteContact ContactName
-  | CreateMyContactLink
-  | DeleteMyContactLink
-  | ShowMyContactLink
+  | CreateMyAddress
+  | DeleteMyAddress
+  | ShowMyAddress
   | AcceptContact ContactName
   | RejectContact ContactName
   | SendMessage ContactName ByteString
@@ -186,8 +186,11 @@ processChatCommand user@User {userId, profile} = \case
     (connId, cReq) <- withAgent (`createConnection` SCMInvitation)
     withStore $ \st -> createDirectConnection st userId connId
     showInvitation cReq
-  Connect (ACR _ cReq) -> do
-    connId <- withAgent $ \a -> joinConnection a cReq . directMessage $ XInfo profile
+  Connect (ACR cMode cReq) -> do
+    let msg :: ChatMsgEvent = case cMode of
+          SCMInvitation -> XInfo profile
+          SCMContact -> XContact profile Nothing
+    connId <- withAgent $ \a -> joinConnection a cReq $ directMessage msg
     withStore $ \st -> createDirectConnection st userId connId
   DeleteContact cName ->
     withStore (\st -> getContactGroupNames st userId cName) >>= \case
@@ -199,23 +202,28 @@ processChatCommand user@User {userId, profile} = \case
         unsetActive $ ActiveC cName
         showContactDeleted cName
       gs -> showContactGroups cName gs
-  CreateMyContactLink -> do
+  CreateMyAddress -> do
     (connId, cReq) <- withAgent (`createConnection` SCMContact)
     withStore $ \st -> createUserContactLink st userId connId cReq
-    showCreatedUserContactLink cReq
-  DeleteMyContactLink -> do
+    showUserContactLinkCreated cReq
+  DeleteMyAddress -> do
+    conns <- withStore $ \st -> getUserContactLinkConnections st userId
+    withAgent $ \a -> forM_ conns $ \Connection {agentConnId} ->
+      deleteConnection a agentConnId `catchError` \(_ :: AgentErrorType) -> pure ()
     withStore $ \st -> deleteUserContactLink st userId
-    showDeletedUserContactLink
-  ShowMyContactLink -> do
+    showUserContactLinkDeleted
+  ShowMyAddress -> do
     cReq <- withStore $ \st -> getUserContactLink st userId
     showUserContactLink cReq
   AcceptContact cName -> do
-    invId <- withStore $ \st -> getUserContactRequest st userId cName
+    (invId, profileId) <- withStore $ \st -> getContactRequest st userId cName
     connId <- withAgent $ \a -> acceptContact a invId . directMessage $ XInfo profile
-    withStore $ \st -> createDirectConnection st userId connId
+    withStore $ \st -> createAcceptedContact st userId connId cName profileId
+    showAcceptingContactRequest cName
   RejectContact cName -> do
     -- TODO RJCT request via the agent
-    withStore $ \st -> deleteUserContactRequest st userId cName
+    withStore $ \st -> deleteContactRequest st userId cName
+    showContactRequestRejected cName
   SendMessage cName msg -> do
     contact <- withStore $ \st -> getContact st userId cName
     let msgEvent = XMsgNew $ MsgContent MTText [] [MsgContentBody {contentType = SimplexContentType XCText, contentData = msg}]
@@ -518,8 +526,11 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
               -- TODO check member ID
               -- TODO update member profile
               pure ()
+            XInfo _profile -> do
+              -- TODO update contact profile
+              pure ()
             XOk -> pure ()
-            _ -> messageError "INFO from member must have x.grp.mem.info or x.ok"
+            _ -> messageError "INFO for existing contact must have x.grp.mem.info, x.info or x.ok"
         CON ->
           withStore (\st -> getViaGroupMember st user ct) >>= \case
             Nothing -> do
@@ -690,15 +701,20 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
         _ -> pure ()
 
     processUserContactRequest :: ACommand 'Agent -> Connection -> UserContact -> m ()
-    processUserContactRequest agentMsg _conn UserContact {userContactId} = case agentMsg of
+    processUserContactRequest agentMsg _conn UserContact {userContactLinkId} = case agentMsg of
       REQ invId connInfo -> do
         ChatMessage {chatMsgEvent} <- liftEither $ parseChatMessage connInfo
         case chatMsgEvent of
-          XContact p _ ->
-            withStore $ \st -> createUserContactRequest st userId userContactId invId p
+          XContact p _ -> profileContactRequest invId p
+          XInfo p -> profileContactRequest invId p
           -- TODO show/log error, other events in contact request
           _ -> pure ()
       _ -> pure ()
+      where
+        profileContactRequest :: InvitationId -> Profile -> m ()
+        profileContactRequest invId p = do
+          cName <- withStore $ \st -> createContactRequest st userId userContactLinkId invId p
+          showReceivedContactRequest cName p
 
     withAckMessage :: ConnId -> MsgMeta -> m () -> m ()
     withAckMessage cId MsgMeta {recipient = (msgId, _)} action =
@@ -1143,6 +1159,11 @@ chatCommandP =
     <|> ("/freceive " <|> "/fr ") *> (ReceiveFile <$> A.decimal <*> optional (A.space *> filePath))
     <|> ("/fcancel " <|> "/fc ") *> (CancelFile <$> A.decimal)
     <|> ("/fstatus " <|> "/fs ") *> (FileStatus <$> A.decimal)
+    <|> ("/address" <|> "/ad") $> CreateMyAddress
+    <|> ("/delete_address" <|> "/da") $> DeleteMyAddress
+    <|> ("/show_address" <|> "/sa") $> ShowMyAddress
+    <|> ("/accept @" <|> "/accept " <|> "/ac @" <|> "/ac ") *> (AcceptContact <$> displayName)
+    <|> ("/reject @" <|> "/reject " <|> "/rc @" <|> "/rc ") *> (RejectContact <$> displayName)
     <|> ("/markdown" <|> "/m") $> MarkdownHelp
     <|> ("/profile " <|> "/p ") *> (UpdateProfile <$> userProfile)
     <|> ("/profile" <|> "/p") $> ShowProfile

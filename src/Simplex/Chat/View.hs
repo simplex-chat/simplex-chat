@@ -16,9 +16,12 @@ module Simplex.Chat.View
     showContactAnotherClient,
     showContactSubscribed,
     showContactSubError,
-    showCreatedUserContactLink,
-    showDeletedUserContactLink,
+    showUserContactLinkCreated,
+    showUserContactLinkDeleted,
     showUserContactLink,
+    showReceivedContactRequest,
+    showAcceptingContactRequest,
+    showContactRequestRejected,
     showGroupSubscribed,
     showGroupEmpty,
     showGroupRemoved,
@@ -95,7 +98,7 @@ import System.Console.ANSI.Types
 type ChatReader m = (MonadUnliftIO m, MonadReader ChatController m)
 
 showInvitation :: ChatReader m => ConnReqInvitation -> m ()
-showInvitation = printToView . connReq
+showInvitation = printToView . connReqInvitation_
 
 showChatError :: ChatReader m => ChatError -> m ()
 showChatError = printToView . chatError
@@ -121,14 +124,23 @@ showContactSubscribed = printToView . contactSubscribed
 showContactSubError :: ChatReader m => ContactName -> ChatError -> m ()
 showContactSubError = printToView .: contactSubError
 
-showCreatedUserContactLink :: ChatReader m => ConnReqContact -> m ()
-showCreatedUserContactLink = printToView . createdUserContactLink
+showUserContactLinkCreated :: ChatReader m => ConnReqContact -> m ()
+showUserContactLinkCreated = printToView . userContactLinkCreated
 
-showDeletedUserContactLink :: ChatReader m => m ()
-showDeletedUserContactLink = printToView deletedUserContactLink
+showUserContactLinkDeleted :: ChatReader m => m ()
+showUserContactLinkDeleted = printToView userContactLinkDeleted
 
 showUserContactLink :: ChatReader m => ConnReqContact -> m ()
-showUserContactLink = printToView . myContactLink
+showUserContactLink = printToView . userContactLink
+
+showReceivedContactRequest :: ChatReader m => ContactName -> Profile -> m ()
+showReceivedContactRequest = printToView .: receivedContactRequest
+
+showAcceptingContactRequest :: ChatReader m => ContactName -> m ()
+showAcceptingContactRequest = printToView . acceptingContactRequest
+
+showContactRequestRejected :: ChatReader m => ContactName -> m ()
+showContactRequestRejected = printToView . contactRequestRejected
 
 showGroupSubscribed :: ChatReader m => GroupName -> m ()
 showGroupSubscribed = printToView . groupSubscribed
@@ -268,13 +280,13 @@ showContactUpdated = printToView .: contactUpdated
 showMessageError :: ChatReader m => Text -> Text -> m ()
 showMessageError = printToView .: messageError
 
-connReq :: ConnReqInvitation -> [StyledString]
-connReq cReq =
-  [ "pass this connection link to your contact (via another channel): ",
+connReqInvitation_ :: ConnReqInvitation -> [StyledString]
+connReqInvitation_ cReq =
+  [ "pass this invitation link to your contact (via another channel): ",
     "",
     (plain . serializeConnReq') cReq,
     "",
-    "and ask them to connect: " <> highlight' "/c <invitation_above>"
+    "and ask them to connect: " <> highlight' "/c <invitation_link_above>"
   ]
 
 contactDeleted :: ContactName -> [StyledString]
@@ -303,14 +315,42 @@ contactSubscribed c = [ttyContact c <> ": connected to server"]
 contactSubError :: ContactName -> ChatError -> [StyledString]
 contactSubError c e = [ttyContact c <> ": contact error " <> sShow e]
 
-createdUserContactLink :: ConnReqContact -> [StyledString]
-createdUserContactLink cReq = []
+userContactLinkCreated :: ConnReqContact -> [StyledString]
+userContactLinkCreated = connReqContact_ "Your new chat address is created!"
 
-deletedUserContactLink :: [StyledString]
-deletedUserContactLink = []
+userContactLinkDeleted :: [StyledString]
+userContactLinkDeleted =
+  [ "Your chat address is deleted - accepted contacts will remain connected.",
+    "To create a new chat address use " <> highlight' "/ad"
+  ]
 
-myContactLink :: ConnReqContact -> [StyledString]
-myContactLink cReq = []
+userContactLink :: ConnReqContact -> [StyledString]
+userContactLink = connReqContact_ "Your chat address:"
+
+connReqContact_ :: StyledString -> ConnReqContact -> [StyledString]
+connReqContact_ intro cReq =
+  [ intro,
+    "",
+    (plain . serializeConnReq') cReq,
+    "",
+    "Anybody can connect to you with: " <> highlight' "/c <contact_link_above>",
+    "to show it again: " <> highlight' "/sa",
+    "to delete it: " <> highlight' "/da",
+    "(accepted contacts will remain connected)"
+  ]
+
+receivedContactRequest :: ContactName -> Profile -> [StyledString]
+receivedContactRequest c Profile {fullName} =
+  [ ttyFullName c fullName <> " wants to connect to you!",
+    "to accept: " <> highlight ("/ac " <> c),
+    "to reject: " <> highlight ("/rc " <> c) <> " (the sender will NOT be notified)"
+  ]
+
+acceptingContactRequest :: ContactName -> [StyledString]
+acceptingContactRequest c = [ttyContact c <> ": accepting contact request..."]
+
+contactRequestRejected :: ContactName -> [StyledString]
+contactRequestRejected c = [ttyContact c <> ": contact request rejected"]
 
 groupSubscribed :: GroupName -> [StyledString]
 groupSubscribed g = [ttyGroup g <> ": connected to server(s)"]
@@ -646,6 +686,9 @@ chatError = \case
     SEFileNotFound fileId -> fileNotFound fileId
     SESndFileNotFound fileId -> fileNotFound fileId
     SERcvFileNotFound fileId -> fileNotFound fileId
+    SEDuplicateContactLink -> ["you already have chat address, to show: " <> highlight' "/sa"]
+    SEUserContactLinkNotFound -> ["no chat address, to create: " <> highlight' "/ad"]
+    SEContactRequestNotFound c -> ["no contact request from " <> ttyContact c]
     e -> ["chat db error: " <> sShow e]
   ChatErrorAgent e -> ["smp agent error: " <> sShow e]
   ChatErrorMessage e -> ["chat message error: " <> sShow e]
