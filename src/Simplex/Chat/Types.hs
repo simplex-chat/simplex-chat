@@ -69,12 +69,11 @@ data UserContact = UserContact
 
 data UserContactRequest = UserContactRequest
   { contactRequestId :: Int64,
-    userContactId :: Int64,
-    localDisplayName :: ContactName,
-    profile :: Profile,
-    connReqInvitation :: ConnReqInvitation,
     agentInvitationId :: InvitationId,
-    activeConn :: Connection
+    userContactLinkId :: Int64,
+    agentContactConnId :: ConnId,
+    localDisplayName :: ContactName,
+    profileId :: Int64
   }
   deriving (Eq, Show)
 

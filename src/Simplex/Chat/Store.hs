@@ -467,21 +467,24 @@ createContactRequest st userId userContactId invId Profile {displayName, fullNam
         (userContactId, invId, profileId, ldn, userId)
       pure ldn
 
-getContactRequest :: StoreMonad m => SQLiteStore -> UserId -> ContactName -> m (InvitationId, Int64)
+getContactRequest :: StoreMonad m => SQLiteStore -> UserId -> ContactName -> m UserContactRequest
 getContactRequest st userId localDisplayName =
   liftIOEither . withTransaction st $ \db ->
     contactReq
       <$> DB.query
         db
         [sql|
-          SELECT agent_invitation_id, contact_profile_id
-          FROM contact_requests
-          WHERE user_id = ?
-            AND local_display_name = ?
+          SELECT cr.contact_request_id, cr.agent_invitation_id, cr.user_contact_link_id,
+            c.agent_conn_id, cr.contact_profile_id
+          FROM contact_requests cr
+          JOIN connections c USING (user_contact_link_id)
+          WHERE cr.user_id = ?
+            AND cr.local_display_name = ?
         |]
         (userId, localDisplayName)
   where
-    contactReq [(invId, profileId)] = Right (invId, profileId)
+    contactReq [(contactRequestId, agentInvitationId, userContactLinkId, agentContactConnId, profileId)] =
+      Right UserContactRequest {contactRequestId, agentInvitationId, userContactLinkId, agentContactConnId, profileId, localDisplayName}
     contactReq _ = Left $ SEContactRequestNotFound localDisplayName
 
 deleteContactRequest :: MonadUnliftIO m => SQLiteStore -> UserId -> ContactName -> m ()

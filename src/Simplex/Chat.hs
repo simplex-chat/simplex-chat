@@ -216,13 +216,16 @@ processChatCommand user@User {userId, profile} = \case
     cReq <- withStore $ \st -> getUserContactLink st userId
     showUserContactLink cReq
   AcceptContact cName -> do
-    (invId, profileId) <- withStore $ \st -> getContactRequest st userId cName
-    connId <- withAgent $ \a -> acceptContact a invId . directMessage $ XInfo profile
+    UserContactRequest {agentInvitationId, profileId} <- withStore $ \st ->
+      getContactRequest st userId cName
+    connId <- withAgent $ \a -> acceptContact a agentInvitationId . directMessage $ XInfo profile
     withStore $ \st -> createAcceptedContact st userId connId cName profileId
     showAcceptingContactRequest cName
   RejectContact cName -> do
-    -- TODO RJCT request via the agent
-    withStore $ \st -> deleteContactRequest st userId cName
+    UserContactRequest {agentContactConnId, agentInvitationId} <- withStore $ \st ->
+      getContactRequest st userId cName
+        `E.finally` deleteContactRequest st userId cName
+    withAgent $ \a -> rejectContact a agentContactConnId agentInvitationId
     showContactRequestRejected cName
   SendMessage cName msg -> do
     contact <- withStore $ \st -> getContact st userId cName
