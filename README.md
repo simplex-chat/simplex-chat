@@ -5,7 +5,7 @@
 
 <p align="center">
   <img alt="GitHub all releases" src="https://img.shields.io/github/downloads/simplex-chat/simplex-chat/total">
-  <img alt="GitHub all releases" src="https://img.shields.io/github/v/release/simplex-chat/simplex-chat">
+  <img alt="GitHub release" src="https://img.shields.io/github/v/release/simplex-chat/simplex-chat">
   <img alt="Twitter Follow" src="https://img.shields.io/twitter/follow/SimpleXChat?style=social">
 </p>
 
