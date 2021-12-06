@@ -22,6 +22,8 @@ module Simplex.Chat.View
     showReceivedContactRequest,
     showAcceptingContactRequest,
     showContactRequestRejected,
+    showUserContactLinkSubscribed,
+    showUserContactLinkSubError,
     showGroupSubscribed,
     showGroupEmpty,
     showGroupRemoved,
@@ -141,6 +143,12 @@ showAcceptingContactRequest = printToView . acceptingContactRequest
 
 showContactRequestRejected :: ChatReader m => ContactName -> m ()
 showContactRequestRejected = printToView . contactRequestRejected
+
+showUserContactLinkSubscribed :: ChatReader m => m ()
+showUserContactLinkSubscribed = printToView ["Your address is active! To show: " <> highlight' "/sa"]
+
+showUserContactLinkSubError :: ChatReader m => ChatError -> m ()
+showUserContactLinkSubError = printToView . userContactLinkSubError
 
 showGroupSubscribed :: ChatReader m => GroupName -> m ()
 showGroupSubscribed = printToView . groupSubscribed
@@ -351,6 +359,12 @@ acceptingContactRequest c = [ttyContact c <> ": accepting contact request..."]
 
 contactRequestRejected :: ContactName -> [StyledString]
 contactRequestRejected c = [ttyContact c <> ": contact request rejected"]
+
+userContactLinkSubError :: ChatError -> [StyledString]
+userContactLinkSubError e =
+  [ "user address error: " <> sShow e,
+    "to delete your address: " <> highlight' "/da"
+  ]
 
 groupSubscribed :: GroupName -> [StyledString]
 groupSubscribed g = [ttyGroup g <> ": connected to server(s)"]

@@ -448,15 +448,18 @@ subscribeUserConnections = void . runExceptT $ do
           where
             resume RcvFileInfo {agentConnId} =
               subscribe agentConnId `catchError` showRcvFileSubError ft
-    subscribePendingConnections user =
-      subscribeConns =<< withStore (`getPendingConnections` user)
-    subscribeUserContactLink User {userId} =
-      subscribeConns =<< withStore (`getUserContactLinkConnections` userId)
+    subscribePendingConnections user = do
+      cs <- withStore (`getPendingConnections` user)
+      subscribeConns cs `catchError` \_ -> pure ()
+    subscribeUserContactLink User {userId} = do
+      cs <- withStore (`getUserContactLinkConnections` userId)
+      (subscribeConns cs >> showUserContactLinkSubscribed)
+        `catchError` showUserContactLinkSubError
     subscribe cId = withAgent (`subscribeConnection` cId)
     subscribeConns conns =
       withAgent $ \a ->
         forM_ conns $ \Connection {agentConnId} ->
-          subscribeConnection a agentConnId `catchError` \_ -> pure ()
+          subscribeConnection a agentConnId
 
 processAgentMessage :: forall m. ChatMonad m => User -> ConnId -> ACommand 'Agent -> m ()
 processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
