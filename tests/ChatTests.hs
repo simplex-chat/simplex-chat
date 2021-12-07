@@ -727,7 +727,7 @@ getContactLink cc created = do
   cc <## ""
   link <- getTermLine cc
   cc <## ""
-  cc <## "Anybody can connect to you with: /c <contact_link_above>"
+  cc <## "Anybody can send you contact requests with: /c <contact_link_above>"
   cc <## "to show it again: /sa"
   cc <## "to delete it: /da (accepted contacts will remain connected)"
   pure link
