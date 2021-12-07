@@ -1,15 +1,9 @@
-<h1 align="center">
-  <img src="images/simplex-chat-logo.svg" alt="SimpleX logo">
+<img src="images/simplex-chat-logo.svg" alt="SimpleX logo" width="100%">
 
-</h1>
-
-<p align="center">
-  <img alt="GitHub all releases" src="https://img.shields.io/github/downloads/simplex-chat/simplex-chat/total">
-  <img alt="GitHub release" src="https://img.shields.io/github/v/release/simplex-chat/simplex-chat">
-  <img alt="Twitter Follow" src="https://img.shields.io/twitter/follow/SimpleXChat?style=social">
-</p>
-
----
+[![GitHub build](https://github.com/simplex-chat/simplex-chat/workflows/build/badge.svg)](https://github.com/simplex-chat/simplex-chat/actions?query=workflow%3Abuild)
+[![GitHub downloads](https://img.shields.io/github/downloads/simplex-chat/simplex-chat/total)](https://github.com/simplex-chat/simplex-chat/releases)
+[![GitHub release](https://img.shields.io/github/v/release/simplex-chat/simplex-chat)](https://github.com/simplex-chat/simplex-chat/releases)
+[![Follow on Twitter](https://img.shields.io/twitter/follow/SimpleXChat?style=social)](https://twitter.com/simplexchat)
 
 # SimpleX Chat
 
@@ -29,7 +23,7 @@ Once the chat client is installed, simply run `simplex-chat` from your terminal.
 
 **We are building the world's most private and secure chat**. If you would like to support it, you can do so in the following ways:
 
-- 🌟 **Star it on GitHub** - starring the repo helps us raise the visibility of the project.
+- 🌟 **Star it on GitHub** - it helps us raise the visibility of the project.
 
 - **Install the chat and try it out** - if you spot a bug, please [raise an issue](https://github.com/simplex-chat/simplex-chat/issues).
 
