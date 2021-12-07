@@ -264,7 +264,13 @@ You can send files to a group with `/f #<group> <file_path>`.
 
 ### User contact addresses
 
-As an alternative to one-time invitation links, you can create a semi-permanent address with `/ad` (for `/address`). The generated address can then be shared via any means that make sense to you, and used by other users as a link to make a contact request `/c <address>`. You can accept or reject incoming requests with `/ac` and `/rc <requesting_contact>` respectively. This address is semi-permanent in a sense that you can delete it and create a new one, for example if you started to receive a lot of unwanted requests via it. Contacts created this way will remain active even in case you delete your address - it is only used for establishing the connection, further communication happens via a separate channel. Use `/help address` for other commands.
+As an alternative to one-time invitation links, you can create a longer-term address with `/ad` (for `/address`). The created address can then be shared via any channel, and used by other users as a link to make a contact request with `/c <user_contact_address>`.
+
+You can accept or reject incoming requests with `/ac <name>` and `/rc <name>` commands.
+
+This address is "longer-term" in a sense that it can be used any number of times to request a connection with you, but you can delete it and create a new one, for example if you start to receive a lot of unwanted requests. Contacts created via this address will remain active - the address is only used to establish the connection, subsequent communication happens via a separate channel.
+
+Use `/help address` for other commands.
 
 > :warning: **Please note:** This is a beta feature - at the moment only request throttling is implemented as a countermeasure against spam.
 
