@@ -90,7 +90,7 @@ The routing of messages relies on the knowledge of client devices how user conta
 - 1-to-1 chat with multiple people in the same terminal window.
 - Group messaging.
 - Sending files to contacts and groups.
-- User addresses - establish connections via semi-permanent contact links.
+- User contact addresses - establish connections via semi-permanent contact links.
 - Auto-populated recipient name - just type your messages to reply to the sender once the connection is established.
 - Demo SMP servers available and pre-configured in the app - or you can [deploy your own server](https://github.com/simplex-chat/simplexmq#using-smp-server-and-smp-agent).
 - No global identity or any names visible to the server(s), ensuring full privacy of your contacts and conversations.
