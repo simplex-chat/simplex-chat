@@ -37,9 +37,6 @@ We appreciate all the help from our contributors, thank you!
 
 ![simplex-chat](./images/connection.gif)
 
-
----
-
 ## Table of contents
 
 - [Disclaimer](#disclaimer)
@@ -62,8 +59,6 @@ We appreciate all the help from our contributors, thank you!
   - [Access chat history](#access-chat-history)
 - [Roadmap](#Roadmap)
 - [License](#license)
-
----
 
 ## Disclaimer
 
@@ -107,7 +102,6 @@ RSA keys are not used as identity, they are randomly generated for each contact.
 ## 🚀 Installation
 
 ### Download chat client
-
 
 #### Linux and MacOS
 
