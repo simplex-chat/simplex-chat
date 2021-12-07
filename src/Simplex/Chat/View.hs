@@ -343,8 +343,7 @@ connReqContact_ intro cReq =
     "",
     "Anybody can connect to you with: " <> highlight' "/c <contact_link_above>",
     "to show it again: " <> highlight' "/sa",
-    "to delete it: " <> highlight' "/da",
-    "(accepted contacts will remain connected)"
+    "to delete it: " <> highlight' "/da" <> " (accepted contacts will remain connected)"
   ]
 
 receivedContactRequest :: ContactName -> Profile -> [StyledString]

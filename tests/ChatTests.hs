@@ -46,6 +46,9 @@ chatTests = do
     it "sender cancelled file transfer" testFileSndCancel
     it "recipient cancelled file transfer" testFileRcvCancel
     it "send and receive file to group" testGroupFileTransfer
+  describe "user contact link" $ do
+    it "should create and connect via contact link" testUserContactLink
+    it "should reject contact and delete contact link" testRejectContactAndDeleteUserContact
 
 testAddContact :: IO ()
 testAddContact =
@@ -530,6 +533,58 @@ testGroupFileTransfer =
             cath <## "completed receiving file 1 (test.jpg) from alice"
         ]
 
+testUserContactLink :: IO ()
+testUserContactLink = testChat3 aliceProfile bobProfile cathProfile $
+  \alice bob cath -> do
+    alice ##> "/ad"
+    cLink <- getContactLink alice True
+    bob ##> ("/c " <> cLink)
+    alice <## "bob (Bob) wants to connect to you!"
+    alice <## "to accept: /ac bob"
+    alice <## "to reject: /rc bob (the sender will NOT be notified)"
+    alice ##> "/ac bob"
+    alice <## "bob: accepting contact request..."
+    concurrently_
+      (bob <## "alice (Alice): contact is connected")
+      (alice <## "bob (Bob): contact is connected")
+    alice <##> bob
+
+    cath ##> ("/c " <> cLink)
+    alice <## "cath (Catherine) wants to connect to you!"
+    alice <## "to accept: /ac cath"
+    alice <## "to reject: /rc cath (the sender will NOT be notified)"
+    alice ##> "/ac cath"
+    alice <## "cath: accepting contact request..."
+    concurrently_
+      (bob <## "alice (Alice): contact is connected")
+      (alice <## "cath (Catherine): contact is connected")
+    alice <##> cath
+
+testRejectContactAndDeleteUserContact :: IO ()
+testRejectContactAndDeleteUserContact = testChat3 aliceProfile bobProfile cathProfile $
+  \alice bob cath -> do
+    alice ##> "/ad"
+    cLink <- getContactLink alice True
+    bob ##> ("/c " <> cLink)
+    alice <## "bob (Bob) wants to connect to you!"
+    alice <## "to accept: /ac bob"
+    alice <## "to reject: /rc bob (the sender will NOT be notified)"
+    alice ##> "/rc bob"
+    alice <## "bob: contact request rejected"
+    (bob </)
+
+    alice ##> "/sa"
+    cLink' <- getContactLink alice False
+    cLink' `shouldBe` cLink
+
+    alice ##> "/da"
+    alice <## "Your chat address is deleted - accepted contacts will remain connected."
+    alice <## "To create a new chat address use /ad"
+
+    cath ##> ("/c " <> cLink)
+    -- TODO this should print that connection is deleted
+    (cath </)
+
 startFileTransfer :: TestCC -> TestCC -> IO ()
 startFileTransfer alice bob = do
   alice #> "/f @bob ./tests/fixtures/test.jpg"
@@ -665,3 +720,14 @@ getInvitation cc = do
   cc <## ""
   cc <## "and ask them to connect: /c <invitation_link_above>"
   pure inv
+
+getContactLink :: TestCC -> Bool -> IO String
+getContactLink cc created = do
+  cc <## if created then "Your new chat address is created!" else "Your chat address:"
+  cc <## ""
+  link <- getTermLine cc
+  cc <## ""
+  cc <## "Anybody can connect to you with: /c <contact_link_above>"
+  cc <## "to show it again: /sa"
+  cc <## "to delete it: /da (accepted contacts will remain connected)"
+  pure link
