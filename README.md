@@ -90,7 +90,7 @@ The routing of messages relies on the knowledge of client devices how user conta
 - 1-to-1 chat with multiple people in the same terminal window.
 - Group messaging.
 - Sending files to contacts and groups.
-- User contact addresses - establish connections via semi-permanent contact links.
+- User contact addresses - establish connections via multiple-use contact links.
 - Auto-populated recipient name - just type your messages to reply to the sender once the connection is established.
 - Demo SMP servers available and pre-configured in the app - or you can [deploy your own server](https://github.com/simplex-chat/simplexmq#using-smp-server-and-smp-agent).
 - No global identity or any names visible to the server(s), ensuring full privacy of your contacts and conversations.
@@ -264,11 +264,11 @@ You can send files to a group with `/f #<group> <file_path>`.
 
 ### User contact addresses
 
-As an alternative to one-time invitation links, you can create a longer-term address with `/ad` (for `/address`). The created address can then be shared via any channel, and used by other users as a link to make a contact request with `/c <user_contact_address>`.
+As an alternative to one-time invitation links, you can create a long-term address with `/ad` (for `/address`). The created address can then be shared via any channel, and used by other users as a link to make a contact request with `/c <user_contact_address>`.
 
 You can accept or reject incoming requests with `/ac <name>` and `/rc <name>` commands.
 
-This address is "longer-term" in a sense that it can be used any number of times to request a connection with you, but you can delete it and create a new one, for example if you start to receive a lot of unwanted requests. Contacts created via this address will remain active - the address is only used to establish the connection, subsequent communication happens via a separate channel.
+User address is "long-term" in a sense that it is a multiple-use connection link - it can be used until it is deleted by the user, in which case all established connections would still remain active (unlike how it works with email, when changing the address results in people not being able to message you).
 
 Use `/help address` for other commands.
 
