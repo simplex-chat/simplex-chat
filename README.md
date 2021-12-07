@@ -262,7 +262,7 @@ You can send a file to your contact with `/f @<contact> <file_path>` - the recip
 
 You can send files to a group with `/f #<group> <file_path>`.
 
-### User addresses (aka contact links)
+### User contact addresses
 
 As an alternative to one-time invitation links, you can create a semi-permanent address with `/ad` (for `/address`). The generated address can then be shared via any means that make sense to you, and used by other users as a link to make a contact request `/c <address>`. You can accept or reject incoming requests with `/ac` and `/rc <requesting_contact>` respectively. This address is semi-permanent in a sense that you can delete it and create a new one, for example if you started to receive a lot of unwanted requests via it. Contacts created this way will remain active even in case you delete your address - it is only used for establishing the connection, further communication happens via a separate channel. Use `/help address` for other commands.
 
