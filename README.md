@@ -58,7 +58,7 @@ We appreciate all the help from our contributors, thank you!
   - [How to use SimpleX chat](#how-to-use-simplex-chat)
   - [Groups](#groups)
   - [Sending files](#sending-files)
-  - [User addresses](#user-addresses-aka-contact-links)
+  - [User contact addresses](#user-contact-addresses)
   - [Access chat history](#access-chat-history)
 - [Roadmap](#Roadmap)
 - [License](#license)
