@@ -58,6 +58,7 @@ We appreciate all the help from our contributors, thank you!
   - [How to use SimpleX chat](#how-to-use-simplex-chat)
   - [Groups](#groups)
   - [Sending files](#sending-files)
+  - [User contact addresses](#user-contact-addresses)
   - [Access chat history](#access-chat-history)
 - [Roadmap](#Roadmap)
 - [License](#license)
@@ -69,8 +70,6 @@ We appreciate all the help from our contributors, thank you!
 This is WIP implementation of SimpleX Chat that implements a new network topology for asynchronous communication combining the advantages and avoiding the disadvantages of federated and P2P networks.
 
 If you expect software to be reliable most of the time, then this is probably not ready for you yet. We use it ourselves for terminal chat and it seems to work most of the time - we would really appreciate if you try SimpleX Chat and give us your feedback!
-
-
 
 > :warning: **Please note:** The main differentiation of SimpleX network is the approach to internet message routing rather than encryption; for that reason no sufficient attention was paid to either TCP transport level encryption or to E2E encryption protocols - they are implemented in an ad hoc way based on RSA and AES algorithms. See [SMP protocol](https://github.com/simplex-chat/simplexmq/blob/master/protocol/simplex-messaging.md#appendix-a) on TCP transport encryption protocol (AEAD-GCM scheme, with an AES key negotiation based on RSA key hash known to the client in advance) and [this section](https://github.com/simplex-chat/simplexmq/blob/master/rfcs/2021-01-26-crypto.md#e2e-encryption) on E2E encryption protocol (an ad hoc hybrid scheme a la PGP). These protocols will change in a consumer ready version to something more robust.
 
@@ -86,11 +85,12 @@ The routing of messages relies on the knowledge of client devices how user conta
 
 ## Terminal chat features
 
-**NEW in v0.4: [groups](#groups) and [sending files](#sending-files)!**
+**NEW in v0.4.3: [user contact addresses](#user-contact-addresses)!**
 
 - 1-to-1 chat with multiple people in the same terminal window.
 - Group messaging.
 - Sending files to contacts and groups.
+- User contact addresses - establish connections via multiple-use contact links.
 - Auto-populated recipient name - just type your messages to reply to the sender once the connection is established.
 - Demo SMP servers available and pre-configured in the app - or you can [deploy your own server](https://github.com/simplex-chat/simplexmq#using-smp-server-and-smp-agent).
 - No global identity or any names visible to the server(s), ensuring full privacy of your contacts and conversations.
@@ -262,9 +262,23 @@ You can send a file to your contact with `/f @<contact> <file_path>` - the recip
 
 You can send files to a group with `/f #<group> <file_path>`.
 
+### User contact addresses
+
+As an alternative to one-time invitation links, you can create a long-term address with `/ad` (for `/address`). The created address can then be shared via any channel, and used by other users as a link to make a contact request with `/c <user_contact_address>`.
+
+You can accept or reject incoming requests with `/ac <name>` and `/rc <name>` commands.
+
+User address is "long-term" in a sense that it is a multiple-use connection link - it can be used until it is deleted by the user, in which case all established connections would still remain active (unlike how it works with email, when changing the address results in people not being able to message you).
+
+Use `/help address` for other commands.
+
+> :warning: **Please note:** This is a beta feature - at the moment only request throttling is implemented as a countermeasure against spam.
+
+![simplex-chat](./images/user-addresses.gif)
+
 ### Access chat history
 
-> 🚧 **Section currently out of date - will be updated soon** 🏗
+> 🚧 **Section currently out of date** 🏗
 
 SimpleX chat stores all your contacts and conversations in a local database file, making it private and portable by design, fully owned and controlled by you.
 
