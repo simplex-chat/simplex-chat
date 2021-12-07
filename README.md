@@ -38,7 +38,6 @@ We appreciate all the help from our contributors, thank you!
 ![simplex-chat](./images/connection.gif)
 
 
----
 
 ## Table of contents
 
@@ -62,7 +61,7 @@ We appreciate all the help from our contributors, thank you!
 - [Roadmap](#Roadmap)
 - [License](#license)
 
----
+
 
 ## Disclaimer
 
