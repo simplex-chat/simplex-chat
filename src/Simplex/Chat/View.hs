@@ -341,7 +341,7 @@ connReqContact_ intro cReq =
     "",
     (plain . serializeConnReq') cReq,
     "",
-    "Anybody can connect to you with: " <> highlight' "/c <contact_link_above>",
+    "Anybody can send you contact requests with: " <> highlight' "/c <contact_link_above>",
     "to show it again: " <> highlight' "/sa",
     "to delete it: " <> highlight' "/da" <> " (accepted contacts will remain connected)"
   ]
