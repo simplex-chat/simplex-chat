@@ -433,6 +433,33 @@ deleteUserContactLink st userId =
         )
       |]
       (Only userId)
+    DB.executeNamed
+      db
+      [sql|
+        DELETE FROM display_names
+        WHERE user_id = :user_id
+          AND local_display_name in (
+            SELECT cr.local_display_name
+            FROM contact_requests cr
+            JOIN user_contact_links uc USING (user_contact_link_id)
+            WHERE uc.user_id = :user_id
+              AND uc.local_display_name = ''
+          )
+      |]
+      [":user_id" := userId]
+    DB.executeNamed
+      db
+      [sql|
+        DELETE FROM contact_profiles
+        WHERE contact_profile_id in (
+          SELECT cr.contact_profile_id
+          FROM contact_requests cr
+          JOIN user_contact_links uc USING (user_contact_link_id)
+          WHERE uc.user_id = :user_id
+            AND uc.local_display_name = ''
+        )
+      |]
+      [":user_id" := userId]
     DB.execute db "DELETE FROM user_contact_links WHERE user_id = ? AND local_display_name = ''" (Only userId)
 
 getUserContactLink :: StoreMonad m => SQLiteStore -> UserId -> m ConnReqContact

@@ -49,6 +49,7 @@ chatTests = do
   describe "user contact link" $ do
     it "should create and connect via contact link" testUserContactLink
     it "should reject contact and delete contact link" testRejectContactAndDeleteUserContact
+    it "should delete connection requests when contact link deleted" testDeleteConnectionRequests
 
 testAddContact :: IO ()
 testAddContact =
@@ -539,9 +540,7 @@ testUserContactLink = testChat3 aliceProfile bobProfile cathProfile $
     alice ##> "/ad"
     cLink <- getContactLink alice True
     bob ##> ("/c " <> cLink)
-    alice <## "bob (Bob) wants to connect to you!"
-    alice <## "to accept: /ac bob"
-    alice <## "to reject: /rc bob (the sender will NOT be notified)"
+    alice <#? bob
     alice ##> "/ac bob"
     alice <## "bob: accepting contact request..."
     concurrently_
@@ -550,9 +549,7 @@ testUserContactLink = testChat3 aliceProfile bobProfile cathProfile $
     alice <##> bob
 
     cath ##> ("/c " <> cLink)
-    alice <## "cath (Catherine) wants to connect to you!"
-    alice <## "to accept: /ac cath"
-    alice <## "to reject: /rc cath (the sender will NOT be notified)"
+    alice <#? cath
     alice ##> "/ac cath"
     alice <## "cath: accepting contact request..."
     concurrently_
@@ -566,9 +563,7 @@ testRejectContactAndDeleteUserContact = testChat3 aliceProfile bobProfile cathPr
     alice ##> "/ad"
     cLink <- getContactLink alice True
     bob ##> ("/c " <> cLink)
-    alice <## "bob (Bob) wants to connect to you!"
-    alice <## "to accept: /ac bob"
-    alice <## "to reject: /rc bob (the sender will NOT be notified)"
+    alice <#? bob
     alice ##> "/rc bob"
     alice <## "bob: contact request rejected"
     (bob </)
@@ -583,6 +578,28 @@ testRejectContactAndDeleteUserContact = testChat3 aliceProfile bobProfile cathPr
 
     cath ##> ("/c " <> cLink)
     cath <## "error: this connection is deleted"
+
+testDeleteConnectionRequests :: IO ()
+testDeleteConnectionRequests = testChat3 aliceProfile bobProfile cathProfile $
+  \alice bob cath -> do
+    alice ##> "/ad"
+    cLink <- getContactLink alice True
+    bob ##> ("/c " <> cLink)
+    alice <#? bob
+    cath ##> ("/c " <> cLink)
+    alice <#? cath
+
+    alice ##> "/da"
+    alice <## "Your chat address is deleted - accepted contacts will remain connected."
+    alice <## "To create a new chat address use /ad"
+
+    alice ##> "/ad"
+    cLink' <- getContactLink alice True
+    bob ##> ("/c " <> cLink')
+    -- same names are used here, as they were released at /da
+    alice <#? bob
+    cath ##> ("/c " <> cLink')
+    alice <#? cath
 
 startFileTransfer :: TestCC -> TestCC -> IO ()
 startFileTransfer alice bob = do
@@ -701,6 +718,14 @@ cc <# line = (dropTime <$> getTermLine cc) `shouldReturn` line
 
 (</) :: TestCC -> Expectation
 (</) cc = timeout 500000 (getTermLine cc) `shouldReturn` Nothing
+
+(<#?) :: TestCC -> TestCC -> Expectation
+cc1 <#? cc2 = do
+  name <- userName cc2
+  sName <- showName cc2
+  cc1 <## (sName <> " wants to connect to you!")
+  cc1 <## ("to accept: /ac " <> name)
+  cc1 <## ("to reject: /rc " <> name <> " (the sender will NOT be notified)")
 
 dropTime :: String -> String
 dropTime msg = case splitAt 6 msg of
