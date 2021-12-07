@@ -556,7 +556,7 @@ testUserContactLink = testChat3 aliceProfile bobProfile cathProfile $
     alice ##> "/ac cath"
     alice <## "cath: accepting contact request..."
     concurrently_
-      (bob <## "alice (Alice): contact is connected")
+      (cath <## "alice (Alice): contact is connected")
       (alice <## "cath (Catherine): contact is connected")
     alice <##> cath
 
@@ -582,8 +582,7 @@ testRejectContactAndDeleteUserContact = testChat3 aliceProfile bobProfile cathPr
     alice <## "To create a new chat address use /ad"
 
     cath ##> ("/c " <> cLink)
-    -- TODO this should print that connection is deleted
-    (cath </)
+    cath <## "error: this connection is deleted"
 
 startFileTransfer :: TestCC -> TestCC -> IO ()
 startFileTransfer alice bob = do

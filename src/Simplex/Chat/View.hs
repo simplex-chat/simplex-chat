@@ -95,6 +95,7 @@ import Simplex.Chat.Terminal (printToTerminal)
 import Simplex.Chat.Types
 import Simplex.Chat.Util (safeDecodeUtf8)
 import Simplex.Messaging.Agent.Protocol
+import qualified Simplex.Messaging.Protocol as SMP
 import System.Console.ANSI.Types
 
 type ChatReader m = (MonadUnliftIO m, MonadReader ChatController m)
@@ -703,7 +704,9 @@ chatError = \case
     SEUserContactLinkNotFound -> ["no chat address, to create: " <> highlight' "/ad"]
     SEContactRequestNotFound c -> ["no contact request from " <> ttyContact c]
     e -> ["chat db error: " <> sShow e]
-  ChatErrorAgent e -> ["smp agent error: " <> sShow e]
+  ChatErrorAgent err -> case err of
+    SMP SMP.AUTH -> ["error: this connection is deleted"]
+    e -> ["smp agent error: " <> sShow e]
   ChatErrorMessage e -> ["chat message error: " <> sShow e]
   where
     fileNotFound fileId = ["file " <> sShow fileId <> " not found"]

@@ -67,6 +67,7 @@ data ChatCommand
   = ChatHelp
   | FilesHelp
   | GroupsHelp
+  | MyAddressHelp
   | MarkdownHelp
   | AddContact
   | Connect AConnectionRequest
@@ -181,6 +182,7 @@ processChatCommand user@User {userId, profile} = \case
   ChatHelp -> printToView chatHelpInfo
   FilesHelp -> printToView filesHelpInfo
   GroupsHelp -> printToView groupsHelpInfo
+  MyAddressHelp -> printToView myAddressHelpInfo
   MarkdownHelp -> printToView markdownInfo
   AddContact -> do
     (connId, cReq) <- withAgent (`createConnection` SCMInvitation)
@@ -1152,6 +1154,7 @@ chatCommandP :: Parser ChatCommand
 chatCommandP =
   ("/help files" <|> "/help file" <|> "/hf") $> FilesHelp
     <|> ("/help groups" <|> "/help group" <|> "/hg") $> GroupsHelp
+    <|> ("/help address" <|> "/ha") $> MyAddressHelp
     <|> ("/help" <|> "/h") $> ChatHelp
     <|> ("/group #" <|> "/group " <|> "/g #" <|> "/g ") *> (NewGroup <$> groupProfile)
     <|> ("/add #" <|> "/add " <|> "/a #" <|> "/a ") *> (AddMember <$> displayName <* A.space <*> displayName <*> memberRole)
