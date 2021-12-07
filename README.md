@@ -37,8 +37,6 @@ We appreciate all the help from our contributors, thank you!
 
 ![simplex-chat](./images/connection.gif)
 
-
-
 ## Table of contents
 
 - [Disclaimer](#disclaimer)
@@ -61,15 +59,11 @@ We appreciate all the help from our contributors, thank you!
 - [Roadmap](#Roadmap)
 - [License](#license)
 
-
-
 ## Disclaimer
 
 This is WIP implementation of SimpleX Chat that implements a new network topology for asynchronous communication combining the advantages and avoiding the disadvantages of federated and P2P networks.
 
 If you expect software to be reliable most of the time, then this is probably not ready for you yet. We use it ourselves for terminal chat and it seems to work most of the time - we would really appreciate if you try SimpleX Chat and give us your feedback!
-
-
 
 > :warning: **Please note:** The main differentiation of SimpleX network is the approach to internet message routing rather than encryption; for that reason no sufficient attention was paid to either TCP transport level encryption or to E2E encryption protocols - they are implemented in an ad hoc way based on RSA and AES algorithms. See [SMP protocol](https://github.com/simplex-chat/simplexmq/blob/master/protocol/simplex-messaging.md#appendix-a) on TCP transport encryption protocol (AEAD-GCM scheme, with an AES key negotiation based on RSA key hash known to the client in advance) and [this section](https://github.com/simplex-chat/simplexmq/blob/master/rfcs/2021-01-26-crypto.md#e2e-encryption) on E2E encryption protocol (an ad hoc hybrid scheme a la PGP). These protocols will change in a consumer ready version to something more robust.
 
@@ -106,7 +100,6 @@ RSA keys are not used as identity, they are randomly generated for each contact.
 ## 🚀 Installation
 
 ### Download chat client
-
 
 #### Linux and MacOS
 
