@@ -85,7 +85,7 @@ The routing of messages relies on the knowledge of client devices how user conta
 
 ## Terminal chat features
 
-**NEW in v0.4.3: [user addresses](#user-addresses-aka-contact-links)!**
+**NEW in v0.4.3: [user contact addresses](#user-contact-addresses)!**
 
 - 1-to-1 chat with multiple people in the same terminal window.
 - Group messaging.
