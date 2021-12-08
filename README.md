@@ -268,7 +268,7 @@ User address is "long-term" in a sense that it is a multiple-use connection link
 
 Use `/help address` for other commands.
 
-> :warning: **Please note:** This is an "alpha" feature - at the moment there is nothing to prevent from sending you spam connection request, it will be added soon!
+> :warning: **Please note:** This is an "alpha" feature - at the moment there is nothing to prevent someone who has obtained this address from spamming you with connection requests; countermeasures will be added soon!  (In the short term, you can simply delete the long-term address you created if it starts getting abused.)
 
 ![simplex-chat](./images/user-addresses.gif)
 
