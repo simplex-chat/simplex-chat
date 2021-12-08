@@ -11,6 +11,10 @@
 
 SimpleX chat prototype is a thin terminal UI on top of [SimpleXMQ](https://github.com/simplex-chat/simplexmq) message broker that uses [SMP protocols](https://github.com/simplex-chat/simplexmq/blob/master/protocol). The motivation for SimpleX chat is [presented here](./simplex.md). See [simplex.chat](https://simplex.chat) website for chat demo and the explanations of the system and how SMP protocol works.
 
+**NEW in v0.5.0: [user contact addresses](#user-contact-addresses)!**
+
+**Please note**: v0.5.0 of SimpleX Chat works with the same database, but the connection links are not compatible with the previous version - please ask all your contacts to upgrade!
+
 ### :zap: Quick installation
 
 ```sh
@@ -55,7 +59,7 @@ We appreciate all the help from our contributors, thank you!
   - [How to use SimpleX chat](#how-to-use-simplex-chat)
   - [Groups](#groups)
   - [Sending files](#sending-files)
-  - [User contact addresses](#user-contact-addresses)
+  - [User contact addresses](#user-contact-addresses-alpha)
   - [Access chat history](#access-chat-history)
 - [Roadmap](#Roadmap)
 - [License](#license)
@@ -79,8 +83,6 @@ Unlike federated networks, the participating server nodes **do not have records 
 The routing of messages relies on the knowledge of client devices how user contacts and groups map at any given moment of time to these disposable queues on server nodes.
 
 ## Terminal chat features
-
-**NEW in v0.4.3: [user contact addresses](#user-contact-addresses)!**
 
 - 1-to-1 chat with multiple people in the same terminal window.
 - Group messaging.
@@ -256,7 +258,7 @@ You can send a file to your contact with `/f @<contact> <file_path>` - the recip
 
 You can send files to a group with `/f #<group> <file_path>`.
 
-### User contact addresses
+### User contact addresses (alpha)
 
 As an alternative to one-time invitation links, you can create a long-term address with `/ad` (for `/address`). The created address can then be shared via any channel, and used by other users as a link to make a contact request with `/c <user_contact_address>`.
 
@@ -266,7 +268,7 @@ User address is "long-term" in a sense that it is a multiple-use connection link
 
 Use `/help address` for other commands.
 
-> :warning: **Please note:** This is a beta feature - at the moment only request throttling is implemented as a countermeasure against spam.
+> :warning: **Please note:** This is an "alpha" feature - at the moment there is nothing to prevent from sending you spam connection request, it will be added soon!
 
 ![simplex-chat](./images/user-addresses.gif)
 
