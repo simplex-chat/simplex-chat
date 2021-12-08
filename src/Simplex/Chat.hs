@@ -67,10 +67,16 @@ data ChatCommand
   = ChatHelp
   | FilesHelp
   | GroupsHelp
+  | MyAddressHelp
   | MarkdownHelp
   | AddContact
-  | Connect ConnectionRequest
+  | Connect AConnectionRequest
   | DeleteContact ContactName
+  | CreateMyAddress
+  | DeleteMyAddress
+  | ShowMyAddress
+  | AcceptContact ContactName
+  | RejectContact ContactName
   | SendMessage ContactName ByteString
   | NewGroup GroupProfile
   | AddMember GroupName ContactName GroupMemberRole
@@ -176,13 +182,17 @@ processChatCommand user@User {userId, profile} = \case
   ChatHelp -> printToView chatHelpInfo
   FilesHelp -> printToView filesHelpInfo
   GroupsHelp -> printToView groupsHelpInfo
+  MyAddressHelp -> printToView myAddressHelpInfo
   MarkdownHelp -> printToView markdownInfo
   AddContact -> do
-    (connId, cReq) <- withAgent createConnection
+    (connId, cReq) <- withAgent (`createConnection` SCMInvitation)
     withStore $ \st -> createDirectConnection st userId connId
     showInvitation cReq
-  Connect cReq -> do
-    connId <- withAgent $ \a -> joinConnection a cReq . directMessage $ XInfo profile
+  Connect (ACR cMode cReq) -> do
+    let msg :: ChatMsgEvent = case cMode of
+          SCMInvitation -> XInfo profile
+          SCMContact -> XContact profile Nothing
+    connId <- withAgent $ \a -> joinConnection a cReq $ directMessage msg
     withStore $ \st -> createDirectConnection st userId connId
   DeleteContact cName ->
     withStore (\st -> getContactGroupNames st userId cName) >>= \case
@@ -194,6 +204,31 @@ processChatCommand user@User {userId, profile} = \case
         unsetActive $ ActiveC cName
         showContactDeleted cName
       gs -> showContactGroups cName gs
+  CreateMyAddress -> do
+    (connId, cReq) <- withAgent (`createConnection` SCMContact)
+    withStore $ \st -> createUserContactLink st userId connId cReq
+    showUserContactLinkCreated cReq
+  DeleteMyAddress -> do
+    conns <- withStore $ \st -> getUserContactLinkConnections st userId
+    withAgent $ \a -> forM_ conns $ \Connection {agentConnId} ->
+      deleteConnection a agentConnId `catchError` \(_ :: AgentErrorType) -> pure ()
+    withStore $ \st -> deleteUserContactLink st userId
+    showUserContactLinkDeleted
+  ShowMyAddress -> do
+    cReq <- withStore $ \st -> getUserContactLink st userId
+    showUserContactLink cReq
+  AcceptContact cName -> do
+    UserContactRequest {agentInvitationId, profileId} <- withStore $ \st ->
+      getContactRequest st userId cName
+    connId <- withAgent $ \a -> acceptContact a agentInvitationId . directMessage $ XInfo profile
+    withStore $ \st -> createAcceptedContact st userId connId cName profileId
+    showAcceptingContactRequest cName
+  RejectContact cName -> do
+    UserContactRequest {agentContactConnId, agentInvitationId} <- withStore $ \st ->
+      getContactRequest st userId cName
+        `E.finally` deleteContactRequest st userId cName
+    withAgent $ \a -> rejectContact a agentContactConnId agentInvitationId
+    showContactRequestRejected cName
   SendMessage cName msg -> do
     contact <- withStore $ \st -> getContact st userId cName
     let msgEvent = XMsgNew $ MsgContent MTText [] [MsgContentBody {contentType = SimplexContentType XCText, contentData = msg}]
@@ -213,7 +248,7 @@ processChatCommand user@User {userId, profile} = \case
     unless (memberActive membership) $ chatError CEGroupMemberNotActive
     when (isJust $ contactMember contact members) $ chatError (CEGroupDuplicateMember cName)
     gVar <- asks idsDrg
-    (agentConnId, cReq) <- withAgent createConnection
+    (agentConnId, cReq) <- withAgent (`createConnection` SCMInvitation)
     GroupMember {memberId} <- withStore $ \st -> createContactGroupMember st gVar user groupId contact memRole agentConnId
     let msg = XGrpInv $ GroupInvitation (userMemberId, userRole) (memberId, memRole) cReq groupProfile
     sendDirectMessage (contactConnId contact) msg
@@ -269,7 +304,7 @@ processChatCommand user@User {userId, profile} = \case
   SendFile cName f -> do
     (fileSize, chSize) <- checkSndFile f
     contact <- withStore $ \st -> getContact st userId cName
-    (agentConnId, fileConnReq) <- withAgent createConnection
+    (agentConnId, fileConnReq) <- withAgent (`createConnection` SCMInvitation)
     let fileInv = FileInvitation {fileName = takeFileName f, fileSize, fileConnReq}
     SndFileTransfer {fileId} <- withStore $ \st ->
       createSndFileTransfer st userId contact f fileInv agentConnId chSize
@@ -282,7 +317,7 @@ processChatCommand user@User {userId, profile} = \case
     unless (memberActive membership) $ chatError CEGroupMemberUserRemoved
     let fileName = takeFileName f
     ms <- forM (filter memberActive members) $ \m -> do
-      (connId, fileConnReq) <- withAgent createConnection
+      (connId, fileConnReq) <- withAgent (`createConnection` SCMInvitation)
       pure (m, connId, FileInvitation {fileName, fileSize, fileConnReq})
     fileId <- withStore $ \st -> createSndGroupFileTransfer st userId group ms f fileSize chSize
     forM_ ms $ \(m, _, fileInv) ->
@@ -378,6 +413,7 @@ subscribeUserConnections = void . runExceptT $ do
   subscribeGroups user
   subscribeFiles user
   subscribePendingConnections user
+  subscribeUserContactLink user
   where
     subscribeContacts user = do
       contacts <- withStore (`getUserContacts` user)
@@ -418,10 +454,17 @@ subscribeUserConnections = void . runExceptT $ do
             resume RcvFileInfo {agentConnId} =
               subscribe agentConnId `catchError` showRcvFileSubError ft
     subscribePendingConnections user = do
-      connections <- withStore (`getPendingConnections` user)
-      forM_ connections $ \Connection {agentConnId} ->
-        subscribe agentConnId `catchError` \_ -> pure ()
+      cs <- withStore (`getPendingConnections` user)
+      subscribeConns cs `catchError` \_ -> pure ()
+    subscribeUserContactLink User {userId} = do
+      cs <- withStore (`getUserContactLinkConnections` userId)
+      (subscribeConns cs >> showUserContactLinkSubscribed)
+        `catchError` showUserContactLinkSubError
     subscribe cId = withAgent (`subscribeConnection` cId)
+    subscribeConns conns =
+      withAgent $ \a ->
+        forM_ conns $ \Connection {agentConnId} ->
+          subscribeConnection a agentConnId
 
 processAgentMessage :: forall m. ChatMonad m => User -> ConnId -> ACommand 'Agent -> m ()
 processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
@@ -437,6 +480,8 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
       processRcvFileConn agentMessage conn ft
     SndFileConnection conn ft ->
       processSndFileConn agentMessage conn ft
+    UserContactConnection conn uc ->
+      processUserContactRequest agentMessage conn uc
   where
     isMember :: MemberId -> Group -> Bool
     isMember memId Group {membership, members} =
@@ -450,7 +495,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
 
     agentMsgConnStatus :: ACommand 'Agent -> Maybe ConnStatus
     agentMsgConnStatus = \case
-      REQ _ _ -> Just ConnRequested
+      CONF {} -> Just ConnRequested
       INFO _ -> Just ConnSndReady
       CON -> Just ConnReady
       _ -> Nothing
@@ -458,9 +503,9 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
     processDirectMessage :: ACommand 'Agent -> Connection -> Maybe Contact -> m ()
     processDirectMessage agentMsg conn = \case
       Nothing -> case agentMsg of
-        REQ confId connInfo -> do
+        CONF confId connInfo -> do
           saveConnInfo conn connInfo
-          acceptAgentConnection conn confId $ XInfo profile
+          allowAgentConnection conn confId $ XInfo profile
         INFO connInfo ->
           saveConnInfo conn connInfo
         MSG meta _ ->
@@ -478,15 +523,15 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
             XInfoProbeCheck probeHash -> xInfoProbeCheck ct probeHash
             XInfoProbeOk probe -> xInfoProbeOk ct probe
             _ -> pure ()
-        REQ confId connInfo -> do
+        CONF confId connInfo -> do
           -- confirming direct connection with a member
           ChatMessage {chatMsgEvent} <- liftEither $ parseChatMessage connInfo
           case chatMsgEvent of
             XGrpMemInfo _memId _memProfile -> do
               -- TODO check member ID
               -- TODO update member profile
-              acceptAgentConnection conn confId XOk
-            _ -> messageError "REQ from member must have x.grp.mem.info"
+              allowAgentConnection conn confId XOk
+            _ -> messageError "CONF from member must have x.grp.mem.info"
         INFO connInfo -> do
           ChatMessage {chatMsgEvent} <- liftEither $ parseChatMessage connInfo
           case chatMsgEvent of
@@ -494,8 +539,11 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
               -- TODO check member ID
               -- TODO update member profile
               pure ()
+            XInfo _profile -> do
+              -- TODO update contact profile
+              pure ()
             XOk -> pure ()
-            _ -> messageError "INFO from member must have x.grp.mem.info or x.ok"
+            _ -> messageError "INFO for existing contact must have x.grp.mem.info, x.info or x.ok"
         CON ->
           withStore (\st -> getViaGroupMember st user ct) >>= \case
             Nothing -> do
@@ -521,7 +569,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
 
     processGroupMessage :: ACommand 'Agent -> Connection -> GroupName -> GroupMember -> m ()
     processGroupMessage agentMsg conn gName m = case agentMsg of
-      REQ confId connInfo -> do
+      CONF confId connInfo -> do
         ChatMessage {chatMsgEvent} <- liftEither $ parseChatMessage connInfo
         case memberCategory m of
           GCInviteeMember ->
@@ -529,18 +577,18 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
               XGrpAcpt memId
                 | memId == memberId m -> do
                   withStore $ \st -> updateGroupMemberStatus st userId m GSMemAccepted
-                  acceptAgentConnection conn confId XOk
+                  allowAgentConnection conn confId XOk
                 | otherwise -> messageError "x.grp.acpt: memberId is different from expected"
-              _ -> messageError "REQ from invited member must have x.grp.acpt"
+              _ -> messageError "CONF from invited member must have x.grp.acpt"
           _ ->
             case chatMsgEvent of
               XGrpMemInfo memId _memProfile
                 | memId == memberId m -> do
                   -- TODO update member profile
                   Group {membership} <- withStore $ \st -> getGroup st user gName
-                  acceptAgentConnection conn confId $ XGrpMemInfo (memberId membership) profile
+                  allowAgentConnection conn confId $ XGrpMemInfo (memberId membership) profile
                 | otherwise -> messageError "x.grp.mem.info: memberId is different from expected"
-              _ -> messageError "REQ from member must have x.grp.mem.info"
+              _ -> messageError "CONF from member must have x.grp.mem.info"
       INFO connInfo -> do
         ChatMessage {chatMsgEvent} <- liftEither $ parseChatMessage connInfo
         case chatMsgEvent of
@@ -603,15 +651,15 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
     processSndFileConn :: ACommand 'Agent -> Connection -> SndFileTransfer -> m ()
     processSndFileConn agentMsg conn ft@SndFileTransfer {fileId, fileName, fileStatus} =
       case agentMsg of
-        REQ confId connInfo -> do
+        CONF confId connInfo -> do
           ChatMessage {chatMsgEvent} <- liftEither $ parseChatMessage connInfo
           case chatMsgEvent of
             XFileAcpt name
               | name == fileName -> do
                 withStore $ \st -> updateSndFileStatus st ft FSAccepted
-                acceptAgentConnection conn confId XOk
+                allowAgentConnection conn confId XOk
               | otherwise -> messageError "x.file.acpt: fileName is different from expected"
-            _ -> messageError "REQ from file connection must have x.file.acpt"
+            _ -> messageError "CONF from file connection must have x.file.acpt"
         CON -> do
           withStore $ \st -> updateSndFileStatus st ft FSConnected
           showSndFileStart ft
@@ -664,6 +712,22 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
                 RcvChunkDuplicate -> pure ()
                 RcvChunkError -> badRcvFileChunk ft $ "incorrect chunk number " <> show chunkNo
         _ -> pure ()
+
+    processUserContactRequest :: ACommand 'Agent -> Connection -> UserContact -> m ()
+    processUserContactRequest agentMsg _conn UserContact {userContactLinkId} = case agentMsg of
+      REQ invId connInfo -> do
+        ChatMessage {chatMsgEvent} <- liftEither $ parseChatMessage connInfo
+        case chatMsgEvent of
+          XContact p _ -> profileContactRequest invId p
+          XInfo p -> profileContactRequest invId p
+          -- TODO show/log error, other events in contact request
+          _ -> pure ()
+      _ -> pure ()
+      where
+        profileContactRequest :: InvitationId -> Profile -> m ()
+        profileContactRequest invId p = do
+          cName <- withStore $ \st -> createContactRequest st userId userContactLinkId invId p
+          showReceivedContactRequest cName p
 
     withAckMessage :: ConnId -> MsgMeta -> m () -> m ()
     withAckMessage cId MsgMeta {recipient = (msgId, _)} action =
@@ -803,8 +867,8 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
           if isMember memId group
             then messageWarning "x.grp.mem.intro ignored: member already exists"
             else do
-              (groupConnId, groupConnReq) <- withAgent createConnection
-              (directConnId, directConnReq) <- withAgent createConnection
+              (groupConnId, groupConnReq) <- withAgent (`createConnection` SCMInvitation)
+              (directConnId, directConnReq) <- withAgent (`createConnection` SCMInvitation)
               newMember <- withStore $ \st -> createIntroReMember st user group m memInfo groupConnId directConnId
               let msg = XGrpMemInv memId IntroInvitation {groupConnReq, directConnReq}
               sendDirectMessage agentConnId msg
@@ -1000,9 +1064,9 @@ sendGroupMessage members chatMsgEvent = do
     forM_ (filter memberActive members) $
       traverse (\connId -> sendMessage a connId msg) . memberConnId
 
-acceptAgentConnection :: ChatMonad m => Connection -> ConfirmationId -> ChatMsgEvent -> m ()
-acceptAgentConnection conn@Connection {agentConnId} confId msg = do
-  withAgent $ \a -> acceptConnection a agentConnId confId $ directMessage msg
+allowAgentConnection :: ChatMonad m => Connection -> ConfirmationId -> ChatMsgEvent -> m ()
+allowAgentConnection conn@Connection {agentConnId} confId msg = do
+  withAgent $ \a -> allowConnection a agentConnId confId $ directMessage msg
   withStore $ \st -> updateConnectionStatus st conn ConnAccepted
 
 getCreateActiveUser :: SQLiteStore -> IO User
@@ -1090,6 +1154,7 @@ chatCommandP :: Parser ChatCommand
 chatCommandP =
   ("/help files" <|> "/help file" <|> "/hf") $> FilesHelp
     <|> ("/help groups" <|> "/help group" <|> "/hg") $> GroupsHelp
+    <|> ("/help address" <|> "/ha") $> MyAddressHelp
     <|> ("/help" <|> "/h") $> ChatHelp
     <|> ("/group #" <|> "/group " <|> "/g #" <|> "/g ") *> (NewGroup <$> groupProfile)
     <|> ("/add #" <|> "/add " <|> "/a #" <|> "/a ") *> (AddMember <$> displayName <* A.space <*> displayName <*> memberRole)
@@ -1108,10 +1173,15 @@ chatCommandP =
     <|> ("/freceive " <|> "/fr ") *> (ReceiveFile <$> A.decimal <*> optional (A.space *> filePath))
     <|> ("/fcancel " <|> "/fc ") *> (CancelFile <$> A.decimal)
     <|> ("/fstatus " <|> "/fs ") *> (FileStatus <$> A.decimal)
+    <|> ("/address" <|> "/ad") $> CreateMyAddress
+    <|> ("/delete_address" <|> "/da") $> DeleteMyAddress
+    <|> ("/show_address" <|> "/sa") $> ShowMyAddress
+    <|> ("/accept @" <|> "/accept " <|> "/ac @" <|> "/ac ") *> (AcceptContact <$> displayName)
+    <|> ("/reject @" <|> "/reject " <|> "/rc @" <|> "/rc ") *> (RejectContact <$> displayName)
     <|> ("/markdown" <|> "/m") $> MarkdownHelp
     <|> ("/profile " <|> "/p ") *> (UpdateProfile <$> userProfile)
     <|> ("/profile" <|> "/p") $> ShowProfile
-    <|> ("/quit" <|> "/q") $> QuitChat
+    <|> ("/quit" <|> "/q" <|> "/exit") $> QuitChat
     <|> ("/version" <|> "/v") $> ShowVersion
   where
     displayName = safeDecodeUtf8 <$> (B.cons <$> A.satisfy refChar <*> A.takeTill (== ' '))

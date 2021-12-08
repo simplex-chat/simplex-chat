@@ -11,7 +11,7 @@
 module Simplex.Chat.Protocol where
 
 import Control.Applicative (optional)
-import Control.Monad ((<=<))
+import Control.Monad ((<=<), (>=>))
 import Data.Aeson (FromJSON, ToJSON)
 import qualified Data.Aeson as J
 import Data.Attoparsec.ByteString.Char8 (Parser)
@@ -21,7 +21,7 @@ import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Int (Int64)
-import Data.List (find)
+import Data.List (find, findIndex)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
@@ -38,6 +38,7 @@ data ChatDirection (p :: AParty) where
   SentGroupMessage :: GroupName -> ChatDirection 'Client
   SndFileConnection :: Connection -> SndFileTransfer -> ChatDirection 'Agent
   RcvFileConnection :: Connection -> RcvFileTransfer -> ChatDirection 'Agent
+  UserContactConnection :: Connection -> UserContact -> ChatDirection 'Agent
 
 deriving instance Eq (ChatDirection p)
 
@@ -49,12 +50,14 @@ fromConnection = \case
   ReceivedGroupMessage conn _ _ -> conn
   SndFileConnection conn _ -> conn
   RcvFileConnection conn _ -> conn
+  UserContactConnection conn _ -> conn
 
 data ChatMsgEvent
   = XMsgNew MsgContent
   | XFile FileInvitation
   | XFileAcpt String
   | XInfo Profile
+  | XContact Profile (Maybe MsgContent)
   | XGrpInv GroupInvitation
   | XGrpAcpt MemberId
   | XGrpMemNew MemberInfo
@@ -107,22 +110,30 @@ toChatMessage RawChatMessage {chatMsgId, chatMsgEvent, chatMsgParams, chatMsgBod
   case (chatMsgEvent, chatMsgParams) of
     ("x.msg.new", mt : rawFiles) -> do
       t <- toMsgType mt
-      files <- mapM (toContentInfo <=< parseAll contentInfoP) rawFiles
+      files <- toFiles rawFiles
       chatMsg . XMsgNew $ MsgContent {messageType = t, files, content = body}
     ("x.file", [name, size, cReq]) -> do
       let fileName = T.unpack $ safeDecodeUtf8 name
       fileSize <- parseAll A.decimal size
-      fileConnReq <- parseAll connReqP cReq
+      fileConnReq <- parseAll connReqP' cReq
       chatMsg . XFile $ FileInvitation {fileName, fileSize, fileConnReq}
     ("x.file.acpt", [name]) ->
       chatMsg . XFileAcpt . T.unpack $ safeDecodeUtf8 name
     ("x.info", []) -> do
       profile <- getJSON body
       chatMsg $ XInfo profile
+    ("x.con", []) -> do
+      profile <- getJSON body
+      chatMsg $ XContact profile Nothing
+    ("x.con", mt : rawFiles) -> do
+      (profile, body') <- extractJSON body
+      t <- toMsgType mt
+      files <- toFiles rawFiles
+      chatMsg . XContact profile $ Just MsgContent {messageType = t, files, content = body'}
     ("x.grp.inv", [fromMemId, fromRole, memId, role, cReq]) -> do
       fromMem <- (,) <$> B64.decode fromMemId <*> toMemberRole fromRole
       invitedMem <- (,) <$> B64.decode memId <*> toMemberRole role
-      groupConnReq <- parseAll connReqP cReq
+      groupConnReq <- parseAll connReqP' cReq
       profile <- getJSON body
       chatMsg . XGrpInv $ GroupInvitation fromMem invitedMem groupConnReq profile
     ("x.grp.acpt", [memId]) ->
@@ -164,11 +175,18 @@ toChatMessage RawChatMessage {chatMsgId, chatMsgEvent, chatMsgParams, chatMsgBod
     toMemberInfo :: ByteString -> ByteString -> [MsgContentBody] -> Either String MemberInfo
     toMemberInfo memId role body = MemberInfo <$> B64.decode memId <*> toMemberRole role <*> getJSON body
     toIntroInv :: ByteString -> ByteString -> Either String IntroInvitation
-    toIntroInv groupConnReq directConnReq = IntroInvitation <$> parseAll connReqP groupConnReq <*> parseAll connReqP directConnReq
+    toIntroInv groupConnReq directConnReq = IntroInvitation <$> parseAll connReqP' groupConnReq <*> parseAll connReqP' directConnReq
     toContentInfo :: (RawContentType, Int) -> Either String (ContentType, Int)
     toContentInfo (rawType, size) = (,size) <$> toContentType rawType
+    toFiles :: [ByteString] -> Either String [(ContentType, Int)]
+    toFiles = mapM $ toContentInfo <=< parseAll contentInfoP
     getJSON :: FromJSON a => [MsgContentBody] -> Either String a
     getJSON = J.eitherDecodeStrict' <=< getSimplexContentType XCJson
+    extractJSON :: FromJSON a => [MsgContentBody] -> Either String (a, [MsgContentBody])
+    extractJSON =
+      extractSimplexContentType XCJson >=> \(a, bs) -> do
+        j <- J.eitherDecodeStrict' a
+        pure (j, bs)
 
 isContentType :: ContentType -> MsgContentBody -> Bool
 isContentType t MsgContentBody {contentType = t'} = t == t'
@@ -181,28 +199,41 @@ getContentType t body = case find (isContentType t) body of
   Just MsgContentBody {contentData} -> Right contentData
   Nothing -> Left "no required content type"
 
+extractContentType :: ContentType -> [MsgContentBody] -> Either String (ByteString, [MsgContentBody])
+extractContentType t body = case findIndex (isContentType t) body of
+  Just i -> case splitAt i body of
+    (b, el : a) -> Right (contentData (el :: MsgContentBody), b ++ a)
+    (_, []) -> Left "no required content type" -- this can only happen if findIndex returns incorrect result
+  Nothing -> Left "no required content type"
+
 getSimplexContentType :: XContentType -> [MsgContentBody] -> Either String ByteString
 getSimplexContentType = getContentType . SimplexContentType
+
+extractSimplexContentType :: XContentType -> [MsgContentBody] -> Either String (ByteString, [MsgContentBody])
+extractSimplexContentType = extractContentType . SimplexContentType
 
 rawChatMessage :: ChatMessage -> RawChatMessage
 rawChatMessage ChatMessage {chatMsgId, chatMsgEvent, chatDAG} =
   case chatMsgEvent of
     XMsgNew MsgContent {messageType = t, files, content} ->
-      let rawFiles = map (serializeContentInfo . rawContentInfo) files
-       in rawMsg "x.msg.new" (rawMsgType t : rawFiles) content
+      rawMsg "x.msg.new" (rawMsgType t : toRawFiles files) content
     XFile FileInvitation {fileName, fileSize, fileConnReq} ->
-      rawMsg "x.file" [encodeUtf8 $ T.pack fileName, bshow fileSize, serializeConnReq fileConnReq] []
+      rawMsg "x.file" [encodeUtf8 $ T.pack fileName, bshow fileSize, serializeConnReq' fileConnReq] []
     XFileAcpt fileName ->
       rawMsg "x.file.acpt" [encodeUtf8 $ T.pack fileName] []
     XInfo profile ->
       rawMsg "x.info" [] [jsonBody profile]
+    XContact profile Nothing ->
+      rawMsg "x.con" [] [jsonBody profile]
+    XContact profile (Just MsgContent {messageType = t, files, content}) ->
+      rawMsg "x.con" (rawMsgType t : toRawFiles files) (jsonBody profile : content)
     XGrpInv (GroupInvitation (fromMemId, fromRole) (memId, role) cReq groupProfile) ->
       let params =
             [ B64.encode fromMemId,
               serializeMemberRole fromRole,
               B64.encode memId,
               serializeMemberRole role,
-              serializeConnReq cReq
+              serializeConnReq' cReq
             ]
        in rawMsg "x.grp.inv" params [jsonBody groupProfile]
     XGrpAcpt memId ->
@@ -213,14 +244,14 @@ rawChatMessage ChatMessage {chatMsgId, chatMsgEvent, chatDAG} =
     XGrpMemIntro (MemberInfo memId role profile) ->
       rawMsg "x.grp.mem.intro" [B64.encode memId, serializeMemberRole role] [jsonBody profile]
     XGrpMemInv memId IntroInvitation {groupConnReq, directConnReq} ->
-      let params = [B64.encode memId, serializeConnReq groupConnReq, serializeConnReq directConnReq]
+      let params = [B64.encode memId, serializeConnReq' groupConnReq, serializeConnReq' directConnReq]
        in rawMsg "x.grp.mem.inv" params []
     XGrpMemFwd (MemberInfo memId role profile) IntroInvitation {groupConnReq, directConnReq} ->
       let params =
             [ B64.encode memId,
               serializeMemberRole role,
-              serializeConnReq groupConnReq,
-              serializeConnReq directConnReq
+              serializeConnReq' groupConnReq,
+              serializeConnReq' directConnReq
             ]
        in rawMsg "x.grp.mem.fwd" params [jsonBody profile]
     XGrpMemInfo memId profile ->
@@ -257,6 +288,8 @@ rawChatMessage ChatMessage {chatMsgId, chatMsgEvent, chatDAG} =
     rawWithDAG body = map rawMsgBodyContent $ case chatDAG of
       Nothing -> body
       Just dag -> MsgContentBody {contentType = SimplexDAG, contentData = dag} : body
+    toRawFiles :: [(ContentType, Int)] -> [ByteString]
+    toRawFiles = map $ serializeContentInfo . rawContentInfo
 
 toMsgBodyContent :: RawMsgBodyContent -> Either String MsgContentBody
 toMsgBodyContent RawMsgBodyContent {contentType, contentData} = do

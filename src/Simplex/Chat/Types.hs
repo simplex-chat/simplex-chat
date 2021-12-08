@@ -1,3 +1,4 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE LambdaCase #-}
@@ -20,7 +21,7 @@ import Database.SQLite.Simple.Internal (Field (..))
 import Database.SQLite.Simple.Ok (Ok (Ok))
 import Database.SQLite.Simple.ToField (ToField (..))
 import GHC.Generics
-import Simplex.Messaging.Agent.Protocol (ConnId, ConnectionRequest)
+import Simplex.Messaging.Agent.Protocol (ConnId, ConnectionMode (..), ConnectionRequest, InvitationId)
 import Simplex.Messaging.Agent.Store.SQLite (fromTextField_)
 
 class IsContact a where
@@ -60,6 +61,22 @@ data Contact = Contact
 contactConnId :: Contact -> ConnId
 contactConnId Contact {activeConn = Connection {agentConnId}} = agentConnId
 
+data UserContact = UserContact
+  { userContactLinkId :: Int64,
+    connReqContact :: ConnReqContact
+  }
+  deriving (Eq, Show)
+
+data UserContactRequest = UserContactRequest
+  { contactRequestId :: Int64,
+    agentInvitationId :: InvitationId,
+    userContactLinkId :: Int64,
+    agentContactConnId :: ConnId,
+    localDisplayName :: ContactName,
+    profileId :: Int64
+  }
+  deriving (Eq, Show)
+
 type ContactName = Text
 
 type GroupName = Text
@@ -96,14 +113,14 @@ instance FromJSON GroupProfile
 data GroupInvitation = GroupInvitation
   { fromMember :: (MemberId, GroupMemberRole),
     invitedMember :: (MemberId, GroupMemberRole),
-    connRequest :: ConnectionRequest,
+    connRequest :: ConnReqInvitation,
     groupProfile :: GroupProfile
   }
   deriving (Eq, Show)
 
 data IntroInvitation = IntroInvitation
-  { groupConnReq :: ConnectionRequest,
-    directConnReq :: ConnectionRequest
+  { groupConnReq :: ConnReqInvitation,
+    directConnReq :: ConnReqInvitation
   }
   deriving (Eq, Show)
 
@@ -116,7 +133,7 @@ memberInfo m = MemberInfo (memberId m) (memberRole m) (memberProfile m)
 data ReceivedGroupInvitation = ReceivedGroupInvitation
   { fromMember :: GroupMember,
     userMember :: GroupMember,
-    connRequest :: ConnectionRequest,
+    connRequest :: ConnReqInvitation,
     groupProfile :: GroupProfile
   }
   deriving (Eq, Show)
@@ -316,7 +333,7 @@ data SndFileTransfer = SndFileTransfer
 data FileInvitation = FileInvitation
   { fileName :: String,
     fileSize :: Integer,
-    fileConnReq :: ConnectionRequest
+    fileConnReq :: ConnReqInvitation
   }
   deriving (Eq, Show)
 
@@ -372,6 +389,10 @@ serializeFileStatus = \case
 data RcvChunkStatus = RcvChunkOk | RcvChunkFinal | RcvChunkDuplicate | RcvChunkError
   deriving (Eq, Show)
 
+type ConnReqInvitation = ConnectionRequest 'CMInvitation
+
+type ConnReqContact = ConnectionRequest 'CMContact
+
 data Connection = Connection
   { connId :: Int64,
     agentConnId :: ConnId,
@@ -379,7 +400,7 @@ data Connection = Connection
     viaContact :: Maybe Int64,
     connType :: ConnType,
     connStatus :: ConnStatus,
-    entityId :: Maybe Int64, -- contact, group member or file ID
+    entityId :: Maybe Int64, -- contact, group member, file ID or user contact ID
     createdAt :: UTCTime
   }
   deriving (Eq, Show)
@@ -426,7 +447,7 @@ serializeConnStatus = \case
   ConnReady -> "ready"
   ConnDeleted -> "deleted"
 
-data ConnType = ConnContact | ConnMember | ConnSndFile | ConnRcvFile
+data ConnType = ConnContact | ConnMember | ConnSndFile | ConnRcvFile | ConnUserContact
   deriving (Eq, Show)
 
 instance FromField ConnType where fromField = fromTextField_ connTypeT
@@ -439,6 +460,7 @@ connTypeT = \case
   "member" -> Just ConnMember
   "snd_file" -> Just ConnSndFile
   "rcv_file" -> Just ConnRcvFile
+  "user_contact" -> Just ConnUserContact
   _ -> Nothing
 
 serializeConnType :: ConnType -> Text
@@ -447,6 +469,7 @@ serializeConnType = \case
   ConnMember -> "member"
   ConnSndFile -> "snd_file"
   ConnRcvFile -> "rcv_file"
+  ConnUserContact -> "user_contact"
 
 data NewConnection = NewConnection
   { agentConnId :: ByteString,
