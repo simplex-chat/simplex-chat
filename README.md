@@ -11,7 +11,7 @@
 
 SimpleX chat prototype is a thin terminal UI on top of [SimpleXMQ](https://github.com/simplex-chat/simplexmq) message broker that uses [SMP protocols](https://github.com/simplex-chat/simplexmq/blob/master/protocol). The motivation for SimpleX chat is [presented here](./simplex.md). See [simplex.chat](https://simplex.chat) website for chat demo and the explanations of the system and how SMP protocol works.
 
-**NEW in v0.5.0: [user contact addresses](#user-contact-addresses)!**
+**NEW in v0.5.0: [user contact addresses](#user-contact-addresses-alpha)!**
 
 **Please note**: v0.5.0 of SimpleX Chat works with the same database, but the connection links are not compatible with the previous version - please ask all your contacts to upgrade!
 
