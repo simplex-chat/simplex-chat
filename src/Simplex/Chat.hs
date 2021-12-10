@@ -191,14 +191,8 @@ processChatCommand user@User {userId, profile} = \case
     (connId, cReq) <- withAgent (`createConnection` SCMInvitation)
     withStore $ \st -> createDirectConnection st userId connId
     showInvitation cReq
-  Connect (ACR SCMInvitation cReq) -> do
-    connId <- withAgent $ \a -> joinConnection a cReq . directMessage $ XInfo profile
-    withStore $ \st -> createDirectConnection st userId connId
-    showSentConfirmation
-  Connect (ACR SCMContact cReq) -> do
-    connId <- withAgent $ \a -> joinConnection a cReq . directMessage $ XContact profile Nothing
-    withStore $ \st -> createDirectConnection st userId connId
-    showSentInvitation
+  Connect (ACR SCMInvitation cReq) -> connect cReq (XInfo profile) >> showSentConfirmation
+  Connect (ACR SCMContact cReq) -> connect cReq (XContact profile Nothing) >> showSentInvitation
   DeleteContact cName ->
     withStore (\st -> getContactGroupNames st userId cName) >>= \case
       [] -> do
@@ -362,6 +356,10 @@ processChatCommand user@User {userId, profile} = \case
   QuitChat -> liftIO exitSuccess
   ShowVersion -> printToView clientVersionInfo
   where
+    connect :: ConnectionRequest c -> ChatMsgEvent -> m ()
+    connect cReq msg = do
+      connId <- withAgent $ \a -> joinConnection a cReq $ directMessage msg
+      withStore $ \st -> createDirectConnection st userId connId
     contactMember :: Contact -> [GroupMember] -> Maybe GroupMember
     contactMember Contact {contactId} =
       find $ \GroupMember {memberContactId = cId, memberStatus = s} ->
