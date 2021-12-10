@@ -55,8 +55,9 @@ chatHelpInfo =
       green "Other commands:",
       indent <> highlight "/profile         " <> " - show / update user profile",
       indent <> highlight "/delete <contact>" <> " - delete contact and all messages with them",
-      indent <> highlight "/markdown        " <> " - show supported markdown syntax",
-      indent <> highlight "/version         " <> " - show SimpleX Chat version",
+      indent <> highlight "/contacts        " <> " - list contacts",
+      indent <> highlight "/markdown        " <> " - supported markdown syntax",
+      indent <> highlight "/version         " <> " - SimpleX Chat version",
       indent <> highlight "/quit            " <> " - quit chat",
       "",
       "The commands may be abbreviated: " <> listHighlight ["/c", "/f", "/g", "/p", "/ad"] <> ", etc."
@@ -88,9 +89,10 @@ groupsHelpInfo =
       indent <> highlight "/leave <group>                 " <> " - leave group",
       indent <> highlight "/delete <group>                " <> " - delete group",
       indent <> highlight "/members <group>               " <> " - list group members",
+      indent <> highlight "/groups                        " <> " - list groups",
       indent <> highlight "#<group> <message>             " <> " - send message to group",
       "",
-      "The commands may be abbreviated: " <> listHighlight ["/g", "/a", "/j", "/rm", "/l", "/d", "/ms"]
+      "The commands may be abbreviated: " <> listHighlight ["/g", "/a", "/j", "/rm", "/l", "/d", "/ms", "/gs"]
     ]
 
 myAddressHelpInfo :: [StyledString]

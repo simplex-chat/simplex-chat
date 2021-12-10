@@ -132,6 +132,20 @@ testGroup =
         (alice <# "#team cath> hey")
         (bob <# "#team cath> hey")
       bob <##> cath
+      -- list groups
+      alice ##> "/gs"
+      alice <## "#team"
+      -- list group members
+      alice ##> "/ms team"
+      alice
+        <### [ "alice (Alice): owner, you, created group",
+               "bob (Bob): admin, invited, connected",
+               "cath (Catherine): admin, invited, connected"
+             ]
+      -- list contacts
+      alice ##> "/cs"
+      alice <## "bob (Bob)"
+      alice <## "cath (Catherine)"
       -- remove member
       bob ##> "/rm team cath"
       concurrentlyN_

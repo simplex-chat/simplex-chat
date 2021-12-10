@@ -11,6 +11,7 @@ module Simplex.Chat.View
     showChatError,
     showContactDeleted,
     showContactGroups,
+    showContactsList,
     showContactConnected,
     showContactDisconnected,
     showContactAnotherClient,
@@ -63,6 +64,7 @@ module Simplex.Chat.View
     showLeftMemberUser,
     showLeftMember,
     showGroupMembers,
+    showGroupsList,
     showContactsMerged,
     showUserProfile,
     showUserProfileUpdated,
@@ -80,7 +82,7 @@ import Data.ByteString.Char8 (ByteString)
 import Data.Composition ((.:), (.:.))
 import Data.Function (on)
 import Data.Int (Int64)
-import Data.List (groupBy, intersperse, sortOn)
+import Data.List (groupBy, intersperse, sortOn, sort)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (DiffTime, UTCTime)
@@ -111,6 +113,9 @@ showContactDeleted = printToView . contactDeleted
 
 showContactGroups :: ChatReader m => ContactName -> [GroupName] -> m ()
 showContactGroups = printToView .: contactGroups
+
+showContactsList :: ChatReader m => [Contact] -> m ()
+showContactsList = printToView . contactsList
 
 showContactConnected :: ChatReader m => Contact -> m ()
 showContactConnected = printToView . contactConnected
@@ -274,6 +279,9 @@ showLeftMember = printToView .: leftMember
 showGroupMembers :: ChatReader m => Group -> m ()
 showGroupMembers = printToView . groupMembers
 
+showGroupsList :: ChatReader m => [GroupName] -> m ()
+showGroupsList = printToView . groupsList
+
 showContactsMerged :: ChatReader m => Contact -> Contact -> m ()
 showContactsMerged = printToView .: contactsMerged
 
@@ -308,6 +316,11 @@ contactGroups c gNames = [ttyContact c <> ": contact cannot be deleted, it is a 
     ttyGroups [] = ""
     ttyGroups [g] = ttyGroup g
     ttyGroups (g : gs) = ttyGroup g <> ", " <> ttyGroups gs
+
+contactsList :: [Contact] -> [StyledString]
+contactsList =
+  let ldn = T.toLower . (localDisplayName :: Contact -> ContactName)
+   in map ttyFullContact . sortOn ldn
 
 contactConnected :: Contact -> [StyledString]
 contactConnected ct = [ttyFullContact ct <> ": contact is connected"]
@@ -460,6 +473,10 @@ groupMembers Group {membership, members} = map groupMember . filter (not . remov
       GSMemComplete -> "connected"
       GSMemCreator -> "created group"
       _ -> ""
+
+groupsList :: [GroupName] -> [StyledString]
+groupsList [] = ["you have no groups!", "to create: " <> highlight' "/g <name>"]
+groupsList gs = map ttyGroup $ sort gs
 
 contactsMerged :: Contact -> Contact -> [StyledString]
 contactsMerged _to@Contact {localDisplayName = c1} _from@Contact {localDisplayName = c2} =
