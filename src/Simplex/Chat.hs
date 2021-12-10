@@ -23,6 +23,7 @@ import Data.Attoparsec.ByteString.Char8 (Parser)
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.Bifunctor (first)
 import Data.ByteString.Char8 (ByteString)
+import Data.Char (isSpace)
 import qualified Data.ByteString.Char8 as B
 import Data.Functor (($>))
 import Data.Int (Int64)
@@ -72,6 +73,7 @@ data ChatCommand
   | AddContact
   | Connect AConnectionRequest
   | DeleteContact ContactName
+  | ListContacts
   | CreateMyAddress
   | DeleteMyAddress
   | ShowMyAddress
@@ -86,6 +88,7 @@ data ChatCommand
   | LeaveGroup GroupName
   | DeleteGroup GroupName
   | ListMembers GroupName
+  | ListGroups
   | SendGroupMessage GroupName ByteString
   | SendFile ContactName FilePath
   | SendGroupFile GroupName FilePath
@@ -164,7 +167,7 @@ inputSubscriber = do
     atomically (readTBQueue q) >>= \case
       InputControl _ -> pure ()
       InputCommand s ->
-        case parseAll chatCommandP . encodeUtf8 $ T.pack s of
+        case parseAll chatCommandP . B.dropWhileEnd isSpace . encodeUtf8 $ T.pack s of
           Left e -> printToView [plain s, "invalid input: " <> plain e]
           Right cmd -> do
             case cmd of
@@ -204,6 +207,7 @@ processChatCommand user@User {userId, profile} = \case
         unsetActive $ ActiveC cName
         showContactDeleted cName
       gs -> showContactGroups cName gs
+  ListContacts -> withStore (`getUserContacts` user) >>= showContactsList
   CreateMyAddress -> do
     (connId, cReq) <- withAgent (`createConnection` SCMContact)
     withStore $ \st -> createUserContactLink st userId connId cReq
@@ -293,6 +297,7 @@ processChatCommand user@User {userId, profile} = \case
   ListMembers gName -> do
     group <- withStore $ \st -> getGroup st user gName
     showGroupMembers group
+  ListGroups -> withStore (`getUserGroupNames` userId) >>= showGroupsList
   SendGroupMessage gName msg -> do
     -- TODO save sent messages
     -- TODO save pending message delivery for members without connections
@@ -1163,7 +1168,9 @@ chatCommandP =
     <|> ("/leave #" <|> "/leave " <|> "/l #" <|> "/l ") *> (LeaveGroup <$> displayName)
     <|> ("/delete #" <|> "/d #") *> (DeleteGroup <$> displayName)
     <|> ("/members #" <|> "/members " <|> "/ms #" <|> "/ms ") *> (ListMembers <$> displayName)
+    <|> ("/groups" <|> "/gs") $> ListGroups
     <|> A.char '#' *> (SendGroupMessage <$> displayName <* A.space <*> A.takeByteString)
+    <|> ("/contacts" <|> "/cs") $> ListContacts
     <|> ("/connect " <|> "/c ") *> (Connect <$> connReqP)
     <|> ("/connect" <|> "/c") $> AddContact
     <|> ("/delete @" <|> "/delete " <|> "/d @" <|> "/d ") *> (DeleteContact <$> displayName)

@@ -48,6 +48,7 @@ module Simplex.Chat.Store
     getGroup,
     deleteGroup,
     getUserGroups,
+    getUserGroupNames,
     getGroupInvitation,
     createContactGroupMember,
     createMemberConnection,
@@ -969,8 +970,14 @@ deleteGroup st User {userId} Group {groupId, members, localDisplayName} =
 getUserGroups :: MonadUnliftIO m => SQLiteStore -> User -> m [Group]
 getUserGroups st user =
   liftIO . withTransaction st $ \db -> do
-    groupNames <- liftIO $ map fromOnly <$> DB.query db "SELECT local_display_name FROM groups WHERE user_id = ?" (Only $ userId user)
+    groupNames <- getUserGroupNames_ db $ userId user
     map fst . rights <$> mapM (runExceptT . getGroup_ db user) groupNames
+
+getUserGroupNames :: MonadUnliftIO m => SQLiteStore -> UserId -> m [GroupName]
+getUserGroupNames st userId = liftIO $ withTransaction st (`getUserGroupNames_` userId)
+
+getUserGroupNames_ :: DB.Connection -> UserId -> IO [GroupName]
+getUserGroupNames_ db userId = map fromOnly <$> DB.query db "SELECT local_display_name FROM groups WHERE user_id = ?" (Only userId)
 
 getGroupInvitation :: StoreMonad m => SQLiteStore -> User -> GroupName -> m ReceivedGroupInvitation
 getGroupInvitation st user localDisplayName =
