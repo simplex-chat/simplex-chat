@@ -8,6 +8,8 @@
 module Simplex.Chat.View
   ( printToView,
     showInvitation,
+    showSentConfirmation,
+    showSentInvitation,
     showChatError,
     showContactDeleted,
     showContactGroups,
@@ -82,7 +84,7 @@ import Data.ByteString.Char8 (ByteString)
 import Data.Composition ((.:), (.:.))
 import Data.Function (on)
 import Data.Int (Int64)
-import Data.List (groupBy, intersperse, sortOn, sort)
+import Data.List (groupBy, intersperse, sort, sortOn)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (DiffTime, UTCTime)
@@ -104,6 +106,12 @@ type ChatReader m = (MonadUnliftIO m, MonadReader ChatController m)
 
 showInvitation :: ChatReader m => ConnReqInvitation -> m ()
 showInvitation = printToView . connReqInvitation_
+
+showSentConfirmation :: ChatReader m => m ()
+showSentConfirmation = printToView ["confirmation sent!"]
+
+showSentInvitation :: ChatReader m => m ()
+showSentInvitation = printToView ["connection request sent!"]
 
 showChatError :: ChatReader m => ChatError -> m ()
 showChatError = printToView . chatError

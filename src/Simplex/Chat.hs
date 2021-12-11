@@ -23,8 +23,8 @@ import Data.Attoparsec.ByteString.Char8 (Parser)
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.Bifunctor (first)
 import Data.ByteString.Char8 (ByteString)
-import Data.Char (isSpace)
 import qualified Data.ByteString.Char8 as B
+import Data.Char (isSpace)
 import Data.Functor (($>))
 import Data.Int (Int64)
 import Data.List (find)
@@ -191,12 +191,8 @@ processChatCommand user@User {userId, profile} = \case
     (connId, cReq) <- withAgent (`createConnection` SCMInvitation)
     withStore $ \st -> createDirectConnection st userId connId
     showInvitation cReq
-  Connect (ACR cMode cReq) -> do
-    let msg :: ChatMsgEvent = case cMode of
-          SCMInvitation -> XInfo profile
-          SCMContact -> XContact profile Nothing
-    connId <- withAgent $ \a -> joinConnection a cReq $ directMessage msg
-    withStore $ \st -> createDirectConnection st userId connId
+  Connect (ACR SCMInvitation cReq) -> connect cReq (XInfo profile) >> showSentConfirmation
+  Connect (ACR SCMContact cReq) -> connect cReq (XContact profile Nothing) >> showSentInvitation
   DeleteContact cName ->
     withStore (\st -> getContactGroupNames st userId cName) >>= \case
       [] -> do
@@ -360,6 +356,10 @@ processChatCommand user@User {userId, profile} = \case
   QuitChat -> liftIO exitSuccess
   ShowVersion -> printToView clientVersionInfo
   where
+    connect :: ConnectionRequest c -> ChatMsgEvent -> m ()
+    connect cReq msg = do
+      connId <- withAgent $ \a -> joinConnection a cReq $ directMessage msg
+      withStore $ \st -> createDirectConnection st userId connId
     contactMember :: Contact -> [GroupMember] -> Maybe GroupMember
     contactMember Contact {contactId} =
       find $ \GroupMember {memberContactId = cId, memberStatus = s} ->

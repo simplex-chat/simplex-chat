@@ -58,6 +58,7 @@ testAddContact =
       alice ##> "/c"
       inv <- getInvitation alice
       bob ##> ("/c " <> inv)
+      bob <## "confirmation sent!"
       concurrently_
         (bob <## "alice (Alice): contact is connected")
         (alice <## "bob (Bob): contact is connected")
@@ -69,6 +70,7 @@ testAddContact =
       alice ##> "/c"
       inv' <- getInvitation alice
       bob ##> ("/c " <> inv')
+      bob <## "confirmation sent!"
       concurrently_
         (bob <## "alice_1 (Alice): contact is connected")
         (alice <## "bob_1 (Bob): contact is connected")
@@ -641,6 +643,7 @@ connectUsers cc1 cc2 = do
   cc1 ##> "/c"
   inv <- getInvitation cc1
   cc2 ##> ("/c " <> inv)
+  cc2 <## "confirmation sent!"
   concurrently_
     (cc2 <## (name1 <> ": contact is connected"))
     (cc1 <## (name2 <> ": contact is connected"))
@@ -737,6 +740,7 @@ cc <# line = (dropTime <$> getTermLine cc) `shouldReturn` line
 cc1 <#? cc2 = do
   name <- userName cc2
   sName <- showName cc2
+  cc2 <## "connection request sent!"
   cc1 <## (sName <> " wants to connect to you!")
   cc1 <## ("to accept: /ac " <> name)
   cc1 <## ("to reject: /rc " <> name <> " (the sender will NOT be notified)")
