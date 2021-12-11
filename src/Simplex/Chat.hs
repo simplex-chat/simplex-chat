@@ -44,7 +44,7 @@ import Simplex.Chat.Store
 import Simplex.Chat.Styled (plain)
 import Simplex.Chat.Terminal
 import Simplex.Chat.Types
-import Simplex.Chat.Util (ifM, unlessM)
+import Simplex.Chat.Util (ifM, unlessM, whenM)
 import Simplex.Chat.View
 import Simplex.Messaging.Agent
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), defaultAgentConfig)
@@ -130,7 +130,9 @@ simplexChat cfg opts t =
 
 newChatController :: WithTerminal t => ChatConfig -> ChatOpts -> t -> (Notification -> IO ()) -> IO ChatController
 newChatController config@ChatConfig {agentConfig = cfg, dbPoolSize, tbqSize} ChatOpts {dbFile, smpServers} t sendNotification = do
-  chatStore <- createStore (dbFile <> ".chat.db") dbPoolSize
+  let f = chatStoreFile dbFile
+  firstTime <- not <$> doesFileExist f
+  chatStore <- createStore f dbPoolSize
   currentUser <- newTVarIO =<< getCreateActiveUser chatStore
   chatTerminal <- newChatTerminal t
   smpAgent <- getSMPAgentClient cfg {dbFile = dbFile <> ".agent.db", smpServers}
@@ -144,7 +146,8 @@ newChatController config@ChatConfig {agentConfig = cfg, dbPoolSize, tbqSize} Cha
 
 runSimplexChat :: ChatController -> IO ()
 runSimplexChat = runReaderT $ do
-  printToView chatWelcome
+  user <- readTVarIO =<< asks currentUser
+  whenM (asks firstTime) . printToView $ chatWelcome user
   race_ runTerminalInput runChatController
 
 runChatController :: (MonadUnliftIO m, MonadReader ChatController m) => m ()
@@ -190,7 +193,7 @@ processChatCommand user@User {userId, profile} = \case
   GroupsHelp -> printToView groupsHelpInfo
   MyAddressHelp -> printToView myAddressHelpInfo
   MarkdownHelp -> printToView markdownInfo
-  Welcome -> printToView chatWelcome
+  Welcome -> printToView $ chatWelcome user
   AddContact -> do
     (connId, cReq) <- withAgent (`createConnection` SCMInvitation)
     withStore $ \st -> createDirectConnection st userId connId

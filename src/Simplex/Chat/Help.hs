@@ -1,3 +1,4 @@
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Simplex.Chat.Help
@@ -12,8 +13,10 @@ where
 
 import Data.List (intersperse)
 import Data.Text (Text)
+import qualified Data.Text as T
 import Simplex.Chat.Markdown
 import Simplex.Chat.Styled
+import Simplex.Chat.Types (Profile (..), User (..))
 import System.Console.ANSI.Types
 
 highlight :: Text -> Markdown
@@ -37,8 +40,8 @@ indent = "        "
 listHighlight :: [Text] -> Markdown
 listHighlight = mconcat . intersperse ", " . map highlight
 
-chatWelcome :: [StyledString]
-chatWelcome =
+chatWelcome :: User -> [StyledString]
+chatWelcome User {profile = Profile {displayName, fullName}} =
   map
     styleMarkdown
     [ blue "                             __   __",
@@ -47,9 +50,10 @@ chatWelcome =
       cyan " \\__ \\| || |\\/| |  _/ |__| _|" <> blue " / . \\" <> yellow "| (__| __ |/ _ \\| |",
       cyan " |___/___|_|  |_|_| |____|___" <> blue "/_/ \\_\\" <> yellow "\\___|_||_/_/ \\_\\_|",
       "",
+      "Welcome " <> green (if T.null fullName then displayName else fullName) <> "!",
       "Thank you for installing SimpleX Chat!",
       "",
-      "To help us building SimpleX Chat:",
+      "To help us build SimpleX Chat:",
       "[ ] connect with 2 friends - " <> highlight "/help" <> " for instructions",
       "[ ] create a group with them - " <> highlight "/group #friends",
       "[ ] send your photo to the group - " <> highlight "/file #friends ./photo.jpg",

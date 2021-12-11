@@ -37,6 +37,7 @@ data ChatConfig = ChatConfig
 
 data ChatController = ChatController
   { currentUser :: TVar User,
+    firstTime :: Bool,
     smpAgent :: AgentClient,
     chatTerminal :: ChatTerminal,
     chatStore :: SQLiteStore,
