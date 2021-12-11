@@ -1,7 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Simplex.Chat.Help
-  ( chatHelpInfo,
+  ( chatWelcome,
+    chatHelpInfo,
     filesHelpInfo,
     groupsHelpInfo,
     myAddressHelpInfo,
@@ -18,6 +19,15 @@ import System.Console.ANSI.Types
 highlight :: Text -> Markdown
 highlight = Markdown (Colored Cyan)
 
+blue :: Text -> Markdown
+blue = Markdown (Colored Blue)
+
+cyan :: Text -> Markdown
+cyan = Markdown (Colored Cyan)
+
+yellow :: Text -> Markdown
+yellow = Markdown (Colored Yellow)
+
 green :: Text -> Markdown
 green = Markdown (Colored Green)
 
@@ -26,6 +36,28 @@ indent = "        "
 
 listHighlight :: [Text] -> Markdown
 listHighlight = mconcat . intersperse ", " . map highlight
+
+chatWelcome :: [StyledString]
+chatWelcome =
+  map
+    styleMarkdown
+    [ blue "                             __   __",
+      cyan "  ___ ___ __  __ ___ _    ___" <> blue "\\ \\ / /" <> yellow " ___ _  _   _ _____",
+      cyan " / __|_ _|  \\/  | _ \\ |  | __ " <> blue "\\ V /" <> yellow " / __| || | /_\\_   _|",
+      cyan " \\__ \\| || |\\/| |  _/ |__| _|" <> blue " / . \\" <> yellow "| (__| __ |/ _ \\| |",
+      cyan " |___/___|_|  |_|_| |____|___" <> blue "/_/ \\_\\" <> yellow "\\___|_||_/_/ \\_\\_|",
+      "",
+      "Thank you for installing SimpleX Chat!",
+      "",
+      "To help us building SimpleX Chat:",
+      "[ ] connect with 2 friends - " <> highlight "/help" <> " for instructions",
+      "[ ] create a group with them - " <> highlight "/group #friends",
+      "[ ] send your photo to the group - " <> highlight "/file #friends ./photo.jpg",
+      "[ ] create your chat " <> highlight "/address" <> " and share it with your friends",
+      "[*] star our GitHub repo: https://github.com/simplex-chat/simplex-chat",
+      "",
+      "To show this message again - " <> highlight "/welcome"
+    ]
 
 chatHelpInfo :: [StyledString]
 chatHelpInfo =

@@ -70,6 +70,7 @@ data ChatCommand
   | GroupsHelp
   | MyAddressHelp
   | MarkdownHelp
+  | Welcome
   | AddContact
   | Connect AConnectionRequest
   | DeleteContact ContactName
@@ -142,7 +143,9 @@ newChatController config@ChatConfig {agentConfig = cfg, dbPoolSize, tbqSize} Cha
   pure ChatController {..}
 
 runSimplexChat :: ChatController -> IO ()
-runSimplexChat = runReaderT (race_ runTerminalInput runChatController)
+runSimplexChat = runReaderT $ do
+  printToView chatWelcome
+  race_ runTerminalInput runChatController
 
 runChatController :: (MonadUnliftIO m, MonadReader ChatController m) => m ()
 runChatController =
@@ -187,6 +190,7 @@ processChatCommand user@User {userId, profile} = \case
   GroupsHelp -> printToView groupsHelpInfo
   MyAddressHelp -> printToView myAddressHelpInfo
   MarkdownHelp -> printToView markdownInfo
+  Welcome -> printToView chatWelcome
   AddContact -> do
     (connId, cReq) <- withAgent (`createConnection` SCMInvitation)
     withStore $ \st -> createDirectConnection st userId connId
@@ -548,7 +552,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
               -- TODO update contact profile
               pure ()
             XOk -> pure ()
-            _ -> messageError "INFO for existing contact must have x.grp.mem.info, x.info or x.ok"
+            _ -> messageError "INFO for existing contact must have x.grp.mem.info, x.info or x.ok"
         CON ->
           withStore (\st -> getViaGroupMember st user ct) >>= \case
             Nothing -> do
@@ -1186,6 +1190,7 @@ chatCommandP =
     <|> ("/accept @" <|> "/accept " <|> "/ac @" <|> "/ac ") *> (AcceptContact <$> displayName)
     <|> ("/reject @" <|> "/reject " <|> "/rc @" <|> "/rc ") *> (RejectContact <$> displayName)
     <|> ("/markdown" <|> "/m") $> MarkdownHelp
+    <|> ("/welcome" <|> "/w") $> Welcome
     <|> ("/profile " <|> "/p ") *> (UpdateProfile <$> userProfile)
     <|> ("/profile" <|> "/p") $> ShowProfile
     <|> ("/quit" <|> "/q" <|> "/exit") $> QuitChat
