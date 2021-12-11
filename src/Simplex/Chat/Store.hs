@@ -89,6 +89,7 @@ module Simplex.Chat.Store
     deleteRcvFileChunks,
     getFileTransfer,
     getFileTransferProgress,
+    getOnboarding,
   )
 where
 
@@ -1589,6 +1590,21 @@ getSndFileTransfers_ db userId fileId =
       case contactName_ <|> memberName_ of
         Just recipientDisplayName -> Right SndFileTransfer {..}
         Nothing -> Left $ SESndFileInvalid fileId
+
+getOnboarding :: MonadUnliftIO m => SQLiteStore -> UserId -> m Onboarding
+getOnboarding st userId =
+  liftIO . withTransaction st $ \db -> do
+    contactsCount <- intQuery db "SELECT COUNT(contact_id) FROM contacts WHERE user_id = ?"
+    createdGroups <- headOrZero <$> DB.query db "SELECT COUNT(g.group_id) FROM groups g JOIN group_members m WHERE g.user_id = ? AND m.member_status = ?" (userId, GSMemCreator)
+    membersCount <- headOrZero <$> DB.query db "SELECT COUNT(group_member_id) FROM group_members WHERE user_id = ? AND (member_status = ? OR member_status = ?)" (userId, GSMemConnected, GSMemComplete)
+    filesSentCount <- intQuery db "SELECT COUNT(s.file_id) FROM snd_files s JOIN files f USING (file_id) WHERE f.user_id = ?"
+    addressCount <- intQuery db "SELECT COUNT(user_contact_link_id) FROM user_contact_links WHERE user_id = ?"
+    pure $ Onboarding {..}
+  where
+    intQuery :: DB.Connection -> DB.Query -> IO Int
+    intQuery db q = headOrZero <$> DB.query db q (Only userId)
+    headOrZero [] = 0
+    headOrZero (n : _) = fromOnly n
 
 -- | Saves unique local display name based on passed displayName, suffixed with _N if required.
 -- This function should be called inside transaction.

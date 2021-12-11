@@ -147,7 +147,7 @@ newChatController config@ChatConfig {agentConfig = cfg, dbPoolSize, tbqSize} Cha
 runSimplexChat :: ChatController -> IO ()
 runSimplexChat = runReaderT $ do
   user <- readTVarIO =<< asks currentUser
-  whenM (asks firstTime) . printToView $ chatWelcome user
+  whenM (asks firstTime) . printToView . chatWelcome user $ Onboarding 0 0 0 0 0
   race_ runTerminalInput runChatController
 
 runChatController :: (MonadUnliftIO m, MonadReader ChatController m) => m ()
@@ -193,7 +193,9 @@ processChatCommand user@User {userId, profile} = \case
   GroupsHelp -> printToView groupsHelpInfo
   MyAddressHelp -> printToView myAddressHelpInfo
   MarkdownHelp -> printToView markdownInfo
-  Welcome -> printToView $ chatWelcome user
+  Welcome -> do
+    ob <- withStore (`getOnboarding` userId)
+    printToView $ chatWelcome user ob
   AddContact -> do
     (connId, cReq) <- withAgent (`createConnection` SCMInvitation)
     withStore $ \st -> createDirectConnection st userId connId

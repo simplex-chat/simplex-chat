@@ -16,7 +16,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Simplex.Chat.Markdown
 import Simplex.Chat.Styled
-import Simplex.Chat.Types (Profile (..), User (..))
+import Simplex.Chat.Types (Onboarding (..), Profile (..), User (..))
 import System.Console.ANSI.Types
 
 highlight :: Text -> Markdown
@@ -40,8 +40,8 @@ indent = "        "
 listHighlight :: [Text] -> Markdown
 listHighlight = mconcat . intersperse ", " . map highlight
 
-chatWelcome :: User -> [StyledString]
-chatWelcome User {profile = Profile {displayName, fullName}} =
+chatWelcome :: User -> Onboarding -> [StyledString]
+chatWelcome user Onboarding {contactsCount, createdGroups, membersCount, filesSentCount, addressCount} =
   map
     styleMarkdown
     [ blue "                             __   __",
@@ -50,18 +50,25 @@ chatWelcome User {profile = Profile {displayName, fullName}} =
       cyan " \\__ \\| || |\\/| |  _/ |__| _|" <> blue " / . \\" <> yellow "| (__| __ |/ _ \\| |",
       cyan " |___/___|_|  |_|_| |____|___" <> blue "/_/ \\_\\" <> yellow "\\___|_||_/_/ \\_\\_|",
       "",
-      "Welcome " <> green (if T.null fullName then displayName else fullName) <> "!",
+      "Welcome " <> green userName <> "!",
       "Thank you for installing SimpleX Chat!",
       "",
+      "To try out how it works:",
+      "[" <> check (contactsCount >= 2) <> "] connect with 2 friends - " <> highlight "/help" <> " for instructions",
+      "[" <> check (createdGroups >= 1 && membersCount >= 2) <> "] create a group with them - " <> highlight "/group #friends",
+      "[" <> check (filesSentCount >= 1) <> "] send your photo, e.g. to the group - " <> highlight "/file #friends ./photo.jpg",
+      "[" <> check (addressCount >= 1) <> "] create your chat " <> highlight "/address" <> " and share it with your friends",
+      "",
       "To help us build SimpleX Chat:",
-      "[ ] connect with 2 friends - " <> highlight "/help" <> " for instructions",
-      "[ ] create a group with them - " <> highlight "/group #friends",
-      "[ ] send your photo to the group - " <> highlight "/file #friends ./photo.jpg",
-      "[ ] create your chat " <> highlight "/address" <> " and share it with your friends",
-      "[*] star our GitHub repo: https://github.com/simplex-chat/simplex-chat",
+      "> star GitHub repo: https://github.com/simplex-chat/simplex-chat",
+      "> join Reddit group: https://www.reddit.com/r/SimpleXChat/",
       "",
       "To show this message again - " <> highlight "/welcome"
     ]
+  where
+    User {profile = Profile {displayName, fullName}} = user
+    userName = if T.null fullName then displayName else fullName
+    check c = if c then green "*" else " "
 
 chatHelpInfo :: [StyledString]
 chatHelpInfo =

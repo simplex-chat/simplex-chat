@@ -518,3 +518,11 @@ serializeIntroStatus = \case
   GMIntroReConnected -> "re-con"
   GMIntroToConnected -> "to-con"
   GMIntroConnected -> "con"
+
+data Onboarding = Onboarding
+  { contactsCount :: Int,
+    createdGroups :: Int,
+    membersCount :: Int,
+    filesSentCount :: Int,
+    addressCount :: Int
+  }
