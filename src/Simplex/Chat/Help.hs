@@ -1,7 +1,9 @@
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Simplex.Chat.Help
-  ( chatHelpInfo,
+  ( chatWelcome,
+    chatHelpInfo,
     filesHelpInfo,
     groupsHelpInfo,
     myAddressHelpInfo,
@@ -11,12 +13,23 @@ where
 
 import Data.List (intersperse)
 import Data.Text (Text)
+import qualified Data.Text as T
 import Simplex.Chat.Markdown
 import Simplex.Chat.Styled
+import Simplex.Chat.Types (Onboarding (..), Profile (..), User (..))
 import System.Console.ANSI.Types
 
 highlight :: Text -> Markdown
 highlight = Markdown (Colored Cyan)
+
+blue :: Text -> Markdown
+blue = Markdown (Colored Blue)
+
+cyan :: Text -> Markdown
+cyan = Markdown (Colored Cyan)
+
+yellow :: Text -> Markdown
+yellow = Markdown (Colored Yellow)
 
 green :: Text -> Markdown
 green = Markdown (Colored Green)
@@ -26,6 +39,36 @@ indent = "        "
 
 listHighlight :: [Text] -> Markdown
 listHighlight = mconcat . intersperse ", " . map highlight
+
+chatWelcome :: User -> Onboarding -> [StyledString]
+chatWelcome user Onboarding {contactsCount, createdGroups, membersCount, filesSentCount, addressCount} =
+  map
+    styleMarkdown
+    [ blue "                             __   __",
+      cyan "  ___ ___ __  __ ___ _    ___" <> blue "\\ \\ / /" <> yellow " ___ _  _   _ _____",
+      cyan " / __|_ _|  \\/  | _ \\ |  | __ " <> blue "\\ V /" <> yellow " / __| || | /_\\_   _|",
+      cyan " \\__ \\| || |\\/| |  _/ |__| _|" <> blue " / . \\" <> yellow "| (__| __ |/ _ \\| |",
+      cyan " |___/___|_|  |_|_| |____|___" <> blue "/_/ \\_\\" <> yellow "\\___|_||_/_/ \\_\\_|",
+      "",
+      "Welcome " <> green userName <> "!",
+      "Thank you for installing SimpleX Chat!",
+      "",
+      "To try out how it works:",
+      "[" <> check (contactsCount >= 2) <> "] connect with 2 friends - " <> highlight "/help" <> " for instructions",
+      "[" <> check (createdGroups >= 1 && membersCount >= 2) <> "] create a group with them - " <> highlight "/group #friends",
+      "[" <> check (filesSentCount >= 1) <> "] send your photo, e.g. to the group - " <> highlight "/file #friends ./photo.jpg",
+      "[" <> check (addressCount >= 1) <> "] create your chat " <> highlight "/address" <> " and share it with your friends",
+      "",
+      "To help us build SimpleX Chat:",
+      "> star GitHub repo: https://github.com/simplex-chat/simplex-chat",
+      "> join Reddit group: https://www.reddit.com/r/SimpleXChat/",
+      "",
+      "To show this message again - " <> highlight "/welcome"
+    ]
+  where
+    User {profile = Profile {displayName, fullName}} = user
+    userName = if T.null fullName then displayName else fullName
+    check c = if c then green "*" else " "
 
 chatHelpInfo :: [StyledString]
 chatHelpInfo =

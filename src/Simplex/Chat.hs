@@ -44,7 +44,7 @@ import Simplex.Chat.Store
 import Simplex.Chat.Styled (plain)
 import Simplex.Chat.Terminal
 import Simplex.Chat.Types
-import Simplex.Chat.Util (ifM, unlessM)
+import Simplex.Chat.Util (ifM, unlessM, whenM)
 import Simplex.Chat.View
 import Simplex.Messaging.Agent
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), defaultAgentConfig)
@@ -70,6 +70,7 @@ data ChatCommand
   | GroupsHelp
   | MyAddressHelp
   | MarkdownHelp
+  | Welcome
   | AddContact
   | Connect AConnectionRequest
   | DeleteContact ContactName
@@ -129,7 +130,9 @@ simplexChat cfg opts t =
 
 newChatController :: WithTerminal t => ChatConfig -> ChatOpts -> t -> (Notification -> IO ()) -> IO ChatController
 newChatController config@ChatConfig {agentConfig = cfg, dbPoolSize, tbqSize} ChatOpts {dbFile, smpServers} t sendNotification = do
-  chatStore <- createStore (dbFile <> ".chat.db") dbPoolSize
+  let f = chatStoreFile dbFile
+  firstTime <- not <$> doesFileExist f
+  chatStore <- createStore f dbPoolSize
   currentUser <- newTVarIO =<< getCreateActiveUser chatStore
   chatTerminal <- newChatTerminal t
   smpAgent <- getSMPAgentClient cfg {dbFile = dbFile <> ".agent.db", smpServers}
@@ -142,7 +145,10 @@ newChatController config@ChatConfig {agentConfig = cfg, dbPoolSize, tbqSize} Cha
   pure ChatController {..}
 
 runSimplexChat :: ChatController -> IO ()
-runSimplexChat = runReaderT (race_ runTerminalInput runChatController)
+runSimplexChat = runReaderT $ do
+  user <- readTVarIO =<< asks currentUser
+  whenM (asks firstTime) . printToView . chatWelcome user $ Onboarding 0 0 0 0 0
+  race_ runTerminalInput runChatController
 
 runChatController :: (MonadUnliftIO m, MonadReader ChatController m) => m ()
 runChatController =
@@ -187,6 +193,9 @@ processChatCommand user@User {userId, profile} = \case
   GroupsHelp -> printToView groupsHelpInfo
   MyAddressHelp -> printToView myAddressHelpInfo
   MarkdownHelp -> printToView markdownInfo
+  Welcome -> do
+    ob <- withStore (`getOnboarding` userId)
+    printToView $ chatWelcome user ob
   AddContact -> do
     (connId, cReq) <- withAgent (`createConnection` SCMInvitation)
     withStore $ \st -> createDirectConnection st userId connId
@@ -548,7 +557,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
               -- TODO update contact profile
               pure ()
             XOk -> pure ()
-            _ -> messageError "INFO for existing contact must have x.grp.mem.info, x.info or x.ok"
+            _ -> messageError "INFO for existing contact must have x.grp.mem.info, x.info or x.ok"
         CON ->
           withStore (\st -> getViaGroupMember st user ct) >>= \case
             Nothing -> do
@@ -1186,6 +1195,7 @@ chatCommandP =
     <|> ("/accept @" <|> "/accept " <|> "/ac @" <|> "/ac ") *> (AcceptContact <$> displayName)
     <|> ("/reject @" <|> "/reject " <|> "/rc @" <|> "/rc ") *> (RejectContact <$> displayName)
     <|> ("/markdown" <|> "/m") $> MarkdownHelp
+    <|> ("/welcome" <|> "/w") $> Welcome
     <|> ("/profile " <|> "/p ") *> (UpdateProfile <$> userProfile)
     <|> ("/profile" <|> "/p") $> ShowProfile
     <|> ("/quit" <|> "/q" <|> "/exit") $> QuitChat
