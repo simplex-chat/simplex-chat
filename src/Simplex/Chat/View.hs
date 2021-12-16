@@ -8,14 +8,25 @@
 module Simplex.Chat.View
   ( printToView,
     showInvitation,
+    showSentConfirmation,
+    showSentInvitation,
     showChatError,
     showContactDeleted,
     showContactGroups,
+    showContactsList,
     showContactConnected,
     showContactDisconnected,
     showContactAnotherClient,
     showContactSubscribed,
     showContactSubError,
+    showUserContactLinkCreated,
+    showUserContactLinkDeleted,
+    showUserContactLink,
+    showReceivedContactRequest,
+    showAcceptingContactRequest,
+    showContactRequestRejected,
+    showUserContactLinkSubscribed,
+    showUserContactLinkSubError,
     showGroupSubscribed,
     showGroupEmpty,
     showGroupRemoved,
@@ -55,6 +66,7 @@ module Simplex.Chat.View
     showLeftMemberUser,
     showLeftMember,
     showGroupMembers,
+    showGroupsList,
     showContactsMerged,
     showUserProfile,
     showUserProfileUpdated,
@@ -72,7 +84,7 @@ import Data.ByteString.Char8 (ByteString)
 import Data.Composition ((.:), (.:.))
 import Data.Function (on)
 import Data.Int (Int64)
-import Data.List (groupBy, intersperse, sortOn)
+import Data.List (groupBy, intersperse, sort, sortOn)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (DiffTime, UTCTime)
@@ -87,12 +99,19 @@ import Simplex.Chat.Terminal (printToTerminal)
 import Simplex.Chat.Types
 import Simplex.Chat.Util (safeDecodeUtf8)
 import Simplex.Messaging.Agent.Protocol
+import qualified Simplex.Messaging.Protocol as SMP
 import System.Console.ANSI.Types
 
 type ChatReader m = (MonadUnliftIO m, MonadReader ChatController m)
 
-showInvitation :: ChatReader m => SMPQueueInfo -> m ()
-showInvitation = printToView . invitation
+showInvitation :: ChatReader m => ConnReqInvitation -> m ()
+showInvitation = printToView . connReqInvitation_
+
+showSentConfirmation :: ChatReader m => m ()
+showSentConfirmation = printToView ["confirmation sent!"]
+
+showSentInvitation :: ChatReader m => m ()
+showSentInvitation = printToView ["connection request sent!"]
 
 showChatError :: ChatReader m => ChatError -> m ()
 showChatError = printToView . chatError
@@ -102,6 +121,9 @@ showContactDeleted = printToView . contactDeleted
 
 showContactGroups :: ChatReader m => ContactName -> [GroupName] -> m ()
 showContactGroups = printToView .: contactGroups
+
+showContactsList :: ChatReader m => [Contact] -> m ()
+showContactsList = printToView . contactsList
 
 showContactConnected :: ChatReader m => Contact -> m ()
 showContactConnected = printToView . contactConnected
@@ -117,6 +139,30 @@ showContactSubscribed = printToView . contactSubscribed
 
 showContactSubError :: ChatReader m => ContactName -> ChatError -> m ()
 showContactSubError = printToView .: contactSubError
+
+showUserContactLinkCreated :: ChatReader m => ConnReqContact -> m ()
+showUserContactLinkCreated = printToView . userContactLinkCreated
+
+showUserContactLinkDeleted :: ChatReader m => m ()
+showUserContactLinkDeleted = printToView userContactLinkDeleted
+
+showUserContactLink :: ChatReader m => ConnReqContact -> m ()
+showUserContactLink = printToView . userContactLink
+
+showReceivedContactRequest :: ChatReader m => ContactName -> Profile -> m ()
+showReceivedContactRequest = printToView .: receivedContactRequest
+
+showAcceptingContactRequest :: ChatReader m => ContactName -> m ()
+showAcceptingContactRequest = printToView . acceptingContactRequest
+
+showContactRequestRejected :: ChatReader m => ContactName -> m ()
+showContactRequestRejected = printToView . contactRequestRejected
+
+showUserContactLinkSubscribed :: ChatReader m => m ()
+showUserContactLinkSubscribed = printToView ["Your address is active! To show: " <> highlight' "/sa"]
+
+showUserContactLinkSubError :: ChatReader m => ChatError -> m ()
+showUserContactLinkSubError = printToView . userContactLinkSubError
 
 showGroupSubscribed :: ChatReader m => GroupName -> m ()
 showGroupSubscribed = printToView . groupSubscribed
@@ -241,6 +287,9 @@ showLeftMember = printToView .: leftMember
 showGroupMembers :: ChatReader m => Group -> m ()
 showGroupMembers = printToView . groupMembers
 
+showGroupsList :: ChatReader m => [GroupName] -> m ()
+showGroupsList = printToView . groupsList
+
 showContactsMerged :: ChatReader m => Contact -> Contact -> m ()
 showContactsMerged = printToView .: contactsMerged
 
@@ -256,13 +305,13 @@ showContactUpdated = printToView .: contactUpdated
 showMessageError :: ChatReader m => Text -> Text -> m ()
 showMessageError = printToView .: messageError
 
-invitation :: SMPQueueInfo -> [StyledString]
-invitation qInfo =
-  [ "pass this invitation to your contact (via another channel): ",
+connReqInvitation_ :: ConnReqInvitation -> [StyledString]
+connReqInvitation_ cReq =
+  [ "pass this invitation link to your contact (via another channel): ",
     "",
-    (plain . serializeSmpQueueInfo) qInfo,
+    (plain . serializeConnReq') cReq,
     "",
-    "and ask them to connect: " <> highlight' "/c <invitation_above>"
+    "and ask them to connect: " <> highlight' "/c <invitation_link_above>"
   ]
 
 contactDeleted :: ContactName -> [StyledString]
@@ -275,6 +324,11 @@ contactGroups c gNames = [ttyContact c <> ": contact cannot be deleted, it is a 
     ttyGroups [] = ""
     ttyGroups [g] = ttyGroup g
     ttyGroups (g : gs) = ttyGroup g <> ", " <> ttyGroups gs
+
+contactsList :: [Contact] -> [StyledString]
+contactsList =
+  let ldn = T.toLower . (localDisplayName :: Contact -> ContactName)
+   in map ttyFullContact . sortOn ldn
 
 contactConnected :: Contact -> [StyledString]
 contactConnected ct = [ttyFullContact ct <> ": contact is connected"]
@@ -290,6 +344,48 @@ contactSubscribed c = [ttyContact c <> ": connected to server"]
 
 contactSubError :: ContactName -> ChatError -> [StyledString]
 contactSubError c e = [ttyContact c <> ": contact error " <> sShow e]
+
+userContactLinkCreated :: ConnReqContact -> [StyledString]
+userContactLinkCreated = connReqContact_ "Your new chat address is created!"
+
+userContactLinkDeleted :: [StyledString]
+userContactLinkDeleted =
+  [ "Your chat address is deleted - accepted contacts will remain connected.",
+    "To create a new chat address use " <> highlight' "/ad"
+  ]
+
+userContactLink :: ConnReqContact -> [StyledString]
+userContactLink = connReqContact_ "Your chat address:"
+
+connReqContact_ :: StyledString -> ConnReqContact -> [StyledString]
+connReqContact_ intro cReq =
+  [ intro,
+    "",
+    (plain . serializeConnReq') cReq,
+    "",
+    "Anybody can send you contact requests with: " <> highlight' "/c <contact_link_above>",
+    "to show it again: " <> highlight' "/sa",
+    "to delete it: " <> highlight' "/da" <> " (accepted contacts will remain connected)"
+  ]
+
+receivedContactRequest :: ContactName -> Profile -> [StyledString]
+receivedContactRequest c Profile {fullName} =
+  [ ttyFullName c fullName <> " wants to connect to you!",
+    "to accept: " <> highlight ("/ac " <> c),
+    "to reject: " <> highlight ("/rc " <> c) <> " (the sender will NOT be notified)"
+  ]
+
+acceptingContactRequest :: ContactName -> [StyledString]
+acceptingContactRequest c = [ttyContact c <> ": accepting contact request..."]
+
+contactRequestRejected :: ContactName -> [StyledString]
+contactRequestRejected c = [ttyContact c <> ": contact request rejected"]
+
+userContactLinkSubError :: ChatError -> [StyledString]
+userContactLinkSubError e =
+  [ "user address error: " <> sShow e,
+    "to delete your address: " <> highlight' "/da"
+  ]
 
 groupSubscribed :: GroupName -> [StyledString]
 groupSubscribed g = [ttyGroup g <> ": connected to server(s)"]
@@ -385,6 +481,10 @@ groupMembers Group {membership, members} = map groupMember . filter (not . remov
       GSMemComplete -> "connected"
       GSMemCreator -> "created group"
       _ -> ""
+
+groupsList :: [GroupName] -> [StyledString]
+groupsList [] = ["you have no groups!", "to create: " <> highlight' "/g <name>"]
+groupsList gs = map ttyGroup $ sort gs
 
 contactsMerged :: Contact -> Contact -> [StyledString]
 contactsMerged _to@Contact {localDisplayName = c1} _from@Contact {localDisplayName = c2} =
@@ -625,8 +725,13 @@ chatError = \case
     SEFileNotFound fileId -> fileNotFound fileId
     SESndFileNotFound fileId -> fileNotFound fileId
     SERcvFileNotFound fileId -> fileNotFound fileId
+    SEDuplicateContactLink -> ["you already have chat address, to show: " <> highlight' "/sa"]
+    SEUserContactLinkNotFound -> ["no chat address, to create: " <> highlight' "/ad"]
+    SEContactRequestNotFound c -> ["no contact request from " <> ttyContact c]
     e -> ["chat db error: " <> sShow e]
-  ChatErrorAgent e -> ["smp agent error: " <> sShow e]
+  ChatErrorAgent err -> case err of
+    SMP SMP.AUTH -> ["error: this connection is deleted"]
+    e -> ["smp agent error: " <> sShow e]
   ChatErrorMessage e -> ["chat message error: " <> sShow e]
   where
     fileNotFound fileId = ["file " <> sShow fileId <> " not found"]

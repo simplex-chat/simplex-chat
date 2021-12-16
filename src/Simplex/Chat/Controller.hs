@@ -26,7 +26,7 @@ import System.IO (Handle)
 import UnliftIO.STM
 
 versionNumber :: String
-versionNumber = "0.4.2"
+versionNumber = "0.5.0"
 
 data ChatConfig = ChatConfig
   { agentConfig :: AgentConfig,
@@ -37,6 +37,7 @@ data ChatConfig = ChatConfig
 
 data ChatController = ChatController
   { currentUser :: TVar User,
+    firstTime :: Bool,
     smpAgent :: AgentClient,
     chatTerminal :: ChatTerminal,
     chatStore :: SQLiteStore,
