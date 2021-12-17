@@ -64,7 +64,7 @@ chatWelcome user Onboarding {contactsCount, createdGroups, membersCount, filesSe
       "> star GitHub repo: https://github.com/simplex-chat/simplex-chat",
       "> join Reddit group: https://www.reddit.com/r/SimpleXChat/",
       "",
-      "If you really like SimpleX Chat, donate from $1: https://github.com/sponsors/simplex-chat"
+      "To show this message again - " <> highlight "/welcome" <> " (or " <> highlight "/w" <> ")"
     ]
   where
     User {profile = Profile {displayName, fullName}} = user
