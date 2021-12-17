@@ -973,16 +973,23 @@ deleteGroup st User {userId} Group {groupId, members, localDisplayName} =
     DB.execute db "DELETE FROM display_names WHERE user_id = ? AND local_display_name = ?" (userId, localDisplayName)
 
 getUserGroups :: MonadUnliftIO m => SQLiteStore -> User -> m [Group]
-getUserGroups st user =
+getUserGroups st user@User {userId} =
   liftIO . withTransaction st $ \db -> do
-    groupNames <- getUserGroupNames_ db $ userId user
+    groupNames <- map fromOnly <$> DB.query db "SELECT local_display_name FROM groups WHERE user_id = ?" (Only userId)
     map fst . rights <$> mapM (runExceptT . getGroup_ db user) groupNames
 
-getUserGroupNames :: MonadUnliftIO m => SQLiteStore -> UserId -> m [GroupName]
-getUserGroupNames st userId = liftIO $ withTransaction st (`getUserGroupNames_` userId)
-
-getUserGroupNames_ :: DB.Connection -> UserId -> IO [GroupName]
-getUserGroupNames_ db userId = map fromOnly <$> DB.query db "SELECT local_display_name FROM groups WHERE user_id = ?" (Only userId)
+getUserGroupNames :: MonadUnliftIO m => SQLiteStore -> UserId -> m [(GroupName, Text)]
+getUserGroupNames st userId =
+  liftIO . withTransaction st $ \db ->
+    DB.query
+      db
+      [sql|
+        SELECT g.local_display_name, p.full_name
+        FROM groups g
+        JOIN group_profiles p USING (group_profile_id)
+        WHERE g.user_id = ?
+      |]
+      (Only userId)
 
 getGroupInvitation :: StoreMonad m => SQLiteStore -> User -> GroupName -> m ReceivedGroupInvitation
 getGroupInvitation st user localDisplayName =
