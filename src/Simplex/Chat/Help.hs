@@ -3,6 +3,7 @@
 
 module Simplex.Chat.Help
   ( chatWelcome,
+    adminWelcomeMessages,
     chatHelpInfo,
     filesHelpInfo,
     groupsHelpInfo,
@@ -11,6 +12,7 @@ module Simplex.Chat.Help
   )
 where
 
+import Data.ByteString (ByteString)
 import Data.List (intersperse)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -21,15 +23,6 @@ import System.Console.ANSI.Types
 
 highlight :: Text -> Markdown
 highlight = Markdown (Colored Cyan)
-
-blue :: Text -> Markdown
-blue = Markdown (Colored Blue)
-
-cyan :: Text -> Markdown
-cyan = Markdown (Colored Cyan)
-
-yellow :: Text -> Markdown
-yellow = Markdown (Colored Yellow)
 
 green :: Text -> Markdown
 green = Markdown (Colored Green)
@@ -44,31 +37,46 @@ chatWelcome :: User -> Onboarding -> [StyledString]
 chatWelcome user Onboarding {contactsCount, createdGroups, membersCount, filesSentCount, addressCount} =
   map
     styleMarkdown
-    [ blue "                             __   __",
-      cyan "  ___ ___ __  __ ___ _    ___" <> blue "\\ \\ / /" <> yellow " ___ _  _   _ _____",
-      cyan " / __|_ _|  \\/  | _ \\ |  | __ " <> blue "\\ V /" <> yellow " / __| || | /_\\_   _|",
-      cyan " \\__ \\| || |\\/| |  _/ |__| _|" <> blue " / . \\" <> yellow "| (__| __ |/ _ \\| |",
-      cyan " |___/___|_|  |_|_| |____|___" <> blue "/_/ \\_\\" <> yellow "\\___|_||_/_/ \\_\\_|",
+    [ "                             __   __",
+      "  ___ ___ __  __ ___ _    ___" <> "\\ \\ / /" <> " ___ _  _   _ _____",
+      " / __|_ _|  \\/  | _ \\ |  | __ " <> "\\ V /" <> " / __| || | /_\\_   _|",
+      " \\__ \\| || |\\/| |  _/ |__| _|" <> " / . \\" <> "| (__| __ |/ _ \\| |",
+      " |___/___|_|  |_|_| |____|___" <> "/_/ \\_\\" <> "\\___|_||_/_/ \\_\\_|",
       "",
       "Welcome " <> green userName <> "!",
       "Thank you for installing SimpleX Chat!",
       "",
-      "To try out how it works:",
+      "We have created several groups that you can join to play with SimpleX Chat:",
+      highlight "#simplex" <> " (SimpleX Engineers 💻) - technical questions about running or contributing to SimpleX Chat",
+      highlight "#hacks" <> " (Ethical Hacking 🔓) - chatting about privacy, security, announced vulnerabilities etc.",
+      highlight "#music" <> " (Music 🎸) - favorite music of our team and users",
+      highlight "#rand" <> " (Random 😇) - anything interesting, just keep it decent and friendly please :)",
+      "",
+      "Connect to our groups admin to be added to these groups - " <> highlight "/admin",
+      "",
+      "To continue:",
       "[" <> check (contactsCount >= 2) <> "] connect with 2 friends - " <> highlight "/help" <> " for instructions",
-      "[" <> check (createdGroups >= 1 && membersCount >= 2) <> "] create a group with them - " <> highlight "/group #friends",
-      "[" <> check (filesSentCount >= 1) <> "] send your photo, e.g. to the group - " <> highlight "/file #friends ./photo.jpg",
-      "[" <> check (addressCount >= 1) <> "] create your chat " <> highlight "/address" <> " and share it with your friends",
+      "[" <> check (createdGroups >= 1 && membersCount >= 2) <> "] create a " <> highlight "/group" <> " with them - " <> highlight "/g #friends",
+      "[" <> check (filesSentCount >= 1) <> "] send " <> highlight "/file" <> ", e.g. your photo, to the group - " <> highlight "/f #friends ./photo.jpg",
+      "[" <> check (addressCount >= 1) <> "] create your chat " <> highlight "/address" <> " and share it with your friends - " <> highlight "/ad",
       "",
       "To help us build SimpleX Chat:",
       "> star GitHub repo: https://github.com/simplex-chat/simplex-chat",
       "> join Reddit group: https://www.reddit.com/r/SimpleXChat/",
       "",
-      "To show this message again - " <> highlight "/welcome"
+      "If you really like SimpleX Chat, donate from $1: https://github.com/sponsors/simplex-chat"
     ]
   where
     User {profile = Profile {displayName, fullName}} = user
     userName = if T.null fullName then displayName else fullName
     check c = if c then green "*" else " "
+
+adminWelcomeMessages :: [ByteString]
+adminWelcomeMessages =
+  [ "Hello - and welcome to SimpleX Chat!",
+    "Which community groups you'd you like to join:",
+    "!5 #simplex!, !5 #hacks!, !5 #music! or !5 #rand!"
+  ]
 
 chatHelpInfo :: [StyledString]
 chatHelpInfo =
@@ -89,13 +97,14 @@ chatHelpInfo =
       indent <> highlight "@bob Hello, Bob!" <> " - Alice messages Bob (assuming Bob has display name 'bob').",
       indent <> highlight "@alice Hey, Alice!" <> " - Bob replies to Alice.",
       "",
-      green "Send file: " <> highlight "/file bob ./photo.jpg" <> " (see /help files)",
+      green "Send file: " <> highlight "/file bob ./photo.jpg",
       "",
-      green "Create group: " <> highlight "/group team" <> " (see /help groups)",
+      green "Create group: " <> highlight "/group team",
       "",
-      green "Create your address: " <> highlight "/address" <> " (see /help address)",
+      green "Create your address: " <> highlight "/address",
       "",
       green "Other commands:",
+      indent <> highlight "/help <topic>    " <> " - help on: files, groups, address",
       indent <> highlight "/profile         " <> " - show / update user profile",
       indent <> highlight "/delete <contact>" <> " - delete contact and all messages with them",
       indent <> highlight "/contacts        " <> " - list contacts",

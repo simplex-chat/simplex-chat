@@ -1594,7 +1594,7 @@ getSndFileTransfers_ db userId fileId =
 getOnboarding :: MonadUnliftIO m => SQLiteStore -> UserId -> m Onboarding
 getOnboarding st userId =
   liftIO . withTransaction st $ \db -> do
-    contactsCount <- intQuery db "SELECT COUNT(contact_id) FROM contacts WHERE user_id = ?"
+    contactsCount <- intQuery db "SELECT COUNT(contact_id) FROM contacts WHERE user_id = ? AND is_user = 0"
     createdGroups <- headOrZero <$> DB.query db "SELECT COUNT(g.group_id) FROM groups g JOIN group_members m WHERE g.user_id = ? AND m.member_status = ?" (userId, GSMemCreator)
     membersCount <- headOrZero <$> DB.query db "SELECT COUNT(group_member_id) FROM group_members WHERE user_id = ? AND (member_status = ? OR member_status = ?)" (userId, GSMemConnected, GSMemComplete)
     filesSentCount <- intQuery db "SELECT COUNT(s.file_id) FROM snd_files s JOIN files f USING (file_id) WHERE f.user_id = ?"
