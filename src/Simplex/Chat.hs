@@ -73,6 +73,8 @@ data ChatCommand
   | Welcome
   | AddContact
   | Connect AConnectionRequest
+  | ConnectAdmin
+  | SendAdminWelcome ContactName
   | DeleteContact ContactName
   | ListContacts
   | CreateMyAddress
@@ -181,6 +183,7 @@ inputSubscriber = do
               SendGroupMessage g msg -> showSentGroupMessage g msg
               SendFile c f -> showSentFileInvitation c f
               SendGroupFile g f -> showSentGroupFileInvitation g f
+              SendAdminWelcome c -> forM_ adminWelcomeMessages $ showSentMessage c
               _ -> printToView [plain s]
             user <- readTVarIO =<< asks currentUser
             withAgentLock a . withLock l . void . runExceptT $
@@ -202,6 +205,8 @@ processChatCommand user@User {userId, profile} = \case
     showInvitation cReq
   Connect (ACR SCMInvitation cReq) -> connect cReq (XInfo profile) >> showSentConfirmation
   Connect (ACR SCMContact cReq) -> connect cReq (XContact profile Nothing) >> showSentInvitation
+  ConnectAdmin -> connect adminContactReq (XContact profile Nothing) >> showSentInvitation
+  SendAdminWelcome cName -> forM_ adminWelcomeMessages $ sendMessageCmd cName
   DeleteContact cName ->
     withStore (\st -> getContactGroupNames st userId cName) >>= \case
       [] -> do
@@ -238,11 +243,7 @@ processChatCommand user@User {userId, profile} = \case
         `E.finally` deleteContactRequest st userId cName
     withAgent $ \a -> rejectContact a agentContactConnId agentInvitationId
     showContactRequestRejected cName
-  SendMessage cName msg -> do
-    contact <- withStore $ \st -> getContact st userId cName
-    let msgEvent = XMsgNew $ MsgContent MTText [] [MsgContentBody {contentType = SimplexContentType XCText, contentData = msg}]
-    sendDirectMessage (contactConnId contact) msgEvent
-    setActive $ ActiveC cName
+  SendMessage cName msg -> sendMessageCmd cName msg
   NewGroup gProfile -> do
     gVar <- asks idsDrg
     group <- withStore $ \st -> createNewGroup st gVar user gProfile
@@ -369,6 +370,12 @@ processChatCommand user@User {userId, profile} = \case
     connect cReq msg = do
       connId <- withAgent $ \a -> joinConnection a cReq $ directMessage msg
       withStore $ \st -> createDirectConnection st userId connId
+    sendMessageCmd :: ContactName -> ByteString -> m ()
+    sendMessageCmd cName msg = do
+      contact <- withStore $ \st -> getContact st userId cName
+      let msgEvent = XMsgNew $ MsgContent MTText [] [MsgContentBody {contentType = SimplexContentType XCText, contentData = msg}]
+      sendDirectMessage (contactConnId contact) msgEvent
+      setActive $ ActiveC cName
     contactMember :: Contact -> [GroupMember] -> Maybe GroupMember
     contactMember Contact {contactId} =
       find $ \GroupMember {memberContactId = cId, memberStatus = s} ->
@@ -1189,6 +1196,8 @@ chatCommandP =
     <|> ("/freceive " <|> "/fr ") *> (ReceiveFile <$> A.decimal <*> optional (A.space *> filePath))
     <|> ("/fcancel " <|> "/fc ") *> (CancelFile <$> A.decimal)
     <|> ("/fstatus " <|> "/fs ") *> (FileStatus <$> A.decimal)
+    <|> "/admin_welcome " *> (SendAdminWelcome <$> displayName)
+    <|> "/admin" $> ConnectAdmin
     <|> ("/address" <|> "/ad") $> CreateMyAddress
     <|> ("/delete_address" <|> "/da") $> DeleteMyAddress
     <|> ("/show_address" <|> "/sa") $> ShowMyAddress
@@ -1220,3 +1229,7 @@ chatCommandP =
         <|> (" admin" $> GRAdmin)
         <|> (" member" $> GRMember)
         <|> pure GRAdmin
+
+adminContactReq :: ConnectionRequest 'CMContact
+adminContactReq =
+  either error id $ parseAll connReqP' "https://simplex.chat/contact#/?smp=smp%3A%2F%2Fnxc7HnrnM8dOKgkMp008ub_9o9LXJlxlMrMpR-mfMQw%3D%40smp3.simplex.im%2F-TXnePw5eH5-4L7B%23&e2e=rsa%3AMIIBoDANBgkqhkiG9w0BAQEFAAOCAY0AMIIBiAKCAQEA6vpcsZggnYL38Qa2G5YU0W5uqnV8WAq_S3flIFU2kx4qW-aokVT8fo0CLJXv9aagdHObFfhc9SXcZPcm4T2NLnafKTgQa_HYFfj764l6cHkbSI-4JBE1gyhtaapsvrDGIdoiGDLgsF3AJVjqs8gavkuTsmw035aWMH-pkpc4qGlEWpNWp1Nn-7O4sdIIQ7yN48jsdCfeIY-BIk3kFR6s4oQOgiOcnir8e3x5tTuRMX1KWSiuzuqLHqgmcI1IqcPJPrBoTQLbXXEMGG1RsvIudxR03jejXXbQvlxXlNNrxwkniEe-P0rApGuCyv2NRMb4n0Wd3ZwewH7X-xtr16XNbQKBgDouGUHD1C55jB-w8W8VJRhFZS2xIYka9gJH1jjCFxHFzgjo69A_sObIamND1pF_JOzj_XCoA1fDICF95XbfS0rq9iS6xvX6M8Muq8QiJsfD5bRt5nh-Y3GK5rAFXS0ZtyOeh07iMLAMJ_EFxBQuKKDRu9_9KAvLL_plU0PuaMH3"

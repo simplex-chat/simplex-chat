@@ -973,16 +973,23 @@ deleteGroup st User {userId} Group {groupId, members, localDisplayName} =
     DB.execute db "DELETE FROM display_names WHERE user_id = ? AND local_display_name = ?" (userId, localDisplayName)
 
 getUserGroups :: MonadUnliftIO m => SQLiteStore -> User -> m [Group]
-getUserGroups st user =
+getUserGroups st user@User {userId} =
   liftIO . withTransaction st $ \db -> do
-    groupNames <- getUserGroupNames_ db $ userId user
+    groupNames <- map fromOnly <$> DB.query db "SELECT local_display_name FROM groups WHERE user_id = ?" (Only userId)
     map fst . rights <$> mapM (runExceptT . getGroup_ db user) groupNames
 
-getUserGroupNames :: MonadUnliftIO m => SQLiteStore -> UserId -> m [GroupName]
-getUserGroupNames st userId = liftIO $ withTransaction st (`getUserGroupNames_` userId)
-
-getUserGroupNames_ :: DB.Connection -> UserId -> IO [GroupName]
-getUserGroupNames_ db userId = map fromOnly <$> DB.query db "SELECT local_display_name FROM groups WHERE user_id = ?" (Only userId)
+getUserGroupNames :: MonadUnliftIO m => SQLiteStore -> UserId -> m [(GroupName, Text)]
+getUserGroupNames st userId =
+  liftIO . withTransaction st $ \db ->
+    DB.query
+      db
+      [sql|
+        SELECT g.local_display_name, p.full_name
+        FROM groups g
+        JOIN group_profiles p USING (group_profile_id)
+        WHERE g.user_id = ?
+      |]
+      (Only userId)
 
 getGroupInvitation :: StoreMonad m => SQLiteStore -> User -> GroupName -> m ReceivedGroupInvitation
 getGroupInvitation st user localDisplayName =
@@ -1594,7 +1601,7 @@ getSndFileTransfers_ db userId fileId =
 getOnboarding :: MonadUnliftIO m => SQLiteStore -> UserId -> m Onboarding
 getOnboarding st userId =
   liftIO . withTransaction st $ \db -> do
-    contactsCount <- intQuery db "SELECT COUNT(contact_id) FROM contacts WHERE user_id = ?"
+    contactsCount <- intQuery db "SELECT COUNT(contact_id) FROM contacts WHERE user_id = ? AND is_user = 0"
     createdGroups <- headOrZero <$> DB.query db "SELECT COUNT(g.group_id) FROM groups g JOIN group_members m WHERE g.user_id = ? AND m.member_status = ?" (userId, GSMemCreator)
     membersCount <- headOrZero <$> DB.query db "SELECT COUNT(group_member_id) FROM group_members WHERE user_id = ? AND (member_status = ? OR member_status = ?)" (userId, GSMemConnected, GSMemComplete)
     filesSentCount <- intQuery db "SELECT COUNT(s.file_id) FROM snd_files s JOIN files f USING (file_id) WHERE f.user_id = ?"
