@@ -55,7 +55,7 @@ chatWelcome user Onboarding {contactsCount, createdGroups, membersCount, filesSe
       "Connect to our groups admin to be added to these groups - " <> highlight "/admin",
       "",
       "To continue:",
-      "[" <> check (contactsCount >= 2) <> "] connect with 2 friends - " <> highlight "/help" <> " for instructions",
+      "[" <> check (contactsCount >= 2) <> "] " <> highlight "/connect" <> " with 2 friends - " <> highlight "/help" <> " for instructions",
       "[" <> check (createdGroups >= 1 && membersCount >= 2) <> "] create a " <> highlight "/group" <> " with them - " <> highlight "/g #friends",
       "[" <> check (filesSentCount >= 1) <> "] send " <> highlight "/file" <> ", e.g. your photo, to the group - " <> highlight "/f #friends ./photo.jpg",
       "[" <> check (addressCount >= 1) <> "] create your chat " <> highlight "/address" <> " and share it with your friends - " <> highlight "/ad",
