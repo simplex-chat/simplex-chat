@@ -74,7 +74,7 @@ chatWelcome user Onboarding {contactsCount, createdGroups, membersCount, filesSe
 adminWelcomeMessages :: [ByteString]
 adminWelcomeMessages =
   [ "Hello - and welcome to SimpleX Chat!",
-    "Which community groups you'd you like to join:",
+    "Which community groups you'd like to join:",
     "!5 #simplex!, !5 #hacks!, !5 #music! or !5 #rand!"
   ]
 
