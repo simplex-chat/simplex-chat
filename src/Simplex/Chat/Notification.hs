@@ -10,10 +10,10 @@ import Control.Monad (void)
 import Data.List (isInfixOf)
 import Data.Map (Map, fromList)
 import qualified Data.Map as M
-import Data.Maybe (fromMaybe)
+import Data.Maybe (fromMaybe, isJust)
 import Data.Text (Text)
 import qualified Data.Text as T
-import System.Directory (createDirectoryIfMissing, doesFileExist, getAppUserDataDirectory)
+import System.Directory (createDirectoryIfMissing, doesFileExist, findExecutable, getAppUserDataDirectory)
 import System.FilePath (combine)
 import System.Info (os)
 import System.Process (readCreateProcess, shell)
@@ -27,16 +27,24 @@ initializeNotifications =
     "mingw32" -> initWinNotify
     "linux" ->
       doesFileExist "/proc/sys/kernel/osrelease" >>= \case
-        False -> pure $ notify linuxScript
+        False -> initLinuxNotify
         True -> do
           v <- readFile "/proc/sys/kernel/osrelease"
           if "Microsoft" `isInfixOf` v || "WSL" `isInfixOf` v
             then initWslNotify
-            else pure $ notify linuxScript
-    _ -> pure . const $ pure ()
+            else initLinuxNotify
+    _ -> pure noNotifications
+
+noNotifications :: Notification -> IO ()
+noNotifications _ = pure ()
 
 hideException :: (a -> IO ()) -> (a -> IO ())
 hideException f a = f a `catch` \(_ :: SomeException) -> pure ()
+
+initLinuxNotify :: IO (Notification -> IO ())
+initLinuxNotify = do
+  found <- isJust <$> findExecutable "notify-send"
+  pure $ if found then notify linuxScript else noNotifications
 
 notify :: (Notification -> Text) -> Notification -> IO ()
 notify script notification =
