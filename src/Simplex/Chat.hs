@@ -72,7 +72,7 @@ data ChatCommand
   | MarkdownHelp
   | Welcome
   | AddContact
-  | Connect AConnectionRequest
+  | Connect (Maybe AConnectionRequest)
   | ConnectAdmin
   | SendAdminWelcome ContactName
   | DeleteContact ContactName
@@ -203,8 +203,9 @@ processChatCommand user@User {userId, profile} = \case
     (connId, cReq) <- withAgent (`createConnection` SCMInvitation)
     withStore $ \st -> createDirectConnection st userId connId
     showInvitation cReq
-  Connect (ACR SCMInvitation cReq) -> connect cReq (XInfo profile) >> showSentConfirmation
-  Connect (ACR SCMContact cReq) -> connect cReq (XContact profile Nothing) >> showSentInvitation
+  Connect (Just (ACR SCMInvitation cReq)) -> connect cReq (XInfo profile) >> showSentConfirmation
+  Connect (Just (ACR SCMContact cReq)) -> connect cReq (XContact profile Nothing) >> showSentInvitation
+  Connect Nothing -> showInvalidConnReq
   ConnectAdmin -> connect adminContactReq (XContact profile Nothing) >> showSentInvitation
   SendAdminWelcome cName -> forM_ adminWelcomeMessages $ sendMessageCmd cName
   DeleteContact cName ->
@@ -1187,7 +1188,7 @@ chatCommandP =
     <|> ("/groups" <|> "/gs") $> ListGroups
     <|> A.char '#' *> (SendGroupMessage <$> displayName <* A.space <*> A.takeByteString)
     <|> ("/contacts" <|> "/cs") $> ListContacts
-    <|> ("/connect " <|> "/c ") *> (Connect <$> connReqP)
+    <|> ("/connect " <|> "/c ") *> (Connect <$> ((Just <$> connReqP) <|> A.takeByteString $> Nothing))
     <|> ("/connect" <|> "/c") $> AddContact
     <|> ("/delete @" <|> "/delete " <|> "/d @" <|> "/d ") *> (DeleteContact <$> displayName)
     <|> A.char '@' *> (SendMessage <$> displayName <*> (A.space *> A.takeByteString))

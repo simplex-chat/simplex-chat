@@ -10,6 +10,7 @@ module Simplex.Chat.View
     showInvitation,
     showSentConfirmation,
     showSentInvitation,
+    showInvalidConnReq,
     showChatError,
     showContactDeleted,
     showContactGroups,
@@ -112,6 +113,15 @@ showSentConfirmation = printToView ["confirmation sent!"]
 
 showSentInvitation :: ChatReader m => m ()
 showSentInvitation = printToView ["connection request sent!"]
+
+showInvalidConnReq :: ChatReader m => m ()
+showInvalidConnReq =
+  printToView
+    [ "Connection link is invalid!",
+      "Possibly, it was created in a newer version (to check version: " <> highlight' "/v" <> ")",
+      "To upgrade (Linux/Mac):",
+      "curl -o- https://raw.githubusercontent.com/simplex-chat/simplex-chat/master/install.sh | bash"
+    ]
 
 showChatError :: ChatReader m => ChatError -> m ()
 showChatError = printToView . chatError
