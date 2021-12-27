@@ -33,13 +33,13 @@ testDBPrefix :: FilePath
 testDBPrefix = "tests/tmp/test"
 
 serverPort :: ServiceName
-serverPort = "5000"
+serverPort = "5001"
 
 opts :: ChatOpts
 opts =
   ChatOpts
     { dbFile = undefined,
-      smpServers = ["localhost:5000"]
+      smpServers = ["localhost:5001"]
     }
 
 termSettings :: VirtualTerminalSettings
