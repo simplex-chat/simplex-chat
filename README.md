@@ -1,19 +1,44 @@
-<img align="right" src="images/logo.svg" alt="SimpleX logo" height="90">
+<img src="images/simplex-chat-logo.svg" alt="SimpleX logo" width="100%">
 
-# SimpleX chat
+# SimpleX Chat
 
-## Private, secure, decentralized
+**The world's most private and secure chat** - open-source, decentralized, and without global identities of any kind.
 
 [![GitHub build](https://github.com/simplex-chat/simplex-chat/workflows/build/badge.svg)](https://github.com/simplex-chat/simplex-chat/actions?query=workflow%3Abuild)
+[![GitHub downloads](https://img.shields.io/github/downloads/simplex-chat/simplex-chat/total)](https://github.com/simplex-chat/simplex-chat/releases)
 [![GitHub release](https://img.shields.io/github/v/release/simplex-chat/simplex-chat)](https://github.com/simplex-chat/simplex-chat/releases)
+[![Follow on Twitter](https://img.shields.io/twitter/follow/SimpleXChat?style=social)](https://twitter.com/simplexchat)
+[![Join on Reddit](https://img.shields.io/reddit/subreddit-subscribers/SimpleXChat?style=social)](https://www.reddit.com/r/SimpleXChat)
 
-> **NEW in v0.4: [groups](#groups) and [sending files](#sending-files)!**
+SimpleX chat prototype is a thin terminal UI on top of [SimpleXMQ](https://github.com/simplex-chat/simplexmq) message broker that uses [SMP protocols](https://github.com/simplex-chat/simplexmq/blob/master/protocol). The motivation for SimpleX chat is [presented here](./simplex.md). See [simplex.chat](https://simplex.chat) website for chat demo and the explanations of the system and how SMP protocol works.
 
-The motivation for SimpleX chat is [presented here](./simplex.md).
+**NEW in v0.5.0: [user contact addresses](#user-contact-addresses-alpha)!**
 
-SimpleX chat prototype is a thin terminal UI on top of [SimpleXMQ](https://github.com/simplex-chat/simplexmq) message broker that uses [SMP protocols](https://github.com/simplex-chat/simplexmq/blob/master/protocol).
+**Please note**: v0.5.0 of SimpleX Chat works with the same database, but the connection links are not compatible with the previous version - please ask all your contacts to upgrade!
 
-See [simplex.chat](https://simplex.chat) website for chat demo and the explanations of the system and how SMP protocol works.
+### :zap: Quick installation
+
+```sh
+curl -o- https://raw.githubusercontent.com/simplex-chat/simplex-chat/master/install.sh | bash
+```
+
+Once the chat client is installed, simply run `simplex-chat` from your terminal.
+
+### :wave: Welcome
+
+**We are building the world's most private and secure chat**. If you would like to support it, you can do so in the following ways:
+
+- 🌟  **Star it on GitHub** - it helps us raise the visibility of the project.
+
+- **Install the chat and try it out** - if you spot a bug, please [raise an issue](https://github.com/simplex-chat/simplex-chat/issues).
+
+- :speech_balloon:  **Spread the word** - terminal chat is an [early-stage product](#disclaimer) while we stabilize the protocol - you can invite your friends for some fun chat inside your terminal. We're using it right inside our IDEs as we are coding it 👨‍💻
+
+- **Make a donation** via [opencollective](https://opencollective.com/simplex-chat) - every donation helps, however large or small!
+
+- **Make a contribution to the project** - we're constantly moving the project forward and there are always lots of things to do!
+
+We appreciate all the help from our contributors, thank you!
 
 ![simplex-chat](./images/connection.gif)
 
@@ -22,7 +47,7 @@ See [simplex.chat](https://simplex.chat) website for chat demo and the explanati
 - [Disclaimer](#disclaimer)
 - [Network topology](#network-topology)
 - [Terminal chat features](#terminal-chat-features)
-- [Installation](#installation)
+- [Installation](#🚀-installation)
   - [Download chat client](#download-chat-client)
     - [Linux and MacOS](#linux-and-macos)
       - [Troubleshooting on Unix](#troubleshooting-on-unix)
@@ -35,25 +60,26 @@ See [simplex.chat](https://simplex.chat) website for chat demo and the explanati
   - [How to use SimpleX chat](#how-to-use-simplex-chat)
   - [Groups](#groups)
   - [Sending files](#sending-files)
+  - [User contact addresses](#user-contact-addresses-alpha)
   - [Access chat history](#access-chat-history)
-- [Future roadmap](#future-roadmap)
+- [Roadmap](#Roadmap)
 - [License](#license)
 
 ## Disclaimer
 
-This is WIP implementation of SimpleX chat that implements a new network topology for asynchronous communication combining the advantages and avoiding the disadvantages of federated and P2P networks.
+This is WIP implementation of SimpleX Chat that implements a new network topology for asynchronous communication combining the advantages and avoiding the disadvantages of federated and P2P networks.
 
-If you expect a software being reliable most of the time and doing something useful, then this is probably not ready for you yet. We do use it for terminal chat though, and it seems to work most of the time - we would really appreciate if you try it and give us your feedback.
+If you expect software to be reliable most of the time, then this is probably not ready for you yet. We use it ourselves for terminal chat and it seems to work most of the time - we would really appreciate if you try SimpleX Chat and give us your feedback!
 
-**Please note:** The main differentiation of SimpleX network is the approach to internet message routing rather than encryption; for that reason no sufficient attention was paid to either TCP transport level encryption or to E2E encryption protocols - they are implemented in an ad hoc way based on RSA and AES algorithms. See [SMP protocol](https://github.com/simplex-chat/simplexmq/blob/master/protocol/simplex-messaging.md#appendix-a) on TCP transport encryption protocol (AEAD-GCM scheme, with an AES key negotiation based on RSA key hash known to the client in advance) and [this section](https://github.com/simplex-chat/simplexmq/blob/master/rfcs/2021-01-26-crypto.md#e2e-encryption) on E2E encryption protocol (an ad hoc hybrid scheme a la PGP). These protocols will change in a consumer ready version to something more robust.
+> :warning: **Please note:** The main differentiation of SimpleX network is the approach to internet message routing rather than encryption; for that reason no sufficient attention was paid to either TCP transport level encryption or to E2E encryption protocols - they are implemented in an ad hoc way based on RSA and AES algorithms. See [SMP protocol](https://github.com/simplex-chat/simplexmq/blob/master/protocol/simplex-messaging.md#appendix-a) on TCP transport encryption protocol (AEAD-GCM scheme, with an AES key negotiation based on RSA key hash known to the client in advance) and [this section](https://github.com/simplex-chat/simplexmq/blob/master/rfcs/2021-01-26-crypto.md#e2e-encryption) on E2E encryption protocol (an ad hoc hybrid scheme a la PGP). These protocols will change in a consumer ready version to something more robust.
 
 ## Network topology
 
-SimpleX is a decentralized client-server network that uses redundant, disposable nodes to asynchronously pass the messages via message queues, providing receiver and sender anonymity.
+SimpleX is a decentralized client-server network that uses redundant, disposable nodes to asynchronously pass messages via message queues, providing receiver and sender anonymity.
 
 Unlike P2P networks, all messages are passed through one or several (for redundancy) servers, that do not even need to have persistence (in fact, the current [SMP server implementation](https://github.com/simplex-chat/simplexmq#smp-server) uses in-memory message storage, persisting only the queue records) - it provides better metadata protection than P2P designs, as no global participant ID is required, and avoids many [problems of P2P networks](https://github.com/simplex-chat/simplex-chat/blob/master/simplex.md#comparison-with-p2p-messaging-protocols).
 
-Unlike federated networks, the participating server nodes do NOT have records of the users, do NOT communicate with each other, do NOT store messages after they are delivered to the recipients, and there is no way to discover the full list of participating servers - it avoids the problem of metadata visibility that federated networks suffer from and better protects the network, as servers do not communicate with each other. Each server node provides unidirectional "dumb pipes" to the users, that do authorization without authentication, having no knowledge of the the users or their contacts. Each queue is assigned two RSA keys - one for receiver and one for sender - and each queue access is authorized with a signature created using a respective key's private counterpart.
+Unlike federated networks, the participating server nodes **do not have records of the users**, **do not communicate with each other**, **do not store messages** after they are delivered to the recipients, and there is no way to discover the full list of participating servers. SimpleX network avoids the problem of metadata visibility that federated networks suffer from and better protects the network, as servers do not communicate with each other. Each server node provides unidirectional "dumb pipes" to the users, that do authorization without authentication, having no knowledge of the the users or their contacts. Each queue is assigned two RSA keys - one for receiver and one for sender - and each queue access is authorized with a signature created using a respective key's private counterpart.
 
 The routing of messages relies on the knowledge of client devices how user contacts and groups map at any given moment of time to these disposable queues on server nodes.
 
@@ -62,6 +88,7 @@ The routing of messages relies on the knowledge of client devices how user conta
 - 1-to-1 chat with multiple people in the same terminal window.
 - Group messaging.
 - Sending files to contacts and groups.
+- User contact addresses - establish connections via multiple-use contact links.
 - Auto-populated recipient name - just type your messages to reply to the sender once the connection is established.
 - Demo SMP servers available and pre-configured in the app - or you can [deploy your own server](https://github.com/simplex-chat/simplexmq#using-smp-server-and-smp-agent).
 - No global identity or any names visible to the server(s), ensuring full privacy of your contacts and conversations.
@@ -73,13 +100,27 @@ The routing of messages relies on the knowledge of client devices how user conta
 
 RSA keys are not used as identity, they are randomly generated for each contact.
 
-## Installation
+<a name="🚀-installation"></a>
+
+## 🚀 Installation
 
 ### Download chat client
 
-Download the chat binary for your system from the [latest stable release](https://github.com/simplex-chat/simplex-chat/releases) and make it executable as shown below.
-
 #### Linux and MacOS
+
+To **install** or **update** `simplex-chat`, you should run the install script. To do that, use the following cURL or Wget command:
+
+```sh
+curl -o- https://raw.githubusercontent.com/simplex-chat/simplex-chat/master/install.sh | bash
+```
+
+```sh
+wget -qO- https://raw.githubusercontent.com/simplex-chat/simplex-chat/master/install.sh | bash
+```
+
+Once the chat client downloads, you can run it with `simplex-chat` command in your terminal.
+
+Alternatively, you can manually download the chat binary for your system from the [latest stable release](https://github.com/simplex-chat/simplex-chat/releases) and make it executable as shown below.
 
 ```sh
 chmod +x <binary>
@@ -132,7 +173,7 @@ $ cd simplex-chat
 $ DOCKER_BUILDKIT=1 docker build --output ~/.local/bin .
 ```
 
-> **Please note:** If you encounter ``version `GLIBC_2.28' not found`` error, rebuild it with `haskell:8.10.4-stretch` base image (change it in your local [Dockerfile](Dockerfile)).
+> **Please note:** If you encounter `` version `GLIBC_2.28' not found `` error, rebuild it with `haskell:8.10.4-stretch` base image (change it in your local [Dockerfile](Dockerfile)).
 
 #### Using Haskell stack
 
@@ -182,9 +223,9 @@ Run `simplex-chat -h` to see all available options.
 
 ### How to use SimpleX chat
 
-Once you have started the chat, you will be prompted to specify your "display name" and an optional "full name" to create a local chat profile. Your display name is an alias for your contacts to refer to you by - it is not unique and does not serve as a global identity. In case different contacts chose the same display name, the chat client adds a numeric suffix to their local display names.
+Once you have started the chat, you will be prompted to specify your "display name" and an optional "full name" to create a local chat profile. Your display name is an alias for your contacts to refer to you by - it is not unique and does not serve as a global identity. If some of your contacts chose the same display name, the chat client adds a numeric suffix to their local display name.
 
-This diagram shows how to connect and message a contact:
+The diagram below shows how to connect and message a contact:
 
 <div align="center">
   <img align="center" src="images/how-to-use-simplex.svg">
@@ -204,7 +245,7 @@ Use `/help` in chat to see the list of available commands.
 
 ### Groups
 
-To create a group use `/g <group>`, then add contacts to it with `/a <group> <name>`and send messages with `#<group> <message>`. Use `/help groups` for other commands.
+To create a group use `/g <group>`, then add contacts to it with `/a <group> <name>`. You can then send messages to the group by entering  `#<group> <message>`. Use `/help groups` for other commands.
 
 ![simplex-chat](./images/groups.gif)
 
@@ -218,9 +259,23 @@ You can send a file to your contact with `/f @<contact> <file_path>` - the recip
 
 You can send files to a group with `/f #<group> <file_path>`.
 
+### User contact addresses (alpha)
+
+As an alternative to one-time invitation links, you can create a long-term address with `/ad` (for `/address`). The created address can then be shared via any channel, and used by other users as a link to make a contact request with `/c <user_contact_address>`.
+
+You can accept or reject incoming requests with `/ac <name>` and `/rc <name>` commands.
+
+User address is "long-term" in a sense that it is a multiple-use connection link - it can be used until it is deleted by the user, in which case all established connections would still remain active (unlike how it works with email, when changing the address results in people not being able to message you).
+
+Use `/help address` for other commands.
+
+> :warning: **Please note:** This is an "alpha" feature - at the moment there is nothing to prevent someone who has obtained this address from spamming you with connection requests; countermeasures will be added soon!  (In the short term, you can simply delete the long-term address you created if it starts getting abused.)
+
+![simplex-chat](./images/user-addresses.gif)
+
 ### Access chat history
 
-> 🚧 **Section currently out of date - will be updated soon** 🏗
+> 🚧 **Section currently out of date** 🏗
 
 SimpleX chat stores all your contacts and conversations in a local database file, making it private and portable by design, fully owned and controlled by you.
 
@@ -241,16 +296,16 @@ order by internal_id desc;
 
 > **Please note:** SQLite foreign key constraints are disabled by default, and must be **[enabled separately for each database connection](https://sqlite.org/foreignkeys.html#fk_enable)**. The latter can be achieved by running `PRAGMA foreign_keys = ON;` command on an open database connection. By running data altering queries without enabling foreign keys prior to that, you may risk putting your database in an inconsistent state.
 
-## Future roadmap
+## Roadmap
 
 1. Mobile and desktop apps (in progress).
 2. SMP protocol improvements:
-    - SMP queue redundancy and rotation.
-    - Message delivery confirmation.
-    - Support multiple devices.
+   - SMP queue redundancy and rotation.
+   - Message delivery confirmation.
+   - Support multiple devices.
 3. Privacy-preserving identity server for optional DNS-based contact/group addresses to simplify connection and discovery, but not used to deliver messages:
-    - keep all your contacts and groups even if you lose the domain.
-    - the server doesn't have information about your contacts and groups.
+   - keep all your contacts and groups even if you lose the domain.
+   - the server doesn't have information about your contacts and groups.
 4. Media server to optimize sending large files to groups.
 5. Channels server for large groups and broadcast channels.
 
