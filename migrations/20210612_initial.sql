@@ -194,6 +194,8 @@ CREATE TABLE connections ( -- all SMP agent connections
     DEFERRABLE INITIALLY DEFERRED
 );
 
+-- PLEASE NOTE: all tables below were unused and are removed in the migration 20211227_messages.sql
+
 CREATE TABLE events ( -- messages received by the agent, append only
   event_id INTEGER PRIMARY KEY,
   agent_msg_id INTEGER NOT NULL, -- internal message ID

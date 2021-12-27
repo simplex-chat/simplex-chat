@@ -742,7 +742,8 @@ mergeContactRecords st userId Contact {contactId = toContactId} Contact {contact
     DB.execute db "UPDATE connections SET contact_id = ? WHERE contact_id = ? AND user_id = ?" (toContactId, fromContactId, userId)
     DB.execute db "UPDATE connections SET via_contact = ? WHERE via_contact = ? AND user_id = ?" (toContactId, fromContactId, userId)
     DB.execute db "UPDATE group_members SET invited_by = ? WHERE invited_by = ? AND user_id = ?" (toContactId, fromContactId, userId)
-    DB.execute db "UPDATE messages SET contact_id = ? WHERE contact_id = ?" (toContactId, fromContactId)
+    DB.execute db "UPDATE direct_messages SET contact_id = ? WHERE contact_id = ?" (toContactId, fromContactId)
+    -- DB.execute db "UPDATE direct_chat_items SET contact_id = ? WHERE contact_id = ?" (toContactId, fromContactId)
     DB.executeNamed
       db
       [sql|
