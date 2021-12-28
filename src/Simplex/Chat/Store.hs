@@ -1691,14 +1691,24 @@ createRcvMsgDeliveryEvent_ :: DB.Connection -> MsgDeliveryId -> RcvMsgDeliverySt
 createRcvMsgDeliveryEvent_ db msgDeliveryId = createMsgDeliveryEvent_ db msgDeliveryId <$> toRcvMsgDeliveryStatusStr
 
 createMsgDeliveryEvent_ :: DB.Connection -> MsgDeliveryId -> Text -> IO ()
-createMsgDeliveryEvent_ db msgDeliveryId msgDeliveryStatus =
+createMsgDeliveryEvent_ db msgDeliveryId msgDeliveryStatus = do
+  ts <- getCurrentTime
   DB.execute
     db
     [sql|
       INSERT INTO msg_delivery_events
-        (msg_delivery_id, delivery_status) VALUES (?,?);
+        (msg_delivery_id, delivery_status, created_at) VALUES (?,?,?);
     |]
-    (msgDeliveryId, msgDeliveryStatus)
+    (msgDeliveryId, msgDeliveryStatus, ts)
+  DB.execute
+    db
+    [sql|
+      UPDATE msg_deliveries
+      SET current_status = ?,
+          updated_at = ?
+      WHERE msg_delivery_id = ?;
+    |]
+    (msgDeliveryStatus, ts, msgDeliveryId)
 
 getMsgDeliveryId_ :: DB.Connection -> ConnId -> AgentMsgId -> IO (Either StoreError MsgDeliveryId)
 getMsgDeliveryId_ db connId agentMsgId =

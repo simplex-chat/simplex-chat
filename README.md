@@ -275,23 +275,29 @@ Use `/help address` for other commands.
 
 ### Access chat history
 
-> 🚧 **Section currently out of date** 🏗
-
-SimpleX chat stores all your contacts and conversations in a local database file, making it private and portable by design, fully owned and controlled by you.
+SimpleX chat stores all your contacts and conversations in a local database file, making it private and portable by design, owned and controlled by the user.
 
 You can search your chat history via SQLite database file:
 
 ```
-sqlite3 ~/.simplex/smp-chat.db
+sqlite3 ~/.simplex/simplex.chat.db
 ```
 
-Now you can query `messages` table, for example:
+Now you can query `direct_messages` and `group_messages`, for example:
 
 ```sql
-select * from messages
-where conn_alias = cast('alice' as blob)
-  and body like '%cats%'
-order by internal_id desc;
+.headers on
+
+-- simple views into direct and group_messages
+-- only 'x.msg.new' ("new message") chat events - filters out service events
+-- msg_sent is 1 for sent, 0 for received
+select contact, msg_sent, msg_body, created_at from direct_messages where chat_msg_event = 'x.msg.new';
+select group_name, contact, msg_sent, msg_body, created_at from group_messages where chat_msg_event = 'x.msg.new';
+
+-- query other details of your chat history with regular SQL
+select * from direct_messages where msg_sent = 1 and chat_msg_event = 'x.file'; -- files you offered for sending
+select * from direct_messages where msg_sent = 0 and contact = 'catherine' and msg_body like '%cats%'; -- everything catherine sent related to cats
+select * from group_messages where group_name = 'team' and contact = 'alice'; -- all correspondence with alice in #team
 ```
 
 > **Please note:** SQLite foreign key constraints are disabled by default, and must be **[enabled separately for each database connection](https://sqlite.org/foreignkeys.html#fk_enable)**. The latter can be achieved by running `PRAGMA foreign_keys = ON;` command on an open database connection. By running data altering queries without enabling foreign keys prior to that, you may risk putting your database in an inconsistent state.
