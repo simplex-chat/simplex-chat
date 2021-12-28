@@ -27,7 +27,7 @@ CREATE TABLE msg_deliveries (
 
 CREATE TABLE msg_delivery_events (
   msg_delivery_event_id INTEGER PRIMARY KEY,
-  msg_delivery_id INTEGER NOT NULL UNIQUE REFERENCES msg_deliveries ON DELETE CASCADE,
+  msg_delivery_id INTEGER NOT NULL REFERENCES msg_deliveries ON DELETE CASCADE,
   delivery_status TEXT NOT NULL DEFAULT 'pending', -- rcv/snd - "pending", "agent"; rcv - "acknowledged"; snd - "sent", "received", "read"
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   UNIQUE (msg_delivery_id, delivery_status)
