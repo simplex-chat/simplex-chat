@@ -1625,18 +1625,14 @@ createNewMessage st newMsg =
 createSndMsgDelivery :: MonadUnliftIO m => SQLiteStore -> SndMsgDelivery -> MessageId -> m ()
 createSndMsgDelivery st sndMsgDelivery messageId =
   liftIO . withTransaction st $ \db -> do
-    -- putStrLn $ "snd: message_id " <> show messageId
     msgDeliveryId <- createSndMsgDelivery_ db sndMsgDelivery messageId
-    -- putStrLn $ "snd: msg_delivery_id " <> show msgDeliveryId
     createSndMsgDeliveryEvent_ db msgDeliveryId SndAgent
 
 createNewMessageAndRcvMsgDelivery :: MonadUnliftIO m => SQLiteStore -> NewMessage -> RcvMsgDelivery -> m ()
 createNewMessageAndRcvMsgDelivery st newMsg rcvMsgDelivery =
   liftIO . withTransaction st $ \db -> do
     messageId <- createNewMessage_ db newMsg
-    -- putStrLn $ "rcv: message_id " <> show messageId
     msgDeliveryId <- createRcvMsgDelivery_ db rcvMsgDelivery messageId
-    -- putStrLn $ "rcv: msg_delivery_id " <> show msgDeliveryId
     createRcvMsgDeliveryEvent_ db msgDeliveryId RcvAgent
 
 createSndMsgDeliveryEvent :: MonadUnliftIO m => SQLiteStore -> ConnId -> AgentMsgId -> SndMsgDeliveryStatus -> m ()

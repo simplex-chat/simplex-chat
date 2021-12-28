@@ -18,8 +18,8 @@ CREATE TABLE messages ( -- messages received by the agent, append only
 
 CREATE TABLE msg_deliveries (
   msg_delivery_id INTEGER PRIMARY KEY,
-  message_id INTEGER NOT NULL REFERENCES messages, -- non UNIQUE for groups
-  agent_conn_id BLOB NOT NULL REFERENCES connections (agent_conn_id),
+  message_id INTEGER NOT NULL REFERENCES messages ON DELETE CASCADE, -- non UNIQUE for groups
+  agent_conn_id BLOB NOT NULL REFERENCES connections (agent_conn_id) ON DELETE CASCADE,
   agent_msg_id INTEGER NOT NULL, -- internal agent message ID (NULL while pending)
   agent_msg_meta TEXT, -- JSON with timestamps etc. sent in MSG, NULL for sent
   UNIQUE (agent_conn_id, agent_msg_id)
