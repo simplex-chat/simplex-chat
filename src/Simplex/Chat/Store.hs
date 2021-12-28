@@ -90,6 +90,8 @@ module Simplex.Chat.Store
     getFileTransfer,
     getFileTransferProgress,
     getOnboarding,
+    createNewMessage,
+    createSndMsgDelivery,
   )
 where
 
@@ -742,8 +744,6 @@ mergeContactRecords st userId Contact {contactId = toContactId} Contact {contact
     DB.execute db "UPDATE connections SET contact_id = ? WHERE contact_id = ? AND user_id = ?" (toContactId, fromContactId, userId)
     DB.execute db "UPDATE connections SET via_contact = ? WHERE via_contact = ? AND user_id = ?" (toContactId, fromContactId, userId)
     DB.execute db "UPDATE group_members SET invited_by = ? WHERE invited_by = ? AND user_id = ?" (toContactId, fromContactId, userId)
-    DB.execute db "UPDATE direct_messages SET contact_id = ? WHERE contact_id = ?" (toContactId, fromContactId)
-    -- DB.execute db "UPDATE direct_chat_items SET contact_id = ? WHERE contact_id = ?" (toContactId, fromContactId)
     DB.executeNamed
       db
       [sql|
@@ -1613,6 +1613,12 @@ getOnboarding st userId =
     intQuery db q = headOrZero <$> DB.query db q (Only userId)
     headOrZero [] = 0
     headOrZero (n : _) = fromOnly n
+
+createNewMessage :: MonadUnliftIO m => SQLiteStore -> NewMessage -> m MessageId
+createNewMessage st newMsg = pure 1
+
+createSndMsgDelivery :: MonadUnliftIO m => SQLiteStore -> SndMsgDelivery -> m ()
+createSndMsgDelivery st sndMsgDelivery = pure ()
 
 -- | Saves unique local display name based on passed displayName, suffixed with _N if required.
 -- This function should be called inside transaction.
