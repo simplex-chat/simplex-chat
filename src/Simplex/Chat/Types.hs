@@ -538,7 +538,7 @@ data MsgDirection = Snd | Rcv
 toMsgDirectionStr :: MsgDirection -> Int
 toMsgDirectionStr = \case
   Snd -> 1
-  Rcv -> 2
+  Rcv -> 0
 
 data NewMessage = NewMessage
   { direction :: MsgDirection,
