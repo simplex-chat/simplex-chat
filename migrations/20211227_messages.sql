@@ -19,7 +19,7 @@ CREATE TABLE messages ( -- messages received by the agent, append only
 CREATE TABLE msg_deliveries (
   msg_delivery_id INTEGER PRIMARY KEY,
   message_id INTEGER NOT NULL UNIQUE REFERENCES messages,
-  agent_conn_id BLOB NOT NULL REFERENCES connections,
+  agent_conn_id BLOB NOT NULL REFERENCES connections (agent_conn_id),
   agent_msg_id INTEGER NOT NULL, -- internal agent message ID (NULL while pending)
   agent_msg_meta TEXT, -- JSON with timestamps etc. sent in MSG, NULL for sent
   UNIQUE (agent_conn_id, agent_msg_id)
@@ -27,8 +27,8 @@ CREATE TABLE msg_deliveries (
 
 CREATE TABLE msg_delivery_events (
   msg_delivery_event_id INTEGER PRIMARY KEY,
-  msg_delivery_id INTEGER NOT NULL UNIQUE REFERENCES msg_deliveries,
-  delivery_status TEXT NOT NULL DEFAULT 'pending', -- pending, agent, sent, received, read
+  msg_delivery_id INTEGER NOT NULL UNIQUE REFERENCES msg_deliveries ON DELETE CASCADE,
+  delivery_status TEXT NOT NULL DEFAULT 'pending', -- rcv/snd - "pending", "agent"; rcv - "acknowledged"; snd - "sent", "received", "read"
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   UNIQUE (msg_delivery_id, delivery_status)
 );

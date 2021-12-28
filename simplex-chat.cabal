@@ -52,6 +52,7 @@ library
     , exceptions ==0.10.*
     , file-embed ==0.0.14.*
     , filepath ==1.4.*
+    , iso8601-time ==0.1.*
     , mtl ==2.2.*
     , optparse-applicative ==0.15.*
     , process ==1.6.*
@@ -87,6 +88,7 @@ executable simplex-chat
     , exceptions ==0.10.*
     , file-embed ==0.0.14.*
     , filepath ==1.4.*
+    , iso8601-time ==0.1.*
     , mtl ==2.2.*
     , optparse-applicative ==0.15.*
     , process ==1.6.*
@@ -130,6 +132,7 @@ test-suite simplex-chat-test
     , file-embed ==0.0.14.*
     , filepath ==1.4.*
     , hspec ==2.7.*
+    , iso8601-time ==0.1.*
     , mtl ==2.2.*
     , network ==3.1.*
     , optparse-applicative ==0.15.*

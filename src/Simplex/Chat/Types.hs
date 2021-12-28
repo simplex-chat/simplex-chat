@@ -13,7 +13,9 @@ import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.Int (Int64)
 import Data.Text (Text)
+import qualified Data.Text as T
 import Data.Time.Clock (UTCTime)
+import Data.Time.ISO8601 (formatISO8601Millis)
 import Data.Typeable (Typeable)
 import Database.SQLite.Simple (ResultError (..), SQLData (..))
 import Database.SQLite.Simple.FromField (FieldParser, FromField (..), returnError)
@@ -21,8 +23,10 @@ import Database.SQLite.Simple.Internal (Field (..))
 import Database.SQLite.Simple.Ok (Ok (Ok))
 import Database.SQLite.Simple.ToField (ToField (..))
 import GHC.Generics
-import Simplex.Messaging.Agent.Protocol (ConnId, ConnectionMode (..), ConnectionRequest, InvitationId)
+import Simplex.Chat.Util (safeDecodeUtf8)
+import Simplex.Messaging.Agent.Protocol (AgentMsgId, ConnId, ConnectionMode (..), ConnectionRequest, InvitationId, MsgMeta (..), serializeMsgIntegrity)
 import Simplex.Messaging.Agent.Store.SQLite (fromTextField_)
+import Simplex.Messaging.Protocol (MsgBody)
 
 class IsContact a where
   contactId' :: a -> Int64
@@ -526,3 +530,68 @@ data Onboarding = Onboarding
     filesSentCount :: Int,
     addressCount :: Int
   }
+
+type MessageId = Int64
+
+data MsgDirection = Snd | Rcv
+
+toMsgDirectionStr :: MsgDirection -> Int
+toMsgDirectionStr = \case
+  Snd -> 1
+  Rcv -> 2
+
+data NewMessage = NewMessage
+  { direction :: MsgDirection,
+    chatMsgEventType :: Text,
+    msgBody :: MsgBody
+  }
+
+data SndMsgDelivery = SndMsgDelivery
+  { agentConnId :: ConnId,
+    agentMsgId :: AgentMsgId
+  }
+
+data RcvMsgDelivery = RcvMsgDelivery
+  { agentConnId :: ConnId,
+    agentMsgId :: AgentMsgId,
+    agentMsgMeta :: MsgMeta
+  }
+
+toMsgMetaStr :: MsgMeta -> Text
+toMsgMetaStr MsgMeta {integrity, recipient = (rmId, rTs), broker = (bmId, bTs), sender = (smId, sTs)} =
+  "{"
+    <> T.intercalate
+      ", "
+      [ field "integrity" <> bsToText (serializeMsgIntegrity integrity),
+        field "rmId" <> intToText rmId,
+        field "rTs" <> tsToText rTs,
+        field "bmId" <> bsToText bmId,
+        field "bTs" <> tsToText bTs,
+        field "smId" <> intToText smId,
+        field "sTs" <> tsToText sTs
+      ]
+    <> "}"
+  where
+    field x = quoted x <> ": "
+    quoted x = "\"" <> x <> "\""
+    bsToText = quoted . safeDecodeUtf8
+    intToText = T.pack . show
+    tsToText = quoted . T.pack . formatISO8601Millis
+
+data SndMsgDeliveryStatus = SndPending | SndAgent | Sent | Received | Read
+
+toSndMsgDeliveryStatusStr :: SndMsgDeliveryStatus -> Text
+toSndMsgDeliveryStatusStr = \case
+  SndPending -> "pending"
+  SndAgent -> "agent"
+  Sent -> "sent"
+  Received -> "received"
+  Read -> "read"
+
+data RcvMsgDeliveryStatus = RcvPending | RcvAgent | Acknowledged
+
+toRcvMsgDeliveryStatusStr :: RcvMsgDeliveryStatus -> Text
+toRcvMsgDeliveryStatusStr = \case
+  RcvPending -> "pending"
+  RcvAgent -> "agent"
+  Acknowledged -> "acknowledged"

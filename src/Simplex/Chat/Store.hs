@@ -92,6 +92,9 @@ module Simplex.Chat.Store
     getOnboarding,
     createNewMessage,
     createSndMsgDelivery,
+    createNewMessageAndRcvMsgDelivery,
+    createSndMsgDeliveryEvent,
+    createRcvMsgDeliveryEvent,
   )
 where
 
@@ -1615,10 +1618,108 @@ getOnboarding st userId =
     headOrZero (n : _) = fromOnly n
 
 createNewMessage :: MonadUnliftIO m => SQLiteStore -> NewMessage -> m MessageId
-createNewMessage st newMsg = pure 1
+createNewMessage st newMsg =
+  liftIO . withTransaction st $ \db ->
+    createNewMessage_ db newMsg
 
-createSndMsgDelivery :: MonadUnliftIO m => SQLiteStore -> SndMsgDelivery -> m ()
-createSndMsgDelivery st sndMsgDelivery = pure ()
+createSndMsgDelivery :: MonadUnliftIO m => SQLiteStore -> SndMsgDelivery -> MessageId -> m ()
+createSndMsgDelivery st sndMsgDelivery messageId =
+  liftIO . withTransaction st $ \db -> do
+    -- putStrLn $ "snd: message_id " <> show messageId
+    msgDeliveryId <- createSndMsgDelivery_ db sndMsgDelivery messageId
+    -- putStrLn $ "snd: msg_delivery_id " <> show msgDeliveryId
+    createSndMsgDeliveryEvent_ db msgDeliveryId SndAgent
+
+createNewMessageAndRcvMsgDelivery :: MonadUnliftIO m => SQLiteStore -> NewMessage -> RcvMsgDelivery -> m ()
+createNewMessageAndRcvMsgDelivery st newMsg rcvMsgDelivery =
+  liftIO . withTransaction st $ \db -> do
+    messageId <- createNewMessage_ db newMsg
+    -- putStrLn $ "rcv: message_id " <> show messageId
+    msgDeliveryId <- createRcvMsgDelivery_ db rcvMsgDelivery messageId
+    -- putStrLn $ "rcv: msg_delivery_id " <> show msgDeliveryId
+    createRcvMsgDeliveryEvent_ db msgDeliveryId RcvAgent
+
+createSndMsgDeliveryEvent :: MonadUnliftIO m => SQLiteStore -> ConnId -> AgentMsgId -> SndMsgDeliveryStatus -> m ()
+createSndMsgDeliveryEvent st connId agentMsgId sndMsgDeliveryStatus =
+  liftIO . withTransaction st $ \db -> do
+    getMsgDeliveryId_ db connId agentMsgId >>= \case
+      Right msgDeliveryId -> createSndMsgDeliveryEvent_ db msgDeliveryId sndMsgDeliveryStatus
+      Left e -> E.throwIO e
+
+createRcvMsgDeliveryEvent :: MonadUnliftIO m => SQLiteStore -> ConnId -> AgentMsgId -> RcvMsgDeliveryStatus -> m ()
+createRcvMsgDeliveryEvent st connId agentMsgId rcvMsgDeliveryStatus =
+  liftIO . withTransaction st $ \db -> do
+    getMsgDeliveryId_ db connId agentMsgId >>= \case
+      Right msgDeliveryId -> createRcvMsgDeliveryEvent_ db msgDeliveryId rcvMsgDeliveryStatus
+      Left e -> E.throwIO e
+
+createNewMessage_ :: DB.Connection -> NewMessage -> IO MessageId
+createNewMessage_ db NewMessage {direction, chatMsgEventType, msgBody} = do
+  DB.execute
+    db
+    [sql|
+      INSERT INTO messages
+        (msg_sent, chat_msg_event, msg_body) VALUES (?,?,?);
+    |]
+    (toMsgDirectionStr direction, chatMsgEventType, msgBody)
+  insertedRowId db
+
+type MsgDeliveryId = Int64
+
+createSndMsgDelivery_ :: DB.Connection -> SndMsgDelivery -> MessageId -> IO MsgDeliveryId
+createSndMsgDelivery_ db SndMsgDelivery {agentConnId, agentMsgId} messageId = do
+  DB.execute
+    db
+    [sql|
+      INSERT INTO msg_deliveries
+        (message_id, agent_conn_id, agent_msg_id, agent_msg_meta) VALUES (?,?,?,NULL);
+    |]
+    (messageId, agentConnId, agentMsgId)
+  insertedRowId db
+
+createSndMsgDeliveryEvent_ :: DB.Connection -> MsgDeliveryId -> SndMsgDeliveryStatus -> IO ()
+createSndMsgDeliveryEvent_ db msgDeliveryId = createMsgDeliveryEvent_ db msgDeliveryId <$> toSndMsgDeliveryStatusStr
+
+createRcvMsgDelivery_ :: DB.Connection -> RcvMsgDelivery -> MessageId -> IO MsgDeliveryId
+createRcvMsgDelivery_ db RcvMsgDelivery {agentConnId, agentMsgId, agentMsgMeta} messageId = do
+  DB.execute
+    db
+    [sql|
+      INSERT INTO msg_deliveries
+        (message_id, agent_conn_id, agent_msg_id, agent_msg_meta) VALUES (?,?,?,?);
+    |]
+    (messageId, agentConnId, agentMsgId, toMsgMetaStr agentMsgMeta)
+  insertedRowId db
+
+createRcvMsgDeliveryEvent_ :: DB.Connection -> MsgDeliveryId -> RcvMsgDeliveryStatus -> IO ()
+createRcvMsgDeliveryEvent_ db msgDeliveryId = createMsgDeliveryEvent_ db msgDeliveryId <$> toRcvMsgDeliveryStatusStr
+
+createMsgDeliveryEvent_ :: DB.Connection -> MsgDeliveryId -> Text -> IO ()
+createMsgDeliveryEvent_ db msgDeliveryId msgDeliveryStatus =
+  DB.execute
+    db
+    [sql|
+      INSERT INTO msg_delivery_events
+        (msg_delivery_id, delivery_status) VALUES (?,?);
+    |]
+    (msgDeliveryId, msgDeliveryStatus)
+
+getMsgDeliveryId_ :: DB.Connection -> ConnId -> AgentMsgId -> IO (Either StoreError MsgDeliveryId)
+getMsgDeliveryId_ db connId agentMsgId =
+  toMsgDeliveryId
+    <$> DB.query
+      db
+      [sql|
+        SELECT msg_delivery_id
+        FROM msg_deliveries m
+        WHERE m.agent_conn_id = ? AND m.agent_msg_id == ?
+        LIMIT 1;
+      |]
+      (connId, agentMsgId)
+  where
+    toMsgDeliveryId :: [Only Int64] -> Either StoreError MsgDeliveryId
+    toMsgDeliveryId [Only msgDeliveryId] = Right msgDeliveryId
+    toMsgDeliveryId _ = Left $ SENoMsgDelivery connId agentMsgId
 
 -- | Saves unique local display name based on passed displayName, suffixed with _N if required.
 -- This function should be called inside transaction.
@@ -1696,4 +1797,5 @@ data StoreError
   | SEIntroNotFound
   | SEUniqueID
   | SEInternal ByteString
+  | SENoMsgDelivery ConnId AgentMsgId
   deriving (Show, Exception)
