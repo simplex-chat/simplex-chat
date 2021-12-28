@@ -19,10 +19,10 @@ CREATE TABLE messages ( -- messages received by the agent, append only
 CREATE TABLE msg_deliveries (
   msg_delivery_id INTEGER PRIMARY KEY,
   message_id INTEGER NOT NULL UNIQUE REFERENCES messages,
-  connection_id INTEGER NOT NULL REFERENCES connections,
-  agent_msg_id INTEGER, -- internal agent message ID (NULL while pending)
+  agent_conn_id BLOB NOT NULL REFERENCES connections,
+  agent_msg_id INTEGER NOT NULL, -- internal agent message ID (NULL while pending)
   agent_msg_meta TEXT, -- JSON with timestamps etc. sent in MSG, NULL for sent
-  UNIQUE (connection_id, agent_msg_id)
+  UNIQUE (agent_conn_id, agent_msg_id)
 );
 
 CREATE TABLE msg_delivery_events (
