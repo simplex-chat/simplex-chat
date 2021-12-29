@@ -19,7 +19,7 @@ import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Int (Int64)
 import Data.Text (Text)
-import Data.Text.Encoding (decodeUtf8)
+import Data.Text.Encoding (decodeLatin1)
 import Data.Time.Clock (UTCTime)
 import Data.Type.Equality
 import Data.Typeable (Typeable)
@@ -609,16 +609,16 @@ instance FromJSON MsgMetaJ
 msgMetaToJson :: MsgMeta -> MsgMetaJ
 msgMetaToJson MsgMeta {integrity, recipient = (rcvId, rcvTs), broker = (serverId, serverTs), sender = (sndId, _)} =
   MsgMetaJ
-    { integrity = (decodeUtf8 . serializeMsgIntegrity) integrity,
+    { integrity = (decodeLatin1 . serializeMsgIntegrity) integrity,
       rcvId,
       rcvTs,
-      serverId = (decodeUtf8 . B64.encode) serverId,
+      serverId = (decodeLatin1 . B64.encode) serverId,
       serverTs,
       sndId
     }
 
-msgMetaJson :: MsgMeta -> ByteString
-msgMetaJson x = LB.toStrict $ J.encode (msgMetaToJson x)
+msgMetaJson :: MsgMeta -> Text
+msgMetaJson = decodeLatin1 . LB.toStrict . J.encode . msgMetaToJson
 
 data MsgDeliveryStatus (d :: MsgDirection) where
   MDSRcvAgent :: MsgDeliveryStatus 'MDRcv
