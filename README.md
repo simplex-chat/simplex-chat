@@ -288,7 +288,7 @@ Now you can query `direct_messages`, `group_messages` and `all_messages` (or sim
 ```sql
 .headers on
 
--- simple views into direct, group and all_messages
+-- simple views into direct, group and all_messages with user's messages deduplicated for group and all_messages
 -- only 'x.msg.new' ("new message") chat events - filters out service events
 -- msg_sent is 1 for sent, 0 for received
 select * from direct_messages_plain;

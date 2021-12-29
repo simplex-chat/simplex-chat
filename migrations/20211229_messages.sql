@@ -46,6 +46,7 @@ SELECT
   m.msg_sent AS msg_sent,
   m.chat_msg_event AS chat_msg_event,
   m.msg_body AS msg_body,
+  md.msg_delivery_id AS delivery_id,
   datetime(md.chat_ts) AS chat_dt,
   md.agent_msg_meta AS msg_meta,
   mde.delivery_status AS delivery_status,
@@ -56,7 +57,7 @@ JOIN (
   SELECT msg_delivery_id, MAX(created_at) MaxDate
   FROM msg_delivery_events
   GROUP BY msg_delivery_id
-) MaxDates ON md.msg_delivery_id = MaxDates.msg_delivery_id
+) MaxDates ON MaxDates.msg_delivery_id = md.msg_delivery_id
 JOIN msg_delivery_events mde ON mde.msg_delivery_id = MaxDates.msg_delivery_id 
                             AND mde.created_at = MaxDates.MaxDate
 JOIN connections c ON c.connection_id = md.connection_id
@@ -80,6 +81,7 @@ SELECT
   m.msg_sent AS msg_sent,
   m.chat_msg_event AS chat_msg_event,
   m.msg_body AS msg_body,
+  md.msg_delivery_id AS delivery_id,
   datetime(md.chat_ts) AS chat_dt,
   md.agent_msg_meta AS msg_meta,
   mde.delivery_status AS delivery_status,
@@ -90,7 +92,7 @@ JOIN (
   SELECT msg_delivery_id, MAX(created_at) MaxDate
   FROM msg_delivery_events
   GROUP BY msg_delivery_id
-) MaxDates ON md.msg_delivery_id = MaxDates.msg_delivery_id
+) MaxDates ON MaxDates.msg_delivery_id = md.msg_delivery_id
 JOIN msg_delivery_events mde ON mde.msg_delivery_id = MaxDates.msg_delivery_id 
                             AND mde.created_at = MaxDates.MaxDate
 JOIN connections c ON c.connection_id = md.connection_id
@@ -98,15 +100,20 @@ JOIN group_members gm ON gm.group_member_id = c.group_member_id
 JOIN groups g ON g.group_id = gm.group_id
 ORDER BY chat_dt DESC;
 
--- TODO ? deduplicate user messages
 CREATE VIEW group_messages_plain AS
 SELECT
   gm.group_name AS group_name,
-  gm.contact AS contact,
+  (CASE WHEN gm.msg_sent = 0 THEN gm.contact ELSE gm.group_name END) AS contact,
   gm.msg_sent AS msg_sent,
   gm.msg_body AS msg_body,
   gm.chat_dt AS chat_dt
 FROM group_messages gm
+JOIN (
+  SELECT message_id, MIN(delivery_id) MinDeliveryId
+  FROM group_messages
+  GROUP BY message_id
+) Deduplicated ON Deduplicated.message_id = gm.message_id
+              AND Deduplicated.MinDeliveryId = gm.delivery_id
 WHERE gm.chat_msg_event = 'x.msg.new';
 
 CREATE VIEW all_messages (
@@ -116,6 +123,7 @@ CREATE VIEW all_messages (
   msg_sent,
   chat_msg_event,
   msg_body,
+  delivery_id,
   chat_dt,
   msg_meta,
   delivery_status,
@@ -131,11 +139,17 @@ CREATE VIEW all_messages (
 CREATE VIEW all_messages_plain AS
 SELECT
   am.group_name AS group_name,
-  am.contact AS contact,
+  (CASE WHEN am.msg_sent = 0 THEN am.contact ELSE am.group_name END) AS contact,
   am.msg_sent AS msg_sent,
   am.msg_body AS msg_body,
   am.chat_dt AS chat_dt
 FROM all_messages am
+JOIN (
+  SELECT message_id, MIN(delivery_id) MinDeliveryId
+  FROM all_messages
+  GROUP BY message_id
+) Deduplicated ON Deduplicated.message_id = am.message_id
+              AND Deduplicated.MinDeliveryId = am.delivery_id
 WHERE am.chat_msg_event = 'x.msg.new';
 
 -- TODO group message parents and chat items not to be implemented in current scope
