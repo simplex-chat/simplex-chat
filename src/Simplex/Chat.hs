@@ -814,7 +814,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
     newTextMessage c meta = \case
       Just MsgContentBody {contentData = bs} -> do
         let text = safeDecodeUtf8 bs
-        showReceivedMessage c (snd $ broker meta) (msgPlain text) (integrity meta)
+        showReceivedMessage c (snd $ broker meta) (msgPlain text) (integrity (meta :: MsgMeta))
         showToast (c <> "> ") text
         setActive $ ActiveC c
       _ -> messageError "x.msg.new: no expected message body"
@@ -823,7 +823,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
     newGroupTextMessage gName GroupMember {localDisplayName = c} meta = \case
       Just MsgContentBody {contentData = bs} -> do
         let text = safeDecodeUtf8 bs
-        showReceivedGroupMessage gName c (snd $ broker meta) (msgPlain text) (integrity meta)
+        showReceivedGroupMessage gName c (snd $ broker meta) (msgPlain text) (integrity (meta :: MsgMeta))
         showToast ("#" <> gName <> " " <> c <> "> ") text
         setActive $ ActiveG gName
       _ -> messageError "x.msg.new: no expected message body"
@@ -833,14 +833,14 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
       -- TODO chunk size has to be sent as part of invitation
       chSize <- asks $ fileChunkSize . config
       ft <- withStore $ \st -> createRcvFileTransfer st userId contact fInv chSize
-      showReceivedMessage c (snd $ broker meta) (receivedFileInvitation ft) (integrity meta)
+      showReceivedMessage c (snd $ broker meta) (receivedFileInvitation ft) (integrity (meta :: MsgMeta))
       setActive $ ActiveC c
 
     processGroupFileInvitation :: GroupName -> GroupMember -> MsgMeta -> FileInvitation -> m ()
     processGroupFileInvitation gName m@GroupMember {localDisplayName = c} meta fInv = do
       chSize <- asks $ fileChunkSize . config
       ft <- withStore $ \st -> createRcvGroupFileTransfer st userId m fInv chSize
-      showReceivedGroupMessage gName c (snd $ broker meta) (receivedFileInvitation ft) (integrity meta)
+      showReceivedGroupMessage gName c (snd $ broker meta) (receivedFileInvitation ft) (integrity (meta :: MsgMeta))
       setActive $ ActiveG gName
 
     processGroupInvitation :: Contact -> GroupInvitation -> m ()

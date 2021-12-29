@@ -13,13 +13,14 @@ module Simplex.Chat.Types where
 
 import Data.Aeson (FromJSON, ToJSON)
 import qualified Data.Aeson as J
+import qualified Data.ByteString.Base64 as B64
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
+import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Int (Int64)
 import Data.Text (Text)
-import qualified Data.Text as T
+import Data.Text.Encoding (decodeUtf8)
 import Data.Time.Clock (UTCTime)
-import Data.Time.ISO8601 (formatISO8601Millis)
 import Data.Type.Equality
 import Data.Typeable (Typeable)
 import Database.SQLite.Simple (ResultError (..), SQLData (..))
@@ -28,7 +29,6 @@ import Database.SQLite.Simple.Internal (Field (..))
 import Database.SQLite.Simple.Ok (Ok (Ok))
 import Database.SQLite.Simple.ToField (ToField (..))
 import GHC.Generics
-import Simplex.Chat.Util (safeDecodeUtf8)
 import Simplex.Messaging.Agent.Protocol (AgentMsgId, ConnId, ConnectionMode (..), ConnectionRequest, InvitationId, MsgMeta (..), serializeMsgIntegrity)
 import Simplex.Messaging.Agent.Store.SQLite (fromTextField_)
 import Simplex.Messaging.Protocol (MsgBody)
@@ -592,26 +592,33 @@ data RcvMsgDelivery = RcvMsgDelivery
     agentMsgMeta :: MsgMeta
   }
 
-toMsgMetaStr :: MsgMeta -> Text
-toMsgMetaStr MsgMeta {integrity, recipient = (rmId, rTs), broker = (bmId, bTs), sender = (smId, sTs)} =
-  "{"
-    <> T.intercalate
-      ", "
-      [ field "integrity" <> bsToText (serializeMsgIntegrity integrity),
-        field "rmId" <> intToText rmId,
-        field "rTs" <> tsToText rTs,
-        field "bmId" <> bsToText bmId,
-        field "bTs" <> tsToText bTs,
-        field "smId" <> intToText smId,
-        field "sTs" <> tsToText sTs
-      ]
-    <> "}"
-  where
-    field x = quoted x <> ": "
-    quoted x = "\"" <> x <> "\""
-    bsToText = quoted . safeDecodeUtf8
-    intToText = T.pack . show
-    tsToText = quoted . T.pack . formatISO8601Millis
+data MsgMetaJ = MsgMetaJ
+  { integrity :: Text,
+    rcvId :: Int64,
+    rcvTs :: UTCTime,
+    serverId :: Text,
+    serverTs :: UTCTime,
+    sndId :: Int64
+  }
+  deriving (Generic, Eq, Show)
+
+instance ToJSON MsgMetaJ where toEncoding = J.genericToEncoding J.defaultOptions
+
+instance FromJSON MsgMetaJ
+
+msgMetaToJson :: MsgMeta -> MsgMetaJ
+msgMetaToJson MsgMeta {integrity, recipient = (rcvId, rcvTs), broker = (serverId, serverTs), sender = (sndId, _)} =
+  MsgMetaJ
+    { integrity = (decodeUtf8 . serializeMsgIntegrity) integrity,
+      rcvId,
+      rcvTs,
+      serverId = (decodeUtf8 . B64.encode) serverId,
+      serverTs,
+      sndId
+    }
+
+msgMetaJson :: MsgMeta -> ByteString
+msgMetaJson x = LB.toStrict $ J.encode (msgMetaToJson x)
 
 data MsgDeliveryStatus (d :: MsgDirection) where
   MDSRcvAgent :: MsgDeliveryStatus 'MDRcv

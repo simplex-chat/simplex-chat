@@ -185,9 +185,9 @@ toChatMessage RawChatMessage {chatMsgId, chatMsgEvent, chatMsgParams, chatMsgBod
     ("x.info.probe", [probe]) -> do
       chatMsg . XInfoProbe =<< B64.decode probe
     ("x.info.probe.check", [probeHash]) -> do
-      chatMsg =<< (XInfoProbeCheck <$> B64.decode probeHash)
+      chatMsg . XInfoProbeCheck =<< B64.decode probeHash
     ("x.info.probe.ok", [probe]) -> do
-      chatMsg =<< (XInfoProbeOk <$> B64.decode probe)
+      chatMsg . XInfoProbeOk =<< B64.decode probe
     ("x.ok", []) ->
       chatMsg XOk
     _ -> Left $ "bad syntax or unsupported event " <> B.unpack chatMsgEvent

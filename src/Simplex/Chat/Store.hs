@@ -1681,7 +1681,7 @@ createRcvMsgDelivery_ db RcvMsgDelivery {connId, agentMsgId, agentMsgMeta} messa
         (message_id, connection_id, agent_msg_id, agent_msg_meta, current_status, chat_ts)
       VALUES (?,?,?,?,?,?);
     |]
-    (messageId, connId, agentMsgId, toMsgMetaStr agentMsgMeta, MDSRcvAgent, snd $ broker agentMsgMeta)
+    (messageId, connId, agentMsgId, msgMetaJson agentMsgMeta, MDSRcvAgent, snd $ broker agentMsgMeta)
   insertedRowId db
 
 createMsgDeliveryEvent_ :: DB.Connection -> Int64 -> MsgDeliveryStatus d -> IO ()
