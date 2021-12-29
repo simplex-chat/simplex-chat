@@ -1665,7 +1665,7 @@ type MsgDeliveryId = Int64
 
 createSndMsgDelivery_ :: DB.Connection -> SndMsgDelivery -> MessageId -> IO MsgDeliveryId
 createSndMsgDelivery_ db SndMsgDelivery {agentConnId, agentMsgId} messageId = do
-  createdAt <- getCurrentTime
+  chatSentTs <- getCurrentTime
   DB.execute
     db
     [sql|
@@ -1673,7 +1673,7 @@ createSndMsgDelivery_ db SndMsgDelivery {agentConnId, agentMsgId} messageId = do
         (message_id, agent_conn_id, agent_msg_id, agent_msg_meta, current_status, chat_sent_ts)
       VALUES (?,?,?,NULL,?,?);
     |]
-    (messageId, agentConnId, agentMsgId, toSndMsgDeliveryStatusStr SndAgent, createdAt)
+    (messageId, agentConnId, agentMsgId, toSndMsgDeliveryStatusStr SndAgent, chatSentTs)
   insertedRowId db
 
 createSndMsgDeliveryEvent_ :: DB.Connection -> MsgDeliveryId -> SndMsgDeliveryStatus -> IO ()
