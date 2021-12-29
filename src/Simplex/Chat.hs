@@ -771,11 +771,11 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
 
     ackMsgDeliveryEvent :: ConnId -> MsgMeta -> m ()
     ackMsgDeliveryEvent cId MsgMeta {recipient = (msgId, _)} =
-      withStore $ \st -> createRcvMsgDeliveryEvent st cId msgId Acknowledged
+      withStore $ \st -> createRcvMsgDeliveryEvent st cId msgId MDSRcvAcknowledged
 
     sentMsgDeliveryEvent :: ConnId -> AgentMsgId -> m ()
     sentMsgDeliveryEvent cId msgId =
-      withStore $ \st -> createSndMsgDeliveryEvent st cId msgId Sent
+      withStore $ \st -> createSndMsgDeliveryEvent st cId msgId MDSSndSent
 
     badRcvFileChunk :: RcvFileTransfer -> String -> m ()
     badRcvFileChunk ft@RcvFileTransfer {fileStatus} err =
@@ -1094,7 +1094,7 @@ deleteMemberConnection m@GroupMember {activeConn} = do
 sendDirectMessage :: ChatMonad m => ConnId -> ChatMsgEvent -> m ()
 sendDirectMessage agentConnId chatMsgEvent = do
   let msgBody = directMessage chatMsgEvent
-      newMsg = NewMessage {direction = Snd, chatMsgEventType = toChatEventType chatMsgEvent, msgBody}
+      newMsg = NewMessage {direction = MDSnd, chatMsgEventType = toChatEventType chatMsgEvent, msgBody}
   -- can be done in transaction after sendMessage, probably shouldn't
   msgId <- withStore $ \st -> createNewMessage st newMsg
   deliverMessage agentConnId msgBody msgId
@@ -1113,7 +1113,7 @@ deliverMessage agentConnId msgBody msgId = do
 sendGroupMessage :: ChatMonad m => [GroupMember] -> ChatMsgEvent -> m ()
 sendGroupMessage members chatMsgEvent = do
   let msgBody = directMessage chatMsgEvent
-      newMsg = NewMessage {direction = Snd, chatMsgEventType = toChatEventType chatMsgEvent, msgBody}
+      newMsg = NewMessage {direction = MDSnd, chatMsgEventType = toChatEventType chatMsgEvent, msgBody}
   msgId <- withStore $ \st -> createNewMessage st newMsg
   -- TODO once scheduled delivery is implemented memberActive should be changed to memberCurrent
   forM_ (map memberConnId $ filter memberActive members) $
@@ -1122,7 +1122,7 @@ sendGroupMessage members chatMsgEvent = do
 saveRcvMSG :: ChatMonad m => ConnId -> MsgMeta -> MsgBody -> m ChatMsgEvent
 saveRcvMSG agentConnId agentMsgMeta msgBody = do
   ChatMessage {chatMsgEvent} <- liftEither $ parseChatMessage msgBody
-  let newMsg = NewMessage {direction = Rcv, chatMsgEventType = toChatEventType chatMsgEvent, msgBody}
+  let newMsg = NewMessage {direction = MDRcv, chatMsgEventType = toChatEventType chatMsgEvent, msgBody}
       agentMsgId = fst $ recipient agentMsgMeta
       rcvMsgDelivery = RcvMsgDelivery {agentConnId, agentMsgId, agentMsgMeta}
   withStore $ \st -> createNewMessageAndRcvMsgDelivery st newMsg rcvMsgDelivery
