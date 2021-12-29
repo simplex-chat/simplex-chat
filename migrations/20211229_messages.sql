@@ -18,7 +18,7 @@ CREATE TABLE messages (
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
--- message deliveries as communicated with the agent, append only
+-- message deliveries communicated with the agent, append only
 CREATE TABLE msg_deliveries (
   msg_delivery_id INTEGER PRIMARY KEY,
   message_id INTEGER NOT NULL REFERENCES messages ON DELETE CASCADE, -- non UNIQUE for group messages
@@ -36,7 +36,7 @@ CREATE TABLE msg_deliveries (
 CREATE TABLE msg_delivery_events (
   msg_delivery_event_id INTEGER PRIMARY KEY,
   msg_delivery_id INTEGER NOT NULL REFERENCES msg_deliveries ON DELETE CASCADE, -- non UNIQUE for multiple events per msg delivery
-  delivery_status TEXT NOT NULL, -- see MsgDeliveryStatus for possible values
+  delivery_status TEXT NOT NULL, -- see MsgDeliveryStatus for allowed values
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   UNIQUE (msg_delivery_id, delivery_status)
 );

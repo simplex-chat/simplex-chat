@@ -1661,7 +1661,7 @@ createNewMessage_ db NewMessage {direction, chatMsgEventType, msgBody} = do
 
 createSndMsgDelivery_ :: DB.Connection -> SndMsgDelivery -> MessageId -> IO Int64
 createSndMsgDelivery_ db SndMsgDelivery {connId, agentMsgId} messageId = do
-  chatSentTs <- getCurrentTime
+  chatTs <- getCurrentTime
   DB.execute
     db
     [sql|
@@ -1669,7 +1669,7 @@ createSndMsgDelivery_ db SndMsgDelivery {connId, agentMsgId} messageId = do
         (message_id, connection_id, agent_msg_id, agent_msg_meta, current_status, chat_ts)
       VALUES (?,?,?,NULL,?,?);
     |]
-    (messageId, connId, agentMsgId, MDSSndSent, chatSentTs)
+    (messageId, connId, agentMsgId, MDSSndSent, chatTs)
   insertedRowId db
 
 createRcvMsgDelivery_ :: DB.Connection -> RcvMsgDelivery -> MessageId -> IO Int64
