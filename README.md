@@ -300,7 +300,7 @@ select * from direct_messages where msg_sent = 0 and contact = 'catherine' and m
 select contact, count(1) as num_messages from direct_messages group by contact; -- aggregate your chat data
 select * from group_messages where group_name = 'team' and contact = 'alice'; -- all correspondence with alice in #team
 
--- get all plain messages from today (sent_ts is currently in UTC)
+-- get all plain messages from today (sent_ts is in UTC)
 select * from (select null as group_name, * from direct_messages_plain union select * from group_messages_plain) where date(sent_ts) > date('now', '-1 day') order by sent_ts;
 ```
 
