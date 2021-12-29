@@ -283,7 +283,7 @@ You can search your chat history via SQLite database file:
 sqlite3 ~/.simplex/simplex.chat.db
 ```
 
-Now you can query `direct_messages` and `group_messages`, for example:
+Now you can query `direct_messages` and `group_messages` (or simpler `direct_messages_plain` and `group_messages_plain`), for example:
 
 ```sql
 .headers on
@@ -291,14 +291,17 @@ Now you can query `direct_messages` and `group_messages`, for example:
 -- simple views into direct and group_messages
 -- only 'x.msg.new' ("new message") chat events - filters out service events
 -- msg_sent is 1 for sent, 0 for received
-select contact, msg_sent, msg_body, created_at from direct_messages where chat_msg_event = 'x.msg.new';
-select group_name, contact, msg_sent, msg_body, created_at from group_messages where chat_msg_event = 'x.msg.new';
+select * from direct_messages_plain;
+select * from group_messages_plain;
 
 -- query other details of your chat history with regular SQL
 select * from direct_messages where msg_sent = 1 and chat_msg_event = 'x.file'; -- files you offered for sending
 select * from direct_messages where msg_sent = 0 and contact = 'catherine' and msg_body like '%cats%'; -- everything catherine sent related to cats
 select contact, count(1) as num_messages from direct_messages group by contact; -- aggregate your chat data
 select * from group_messages where group_name = 'team' and contact = 'alice'; -- all correspondence with alice in #team
+
+-- get all plain messages from today (sent_ts is currently in UTC)
+select * from (select NULL as group_name, * from direct_messages_plain union select * from group_messages_plain) where date(sent_ts) > date('now', '-1 day') order by sent_ts;
 ```
 
 > **Please note:** SQLite foreign key constraints are disabled by default, and must be **[enabled separately for each database connection](https://sqlite.org/foreignkeys.html#fk_enable)**. The latter can be achieved by running `PRAGMA foreign_keys = ON;` command on an open database connection. By running data altering queries without enabling foreign keys prior to that, you may risk putting your database in an inconsistent state.

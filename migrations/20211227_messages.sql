@@ -51,7 +51,16 @@ FROM messages m
 JOIN msg_deliveries md ON md.message_id = m.message_id
 JOIN connections c ON c.agent_conn_id = md.agent_conn_id
 JOIN contacts ct ON ct.contact_id = c.contact_id
-ORDER BY m.created_at DESC;
+ORDER BY md.chat_sent_ts DESC;
+
+CREATE VIEW direct_messages_plain AS
+SELECT
+  dm.contact AS contact,
+  dm.msg_sent AS msg_sent,
+  dm.msg_body AS msg_body,
+  dm.sent_ts AS sent_ts
+FROM direct_messages dm
+WHERE dm.chat_msg_event = 'x.msg.new';
 
 -- TODO ? group user messages
 CREATE VIEW group_messages AS
@@ -71,7 +80,17 @@ JOIN msg_deliveries md ON md.message_id = m.message_id
 JOIN connections c ON c.agent_conn_id = md.agent_conn_id
 JOIN group_members gm ON gm.group_member_id = c.group_member_id
 JOIN groups g ON g.group_id = gm.group_id
-ORDER BY m.created_at DESC;
+ORDER BY md.chat_sent_ts DESC;
+
+CREATE VIEW group_messages_plain AS
+SELECT
+  gm.group_name AS group_name,
+  gm.contact AS contact,
+  gm.msg_sent AS msg_sent,
+  gm.msg_body AS msg_body,
+  gm.sent_ts AS sent_ts
+FROM group_messages gm
+WHERE gm.chat_msg_event = 'x.msg.new';
 
 -- TODO group message parents and chat items not to be implemented in current scope
 
