@@ -46,10 +46,10 @@ SELECT
   m.msg_sent AS msg_sent,
   m.chat_msg_event AS chat_msg_event,
   m.msg_body AS msg_body,
-  md.chat_ts AS chat_ts,
+  datetime(md.chat_ts) AS chat_dt,
   md.agent_msg_meta AS msg_meta,
   mde.delivery_status AS delivery_status,
-  mde.created_at AS delivery_status_ts
+  datetime(mde.created_at) AS delivery_status_dt
 FROM messages m
 JOIN msg_deliveries md ON md.message_id = m.message_id
 JOIN (
@@ -61,18 +61,17 @@ JOIN msg_delivery_events mde ON mde.msg_delivery_id = MaxDates.msg_delivery_id
                             AND mde.created_at = MaxDates.MaxDate
 JOIN connections c ON c.connection_id = md.connection_id
 JOIN contacts ct ON ct.contact_id = c.contact_id
-ORDER BY md.chat_ts DESC;
+ORDER BY chat_dt DESC;
 
 CREATE VIEW direct_messages_plain AS
 SELECT
   dm.contact AS contact,
   dm.msg_sent AS msg_sent,
   dm.msg_body AS msg_body,
-  dm.chat_ts AS chat_ts
+  dm.chat_dt AS chat_dt
 FROM direct_messages dm
 WHERE dm.chat_msg_event = 'x.msg.new';
 
--- TODO ? group user messages
 CREATE VIEW group_messages AS
 SELECT
   g.local_display_name AS group_name,
@@ -81,10 +80,10 @@ SELECT
   m.msg_sent AS msg_sent,
   m.chat_msg_event AS chat_msg_event,
   m.msg_body AS msg_body,
-  md.chat_ts AS chat_ts,
+  datetime(md.chat_ts) AS chat_dt,
   md.agent_msg_meta AS msg_meta,
   mde.delivery_status AS delivery_status,
-  mde.created_at AS delivery_status_ts
+  datetime(mde.created_at) AS delivery_status_dt
 FROM messages m
 JOIN msg_deliveries md ON md.message_id = m.message_id
 JOIN (
@@ -97,17 +96,47 @@ JOIN msg_delivery_events mde ON mde.msg_delivery_id = MaxDates.msg_delivery_id
 JOIN connections c ON c.connection_id = md.connection_id
 JOIN group_members gm ON gm.group_member_id = c.group_member_id
 JOIN groups g ON g.group_id = gm.group_id
-ORDER BY md.chat_ts DESC;
+ORDER BY chat_dt DESC;
 
+-- TODO ? deduplicate user messages
 CREATE VIEW group_messages_plain AS
 SELECT
   gm.group_name AS group_name,
   gm.contact AS contact,
   gm.msg_sent AS msg_sent,
   gm.msg_body AS msg_body,
-  gm.chat_ts AS chat_ts
+  gm.chat_dt AS chat_dt
 FROM group_messages gm
 WHERE gm.chat_msg_event = 'x.msg.new';
+
+CREATE VIEW all_messages (
+  group_name,
+  contact,
+  message_id,
+  msg_sent,
+  chat_msg_event,
+  msg_body,
+  chat_dt,
+  msg_meta,
+  delivery_status,
+  delivery_status_dt
+) AS
+  SELECT * FROM (
+    SELECT NULL AS group_name, * FROM direct_messages
+    UNION
+    SELECT * FROM group_messages 
+  )
+  ORDER BY chat_dt DESC;
+
+CREATE VIEW all_messages_plain AS
+SELECT
+  am.group_name AS group_name,
+  am.contact AS contact,
+  am.msg_sent AS msg_sent,
+  am.msg_body AS msg_body,
+  am.chat_dt AS chat_dt
+FROM all_messages am
+WHERE am.chat_msg_event = 'x.msg.new';
 
 -- TODO group message parents and chat items not to be implemented in current scope
 
