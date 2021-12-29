@@ -1,19 +1,27 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
 
 module Simplex.Chat.Types where
 
 import Data.Aeson (FromJSON, ToJSON)
 import qualified Data.Aeson as J
+import qualified Data.ByteString.Base64 as B64
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
+import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Int (Int64)
 import Data.Text (Text)
+import Data.Text.Encoding (decodeLatin1)
 import Data.Time.Clock (UTCTime)
+import Data.Type.Equality
 import Data.Typeable (Typeable)
 import Database.SQLite.Simple (ResultError (..), SQLData (..))
 import Database.SQLite.Simple.FromField (FieldParser, FromField (..), returnError)
@@ -21,8 +29,9 @@ import Database.SQLite.Simple.Internal (Field (..))
 import Database.SQLite.Simple.Ok (Ok (Ok))
 import Database.SQLite.Simple.ToField (ToField (..))
 import GHC.Generics
-import Simplex.Messaging.Agent.Protocol (ConnId, ConnectionMode (..), ConnectionRequest, InvitationId)
+import Simplex.Messaging.Agent.Protocol (AgentMsgId, ConnId, ConnectionMode (..), ConnectionRequest, InvitationId, MsgMeta (..), serializeMsgIntegrity)
 import Simplex.Messaging.Agent.Store.SQLite (fromTextField_)
+import Simplex.Messaging.Protocol (MsgBody)
 
 class IsContact a where
   contactId' :: a -> Int64
@@ -57,6 +66,9 @@ data Contact = Contact
     viaGroup :: Maybe Int64
   }
   deriving (Eq, Show)
+
+contactConn :: Contact -> Connection
+contactConn = activeConn
 
 contactConnId :: Contact -> ConnId
 contactConnId Contact {activeConn = Connection {agentConnId}} = agentConnId
@@ -152,6 +164,9 @@ data GroupMember = GroupMember
     activeConn :: Maybe Connection
   }
   deriving (Eq, Show)
+
+memberConn :: GroupMember -> Maybe Connection
+memberConn = activeConn
 
 memberConnId :: GroupMember -> Maybe ConnId
 memberConnId GroupMember {activeConn} = case activeConn of
@@ -526,3 +541,125 @@ data Onboarding = Onboarding
     filesSentCount :: Int,
     addressCount :: Int
   }
+
+data NewMessage = NewMessage
+  { direction :: MsgDirection,
+    chatMsgEventType :: Text,
+    msgBody :: MsgBody
+  }
+
+type MessageId = Int64
+
+data MsgDirection = MDRcv | MDSnd
+
+data SMsgDirection (d :: MsgDirection) where
+  SMDRcv :: SMsgDirection 'MDRcv
+  SMDSnd :: SMsgDirection 'MDSnd
+
+instance TestEquality SMsgDirection where
+  testEquality SMDRcv SMDRcv = Just Refl
+  testEquality SMDSnd SMDSnd = Just Refl
+  testEquality _ _ = Nothing
+
+class MsgDirectionI (d :: MsgDirection) where
+  msgDirection :: SMsgDirection d
+
+instance MsgDirectionI 'MDRcv where msgDirection = SMDRcv
+
+instance MsgDirectionI 'MDSnd where msgDirection = SMDSnd
+
+instance ToField MsgDirection where toField = toField . msgDirectionInt
+
+msgDirectionInt :: MsgDirection -> Int
+msgDirectionInt = \case
+  MDRcv -> 0
+  MDSnd -> 1
+
+msgDirectionIntP :: Int -> Maybe MsgDirection
+msgDirectionIntP = \case
+  0 -> Just MDRcv
+  1 -> Just MDSnd
+  _ -> Nothing
+
+data SndMsgDelivery = SndMsgDelivery
+  { connId :: Int64,
+    agentMsgId :: AgentMsgId
+  }
+
+data RcvMsgDelivery = RcvMsgDelivery
+  { connId :: Int64,
+    agentMsgId :: AgentMsgId,
+    agentMsgMeta :: MsgMeta
+  }
+
+data MsgMetaJ = MsgMetaJ
+  { integrity :: Text,
+    rcvId :: Int64,
+    rcvTs :: UTCTime,
+    serverId :: Text,
+    serverTs :: UTCTime,
+    sndId :: Int64
+  }
+  deriving (Generic, Eq, Show)
+
+instance ToJSON MsgMetaJ where toEncoding = J.genericToEncoding J.defaultOptions
+
+instance FromJSON MsgMetaJ
+
+msgMetaToJson :: MsgMeta -> MsgMetaJ
+msgMetaToJson MsgMeta {integrity, recipient = (rcvId, rcvTs), broker = (serverId, serverTs), sender = (sndId, _)} =
+  MsgMetaJ
+    { integrity = (decodeLatin1 . serializeMsgIntegrity) integrity,
+      rcvId,
+      rcvTs,
+      serverId = (decodeLatin1 . B64.encode) serverId,
+      serverTs,
+      sndId
+    }
+
+msgMetaJson :: MsgMeta -> Text
+msgMetaJson = decodeLatin1 . LB.toStrict . J.encode . msgMetaToJson
+
+data MsgDeliveryStatus (d :: MsgDirection) where
+  MDSRcvAgent :: MsgDeliveryStatus 'MDRcv
+  MDSRcvAcknowledged :: MsgDeliveryStatus 'MDRcv
+  MDSSndPending :: MsgDeliveryStatus 'MDSnd
+  MDSSndAgent :: MsgDeliveryStatus 'MDSnd
+  MDSSndSent :: MsgDeliveryStatus 'MDSnd
+  MDSSndReceived :: MsgDeliveryStatus 'MDSnd
+  MDSSndRead :: MsgDeliveryStatus 'MDSnd
+
+data AMsgDeliveryStatus = forall d. AMDS (SMsgDirection d) (MsgDeliveryStatus d)
+
+instance (Typeable d, MsgDirectionI d) => FromField (MsgDeliveryStatus d) where
+  fromField = fromTextField_ msgDeliveryStatusT'
+
+instance ToField (MsgDeliveryStatus d) where toField = toField . serializeMsgDeliveryStatus
+
+serializeMsgDeliveryStatus :: MsgDeliveryStatus d -> Text
+serializeMsgDeliveryStatus = \case
+  MDSRcvAgent -> "rcv_agent"
+  MDSRcvAcknowledged -> "rcv_acknowledged"
+  MDSSndPending -> "snd_pending"
+  MDSSndAgent -> "snd_agent"
+  MDSSndSent -> "snd_sent"
+  MDSSndReceived -> "snd_received"
+  MDSSndRead -> "snd_read"
+
+msgDeliveryStatusT :: Text -> Maybe AMsgDeliveryStatus
+msgDeliveryStatusT = \case
+  "rcv_agent" -> Just $ AMDS SMDRcv MDSRcvAgent
+  "rcv_acknowledged" -> Just $ AMDS SMDRcv MDSRcvAcknowledged
+  "snd_pending" -> Just $ AMDS SMDSnd MDSSndPending
+  "snd_agent" -> Just $ AMDS SMDSnd MDSSndAgent
+  "snd_sent" -> Just $ AMDS SMDSnd MDSSndSent
+  "snd_received" -> Just $ AMDS SMDSnd MDSSndReceived
+  "snd_read" -> Just $ AMDS SMDSnd MDSSndRead
+  _ -> Nothing
+
+msgDeliveryStatusT' :: forall d. MsgDirectionI d => Text -> Maybe (MsgDeliveryStatus d)
+msgDeliveryStatusT' s =
+  msgDeliveryStatusT s >>= \(AMDS d st) ->
+    case testEquality d (msgDirection @d) of
+      Just Refl -> Just st
+      _ -> Nothing

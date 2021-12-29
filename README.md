@@ -275,23 +275,34 @@ Use `/help address` for other commands.
 
 ### Access chat history
 
-> 🚧 **Section currently out of date** 🏗
-
-SimpleX chat stores all your contacts and conversations in a local database file, making it private and portable by design, fully owned and controlled by you.
+SimpleX chat stores all your contacts and conversations in a local database file, making it private and portable by design, owned and controlled by the user.
 
 You can search your chat history via SQLite database file:
 
 ```
-sqlite3 ~/.simplex/smp-chat.db
+sqlite3 ~/.simplex/simplex.chat.db
 ```
 
-Now you can query `messages` table, for example:
+Now you can query `direct_messages`, `group_messages` and `all_messages` (or simpler `direct_messages_plain`, `group_messages_plain` and `all_messages_plain`), for example:
 
 ```sql
-select * from messages
-where conn_alias = cast('alice' as blob)
-  and body like '%cats%'
-order by internal_id desc;
+.headers on
+
+-- simple views into direct, group and all_messages with user's messages deduplicated for group and all_messages
+-- only 'x.msg.new' ("new message") chat events - filters out service events
+-- msg_sent is 1 for sent, 0 for received
+select * from direct_messages_plain;
+select * from group_messages_plain;
+select * from all_messages_plain;
+
+-- query other details of your chat history with regular SQL
+select * from direct_messages where msg_sent = 1 and chat_msg_event = 'x.file'; -- files you offered for sending
+select * from direct_messages where msg_sent = 0 and contact = 'catherine' and msg_body like '%cats%'; -- everything catherine sent related to cats
+select contact, count(1) as num_messages from direct_messages group by contact; -- aggregate your chat data
+select * from group_messages where group_name = 'team' and contact = 'alice'; -- all correspondence with alice in #team
+
+-- get all plain messages from today (chat_dt is in UTC)
+select * from all_messages_plain where date(chat_dt) > date('now', '-1 day') order by chat_dt;
 ```
 
 > **Please note:** SQLite foreign key constraints are disabled by default, and must be **[enabled separately for each database connection](https://sqlite.org/foreignkeys.html#fk_enable)**. The latter can be achieved by running `PRAGMA foreign_keys = ON;` command on an open database connection. By running data altering queries without enabling foreign keys prior to that, you may risk putting your database in an inconsistent state.
