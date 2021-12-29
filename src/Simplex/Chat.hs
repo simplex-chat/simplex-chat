@@ -263,7 +263,7 @@ processChatCommand user@User {userId, profile} = \case
     (agentConnId, cReq) <- withAgent (`createConnection` SCMInvitation)
     GroupMember {memberId} <- withStore $ \st -> createContactGroupMember st gVar user groupId contact memRole agentConnId
     let msg = XGrpInv $ GroupInvitation (userMemberId, userRole) (memberId, memRole) cReq groupProfile
-    sendDirectMessage (contactConnId contact) msg
+    sendDirectMessage (contactConn contact) msg
     showSentGroupInvitation gName cName
     setActive $ ActiveG gName
   JoinGroup gName -> do
@@ -320,7 +320,7 @@ processChatCommand user@User {userId, profile} = \case
     let fileInv = FileInvitation {fileName = takeFileName f, fileSize, fileConnReq}
     SndFileTransfer {fileId} <- withStore $ \st ->
       createSndFileTransfer st userId contact f fileInv agentConnId chSize
-    sendDirectMessage (contactConnId contact) $ XFile fileInv
+    sendDirectMessage (contactConn contact) $ XFile fileInv
     showSentFileInfo fileId
     setActive $ ActiveC cName
   SendGroupFile gName f -> do
@@ -334,7 +334,7 @@ processChatCommand user@User {userId, profile} = \case
     fileId <- withStore $ \st -> createSndGroupFileTransfer st userId group ms f fileSize chSize
     -- TODO sendGroupMessage - same file invitation to all
     forM_ ms $ \(m, _, fileInv) ->
-      traverse (`sendDirectMessage` XFile fileInv) $ memberConnId m
+      traverse (`sendDirectMessage` XFile fileInv) $ memberConn m
     showSentFileInfo fileId
     setActive $ ActiveG gName
   ReceiveFile fileId filePath_ -> do
@@ -362,7 +362,7 @@ processChatCommand user@User {userId, profile} = \case
     user' <- withStore $ \st -> updateUserProfile st user p
     asks currentUser >>= atomically . (`writeTVar` user')
     contacts <- withStore (`getUserContacts` user)
-    forM_ contacts $ \ct -> sendDirectMessage (contactConnId ct) $ XInfo p
+    forM_ contacts $ \ct -> sendDirectMessage (contactConn ct) $ XInfo p
     showUserProfileUpdated user user'
   ShowProfile -> showUserProfile profile
   QuitChat -> liftIO exitSuccess
@@ -376,7 +376,7 @@ processChatCommand user@User {userId, profile} = \case
     sendMessageCmd cName msg = do
       contact <- withStore $ \st -> getContact st userId cName
       let msgEvent = XMsgNew $ MsgContent MTText [] [MsgContentBody {contentType = SimplexContentType XCText, contentData = msg}]
-      sendDirectMessage (contactConnId contact) msgEvent
+      sendDirectMessage (contactConn contact) msgEvent
       setActive $ ActiveC cName
     contactMember :: Contact -> [GroupMember] -> Maybe GroupMember
     contactMember Contact {contactId} =
@@ -532,15 +532,15 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
         INFO connInfo ->
           saveConnInfo conn connInfo
         MSG meta msgBody -> do
-          _ <- saveRcvMSG agentConnId meta msgBody
+          _ <- saveRcvMSG conn meta msgBody
           withAckMessage agentConnId meta $ pure ()
-          ackMsgDeliveryEvent agentConnId meta
+          ackMsgDeliveryEvent conn meta
         SENT msgId ->
-          sentMsgDeliveryEvent agentConnId msgId
+          sentMsgDeliveryEvent conn msgId
         _ -> pure ()
       Just ct@Contact {localDisplayName = c} -> case agentMsg of
         MSG meta msgBody -> do
-          chatMsgEvent <- saveRcvMSG agentConnId meta msgBody
+          chatMsgEvent <- saveRcvMSG conn meta msgBody
           withAckMessage agentConnId meta $
             case chatMsgEvent of
               XMsgNew (MsgContent MTText [] body) -> newTextMessage c meta $ find (isSimplexContentType XCText) body
@@ -551,7 +551,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
               XInfoProbeCheck probeHash -> xInfoProbeCheck ct probeHash
               XInfoProbeOk probe -> xInfoProbeOk ct probe
               _ -> pure ()
-          ackMsgDeliveryEvent agentConnId meta
+          ackMsgDeliveryEvent conn meta
         CONF confId connInfo -> do
           -- confirming direct connection with a member
           ChatMessage {chatMsgEvent} <- liftEither $ parseChatMessage connInfo
@@ -584,7 +584,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
                 notifyMemberConnected gName m
                 when (memberCategory m == GCPreMember) $ probeMatchingContacts ct
         SENT msgId ->
-          sentMsgDeliveryEvent agentConnId msgId
+          sentMsgDeliveryEvent conn msgId
         END -> do
           showContactAnotherClient c
           showToast (c <> "> ") "connected to another client"
@@ -650,7 +650,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
             intros <- withStore $ \st -> createIntroductions st group m
             sendGroupMessage members . XGrpMemNew $ memberInfo m
             forM_ intros $ \intro -> do
-              sendDirectMessage agentConnId . XGrpMemIntro . memberInfo $ reMember intro
+              sendDirectMessage conn . XGrpMemIntro . memberInfo $ reMember intro
               withStore $ \st -> updateIntroStatus st intro GMIntroSent
           _ -> do
             -- TODO send probe and decide whether to use existing contact connection or the new contact connection
@@ -664,23 +664,23 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
                   notifyMemberConnected gName m
                   when (memberCategory m == GCPreMember) $ probeMatchingContacts ct
       MSG meta msgBody -> do
-        chatMsgEvent <- saveRcvMSG agentConnId meta msgBody
+        chatMsgEvent <- saveRcvMSG conn meta msgBody
         withAckMessage agentConnId meta $
           case chatMsgEvent of
             XMsgNew (MsgContent MTText [] body) ->
               newGroupTextMessage gName m meta $ find (isSimplexContentType XCText) body
             XFile fInv -> processGroupFileInvitation gName m meta fInv
             XGrpMemNew memInfo -> xGrpMemNew gName m memInfo
-            XGrpMemIntro memInfo -> xGrpMemIntro gName m memInfo
+            XGrpMemIntro memInfo -> xGrpMemIntro conn gName m memInfo
             XGrpMemInv memId introInv -> xGrpMemInv gName m memId introInv
             XGrpMemFwd memInfo introInv -> xGrpMemFwd gName m memInfo introInv
             XGrpMemDel memId -> xGrpMemDel gName m memId
             XGrpLeave -> xGrpLeave gName m
             XGrpDel -> xGrpDel gName m
             _ -> messageError $ "unsupported message: " <> T.pack (show chatMsgEvent)
-        ackMsgDeliveryEvent agentConnId meta
+        ackMsgDeliveryEvent conn meta
       SENT msgId ->
-        sentMsgDeliveryEvent agentConnId msgId
+        sentMsgDeliveryEvent conn msgId
       _ -> pure ()
 
     processSndFileConn :: ACommand 'Agent -> Connection -> SndFileTransfer -> m ()
@@ -769,13 +769,13 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
     withAckMessage cId MsgMeta {recipient = (msgId, _)} action =
       action `E.finally` withAgent (\a -> ackMessage a cId msgId `catchError` \_ -> pure ())
 
-    ackMsgDeliveryEvent :: ConnId -> MsgMeta -> m ()
-    ackMsgDeliveryEvent cId MsgMeta {recipient = (msgId, _)} =
-      withStore $ \st -> createRcvMsgDeliveryEvent st cId msgId MDSRcvAcknowledged
+    ackMsgDeliveryEvent :: Connection -> MsgMeta -> m ()
+    ackMsgDeliveryEvent Connection {connId} MsgMeta {recipient = (msgId, _)} =
+      withStore $ \st -> createRcvMsgDeliveryEvent st connId msgId MDSRcvAcknowledged
 
-    sentMsgDeliveryEvent :: ConnId -> AgentMsgId -> m ()
-    sentMsgDeliveryEvent cId msgId =
-      withStore $ \st -> createSndMsgDeliveryEvent st cId msgId MDSSndSent
+    sentMsgDeliveryEvent :: Connection -> AgentMsgId -> m ()
+    sentMsgDeliveryEvent Connection {connId} msgId =
+      withStore $ \st -> createSndMsgDeliveryEvent st connId msgId MDSSndSent
 
     badRcvFileChunk :: RcvFileTransfer -> String -> m ()
     badRcvFileChunk ft@RcvFileTransfer {fileStatus} err =
@@ -795,13 +795,13 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
     probeMatchingContacts ct = do
       gVar <- asks idsDrg
       (probe, probeId) <- withStore $ \st -> createSentProbe st gVar userId ct
-      sendDirectMessage (contactConnId ct) $ XInfoProbe probe
+      sendDirectMessage (contactConn ct) $ XInfoProbe probe
       cs <- withStore (\st -> getMatchingContacts st userId ct)
       let probeHash = C.sha256Hash probe
       forM_ cs $ \c -> sendProbeHash c probeHash probeId `catchError` const (pure ())
       where
         sendProbeHash c probeHash probeId = do
-          sendDirectMessage (contactConnId c) $ XInfoProbeCheck probeHash
+          sendDirectMessage (contactConn c) $ XInfoProbeCheck probeHash
           withStore $ \st -> createSentProbeHash st userId probeId c
 
     messageWarning :: Text -> m ()
@@ -868,7 +868,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
     probeMatch :: Contact -> Contact -> ByteString -> m ()
     probeMatch c1@Contact {profile = p1} c2@Contact {profile = p2} probe =
       when (p1 == p2) $ do
-        sendDirectMessage (contactConnId c1) $ XInfoProbeOk probe
+        sendDirectMessage (contactConn c1) $ XInfoProbeOk probe
         mergeContacts c1 c2
 
     xInfoProbeOk :: Contact -> ByteString -> m ()
@@ -900,8 +900,8 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
             newMember <- withStore $ \st -> createNewGroupMember st user group memInfo GCPostMember GSMemAnnounced
             showJoinedGroupMemberConnecting gName m newMember
 
-    xGrpMemIntro :: GroupName -> GroupMember -> MemberInfo -> m ()
-    xGrpMemIntro gName m memInfo@(MemberInfo memId _ _) =
+    xGrpMemIntro :: Connection -> GroupName -> GroupMember -> MemberInfo -> m ()
+    xGrpMemIntro conn gName m memInfo@(MemberInfo memId _ _) =
       case memberCategory m of
         GCHostMember -> do
           group <- withStore $ \st -> getGroup st user gName
@@ -912,7 +912,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
               (directConnId, directConnReq) <- withAgent (`createConnection` SCMInvitation)
               newMember <- withStore $ \st -> createIntroReMember st user group m memInfo groupConnId directConnId
               let msg = XGrpMemInv memId IntroInvitation {groupConnReq, directConnReq}
-              sendDirectMessage agentConnId msg
+              sendDirectMessage conn msg
               withStore $ \st -> updateGroupMemberStatus st userId newMember GSMemIntroInvited
         _ -> messageError "x.grp.mem.intro can be only sent by host member"
 
@@ -927,8 +927,8 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
               intro <- withStore $ \st -> saveIntroInvitation st reMember m introInv
               case activeConn (reMember :: GroupMember) of
                 Nothing -> pure () -- this is not an error, introduction will be forwarded once the member is connected
-                Just Connection {agentConnId = reAgentConnId} -> do
-                  sendDirectMessage reAgentConnId $ XGrpMemFwd (memberInfo m) introInv
+                Just reConn -> do
+                  sendDirectMessage reConn $ XGrpMemFwd (memberInfo m) introInv
                   withStore $ \st -> updateIntroStatus st intro GMIntroInvForwarded
         _ -> messageError "x.grp.mem.inv can be only sent by invitee member"
 
@@ -1091,23 +1091,23 @@ deleteMemberConnection m@GroupMember {activeConn} = do
   -- withStore $ \st -> deleteGroupMemberConnection st userId m
   forM_ activeConn $ \conn -> withStore $ \st -> updateConnectionStatus st conn ConnDeleted
 
-sendDirectMessage :: ChatMonad m => ConnId -> ChatMsgEvent -> m ()
-sendDirectMessage agentConnId chatMsgEvent = do
+sendDirectMessage :: ChatMonad m => Connection -> ChatMsgEvent -> m ()
+sendDirectMessage conn chatMsgEvent = do
   let msgBody = directMessage chatMsgEvent
       newMsg = NewMessage {direction = MDSnd, chatMsgEventType = toChatEventType chatMsgEvent, msgBody}
   -- can be done in transaction after sendMessage, probably shouldn't
   msgId <- withStore $ \st -> createNewMessage st newMsg
-  deliverMessage agentConnId msgBody msgId
+  deliverMessage conn msgBody msgId
 
 directMessage :: ChatMsgEvent -> ByteString
 directMessage chatMsgEvent =
   serializeRawChatMessage $
     rawChatMessage ChatMessage {chatMsgId = Nothing, chatMsgEvent, chatDAG = Nothing}
 
-deliverMessage :: ChatMonad m => ConnId -> MsgBody -> MessageId -> m ()
-deliverMessage agentConnId msgBody msgId = do
+deliverMessage :: ChatMonad m => Connection -> MsgBody -> MessageId -> m ()
+deliverMessage Connection {connId, agentConnId} msgBody msgId = do
   agentMsgId <- withAgent $ \a -> sendMessage a agentConnId msgBody
-  let sndMsgDelivery = SndMsgDelivery {agentConnId, agentMsgId}
+  let sndMsgDelivery = SndMsgDelivery {connId, agentMsgId}
   withStore $ \st -> createSndMsgDelivery st sndMsgDelivery msgId
 
 sendGroupMessage :: ChatMonad m => [GroupMember] -> ChatMsgEvent -> m ()
@@ -1116,15 +1116,15 @@ sendGroupMessage members chatMsgEvent = do
       newMsg = NewMessage {direction = MDSnd, chatMsgEventType = toChatEventType chatMsgEvent, msgBody}
   msgId <- withStore $ \st -> createNewMessage st newMsg
   -- TODO once scheduled delivery is implemented memberActive should be changed to memberCurrent
-  forM_ (map memberConnId $ filter memberActive members) $
-    traverse $ \agentConnId -> deliverMessage agentConnId msgBody msgId
+  forM_ (map memberConn $ filter memberActive members) $
+    traverse (\conn -> deliverMessage conn msgBody msgId)
 
-saveRcvMSG :: ChatMonad m => ConnId -> MsgMeta -> MsgBody -> m ChatMsgEvent
-saveRcvMSG agentConnId agentMsgMeta msgBody = do
+saveRcvMSG :: ChatMonad m => Connection -> MsgMeta -> MsgBody -> m ChatMsgEvent
+saveRcvMSG Connection {connId} agentMsgMeta msgBody = do
   ChatMessage {chatMsgEvent} <- liftEither $ parseChatMessage msgBody
   let newMsg = NewMessage {direction = MDRcv, chatMsgEventType = toChatEventType chatMsgEvent, msgBody}
       agentMsgId = fst $ recipient agentMsgMeta
-      rcvMsgDelivery = RcvMsgDelivery {agentConnId, agentMsgId, agentMsgMeta}
+      rcvMsgDelivery = RcvMsgDelivery {connId, agentMsgId, agentMsgMeta}
   withStore $ \st -> createNewMessageAndRcvMsgDelivery st newMsg rcvMsgDelivery
   pure chatMsgEvent
 

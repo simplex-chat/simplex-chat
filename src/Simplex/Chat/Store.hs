@@ -1635,13 +1635,13 @@ createNewMessageAndRcvMsgDelivery st newMsg rcvMsgDelivery =
     msgDeliveryId <- createRcvMsgDelivery_ db rcvMsgDelivery messageId
     createMsgDeliveryEvent_ db msgDeliveryId MDSRcvAgent
 
-createSndMsgDeliveryEvent :: StoreMonad m => SQLiteStore -> ConnId -> AgentMsgId -> MsgDeliveryStatus 'MDSnd -> m ()
+createSndMsgDeliveryEvent :: StoreMonad m => SQLiteStore -> Int64 -> AgentMsgId -> MsgDeliveryStatus 'MDSnd -> m ()
 createSndMsgDeliveryEvent st connId agentMsgId sndMsgDeliveryStatus =
   liftIOEither . withTransaction st $ \db -> runExceptT $ do
     msgDeliveryId <- ExceptT $ getMsgDeliveryId_ db connId agentMsgId
     liftIO $ createMsgDeliveryEvent_ db msgDeliveryId sndMsgDeliveryStatus
 
-createRcvMsgDeliveryEvent :: StoreMonad m => SQLiteStore -> ConnId -> AgentMsgId -> MsgDeliveryStatus 'MDRcv -> m ()
+createRcvMsgDeliveryEvent :: StoreMonad m => SQLiteStore -> Int64 -> AgentMsgId -> MsgDeliveryStatus 'MDRcv -> m ()
 createRcvMsgDeliveryEvent st connId agentMsgId rcvMsgDeliveryStatus =
   liftIOEither . withTransaction st $ \db -> runExceptT $ do
     msgDeliveryId <- ExceptT $ getMsgDeliveryId_ db connId agentMsgId
@@ -1660,28 +1660,28 @@ createNewMessage_ db NewMessage {direction, chatMsgEventType, msgBody} = do
   insertedRowId db
 
 createSndMsgDelivery_ :: DB.Connection -> SndMsgDelivery -> MessageId -> IO Int64
-createSndMsgDelivery_ db SndMsgDelivery {agentConnId, agentMsgId} messageId = do
+createSndMsgDelivery_ db SndMsgDelivery {connId, agentMsgId} messageId = do
   chatSentTs <- getCurrentTime
   DB.execute
     db
     [sql|
       INSERT INTO msg_deliveries
-        (message_id, agent_conn_id, agent_msg_id, agent_msg_meta, current_status, chat_ts)
+        (message_id, connection_id, agent_msg_id, agent_msg_meta, current_status, chat_ts)
       VALUES (?,?,?,NULL,?,?);
     |]
-    (messageId, agentConnId, agentMsgId, MDSSndSent, chatSentTs)
+    (messageId, connId, agentMsgId, MDSSndSent, chatSentTs)
   insertedRowId db
 
 createRcvMsgDelivery_ :: DB.Connection -> RcvMsgDelivery -> MessageId -> IO Int64
-createRcvMsgDelivery_ db RcvMsgDelivery {agentConnId, agentMsgId, agentMsgMeta} messageId = do
+createRcvMsgDelivery_ db RcvMsgDelivery {connId, agentMsgId, agentMsgMeta} messageId = do
   DB.execute
     db
     [sql|
       INSERT INTO msg_deliveries
-        (message_id, agent_conn_id, agent_msg_id, agent_msg_meta, current_status, chat_ts)
+        (message_id, connection_id, agent_msg_id, agent_msg_meta, current_status, chat_ts)
       VALUES (?,?,?,?,?,?);
     |]
-    (messageId, agentConnId, agentMsgId, toMsgMetaStr agentMsgMeta, MDSRcvAgent, snd $ broker agentMsgMeta)
+    (messageId, connId, agentMsgId, toMsgMetaStr agentMsgMeta, MDSRcvAgent, snd $ broker agentMsgMeta)
   insertedRowId db
 
 createMsgDeliveryEvent_ :: DB.Connection -> Int64 -> MsgDeliveryStatus d -> IO ()
@@ -1704,7 +1704,7 @@ createMsgDeliveryEvent_ db msgDeliveryId msgDeliveryStatus = do
     |]
     (msgDeliveryStatus, ts, msgDeliveryId)
 
-getMsgDeliveryId_ :: DB.Connection -> ConnId -> AgentMsgId -> IO (Either StoreError Int64)
+getMsgDeliveryId_ :: DB.Connection -> Int64 -> AgentMsgId -> IO (Either StoreError Int64)
 getMsgDeliveryId_ db connId agentMsgId =
   toMsgDeliveryId
     <$> DB.query
@@ -1712,7 +1712,7 @@ getMsgDeliveryId_ db connId agentMsgId =
       [sql|
         SELECT msg_delivery_id
         FROM msg_deliveries m
-        WHERE m.agent_conn_id = ? AND m.agent_msg_id == ?
+        WHERE m.connection_id = ? AND m.agent_msg_id == ?
         LIMIT 1;
       |]
       (connId, agentMsgId)
@@ -1797,5 +1797,5 @@ data StoreError
   | SEIntroNotFound
   | SEUniqueID
   | SEInternal ByteString
-  | SENoMsgDelivery ConnId AgentMsgId
+  | SENoMsgDelivery Int64 AgentMsgId
   deriving (Show, Exception)

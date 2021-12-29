@@ -67,6 +67,9 @@ data Contact = Contact
   }
   deriving (Eq, Show)
 
+contactConn :: Contact -> Connection
+contactConn = activeConn
+
 contactConnId :: Contact -> ConnId
 contactConnId Contact {activeConn = Connection {agentConnId}} = agentConnId
 
@@ -161,6 +164,9 @@ data GroupMember = GroupMember
     activeConn :: Maybe Connection
   }
   deriving (Eq, Show)
+
+memberConn :: GroupMember -> Maybe Connection
+memberConn = activeConn
 
 memberConnId :: GroupMember -> Maybe ConnId
 memberConnId GroupMember {activeConn} = case activeConn of
@@ -536,6 +542,12 @@ data Onboarding = Onboarding
     addressCount :: Int
   }
 
+data NewMessage = NewMessage
+  { direction :: MsgDirection,
+    chatMsgEventType :: Text,
+    msgBody :: MsgBody
+  }
+
 type MessageId = Int64
 
 data MsgDirection = MDRcv | MDSnd
@@ -569,19 +581,13 @@ msgDirectionIntP = \case
   1 -> Just MDSnd
   _ -> Nothing
 
-data NewMessage = NewMessage
-  { direction :: MsgDirection,
-    chatMsgEventType :: Text,
-    msgBody :: MsgBody
-  }
-
 data SndMsgDelivery = SndMsgDelivery
-  { agentConnId :: ConnId,
+  { connId :: Int64,
     agentMsgId :: AgentMsgId
   }
 
 data RcvMsgDelivery = RcvMsgDelivery
-  { agentConnId :: ConnId,
+  { connId :: Int64,
     agentMsgId :: AgentMsgId,
     agentMsgMeta :: MsgMeta
   }

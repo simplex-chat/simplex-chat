@@ -8,31 +8,35 @@ DROP TABLE message_content;
 DROP TABLE events;
 DROP TABLE messages;
 
-CREATE TABLE messages ( -- messages received by the agent, append only
+-- all message events as received or sent, append only
+-- maps to message deliveries as one-to-many for group messages
+CREATE TABLE messages (
   message_id INTEGER PRIMARY KEY,
-  msg_sent INTEGER NOT NULL, -- 1 for sent, 0 for received
+  msg_sent INTEGER NOT NULL, -- 0 for received, 1 for sent
   chat_msg_event TEXT NOT NULL, -- message event type (the constructor of ChatMsgEvent)
-  msg_body BLOB, -- agent message body as sent
+  msg_body BLOB, -- agent message body as received or sent
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+-- message deliveries as communicated with the agent, append only
 CREATE TABLE msg_deliveries (
   msg_delivery_id INTEGER PRIMARY KEY,
-  message_id INTEGER NOT NULL REFERENCES messages ON DELETE CASCADE, -- non UNIQUE for groups
-  agent_conn_id BLOB NOT NULL REFERENCES connections (agent_conn_id) ON DELETE CASCADE,
-  agent_msg_id INTEGER NOT NULL, -- internal agent message ID (NULL while pending)
+  message_id INTEGER NOT NULL REFERENCES messages ON DELETE CASCADE, -- non UNIQUE for group messages
+  connection_id INTEGER NOT NULL REFERENCES connections ON DELETE CASCADE,
+  agent_msg_id INTEGER, -- internal agent message ID (NULL while pending)
   agent_msg_meta TEXT, -- JSON with timestamps etc. sent in MSG, NULL for sent
   current_status TEXT NOT NULL, -- updates with new message delivery events
   chat_ts TEXT NOT NULL DEFAULT (datetime('now')), -- created_at for sent, broker_ts for received
   updated_at TEXT NOT NULL DEFAULT (datetime('now')),
-  UNIQUE (agent_conn_id, agent_msg_id)
+  UNIQUE (connection_id, agent_msg_id)
 );
 
--- TODO recovery for received messages with "agent" status - acknowledge to agent
+-- TODO recovery for received messages with "rcv_agent" status - acknowledge to agent
+-- changes of messagy delivery status, append only
 CREATE TABLE msg_delivery_events (
   msg_delivery_event_id INTEGER PRIMARY KEY,
   msg_delivery_id INTEGER NOT NULL REFERENCES msg_deliveries ON DELETE CASCADE, -- non UNIQUE for multiple events per msg delivery
-  delivery_status TEXT NOT NULL,
+  delivery_status TEXT NOT NULL, -- see MsgDeliveryStatus for possible values
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   UNIQUE (msg_delivery_id, delivery_status)
 );
@@ -50,7 +54,7 @@ SELECT
   md.updated_at AS delivery_status_updated_at
 FROM messages m
 JOIN msg_deliveries md ON md.message_id = m.message_id
-JOIN connections c ON c.agent_conn_id = md.agent_conn_id
+JOIN connections c ON c.connection_id = md.connection_id
 JOIN contacts ct ON ct.contact_id = c.contact_id
 ORDER BY md.chat_ts DESC;
 
@@ -78,7 +82,7 @@ SELECT
   md.updated_at AS delivery_status_updated_at
 FROM messages m
 JOIN msg_deliveries md ON md.message_id = m.message_id
-JOIN connections c ON c.agent_conn_id = md.agent_conn_id
+JOIN connections c ON c.connection_id = md.connection_id
 JOIN group_members gm ON gm.group_member_id = c.group_member_id
 JOIN groups g ON g.group_id = gm.group_id
 ORDER BY md.chat_ts DESC;
