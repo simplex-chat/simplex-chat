@@ -689,6 +689,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
         CONF confId connInfo -> do
           ChatMessage {chatMsgEvent} <- liftEither $ parseChatMessage connInfo
           case chatMsgEvent of
+            -- TODO save XFileAcpt message
             XFileAcpt name
               | name == fileName -> do
                 withStore $ \st -> updateSndFileStatus st ft FSAccepted
