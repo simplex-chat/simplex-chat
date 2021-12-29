@@ -1635,19 +1635,17 @@ createNewMessageAndRcvMsgDelivery st newMsg rcvMsgDelivery =
     msgDeliveryId <- createRcvMsgDelivery_ db rcvMsgDelivery messageId
     createRcvMsgDeliveryEvent_ db msgDeliveryId RcvAgent
 
-createSndMsgDeliveryEvent :: MonadUnliftIO m => SQLiteStore -> ConnId -> AgentMsgId -> SndMsgDeliveryStatus -> m ()
+createSndMsgDeliveryEvent :: StoreMonad m => SQLiteStore -> ConnId -> AgentMsgId -> SndMsgDeliveryStatus -> m ()
 createSndMsgDeliveryEvent st connId agentMsgId sndMsgDeliveryStatus =
-  liftIO . withTransaction st $ \db -> do
-    getMsgDeliveryId_ db connId agentMsgId >>= \case
-      Right msgDeliveryId -> createSndMsgDeliveryEvent_ db msgDeliveryId sndMsgDeliveryStatus
-      Left e -> E.throwIO e
+  liftIOEither . withTransaction st $ \db -> runExceptT $ do
+    msgDeliveryId <- ExceptT $ getMsgDeliveryId_ db connId agentMsgId
+    liftIO $ createSndMsgDeliveryEvent_ db msgDeliveryId sndMsgDeliveryStatus
 
-createRcvMsgDeliveryEvent :: MonadUnliftIO m => SQLiteStore -> ConnId -> AgentMsgId -> RcvMsgDeliveryStatus -> m ()
+createRcvMsgDeliveryEvent :: StoreMonad m => SQLiteStore -> ConnId -> AgentMsgId -> RcvMsgDeliveryStatus -> m ()
 createRcvMsgDeliveryEvent st connId agentMsgId rcvMsgDeliveryStatus =
-  liftIO . withTransaction st $ \db -> do
-    getMsgDeliveryId_ db connId agentMsgId >>= \case
-      Right msgDeliveryId -> createRcvMsgDeliveryEvent_ db msgDeliveryId rcvMsgDeliveryStatus
-      Left e -> E.throwIO e
+  liftIOEither . withTransaction st $ \db -> runExceptT $ do
+    msgDeliveryId <- ExceptT $ getMsgDeliveryId_ db connId agentMsgId
+    liftIO $ createRcvMsgDeliveryEvent_ db msgDeliveryId rcvMsgDeliveryStatus
 
 createNewMessage_ :: DB.Connection -> NewMessage -> IO MessageId
 createNewMessage_ db NewMessage {direction, chatMsgEventType, msgBody} = do
