@@ -25,7 +25,7 @@ CREATE TABLE msg_deliveries (
   connection_id INTEGER NOT NULL REFERENCES connections ON DELETE CASCADE,
   agent_msg_id INTEGER, -- internal agent message ID (NULL while pending)
   agent_msg_meta TEXT, -- JSON with timestamps etc. sent in MSG, NULL for sent
-  chat_ts TEXT NOT NULL DEFAULT (datetime('now')), -- created_at for sent, broker_ts for received
+  chat_ts TEXT NOT NULL DEFAULT (datetime('now')), -- broker_ts for received, created_at for sent
   UNIQUE (connection_id, agent_msg_id)
 );
 
