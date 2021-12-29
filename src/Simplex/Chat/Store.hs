@@ -123,7 +123,7 @@ import qualified Database.SQLite.Simple as DB
 import Database.SQLite.Simple.QQ (sql)
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
-import Simplex.Messaging.Agent.Protocol (AParty (..), AgentMsgId, ConnId, InvitationId)
+import Simplex.Messaging.Agent.Protocol (AParty (..), AgentMsgId, ConnId, InvitationId, MsgMeta (..))
 import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore (..), createSQLiteStore, withTransaction)
 import Simplex.Messaging.Agent.Store.SQLite.Migrations (Migration (..))
 import qualified Simplex.Messaging.Crypto as C
@@ -1665,13 +1665,15 @@ type MsgDeliveryId = Int64
 
 createSndMsgDelivery_ :: DB.Connection -> SndMsgDelivery -> MessageId -> IO MsgDeliveryId
 createSndMsgDelivery_ db SndMsgDelivery {agentConnId, agentMsgId} messageId = do
+  createdAt <- getCurrentTime
   DB.execute
     db
     [sql|
       INSERT INTO msg_deliveries
-        (message_id, agent_conn_id, agent_msg_id, agent_msg_meta) VALUES (?,?,?,NULL);
+        (message_id, agent_conn_id, agent_msg_id, agent_msg_meta, current_status, chat_sent_ts)
+      VALUES (?,?,?,NULL,?,?);
     |]
-    (messageId, agentConnId, agentMsgId)
+    (messageId, agentConnId, agentMsgId, toSndMsgDeliveryStatusStr SndAgent, createdAt)
   insertedRowId db
 
 createSndMsgDeliveryEvent_ :: DB.Connection -> MsgDeliveryId -> SndMsgDeliveryStatus -> IO ()
@@ -1683,9 +1685,10 @@ createRcvMsgDelivery_ db RcvMsgDelivery {agentConnId, agentMsgId, agentMsgMeta} 
     db
     [sql|
       INSERT INTO msg_deliveries
-        (message_id, agent_conn_id, agent_msg_id, agent_msg_meta) VALUES (?,?,?,?);
+        (message_id, agent_conn_id, agent_msg_id, agent_msg_meta, current_status, chat_sent_ts)
+      VALUES (?,?,?,?,?,?);
     |]
-    (messageId, agentConnId, agentMsgId, toMsgMetaStr agentMsgMeta)
+    (messageId, agentConnId, agentMsgId, toMsgMetaStr agentMsgMeta, toRcvMsgDeliveryStatusStr RcvAgent, snd $ broker agentMsgMeta)
   insertedRowId db
 
 createRcvMsgDeliveryEvent_ :: DB.Connection -> MsgDeliveryId -> RcvMsgDeliveryStatus -> IO ()

@@ -23,11 +23,11 @@ CREATE TABLE msg_deliveries (
   agent_msg_id INTEGER NOT NULL, -- internal agent message ID (NULL while pending)
   agent_msg_meta TEXT, -- JSON with timestamps etc. sent in MSG, NULL for sent
   current_status TEXT NOT NULL DEFAULT 'pending', -- updates with new message delivery events
+  chat_sent_ts TEXT NOT NULL DEFAULT (datetime('now')), -- created_at for sent, broker_ts for received -- TODO ? zoned time
   updated_at TEXT NOT NULL DEFAULT (datetime('now')),
   UNIQUE (agent_conn_id, agent_msg_id)
 );
 
--- TODO ? add sent_ts for quering by time (created_at for sent and broker_ts for received) 
 CREATE TABLE msg_delivery_events (
   msg_delivery_event_id INTEGER PRIMARY KEY,
   msg_delivery_id INTEGER NOT NULL REFERENCES msg_deliveries ON DELETE CASCADE, -- non UNIQUE for multiple events per msg delivery
@@ -43,7 +43,7 @@ SELECT
   m.msg_sent AS msg_sent,
   m.chat_msg_event AS chat_msg_event,
   m.msg_body AS msg_body,
-  m.created_at AS created_at,
+  md.chat_sent_ts AS sent_ts,
   md.agent_msg_meta AS msg_meta,
   md.current_status AS delivery_status,
   md.updated_at AS delivery_status_updated_at
@@ -62,7 +62,7 @@ SELECT
   m.msg_sent AS msg_sent,
   m.chat_msg_event AS chat_msg_event,
   m.msg_body AS msg_body,
-  m.created_at AS created_at,
+  md.chat_sent_ts AS sent_ts,
   md.agent_msg_meta AS msg_meta,
   md.current_status AS delivery_status,
   md.updated_at AS delivery_status_updated_at

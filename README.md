@@ -297,6 +297,7 @@ select group_name, contact, msg_sent, msg_body, created_at from group_messages w
 -- query other details of your chat history with regular SQL
 select * from direct_messages where msg_sent = 1 and chat_msg_event = 'x.file'; -- files you offered for sending
 select * from direct_messages where msg_sent = 0 and contact = 'catherine' and msg_body like '%cats%'; -- everything catherine sent related to cats
+select contact, count(1) as num_messages from direct_messages group by contact; -- aggregate your chat data
 select * from group_messages where group_name = 'team' and contact = 'alice'; -- all correspondence with alice in #team
 ```
 
