@@ -301,7 +301,7 @@ select contact, count(1) as num_messages from direct_messages group by contact; 
 select * from group_messages where group_name = 'team' and contact = 'alice'; -- all correspondence with alice in #team
 
 -- get all plain messages from today (sent_ts is currently in UTC)
-select * from (select NULL as group_name, * from direct_messages_plain union select * from group_messages_plain) where date(sent_ts) > date('now', '-1 day') order by sent_ts;
+select * from (select null as group_name, * from direct_messages_plain union select * from group_messages_plain) where date(sent_ts) > date('now', '-1 day') order by sent_ts;
 ```
 
 > **Please note:** SQLite foreign key constraints are disabled by default, and must be **[enabled separately for each database connection](https://sqlite.org/foreignkeys.html#fk_enable)**. The latter can be achieved by running `PRAGMA foreign_keys = ON;` command on an open database connection. By running data altering queries without enabling foreign keys prior to that, you may risk putting your database in an inconsistent state.
