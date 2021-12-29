@@ -25,9 +25,7 @@ CREATE TABLE msg_deliveries (
   connection_id INTEGER NOT NULL REFERENCES connections ON DELETE CASCADE,
   agent_msg_id INTEGER, -- internal agent message ID (NULL while pending)
   agent_msg_meta TEXT, -- JSON with timestamps etc. sent in MSG, NULL for sent
-  current_status TEXT NOT NULL, -- updates with new message delivery events
   chat_ts TEXT NOT NULL DEFAULT (datetime('now')), -- created_at for sent, broker_ts for received
-  updated_at TEXT NOT NULL DEFAULT (datetime('now')),
   UNIQUE (connection_id, agent_msg_id)
 );
 
@@ -50,10 +48,17 @@ SELECT
   m.msg_body AS msg_body,
   md.chat_ts AS chat_ts,
   md.agent_msg_meta AS msg_meta,
-  md.current_status AS delivery_status,
-  md.updated_at AS delivery_status_updated_at
+  mde.delivery_status AS delivery_status,
+  mde.created_at AS delivery_status_ts
 FROM messages m
 JOIN msg_deliveries md ON md.message_id = m.message_id
+JOIN (
+  SELECT msg_delivery_id, MAX(created_at) MaxDate
+  FROM msg_delivery_events
+  GROUP BY msg_delivery_id
+) MaxDates ON md.msg_delivery_id = MaxDates.msg_delivery_id
+JOIN msg_delivery_events mde ON mde.msg_delivery_id = MaxDates.msg_delivery_id 
+                            AND mde.created_at = MaxDates.MaxDate
 JOIN connections c ON c.connection_id = md.connection_id
 JOIN contacts ct ON ct.contact_id = c.contact_id
 ORDER BY md.chat_ts DESC;
@@ -78,10 +83,17 @@ SELECT
   m.msg_body AS msg_body,
   md.chat_ts AS chat_ts,
   md.agent_msg_meta AS msg_meta,
-  md.current_status AS delivery_status,
-  md.updated_at AS delivery_status_updated_at
+  mde.delivery_status AS delivery_status,
+  mde.created_at AS delivery_status_ts
 FROM messages m
 JOIN msg_deliveries md ON md.message_id = m.message_id
+JOIN (
+  SELECT msg_delivery_id, MAX(created_at) MaxDate
+  FROM msg_delivery_events
+  GROUP BY msg_delivery_id
+) MaxDates ON md.msg_delivery_id = MaxDates.msg_delivery_id
+JOIN msg_delivery_events mde ON mde.msg_delivery_id = MaxDates.msg_delivery_id 
+                            AND mde.created_at = MaxDates.MaxDate
 JOIN connections c ON c.connection_id = md.connection_id
 JOIN group_members gm ON gm.group_member_id = c.group_member_id
 JOIN groups g ON g.group_id = gm.group_id

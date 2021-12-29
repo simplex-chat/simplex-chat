@@ -1666,10 +1666,10 @@ createSndMsgDelivery_ db SndMsgDelivery {connId, agentMsgId} messageId = do
     db
     [sql|
       INSERT INTO msg_deliveries
-        (message_id, connection_id, agent_msg_id, agent_msg_meta, current_status, chat_ts)
-      VALUES (?,?,?,NULL,?,?);
+        (message_id, connection_id, agent_msg_id, agent_msg_meta, chat_ts)
+      VALUES (?,?,?,NULL,?);
     |]
-    (messageId, connId, agentMsgId, MDSSndSent, chatTs)
+    (messageId, connId, agentMsgId, chatTs)
   insertedRowId db
 
 createRcvMsgDelivery_ :: DB.Connection -> RcvMsgDelivery -> MessageId -> IO Int64
@@ -1678,31 +1678,22 @@ createRcvMsgDelivery_ db RcvMsgDelivery {connId, agentMsgId, agentMsgMeta} messa
     db
     [sql|
       INSERT INTO msg_deliveries
-        (message_id, connection_id, agent_msg_id, agent_msg_meta, current_status, chat_ts)
-      VALUES (?,?,?,?,?,?);
+        (message_id, connection_id, agent_msg_id, agent_msg_meta, chat_ts)
+      VALUES (?,?,?,?,?);
     |]
-    (messageId, connId, agentMsgId, msgMetaJson agentMsgMeta, MDSRcvAgent, snd $ broker agentMsgMeta)
+    (messageId, connId, agentMsgId, msgMetaJson agentMsgMeta, snd $ broker agentMsgMeta)
   insertedRowId db
 
 createMsgDeliveryEvent_ :: DB.Connection -> Int64 -> MsgDeliveryStatus d -> IO ()
 createMsgDeliveryEvent_ db msgDeliveryId msgDeliveryStatus = do
-  ts <- getCurrentTime
+  createdAt <- getCurrentTime
   DB.execute
     db
     [sql|
       INSERT INTO msg_delivery_events
         (msg_delivery_id, delivery_status, created_at) VALUES (?,?,?);
     |]
-    (msgDeliveryId, msgDeliveryStatus, ts)
-  DB.execute
-    db
-    [sql|
-      UPDATE msg_deliveries
-      SET current_status = ?,
-          updated_at = ?
-      WHERE msg_delivery_id = ?;
-    |]
-    (msgDeliveryStatus, ts, msgDeliveryId)
+    (msgDeliveryId, msgDeliveryStatus, createdAt)
 
 getMsgDeliveryId_ :: DB.Connection -> Int64 -> AgentMsgId -> IO (Either StoreError Int64)
 getMsgDeliveryId_ db connId agentMsgId =
