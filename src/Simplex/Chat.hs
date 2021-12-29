@@ -1116,8 +1116,8 @@ sendGroupMessage members chatMsgEvent = do
       newMsg = NewMessage {direction = Snd, chatMsgEventType = toChatEventType chatMsgEvent, msgBody}
   msgId <- withStore $ \st -> createNewMessage st newMsg
   -- TODO once scheduled delivery is implemented memberActive should be changed to memberCurrent
-  forM_ (mapM memberConnId (filter memberActive members)) $
-    traverse $ \agentConnId -> deliverMessage agentConnId msgBody msgId
+  forM_ (filter memberActive members) $
+    traverse (\agentConnId -> deliverMessage agentConnId msgBody msgId) . memberConnId
 
 saveRcvMSG :: ChatMonad m => ConnId -> MsgMeta -> MsgBody -> m ChatMsgEvent
 saveRcvMSG agentConnId agentMsgMeta msgBody = do
