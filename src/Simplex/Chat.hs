@@ -1097,14 +1097,18 @@ sendDirectMessage agentConnId chatMsgEvent = do
       newMsg = NewMessage {direction = Snd, chatMsgEventType = toChatEventType chatMsgEvent, msgBody}
   -- can be done in transaction after sendMessage, probably shouldn't
   msgId <- withStore $ \st -> createNewMessage st newMsg
-  agentMsgId <- withAgent $ \a -> sendMessage a agentConnId msgBody
-  let sndMsgDelivery = SndMsgDelivery {agentConnId, agentMsgId}
-  withStore $ \st -> createSndMsgDelivery st sndMsgDelivery msgId
+  deliverMessage agentConnId msgBody msgId
 
 directMessage :: ChatMsgEvent -> ByteString
 directMessage chatMsgEvent =
   serializeRawChatMessage $
     rawChatMessage ChatMessage {chatMsgId = Nothing, chatMsgEvent, chatDAG = Nothing}
+
+deliverMessage :: ChatMonad m => ConnId -> MsgBody -> MessageId -> m ()
+deliverMessage agentConnId msgBody msgId = do
+  agentMsgId <- withAgent $ \a -> sendMessage a agentConnId msgBody
+  let sndMsgDelivery = SndMsgDelivery {agentConnId, agentMsgId}
+  withStore $ \st -> createSndMsgDelivery st sndMsgDelivery msgId
 
 sendGroupMessage :: ChatMonad m => [GroupMember] -> ChatMsgEvent -> m ()
 sendGroupMessage members chatMsgEvent = do
@@ -1113,12 +1117,7 @@ sendGroupMessage members chatMsgEvent = do
   msgId <- withStore $ \st -> createNewMessage st newMsg
   -- TODO once scheduled delivery is implemented memberActive should be changed to memberCurrent
   forM_ (mapM memberConnId (filter memberActive members)) $
-    traverse
-      ( \agentConnId -> do
-          agentMsgId <- withAgent $ \a -> sendMessage a agentConnId msgBody
-          let sndMsgDelivery = SndMsgDelivery {agentConnId, agentMsgId}
-          withStore $ \st -> createSndMsgDelivery st sndMsgDelivery msgId
-      )
+    traverse $ \agentConnId -> deliverMessage agentConnId msgBody msgId
 
 saveRcvMSG :: ChatMonad m => ConnId -> MsgMeta -> MsgBody -> m ChatMsgEvent
 saveRcvMSG agentConnId agentMsgMeta msgBody = do
