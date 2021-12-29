@@ -23,11 +23,12 @@ CREATE TABLE msg_deliveries (
   agent_msg_id INTEGER NOT NULL, -- internal agent message ID (NULL while pending)
   agent_msg_meta TEXT, -- JSON with timestamps etc. sent in MSG, NULL for sent
   current_status TEXT NOT NULL DEFAULT 'pending', -- updates with new message delivery events
-  chat_sent_ts TEXT NOT NULL DEFAULT (datetime('now')), -- created_at for sent, broker_ts for received -- TODO ? zoned time
+  chat_ts TEXT NOT NULL DEFAULT (datetime('now')), -- created_at for sent, broker_ts for received -- TODO ? zoned time
   updated_at TEXT NOT NULL DEFAULT (datetime('now')),
   UNIQUE (agent_conn_id, agent_msg_id)
 );
 
+-- TODO recovery for received messages with "agent" status - acknowledge to agent
 CREATE TABLE msg_delivery_events (
   msg_delivery_event_id INTEGER PRIMARY KEY,
   msg_delivery_id INTEGER NOT NULL REFERENCES msg_deliveries ON DELETE CASCADE, -- non UNIQUE for multiple events per msg delivery
@@ -43,7 +44,7 @@ SELECT
   m.msg_sent AS msg_sent,
   m.chat_msg_event AS chat_msg_event,
   m.msg_body AS msg_body,
-  md.chat_sent_ts AS sent_ts,
+  md.chat_ts AS chat_ts,
   md.agent_msg_meta AS msg_meta,
   md.current_status AS delivery_status,
   md.updated_at AS delivery_status_updated_at
@@ -51,14 +52,14 @@ FROM messages m
 JOIN msg_deliveries md ON md.message_id = m.message_id
 JOIN connections c ON c.agent_conn_id = md.agent_conn_id
 JOIN contacts ct ON ct.contact_id = c.contact_id
-ORDER BY md.chat_sent_ts DESC;
+ORDER BY md.chat_ts DESC;
 
 CREATE VIEW direct_messages_plain AS
 SELECT
   dm.contact AS contact,
   dm.msg_sent AS msg_sent,
   dm.msg_body AS msg_body,
-  dm.sent_ts AS sent_ts
+  dm.chat_ts AS chat_ts
 FROM direct_messages dm
 WHERE dm.chat_msg_event = 'x.msg.new';
 
@@ -71,7 +72,7 @@ SELECT
   m.msg_sent AS msg_sent,
   m.chat_msg_event AS chat_msg_event,
   m.msg_body AS msg_body,
-  md.chat_sent_ts AS sent_ts,
+  md.chat_ts AS chat_ts,
   md.agent_msg_meta AS msg_meta,
   md.current_status AS delivery_status,
   md.updated_at AS delivery_status_updated_at
@@ -80,7 +81,7 @@ JOIN msg_deliveries md ON md.message_id = m.message_id
 JOIN connections c ON c.agent_conn_id = md.agent_conn_id
 JOIN group_members gm ON gm.group_member_id = c.group_member_id
 JOIN groups g ON g.group_id = gm.group_id
-ORDER BY md.chat_sent_ts DESC;
+ORDER BY md.chat_ts DESC;
 
 CREATE VIEW group_messages_plain AS
 SELECT
@@ -88,7 +89,7 @@ SELECT
   gm.contact AS contact,
   gm.msg_sent AS msg_sent,
   gm.msg_body AS msg_body,
-  gm.sent_ts AS sent_ts
+  gm.chat_ts AS chat_ts
 FROM group_messages gm
 WHERE gm.chat_msg_event = 'x.msg.new';
 

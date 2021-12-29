@@ -1670,7 +1670,7 @@ createSndMsgDelivery_ db SndMsgDelivery {agentConnId, agentMsgId} messageId = do
     db
     [sql|
       INSERT INTO msg_deliveries
-        (message_id, agent_conn_id, agent_msg_id, agent_msg_meta, current_status, chat_sent_ts)
+        (message_id, agent_conn_id, agent_msg_id, agent_msg_meta, current_status, chat_ts)
       VALUES (?,?,?,NULL,?,?);
     |]
     (messageId, agentConnId, agentMsgId, toSndMsgDeliveryStatusStr SndAgent, chatSentTs)
@@ -1685,7 +1685,7 @@ createRcvMsgDelivery_ db RcvMsgDelivery {agentConnId, agentMsgId, agentMsgMeta} 
     db
     [sql|
       INSERT INTO msg_deliveries
-        (message_id, agent_conn_id, agent_msg_id, agent_msg_meta, current_status, chat_sent_ts)
+        (message_id, agent_conn_id, agent_msg_id, agent_msg_meta, current_status, chat_ts)
       VALUES (?,?,?,?,?,?);
     |]
     (messageId, agentConnId, agentMsgId, toMsgMetaStr agentMsgMeta, toRcvMsgDeliveryStatusStr RcvAgent, snd $ broker agentMsgMeta)

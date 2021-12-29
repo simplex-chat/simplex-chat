@@ -300,8 +300,8 @@ select * from direct_messages where msg_sent = 0 and contact = 'catherine' and m
 select contact, count(1) as num_messages from direct_messages group by contact; -- aggregate your chat data
 select * from group_messages where group_name = 'team' and contact = 'alice'; -- all correspondence with alice in #team
 
--- get all plain messages from today (sent_ts is in UTC)
-select * from (select null as group_name, * from direct_messages_plain union select * from group_messages_plain) where date(sent_ts) > date('now', '-1 day') order by sent_ts;
+-- get all plain messages from today (chat_ts is in UTC)
+select * from (select null as group_name, * from direct_messages_plain union select * from group_messages_plain) where date(chat_ts) > date('now', '-1 day') order by chat_ts;
 ```
 
 > **Please note:** SQLite foreign key constraints are disabled by default, and must be **[enabled separately for each database connection](https://sqlite.org/foreignkeys.html#fk_enable)**. The latter can be achieved by running `PRAGMA foreign_keys = ON;` command on an open database connection. By running data altering queries without enabling foreign keys prior to that, you may risk putting your database in an inconsistent state.
