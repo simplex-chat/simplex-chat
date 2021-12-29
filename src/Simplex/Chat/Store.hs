@@ -1651,13 +1651,14 @@ createRcvMsgDeliveryEvent st connId agentMsgId rcvMsgDeliveryStatus =
 
 createNewMessage_ :: DB.Connection -> NewMessage -> IO MessageId
 createNewMessage_ db NewMessage {direction, chatMsgEventType, msgBody} = do
+  createdAt <- getCurrentTime
   DB.execute
     db
     [sql|
       INSERT INTO messages
-        (msg_sent, chat_msg_event, msg_body) VALUES (?,?,?);
+        (msg_sent, chat_msg_event, msg_body, created_at) VALUES (?,?,?,?);
     |]
-    (toMsgDirectionStr direction, chatMsgEventType, msgBody)
+    (toMsgDirectionStr direction, chatMsgEventType, msgBody, createdAt)
   insertedRowId db
 
 type MsgDeliveryId = Int64
