@@ -58,7 +58,7 @@ JOIN (
   FROM msg_delivery_events
   GROUP BY msg_delivery_id
 ) MaxDates ON MaxDates.msg_delivery_id = md.msg_delivery_id
-JOIN msg_delivery_events mde ON mde.msg_delivery_id = MaxDates.msg_delivery_id 
+JOIN msg_delivery_events mde ON mde.msg_delivery_id = MaxDates.msg_delivery_id
                             AND mde.created_at = MaxDates.MaxDate
 JOIN connections c ON c.connection_id = md.connection_id
 JOIN contacts ct ON ct.contact_id = c.contact_id
@@ -93,7 +93,7 @@ JOIN (
   FROM msg_delivery_events
   GROUP BY msg_delivery_id
 ) MaxDates ON MaxDates.msg_delivery_id = md.msg_delivery_id
-JOIN msg_delivery_events mde ON mde.msg_delivery_id = MaxDates.msg_delivery_id 
+JOIN msg_delivery_events mde ON mde.msg_delivery_id = MaxDates.msg_delivery_id
                             AND mde.created_at = MaxDates.MaxDate
 JOIN connections c ON c.connection_id = md.connection_id
 JOIN group_members gm ON gm.group_member_id = c.group_member_id
@@ -132,25 +132,23 @@ CREATE VIEW all_messages (
   SELECT * FROM (
     SELECT NULL AS group_name, * FROM direct_messages
     UNION
-    SELECT * FROM group_messages 
+    SELECT * FROM group_messages
   )
   ORDER BY chat_dt DESC;
 
-CREATE VIEW all_messages_plain AS
-SELECT
-  am.group_name AS group_name,
-  (CASE WHEN am.msg_sent = 0 THEN am.contact ELSE am.group_name END) AS contact,
-  am.msg_sent AS msg_sent,
-  am.msg_body AS msg_body,
-  am.chat_dt AS chat_dt
-FROM all_messages am
-JOIN (
-  SELECT message_id, MIN(delivery_id) MinDeliveryId
-  FROM all_messages
-  GROUP BY message_id
-) Deduplicated ON Deduplicated.message_id = am.message_id
-              AND Deduplicated.MinDeliveryId = am.delivery_id
-WHERE am.chat_msg_event = 'x.msg.new';
+CREATE VIEW all_messages_plain (
+  group_name,
+  contact,
+  msg_sent,
+  msg_body,
+  chat_dt
+) AS
+  SELECT * FROM (
+    SELECT NULL AS group_name, * FROM direct_messages_plain
+    UNION
+    SELECT * FROM group_messages_plain
+  )
+  ORDER BY chat_dt DESC;
 
 -- TODO group message parents and chat items not to be implemented in current scope
 
