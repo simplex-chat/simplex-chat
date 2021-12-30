@@ -286,6 +286,8 @@ sqlite3 ~/.simplex/simplex.chat.db
 Now you can query `direct_messages`, `group_messages` and `all_messages` (or simpler `direct_messages_plain`, `group_messages_plain` and `all_messages_plain`), for example:
 
 ```sql
+-- you can put these or your preferred settings into ~/.sqliterc to persist across sqlite3 client sessions
+.mode column
 .headers on
 
 -- simple views into direct, group and all_messages with user's messages deduplicated for group and all_messages
@@ -300,9 +302,20 @@ select * from direct_messages where msg_sent = 1 and chat_msg_event = 'x.file'; 
 select * from direct_messages where msg_sent = 0 and contact = 'catherine' and msg_body like '%cats%'; -- everything catherine sent related to cats
 select contact, count(1) as num_messages from direct_messages group by contact; -- aggregate your chat data
 select * from group_messages where group_name = 'team' and contact = 'alice'; -- all correspondence with alice in #team
+```
 
--- get all plain messages from today (chat_dt is in UTC)
+**Convenience queries**
+
+Get all messages from today (`chat_dt` is in UTC):
+
+```sql
 select * from all_messages_plain where date(chat_dt) > date('now', '-1 day') order by chat_dt;
+```
+
+Get overnight messages in the morning:
+
+```sql
+select * from all_messages_plain where chat_dt > datetime('now', '-15 hours') order by chat_dt;
 ```
 
 > **Please note:** SQLite foreign key constraints are disabled by default, and must be **[enabled separately for each database connection](https://sqlite.org/foreignkeys.html#fk_enable)**. The latter can be achieved by running `PRAGMA foreign_keys = ON;` command on an open database connection. By running data altering queries without enabling foreign keys prior to that, you may risk putting your database in an inconsistent state.
