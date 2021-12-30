@@ -306,7 +306,11 @@ select * from direct_messages where msg_sent = 0 and contact = 'catherine' and m
 select * from group_messages where group_name = 'team' and contact = 'alice'; -- all correspondence with alice in #team
 
 -- aggregate your chat data
-select contact_or_group, num_messages from (select contact as contact_or_group, count(1) as num_messages from direct_messages_plain group by contact union select group_name as contact_or_group, count(1) as num_messages from group_messages_plain group by group_name) order by num_messages desc;
+select contact_or_group, num_messages from (
+  select contact as contact_or_group, count(1) as num_messages from direct_messages_plain group by contact
+  union
+  select group_name as contact_or_group, count(1) as num_messages from group_messages_plain group by group_name
+) order by num_messages desc;
 ```
 
 **Convenience queries**
