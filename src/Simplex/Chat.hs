@@ -281,7 +281,7 @@ processChatCommand user@User {userId, profile} = \case
       Just member -> do
         let userRole = memberRole membership
         when (userRole < GRAdmin || userRole < memberRole member) $ chatError CEGroupUserRole
-        when (memberStatus member /= GSMemInvited) $ sendGroupMessage members (XGrpMemDel $ memberId member)
+        when (memberStatus member /= GSMemInvited) . sendGroupMessage members $ XGrpMemDel (memberId member)
         deleteMemberConnection member
         withStore $ \st -> updateGroupMemberStatus st userId member GSMemRemoved
         showDeletedMember gName Nothing (Just member)
