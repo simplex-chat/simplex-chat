@@ -12,9 +12,11 @@
 
 SimpleX chat prototype is a thin terminal UI on top of [SimpleXMQ](https://github.com/simplex-chat/simplexmq) message broker that uses [SMP protocols](https://github.com/simplex-chat/simplexmq/blob/master/protocol). The motivation for SimpleX chat is [presented here](./simplex.md). See [simplex.chat](https://simplex.chat) website for chat demo and the explanations of the system and how SMP protocol works.
 
-**NEW in v0.5.0: [user contact addresses](#user-contact-addresses-alpha)!**
+**NEW in v0.5.4: [messages persistence](#access-chat-history)**
 
-**Please note**: v0.5.0 of SimpleX Chat works with the same database, but the connection links are not compatible with the previous version - please ask all your contacts to upgrade!
+**NEW in v0.5.0: [user contact addresses](#user-contact-addresses-alpha)**
+
+**Please note**: v0.5.0 of SimpleX Chat works with the same database, but the connection links are not compatible with the prior versions - please ask all your contacts to upgrade!
 
 ### :zap: Quick installation
 
@@ -89,6 +91,7 @@ The routing of messages relies on the knowledge of client devices how user conta
 - Group messaging.
 - Sending files to contacts and groups.
 - User contact addresses - establish connections via multiple-use contact links.
+- Messages persisted in a local SQLite database.
 - Auto-populated recipient name - just type your messages to reply to the sender once the connection is established.
 - Demo SMP servers available and pre-configured in the app - or you can [deploy your own server](https://github.com/simplex-chat/simplexmq#using-smp-server-and-smp-agent).
 - No global identity or any names visible to the server(s), ensuring full privacy of your contacts and conversations.
@@ -275,15 +278,15 @@ Use `/help address` for other commands.
 
 ### Access chat history
 
-SimpleX chat stores all your contacts and conversations in a local database file, making it private and portable by design, owned and controlled by the user.
+SimpleX chat stores all your contacts and conversations in a local SQLite database, making it private and portable by design, owned and controlled by user.
 
-You can search your chat history via SQLite database file:
+You can view and search your chat history by querying your database:
 
 ```
 sqlite3 ~/.simplex/simplex.chat.db
 ```
 
-Now you can query `direct_messages`, `group_messages` and `all_messages` (or simpler `direct_messages_plain`, `group_messages_plain` and `all_messages_plain`), for example:
+Now you can run queries against `direct_messages`, `group_messages` and `all_messages` (or their simpler alternatives `direct_messages_plain`, `group_messages_plain` and `all_messages_plain`), for example:
 
 ```sql
 -- you can put these or your preferred settings into ~/.sqliterc to persist across sqlite3 client sessions
@@ -292,7 +295,7 @@ Now you can query `direct_messages`, `group_messages` and `all_messages` (or sim
 
 -- simple views into direct, group and all_messages with user's messages deduplicated for group and all_messages
 -- only 'x.msg.new' ("new message") chat events - filters out service events
--- msg_sent is 1 for sent, 0 for received
+-- msg_sent is 0 for received, 1 for sent
 select * from direct_messages_plain;
 select * from group_messages_plain;
 select * from all_messages_plain;
@@ -300,8 +303,14 @@ select * from all_messages_plain;
 -- query other details of your chat history with regular SQL
 select * from direct_messages where msg_sent = 1 and chat_msg_event = 'x.file'; -- files you offered for sending
 select * from direct_messages where msg_sent = 0 and contact = 'catherine' and msg_body like '%cats%'; -- everything catherine sent related to cats
-select contact, count(1) as num_messages from direct_messages group by contact; -- aggregate your chat data
 select * from group_messages where group_name = 'team' and contact = 'alice'; -- all correspondence with alice in #team
+
+-- aggregate your chat data
+select contact_or_group, num_messages from (
+  select contact as contact_or_group, count(1) as num_messages from direct_messages_plain group by contact
+  union
+  select group_name as contact_or_group, count(1) as num_messages from group_messages_plain group by group_name
+) order by num_messages desc;
 ```
 
 **Convenience queries**
