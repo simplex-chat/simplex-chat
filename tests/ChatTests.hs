@@ -37,6 +37,7 @@ chatTests = do
     it "add contacts, create group and send/receive messages" testGroup
     it "create and join group with 4 members" testGroup2
     it "create and delete group" testGroupDelete
+    it "invitee delete group when in status invited" testGroupDeleteWhenInvited
     it "remove contact from group and add again" testGroupRemoveAdd
   describe "user profiles" $
     it "update user profiles and notify contacts" testUpdateProfile
@@ -166,7 +167,7 @@ testGroup =
         (bob <# "#team alice> hello")
         (cath </)
       cath #> "#team hello"
-      cath <## "you are no longer the member of the group"
+      cath <## "you are no longer a member of the group"
       bob <##> cath
 
 testGroup2 :: IO ()
@@ -291,7 +292,7 @@ testGroup2 =
           (dan </)
         ]
       dan #> "#club how is it going?"
-      dan <## "you are no longer the member of the group"
+      dan <## "you are no longer a member of the group"
       dan <##> cath
       dan <##> alice
       -- member leaves
@@ -312,7 +313,7 @@ testGroup2 =
         (alice <# "#club cath> hey")
         (bob </)
       bob #> "#club how is it going?"
-      bob <## "you are no longer the member of the group"
+      bob <## "you are no longer a member of the group"
       bob <##> cath
       bob <##> alice
 
@@ -334,7 +335,38 @@ testGroupDelete =
       bob ##> "/d #team"
       bob <## "#team: you deleted the group"
       cath #> "#team hi"
-      cath <## "you are no longer the member of the group"
+      cath <## "you are no longer a member of the group"
+
+testGroupDeleteWhenInvited :: IO ()
+testGroupDeleteWhenInvited =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+      alice ##> "/g team"
+      alice <## "group #team is created"
+      alice <## "use /a team <name> to add members"
+      alice ##> "/a team bob"
+      concurrentlyN_
+        [ alice <## "invitation to join the group #team sent to bob",
+          do
+            bob <## "#team: alice invites you to join the group as admin"
+            bob <## "use /j team to accept"
+        ]
+      bob ##> "/d #team"
+      bob <## "#team: you deleted the group"
+      -- alice shouldn't receive notification that bob deleted group,
+      -- but she should be able to remove and re-add bob
+      alice ##> "/a team bob"
+      alice <## "contact bob is already in the group"
+      alice ##> "/rm team bob"
+      alice <## "#team: you removed bob from the group"
+      alice ##> "/a team bob"
+      concurrentlyN_
+        [ alice <## "invitation to join the group #team sent to bob",
+          do
+            bob <## "#team: alice invites you to join the group as admin"
+            bob <## "use /j team to accept"
+        ]
 
 testGroupRemoveAdd :: IO ()
 testGroupRemoveAdd =
