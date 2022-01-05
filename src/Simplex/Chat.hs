@@ -296,7 +296,7 @@ processChatCommand user@User {userId, profile} = \case
     let s = memberStatus membership
         canDelete =
           memberRole membership == GROwner
-            || (s == GSMemRemoved || s == GSMemLeft || s == GSMemGroupDeleted)
+            || (s == GSMemRemoved || s == GSMemLeft || s == GSMemGroupDeleted || s == GSMemInvited)
     unless canDelete $ chatError CEGroupUserRole
     when (memberActive membership) $ sendGroupMessage members XGrpDel
     mapM_ deleteMemberConnection members
