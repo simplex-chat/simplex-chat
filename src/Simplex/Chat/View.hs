@@ -31,7 +31,7 @@ module Simplex.Chat.View
     showGroupSubscribed,
     showGroupEmpty,
     showGroupRemoved,
-    showUnprocessedGroupInvitation,
+    showGroupInvitation,
     showMemberSubError,
     showReceivedMessage,
     showReceivedGroupMessage,
@@ -175,18 +175,18 @@ showUserContactLinkSubscribed = printToView ["Your address is active! To show: "
 showUserContactLinkSubError :: ChatReader m => ChatError -> m ()
 showUserContactLinkSubError = printToView . userContactLinkSubError
 
-showGroupSubscribed :: ChatReader m => GroupName -> m ()
+showGroupSubscribed :: ChatReader m => Group -> m ()
 showGroupSubscribed = printToView . groupSubscribed
 
-showGroupEmpty :: ChatReader m => GroupName -> m ()
+showGroupEmpty :: ChatReader m => Group -> m ()
 showGroupEmpty = printToView . groupEmpty
 
-showGroupRemoved :: ChatReader m => GroupName -> m ()
+showGroupRemoved :: ChatReader m => Group -> m ()
 showGroupRemoved = printToView . groupRemoved
 
-showUnprocessedGroupInvitation :: ChatReader m => Group -> m ()
-showUnprocessedGroupInvitation Group {localDisplayName = ldn, groupProfile = GroupProfile {fullName}} =
-  printToView [unprocessedGroupInvitation ldn fullName]
+showGroupInvitation :: ChatReader m => Group -> m ()
+showGroupInvitation Group {localDisplayName = ldn, groupProfile = GroupProfile {fullName}} =
+  printToView [groupInvitation ldn fullName]
 
 showMemberSubError :: ChatReader m => GroupName -> ContactName -> ChatError -> m ()
 showMemberSubError = printToView .:. memberSubError
@@ -402,14 +402,14 @@ userContactLinkSubError e =
     "to delete your address: " <> highlight' "/da"
   ]
 
-groupSubscribed :: GroupName -> [StyledString]
-groupSubscribed g = [ttyGroup g <> ": connected to server(s)"]
+groupSubscribed :: Group -> [StyledString]
+groupSubscribed g = [ttyFullGroup g <> ": connected to server(s)"]
 
-groupEmpty :: GroupName -> [StyledString]
-groupEmpty g = [ttyGroup g <> ": group is empty"]
+groupEmpty :: Group -> [StyledString]
+groupEmpty g = [ttyFullGroup g <> ": group is empty"]
 
-groupRemoved :: GroupName -> [StyledString]
-groupRemoved g = [ttyGroup g <> ": you are no longer a member or group deleted"]
+groupRemoved :: Group -> [StyledString]
+groupRemoved g = [ttyFullGroup g <> ": you are no longer a member or group deleted"]
 
 memberSubError :: GroupName -> ContactName -> ChatError -> [StyledString]
 memberSubError g c e = [ttyGroup g <> " member " <> ttyContact c <> " error: " <> sShow e]
@@ -501,11 +501,11 @@ groupsList :: [(GroupName, Text, GroupMemberStatus)] -> [StyledString]
 groupsList [] = ["you have no groups!", "to create: " <> highlight' "/g <name>"]
 groupsList gs = map groupSS $ sort gs
   where
-    groupSS (displayName, fullName, GSMemInvited) = unprocessedGroupInvitation displayName fullName
+    groupSS (displayName, fullName, GSMemInvited) = groupInvitation displayName fullName
     groupSS (displayName, fullName, _) = ttyGroup displayName <> optFullName displayName fullName
 
-unprocessedGroupInvitation :: GroupName -> Text -> StyledString
-unprocessedGroupInvitation displayName fullName =
+groupInvitation :: GroupName -> Text -> StyledString
+groupInvitation displayName fullName =
   highlight ("#" <> displayName)
     <> optFullName displayName fullName
     <> " - you are invited ("
