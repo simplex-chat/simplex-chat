@@ -904,12 +904,8 @@ createGroupInvitation st user@User {userId} contact GroupInvitation {fromMember,
   where
     getGroupInvitationLdn_ :: DB.Connection -> IO (Maybe GroupName)
     getGroupInvitationLdn_ db =
-      toGroupLdn
+      listToMaybe . map fromOnly
         <$> DB.query db "SELECT local_display_name FROM groups WHERE inv_queue_info = ? AND user_id = ? LIMIT 1;" (connRequest, userId)
-      where
-        toGroupLdn :: [Only GroupName] -> Maybe GroupName
-        toGroupLdn [Only ldn] = Just ldn
-        toGroupLdn _ = Nothing
     createGroupInvitation_ :: DB.Connection -> IO (Either StoreError Group)
     createGroupInvitation_ db = do
       let GroupProfile {displayName, fullName} = groupProfile
@@ -1046,11 +1042,8 @@ createContactGroupMemberWithInvitation st gVar user groupId contact memberRole a
 getContactGroupMemberInvitation :: StoreMonad m => SQLiteStore -> User -> Int64 -> m (Maybe ConnReqInvitation)
 getContactGroupMemberInvitation st User {userId} groupMemberId =
   liftIO . withTransaction st $ \db ->
-    toInvitation <$> DB.query db "SELECT inv_queue_info FROM group_members WHERE group_member_id = ? AND user_id = ?;" (groupMemberId, userId)
-  where
-    toInvitation :: [Only ConnReqInvitation] -> Maybe ConnReqInvitation
-    toInvitation [Only cReq] = Just cReq
-    toInvitation _ = Nothing
+    listToMaybe . map fromOnly
+      <$> DB.query db "SELECT inv_queue_info FROM group_members WHERE group_member_id = ? AND user_id = ?;" (groupMemberId, userId)
 
 createMemberConnection :: MonadUnliftIO m => SQLiteStore -> UserId -> GroupMember -> ConnId -> m ()
 createMemberConnection st userId GroupMember {groupMemberId} agentConnId =
