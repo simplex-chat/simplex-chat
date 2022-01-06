@@ -381,23 +381,7 @@ testGroupReAddInvited =
             bob <## "#team: alice invites you to join the group as admin"
             bob <## "use /j team to accept"
         ]
-      -- TODO we could save and try to reuse connection request,
-      -- TODO then invitee would be able to recognize it's the same group
-      -- alice re-adds bob; if bob hasn't deleted the group,
-      -- he sees it as a new group with a different local display name
-      alice ##> "/a team bob"
-      concurrentlyN_
-        [ alice <## "invitation to join the group #team sent to bob",
-          do
-            bob <## "#team_1 (team): alice invites you to join the group as admin"
-            bob <## "use /j team_1 to accept"
-        ]
-      -- if alice re-adds bob after he has deleted the group,
-      -- he sees it with original local display name
-      bob ##> "/d #team"
-      bob <## "#team: you deleted the group"
-      bob ##> "/d #team_1"
-      bob <## "#team_1: you deleted the group"
+      -- alice re-adds bob, he sees it as the same group
       alice ##> "/a team bob"
       concurrentlyN_
         [ alice <## "invitation to join the group #team sent to bob",

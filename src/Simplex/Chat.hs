@@ -259,19 +259,21 @@ processChatCommand user@User {userId, profile} = \case
     when (memberStatus membership == GSMemInvited) $ chatError (CEGroupNotJoined gName)
     unless (memberActive membership) $ chatError CEGroupMemberNotActive
     case contactMember contact members of
-      Nothing -> addGroupMember contact groupId userMemberId userRole groupProfile
-      Just gm@GroupMember {memberStatus} -> do
-        if memberStatus == GSMemInvited
-          then do
-            -- TODO save and try to reuse connection request
-            deleteMemberConnection gm
-            addGroupMember contact groupId userMemberId userRole groupProfile
-          else chatError (CEGroupDuplicateMember cName)
-    where
-      addGroupMember contact groupId userMemberId userRole groupProfile = do
+      Nothing -> do
         gVar <- asks idsDrg
         (agentConnId, cReq) <- withAgent (`createConnection` SCMInvitation)
-        GroupMember {memberId} <- withStore $ \st -> createContactGroupMember st gVar user groupId contact memRole agentConnId
+        GroupMember {memberId} <- withStore $ \st -> createContactGroupMemberWithInvitation st gVar user groupId contact memRole agentConnId cReq
+        sendInvitation contact userMemberId userRole memberId groupProfile cReq
+      Just GroupMember {groupMemberId, memberId, memberStatus} -> do
+        if memberStatus == GSMemInvited
+          then do
+            contactRequest <- withStore (`getContactGroupMemberInvitation` groupMemberId)
+            case contactRequest of
+              Nothing -> showCannotResendInvitation gName cName
+              Just cReq -> sendInvitation contact userMemberId userRole memberId groupProfile cReq
+          else chatError (CEGroupDuplicateMember cName)
+    where
+      sendInvitation contact userMemberId userRole memberId groupProfile cReq = do
         let msg = XGrpInv $ GroupInvitation (userMemberId, userRole) (memberId, memRole) cReq groupProfile
         sendDirectMessage (contactConn contact) msg
         showSentGroupInvitation gName cName

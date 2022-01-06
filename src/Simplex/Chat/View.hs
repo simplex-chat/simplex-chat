@@ -58,6 +58,7 @@ module Simplex.Chat.View
     showGroupDeletedUser,
     showGroupDeleted,
     showSentGroupInvitation,
+    showCannotResendInvitation,
     showReceivedGroupInvitation,
     showJoinedGroupMember,
     showUserJoinedGroup,
@@ -272,6 +273,9 @@ showGroupDeleted = printToView .: groupDeleted
 showSentGroupInvitation :: ChatReader m => GroupName -> ContactName -> m ()
 showSentGroupInvitation = printToView .: sentGroupInvitation
 
+showCannotResendInvitation :: ChatReader m => GroupName -> ContactName -> m ()
+showCannotResendInvitation = printToView .: cannotResendInvitation
+
 showReceivedGroupInvitation :: ChatReader m => Group -> ContactName -> GroupMemberRole -> m ()
 showReceivedGroupInvitation = printToView .:. receivedGroupInvitation
 
@@ -431,6 +435,12 @@ groupDeleted_ g m = [ttyGroup g <> ": " <> memberOrUser m <> " deleted the group
 
 sentGroupInvitation :: GroupName -> ContactName -> [StyledString]
 sentGroupInvitation g c = ["invitation to join the group " <> ttyGroup g <> " sent to " <> ttyContact c]
+
+cannotResendInvitation :: GroupName -> ContactName -> [StyledString]
+cannotResendInvitation g c =
+  [ ttyContact c <> " is already invited to group " <> ttyGroup g,
+    "to re-send invitation: " <> highlight ("/rm " <> g <> " " <> c) <> ", " <> highlight ("/a " <> g <> " " <> c)
+  ]
 
 receivedGroupInvitation :: Group -> ContactName -> GroupMemberRole -> [StyledString]
 receivedGroupInvitation g@Group {localDisplayName} c role =
