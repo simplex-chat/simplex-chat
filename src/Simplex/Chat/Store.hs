@@ -892,7 +892,7 @@ createNewGroup st gVar user groupProfile =
     membership <- createContactMember_ db user groupId user (memberId, GROwner) GCUserMember GSMemCreator IBUser
     pure $ Right Group {groupId, localDisplayName = displayName, groupProfile, members = [], membership}
 
--- | creates a new group record for the group the current user was invited to or returns existing one
+-- | creates a new group record for the group the current user was invited to, or returns an existing one
 createGroupInvitation ::
   StoreMonad m => SQLiteStore -> User -> Contact -> GroupInvitation -> m Group
 createGroupInvitation st user contact GroupInvitation {fromMember, invitedMember, connRequest, groupProfile} =
