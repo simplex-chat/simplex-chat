@@ -1042,7 +1042,7 @@ createContactGroupMemberWithInvitation st gVar user groupId contact memberRole a
 getContactGroupMemberInvitation :: StoreMonad m => SQLiteStore -> User -> Int64 -> m (Maybe ConnReqInvitation)
 getContactGroupMemberInvitation st User {userId} groupMemberId =
   liftIO . withTransaction st $ \db ->
-    listToMaybe . map fromOnly
+    join . listToMaybe . map fromOnly
       <$> DB.query db "SELECT inv_queue_info FROM group_members WHERE group_member_id = ? AND user_id = ?;" (groupMemberId, userId)
 
 createMemberConnection :: MonadUnliftIO m => SQLiteStore -> UserId -> GroupMember -> ConnId -> m ()
