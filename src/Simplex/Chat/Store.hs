@@ -899,6 +899,7 @@ createGroupInvitation st user contact GroupInvitation {fromMember, invitedMember
   liftIOEither . withTransaction st $ \db -> do
     getGroupInvitationLdn_ db >>= \case
       Nothing -> createGroupInvitation_ db
+      -- TODO treat the case that the invitation details could've changed
       Just localDisplayName -> runExceptT $ fst <$> getGroup_ db user localDisplayName
   where
     getGroupInvitationLdn_ :: DB.Connection -> IO (Maybe GroupName)
