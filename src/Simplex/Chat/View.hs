@@ -31,6 +31,7 @@ module Simplex.Chat.View
     showGroupSubscribed,
     showGroupEmpty,
     showGroupRemoved,
+    showGroupInvitation,
     showMemberSubError,
     showReceivedMessage,
     showReceivedGroupMessage,
@@ -57,6 +58,7 @@ module Simplex.Chat.View
     showGroupDeletedUser,
     showGroupDeleted,
     showSentGroupInvitation,
+    showCannotResendInvitation,
     showReceivedGroupInvitation,
     showJoinedGroupMember,
     showUserJoinedGroup,
@@ -174,14 +176,18 @@ showUserContactLinkSubscribed = printToView ["Your address is active! To show: "
 showUserContactLinkSubError :: ChatReader m => ChatError -> m ()
 showUserContactLinkSubError = printToView . userContactLinkSubError
 
-showGroupSubscribed :: ChatReader m => GroupName -> m ()
+showGroupSubscribed :: ChatReader m => Group -> m ()
 showGroupSubscribed = printToView . groupSubscribed
 
-showGroupEmpty :: ChatReader m => GroupName -> m ()
+showGroupEmpty :: ChatReader m => Group -> m ()
 showGroupEmpty = printToView . groupEmpty
 
-showGroupRemoved :: ChatReader m => GroupName -> m ()
+showGroupRemoved :: ChatReader m => Group -> m ()
 showGroupRemoved = printToView . groupRemoved
+
+showGroupInvitation :: ChatReader m => Group -> m ()
+showGroupInvitation Group {localDisplayName = ldn, groupProfile = GroupProfile {fullName}} =
+  printToView [groupInvitation ldn fullName]
 
 showMemberSubError :: ChatReader m => GroupName -> ContactName -> ChatError -> m ()
 showMemberSubError = printToView .:. memberSubError
@@ -267,6 +273,9 @@ showGroupDeleted = printToView .: groupDeleted
 showSentGroupInvitation :: ChatReader m => GroupName -> ContactName -> m ()
 showSentGroupInvitation = printToView .: sentGroupInvitation
 
+showCannotResendInvitation :: ChatReader m => GroupName -> ContactName -> m ()
+showCannotResendInvitation = printToView .: cannotResendInvitation
+
 showReceivedGroupInvitation :: ChatReader m => Group -> ContactName -> GroupMemberRole -> m ()
 showReceivedGroupInvitation = printToView .:. receivedGroupInvitation
 
@@ -297,7 +306,7 @@ showLeftMember = printToView .: leftMember
 showGroupMembers :: ChatReader m => Group -> m ()
 showGroupMembers = printToView . groupMembers
 
-showGroupsList :: ChatReader m => [(GroupName, Text)] -> m ()
+showGroupsList :: ChatReader m => [(GroupName, Text, GroupMemberStatus)] -> m ()
 showGroupsList = printToView . groupsList
 
 showContactsMerged :: ChatReader m => Contact -> Contact -> m ()
@@ -397,14 +406,14 @@ userContactLinkSubError e =
     "to delete your address: " <> highlight' "/da"
   ]
 
-groupSubscribed :: GroupName -> [StyledString]
-groupSubscribed g = [ttyGroup g <> ": connected to server(s)"]
+groupSubscribed :: Group -> [StyledString]
+groupSubscribed g = [ttyFullGroup g <> ": connected to server(s)"]
 
-groupEmpty :: GroupName -> [StyledString]
-groupEmpty g = [ttyGroup g <> ": group is empty"]
+groupEmpty :: Group -> [StyledString]
+groupEmpty g = [ttyFullGroup g <> ": group is empty"]
 
-groupRemoved :: GroupName -> [StyledString]
-groupRemoved g = [ttyGroup g <> ": you are no longer a member or group deleted"]
+groupRemoved :: Group -> [StyledString]
+groupRemoved g = [ttyFullGroup g <> ": you are no longer a member or group deleted"]
 
 memberSubError :: GroupName -> ContactName -> ChatError -> [StyledString]
 memberSubError g c e = [ttyGroup g <> " member " <> ttyContact c <> " error: " <> sShow e]
@@ -426,6 +435,12 @@ groupDeleted_ g m = [ttyGroup g <> ": " <> memberOrUser m <> " deleted the group
 
 sentGroupInvitation :: GroupName -> ContactName -> [StyledString]
 sentGroupInvitation g c = ["invitation to join the group " <> ttyGroup g <> " sent to " <> ttyContact c]
+
+cannotResendInvitation :: GroupName -> ContactName -> [StyledString]
+cannotResendInvitation g c =
+  [ ttyContact c <> " is already invited to group " <> ttyGroup g,
+    "to re-send invitation: " <> highlight ("/rm " <> g <> " " <> c) <> ", " <> highlight ("/a " <> g <> " " <> c)
+  ]
 
 receivedGroupInvitation :: Group -> ContactName -> GroupMemberRole -> [StyledString]
 receivedGroupInvitation g@Group {localDisplayName} c role =
@@ -492,11 +507,22 @@ groupMembers Group {membership, members} = map groupMember . filter (not . remov
       GSMemCreator -> "created group"
       _ -> ""
 
-groupsList :: [(GroupName, Text)] -> [StyledString]
+groupsList :: [(GroupName, Text, GroupMemberStatus)] -> [StyledString]
 groupsList [] = ["you have no groups!", "to create: " <> highlight' "/g <name>"]
-groupsList gs = map groupNames $ sort gs
+groupsList gs = map groupSS $ sort gs
   where
-    groupNames (displayName, fullName) = ttyGroup displayName <> optFullName displayName fullName
+    groupSS (displayName, fullName, GSMemInvited) = groupInvitation displayName fullName
+    groupSS (displayName, fullName, _) = ttyGroup displayName <> optFullName displayName fullName
+
+groupInvitation :: GroupName -> Text -> StyledString
+groupInvitation displayName fullName =
+  highlight ("#" <> displayName)
+    <> optFullName displayName fullName
+    <> " - you are invited ("
+    <> highlight ("/j " <> displayName)
+    <> " to join, "
+    <> highlight ("/d #" <> displayName)
+    <> " to delete invitation)"
 
 contactsMerged :: Contact -> Contact -> [StyledString]
 contactsMerged _to@Contact {localDisplayName = c1} _from@Contact {localDisplayName = c2} =
@@ -716,7 +742,7 @@ chatError = \case
     CEGroupContactRole c -> ["contact " <> ttyContact c <> " has insufficient permissions for this group action"]
     CEGroupNotJoined g -> ["you did not join this group, use " <> highlight ("/join #" <> g)]
     CEGroupMemberNotActive -> ["you cannot invite other members yet, try later"]
-    CEGroupMemberUserRemoved -> ["you are no longer the member of the group"]
+    CEGroupMemberUserRemoved -> ["you are no longer a member of the group"]
     CEGroupMemberNotFound c -> ["contact " <> ttyContact c <> " is not a group member"]
     CEGroupInternal s -> ["chat group bug: " <> plain s]
     CEFileNotFound f -> ["file not found: " <> plain f]

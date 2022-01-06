@@ -37,7 +37,10 @@ chatTests = do
     it "add contacts, create group and send/receive messages" testGroup
     it "create and join group with 4 members" testGroup2
     it "create and delete group" testGroupDelete
+    it "invitee delete group when in status invited" testGroupDeleteWhenInvited
+    it "re-add member in status invited" testGroupReAddInvited
     it "remove contact from group and add again" testGroupRemoveAdd
+    it "list groups containing group invitations" testGroupList
   describe "user profiles" $
     it "update user profiles and notify contacts" testUpdateProfile
   describe "sending and receiving files" $ do
@@ -166,7 +169,7 @@ testGroup =
         (bob <# "#team alice> hello")
         (cath </)
       cath #> "#team hello"
-      cath <## "you are no longer the member of the group"
+      cath <## "you are no longer a member of the group"
       bob <##> cath
 
 testGroup2 :: IO ()
@@ -291,7 +294,7 @@ testGroup2 =
           (dan </)
         ]
       dan #> "#club how is it going?"
-      dan <## "you are no longer the member of the group"
+      dan <## "you are no longer a member of the group"
       dan <##> cath
       dan <##> alice
       -- member leaves
@@ -312,7 +315,7 @@ testGroup2 =
         (alice <# "#club cath> hey")
         (bob </)
       bob #> "#club how is it going?"
-      bob <## "you are no longer the member of the group"
+      bob <## "you are no longer a member of the group"
       bob <##> cath
       bob <##> alice
 
@@ -334,7 +337,69 @@ testGroupDelete =
       bob ##> "/d #team"
       bob <## "#team: you deleted the group"
       cath #> "#team hi"
-      cath <## "you are no longer the member of the group"
+      cath <## "you are no longer a member of the group"
+
+testGroupDeleteWhenInvited :: IO ()
+testGroupDeleteWhenInvited =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+      alice ##> "/g team"
+      alice <## "group #team is created"
+      alice <## "use /a team <name> to add members"
+      alice ##> "/a team bob"
+      concurrentlyN_
+        [ alice <## "invitation to join the group #team sent to bob",
+          do
+            bob <## "#team: alice invites you to join the group as admin"
+            bob <## "use /j team to accept"
+        ]
+      bob ##> "/d #team"
+      bob <## "#team: you deleted the group"
+      -- alice doesn't receive notification that bob deleted group,
+      -- but she can re-add bob
+      alice ##> "/a team bob"
+      concurrentlyN_
+        [ alice <## "invitation to join the group #team sent to bob",
+          do
+            bob <## "#team: alice invites you to join the group as admin"
+            bob <## "use /j team to accept"
+        ]
+
+testGroupReAddInvited :: IO ()
+testGroupReAddInvited =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+      alice ##> "/g team"
+      alice <## "group #team is created"
+      alice <## "use /a team <name> to add members"
+      alice ##> "/a team bob"
+      concurrentlyN_
+        [ alice <## "invitation to join the group #team sent to bob",
+          do
+            bob <## "#team: alice invites you to join the group as admin"
+            bob <## "use /j team to accept"
+        ]
+      -- alice re-adds bob, he sees it as the same group
+      alice ##> "/a team bob"
+      concurrentlyN_
+        [ alice <## "invitation to join the group #team sent to bob",
+          do
+            bob <## "#team: alice invites you to join the group as admin"
+            bob <## "use /j team to accept"
+        ]
+      -- if alice removes bob and then re-adds him, she uses a new connection request
+      -- and he sees it as a new group with a different local display name
+      alice ##> "/rm team bob"
+      alice <## "#team: you removed bob from the group"
+      alice ##> "/a team bob"
+      concurrentlyN_
+        [ alice <## "invitation to join the group #team sent to bob",
+          do
+            bob <## "#team_1 (team): alice invites you to join the group as admin"
+            bob <## "use /j team_1 to accept"
+        ]
 
 testGroupRemoveAdd :: IO ()
 testGroupRemoveAdd =
@@ -380,6 +445,36 @@ testGroupRemoveAdd =
       concurrently_
         (alice <# "#team cath> hello")
         (bob <# "#team_1 cath> hello")
+
+testGroupList :: IO ()
+testGroupList =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      createGroup2 "team" alice bob
+      alice ##> "/g tennis"
+      alice <## "group #tennis is created"
+      alice <## "use /a tennis <name> to add members"
+      alice ##> "/a tennis bob"
+      concurrentlyN_
+        [ alice <## "invitation to join the group #tennis sent to bob",
+          do
+            bob <## "#tennis: alice invites you to join the group as admin"
+            bob <## "use /j tennis to accept"
+        ]
+      -- alice sees both groups
+      alice ##> "/gs"
+      alice <### ["#team", "#tennis"]
+      -- bob sees #tennis as invitation
+      bob ##> "/gs"
+      bob
+        <### [ "#team",
+               "#tennis - you are invited (/j tennis to join, /d #tennis to delete invitation)"
+             ]
+      -- after deleting invitation bob sees only one group
+      bob ##> "/d #tennis"
+      bob <## "#tennis: you deleted the group"
+      bob ##> "/gs"
+      bob <## "#team"
 
 testUpdateProfile :: IO ()
 testUpdateProfile =
@@ -653,23 +748,27 @@ showName (TestCC ChatController {currentUser} _ _ _ _) = do
   User {localDisplayName, profile = Profile {fullName}} <- readTVarIO currentUser
   pure . T.unpack $ localDisplayName <> " (" <> fullName <> ")"
 
-createGroup3 :: String -> TestCC -> TestCC -> TestCC -> IO ()
-createGroup3 gName cc1 cc2 cc3 = do
+createGroup2 :: String -> TestCC -> TestCC -> IO ()
+createGroup2 gName cc1 cc2 = do
   connectUsers cc1 cc2
-  connectUsers cc1 cc3
   name2 <- userName cc2
-  name3 <- userName cc3
-  sName2 <- showName cc2
-  sName3 <- showName cc3
   cc1 ##> ("/g " <> gName)
   cc1 <## ("group #" <> gName <> " is created")
   cc1 <## ("use /a " <> gName <> " <name> to add members")
-  addMember cc2
+  addMember gName cc1 cc2
   cc2 ##> ("/j " <> gName)
   concurrently_
     (cc1 <## ("#" <> gName <> ": " <> name2 <> " joined the group"))
     (cc2 <## ("#" <> gName <> ": you joined the group"))
-  addMember cc3
+
+createGroup3 :: String -> TestCC -> TestCC -> TestCC -> IO ()
+createGroup3 gName cc1 cc2 cc3 = do
+  createGroup2 gName cc1 cc2
+  connectUsers cc1 cc3
+  name3 <- userName cc3
+  sName2 <- showName cc2
+  sName3 <- showName cc3
+  addMember gName cc1 cc3
   cc3 ##> ("/j " <> gName)
   concurrentlyN_
     [ cc1 <## ("#" <> gName <> ": " <> name3 <> " joined the group"),
@@ -680,18 +779,18 @@ createGroup3 gName cc1 cc2 cc3 = do
         cc2 <## ("#" <> gName <> ": alice added " <> sName3 <> " to the group (connecting...)")
         cc2 <## ("#" <> gName <> ": new member " <> name3 <> " is connected")
     ]
-  where
-    addMember :: TestCC -> IO ()
-    addMember mem = do
-      name1 <- userName cc1
-      memName <- userName mem
-      cc1 ##> ("/a " <> gName <> " " <> memName)
-      concurrentlyN_
-        [ cc1 <## ("invitation to join the group #" <> gName <> " sent to " <> memName),
-          do
-            mem <## ("#" <> gName <> ": " <> name1 <> " invites you to join the group as admin")
-            mem <## ("use /j " <> gName <> " to accept")
-        ]
+
+addMember :: String -> TestCC -> TestCC -> IO ()
+addMember gName inviting invitee = do
+  name1 <- userName inviting
+  memName <- userName invitee
+  inviting ##> ("/a " <> gName <> " " <> memName)
+  concurrentlyN_
+    [ inviting <## ("invitation to join the group #" <> gName <> " sent to " <> memName),
+      do
+        invitee <## ("#" <> gName <> ": " <> name1 <> " invites you to join the group as admin")
+        invitee <## ("use /j " <> gName <> " to accept")
+    ]
 
 -- | test sending direct messages
 (<##>) :: TestCC -> TestCC -> IO ()
