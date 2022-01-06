@@ -1,4 +1,4 @@
 {
-  "template": "${{UNCATEGORIZED}}",
-  "pr_template": "- ${{TITLE}}\n"
+  "template": "Commits:\n${{UNCATEGORIZED}}",
+  "pr_template": "- ${{TITLE}}"
 }
