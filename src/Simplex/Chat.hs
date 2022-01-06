@@ -307,8 +307,7 @@ processChatCommand user@User {userId, profile} = \case
     showGroupMembers group
   ListGroups -> do
     groups <- withStore (`getUserGroups` user)
-    let groupsList = map groupDetails groups
-    showGroupsList groupsList
+    showGroupsList $ map groupDetails groups
     where
       groupDetails g =
         ( localDisplayName (g :: Group),
