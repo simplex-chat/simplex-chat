@@ -895,7 +895,7 @@ createNewGroup st gVar user groupProfile =
 -- | creates a new group record for the group the current user was invited to, or returns an existing one
 createGroupInvitation ::
   StoreMonad m => SQLiteStore -> User -> Contact -> GroupInvitation -> m Group
-createGroupInvitation st user contact GroupInvitation {fromMember, invitedMember, connRequest, groupProfile} =
+createGroupInvitation st user@User {userId} contact GroupInvitation {fromMember, invitedMember, connRequest, groupProfile} =
   liftIOEither . withTransaction st $ \db -> do
     getGroupInvitationLdn_ db >>= \case
       Nothing -> createGroupInvitation_ db
@@ -904,16 +904,19 @@ createGroupInvitation st user contact GroupInvitation {fromMember, invitedMember
   where
     getGroupInvitationLdn_ :: DB.Connection -> IO (Maybe GroupName)
     getGroupInvitationLdn_ db =
-      listToMaybe . map fromOnly
-        <$> DB.query db "SELECT local_display_name FROM groups WHERE inv_queue_info = ? LIMIT 1;" (Only connRequest)
+      toGroupLdn
+        <$> DB.query db "SELECT local_display_name FROM groups WHERE inv_queue_info = ? AND user_id = ? LIMIT 1;" (connRequest, userId)
+      where
+        toGroupLdn :: [Only GroupName] -> Maybe GroupName
+        toGroupLdn [Only ldn] = Just ldn
+        toGroupLdn _ = Nothing
     createGroupInvitation_ :: DB.Connection -> IO (Either StoreError Group)
     createGroupInvitation_ db = do
       let GroupProfile {displayName, fullName} = groupProfile
-          uId = userId user
-      withLocalDisplayName db uId displayName $ \localDisplayName -> do
+      withLocalDisplayName db userId displayName $ \localDisplayName -> do
         DB.execute db "INSERT INTO group_profiles (display_name, full_name) VALUES (?, ?)" (displayName, fullName)
         profileId <- insertedRowId db
-        DB.execute db "INSERT INTO groups (group_profile_id, local_display_name, inv_queue_info, user_id) VALUES (?, ?, ?, ?)" (profileId, localDisplayName, connRequest, uId)
+        DB.execute db "INSERT INTO groups (group_profile_id, local_display_name, inv_queue_info, user_id) VALUES (?, ?, ?, ?)" (profileId, localDisplayName, connRequest, userId)
         groupId <- insertedRowId db
         member <- createContactMember_ db user groupId contact fromMember GCHostMember GSMemInvited IBUnknown
         membership <- createContactMember_ db user groupId user invitedMember GCUserMember GSMemInvited (IBContact $ contactId contact)
@@ -1040,11 +1043,14 @@ createContactGroupMemberWithInvitation st gVar user groupId contact memberRole a
       void $ createMemberConnection_ db (userId user) groupMemberId agentConnId Nothing 0
       pure member
 
-getContactGroupMemberInvitation :: StoreMonad m => SQLiteStore -> Int64 -> m (Maybe ConnReqInvitation)
-getContactGroupMemberInvitation st groupMemberId =
+getContactGroupMemberInvitation :: StoreMonad m => SQLiteStore -> User -> Int64 -> m (Maybe ConnReqInvitation)
+getContactGroupMemberInvitation st User {userId} groupMemberId =
   liftIO . withTransaction st $ \db ->
-    listToMaybe . map fromOnly
-      <$> DB.query db "SELECT inv_queue_info FROM group_members WHERE group_member_id = ?;" (Only groupMemberId)
+    toInvitation <$> DB.query db "SELECT inv_queue_info FROM group_members WHERE group_member_id = ? AND user_id = ?;" (groupMemberId, userId)
+  where
+    toInvitation :: [Only ConnReqInvitation] -> Maybe ConnReqInvitation
+    toInvitation [Only cReq] = Just cReq
+    toInvitation _ = Nothing
 
 createMemberConnection :: MonadUnliftIO m => SQLiteStore -> UserId -> GroupMember -> ConnId -> m ()
 createMemberConnection st userId GroupMember {groupMemberId} agentConnId =

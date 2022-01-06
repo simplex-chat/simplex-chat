@@ -267,7 +267,7 @@ processChatCommand user@User {userId, profile} = \case
       Just GroupMember {groupMemberId, memberId, memberStatus} -> do
         if memberStatus == GSMemInvited
           then do
-            contactRequest <- withStore (`getContactGroupMemberInvitation` groupMemberId)
+            contactRequest <- withStore $ \st -> getContactGroupMemberInvitation st user groupMemberId
             case contactRequest of
               Nothing -> showCannotResendInvitation gName cName
               Just cReq -> sendInvitation contact userMemberId userRole memberId groupProfile cReq
