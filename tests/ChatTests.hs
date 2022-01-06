@@ -389,6 +389,17 @@ testGroupReAddInvited =
             bob <## "#team: alice invites you to join the group as admin"
             bob <## "use /j team to accept"
         ]
+      -- if alice removes bob and then re-adds him, she uses a new connection request
+      -- and he sees it as a new group with a different local display name
+      alice ##> "/rm team bob"
+      alice <## "#team: you removed bob from the group"
+      alice ##> "/a team bob"
+      concurrentlyN_
+        [ alice <## "invitation to join the group #team sent to bob",
+          do
+            bob <## "#team_1 (team): alice invites you to join the group as admin"
+            bob <## "use /j team_1 to accept"
+        ]
 
 testGroupRemoveAdd :: IO ()
 testGroupRemoveAdd =
