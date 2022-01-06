@@ -258,14 +258,24 @@ processChatCommand user@User {userId, profile} = \case
     when (userRole < GRAdmin || userRole < memRole) $ chatError CEGroupUserRole
     when (memberStatus membership == GSMemInvited) $ chatError (CEGroupNotJoined gName)
     unless (memberActive membership) $ chatError CEGroupMemberNotActive
-    when (isJust $ contactMember contact members) $ chatError (CEGroupDuplicateMember cName)
-    gVar <- asks idsDrg
-    (agentConnId, cReq) <- withAgent (`createConnection` SCMInvitation)
-    GroupMember {memberId} <- withStore $ \st -> createContactGroupMember st gVar user groupId contact memRole agentConnId
-    let msg = XGrpInv $ GroupInvitation (userMemberId, userRole) (memberId, memRole) cReq groupProfile
-    sendDirectMessage (contactConn contact) msg
-    showSentGroupInvitation gName cName
-    setActive $ ActiveG gName
+    case contactMember contact members of
+      Nothing -> do
+        gVar <- asks idsDrg
+        (agentConnId, cReq) <- withAgent (`createConnection` SCMInvitation)
+        GroupMember {memberId} <- withStore $ \st -> createContactGroupMemberWithInvitation st gVar user groupId contact memRole agentConnId cReq
+        sendInvitation contact userMemberId userRole memberId groupProfile cReq
+      Just GroupMember {groupMemberId, memberId, memberStatus}
+        | memberStatus == GSMemInvited ->
+          withStore (\st -> getContactGroupMemberInvitation st user groupMemberId) >>= \case
+            Just cReq -> sendInvitation contact userMemberId userRole memberId groupProfile cReq
+            Nothing -> showCannotResendInvitation gName cName
+        | otherwise -> chatError (CEGroupDuplicateMember cName)
+    where
+      sendInvitation contact userMemberId userRole memberId groupProfile cReq = do
+        let msg = XGrpInv $ GroupInvitation (userMemberId, userRole) (memberId, memRole) cReq groupProfile
+        sendDirectMessage (contactConn contact) msg
+        showSentGroupInvitation gName cName
+        setActive $ ActiveG gName
   JoinGroup gName -> do
     ReceivedGroupInvitation {fromMember, userMember, connRequest} <- withStore $ \st -> getGroupInvitation st user gName
     agentConnId <- withAgent $ \a -> joinConnection a connRequest . directMessage . XGrpAcpt $ memberId userMember
@@ -447,17 +457,17 @@ subscribeUserConnections = void . runExceptT $ do
       forM_ groups $ \g@Group {members, membership, localDisplayName = gn} -> do
         let connectedMembers = mapMaybe (\m -> (m,) <$> memberConnId m) members
         if memberStatus membership == GSMemInvited
-          then showUnprocessedGroupInvitation g
+          then showGroupInvitation g
           else
             if null connectedMembers
               then
                 if memberActive membership
-                  then showGroupEmpty gn
-                  else showGroupRemoved gn
+                  then showGroupEmpty g
+                  else showGroupRemoved g
               else do
                 forM_ connectedMembers $ \(GroupMember {localDisplayName = c}, cId) ->
                   subscribe cId `catchError` showMemberSubError gn c
-                showGroupSubscribed gn
+                showGroupSubscribed g
     subscribeFiles user = do
       withStore (`getLiveSndFileTransfers` user) >>= mapM_ subscribeSndFile
       withStore (`getLiveRcvFileTransfers` user) >>= mapM_ subscribeRcvFile

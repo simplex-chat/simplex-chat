@@ -51,7 +51,8 @@ module Simplex.Chat.Store
     getUserGroups,
     getUserGroupDetails,
     getGroupInvitation,
-    createContactGroupMember,
+    createContactGroupMemberWithInvitation,
+    getContactGroupMemberInvitation,
     createMemberConnection,
     updateGroupMemberStatus,
     createNewGroupMember,
@@ -891,21 +892,31 @@ createNewGroup st gVar user groupProfile =
     membership <- createContactMember_ db user groupId user (memberId, GROwner) GCUserMember GSMemCreator IBUser
     pure $ Right Group {groupId, localDisplayName = displayName, groupProfile, members = [], membership}
 
--- | creates a new group record for the group the current user was invited to
+-- | creates a new group record for the group the current user was invited to, or returns an existing one
 createGroupInvitation ::
   StoreMonad m => SQLiteStore -> User -> Contact -> GroupInvitation -> m Group
-createGroupInvitation st user contact GroupInvitation {fromMember, invitedMember, connRequest, groupProfile} =
+createGroupInvitation st user@User {userId} contact GroupInvitation {fromMember, invitedMember, connRequest, groupProfile} =
   liftIOEither . withTransaction st $ \db -> do
-    let GroupProfile {displayName, fullName} = groupProfile
-        uId = userId user
-    withLocalDisplayName db uId displayName $ \localDisplayName -> do
-      DB.execute db "INSERT INTO group_profiles (display_name, full_name) VALUES (?, ?)" (displayName, fullName)
-      profileId <- insertedRowId db
-      DB.execute db "INSERT INTO groups (group_profile_id, local_display_name, inv_queue_info, user_id) VALUES (?, ?, ?, ?)" (profileId, localDisplayName, connRequest, uId)
-      groupId <- insertedRowId db
-      member <- createContactMember_ db user groupId contact fromMember GCHostMember GSMemInvited IBUnknown
-      membership <- createContactMember_ db user groupId user invitedMember GCUserMember GSMemInvited (IBContact $ contactId contact)
-      pure Group {groupId, localDisplayName, groupProfile, members = [member], membership}
+    getGroupInvitationLdn_ db >>= \case
+      Nothing -> createGroupInvitation_ db
+      -- TODO treat the case that the invitation details could've changed
+      Just localDisplayName -> runExceptT $ fst <$> getGroup_ db user localDisplayName
+  where
+    getGroupInvitationLdn_ :: DB.Connection -> IO (Maybe GroupName)
+    getGroupInvitationLdn_ db =
+      listToMaybe . map fromOnly
+        <$> DB.query db "SELECT local_display_name FROM groups WHERE inv_queue_info = ? AND user_id = ? LIMIT 1;" (connRequest, userId)
+    createGroupInvitation_ :: DB.Connection -> IO (Either StoreError Group)
+    createGroupInvitation_ db = do
+      let GroupProfile {displayName, fullName} = groupProfile
+      withLocalDisplayName db userId displayName $ \localDisplayName -> do
+        DB.execute db "INSERT INTO group_profiles (display_name, full_name) VALUES (?, ?)" (displayName, fullName)
+        profileId <- insertedRowId db
+        DB.execute db "INSERT INTO groups (group_profile_id, local_display_name, inv_queue_info, user_id) VALUES (?, ?, ?, ?)" (profileId, localDisplayName, connRequest, userId)
+        groupId <- insertedRowId db
+        member <- createContactMember_ db user groupId contact fromMember GCHostMember GSMemInvited IBUnknown
+        membership <- createContactMember_ db user groupId user invitedMember GCUserMember GSMemInvited (IBContact $ contactId contact)
+        pure Group {groupId, localDisplayName, groupProfile, members = [member], membership}
 
 -- TODO return the last connection that is ready, not any last connection
 -- requires updating connection status
@@ -974,6 +985,7 @@ deleteGroup st User {userId} Group {groupId, members, localDisplayName} =
     forM_ members $ \m -> DB.execute db "DELETE FROM connections WHERE user_id = ? AND group_member_id = ?" (userId, groupMemberId m)
     DB.execute db "DELETE FROM group_members WHERE user_id = ? AND group_id = ?" (userId, groupId)
     DB.execute db "DELETE FROM groups WHERE user_id = ? AND group_id = ?" (userId, groupId)
+    -- TODO ? delete group profile
     DB.execute db "DELETE FROM display_names WHERE user_id = ? AND local_display_name = ?" (userId, localDisplayName)
 
 getUserGroups :: MonadUnliftIO m => SQLiteStore -> User -> m [Group]
@@ -1019,14 +1031,19 @@ toGroupMember userContactId (groupMemberId, groupId, memberId, memberRole, membe
       activeConn = Nothing
    in GroupMember {..}
 
-createContactGroupMember :: StoreMonad m => SQLiteStore -> TVar ChaChaDRG -> User -> Int64 -> Contact -> GroupMemberRole -> ConnId -> m GroupMember
-createContactGroupMember st gVar user groupId contact memberRole agentConnId =
+createContactGroupMemberWithInvitation :: StoreMonad m => SQLiteStore -> TVar ChaChaDRG -> User -> Int64 -> Contact -> GroupMemberRole -> ConnId -> ConnReqInvitation -> m GroupMember
+createContactGroupMemberWithInvitation st gVar user groupId contact memberRole agentConnId connRequest =
   liftIOEither . withTransaction st $ \db ->
     createWithRandomId gVar $ \memId -> do
-      member <- createContactMember_ db user groupId contact (memId, memberRole) GCInviteeMember GSMemInvited IBUser
-      groupMemberId <- insertedRowId db
+      member@GroupMember {groupMemberId} <- createContactMemberWithInvitation_ db user groupId contact (memId, memberRole) GCInviteeMember GSMemInvited IBUser (Just connRequest)
       void $ createMemberConnection_ db (userId user) groupMemberId agentConnId Nothing 0
       pure member
+
+getContactGroupMemberInvitation :: StoreMonad m => SQLiteStore -> User -> Int64 -> m (Maybe ConnReqInvitation)
+getContactGroupMemberInvitation st User {userId} groupMemberId =
+  liftIO . withTransaction st $ \db ->
+    join . listToMaybe . map fromOnly
+      <$> DB.query db "SELECT inv_queue_info FROM group_members WHERE group_member_id = ? AND user_id = ?;" (groupMemberId, userId)
 
 createMemberConnection :: MonadUnliftIO m => SQLiteStore -> UserId -> GroupMember -> ConnId -> m ()
 createMemberConnection st userId GroupMember {groupMemberId} agentConnId =
@@ -1253,7 +1270,11 @@ createMemberConnection_ :: DB.Connection -> UserId -> Int64 -> ConnId -> Maybe I
 createMemberConnection_ db userId groupMemberId = createConnection_ db userId ConnMember (Just groupMemberId)
 
 createContactMember_ :: IsContact a => DB.Connection -> User -> Int64 -> a -> (MemberId, GroupMemberRole) -> GroupMemberCategory -> GroupMemberStatus -> InvitedBy -> IO GroupMember
-createContactMember_ db User {userId, userContactId} groupId userOrContact (memberId, memberRole) memberCategory memberStatus invitedBy = do
+createContactMember_ db user groupId userOrContact (memberId, memberRole) memberCategory memberStatus invitedBy =
+  createContactMemberWithInvitation_ db user groupId userOrContact (memberId, memberRole) memberCategory memberStatus invitedBy Nothing
+
+createContactMemberWithInvitation_ :: IsContact a => DB.Connection -> User -> Int64 -> a -> (MemberId, GroupMemberRole) -> GroupMemberCategory -> GroupMemberStatus -> InvitedBy -> Maybe ConnReqInvitation -> IO GroupMember
+createContactMemberWithInvitation_ db User {userId, userContactId} groupId userOrContact (memberId, memberRole) memberCategory memberStatus invitedBy connRequest = do
   insertMember_
   groupMemberId <- insertedRowId db
   let memberProfile = profile' userOrContact
@@ -1268,12 +1289,12 @@ createContactMember_ db User {userId, userContactId} groupId userOrContact (memb
         [sql|
           INSERT INTO group_members
             ( group_id, member_id, member_role, member_category, member_status, invited_by,
-              user_id, local_display_name, contact_profile_id, contact_id)
+              user_id, local_display_name, contact_profile_id, contact_id, inv_queue_info)
           VALUES
             (:group_id,:member_id,:member_role,:member_category,:member_status,:invited_by,
              :user_id,:local_display_name,
               (SELECT contact_profile_id FROM contacts WHERE contact_id = :contact_id),
-              :contact_id)
+              :contact_id, :inv_queue_info)
         |]
         [ ":group_id" := groupId,
           ":member_id" := memberId,
@@ -1283,7 +1304,8 @@ createContactMember_ db User {userId, userContactId} groupId userOrContact (memb
           ":invited_by" := fromInvitedBy userContactId invitedBy,
           ":user_id" := userId,
           ":local_display_name" := localDisplayName' userOrContact,
-          ":contact_id" := contactId' userOrContact
+          ":contact_id" := contactId' userOrContact,
+          ":inv_queue_info" := connRequest
         ]
 
 getViaGroupMember :: MonadUnliftIO m => SQLiteStore -> User -> Contact -> m (Maybe (GroupName, GroupMember))

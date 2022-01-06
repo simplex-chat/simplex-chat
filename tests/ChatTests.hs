@@ -38,7 +38,9 @@ chatTests = do
     it "create and join group with 4 members" testGroup2
     it "create and delete group" testGroupDelete
     it "invitee delete group when in status invited" testGroupDeleteWhenInvited
+    it "re-add member in status invited" testGroupReAddInvited
     it "remove contact from group and add again" testGroupRemoveAdd
+    it "list groups containing group invitations" testGroupList
   describe "user profiles" $
     it "update user profiles and notify contacts" testUpdateProfile
   describe "sending and receiving files" $ do
@@ -354,18 +356,49 @@ testGroupDeleteWhenInvited =
         ]
       bob ##> "/d #team"
       bob <## "#team: you deleted the group"
-      -- alice shouldn't receive notification that bob deleted group,
-      -- but she should be able to remove and re-add bob
-      alice ##> "/a team bob"
-      alice <## "contact bob is already in the group"
-      alice ##> "/rm team bob"
-      alice <## "#team: you removed bob from the group"
+      -- alice doesn't receive notification that bob deleted group,
+      -- but she can re-add bob
       alice ##> "/a team bob"
       concurrentlyN_
         [ alice <## "invitation to join the group #team sent to bob",
           do
             bob <## "#team: alice invites you to join the group as admin"
             bob <## "use /j team to accept"
+        ]
+
+testGroupReAddInvited :: IO ()
+testGroupReAddInvited =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+      alice ##> "/g team"
+      alice <## "group #team is created"
+      alice <## "use /a team <name> to add members"
+      alice ##> "/a team bob"
+      concurrentlyN_
+        [ alice <## "invitation to join the group #team sent to bob",
+          do
+            bob <## "#team: alice invites you to join the group as admin"
+            bob <## "use /j team to accept"
+        ]
+      -- alice re-adds bob, he sees it as the same group
+      alice ##> "/a team bob"
+      concurrentlyN_
+        [ alice <## "invitation to join the group #team sent to bob",
+          do
+            bob <## "#team: alice invites you to join the group as admin"
+            bob <## "use /j team to accept"
+        ]
+      -- if alice removes bob and then re-adds him, she uses a new connection request
+      -- and he sees it as a new group with a different local display name
+      alice ##> "/rm team bob"
+      alice <## "#team: you removed bob from the group"
+      alice ##> "/a team bob"
+      concurrentlyN_
+        [ alice <## "invitation to join the group #team sent to bob",
+          do
+            bob <## "#team_1 (team): alice invites you to join the group as admin"
+            bob <## "use /j team_1 to accept"
         ]
 
 testGroupRemoveAdd :: IO ()
