@@ -264,14 +264,12 @@ processChatCommand user@User {userId, profile} = \case
         (agentConnId, cReq) <- withAgent (`createConnection` SCMInvitation)
         GroupMember {memberId} <- withStore $ \st -> createContactGroupMemberWithInvitation st gVar user groupId contact memRole agentConnId cReq
         sendInvitation contact userMemberId userRole memberId groupProfile cReq
-      Just GroupMember {groupMemberId, memberId, memberStatus} -> do
-        if memberStatus == GSMemInvited
-          then do
-            contactRequest <- withStore $ \st -> getContactGroupMemberInvitation st user groupMemberId
-            case contactRequest of
-              Nothing -> showCannotResendInvitation gName cName
-              Just cReq -> sendInvitation contact userMemberId userRole memberId groupProfile cReq
-          else chatError (CEGroupDuplicateMember cName)
+      Just GroupMember {groupMemberId, memberId, memberStatus}
+        | memberStatus == GSMemInvited -> do
+          withStore $ \st -> getContactGroupMemberInvitation st user groupMemberId >>= \case
+            Just cReq -> sendInvitation contact userMemberId userRole memberId groupProfile cReq
+            _ -> showCannotResendInvitation gName cName
+        | otherwise -> chatError (CEGroupDuplicateMember cName)
     where
       sendInvitation contact userMemberId userRole memberId groupProfile cReq = do
         let msg = XGrpInv $ GroupInvitation (userMemberId, userRole) (memberId, memRole) cReq groupProfile
