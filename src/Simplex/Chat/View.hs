@@ -297,7 +297,7 @@ showLeftMember = printToView .: leftMember
 showGroupMembers :: ChatReader m => Group -> m ()
 showGroupMembers = printToView . groupMembers
 
-showGroupsList :: ChatReader m => [(GroupName, Text)] -> m ()
+showGroupsList :: ChatReader m => [(GroupName, Text, GroupMemberStatus)] -> m ()
 showGroupsList = printToView . groupsList
 
 showContactsMerged :: ChatReader m => Contact -> Contact -> m ()
@@ -492,11 +492,19 @@ groupMembers Group {membership, members} = map groupMember . filter (not . remov
       GSMemCreator -> "created group"
       _ -> ""
 
-groupsList :: [(GroupName, Text)] -> [StyledString]
+groupsList :: [(GroupName, Text, GroupMemberStatus)] -> [StyledString]
 groupsList [] = ["you have no groups!", "to create: " <> highlight' "/g <name>"]
 groupsList gs = map groupNames $ sort gs
   where
-    groupNames (displayName, fullName) = ttyGroup displayName <> optFullName displayName fullName
+    groupNames (displayName, fullName, GSMemInvited) =
+      ttyGroup displayName
+        <> optFullName displayName fullName
+        <> " - you are invited ("
+        <> highlight' ("/j " <> T.unpack displayName)
+        <> " to join, "
+        <> highlight' ("/d #" <> T.unpack displayName)
+        <> " to delete invitation)"
+    groupNames (displayName, fullName, _) = ttyGroup displayName <> optFullName displayName fullName
 
 contactsMerged :: Contact -> Contact -> [StyledString]
 contactsMerged _to@Contact {localDisplayName = c1} _from@Contact {localDisplayName = c2} =

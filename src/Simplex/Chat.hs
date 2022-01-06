@@ -305,7 +305,7 @@ processChatCommand user@User {userId, profile} = \case
   ListMembers gName -> do
     group <- withStore $ \st -> getGroup st user gName
     showGroupMembers group
-  ListGroups -> withStore (`getUserGroupNames` userId) >>= showGroupsList
+  ListGroups -> withStore (`getUserGroupDetails` userId) >>= showGroupsList
   SendGroupMessage gName msg -> do
     -- TODO save pending message delivery for members without connections
     Group {members, membership} <- withStore $ \st -> getGroup st user gName
@@ -446,15 +446,18 @@ subscribeUserConnections = void . runExceptT $ do
       groups <- withStore (`getUserGroups` user)
       forM_ groups $ \Group {members, membership, localDisplayName = g} -> do
         let connectedMembers = mapMaybe (\m -> (m,) <$> memberConnId m) members
-        if null connectedMembers
-          then
-            if memberActive membership
-              then showGroupEmpty g
-              else showGroupRemoved g
-          else do
-            forM_ connectedMembers $ \(GroupMember {localDisplayName = c}, cId) ->
-              subscribe cId `catchError` showMemberSubError g c
-            showGroupSubscribed g
+        if memberStatus membership == GSMemInvited
+          then pure ()
+          else
+            if null connectedMembers
+              then
+                if memberActive membership
+                  then showGroupEmpty g
+                  else showGroupRemoved g
+              else do
+                forM_ connectedMembers $ \(GroupMember {localDisplayName = c}, cId) ->
+                  subscribe cId `catchError` showMemberSubError g c
+                showGroupSubscribed g
     subscribeFiles user = do
       withStore (`getLiveSndFileTransfers` user) >>= mapM_ subscribeSndFile
       withStore (`getLiveRcvFileTransfers` user) >>= mapM_ subscribeRcvFile
