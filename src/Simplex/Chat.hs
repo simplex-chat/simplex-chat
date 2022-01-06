@@ -266,9 +266,9 @@ processChatCommand user@User {userId, profile} = \case
         sendInvitation contact userMemberId userRole memberId groupProfile cReq
       Just GroupMember {groupMemberId, memberId, memberStatus}
         | memberStatus == GSMemInvited ->
-          withStore $ \st -> getContactGroupMemberInvitation st user groupMemberId >>= \case
+          withStore (\st -> getContactGroupMemberInvitation st user groupMemberId) >>= \case
             Just cReq -> sendInvitation contact userMemberId userRole memberId groupProfile cReq
-            _ -> showCannotResendInvitation gName cName
+            Nothing -> showCannotResendInvitation gName cName
         | otherwise -> chatError (CEGroupDuplicateMember cName)
     where
       sendInvitation contact userMemberId userRole memberId groupProfile cReq = do
