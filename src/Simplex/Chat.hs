@@ -265,7 +265,7 @@ processChatCommand user@User {userId, profile} = \case
         GroupMember {memberId} <- withStore $ \st -> createContactGroupMemberWithInvitation st gVar user groupId contact memRole agentConnId cReq
         sendInvitation contact userMemberId userRole memberId groupProfile cReq
       Just GroupMember {groupMemberId, memberId, memberStatus}
-        | memberStatus == GSMemInvited -> do
+        | memberStatus == GSMemInvited ->
           withStore $ \st -> getContactGroupMemberInvitation st user groupMemberId >>= \case
             Just cReq -> sendInvitation contact userMemberId userRole memberId groupProfile cReq
             _ -> showCannotResendInvitation gName cName
