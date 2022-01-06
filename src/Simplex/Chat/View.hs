@@ -31,6 +31,7 @@ module Simplex.Chat.View
     showGroupSubscribed,
     showGroupEmpty,
     showGroupRemoved,
+    showUnprocessedGroupInvitation,
     showMemberSubError,
     showReceivedMessage,
     showReceivedGroupMessage,
@@ -182,6 +183,10 @@ showGroupEmpty = printToView . groupEmpty
 
 showGroupRemoved :: ChatReader m => GroupName -> m ()
 showGroupRemoved = printToView . groupRemoved
+
+showUnprocessedGroupInvitation :: ChatReader m => Group -> m ()
+showUnprocessedGroupInvitation Group {localDisplayName = ldn, groupProfile = GroupProfile {fullName}} =
+  printToView [unprocessedGroupInvitation ldn fullName]
 
 showMemberSubError :: ChatReader m => GroupName -> ContactName -> ChatError -> m ()
 showMemberSubError = printToView .:. memberSubError
@@ -494,17 +499,20 @@ groupMembers Group {membership, members} = map groupMember . filter (not . remov
 
 groupsList :: [(GroupName, Text, GroupMemberStatus)] -> [StyledString]
 groupsList [] = ["you have no groups!", "to create: " <> highlight' "/g <name>"]
-groupsList gs = map groupNames $ sort gs
+groupsList gs = map groupSS $ sort gs
   where
-    groupNames (displayName, fullName, GSMemInvited) =
-      ttyGroup displayName
-        <> optFullName displayName fullName
-        <> " - you are invited ("
-        <> highlight' ("/j " <> T.unpack displayName)
-        <> " to join, "
-        <> highlight' ("/d #" <> T.unpack displayName)
-        <> " to delete invitation)"
-    groupNames (displayName, fullName, _) = ttyGroup displayName <> optFullName displayName fullName
+    groupSS (displayName, fullName, GSMemInvited) = unprocessedGroupInvitation displayName fullName
+    groupSS (displayName, fullName, _) = ttyGroup displayName <> optFullName displayName fullName
+
+unprocessedGroupInvitation :: GroupName -> Text -> StyledString
+unprocessedGroupInvitation displayName fullName =
+  highlight ("#" <> displayName)
+    <> optFullName displayName fullName
+    <> " - you are invited ("
+    <> highlight ("/j " <> displayName)
+    <> " to join, "
+    <> highlight ("/d #" <> displayName)
+    <> " to delete invitation)"
 
 contactsMerged :: Contact -> Contact -> [StyledString]
 contactsMerged _to@Contact {localDisplayName = c1} _from@Contact {localDisplayName = c2} =

@@ -444,20 +444,20 @@ subscribeUserConnections = void . runExceptT $ do
         (subscribe (contactConnId ct) >> showContactSubscribed c) `catchError` showContactSubError c
     subscribeGroups user = do
       groups <- withStore (`getUserGroups` user)
-      forM_ groups $ \Group {members, membership, localDisplayName = g} -> do
+      forM_ groups $ \g@Group {members, membership, localDisplayName = ldn} -> do
         let connectedMembers = mapMaybe (\m -> (m,) <$> memberConnId m) members
         if memberStatus membership == GSMemInvited
-          then pure ()
+          then showUnprocessedGroupInvitation g
           else
             if null connectedMembers
               then
                 if memberActive membership
-                  then showGroupEmpty g
-                  else showGroupRemoved g
+                  then showGroupEmpty ldn
+                  else showGroupRemoved ldn
               else do
                 forM_ connectedMembers $ \(GroupMember {localDisplayName = c}, cId) ->
-                  subscribe cId `catchError` showMemberSubError g c
-                showGroupSubscribed g
+                  subscribe cId `catchError` showMemberSubError ldn c
+                showGroupSubscribed ldn
     subscribeFiles user = do
       withStore (`getLiveSndFileTransfers` user) >>= mapM_ subscribeSndFile
       withStore (`getLiveRcvFileTransfers` user) >>= mapM_ subscribeRcvFile
