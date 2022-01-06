@@ -4,8 +4,8 @@
 
 Existing chat platforms and protocols have some or all of the following problems:
 
-- Lack of privacy of the conversation, partially caused by [E2EE][1] implementations.
-- Lack of privacy of the user profile and connections.
+- Lack of privacy of the user profile and connections (meta-data privacy).
+- No protection (or only optional protection) of [E2EE][1] implementations from MITM attacks.
 - Unsolicited messages (spam and abuse).
 - Lack of data ownership and protection.
 - Complexity of usage for all non-centralized protocols to non-technical users.
