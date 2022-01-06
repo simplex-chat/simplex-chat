@@ -51,8 +51,8 @@ module Simplex.Chat.Store
     getUserGroups,
     getUserGroupDetails,
     getGroupInvitation,
-    createContactGroupMemberWithInvitation,
-    getContactGroupMemberInvitation,
+    createContactMember,
+    getMemberInvitation,
     createMemberConnection,
     updateGroupMemberStatus,
     createNewGroupMember,
@@ -1031,16 +1031,16 @@ toGroupMember userContactId (groupMemberId, groupId, memberId, memberRole, membe
       activeConn = Nothing
    in GroupMember {..}
 
-createContactGroupMemberWithInvitation :: StoreMonad m => SQLiteStore -> TVar ChaChaDRG -> User -> Int64 -> Contact -> GroupMemberRole -> ConnId -> ConnReqInvitation -> m GroupMember
-createContactGroupMemberWithInvitation st gVar user groupId contact memberRole agentConnId connRequest =
+createContactMember :: StoreMonad m => SQLiteStore -> TVar ChaChaDRG -> User -> Int64 -> Contact -> GroupMemberRole -> ConnId -> ConnReqInvitation -> m GroupMember
+createContactMember st gVar user groupId contact memberRole agentConnId connRequest =
   liftIOEither . withTransaction st $ \db ->
     createWithRandomId gVar $ \memId -> do
-      member@GroupMember {groupMemberId} <- createContactMemberWithInvitation_ db user groupId contact (memId, memberRole) GCInviteeMember GSMemInvited IBUser (Just connRequest)
+      member@GroupMember {groupMemberId} <- createContactMemberInv_ db user groupId contact (memId, memberRole) GCInviteeMember GSMemInvited IBUser (Just connRequest)
       void $ createMemberConnection_ db (userId user) groupMemberId agentConnId Nothing 0
       pure member
 
-getContactGroupMemberInvitation :: StoreMonad m => SQLiteStore -> User -> Int64 -> m (Maybe ConnReqInvitation)
-getContactGroupMemberInvitation st User {userId} groupMemberId =
+getMemberInvitation :: StoreMonad m => SQLiteStore -> User -> Int64 -> m (Maybe ConnReqInvitation)
+getMemberInvitation st User {userId} groupMemberId =
   liftIO . withTransaction st $ \db ->
     join . listToMaybe . map fromOnly
       <$> DB.query db "SELECT inv_queue_info FROM group_members WHERE group_member_id = ? AND user_id = ?;" (groupMemberId, userId)
@@ -1271,10 +1271,10 @@ createMemberConnection_ db userId groupMemberId = createConnection_ db userId Co
 
 createContactMember_ :: IsContact a => DB.Connection -> User -> Int64 -> a -> (MemberId, GroupMemberRole) -> GroupMemberCategory -> GroupMemberStatus -> InvitedBy -> IO GroupMember
 createContactMember_ db user groupId userOrContact (memberId, memberRole) memberCategory memberStatus invitedBy =
-  createContactMemberWithInvitation_ db user groupId userOrContact (memberId, memberRole) memberCategory memberStatus invitedBy Nothing
+  createContactMemberInv_ db user groupId userOrContact (memberId, memberRole) memberCategory memberStatus invitedBy Nothing
 
-createContactMemberWithInvitation_ :: IsContact a => DB.Connection -> User -> Int64 -> a -> (MemberId, GroupMemberRole) -> GroupMemberCategory -> GroupMemberStatus -> InvitedBy -> Maybe ConnReqInvitation -> IO GroupMember
-createContactMemberWithInvitation_ db User {userId, userContactId} groupId userOrContact (memberId, memberRole) memberCategory memberStatus invitedBy connRequest = do
+createContactMemberInv_ :: IsContact a => DB.Connection -> User -> Int64 -> a -> (MemberId, GroupMemberRole) -> GroupMemberCategory -> GroupMemberStatus -> InvitedBy -> Maybe ConnReqInvitation -> IO GroupMember
+createContactMemberInv_ db User {userId, userContactId} groupId userOrContact (memberId, memberRole) memberCategory memberStatus invitedBy connRequest = do
   insertMember_
   groupMemberId <- insertedRowId db
   let memberProfile = profile' userOrContact

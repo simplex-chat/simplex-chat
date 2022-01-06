@@ -253,29 +253,27 @@ processChatCommand user@User {userId, profile} = \case
   AddMember gName cName memRole -> do
     (group, contact) <- withStore $ \st -> (,) <$> getGroup st user gName <*> getContact st userId cName
     let Group {groupId, groupProfile, membership, members} = group
-        userRole = memberRole membership
-        userMemberId = memberId membership
+        GroupMember {memberRole = userRole, memberId = userMemberId} = membership
     when (userRole < GRAdmin || userRole < memRole) $ chatError CEGroupUserRole
     when (memberStatus membership == GSMemInvited) $ chatError (CEGroupNotJoined gName)
     unless (memberActive membership) $ chatError CEGroupMemberNotActive
+    let sendInvitation memberId cReq = do
+          sendDirectMessage (contactConn contact) $
+            XGrpInv $ GroupInvitation (userMemberId, userRole) (memberId, memRole) cReq groupProfile
+          showSentGroupInvitation gName cName
+          setActive $ ActiveG gName
     case contactMember contact members of
       Nothing -> do
         gVar <- asks idsDrg
         (agentConnId, cReq) <- withAgent (`createConnection` SCMInvitation)
-        GroupMember {memberId} <- withStore $ \st -> createContactGroupMemberWithInvitation st gVar user groupId contact memRole agentConnId cReq
-        sendInvitation contact userMemberId userRole memberId groupProfile cReq
+        GroupMember {memberId} <- withStore $ \st -> createContactMember st gVar user groupId contact memRole agentConnId cReq
+        sendInvitation memberId cReq
       Just GroupMember {groupMemberId, memberId, memberStatus}
         | memberStatus == GSMemInvited ->
-          withStore (\st -> getContactGroupMemberInvitation st user groupMemberId) >>= \case
-            Just cReq -> sendInvitation contact userMemberId userRole memberId groupProfile cReq
+          withStore (\st -> getMemberInvitation st user groupMemberId) >>= \case
+            Just cReq -> sendInvitation memberId cReq
             Nothing -> showCannotResendInvitation gName cName
         | otherwise -> chatError (CEGroupDuplicateMember cName)
-    where
-      sendInvitation contact userMemberId userRole memberId groupProfile cReq = do
-        let msg = XGrpInv $ GroupInvitation (userMemberId, userRole) (memberId, memRole) cReq groupProfile
-        sendDirectMessage (contactConn contact) msg
-        showSentGroupInvitation gName cName
-        setActive $ ActiveG gName
   JoinGroup gName -> do
     ReceivedGroupInvitation {fromMember, userMember, connRequest} <- withStore $ \st -> getGroupInvitation st user gName
     agentConnId <- withAgent $ \a -> joinConnection a connRequest . directMessage . XGrpAcpt $ memberId userMember
