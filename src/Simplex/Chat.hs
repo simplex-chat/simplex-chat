@@ -305,15 +305,7 @@ processChatCommand user@User {userId, profile} = \case
   ListMembers gName -> do
     group <- withStore $ \st -> getGroup st user gName
     showGroupMembers group
-  ListGroups -> do
-    groups <- withStore (`getUserGroups` user)
-    showGroupsList $ map groupDetails groups
-    where
-      groupDetails g =
-        ( localDisplayName (g :: Group),
-          fullName (groupProfile (g :: Group) :: GroupProfile),
-          memberStatus (membership g)
-        )
+  ListGroups -> withStore (`getUserGroupDetails` userId) >>= showGroupsList
   SendGroupMessage gName msg -> do
     -- TODO save pending message delivery for members without connections
     Group {members, membership} <- withStore $ \st -> getGroup st user gName
