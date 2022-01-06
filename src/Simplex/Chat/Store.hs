@@ -1023,8 +1023,7 @@ createContactGroupMember :: StoreMonad m => SQLiteStore -> TVar ChaChaDRG -> Use
 createContactGroupMember st gVar user groupId contact memberRole agentConnId =
   liftIOEither . withTransaction st $ \db ->
     createWithRandomId gVar $ \memId -> do
-      member <- createContactMember_ db user groupId contact (memId, memberRole) GCInviteeMember GSMemInvited IBUser
-      groupMemberId <- insertedRowId db
+      member@GroupMember {groupMemberId} <- createContactMember_ db user groupId contact (memId, memberRole) GCInviteeMember GSMemInvited IBUser
       void $ createMemberConnection_ db (userId user) groupMemberId agentConnId Nothing 0
       pure member
 

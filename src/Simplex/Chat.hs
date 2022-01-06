@@ -258,14 +258,24 @@ processChatCommand user@User {userId, profile} = \case
     when (userRole < GRAdmin || userRole < memRole) $ chatError CEGroupUserRole
     when (memberStatus membership == GSMemInvited) $ chatError (CEGroupNotJoined gName)
     unless (memberActive membership) $ chatError CEGroupMemberNotActive
-    when (isJust $ contactMember contact members) $ chatError (CEGroupDuplicateMember cName)
-    gVar <- asks idsDrg
-    (agentConnId, cReq) <- withAgent (`createConnection` SCMInvitation)
-    GroupMember {memberId} <- withStore $ \st -> createContactGroupMember st gVar user groupId contact memRole agentConnId
-    let msg = XGrpInv $ GroupInvitation (userMemberId, userRole) (memberId, memRole) cReq groupProfile
-    sendDirectMessage (contactConn contact) msg
-    showSentGroupInvitation gName cName
-    setActive $ ActiveG gName
+    case contactMember contact members of
+      Nothing -> addGroupMember contact groupId userMemberId userRole groupProfile
+      Just gm@GroupMember {memberStatus} -> do
+        if memberStatus == GSMemInvited
+          then do
+            -- TODO save and try to reuse connection request
+            deleteMemberConnection gm
+            addGroupMember contact groupId userMemberId userRole groupProfile
+          else chatError (CEGroupDuplicateMember cName)
+    where
+      addGroupMember contact groupId userMemberId userRole groupProfile = do
+        gVar <- asks idsDrg
+        (agentConnId, cReq) <- withAgent (`createConnection` SCMInvitation)
+        GroupMember {memberId} <- withStore $ \st -> createContactGroupMember st gVar user groupId contact memRole agentConnId
+        let msg = XGrpInv $ GroupInvitation (userMemberId, userRole) (memberId, memRole) cReq groupProfile
+        sendDirectMessage (contactConn contact) msg
+        showSentGroupInvitation gName cName
+        setActive $ ActiveG gName
   JoinGroup gName -> do
     ReceivedGroupInvitation {fromMember, userMember, connRequest} <- withStore $ \st -> getGroupInvitation st user gName
     agentConnId <- withAgent $ \a -> joinConnection a connRequest . directMessage . XGrpAcpt $ memberId userMember

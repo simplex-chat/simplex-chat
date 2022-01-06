@@ -38,7 +38,9 @@ chatTests = do
     it "create and join group with 4 members" testGroup2
     it "create and delete group" testGroupDelete
     it "invitee delete group when in status invited" testGroupDeleteWhenInvited
+    it "re-add member in status invited" testGroupReAddInvited
     it "remove contact from group and add again" testGroupRemoveAdd
+    it "list groups containing group invitations" testGroupList
   describe "user profiles" $
     it "update user profiles and notify contacts" testUpdateProfile
   describe "sending and receiving files" $ do
@@ -354,12 +356,48 @@ testGroupDeleteWhenInvited =
         ]
       bob ##> "/d #team"
       bob <## "#team: you deleted the group"
-      -- alice shouldn't receive notification that bob deleted group,
-      -- but she should be able to remove and re-add bob
+      -- alice doesn't receive notification that bob deleted group,
+      -- but she can re-add bob
       alice ##> "/a team bob"
-      alice <## "contact bob is already in the group"
-      alice ##> "/rm team bob"
-      alice <## "#team: you removed bob from the group"
+      concurrentlyN_
+        [ alice <## "invitation to join the group #team sent to bob",
+          do
+            bob <## "#team: alice invites you to join the group as admin"
+            bob <## "use /j team to accept"
+        ]
+
+testGroupReAddInvited :: IO ()
+testGroupReAddInvited =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+      alice ##> "/g team"
+      alice <## "group #team is created"
+      alice <## "use /a team <name> to add members"
+      alice ##> "/a team bob"
+      concurrentlyN_
+        [ alice <## "invitation to join the group #team sent to bob",
+          do
+            bob <## "#team: alice invites you to join the group as admin"
+            bob <## "use /j team to accept"
+        ]
+      -- TODO we could save and try to reuse connection request,
+      -- TODO then invitee would be able to recognize it's the same group
+      -- alice re-adds bob; if bob hasn't deleted the group,
+      -- he sees it as a new group with a different local display name
+      alice ##> "/a team bob"
+      concurrentlyN_
+        [ alice <## "invitation to join the group #team sent to bob",
+          do
+            bob <## "#team_1 (team): alice invites you to join the group as admin"
+            bob <## "use /j team_1 to accept"
+        ]
+      -- if alice re-adds bob after he has deleted the group,
+      -- he sees it with original local display name
+      bob ##> "/d #team"
+      bob <## "#team: you deleted the group"
+      bob ##> "/d #team_1"
+      bob <## "#team_1: you deleted the group"
       alice ##> "/a team bob"
       concurrentlyN_
         [ alice <## "invitation to join the group #team sent to bob",
