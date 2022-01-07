@@ -82,6 +82,9 @@ Chat message JTD:
 }
 ```
 
+event: x.msg.new
+params: {message: "<message content type>", "text": "<message text>"}
+
 ### Group protocol
 
 #### Add group member
