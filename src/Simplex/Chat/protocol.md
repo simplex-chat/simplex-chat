@@ -85,8 +85,8 @@ Chat message JTD:
 Events:
 
 ```jsonc
-event: "x.msg.new" // XMsgNew
-params:            // MsgContent
+"event": "x.msg.new" // XMsgNew
+"params":            // MsgContent
 {
   "messageType": "<message type>",
   // field "files" can be represented in content as contentType "file" with length prepended or as complex contentData
@@ -99,37 +99,37 @@ params:            // MsgContent
   ]
 }
 
-event: "x.file" // XFile; TODO rename into x.file.inv?
-params:         // FileInvitation
+"event": "x.file" // XFile; TODO rename into x.file.inv?
+"params":         // FileInvitation
 {
   "fileName": "<file name>",
-  "fileSize": 666, // integer
+  "fileSize": 666,
   "fileConnReq": "<file conn req>"
 }
 
-event: "x.file.acpt" // XFileAcpt
-params:              // String
+"event": "x.file.acpt" // XFileAcpt
+"params":              // String
 {
   "fileName": "<file name>"
 }
 
-event: "x.info" // XInfo
-params:         // Profile
+"event": "x.info" // XInfo
+"params":         // Profile
 {
   "displayName": "<display name>",
   "fullName": "<full name>"
 }
 
-event: "x.con" // XContact; TODO rename into x.contact?
-params:        // Profile (Maybe MsgContent)
+"event": "x.con" // XContact; TODO rename into x.contact?
+"params":        // Profile (Maybe MsgContent)
 {
   "displayName": "<display name>",
   "fullName": "<full name>",
   "messageContent": <MsgContent> // see x.msg.new; optional
 }
 
-event: "x.grp.inv" // XGrpInv
-params:            // GroupInvitation
+"event": "x.grp.inv" // XGrpInv
+"params":            // GroupInvitation
 {
   "fromMemberId": "<from_member ID>",
   "fromMemberRole": "<from_member role>",
@@ -142,14 +142,14 @@ params:            // GroupInvitation
   }
 }
 
-event: "x.grp.acpt" // XGrpAcpt
-params:             // MemberId
+"event": "x.grp.acpt" // XGrpAcpt
+"params":             // MemberId
 {
   "memberId": "<member ID>"
 }
 
-event: "x.grp.mem.new" // XGrpMemNew
-params:                // MemberInfo
+"event": "x.grp.mem.new" // XGrpMemNew
+"params":                // MemberInfo
 {
   "memberId": "<member ID>",
   "memberRole": "<member role>",
@@ -159,8 +159,8 @@ params:                // MemberInfo
   }
 }
 
-event: "x.grp.mem.intro" // XGrpMemIntro
-params:                  // MemberInfo
+"event": "x.grp.mem.intro" // XGrpMemIntro
+"params":                  // MemberInfo
 {
   "memberId": "<member ID>",
   "memberRole": "<member role>",
@@ -170,16 +170,16 @@ params:                  // MemberInfo
   }
 }
 
-event: "x.grp.mem.inv" // XGrpMemInv
-params:                // MemberId IntroInvitation
+"event": "x.grp.mem.inv" // XGrpMemInv
+"params":                // MemberId IntroInvitation
 {
   "memberId": "<member ID>",
   "groupConnReq": "<group conn req>",
   "directConnReq": "<direct conn req>"
 }
 
-event: "x.grp.mem.fwd" // XGrpMemFwd
-params:                // MemberInfo IntroInvitation
+"event": "x.grp.mem.fwd" // XGrpMemFwd
+"params":                // MemberInfo IntroInvitation
 {
   "memberId": "<member ID>",
   "memberRole": "<member role>",
@@ -191,8 +191,8 @@ params:                // MemberInfo IntroInvitation
   "directConnReq": "<direct conn req>"
 }
 
-event: "x.grp.mem.info" // XGrpMemInfo
-params:                 // MemberId Profile
+"event": "x.grp.mem.info" // XGrpMemInfo
+"params":                 // MemberId Profile
 {
   "memberId": "<member ID>",
   "profile": {
@@ -201,52 +201,52 @@ params:                 // MemberId Profile
   }
 }
 
-event: "x.grp.mem.con" // XGrpMemCon
-params:                // MemberId
+"event": "x.grp.mem.con" // XGrpMemCon
+"params":                // MemberId
 {
   "memberId": "<member ID>"
 }
 
-event: "x.grp.mem.con.all" // XGrpMemConAll
-params:                    // MemberId
+"event": "x.grp.mem.con.all" // XGrpMemConAll
+"params":                    // MemberId
 {
   "memberId": "<member ID>"
 }
 
-event: "x.grp.mem.del" // XGrpMemDel
-params:                // MemberId
+"event": "x.grp.mem.del" // XGrpMemDel
+"params":                // MemberId
 {
   "memberId": "<member ID>"
 }
 
-event: "x.grp.leave" // XGrpLeave
-params:
+"event": "x.grp.leave" // XGrpLeave
+"params":
 {}
 
-event: "x.grp.del" // XGrpDel
-params:
+"event": "x.grp.del" // XGrpDel
+"params":
 {}
 
-event: "x.info.probe" // XInfoProbe
-params:               // ByteString
+"event": "x.info.probe" // XInfoProbe
+"params":               // ByteString
 {
   "probe": "<probe>"
 }
 
-event: "x.info.probe.check" // XInfoProbeCheck
-params:                     // ByteString
+"event": "x.info.probe.check" // XInfoProbeCheck
+"params":                     // ByteString
 {
   "probeHash": "<probe hash>"
 }
 
-event: "x.info.probe.ok" // XInfoProbeOk
-params:                  // ByteString
+"event": "x.info.probe.ok" // XInfoProbeOk
+"params":                  // ByteString
 {
   "probe": "<probe>"
 }
 
-event: "x.ok" // XOk
-params:
+"event": "x.ok" // XOk
+"params":
 {}
 ```
 
