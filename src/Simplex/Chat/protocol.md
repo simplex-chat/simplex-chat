@@ -22,9 +22,6 @@ The syntax of the message inside agent MSG:
 ```abnf
 agentMessageBody = [chatMsgId] SP msgEvent SP [parameters] SP [contentParts [SP msgBodyParts]]
 chatMsgId = 1*DIGIT ; used to refer to previous message;
-                    ; in the group should only be used in messages sent to all members,
-                    ; which is the main reason not to use external agent ID -
-                    ; some messages are sent only to one member
 msgEvent = protocolNamespace 1*("." msgTypeName)
 protocolNamespace = 1*ALPHA ; "x" for all events defined in the protocol
 msgTypeName = 1*ALPHA
@@ -66,6 +63,23 @@ refMsgHash = 16*16(OCTET) ; SHA256 of agent message body
 ' x.grp.mem.req 23456,123 x.json:NNN {...} '
 ' x.grp.mem.direct.inv 23456,234 x.text:NNN <invitation>  '
 ' x.file name,size x.text:NNN <invitation> '
+```
+
+Chat message JTD:
+
+```
+{
+  "properties": {
+    "msgId": {"type": "string"},
+    "minVersion": {"type": "uint16"}, -- Word16
+    "maxVersion": {"type": "uint16"}, -- Word16
+    "event": {"type": "string"}, -- Text e.g. s.ok
+    "params": {"values": {}}, -- Map Text Value
+  },
+  "optionalProperties": {
+    "dag": {"type": "string"}
+  }
+}
 ```
 
 ### Group protocol
