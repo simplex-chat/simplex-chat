@@ -67,7 +67,7 @@ refMsgHash = 16*16(OCTET) ; SHA256 of agent message body
 
 Chat message JTD:
 
-```json
+```jsonc
 {
   "properties": {
     "msgId": {"type": "string"},
@@ -84,7 +84,7 @@ Chat message JTD:
 
 Events:
 
-```json
+```jsonc
 event: "x.msg.new" // XMsgNew
 params:            // MsgContent
 {
