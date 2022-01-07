@@ -103,7 +103,7 @@ Events:
 "params":         // FileInvitation
 {
   "fileName": "<file name>",
-  "fileSize": 666,
+  "fileSize": <file size>, // integer
   "fileConnReq": "<file conn req>"
 }
 
