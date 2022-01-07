@@ -103,7 +103,7 @@ event: "x.file" // XFile; TODO rename into x.file.inv?
 params:         // FileInvitation
 {
   "fileName": "<file name>",
-  "fileSize": <file_size>, // integer
+  "fileSize": 666, // integer
   "fileConnReq": "<file conn req>"
 }
 
