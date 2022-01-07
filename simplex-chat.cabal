@@ -40,7 +40,7 @@ library
   ghc-options: -Wall -Wcompat -Werror=incomplete-patterns -Wredundant-constraints -Wincomplete-record-updates -Wincomplete-uni-patterns -Wunused-type-patterns
   build-depends:
       aeson ==1.5.*
-    , ansi-terminal >=0.10 && <0.12.0
+    , ansi-terminal >=0.10 && <0.12
     , attoparsec ==0.13.*
     , base >=4.7 && <5
     , base64-bytestring >=1.0 && <1.3
@@ -75,7 +75,7 @@ executable simplex-chat
   ghc-options: -Wall -Wcompat -Werror=incomplete-patterns -Wredundant-constraints -Wincomplete-record-updates -Wincomplete-uni-patterns -Wunused-type-patterns -threaded
   build-depends:
       aeson ==1.5.*
-    , ansi-terminal >=0.10 && <0.12.0
+    , ansi-terminal >=0.10 && <0.12
     , attoparsec ==0.13.*
     , base >=4.7 && <5
     , base64-bytestring >=1.0 && <1.3
@@ -116,7 +116,7 @@ test-suite simplex-chat-test
   ghc-options: -Wall -Wcompat -Werror=incomplete-patterns -Wredundant-constraints -Wincomplete-record-updates -Wincomplete-uni-patterns -Wunused-type-patterns
   build-depends:
       aeson ==1.5.*
-    , ansi-terminal >=0.10 && <0.12.0
+    , ansi-terminal >=0.10 && <0.12
     , async ==2.2.*
     , attoparsec ==0.13.*
     , base >=4.7 && <5
