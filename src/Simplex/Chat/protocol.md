@@ -71,10 +71,10 @@ Chat message JTD:
 {
   "properties": {
     "msgId": {"type": "string"},
-    "minVersion": {"type": "uint16"}, -- Word16
-    "maxVersion": {"type": "uint16"}, -- Word16
-    "event": {"type": "string"}, -- Text e.g. s.ok
-    "params": {"values": {}}, -- Map Text Value
+    "minVersion": {"type": "uint16"}, // Word16
+    "maxVersion": {"type": "uint16"}, // Word16
+    "event": {"type": "string"}, // Text e.g. s.ok
+    "params": {"values": {}}, // Map Text Value
   },
   "optionalProperties": {
     "dag": {"type": "string"}
