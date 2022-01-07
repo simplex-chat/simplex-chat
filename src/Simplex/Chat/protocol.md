@@ -88,23 +88,28 @@ Events:
 "event": "x.msg.new" // XMsgNew
 "params":            // MsgContent
 {
-  "messageType": "<message type>",
-  // field "files" can be represented in content as contentType "file" with length prepended or as complex contentData
-  "content": [
+  "content": {
+    "msgType": "text",
+    // field "files" can be represented in content as contentType "file" with length prepended or as complex contentData
+    "text": "<msg text>"
+  }
+  // "content": [
     // free form contentType for extensibility and/or complex content types? e.g. MIME
     // could it be useful if contentData was free form as well? currently it is ByteString
-    {"contentType": <content type>, "contentData": "<content data>"},
-    ...
-    {"contentType": <content type N>, "contentData": "<content data N>"}
-  ]
+  //  {"contentType": <content type>, "contentData": "<content data>"},
+  //  ...
+  //  {"contentType": <content type N>, "contentData": "<content data N>"}
+  // ]
 }
 
 "event": "x.file" // XFile; TODO rename into x.file.inv?
 "params":         // FileInvitation
 {
-  "fileName": "<file name>",
-  "fileSize": <file size>, // integer
-  "fileConnReq": "<file conn req>"
+  "file": {
+    "fileName": "<file name>",
+    "fileSize": <file size>, // integer
+    "fileConnReq": "<file conn req>"
+  }
 }
 
 "event": "x.file.acpt" // XFileAcpt
@@ -116,25 +121,36 @@ Events:
 "event": "x.info" // XInfo
 "params":         // Profile
 {
-  "displayName": "<display name>",
-  "fullName": "<full name>"
+  "profile": {
+    "displayName": "<display name>",
+    "fullName": "<full name>"
+  }
 }
 
 "event": "x.con" // XContact; TODO rename into x.contact?
 "params":        // Profile (Maybe MsgContent)
 {
-  "displayName": "<display name>",
-  "fullName": "<full name>",
-  "messageContent": <MsgContent> // see x.msg.new; optional
+  "profile": {
+    "displayName": "<display name>",
+    "fullName": "<full name>"
+  },
+  "content": {
+    "msgType": "text",
+    "text": "<msg text>"
+  } // optional
 }
 
 "event": "x.grp.inv" // XGrpInv
 "params":            // GroupInvitation
 {
-  "fromMemberId": "<from_member ID>",
-  "fromMemberRole": "<from_member role>",
-  "invitedMemberId": "<invited_member ID>",
-  "invitedMemberRole": "<invited_member role>",
+  "fromMember": { 
+    "memberId": "<from_member ID>",
+    "memberRole": "<from_member role>"
+  },
+  "invitedMember": {
+    "memberId": "<invited_member ID>",
+    "memberRole": "<invited_member role>"
+  },
   "connRequest": "<conn request>",
   "groupProfile": {
     "displayName": "<display name>",
@@ -151,22 +167,26 @@ Events:
 "event": "x.grp.mem.new" // XGrpMemNew
 "params":                // MemberInfo
 {
-  "memberId": "<member ID>",
-  "memberRole": "<member role>",
-  "profile": {
-    "displayName": "<display name>",
-    "fullName": "<full name>"
+  "memberInfo": {
+    "memberId": "<member ID>",
+    "memberRole": "<member role>",
+    "profile": {
+      "displayName": "<display name>",
+      "fullName": "<full name>"
+    }
   }
 }
 
 "event": "x.grp.mem.intro" // XGrpMemIntro
 "params":                  // MemberInfo
 {
-  "memberId": "<member ID>",
-  "memberRole": "<member role>",
-  "profile": {
-    "displayName": "<display name>",
-    "fullName": "<full name>"
+  "memberInfo": {
+    "memberId": "<member ID>",
+    "memberRole": "<member role>",
+    "profile": {
+      "displayName": "<display name>",
+      "fullName": "<full name>"
+    }
   }
 }
 
@@ -174,21 +194,27 @@ Events:
 "params":                // MemberId IntroInvitation
 {
   "memberId": "<member ID>",
-  "groupConnReq": "<group conn req>",
-  "directConnReq": "<direct conn req>"
+  "memberIntro": {
+    "groupConnReq": "<group conn req>",
+    "directConnReq": "<direct conn req>"
+  }
 }
 
 "event": "x.grp.mem.fwd" // XGrpMemFwd
 "params":                // MemberInfo IntroInvitation
 {
-  "memberId": "<member ID>",
-  "memberRole": "<member role>",
-  "profile": {
-    "displayName": "<display name>",
-    "fullName": "<full name>"
+  "memberInfo": {
+    "memberId": "<member ID>",
+    "memberRole": "<member role>",
+    "profile": {
+      "displayName": "<display name>",
+      "fullName": "<full name>"
+    },
   },
-  "groupConnReq": "<group conn req>",
-  "directConnReq": "<direct conn req>"
+  "memberIntro": {
+    "groupConnReq": "<group conn req>",
+    "directConnReq": "<direct conn req>"
+  }
 }
 
 "event": "x.grp.mem.info" // XGrpMemInfo
