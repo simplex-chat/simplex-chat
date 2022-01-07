@@ -40,6 +40,7 @@ import Simplex.Chat.Input
 import Simplex.Chat.Notification
 import Simplex.Chat.Options (ChatOpts (..))
 import Simplex.Chat.Protocol
+import Simplex.Chat.Protocol.Legacy
 import Simplex.Chat.Store
 import Simplex.Chat.Styled (plain)
 import Simplex.Chat.Terminal

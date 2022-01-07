@@ -5,6 +5,7 @@ module ProtocolTests where
 
 import Data.ByteString.Char8 (ByteString)
 import Simplex.Chat.Protocol
+import Simplex.Chat.Protocol.Legacy
 import Simplex.Messaging.Parsers (parseAll)
 import Test.Hspec
 

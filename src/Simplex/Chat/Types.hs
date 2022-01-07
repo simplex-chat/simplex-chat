@@ -1,4 +1,5 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE GADTs #-}
@@ -106,21 +107,17 @@ data Profile = Profile
   { displayName :: ContactName,
     fullName :: Text
   }
-  deriving (Generic, Eq, Show)
+  deriving (Eq, Show, Generic, FromJSON)
 
 instance ToJSON Profile where toEncoding = J.genericToEncoding J.defaultOptions
-
-instance FromJSON Profile
 
 data GroupProfile = GroupProfile
   { displayName :: GroupName,
     fullName :: Text
   }
-  deriving (Generic, Eq, Show)
+  deriving (Eq, Show, Generic, FromJSON)
 
 instance ToJSON GroupProfile where toEncoding = J.genericToEncoding J.defaultOptions
-
-instance FromJSON GroupProfile
 
 data GroupInvitation = GroupInvitation
   { fromMember :: (MemberId, GroupMemberRole),
@@ -592,7 +589,7 @@ data RcvMsgDelivery = RcvMsgDelivery
     agentMsgMeta :: MsgMeta
   }
 
-data MsgMetaJ = MsgMetaJ
+data MsgMetaJSON = MsgMetaJSON
   { integrity :: Text,
     rcvId :: Int64,
     rcvTs :: UTCTime,
@@ -600,15 +597,13 @@ data MsgMetaJ = MsgMetaJ
     serverTs :: UTCTime,
     sndId :: Int64
   }
-  deriving (Generic, Eq, Show)
+  deriving (Eq, Show, FromJSON, Generic)
 
-instance ToJSON MsgMetaJ where toEncoding = J.genericToEncoding J.defaultOptions
+instance ToJSON MsgMetaJSON where toEncoding = J.genericToEncoding J.defaultOptions
 
-instance FromJSON MsgMetaJ
-
-msgMetaToJson :: MsgMeta -> MsgMetaJ
+msgMetaToJson :: MsgMeta -> MsgMetaJSON
 msgMetaToJson MsgMeta {integrity, recipient = (rcvId, rcvTs), broker = (serverId, serverTs), sender = (sndId, _)} =
-  MsgMetaJ
+  MsgMetaJSON
     { integrity = (decodeLatin1 . serializeMsgIntegrity) integrity,
       rcvId,
       rcvTs,
