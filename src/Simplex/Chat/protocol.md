@@ -67,7 +67,7 @@ refMsgHash = 16*16(OCTET) ; SHA256 of agent message body
 
 Chat message JTD:
 
-```
+```json
 {
   "properties": {
     "msgId": {"type": "string"},
@@ -82,8 +82,173 @@ Chat message JTD:
 }
 ```
 
-event: x.msg.new
-params: {message: "<message content type>", "text": "<message text>"}
+Events:
+
+```json
+event: "x.msg.new" // XMsgNew
+params:            // MsgContent
+{
+  "messageType": "<message type>",
+  // field "files" can be represented in content as contentType "file" with length prepended or as complex contentData
+  "content": [
+    // free form contentType for extensibility and/or complex content types? e.g. MIME
+    // could it be useful if contentData was free form as well? currently it is ByteString
+    {"contentType": <content type>, "contentData": "<content data>"},
+    ...
+    {"contentType": <content type N>, "contentData": "<content data N>"}
+  ]
+}
+
+event: "x.file" // XFile; TODO rename into x.file.inv?
+params:         // FileInvitation
+{
+  "fileName": "<file name>",
+  "fileSize": <file_size>, // integer
+  "fileConnReq": "<file conn req>"
+}
+
+event: "x.file.acpt" // XFileAcpt
+params:              // String
+{
+  "fileName": "<file name>"
+}
+
+event: "x.info" // XInfo
+params:         // Profile
+{
+  "displayName": "<display name>",
+  "fullName": "<full name>"
+}
+
+event: "x.con" // XContact; TODO rename into x.contact?
+params:        // Profile (Maybe MsgContent)
+{
+  "displayName": "<display name>",
+  "fullName": "<full name>",
+  "messageContent": <MsgContent> // see x.msg.new; optional
+}
+
+event: "x.grp.inv" // XGrpInv
+params:            // GroupInvitation
+{
+  "fromMemberId": "<from_member ID>",
+  "fromMemberRole": "<from_member role>",
+  "invitedMemberId": "<invited_member ID>",
+  "invitedMemberRole": "<invited_member role>",
+  "connRequest": "<conn request>",
+  "groupProfile": {
+    "displayName": "<display name>",
+    "fullName": "<full name>"
+  }
+}
+
+event: "x.grp.acpt" // XGrpAcpt
+params:             // MemberId
+{
+  "memberId": "<member ID>"
+}
+
+event: "x.grp.mem.new" // XGrpMemNew
+params:                // MemberInfo
+{
+  "memberId": "<member ID>",
+  "memberRole": "<member role>",
+  "profile": {
+    "displayName": "<display name>",
+    "fullName": "<full name>"
+  }
+}
+
+event: "x.grp.mem.intro" // XGrpMemIntro
+params:                  // MemberInfo
+{
+  "memberId": "<member ID>",
+  "memberRole": "<member role>",
+  "profile": {
+    "displayName": "<display name>",
+    "fullName": "<full name>"
+  }
+}
+
+event: "x.grp.mem.inv" // XGrpMemInv
+params:                // MemberId IntroInvitation
+{
+  "memberId": "<member ID>",
+  "groupConnReq": "<group conn req>",
+  "directConnReq": "<direct conn req>"
+}
+
+event: "x.grp.mem.fwd" // XGrpMemFwd
+params:                // MemberInfo IntroInvitation
+{
+  "memberId": "<member ID>",
+  "memberRole": "<member role>",
+  "profile": {
+    "displayName": "<display name>",
+    "fullName": "<full name>"
+  },
+  "groupConnReq": "<group conn req>",
+  "directConnReq": "<direct conn req>"
+}
+
+event: "x.grp.mem.info" // XGrpMemInfo
+params:                 // MemberId Profile
+{
+  "memberId": "<member ID>",
+  "profile": {
+    "displayName": "<display name>",
+    "fullName": "<full name>"
+  }
+}
+
+event: "x.grp.mem.con" // XGrpMemCon
+params:                // MemberId
+{
+  "memberId": "<member ID>"
+}
+
+event: "x.grp.mem.con.all" // XGrpMemConAll
+params:                    // MemberId
+{
+  "memberId": "<member ID>"
+}
+
+event: "x.grp.mem.del" // XGrpMemDel
+params:                // MemberId
+{
+  "memberId": "<member ID>"
+}
+
+event: "x.grp.leave" // XGrpLeave
+params:
+{}
+
+event: "x.grp.del" // XGrpDel
+params:
+{}
+
+event: "x.info.probe" // XInfoProbe
+params:               // ByteString
+{
+  "probe": "<probe>"
+}
+
+event: "x.info.probe.check" // XInfoProbeCheck
+params:                     // ByteString
+{
+  "probeHash": "<probe hash>"
+}
+
+event: "x.info.probe.ok" // XInfoProbeOk
+params:                  // ByteString
+{
+  "probe": "<probe>"
+}
+
+event: "x.ok" // XOk
+params:
+{}
+```
 
 ### Group protocol
 
