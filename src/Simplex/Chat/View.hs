@@ -496,7 +496,7 @@ groupMembers Group {membership, members} = map groupMember . filter (not . remov
   where
     removedOrLeft m = let s = memberStatus m in s == GSMemRemoved || s == GSMemLeft
     groupMember m = ttyFullMember m <> ": " <> role m <> ", " <> category m <> status m
-    role = plain . strEncode . memberRole
+    role m = plain . strEncode $ memberRole (m :: GroupMember)
     category m = case memberCategory m of
       GCUserMember -> "you, "
       GCInviteeMember -> "invited, "

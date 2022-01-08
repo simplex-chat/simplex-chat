@@ -126,32 +126,43 @@ data GroupProfile = GroupProfile
 instance ToJSON GroupProfile where toEncoding = J.genericToEncoding J.defaultOptions
 
 data GroupInvitation = GroupInvitation
-  { fromMember :: (MemberId, GroupMemberRole),
-    invitedMember :: (MemberId, GroupMemberRole),
+  { fromMember :: MemberIdRole,
+    invitedMember :: MemberIdRole,
     connRequest :: ConnReqInv 'AgentV0,
     groupProfile :: GroupProfile
   }
-  deriving (Eq, Show)
+  deriving (Eq, Show, Generic, FromJSON)
+
+instance ToJSON GroupInvitation where toEncoding = J.genericToEncoding J.defaultOptions
+
+data MemberIdRole = MemberIdRole
+  { memberId :: MemberId,
+    memberRole :: GroupMemberRole
+  }
+  deriving (Eq, Show, Generic, FromJSON)
+
+instance ToJSON MemberIdRole where toEncoding = J.genericToEncoding J.defaultOptions
 
 data IntroInvitation = IntroInvitation
   { groupConnReq :: ConnReqInv 'AgentV0,
     directConnReq :: ConnReqInv 'AgentV0
   }
-  deriving (Eq, Show)
+  deriving (Eq, Show, Generic, FromJSON)
 
-data MemberInfo = MemberInfo MemberId GroupMemberRole Profile
-  deriving (Eq, Show)
+instance ToJSON IntroInvitation where toEncoding = J.genericToEncoding J.defaultOptions
 
-instance FromJSON MemberInfo where
-  parseJSON (J.Object v) = MemberInfo <$> v .: "memberId" <*> v .: "memberRole" <*> v .: "profile"
-  parseJSON invalid = JT.prependFailure "bad MemberInfo, " (JT.typeMismatch "Object" invalid)
+data MemberInfo = MemberInfo
+  { memberId :: MemberId,
+    memberRole :: GroupMemberRole,
+    profile :: Profile
+  }
+  deriving (Eq, Show, Generic, FromJSON)
 
-instance ToJSON MemberInfo where
-  toJSON (MemberInfo memId role profile) = J.object ["memberId" .= memId, "memberRole" .= role, "profile" .= profile]
-  toEncoding (MemberInfo memId role profile) = J.pairs $ "memberId" .= memId <> "memberRole" .= role <> "profile" .= profile
+instance ToJSON MemberInfo where toEncoding = J.genericToEncoding J.defaultOptions
 
 memberInfo :: GroupMember -> MemberInfo
-memberInfo m = MemberInfo (memberId m) (memberRole m) (memberProfile m)
+memberInfo GroupMember {memberId, memberRole, memberProfile} =
+  MemberInfo memberId memberRole memberProfile
 
 data ReceivedGroupInvitation = ReceivedGroupInvitation
   { fromMember :: GroupMember,
@@ -415,6 +426,23 @@ data FileInvitation = FileInvitation
     fileConnReq :: ConnReqInv 'AgentV0
   }
   deriving (Eq, Show, Generic)
+
+instance FromJSON FileInvitation where
+  parseJSON (J.Object v) = FileInvitation <$> v .: "fileName" <*> v .: "fileSize" <*> v .: "fileConnReq"
+  parseJSON invalid = JT.prependFailure "bad FileInvitation, " (JT.typeMismatch "Object" invalid)
+
+instance ToJSON FileInvitation where
+  toJSON (FileInvitation fileName fileSize fileConnReq) =
+    J.object
+      [ "fileName" .= fileName,
+        "fileSize" .= fileSize,
+        "fileConnReq" .= fileConnReq
+      ]
+  toEncoding (FileInvitation fileName fileSize fileConnReq) =
+    J.pairs $
+      "fileName" .= fileName
+        <> "fileSize" .= fileSize
+        <> "fileConnReq" .= fileConnReq
 
 data RcvFileTransfer = RcvFileTransfer
   { fileId :: Int64,

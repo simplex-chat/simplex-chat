@@ -262,7 +262,7 @@ processChatCommand user@User {userId, profile} = \case
     unless (memberActive membership) $ chatError CEGroupMemberNotActive
     let sendInvitation memberId cReq = do
           sendDirectMessage (contactConn contact) $
-            XGrpInv $ GroupInvitation (userMemberId, userRole) (memberId, memRole) cReq groupProfile
+            XGrpInv $ GroupInvitation (MemberIdRole userMemberId userRole) (MemberIdRole memberId memRole) cReq groupProfile
           showSentGroupInvitation gName cName
           setActive $ ActiveG gName
     case contactMember contact members of
@@ -279,7 +279,7 @@ processChatCommand user@User {userId, profile} = \case
         | otherwise -> chatError (CEGroupDuplicateMember cName)
   JoinGroup gName -> do
     ReceivedGroupInvitation {fromMember, userMember, connRequest = ConnReqInvV0 connRequest} <- withStore $ \st -> getGroupInvitation st user gName
-    agentConnId <- withAgent $ \a -> joinConnection a connRequest . directMessage . XGrpAcpt $ memberId userMember
+    agentConnId <- withAgent $ \a -> joinConnection a connRequest . directMessage . XGrpAcpt $ memberId (userMember :: GroupMember)
     withStore $ \st -> do
       createMemberConnection st userId fromMember agentConnId
       updateGroupMemberStatus st userId fromMember GSMemAccepted
@@ -289,13 +289,13 @@ processChatCommand user@User {userId, profile} = \case
     Group {membership, members} <- withStore $ \st -> getGroup st user gName
     case find ((== cName) . (localDisplayName :: GroupMember -> ContactName)) members of
       Nothing -> chatError $ CEGroupMemberNotFound cName
-      Just member -> do
-        let userRole = memberRole membership
-        when (userRole < GRAdmin || userRole < memberRole member) $ chatError CEGroupUserRole
-        when (memberStatus member /= GSMemInvited) . sendGroupMessage members $ XGrpMemDel (memberId member)
-        deleteMemberConnection member
-        withStore $ \st -> updateGroupMemberStatus st userId member GSMemRemoved
-        showDeletedMember gName Nothing (Just member)
+      Just m@GroupMember {memberId = mId, memberRole = mRole, memberStatus = mStatus} -> do
+        let userRole = memberRole (membership :: GroupMember)
+        when (userRole < GRAdmin || userRole < mRole) $ chatError CEGroupUserRole
+        when (mStatus /= GSMemInvited) . sendGroupMessage members $ XGrpMemDel mId
+        deleteMemberConnection m
+        withStore $ \st -> updateGroupMemberStatus st userId m GSMemRemoved
+        showDeletedMember gName Nothing (Just m)
   LeaveGroup gName -> do
     Group {membership, members} <- withStore $ \st -> getGroup st user gName
     sendGroupMessage members XGrpLeave
@@ -306,7 +306,7 @@ processChatCommand user@User {userId, profile} = \case
     g@Group {membership, members} <- withStore $ \st -> getGroup st user gName
     let s = memberStatus membership
         canDelete =
-          memberRole membership == GROwner
+          memberRole (membership :: GroupMember) == GROwner
             || (s == GSMemRemoved || s == GSMemLeft || s == GSMemGroupDeleted || s == GSMemInvited)
     unless canDelete $ chatError CEGroupUserRole
     when (memberActive membership) $ sendGroupMessage members XGrpDel
@@ -522,7 +522,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
   where
     isMember :: MemberId -> Group -> Bool
     isMember memId Group {membership, members} =
-      memberId membership == memId || isJust (find ((== memId) . memberId) members)
+      sameMemberId memId membership || isJust (find (sameMemberId memId) members)
 
     contactIsReady :: Contact -> Bool
     contactIsReady Contact {activeConn} = connStatus activeConn == ConnReady
@@ -620,7 +620,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
           GCInviteeMember ->
             case chatMsgEvent of
               XGrpAcpt memId
-                | memId == memberId m -> do
+                | sameMemberId memId m -> do
                   withStore $ \st -> updateGroupMemberStatus st userId m GSMemAccepted
                   allowAgentConnection conn confId XOk
                 | otherwise -> messageError "x.grp.acpt: memberId is different from expected"
@@ -628,17 +628,17 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
           _ ->
             case chatMsgEvent of
               XGrpMemInfo memId _memProfile
-                | memId == memberId m -> do
+                | sameMemberId memId m -> do
                   -- TODO update member profile
                   Group {membership} <- withStore $ \st -> getGroup st user gName
-                  allowAgentConnection conn confId $ XGrpMemInfo (memberId membership) profile
+                  allowAgentConnection conn confId $ XGrpMemInfo (memberId (membership :: GroupMember)) profile
                 | otherwise -> messageError "x.grp.mem.info: memberId is different from expected"
               _ -> messageError "CONF from member must have x.grp.mem.info"
       INFO connInfo -> do
         ChatMessage {chatMsgEvent} <- liftEither $ parseChatMessage connInfo
         case chatMsgEvent of
           XGrpMemInfo memId _memProfile
-            | memId == memberId m -> do
+            | sameMemberId memId m -> do
               -- TODO update member profile
               pure ()
             | otherwise -> messageError "x.grp.mem.info: memberId is different from expected"
@@ -858,7 +858,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
       setActive $ ActiveG gName
 
     processGroupInvitation :: Contact -> GroupInvitation -> m ()
-    processGroupInvitation ct@Contact {localDisplayName} inv@(GroupInvitation (fromMemId, fromRole) (memId, memRole) _ _) = do
+    processGroupInvitation ct@Contact {localDisplayName} inv@(GroupInvitation (MemberIdRole fromMemId fromRole) (MemberIdRole memId memRole) _ _) = do
       when (fromRole < GRAdmin || fromRole < memRole) $ chatError (CEGroupContactRole localDisplayName)
       when (fromMemId == memId) $ chatError CEGroupDuplicateMemberId
       group <- withStore $ \st -> createGroupInvitation st user ct inv
@@ -907,7 +907,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
     xGrpMemNew :: GroupName -> GroupMember -> MemberInfo -> m ()
     xGrpMemNew gName m memInfo@(MemberInfo memId _ _) = do
       group@Group {membership} <- withStore $ \st -> getGroup st user gName
-      when (memberId membership /= memId) $
+      unless (sameMemberId memId membership) $
         if isMember memId group
           then messageError "x.grp.mem.new error: member already exists"
           else do
@@ -935,7 +935,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
       case memberCategory m of
         GCInviteeMember -> do
           group <- withStore $ \st -> getGroup st user gName
-          case find ((== memId) . memberId) $ members group of
+          case find (sameMemberId memId) $ members group of
             Nothing -> messageError "x.grp.mem.inv error: referenced member does not exists"
             Just reMember -> do
               intro <- withStore $ \st -> saveIntroInvitation st reMember m introInv
@@ -949,7 +949,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
     xGrpMemFwd :: GroupName -> GroupMember -> MemberInfo -> IntroInvitation -> m ()
     xGrpMemFwd gName m memInfo@(MemberInfo memId _ _) introInv@IntroInvitation {groupConnReq = ConnReqInvV0 groupConnReq, directConnReq = ConnReqInvV0 directConnReq} = do
       group@Group {membership} <- withStore $ \st -> getGroup st user gName
-      toMember <- case find ((== memId) . memberId) $ members group of
+      toMember <- case find (sameMemberId memId) $ members group of
         -- TODO if the missed messages are correctly sent as soon as there is connection before anything else is sent
         -- the situation when member does not exist is an error
         -- member receiving x.grp.mem.fwd should have also received x.grp.mem.new prior to that.
@@ -957,7 +957,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
         Nothing -> withStore $ \st -> createNewGroupMember st user group memInfo GCPostMember GSMemAnnounced
         Just m' -> pure m'
       withStore $ \st -> saveMemberInvitation st toMember introInv
-      let msg = XGrpMemInfo (memberId membership) profile
+      let msg = XGrpMemInfo (memberId (membership :: GroupMember)) profile
       groupConnId <- withAgent $ \a -> joinConnection a groupConnReq $ directMessage msg
       directConnId <- withAgent $ \a -> joinConnection a directConnReq $ directMessage msg
       withStore $ \st -> createIntroToMemberContact st userId m toMember groupConnId directConnId
@@ -965,21 +965,24 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
     xGrpMemDel :: GroupName -> GroupMember -> MemberId -> m ()
     xGrpMemDel gName m memId = do
       Group {membership, members} <- withStore $ \st -> getGroup st user gName
-      if memberId membership == memId
+      if memberId (membership :: GroupMember) == memId
         then do
           mapM_ deleteMemberConnection members
           withStore $ \st -> updateGroupMemberStatus st userId membership GSMemRemoved
           showDeletedMemberUser gName m
-        else case find ((== memId) . memberId) members of
+        else case find (sameMemberId memId) members of
           Nothing -> messageError "x.grp.mem.del with unknown member ID"
           Just member -> do
-            let mRole = memberRole m
-            if mRole < GRAdmin || mRole < memberRole member
+            let mRole = memberRole (m :: GroupMember)
+            if mRole < GRAdmin || mRole < memberRole (member :: GroupMember)
               then messageError "x.grp.mem.del with insufficient member permissions"
               else do
                 deleteMemberConnection member
                 withStore $ \st -> updateGroupMemberStatus st userId member GSMemRemoved
                 showDeletedMember gName (Just m) (Just member)
+
+    sameMemberId :: MemberId -> GroupMember -> Bool
+    sameMemberId memId GroupMember {memberId} = memId == memberId
 
     xGrpLeave :: GroupName -> GroupMember -> m ()
     xGrpLeave gName m = do
@@ -988,8 +991,8 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
       showLeftMember gName m
 
     xGrpDel :: GroupName -> GroupMember -> m ()
-    xGrpDel gName m = do
-      when (memberRole m /= GROwner) $ chatError CEGroupUserRole
+    xGrpDel gName m@GroupMember {memberRole} = do
+      when (memberRole /= GROwner) $ chatError CEGroupUserRole
       ms <- withStore $ \st -> do
         Group {members, membership} <- getGroup st user gName
         updateGroupMemberStatus st userId membership GSMemGroupDeleted

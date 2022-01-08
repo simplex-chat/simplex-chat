@@ -27,6 +27,7 @@ import Data.Text.Encoding (encodeUtf8)
 import Simplex.Chat.Protocol.Encoding
 import Simplex.Chat.Protocol.Legacy
 import Simplex.Chat.Types
+import Simplex.Chat.Types (GroupInvitation (GroupInvitation))
 import Simplex.Chat.Util (safeDecodeUtf8)
 import "simplexmq-legacy" Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Encoding.String (StrEncoding (..))
@@ -129,6 +130,11 @@ toChatEventType = \case
   XInfoProbeOk _ -> "x.info.probe.ok"
   XOk -> "x.ok"
 
+(.->) :: FromJSON a => JT.Parser JT.Object -> Text -> JT.Parser a
+(.->) parser key = do
+  obj <- parser
+  obj .: key
+
 appToChatMessage :: AppMessage -> Either String ChatMessage
 appToChatMessage AppMessage {msgId, event, params, dag} = do
   chatMsgId <- U.decode $ encodeUtf8 msgId
@@ -136,7 +142,9 @@ appToChatMessage AppMessage {msgId, event, params, dag} = do
   let chatMsg msg = pure ChatMessage {chatMsgId, chatMsgEvent = msg, chatDAG}
   case event of
     "x.msg.new" -> Left ""
-    "x.file" -> Left ""
+    "x.file" -> do
+      file <- JT.parseEither (.: "file") params
+      chatMsg $ XFile file
     "x.file.acpt" -> do
       fileName <- JT.parseEither (.: "fileName") params
       chatMsg $ XFileAcpt fileName
@@ -144,7 +152,9 @@ appToChatMessage AppMessage {msgId, event, params, dag} = do
       profile <- JT.parseEither (.: "profile") params
       chatMsg $ XInfo profile
     "x.con" -> Left ""
-    "x.grp.inv" -> Left ""
+    "x.grp.inv" -> do
+      groupInvitation <- JT.parseEither J.parseJSON $ J.Object params
+      chatMsg $ XGrpInv groupInvitation
     "x.grp.acpt" -> do
       memberId <- JT.parseEither (.: "memberId") params
       chatMsg $ XGrpAcpt memberId
@@ -154,8 +164,14 @@ appToChatMessage AppMessage {msgId, event, params, dag} = do
     "x.grp.mem.intro" -> do
       memInfo <- JT.parseEither (.: "memberInfo") params
       chatMsg $ XGrpMemIntro memInfo
-    "x.grp.mem.inv" -> Left ""
-    "x.grp.mem.fwd" -> Left ""
+    "x.grp.mem.inv" -> do
+      memberId <- JT.parseEither (.: "memberId") params
+      memberIntro <- JT.parseEither (.: "memberIntro") params
+      chatMsg $ XGrpMemInv memberId memberIntro
+    "x.grp.mem.fwd" -> do
+      memInfo <- JT.parseEither (.: "memberInfo") params
+      memberIntro <- JT.parseEither (.: "memberIntro") params
+      chatMsg $ XGrpMemFwd memInfo memberIntro
     "x.grp.mem.info" -> do
       memberId <- JT.parseEither (.: "memberId") params
       profile <- JT.parseEither (.: "profile") params
@@ -211,8 +227,8 @@ rawToChatMessage RawChatMessage {chatMsgEvent, chatMsgParams, chatMsgBody} = do
       files <- toFiles rawFiles
       chatMsg . XContact profile $ Just MsgContent {messageType = t, files, content = body'}
     ("x.grp.inv", [fromMemId, fromRole, memId, role, cReq]) -> do
-      fromMem <- (,) <$> strDecode fromMemId <*> strDecode fromRole
-      invitedMem <- (,) <$> strDecode memId <*> strDecode role
+      fromMem <- MemberIdRole <$> strDecode fromMemId <*> strDecode fromRole
+      invitedMem <- MemberIdRole <$> strDecode memId <*> strDecode role
       groupConnReq <- strDecode cReq
       profile <- getJSON body
       chatMsg . XGrpInv $ GroupInvitation fromMem invitedMem groupConnReq profile
@@ -307,7 +323,7 @@ chatMessageToRaw ChatMessage {chatMsgEvent, chatDAG} =
       rawMsg [] [jsonBody profile]
     XContact profile (Just MsgContent {messageType = t, files, content}) ->
       rawMsg (rawMsgType t : toRawFiles files) (jsonBody profile : content)
-    XGrpInv (GroupInvitation (fromMemId, fromRole) (memId, role) cReq groupProfile) ->
+    XGrpInv (GroupInvitation (MemberIdRole fromMemId fromRole) (MemberIdRole memId role) cReq groupProfile) ->
       let params =
             [ strEncode fromMemId,
               strEncode fromRole,

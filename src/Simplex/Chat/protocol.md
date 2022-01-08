@@ -143,7 +143,7 @@ Events:
 "event": "x.grp.inv" // XGrpInv
 "params":            // GroupInvitation
 {
-  "fromMember": { 
+  "fromMember": {
     "memberId": "<from_member ID>",
     "memberRole": "<from_member role>"
   },

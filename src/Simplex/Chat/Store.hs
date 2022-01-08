@@ -891,7 +891,7 @@ createNewGroup st gVar user groupProfile =
     DB.execute db "INSERT INTO groups (local_display_name, user_id, group_profile_id) VALUES (?, ?, ?)" (displayName, uId, profileId)
     groupId <- insertedRowId db
     memberId <- randomBytes gVar 12
-    membership <- createContactMember_ db user groupId user (MemberId memberId, GROwner) GCUserMember GSMemCreator IBUser
+    membership <- createContactMember_ db user groupId user (MemberIdRole (MemberId memberId) GROwner) GCUserMember GSMemCreator IBUser
     pure $ Right Group {groupId, localDisplayName = displayName, groupProfile, members = [], membership}
 
 -- | creates a new group record for the group the current user was invited to, or returns an existing one
@@ -1033,11 +1033,11 @@ toGroupMember userContactId (groupMemberId, groupId, memberId, memberRole, membe
       activeConn = Nothing
    in GroupMember {..}
 
-createContactMember :: StoreMonad m => SQLiteStore -> TVar ChaChaDRG -> User -> Int64 -> Contact -> GroupMemberRole -> ConnId -> (ConnReqInv 'AgentV0) -> m GroupMember
+createContactMember :: StoreMonad m => SQLiteStore -> TVar ChaChaDRG -> User -> Int64 -> Contact -> GroupMemberRole -> ConnId -> ConnReqInv 'AgentV0 -> m GroupMember
 createContactMember st gVar user groupId contact memberRole agentConnId connRequest =
   liftIOEither . withTransaction st $ \db ->
     createWithRandomId gVar $ \memId -> do
-      member@GroupMember {groupMemberId} <- createContactMemberInv_ db user groupId contact (MemberId memId, memberRole) GCInviteeMember GSMemInvited IBUser (Just connRequest)
+      member@GroupMember {groupMemberId} <- createContactMemberInv_ db user groupId contact (MemberIdRole (MemberId memId) memberRole) GCInviteeMember GSMemInvited IBUser (Just connRequest)
       void $ createMemberConnection_ db (userId user) groupMemberId agentConnId Nothing 0
       pure member
 
@@ -1271,12 +1271,12 @@ createIntroToMemberContact st userId GroupMember {memberContactId = viaContactId
 createMemberConnection_ :: DB.Connection -> UserId -> Int64 -> ConnId -> Maybe Int64 -> Int -> IO Connection
 createMemberConnection_ db userId groupMemberId = createConnection_ db userId ConnMember (Just groupMemberId)
 
-createContactMember_ :: IsContact a => DB.Connection -> User -> Int64 -> a -> (MemberId, GroupMemberRole) -> GroupMemberCategory -> GroupMemberStatus -> InvitedBy -> IO GroupMember
-createContactMember_ db user groupId userOrContact (memberId, memberRole) memberCategory memberStatus invitedBy =
-  createContactMemberInv_ db user groupId userOrContact (memberId, memberRole) memberCategory memberStatus invitedBy Nothing
+createContactMember_ :: IsContact a => DB.Connection -> User -> Int64 -> a -> MemberIdRole -> GroupMemberCategory -> GroupMemberStatus -> InvitedBy -> IO GroupMember
+createContactMember_ db user groupId userOrContact MemberIdRole {memberId, memberRole} memberCategory memberStatus invitedBy =
+  createContactMemberInv_ db user groupId userOrContact MemberIdRole {memberId, memberRole} memberCategory memberStatus invitedBy Nothing
 
-createContactMemberInv_ :: IsContact a => DB.Connection -> User -> Int64 -> a -> (MemberId, GroupMemberRole) -> GroupMemberCategory -> GroupMemberStatus -> InvitedBy -> Maybe (ConnReqInv 'AgentV0) -> IO GroupMember
-createContactMemberInv_ db User {userId, userContactId} groupId userOrContact (memberId, memberRole) memberCategory memberStatus invitedBy connRequest = do
+createContactMemberInv_ :: IsContact a => DB.Connection -> User -> Int64 -> a -> MemberIdRole -> GroupMemberCategory -> GroupMemberStatus -> InvitedBy -> Maybe (ConnReqInv 'AgentV0) -> IO GroupMember
+createContactMemberInv_ db User {userId, userContactId} groupId userOrContact MemberIdRole {memberId, memberRole} memberCategory memberStatus invitedBy connRequest = do
   insertMember_
   groupMemberId <- insertedRowId db
   let memberProfile = profile' userOrContact
@@ -1488,7 +1488,7 @@ getRcvFileTransfer_ db userId fileId =
       (userId, fileId)
   where
     rcvFileTransfer ::
-      [(FileStatus, (ConnReqInv 'AgentV0), String, Integer, Integer, Maybe ContactName, Maybe ContactName, Maybe FilePath, Maybe Int64, Maybe ConnId)] ->
+      [(FileStatus, ConnReqInv 'AgentV0, String, Integer, Integer, Maybe ContactName, Maybe ContactName, Maybe FilePath, Maybe Int64, Maybe ConnId)] ->
       Either StoreError RcvFileTransfer
     rcvFileTransfer [(fileStatus', fileConnReq, fileName, fileSize, chunkSize, contactName_, memberName_, filePath_, connId_, agentConnId_)] =
       let fileInv = FileInvitation {fileName, fileSize, fileConnReq}
