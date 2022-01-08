@@ -27,7 +27,6 @@ import Data.Text.Encoding (encodeUtf8)
 import Simplex.Chat.Protocol.Encoding
 import Simplex.Chat.Protocol.Legacy
 import Simplex.Chat.Types
-import Simplex.Chat.Types (GroupInvitation (GroupInvitation))
 import Simplex.Chat.Util (safeDecodeUtf8)
 import "simplexmq-legacy" Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Encoding.String (StrEncoding (..))
