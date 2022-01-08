@@ -16,7 +16,6 @@ import Data.Aeson (FromJSON, ToJSON, (.:))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.Types as JT
 import qualified Data.Attoparsec.ByteString.Char8 as A
-import qualified Data.ByteString.Base64 as B64
 import qualified Data.ByteString.Base64.URL as U
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
@@ -30,7 +29,7 @@ import Simplex.Chat.Protocol.Legacy
 import Simplex.Chat.Types
 import Simplex.Chat.Util (safeDecodeUtf8)
 import "simplexmq-legacy" Simplex.Messaging.Agent.Protocol
-import Simplex.Messaging.Encoding.String
+import Simplex.Messaging.Encoding.String (StrEncoding (..))
 import "simplexmq" Simplex.Messaging.Parsers (parseAll)
 import "simplexmq" Simplex.Messaging.Util (bshow)
 
@@ -73,9 +72,9 @@ data ChatMsgEvent
   | XGrpMemDel MemberId
   | XGrpLeave
   | XGrpDel
-  | XInfoProbe ByteString
-  | XInfoProbeCheck ByteString
-  | XInfoProbeOk ByteString
+  | XInfoProbe Probe
+  | XInfoProbeCheck ProbeHash
+  | XInfoProbeOk Probe
   | XOk
   deriving (Eq, Show)
 
@@ -138,10 +137,51 @@ appToChatMessage AppMessage {msgId, event, params, dag} = do
   case event of
     "x.msg.new" -> Left ""
     "x.file" -> Left ""
+    "x.file.acpt" -> do
+      fileName <- JT.parseEither (.: "fileName") params
+      chatMsg $ XFileAcpt fileName
     "x.info" -> do
       profile <- JT.parseEither (.: "profile") params
       chatMsg $ XInfo profile
-    _ -> Left ""
+    "x.con" -> Left ""
+    "x.grp.inv" -> Left ""
+    "x.grp.acpt" -> do
+      memberId <- JT.parseEither (.: "memberId") params
+      chatMsg $ XGrpAcpt memberId
+    "x.grp.mem.new" -> do
+      memInfo <- JT.parseEither (.: "memberInfo") params
+      chatMsg $ XGrpMemNew memInfo
+    "x.grp.mem.intro" -> do
+      memInfo <- JT.parseEither (.: "memberInfo") params
+      chatMsg $ XGrpMemIntro memInfo
+    "x.grp.mem.inv" -> Left ""
+    "x.grp.mem.fwd" -> Left ""
+    "x.grp.mem.info" -> do
+      memberId <- JT.parseEither (.: "memberId") params
+      profile <- JT.parseEither (.: "profile") params
+      chatMsg $ XGrpMemInfo memberId profile
+    "x.grp.mem.con" -> do
+      memberId <- JT.parseEither (.: "memberId") params
+      chatMsg $ XGrpMemCon memberId
+    "x.grp.mem.con.all" -> do
+      memberId <- JT.parseEither (.: "memberId") params
+      chatMsg $ XGrpMemConAll memberId
+    "x.grp.mem.del" -> do
+      memberId <- JT.parseEither (.: "memberId") params
+      chatMsg $ XGrpMemDel memberId
+    "x.grp.leave" -> chatMsg XGrpLeave
+    "x.grp.del" -> chatMsg XGrpDel
+    "x.info.probe" -> do
+      probe <- JT.parseEither (.: "probe") params
+      chatMsg $ XInfoProbe probe
+    "x.info.probe.check" -> do
+      probeHash <- JT.parseEither (.: "probeHash") params
+      chatMsg $ XInfoProbeCheck probeHash
+    "x.info.probe.ok" -> do
+      probe <- JT.parseEither (.: "probe") params
+      chatMsg $ XInfoProbeOk probe
+    "x.ok" -> chatMsg XOk
+    _ -> Left $ "bad syntax or unsupported event " <> T.unpack event
 
 rawToChatMessage :: RawChatMessage -> Either String ChatMessage
 rawToChatMessage RawChatMessage {chatMsgEvent, chatMsgParams, chatMsgBody} = do
@@ -171,39 +211,39 @@ rawToChatMessage RawChatMessage {chatMsgEvent, chatMsgParams, chatMsgBody} = do
       files <- toFiles rawFiles
       chatMsg . XContact profile $ Just MsgContent {messageType = t, files, content = body'}
     ("x.grp.inv", [fromMemId, fromRole, memId, role, cReq]) -> do
-      fromMem <- (,) <$> B64.decode fromMemId <*> strDecode fromRole
-      invitedMem <- (,) <$> B64.decode memId <*> strDecode role
+      fromMem <- (,) <$> strDecode fromMemId <*> strDecode fromRole
+      invitedMem <- (,) <$> strDecode memId <*> strDecode role
       groupConnReq <- parseAll connReqP' cReq
       profile <- getJSON body
       chatMsg . XGrpInv $ GroupInvitation fromMem invitedMem groupConnReq profile
     ("x.grp.acpt", [memId]) ->
-      chatMsg . XGrpAcpt =<< B64.decode memId
+      chatMsg . XGrpAcpt =<< strDecode memId
     ("x.grp.mem.new", [memId, role]) -> do
       chatMsg . XGrpMemNew =<< toMemberInfo memId role body
     ("x.grp.mem.intro", [memId, role]) ->
       chatMsg . XGrpMemIntro =<< toMemberInfo memId role body
     ("x.grp.mem.inv", [memId, groupConnReq, directConnReq]) ->
-      chatMsg =<< (XGrpMemInv <$> B64.decode memId <*> toIntroInv groupConnReq directConnReq)
+      chatMsg =<< (XGrpMemInv <$> strDecode memId <*> toIntroInv groupConnReq directConnReq)
     ("x.grp.mem.fwd", [memId, role, groupConnReq, directConnReq]) -> do
       chatMsg =<< (XGrpMemFwd <$> toMemberInfo memId role body <*> toIntroInv groupConnReq directConnReq)
     ("x.grp.mem.info", [memId]) ->
-      chatMsg =<< (XGrpMemInfo <$> B64.decode memId <*> getJSON body)
+      chatMsg =<< (XGrpMemInfo <$> strDecode memId <*> getJSON body)
     ("x.grp.mem.con", [memId]) ->
-      chatMsg . XGrpMemCon =<< B64.decode memId
+      chatMsg . XGrpMemCon =<< strDecode memId
     ("x.grp.mem.con.all", [memId]) ->
-      chatMsg . XGrpMemConAll =<< B64.decode memId
+      chatMsg . XGrpMemConAll =<< strDecode memId
     ("x.grp.mem.del", [memId]) ->
-      chatMsg . XGrpMemDel =<< B64.decode memId
+      chatMsg . XGrpMemDel =<< strDecode memId
     ("x.grp.leave", []) ->
       chatMsg XGrpLeave
     ("x.grp.del", []) ->
       chatMsg XGrpDel
     ("x.info.probe", [probe]) -> do
-      chatMsg . XInfoProbe =<< B64.decode probe
+      chatMsg . XInfoProbe =<< strDecode probe
     ("x.info.probe.check", [probeHash]) -> do
-      chatMsg . XInfoProbeCheck =<< B64.decode probeHash
+      chatMsg . XInfoProbeCheck =<< strDecode probeHash
     ("x.info.probe.ok", [probe]) -> do
-      chatMsg . XInfoProbeOk =<< B64.decode probe
+      chatMsg . XInfoProbeOk =<< strDecode probe
     ("x.ok", []) ->
       chatMsg XOk
     _ -> Left $ "bad syntax or unsupported event " <> B.unpack chatMsgEvent
@@ -213,7 +253,7 @@ rawToChatMessage RawChatMessage {chatMsgEvent, chatMsgParams, chatMsgBody} = do
       (b, MsgContentBody SimplexDAG dag : a) -> (Just dag, b <> a)
       _ -> (Nothing, body)
     toMemberInfo :: ByteString -> ByteString -> [MsgContentBody] -> Either String MemberInfo
-    toMemberInfo memId role body = MemberInfo <$> B64.decode memId <*> strDecode role <*> getJSON body
+    toMemberInfo memId role body = MemberInfo <$> strDecode memId <*> strDecode role <*> getJSON body
     toIntroInv :: ByteString -> ByteString -> Either String IntroInvitation
     toIntroInv groupConnReq directConnReq = IntroInvitation <$> parseAll connReqP' groupConnReq <*> parseAll connReqP' directConnReq
     toContentInfo :: (RawContentType, Int) -> Either String (ContentType, Int)
@@ -269,49 +309,49 @@ chatMessageToRaw ChatMessage {chatMsgEvent, chatDAG} =
       rawMsg (rawMsgType t : toRawFiles files) (jsonBody profile : content)
     XGrpInv (GroupInvitation (fromMemId, fromRole) (memId, role) cReq groupProfile) ->
       let params =
-            [ B64.encode fromMemId,
+            [ strEncode fromMemId,
               strEncode fromRole,
-              B64.encode memId,
+              strEncode memId,
               strEncode role,
               serializeConnReq' cReq
             ]
        in rawMsg params [jsonBody groupProfile]
     XGrpAcpt memId ->
-      rawMsg [B64.encode memId] []
+      rawMsg [strEncode memId] []
     XGrpMemNew (MemberInfo memId role profile) ->
-      let params = [B64.encode memId, strEncode role]
+      let params = [strEncode memId, strEncode role]
        in rawMsg params [jsonBody profile]
     XGrpMemIntro (MemberInfo memId role profile) ->
-      rawMsg [B64.encode memId, strEncode role] [jsonBody profile]
+      rawMsg [strEncode memId, strEncode role] [jsonBody profile]
     XGrpMemInv memId IntroInvitation {groupConnReq, directConnReq} ->
-      let params = [B64.encode memId, serializeConnReq' groupConnReq, serializeConnReq' directConnReq]
+      let params = [strEncode memId, serializeConnReq' groupConnReq, serializeConnReq' directConnReq]
        in rawMsg params []
     XGrpMemFwd (MemberInfo memId role profile) IntroInvitation {groupConnReq, directConnReq} ->
       let params =
-            [ B64.encode memId,
+            [ strEncode memId,
               strEncode role,
               serializeConnReq' groupConnReq,
               serializeConnReq' directConnReq
             ]
        in rawMsg params [jsonBody profile]
     XGrpMemInfo memId profile ->
-      rawMsg [B64.encode memId] [jsonBody profile]
+      rawMsg [strEncode memId] [jsonBody profile]
     XGrpMemCon memId ->
-      rawMsg [B64.encode memId] []
+      rawMsg [strEncode memId] []
     XGrpMemConAll memId ->
-      rawMsg [B64.encode memId] []
+      rawMsg [strEncode memId] []
     XGrpMemDel memId ->
-      rawMsg [B64.encode memId] []
+      rawMsg [strEncode memId] []
     XGrpLeave ->
       rawMsg [] []
     XGrpDel ->
       rawMsg [] []
     XInfoProbe probe ->
-      rawMsg [B64.encode probe] []
+      rawMsg [strEncode probe] []
     XInfoProbeCheck probeHash ->
-      rawMsg [B64.encode probeHash] []
+      rawMsg [strEncode probeHash] []
     XInfoProbeOk probe ->
-      rawMsg [B64.encode probe] []
+      rawMsg [strEncode probe] []
     XOk ->
       rawMsg [] []
   where

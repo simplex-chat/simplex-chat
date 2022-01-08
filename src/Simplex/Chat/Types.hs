@@ -13,8 +13,9 @@
 
 module Simplex.Chat.Types where
 
-import Data.Aeson (FromJSON, ToJSON)
+import Data.Aeson (FromJSON, ToJSON, (.:), (.=))
 import qualified Data.Aeson as J
+import qualified Data.Aeson.Types as JT
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.ByteString.Base64 as B64
 import Data.ByteString.Char8 (ByteString)
@@ -140,6 +141,14 @@ data IntroInvitation = IntroInvitation
 data MemberInfo = MemberInfo MemberId GroupMemberRole Profile
   deriving (Eq, Show)
 
+instance FromJSON MemberInfo where
+  parseJSON (J.Object v) = MemberInfo <$> v .: "memberId" <*> v .: "memberRole" <*> v .: "profile"
+  parseJSON invalid = JT.prependFailure "bad MemberInfo, " (JT.typeMismatch "Object" invalid)
+
+instance ToJSON MemberInfo where
+  toJSON (MemberInfo memId role profile) = J.object ["memberId" .= memId, "memberRole" .= role, "profile" .= profile]
+  toEncoding (MemberInfo memId role profile) = J.pairs $ "memberId" .= memId <> "memberRole" .= role <> "profile" .= profile
+
 memberInfo :: GroupMember -> MemberInfo
 memberInfo m = MemberInfo (memberId m) (memberRole m) (memberProfile m)
 
@@ -184,7 +193,24 @@ data NewGroupMember = NewGroupMember
     memContactId :: Maybe Int64
   }
 
-type MemberId = ByteString
+newtype MemberId = MemberId {unMemberId :: ByteString}
+  deriving (Eq, Show)
+
+instance FromField MemberId where fromField f = MemberId <$> fromField f
+
+instance ToField MemberId where toField (MemberId m) = toField m
+
+instance StrEncoding MemberId where
+  strEncode (MemberId m) = strEncode m
+  strDecode s = MemberId <$> strDecode s
+  strP = MemberId <$> strP
+
+instance FromJSON MemberId where
+  parseJSON = strParseJSON "MemberId"
+
+instance ToJSON MemberId where
+  toJSON = strToJSON
+  toEncoding = strToJEncoding
 
 data InvitedBy = IBContact Int64 | IBUser | IBUnknown
   deriving (Eq, Show)
@@ -220,6 +246,13 @@ instance StrEncoding GroupMemberRole where
     r -> Left $ "bad GroupMemberRole " <> B.unpack r
   strP = strDecode <$?> A.takeByteString
 
+instance FromJSON GroupMemberRole where
+  parseJSON = strParseJSON "GroupMemberRole"
+
+instance ToJSON GroupMemberRole where
+  toJSON = strToJSON
+  toEncoding = strToJEncoding
+
 fromBlobField_ :: Typeable k => (ByteString -> Either String k) -> FieldParser k
 fromBlobField_ p = \case
   f@(Field (SQLBlob b) _) ->
@@ -227,6 +260,36 @@ fromBlobField_ p = \case
       Right k -> Ok k
       Left e -> returnError ConversionFailed f ("could not parse field: " ++ e)
   f -> returnError ConversionFailed f "expecting SQLBlob column type"
+
+newtype Probe = Probe {unProbe :: ByteString}
+  deriving (Eq, Show)
+
+instance StrEncoding Probe where
+  strEncode (Probe p) = strEncode p
+  strDecode s = Probe <$> strDecode s
+  strP = Probe <$> strP
+
+instance FromJSON Probe where
+  parseJSON = strParseJSON "Probe"
+
+instance ToJSON Probe where
+  toJSON = strToJSON
+  toEncoding = strToJEncoding
+
+newtype ProbeHash = ProbeHash {unProbeHash :: ByteString}
+  deriving (Eq, Show)
+
+instance StrEncoding ProbeHash where
+  strEncode (ProbeHash p) = strEncode p
+  strDecode s = ProbeHash <$> strDecode s
+  strP = ProbeHash <$> strP
+
+instance FromJSON ProbeHash where
+  parseJSON = strParseJSON "ProbeHash"
+
+instance ToJSON ProbeHash where
+  toJSON = strToJSON
+  toEncoding = strToJEncoding
 
 data GroupMemberCategory
   = GCUserMember

@@ -810,7 +810,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
       (probe, probeId) <- withStore $ \st -> createSentProbe st gVar userId ct
       sendDirectMessage (contactConn ct) $ XInfoProbe probe
       cs <- withStore (\st -> getMatchingContacts st userId ct)
-      let probeHash = C.sha256Hash probe
+      let probeHash = ProbeHash $ C.sha256Hash (unProbe probe)
       forM_ cs $ \c -> sendProbeHash c probeHash probeId `catchError` const (pure ())
       where
         sendProbeHash c probeHash probeId = do
@@ -868,23 +868,23 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
       c' <- withStore $ \st -> updateContactProfile st userId c p'
       showContactUpdated c c'
 
-    xInfoProbe :: Contact -> ByteString -> m ()
+    xInfoProbe :: Contact -> Probe -> m ()
     xInfoProbe c2 probe = do
       r <- withStore $ \st -> matchReceivedProbe st userId c2 probe
       forM_ r $ \c1 -> probeMatch c1 c2 probe
 
-    xInfoProbeCheck :: Contact -> ByteString -> m ()
+    xInfoProbeCheck :: Contact -> ProbeHash -> m ()
     xInfoProbeCheck c1 probeHash = do
       r <- withStore $ \st -> matchReceivedProbeHash st userId c1 probeHash
       forM_ r . uncurry $ probeMatch c1
 
-    probeMatch :: Contact -> Contact -> ByteString -> m ()
+    probeMatch :: Contact -> Contact -> Probe -> m ()
     probeMatch c1@Contact {profile = p1} c2@Contact {profile = p2} probe =
       when (p1 == p2) $ do
         sendDirectMessage (contactConn c1) $ XInfoProbeOk probe
         mergeContacts c1 c2
 
-    xInfoProbeOk :: Contact -> ByteString -> m ()
+    xInfoProbeOk :: Contact -> Probe -> m ()
     xInfoProbeOk c1 probe = do
       r <- withStore $ \st -> matchSentProbe st userId c1 probe
       forM_ r $ \c2 -> mergeContacts c1 c2
