@@ -5,6 +5,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE PackageImports #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -47,14 +48,14 @@ import Simplex.Chat.Terminal
 import Simplex.Chat.Types
 import Simplex.Chat.Util (ifM, unlessM, whenM)
 import Simplex.Chat.View
-import Simplex.Messaging.Agent
-import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), defaultAgentConfig)
-import Simplex.Messaging.Agent.Protocol
-import qualified Simplex.Messaging.Crypto as C
-import Simplex.Messaging.Parsers (parseAll)
-import Simplex.Messaging.Protocol (MsgBody)
-import qualified Simplex.Messaging.Protocol as SMP
-import Simplex.Messaging.Util (bshow, raceAny_, tryError)
+import "simplexmq-legacy" Simplex.Messaging.Agent
+import "simplexmq-legacy" Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), defaultAgentConfig)
+import "simplexmq-legacy" Simplex.Messaging.Agent.Protocol
+import qualified "simplexmq" Simplex.Messaging.Crypto as C
+import "simplexmq" Simplex.Messaging.Parsers (parseAll)
+import "simplexmq" Simplex.Messaging.Protocol (MsgBody)
+import qualified "simplexmq-legacy" Simplex.Messaging.Protocol as SMP
+import "simplexmq" Simplex.Messaging.Util (bshow, raceAny_, tryError)
 import System.Exit (exitFailure, exitSuccess)
 import System.FilePath (combine, splitExtensions, takeFileName)
 import System.IO (Handle, IOMode (..), SeekMode (..), hFlush, openFile, stdout)
@@ -996,7 +997,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
       showGroupDeleted gName m
 
 parseChatMessage :: ByteString -> Either ChatError ChatMessage
-parseChatMessage msgBody = first ChatErrorMessage (parseAll rawChatMessageP msgBody >>= toChatMessage)
+parseChatMessage msgBody = first ChatErrorMessage (parseAll rawChatMessageP msgBody >>= rawToChatMessage)
 
 sendFileChunk :: ChatMonad m => SndFileTransfer -> m ()
 sendFileChunk ft@SndFileTransfer {fileId, fileStatus, agentConnId} =
@@ -1114,7 +1115,7 @@ sendDirectMessage conn chatMsgEvent = do
 directMessage :: ChatMsgEvent -> ByteString
 directMessage chatMsgEvent =
   serializeRawChatMessage $
-    rawChatMessage ChatMessage {chatMsgId = Nothing, chatMsgEvent, chatDAG = Nothing}
+    chatMessageToRaw ChatMessage {chatMsgId = "", chatMsgEvent, chatDAG = Nothing}
 
 deliverMessage :: ChatMonad m => Connection -> MsgBody -> MessageId -> m ()
 deliverMessage Connection {connId, agentConnId} msgBody msgId = do

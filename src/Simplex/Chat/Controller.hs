@@ -3,6 +3,7 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE PackageImports #-}
 
 module Simplex.Chat.Controller where
 
@@ -18,10 +19,10 @@ import Simplex.Chat.Notification
 import Simplex.Chat.Store (StoreError)
 import Simplex.Chat.Terminal
 import Simplex.Chat.Types
-import Simplex.Messaging.Agent (AgentClient)
-import Simplex.Messaging.Agent.Env.SQLite (AgentConfig)
-import Simplex.Messaging.Agent.Protocol (AgentErrorType)
-import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore)
+import "simplexmq-legacy" Simplex.Messaging.Agent (AgentClient)
+import "simplexmq-legacy" Simplex.Messaging.Agent.Env.SQLite (AgentConfig)
+import "simplexmq-legacy" Simplex.Messaging.Agent.Protocol (AgentErrorType)
+import "simplexmq-legacy" Simplex.Messaging.Agent.Store.SQLite (SQLiteStore)
 import System.IO (Handle)
 import UnliftIO.STM
 

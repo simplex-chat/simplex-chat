@@ -14,7 +14,8 @@ data AppMessage = AppMessage
     minVersion :: Word16,
     maxVersion :: Word16,
     event :: Text,
-    params :: J.Object
+    params :: J.Object,
+    dag :: Maybe Text
   }
   deriving (Generic, FromJSON)
 

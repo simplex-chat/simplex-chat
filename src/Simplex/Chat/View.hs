@@ -4,6 +4,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE PackageImports #-}
 
 module Simplex.Chat.View
   ( printToView,
@@ -101,8 +102,9 @@ import Simplex.Chat.Styled
 import Simplex.Chat.Terminal (printToTerminal)
 import Simplex.Chat.Types
 import Simplex.Chat.Util (safeDecodeUtf8)
-import Simplex.Messaging.Agent.Protocol
-import qualified Simplex.Messaging.Protocol as SMP
+import "simplexmq-legacy" Simplex.Messaging.Agent.Protocol
+import Simplex.Messaging.Encoding.String
+import qualified "simplexmq-legacy" Simplex.Messaging.Protocol as SMP
 import System.Console.ANSI.Types
 
 type ChatReader m = (MonadUnliftIO m, MonadReader ChatController m)
@@ -444,7 +446,7 @@ cannotResendInvitation g c =
 
 receivedGroupInvitation :: Group -> ContactName -> GroupMemberRole -> [StyledString]
 receivedGroupInvitation g@Group {localDisplayName} c role =
-  [ ttyFullGroup g <> ": " <> ttyContact c <> " invites you to join the group as " <> plain (serializeMemberRole role),
+  [ ttyFullGroup g <> ": " <> ttyContact c <> " invites you to join the group as " <> plain (strEncode role),
     "use " <> highlight ("/j " <> localDisplayName) <> " to accept"
   ]
 
@@ -492,7 +494,7 @@ groupMembers Group {membership, members} = map groupMember . filter (not . remov
   where
     removedOrLeft m = let s = memberStatus m in s == GSMemRemoved || s == GSMemLeft
     groupMember m = ttyFullMember m <> ": " <> role m <> ", " <> category m <> status m
-    role = plain . serializeMemberRole . memberRole
+    role = plain . strEncode . memberRole
     category m = case memberCategory m of
       GCUserMember -> "you, "
       GCInviteeMember -> "invited, "

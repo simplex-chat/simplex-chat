@@ -1,19 +1,17 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE PackageImports #-}
 
 module Simplex.Chat.Protocol.Legacy where
 
-import Control.Applicative (optional)
 import Data.Attoparsec.ByteString.Char8 (Parser)
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
-import Data.Int (Int64)
-import Simplex.Messaging.Util (bshow)
+import "simplexmq" Simplex.Messaging.Util (bshow)
 
 data RawChatMessage = RawChatMessage
-  { chatMsgId :: Maybe Int64,
-    chatMsgEvent :: ByteString,
+  { chatMsgEvent :: ByteString,
     chatMsgParams :: [ByteString],
     chatMsgBody :: [RawMsgBodyContent]
   }
@@ -32,11 +30,11 @@ type NameSpace = ByteString
 
 rawChatMessageP :: Parser RawChatMessage
 rawChatMessageP = do
-  chatMsgId <- optional A.decimal <* A.space
+  _ <- A.takeTill (== ' ') <* A.space
   chatMsgEvent <- B.intercalate "." <$> identifierP `A.sepBy1'` A.char '.' <* A.space
   chatMsgParams <- A.takeWhile1 (not . A.inClass ", ") `A.sepBy'` A.char ',' <* A.space
   chatMsgBody <- msgBodyContent =<< contentInfoP `A.sepBy'` A.char ',' <* A.space
-  pure RawChatMessage {chatMsgId, chatMsgEvent, chatMsgParams, chatMsgBody}
+  pure RawChatMessage {chatMsgEvent, chatMsgParams, chatMsgBody}
   where
     msgBodyContent :: [(RawContentType, Int)] -> Parser [RawMsgBodyContent]
     msgBodyContent [] = pure []
@@ -54,9 +52,9 @@ identifierP :: Parser ByteString
 identifierP = B.cons <$> A.letter_ascii <*> A.takeWhile (\c -> A.isAlpha_ascii c || A.isDigit c)
 
 serializeRawChatMessage :: RawChatMessage -> ByteString
-serializeRawChatMessage RawChatMessage {chatMsgId, chatMsgEvent, chatMsgParams, chatMsgBody} =
+serializeRawChatMessage RawChatMessage {chatMsgEvent, chatMsgParams, chatMsgBody} =
   B.unwords
-    [ maybe "" bshow chatMsgId,
+    [ "",
       chatMsgEvent,
       B.intercalate "," chatMsgParams,
       B.unwords $ map serializeBodyContentInfo chatMsgBody,

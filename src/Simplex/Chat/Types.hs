@@ -7,6 +7,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE PackageImports #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 
@@ -14,6 +15,7 @@ module Simplex.Chat.Types where
 
 import Data.Aeson (FromJSON, ToJSON)
 import qualified Data.Aeson as J
+import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.ByteString.Base64 as B64
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
@@ -30,9 +32,11 @@ import Database.SQLite.Simple.Internal (Field (..))
 import Database.SQLite.Simple.Ok (Ok (Ok))
 import Database.SQLite.Simple.ToField (ToField (..))
 import GHC.Generics
-import Simplex.Messaging.Agent.Protocol (AgentMsgId, ConnId, ConnectionMode (..), ConnectionRequest, InvitationId, MsgMeta (..), serializeMsgIntegrity)
-import Simplex.Messaging.Agent.Store.SQLite (fromTextField_)
-import Simplex.Messaging.Protocol (MsgBody)
+import "simplexmq-legacy" Simplex.Messaging.Agent.Protocol (AgentMsgId, ConnId, ConnectionMode (..), ConnectionRequest, InvitationId, MsgMeta (..), serializeMsgIntegrity)
+import "simplexmq-legacy" Simplex.Messaging.Agent.Store.SQLite (fromTextField_)
+import Simplex.Messaging.Encoding.String
+import "simplexmq" Simplex.Messaging.Protocol (MsgBody)
+import "simplexmq" Simplex.Messaging.Util ((<$?>))
 
 class IsContact a where
   contactId' :: a -> Int64
@@ -200,22 +204,21 @@ fromInvitedBy userCtId = \case
 data GroupMemberRole = GRMember | GRAdmin | GROwner
   deriving (Eq, Show, Ord)
 
-instance FromField GroupMemberRole where fromField = fromBlobField_ toMemberRole
+instance FromField GroupMemberRole where fromField = fromBlobField_ strDecode
 
-instance ToField GroupMemberRole where toField = toField . serializeMemberRole
+instance ToField GroupMemberRole where toField = toField . strEncode
 
-toMemberRole :: ByteString -> Either String GroupMemberRole
-toMemberRole = \case
-  "owner" -> Right GROwner
-  "admin" -> Right GRAdmin
-  "member" -> Right GRMember
-  r -> Left $ "invalid group member role " <> B.unpack r
-
-serializeMemberRole :: GroupMemberRole -> ByteString
-serializeMemberRole = \case
-  GROwner -> "owner"
-  GRAdmin -> "admin"
-  GRMember -> "member"
+instance StrEncoding GroupMemberRole where
+  strEncode = \case
+    GROwner -> "owner"
+    GRAdmin -> "admin"
+    GRMember -> "member"
+  strDecode = \case
+    "owner" -> Right GROwner
+    "admin" -> Right GRAdmin
+    "member" -> Right GRMember
+    r -> Left $ "bad GroupMemberRole " <> B.unpack r
+  strP = strDecode <$?> A.takeByteString
 
 fromBlobField_ :: Typeable k => (ByteString -> Either String k) -> FieldParser k
 fromBlobField_ p = \case
@@ -347,7 +350,7 @@ data FileInvitation = FileInvitation
     fileSize :: Integer,
     fileConnReq :: ConnReqInvitation
   }
-  deriving (Eq, Show)
+  deriving (Eq, Show, Generic)
 
 data RcvFileTransfer = RcvFileTransfer
   { fileId :: Int64,

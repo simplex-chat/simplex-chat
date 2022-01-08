@@ -59,6 +59,7 @@ library
     , process ==1.6.*
     , simple-logger ==0.1.*
     , simplexmq >=0.5.2 && <0.6
+    , simplexmq-legacy ==0.5.2
     , sqlite-simple ==0.4.*
     , stm ==2.5.*
     , terminal ==0.2.*
@@ -95,6 +96,7 @@ executable simplex-chat
     , simple-logger ==0.1.*
     , simplex-chat
     , simplexmq >=0.5.2 && <0.6
+    , simplexmq-legacy ==0.5.2
     , sqlite-simple ==0.4.*
     , stm ==2.5.*
     , terminal ==0.2.*
@@ -139,6 +141,7 @@ test-suite simplex-chat-test
     , simple-logger ==0.1.*
     , simplex-chat
     , simplexmq >=0.5.2 && <0.6
+    , simplexmq-legacy ==0.5.2
     , sqlite-simple ==0.4.*
     , stm ==2.5.*
     , terminal ==0.2.*

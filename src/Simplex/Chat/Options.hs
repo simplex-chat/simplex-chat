@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE PackageImports #-}
 
 module Simplex.Chat.Options (getChatOpts, ChatOpts (..)) where
 
@@ -7,8 +8,8 @@ import qualified Data.ByteString.Char8 as B
 import Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as L
 import Options.Applicative
-import Simplex.Messaging.Agent.Protocol (SMPServer (..), smpServerP)
-import Simplex.Messaging.Parsers (parseAll)
+import "simplexmq-legacy" Simplex.Messaging.Agent.Protocol (SMPServer (..), smpServerP)
+import "simplexmq" Simplex.Messaging.Parsers (parseAll)
 import System.FilePath (combine)
 
 data ChatOpts = ChatOpts

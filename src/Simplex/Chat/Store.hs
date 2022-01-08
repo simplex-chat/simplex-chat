@@ -6,6 +6,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE PackageImports #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -124,11 +125,11 @@ import qualified Database.SQLite.Simple as DB
 import Database.SQLite.Simple.QQ (sql)
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
-import Simplex.Messaging.Agent.Protocol (AParty (..), AgentMsgId, ConnId, InvitationId, MsgMeta (..))
-import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore (..), createSQLiteStore, withTransaction)
-import Simplex.Messaging.Agent.Store.SQLite.Migrations (Migration (..))
-import qualified Simplex.Messaging.Crypto as C
-import Simplex.Messaging.Util (bshow, liftIOEither, (<$$>))
+import "simplexmq-legacy" Simplex.Messaging.Agent.Protocol (AParty (..), AgentMsgId, ConnId, InvitationId, MsgMeta (..))
+import "simplexmq-legacy" Simplex.Messaging.Agent.Store.SQLite (SQLiteStore (..), createSQLiteStore, withTransaction)
+import "simplexmq-legacy" Simplex.Messaging.Agent.Store.SQLite.Migrations (Migration (..))
+import qualified "simplexmq" Simplex.Messaging.Crypto as C
+import "simplexmq" Simplex.Messaging.Util (bshow, liftIOEither, (<$$>))
 import System.FilePath (takeBaseName, takeExtension, takeFileName)
 import UnliftIO.STM
 

@@ -5,30 +5,34 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE PackageImports #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TupleSections #-}
 
 module Simplex.Chat.Protocol where
 
 import Control.Monad ((<=<), (>=>))
-import Data.Aeson (FromJSON, ToJSON)
+import Data.Aeson (FromJSON, ToJSON, (.:))
 import qualified Data.Aeson as J
+import qualified Data.Aeson.Types as JT
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.ByteString.Base64 as B64
+import qualified Data.ByteString.Base64.URL as U
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
-import Data.Int (Int64)
 import Data.List (find, findIndex)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
+import Simplex.Chat.Protocol.Encoding
 import Simplex.Chat.Protocol.Legacy
 import Simplex.Chat.Types
 import Simplex.Chat.Util (safeDecodeUtf8)
-import Simplex.Messaging.Agent.Protocol
-import Simplex.Messaging.Parsers (parseAll)
-import Simplex.Messaging.Util (bshow)
+import "simplexmq-legacy" Simplex.Messaging.Agent.Protocol
+import Simplex.Messaging.Encoding.String
+import "simplexmq" Simplex.Messaging.Parsers (parseAll)
+import "simplexmq" Simplex.Messaging.Util (bshow)
 
 data ChatDirection (p :: AParty) where
   ReceivedDirectMessage :: Connection -> Maybe Contact -> ChatDirection 'Agent
@@ -96,7 +100,7 @@ rawMsgType = \case
   MTImage -> "c.image"
 
 data ChatMessage = ChatMessage
-  { chatMsgId :: Maybe Int64,
+  { chatMsgId :: ByteString,
     chatMsgEvent :: ChatMsgEvent,
     chatDAG :: Maybe ByteString
   }
@@ -126,10 +130,23 @@ toChatEventType = \case
   XInfoProbeOk _ -> "x.info.probe.ok"
   XOk -> "x.ok"
 
-toChatMessage :: RawChatMessage -> Either String ChatMessage
-toChatMessage RawChatMessage {chatMsgId, chatMsgEvent, chatMsgParams, chatMsgBody} = do
-  (chatDAG, body) <- getDAG <$> mapM toMsgBodyContent chatMsgBody
+appToChatMessage :: AppMessage -> Either String ChatMessage
+appToChatMessage AppMessage {msgId, event, params, dag} = do
+  chatMsgId <- U.decode $ encodeUtf8 msgId
+  chatDAG <- mapM (U.decode . encodeUtf8) dag
   let chatMsg msg = pure ChatMessage {chatMsgId, chatMsgEvent = msg, chatDAG}
+  case event of
+    "x.msg.new" -> Left ""
+    "x.file" -> Left ""
+    "x.info" -> do
+      profile <- JT.parseEither (.: "profile") params
+      chatMsg $ XInfo profile
+    _ -> Left ""
+
+rawToChatMessage :: RawChatMessage -> Either String ChatMessage
+rawToChatMessage RawChatMessage {chatMsgEvent, chatMsgParams, chatMsgBody} = do
+  (chatDAG, body) <- getDAG <$> mapM toMsgBodyContent chatMsgBody
+  let chatMsg msg = pure ChatMessage {chatMsgId = "", chatMsgEvent = msg, chatDAG}
   case (chatMsgEvent, chatMsgParams) of
     ("x.msg.new", mt : rawFiles) -> do
       t <- toMsgType mt
@@ -154,8 +171,8 @@ toChatMessage RawChatMessage {chatMsgId, chatMsgEvent, chatMsgParams, chatMsgBod
       files <- toFiles rawFiles
       chatMsg . XContact profile $ Just MsgContent {messageType = t, files, content = body'}
     ("x.grp.inv", [fromMemId, fromRole, memId, role, cReq]) -> do
-      fromMem <- (,) <$> B64.decode fromMemId <*> toMemberRole fromRole
-      invitedMem <- (,) <$> B64.decode memId <*> toMemberRole role
+      fromMem <- (,) <$> B64.decode fromMemId <*> strDecode fromRole
+      invitedMem <- (,) <$> B64.decode memId <*> strDecode role
       groupConnReq <- parseAll connReqP' cReq
       profile <- getJSON body
       chatMsg . XGrpInv $ GroupInvitation fromMem invitedMem groupConnReq profile
@@ -196,7 +213,7 @@ toChatMessage RawChatMessage {chatMsgId, chatMsgEvent, chatMsgParams, chatMsgBod
       (b, MsgContentBody SimplexDAG dag : a) -> (Just dag, b <> a)
       _ -> (Nothing, body)
     toMemberInfo :: ByteString -> ByteString -> [MsgContentBody] -> Either String MemberInfo
-    toMemberInfo memId role body = MemberInfo <$> B64.decode memId <*> toMemberRole role <*> getJSON body
+    toMemberInfo memId role body = MemberInfo <$> B64.decode memId <*> strDecode role <*> getJSON body
     toIntroInv :: ByteString -> ByteString -> Either String IntroInvitation
     toIntroInv groupConnReq directConnReq = IntroInvitation <$> parseAll connReqP' groupConnReq <*> parseAll connReqP' directConnReq
     toContentInfo :: (RawContentType, Int) -> Either String (ContentType, Int)
@@ -235,8 +252,8 @@ getSimplexContentType = getContentType . SimplexContentType
 extractSimplexContentType :: XContentType -> [MsgContentBody] -> Either String (ByteString, [MsgContentBody])
 extractSimplexContentType = extractContentType . SimplexContentType
 
-rawChatMessage :: ChatMessage -> RawChatMessage
-rawChatMessage ChatMessage {chatMsgId, chatMsgEvent, chatDAG} =
+chatMessageToRaw :: ChatMessage -> RawChatMessage
+chatMessageToRaw ChatMessage {chatMsgEvent, chatDAG} =
   case chatMsgEvent of
     XMsgNew MsgContent {messageType = t, files, content} ->
       rawMsg (rawMsgType t : toRawFiles files) content
@@ -253,26 +270,26 @@ rawChatMessage ChatMessage {chatMsgId, chatMsgEvent, chatDAG} =
     XGrpInv (GroupInvitation (fromMemId, fromRole) (memId, role) cReq groupProfile) ->
       let params =
             [ B64.encode fromMemId,
-              serializeMemberRole fromRole,
+              strEncode fromRole,
               B64.encode memId,
-              serializeMemberRole role,
+              strEncode role,
               serializeConnReq' cReq
             ]
        in rawMsg params [jsonBody groupProfile]
     XGrpAcpt memId ->
       rawMsg [B64.encode memId] []
     XGrpMemNew (MemberInfo memId role profile) ->
-      let params = [B64.encode memId, serializeMemberRole role]
+      let params = [B64.encode memId, strEncode role]
        in rawMsg params [jsonBody profile]
     XGrpMemIntro (MemberInfo memId role profile) ->
-      rawMsg [B64.encode memId, serializeMemberRole role] [jsonBody profile]
+      rawMsg [B64.encode memId, strEncode role] [jsonBody profile]
     XGrpMemInv memId IntroInvitation {groupConnReq, directConnReq} ->
       let params = [B64.encode memId, serializeConnReq' groupConnReq, serializeConnReq' directConnReq]
        in rawMsg params []
     XGrpMemFwd (MemberInfo memId role profile) IntroInvitation {groupConnReq, directConnReq} ->
       let params =
             [ B64.encode memId,
-              serializeMemberRole role,
+              strEncode role,
               serializeConnReq' groupConnReq,
               serializeConnReq' directConnReq
             ]
@@ -301,7 +318,7 @@ rawChatMessage ChatMessage {chatMsgId, chatMsgEvent, chatDAG} =
     rawMsg :: [ByteString] -> [MsgContentBody] -> RawChatMessage
     rawMsg chatMsgParams body = do
       let event = encodeUtf8 $ toChatEventType chatMsgEvent
-      RawChatMessage {chatMsgId, chatMsgEvent = event, chatMsgParams, chatMsgBody = rawWithDAG body}
+      RawChatMessage {chatMsgEvent = event, chatMsgParams, chatMsgBody = rawWithDAG body}
     rawContentInfo :: (ContentType, Int) -> (RawContentType, Int)
     rawContentInfo (t, size) = (rawContentType t, size)
     jsonBody :: ToJSON a => a -> MsgContentBody
