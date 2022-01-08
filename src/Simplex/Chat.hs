@@ -42,6 +42,7 @@ import Simplex.Chat.Notification
 import Simplex.Chat.Options (ChatOpts (..))
 import Simplex.Chat.Protocol
 import Simplex.Chat.Protocol.Legacy
+import Simplex.Chat.SimpleXMQ
 import Simplex.Chat.Store
 import Simplex.Chat.Styled (plain)
 import Simplex.Chat.Terminal
@@ -155,7 +156,7 @@ runSimplexChat = runReaderT $ do
   whenM (asks firstTime) . printToView . chatWelcome user $ Onboarding 0 0 0 0 0
   race_ runTerminalInput runChatController
 
-runChatController :: (MonadUnliftIO m, MonadReader ChatController m) => m ()
+runChatController :: (MonadUnliftIO m, MonadReader ChatController m, MonadFail m) => m ()
 runChatController =
   raceAny_
     [ inputSubscriber,
@@ -169,7 +170,7 @@ withLock lock =
     (void . atomically $ takeTMVar lock)
     (atomically $ putTMVar lock ())
 
-inputSubscriber :: (MonadUnliftIO m, MonadReader ChatController m) => m ()
+inputSubscriber :: (MonadUnliftIO m, MonadReader ChatController m, MonadFail m) => m ()
 inputSubscriber = do
   q <- asks inputQ
   l <- asks chatLock
@@ -205,7 +206,7 @@ processChatCommand user@User {userId, profile} = \case
   AddContact -> do
     (connId, cReq) <- withAgent (`createConnection` SCMInvitation)
     withStore $ \st -> createDirectConnection st userId connId
-    showInvitation cReq
+    showInvitation $ ConnReqInvV0 cReq
   Connect (Just (ACR SCMInvitation cReq)) -> connect cReq (XInfo profile) >> showSentConfirmation
   Connect (Just (ACR SCMContact cReq)) -> connect cReq (XContact profile Nothing) >> showSentInvitation
   Connect Nothing -> showInvalidConnReq
@@ -268,8 +269,8 @@ processChatCommand user@User {userId, profile} = \case
       Nothing -> do
         gVar <- asks idsDrg
         (agentConnId, cReq) <- withAgent (`createConnection` SCMInvitation)
-        GroupMember {memberId} <- withStore $ \st -> createContactMember st gVar user groupId contact memRole agentConnId cReq
-        sendInvitation memberId cReq
+        GroupMember {memberId} <- withStore $ \st -> createContactMember st gVar user groupId contact memRole agentConnId $ ConnReqInvV0 cReq
+        sendInvitation memberId $ ConnReqInvV0 cReq
       Just GroupMember {groupMemberId, memberId, memberStatus}
         | memberStatus == GSMemInvited ->
           withStore (\st -> getMemberInvitation st user groupMemberId) >>= \case
@@ -277,7 +278,7 @@ processChatCommand user@User {userId, profile} = \case
             Nothing -> showCannotResendInvitation gName cName
         | otherwise -> chatError (CEGroupDuplicateMember cName)
   JoinGroup gName -> do
-    ReceivedGroupInvitation {fromMember, userMember, connRequest} <- withStore $ \st -> getGroupInvitation st user gName
+    ReceivedGroupInvitation {fromMember, userMember, connRequest = ConnReqInvV0 connRequest} <- withStore $ \st -> getGroupInvitation st user gName
     agentConnId <- withAgent $ \a -> joinConnection a connRequest . directMessage . XGrpAcpt $ memberId userMember
     withStore $ \st -> do
       createMemberConnection st userId fromMember agentConnId
@@ -327,7 +328,7 @@ processChatCommand user@User {userId, profile} = \case
     (fileSize, chSize) <- checkSndFile f
     contact <- withStore $ \st -> getContact st userId cName
     (agentConnId, fileConnReq) <- withAgent (`createConnection` SCMInvitation)
-    let fileInv = FileInvitation {fileName = takeFileName f, fileSize, fileConnReq}
+    let fileInv = FileInvitation {fileName = takeFileName f, fileSize, fileConnReq = ConnReqInvV0 fileConnReq}
     SndFileTransfer {fileId} <- withStore $ \st ->
       createSndFileTransfer st userId contact f fileInv agentConnId chSize
     sendDirectMessage (contactConn contact) $ XFile fileInv
@@ -340,7 +341,7 @@ processChatCommand user@User {userId, profile} = \case
     let fileName = takeFileName f
     ms <- forM (filter memberActive members) $ \m -> do
       (connId, fileConnReq) <- withAgent (`createConnection` SCMInvitation)
-      pure (m, connId, FileInvitation {fileName, fileSize, fileConnReq})
+      pure (m, connId, FileInvitation {fileName, fileSize, fileConnReq = ConnReqInvV0 fileConnReq})
     fileId <- withStore $ \st -> createSndGroupFileTransfer st userId group ms f fileSize chSize
     -- TODO sendGroupMessage - same file invitation to all
     forM_ ms $ \(m, _, fileInv) ->
@@ -348,7 +349,7 @@ processChatCommand user@User {userId, profile} = \case
     showSentFileInfo fileId
     setActive $ ActiveG gName
   ReceiveFile fileId filePath_ -> do
-    ft@RcvFileTransfer {fileInvitation = FileInvitation {fileName, fileConnReq}, fileStatus} <- withStore $ \st -> getRcvFileTransfer st userId fileId
+    ft@RcvFileTransfer {fileInvitation = FileInvitation {fileName, fileConnReq = ConnReqInvV0 fileConnReq}, fileStatus} <- withStore $ \st -> getRcvFileTransfer st userId fileId
     unless (fileStatus == RFSNew) . chatError $ CEFileAlreadyReceiving fileName
     tryError (withAgent $ \a -> joinConnection a fileConnReq . directMessage $ XFileAcpt fileName) >>= \case
       Right agentConnId -> do
@@ -428,7 +429,7 @@ processChatCommand user@User {userId, profile} = \case
               f = filePath `combine` (name <> suffix <> ext)
            in ifM (doesFileExist f) (tryCombine $ n + 1) (pure f)
 
-agentSubscriber :: (MonadUnliftIO m, MonadReader ChatController m) => m ()
+agentSubscriber :: (MonadUnliftIO m, MonadReader ChatController m, MonadFail m) => m ()
 agentSubscriber = do
   q <- asks $ subQ . smpAgent
   l <- asks chatLock
@@ -439,7 +440,7 @@ agentSubscriber = do
     withLock l . void . runExceptT $
       processAgentMessage user connId msg `catchError` showChatError
 
-subscribeUserConnections :: (MonadUnliftIO m, MonadReader ChatController m) => m ()
+subscribeUserConnections :: (MonadUnliftIO m, MonadReader ChatController m, MonadFail m) => m ()
 subscribeUserConnections = void . runExceptT $ do
   user <- readTVarIO =<< asks currentUser
   subscribeContacts user
@@ -924,7 +925,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
               (groupConnId, groupConnReq) <- withAgent (`createConnection` SCMInvitation)
               (directConnId, directConnReq) <- withAgent (`createConnection` SCMInvitation)
               newMember <- withStore $ \st -> createIntroReMember st user group m memInfo groupConnId directConnId
-              let msg = XGrpMemInv memId IntroInvitation {groupConnReq, directConnReq}
+              let msg = XGrpMemInv memId IntroInvitation {groupConnReq = ConnReqInvV0 groupConnReq, directConnReq = ConnReqInvV0 directConnReq}
               sendDirectMessage conn msg
               withStore $ \st -> updateGroupMemberStatus st userId newMember GSMemIntroInvited
         _ -> messageError "x.grp.mem.intro can be only sent by host member"
@@ -946,7 +947,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
         _ -> messageError "x.grp.mem.inv can be only sent by invitee member"
 
     xGrpMemFwd :: GroupName -> GroupMember -> MemberInfo -> IntroInvitation -> m ()
-    xGrpMemFwd gName m memInfo@(MemberInfo memId _ _) introInv@IntroInvitation {groupConnReq, directConnReq} = do
+    xGrpMemFwd gName m memInfo@(MemberInfo memId _ _) introInv@IntroInvitation {groupConnReq = ConnReqInvV0 groupConnReq, directConnReq = ConnReqInvV0 directConnReq} = do
       group@Group {membership} <- withStore $ \st -> getGroup st user gName
       toMember <- case find ((== memId) . memberId) $ members group of
         -- TODO if the missed messages are correctly sent as soon as there is connection before anything else is sent

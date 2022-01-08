@@ -195,7 +195,7 @@ rawToChatMessage RawChatMessage {chatMsgEvent, chatMsgParams, chatMsgBody} = do
     ("x.file", [name, size, cReq]) -> do
       let fileName = T.unpack $ safeDecodeUtf8 name
       fileSize <- parseAll A.decimal size
-      fileConnReq <- parseAll connReqP' cReq
+      fileConnReq <- strDecode cReq
       chatMsg . XFile $ FileInvitation {fileName, fileSize, fileConnReq}
     ("x.file.acpt", [name]) ->
       chatMsg . XFileAcpt . T.unpack $ safeDecodeUtf8 name
@@ -213,7 +213,7 @@ rawToChatMessage RawChatMessage {chatMsgEvent, chatMsgParams, chatMsgBody} = do
     ("x.grp.inv", [fromMemId, fromRole, memId, role, cReq]) -> do
       fromMem <- (,) <$> strDecode fromMemId <*> strDecode fromRole
       invitedMem <- (,) <$> strDecode memId <*> strDecode role
-      groupConnReq <- parseAll connReqP' cReq
+      groupConnReq <- strDecode cReq
       profile <- getJSON body
       chatMsg . XGrpInv $ GroupInvitation fromMem invitedMem groupConnReq profile
     ("x.grp.acpt", [memId]) ->
@@ -255,7 +255,7 @@ rawToChatMessage RawChatMessage {chatMsgEvent, chatMsgParams, chatMsgBody} = do
     toMemberInfo :: ByteString -> ByteString -> [MsgContentBody] -> Either String MemberInfo
     toMemberInfo memId role body = MemberInfo <$> strDecode memId <*> strDecode role <*> getJSON body
     toIntroInv :: ByteString -> ByteString -> Either String IntroInvitation
-    toIntroInv groupConnReq directConnReq = IntroInvitation <$> parseAll connReqP' groupConnReq <*> parseAll connReqP' directConnReq
+    toIntroInv groupConnReq directConnReq = IntroInvitation <$> strDecode groupConnReq <*> strDecode directConnReq
     toContentInfo :: (RawContentType, Int) -> Either String (ContentType, Int)
     toContentInfo (rawType, size) = (,size) <$> toContentType rawType
     toFiles :: [ByteString] -> Either String [(ContentType, Int)]
@@ -298,7 +298,7 @@ chatMessageToRaw ChatMessage {chatMsgEvent, chatDAG} =
     XMsgNew MsgContent {messageType = t, files, content} ->
       rawMsg (rawMsgType t : toRawFiles files) content
     XFile FileInvitation {fileName, fileSize, fileConnReq} ->
-      rawMsg [encodeUtf8 $ T.pack fileName, bshow fileSize, serializeConnReq' fileConnReq] []
+      rawMsg [encodeUtf8 $ T.pack fileName, bshow fileSize, strEncode fileConnReq] []
     XFileAcpt fileName ->
       rawMsg [encodeUtf8 $ T.pack fileName] []
     XInfo profile ->
@@ -313,7 +313,7 @@ chatMessageToRaw ChatMessage {chatMsgEvent, chatDAG} =
               strEncode fromRole,
               strEncode memId,
               strEncode role,
-              serializeConnReq' cReq
+              strEncode cReq
             ]
        in rawMsg params [jsonBody groupProfile]
     XGrpAcpt memId ->
@@ -324,14 +324,14 @@ chatMessageToRaw ChatMessage {chatMsgEvent, chatDAG} =
     XGrpMemIntro (MemberInfo memId role profile) ->
       rawMsg [strEncode memId, strEncode role] [jsonBody profile]
     XGrpMemInv memId IntroInvitation {groupConnReq, directConnReq} ->
-      let params = [strEncode memId, serializeConnReq' groupConnReq, serializeConnReq' directConnReq]
+      let params = [strEncode memId, strEncode groupConnReq, strEncode directConnReq]
        in rawMsg params []
     XGrpMemFwd (MemberInfo memId role profile) IntroInvitation {groupConnReq, directConnReq} ->
       let params =
             [ strEncode memId,
               strEncode role,
-              serializeConnReq' groupConnReq,
-              serializeConnReq' directConnReq
+              strEncode groupConnReq,
+              strEncode directConnReq
             ]
        in rawMsg params [jsonBody profile]
     XGrpMemInfo memId profile ->

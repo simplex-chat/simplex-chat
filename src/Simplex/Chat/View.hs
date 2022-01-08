@@ -1,4 +1,5 @@
 {-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE LambdaCase #-}
@@ -97,6 +98,7 @@ import Data.Time.LocalTime (TimeZone, ZonedTime, getCurrentTimeZone, getZonedTim
 import Numeric (showFFloat)
 import Simplex.Chat.Controller
 import Simplex.Chat.Markdown
+import Simplex.Chat.SimpleXMQ (AgentVersion (..), ConnReqInv)
 import Simplex.Chat.Store (StoreError (..))
 import Simplex.Chat.Styled
 import Simplex.Chat.Terminal (printToTerminal)
@@ -109,7 +111,7 @@ import System.Console.ANSI.Types
 
 type ChatReader m = (MonadUnliftIO m, MonadReader ChatController m)
 
-showInvitation :: ChatReader m => ConnReqInvitation -> m ()
+showInvitation :: ChatReader m => ConnReqInv 'AgentV0 -> m ()
 showInvitation = printToView . connReqInvitation_
 
 showSentConfirmation :: ChatReader m => m ()
@@ -326,11 +328,11 @@ showContactUpdated = printToView .: contactUpdated
 showMessageError :: ChatReader m => Text -> Text -> m ()
 showMessageError = printToView .: messageError
 
-connReqInvitation_ :: ConnReqInvitation -> [StyledString]
+connReqInvitation_ :: ConnReqInv 'AgentV0 -> [StyledString]
 connReqInvitation_ cReq =
   [ "pass this invitation link to your contact (via another channel): ",
     "",
-    (plain . serializeConnReq') cReq,
+    (plain . strEncode) cReq,
     "",
     "and ask them to connect: " <> highlight' "/c <invitation_link_above>"
   ]
@@ -755,6 +757,7 @@ chatError = \case
     CEFileSend fileId e -> ["error sending file " <> sShow fileId <> ": " <> sShow e]
     CEFileRcvChunk e -> ["error receiving file: " <> plain e]
     CEFileInternal e -> ["file error: " <> plain e]
+    CEAgentVersion -> ["unsupported agent version"]
   -- e -> ["chat error: " <> sShow e]
   ChatErrorStore err -> case err of
     SEDuplicateName -> ["this display name is already used by user, contact or group"]

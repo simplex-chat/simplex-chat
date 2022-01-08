@@ -33,6 +33,7 @@ import Database.SQLite.Simple.Internal (Field (..))
 import Database.SQLite.Simple.Ok (Ok (Ok))
 import Database.SQLite.Simple.ToField (ToField (..))
 import GHC.Generics
+import Simplex.Chat.SimpleXMQ
 import "simplexmq-legacy" Simplex.Messaging.Agent.Protocol (AgentMsgId, ConnId, ConnectionMode (..), ConnectionRequest, InvitationId, MsgMeta (..), serializeMsgIntegrity)
 import "simplexmq-legacy" Simplex.Messaging.Agent.Store.SQLite (fromTextField_)
 import Simplex.Messaging.Encoding.String
@@ -127,14 +128,14 @@ instance ToJSON GroupProfile where toEncoding = J.genericToEncoding J.defaultOpt
 data GroupInvitation = GroupInvitation
   { fromMember :: (MemberId, GroupMemberRole),
     invitedMember :: (MemberId, GroupMemberRole),
-    connRequest :: ConnReqInvitation,
+    connRequest :: ConnReqInv 'AgentV0,
     groupProfile :: GroupProfile
   }
   deriving (Eq, Show)
 
 data IntroInvitation = IntroInvitation
-  { groupConnReq :: ConnReqInvitation,
-    directConnReq :: ConnReqInvitation
+  { groupConnReq :: ConnReqInv 'AgentV0,
+    directConnReq :: ConnReqInv 'AgentV0
   }
   deriving (Eq, Show)
 
@@ -155,7 +156,7 @@ memberInfo m = MemberInfo (memberId m) (memberRole m) (memberProfile m)
 data ReceivedGroupInvitation = ReceivedGroupInvitation
   { fromMember :: GroupMember,
     userMember :: GroupMember,
-    connRequest :: ConnReqInvitation,
+    connRequest :: ConnReqInv 'AgentV0,
     groupProfile :: GroupProfile
   }
   deriving (Eq, Show)
@@ -411,7 +412,7 @@ data SndFileTransfer = SndFileTransfer
 data FileInvitation = FileInvitation
   { fileName :: String,
     fileSize :: Integer,
-    fileConnReq :: ConnReqInvitation
+    fileConnReq :: ConnReqInv 'AgentV0
   }
   deriving (Eq, Show, Generic)
 
@@ -466,8 +467,6 @@ serializeFileStatus = \case
 
 data RcvChunkStatus = RcvChunkOk | RcvChunkFinal | RcvChunkDuplicate | RcvChunkError
   deriving (Eq, Show)
-
-type ConnReqInvitation = ConnectionRequest 'CMInvitation
 
 type ConnReqContact = ConnectionRequest 'CMContact
 

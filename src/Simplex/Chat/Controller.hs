@@ -79,9 +79,10 @@ data ChatErrorType
   | CEFileSend Int64 AgentErrorType
   | CEFileRcvChunk String
   | CEFileInternal String
+  | CEAgentVersion
   deriving (Show, Exception)
 
-type ChatMonad m = (MonadUnliftIO m, MonadReader ChatController m, MonadError ChatError m)
+type ChatMonad m = (MonadUnliftIO m, MonadReader ChatController m, MonadError ChatError m, MonadFail m)
 
 setActive :: (MonadUnliftIO m, MonadReader ChatController m) => ActiveTo -> m ()
 setActive to = asks (activeTo . chatTerminal) >>= atomically . (`writeTVar` to)
