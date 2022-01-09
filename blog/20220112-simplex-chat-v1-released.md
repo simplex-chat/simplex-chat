@@ -1,15 +1,22 @@
-# SimpleX announces SimpleX chat v1 release, the world's most private and secure chat and application platform
+# SimpleX announces SimpleX Chat v1
+## _The world's most private and secure chat and application platform_
 
-We are building the most secure and private platform for building Internet applications. [SimpleX Chat](https://github.com/simplex-chat/simplex-chat) is a chat application built on the SimpleX platform that also serves as an example and reference application.
+We are building a new platform for distributed Internet applications where privacy of the messages _and_ the network matter. [SimpleX Chat](https://github.com/simplex-chat/simplex-chat) is our first application, a chat application built on the SimpleX platform that  serves as an example of the power of the platform and as a reference application.
+
+## What is SimpleX?
+
+We recognised that there is currently no messaging application which respects user privacy and guarantees metadata privacy -- in other words, messages could be private, but a third party can always see who is communicating with whom by examining a central service and the connection graph.  SimpleX, at it's core, is designed to be truly distributed with no central server.  This allows for enormous scalability at low cost, and also makes it virtually impossible to snoop on the network graph.
+
+The first application built on the platform is Simplex Chat, which for now is terminal (command line) based with mobile apps in the pipeline.  The platform can easily support a private social network feed and a multitude of other services, which can be developed by the Simplex team or third party developers.
 
 ## What's new in v1?
 
 ### Stable protocol implementation
 All releases from v1 onwards will be forwards and backwards compatible. SimpleX Chat itself is still backwards compatible by supporting "legacy" contacts that should be migrated once both connected users upgrade the chat.
 
-### Message encryption has been completely re-engineered to provide forward secrecy and break-in recover
+### Message encryption has been completely re-engineered to provide forward secrecy and recovery from break-in
 
-SimpleX Chat v1 uses:
+SimpleX Chat v1 now uses:
 
 - double-ratchet E2E encryption using AES-256-GCM cipher with X3DH key exchange using 2 ephemeral Curve448 keys to derive secrets for ratchet initialization. These keys and secrets are separate for each contact, group membership and file transfer.
 - in addition to double ratchet, there is a separate E2E encryption in each message queue with DH key exchange using Curve25519 and NaCl crypto-box - seperate E2E encryption has been added to avoid having any cipher-text in common between message queues withing a single contact (to prevent traffic correlation).
@@ -37,11 +44,7 @@ We are delighted to announce that ... is joining SimpleX in a ... capacity. ... 
 
 
 
-## What is SimpleX?
-
-We recognised that there is currently no messaging application which respects user privacy and guarantees metadata privacy -- _elevator pitch to a journalist on why SimpleX was developed._
-
-...
+## Learn more about Simplex
 
 Further detail on the design motivations and objectives is available [here](https://github.com/simplex-chat/simplex-chat/blob/blog/simplex.md).
 
