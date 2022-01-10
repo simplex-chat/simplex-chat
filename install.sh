@@ -14,6 +14,28 @@ else
 	exit 1
 fi
 
+#check binary exists
+
+if which simplex-chat then
+  chat_path = which simplex-chat
+elif target_dir/simplex-chat exists then
+  chat_path = target_dir/simplex-chat
+else
+  chat_path = nothing
+fi
+
+# prepare for upgrade
+
+if chat_path is not nothing &&
+   (
+     not (simplex-chat -h | grep v1) OR
+     initial2021 migration exists
+   ) then
+  warn
+  ask a/c
+  on continue: move chat_path to chat_path_v0
+fi
+
 # Prepare to upgrade from v0 to v1
 if [[ \
   ! $(simplex-chat -h | grep v1) || \
@@ -30,9 +52,9 @@ if [[ \
           ;;
         [Cc]* )
           chat_path=$(which simplex-chat)
-          if [[ -z "$chat_path" ]]; then
-            # check if old file exists and write to chat_path
-          fi
+          # if [[ -z "$chat_path" ]]; then
+          #   # check if old file exists and write to chat_path
+          # fi
           new_chat_path="$chat_path-v0"
           mv ${chat_path} ${new_chat_path}
           echo "Renamed $chat_path into $new_chat_path"
