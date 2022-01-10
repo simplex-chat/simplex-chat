@@ -14,6 +14,35 @@ else
 	exit 1
 fi
 
+# Prepare to upgrade from v0 to v1
+if [[ \
+  ! $(simplex-chat -h | grep v1) || \
+  $(echo "select * from migrations;" | sqlite3 ~/.simplex/simplex.agent.db | grep 20210101_initial) \
+]]; then
+  echo "Found previous version of SimpleX Chat, current version v1.0.0 is not compatible."
+  echo "If you choose to continue the installation it will be renamed to simplex-chat-v0 and version v1 will be installed as simplex-chat with clean database."
+  echo "The next version v1.1.0 will be backwards compatible with your groups and contacts. Please see <link> for more information."
+  while true; do
+    read -p "Please choose to (a)bort or (c)ontinue: " yn
+    case $yn in
+        [Aa]* )
+          exit 1
+          ;;
+        [Cc]* )
+          chat_path=$(which simplex-chat)
+          if [[ -z "$chat_path" ]]; then
+            # check if old file exists and write to chat_path
+          fi
+          new_chat_path="$chat_path-v0"
+          mv ${chat_path} ${new_chat_path}
+          echo "Renamed $chat_path into $new_chat_path"
+          break
+          ;;
+        * ) echo "Please answer a or c."
+    esac
+  done
+fi
+
 [ ! -d $TARGET_DIR ] && mkdir -p $TARGET_DIR
 
 if [ -n "$(command -v curl)" ]; then
