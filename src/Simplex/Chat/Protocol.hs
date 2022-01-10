@@ -67,11 +67,11 @@ instance StrEncoding ChatMessage where
   strP = strDecode <$?> A.takeByteString
 
 data ChatMsgEvent
-  = XMsgNew MsgContent'
+  = XMsgNew MsgContent
   | XFile FileInvitation
   | XFileAcpt String
   | XInfo Profile
-  | XContact Profile (Maybe MsgContent')
+  | XContact Profile (Maybe MsgContent)
   | XGrpInv GroupInvitation
   | XGrpAcpt MemberId
   | XGrpMemNew MemberInfo
@@ -108,15 +108,15 @@ instance ToJSON MsgContentType where
   toJSON = strToJSON
   toEncoding = strToJEncoding
 
-data MsgContent' = MCText Text | MCUnknown
+data MsgContent = MCText Text | MCUnknown
   deriving (Eq, Show)
 
-toMsgContentType :: MsgContent' -> MsgContentType
+toMsgContentType :: MsgContent -> MsgContentType
 toMsgContentType = \case
   MCText _ -> MCText_
   MCUnknown -> MCUnknown_
 
-instance FromJSON MsgContent' where
+instance FromJSON MsgContent where
   parseJSON (J.Object v) = do
     v .: "type" >>= \case
       MCText_ -> MCText <$> v .: "text"
@@ -127,7 +127,7 @@ instance FromJSON MsgContent' where
 unknownMsgType :: Text
 unknownMsgType = "unknown message type"
 
-instance ToJSON MsgContent' where
+instance ToJSON MsgContent where
   toJSON mc =
     J.object $
       ("type" .= toMsgContentType mc) : case mc of
