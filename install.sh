@@ -17,26 +17,28 @@ fi
 #check binary exists
 
 if which simplex-chat then
-  chat_path = which simplex-chat
+	_path = which simplex-chat
 elif target_dir/simplex-chat exists then
-  chat_path = target_dir/simplex-chat
+	_path = target_dir/simplex-chat
 else
-  chat_path = nothing
+	ath = nothing
 fi
 
 # prepare for upgrade
 
-if chat_path is not nothing then
-  if not (simplex-chat -h | grep v1) then
-    warn
-    ask a/c
-      on abort: exit 1
-      on continue: move chat_path to chat_path_v0
-elif initial2021 migration exists then
-  warn2
-  ask a/c
-    on abort: exit 1
-    on continue: break
+if chat_path is nothing then
+	if initial2021 migration exists then
+		warn_migration
+		ask a/c
+			on abort: exit 1
+			on continue: break
+	fi
+	elif not (simplex-chat -h | grep v1) then
+		warn
+		ask a/c
+			on abort: exit 1
+			on continue: move chat_path to chat_path_v0
+	fi
 fi
 
 # Prepare to upgrade from v0 to v1
