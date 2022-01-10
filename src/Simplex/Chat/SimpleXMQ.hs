@@ -17,7 +17,7 @@ import Data.Typeable (Typeable)
 import Database.SQLite.Simple.FromField (FromField (..))
 import Database.SQLite.Simple.ToField (ToField (..))
 import qualified "simplexmq" Simplex.Messaging.Agent.Protocol as P
-import qualified "simplexmq-legacy" Simplex.Messaging.Agent.Protocol as PL
+-- import qualified "simplexmq-legacy" Simplex.Messaging.Agent.Protocol as PL
 import Simplex.Messaging.Encoding.String
 import "simplexmq" Simplex.Messaging.Parsers (blobFieldDecoder)
 import "simplexmq" Simplex.Messaging.Util ((<$?>))
@@ -45,7 +45,8 @@ instance AgentVersionI 'AgentV0 where sAgentVersion = SAgentV0
 
 data ConnReqInv (v :: AgentVersion) where
   ConnReqInv :: P.ConnectionRequestUri 'P.CMInvitation -> ConnReqInv 'AgentV1
-  ConnReqInvV0 :: PL.ConnectionRequest 'PL.CMInvitation -> ConnReqInv 'AgentV0
+
+-- ConnReqInvV0 :: PL.ConnectionRequest 'PL.CMInvitation -> ConnReqInv 'AgentV0
 
 deriving instance Eq (ConnReqInv v)
 
@@ -62,21 +63,24 @@ deriving instance Show AChatConnReqInv
 
 data AChatConnReq (v :: AgentVersion) where
   AChatConnReq :: P.AConnectionRequestUri -> AChatConnReq 'AgentV1
-  AChatConnReqV0 :: PL.AConnectionRequest -> AChatConnReq 'AgentV0
+
+-- AChatConnReqV0 :: PL.AConnectionRequest -> AChatConnReq 'AgentV0
 
 data AAChatConnReq = forall v. AgentVersionI v => ACReq (SAgentVersion v) (AChatConnReq v)
 
 instance AgentVersionI v => StrEncoding (ConnReqInv v) where
   strEncode = \case
     ConnReqInv cReq -> strEncode cReq
-    ConnReqInvV0 cReq -> PL.serializeConnReq' cReq
+
+  -- ConnReqInvV0 cReq -> PL.serializeConnReq' cReq
   strP = (\(ACReqInv _ cReq) -> checkAgentVersion cReq) <$?> strP
 
 instance StrEncoding AChatConnReqInv where
   strEncode (ACReqInv _ cReq) = strEncode cReq
   strP =
     ACReqInv SAgentV1 <$> (ConnReqInv <$> strP)
-      <|> ACReqInv SAgentV0 <$> (ConnReqInvV0 <$> PL.connReqP')
+
+-- <|> ACReqInv SAgentV0 <$> (ConnReqInvV0 <$> PL.connReqP')
 
 instance AgentVersionI v => FromJSON (ConnReqInv v) where
   parseJSON = strParseJSON "ConnReqInv"

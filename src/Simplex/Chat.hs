@@ -49,13 +49,14 @@ import Simplex.Chat.Terminal
 import Simplex.Chat.Types
 import Simplex.Chat.Util (ifM, unlessM, whenM)
 import Simplex.Chat.View
-import "simplexmq-legacy" Simplex.Messaging.Agent
-import "simplexmq-legacy" Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), defaultAgentConfig)
-import "simplexmq-legacy" Simplex.Messaging.Agent.Protocol
+import "simplexmq" Simplex.Messaging.Agent
+import "simplexmq" Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), defaultAgentConfig)
+import "simplexmq" Simplex.Messaging.Agent.Protocol
 import qualified "simplexmq" Simplex.Messaging.Crypto as C
+import Simplex.Messaging.Encoding.String
 import "simplexmq" Simplex.Messaging.Parsers (parseAll)
 import "simplexmq" Simplex.Messaging.Protocol (MsgBody)
-import qualified "simplexmq-legacy" Simplex.Messaging.Protocol as SMP
+import qualified "simplexmq" Simplex.Messaging.Protocol as SMP
 import "simplexmq" Simplex.Messaging.Util (bshow, raceAny_, tryError)
 import System.Exit (exitFailure, exitSuccess)
 import System.FilePath (combine, splitExtensions, takeFileName)
@@ -76,9 +77,9 @@ data ChatCommand
   | MarkdownHelp
   | Welcome
   | AddContact
-  | Connect (Maybe AConnectionRequest)
-  | ConnectAdmin
-  | SendAdminWelcome ContactName
+  | Connect (Maybe AConnectionRequestUri)
+  | --   |   ConnectAdmin
+    SendAdminWelcome ContactName
   | DeleteContact ContactName
   | ListContacts
   | CreateMyAddress
@@ -206,11 +207,11 @@ processChatCommand user@User {userId, profile} = \case
   AddContact -> do
     (connId, cReq) <- withAgent (`createConnection` SCMInvitation)
     withStore $ \st -> createDirectConnection st userId connId
-    showInvitation $ ConnReqInvV0 cReq
+    showInvitation $ ConnReqInv cReq
   Connect (Just (ACR SCMInvitation cReq)) -> connect cReq (XInfo profile) >> showSentConfirmation
   Connect (Just (ACR SCMContact cReq)) -> connect cReq (XContact profile Nothing) >> showSentInvitation
   Connect Nothing -> showInvalidConnReq
-  ConnectAdmin -> connect adminContactReq (XContact profile Nothing) >> showSentInvitation
+  -- ConnectAdmin -> connect adminContactReq (XContact profile Nothing) >> showSentInvitation
   SendAdminWelcome cName -> forM_ adminWelcomeMessages $ sendMessageCmd cName
   DeleteContact cName ->
     withStore (\st -> getContactGroupNames st userId cName) >>= \case
@@ -269,8 +270,8 @@ processChatCommand user@User {userId, profile} = \case
       Nothing -> do
         gVar <- asks idsDrg
         (agentConnId, cReq) <- withAgent (`createConnection` SCMInvitation)
-        GroupMember {memberId} <- withStore $ \st -> createContactMember st gVar user groupId contact memRole agentConnId $ ConnReqInvV0 cReq
-        sendInvitation memberId $ ConnReqInvV0 cReq
+        GroupMember {memberId} <- withStore $ \st -> createContactMember st gVar user groupId contact memRole agentConnId $ ConnReqInv cReq
+        sendInvitation memberId $ ConnReqInv cReq
       Just GroupMember {groupMemberId, memberId, memberStatus}
         | memberStatus == GSMemInvited ->
           withStore (\st -> getMemberInvitation st user groupMemberId) >>= \case
@@ -278,7 +279,7 @@ processChatCommand user@User {userId, profile} = \case
             Nothing -> showCannotResendInvitation gName cName
         | otherwise -> chatError (CEGroupDuplicateMember cName)
   JoinGroup gName -> do
-    ReceivedGroupInvitation {fromMember, userMember, connRequest = ConnReqInvV0 connRequest} <- withStore $ \st -> getGroupInvitation st user gName
+    ReceivedGroupInvitation {fromMember, userMember, connRequest = ConnReqInv connRequest} <- withStore $ \st -> getGroupInvitation st user gName
     agentConnId <- withAgent $ \a -> joinConnection a connRequest . directMessage . XGrpAcpt $ memberId (userMember :: GroupMember)
     withStore $ \st -> do
       createMemberConnection st userId fromMember agentConnId
@@ -328,7 +329,7 @@ processChatCommand user@User {userId, profile} = \case
     (fileSize, chSize) <- checkSndFile f
     contact <- withStore $ \st -> getContact st userId cName
     (agentConnId, fileConnReq) <- withAgent (`createConnection` SCMInvitation)
-    let fileInv = FileInvitation {fileName = takeFileName f, fileSize, fileConnReq = ConnReqInvV0 fileConnReq}
+    let fileInv = FileInvitation {fileName = takeFileName f, fileSize, fileConnReq = ConnReqInv fileConnReq}
     SndFileTransfer {fileId} <- withStore $ \st ->
       createSndFileTransfer st userId contact f fileInv agentConnId chSize
     sendDirectMessage (contactConn contact) $ XFile fileInv
@@ -341,7 +342,7 @@ processChatCommand user@User {userId, profile} = \case
     let fileName = takeFileName f
     ms <- forM (filter memberActive members) $ \m -> do
       (connId, fileConnReq) <- withAgent (`createConnection` SCMInvitation)
-      pure (m, connId, FileInvitation {fileName, fileSize, fileConnReq = ConnReqInvV0 fileConnReq})
+      pure (m, connId, FileInvitation {fileName, fileSize, fileConnReq = ConnReqInv fileConnReq})
     fileId <- withStore $ \st -> createSndGroupFileTransfer st userId group ms f fileSize chSize
     -- TODO sendGroupMessage - same file invitation to all
     forM_ ms $ \(m, _, fileInv) ->
@@ -349,7 +350,7 @@ processChatCommand user@User {userId, profile} = \case
     showSentFileInfo fileId
     setActive $ ActiveG gName
   ReceiveFile fileId filePath_ -> do
-    ft@RcvFileTransfer {fileInvitation = FileInvitation {fileName, fileConnReq = ConnReqInvV0 fileConnReq}, fileStatus} <- withStore $ \st -> getRcvFileTransfer st userId fileId
+    ft@RcvFileTransfer {fileInvitation = FileInvitation {fileName, fileConnReq = ConnReqInv fileConnReq}, fileStatus} <- withStore $ \st -> getRcvFileTransfer st userId fileId
     unless (fileStatus == RFSNew) . chatError $ CEFileAlreadyReceiving fileName
     tryError (withAgent $ \a -> joinConnection a fileConnReq . directMessage $ XFileAcpt fileName) >>= \case
       Right agentConnId -> do
@@ -379,7 +380,7 @@ processChatCommand user@User {userId, profile} = \case
   QuitChat -> liftIO exitSuccess
   ShowVersion -> printToView clientVersionInfo
   where
-    connect :: ConnectionRequest c -> ChatMsgEvent -> m ()
+    connect :: ConnectionRequestUri c -> ChatMsgEvent -> m ()
     connect cReq msg = do
       connId <- withAgent $ \a -> joinConnection a cReq $ directMessage msg
       withStore $ \st -> createDirectConnection st userId connId
@@ -925,7 +926,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
               (groupConnId, groupConnReq) <- withAgent (`createConnection` SCMInvitation)
               (directConnId, directConnReq) <- withAgent (`createConnection` SCMInvitation)
               newMember <- withStore $ \st -> createIntroReMember st user group m memInfo groupConnId directConnId
-              let msg = XGrpMemInv memId IntroInvitation {groupConnReq = ConnReqInvV0 groupConnReq, directConnReq = ConnReqInvV0 directConnReq}
+              let msg = XGrpMemInv memId IntroInvitation {groupConnReq = ConnReqInv groupConnReq, directConnReq = ConnReqInv directConnReq}
               sendDirectMessage conn msg
               withStore $ \st -> updateGroupMemberStatus st userId newMember GSMemIntroInvited
         _ -> messageError "x.grp.mem.intro can be only sent by host member"
@@ -947,7 +948,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
         _ -> messageError "x.grp.mem.inv can be only sent by invitee member"
 
     xGrpMemFwd :: GroupName -> GroupMember -> MemberInfo -> IntroInvitation -> m ()
-    xGrpMemFwd gName m memInfo@(MemberInfo memId _ _) introInv@IntroInvitation {groupConnReq = ConnReqInvV0 groupConnReq, directConnReq = ConnReqInvV0 directConnReq} = do
+    xGrpMemFwd gName m memInfo@(MemberInfo memId _ _) introInv@IntroInvitation {groupConnReq = ConnReqInv groupConnReq, directConnReq = ConnReqInv directConnReq} = do
       group@Group {membership} <- withStore $ \st -> getGroup st user gName
       toMember <- case find (sameMemberId memId) $ members group of
         -- TODO if the missed messages are correctly sent as soon as there is connection before anything else is sent
@@ -1247,7 +1248,7 @@ chatCommandP =
     <|> ("/groups" <|> "/gs") $> ListGroups
     <|> A.char '#' *> (SendGroupMessage <$> displayName <* A.space <*> A.takeByteString)
     <|> ("/contacts" <|> "/cs") $> ListContacts
-    <|> ("/connect " <|> "/c ") *> (Connect <$> ((Just <$> connReqP) <|> A.takeByteString $> Nothing))
+    <|> ("/connect " <|> "/c ") *> (Connect <$> ((Just <$> strP) <|> A.takeByteString $> Nothing))
     <|> ("/connect" <|> "/c") $> AddContact
     <|> ("/delete @" <|> "/delete " <|> "/d @" <|> "/d ") *> (DeleteContact <$> displayName)
     <|> A.char '@' *> (SendMessage <$> displayName <*> (A.space *> A.takeByteString))
@@ -1257,7 +1258,7 @@ chatCommandP =
     <|> ("/fcancel " <|> "/fc ") *> (CancelFile <$> A.decimal)
     <|> ("/fstatus " <|> "/fs ") *> (FileStatus <$> A.decimal)
     <|> "/admin_welcome " *> (SendAdminWelcome <$> displayName)
-    <|> "/admin" $> ConnectAdmin
+    -- <|> "/admin" $> ConnectAdmin
     <|> ("/address" <|> "/ad") $> CreateMyAddress
     <|> ("/delete_address" <|> "/da") $> DeleteMyAddress
     <|> ("/show_address" <|> "/sa") $> ShowMyAddress
@@ -1290,6 +1291,6 @@ chatCommandP =
         <|> (" member" $> GRMember)
         <|> pure GRAdmin
 
-adminContactReq :: ConnectionRequest 'CMContact
-adminContactReq =
-  either error id $ parseAll connReqP' "https://simplex.chat/contact#/?smp=smp%3A%2F%2Fnxc7HnrnM8dOKgkMp008ub_9o9LXJlxlMrMpR-mfMQw%3D%40smp3.simplex.im%2F-TXnePw5eH5-4L7B%23&e2e=rsa%3AMIIBoDANBgkqhkiG9w0BAQEFAAOCAY0AMIIBiAKCAQEA6vpcsZggnYL38Qa2G5YU0W5uqnV8WAq_S3flIFU2kx4qW-aokVT8fo0CLJXv9aagdHObFfhc9SXcZPcm4T2NLnafKTgQa_HYFfj764l6cHkbSI-4JBE1gyhtaapsvrDGIdoiGDLgsF3AJVjqs8gavkuTsmw035aWMH-pkpc4qGlEWpNWp1Nn-7O4sdIIQ7yN48jsdCfeIY-BIk3kFR6s4oQOgiOcnir8e3x5tTuRMX1KWSiuzuqLHqgmcI1IqcPJPrBoTQLbXXEMGG1RsvIudxR03jejXXbQvlxXlNNrxwkniEe-P0rApGuCyv2NRMb4n0Wd3ZwewH7X-xtr16XNbQKBgDouGUHD1C55jB-w8W8VJRhFZS2xIYka9gJH1jjCFxHFzgjo69A_sObIamND1pF_JOzj_XCoA1fDICF95XbfS0rq9iS6xvX6M8Muq8QiJsfD5bRt5nh-Y3GK5rAFXS0ZtyOeh07iMLAMJ_EFxBQuKKDRu9_9KAvLL_plU0PuaMH3"
+-- adminContactReq :: ConnReqContact
+-- adminContactReq =
+--   either error id $ parseAll connReqP' "https://simplex.chat/contact#/?smp=smp%3A%2F%2Fnxc7HnrnM8dOKgkMp008ub_9o9LXJlxlMrMpR-mfMQw%3D%40smp3.simplex.im%2F-TXnePw5eH5-4L7B%23&e2e=rsa%3AMIIBoDANBgkqhkiG9w0BAQEFAAOCAY0AMIIBiAKCAQEA6vpcsZggnYL38Qa2G5YU0W5uqnV8WAq_S3flIFU2kx4qW-aokVT8fo0CLJXv9aagdHObFfhc9SXcZPcm4T2NLnafKTgQa_HYFfj764l6cHkbSI-4JBE1gyhtaapsvrDGIdoiGDLgsF3AJVjqs8gavkuTsmw035aWMH-pkpc4qGlEWpNWp1Nn-7O4sdIIQ7yN48jsdCfeIY-BIk3kFR6s4oQOgiOcnir8e3x5tTuRMX1KWSiuzuqLHqgmcI1IqcPJPrBoTQLbXXEMGG1RsvIudxR03jejXXbQvlxXlNNrxwkniEe-P0rApGuCyv2NRMb4n0Wd3ZwewH7X-xtr16XNbQKBgDouGUHD1C55jB-w8W8VJRhFZS2xIYka9gJH1jjCFxHFzgjo69A_sObIamND1pF_JOzj_XCoA1fDICF95XbfS0rq9iS6xvX6M8Muq8QiJsfD5bRt5nh-Y3GK5rAFXS0ZtyOeh07iMLAMJ_EFxBQuKKDRu9_9KAvLL_plU0PuaMH3"

@@ -32,7 +32,7 @@ import Simplex.Chat.Protocol.Encoding
 import Simplex.Chat.Protocol.Legacy
 import Simplex.Chat.Types
 import Simplex.Chat.Util (safeDecodeUtf8)
-import "simplexmq-legacy" Simplex.Messaging.Agent.Protocol
+import "simplexmq" Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Encoding.String (StrEncoding (..))
 import "simplexmq" Simplex.Messaging.Parsers (parseAll)
 import "simplexmq" Simplex.Messaging.Util (bshow, (<$?>))

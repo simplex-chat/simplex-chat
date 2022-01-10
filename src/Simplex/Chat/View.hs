@@ -104,14 +104,14 @@ import Simplex.Chat.Styled
 import Simplex.Chat.Terminal (printToTerminal)
 import Simplex.Chat.Types
 import Simplex.Chat.Util (safeDecodeUtf8)
-import "simplexmq-legacy" Simplex.Messaging.Agent.Protocol
+import "simplexmq" Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Encoding.String
-import qualified "simplexmq-legacy" Simplex.Messaging.Protocol as SMP
+import qualified "simplexmq" Simplex.Messaging.Protocol as SMP
 import System.Console.ANSI.Types
 
 type ChatReader m = (MonadUnliftIO m, MonadReader ChatController m)
 
-showInvitation :: ChatReader m => ConnReqInv 'AgentV0 -> m ()
+showInvitation :: ChatReader m => ConnReqInv 'AgentV1 -> m ()
 showInvitation = printToView . connReqInvitation_
 
 showSentConfirmation :: ChatReader m => m ()
@@ -328,7 +328,7 @@ showContactUpdated = printToView .: contactUpdated
 showMessageError :: ChatReader m => Text -> Text -> m ()
 showMessageError = printToView .: messageError
 
-connReqInvitation_ :: ConnReqInv 'AgentV0 -> [StyledString]
+connReqInvitation_ :: ConnReqInv 'AgentV1 -> [StyledString]
 connReqInvitation_ cReq =
   [ "pass this invitation link to your contact (via another channel): ",
     "",
@@ -384,7 +384,7 @@ connReqContact_ :: StyledString -> ConnReqContact -> [StyledString]
 connReqContact_ intro cReq =
   [ intro,
     "",
-    (plain . serializeConnReq') cReq,
+    (plain . strEncode) cReq,
     "",
     "Anybody can send you contact requests with: " <> highlight' "/c <contact_link_above>",
     "to show it again: " <> highlight' "/sa",

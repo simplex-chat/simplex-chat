@@ -34,8 +34,8 @@ import Database.SQLite.Simple.Ok (Ok (Ok))
 import Database.SQLite.Simple.ToField (ToField (..))
 import GHC.Generics
 import Simplex.Chat.SimpleXMQ
-import "simplexmq-legacy" Simplex.Messaging.Agent.Protocol (AgentMsgId, ConnId, ConnectionMode (..), ConnectionRequest, InvitationId, MsgMeta (..), serializeMsgIntegrity)
-import "simplexmq-legacy" Simplex.Messaging.Agent.Store.SQLite (fromTextField_)
+import "simplexmq" Simplex.Messaging.Agent.Protocol (AgentMsgId, ConnId, ConnectionMode (..), ConnectionRequestUri, InvitationId, MsgMeta (..), serializeMsgIntegrity)
+import "simplexmq" Simplex.Messaging.Agent.Store.SQLite (fromTextField_)
 import Simplex.Messaging.Encoding.String
 import "simplexmq" Simplex.Messaging.Protocol (MsgBody)
 import "simplexmq" Simplex.Messaging.Util ((<$?>))
@@ -128,7 +128,7 @@ instance ToJSON GroupProfile where toEncoding = J.genericToEncoding J.defaultOpt
 data GroupInvitation = GroupInvitation
   { fromMember :: MemberIdRole,
     invitedMember :: MemberIdRole,
-    connRequest :: ConnReqInv 'AgentV0,
+    connRequest :: ConnReqInv 'AgentV1,
     groupProfile :: GroupProfile
   }
   deriving (Eq, Show, Generic, FromJSON)
@@ -144,8 +144,8 @@ data MemberIdRole = MemberIdRole
 instance ToJSON MemberIdRole where toEncoding = J.genericToEncoding J.defaultOptions
 
 data IntroInvitation = IntroInvitation
-  { groupConnReq :: ConnReqInv 'AgentV0,
-    directConnReq :: ConnReqInv 'AgentV0
+  { groupConnReq :: ConnReqInv 'AgentV1,
+    directConnReq :: ConnReqInv 'AgentV1
   }
   deriving (Eq, Show, Generic, FromJSON)
 
@@ -167,7 +167,7 @@ memberInfo GroupMember {memberId, memberRole, memberProfile} =
 data ReceivedGroupInvitation = ReceivedGroupInvitation
   { fromMember :: GroupMember,
     userMember :: GroupMember,
-    connRequest :: ConnReqInv 'AgentV0,
+    connRequest :: ConnReqInv 'AgentV1,
     groupProfile :: GroupProfile
   }
   deriving (Eq, Show)
@@ -423,7 +423,7 @@ data SndFileTransfer = SndFileTransfer
 data FileInvitation = FileInvitation
   { fileName :: String,
     fileSize :: Integer,
-    fileConnReq :: ConnReqInv 'AgentV0
+    fileConnReq :: ConnReqInv 'AgentV1
   }
   deriving (Eq, Show, Generic)
 
@@ -496,7 +496,7 @@ serializeFileStatus = \case
 data RcvChunkStatus = RcvChunkOk | RcvChunkFinal | RcvChunkDuplicate | RcvChunkError
   deriving (Eq, Show)
 
-type ConnReqContact = ConnectionRequest 'CMContact
+type ConnReqContact = ConnectionRequestUri 'CMContact
 
 data Connection = Connection
   { connId :: Int64,
@@ -695,7 +695,7 @@ data MsgMetaJSON = MsgMetaJSON
 instance ToJSON MsgMetaJSON where toEncoding = J.genericToEncoding J.defaultOptions
 
 msgMetaToJson :: MsgMeta -> MsgMetaJSON
-msgMetaToJson MsgMeta {integrity, recipient = (rcvId, rcvTs), broker = (serverId, serverTs), sender = (sndId, _)} =
+msgMetaToJson MsgMeta {integrity, recipient = (rcvId, rcvTs), broker = (serverId, serverTs), sndMsgId = sndId} =
   MsgMetaJSON
     { integrity = (decodeLatin1 . serializeMsgIntegrity) integrity,
       rcvId,
