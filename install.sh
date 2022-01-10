@@ -28,7 +28,7 @@ fi
 
 # If chat binary not found, check v0 initial migration and offer to abort or continue
 if [[ -z $binary ]]; then
-	agent_db="~/.simplex/simplex.agent.db"
+	agent_db="$HOME/.simplex/simplex.agent.db"
 	if [[ \
 		-f "$agent_db" && \
 		$(echo "select * from migrations;" | sqlite3 $agent_db | grep 20210101_initial) \
