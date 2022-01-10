@@ -32,12 +32,11 @@ if chat_path is not nothing then
     ask a/c
       on abort: exit 1
       on continue: move chat_path to chat_path_v0
-  elif initial2021 migration exists then
-    warn2
-    ask a/c
-      on abort: exit 1
-      on continue: break
-  fi
+elif initial2021 migration exists then
+  warn2
+  ask a/c
+    on abort: exit 1
+    on continue: break
 fi
 
 # Prepare to upgrade from v0 to v1
