@@ -143,18 +143,20 @@ Events:
 "event": "x.grp.inv" // XGrpInv
 "params":            // GroupInvitation
 {
-  "fromMember": {
-    "memberId": "<from_member ID>",
-    "memberRole": "<from_member role>"
-  },
-  "invitedMember": {
-    "memberId": "<invited_member ID>",
-    "memberRole": "<invited_member role>"
-  },
-  "connRequest": "<conn request>",
-  "groupProfile": {
-    "displayName": "<display name>",
-    "fullName": "<full name>"
+  "groupInvitation": {
+    "fromMember": {
+      "memberId": "<from_member ID>",
+      "memberRole": "<from_member role>"
+    },
+    "invitedMember": {
+      "memberId": "<invited_member ID>",
+      "memberRole": "<invited_member role>"
+    },
+    "connRequest": "<conn request>",
+    "groupProfile": {
+      "displayName": "<display name>",
+      "fullName": "<full name>"
+    }
   }
 }
 

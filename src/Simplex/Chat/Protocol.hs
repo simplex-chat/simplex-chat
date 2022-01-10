@@ -223,7 +223,7 @@ appToChatMessage AppMessage {msgId, event, params, dag} = do
       XFileAcpt_ -> XFileAcpt <$> p "fileName"
       XInfo_ -> XInfo <$> p "profile"
       XContact_ -> throwError ""
-      XGrpInv_ -> XGrpInv <$> JT.parseEither J.parseJSON (J.Object params)
+      XGrpInv_ -> XGrpInv <$> p "groupInvitation"
       XGrpAcpt_ -> XGrpAcpt <$> p "memberId"
       XGrpMemNew_ -> XGrpMemNew <$> p "memberInfo"
       XGrpMemIntro_ -> XGrpMemIntro <$> p "memberInfo"
@@ -256,7 +256,7 @@ chatToAppMessage ChatMessage {chatMsgId, chatMsgEvent, chatDAG} =
       XFileAcpt fileName -> o ["fileName" .= fileName]
       XInfo profile -> o ["profile" .= profile]
       -- XContact _ _ -> throwError ""
-      -- XGrpInv _ -> XGrpInv <$> JT.parseEither J.parseJSON (J.Object params)
+      XGrpInv groupInv -> o ["groupInvitation" .= groupInv]
       XGrpAcpt memId -> o ["memberId" .= memId]
       XGrpMemNew memInfo -> o ["memberInfo" .= memInfo]
       XGrpMemIntro memInfo -> o ["memberInfo" .= memInfo]
