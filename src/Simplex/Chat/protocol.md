@@ -127,7 +127,7 @@ Events:
   }
 }
 
-"event": "x.con" // XContact; TODO rename into x.contact?
+"event": "x.contact" // XContact
 "params":        // Profile (Maybe MsgContent)
 {
   "profile": {

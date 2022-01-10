@@ -27,8 +27,6 @@ library
       Simplex.Chat.Notification
       Simplex.Chat.Options
       Simplex.Chat.Protocol
-      Simplex.Chat.Protocol.Encoding
-      Simplex.Chat.Protocol.Legacy
       Simplex.Chat.Store
       Simplex.Chat.Styled
       Simplex.Chat.Terminal

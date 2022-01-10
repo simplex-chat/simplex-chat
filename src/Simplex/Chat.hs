@@ -40,7 +40,6 @@ import Simplex.Chat.Input
 import Simplex.Chat.Notification
 import Simplex.Chat.Options (ChatOpts (..))
 import Simplex.Chat.Protocol
-import Simplex.Chat.Protocol.Legacy
 import Simplex.Chat.Store
 import Simplex.Chat.Styled (plain)
 import Simplex.Chat.Terminal
@@ -119,7 +118,7 @@ defaultChatConfig =
           },
       dbPoolSize = 1,
       tbqSize = 16,
-      fileChunkSize = 7050
+      fileChunkSize = 15000
     }
 
 logCfg :: LogConfig
@@ -320,7 +319,7 @@ processChatCommand user@User {userId, profile} = \case
     -- TODO save pending message delivery for members without connections
     Group {members, membership} <- withStore $ \st -> getGroup st user gName
     unless (memberActive membership) $ chatError CEGroupMemberUserRemoved
-    let msgEvent = XMsgNew $ MsgContent MTText [] [MsgContentBody {contentType = SimplexContentType XCText, contentData = msg}]
+    let msgEvent = XMsgNew . MCText $ safeDecodeUtf8 msg
     sendGroupMessage members msgEvent
     setActive $ ActiveG gName
   SendFile cName f -> do
@@ -385,7 +384,7 @@ processChatCommand user@User {userId, profile} = \case
     sendMessageCmd :: ContactName -> ByteString -> m ()
     sendMessageCmd cName msg = do
       contact <- withStore $ \st -> getContact st userId cName
-      let msgEvent = XMsgNew $ MsgContent MTText [] [MsgContentBody {contentType = SimplexContentType XCText, contentData = msg}]
+      let msgEvent = XMsgNew . MCText $ safeDecodeUtf8 msg
       sendDirectMessage (contactConn contact) msgEvent
       setActive $ ActiveC cName
     contactMember :: Contact -> [GroupMember] -> Maybe GroupMember
@@ -556,7 +555,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
           chatMsgEvent <- saveRcvMSG conn meta msgBody
           withAckMessage agentConnId meta $
             case chatMsgEvent of
-              XMsgNew (MsgContent MTText [] body) -> newTextMessage c meta $ find (isSimplexContentType XCText) body
+              XMsgNew (MCText text) -> newTextMessage c meta text
               XFile fInv -> processFileInvitation ct meta fInv
               XInfo p -> xInfo ct p
               XGrpInv gInv -> processGroupInvitation ct gInv
@@ -680,8 +679,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
         chatMsgEvent <- saveRcvMSG conn meta msgBody
         withAckMessage agentConnId meta $
           case chatMsgEvent of
-            XMsgNew (MsgContent MTText [] body) ->
-              newGroupTextMessage gName m meta $ find (isSimplexContentType XCText) body
+            XMsgNew (MCText text) -> newGroupTextMessage gName m meta text
             XFile fInv -> processGroupFileInvitation gName m meta fInv
             XGrpMemNew memInfo -> xGrpMemNew gName m memInfo
             XGrpMemIntro memInfo -> xGrpMemIntro conn gName m memInfo
@@ -823,23 +821,17 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
     messageError :: Text -> m ()
     messageError = showMessageError "error"
 
-    newTextMessage :: ContactName -> MsgMeta -> Maybe MsgContentBody -> m ()
-    newTextMessage c meta = \case
-      Just MsgContentBody {contentData = bs} -> do
-        let text = safeDecodeUtf8 bs
-        showReceivedMessage c (snd $ broker meta) (msgPlain text) (integrity (meta :: MsgMeta))
-        showToast (c <> "> ") text
-        setActive $ ActiveC c
-      _ -> messageError "x.msg.new: no expected message body"
+    newTextMessage :: ContactName -> MsgMeta -> Text -> m ()
+    newTextMessage c meta text = do
+      showReceivedMessage c (snd $ broker meta) (msgPlain text) (integrity (meta :: MsgMeta))
+      showToast (c <> "> ") text
+      setActive $ ActiveC c
 
-    newGroupTextMessage :: GroupName -> GroupMember -> MsgMeta -> Maybe MsgContentBody -> m ()
-    newGroupTextMessage gName GroupMember {localDisplayName = c} meta = \case
-      Just MsgContentBody {contentData = bs} -> do
-        let text = safeDecodeUtf8 bs
-        showReceivedGroupMessage gName c (snd $ broker meta) (msgPlain text) (integrity (meta :: MsgMeta))
-        showToast ("#" <> gName <> " " <> c <> "> ") text
-        setActive $ ActiveG gName
-      _ -> messageError "x.msg.new: no expected message body"
+    newGroupTextMessage :: GroupName -> GroupMember -> MsgMeta -> Text -> m ()
+    newGroupTextMessage gName GroupMember {localDisplayName = c} meta text = do
+      showReceivedGroupMessage gName c (snd $ broker meta) (msgPlain text) (integrity (meta :: MsgMeta))
+      showToast ("#" <> gName <> " " <> c <> "> ") text
+      setActive $ ActiveG gName
 
     processFileInvitation :: Contact -> MsgMeta -> FileInvitation -> m ()
     processFileInvitation contact@Contact {localDisplayName = c} meta fInv = do
@@ -1000,7 +992,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
       showGroupDeleted gName m
 
 parseChatMessage :: ByteString -> Either ChatError ChatMessage
-parseChatMessage msgBody = first ChatErrorMessage (parseAll rawChatMessageP msgBody >>= rawToChatMessage)
+parseChatMessage = first ChatErrorMessage . strDecode
 
 sendFileChunk :: ChatMonad m => SndFileTransfer -> m ()
 sendFileChunk ft@SndFileTransfer {fileId, fileStatus, agentConnId} =
@@ -1116,9 +1108,7 @@ sendDirectMessage conn chatMsgEvent = do
   deliverMessage conn msgBody msgId
 
 directMessage :: ChatMsgEvent -> ByteString
-directMessage chatMsgEvent =
-  serializeRawChatMessage $
-    chatMessageToRaw ChatMessage {chatMsgId = "", chatMsgEvent, chatDAG = Nothing}
+directMessage chatMsgEvent = strEncode ChatMessage {chatMsgEvent}
 
 deliverMessage :: ChatMonad m => Connection -> MsgBody -> MessageId -> m ()
 deliverMessage Connection {connId, agentConnId} msgBody msgId = do
