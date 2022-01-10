@@ -6,7 +6,6 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE PackageImports #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -124,13 +123,12 @@ import Database.SQLite.Simple (NamedParam (..), Only (..), SQLError, (:.) (..))
 import qualified Database.SQLite.Simple as DB
 import Database.SQLite.Simple.QQ (sql)
 import Simplex.Chat.Protocol
-import Simplex.Chat.SimpleXMQ (AgentVersion (..), ConnReqInv)
 import Simplex.Chat.Types
-import "simplexmq" Simplex.Messaging.Agent.Protocol (AParty (..), AgentMsgId, ConnId, InvitationId, MsgMeta (..))
-import "simplexmq" Simplex.Messaging.Agent.Store.SQLite (SQLiteStore (..), createSQLiteStore, withTransaction)
-import "simplexmq" Simplex.Messaging.Agent.Store.SQLite.Migrations (Migration (..))
-import qualified "simplexmq" Simplex.Messaging.Crypto as C
-import "simplexmq" Simplex.Messaging.Util (bshow, liftIOEither, (<$$>))
+import Simplex.Messaging.Agent.Protocol (AParty (..), AgentMsgId, ConnId, InvitationId, MsgMeta (..))
+import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore (..), createSQLiteStore, withTransaction)
+import Simplex.Messaging.Agent.Store.SQLite.Migrations (Migration (..))
+import qualified Simplex.Messaging.Crypto as C
+import Simplex.Messaging.Util (bshow, liftIOEither, (<$$>))
 import System.FilePath (takeBaseName, takeExtension, takeFileName)
 import UnliftIO.STM
 
@@ -926,14 +924,14 @@ getGroup :: StoreMonad m => SQLiteStore -> User -> GroupName -> m Group
 getGroup st user localDisplayName =
   liftIOEither . withTransaction st $ \db -> runExceptT $ fst <$> getGroup_ db user localDisplayName
 
-getGroup_ :: DB.Connection -> User -> GroupName -> ExceptT StoreError IO (Group, Maybe (ConnReqInv 'AgentV1))
+getGroup_ :: DB.Connection -> User -> GroupName -> ExceptT StoreError IO (Group, Maybe ConnReqInvitation)
 getGroup_ db User {userId, userContactId} localDisplayName = do
   (g@Group {groupId}, cReq) <- getGroupRec_
   allMembers <- getMembers_ groupId
   (members, membership) <- liftEither $ splitUserMember_ allMembers
   pure (g {members, membership}, cReq)
   where
-    getGroupRec_ :: ExceptT StoreError IO (Group, Maybe (ConnReqInv 'AgentV1))
+    getGroupRec_ :: ExceptT StoreError IO (Group, Maybe ConnReqInvitation)
     getGroupRec_ = ExceptT $ do
       toGroup
         <$> DB.query
@@ -945,7 +943,7 @@ getGroup_ db User {userId, userContactId} localDisplayName = do
             WHERE g.local_display_name = ? AND g.user_id = ?
           |]
           (localDisplayName, userId)
-    toGroup :: [(Int64, GroupName, Text, Maybe (ConnReqInv 'AgentV1))] -> Either StoreError (Group, Maybe (ConnReqInv 'AgentV1))
+    toGroup :: [(Int64, GroupName, Text, Maybe ConnReqInvitation)] -> Either StoreError (Group, Maybe ConnReqInvitation)
     toGroup [(groupId, displayName, fullName, cReq)] =
       let groupProfile = GroupProfile {displayName, fullName}
        in Right (Group {groupId, localDisplayName, groupProfile, members = undefined, membership = undefined}, cReq)
@@ -1033,7 +1031,7 @@ toGroupMember userContactId (groupMemberId, groupId, memberId, memberRole, membe
       activeConn = Nothing
    in GroupMember {..}
 
-createContactMember :: StoreMonad m => SQLiteStore -> TVar ChaChaDRG -> User -> Int64 -> Contact -> GroupMemberRole -> ConnId -> ConnReqInv 'AgentV1 -> m GroupMember
+createContactMember :: StoreMonad m => SQLiteStore -> TVar ChaChaDRG -> User -> Int64 -> Contact -> GroupMemberRole -> ConnId -> ConnReqInvitation -> m GroupMember
 createContactMember st gVar user groupId contact memberRole agentConnId connRequest =
   liftIOEither . withTransaction st $ \db ->
     createWithRandomId gVar $ \memId -> do
@@ -1041,7 +1039,7 @@ createContactMember st gVar user groupId contact memberRole agentConnId connRequ
       void $ createMemberConnection_ db (userId user) groupMemberId agentConnId Nothing 0
       pure member
 
-getMemberInvitation :: StoreMonad m => SQLiteStore -> User -> Int64 -> m (Maybe (ConnReqInv 'AgentV1))
+getMemberInvitation :: StoreMonad m => SQLiteStore -> User -> Int64 -> m (Maybe ConnReqInvitation)
 getMemberInvitation st User {userId} groupMemberId =
   liftIO . withTransaction st $ \db ->
     join . listToMaybe . map fromOnly
@@ -1204,7 +1202,7 @@ getIntroduction_ db reMember toMember = ExceptT $ do
       |]
       (groupMemberId reMember, groupMemberId toMember)
   where
-    toIntro :: [(Int64, Maybe (ConnReqInv 'AgentV1), Maybe (ConnReqInv 'AgentV1), GroupMemberIntroStatus)] -> Either StoreError GroupMemberIntro
+    toIntro :: [(Int64, Maybe ConnReqInvitation, Maybe ConnReqInvitation, GroupMemberIntroStatus)] -> Either StoreError GroupMemberIntro
     toIntro [(introId, groupConnReq, directConnReq, introStatus)] =
       let introInvitation = IntroInvitation <$> groupConnReq <*> directConnReq
        in Right GroupMemberIntro {introId, reMember, toMember, introStatus, introInvitation}
@@ -1275,7 +1273,7 @@ createContactMember_ :: IsContact a => DB.Connection -> User -> Int64 -> a -> Me
 createContactMember_ db user groupId userOrContact MemberIdRole {memberId, memberRole} memberCategory memberStatus invitedBy =
   createContactMemberInv_ db user groupId userOrContact MemberIdRole {memberId, memberRole} memberCategory memberStatus invitedBy Nothing
 
-createContactMemberInv_ :: IsContact a => DB.Connection -> User -> Int64 -> a -> MemberIdRole -> GroupMemberCategory -> GroupMemberStatus -> InvitedBy -> Maybe (ConnReqInv 'AgentV1) -> IO GroupMember
+createContactMemberInv_ :: IsContact a => DB.Connection -> User -> Int64 -> a -> MemberIdRole -> GroupMemberCategory -> GroupMemberStatus -> InvitedBy -> Maybe ConnReqInvitation -> IO GroupMember
 createContactMemberInv_ db User {userId, userContactId} groupId userOrContact MemberIdRole {memberId, memberRole} memberCategory memberStatus invitedBy connRequest = do
   insertMember_
   groupMemberId <- insertedRowId db
@@ -1488,7 +1486,7 @@ getRcvFileTransfer_ db userId fileId =
       (userId, fileId)
   where
     rcvFileTransfer ::
-      [(FileStatus, ConnReqInv 'AgentV1, String, Integer, Integer, Maybe ContactName, Maybe ContactName, Maybe FilePath, Maybe Int64, Maybe ConnId)] ->
+      [(FileStatus, ConnReqInvitation, String, Integer, Integer, Maybe ContactName, Maybe ContactName, Maybe FilePath, Maybe Int64, Maybe ConnId)] ->
       Either StoreError RcvFileTransfer
     rcvFileTransfer [(fileStatus', fileConnReq, fileName, fileSize, chunkSize, contactName_, memberName_, filePath_, connId_, agentConnId_)] =
       let fileInv = FileInvitation {fileName, fileSize, fileConnReq}

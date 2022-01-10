@@ -7,7 +7,6 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE PackageImports #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 
@@ -33,12 +32,11 @@ import Database.SQLite.Simple.Internal (Field (..))
 import Database.SQLite.Simple.Ok (Ok (Ok))
 import Database.SQLite.Simple.ToField (ToField (..))
 import GHC.Generics
-import Simplex.Chat.SimpleXMQ
-import "simplexmq" Simplex.Messaging.Agent.Protocol (AgentMsgId, ConnId, ConnectionMode (..), ConnectionRequestUri, InvitationId, MsgMeta (..), serializeMsgIntegrity)
-import "simplexmq" Simplex.Messaging.Agent.Store.SQLite (fromTextField_)
+import Simplex.Messaging.Agent.Protocol (AgentMsgId, ConnId, ConnectionMode (..), ConnectionRequestUri, InvitationId, MsgMeta (..), serializeMsgIntegrity)
+import Simplex.Messaging.Agent.Store.SQLite (fromTextField_)
 import Simplex.Messaging.Encoding.String
-import "simplexmq" Simplex.Messaging.Protocol (MsgBody)
-import "simplexmq" Simplex.Messaging.Util ((<$?>))
+import Simplex.Messaging.Protocol (MsgBody)
+import Simplex.Messaging.Util ((<$?>))
 
 class IsContact a where
   contactId' :: a -> Int64
@@ -128,7 +126,7 @@ instance ToJSON GroupProfile where toEncoding = J.genericToEncoding J.defaultOpt
 data GroupInvitation = GroupInvitation
   { fromMember :: MemberIdRole,
     invitedMember :: MemberIdRole,
-    connRequest :: ConnReqInv 'AgentV1,
+    connRequest :: ConnReqInvitation,
     groupProfile :: GroupProfile
   }
   deriving (Eq, Show, Generic, FromJSON)
@@ -144,8 +142,8 @@ data MemberIdRole = MemberIdRole
 instance ToJSON MemberIdRole where toEncoding = J.genericToEncoding J.defaultOptions
 
 data IntroInvitation = IntroInvitation
-  { groupConnReq :: ConnReqInv 'AgentV1,
-    directConnReq :: ConnReqInv 'AgentV1
+  { groupConnReq :: ConnReqInvitation,
+    directConnReq :: ConnReqInvitation
   }
   deriving (Eq, Show, Generic, FromJSON)
 
@@ -167,7 +165,7 @@ memberInfo GroupMember {memberId, memberRole, memberProfile} =
 data ReceivedGroupInvitation = ReceivedGroupInvitation
   { fromMember :: GroupMember,
     userMember :: GroupMember,
-    connRequest :: ConnReqInv 'AgentV1,
+    connRequest :: ConnReqInvitation,
     groupProfile :: GroupProfile
   }
   deriving (Eq, Show)
@@ -423,7 +421,7 @@ data SndFileTransfer = SndFileTransfer
 data FileInvitation = FileInvitation
   { fileName :: String,
     fileSize :: Integer,
-    fileConnReq :: ConnReqInv 'AgentV1
+    fileConnReq :: ConnReqInvitation
   }
   deriving (Eq, Show, Generic)
 
@@ -495,6 +493,8 @@ serializeFileStatus = \case
 
 data RcvChunkStatus = RcvChunkOk | RcvChunkFinal | RcvChunkDuplicate | RcvChunkError
   deriving (Eq, Show)
+
+type ConnReqInvitation = ConnectionRequestUri 'CMInvitation
 
 type ConnReqContact = ConnectionRequestUri 'CMContact
 

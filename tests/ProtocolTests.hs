@@ -1,12 +1,11 @@
 {-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE PackageImports #-}
 
 module ProtocolTests where
 
 import Data.ByteString.Char8 (ByteString)
 import Simplex.Chat.Protocol.Legacy
-import "simplexmq" Simplex.Messaging.Parsers (parseAll)
+import Simplex.Messaging.Parsers (parseAll)
 import Test.Hspec
 
 protocolTests :: Spec

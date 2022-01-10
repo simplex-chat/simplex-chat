@@ -3,7 +3,6 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE PackageImports #-}
 {-# LANGUAGE TypeApplications #-}
 
 module ChatClient where
@@ -20,11 +19,11 @@ import Simplex.Chat.Controller (ChatConfig (..), ChatController (..))
 import Simplex.Chat.Options
 import Simplex.Chat.Store
 import Simplex.Chat.Types (Profile)
-import "simplexmq" Simplex.Messaging.Agent.Env.SQLite
-import "simplexmq" Simplex.Messaging.Agent.RetryInterval
-import "simplexmq" Simplex.Messaging.Server (runSMPServerBlocking)
-import "simplexmq" Simplex.Messaging.Server.Env.STM
-import "simplexmq" Simplex.Messaging.Transport
+import Simplex.Messaging.Agent.Env.SQLite
+import Simplex.Messaging.Agent.RetryInterval
+import Simplex.Messaging.Server (runSMPServerBlocking)
+import Simplex.Messaging.Server.Env.STM
+import Simplex.Messaging.Transport
 import System.Directory (createDirectoryIfMissing, removeDirectoryRecursive)
 import qualified System.Terminal as C
 import System.Terminal.Internal (VirtualTerminal (..), VirtualTerminalSettings (..), withVirtualTerminal)

@@ -1,6 +1,5 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE PackageImports #-}
 
 module Simplex.Chat.Protocol.Legacy where
 
@@ -8,7 +7,7 @@ import Data.Attoparsec.ByteString.Char8 (Parser)
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
-import "simplexmq" Simplex.Messaging.Util (bshow)
+import Simplex.Messaging.Util (bshow)
 
 data RawChatMessage = RawChatMessage
   { chatMsgEvent :: ByteString,

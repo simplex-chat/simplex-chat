@@ -5,7 +5,6 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE PackageImports #-}
 
 module Simplex.Chat.View
   ( printToView,
@@ -98,20 +97,19 @@ import Data.Time.LocalTime (TimeZone, ZonedTime, getCurrentTimeZone, getZonedTim
 import Numeric (showFFloat)
 import Simplex.Chat.Controller
 import Simplex.Chat.Markdown
-import Simplex.Chat.SimpleXMQ (AgentVersion (..), ConnReqInv)
 import Simplex.Chat.Store (StoreError (..))
 import Simplex.Chat.Styled
 import Simplex.Chat.Terminal (printToTerminal)
 import Simplex.Chat.Types
 import Simplex.Chat.Util (safeDecodeUtf8)
-import "simplexmq" Simplex.Messaging.Agent.Protocol
+import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Encoding.String
-import qualified "simplexmq" Simplex.Messaging.Protocol as SMP
+import qualified Simplex.Messaging.Protocol as SMP
 import System.Console.ANSI.Types
 
 type ChatReader m = (MonadUnliftIO m, MonadReader ChatController m)
 
-showInvitation :: ChatReader m => ConnReqInv 'AgentV1 -> m ()
+showInvitation :: ChatReader m => ConnReqInvitation -> m ()
 showInvitation = printToView . connReqInvitation_
 
 showSentConfirmation :: ChatReader m => m ()
@@ -328,7 +326,7 @@ showContactUpdated = printToView .: contactUpdated
 showMessageError :: ChatReader m => Text -> Text -> m ()
 showMessageError = printToView .: messageError
 
-connReqInvitation_ :: ConnReqInv 'AgentV1 -> [StyledString]
+connReqInvitation_ :: ConnReqInvitation -> [StyledString]
 connReqInvitation_ cReq =
   [ "pass this invitation link to your contact (via another channel): ",
     "",
