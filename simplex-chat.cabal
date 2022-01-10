@@ -68,6 +68,7 @@ library
     , time ==1.9.*
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
+    , unordered-containers ==0.2.*
   default-language: Haskell2010
 
 executable simplex-chat
@@ -105,6 +106,7 @@ executable simplex-chat
     , time ==1.9.*
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
+    , unordered-containers ==0.2.*
   default-language: Haskell2010
 
 test-suite simplex-chat-test
@@ -150,4 +152,5 @@ test-suite simplex-chat-test
     , time ==1.9.*
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
+    , unordered-containers ==0.2.*
   default-language: Haskell2010

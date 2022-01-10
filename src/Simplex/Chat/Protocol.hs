@@ -6,13 +6,16 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PackageImports #-}
+{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TupleSections #-}
 
 module Simplex.Chat.Protocol where
 
 import Control.Monad ((<=<), (>=>))
-import Data.Aeson (FromJSON, ToJSON, (.:))
+import Control.Monad.Except (throwError)
+import Data.Aeson (FromJSON, ToJSON, (.:), (.=))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.Types as JT
 import qualified Data.Attoparsec.ByteString.Char8 as A
@@ -20,10 +23,11 @@ import qualified Data.ByteString.Base64.URL as U
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
+import qualified Data.HashMap.Strict as H
 import Data.List (find, findIndex)
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Text.Encoding (encodeUtf8)
+import Data.Text.Encoding (decodeLatin1, encodeUtf8)
 import Simplex.Chat.Protocol.Encoding
 import Simplex.Chat.Protocol.Legacy
 import Simplex.Chat.Types
@@ -31,7 +35,7 @@ import Simplex.Chat.Util (safeDecodeUtf8)
 import "simplexmq-legacy" Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Encoding.String (StrEncoding (..))
 import "simplexmq" Simplex.Messaging.Parsers (parseAll)
-import "simplexmq" Simplex.Messaging.Util (bshow)
+import "simplexmq" Simplex.Messaging.Util (bshow, (<$?>))
 
 data ChatDirection (p :: AParty) where
   ReceivedDirectMessage :: Connection -> Maybe Contact -> ChatDirection 'Agent
@@ -105,98 +109,170 @@ data ChatMessage = ChatMessage
   }
   deriving (Eq, Show)
 
-toChatEventType :: ChatMsgEvent -> Text
-toChatEventType = \case
-  XMsgNew _ -> "x.msg.new"
-  XFile _ -> "x.file"
-  XFileAcpt _ -> "x.file.acpt"
-  XInfo _ -> "x.info"
-  XContact _ _ -> "x.con"
-  XGrpInv _ -> "x.grp.inv"
-  XGrpAcpt _ -> "x.grp.acpt"
-  XGrpMemNew _ -> "x.grp.mem.new"
-  XGrpMemIntro _ -> "x.grp.mem.intro"
-  XGrpMemInv _ _ -> "x.grp.mem.inv"
-  XGrpMemFwd _ _ -> "x.grp.mem.fwd"
-  XGrpMemInfo _ _ -> "x.grp.mem.info"
-  XGrpMemCon _ -> "x.grp.mem.con"
-  XGrpMemConAll _ -> "x.grp.mem.con.all"
-  XGrpMemDel _ -> "x.grp.mem.del"
-  XGrpLeave -> "x.grp.leave"
-  XGrpDel -> "x.grp.del"
-  XInfoProbe _ -> "x.info.probe"
-  XInfoProbeCheck _ -> "x.info.probe.check"
-  XInfoProbeOk _ -> "x.info.probe.ok"
-  XOk -> "x.ok"
+data CMEventTag
+  = XMsgNew_
+  | XFile_
+  | XFileAcpt_
+  | XInfo_
+  | XContact_
+  | XGrpInv_
+  | XGrpAcpt_
+  | XGrpMemNew_
+  | XGrpMemIntro_
+  | XGrpMemInv_
+  | XGrpMemFwd_
+  | XGrpMemInfo_
+  | XGrpMemCon_
+  | XGrpMemConAll_
+  | XGrpMemDel_
+  | XGrpLeave_
+  | XGrpDel_
+  | XInfoProbe_
+  | XInfoProbeCheck_
+  | XInfoProbeOk_
+  | XOk_
 
-(.->) :: FromJSON a => JT.Parser JT.Object -> Text -> JT.Parser a
-(.->) parser key = do
-  obj <- parser
-  obj .: key
+instance StrEncoding CMEventTag where
+  strEncode = \case
+    XMsgNew_ -> "x.msg.new"
+    XFile_ -> "x.file"
+    XFileAcpt_ -> "x.file.acpt"
+    XInfo_ -> "x.info"
+    XContact_ -> "x.con"
+    XGrpInv_ -> "x.grp.inv"
+    XGrpAcpt_ -> "x.grp.acpt"
+    XGrpMemNew_ -> "x.grp.mem.new"
+    XGrpMemIntro_ -> "x.grp.mem.intro"
+    XGrpMemInv_ -> "x.grp.mem.inv"
+    XGrpMemFwd_ -> "x.grp.mem.fwd"
+    XGrpMemInfo_ -> "x.grp.mem.info"
+    XGrpMemCon_ -> "x.grp.mem.con"
+    XGrpMemConAll_ -> "x.grp.mem.con.all"
+    XGrpMemDel_ -> "x.grp.mem.del"
+    XGrpLeave_ -> "x.grp.leave"
+    XGrpDel_ -> "x.grp.del"
+    XInfoProbe_ -> "x.info.probe"
+    XInfoProbeCheck_ -> "x.info.probe.check"
+    XInfoProbeOk_ -> "x.info.probe.ok"
+    XOk_ -> "x.ok"
+  strDecode = \case
+    "x.msg.new" -> Right XMsgNew_
+    "x.file" -> Right XFile_
+    "x.file.acpt" -> Right XFileAcpt_
+    "x.info" -> Right XInfo_
+    "x.con" -> Right XContact_
+    "x.grp.inv" -> Right XGrpInv_
+    "x.grp.acpt" -> Right XGrpAcpt_
+    "x.grp.mem.new" -> Right XGrpMemNew_
+    "x.grp.mem.intro" -> Right XGrpMemIntro_
+    "x.grp.mem.inv" -> Right XGrpMemInv_
+    "x.grp.mem.fwd" -> Right XGrpMemFwd_
+    "x.grp.mem.info" -> Right XGrpMemInfo_
+    "x.grp.mem.con" -> Right XGrpMemCon_
+    "x.grp.mem.con.all" -> Right XGrpMemConAll_
+    "x.grp.mem.del" -> Right XGrpMemDel_
+    "x.grp.leave" -> Right XGrpLeave_
+    "x.grp.del" -> Right XGrpDel_
+    "x.info.probe" -> Right XInfoProbe_
+    "x.info.probe.check" -> Right XInfoProbeCheck_
+    "x.info.probe.ok" -> Right XInfoProbeOk_
+    "x.ok" -> Right XOk_
+    _ -> Left "bad CMEventTag"
+  strP = strDecode <$?> A.takeTill (== ' ')
 
-appToChatMessage :: AppMessage -> Either String ChatMessage
+toCMEventTag :: ChatMsgEvent -> CMEventTag
+toCMEventTag = \case
+  XMsgNew _ -> XMsgNew_
+  XFile _ -> XFile_
+  XFileAcpt _ -> XFileAcpt_
+  XInfo _ -> XInfo_
+  XContact _ _ -> XContact_
+  XGrpInv _ -> XGrpInv_
+  XGrpAcpt _ -> XGrpAcpt_
+  XGrpMemNew _ -> XGrpMemNew_
+  XGrpMemIntro _ -> XGrpMemIntro_
+  XGrpMemInv _ _ -> XGrpMemInv_
+  XGrpMemFwd _ _ -> XGrpMemFwd_
+  XGrpMemInfo _ _ -> XGrpMemInfo_
+  XGrpMemCon _ -> XGrpMemCon_
+  XGrpMemConAll _ -> XGrpMemConAll_
+  XGrpMemDel _ -> XGrpMemDel_
+  XGrpLeave -> XGrpLeave_
+  XGrpDel -> XGrpDel_
+  XInfoProbe _ -> XInfoProbe_
+  XInfoProbeCheck _ -> XInfoProbeCheck_
+  XInfoProbeOk _ -> XInfoProbeOk_
+  XOk -> XOk_
+
+toChatEventTag :: ChatMsgEvent -> Text
+toChatEventTag = decodeLatin1 . strEncode . toCMEventTag
+
+appToChatMessage :: AppMessage -> Either String (CMEventTag, ChatMessage)
 appToChatMessage AppMessage {msgId, event, params, dag} = do
   chatMsgId <- U.decode $ encodeUtf8 msgId
   chatDAG <- mapM (U.decode . encodeUtf8) dag
-  let chatMsg msg = pure ChatMessage {chatMsgId, chatMsgEvent = msg, chatDAG}
-  case event of
-    "x.msg.new" -> Left ""
-    "x.file" -> do
-      file <- JT.parseEither (.: "file") params
-      chatMsg $ XFile file
-    "x.file.acpt" -> do
-      fileName <- JT.parseEither (.: "fileName") params
-      chatMsg $ XFileAcpt fileName
-    "x.info" -> do
-      profile <- JT.parseEither (.: "profile") params
-      chatMsg $ XInfo profile
-    "x.con" -> Left ""
-    "x.grp.inv" -> do
-      groupInvitation <- JT.parseEither J.parseJSON $ J.Object params
-      chatMsg $ XGrpInv groupInvitation
-    "x.grp.acpt" -> do
-      memberId <- JT.parseEither (.: "memberId") params
-      chatMsg $ XGrpAcpt memberId
-    "x.grp.mem.new" -> do
-      memInfo <- JT.parseEither (.: "memberInfo") params
-      chatMsg $ XGrpMemNew memInfo
-    "x.grp.mem.intro" -> do
-      memInfo <- JT.parseEither (.: "memberInfo") params
-      chatMsg $ XGrpMemIntro memInfo
-    "x.grp.mem.inv" -> do
-      memberId <- JT.parseEither (.: "memberId") params
-      memberIntro <- JT.parseEither (.: "memberIntro") params
-      chatMsg $ XGrpMemInv memberId memberIntro
-    "x.grp.mem.fwd" -> do
-      memInfo <- JT.parseEither (.: "memberInfo") params
-      memberIntro <- JT.parseEither (.: "memberIntro") params
-      chatMsg $ XGrpMemFwd memInfo memberIntro
-    "x.grp.mem.info" -> do
-      memberId <- JT.parseEither (.: "memberId") params
-      profile <- JT.parseEither (.: "profile") params
-      chatMsg $ XGrpMemInfo memberId profile
-    "x.grp.mem.con" -> do
-      memberId <- JT.parseEither (.: "memberId") params
-      chatMsg $ XGrpMemCon memberId
-    "x.grp.mem.con.all" -> do
-      memberId <- JT.parseEither (.: "memberId") params
-      chatMsg $ XGrpMemConAll memberId
-    "x.grp.mem.del" -> do
-      memberId <- JT.parseEither (.: "memberId") params
-      chatMsg $ XGrpMemDel memberId
-    "x.grp.leave" -> chatMsg XGrpLeave
-    "x.grp.del" -> chatMsg XGrpDel
-    "x.info.probe" -> do
-      probe <- JT.parseEither (.: "probe") params
-      chatMsg $ XInfoProbe probe
-    "x.info.probe.check" -> do
-      probeHash <- JT.parseEither (.: "probeHash") params
-      chatMsg $ XInfoProbeCheck probeHash
-    "x.info.probe.ok" -> do
-      probe <- JT.parseEither (.: "probe") params
-      chatMsg $ XInfoProbeOk probe
-    "x.ok" -> chatMsg XOk
-    _ -> Left $ "bad syntax or unsupported event " <> T.unpack event
+  eventTag <- strDecode $ encodeUtf8 event
+  chatMsgEvent <- msg eventTag
+  pure (eventTag, ChatMessage {chatMsgId, chatMsgEvent, chatDAG})
+  where
+    p :: FromJSON a => Text -> Either String a
+    p key = JT.parseEither (.: key) params
+    msg = \case
+      XMsgNew_ -> throwError ""
+      XFile_ -> XFile <$> p "file"
+      XFileAcpt_ -> XFileAcpt <$> p "fileName"
+      XInfo_ -> XInfo <$> p "profile"
+      XContact_ -> throwError ""
+      XGrpInv_ -> XGrpInv <$> JT.parseEither J.parseJSON (J.Object params)
+      XGrpAcpt_ -> XGrpAcpt <$> p "memberId"
+      XGrpMemNew_ -> XGrpMemNew <$> p "memberInfo"
+      XGrpMemIntro_ -> XGrpMemIntro <$> p "memberInfo"
+      XGrpMemInv_ -> XGrpMemInv <$> p "memberId" <*> p "memberIntro"
+      XGrpMemFwd_ -> XGrpMemFwd <$> p "memberInfo" <*> p "memberIntro"
+      XGrpMemInfo_ -> XGrpMemInfo <$> p "memberId" <*> p "profile"
+      XGrpMemCon_ -> XGrpMemCon <$> p "memberId"
+      XGrpMemConAll_ -> XGrpMemConAll <$> p "memberId"
+      XGrpMemDel_ -> XGrpMemDel <$> p "memberId"
+      XGrpLeave_ -> pure XGrpLeave
+      XGrpDel_ -> pure XGrpDel
+      XInfoProbe_ -> XInfoProbe <$> p "probe"
+      XInfoProbeCheck_ -> XInfoProbeCheck <$> p "probeHash"
+      XInfoProbeOk_ -> XInfoProbeOk <$> p "probe"
+      XOk_ -> pure XOk
+
+chatToAppMessage :: ChatMessage -> AppMessage
+chatToAppMessage ChatMessage {chatMsgId, chatMsgEvent, chatDAG} =
+  -- TODO version
+  AppMessage {msgId, event, params, dag}
+  where
+    msgId = decodeLatin1 $ U.encode chatMsgId
+    dag = decodeLatin1 . U.encode <$> chatDAG
+    event = toChatEventTag chatMsgEvent
+    o :: [(Text, J.Value)] -> J.Object
+    o = H.fromList
+    params = case chatMsgEvent of
+      -- XMsgNew _ -> throwError ""
+      XFile fileInv -> o ["file" .= fileInv]
+      XFileAcpt fileName -> o ["fileName" .= fileName]
+      XInfo profile -> o ["profile" .= profile]
+      -- XContact _ _ -> throwError ""
+      -- XGrpInv _ -> XGrpInv <$> JT.parseEither J.parseJSON (J.Object params)
+      XGrpAcpt memId -> o ["memberId" .= memId]
+      XGrpMemNew memInfo -> o ["memberInfo" .= memInfo]
+      XGrpMemIntro memInfo -> o ["memberInfo" .= memInfo]
+      XGrpMemInv memId memIntro -> o ["memberId" .= memId, "memberIntro" .= memIntro]
+      XGrpMemFwd memInfo memIntro -> o ["memberInfo" .= memInfo, "memberIntro" .= memIntro]
+      XGrpMemInfo memId profile -> o ["memberId" .= memId, "profile" .= profile]
+      XGrpMemCon memId -> o ["memberId" .= memId]
+      XGrpMemConAll memId -> o ["memberId" .= memId]
+      XGrpMemDel memId -> o ["memberId" .= memId]
+      XGrpLeave -> H.empty
+      XGrpDel -> H.empty
+      XInfoProbe probe -> o ["probe" .= probe]
+      XInfoProbeCheck probeHash -> o ["probeHash" .= probeHash]
+      XInfoProbeOk probe -> o ["probe" .= probe]
+      XOk -> H.empty
+      _ -> H.empty
 
 rawToChatMessage :: RawChatMessage -> Either String ChatMessage
 rawToChatMessage RawChatMessage {chatMsgEvent, chatMsgParams, chatMsgBody} = do
@@ -372,7 +448,7 @@ chatMessageToRaw ChatMessage {chatMsgEvent, chatDAG} =
   where
     rawMsg :: [ByteString] -> [MsgContentBody] -> RawChatMessage
     rawMsg chatMsgParams body = do
-      let event = encodeUtf8 $ toChatEventType chatMsgEvent
+      let event = encodeUtf8 $ toChatEventTag chatMsgEvent
       RawChatMessage {chatMsgEvent = event, chatMsgParams, chatMsgBody = rawWithDAG body}
     rawContentInfo :: (ContentType, Int) -> (RawContentType, Int)
     rawContentInfo (t, size) = (rawContentType t, size)

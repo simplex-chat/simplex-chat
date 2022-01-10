@@ -1111,7 +1111,7 @@ deleteMemberConnection m@GroupMember {activeConn} = do
 sendDirectMessage :: ChatMonad m => Connection -> ChatMsgEvent -> m ()
 sendDirectMessage conn chatMsgEvent = do
   let msgBody = directMessage chatMsgEvent
-      newMsg = NewMessage {direction = MDSnd, chatMsgEventType = toChatEventType chatMsgEvent, msgBody}
+      newMsg = NewMessage {direction = MDSnd, chatMsgEventType = toChatEventTag chatMsgEvent, msgBody}
   -- can be done in transaction after sendMessage, probably shouldn't
   msgId <- withStore $ \st -> createNewMessage st newMsg
   deliverMessage conn msgBody msgId
@@ -1130,7 +1130,7 @@ deliverMessage Connection {connId, agentConnId} msgBody msgId = do
 sendGroupMessage :: ChatMonad m => [GroupMember] -> ChatMsgEvent -> m ()
 sendGroupMessage members chatMsgEvent = do
   let msgBody = directMessage chatMsgEvent
-      newMsg = NewMessage {direction = MDSnd, chatMsgEventType = toChatEventType chatMsgEvent, msgBody}
+      newMsg = NewMessage {direction = MDSnd, chatMsgEventType = toChatEventTag chatMsgEvent, msgBody}
   msgId <- withStore $ \st -> createNewMessage st newMsg
   -- TODO once scheduled delivery is implemented memberActive should be changed to memberCurrent
   forM_ (map memberConn $ filter memberActive members) $
@@ -1139,7 +1139,7 @@ sendGroupMessage members chatMsgEvent = do
 saveRcvMSG :: ChatMonad m => Connection -> MsgMeta -> MsgBody -> m ChatMsgEvent
 saveRcvMSG Connection {connId} agentMsgMeta msgBody = do
   ChatMessage {chatMsgEvent} <- liftEither $ parseChatMessage msgBody
-  let newMsg = NewMessage {direction = MDRcv, chatMsgEventType = toChatEventType chatMsgEvent, msgBody}
+  let newMsg = NewMessage {direction = MDRcv, chatMsgEventType = toChatEventTag chatMsgEvent, msgBody}
       agentMsgId = fst $ recipient agentMsgMeta
       rcvMsgDelivery = RcvMsgDelivery {connId, agentMsgId, agentMsgMeta}
   withStore $ \st -> createNewMessageAndRcvMsgDelivery st newMsg rcvMsgDelivery
