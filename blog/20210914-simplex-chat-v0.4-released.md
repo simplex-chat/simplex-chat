@@ -30,7 +30,7 @@ Sharing files is simple! To send a file to a contact, use the `/f @<contact> <fi
 
 ![simplex-chat](../images/files.gif)
 
-## We need your help!
+## We're always looking for help!
 
 We'd really appreciate your comments, criticism and support - a star on the GitHub repo, downloading and testing the chat or any contribution to the project will help a lot – thank you for all your support!
 
