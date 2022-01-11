@@ -14,7 +14,7 @@
 module Simplex.Chat.Protocol where
 
 import Control.Monad ((<=<))
-import Data.Aeson (FromJSON, ToJSON, (.:), (.=))
+import Data.Aeson (FromJSON, ToJSON, (.:), (.:?), (.=))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.Types as JT
 import qualified Data.Attoparsec.ByteString.Char8 as A
@@ -56,7 +56,7 @@ data AppMessage = AppMessage
   }
   deriving (Generic, FromJSON)
 
-instance ToJSON AppMessage where toEncoding = J.genericToEncoding J.defaultOptions
+instance ToJSON AppMessage where toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
 newtype ChatMessage = ChatMessage {chatMsgEvent :: ChatMsgEvent}
   deriving (Eq, Show)
@@ -250,7 +250,7 @@ appToChatMessage AppMessage {event, params} = do
       XFile_ -> XFile <$> p "file"
       XFileAcpt_ -> XFileAcpt <$> p "fileName"
       XInfo_ -> XInfo <$> p "profile"
-      XContact_ -> XContact <$> p "profile" <*> p "content"
+      XContact_ -> XContact <$> p "profile" <*> JT.parseEither (.:? "content") params
       XGrpInv_ -> XGrpInv <$> p "groupInvitation"
       XGrpAcpt_ -> XGrpAcpt <$> p "memberId"
       XGrpMemNew_ -> XGrpMemNew <$> p "memberInfo"
@@ -279,7 +279,7 @@ chatToAppMessage ChatMessage {chatMsgEvent} = AppMessage {event, params}
       XFile fileInv -> o ["file" .= fileInv]
       XFileAcpt fileName -> o ["fileName" .= fileName]
       XInfo profile -> o ["profile" .= profile]
-      XContact profile content -> o ["profile" .= profile, "content" .= content]
+      XContact profile content -> o $ maybe id ((:) . ("content" .=)) content ["profile" .= profile]
       XGrpInv groupInv -> o ["groupInvitation" .= groupInv]
       XGrpAcpt memId -> o ["memberId" .= memId]
       XGrpMemNew memInfo -> o ["memberInfo" .= memInfo]

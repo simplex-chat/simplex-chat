@@ -9,6 +9,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
+{-# LANGUAGE TypeApplications #-}
 
 module Simplex.Chat where
 
@@ -34,6 +35,7 @@ import Data.Maybe (isJust, mapMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
+import Data.Word (Word32)
 import Simplex.Chat.Controller
 import Simplex.Chat.Help
 import Simplex.Chat.Input
@@ -50,11 +52,12 @@ import Simplex.Messaging.Agent
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), defaultAgentConfig)
 import Simplex.Messaging.Agent.Protocol
 import qualified Simplex.Messaging.Crypto as C
+import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (parseAll)
 import Simplex.Messaging.Protocol (MsgBody)
 import qualified Simplex.Messaging.Protocol as SMP
-import Simplex.Messaging.Util (bshow, raceAny_, tryError)
+import Simplex.Messaging.Util (raceAny_, tryError)
 import System.Exit (exitFailure, exitSuccess)
 import System.FilePath (combine, splitExtensions, takeFileName)
 import System.IO (Handle, IOMode (..), SeekMode (..), hFlush, openFile, stdout)
@@ -731,10 +734,10 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
           showRcvFileStart ft
         MSG meta@MsgMeta {recipient = (msgId, _), integrity} msgBody -> withAckMessage agentConnId meta $ do
           parseFileChunk msgBody >>= \case
-            (0, _) -> do
+            FileChunkCancel -> do
               cancelRcvFileTransfer ft
               showRcvFileSndCancelled ft
-            (chunkNo, chunk) -> do
+            FileChunk {chunkNo, chunkBytes = chunk} -> do
               case integrity of
                 MsgOk -> pure ()
                 MsgError MsgDuplicate -> pure () -- TODO remove once agent removes duplicates
@@ -1009,8 +1012,8 @@ sendFileChunk ft@SndFileTransfer {fileId, fileStatus, agentConnId} =
 
 sendFileChunkNo :: ChatMonad m => SndFileTransfer -> Integer -> m ()
 sendFileChunkNo ft@SndFileTransfer {agentConnId} chunkNo = do
-  bytes <- readFileChunk ft chunkNo
-  msgId <- withAgent $ \a -> sendMessage a agentConnId $ serializeFileChunk chunkNo bytes
+  chunkBytes <- readFileChunk ft chunkNo
+  msgId <- withAgent $ \a -> sendMessage a agentConnId $ smpEncode FileChunk {chunkNo, chunkBytes}
   withStore $ \st -> updateSndFileChunkMsg st ft chunkNo msgId
 
 readFileChunk :: ChatMonad m => SndFileTransfer -> Integer -> m ByteString
@@ -1024,13 +1027,24 @@ readFileChunk SndFileTransfer {fileId, filePath, chunkSize} chunkNo =
       when (pos /= pos') $ hSeek h AbsoluteSeek pos'
       liftIO . B.hGet h $ fromInteger chunkSize
 
-parseFileChunk :: ChatMonad m => ByteString -> m (Integer, ByteString)
-parseFileChunk msg =
-  liftEither . first (ChatError . CEFileRcvChunk) $
-    parseAll ((,) <$> A.decimal <* A.space <*> A.takeByteString) msg
+data FileChunk = FileChunk {chunkNo :: Integer, chunkBytes :: ByteString} | FileChunkCancel
 
-serializeFileChunk :: Integer -> ByteString -> ByteString
-serializeFileChunk chunkNo bytes = bshow chunkNo <> " " <> bytes
+instance Encoding FileChunk where
+  smpEncode = \case
+    FileChunk {chunkNo, chunkBytes} -> smpEncode ('F', fromIntegral chunkNo :: Word32, Tail chunkBytes)
+    FileChunkCancel -> smpEncode 'C'
+  smpP =
+    smpP >>= \case
+      'F' -> do
+        chunkNo <- fromIntegral <$> smpP @Word32
+        Tail chunkBytes <- smpP
+        pure FileChunk {chunkNo, chunkBytes}
+      'C' -> pure FileChunkCancel
+      _ -> fail "bad FileChunk"
+
+parseFileChunk :: ChatMonad m => ByteString -> m FileChunk
+parseFileChunk msg =
+  liftEither . first (ChatError . CEFileRcvChunk) $ parseAll smpP msg
 
 appendFileChunk :: ChatMonad m => RcvFileTransfer -> Integer -> ByteString -> m ()
 appendFileChunk ft@RcvFileTransfer {fileId, fileStatus} chunkNo chunk =
@@ -1080,7 +1094,7 @@ cancelSndFileTransfer ft@SndFileTransfer {agentConnId, fileStatus} =
       updateSndFileStatus st ft FSCancelled
       deleteSndFileChunks st ft
     withAgent $ \a -> do
-      void (sendMessage a agentConnId "0 ") `catchError` \_ -> pure ()
+      void (sendMessage a agentConnId $ smpEncode FileChunkCancel) `catchError` \_ -> pure ()
       suspendConnection a agentConnId
 
 closeFileHandle :: ChatMonad m => Int64 -> (ChatController -> TVar (Map Int64 Handle)) -> m ()
