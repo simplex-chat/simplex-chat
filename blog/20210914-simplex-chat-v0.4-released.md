@@ -14,10 +14,21 @@ The first application built on the platform is Simplex Chat, which for now is te
 
 ## What's new in v0.5?
 
+We're exicted to announce that SimpleX Chat now supports group chat and file transfer!
+
 ### Chat groups
+
+To create a group use the `/g <group>` command. You can then invite contacts to the group by entering the `/a <group> <name>` command. Your contact(s) will need to use the `/j accept` command to accept the invitation to the group. To send messages to the group, simply enter `#<group> <message>`.  
+
+**Please note:** Groups are not stored on any server; they are maintained as a list of members in the app database. Sending a message to the group sends a message to each member of the group.
+
+![simplex-chat](../images/groups.gif)
 
 ### File transfer
 
+Sharing files is simple! To send a file to a contact, use the `/f @<contact> <file_path>` command. The recipient will have to accept before the file is sent.
+
+![simplex-chat](../images/files.gif)
 
 ## We need your help!
 
