@@ -80,13 +80,14 @@ decodeChatMessageTest = describe "Chat message encoding/decoding" $ do
       #==# XFile FileInvitation {fileName = "photo.jpg", fileSize = 12345, fileConnReq = testConnReq}
   it "x.file.acpt" $ "{\"event\":\"x.file.acpt\",\"params\":{\"fileName\":\"photo.jpg\"}}" #==# XFileAcpt "photo.jpg"
   it "x.info" $ "{\"event\":\"x.info\",\"params\":{\"profile\":{\"fullName\":\"Alice\",\"displayName\":\"alice\"}}}" #==# XInfo testProfile
-  -- TODO make it Maybe?
   it "x.info" $ "{\"event\":\"x.info\",\"params\":{\"profile\":{\"fullName\":\"\",\"displayName\":\"alice\"}}}" #==# XInfo Profile {displayName = "alice", fullName = ""}
-  -- TODO make null optional for parsing
-  it "x.contact" $
-    "{\"event\":\"x.contact\",\"params\":{\"content\":null,\"profile\":{\"fullName\":\"Alice\",\"displayName\":\"alice\"}}}"
+  it "x.contact without content field" $
+    "{\"event\":\"x.contact\",\"params\":{\"profile\":{\"fullName\":\"Alice\",\"displayName\":\"alice\"}}}"
       #==# XContact testProfile Nothing
-  it "x.contact" $
+  it "x.contact with content null" $
+    "{\"event\":\"x.contact\",\"params\":{\"content\":null,\"profile\":{\"fullName\":\"Alice\",\"displayName\":\"alice\"}}}"
+      ==# XContact testProfile Nothing
+  it "x.contact with content" $
     "{\"event\":\"x.contact\",\"params\":{\"content\":{\"text\":\"hello\",\"type\":\"text\"},\"profile\":{\"fullName\":\"Alice\",\"displayName\":\"alice\"}}}"
       #==# XContact testProfile (Just $ MCText "hello")
   it "x.grp.inv" $
