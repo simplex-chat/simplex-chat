@@ -7,7 +7,8 @@ import qualified Data.ByteString.Char8 as B
 import Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as L
 import Options.Applicative
-import Simplex.Messaging.Agent.Protocol (SMPServer (..), smpServerP)
+import Simplex.Messaging.Agent.Protocol (SMPServer (..))
+import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (parseAll)
 import System.FilePath (combine)
 
@@ -37,8 +38,8 @@ chatOpts appDir =
             )
           <> value
             ( L.fromList
-                [ "smp2.simplex.im#z5W2QLQ1Br3Yd6CoWg7bIq1bHdwK7Y8bEiEXBs/WfAg=", -- London, UK
-                  "smp3.simplex.im#nxc7HnrnM8dOKgkMp008ub/9o9LXJlxlMrMpR+mfMQw=" -- Fremont, CA
+                [ "smp://z5W2QLQ1Br3Yd6CoWg7bIq1bHdwK7Y8bEiEXBs_WfAg=@smp2.simplex.im", -- London, UK
+                  "smp://nxc7HnrnM8dOKgkMp008ub_9o9LXJlxlMrMpR-mfMQw=@smp3.simplex.im" -- Fremont, CA
                 ]
             )
       )
@@ -48,7 +49,7 @@ chatOpts appDir =
 parseSMPServer :: ReadM (NonEmpty SMPServer)
 parseSMPServer = eitherReader $ parseAll servers . B.pack
   where
-    servers = L.fromList <$> smpServerP `A.sepBy1` A.char ','
+    servers = L.fromList <$> strP `A.sepBy1` A.char ','
 
 getChatOpts :: FilePath -> IO ChatOpts
 getChatOpts appDir = execParser opts

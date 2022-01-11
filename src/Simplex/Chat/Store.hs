@@ -667,20 +667,20 @@ getMatchingContacts st userId Contact {contactId, profile = Profile {displayName
           ]
     rights <$> mapM (runExceptT . getContact_ db userId) contactNames
 
-createSentProbe :: StoreMonad m => SQLiteStore -> TVar ChaChaDRG -> UserId -> Contact -> m (ByteString, Int64)
+createSentProbe :: StoreMonad m => SQLiteStore -> TVar ChaChaDRG -> UserId -> Contact -> m (Probe, Int64)
 createSentProbe st gVar userId _to@Contact {contactId} =
   liftIOEither . withTransaction st $ \db ->
     createWithRandomBytes 32 gVar $ \probe -> do
       DB.execute db "INSERT INTO sent_probes (contact_id, probe, user_id) VALUES (?,?,?)" (contactId, probe, userId)
-      (probe,) <$> insertedRowId db
+      (Probe probe,) <$> insertedRowId db
 
 createSentProbeHash :: MonadUnliftIO m => SQLiteStore -> UserId -> Int64 -> Contact -> m ()
 createSentProbeHash st userId probeId _to@Contact {contactId} =
   liftIO . withTransaction st $ \db ->
     DB.execute db "INSERT INTO sent_probe_hashes (sent_probe_id, contact_id, user_id) VALUES (?,?,?)" (probeId, contactId, userId)
 
-matchReceivedProbe :: MonadUnliftIO m => SQLiteStore -> UserId -> Contact -> ByteString -> m (Maybe Contact)
-matchReceivedProbe st userId _from@Contact {contactId} probe =
+matchReceivedProbe :: MonadUnliftIO m => SQLiteStore -> UserId -> Contact -> Probe -> m (Maybe Contact)
+matchReceivedProbe st userId _from@Contact {contactId} (Probe probe) =
   liftIO . withTransaction st $ \db -> do
     let probeHash = C.sha256Hash probe
     contactNames <-
@@ -701,8 +701,8 @@ matchReceivedProbe st userId _from@Contact {contactId} probe =
         either (const Nothing) Just
           <$> runExceptT (getContact_ db userId cName)
 
-matchReceivedProbeHash :: MonadUnliftIO m => SQLiteStore -> UserId -> Contact -> ByteString -> m (Maybe (Contact, ByteString))
-matchReceivedProbeHash st userId _from@Contact {contactId} probeHash =
+matchReceivedProbeHash :: MonadUnliftIO m => SQLiteStore -> UserId -> Contact -> ProbeHash -> m (Maybe (Contact, Probe))
+matchReceivedProbeHash st userId _from@Contact {contactId} (ProbeHash probeHash) =
   liftIO . withTransaction st $ \db -> do
     namesAndProbes <-
       DB.query
@@ -718,11 +718,11 @@ matchReceivedProbeHash st userId _from@Contact {contactId} probeHash =
     case namesAndProbes of
       [] -> pure Nothing
       (cName, probe) : _ ->
-        either (const Nothing) (Just . (,probe))
+        either (const Nothing) (Just . (,Probe probe))
           <$> runExceptT (getContact_ db userId cName)
 
-matchSentProbe :: MonadUnliftIO m => SQLiteStore -> UserId -> Contact -> ByteString -> m (Maybe Contact)
-matchSentProbe st userId _from@Contact {contactId} probe =
+matchSentProbe :: MonadUnliftIO m => SQLiteStore -> UserId -> Contact -> Probe -> m (Maybe Contact)
+matchSentProbe st userId _from@Contact {contactId} (Probe probe) =
   liftIO . withTransaction st $ \db -> do
     contactNames <-
       map fromOnly
@@ -889,7 +889,7 @@ createNewGroup st gVar user groupProfile =
     DB.execute db "INSERT INTO groups (local_display_name, user_id, group_profile_id) VALUES (?, ?, ?)" (displayName, uId, profileId)
     groupId <- insertedRowId db
     memberId <- randomBytes gVar 12
-    membership <- createContactMember_ db user groupId user (memberId, GROwner) GCUserMember GSMemCreator IBUser
+    membership <- createContactMember_ db user groupId user (MemberIdRole (MemberId memberId) GROwner) GCUserMember GSMemCreator IBUser
     pure $ Right Group {groupId, localDisplayName = displayName, groupProfile, members = [], membership}
 
 -- | creates a new group record for the group the current user was invited to, or returns an existing one
@@ -1022,7 +1022,7 @@ getGroupInvitation st user localDisplayName =
     findFromContact (IBContact contactId) = find ((== Just contactId) . memberContactId)
     findFromContact _ = const Nothing
 
-type GroupMemberRow = (Int64, Int64, ByteString, GroupMemberRole, GroupMemberCategory, GroupMemberStatus, Maybe Int64, ContactName, Maybe Int64, ContactName, Text)
+type GroupMemberRow = (Int64, Int64, MemberId, GroupMemberRole, GroupMemberCategory, GroupMemberStatus, Maybe Int64, ContactName, Maybe Int64, ContactName, Text)
 
 toGroupMember :: Int64 -> GroupMemberRow -> GroupMember
 toGroupMember userContactId (groupMemberId, groupId, memberId, memberRole, memberCategory, memberStatus, invitedById, localDisplayName, memberContactId, displayName, fullName) =
@@ -1035,7 +1035,7 @@ createContactMember :: StoreMonad m => SQLiteStore -> TVar ChaChaDRG -> User -> 
 createContactMember st gVar user groupId contact memberRole agentConnId connRequest =
   liftIOEither . withTransaction st $ \db ->
     createWithRandomId gVar $ \memId -> do
-      member@GroupMember {groupMemberId} <- createContactMemberInv_ db user groupId contact (memId, memberRole) GCInviteeMember GSMemInvited IBUser (Just connRequest)
+      member@GroupMember {groupMemberId} <- createContactMemberInv_ db user groupId contact (MemberIdRole (MemberId memId) memberRole) GCInviteeMember GSMemInvited IBUser (Just connRequest)
       void $ createMemberConnection_ db (userId user) groupMemberId agentConnId Nothing 0
       pure member
 
@@ -1269,12 +1269,12 @@ createIntroToMemberContact st userId GroupMember {memberContactId = viaContactId
 createMemberConnection_ :: DB.Connection -> UserId -> Int64 -> ConnId -> Maybe Int64 -> Int -> IO Connection
 createMemberConnection_ db userId groupMemberId = createConnection_ db userId ConnMember (Just groupMemberId)
 
-createContactMember_ :: IsContact a => DB.Connection -> User -> Int64 -> a -> (MemberId, GroupMemberRole) -> GroupMemberCategory -> GroupMemberStatus -> InvitedBy -> IO GroupMember
-createContactMember_ db user groupId userOrContact (memberId, memberRole) memberCategory memberStatus invitedBy =
-  createContactMemberInv_ db user groupId userOrContact (memberId, memberRole) memberCategory memberStatus invitedBy Nothing
+createContactMember_ :: IsContact a => DB.Connection -> User -> Int64 -> a -> MemberIdRole -> GroupMemberCategory -> GroupMemberStatus -> InvitedBy -> IO GroupMember
+createContactMember_ db user groupId userOrContact MemberIdRole {memberId, memberRole} memberCategory memberStatus invitedBy =
+  createContactMemberInv_ db user groupId userOrContact MemberIdRole {memberId, memberRole} memberCategory memberStatus invitedBy Nothing
 
-createContactMemberInv_ :: IsContact a => DB.Connection -> User -> Int64 -> a -> (MemberId, GroupMemberRole) -> GroupMemberCategory -> GroupMemberStatus -> InvitedBy -> Maybe ConnReqInvitation -> IO GroupMember
-createContactMemberInv_ db User {userId, userContactId} groupId userOrContact (memberId, memberRole) memberCategory memberStatus invitedBy connRequest = do
+createContactMemberInv_ :: IsContact a => DB.Connection -> User -> Int64 -> a -> MemberIdRole -> GroupMemberCategory -> GroupMemberStatus -> InvitedBy -> Maybe ConnReqInvitation -> IO GroupMember
+createContactMemberInv_ db User {userId, userContactId} groupId userOrContact MemberIdRole {memberId, memberRole} memberCategory memberStatus invitedBy connRequest = do
   insertMember_
   groupMemberId <- insertedRowId db
   let memberProfile = profile' userOrContact

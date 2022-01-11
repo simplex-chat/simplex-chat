@@ -37,6 +37,7 @@ dependencies:
   - time == 1.9.*
   - unliftio == 0.2.*
   - unliftio-core == 0.2.*
+  - unordered-containers == 0.2.*
 
 library:
   source-dirs: src
