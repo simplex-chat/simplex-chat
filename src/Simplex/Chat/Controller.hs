@@ -26,7 +26,7 @@ import System.IO (Handle)
 import UnliftIO.STM
 
 versionNumber :: String
-versionNumber = "0.5.4"
+versionNumber = "1.0.0"
 
 data ChatConfig = ChatConfig
   { agentConfig :: AgentConfig,
