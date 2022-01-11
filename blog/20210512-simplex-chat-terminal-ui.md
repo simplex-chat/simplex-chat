@@ -2,27 +2,23 @@
 
 **Published:** 12 May 2021
 
-Since my post about SimpleX Messaging Protocol (SMP) six months ago, Efim (my son) and I have been working to get SimpleX chat prototype ready to use, and this day has come!
+For the last six months [me](https://github.com/epoberezkin) and my son [Efim](https://github.com/efim-poberezkin) have been working to bring you a working prototype of SimpleX Chat. We're excited to announce SimpleX Chat terminal client is now available [here](https://github.com/simplex-chat/simplex-chat) on Linux, Windows and Mac (you can either build from source or download the binary for Linux, Windows or Mac from the latest release).
 
-The terminal chat client is available in https://github.com/simplex-chat/simplex-chat - you can either build it from source or download the binary for Linux, Windows or Mac from the latest release.
+We’ve been using the terminal client between us and a few other people for a couple of months now, eating our own “dog food”, and have developed up to version 0.3.1, with most of the messaging protocol features we originally planned
 
-We’ve been using it between us and some other people for a couple of months now, eating our own “dog food”, and it got to the version 0.3.1, with most of the messaging protocol features we planned:
+### Features
 
-end-to-end encryption with protection from man in the middle attack - the invitation has to be passed out-of-band (see how to use SimpleX chat in the repo).
+- End-to-end encryption with protection from man in the middle attack. The connection invitation must be passed out-of-band (see [how to use SimpleX Chat](https://github.com/simplex-chat/simplex-chat#how-to-use-simplex-chat) in the repo).
+- No global identity or any usernames visible to the server(s), ensuring full privacy of your contacts and conversations.
+- Message signing and verification with automatically generated RSA keys, with keys being unique per each connection.
+- Authorization of each command/message by the servers with automatically generated RSA key pairs, also unique per connection.
+- Message integrity validation (via passing the digests of the previous messages).
+- Encrypted TCP transport, independent of certificates.
+- You can deploy your own server, but you don’t have to - the demo SMP server to relay your messages is available at smp1.simplex.im:5223 (pre-configured in the client).
 
-no global identity or any usernames visible to the server(s), ensuring full privacy of your contacts and conversations.
+### We need your help!
 
-message signing and verification with automatically generated RSA keys, with keys being unique per each connection.
-
-authorization of each command/message by the servers with automatically generated RSA key pairs, also unique per connection.
-
-Message integrity validation (via passing the digests of the previous messages).
-
-Encrypted TCP transport, independent of certificates.
-
-You can deploy your own server, but you don’t have to - the demo SMP server to relay your messages is available at smp1.simplex.im:5223 (and it's pre-configured in the client).
-
-We'd really appreciate your feedback, criticism and support - a star on the github repo, signing up to the mailing list or any contribution to the project will help building the new kind of the chat network - the one that lets you control your chat - there is so much more to do!
+We're building a new kind of chat network - the only network that lets you control your chat. We'd really appreciate your feedback, criticism and support - a star on the github repo, signing up to the mailing list or any contribution to the project will help. There is so much more to do!
 
 ---
 
