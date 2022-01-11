@@ -208,7 +208,7 @@ To specify a different file path prefix for the database files use `-d` command 
 $ simplex-chat -d alice
 ```
 
-Running above, for example, would create `alice_chat.db` and `alice_agent.db` database files in current directory.
+Running above, for example, would create `alice_v1_chat.db` and `alice_v1_agent.db` database files in current directory.
 
 Default SMP servers are hosted on Linode (London, UK and Fremont, CA) - they are [pre-configured in the app](https://github.com/simplex-chat/simplex-chat/blob/master/src/Simplex/Chat/Options.hs#L40). Base-64 encoded string after server host is the transport key digest.
 

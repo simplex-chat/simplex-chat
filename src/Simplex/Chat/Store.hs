@@ -145,7 +145,7 @@ createStore :: FilePath -> Int -> IO SQLiteStore
 createStore dbFilePath poolSize = createSQLiteStore dbFilePath poolSize migrations
 
 chatStoreFile :: FilePath -> FilePath
-chatStoreFile = (<> ".chat.db")
+chatStoreFile = (<> "_chat.db")
 
 checkConstraint :: StoreError -> IO (Either StoreError a) -> IO (Either StoreError a)
 checkConstraint err action = action `E.catch` (pure . Left . handleSQLError err)

@@ -5,7 +5,7 @@ cabal-version: 1.12
 -- see: https://github.com/sol/hpack
 
 name:           simplex-chat
-version:        0.5.4
+version:        1.0.0
 category:       Web, System, Services, Cryptography
 homepage:       https://github.com/simplex-chat/simplex-chat#readme
 author:         Evgeny Poberezkin
@@ -56,7 +56,7 @@ library
     , optparse-applicative >=0.15 && <0.17
     , process ==1.6.*
     , simple-logger ==0.1.*
-    , simplexmq >=0.5.2 && <0.6
+    , simplexmq ==1.0.*
     , sqlite-simple ==0.4.*
     , stm ==2.5.*
     , terminal ==0.2.*
@@ -93,7 +93,7 @@ executable simplex-chat
     , process ==1.6.*
     , simple-logger ==0.1.*
     , simplex-chat
-    , simplexmq >=0.5.2 && <0.6
+    , simplexmq ==1.0.*
     , sqlite-simple ==0.4.*
     , stm ==2.5.*
     , terminal ==0.2.*
@@ -138,7 +138,7 @@ test-suite simplex-chat-test
     , process ==1.6.*
     , simple-logger ==0.1.*
     , simplex-chat
-    , simplexmq >=0.5.2 && <0.6
+    , simplexmq ==1.0.*
     , sqlite-simple ==0.4.*
     , stm ==2.5.*
     , terminal ==0.2.*
