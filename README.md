@@ -289,7 +289,7 @@ curl -o- https://raw.githubusercontent.com/simplex-chat/simplex-chat/master/mess
 You can view and search your chat history by querying your database:
 
 ```sh
-sqlite3 ~/.simplex/simplex.chat.db
+sqlite3 ~/.simplex/simplex_v1_chat.db
 ```
 
 Now you can run queries against `direct_messages`, `group_messages` and `all_messages` (or their simpler alternatives `direct_messages_plain`, `group_messages_plain` and `all_messages_plain`), for example:
