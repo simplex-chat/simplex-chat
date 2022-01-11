@@ -283,7 +283,7 @@ SimpleX chat stores all your contacts and conversations in a local SQLite databa
 > **Please note:** Starting with v1.0.0 message views are not created as part of database initialization. Run the below script to create them in your database.
 
 ```sh
-curl -o- https://raw.githubusercontent.com/simplex-chat/simplex-chat/master/message_views.sql | sqlite3 ~/.simplex/simplex.chat.db
+curl -o- https://raw.githubusercontent.com/simplex-chat/simplex-chat/master/message_views.sql | sqlite3 ~/.simplex/simplex_v1_chat.db
 ```
 
 You can view and search your chat history by querying your database:
@@ -295,28 +295,39 @@ sqlite3 ~/.simplex/simplex.chat.db
 Now you can run queries against `direct_messages`, `group_messages` and `all_messages` (or their simpler alternatives `direct_messages_plain`, `group_messages_plain` and `all_messages_plain`), for example:
 
 ```sql
--- you can put these or your preferred settings into ~/.sqliterc to persist across sqlite3 client sessions
+-- you can put these or your preferred settings into ~/.sqliterc
+-- to persist across sqlite3 client sessions
 .mode column
 .headers on
+.nullvalue NULL
 
--- simple views into direct, group and all_messages with user's messages deduplicated for group and all_messages
--- only 'x.msg.new' ("new message") chat events - filters out service events
+-- simple views into direct, group and all_messages
+-- with user's messages deduplicated for group and all_messages;
+-- only 'x.msg.new' ("new message") chat events - filters out service events;
 -- msg_sent is 0 for received, 1 for sent
 select * from direct_messages_plain;
 select * from group_messages_plain;
 select * from all_messages_plain;
 
--- query other details of your chat history with regular SQL
-select * from direct_messages where msg_sent = 1 and chat_msg_event = 'x.file'; -- files you offered for sending
-select * from direct_messages where msg_sent = 0 and contact = 'catherine' and msg_body like '%cats%'; -- everything catherine sent related to cats
-select * from group_messages where group_name = 'team' and contact = 'alice'; -- all correspondence with alice in #team
+-- query other details of your chat history with regular SQL, for example:
+-- files you offered for sending
+select * from direct_messages where msg_sent = 1 and chat_msg_event = 'x.file';
+-- everything catherine sent related to cats
+select * from direct_messages where msg_sent = 0 and contact = 'catherine' and msg_body like '%cats%'; 
+-- all correspondence with alice in #team
+select * from group_messages where group_name = 'team' and contact = 'alice';
 
 -- aggregate your chat data
 select contact_or_group, num_messages from (
-  select contact as contact_or_group, count(1) as num_messages from direct_messages_plain group by contact
+  select
+    contact as contact_or_group, count(1) as num_messages
+    from direct_messages_plain group by contact
   union
-  select group_name as contact_or_group, count(1) as num_messages from group_messages_plain group by group_name
-) order by num_messages desc;
+  select
+    group_name as contact_or_group, count(1) as num_messages
+    from group_messages_plain group by group_name
+)
+order by num_messages desc;
 ```
 
 **Convenience queries**
