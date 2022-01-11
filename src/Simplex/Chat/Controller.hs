@@ -28,6 +28,12 @@ import UnliftIO.STM
 versionNumber :: String
 versionNumber = "1.0.0"
 
+versionStr :: String
+versionStr = "SimpleX Chat v" <> versionNumber
+
+updateStr :: String
+updateStr = "To update run: curl -o- https://raw.githubusercontent.com/simplex-chat/simplex-chat/master/install.sh | bash"
+
 data ChatConfig = ChatConfig
   { agentConfig :: AgentConfig,
     dbPoolSize :: Int,

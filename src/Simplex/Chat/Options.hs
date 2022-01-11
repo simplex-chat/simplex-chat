@@ -7,6 +7,7 @@ import qualified Data.ByteString.Char8 as B
 import Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as L
 import Options.Applicative
+import Simplex.Chat.Controller (updateStr, versionStr)
 import Simplex.Messaging.Agent.Protocol (SMPServer (..))
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (parseAll)
@@ -24,8 +25,9 @@ chatOpts appDir =
       ( long "database"
           <> short 'd'
           <> metavar "DB_FILE"
-          <> help ("sqlite database file path (" <> defaultDbFilePath <> ")")
+          <> help "Path prefix to chat and agent database files"
           <> value defaultDbFilePath
+          <> showDefault
       )
     <*> option
       parseSMPServer
@@ -33,9 +35,8 @@ chatOpts appDir =
           <> short 's'
           <> metavar "SERVER"
           <> help
-            ( "SMP server(s) to use"
-                <> "\n(smp2.simplex.im,smp3.simplex.im)"
-            )
+            "Comma separated list of SMP server(s) to use \
+            \(default: smp2.simplex.im,smp3.simplex.im)"
           <> value
             ( L.fromList
                 [ "smp://CTMzyymBBawF0yuMln3UxTip6RgFVtYPL8UYuCoIBwE=@139.162.205.110", -- London, UK
@@ -52,12 +53,11 @@ parseSMPServer = eitherReader $ parseAll servers . B.pack
     servers = L.fromList <$> strP `A.sepBy1` A.char ','
 
 getChatOpts :: FilePath -> IO ChatOpts
-getChatOpts appDir = execParser opts
+getChatOpts appDir =
+  execParser $
+    info
+      (helper <*> versionOption <*> chatOpts appDir)
+      (header versionStr <> fullDesc <> progDesc "Start chat with DB_FILE file and use SERVER as SMP server")
   where
-    opts =
-      info
-        (chatOpts appDir <**> helper)
-        ( fullDesc
-            <> header "Chat prototype using Simplex Messaging Protocol (SMP)"
-            <> progDesc "Start chat with DB_FILE file and use SERVER as SMP server"
-        )
+    versionOption = infoOption versionAndUpdate (long "version" <> short 'v' <> help "Show version")
+    versionAndUpdate = versionStr <> "\n" <> updateStr
