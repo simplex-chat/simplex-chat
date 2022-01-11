@@ -35,7 +35,6 @@ if [[ -z $binary ]]; then
 	]]; then
 		echo "Warning: found SimpleX Chat database, the current version is not backwards compatible."
 		echo "If you choose to continue the installation current version will be installed as $APP_NAME with clean database, old database will be preserved."
-		echo "The next version v1.1.0 will be backwards compatible with your groups and contacts. Please see <link> for more information."
 		while true; do
 			read -p "Please choose to (a)bort or (c)ontinue: " yn
 			case $yn in
