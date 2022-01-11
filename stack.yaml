@@ -41,7 +41,7 @@ extra-deps:
   # - simplexmq-0.5.2@sha256:3544e479f353c1bbc6aa9405ef6976b78364f437d8af9cc45b9e0b228429e240,7884
   # - ../simplexmq
   - github: simplex-chat/simplexmq
-    commit: d48da40f7ef4c27229f040137864a7e4433a43e0
+    commit: d8a61de290207509dc57a548f5551e294066e040
   - github: simplex-chat/hs-tls
     commit: cea6d52c512716ff09adcac86ebc95bb0b3bb797
     subdirs:
