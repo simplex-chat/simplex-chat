@@ -71,7 +71,7 @@ cfg =
 
 virtualSimplexChat :: FilePath -> Profile -> IO TestCC
 virtualSimplexChat dbFile profile = do
-  st <- createStore (dbFile <> ".chat.db") 1
+  st <- createStore (dbFile <> "_chat.db") 1
   void . runExceptT $ createUser st profile True
   t <- withVirtualTerminal termSettings pure
   cc <- newChatController cfg opts {dbFile} t . const $ pure () -- no notifications

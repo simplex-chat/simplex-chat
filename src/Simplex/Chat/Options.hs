@@ -44,7 +44,7 @@ chatOpts appDir =
             )
       )
   where
-    defaultDbFilePath = combine appDir "simplex"
+    defaultDbFilePath = combine appDir "simplex_v1"
 
 parseSMPServer :: ReadM (NonEmpty SMPServer)
 parseSMPServer = eitherReader $ parseAll servers . B.pack

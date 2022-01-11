@@ -139,7 +139,7 @@ newChatController config@ChatConfig {agentConfig = cfg, dbPoolSize, tbqSize} Cha
   chatStore <- createStore f dbPoolSize
   currentUser <- newTVarIO =<< getCreateActiveUser chatStore
   chatTerminal <- newChatTerminal t
-  smpAgent <- getSMPAgentClient cfg {dbFile = dbFile <> ".agent.db", smpServers}
+  smpAgent <- getSMPAgentClient cfg {dbFile = dbFile <> "_agent.db", smpServers}
   idsDrg <- newTVarIO =<< drgNew
   inputQ <- newTBQueueIO tbqSize
   notifyQ <- newTBQueueIO tbqSize
