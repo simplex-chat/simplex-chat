@@ -47,8 +47,7 @@ if [[ -z $binary ]]; then
 # If chat binary found, check version and offer to abort or continue, on continue rename chat binary
 elif [[ ! $($binary -h | grep v1) ]]; then
 	echo "Warning: found a previous version of SimpleX Chat, the current version is not backwards compatible."
-	echo "If you choose to continue the installation it will be renamed to $APP_NAME-v0 and version v1 will be installed as $APP_NAME with clean database."
-	echo "The next version v1.1.0 will be backwards compatible with your groups and contacts. Please see <link> for more information."
+	echo "If you continue, it will be renamed to $APP_NAME-v0, and the new version will be installed as $APP_NAME with a clean database."
 	while true; do
 		read -p "Please choose to (a)bort or (c)ontinue: " yn
 		case $yn in
