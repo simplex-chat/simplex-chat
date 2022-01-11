@@ -23,7 +23,7 @@ srv :: SMPServer
 srv =
   SMPServer
     { host = "smp.simplex.im",
-      port = Just "5223",
+      port = "5223",
       keyHash = C.KeyHash "\215m\248\251"
     }
 
