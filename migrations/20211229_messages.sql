@@ -39,6 +39,8 @@ CREATE TABLE msg_delivery_events (
   UNIQUE (msg_delivery_id, delivery_status)
 );
 
+-- TODO delete all message views when merging migrations
+
 CREATE VIEW direct_messages AS
 SELECT
   ct.local_display_name AS contact,
