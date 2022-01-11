@@ -40,7 +40,7 @@ if [[ -z $binary ]]; then
 			case $yn in
 					[Aa]* ) exit 1 ;;
 					[Cc]* ) break ;;
-					* ) echo "Please answer a or c."
+					* ) echo "Please answer 'a' or 'c'."
 			esac
 		done
 	fi
