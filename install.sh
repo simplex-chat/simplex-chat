@@ -34,7 +34,7 @@ if [[ -z $binary ]]; then
 		$(echo "select * from migrations;" | sqlite3 $agent_db | grep 20210101_initial) \
 	]]; then
 		echo "Warning: found SimpleX Chat database, the current version is not backwards compatible."
-		echo "If you choose to continue the installation current version will be installed as $APP_NAME with clean database, old database will be preserved."
+		echo "If you continue, the current version will be installed as $APP_NAME with a clean database, the old database will be preserved."
 		while true; do
 			read -p "Please choose to (a)bort or (c)ontinue: " yn
 			case $yn in
