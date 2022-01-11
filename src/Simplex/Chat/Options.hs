@@ -36,7 +36,7 @@ chatOpts appDir =
           <> metavar "SERVER"
           <> help
             "Comma separated list of SMP server(s) to use \
-            \(default: smp2.simplex.im,smp3.simplex.im)"
+            \(default: smp4.simplex.im,smp5.simplex.im,smp6.simplex.im)"
           <> value
             ( L.fromList
                 [ "smp://CTMzyymBBawF0yuMln3UxTip6RgFVtYPL8UYuCoIBwE=@139.162.205.110", -- London, UK
