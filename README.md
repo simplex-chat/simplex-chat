@@ -12,7 +12,7 @@
 
 SimpleX chat prototype is a thin terminal UI on top of [SimpleXMQ](https://github.com/simplex-chat/simplexmq) message broker that uses [SMP protocols](https://github.com/simplex-chat/simplexmq/blob/master/protocol). The motivation for SimpleX chat is [presented here](./simplex.md). See [simplex.chat](https://simplex.chat) website for chat demo and the explanations of the system and how SMP protocol works.
 
-**NEW in v0.5.4: [messages persistence](#access-chat-history)**
+**NEW in v0.5.4: [message persistence](#access-chat-history)**
 
 **NEW in v0.5.0: [user contact addresses](#user-contact-addresses-alpha)**
 
@@ -280,9 +280,15 @@ Use `/help address` for other commands.
 
 SimpleX chat stores all your contacts and conversations in a local SQLite database, making it private and portable by design, owned and controlled by user.
 
+> **Please note:** Starting with v1.0.0 message views are not created as part of database initialization. Run the below script to create them in your database.
+
+```sh
+curl -o- https://raw.githubusercontent.com/simplex-chat/simplex-chat/master/message_views.sql | sqlite3 ~/.simplex/simplex.chat.db
+```
+
 You can view and search your chat history by querying your database:
 
-```
+```sh
 sqlite3 ~/.simplex/simplex.chat.db
 ```
 
