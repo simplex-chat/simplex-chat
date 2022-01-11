@@ -279,7 +279,7 @@ chatToAppMessage ChatMessage {chatMsgEvent} = AppMessage {event, params}
       XFile fileInv -> o ["file" .= fileInv]
       XFileAcpt fileName -> o ["fileName" .= fileName]
       XInfo profile -> o ["profile" .= profile]
-      XContact profile content -> o $ ("profile" .= profile) : maybe [] (\c -> ["content" .= c]) content
+      XContact profile content -> o $ maybe id ((:) . ("content" .=)) content ["profile" .= profile]
       XGrpInv groupInv -> o ["groupInvitation" .= groupInv]
       XGrpAcpt memId -> o ["memberId" .= memId]
       XGrpMemNew memInfo -> o ["memberInfo" .= memInfo]
