@@ -834,4 +834,4 @@ styleTime :: String -> StyledString
 styleTime = Styled [SetColor Foreground Vivid Black]
 
 clientVersionInfo :: [StyledString]
-clientVersionInfo = [plain $ "SimpleX Chat v" <> versionNumber]
+clientVersionInfo = [plain versionStr, plain updateStr]
