@@ -38,8 +38,8 @@ chatOpts appDir =
             )
           <> value
             ( L.fromList
-                [ "smp://E66-zIY5xvx2UBy_WWK_A9xTb5tXID8eWiNBNuExdUI=@139.162.205.110", -- London, UK
-                  "smp://El_TQEeKjFYoggGnn2jHCzgKW6UJ3SInnZ5490jfC8M=@96.126.97.196" -- Fremont, CA
+                [ "smp://CTMzyymBBawF0yuMln3UxTip6RgFVtYPL8UYuCoIBwE=@139.162.205.110", -- London, UK
+                  "smp://t82czNx4tiftzbk_M4KEITL1RS9CmcTWiCLHSlNsEZ8=@96.126.97.196" -- Fremont, CA
                 ]
             )
       )
