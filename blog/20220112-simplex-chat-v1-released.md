@@ -1,13 +1,13 @@
 # SimpleX announces SimpleX Chat v1
 ## _The world's most private and secure chat and application platform_
 
-We are building a new platform for distributed Internet applications where privacy of the messages _and_ the network matter. [SimpleX Chat](https://github.com/simplex-chat/simplex-chat) is our first application, a chat application built on the SimpleX platform that  serves as an example of the power of the platform and as a reference application.
+We are building a new platform for distributed Internet applications where privacy of the messages _and_ the network matter. [SimpleX Chat](https://github.com/simplex-chat/simplex-chat) is our first application, a chat application built on the SimpleX platform that serves as an example of the power of the platform and as a reference application.
 
 ## What is SimpleX?
 
-We recognised that there is currently no messaging application which respects user privacy and guarantees metadata privacy -- in other words, messages could be private, but a third party can always see who is communicating with whom by examining a central service and the connection graph.  SimpleX, at it's core, is designed to be truly distributed with no central server.  This allows for enormous scalability at low cost, and also makes it virtually impossible to snoop on the network graph.
+We recognised that there is currently no messaging application which respects user privacy and guarantees metadata privacy -- in other words, messages could be private, but a third party can always see who is communicating with whom by examining a central service and the connection graph. SimpleX, at it's core, is designed to be truly distributed with no central server. This allows for enormous scalability at low cost, and also makes it virtually impossible to snoop on the network graph.
 
-The first application built on the platform is Simplex Chat, which for now is terminal (command line) based with mobile apps in the pipeline.  The platform can easily support a private social network feed and a multitude of other services, which can be developed by the Simplex team or third party developers.
+The first application built on the platform is Simplex Chat, which for now is terminal (command line) based with mobile apps in the pipeline. The platform can easily support a private social network feed and a multitude of other services, which can be developed by the Simplex team or third party developers.
 
 ## What's new in v1?
 
@@ -19,7 +19,7 @@ All releases from v1 onwards will be forwards and backwards compatible. SimpleX 
 SimpleX Chat v1 now uses:
 
 - double-ratchet E2E encryption using AES-256-GCM cipher with X3DH key exchange using 2 ephemeral Curve448 keys to derive secrets for ratchet initialization. These keys and secrets are separate for each contact, group membership and file transfer.
-- in addition to double ratchet, there is a separate E2E encryption in each message queue with DH key exchange using Curve25519 and NaCl crypto-box - seperate E2E encryption has been added to avoid having any cipher-text in common between message queues withing a single contact (to prevent traffic correlation).
+- in addition to double ratchet, there is a separate E2E encryption in each message queue with DH key exchange using Curve25519 and NaCl crypto-box - separate E2E encryption has been added to avoid having any cipher-text in common between message queues withing a single contact (to prevent traffic correlation).
 - additional encryption of messages delivered from servers to recipients, also using Curve25519 DH exchange and NaCl crypto-box - to avoid shared cipher-text in sent and received traffic (also to prevent traffic correlation).
 
 ### Improved user and server authentication and transport
@@ -50,7 +50,7 @@ Further detail on the design motivations and objectives is available [here](http
 
 SimpleX Chat client can be used in the terminal on all major desktop platforms (Windows/Mac/Linux) and also on Android devices with [Termux](https://github.com/termux).
 
-SimpleX also allows people to host their own servers and own their own chat data. SimpleX servers are exceptionally lightweight and require a single process with the initial memory footprint of under 20 Mb, which grows grows as the server adds in-memory queues (even with 10,000 queues it uses less than 50Mb, not accounting for messages).
+SimpleX also allows people to host their own servers and own their own chat data. SimpleX servers are exceptionally lightweight and require a single process with the initial memory footprint of under 20 Mb, which grows as the server adds in-memory queues (even with 10,000 queues it uses less than 50Mb, not accounting for messages).
 
 
 
