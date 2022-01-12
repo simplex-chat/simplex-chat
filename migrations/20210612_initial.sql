@@ -90,7 +90,7 @@ CREATE TABLE groups (
   user_id INTEGER NOT NULL REFERENCES users,
   local_display_name TEXT NOT NULL, -- local group name without spaces
   group_profile_id INTEGER REFERENCES group_profiles, -- shared group profile
-  inv_queue_info BLOB,
+  inv_queue_info BLOB, -- received
   FOREIGN KEY (user_id, local_display_name)
     REFERENCES display_names (user_id, local_display_name)
     ON DELETE RESTRICT
@@ -107,8 +107,9 @@ CREATE TABLE group_members ( -- group members, excluding the local user
   member_category TEXT NOT NULL, -- see GroupMemberCategory
   member_status TEXT NOT NULL, -- see GroupMemberStatus
   invited_by INTEGER REFERENCES contacts (contact_id) ON DELETE RESTRICT, -- NULL for the members who joined before the current user and for the group creator
-  group_queue_info BLOB,
-  direct_queue_info BLOB,
+  sent_inv_queue_info BLOB, -- sent
+  group_queue_info BLOB, -- received
+  direct_queue_info BLOB, -- received
   user_id INTEGER NOT NULL REFERENCES users,
   local_display_name TEXT NOT NULL, -- should be the same as contact
   contact_profile_id INTEGER NOT NULL REFERENCES contact_profiles ON DELETE RESTRICT,
@@ -119,6 +120,8 @@ CREATE TABLE group_members ( -- group members, excluding the local user
     ON UPDATE CASCADE,
   UNIQUE (group_id, member_id)
 );
+
+CREATE INDEX idx_groups_inv_queue_info ON groups (inv_queue_info);
 
 CREATE TABLE group_member_intros (
   group_member_intro_id INTEGER PRIMARY KEY,
@@ -182,6 +185,7 @@ CREATE TABLE connections ( -- all SMP agent connections
   via_contact INTEGER REFERENCES contacts (contact_id),
   conn_status TEXT NOT NULL,
   conn_type TEXT NOT NULL, -- contact, member, rcv_file, snd_file
+  user_contact_link_id INTEGER REFERENCES user_contact_links ON DELETE RESTRICT,
   contact_id INTEGER REFERENCES contacts ON DELETE RESTRICT,
   group_member_id INTEGER REFERENCES group_members ON DELETE RESTRICT,
   snd_file_id INTEGER,
@@ -194,87 +198,60 @@ CREATE TABLE connections ( -- all SMP agent connections
     DEFERRABLE INITIALLY DEFERRED
 );
 
--- PLEASE NOTE: all tables below were unused and are removed in the migration 20211227_messages.sql
+CREATE TABLE user_contact_links (
+  user_contact_link_id INTEGER PRIMARY KEY,
+  conn_req_contact BLOB NOT NULL,
+  local_display_name TEXT NOT NULL DEFAULT '',
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  user_id INTEGER NOT NULL REFERENCES users,
+  UNIQUE (user_id, local_display_name)
+);
 
-CREATE TABLE events ( -- messages received by the agent, append only
-  event_id INTEGER PRIMARY KEY,
-  agent_msg_id INTEGER NOT NULL, -- internal message ID
-  external_msg_id INTEGER NOT NULL, -- external message ID (sent or received)
-  agent_meta TEXT NOT NULL, -- JSON with timestamps etc. sent in MSG
-  connection_id INTEGER NOT NULL REFERENCES connections,
-  received INTEGER NOT NULL, -- 0 for received, 1 for sent
-  chat_event_id INTEGER,
-  continuation_of INTEGER, -- references chat_event_id, but can be incorrect
-  event_type TEXT NOT NULL, -- event type - see protocol/types.ts
-  event_encoding INTEGER NOT NULL, -- format of event_body: 0 - binary, 1 - text utf8, 2 - JSON (utf8)
-  content_type TEXT NOT NULL, -- content type - see protocol/types.ts
-  event_body BLOB, -- agent message body as sent
-  event_hash BLOB NOT NULL,
-  integrity TEXT NOT NULL DEFAULT '',
+CREATE TABLE contact_requests (
+  contact_request_id INTEGER PRIMARY KEY,
+  user_contact_link_id INTEGER NOT NULL REFERENCES user_contact_links
+    ON UPDATE CASCADE ON DELETE CASCADE,
+  agent_invitation_id  BLOB NOT NULL,
+  contact_profile_id INTEGER REFERENCES contact_profiles
+    DEFERRABLE INITIALLY DEFERRED, -- NULL if it's an incognito profile
+  local_display_name TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  user_id INTEGER NOT NULL REFERENCES users,
+  FOREIGN KEY (user_id, local_display_name)
+    REFERENCES display_names (user_id, local_display_name)
+    ON UPDATE CASCADE
+    DEFERRABLE INITIALLY DEFERRED,
+  UNIQUE (user_id, local_display_name),
+  UNIQUE (user_id, contact_profile_id)
+);
+
+-- all message events as received or sent, append only
+-- maps to message deliveries as one-to-many for group messages
+CREATE TABLE messages (
+  message_id INTEGER PRIMARY KEY,
+  msg_sent INTEGER NOT NULL, -- 0 for received, 1 for sent
+  chat_msg_event TEXT NOT NULL, -- message event type (the constructor of ChatMsgEvent)
+  msg_body BLOB, -- agent message body as received or sent
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
-CREATE INDEX events_external_msg_id_index ON events (connection_id, external_msg_id);
-
-CREATE TABLE event_body_parts (
-  event_body_part_id INTEGER PRIMARY KEY,
-  event_id REFERENCES events,
-  full_size INTEGER NOT NULL,
-  part_status TEXT, -- full, partial
-  content_type TEXT NOT NULL,
-  event_part BLOB
+-- message deliveries communicated with the agent, append only
+CREATE TABLE msg_deliveries (
+  msg_delivery_id INTEGER PRIMARY KEY,
+  message_id INTEGER NOT NULL REFERENCES messages ON DELETE CASCADE, -- non UNIQUE for group messages
+  connection_id INTEGER NOT NULL REFERENCES connections ON DELETE CASCADE,
+  agent_msg_id INTEGER, -- internal agent message ID (NULL while pending)
+  agent_msg_meta TEXT, -- JSON with timestamps etc. sent in MSG, NULL for sent
+  chat_ts TEXT NOT NULL DEFAULT (datetime('now')), -- broker_ts for received, created_at for sent
+  UNIQUE (connection_id, agent_msg_id)
 );
 
-CREATE TABLE contact_profile_events (
-  event_id INTEGER NOT NULL UNIQUE REFERENCES events,
-  contact_profile_id INTEGER NOT NULL REFERENCES contact_profiles
-);
-
-CREATE TABLE group_profile_events (
-  event_id INTEGER NOT NULL UNIQUE REFERENCES events,
-  group_profile_id INTEGER NOT NULL REFERENCES group_profiles
-);
-
-CREATE TABLE group_events (
-  event_id INTEGER NOT NULL UNIQUE REFERENCES events,
-  group_id INTEGER NOT NULL REFERENCES groups ON DELETE RESTRICT,
-  group_member_id INTEGER REFERENCES group_members -- NULL for current user
-);
-
-CREATE TABLE group_event_parents (
-  group_event_parent_id INTEGER PRIMARY KEY,
-  event_id INTEGER NOT NULL REFERENCES group_events (event_id),
-  parent_group_member_id INTEGER REFERENCES group_members (group_member_id), -- can be NULL if parent_member_id is incorrect
-  parent_member_id BLOB, -- shared member ID, unique per group
-  parent_event_id INTEGER REFERENCES events (event_id) ON DELETE CASCADE, -- this can be NULL if received event references another event that's not received yet
-  parent_chat_event_id INTEGER NOT NULL,
-  parent_event_hash BLOB NOT NULL
-);
-
-CREATE INDEX group_event_parents_parent_chat_event_id_index
-  ON group_event_parents (parent_member_id, parent_chat_event_id);
-
-CREATE TABLE messages ( -- mutable messages presented to user
-  message_id INTEGER PRIMARY KEY,
-  contact_id INTEGER NOT NULL REFERENCES contacts ON DELETE RESTRICT, -- 1 for sent messages
-  group_id INTEGER REFERENCES groups ON DELETE RESTRICT, -- NULL for direct messages
-  deleted INTEGER NOT NULL, -- 1 for deleted
-  msg_type TEXT NOT NULL,
-  content_type TEXT NOT NULL,
-  msg_text TEXT NOT NULL, -- textual representation
-  msg_props TEXT NOT NULL -- JSON
-);
-
-CREATE TABLE message_content (
-  message_content_id INTEGER PRIMARY KEY,
-  message_id INTEGER REFERENCES messages ON DELETE CASCADE,
-  content_type TEXT NOT NULL,
-  content_size INTEGER, -- full expected content size
-  content_status TEXT, -- empty, part, full
-  content BLOB NOT NULL
-);
-
-CREATE TABLE message_events (
-  event_id INTEGER NOT NULL UNIQUE REFERENCES events,
-  message_id INTEGER NOT NULL REFERENCES messages
+-- TODO recovery for received messages with "rcv_agent" status - acknowledge to agent
+-- changes of messagy delivery status, append only
+CREATE TABLE msg_delivery_events (
+  msg_delivery_event_id INTEGER PRIMARY KEY,
+  msg_delivery_id INTEGER NOT NULL REFERENCES msg_deliveries ON DELETE CASCADE, -- non UNIQUE for multiple events per msg delivery
+  delivery_status TEXT NOT NULL, -- see MsgDeliveryStatus for allowed values
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE (msg_delivery_id, delivery_status)
 );

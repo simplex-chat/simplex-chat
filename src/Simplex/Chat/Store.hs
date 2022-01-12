@@ -1043,7 +1043,7 @@ getMemberInvitation :: StoreMonad m => SQLiteStore -> User -> Int64 -> m (Maybe 
 getMemberInvitation st User {userId} groupMemberId =
   liftIO . withTransaction st $ \db ->
     join . listToMaybe . map fromOnly
-      <$> DB.query db "SELECT inv_queue_info FROM group_members WHERE group_member_id = ? AND user_id = ?;" (groupMemberId, userId)
+      <$> DB.query db "SELECT sent_inv_queue_info FROM group_members WHERE group_member_id = ? AND user_id = ?;" (groupMemberId, userId)
 
 createMemberConnection :: MonadUnliftIO m => SQLiteStore -> UserId -> GroupMember -> ConnId -> m ()
 createMemberConnection st userId GroupMember {groupMemberId} agentConnId =
@@ -1289,12 +1289,12 @@ createContactMemberInv_ db User {userId, userContactId} groupId userOrContact Me
         [sql|
           INSERT INTO group_members
             ( group_id, member_id, member_role, member_category, member_status, invited_by,
-              user_id, local_display_name, contact_profile_id, contact_id, inv_queue_info)
+              user_id, local_display_name, contact_profile_id, contact_id, sent_inv_queue_info)
           VALUES
             (:group_id,:member_id,:member_role,:member_category,:member_status,:invited_by,
              :user_id,:local_display_name,
               (SELECT contact_profile_id FROM contacts WHERE contact_id = :contact_id),
-              :contact_id, :inv_queue_info)
+              :contact_id, :sent_inv_queue_info)
         |]
         [ ":group_id" := groupId,
           ":member_id" := memberId,
@@ -1305,7 +1305,7 @@ createContactMemberInv_ db User {userId, userContactId} groupId userOrContact Me
           ":user_id" := userId,
           ":local_display_name" := localDisplayName' userOrContact,
           ":contact_id" := contactId' userOrContact,
-          ":inv_queue_info" := connRequest
+          ":sent_inv_queue_info" := connRequest
         ]
 
 getViaGroupMember :: MonadUnliftIO m => SQLiteStore -> User -> Contact -> m (Maybe (GroupName, GroupMember))
