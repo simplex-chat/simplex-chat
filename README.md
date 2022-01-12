@@ -171,9 +171,7 @@ $ simplex-chat -d alice
 
 Running above, for example, would create `alice_v1_chat.db` and `alice_v1_agent.db` database files in current directory.
 
-<!-- TODO update -->
-
-Default SMP servers are hosted on Linode (London, UK and Fremont, CA) - they are [pre-configured in the app](https://github.com/simplex-chat/simplex-chat/blob/master/src/Simplex/Chat/Options.hs#L40).
+Default SMP servers are hosted on Linode (London, UK and Fremont, CA) - they are [pre-configured in the app](https://github.com/simplex-chat/simplex-chat/blob/master/src/Simplex/Chat/Options.hs#L42).
 
 If you deployed your own SMP server(s) you can configure client via `-s` option:
 
