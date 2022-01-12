@@ -1,4 +1,5 @@
 {-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE LambdaCase #-}
@@ -102,6 +103,7 @@ import Simplex.Chat.Terminal (printToTerminal)
 import Simplex.Chat.Types
 import Simplex.Chat.Util (safeDecodeUtf8)
 import Simplex.Messaging.Agent.Protocol
+import Simplex.Messaging.Encoding.String
 import qualified Simplex.Messaging.Protocol as SMP
 import System.Console.ANSI.Types
 
@@ -328,7 +330,7 @@ connReqInvitation_ :: ConnReqInvitation -> [StyledString]
 connReqInvitation_ cReq =
   [ "pass this invitation link to your contact (via another channel): ",
     "",
-    (plain . serializeConnReq') cReq,
+    (plain . strEncode) cReq,
     "",
     "and ask them to connect: " <> highlight' "/c <invitation_link_above>"
   ]
@@ -380,7 +382,7 @@ connReqContact_ :: StyledString -> ConnReqContact -> [StyledString]
 connReqContact_ intro cReq =
   [ intro,
     "",
-    (plain . serializeConnReq') cReq,
+    (plain . strEncode) cReq,
     "",
     "Anybody can send you contact requests with: " <> highlight' "/c <contact_link_above>",
     "to show it again: " <> highlight' "/sa",
@@ -444,7 +446,7 @@ cannotResendInvitation g c =
 
 receivedGroupInvitation :: Group -> ContactName -> GroupMemberRole -> [StyledString]
 receivedGroupInvitation g@Group {localDisplayName} c role =
-  [ ttyFullGroup g <> ": " <> ttyContact c <> " invites you to join the group as " <> plain (serializeMemberRole role),
+  [ ttyFullGroup g <> ": " <> ttyContact c <> " invites you to join the group as " <> plain (strEncode role),
     "use " <> highlight ("/j " <> localDisplayName) <> " to accept"
   ]
 
@@ -492,7 +494,7 @@ groupMembers Group {membership, members} = map groupMember . filter (not . remov
   where
     removedOrLeft m = let s = memberStatus m in s == GSMemRemoved || s == GSMemLeft
     groupMember m = ttyFullMember m <> ": " <> role m <> ", " <> category m <> status m
-    role = plain . serializeMemberRole . memberRole
+    role m = plain . strEncode $ memberRole (m :: GroupMember)
     category m = case memberCategory m of
       GCUserMember -> "you, "
       GCInviteeMember -> "invited, "
@@ -753,6 +755,7 @@ chatError = \case
     CEFileSend fileId e -> ["error sending file " <> sShow fileId <> ": " <> sShow e]
     CEFileRcvChunk e -> ["error receiving file: " <> plain e]
     CEFileInternal e -> ["file error: " <> plain e]
+    CEAgentVersion -> ["unsupported agent version"]
   -- e -> ["chat error: " <> sShow e]
   ChatErrorStore err -> case err of
     SEDuplicateName -> ["this display name is already used by user, contact or group"]
@@ -831,4 +834,4 @@ styleTime :: String -> StyledString
 styleTime = Styled [SetColor Foreground Vivid Black]
 
 clientVersionInfo :: [StyledString]
-clientVersionInfo = [plain $ "SimpleX Chat v" <> versionNumber]
+clientVersionInfo = [plain versionStr, plain updateStr]

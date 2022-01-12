@@ -295,6 +295,8 @@ testGroup2 =
         ]
       dan #> "#club how is it going?"
       dan <## "you are no longer a member of the group"
+      dan ##> "/d #club"
+      dan <## "#club: you deleted the group"
       dan <##> cath
       dan <##> alice
       -- member leaves
@@ -316,6 +318,8 @@ testGroup2 =
         (bob </)
       bob #> "#club how is it going?"
       bob <## "you are no longer a member of the group"
+      bob ##> "/d #club"
+      bob <## "#club: you deleted the group"
       bob <##> cath
       bob <##> alice
 
@@ -338,6 +342,8 @@ testGroupDelete =
       bob <## "#team: you deleted the group"
       cath #> "#team hi"
       cath <## "you are no longer a member of the group"
+      cath ##> "/d #team"
+      cath <## "#team: you deleted the group"
 
 testGroupDeleteWhenInvited :: IO ()
 testGroupDeleteWhenInvited =
