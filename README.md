@@ -159,7 +159,7 @@ $ stack install
 
 ### Running the chat client
 
-To start the chat client, run `simplex-chat` from the terminal. If you get `simplex-chat: command not found`, see [Troubleshooting on Unix](#troubleshooting-on-unix).
+To start the chat client, run `simplex-chat` from the terminal.
 
 By default, app data directory is created in the home directory (`~/.simplex`, or `%APPDATA%/simplex` on Windows), and two SQLite database files `simplex_v1_chat.db` and `simplex_v1_agent.db` are initialized in it.
 
