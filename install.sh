@@ -60,7 +60,6 @@ elif [[ ! $($binary -h | grep v1) ]]; then
     esac
   done
 fi
-# Prepare to upgrade from v0 to v1 /
 
 [[ ! -d $BIN_DIR ]] && mkdir -p $BIN_DIR
 
