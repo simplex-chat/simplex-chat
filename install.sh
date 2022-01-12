@@ -15,6 +15,9 @@ else
   exit 1
 fi
 
+# / Prepare to upgrade from v0 to v1
+
+# Determine path of chat binary
 if [[ -n "$(which $APP_NAME)" ]]; then
   binary=$(which $APP_NAME)
 elif [[ -f "$BIN_PATH" ]]; then
@@ -23,7 +26,7 @@ else
   binary=""
 fi
 
-if [[ -z $binary ]]; then
+if [[ -z $binary ]]; then  # If chat binary not found, check v0 initial migration and offer to abort or continue
   agent_db="$HOME/.simplex/simplex.agent.db"
   if [[ \
     -f "$agent_db" && \
@@ -40,7 +43,7 @@ if [[ -z $binary ]]; then
       esac
     done
   fi
-elif [[ ! $($binary -h | grep v1) ]]; then
+elif [[ ! $($binary -h | grep v1) ]]; then  # If chat binary found, check version and offer to abort or continue, on continue rename chat binary
   echo "Warning: found a previous version of SimpleX Chat, the current version is not backwards compatible."
   echo "If you continue, it will be renamed to $APP_NAME-v0, and the new version will be installed as $APP_NAME with a clean database."
   while true; do
@@ -56,7 +59,10 @@ elif [[ ! $($binary -h | grep v1) ]]; then
         * ) echo "Please answer 'a' or 'c'."
     esac
   done
+else
+  echo "v0 not found"
 fi
+# Prepare to upgrade from v0 to v1 /
 
 [[ ! -d $BIN_DIR ]] && mkdir -p $BIN_DIR
 
