@@ -50,7 +50,6 @@ We appreciate all the help from our contributors, thank you!
 - [Installation](#🚀-installation)
   - [Download chat client](#download-chat-client)
     - [Linux and MacOS](#linux-and-macos)
-      - [Troubleshooting on Unix](#troubleshooting-on-unix)
     - [Windows](#windows)
   - [Build from source](#build-from-source)
     - [Using Docker](#using-docker)
@@ -133,30 +132,6 @@ mv <binary> ~/.local/bin/simplex-chat
 (or any other preferred location on `PATH`).
 
 On MacOS you also need to [allow Gatekeeper to run it](https://support.apple.com/en-us/HT202491).
-
-##### Troubleshooting on Unix
-
-If you downloaded the binary manually and get `simplex-chat: command not found` error when executing it, you need to add the directory containing it to the [`PATH` variable](https://man7.org/linux/man-pages/man7/environ.7.html) (find "PATH" in page). To modify `PATH` for future sessions, put `PATH="$PATH:/path/to/dir"` in `~/.profile`, or in `~/.bash_profile` if that's what you have. See [this answer](https://unix.stackexchange.com/a/26059) for the detailed explanation on the appropriate place to define environment variables for `bash` and other shells.
-
-For example, if you followed the previous instructions, open `~/.profile` for editing:
-
-```sh
-vi ~/.profile
-```
-
-And add the following line to the end:
-
-```sh
-PATH="$PATH:$HOME/.local/bin"
-```
-
-Note that this will not automatically update your `PATH` for the remainder of the session. To do this, you should run:
-
-```sh
-source ~/.profile
-```
-
-Or restart your terminal to start a new session.
 
 #### Windows
 
