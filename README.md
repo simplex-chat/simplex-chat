@@ -10,13 +10,13 @@
 [![Follow on Twitter](https://img.shields.io/twitter/follow/SimpleXChat?style=social)](https://twitter.com/simplexchat)
 [![Join on Reddit](https://img.shields.io/reddit/subreddit-subscribers/SimpleXChat?style=social)](https://www.reddit.com/r/SimpleXChat)
 
-SimpleX chat prototype is a thin terminal UI on top of [SimpleXMQ](https://github.com/simplex-chat/simplexmq) message broker that uses [SMP protocols](https://github.com/simplex-chat/simplexmq/blob/master/protocol). The motivation for SimpleX chat is [presented here](./simplex.md). See [simplex.chat](https://simplex.chat) website for chat demo and the explanations of the system and how SMP protocol works.
+SimpleX chat prototype is a thin terminal UI on top of [SimpleXMQ](https://github.com/simplex-chat/simplexmq) message broker.
 
-**NEW in v0.5.4: [message persistence](#access-chat-history)**
+- [Website](https://simplex.chat) - see demo and explanation of the system and protocols
+- [Motivation for SimpleX](./simplex.md)
+- [SMP protocols](https://github.com/simplex-chat/simplexmq/blob/master/protocol) forming SimpleXMQ
 
-**NEW in v0.5.0: [user contact addresses](#user-contact-addresses-alpha)**
-
-**Please note**: v0.5.0 of SimpleX Chat works with the same database, but the connection links are not compatible with the prior versions - please ask all your contacts to upgrade!
+**v1.0.0 is released: [read announcement here](link)**
 
 ### :zap: Quick installation
 
@@ -34,9 +34,9 @@ Once the chat client is installed, simply run `simplex-chat` from your terminal.
 
 - **Install the chat and try it out** - if you spot a bug, please [raise an issue](https://github.com/simplex-chat/simplex-chat/issues).
 
-- :speech_balloon:  **Spread the word** - terminal chat is an [early-stage product](#disclaimer) while we stabilize the protocol - you can invite your friends for some fun chat inside your terminal. We're using it right inside our IDEs as we are coding it 👨‍💻
+- :speech_balloon:  **Spread the word** - invite your friends for some fun chat inside your terminal. Terminal chat is an [early-stage product](#disclaimer), but it works quite reliably most of the time - we're using it right inside our IDEs as we are coding it. 👨‍💻
 
-- **Make a donation** via [opencollective](https://opencollective.com/simplex-chat) - every donation helps, however large or small!
+- **Make a donation** via [opencollective](https://opencollective.com/simplex-chat) - every donation helps, however large or small.
 
 - **Make a contribution to the project** - we're constantly moving the project forward and there are always lots of things to do!
 
@@ -71,9 +71,9 @@ We appreciate all the help from our contributors, thank you!
 
 This is WIP implementation of SimpleX Chat that implements a new network topology for asynchronous communication combining the advantages and avoiding the disadvantages of federated and P2P networks.
 
-If you expect software to be reliable most of the time, then this is probably not ready for you yet. We use it ourselves for terminal chat and it seems to work most of the time - we would really appreciate if you try SimpleX Chat and give us your feedback!
+[SimpleXMQ security model](https://github.com/simplex-chat/simplexmq/blob/master/protocol/overview-tjr.md) has undergone a major overhaul for v1.0.0, but the implementation has not been audited yet.
 
-> :warning: **Please note:** The main differentiation of SimpleX network is the approach to internet message routing rather than encryption; for that reason no sufficient attention was paid to either TCP transport level encryption or to E2E encryption protocols - they are implemented in an ad hoc way based on RSA and AES algorithms. See [SMP protocol](https://github.com/simplex-chat/simplexmq/blob/master/protocol/simplex-messaging.md#appendix-a) on TCP transport encryption protocol (AEAD-GCM scheme, with an AES key negotiation based on RSA key hash known to the client in advance) and [this section](https://github.com/simplex-chat/simplexmq/blob/master/rfcs/2021-01-26-crypto.md#e2e-encryption) on E2E encryption protocol (an ad hoc hybrid scheme a la PGP). These protocols will change in a consumer ready version to something more robust.
+As for chat application, you may encounter occasional bugs. If you expect software to be reliable all the time, then this is probably not ready for you yet. We use it ourselves for terminal chat and it works most of the time - we would really appreciate if you try SimpleX Chat and give us your feedback!
 
 ## Network topology
 
@@ -81,7 +81,7 @@ SimpleX is a decentralized client-server network that uses redundant, disposable
 
 Unlike P2P networks, all messages are passed through one or several (for redundancy) servers, that do not even need to have persistence (in fact, the current [SMP server implementation](https://github.com/simplex-chat/simplexmq#smp-server) uses in-memory message storage, persisting only the queue records) - it provides better metadata protection than P2P designs, as no global participant ID is required, and avoids many [problems of P2P networks](https://github.com/simplex-chat/simplex-chat/blob/master/simplex.md#comparison-with-p2p-messaging-protocols).
 
-Unlike federated networks, the participating server nodes **do not have records of the users**, **do not communicate with each other**, **do not store messages** after they are delivered to the recipients, and there is no way to discover the full list of participating servers. SimpleX network avoids the problem of metadata visibility that federated networks suffer from and better protects the network, as servers do not communicate with each other. Each server node provides unidirectional "dumb pipes" to the users, that do authorization without authentication, having no knowledge of the the users or their contacts. Each queue is assigned two RSA keys - one for receiver and one for sender - and each queue access is authorized with a signature created using a respective key's private counterpart.
+Unlike federated networks, the participating server nodes **do not have records of the users**, **do not communicate with each other**, **do not store messages** after they are delivered to the recipients, and there is no way to discover the full list of participating servers. SimpleX network avoids the problem of metadata visibility that federated networks suffer from and better protects the network, as servers do not communicate with each other. Each server node provides unidirectional "dumb pipes" to the users, that do authorization without authentication, having no knowledge of the the users or their contacts. Each queue is assigned two Ed448 keys - one for receiver and one for sender - and each queue access is authorized with a signature created using a respective key's private counterpart.
 
 The routing of messages relies on the knowledge of client devices how user contacts and groups map at any given moment of time to these disposable queues on server nodes.
 
@@ -95,13 +95,15 @@ The routing of messages relies on the knowledge of client devices how user conta
 - Auto-populated recipient name - just type your messages to reply to the sender once the connection is established.
 - Demo SMP servers available and pre-configured in the app - or you can [deploy your own server](https://github.com/simplex-chat/simplexmq#using-smp-server-and-smp-agent).
 - No global identity or any names visible to the server(s), ensuring full privacy of your contacts and conversations.
-- E2E encryption, with RSA public key that has to be passed out-of-band (see [How to use SimpleX chat](#how-to-use-simplex-chat)).
-- Message signing and verification with automatically generated RSA keys.
+- Two layers of E2E encryption (double ratchet on connection level and NaCl crypto_box on queue level) using X3DH key agreement with ephemeral Curve448 keys and out-of-band passing of recipient keys (see [How to use SimpleX chat](#how-to-use-simplex-chat)).
 - Message integrity validation (via including the digests of the previous messages).
-- Authentication of each command/message by SMP servers with automatically generated RSA key pairs.
-- TCP transport encryption using SMP transport protocol.
+- Authentication of each command/message by SMP servers with automatically generated Ed448 keys.
+- TLS 1.2 transport encryption.
+- Additional encryption of messages from SMP server to recipient to reduce traffic correlation.
 
-RSA keys are not used as identity, they are randomly generated for each contact.
+Public keys involved in key exchange are not used as identity, they are randomly generated for each contact.
+
+See [Encryption Primitives Used](https://github.com/simplex-chat/simplexmq/blob/master/protocol/overview-tjr.md#encryption-primitives-used) for technical details.
 
 <a name="🚀-installation"></a>
 
@@ -136,7 +138,7 @@ On MacOS you also need to [allow Gatekeeper to run it](https://support.apple.com
 
 ##### Troubleshooting on Unix
 
-If you get `simplex-chat: command not found` when executing the downloaded binary, you need to add the directory containing it to the [`PATH` variable](https://man7.org/linux/man-pages/man7/environ.7.html) (find "PATH" in page). To modify `PATH` for future sessions, put `PATH="$PATH:/path/to/dir"` in `~/.profile`, or in `~/.bash_profile` if that's what you have. See [this answer](https://unix.stackexchange.com/a/26059) for the detailed explanation on the appropriate place to define environment variables for `bash` and other shells.
+If you downloaded the binary manually and get `simplex-chat: command not found` error when executing it, you need to add the directory containing it to the [`PATH` variable](https://man7.org/linux/man-pages/man7/environ.7.html) (find "PATH" in page). To modify `PATH` for future sessions, put `PATH="$PATH:/path/to/dir"` in `~/.profile`, or in `~/.bash_profile` if that's what you have. See [this answer](https://unix.stackexchange.com/a/26059) for the detailed explanation on the appropriate place to define environment variables for `bash` and other shells.
 
 For example, if you followed the previous instructions, open `~/.profile` for editing:
 
@@ -210,15 +212,17 @@ $ simplex-chat -d alice
 
 Running above, for example, would create `alice_v1_chat.db` and `alice_v1_agent.db` database files in current directory.
 
-Default SMP servers are hosted on Linode (London, UK and Fremont, CA) - they are [pre-configured in the app](https://github.com/simplex-chat/simplex-chat/blob/master/src/Simplex/Chat/Options.hs#L40). Base-64 encoded string after server host is the transport key digest.
+<!-- TODO update -->
+
+Default SMP servers are hosted on Linode (London, UK and Fremont, CA) - they are [pre-configured in the app](https://github.com/simplex-chat/simplex-chat/blob/master/src/Simplex/Chat/Options.hs#L40).
 
 If you deployed your own SMP server(s) you can configure client via `-s` option:
 
 ```shell
-$ simplex-chat -s smp.example.com:5223#KXNE1m2E1m0lm92WGKet9CL6+lO742Vy5G6nsrkvgs8=
+$ simplex-chat -s smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=@smp.example.com
 ```
 
-The base-64 encoded string in server address is the digest of RSA transport handshake key that the server will generate on the first run and output its digest.
+Base-64 encoded string preceding the server address is the server's online certificate fingerprint. It is generated on server initialization and validated by client during TLS handshake.
 
 You can still talk to people using default or any other server - it only affects the location of the message queue when you initiate the connection (and the reply queue can be on another server, as set by the other party's client).
 
@@ -238,7 +242,7 @@ Once you've set up your local profile, enter `/c` (for `/connect`) to create a n
 
 You are able to create multiple invitations by entering `/connect` multiple times and sending these invitations to the corresponding contacts you'd like to connect with.
 
-The invitation has the format `smp::<server>::<queue_id>::<rsa_public_key_for_this_queue_only>`. The invitation can only be used once and even if this is intercepted, the attacker would not be able to use it to send you the messages via this queue once your contact confirms that the connection is established.
+The invitation can only be used once and even if this is intercepted, the attacker would not be able to use it to send you the messages via this queue once your contact confirms that the connection is established. See agent protocol for explanation of [invitation format](https://github.com/simplex-chat/simplexmq/blob/master/protocol/agent-protocol.md#connection-request).
 
 The contact who received the invitation should enter `/c <invitation>` to accept the connection. This establishes the connection, and both parties are notified.
 
@@ -292,43 +296,7 @@ You can view and search your chat history by querying your database:
 sqlite3 ~/.simplex/simplex_v1_chat.db
 ```
 
-Now you can run queries against `direct_messages`, `group_messages` and `all_messages` (or their simpler alternatives `direct_messages_plain`, `group_messages_plain` and `all_messages_plain`), for example:
-
-```sql
--- you can put these or your preferred settings into ~/.sqliterc
--- to persist across sqlite3 client sessions
-.mode column
-.headers on
-.nullvalue NULL
-
--- simple views into direct, group and all_messages
--- with user's messages deduplicated for group and all_messages;
--- only 'x.msg.new' ("new message") chat events - filters out service events;
--- msg_sent is 0 for received, 1 for sent
-select * from direct_messages_plain;
-select * from group_messages_plain;
-select * from all_messages_plain;
-
--- query other details of your chat history with regular SQL, for example:
--- files you offered for sending
-select * from direct_messages where msg_sent = 1 and chat_msg_event = 'x.file';
--- everything catherine sent related to cats
-select * from direct_messages where msg_sent = 0 and contact = 'catherine' and msg_body like '%cats%'; 
--- all correspondence with alice in #team
-select * from group_messages where group_name = 'team' and contact = 'alice';
-
--- aggregate your chat data
-select contact_or_group, num_messages from (
-  select
-    contact as contact_or_group, count(1) as num_messages
-    from direct_messages_plain group by contact
-  union
-  select
-    group_name as contact_or_group, count(1) as num_messages
-    from group_messages_plain group by group_name
-)
-order by num_messages desc;
-```
+See [Queries to chat database](./queries.md) for examples.
 
 **Convenience queries**
 
