@@ -45,7 +45,7 @@ Once the chat client is installed, simply run `simplex-chat` from your terminal.
   - [How to use SimpleX chat](#how-to-use-simplex-chat)
   - [Groups](#groups)
   - [Sending files](#sending-files)
-  - [User contact addresses](#user-contact-addresses-alpha)
+  - [User contact addresses](#user-contact-addresses)
   - [Access chat history](#access-chat-history)
 - [Roadmap](#Roadmap)
 - [License](#license)
@@ -225,7 +225,7 @@ You can send a file to your contact with `/f @<contact> <file_path>` - the recip
 
 You can send files to a group with `/f #<group> <file_path>`.
 
-### User contact addresses (alpha)
+### User contact addresses
 
 As an alternative to one-time invitation links, you can create a long-term address with `/ad` (for `/address`). The created address can then be shared via any channel, and used by other users as a link to make a contact request with `/c <user_contact_address>`.
 
