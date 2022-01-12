@@ -237,13 +237,13 @@ Use `/help address` for other commands.
 
 SimpleX chat stores all your contacts and conversations in a local SQLite database, making it private and portable by design, owned and controlled by user.
 
-> **Please note:** Starting with v1.0.0 message views are not created as part of database initialization. Run the below script to create them in your database.
+You can view and search your chat history by querying your database. Run the below script to create message views in your database.
 
 ```sh
 curl -o- https://raw.githubusercontent.com/simplex-chat/simplex-chat/master/message_views.sql | sqlite3 ~/.simplex/simplex_v1_chat.db
 ```
 
-You can view and search your chat history by querying your database:
+Open SQLite Command Line Shell:
 
 ```sh
 sqlite3 ~/.simplex/simplex_v1_chat.db
