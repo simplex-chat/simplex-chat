@@ -26,7 +26,7 @@ else
   binary=""
 fi
 
-if [[ -z $binary ]]; then  # # If chat binary not found, check v0 initial migration and offer to abort or continue
+if [[ -z $binary ]]; then
   agent_db="$HOME/.simplex/simplex.agent.db"
   if [[ \
     -f "$agent_db" && \
@@ -43,7 +43,7 @@ if [[ -z $binary ]]; then  # # If chat binary not found, check v0 initial migrat
       esac
     done
   fi
-elif [[ ! $($binary -h | grep v1) ]]; then  # If chat binary found, check version and offer to abort or continue, on continue rename chat binary
+elif [[ ! $($binary -h | grep v1) ]]; then
   echo "Warning: found a previous version of SimpleX Chat, the current version is not backwards compatible."
   echo "If you continue, it will be renamed to $APP_NAME-v0, and the new version will be installed as $APP_NAME with a clean database."
   while true; do
