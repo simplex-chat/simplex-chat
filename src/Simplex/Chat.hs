@@ -552,6 +552,10 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
           ackMsgDeliveryEvent conn meta
         SENT msgId ->
           sentMsgDeliveryEvent conn msgId
+        -- TODO print errors
+        MERR _ _ -> pure ()
+        ERR _ -> pure ()
+        -- TODO add debugging output
         _ -> pure ()
       Just ct@Contact {localDisplayName = c} -> case agentMsg of
         MSG meta msgBody -> do
@@ -611,6 +615,10 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
           showContactSubscribed c
           showToast (c <> "> ") "is active"
           setActive $ ActiveC c
+        -- TODO print errors
+        MERR _ _ -> pure ()
+        ERR _ -> pure ()
+        -- TODO add debugging output
         _ -> pure ()
 
     processGroupMessage :: ACommand 'Agent -> Connection -> GroupName -> GroupMember -> m ()
@@ -695,6 +703,10 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
         ackMsgDeliveryEvent conn meta
       SENT msgId ->
         sentMsgDeliveryEvent conn msgId
+      -- TODO print errors
+      MERR _ _ -> pure ()
+      ERR _ -> pure ()
+      -- TODO add debugging output
       _ -> pure ()
 
     processSndFileConn :: ACommand 'Agent -> Connection -> SndFileTransfer -> m ()
@@ -724,6 +736,9 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
             _ -> chatError $ CEFileSend fileId err
         MSG meta _ ->
           withAckMessage agentConnId meta $ pure ()
+        -- TODO print errors
+        ERR _ -> pure ()
+        -- TODO add debugging output
         _ -> pure ()
 
     processRcvFileConn :: ACommand 'Agent -> Connection -> RcvFileTransfer -> m ()
@@ -761,6 +776,10 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
                       withAgent (`deleteConnection` agentConnId)
                 RcvChunkDuplicate -> pure ()
                 RcvChunkError -> badRcvFileChunk ft $ "incorrect chunk number " <> show chunkNo
+        -- TODO print errors
+        MERR _ _ -> pure ()
+        ERR _ -> pure ()
+        -- TODO add debugging output
         _ -> pure ()
 
     processUserContactRequest :: ACommand 'Agent -> Connection -> UserContact -> m ()
@@ -772,6 +791,10 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
           XInfo p -> profileContactRequest invId p
           -- TODO show/log error, other events in contact request
           _ -> pure ()
+      -- TODO print errors
+      MERR _ _ -> pure ()
+      ERR _ -> pure ()
+      -- TODO add debugging output
       _ -> pure ()
       where
         profileContactRequest :: InvitationId -> Profile -> m ()
