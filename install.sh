@@ -62,7 +62,7 @@ elif [[ ! $($binary -h | grep v1) ]]; then  # If chat binary found, check versio
 fi
 # Prepare to upgrade from v0 to v1 /
 
-[ ! -d $BIN_DIR ] && mkdir -p $BIN_DIR
+[[ ! -d $BIN_DIR ]] && mkdir -p $BIN_DIR
 
 if [ -n "$(command -v curl)" ]; then
 	curl -L -o $BIN_PATH "https://github.com/$APP_NAME/$APP_NAME/releases/latest/download/$APP_NAME-$PLATFORM"
