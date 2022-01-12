@@ -2,7 +2,7 @@
 
 # SimpleX Chat
 
-**The world's most private and secure chat** - open-source and without global identities of any kind.
+SimpleX - the most private and secure open-source chat and applications platform - now with double-ratchet E2E encryption.
 
 [![GitHub build](https://github.com/simplex-chat/simplex-chat/workflows/build/badge.svg)](https://github.com/simplex-chat/simplex-chat/actions?query=workflow%3Abuild)
 [![GitHub downloads](https://img.shields.io/github/downloads/simplex-chat/simplex-chat/total)](https://github.com/simplex-chat/simplex-chat/releases)
@@ -10,13 +10,11 @@
 [![Follow on Twitter](https://img.shields.io/twitter/follow/SimpleXChat?style=social)](https://twitter.com/simplexchat)
 [![Join on Reddit](https://img.shields.io/reddit/subreddit-subscribers/SimpleXChat?style=social)](https://www.reddit.com/r/SimpleXChat)
 
-SimpleX chat prototype is a thin terminal UI on top of [SimpleXMQ](https://github.com/simplex-chat/simplexmq) message broker.
+SimpleX Chat is a terminal (command line) UI using [SimpleXMQ](https://github.com/simplex-chat/simplexmq) message broker.
 
-- [Website](https://simplex.chat) - see demo and explanation of the system and protocols
-- [Motivation for SimpleX](./simplex.md)
-- [SMP protocols](https://github.com/simplex-chat/simplexmq/blob/master/protocol) forming SimpleXMQ
+See [SimpleX overview](https://github.com/simplex-chat/simplexmq/blob/master/protocol/overview-tjr.md) for more information on platform objectives and technical design.
 
-**v1.0.0 is released: [read announcement here](link)**
+**v1.0.0 is released: [read announcement here](https://github.com/simplex-chat/simplex-chat/blob/master/blog/20220112-simplex-chat-v1-released.md)**
 
 ### :zap: Quick installation
 
@@ -52,11 +50,11 @@ Once the chat client is installed, simply run `simplex-chat` from your terminal.
 
 ## Disclaimer
 
-This is WIP implementation of SimpleX Chat that implements a new network topology for asynchronous communication combining the advantages and avoiding the disadvantages of federated and P2P networks.
+SimpleX Chat implements a new network topology for asynchronous communication combining the advantages and avoiding the disadvantages of federated and P2P networks.
 
-[SimpleXMQ security model](https://github.com/simplex-chat/simplexmq/blob/master/protocol/overview-tjr.md) has undergone a major overhaul for v1.0.0, but the implementation has not been audited yet.
+[SimpleXMQ security model](https://github.com/simplex-chat/simplexmq/blob/master/protocol/overview-tjr.md) had many improvements in v1.0.0; the implementation has not been audited yet.
 
-As for chat application, you may encounter occasional bugs. If you expect software to be reliable all the time, then this is probably not ready for you yet. We use it ourselves for terminal chat and it works most of the time - we would really appreciate if you try SimpleX Chat and give us your feedback!
+We use SimpleX Chat all the time, but you may find some bugs. We would really appreciate if you use it and let us know anything that needs to be fixed or improved.
 
 ## Network topology
 
@@ -64,7 +62,7 @@ SimpleX is a client-server network that uses redundant, disposable nodes to asyn
 
 Unlike P2P networks, all messages are passed through one or several (for redundancy) servers, that do not even need to have persistence (in fact, the current [SMP server implementation](https://github.com/simplex-chat/simplexmq#smp-server) uses in-memory message storage, persisting only the queue records) - it provides better metadata protection than P2P designs, as no global participant ID is required, and avoids many [problems of P2P networks](https://github.com/simplex-chat/simplex-chat/blob/master/simplex.md#comparison-with-p2p-messaging-protocols).
 
-Unlike federated networks, the participating server nodes **do not have records of the users**, **do not communicate with each other**, **do not store messages** after they are delivered to the recipients, and there is no way to discover the full list of participating servers. SimpleX network avoids the problem of metadata visibility that federated networks suffer from and better protects the network, as servers do not communicate with each other. Each server node provides unidirectional "dumb pipes" to the users, that do authorization without authentication, having no knowledge of the the users or their contacts. Each queue is assigned two Ed448 keys - one for receiver and one for sender - and each queue access is authorized with a signature created using a respective key's private counterpart.
+Unlike federated networks, the participating server nodes **do not have records of the users**, **do not communicate with each other**, **do not store messages** after they are delivered to the recipients, and there is no way to discover the full list of participating servers. SimpleX network avoids the problem of metadata visibility that federated networks have and better protects the network, as servers do not communicate with each other. Each server node provides unidirectional "dumb pipes" to the users, that do authorization without authentication, having no knowledge of the the users or their contacts. Each queue is assigned two Ed448 keys - one for receiver and one for sender - and each queue access is authorized with a signature created using a respective key's private counterpart.
 
 The routing of messages relies on the knowledge of client devices how user contacts and groups map at any given moment of time to these disposable queues on server nodes.
 
@@ -78,7 +76,7 @@ The routing of messages relies on the knowledge of client devices how user conta
 - Auto-populated recipient name - just type your messages to reply to the sender once the connection is established.
 - Demo SMP servers available and pre-configured in the app - or you can [deploy your own server](https://github.com/simplex-chat/simplexmq#using-smp-server-and-smp-agent).
 - No global identity or any names visible to the server(s), ensuring full privacy of your contacts and conversations.
-- Two layers of E2E encryption (double ratchet on connection level and NaCl crypto_box on queue level) using X3DH key agreement with ephemeral Curve448 keys and out-of-band passing of recipient keys (see [How to use SimpleX chat](#how-to-use-simplex-chat)).
+- Two layers of E2E encryption (double-ratchet for duplex connections, using X3DH key agreement with ephemeral Curve448 keys, and NaCl crypto_box for SMP queues, using Curve25519 keys) and out-of-band passing of recipient keys (see [How to use SimpleX chat](#how-to-use-simplex-chat).
 - Message integrity validation (via including the digests of the previous messages).
 - Authentication of each command/message by SMP servers with automatically generated Ed448 keys.
 - TLS 1.2 transport encryption.
@@ -171,7 +169,7 @@ $ simplex-chat -d alice
 
 Running above, for example, would create `alice_v1_chat.db` and `alice_v1_agent.db` database files in current directory.
 
-Default SMP servers are hosted on Linode (London, UK and Fremont, CA) - they are [pre-configured in the app](https://github.com/simplex-chat/simplex-chat/blob/master/src/Simplex/Chat/Options.hs#L42).
+Three default SMP servers are hosted on Linode - they are [pre-configured in the app](https://github.com/simplex-chat/simplex-chat/blob/master/src/Simplex/Chat/Options.hs#L42).
 
 If you deployed your own SMP server(s) you can configure client via `-s` option:
 
@@ -179,7 +177,7 @@ If you deployed your own SMP server(s) you can configure client via `-s` option:
 $ simplex-chat -s smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=@smp.example.com
 ```
 
-Base-64 encoded string preceding the server address is the server's online certificate fingerprint. It is generated on server initialization and validated by client during TLS handshake.
+Base64url encoded string preceding the server address is the server's online certificate fingerprint. It is generated on server initialization and validated by client during TLS handshake.
 
 You can still talk to people using default or any other server - it only affects the location of the message queue when you initiate the connection (and the reply queue can be on another server, as set by the other party's client).
 
