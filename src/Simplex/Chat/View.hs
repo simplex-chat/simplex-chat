@@ -121,10 +121,10 @@ showSentInvitation = printToView ["connection request sent!"]
 showInvalidConnReq :: ChatReader m => m ()
 showInvalidConnReq =
   printToView
-    [ "Connection link is invalid!",
-      "Possibly, it was created in a newer version (to check version: " <> highlight' "/v" <> ")",
-      "To upgrade (Linux/Mac):",
-      "curl -o- https://raw.githubusercontent.com/simplex-chat/simplex-chat/master/install.sh | bash"
+    [ "",
+      "Connection link is invalid, possibly it was created in a previous version.",
+      "Please ask your contact to check " <> highlight' "/version" <> " and update if needed.",
+      plain updateStr
     ]
 
 showChatError :: ChatReader m => ChatError -> m ()
