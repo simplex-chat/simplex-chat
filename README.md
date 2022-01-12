@@ -274,8 +274,6 @@ User address is "long-term" in a sense that it is a multiple-use connection link
 
 Use `/help address` for other commands.
 
-> :warning: **Please note:** This is an "alpha" feature - at the moment there is nothing to prevent someone who has obtained this address from spamming you with connection requests; countermeasures will be added soon!  (In the short term, you can simply delete the long-term address you created if it starts getting abused.)
-
 ![simplex-chat](./images/user-addresses.gif)
 
 ### Access chat history
@@ -296,6 +294,8 @@ sqlite3 ~/.simplex/simplex_v1_chat.db
 
 See [Queries to chat database](./queries.md) for examples.
 
+> **Please note:** SQLite foreign key constraints are disabled by default, and must be **[enabled separately for each database connection](https://sqlite.org/foreignkeys.html#fk_enable)**. The latter can be achieved by running `PRAGMA foreign_keys = ON;` command on an open database connection. By running data altering queries without enabling foreign keys prior to that, you may risk putting your database in an inconsistent state.
+
 **Convenience queries**
 
 Get all messages from today (`chat_dt` is in UTC):
@@ -309,8 +309,6 @@ Get overnight messages in the morning:
 ```sql
 select * from all_messages_plain where chat_dt > datetime('now', '-15 hours') order by chat_dt;
 ```
-
-> **Please note:** SQLite foreign key constraints are disabled by default, and must be **[enabled separately for each database connection](https://sqlite.org/foreignkeys.html#fk_enable)**. The latter can be achieved by running `PRAGMA foreign_keys = ON;` command on an open database connection. By running data altering queries without enabling foreign keys prior to that, you may risk putting your database in an inconsistent state.
 
 ## Roadmap
 
