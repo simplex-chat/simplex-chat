@@ -778,6 +778,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
         profileContactRequest invId p = do
           cName <- withStore $ \st -> createContactRequest st userId userContactLinkId invId p
           showReceivedContactRequest cName p
+          showToast (cName <> "> ") "wants to connect to you"
 
     withAckMessage :: ConnId -> MsgMeta -> m () -> m ()
     withAckMessage cId MsgMeta {recipient = (msgId, _)} action =
@@ -842,6 +843,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
       chSize <- asks $ fileChunkSize . config
       ft <- withStore $ \st -> createRcvFileTransfer st userId contact fInv chSize
       showReceivedMessage c (snd $ broker meta) (receivedFileInvitation ft) (integrity (meta :: MsgMeta))
+      showToast (c <> "> ") "wants to send a file"
       setActive $ ActiveC c
 
     processGroupFileInvitation :: GroupName -> GroupMember -> MsgMeta -> FileInvitation -> m ()
@@ -849,14 +851,16 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
       chSize <- asks $ fileChunkSize . config
       ft <- withStore $ \st -> createRcvGroupFileTransfer st userId m fInv chSize
       showReceivedGroupMessage gName c (snd $ broker meta) (receivedFileInvitation ft) (integrity (meta :: MsgMeta))
+      showToast ("#" <> gName <> " " <> c <> "> ") "wants to send a file"
       setActive $ ActiveG gName
 
     processGroupInvitation :: Contact -> GroupInvitation -> m ()
-    processGroupInvitation ct@Contact {localDisplayName} inv@(GroupInvitation (MemberIdRole fromMemId fromRole) (MemberIdRole memId memRole) _ _) = do
-      when (fromRole < GRAdmin || fromRole < memRole) $ chatError (CEGroupContactRole localDisplayName)
+    processGroupInvitation ct@Contact {localDisplayName = c} inv@(GroupInvitation (MemberIdRole fromMemId fromRole) (MemberIdRole memId memRole) _ _) = do
+      when (fromRole < GRAdmin || fromRole < memRole) $ chatError (CEGroupContactRole c)
       when (fromMemId == memId) $ chatError CEGroupDuplicateMemberId
-      group <- withStore $ \st -> createGroupInvitation st user ct inv
-      showReceivedGroupInvitation group localDisplayName memRole
+      group@Group {localDisplayName = gName} <- withStore $ \st -> createGroupInvitation st user ct inv
+      showReceivedGroupInvitation group c memRole
+      showToast ("#" <> gName <> " " <> c <> "> ") $ "invited you to join the group"
 
     xInfo :: Contact -> Profile -> m ()
     xInfo c@Contact {profile = p} p' = unless (p == p') $ do
