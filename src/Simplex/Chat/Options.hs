@@ -7,7 +7,9 @@ import qualified Data.ByteString.Char8 as B
 import Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as L
 import Options.Applicative
-import Simplex.Messaging.Agent.Protocol (SMPServer (..), smpServerP)
+import Simplex.Chat.Controller (updateStr, versionStr)
+import Simplex.Messaging.Agent.Protocol (SMPServer (..))
+import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (parseAll)
 import System.FilePath (combine)
 
@@ -23,8 +25,9 @@ chatOpts appDir =
       ( long "database"
           <> short 'd'
           <> metavar "DB_FILE"
-          <> help ("sqlite database file path (" <> defaultDbFilePath <> ")")
+          <> help "Path prefix to chat and agent database files"
           <> value defaultDbFilePath
+          <> showDefault
       )
     <*> option
       parseSMPServer
@@ -32,31 +35,30 @@ chatOpts appDir =
           <> short 's'
           <> metavar "SERVER"
           <> help
-            ( "SMP server(s) to use"
-                <> "\n(smp2.simplex.im,smp3.simplex.im)"
-            )
+            "Comma separated list of SMP server(s) to use \
+            \(default: smp4.simplex.im,smp5.simplex.im,smp6.simplex.im)"
           <> value
             ( L.fromList
-                [ "smp2.simplex.im#z5W2QLQ1Br3Yd6CoWg7bIq1bHdwK7Y8bEiEXBs/WfAg=", -- London, UK
-                  "smp3.simplex.im#nxc7HnrnM8dOKgkMp008ub/9o9LXJlxlMrMpR+mfMQw=" -- Fremont, CA
+                [ "smp://u2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU=@smp4.simplex.im", -- London, UK
+                  "smp://hpq7_4gGJiilmz5Rf-CswuU5kZGkm_zOIooSw6yALRg=@smp5.simplex.im", -- Fremont, CA
+                  "smp://PQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo=@smp6.simplex.im" -- Dallas, TX
                 ]
             )
       )
   where
-    defaultDbFilePath = combine appDir "simplex"
+    defaultDbFilePath = combine appDir "simplex_v1"
 
 parseSMPServer :: ReadM (NonEmpty SMPServer)
 parseSMPServer = eitherReader $ parseAll servers . B.pack
   where
-    servers = L.fromList <$> smpServerP `A.sepBy1` A.char ','
+    servers = L.fromList <$> strP `A.sepBy1` A.char ','
 
 getChatOpts :: FilePath -> IO ChatOpts
-getChatOpts appDir = execParser opts
+getChatOpts appDir =
+  execParser $
+    info
+      (helper <*> versionOption <*> chatOpts appDir)
+      (header versionStr <> fullDesc <> progDesc "Start chat with DB_FILE file and use SERVER as SMP server")
   where
-    opts =
-      info
-        (chatOpts appDir <**> helper)
-        ( fullDesc
-            <> header "Chat prototype using Simplex Messaging Protocol (SMP)"
-            <> progDesc "Start chat with DB_FILE file and use SERVER as SMP server"
-        )
+    versionOption = infoOption versionAndUpdate (long "version" <> short 'v' <> help "Show version")
+    versionAndUpdate = versionStr <> "\n" <> updateStr

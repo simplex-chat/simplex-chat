@@ -26,7 +26,13 @@ import System.IO (Handle)
 import UnliftIO.STM
 
 versionNumber :: String
-versionNumber = "0.5.5"
+versionNumber = "1.0.0"
+
+versionStr :: String
+versionStr = "SimpleX Chat v" <> versionNumber
+
+updateStr :: String
+updateStr = "To update run: curl -o- https://raw.githubusercontent.com/simplex-chat/simplex-chat/master/install.sh | bash"
 
 data ChatConfig = ChatConfig
   { agentConfig :: AgentConfig,
@@ -78,9 +84,10 @@ data ChatErrorType
   | CEFileSend Int64 AgentErrorType
   | CEFileRcvChunk String
   | CEFileInternal String
+  | CEAgentVersion
   deriving (Show, Exception)
 
-type ChatMonad m = (MonadUnliftIO m, MonadReader ChatController m, MonadError ChatError m)
+type ChatMonad m = (MonadUnliftIO m, MonadReader ChatController m, MonadError ChatError m, MonadFail m)
 
 setActive :: (MonadUnliftIO m, MonadReader ChatController m) => ActiveTo -> m ()
 setActive to = asks (activeTo . chatTerminal) >>= atomically . (`writeTVar` to)

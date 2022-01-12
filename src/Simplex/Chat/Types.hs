@@ -1,4 +1,5 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE GADTs #-}
@@ -11,8 +12,10 @@
 
 module Simplex.Chat.Types where
 
-import Data.Aeson (FromJSON, ToJSON)
+import Data.Aeson (FromJSON, ToJSON, (.:), (.=))
 import qualified Data.Aeson as J
+import qualified Data.Aeson.Types as JT
+import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.ByteString.Base64 as B64
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
@@ -29,9 +32,11 @@ import Database.SQLite.Simple.Internal (Field (..))
 import Database.SQLite.Simple.Ok (Ok (Ok))
 import Database.SQLite.Simple.ToField (ToField (..))
 import GHC.Generics
-import Simplex.Messaging.Agent.Protocol (AgentMsgId, ConnId, ConnectionMode (..), ConnectionRequest, InvitationId, MsgMeta (..), serializeMsgIntegrity)
+import Simplex.Messaging.Agent.Protocol (AgentMsgId, ConnId, ConnectionMode (..), ConnectionRequestUri, InvitationId, MsgMeta (..), serializeMsgIntegrity)
 import Simplex.Messaging.Agent.Store.SQLite (fromTextField_)
+import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Protocol (MsgBody)
+import Simplex.Messaging.Util ((<$?>))
 
 class IsContact a where
   contactId' :: a -> Int64
@@ -106,41 +111,56 @@ data Profile = Profile
   { displayName :: ContactName,
     fullName :: Text
   }
-  deriving (Generic, Eq, Show)
+  deriving (Eq, Show, Generic, FromJSON)
 
 instance ToJSON Profile where toEncoding = J.genericToEncoding J.defaultOptions
-
-instance FromJSON Profile
 
 data GroupProfile = GroupProfile
   { displayName :: GroupName,
     fullName :: Text
   }
-  deriving (Generic, Eq, Show)
+  deriving (Eq, Show, Generic, FromJSON)
 
 instance ToJSON GroupProfile where toEncoding = J.genericToEncoding J.defaultOptions
 
-instance FromJSON GroupProfile
-
 data GroupInvitation = GroupInvitation
-  { fromMember :: (MemberId, GroupMemberRole),
-    invitedMember :: (MemberId, GroupMemberRole),
+  { fromMember :: MemberIdRole,
+    invitedMember :: MemberIdRole,
     connRequest :: ConnReqInvitation,
     groupProfile :: GroupProfile
   }
-  deriving (Eq, Show)
+  deriving (Eq, Show, Generic, FromJSON)
+
+instance ToJSON GroupInvitation where toEncoding = J.genericToEncoding J.defaultOptions
+
+data MemberIdRole = MemberIdRole
+  { memberId :: MemberId,
+    memberRole :: GroupMemberRole
+  }
+  deriving (Eq, Show, Generic, FromJSON)
+
+instance ToJSON MemberIdRole where toEncoding = J.genericToEncoding J.defaultOptions
 
 data IntroInvitation = IntroInvitation
   { groupConnReq :: ConnReqInvitation,
     directConnReq :: ConnReqInvitation
   }
-  deriving (Eq, Show)
+  deriving (Eq, Show, Generic, FromJSON)
 
-data MemberInfo = MemberInfo MemberId GroupMemberRole Profile
-  deriving (Eq, Show)
+instance ToJSON IntroInvitation where toEncoding = J.genericToEncoding J.defaultOptions
+
+data MemberInfo = MemberInfo
+  { memberId :: MemberId,
+    memberRole :: GroupMemberRole,
+    profile :: Profile
+  }
+  deriving (Eq, Show, Generic, FromJSON)
+
+instance ToJSON MemberInfo where toEncoding = J.genericToEncoding J.defaultOptions
 
 memberInfo :: GroupMember -> MemberInfo
-memberInfo m = MemberInfo (memberId m) (memberRole m) (memberProfile m)
+memberInfo GroupMember {memberId, memberRole, memberProfile} =
+  MemberInfo memberId memberRole memberProfile
 
 data ReceivedGroupInvitation = ReceivedGroupInvitation
   { fromMember :: GroupMember,
@@ -183,7 +203,24 @@ data NewGroupMember = NewGroupMember
     memContactId :: Maybe Int64
   }
 
-type MemberId = ByteString
+newtype MemberId = MemberId {unMemberId :: ByteString}
+  deriving (Eq, Show)
+
+instance FromField MemberId where fromField f = MemberId <$> fromField f
+
+instance ToField MemberId where toField (MemberId m) = toField m
+
+instance StrEncoding MemberId where
+  strEncode (MemberId m) = strEncode m
+  strDecode s = MemberId <$> strDecode s
+  strP = MemberId <$> strP
+
+instance FromJSON MemberId where
+  parseJSON = strParseJSON "MemberId"
+
+instance ToJSON MemberId where
+  toJSON = strToJSON
+  toEncoding = strToJEncoding
 
 data InvitedBy = IBContact Int64 | IBUser | IBUnknown
   deriving (Eq, Show)
@@ -203,22 +240,28 @@ fromInvitedBy userCtId = \case
 data GroupMemberRole = GRMember | GRAdmin | GROwner
   deriving (Eq, Show, Ord)
 
-instance FromField GroupMemberRole where fromField = fromBlobField_ toMemberRole
+instance FromField GroupMemberRole where fromField = fromBlobField_ strDecode
 
-instance ToField GroupMemberRole where toField = toField . serializeMemberRole
+instance ToField GroupMemberRole where toField = toField . strEncode
 
-toMemberRole :: ByteString -> Either String GroupMemberRole
-toMemberRole = \case
-  "owner" -> Right GROwner
-  "admin" -> Right GRAdmin
-  "member" -> Right GRMember
-  r -> Left $ "invalid group member role " <> B.unpack r
+instance StrEncoding GroupMemberRole where
+  strEncode = \case
+    GROwner -> "owner"
+    GRAdmin -> "admin"
+    GRMember -> "member"
+  strDecode = \case
+    "owner" -> Right GROwner
+    "admin" -> Right GRAdmin
+    "member" -> Right GRMember
+    r -> Left $ "bad GroupMemberRole " <> B.unpack r
+  strP = strDecode <$?> A.takeByteString
 
-serializeMemberRole :: GroupMemberRole -> ByteString
-serializeMemberRole = \case
-  GROwner -> "owner"
-  GRAdmin -> "admin"
-  GRMember -> "member"
+instance FromJSON GroupMemberRole where
+  parseJSON = strParseJSON "GroupMemberRole"
+
+instance ToJSON GroupMemberRole where
+  toJSON = strToJSON
+  toEncoding = strToJEncoding
 
 fromBlobField_ :: Typeable k => (ByteString -> Either String k) -> FieldParser k
 fromBlobField_ p = \case
@@ -227,6 +270,36 @@ fromBlobField_ p = \case
       Right k -> Ok k
       Left e -> returnError ConversionFailed f ("could not parse field: " ++ e)
   f -> returnError ConversionFailed f "expecting SQLBlob column type"
+
+newtype Probe = Probe {unProbe :: ByteString}
+  deriving (Eq, Show)
+
+instance StrEncoding Probe where
+  strEncode (Probe p) = strEncode p
+  strDecode s = Probe <$> strDecode s
+  strP = Probe <$> strP
+
+instance FromJSON Probe where
+  parseJSON = strParseJSON "Probe"
+
+instance ToJSON Probe where
+  toJSON = strToJSON
+  toEncoding = strToJEncoding
+
+newtype ProbeHash = ProbeHash {unProbeHash :: ByteString}
+  deriving (Eq, Show)
+
+instance StrEncoding ProbeHash where
+  strEncode (ProbeHash p) = strEncode p
+  strDecode s = ProbeHash <$> strDecode s
+  strP = ProbeHash <$> strP
+
+instance FromJSON ProbeHash where
+  parseJSON = strParseJSON "ProbeHash"
+
+instance ToJSON ProbeHash where
+  toJSON = strToJSON
+  toEncoding = strToJEncoding
 
 data GroupMemberCategory
   = GCUserMember
@@ -350,7 +423,24 @@ data FileInvitation = FileInvitation
     fileSize :: Integer,
     fileConnReq :: ConnReqInvitation
   }
-  deriving (Eq, Show)
+  deriving (Eq, Show, Generic)
+
+instance FromJSON FileInvitation where
+  parseJSON (J.Object v) = FileInvitation <$> v .: "fileName" <*> v .: "fileSize" <*> v .: "fileConnReq"
+  parseJSON invalid = JT.prependFailure "bad FileInvitation, " (JT.typeMismatch "Object" invalid)
+
+instance ToJSON FileInvitation where
+  toJSON (FileInvitation fileName fileSize fileConnReq) =
+    J.object
+      [ "fileName" .= fileName,
+        "fileSize" .= fileSize,
+        "fileConnReq" .= fileConnReq
+      ]
+  toEncoding (FileInvitation fileName fileSize fileConnReq) =
+    J.pairs $
+      "fileName" .= fileName
+        <> "fileSize" .= fileSize
+        <> "fileConnReq" .= fileConnReq
 
 data RcvFileTransfer = RcvFileTransfer
   { fileId :: Int64,
@@ -404,9 +494,9 @@ serializeFileStatus = \case
 data RcvChunkStatus = RcvChunkOk | RcvChunkFinal | RcvChunkDuplicate | RcvChunkError
   deriving (Eq, Show)
 
-type ConnReqInvitation = ConnectionRequest 'CMInvitation
+type ConnReqInvitation = ConnectionRequestUri 'CMInvitation
 
-type ConnReqContact = ConnectionRequest 'CMContact
+type ConnReqContact = ConnectionRequestUri 'CMContact
 
 data Connection = Connection
   { connId :: Int64,
@@ -592,7 +682,7 @@ data RcvMsgDelivery = RcvMsgDelivery
     agentMsgMeta :: MsgMeta
   }
 
-data MsgMetaJ = MsgMetaJ
+data MsgMetaJSON = MsgMetaJSON
   { integrity :: Text,
     rcvId :: Int64,
     rcvTs :: UTCTime,
@@ -600,15 +690,13 @@ data MsgMetaJ = MsgMetaJ
     serverTs :: UTCTime,
     sndId :: Int64
   }
-  deriving (Generic, Eq, Show)
+  deriving (Eq, Show, FromJSON, Generic)
 
-instance ToJSON MsgMetaJ where toEncoding = J.genericToEncoding J.defaultOptions
+instance ToJSON MsgMetaJSON where toEncoding = J.genericToEncoding J.defaultOptions
 
-instance FromJSON MsgMetaJ
-
-msgMetaToJson :: MsgMeta -> MsgMetaJ
-msgMetaToJson MsgMeta {integrity, recipient = (rcvId, rcvTs), broker = (serverId, serverTs), sender = (sndId, _)} =
-  MsgMetaJ
+msgMetaToJson :: MsgMeta -> MsgMetaJSON
+msgMetaToJson MsgMeta {integrity, recipient = (rcvId, rcvTs), broker = (serverId, serverTs), sndMsgId = sndId} =
+  MsgMetaJSON
     { integrity = (decodeLatin1 . serializeMsgIntegrity) integrity,
       rcvId,
       rcvTs,
