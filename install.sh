@@ -40,7 +40,7 @@ if [[ -z $binary ]]; then
 			case $yn in
 					[Aa]* ) exit 1 ;;
 					[Cc]* ) break ;;
-					* ) echo "Please answer 'a' or 'c'."
+					* ) echo "Please answer a or c."
 			esac
 		done
 	fi
@@ -58,7 +58,7 @@ elif [[ ! $($binary -h | grep v1) ]]; then
 					echo "Renamed $binary into $binary_v0"
 					break
 					;;
-				* ) echo "Please answer 'a' or 'c'."
+				* ) echo "Please answer a or c."
 		esac
 	done
 fi
