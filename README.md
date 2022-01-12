@@ -76,7 +76,7 @@ The routing of messages relies on the knowledge of client devices how user conta
 - Auto-populated recipient name - just type your messages to reply to the sender once the connection is established.
 - Demo SMP servers available and pre-configured in the app - or you can [deploy your own server](https://github.com/simplex-chat/simplexmq#using-smp-server-and-smp-agent).
 - No global identity or any names visible to the server(s), ensuring full privacy of your contacts and conversations.
-- Two layers of E2E encryption (double-ratchet for duplex connections, using X3DH key agreement with ephemeral Curve448 keys, and NaCl crypto_box for SMP queues, using Curve25519 keys) and out-of-band passing of recipient keys (see [How to use SimpleX chat](#how-to-use-simplex-chat).
+- Two layers of E2E encryption (double-ratchet for duplex connections, using X3DH key agreement with ephemeral Curve448 keys, and NaCl crypto_box for SMP queues, using Curve25519 keys) and out-of-band passing of recipient keys (see [How to use SimpleX chat](#how-to-use-simplex-chat)).
 - Message integrity validation (via including the digests of the previous messages).
 - Authentication of each command/message by SMP servers with automatically generated Ed448 keys.
 - TLS 1.2 transport encryption.
