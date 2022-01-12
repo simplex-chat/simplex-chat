@@ -1,6 +1,6 @@
 ## Announcing SimpleX Chat Prototype!
 
-**Published:** 12 May 2021
+**Published:** May 12, 2021
 
 For the last six months [me](https://github.com/epoberezkin) and my son [Efim](https://github.com/efim-poberezkin) have been working to bring you a working prototype of SimpleX Chat. We're excited to announce SimpleX Chat terminal client is now available [here](https://github.com/simplex-chat/simplex-chat) on Linux, Windows and Mac (you can either build from source or download the binary for Linux, Windows or Mac from the latest release).
 

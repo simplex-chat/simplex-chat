@@ -1,7 +1,8 @@
 # SimpleX announces SimpleX Chat v0.4
-## _Open-source decentralized chat that uses privacy-preserving message routing protocol_
 
-**Published:** 14 September 2021
+## Open-source decentralized chat that uses privacy-preserving message routing protocol
+
+**Published:** Sep 14, 2021
 
 We are building a new platform for distributed Internet applications where privacy of the messages _and_ the network matter. [SimpleX Chat](https://github.com/simplex-chat/simplex-chat) is our first application, a chat application built on the SimpleX platform that  serves as an example of the power of the platform and as a reference application.
 

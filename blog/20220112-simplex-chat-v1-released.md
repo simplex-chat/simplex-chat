@@ -1,6 +1,8 @@
 # SimpleX announces SimpleX Chat v1
 
-## The world's most private and secure chat and application platform
+**Published:** Jan 12, 2022
+
+## The most private and secure chat and application platform
 
 We are building a new platform for distributed Internet applications where privacy of the messages _and_ the network matter. [SimpleX Chat](https://github.com/simplex-chat/simplex-chat) is our first application, a messaging application built on the SimpleX platform.
 
