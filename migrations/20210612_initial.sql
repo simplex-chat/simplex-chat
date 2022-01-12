@@ -99,6 +99,8 @@ CREATE TABLE groups (
   UNIQUE (user_id, group_profile_id)
 );
 
+CREATE INDEX idx_groups_inv_queue_info ON groups (inv_queue_info);
+
 CREATE TABLE group_members ( -- group members, excluding the local user
   group_member_id INTEGER PRIMARY KEY,
   group_id INTEGER NOT NULL REFERENCES groups ON DELETE CASCADE,
@@ -120,8 +122,6 @@ CREATE TABLE group_members ( -- group members, excluding the local user
     ON UPDATE CASCADE,
   UNIQUE (group_id, member_id)
 );
-
-CREATE INDEX idx_groups_inv_queue_info ON groups (inv_queue_info);
 
 CREATE TABLE group_member_intros (
   group_member_intro_id INTEGER PRIMARY KEY,
