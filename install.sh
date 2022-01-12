@@ -36,7 +36,7 @@ if [[ -z $binary ]]; then
     echo "Warning: found SimpleX Chat database, the current version is not backwards compatible."
     echo "If you continue, the current version will be installed as $APP_NAME with a clean database, the old database will be preserved."
     while true; do
-      read -p "Please choose to (a)bort or (c)ontinue: " yn
+      read -p "Please choose to (a)bort or (c)ontinue: " yn < /dev/tty
       case $yn in
           [Aa]* ) exit 1 ;;
           [Cc]* ) break ;;
@@ -49,7 +49,7 @@ elif [[ ! $($binary -h | grep v1) ]]; then
   echo "Warning: found a previous version of SimpleX Chat, the current version is not backwards compatible."
   echo "If you continue, it will be renamed to $APP_NAME-v0, and the new version will be installed as $APP_NAME with a clean database."
   while true; do
-    read -p "Please choose (a)bort or (c)ontinue: " yn
+    read -p "Please choose (a)bort or (c)ontinue: " yn < /dev/tty
     case $yn in
         [Aa]* ) exit 1 ;;
         [Cc]* )
