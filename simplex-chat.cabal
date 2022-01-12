@@ -8,14 +8,15 @@ name:           simplex-chat
 version:        1.0.0
 category:       Web, System, Services, Cryptography
 homepage:       https://github.com/simplex-chat/simplex-chat#readme
-author:         Evgeny Poberezkin
-maintainer:     evgeny@poberezkin.com
-copyright:      2020 Evgeny Poberezkin
+author:         simplex.chat
+maintainer:     chat@simplex.chat
+copyright:      2020-22 simplex.chat
 license:        AGPL-3
 license-file:   LICENSE
 build-type:     Simple
 extra-source-files:
     README.md
+    migrations/20220101_initial.sql
 
 library
   exposed-modules:
