@@ -1,4 +1,4 @@
-# Queries to chat database
+# Message queries
 
 You can run queries against `direct_messages`, `group_messages` and `all_messages` (or their simpler alternatives `direct_messages_plain`, `group_messages_plain` and `all_messages_plain`), for example:
 

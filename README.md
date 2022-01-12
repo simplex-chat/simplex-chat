@@ -267,7 +267,7 @@ You can view and search your chat history by querying your database:
 sqlite3 ~/.simplex/simplex_v1_chat.db
 ```
 
-See [Queries to chat database](./queries.md) for examples.
+See [Message queries](./message_queries.md) for examples.
 
 > **Please note:** SQLite foreign key constraints are disabled by default, and must be **[enabled separately for each database connection](https://sqlite.org/foreignkeys.html#fk_enable)**. The latter can be achieved by running `PRAGMA foreign_keys = ON;` command on an open database connection. By running data altering queries without enabling foreign keys prior to that, you may risk putting your database in an inconsistent state.
 
