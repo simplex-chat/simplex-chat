@@ -26,20 +26,6 @@ curl -o- https://raw.githubusercontent.com/simplex-chat/simplex-chat/master/inst
 
 Once the chat client is installed, simply run `simplex-chat` from your terminal.
 
-### :wave: Welcome
-
-**We are building the world's most private and secure chat**. If you would like to support it, you can do so in the following ways:
-
-- **Install the chat and try it out** - if you spot a bug, please [raise an issue](https://github.com/simplex-chat/simplex-chat/issues).
-
-- :speech_balloon:  **Spread the word** - invite your friends for some fun chat inside your terminal. Terminal chat is an [early-stage product](#disclaimer), but it works quite reliably most of the time - we're using it right inside our IDEs as we are coding it. 👨‍💻
-
-- **Make a donation** via [opencollective](https://opencollective.com/simplex-chat) - every donation helps, however large or small.
-
-- **Make a contribution to the project** - we're constantly moving the project forward and there are always lots of things to do!
-
-We appreciate all the help from our contributors, thank you!
-
 ![simplex-chat](./images/connection.gif)
 
 ## Table of contents
