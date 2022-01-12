@@ -2,7 +2,7 @@
 
 # SimpleX Chat
 
-**The world's most private and secure chat** - open-source, decentralized, and without global identities of any kind.
+**The world's most private and secure chat** - open-source and without global identities of any kind.
 
 [![GitHub build](https://github.com/simplex-chat/simplex-chat/workflows/build/badge.svg)](https://github.com/simplex-chat/simplex-chat/actions?query=workflow%3Abuild)
 [![GitHub downloads](https://img.shields.io/github/downloads/simplex-chat/simplex-chat/total)](https://github.com/simplex-chat/simplex-chat/releases)
@@ -75,7 +75,7 @@ As for chat application, you may encounter occasional bugs. If you expect softwa
 
 ## Network topology
 
-SimpleX is a decentralized client-server network that uses redundant, disposable nodes to asynchronously pass messages via message queues, providing receiver and sender anonymity.
+SimpleX is a client-server network that uses redundant, disposable nodes to asynchronously pass messages via message queues, providing receiver and sender anonymity.
 
 Unlike P2P networks, all messages are passed through one or several (for redundancy) servers, that do not even need to have persistence (in fact, the current [SMP server implementation](https://github.com/simplex-chat/simplexmq#smp-server) uses in-memory message storage, persisting only the queue records) - it provides better metadata protection than P2P designs, as no global participant ID is required, and avoids many [problems of P2P networks](https://github.com/simplex-chat/simplex-chat/blob/master/simplex.md#comparison-with-p2p-messaging-protocols).
 
