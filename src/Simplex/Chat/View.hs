@@ -1,4 +1,5 @@
 {-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE LambdaCase #-}
@@ -31,7 +32,7 @@ module Simplex.Chat.View
     showGroupSubscribed,
     showGroupEmpty,
     showGroupRemoved,
-    showUnprocessedGroupInvitation,
+    showGroupInvitation,
     showMemberSubError,
     showReceivedMessage,
     showReceivedGroupMessage,
@@ -58,6 +59,7 @@ module Simplex.Chat.View
     showGroupDeletedUser,
     showGroupDeleted,
     showSentGroupInvitation,
+    showCannotResendInvitation,
     showReceivedGroupInvitation,
     showJoinedGroupMember,
     showUserJoinedGroup,
@@ -101,6 +103,7 @@ import Simplex.Chat.Terminal (printToTerminal)
 import Simplex.Chat.Types
 import Simplex.Chat.Util (safeDecodeUtf8)
 import Simplex.Messaging.Agent.Protocol
+import Simplex.Messaging.Encoding.String
 import qualified Simplex.Messaging.Protocol as SMP
 import System.Console.ANSI.Types
 
@@ -118,10 +121,10 @@ showSentInvitation = printToView ["connection request sent!"]
 showInvalidConnReq :: ChatReader m => m ()
 showInvalidConnReq =
   printToView
-    [ "Connection link is invalid!",
-      "Possibly, it was created in a newer version (to check version: " <> highlight' "/v" <> ")",
-      "To upgrade (Linux/Mac):",
-      "curl -o- https://raw.githubusercontent.com/simplex-chat/simplex-chat/master/install.sh | bash"
+    [ "",
+      "Connection link is invalid, possibly it was created in a previous version.",
+      "Please ask your contact to check " <> highlight' "/version" <> " and update if needed.",
+      plain updateStr
     ]
 
 showChatError :: ChatReader m => ChatError -> m ()
@@ -175,18 +178,18 @@ showUserContactLinkSubscribed = printToView ["Your address is active! To show: "
 showUserContactLinkSubError :: ChatReader m => ChatError -> m ()
 showUserContactLinkSubError = printToView . userContactLinkSubError
 
-showGroupSubscribed :: ChatReader m => GroupName -> m ()
+showGroupSubscribed :: ChatReader m => Group -> m ()
 showGroupSubscribed = printToView . groupSubscribed
 
-showGroupEmpty :: ChatReader m => GroupName -> m ()
+showGroupEmpty :: ChatReader m => Group -> m ()
 showGroupEmpty = printToView . groupEmpty
 
-showGroupRemoved :: ChatReader m => GroupName -> m ()
+showGroupRemoved :: ChatReader m => Group -> m ()
 showGroupRemoved = printToView . groupRemoved
 
-showUnprocessedGroupInvitation :: ChatReader m => Group -> m ()
-showUnprocessedGroupInvitation Group {localDisplayName = ldn, groupProfile = GroupProfile {fullName}} =
-  printToView [unprocessedGroupInvitation ldn fullName]
+showGroupInvitation :: ChatReader m => Group -> m ()
+showGroupInvitation Group {localDisplayName = ldn, groupProfile = GroupProfile {fullName}} =
+  printToView [groupInvitation ldn fullName]
 
 showMemberSubError :: ChatReader m => GroupName -> ContactName -> ChatError -> m ()
 showMemberSubError = printToView .:. memberSubError
@@ -272,6 +275,9 @@ showGroupDeleted = printToView .: groupDeleted
 showSentGroupInvitation :: ChatReader m => GroupName -> ContactName -> m ()
 showSentGroupInvitation = printToView .: sentGroupInvitation
 
+showCannotResendInvitation :: ChatReader m => GroupName -> ContactName -> m ()
+showCannotResendInvitation = printToView .: cannotResendInvitation
+
 showReceivedGroupInvitation :: ChatReader m => Group -> ContactName -> GroupMemberRole -> m ()
 showReceivedGroupInvitation = printToView .:. receivedGroupInvitation
 
@@ -324,7 +330,7 @@ connReqInvitation_ :: ConnReqInvitation -> [StyledString]
 connReqInvitation_ cReq =
   [ "pass this invitation link to your contact (via another channel): ",
     "",
-    (plain . serializeConnReq') cReq,
+    (plain . strEncode) cReq,
     "",
     "and ask them to connect: " <> highlight' "/c <invitation_link_above>"
   ]
@@ -376,7 +382,7 @@ connReqContact_ :: StyledString -> ConnReqContact -> [StyledString]
 connReqContact_ intro cReq =
   [ intro,
     "",
-    (plain . serializeConnReq') cReq,
+    (plain . strEncode) cReq,
     "",
     "Anybody can send you contact requests with: " <> highlight' "/c <contact_link_above>",
     "to show it again: " <> highlight' "/sa",
@@ -402,14 +408,14 @@ userContactLinkSubError e =
     "to delete your address: " <> highlight' "/da"
   ]
 
-groupSubscribed :: GroupName -> [StyledString]
-groupSubscribed g = [ttyGroup g <> ": connected to server(s)"]
+groupSubscribed :: Group -> [StyledString]
+groupSubscribed g = [ttyFullGroup g <> ": connected to server(s)"]
 
-groupEmpty :: GroupName -> [StyledString]
-groupEmpty g = [ttyGroup g <> ": group is empty"]
+groupEmpty :: Group -> [StyledString]
+groupEmpty g = [ttyFullGroup g <> ": group is empty"]
 
-groupRemoved :: GroupName -> [StyledString]
-groupRemoved g = [ttyGroup g <> ": you are no longer a member or group deleted"]
+groupRemoved :: Group -> [StyledString]
+groupRemoved g = [ttyFullGroup g <> ": you are no longer a member or group deleted"]
 
 memberSubError :: GroupName -> ContactName -> ChatError -> [StyledString]
 memberSubError g c e = [ttyGroup g <> " member " <> ttyContact c <> " error: " <> sShow e]
@@ -432,9 +438,15 @@ groupDeleted_ g m = [ttyGroup g <> ": " <> memberOrUser m <> " deleted the group
 sentGroupInvitation :: GroupName -> ContactName -> [StyledString]
 sentGroupInvitation g c = ["invitation to join the group " <> ttyGroup g <> " sent to " <> ttyContact c]
 
+cannotResendInvitation :: GroupName -> ContactName -> [StyledString]
+cannotResendInvitation g c =
+  [ ttyContact c <> " is already invited to group " <> ttyGroup g,
+    "to re-send invitation: " <> highlight ("/rm " <> g <> " " <> c) <> ", " <> highlight ("/a " <> g <> " " <> c)
+  ]
+
 receivedGroupInvitation :: Group -> ContactName -> GroupMemberRole -> [StyledString]
 receivedGroupInvitation g@Group {localDisplayName} c role =
-  [ ttyFullGroup g <> ": " <> ttyContact c <> " invites you to join the group as " <> plain (serializeMemberRole role),
+  [ ttyFullGroup g <> ": " <> ttyContact c <> " invites you to join the group as " <> plain (strEncode role),
     "use " <> highlight ("/j " <> localDisplayName) <> " to accept"
   ]
 
@@ -482,7 +494,7 @@ groupMembers Group {membership, members} = map groupMember . filter (not . remov
   where
     removedOrLeft m = let s = memberStatus m in s == GSMemRemoved || s == GSMemLeft
     groupMember m = ttyFullMember m <> ": " <> role m <> ", " <> category m <> status m
-    role = plain . serializeMemberRole . memberRole
+    role m = plain . strEncode $ memberRole (m :: GroupMember)
     category m = case memberCategory m of
       GCUserMember -> "you, "
       GCInviteeMember -> "invited, "
@@ -501,11 +513,11 @@ groupsList :: [(GroupName, Text, GroupMemberStatus)] -> [StyledString]
 groupsList [] = ["you have no groups!", "to create: " <> highlight' "/g <name>"]
 groupsList gs = map groupSS $ sort gs
   where
-    groupSS (displayName, fullName, GSMemInvited) = unprocessedGroupInvitation displayName fullName
+    groupSS (displayName, fullName, GSMemInvited) = groupInvitation displayName fullName
     groupSS (displayName, fullName, _) = ttyGroup displayName <> optFullName displayName fullName
 
-unprocessedGroupInvitation :: GroupName -> Text -> StyledString
-unprocessedGroupInvitation displayName fullName =
+groupInvitation :: GroupName -> Text -> StyledString
+groupInvitation displayName fullName =
   highlight ("#" <> displayName)
     <> optFullName displayName fullName
     <> " - you are invited ("
@@ -743,6 +755,7 @@ chatError = \case
     CEFileSend fileId e -> ["error sending file " <> sShow fileId <> ": " <> sShow e]
     CEFileRcvChunk e -> ["error receiving file: " <> plain e]
     CEFileInternal e -> ["file error: " <> plain e]
+    CEAgentVersion -> ["unsupported agent version"]
   -- e -> ["chat error: " <> sShow e]
   ChatErrorStore err -> case err of
     SEDuplicateName -> ["this display name is already used by user, contact or group"]
@@ -821,4 +834,4 @@ styleTime :: String -> StyledString
 styleTime = Styled [SetColor Foreground Vivid Black]
 
 clientVersionInfo :: [StyledString]
-clientVersionInfo = [plain $ "SimpleX Chat v" <> versionNumber]
+clientVersionInfo = [plain versionStr, plain updateStr]

@@ -22,9 +22,6 @@ The syntax of the message inside agent MSG:
 ```abnf
 agentMessageBody = [chatMsgId] SP msgEvent SP [parameters] SP [contentParts [SP msgBodyParts]]
 chatMsgId = 1*DIGIT ; used to refer to previous message;
-                    ; in the group should only be used in messages sent to all members,
-                    ; which is the main reason not to use external agent ID -
-                    ; some messages are sent only to one member
 msgEvent = protocolNamespace 1*("." msgTypeName)
 protocolNamespace = 1*ALPHA ; "x" for all events defined in the protocol
 msgTypeName = 1*ALPHA
@@ -66,6 +63,219 @@ refMsgHash = 16*16(OCTET) ; SHA256 of agent message body
 ' x.grp.mem.req 23456,123 x.json:NNN {...} '
 ' x.grp.mem.direct.inv 23456,234 x.text:NNN <invitation>  '
 ' x.file name,size x.text:NNN <invitation> '
+```
+
+Chat message JTD:
+
+```jsonc
+{
+  "properties": {
+    "msgId": {"type": "string"},
+    "minVersion": {"type": "uint16"}, // Word16
+    "maxVersion": {"type": "uint16"}, // Word16
+    "event": {"type": "string"}, // Text e.g. s.ok
+    "params": {"values": {}}, // Map Text Value
+  },
+  "optionalProperties": {
+    "dag": {"type": "string"}
+  }
+}
+```
+
+Events:
+
+```jsonc
+"event": "x.msg.new" // XMsgNew
+"params":            // MsgContent
+{
+  "content": {
+    "msgType": "text",
+    // field "files" can be represented in content as contentType "file" with length prepended or as complex contentData
+    "text": "<msg text>"
+  }
+  // "content": [
+    // free form contentType for extensibility and/or complex content types? e.g. MIME
+    // could it be useful if contentData was free form as well? currently it is ByteString
+  //  {"contentType": <content type>, "contentData": "<content data>"},
+  //  ...
+  //  {"contentType": <content type N>, "contentData": "<content data N>"}
+  // ]
+}
+
+"event": "x.file" // XFile; TODO rename into x.file.inv?
+"params":         // FileInvitation
+{
+  "file": {
+    "fileName": "<file name>",
+    "fileSize": <file size>, // integer
+    "fileConnReq": "<file conn req>"
+  }
+}
+
+"event": "x.file.acpt" // XFileAcpt
+"params":              // String
+{
+  "fileName": "<file name>"
+}
+
+"event": "x.info" // XInfo
+"params":         // Profile
+{
+  "profile": {
+    "displayName": "<display name>",
+    "fullName": "<full name>"
+  }
+}
+
+"event": "x.contact" // XContact
+"params":        // Profile (Maybe MsgContent)
+{
+  "profile": {
+    "displayName": "<display name>",
+    "fullName": "<full name>"
+  },
+  "content": {
+    "msgType": "text",
+    "text": "<msg text>"
+  } // optional
+}
+
+"event": "x.grp.inv" // XGrpInv
+"params":            // GroupInvitation
+{
+  "groupInvitation": {
+    "fromMember": {
+      "memberId": "<from_member ID>",
+      "memberRole": "<from_member role>"
+    },
+    "invitedMember": {
+      "memberId": "<invited_member ID>",
+      "memberRole": "<invited_member role>"
+    },
+    "connRequest": "<conn request>",
+    "groupProfile": {
+      "displayName": "<display name>",
+      "fullName": "<full name>"
+    }
+  }
+}
+
+"event": "x.grp.acpt" // XGrpAcpt
+"params":             // MemberId
+{
+  "memberId": "<member ID>"
+}
+
+"event": "x.grp.mem.new" // XGrpMemNew
+"params":                // MemberInfo
+{
+  "memberInfo": {
+    "memberId": "<member ID>",
+    "memberRole": "<member role>",
+    "profile": {
+      "displayName": "<display name>",
+      "fullName": "<full name>"
+    }
+  }
+}
+
+"event": "x.grp.mem.intro" // XGrpMemIntro
+"params":                  // MemberInfo
+{
+  "memberInfo": {
+    "memberId": "<member ID>",
+    "memberRole": "<member role>",
+    "profile": {
+      "displayName": "<display name>",
+      "fullName": "<full name>"
+    }
+  }
+}
+
+"event": "x.grp.mem.inv" // XGrpMemInv
+"params":                // MemberId IntroInvitation
+{
+  "memberId": "<member ID>",
+  "memberIntro": {
+    "groupConnReq": "<group conn req>",
+    "directConnReq": "<direct conn req>"
+  }
+}
+
+"event": "x.grp.mem.fwd" // XGrpMemFwd
+"params":                // MemberInfo IntroInvitation
+{
+  "memberInfo": {
+    "memberId": "<member ID>",
+    "memberRole": "<member role>",
+    "profile": {
+      "displayName": "<display name>",
+      "fullName": "<full name>"
+    },
+  },
+  "memberIntro": {
+    "groupConnReq": "<group conn req>",
+    "directConnReq": "<direct conn req>"
+  }
+}
+
+"event": "x.grp.mem.info" // XGrpMemInfo
+"params":                 // MemberId Profile
+{
+  "memberId": "<member ID>",
+  "profile": {
+    "displayName": "<display name>",
+    "fullName": "<full name>"
+  }
+}
+
+"event": "x.grp.mem.con" // XGrpMemCon
+"params":                // MemberId
+{
+  "memberId": "<member ID>"
+}
+
+"event": "x.grp.mem.con.all" // XGrpMemConAll
+"params":                    // MemberId
+{
+  "memberId": "<member ID>"
+}
+
+"event": "x.grp.mem.del" // XGrpMemDel
+"params":                // MemberId
+{
+  "memberId": "<member ID>"
+}
+
+"event": "x.grp.leave" // XGrpLeave
+"params":
+{}
+
+"event": "x.grp.del" // XGrpDel
+"params":
+{}
+
+"event": "x.info.probe" // XInfoProbe
+"params":               // ByteString
+{
+  "probe": "<probe>"
+}
+
+"event": "x.info.probe.check" // XInfoProbeCheck
+"params":                     // ByteString
+{
+  "probeHash": "<probe hash>"
+}
+
+"event": "x.info.probe.ok" // XInfoProbeOk
+"params":                  // ByteString
+{
+  "probe": "<probe>"
+}
+
+"event": "x.ok" // XOk
+"params":
+{}
 ```
 
 ### Group protocol
