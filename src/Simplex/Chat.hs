@@ -78,8 +78,7 @@ data ChatCommand
   | Welcome
   | AddContact
   | Connect (Maybe AConnectionRequestUri)
-  | --   |   ConnectAdmin
-    SendAdminWelcome ContactName
+  | ConnectAdmin
   | DeleteContact ContactName
   | ListContacts
   | CreateMyAddress
@@ -154,7 +153,7 @@ newChatController config@ChatConfig {agentConfig = cfg, dbPoolSize, tbqSize} Cha
 runSimplexChat :: ChatController -> IO ()
 runSimplexChat = runReaderT $ do
   user <- readTVarIO =<< asks currentUser
-  whenM (asks firstTime) . printToView . chatWelcome user $ Onboarding 0 0 0 0 0
+  whenM (asks firstTime) . printToView $ chatWelcome user
   race_ runTerminalInput runChatController
 
 runChatController :: (MonadUnliftIO m, MonadReader ChatController m, MonadFail m) => m ()
@@ -188,7 +187,6 @@ inputSubscriber = do
               SendGroupMessage g msg -> showSentGroupMessage g msg
               SendFile c f -> showSentFileInvitation c f
               SendGroupFile g f -> showSentGroupFileInvitation g f
-              SendAdminWelcome c -> forM_ adminWelcomeMessages $ showSentMessage c
               _ -> printToView [plain s]
             user <- readTVarIO =<< asks currentUser
             withAgentLock a . withLock l . void . runExceptT $
@@ -201,9 +199,7 @@ processChatCommand user@User {userId, profile} = \case
   GroupsHelp -> printToView groupsHelpInfo
   MyAddressHelp -> printToView myAddressHelpInfo
   MarkdownHelp -> printToView markdownInfo
-  Welcome -> do
-    ob <- withStore (`getOnboarding` userId)
-    printToView $ chatWelcome user ob
+  Welcome -> printToView $ chatWelcome user
   AddContact -> do
     (connId, cReq) <- withAgent (`createConnection` SCMInvitation)
     withStore $ \st -> createDirectConnection st userId connId
@@ -211,8 +207,7 @@ processChatCommand user@User {userId, profile} = \case
   Connect (Just (ACR SCMInvitation cReq)) -> connect cReq (XInfo profile) >> showSentConfirmation
   Connect (Just (ACR SCMContact cReq)) -> connect cReq (XContact profile Nothing) >> showSentInvitation
   Connect Nothing -> showInvalidConnReq
-  -- ConnectAdmin -> connect adminContactReq (XContact profile Nothing) >> showSentInvitation
-  SendAdminWelcome cName -> forM_ adminWelcomeMessages $ sendMessageCmd cName
+  ConnectAdmin -> connect adminContactReq (XContact profile Nothing) >> showSentInvitation
   DeleteContact cName ->
     withStore (\st -> getContactGroupNames st userId cName) >>= \case
       [] -> do
@@ -1286,8 +1281,7 @@ chatCommandP =
     <|> ("/freceive " <|> "/fr ") *> (ReceiveFile <$> A.decimal <*> optional (A.space *> filePath))
     <|> ("/fcancel " <|> "/fc ") *> (CancelFile <$> A.decimal)
     <|> ("/fstatus " <|> "/fs ") *> (FileStatus <$> A.decimal)
-    <|> "/admin_welcome " *> (SendAdminWelcome <$> displayName)
-    -- <|> "/admin" $> ConnectAdmin
+    <|> "/simplex" $> ConnectAdmin
     <|> ("/address" <|> "/ad") $> CreateMyAddress
     <|> ("/delete_address" <|> "/da") $> DeleteMyAddress
     <|> ("/show_address" <|> "/sa") $> ShowMyAddress
@@ -1320,6 +1314,6 @@ chatCommandP =
         <|> (" member" $> GRMember)
         <|> pure GRAdmin
 
--- adminContactReq :: ConnReqContact
--- adminContactReq =
---   either error id $ parseAll connReqP' "https://simplex.chat/contact#/?smp=smp%3A%2F%2Fnxc7HnrnM8dOKgkMp008ub_9o9LXJlxlMrMpR-mfMQw%3D%40smp3.simplex.im%2F-TXnePw5eH5-4L7B%23&e2e=rsa%3AMIIBoDANBgkqhkiG9w0BAQEFAAOCAY0AMIIBiAKCAQEA6vpcsZggnYL38Qa2G5YU0W5uqnV8WAq_S3flIFU2kx4qW-aokVT8fo0CLJXv9aagdHObFfhc9SXcZPcm4T2NLnafKTgQa_HYFfj764l6cHkbSI-4JBE1gyhtaapsvrDGIdoiGDLgsF3AJVjqs8gavkuTsmw035aWMH-pkpc4qGlEWpNWp1Nn-7O4sdIIQ7yN48jsdCfeIY-BIk3kFR6s4oQOgiOcnir8e3x5tTuRMX1KWSiuzuqLHqgmcI1IqcPJPrBoTQLbXXEMGG1RsvIudxR03jejXXbQvlxXlNNrxwkniEe-P0rApGuCyv2NRMb4n0Wd3ZwewH7X-xtr16XNbQKBgDouGUHD1C55jB-w8W8VJRhFZS2xIYka9gJH1jjCFxHFzgjo69A_sObIamND1pF_JOzj_XCoA1fDICF95XbfS0rq9iS6xvX6M8Muq8QiJsfD5bRt5nh-Y3GK5rAFXS0ZtyOeh07iMLAMJ_EFxBQuKKDRu9_9KAvLL_plU0PuaMH3"
+adminContactReq :: ConnReqContact
+adminContactReq =
+  either error id $ strDecode "https://simplex.chat/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23MCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%3D"

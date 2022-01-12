@@ -624,14 +624,6 @@ serializeIntroStatus = \case
   GMIntroToConnected -> "to-con"
   GMIntroConnected -> "con"
 
-data Onboarding = Onboarding
-  { contactsCount :: Int,
-    createdGroups :: Int,
-    membersCount :: Int,
-    filesSentCount :: Int,
-    addressCount :: Int
-  }
-
 data NewMessage = NewMessage
   { direction :: MsgDirection,
     chatMsgEventType :: Text,

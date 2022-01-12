@@ -3,7 +3,6 @@
 
 module Simplex.Chat.Help
   ( chatWelcome,
-    adminWelcomeMessages,
     chatHelpInfo,
     filesHelpInfo,
     groupsHelpInfo,
@@ -12,13 +11,12 @@ module Simplex.Chat.Help
   )
 where
 
-import Data.ByteString (ByteString)
 import Data.List (intersperse)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Simplex.Chat.Markdown
 import Simplex.Chat.Styled
-import Simplex.Chat.Types (Onboarding (..), Profile (..), User (..))
+import Simplex.Chat.Types (Profile (..), User (..))
 import System.Console.ANSI.Types
 
 highlight :: Text -> Markdown
@@ -33,8 +31,8 @@ indent = "        "
 listHighlight :: [Text] -> Markdown
 listHighlight = mconcat . intersperse ", " . map highlight
 
-chatWelcome :: User -> Onboarding -> [StyledString]
-chatWelcome user Onboarding {contactsCount, createdGroups, membersCount, filesSentCount, addressCount} =
+chatWelcome :: User -> [StyledString]
+chatWelcome user =
   map
     styleMarkdown
     [ "                             __   __",
@@ -46,37 +44,21 @@ chatWelcome user Onboarding {contactsCount, createdGroups, membersCount, filesSe
       "Welcome " <> green userName <> "!",
       "Thank you for installing SimpleX Chat!",
       "",
-      "We have created several groups that you can join to play with SimpleX Chat:",
-      highlight "#simplex" <> " (SimpleX Engineers 💻) - technical questions about running or contributing to SimpleX Chat",
-      highlight "#hacks" <> " (Ethical Hacking 🔓) - chatting about privacy, security, announced vulnerabilities etc.",
+      "We have a couple of groups that you can join to play with SimpleX Chat:",
+      highlight "#termux" <> " (Android Termux 📱) - chatting about using SimpleX Chat on Android devices",
       highlight "#music" <> " (Music 🎸) - favorite music of our team and users",
-      highlight "#rand" <> " (Random 😇) - anything interesting, just keep it decent and friendly please :)",
       "",
-      "Connect to our groups admin to be added to these groups - " <> highlight "/admin",
+      "Connect to SimpleX Chat team to be added to these groups - type " <> highlight "/simplex",
       "",
-      "To continue:",
-      "[" <> check (contactsCount >= 2) <> "] " <> highlight "/connect" <> " with 2 friends - " <> highlight "/help" <> " for instructions",
-      "[" <> check (createdGroups >= 1 && membersCount >= 2) <> "] create a " <> highlight "/group" <> " with them - " <> highlight "/g #friends",
-      "[" <> check (filesSentCount >= 1) <> "] send " <> highlight "/file" <> ", e.g. your photo, to the group - " <> highlight "/f #friends ./photo.jpg",
-      "[" <> check (addressCount >= 1) <> "] create your optional chat " <> highlight "/address" <> " and share it with your friends - " <> highlight "/ad",
+      "Follow our updates:",
+      "> Reddit: https://www.reddit.com/r/SimpleXChat/",
+      "> Twitter: https://twitter.com/SimpleXChat",
       "",
-      "To help us build SimpleX Chat:",
-      "> star GitHub repo: https://github.com/simplex-chat/simplex-chat",
-      "> join Reddit group: https://www.reddit.com/r/SimpleXChat/",
-      "",
-      "To show this message again - " <> highlight "/welcome" <> " (or " <> highlight "/w" <> ")"
+      "Type " <> highlight "/help" <> " for usage info, " <> highlight "/welcome" <> " to show this message"
     ]
   where
     User {profile = Profile {displayName, fullName}} = user
     userName = if T.null fullName then displayName else fullName
-    check c = if c then green "*" else " "
-
-adminWelcomeMessages :: [ByteString]
-adminWelcomeMessages =
-  [ "Hello - and welcome to SimpleX Chat!",
-    "Which community groups you'd like to join:",
-    "!5 #simplex!, !5 #hacks!, !5 #music! or !5 #rand!"
-  ]
 
 chatHelpInfo :: [StyledString]
 chatHelpInfo =
