@@ -51,6 +51,7 @@ import Simplex.Chat.View
 import Simplex.Messaging.Agent
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), defaultAgentConfig)
 import Simplex.Messaging.Agent.Protocol
+import Simplex.Messaging.Client (SMPClientConfig (..), smpDefaultConfig)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
@@ -116,7 +117,8 @@ defaultChatConfig =
           { tcpPort = undefined, -- agent does not listen to TCP
             smpServers = undefined, -- filled in from options
             dbFile = undefined, -- filled in from options
-            dbPoolSize = 1
+            dbPoolSize = 1,
+            smpCfg = smpDefaultConfig {tcpTimeout = 6000000}
           },
       dbPoolSize = 1,
       tbqSize = 16,
