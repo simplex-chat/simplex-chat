@@ -177,7 +177,7 @@ If you deployed your own SMP server(s) you can configure client via `-s` option:
 $ simplex-chat -s smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=@smp.example.com
 ```
 
-Base64url encoded string preceding the server address is the server's online certificate fingerprint. It is generated on server initialization and validated by client during TLS handshake.
+Base64url encoded string preceding the server address is the server's offline certificate fingerprint which is validated by client during TLS handshake.
 
 You can still talk to people using default or any other server - it only affects the location of the message queue when you initiate the connection (and the reply queue can be on another server, as set by the other party's client).
 
