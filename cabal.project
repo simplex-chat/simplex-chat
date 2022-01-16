@@ -5,3 +5,8 @@ source-repository-package
     location: git://github.com/simplex-chat/hs-tls.git
     tag: cea6d52c512716ff09adcac86ebc95bb0b3bb797
     subdir: core
+
+source-repository-package
+    type: git
+    location: git://github.com/simplex-chat/haskell-terminal.git
+    tag: ab2260e08ed5df5569ca42d229dc4073a67980ec
