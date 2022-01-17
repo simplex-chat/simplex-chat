@@ -751,7 +751,7 @@ connectUsers cc1 cc2 = do
 
 showName :: TestCC -> IO String
 showName (TestCC ChatController {currentUser} _ _ _ _) = do
-  User {localDisplayName, profile = Profile {fullName}} <- readTVarIO currentUser
+  Just User {localDisplayName, profile = Profile {fullName}} <- readTVarIO currentUser
   pure . T.unpack $ localDisplayName <> " (" <> fullName <> ")"
 
 createGroup2 :: String -> TestCC -> TestCC -> IO ()
@@ -809,7 +809,9 @@ cc1 <##> cc2 = do
   cc1 <# (name2 <> "> hey")
 
 userName :: TestCC -> IO [Char]
-userName (TestCC ChatController {currentUser} _ _ _ _) = T.unpack . localDisplayName <$> readTVarIO currentUser
+userName (TestCC ChatController {currentUser} _ _ _ _) = do
+  Just user <- readTVarIO currentUser
+  pure . T.unpack $ localDisplayName user
 
 (##>) :: TestCC -> String -> IO ()
 cc ##> cmd = do

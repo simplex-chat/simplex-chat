@@ -9,18 +9,13 @@ module Simplex.Chat.Terminal where
 import Control.Monad.Catch (MonadMask)
 import Control.Monad.IO.Class (MonadIO)
 import Simplex.Chat.Styled
-import Simplex.Chat.Types
 import System.Console.ANSI.Types
 import System.Terminal
 import System.Terminal.Internal (LocalTerminal, Terminal, VirtualTerminal)
 import UnliftIO.STM
 
-data ActiveTo = ActiveNone | ActiveC ContactName | ActiveG GroupName
-  deriving (Eq)
-
 data ChatTerminal = ChatTerminal
-  { activeTo :: TVar ActiveTo,
-    termDevice :: TerminalDevice,
+  { termDevice :: TerminalDevice,
     termState :: TVar TerminalState,
     termSize :: Size,
     nextMessageRow :: TVar Int,
@@ -50,17 +45,16 @@ withChatTerm ChatTerminal {termDevice = TerminalDevice t} action = withTerm t $ 
 
 newChatTerminal :: WithTerminal t => t -> IO ChatTerminal
 newChatTerminal t = do
-  activeTo <- newTVarIO ActiveNone
   termSize <- withTerm t . runTerminalT $ getWindowSize
   let lastRow = height termSize - 1
-  termState <- newTVarIO newTermState
+  termState <- newTVarIO mkTermState
   termLock <- newTMVarIO ()
   nextMessageRow <- newTVarIO lastRow
   -- threadDelay 500000 -- this delay is the same as timeout in getTerminalSize
-  return ChatTerminal {activeTo, termDevice = TerminalDevice t, termState, termSize, nextMessageRow, termLock}
+  return ChatTerminal {termDevice = TerminalDevice t, termState, termSize, nextMessageRow, termLock}
 
-newTermState :: TerminalState
-newTermState =
+mkTermState :: TerminalState
+mkTermState =
   TerminalState
     { inputString = "",
       inputPosition = 0,

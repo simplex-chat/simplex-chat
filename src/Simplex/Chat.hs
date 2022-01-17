@@ -62,7 +62,6 @@ import System.Exit (exitFailure, exitSuccess)
 import System.FilePath (combine, splitExtensions, takeFileName)
 import System.IO (Handle, IOMode (..), SeekMode (..), hFlush, openFile, stdout)
 import Text.Read (readMaybe)
-import UnliftIO.Async (race_)
 import UnliftIO.Concurrent (forkIO, threadDelay)
 import UnliftIO.Directory (doesDirectoryExist, doesFileExist, getFileSize, getHomeDirectory, getTemporaryDirectory)
 import qualified UnliftIO.Exception as E
@@ -126,49 +125,51 @@ defaultChatConfig =
 logCfg :: LogConfig
 logCfg = LogConfig {lc_file = Nothing, lc_stderr = True}
 
-simplexChatTerminal :: WithTerminal t => ChatConfig -> ChatOpts -> t -> IO ()
-simplexChatTerminal cfg opts t =
+simplexChat :: WithTerminal t => ChatConfig -> ChatOpts -> t -> IO ()
+simplexChat cfg opts t = do
   -- setLogLevel LogInfo -- LogError
   -- withGlobalLogging logCfg $ do
-  initializeNotifications
-    >>= newChatController cfg opts t
-    >>= runSimplexChat
+  sendNotification <- initializeNotifications
+  ct <- newChatTerminal t
+  cc <- newChatControllerTerminal cfg opts sendNotification
+  runSimplexChat ct cc
 
--- simplexChatMobile :: ChatConfig -> ChatOpts -> t -> IO ()
--- simplexChatMobile cfg opts t =
---   -- setLogLevel LogInfo -- LogError
---   -- withGlobalLogging logCfg $ do
---   initializeNotifications
---     >>= newChatController cfg opts t
---     >>= runSimplexChat
+newChatControllerTerminal :: ChatConfig -> ChatOpts -> (Notification -> IO ()) -> IO ChatController
+newChatControllerTerminal config@ChatConfig {dbPoolSize} opts@ChatOpts {dbFilePrefix} sendNotification = do
+  let f = chatStoreFile dbFilePrefix
+  st <- createStore f dbPoolSize
+  user <- getCreateActiveUser st
+  newChatController st (Just user) config opts sendNotification
 
-newChatController :: WithTerminal t => ChatConfig -> ChatOpts -> t -> (Notification -> IO ()) -> IO ChatController
-newChatController config@ChatConfig {agentConfig = cfg, dbPoolSize, tbqSize} ChatOpts {dbFile, smpServers} t sendNotification = do
-  let f = chatStoreFile dbFile
+newChatController :: SQLiteStore -> Maybe User -> ChatConfig -> ChatOpts -> (Notification -> IO ()) -> IO ChatController
+newChatController chatStore user config@ChatConfig {agentConfig = cfg, tbqSize} ChatOpts {dbFilePrefix, smpServers} sendNotification = do
+  let f = chatStoreFile dbFilePrefix
+  activeTo <- newTVarIO ActiveNone
   firstTime <- not <$> doesFileExist f
-  chatStore <- createStore f dbPoolSize
-  currentUser <- newTVarIO =<< getCreateActiveUser chatStore
-  chatTerminal <- newChatTerminal t
-  smpAgent <- getSMPAgentClient cfg {dbFile = dbFile <> "_agent.db", smpServers}
+  currentUser <- newTVarIO user
+  smpAgent <- getSMPAgentClient cfg {dbFile = dbFilePrefix <> "_agent.db", smpServers}
   idsDrg <- newTVarIO =<< drgNew
   inputQ <- newTBQueueIO tbqSize
+  outputQ <- newTBQueueIO tbqSize
   notifyQ <- newTBQueueIO tbqSize
   chatLock <- newTMVarIO ()
   sndFiles <- newTVarIO M.empty
   rcvFiles <- newTVarIO M.empty
-  pure ChatController {..}
+  pure ChatController {activeTo, firstTime, currentUser, smpAgent, chatStore, idsDrg, inputQ, outputQ, notifyQ, chatLock, sndFiles, rcvFiles, config, sendNotification}
 
-runSimplexChat :: ChatController -> IO ()
-runSimplexChat = runReaderT $ do
-  user <- readTVarIO =<< asks currentUser
-  whenM (asks firstTime) . printToView $ chatWelcome user
-  race_ runTerminalInput runChatController
+runSimplexChat :: ChatTerminal -> ChatController -> IO ()
+runSimplexChat ct = runReaderT $ do
+  Just user <- readTVarIO =<< asks currentUser
+  whenM (asks firstTime) . liftIO . printToTerminal ct $ chatWelcome user
+  raceAny_ [runTerminalInput ct, runTerminalOutput ct, runChatController]
 
 runChatController :: (MonadUnliftIO m, MonadReader ChatController m, MonadFail m) => m ()
-runChatController =
+runChatController = do
+  q <- asks outputQ
+  let toView = atomically . writeTBQueue q
   raceAny_
-    [ inputSubscriber printToViewTerminal,
-      agentSubscriber printToViewTerminal,
+    [ inputSubscriber toView,
+      agentSubscriber toView,
       notificationSubscriber
     ]
 
@@ -188,17 +189,19 @@ inputSubscriber toView = do
       InputControl _ -> pure ()
       InputCommand s ->
         case parseAll chatCommandP . B.dropWhileEnd isSpace . encodeUtf8 $ T.pack s of
-          Left e -> printToView [plain s, "invalid input: " <> plain e]
+          Left e -> toView [plain s, "invalid input: " <> plain e]
           Right cmd -> do
             case cmd of
               SendMessage c msg -> toView =<< liftIO (viewSentMessage c msg)
               SendGroupMessage g msg -> toView =<< liftIO (viewSentGroupMessage g msg)
               SendFile c f -> toView =<< liftIO (viewSentFileInvitation c f)
               SendGroupFile g f -> toView =<< liftIO (viewSentGroupFileInvitation g f)
-              _ -> printToView [plain s]
-            user <- readTVarIO =<< asks currentUser
+              _ -> toView [plain s]
+            Just user <- readTVarIO =<< asks currentUser
             withAgentLock a . withLock l . void . runExceptT $
-              processChatCommand printToViewTerminal user cmd `catchError` (ExceptT . fmap Right . toView . viewChatError)
+              processChatCommand toView' user cmd `catchError` (toView' . viewChatError)
+  where
+    toView' = ExceptT . fmap Right . toView
 
 processChatCommand :: forall m. ChatMonad m => ([StyledString] -> m ()) -> User -> ChatCommand -> m ()
 processChatCommand toView user@User {userId, profile} = \case
@@ -375,13 +378,13 @@ processChatCommand toView user@User {userId, profile} = \case
     withStore (\st -> getFileTransferProgress st userId fileId) >>= toView . viewFileTransferStatus
   UpdateProfile p -> unless (p == profile) $ do
     user' <- withStore $ \st -> updateUserProfile st user p
-    asks currentUser >>= atomically . (`writeTVar` user')
+    asks currentUser >>= atomically . (`writeTVar` Just user')
     contacts <- withStore (`getUserContacts` user)
     forM_ contacts $ \ct -> sendDirectMessage (contactConn ct) $ XInfo p
     toView $ viewUserProfileUpdated user user'
   ShowProfile -> toView $ viewUserProfile profile
   QuitChat -> liftIO exitSuccess
-  ShowVersion -> printToView clientVersionInfo
+  ShowVersion -> toView clientVersionInfo
   where
     connect :: ConnectionRequestUri c -> ChatMsgEvent -> m ()
     connect cReq msg = do
@@ -440,7 +443,7 @@ agentSubscriber toView = do
   subscribeUserConnections toView
   forever $ do
     (_, connId, msg) <- atomically $ readTBQueue q
-    user <- readTVarIO =<< asks currentUser
+    Just user <- readTVarIO =<< asks currentUser
     withLock l . void . runExceptT $
       processAgentMessage toView' user connId msg `catchError` (toView' . viewChatError)
   where
@@ -448,7 +451,7 @@ agentSubscriber toView = do
 
 subscribeUserConnections :: forall m. (MonadUnliftIO m, MonadReader ChatController m, MonadFail m) => ([StyledString] -> m ()) -> m ()
 subscribeUserConnections toView = void . runExceptT $ do
-  user <- readTVarIO =<< asks currentUser
+  Just user <- readTVarIO =<< asks currentUser
   subscribeContacts user
   subscribeGroups user
   subscribeFiles user

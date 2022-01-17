@@ -25,6 +25,7 @@ library
       Simplex.Chat.Help
       Simplex.Chat.Input
       Simplex.Chat.Markdown
+      Simplex.Chat.Mobile
       Simplex.Chat.Notification
       Simplex.Chat.Options
       Simplex.Chat.Protocol

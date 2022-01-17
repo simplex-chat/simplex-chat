@@ -7,8 +7,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Simplex.Chat.View
-  ( printToView,
-    safeDecodeUtf8,
+  ( safeDecodeUtf8,
     msgPlain,
     clientVersionInfo,
     viewConnReqInvitation,
@@ -83,8 +82,6 @@ module Simplex.Chat.View
   )
 where
 
-import Control.Monad.IO.Unlift
-import Control.Monad.Reader
 import Data.ByteString.Char8 (ByteString)
 import Data.Composition ((.:))
 import Data.Function (on)
@@ -100,7 +97,6 @@ import Simplex.Chat.Controller
 import Simplex.Chat.Markdown
 import Simplex.Chat.Store (StoreError (..))
 import Simplex.Chat.Styled
-import Simplex.Chat.Terminal (printToTerminal)
 import Simplex.Chat.Types
 import Simplex.Chat.Util (safeDecodeUtf8)
 import Simplex.Messaging.Agent.Protocol
@@ -603,9 +599,6 @@ viewChatError = \case
   ChatErrorMessage e -> ["chat message error: " <> sShow e]
   where
     fileNotFound fileId = ["file " <> sShow fileId <> " not found"]
-
-printToView :: (MonadUnliftIO m, MonadReader ChatController m) => [StyledString] -> m ()
-printToView s = asks chatTerminal >>= liftIO . (`printToTerminal` s)
 
 ttyContact :: ContactName -> StyledString
 ttyContact = styled (Colored Green)

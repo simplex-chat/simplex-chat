@@ -2,6 +2,7 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Simplex.Chat.Controller where
@@ -42,14 +43,18 @@ data ChatConfig = ChatConfig
     fileChunkSize :: Integer
   }
 
+data ActiveTo = ActiveNone | ActiveC ContactName | ActiveG GroupName
+  deriving (Eq)
+
 data ChatController = ChatController
-  { currentUser :: TVar User,
+  { currentUser :: TVar (Maybe User),
+    activeTo :: TVar ActiveTo,
     firstTime :: Bool,
     smpAgent :: AgentClient,
-    chatTerminal :: ChatTerminal,
     chatStore :: SQLiteStore,
     idsDrg :: TVar ChaChaDRG,
     inputQ :: TBQueue InputEvent,
+    outputQ :: TBQueue [StyledString],
     notifyQ :: TBQueue Notification,
     sendNotification :: Notification -> IO (),
     chatLock :: TMVar (),
@@ -91,12 +96,15 @@ data ChatErrorType
 type ChatMonad m = (MonadUnliftIO m, MonadReader ChatController m, MonadError ChatError m, MonadFail m)
 
 setActive :: (MonadUnliftIO m, MonadReader ChatController m) => ActiveTo -> m ()
-setActive to = asks (activeTo . chatTerminal) >>= atomically . (`writeTVar` to)
+setActive to = asks activeTo >>= atomically . (`writeTVar` to)
 
 unsetActive :: (MonadUnliftIO m, MonadReader ChatController m) => ActiveTo -> m ()
-unsetActive a = asks (activeTo . chatTerminal) >>= atomically . (`modifyTVar` unset)
+unsetActive a = asks activeTo >>= atomically . (`modifyTVar` unset)
   where
     unset a' = if a == a' then ActiveNone else a'
 
-printToViewTerminal :: (MonadUnliftIO m, MonadReader ChatController m) => [StyledString] -> m ()
-printToViewTerminal s = asks chatTerminal >>= liftIO . (`printToTerminal` s)
+runTerminalOutput :: (MonadUnliftIO m, MonadReader ChatController m) => ChatTerminal -> m ()
+runTerminalOutput ct = do
+  ChatController {outputQ} <- ask
+  forever $
+    atomically (readTBQueue outputQ) >>= liftIO . printToTerminal ct
