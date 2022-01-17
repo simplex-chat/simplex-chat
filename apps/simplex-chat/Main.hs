@@ -15,7 +15,7 @@ main :: IO ()
 main = do
   opts <- welcomeGetOpts
   t <- withTerminal pure
-  simplexChat defaultChatConfig opts t
+  simplexChatTerminal defaultChatConfig opts t
 
 welcomeGetOpts :: IO ChatOpts
 welcomeGetOpts = do

@@ -16,6 +16,7 @@ import Data.Map.Strict (Map)
 import Numeric.Natural
 import Simplex.Chat.Notification
 import Simplex.Chat.Store (StoreError)
+import Simplex.Chat.Styled
 import Simplex.Chat.Terminal
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent (AgentClient)
@@ -96,3 +97,6 @@ unsetActive :: (MonadUnliftIO m, MonadReader ChatController m) => ActiveTo -> m 
 unsetActive a = asks (activeTo . chatTerminal) >>= atomically . (`modifyTVar` unset)
   where
     unset a' = if a == a' then ActiveNone else a'
+
+printToViewTerminal :: (MonadUnliftIO m, MonadReader ChatController m) => [StyledString] -> m ()
+printToViewTerminal s = asks chatTerminal >>= liftIO . (`printToTerminal` s)
