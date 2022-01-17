@@ -4,8 +4,10 @@
 
 module Simplex.Chat.Mobile where
 
+import Control.Concurrent (forkIO)
 import Control.Concurrent.STM
-import Control.Monad.Except
+import Control.Monad.Except (runExceptT)
+import Control.Monad.Reader (runReaderT)
 import Data.Aeson ((.=))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.Encoding as JE
@@ -77,7 +79,9 @@ chatInit = do
   let f = chatStoreFile mobileDBPrefix
   st <- createStore f $ dbPoolSize defaultChatConfig
   user <- getActiveUser_ st
-  newChatController st user defaultChatConfig mobileChatOpts . const $ pure ()
+  cc <- newChatController st user defaultChatConfig mobileChatOpts . const $ pure ()
+  _ <- forkIO $ runReaderT runChatController cc
+  pure cc
 
 getActiveUser_ :: SQLiteStore -> IO (Maybe User)
 getActiveUser_ st = find activeUser <$> getUsers st
