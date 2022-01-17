@@ -40,10 +40,10 @@ This package has its [own sqlite database file](https://github.com/simplex-chat/
 
 Simplex-chat library is what we will use from the app:
   - command type [ChatCommand in Chat.hs](https://github.com/simplex-chat/simplex-chat/blob/master/src/Simplex/Chat.hs#L72) that UI can send to it
-  - UI sends these commands via TBQueue that `inputSubscriber` reads in forever look and sends to `processChatCommand`. There is a hack that `inputSubscriber` not only reads commands but also shows them in the view, depending on the commands.
+  - UI sends these commands via TBQueue that `inputSubscriber` reads in forever loop and sends to `processChatCommand`. There is a hack that `inputSubscriber` not only reads commands but also shows them in the view, depending on the commands.
   - collection of [view functions in Chat/View.hs](https://github.com/simplex-chat/simplex-chat/blob/master/src/Simplex/Chat/View.hs) to reflect all events in view.
 
-This package also creates its own [database file](https://github.com/simplex-chat/simplex-chat/tree/master/migrations) where it stores references to agent connections managed by the agent, and how they may to contacts, groups, and file transmissions.
+This package also creates its own [database file](https://github.com/simplex-chat/simplex-chat/tree/master/migrations) where it stores references to agent connections managed by the agent, and how they map to contacts, groups, and file transmissions.
 
 ## App design options and questions
 
@@ -59,6 +59,25 @@ On another hand, it might be easier to grow chat API if this is passed via a sin
 
 In both cases, we should split `processChatCommand` (or the functions it calls) into a separate module, so it does not have code that is not used from the app.
 
+**Proposal**
+
+Use option 2 to send commands from UI to chat, encoding/decoding commands as strings with a tag in the beginning (TBC binary, text or JSON based - encoding will have to be replicated in UI land; both encoding and decoding is needed in Haskell land to refactor terminal chat to use this layer as well, so we have a standard API for all implementations).
+
+This function would have this type:
+
+```haskell
+sendRequest :: CString -> IO CString
+```
+
+to allow instant responses.
+
+One more idea. This function could be made to match REST semantics that would simplify making chat into a REST chat server api:
+
+```haskell
+sendRequest :: CString -> CString -> CString -> CString -> IO CString
+sendRequest verb path qs body = pure ""
+```
+
 ### Sending messages and notifications from Haskell to UI
 
 Firstly, we have to refactor the existing code so that all functions in [View.hs](https://github.com/simplex-chat/simplex-chat/blob/master/src/Simplex/Chat/View.hs) are passed to `processChatCommand` (or the functions for each command, if we go with this approach) as a single record containing all view functions.
@@ -71,6 +90,32 @@ Again, there are two similar options how this communication can happen:
 
 In this case the second option seems definitely easier, as even with simple terminal UI there are more view events than chat commands (although, given different mobile UI paradigms some of these events may not be needed, but some additional events are likely to be addedd, that would be doing nothing for terminal app).
 
+**Proposal**
+
+Encode messages and notifications as JSON, but instead of exporting the function from UI (which would have to be done differently from different platforms), have Haskell export function `receiveMessage` that would be blocking until the next notification or message is available. UI would handle it in a simple loop, on a separate thread:
+
+```haskell
+-- CString is serialized JSON (ToJSON serialized datatype from haskell)
+receiveMessage :: IO CString ()
+```
+
+To convert between Haskell and C interface:
+
+```haskell
+type CJSON = CString
+
+toCJSON ToJSON a => a -> CJSON
+toCJSON = ...
+
+-- Haskell interface
+send :: ToJSON a => String -> IO a
+recv :: ToJSON a => IO a
+
+-- C interface
+c_send :: CString -> IO CJSON
+c_recv :: IO CJSON
+```
+
 ### Accessing chat database from the UI
 
 Unlike terminal UI that does not provide any capabilities to access chat history, mobile UI needs to have access to it.
@@ -80,6 +125,20 @@ Two options how it can be done:
 - UI accesses database via Haskell functions. The upside of this is that there would be no issues with concurrency, and chat schema would be "owned" by Haskell core, but it requires either a separate serializable protocol for database access or multiple exported functions (same two options as before).
 
 However bad the second option is, it seems slightly better as at least we would not have to duplicate sql quiries in iOS and Android. But this is the trade-off I am least certain of...
+
+**Proposal**
+
+Use the same `sendRequest` function to access database.
+
+Additional idea: as these calls should never mutate chat database, they should only query the state, and as these functions will not be needed for terminal UI, I think we could export it as a separate function and have all necessary queries/functions in a separate module, e.g.:
+
+```haskell
+-- params and result are JSON encoded
+chatQuery :: CString -> IO CString
+chatQuery params = pure ""
+```
+
+On another hand, if we go with REST-like `sendRequest` then it definitely should be the only function to access chat and database state.
 
 ### UI database
 
