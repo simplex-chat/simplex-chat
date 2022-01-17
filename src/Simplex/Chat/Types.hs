@@ -60,6 +60,9 @@ data User = User
     profile :: Profile,
     activeUser :: Bool
   }
+  deriving (Generic, FromJSON)
+
+instance ToJSON User where toEncoding = J.genericToEncoding J.defaultOptions
 
 type UserId = Int64
 

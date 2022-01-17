@@ -18,6 +18,7 @@ import Simplex.Chat
 import Simplex.Chat.Controller (ChatConfig (..), ChatController (..))
 import Simplex.Chat.Options
 import Simplex.Chat.Store
+import Simplex.Chat.Terminal (newChatTerminal)
 import Simplex.Chat.Types (Profile)
 import Simplex.Messaging.Agent.Env.SQLite
 import Simplex.Messaging.Agent.RetryInterval
@@ -38,7 +39,7 @@ serverPort = "5001"
 opts :: ChatOpts
 opts =
   ChatOpts
-    { dbFile = undefined,
+    { dbFilePrefix = undefined,
       smpServers = ["smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=@localhost:5001"]
     }
 
@@ -70,12 +71,13 @@ cfg =
     }
 
 virtualSimplexChat :: FilePath -> Profile -> IO TestCC
-virtualSimplexChat dbFile profile = do
-  st <- createStore (dbFile <> "_chat.db") 1
+virtualSimplexChat dbFilePrefix profile = do
+  st <- createStore (dbFilePrefix <> "_chat.db") 1
   void . runExceptT $ createUser st profile True
   t <- withVirtualTerminal termSettings pure
-  cc <- newChatController cfg opts {dbFile} t . const $ pure () -- no notifications
-  chatAsync <- async $ runSimplexChat cc
+  ct <- newChatTerminal t
+  cc <- newChatControllerTerminal cfg opts {dbFilePrefix} . const $ pure () -- no notifications
+  chatAsync <- async $ runSimplexChat ct cc
   termQ <- newTQueueIO
   termAsync <- async $ readTerminalOutput t termQ
   pure TestCC {chatController = cc, virtualTerminal = t, chatAsync, termAsync, termQ}
