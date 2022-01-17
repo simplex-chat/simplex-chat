@@ -5,6 +5,7 @@
 
 module ProtocolTests where
 
+import qualified Data.Aeson as J
 import Data.ByteString.Char8 (ByteString)
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
@@ -59,7 +60,9 @@ s ==# msg = do
   parseAll strP s `shouldBe` Right (ChatMessage msg)
 
 (#==) :: ByteString -> ChatMsgEvent -> Expectation
-s #== msg = strEncode (ChatMessage msg) `shouldBe` s
+s #== msg =
+  J.eitherDecodeStrict' (strEncode $ ChatMessage msg)
+    `shouldBe` (J.eitherDecodeStrict' s :: Either String J.Value)
 
 (#==#) :: ByteString -> ChatMsgEvent -> Expectation
 s #==# msg = do
@@ -109,7 +112,7 @@ decodeChatMessageTest = describe "Chat message encoding/decoding" $ do
       #==# XGrpMemFwd MemberInfo {memberId = MemberId "\1\2\3\4", memberRole = GRAdmin, profile = testProfile} IntroInvitation {groupConnReq = testConnReq, directConnReq = testConnReq}
   it "x.grp.mem.info" $
     "{\"event\":\"x.grp.mem.info\",\"params\":{\"memberId\":\"AQIDBA==\",\"profile\":{\"fullName\":\"Alice\",\"displayName\":\"alice\"}}}"
-      #== XGrpMemInfo (MemberId "\1\2\3\4") testProfile
+      #==# XGrpMemInfo (MemberId "\1\2\3\4") testProfile
   it "x.grp.mem.con" $ "{\"event\":\"x.grp.mem.con\",\"params\":{\"memberId\":\"AQIDBA==\"}}" #==# XGrpMemCon (MemberId "\1\2\3\4")
   it "x.grp.mem.con.all" $ "{\"event\":\"x.grp.mem.con.all\",\"params\":{\"memberId\":\"AQIDBA==\"}}" #==# XGrpMemConAll (MemberId "\1\2\3\4")
   it "x.grp.mem.del" $ "{\"event\":\"x.grp.mem.del\",\"params\":{\"memberId\":\"AQIDBA==\"}}" #==# XGrpMemDel (MemberId "\1\2\3\4")
