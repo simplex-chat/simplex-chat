@@ -17,6 +17,10 @@
 		5CA059EE279559F40002BEB4 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CA059C4279559F40002BEB4 /* ContentView.swift */; };
 		5CA059EF279559F40002BEB4 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 5CA059C5279559F40002BEB4 /* Assets.xcassets */; };
 		5CA059F0279559F40002BEB4 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 5CA059C5279559F40002BEB4 /* Assets.xcassets */; };
+		5CA05A4C27974EB60002BEB4 /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CA05A4B27974EB60002BEB4 /* ProfileView.swift */; };
+		5CA05A4D27974EB60002BEB4 /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CA05A4B27974EB60002BEB4 /* ProfileView.swift */; };
+		5CA05A4F279752D00002BEB4 /* MessageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CA05A4E279752D00002BEB4 /* MessageView.swift */; };
+		5CA05A50279752D00002BEB4 /* MessageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CA05A4E279752D00002BEB4 /* MessageView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -49,6 +53,8 @@
 		5CA059E3279559F40002BEB4 /* Tests macOS.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Tests macOS.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		5CA059E7279559F40002BEB4 /* Tests_macOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests_macOS.swift; sourceTree = "<group>"; };
 		5CA059E9279559F40002BEB4 /* Tests_macOSLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests_macOSLaunchTests.swift; sourceTree = "<group>"; };
+		5CA05A4B27974EB60002BEB4 /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
+		5CA05A4E279752D00002BEB4 /* MessageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -99,6 +105,8 @@
 			children = (
 				5CA059C3279559F40002BEB4 /* SimpleXApp.swift */,
 				5CA059C4279559F40002BEB4 /* ContentView.swift */,
+				5CA05A4B27974EB60002BEB4 /* ProfileView.swift */,
+				5CA05A4E279752D00002BEB4 /* MessageView.swift */,
 				5CA059C5279559F40002BEB4 /* Assets.xcassets */,
 			);
 			path = Shared;
@@ -299,7 +307,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				5CA05A4F279752D00002BEB4 /* MessageView.swift in Sources */,
 				5CA059ED279559F40002BEB4 /* ContentView.swift in Sources */,
+				5CA05A4C27974EB60002BEB4 /* ProfileView.swift in Sources */,
 				5CA059EB279559F40002BEB4 /* SimpleXApp.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -308,7 +318,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				5CA05A50279752D00002BEB4 /* MessageView.swift in Sources */,
 				5CA059EE279559F40002BEB4 /* ContentView.swift in Sources */,
+				5CA05A4D27974EB60002BEB4 /* ProfileView.swift in Sources */,
 				5CA059EC279559F40002BEB4 /* SimpleXApp.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

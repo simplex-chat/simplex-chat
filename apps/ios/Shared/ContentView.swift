@@ -8,14 +8,43 @@
 import SwiftUI
 
 struct ContentView: View {
+    @State var messages: [String] = ["Start session:"]
+    @State var text: String = ""
+    
+    func sendMessage() {
+    }
+    
     var body: some View {
-        Text("Hello, world!")
+        VStack {
+            ScrollView {
+                LazyVStack {
+                    ForEach(messages, id: \.self) { msg in
+                        MessageView(message: msg, sent: false)
+                    }
+                }
+                .padding(10)
+            }
+            .frame(minWidth: 0,
+                   maxWidth: .infinity,
+                   minHeight: 0,
+                   maxHeight: .infinity,
+                   alignment: .topLeading)
+            HStack {
+                TextField("Message...", text: $text)
+                   .textFieldStyle(RoundedBorderTextFieldStyle())
+                   .frame(minHeight: CGFloat(30))
+                Button(action: sendMessage) {
+                    Text("Send")
+                }.disabled(text.isEmpty)
+            }
+            .frame(minHeight: CGFloat(30))
             .padding()
+        }
     }
 }
 
 struct ContentView_Previews: PreviewProvider {
     static var previews: some View {
-        ContentView()
+        ContentView(text: "Hello!")
     }
 }
