@@ -6,8 +6,8 @@ module Simplex.Chat.Mobile where
 
 import Control.Concurrent (forkIO)
 import Control.Concurrent.STM
-import Control.Monad.Except (runExceptT)
-import Control.Monad.Reader (runReaderT)
+import Control.Monad.Except
+import Control.Monad.Reader
 import Data.Aeson ((.=))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.Encoding as JE
@@ -33,6 +33,8 @@ foreign export ccall "chat_get_user" cChatGetUser :: StablePtr ChatController ->
 
 foreign export ccall "chat_create_user" cChatCreateUser :: StablePtr ChatController -> CJSONString -> IO CJSONString
 
+foreign export ccall "chat_start" cChatStart :: StablePtr ChatController -> IO ()
+
 foreign export ccall "chat_send_cmd" cChatSendCmd :: StablePtr ChatController -> CString -> IO CJSONString
 
 foreign export ccall "chat_recv_msg" cChatRecvMsg :: StablePtr ChatController -> IO CString
@@ -51,6 +53,10 @@ cChatCreateUser cPtr profileCJson = do
   c <- deRefStablePtr cPtr
   p <- peekCString profileCJson
   newCString =<< chatCreateUser c p
+
+-- | this function starts chat - it cannot be started during initialization right now, as it cannot work without user (to be fixed later)
+cChatStart :: StablePtr ChatController -> IO ()
+cChatStart cc = deRefStablePtr cc >>= chatStart
 
 -- | send command to chat (same syntax as in terminal for now)
 cChatSendCmd :: StablePtr ChatController -> CString -> IO CJSONString
@@ -79,9 +85,10 @@ chatInit = do
   let f = chatStoreFile mobileDBPrefix
   st <- createStore f $ dbPoolSize defaultChatConfig
   user <- getActiveUser_ st
-  cc <- newChatController st user defaultChatConfig mobileChatOpts . const $ pure ()
-  _ <- forkIO $ runReaderT runChatController cc
-  pure cc
+  newChatController st user defaultChatConfig mobileChatOpts . const $ pure ()
+
+chatStart :: ChatController -> IO ()
+chatStart cc = void . forkIO $ runReaderT runChatController cc
 
 getActiveUser_ :: SQLiteStore -> IO (Maybe User)
 getActiveUser_ st = find activeUser <$> getUsers st
