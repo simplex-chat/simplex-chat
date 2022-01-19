@@ -49,29 +49,20 @@ jobs:
         include:
           - os: ubuntu-20.04
             cache_path: ~/.stack
-            stack_args: "--test"
             artifact_rel_path: /bin/simplex-chat
             asset_name: simplex-chat-ubuntu-20_04-x86-64
-            shell: bash
           - os: ubuntu-18.04
             cache_path: ~/.stack
-            stack_args: "--test"
             artifact_rel_path: /bin/simplex-chat
             asset_name: simplex-chat-ubuntu-18_04-x86-64
-            shell: bash
           - os: macos-latest
             cache_path: ~/.stack
-            stack_args: "--test"
             artifact_rel_path: /bin/simplex-chat
             asset_name: simplex-chat-macos-x86-64
-            shell: bash
-          # TODO enable tests for windows once fixed (remove stack_args altogether)
           - os: windows-latest
             cache_path: C:/sr
-            stack_args: ""
             artifact_rel_path: /bin/simplex-chat.exe
             asset_name: simplex-chat-windows-x86-64
-            shell: cmd
     steps:
       - name: Clone project
         uses: actions/checkout@v2
@@ -89,19 +80,45 @@ jobs:
           path: ${{ matrix.cache_path }}
           key: ${{ matrix.os }}-${{ hashFiles('stack.yaml') }}
 
-      - name: Build & test
-        id: build_test
-        shell: pwsh
+      # / Unix
+
+      - name: Unix build
+        id: unix_build
+        if: matrix.os != 'windows-latest'
+        shell: bash
         run: |
-          pwsh -command "$ErrorActionPreference = 'Stop'; & {0}"
-          stack build ${{ matrix.stack_args }}
+          stack build --test
           echo "::set-output name=LOCAL_INSTALL_ROOT::$(stack path --local-install-root)"
 
-      - name: Upload binaries to release
-        if: startsWith(github.ref, 'refs/tags/v')
+      - name: Unix upload binaries to release
+        if: startsWith(github.ref, 'refs/tags/v') && matrix.os != 'windows-latest'
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: ${{ steps.build_test.outputs.LOCAL_INSTALL_ROOT }}${{ matrix.artifact_rel_path }}
+          file: ${{ steps.unix_build.outputs.LOCAL_INSTALL_ROOT }}${{ matrix.artifact_rel_path }}
           asset_name: ${{ matrix.asset_name }}
           tag: ${{ github.ref }}
+
+      # Unix /
+
+      # / Windows
+
+      # TODO run tests on Windows
+      - name: Windows build
+        id: windows_build
+        if: matrix.os == 'windows-latest'
+        shell: cmd
+        run: |
+          stack build
+          echo "::set-output name=LOCAL_INSTALL_ROOT::$(stack path --local-install-root)"
+
+      - name: Windows upload binaries to release
+        if: startsWith(github.ref, 'refs/tags/v') && matrix.os == 'windows-latest'
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: ${{ steps.windows_build.outputs.LOCAL_INSTALL_ROOT }}${{ matrix.artifact_rel_path }}
+          asset_name: ${{ matrix.asset_name }}
+          tag: ${{ github.ref }}
+
+      # Windows /
