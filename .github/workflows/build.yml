@@ -91,9 +91,8 @@ jobs:
 
       - name: Build & test
         id: build_test
-        shell: '${{ matrix.shell }}'
         run: |
-          stack build ${{ matrix.stack_args }}
+          call stack build ${{ matrix.stack_args }}
           echo "::set-output name=LOCAL_INSTALL_ROOT::$(stack path --local-install-root)"
 
       - name: Upload binaries to release
