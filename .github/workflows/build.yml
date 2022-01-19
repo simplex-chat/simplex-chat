@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - master
-      - v4
+      - stable
     tags:
       - "v*"
   pull_request:
@@ -49,19 +49,15 @@ jobs:
         include:
           - os: ubuntu-20.04
             cache_path: ~/.stack
-            artifact_rel_path: /bin/simplex-chat
             asset_name: simplex-chat-ubuntu-20_04-x86-64
           - os: ubuntu-18.04
             cache_path: ~/.stack
-            artifact_rel_path: /bin/simplex-chat
             asset_name: simplex-chat-ubuntu-18_04-x86-64
           - os: macos-latest
             cache_path: ~/.stack
-            artifact_rel_path: /bin/simplex-chat
             asset_name: simplex-chat-macos-x86-64
           - os: windows-latest
             cache_path: C:/sr
-            artifact_rel_path: /bin/simplex-chat.exe
             asset_name: simplex-chat-windows-x86-64
     steps:
       - name: Clone project
@@ -95,13 +91,17 @@ jobs:
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: ${{ steps.unix_build.outputs.LOCAL_INSTALL_ROOT }}${{ matrix.artifact_rel_path }}
+          file: ${{ steps.unix_build.outputs.LOCAL_INSTALL_ROOT }}/bin/simplex-chat
           asset_name: ${{ matrix.asset_name }}
           tag: ${{ github.ref }}
 
       # Unix /
 
       # / Windows
+
+      # * In powershell multiline commands do not fail if individual commands fail - https://github.community/t/multiline-commands-on-windows-do-not-fail-if-individual-commands-fail/16753
+      # * And GitHub Actions does not support parameterizing shell in a matrix job - https://github.community/t/using-matrix-to-specify-shell-is-it-possible/17065
+      # * So we're running a separate set of actions for Windows build
 
       # TODO run tests on Windows
       - name: Windows build
@@ -117,7 +117,7 @@ jobs:
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: ${{ steps.windows_build.outputs.LOCAL_INSTALL_ROOT }}${{ matrix.artifact_rel_path }}
+          file: ${{ steps.windows_build.outputs.LOCAL_INSTALL_ROOT }}/bin/simplex-chat.exe
           asset_name: ${{ matrix.asset_name }}
           tag: ${{ github.ref }}
 
