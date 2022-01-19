@@ -27,7 +27,7 @@ import Simplex.Chat.Types
 mobileDBPrefix :: FilePath
 mobileDBPrefix = "simplex_v1"
 
-foreign export ccall "chat_init" cChatInit :: IO (StablePtr ChatController)
+foreign export ccall "chat_init" cChatInit :: CString -> IO (StablePtr ChatController)
 
 foreign export ccall "chat_get_user" cChatGetUser :: StablePtr ChatController -> IO CJSONString
 
@@ -40,8 +40,8 @@ foreign export ccall "chat_send_cmd" cChatSendCmd :: StablePtr ChatController ->
 foreign export ccall "chat_recv_msg" cChatRecvMsg :: StablePtr ChatController -> IO CString
 
 -- | this function returns opaque pointer that needs to be sent to other functions
-cChatInit :: IO (StablePtr ChatController)
-cChatInit = chatInit >>= newStablePtr
+cChatInit :: CString -> IO (StablePtr ChatController)
+cChatInit fp = peekCString fp >>= chatInit >>= newStablePtr
 
 -- | returns JSON in the form `{"user": <user object>}` or `{}` in case there is no active user (to show dialog to enter displayName/fullName)
 cChatGetUser :: StablePtr ChatController -> IO CJSONString
@@ -80,12 +80,12 @@ type CJSONString = CString
 
 type JSONString = String
 
-chatInit :: IO ChatController
-chatInit = do
+chatInit :: String -> IO ChatController
+chatInit dbFilePrefix = do
   let f = chatStoreFile mobileDBPrefix
   st <- createStore f $ dbPoolSize defaultChatConfig
   user <- getActiveUser_ st
-  newChatController st user defaultChatConfig mobileChatOpts . const $ pure ()
+  newChatController st user defaultChatConfig mobileChatOpts {dbFilePrefix} . const $ pure ()
 
 chatStart :: ChatController -> IO ()
 chatStart cc = void . forkIO $ runReaderT runChatController cc

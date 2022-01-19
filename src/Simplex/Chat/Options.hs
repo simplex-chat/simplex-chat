@@ -27,7 +27,7 @@ defaultSMPServers :: NonEmpty SMPServer
 defaultSMPServers =
   L.fromList
     [ "smp://Tn1b3Rr7_gErbVt2v50Y_T-PvUAi1BYAMS-62w-k9CI=@139.162.240.237"
-      -- "smp://u2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU=@smp4.simplex.im",
+    -- "smp://u2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU=@smp4.simplex.im",
     ]
 
 chatOpts :: FilePath -> Parser ChatOpts
