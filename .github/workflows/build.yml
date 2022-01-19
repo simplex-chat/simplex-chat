@@ -91,6 +91,7 @@ jobs:
 
       - name: Build & test
         id: build_test
+        shell: pwsh
         run: |
           call stack build ${{ matrix.stack_args }}
           echo "::set-output name=LOCAL_INSTALL_ROOT::$(stack path --local-install-root)"
