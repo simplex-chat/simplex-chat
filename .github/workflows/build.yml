@@ -93,6 +93,7 @@ jobs:
         id: build_test
         shell: pwsh
         run: |
+          pwsh -command "$ErrorActionPreference = 'Stop'; & {0}"
           stack build ${{ matrix.stack_args }}
           echo "::set-output name=LOCAL_INSTALL_ROOT::$(stack path --local-install-root)"
 
