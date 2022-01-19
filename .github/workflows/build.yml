@@ -52,26 +52,26 @@ jobs:
             stack_args: "--test"
             artifact_rel_path: /bin/simplex-chat
             asset_name: simplex-chat-ubuntu-20_04-x86-64
-            shl: bash
+            shell: bash
           - os: ubuntu-18.04
             cache_path: ~/.stack
             stack_args: "--test"
             artifact_rel_path: /bin/simplex-chat
             asset_name: simplex-chat-ubuntu-18_04-x86-64
-            shl: bash
+            shell: bash
           - os: macos-latest
             cache_path: ~/.stack
             stack_args: "--test"
             artifact_rel_path: /bin/simplex-chat
             asset_name: simplex-chat-macos-x86-64
-            shl: bash
+            shell: bash
           # TODO enable tests for windows once fixed (remove stack_args altogether)
           - os: windows-latest
             cache_path: C:/sr
             stack_args: ""
             artifact_rel_path: /bin/simplex-chat.exe
             asset_name: simplex-chat-windows-x86-64
-            shl: cmd
+            shell: cmd
     steps:
       - name: Clone project
         uses: actions/checkout@v2
@@ -91,7 +91,7 @@ jobs:
 
       - name: Build & test
         id: build_test
-        shell: ${{ matrix.shl }}
+        shell: ${{ matrix.shell }}
         run: |
           stack build ${{ matrix.stack_args }}
           echo "::set-output name=LOCAL_INSTALL_ROOT::$(stack path --local-install-root)"
