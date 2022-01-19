@@ -86,7 +86,7 @@ jobs:
           stack build --test
           echo "::set-output name=LOCAL_INSTALL_ROOT::$(stack path --local-install-root)"
 
-      - name: Unix upload binaries to release
+      - name: Unix upload binary to release
         if: startsWith(github.ref, 'refs/tags/v') && matrix.os != 'windows-latest'
         uses: svenstaro/upload-release-action@v2
         with:
@@ -112,7 +112,7 @@ jobs:
           stack build
           echo "::set-output name=LOCAL_INSTALL_ROOT::$(stack path --local-install-root)"
 
-      - name: Windows upload binaries to release
+      - name: Windows upload binary to release
         if: startsWith(github.ref, 'refs/tags/v') && matrix.os == 'windows-latest'
         uses: svenstaro/upload-release-action@v2
         with:
