@@ -127,6 +127,7 @@ logCfg = LogConfig {lc_file = Nothing, lc_stderr = True}
 
 simplexChat :: WithTerminal t => ChatConfig -> ChatOpts -> t -> IO ()
 simplexChat cfg opts t = do
+  -- uncomment these two lines to enable logging
   -- setLogLevel LogInfo -- LogError
   -- withGlobalLogging logCfg $ do
   sendNotification <- initializeNotifications
