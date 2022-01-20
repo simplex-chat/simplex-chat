@@ -1,4 +1,4 @@
-packages: .
+packages: . ../haskell-terminal
 
 source-repository-package
     type: git
