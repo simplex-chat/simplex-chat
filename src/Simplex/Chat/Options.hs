@@ -47,7 +47,7 @@ chatOpts appDir =
             )
       )
     <*> switch
-      ( long "agent-logging"
+      ( long "log"
           <> short 'l'
           <> help "Enable agent logging"
       )

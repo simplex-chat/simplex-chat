@@ -127,12 +127,11 @@ logCfg :: LogConfig
 logCfg = LogConfig {lc_file = Nothing, lc_stderr = True}
 
 simplexChat :: WithTerminal t => ChatConfig -> ChatOpts -> t -> IO ()
-simplexChat cfg opts@ChatOpts {agentLogging} t =
-  if agentLogging
-    then do
-      setLogLevel LogInfo -- LogError
-      withGlobalLogging logCfg initRun
-    else initRun
+simplexChat cfg opts@ChatOpts {agentLogging} t
+  | agentLogging = do
+    setLogLevel LogInfo -- LogError
+    withGlobalLogging logCfg initRun
+  otherwise = initRun
   where
     initRun =
       initializeNotifications
