@@ -16,7 +16,7 @@ import System.FilePath (combine)
 data ChatOpts = ChatOpts
   { dbFile :: String,
     smpServers :: NonEmpty SMPServer,
-    agentLogging :: Bool
+    logging :: Bool
   }
 
 chatOpts :: FilePath -> Parser ChatOpts
@@ -49,7 +49,7 @@ chatOpts appDir =
     <*> switch
       ( long "log"
           <> short 'l'
-          <> help "Enable agent logging"
+          <> help "Enable logging"
       )
   where
     defaultDbFilePath = combine appDir "simplex_v1"

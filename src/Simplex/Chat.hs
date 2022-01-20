@@ -127,8 +127,8 @@ logCfg :: LogConfig
 logCfg = LogConfig {lc_file = Nothing, lc_stderr = True}
 
 simplexChat :: WithTerminal t => ChatConfig -> ChatOpts -> t -> IO ()
-simplexChat cfg opts@ChatOpts {agentLogging} t
-  | agentLogging = do
+simplexChat cfg opts@ChatOpts {logging} t
+  | logging = do
     setLogLevel LogInfo -- LogError
     withGlobalLogging logCfg initRun
   | otherwise = initRun
