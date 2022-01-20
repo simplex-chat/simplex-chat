@@ -131,7 +131,7 @@ simplexChat cfg opts@ChatOpts {agentLogging} t
   | agentLogging = do
     setLogLevel LogInfo -- LogError
     withGlobalLogging logCfg initRun
-  otherwise = initRun
+  | otherwise = initRun
   where
     initRun =
       initializeNotifications
