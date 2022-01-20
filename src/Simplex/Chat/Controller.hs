@@ -47,7 +47,7 @@ data ActiveTo = ActiveNone | ActiveC ContactName | ActiveG GroupName
   deriving (Eq)
 
 data ChatController = ChatController
-  { currentUser :: TVar (Maybe User),
+  { currentUser :: TVar User,
     activeTo :: TVar ActiveTo,
     firstTime :: Bool,
     smpAgent :: AgentClient,
