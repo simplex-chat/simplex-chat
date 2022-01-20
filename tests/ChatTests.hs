@@ -809,9 +809,7 @@ cc1 <##> cc2 = do
   cc1 <# (name2 <> "> hey")
 
 userName :: TestCC -> IO [Char]
-userName (TestCC ChatController {currentUser} _ _ _ _) = do
-  user <- readTVarIO currentUser
-  pure . T.unpack $ localDisplayName user
+userName (TestCC ChatController {currentUser} _ _ _ _) = T.unpack . localDisplayName <$> readTVarIO currentUser
 
 (##>) :: TestCC -> String -> IO ()
 cc ##> cmd = do
