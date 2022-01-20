@@ -125,6 +125,8 @@ move <binary> %APPDATA%/local/bin/simplex-chat.exe
 
 ### Build from source
 
+> **Please note:** to build the app use source code from [stable branch](https://github.com/simplex-chat/simplex-chat/tree/stable).
+
 #### Using Docker
 
 On Linux, you can build the chat executable using [docker build with custom output](https://docs.docker.com/engine/reference/commandline/build/#custom-build-outputs):
@@ -132,6 +134,7 @@ On Linux, you can build the chat executable using [docker build with custom outp
 ```shell
 $ git clone git@github.com:simplex-chat/simplex-chat.git
 $ cd simplex-chat
+$ git checkout stable
 $ DOCKER_BUILDKIT=1 docker build --output ~/.local/bin .
 ```
 
@@ -150,6 +153,7 @@ and build the project:
 ```shell
 $ git clone git@github.com:simplex-chat/simplex-chat.git
 $ cd simplex-chat
+$ git checkout stable
 $ stack install
 ```
 

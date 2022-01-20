@@ -40,7 +40,8 @@ opts :: ChatOpts
 opts =
   ChatOpts
     { dbFilePrefix = undefined,
-      smpServers = ["smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=@localhost:5001"]
+      smpServers = ["smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=@localhost:5001"],
+      logging = False
     }
 
 termSettings :: VirtualTerminalSettings

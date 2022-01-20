@@ -20,7 +20,8 @@ import System.FilePath (combine)
 
 data ChatOpts = ChatOpts
   { dbFilePrefix :: String,
-    smpServers :: NonEmpty SMPServer
+    smpServers :: NonEmpty SMPServer,
+    logging :: Bool
   }
 
 defaultSMPServers :: NonEmpty SMPServer
@@ -50,6 +51,11 @@ chatOpts appDir =
             "Comma separated list of SMP server(s) to use \
             \(default: smp4.simplex.im,smp5.simplex.im,smp6.simplex.im)"
           <> value defaultSMPServers
+      )
+    <*> switch
+      ( long "log"
+          <> short 'l'
+          <> help "Enable logging"
       )
   where
     defaultDbFilePath = combine appDir "simplex_v1"
