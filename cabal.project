@@ -9,4 +9,4 @@ source-repository-package
 source-repository-package
     type: git
     location: git://github.com/simplex-chat/haskell-terminal.git
-    tag: 5e0759ce4f9655fd3f0d94c76225e6904630dfd3
+    tag: f708b00009b54890172068f168bf98508ffcd495
