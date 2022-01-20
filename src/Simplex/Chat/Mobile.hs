@@ -23,10 +23,6 @@ import Simplex.Chat.Store
 import Simplex.Chat.Styled
 import Simplex.Chat.Types
 
--- | prefix to database file path
-mobileDBPrefix :: FilePath
-mobileDBPrefix = "simplex_v1"
-
 foreign export ccall "chat_init" cChatInit :: CString -> IO (StablePtr ChatController)
 
 foreign export ccall "chat_get_user" cChatGetUser :: StablePtr ChatController -> IO CJSONString
@@ -82,7 +78,7 @@ type JSONString = String
 
 chatInit :: String -> IO ChatController
 chatInit dbFilePrefix = do
-  let f = chatStoreFile mobileDBPrefix
+  let f = chatStoreFile dbFilePrefix
   st <- createStore f $ dbPoolSize defaultChatConfig
   user <- getActiveUser_ st
   newChatController st user defaultChatConfig mobileChatOpts {dbFilePrefix} . const $ pure ()
