@@ -39,7 +39,7 @@ extra-deps:
   - simple-logger-0.1.0@sha256:be8ede4bd251a9cac776533bae7fb643369ebd826eb948a9a18df1a8dd252ff8,1079
   # - terminal-0.2.0.0@sha256:de6770ecaae3197c66ac1f0db5a80cf5a5b1d3b64a66a05b50f442de5ad39570,2977
   - github: simplex-chat/haskell-terminal
-    commit: 994602af65e7f038bc387139ec961248760fd6e6
+    commit: 7760af16f7af26ec08afa3483f3834cde5aeb64a
   - simplexmq-1.0.0@sha256:34b2004728ae396e3ae449cd090ba7410781e2b3cefc59259915f4ca5daa9ea8,8561
   # - ../simplexmq
   # - github: simplex-chat/simplexmq
