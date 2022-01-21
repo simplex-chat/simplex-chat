@@ -40,12 +40,12 @@ extra-deps:
   # - terminal-0.2.0.0@sha256:de6770ecaae3197c66ac1f0db5a80cf5a5b1d3b64a66a05b50f442de5ad39570,2977
   - github: simplex-chat/haskell-terminal
     commit: f708b00009b54890172068f168bf98508ffcd495
-  - simplexmq-1.0.0@sha256:34b2004728ae396e3ae449cd090ba7410781e2b3cefc59259915f4ca5daa9ea8,8561
+  # - simplexmq-1.0.0@sha256:34b2004728ae396e3ae449cd090ba7410781e2b3cefc59259915f4ca5daa9ea8,8561
   # - ../simplexmq
-  # - github: simplex-chat/simplexmq
-  #   commit: bfa4911217b71527a6fbaf73b242b5684aaf9fce
+  - github: simplex-chat/simplexmq
+    commit: 670b3b79749bfb48a04ee40b8c441e9ca68ad41a
   - github: simplex-chat/hs-tls
-    commit: cea6d52c512716ff09adcac86ebc95bb0b3bb797
+    commit: f6cc753611f80af300401cfae63846e9d7c40d9e
     subdirs:
       - core
 

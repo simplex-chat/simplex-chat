@@ -60,6 +60,9 @@ data User = User
     profile :: Profile,
     activeUser :: Bool
   }
+  deriving (Generic, FromJSON)
+
+instance ToJSON User where toEncoding = J.genericToEncoding J.defaultOptions
 
 type UserId = Int64
 
@@ -743,3 +746,5 @@ msgDeliveryStatusT' s =
     case testEquality d (msgDirection @d) of
       Just Refl -> Just st
       _ -> Nothing
+
+data Notification = Notification {title :: Text, text :: Text}

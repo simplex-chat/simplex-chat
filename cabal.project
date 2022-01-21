@@ -2,8 +2,13 @@ packages: .
 
 source-repository-package
     type: git
+    location: git://github.com/simplex-chat/simplexmq.git
+    tag: 670b3b79749bfb48a04ee40b8c441e9ca68ad41a
+
+source-repository-package
+    type: git
     location: git://github.com/simplex-chat/hs-tls.git
-    tag: cea6d52c512716ff09adcac86ebc95bb0b3bb797
+    tag: f6cc753611f80af300401cfae63846e9d7c40d9e
     subdir: core
 
 source-repository-package

@@ -108,7 +108,6 @@ import Crypto.Random (ChaChaDRG, randomBytesGenerate)
 import qualified Data.ByteString.Base64 as B64
 import Data.ByteString.Char8 (ByteString)
 import Data.Either (rights)
-import Data.FileEmbed (embedDir, makeRelativeToProject)
 import Data.Function (on)
 import Data.Functor (($>))
 import Data.Int (Int64)
@@ -116,11 +115,11 @@ import Data.List (find, sortBy)
 import Data.Maybe (listToMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Text.Encoding (decodeUtf8)
 import Data.Time.Clock (UTCTime, getCurrentTime)
-import Database.SQLite.Simple (NamedParam (..), Only (..), SQLError, (:.) (..))
+import Database.SQLite.Simple (NamedParam (..), Only (..), Query (..), SQLError, (:.) (..))
 import qualified Database.SQLite.Simple as DB
 import Database.SQLite.Simple.QQ (sql)
+import Simplex.Chat.Migrations.M20220101_initial
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Protocol (AParty (..), AgentMsgId, ConnId, InvitationId, MsgMeta (..))
@@ -128,17 +127,19 @@ import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore (..), createSQLiteStore
 import Simplex.Messaging.Agent.Store.SQLite.Migrations (Migration (..))
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Util (bshow, liftIOEither, (<$$>))
-import System.FilePath (takeBaseName, takeExtension, takeFileName)
+import System.FilePath (takeFileName)
 import UnliftIO.STM
+
+schemaMigrations :: [(String, Query)]
+schemaMigrations =
+  [ ("20220101_initial", m20220101_initial)
+  ]
 
 -- | The list of migrations in ascending order by date
 migrations :: [Migration]
-migrations =
-  sortBy (compare `on` name) . map migration . filter sqlFile $
-    $(makeRelativeToProject "migrations" >>= embedDir)
+migrations = sortBy (compare `on` name) $ map migration schemaMigrations
   where
-    sqlFile (file, _) = takeExtension file == ".sql"
-    migration (file, qStr) = Migration {name = takeBaseName file, up = decodeUtf8 qStr}
+    migration (name, query) = Migration {name = name, up = fromQuery query}
 
 createStore :: FilePath -> Int -> IO SQLiteStore
 createStore dbFilePath poolSize = createSQLiteStore dbFilePath poolSize migrations

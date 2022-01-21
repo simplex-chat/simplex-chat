@@ -2,14 +2,14 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 
-module Simplex.Chat.Input where
+module Simplex.Chat.Terminal.Input where
 
 import Control.Monad.IO.Unlift
 import Control.Monad.Reader
 import Data.List (dropWhileEnd)
 import qualified Data.Text as T
 import Simplex.Chat.Controller
-import Simplex.Chat.Terminal
+import Simplex.Chat.Terminal.Output
 import System.Exit (exitSuccess)
 import System.Terminal hiding (insertChars)
 import UnliftIO.STM
@@ -21,16 +21,16 @@ getKey =
     Right (KeyEvent key ms) -> pure (key, ms)
     _ -> getKey
 
-runTerminalInput :: (MonadUnliftIO m, MonadReader ChatController m) => m ()
-runTerminalInput = do
-  ChatController {inputQ, chatTerminal = ct} <- ask
+runTerminalInput :: (MonadUnliftIO m, MonadReader ChatController m) => ChatTerminal -> m ()
+runTerminalInput ct = do
+  cc <- ask
   liftIO $
     withChatTerm ct $ do
       updateInput ct
-      receiveFromTTY inputQ ct
+      receiveFromTTY cc ct
 
-receiveFromTTY :: MonadTerminal m => TBQueue InputEvent -> ChatTerminal -> m ()
-receiveFromTTY inputQ ct@ChatTerminal {activeTo, termSize, termState} =
+receiveFromTTY :: MonadTerminal m => ChatController -> ChatTerminal -> m ()
+receiveFromTTY ChatController {inputQ, activeTo} ct@ChatTerminal {termSize, termState} =
   forever $ getKey >>= processKey >> withTermLock ct (updateInput ct)
   where
     processKey :: MonadTerminal m => (Key, Modifiers) -> m ()

@@ -1,6 +1,11 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Simplex.Chat.Options (getChatOpts, ChatOpts (..)) where
+module Simplex.Chat.Options
+  ( ChatOpts (..),
+    getChatOpts,
+    defaultSMPServers,
+  )
+where
 
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.ByteString.Char8 as B
@@ -14,10 +19,19 @@ import Simplex.Messaging.Parsers (parseAll)
 import System.FilePath (combine)
 
 data ChatOpts = ChatOpts
-  { dbFile :: String,
+  { dbFilePrefix :: String,
     smpServers :: NonEmpty SMPServer,
     logging :: Bool
   }
+
+defaultSMPServers :: NonEmpty SMPServer
+defaultSMPServers =
+  L.fromList
+    [ "smp://u2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU=@smp4.simplex.im",
+      "smp://hpq7_4gGJiilmz5Rf-CswuU5kZGkm_zOIooSw6yALRg=@smp5.simplex.im",
+      "smp://PQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo=@smp6.simplex.im"
+      -- "smp://Tn1b3Rr7_gErbVt2v50Y_T-PvUAi1BYAMS-62w-k9CI=@139.162.240.237"
+    ]
 
 chatOpts :: FilePath -> Parser ChatOpts
 chatOpts appDir =
@@ -38,13 +52,7 @@ chatOpts appDir =
           <> help
             "Comma separated list of SMP server(s) to use \
             \(default: smp4.simplex.im,smp5.simplex.im,smp6.simplex.im)"
-          <> value
-            ( L.fromList
-                [ "smp://u2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU=@smp4.simplex.im",
-                  "smp://hpq7_4gGJiilmz5Rf-CswuU5kZGkm_zOIooSw6yALRg=@smp5.simplex.im",
-                  "smp://PQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo=@smp6.simplex.im"
-                ]
-            )
+          <> value defaultSMPServers
       )
     <*> switch
       ( long "log"

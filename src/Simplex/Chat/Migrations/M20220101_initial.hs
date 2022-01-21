@@ -1,3 +1,13 @@
+{-# LANGUAGE QuasiQuotes #-}
+
+module Simplex.Chat.Migrations.M20220101_initial where
+
+import Database.SQLite.Simple (Query)
+import Database.SQLite.Simple.QQ (sql)
+
+m20220101_initial :: Query
+m20220101_initial =
+  [sql|
 CREATE TABLE contact_profiles ( -- remote user profile
   contact_profile_id INTEGER PRIMARY KEY,
   display_name TEXT NOT NULL, -- contact name set by remote user (not unique), this name must not contain spaces
@@ -257,3 +267,4 @@ CREATE TABLE msg_delivery_events (
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   UNIQUE (msg_delivery_id, delivery_status)
 );
+|]

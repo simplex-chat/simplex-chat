@@ -38,15 +38,12 @@ import Data.Text.Encoding (encodeUtf8)
 import Data.Word (Word32)
 import Simplex.Chat.Controller
 import Simplex.Chat.Help
-import Simplex.Chat.Input
-import Simplex.Chat.Notification
 import Simplex.Chat.Options (ChatOpts (..))
 import Simplex.Chat.Protocol
 import Simplex.Chat.Store
-import Simplex.Chat.Styled (plain)
-import Simplex.Chat.Terminal
+import Simplex.Chat.Styled
 import Simplex.Chat.Types
-import Simplex.Chat.Util (ifM, unlessM, whenM)
+import Simplex.Chat.Util (ifM, unlessM)
 import Simplex.Chat.View
 import Simplex.Messaging.Agent
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), defaultAgentConfig)
@@ -62,7 +59,6 @@ import System.Exit (exitFailure, exitSuccess)
 import System.FilePath (combine, splitExtensions, takeFileName)
 import System.IO (Handle, IOMode (..), SeekMode (..), hFlush, openFile, stdout)
 import Text.Read (readMaybe)
-import UnliftIO.Async (race_)
 import UnliftIO.Concurrent (forkIO, threadDelay)
 import UnliftIO.Directory (doesDirectoryExist, doesFileExist, getFileSize, getHomeDirectory, getTemporaryDirectory)
 import qualified UnliftIO.Exception as E
@@ -126,45 +122,29 @@ defaultChatConfig =
 logCfg :: LogConfig
 logCfg = LogConfig {lc_file = Nothing, lc_stderr = True}
 
-simplexChat :: WithTerminal t => ChatConfig -> ChatOpts -> t -> IO ()
-simplexChat cfg opts@ChatOpts {logging} t
-  | logging = do
-    setLogLevel LogInfo -- LogError
-    withGlobalLogging logCfg initRun
-  | otherwise = initRun
-  where
-    initRun =
-      initializeNotifications
-        >>= newChatController cfg opts t
-        >>= runSimplexChat
-
-newChatController :: WithTerminal t => ChatConfig -> ChatOpts -> t -> (Notification -> IO ()) -> IO ChatController
-newChatController config@ChatConfig {agentConfig = cfg, dbPoolSize, tbqSize} ChatOpts {dbFile, smpServers} t sendNotification = do
-  let f = chatStoreFile dbFile
+newChatController :: SQLiteStore -> User -> ChatConfig -> ChatOpts -> (Notification -> IO ()) -> IO ChatController
+newChatController chatStore user config@ChatConfig {agentConfig = cfg, tbqSize} ChatOpts {dbFilePrefix, smpServers} sendNotification = do
+  let f = chatStoreFile dbFilePrefix
+  activeTo <- newTVarIO ActiveNone
   firstTime <- not <$> doesFileExist f
-  chatStore <- createStore f dbPoolSize
-  currentUser <- newTVarIO =<< getCreateActiveUser chatStore
-  chatTerminal <- newChatTerminal t
-  smpAgent <- getSMPAgentClient cfg {dbFile = dbFile <> "_agent.db", smpServers}
+  currentUser <- newTVarIO user
+  smpAgent <- getSMPAgentClient cfg {dbFile = dbFilePrefix <> "_agent.db", smpServers}
   idsDrg <- newTVarIO =<< drgNew
   inputQ <- newTBQueueIO tbqSize
+  outputQ <- newTBQueueIO tbqSize
   notifyQ <- newTBQueueIO tbqSize
   chatLock <- newTMVarIO ()
   sndFiles <- newTVarIO M.empty
   rcvFiles <- newTVarIO M.empty
-  pure ChatController {..}
-
-runSimplexChat :: ChatController -> IO ()
-runSimplexChat = runReaderT $ do
-  user <- readTVarIO =<< asks currentUser
-  whenM (asks firstTime) . printToView $ chatWelcome user
-  race_ runTerminalInput runChatController
+  pure ChatController {activeTo, firstTime, currentUser, smpAgent, chatStore, idsDrg, inputQ, outputQ, notifyQ, chatLock, sndFiles, rcvFiles, config, sendNotification}
 
 runChatController :: (MonadUnliftIO m, MonadReader ChatController m, MonadFail m) => m ()
-runChatController =
+runChatController = do
+  q <- asks outputQ
+  let toView = atomically . writeTBQueue q
   raceAny_
-    [ inputSubscriber,
-      agentSubscriber,
+    [ inputSubscriber toView,
+      agentSubscriber toView,
       notificationSubscriber
     ]
 
@@ -174,8 +154,8 @@ withLock lock =
     (void . atomically $ takeTMVar lock)
     (atomically $ putTMVar lock ())
 
-inputSubscriber :: (MonadUnliftIO m, MonadReader ChatController m, MonadFail m) => m ()
-inputSubscriber = do
+inputSubscriber :: (MonadUnliftIO m, MonadReader ChatController m, MonadFail m) => ([StyledString] -> m ()) -> m ()
+inputSubscriber toView = do
   q <- asks inputQ
   l <- asks chatLock
   a <- asks smpAgent
@@ -184,34 +164,36 @@ inputSubscriber = do
       InputControl _ -> pure ()
       InputCommand s ->
         case parseAll chatCommandP . B.dropWhileEnd isSpace . encodeUtf8 $ T.pack s of
-          Left e -> printToView [plain s, "invalid input: " <> plain e]
+          Left e -> toView [plain s, "invalid input: " <> plain e]
           Right cmd -> do
             case cmd of
-              SendMessage c msg -> showSentMessage c msg
-              SendGroupMessage g msg -> showSentGroupMessage g msg
-              SendFile c f -> showSentFileInvitation c f
-              SendGroupFile g f -> showSentGroupFileInvitation g f
-              _ -> printToView [plain s]
+              SendMessage c msg -> toView =<< liftIO (viewSentMessage c msg)
+              SendGroupMessage g msg -> toView =<< liftIO (viewSentGroupMessage g msg)
+              SendFile c f -> toView =<< liftIO (viewSentFileInvitation c f)
+              SendGroupFile g f -> toView =<< liftIO (viewSentGroupFileInvitation g f)
+              _ -> toView [plain s]
             user <- readTVarIO =<< asks currentUser
             withAgentLock a . withLock l . void . runExceptT $
-              processChatCommand user cmd `catchError` showChatError
+              processChatCommand toView' user cmd `catchError` (toView' . viewChatError)
+  where
+    toView' = ExceptT . fmap Right . toView
 
-processChatCommand :: forall m. ChatMonad m => User -> ChatCommand -> m ()
-processChatCommand user@User {userId, profile} = \case
-  ChatHelp -> printToView chatHelpInfo
-  FilesHelp -> printToView filesHelpInfo
-  GroupsHelp -> printToView groupsHelpInfo
-  MyAddressHelp -> printToView myAddressHelpInfo
-  MarkdownHelp -> printToView markdownInfo
-  Welcome -> printToView $ chatWelcome user
+processChatCommand :: forall m. ChatMonad m => ([StyledString] -> m ()) -> User -> ChatCommand -> m ()
+processChatCommand toView user@User {userId, profile} = \case
+  ChatHelp -> toView chatHelpInfo
+  FilesHelp -> toView filesHelpInfo
+  GroupsHelp -> toView groupsHelpInfo
+  MyAddressHelp -> toView myAddressHelpInfo
+  MarkdownHelp -> toView markdownInfo
+  Welcome -> toView $ chatWelcome user
   AddContact -> do
     (connId, cReq) <- withAgent (`createConnection` SCMInvitation)
     withStore $ \st -> createDirectConnection st userId connId
-    showInvitation cReq
-  Connect (Just (ACR SCMInvitation cReq)) -> connect cReq (XInfo profile) >> showSentConfirmation
-  Connect (Just (ACR SCMContact cReq)) -> connect cReq (XContact profile Nothing) >> showSentInvitation
-  Connect Nothing -> showInvalidConnReq
-  ConnectAdmin -> connect adminContactReq (XContact profile Nothing) >> showSentInvitation
+    toView $ viewConnReqInvitation cReq
+  Connect (Just (ACR SCMInvitation cReq)) -> connect cReq (XInfo profile) >> toView viewSentConfirmation
+  Connect (Just (ACR SCMContact cReq)) -> connect cReq (XContact profile Nothing) >> toView viewSentInvitation
+  Connect Nothing -> toView viewInvalidConnReq
+  ConnectAdmin -> connect adminContactReq (XContact profile Nothing) >> toView viewSentInvitation
   DeleteContact cName ->
     withStore (\st -> getContactGroupNames st userId cName) >>= \case
       [] -> do
@@ -220,39 +202,39 @@ processChatCommand user@User {userId, profile} = \case
           deleteConnection a agentConnId `catchError` \(_ :: AgentErrorType) -> pure ()
         withStore $ \st -> deleteContact st userId cName
         unsetActive $ ActiveC cName
-        showContactDeleted cName
-      gs -> showContactGroups cName gs
-  ListContacts -> withStore (`getUserContacts` user) >>= showContactsList
+        toView $ viewContactDeleted cName
+      gs -> toView $ viewContactGroups cName gs
+  ListContacts -> withStore (`getUserContacts` user) >>= toView . viewContactsList
   CreateMyAddress -> do
     (connId, cReq) <- withAgent (`createConnection` SCMContact)
     withStore $ \st -> createUserContactLink st userId connId cReq
-    showUserContactLinkCreated cReq
+    toView $ viewUserContactLinkCreated cReq
   DeleteMyAddress -> do
     conns <- withStore $ \st -> getUserContactLinkConnections st userId
     withAgent $ \a -> forM_ conns $ \Connection {agentConnId} ->
       deleteConnection a agentConnId `catchError` \(_ :: AgentErrorType) -> pure ()
     withStore $ \st -> deleteUserContactLink st userId
-    showUserContactLinkDeleted
+    toView viewUserContactLinkDeleted
   ShowMyAddress -> do
     cReq <- withStore $ \st -> getUserContactLink st userId
-    showUserContactLink cReq
+    toView $ viewUserContactLink cReq
   AcceptContact cName -> do
     UserContactRequest {agentInvitationId, profileId} <- withStore $ \st ->
       getContactRequest st userId cName
     connId <- withAgent $ \a -> acceptContact a agentInvitationId . directMessage $ XInfo profile
     withStore $ \st -> createAcceptedContact st userId connId cName profileId
-    showAcceptingContactRequest cName
+    toView $ viewAcceptingContactRequest cName
   RejectContact cName -> do
     UserContactRequest {agentContactConnId, agentInvitationId} <- withStore $ \st ->
       getContactRequest st userId cName
         `E.finally` deleteContactRequest st userId cName
     withAgent $ \a -> rejectContact a agentContactConnId agentInvitationId
-    showContactRequestRejected cName
+    toView $ viewContactRequestRejected cName
   SendMessage cName msg -> sendMessageCmd cName msg
   NewGroup gProfile -> do
     gVar <- asks idsDrg
     group <- withStore $ \st -> createNewGroup st gVar user gProfile
-    showGroupCreated group
+    toView $ viewGroupCreated group
   AddMember gName cName memRole -> do
     (group, contact) <- withStore $ \st -> (,) <$> getGroup st user gName <*> getContact st userId cName
     let Group {groupId, groupProfile, membership, members} = group
@@ -263,7 +245,7 @@ processChatCommand user@User {userId, profile} = \case
     let sendInvitation memberId cReq = do
           sendDirectMessage (contactConn contact) $
             XGrpInv $ GroupInvitation (MemberIdRole userMemberId userRole) (MemberIdRole memberId memRole) cReq groupProfile
-          showSentGroupInvitation gName cName
+          toView $ viewSentGroupInvitation gName cName
           setActive $ ActiveG gName
     case contactMember contact members of
       Nothing -> do
@@ -275,7 +257,7 @@ processChatCommand user@User {userId, profile} = \case
         | memberStatus == GSMemInvited ->
           withStore (\st -> getMemberInvitation st user groupMemberId) >>= \case
             Just cReq -> sendInvitation memberId cReq
-            Nothing -> showCannotResendInvitation gName cName
+            Nothing -> toView $ viewCannotResendInvitation gName cName
         | otherwise -> chatError (CEGroupDuplicateMember cName)
   JoinGroup gName -> do
     ReceivedGroupInvitation {fromMember, userMember, connRequest} <- withStore $ \st -> getGroupInvitation st user gName
@@ -295,13 +277,13 @@ processChatCommand user@User {userId, profile} = \case
         when (mStatus /= GSMemInvited) . sendGroupMessage members $ XGrpMemDel mId
         deleteMemberConnection m
         withStore $ \st -> updateGroupMemberStatus st userId m GSMemRemoved
-        showDeletedMember gName Nothing (Just m)
+        toView $ viewDeletedMember gName Nothing (Just m)
   LeaveGroup gName -> do
     Group {membership, members} <- withStore $ \st -> getGroup st user gName
     sendGroupMessage members XGrpLeave
     mapM_ deleteMemberConnection members
     withStore $ \st -> updateGroupMemberStatus st userId membership GSMemLeft
-    showLeftMemberUser gName
+    toView $ viewLeftMemberUser gName
   DeleteGroup gName -> do
     g@Group {membership, members} <- withStore $ \st -> getGroup st user gName
     let s = memberStatus membership
@@ -312,11 +294,11 @@ processChatCommand user@User {userId, profile} = \case
     when (memberActive membership) $ sendGroupMessage members XGrpDel
     mapM_ deleteMemberConnection members
     withStore $ \st -> deleteGroup st user g
-    showGroupDeletedUser gName
+    toView $ viewGroupDeletedUser gName
   ListMembers gName -> do
     group <- withStore $ \st -> getGroup st user gName
-    showGroupMembers group
-  ListGroups -> withStore (`getUserGroupDetails` userId) >>= showGroupsList
+    toView $ viewGroupMembers group
+  ListGroups -> withStore (`getUserGroupDetails` userId) >>= toView . viewGroupsList
   SendGroupMessage gName msg -> do
     -- TODO save pending message delivery for members without connections
     Group {members, membership} <- withStore $ \st -> getGroup st user gName
@@ -332,7 +314,7 @@ processChatCommand user@User {userId, profile} = \case
     SndFileTransfer {fileId} <- withStore $ \st ->
       createSndFileTransfer st userId contact f fileInv agentConnId chSize
     sendDirectMessage (contactConn contact) $ XFile fileInv
-    showSentFileInfo fileId
+    toView $ viewSentFileInfo fileId
     setActive $ ActiveC cName
   SendGroupFile gName f -> do
     (fileSize, chSize) <- checkSndFile f
@@ -346,7 +328,7 @@ processChatCommand user@User {userId, profile} = \case
     -- TODO sendGroupMessage - same file invitation to all
     forM_ ms $ \(m, _, fileInv) ->
       traverse (`sendDirectMessage` XFile fileInv) $ memberConn m
-    showSentFileInfo fileId
+    toView $ viewSentFileInfo fileId
     setActive $ ActiveG gName
   ReceiveFile fileId filePath_ -> do
     ft@RcvFileTransfer {fileInvitation = FileInvitation {fileName, fileConnReq}, fileStatus} <- withStore $ \st -> getRcvFileTransfer st userId fileId
@@ -355,29 +337,29 @@ processChatCommand user@User {userId, profile} = \case
       Right agentConnId -> do
         filePath <- getRcvFilePath fileId filePath_ fileName
         withStore $ \st -> acceptRcvFileTransfer st userId fileId agentConnId filePath
-        showRcvFileAccepted ft filePath
-      Left (ChatErrorAgent (SMP SMP.AUTH)) -> showRcvFileSndCancelled ft
-      Left (ChatErrorAgent (CONN DUPLICATE)) -> showRcvFileSndCancelled ft
+        toView $ viewRcvFileAccepted ft filePath
+      Left (ChatErrorAgent (SMP SMP.AUTH)) -> toView $ viewRcvFileSndCancelled ft
+      Left (ChatErrorAgent (CONN DUPLICATE)) -> toView $ viewRcvFileSndCancelled ft
       Left e -> throwError e
   CancelFile fileId ->
     withStore (\st -> getFileTransfer st userId fileId) >>= \case
       FTSnd fts -> do
         forM_ fts $ \ft -> cancelSndFileTransfer ft
-        showSndGroupFileCancelled fts
+        toView $ viewSndGroupFileCancelled fts
       FTRcv ft -> do
         cancelRcvFileTransfer ft
-        showRcvFileCancelled ft
+        toView $ viewRcvFileCancelled ft
   FileStatus fileId ->
-    withStore (\st -> getFileTransferProgress st userId fileId) >>= showFileTransferStatus
+    withStore (\st -> getFileTransferProgress st userId fileId) >>= toView . viewFileTransferStatus
   UpdateProfile p -> unless (p == profile) $ do
     user' <- withStore $ \st -> updateUserProfile st user p
     asks currentUser >>= atomically . (`writeTVar` user')
     contacts <- withStore (`getUserContacts` user)
     forM_ contacts $ \ct -> sendDirectMessage (contactConn ct) $ XInfo p
-    showUserProfileUpdated user user'
-  ShowProfile -> showUserProfile profile
+    toView $ viewUserProfileUpdated user user'
+  ShowProfile -> toView $ viewUserProfile profile
   QuitChat -> liftIO exitSuccess
-  ShowVersion -> printToView clientVersionInfo
+  ShowVersion -> toView clientVersionInfo
   where
     connect :: ConnectionRequestUri c -> ChatMsgEvent -> m ()
     connect cReq msg = do
@@ -429,19 +411,21 @@ processChatCommand user@User {userId, profile} = \case
               f = filePath `combine` (name <> suffix <> ext)
            in ifM (doesFileExist f) (tryCombine $ n + 1) (pure f)
 
-agentSubscriber :: (MonadUnliftIO m, MonadReader ChatController m, MonadFail m) => m ()
-agentSubscriber = do
+agentSubscriber :: (MonadUnliftIO m, MonadReader ChatController m, MonadFail m) => ([StyledString] -> m ()) -> m ()
+agentSubscriber toView = do
   q <- asks $ subQ . smpAgent
   l <- asks chatLock
-  subscribeUserConnections
+  subscribeUserConnections toView
   forever $ do
     (_, connId, msg) <- atomically $ readTBQueue q
     user <- readTVarIO =<< asks currentUser
     withLock l . void . runExceptT $
-      processAgentMessage user connId msg `catchError` showChatError
+      processAgentMessage toView' user connId msg `catchError` (toView' . viewChatError)
+  where
+    toView' = ExceptT . fmap Right . toView
 
-subscribeUserConnections :: (MonadUnliftIO m, MonadReader ChatController m, MonadFail m) => m ()
-subscribeUserConnections = void . runExceptT $ do
+subscribeUserConnections :: forall m. (MonadUnliftIO m, MonadReader ChatController m, MonadFail m) => ([StyledString] -> m ()) -> m ()
+subscribeUserConnections toView = void . runExceptT $ do
   user <- readTVarIO =<< asks currentUser
   subscribeContacts user
   subscribeGroups user
@@ -449,39 +433,40 @@ subscribeUserConnections = void . runExceptT $ do
   subscribePendingConnections user
   subscribeUserContactLink user
   where
+    toView' = ExceptT . fmap Right . toView
     subscribeContacts user = do
       contacts <- withStore (`getUserContacts` user)
       forM_ contacts $ \ct@Contact {localDisplayName = c} ->
-        (subscribe (contactConnId ct) >> showContactSubscribed c) `catchError` showContactSubError c
+        (subscribe (contactConnId ct) >> toView' (viewContactSubscribed c)) `catchError` (toView' . viewContactSubError c)
     subscribeGroups user = do
       groups <- withStore (`getUserGroups` user)
       forM_ groups $ \g@Group {members, membership, localDisplayName = gn} -> do
         let connectedMembers = mapMaybe (\m -> (m,) <$> memberConnId m) members
         if memberStatus membership == GSMemInvited
-          then showGroupInvitation g
+          then toView' $ viewGroupInvitation g
           else
             if null connectedMembers
               then
                 if memberActive membership
-                  then showGroupEmpty g
-                  else showGroupRemoved g
+                  then toView' $ viewGroupEmpty g
+                  else toView' $ viewGroupRemoved g
               else do
                 forM_ connectedMembers $ \(GroupMember {localDisplayName = c}, cId) ->
-                  subscribe cId `catchError` showMemberSubError gn c
-                showGroupSubscribed g
+                  subscribe cId `catchError` (toView' . viewMemberSubError gn c)
+                toView' $ viewGroupSubscribed g
     subscribeFiles user = do
       withStore (`getLiveSndFileTransfers` user) >>= mapM_ subscribeSndFile
       withStore (`getLiveRcvFileTransfers` user) >>= mapM_ subscribeRcvFile
       where
         subscribeSndFile ft@SndFileTransfer {fileId, fileStatus, agentConnId} = do
-          subscribe agentConnId `catchError` showSndFileSubError ft
+          subscribe agentConnId `catchError` (toView' . viewSndFileSubError ft)
           void . forkIO $ do
             threadDelay 1000000
             l <- asks chatLock
             a <- asks smpAgent
             unless (fileStatus == FSNew) . unlessM (isFileActive fileId sndFiles) $
               withAgentLock a . withLock l $
-                sendFileChunk ft
+                sendFileChunk toView' ft
         subscribeRcvFile ft@RcvFileTransfer {fileStatus} =
           case fileStatus of
             RFSAccepted fInfo -> resume fInfo
@@ -489,22 +474,22 @@ subscribeUserConnections = void . runExceptT $ do
             _ -> pure ()
           where
             resume RcvFileInfo {agentConnId} =
-              subscribe agentConnId `catchError` showRcvFileSubError ft
+              subscribe agentConnId `catchError` (toView' . viewRcvFileSubError ft)
     subscribePendingConnections user = do
       cs <- withStore (`getPendingConnections` user)
       subscribeConns cs `catchError` \_ -> pure ()
     subscribeUserContactLink User {userId} = do
       cs <- withStore (`getUserContactLinkConnections` userId)
-      (subscribeConns cs >> showUserContactLinkSubscribed)
-        `catchError` showUserContactLinkSubError
+      (subscribeConns cs >> toView' viewUserContactLinkSubscribed)
+        `catchError` (toView' . viewUserContactLinkSubError)
     subscribe cId = withAgent (`subscribeConnection` cId)
     subscribeConns conns =
       withAgent $ \a ->
         forM_ conns $ \Connection {agentConnId} ->
           subscribeConnection a agentConnId
 
-processAgentMessage :: forall m. ChatMonad m => User -> ConnId -> ACommand 'Agent -> m ()
-processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
+processAgentMessage :: forall m. ChatMonad m => ([StyledString] -> m ()) -> User -> ConnId -> ACommand 'Agent -> m ()
+processAgentMessage toView user@User {userId, profile} agentConnId agentMessage = do
   chatDirection <- withStore $ \st -> getConnectionChatDirection st user agentConnId
   forM_ (agentMsgConnStatus agentMessage) $ \status ->
     withStore $ \st -> updateConnectionStatus st (fromConnection chatDirection) status
@@ -594,7 +579,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
         CON ->
           withStore (\st -> getViaGroupMember st user ct) >>= \case
             Nothing -> do
-              showContactConnected ct
+              toView $ viewContactConnected ct
               setActive $ ActiveC c
               showToast (c <> "> ") "connected"
             Just (gName, m) ->
@@ -604,14 +589,14 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
         SENT msgId ->
           sentMsgDeliveryEvent conn msgId
         END -> do
-          showContactAnotherClient c
+          toView $ viewContactAnotherClient c
           showToast (c <> "> ") "connected to another client"
           unsetActive $ ActiveC c
         DOWN -> do
-          showContactDisconnected c
+          toView $ viewContactDisconnected c
           showToast (c <> "> ") "disconnected"
         UP -> do
-          showContactSubscribed c
+          toView $ viewContactSubscribed c
           showToast (c <> "> ") "is active"
           setActive $ ActiveC c
         -- TODO print errors
@@ -662,11 +647,11 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
         -- TODO forward any pending (GMIntroInvReceived) introductions
         case memberCategory m of
           GCHostMember -> do
-            showUserJoinedGroup gName
+            toView $ viewUserJoinedGroup gName
             setActive $ ActiveG gName
             showToast ("#" <> gName) "you are connected to group"
           GCInviteeMember -> do
-            showJoinedGroupMember gName m
+            toView $ viewJoinedGroupMember gName m
             setActive $ ActiveG gName
             showToast ("#" <> gName) $ "member " <> localDisplayName (m :: GroupMember) <> " is connected"
             intros <- withStore $ \st -> createIntroductions st group m
@@ -723,15 +708,15 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
             _ -> messageError "CONF from file connection must have x.file.acpt"
         CON -> do
           withStore $ \st -> updateSndFileStatus st ft FSConnected
-          showSndFileStart ft
-          sendFileChunk ft
+          toView $ viewSndFileStart ft
+          sendFileChunk toView ft
         SENT msgId -> do
           withStore $ \st -> updateSndFileChunkSent st ft msgId
-          unless (fileStatus == FSCancelled) $ sendFileChunk ft
+          unless (fileStatus == FSCancelled) $ sendFileChunk toView ft
         MERR _ err -> do
           cancelSndFileTransfer ft
           case err of
-            SMP SMP.AUTH -> unless (fileStatus == FSCancelled) $ showSndFileRcvCancelled ft
+            SMP SMP.AUTH -> unless (fileStatus == FSCancelled) $ toView $ viewSndFileRcvCancelled ft
             _ -> chatError $ CEFileSend fileId err
         MSG meta _ ->
           withAckMessage agentConnId meta $ pure ()
@@ -745,12 +730,12 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
       case agentMsg of
         CON -> do
           withStore $ \st -> updateRcvFileStatus st ft FSConnected
-          showRcvFileStart ft
+          toView $ viewRcvFileStart ft
         MSG meta@MsgMeta {recipient = (msgId, _), integrity} msgBody -> withAckMessage agentConnId meta $ do
           parseFileChunk msgBody >>= \case
             FileChunkCancel -> do
               cancelRcvFileTransfer ft
-              showRcvFileSndCancelled ft
+              toView $ viewRcvFileSndCancelled ft
             FileChunk {chunkNo, chunkBytes = chunk} -> do
               case integrity of
                 MsgOk -> pure ()
@@ -770,7 +755,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
                       withStore $ \st -> do
                         updateRcvFileStatus st ft FSComplete
                         deleteRcvFileChunks st ft
-                      showRcvFileComplete ft
+                      toView $ viewRcvFileComplete ft
                       closeFileHandle fileId rcvFiles
                       withAgent (`deleteConnection` agentConnId)
                 RcvChunkDuplicate -> pure ()
@@ -799,7 +784,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
         profileContactRequest :: InvitationId -> Profile -> m ()
         profileContactRequest invId p = do
           cName <- withStore $ \st -> createContactRequest st userId userContactLinkId invId p
-          showReceivedContactRequest cName p
+          toView $ viewReceivedContactRequest cName p
           showToast (cName <> "> ") "wants to connect to you"
 
     withAckMessage :: ConnId -> MsgMeta -> m () -> m ()
@@ -824,7 +809,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
 
     notifyMemberConnected :: GroupName -> GroupMember -> m ()
     notifyMemberConnected gName m@GroupMember {localDisplayName} = do
-      showConnectedToGroupMember gName m
+      toView $ viewConnectedToGroupMember gName m
       setActive $ ActiveG gName
       showToast ("#" <> gName) $ "member " <> localDisplayName <> " is connected"
 
@@ -842,20 +827,20 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
           withStore $ \st -> createSentProbeHash st userId probeId c
 
     messageWarning :: Text -> m ()
-    messageWarning = showMessageError "warning"
+    messageWarning = toView . viewMessageError "warning"
 
     messageError :: Text -> m ()
-    messageError = showMessageError "error"
+    messageError = toView . viewMessageError "error"
 
     newTextMessage :: ContactName -> MsgMeta -> Text -> m ()
     newTextMessage c meta text = do
-      showReceivedMessage c (snd $ broker meta) (msgPlain text) (integrity (meta :: MsgMeta))
+      toView =<< liftIO (viewReceivedMessage c (snd $ broker meta) (msgPlain text) (integrity (meta :: MsgMeta)))
       showToast (c <> "> ") text
       setActive $ ActiveC c
 
     newGroupTextMessage :: GroupName -> GroupMember -> MsgMeta -> Text -> m ()
     newGroupTextMessage gName GroupMember {localDisplayName = c} meta text = do
-      showReceivedGroupMessage gName c (snd $ broker meta) (msgPlain text) (integrity (meta :: MsgMeta))
+      toView =<< liftIO (viewReceivedGroupMessage gName c (snd $ broker meta) (msgPlain text) (integrity (meta :: MsgMeta)))
       showToast ("#" <> gName <> " " <> c <> "> ") text
       setActive $ ActiveG gName
 
@@ -864,7 +849,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
       -- TODO chunk size has to be sent as part of invitation
       chSize <- asks $ fileChunkSize . config
       ft <- withStore $ \st -> createRcvFileTransfer st userId contact fInv chSize
-      showReceivedMessage c (snd $ broker meta) (receivedFileInvitation ft) (integrity (meta :: MsgMeta))
+      toView =<< liftIO (viewReceivedFileInvitation c (snd $ broker meta) ft (integrity (meta :: MsgMeta)))
       showToast (c <> "> ") "wants to send a file"
       setActive $ ActiveC c
 
@@ -872,7 +857,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
     processGroupFileInvitation gName m@GroupMember {localDisplayName = c} meta fInv = do
       chSize <- asks $ fileChunkSize . config
       ft <- withStore $ \st -> createRcvGroupFileTransfer st userId m fInv chSize
-      showReceivedGroupMessage gName c (snd $ broker meta) (receivedFileInvitation ft) (integrity (meta :: MsgMeta))
+      toView =<< liftIO (viewReceivedGroupFileInvitation gName c (snd $ broker meta) ft (integrity (meta :: MsgMeta)))
       showToast ("#" <> gName <> " " <> c <> "> ") "wants to send a file"
       setActive $ ActiveG gName
 
@@ -881,13 +866,13 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
       when (fromRole < GRAdmin || fromRole < memRole) $ chatError (CEGroupContactRole c)
       when (fromMemId == memId) $ chatError CEGroupDuplicateMemberId
       group@Group {localDisplayName = gName} <- withStore $ \st -> createGroupInvitation st user ct inv
-      showReceivedGroupInvitation group c memRole
+      toView $ viewReceivedGroupInvitation group c memRole
       showToast ("#" <> gName <> " " <> c <> "> ") $ "invited you to join the group"
 
     xInfo :: Contact -> Profile -> m ()
     xInfo c@Contact {profile = p} p' = unless (p == p') $ do
       c' <- withStore $ \st -> updateContactProfile st userId c p'
-      showContactUpdated c c'
+      toView $ viewContactUpdated c c'
 
     xInfoProbe :: Contact -> Probe -> m ()
     xInfoProbe c2 probe = do
@@ -913,7 +898,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
     mergeContacts :: Contact -> Contact -> m ()
     mergeContacts to from = do
       withStore $ \st -> mergeContactRecords st userId to from
-      showContactsMerged to from
+      toView $ viewContactsMerged to from
 
     saveConnInfo :: Connection -> ConnInfo -> m ()
     saveConnInfo activeConn connInfo = do
@@ -932,7 +917,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
           then messageError "x.grp.mem.new error: member already exists"
           else do
             newMember <- withStore $ \st -> createNewGroupMember st user group memInfo GCPostMember GSMemAnnounced
-            showJoinedGroupMemberConnecting gName m newMember
+            toView $ viewJoinedGroupMemberConnecting gName m newMember
 
     xGrpMemIntro :: Connection -> GroupName -> GroupMember -> MemberInfo -> m ()
     xGrpMemIntro conn gName m memInfo@(MemberInfo memId _ _) =
@@ -989,7 +974,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
         then do
           mapM_ deleteMemberConnection members
           withStore $ \st -> updateGroupMemberStatus st userId membership GSMemRemoved
-          showDeletedMemberUser gName m
+          toView $ viewDeletedMemberUser gName m
         else case find (sameMemberId memId) members of
           Nothing -> messageError "x.grp.mem.del with unknown member ID"
           Just member -> do
@@ -999,7 +984,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
               else do
                 deleteMemberConnection member
                 withStore $ \st -> updateGroupMemberStatus st userId member GSMemRemoved
-                showDeletedMember gName (Just m) (Just member)
+                toView $ viewDeletedMember gName (Just m) (Just member)
 
     sameMemberId :: MemberId -> GroupMember -> Bool
     sameMemberId memId GroupMember {memberId} = memId == memberId
@@ -1008,7 +993,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
     xGrpLeave gName m = do
       deleteMemberConnection m
       withStore $ \st -> updateGroupMemberStatus st userId m GSMemLeft
-      showLeftMember gName m
+      toView $ viewLeftMember gName m
 
     xGrpDel :: GroupName -> GroupMember -> m ()
     xGrpDel gName m@GroupMember {memberRole} = do
@@ -1018,13 +1003,13 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
         updateGroupMemberStatus st userId membership GSMemGroupDeleted
         pure members
       mapM_ deleteMemberConnection ms
-      showGroupDeleted gName m
+      toView $ viewGroupDeleted gName m
 
 parseChatMessage :: ByteString -> Either ChatError ChatMessage
 parseChatMessage = first ChatErrorMessage . strDecode
 
-sendFileChunk :: ChatMonad m => SndFileTransfer -> m ()
-sendFileChunk ft@SndFileTransfer {fileId, fileStatus, agentConnId} =
+sendFileChunk :: ChatMonad m => ([StyledString] -> m ()) -> SndFileTransfer -> m ()
+sendFileChunk toView ft@SndFileTransfer {fileId, fileStatus, agentConnId} =
   unless (fileStatus == FSComplete || fileStatus == FSCancelled) $
     withStore (`createSndFileChunk` ft) >>= \case
       Just chunkNo -> sendFileChunkNo ft chunkNo
@@ -1032,7 +1017,7 @@ sendFileChunk ft@SndFileTransfer {fileId, fileStatus, agentConnId} =
         withStore $ \st -> do
           updateSndFileStatus st ft FSComplete
           deleteSndFileChunks st ft
-        showSndFileComplete ft
+        toView $ viewSndFileComplete ft
         closeFileHandle fileId sndFiles
         withAgent (`deleteConnection` agentConnId)
 
