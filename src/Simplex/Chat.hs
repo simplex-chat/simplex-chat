@@ -6,7 +6,6 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeApplications #-}
@@ -26,6 +25,7 @@ import Data.Bifunctor (first)
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.Char (isSpace)
+import Data.Foldable (for_)
 import Data.Functor (($>))
 import Data.Int (Int64)
 import Data.List (find)
@@ -852,7 +852,7 @@ processAgentMessage toView user@User {userId, profile} agentConnId agentMessage 
       when (fromMemId == memId) $ chatError CEGroupDuplicateMemberId
       group@Group {localDisplayName = gName} <- withStore $ \st -> createGroupInvitation st user ct inv
       toView $ viewReceivedGroupInvitation group c memRole
-      showToast ("#" <> gName <> " " <> c <> "> ") $ "invited you to join the group"
+      showToast ("#" <> gName <> " " <> c <> "> ") "invited you to join the group"
 
     xInfo :: Contact -> Profile -> m ()
     xInfo c@Contact {profile = p} p' = unless (p == p') $ do
@@ -1134,9 +1134,11 @@ sendGroupMessage members chatMsgEvent = do
   let msgBody = directMessage chatMsgEvent
       newMsg = NewMessage {direction = MDSnd, cmEventTag = toCMEventTag chatMsgEvent, msgTime, msgBody}
   msg@Message {msgId} <- withStore $ \st -> createNewMessage st newMsg
-  -- TODO once scheduled delivery is implemented memberActive should be changed to memberCurrent
-  forM_ (map memberConn $ filter memberActive members) $
-    traverse (\conn -> deliverMessage conn msgBody msgId)
+  for_ (filter memberCurrent members) $
+    \m ->
+      case memberConn m of
+        Nothing -> withStore $ \st -> createPendingGroupMessage st msgId (groupMemberId m)
+        Just conn -> deliverMessage conn msgBody msgId
   pure msg
 
 saveRcvMSG :: ChatMonad m => Connection -> MsgMeta -> MsgBody -> m (ChatMsgEvent, Message)

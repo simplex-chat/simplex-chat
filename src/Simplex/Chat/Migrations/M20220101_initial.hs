@@ -247,6 +247,7 @@ CREATE TABLE messages (
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+-- TODO ? agent_msg_id could be NOT NULL now that pending_group_messages are separate
 -- message deliveries communicated with the agent, append only
 CREATE TABLE msg_deliveries (
   msg_delivery_id INTEGER PRIMARY KEY,
