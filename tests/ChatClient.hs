@@ -75,11 +75,11 @@ cfg =
 virtualSimplexChat :: FilePath -> Profile -> IO TestCC
 virtualSimplexChat dbFilePrefix profile = do
   st <- createStore (dbFilePrefix <> "_chat.db") 1
-  void . runExceptT $ createUser st profile True
+  Right user <- runExceptT $ createUser st profile True
   t <- withVirtualTerminal termSettings pure
   ct <- newChatTerminal t
-  cc <- newChatControllerTerminal cfg opts {dbFilePrefix} . const $ pure () -- no notifications
-  chatAsync <- async $ runSimplexChat ct cc
+  cc <- newChatController st user cfg opts {dbFilePrefix} . const $ pure () -- no notifications
+  chatAsync <- async $ runSimplexChat user ct cc
   termQ <- newTQueueIO
   termAsync <- async $ readTerminalOutput t termQ
   pure TestCC {chatController = cc, virtualTerminal = t, chatAsync, termAsync, termQ}
