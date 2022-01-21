@@ -79,7 +79,7 @@ The routing of messages relies on the knowledge of client devices how user conta
 - Two layers of E2E encryption (double-ratchet for duplex connections, using X3DH key agreement with ephemeral Curve448 keys, and NaCl crypto_box for SMP queues, using Curve25519 keys) and out-of-band passing of recipient keys (see [How to use SimpleX chat](#how-to-use-simplex-chat)).
 - Message integrity validation (via including the digests of the previous messages).
 - Authentication of each command/message by SMP servers with automatically generated Ed448 keys.
-- TLS 1.2 transport encryption.
+- TLS 1.3 transport encryption.
 - Additional encryption of messages from SMP server to recipient to reduce traffic correlation.
 
 Public keys involved in key exchange are not used as identity, they are randomly generated for each contact.
