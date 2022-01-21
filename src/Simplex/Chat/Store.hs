@@ -91,11 +91,11 @@ module Simplex.Chat.Store
     getFileTransfer,
     getFileTransferProgress,
     createNewMessage,
-    createPendingGroupMessage,
     createSndMsgDelivery,
     createNewMessageAndRcvMsgDelivery,
     createSndMsgDeliveryEvent,
     createRcvMsgDeliveryEvent,
+    createPendingGroupMessage,
   )
 where
 
@@ -1640,18 +1640,6 @@ createNewMessage st newMsg =
   liftIO . withTransaction st $ \db ->
     createNewMessage_ db newMsg
 
-createPendingGroupMessage :: MonadUnliftIO m => SQLiteStore -> MessageId -> Int64 -> m ()
-createPendingGroupMessage st messageId groupMemberId =
-  liftIO . withTransaction st $ \db -> do
-    createdAt <- getCurrentTime
-    DB.execute
-      db
-      [sql|
-        INSERT INTO pending_group_messages
-          (message_id, group_member_id, created_at) VALUES (?,?,?);
-      |]
-      (messageId, groupMemberId, createdAt)
-
 createSndMsgDelivery :: MonadUnliftIO m => SQLiteStore -> SndMsgDelivery -> MessageId -> m ()
 createSndMsgDelivery st sndMsgDelivery messageId =
   liftIO . withTransaction st $ \db -> do
@@ -1743,6 +1731,18 @@ getMsgDeliveryId_ db connId agentMsgId =
     toMsgDeliveryId :: [Only Int64] -> Either StoreError Int64
     toMsgDeliveryId [Only msgDeliveryId] = Right msgDeliveryId
     toMsgDeliveryId _ = Left $ SENoMsgDelivery connId agentMsgId
+
+createPendingGroupMessage :: MonadUnliftIO m => SQLiteStore -> MessageId -> Int64 -> m ()
+createPendingGroupMessage st messageId groupMemberId =
+  liftIO . withTransaction st $ \db -> do
+    createdAt <- getCurrentTime
+    DB.execute
+      db
+      [sql|
+        INSERT INTO pending_group_messages
+          (message_id, group_member_id, created_at) VALUES (?,?,?);
+      |]
+      (messageId, groupMemberId, createdAt)
 
 -- | Saves unique local display name based on passed displayName, suffixed with _N if required.
 -- This function should be called inside transaction.

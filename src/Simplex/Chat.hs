@@ -1123,12 +1123,6 @@ sendDirectMessage conn chatMsgEvent = do
 directMessage :: ChatMsgEvent -> ByteString
 directMessage chatMsgEvent = strEncode ChatMessage {chatMsgEvent}
 
-sendPendingGroupMessages :: ChatMonad m => GroupMember -> m ()
-sendPendingGroupMessages member = do
-  -- read messages (msgId from pending_group_messages by group_member_id, msgBody from joined messages)
-  -- for_ (msgId, msgBody) $ deliverMessage conn msgBody msgId
-  pure ()
-
 deliverMessage :: ChatMonad m => Connection -> MsgBody -> MessageId -> m ()
 deliverMessage Connection {connId, agentConnId} msgBody msgId = do
   agentMsgId <- withAgent $ \a -> sendMessage a agentConnId msgBody
@@ -1147,6 +1141,12 @@ sendGroupMessage members chatMsgEvent = do
         Nothing -> withStore $ \st -> createPendingGroupMessage st msgId (groupMemberId m)
         Just conn -> deliverMessage conn msgBody msgId
   pure msg
+
+sendPendingGroupMessages :: ChatMonad m => GroupMember -> m ()
+sendPendingGroupMessages member = do
+  -- read messages (msgId from pending_group_messages by group_member_id, msgBody from joined messages)
+  -- for_ (msgId, msgBody) $ deliverMessage conn msgBody msgId
+  pure ()
 
 saveRcvMSG :: ChatMonad m => Connection -> MsgMeta -> MsgBody -> m (ChatMsgEvent, Message)
 saveRcvMSG Connection {connId} agentMsgMeta msgBody = do
