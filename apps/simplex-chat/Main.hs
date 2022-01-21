@@ -5,6 +5,7 @@
 
 module Main where
 
+import Simplex.Chat
 import Simplex.Chat.Controller (versionNumber)
 import Simplex.Chat.Options
 import Simplex.Chat.Terminal
