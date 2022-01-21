@@ -18,7 +18,8 @@ import Simplex.Chat
 import Simplex.Chat.Controller (ChatConfig (..), ChatController (..))
 import Simplex.Chat.Options
 import Simplex.Chat.Store
-import Simplex.Chat.Terminal (newChatTerminal)
+import Simplex.Chat.Terminal
+import Simplex.Chat.Terminal.Output (newChatTerminal)
 import Simplex.Chat.Types (Profile)
 import Simplex.Messaging.Agent.Env.SQLite
 import Simplex.Messaging.Agent.RetryInterval

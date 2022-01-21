@@ -2,14 +2,14 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 
-module Simplex.Chat.Input where
+module Simplex.Chat.Terminal.Input where
 
 import Control.Monad.IO.Unlift
 import Control.Monad.Reader
 import Data.List (dropWhileEnd)
 import qualified Data.Text as T
 import Simplex.Chat.Controller
-import Simplex.Chat.Terminal
+import Simplex.Chat.Terminal.Output
 import System.Exit (exitSuccess)
 import System.Terminal hiding (insertChars)
 import UnliftIO.STM

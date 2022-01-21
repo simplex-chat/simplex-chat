@@ -3,7 +3,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module Simplex.Chat.Notification (Notification (..), initializeNotifications) where
+module Simplex.Chat.Terminal.Notification (Notification (..), initializeNotifications) where
 
 import Control.Exception
 import Control.Monad (void)
@@ -13,12 +13,11 @@ import qualified Data.Map as M
 import Data.Maybe (fromMaybe, isJust)
 import Data.Text (Text)
 import qualified Data.Text as T
+import Simplex.Chat.Types
 import System.Directory (createDirectoryIfMissing, doesFileExist, findExecutable, getAppUserDataDirectory)
 import System.FilePath (combine)
 import System.Info (os)
 import System.Process (readCreateProcess, shell)
-
-data Notification = Notification {title :: Text, text :: Text}
 
 initializeNotifications :: IO (Notification -> IO ())
 initializeNotifications =

@@ -38,15 +38,12 @@ import Data.Text.Encoding (encodeUtf8)
 import Data.Word (Word32)
 import Simplex.Chat.Controller
 import Simplex.Chat.Help
-import Simplex.Chat.Input
-import Simplex.Chat.Notification
 import Simplex.Chat.Options (ChatOpts (..))
 import Simplex.Chat.Protocol
 import Simplex.Chat.Store
 import Simplex.Chat.Styled
-import Simplex.Chat.Terminal
 import Simplex.Chat.Types
-import Simplex.Chat.Util (ifM, unlessM, whenM)
+import Simplex.Chat.Util (ifM, unlessM)
 import Simplex.Chat.View
 import Simplex.Messaging.Agent
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), defaultAgentConfig)
@@ -125,26 +122,6 @@ defaultChatConfig =
 logCfg :: LogConfig
 logCfg = LogConfig {lc_file = Nothing, lc_stderr = True}
 
-simplexChat :: WithTerminal t => ChatConfig -> ChatOpts -> t -> IO ()
-simplexChat cfg opts t
-  | logging opts = do
-    setLogLevel LogInfo -- LogError
-    withGlobalLogging logCfg initRun
-  | otherwise = initRun
-  where
-    initRun = do
-      sendNotification <- initializeNotifications
-      ct <- newChatTerminal t
-      cc <- newChatControllerTerminal cfg opts sendNotification
-      runSimplexChat ct cc
-
-newChatControllerTerminal :: ChatConfig -> ChatOpts -> (Notification -> IO ()) -> IO ChatController
-newChatControllerTerminal config@ChatConfig {dbPoolSize} opts@ChatOpts {dbFilePrefix} sendNotification = do
-  let f = chatStoreFile dbFilePrefix
-  st <- createStore f dbPoolSize
-  user <- getCreateActiveUser st
-  newChatController st user config opts sendNotification
-
 newChatController :: SQLiteStore -> User -> ChatConfig -> ChatOpts -> (Notification -> IO ()) -> IO ChatController
 newChatController chatStore user config@ChatConfig {agentConfig = cfg, tbqSize} ChatOpts {dbFilePrefix, smpServers} sendNotification = do
   let f = chatStoreFile dbFilePrefix
@@ -160,12 +137,6 @@ newChatController chatStore user config@ChatConfig {agentConfig = cfg, tbqSize} 
   sndFiles <- newTVarIO M.empty
   rcvFiles <- newTVarIO M.empty
   pure ChatController {activeTo, firstTime, currentUser, smpAgent, chatStore, idsDrg, inputQ, outputQ, notifyQ, chatLock, sndFiles, rcvFiles, config, sendNotification}
-
-runSimplexChat :: ChatTerminal -> ChatController -> IO ()
-runSimplexChat ct = runReaderT $ do
-  user <- readTVarIO =<< asks currentUser
-  whenM (asks firstTime) . liftIO . printToTerminal ct $ chatWelcome user
-  raceAny_ [runTerminalInput ct, runTerminalOutput ct, runChatController]
 
 runChatController :: (MonadUnliftIO m, MonadReader ChatController m, MonadFail m) => m ()
 runChatController = do

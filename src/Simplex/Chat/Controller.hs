@@ -15,7 +15,6 @@ import Crypto.Random (ChaChaDRG)
 import Data.Int (Int64)
 import Data.Map.Strict (Map)
 import Numeric.Natural
-import Simplex.Chat.Notification
 import Simplex.Chat.Store (StoreError)
 import Simplex.Chat.Styled
 import Simplex.Chat.Types

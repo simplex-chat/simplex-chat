@@ -746,3 +746,5 @@ msgDeliveryStatusT' s =
     case testEquality d (msgDirection @d) of
       Just Refl -> Just st
       _ -> Nothing
+
+data Notification = Notification {title :: Text, text :: Text}

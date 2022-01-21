@@ -22,16 +22,17 @@ library
       Simplex.Chat
       Simplex.Chat.Controller
       Simplex.Chat.Help
-      Simplex.Chat.Input
       Simplex.Chat.Markdown
       Simplex.Chat.Migrations.M20220101_initial
       Simplex.Chat.Mobile
-      Simplex.Chat.Notification
       Simplex.Chat.Options
       Simplex.Chat.Protocol
       Simplex.Chat.Store
       Simplex.Chat.Styled
       Simplex.Chat.Terminal
+      Simplex.Chat.Terminal.Input
+      Simplex.Chat.Terminal.Output
+      Simplex.Chat.Terminal.Notification
       Simplex.Chat.Types
       Simplex.Chat.Util
       Simplex.Chat.View
