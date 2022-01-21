@@ -26,7 +26,7 @@ import System.IO (Handle)
 import UnliftIO.STM
 
 versionNumber :: String
-versionNumber = "1.0.1"
+versionNumber = "1.0.2"
 
 versionStr :: String
 versionStr = "SimpleX Chat v" <> versionNumber
