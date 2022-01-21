@@ -18,7 +18,6 @@ import Numeric.Natural
 import Simplex.Chat.Notification
 import Simplex.Chat.Store (StoreError)
 import Simplex.Chat.Styled
-import Simplex.Chat.Terminal
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent (AgentClient)
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig)
@@ -102,9 +101,3 @@ unsetActive :: (MonadUnliftIO m, MonadReader ChatController m) => ActiveTo -> m 
 unsetActive a = asks activeTo >>= atomically . (`modifyTVar` unset)
   where
     unset a' = if a == a' then ActiveNone else a'
-
-runTerminalOutput :: (MonadUnliftIO m, MonadReader ChatController m) => ChatTerminal -> m ()
-runTerminalOutput ct = do
-  ChatController {outputQ} <- ask
-  forever $
-    atomically (readTBQueue outputQ) >>= liftIO . printToTerminal ct

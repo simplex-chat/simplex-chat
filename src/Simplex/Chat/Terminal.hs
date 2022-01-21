@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
@@ -7,7 +8,9 @@
 module Simplex.Chat.Terminal where
 
 import Control.Monad.Catch (MonadMask)
-import Control.Monad.IO.Class (MonadIO)
+import Control.Monad.IO.Unlift
+import Control.Monad.Reader
+import Simplex.Chat.Controller
 import Simplex.Chat.Styled
 import System.Console.ANSI.Types
 import System.Terminal
@@ -67,6 +70,12 @@ withTermLock ChatTerminal {termLock} action = do
   _ <- atomically $ takeTMVar termLock
   action
   atomically $ putTMVar termLock ()
+
+runTerminalOutput :: (MonadUnliftIO m, MonadReader ChatController m) => ChatTerminal -> m ()
+runTerminalOutput ct = do
+  ChatController {outputQ} <- ask
+  forever $
+    atomically (readTBQueue outputQ) >>= liftIO . printToTerminal ct
 
 printToTerminal :: ChatTerminal -> [StyledString] -> IO ()
 printToTerminal ct s =
