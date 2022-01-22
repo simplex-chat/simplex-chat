@@ -1743,7 +1743,7 @@ createPendingGroupMessage st groupMemberId messageId mIntroId =
       db
       [sql|
         INSERT INTO pending_group_messages
-          (group_member_id, message_id, group_member_intro_id, created_at) VALUES (?,?,?)
+          (group_member_id, message_id, group_member_intro_id, created_at) VALUES (?,?,?,?)
       |]
       (groupMemberId, messageId, mIntroId, createdAt)
 
