@@ -1735,19 +1735,19 @@ getMsgDeliveryId_ db connId agentMsgId =
     toMsgDeliveryId [Only msgDeliveryId] = Right msgDeliveryId
     toMsgDeliveryId _ = Left $ SENoMsgDelivery connId agentMsgId
 
-createPendingGroupMessage :: MonadUnliftIO m => SQLiteStore -> Int64 -> MessageId -> m ()
-createPendingGroupMessage st groupMemberId messageId =
+createPendingGroupMessage :: MonadUnliftIO m => SQLiteStore -> Int64 -> MessageId -> Maybe Int64 -> m ()
+createPendingGroupMessage st groupMemberId messageId mIntroId =
   liftIO . withTransaction st $ \db -> do
     createdAt <- getCurrentTime
     DB.execute
       db
       [sql|
         INSERT INTO pending_group_messages
-          (group_member_id, message_id, created_at) VALUES (?,?,?)
+          (group_member_id, message_id, group_member_intro_id, created_at) VALUES (?,?,?)
       |]
-      (groupMemberId, messageId, createdAt)
+      (groupMemberId, messageId, mIntroId, createdAt)
 
-getPendingGroupMessages :: MonadUnliftIO m => SQLiteStore -> Int64 -> m [(MessageId, MsgBody, Text, Int64)]
+getPendingGroupMessages :: MonadUnliftIO m => SQLiteStore -> Int64 -> m [(MessageId, MsgBody, CMEventTag, Maybe Int64)]
 getPendingGroupMessages st groupMemberId =
   liftIO . withTransaction st $ \db ->
     DB.query

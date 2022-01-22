@@ -928,11 +928,11 @@ processAgentMessage toView user@User {userId, profile} agentConnId agentMessage 
           group <- withStore $ \st -> getGroup st user gName
           case find (sameMemberId memId) $ members group of
             Nothing -> messageError "x.grp.mem.inv error: referenced member does not exists"
-            Just reMember -> do
+            Just reMember@GroupMember {groupMemberId = reMemberId} -> do
               GroupMemberIntro {introId} <- withStore $ \st -> saveIntroInvitation st reMember m introInv
               Message {msgId, msgBody} <- createSndMessage $ XGrpMemFwd (memberInfo m) introInv
               case activeConn (reMember :: GroupMember) of
-                Nothing -> withStore $ \st -> createPendingGroupMessage st msgId (groupMemberId m)
+                Nothing -> withStore $ \st -> createPendingGroupMessage st msgId (groupMemberId m) (Just introId)
                 Just reConn -> do
                   deliverMessage reConn msgBody msgId
                   withStore $ \st -> updateIntroStatus st introId GMIntroInvForwarded
@@ -1136,23 +1136,21 @@ deliverMessage Connection {connId, agentConnId} msgBody msgId = do
 sendGroupMessage :: ChatMonad m => [GroupMember] -> ChatMsgEvent -> m Message
 sendGroupMessage members chatMsgEvent = do
   msg@Message {msgId, msgBody} <- createSndMessage chatMsgEvent
-  for_ (filter memberCurrent members) $
-    \m ->
-      case memberConn m of
-        Nothing -> withStore $ \st -> createPendingGroupMessage st msgId (groupMemberId m)
-        Just conn -> deliverMessage conn msgBody msgId
+  for_ (filter memberCurrent members) $ \m@GroupMember {groupMemberId} ->
+    case memberConn m of
+      Nothing -> withStore $ \st -> createPendingGroupMessage st groupMemberId msgId Nothing
+      Just conn -> deliverMessage conn msgBody msgId
   pure msg
 
 sendPendingGroupMessages :: ChatMonad m => GroupMember -> Connection -> m ()
-sendPendingGroupMessages GroupMember {groupMemberId} conn = do
+sendPendingGroupMessages GroupMember {groupMemberId, localDisplayName} conn = do
   pendingMessages <- withStore $ \st -> getPendingGroupMessages st groupMemberId
-  for_ pendingMessages $ \(msgId, msgBody, chatMsgEventType, introId) -> do
+  for_ pendingMessages $ \(msgId, msgBody, chatMsgEventTag, mIntroId) -> do
     deliverMessage conn msgBody msgId
     withStore (\st -> deletePendingGroupMessage st groupMemberId msgId)
-    when (chatMsgEventType == "x.grp.mem.fwd") (withStore $ \st -> updateIntroStatus st introId GMIntroInvForwarded)
-
--- TODO if message is XGrpMemFwd then update introduction status
--- withStore $ \st -> updateIntroStatus st intro GMIntroInvForwarded
+    when (chatMsgEventTag == XGrpMemFwd_) $ case mIntroId of
+      Nothing -> chatError $ CEGroupMemberIntroNotFound localDisplayName
+      Just introId -> withStore (\st -> updateIntroStatus st introId GMIntroInvForwarded)
 
 saveRcvMSG :: ChatMonad m => Connection -> MsgMeta -> MsgBody -> m (ChatMsgEvent, Message)
 saveRcvMSG Connection {connId} agentMsgMeta msgBody = do
