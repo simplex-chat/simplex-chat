@@ -97,7 +97,7 @@ module Simplex.Chat.Store
     createRcvMsgDeliveryEvent,
     createPendingGroupMessage,
     getPendingGroupMessages,
-    deletePendingGroupMessages,
+    deletePendingGroupMessage,
   )
 where
 
@@ -1735,17 +1735,17 @@ getMsgDeliveryId_ db connId agentMsgId =
     toMsgDeliveryId [Only msgDeliveryId] = Right msgDeliveryId
     toMsgDeliveryId _ = Left $ SENoMsgDelivery connId agentMsgId
 
-createPendingGroupMessage :: MonadUnliftIO m => SQLiteStore -> MessageId -> Int64 -> m ()
-createPendingGroupMessage st messageId groupMemberId =
+createPendingGroupMessage :: MonadUnliftIO m => SQLiteStore -> Int64 -> MessageId -> m ()
+createPendingGroupMessage st groupMemberId messageId =
   liftIO . withTransaction st $ \db -> do
     createdAt <- getCurrentTime
     DB.execute
       db
       [sql|
         INSERT INTO pending_group_messages
-          (message_id, group_member_id, created_at) VALUES (?,?,?)
+          (group_member_id, message_id, created_at) VALUES (?,?,?)
       |]
-      (messageId, groupMemberId, createdAt)
+      (groupMemberId, messageId, createdAt)
 
 getPendingGroupMessages :: MonadUnliftIO m => SQLiteStore -> Int64 -> m [(MessageId, MsgBody)]
 getPendingGroupMessages st groupMemberId =
@@ -1757,13 +1757,14 @@ getPendingGroupMessages st groupMemberId =
         FROM pending_group_messages pgm
         JOIN messages m USING (message_id)
         WHERE pgm.group_member_id = ?
+        ORDER BY pgm.message_id ASC
       |]
       (Only groupMemberId)
 
-deletePendingGroupMessages :: MonadUnliftIO m => SQLiteStore -> Int64 -> m ()
-deletePendingGroupMessages st groupMemberId =
+deletePendingGroupMessage :: MonadUnliftIO m => SQLiteStore -> Int64 -> MessageId -> m ()
+deletePendingGroupMessage st groupMemberId messageId =
   liftIO . withTransaction st $ \db ->
-    DB.execute db "DELETE FROM pending_group_messages WHERE group_member_id = ?" (Only groupMemberId)
+    DB.execute db "DELETE FROM pending_group_messages WHERE group_member_id = ? AND message_id = ?" (groupMemberId, messageId)
 
 -- | Saves unique local display name based on passed displayName, suffixed with _N if required.
 -- This function should be called inside transaction.

@@ -1145,9 +1145,11 @@ sendGroupMessage members chatMsgEvent = do
 sendPendingGroupMessages :: ChatMonad m => GroupMember -> Connection -> m ()
 sendPendingGroupMessages GroupMember {groupMemberId} conn = do
   pendingMessages <- withStore $ \st -> getPendingGroupMessages st groupMemberId
-  for_ pendingMessages $
-    \(msgId, msgBody) -> deliverMessage conn msgBody msgId
-  withStore $ \st -> deletePendingGroupMessages st groupMemberId
+  for_ pendingMessages $ \(msgId, msgBody) ->
+    deliverMessage conn msgBody msgId
+      >> withStore (\st -> deletePendingGroupMessage st groupMemberId msgId)
+      -- TODO if message is XGrpMemFwd then update introduction status
+      -- withStore $ \st -> updateIntroStatus st intro GMIntroInvForwarded
 
 -- TODO if message is XGrpMemFwd then update introduction status
 -- withStore $ \st -> updateIntroStatus st intro GMIntroInvForwarded
