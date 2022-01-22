@@ -621,7 +621,7 @@ processAgentMessage toView user@User {userId, profile} agentConnId agentMessage 
           updateGroupMemberStatus st userId m GSMemConnected
           unless (memberActive membership) $
             updateGroupMemberStatus st userId membership GSMemConnected
-        sendPendingGroupMessages m
+        sendPendingGroupMessages m conn
         -- TODO forward any pending (GMIntroInvReceived) introductions
         case memberCategory m of
           GCHostMember -> do
@@ -1142,11 +1142,12 @@ sendGroupMessage members chatMsgEvent = do
         Just conn -> deliverMessage conn msgBody msgId
   pure msg
 
-sendPendingGroupMessages :: ChatMonad m => GroupMember -> m ()
-sendPendingGroupMessages member = do
-  -- read messages (msgId from pending_group_messages by group_member_id, msgBody from joined messages)
-  -- for_ (msgId, msgBody) $ deliverMessage conn msgBody msgId
-  pure ()
+sendPendingGroupMessages :: ChatMonad m => GroupMember -> Connection -> m ()
+sendPendingGroupMessages GroupMember {groupMemberId} conn = do
+  pendingMessages <- withStore $ \st -> getPendingGroupMessages st groupMemberId
+  for_ pendingMessages $
+    \(msgId, msgBody) -> deliverMessage conn msgBody msgId
+  withStore $ \st -> deletePendingGroupMessages st groupMemberId
 
 saveRcvMSG :: ChatMonad m => Connection -> MsgMeta -> MsgBody -> m (ChatMsgEvent, Message)
 saveRcvMSG Connection {connId} agentMsgMeta msgBody = do

@@ -96,6 +96,8 @@ module Simplex.Chat.Store
     createSndMsgDeliveryEvent,
     createRcvMsgDeliveryEvent,
     createPendingGroupMessage,
+    getPendingGroupMessages,
+    deletePendingGroupMessages,
   )
 where
 
@@ -130,6 +132,7 @@ import Simplex.Messaging.Agent.Protocol (AParty (..), AgentMsgId, ConnId, Invita
 import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore (..), createSQLiteStore, withTransaction)
 import Simplex.Messaging.Agent.Store.SQLite.Migrations (Migration (..))
 import qualified Simplex.Messaging.Crypto as C
+import Simplex.Messaging.Protocol (MsgBody)
 import Simplex.Messaging.Util (bshow, liftIOEither, (<$$>))
 import System.FilePath (takeFileName)
 import UnliftIO.STM
@@ -1740,9 +1743,27 @@ createPendingGroupMessage st messageId groupMemberId =
       db
       [sql|
         INSERT INTO pending_group_messages
-          (message_id, group_member_id, created_at) VALUES (?,?,?);
+          (message_id, group_member_id, created_at) VALUES (?,?,?)
       |]
       (messageId, groupMemberId, createdAt)
+
+getPendingGroupMessages :: MonadUnliftIO m => SQLiteStore -> Int64 -> m [(MessageId, MsgBody)]
+getPendingGroupMessages st groupMemberId =
+  liftIO . withTransaction st $ \db ->
+    DB.query
+      db
+      [sql|
+        SELECT pgm.message_id, m.msg_body
+        FROM pending_group_messages pgm
+        JOIN messages m USING (message_id)
+        WHERE pgm.group_member_id = ?
+      |]
+      (Only groupMemberId)
+
+deletePendingGroupMessages :: MonadUnliftIO m => SQLiteStore -> Int64 -> m ()
+deletePendingGroupMessages st groupMemberId =
+  liftIO . withTransaction st $ \db ->
+    DB.execute db "DELETE FROM pending_group_messages WHERE group_member_id = ?" (Only groupMemberId)
 
 -- | Saves unique local display name based on passed displayName, suffixed with _N if required.
 -- This function should be called inside transaction.
