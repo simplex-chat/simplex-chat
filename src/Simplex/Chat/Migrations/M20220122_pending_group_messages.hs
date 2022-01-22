@@ -8,6 +8,7 @@ import Database.SQLite.Simple.QQ (sql)
 m20220122_pending_group_messages :: Query
 m20220122_pending_group_messages =
   [sql|
+-- pending messages for announced but not yet connected group members (memberCurrent)
 CREATE TABLE pending_group_messages (
   pending_group_message_id INTEGER PRIMARY KEY,
   message_id INTEGER NOT NULL REFERENCES messages ON DELETE CASCADE,
