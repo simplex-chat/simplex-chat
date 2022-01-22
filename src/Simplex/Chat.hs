@@ -1144,6 +1144,7 @@ sendGroupMessage members chatMsgEvent = do
 sendPendingGroupMessages :: ChatMonad m => GroupMember -> Connection -> m ()
 sendPendingGroupMessages GroupMember {groupMemberId, localDisplayName} conn = do
   pendingMessages <- withStore $ \st -> getPendingGroupMessages st groupMemberId
+  -- TODO ensure order
   for_ pendingMessages $ \(msgId, msgBody, chatMsgEventTag, mIntroId) -> do
     deliverMessage conn msgBody msgId
     withStore (\st -> deletePendingGroupMessage st groupMemberId msgId)
