@@ -634,7 +634,6 @@ processAgentMessage toView user@User {userId, profile} agentConnId agentMessage 
             intros <- withStore $ \st -> createIntroductions st group m
             void . sendGroupMessage members . XGrpMemNew $ memberInfo m
             forM_ intros $ \intro@GroupMemberIntro {introId} -> do
-              -- sendGroupMessage' ?
               void . sendDirectMessage conn . XGrpMemIntro . memberInfo $ reMember intro
               withStore $ \st -> updateIntroStatus st introId GMIntroSent
           _ -> do
