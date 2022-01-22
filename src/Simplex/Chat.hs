@@ -622,7 +622,6 @@ processAgentMessage toView user@User {userId, profile} agentConnId agentMessage 
           unless (memberActive membership) $
             updateGroupMemberStatus st userId membership GSMemConnected
         sendPendingGroupMessages m conn
-        -- TODO forward any pending (GMIntroInvReceived) introductions
         case memberCategory m of
           GCHostMember -> do
             toView__ $ CRUserJoinedGroup gName
@@ -930,10 +929,11 @@ processAgentMessage toView user@User {userId, profile} agentConnId agentMessage 
             Nothing -> messageError "x.grp.mem.inv error: referenced member does not exists"
             Just reMember -> do
               intro <- withStore $ \st -> saveIntroInvitation st reMember m introInv
+              Message {msgId, msgBody} <- createSndMessage $ XGrpMemFwd (memberInfo m) introInv
               case activeConn (reMember :: GroupMember) of
-                Nothing -> pure () -- this is not an error, introduction will be forwarded once the member is connected
+                Nothing -> withStore $ \st -> createPendingGroupMessage st msgId (groupMemberId m)
                 Just reConn -> do
-                  void . sendDirectMessage reConn $ XGrpMemFwd (memberInfo m) introInv
+                  deliverMessage reConn msgBody msgId
                   withStore $ \st -> updateIntroStatus st intro GMIntroInvForwarded
         _ -> messageError "x.grp.mem.inv can be only sent by invitee member"
 
@@ -1112,13 +1112,16 @@ deleteMemberConnection m@GroupMember {activeConn} = do
 
 sendDirectMessage :: ChatMonad m => Connection -> ChatMsgEvent -> m Message
 sendDirectMessage conn chatMsgEvent = do
+  msg@Message {msgId, msgBody} <- createSndMessage chatMsgEvent
+  deliverMessage conn msgBody msgId
+  pure msg
+
+createSndMessage :: ChatMonad m => ChatMsgEvent -> m Message
+createSndMessage chatMsgEvent = do
   msgTime <- liftIO getCurrentTime
   let msgBody = directMessage chatMsgEvent
       newMsg = NewMessage {direction = MDSnd, cmEventTag = toCMEventTag chatMsgEvent, msgBody, msgTime}
-  -- can be done in transaction after sendMessage, probably shouldn't
-  msg@Message {msgId} <- withStore $ \st -> createNewMessage st newMsg
-  deliverMessage conn msgBody msgId
-  pure msg
+  withStore $ \st -> createNewMessage st newMsg
 
 directMessage :: ChatMsgEvent -> ByteString
 directMessage chatMsgEvent = strEncode ChatMessage {chatMsgEvent}
@@ -1131,10 +1134,7 @@ deliverMessage Connection {connId, agentConnId} msgBody msgId = do
 
 sendGroupMessage :: ChatMonad m => [GroupMember] -> ChatMsgEvent -> m Message
 sendGroupMessage members chatMsgEvent = do
-  msgTime <- liftIO getCurrentTime
-  let msgBody = directMessage chatMsgEvent
-      newMsg = NewMessage {direction = MDSnd, cmEventTag = toCMEventTag chatMsgEvent, msgTime, msgBody}
-  msg@Message {msgId} <- withStore $ \st -> createNewMessage st newMsg
+  msg@Message {msgId, msgBody} <- createSndMessage chatMsgEvent
   for_ (filter memberCurrent members) $
     \m ->
       case memberConn m of
@@ -1148,6 +1148,9 @@ sendPendingGroupMessages GroupMember {groupMemberId} conn = do
   for_ pendingMessages $
     \(msgId, msgBody) -> deliverMessage conn msgBody msgId
   withStore $ \st -> deletePendingGroupMessages st groupMemberId
+
+-- TODO if message is XGrpMemFwd then update introduction status
+-- withStore $ \st -> updateIntroStatus st intro GMIntroInvForwarded
 
 saveRcvMSG :: ChatMonad m => Connection -> MsgMeta -> MsgBody -> m (ChatMsgEvent, Message)
 saveRcvMSG Connection {connId} agentMsgMeta msgBody = do
