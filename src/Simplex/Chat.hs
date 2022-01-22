@@ -633,9 +633,10 @@ processAgentMessage toView user@User {userId, profile} agentConnId agentMessage 
             showToast ("#" <> gName) $ "member " <> localDisplayName (m :: GroupMember) <> " is connected"
             intros <- withStore $ \st -> createIntroductions st group m
             void . sendGroupMessage members . XGrpMemNew $ memberInfo m
-            forM_ intros $ \intro -> do
+            forM_ intros $ \intro@GroupMemberIntro {introId} -> do
+              -- sendGroupMessage' ?
               void . sendDirectMessage conn . XGrpMemIntro . memberInfo $ reMember intro
-              withStore $ \st -> updateIntroStatus st intro GMIntroSent
+              withStore $ \st -> updateIntroStatus st introId GMIntroSent
           _ -> do
             -- TODO send probe and decide whether to use existing contact connection or the new contact connection
             -- TODO notify member who forwarded introduction - question - where it is stored? There is via_contact but probably there should be via_member in group_members table
@@ -928,13 +929,13 @@ processAgentMessage toView user@User {userId, profile} agentConnId agentMessage 
           case find (sameMemberId memId) $ members group of
             Nothing -> messageError "x.grp.mem.inv error: referenced member does not exists"
             Just reMember -> do
-              intro <- withStore $ \st -> saveIntroInvitation st reMember m introInv
+              GroupMemberIntro {introId} <- withStore $ \st -> saveIntroInvitation st reMember m introInv
               Message {msgId, msgBody} <- createSndMessage $ XGrpMemFwd (memberInfo m) introInv
               case activeConn (reMember :: GroupMember) of
                 Nothing -> withStore $ \st -> createPendingGroupMessage st msgId (groupMemberId m)
                 Just reConn -> do
                   deliverMessage reConn msgBody msgId
-                  withStore $ \st -> updateIntroStatus st intro GMIntroInvForwarded
+                  withStore $ \st -> updateIntroStatus st introId GMIntroInvForwarded
         _ -> messageError "x.grp.mem.inv can be only sent by invitee member"
 
     xGrpMemFwd :: GroupName -> GroupMember -> MemberInfo -> IntroInvitation -> m ()
@@ -1145,11 +1146,10 @@ sendGroupMessage members chatMsgEvent = do
 sendPendingGroupMessages :: ChatMonad m => GroupMember -> Connection -> m ()
 sendPendingGroupMessages GroupMember {groupMemberId} conn = do
   pendingMessages <- withStore $ \st -> getPendingGroupMessages st groupMemberId
-  for_ pendingMessages $ \(msgId, msgBody) ->
+  for_ pendingMessages $ \(msgId, msgBody, chatMsgEventType, introId) -> do
     deliverMessage conn msgBody msgId
-      >> withStore (\st -> deletePendingGroupMessage st groupMemberId msgId)
-      -- TODO if message is XGrpMemFwd then update introduction status
-      -- withStore $ \st -> updateIntroStatus st intro GMIntroInvForwarded
+    withStore (\st -> deletePendingGroupMessage st groupMemberId msgId)
+    when (chatMsgEventType == "x.grp.mem.fwd") (withStore $ \st -> updateIntroStatus st introId GMIntroInvForwarded)
 
 -- TODO if message is XGrpMemFwd then update introduction status
 -- withStore $ \st -> updateIntroStatus st intro GMIntroInvForwarded

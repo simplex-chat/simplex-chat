@@ -1152,8 +1152,8 @@ createIntroductions st Group {members} toMember = do
       introId <- insertedRowId db
       pure GroupMemberIntro {introId, reMember, toMember, introStatus = GMIntroPending, introInvitation = Nothing}
 
-updateIntroStatus :: MonadUnliftIO m => SQLiteStore -> GroupMemberIntro -> GroupMemberIntroStatus -> m ()
-updateIntroStatus st GroupMemberIntro {introId} introStatus' =
+updateIntroStatus :: MonadUnliftIO m => SQLiteStore -> Int64 -> GroupMemberIntroStatus -> m ()
+updateIntroStatus st introId introStatus' =
   liftIO . withTransaction st $ \db ->
     DB.executeNamed
       db
@@ -1747,13 +1747,13 @@ createPendingGroupMessage st groupMemberId messageId =
       |]
       (groupMemberId, messageId, createdAt)
 
-getPendingGroupMessages :: MonadUnliftIO m => SQLiteStore -> Int64 -> m [(MessageId, MsgBody)]
+getPendingGroupMessages :: MonadUnliftIO m => SQLiteStore -> Int64 -> m [(MessageId, MsgBody, Text, Int64)]
 getPendingGroupMessages st groupMemberId =
   liftIO . withTransaction st $ \db ->
     DB.query
       db
       [sql|
-        SELECT pgm.message_id, m.msg_body
+        SELECT pgm.message_id, m.msg_body, m.chat_msg_event, pgm.group_member_intro_id
         FROM pending_group_messages pgm
         JOIN messages m USING (message_id)
         WHERE pgm.group_member_id = ?
