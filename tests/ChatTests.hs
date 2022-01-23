@@ -84,7 +84,7 @@ testAddContact =
       -- test deleting contact
       alice ##> "/d bob_1"
       alice <## "bob_1: contact is deleted"
-      alice #> "@bob_1 hey"
+      alice ##> "@bob_1 hey"
       alice <## "no contact bob_1"
 
 testGroup :: IO ()
@@ -168,7 +168,7 @@ testGroup =
       concurrently_
         (bob <# "#team alice> hello")
         (cath </)
-      cath #> "#team hello"
+      cath ##> "#team hello"
       cath <## "you are no longer a member of the group"
       bob <##> cath
 
@@ -293,7 +293,7 @@ testGroup2 =
           bob <# "#club cath> hey",
           (dan </)
         ]
-      dan #> "#club how is it going?"
+      dan ##> "#club how is it going?"
       dan <## "you are no longer a member of the group"
       dan ##> "/d #club"
       dan <## "#club: you deleted the group"
@@ -316,7 +316,7 @@ testGroup2 =
       concurrently_
         (alice <# "#club cath> hey")
         (bob </)
-      bob #> "#club how is it going?"
+      bob ##> "#club how is it going?"
       bob <## "you are no longer a member of the group"
       bob ##> "/d #club"
       bob <## "#club: you deleted the group"
@@ -340,7 +340,7 @@ testGroupDelete =
         ]
       bob ##> "/d #team"
       bob <## "#team: you deleted the group"
-      cath #> "#team hi"
+      cath ##> "#team hi"
       cath <## "you are no longer a member of the group"
       cath ##> "/d #team"
       cath <## "#team: you deleted the group"
@@ -822,7 +822,7 @@ cc #> cmd = do
   cc <# cmd
 
 send :: TestCC -> String -> IO ()
-send TestCC {chatController = cc} cmd = atomically $ writeTBQueue (inputQ cc) $ InputCommand cmd
+send TestCC {chatController = cc} cmd = atomically $ writeTBQueue (inputQ cc) cmd
 
 (<##) :: TestCC -> String -> Expectation
 cc <## line = getTermLine cc `shouldReturn` line

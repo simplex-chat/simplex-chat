@@ -35,4 +35,4 @@ simplexChat cfg opts t
 runSimplexChat :: User -> ChatTerminal -> ChatController -> IO ()
 runSimplexChat user ct = runReaderT $ do
   whenM (asks firstTime) . liftIO . printToTerminal ct $ chatWelcome user
-  raceAny_ [runTerminalInput ct, runTerminalOutput ct, runChatController]
+  raceAny_ [runTerminalInput ct, runTerminalOutput ct, runInputLoop ct, runChatController]

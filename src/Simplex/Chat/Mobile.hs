@@ -23,6 +23,7 @@ import Simplex.Chat.Options
 import Simplex.Chat.Store
 import Simplex.Chat.Styled
 import Simplex.Chat.Types
+import Simplex.Chat.View
 
 foreign export ccall "chat_init_store" cChatInitStore :: CString -> IO (StablePtr ChatStore)
 
@@ -76,8 +77,6 @@ mobileChatOpts =
 
 type CJSONString = CString
 
-type JSONString = String
-
 data ChatStore = ChatStore
   { dbFilePrefix :: FilePath,
     chatStore :: SQLiteStore
@@ -117,10 +116,10 @@ chatStart ChatStore {dbFilePrefix, chatStore} = do
   pure cc
 
 chatSendCmd :: ChatController -> String -> IO JSONString
-chatSendCmd ChatController {inputQ} s = atomically (writeTBQueue inputQ $ InputCommand s) >> pure "{}"
+chatSendCmd ChatController {inputQ} s = atomically (writeTBQueue inputQ s) >> pure "{}"
 
 chatRecvMsg :: ChatController -> IO String
-chatRecvMsg ChatController {outputQ} = unlines . map unStyle <$> atomically (readTBQueue outputQ)
+chatRecvMsg ChatController {outputQ} = unlines . map unStyle . responseToView "" . snd <$> atomically (readTBQueue outputQ)
 
 jsonObject :: J.Series -> JSONString
 jsonObject = LB.unpack . JE.encodingToLazyByteString . J.pairs

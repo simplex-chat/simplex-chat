@@ -22,9 +22,12 @@ import qualified Data.ByteString.Lazy.Char8 as LB
 import qualified Data.HashMap.Strict as H
 import Data.Text (Text)
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
+import Database.SQLite.Simple.FromField (FromField (..))
+import Database.SQLite.Simple.ToField (ToField (..))
 import GHC.Generics
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Protocol
+import Simplex.Messaging.Agent.Store.SQLite (fromTextField_)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Util ((<$?>))
 
@@ -111,6 +114,11 @@ instance ToJSON MsgContentType where
 data MsgContent = MCText Text | MCUnknown
   deriving (Eq, Show)
 
+msgContentText :: MsgContent -> Text
+msgContentText = \case
+  MCText t -> t
+  MCUnknown -> unknownMsgType
+
 toMsgContentType :: MsgContent -> MsgContentType
 toMsgContentType = \case
   MCText _ -> MCText_
@@ -161,6 +169,7 @@ data CMEventTag
   | XInfoProbeCheck_
   | XInfoProbeOk_
   | XOk_
+  deriving (Show)
 
 instance StrEncoding CMEventTag where
   strEncode = \case
@@ -236,6 +245,10 @@ toCMEventTag = \case
 
 toChatEventTag :: ChatMsgEvent -> Text
 toChatEventTag = decodeLatin1 . strEncode . toCMEventTag
+
+instance FromField CMEventTag where fromField = fromTextField_ $ either (const Nothing) Just . strDecode . encodeUtf8
+
+instance ToField CMEventTag where toField = toField . decodeLatin1 . strEncode
 
 appToChatMessage :: AppMessage -> Either String ChatMessage
 appToChatMessage AppMessage {event, params} = do

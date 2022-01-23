@@ -21,6 +21,7 @@ import Simplex.Chat.Markdown
 import System.Console.ANSI.Types
 
 data StyledString = Styled [SGR] String | StyledString :<>: StyledString
+  deriving (Show)
 
 instance Semigroup StyledString where (<>) = (:<>:)
 
