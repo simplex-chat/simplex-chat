@@ -930,8 +930,8 @@ processAgentMessage toView user@User {userId, profile} agentConnId agentMessage 
             Just reMember@GroupMember {groupMemberId = reMemberId} -> do
               GroupMemberIntro {introId} <- withStore $ \st -> saveIntroInvitation st reMember m introInv
               Message {msgId, msgBody} <- createSndMessage $ XGrpMemFwd (memberInfo m) introInv
-              case activeConn (reMember :: GroupMember) of
-                Nothing -> withStore $ \st -> createPendingGroupMessage st msgId (groupMemberId m) (Just introId)
+              case memberConn reMember of
+                Nothing -> withStore $ \st -> createPendingGroupMessage st msgId reMemberId (Just introId)
                 Just reConn -> do
                   deliverMessage reConn msgBody msgId
                   withStore $ \st -> updateIntroStatus st introId GMIntroInvForwarded
