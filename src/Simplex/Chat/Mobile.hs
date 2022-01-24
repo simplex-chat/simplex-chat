@@ -21,7 +21,6 @@ import Simplex.Chat
 import Simplex.Chat.Controller
 import Simplex.Chat.Options
 import Simplex.Chat.Store
-import Simplex.Chat.Styled
 import Simplex.Chat.Types
 import Simplex.Chat.View
 
@@ -119,7 +118,15 @@ chatSendCmd :: ChatController -> String -> IO JSONString
 chatSendCmd ChatController {inputQ} s = atomically (writeTBQueue inputQ s) >> pure "{}"
 
 chatRecvMsg :: ChatController -> IO String
-chatRecvMsg ChatController {outputQ} = unlines . map unStyle . responseToView "" . snd <$> atomically (readTBQueue outputQ)
+chatRecvMsg ChatController {outputQ} = serializeChatResponse . snd <$> atomically (readTBQueue outputQ)
 
 jsonObject :: J.Series -> JSONString
 jsonObject = LB.unpack . JE.encodingToLazyByteString . J.pairs
+
+-- crToJSON :: ChatResponse -> JSONString
+-- crToJSON = \case
+--   CRUserProfile p -> o "profile" $ J.pairs ("profile" .= p)
+--   r -> o "terminal" $ J.pairs ("response" .= serializeChatResponse r)
+--   where
+--     o :: String -> JE.Encoding -> JSONString
+--     o tp ss = jsonObject ("type" .= tp <> "params" .= ss)

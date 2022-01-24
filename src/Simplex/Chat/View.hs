@@ -27,6 +27,9 @@ import Simplex.Messaging.Encoding.String
 import qualified Simplex.Messaging.Protocol as SMP
 import System.Console.ANSI.Types
 
+serializeChatResponse :: ChatResponse -> String
+serializeChatResponse = unlines . map unStyle . responseToView ""
+
 responseToView :: String -> ChatResponse -> [StyledString]
 responseToView cmd = \case
   CRSentMessage c mc meta -> viewSentMessage (ttyToContact c) mc meta
