@@ -15,9 +15,9 @@ import Data.ByteString.Char8 (ByteString)
 import Data.Int (Int64)
 import Data.Map.Strict (Map)
 import Data.Text (Text)
-import Data.Time.LocalTime (TimeZone)
 import Numeric.Natural
 import Simplex.Chat.Messages
+import Simplex.Chat.Protocol
 import Simplex.Chat.Store (StoreError)
 import Simplex.Chat.Styled
 import Simplex.Chat.Types
@@ -105,10 +105,14 @@ data ChatCommand
 
 data ChatResponse
   = ChatResponse [StyledString]
-  | CRSentMessage ContactName TimeZone ChatUserMessage
-  | CRSentGroupMessage GroupName TimeZone ChatUserMessage
-  | CRReceivedMessage ContactName TimeZone ChatUserMessage MsgIntegrity
-  | CRReceivedGroupMessage GroupName ContactName TimeZone ChatUserMessage MsgIntegrity
+  | CRSentMessage ContactName MsgContent ChatMsgMeta
+  | CRSentGroupMessage GroupName MsgContent ChatMsgMeta
+  | CRSentFileInvitation ContactName FileTransferId FilePath ChatMsgMeta
+  | CRSentGroupFileInvitation GroupName FileTransferId FilePath ChatMsgMeta
+  | CRReceivedMessage ContactName ChatMsgMeta MsgContent MsgIntegrity
+  | CRReceivedGroupMessage GroupName ContactName ChatMsgMeta MsgContent MsgIntegrity
+  | CRReceivedFileInvitattion ContactName ChatMsgMeta RcvFileTransfer MsgIntegrity
+  | CRReceivedGroupFileInvitattion GroupName ContactName ChatMsgMeta RcvFileTransfer MsgIntegrity
   | CRCommandAccepted CorrId
   | CRChatHelp HelpSection
   | CRWelcome User

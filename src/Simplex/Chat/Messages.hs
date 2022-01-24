@@ -20,6 +20,7 @@ import Data.Int (Int64)
 import Data.Text (Text)
 import Data.Text.Encoding (decodeLatin1)
 import Data.Time.Clock (UTCTime)
+import Data.Time.LocalTime (ZonedTime)
 import Data.Type.Equality
 import Data.Typeable (Typeable)
 import Database.SQLite.Simple.FromField (FromField (..))
@@ -56,15 +57,12 @@ data PendingGroupMessage = PendingGroupMessage
     introId_ :: Maybe Int64
   }
 
-data ChatUserMessage = ChatUserMessage
+data ChatMsgMeta = ChatMsgMeta
   { msgId :: MessageId,
     msgTime :: UTCTime,
-    createdAt :: UTCTime,
-    userMsg :: UserMessage
+    localMsgTime :: ZonedTime,
+    createdAt :: UTCTime
   }
-  deriving (Show)
-
-data UserMessage = UXMsgNew MsgContent | UXFile FileTransferId FilePath
   deriving (Show)
 
 data MsgDirection = MDRcv | MDSnd

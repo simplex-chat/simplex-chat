@@ -13,7 +13,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (DiffTime, UTCTime)
 import Data.Time.Format (defaultTimeLocale, formatTime)
-import Data.Time.LocalTime (TimeZone, ZonedTime, getCurrentTimeZone, getZonedTime, localDay, localTimeOfDay, timeOfDayToTime, utcToLocalTime, utcToZonedTime, zonedTimeToLocalTime)
+import Data.Time.LocalTime (TimeZone, ZonedTime (..), getCurrentTimeZone, getZonedTime, localDay, localTimeOfDay, timeOfDayToTime, utcToLocalTime, utcToZonedTime)
 import Numeric (showFFloat)
 import Simplex.Chat.Controller
 import Simplex.Chat.Help
@@ -31,10 +31,14 @@ import System.Console.ANSI.Types
 responseToView :: String -> ChatResponse -> [StyledString]
 responseToView cmd = \case
   ChatResponse s -> s
-  CRSentMessage c tz msg -> viewSentMessage c tz msg
-  CRSentGroupMessage g tz msg -> viewSentGroupMessage g tz msg
-  CRReceivedMessage c tz msg mOk -> viewReceivedMessage' c tz msg mOk
-  CRReceivedGroupMessage g c tz msg mOk -> viewReceivedGroupMessage' g c tz msg mOk
+  CRSentMessage c mc meta -> viewSentMessage c mc meta
+  CRSentGroupMessage g mc meta -> viewSentGroupMessage g mc meta
+  CRSentFileInvitation c fId fPath meta -> viewSentFileInvitation c fId fPath meta
+  CRSentGroupFileInvitation g fId fPath meta -> viewSentGroupFileInvitation g fId fPath meta
+  CRReceivedMessage c meta mc mOk -> viewReceivedMessage' c meta mc mOk
+  CRReceivedGroupMessage g c meta mc mOk -> viewReceivedGroupMessage' g c meta mc mOk
+  CRReceivedFileInvitattion c meta ft mOk -> viewReceivedFileInvitation' c meta ft mOk
+  CRReceivedGroupFileInvitattion g c meta ft mOk -> viewReceivedGroupFileInvitation' g c meta ft mOk
   CRCommandAccepted _ -> r []
   CRChatHelp section -> case section of
     HSMain -> r chatHelpInfo
@@ -302,21 +306,23 @@ viewReceivedMessage_ from utcTime msg mOk = do
     msgError :: String -> [StyledString]
     msgError s = [styled (Colored Red) s]
 
-viewReceivedMessage' :: ContactName -> TimeZone -> ChatUserMessage -> MsgIntegrity -> [StyledString]
+viewReceivedMessage' :: ContactName -> ChatMsgMeta -> MsgContent -> MsgIntegrity -> [StyledString]
 viewReceivedMessage' = viewReceivedMessage_' . ttyFromContact
 
-viewReceivedGroupMessage' :: GroupName -> ContactName -> TimeZone -> ChatUserMessage -> MsgIntegrity -> [StyledString]
+viewReceivedGroupMessage' :: GroupName -> ContactName -> ChatMsgMeta -> MsgContent -> MsgIntegrity -> [StyledString]
 viewReceivedGroupMessage' = viewReceivedMessage_' .: ttyFromGroup
 
-viewReceivedMessage_' :: StyledString -> TimeZone -> ChatUserMessage -> MsgIntegrity -> [StyledString]
-viewReceivedMessage_' from tz ChatUserMessage {msgTime, createdAt, userMsg} mOk =
-  case userMsg of
-    UXMsgNew mc -> prependFirst (formatedTime <> " " <> from) (ttyMsgContent mc) ++ showIntegrity mOk
-    UXFile fileId f -> []
+viewReceivedMessage_' :: StyledString -> ChatMsgMeta -> MsgContent -> MsgIntegrity -> [StyledString]
+viewReceivedMessage_' from meta mc = receivedWithTime_ from meta (ttyMsgContent mc)
+
+receivedWithTime_ :: StyledString -> ChatMsgMeta -> [StyledString] -> MsgIntegrity -> [StyledString]
+receivedWithTime_ from ChatMsgMeta {localMsgTime, createdAt} styledMsg mOk = do
+  prependFirst (formatedTime <> " " <> from) styledMsg ++ showIntegrity mOk
   where
     formatedTime :: StyledString
     formatedTime =
-      let localTime = utcToLocalTime tz msgTime
+      let localTime = zonedTimeToLocalTime localMsgTime
+          tz = zonedTimeZone localMsgTime
           format =
             if (localDay localTime < localDay (zonedTimeToLocalTime $ utcToZonedTime tz createdAt))
               && (timeOfDayToTime (localTimeOfDay localTime) > (6 * 60 * 60 :: DiffTime))
@@ -335,27 +341,38 @@ viewReceivedMessage_' from tz ChatUserMessage {msgTime, createdAt, userMsg} mOk 
     msgError :: String -> [StyledString]
     msgError s = [styled (Colored Red) s]
 
-viewSentMessage :: ContactName -> TimeZone -> ChatUserMessage -> [StyledString]
+viewSentMessage :: ContactName -> MsgContent -> ChatMsgMeta -> [StyledString]
 viewSentMessage = viewSentMessage_ . ttyToContact
 
-viewSentGroupMessage :: GroupName -> TimeZone -> ChatUserMessage -> [StyledString]
+viewSentGroupMessage :: GroupName -> MsgContent -> ChatMsgMeta -> [StyledString]
 viewSentGroupMessage = viewSentMessage_ . ttyToGroup
 
-viewSentMessage_ :: StyledString -> TimeZone -> ChatUserMessage -> [StyledString]
-viewSentMessage_ to tz ChatUserMessage {msgTime, userMsg} = case userMsg of
-  UXMsgNew mc -> prependFirst (ttyMsgTime tz msgTime <> " " <> to) (ttyMsgContent mc)
-  UXFile fileId f ->
-    [ ttyMsgTime tz msgTime <> " /f " <> to <> ttyFilePath f,
-      "use " <> highlight ("/fc " <> show fileId) <> " to cancel sending"
-    ]
+viewSentMessage_ :: StyledString -> MsgContent -> ChatMsgMeta -> [StyledString]
+viewSentMessage_ to mc = sentWithTime_ $ prependFirst to (ttyMsgContent mc)
 
-ttyMsgTime :: TimeZone -> UTCTime -> StyledString
-ttyMsgTime tz = styleTime . formatTime defaultTimeLocale "%H:%M" . utcToZonedTime tz
+viewSentFileInvitation :: ContactName -> FileTransferId -> FilePath -> ChatMsgMeta -> [StyledString]
+viewSentFileInvitation = viewSentFile_ . ttyToContact
+
+viewSentGroupFileInvitation :: GroupName -> FileTransferId -> FilePath -> ChatMsgMeta -> [StyledString]
+viewSentGroupFileInvitation = viewSentFile_ . ttyToGroup
+
+viewSentFile_ :: StyledString -> FileTransferId -> FilePath -> ChatMsgMeta -> [StyledString]
+viewSentFile_ to fId fPath meta = sentWithTime_ (ttySentFile to fId fPath) meta
+
+sentWithTime_ :: [StyledString] -> ChatMsgMeta -> [StyledString]
+sentWithTime_ styledMsg ChatMsgMeta {localMsgTime} =
+  prependFirst (ttyMsgTime localMsgTime <> " ") styledMsg
+
+ttyMsgTime :: ZonedTime -> StyledString
+ttyMsgTime = styleTime . formatTime defaultTimeLocale "%H:%M"
 
 ttyMsgContent :: MsgContent -> [StyledString]
 ttyMsgContent = \case
   MCText t -> msgPlain t
   MCUnknown -> ["unknown message type"]
+
+ttySentFile :: StyledString -> FileTransferId -> FilePath -> [StyledString]
+ttySentFile to fId fPath = ["/f " <> to <> ttyFilePath fPath, "use " <> highlight ("/fc " <> show fId) <> " to cancel sending"]
 
 prependFirst :: StyledString -> [StyledString] -> [StyledString]
 prependFirst s [] = [s]
@@ -382,6 +399,15 @@ viewReceivedFileInvitation c ts = viewReceivedMessage c ts . receivedFileInvitat
 
 viewReceivedGroupFileInvitation :: GroupName -> ContactName -> UTCTime -> RcvFileTransfer -> MsgIntegrity -> IO [StyledString]
 viewReceivedGroupFileInvitation g c ts = viewReceivedGroupMessage g c ts . receivedFileInvitation_
+
+viewReceivedFileInvitation' :: ContactName -> ChatMsgMeta -> RcvFileTransfer -> MsgIntegrity -> [StyledString]
+viewReceivedFileInvitation' = viewReceivedFileInvitation_' . ttyFromContact
+
+viewReceivedGroupFileInvitation' :: GroupName -> ContactName -> ChatMsgMeta -> RcvFileTransfer -> MsgIntegrity -> [StyledString]
+viewReceivedGroupFileInvitation' = viewReceivedFileInvitation_' .: ttyFromGroup
+
+viewReceivedFileInvitation_' :: StyledString -> ChatMsgMeta -> RcvFileTransfer -> MsgIntegrity -> [StyledString]
+viewReceivedFileInvitation_' from meta ft = receivedWithTime_ from meta (receivedFileInvitation_ ft)
 
 receivedFileInvitation_ :: RcvFileTransfer -> [StyledString]
 receivedFileInvitation_ RcvFileTransfer {fileId, fileInvitation = FileInvitation {fileName, fileSize}} =
