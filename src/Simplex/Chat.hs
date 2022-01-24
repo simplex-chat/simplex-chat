@@ -927,14 +927,9 @@ processAgentMessage toView user@User {userId, profile} agentConnId agentMessage 
           group <- withStore $ \st -> getGroup st user gName
           case find (sameMemberId memId) $ members group of
             Nothing -> messageError "x.grp.mem.inv error: referenced member does not exists"
-            Just reMember@GroupMember {groupMemberId = reMemberId} -> do
-              intro@GroupMemberIntro {introId} <- withStore $ \st -> saveIntroInvitation st reMember m introInv
-              Message {msgId, msgBody} <- createSndMessage $ XGrpMemFwd (memberInfo m) introInv
-              case memberConn reMember of
-                Nothing -> withStore $ \st -> createPendingGroupMessage st msgId reMemberId (Just introId)
-                Just reConn -> do
-                  deliverMessage reConn msgBody msgId
-                  withStore $ \st -> updateIntroStatus st intro GMIntroInvForwarded
+            Just reMember -> do
+              GroupMemberIntro {introId} <- withStore $ \st -> saveIntroInvitation st reMember m introInv
+              void $ sendXGrpMemInv reMember (XGrpMemFwd (memberInfo m) introInv) introId
         _ -> messageError "x.grp.mem.inv can be only sent by invitee member"
 
     xGrpMemFwd :: GroupName -> GroupMember -> MemberInfo -> IntroInvitation -> m ()
@@ -1133,12 +1128,21 @@ deliverMessage Connection {connId, agentConnId} msgBody msgId = do
   withStore $ \st -> createSndMsgDelivery st sndMsgDelivery msgId
 
 sendGroupMessage :: ChatMonad m => [GroupMember] -> ChatMsgEvent -> m Message
-sendGroupMessage members chatMsgEvent = do
+sendGroupMessage members chatMsgEvent =
+  sendGroupMessage' members chatMsgEvent Nothing $ pure ()
+
+sendXGrpMemInv :: ChatMonad m => GroupMember -> ChatMsgEvent -> Int64 -> m Message
+sendXGrpMemInv reMember chatMsgEvent introId =
+  sendGroupMessage' [reMember] chatMsgEvent (Just introId) $
+    withStore (\st -> updateIntroStatus' st introId GMIntroInvForwarded)
+
+sendGroupMessage' :: ChatMonad m => [GroupMember] -> ChatMsgEvent -> Maybe Int64 -> m () -> m Message
+sendGroupMessage' members chatMsgEvent mIntroId postDeliver = do
   msg@Message {msgId, msgBody} <- createSndMessage chatMsgEvent
   for_ (filter memberCurrent members) $ \m@GroupMember {groupMemberId} ->
     case memberConn m of
-      Nothing -> withStore $ \st -> createPendingGroupMessage st groupMemberId msgId Nothing
-      Just conn -> deliverMessage conn msgBody msgId
+      Nothing -> withStore $ \st -> createPendingGroupMessage st groupMemberId msgId mIntroId
+      Just conn -> deliverMessage conn msgBody msgId >> postDeliver
   pure msg
 
 sendPendingGroupMessages :: ChatMonad m => GroupMember -> Connection -> m ()
