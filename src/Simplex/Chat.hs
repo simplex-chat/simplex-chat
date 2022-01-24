@@ -6,7 +6,6 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeApplications #-}
@@ -26,6 +25,7 @@ import Data.Bifunctor (first)
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.Char (isSpace)
+import Data.Foldable (for_)
 import Data.Functor (($>))
 import Data.Int (Int64)
 import Data.List (find)
@@ -624,7 +624,7 @@ processAgentMessage toView user@User {userId, profile} agentConnId agentMessage 
           updateGroupMemberStatus st userId m GSMemConnected
           unless (memberActive membership) $
             updateGroupMemberStatus st userId membership GSMemConnected
-        -- TODO forward any pending (GMIntroInvReceived) introductions
+        sendPendingGroupMessages m conn
         case memberCategory m of
           GCHostMember -> do
             toView__ $ CRUserJoinedGroup gName
@@ -636,9 +636,9 @@ processAgentMessage toView user@User {userId, profile} agentConnId agentMessage 
             showToast ("#" <> gName) $ "member " <> localDisplayName (m :: GroupMember) <> " is connected"
             intros <- withStore $ \st -> createIntroductions st group m
             void . sendGroupMessage members . XGrpMemNew $ memberInfo m
-            forM_ intros $ \intro -> do
+            forM_ intros $ \intro@GroupMemberIntro {introId} -> do
               void . sendDirectMessage conn . XGrpMemIntro . memberInfo $ reMember intro
-              withStore $ \st -> updateIntroStatus st intro GMIntroSent
+              withStore $ \st -> updateIntroStatus st introId GMIntroSent
           _ -> do
             -- TODO send probe and decide whether to use existing contact connection or the new contact connection
             -- TODO notify member who forwarded introduction - question - where it is stored? There is via_contact but probably there should be via_member in group_members table
@@ -852,7 +852,7 @@ processAgentMessage toView user@User {userId, profile} agentConnId agentMessage 
       when (fromMemId == memId) $ chatError CEGroupDuplicateMemberId
       group@Group {localDisplayName = gName} <- withStore $ \st -> createGroupInvitation st user ct inv
       toView $ viewReceivedGroupInvitation group c memRole
-      showToast ("#" <> gName <> " " <> c <> "> ") $ "invited you to join the group"
+      showToast ("#" <> gName <> " " <> c <> "> ") "invited you to join the group"
 
     xInfo :: Contact -> Profile -> m ()
     xInfo c@Contact {profile = p} p' = unless (p == p') $ do
@@ -928,12 +928,8 @@ processAgentMessage toView user@User {userId, profile} agentConnId agentMessage 
           case find (sameMemberId memId) $ members group of
             Nothing -> messageError "x.grp.mem.inv error: referenced member does not exists"
             Just reMember -> do
-              intro <- withStore $ \st -> saveIntroInvitation st reMember m introInv
-              case activeConn (reMember :: GroupMember) of
-                Nothing -> pure () -- this is not an error, introduction will be forwarded once the member is connected
-                Just reConn -> do
-                  void . sendDirectMessage reConn $ XGrpMemFwd (memberInfo m) introInv
-                  withStore $ \st -> updateIntroStatus st intro GMIntroInvForwarded
+              GroupMemberIntro {introId} <- withStore $ \st -> saveIntroInvitation st reMember m introInv
+              void $ sendXGrpMemInv reMember (XGrpMemFwd (memberInfo m) introInv) introId
         _ -> messageError "x.grp.mem.inv can be only sent by invitee member"
 
     xGrpMemFwd :: GroupName -> GroupMember -> MemberInfo -> IntroInvitation -> m ()
@@ -1111,13 +1107,16 @@ deleteMemberConnection m@GroupMember {activeConn} = do
 
 sendDirectMessage :: ChatMonad m => Connection -> ChatMsgEvent -> m Message
 sendDirectMessage conn chatMsgEvent = do
+  msg@Message {msgId, msgBody} <- createSndMessage chatMsgEvent
+  deliverMessage conn msgBody msgId
+  pure msg
+
+createSndMessage :: ChatMonad m => ChatMsgEvent -> m Message
+createSndMessage chatMsgEvent = do
   msgTime <- liftIO getCurrentTime
   let msgBody = directMessage chatMsgEvent
       newMsg = NewMessage {direction = MDSnd, cmEventTag = toCMEventTag chatMsgEvent, msgBody, msgTime}
-  -- can be done in transaction after sendMessage, probably shouldn't
-  msg@Message {msgId} <- withStore $ \st -> createNewMessage st newMsg
-  deliverMessage conn msgBody msgId
-  pure msg
+  withStore $ \st -> createNewMessage st newMsg
 
 directMessage :: ChatMsgEvent -> ByteString
 directMessage chatMsgEvent = strEncode ChatMessage {chatMsgEvent}
@@ -1129,15 +1128,33 @@ deliverMessage Connection {connId, agentConnId} msgBody msgId = do
   withStore $ \st -> createSndMsgDelivery st sndMsgDelivery msgId
 
 sendGroupMessage :: ChatMonad m => [GroupMember] -> ChatMsgEvent -> m Message
-sendGroupMessage members chatMsgEvent = do
-  msgTime <- liftIO getCurrentTime
-  let msgBody = directMessage chatMsgEvent
-      newMsg = NewMessage {direction = MDSnd, cmEventTag = toCMEventTag chatMsgEvent, msgTime, msgBody}
-  msg@Message {msgId} <- withStore $ \st -> createNewMessage st newMsg
-  -- TODO once scheduled delivery is implemented memberActive should be changed to memberCurrent
-  forM_ (map memberConn $ filter memberActive members) $
-    traverse (\conn -> deliverMessage conn msgBody msgId)
+sendGroupMessage members chatMsgEvent =
+  sendGroupMessage' members chatMsgEvent Nothing $ pure ()
+
+sendXGrpMemInv :: ChatMonad m => GroupMember -> ChatMsgEvent -> Int64 -> m Message
+sendXGrpMemInv reMember chatMsgEvent introId =
+  sendGroupMessage' [reMember] chatMsgEvent (Just introId) $
+    withStore (\st -> updateIntroStatus st introId GMIntroInvForwarded)
+
+sendGroupMessage' :: ChatMonad m => [GroupMember] -> ChatMsgEvent -> Maybe Int64 -> m () -> m Message
+sendGroupMessage' members chatMsgEvent introId_ postDeliver = do
+  msg@Message {msgId, msgBody} <- createSndMessage chatMsgEvent
+  for_ (filter memberCurrent members) $ \m@GroupMember {groupMemberId} ->
+    case memberConn m of
+      Nothing -> withStore $ \st -> createPendingGroupMessage st groupMemberId msgId introId_
+      Just conn -> deliverMessage conn msgBody msgId >> postDeliver
   pure msg
+
+sendPendingGroupMessages :: ChatMonad m => GroupMember -> Connection -> m ()
+sendPendingGroupMessages GroupMember {groupMemberId, localDisplayName} conn = do
+  pendingMessages <- withStore $ \st -> getPendingGroupMessages st groupMemberId
+  -- TODO ensure order - pending messages interleave with user input messages
+  for_ pendingMessages $ \PendingGroupMessage {msgId, cmEventTag, msgBody, introId_} -> do
+    deliverMessage conn msgBody msgId
+    withStore (\st -> deletePendingGroupMessage st groupMemberId msgId)
+    when (cmEventTag == XGrpMemFwd_) $ case introId_ of
+      Nothing -> chatError $ CEGroupMemberIntroNotFound localDisplayName
+      Just introId -> withStore (\st -> updateIntroStatus st introId GMIntroInvForwarded)
 
 saveRcvMSG :: ChatMonad m => Connection -> MsgMeta -> MsgBody -> m (ChatMsgEvent, Message)
 saveRcvMSG Connection {connId} agentMsgMeta msgBody = do

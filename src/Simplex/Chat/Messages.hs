@@ -50,6 +50,13 @@ data Message = Message
   }
   deriving (Show)
 
+data PendingGroupMessage = PendingGroupMessage
+  { msgId :: MessageId,
+    cmEventTag :: CMEventTag,
+    msgBody :: MsgBody,
+    introId_ :: Maybe Int64
+  }
+
 data ChatMsgMeta = ChatMsgMeta
   { msgId :: MessageId,
     msgTime :: UTCTime,

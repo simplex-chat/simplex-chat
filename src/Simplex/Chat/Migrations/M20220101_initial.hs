@@ -242,11 +242,12 @@ CREATE TABLE contact_requests (
 CREATE TABLE messages (
   message_id INTEGER PRIMARY KEY,
   msg_sent INTEGER NOT NULL, -- 0 for received, 1 for sent
-  chat_msg_event TEXT NOT NULL, -- message event type (the constructor of ChatMsgEvent)
+  chat_msg_event TEXT NOT NULL, -- message event tag (the constructor of CMEventTag)
   msg_body BLOB, -- agent message body as received or sent
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+-- TODO ? agent_msg_id could be NOT NULL now that pending_group_messages are separate
 -- message deliveries communicated with the agent, append only
 CREATE TABLE msg_deliveries (
   msg_delivery_id INTEGER PRIMARY KEY,

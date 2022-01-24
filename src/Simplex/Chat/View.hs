@@ -493,6 +493,7 @@ viewChatError = \case
     CEGroupMemberNotActive -> ["you cannot invite other members yet, try later"]
     CEGroupMemberUserRemoved -> ["you are no longer a member of the group"]
     CEGroupMemberNotFound c -> ["contact " <> ttyContact c <> " is not a group member"]
+    CEGroupMemberIntroNotFound c -> ["group member intro not found for " <> ttyContact c]
     CEGroupCantResendInvitation g c -> viewCannotResendInvitation g c
     CEGroupInternal s -> ["chat group bug: " <> plain s]
     CEFileNotFound f -> ["file not found: " <> plain f]
@@ -535,7 +536,6 @@ ttyFullContact Contact {localDisplayName, profile = Profile {fullName}} =
 
 ttyMember :: GroupMember -> StyledString
 ttyMember GroupMember {localDisplayName} = ttyContact localDisplayName
-
 ttyFullMember :: GroupMember -> StyledString
 ttyFullMember GroupMember {localDisplayName, memberProfile = Profile {fullName}} =
   ttyFullName localDisplayName fullName

@@ -2,7 +2,6 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Simplex.Chat.Controller where
@@ -193,6 +192,7 @@ data ChatErrorType
   | CEGroupMemberNotActive
   | CEGroupMemberUserRemoved
   | CEGroupMemberNotFound ContactName
+  | CEGroupMemberIntroNotFound ContactName
   | CEGroupCantResendInvitation GroupName ContactName
   | CEGroupInternal String
   | CEFileNotFound String

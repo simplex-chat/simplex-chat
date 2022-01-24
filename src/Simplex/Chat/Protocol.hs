@@ -18,9 +18,11 @@ import Data.Aeson (FromJSON, ToJSON, (.:), (.:?), (.=))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.Types as JT
 import qualified Data.Attoparsec.ByteString.Char8 as A
+import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
 import qualified Data.HashMap.Strict as H
 import Data.Text (Text)
+import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
 import Database.SQLite.Simple.FromField (FromField (..))
 import Database.SQLite.Simple.ToField (ToField (..))
@@ -169,7 +171,7 @@ data CMEventTag
   | XInfoProbeCheck_
   | XInfoProbeOk_
   | XOk_
-  deriving (Show)
+  deriving (Eq, Show)
 
 instance StrEncoding CMEventTag where
   strEncode = \case
@@ -243,12 +245,15 @@ toCMEventTag = \case
   XInfoProbeOk _ -> XInfoProbeOk_
   XOk -> XOk_
 
-toChatEventTag :: ChatMsgEvent -> Text
-toChatEventTag = decodeLatin1 . strEncode . toCMEventTag
+cmEventTagT :: Text -> Maybe CMEventTag
+cmEventTagT = either (const Nothing) Just . strDecode . encodeUtf8
 
-instance FromField CMEventTag where fromField = fromTextField_ $ either (const Nothing) Just . strDecode . encodeUtf8
+serializeCMEventTag :: CMEventTag -> Text
+serializeCMEventTag = decodeLatin1 . strEncode
 
-instance ToField CMEventTag where toField = toField . decodeLatin1 . strEncode
+instance FromField CMEventTag where fromField = fromTextField_ cmEventTagT
+
+instance ToField CMEventTag where toField = toField . serializeCMEventTag
 
 appToChatMessage :: AppMessage -> Either String ChatMessage
 appToChatMessage AppMessage {event, params} = do
@@ -284,7 +289,7 @@ appToChatMessage AppMessage {event, params} = do
 chatToAppMessage :: ChatMessage -> AppMessage
 chatToAppMessage ChatMessage {chatMsgEvent} = AppMessage {event, params}
   where
-    event = toChatEventTag chatMsgEvent
+    event = serializeCMEventTag . toCMEventTag $ chatMsgEvent
     o :: [(Text, J.Value)] -> J.Object
     o = H.fromList
     params = case chatMsgEvent of
