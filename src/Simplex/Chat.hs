@@ -36,7 +36,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Data.Time.Clock (getCurrentTime)
-import Data.Time.LocalTime (getCurrentTimeZone)
+import Data.Time.LocalTime (utcToLocalZonedTime)
 import Data.Word (Word32)
 import Simplex.Chat.Controller
 import Simplex.Chat.Messages
@@ -192,10 +192,9 @@ processChatCommand user@User {userId, profile} = \case
   SendMessage cName msg -> do
     contact <- withStore $ \st -> getContact st userId cName
     let msgContent = MCText $ safeDecodeUtf8 msg
-    Message {msgId, msgTime, createdAt} <- sendDirectMessage (contactConn contact) $ XMsgNew msgContent
+    meta <- liftIO . mkChatMsgMeta =<< sendDirectMessage (contactConn contact) (XMsgNew msgContent)
     setActive $ ActiveC cName
-    tz <- liftIO getCurrentTimeZone
-    pure $ CRSentMessage cName tz ChatUserMessage {msgId, msgTime, userMsg = UXMsgNew msgContent, createdAt}
+    pure $ CRSentMessage cName msgContent meta
   NewGroup gProfile -> do
     gVar <- asks idsDrg
     CRGroupCreated <$> withStore (\st -> createNewGroup st gVar user gProfile)
@@ -270,10 +269,9 @@ processChatCommand user@User {userId, profile} = \case
     Group {members, membership} <- withStore $ \st -> getGroup st user gName
     unless (memberActive membership) $ chatError CEGroupMemberUserRemoved
     let msgContent = MCText $ safeDecodeUtf8 msg
-    Message {msgId, msgTime, createdAt} <- sendGroupMessage members $ XMsgNew msgContent
+    meta <- liftIO . mkChatMsgMeta =<< sendGroupMessage members (XMsgNew msgContent)
     setActive $ ActiveG gName
-    tz <- liftIO getCurrentTimeZone
-    pure $ CRSentGroupMessage gName tz ChatUserMessage {msgId, msgTime, userMsg = UXMsgNew msgContent, createdAt}
+    pure $ CRSentGroupMessage gName msgContent meta
   SendFile cName f -> do
     (fileSize, chSize) <- checkSndFile f
     contact <- withStore $ \st -> getContact st userId cName
@@ -281,10 +279,9 @@ processChatCommand user@User {userId, profile} = \case
     let fileInv = FileInvitation {fileName = takeFileName f, fileSize, fileConnReq}
     SndFileTransfer {fileId} <- withStore $ \st ->
       createSndFileTransfer st userId contact f fileInv agentConnId chSize
-    Message {msgId, msgTime, createdAt} <- sendDirectMessage (contactConn contact) $ XFile fileInv
+    meta <- liftIO . mkChatMsgMeta =<< sendDirectMessage (contactConn contact) (XFile fileInv)
     setActive $ ActiveC cName
-    tz <- liftIO getCurrentTimeZone
-    pure $ CRSentMessage cName tz ChatUserMessage {msgId, msgTime, userMsg = UXFile fileId f, createdAt}
+    pure $ CRSentFileInvitation cName fileId f meta
   SendGroupFile gName f -> do
     (fileSize, chSize) <- checkSndFile f
     group@Group {members, membership} <- withStore $ \st -> getGroup st user gName
@@ -300,8 +297,9 @@ processChatCommand user@User {userId, profile} = \case
     setActive $ ActiveG gName
     -- this is a hack as we have multiple direct messages instead of one per group
     msgTime <- liftIO getCurrentTime
-    tz <- liftIO getCurrentTimeZone
-    pure $ CRSentGroupMessage gName tz ChatUserMessage {msgId = 0, msgTime, userMsg = UXFile fileId f, createdAt = msgTime}
+    localMsgTime <- liftIO $ utcToLocalZonedTime msgTime
+    let meta = ChatMsgMeta {msgId = 0, msgTime, localMsgTime, createdAt = msgTime}
+    pure $ CRSentGroupFileInvitation gName fileId f meta
   ReceiveFile fileId filePath_ -> do
     ft@RcvFileTransfer {fileInvitation = FileInvitation {fileName, fileConnReq}, fileStatus} <- withStore $ \st -> getRcvFileTransfer st userId fileId
     unless (fileStatus == RFSNew) . chatError $ CEFileAlreadyReceiving fileName
@@ -388,6 +386,11 @@ processChatCommand user@User {userId, profile} = \case
               suffix = if n == 0 then "" else "_" <> show n
               f = filePath `combine` (name <> suffix <> ext)
            in ifM (doesFileExist f) (tryCombine $ n + 1) (pure f)
+
+mkChatMsgMeta :: Message -> IO ChatMsgMeta
+mkChatMsgMeta Message {msgId, msgTime, createdAt} = do
+  localMsgTime <- utcToLocalZonedTime msgTime
+  pure ChatMsgMeta {msgId, msgTime, localMsgTime, createdAt}
 
 agentSubscriber :: (MonadUnliftIO m, MonadReader ChatController m) => ([StyledString] -> m ()) -> m ()
 agentSubscriber toView = do
@@ -524,7 +527,7 @@ processAgentMessage toView user@User {userId, profile} agentConnId agentMessage 
           withAckMessage agentConnId meta $
             case chatMsgEvent of
               XMsgNew mc -> newContentMessage c msg mc meta
-              XFile fInv -> processFileInvitation ct meta fInv
+              XFile fInv -> processFileInvitation ct msg fInv meta
               XInfo p -> xInfo ct p
               XGrpInv gInv -> processGroupInvitation ct gInv
               XInfoProbe probe -> xInfoProbe ct probe
@@ -652,7 +655,7 @@ processAgentMessage toView user@User {userId, profile} agentConnId agentMessage 
         withAckMessage agentConnId meta $
           case chatMsgEvent of
             XMsgNew mc -> newGroupContentMessage gName m msg mc meta
-            XFile fInv -> processGroupFileInvitation gName m meta fInv
+            XFile fInv -> processGroupFileInvitation gName m msg fInv meta
             XGrpMemNew memInfo -> xGrpMemNew gName m memInfo
             XGrpMemIntro memInfo -> xGrpMemIntro conn gName m memInfo
             XGrpMemInv memId introInv -> xGrpMemInv gName m memId introInv
@@ -799,6 +802,7 @@ processAgentMessage toView user@User {userId, profile} agentConnId agentMessage 
       let probeHash = ProbeHash $ C.sha256Hash (unProbe probe)
       forM_ cs $ \c -> sendProbeHash c probeHash probeId `catchError` const (pure ())
       where
+        sendProbeHash :: Contact -> ProbeHash -> Int64 -> m ()
         sendProbeHash c probeHash probeId = do
           void . sendDirectMessage (contactConn c) $ XInfoProbeCheck probeHash
           withStore $ \st -> createSentProbeHash st userId probeId c
@@ -810,39 +814,35 @@ processAgentMessage toView user@User {userId, profile} agentConnId agentMessage 
     messageError = toView__ . CRMessageError "error"
 
     newContentMessage :: ContactName -> Message -> MsgContent -> MsgMeta -> m ()
-    newContentMessage c Message {msgId, msgTime, createdAt} mc MsgMeta {integrity} = do
-      tz <- liftIO getCurrentTimeZone
-      let chatUserMsg = ChatUserMessage {msgId, msgTime, createdAt, userMsg = UXMsgNew mc}
-      toView__ $ CRReceivedMessage c tz chatUserMsg integrity
-
-      -- toView =<< liftIO (viewReceivedMessage c (snd $ broker meta) (msgPlain text) (integrity (meta :: MsgMeta)))
+    newContentMessage c msg mc MsgMeta {integrity} = do
+      meta <- liftIO $ mkChatMsgMeta msg
+      toView__ $ CRReceivedMessage c meta mc integrity
       showToast (c <> "> ") $ msgContentText mc
       setActive $ ActiveC c
 
     newGroupContentMessage :: GroupName -> GroupMember -> Message -> MsgContent -> MsgMeta -> m ()
-    newGroupContentMessage gName GroupMember {localDisplayName = c} Message {msgId, msgTime, createdAt} mc MsgMeta {integrity} = do
-      tz <- liftIO getCurrentTimeZone
-      let chatUserMsg = ChatUserMessage {msgId, msgTime, createdAt, userMsg = UXMsgNew mc}
-      toView__ $ CRReceivedGroupMessage gName c tz chatUserMsg integrity
-
-      -- toView =<< liftIO (viewReceivedGroupMessage gName c (snd $ broker meta) (msgPlain text) (integrity (meta :: MsgMeta)))
+    newGroupContentMessage gName GroupMember {localDisplayName = c} msg mc MsgMeta {integrity} = do
+      meta <- liftIO $ mkChatMsgMeta msg
+      toView__ $ CRReceivedGroupMessage gName c meta mc integrity
       showToast ("#" <> gName <> " " <> c <> "> ") $ msgContentText mc
       setActive $ ActiveG gName
 
-    processFileInvitation :: Contact -> MsgMeta -> FileInvitation -> m ()
-    processFileInvitation contact@Contact {localDisplayName = c} meta fInv = do
+    processFileInvitation :: Contact -> Message -> FileInvitation -> MsgMeta -> m ()
+    processFileInvitation contact@Contact {localDisplayName = c} msg fInv MsgMeta {integrity} = do
       -- TODO chunk size has to be sent as part of invitation
       chSize <- asks $ fileChunkSize . config
       ft <- withStore $ \st -> createRcvFileTransfer st userId contact fInv chSize
-      toView =<< liftIO (viewReceivedFileInvitation c (snd $ broker meta) ft (integrity (meta :: MsgMeta)))
+      meta <- liftIO $ mkChatMsgMeta msg
+      toView__ $ CRReceivedFileInvitattion c meta ft integrity
       showToast (c <> "> ") "wants to send a file"
       setActive $ ActiveC c
 
-    processGroupFileInvitation :: GroupName -> GroupMember -> MsgMeta -> FileInvitation -> m ()
-    processGroupFileInvitation gName m@GroupMember {localDisplayName = c} meta fInv = do
+    processGroupFileInvitation :: GroupName -> GroupMember -> Message -> FileInvitation -> MsgMeta -> m ()
+    processGroupFileInvitation gName m@GroupMember {localDisplayName = c} msg fInv MsgMeta {integrity} = do
       chSize <- asks $ fileChunkSize . config
       ft <- withStore $ \st -> createRcvGroupFileTransfer st userId m fInv chSize
-      toView =<< liftIO (viewReceivedGroupFileInvitation gName c (snd $ broker meta) ft (integrity (meta :: MsgMeta)))
+      meta <- liftIO $ mkChatMsgMeta msg
+      toView__ $ CRReceivedGroupFileInvitattion gName c meta ft integrity
       showToast ("#" <> gName <> " " <> c <> "> ") "wants to send a file"
       setActive $ ActiveG gName
 
