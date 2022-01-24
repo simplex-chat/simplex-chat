@@ -7,14 +7,16 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		5C764E61279C70E0000C6508 /* libgmp.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C764E5D279C70DE000C6508 /* libgmp.a */; };
-		5C764E62279C70E0000C6508 /* libgmp.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C764E5D279C70DE000C6508 /* libgmp.a */; };
-		5C764E63279C70E0000C6508 /* libgmpxx.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C764E5E279C70DE000C6508 /* libgmpxx.a */; };
-		5C764E64279C70E0000C6508 /* libgmpxx.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C764E5E279C70DE000C6508 /* libgmpxx.a */; };
-		5C764E65279C70E0000C6508 /* libffi.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C764E5F279C70DE000C6508 /* libffi.a */; };
-		5C764E66279C70E0000C6508 /* libffi.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C764E5F279C70DE000C6508 /* libffi.a */; };
-		5C764E67279C70E0000C6508 /* libHSsimplex-chat-1.0.1-756RvUPisyT7gsYObFpxWS-ghc8.10.7.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C764E60279C70E0000C6508 /* libHSsimplex-chat-1.0.1-756RvUPisyT7gsYObFpxWS-ghc8.10.7.a */; };
-		5C764E68279C70E0000C6508 /* libHSsimplex-chat-1.0.1-756RvUPisyT7gsYObFpxWS-ghc8.10.7.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C764E60279C70E0000C6508 /* libHSsimplex-chat-1.0.1-756RvUPisyT7gsYObFpxWS-ghc8.10.7.a */; };
+		5C1AEB82279F4A6400247F08 /* libHSsimplex-chat-1.0.2-FYXW0143sf06WiRQx9DgCD.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C1AEB7D279F4A6400247F08 /* libHSsimplex-chat-1.0.2-FYXW0143sf06WiRQx9DgCD.a */; };
+		5C1AEB83279F4A6400247F08 /* libHSsimplex-chat-1.0.2-FYXW0143sf06WiRQx9DgCD.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C1AEB7D279F4A6400247F08 /* libHSsimplex-chat-1.0.2-FYXW0143sf06WiRQx9DgCD.a */; };
+		5C1AEB84279F4A6400247F08 /* libHSsimplex-chat-1.0.2-FYXW0143sf06WiRQx9DgCD-ghc8.10.7.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C1AEB7E279F4A6400247F08 /* libHSsimplex-chat-1.0.2-FYXW0143sf06WiRQx9DgCD-ghc8.10.7.a */; };
+		5C1AEB85279F4A6400247F08 /* libHSsimplex-chat-1.0.2-FYXW0143sf06WiRQx9DgCD-ghc8.10.7.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C1AEB7E279F4A6400247F08 /* libHSsimplex-chat-1.0.2-FYXW0143sf06WiRQx9DgCD-ghc8.10.7.a */; };
+		5C1AEB86279F4A6400247F08 /* libffi.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C1AEB7F279F4A6400247F08 /* libffi.a */; };
+		5C1AEB87279F4A6400247F08 /* libffi.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C1AEB7F279F4A6400247F08 /* libffi.a */; };
+		5C1AEB88279F4A6400247F08 /* libgmp.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C1AEB80279F4A6400247F08 /* libgmp.a */; };
+		5C1AEB89279F4A6400247F08 /* libgmp.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C1AEB80279F4A6400247F08 /* libgmp.a */; };
+		5C1AEB8A279F4A6400247F08 /* libgmpxx.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C1AEB81279F4A6400247F08 /* libgmpxx.a */; };
+		5C1AEB8B279F4A6400247F08 /* libgmpxx.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C1AEB81279F4A6400247F08 /* libgmpxx.a */; };
 		5C764E80279C7276000C6508 /* dummy.m in Sources */ = {isa = PBXBuildFile; fileRef = 5C764E7F279C7276000C6508 /* dummy.m */; };
 		5C764E81279C7276000C6508 /* dummy.m in Sources */ = {isa = PBXBuildFile; fileRef = 5C764E7F279C7276000C6508 /* dummy.m */; };
 		5C764E82279C748B000C6508 /* libiconv.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C764E7B279C71D4000C6508 /* libiconv.tbd */; };
@@ -57,10 +59,11 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		5C764E5D279C70DE000C6508 /* libgmp.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libgmp.a; sourceTree = "<group>"; };
-		5C764E5E279C70DE000C6508 /* libgmpxx.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libgmpxx.a; sourceTree = "<group>"; };
-		5C764E5F279C70DE000C6508 /* libffi.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libffi.a; sourceTree = "<group>"; };
-		5C764E60279C70E0000C6508 /* libHSsimplex-chat-1.0.1-756RvUPisyT7gsYObFpxWS-ghc8.10.7.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = "libHSsimplex-chat-1.0.1-756RvUPisyT7gsYObFpxWS-ghc8.10.7.a"; sourceTree = "<group>"; };
+		5C1AEB7D279F4A6400247F08 /* libHSsimplex-chat-1.0.2-FYXW0143sf06WiRQx9DgCD.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = "libHSsimplex-chat-1.0.2-FYXW0143sf06WiRQx9DgCD.a"; sourceTree = "<group>"; };
+		5C1AEB7E279F4A6400247F08 /* libHSsimplex-chat-1.0.2-FYXW0143sf06WiRQx9DgCD-ghc8.10.7.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = "libHSsimplex-chat-1.0.2-FYXW0143sf06WiRQx9DgCD-ghc8.10.7.a"; sourceTree = "<group>"; };
+		5C1AEB7F279F4A6400247F08 /* libffi.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libffi.a; sourceTree = "<group>"; };
+		5C1AEB80279F4A6400247F08 /* libgmp.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libgmp.a; sourceTree = "<group>"; };
+		5C1AEB81279F4A6400247F08 /* libgmpxx.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libgmpxx.a; sourceTree = "<group>"; };
 		5C764E7B279C71D4000C6508 /* libiconv.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libiconv.tbd; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS15.2.sdk/usr/lib/libiconv.tbd; sourceTree = DEVELOPER_DIR; };
 		5C764E7C279C71DB000C6508 /* libz.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libz.tbd; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS15.2.sdk/usr/lib/libz.tbd; sourceTree = DEVELOPER_DIR; };
 		5C764E7D279C7275000C6508 /* SimpleX (iOS)-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "SimpleX (iOS)-Bridging-Header.h"; sourceTree = "<group>"; };
@@ -87,12 +90,13 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				5C764E67279C70E0000C6508 /* libHSsimplex-chat-1.0.1-756RvUPisyT7gsYObFpxWS-ghc8.10.7.a in Frameworks */,
 				5C764E83279C748B000C6508 /* libz.tbd in Frameworks */,
-				5C764E63279C70E0000C6508 /* libgmpxx.a in Frameworks */,
-				5C764E65279C70E0000C6508 /* libffi.a in Frameworks */,
-				5C764E61279C70E0000C6508 /* libgmp.a in Frameworks */,
+				5C1AEB84279F4A6400247F08 /* libHSsimplex-chat-1.0.2-FYXW0143sf06WiRQx9DgCD-ghc8.10.7.a in Frameworks */,
 				5C764E82279C748B000C6508 /* libiconv.tbd in Frameworks */,
+				5C1AEB86279F4A6400247F08 /* libffi.a in Frameworks */,
+				5C1AEB88279F4A6400247F08 /* libgmp.a in Frameworks */,
+				5C1AEB82279F4A6400247F08 /* libHSsimplex-chat-1.0.2-FYXW0143sf06WiRQx9DgCD.a in Frameworks */,
+				5C1AEB8A279F4A6400247F08 /* libgmpxx.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -100,12 +104,13 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				5C764E68279C70E0000C6508 /* libHSsimplex-chat-1.0.1-756RvUPisyT7gsYObFpxWS-ghc8.10.7.a in Frameworks */,
 				5C764E85279C748C000C6508 /* libz.tbd in Frameworks */,
-				5C764E64279C70E0000C6508 /* libgmpxx.a in Frameworks */,
-				5C764E66279C70E0000C6508 /* libffi.a in Frameworks */,
-				5C764E62279C70E0000C6508 /* libgmp.a in Frameworks */,
+				5C1AEB85279F4A6400247F08 /* libHSsimplex-chat-1.0.2-FYXW0143sf06WiRQx9DgCD-ghc8.10.7.a in Frameworks */,
 				5C764E84279C748C000C6508 /* libiconv.tbd in Frameworks */,
+				5C1AEB87279F4A6400247F08 /* libffi.a in Frameworks */,
+				5C1AEB89279F4A6400247F08 /* libgmp.a in Frameworks */,
+				5C1AEB83279F4A6400247F08 /* libHSsimplex-chat-1.0.2-FYXW0143sf06WiRQx9DgCD.a in Frameworks */,
+				5C1AEB8B279F4A6400247F08 /* libgmpxx.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -129,10 +134,11 @@
 		5C764E5C279C70B7000C6508 /* Libraries */ = {
 			isa = PBXGroup;
 			children = (
-				5C764E5F279C70DE000C6508 /* libffi.a */,
-				5C764E5D279C70DE000C6508 /* libgmp.a */,
-				5C764E5E279C70DE000C6508 /* libgmpxx.a */,
-				5C764E60279C70E0000C6508 /* libHSsimplex-chat-1.0.1-756RvUPisyT7gsYObFpxWS-ghc8.10.7.a */,
+				5C1AEB7F279F4A6400247F08 /* libffi.a */,
+				5C1AEB80279F4A6400247F08 /* libgmp.a */,
+				5C1AEB81279F4A6400247F08 /* libgmpxx.a */,
+				5C1AEB7E279F4A6400247F08 /* libHSsimplex-chat-1.0.2-FYXW0143sf06WiRQx9DgCD-ghc8.10.7.a */,
+				5C1AEB7D279F4A6400247F08 /* libHSsimplex-chat-1.0.2-FYXW0143sf06WiRQx9DgCD.a */,
 			);
 			path = Libraries;
 			sourceTree = "<group>";
@@ -572,6 +578,8 @@
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)/Libraries",
+					"$(PROJECT_DIR)/Libraries/ios",
+					"$(PROJECT_DIR)/Libraries/sim",
 				);
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = chat.simplex.app;
@@ -610,6 +618,8 @@
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)/Libraries",
+					"$(PROJECT_DIR)/Libraries/ios",
+					"$(PROJECT_DIR)/Libraries/sim",
 				);
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = chat.simplex.app;
@@ -630,6 +640,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = "SimpleX (macOS)Debug.entitlements";
+				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
@@ -646,6 +657,8 @@
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)/Libraries",
+					"$(PROJECT_DIR)/Libraries/ios",
+					"$(PROJECT_DIR)/Libraries/sim",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 12.1;
 				MARKETING_VERSION = 1.0;
@@ -682,6 +695,8 @@
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)/Libraries",
+					"$(PROJECT_DIR)/Libraries/ios",
+					"$(PROJECT_DIR)/Libraries/sim",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 12.1;
 				MARKETING_VERSION = 1.0;
