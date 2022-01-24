@@ -19,7 +19,6 @@ import Numeric.Natural
 import Simplex.Chat.Messages
 import Simplex.Chat.Protocol
 import Simplex.Chat.Store (StoreError)
-import Simplex.Chat.Styled
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent (AgentClient)
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig)
@@ -104,8 +103,7 @@ data ChatCommand
   deriving (Show)
 
 data ChatResponse
-  = ChatResponse [StyledString]
-  | CRSentMessage ContactName MsgContent ChatMsgMeta
+  = CRSentMessage ContactName MsgContent ChatMsgMeta
   | CRSentGroupMessage GroupName MsgContent ChatMsgMeta
   | CRSentFileInvitation ContactName FileTransferId FilePath ChatMsgMeta
   | CRSentGroupFileInvitation GroupName FileTransferId FilePath ChatMsgMeta
@@ -116,11 +114,13 @@ data ChatResponse
   | CRCommandAccepted CorrId
   | CRChatHelp HelpSection
   | CRWelcome User
+  | CRGroupCreated Group
+  | CRGroupMembers Group
   | CRContactsList [Contact]
   | CRUserContactLink ConnReqContact
   | CRContactRequestRejected ContactName
-  | CRGroupCreated Group
-  | CRGroupMembers Group
+  | CRUserAcceptedGroupSent GroupName
+  | CRUserDeletedMember GroupName GroupMember
   | CRGroupsList [GroupInfo]
   | CRSentGroupInvitation GroupName ContactName
   | CRFileTransferStatus (FileTransfer, [Integer])
@@ -130,6 +130,8 @@ data ChatResponse
   | CRInvitation ConnReqInvitation
   | CRSentConfirmation
   | CRSentInvitation
+  | CRContactUpdated {fromContact :: Contact, toContact :: Contact}
+  | CRContactsMerged {intoContact :: Contact, mergedContact :: Contact}
   | CRContactDeleted ContactName
   | CRUserContactLinkCreated ConnReqContact
   | CRUserContactLinkDeleted
@@ -138,10 +140,11 @@ data ChatResponse
   | CRLeftMemberUser GroupName
   | CRGroupDeletedUser GroupName
   | CRRcvFileAccepted RcvFileTransfer FilePath
-  | CRRcvFileSndCancelled RcvFileTransfer
+  | CRRcvFileAcceptedSndCancelled RcvFileTransfer
   | CRRcvFileStart RcvFileTransfer
   | CRRcvFileComplete RcvFileTransfer
   | CRRcvFileCancelled RcvFileTransfer
+  | CRRcvFileSndCancelled RcvFileTransfer
   | CRSndFileStart SndFileTransfer
   | CRSndFileComplete SndFileTransfer
   | CRSndFileCancelled SndFileTransfer
@@ -154,15 +157,17 @@ data ChatResponse
   | CRContactSubscribed ContactName
   | CRContactSubError ContactName ChatError
   | CRGroupInvitation Group
+  | CRReceivedGroupInvitation Group ContactName GroupMemberRole
   | CRUserJoinedGroup GroupName
   | CRJoinedGroupMember GroupName GroupMember
   | CRJoinedGroupMemberConnecting {group :: GroupName, hostMember :: GroupMember, member :: GroupMember}
   | CRConnectedToGroupMember GroupName GroupMember
-  | CRDeletedMember {group :: GroupName, byMember :: Maybe GroupMember, deletedMember :: Maybe GroupMember}
+  | CRDeletedMember {group :: GroupName, byMember :: GroupMember, deletedMember :: GroupMember}
   | CRDeletedMemberUser GroupName GroupMember
   | CRLeftMember GroupName GroupMember
   | CRGroupEmpty Group
   | CRGroupRemoved Group
+  | CRGroupDeleted GroupName GroupMember
   | CRMemberSubError GroupName ContactName ChatError
   | CRGroupSubscribed Group
   | CRSndFileSubError SndFileTransfer ChatError
