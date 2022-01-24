@@ -125,6 +125,7 @@ import Database.SQLite.Simple.QQ (sql)
 import Simplex.Chat.Messages
 import Simplex.Chat.Migrations.M20220101_initial
 import Simplex.Chat.Migrations.M20220122_pending_group_messages
+import Simplex.Chat.Migrations.M20220125_chat_items
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Protocol (AParty (..), AgentMsgId, ConnId, InvitationId, MsgMeta (..))
@@ -138,7 +139,8 @@ import UnliftIO.STM
 schemaMigrations :: [(String, Query)]
 schemaMigrations =
   [ ("20220101_initial", m20220101_initial),
-    ("20220122_pending_group_messages", m20220122_pending_group_messages)
+    ("20220122_pending_group_messages", m20220122_pending_group_messages),
+    ("20220125_chat_items", m20220125_chat_items)
   ]
 
 -- | The list of migrations in ascending order by date

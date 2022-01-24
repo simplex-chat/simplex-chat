@@ -17,5 +17,6 @@ CREATE TABLE pending_group_messages (
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+-- TODO remove
 ALTER TABLE messages ADD chat_ts TEXT;
 |]
