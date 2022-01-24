@@ -633,9 +633,9 @@ processAgentMessage toView user@User {userId, profile} agentConnId agentMessage 
             showToast ("#" <> gName) $ "member " <> localDisplayName (m :: GroupMember) <> " is connected"
             intros <- withStore $ \st -> createIntroductions st group m
             void . sendGroupMessage members . XGrpMemNew $ memberInfo m
-            forM_ intros $ \intro -> do
+            forM_ intros $ \intro@GroupMemberIntro {introId} -> do
               void . sendDirectMessage conn . XGrpMemIntro . memberInfo $ reMember intro
-              withStore $ \st -> updateIntroStatus st intro GMIntroSent
+              withStore $ \st -> updateIntroStatus st introId GMIntroSent
           _ -> do
             -- TODO send probe and decide whether to use existing contact connection or the new contact connection
             -- TODO notify member who forwarded introduction - question - where it is stored? There is via_contact but probably there should be via_member in group_members table
@@ -1134,7 +1134,7 @@ sendGroupMessage members chatMsgEvent =
 sendXGrpMemInv :: ChatMonad m => GroupMember -> ChatMsgEvent -> Int64 -> m Message
 sendXGrpMemInv reMember chatMsgEvent introId =
   sendGroupMessage' [reMember] chatMsgEvent (Just introId) $
-    withStore (\st -> updateIntroStatus' st introId GMIntroInvForwarded)
+    withStore (\st -> updateIntroStatus st introId GMIntroInvForwarded)
 
 sendGroupMessage' :: ChatMonad m => [GroupMember] -> ChatMsgEvent -> Maybe Int64 -> m () -> m Message
 sendGroupMessage' members chatMsgEvent mIntroId postDeliver = do
@@ -1154,7 +1154,7 @@ sendPendingGroupMessages GroupMember {groupMemberId, localDisplayName} conn = do
     withStore (\st -> deletePendingGroupMessage st groupMemberId msgId)
     when (cmEventTag == XGrpMemFwd_) $ case mIntroId of
       Nothing -> chatError $ CEGroupMemberIntroNotFound localDisplayName
-      Just introId -> withStore (\st -> updateIntroStatus' st introId GMIntroInvForwarded)
+      Just introId -> withStore (\st -> updateIntroStatus st introId GMIntroInvForwarded)
 
 saveRcvMSG :: ChatMonad m => Connection -> MsgMeta -> MsgBody -> m (ChatMsgEvent, Message)
 saveRcvMSG Connection {connId} agentMsgMeta msgBody = do

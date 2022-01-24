@@ -59,7 +59,6 @@ module Simplex.Chat.Store
     deleteGroupMemberConnection,
     createIntroductions,
     updateIntroStatus,
-    updateIntroStatus',
     saveIntroInvitation,
     createIntroReMember,
     createIntroToMemberContact,
@@ -133,7 +132,6 @@ import Simplex.Messaging.Agent.Protocol (AParty (..), AgentMsgId, ConnId, Invita
 import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore (..), createSQLiteStore, withTransaction)
 import Simplex.Messaging.Agent.Store.SQLite.Migrations (Migration (..))
 import qualified Simplex.Messaging.Crypto as C
-import Simplex.Messaging.Protocol (MsgBody)
 import Simplex.Messaging.Util (bshow, liftIOEither, (<$$>))
 import System.FilePath (takeFileName)
 import UnliftIO.STM
@@ -1153,11 +1151,8 @@ createIntroductions st Group {members} toMember = do
       introId <- insertedRowId db
       pure GroupMemberIntro {introId, reMember, toMember, introStatus = GMIntroPending, introInvitation = Nothing}
 
-updateIntroStatus :: MonadUnliftIO m => SQLiteStore -> GroupMemberIntro -> GroupMemberIntroStatus -> m ()
-updateIntroStatus st GroupMemberIntro {introId} = updateIntroStatus' st introId
-
-updateIntroStatus' :: MonadUnliftIO m => SQLiteStore -> Int64 -> GroupMemberIntroStatus -> m ()
-updateIntroStatus' st introId introStatus =
+updateIntroStatus :: MonadUnliftIO m => SQLiteStore -> Int64 -> GroupMemberIntroStatus -> m ()
+updateIntroStatus st introId introStatus =
   liftIO . withTransaction st $ \db ->
     DB.executeNamed
       db
