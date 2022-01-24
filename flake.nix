@@ -18,12 +18,7 @@
           name = "simplex-chat";
           src = ./.;
         };
-        sha256map = {
-            "git://github.com/simplex-chat/simplexmq.git"."670b3b79749bfb48a04ee40b8c441e9ca68ad41a" = "193spgdhysh5x7dizw6ask326ck4npyg9bklza7fvbg9p4fyzf7l"; 
-            "git://github.com/simplex-chat/hs-tls.git"."f6cc753611f80af300401cfae63846e9d7c40d9e" = "00yygc54l7k9mdnlvz2chk3a5v1pbxmkp9qkbfi6x9xi9rkh8dc4";
-            "git://github.com/simplex-chat/haskell-terminal.git"."f708b00009b54890172068f168bf98508ffcd495" = "0zmq7lmfsk8m340g47g5963yba7i88n4afa6z93sg9px5jv1mijj";
-            "git://github.com/zw3rk/android-support.git"."3c3a5ab0b8b137a072c98d3d0937cbdc96918ddb" = "1r6jyxbim3dsvrmakqfyxbd6ms6miaghpbwyl0sr6dzwpgaprz97";
-        };
+        sha256map = import ./sha256map.nix;
         modules = [{
           packages.direct-sqlite.patches = [ ./direct-sqlite-2.3.26.patch ];
         }
@@ -150,6 +145,21 @@
         }.${system} or {});
         # build all packages in hydra.
         hydraJobs = packages;
+
+        devShell = let
+	updateCmd = pkgs.writeShellApplication {
+          name = "update-sha256map";
+          runtimeInputs = [ pkgs.nix-prefetch-git pkgs.jq pkgs.gawk ];
+          text = ''
+            gawk -f update-sha256.awk cabal.project > sha256map.nix
+          '';
+        }; in
+	pkgs.mkShell {
+          buildInputs = [ updateCmd ];
+          shellHook = ''
+            echo "welcome to the shell!"
+          '';
+        };
       }
     );
 }
