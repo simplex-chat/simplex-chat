@@ -115,7 +115,7 @@ chatStart ChatStore {dbFilePrefix, chatStore} = do
   pure cc
 
 chatSendCmd :: ChatController -> String -> IO JSONString
-chatSendCmd ChatController {inputQ} s = atomically (writeTBQueue inputQ s) >> pure "{}"
+chatSendCmd cc s = crToJSON <$> runReaderT (execChatCommand s) cc
 
 chatRecvMsg :: ChatController -> IO String
 chatRecvMsg ChatController {outputQ} = serializeChatResponse . snd <$> atomically (readTBQueue outputQ)
@@ -123,10 +123,10 @@ chatRecvMsg ChatController {outputQ} = serializeChatResponse . snd <$> atomicall
 jsonObject :: J.Series -> JSONString
 jsonObject = LB.unpack . JE.encodingToLazyByteString . J.pairs
 
--- crToJSON :: ChatResponse -> JSONString
--- crToJSON = \case
---   CRUserProfile p -> o "profile" $ J.pairs ("profile" .= p)
---   r -> o "terminal" $ J.pairs ("response" .= serializeChatResponse r)
---   where
---     o :: String -> JE.Encoding -> JSONString
---     o tp ss = jsonObject ("type" .= tp <> "params" .= ss)
+crToJSON :: ChatResponse -> JSONString
+crToJSON = \case
+  CRUserProfile p -> o "profile" $ J.object ["profile" .= p]
+  r -> o "terminal" $ J.object ["response" .= serializeChatResponse r]
+  where
+    o :: String -> J.Value -> JSONString
+    o tp params = jsonObject ("type" .= tp <> "params" .= params)
