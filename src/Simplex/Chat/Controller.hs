@@ -1,9 +1,7 @@
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Simplex.Chat.Controller where
@@ -111,8 +109,8 @@ data ChatResponse
   | CRSentGroupFileInvitation GroupName FileTransferId FilePath ChatMsgMeta
   | CRReceivedMessage ContactName ChatMsgMeta MsgContent MsgIntegrity
   | CRReceivedGroupMessage GroupName ContactName ChatMsgMeta MsgContent MsgIntegrity
-  | CRReceivedFileInvitattion ContactName ChatMsgMeta RcvFileTransfer MsgIntegrity
-  | CRReceivedGroupFileInvitattion GroupName ContactName ChatMsgMeta RcvFileTransfer MsgIntegrity
+  | CRReceivedFileInvitation ContactName ChatMsgMeta RcvFileTransfer MsgIntegrity
+  | CRReceivedGroupFileInvitation GroupName ContactName ChatMsgMeta RcvFileTransfer MsgIntegrity
   | CRCommandAccepted CorrId
   | CRChatHelp HelpSection
   | CRWelcome User

@@ -38,8 +38,8 @@ responseToView cmd = \case
   CRSentGroupFileInvitation g fId fPath meta -> viewSentFileInvitation (ttyToGroup g) fId fPath meta
   CRReceivedMessage c meta mc mOk -> viewReceivedMessage (ttyFromContact c) meta mc mOk
   CRReceivedGroupMessage g c meta mc mOk -> viewReceivedMessage (ttyFromGroup g c) meta mc mOk
-  CRReceivedFileInvitattion c meta ft mOk -> viewReceivedFileInvitation (ttyFromContact c) meta ft mOk
-  CRReceivedGroupFileInvitattion g c meta ft mOk -> viewReceivedFileInvitation (ttyFromGroup g c) meta ft mOk
+  CRReceivedFileInvitation c meta ft mOk -> viewReceivedFileInvitation (ttyFromContact c) meta ft mOk
+  CRReceivedGroupFileInvitation g c meta ft mOk -> viewReceivedFileInvitation (ttyFromGroup g c) meta ft mOk
   CRCommandAccepted _ -> r []
   CRChatHelp section -> case section of
     HSMain -> r chatHelpInfo
@@ -118,7 +118,7 @@ responseToView cmd = \case
   CRChatError e -> viewChatError e
   where
     r = (plain cmd :)
-    -- this function should be `id` in case of asyncronous command responses
+    -- this function should be `id` in case of asynchronous command responses
     r' = r
 
 viewInvalidConnReq :: [StyledString]
@@ -273,10 +273,10 @@ viewReceivedMessage from meta mc = receivedWithTime_ from meta (ttyMsgContent mc
 
 receivedWithTime_ :: StyledString -> ChatMsgMeta -> [StyledString] -> MsgIntegrity -> [StyledString]
 receivedWithTime_ from ChatMsgMeta {localChatTs, createdAt} styledMsg mOk = do
-  prependFirst (formatedTime <> " " <> from) styledMsg ++ showIntegrity mOk
+  prependFirst (formattedTime <> " " <> from) styledMsg ++ showIntegrity mOk
   where
-    formatedTime :: StyledString
-    formatedTime =
+    formattedTime :: StyledString
+    formattedTime =
       let localTime = zonedTimeToLocalTime localChatTs
           tz = zonedTimeZone localChatTs
           format =

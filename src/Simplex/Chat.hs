@@ -329,8 +329,8 @@ processChatCommand user@User {userId, profile} = \case
     procCmd :: m ChatResponse -> m ChatResponse
     procCmd a = do
       a
-      -- | below code would make command responses asyncriounous where they can be slow
-      -- | in View.hs `r'` should be defined as `id` in this case
+      -- ! below code would make command responses asynchronous where they can be slow
+      -- ! in View.hs `r'` should be defined as `id` in this case
       -- gVar <- asks idsDrg
       -- corrId <- liftIO $ CorrId <$> randomBytes gVar 8
       -- q <- asks outputQ
@@ -826,7 +826,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
       chSize <- asks $ fileChunkSize . config
       ft <- withStore $ \st -> createRcvFileTransfer st userId contact fInv chSize
       meta <- liftIO $ mkChatMsgMeta msg
-      toView $ CRReceivedFileInvitattion c meta ft integrity
+      toView $ CRReceivedFileInvitation c meta ft integrity
       showToast (c <> "> ") "wants to send a file"
       setActive $ ActiveC c
 
@@ -835,7 +835,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
       chSize <- asks $ fileChunkSize . config
       ft <- withStore $ \st -> createRcvGroupFileTransfer st userId m fInv chSize
       meta <- liftIO $ mkChatMsgMeta msg
-      toView $ CRReceivedGroupFileInvitattion gName c meta ft integrity
+      toView $ CRReceivedGroupFileInvitation gName c meta ft integrity
       showToast ("#" <> gName <> " " <> c <> "> ") "wants to send a file"
       setActive $ ActiveG gName
 

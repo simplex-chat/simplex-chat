@@ -260,7 +260,7 @@ CREATE TABLE msg_deliveries (
 );
 
 -- TODO recovery for received messages with "rcv_agent" status - acknowledge to agent
--- changes of messagy delivery status, append only
+-- changes of message delivery status, append only
 CREATE TABLE msg_delivery_events (
   msg_delivery_event_id INTEGER PRIMARY KEY,
   msg_delivery_id INTEGER NOT NULL REFERENCES msg_deliveries ON DELETE CASCADE, -- non UNIQUE for multiple events per msg delivery

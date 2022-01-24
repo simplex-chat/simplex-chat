@@ -1,5 +1,3 @@
-{-# LANGUAGE NamedFieldPuns #-}
-
 module Simplex.Chat.Terminal where
 
 import Control.Logger.Simple
@@ -24,12 +22,12 @@ simplexChat cfg opts t
   | otherwise = initRun
   where
     initRun = do
-      sendNotification <- initializeNotifications
+      sendNotification' <- initializeNotifications
       let f = chatStoreFile $ dbFilePrefix opts
       st <- createStore f $ dbPoolSize cfg
       user <- getCreateActiveUser st
       ct <- newChatTerminal t
-      cc <- newChatController st user cfg opts sendNotification
+      cc <- newChatController st user cfg opts sendNotification'
       runSimplexChat user ct cc
 
 runSimplexChat :: User -> ChatTerminal -> ChatController -> IO ()
