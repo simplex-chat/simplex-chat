@@ -35,7 +35,7 @@ import Simplex.Messaging.Protocol (MsgBody)
 data NewMessage = NewMessage
   { direction :: MsgDirection,
     cmEventTag :: CMEventTag,
-    msgTime :: UTCTime,
+    chatTs :: UTCTime,
     msgBody :: MsgBody
   }
   deriving (Show)
@@ -44,7 +44,7 @@ data Message = Message
   { msgId :: MessageId,
     direction :: MsgDirection,
     cmEventTag :: CMEventTag,
-    msgTime :: UTCTime,
+    chatTs :: UTCTime,
     msgBody :: MsgBody,
     createdAt :: UTCTime
   }
@@ -59,8 +59,8 @@ data PendingGroupMessage = PendingGroupMessage
 
 data ChatMsgMeta = ChatMsgMeta
   { msgId :: MessageId,
-    msgTime :: UTCTime,
-    localMsgTime :: ZonedTime,
+    chatTs :: UTCTime,
+    localChatTs :: ZonedTime,
     createdAt :: UTCTime
   }
   deriving (Show)

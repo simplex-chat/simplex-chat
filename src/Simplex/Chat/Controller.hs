@@ -147,7 +147,7 @@ data ChatResponse
   | CRSndFileCancelled SndFileTransfer
   | CRSndFileRcvCancelled SndFileTransfer
   | CRSndGroupFileCancelled [SndFileTransfer]
-  | CRUserProfileUpdated {from :: Profile, to :: Profile}
+  | CRUserProfileUpdated {fromProfile :: Profile, toProfile :: Profile}
   | CRContactConnected Contact
   | CRContactAnotherClient ContactName
   | CRContactDisconnected ContactName

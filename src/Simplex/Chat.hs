@@ -296,9 +296,9 @@ processChatCommand user@User {userId, profile} = \case
       traverse (`sendDirectMessage` XFile fileInv) $ memberConn m
     setActive $ ActiveG gName
     -- this is a hack as we have multiple direct messages instead of one per group
-    msgTime <- liftIO getCurrentTime
-    localMsgTime <- liftIO $ utcToLocalZonedTime msgTime
-    let meta = ChatMsgMeta {msgId = 0, msgTime, localMsgTime, createdAt = msgTime}
+    chatTs <- liftIO getCurrentTime
+    localChatTs <- liftIO $ utcToLocalZonedTime chatTs
+    let meta = ChatMsgMeta {msgId = 0, chatTs, localChatTs, createdAt = chatTs}
     pure $ CRSentGroupFileInvitation gName fileId f meta
   ReceiveFile fileId filePath_ -> do
     ft@RcvFileTransfer {fileInvitation = FileInvitation {fileName, fileConnReq}, fileStatus} <- withStore $ \st -> getRcvFileTransfer st userId fileId
@@ -388,9 +388,9 @@ processChatCommand user@User {userId, profile} = \case
            in ifM (doesFileExist f) (tryCombine $ n + 1) (pure f)
 
 mkChatMsgMeta :: Message -> IO ChatMsgMeta
-mkChatMsgMeta Message {msgId, msgTime, createdAt} = do
-  localMsgTime <- utcToLocalZonedTime msgTime
-  pure ChatMsgMeta {msgId, msgTime, localMsgTime, createdAt}
+mkChatMsgMeta Message {msgId, chatTs, createdAt} = do
+  localChatTs <- utcToLocalZonedTime chatTs
+  pure ChatMsgMeta {msgId, chatTs, localChatTs, createdAt}
 
 agentSubscriber :: (MonadUnliftIO m, MonadReader ChatController m) => ([StyledString] -> m ()) -> m ()
 agentSubscriber toView = do
@@ -1113,9 +1113,9 @@ sendDirectMessage conn chatMsgEvent = do
 
 createSndMessage :: ChatMonad m => ChatMsgEvent -> m Message
 createSndMessage chatMsgEvent = do
-  msgTime <- liftIO getCurrentTime
+  chatTs <- liftIO getCurrentTime
   let msgBody = directMessage chatMsgEvent
-      newMsg = NewMessage {direction = MDSnd, cmEventTag = toCMEventTag chatMsgEvent, msgBody, msgTime}
+      newMsg = NewMessage {direction = MDSnd, cmEventTag = toCMEventTag chatMsgEvent, msgBody, chatTs}
   withStore $ \st -> createNewMessage st newMsg
 
 directMessage :: ChatMsgEvent -> ByteString
@@ -1160,9 +1160,9 @@ saveRcvMSG :: ChatMonad m => Connection -> MsgMeta -> MsgBody -> m (ChatMsgEvent
 saveRcvMSG Connection {connId} agentMsgMeta msgBody = do
   ChatMessage {chatMsgEvent} <- liftEither $ parseChatMessage msgBody
   let agentMsgId = fst $ recipient agentMsgMeta
-      msgTime = snd $ broker agentMsgMeta
+      chatTs = snd $ broker agentMsgMeta
       cmEventTag = toCMEventTag chatMsgEvent
-      newMsg = NewMessage {direction = MDRcv, cmEventTag, msgTime, msgBody}
+      newMsg = NewMessage {direction = MDRcv, cmEventTag, chatTs, msgBody}
       rcvMsgDelivery = RcvMsgDelivery {connId, agentMsgId, agentMsgMeta}
   msg <- withStore $ \st -> createNewMessageAndRcvMsgDelivery st newMsg rcvMsgDelivery
   pure (chatMsgEvent, msg)

@@ -125,7 +125,6 @@ import Database.SQLite.Simple.QQ (sql)
 import Simplex.Chat.Messages
 import Simplex.Chat.Migrations.M20220101_initial
 import Simplex.Chat.Migrations.M20220122_pending_group_messages
-import Simplex.Chat.Migrations.M20220123_msg_time
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Protocol (AParty (..), AgentMsgId, ConnId, InvitationId, MsgMeta (..))
@@ -139,8 +138,7 @@ import UnliftIO.STM
 schemaMigrations :: [(String, Query)]
 schemaMigrations =
   [ ("20220101_initial", m20220101_initial),
-    ("20220122_pending_group_messages", m20220122_pending_group_messages),
-    ("20220123_msg_time", m20220123_msg_time)
+    ("20220122_pending_group_messages", m20220122_pending_group_messages)
   ]
 
 -- | The list of migrations in ascending order by date
@@ -1669,17 +1667,17 @@ createRcvMsgDeliveryEvent st connId agentMsgId rcvMsgDeliveryStatus =
     liftIO $ createMsgDeliveryEvent_ db msgDeliveryId rcvMsgDeliveryStatus
 
 createNewMessage_ :: DB.Connection -> NewMessage -> IO Message
-createNewMessage_ db NewMessage {direction, cmEventTag, msgTime, msgBody} = do
+createNewMessage_ db NewMessage {direction, cmEventTag, chatTs, msgBody} = do
   createdAt <- getCurrentTime
   DB.execute
     db
     [sql|
       INSERT INTO messages
-        (msg_sent, chat_msg_event, msg_time, msg_body, created_at) VALUES (?,?,?,?,?);
+        (msg_sent, chat_msg_event, chat_ts, msg_body, created_at) VALUES (?,?,?,?,?);
     |]
-    (direction, cmEventTag, msgTime, msgBody, createdAt)
+    (direction, cmEventTag, chatTs, msgBody, createdAt)
   msgId <- insertedRowId db
-  pure Message {msgId, direction, cmEventTag, msgTime, msgBody, createdAt}
+  pure Message {msgId, direction, cmEventTag, chatTs, msgBody, createdAt}
 
 createSndMsgDelivery_ :: DB.Connection -> SndMsgDelivery -> MessageId -> IO Int64
 createSndMsgDelivery_ db SndMsgDelivery {connId, agentMsgId} messageId = do

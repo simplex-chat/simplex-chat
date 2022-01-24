@@ -316,13 +316,13 @@ viewReceivedMessage_' :: StyledString -> ChatMsgMeta -> MsgContent -> MsgIntegri
 viewReceivedMessage_' from meta mc = receivedWithTime_ from meta (ttyMsgContent mc)
 
 receivedWithTime_ :: StyledString -> ChatMsgMeta -> [StyledString] -> MsgIntegrity -> [StyledString]
-receivedWithTime_ from ChatMsgMeta {localMsgTime, createdAt} styledMsg mOk = do
+receivedWithTime_ from ChatMsgMeta {localChatTs, createdAt} styledMsg mOk = do
   prependFirst (formatedTime <> " " <> from) styledMsg ++ showIntegrity mOk
   where
     formatedTime :: StyledString
     formatedTime =
-      let localTime = zonedTimeToLocalTime localMsgTime
-          tz = zonedTimeZone localMsgTime
+      let localTime = zonedTimeToLocalTime localChatTs
+          tz = zonedTimeZone localChatTs
           format =
             if (localDay localTime < localDay (zonedTimeToLocalTime $ utcToZonedTime tz createdAt))
               && (timeOfDayToTime (localTimeOfDay localTime) > (6 * 60 * 60 :: DiffTime))
@@ -360,8 +360,8 @@ viewSentFile_ :: StyledString -> FileTransferId -> FilePath -> ChatMsgMeta -> [S
 viewSentFile_ to fId fPath meta = sentWithTime_ (ttySentFile to fId fPath) meta
 
 sentWithTime_ :: [StyledString] -> ChatMsgMeta -> [StyledString]
-sentWithTime_ styledMsg ChatMsgMeta {localMsgTime} =
-  prependFirst (ttyMsgTime localMsgTime <> " ") styledMsg
+sentWithTime_ styledMsg ChatMsgMeta {localChatTs} =
+  prependFirst (ttyMsgTime localChatTs <> " ") styledMsg
 
 ttyMsgTime :: ZonedTime -> StyledString
 ttyMsgTime = styleTime . formatTime defaultTimeLocale "%H:%M"
@@ -536,6 +536,7 @@ ttyFullContact Contact {localDisplayName, profile = Profile {fullName}} =
 
 ttyMember :: GroupMember -> StyledString
 ttyMember GroupMember {localDisplayName} = ttyContact localDisplayName
+
 ttyFullMember :: GroupMember -> StyledString
 ttyFullMember GroupMember {localDisplayName, memberProfile = Profile {fullName}} =
   ttyFullName localDisplayName fullName
