@@ -32,6 +32,51 @@ import Simplex.Messaging.Agent.Protocol (AgentMsgId, MsgMeta (..), serializeMsgI
 import Simplex.Messaging.Agent.Store.SQLite (fromTextField_)
 import Simplex.Messaging.Protocol (MsgBody)
 
+data ChatType = CTDirect | CTGroup
+
+data Chat (c :: ChatType) where
+  DirectChat :: Contact -> Chat 'CTDirect
+  GroupChat :: Group -> Chat 'CTGroup
+
+data ChatItem (c :: ChatType) (d :: MsgDirection) where
+  DirectChatItem :: CIMeta -> CIContent d -> ChatItem 'CTDirect d
+  SndGroupChatItem :: CIMeta -> CIContent 'MDSnd -> ChatItem 'CTGroup 'MDSnd
+  RcvGroupChatItem :: GroupMember -> CIMeta -> CIContent 'MDRcv -> ChatItem 'CTGroup 'MDRcv
+
+data AChatItem c = forall d. AChatItem (SMsgDirection d) (ChatItem c d)
+
+-- | type to show one chat with messages
+data ChatItemList = forall c. ChatItemList (SChatType c) (Chat c) [AChatItem c]
+
+-- | type to show the list of chats, with one last message in each
+data ChatInfo = forall c. ChatInfo (SChatType c) (Chat c) (AChatItem c)
+
+-- | type to show a mix of messages from multiple chats
+data AnyChatItem = forall c d. AnyChatItem (SChatType c) (SMsgDirection d) (Chat c) (ChatItem c d)
+
+type CIMeta = ChatMsgMeta
+
+data CIContent (d :: MsgDirection) where
+  CIContent :: MsgContent -> CIContent d
+  CISndFileInvitation :: FileTransferId -> FilePath -> CIContent 'MDSnd
+  CIRcvFileInvitation :: RcvFileTransfer -> CIContent 'MDRcv
+
+data SChatType (c :: ChatType) where
+  SCTDirect :: SChatType 'CTDirect
+  SCTGroup :: SChatType 'CTGroup
+
+instance TestEquality SChatType where
+  testEquality SCTDirect SCTDirect = Just Refl
+  testEquality SCTGroup SCTGroup = Just Refl
+  testEquality _ _ = Nothing
+
+class ChatTypeI (c :: ChatType) where
+  chatType :: SChatType c
+
+instance ChatTypeI 'CTDirect where chatType = SCTDirect
+
+instance ChatTypeI 'CTGroup where chatType = SCTGroup
+
 data NewMessage = NewMessage
   { direction :: MsgDirection,
     cmEventTag :: CMEventTag,
@@ -58,7 +103,7 @@ data PendingGroupMessage = PendingGroupMessage
   }
 
 data ChatMsgMeta = ChatMsgMeta
-  { msgId :: MessageId,
+  { msgId :: MessageId, -- the message that created chat item
     chatTs :: UTCTime,
     localChatTs :: ZonedTime,
     createdAt :: UTCTime
