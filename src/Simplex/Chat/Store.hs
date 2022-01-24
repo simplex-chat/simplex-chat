@@ -59,6 +59,7 @@ module Simplex.Chat.Store
     deleteGroupMemberConnection,
     createIntroductions,
     updateIntroStatus,
+    updateIntroStatus',
     saveIntroInvitation,
     createIntroReMember,
     createIntroToMemberContact,
@@ -1152,8 +1153,11 @@ createIntroductions st Group {members} toMember = do
       introId <- insertedRowId db
       pure GroupMemberIntro {introId, reMember, toMember, introStatus = GMIntroPending, introInvitation = Nothing}
 
-updateIntroStatus :: MonadUnliftIO m => SQLiteStore -> Int64 -> GroupMemberIntroStatus -> m ()
-updateIntroStatus st introId introStatus' =
+updateIntroStatus :: MonadUnliftIO m => SQLiteStore -> GroupMemberIntro -> GroupMemberIntroStatus -> m ()
+updateIntroStatus st GroupMemberIntro {introId} = updateIntroStatus' st introId
+
+updateIntroStatus' :: MonadUnliftIO m => SQLiteStore -> Int64 -> GroupMemberIntroStatus -> m ()
+updateIntroStatus' st introId introStatus =
   liftIO . withTransaction st $ \db ->
     DB.executeNamed
       db
@@ -1162,7 +1166,7 @@ updateIntroStatus st introId introStatus' =
         SET intro_status = :intro_status
         WHERE group_member_intro_id = :intro_id
       |]
-      [":intro_status" := introStatus', ":intro_id" := introId]
+      [":intro_status" := introStatus, ":intro_id" := introId]
 
 saveIntroInvitation :: StoreMonad m => SQLiteStore -> GroupMember -> GroupMember -> IntroInvitation -> m GroupMemberIntro
 saveIntroInvitation st reMember toMember introInv = do

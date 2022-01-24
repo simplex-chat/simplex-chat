@@ -510,7 +510,6 @@ ttyFullContact Contact {localDisplayName, profile = Profile {fullName}} =
 
 ttyMember :: GroupMember -> StyledString
 ttyMember GroupMember {localDisplayName} = ttyContact localDisplayName
-
 ttyFullMember :: GroupMember -> StyledString
 ttyFullMember GroupMember {localDisplayName, memberProfile = Profile {fullName}} =
   ttyFullName localDisplayName fullName
