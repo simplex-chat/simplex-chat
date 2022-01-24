@@ -53,7 +53,7 @@ data PendingGroupMessage = PendingGroupMessage
   { msgId :: MessageId,
     cmEventTag :: CMEventTag,
     msgBody :: MsgBody,
-    mIntroId :: Maybe Int64
+    introId_ :: Maybe Int64
   }
 
 data ChatUserMessage = ChatUserMessage

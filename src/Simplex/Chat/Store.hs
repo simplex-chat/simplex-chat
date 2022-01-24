@@ -1735,7 +1735,7 @@ getMsgDeliveryId_ db connId agentMsgId =
     toMsgDeliveryId _ = Left $ SENoMsgDelivery connId agentMsgId
 
 createPendingGroupMessage :: MonadUnliftIO m => SQLiteStore -> Int64 -> MessageId -> Maybe Int64 -> m ()
-createPendingGroupMessage st groupMemberId messageId mIntroId =
+createPendingGroupMessage st groupMemberId messageId introId_ =
   liftIO . withTransaction st $ \db -> do
     createdAt <- getCurrentTime
     DB.execute
@@ -1744,7 +1744,7 @@ createPendingGroupMessage st groupMemberId messageId mIntroId =
         INSERT INTO pending_group_messages
           (group_member_id, message_id, group_member_intro_id, created_at) VALUES (?,?,?,?)
       |]
-      (groupMemberId, messageId, mIntroId, createdAt)
+      (groupMemberId, messageId, introId_, createdAt)
 
 getPendingGroupMessages :: MonadUnliftIO m => SQLiteStore -> Int64 -> m [PendingGroupMessage]
 getPendingGroupMessages st groupMemberId =
@@ -1761,8 +1761,8 @@ getPendingGroupMessages st groupMemberId =
         |]
         (Only groupMemberId)
   where
-    pendingGroupMessage (msgId, cmEventTag, msgBody, mIntroId) =
-      PendingGroupMessage {msgId, cmEventTag, msgBody, mIntroId}
+    pendingGroupMessage (msgId, cmEventTag, msgBody, introId_) =
+      PendingGroupMessage {msgId, cmEventTag, msgBody, introId_}
 
 deletePendingGroupMessage :: MonadUnliftIO m => SQLiteStore -> Int64 -> MessageId -> m ()
 deletePendingGroupMessage st groupMemberId messageId =

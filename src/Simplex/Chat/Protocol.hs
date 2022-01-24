@@ -245,18 +245,15 @@ toCMEventTag = \case
   XInfoProbeOk _ -> XInfoProbeOk_
   XOk -> XOk_
 
-fromChatEventTag :: CMEventTag -> Text
-fromChatEventTag = decodeLatin1 . strEncode
+cmEventTagT :: Text -> Maybe CMEventTag
+cmEventTagT = either (const Nothing) Just . strDecode . encodeUtf8
 
-toChatEventTag :: Text -> Maybe CMEventTag
-toChatEventTag = rightToMaybe . strDecode . B.pack . T.unpack
+serializeCMEventTag :: CMEventTag -> Text
+serializeCMEventTag = decodeLatin1 . strEncode
 
-rightToMaybe :: Either b a -> Maybe a
-rightToMaybe = either (const Nothing) Just
+instance FromField CMEventTag where fromField = fromTextField_ cmEventTagT
 
-instance FromField CMEventTag where fromField = fromTextField_ toChatEventTag
-
-instance ToField CMEventTag where toField = toField . fromChatEventTag
+instance ToField CMEventTag where toField = toField . serializeCMEventTag
 
 appToChatMessage :: AppMessage -> Either String ChatMessage
 appToChatMessage AppMessage {event, params} = do
@@ -292,7 +289,7 @@ appToChatMessage AppMessage {event, params} = do
 chatToAppMessage :: ChatMessage -> AppMessage
 chatToAppMessage ChatMessage {chatMsgEvent} = AppMessage {event, params}
   where
-    event = fromChatEventTag . toCMEventTag $ chatMsgEvent
+    event = serializeCMEventTag . toCMEventTag $ chatMsgEvent
     o :: [(Text, J.Value)] -> J.Object
     o = H.fromList
     params = case chatMsgEvent of

@@ -1137,22 +1137,22 @@ sendXGrpMemInv reMember chatMsgEvent introId =
     withStore (\st -> updateIntroStatus st introId GMIntroInvForwarded)
 
 sendGroupMessage' :: ChatMonad m => [GroupMember] -> ChatMsgEvent -> Maybe Int64 -> m () -> m Message
-sendGroupMessage' members chatMsgEvent mIntroId postDeliver = do
+sendGroupMessage' members chatMsgEvent introId_ postDeliver = do
   msg@Message {msgId, msgBody} <- createSndMessage chatMsgEvent
   for_ (filter memberCurrent members) $ \m@GroupMember {groupMemberId} ->
     case memberConn m of
-      Nothing -> withStore $ \st -> createPendingGroupMessage st groupMemberId msgId mIntroId
+      Nothing -> withStore $ \st -> createPendingGroupMessage st groupMemberId msgId introId_
       Just conn -> deliverMessage conn msgBody msgId >> postDeliver
   pure msg
 
 sendPendingGroupMessages :: ChatMonad m => GroupMember -> Connection -> m ()
 sendPendingGroupMessages GroupMember {groupMemberId, localDisplayName} conn = do
   pendingMessages <- withStore $ \st -> getPendingGroupMessages st groupMemberId
-  -- TODO ensure order
-  for_ pendingMessages $ \PendingGroupMessage {msgId, cmEventTag, msgBody, mIntroId} -> do
+  -- TODO ensure order - pending messages interleave with user input messages
+  for_ pendingMessages $ \PendingGroupMessage {msgId, cmEventTag, msgBody, introId_} -> do
     deliverMessage conn msgBody msgId
     withStore (\st -> deletePendingGroupMessage st groupMemberId msgId)
-    when (cmEventTag == XGrpMemFwd_) $ case mIntroId of
+    when (cmEventTag == XGrpMemFwd_) $ case introId_ of
       Nothing -> chatError $ CEGroupMemberIntroNotFound localDisplayName
       Just introId -> withStore (\st -> updateIntroStatus st introId GMIntroInvForwarded)
 
