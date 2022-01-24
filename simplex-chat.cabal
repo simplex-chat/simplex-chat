@@ -23,7 +23,9 @@ library
       Simplex.Chat.Controller
       Simplex.Chat.Help
       Simplex.Chat.Markdown
+      Simplex.Chat.Messages
       Simplex.Chat.Migrations.M20220101_initial
+      Simplex.Chat.Migrations.M20220122_pending_group_messages
       Simplex.Chat.Mobile
       Simplex.Chat.Options
       Simplex.Chat.Protocol

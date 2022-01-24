@@ -1,114 +1,125 @@
-{-# LANGUAGE ConstraintKinds #-}
-{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Simplex.Chat.View
-  ( safeDecodeUtf8,
-    msgPlain,
-    clientVersionInfo,
-    viewConnReqInvitation,
-    viewSentConfirmation,
-    viewSentInvitation,
-    viewInvalidConnReq,
-    viewContactDeleted,
-    viewContactGroups,
-    viewContactsList,
-    viewUserContactLinkCreated,
-    viewUserContactLinkDeleted,
-    viewUserContactLink,
-    viewAcceptingContactRequest,
-    viewContactRequestRejected,
-    viewGroupCreated,
-    viewSentGroupInvitation,
-    viewCannotResendInvitation,
-    viewDeletedMember,
-    viewLeftMemberUser,
-    viewGroupDeletedUser,
-    viewGroupMembers,
-    viewSentFileInfo,
-    viewRcvFileAccepted,
-    viewRcvFileSndCancelled,
-    viewSndGroupFileCancelled,
-    viewRcvFileCancelled,
-    viewFileTransferStatus,
-    viewUserProfileUpdated,
-    viewUserProfile,
-    viewChatError,
-    viewSentMessage,
-    viewSentGroupMessage,
-    viewSentGroupFileInvitation,
-    viewSentFileInvitation,
-    viewGroupsList,
-    viewContactSubscribed,
-    viewContactSubError,
-    viewGroupInvitation,
-    viewGroupEmpty,
-    viewGroupRemoved,
-    viewMemberSubError,
-    viewGroupSubscribed,
-    viewSndFileSubError,
-    viewRcvFileSubError,
-    viewUserContactLinkSubscribed,
-    viewUserContactLinkSubError,
-    viewContactConnected,
-    viewContactDisconnected,
-    viewContactAnotherClient,
-    viewJoinedGroupMember,
-    viewUserJoinedGroup,
-    viewJoinedGroupMemberConnecting,
-    viewConnectedToGroupMember,
-    viewReceivedGroupInvitation,
-    viewDeletedMemberUser,
-    viewLeftMember,
-    viewSndFileStart,
-    viewSndFileComplete,
-    viewSndFileCancelled,
-    viewSndFileRcvCancelled,
-    viewRcvFileStart,
-    viewRcvFileComplete,
-    viewReceivedContactRequest,
-    viewMessageError,
-    viewReceivedMessage,
-    viewReceivedGroupMessage,
-    viewReceivedFileInvitation,
-    viewReceivedGroupFileInvitation,
-    viewContactUpdated,
-    viewContactsMerged,
-    viewGroupDeleted,
-  )
-where
+module Simplex.Chat.View where
 
-import Data.ByteString.Char8 (ByteString)
-import Data.Composition ((.:))
 import Data.Function (on)
 import Data.Int (Int64)
-import Data.List (groupBy, intersperse, sort, sortOn)
+import Data.List (groupBy, intersperse, sortOn)
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Time.Clock (DiffTime, UTCTime)
+import Data.Time.Clock (DiffTime)
 import Data.Time.Format (defaultTimeLocale, formatTime)
-import Data.Time.LocalTime (TimeZone, ZonedTime, getCurrentTimeZone, getZonedTime, localDay, localTimeOfDay, timeOfDayToTime, utcToLocalTime, zonedTimeToLocalTime)
+import Data.Time.LocalTime (ZonedTime (..), localDay, localTimeOfDay, timeOfDayToTime, utcToZonedTime)
 import Numeric (showFFloat)
 import Simplex.Chat.Controller
+import Simplex.Chat.Help
 import Simplex.Chat.Markdown
+import Simplex.Chat.Messages
+import Simplex.Chat.Protocol
 import Simplex.Chat.Store (StoreError (..))
 import Simplex.Chat.Styled
 import Simplex.Chat.Types
-import Simplex.Chat.Util (safeDecodeUtf8)
 import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Encoding.String
 import qualified Simplex.Messaging.Protocol as SMP
 import System.Console.ANSI.Types
 
-viewSentConfirmation :: [StyledString]
-viewSentConfirmation = ["confirmation sent!"]
+serializeChatResponse :: ChatResponse -> String
+serializeChatResponse = unlines . map unStyle . responseToView ""
 
-viewSentInvitation :: [StyledString]
-viewSentInvitation = ["connection request sent!"]
+responseToView :: String -> ChatResponse -> [StyledString]
+responseToView cmd = \case
+  CRSentMessage c mc meta -> viewSentMessage (ttyToContact c) mc meta
+  CRSentGroupMessage g mc meta -> viewSentMessage (ttyToGroup g) mc meta
+  CRSentFileInvitation c fId fPath meta -> viewSentFileInvitation (ttyToContact c) fId fPath meta
+  CRSentGroupFileInvitation g fId fPath meta -> viewSentFileInvitation (ttyToGroup g) fId fPath meta
+  CRReceivedMessage c meta mc mOk -> viewReceivedMessage (ttyFromContact c) meta mc mOk
+  CRReceivedGroupMessage g c meta mc mOk -> viewReceivedMessage (ttyFromGroup g c) meta mc mOk
+  CRReceivedFileInvitation c meta ft mOk -> viewReceivedFileInvitation (ttyFromContact c) meta ft mOk
+  CRReceivedGroupFileInvitation g c meta ft mOk -> viewReceivedFileInvitation (ttyFromGroup g c) meta ft mOk
+  CRCommandAccepted _ -> r []
+  CRChatHelp section -> case section of
+    HSMain -> r chatHelpInfo
+    HSFiles -> r filesHelpInfo
+    HSGroups -> r groupsHelpInfo
+    HSMyAddress -> r myAddressHelpInfo
+    HSMarkdown -> r markdownInfo
+  CRWelcome user -> r $ chatWelcome user
+  CRContactsList cs -> r $ viewContactsList cs
+  CRUserContactLink cReq -> r $ connReqContact_ "Your chat address:" cReq
+  CRContactRequestRejected c -> r [ttyContact c <> ": contact request rejected"]
+  CRGroupCreated g -> r $ viewGroupCreated g
+  CRGroupMembers g -> r $ viewGroupMembers g
+  CRGroupsList gs -> r $ viewGroupsList gs
+  CRSentGroupInvitation g c -> r ["invitation to join the group " <> ttyGroup g <> " sent to " <> ttyContact c]
+  CRFileTransferStatus ftStatus -> r $ viewFileTransferStatus ftStatus
+  CRUserProfile p -> r $ viewUserProfile p
+  CRUserProfileNoChange -> r ["user profile did not change"]
+  CRVersionInfo -> r [plain versionStr, plain updateStr]
+  CRChatCmdError e -> r $ viewChatError e
+  CRInvitation cReq -> r' $ viewConnReqInvitation cReq
+  CRSentConfirmation -> r' ["confirmation sent!"]
+  CRSentInvitation -> r' ["connection request sent!"]
+  CRContactDeleted c -> r' [ttyContact c <> ": contact is deleted"]
+  CRAcceptingContactRequest c -> r' [ttyContact c <> ": accepting contact request..."]
+  CRUserContactLinkCreated cReq -> r' $ connReqContact_ "Your new chat address is created!" cReq
+  CRUserContactLinkDeleted -> r' viewUserContactLinkDeleted
+  CRUserAcceptedGroupSent _gn -> r' [] -- [ttyGroup g <> ": joining the group..."]
+  CRUserDeletedMember g m -> r' [ttyGroup g <> ": you removed " <> ttyMember m <> " from the group"]
+  CRLeftMemberUser g -> r' $ [ttyGroup g <> ": you left the group"] <> groupPreserved g
+  CRGroupDeletedUser g -> r' [ttyGroup g <> ": you deleted the group"]
+  CRRcvFileAccepted RcvFileTransfer {fileId, senderDisplayName = c} filePath ->
+    r' ["saving file " <> sShow fileId <> " from " <> ttyContact c <> " to " <> plain filePath]
+  CRRcvFileAcceptedSndCancelled ft -> r' $ viewRcvFileSndCancelled ft
+  CRSndGroupFileCancelled fts -> r' $ viewSndGroupFileCancelled fts
+  CRRcvFileCancelled ft -> r' $ receivingFile_ "cancelled" ft
+  CRUserProfileUpdated p p' -> r' $ viewUserProfileUpdated p p'
+  CRContactUpdated c c' -> viewContactUpdated c c'
+  CRContactsMerged intoCt mergedCt -> viewContactsMerged intoCt mergedCt
+  CRReceivedContactRequest c p -> viewReceivedContactRequest c p
+  CRRcvFileStart ft -> receivingFile_ "started" ft
+  CRRcvFileComplete ft -> receivingFile_ "completed" ft
+  CRRcvFileSndCancelled ft -> viewRcvFileSndCancelled ft
+  CRSndFileStart ft -> sendingFile_ "started" ft
+  CRSndFileComplete ft -> sendingFile_ "completed" ft
+  CRSndFileCancelled ft -> sendingFile_ "cancelled" ft
+  CRSndFileRcvCancelled ft@SndFileTransfer {recipientDisplayName = c} ->
+    [ttyContact c <> " cancelled receiving " <> sndFile ft]
+  CRContactConnected ct -> [ttyFullContact ct <> ": contact is connected"]
+  CRContactAnotherClient c -> [ttyContact c <> ": contact is connected to another client"]
+  CRContactDisconnected c -> [ttyContact c <> ": disconnected from server (messages will be queued)"]
+  CRContactSubscribed c -> [ttyContact c <> ": connected to server"]
+  CRContactSubError c e -> [ttyContact c <> ": contact error " <> sShow e]
+  CRGroupInvitation Group {localDisplayName = ldn, groupProfile = GroupProfile {fullName}} ->
+    [groupInvitation ldn fullName]
+  CRReceivedGroupInvitation g c role -> viewReceivedGroupInvitation g c role
+  CRUserJoinedGroup g -> [ttyGroup g <> ": you joined the group"]
+  CRJoinedGroupMember g m -> [ttyGroup g <> ": " <> ttyMember m <> " joined the group "]
+  CRJoinedGroupMemberConnecting g host m -> [ttyGroup g <> ": " <> ttyMember host <> " added " <> ttyFullMember m <> " to the group (connecting...)"]
+  CRConnectedToGroupMember g m -> [ttyGroup g <> ": " <> connectedMember m <> " is connected"]
+  CRDeletedMemberUser g by -> [ttyGroup g <> ": " <> ttyMember by <> " removed you from the group"] <> groupPreserved g
+  CRDeletedMember g by m -> [ttyGroup g <> ": " <> ttyMember by <> " removed " <> ttyMember m <> " from the group"]
+  CRLeftMember g m -> [ttyGroup g <> ": " <> ttyMember m <> " left the group"]
+  CRGroupEmpty g -> [ttyFullGroup g <> ": group is empty"]
+  CRGroupRemoved g -> [ttyFullGroup g <> ": you are no longer a member or group deleted"]
+  CRGroupDeleted gn m -> [ttyGroup gn <> ": " <> ttyMember m <> " deleted the group", "use " <> highlight ("/d #" <> gn) <> " to delete the local copy of the group"]
+  CRMemberSubError gn c e -> [ttyGroup gn <> " member " <> ttyContact c <> " error: " <> sShow e]
+  CRGroupSubscribed g -> [ttyFullGroup g <> ": connected to server(s)"]
+  CRSndFileSubError SndFileTransfer {fileId, fileName} e ->
+    ["sent file " <> sShow fileId <> " (" <> plain fileName <> ") error: " <> sShow e]
+  CRRcvFileSubError RcvFileTransfer {fileId, fileInvitation = FileInvitation {fileName}} e ->
+    ["received file " <> sShow fileId <> " (" <> plain fileName <> ") error: " <> sShow e]
+  CRUserContactLinkSubscribed -> ["Your address is active! To show: " <> highlight' "/sa"]
+  CRUserContactLinkSubError e -> ["user address error: " <> sShow e, "to delete your address: " <> highlight' "/da"]
+  CRMessageError prefix err -> [plain prefix <> ": " <> plain err]
+  CRChatError e -> viewChatError e
+  where
+    r = (plain cmd :)
+    -- this function should be `id` in case of asynchronous command responses
+    r' = r
 
 viewInvalidConnReq :: [StyledString]
 viewInvalidConnReq =
@@ -117,9 +128,6 @@ viewInvalidConnReq =
     "Please ask your contact to check " <> highlight' "/version" <> " and update if needed.",
     plain updateStr
   ]
-
-viewUserContactLinkSubscribed :: [StyledString]
-viewUserContactLinkSubscribed = ["Your address is active! To show: " <> highlight' "/sa"]
 
 viewConnReqInvitation :: ConnReqInvitation -> [StyledString]
 viewConnReqInvitation cReq =
@@ -130,48 +138,16 @@ viewConnReqInvitation cReq =
     "and ask them to connect: " <> highlight' "/c <invitation_link_above>"
   ]
 
-viewContactDeleted :: ContactName -> [StyledString]
-viewContactDeleted c = [ttyContact c <> ": contact is deleted"]
-
-viewContactGroups :: ContactName -> [GroupName] -> [StyledString]
-viewContactGroups c gNames = [ttyContact c <> ": contact cannot be deleted, it is a member of the group(s) " <> ttyGroups gNames]
-  where
-    ttyGroups :: [GroupName] -> StyledString
-    ttyGroups [] = ""
-    ttyGroups [g] = ttyGroup g
-    ttyGroups (g : gs) = ttyGroup g <> ", " <> ttyGroups gs
-
 viewContactsList :: [Contact] -> [StyledString]
 viewContactsList =
   let ldn = T.toLower . (localDisplayName :: Contact -> ContactName)
    in map ttyFullContact . sortOn ldn
-
-viewContactConnected :: Contact -> [StyledString]
-viewContactConnected ct = [ttyFullContact ct <> ": contact is connected"]
-
-viewContactDisconnected :: ContactName -> [StyledString]
-viewContactDisconnected c = [ttyContact c <> ": disconnected from server (messages will be queued)"]
-
-viewContactAnotherClient :: ContactName -> [StyledString]
-viewContactAnotherClient c = [ttyContact c <> ": contact is connected to another client"]
-
-viewContactSubscribed :: ContactName -> [StyledString]
-viewContactSubscribed c = [ttyContact c <> ": connected to server"]
-
-viewContactSubError :: ContactName -> ChatError -> [StyledString]
-viewContactSubError c e = [ttyContact c <> ": contact error " <> sShow e]
-
-viewUserContactLinkCreated :: ConnReqContact -> [StyledString]
-viewUserContactLinkCreated = connReqContact_ "Your new chat address is created!"
 
 viewUserContactLinkDeleted :: [StyledString]
 viewUserContactLinkDeleted =
   [ "Your chat address is deleted - accepted contacts will remain connected.",
     "To create a new chat address use " <> highlight' "/ad"
   ]
-
-viewUserContactLink :: ConnReqContact -> [StyledString]
-viewUserContactLink = connReqContact_ "Your chat address:"
 
 connReqContact_ :: StyledString -> ConnReqContact -> [StyledString]
 connReqContact_ intro cReq =
@@ -191,47 +167,11 @@ viewReceivedContactRequest c Profile {fullName} =
     "to reject: " <> highlight ("/rc " <> c) <> " (the sender will NOT be notified)"
   ]
 
-viewAcceptingContactRequest :: ContactName -> [StyledString]
-viewAcceptingContactRequest c = [ttyContact c <> ": accepting contact request..."]
-
-viewContactRequestRejected :: ContactName -> [StyledString]
-viewContactRequestRejected c = [ttyContact c <> ": contact request rejected"]
-
-viewUserContactLinkSubError :: ChatError -> [StyledString]
-viewUserContactLinkSubError e =
-  [ "user address error: " <> sShow e,
-    "to delete your address: " <> highlight' "/da"
-  ]
-
-viewGroupSubscribed :: Group -> [StyledString]
-viewGroupSubscribed g = [ttyFullGroup g <> ": connected to server(s)"]
-
-viewGroupEmpty :: Group -> [StyledString]
-viewGroupEmpty g = [ttyFullGroup g <> ": group is empty"]
-
-viewGroupRemoved :: Group -> [StyledString]
-viewGroupRemoved g = [ttyFullGroup g <> ": you are no longer a member or group deleted"]
-
-viewMemberSubError :: GroupName -> ContactName -> ChatError -> [StyledString]
-viewMemberSubError g c e = [ttyGroup g <> " member " <> ttyContact c <> " error: " <> sShow e]
-
 viewGroupCreated :: Group -> [StyledString]
 viewGroupCreated g@Group {localDisplayName} =
   [ "group " <> ttyFullGroup g <> " is created",
     "use " <> highlight ("/a " <> localDisplayName <> " <name>") <> " to add members"
   ]
-
-viewGroupDeletedUser :: GroupName -> [StyledString]
-viewGroupDeletedUser g = groupDeleted_ g Nothing
-
-viewGroupDeleted :: GroupName -> GroupMember -> [StyledString]
-viewGroupDeleted g m = groupDeleted_ g (Just m) <> ["use " <> highlight ("/d #" <> g) <> " to delete the local copy of the group"]
-
-groupDeleted_ :: GroupName -> Maybe GroupMember -> [StyledString]
-groupDeleted_ g m = [ttyGroup g <> ": " <> memberOrUser m <> " deleted the group"]
-
-viewSentGroupInvitation :: GroupName -> ContactName -> [StyledString]
-viewSentGroupInvitation g c = ["invitation to join the group " <> ttyGroup g <> " sent to " <> ttyContact c]
 
 viewCannotResendInvitation :: GroupName -> ContactName -> [StyledString]
 viewCannotResendInvitation g c =
@@ -245,38 +185,8 @@ viewReceivedGroupInvitation g@Group {localDisplayName} c role =
     "use " <> highlight ("/j " <> localDisplayName) <> " to accept"
   ]
 
-viewJoinedGroupMember :: GroupName -> GroupMember -> [StyledString]
-viewJoinedGroupMember g m = [ttyGroup g <> ": " <> ttyMember m <> " joined the group "]
-
-viewUserJoinedGroup :: GroupName -> [StyledString]
-viewUserJoinedGroup g = [ttyGroup g <> ": you joined the group"]
-
-viewJoinedGroupMemberConnecting :: GroupName -> GroupMember -> GroupMember -> [StyledString]
-viewJoinedGroupMemberConnecting g host m = [ttyGroup g <> ": " <> ttyMember host <> " added " <> ttyFullMember m <> " to the group (connecting...)"]
-
-viewConnectedToGroupMember :: GroupName -> GroupMember -> [StyledString]
-viewConnectedToGroupMember g m = [ttyGroup g <> ": " <> connectedMember m <> " is connected"]
-
-viewDeletedMember :: GroupName -> Maybe GroupMember -> Maybe GroupMember -> [StyledString]
-viewDeletedMember g by m = [ttyGroup g <> ": " <> memberOrUser by <> " removed " <> memberOrUser m <> " from the group"]
-
-viewDeletedMemberUser :: GroupName -> GroupMember -> [StyledString]
-viewDeletedMemberUser g by = viewDeletedMember g (Just by) Nothing <> groupPreserved g
-
-viewLeftMemberUser :: GroupName -> [StyledString]
-viewLeftMemberUser g = leftMember_ g Nothing <> groupPreserved g
-
-viewLeftMember :: GroupName -> GroupMember -> [StyledString]
-viewLeftMember g m = leftMember_ g (Just m)
-
-leftMember_ :: GroupName -> Maybe GroupMember -> [StyledString]
-leftMember_ g m = [ttyGroup g <> ": " <> memberOrUser m <> " left the group"]
-
 groupPreserved :: GroupName -> [StyledString]
 groupPreserved g = ["use " <> highlight ("/d #" <> g) <> " to delete the group"]
-
-memberOrUser :: Maybe GroupMember -> StyledString
-memberOrUser = maybe "you" ttyMember
 
 connectedMember :: GroupMember -> StyledString
 connectedMember m = case memberCategory m of
@@ -304,16 +214,15 @@ viewGroupMembers Group {membership, members} = map groupMember . filter (not . r
       GSMemCreator -> "created group"
       _ -> ""
 
-viewGroupsList :: [(GroupName, Text, GroupMemberStatus)] -> [StyledString]
+viewGroupsList :: [GroupInfo] -> [StyledString]
 viewGroupsList [] = ["you have no groups!", "to create: " <> highlight' "/g <name>"]
-viewGroupsList gs = map groupSS $ sort gs
+viewGroupsList gs = map groupSS $ sortOn ldn_ gs
   where
-    groupSS (displayName, fullName, GSMemInvited) = groupInvitation displayName fullName
-    groupSS (displayName, fullName, _) = ttyGroup displayName <> optFullName displayName fullName
-
-viewGroupInvitation :: Group -> [StyledString]
-viewGroupInvitation Group {localDisplayName = ldn, groupProfile = GroupProfile {fullName}} =
-  [groupInvitation ldn fullName]
+    ldn_ = T.toLower . (localDisplayName :: GroupInfo -> GroupName)
+    groupSS GroupInfo {localDisplayName = ldn, groupProfile = GroupProfile {fullName}, userMemberStatus} =
+      case userMemberStatus of
+        GSMemInvited -> groupInvitation ldn fullName
+        _ -> ttyGroup ldn <> optFullName ldn fullName
 
 groupInvitation :: GroupName -> Text -> StyledString
 groupInvitation displayName fullName =
@@ -326,7 +235,7 @@ groupInvitation displayName fullName =
     <> " to delete invitation)"
 
 viewContactsMerged :: Contact -> Contact -> [StyledString]
-viewContactsMerged _to@Contact {localDisplayName = c1} _from@Contact {localDisplayName = c2} =
+viewContactsMerged _into@Contact {localDisplayName = c1} _merged@Contact {localDisplayName = c2} =
   [ "contact " <> ttyContact c2 <> " is merged into " <> ttyContact c1,
     "use " <> ttyToContact c1 <> highlight' "<message>" <> " to send messages"
   ]
@@ -338,15 +247,13 @@ viewUserProfile Profile {displayName, fullName} =
     "(the updated profile will be sent to all your contacts)"
   ]
 
-viewUserProfileUpdated :: User -> User -> [StyledString]
-viewUserProfileUpdated
-  User {localDisplayName = n, profile = Profile {fullName}}
-  User {localDisplayName = n', profile = Profile {fullName = fullName'}}
-    | n == n' && fullName == fullName' = []
-    | n == n' = ["user full name " <> (if T.null fullName' || fullName' == n' then "removed" else "changed to " <> plain fullName') <> notified]
-    | otherwise = ["user profile is changed to " <> ttyFullName n' fullName' <> notified]
-    where
-      notified = " (your contacts are notified)"
+viewUserProfileUpdated :: Profile -> Profile -> [StyledString]
+viewUserProfileUpdated Profile {displayName = n, fullName} Profile {displayName = n', fullName = fullName'}
+  | n == n' && fullName == fullName' = []
+  | n == n' = ["user full name " <> (if T.null fullName' || fullName' == n' then "removed" else "changed to " <> plain fullName') <> notified]
+  | otherwise = ["user profile is changed to " <> ttyFullName n' fullName' <> notified]
+  where
+    notified = " (your contacts are notified)"
 
 viewContactUpdated :: Contact -> Contact -> [StyledString]
 viewContactUpdated
@@ -361,25 +268,19 @@ viewContactUpdated
     where
       fullNameUpdate = if T.null fullName' || fullName' == n' then " removed full name" else " updated full name: " <> plain fullName'
 
-viewMessageError :: Text -> Text -> [StyledString]
-viewMessageError prefix err = [plain prefix <> ": " <> plain err]
+viewReceivedMessage :: StyledString -> ChatMsgMeta -> MsgContent -> MsgIntegrity -> [StyledString]
+viewReceivedMessage from meta mc = receivedWithTime_ from meta (ttyMsgContent mc)
 
-viewReceivedMessage :: ContactName -> UTCTime -> [StyledString] -> MsgIntegrity -> IO [StyledString]
-viewReceivedMessage = viewReceivedMessage_ . ttyFromContact
-
-viewReceivedGroupMessage :: GroupName -> ContactName -> UTCTime -> [StyledString] -> MsgIntegrity -> IO [StyledString]
-viewReceivedGroupMessage = viewReceivedMessage_ .: ttyFromGroup
-
-viewReceivedMessage_ :: StyledString -> UTCTime -> [StyledString] -> MsgIntegrity -> IO [StyledString]
-viewReceivedMessage_ from utcTime msg mOk = do
-  t <- formatUTCTime <$> getCurrentTimeZone <*> getZonedTime
-  pure $ prependFirst (t <> " " <> from) msg ++ showIntegrity mOk
+receivedWithTime_ :: StyledString -> ChatMsgMeta -> [StyledString] -> MsgIntegrity -> [StyledString]
+receivedWithTime_ from ChatMsgMeta {localChatTs, createdAt} styledMsg mOk = do
+  prependFirst (formattedTime <> " " <> from) styledMsg ++ showIntegrity mOk
   where
-    formatUTCTime :: TimeZone -> ZonedTime -> StyledString
-    formatUTCTime localTz currentTime =
-      let localTime = utcToLocalTime localTz utcTime
+    formattedTime :: StyledString
+    formattedTime =
+      let localTime = zonedTimeToLocalTime localChatTs
+          tz = zonedTimeZone localChatTs
           format =
-            if (localDay localTime < localDay (zonedTimeToLocalTime currentTime))
+            if (localDay localTime < localDay (zonedTimeToLocalTime $ utcToZonedTime tz createdAt))
               && (timeOfDayToTime (localTimeOfDay localTime) > (6 * 60 * 60 :: DiffTime))
               then "%m-%d" -- if message is from yesterday or before and 6 hours has passed since midnight
               else "%H:%M"
@@ -396,28 +297,26 @@ viewReceivedMessage_ from utcTime msg mOk = do
     msgError :: String -> [StyledString]
     msgError s = [styled (Colored Red) s]
 
-viewSentMessage :: ContactName -> ByteString -> IO [StyledString]
-viewSentMessage = viewSentMessage_ . ttyToContact
+viewSentMessage :: StyledString -> MsgContent -> ChatMsgMeta -> [StyledString]
+viewSentMessage to = sentWithTime_ . prependFirst to . ttyMsgContent
 
-viewSentGroupMessage :: GroupName -> ByteString -> IO [StyledString]
-viewSentGroupMessage = viewSentMessage_ . ttyToGroup
+viewSentFileInvitation :: StyledString -> FileTransferId -> FilePath -> ChatMsgMeta -> [StyledString]
+viewSentFileInvitation to fId fPath = sentWithTime_ $ ttySentFile to fId fPath
 
-viewSentMessage_ :: StyledString -> ByteString -> IO [StyledString]
-viewSentMessage_ to msg = sentWithTime_ to . msgPlain $ safeDecodeUtf8 msg
+sentWithTime_ :: [StyledString] -> ChatMsgMeta -> [StyledString]
+sentWithTime_ styledMsg ChatMsgMeta {localChatTs} =
+  prependFirst (ttyMsgTime localChatTs <> " ") styledMsg
 
-viewSentFileInvitation :: ContactName -> FilePath -> IO [StyledString]
-viewSentFileInvitation = viewSentFileInvitation_ . ttyToContact
+ttyMsgTime :: ZonedTime -> StyledString
+ttyMsgTime = styleTime . formatTime defaultTimeLocale "%H:%M"
 
-viewSentGroupFileInvitation :: GroupName -> FilePath -> IO [StyledString]
-viewSentGroupFileInvitation = viewSentFileInvitation_ . ttyToGroup
+ttyMsgContent :: MsgContent -> [StyledString]
+ttyMsgContent = \case
+  MCText t -> msgPlain t
+  MCUnknown -> ["unknown message type"]
 
-viewSentFileInvitation_ :: StyledString -> FilePath -> IO [StyledString]
-viewSentFileInvitation_ to f = sentWithTime_ ("/f " <> to) [ttyFilePath f]
-
-sentWithTime_ :: StyledString -> [StyledString] -> IO [StyledString]
-sentWithTime_ to styledMsg = do
-  time <- formatTime defaultTimeLocale "%H:%M" <$> getZonedTime
-  pure $ prependFirst (styleTime time <> " " <> to) styledMsg
+ttySentFile :: StyledString -> FileTransferId -> FilePath -> [StyledString]
+ttySentFile to fId fPath = ["/f " <> to <> ttyFilePath fPath, "use " <> highlight ("/fc " <> show fId) <> " to cancel sending"]
 
 prependFirst :: StyledString -> [StyledString] -> [StyledString]
 prependFirst s [] = [s]
@@ -426,18 +325,9 @@ prependFirst s (s' : ss) = (s <> s') : ss
 msgPlain :: Text -> [StyledString]
 msgPlain = map styleMarkdownText . T.lines
 
-viewSentFileInfo :: Int64 -> [StyledString]
-viewSentFileInfo fileId =
-  ["use " <> highlight ("/fc " <> show fileId) <> " to cancel sending"]
-
-viewSndFileStart :: SndFileTransfer -> [StyledString]
-viewSndFileStart = sendingFile_ "started"
-
-viewSndFileComplete :: SndFileTransfer -> [StyledString]
-viewSndFileComplete = sendingFile_ "completed"
-
-viewSndFileCancelled :: SndFileTransfer -> [StyledString]
-viewSndFileCancelled = sendingFile_ "cancelled"
+viewRcvFileSndCancelled :: RcvFileTransfer -> [StyledString]
+viewRcvFileSndCancelled ft@RcvFileTransfer {senderDisplayName = c} =
+  [ttyContact c <> " cancelled sending " <> rcvFile ft]
 
 viewSndGroupFileCancelled :: [SndFileTransfer] -> [StyledString]
 viewSndGroupFileCancelled fts =
@@ -449,18 +339,11 @@ sendingFile_ :: StyledString -> SndFileTransfer -> [StyledString]
 sendingFile_ status ft@SndFileTransfer {recipientDisplayName = c} =
   [status <> " sending " <> sndFile ft <> " to " <> ttyContact c]
 
-viewSndFileRcvCancelled :: SndFileTransfer -> [StyledString]
-viewSndFileRcvCancelled ft@SndFileTransfer {recipientDisplayName = c} =
-  [ttyContact c <> " cancelled receiving " <> sndFile ft]
-
 sndFile :: SndFileTransfer -> StyledString
 sndFile SndFileTransfer {fileId, fileName} = fileTransfer fileId fileName
 
-viewReceivedFileInvitation :: ContactName -> UTCTime -> RcvFileTransfer -> MsgIntegrity -> IO [StyledString]
-viewReceivedFileInvitation c ts = viewReceivedMessage c ts . receivedFileInvitation_
-
-viewReceivedGroupFileInvitation :: GroupName -> ContactName -> UTCTime -> RcvFileTransfer -> MsgIntegrity -> IO [StyledString]
-viewReceivedGroupFileInvitation g c ts = viewReceivedGroupMessage g c ts . receivedFileInvitation_
+viewReceivedFileInvitation :: StyledString -> ChatMsgMeta -> RcvFileTransfer -> MsgIntegrity -> [StyledString]
+viewReceivedFileInvitation from meta ft = receivedWithTime_ from meta (receivedFileInvitation_ ft)
 
 receivedFileInvitation_ :: RcvFileTransfer -> [StyledString]
 receivedFileInvitation_ RcvFileTransfer {fileId, fileInvitation = FileInvitation {fileName, fileSize}} =
@@ -480,26 +363,9 @@ humanReadableSize size
     mB = kB * 1024
     gB = mB * 1024
 
-viewRcvFileAccepted :: RcvFileTransfer -> FilePath -> [StyledString]
-viewRcvFileAccepted RcvFileTransfer {fileId, senderDisplayName = c} filePath =
-  ["saving file " <> sShow fileId <> " from " <> ttyContact c <> " to " <> plain filePath]
-
-viewRcvFileStart :: RcvFileTransfer -> [StyledString]
-viewRcvFileStart = receivingFile_ "started"
-
-viewRcvFileComplete :: RcvFileTransfer -> [StyledString]
-viewRcvFileComplete = receivingFile_ "completed"
-
-viewRcvFileCancelled :: RcvFileTransfer -> [StyledString]
-viewRcvFileCancelled = receivingFile_ "cancelled"
-
 receivingFile_ :: StyledString -> RcvFileTransfer -> [StyledString]
 receivingFile_ status ft@RcvFileTransfer {senderDisplayName = c} =
   [status <> " receiving " <> rcvFile ft <> " from " <> ttyContact c]
-
-viewRcvFileSndCancelled :: RcvFileTransfer -> [StyledString]
-viewRcvFileSndCancelled ft@RcvFileTransfer {senderDisplayName = c} =
-  [ttyContact c <> " cancelled sending " <> rcvFile ft]
 
 rcvFile :: RcvFileTransfer -> StyledString
 rcvFile RcvFileTransfer {fileId, fileInvitation = FileInvitation {fileName}} = fileTransfer fileId fileName
@@ -550,17 +416,11 @@ fileProgress :: [Integer] -> Integer -> Integer -> StyledString
 fileProgress chunksNum chunkSize fileSize =
   sShow (sum chunksNum * chunkSize * 100 `div` fileSize) <> "% of " <> humanReadableSize fileSize
 
-viewSndFileSubError :: SndFileTransfer -> ChatError -> [StyledString]
-viewSndFileSubError SndFileTransfer {fileId, fileName} e =
-  ["sent file " <> sShow fileId <> " (" <> plain fileName <> ") error: " <> sShow e]
-
-viewRcvFileSubError :: RcvFileTransfer -> ChatError -> [StyledString]
-viewRcvFileSubError RcvFileTransfer {fileId, fileInvitation = FileInvitation {fileName}} e =
-  ["received file " <> sShow fileId <> " (" <> plain fileName <> ") error: " <> sShow e]
-
 viewChatError :: ChatError -> [StyledString]
 viewChatError = \case
   ChatError err -> case err of
+    CEInvalidConnReq -> viewInvalidConnReq
+    CEContactGroups c gNames -> [ttyContact c <> ": contact cannot be deleted, it is a member of the group(s) " <> ttyGroups gNames]
     CEGroupDuplicateMember c -> ["contact " <> ttyContact c <> " is already in the group"]
     CEGroupDuplicateMemberId -> ["cannot add member - duplicate member ID"]
     CEGroupUserRole -> ["you have insufficient permissions for this group command"]
@@ -569,6 +429,8 @@ viewChatError = \case
     CEGroupMemberNotActive -> ["you cannot invite other members yet, try later"]
     CEGroupMemberUserRemoved -> ["you are no longer a member of the group"]
     CEGroupMemberNotFound c -> ["contact " <> ttyContact c <> " is not a group member"]
+    CEGroupMemberIntroNotFound c -> ["group member intro not found for " <> ttyContact c]
+    CEGroupCantResendInvitation g c -> viewCannotResendInvitation g c
     CEGroupInternal s -> ["chat group bug: " <> plain s]
     CEFileNotFound f -> ["file not found: " <> plain f]
     CEFileAlreadyReceiving f -> ["file is already accepted: " <> plain f]
@@ -579,6 +441,7 @@ viewChatError = \case
     CEFileRcvChunk e -> ["error receiving file: " <> plain e]
     CEFileInternal e -> ["file error: " <> plain e]
     CEAgentVersion -> ["unsupported agent version"]
+    CECommandError e -> ["bad chat command: " <> plain e]
   -- e -> ["chat error: " <> sShow e]
   ChatErrorStore err -> case err of
     SEDuplicateName -> ["this display name is already used by user, contact or group"]
@@ -626,6 +489,11 @@ ttyFromContact c = styled (Colored Yellow) $ c <> "> "
 ttyGroup :: GroupName -> StyledString
 ttyGroup g = styled (Colored Blue) $ "#" <> g
 
+ttyGroups :: [GroupName] -> StyledString
+ttyGroups [] = ""
+ttyGroups [g] = ttyGroup g
+ttyGroups (g : gs) = ttyGroup g <> ", " <> ttyGroups gs
+
 ttyFullGroup :: Group -> StyledString
 ttyFullGroup Group {localDisplayName, groupProfile = GroupProfile {fullName}} =
   ttyGroup localDisplayName <> optFullName localDisplayName fullName
@@ -652,6 +520,3 @@ highlight' = highlight
 
 styleTime :: String -> StyledString
 styleTime = Styled [SetColor Foreground Vivid Black]
-
-clientVersionInfo :: [StyledString]
-clientVersionInfo = [plain versionStr, plain updateStr]

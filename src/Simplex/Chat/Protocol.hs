@@ -22,9 +22,12 @@ import qualified Data.ByteString.Lazy.Char8 as LB
 import qualified Data.HashMap.Strict as H
 import Data.Text (Text)
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
+import Database.SQLite.Simple.FromField (FromField (..))
+import Database.SQLite.Simple.ToField (ToField (..))
 import GHC.Generics
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Protocol
+import Simplex.Messaging.Agent.Store.SQLite (fromTextField_)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Util ((<$?>))
 
@@ -111,6 +114,11 @@ instance ToJSON MsgContentType where
 data MsgContent = MCText Text | MCUnknown
   deriving (Eq, Show)
 
+msgContentText :: MsgContent -> Text
+msgContentText = \case
+  MCText t -> t
+  MCUnknown -> unknownMsgType
+
 toMsgContentType :: MsgContent -> MsgContentType
 toMsgContentType = \case
   MCText _ -> MCText_
@@ -161,6 +169,7 @@ data CMEventTag
   | XInfoProbeCheck_
   | XInfoProbeOk_
   | XOk_
+  deriving (Eq, Show)
 
 instance StrEncoding CMEventTag where
   strEncode = \case
@@ -234,8 +243,15 @@ toCMEventTag = \case
   XInfoProbeOk _ -> XInfoProbeOk_
   XOk -> XOk_
 
-toChatEventTag :: ChatMsgEvent -> Text
-toChatEventTag = decodeLatin1 . strEncode . toCMEventTag
+cmEventTagT :: Text -> Maybe CMEventTag
+cmEventTagT = either (const Nothing) Just . strDecode . encodeUtf8
+
+serializeCMEventTag :: CMEventTag -> Text
+serializeCMEventTag = decodeLatin1 . strEncode
+
+instance FromField CMEventTag where fromField = fromTextField_ cmEventTagT
+
+instance ToField CMEventTag where toField = toField . serializeCMEventTag
 
 appToChatMessage :: AppMessage -> Either String ChatMessage
 appToChatMessage AppMessage {event, params} = do
@@ -271,7 +287,7 @@ appToChatMessage AppMessage {event, params} = do
 chatToAppMessage :: ChatMessage -> AppMessage
 chatToAppMessage ChatMessage {chatMsgEvent} = AppMessage {event, params}
   where
-    event = toChatEventTag chatMsgEvent
+    event = serializeCMEventTag . toCMEventTag $ chatMsgEvent
     o :: [(Text, J.Value)] -> J.Object
     o = H.fromList
     params = case chatMsgEvent of

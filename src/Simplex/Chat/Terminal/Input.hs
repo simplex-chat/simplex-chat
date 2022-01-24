@@ -1,6 +1,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module Simplex.Chat.Terminal.Input where
 
@@ -8,8 +9,10 @@ import Control.Monad.IO.Unlift
 import Control.Monad.Reader
 import Data.List (dropWhileEnd)
 import qualified Data.Text as T
+import Simplex.Chat
 import Simplex.Chat.Controller
 import Simplex.Chat.Terminal.Output
+import Simplex.Chat.View
 import System.Exit (exitSuccess)
 import System.Terminal hiding (insertChars)
 import UnliftIO.STM
@@ -20,6 +23,14 @@ getKey =
     Left Interrupt -> liftIO exitSuccess
     Right (KeyEvent key ms) -> pure (key, ms)
     _ -> getKey
+
+runInputLoop :: (MonadUnliftIO m, MonadReader ChatController m) => ChatTerminal -> m ()
+runInputLoop ct = do
+  q <- asks inputQ
+  forever $ do
+    s <- atomically $ readTBQueue q
+    r <- execChatCommand s
+    liftIO . printToTerminal ct $ responseToView s r
 
 runTerminalInput :: (MonadUnliftIO m, MonadReader ChatController m) => ChatTerminal -> m ()
 runTerminalInput ct = do
@@ -45,7 +56,7 @@ receiveFromTTY ChatController {inputQ, activeTo} ct@ChatTerminal {termSize, term
       ts <- readTVar termState
       let s = inputString ts
       writeTVar termState $ ts {inputString = "", inputPosition = 0, previousInput = s}
-      writeTBQueue inputQ $ InputCommand s
+      writeTBQueue inputQ s
 
 updateTermState :: ActiveTo -> Int -> (Key, Modifiers) -> TerminalState -> TerminalState
 updateTermState ac tw (key, ms) ts@TerminalState {inputString = s, inputPosition = p} = case key of

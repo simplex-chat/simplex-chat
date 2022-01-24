@@ -12,6 +12,7 @@ import Control.Monad.IO.Unlift
 import Control.Monad.Reader
 import Simplex.Chat.Controller
 import Simplex.Chat.Styled
+import Simplex.Chat.View
 import System.Console.ANSI.Types
 import System.Terminal
 import System.Terminal.Internal (LocalTerminal, Terminal, VirtualTerminal)
@@ -75,7 +76,7 @@ runTerminalOutput :: (MonadUnliftIO m, MonadReader ChatController m) => ChatTerm
 runTerminalOutput ct = do
   ChatController {outputQ} <- ask
   forever $
-    atomically (readTBQueue outputQ) >>= liftIO . printToTerminal ct
+    atomically (readTBQueue outputQ) >>= liftIO . printToTerminal ct . responseToView "" . snd
 
 printToTerminal :: ChatTerminal -> [StyledString] -> IO ()
 printToTerminal ct s =

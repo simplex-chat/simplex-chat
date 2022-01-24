@@ -21,8 +21,8 @@ import Simplex.Chat
 import Simplex.Chat.Controller
 import Simplex.Chat.Options
 import Simplex.Chat.Store
-import Simplex.Chat.Styled
 import Simplex.Chat.Types
+import Simplex.Chat.View
 
 foreign export ccall "chat_init_store" cChatInitStore :: CString -> IO (StablePtr ChatStore)
 
@@ -76,8 +76,6 @@ mobileChatOpts =
 
 type CJSONString = CString
 
-type JSONString = String
-
 data ChatStore = ChatStore
   { dbFilePrefix :: FilePath,
     chatStore :: SQLiteStore
@@ -117,10 +115,18 @@ chatStart ChatStore {dbFilePrefix, chatStore} = do
   pure cc
 
 chatSendCmd :: ChatController -> String -> IO JSONString
-chatSendCmd ChatController {inputQ} s = atomically (writeTBQueue inputQ $ InputCommand s) >> pure "{}"
+chatSendCmd cc s = crToJSON <$> runReaderT (execChatCommand s) cc
 
 chatRecvMsg :: ChatController -> IO String
-chatRecvMsg ChatController {outputQ} = unlines . map unStyle <$> atomically (readTBQueue outputQ)
+chatRecvMsg ChatController {outputQ} = serializeChatResponse . snd <$> atomically (readTBQueue outputQ)
 
 jsonObject :: J.Series -> JSONString
 jsonObject = LB.unpack . JE.encodingToLazyByteString . J.pairs
+
+crToJSON :: ChatResponse -> JSONString
+crToJSON = \case
+  CRUserProfile p -> o "profile" $ J.object ["profile" .= p]
+  r -> o "terminal" $ J.object ["response" .= serializeChatResponse r]
+  where
+    o :: String -> J.Value -> JSONString
+    o tp params = jsonObject ("type" .= tp <> "params" .= params)

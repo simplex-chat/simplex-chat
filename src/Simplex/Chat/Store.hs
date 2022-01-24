@@ -95,6 +95,9 @@ module Simplex.Chat.Store
     createNewMessageAndRcvMsgDelivery,
     createSndMsgDeliveryEvent,
     createRcvMsgDeliveryEvent,
+    createPendingGroupMessage,
+    getPendingGroupMessages,
+    deletePendingGroupMessage,
   )
 where
 
@@ -119,7 +122,9 @@ import Data.Time.Clock (UTCTime, getCurrentTime)
 import Database.SQLite.Simple (NamedParam (..), Only (..), Query (..), SQLError, (:.) (..))
 import qualified Database.SQLite.Simple as DB
 import Database.SQLite.Simple.QQ (sql)
+import Simplex.Chat.Messages
 import Simplex.Chat.Migrations.M20220101_initial
+import Simplex.Chat.Migrations.M20220122_pending_group_messages
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Protocol (AParty (..), AgentMsgId, ConnId, InvitationId, MsgMeta (..))
@@ -132,7 +137,8 @@ import UnliftIO.STM
 
 schemaMigrations :: [(String, Query)]
 schemaMigrations =
-  [ ("20220101_initial", m20220101_initial)
+  [ ("20220101_initial", m20220101_initial),
+    ("20220122_pending_group_messages", m20220122_pending_group_messages)
   ]
 
 -- | The list of migrations in ascending order by date
@@ -303,18 +309,18 @@ getContact :: StoreMonad m => SQLiteStore -> UserId -> ContactName -> m Contact
 getContact st userId localDisplayName =
   liftIOEither . withTransaction st $ \db -> runExceptT $ getContact_ db userId localDisplayName
 
-updateUserProfile :: StoreMonad m => SQLiteStore -> User -> Profile -> m User
-updateUserProfile st u@User {userId, userContactId, localDisplayName, profile = Profile {displayName}} p'@Profile {displayName = newName}
+updateUserProfile :: StoreMonad m => SQLiteStore -> User -> Profile -> m ()
+updateUserProfile st User {userId, userContactId, localDisplayName, profile = Profile {displayName}} p'@Profile {displayName = newName}
   | displayName == newName =
     liftIO . withTransaction st $ \db ->
-      updateContactProfile_ db userId userContactId p' $> (u :: User) {profile = p'}
+      updateContactProfile_ db userId userContactId p'
   | otherwise =
     liftIOEither . checkConstraint SEDuplicateName . withTransaction st $ \db -> do
       DB.execute db "UPDATE users SET local_display_name = ? WHERE user_id = ?" (newName, userId)
       DB.execute db "INSERT INTO display_names (local_display_name, ldn_base, user_id) VALUES (?, ?, ?)" (newName, newName, userId)
       updateContactProfile_ db userId userContactId p'
       updateContact_ db userId userContactId localDisplayName newName
-      pure . Right $ (u :: User) {localDisplayName = newName, profile = p'}
+      pure $ Right ()
 
 updateContactProfile :: StoreMonad m => SQLiteStore -> UserId -> Contact -> Profile -> m Contact
 updateContactProfile st userId c@Contact {contactId, localDisplayName, profile = Profile {displayName}} p'@Profile {displayName = newName}
@@ -994,19 +1000,23 @@ getUserGroups st user@User {userId} =
     groupNames <- map fromOnly <$> DB.query db "SELECT local_display_name FROM groups WHERE user_id = ?" (Only userId)
     map fst . rights <$> mapM (runExceptT . getGroup_ db user) groupNames
 
-getUserGroupDetails :: MonadUnliftIO m => SQLiteStore -> UserId -> m [(GroupName, Text, GroupMemberStatus)]
+getUserGroupDetails :: MonadUnliftIO m => SQLiteStore -> UserId -> m [GroupInfo]
 getUserGroupDetails st userId =
   liftIO . withTransaction st $ \db ->
-    DB.query
-      db
-      [sql|
-        SELECT g.local_display_name, p.full_name, m.member_status
-        FROM groups g
-        JOIN group_profiles p USING (group_profile_id)
-        JOIN group_members m USING (group_id)
-        WHERE g.user_id = ? AND m.member_category = 'user'
-      |]
-      (Only userId)
+    map groupInfo
+      <$> DB.query
+        db
+        [sql|
+          SELECT g.group_id, g.local_display_name, p.display_name, p.full_name, m.member_status
+          FROM groups g
+          JOIN group_profiles p USING (group_profile_id)
+          JOIN group_members m USING (group_id)
+          WHERE g.user_id = ? AND m.member_category = 'user'
+        |]
+        (Only userId)
+  where
+    groupInfo (groupId, localDisplayName, displayName, fullName, userMemberStatus) =
+      GroupInfo {groupId, localDisplayName, groupProfile = GroupProfile {displayName, fullName}, userMemberStatus}
 
 getGroupInvitation :: StoreMonad m => SQLiteStore -> User -> GroupName -> m ReceivedGroupInvitation
 getGroupInvitation st user localDisplayName =
@@ -1139,8 +1149,8 @@ createIntroductions st Group {members} toMember = do
       introId <- insertedRowId db
       pure GroupMemberIntro {introId, reMember, toMember, introStatus = GMIntroPending, introInvitation = Nothing}
 
-updateIntroStatus :: MonadUnliftIO m => SQLiteStore -> GroupMemberIntro -> GroupMemberIntroStatus -> m ()
-updateIntroStatus st GroupMemberIntro {introId} introStatus' =
+updateIntroStatus :: MonadUnliftIO m => SQLiteStore -> Int64 -> GroupMemberIntroStatus -> m ()
+updateIntroStatus st introId introStatus =
   liftIO . withTransaction st $ \db ->
     DB.executeNamed
       db
@@ -1149,7 +1159,7 @@ updateIntroStatus st GroupMemberIntro {introId} introStatus' =
         SET intro_status = :intro_status
         WHERE group_member_intro_id = :intro_id
       |]
-      [":intro_status" := introStatus', ":intro_id" := introId]
+      [":intro_status" := introStatus, ":intro_id" := introId]
 
 saveIntroInvitation :: StoreMonad m => SQLiteStore -> GroupMember -> GroupMember -> IntroInvitation -> m GroupMemberIntro
 saveIntroInvitation st reMember toMember introInv = do
@@ -1625,7 +1635,7 @@ getSndFileTransfers_ db userId fileId =
         Just recipientDisplayName -> Right SndFileTransfer {..}
         Nothing -> Left $ SESndFileInvalid fileId
 
-createNewMessage :: MonadUnliftIO m => SQLiteStore -> NewMessage -> m MessageId
+createNewMessage :: MonadUnliftIO m => SQLiteStore -> NewMessage -> m Message
 createNewMessage st newMsg =
   liftIO . withTransaction st $ \db ->
     createNewMessage_ db newMsg
@@ -1636,12 +1646,13 @@ createSndMsgDelivery st sndMsgDelivery messageId =
     msgDeliveryId <- createSndMsgDelivery_ db sndMsgDelivery messageId
     createMsgDeliveryEvent_ db msgDeliveryId MDSSndAgent
 
-createNewMessageAndRcvMsgDelivery :: MonadUnliftIO m => SQLiteStore -> NewMessage -> RcvMsgDelivery -> m ()
+createNewMessageAndRcvMsgDelivery :: MonadUnliftIO m => SQLiteStore -> NewMessage -> RcvMsgDelivery -> m Message
 createNewMessageAndRcvMsgDelivery st newMsg rcvMsgDelivery =
   liftIO . withTransaction st $ \db -> do
-    messageId <- createNewMessage_ db newMsg
-    msgDeliveryId <- createRcvMsgDelivery_ db rcvMsgDelivery messageId
+    msg@Message {msgId} <- createNewMessage_ db newMsg
+    msgDeliveryId <- createRcvMsgDelivery_ db rcvMsgDelivery msgId
     createMsgDeliveryEvent_ db msgDeliveryId MDSRcvAgent
+    pure msg
 
 createSndMsgDeliveryEvent :: StoreMonad m => SQLiteStore -> Int64 -> AgentMsgId -> MsgDeliveryStatus 'MDSnd -> m ()
 createSndMsgDeliveryEvent st connId agentMsgId sndMsgDeliveryStatus =
@@ -1655,17 +1666,18 @@ createRcvMsgDeliveryEvent st connId agentMsgId rcvMsgDeliveryStatus =
     msgDeliveryId <- ExceptT $ getMsgDeliveryId_ db connId agentMsgId
     liftIO $ createMsgDeliveryEvent_ db msgDeliveryId rcvMsgDeliveryStatus
 
-createNewMessage_ :: DB.Connection -> NewMessage -> IO MessageId
-createNewMessage_ db NewMessage {direction, chatMsgEventType, msgBody} = do
+createNewMessage_ :: DB.Connection -> NewMessage -> IO Message
+createNewMessage_ db NewMessage {direction, cmEventTag, chatTs, msgBody} = do
   createdAt <- getCurrentTime
   DB.execute
     db
     [sql|
       INSERT INTO messages
-        (msg_sent, chat_msg_event, msg_body, created_at) VALUES (?,?,?,?);
+        (msg_sent, chat_msg_event, chat_ts, msg_body, created_at) VALUES (?,?,?,?,?);
     |]
-    (direction, chatMsgEventType, msgBody, createdAt)
-  insertedRowId db
+    (direction, cmEventTag, chatTs, msgBody, createdAt)
+  msgId <- insertedRowId db
+  pure Message {msgId, direction, cmEventTag, chatTs, msgBody, createdAt}
 
 createSndMsgDelivery_ :: DB.Connection -> SndMsgDelivery -> MessageId -> IO Int64
 createSndMsgDelivery_ db SndMsgDelivery {connId, agentMsgId} messageId = do
@@ -1719,6 +1731,41 @@ getMsgDeliveryId_ db connId agentMsgId =
     toMsgDeliveryId :: [Only Int64] -> Either StoreError Int64
     toMsgDeliveryId [Only msgDeliveryId] = Right msgDeliveryId
     toMsgDeliveryId _ = Left $ SENoMsgDelivery connId agentMsgId
+
+createPendingGroupMessage :: MonadUnliftIO m => SQLiteStore -> Int64 -> MessageId -> Maybe Int64 -> m ()
+createPendingGroupMessage st groupMemberId messageId introId_ =
+  liftIO . withTransaction st $ \db -> do
+    createdAt <- getCurrentTime
+    DB.execute
+      db
+      [sql|
+        INSERT INTO pending_group_messages
+          (group_member_id, message_id, group_member_intro_id, created_at) VALUES (?,?,?,?)
+      |]
+      (groupMemberId, messageId, introId_, createdAt)
+
+getPendingGroupMessages :: MonadUnliftIO m => SQLiteStore -> Int64 -> m [PendingGroupMessage]
+getPendingGroupMessages st groupMemberId =
+  liftIO . withTransaction st $ \db ->
+    map pendingGroupMessage
+      <$> DB.query
+        db
+        [sql|
+          SELECT pgm.message_id, m.chat_msg_event, m.msg_body, pgm.group_member_intro_id
+          FROM pending_group_messages pgm
+          JOIN messages m USING (message_id)
+          WHERE pgm.group_member_id = ?
+          ORDER BY pgm.message_id ASC
+        |]
+        (Only groupMemberId)
+  where
+    pendingGroupMessage (msgId, cmEventTag, msgBody, introId_) =
+      PendingGroupMessage {msgId, cmEventTag, msgBody, introId_}
+
+deletePendingGroupMessage :: MonadUnliftIO m => SQLiteStore -> Int64 -> MessageId -> m ()
+deletePendingGroupMessage st groupMemberId messageId =
+  liftIO . withTransaction st $ \db ->
+    DB.execute db "DELETE FROM pending_group_messages WHERE group_member_id = ? AND message_id = ?" (groupMemberId, messageId)
 
 -- | Saves unique local display name based on passed displayName, suffixed with _N if required.
 -- This function should be called inside transaction.
