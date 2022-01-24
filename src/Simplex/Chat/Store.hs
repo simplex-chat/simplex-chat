@@ -1751,19 +1751,23 @@ createPendingGroupMessage st groupMemberId messageId mIntroId =
       |]
       (groupMemberId, messageId, mIntroId, createdAt)
 
-getPendingGroupMessages :: MonadUnliftIO m => SQLiteStore -> Int64 -> m [(MessageId, MsgBody, CMEventTag, Maybe Int64)]
+getPendingGroupMessages :: MonadUnliftIO m => SQLiteStore -> Int64 -> m [PendingGroupMessage]
 getPendingGroupMessages st groupMemberId =
   liftIO . withTransaction st $ \db ->
-    DB.query
-      db
-      [sql|
-        SELECT pgm.message_id, m.msg_body, m.chat_msg_event, pgm.group_member_intro_id
-        FROM pending_group_messages pgm
-        JOIN messages m USING (message_id)
-        WHERE pgm.group_member_id = ?
-        ORDER BY pgm.message_id ASC
-      |]
-      (Only groupMemberId)
+    map pendingGroupMessage
+      <$> DB.query
+        db
+        [sql|
+          SELECT pgm.message_id, m.chat_msg_event, m.msg_body, pgm.group_member_intro_id
+          FROM pending_group_messages pgm
+          JOIN messages m USING (message_id)
+          WHERE pgm.group_member_id = ?
+          ORDER BY pgm.message_id ASC
+        |]
+        (Only groupMemberId)
+  where
+    pendingGroupMessage (msgId, cmEventTag, msgBody, mIntroId) =
+      PendingGroupMessage {msgId, cmEventTag, msgBody, mIntroId}
 
 deletePendingGroupMessage :: MonadUnliftIO m => SQLiteStore -> Int64 -> MessageId -> m ()
 deletePendingGroupMessage st groupMemberId messageId =

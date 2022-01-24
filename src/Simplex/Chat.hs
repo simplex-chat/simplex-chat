@@ -1149,10 +1149,10 @@ sendPendingGroupMessages :: ChatMonad m => GroupMember -> Connection -> m ()
 sendPendingGroupMessages GroupMember {groupMemberId, localDisplayName} conn = do
   pendingMessages <- withStore $ \st -> getPendingGroupMessages st groupMemberId
   -- TODO ensure order
-  for_ pendingMessages $ \(msgId, msgBody, chatMsgEventTag, mIntroId) -> do
+  for_ pendingMessages $ \PendingGroupMessage {msgId, cmEventTag, msgBody, mIntroId} -> do
     deliverMessage conn msgBody msgId
     withStore (\st -> deletePendingGroupMessage st groupMemberId msgId)
-    when (chatMsgEventTag == XGrpMemFwd_) $ case mIntroId of
+    when (cmEventTag == XGrpMemFwd_) $ case mIntroId of
       Nothing -> chatError $ CEGroupMemberIntroNotFound localDisplayName
       Just introId -> withStore (\st -> updateIntroStatus' st introId GMIntroInvForwarded)
 
