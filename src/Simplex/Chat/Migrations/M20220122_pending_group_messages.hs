@@ -16,7 +16,4 @@ CREATE TABLE pending_group_messages (
   group_member_intro_id INTEGER REFERENCES group_member_intros ON DELETE CASCADE,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
-
--- TODO remove
-ALTER TABLE messages ADD chat_ts TEXT;
 |]

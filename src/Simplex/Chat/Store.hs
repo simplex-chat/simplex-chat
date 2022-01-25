@@ -1641,7 +1641,7 @@ getSndFileTransfers_ db userId fileId =
         Just recipientDisplayName -> Right SndFileTransfer {..}
         Nothing -> Left $ SESndFileInvalid fileId
 
-createNewMessage :: MonadUnliftIO m => SQLiteStore -> NewMessage -> m Message
+createNewMessage :: MonadUnliftIO m => SQLiteStore -> NewMessage -> m MessageId
 createNewMessage st newMsg =
   liftIO . withTransaction st $ \db ->
     createNewMessage_ db newMsg
@@ -1652,13 +1652,12 @@ createSndMsgDelivery st sndMsgDelivery messageId =
     msgDeliveryId <- createSndMsgDelivery_ db sndMsgDelivery messageId
     createMsgDeliveryEvent_ db msgDeliveryId MDSSndAgent
 
-createNewMessageAndRcvMsgDelivery :: MonadUnliftIO m => SQLiteStore -> NewMessage -> RcvMsgDelivery -> m Message
+createNewMessageAndRcvMsgDelivery :: MonadUnliftIO m => SQLiteStore -> NewMessage -> RcvMsgDelivery -> m ()
 createNewMessageAndRcvMsgDelivery st newMsg rcvMsgDelivery =
   liftIO . withTransaction st $ \db -> do
-    msg@Message {msgId} <- createNewMessage_ db newMsg
-    msgDeliveryId <- createRcvMsgDelivery_ db rcvMsgDelivery msgId
+    messageId <- createNewMessage_ db newMsg
+    msgDeliveryId <- createRcvMsgDelivery_ db rcvMsgDelivery messageId
     createMsgDeliveryEvent_ db msgDeliveryId MDSRcvAgent
-    pure msg
 
 createSndMsgDeliveryEvent :: StoreMonad m => SQLiteStore -> Int64 -> AgentMsgId -> MsgDeliveryStatus 'MDSnd -> m ()
 createSndMsgDeliveryEvent st connId agentMsgId sndMsgDeliveryStatus =
@@ -1672,18 +1671,17 @@ createRcvMsgDeliveryEvent st connId agentMsgId rcvMsgDeliveryStatus =
     msgDeliveryId <- ExceptT $ getMsgDeliveryId_ db connId agentMsgId
     liftIO $ createMsgDeliveryEvent_ db msgDeliveryId rcvMsgDeliveryStatus
 
-createNewMessage_ :: DB.Connection -> NewMessage -> IO Message
-createNewMessage_ db NewMessage {direction, cmEventTag, chatTs, msgBody} = do
+createNewMessage_ :: DB.Connection -> NewMessage -> IO MessageId
+createNewMessage_ db NewMessage {direction, cmEventTag, msgBody} = do
   createdAt <- getCurrentTime
   DB.execute
     db
     [sql|
       INSERT INTO messages
-        (msg_sent, chat_msg_event, chat_ts, msg_body, created_at) VALUES (?,?,?,?,?);
+        (msg_sent, chat_msg_event, msg_body, created_at) VALUES (?,?,?,?);
     |]
-    (direction, cmEventTag, chatTs, msgBody, createdAt)
-  msgId <- insertedRowId db
-  pure Message {msgId, direction, cmEventTag, chatTs, msgBody, createdAt}
+    (direction, cmEventTag, msgBody, createdAt)
+  insertedRowId db
 
 createSndMsgDelivery_ :: DB.Connection -> SndMsgDelivery -> MessageId -> IO Int64
 createSndMsgDelivery_ db SndMsgDelivery {connId, agentMsgId} messageId = do
@@ -1772,6 +1770,20 @@ deletePendingGroupMessage :: MonadUnliftIO m => SQLiteStore -> Int64 -> MessageI
 deletePendingGroupMessage st groupMemberId messageId =
   liftIO . withTransaction st $ \db ->
     DB.execute db "DELETE FROM pending_group_messages WHERE group_member_id = ? AND message_id = ?" (groupMemberId, messageId)
+
+-- createNewChatItem :: MonadUnliftIO m => SQLiteStore -> NewMessage -> m MessageId
+-- createNewChatItem st NewMessage {direction, cmEventTag, chatTs, msgBody} =
+--   liftIO . withTransaction st $ \db -> do
+--     createdAt <- getCurrentTime
+--     DB.execute
+--       db
+--       [sql|
+--         INSERT INTO messages
+--           (msg_sent, chat_msg_event, chat_ts, msg_body, created_at) VALUES (?,?,?,?,?);
+--       |]
+--       (direction, cmEventTag, chatTs, msgBody, createdAt)
+--     msgId <- insertedRowId db
+--     pure Message {msgId, direction, cmEventTag, chatTs, msgBody, createdAt}
 
 -- getDirectChatItemList :: MonadUnliftIO m => SQLiteStore -> UserId -> Int64 -> m ChatItemList
 -- getDirectChatItemList st userId contactId =

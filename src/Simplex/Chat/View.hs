@@ -294,13 +294,13 @@ viewReceivedMessage :: StyledString -> CIMetaProps -> MsgContent -> MsgIntegrity
 viewReceivedMessage from meta mc = receivedWithTime_ from meta (ttyMsgContent mc)
 
 receivedWithTime_ :: StyledString -> CIMetaProps -> [StyledString] -> MsgIntegrity -> [StyledString]
-receivedWithTime_ from CIMetaProps {localChatTs, createdAt} styledMsg mOk = do
+receivedWithTime_ from CIMetaProps {localItemTs, createdAt} styledMsg mOk = do
   prependFirst (formattedTime <> " " <> from) styledMsg ++ showIntegrity mOk
   where
     formattedTime :: StyledString
     formattedTime =
-      let localTime = zonedTimeToLocalTime localChatTs
-          tz = zonedTimeZone localChatTs
+      let localTime = zonedTimeToLocalTime localItemTs
+          tz = zonedTimeZone localItemTs
           format =
             if (localDay localTime < localDay (zonedTimeToLocalTime $ utcToZonedTime tz createdAt))
               && (timeOfDayToTime (localTimeOfDay localTime) > (6 * 60 * 60 :: DiffTime))
@@ -326,8 +326,8 @@ viewSentFileInvitation :: StyledString -> FileTransferId -> FilePath -> CIMetaPr
 viewSentFileInvitation to fId fPath = sentWithTime_ $ ttySentFile to fId fPath
 
 sentWithTime_ :: [StyledString] -> CIMetaProps -> [StyledString]
-sentWithTime_ styledMsg CIMetaProps {localChatTs} =
-  prependFirst (ttyMsgTime localChatTs <> " ") styledMsg
+sentWithTime_ styledMsg CIMetaProps {localItemTs} =
+  prependFirst (ttyMsgTime localItemTs <> " ") styledMsg
 
 ttyMsgTime :: ZonedTime -> StyledString
 ttyMsgTime = styleTime . formatTime defaultTimeLocale "%H:%M"

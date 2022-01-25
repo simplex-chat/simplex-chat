@@ -76,13 +76,15 @@ deriving instance Show (CIMeta d)
 
 data CIMetaProps = CIMetaProps
   { chatItemId :: ChatItemId,
-    chatTs :: UTCTime,
-    localChatTs :: ZonedTime,
+    itemTs :: UTCTime,
+    localItemTs :: ZonedTime,
     createdAt :: UTCTime
   }
   deriving (Show)
 
 type ChatItemId = Int64
+
+type ItemTs = UTCTime
 
 data CIContent (d :: MsgDirection) where
   CIMsgContent :: MsgContent -> CIContent d
@@ -112,18 +114,7 @@ instance ChatTypeI 'CTGroup where chatType = SCTGroup
 data NewMessage = NewMessage
   { direction :: MsgDirection,
     cmEventTag :: CMEventTag,
-    chatTs :: UTCTime,
     msgBody :: MsgBody
-  }
-  deriving (Show)
-
-data Message = Message
-  { msgId :: MessageId,
-    direction :: MsgDirection,
-    cmEventTag :: CMEventTag,
-    chatTs :: UTCTime,
-    msgBody :: MsgBody,
-    createdAt :: UTCTime
   }
   deriving (Show)
 
