@@ -200,7 +200,7 @@ processChatCommand user@User {userId, profile} = \case
           void . sendDirectMessage (contactConn contact) $
             XGrpInv $ GroupInvitation (MemberIdRole userMemberId userRole) (MemberIdRole memberId memRole) cReq groupProfile
           setActive $ ActiveG gName
-          pure $ CRSentGroupInvitation gInfo cName
+          pure $ CRSentGroupInvitation gInfo contact
     case contactMember contact members of
       Nothing -> do
         gVar <- asks idsDrg
@@ -417,8 +417,8 @@ subscribeUserConnections = void . runExceptT $ do
   where
     subscribeContacts user = do
       contacts <- withStore (`getUserContacts` user)
-      forM_ contacts $ \ct@Contact {localDisplayName = c} ->
-        (subscribe (contactConnId ct) >> toView (CRContactSubscribed c)) `catchError` (toView . CRContactSubError c)
+      forM_ contacts $ \ct ->
+        (subscribe (contactConnId ct) >> toView (CRContactSubscribed ct)) `catchError` (toView . CRContactSubError ct)
     subscribeGroups user = do
       groups <- withStore (`getUserGroups` user)
       forM_ groups $ \(Group g@GroupInfo {membership} members) -> do
@@ -571,14 +571,14 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
         SENT msgId ->
           sentMsgDeliveryEvent conn msgId
         END -> do
-          toView $ CRContactAnotherClient c
+          toView $ CRContactAnotherClient ct
           showToast (c <> "> ") "connected to another client"
           unsetActive $ ActiveC c
         DOWN -> do
-          toView $ CRContactDisconnected c
+          toView $ CRContactDisconnected ct
           showToast (c <> "> ") "disconnected"
         UP -> do
-          toView $ CRContactSubscribed c
+          toView $ CRContactSubscribed ct
           showToast (c <> "> ") "is active"
           setActive $ ActiveC c
         -- TODO print errors
@@ -856,7 +856,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
       when (fromRole < GRAdmin || fromRole < memRole) $ chatError (CEGroupContactRole c)
       when (fromMemId == memId) $ chatError CEGroupDuplicateMemberId
       gInfo@GroupInfo {localDisplayName = gName} <- withStore $ \st -> createGroupInvitation st user ct inv
-      toView $ CRReceivedGroupInvitation gInfo c memRole
+      toView $ CRReceivedGroupInvitation gInfo ct memRole
       showToast ("#" <> gName <> " " <> c <> "> ") "invited you to join the group"
 
     xInfo :: Contact -> Profile -> m ()

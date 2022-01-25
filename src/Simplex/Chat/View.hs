@@ -48,7 +48,7 @@ responseToView cmd = \case
   CRGroupCreated g -> r $ viewGroupCreated g
   CRGroupMembers g -> r $ viewGroupMembers g
   CRGroupsList gs -> r $ viewGroupsList gs
-  CRSentGroupInvitation g c -> r ["invitation to join the group " <> ttyGroupName g <> " sent to " <> ttyContact c]
+  CRSentGroupInvitation g c -> r ["invitation to join the group " <> ttyGroup' g <> " sent to " <> ttyContact' c]
   CRFileTransferStatus ftStatus -> r $ viewFileTransferStatus ftStatus
   CRUserProfile p -> r $ viewUserProfile p
   CRUserProfileNoChange -> r ["user profile did not change"]
@@ -61,10 +61,10 @@ responseToView cmd = \case
   CRAcceptingContactRequest c -> r' [ttyContact c <> ": accepting contact request..."]
   CRUserContactLinkCreated cReq -> r' $ connReqContact_ "Your new chat address is created!" cReq
   CRUserContactLinkDeleted -> r' viewUserContactLinkDeleted
-  CRUserAcceptedGroupSent _g -> r' [] -- [ttyGroupName g <> ": joining the group..."]
-  CRUserDeletedMember g m -> r' [ttyGroupName g <> ": you removed " <> ttyMember m <> " from the group"]
-  CRLeftMemberUser g -> r' $ [ttyGroupName g <> ": you left the group"] <> groupPreserved g
-  CRGroupDeletedUser g -> r' [ttyGroupName g <> ": you deleted the group"]
+  CRUserAcceptedGroupSent _g -> r' [] -- [ttyGroup' g <> ": joining the group..."]
+  CRUserDeletedMember g m -> r' [ttyGroup' g <> ": you removed " <> ttyMember m <> " from the group"]
+  CRLeftMemberUser g -> r' $ [ttyGroup' g <> ": you left the group"] <> groupPreserved g
+  CRGroupDeletedUser g -> r' [ttyGroup' g <> ": you deleted the group"]
   CRRcvFileAccepted RcvFileTransfer {fileId, senderDisplayName = c} filePath ->
     r' ["saving file " <> sShow fileId <> " from " <> ttyContact c <> " to " <> plain filePath]
   CRRcvFileAcceptedSndCancelled ft -> r' $ viewRcvFileSndCancelled ft
@@ -83,24 +83,24 @@ responseToView cmd = \case
   CRSndFileRcvCancelled ft@SndFileTransfer {recipientDisplayName = c} ->
     [ttyContact c <> " cancelled receiving " <> sndFile ft]
   CRContactConnected ct -> [ttyFullContact ct <> ": contact is connected"]
-  CRContactAnotherClient c -> [ttyContact c <> ": contact is connected to another client"]
-  CRContactDisconnected c -> [ttyContact c <> ": disconnected from server (messages will be queued)"]
-  CRContactSubscribed c -> [ttyContact c <> ": connected to server"]
-  CRContactSubError c e -> [ttyContact c <> ": contact error " <> sShow e]
+  CRContactAnotherClient c -> [ttyContact' c <> ": contact is connected to another client"]
+  CRContactDisconnected c -> [ttyContact' c <> ": disconnected from server (messages will be queued)"]
+  CRContactSubscribed c -> [ttyContact' c <> ": connected to server"]
+  CRContactSubError c e -> [ttyContact' c <> ": contact error " <> sShow e]
   CRGroupInvitation GroupInfo {localDisplayName = ldn, groupProfile = GroupProfile {fullName}} ->
     [groupInvitation ldn fullName]
   CRReceivedGroupInvitation g c role -> viewReceivedGroupInvitation g c role
-  CRUserJoinedGroup g -> [ttyGroupName g <> ": you joined the group"]
-  CRJoinedGroupMember g m -> [ttyGroupName g <> ": " <> ttyMember m <> " joined the group "]
-  CRJoinedGroupMemberConnecting g host m -> [ttyGroupName g <> ": " <> ttyMember host <> " added " <> ttyFullMember m <> " to the group (connecting...)"]
-  CRConnectedToGroupMember g m -> [ttyGroupName g <> ": " <> connectedMember m <> " is connected"]
-  CRDeletedMemberUser g by -> [ttyGroupName g <> ": " <> ttyMember by <> " removed you from the group"] <> groupPreserved g
-  CRDeletedMember g by m -> [ttyGroupName g <> ": " <> ttyMember by <> " removed " <> ttyMember m <> " from the group"]
-  CRLeftMember g m -> [ttyGroupName g <> ": " <> ttyMember m <> " left the group"]
+  CRUserJoinedGroup g -> [ttyGroup' g <> ": you joined the group"]
+  CRJoinedGroupMember g m -> [ttyGroup' g <> ": " <> ttyMember m <> " joined the group "]
+  CRJoinedGroupMemberConnecting g host m -> [ttyGroup' g <> ": " <> ttyMember host <> " added " <> ttyFullMember m <> " to the group (connecting...)"]
+  CRConnectedToGroupMember g m -> [ttyGroup' g <> ": " <> connectedMember m <> " is connected"]
+  CRDeletedMemberUser g by -> [ttyGroup' g <> ": " <> ttyMember by <> " removed you from the group"] <> groupPreserved g
+  CRDeletedMember g by m -> [ttyGroup' g <> ": " <> ttyMember by <> " removed " <> ttyMember m <> " from the group"]
+  CRLeftMember g m -> [ttyGroup' g <> ": " <> ttyMember m <> " left the group"]
   CRGroupEmpty g -> [ttyFullGroup g <> ": group is empty"]
   CRGroupRemoved g -> [ttyFullGroup g <> ": you are no longer a member or group deleted"]
-  CRGroupDeleted g m -> [ttyGroupName g <> ": " <> ttyMember m <> " deleted the group", "use " <> highlight ("/d #" <> groupName g) <> " to delete the local copy of the group"]
-  CRMemberSubError g c e -> [ttyGroupName g <> " member " <> ttyContact c <> " error: " <> sShow e]
+  CRGroupDeleted g m -> [ttyGroup' g <> ": " <> ttyMember m <> " deleted the group", "use " <> highlight ("/d #" <> groupName g) <> " to delete the local copy of the group"]
+  CRMemberSubError g c e -> [ttyGroup' g <> " member " <> ttyContact c <> " error: " <> sShow e]
   CRGroupSubscribed g -> [ttyFullGroup g <> ": connected to server(s)"]
   CRSndFileSubError SndFileTransfer {fileId, fileName} e ->
     ["sent file " <> sShow fileId <> " (" <> plain fileName <> ") error: " <> sShow e]
@@ -200,9 +200,9 @@ viewCannotResendInvitation GroupInfo {localDisplayName = gn} c =
     "to re-send invitation: " <> highlight ("/rm " <> gn <> " " <> c) <> ", " <> highlight ("/a " <> gn <> " " <> c)
   ]
 
-viewReceivedGroupInvitation :: GroupInfo -> ContactName -> GroupMemberRole -> [StyledString]
+viewReceivedGroupInvitation :: GroupInfo -> Contact -> GroupMemberRole -> [StyledString]
 viewReceivedGroupInvitation g c role =
-  [ ttyFullGroup g <> ": " <> ttyContact c <> " invites you to join the group as " <> plain (strEncode role),
+  [ ttyFullGroup g <> ": " <> ttyContact' c <> " invites you to join the group as " <> plain (strEncode role),
     "use " <> highlight ("/j " <> groupName g) <> " to accept"
   ]
 
@@ -487,6 +487,9 @@ viewChatError = \case
 ttyContact :: ContactName -> StyledString
 ttyContact = styled (Colored Green)
 
+ttyContact' :: Contact -> StyledString
+ttyContact' Contact {localDisplayName = c} = ttyContact c
+
 ttyFullContact :: Contact -> StyledString
 ttyFullContact Contact {localDisplayName, profile = Profile {fullName}} =
   ttyFullName localDisplayName fullName
@@ -510,8 +513,8 @@ ttyFromContact c = styled (Colored Yellow) $ c <> "> "
 ttyGroup :: GroupName -> StyledString
 ttyGroup g = styled (Colored Blue) $ "#" <> g
 
-ttyGroupName :: GroupInfo -> StyledString
-ttyGroupName = ttyGroup . groupName
+ttyGroup' :: GroupInfo -> StyledString
+ttyGroup' = ttyGroup . groupName
 
 ttyGroups :: [GroupName] -> StyledString
 ttyGroups [] = ""
