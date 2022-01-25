@@ -1769,6 +1769,46 @@ deletePendingGroupMessage st groupMemberId messageId =
   liftIO . withTransaction st $ \db ->
     DB.execute db "DELETE FROM pending_group_messages WHERE group_member_id = ? AND message_id = ?" (groupMemberId, messageId)
 
+-- getDirectChatItemList :: MonadUnliftIO m => SQLiteStore -> UserId -> Int64 -> m ChatItemList
+-- getDirectChatItemList st userId contactId =
+--   liftIO . withTransaction st $ \db ->
+--     DB.query
+--       db
+--       [sql|
+--         ...
+--       |]
+--       (userId, contactId)
+
+-- getGroupChatItemList :: MonadUnliftIO m => SQLiteStore -> UserId -> Int64 -> m ChatItemList
+-- getGroupChatItemList st userId groupId =
+--   liftIO . withTransaction st $ \db ->
+--     DB.query
+--       db
+--       [sql|
+--         ...
+--       |]
+--       (userId, groupId)
+
+-- getChatInfoList :: MonadUnliftIO m => SQLiteStore -> UserId -> m [ChatInfo]
+-- getChatInfoList st userId =
+--   liftIO . withTransaction st $ \db ->
+--     DB.query
+--       db
+--       [sql|
+--         ...
+--       |]
+--       (Only userId)
+
+-- getChatItemsMixed :: MonadUnliftIO m => SQLiteStore -> UserId -> m [AnyChatItem]
+-- getChatItemsMixed st userId =
+--   liftIO . withTransaction st $ \db ->
+--     DB.query
+--       db
+--       [sql|
+--         ...
+--       |]
+--       (Only userId)
+
 -- | Saves unique local display name based on passed displayName, suffixed with _N if required.
 -- This function should be called inside transaction.
 withLocalDisplayName :: forall a. DB.Connection -> UserId -> Text -> (Text -> IO a) -> IO (Either StoreError a)
