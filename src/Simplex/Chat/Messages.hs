@@ -49,7 +49,7 @@ data AChatItem c = forall d. AChatItem (SMsgDirection d) (ChatItem c d)
 data ChatItemList = forall c. ChatItemList (SChatType c) (Chat c) [AChatItem c]
 
 -- | type to show the list of chats, with one last message in each
-data ChatInfo = forall c. ChatInfo (SChatType c) (Chat c) (AChatItem c)
+data ChatInfo = forall c. ChatInfo (SChatType c) (Chat c) (Maybe (AChatItem c))
 
 -- | type to show a mix of messages from multiple chats
 data AnyChatItem = forall c d. AnyChatItem (SChatType c) (SMsgDirection d) (Chat c) (ChatItem c d)
