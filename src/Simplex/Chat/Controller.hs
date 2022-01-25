@@ -106,15 +106,15 @@ data ChatResponse
   | CRCommandAccepted CorrId
   | CRChatHelp HelpSection
   | CRWelcome User
-  | CRGroupCreated Group
+  | CRGroupCreated GroupInfo
   | CRGroupMembers Group
   | CRContactsList [Contact]
   | CRUserContactLink ConnReqContact
   | CRContactRequestRejected ContactName
-  | CRUserAcceptedGroupSent GroupName
-  | CRUserDeletedMember GroupName GroupMember
+  | CRUserAcceptedGroupSent GroupInfo
+  | CRUserDeletedMember GroupInfo GroupMember
   | CRGroupsList [GroupInfo]
-  | CRSentGroupInvitation GroupName ContactName
+  | CRSentGroupInvitation GroupInfo ContactName
   | CRFileTransferStatus (FileTransfer, [Integer])
   | CRUserProfile Profile
   | CRUserProfileNoChange
@@ -129,8 +129,8 @@ data ChatResponse
   | CRUserContactLinkDeleted
   | CRReceivedContactRequest ContactName Profile
   | CRAcceptingContactRequest ContactName
-  | CRLeftMemberUser GroupName
-  | CRGroupDeletedUser GroupName
+  | CRLeftMemberUser GroupInfo
+  | CRGroupDeletedUser GroupInfo
   | CRRcvFileAccepted RcvFileTransfer FilePath
   | CRRcvFileAcceptedSndCancelled RcvFileTransfer
   | CRRcvFileStart RcvFileTransfer
@@ -148,20 +148,20 @@ data ChatResponse
   | CRContactDisconnected ContactName
   | CRContactSubscribed ContactName
   | CRContactSubError ContactName ChatError
-  | CRGroupInvitation Group
-  | CRReceivedGroupInvitation Group ContactName GroupMemberRole
-  | CRUserJoinedGroup GroupName
-  | CRJoinedGroupMember GroupName GroupMember
-  | CRJoinedGroupMemberConnecting {group :: GroupName, hostMember :: GroupMember, member :: GroupMember}
-  | CRConnectedToGroupMember GroupName GroupMember
-  | CRDeletedMember {group :: GroupName, byMember :: GroupMember, deletedMember :: GroupMember}
-  | CRDeletedMemberUser GroupName GroupMember
-  | CRLeftMember GroupName GroupMember
-  | CRGroupEmpty Group
-  | CRGroupRemoved Group
-  | CRGroupDeleted GroupName GroupMember
-  | CRMemberSubError GroupName ContactName ChatError
-  | CRGroupSubscribed Group
+  | CRGroupInvitation GroupInfo
+  | CRReceivedGroupInvitation GroupInfo ContactName GroupMemberRole
+  | CRUserJoinedGroup GroupInfo
+  | CRJoinedGroupMember GroupInfo GroupMember
+  | CRJoinedGroupMemberConnecting {group :: GroupInfo, hostMember :: GroupMember, member :: GroupMember}
+  | CRConnectedToGroupMember GroupInfo GroupMember
+  | CRDeletedMember {group :: GroupInfo, byMember :: GroupMember, deletedMember :: GroupMember}
+  | CRDeletedMemberUser GroupInfo GroupMember
+  | CRLeftMember GroupInfo GroupMember
+  | CRGroupEmpty GroupInfo
+  | CRGroupRemoved GroupInfo
+  | CRGroupDeleted GroupInfo GroupMember
+  | CRMemberSubError GroupInfo ContactName ChatError
+  | CRGroupSubscribed GroupInfo
   | CRSndFileSubError SndFileTransfer ChatError
   | CRRcvFileSubError RcvFileTransfer ChatError
   | CRUserContactLinkSubscribed
@@ -185,12 +185,12 @@ data ChatErrorType
   | CEGroupContactRole ContactName
   | CEGroupDuplicateMember ContactName
   | CEGroupDuplicateMemberId
-  | CEGroupNotJoined GroupName
+  | CEGroupNotJoined GroupInfo
   | CEGroupMemberNotActive
   | CEGroupMemberUserRemoved
   | CEGroupMemberNotFound ContactName
   | CEGroupMemberIntroNotFound ContactName
-  | CEGroupCantResendInvitation GroupName ContactName
+  | CEGroupCantResendInvitation GroupInfo ContactName
   | CEGroupInternal String
   | CEFileNotFound String
   | CEFileAlreadyReceiving String

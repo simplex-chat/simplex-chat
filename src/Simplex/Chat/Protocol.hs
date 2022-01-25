@@ -26,28 +26,22 @@ import Database.SQLite.Simple.FromField (FromField (..))
 import Database.SQLite.Simple.ToField (ToField (..))
 import GHC.Generics
 import Simplex.Chat.Types
-import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Agent.Store.SQLite (fromTextField_)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Util ((<$?>))
 
-data ChatDirection (p :: AParty) where
-  ReceivedDirectMessage :: Connection -> Maybe Contact -> ChatDirection 'Agent
-  SentDirectMessage :: Contact -> ChatDirection 'Client
-  ReceivedGroupMessage :: Connection -> GroupName -> GroupMember -> ChatDirection 'Agent
-  SentGroupMessage :: GroupName -> ChatDirection 'Client
-  SndFileConnection :: Connection -> SndFileTransfer -> ChatDirection 'Agent
-  RcvFileConnection :: Connection -> RcvFileTransfer -> ChatDirection 'Agent
-  UserContactConnection :: Connection -> UserContact -> ChatDirection 'Agent
+data ConnectionEntity
+  = RcvDirectMsgConnection Connection (Maybe Contact)
+  | RcvGroupMsgConnection Connection GroupInfo GroupMember
+  | SndFileConnection Connection SndFileTransfer
+  | RcvFileConnection Connection RcvFileTransfer
+  | UserContactConnection Connection UserContact
+  deriving (Eq, Show)
 
-deriving instance Eq (ChatDirection p)
-
-deriving instance Show (ChatDirection p)
-
-fromConnection :: ChatDirection 'Agent -> Connection
+fromConnection :: ConnectionEntity -> Connection
 fromConnection = \case
-  ReceivedDirectMessage conn _ -> conn
-  ReceivedGroupMessage conn _ _ -> conn
+  RcvDirectMsgConnection conn _ -> conn
+  RcvGroupMsgConnection conn _ _ -> conn
   SndFileConnection conn _ -> conn
   RcvFileConnection conn _ -> conn
   UserContactConnection conn _ -> conn
