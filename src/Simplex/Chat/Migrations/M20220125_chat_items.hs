@@ -10,11 +10,10 @@ m20220125_chat_items =
   [sql|
 CREATE TABLE chat_items ( -- mutable chat_items presented to user
   chat_item_id INTEGER PRIMARY KEY,
-  chat_msg_id INTEGER NOT NULL, -- sent as part of the message that created the item -- TODO what is this for?
-  creating_message_id INTEGER NOT NULL UNIQUE REFERENCES messages,
-  item_type TEXT NOT NULL,
+  chat_msg_id INTEGER, -- sent as part of the message that created the item
+  created_by_message_id INTEGER NOT NULL UNIQUE REFERENCES messages,
   item_text TEXT NOT NULL, -- textual representation
-  item_props TEXT NOT NULL -- JSON
+  item_content TEXT NOT NULL -- JSON
 );
 
 CREATE TABLE direct_chat_items (
@@ -32,14 +31,6 @@ CREATE TABLE group_chat_items (
   item_sent INTEGER, -- 0 for received, 1 for sent
   item_ts TEXT NOT NULL DEFAULT (datetime('now')), -- broker_ts of creating message for received, created_at for sent
   item_deleted INTEGER NOT NULL -- 1 for deleted
-);
-
-CREATE TABLE chat_item_content (
-  chat_item_content_id INTEGER PRIMARY KEY,
-  chat_item_id INTEGER NOT NULL REFERENCES chat_items ON DELETE CASCADE,
-  content_type TEXT NOT NULL,
-  content_size INTEGER NOT NULL,
-  content BLOB NOT NULL
 );
 
 CREATE TABLE chat_item_messages (

@@ -1,11 +1,9 @@
 SELECT
-  ci.chat_item_id, ci.creating_message_id, ci.item_type, ci.item_text, ci.item_props,
-  cic.content_type, cic.content,
+  ci.chat_item_id, ci.chat_msg_id, ci.created_by_message_id, ci.item_text, ci.item_content,
   gci.item_sent, gci.item_ts, gci.item_deleted,
   gp.display_name, gp.full_name, gp.properties,
   cp.display_name, cp.full_name, cp.properties
 FROM chat_items ci
-JOIN chat_item_content cic ON cic.chat_item_id == ci.chat_item_id
 JOIN group_chat_items gci ON gci.chat_item_id == ci.chat_item_id
 JOIN groups g ON g.group_id == gci.group_id
 JOIN group_profiles gp ON gp.group_profile_id == g.group_profile_id
