@@ -16,9 +16,16 @@ SELECT
   md.agent_msg_meta,
   mde.delivery_status,
   mde.created_at
-FROM chat_items ci
-JOIN contacts c ON c.contact_id == ci.contact_id
+FROM contacts c
 JOIN contact_profiles cp ON cp.contact_profile_id == c.contact_profile_id
+JOIN (
+  SELECT contact_id, chat_item_id, MAX(item_ts) MaxDate
+  FROM chat_items
+  WHERE item_deleted != 1
+  GROUP BY contact_id, chat_item_id
+) CIMaxDates ON CIMaxDates.contact_id = c.contact_id
+LEFT JOIN chat_items ci ON ci.chat_item_id == CIMaxDates.chat_item_id
+                       AND ci.item_ts == CIMaxDates.MaxDate
 JOIN messages m ON m.message_id == ci.created_by_message_id
 JOIN msg_deliveries md ON md.message_id = m.message_id
 JOIN (
@@ -28,5 +35,5 @@ JOIN (
 ) MDEMaxDates ON MDEMaxDates.msg_delivery_id = md.msg_delivery_id
 JOIN msg_delivery_events mde ON mde.msg_delivery_id = MDEMaxDates.msg_delivery_id
                             AND mde.created_at = MDEMaxDates.MaxDate
-WHERE c.user_id = ? AND c.contact_id = ?
+WHERE c.user_id = ?
 ORDER BY ci.item_ts DESC
