@@ -1002,23 +1002,27 @@ getUserGroups st user@User {userId} =
     groupNames <- map fromOnly <$> DB.query db "SELECT local_display_name FROM groups WHERE user_id = ?" (Only userId)
     map fst . rights <$> mapM (runExceptT . getGroup_ db user) groupNames
 
-getUserGroupDetails :: MonadUnliftIO m => SQLiteStore -> UserId -> m [GroupInfo]
-getUserGroupDetails st userId =
+getUserGroupDetails :: MonadUnliftIO m => SQLiteStore -> User -> m [GroupInfo]
+getUserGroupDetails st User {userId, userContactId} =
   liftIO . withTransaction st $ \db ->
     map groupInfo
       <$> DB.query
         db
         [sql|
-          SELECT g.group_id, g.local_display_name, p.display_name, p.full_name, m.member_status
+          SELECT g.group_id, g.local_display_name, gp.display_name, gp.full_name,
+            m.group_member_id, g.group_id, m.member_id, m.member_role, m.member_category, m.member_status,
+            m.invited_by, m.local_display_name, m.contact_id, mp.display_name, mp.full_name
           FROM groups g
-          JOIN group_profiles p USING (group_profile_id)
+          JOIN group_profiles gp USING (group_profile_id)
           JOIN group_members m USING (group_id)
+          JOIN contact_profiles mp USING (contact_profile_id)
           WHERE g.user_id = ? AND m.member_category = 'user'
         |]
         (Only userId)
   where
-    groupInfo (groupId, localDisplayName, displayName, fullName, userMemberStatus) =
-      GroupInfo {groupId, localDisplayName, groupProfile = GroupProfile {displayName, fullName}, userMemberStatus}
+    groupInfo ((groupId, localDisplayName, displayName, fullName) :. memberRow) =
+      let membership = toGroupMember userContactId memberRow
+       in GroupInfo {groupId, localDisplayName, groupProfile = GroupProfile {displayName, fullName}, membership}
 
 getGroupInvitation :: StoreMonad m => SQLiteStore -> User -> GroupName -> m ReceivedGroupInvitation
 getGroupInvitation st user localDisplayName =

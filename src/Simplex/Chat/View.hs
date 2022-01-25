@@ -241,8 +241,8 @@ viewGroupsList [] = ["you have no groups!", "to create: " <> highlight' "/g <nam
 viewGroupsList gs = map groupSS $ sortOn ldn_ gs
   where
     ldn_ = T.toLower . (localDisplayName :: GroupInfo -> GroupName)
-    groupSS GroupInfo {localDisplayName = ldn, groupProfile = GroupProfile {fullName}, userMemberStatus} =
-      case userMemberStatus of
+    groupSS GroupInfo {localDisplayName = ldn, groupProfile = GroupProfile {fullName}, membership} =
+      case memberStatus membership of
         GSMemInvited -> groupInvitation ldn fullName
         _ -> ttyGroup ldn <> optFullName ldn fullName
 

@@ -108,7 +108,7 @@ data GroupInfo = GroupInfo
   { groupId :: Int64,
     localDisplayName :: GroupName,
     groupProfile :: GroupProfile,
-    userMemberStatus :: GroupMemberStatus
+    membership :: GroupMember
   }
   deriving (Show)
 

@@ -252,7 +252,7 @@ processChatCommand user@User {userId, profile} = \case
       withStore $ \st -> deleteGroup st user g
       pure $ CRGroupDeletedUser gName
   ListMembers gName -> CRGroupMembers <$> withStore (\st -> getGroup st user gName)
-  ListGroups -> CRGroupsList <$> withStore (`getUserGroupDetails` userId)
+  ListGroups -> CRGroupsList <$> withStore (`getUserGroupDetails` user)
   SendGroupMessage gName msg -> do
     -- TODO save pending message delivery for members without connections
     Group {members, membership} <- withStore $ \st -> getGroup st user gName
