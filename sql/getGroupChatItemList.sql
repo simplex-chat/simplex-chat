@@ -20,9 +20,9 @@ SELECT
   md.agent_msg_meta,
   mde.delivery_status,
   mde.created_at
-FROM chat_items ci
-JOIN groups g ON g.group_id = ci.group_id
+FROM groups g
 JOIN group_profiles gp ON gp.group_profile_id == g.group_profile_id
+LEFT JOIN chat_items ci ON ci.group_id == g.group_id
 LEFT JOIN group_members ON gm.group_member_id == ci.group_member_id
 JOIN contact_profiles cp ON cp.contact_profile_id == gm.contact_profile_id
 JOIN messages m ON m.message_id == ci.created_by_message_id
