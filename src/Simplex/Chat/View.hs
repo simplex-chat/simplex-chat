@@ -1,4 +1,5 @@
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -32,14 +33,7 @@ serializeChatResponse = unlines . map unStyle . responseToView ""
 
 responseToView :: String -> ChatResponse -> [StyledString]
 responseToView cmd = \case
-  CRSentMessage c mc meta -> viewSentMessage (ttyToContact c) mc meta
-  CRSentGroupMessage g mc meta -> viewSentMessage (ttyToGroup g) mc meta
-  CRSentFileInvitation c fId fPath meta -> viewSentFileInvitation (ttyToContact c) fId fPath meta
-  CRSentGroupFileInvitation g fId fPath meta -> viewSentFileInvitation (ttyToGroup g) fId fPath meta
-  CRReceivedMessage c meta mc mOk -> viewReceivedMessage (ttyFromContact c) meta mc mOk
-  CRReceivedGroupMessage g c meta mc mOk -> viewReceivedMessage (ttyFromGroup g c) meta mc mOk
-  CRReceivedFileInvitation c meta ft mOk -> viewReceivedFileInvitation (ttyFromContact c) meta ft mOk
-  CRReceivedGroupFileInvitation g c meta ft mOk -> viewReceivedFileInvitation (ttyFromGroup g c) meta ft mOk
+  CRNewChatItem (AnyChatItem _ _ chat item) -> viewChatItem chat item
   CRCommandAccepted _ -> r []
   CRChatHelp section -> case section of
     HSMain -> r chatHelpInfo
@@ -120,6 +114,34 @@ responseToView cmd = \case
     r = (plain cmd :)
     -- this function should be `id` in case of asynchronous command responses
     r' = r
+
+viewChatItem :: Chat c -> ChatItem c d -> [StyledString]
+viewChatItem chat item = case (chat, item) of
+  (DirectChat c, DirectChatItem ciMeta content) -> case ciMeta of
+    CISndMeta meta -> case content of
+      CIMsgContent mc -> viewSentMessage to mc meta
+      CISndFileInvitation fId fPath -> viewSentFileInvitation to fId fPath meta
+    CIRcvMeta meta mOk -> case content of
+      CIMsgContent mc -> viewReceivedMessage from meta mc mOk
+      CIRcvFileInvitation ft -> viewReceivedFileInvitation from meta ft mOk
+    where
+      to = ttyToContact' c
+      from = ttyFromContact' c
+  (GroupChat g, SndGroupChatItem (CISndMeta meta) content) -> case content of
+    CIMsgContent mc -> viewSentMessage to mc meta
+    CISndFileInvitation fId fPath -> viewSentFileInvitation to fId fPath meta
+    where
+      to = ttyToGroup' g
+  (GroupChat g, RcvGroupChatItem c (CIRcvMeta meta mOk) content) -> case content of
+    CIMsgContent mc -> viewReceivedMessage from meta mc mOk
+    CIRcvFileInvitation ft -> viewReceivedFileInvitation from meta ft mOk
+    where
+      from = ttyFromGroup' g c
+  where
+    ttyToContact' Contact {localDisplayName} = ttyToContact localDisplayName
+    ttyFromContact' Contact {localDisplayName} = ttyFromContact localDisplayName
+    ttyToGroup' g = ttyToGroup g
+    ttyFromGroup' g GroupMember {localDisplayName = c} = ttyFromGroup g c
 
 viewInvalidConnReq :: [StyledString]
 viewInvalidConnReq =
@@ -268,11 +290,11 @@ viewContactUpdated
     where
       fullNameUpdate = if T.null fullName' || fullName' == n' then " removed full name" else " updated full name: " <> plain fullName'
 
-viewReceivedMessage :: StyledString -> ChatMsgMeta -> MsgContent -> MsgIntegrity -> [StyledString]
+viewReceivedMessage :: StyledString -> CIMetaProps -> MsgContent -> MsgIntegrity -> [StyledString]
 viewReceivedMessage from meta mc = receivedWithTime_ from meta (ttyMsgContent mc)
 
-receivedWithTime_ :: StyledString -> ChatMsgMeta -> [StyledString] -> MsgIntegrity -> [StyledString]
-receivedWithTime_ from ChatMsgMeta {localChatTs, createdAt} styledMsg mOk = do
+receivedWithTime_ :: StyledString -> CIMetaProps -> [StyledString] -> MsgIntegrity -> [StyledString]
+receivedWithTime_ from CIMetaProps {localChatTs, createdAt} styledMsg mOk = do
   prependFirst (formattedTime <> " " <> from) styledMsg ++ showIntegrity mOk
   where
     formattedTime :: StyledString
@@ -297,14 +319,14 @@ receivedWithTime_ from ChatMsgMeta {localChatTs, createdAt} styledMsg mOk = do
     msgError :: String -> [StyledString]
     msgError s = [styled (Colored Red) s]
 
-viewSentMessage :: StyledString -> MsgContent -> ChatMsgMeta -> [StyledString]
+viewSentMessage :: StyledString -> MsgContent -> CIMetaProps -> [StyledString]
 viewSentMessage to = sentWithTime_ . prependFirst to . ttyMsgContent
 
-viewSentFileInvitation :: StyledString -> FileTransferId -> FilePath -> ChatMsgMeta -> [StyledString]
+viewSentFileInvitation :: StyledString -> FileTransferId -> FilePath -> CIMetaProps -> [StyledString]
 viewSentFileInvitation to fId fPath = sentWithTime_ $ ttySentFile to fId fPath
 
-sentWithTime_ :: [StyledString] -> ChatMsgMeta -> [StyledString]
-sentWithTime_ styledMsg ChatMsgMeta {localChatTs} =
+sentWithTime_ :: [StyledString] -> CIMetaProps -> [StyledString]
+sentWithTime_ styledMsg CIMetaProps {localChatTs} =
   prependFirst (ttyMsgTime localChatTs <> " ") styledMsg
 
 ttyMsgTime :: ZonedTime -> StyledString
@@ -342,7 +364,7 @@ sendingFile_ status ft@SndFileTransfer {recipientDisplayName = c} =
 sndFile :: SndFileTransfer -> StyledString
 sndFile SndFileTransfer {fileId, fileName} = fileTransfer fileId fileName
 
-viewReceivedFileInvitation :: StyledString -> ChatMsgMeta -> RcvFileTransfer -> MsgIntegrity -> [StyledString]
+viewReceivedFileInvitation :: StyledString -> CIMetaProps -> RcvFileTransfer -> MsgIntegrity -> [StyledString]
 viewReceivedFileInvitation from meta ft = receivedWithTime_ from meta (receivedFileInvitation_ ft)
 
 receivedFileInvitation_ :: RcvFileTransfer -> [StyledString]
