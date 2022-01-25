@@ -3,6 +3,7 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -98,6 +99,7 @@ module Simplex.Chat.Store
     createPendingGroupMessage,
     getPendingGroupMessages,
     deletePendingGroupMessage,
+    createNewChatItem,
   )
 where
 
@@ -1771,19 +1773,28 @@ deletePendingGroupMessage st groupMemberId messageId =
   liftIO . withTransaction st $ \db ->
     DB.execute db "DELETE FROM pending_group_messages WHERE group_member_id = ? AND message_id = ?" (groupMemberId, messageId)
 
--- createNewChatItem :: MonadUnliftIO m => SQLiteStore -> NewMessage -> m MessageId
--- createNewChatItem st NewMessage {direction, cmEventTag, chatTs, msgBody} =
---   liftIO . withTransaction st $ \db -> do
---     createdAt <- getCurrentTime
---     DB.execute
---       db
---       [sql|
---         INSERT INTO messages
---           (msg_sent, chat_msg_event, chat_ts, msg_body, created_at) VALUES (?,?,?,?,?);
---       |]
---       (direction, cmEventTag, chatTs, msgBody, createdAt)
---     msgId <- insertedRowId db
---     pure Message {msgId, direction, cmEventTag, chatTs, msgBody, createdAt}
+createNewChatItem :: MonadUnliftIO m => SQLiteStore -> UserId -> ChatDirection' c d -> NewChatItem d -> m ChatItemId
+createNewChatItem st userId chatDirection NewChatItem {createdByMessageId, itemSent, itemTs, itemContent, itemText, createdAt} =
+  liftIO . withTransaction st $ \db -> do
+    let (contactId_, groupId_, groupMemberId_) = ids
+    DB.execute
+      db
+      [sql|
+        INSERT INTO chat_items (
+          user_id, contact_id, group_id, group_member_id,
+          created_by_message_id, item_sent, item_ts, item_content, item_text, created_at, updated_at
+        ) VALUES (?,?,?,?,?,?,?,?,?,?,?);
+      |]
+      ( (userId, contactId_, groupId_, groupMemberId_)
+          :. (createdByMessageId, itemSent, itemTs, itemContent, itemText, createdAt, createdAt)
+      )
+    insertedRowId db
+  where
+    ids :: (Maybe Int64, Maybe Int64, Maybe Int64)
+    ids = case chatDirection of
+      DirectChat_ Contact {contactId} -> (Just contactId, Nothing, Nothing)
+      SndGroupChat_ GroupInfo {groupId} -> (Nothing, Just groupId, Nothing)
+      RcvGroupChat_ GroupInfo {groupId} GroupMember {groupMemberId} -> (Nothing, Just groupId, Just groupMemberId)
 
 -- getDirectChatItemList :: MonadUnliftIO m => SQLiteStore -> UserId -> Int64 -> m ChatItemList
 -- getDirectChatItemList st userId contactId =

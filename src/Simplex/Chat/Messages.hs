@@ -53,10 +53,25 @@ data AChatItem c = forall d. AChatItem (SMsgDirection d) (ChatItem c d)
 
 deriving instance Show (AChatItem c)
 
+data ChatDirection' (c :: ChatType) (d :: MsgDirection) where
+  DirectChat_ :: Contact -> ChatDirection' 'CTDirect d
+  SndGroupChat_ :: GroupInfo -> ChatDirection' 'CTGroup 'MDSnd
+  RcvGroupChat_ :: GroupInfo -> GroupMember -> ChatDirection' 'CTGroup 'MDRcv
+
+data NewChatItem d = NewChatItem
+  { createdByMessageId :: MessageId,
+    itemSent :: MsgDirection,
+    itemTs :: ChatItemTs,
+    itemContent :: CIContent d,
+    itemText :: Text,
+    createdAt :: UTCTime
+  }
+  deriving (Show)
+
 -- | type to show one chat with messages
 data ChatItemList = forall c. ChatItemList (SChatType c) (Chat c) [AChatItem c]
 
-deriving instance Show (ChatItemList)
+deriving instance Show ChatItemList
 
 -- | type to show the list of chats, with one last message in each
 data ChatInfo = forall c. ChatInfo (SChatType c) (Chat c) (Maybe (AChatItem c))
@@ -75,8 +90,8 @@ data CIMeta (d :: MsgDirection) where
 deriving instance Show (CIMeta d)
 
 data CIMetaProps = CIMetaProps
-  { chatItemId :: ChatItemId,
-    itemTs :: UTCTime,
+  { itemId :: ChatItemId,
+    itemTs :: ChatItemTs,
     localItemTs :: ZonedTime,
     createdAt :: UTCTime
   }
@@ -84,7 +99,7 @@ data CIMetaProps = CIMetaProps
 
 type ChatItemId = Int64
 
-type ItemTs = UTCTime
+type ChatItemTs = UTCTime
 
 data CIContent (d :: MsgDirection) where
   CIMsgContent :: MsgContent -> CIContent d
@@ -92,6 +107,8 @@ data CIContent (d :: MsgDirection) where
   CIRcvFileInvitation :: RcvFileTransfer -> CIContent 'MDRcv
 
 deriving instance Show (CIContent d)
+
+instance ToField (CIContent d) where toField _ = toField ("" :: Text)
 
 data SChatType (c :: ChatType) where
   SCTDirect :: SChatType 'CTDirect
