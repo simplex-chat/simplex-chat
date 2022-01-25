@@ -8,6 +8,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TypeApplications #-}
 
 module Simplex.Chat.Messages where
@@ -28,42 +29,73 @@ import Database.SQLite.Simple.ToField (ToField (..))
 import GHC.Generics
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
-import Simplex.Messaging.Agent.Protocol (AgentMsgId, MsgMeta (..), serializeMsgIntegrity)
+import Simplex.Messaging.Agent.Protocol (AgentMsgId, MsgIntegrity, MsgMeta (..), serializeMsgIntegrity)
 import Simplex.Messaging.Agent.Store.SQLite (fromTextField_)
 import Simplex.Messaging.Protocol (MsgBody)
 
 data ChatType = CTDirect | CTGroup
+  deriving (Show)
 
 data Chat (c :: ChatType) where
   DirectChat :: Contact -> Chat 'CTDirect
-  GroupChat :: Group -> Chat 'CTGroup
+  GroupChat :: GroupName -> Chat 'CTGroup
+
+deriving instance Show (Chat c)
 
 data ChatItem (c :: ChatType) (d :: MsgDirection) where
-  DirectChatItem :: CIMeta -> CIContent d -> ChatItem 'CTDirect d
-  SndGroupChatItem :: CIMeta -> CIContent 'MDSnd -> ChatItem 'CTGroup 'MDSnd
-  RcvGroupChatItem :: GroupMember -> CIMeta -> CIContent 'MDRcv -> ChatItem 'CTGroup 'MDRcv
+  DirectChatItem :: CIMeta d -> CIContent d -> ChatItem 'CTDirect d
+  SndGroupChatItem :: CIMeta 'MDSnd -> CIContent 'MDSnd -> ChatItem 'CTGroup 'MDSnd
+  RcvGroupChatItem :: GroupMember -> CIMeta 'MDRcv -> CIContent 'MDRcv -> ChatItem 'CTGroup 'MDRcv
+
+deriving instance Show (ChatItem c d)
 
 data AChatItem c = forall d. AChatItem (SMsgDirection d) (ChatItem c d)
+
+deriving instance Show (AChatItem c)
 
 -- | type to show one chat with messages
 data ChatItemList = forall c. ChatItemList (SChatType c) (Chat c) [AChatItem c]
 
+deriving instance Show (ChatItemList)
+
 -- | type to show the list of chats, with one last message in each
 data ChatInfo = forall c. ChatInfo (SChatType c) (Chat c) (Maybe (AChatItem c))
+
+deriving instance Show ChatInfo
 
 -- | type to show a mix of messages from multiple chats
 data AnyChatItem = forall c d. AnyChatItem (SChatType c) (SMsgDirection d) (Chat c) (ChatItem c d)
 
-type CIMeta = ChatMsgMeta
+deriving instance Show AnyChatItem
+
+data CIMeta (d :: MsgDirection) where
+  CISndMeta :: CIMetaProps -> CIMeta 'MDSnd
+  CIRcvMeta :: CIMetaProps -> MsgIntegrity -> CIMeta 'MDRcv
+
+deriving instance Show (CIMeta d)
+
+data CIMetaProps = CIMetaProps
+  { chatItemId :: ChatItemId,
+    chatTs :: UTCTime,
+    localChatTs :: ZonedTime,
+    createdAt :: UTCTime
+  }
+  deriving (Show)
+
+type ChatItemId = Int64
 
 data CIContent (d :: MsgDirection) where
-  CIContent :: MsgContent -> CIContent d
+  CIMsgContent :: MsgContent -> CIContent d
   CISndFileInvitation :: FileTransferId -> FilePath -> CIContent 'MDSnd
   CIRcvFileInvitation :: RcvFileTransfer -> CIContent 'MDRcv
+
+deriving instance Show (CIContent d)
 
 data SChatType (c :: ChatType) where
   SCTDirect :: SChatType 'CTDirect
   SCTGroup :: SChatType 'CTGroup
+
+deriving instance Show (SChatType c)
 
 instance TestEquality SChatType where
   testEquality SCTDirect SCTDirect = Just Refl
@@ -102,13 +134,7 @@ data PendingGroupMessage = PendingGroupMessage
     introId_ :: Maybe Int64
   }
 
-data ChatMsgMeta = ChatMsgMeta
-  { msgId :: MessageId, -- the message that created chat item
-    chatTs :: UTCTime,
-    localChatTs :: ZonedTime,
-    createdAt :: UTCTime
-  }
-  deriving (Show)
+type MessageId = Int64
 
 data MsgDirection = MDRcv | MDSnd
   deriving (Show)
@@ -116,6 +142,8 @@ data MsgDirection = MDRcv | MDSnd
 data SMsgDirection (d :: MsgDirection) where
   SMDRcv :: SMsgDirection 'MDRcv
   SMDSnd :: SMsgDirection 'MDSnd
+
+deriving instance Show (SMsgDirection d)
 
 instance TestEquality SMsgDirection where
   testEquality SMDRcv SMDRcv = Just Refl

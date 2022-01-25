@@ -634,8 +634,6 @@ serializeIntroStatus = \case
   GMIntroToConnected -> "to-con"
   GMIntroConnected -> "con"
 
-type MessageId = Int64
-
 data Notification = Notification {title :: Text, text :: Text}
 
 type JSONString = String

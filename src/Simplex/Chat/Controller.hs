@@ -17,7 +17,6 @@ import Data.Map.Strict (Map)
 import Data.Text (Text)
 import Numeric.Natural
 import Simplex.Chat.Messages
-import Simplex.Chat.Protocol
 import Simplex.Chat.Store (StoreError)
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent (AgentClient)
@@ -103,14 +102,7 @@ data ChatCommand
   deriving (Show)
 
 data ChatResponse
-  = CRSentMessage ContactName MsgContent ChatMsgMeta
-  | CRSentGroupMessage GroupName MsgContent ChatMsgMeta
-  | CRSentFileInvitation ContactName FileTransferId FilePath ChatMsgMeta
-  | CRSentGroupFileInvitation GroupName FileTransferId FilePath ChatMsgMeta
-  | CRReceivedMessage ContactName ChatMsgMeta MsgContent MsgIntegrity
-  | CRReceivedGroupMessage GroupName ContactName ChatMsgMeta MsgContent MsgIntegrity
-  | CRReceivedFileInvitation ContactName ChatMsgMeta RcvFileTransfer MsgIntegrity
-  | CRReceivedGroupFileInvitation GroupName ContactName ChatMsgMeta RcvFileTransfer MsgIntegrity
+  = CRNewChatItem AnyChatItem
   | CRCommandAccepted CorrId
   | CRChatHelp HelpSection
   | CRWelcome User
