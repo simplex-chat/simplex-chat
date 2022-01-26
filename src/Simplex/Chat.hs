@@ -180,9 +180,9 @@ processChatCommand user@User {userId, profile} = \case
   SendMessage cName msg -> do
     contact <- withStore $ \st -> getContact st userId cName
     let mc = MCText $ safeDecodeUtf8 msg
-    (_, chatItem) <- sendDirectChatItem userId contact (XMsgNew mc) (CIMsgContent mc)
+    ci <- sendDirectChatItem userId contact (XMsgNew mc) (CIMsgContent mc)
     setActive $ ActiveC cName
-    pure $ CRNewChatItem chatItem
+    pure . CRNewChatItem $ AnyChatItem SCTDirect SMDSnd (DirectChat contact) ci
   NewGroup gProfile -> do
     gVar <- asks idsDrg
     CRGroupCreated <$> withStore (\st -> createNewGroup st gVar user gProfile)
@@ -255,12 +255,12 @@ processChatCommand user@User {userId, profile} = \case
   ListMembers gName -> CRGroupMembers <$> withStore (\st -> getGroup st user gName)
   ListGroups -> CRGroupsList <$> withStore (`getUserGroupDetails` user)
   SendGroupMessage gName msg -> do
-    group@(Group GroupInfo {membership} _) <- withStore $ \st -> getGroup st user gName
+    group@(Group gInfo@GroupInfo {membership} _) <- withStore $ \st -> getGroup st user gName
     unless (memberActive membership) $ chatError CEGroupMemberUserRemoved
     let mc = MCText $ safeDecodeUtf8 msg
-    (_, chatItem) <- sendGroupChatItem userId group (XMsgNew mc) (CIMsgContent mc)
+    ci <- sendGroupChatItem userId group (XMsgNew mc) (CIMsgContent mc)
     setActive $ ActiveG gName
-    pure $ CRNewChatItem chatItem
+    pure . CRNewChatItem $ AnyChatItem SCTGroup SMDSnd (GroupChat gInfo) ci
   SendFile cName f -> do
     (fileSize, chSize) <- checkSndFile f
     contact <- withStore $ \st -> getContact st userId cName
@@ -268,10 +268,10 @@ processChatCommand user@User {userId, profile} = \case
     let fileInv = FileInvitation {fileName = takeFileName f, fileSize, fileConnReq}
     SndFileTransfer {fileId} <- withStore $ \st ->
       createSndFileTransfer st userId contact f fileInv agentConnId chSize
-    (itemId, chatItem) <- sendDirectChatItem userId contact (XFile fileInv) (CISndFileInvitation fileId f)
-    withStore $ \st -> updateFileTransferChatItemId st fileId itemId
+    ci <- sendDirectChatItem userId contact (XFile fileInv) (CISndFileInvitation fileId f)
+    withStore $ \st -> updateFileTransferChatItemId st fileId $ chatItemId ci
     setActive $ ActiveC cName
-    pure $ CRNewChatItem chatItem
+    pure . CRNewChatItem $ AnyChatItem SCTDirect SMDSnd (DirectChat contact) ci
   SendGroupFile gName f -> do
     (fileSize, chSize) <- checkSndFile f
     Group gInfo@GroupInfo {membership} members <- withStore $ \st -> getGroup st user gName
@@ -804,15 +804,15 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
 
     newContentMessage :: Contact -> MsgContent -> MessageId -> MsgMeta -> m ()
     newContentMessage ct@Contact {localDisplayName = c} mc msgId msgMeta = do
-      (_, chatItem) <- saveRcvDirectChatItem userId ct msgId msgMeta (CIMsgContent mc)
-      toView $ CRNewChatItem chatItem
+      ci <- saveRcvDirectChatItem userId ct msgId msgMeta (CIMsgContent mc)
+      toView . CRNewChatItem $ AnyChatItem SCTDirect SMDRcv (DirectChat ct) ci
       showToast (c <> "> ") $ msgContentText mc
       setActive $ ActiveC c
 
     newGroupContentMessage :: GroupInfo -> GroupMember -> MsgContent -> MessageId -> MsgMeta -> m ()
     newGroupContentMessage gInfo m@GroupMember {localDisplayName = c} mc msgId msgMeta = do
-      (_, chatItem) <- saveRcvGroupChatItem userId gInfo m msgId msgMeta (CIMsgContent mc)
-      toView $ CRNewChatItem chatItem
+      ci <- saveRcvGroupChatItem userId gInfo m msgId msgMeta (CIMsgContent mc)
+      toView . CRNewChatItem $ AnyChatItem SCTGroup SMDRcv (GroupChat gInfo) ci
       let g = groupName gInfo
       showToast ("#" <> g <> " " <> c <> "> ") $ msgContentText mc
       setActive $ ActiveG g
@@ -822,9 +822,9 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
       -- TODO chunk size has to be sent as part of invitation
       chSize <- asks $ fileChunkSize . config
       ft@RcvFileTransfer {fileId} <- withStore $ \st -> createRcvFileTransfer st userId ct fInv chSize
-      (itemId, chatItem) <- saveRcvDirectChatItem userId ct msgId msgMeta (CIRcvFileInvitation ft)
-      withStore $ \st -> updateFileTransferChatItemId st fileId itemId
-      toView $ CRNewChatItem chatItem
+      ci <- saveRcvDirectChatItem userId ct msgId msgMeta (CIRcvFileInvitation ft)
+      withStore $ \st -> updateFileTransferChatItemId st fileId $ chatItemId ci
+      toView . CRNewChatItem $ AnyChatItem SCTDirect SMDRcv (DirectChat ct) ci
       showToast (c <> "> ") "wants to send a file"
       setActive $ ActiveC c
 
@@ -832,9 +832,9 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
     processGroupFileInvitation gInfo m@GroupMember {localDisplayName = c} fInv msgId msgMeta = do
       chSize <- asks $ fileChunkSize . config
       ft@RcvFileTransfer {fileId} <- withStore $ \st -> createRcvGroupFileTransfer st userId m fInv chSize
-      (itemId, chatItem) <- saveRcvGroupChatItem userId gInfo m msgId msgMeta (CIRcvFileInvitation ft)
-      withStore $ \st -> updateFileTransferChatItemId st fileId itemId
-      toView $ CRNewChatItem chatItem
+      ci <- saveRcvGroupChatItem userId gInfo m msgId msgMeta (CIRcvFileInvitation ft)
+      withStore $ \st -> updateFileTransferChatItemId st fileId $ chatItemId ci
+      toView . CRNewChatItem $ AnyChatItem SCTGroup SMDRcv (GroupChat gInfo) ci
       let g = groupName gInfo
       showToast ("#" <> g <> " " <> c <> "> ") "wants to send a file"
       setActive $ ActiveG g
@@ -1159,33 +1159,33 @@ saveRcvMSG Connection {connId} agentMsgMeta msgBody = do
   msgId <- withStore $ \st -> createNewMessageAndRcvMsgDelivery st newMsg rcvMsgDelivery
   pure (msgId, chatMsgEvent)
 
-sendDirectChatItem :: ChatMonad m => UserId -> Contact -> ChatMsgEvent -> CIContent 'MDSnd -> m (ChatItemId, AnyChatItem)
+sendDirectChatItem :: ChatMonad m => UserId -> Contact -> ChatMsgEvent -> CIContent 'MDSnd -> m (ChatItem 'CTDirect 'MDSnd)
 sendDirectChatItem userId contact@Contact {activeConn} chatMsgEvent chatItemContent = do
   msgId <- sendDirectMessage activeConn chatMsgEvent
-  chatItemMeta@CIMetaProps {itemId} <- saveChatItem userId (DirectChat_ contact) (Just msgId) chatItemContent
-  pure (itemId, AnyChatItem SCTDirect SMDSnd (DirectChat contact) $ DirectChatItem (CISndMeta chatItemMeta) chatItemContent)
+  ciMeta <- saveChatItem userId (DirectChat_ contact) (Just msgId) chatItemContent
+  pure $ DirectChatItem (CISndMeta ciMeta) chatItemContent
 
-sendGroupChatItem :: ChatMonad m => UserId -> Group -> ChatMsgEvent -> CIContent 'MDSnd -> m (ChatItemId, AnyChatItem)
+sendGroupChatItem :: ChatMonad m => UserId -> Group -> ChatMsgEvent -> CIContent 'MDSnd -> m (ChatItem 'CTGroup 'MDSnd)
 sendGroupChatItem userId (Group groupInfo members) chatMsgEvent chatItemContent = do
   msgId <- sendGroupMessage members chatMsgEvent
-  chatItemMeta@CIMetaProps {itemId} <- saveChatItem userId (SndGroupChat_ groupInfo) (Just msgId) chatItemContent
-  pure (itemId, AnyChatItem SCTGroup SMDSnd (GroupChat groupInfo) $ SndGroupChatItem (CISndMeta chatItemMeta) chatItemContent)
+  ciMeta <- saveChatItem userId (SndGroupChat_ groupInfo) (Just msgId) chatItemContent
+  pure $ SndGroupChatItem (CISndMeta ciMeta) chatItemContent
 
-saveRcvDirectChatItem :: ChatMonad m => UserId -> Contact -> MessageId -> MsgMeta -> CIContent 'MDRcv -> m (ChatItemId, AnyChatItem)
+saveRcvDirectChatItem :: ChatMonad m => UserId -> Contact -> MessageId -> MsgMeta -> CIContent 'MDRcv -> m (ChatItem 'CTDirect 'MDRcv)
 saveRcvDirectChatItem userId contact msgId MsgMeta {integrity} chatItemContent = do
-  chatItemMeta@CIMetaProps {itemId} <- saveChatItem userId (DirectChat_ contact) (Just msgId) chatItemContent
-  pure (itemId, AnyChatItem SCTDirect SMDRcv (DirectChat contact) $ DirectChatItem (CIRcvMeta chatItemMeta integrity) chatItemContent)
+  ciMeta <- saveChatItem userId (DirectChat_ contact) (Just msgId) chatItemContent
+  pure $ DirectChatItem (CIRcvMeta ciMeta integrity) chatItemContent
 
-saveRcvGroupChatItem :: ChatMonad m => UserId -> GroupInfo -> GroupMember -> MessageId -> MsgMeta -> CIContent 'MDRcv -> m (ChatItemId, AnyChatItem)
+saveRcvGroupChatItem :: ChatMonad m => UserId -> GroupInfo -> GroupMember -> MessageId -> MsgMeta -> CIContent 'MDRcv -> m (ChatItem 'CTGroup 'MDRcv)
 saveRcvGroupChatItem userId groupInfo groupMember msgId MsgMeta {integrity} chatItemContent = do
-  chatItemMeta@CIMetaProps {itemId} <- saveChatItem userId (RcvGroupChat_ groupInfo groupMember) (Just msgId) chatItemContent
-  pure (itemId, AnyChatItem SCTGroup SMDRcv (GroupChat groupInfo) $ RcvGroupChatItem groupMember (CIRcvMeta chatItemMeta integrity) chatItemContent)
+  ciMeta <- saveChatItem userId (RcvGroupChat_ groupInfo groupMember) (Just msgId) chatItemContent
+  pure $ RcvGroupChatItem groupMember (CIRcvMeta ciMeta integrity) chatItemContent
 
-saveChatItem :: ChatMonad m => UserId -> ChatDirection' c d -> Maybe MessageId -> CIContent d -> m CIMetaProps
+saveChatItem :: ChatMonad m => UserId -> ChatDirection c d -> Maybe MessageId -> CIContent d -> m CIMetaProps
 saveChatItem userId chatDirection msgId_ chatItemContent = do
-  newChatItem@NewChatItem {itemTs, createdAt} <- mkNewChatItem msgId_ MDRcv Nothing chatItemContent
-  chatItemId <- withStore $ \st -> createNewChatItem st userId chatDirection newChatItem
-  liftIO $ mkCIMetaProps chatItemId itemTs createdAt
+  ci@NewChatItem {itemTs, createdAt} <- mkNewChatItem msgId_ MDRcv Nothing chatItemContent
+  ciId <- withStore $ \st -> createNewChatItem st userId chatDirection ci
+  liftIO $ mkCIMetaProps ciId itemTs createdAt
 
 mkNewChatItem :: ChatMonad m => Maybe MessageId -> MsgDirection -> Maybe UTCTime -> CIContent d -> m (NewChatItem d)
 mkNewChatItem createdByMsgId_ itemSent brokerTs_ itemContent = do

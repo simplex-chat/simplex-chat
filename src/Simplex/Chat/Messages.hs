@@ -54,10 +54,17 @@ data AChatItem c = forall d. AChatItem (SMsgDirection d) (ChatItem c d)
 
 deriving instance Show (AChatItem c)
 
-data ChatDirection' (c :: ChatType) (d :: MsgDirection) where
-  DirectChat_ :: Contact -> ChatDirection' 'CTDirect d
-  SndGroupChat_ :: GroupInfo -> ChatDirection' 'CTGroup 'MDSnd
-  RcvGroupChat_ :: GroupInfo -> GroupMember -> ChatDirection' 'CTGroup 'MDRcv
+chatItemId :: ChatItem c d -> ChatItemId
+chatItemId = \case
+  DirectChatItem (CISndMeta CIMetaProps {itemId}) _ -> itemId
+  DirectChatItem (CIRcvMeta CIMetaProps {itemId} _) _ -> itemId
+  SndGroupChatItem (CISndMeta CIMetaProps {itemId}) _ -> itemId
+  RcvGroupChatItem _ (CIRcvMeta CIMetaProps {itemId} _) _ -> itemId
+
+data ChatDirection (c :: ChatType) (d :: MsgDirection) where
+  DirectChat_ :: Contact -> ChatDirection 'CTDirect d
+  SndGroupChat_ :: GroupInfo -> ChatDirection 'CTGroup 'MDSnd
+  RcvGroupChat_ :: GroupInfo -> GroupMember -> ChatDirection 'CTGroup 'MDRcv
 
 data NewChatItem d = NewChatItem
   { createdByMsgId_ :: Maybe MessageId,

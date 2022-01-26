@@ -1619,9 +1619,9 @@ deleteRcvFileChunks st RcvFileTransfer {fileId} =
     DB.execute db "DELETE FROM rcv_file_chunks WHERE file_id = ?" (Only fileId)
 
 updateFileTransferChatItemId :: MonadUnliftIO m => SQLiteStore -> FileTransferId -> ChatItemId -> m ()
-updateFileTransferChatItemId st fileId chatItemId =
+updateFileTransferChatItemId st fileId ciId =
   liftIO . withTransaction st $ \db ->
-    DB.execute db "UPDATE files SET chat_item_id = ? WHERE file_id = ?" (chatItemId, fileId)
+    DB.execute db "UPDATE files SET chat_item_id = ? WHERE file_id = ?" (ciId, fileId)
 
 getFileTransfer :: StoreMonad m => SQLiteStore -> UserId -> Int64 -> m FileTransfer
 getFileTransfer st userId fileId =
@@ -1812,7 +1812,7 @@ deletePendingGroupMessage st groupMemberId messageId =
   liftIO . withTransaction st $ \db ->
     DB.execute db "DELETE FROM pending_group_messages WHERE group_member_id = ? AND message_id = ?" (groupMemberId, messageId)
 
-createNewChatItem :: MonadUnliftIO m => SQLiteStore -> UserId -> ChatDirection' c d -> NewChatItem d -> m ChatItemId
+createNewChatItem :: MonadUnliftIO m => SQLiteStore -> UserId -> ChatDirection c d -> NewChatItem d -> m ChatItemId
 createNewChatItem st userId chatDirection NewChatItem {createdByMsgId_, itemSent, itemTs, itemContent, itemText, createdAt} =
   liftIO . withTransaction st $ \db -> do
     let (contactId_, groupId_, groupMemberId_) = ids
@@ -1827,10 +1827,10 @@ createNewChatItem st userId chatDirection NewChatItem {createdByMsgId_, itemSent
       ( (userId, contactId_, groupId_, groupMemberId_)
           :. (createdByMsgId_, itemSent, itemTs, itemContent, itemText, createdAt, createdAt)
       )
-    chatItemId <- insertedRowId db
+    ciId <- insertedRowId db
     when (isJust createdByMsgId_) $
-      DB.execute db "INSERT INTO chat_item_messages (chat_item_id, message_id) VALUES (?,?)" (chatItemId, fromJust createdByMsgId_)
-    pure chatItemId
+      DB.execute db "INSERT INTO chat_item_messages (chat_item_id, message_id) VALUES (?,?)" (ciId, fromJust createdByMsgId_)
+    pure ciId
   where
     ids :: (Maybe Int64, Maybe Int64, Maybe Int64)
     ids = case chatDirection of
