@@ -13,7 +13,7 @@
 
 module Simplex.Chat.Messages where
 
-import Data.Aeson (FromJSON, ToJSON, (.=))
+import Data.Aeson (FromJSON, ToJSON)
 import qualified Data.Aeson as J
 import qualified Data.ByteString.Base64 as B64
 import qualified Data.ByteString.Lazy.Char8 as LB
@@ -27,11 +27,13 @@ import Data.Type.Equality
 import Data.Typeable (Typeable)
 import Database.SQLite.Simple.FromField (FromField (..))
 import Database.SQLite.Simple.ToField (ToField (..))
-import GHC.Generics
+import GHC.Generics (Generic)
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
-import Simplex.Messaging.Agent.Protocol (AgentMsgId, MsgIntegrity, MsgMeta (..), serializeMsgIntegrity)
+import Simplex.Messaging.Agent.Protocol (AgentMsgId, MsgIntegrity, MsgMeta (..))
 import Simplex.Messaging.Agent.Store.SQLite (fromTextField_)
+import Simplex.Messaging.Encoding.String
+import Simplex.Messaging.Parsers (dropPrefix, sumTypeJSON)
 import Simplex.Messaging.Protocol (MsgBody)
 
 data ChatType = CTDirect | CTGroup
@@ -43,6 +45,22 @@ data ChatInfo (c :: ChatType) where
 
 deriving instance Show (ChatInfo c)
 
+data JSONChatInfo = JCInfoDirect Contact | JCInfoGroup GroupInfo
+  deriving (Generic)
+
+instance ToJSON JSONChatInfo where
+  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "JCInfo"
+  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "JCInfo"
+
+instance ToJSON (ChatInfo c) where
+  toJSON = J.toJSON . jsonChatInfo
+  toEncoding = J.toEncoding . jsonChatInfo
+
+jsonChatInfo :: ChatInfo c -> JSONChatInfo
+jsonChatInfo = \case
+  DirectChat c -> JCInfoDirect c
+  GroupChat g -> JCInfoGroup g
+
 type ChatItemData d = (CIMeta d, CIContent d)
 
 data ChatItem (c :: ChatType) (d :: MsgDirection) where
@@ -51,6 +69,26 @@ data ChatItem (c :: ChatType) (d :: MsgDirection) where
   RcvGroupChatItem :: GroupMember -> CIMeta 'MDRcv -> CIContent 'MDRcv -> ChatItem 'CTGroup 'MDRcv
 
 deriving instance Show (ChatItem c d)
+
+data JSONChatItem d
+  = JCItemDirect {meta :: CIMeta d, content :: CIContent d}
+  | JCItemSndGroup {meta :: CIMeta d, content :: CIContent d}
+  | JCItemRcvGroup {member :: GroupMember, meta :: CIMeta d, content :: CIContent d}
+  deriving (Generic)
+
+instance ToJSON (JSONChatItem d) where
+  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "JCItem"
+  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "JCItem"
+
+instance ToJSON (ChatItem c d) where
+  toJSON = J.toJSON . jsonChatItem
+  toEncoding = J.toEncoding . jsonChatItem
+
+jsonChatItem :: ChatItem c d -> JSONChatItem d
+jsonChatItem = \case
+  DirectChatItem meta cic -> JCItemDirect meta cic
+  SndGroupChatItem meta cic -> JCItemSndGroup meta cic
+  RcvGroupChatItem m meta cic -> JCItemRcvGroup m meta cic
 
 data CChatItem c = forall d. CChatItem (SMsgDirection d) (ChatItem c d)
 
@@ -92,11 +130,40 @@ data AChatItem = forall c d. AChatItem (SChatType c) (SMsgDirection d) (ChatInfo
 
 deriving instance Show AChatItem
 
+instance ToJSON AChatItem where
+  toJSON (AChatItem _ _ chat item) = J.toJSON $ JSONAnyChatItem chat item
+  toEncoding (AChatItem _ _ chat item) = J.toEncoding $ JSONAnyChatItem chat item
+
+data JSONAnyChatItem c d = JSONAnyChatItem {chatInfo :: ChatInfo c, chatItem :: ChatItem c d}
+  deriving (Generic)
+
+instance ToJSON (JSONAnyChatItem c d) where
+  toJSON = J.genericToJSON J.defaultOptions
+  toEncoding = J.genericToEncoding J.defaultOptions
+
 data CIMeta (d :: MsgDirection) where
   CISndMeta :: CIMetaProps -> CIMeta 'MDSnd
   CIRcvMeta :: CIMetaProps -> MsgIntegrity -> CIMeta 'MDRcv
 
 deriving instance Show (CIMeta d)
+
+instance ToJSON (CIMeta d) where
+  toJSON = J.toJSON . jsonCIMeta
+  toEncoding = J.toEncoding . jsonCIMeta
+
+data JSONCIMeta
+  = JCIMetaSnd CIMetaProps
+  | JCIMetaRcv CIMetaProps MsgIntegrity
+  deriving (Generic)
+
+instance ToJSON JSONCIMeta where
+  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "JCIMeta"
+  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "JCIMeta"
+
+jsonCIMeta :: CIMeta d -> JSONCIMeta
+jsonCIMeta = \case
+  CISndMeta meta -> JCIMetaSnd meta
+  CIRcvMeta meta integrity -> JCIMetaRcv meta integrity
 
 data CIMetaProps = CIMetaProps
   { itemId :: ChatItemId,
@@ -104,7 +171,9 @@ data CIMetaProps = CIMetaProps
     localItemTs :: ZonedTime,
     createdAt :: UTCTime
   }
-  deriving (Show)
+  deriving (Show, Generic, FromJSON)
+
+instance ToJSON CIMetaProps where toEncoding = J.genericToEncoding J.defaultOptions
 
 type ChatItemId = Int64
 
@@ -120,26 +189,24 @@ deriving instance Show (CIContent d)
 instance ToField (CIContent d) where toField = toField . decodeLatin1 . LB.toStrict . J.encode
 
 instance ToJSON (CIContent d) where
-  toJSON = J.toJSON . ciContentToJSON
-  toEncoding = J.toEncoding . ciContentToJSON
+  toJSON = J.toJSON . jsonCIContent
+  toEncoding = J.toEncoding . jsonCIContent
 
-data CIContentJSON = CIContentJSON
-  { tag :: Text,
-    subTag :: Maybe Text,
-    args :: J.Value
-  }
-  deriving (Generic, FromJSON)
+data JSONCIContent
+  = JCIMsgContent MsgContent
+  | JCISndFileInvitation FileTransferId FilePath
+  | JCIRcvFileInvitation RcvFileTransfer
+  deriving (Generic)
 
-instance ToJSON CIContentJSON where toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
+instance ToJSON JSONCIContent where
+  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "JCI"
+  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "JCI"
 
-ciContentToJSON :: CIContent d -> CIContentJSON
-ciContentToJSON = \case
-  CIMsgContent mc -> o "content" "" $ J.object ["content" .= mc]
-  CISndFileInvitation fId fPath -> o "sndFile" "invitation" $ J.object ["fileId" .= fId, "filePath" .= fPath]
-  CIRcvFileInvitation ft -> o "rcvFile" "invitation" $ J.object ["fileTransfer" .= ft]
-  where
-    o tag "" args = CIContentJSON {tag, subTag = Nothing, args}
-    o tag st args = CIContentJSON {tag, subTag = Just st, args}
+jsonCIContent :: CIContent d -> JSONCIContent
+jsonCIContent = \case
+  CIMsgContent mc -> JCIMsgContent mc
+  CISndFileInvitation fId fPath -> JCISndFileInvitation fId fPath
+  CIRcvFileInvitation ft -> JCIRcvFileInvitation ft
 
 ciContentToText :: CIContent d -> Text
 ciContentToText = \case
@@ -241,7 +308,7 @@ instance ToJSON MsgMetaJSON where toEncoding = J.genericToEncoding J.defaultOpti
 msgMetaToJson :: MsgMeta -> MsgMetaJSON
 msgMetaToJson MsgMeta {integrity, recipient = (rcvId, rcvTs), broker = (serverId, serverTs), sndMsgId = sndId} =
   MsgMetaJSON
-    { integrity = (decodeLatin1 . serializeMsgIntegrity) integrity,
+    { integrity = (decodeLatin1 . strEncode) integrity,
       rcvId,
       rcvTs,
       serverId = (decodeLatin1 . B64.encode) serverId,
