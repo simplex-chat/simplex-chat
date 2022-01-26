@@ -285,11 +285,9 @@ processChatCommand user@User {userId, profile} = \case
       traverse (`sendDirectMessage` XFile fileInv) $ memberConn m
     setActive $ ActiveG gName
     -- this is a hack as we have multiple direct messages instead of one per group
-    let chatDirection = SndGroupChat_ gInfo
-    newChatItem@NewChatItem {itemTs, createdAt} <- mkNewChatItem 1 MDSnd Nothing (CISndFileInvitation fileId f)
-    chatItemId <- withStore $ \st -> createNewChatItem st userId chatDirection newChatItem
-    chatItemMeta <- liftIO $ mkCIMetaProps chatItemId itemTs createdAt
-    pure . CRNewChatItem $ AnyChatItem SCTGroup SMDSnd (GroupChat gInfo) $ SndGroupChatItem (CISndMeta chatItemMeta) (CISndFileInvitation fileId f)
+    let chatItemContent = CISndFileInvitation fileId f
+    chatItemMeta <- saveChatItem userId (SndGroupChat_ gInfo) 1 chatItemContent
+    pure . CRNewChatItem $ AnyChatItem SCTGroup SMDSnd (GroupChat gInfo) $ SndGroupChatItem (CISndMeta chatItemMeta) chatItemContent
   ReceiveFile fileId filePath_ -> do
     ft@RcvFileTransfer {fileInvitation = FileInvitation {fileName, fileConnReq}, fileStatus} <- withStore $ \st -> getRcvFileTransfer st userId fileId
     unless (fileStatus == RFSNew) . chatError $ CEFileAlreadyReceiving fileName
