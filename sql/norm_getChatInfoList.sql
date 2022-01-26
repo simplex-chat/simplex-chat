@@ -1,13 +1,13 @@
 SELECT
   chat_type,
-  chat_item_id, chat_msg_id, created_by_message_id, item_text, item_content,
+  chat_item_id, chat_msg_id, created_by_msg_id, item_text, item_content,
   item_sent, item_ts, item_deleted,
   group_display_name, group_full_name, group_properties,
   contact_display_name, contact_full_name, contact_properties
 FROM (
   SELECT
       'direct' AS chat_type,
-      ci.chat_item_id AS chat_item_id, ci.chat_msg_id AS chat_msg_id, ci.created_by_message_id AS created_by_message_id, ci.item_text AS item_text, ci.item_content AS item_content,
+      ci.chat_item_id AS chat_item_id, ci.chat_msg_id AS chat_msg_id, ci.created_by_msg_id AS created_by_msg_id, ci.item_text AS item_text, ci.item_content AS item_content,
       dci.item_sent AS item_sent, dci.item_ts AS item_ts, dci.item_deleted AS item_deleted,
       NULL AS group_display_name, NULL AS group_full_name, NULL AS group_properties,
       cp.display_name AS contact_display_name, cp.full_name AS contact_full_name, cp.properties AS contact_properties
@@ -26,7 +26,7 @@ FROM (
   UNION
   SELECT
       'group' AS chat_type,
-      ci.chat_item_id AS chat_item_id, ci.chat_msg_id AS chat_msg_id, ci.created_by_message_id AS created_by_message_id, ci.item_text AS item_text, ci.item_content AS item_content,
+      ci.chat_item_id AS chat_item_id, ci.chat_msg_id AS chat_msg_id, ci.created_by_msg_id AS created_by_msg_id, ci.item_text AS item_text, ci.item_content AS item_content,
       gci.item_sent AS item_sent, gci.item_ts AS item_ts, gci.item_deleted AS item_deleted,
       gp.display_name AS group_display_name, gp.full_name AS group_full_name, gp.properties AS group_properties,
       cp.display_name AS contact_display_name, cp.full_name AS contact_full_name, cp.properties AS contact_properties

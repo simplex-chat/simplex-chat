@@ -11,7 +11,7 @@ m20220125_chat_items =
 CREATE TABLE chat_items ( -- mutable chat_items presented to user
   chat_item_id INTEGER PRIMARY KEY,
   chat_msg_id INTEGER, -- sent as part of the message that created the item
-  created_by_message_id INTEGER NOT NULL UNIQUE REFERENCES messages,
+  created_by_msg_id INTEGER NOT NULL UNIQUE REFERENCES messages,
   item_text TEXT NOT NULL, -- textual representation
   item_content TEXT NOT NULL -- JSON
 );

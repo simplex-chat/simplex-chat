@@ -59,7 +59,7 @@ data ChatDirection' (c :: ChatType) (d :: MsgDirection) where
   RcvGroupChat_ :: GroupInfo -> GroupMember -> ChatDirection' 'CTGroup 'MDRcv
 
 data NewChatItem d = NewChatItem
-  { createdByMessageId :: MessageId,
+  { createdByMsgId_ :: Maybe MessageId,
     itemSent :: MsgDirection,
     itemTs :: ChatItemTs,
     itemContent :: CIContent d,

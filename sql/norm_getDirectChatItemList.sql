@@ -1,5 +1,5 @@
 SELECT
-  ci.chat_item_id, ci.chat_msg_id, ci.created_by_message_id, ci.item_text, ci.item_content,
+  ci.chat_item_id, ci.chat_msg_id, ci.created_by_msg_id, ci.item_text, ci.item_content,
   dci.item_sent, dci.item_ts, dci.item_deleted,
   cp.display_name, cp.full_name, cp.properties
 FROM chat_items ci

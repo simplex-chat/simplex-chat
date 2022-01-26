@@ -119,7 +119,7 @@ import Data.Function (on)
 import Data.Functor (($>))
 import Data.Int (Int64)
 import Data.List (find, sortBy)
-import Data.Maybe (listToMaybe)
+import Data.Maybe (fromJust, isJust, listToMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (UTCTime, getCurrentTime)
@@ -1807,7 +1807,7 @@ deletePendingGroupMessage st groupMemberId messageId =
     DB.execute db "DELETE FROM pending_group_messages WHERE group_member_id = ? AND message_id = ?" (groupMemberId, messageId)
 
 createNewChatItem :: MonadUnliftIO m => SQLiteStore -> UserId -> ChatDirection' c d -> NewChatItem d -> m ChatItemId
-createNewChatItem st userId chatDirection NewChatItem {createdByMessageId, itemSent, itemTs, itemContent, itemText, createdAt} =
+createNewChatItem st userId chatDirection NewChatItem {createdByMsgId_, itemSent, itemTs, itemContent, itemText, createdAt} =
   liftIO . withTransaction st $ \db -> do
     let (contactId_, groupId_, groupMemberId_) = ids
     DB.execute
@@ -1815,13 +1815,16 @@ createNewChatItem st userId chatDirection NewChatItem {createdByMessageId, itemS
       [sql|
         INSERT INTO chat_items (
           user_id, contact_id, group_id, group_member_id,
-          created_by_message_id, item_sent, item_ts, item_content, item_text, created_at, updated_at
-        ) VALUES (?,?,?,?,?,?,?,?,?,?,?);
+          created_by_msg_id, item_sent, item_ts, item_content, item_text, created_at, updated_at
+        ) VALUES (?,?,?,?,?,?,?,?,?,?,?)
       |]
       ( (userId, contactId_, groupId_, groupMemberId_)
-          :. (createdByMessageId, itemSent, itemTs, itemContent, itemText, createdAt, createdAt)
+          :. (createdByMsgId_, itemSent, itemTs, itemContent, itemText, createdAt, createdAt)
       )
-    insertedRowId db
+    chatItemId <- insertedRowId db
+    when (isJust createdByMsgId_) $
+      DB.execute db "INSERT INTO chat_item_messages (chat_item_id, message_id) VALUES (?,?)" (chatItemId, fromJust createdByMsgId_)
+    pure chatItemId
   where
     ids :: (Maybe Int64, Maybe Int64, Maybe Int64)
     ids = case chatDirection of

@@ -5,7 +5,7 @@ SELECT
   cp.properties,
   ci.chat_item_id,
   ci.chat_msg_id,
-  ci.created_by_message_id,
+  ci.created_by_msg_id,
   ci.item_sent,
   ci.item_ts,
   ci.item_deleted,
@@ -26,7 +26,7 @@ JOIN (
 ) CIMaxDates ON CIMaxDates.contact_id = c.contact_id
 LEFT JOIN chat_items ci ON ci.chat_item_id == CIMaxDates.chat_item_id
                        AND ci.item_ts == CIMaxDates.MaxDate
-JOIN messages m ON m.message_id == ci.created_by_message_id
+JOIN messages m ON m.message_id == ci.created_by_msg_id
 JOIN msg_deliveries md ON md.message_id = m.message_id
 JOIN (
   SELECT msg_delivery_id, MAX(created_at) MaxDate
