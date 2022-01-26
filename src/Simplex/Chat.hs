@@ -270,7 +270,7 @@ processChatCommand user@User {userId, profile} = \case
       createSndFileTransfer st userId contact f fileInv agentConnId chSize
     chatItem <- sendDirectChatItem userId contact (XFile fileInv) (CISndFileInvitation fileId f)
     setActive $ ActiveC cName
-    pure . CRNewChatItem $ chatItem
+    pure $ CRNewChatItem chatItem
   SendGroupFile gName f -> do
     (fileSize, chSize) <- checkSndFile f
     Group gInfo@GroupInfo {membership} members <- withStore $ \st -> getGroup st user gName
