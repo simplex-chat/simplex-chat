@@ -1834,9 +1834,9 @@ createNewChatItem st userId chatDirection NewChatItem {createdByMsgId_, itemSent
   where
     ids :: (Maybe Int64, Maybe Int64, Maybe Int64)
     ids = case chatDirection of
-      DirectChat_ Contact {contactId} -> (Just contactId, Nothing, Nothing)
-      SndGroupChat_ GroupInfo {groupId} -> (Nothing, Just groupId, Nothing)
-      RcvGroupChat_ GroupInfo {groupId} GroupMember {groupMemberId} -> (Nothing, Just groupId, Just groupMemberId)
+      CDDirect Contact {contactId} -> (Just contactId, Nothing, Nothing)
+      CDSndGroup GroupInfo {groupId} -> (Nothing, Just groupId, Nothing)
+      CDRcvGroup GroupInfo {groupId} GroupMember {groupMemberId} -> (Nothing, Just groupId, Just groupMemberId)
 
 -- getDirectChatItemList :: MonadUnliftIO m => SQLiteStore -> UserId -> Int64 -> m ChatItemList
 -- getDirectChatItemList st userId contactId =

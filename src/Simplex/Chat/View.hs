@@ -33,7 +33,7 @@ serializeChatResponse = unlines . map unStyle . responseToView ""
 
 responseToView :: String -> ChatResponse -> [StyledString]
 responseToView cmd = \case
-  CRNewChatItem (AnyChatItem _ _ chat item) -> viewChatItem chat item
+  CRNewChatItem (AChatItem _ _ chat item) -> viewChatItem chat item
   CRCommandAccepted _ -> r []
   CRChatHelp section -> case section of
     HSMain -> r chatHelpInfo
@@ -115,7 +115,7 @@ responseToView cmd = \case
     -- this function should be `id` in case of asynchronous command responses
     r' = r
 
-viewChatItem :: Chat c -> ChatItem c d -> [StyledString]
+viewChatItem :: ChatInfo c -> ChatItem c d -> [StyledString]
 viewChatItem chat item = case (chat, item) of
   (DirectChat c, DirectChatItem ciMeta content) -> case ciMeta of
     CISndMeta meta -> case content of

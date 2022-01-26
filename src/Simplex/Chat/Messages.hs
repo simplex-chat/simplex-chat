@@ -37,11 +37,13 @@ import Simplex.Messaging.Protocol (MsgBody)
 data ChatType = CTDirect | CTGroup
   deriving (Show)
 
-data Chat (c :: ChatType) where
-  DirectChat :: Contact -> Chat 'CTDirect
-  GroupChat :: GroupInfo -> Chat 'CTGroup
+data ChatInfo (c :: ChatType) where
+  DirectChat :: Contact -> ChatInfo 'CTDirect
+  GroupChat :: GroupInfo -> ChatInfo 'CTGroup
 
-deriving instance Show (Chat c)
+deriving instance Show (ChatInfo c)
+
+type ChatItemData d = (CIMeta d, CIContent d)
 
 data ChatItem (c :: ChatType) (d :: MsgDirection) where
   DirectChatItem :: CIMeta d -> CIContent d -> ChatItem 'CTDirect d
@@ -50,9 +52,9 @@ data ChatItem (c :: ChatType) (d :: MsgDirection) where
 
 deriving instance Show (ChatItem c d)
 
-data AChatItem c = forall d. AChatItem (SMsgDirection d) (ChatItem c d)
+data CChatItem c = forall d. CChatItem (SMsgDirection d) (ChatItem c d)
 
-deriving instance Show (AChatItem c)
+deriving instance Show (CChatItem c)
 
 chatItemId :: ChatItem c d -> ChatItemId
 chatItemId = \case
@@ -62,9 +64,9 @@ chatItemId = \case
   RcvGroupChatItem _ (CIRcvMeta CIMetaProps {itemId} _) _ -> itemId
 
 data ChatDirection (c :: ChatType) (d :: MsgDirection) where
-  DirectChat_ :: Contact -> ChatDirection 'CTDirect d
-  SndGroupChat_ :: GroupInfo -> ChatDirection 'CTGroup 'MDSnd
-  RcvGroupChat_ :: GroupInfo -> GroupMember -> ChatDirection 'CTGroup 'MDRcv
+  CDDirect :: Contact -> ChatDirection 'CTDirect d
+  CDSndGroup :: GroupInfo -> ChatDirection 'CTGroup 'MDSnd
+  CDRcvGroup :: GroupInfo -> GroupMember -> ChatDirection 'CTGroup 'MDRcv
 
 data NewChatItem d = NewChatItem
   { createdByMsgId_ :: Maybe MessageId,
@@ -77,19 +79,18 @@ data NewChatItem d = NewChatItem
   deriving (Show)
 
 -- | type to show one chat with messages
-data ChatItemList = forall c. ChatItemList (SChatType c) (Chat c) [AChatItem c]
-
-deriving instance Show ChatItemList
+data Chat c = Chat (ChatInfo c) [CChatItem c]
+  deriving (Show)
 
 -- | type to show the list of chats, with one last message in each
-data ChatInfo = forall c. ChatInfo (SChatType c) (Chat c) (Maybe (AChatItem c))
+data AChatPreview = forall c. AChatPreview (SChatType c) (ChatInfo c) (Maybe (CChatItem c))
 
-deriving instance Show ChatInfo
+deriving instance Show AChatPreview
 
 -- | type to show a mix of messages from multiple chats
-data AnyChatItem = forall c d. AnyChatItem (SChatType c) (SMsgDirection d) (Chat c) (ChatItem c d)
+data AChatItem = forall c d. AChatItem (SChatType c) (SMsgDirection d) (ChatInfo c) (ChatItem c d)
 
-deriving instance Show AnyChatItem
+deriving instance Show AChatItem
 
 data CIMeta (d :: MsgDirection) where
   CISndMeta :: CIMetaProps -> CIMeta 'MDSnd

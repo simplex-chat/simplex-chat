@@ -102,7 +102,7 @@ data ChatCommand
   deriving (Show)
 
 data ChatResponse
-  = CRNewChatItem AnyChatItem
+  = CRNewChatItem AChatItem
   | CRCommandAccepted CorrId
   | CRChatHelp HelpSection
   | CRWelcome User
