@@ -1,0 +1,15 @@
+diff --git a/direct-sqlite.cabal b/direct-sqlite.cabal
+index 96f26b7..996198e 100644
+--- a/direct-sqlite.cabal
++++ b/direct-sqlite.cabal
+@@ -69,7 +69,9 @@ library
+     install-includes: sqlite3.h, sqlite3ext.h
+     include-dirs:     cbits
+
+-    if !os(windows) && !os(android)
++    extra-libraries: dl
++
++    if !os(windows) && !os(android)
+       extra-libraries: pthread
+
+     if flag(fulltextsearch)

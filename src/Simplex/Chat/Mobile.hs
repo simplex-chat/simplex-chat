@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
@@ -9,20 +10,23 @@ import Control.Concurrent (forkIO)
 import Control.Concurrent.STM
 import Control.Monad.Except
 import Control.Monad.Reader
-import Data.Aeson ((.=))
+import Data.Aeson (ToJSON (..), (.=))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.Encoding as JE
+import qualified Data.ByteString.Base64.URL as U
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.List (find)
 import Foreign.C.String
 import Foreign.StablePtr
+import GHC.Generics
 import Simplex.Chat
 import Simplex.Chat.Controller
 import Simplex.Chat.Options
 import Simplex.Chat.Store
 import Simplex.Chat.Types
 import Simplex.Chat.View
+import Simplex.Messaging.Protocol (CorrId (..))
 
 foreign export ccall "chat_init_store" cChatInitStore :: CString -> IO (StablePtr ChatStore)
 
@@ -34,7 +38,7 @@ foreign export ccall "chat_start" cChatStart :: StablePtr ChatStore -> IO (Stabl
 
 foreign export ccall "chat_send_cmd" cChatSendCmd :: StablePtr ChatController -> CString -> IO CJSONString
 
-foreign export ccall "chat_recv_msg" cChatRecvMsg :: StablePtr ChatController -> IO CString
+foreign export ccall "chat_recv_msg" cChatRecvMsg :: StablePtr ChatController -> IO CJSONString
 
 -- | creates or connects to chat store
 cChatInitStore :: CString -> IO (StablePtr ChatStore)
@@ -63,7 +67,7 @@ cChatSendCmd cPtr cCmd = do
   newCString =<< chatSendCmd c cmd
 
 -- | receive message from chat (blocking)
-cChatRecvMsg :: StablePtr ChatController -> IO CString
+cChatRecvMsg :: StablePtr ChatController -> IO CJSONString
 cChatRecvMsg cc = deRefStablePtr cc >>= chatRecvMsg >>= newCString
 
 mobileChatOpts :: ChatOpts
@@ -115,18 +119,33 @@ chatStart ChatStore {dbFilePrefix, chatStore} = do
   pure cc
 
 chatSendCmd :: ChatController -> String -> IO JSONString
-chatSendCmd cc s = crToJSON <$> runReaderT (execChatCommand s) cc
+chatSendCmd cc s = crToJSON (CorrId "") <$> runReaderT (execChatCommand s) cc
 
-chatRecvMsg :: ChatController -> IO String
-chatRecvMsg ChatController {outputQ} = serializeChatResponse . snd <$> atomically (readTBQueue outputQ)
+chatRecvMsg :: ChatController -> IO JSONString
+chatRecvMsg ChatController {outputQ} = json <$> atomically (readTBQueue outputQ)
+  where
+    json (corrId, resp) = crToJSON corrId resp
 
 jsonObject :: J.Series -> JSONString
 jsonObject = LB.unpack . JE.encodingToLazyByteString . J.pairs
 
-crToJSON :: ChatResponse -> JSONString
-crToJSON = \case
-  CRUserProfile p -> o "profile" $ J.object ["profile" .= p]
-  r -> o "terminal" $ J.object ["response" .= serializeChatResponse r]
+crToJSON :: CorrId -> ChatResponse -> JSONString
+crToJSON corrId = LB.unpack . J.encode . crToAPI corrId
+
+crToAPI :: CorrId -> ChatResponse -> APIResponse
+crToAPI (CorrId cId) = \case
+  CRUserProfile p -> api "profile" $ J.object ["profile" .= p]
+  r -> api "terminal" $ J.object ["output" .= serializeChatResponse r]
   where
-    o :: String -> J.Value -> JSONString
-    o tp params = jsonObject ("type" .= tp <> "params" .= params)
+    corr = if B.null cId then Nothing else Just . B.unpack $ U.encode cId
+    api tag args = APIResponse {corr, tag, args}
+
+data APIResponse = APIResponse
+  { -- | optional correlation ID for async command responses
+    corr :: Maybe String,
+    tag :: String,
+    args :: J.Value
+  }
+  deriving (Generic)
+
+instance ToJSON APIResponse where toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
