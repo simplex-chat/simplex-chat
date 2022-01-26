@@ -95,19 +95,20 @@ getActiveUser_ st = find activeUser <$> getUsers st
 -- | returns JSON in the form `{"user": <user object>}` or `{}`
 chatGetUser :: ChatStore -> IO JSONString
 chatGetUser ChatStore {chatStore} =
-  maybe "{}" (jsonObject . ("user" .=)) <$> getActiveUser_ chatStore
+  maybe "{}" userObject <$> getActiveUser_ chatStore
 
 -- | returns JSON in the form `{"user": <user object>}` or `{"error": "<error>"}`
 chatCreateUser :: ChatStore -> JSONString -> IO JSONString
 chatCreateUser ChatStore {chatStore} profileJson =
   case J.eitherDecodeStrict' $ B.pack profileJson of
-    Left e -> err e
+    Left e -> pure $ err e
     Right p ->
-      runExceptT (createUser chatStore p True) >>= \case
-        Right user -> pure . jsonObject $ "user" .= user
-        Left e -> err e
+      either err userObject <$> runExceptT (createUser chatStore p True)
   where
-    err e = pure . jsonObject $ "error" .= show e
+    err e = jsonObject $ "error" .= show e
+
+userObject :: User -> JSONString
+userObject user = jsonObject $ "user" .= user
 
 chatStart :: ChatStore -> IO ChatController
 chatStart ChatStore {dbFilePrefix, chatStore} = do
@@ -130,4 +131,6 @@ jsonObject = LB.unpack . JE.encodingToLazyByteString . J.pairs
 data APIResponse = APIResponse {corr :: Maybe CorrId, resp :: ChatResponse}
   deriving (Generic)
 
-instance ToJSON APIResponse where toEncoding = J.genericToEncoding J.defaultOptions
+instance ToJSON APIResponse where
+  toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
+  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
