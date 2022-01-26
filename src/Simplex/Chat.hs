@@ -1196,7 +1196,7 @@ mkNewChatItem createdByMsgId_ itemSent brokerTs_ itemContent = do
         itemSent,
         itemTs,
         itemContent,
-        itemText = "",
+        itemText = ciContentToText itemContent,
         createdAt
       }
   where
