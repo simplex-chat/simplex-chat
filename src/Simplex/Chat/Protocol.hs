@@ -24,7 +24,7 @@ import Data.Text (Text)
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
 import Database.SQLite.Simple.FromField (FromField (..))
 import Database.SQLite.Simple.ToField (ToField (..))
-import GHC.Generics
+import GHC.Generics (Generic)
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Store.SQLite (fromTextField_)
 import Simplex.Messaging.Encoding.String
@@ -105,6 +105,8 @@ instance ToJSON MsgContentType where
   toJSON = strToJSON
   toEncoding = strToJEncoding
 
+-- TODO - include tag and original JSON into MCUnknown so that information is not lost
+-- so when it serializes back it is the same as it was and chat upgrade makes it readable
 data MsgContent = MCText Text | MCUnknown
   deriving (Eq, Show)
 

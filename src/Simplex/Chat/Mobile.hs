@@ -13,19 +13,17 @@ import Control.Monad.Reader
 import Data.Aeson (ToJSON (..), (.=))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.Encoding as JE
-import qualified Data.ByteString.Base64.URL as U
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.List (find)
 import Foreign.C.String
 import Foreign.StablePtr
-import GHC.Generics
+import GHC.Generics (Generic)
 import Simplex.Chat
 import Simplex.Chat.Controller
 import Simplex.Chat.Options
 import Simplex.Chat.Store
 import Simplex.Chat.Types
-import Simplex.Chat.View
 import Simplex.Messaging.Protocol (CorrId (..))
 
 foreign export ccall "chat_init_store" cChatInitStore :: CString -> IO (StablePtr ChatStore)
@@ -97,19 +95,19 @@ getActiveUser_ st = find activeUser <$> getUsers st
 -- | returns JSON in the form `{"user": <user object>}` or `{}`
 chatGetUser :: ChatStore -> IO JSONString
 chatGetUser ChatStore {chatStore} =
-  maybe "{}" (jsonObject . ("user" .=)) <$> getActiveUser_ chatStore
+  maybe "{}" userObject <$> getActiveUser_ chatStore
 
 -- | returns JSON in the form `{"user": <user object>}` or `{"error": "<error>"}`
 chatCreateUser :: ChatStore -> JSONString -> IO JSONString
 chatCreateUser ChatStore {chatStore} profileJson =
   case J.eitherDecodeStrict' $ B.pack profileJson of
-    Left e -> err e
-    Right p ->
-      runExceptT (createUser chatStore p True) >>= \case
-        Right user -> pure . jsonObject $ "user" .= user
-        Left e -> err e
+    Left e -> pure $ err e
+    Right p -> either err userObject <$> runExceptT (createUser chatStore p True)
   where
-    err e = pure . jsonObject $ "error" .= show e
+    err e = jsonObject $ "error" .= show e
+
+userObject :: User -> JSONString
+userObject user = jsonObject $ "user" .= user
 
 chatStart :: ChatStore -> IO ChatController
 chatStart ChatStore {dbFilePrefix, chatStore} = do
@@ -119,33 +117,19 @@ chatStart ChatStore {dbFilePrefix, chatStore} = do
   pure cc
 
 chatSendCmd :: ChatController -> String -> IO JSONString
-chatSendCmd cc s = crToJSON (CorrId "") <$> runReaderT (execChatCommand s) cc
+chatSendCmd cc s = LB.unpack . J.encode . APIResponse Nothing <$> runReaderT (execChatCommand s) cc
 
 chatRecvMsg :: ChatController -> IO JSONString
 chatRecvMsg ChatController {outputQ} = json <$> atomically (readTBQueue outputQ)
   where
-    json (corrId, resp) = crToJSON corrId resp
+    json (corr, resp) = LB.unpack $ J.encode APIResponse {corr, resp}
 
 jsonObject :: J.Series -> JSONString
 jsonObject = LB.unpack . JE.encodingToLazyByteString . J.pairs
 
-crToJSON :: CorrId -> ChatResponse -> JSONString
-crToJSON corrId = LB.unpack . J.encode . crToAPI corrId
-
-crToAPI :: CorrId -> ChatResponse -> APIResponse
-crToAPI (CorrId cId) = \case
-  CRUserProfile p -> api "profile" $ J.object ["profile" .= p]
-  r -> api "terminal" $ J.object ["output" .= serializeChatResponse r]
-  where
-    corr = if B.null cId then Nothing else Just . B.unpack $ U.encode cId
-    api tag args = APIResponse {corr, tag, args}
-
-data APIResponse = APIResponse
-  { -- | optional correlation ID for async command responses
-    corr :: Maybe String,
-    tag :: String,
-    args :: J.Value
-  }
+data APIResponse = APIResponse {corr :: Maybe CorrId, resp :: ChatResponse}
   deriving (Generic)
 
-instance ToJSON APIResponse where toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
+instance ToJSON APIResponse where
+  toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
+  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}

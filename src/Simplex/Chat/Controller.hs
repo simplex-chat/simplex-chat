@@ -1,5 +1,6 @@
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -11,10 +12,13 @@ import Control.Monad.Except
 import Control.Monad.IO.Unlift
 import Control.Monad.Reader
 import Crypto.Random (ChaChaDRG)
+import Data.Aeson (ToJSON)
+import qualified Data.Aeson as J
 import Data.ByteString.Char8 (ByteString)
 import Data.Int (Int64)
 import Data.Map.Strict (Map)
 import Data.Text (Text)
+import GHC.Generics (Generic)
 import Numeric.Natural
 import Simplex.Chat.Messages
 import Simplex.Chat.Store (StoreError)
@@ -23,6 +27,7 @@ import Simplex.Messaging.Agent (AgentClient)
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig)
 import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore)
+import Simplex.Messaging.Parsers (dropPrefix, sumTypeJSON)
 import Simplex.Messaging.Protocol (CorrId)
 import System.IO (Handle)
 import UnliftIO.STM
@@ -54,7 +59,7 @@ data ChatController = ChatController
     chatStore :: SQLiteStore,
     idsDrg :: TVar ChaChaDRG,
     inputQ :: TBQueue String,
-    outputQ :: TBQueue (CorrId, ChatResponse),
+    outputQ :: TBQueue (Maybe CorrId, ChatResponse),
     notifyQ :: TBQueue Notification,
     sendNotification :: Notification -> IO (),
     chatLock :: TMVar (),
@@ -64,7 +69,11 @@ data ChatController = ChatController
   }
 
 data HelpSection = HSMain | HSFiles | HSGroups | HSMyAddress | HSMarkdown
-  deriving (Show)
+  deriving (Show, Generic)
+
+instance ToJSON HelpSection where
+  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "HS"
+  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "HS"
 
 data ChatCommand
   = ChatHelp HelpSection
@@ -92,9 +101,9 @@ data ChatCommand
   | SendGroupMessage GroupName ByteString
   | SendFile ContactName FilePath
   | SendGroupFile GroupName FilePath
-  | ReceiveFile Int64 (Maybe FilePath)
-  | CancelFile Int64
-  | FileStatus Int64
+  | ReceiveFile FileTransferId (Maybe FilePath)
+  | CancelFile FileTransferId
+  | FileStatus FileTransferId
   | ShowProfile
   | UpdateProfile Profile
   | QuitChat
@@ -102,107 +111,119 @@ data ChatCommand
   deriving (Show)
 
 data ChatResponse
-  = CRNewChatItem AChatItem
-  | CRCommandAccepted CorrId
+  = CRNewChatItem {chatItem :: AChatItem}
+  | CRCmdAccepted {corr :: CorrId}
   | CRChatHelp HelpSection
   | CRWelcome User
-  | CRGroupCreated GroupInfo
-  | CRGroupMembers Group
-  | CRContactsList [Contact]
-  | CRUserContactLink ConnReqContact
-  | CRContactRequestRejected ContactName -- TODO
-  | CRUserAcceptedGroupSent GroupInfo
-  | CRUserDeletedMember GroupInfo GroupMember
-  | CRGroupsList [GroupInfo]
-  | CRSentGroupInvitation GroupInfo Contact
-  | CRFileTransferStatus (FileTransfer, [Integer])
-  | CRUserProfile Profile
+  | CRGroupCreated {groupInfo :: GroupInfo}
+  | CRGroupMembers {group :: Group}
+  | CRContactsList {contacts :: [Contact]}
+  | CRUserContactLink {connReqContact :: ConnReqContact}
+  | CRContactRequestRejected {contactName :: ContactName} -- TODO
+  | CRUserAcceptedGroupSent {groupInfo :: GroupInfo}
+  | CRUserDeletedMember {groupInfo :: GroupInfo, member :: GroupMember}
+  | CRGroupsList {groups :: [GroupInfo]}
+  | CRSentGroupInvitation {groupInfo :: GroupInfo, contact :: Contact}
+  | CRFileTransferStatus (FileTransfer, [Integer]) -- TODO refactor this type to FileTransferStatus
+  | CRUserProfile {profile :: Profile}
   | CRUserProfileNoChange
   | CRVersionInfo
-  | CRInvitation ConnReqInvitation
+  | CRInvitation {connReqInvitation :: ConnReqInvitation}
   | CRSentConfirmation
   | CRSentInvitation
   | CRContactUpdated {fromContact :: Contact, toContact :: Contact}
   | CRContactsMerged {intoContact :: Contact, mergedContact :: Contact}
-  | CRContactDeleted ContactName -- TODO
-  | CRUserContactLinkCreated ConnReqContact
+  | CRContactDeleted {contactName :: ContactName} -- TODO
+  | CRUserContactLinkCreated {connReqContact :: ConnReqContact}
   | CRUserContactLinkDeleted
-  | CRReceivedContactRequest ContactName Profile -- TODO what is the entity here?
-  | CRAcceptingContactRequest ContactName -- TODO
-  | CRLeftMemberUser GroupInfo
-  | CRGroupDeletedUser GroupInfo
-  | CRRcvFileAccepted RcvFileTransfer FilePath
-  | CRRcvFileAcceptedSndCancelled RcvFileTransfer
-  | CRRcvFileStart RcvFileTransfer
-  | CRRcvFileComplete RcvFileTransfer
-  | CRRcvFileCancelled RcvFileTransfer
-  | CRRcvFileSndCancelled RcvFileTransfer
-  | CRSndFileStart SndFileTransfer
-  | CRSndFileComplete SndFileTransfer
-  | CRSndFileCancelled SndFileTransfer
-  | CRSndFileRcvCancelled SndFileTransfer
-  | CRSndGroupFileCancelled [SndFileTransfer]
+  | CRReceivedContactRequest {contactName :: ContactName, profile :: Profile} -- TODO what is the entity here?
+  | CRAcceptingContactRequest {contactName :: ContactName} -- TODO
+  | CRLeftMemberUser {groupInfo :: GroupInfo}
+  | CRGroupDeletedUser {groupInfo :: GroupInfo}
+  | CRRcvFileAccepted {fileTransfer :: RcvFileTransfer, filePath :: FilePath}
+  | CRRcvFileAcceptedSndCancelled {rcvFileTransfer :: RcvFileTransfer}
+  | CRRcvFileStart {rcvFileTransfer :: RcvFileTransfer}
+  | CRRcvFileComplete {rcvFileTransfer :: RcvFileTransfer}
+  | CRRcvFileCancelled {rcvFileTransfer :: RcvFileTransfer}
+  | CRRcvFileSndCancelled {rcvFileTransfer :: RcvFileTransfer}
+  | CRSndFileStart {sndFileTransfer :: SndFileTransfer}
+  | CRSndFileComplete {sndFileTransfer :: SndFileTransfer}
+  | CRSndFileCancelled {sndFileTransfer :: SndFileTransfer}
+  | CRSndFileRcvCancelled {sndFileTransfer :: SndFileTransfer}
+  | CRSndGroupFileCancelled {sndFileTransfers :: [SndFileTransfer]}
   | CRUserProfileUpdated {fromProfile :: Profile, toProfile :: Profile}
-  | CRContactConnected Contact
-  | CRContactAnotherClient Contact
-  | CRContactDisconnected Contact
-  | CRContactSubscribed Contact
-  | CRContactSubError Contact ChatError
-  | CRGroupInvitation GroupInfo
-  | CRReceivedGroupInvitation GroupInfo Contact GroupMemberRole
-  | CRUserJoinedGroup GroupInfo
-  | CRJoinedGroupMember GroupInfo GroupMember
-  | CRJoinedGroupMemberConnecting {group :: GroupInfo, hostMember :: GroupMember, member :: GroupMember}
-  | CRConnectedToGroupMember GroupInfo GroupMember
-  | CRDeletedMember {group :: GroupInfo, byMember :: GroupMember, deletedMember :: GroupMember}
-  | CRDeletedMemberUser GroupInfo GroupMember
-  | CRLeftMember GroupInfo GroupMember
-  | CRGroupEmpty GroupInfo
-  | CRGroupRemoved GroupInfo
-  | CRGroupDeleted GroupInfo GroupMember
-  | CRMemberSubError GroupInfo ContactName ChatError -- TODO Contact?  or GroupMember?
-  | CRGroupSubscribed GroupInfo
-  | CRSndFileSubError SndFileTransfer ChatError
-  | CRRcvFileSubError RcvFileTransfer ChatError
+  | CRContactConnected {contact :: Contact}
+  | CRContactAnotherClient {contact :: Contact}
+  | CRContactDisconnected {contact :: Contact}
+  | CRContactSubscribed {contact :: Contact}
+  | CRContactSubError {contact :: Contact, chatError :: ChatError}
+  | CRGroupInvitation {groupInfo :: GroupInfo}
+  | CRReceivedGroupInvitation {groupInfo :: GroupInfo, contact :: Contact, memberRole :: GroupMemberRole}
+  | CRUserJoinedGroup {groupInfo :: GroupInfo}
+  | CRJoinedGroupMember {groupInfo :: GroupInfo, member :: GroupMember}
+  | CRJoinedGroupMemberConnecting {groupInfo :: GroupInfo, hostMember :: GroupMember, member :: GroupMember}
+  | CRConnectedToGroupMember {groupInfo :: GroupInfo, member :: GroupMember}
+  | CRDeletedMember {groupInfo :: GroupInfo, byMember :: GroupMember, deletedMember :: GroupMember}
+  | CRDeletedMemberUser {groupInfo :: GroupInfo, member :: GroupMember}
+  | CRLeftMember {groupInfo :: GroupInfo, member :: GroupMember}
+  | CRGroupEmpty {groupInfo :: GroupInfo}
+  | CRGroupRemoved {groupInfo :: GroupInfo}
+  | CRGroupDeleted {groupInfo :: GroupInfo, member :: GroupMember}
+  | CRMemberSubError {groupInfo :: GroupInfo, contactName :: ContactName, chatError :: ChatError} -- TODO Contact?  or GroupMember?
+  | CRGroupSubscribed {groupInfo :: GroupInfo}
+  | CRSndFileSubError {sndFileTransfer :: SndFileTransfer, chatError :: ChatError}
+  | CRRcvFileSubError {rcvFileTransfer :: RcvFileTransfer, chatError :: ChatError}
   | CRUserContactLinkSubscribed
-  | CRUserContactLinkSubError ChatError
-  | CRMessageError Text Text
-  | CRChatCmdError ChatError
-  | CRChatError ChatError
-  deriving (Show)
+  | CRUserContactLinkSubError {chatError :: ChatError}
+  | CRMessageError {severity :: Text, errorMessage :: Text}
+  | CRChatCmdError {chatError :: ChatError}
+  | CRChatError {chatError :: ChatError}
+  deriving (Show, Generic)
+
+instance ToJSON ChatResponse where
+  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "CR"
+  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "CR"
 
 data ChatError
   = ChatError ChatErrorType
   | ChatErrorMessage String
   | ChatErrorAgent AgentErrorType
   | ChatErrorStore StoreError
-  deriving (Show, Exception)
+  deriving (Show, Exception, Generic)
+
+instance ToJSON ChatError where
+  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "Chat"
+  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "Chat"
 
 data ChatErrorType
   = CEGroupUserRole
   | CEInvalidConnReq
-  | CEContactGroups ContactName [GroupName]
-  | CEGroupContactRole ContactName
-  | CEGroupDuplicateMember ContactName
+  | CEContactGroups {contactName :: ContactName, groupNames :: [GroupName]}
+  | CEGroupContactRole {contactName :: ContactName}
+  | CEGroupDuplicateMember {contactName :: ContactName}
   | CEGroupDuplicateMemberId
-  | CEGroupNotJoined GroupInfo
+  | CEGroupNotJoined {groupInfo :: GroupInfo}
   | CEGroupMemberNotActive
   | CEGroupMemberUserRemoved
-  | CEGroupMemberNotFound ContactName
-  | CEGroupMemberIntroNotFound ContactName
-  | CEGroupCantResendInvitation GroupInfo ContactName
-  | CEGroupInternal String
-  | CEFileNotFound String
-  | CEFileAlreadyReceiving String
-  | CEFileAlreadyExists FilePath
-  | CEFileRead FilePath SomeException
-  | CEFileWrite FilePath SomeException
-  | CEFileSend Int64 AgentErrorType
-  | CEFileRcvChunk String
-  | CEFileInternal String
+  | CEGroupMemberNotFound {contactName :: ContactName}
+  | CEGroupMemberIntroNotFound {contactName :: ContactName}
+  | CEGroupCantResendInvitation {groupInfo :: GroupInfo, contactName :: ContactName}
+  | CEGroupInternal {message :: String}
+  | CEFileNotFound {message :: String}
+  | CEFileAlreadyReceiving {message :: String}
+  | CEFileAlreadyExists {filePath :: FilePath}
+  | CEFileRead {filePath :: FilePath, message :: String}
+  | CEFileWrite {filePath :: FilePath, message :: String}
+  | CEFileSend {fileId :: FileTransferId, agentError :: AgentErrorType}
+  | CEFileRcvChunk {message :: String}
+  | CEFileInternal {message :: String}
   | CEAgentVersion
-  | CECommandError String
-  deriving (Show, Exception)
+  | CECommandError {message :: String}
+  deriving (Show, Exception, Generic)
+
+instance ToJSON ChatErrorType where
+  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "CE"
+  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "CE"
 
 type ChatMonad m = (MonadUnliftIO m, MonadReader ChatController m, MonadError ChatError m)
 

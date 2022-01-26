@@ -34,7 +34,7 @@ serializeChatResponse = unlines . map unStyle . responseToView ""
 responseToView :: String -> ChatResponse -> [StyledString]
 responseToView cmd = \case
   CRNewChatItem (AChatItem _ _ chat item) -> viewChatItem chat item
-  CRCommandAccepted _ -> r []
+  CRCmdAccepted _ -> r []
   CRChatHelp section -> case section of
     HSMain -> r chatHelpInfo
     HSFiles -> r filesHelpInfo
@@ -361,7 +361,7 @@ sendingFile_ status ft@SndFileTransfer {recipientDisplayName = c} =
   [status <> " sending " <> sndFile ft <> " to " <> ttyContact c]
 
 sndFile :: SndFileTransfer -> StyledString
-sndFile SndFileTransfer {fileId, fileName} = fileTransfer fileId fileName
+sndFile SndFileTransfer {fileId, fileName} = fileTransferStr fileId fileName
 
 viewReceivedFileInvitation :: StyledString -> CIMetaProps -> RcvFileTransfer -> MsgIntegrity -> [StyledString]
 viewReceivedFileInvitation from meta ft = receivedWithTime_ from meta (receivedFileInvitation_ ft)
@@ -389,10 +389,10 @@ receivingFile_ status ft@RcvFileTransfer {senderDisplayName = c} =
   [status <> " receiving " <> rcvFile ft <> " from " <> ttyContact c]
 
 rcvFile :: RcvFileTransfer -> StyledString
-rcvFile RcvFileTransfer {fileId, fileInvitation = FileInvitation {fileName}} = fileTransfer fileId fileName
+rcvFile RcvFileTransfer {fileId, fileInvitation = FileInvitation {fileName}} = fileTransferStr fileId fileName
 
-fileTransfer :: Int64 -> String -> StyledString
-fileTransfer fileId fileName = "file " <> sShow fileId <> " (" <> ttyFilePath fileName <> ")"
+fileTransferStr :: Int64 -> String -> StyledString
+fileTransferStr fileId fileName = "file " <> sShow fileId <> " (" <> ttyFilePath fileName <> ")"
 
 viewFileTransferStatus :: (FileTransfer, [Integer]) -> [StyledString]
 viewFileTransferStatus (FTSnd [ft@SndFileTransfer {fileStatus, fileSize, chunkSize}], chunksNum) =

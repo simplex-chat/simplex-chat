@@ -1,6 +1,7 @@
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
@@ -114,6 +115,8 @@ import qualified Control.Exception as E
 import Control.Monad.Except
 import Control.Monad.IO.Unlift
 import Crypto.Random (ChaChaDRG, randomBytesGenerate)
+import Data.Aeson (ToJSON)
+import qualified Data.Aeson as J
 import qualified Data.ByteString.Base64 as B64
 import Data.ByteString.Char8 (ByteString)
 import Data.Either (rights)
@@ -128,6 +131,7 @@ import Data.Time.Clock (UTCTime, getCurrentTime)
 import Database.SQLite.Simple (NamedParam (..), Only (..), Query (..), SQLError, (:.) (..))
 import qualified Database.SQLite.Simple as DB
 import Database.SQLite.Simple.QQ (sql)
+import GHC.Generics (Generic)
 import Simplex.Chat.Messages
 import Simplex.Chat.Migrations.M20220101_initial
 import Simplex.Chat.Migrations.M20220122_pending_group_messages
@@ -138,7 +142,8 @@ import Simplex.Messaging.Agent.Protocol (AgentMsgId, ConnId, InvitationId, MsgMe
 import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore (..), createSQLiteStore, firstRow, withTransaction)
 import Simplex.Messaging.Agent.Store.SQLite.Migrations (Migration (..))
 import qualified Simplex.Messaging.Crypto as C
-import Simplex.Messaging.Util (bshow, liftIOEither, (<$$>))
+import Simplex.Messaging.Parsers (dropPrefix, sumTypeJSON)
+import Simplex.Messaging.Util (liftIOEither, (<$$>))
 import System.FilePath (takeFileName)
 import UnliftIO.STM
 
@@ -167,7 +172,7 @@ checkConstraint err action = action `E.catch` (pure . Left . handleSQLError err)
 handleSQLError :: StoreError -> SQLError -> StoreError
 handleSQLError err e
   | DB.sqlError e == DB.ErrorConstraint = err
-  | otherwise = SEInternal $ bshow e
+  | otherwise = SEInternal $ show e
 
 insertedRowId :: DB.Connection -> IO Int64
 insertedRowId db = fromOnly . head <$> DB.query_ db "SELECT last_insert_rowid()"
@@ -219,11 +224,8 @@ createDirectConnection st userId agentConnId =
 createContactConnection_ :: DB.Connection -> UserId -> ConnId -> Maybe Int64 -> Int -> IO Connection
 createContactConnection_ db userId = createConnection_ db userId ConnContact Nothing
 
--- field types coincidentally match, but the first element here is user ID and not connection ID as in ConnectionRow
-type InsertedConnectionRow = ConnectionRow
-
 createConnection_ :: DB.Connection -> UserId -> ConnType -> Maybe Int64 -> ConnId -> Maybe Int64 -> Int -> IO Connection
-createConnection_ db userId connType entityId agentConnId viaContact connLevel = do
+createConnection_ db userId connType entityId acId viaContact connLevel = do
   createdAt <- getCurrentTime
   DB.execute
     db
@@ -233,25 +235,10 @@ createConnection_ db userId connType entityId agentConnId viaContact connLevel =
         contact_id, group_member_id, snd_file_id, rcv_file_id, user_contact_link_id, created_at
       ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?);
     |]
-    (insertConnParams createdAt)
+    (userId, acId, connLevel, viaContact, ConnNew, connType, ent ConnContact, ent ConnMember, ent ConnSndFile, ent ConnRcvFile, ent ConnUserContact, createdAt)
   connId <- insertedRowId db
-  pure Connection {connId, agentConnId, connType, entityId, viaContact, connLevel, connStatus = ConnNew, createdAt}
+  pure Connection {connId, agentConnId = AgentConnId acId, connType, entityId, viaContact, connLevel, connStatus = ConnNew, createdAt}
   where
-    insertConnParams :: UTCTime -> InsertedConnectionRow
-    insertConnParams createdAt =
-      ( userId,
-        agentConnId,
-        connLevel,
-        viaContact,
-        ConnNew,
-        connType,
-        ent ConnContact,
-        ent ConnMember,
-        ent ConnSndFile,
-        ent ConnRcvFile,
-        ent ConnUserContact,
-        createdAt
-      )
     ent ct = if connType == ct then entityId else Nothing
 
 createDirectContact :: StoreMonad m => SQLiteStore -> UserId -> Connection -> Profile -> m ()
@@ -652,9 +639,9 @@ type ConnectionRow = (Int64, ConnId, Int, Maybe Int64, ConnStatus, ConnType, May
 type MaybeConnectionRow = (Maybe Int64, Maybe ConnId, Maybe Int, Maybe Int64, Maybe ConnStatus, Maybe ConnType, Maybe Int64, Maybe Int64, Maybe Int64, Maybe Int64, Maybe Int64, Maybe UTCTime)
 
 toConnection :: ConnectionRow -> Connection
-toConnection (connId, agentConnId, connLevel, viaContact, connStatus, connType, contactId, groupMemberId, sndFileId, rcvFileId, userContactLinkId, createdAt) =
+toConnection (connId, acId, connLevel, viaContact, connStatus, connType, contactId, groupMemberId, sndFileId, rcvFileId, userContactLinkId, createdAt) =
   let entityId = entityId_ connType
-   in Connection {connId, agentConnId, connLevel, viaContact, connStatus, connType, entityId, createdAt}
+   in Connection {connId, agentConnId = AgentConnId acId, connLevel, viaContact, connStatus, connType, entityId, createdAt}
   where
     entityId_ :: ConnType -> Maybe Int64
     entityId_ ConnContact = contactId
@@ -795,7 +782,7 @@ getConnectionEntity st User {userId, userContactId} agentConnId =
       Nothing ->
         if connType == ConnContact
           then pure $ RcvDirectMsgConnection c Nothing
-          else throwError $ SEInternal $ "connection " <> bshow connType <> " without entity"
+          else throwError $ SEInternal $ "connection " <> show connType <> " without entity"
       Just entId ->
         case connType of
           ConnMember -> uncurry (RcvGroupMsgConnection c) <$> getGroupAndMember_ db entId c
@@ -818,7 +805,7 @@ getConnectionEntity st User {userId, userContactId} agentConnId =
           (userId, agentConnId)
     connection :: [ConnectionRow] -> Either StoreError Connection
     connection (connRow : _) = Right $ toConnection connRow
-    connection _ = Left $ SEConnectionNotFound agentConnId
+    connection _ = Left . SEConnectionNotFound $ AgentConnId agentConnId
     getContactRec_ :: DB.Connection -> Int64 -> Connection -> ExceptT StoreError IO Contact
     getContactRec_ db contactId c = ExceptT $ do
       toContact contactId c
@@ -1432,14 +1419,14 @@ getViaGroupContact st User {userId} GroupMember {groupMemberId} =
     toContact _ = Nothing
 
 createSndFileTransfer :: MonadUnliftIO m => SQLiteStore -> UserId -> Contact -> FilePath -> FileInvitation -> ConnId -> Integer -> m SndFileTransfer
-createSndFileTransfer st userId Contact {contactId, localDisplayName = recipientDisplayName} filePath FileInvitation {fileName, fileSize} aConnId chunkSize =
+createSndFileTransfer st userId Contact {contactId, localDisplayName = recipientDisplayName} filePath FileInvitation {fileName, fileSize} acId chunkSize =
   liftIO . withTransaction st $ \db -> do
     DB.execute db "INSERT INTO files (user_id, contact_id, file_name, file_path, file_size, chunk_size) VALUES (?, ?, ?, ?, ?, ?)" (userId, contactId, fileName, filePath, fileSize, chunkSize)
     fileId <- insertedRowId db
-    Connection {connId} <- createSndFileConnection_ db userId fileId aConnId
+    Connection {connId} <- createSndFileConnection_ db userId fileId acId
     let fileStatus = FSNew
     DB.execute db "INSERT INTO snd_files (file_id, file_status, connection_id) VALUES (?, ?, ?)" (fileId, fileStatus, connId)
-    pure SndFileTransfer {fileId, fileName, filePath, fileSize, chunkSize, recipientDisplayName, connId, fileStatus, agentConnId = AgentConnId aConnId}
+    pure SndFileTransfer {fileId, fileName, filePath, fileSize, chunkSize, recipientDisplayName, connId, fileStatus, agentConnId = AgentConnId acId}
 
 createSndGroupFileTransfer :: MonadUnliftIO m => SQLiteStore -> UserId -> GroupInfo -> [(GroupMember, ConnId, FileInvitation)] -> FilePath -> Integer -> Integer -> m Int64
 createSndGroupFileTransfer st userId GroupInfo {groupId} ms filePath fileSize chunkSize =
@@ -1990,7 +1977,7 @@ createWithRandomBytes size gVar create = tryCreate 3
         Right x -> pure $ Right x
         Left e
           | DB.sqlError e == DB.ErrorConstraint -> tryCreate (n - 1)
-          | otherwise -> pure . Left . SEInternal $ bshow e
+          | otherwise -> pure . Left . SEInternal $ show e
 
 randomBytes :: TVar ChaChaDRG -> Int -> IO ByteString
 randomBytes gVar n = B64.encode <$> (atomically . stateTVar gVar $ randomBytesGenerate n)
@@ -2012,9 +1999,13 @@ data StoreError
   | SERcvFileNotFound Int64
   | SEFileNotFound Int64
   | SERcvFileInvalid Int64
-  | SEConnectionNotFound ConnId
+  | SEConnectionNotFound AgentConnId
   | SEIntroNotFound
   | SEUniqueID
-  | SEInternal ByteString
+  | SEInternal String
   | SENoMsgDelivery Int64 AgentMsgId
-  deriving (Show, Exception)
+  deriving (Show, Exception, Generic)
+
+instance ToJSON StoreError where
+  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "SE"
+  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "SE"
