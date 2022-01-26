@@ -136,7 +136,7 @@ ciContentToJSON = \case
 ciContentToText :: CIContent d -> Text
 ciContentToText = \case
   CIMsgContent mc -> msgContentText mc
-  CISndFileInvitation fId fPath -> "you sent file #" <> show fId <> ": " <> T.pack fPath
+  CISndFileInvitation fId fPath -> "you sent file #" <> T.pack (show fId) <> ": " <> T.pack fPath
   CIRcvFileInvitation RcvFileTransfer {fileInvitation = FileInvitation {fileName}} -> "file " <> T.pack fileName
 
 data SChatType (c :: ChatType) where
