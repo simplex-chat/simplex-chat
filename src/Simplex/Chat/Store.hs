@@ -875,7 +875,7 @@ getConnectionEntity st User {userId, userContactId} agentConnId =
     sndFileTransfer_ :: Int64 -> Int64 -> [(FileStatus, String, Integer, Integer, FilePath, Maybe ContactName, Maybe ContactName)] -> Either StoreError SndFileTransfer
     sndFileTransfer_ fileId connId [(fileStatus, fileName, fileSize, chunkSize, filePath, contactName_, memberName_)] =
       case contactName_ <|> memberName_ of
-        Just recipientDisplayName -> Right SndFileTransfer {..}
+        Just recipientDisplayName -> Right SndFileTransfer {fileId, fileStatus, fileName, fileSize, chunkSize, filePath, recipientDisplayName, connId, agentConnId = AgentConnId agentConnId}
         Nothing -> Left $ SESndFileInvalid fileId
     sndFileTransfer_ fileId _ _ = Left $ SESndFileNotFound fileId
     getUserContact_ :: DB.Connection -> Int64 -> ExceptT StoreError IO UserContact
@@ -1422,14 +1422,14 @@ getViaGroupContact st User {userId} GroupMember {groupMemberId} =
     toContact _ = Nothing
 
 createSndFileTransfer :: MonadUnliftIO m => SQLiteStore -> UserId -> Contact -> FilePath -> FileInvitation -> ConnId -> Integer -> m SndFileTransfer
-createSndFileTransfer st userId Contact {contactId, localDisplayName = recipientDisplayName} filePath FileInvitation {fileName, fileSize} agentConnId chunkSize =
+createSndFileTransfer st userId Contact {contactId, localDisplayName = recipientDisplayName} filePath FileInvitation {fileName, fileSize} aConnId chunkSize =
   liftIO . withTransaction st $ \db -> do
     DB.execute db "INSERT INTO files (user_id, contact_id, file_name, file_path, file_size, chunk_size) VALUES (?, ?, ?, ?, ?, ?)" (userId, contactId, fileName, filePath, fileSize, chunkSize)
     fileId <- insertedRowId db
-    Connection {connId} <- createSndFileConnection_ db userId fileId agentConnId
+    Connection {connId} <- createSndFileConnection_ db userId fileId aConnId
     let fileStatus = FSNew
     DB.execute db "INSERT INTO snd_files (file_id, file_status, connection_id) VALUES (?, ?, ?)" (fileId, fileStatus, connId)
-    pure SndFileTransfer {..}
+    pure SndFileTransfer {fileId, fileName, filePath, fileSize, chunkSize, recipientDisplayName, connId, fileStatus, agentConnId = AgentConnId aConnId}
 
 createSndGroupFileTransfer :: MonadUnliftIO m => SQLiteStore -> UserId -> GroupInfo -> [(GroupMember, ConnId, FileInvitation)] -> FilePath -> Integer -> Integer -> m Int64
 createSndGroupFileTransfer st userId GroupInfo {groupId} ms filePath fileSize chunkSize =
@@ -1536,7 +1536,7 @@ getRcvFileTransfer_ db userId fileId =
       (userId, fileId)
   where
     rcvFileTransfer ::
-      [(FileStatus, ConnReqInvitation, String, Integer, Integer, Maybe ContactName, Maybe ContactName, Maybe FilePath, Maybe Int64, Maybe ConnId)] ->
+      [(FileStatus, ConnReqInvitation, String, Integer, Integer, Maybe ContactName, Maybe ContactName, Maybe FilePath, Maybe Int64, Maybe AgentConnId)] ->
       Either StoreError RcvFileTransfer
     rcvFileTransfer [(fileStatus', fileConnReq, fileName, fileSize, chunkSize, contactName_, memberName_, filePath_, connId_, agentConnId_)] =
       let fileInv = FileInvitation {fileName, fileSize, fileConnReq}
@@ -1667,12 +1667,12 @@ getSndFileTransfers_ db userId fileId =
       |]
       (userId, fileId)
   where
-    sndFileTransfers :: [(FileStatus, String, Integer, Integer, FilePath, Int64, ConnId, Maybe ContactName, Maybe ContactName)] -> Either StoreError [SndFileTransfer]
+    sndFileTransfers :: [(FileStatus, String, Integer, Integer, FilePath, Int64, AgentConnId, Maybe ContactName, Maybe ContactName)] -> Either StoreError [SndFileTransfer]
     sndFileTransfers [] = Left $ SESndFileNotFound fileId
     sndFileTransfers fts = mapM sndFileTransfer fts
     sndFileTransfer (fileStatus, fileName, fileSize, chunkSize, filePath, connId, agentConnId, contactName_, memberName_) =
       case contactName_ <|> memberName_ of
-        Just recipientDisplayName -> Right SndFileTransfer {..}
+        Just recipientDisplayName -> Right SndFileTransfer {fileId, fileStatus, fileName, fileSize, chunkSize, filePath, recipientDisplayName, connId, agentConnId}
         Nothing -> Left $ SESndFileInvalid fileId
 
 createNewMessage :: MonadUnliftIO m => SQLiteStore -> NewMessage -> m MessageId

@@ -13,12 +13,13 @@
 
 module Simplex.Chat.Messages where
 
-import Data.Aeson (FromJSON, ToJSON)
+import Data.Aeson (FromJSON, ToJSON, (.=))
 import qualified Data.Aeson as J
 import qualified Data.ByteString.Base64 as B64
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Int (Int64)
 import Data.Text (Text)
+import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1)
 import Data.Time.Clock (UTCTime)
 import Data.Time.LocalTime (ZonedTime)
@@ -108,7 +109,35 @@ data CIContent (d :: MsgDirection) where
 
 deriving instance Show (CIContent d)
 
-instance ToField (CIContent d) where toField _ = toField ("" :: Text)
+instance ToField (CIContent d) where toField = toField . decodeLatin1 . LB.toStrict . J.encode
+
+instance ToJSON (CIContent d) where
+  toJSON = J.toJSON . ciContentToJSON
+  toEncoding = J.toEncoding . ciContentToJSON
+
+data CIContentJSON = CIContentJSON
+  { tag :: Text,
+    subTag :: Maybe Text,
+    args :: J.Value
+  }
+  deriving (Generic, FromJSON)
+
+instance ToJSON CIContentJSON where toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
+
+ciContentToJSON :: CIContent d -> CIContentJSON
+ciContentToJSON = \case
+  CIMsgContent mc -> o "content" "" $ J.object ["content" .= mc]
+  CISndFileInvitation fId fPath -> o "sndFile" "invitation" $ J.object ["fileId" .= fId, "filePath" .= fPath]
+  CIRcvFileInvitation ft -> o "rcvFile" "invitation" $ J.object ["fileTransfer" .= ft]
+  where
+    o tag "" args = CIContentJSON {tag, subTag = Nothing, args}
+    o tag st args = CIContentJSON {tag, subTag = Just st, args}
+
+ciContentToText :: CIContent d -> Text
+ciContentToText = \case
+  CIMsgContent mc -> msgContentText mc
+  CISndFileInvitation fId fPath -> "you sent file #" <> show fId <> ": " <> T.pack fPath
+  CIRcvFileInvitation RcvFileTransfer {fileInvitation = FileInvitation {fileName}} -> "file " <> T.pack fileName
 
 data SChatType (c :: ChatType) where
   SCTDirect :: SChatType 'CTDirect
@@ -199,7 +228,7 @@ data MsgMetaJSON = MsgMetaJSON
   }
   deriving (Eq, Show, FromJSON, Generic)
 
-instance ToJSON MsgMetaJSON where toEncoding = J.genericToEncoding J.defaultOptions
+instance ToJSON MsgMetaJSON where toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
 msgMetaToJson :: MsgMeta -> MsgMetaJSON
 msgMetaToJson MsgMeta {integrity, recipient = (rcvId, rcvTs), broker = (serverId, serverTs), sndMsgId = sndId} =
