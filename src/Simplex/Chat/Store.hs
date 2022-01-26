@@ -375,7 +375,7 @@ toContact' :: ContactRow -> Contact
 toContact' ((contactId, localDisplayName, viaGroup, displayName, fullName) :. connRow) =
   let profile = Profile {displayName, fullName}
       activeConn = toConnection connRow
-   in Contact {..}
+   in Contact {contactId, localDisplayName, profile, activeConn, viaGroup}
 
 -- TODO return the last connection that is ready, not any last connection
 -- requires updating connection status
