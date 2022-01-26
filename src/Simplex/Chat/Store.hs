@@ -103,6 +103,7 @@ module Simplex.Chat.Store
     getPendingGroupMessages,
     deletePendingGroupMessage,
     createNewChatItem,
+    getChatPreviews,
   )
 where
 
@@ -367,6 +368,14 @@ updateContact_ db userId contactId displayName newName = do
   DB.execute db "UPDATE contacts SET local_display_name = ? WHERE user_id = ? AND contact_id = ?" (newName, userId, contactId)
   DB.execute db "UPDATE group_members SET local_display_name = ? WHERE user_id = ? AND contact_id = ?" (newName, userId, contactId)
   DB.execute db "DELETE FROM display_names WHERE local_display_name = ? AND user_id = ?" (displayName, userId)
+
+type ContactRow = (Int64, ContactName, Maybe Int64, ContactName, Text) :. ConnectionRow
+
+toContact' :: ContactRow -> Contact
+toContact' ((contactId, localDisplayName, viaGroup, displayName, fullName) :. connRow) =
+  let profile = Profile {displayName, fullName}
+      activeConn = toConnection connRow
+   in Contact {..}
 
 -- TODO return the last connection that is ready, not any last connection
 -- requires updating connection status
@@ -1838,6 +1847,69 @@ createNewChatItem st userId chatDirection NewChatItem {createdByMsgId_, itemSent
       CDSndGroup GroupInfo {groupId} -> (Nothing, Just groupId, Nothing)
       CDRcvGroup GroupInfo {groupId} GroupMember {groupMemberId} -> (Nothing, Just groupId, Just groupMemberId)
 
+getChatPreviews :: MonadUnliftIO m => SQLiteStore -> User -> m [AChatPreview]
+getChatPreviews st user =
+  liftIO . withTransaction st $ \db -> do
+    directChatPreviews <- getDirectChatPreviews_ db user
+    groupChatPreviews <- getGroupChatPreviews_ db user
+    pure $ directChatPreviews ++ groupChatPreviews
+
+getDirectChatPreviews_ :: DB.Connection -> User -> IO [AChatPreview]
+getDirectChatPreviews_ db User {userId} =
+  map toDirectChatPreview
+    <$> DB.query
+      db
+      [sql|
+        SELECT
+          -- Contact
+          ct.contact_id, ct.local_display_name, ct.via_group,
+          -- Contact {profile}
+          cp.display_name, cp.full_name,
+          -- Contact {activeConn}
+          c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.conn_status, c.conn_type,
+          c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at
+        FROM contacts ct
+        JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
+        JOIN connections c ON c.contact_id = ct.contact_id
+        WHERE ct.user_id = ?
+      |]
+      (Only userId)
+  where
+    toDirectChatPreview :: ContactRow -> AChatPreview
+    toDirectChatPreview contactRow =
+      let contact = toContact' contactRow
+       in AChatPreview SCTDirect (DirectChat contact) Nothing
+
+getGroupChatPreviews_ :: DB.Connection -> User -> IO [AChatPreview]
+getGroupChatPreviews_ db User {userId, userContactId} =
+  map toGroupChatPreview
+    <$> DB.query
+      db
+      [sql|
+        SELECT
+          -- GroupInfo
+          g.group_id, g.local_display_name,
+          -- GroupInfo {groupProfile}
+          gp.display_name, gp.full_name,
+          -- GroupInfo {membership}
+          mu.group_member_id, mu.group_id, mu.member_id, mu.member_role, mu.member_category, mu.member_status,
+          mu.invited_by, mu.local_display_name, mu.contact_id,
+          -- GroupInfo {membership = GroupMember {memberProfile}}
+          pu.display_name, pu.full_name
+        FROM groups g
+        JOIN group_profiles gp ON gp.group_profile_id == g.group_profile_id
+        JOIN group_members mu ON g.group_id = mu.group_id
+        JOIN contact_profiles pu ON pu.contact_profile_id = mu.contact_profile_id
+        WHERE ct.user_id = ?
+      |]
+      (Only userId)
+  where
+    toGroupChatPreview :: (Int64, GroupName, GroupName, Text) :. GroupMemberRow -> AChatPreview
+    toGroupChatPreview ((groupId, localDisplayName, displayName, fullName) :. userMemberRow) =
+      let membership = toGroupMember userContactId userMemberRow
+          groupInfo = GroupInfo {groupId, localDisplayName, groupProfile = GroupProfile {displayName, fullName}, membership}
+       in AChatPreview SCTGroup (GroupChat groupInfo) Nothing
+
 -- getDirectChatItemList :: MonadUnliftIO m => SQLiteStore -> UserId -> Int64 -> m ChatItemList
 -- getDirectChatItemList st userId contactId =
 --   liftIO . withTransaction st $ \db ->
@@ -1857,16 +1929,6 @@ createNewChatItem st userId chatDirection NewChatItem {createdByMsgId_, itemSent
 --         ...
 --       |]
 --       (userId, groupId)
-
--- getChatInfoList :: MonadUnliftIO m => SQLiteStore -> UserId -> m [ChatInfo]
--- getChatInfoList st userId =
---   liftIO . withTransaction st $ \db ->
---     DB.query
---       db
---       [sql|
---         ...
---       |]
---       (Only userId)
 
 -- getChatItemsMixed :: MonadUnliftIO m => SQLiteStore -> UserId -> m [AnyChatItem]
 -- getChatItemsMixed st userId =
