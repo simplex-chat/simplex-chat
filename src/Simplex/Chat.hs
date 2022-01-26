@@ -1160,32 +1160,30 @@ saveRcvMSG Connection {connId} agentMsgMeta msgBody = do
 sendDirectChatItem :: ChatMonad m => UserId -> Contact -> ChatMsgEvent -> CIContent 'MDSnd -> m AnyChatItem
 sendDirectChatItem userId contact@Contact {activeConn} chatMsgEvent chatItemContent = do
   msgId <- sendDirectMessage activeConn chatMsgEvent
-  newChatItem@NewChatItem {itemTs, createdAt} <- mkNewChatItem msgId MDSnd Nothing chatItemContent
-  chatItemId <- withStore $ \st -> createNewChatItem st userId (DirectChat_ contact) newChatItem
-  chatItemMeta <- liftIO $ mkCIMetaProps chatItemId itemTs createdAt
+  chatItemMeta <- saveChatItem userId (DirectChat_ contact) msgId chatItemContent
   pure $ AnyChatItem SCTDirect SMDSnd (DirectChat contact) $ DirectChatItem (CISndMeta chatItemMeta) chatItemContent
 
 sendGroupChatItem :: ChatMonad m => UserId -> Group -> ChatMsgEvent -> CIContent 'MDSnd -> m AnyChatItem
 sendGroupChatItem userId (Group groupInfo members) chatMsgEvent chatItemContent = do
   msgId <- sendGroupMessage members chatMsgEvent
-  newChatItem@NewChatItem {itemTs, createdAt} <- mkNewChatItem msgId MDSnd Nothing chatItemContent
-  chatItemId <- withStore $ \st -> createNewChatItem st userId (SndGroupChat_ groupInfo) newChatItem
-  chatItemMeta <- liftIO $ mkCIMetaProps chatItemId itemTs createdAt
+  chatItemMeta <- saveChatItem userId (SndGroupChat_ groupInfo) msgId chatItemContent
   pure $ AnyChatItem SCTGroup SMDSnd (GroupChat groupInfo) $ SndGroupChatItem (CISndMeta chatItemMeta) chatItemContent
 
 saveRcvDirectChatItem :: ChatMonad m => UserId -> Contact -> MessageId -> MsgMeta -> CIContent 'MDRcv -> m AnyChatItem
 saveRcvDirectChatItem userId contact msgId MsgMeta {integrity} chatItemContent = do
-  newChatItem@NewChatItem {itemTs, createdAt} <- mkNewChatItem msgId MDRcv Nothing chatItemContent
-  chatItemId <- withStore $ \st -> createNewChatItem st userId (DirectChat_ contact) newChatItem
-  chatItemMeta <- liftIO $ mkCIMetaProps chatItemId itemTs createdAt
+  chatItemMeta <- saveChatItem userId (DirectChat_ contact) msgId chatItemContent
   pure $ AnyChatItem SCTDirect SMDRcv (DirectChat contact) $ DirectChatItem (CIRcvMeta chatItemMeta integrity) chatItemContent
 
 saveRcvGroupChatItem :: ChatMonad m => UserId -> GroupInfo -> GroupMember -> MessageId -> MsgMeta -> CIContent 'MDRcv -> m AnyChatItem
 saveRcvGroupChatItem userId groupInfo groupMember msgId MsgMeta {integrity} chatItemContent = do
-  newChatItem@NewChatItem {itemTs, createdAt} <- mkNewChatItem msgId MDRcv Nothing chatItemContent
-  chatItemId <- withStore $ \st -> createNewChatItem st userId (RcvGroupChat_ groupInfo groupMember) newChatItem
-  chatItemMeta <- liftIO $ mkCIMetaProps chatItemId itemTs createdAt
+  chatItemMeta <- saveChatItem userId (RcvGroupChat_ groupInfo groupMember) msgId chatItemContent
   pure $ AnyChatItem SCTGroup SMDRcv (GroupChat groupInfo) $ RcvGroupChatItem groupMember (CIRcvMeta chatItemMeta integrity) chatItemContent
+
+saveChatItem :: ChatMonad m => UserId -> ChatDirection' c d -> MessageId -> CIContent d -> m CIMetaProps
+saveChatItem userId chatDirection msgId chatItemContent = do
+  newChatItem@NewChatItem {itemTs, createdAt} <- mkNewChatItem msgId MDRcv Nothing chatItemContent
+  chatItemId <- withStore $ \st -> createNewChatItem st userId chatDirection newChatItem
+  liftIO $ mkCIMetaProps chatItemId itemTs createdAt
 
 mkNewChatItem :: ChatMonad m => MessageId -> MsgDirection -> Maybe UTCTime -> CIContent d -> m (NewChatItem d)
 mkNewChatItem createdByMessageId itemSent brokerTs_ itemContent = do
