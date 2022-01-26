@@ -95,10 +95,7 @@ type ContactName = Text
 
 type GroupName = Text
 
-data Group = Group
-  { groupInfo :: GroupInfo,
-    members :: [GroupMember]
-  }
+data Group = Group GroupInfo [GroupMember]
   deriving (Eq, Show)
 
 data GroupInfo = GroupInfo

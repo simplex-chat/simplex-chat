@@ -255,7 +255,7 @@ processChatCommand user@User {userId, profile} = \case
   ListMembers gName -> CRGroupMembers <$> withStore (\st -> getGroup st user gName)
   ListGroups -> CRGroupsList <$> withStore (`getUserGroupDetails` user)
   SendGroupMessage gName msg -> do
-    group@Group {groupInfo = GroupInfo {membership}} <- withStore $ \st -> getGroup st user gName
+    group@(Group GroupInfo {membership} _) <- withStore $ \st -> getGroup st user gName
     unless (memberActive membership) $ chatError CEGroupMemberUserRemoved
     let mc = MCText $ safeDecodeUtf8 msg
     chatItem <- sendGroupChatItem userId group (XMsgNew mc) (CIMsgContent mc)
@@ -1166,7 +1166,7 @@ sendDirectChatItem userId contact@Contact {activeConn} chatMsgEvent chatItemCont
   pure $ AnyChatItem SCTDirect SMDSnd (DirectChat contact) $ DirectChatItem (CISndMeta chatItemMeta) chatItemContent
 
 sendGroupChatItem :: ChatMonad m => UserId -> Group -> ChatMsgEvent -> CIContent 'MDSnd -> m AnyChatItem
-sendGroupChatItem userId Group {groupInfo, members} chatMsgEvent chatItemContent = do
+sendGroupChatItem userId (Group groupInfo members) chatMsgEvent chatItemContent = do
   msgId <- sendGroupMessage members chatMsgEvent
   newChatItem@NewChatItem {itemTs, createdAt} <- mkNewChatItem msgId MDSnd Nothing chatItemContent
   chatItemId <- withStore $ \st -> createNewChatItem st userId (SndGroupChat_ groupInfo) newChatItem
