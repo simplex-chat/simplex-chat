@@ -101,9 +101,9 @@ data ChatCommand
   | SendGroupMessage GroupName ByteString
   | SendFile ContactName FilePath
   | SendGroupFile GroupName FilePath
-  | ReceiveFile Int64 (Maybe FilePath)
-  | CancelFile Int64
-  | FileStatus Int64
+  | ReceiveFile FileTransferId (Maybe FilePath)
+  | CancelFile FileTransferId
+  | FileStatus FileTransferId
   | ShowProfile
   | UpdateProfile Profile
   | QuitChat
@@ -112,7 +112,7 @@ data ChatCommand
 
 data ChatResponse
   = CRNewChatItem {chatItem :: AChatItem}
-  | CRCommandAccepted {cmdCorrId :: CorrId}
+  | CRCmdAccepted {corr :: CorrId}
   | CRChatHelp HelpSection
   | CRWelcome User
   | CRGroupCreated {groupInfo :: GroupInfo}
@@ -198,27 +198,27 @@ instance ToJSON ChatError where
 data ChatErrorType
   = CEGroupUserRole
   | CEInvalidConnReq
-  | CEContactGroups ContactName [GroupName]
-  | CEGroupContactRole ContactName
-  | CEGroupDuplicateMember ContactName
+  | CEContactGroups {contactName :: ContactName, groupNames :: [GroupName]}
+  | CEGroupContactRole {contactName :: ContactName}
+  | CEGroupDuplicateMember {contactName :: ContactName}
   | CEGroupDuplicateMemberId
-  | CEGroupNotJoined GroupInfo
+  | CEGroupNotJoined {groupInfo :: GroupInfo}
   | CEGroupMemberNotActive
   | CEGroupMemberUserRemoved
-  | CEGroupMemberNotFound ContactName
-  | CEGroupMemberIntroNotFound ContactName
-  | CEGroupCantResendInvitation GroupInfo ContactName
-  | CEGroupInternal String
-  | CEFileNotFound String
-  | CEFileAlreadyReceiving String
-  | CEFileAlreadyExists FilePath
-  | CEFileRead FilePath String
-  | CEFileWrite FilePath String
-  | CEFileSend Int64 AgentErrorType
-  | CEFileRcvChunk String
-  | CEFileInternal String
+  | CEGroupMemberNotFound {contactName :: ContactName}
+  | CEGroupMemberIntroNotFound {contactName :: ContactName}
+  | CEGroupCantResendInvitation {groupInfo :: GroupInfo, contactName :: ContactName}
+  | CEGroupInternal {message :: String}
+  | CEFileNotFound {message :: String}
+  | CEFileAlreadyReceiving {message :: String}
+  | CEFileAlreadyExists {filePath :: FilePath}
+  | CEFileRead {filePath :: FilePath, message :: String}
+  | CEFileWrite {filePath :: FilePath, message :: String}
+  | CEFileSend {fileId :: FileTransferId, agentError :: AgentErrorType}
+  | CEFileRcvChunk {message :: String}
+  | CEFileInternal {message :: String}
   | CEAgentVersion
-  | CECommandError String
+  | CECommandError {message :: String}
   deriving (Show, Exception, Generic)
 
 instance ToJSON ChatErrorType where

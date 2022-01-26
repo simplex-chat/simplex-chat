@@ -34,7 +34,7 @@ serializeChatResponse = unlines . map unStyle . responseToView ""
 responseToView :: String -> ChatResponse -> [StyledString]
 responseToView cmd = \case
   CRNewChatItem (AChatItem _ _ chat item) -> viewChatItem chat item
-  CRCommandAccepted _ -> r []
+  CRCmdAccepted _ -> r []
   CRChatHelp section -> case section of
     HSMain -> r chatHelpInfo
     HSFiles -> r filesHelpInfo

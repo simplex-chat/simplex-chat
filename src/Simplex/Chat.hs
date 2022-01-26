@@ -337,7 +337,7 @@ processChatCommand user@User {userId, profile} = \case
     -- q <- asks outputQ
     -- void . forkIO $ atomically . writeTBQueue q =<<
     --   (Just corrId,) <$> (a `catchError` (pure . CRChatError))
-    -- pure $ CRCommandAccepted corrId
+    -- pure $ CRCmdAccepted corrId
     -- a corrId
     connect :: ConnectionRequestUri c -> ChatMsgEvent -> m ()
     connect cReq msg = do

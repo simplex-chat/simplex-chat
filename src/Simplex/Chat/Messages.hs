@@ -45,7 +45,9 @@ data ChatInfo (c :: ChatType) where
 
 deriving instance Show (ChatInfo c)
 
-data JSONChatInfo = JCInfoDirect Contact | JCInfoGroup GroupInfo
+data JSONChatInfo
+  = JCInfoDirect {contact :: Contact}
+  | JCInfoGroup {groupInfo :: GroupInfo}
   deriving (Generic)
 
 instance ToJSON JSONChatInfo where
@@ -152,8 +154,8 @@ instance ToJSON (CIMeta d) where
   toEncoding = J.toEncoding . jsonCIMeta
 
 data JSONCIMeta
-  = JCIMetaSnd CIMetaProps
-  | JCIMetaRcv CIMetaProps MsgIntegrity
+  = JCIMetaSnd {meta :: CIMetaProps}
+  | JCIMetaRcv {meta :: CIMetaProps, integrity :: MsgIntegrity}
   deriving (Generic)
 
 instance ToJSON JSONCIMeta where
@@ -193,9 +195,9 @@ instance ToJSON (CIContent d) where
   toEncoding = J.toEncoding . jsonCIContent
 
 data JSONCIContent
-  = JCIMsgContent MsgContent
-  | JCISndFileInvitation FileTransferId FilePath
-  | JCIRcvFileInvitation RcvFileTransfer
+  = JCIMsgContent {msgContent :: MsgContent}
+  | JCISndFileInvitation {fileId :: FileTransferId, filePath :: FilePath}
+  | JCIRcvFileInvitation {rcvFileTransfer :: RcvFileTransfer}
   deriving (Generic)
 
 instance ToJSON JSONCIContent where

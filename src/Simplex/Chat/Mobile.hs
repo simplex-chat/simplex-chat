@@ -102,8 +102,7 @@ chatCreateUser :: ChatStore -> JSONString -> IO JSONString
 chatCreateUser ChatStore {chatStore} profileJson =
   case J.eitherDecodeStrict' $ B.pack profileJson of
     Left e -> pure $ err e
-    Right p ->
-      either err userObject <$> runExceptT (createUser chatStore p True)
+    Right p -> either err userObject <$> runExceptT (createUser chatStore p True)
   where
     err e = jsonObject $ "error" .= show e
 
