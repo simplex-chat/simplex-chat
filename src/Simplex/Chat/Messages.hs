@@ -38,7 +38,7 @@ data ChatType = CTDirect | CTGroup
 
 data Chat (c :: ChatType) where
   DirectChat :: Contact -> Chat 'CTDirect
-  GroupChat :: GroupName -> Chat 'CTGroup
+  GroupChat :: GroupInfo -> Chat 'CTGroup
 
 deriving instance Show (Chat c)
 

@@ -96,11 +96,8 @@ type ContactName = Text
 type GroupName = Text
 
 data Group = Group
-  { groupId :: Int64,
-    localDisplayName :: GroupName,
-    groupProfile :: GroupProfile,
-    members :: [GroupMember],
-    membership :: GroupMember
+  { groupInfo :: GroupInfo,
+    members :: [GroupMember]
   }
   deriving (Eq, Show)
 
@@ -110,7 +107,10 @@ data GroupInfo = GroupInfo
     groupProfile :: GroupProfile,
     membership :: GroupMember
   }
-  deriving (Show)
+  deriving (Eq, Show)
+
+groupName :: GroupInfo -> GroupName
+groupName GroupInfo {localDisplayName = g} = g
 
 data Profile = Profile
   { displayName :: ContactName,
@@ -169,9 +169,8 @@ memberInfo GroupMember {memberId, memberRole, memberProfile} =
 
 data ReceivedGroupInvitation = ReceivedGroupInvitation
   { fromMember :: GroupMember,
-    userMember :: GroupMember,
     connRequest :: ConnReqInvitation,
-    groupProfile :: GroupProfile
+    groupInfo :: GroupInfo
   }
   deriving (Eq, Show)
 
