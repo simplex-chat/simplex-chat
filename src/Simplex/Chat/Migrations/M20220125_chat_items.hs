@@ -30,4 +30,6 @@ CREATE TABLE chat_item_messages (
   message_id INTEGER NOT NULL UNIQUE REFERENCES messages ON DELETE CASCADE,
   UNIQUE (chat_item_id, message_id)
 );
+
+ALTER TABLE files ADD COLUMN chat_item_id INTEGER DEFAULT NULL REFERENCES chat_items ON DELETE CASCADE;
 |]

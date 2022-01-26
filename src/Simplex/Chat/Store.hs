@@ -91,6 +91,7 @@ module Simplex.Chat.Store
     createRcvFileChunk,
     updatedRcvFileChunkStored,
     deleteRcvFileChunks,
+    updateFileTransferChatItemId,
     getFileTransfer,
     getFileTransferProgress,
     createNewMessage,
@@ -1616,6 +1617,11 @@ deleteRcvFileChunks :: MonadUnliftIO m => SQLiteStore -> RcvFileTransfer -> m ()
 deleteRcvFileChunks st RcvFileTransfer {fileId} =
   liftIO . withTransaction st $ \db ->
     DB.execute db "DELETE FROM rcv_file_chunks WHERE file_id = ?" (Only fileId)
+
+updateFileTransferChatItemId :: MonadUnliftIO m => SQLiteStore -> FileTransferId -> ChatItemId -> m ()
+updateFileTransferChatItemId st fileId chatItemId =
+  liftIO . withTransaction st $ \db ->
+    DB.execute db "UPDATE files SET chat_item_id = ? WHERE file_id = ?" (chatItemId, fileId)
 
 getFileTransfer :: StoreMonad m => SQLiteStore -> UserId -> Int64 -> m FileTransfer
 getFileTransfer st userId fileId =
