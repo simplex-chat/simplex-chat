@@ -13,6 +13,7 @@ module Simplex.Chat.Types where
 
 import Data.Aeson (FromJSON, ToJSON, (.:), (.=))
 import qualified Data.Aeson as J
+import qualified Data.Aeson.Encoding as JE
 import qualified Data.Aeson.Types as JT
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.ByteString.Char8 (ByteString)
@@ -56,7 +57,7 @@ data User = User
   }
   deriving (Show, Generic, FromJSON)
 
-instance ToJSON User where toEncoding = J.genericToEncoding J.defaultOptions
+instance ToJSON User where toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
 type UserId = Int64
 
@@ -95,22 +96,19 @@ type ContactName = Text
 
 type GroupName = Text
 
-data Group = Group
-  { groupId :: Int64,
-    localDisplayName :: GroupName,
-    groupProfile :: GroupProfile,
-    members :: [GroupMember],
-    membership :: GroupMember
-  }
+data Group = Group GroupInfo [GroupMember]
   deriving (Eq, Show)
 
 data GroupInfo = GroupInfo
   { groupId :: Int64,
     localDisplayName :: GroupName,
     groupProfile :: GroupProfile,
-    userMemberStatus :: GroupMemberStatus
+    membership :: GroupMember
   }
-  deriving (Show)
+  deriving (Eq, Show)
+
+groupName :: GroupInfo -> GroupName
+groupName GroupInfo {localDisplayName = g} = g
 
 data Profile = Profile
   { displayName :: ContactName,
@@ -118,7 +116,7 @@ data Profile = Profile
   }
   deriving (Eq, Show, Generic, FromJSON)
 
-instance ToJSON Profile where toEncoding = J.genericToEncoding J.defaultOptions
+instance ToJSON Profile where toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
 data GroupProfile = GroupProfile
   { displayName :: GroupName,
@@ -126,7 +124,7 @@ data GroupProfile = GroupProfile
   }
   deriving (Eq, Show, Generic, FromJSON)
 
-instance ToJSON GroupProfile where toEncoding = J.genericToEncoding J.defaultOptions
+instance ToJSON GroupProfile where toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
 data GroupInvitation = GroupInvitation
   { fromMember :: MemberIdRole,
@@ -136,7 +134,7 @@ data GroupInvitation = GroupInvitation
   }
   deriving (Eq, Show, Generic, FromJSON)
 
-instance ToJSON GroupInvitation where toEncoding = J.genericToEncoding J.defaultOptions
+instance ToJSON GroupInvitation where toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
 data MemberIdRole = MemberIdRole
   { memberId :: MemberId,
@@ -144,7 +142,7 @@ data MemberIdRole = MemberIdRole
   }
   deriving (Eq, Show, Generic, FromJSON)
 
-instance ToJSON MemberIdRole where toEncoding = J.genericToEncoding J.defaultOptions
+instance ToJSON MemberIdRole where toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
 data IntroInvitation = IntroInvitation
   { groupConnReq :: ConnReqInvitation,
@@ -152,7 +150,7 @@ data IntroInvitation = IntroInvitation
   }
   deriving (Eq, Show, Generic, FromJSON)
 
-instance ToJSON IntroInvitation where toEncoding = J.genericToEncoding J.defaultOptions
+instance ToJSON IntroInvitation where toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
 data MemberInfo = MemberInfo
   { memberId :: MemberId,
@@ -161,7 +159,7 @@ data MemberInfo = MemberInfo
   }
   deriving (Eq, Show, Generic, FromJSON)
 
-instance ToJSON MemberInfo where toEncoding = J.genericToEncoding J.defaultOptions
+instance ToJSON MemberInfo where toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
 memberInfo :: GroupMember -> MemberInfo
 memberInfo GroupMember {memberId, memberRole, memberProfile} =
@@ -169,9 +167,8 @@ memberInfo GroupMember {memberId, memberRole, memberProfile} =
 
 data ReceivedGroupInvitation = ReceivedGroupInvitation
   { fromMember :: GroupMember,
-    userMember :: GroupMember,
     connRequest :: ConnReqInvitation,
-    groupProfile :: GroupProfile
+    groupInfo :: GroupInfo
   }
   deriving (Eq, Show)
 
@@ -418,7 +415,7 @@ data SndFileTransfer = SndFileTransfer
     chunkSize :: Integer,
     recipientDisplayName :: ContactName,
     connId :: Int64,
-    agentConnId :: ConnId,
+    agentConnId :: AgentConnId,
     fileStatus :: FileStatus
   }
   deriving (Eq, Show)
@@ -456,7 +453,9 @@ data RcvFileTransfer = RcvFileTransfer
     senderDisplayName :: ContactName,
     chunkSize :: Integer
   }
-  deriving (Eq, Show)
+  deriving (Eq, Show, Generic, FromJSON)
+
+instance ToJSON RcvFileTransfer where toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
 data RcvFileStatus
   = RFSNew
@@ -466,12 +465,64 @@ data RcvFileStatus
   | RFSCancelled RcvFileInfo
   deriving (Eq, Show)
 
+instance FromJSON RcvFileStatus where
+  parseJSON = J.withObject "RcvFileStatus" $ \v -> do
+    let rfs mk = mk <$> v .: "fileInfo"
+    v .: "status" >>= \case
+      ("new" :: Text) -> pure RFSNew
+      "accepted" -> rfs RFSAccepted
+      "connected" -> rfs RFSConnected
+      "complete" -> rfs RFSComplete
+      "cancelled" -> rfs RFSCancelled
+      _ -> fail "bad RcvFileStatus"
+
+instance ToJSON RcvFileStatus where
+  toJSON s = J.object $ ["status" .= rfsTag s, "fileInfo" .= rfsInfo s]
+  toEncoding s = J.pairs $ ("status" .= rfsTag s <> "fileInfo" .= rfsInfo s)
+
+rfsTag :: RcvFileStatus -> Text
+rfsTag = \case
+  RFSNew -> "new"
+  RFSAccepted _ -> "accepted"
+  RFSConnected _ -> "connected"
+  RFSComplete _ -> "complete"
+  RFSCancelled _ -> "cancelled"
+
+rfsInfo :: RcvFileStatus -> Maybe RcvFileInfo
+rfsInfo = \case
+  RFSNew -> Nothing
+  RFSAccepted info -> Just info
+  RFSConnected info -> Just info
+  RFSComplete info -> Just info
+  RFSCancelled info -> Just info
+
 data RcvFileInfo = RcvFileInfo
   { filePath :: FilePath,
     connId :: Int64,
-    agentConnId :: ConnId
+    agentConnId :: AgentConnId
   }
+  deriving (Eq, Show, Generic, FromJSON)
+
+instance ToJSON RcvFileInfo where toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
+
+newtype AgentConnId = AgentConnId ConnId
   deriving (Eq, Show)
+
+instance StrEncoding AgentConnId where
+  strEncode (AgentConnId connId) = strEncode connId
+  strDecode s = AgentConnId <$> strDecode s
+  strP = AgentConnId <$> strP
+
+instance FromJSON AgentConnId where
+  parseJSON = strParseJSON "AgentConnId"
+
+instance ToJSON AgentConnId where
+  toJSON = strToJSON
+  toEncoding = strToJEncoding
+
+instance FromField AgentConnId where fromField f = AgentConnId <$> fromField f
+
+instance ToField AgentConnId where toField (AgentConnId m) = toField m
 
 data FileTransfer = FTSnd [SndFileTransfer] | FTRcv RcvFileTransfer
   deriving (Show)
@@ -481,6 +532,13 @@ data FileStatus = FSNew | FSAccepted | FSConnected | FSComplete | FSCancelled de
 instance FromField FileStatus where fromField = fromTextField_ fileStatusT
 
 instance ToField FileStatus where toField = toField . serializeFileStatus
+
+instance FromJSON FileStatus where
+  parseJSON = J.withText "FileStatus" $ maybe (fail "bad FileStatus") pure . fileStatusT
+
+instance ToJSON FileStatus where
+  toJSON = J.String . serializeFileStatus
+  toEncoding = JE.text . serializeFileStatus
 
 fileStatusT :: Text -> Maybe FileStatus
 fileStatusT = \case
@@ -633,8 +691,6 @@ serializeIntroStatus = \case
   GMIntroReConnected -> "re-con"
   GMIntroToConnected -> "to-con"
   GMIntroConnected -> "con"
-
-type MessageId = Int64
 
 data Notification = Notification {title :: Text, text :: Text}
 

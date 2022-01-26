@@ -26,6 +26,7 @@ library
       Simplex.Chat.Messages
       Simplex.Chat.Migrations.M20220101_initial
       Simplex.Chat.Migrations.M20220122_pending_group_messages
+      Simplex.Chat.Migrations.M20220125_chat_items
       Simplex.Chat.Mobile
       Simplex.Chat.Options
       Simplex.Chat.Protocol

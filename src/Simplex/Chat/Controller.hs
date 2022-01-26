@@ -17,7 +17,6 @@ import Data.Map.Strict (Map)
 import Data.Text (Text)
 import Numeric.Natural
 import Simplex.Chat.Messages
-import Simplex.Chat.Protocol
 import Simplex.Chat.Store (StoreError)
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent (AgentClient)
@@ -103,26 +102,19 @@ data ChatCommand
   deriving (Show)
 
 data ChatResponse
-  = CRSentMessage ContactName MsgContent ChatMsgMeta
-  | CRSentGroupMessage GroupName MsgContent ChatMsgMeta
-  | CRSentFileInvitation ContactName FileTransferId FilePath ChatMsgMeta
-  | CRSentGroupFileInvitation GroupName FileTransferId FilePath ChatMsgMeta
-  | CRReceivedMessage ContactName ChatMsgMeta MsgContent MsgIntegrity
-  | CRReceivedGroupMessage GroupName ContactName ChatMsgMeta MsgContent MsgIntegrity
-  | CRReceivedFileInvitation ContactName ChatMsgMeta RcvFileTransfer MsgIntegrity
-  | CRReceivedGroupFileInvitation GroupName ContactName ChatMsgMeta RcvFileTransfer MsgIntegrity
+  = CRNewChatItem AChatItem
   | CRCommandAccepted CorrId
   | CRChatHelp HelpSection
   | CRWelcome User
-  | CRGroupCreated Group
+  | CRGroupCreated GroupInfo
   | CRGroupMembers Group
   | CRContactsList [Contact]
   | CRUserContactLink ConnReqContact
-  | CRContactRequestRejected ContactName
-  | CRUserAcceptedGroupSent GroupName
-  | CRUserDeletedMember GroupName GroupMember
+  | CRContactRequestRejected ContactName -- TODO
+  | CRUserAcceptedGroupSent GroupInfo
+  | CRUserDeletedMember GroupInfo GroupMember
   | CRGroupsList [GroupInfo]
-  | CRSentGroupInvitation GroupName ContactName
+  | CRSentGroupInvitation GroupInfo Contact
   | CRFileTransferStatus (FileTransfer, [Integer])
   | CRUserProfile Profile
   | CRUserProfileNoChange
@@ -132,13 +124,13 @@ data ChatResponse
   | CRSentInvitation
   | CRContactUpdated {fromContact :: Contact, toContact :: Contact}
   | CRContactsMerged {intoContact :: Contact, mergedContact :: Contact}
-  | CRContactDeleted ContactName
+  | CRContactDeleted ContactName -- TODO
   | CRUserContactLinkCreated ConnReqContact
   | CRUserContactLinkDeleted
-  | CRReceivedContactRequest ContactName Profile
-  | CRAcceptingContactRequest ContactName
-  | CRLeftMemberUser GroupName
-  | CRGroupDeletedUser GroupName
+  | CRReceivedContactRequest ContactName Profile -- TODO what is the entity here?
+  | CRAcceptingContactRequest ContactName -- TODO
+  | CRLeftMemberUser GroupInfo
+  | CRGroupDeletedUser GroupInfo
   | CRRcvFileAccepted RcvFileTransfer FilePath
   | CRRcvFileAcceptedSndCancelled RcvFileTransfer
   | CRRcvFileStart RcvFileTransfer
@@ -152,24 +144,24 @@ data ChatResponse
   | CRSndGroupFileCancelled [SndFileTransfer]
   | CRUserProfileUpdated {fromProfile :: Profile, toProfile :: Profile}
   | CRContactConnected Contact
-  | CRContactAnotherClient ContactName
-  | CRContactDisconnected ContactName
-  | CRContactSubscribed ContactName
-  | CRContactSubError ContactName ChatError
-  | CRGroupInvitation Group
-  | CRReceivedGroupInvitation Group ContactName GroupMemberRole
-  | CRUserJoinedGroup GroupName
-  | CRJoinedGroupMember GroupName GroupMember
-  | CRJoinedGroupMemberConnecting {group :: GroupName, hostMember :: GroupMember, member :: GroupMember}
-  | CRConnectedToGroupMember GroupName GroupMember
-  | CRDeletedMember {group :: GroupName, byMember :: GroupMember, deletedMember :: GroupMember}
-  | CRDeletedMemberUser GroupName GroupMember
-  | CRLeftMember GroupName GroupMember
-  | CRGroupEmpty Group
-  | CRGroupRemoved Group
-  | CRGroupDeleted GroupName GroupMember
-  | CRMemberSubError GroupName ContactName ChatError
-  | CRGroupSubscribed Group
+  | CRContactAnotherClient Contact
+  | CRContactDisconnected Contact
+  | CRContactSubscribed Contact
+  | CRContactSubError Contact ChatError
+  | CRGroupInvitation GroupInfo
+  | CRReceivedGroupInvitation GroupInfo Contact GroupMemberRole
+  | CRUserJoinedGroup GroupInfo
+  | CRJoinedGroupMember GroupInfo GroupMember
+  | CRJoinedGroupMemberConnecting {group :: GroupInfo, hostMember :: GroupMember, member :: GroupMember}
+  | CRConnectedToGroupMember GroupInfo GroupMember
+  | CRDeletedMember {group :: GroupInfo, byMember :: GroupMember, deletedMember :: GroupMember}
+  | CRDeletedMemberUser GroupInfo GroupMember
+  | CRLeftMember GroupInfo GroupMember
+  | CRGroupEmpty GroupInfo
+  | CRGroupRemoved GroupInfo
+  | CRGroupDeleted GroupInfo GroupMember
+  | CRMemberSubError GroupInfo ContactName ChatError -- TODO Contact?  or GroupMember?
+  | CRGroupSubscribed GroupInfo
   | CRSndFileSubError SndFileTransfer ChatError
   | CRRcvFileSubError RcvFileTransfer ChatError
   | CRUserContactLinkSubscribed
@@ -193,12 +185,12 @@ data ChatErrorType
   | CEGroupContactRole ContactName
   | CEGroupDuplicateMember ContactName
   | CEGroupDuplicateMemberId
-  | CEGroupNotJoined GroupName
+  | CEGroupNotJoined GroupInfo
   | CEGroupMemberNotActive
   | CEGroupMemberUserRemoved
   | CEGroupMemberNotFound ContactName
   | CEGroupMemberIntroNotFound ContactName
-  | CEGroupCantResendInvitation GroupName ContactName
+  | CEGroupCantResendInvitation GroupInfo ContactName
   | CEGroupInternal String
   | CEFileNotFound String
   | CEFileAlreadyReceiving String
