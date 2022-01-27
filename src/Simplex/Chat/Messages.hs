@@ -19,7 +19,6 @@ import qualified Data.ByteString.Base64 as B64
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Int (Int64)
 import Data.Text (Text)
-import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1)
 import Data.Time.Clock (UTCTime)
 import Data.Time.LocalTime (ZonedTime, utcToLocalZonedTime)
@@ -30,6 +29,7 @@ import Database.SQLite.Simple.ToField (ToField (..))
 import GHC.Generics (Generic)
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
+import Simplex.Chat.Util (enumJSON)
 import Simplex.Messaging.Agent.Protocol (AgentMsgId, MsgIntegrity, MsgMeta (..))
 import Simplex.Messaging.Agent.Store.SQLite (fromTextField_)
 import Simplex.Messaging.Encoding.String
@@ -78,11 +78,11 @@ data JSONChatItem d
   | JCItemRcvGroup {member :: GroupMember, meta :: CIMeta d, content :: CIContent d}
   deriving (Generic)
 
-instance ToJSON (JSONChatItem d) where
+instance MsgDirectionI d => ToJSON (JSONChatItem d) where
   toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "JCItem"
   toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "JCItem"
 
-instance ToJSON (ChatItem c d) where
+instance MsgDirectionI d => ToJSON (ChatItem c d) where
   toJSON = J.toJSON . jsonChatItem
   toEncoding = J.toEncoding . jsonChatItem
 
@@ -128,7 +128,7 @@ data AChatPreview = forall c. AChatPreview (SChatType c) (ChatInfo c) (Maybe (CC
 deriving instance Show AChatPreview
 
 -- | type to show a mix of messages from multiple chats
-data AChatItem = forall c d. AChatItem (SChatType c) (SMsgDirection d) (ChatInfo c) (ChatItem c d)
+data AChatItem = forall c d. MsgDirectionI d => AChatItem (SChatType c) (SMsgDirection d) (ChatInfo c) (ChatItem c d)
 
 deriving instance Show AChatItem
 
@@ -139,7 +139,7 @@ instance ToJSON AChatItem where
 data JSONAnyChatItem c d = JSONAnyChatItem {chatInfo :: ChatInfo c, chatItem :: ChatItem c d}
   deriving (Generic)
 
-instance ToJSON (JSONAnyChatItem c d) where
+instance MsgDirectionI d => ToJSON (JSONAnyChatItem c d) where
   toJSON = J.genericToJSON J.defaultOptions
   toEncoding = J.genericToEncoding J.defaultOptions
 
@@ -194,33 +194,46 @@ data CIContent (d :: MsgDirection) where
 
 deriving instance Show (CIContent d)
 
-instance ToField (CIContent d) where toField = toField . decodeLatin1 . LB.toStrict . J.encode
+instance MsgDirectionI d => ToField (CIContent d) where
+  toField = toField . decodeLatin1 . LB.toStrict . J.encode
 
-instance ToJSON (CIContent d) where
+instance MsgDirectionI d => ToJSON (CIContent d) where
   toJSON = J.toJSON . jsonCIContent
   toEncoding = J.toEncoding . jsonCIContent
 
+data ACIContent = forall d. ACIContent (SMsgDirection d) (CIContent d)
+
+instance FromJSON ACIContent where
+  parseJSON = fmap aciContentJSON . J.parseJSON
+
 data JSONCIContent
-  = JCIMsgContent {msgContent :: MsgContent}
+  = JCIMsgContent {msgDir :: MsgDirection, msgContent :: MsgContent}
   | JCISndFileInvitation {fileId :: FileTransferId, filePath :: FilePath}
   | JCIRcvFileInvitation {rcvFileTransfer :: RcvFileTransfer}
   deriving (Generic)
+
+instance FromJSON JSONCIContent where
+  parseJSON = J.genericParseJSON . sumTypeJSON $ dropPrefix "JCI"
 
 instance ToJSON JSONCIContent where
   toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "JCI"
   toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "JCI"
 
-jsonCIContent :: CIContent d -> JSONCIContent
+jsonCIContent :: forall d. MsgDirectionI d => CIContent d -> JSONCIContent
 jsonCIContent = \case
-  CIMsgContent mc -> JCIMsgContent mc
+  CIMsgContent mc -> JCIMsgContent md mc
   CISndFileInvitation fId fPath -> JCISndFileInvitation fId fPath
   CIRcvFileInvitation ft -> JCIRcvFileInvitation ft
+  where
+    md = toMsgDirection $ msgDirection @d
 
-ciContentToText :: CIContent d -> Text
-ciContentToText = \case
-  CIMsgContent mc -> msgContentText mc
-  CISndFileInvitation fId fPath -> "you sent file #" <> T.pack (show fId) <> ": " <> T.pack fPath
-  CIRcvFileInvitation RcvFileTransfer {fileInvitation = FileInvitation {fileName}} -> "file " <> T.pack fileName
+aciContentJSON :: JSONCIContent -> ACIContent
+aciContentJSON = \case
+  JCIMsgContent md mc -> case md of
+    MDSnd -> ACIContent SMDSnd $ CIMsgContent mc
+    MDRcv -> ACIContent SMDRcv $ CIMsgContent mc
+  JCISndFileInvitation fId fPath -> ACIContent SMDSnd $ CISndFileInvitation fId fPath
+  JCIRcvFileInvitation ft -> ACIContent SMDRcv $ CIRcvFileInvitation ft
 
 data SChatType (c :: ChatType) where
   SCTDirect :: SChatType 'CTDirect
@@ -257,11 +270,25 @@ data PendingGroupMessage = PendingGroupMessage
 type MessageId = Int64
 
 data MsgDirection = MDRcv | MDSnd
-  deriving (Show)
+  deriving (Show, Generic)
+
+instance FromJSON MsgDirection where
+  parseJSON = J.genericParseJSON . enumJSON $ dropPrefix "MD"
+
+instance ToJSON MsgDirection where
+  toJSON = J.genericToJSON . enumJSON $ dropPrefix "MD"
+  toEncoding = J.genericToEncoding . enumJSON $ dropPrefix "MD"
 
 data SMsgDirection (d :: MsgDirection) where
   SMDRcv :: SMsgDirection 'MDRcv
   SMDSnd :: SMsgDirection 'MDSnd
+
+data ASMsgDirection = forall d. ASMD (SMsgDirection d)
+
+toMsgDirection :: SMsgDirection d -> MsgDirection
+toMsgDirection = \case
+  SMDRcv -> MDRcv
+  SMDSnd -> MDSnd
 
 deriving instance Show (SMsgDirection d)
 
@@ -278,6 +305,8 @@ instance MsgDirectionI 'MDRcv where msgDirection = SMDRcv
 instance MsgDirectionI 'MDSnd where msgDirection = SMDSnd
 
 instance ToField MsgDirection where toField = toField . msgDirectionInt
+
+instance ToField (SMsgDirection d) where toField = toField . msgDirectionInt . toMsgDirection
 
 msgDirectionInt :: MsgDirection -> Int
 msgDirectionInt = \case
