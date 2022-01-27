@@ -1953,12 +1953,13 @@ getDirectChatItems_ db User {userId} contactId = do
         (userId, contactId)
   liftIO $ mapM toDirectChatItem chatItems_
   where
-    toDirectChatItem :: (Int64, SMsgDirection d, ChatItemTs, CIContent d, Text, UTCTime, MsgMeta) -> IO (CChatItem 'CTDirect)
+    toDirectChatItem :: (Int64, ASMsgDirection, ChatItemTs, ACIContent, Text, UTCTime, MsgMeta) -> IO (CChatItem 'CTDirect)
     toDirectChatItem (itemId, itemSent, itemTs, itemContent, itemText, createdAt, MsgMeta {integrity}) = do
       ciMeta <- liftIO $ mkCIMetaProps itemId itemTs itemText createdAt
       case (itemSent, itemContent) of
-        (SMDRcv, _) -> pure $ CChatItem SMDRcv (DirectChatItem (CIRcvMeta ciMeta integrity) itemContent)
-        (SMDSnd, _) -> pure $ CChatItem SMDSnd (DirectChatItem (CISndMeta ciMeta) itemContent)
+        (ASMD SMDRcv, ACIContent SMDRcv ciContent) -> pure $ CChatItem SMDRcv (DirectChatItem (CIRcvMeta ciMeta integrity) ciContent)
+        (ASMD SMDSnd, ACIContent SMDSnd ciContent) -> pure $ CChatItem SMDSnd (DirectChatItem (CISndMeta ciMeta) ciContent)
+        _ -> fail "bad chat item" -- TODO ? "Bad" ChatItem constructor
 
 -- getGroupChatItemList :: MonadUnliftIO m => SQLiteStore -> UserId -> Int64 -> m ChatItemList
 -- getGroupChatItemList st userId groupId =
