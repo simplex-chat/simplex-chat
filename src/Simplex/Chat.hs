@@ -1185,7 +1185,7 @@ saveRcvGroupChatItem userId g m msgId MsgMeta {broker = (_, brokerTs), integrity
   ciMeta <- saveChatItem userId (CDRcvGroup g m) $ mkNewChatItem ciContent msgId brokerTs createdAt
   pure $ RcvGroupChatItem m (CIRcvMeta ciMeta integrity) ciContent
 
-saveChatItem :: ChatMonad m => UserId -> ChatDirection c d -> NewChatItem d -> m CIMetaProps
+saveChatItem :: (MsgDirectionI d, ChatMonad m) => UserId -> ChatDirection c d -> NewChatItem d -> m CIMetaProps
 saveChatItem userId cd ci@NewChatItem {itemTs, itemText, createdAt} = do
   ciId <- withStore $ \st -> createNewChatItem st userId cd ci
   liftIO $ mkCIMetaProps ciId itemTs itemText createdAt

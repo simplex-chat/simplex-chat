@@ -19,12 +19,16 @@ import qualified Data.ByteString.Base64 as B64
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Int (Int64)
 import Data.Text (Text)
+import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1)
 import Data.Time.Clock (UTCTime)
 import Data.Time.LocalTime (ZonedTime, utcToLocalZonedTime)
 import Data.Type.Equality
 import Data.Typeable (Typeable)
-import Database.SQLite.Simple.FromField (FromField (..))
+import Database.SQLite.Simple (SQLData (SQLInteger))
+import Database.SQLite.Simple.FromField (FromField (..), ResultError (ConversionFailed), returnError)
+import Database.SQLite.Simple.Internal (Field (..))
+import Database.SQLite.Simple.Ok (Ok (Ok))
 import Database.SQLite.Simple.ToField (ToField (..))
 import GHC.Generics (Generic)
 import Simplex.Chat.Protocol
@@ -194,6 +198,12 @@ data CIContent (d :: MsgDirection) where
 
 deriving instance Show (CIContent d)
 
+ciContentToText :: CIContent d -> Text
+ciContentToText = \case
+  CIMsgContent mc -> msgContentText mc
+  CISndFileInvitation fId fPath -> "you sent file #" <> T.pack (show fId) <> ": " <> T.pack fPath
+  CIRcvFileInvitation RcvFileTransfer {fileInvitation = FileInvitation {fileName}} -> "file " <> T.pack fileName
+
 instance MsgDirectionI d => ToField (CIContent d) where
   toField = toField . decodeLatin1 . LB.toStrict . J.encode
 
@@ -279,16 +289,13 @@ instance ToJSON MsgDirection where
   toJSON = J.genericToJSON . enumJSON $ dropPrefix "MD"
   toEncoding = J.genericToEncoding . enumJSON $ dropPrefix "MD"
 
+instance ToField MsgDirection where toField = toField . msgDirectionInt
+
 data SMsgDirection (d :: MsgDirection) where
   SMDRcv :: SMsgDirection 'MDRcv
   SMDSnd :: SMsgDirection 'MDSnd
 
 data ASMsgDirection = forall d. ASMD (SMsgDirection d)
-
-toMsgDirection :: SMsgDirection d -> MsgDirection
-toMsgDirection = \case
-  SMDRcv -> MDRcv
-  SMDSnd -> MDSnd
 
 deriving instance Show (SMsgDirection d)
 
@@ -297,16 +304,43 @@ instance TestEquality SMsgDirection where
   testEquality SMDSnd SMDSnd = Just Refl
   testEquality _ _ = Nothing
 
+instance ToField (SMsgDirection d) where toField = toField . msgDirectionInt . toMsgDirection
+
+instance (Typeable d, MsgDirectionI d) => FromField (SMsgDirection d) where
+  fromField = fromIntField_ sMsgDirectionT'
+
+toMsgDirection :: SMsgDirection d -> MsgDirection
+toMsgDirection = \case
+  SMDRcv -> MDRcv
+  SMDSnd -> MDSnd
+
+fromIntField_ :: Typeable a => (Int64 -> Maybe a) -> Field -> Ok a
+fromIntField_ fromInt = \case
+  f@(Field (SQLInteger i) _) ->
+    case fromInt i of
+      Just x -> Ok x
+      _ -> returnError ConversionFailed f ("invalid integer: " <> show i)
+  f -> returnError ConversionFailed f "expecting SQLInteger column type"
+
+sMsgDirectionT' :: forall d. MsgDirectionI d => Int64 -> Maybe (SMsgDirection d)
+sMsgDirectionT' i =
+  msgDirectionIntP' i >>= \(ASMD d) ->
+    case testEquality d (msgDirection @d) of
+      Just Refl -> Just d
+      _ -> Nothing
+
+msgDirectionIntP' :: Int64 -> Maybe ASMsgDirection
+msgDirectionIntP' = \case
+  0 -> Just $ ASMD SMDRcv
+  1 -> Just $ ASMD SMDSnd
+  _ -> Nothing
+
 class MsgDirectionI (d :: MsgDirection) where
   msgDirection :: SMsgDirection d
 
 instance MsgDirectionI 'MDRcv where msgDirection = SMDRcv
 
 instance MsgDirectionI 'MDSnd where msgDirection = SMDSnd
-
-instance ToField MsgDirection where toField = toField . msgDirectionInt
-
-instance ToField (SMsgDirection d) where toField = toField . msgDirectionInt . toMsgDirection
 
 msgDirectionInt :: MsgDirection -> Int
 msgDirectionInt = \case

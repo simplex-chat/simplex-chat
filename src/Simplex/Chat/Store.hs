@@ -105,7 +105,7 @@ module Simplex.Chat.Store
     deletePendingGroupMessage,
     createNewChatItem,
     getChatPreviews,
-    -- getDirectChat,
+    getDirectChat,
   )
 where
 
@@ -120,6 +120,7 @@ import Data.Aeson (ToJSON)
 import qualified Data.Aeson as J
 import qualified Data.ByteString.Base64 as B64
 import Data.ByteString.Char8 (ByteString)
+import Data.Data (Typeable)
 import Data.Either (rights)
 import Data.Function (on)
 import Data.Functor (($>))
@@ -1900,34 +1901,12 @@ getGroupChatPreviews_ db User {userId, userContactId} =
           groupInfo = GroupInfo {groupId, localDisplayName, groupProfile = GroupProfile {displayName, fullName}, membership}
        in AChatPreview SCTGroup (GroupChat groupInfo) Nothing
 
--- getDirectChat :: StoreMonad m => SQLiteStore -> User -> Int64 -> m (Chat 'CTDirect)
--- getDirectChat st user@User {userId} contactId =
---   liftIOEither . withTransaction st $ \db -> runExceptT $ do
---     contact <- getContact_' db user contactId
---     chatItems <-
---       liftIO $
---         map toDirectChatItem
---           <$> DB.query
---             db
---             [sql|
---               SELECT
---                 -- CChatItem
---                 ci.chat_item_id, ci.item_sent, ci.item_ts, ci.item_content, ci.item_text, ci.created_at,
---                 md.agent_msg_meta
---               FROM chat_items ci
---               LEFT JOIN messages m ON m.message_id == ci.created_by_msg_id
---               LEFT JOIN msg_deliveries md ON md.message_id = m.message_id
---               WHERE ci.user_id = ? AND ci.contact_id = ?
---             |]
---             (userId, contactId)
---     pure $ Chat (DirectChat contact) chatItems
---   where
---     toDirectChatItem :: (Int64, MsgDirection, ChatItemTs, CIContent d, Text, UTCTime, MsgMeta) -> IO (CChatItem 'CTDirect)
---     toDirectChatItem (itemId, itemSent, itemTs, itemContent, itemText, createdAt, MsgMeta {integrity}) = do
---       ciMeta <- liftIO $ mkCIMetaProps itemId itemTs itemText createdAt
---       case itemSent of
---         MDRcv -> pure $ CChatItem SMDRcv (DirectChatItem (CIRcvMeta ciMeta integrity) (itemContent :: (CIContent 'MDRcv)))
---         MDSnd -> pure $ CChatItem SMDSnd (DirectChatItem (CISndMeta ciMeta) itemContent)
+getDirectChat :: StoreMonad m => SQLiteStore -> User -> Int64 -> m (Chat 'CTDirect)
+getDirectChat st user contactId =
+  liftIOEither . withTransaction st $ \db -> runExceptT $ do
+    contact <- getContact_' db user contactId
+    chatItems <- liftIO $ getDirectChatItems_ db user contactId
+    pure $ Chat (DirectChat contact) chatItems
 
 getContact_' :: DB.Connection -> User -> Int64 -> ExceptT StoreError IO Contact
 getContact_' db User {userId} contactId =
@@ -1954,6 +1933,32 @@ getContact_' db User {userId} contactId =
     toContact :: [ContactRow] -> Either StoreError Contact
     toContact (contactRow : _) = Right $ toContact' contactRow
     toContact _ = Left $ SEContactNotFoundById contactId
+
+getDirectChatItems_ :: DB.Connection -> User -> Int64 -> IO [CChatItem 'CTDirect]
+getDirectChatItems_ db User {userId} contactId = do
+  chatItems_ <-
+    liftIO $
+      DB.query
+        db
+        [sql|
+          SELECT
+            -- CChatItem
+            ci.chat_item_id, ci.item_sent, ci.item_ts, ci.item_content, ci.item_text, ci.created_at,
+            md.agent_msg_meta
+          FROM chat_items ci
+          LEFT JOIN messages m ON m.message_id == ci.created_by_msg_id
+          LEFT JOIN msg_deliveries md ON md.message_id = m.message_id
+          WHERE ci.user_id = ? AND ci.contact_id = ?
+        |]
+        (userId, contactId)
+  liftIO $ mapM toDirectChatItem chatItems_
+  where
+    toDirectChatItem :: (Int64, SMsgDirection d, ChatItemTs, CIContent d, Text, UTCTime, MsgMeta) -> IO (CChatItem 'CTDirect)
+    toDirectChatItem (itemId, itemSent, itemTs, itemContent, itemText, createdAt, MsgMeta {integrity}) = do
+      ciMeta <- liftIO $ mkCIMetaProps itemId itemTs itemText createdAt
+      case (itemSent, itemContent) of
+        (SMDRcv, _) -> pure $ CChatItem SMDRcv (DirectChatItem (CIRcvMeta ciMeta integrity) itemContent)
+        (SMDSnd, _) -> pure $ CChatItem SMDSnd (DirectChatItem (CISndMeta ciMeta) itemContent)
 
 -- getGroupChatItemList :: MonadUnliftIO m => SQLiteStore -> UserId -> Int64 -> m ChatItemList
 -- getGroupChatItemList st userId groupId =
