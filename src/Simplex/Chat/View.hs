@@ -99,7 +99,7 @@ responseToView cmd = \case
   CRLeftMember g m -> [ttyGroup' g <> ": " <> ttyMember m <> " left the group"]
   CRGroupEmpty g -> [ttyFullGroup g <> ": group is empty"]
   CRGroupRemoved g -> [ttyFullGroup g <> ": you are no longer a member or group deleted"]
-  CRGroupDeleted g m -> [ttyGroup' g <> ": " <> ttyMember m <> " deleted the group", "use " <> highlight ("/d #" <> groupName g) <> " to delete the local copy of the group"]
+  CRGroupDeleted g m -> [ttyGroup' g <> ": " <> ttyMember m <> " deleted the group", "use " <> highlight ("/d #" <> groupName' g) <> " to delete the local copy of the group"]
   CRMemberSubError g c e -> [ttyGroup' g <> " member " <> ttyContact c <> " error: " <> sShow e]
   CRGroupSubscribed g -> [ttyFullGroup g <> ": connected to server(s)"]
   CRSndFileSubError SndFileTransfer {fileId, fileName} e ->
@@ -203,11 +203,11 @@ viewCannotResendInvitation GroupInfo {localDisplayName = gn} c =
 viewReceivedGroupInvitation :: GroupInfo -> Contact -> GroupMemberRole -> [StyledString]
 viewReceivedGroupInvitation g c role =
   [ ttyFullGroup g <> ": " <> ttyContact' c <> " invites you to join the group as " <> plain (strEncode role),
-    "use " <> highlight ("/j " <> groupName g) <> " to accept"
+    "use " <> highlight ("/j " <> groupName' g) <> " to accept"
   ]
 
 groupPreserved :: GroupInfo -> [StyledString]
-groupPreserved g = ["use " <> highlight ("/d #" <> groupName g) <> " to delete the group"]
+groupPreserved g = ["use " <> highlight ("/d #" <> groupName' g) <> " to delete the group"]
 
 connectedMember :: GroupMember -> StyledString
 connectedMember m = case memberCategory m of
@@ -446,7 +446,7 @@ viewChatError = \case
     CEGroupDuplicateMemberId -> ["cannot add member - duplicate member ID"]
     CEGroupUserRole -> ["you have insufficient permissions for this group command"]
     CEGroupContactRole c -> ["contact " <> ttyContact c <> " has insufficient permissions for this group action"]
-    CEGroupNotJoined g -> ["you did not join this group, use " <> highlight ("/join #" <> groupName g)]
+    CEGroupNotJoined g -> ["you did not join this group, use " <> highlight ("/join #" <> groupName' g)]
     CEGroupMemberNotActive -> ["you cannot invite other members yet, try later"]
     CEGroupMemberUserRemoved -> ["you are no longer a member of the group"]
     CEGroupMemberNotFound c -> ["contact " <> ttyContact c <> " is not a group member"]
@@ -514,7 +514,7 @@ ttyGroup :: GroupName -> StyledString
 ttyGroup g = styled (Colored Blue) $ "#" <> g
 
 ttyGroup' :: GroupInfo -> StyledString
-ttyGroup' = ttyGroup . groupName
+ttyGroup' = ttyGroup . groupName'
 
 ttyGroups :: [GroupName] -> StyledString
 ttyGroups [] = ""

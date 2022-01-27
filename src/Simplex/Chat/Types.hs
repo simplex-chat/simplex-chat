@@ -32,10 +32,11 @@ import Database.SQLite.Simple.Internal (Field (..))
 import Database.SQLite.Simple.Ok (Ok (Ok))
 import Database.SQLite.Simple.ToField (ToField (..))
 import GHC.Generics (Generic)
+import Simplex.Chat.Util (singleFieldJSON)
 import Simplex.Messaging.Agent.Protocol (ConnId, ConnectionMode (..), ConnectionRequestUri, InvitationId)
 import Simplex.Messaging.Agent.Store.SQLite (fromTextField_)
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Parsers (dropPrefix, sumTypeJSON)
+import Simplex.Messaging.Parsers (dropPrefix)
 import Simplex.Messaging.Util ((<$?>))
 
 class IsContact a where
@@ -120,8 +121,8 @@ data GroupInfo = GroupInfo
 
 instance ToJSON GroupInfo where toEncoding = J.genericToEncoding J.defaultOptions
 
-groupName :: GroupInfo -> GroupName
-groupName GroupInfo {localDisplayName = g} = g
+groupName' :: GroupInfo -> GroupName
+groupName' GroupInfo {localDisplayName = g} = g
 
 data Profile = Profile
   { displayName :: ContactName,
@@ -243,11 +244,11 @@ data InvitedBy = IBContact {byContactId :: Int64} | IBUser | IBUnknown
   deriving (Eq, Show, Generic)
 
 instance FromJSON InvitedBy where
-  parseJSON = J.genericParseJSON . sumTypeJSON $ dropPrefix "IB"
+  parseJSON = J.genericParseJSON . singleFieldJSON $ dropPrefix "IB"
 
 instance ToJSON InvitedBy where
-  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "IB"
-  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "IB"
+  toJSON = J.genericToJSON . singleFieldJSON $ dropPrefix "IB"
+  toEncoding = J.genericToEncoding . singleFieldJSON $ dropPrefix "IB"
 
 toInvitedBy :: Int64 -> Maybe Int64 -> InvitedBy
 toInvitedBy userCtId (Just ctId)
@@ -483,11 +484,11 @@ data RcvFileStatus
   deriving (Eq, Show, Generic)
 
 instance FromJSON RcvFileStatus where
-  parseJSON = J.genericParseJSON . sumTypeJSON $ dropPrefix "RFS"
+  parseJSON = J.genericParseJSON . singleFieldJSON $ dropPrefix "RFS"
 
 instance ToJSON RcvFileStatus where
-  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "RFS"
-  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "RFS"
+  toJSON = J.genericToJSON . singleFieldJSON $ dropPrefix "RFS"
+  toEncoding = J.genericToEncoding . singleFieldJSON $ dropPrefix "RFS"
 
 data RcvFileInfo = RcvFileInfo
   { filePath :: FilePath,
@@ -521,8 +522,8 @@ data FileTransfer = FTSnd {sndFileTransfers :: [SndFileTransfer]} | FTRcv RcvFil
   deriving (Show, Generic)
 
 instance ToJSON FileTransfer where
-  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "FT"
-  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "FT"
+  toJSON = J.genericToJSON . singleFieldJSON $ dropPrefix "FT"
+  toEncoding = J.genericToEncoding . singleFieldJSON $ dropPrefix "FT"
 
 data FileStatus = FSNew | FSAccepted | FSConnected | FSComplete | FSCancelled deriving (Eq, Ord, Show)
 
