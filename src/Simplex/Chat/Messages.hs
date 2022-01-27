@@ -170,15 +170,16 @@ jsonCIMeta = \case
 data CIMetaProps = CIMetaProps
   { itemId :: ChatItemId,
     itemTs :: ChatItemTs,
+    itemText :: Text,
     localItemTs :: ZonedTime,
     createdAt :: UTCTime
   }
   deriving (Show, Generic, FromJSON)
 
-mkCIMetaProps :: ChatItemId -> ChatItemTs -> UTCTime -> IO CIMetaProps
-mkCIMetaProps itemId itemTs createdAt = do
+mkCIMetaProps :: ChatItemId -> ChatItemTs -> Text -> UTCTime -> IO CIMetaProps
+mkCIMetaProps itemId itemTs itemText createdAt = do
   localItemTs <- utcToLocalZonedTime itemTs
-  pure CIMetaProps {itemId, itemTs, localItemTs, createdAt}
+  pure CIMetaProps {itemId, itemTs, itemText, localItemTs, createdAt}
 
 instance ToJSON CIMetaProps where toEncoding = J.genericToEncoding J.defaultOptions
 

@@ -1924,7 +1924,7 @@ getDirectChat st user@User {userId} contactId =
   where
     toDirectChatItem :: (Int64, MsgDirection, ChatItemTs, CIContent d, Text, UTCTime, MsgMeta) -> IO (CChatItem 'CTDirect)
     toDirectChatItem (itemId, itemSent, itemTs, itemContent, itemText, createdAt, MsgMeta {integrity}) = do
-      ciMeta <- liftIO $ mkCIMetaProps itemId itemTs createdAt
+      ciMeta <- liftIO $ mkCIMetaProps itemId itemTs itemText createdAt
       case itemSent of
         MDRcv -> pure $ CChatItem SMDRcv (DirectChatItem (CIRcvMeta ciMeta integrity) (itemContent :: (CIContent 'MDRcv)))
         MDSnd -> pure $ CChatItem SMDSnd (DirectChatItem (CISndMeta ciMeta) itemContent)
