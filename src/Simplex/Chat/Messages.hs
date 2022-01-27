@@ -22,7 +22,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1)
 import Data.Time.Clock (UTCTime)
-import Data.Time.LocalTime (ZonedTime)
+import Data.Time.LocalTime (ZonedTime, utcToLocalZonedTime)
 import Data.Type.Equality
 import Data.Typeable (Typeable)
 import Database.SQLite.Simple.FromField (FromField (..))
@@ -109,8 +109,8 @@ data ChatDirection (c :: ChatType) (d :: MsgDirection) where
   CDRcvGroup :: GroupInfo -> GroupMember -> ChatDirection 'CTGroup 'MDRcv
 
 data NewChatItem d = NewChatItem
-  { createdByMsgId_ :: Maybe MessageId,
-    itemSent :: MsgDirection,
+  { createdByMsgId :: Maybe MessageId,
+    itemSent :: SMsgDirection d,
     itemTs :: ChatItemTs,
     itemContent :: CIContent d,
     itemText :: Text,
@@ -174,6 +174,11 @@ data CIMetaProps = CIMetaProps
     createdAt :: UTCTime
   }
   deriving (Show, Generic, FromJSON)
+
+mkCIMetaProps :: ChatItemId -> ChatItemTs -> UTCTime -> IO CIMetaProps
+mkCIMetaProps itemId itemTs createdAt = do
+  localItemTs <- utcToLocalZonedTime itemTs
+  pure CIMetaProps {itemId, itemTs, localItemTs, createdAt}
 
 instance ToJSON CIMetaProps where toEncoding = J.genericToEncoding J.defaultOptions
 

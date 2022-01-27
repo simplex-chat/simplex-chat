@@ -105,6 +105,7 @@ module Simplex.Chat.Store
     deletePendingGroupMessage,
     createNewChatItem,
     getChatPreviews,
+    getDirectChat,
   )
 where
 
@@ -1809,7 +1810,7 @@ deletePendingGroupMessage st groupMemberId messageId =
     DB.execute db "DELETE FROM pending_group_messages WHERE group_member_id = ? AND message_id = ?" (groupMemberId, messageId)
 
 createNewChatItem :: MonadUnliftIO m => SQLiteStore -> UserId -> ChatDirection c d -> NewChatItem d -> m ChatItemId
-createNewChatItem st userId chatDirection NewChatItem {createdByMsgId_, itemSent, itemTs, itemContent, itemText, createdAt} =
+createNewChatItem st userId chatDirection NewChatItem {createdByMsgId, itemSent, itemTs, itemContent, itemText, createdAt} =
   liftIO . withTransaction st $ \db -> do
     let (contactId_, groupId_, groupMemberId_) = ids
     DB.execute
@@ -1821,11 +1822,13 @@ createNewChatItem st userId chatDirection NewChatItem {createdByMsgId_, itemSent
         ) VALUES (?,?,?,?,?,?,?,?,?,?,?)
       |]
       ( (userId, contactId_, groupId_, groupMemberId_)
-          :. (createdByMsgId_, itemSent, itemTs, itemContent, itemText, createdAt, createdAt)
+          :. (createdByMsgId, itemSent, itemTs, itemContent, itemText, createdAt, createdAt)
       )
     ciId <- insertedRowId db
-    when (isJust createdByMsgId_) $
-      DB.execute db "INSERT INTO chat_item_messages (chat_item_id, message_id) VALUES (?,?)" (ciId, fromJust createdByMsgId_)
+    case createdByMsgId of
+      Nothing -> pure ()
+      Just msgId ->
+        DB.execute db "INSERT INTO chat_item_messages (chat_item_id, message_id) VALUES (?,?)" (ciId, msgId)
     pure ciId
   where
     ids :: (Maybe Int64, Maybe Int64, Maybe Int64)
@@ -1897,33 +1900,60 @@ getGroupChatPreviews_ db User {userId, userContactId} =
           groupInfo = GroupInfo {groupId, localDisplayName, groupProfile = GroupProfile {displayName, fullName}, membership}
        in AChatPreview SCTGroup (GroupChat groupInfo) Nothing
 
-getDirectChat :: MonadUnliftIO m => SQLiteStore -> User -> Int64 -> m (Either StoreError (Chat 'CTDirect))
-getDirectChat st User {userId} contactId =
-  liftIO . withTransaction st $ \db ->
-    toDirectChat
+getDirectChat :: StoreMonad m => SQLiteStore -> User -> Int64 -> m (Chat 'CTDirect)
+getDirectChat st user@User {userId} contactId =
+  liftIOEither . withTransaction st $ \db -> runExceptT $ do
+    contact <- getContact_' db user contactId
+    chatItems <-
+      liftIO $
+        map toDirectChatItem
+          <$> DB.query
+            db
+            [sql|
+              SELECT
+                -- CChatItem
+                ci.chat_item_id, ci.item_sent, ci.item_ts, ci.item_content, ci.item_text, ci.created_at,
+                md.agent_msg_meta
+              FROM chat_items ci
+              LEFT JOIN messages m ON m.message_id == ci.created_by_msg_id
+              LEFT JOIN msg_deliveries md ON md.message_id = m.message_id
+              WHERE ci.user_id = ? AND ci.contact_id = ?
+            |]
+            (userId, contactId)
+    pure $ Chat (DirectChat contact) chatItems
+  where
+    toDirectChatItem :: (Int64, MsgDirection, ChatItemTs, CIContent d, Text, UTCTime, MsgMeta) -> IO (CChatItem 'CTDirect)
+    toDirectChatItem (itemId, itemSent, itemTs, itemContent, itemText, createdAt, MsgMeta {integrity}) = do
+      ciMeta <- liftIO $ mkCIMetaProps itemId itemTs createdAt
+      case itemSent of
+        MDRcv -> pure $ CChatItem SMDRcv (DirectChatItem (CIRcvMeta ciMeta integrity) (itemContent :: (CIContent 'MDRcv)))
+        MDSnd -> pure $ CChatItem SMDSnd (DirectChatItem (CISndMeta ciMeta) itemContent)
+
+getContact_' :: DB.Connection -> User -> Int64 -> ExceptT StoreError IO Contact
+getContact_' db User {userId} contactId =
+  ExceptT $
+    toContact
       <$> DB.query
         db
         [sql|
-          SELECT
-            -- Contact
-            ct.contact_id, ct.local_display_name, ct.via_group,
-            -- Contact {profile}
-            cp.display_name, cp.full_name,
-            -- Contact {activeConn}
-            c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.conn_status, c.conn_type,
-            c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at
-          FROM contacts ct
-          JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
-          JOIN connections c ON c.contact_id = ct.contact_id
-          WHERE ct.user_id = ? AND ct.contact_id = ?
-        |]
+        SELECT
+          -- Contact
+          ct.contact_id, ct.local_display_name, ct.via_group,
+          -- Contact {profile}
+          cp.display_name, cp.full_name,
+          -- Contact {activeConn}
+          c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.conn_status, c.conn_type,
+          c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at
+        FROM contacts ct
+        JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
+        JOIN connections c ON c.contact_id = ct.contact_id
+        WHERE ct.user_id = ? AND ct.contact_id = ?
+      |]
         (userId, contactId)
   where
-    toDirectChat :: [ContactRow] -> Either StoreError (Chat 'CTDirect)
-    toDirectChat (contactRow : _) =
-      let contact = toContact' contactRow
-       in Right $ Chat (DirectChat contact) []
-    toDirectChat _ = Left $ SEDirectChatNotFound contactId
+    toContact :: [ContactRow] -> Either StoreError Contact
+    toContact (contactRow : _) = Right $ toContact' contactRow
+    toContact _ = Left $ SEContactNotFoundById contactId
 
 -- getGroupChatItemList :: MonadUnliftIO m => SQLiteStore -> UserId -> Int64 -> m ChatItemList
 -- getGroupChatItemList st userId groupId =
@@ -2002,6 +2032,7 @@ randomBytes gVar n = B64.encode <$> (atomically . stateTVar gVar $ randomBytesGe
 
 data StoreError
   = SEDuplicateName
+  | SEContactNotFoundById Int64
   | SEContactNotFound ContactName
   | SEContactNotReady ContactName
   | SEDuplicateContactLink
@@ -2022,7 +2053,6 @@ data StoreError
   | SEUniqueID
   | SEInternal String
   | SENoMsgDelivery Int64 AgentMsgId
-  | SEDirectChatNotFound Int64
   deriving (Show, Exception, Generic)
 
 instance ToJSON StoreError where
