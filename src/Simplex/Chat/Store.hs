@@ -146,7 +146,7 @@ import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore (..), createSQLiteStore
 import Simplex.Messaging.Agent.Store.SQLite.Migrations (Migration (..))
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Parsers (dropPrefix, sumTypeJSON)
+import Simplex.Messaging.Parsers (dropPrefix, parseAll, sumTypeJSON)
 import Simplex.Messaging.Util (liftIOEither, (<$$>))
 import System.FilePath (takeFileName)
 import UnliftIO.STM
@@ -1960,7 +1960,7 @@ getDirectChatItems_ db User {userId} contactId = do
       ciMeta <- liftIO $ mkCIMetaProps itemId itemTs itemText createdAt
       case (itemSent, itemContent) of
         (ASMD SMDRcv, ACIContent SMDRcv ciContent) -> do
-          -- let msgIntegrity = -- TODO parser?
+          let msgIntegrity = parseAll strP $ encodeUtf8 integrity
           pure $ CChatItem SMDRcv (DirectChatItem (CIRcvMeta ciMeta msgIntegrity) ciContent)
         (ASMD SMDSnd, ACIContent SMDSnd ciContent) ->
           pure $ CChatItem SMDSnd (DirectChatItem (CISndMeta ciMeta) ciContent)
