@@ -777,7 +777,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
     notifyMemberConnected :: GroupInfo -> GroupMember -> m ()
     notifyMemberConnected gInfo m@GroupMember {localDisplayName = c} = do
       toView $ CRConnectedToGroupMember gInfo m
-      let g = groupName gInfo
+      let g = groupName' gInfo
       setActive $ ActiveG g
       showToast ("#" <> g) $ "member " <> c <> " is connected"
 
@@ -812,7 +812,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
     newGroupContentMessage gInfo m@GroupMember {localDisplayName = c} mc msgId msgMeta = do
       ci <- saveRcvGroupChatItem userId gInfo m msgId msgMeta (CIMsgContent mc)
       toView . CRNewChatItem $ AChatItem SCTGroup SMDRcv (GroupChat gInfo) ci
-      let g = groupName gInfo
+      let g = groupName' gInfo
       showToast ("#" <> g <> " " <> c <> "> ") $ msgContentText mc
       setActive $ ActiveG g
 
@@ -834,7 +834,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
       ci <- saveRcvGroupChatItem userId gInfo m msgId msgMeta (CIRcvFileInvitation ft)
       withStore $ \st -> updateFileTransferChatItemId st fileId $ chatItemId ci
       toView . CRNewChatItem $ AChatItem SCTGroup SMDRcv (GroupChat gInfo) ci
-      let g = groupName gInfo
+      let g = groupName' gInfo
       showToast ("#" <> g <> " " <> c <> "> ") "wants to send a file"
       setActive $ ActiveG g
 

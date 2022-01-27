@@ -23,11 +23,12 @@ import Numeric.Natural
 import Simplex.Chat.Messages
 import Simplex.Chat.Store (StoreError)
 import Simplex.Chat.Types
+import Simplex.Chat.Util (enumJSON, singleFieldJSON)
 import Simplex.Messaging.Agent (AgentClient)
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig)
 import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore)
-import Simplex.Messaging.Parsers (dropPrefix, sumTypeJSON)
+import Simplex.Messaging.Parsers (dropPrefix)
 import Simplex.Messaging.Protocol (CorrId)
 import System.IO (Handle)
 import UnliftIO.STM
@@ -72,8 +73,8 @@ data HelpSection = HSMain | HSFiles | HSGroups | HSMyAddress | HSMarkdown
   deriving (Show, Generic)
 
 instance ToJSON HelpSection where
-  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "HS"
-  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "HS"
+  toJSON = J.genericToJSON . enumJSON $ dropPrefix "HS"
+  toEncoding = J.genericToEncoding . enumJSON $ dropPrefix "HS"
 
 data ChatCommand
   = ChatHelp HelpSection
@@ -113,8 +114,8 @@ data ChatCommand
 data ChatResponse
   = CRNewChatItem {chatItem :: AChatItem}
   | CRCmdAccepted {corr :: CorrId}
-  | CRChatHelp HelpSection
-  | CRWelcome User
+  | CRChatHelp {helpSection :: HelpSection}
+  | CRWelcome {user :: User}
   | CRGroupCreated {groupInfo :: GroupInfo}
   | CRGroupMembers {group :: Group}
   | CRContactsList {contacts :: [Contact]}
@@ -181,19 +182,19 @@ data ChatResponse
   deriving (Show, Generic)
 
 instance ToJSON ChatResponse where
-  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "CR"
-  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "CR"
+  toJSON = J.genericToJSON . singleFieldJSON $ dropPrefix "CR"
+  toEncoding = J.genericToEncoding . singleFieldJSON $ dropPrefix "CR"
 
 data ChatError
-  = ChatError ChatErrorType
-  | ChatErrorMessage String
-  | ChatErrorAgent AgentErrorType
-  | ChatErrorStore StoreError
+  = ChatError {errorType :: ChatErrorType}
+  | ChatErrorMessage {errorMessage :: String}
+  | ChatErrorAgent {agentError :: AgentErrorType}
+  | ChatErrorStore {storeError :: StoreError}
   deriving (Show, Exception, Generic)
 
 instance ToJSON ChatError where
-  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "Chat"
-  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "Chat"
+  toJSON = J.genericToJSON . singleFieldJSON $ dropPrefix "Chat"
+  toEncoding = J.genericToEncoding . singleFieldJSON $ dropPrefix "Chat"
 
 data ChatErrorType
   = CEGroupUserRole
@@ -222,8 +223,8 @@ data ChatErrorType
   deriving (Show, Exception, Generic)
 
 instance ToJSON ChatErrorType where
-  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "CE"
-  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "CE"
+  toJSON = J.genericToJSON . singleFieldJSON $ dropPrefix "CE"
+  toEncoding = J.genericToEncoding . singleFieldJSON $ dropPrefix "CE"
 
 type ChatMonad m = (MonadUnliftIO m, MonadReader ChatController m, MonadError ChatError m)
 
