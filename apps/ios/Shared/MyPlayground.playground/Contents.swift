@@ -10,6 +10,6 @@ let ct = Contact(
     profile: Profile(displayName: "ep", fullName: "")
 )
 
-let data = try! jsonEncoder.encode(ChatResponse.contactConnected)
+let data = try! jsonEncoder.encode(ChatResponse.contactConnected(contact: ct))
 
 print(String(decoding: data, as: UTF8.self))

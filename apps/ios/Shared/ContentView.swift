@@ -47,6 +47,7 @@ import SwiftUI
 
 struct ContentView: View {
     @EnvironmentObject var chatModel: ChatModel
+    
 //    var chatStore: chat_store
 //    private let controller: chat_controller
 
@@ -55,34 +56,25 @@ struct ContentView: View {
 //    }
     
 
-    @State private var logbuffer = [String]()
-    @State private var chatcmd: String = ""
-    @State private var chatlog: String = ""
-    @FocusState private var focused: Bool
-    
-    func addLine(line: String) {
-        print(line)
-        logbuffer.append(line)
-        if(logbuffer.count > 50) { _ = logbuffer.dropFirst() }
-        chatlog = logbuffer.joined(separator: "\n")
-    }
+//    @State private var logbuffer = [String]()
+//    @State private var chatcmd: String = ""
+//    @State private var chatlog: String = ""
+//    @FocusState private var focused: Bool
+//    
+//    func addLine(line: String) {
+//        print(line)
+//        logbuffer.append(line)
+//        if(logbuffer.count > 50) { _ = logbuffer.dropFirst() }
+//        chatlog = logbuffer.joined(separator: "\n")
+//    }
     
     var body: some View {
         if let user = chatModel.currentUser {
-//            ChatView()
+            ChatListView(user: user)
         } else {
             WelcomeView()
         }
-//        DispatchQueue.global().async {
-//            while(true) {
-//                let msg = String.init(cString: chat_recv_msg(controller))
-//
-//                DispatchQueue.main.async {
-//                    addLine(line: msg)
-//                }
-//            }
-//        }
-//
+
 //        return VStack {
 //            ScrollView {
 //                VStack(alignment: .leading) {
@@ -105,8 +97,7 @@ struct ContentView: View {
 //                .disableAutocorrection(true)
 //                .padding()
 //        }
-    }
-    
+    }    
 }
 
 

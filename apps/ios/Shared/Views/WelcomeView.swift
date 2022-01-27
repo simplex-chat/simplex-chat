@@ -8,8 +8,10 @@
 import SwiftUI
 
 struct WelcomeView: View {
+    @EnvironmentObject var chatModel: ChatModel
     @State var displayName: String = ""
     @State var fullName: String = ""
+
     var body: some View {
         VStack(alignment: .leading) {
             Text("Create profile")
@@ -20,6 +22,16 @@ struct WelcomeView: View {
             TextField("Display name", text: $displayName)
                 .padding(.bottom)
             TextField("Full name (optional)", text: $fullName)
+                .padding(.bottom)
+            Button("Create") {
+                let profile = Profile(
+                    displayName: displayName,
+                    fullName: fullName
+                )
+                if let user = chatCreateUser(profile) {
+                    chatModel.currentUser = user
+                }
+            }
         }
         .padding()
     }

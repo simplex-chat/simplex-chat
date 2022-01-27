@@ -8,11 +8,11 @@
 
 import Foundation
 import Combine
-import SwiftUI
 
 final class ChatModel: ObservableObject {
     @Published var currentUser: User?
-    @Published var userChats: [Chat] = []
+    @Published var chats: [Chat] = []
+    @Published var chatItems: [ChatItem] = []
 }
 
 struct User: Codable {
@@ -27,41 +27,59 @@ typealias ContactName = String
 
 typealias GroupName = String
 
-struct Profile: Codable {
+struct Profile: Hashable, Equatable, Codable {
     var displayName: String
     var fullName: String
 }
 
-enum Chat {
-    case direct(Contact, [ChatMessage])
-    case group(GroupInfo, [ChatMessage])
+enum Chat: Hashable, Equatable {
+    case direct(Contact, [ChatItem])
+    case group(GroupInfo, [ChatItem])
+    
+    func label() -> String {
+        switch self {
+        case let .direct(contact, _):
+            return "@" + contact.localDisplayName
+        case let .group(groupInfo, _):
+            return "#" + groupInfo.localDisplayName
+        }
+    }
 }
 
-struct Contact: Codable {
+struct Contact: Hashable, Equatable, Codable {
     var contactId: Int64
     var localDisplayName: ContactName
     var profile: Profile
     var viaGroup: Int64?
 }
 
-struct GroupInfo: Codable {
+struct GroupInfo: Hashable, Equatable, Codable {
     var groupId: Int64
     var localDisplayName: GroupName
     var groupProfile: GroupProfile
 }
 
-struct GroupProfile: Codable {
+struct GroupProfile: Hashable, Equatable, Codable {
     var displayName: String
     var fullName: String
 }
 
-struct ChatMessage {
+struct ChatItem: Hashable, Equatable, Codable {
 //    var from: GroupMember?
     var ts: Date
     var content: MsgContent
+    
+    func text() -> String {
+        switch content {
+        case .text(let str):
+            return str
+        case .unknown:
+            return "unknown"
+        }
+    }
 }
 
-enum MsgContent {
+enum MsgContent: Hashable, Equatable, Codable {
     case text(String)
     case unknown
 }

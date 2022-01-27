@@ -1,5 +1,5 @@
 //
-//  ChatStore.swift
+//  ChatAPI.swift
 //  SimpleX
 //
 //  Created by Evgeny Poberezkin on 27/01/2022.
@@ -9,47 +9,55 @@
 import Foundation
 
 private var chatStore: chat_store?
-
 private var chatController: chat_ctrl?
-
-private func getStore() -> chat_store {
-    if let store = chatStore { return store }
-    let dataDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!.path + "/mobile_v1"
-    var cstr = dataDir.cString(using: .utf8)!
-    chatStore = chat_init_store(&cstr)
-    return chatStore!
-}
-
-func chatGetUser() -> User? {
-    let store = getStore()
-    let user: User? = decodeCJSON(chat_get_user(store))
-    if user != nil { chatController = chat_start(store) }
-    return user
-}
-
-private func getChatCtrl() -> chat_ctrl {
-    if let controller = chatController { return controller }
-    fatalError("Chat controller was not started!")
-}
-
-func chatSendCmd(cmd: ChatCommand) async -> ChatResponse? {
-    var c = commandString(cmd).cString(using: .utf8)!
-    let r = chat_send_cmd(getChatCtrl(), &c)!
-    print(String.init(cString: r))
-    return decodeCJSON(r)
-}
-
 private let jsonDecoder = JSONDecoder()
-
-func decodeCJSON<T: Decodable>(_ cjson: UnsafePointer<CChar>) -> T? {
-    let p = UnsafeMutableRawPointer.init(mutating: UnsafeRawPointer(cjson))
-    let d = Data.init(bytesNoCopy: p, count: strlen(cjson), deallocator: .free)
-    return try? jsonDecoder.decode(T.self, from: d)
-}
+private let jsonEncoder = JSONEncoder()
 
 enum ChatCommand {
     case string(String)
     case help
+}
+
+enum ChatResponse: Codable {
+    case string(String)
+//    case chatHelp(String)
+//    case newSentInvitation
+//    case contactConnected(contact: Contact)
+}
+
+func chatGetUser() -> User? {
+    let store = getStore()
+    print("chatGetUser")
+    let r: UserResponse? = decodeCJSON(chat_get_user(store))
+    let user = r?.user
+    if user != nil { initChatCtrl(store) }
+    print("user", user as Any)
+    return user
+}
+
+func chatCreateUser(_ p: Profile) -> User? {
+    let store = getStore()
+    print("chatCreateUser")
+    var str = encodeCJSON(p)
+    chat_create_user(store, &str)
+    let user = chatGetUser()
+    if user != nil { initChatCtrl(store) }
+    print("user", user as Any)
+    return user
+}
+
+func chatSendCmd(cmd: ChatCommand) -> ChatResponse? {
+    var c = commandString(cmd).cString(using: .utf8)!
+    return chatResponse(chat_send_cmd(getChatCtrl(), &c)!)
+}
+
+func chatRecvMsg() -> ChatResponse? {
+    chatResponse(chat_recv_msg(getChatCtrl())!)
+}
+
+private struct UserResponse: Decodable {
+    var user: User?
+    var error: String?
 }
 
 private func commandString(_ cmd: ChatCommand) -> String {
@@ -61,8 +69,44 @@ private func commandString(_ cmd: ChatCommand) -> String {
     }
 }
 
-enum ChatResponse: Codable {
-    case chatHelp(String)
-    case newSentInvitation
-    case contactConnected(contact: Contact)
+private func chatResponse(_ s: UnsafePointer<CChar>) -> ChatResponse? {
+    let str = String.init(cString: s)
+    print(str)
+    return ChatResponse.string(str)
+    //    return decodeCJSON(r)
+}
+
+private func getStore() -> chat_store {
+    if let store = chatStore { return store }
+    let dataDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!.path + "/mobile_v1"
+    var cstr = dataDir.cString(using: .utf8)!
+    chatStore = chat_init_store(&cstr)
+    return chatStore!
+}
+
+private func initChatCtrl(_ store: chat_store) {
+    if chatController == nil {
+        chatController = chat_start(store)        
+    }
+}
+
+private func getChatCtrl() -> chat_ctrl {
+    if let controller = chatController { return controller }
+    fatalError("Chat controller was not started!")
+}
+
+private func decodeCJSON<T: Decodable>(_ cjson: UnsafePointer<CChar>) -> T? {
+    let s = String.init(cString: cjson)
+    print("decodeCJSON", s)
+    let d = s.data(using: .utf8)!
+//    let p = UnsafeMutableRawPointer.init(mutating: UnsafeRawPointer(cjson))
+//    let d = Data.init(bytesNoCopy: p, count: strlen(cjson), deallocator: .free)
+    return try? jsonDecoder.decode(T.self, from: d)
+}
+
+private func encodeCJSON<T: Encodable>(_ value: T) -> [CChar] {
+    let data = try! jsonEncoder.encode(value)
+    let str = String(decoding: data, as: UTF8.self)
+    print("encodeCJSON", str)
+    return str.cString(using: .utf8)!
 }
