@@ -1897,15 +1897,33 @@ getGroupChatPreviews_ db User {userId, userContactId} =
           groupInfo = GroupInfo {groupId, localDisplayName, groupProfile = GroupProfile {displayName, fullName}, membership}
        in AChatPreview SCTGroup (GroupChat groupInfo) Nothing
 
--- getDirectChatItemList :: MonadUnliftIO m => SQLiteStore -> UserId -> Int64 -> m ChatItemList
--- getDirectChatItemList st userId contactId =
---   liftIO . withTransaction st $ \db ->
---     DB.query
---       db
---       [sql|
---         ...
---       |]
---       (userId, contactId)
+getDirectChat :: MonadUnliftIO m => SQLiteStore -> User -> Int64 -> m (Either StoreError (Chat 'CTDirect))
+getDirectChat st User {userId} contactId =
+  liftIO . withTransaction st $ \db ->
+    toDirectChat
+      <$> DB.query
+        db
+        [sql|
+          SELECT
+            -- Contact
+            ct.contact_id, ct.local_display_name, ct.via_group,
+            -- Contact {profile}
+            cp.display_name, cp.full_name,
+            -- Contact {activeConn}
+            c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.conn_status, c.conn_type,
+            c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at
+          FROM contacts ct
+          JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
+          JOIN connections c ON c.contact_id = ct.contact_id
+          WHERE ct.user_id = ? AND ct.contact_id = ?
+        |]
+        (userId, contactId)
+  where
+    toDirectChat :: [ContactRow] -> Either StoreError (Chat 'CTDirect)
+    toDirectChat (contactRow : _) =
+      let contact = toContact' contactRow
+       in Right $ Chat (DirectChat contact) []
+    toDirectChat _ = Left $ SEDirectChatNotFound contactId
 
 -- getGroupChatItemList :: MonadUnliftIO m => SQLiteStore -> UserId -> Int64 -> m ChatItemList
 -- getGroupChatItemList st userId groupId =
@@ -2004,6 +2022,7 @@ data StoreError
   | SEUniqueID
   | SEInternal String
   | SENoMsgDelivery Int64 AgentMsgId
+  | SEDirectChatNotFound Int64
   deriving (Show, Exception, Generic)
 
 instance ToJSON StoreError where
