@@ -30,10 +30,11 @@ import Database.SQLite.Simple.ToField (ToField (..))
 import GHC.Generics (Generic)
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
+import Simplex.Chat.Util (enumJSON, singleFieldJSON)
 import Simplex.Messaging.Agent.Protocol (AgentMsgId, MsgIntegrity, MsgMeta (..))
 import Simplex.Messaging.Agent.Store.SQLite (fromTextField_)
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Parsers (dropPrefix, sumTypeJSON)
+import Simplex.Messaging.Parsers (dropPrefix)
 import Simplex.Messaging.Protocol (MsgBody)
 
 data ChatType = CTDirect | CTGroup
@@ -51,8 +52,8 @@ data JSONChatInfo
   deriving (Generic)
 
 instance ToJSON JSONChatInfo where
-  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "JCInfo"
-  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "JCInfo"
+  toJSON = J.genericToJSON . singleFieldJSON $ dropPrefix "JCInfo"
+  toEncoding = J.genericToEncoding . singleFieldJSON $ dropPrefix "JCInfo"
 
 instance ToJSON (ChatInfo c) where
   toJSON = J.toJSON . jsonChatInfo
@@ -73,24 +74,26 @@ data ChatItem (c :: ChatType) (d :: MsgDirection) where
 deriving instance Show (ChatItem c d)
 
 data JSONChatItem d
-  = JCItemDirect {meta :: CIMeta d, content :: CIContent d}
-  | JCItemSndGroup {meta :: CIMeta d, content :: CIContent d}
-  | JCItemRcvGroup {member :: GroupMember, meta :: CIMeta d, content :: CIContent d}
+  = JCItemDirect {dir :: MsgDirection, meta :: CIMeta d, content :: CIContent d}
+  | JCItemSndGroup {dir :: MsgDirection, meta :: CIMeta d, content :: CIContent d}
+  | JCItemRcvGroup {dir :: MsgDirection, member :: GroupMember, meta :: CIMeta d, content :: CIContent d}
   deriving (Generic)
 
 instance ToJSON (JSONChatItem d) where
-  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "JCItem"
-  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "JCItem"
+  toJSON = J.genericToJSON . singleFieldJSON $ dropPrefix "JCItem"
+  toEncoding = J.genericToEncoding . singleFieldJSON $ dropPrefix "JCItem"
 
-instance ToJSON (ChatItem c d) where
+instance MsgDirectionI d => ToJSON (ChatItem c d) where
   toJSON = J.toJSON . jsonChatItem
   toEncoding = J.toEncoding . jsonChatItem
 
-jsonChatItem :: ChatItem c d -> JSONChatItem d
+jsonChatItem :: forall c d. MsgDirectionI d => ChatItem c d -> JSONChatItem d
 jsonChatItem = \case
-  DirectChatItem meta cic -> JCItemDirect meta cic
-  SndGroupChatItem meta cic -> JCItemSndGroup meta cic
-  RcvGroupChatItem m meta cic -> JCItemRcvGroup m meta cic
+  DirectChatItem meta cic -> JCItemDirect md meta cic
+  SndGroupChatItem meta cic -> JCItemSndGroup md meta cic
+  RcvGroupChatItem m meta cic -> JCItemRcvGroup md m meta cic
+  where
+    md = toMsgDirection $ msgDirection @d
 
 data CChatItem c = forall d. CChatItem (SMsgDirection d) (ChatItem c d)
 
@@ -128,7 +131,7 @@ data AChatPreview = forall c. AChatPreview (SChatType c) (ChatInfo c) (Maybe (CC
 deriving instance Show AChatPreview
 
 -- | type to show a mix of messages from multiple chats
-data AChatItem = forall c d. AChatItem (SChatType c) (SMsgDirection d) (ChatInfo c) (ChatItem c d)
+data AChatItem = forall c d. MsgDirectionI d => AChatItem (SChatType c) (SMsgDirection d) (ChatInfo c) (ChatItem c d)
 
 deriving instance Show AChatItem
 
@@ -139,7 +142,7 @@ instance ToJSON AChatItem where
 data JSONAnyChatItem c d = JSONAnyChatItem {chatInfo :: ChatInfo c, chatItem :: ChatItem c d}
   deriving (Generic)
 
-instance ToJSON (JSONAnyChatItem c d) where
+instance MsgDirectionI d => ToJSON (JSONAnyChatItem c d) where
   toJSON = J.genericToJSON J.defaultOptions
   toEncoding = J.genericToEncoding J.defaultOptions
 
@@ -159,8 +162,8 @@ data JSONCIMeta
   deriving (Generic)
 
 instance ToJSON JSONCIMeta where
-  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "JCIMeta"
-  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "JCIMeta"
+  toJSON = J.genericToJSON . singleFieldJSON $ dropPrefix "JCIMeta"
+  toEncoding = J.genericToEncoding . singleFieldJSON $ dropPrefix "JCIMeta"
 
 jsonCIMeta :: CIMeta d -> JSONCIMeta
 jsonCIMeta = \case
@@ -201,8 +204,8 @@ data JSONCIContent
   deriving (Generic)
 
 instance ToJSON JSONCIContent where
-  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "JCI"
-  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "JCI"
+  toJSON = J.genericToJSON . singleFieldJSON $ dropPrefix "JCI"
+  toEncoding = J.genericToEncoding . singleFieldJSON $ dropPrefix "JCI"
 
 jsonCIContent :: CIContent d -> JSONCIContent
 jsonCIContent = \case
@@ -251,7 +254,14 @@ data PendingGroupMessage = PendingGroupMessage
 type MessageId = Int64
 
 data MsgDirection = MDRcv | MDSnd
-  deriving (Show)
+  deriving (Show, Generic)
+
+instance FromJSON MsgDirection where
+  parseJSON = J.genericParseJSON . enumJSON $ dropPrefix "MD"
+
+instance ToJSON MsgDirection where
+  toJSON = J.genericToJSON . enumJSON $ dropPrefix "MD"
+  toEncoding = J.genericToEncoding . enumJSON $ dropPrefix "MD"
 
 data SMsgDirection (d :: MsgDirection) where
   SMDRcv :: SMsgDirection 'MDRcv
@@ -270,6 +280,11 @@ class MsgDirectionI (d :: MsgDirection) where
 instance MsgDirectionI 'MDRcv where msgDirection = SMDRcv
 
 instance MsgDirectionI 'MDSnd where msgDirection = SMDSnd
+
+toMsgDirection :: SMsgDirection d -> MsgDirection
+toMsgDirection = \case
+  SMDRcv -> MDRcv
+  SMDSnd -> MDSnd
 
 instance ToField MsgDirection where toField = toField . msgDirectionInt
 
