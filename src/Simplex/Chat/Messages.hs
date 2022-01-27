@@ -20,7 +20,7 @@ import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Int (Int64)
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Text.Encoding (decodeLatin1)
+import Data.Text.Encoding (decodeLatin1, encodeUtf8)
 import Data.Time.Clock (UTCTime)
 import Data.Time.LocalTime (ZonedTime, utcToLocalZonedTime)
 import Data.Type.Equality
@@ -216,6 +216,8 @@ data ACIContent = forall d. ACIContent (SMsgDirection d) (CIContent d)
 instance FromJSON ACIContent where
   parseJSON = fmap aciContentJSON . J.parseJSON
 
+instance FromField ACIContent where fromField = fromTextField_ $ J.decode . LB.fromStrict . encodeUtf8
+
 data JSONCIContent
   = JCIMsgContent {msgDir :: MsgDirection, msgContent :: MsgContent}
   | JCISndFileInvitation {fileId :: FileTransferId, filePath :: FilePath}
@@ -306,13 +308,17 @@ instance TestEquality SMsgDirection where
 
 instance ToField (SMsgDirection d) where toField = toField . msgDirectionInt . toMsgDirection
 
-instance (Typeable d, MsgDirectionI d) => FromField (SMsgDirection d) where
-  fromField = fromIntField_ sMsgDirectionT'
+instance FromField ASMsgDirection where fromField = fromIntField_ $ fmap fromMsgDirection . msgDirectionIntP
 
 toMsgDirection :: SMsgDirection d -> MsgDirection
 toMsgDirection = \case
   SMDRcv -> MDRcv
   SMDSnd -> MDSnd
+
+fromMsgDirection :: MsgDirection -> ASMsgDirection
+fromMsgDirection = \case
+  MDRcv -> ASMD SMDRcv
+  MDSnd -> ASMD SMDSnd
 
 fromIntField_ :: Typeable a => (Int64 -> Maybe a) -> Field -> Ok a
 fromIntField_ fromInt = \case
@@ -322,18 +328,29 @@ fromIntField_ fromInt = \case
       _ -> returnError ConversionFailed f ("invalid integer: " <> show i)
   f -> returnError ConversionFailed f "expecting SQLInteger column type"
 
-sMsgDirectionT' :: forall d. MsgDirectionI d => Int64 -> Maybe (SMsgDirection d)
-sMsgDirectionT' i =
-  msgDirectionIntP' i >>= \(ASMD d) ->
-    case testEquality d (msgDirection @d) of
-      Just Refl -> Just d
-      _ -> Nothing
+-- instance FromField ASMsgDirection where fromField = fromIntField_ asMsgDirectionIntP
 
-msgDirectionIntP' :: Int64 -> Maybe ASMsgDirection
-msgDirectionIntP' = \case
-  0 -> Just $ ASMD SMDRcv
-  1 -> Just $ ASMD SMDSnd
-  _ -> Nothing
+-- asMsgDirectionIntP :: Int64 -> Maybe ASMsgDirection
+-- asMsgDirectionIntP = \case
+--   0 -> Just $ ASMD SMDRcv
+--   1 -> Just $ ASMD SMDSnd
+--   _ -> Nothing
+
+-- instance (Typeable d, MsgDirectionI d) => FromField (SMsgDirection d) where
+--   fromField = fromIntField_ sMsgDirectionT'
+
+-- sMsgDirectionT' :: forall d. MsgDirectionI d => Int64 -> Maybe (SMsgDirection d)
+-- sMsgDirectionT' i =
+--   msgDirectionIntP' i >>= \(ASMD d) ->
+--     case testEquality d (msgDirection @d) of
+--       Just Refl -> Just d
+--       _ -> Nothing
+
+-- msgDirectionIntP' :: Int64 -> Maybe ASMsgDirection
+-- msgDirectionIntP' = \case
+--   0 -> Just $ ASMD SMDRcv
+--   1 -> Just $ ASMD SMDSnd
+--   _ -> Nothing
 
 class MsgDirectionI (d :: MsgDirection) where
   msgDirection :: SMsgDirection d
@@ -342,12 +359,12 @@ instance MsgDirectionI 'MDRcv where msgDirection = SMDRcv
 
 instance MsgDirectionI 'MDSnd where msgDirection = SMDSnd
 
-msgDirectionInt :: MsgDirection -> Int
+msgDirectionInt :: MsgDirection -> Int64
 msgDirectionInt = \case
   MDRcv -> 0
   MDSnd -> 1
 
-msgDirectionIntP :: Int -> Maybe MsgDirection
+msgDirectionIntP :: Int64 -> Maybe MsgDirection
 msgDirectionIntP = \case
   0 -> Just MDRcv
   1 -> Just MDSnd
@@ -375,6 +392,8 @@ data MsgMetaJSON = MsgMetaJSON
   deriving (Eq, Show, FromJSON, Generic)
 
 instance ToJSON MsgMetaJSON where toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
+
+-- instance FromJson MsgMetaJSON where fromEncoding = J.genericFromEncoding JSONKeyOptions
 
 msgMetaToJson :: MsgMeta -> MsgMetaJSON
 msgMetaToJson MsgMeta {integrity, recipient = (rcvId, rcvTs), broker = (serverId, serverTs), sndMsgId = sndId} =

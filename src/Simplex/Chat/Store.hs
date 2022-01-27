@@ -129,6 +129,7 @@ import Data.List (find, sortBy)
 import Data.Maybe (fromJust, isJust, listToMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
+import Data.Text.Encoding (encodeUtf8)
 import Data.Time.Clock (UTCTime, getCurrentTime)
 import Database.SQLite.Simple (NamedParam (..), Only (..), Query (..), SQLError, (:.) (..))
 import qualified Database.SQLite.Simple as DB
@@ -144,6 +145,7 @@ import Simplex.Messaging.Agent.Protocol (AgentMsgId, ConnId, InvitationId, MsgMe
 import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore (..), createSQLiteStore, firstRow, withTransaction)
 import Simplex.Messaging.Agent.Store.SQLite.Migrations (Migration (..))
 import qualified Simplex.Messaging.Crypto as C
+import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, sumTypeJSON)
 import Simplex.Messaging.Util (liftIOEither, (<$$>))
 import System.FilePath (takeFileName)
@@ -1953,12 +1955,15 @@ getDirectChatItems_ db User {userId} contactId = do
         (userId, contactId)
   liftIO $ mapM toDirectChatItem chatItems_
   where
-    toDirectChatItem :: (Int64, ASMsgDirection, ChatItemTs, ACIContent, Text, UTCTime, MsgMeta) -> IO (CChatItem 'CTDirect)
-    toDirectChatItem (itemId, itemSent, itemTs, itemContent, itemText, createdAt, MsgMeta {integrity}) = do
+    toDirectChatItem :: (Int64, ASMsgDirection, ChatItemTs, ACIContent, Text, UTCTime, MsgMetaJSON) -> IO (CChatItem 'CTDirect)
+    toDirectChatItem (itemId, itemSent, itemTs, itemContent, itemText, createdAt, MsgMetaJSON {integrity}) = do
       ciMeta <- liftIO $ mkCIMetaProps itemId itemTs itemText createdAt
       case (itemSent, itemContent) of
-        (ASMD SMDRcv, ACIContent SMDRcv ciContent) -> pure $ CChatItem SMDRcv (DirectChatItem (CIRcvMeta ciMeta integrity) ciContent)
-        (ASMD SMDSnd, ACIContent SMDSnd ciContent) -> pure $ CChatItem SMDSnd (DirectChatItem (CISndMeta ciMeta) ciContent)
+        (ASMD SMDRcv, ACIContent SMDRcv ciContent) -> do
+          -- let msgIntegrity = -- TODO parser?
+          pure $ CChatItem SMDRcv (DirectChatItem (CIRcvMeta ciMeta msgIntegrity) ciContent)
+        (ASMD SMDSnd, ACIContent SMDSnd ciContent) ->
+          pure $ CChatItem SMDSnd (DirectChatItem (CISndMeta ciMeta) ciContent)
         _ -> fail "bad chat item" -- TODO ? "Bad" ChatItem constructor
 
 -- getGroupChatItemList :: MonadUnliftIO m => SQLiteStore -> UserId -> Int64 -> m ChatItemList
