@@ -12,7 +12,7 @@ import SwiftUI
 
 final class ChatModel: ObservableObject {
     @Published var currentUser: User?
-    @Published var channels: [ChatChannel] = []
+    @Published var userChats: [Chat] = []
 }
 
 struct User: Codable {
@@ -32,12 +32,12 @@ struct Profile: Codable {
     var fullName: String
 }
 
-enum ChatChannel {
-    case contact(ContactInfo, [ChatMessage])
+enum Chat {
+    case direct(Contact, [ChatMessage])
     case group(GroupInfo, [ChatMessage])
 }
 
-struct ContactInfo: Codable {
+struct Contact: Codable {
     var contactId: Int64
     var localDisplayName: ContactName
     var profile: Profile
@@ -56,7 +56,7 @@ struct GroupProfile: Codable {
 }
 
 struct ChatMessage {
-    var from: ContactInfo?
+//    var from: GroupMember?
     var ts: Date
     var content: MsgContent
 }

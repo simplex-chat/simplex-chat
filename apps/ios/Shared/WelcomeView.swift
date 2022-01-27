@@ -1,5 +1,5 @@
 //
-//  ProfileView.swift
+//  WelcomeView.swift
 //  SimpleX
 //
 //  Created by Evgeny Poberezkin on 18/01/2022.
@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-struct ProfileView: View {
+struct WelcomeView: View {
     @State var displayName: String = ""
     @State var fullName: String = ""
     var body: some View {
@@ -25,8 +25,8 @@ struct ProfileView: View {
     }
 }
 
-struct ProfileView_Previews: PreviewProvider {
+struct WelcomeView_Previews: PreviewProvider {
     static var previews: some View {
-        ProfileView()
+        WelcomeView()
     }
 }
