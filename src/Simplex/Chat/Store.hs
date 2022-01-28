@@ -105,6 +105,7 @@ module Simplex.Chat.Store
     deletePendingGroupMessage,
     createNewChatItem,
     getChatPreviews,
+    getDirectChat,
   )
 where
 
@@ -124,10 +125,11 @@ import Data.Function (on)
 import Data.Functor (($>))
 import Data.Int (Int64)
 import Data.List (find, sortBy)
-import Data.Maybe (fromJust, isJust, listToMaybe)
+import Data.Maybe (listToMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (UTCTime, getCurrentTime)
+import Data.Time.LocalTime (TimeZone, getCurrentTimeZone)
 import Database.SQLite.Simple (NamedParam (..), Only (..), Query (..), SQLError, (:.) (..))
 import qualified Database.SQLite.Simple as DB
 import Database.SQLite.Simple.QQ (sql)
@@ -1810,7 +1812,7 @@ deletePendingGroupMessage st groupMemberId messageId =
     DB.execute db "DELETE FROM pending_group_messages WHERE group_member_id = ? AND message_id = ?" (groupMemberId, messageId)
 
 createNewChatItem :: MonadUnliftIO m => SQLiteStore -> UserId -> ChatDirection c d -> NewChatItem d -> m ChatItemId
-createNewChatItem st userId chatDirection NewChatItem {createdByMsgId_, itemSent, itemTs, itemContent, itemText, createdAt} =
+createNewChatItem st userId chatDirection NewChatItem {createdByMsgId, itemSent, itemTs, itemContent, itemText, createdAt} =
   liftIO . withTransaction st $ \db -> do
     let (contactId_, groupId_, groupMemberId_) = ids
     DB.execute
@@ -1822,18 +1824,21 @@ createNewChatItem st userId chatDirection NewChatItem {createdByMsgId_, itemSent
         ) VALUES (?,?,?,?,?,?,?,?,?,?,?)
       |]
       ( (userId, contactId_, groupId_, groupMemberId_)
-          :. (createdByMsgId_, itemSent, itemTs, itemContent, itemText, createdAt, createdAt)
+          :. (createdByMsgId, itemSent, itemTs, itemContent, itemText, createdAt, createdAt)
       )
     ciId <- insertedRowId db
-    when (isJust createdByMsgId_) $
-      DB.execute db "INSERT INTO chat_item_messages (chat_item_id, message_id) VALUES (?,?)" (ciId, fromJust createdByMsgId_)
+    case createdByMsgId of
+      Nothing -> pure ()
+      Just msgId ->
+        DB.execute db "INSERT INTO chat_item_messages (chat_item_id, message_id) VALUES (?,?)" (ciId, msgId)
     pure ciId
   where
     ids :: (Maybe Int64, Maybe Int64, Maybe Int64)
     ids = case chatDirection of
-      CDDirect Contact {contactId} -> (Just contactId, Nothing, Nothing)
-      CDSndGroup GroupInfo {groupId} -> (Nothing, Just groupId, Nothing)
-      CDRcvGroup GroupInfo {groupId} GroupMember {groupMemberId} -> (Nothing, Just groupId, Just groupMemberId)
+      CDDirectSnd Contact {contactId} -> (Just contactId, Nothing, Nothing)
+      CDDirectRcv Contact {contactId} -> (Just contactId, Nothing, Nothing)
+      CDGroupSnd GroupInfo {groupId} -> (Nothing, Just groupId, Nothing)
+      CDGroupRcv GroupInfo {groupId} GroupMember {groupMemberId} -> (Nothing, Just groupId, Just groupMemberId)
 
 getChatPreviews :: MonadUnliftIO m => SQLiteStore -> User -> m [AChatPreview]
 getChatPreviews st user =
@@ -1898,15 +1903,58 @@ getGroupChatPreviews_ db User {userId, userContactId} =
           groupInfo = GroupInfo {groupId, localDisplayName, groupProfile = GroupProfile {displayName, fullName}, membership}
        in AChatPreview SCTGroup (GroupChat groupInfo) Nothing
 
--- getDirectChatItemList :: MonadUnliftIO m => SQLiteStore -> UserId -> Int64 -> m ChatItemList
--- getDirectChatItemList st userId contactId =
---   liftIO . withTransaction st $ \db ->
---     DB.query
---       db
---       [sql|
---         ...
---       |]
---       (userId, contactId)
+getDirectChat :: StoreMonad m => SQLiteStore -> User -> Int64 -> m (Chat 'CTDirect)
+getDirectChat st user contactId =
+  liftIOEither . withTransaction st $ \db -> runExceptT $ do
+    contact <- getContact_' db user contactId
+    chatItems <- liftIO $ getDirectChatItems_ db user contactId
+    pure $ Chat (DirectChat contact) chatItems
+
+getContact_' :: DB.Connection -> User -> Int64 -> ExceptT StoreError IO Contact
+getContact_' db User {userId} contactId =
+  ExceptT $
+    toContact
+      <$> DB.query
+        db
+        [sql|
+        SELECT
+          -- Contact
+          ct.contact_id, ct.local_display_name, ct.via_group,
+          -- Contact {profile}
+          cp.display_name, cp.full_name,
+          -- Contact {activeConn}
+          c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.conn_status, c.conn_type,
+          c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at
+        FROM contacts ct
+        JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
+        JOIN connections c ON c.contact_id = ct.contact_id
+        WHERE ct.user_id = ? AND ct.contact_id = ?
+      |]
+        (userId, contactId)
+  where
+    toContact :: [ContactRow] -> Either StoreError Contact
+    toContact (contactRow : _) = Right $ toContact' contactRow
+    toContact _ = Left $ SEContactNotFoundById contactId
+
+getDirectChatItems_ :: DB.Connection -> User -> Int64 -> IO [CChatItem 'CTDirect]
+getDirectChatItems_ db User {userId} contactId = do
+  tz <- getCurrentTimeZone
+  map (toDirectChatItem tz)
+    <$> DB.query
+      db
+      [sql|
+        SELECT chat_item_id, item_ts, item_content, item_text, created_at
+        FROM chat_items
+        WHERE user_id = ? AND contact_id = ?
+      |]
+      (userId, contactId)
+  where
+    toDirectChatItem :: TimeZone -> (Int64, ChatItemTs, ACIContent, Text, UTCTime) -> (CChatItem 'CTDirect)
+    toDirectChatItem tz (itemId, itemTs, itemContent, itemText, createdAt) =
+      let ciMeta = mkCIMeta itemId itemText tz itemTs createdAt
+       in case itemContent of
+            ACIContent d@SMDSnd ciContent -> CChatItem d $ ChatItem CIDirectSnd ciMeta ciContent
+            ACIContent d@SMDRcv ciContent -> CChatItem d $ ChatItem CIDirectRcv ciMeta ciContent
 
 -- getGroupChatItemList :: MonadUnliftIO m => SQLiteStore -> UserId -> Int64 -> m ChatItemList
 -- getGroupChatItemList st userId groupId =
@@ -1985,6 +2033,7 @@ randomBytes gVar n = B64.encode <$> (atomically . stateTVar gVar $ randomBytesGe
 
 data StoreError
   = SEDuplicateName
+  | SEContactNotFoundById Int64
   | SEContactNotFound {contactName :: ContactName}
   | SEContactNotReady {contactName :: ContactName}
   | SEDuplicateContactLink
