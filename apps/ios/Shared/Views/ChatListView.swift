@@ -18,12 +18,12 @@ struct ChatListView: View {
         }
 
         return VStack {
-            if chatModel.chats.isEmpty {
+//            if chatModel.chats.isEmpty {
                 VStack {
                     Text("Hello chat")
                     Text("Active user: \(user.localDisplayName) (\(user.profile.fullName))")
                 }
-            }
+//            }
             NavigationView {
                 List {
                     NavigationLink {
@@ -31,16 +31,18 @@ struct ChatListView: View {
                     } label: {
                         Text("Terminal")
                     }
-                }
                 
-                ForEach(chatModel.chats, id: \.self) { chat in
-                    NavigationLink {
-                        ChatView(chat: chat)
-                    } label: {
-                        Text(chat.label())
+                    ForEach(chatModel.chatPreviews, id: \.self) { cp in
+                        NavigationLink {
+//                            ChatView(chat: chat)
+                            Text("hello")
+                        } label: {
+                            ChatPreviewView(chatPreview: cp)
+                        }
                     }
                 }
             }
+            .navigationViewStyle(.stack)
         }
     }
 }

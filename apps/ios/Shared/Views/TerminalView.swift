@@ -16,12 +16,22 @@ struct TerminalView: View {
     var body: some View {
         VStack {
             ScrollView {
-                LazyVStack {
-                    ForEach(chatModel.chatResponses, id: \.self) { cr in
-                        Text(cr.responseType)
+                LazyVStack {                    ForEach(chatModel.chatResponses, id: \.self) { cr in
+                        NavigationLink {
+                            ScrollView {
+                                Text(cr.details)
+                            }
+                        } label: {
+                            Text(cr.responseType)
+                                .frame(width: 360, height: 30, alignment: .leading)
+                        }
                     }
                 }
             }
+            .navigationViewStyle(.stack)
+
+            Spacer()
+
             HStack {
                 TextField("Message...", text: $command)
                    .textFieldStyle(RoundedBorderTextFieldStyle())
@@ -48,6 +58,15 @@ struct TerminalView: View {
 
 struct TerminalView_Previews: PreviewProvider {
     static var previews: some View {
-        TerminalView()
+        let chatModel = ChatModel()
+        chatModel.chatResponses = [
+            ChatResponse.response(type: "contactSubscribed", json: "{}"),
+            ChatResponse.response(type: "newChatItem", json: "{}")
+        ]
+        return NavigationView {
+            TerminalView()
+                .environmentObject(chatModel)
+        }
+
     }
 }

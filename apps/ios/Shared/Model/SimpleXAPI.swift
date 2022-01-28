@@ -14,12 +14,18 @@ private let jsonDecoder = JSONDecoder()
 private let jsonEncoder = JSONEncoder()
 
 enum ChatCommand {
+    case apiChats
     case string(String)
     case help
 }
 
+struct APIResponse: Codable {
+    var resp: ChatResponse
+}
+
 enum ChatResponse: Hashable, Codable {
     case response(type: String, json: String)
+    case apiChats(chats: [ChatPreview])
 //    case chatHelp(String)
 //    case newSentInvitation
 //    case contactConnected(contact: Contact)
@@ -27,7 +33,17 @@ enum ChatResponse: Hashable, Codable {
     var responseType: String {
         get {
             switch self {
-            case let .response(type, _): return type
+            case let .response(type, _): return "* \(type)"
+            case .apiChats(_): return "apiChats"
+            }
+        }
+    }
+    
+    var details: String {
+        get {
+            switch self {
+            case let .response(_, json): return json
+            case let .apiChats(chats): return String(describing: chats)
             }
         }
     }
@@ -70,10 +86,9 @@ private struct UserResponse: Decodable {
 
 private func commandString(_ cmd: ChatCommand) -> String {
     switch cmd {
-    case let .string(str):
-        return str
-    case .help:
-        return "/help"
+    case .apiChats: return "/api/v1/chats"
+    case let .string(str): return str
+    case .help: return "/help"
     }
 }
 
@@ -85,8 +100,13 @@ private func chatResponse(_ cjson: UnsafePointer<CChar>) -> ChatResponse? {
 //    let p = UnsafeMutableRawPointer.init(mutating: UnsafeRawPointer(cjson))
 //    let d = Data.init(bytesNoCopy: p, count: strlen(cjson), deallocator: .free)
 
-    if let r = try? jsonDecoder.decode(ChatResponse.self, from: d) { return r }
-    
+    do {
+        let r = try jsonDecoder.decode(APIResponse.self, from: d)
+        return r.resp
+    } catch {
+        print (error)
+    }
+        
     var type: String?
     var json: String?
     if let j = try? JSONSerialization.jsonObject(with: d) as? NSDictionary {

@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		5C063D2727A4564100AEC577 /* ChatPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C063D2627A4564100AEC577 /* ChatPreviewView.swift */; };
+		5C063D2827A4564100AEC577 /* ChatPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C063D2627A4564100AEC577 /* ChatPreviewView.swift */; };
 		5C1AEB82279F4A6400247F08 /* libHSsimplex-chat-1.0.2-FYXW0143sf06WiRQx9DgCD.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C1AEB7D279F4A6400247F08 /* libHSsimplex-chat-1.0.2-FYXW0143sf06WiRQx9DgCD.a */; };
 		5C1AEB83279F4A6400247F08 /* libHSsimplex-chat-1.0.2-FYXW0143sf06WiRQx9DgCD.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C1AEB7D279F4A6400247F08 /* libHSsimplex-chat-1.0.2-FYXW0143sf06WiRQx9DgCD.a */; };
 		5C1AEB84279F4A6400247F08 /* libHSsimplex-chat-1.0.2-FYXW0143sf06WiRQx9DgCD-ghc8.10.7.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C1AEB7E279F4A6400247F08 /* libHSsimplex-chat-1.0.2-FYXW0143sf06WiRQx9DgCD-ghc8.10.7.a */; };
@@ -69,6 +71,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		5C063D2627A4564100AEC577 /* ChatPreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatPreviewView.swift; sourceTree = "<group>"; };
 		5C1AEB7D279F4A6400247F08 /* libHSsimplex-chat-1.0.2-FYXW0143sf06WiRQx9DgCD.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = "libHSsimplex-chat-1.0.2-FYXW0143sf06WiRQx9DgCD.a"; sourceTree = "<group>"; };
 		5C1AEB7E279F4A6400247F08 /* libHSsimplex-chat-1.0.2-FYXW0143sf06WiRQx9DgCD-ghc8.10.7.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = "libHSsimplex-chat-1.0.2-FYXW0143sf06WiRQx9DgCD-ghc8.10.7.a"; sourceTree = "<group>"; };
 		5C1AEB7F279F4A6400247F08 /* libffi.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libffi.a; sourceTree = "<group>"; };
@@ -153,6 +156,7 @@
 				5CA05A4B27974EB60002BEB4 /* WelcomeView.swift */,
 				5CA05A4E279752D00002BEB4 /* MessageView.swift */,
 				5C2E260A27A30CFA00F70299 /* ChatListView.swift */,
+				5C063D2627A4564100AEC577 /* ChatPreviewView.swift */,
 				5C2E261427A3111A00F70299 /* ChatItemListView.swift */,
 				5C2E260E27A30FDC00F70299 /* ChatView.swift */,
 				5C2E261127A30FEA00F70299 /* TerminalView.swift */,
@@ -417,6 +421,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				5C764E80279C7276000C6508 /* dummy.m in Sources */,
+				5C063D2727A4564100AEC577 /* ChatPreviewView.swift in Sources */,
 				5C2E261227A30FEA00F70299 /* TerminalView.swift in Sources */,
 				5CA05A4F279752D00002BEB4 /* MessageView.swift in Sources */,
 				5CA059ED279559F40002BEB4 /* ContentView.swift in Sources */,
@@ -435,6 +440,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				5C764E81279C7276000C6508 /* dummy.m in Sources */,
+				5C063D2827A4564100AEC577 /* ChatPreviewView.swift in Sources */,
 				5C2E261327A30FEA00F70299 /* TerminalView.swift in Sources */,
 				5CA05A50279752D00002BEB4 /* MessageView.swift in Sources */,
 				5CA059EE279559F40002BEB4 /* ContentView.swift in Sources */,
