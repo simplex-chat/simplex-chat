@@ -106,6 +106,7 @@ module Simplex.Chat.Store
     createNewChatItem,
     getChatPreviews,
     getDirectChat,
+    getGroupChat,
   )
 where
 
@@ -1919,17 +1920,16 @@ getGroupChatPreviews_ db User {userId, userContactId} =
 getDirectChat :: StoreMonad m => SQLiteStore -> User -> Int64 -> m (Chat 'CTDirect)
 getDirectChat st user contactId =
   liftIOEither . withTransaction st $ \db -> runExceptT $ do
-    contact <- getContact_' db user contactId
+    contact <- ExceptT $ getContact_' db user contactId
     chatItems <- liftIO $ getDirectChatItems_ db user contactId
     pure $ Chat (DirectChat contact) chatItems
 
-getContact_' :: DB.Connection -> User -> Int64 -> ExceptT StoreError IO Contact
+getContact_' :: DB.Connection -> User -> Int64 -> IO (Either StoreError Contact)
 getContact_' db User {userId} contactId =
-  ExceptT $
-    toContact
-      <$> DB.query
-        db
-        [sql|
+  firstRow toContact' (SEContactNotFoundById contactId) $
+    DB.query
+      db
+      [sql|
         SELECT
           -- Contact
           ct.contact_id, ct.local_display_name, ct.via_group,
@@ -1943,11 +1943,7 @@ getContact_' db User {userId} contactId =
         JOIN connections c ON c.contact_id = ct.contact_id
         WHERE ct.user_id = ? AND ct.contact_id = ?
       |]
-        (userId, contactId)
-  where
-    toContact :: [ContactRow] -> Either StoreError Contact
-    toContact (contactRow : _) = Right $ toContact' contactRow
-    toContact _ = Left $ SEContactNotFoundById contactId
+      (userId, contactId)
 
 getDirectChatItems_ :: DB.Connection -> User -> Int64 -> IO [CChatItem 'CTDirect]
 getDirectChatItems_ db User {userId} contactId = do
@@ -1962,6 +1958,45 @@ getDirectChatItems_ db User {userId} contactId = do
         ORDER BY item_ts ASC
       |]
       (userId, contactId)
+
+getGroupChat :: StoreMonad m => SQLiteStore -> User -> Int64 -> m (Chat 'CTGroup)
+getGroupChat st user groupId =
+  liftIOEither . withTransaction st $ \db -> runExceptT $ do
+    groupInfo <- ExceptT $ getGroupInfo_' db user groupId
+    chatItems <- liftIO $ getGroupChatItems_ db user groupId
+    pure $ Chat (GroupChat groupInfo) chatItems
+
+getGroupInfo_' :: DB.Connection -> User -> Int64 -> IO (Either StoreError GroupInfo)
+getGroupInfo_' db User {userId, userContactId} groupId =
+  firstRow (toGroupInfo userContactId) (SEGroupNotFoundById groupId) $
+    DB.query
+      db
+      [sql|
+        SELECT g.group_id, g.local_display_name, gp.display_name, gp.full_name,
+          m.group_member_id, g.group_id, m.member_id, m.member_role, m.member_category, m.member_status,
+          m.invited_by, m.local_display_name, m.contact_id, mp.display_name, mp.full_name
+        FROM groups g
+        JOIN group_profiles gp USING (group_profile_id)
+        JOIN group_members m USING (group_id)
+        JOIN contact_profiles mp USING (contact_profile_id)
+        WHERE g.groupId = ? AND g.user_id = ? AND m.contact_id = ?
+      |]
+      (groupId, userId, userContactId)
+
+getGroupChatItems_ :: DB.Connection -> User -> Int64 -> IO [CChatItem 'CTGroup]
+getGroupChatItems_ db User {userId} groupId = do
+  tz <- getCurrentTimeZone
+  -- map (toGroupChatItem tz)
+  --   <$> DB.query
+  --     db
+  --     [sql|
+  --       SELECT chat_item_id, item_ts, item_content, item_text, created_at
+  --       FROM chat_items
+  --       WHERE user_id = ? AND contact_id = ?
+  --       ORDER BY item_ts ASC
+  --     |]
+  --     (userId, contactId)
+  pure []
 
 type ChatItemRow = (Int64, ChatItemTs, ACIContent, Text, UTCTime)
 
@@ -1978,16 +2013,6 @@ toMaybeDirectChatItem :: TimeZone -> MaybeChatItemRow -> Maybe (CChatItem 'CTDir
 toMaybeDirectChatItem tz (Just itemId, Just itemTs, Just itemContent, Just itemText, Just createdAt) =
   Just $ toDirectChatItem tz (itemId, itemTs, itemContent, itemText, createdAt)
 toMaybeDirectChatItem _ _ = Nothing
-
--- getGroupChatItemList :: MonadUnliftIO m => SQLiteStore -> UserId -> Int64 -> m ChatItemList
--- getGroupChatItemList st userId groupId =
---   liftIO . withTransaction st $ \db ->
---     DB.query
---       db
---       [sql|
---         ...
---       |]
---       (userId, groupId)
 
 -- getChatItemsMixed :: MonadUnliftIO m => SQLiteStore -> UserId -> m [AnyChatItem]
 -- getChatItemsMixed st userId =
@@ -2062,6 +2087,7 @@ data StoreError
   | SEDuplicateContactLink
   | SEUserContactLinkNotFound
   | SEContactRequestNotFound {contactName :: ContactName}
+  | SEGroupNotFoundById Int64
   | SEGroupNotFound {groupName :: GroupName}
   | SEGroupWithoutUser
   | SEDuplicateGroupMember
