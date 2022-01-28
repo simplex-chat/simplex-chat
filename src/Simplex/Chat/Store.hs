@@ -129,6 +129,7 @@ import Data.Maybe (listToMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (UTCTime, getCurrentTime)
+import Data.Time.LocalTime (TimeZone, getCurrentTimeZone)
 import Database.SQLite.Simple (NamedParam (..), Only (..), Query (..), SQLError, (:.) (..))
 import qualified Database.SQLite.Simple as DB
 import Database.SQLite.Simple.QQ (sql)
@@ -1810,7 +1811,7 @@ deletePendingGroupMessage st groupMemberId messageId =
   liftIO . withTransaction st $ \db ->
     DB.execute db "DELETE FROM pending_group_messages WHERE group_member_id = ? AND message_id = ?" (groupMemberId, messageId)
 
-createNewChatItem :: (MsgDirectionI d, MonadUnliftIO m) => SQLiteStore -> UserId -> ChatDirection c d -> NewChatItem d -> m ChatItemId
+createNewChatItem :: MonadUnliftIO m => SQLiteStore -> UserId -> ChatDirection c d -> NewChatItem d -> m ChatItemId
 createNewChatItem st userId chatDirection NewChatItem {createdByMsgId, itemSent, itemTs, itemContent, itemText, createdAt} =
   liftIO . withTransaction st $ \db -> do
     let (contactId_, groupId_, groupMemberId_) = ids
@@ -1834,9 +1835,10 @@ createNewChatItem st userId chatDirection NewChatItem {createdByMsgId, itemSent,
   where
     ids :: (Maybe Int64, Maybe Int64, Maybe Int64)
     ids = case chatDirection of
-      CDDirect Contact {contactId} -> (Just contactId, Nothing, Nothing)
-      CDSndGroup GroupInfo {groupId} -> (Nothing, Just groupId, Nothing)
-      CDRcvGroup GroupInfo {groupId} GroupMember {groupMemberId} -> (Nothing, Just groupId, Just groupMemberId)
+      CDDirectSnd Contact {contactId} -> (Just contactId, Nothing, Nothing)
+      CDDirectRcv Contact {contactId} -> (Just contactId, Nothing, Nothing)
+      CDGroupSnd GroupInfo {groupId} -> (Nothing, Just groupId, Nothing)
+      CDGroupRcv GroupInfo {groupId} GroupMember {groupMemberId} -> (Nothing, Just groupId, Just groupMemberId)
 
 getChatPreviews :: MonadUnliftIO m => SQLiteStore -> User -> m [AChatPreview]
 getChatPreviews st user =
@@ -1936,28 +1938,23 @@ getContact_' db User {userId} contactId =
 
 getDirectChatItems_ :: DB.Connection -> User -> Int64 -> IO [CChatItem 'CTDirect]
 getDirectChatItems_ db User {userId} contactId = do
-  chatItems_ <-
-    liftIO $
-      DB.query
-        db
-        [sql|
-          SELECT
-            -- CChatItem
-            ci.chat_item_id, ci.item_ts, ci.item_content, ci.item_text, ci.created_at
-          FROM chat_items ci
-          LEFT JOIN messages m ON m.message_id == ci.created_by_msg_id
-          LEFT JOIN msg_deliveries md ON md.message_id = m.message_id
-          WHERE ci.user_id = ? AND ci.contact_id = ?
-        |]
-        (userId, contactId)
-  liftIO $ mapM toDirectChatItem chatItems_
+  tz <- getCurrentTimeZone
+  map (toDirectChatItem tz)
+    <$> DB.query
+      db
+      [sql|
+        SELECT chat_item_id, item_ts, item_content, item_text, created_at
+        FROM chat_items
+        WHERE user_id = ? AND contact_id = ?
+      |]
+      (userId, contactId)
   where
-    toDirectChatItem :: (Int64, ChatItemTs, ACIContent, Text, UTCTime) -> IO (CChatItem 'CTDirect)
-    toDirectChatItem (itemId, itemTs, itemContent, itemText, createdAt) = do
-      ciMeta <- liftIO $ mkCIMetaProps itemId itemTs itemText createdAt
-      pure $ case itemContent of
-        ACIContent SMDRcv ciContent -> CChatItem SMDRcv (DirectChatItem (CIRcvMeta ciMeta) ciContent)
-        ACIContent SMDSnd ciContent -> CChatItem SMDSnd (DirectChatItem (CISndMeta ciMeta) ciContent)
+    toDirectChatItem :: TimeZone -> (Int64, ChatItemTs, ACIContent, Text, UTCTime) -> (CChatItem 'CTDirect)
+    toDirectChatItem tz (itemId, itemTs, itemContent, itemText, createdAt) =
+      let ciMeta = mkCIMeta itemId itemText tz itemTs createdAt
+       in case itemContent of
+            ACIContent d@SMDSnd ciContent -> CChatItem d $ ChatItem CIDirectSnd ciMeta ciContent
+            ACIContent d@SMDRcv ciContent -> CChatItem d $ ChatItem CIDirectRcv ciMeta ciContent
 
 -- getGroupChatItemList :: MonadUnliftIO m => SQLiteStore -> UserId -> Int64 -> m ChatItemList
 -- getGroupChatItemList st userId groupId =

@@ -1,4 +1,5 @@
 {-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
@@ -77,7 +78,10 @@ instance ToJSON HelpSection where
   toEncoding = J.genericToEncoding . enumJSON $ dropPrefix "HS"
 
 data ChatCommand
-  = ChatHelp HelpSection
+  = APIGetChats
+  | APIGetChat ChatType Int64
+  | APIGetChatItems Int
+  | ChatHelp HelpSection
   | Welcome
   | AddContact
   | Connect (Maybe AConnectionRequestUri)
@@ -112,7 +116,9 @@ data ChatCommand
   deriving (Show)
 
 data ChatResponse
-  = CRNewChatItem {chatItem :: AChatItem}
+  = CRApiChats {chats :: [AChatPreview]}
+  | CRApiDirectChat {chat :: Chat 'CTDirect}
+  | CRNewChatItem {chatItem :: AChatItem}
   | CRCmdAccepted {corr :: CorrId}
   | CRChatHelp {helpSection :: HelpSection}
   | CRWelcome {user :: User}
