@@ -126,9 +126,11 @@ processChatCommand :: forall m. ChatMonad m => User -> ChatCommand -> m ChatResp
 processChatCommand user@User {userId, profile} = \case
   APIGetChats -> CRApiChats <$> withStore (`getChatPreviews` user)
   APIGetChat cType cId -> case cType of
-    CTDirect -> CRApiDirectChat <$> withStore $ \st -> getDirectChat st user cId
-    CTGroup -> pure ()
-  APIGetChatItems count -> pure ()
+    CTDirect -> do
+      chat <- withStore $ \st -> getDirectChat st user cId
+      pure $ CRApiDirectChat chat
+    CTGroup -> pure $ CRChatError ChatErrorNotImplemented
+  APIGetChatItems count -> pure $ CRChatError ChatErrorNotImplemented
   ChatHelp section -> pure $ CRChatHelp section
   Welcome -> pure $ CRWelcome user
   AddContact -> procCmd $ do
@@ -1296,8 +1298,8 @@ withStore action =
 
 chatCommandP :: Parser ChatCommand
 chatCommandP =
-    "/api/v1/chats" $> APIGetChats
-    <|> "/api/v1/chat/" *> (APIGetChat <$> ("direct/" $> CTDirect <|> "group/" $> CTGroup)*> A.decimalcId ->
+  "/api/v1/chats" $> APIGetChats
+    <|> "/api/v1/chat/" *> (APIGetChat <$> ("direct/" $> CTDirect <|> "group/" $> CTGroup) <*> A.decimal)
     <|> "/api/v1/chat/items?count=" *> (APIGetChatItems <$> A.decimal)
     <|> ("/help files" <|> "/help file" <|> "/hf") $> ChatHelp HSFiles
     <|> ("/help groups" <|> "/help group" <|> "/hg") $> ChatHelp HSGroups

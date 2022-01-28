@@ -34,8 +34,8 @@ serializeChatResponse = unlines . map unStyle . responseToView ""
 
 responseToView :: String -> ChatResponse -> [StyledString]
 responseToView cmd = \case
-  CRApiChats chats -> sShow chats
-  CRApiDirectChat chat -> sShow chat
+  CRApiChats chats -> [sShow chats]
+  CRApiDirectChat chat -> [sShow chat]
   CRNewChatItem (AChatItem _ _ chat item) -> viewChatItem chat item
   CRCmdAccepted _ -> r []
   CRChatHelp section -> case section of
@@ -484,6 +484,7 @@ viewChatError = \case
     SMP SMP.AUTH -> ["error: this connection is deleted"]
     e -> ["smp agent error: " <> sShow e]
   ChatErrorMessage e -> ["chat message error: " <> sShow e]
+  ChatErrorNotImplemented -> ["chat error: not implemented"]
   where
     fileNotFound fileId = ["file " <> sShow fileId <> " not found"]
 

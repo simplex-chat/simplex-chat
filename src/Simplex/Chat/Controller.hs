@@ -196,6 +196,7 @@ data ChatError
   | ChatErrorMessage {errorMessage :: String}
   | ChatErrorAgent {agentError :: AgentErrorType}
   | ChatErrorStore {storeError :: StoreError}
+  | ChatErrorNotImplemented
   deriving (Show, Exception, Generic)
 
 instance ToJSON ChatError where
