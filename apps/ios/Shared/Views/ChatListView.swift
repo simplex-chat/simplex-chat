@@ -13,26 +13,32 @@ struct ChatListView: View {
     var user: User
 
     var body: some View {
-        if chatModel.chats.isEmpty {
-            VStack {
-                Text("Hello chat")
-                Text("Active user: \(user.localDisplayName) (\(user.profile.fullName))")
-            }
+        DispatchQueue.global().async {
+            while(true) { processAPIResponse(chatModel, chatRecvMsg()) }
         }
-        NavigationView {
-            List {
-                NavigationLink {
-                    TerminalView()
-                } label: {
-                    Text("Terminal")
+
+        return VStack {
+            if chatModel.chats.isEmpty {
+                VStack {
+                    Text("Hello chat")
+                    Text("Active user: \(user.localDisplayName) (\(user.profile.fullName))")
                 }
             }
-            
-            ForEach(chatModel.chats, id: \.self) { chat in
-                NavigationLink {
-                    ChatView(chat: chat)
-                } label: {
-                    Text(chat.label())
+            NavigationView {
+                List {
+                    NavigationLink {
+                        TerminalView()
+                    } label: {
+                        Text("Terminal")
+                    }
+                }
+                
+                ForEach(chatModel.chats, id: \.self) { chat in
+                    NavigationLink {
+                        ChatView(chat: chat)
+                    } label: {
+                        Text(chat.label())
+                    }
                 }
             }
         }

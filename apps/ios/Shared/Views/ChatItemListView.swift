@@ -11,24 +11,8 @@ import SwiftUI
 struct ChatItemListView: View {
     @EnvironmentObject var chatModel: ChatModel
     var chatItems: [ChatItem]
-    var body: some View {
-        DispatchQueue.global().async {
-            while(true) {
-                if let res = chatRecvMsg() {
-                    DispatchQueue.main.async {
-                        switch res {
-                        case .string(let str):
-                            chatModel.chatItems.append(ChatItem(
-                                ts: Date.now,
-                                content: .text(str)
-                            ))
-                        }
-                    }
-                }
-            }
-        }
-        
-        return ScrollView {
+    var body: some View {        
+        ScrollView {
             LazyVStack {
                 ForEach(chatItems, id: \.self) { ci in
                     Text(ci.text())

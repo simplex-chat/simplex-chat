@@ -13,6 +13,7 @@ final class ChatModel: ObservableObject {
     @Published var currentUser: User?
     @Published var chats: [Chat] = []
     @Published var chatItems: [ChatItem] = []
+    @Published var chatResponses: [ChatResponse] = []
 }
 
 struct User: Codable {
@@ -82,4 +83,19 @@ struct ChatItem: Hashable, Equatable, Codable {
 enum MsgContent: Hashable, Equatable, Codable {
     case text(String)
     case unknown
+}
+
+func processAPIResponse(_ chatModel: ChatModel, _ res: ChatResponse?) {
+    if let r = res {
+        DispatchQueue.main.async {
+            chatModel.chatResponses.append(r)
+            switch r {
+            case let .response(type, _):
+                chatModel.chatItems.append(ChatItem(
+                    ts: Date.now,
+                    content: .text(type)
+                ))
+            }
+        }
+    }
 }

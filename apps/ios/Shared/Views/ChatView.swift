@@ -15,7 +15,7 @@ struct ChatView: View {
         switch chat {
         case let .direct(_, items):
                 chatItems = items
-        case let .group(groupInfo, items):
+        case let .group(_, items):
                 chatItems = items
         }
         

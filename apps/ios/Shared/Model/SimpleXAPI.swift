@@ -18,11 +18,19 @@ enum ChatCommand {
     case help
 }
 
-enum ChatResponse: Codable {
-    case string(String)
+enum ChatResponse: Hashable, Codable {
+    case response(type: String, json: String)
 //    case chatHelp(String)
 //    case newSentInvitation
 //    case contactConnected(contact: Contact)
+    
+    var responseType: String {
+        get {
+            switch self {
+            case let .response(type, _): return type
+            }
+        }
+    }
 }
 
 func chatGetUser() -> User? {
@@ -46,7 +54,7 @@ func chatCreateUser(_ p: Profile) -> User? {
     return user
 }
 
-func chatSendCmd(cmd: ChatCommand) -> ChatResponse? {
+func chatSendCmd(_ cmd: ChatCommand) -> ChatResponse? {
     var c = commandString(cmd).cString(using: .utf8)!
     return chatResponse(chat_send_cmd(getChatCtrl(), &c)!)
 }
@@ -69,11 +77,27 @@ private func commandString(_ cmd: ChatCommand) -> String {
     }
 }
 
-private func chatResponse(_ s: UnsafePointer<CChar>) -> ChatResponse? {
-    let str = String.init(cString: s)
-    print(str)
-    return ChatResponse.string(str)
-    //    return decodeCJSON(r)
+private func chatResponse(_ cjson: UnsafePointer<CChar>) -> ChatResponse? {
+    let s = String.init(cString: cjson)
+    print("chatResponse", s)
+    let d = s.data(using: .utf8)!
+//  TODO is there a way to do it without copying the data? e.g:
+//    let p = UnsafeMutableRawPointer.init(mutating: UnsafeRawPointer(cjson))
+//    let d = Data.init(bytesNoCopy: p, count: strlen(cjson), deallocator: .free)
+
+    if let r = try? jsonDecoder.decode(ChatResponse.self, from: d) { return r }
+    
+    var type: String?
+    var json: String?
+    if let j = try? JSONSerialization.jsonObject(with: d) as? NSDictionary {
+        if let j1 = j["resp"] as? NSDictionary, j1.count == 1 {
+            type = j1.allKeys[0] as? String
+        }
+        if let d = try? JSONSerialization.data(withJSONObject: j, options: .prettyPrinted) {
+            json = String(decoding: d, as: UTF8.self)
+        }
+    }
+    return ChatResponse.response(type: type ?? "invalid", json: json ?? s)
 }
 
 private func getStore() -> chat_store {
@@ -102,6 +126,12 @@ private func decodeCJSON<T: Decodable>(_ cjson: UnsafePointer<CChar>) -> T? {
 //    let p = UnsafeMutableRawPointer.init(mutating: UnsafeRawPointer(cjson))
 //    let d = Data.init(bytesNoCopy: p, count: strlen(cjson), deallocator: .free)
     return try? jsonDecoder.decode(T.self, from: d)
+}
+
+private func getJSONObject(_ cjson: UnsafePointer<CChar>) -> NSDictionary? {
+    let s = String.init(cString: cjson)
+    let d = s.data(using: .utf8)!
+    return try? JSONSerialization.jsonObject(with: d) as? NSDictionary
 }
 
 private func encodeCJSON<T: Encodable>(_ value: T) -> [CChar] {

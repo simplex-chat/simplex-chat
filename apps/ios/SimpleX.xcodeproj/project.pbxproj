@@ -17,8 +17,8 @@
 		5C1AEB89279F4A6400247F08 /* libgmp.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C1AEB80279F4A6400247F08 /* libgmp.a */; };
 		5C1AEB8A279F4A6400247F08 /* libgmpxx.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C1AEB81279F4A6400247F08 /* libgmpxx.a */; };
 		5C1AEB8B279F4A6400247F08 /* libgmpxx.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C1AEB81279F4A6400247F08 /* libgmpxx.a */; };
-		5C2E260727A2941F00F70299 /* ChatAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C2E260627A2941F00F70299 /* ChatAPI.swift */; };
-		5C2E260827A2941F00F70299 /* ChatAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C2E260627A2941F00F70299 /* ChatAPI.swift */; };
+		5C2E260727A2941F00F70299 /* SimpleXAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C2E260627A2941F00F70299 /* SimpleXAPI.swift */; };
+		5C2E260827A2941F00F70299 /* SimpleXAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C2E260627A2941F00F70299 /* SimpleXAPI.swift */; };
 		5C2E260B27A30CFA00F70299 /* ChatListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C2E260A27A30CFA00F70299 /* ChatListView.swift */; };
 		5C2E260C27A30CFA00F70299 /* ChatListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C2E260A27A30CFA00F70299 /* ChatListView.swift */; };
 		5C2E260F27A30FDC00F70299 /* ChatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C2E260E27A30FDC00F70299 /* ChatView.swift */; };
@@ -74,7 +74,7 @@
 		5C1AEB7F279F4A6400247F08 /* libffi.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libffi.a; sourceTree = "<group>"; };
 		5C1AEB80279F4A6400247F08 /* libgmp.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libgmp.a; sourceTree = "<group>"; };
 		5C1AEB81279F4A6400247F08 /* libgmpxx.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libgmpxx.a; sourceTree = "<group>"; };
-		5C2E260627A2941F00F70299 /* ChatAPI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatAPI.swift; sourceTree = "<group>"; };
+		5C2E260627A2941F00F70299 /* SimpleXAPI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimpleXAPI.swift; sourceTree = "<group>"; };
 		5C2E260927A2C63500F70299 /* MyPlayground.playground */ = {isa = PBXFileReference; lastKnownFileType = file.playground; path = MyPlayground.playground; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.swift; };
 		5C2E260A27A30CFA00F70299 /* ChatListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatListView.swift; sourceTree = "<group>"; };
 		5C2E260E27A30FDC00F70299 /* ChatView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatView.swift; sourceTree = "<group>"; };
@@ -185,6 +185,7 @@
 			isa = PBXGroup;
 			children = (
 				5C764E88279CBCB3000C6508 /* ChatModel.swift */,
+				5C2E260627A2941F00F70299 /* SimpleXAPI.swift */,
 			);
 			path = Model;
 			sourceTree = "<group>";
@@ -207,7 +208,6 @@
 			children = (
 				5C764E87279CBC8E000C6508 /* Model */,
 				5CA059C3279559F40002BEB4 /* SimpleXApp.swift */,
-				5C2E260627A2941F00F70299 /* ChatAPI.swift */,
 				5C2E260927A2C63500F70299 /* MyPlayground.playground */,
 				5C764E7F279C7276000C6508 /* dummy.m */,
 				5CA059C4279559F40002BEB4 /* ContentView.swift */,
@@ -425,7 +425,7 @@
 				5C2E260B27A30CFA00F70299 /* ChatListView.swift in Sources */,
 				5CA059EB279559F40002BEB4 /* SimpleXApp.swift in Sources */,
 				5C764E89279CBCB3000C6508 /* ChatModel.swift in Sources */,
-				5C2E260727A2941F00F70299 /* ChatAPI.swift in Sources */,
+				5C2E260727A2941F00F70299 /* SimpleXAPI.swift in Sources */,
 				5C2E261527A3111A00F70299 /* ChatItemListView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -443,7 +443,7 @@
 				5C2E260C27A30CFA00F70299 /* ChatListView.swift in Sources */,
 				5CA059EC279559F40002BEB4 /* SimpleXApp.swift in Sources */,
 				5C764E8A279CBCB3000C6508 /* ChatModel.swift in Sources */,
-				5C2E260827A2941F00F70299 /* ChatAPI.swift in Sources */,
+				5C2E260827A2941F00F70299 /* SimpleXAPI.swift in Sources */,
 				5C2E261627A3111A00F70299 /* ChatItemListView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

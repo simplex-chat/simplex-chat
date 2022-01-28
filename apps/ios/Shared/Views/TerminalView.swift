@@ -15,7 +15,13 @@ struct TerminalView: View {
     
     var body: some View {
         VStack {
-            ChatItemListView(chatItems: chatModel.chatItems)
+            ScrollView {
+                LazyVStack {
+                    ForEach(chatModel.chatResponses, id: \.self) { cr in
+                        Text(cr.responseType)
+                    }
+                }
+            }
             HStack {
                 TextField("Message...", text: $command)
                    .textFieldStyle(RoundedBorderTextFieldStyle())
@@ -34,17 +40,7 @@ struct TerminalView: View {
             let cmd: String = self.$command.wrappedValue
             inProgress = true
             command = ""
-            if let res = chatSendCmd(cmd: ChatCommand.string(cmd)) {
-                DispatchQueue.main.async {
-                    switch res {
-                    case .string(let str):
-                        chatModel.chatItems.append(ChatItem(
-                            ts: Date.now,
-                            content: .text(str)
-                        ))
-                    }
-                }
-            }
+            processAPIResponse(chatModel, chatSendCmd(ChatCommand.string(cmd)))
             inProgress = false
         }
     }
