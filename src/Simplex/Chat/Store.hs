@@ -1848,8 +1848,9 @@ getChatPreviews st user =
     pure $ directChatPreviews <> groupChatPreviews
 
 getDirectChatPreviews_ :: DB.Connection -> User -> IO [AChatPreview]
-getDirectChatPreviews_ db User {userId} =
-  map toDirectChatPreview
+getDirectChatPreviews_ db User {userId} = do
+  tz <- getCurrentTimeZone
+  map (toDirectChatPreview tz)
     <$> DB.query
       db
       [sql|
@@ -1860,18 +1861,30 @@ getDirectChatPreviews_ db User {userId} =
           cp.display_name, cp.full_name,
           -- Contact {activeConn}
           c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.conn_status, c.conn_type,
-          c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at
+          c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at,
+          -- CChatItem 'CTDirect
+          ci.chat_item_id, ci.item_ts, ci.item_content, ci.item_text, ci.created_at
         FROM contacts ct
         JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
         JOIN connections c ON c.contact_id = ct.contact_id
+        LEFT JOIN (
+          SELECT contact_id, MAX(item_ts) MaxDate
+          FROM chat_items
+          WHERE item_deleted != 1
+          GROUP BY contact_id
+        ) CIMaxDates ON CIMaxDates.contact_id = c.contact_id
+        LEFT JOIN chat_items ci ON ci.contact_id == CIMaxDates.contact_id
+                               AND ci.item_ts == CIMaxDates.MaxDate
         WHERE ct.user_id = ?
+        ORDER BY ci.item_ts ASC
       |]
       (Only userId)
   where
-    toDirectChatPreview :: ContactRow -> AChatPreview
-    toDirectChatPreview contactRow =
+    toDirectChatPreview :: TimeZone -> ContactRow :. MaybeChatItemRow -> AChatPreview
+    toDirectChatPreview tz (contactRow :. ciRow_) =
       let contact = toContact' contactRow
-       in AChatPreview SCTDirect (DirectChat contact) Nothing
+          ci_ = toMaybeDirectChatItem tz ciRow_
+       in AChatPreview SCTDirect (DirectChat contact) ci_
 
 getGroupChatPreviews_ :: DB.Connection -> User -> IO [AChatPreview]
 getGroupChatPreviews_ db User {userId, userContactId} =
@@ -1893,9 +1906,9 @@ getGroupChatPreviews_ db User {userId, userContactId} =
         JOIN group_profiles gp ON gp.group_profile_id == g.group_profile_id
         JOIN group_members mu ON g.group_id = mu.group_id
         JOIN contact_profiles pu ON pu.contact_profile_id = mu.contact_profile_id
-        WHERE g.user_id = ?
+        WHERE g.user_id = ? AND mu.contact_id = ?
       |]
-      (Only userId)
+      (userId, userContactId)
   where
     toGroupChatPreview :: (Int64, GroupName, GroupName, Text) :. GroupMemberRow -> AChatPreview
     toGroupChatPreview ((groupId, localDisplayName, displayName, fullName) :. userMemberRow) =
@@ -1946,15 +1959,25 @@ getDirectChatItems_ db User {userId} contactId = do
         SELECT chat_item_id, item_ts, item_content, item_text, created_at
         FROM chat_items
         WHERE user_id = ? AND contact_id = ?
+        ORDER BY item_ts ASC
       |]
       (userId, contactId)
-  where
-    toDirectChatItem :: TimeZone -> (Int64, ChatItemTs, ACIContent, Text, UTCTime) -> (CChatItem 'CTDirect)
-    toDirectChatItem tz (itemId, itemTs, itemContent, itemText, createdAt) =
-      let ciMeta = mkCIMeta itemId itemText tz itemTs createdAt
-       in case itemContent of
-            ACIContent d@SMDSnd ciContent -> CChatItem d $ ChatItem CIDirectSnd ciMeta ciContent
-            ACIContent d@SMDRcv ciContent -> CChatItem d $ ChatItem CIDirectRcv ciMeta ciContent
+
+type ChatItemRow = (Int64, ChatItemTs, ACIContent, Text, UTCTime)
+
+type MaybeChatItemRow = (Maybe Int64, Maybe ChatItemTs, Maybe ACIContent, Maybe Text, Maybe UTCTime)
+
+toDirectChatItem :: TimeZone -> ChatItemRow -> CChatItem 'CTDirect
+toDirectChatItem tz (itemId, itemTs, itemContent, itemText, createdAt) =
+  let ciMeta = mkCIMeta itemId itemText tz itemTs createdAt
+   in case itemContent of
+        ACIContent d@SMDSnd ciContent -> CChatItem d $ ChatItem CIDirectSnd ciMeta ciContent
+        ACIContent d@SMDRcv ciContent -> CChatItem d $ ChatItem CIDirectRcv ciMeta ciContent
+
+toMaybeDirectChatItem :: TimeZone -> MaybeChatItemRow -> Maybe (CChatItem 'CTDirect)
+toMaybeDirectChatItem tz (Just itemId, Just itemTs, Just itemContent, Just itemText, Just createdAt) =
+  Just $ toDirectChatItem tz (itemId, itemTs, itemContent, itemText, createdAt)
+toMaybeDirectChatItem _ _ = Nothing
 
 -- getGroupChatItemList :: MonadUnliftIO m => SQLiteStore -> UserId -> Int64 -> m ChatItemList
 -- getGroupChatItemList st userId groupId =
