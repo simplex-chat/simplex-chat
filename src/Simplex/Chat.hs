@@ -126,9 +126,7 @@ processChatCommand :: forall m. ChatMonad m => User -> ChatCommand -> m ChatResp
 processChatCommand user@User {userId, profile} = \case
   APIGetChats -> CRApiChats <$> withStore (`getChatPreviews` user)
   APIGetChat cType cId -> case cType of
-    CTDirect -> do
-      chat <- withStore $ \st -> getDirectChat st user cId
-      pure $ CRApiDirectChat chat
+    CTDirect -> CRApiDirectChat <$> withStore (\st -> getDirectChat st user cId)
     CTGroup -> pure $ CRChatError ChatErrorNotImplemented
   APIGetChatItems count -> pure $ CRChatError ChatErrorNotImplemented
   ChatHelp section -> pure $ CRChatHelp section
