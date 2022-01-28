@@ -26,3 +26,11 @@ enumJSON tagModifier =
     { J.constructorTagModifier = tagModifier,
       J.allNullaryToStringTag = True
     }
+
+singleFieldJSON :: (String -> String) -> J.Options
+singleFieldJSON tagModifier =
+  J.defaultOptions
+    { J.constructorTagModifier = tagModifier,
+      J.sumEncoding = J.ObjectWithSingleField,
+      J.omitNothingFields = True
+    }

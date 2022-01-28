@@ -25,12 +25,12 @@ simplexChat cfg opts t
       sendNotification' <- initializeNotifications
       let f = chatStoreFile $ dbFilePrefix opts
       st <- createStore f $ dbPoolSize cfg
-      user <- getCreateActiveUser st
+      u <- getCreateActiveUser st
       ct <- newChatTerminal t
-      cc <- newChatController st user cfg opts sendNotification'
-      runSimplexChat user ct cc
+      cc <- newChatController st u cfg opts sendNotification'
+      runSimplexChat u ct cc
 
 runSimplexChat :: User -> ChatTerminal -> ChatController -> IO ()
-runSimplexChat user ct = runReaderT $ do
-  whenM (asks firstTime) . liftIO . printToTerminal ct $ chatWelcome user
+runSimplexChat u ct = runReaderT $ do
+  whenM (asks firstTime) . liftIO . printToTerminal ct $ chatWelcome u
   raceAny_ [runTerminalInput ct, runTerminalOutput ct, runInputLoop ct, runChatController]
