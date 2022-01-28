@@ -121,9 +121,9 @@ viewChatItem chat item = case (chat, item) of
     CISndMeta meta -> case content of
       CIMsgContent mc -> viewSentMessage to mc meta
       CISndFileInvitation fId fPath -> viewSentFileInvitation to fId fPath meta
-    CIRcvMeta meta mOk -> case content of
-      CIMsgContent mc -> viewReceivedMessage from meta mc mOk
-      CIRcvFileInvitation ft -> viewReceivedFileInvitation from meta ft mOk
+    CIRcvMeta meta -> case content of
+      CIMsgContent mc -> viewReceivedMessage from meta mc -- mOk
+      CIRcvFileInvitation ft -> viewReceivedFileInvitation from meta ft -- mOk
     where
       to = ttyToContact' c
       from = ttyFromContact' c
@@ -132,9 +132,9 @@ viewChatItem chat item = case (chat, item) of
     CISndFileInvitation fId fPath -> viewSentFileInvitation to fId fPath meta
     where
       to = ttyToGroup g
-  (GroupChat g, RcvGroupChatItem c (CIRcvMeta meta mOk) content) -> case content of
-    CIMsgContent mc -> viewReceivedMessage from meta mc mOk
-    CIRcvFileInvitation ft -> viewReceivedFileInvitation from meta ft mOk
+  (GroupChat g, RcvGroupChatItem c (CIRcvMeta meta) content) -> case content of
+    CIMsgContent mc -> viewReceivedMessage from meta mc -- mOk
+    CIRcvFileInvitation ft -> viewReceivedFileInvitation from meta ft -- mOk
     where
       from = ttyFromGroup' g c
   where
@@ -289,12 +289,12 @@ viewContactUpdated
     where
       fullNameUpdate = if T.null fullName' || fullName' == n' then " removed full name" else " updated full name: " <> plain fullName'
 
-viewReceivedMessage :: StyledString -> CIMetaProps -> MsgContent -> MsgIntegrity -> [StyledString]
+viewReceivedMessage :: StyledString -> CIMetaProps -> MsgContent -> [StyledString]
 viewReceivedMessage from meta mc = receivedWithTime_ from meta (ttyMsgContent mc)
 
-receivedWithTime_ :: StyledString -> CIMetaProps -> [StyledString] -> MsgIntegrity -> [StyledString]
-receivedWithTime_ from CIMetaProps {localItemTs, createdAt} styledMsg mOk = do
-  prependFirst (formattedTime <> " " <> from) styledMsg ++ showIntegrity mOk
+receivedWithTime_ :: StyledString -> CIMetaProps -> [StyledString] -> [StyledString]
+receivedWithTime_ from CIMetaProps {localItemTs, createdAt} styledMsg = do
+  prependFirst (formattedTime <> " " <> from) styledMsg -- ++ showIntegrity mOk
   where
     formattedTime :: StyledString
     formattedTime =
@@ -363,7 +363,7 @@ sendingFile_ status ft@SndFileTransfer {recipientDisplayName = c} =
 sndFile :: SndFileTransfer -> StyledString
 sndFile SndFileTransfer {fileId, fileName} = fileTransferStr fileId fileName
 
-viewReceivedFileInvitation :: StyledString -> CIMetaProps -> RcvFileTransfer -> MsgIntegrity -> [StyledString]
+viewReceivedFileInvitation :: StyledString -> CIMetaProps -> RcvFileTransfer -> [StyledString]
 viewReceivedFileInvitation from meta ft = receivedWithTime_ from meta (receivedFileInvitation_ ft)
 
 receivedFileInvitation_ :: RcvFileTransfer -> [StyledString]
