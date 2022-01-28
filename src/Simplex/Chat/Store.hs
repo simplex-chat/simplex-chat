@@ -147,7 +147,7 @@ import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore (..), createSQLiteStore
 import Simplex.Messaging.Agent.Store.SQLite.Migrations (Migration (..))
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Parsers (dropPrefix, parseAll)
+import Simplex.Messaging.Parsers (dropPrefix, parseAll, parseString, parse)
 import Simplex.Messaging.Util (liftIOEither, (<$$>))
 import System.FilePath (takeFileName)
 import UnliftIO.STM
@@ -1956,13 +1956,18 @@ getDirectChatItems_ db User {userId} contactId = do
         (userId, contactId)
   liftIO $ mapM toDirectChatItem chatItems_
   where
-    toDirectChatItem :: (Int64, ASMsgDirection, ChatItemTs, ACIContent, Text, UTCTime, MsgMetaJSON) -> IO (CChatItem 'CTDirect)
-    toDirectChatItem (itemId, itemSent, itemTs, itemContent, itemText, createdAt, MsgMetaJSON {integrity}) = do
+    toDirectChatItem :: (Int64, ASMsgDirection, ChatItemTs, ACIContent, Text, UTCTime, Maybe MsgMetaJSON) -> IO (CChatItem 'CTDirect)
+    toDirectChatItem (itemId, itemSent, itemTs, itemContent, itemText, createdAt, msgMetaJSON) = do
       ciMeta <- liftIO $ mkCIMetaProps itemId itemTs itemText createdAt
       case (itemSent, itemContent) of
         (ASMD SMDRcv, ACIContent SMDRcv ciContent) -> do
-          let msgIntegrity = parseAll strP $ encodeUtf8 integrity
-          pure $ CChatItem SMDRcv (DirectChatItem (CIRcvMeta ciMeta msgIntegrity) ciContent)
+          case msgMetaJSON of
+            Nothing -> fail "bad chat item" -- TODO ? CChatItem with "Bad" CIMeta constructor
+            Just MsgMetaJSON {integrity} -> do
+              let a = encodeUtf8 integrity
+                  b = parseAll strP a
+                  MsgIntegrity msgIntegrity = parseAll strP $ encodeUtf8 integrity 
+              pure $ CChatItem SMDRcv (DirectChatItem (CIRcvMeta ciMeta msgIntegrity) ciContent)
         (ASMD SMDSnd, ACIContent SMDSnd ciContent) ->
           pure $ CChatItem SMDSnd (DirectChatItem (CISndMeta ciMeta) ciContent)
         _ -> fail "bad chat item" -- TODO ? "Bad" ChatItem constructor
