@@ -120,16 +120,14 @@ import Data.Aeson (ToJSON)
 import qualified Data.Aeson as J
 import qualified Data.ByteString.Base64 as B64
 import Data.ByteString.Char8 (ByteString)
-import Data.Data (Typeable)
 import Data.Either (rights)
 import Data.Function (on)
 import Data.Functor (($>))
 import Data.Int (Int64)
 import Data.List (find, sortBy)
-import Data.Maybe (fromJust, isJust, listToMaybe)
+import Data.Maybe (listToMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Text.Encoding (encodeUtf8)
 import Data.Time.Clock (UTCTime, getCurrentTime)
 import Database.SQLite.Simple (NamedParam (..), Only (..), Query (..), SQLError, (:.) (..))
 import qualified Database.SQLite.Simple as DB
@@ -146,8 +144,7 @@ import Simplex.Messaging.Agent.Protocol (AgentMsgId, ConnId, InvitationId, MsgMe
 import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore (..), createSQLiteStore, firstRow, withTransaction)
 import Simplex.Messaging.Agent.Store.SQLite.Migrations (Migration (..))
 import qualified Simplex.Messaging.Crypto as C
-import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Parsers (dropPrefix, parseAll, parseString, parse)
+import Simplex.Messaging.Parsers (dropPrefix)
 import Simplex.Messaging.Util (liftIOEither, (<$$>))
 import System.FilePath (takeFileName)
 import UnliftIO.STM
@@ -1946,8 +1943,7 @@ getDirectChatItems_ db User {userId} contactId = do
         [sql|
           SELECT
             -- CChatItem
-            ci.chat_item_id, ci.item_sent, ci.item_ts, ci.item_content, ci.item_text, ci.created_at,
-            md.agent_msg_meta
+            ci.chat_item_id, ci.item_ts, ci.item_content, ci.item_text, ci.created_at
           FROM chat_items ci
           LEFT JOIN messages m ON m.message_id == ci.created_by_msg_id
           LEFT JOIN msg_deliveries md ON md.message_id = m.message_id
@@ -1956,21 +1952,12 @@ getDirectChatItems_ db User {userId} contactId = do
         (userId, contactId)
   liftIO $ mapM toDirectChatItem chatItems_
   where
-    toDirectChatItem :: (Int64, ASMsgDirection, ChatItemTs, ACIContent, Text, UTCTime, Maybe MsgMetaJSON) -> IO (CChatItem 'CTDirect)
-    toDirectChatItem (itemId, itemSent, itemTs, itemContent, itemText, createdAt, msgMetaJSON) = do
+    toDirectChatItem :: (Int64, ChatItemTs, ACIContent, Text, UTCTime) -> IO (CChatItem 'CTDirect)
+    toDirectChatItem (itemId, itemTs, itemContent, itemText, createdAt) = do
       ciMeta <- liftIO $ mkCIMetaProps itemId itemTs itemText createdAt
-      case (itemSent, itemContent) of
-        (ASMD SMDRcv, ACIContent SMDRcv ciContent) -> do
-          case msgMetaJSON of
-            Nothing -> fail "bad chat item" -- TODO ? CChatItem with "Bad" CIMeta constructor
-            Just MsgMetaJSON {integrity} -> do
-              let a = encodeUtf8 integrity
-                  b = parseAll strP a
-                  MsgIntegrity msgIntegrity = parseAll strP $ encodeUtf8 integrity 
-              pure $ CChatItem SMDRcv (DirectChatItem (CIRcvMeta ciMeta msgIntegrity) ciContent)
-        (ASMD SMDSnd, ACIContent SMDSnd ciContent) ->
-          pure $ CChatItem SMDSnd (DirectChatItem (CISndMeta ciMeta) ciContent)
-        _ -> fail "bad chat item" -- TODO ? "Bad" ChatItem constructor
+      pure $ case itemContent of
+        ACIContent SMDRcv ciContent -> CChatItem SMDRcv (DirectChatItem (CIRcvMeta ciMeta) ciContent)
+        ACIContent SMDSnd ciContent -> CChatItem SMDSnd (DirectChatItem (CISndMeta ciMeta) ciContent)
 
 -- getGroupChatItemList :: MonadUnliftIO m => SQLiteStore -> UserId -> Int64 -> m ChatItemList
 -- getGroupChatItemList st userId groupId =

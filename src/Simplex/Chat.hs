@@ -1174,16 +1174,16 @@ sendGroupChatItem userId (Group g ms) chatMsgEvent ciContent = do
   pure $ SndGroupChatItem (CISndMeta ciMeta) ciContent
 
 saveRcvDirectChatItem :: ChatMonad m => UserId -> Contact -> MessageId -> MsgMeta -> CIContent 'MDRcv -> m (ChatItem 'CTDirect 'MDRcv)
-saveRcvDirectChatItem userId ct msgId MsgMeta {broker = (_, brokerTs), integrity} ciContent = do
+saveRcvDirectChatItem userId ct msgId MsgMeta {broker = (_, brokerTs)} ciContent = do
   createdAt <- liftIO getCurrentTime
   ciMeta <- saveChatItem userId (CDDirect ct) $ mkNewChatItem ciContent msgId brokerTs createdAt
-  pure $ DirectChatItem (CIRcvMeta ciMeta integrity) ciContent
+  pure $ DirectChatItem (CIRcvMeta ciMeta) ciContent
 
 saveRcvGroupChatItem :: ChatMonad m => UserId -> GroupInfo -> GroupMember -> MessageId -> MsgMeta -> CIContent 'MDRcv -> m (ChatItem 'CTGroup 'MDRcv)
-saveRcvGroupChatItem userId g m msgId MsgMeta {broker = (_, brokerTs), integrity} ciContent = do
+saveRcvGroupChatItem userId g m msgId MsgMeta {broker = (_, brokerTs)} ciContent = do
   createdAt <- liftIO getCurrentTime
   ciMeta <- saveChatItem userId (CDRcvGroup g m) $ mkNewChatItem ciContent msgId brokerTs createdAt
-  pure $ RcvGroupChatItem m (CIRcvMeta ciMeta integrity) ciContent
+  pure $ RcvGroupChatItem m (CIRcvMeta ciMeta) ciContent
 
 saveChatItem :: (MsgDirectionI d, ChatMonad m) => UserId -> ChatDirection c d -> NewChatItem d -> m CIMetaProps
 saveChatItem userId cd ci@NewChatItem {itemTs, itemText, createdAt} = do

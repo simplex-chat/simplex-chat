@@ -25,16 +25,13 @@ import Data.Time.Clock (UTCTime)
 import Data.Time.LocalTime (ZonedTime, utcToLocalZonedTime)
 import Data.Type.Equality
 import Data.Typeable (Typeable)
-import Database.SQLite.Simple (SQLData (SQLInteger))
-import Database.SQLite.Simple.FromField (FromField (..), ResultError (ConversionFailed), returnError)
-import Database.SQLite.Simple.Internal (Field (..))
-import Database.SQLite.Simple.Ok (Ok (Ok))
+import Database.SQLite.Simple.FromField (FromField (..))
 import Database.SQLite.Simple.ToField (ToField (..))
 import GHC.Generics (Generic)
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Chat.Util (enumJSON, singleFieldJSON)
-import Simplex.Messaging.Agent.Protocol (AgentMsgId, MsgIntegrity, MsgMeta (..))
+import Simplex.Messaging.Agent.Protocol (AgentMsgId, MsgMeta (..))
 import Simplex.Messaging.Agent.Store.SQLite (fromTextField_)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix)
@@ -105,9 +102,9 @@ deriving instance Show (CChatItem c)
 chatItemId :: ChatItem c d -> ChatItemId
 chatItemId = \case
   DirectChatItem (CISndMeta CIMetaProps {itemId}) _ -> itemId
-  DirectChatItem (CIRcvMeta CIMetaProps {itemId} _) _ -> itemId
+  DirectChatItem (CIRcvMeta CIMetaProps {itemId}) _ -> itemId
   SndGroupChatItem (CISndMeta CIMetaProps {itemId}) _ -> itemId
-  RcvGroupChatItem _ (CIRcvMeta CIMetaProps {itemId} _) _ -> itemId
+  RcvGroupChatItem _ (CIRcvMeta CIMetaProps {itemId}) _ -> itemId
 
 data ChatDirection (c :: ChatType) (d :: MsgDirection) where
   CDDirect :: Contact -> ChatDirection 'CTDirect d
@@ -151,7 +148,7 @@ instance MsgDirectionI d => ToJSON (JSONAnyChatItem c d) where
 
 data CIMeta (d :: MsgDirection) where
   CISndMeta :: CIMetaProps -> CIMeta 'MDSnd
-  CIRcvMeta :: CIMetaProps -> MsgIntegrity -> CIMeta 'MDRcv
+  CIRcvMeta :: CIMetaProps -> CIMeta 'MDRcv
 
 deriving instance Show (CIMeta d)
 
@@ -161,7 +158,7 @@ instance ToJSON (CIMeta d) where
 
 data JSONCIMeta
   = JCIMetaSnd {meta :: CIMetaProps}
-  | JCIMetaRcv {meta :: CIMetaProps, integrity :: MsgIntegrity}
+  | JCIMetaRcv {meta :: CIMetaProps}
   deriving (Generic)
 
 instance ToJSON JSONCIMeta where
@@ -171,7 +168,7 @@ instance ToJSON JSONCIMeta where
 jsonCIMeta :: CIMeta d -> JSONCIMeta
 jsonCIMeta = \case
   CISndMeta meta -> JCIMetaSnd meta
-  CIRcvMeta meta integrity -> JCIMetaRcv meta integrity
+  CIRcvMeta meta -> JCIMetaRcv meta
 
 data CIMetaProps = CIMetaProps
   { itemId :: ChatItemId,
@@ -299,8 +296,6 @@ data SMsgDirection (d :: MsgDirection) where
   SMDRcv :: SMsgDirection 'MDRcv
   SMDSnd :: SMsgDirection 'MDSnd
 
-data ASMsgDirection = forall d. ASMD (SMsgDirection d)
-
 deriving instance Show (SMsgDirection d)
 
 instance TestEquality SMsgDirection where
@@ -310,49 +305,10 @@ instance TestEquality SMsgDirection where
 
 instance ToField (SMsgDirection d) where toField = toField . msgDirectionInt . toMsgDirection
 
-instance FromField ASMsgDirection where fromField = fromIntField_ $ fmap fromMsgDirection . msgDirectionIntP
-
 toMsgDirection :: SMsgDirection d -> MsgDirection
 toMsgDirection = \case
   SMDRcv -> MDRcv
   SMDSnd -> MDSnd
-
-fromMsgDirection :: MsgDirection -> ASMsgDirection
-fromMsgDirection = \case
-  MDRcv -> ASMD SMDRcv
-  MDSnd -> ASMD SMDSnd
-
-fromIntField_ :: Typeable a => (Int64 -> Maybe a) -> Field -> Ok a
-fromIntField_ fromInt = \case
-  f@(Field (SQLInteger i) _) ->
-    case fromInt i of
-      Just x -> Ok x
-      _ -> returnError ConversionFailed f ("invalid integer: " <> show i)
-  f -> returnError ConversionFailed f "expecting SQLInteger column type"
-
--- instance FromField ASMsgDirection where fromField = fromIntField_ asMsgDirectionIntP
-
--- asMsgDirectionIntP :: Int64 -> Maybe ASMsgDirection
--- asMsgDirectionIntP = \case
---   0 -> Just $ ASMD SMDRcv
---   1 -> Just $ ASMD SMDSnd
---   _ -> Nothing
-
--- instance (Typeable d, MsgDirectionI d) => FromField (SMsgDirection d) where
---   fromField = fromIntField_ sMsgDirectionT'
-
--- sMsgDirectionT' :: forall d. MsgDirectionI d => Int64 -> Maybe (SMsgDirection d)
--- sMsgDirectionT' i =
---   msgDirectionIntP' i >>= \(ASMD d) ->
---     case testEquality d (msgDirection @d) of
---       Just Refl -> Just d
---       _ -> Nothing
-
--- msgDirectionIntP' :: Int64 -> Maybe ASMsgDirection
--- msgDirectionIntP' = \case
---   0 -> Just $ ASMD SMDRcv
---   1 -> Just $ ASMD SMDSnd
---   _ -> Nothing
 
 class MsgDirectionI (d :: MsgDirection) where
   msgDirection :: SMsgDirection d
