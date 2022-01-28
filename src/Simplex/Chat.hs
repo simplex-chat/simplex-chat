@@ -128,7 +128,7 @@ processChatCommand user@User {userId, profile} = \case
   APIGetChat cType cId -> case cType of
     CTDirect -> CRApiDirectChat <$> withStore (\st -> getDirectChat st user cId)
     CTGroup -> pure $ CRChatError ChatErrorNotImplemented
-  APIGetChatItems count -> pure $ CRChatError ChatErrorNotImplemented
+  APIGetChatItems _count -> pure $ CRChatError ChatErrorNotImplemented
   ChatHelp section -> pure $ CRChatHelp section
   Welcome -> pure $ CRWelcome user
   AddContact -> procCmd $ do
