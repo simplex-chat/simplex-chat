@@ -14,7 +14,7 @@ final class ChatModel: ObservableObject {
     @Published var chats: Dictionary<String, Chat> = [:]
     @Published var chatPreviews: [ChatPreview] = []
     @Published var chatItems: [ChatItem] = []
-    @Published var apiResponses: [APIResponse] = []
+    @Published var terminalItems: [TerminalItem] = []
 }
 
 struct User: Codable {
@@ -34,13 +34,18 @@ struct Profile: Codable {
     var fullName: String
 }
 
-struct ChatPreview: Identifiable, Codable {
+struct ChatPreview: Identifiable, Decodable {
     var chatInfo: ChatInfo
     var lastChatItem: ChatItem?
 
     var id: String {
         get { chatInfo.id }
     }
+}
+
+enum ChatType: String {
+    case direct
+    case group
 }
 
 enum ChatInfo: Identifiable, Codable {
@@ -65,10 +70,10 @@ enum ChatInfo: Identifiable, Codable {
         }
     }
 
-    var apiType: String {
+    var chatType: ChatType {
         get {
             switch self {
-            case .direct(_): return "direct"
+            case .direct(_): return .direct
 //            case let .group(_): return "group"
             }
         }
@@ -84,7 +89,7 @@ enum ChatInfo: Identifiable, Codable {
     }
 }
 
-class Chat: Codable {
+class Chat: Decodable {
     var chatInfo: ChatInfo
     var chatItems: [ChatItem]
 }
@@ -115,7 +120,7 @@ struct GroupMember: Codable {
 
 }
 
-struct ChatItem: Identifiable, Codable {
+struct ChatItem: Identifiable, Decodable {
     var chatDir: CIDirection
     var meta: CIMeta
     var content: CIContent
@@ -123,21 +128,21 @@ struct ChatItem: Identifiable, Codable {
     var id: Int64 { get { meta.itemId } }
 }
 
-enum CIDirection: Codable {
+enum CIDirection: Decodable {
     case directSnd
     case directRcv
     case groupSnd
     case groupRcv(GroupMember)
 }
 
-struct CIMeta: Codable {
+struct CIMeta: Decodable {
     var itemId: Int64
     var itemTs: Date
     var itemText: String
     var createdAt: Date
 }
 
-enum CIContent: Codable {
+enum CIContent: Decodable {
     case sndMsgContent(msgContent: MsgContent)
     case rcvMsgContent(msgContent: MsgContent)
     // files etc.
@@ -152,22 +157,42 @@ enum CIContent: Codable {
     }
 }
 
-enum MsgContent: Codable {
+enum MsgContent {
     case text(String)
-    case unknown(type: String, text: String, json: String)
-    case invalid(json: String)
+    case unknown(type: String, text: String)
+    case invalid(error: String)
 
-    init(from: Decoder) throws {
-        self = .invalid(json: "")
-    }
-    
     var string: String {
         get {
             switch self {
-            case let .text(str): return str
-            case .unknown: return "unknown"
+            case let .text(text): return text
+            case let .unknown(_, text): return text
             case .invalid:  return "invalid"
             }
+        }
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case type
+        case text
+    }
+}
+
+extension MsgContent: Decodable {
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        do {
+            let type = try container.decode(String.self, forKey: CodingKeys.type)
+            switch type {
+            case "text":
+                let text = try container.decode(String.self, forKey: CodingKeys.text)
+                self = .text(text)
+            default:
+                let text = try? container.decode(String.self, forKey: CodingKeys.text)
+                self = .unknown(type: type, text: text ?? "unknown message format")
+            }
+        } catch {
+            self = .invalid(error: String(describing: error))
         }
     }
 }

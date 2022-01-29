@@ -35,6 +35,10 @@
 		5C764E85279C748C000C6508 /* libz.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C764E7C279C71DB000C6508 /* libz.tbd */; };
 		5C764E89279CBCB3000C6508 /* ChatModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C764E88279CBCB3000C6508 /* ChatModel.swift */; };
 		5C764E8A279CBCB3000C6508 /* ChatModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C764E88279CBCB3000C6508 /* ChatModel.swift */; };
+		5C9FD96B27A56D4D0075386C /* JSON.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C9FD96A27A56D4D0075386C /* JSON.swift */; };
+		5C9FD96C27A56D4D0075386C /* JSON.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C9FD96A27A56D4D0075386C /* JSON.swift */; };
+		5C9FD96E27A5D6ED0075386C /* SendMessageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C9FD96D27A5D6ED0075386C /* SendMessageView.swift */; };
+		5C9FD96F27A5D6ED0075386C /* SendMessageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C9FD96D27A5D6ED0075386C /* SendMessageView.swift */; };
 		5CA059DC279559F40002BEB4 /* Tests_iOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CA059DB279559F40002BEB4 /* Tests_iOS.swift */; };
 		5CA059DE279559F40002BEB4 /* Tests_iOSLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CA059DD279559F40002BEB4 /* Tests_iOSLaunchTests.swift */; };
 		5CA059E8279559F40002BEB4 /* Tests_macOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CA059E7279559F40002BEB4 /* Tests_macOS.swift */; };
@@ -86,6 +90,8 @@
 		5C764E7E279C7275000C6508 /* SimpleX (macOS)-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "SimpleX (macOS)-Bridging-Header.h"; sourceTree = "<group>"; };
 		5C764E7F279C7276000C6508 /* dummy.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = dummy.m; sourceTree = "<group>"; };
 		5C764E88279CBCB3000C6508 /* ChatModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatModel.swift; sourceTree = "<group>"; };
+		5C9FD96A27A56D4D0075386C /* JSON.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JSON.swift; sourceTree = "<group>"; };
+		5C9FD96D27A5D6ED0075386C /* SendMessageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SendMessageView.swift; sourceTree = "<group>"; };
 		5CA059C3279559F40002BEB4 /* SimpleXApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimpleXApp.swift; sourceTree = "<group>"; };
 		5CA059C4279559F40002BEB4 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		5CA059C5279559F40002BEB4 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -156,6 +162,7 @@
 				5C063D2627A4564100AEC577 /* ChatPreviewView.swift */,
 				5C2E260E27A30FDC00F70299 /* ChatView.swift */,
 				5C2E261127A30FEA00F70299 /* TerminalView.swift */,
+				5C9FD96D27A5D6ED0075386C /* SendMessageView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -186,6 +193,7 @@
 			children = (
 				5C764E88279CBCB3000C6508 /* ChatModel.swift */,
 				5C2E260627A2941F00F70299 /* SimpleXAPI.swift */,
+				5C9FD96A27A56D4D0075386C /* JSON.swift */,
 			);
 			path = Model;
 			sourceTree = "<group>";
@@ -419,6 +427,8 @@
 				5C764E80279C7276000C6508 /* dummy.m in Sources */,
 				5C063D2727A4564100AEC577 /* ChatPreviewView.swift in Sources */,
 				5C2E261227A30FEA00F70299 /* TerminalView.swift in Sources */,
+				5C9FD96B27A56D4D0075386C /* JSON.swift in Sources */,
+				5C9FD96E27A5D6ED0075386C /* SendMessageView.swift in Sources */,
 				5CA05A4F279752D00002BEB4 /* MessageView.swift in Sources */,
 				5CA059ED279559F40002BEB4 /* ContentView.swift in Sources */,
 				5CA05A4C27974EB60002BEB4 /* WelcomeView.swift in Sources */,
@@ -437,6 +447,8 @@
 				5C764E81279C7276000C6508 /* dummy.m in Sources */,
 				5C063D2827A4564100AEC577 /* ChatPreviewView.swift in Sources */,
 				5C2E261327A30FEA00F70299 /* TerminalView.swift in Sources */,
+				5C9FD96C27A56D4D0075386C /* JSON.swift in Sources */,
+				5C9FD96F27A5D6ED0075386C /* SendMessageView.swift in Sources */,
 				5CA05A50279752D00002BEB4 /* MessageView.swift in Sources */,
 				5CA059EE279559F40002BEB4 /* ContentView.swift in Sources */,
 				5CA05A4D27974EB60002BEB4 /* WelcomeView.swift in Sources */,

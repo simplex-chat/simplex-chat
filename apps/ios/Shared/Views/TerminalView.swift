@@ -10,20 +10,19 @@ import SwiftUI
 
 struct TerminalView: View {
     @EnvironmentObject var chatModel: ChatModel
-    @State var command: String = ""
     @State var inProgress: Bool = false
     
     var body: some View {
         VStack {
             ScrollView {
                 LazyVStack {
-                    ForEach(chatModel.apiResponses) { r in
+                    ForEach(chatModel.terminalItems) { item in
                         NavigationLink {
                             ScrollView {
-                                Text(r.resp.details)
+                                Text(item.details)
                             }
                         } label: {
-                            Text(r.resp.responseType)
+                            Text(item.label)
                             .frame(width: 360, height: 30, alignment: .leading)
                         }
                     }
@@ -33,25 +32,25 @@ struct TerminalView: View {
 
             Spacer()
 
-            HStack {
-                TextField("Message...", text: $command)
-                   .textFieldStyle(RoundedBorderTextFieldStyle())
-                   .frame(minHeight: 30)
-                Button(action: sendMessage) {
-                    Text("Send")
-                }.disabled(command.isEmpty)
-            }
-            .frame(minHeight: 30)
-            .padding()
+            SendMessageView(sendMessage: sendMessage, inProgress: inProgress)
         }
     }
     
-    func sendMessage() {
+    func sendMessage(_ cmdStr: String) {
+        let cmd = ChatCommand.string(cmdStr)
+        chatModel.terminalItems.append(.cmd(Date.now, cmd))
+
         DispatchQueue.global().async {
-            let cmd: String = self.$command.wrappedValue
             inProgress = true
-            command = ""
-            chatSendCmd(chatModel, ChatCommand.string(cmd))
+            sleep(2)
+            do {
+                let r = try chatSendCmd(cmd)
+                DispatchQueue.main.async {
+                    chatModel.terminalItems.append(.resp(Date.now, r))
+                }
+            } catch {
+                print(error)
+            }
             inProgress = false
         }
     }
@@ -60,9 +59,9 @@ struct TerminalView: View {
 struct TerminalView_Previews: PreviewProvider {
     static var previews: some View {
         let chatModel = ChatModel()
-        chatModel.apiResponses = [
-            APIResponse(resp: ChatResponse.response(type: "contactSubscribed", json: "{}"), id: 1),
-            APIResponse(resp: ChatResponse.response(type: "newChatItem", json: "{}"), id: 2)
+        chatModel.terminalItems = [
+            .resp(Date.now, ChatResponse.response(type: "contactSubscribed", json: "{}")),
+            .resp(Date.now, ChatResponse.response(type: "newChatItem", json: "{}"))
         ]
         return NavigationView {
             TerminalView()

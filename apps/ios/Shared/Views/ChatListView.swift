@@ -14,7 +14,13 @@ struct ChatListView: View {
 
     var body: some View {
         DispatchQueue.global().async {
-            while(true) { chatRecvMsg(chatModel) }
+            while(true) {
+                do {
+                    try processReceivedMsg(chatModel, chatRecvMsg())
+                } catch {
+                    print("error receiving message: ", error)
+                }
+            }
         }
 
         return VStack {
@@ -36,7 +42,12 @@ struct ChatListView: View {
                         NavigationLink {
                             ChatView(chatInfo: chatPreview.chatInfo)
                                 .onAppear {
-                                    chatSendCmd(chatModel, .apiGetChatItems(type: "direct", id: chatPreview.chatInfo.apiId))
+                                    do {
+                                        let chat = try apiGetChatItems(type: .direct, id: chatPreview.chatInfo.apiId)
+                                        chatModel.chats[chat.chatInfo.id] = chat
+                                    } catch {
+                                        print("apiGetChatItems", error)
+                                    }
                                 }
                         } label: {
                             ChatPreviewView(chatPreview: chatPreview)

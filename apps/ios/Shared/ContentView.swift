@@ -71,7 +71,14 @@ struct ContentView: View {
     var body: some View {
         if let user = chatModel.currentUser {
             ChatListView(user: user)
-                .onAppear { chatSendCmd(chatModel, .apiGetChats) }
+                .onAppear {
+                    do {
+                        let chats = try apiGetChats()
+                        chatModel.chatPreviews = chats
+                    } catch {
+                        print(error)
+                    }
+                }
         } else {
             WelcomeView()
         }
