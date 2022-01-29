@@ -1870,7 +1870,7 @@ getChatPreviews st user =
   liftIO . withTransaction st $ \db -> do
     directChatPreviews <- getDirectChatPreviews_ db user
     groupChatPreviews <- getGroupChatPreviews_ db user
-    pure $ directChatPreviews <> groupChatPreviews
+    pure $ directChatPreviews <> groupChatPreviews -- TODO sort
 
 getDirectChatPreviews_ :: DB.Connection -> User -> IO [AChatPreview]
 getDirectChatPreviews_ db User {userId} = do
