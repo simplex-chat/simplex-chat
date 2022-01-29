@@ -33,6 +33,7 @@ struct ChatHeaderView: View {
             .sheet(isPresented: $createGroup, content: { CreateGroupView() })
         }
         .padding(.horizontal)
+        .padding(.top)
     }
 }
 

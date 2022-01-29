@@ -65,7 +65,7 @@ enum ChatInfo: Identifiable, Codable {
     case direct(contact: Contact)
     case group(groupInfo: GroupInfo)
     
-    var displayName: String {
+    var localDisplayName: String {
         get {
             switch self {
             case let .direct(contact): return "@\(contact.localDisplayName)"

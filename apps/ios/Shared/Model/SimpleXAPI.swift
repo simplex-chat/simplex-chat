@@ -17,6 +17,7 @@ private let jsonEncoder = getJSONEncoder()
 enum ChatCommand {
     case apiGetChats
     case apiGetChatItems(type: ChatType, id: Int64)
+    case apiSendMessage(localDisplayName: String, msg: String)
     case string(String)
     case help
 
@@ -27,6 +28,8 @@ enum ChatCommand {
                 return "/api/v1/chats"
             case let .apiGetChatItems(type, id):
                 return "/api/v1/chat/\(type)/\(id)"
+            case let .apiSendMessage(localDisplayName, msg):
+                return "\(localDisplayName) \(msg)"
             case let .string(str):
                 return str
             case .help: return "/help"
@@ -151,6 +154,14 @@ func apiGetChatItems(type: ChatType, id: Int64) throws -> Chat {
     let r = try chatSendCmd(.apiGetChatItems(type: type, id: id))
     switch r {
     case let .apiDirectChat(chat): return chat
+    default: throw r
+    }
+}
+
+func apiSendMessage(localDisplayName: String, msg: String) throws -> ChatItem {
+    let r = try chatSendCmd(.apiSendMessage(localDisplayName: localDisplayName, msg: msg))
+    switch r {
+    case let .newChatItem(aChatItem): return aChatItem.chatItem
     default: throw r
     }
 }
