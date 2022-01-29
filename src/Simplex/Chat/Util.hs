@@ -34,3 +34,6 @@ singleFieldJSON tagModifier =
       J.sumEncoding = J.ObjectWithSingleField,
       J.omitNothingFields = True
     }
+
+eitherToMaybe :: Either a b -> Maybe b
+eitherToMaybe = either (const Nothing) Just
