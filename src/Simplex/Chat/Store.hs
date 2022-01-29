@@ -835,13 +835,17 @@ getConnectionEntity st User {userId, userContactId} agentConnId =
           [sql|
             SELECT
               -- GroupInfo
-              g.group_id, g.local_display_name, gp.display_name, gp.full_name,
+              g.group_id, g.local_display_name,
+              -- GroupInfo {groupProfile}
+              gp.display_name, gp.full_name,
+              -- GroupInfo {membership}
+              mu.group_member_id, mu.group_id, mu.member_id, mu.member_role, mu.member_category,
+              mu.member_status, mu.invited_by, mu.local_display_name, mu.contact_id,
+              -- GroupInfo {membership = GroupMember {memberProfile}}
+              pu.display_name, pu.full_name,
               -- from GroupMember
               m.group_member_id, m.group_id, m.member_id, m.member_role, m.member_category, m.member_status,
-              m.invited_by, m.local_display_name, m.contact_id, p.display_name, p.full_name,
-              -- user membership
-              mu.group_member_id, mu.group_id, mu.member_id, mu.member_role, mu.member_category, mu.member_status,
-              mu.invited_by, mu.local_display_name, mu.contact_id, pu.display_name, pu.full_name
+              m.invited_by, m.local_display_name, m.contact_id, p.display_name, p.full_name
             FROM group_members m
             JOIN contact_profiles p ON p.contact_profile_id = m.contact_profile_id
             JOIN groups g ON g.group_id = m.group_id
@@ -851,8 +855,8 @@ getConnectionEntity st User {userId, userContactId} agentConnId =
             WHERE m.group_member_id = ? AND g.user_id = ? AND mu.contact_id = ?
           |]
           (groupMemberId, userId, userContactId)
-    toGroupAndMember :: Connection -> (Int64, GroupName, GroupName, Text) :. GroupMemberRow :. GroupMemberRow -> (GroupInfo, GroupMember)
-    toGroupAndMember c ((groupId, localDisplayName, displayName, fullName) :. memberRow :. userMemberRow) =
+    toGroupAndMember :: Connection -> GroupInfoRow :. GroupMemberRow -> (GroupInfo, GroupMember)
+    toGroupAndMember c (((groupId, localDisplayName, displayName, fullName) :. userMemberRow) :. memberRow) =
       let member = toGroupMember userContactId memberRow
           membership = toGroupMember userContactId userMemberRow
        in ( GroupInfo {groupId, localDisplayName, groupProfile = GroupProfile {displayName, fullName}, membership},
@@ -995,20 +999,29 @@ getGroupInfo_ db User {userId, userContactId} gName =
     DB.query
       db
       [sql|
-        SELECT g.group_id, g.local_display_name, gp.display_name, gp.full_name,
-          m.group_member_id, g.group_id, m.member_id, m.member_role, m.member_category, m.member_status,
-          m.invited_by, m.local_display_name, m.contact_id, mp.display_name, mp.full_name
+        SELECT
+          -- GroupInfo
+          g.group_id, g.local_display_name,
+          -- GroupInfo {groupProfile}
+          gp.display_name, gp.full_name,
+          -- GroupInfo {membership}
+          mu.group_member_id, mu.group_id, mu.member_id, mu.member_role, mu.member_category,
+          mu.member_status, mu.invited_by, mu.local_display_name, mu.contact_id,
+          -- GroupInfo {membership = GroupMember {memberProfile}}
+          pu.display_name, pu.full_name
         FROM groups g
-        JOIN group_profiles gp USING (group_profile_id)
-        JOIN group_members m USING (group_id)
-        JOIN contact_profiles mp USING (contact_profile_id)
-        WHERE g.local_display_name = ? AND g.user_id = ? AND m.contact_id = ?
+        JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id
+        JOIN group_members mu ON mu.group_id = g.group_id
+        JOIN contact_profiles pu ON pu.contact_profile_id = mu.contact_profile_id
+        WHERE g.local_display_name = ? AND g.user_id = ? AND mu.contact_id = ?
       |]
       (gName, userId, userContactId)
 
-toGroupInfo :: Int64 -> (Int64, GroupName, GroupName, Text) :. GroupMemberRow -> GroupInfo
-toGroupInfo userContactId ((groupId, localDisplayName, displayName, fullName) :. memberRow) =
-  let membership = toGroupMember userContactId memberRow
+type GroupInfoRow = (Int64, GroupName, GroupName, Text) :. GroupMemberRow
+
+toGroupInfo :: Int64 -> GroupInfoRow -> GroupInfo
+toGroupInfo userContactId ((groupId, localDisplayName, displayName, fullName) :. userMemberRow) =
+  let membership = toGroupMember userContactId userMemberRow
    in GroupInfo {groupId, localDisplayName, groupProfile = GroupProfile {displayName, fullName}, membership}
 
 getGroupMembers :: MonadUnliftIO m => SQLiteStore -> User -> GroupInfo -> m [GroupMember]
@@ -1363,15 +1376,19 @@ getViaGroupMember st User {userId, userContactId} Contact {contactId} =
         [sql|
           SELECT
             -- GroupInfo
-            g.group_id, g.local_display_name, gp.display_name, gp.full_name,
+            g.group_id, g.local_display_name,
+            -- GroupInfo {groupProfile}
+            gp.display_name, gp.full_name,
+            -- GroupInfo {membership}
+            mu.group_member_id, mu.group_id, mu.member_id, mu.member_role, mu.member_category,
+            mu.member_status, mu.invited_by, mu.local_display_name, mu.contact_id,
+            -- GroupInfo {membership = GroupMember {memberProfile}}
+            pu.display_name, pu.full_name,
             -- via GroupMember
             m.group_member_id, m.group_id, m.member_id, m.member_role, m.member_category, m.member_status,
             m.invited_by, m.local_display_name, m.contact_id, p.display_name, p.full_name,
             c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact,
-            c.conn_status, c.conn_type, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at,
-            -- user membership
-            mu.group_member_id, mu.group_id, mu.member_id, mu.member_role, mu.member_category, mu.member_status,
-            mu.invited_by, mu.local_display_name, mu.contact_id, pu.display_name, pu.full_name
+            c.conn_status, c.conn_type, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at
           FROM group_members m
           JOIN contacts ct ON ct.contact_id = m.contact_id
           JOIN contact_profiles p ON p.contact_profile_id = m.contact_profile_id
@@ -1388,8 +1405,8 @@ getViaGroupMember st User {userId, userContactId} Contact {contactId} =
         |]
         (userId, contactId, userContactId)
   where
-    toGroupAndMember :: [(Int64, GroupName, GroupName, Text) :. GroupMemberRow :. MaybeConnectionRow :. GroupMemberRow] -> Maybe (GroupInfo, GroupMember)
-    toGroupAndMember [(groupId, localDisplayName, displayName, fullName) :. memberRow :. connRow :. userMemberRow] =
+    toGroupAndMember :: [GroupInfoRow :. GroupMemberRow :. MaybeConnectionRow] -> Maybe (GroupInfo, GroupMember)
+    toGroupAndMember [((groupId, localDisplayName, displayName, fullName) :. userMemberRow) :. memberRow :. connRow] =
       let member = toGroupMember userContactId memberRow
           membership = toGroupMember userContactId userMemberRow
        in Just
@@ -1884,7 +1901,7 @@ getDirectChatPreviews_ db User {userId} = do
         LEFT JOIN chat_items ci ON ci.contact_id = CIMaxDates.contact_id
                                AND ci.item_ts = CIMaxDates.MaxDate
         WHERE ct.user_id = ?
-        ORDER BY ci.item_ts ASC
+        ORDER BY ci.item_ts DESC
       |]
       (Only userId)
   where
@@ -1895,8 +1912,9 @@ getDirectChatPreviews_ db User {userId} = do
        in AChatPreview SCTDirect (DirectChat contact) ci_
 
 getGroupChatPreviews_ :: DB.Connection -> User -> IO [AChatPreview]
-getGroupChatPreviews_ db User {userId, userContactId} =
-  map toGroupChatPreview
+getGroupChatPreviews_ db User {userId, userContactId} = do
+  tz <- getCurrentTimeZone
+  map (toGroupChatPreview tz)
     <$> DB.query
       db
       [sql|
@@ -1909,20 +1927,39 @@ getGroupChatPreviews_ db User {userId, userContactId} =
           mu.group_member_id, mu.group_id, mu.member_id, mu.member_role, mu.member_category,
           mu.member_status, mu.invited_by, mu.local_display_name, mu.contact_id,
           -- GroupInfo {membership = GroupMember {memberProfile}}
-          pu.display_name, pu.full_name
+          pu.display_name, pu.full_name,
+          -- ChatItem
+          ci.chat_item_id, ci.item_ts, ci.item_content, ci.item_text, ci.created_at,
+          -- GroupMember
+          m.group_member_id, m.group_id, m.member_id, m.member_role, m.member_category,
+          m.member_status, m.invited_by, m.local_display_name, m.contact_id,
+          -- GroupMember {memberProfile}
+          p.display_name, p.full_name
         FROM groups g
         JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id
         JOIN group_members mu ON mu.group_id = g.group_id
         JOIN contact_profiles pu ON pu.contact_profile_id = mu.contact_profile_id
+        LEFT JOIN (
+          SELECT group_id, MAX(item_ts) MaxDate
+          FROM chat_items
+          WHERE item_deleted != 1
+          GROUP BY group_id
+        ) GIMaxDates ON GIMaxDates.group_id = g.group_id
+        LEFT JOIN chat_items ci ON ci.group_id = GIMaxDates.group_id
+                               AND ci.item_ts = GIMaxDates.MaxDate
+        LEFT JOIN group_members m ON m.group_member_id = ci.group_member_id
+        LEFT JOIN contact_profiles p ON p.contact_profile_id = m.contact_profile_id
         WHERE g.user_id = ? AND mu.contact_id = ?
+        ORDER BY ci.item_ts DESC
       |]
       (userId, userContactId)
   where
-    toGroupChatPreview :: (Int64, GroupName, GroupName, Text) :. GroupMemberRow -> AChatPreview
-    toGroupChatPreview ((groupId, localDisplayName, displayName, fullName) :. userMemberRow) =
+    toGroupChatPreview :: TimeZone -> GroupInfoRow :. MaybeGroupChatItemRow -> AChatPreview
+    toGroupChatPreview tz (((groupId, localDisplayName, displayName, fullName) :. userMemberRow) :. ciRow_) =
       let membership = toGroupMember userContactId userMemberRow
           groupInfo = GroupInfo {groupId, localDisplayName, groupProfile = GroupProfile {displayName, fullName}, membership}
-       in AChatPreview SCTGroup (GroupChat groupInfo) Nothing
+          ci_ = toMaybeGroupChatItem tz userContactId ciRow_
+       in AChatPreview SCTGroup (GroupChat groupInfo) ci_
 
 getDirectChat :: StoreMonad m => SQLiteStore -> User -> Int64 -> m (Chat 'CTDirect)
 getDirectChat st user contactId =
@@ -2008,8 +2045,8 @@ getGroupChatItems_ db User {userId, userContactId} groupId = do
           -- ChatItem
           ci.chat_item_id, ci.item_ts, ci.item_content, ci.item_text, ci.created_at,
           -- GroupMember
-          m.group_member_id, m.group_id, m.member_id, m.member_role, m.member_category, m.member_status,
-          m.invited_by, m.local_display_name, m.contact_id,
+          m.group_member_id, m.group_id, m.member_id, m.member_role, m.member_category,
+          m.member_status, m.invited_by, m.local_display_name, m.contact_id,
           -- GroupMember {memberProfile}
           p.display_name, p.full_name
         FROM chat_items ci
@@ -2038,6 +2075,8 @@ toMaybeDirectChatItem _ _ = Nothing
 
 type GroupChatItemRow = ChatItemRow :. MaybeGroupMemberRow
 
+type MaybeGroupChatItemRow = MaybeChatItemRow :. MaybeGroupMemberRow
+
 toGroupChatItem :: TimeZone -> Int64 -> GroupChatItemRow -> CChatItem 'CTGroup
 toGroupChatItem tz userContactId ((itemId, itemTs, itemContent, itemText, createdAt) :. memberRow_) =
   let ciMeta = mkCIMeta itemId itemText tz itemTs createdAt
@@ -2046,6 +2085,11 @@ toGroupChatItem tz userContactId ((itemId, itemTs, itemContent, itemText, create
         (ACIContent d@SMDSnd ciContent, Nothing) -> CChatItem d $ ChatItem CIGroupSnd ciMeta ciContent
         (ACIContent d@SMDRcv ciContent, Just member) -> CChatItem d $ ChatItem (CIGroupRcv member) ciMeta ciContent
         _ -> error "bad chat item" -- TODO
+
+toMaybeGroupChatItem :: TimeZone -> Int64 -> MaybeGroupChatItemRow -> Maybe (CChatItem 'CTGroup)
+toMaybeGroupChatItem tz userContactId ((Just itemId, Just itemTs, Just itemContent, Just itemText, Just createdAt) :. memberRow_) =
+  Just $ toGroupChatItem tz userContactId ((itemId, itemTs, itemContent, itemText, createdAt) :. memberRow_)
+toMaybeGroupChatItem _ _ _ = Nothing
 
 -- getChatItemsMixed :: MonadUnliftIO m => SQLiteStore -> UserId -> m [AnyChatItem]
 -- getChatItemsMixed st userId =
