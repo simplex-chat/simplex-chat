@@ -24,12 +24,11 @@ import Numeric.Natural
 import Simplex.Chat.Messages
 import Simplex.Chat.Store (StoreError)
 import Simplex.Chat.Types
-import Simplex.Chat.Util (enumJSON, singleFieldJSON)
 import Simplex.Messaging.Agent (AgentClient)
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig)
 import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore)
-import Simplex.Messaging.Parsers (dropPrefix)
+import Simplex.Messaging.Parsers (dropPrefix, enumJSON, sumTypeJSON)
 import Simplex.Messaging.Protocol (CorrId)
 import System.IO (Handle)
 import UnliftIO.STM
@@ -188,8 +187,8 @@ data ChatResponse
   deriving (Show, Generic)
 
 instance ToJSON ChatResponse where
-  toJSON = J.genericToJSON . singleFieldJSON $ dropPrefix "CR"
-  toEncoding = J.genericToEncoding . singleFieldJSON $ dropPrefix "CR"
+  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "CR"
+  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "CR"
 
 data ChatError
   = ChatError {errorType :: ChatErrorType}
@@ -200,8 +199,8 @@ data ChatError
   deriving (Show, Exception, Generic)
 
 instance ToJSON ChatError where
-  toJSON = J.genericToJSON . singleFieldJSON $ dropPrefix "Chat"
-  toEncoding = J.genericToEncoding . singleFieldJSON $ dropPrefix "Chat"
+  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "Chat"
+  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "Chat"
 
 data ChatErrorType
   = CEGroupUserRole
@@ -230,8 +229,8 @@ data ChatErrorType
   deriving (Show, Exception, Generic)
 
 instance ToJSON ChatErrorType where
-  toJSON = J.genericToJSON . singleFieldJSON $ dropPrefix "CE"
-  toEncoding = J.genericToEncoding . singleFieldJSON $ dropPrefix "CE"
+  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "CE"
+  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "CE"
 
 type ChatMonad m = (MonadUnliftIO m, MonadReader ChatController m, MonadError ChatError m)
 

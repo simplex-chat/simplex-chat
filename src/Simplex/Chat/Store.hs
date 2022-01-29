@@ -140,12 +140,11 @@ import Simplex.Chat.Migrations.M20220122_pending_group_messages
 import Simplex.Chat.Migrations.M20220125_chat_items
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
-import Simplex.Chat.Util (singleFieldJSON)
 import Simplex.Messaging.Agent.Protocol (AgentMsgId, ConnId, InvitationId, MsgMeta (..))
 import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore (..), createSQLiteStore, firstRow, withTransaction)
 import Simplex.Messaging.Agent.Store.SQLite.Migrations (Migration (..))
 import qualified Simplex.Messaging.Crypto as C
-import Simplex.Messaging.Parsers (dropPrefix)
+import Simplex.Messaging.Parsers (dropPrefix, sumTypeJSON)
 import Simplex.Messaging.Util (liftIOEither, (<$$>))
 import System.FilePath (takeFileName)
 import UnliftIO.STM
@@ -2080,5 +2079,5 @@ data StoreError
   deriving (Show, Exception, Generic)
 
 instance ToJSON StoreError where
-  toJSON = J.genericToJSON . singleFieldJSON $ dropPrefix "SE"
-  toEncoding = J.genericToEncoding . singleFieldJSON $ dropPrefix "SE"
+  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "SE"
+  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "SE"
