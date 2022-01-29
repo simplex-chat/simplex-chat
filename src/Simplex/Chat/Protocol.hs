@@ -18,7 +18,7 @@ import qualified Data.Aeson as J
 import qualified Data.Aeson.Types as JT
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.ByteString.Lazy.Char8 as LB
-import qualified Data.HashMap.Strict as H
+import qualified Data.Aeson.KeyMap as JM
 import Data.Text (Text)
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
 import Database.SQLite.Simple.FromField (FromField (..))
@@ -255,7 +255,7 @@ appToChatMessage AppMessage {event, params} = do
   chatMsgEvent <- msg eventTag
   pure ChatMessage {chatMsgEvent}
   where
-    p :: FromJSON a => Text -> Either String a
+    p :: FromJSON a => J.Key -> Either String a
     p key = JT.parseEither (.: key) params
     msg = \case
       XMsgNew_ -> XMsgNew <$> p "content"
@@ -284,8 +284,8 @@ chatToAppMessage :: ChatMessage -> AppMessage
 chatToAppMessage ChatMessage {chatMsgEvent} = AppMessage {event, params}
   where
     event = serializeCMEventTag . toCMEventTag $ chatMsgEvent
-    o :: [(Text, J.Value)] -> J.Object
-    o = H.fromList
+    o :: [(J.Key, J.Value)] -> J.Object
+    o = JM.fromList
     params = case chatMsgEvent of
       XMsgNew content -> o ["content" .= content]
       XFile fileInv -> o ["file" .= fileInv]
@@ -302,9 +302,9 @@ chatToAppMessage ChatMessage {chatMsgEvent} = AppMessage {event, params}
       XGrpMemCon memId -> o ["memberId" .= memId]
       XGrpMemConAll memId -> o ["memberId" .= memId]
       XGrpMemDel memId -> o ["memberId" .= memId]
-      XGrpLeave -> H.empty
-      XGrpDel -> H.empty
+      XGrpLeave -> JM.empty
+      XGrpDel -> JM.empty
       XInfoProbe probe -> o ["probe" .= probe]
       XInfoProbeCheck probeHash -> o ["probeHash" .= probeHash]
       XInfoProbeOk probe -> o ["probe" .= probe]
-      XOk -> H.empty
+      XOk -> JM.empty

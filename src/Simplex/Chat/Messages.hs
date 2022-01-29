@@ -30,11 +30,10 @@ import Database.SQLite.Simple.ToField (ToField (..))
 import GHC.Generics (Generic)
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
-import Simplex.Chat.Util (enumJSON, singleFieldJSON)
 import Simplex.Messaging.Agent.Protocol (AgentMsgId, MsgMeta (..))
 import Simplex.Messaging.Agent.Store.SQLite (fromTextField_)
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Parsers (dropPrefix)
+import Simplex.Messaging.Parsers (dropPrefix, enumJSON, sumTypeJSON)
 import Simplex.Messaging.Protocol (MsgBody)
 
 data ChatType = CTDirect | CTGroup
@@ -56,8 +55,8 @@ data JSONChatInfo
   deriving (Generic)
 
 instance ToJSON JSONChatInfo where
-  toJSON = J.genericToJSON . singleFieldJSON $ dropPrefix "JCInfo"
-  toEncoding = J.genericToEncoding . singleFieldJSON $ dropPrefix "JCInfo"
+  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "JCInfo"
+  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "JCInfo"
 
 instance ToJSON (ChatInfo c) where
   toJSON = J.toJSON . jsonChatInfo
@@ -92,11 +91,14 @@ data JSONCIDirection
   | JCIDirectRcv
   | JCIGroupSnd
   | JCIGroupRcv {groupMember :: GroupMember}
-  deriving (Generic)
+  deriving (Generic, Show)
+
+instance FromJSON JSONCIDirection where
+  parseJSON = J.genericParseJSON . sumTypeJSON $ dropPrefix "JCI"
 
 instance ToJSON JSONCIDirection where
-  toJSON = J.genericToJSON . singleFieldJSON $ dropPrefix "JCI"
-  toEncoding = J.genericToEncoding . singleFieldJSON $ dropPrefix "JCI"
+  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "JCI"
+  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "JCI"
 
 instance ToJSON (CIDirection c d) where
   toJSON = J.toJSON . jsonCIDirection
@@ -240,11 +242,11 @@ data JSONCIContent
   deriving (Generic)
 
 instance FromJSON JSONCIContent where
-  parseJSON = J.genericParseJSON . singleFieldJSON $ dropPrefix "JCI"
+  parseJSON = J.genericParseJSON . sumTypeJSON $ dropPrefix "JCI"
 
 instance ToJSON JSONCIContent where
-  toJSON = J.genericToJSON . singleFieldJSON $ dropPrefix "JCI"
-  toEncoding = J.genericToEncoding . singleFieldJSON $ dropPrefix "JCI"
+  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "JCI"
+  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "JCI"
 
 jsonCIContent :: CIContent d -> JSONCIContent
 jsonCIContent = \case
