@@ -1063,12 +1063,19 @@ getGroupInvitation st user localDisplayName =
 
 type GroupMemberRow = (Int64, Int64, MemberId, GroupMemberRole, GroupMemberCategory, GroupMemberStatus, Maybe Int64, ContactName, Maybe Int64, ContactName, Text)
 
+type MaybeGroupMemberRow = (Maybe Int64, Maybe Int64, Maybe MemberId, Maybe GroupMemberRole, Maybe GroupMemberCategory, Maybe GroupMemberStatus, Maybe Int64, Maybe ContactName, Maybe Int64, Maybe ContactName, Maybe Text)
+
 toGroupMember :: Int64 -> GroupMemberRow -> GroupMember
 toGroupMember userContactId (groupMemberId, groupId, memberId, memberRole, memberCategory, memberStatus, invitedById, localDisplayName, memberContactId, displayName, fullName) =
   let memberProfile = Profile {displayName, fullName}
       invitedBy = toInvitedBy userContactId invitedById
       activeConn = Nothing
    in GroupMember {..}
+
+toMaybeGroupMember :: Int64 -> MaybeGroupMemberRow -> Maybe GroupMember
+toMaybeGroupMember userContactId (Just groupMemberId, Just groupId, Just memberId, Just memberRole, Just memberCategory, Just memberStatus, invitedById, Just localDisplayName, memberContactId, Just displayName, Just fullName) =
+  Just $ toGroupMember userContactId (groupMemberId, groupId, memberId, memberRole, memberCategory, memberStatus, invitedById, localDisplayName, memberContactId, displayName, fullName)
+toMaybeGroupMember _ _ = Nothing
 
 createContactMember :: StoreMonad m => SQLiteStore -> TVar ChaChaDRG -> User -> Int64 -> Contact -> GroupMemberRole -> ConnId -> ConnReqInvitation -> m GroupMember
 createContactMember st gVar user groupId contact memberRole agentConnId connRequest =
@@ -1979,24 +1986,32 @@ getGroupInfo_' db User {userId, userContactId} groupId =
         JOIN group_profiles gp USING (group_profile_id)
         JOIN group_members m USING (group_id)
         JOIN contact_profiles mp USING (contact_profile_id)
-        WHERE g.groupId = ? AND g.user_id = ? AND m.contact_id = ?
+        WHERE g.group_id = ? AND g.user_id = ? AND m.contact_id = ?
       |]
       (groupId, userId, userContactId)
 
 getGroupChatItems_ :: DB.Connection -> User -> Int64 -> IO [CChatItem 'CTGroup]
-getGroupChatItems_ db User {userId} groupId = do
+getGroupChatItems_ db User {userId, userContactId} groupId = do
   tz <- getCurrentTimeZone
-  -- map (toGroupChatItem tz)
-  --   <$> DB.query
-  --     db
-  --     [sql|
-  --       SELECT chat_item_id, item_ts, item_content, item_text, created_at
-  --       FROM chat_items
-  --       WHERE user_id = ? AND contact_id = ?
-  --       ORDER BY item_ts ASC
-  --     |]
-  --     (userId, contactId)
-  pure []
+  map (toGroupChatItem tz userContactId)
+    <$> DB.query
+      db
+      [sql|
+        SELECT
+          -- ChatItem
+          ci.chat_item_id, ci.item_ts, ci.item_content, ci.item_text, ci.created_at,
+          -- GroupMember
+          m.group_member_id, m.group_id, m.member_id, m.member_role, m.member_category, m.member_status,
+          m.invited_by, m.local_display_name, m.contact_id,
+          -- GroupMember {memberProfile}
+          p.display_name, p.full_name
+        FROM chat_items ci
+        LEFT JOIN group_members m ON m.group_member_id == ci.group_member_id
+        LEFT JOIN contact_profiles p ON p.contact_profile_id == m.contact_profile_id
+        WHERE ci.user_id = ? AND ci.group_id = ?
+        ORDER BY ci.item_ts ASC
+      |]
+      (userId, groupId)
 
 type ChatItemRow = (Int64, ChatItemTs, ACIContent, Text, UTCTime)
 
@@ -2013,6 +2028,17 @@ toMaybeDirectChatItem :: TimeZone -> MaybeChatItemRow -> Maybe (CChatItem 'CTDir
 toMaybeDirectChatItem tz (Just itemId, Just itemTs, Just itemContent, Just itemText, Just createdAt) =
   Just $ toDirectChatItem tz (itemId, itemTs, itemContent, itemText, createdAt)
 toMaybeDirectChatItem _ _ = Nothing
+
+type GroupChatItemRow = ChatItemRow :. MaybeGroupMemberRow
+
+toGroupChatItem :: TimeZone -> Int64 -> GroupChatItemRow -> CChatItem 'CTGroup
+toGroupChatItem tz userContactId ((itemId, itemTs, itemContent, itemText, createdAt) :. memberRow_) =
+  let ciMeta = mkCIMeta itemId itemText tz itemTs createdAt
+      member_ = toMaybeGroupMember userContactId memberRow_
+   in case (itemContent, member_) of
+        (ACIContent d@SMDSnd ciContent, Nothing) -> CChatItem d $ ChatItem CIGroupSnd ciMeta ciContent
+        (ACIContent d@SMDRcv ciContent, Just member) -> CChatItem d $ ChatItem (CIGroupRcv member) ciMeta ciContent
+        _ -> error "bad chat item" -- TODO
 
 -- getChatItemsMixed :: MonadUnliftIO m => SQLiteStore -> UserId -> m [AnyChatItem]
 -- getChatItemsMixed st userId =
