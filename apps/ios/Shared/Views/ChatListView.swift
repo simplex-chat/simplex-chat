@@ -25,11 +25,14 @@ struct ChatListView: View {
 
         return VStack {
 //            if chatModel.chats.isEmpty {
-                VStack {
-                    Text("Hello chat")
-                    Text("Active user: \(user.localDisplayName) (\(user.profile.fullName))")
-                }
+//                VStack {
+//                    Text("Hello chat")
+//                    Text("Active user: \(user.localDisplayName) (\(user.profile.fullName))")
+//                }
 //            }
+
+            ChatHeaderView()
+            
             NavigationView {
                 List {
                     NavigationLink {
@@ -62,6 +65,9 @@ struct ChatListView: View {
 
 //struct ChatListView_Previews: PreviewProvider {
 //    static var previews: some View {
-//        ChatListView()
+//        let chatModel = ChatModel()
+//        chatModel.chatPreviews = []
+//        return ChatListView(user: sampleUser)
+//            .environmentObject(chatModel)
 //    }
 //}

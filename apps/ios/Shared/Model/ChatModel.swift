@@ -25,6 +25,14 @@ struct User: Codable {
     var activeUser: Bool
 }
 
+let sampleUser = User(
+    userId: 1,
+    userContactId: 1,
+    localDisplayName: "alice",
+    profile: sampleProfile,
+    activeUser: true
+)
+
 typealias ContactName = String
 
 typealias GroupName = String
@@ -33,6 +41,11 @@ struct Profile: Codable {
     var displayName: String
     var fullName: String
 }
+
+let sampleProfile = Profile(
+    displayName: "alice",
+    fullName: "Alice"
+)
 
 struct ChatPreview: Identifiable, Decodable {
     var chatInfo: ChatInfo
@@ -73,8 +86,8 @@ enum ChatInfo: Identifiable, Codable {
     var chatType: ChatType {
         get {
             switch self {
-            case .direct(_): return .direct
-            case .group(_): return .group
+            case .direct: return .direct
+            case .group: return .group
             }
         }
     }
@@ -89,7 +102,11 @@ enum ChatInfo: Identifiable, Codable {
     }
 }
 
-class Chat: Decodable {
+let sampleDirectChatInfo = ChatInfo.direct(contact: sampleContact)
+
+let sampleGroupChatInfo = ChatInfo.group(groupInfo: sampleGroupInfo)
+
+struct Chat: Decodable {
     var chatInfo: ChatInfo
     var chatItems: [ChatItem]
 }
@@ -103,6 +120,12 @@ struct Contact: Identifiable, Codable {
     var id: String { get { "@\(contactId)" } }
 }
 
+let sampleContact = Contact(
+    contactId: 1,
+    localDisplayName: "alice",
+    profile: sampleProfile
+)
+
 struct GroupInfo: Identifiable, Codable {
     var groupId: Int64
     var localDisplayName: GroupName
@@ -111,10 +134,21 @@ struct GroupInfo: Identifiable, Codable {
     var id: String { get { "#\(groupId)" } }
 }
 
+let sampleGroupInfo = GroupInfo(
+    groupId: 1,
+    localDisplayName: "team",
+    groupProfile: sampleGroupProfile
+)
+
 struct GroupProfile: Codable {
     var displayName: String
     var fullName: String
 }
+
+let sampleGroupProfile = GroupProfile(
+    displayName: "team",
+    fullName: "My Team"
+)
 
 struct GroupMember: Codable {
 

@@ -42,7 +42,6 @@ struct TerminalView: View {
 
         DispatchQueue.global().async {
             inProgress = true
-            sleep(2)
             do {
                 let r = try chatSendCmd(cmd)
                 DispatchQueue.main.async {

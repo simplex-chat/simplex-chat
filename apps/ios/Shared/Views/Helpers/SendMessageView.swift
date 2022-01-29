@@ -26,9 +26,8 @@ struct SendMessageView: View {
                 ProgressView()
                     .frame(width: 40, height: 20, alignment: .center)
             } else {
-                Button(action: submit) {
-                    Text("Send")
-                }.disabled(command.isEmpty)
+                Button("Send", action :submit)
+                    .disabled(command.isEmpty)
             }
         }
         .frame(minHeight: 30)

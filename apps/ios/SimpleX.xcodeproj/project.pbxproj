@@ -53,6 +53,14 @@
 		5CA05A4D27974EB60002BEB4 /* WelcomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CA05A4B27974EB60002BEB4 /* WelcomeView.swift */; };
 		5CA05A4F279752D00002BEB4 /* MessageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CA05A4E279752D00002BEB4 /* MessageView.swift */; };
 		5CA05A50279752D00002BEB4 /* MessageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CA05A4E279752D00002BEB4 /* MessageView.swift */; };
+		5CCD403127A5F1C600368C90 /* ChatHeaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CCD403027A5F1C600368C90 /* ChatHeaderView.swift */; };
+		5CCD403227A5F1C600368C90 /* ChatHeaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CCD403027A5F1C600368C90 /* ChatHeaderView.swift */; };
+		5CCD403427A5F6DF00368C90 /* InviteContactView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CCD403327A5F6DF00368C90 /* InviteContactView.swift */; };
+		5CCD403527A5F6DF00368C90 /* InviteContactView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CCD403327A5F6DF00368C90 /* InviteContactView.swift */; };
+		5CCD403727A5F9A200368C90 /* ScanQRCodeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CCD403627A5F9A200368C90 /* ScanQRCodeView.swift */; };
+		5CCD403827A5F9A200368C90 /* ScanQRCodeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CCD403627A5F9A200368C90 /* ScanQRCodeView.swift */; };
+		5CCD403A27A5F9BE00368C90 /* CreateGroupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CCD403927A5F9BE00368C90 /* CreateGroupView.swift */; };
+		5CCD403B27A5F9BE00368C90 /* CreateGroupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CCD403927A5F9BE00368C90 /* CreateGroupView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -105,6 +113,10 @@
 		5CA059E9279559F40002BEB4 /* Tests_macOSLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests_macOSLaunchTests.swift; sourceTree = "<group>"; };
 		5CA05A4B27974EB60002BEB4 /* WelcomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeView.swift; sourceTree = "<group>"; };
 		5CA05A4E279752D00002BEB4 /* MessageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageView.swift; sourceTree = "<group>"; };
+		5CCD403027A5F1C600368C90 /* ChatHeaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatHeaderView.swift; sourceTree = "<group>"; };
+		5CCD403327A5F6DF00368C90 /* InviteContactView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InviteContactView.swift; sourceTree = "<group>"; };
+		5CCD403627A5F9A200368C90 /* ScanQRCodeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanQRCodeView.swift; sourceTree = "<group>"; };
+		5CCD403927A5F9BE00368C90 /* CreateGroupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateGroupView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -156,15 +168,27 @@
 		5C2E260D27A30E2400F70299 /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				5C5F4AC227A5E9AF00B51EF1 /* Helpers */,
 				5CA05A4B27974EB60002BEB4 /* WelcomeView.swift */,
 				5C2E260A27A30CFA00F70299 /* ChatListView.swift */,
-				5CA05A4E279752D00002BEB4 /* MessageView.swift */,
 				5C063D2627A4564100AEC577 /* ChatPreviewView.swift */,
 				5C2E260E27A30FDC00F70299 /* ChatView.swift */,
 				5C2E261127A30FEA00F70299 /* TerminalView.swift */,
-				5C9FD96D27A5D6ED0075386C /* SendMessageView.swift */,
 			);
 			path = Views;
+			sourceTree = "<group>";
+		};
+		5C5F4AC227A5E9AF00B51EF1 /* Helpers */ = {
+			isa = PBXGroup;
+			children = (
+				5C9FD96D27A5D6ED0075386C /* SendMessageView.swift */,
+				5CA05A4E279752D00002BEB4 /* MessageView.swift */,
+				5CCD403027A5F1C600368C90 /* ChatHeaderView.swift */,
+				5CCD403927A5F9BE00368C90 /* CreateGroupView.swift */,
+				5CCD403627A5F9A200368C90 /* ScanQRCodeView.swift */,
+				5CCD403327A5F6DF00368C90 /* InviteContactView.swift */,
+			);
+			path = Helpers;
 			sourceTree = "<group>";
 		};
 		5C764E5C279C70B7000C6508 /* Libraries */ = {
@@ -429,12 +453,16 @@
 				5C2E261227A30FEA00F70299 /* TerminalView.swift in Sources */,
 				5C9FD96B27A56D4D0075386C /* JSON.swift in Sources */,
 				5C9FD96E27A5D6ED0075386C /* SendMessageView.swift in Sources */,
+				5CCD403127A5F1C600368C90 /* ChatHeaderView.swift in Sources */,
 				5CA05A4F279752D00002BEB4 /* MessageView.swift in Sources */,
 				5CA059ED279559F40002BEB4 /* ContentView.swift in Sources */,
+				5CCD403427A5F6DF00368C90 /* InviteContactView.swift in Sources */,
 				5CA05A4C27974EB60002BEB4 /* WelcomeView.swift in Sources */,
 				5C2E260F27A30FDC00F70299 /* ChatView.swift in Sources */,
 				5C2E260B27A30CFA00F70299 /* ChatListView.swift in Sources */,
 				5CA059EB279559F40002BEB4 /* SimpleXApp.swift in Sources */,
+				5CCD403727A5F9A200368C90 /* ScanQRCodeView.swift in Sources */,
+				5CCD403A27A5F9BE00368C90 /* CreateGroupView.swift in Sources */,
 				5C764E89279CBCB3000C6508 /* ChatModel.swift in Sources */,
 				5C2E260727A2941F00F70299 /* SimpleXAPI.swift in Sources */,
 			);
@@ -449,12 +477,16 @@
 				5C2E261327A30FEA00F70299 /* TerminalView.swift in Sources */,
 				5C9FD96C27A56D4D0075386C /* JSON.swift in Sources */,
 				5C9FD96F27A5D6ED0075386C /* SendMessageView.swift in Sources */,
+				5CCD403227A5F1C600368C90 /* ChatHeaderView.swift in Sources */,
 				5CA05A50279752D00002BEB4 /* MessageView.swift in Sources */,
 				5CA059EE279559F40002BEB4 /* ContentView.swift in Sources */,
+				5CCD403527A5F6DF00368C90 /* InviteContactView.swift in Sources */,
 				5CA05A4D27974EB60002BEB4 /* WelcomeView.swift in Sources */,
 				5C2E261027A30FDC00F70299 /* ChatView.swift in Sources */,
 				5C2E260C27A30CFA00F70299 /* ChatListView.swift in Sources */,
 				5CA059EC279559F40002BEB4 /* SimpleXApp.swift in Sources */,
+				5CCD403827A5F9A200368C90 /* ScanQRCodeView.swift in Sources */,
+				5CCD403B27A5F9BE00368C90 /* CreateGroupView.swift in Sources */,
 				5C764E8A279CBCB3000C6508 /* ChatModel.swift in Sources */,
 				5C2E260827A2941F00F70299 /* SimpleXAPI.swift in Sources */,
 			);
