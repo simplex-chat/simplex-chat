@@ -2,11 +2,7 @@
 
 ## Prerequisites
 
-- `mac2ios` executable and in PATH:
-
-  https://github.com/zw3rk/mobile-core-tools
-
-- Folders:
+- Prepare folders:
 
   ```sh
   mkdir -p ./apps/ios/Libraries/mac ./apps/ios/Libraries/ios ./apps/ios/Libraries/sim
@@ -14,11 +10,9 @@
 
 ## Update binaries
 
-1. Download binary distribution from `aarch64-darwin:lib:simplex-chat.aarch64-darwin` job at
-https://ci.zw3rk.com/jobset/zw3rk/simplex-chat
-and extract binaries to `./apps/ios/Libraries/mac`.
+1. Extract binaries to `./apps/ios/Libraries/mac`.
 
-2. Prepare binaries for iOS and for Xcode simulator:
+2. Prepare binaries:
 
     ```sh
     chmod +w ./apps/ios/Libraries/mac/*
@@ -30,13 +24,11 @@ and extract binaries to `./apps/ios/Libraries/mac`.
 
 3. Put binaries into `./apps/ios/Libraries`.
 
-    For simulator:
-
     ```sh
     cp ./apps/ios/Libraries/sim/* ./apps/ios/Libraries
     ```
 
-    For iOS:
+    or:
 
     ```sh
     cp ./apps/ios/Libraries/ios/* ./apps/ios/Libraries

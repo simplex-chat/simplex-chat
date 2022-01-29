@@ -20,8 +20,12 @@ struct WelcomeView: View {
             Text("Your profile is stored on your device and shared only with your contacts.\nSimpleX servers cannot see your profile.")
                 .padding(.bottom)
             TextField("Display name", text: $displayName)
+                .textInputAutocapitalization(.never)
+                .disableAutocorrection(true)
                 .padding(.bottom)
             TextField("Full name (optional)", text: $fullName)
+                .textInputAutocapitalization(.never)
+                .disableAutocorrection(true)
                 .padding(.bottom)
             Button("Create") {
                 let profile = Profile(

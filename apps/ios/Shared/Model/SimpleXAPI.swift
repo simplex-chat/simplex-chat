@@ -7,15 +7,16 @@
 //
 
 import Foundation
+import UIKit
 
 private var chatStore: chat_store?
 private var chatController: chat_ctrl?
-private let jsonDecoder = JSONDecoder()
-private let jsonEncoder = JSONEncoder()
+private let jsonDecoder = getJSONDecoder()
+private let jsonEncoder = getJSONEncoder()
 
 enum ChatCommand {
     case apiGetChats
-    case apiGetChatItems(type: String, id: Int64)
+    case apiGetChatItems(type: ChatType, id: Int64)
     case string(String)
     case help
 
@@ -25,7 +26,7 @@ enum ChatCommand {
             case .apiGetChats:
                 return "/api/v1/chats"
             case let .apiGetChatItems(type, id):
-                return "/api/v1/chat/items/\(type)/\(id)"
+                return "/api/v1/chat/\(type)/\(id)"
             case let .string(str):
                 return str
             case .help: return "/help"
@@ -34,30 +35,26 @@ enum ChatCommand {
     }
 }
 
-struct APIResponse: Identifiable {
-    var resp: ChatResponse
-    var id: Int64
-}
-
-struct APIResponseJSON: Decodable {
+struct APIResponse: Decodable {
     var resp: ChatResponse
 }
 
-enum ChatResponse: Codable {
+enum ChatResponse: Decodable, Error {
     case response(type: String, json: String)
     case apiChats(chats: [ChatPreview])
     case apiDirectChat(chat: Chat) // direct/<id> or group/<id>, same as ChatPreview.id
-//    case chatHelp(String)
 //    case newSentInvitation
     case contactConnected(contact: Contact)
+    case newChatItem(chatItem: AChatItem)
 
     var responseType: String {
         get {
             switch self {
             case let .response(type, _): return "* \(type)"
-            case .apiChats(_): return "apiChats"
-            case .apiDirectChat(_): return "apiDirectChat"
-            case .contactConnected(_): return "contactConnected"
+            case .apiChats: return "apiChats"
+            case .apiDirectChat: return "apiDirectChat"
+            case .contactConnected: return "contactConnected"
+            case .newChatItem: return "newChatItem"
             }
         }
     }
@@ -69,6 +66,39 @@ enum ChatResponse: Codable {
             case let .apiChats(chats): return String(describing: chats)
             case let .apiDirectChat(chat): return String(describing: chat)
             case let .contactConnected(contact): return String(describing: contact)
+            case let .newChatItem(chatItem): return String(describing: chatItem)
+            }
+        }
+    }
+}
+
+enum TerminalItem: Identifiable {
+    case cmd(Date, ChatCommand)
+    case resp(Date, ChatResponse)
+
+    var id: Date {
+        get {
+            switch self {
+            case let .cmd(id, _): return id
+            case let .resp(id, _): return id
+            }
+        }
+    }
+
+    var label: String {
+        get {
+            switch self {
+            case let .cmd(_, cmd): return "> \(cmd.cmdString.prefix(30))"
+            case let .resp(_, resp): return "< \(resp.responseType)"
+            }
+        }
+    }
+
+    var details: String {
+        get {
+            switch self {
+            case let .cmd(_, cmd): return cmd.cmdString
+            case let .resp(_, resp): return resp.details
             }
         }
     }
@@ -95,41 +125,52 @@ func chatCreateUser(_ p: Profile) -> User? {
     return user
 }
 
-func chatSendCmd(_ chatModel: ChatModel, _ cmd: ChatCommand) {
+func chatSendCmd(_ cmd: ChatCommand) throws -> ChatResponse {
     var c = cmd.cmdString.cString(using: .utf8)!
-    processAPIResponse(chatModel,
-        apiResponse(
-            chat_send_cmd(getChatCtrl(), &c)!))
+// TODO some mechanism to update model without passing it - maybe Publisher / Subscriber?
+//    DispatchQueue.main.async {
+//        termId += 1
+//        chatModel.terminalItems.append(.cmd(termId, cmd))
+//    }
+    return chatResponse(chat_send_cmd(getChatCtrl(), &c)!)
 }
 
-func chatRecvMsg(_ chatModel: ChatModel) {
-    processAPIResponse(chatModel,
-        apiResponse(
-            chat_recv_msg(getChatCtrl())!))
+func chatRecvMsg() throws -> ChatResponse {
+    chatResponse(chat_recv_msg(getChatCtrl())!)
 }
 
-private func processAPIResponse(_ chatModel: ChatModel, _ res: APIResponse?) {
-    if let r = res {
-        DispatchQueue.main.async {
-            chatModel.apiResponses.append(r)
-            switch r.resp {
-            case let .apiChats(chats):
-                chatModel.chatPreviews = chats
-            case let .apiDirectChat(chat):
-                chatModel.chats[chat.chatInfo.id] = chat
-            case let .contactConnected(contact):
-                chatModel.chatPreviews.insert(
-                    ChatPreview(chatInfo: .direct(contact: contact)),
-                    at: 0
-                )
-            default: return
+func apiGetChats() throws -> [ChatPreview] {
+    let r = try chatSendCmd(.apiGetChats)
+    switch r {
+    case let .apiChats(chats): return chats
+    default: throw r
+    }
+}
 
-//            case let .response(type, _):
-//                chatModel.chatItems.append(ChatItem(
-//                    ts: Date.now,
-//                    content: .text(type)
-//                ))
-            }
+func apiGetChatItems(type: ChatType, id: Int64) throws -> Chat {
+    let r = try chatSendCmd(.apiGetChatItems(type: type, id: id))
+    switch r {
+    case let .apiDirectChat(chat): return chat
+    default: throw r
+    }
+}
+
+func processReceivedMsg(_ chatModel: ChatModel, _ res: ChatResponse) {
+    DispatchQueue.main.async {
+        chatModel.terminalItems.append(.resp(Date.now, res))
+        switch res {
+        case let .contactConnected(contact):
+            chatModel.chatPreviews.insert(
+                ChatPreview(chatInfo: .direct(contact: contact)),
+                at: 0
+            )
+        case let .newChatItem(aChatItem):
+            let ci = aChatItem.chatInfo
+            let chat = chatModel.chats[ci.id] ?? Chat(chatInfo: ci, chatItems: [])
+            chatModel.chats[ci.id] = chat
+            chat.chatItems.append(aChatItem.chatItem)
+        default:
+            print("unsupported response: ", res)
         }
     }
 }
@@ -139,19 +180,19 @@ private struct UserResponse: Decodable {
     var error: String?
 }
 
-private var respId: Int64 = 0
-
-private func apiResponse(_ cjson: UnsafePointer<CChar>) -> APIResponse? {
+private func chatResponse(_ cjson: UnsafePointer<CChar>) -> ChatResponse {
     let s = String.init(cString: cjson)
-    print("apiResponse", s)
+    print("chatResponse", s)
     let d = s.data(using: .utf8)!
-//  TODO is there a way to do it without copying the data? e.g:
+// TODO is there a way to do it without copying the data? e.g:
 //    let p = UnsafeMutableRawPointer.init(mutating: UnsafeRawPointer(cjson))
 //    let d = Data.init(bytesNoCopy: p, count: strlen(cjson), deallocator: .free)
 
+// TODO some mechanism to update model without passing it - maybe Publisher / Subscriber?
+
     do {
-        let r = try jsonDecoder.decode(APIResponseJSON.self, from: d)
-        return APIResponse(resp: r.resp, id: respId)
+        let r = try jsonDecoder.decode(APIResponse.self, from: d)
+        return r.resp
     } catch {
         print (error)
     }
@@ -164,11 +205,7 @@ private func apiResponse(_ cjson: UnsafePointer<CChar>) -> APIResponse? {
         }
         json = prettyJSON(j)
     }
-    respId += 1
-    return APIResponse(
-        resp: ChatResponse.response(type: type ?? "invalid", json: json ?? s),
-        id: respId
-    )
+    return ChatResponse.response(type: type ?? "invalid", json: json ?? s)
 }
 
 func prettyJSON(_ obj: NSDictionary) -> String? {

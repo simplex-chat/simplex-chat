@@ -10,6 +10,8 @@ import SwiftUI
 
 struct ChatView: View {
     @EnvironmentObject var chatModel: ChatModel
+    @State var inProgress: Bool = false
+
     var chatInfo: ChatInfo
     var body: some View {
         VStack {
@@ -26,12 +28,28 @@ struct ChatView: View {
             } else {
                 Text("unexpected: chat not found...")
             }
+            
+            Spacer()
+
+            SendMessageView(sendMessage: sendMessage, inProgress: inProgress)
         }
+    }
+
+    func sendMessage(_ msg: String) {
+
     }
 }
 
-//struct ChatView_Previews: PreviewProvider {
-//    static var previews: some View {
-//        ChatView()
-//    }
-//}
+struct ChatView_Previews: PreviewProvider {
+    static var previews: some View {
+        let chatModel = ChatModel()
+        chatModel.chats = [
+            "@1": Chat(
+                chatInfo: sampleDirectChatInfo,
+                chatItems: []
+            )
+        ]
+        return ChatView(chatInfo: sampleDirectChatInfo)
+            .environmentObject(chatModel)
+    }
+}
