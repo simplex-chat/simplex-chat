@@ -125,11 +125,13 @@ import Data.Either (rights)
 import Data.Function (on)
 import Data.Functor (($>))
 import Data.Int (Int64)
-import Data.List (find, sortBy)
+import Data.List (find, sortBy, sortOn)
 import Data.Maybe (listToMaybe)
+import Data.Ord (Down (..))
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Time.Clock (UTCTime, getCurrentTime)
+import Data.Time (fromGregorian, secondsToDiffTime)
+import Data.Time.Clock (UTCTime (UTCTime), getCurrentTime)
 import Data.Time.LocalTime (TimeZone, getCurrentTimeZone)
 import Database.SQLite.Simple (NamedParam (..), Only (..), Query (..), SQLError, (:.) (..))
 import qualified Database.SQLite.Simple as DB
@@ -1870,7 +1872,11 @@ getChatPreviews st user =
   liftIO . withTransaction st $ \db -> do
     directChatPreviews <- getDirectChatPreviews_ db user
     groupChatPreviews <- getGroupChatPreviews_ db user
-    pure $ directChatPreviews <> groupChatPreviews -- TODO sort
+    pure $ sortOn (Down . ts) (directChatPreviews <> groupChatPreviews)
+  where
+    ts :: AChatPreview -> UTCTime
+    ts (AChatPreview _ _ Nothing) = UTCTime (fromGregorian 2122 1 29) (secondsToDiffTime 0) -- TODO Contact/GroupInfo createdAt
+    ts (AChatPreview _ _ (Just (CChatItem _ (ChatItem _ CIMeta {itemTs} _)))) = itemTs
 
 getDirectChatPreviews_ :: DB.Connection -> User -> IO [AChatPreview]
 getDirectChatPreviews_ db User {userId} = do
