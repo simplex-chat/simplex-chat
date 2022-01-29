@@ -106,9 +106,14 @@ let sampleDirectChatInfo = ChatInfo.direct(contact: sampleContact)
 
 let sampleGroupChatInfo = ChatInfo.group(groupInfo: sampleGroupInfo)
 
-struct Chat: Decodable {
+class Chat: Decodable {
     var chatInfo: ChatInfo
     var chatItems: [ChatItem]
+
+    init(chatInfo: ChatInfo, chatItems: [ChatItem]) {
+        self.chatInfo = chatInfo
+        self.chatItems = chatItems
+    }
 }
 
 struct Contact: Identifiable, Codable {
@@ -152,6 +157,11 @@ let sampleGroupProfile = GroupProfile(
 
 struct GroupMember: Codable {
 
+}
+
+struct AChatItem: Decodable {
+    var chatInfo: ChatInfo
+    var chatItem: ChatItem
 }
 
 struct ChatItem: Identifiable, Decodable {

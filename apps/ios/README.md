@@ -14,9 +14,7 @@
 
 ## Update binaries
 
-1. Download binary distribution from `aarch64-darwin:lib:simplex-chat.aarch64-darwin` job at
-https://ci.zw3rk.com/jobset/zw3rk/simplex-chat
-and extract binaries to `./apps/ios/Libraries/mac`.
+1. Extract binaries to `./apps/ios/Libraries/mac`.
 
 2. Prepare binaries for iOS and for Xcode simulator:
 

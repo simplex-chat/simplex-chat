@@ -43,17 +43,18 @@ enum ChatResponse: Decodable, Error {
     case response(type: String, json: String)
     case apiChats(chats: [ChatPreview])
     case apiDirectChat(chat: Chat) // direct/<id> or group/<id>, same as ChatPreview.id
-//    case chatHelp(String)
 //    case newSentInvitation
     case contactConnected(contact: Contact)
+    case newChatItem(chatItem: AChatItem)
 
     var responseType: String {
         get {
             switch self {
             case let .response(type, _): return "* \(type)"
-            case .apiChats(_): return "apiChats"
-            case .apiDirectChat(_): return "apiDirectChat"
-            case .contactConnected(_): return "contactConnected"
+            case .apiChats: return "apiChats"
+            case .apiDirectChat: return "apiDirectChat"
+            case .contactConnected: return "contactConnected"
+            case .newChatItem: return "newChatItem"
             }
         }
     }
@@ -65,6 +66,7 @@ enum ChatResponse: Decodable, Error {
             case let .apiChats(chats): return String(describing: chats)
             case let .apiDirectChat(chat): return String(describing: chat)
             case let .contactConnected(contact): return String(describing: contact)
+            case let .newChatItem(chatItem): return String(describing: chatItem)
             }
         }
     }
@@ -162,6 +164,11 @@ func processReceivedMsg(_ chatModel: ChatModel, _ res: ChatResponse) {
                 ChatPreview(chatInfo: .direct(contact: contact)),
                 at: 0
             )
+        case let .newChatItem(aChatItem):
+            let ci = aChatItem.chatInfo
+            let chat = chatModel.chats[ci.id] ?? Chat(chatInfo: ci, chatItems: [])
+            chatModel.chats[ci.id] = chat
+            chat.chatItems.append(aChatItem.chatItem)
         default:
             print("unsupported response: ", res)
         }
