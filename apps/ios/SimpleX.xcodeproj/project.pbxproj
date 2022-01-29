@@ -27,8 +27,6 @@
 		5C2E261027A30FDC00F70299 /* ChatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C2E260E27A30FDC00F70299 /* ChatView.swift */; };
 		5C2E261227A30FEA00F70299 /* TerminalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C2E261127A30FEA00F70299 /* TerminalView.swift */; };
 		5C2E261327A30FEA00F70299 /* TerminalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C2E261127A30FEA00F70299 /* TerminalView.swift */; };
-		5C2E261527A3111A00F70299 /* ChatItemListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C2E261427A3111A00F70299 /* ChatItemListView.swift */; };
-		5C2E261627A3111A00F70299 /* ChatItemListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C2E261427A3111A00F70299 /* ChatItemListView.swift */; };
 		5C764E80279C7276000C6508 /* dummy.m in Sources */ = {isa = PBXBuildFile; fileRef = 5C764E7F279C7276000C6508 /* dummy.m */; };
 		5C764E81279C7276000C6508 /* dummy.m in Sources */ = {isa = PBXBuildFile; fileRef = 5C764E7F279C7276000C6508 /* dummy.m */; };
 		5C764E82279C748B000C6508 /* libiconv.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C764E7B279C71D4000C6508 /* libiconv.tbd */; };
@@ -82,7 +80,6 @@
 		5C2E260A27A30CFA00F70299 /* ChatListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatListView.swift; sourceTree = "<group>"; };
 		5C2E260E27A30FDC00F70299 /* ChatView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatView.swift; sourceTree = "<group>"; };
 		5C2E261127A30FEA00F70299 /* TerminalView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalView.swift; sourceTree = "<group>"; };
-		5C2E261427A3111A00F70299 /* ChatItemListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatItemListView.swift; sourceTree = "<group>"; };
 		5C764E7B279C71D4000C6508 /* libiconv.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libiconv.tbd; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS15.2.sdk/usr/lib/libiconv.tbd; sourceTree = DEVELOPER_DIR; };
 		5C764E7C279C71DB000C6508 /* libz.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libz.tbd; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS15.2.sdk/usr/lib/libz.tbd; sourceTree = DEVELOPER_DIR; };
 		5C764E7D279C7275000C6508 /* SimpleX (iOS)-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "SimpleX (iOS)-Bridging-Header.h"; sourceTree = "<group>"; };
@@ -154,10 +151,9 @@
 			isa = PBXGroup;
 			children = (
 				5CA05A4B27974EB60002BEB4 /* WelcomeView.swift */,
-				5CA05A4E279752D00002BEB4 /* MessageView.swift */,
 				5C2E260A27A30CFA00F70299 /* ChatListView.swift */,
+				5CA05A4E279752D00002BEB4 /* MessageView.swift */,
 				5C063D2627A4564100AEC577 /* ChatPreviewView.swift */,
-				5C2E261427A3111A00F70299 /* ChatItemListView.swift */,
 				5C2E260E27A30FDC00F70299 /* ChatView.swift */,
 				5C2E261127A30FEA00F70299 /* TerminalView.swift */,
 			);
@@ -431,7 +427,6 @@
 				5CA059EB279559F40002BEB4 /* SimpleXApp.swift in Sources */,
 				5C764E89279CBCB3000C6508 /* ChatModel.swift in Sources */,
 				5C2E260727A2941F00F70299 /* SimpleXAPI.swift in Sources */,
-				5C2E261527A3111A00F70299 /* ChatItemListView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -450,7 +445,6 @@
 				5CA059EC279559F40002BEB4 /* SimpleXApp.swift in Sources */,
 				5C764E8A279CBCB3000C6508 /* ChatModel.swift in Sources */,
 				5C2E260827A2941F00F70299 /* SimpleXAPI.swift in Sources */,
-				5C2E261627A3111A00F70299 /* ChatItemListView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

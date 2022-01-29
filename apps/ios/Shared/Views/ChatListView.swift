@@ -14,7 +14,7 @@ struct ChatListView: View {
 
     var body: some View {
         DispatchQueue.global().async {
-            while(true) { processAPIResponse(chatModel, chatRecvMsg()) }
+            while(true) { chatRecvMsg(chatModel) }
         }
 
         return VStack {
@@ -32,12 +32,14 @@ struct ChatListView: View {
                         Text("Terminal")
                     }
                 
-                    ForEach(chatModel.chatPreviews, id: \.self) { cp in
+                    ForEach(chatModel.chatPreviews) { chatPreview in
                         NavigationLink {
-//                            ChatView(chat: chat)
-                            Text("hello")
+                            ChatView(chatInfo: chatPreview.chatInfo)
+                                .onAppear {
+                                    chatSendCmd(chatModel, .apiGetChatItems(type: "direct", id: chatPreview.chatInfo.apiId))
+                                }
                         } label: {
-                            ChatPreviewView(chatPreview: cp)
+                            ChatPreviewView(chatPreview: chatPreview)
                         }
                     }
                 }

@@ -16,14 +16,15 @@ struct TerminalView: View {
     var body: some View {
         VStack {
             ScrollView {
-                LazyVStack {                    ForEach(chatModel.chatResponses, id: \.self) { cr in
+                LazyVStack {
+                    ForEach(chatModel.apiResponses) { r in
                         NavigationLink {
                             ScrollView {
-                                Text(cr.details)
+                                Text(r.resp.details)
                             }
                         } label: {
-                            Text(cr.responseType)
-                                .frame(width: 360, height: 30, alignment: .leading)
+                            Text(r.resp.responseType)
+                            .frame(width: 360, height: 30, alignment: .leading)
                         }
                     }
                 }
@@ -35,12 +36,12 @@ struct TerminalView: View {
             HStack {
                 TextField("Message...", text: $command)
                    .textFieldStyle(RoundedBorderTextFieldStyle())
-                   .frame(minHeight: CGFloat(30))
+                   .frame(minHeight: 30)
                 Button(action: sendMessage) {
                     Text("Send")
                 }.disabled(command.isEmpty)
             }
-            .frame(minHeight: CGFloat(30))
+            .frame(minHeight: 30)
             .padding()
         }
     }
@@ -50,7 +51,7 @@ struct TerminalView: View {
             let cmd: String = self.$command.wrappedValue
             inProgress = true
             command = ""
-            processAPIResponse(chatModel, chatSendCmd(ChatCommand.string(cmd)))
+            chatSendCmd(chatModel, ChatCommand.string(cmd))
             inProgress = false
         }
     }
@@ -59,9 +60,9 @@ struct TerminalView: View {
 struct TerminalView_Previews: PreviewProvider {
     static var previews: some View {
         let chatModel = ChatModel()
-        chatModel.chatResponses = [
-            ChatResponse.response(type: "contactSubscribed", json: "{}"),
-            ChatResponse.response(type: "newChatItem", json: "{}")
+        chatModel.apiResponses = [
+            APIResponse(resp: ChatResponse.response(type: "contactSubscribed", json: "{}"), id: 1),
+            APIResponse(resp: ChatResponse.response(type: "newChatItem", json: "{}"), id: 2)
         ]
         return NavigationView {
             TerminalView()

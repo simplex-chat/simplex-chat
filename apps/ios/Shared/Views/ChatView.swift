@@ -9,18 +9,23 @@
 import SwiftUI
 
 struct ChatView: View {
-    var chat: Chat
+    @EnvironmentObject var chatModel: ChatModel
+    var chatInfo: ChatInfo
     var body: some View {
-        var chatItems: [ChatItem]
-        switch chat {
-        case let .direct(_, items):
-                chatItems = items
-        case let .group(_, items):
-                chatItems = items
-        }
-        
-        return VStack {
-            ChatItemListView(chatItems: chatItems)
+        VStack {
+            if let chat: Chat = chatModel.chats[chatInfo.id] {
+                VStack {
+                    ScrollView {
+                        LazyVStack {
+                            ForEach(chat.chatItems) { chatItem in
+                                Text(chatItem.content.text)
+                            }
+                        }
+                    }
+                }
+            } else {
+                Text("unexpected: chat not found...")
+            }
         }
     }
 }

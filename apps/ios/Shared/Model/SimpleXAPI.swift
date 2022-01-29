@@ -14,27 +14,50 @@ private let jsonDecoder = JSONDecoder()
 private let jsonEncoder = JSONEncoder()
 
 enum ChatCommand {
-    case apiChats
+    case apiGetChats
+    case apiGetChatItems(type: String, id: Int64)
     case string(String)
     case help
+
+    var cmdString: String {
+        get {
+            switch self {
+            case .apiGetChats:
+                return "/api/v1/chats"
+            case let .apiGetChatItems(type, id):
+                return "/api/v1/chat/items/\(type)/\(id)"
+            case let .string(str):
+                return str
+            case .help: return "/help"
+            }
+        }
+    }
 }
 
-struct APIResponse: Codable {
+struct APIResponse: Identifiable {
+    var resp: ChatResponse
+    var id: Int64
+}
+
+struct APIResponseJSON: Decodable {
     var resp: ChatResponse
 }
 
-enum ChatResponse: Hashable, Codable {
+enum ChatResponse: Codable {
     case response(type: String, json: String)
     case apiChats(chats: [ChatPreview])
+    case apiDirectChat(chat: Chat) // direct/<id> or group/<id>, same as ChatPreview.id
 //    case chatHelp(String)
 //    case newSentInvitation
-//    case contactConnected(contact: Contact)
-    
+    case contactConnected(contact: Contact)
+
     var responseType: String {
         get {
             switch self {
             case let .response(type, _): return "* \(type)"
             case .apiChats(_): return "apiChats"
+            case .apiDirectChat(_): return "apiDirectChat"
+            case .contactConnected(_): return "contactConnected"
             }
         }
     }
@@ -44,6 +67,8 @@ enum ChatResponse: Hashable, Codable {
             switch self {
             case let .response(_, json): return json
             case let .apiChats(chats): return String(describing: chats)
+            case let .apiDirectChat(chat): return String(describing: chat)
+            case let .contactConnected(contact): return String(describing: contact)
             }
         }
     }
@@ -70,13 +95,43 @@ func chatCreateUser(_ p: Profile) -> User? {
     return user
 }
 
-func chatSendCmd(_ cmd: ChatCommand) -> ChatResponse? {
-    var c = commandString(cmd).cString(using: .utf8)!
-    return chatResponse(chat_send_cmd(getChatCtrl(), &c)!)
+func chatSendCmd(_ chatModel: ChatModel, _ cmd: ChatCommand) {
+    var c = cmd.cmdString.cString(using: .utf8)!
+    processAPIResponse(chatModel,
+        apiResponse(
+            chat_send_cmd(getChatCtrl(), &c)!))
 }
 
-func chatRecvMsg() -> ChatResponse? {
-    chatResponse(chat_recv_msg(getChatCtrl())!)
+func chatRecvMsg(_ chatModel: ChatModel) {
+    processAPIResponse(chatModel,
+        apiResponse(
+            chat_recv_msg(getChatCtrl())!))
+}
+
+private func processAPIResponse(_ chatModel: ChatModel, _ res: APIResponse?) {
+    if let r = res {
+        DispatchQueue.main.async {
+            chatModel.apiResponses.append(r)
+            switch r.resp {
+            case let .apiChats(chats):
+                chatModel.chatPreviews = chats
+            case let .apiDirectChat(chat):
+                chatModel.chats[chat.chatInfo.id] = chat
+            case let .contactConnected(contact):
+                chatModel.chatPreviews.insert(
+                    ChatPreview(chatInfo: .direct(contact: contact)),
+                    at: 0
+                )
+            default: return
+
+//            case let .response(type, _):
+//                chatModel.chatItems.append(ChatItem(
+//                    ts: Date.now,
+//                    content: .text(type)
+//                ))
+            }
+        }
+    }
 }
 
 private struct UserResponse: Decodable {
@@ -84,25 +139,19 @@ private struct UserResponse: Decodable {
     var error: String?
 }
 
-private func commandString(_ cmd: ChatCommand) -> String {
-    switch cmd {
-    case .apiChats: return "/api/v1/chats"
-    case let .string(str): return str
-    case .help: return "/help"
-    }
-}
+private var respId: Int64 = 0
 
-private func chatResponse(_ cjson: UnsafePointer<CChar>) -> ChatResponse? {
+private func apiResponse(_ cjson: UnsafePointer<CChar>) -> APIResponse? {
     let s = String.init(cString: cjson)
-    print("chatResponse", s)
+    print("apiResponse", s)
     let d = s.data(using: .utf8)!
 //  TODO is there a way to do it without copying the data? e.g:
 //    let p = UnsafeMutableRawPointer.init(mutating: UnsafeRawPointer(cjson))
 //    let d = Data.init(bytesNoCopy: p, count: strlen(cjson), deallocator: .free)
 
     do {
-        let r = try jsonDecoder.decode(APIResponse.self, from: d)
-        return r.resp
+        let r = try jsonDecoder.decode(APIResponseJSON.self, from: d)
+        return APIResponse(resp: r.resp, id: respId)
     } catch {
         print (error)
     }
@@ -113,11 +162,20 @@ private func chatResponse(_ cjson: UnsafePointer<CChar>) -> ChatResponse? {
         if let j1 = j["resp"] as? NSDictionary, j1.count == 1 {
             type = j1.allKeys[0] as? String
         }
-        if let d = try? JSONSerialization.data(withJSONObject: j, options: .prettyPrinted) {
-            json = String(decoding: d, as: UTF8.self)
-        }
+        json = prettyJSON(j)
     }
-    return ChatResponse.response(type: type ?? "invalid", json: json ?? s)
+    respId += 1
+    return APIResponse(
+        resp: ChatResponse.response(type: type ?? "invalid", json: json ?? s),
+        id: respId
+    )
+}
+
+func prettyJSON(_ obj: NSDictionary) -> String? {
+    if let d = try? JSONSerialization.data(withJSONObject: obj, options: .prettyPrinted) {
+        return String(decoding: d, as: UTF8.self)
+    }
+    return nil
 }
 
 private func getStore() -> chat_store {
