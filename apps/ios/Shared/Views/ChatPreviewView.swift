@@ -18,16 +18,30 @@ struct ChatPreviewView: View {
 
 struct ChatPreviewView_Previews: PreviewProvider {
     static var previews: some View {
-        ChatPreviewView(chatPreview: ChatPreview(
-            chatInfo: .direct(contact: Contact(
-                contactId: 123,
-                localDisplayName: "ep",
-                profile: Profile(
-                    displayName: "ep",
-                    fullName: "Ep"
-                ),
-                viaGroup: nil
+        Group{
+            ChatPreviewView(chatPreview: ChatPreview(
+                chatInfo: .direct(contact: Contact(
+                    contactId: 123,
+                    localDisplayName: "ep",
+                    profile: Profile(
+                        displayName: "ep",
+                        fullName: "Ep"
+                    ),
+                    viaGroup: nil
+                ))
             ))
-        ))
+            
+            ChatPreviewView(chatPreview: ChatPreview(
+                chatInfo: .group(groupInfo: GroupInfo(
+                    groupId: 123,
+                    localDisplayName: "team",
+                    groupProfile: GroupProfile(
+                        displayName: "team",
+                        fullName: "My Team"
+                    )
+                ))
+            ))
+        }
+        .previewLayout(.fixed(width: 300, height: 70))
     }
 }
