@@ -50,13 +50,13 @@ enum ChatType: String {
 
 enum ChatInfo: Identifiable, Codable {
     case direct(contact: Contact)
-//    case group()
+    case group(groupInfo: GroupInfo)
     
     var displayName: String {
         get {
             switch self {
             case let .direct(contact): return "@\(contact.localDisplayName)"
-//            case let .group(groupInfo, _): return "#\(groupInfo.localDisplayName)"
+            case let .group(groupInfo): return "#\(groupInfo.localDisplayName)"
             }
         }
     }
@@ -65,7 +65,7 @@ enum ChatInfo: Identifiable, Codable {
         get {
             switch self {
             case let .direct(contact): return "@\(contact.contactId)"
-//            case let .group(contact): return group.id
+            case let .group(groupInfo): return "#\(groupInfo.groupId)"
             }
         }
     }
@@ -74,7 +74,7 @@ enum ChatInfo: Identifiable, Codable {
         get {
             switch self {
             case .direct(_): return .direct
-//            case let .group(_): return "group"
+            case .group(_): return .group
             }
         }
     }
@@ -83,7 +83,7 @@ enum ChatInfo: Identifiable, Codable {
         get {
             switch self {
             case let .direct(contact): return contact.contactId
-//            case let .group(contact): return group.id
+            case let .group(groupInfo): return groupInfo.groupId
             }
         }
     }
