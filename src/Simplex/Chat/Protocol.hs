@@ -9,7 +9,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE StandaloneDeriving #-}
 
 module Simplex.Chat.Protocol where
 
@@ -26,6 +25,7 @@ import Database.SQLite.Simple.FromField (FromField (..))
 import Database.SQLite.Simple.ToField (ToField (..))
 import GHC.Generics (Generic)
 import Simplex.Chat.Types
+import Simplex.Chat.Util (eitherToMaybe)
 import Simplex.Messaging.Agent.Store.SQLite (fromTextField_)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Util ((<$?>))
@@ -240,7 +240,7 @@ toCMEventTag = \case
   XOk -> XOk_
 
 cmEventTagT :: Text -> Maybe CMEventTag
-cmEventTagT = either (const Nothing) Just . strDecode . encodeUtf8
+cmEventTagT = eitherToMaybe . strDecode . encodeUtf8
 
 serializeCMEventTag :: CMEventTag -> Text
 serializeCMEventTag = decodeLatin1 . strEncode

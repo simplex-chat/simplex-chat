@@ -36,6 +36,7 @@ responseToView :: String -> ChatResponse -> [StyledString]
 responseToView cmd = \case
   CRApiChats chats -> api [sShow chats]
   CRApiDirectChat chat -> api [sShow chat]
+  CRApiGroupChat gChat -> api [sShow gChat]
   CRNewChatItem (AChatItem _ _ chat item) -> viewChatItem chat item
   CRCmdAccepted _ -> r []
   CRChatHelp section -> case section of
@@ -470,9 +471,9 @@ viewChatError = \case
   -- e -> ["chat error: " <> sShow e]
   ChatErrorStore err -> case err of
     SEDuplicateName -> ["this display name is already used by user, contact or group"]
-    SEContactNotFound c -> ["no contact " <> ttyContact c]
+    SEContactNotFoundByName c -> ["no contact " <> ttyContact c]
     SEContactNotReady c -> ["contact " <> ttyContact c <> " is not active yet"]
-    SEGroupNotFound g -> ["no group " <> ttyGroup g]
+    SEGroupNotFoundByName g -> ["no group " <> ttyGroup g]
     SEGroupAlreadyJoined -> ["you already joined this group"]
     SEFileNotFound fileId -> fileNotFound fileId
     SESndFileNotFound fileId -> fileNotFound fileId

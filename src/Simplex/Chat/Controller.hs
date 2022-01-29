@@ -118,6 +118,7 @@ data ChatCommand
 data ChatResponse
   = CRApiChats {chats :: [AChatPreview]}
   | CRApiDirectChat {chat :: Chat 'CTDirect}
+  | CRApiGroupChat {gChat :: Chat 'CTGroup}
   | CRNewChatItem {chatItem :: AChatItem}
   | CRCmdAccepted {corr :: CorrId}
   | CRChatHelp {helpSection :: HelpSection}
