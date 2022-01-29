@@ -106,6 +106,7 @@ module Simplex.Chat.Store
     createNewChatItem,
     getChatPreviews,
     getDirectChat,
+    getGroupChat,
   )
 where
 
@@ -124,11 +125,13 @@ import Data.Either (rights)
 import Data.Function (on)
 import Data.Functor (($>))
 import Data.Int (Int64)
-import Data.List (find, sortBy)
+import Data.List (find, sortBy, sortOn)
 import Data.Maybe (listToMaybe)
+import Data.Ord (Down (..))
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Time.Clock (UTCTime, getCurrentTime)
+import Data.Time (fromGregorian, secondsToDiffTime)
+import Data.Time.Clock (UTCTime (UTCTime), getCurrentTime)
 import Data.Time.LocalTime (TimeZone, getCurrentTimeZone)
 import Database.SQLite.Simple (NamedParam (..), Only (..), Query (..), SQLError, (:.) (..))
 import qualified Database.SQLite.Simple as DB
@@ -140,6 +143,7 @@ import Simplex.Chat.Migrations.M20220122_pending_group_messages
 import Simplex.Chat.Migrations.M20220125_chat_items
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
+import Simplex.Chat.Util (eitherToMaybe)
 import Simplex.Messaging.Agent.Protocol (AgentMsgId, ConnId, InvitationId, MsgMeta (..))
 import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore (..), createSQLiteStore, firstRow, withTransaction)
 import Simplex.Messaging.Agent.Store.SQLite.Migrations (Migration (..))
@@ -404,7 +408,7 @@ getContact_ db userId localDisplayName = do
     toContact [(contactId, displayName, fullName, viaGroup)] =
       let profile = Profile {displayName, fullName}
        in Right Contact {contactId, localDisplayName, profile, activeConn = undefined, viaGroup}
-    toContact _ = Left $ SEContactNotFound localDisplayName
+    toContact _ = Left $ SEContactNotFoundByName localDisplayName
     connection :: [ConnectionRow] -> Either StoreError Connection
     connection (connRow : _) = Right $ toConnection connRow
     connection _ = Left $ SEContactNotReady localDisplayName
@@ -432,7 +436,7 @@ getUserContactLinkConnections st userId =
           SELECT c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact,
             c.conn_status, c.conn_type, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at
           FROM connections c
-          JOIN user_contact_links uc ON c.user_contact_link_id == uc.user_contact_link_id
+          JOIN user_contact_links uc ON c.user_contact_link_id = uc.user_contact_link_id
           WHERE c.user_id = :user_id
             AND uc.user_id = :user_id
             AND uc.local_display_name = ''
@@ -626,14 +630,14 @@ getContactConnections st userId displayName =
           SELECT c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact,
             c.conn_status, c.conn_type, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at
           FROM connections c
-          JOIN contacts cs ON c.contact_id == cs.contact_id
+          JOIN contacts cs ON c.contact_id = cs.contact_id
           WHERE c.user_id = :user_id
             AND cs.user_id = :user_id
-            AND cs.local_display_name == :display_name
+            AND cs.local_display_name = :display_name
         |]
         [":user_id" := userId, ":display_name" := displayName]
   where
-    connections [] = Left $ SEContactNotFound displayName
+    connections [] = Left $ SEContactNotFoundByName displayName
     connections rows = Right $ map toConnection rows
 
 type ConnectionRow = (Int64, ConnId, Int, Maybe Int64, ConnStatus, ConnType, Maybe Int64, Maybe Int64, Maybe Int64, Maybe Int64, Maybe Int64, UTCTime)
@@ -708,9 +712,7 @@ matchReceivedProbe st userId _from@Contact {contactId} (Probe probe) =
     DB.execute db "INSERT INTO received_probes (contact_id, probe, probe_hash, user_id) VALUES (?,?,?,?)" (contactId, probe, probeHash, userId)
     case contactNames of
       [] -> pure Nothing
-      cName : _ ->
-        either (const Nothing) Just
-          <$> runExceptT (getContact_ db userId cName)
+      cName : _ -> eitherToMaybe <$> runExceptT (getContact_ db userId cName)
 
 matchReceivedProbeHash :: MonadUnliftIO m => SQLiteStore -> UserId -> Contact -> ProbeHash -> m (Maybe (Contact, Probe))
 matchReceivedProbeHash st userId _from@Contact {contactId} (ProbeHash probeHash) =
@@ -749,9 +751,7 @@ matchSentProbe st userId _from@Contact {contactId} (Probe probe) =
           (userId, probe, contactId)
     case contactNames of
       [] -> pure Nothing
-      cName : _ ->
-        either (const Nothing) Just
-          <$> runExceptT (getContact_ db userId cName)
+      cName : _ -> eitherToMaybe <$> runExceptT (getContact_ db userId cName)
 
 mergeContactRecords :: MonadUnliftIO m => SQLiteStore -> UserId -> Contact -> Contact -> m ()
 mergeContactRecords st userId Contact {contactId = toContactId} Contact {contactId = fromContactId, localDisplayName} =
@@ -833,13 +833,17 @@ getConnectionEntity st User {userId, userContactId} agentConnId =
           [sql|
             SELECT
               -- GroupInfo
-              g.group_id, g.local_display_name, gp.display_name, gp.full_name,
+              g.group_id, g.local_display_name,
+              -- GroupInfo {groupProfile}
+              gp.display_name, gp.full_name,
+              -- GroupInfo {membership}
+              mu.group_member_id, mu.group_id, mu.member_id, mu.member_role, mu.member_category,
+              mu.member_status, mu.invited_by, mu.local_display_name, mu.contact_id,
+              -- GroupInfo {membership = GroupMember {memberProfile}}
+              pu.display_name, pu.full_name,
               -- from GroupMember
               m.group_member_id, m.group_id, m.member_id, m.member_role, m.member_category, m.member_status,
-              m.invited_by, m.local_display_name, m.contact_id, p.display_name, p.full_name,
-              -- user membership
-              mu.group_member_id, mu.group_id, mu.member_id, mu.member_role, mu.member_category, mu.member_status,
-              mu.invited_by, mu.local_display_name, mu.contact_id, pu.display_name, pu.full_name
+              m.invited_by, m.local_display_name, m.contact_id, p.display_name, p.full_name
             FROM group_members m
             JOIN contact_profiles p ON p.contact_profile_id = m.contact_profile_id
             JOIN groups g ON g.group_id = m.group_id
@@ -849,8 +853,8 @@ getConnectionEntity st User {userId, userContactId} agentConnId =
             WHERE m.group_member_id = ? AND g.user_id = ? AND mu.contact_id = ?
           |]
           (groupMemberId, userId, userContactId)
-    toGroupAndMember :: Connection -> (Int64, GroupName, GroupName, Text) :. GroupMemberRow :. GroupMemberRow -> (GroupInfo, GroupMember)
-    toGroupAndMember c ((groupId, localDisplayName, displayName, fullName) :. memberRow :. userMemberRow) =
+    toGroupAndMember :: Connection -> GroupInfoRow :. GroupMemberRow -> (GroupInfo, GroupMember)
+    toGroupAndMember c (((groupId, localDisplayName, displayName, fullName) :. userMemberRow) :. memberRow) =
       let member = toGroupMember userContactId memberRow
           membership = toGroupMember userContactId userMemberRow
        in ( GroupInfo {groupId, localDisplayName, groupProfile = GroupProfile {displayName, fullName}, membership},
@@ -916,7 +920,7 @@ createNewGroup st gVar user groupProfile =
 -- | creates a new group record for the group the current user was invited to, or returns an existing one
 createGroupInvitation ::
   StoreMonad m => SQLiteStore -> User -> Contact -> GroupInvitation -> m GroupInfo
-createGroupInvitation st user@User {userId} contact GroupInvitation {fromMember, invitedMember, connRequest, groupProfile} =
+createGroupInvitation st user@User {userId} contact@Contact {contactId} GroupInvitation {fromMember, invitedMember, connRequest, groupProfile} =
   liftIOEither . withTransaction st $ \db -> do
     getGroupInvitationLdn_ db >>= \case
       Nothing -> createGroupInvitation_ db
@@ -936,7 +940,7 @@ createGroupInvitation st user@User {userId} contact GroupInvitation {fromMember,
         DB.execute db "INSERT INTO groups (group_profile_id, local_display_name, inv_queue_info, user_id) VALUES (?, ?, ?, ?)" (profileId, localDisplayName, connRequest, userId)
         groupId <- insertedRowId db
         _ <- createContactMember_ db user groupId contact fromMember GCHostMember GSMemInvited IBUnknown
-        membership <- createContactMember_ db user groupId user invitedMember GCUserMember GSMemInvited (IBContact $ contactId contact)
+        membership <- createContactMember_ db user groupId user invitedMember GCUserMember GSMemInvited (IBContact contactId)
         pure $ GroupInfo {groupId, localDisplayName, groupProfile, membership}
 
 -- TODO return the last connection that is ready, not any last connection
@@ -989,24 +993,33 @@ getGroupInfo st user gName = liftIOEither . withTransaction st $ \db -> getGroup
 
 getGroupInfo_ :: DB.Connection -> User -> GroupName -> IO (Either StoreError GroupInfo)
 getGroupInfo_ db User {userId, userContactId} gName =
-  firstRow (toGroupInfo userContactId) (SEGroupNotFound gName) $
+  firstRow (toGroupInfo userContactId) (SEGroupNotFoundByName gName) $
     DB.query
       db
       [sql|
-        SELECT g.group_id, g.local_display_name, gp.display_name, gp.full_name,
-          m.group_member_id, g.group_id, m.member_id, m.member_role, m.member_category, m.member_status,
-          m.invited_by, m.local_display_name, m.contact_id, mp.display_name, mp.full_name
+        SELECT
+          -- GroupInfo
+          g.group_id, g.local_display_name,
+          -- GroupInfo {groupProfile}
+          gp.display_name, gp.full_name,
+          -- GroupInfo {membership}
+          mu.group_member_id, mu.group_id, mu.member_id, mu.member_role, mu.member_category,
+          mu.member_status, mu.invited_by, mu.local_display_name, mu.contact_id,
+          -- GroupInfo {membership = GroupMember {memberProfile}}
+          pu.display_name, pu.full_name
         FROM groups g
-        JOIN group_profiles gp USING (group_profile_id)
-        JOIN group_members m USING (group_id)
-        JOIN contact_profiles mp USING (contact_profile_id)
-        WHERE g.local_display_name = ? AND g.user_id = ? AND m.contact_id = ?
+        JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id
+        JOIN group_members mu ON mu.group_id = g.group_id
+        JOIN contact_profiles pu ON pu.contact_profile_id = mu.contact_profile_id
+        WHERE g.local_display_name = ? AND g.user_id = ? AND mu.contact_id = ?
       |]
       (gName, userId, userContactId)
 
-toGroupInfo :: Int64 -> (Int64, GroupName, GroupName, Text) :. GroupMemberRow -> GroupInfo
-toGroupInfo userContactId ((groupId, localDisplayName, displayName, fullName) :. memberRow) =
-  let membership = toGroupMember userContactId memberRow
+type GroupInfoRow = (Int64, GroupName, GroupName, Text) :. GroupMemberRow
+
+toGroupInfo :: Int64 -> GroupInfoRow -> GroupInfo
+toGroupInfo userContactId ((groupId, localDisplayName, displayName, fullName) :. userMemberRow) =
+  let membership = toGroupMember userContactId userMemberRow
    in GroupInfo {groupId, localDisplayName, groupProfile = GroupProfile {displayName, fullName}, membership}
 
 getGroupMembers :: MonadUnliftIO m => SQLiteStore -> User -> GroupInfo -> m [GroupMember]
@@ -1053,7 +1066,7 @@ getGroupInvitation st user localDisplayName =
   where
     getConnRec_ :: DB.Connection -> User -> ExceptT StoreError IO (Maybe ConnReqInvitation)
     getConnRec_ db User {userId} = ExceptT $ do
-      firstRow fromOnly (SEGroupNotFound localDisplayName) $
+      firstRow fromOnly (SEGroupNotFoundByName localDisplayName) $
         DB.query db "SELECT g.inv_queue_info FROM groups g WHERE g.local_display_name = ? AND g.user_id = ?" (localDisplayName, userId)
     findFromContact :: InvitedBy -> [GroupMember] -> Maybe GroupMember
     findFromContact (IBContact contactId) = find ((== Just contactId) . memberContactId)
@@ -1061,12 +1074,19 @@ getGroupInvitation st user localDisplayName =
 
 type GroupMemberRow = (Int64, Int64, MemberId, GroupMemberRole, GroupMemberCategory, GroupMemberStatus, Maybe Int64, ContactName, Maybe Int64, ContactName, Text)
 
+type MaybeGroupMemberRow = (Maybe Int64, Maybe Int64, Maybe MemberId, Maybe GroupMemberRole, Maybe GroupMemberCategory, Maybe GroupMemberStatus, Maybe Int64, Maybe ContactName, Maybe Int64, Maybe ContactName, Maybe Text)
+
 toGroupMember :: Int64 -> GroupMemberRow -> GroupMember
 toGroupMember userContactId (groupMemberId, groupId, memberId, memberRole, memberCategory, memberStatus, invitedById, localDisplayName, memberContactId, displayName, fullName) =
   let memberProfile = Profile {displayName, fullName}
       invitedBy = toInvitedBy userContactId invitedById
       activeConn = Nothing
    in GroupMember {..}
+
+toMaybeGroupMember :: Int64 -> MaybeGroupMemberRow -> Maybe GroupMember
+toMaybeGroupMember userContactId (Just groupMemberId, Just groupId, Just memberId, Just memberRole, Just memberCategory, Just memberStatus, invitedById, Just localDisplayName, memberContactId, Just displayName, Just fullName) =
+  Just $ toGroupMember userContactId (groupMemberId, groupId, memberId, memberRole, memberCategory, memberStatus, invitedById, localDisplayName, memberContactId, displayName, fullName)
+toMaybeGroupMember _ _ = Nothing
 
 createContactMember :: StoreMonad m => SQLiteStore -> TVar ChaChaDRG -> User -> Int64 -> Contact -> GroupMemberRole -> ConnId -> ConnReqInvitation -> m GroupMember
 createContactMember st gVar user groupId contact memberRole agentConnId connRequest =
@@ -1354,15 +1374,19 @@ getViaGroupMember st User {userId, userContactId} Contact {contactId} =
         [sql|
           SELECT
             -- GroupInfo
-            g.group_id, g.local_display_name, gp.display_name, gp.full_name,
+            g.group_id, g.local_display_name,
+            -- GroupInfo {groupProfile}
+            gp.display_name, gp.full_name,
+            -- GroupInfo {membership}
+            mu.group_member_id, mu.group_id, mu.member_id, mu.member_role, mu.member_category,
+            mu.member_status, mu.invited_by, mu.local_display_name, mu.contact_id,
+            -- GroupInfo {membership = GroupMember {memberProfile}}
+            pu.display_name, pu.full_name,
             -- via GroupMember
             m.group_member_id, m.group_id, m.member_id, m.member_role, m.member_category, m.member_status,
             m.invited_by, m.local_display_name, m.contact_id, p.display_name, p.full_name,
             c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact,
-            c.conn_status, c.conn_type, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at,
-            -- user membership
-            mu.group_member_id, mu.group_id, mu.member_id, mu.member_role, mu.member_category, mu.member_status,
-            mu.invited_by, mu.local_display_name, mu.contact_id, pu.display_name, pu.full_name
+            c.conn_status, c.conn_type, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at
           FROM group_members m
           JOIN contacts ct ON ct.contact_id = m.contact_id
           JOIN contact_profiles p ON p.contact_profile_id = m.contact_profile_id
@@ -1379,8 +1403,8 @@ getViaGroupMember st User {userId, userContactId} Contact {contactId} =
         |]
         (userId, contactId, userContactId)
   where
-    toGroupAndMember :: [(Int64, GroupName, GroupName, Text) :. GroupMemberRow :. MaybeConnectionRow :. GroupMemberRow] -> Maybe (GroupInfo, GroupMember)
-    toGroupAndMember [(groupId, localDisplayName, displayName, fullName) :. memberRow :. connRow :. userMemberRow] =
+    toGroupAndMember :: [GroupInfoRow :. GroupMemberRow :. MaybeConnectionRow] -> Maybe (GroupInfo, GroupMember)
+    toGroupAndMember [((groupId, localDisplayName, displayName, fullName) :. userMemberRow) :. memberRow :. connRow] =
       let member = toGroupMember userContactId memberRow
           membership = toGroupMember userContactId userMemberRow
        in Just
@@ -1766,7 +1790,7 @@ getMsgDeliveryId_ db connId agentMsgId =
       [sql|
         SELECT msg_delivery_id
         FROM msg_deliveries m
-        WHERE m.connection_id = ? AND m.agent_msg_id == ?
+        WHERE m.connection_id = ? AND m.agent_msg_id = ?
         LIMIT 1;
       |]
       (connId, agentMsgId)
@@ -1844,7 +1868,11 @@ getChatPreviews st user =
   liftIO . withTransaction st $ \db -> do
     directChatPreviews <- getDirectChatPreviews_ db user
     groupChatPreviews <- getGroupChatPreviews_ db user
-    pure $ directChatPreviews <> groupChatPreviews
+    pure $ sortOn (Down . ts) (directChatPreviews <> groupChatPreviews)
+  where
+    ts :: AChatPreview -> UTCTime
+    ts (AChatPreview _ _ Nothing) = UTCTime (fromGregorian 2122 1 29) (secondsToDiffTime 0) -- TODO Contact/GroupInfo createdAt
+    ts (AChatPreview _ _ (Just (CChatItem _ (ChatItem _ CIMeta {itemTs} _)))) = itemTs
 
 getDirectChatPreviews_ :: DB.Connection -> User -> IO [AChatPreview]
 getDirectChatPreviews_ db User {userId} = do
@@ -1861,7 +1889,7 @@ getDirectChatPreviews_ db User {userId} = do
           -- Contact {activeConn}
           c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.conn_status, c.conn_type,
           c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at,
-          -- CChatItem 'CTDirect
+          -- ChatItem
           ci.chat_item_id, ci.item_ts, ci.item_content, ci.item_text, ci.created_at
         FROM contacts ct
         JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
@@ -1872,10 +1900,10 @@ getDirectChatPreviews_ db User {userId} = do
           WHERE item_deleted != 1
           GROUP BY contact_id
         ) CIMaxDates ON CIMaxDates.contact_id = c.contact_id
-        LEFT JOIN chat_items ci ON ci.contact_id == CIMaxDates.contact_id
-                               AND ci.item_ts == CIMaxDates.MaxDate
+        LEFT JOIN chat_items ci ON ci.contact_id = CIMaxDates.contact_id
+                               AND ci.item_ts = CIMaxDates.MaxDate
         WHERE ct.user_id = ?
-        ORDER BY ci.item_ts ASC
+        ORDER BY ci.item_ts DESC
       |]
       (Only userId)
   where
@@ -1886,8 +1914,9 @@ getDirectChatPreviews_ db User {userId} = do
        in AChatPreview SCTDirect (DirectChat contact) ci_
 
 getGroupChatPreviews_ :: DB.Connection -> User -> IO [AChatPreview]
-getGroupChatPreviews_ db User {userId, userContactId} =
-  map toGroupChatPreview
+getGroupChatPreviews_ db User {userId, userContactId} = do
+  tz <- getCurrentTimeZone
+  map (toGroupChatPreview tz)
     <$> DB.query
       db
       [sql|
@@ -1897,38 +1926,57 @@ getGroupChatPreviews_ db User {userId, userContactId} =
           -- GroupInfo {groupProfile}
           gp.display_name, gp.full_name,
           -- GroupInfo {membership}
-          mu.group_member_id, mu.group_id, mu.member_id, mu.member_role, mu.member_category, mu.member_status,
-          mu.invited_by, mu.local_display_name, mu.contact_id,
+          mu.group_member_id, mu.group_id, mu.member_id, mu.member_role, mu.member_category,
+          mu.member_status, mu.invited_by, mu.local_display_name, mu.contact_id,
           -- GroupInfo {membership = GroupMember {memberProfile}}
-          pu.display_name, pu.full_name
+          pu.display_name, pu.full_name,
+          -- ChatItem
+          ci.chat_item_id, ci.item_ts, ci.item_content, ci.item_text, ci.created_at,
+          -- GroupMember
+          m.group_member_id, m.group_id, m.member_id, m.member_role, m.member_category,
+          m.member_status, m.invited_by, m.local_display_name, m.contact_id,
+          -- GroupMember {memberProfile}
+          p.display_name, p.full_name
         FROM groups g
-        JOIN group_profiles gp ON gp.group_profile_id == g.group_profile_id
-        JOIN group_members mu ON g.group_id = mu.group_id
+        JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id
+        JOIN group_members mu ON mu.group_id = g.group_id
         JOIN contact_profiles pu ON pu.contact_profile_id = mu.contact_profile_id
+        LEFT JOIN (
+          SELECT group_id, MAX(item_ts) MaxDate
+          FROM chat_items
+          WHERE item_deleted != 1
+          GROUP BY group_id
+        ) GIMaxDates ON GIMaxDates.group_id = g.group_id
+        LEFT JOIN chat_items ci ON ci.group_id = GIMaxDates.group_id
+                               AND ci.item_ts = GIMaxDates.MaxDate
+        LEFT JOIN group_members m ON m.group_member_id = ci.group_member_id
+        LEFT JOIN contact_profiles p ON p.contact_profile_id = m.contact_profile_id
         WHERE g.user_id = ? AND mu.contact_id = ?
+        ORDER BY ci.item_ts DESC
       |]
       (userId, userContactId)
   where
-    toGroupChatPreview :: (Int64, GroupName, GroupName, Text) :. GroupMemberRow -> AChatPreview
-    toGroupChatPreview ((groupId, localDisplayName, displayName, fullName) :. userMemberRow) =
+    toGroupChatPreview :: TimeZone -> GroupInfoRow :. MaybeGroupChatItemRow -> AChatPreview
+    toGroupChatPreview tz (((groupId, localDisplayName, displayName, fullName) :. userMemberRow) :. ciRow_) =
       let membership = toGroupMember userContactId userMemberRow
           groupInfo = GroupInfo {groupId, localDisplayName, groupProfile = GroupProfile {displayName, fullName}, membership}
-       in AChatPreview SCTGroup (GroupChat groupInfo) Nothing
+          ci_ = toMaybeGroupChatItem tz userContactId ciRow_
+       in AChatPreview SCTGroup (GroupChat groupInfo) ci_
 
 getDirectChat :: StoreMonad m => SQLiteStore -> User -> Int64 -> m (Chat 'CTDirect)
 getDirectChat st user contactId =
   liftIOEither . withTransaction st $ \db -> runExceptT $ do
-    contact <- getContact_' db user contactId
+    contact <- ExceptT $ getContact_' db user contactId
     chatItems <- liftIO $ getDirectChatItems_ db user contactId
     pure $ Chat (DirectChat contact) chatItems
 
-getContact_' :: DB.Connection -> User -> Int64 -> ExceptT StoreError IO Contact
+-- TODO reuse in contact queries
+getContact_' :: DB.Connection -> User -> Int64 -> IO (Either StoreError Contact)
 getContact_' db User {userId} contactId =
-  ExceptT $
-    toContact
-      <$> DB.query
-        db
-        [sql|
+  firstRow toContact' (SEContactNotFound contactId) $
+    DB.query
+      db
+      [sql|
         SELECT
           -- Contact
           ct.contact_id, ct.local_display_name, ct.via_group,
@@ -1942,11 +1990,7 @@ getContact_' db User {userId} contactId =
         JOIN connections c ON c.contact_id = ct.contact_id
         WHERE ct.user_id = ? AND ct.contact_id = ?
       |]
-        (userId, contactId)
-  where
-    toContact :: [ContactRow] -> Either StoreError Contact
-    toContact (contactRow : _) = Right $ toContact' contactRow
-    toContact _ = Left $ SEContactNotFoundById contactId
+      (userId, contactId)
 
 getDirectChatItems_ :: DB.Connection -> User -> Int64 -> IO [CChatItem 'CTDirect]
 getDirectChatItems_ db User {userId} contactId = do
@@ -1961,6 +2005,61 @@ getDirectChatItems_ db User {userId} contactId = do
         ORDER BY item_ts ASC
       |]
       (userId, contactId)
+
+getGroupChat :: StoreMonad m => SQLiteStore -> User -> Int64 -> m (Chat 'CTGroup)
+getGroupChat st user groupId =
+  liftIOEither . withTransaction st $ \db -> runExceptT $ do
+    groupInfo <- ExceptT $ getGroupInfo_' db user groupId
+    chatItems <- ExceptT $ getGroupChatItems_ db user groupId
+    pure $ Chat (GroupChat groupInfo) chatItems
+
+-- TODO reuse in group queries
+getGroupInfo_' :: DB.Connection -> User -> Int64 -> IO (Either StoreError GroupInfo)
+getGroupInfo_' db User {userId, userContactId} groupId =
+  firstRow (toGroupInfo userContactId) (SEGroupNotFound groupId) $
+    DB.query
+      db
+      [sql|
+        SELECT
+          -- GroupInfo
+          g.group_id, g.local_display_name,
+          -- GroupInfo {groupProfile}
+          gp.display_name, gp.full_name,
+          -- GroupInfo {membership}
+          mu.group_member_id, mu.group_id, mu.member_id, mu.member_role, mu.member_category,
+          mu.member_status, mu.invited_by, mu.local_display_name, mu.contact_id,
+          -- GroupInfo {membership = GroupMember {memberProfile}}
+          pu.display_name, pu.full_name
+        FROM groups g
+        JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id
+        JOIN group_members mu ON mu.group_id = g.group_id
+        JOIN contact_profiles pu ON pu.contact_profile_id = mu.contact_profile_id
+        WHERE g.group_id = ? AND g.user_id = ? AND mu.contact_id = ?
+      |]
+      (groupId, userId, userContactId)
+
+getGroupChatItems_ :: DB.Connection -> User -> Int64 -> IO (Either StoreError [CChatItem 'CTGroup])
+getGroupChatItems_ db User {userId, userContactId} groupId = do
+  tz <- getCurrentTimeZone
+  mapM (toGroupChatItem tz userContactId)
+    <$> DB.query
+      db
+      [sql|
+        SELECT
+          -- ChatItem
+          ci.chat_item_id, ci.item_ts, ci.item_content, ci.item_text, ci.created_at,
+          -- GroupMember
+          m.group_member_id, m.group_id, m.member_id, m.member_role, m.member_category,
+          m.member_status, m.invited_by, m.local_display_name, m.contact_id,
+          -- GroupMember {memberProfile}
+          p.display_name, p.full_name
+        FROM chat_items ci
+        LEFT JOIN group_members m ON m.group_member_id = ci.group_member_id
+        LEFT JOIN contact_profiles p ON p.contact_profile_id = m.contact_profile_id
+        WHERE ci.user_id = ? AND ci.group_id = ?
+        ORDER BY ci.item_ts ASC
+      |]
+      (userId, groupId)
 
 type ChatItemRow = (Int64, ChatItemTs, ACIContent, Text, UTCTime)
 
@@ -1978,25 +2077,23 @@ toMaybeDirectChatItem tz (Just itemId, Just itemTs, Just itemContent, Just itemT
   Just $ toDirectChatItem tz (itemId, itemTs, itemContent, itemText, createdAt)
 toMaybeDirectChatItem _ _ = Nothing
 
--- getGroupChatItemList :: MonadUnliftIO m => SQLiteStore -> UserId -> Int64 -> m ChatItemList
--- getGroupChatItemList st userId groupId =
---   liftIO . withTransaction st $ \db ->
---     DB.query
---       db
---       [sql|
---         ...
---       |]
---       (userId, groupId)
+type GroupChatItemRow = ChatItemRow :. MaybeGroupMemberRow
 
--- getChatItemsMixed :: MonadUnliftIO m => SQLiteStore -> UserId -> m [AnyChatItem]
--- getChatItemsMixed st userId =
---   liftIO . withTransaction st $ \db ->
---     DB.query
---       db
---       [sql|
---         ...
---       |]
---       (Only userId)
+type MaybeGroupChatItemRow = MaybeChatItemRow :. MaybeGroupMemberRow
+
+toGroupChatItem :: TimeZone -> Int64 -> GroupChatItemRow -> Either StoreError (CChatItem 'CTGroup)
+toGroupChatItem tz userContactId ((itemId, itemTs, itemContent, itemText, createdAt) :. memberRow_) =
+  let ciMeta = mkCIMeta itemId itemText tz itemTs createdAt
+      member_ = toMaybeGroupMember userContactId memberRow_
+   in case (itemContent, member_) of
+        (ACIContent d@SMDSnd ciContent, Nothing) -> Right $ CChatItem d (ChatItem CIGroupSnd ciMeta ciContent)
+        (ACIContent d@SMDRcv ciContent, Just member) -> Right $ CChatItem d (ChatItem (CIGroupRcv member) ciMeta ciContent)
+        _ -> Left $ SEBadChatItem itemId
+
+toMaybeGroupChatItem :: TimeZone -> Int64 -> MaybeGroupChatItemRow -> Maybe (CChatItem 'CTGroup)
+toMaybeGroupChatItem tz userContactId ((Just itemId, Just itemTs, Just itemContent, Just itemText, Just createdAt) :. memberRow_) =
+  eitherToMaybe $ toGroupChatItem tz userContactId ((itemId, itemTs, itemContent, itemText, createdAt) :. memberRow_)
+toMaybeGroupChatItem _ _ _ = Nothing
 
 -- | Saves unique local display name based on passed displayName, suffixed with _N if required.
 -- This function should be called inside transaction.
@@ -2055,13 +2152,14 @@ randomBytes gVar n = B64.encode <$> (atomically . stateTVar gVar $ randomBytesGe
 
 data StoreError
   = SEDuplicateName
-  | SEContactNotFoundById Int64
-  | SEContactNotFound {contactName :: ContactName}
+  | SEContactNotFound {contactId :: Int64}
+  | SEContactNotFoundByName {contactName :: ContactName}
   | SEContactNotReady {contactName :: ContactName}
   | SEDuplicateContactLink
   | SEUserContactLinkNotFound
   | SEContactRequestNotFound {contactName :: ContactName}
-  | SEGroupNotFound {groupName :: GroupName}
+  | SEGroupNotFound {groupId :: Int64}
+  | SEGroupNotFoundByName {groupName :: GroupName}
   | SEGroupWithoutUser
   | SEDuplicateGroupMember
   | SEGroupAlreadyJoined
@@ -2076,6 +2174,7 @@ data StoreError
   | SEUniqueID
   | SEInternal {message :: String}
   | SENoMsgDelivery {connId :: Int64, agentMsgId :: AgentMsgId}
+  | SEBadChatItem {itemId :: Int64}
   deriving (Show, Exception, Generic)
 
 instance ToJSON StoreError where
