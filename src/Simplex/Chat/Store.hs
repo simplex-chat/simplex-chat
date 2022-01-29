@@ -434,7 +434,7 @@ getUserContactLinkConnections st userId =
           SELECT c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact,
             c.conn_status, c.conn_type, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at
           FROM connections c
-          JOIN user_contact_links uc ON c.user_contact_link_id == uc.user_contact_link_id
+          JOIN user_contact_links uc ON c.user_contact_link_id = uc.user_contact_link_id
           WHERE c.user_id = :user_id
             AND uc.user_id = :user_id
             AND uc.local_display_name = ''
@@ -628,10 +628,10 @@ getContactConnections st userId displayName =
           SELECT c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact,
             c.conn_status, c.conn_type, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at
           FROM connections c
-          JOIN contacts cs ON c.contact_id == cs.contact_id
+          JOIN contacts cs ON c.contact_id = cs.contact_id
           WHERE c.user_id = :user_id
             AND cs.user_id = :user_id
-            AND cs.local_display_name == :display_name
+            AND cs.local_display_name = :display_name
         |]
         [":user_id" := userId, ":display_name" := displayName]
   where
@@ -1775,7 +1775,7 @@ getMsgDeliveryId_ db connId agentMsgId =
       [sql|
         SELECT msg_delivery_id
         FROM msg_deliveries m
-        WHERE m.connection_id = ? AND m.agent_msg_id == ?
+        WHERE m.connection_id = ? AND m.agent_msg_id = ?
         LIMIT 1;
       |]
       (connId, agentMsgId)
@@ -1870,7 +1870,7 @@ getDirectChatPreviews_ db User {userId} = do
           -- Contact {activeConn}
           c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.conn_status, c.conn_type,
           c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at,
-          -- CChatItem 'CTDirect
+          -- ChatItem
           ci.chat_item_id, ci.item_ts, ci.item_content, ci.item_text, ci.created_at
         FROM contacts ct
         JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
@@ -1881,8 +1881,8 @@ getDirectChatPreviews_ db User {userId} = do
           WHERE item_deleted != 1
           GROUP BY contact_id
         ) CIMaxDates ON CIMaxDates.contact_id = c.contact_id
-        LEFT JOIN chat_items ci ON ci.contact_id == CIMaxDates.contact_id
-                               AND ci.item_ts == CIMaxDates.MaxDate
+        LEFT JOIN chat_items ci ON ci.contact_id = CIMaxDates.contact_id
+                               AND ci.item_ts = CIMaxDates.MaxDate
         WHERE ct.user_id = ?
         ORDER BY ci.item_ts ASC
       |]
@@ -1906,13 +1906,13 @@ getGroupChatPreviews_ db User {userId, userContactId} =
           -- GroupInfo {groupProfile}
           gp.display_name, gp.full_name,
           -- GroupInfo {membership}
-          mu.group_member_id, mu.group_id, mu.member_id, mu.member_role, mu.member_category, mu.member_status,
-          mu.invited_by, mu.local_display_name, mu.contact_id,
+          mu.group_member_id, mu.group_id, mu.member_id, mu.member_role, mu.member_category,
+          mu.member_status, mu.invited_by, mu.local_display_name, mu.contact_id,
           -- GroupInfo {membership = GroupMember {memberProfile}}
           pu.display_name, pu.full_name
         FROM groups g
-        JOIN group_profiles gp ON gp.group_profile_id == g.group_profile_id
-        JOIN group_members mu ON g.group_id = mu.group_id
+        JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id
+        JOIN group_members mu ON mu.group_id = g.group_id
         JOIN contact_profiles pu ON pu.contact_profile_id = mu.contact_profile_id
         WHERE g.user_id = ? AND mu.contact_id = ?
       |]
@@ -1979,14 +1979,21 @@ getGroupInfo_' db User {userId, userContactId} groupId =
     DB.query
       db
       [sql|
-        SELECT g.group_id, g.local_display_name, gp.display_name, gp.full_name,
-          m.group_member_id, g.group_id, m.member_id, m.member_role, m.member_category, m.member_status,
-          m.invited_by, m.local_display_name, m.contact_id, mp.display_name, mp.full_name
+        SELECT
+          -- GroupInfo
+          g.group_id, g.local_display_name,
+          -- GroupInfo {groupProfile}
+          gp.display_name, gp.full_name,
+          -- GroupInfo {membership}
+          mu.group_member_id, mu.group_id, mu.member_id, mu.member_role, mu.member_category,
+          mu.member_status, mu.invited_by, mu.local_display_name, mu.contact_id,
+          -- GroupInfo {membership = GroupMember {memberProfile}}
+          pu.display_name, pu.full_name
         FROM groups g
-        JOIN group_profiles gp USING (group_profile_id)
-        JOIN group_members m USING (group_id)
-        JOIN contact_profiles mp USING (contact_profile_id)
-        WHERE g.group_id = ? AND g.user_id = ? AND m.contact_id = ?
+        JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id
+        JOIN group_members mu ON mu.group_id = g.group_id
+        JOIN contact_profiles pu ON pu.contact_profile_id = mu.contact_profile_id
+        WHERE g.group_id = ? AND g.user_id = ? AND mu.contact_id = ?
       |]
       (groupId, userId, userContactId)
 
@@ -2006,8 +2013,8 @@ getGroupChatItems_ db User {userId, userContactId} groupId = do
           -- GroupMember {memberProfile}
           p.display_name, p.full_name
         FROM chat_items ci
-        LEFT JOIN group_members m ON m.group_member_id == ci.group_member_id
-        LEFT JOIN contact_profiles p ON p.contact_profile_id == m.contact_profile_id
+        LEFT JOIN group_members m ON m.group_member_id = ci.group_member_id
+        LEFT JOIN contact_profiles p ON p.contact_profile_id = m.contact_profile_id
         WHERE ci.user_id = ? AND ci.group_id = ?
         ORDER BY ci.item_ts ASC
       |]
