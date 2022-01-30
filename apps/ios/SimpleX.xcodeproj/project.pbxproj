@@ -35,6 +35,7 @@
 		5C764E85279C748C000C6508 /* libz.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C764E7C279C71DB000C6508 /* libz.tbd */; };
 		5C764E89279CBCB3000C6508 /* ChatModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C764E88279CBCB3000C6508 /* ChatModel.swift */; };
 		5C764E8A279CBCB3000C6508 /* ChatModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C764E88279CBCB3000C6508 /* ChatModel.swift */; };
+		5C8F01CD27A6F0D8007D2C8D /* CodeScanner in Frameworks */ = {isa = PBXBuildFile; productRef = 5C8F01CC27A6F0D8007D2C8D /* CodeScanner */; };
 		5C9FD96B27A56D4D0075386C /* JSON.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C9FD96A27A56D4D0075386C /* JSON.swift */; };
 		5C9FD96C27A56D4D0075386C /* JSON.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C9FD96A27A56D4D0075386C /* JSON.swift */; };
 		5C9FD96E27A5D6ED0075386C /* SendMessageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C9FD96D27A5D6ED0075386C /* SendMessageView.swift */; };
@@ -61,8 +62,8 @@
 		5CCD403227A5F1C600368C90 /* ChatHeaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CCD403027A5F1C600368C90 /* ChatHeaderView.swift */; };
 		5CCD403427A5F6DF00368C90 /* AddContactView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CCD403327A5F6DF00368C90 /* AddContactView.swift */; };
 		5CCD403527A5F6DF00368C90 /* AddContactView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CCD403327A5F6DF00368C90 /* AddContactView.swift */; };
-		5CCD403727A5F9A200368C90 /* ScanQRCodeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CCD403627A5F9A200368C90 /* ScanQRCodeView.swift */; };
-		5CCD403827A5F9A200368C90 /* ScanQRCodeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CCD403627A5F9A200368C90 /* ScanQRCodeView.swift */; };
+		5CCD403727A5F9A200368C90 /* ConnectContactView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CCD403627A5F9A200368C90 /* ConnectContactView.swift */; };
+		5CCD403827A5F9A200368C90 /* ConnectContactView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CCD403627A5F9A200368C90 /* ConnectContactView.swift */; };
 		5CCD403A27A5F9BE00368C90 /* CreateGroupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CCD403927A5F9BE00368C90 /* CreateGroupView.swift */; };
 		5CCD403B27A5F9BE00368C90 /* CreateGroupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CCD403927A5F9BE00368C90 /* CreateGroupView.swift */; };
 /* End PBXBuildFile section */
@@ -121,7 +122,7 @@
 		5CC1C99427A6CF7F000D9FF6 /* ShareSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareSheet.swift; sourceTree = "<group>"; };
 		5CCD403027A5F1C600368C90 /* ChatHeaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatHeaderView.swift; sourceTree = "<group>"; };
 		5CCD403327A5F6DF00368C90 /* AddContactView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddContactView.swift; sourceTree = "<group>"; };
-		5CCD403627A5F9A200368C90 /* ScanQRCodeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanQRCodeView.swift; sourceTree = "<group>"; };
+		5CCD403627A5F9A200368C90 /* ConnectContactView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectContactView.swift; sourceTree = "<group>"; };
 		5CCD403927A5F9BE00368C90 /* CreateGroupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateGroupView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -130,6 +131,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				5C8F01CD27A6F0D8007D2C8D /* CodeScanner in Frameworks */,
 				5C764E83279C748B000C6508 /* libz.tbd in Frameworks */,
 				5C764E82279C748B000C6508 /* libiconv.tbd in Frameworks */,
 				5C1AEB86279F4A6400247F08 /* libffi.a in Frameworks */,
@@ -190,9 +192,9 @@
 				5C9FD96D27A5D6ED0075386C /* SendMessageView.swift */,
 				5CA05A4E279752D00002BEB4 /* MessageView.swift */,
 				5CCD403027A5F1C600368C90 /* ChatHeaderView.swift */,
-				5CCD403927A5F9BE00368C90 /* CreateGroupView.swift */,
-				5CCD403627A5F9A200368C90 /* ScanQRCodeView.swift */,
 				5CCD403327A5F6DF00368C90 /* AddContactView.swift */,
+				5CCD403627A5F9A200368C90 /* ConnectContactView.swift */,
+				5CCD403927A5F9BE00368C90 /* CreateGroupView.swift */,
 				5CC1C99127A6C7F5000D9FF6 /* QRCode.swift */,
 				5CC1C99427A6CF7F000D9FF6 /* ShareSheet.swift */,
 			);
@@ -311,6 +313,9 @@
 			dependencies = (
 			);
 			name = "SimpleX (iOS)";
+			packageProductDependencies = (
+				5C8F01CC27A6F0D8007D2C8D /* CodeScanner */,
+			);
 			productName = "SimpleX (iOS)";
 			productReference = 5CA059CA279559F40002BEB4 /* SimpleX.app */;
 			productType = "com.apple.product-type.application";
@@ -406,6 +411,9 @@
 				Base,
 			);
 			mainGroup = 5CA059BD279559F40002BEB4;
+			packageReferences = (
+				5C8F01CB27A6F0D8007D2C8D /* XCRemoteSwiftPackageReference "CodeScanner" */,
+			);
 			productRefGroup = 5CA059CB279559F40002BEB4 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -470,7 +478,7 @@
 				5C2E260F27A30FDC00F70299 /* ChatView.swift in Sources */,
 				5C2E260B27A30CFA00F70299 /* ChatListView.swift in Sources */,
 				5CA059EB279559F40002BEB4 /* SimpleXApp.swift in Sources */,
-				5CCD403727A5F9A200368C90 /* ScanQRCodeView.swift in Sources */,
+				5CCD403727A5F9A200368C90 /* ConnectContactView.swift in Sources */,
 				5CCD403A27A5F9BE00368C90 /* CreateGroupView.swift in Sources */,
 				5C764E89279CBCB3000C6508 /* ChatModel.swift in Sources */,
 				5CC1C99527A6CF7F000D9FF6 /* ShareSheet.swift in Sources */,
@@ -496,7 +504,7 @@
 				5C2E261027A30FDC00F70299 /* ChatView.swift in Sources */,
 				5C2E260C27A30CFA00F70299 /* ChatListView.swift in Sources */,
 				5CA059EC279559F40002BEB4 /* SimpleXApp.swift in Sources */,
-				5CCD403827A5F9A200368C90 /* ScanQRCodeView.swift in Sources */,
+				5CCD403827A5F9A200368C90 /* ConnectContactView.swift in Sources */,
 				5CCD403B27A5F9BE00368C90 /* CreateGroupView.swift in Sources */,
 				5C764E8A279CBCB3000C6508 /* ChatModel.swift in Sources */,
 				5CC1C99627A6CF7F000D9FF6 /* ShareSheet.swift in Sources */,
@@ -661,6 +669,7 @@
 				ENABLE_BITCODE = NO;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSCameraUsageDescription = "$(PRODUCT_NAME) needs camera access to scan QR codes to connect to other app users";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -701,6 +710,7 @@
 				ENABLE_BITCODE = NO;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSCameraUsageDescription = "$(PRODUCT_NAME) needs camera access to scan QR codes to connect to other app users";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -933,6 +943,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		5C8F01CB27A6F0D8007D2C8D /* XCRemoteSwiftPackageReference "CodeScanner" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/twostraws/CodeScanner";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.0.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		5C8F01CC27A6F0D8007D2C8D /* CodeScanner */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 5C8F01CB27A6F0D8007D2C8D /* XCRemoteSwiftPackageReference "CodeScanner" */;
+			productName = CodeScanner;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 5CA059BE279559F40002BEB4 /* Project object */;
 }
