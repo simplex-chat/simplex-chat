@@ -1823,18 +1823,18 @@ createNewChatItem st userId chatDirection NewChatItem {createdByMsgId, itemSent,
       CDGroupSnd GroupInfo {groupId} -> (Nothing, Just groupId, Nothing)
       CDGroupRcv GroupInfo {groupId} GroupMember {groupMemberId} -> (Nothing, Just groupId, Just groupMemberId)
 
-getChatPreviews :: MonadUnliftIO m => SQLiteStore -> User -> m [AChatPreview]
+getChatPreviews :: MonadUnliftIO m => SQLiteStore -> User -> m [AChat]
 getChatPreviews st user =
   liftIO . withTransaction st $ \db -> do
     directChatPreviews <- getDirectChatPreviews_ db user
     groupChatPreviews <- getGroupChatPreviews_ db user
     pure $ sortOn (Down . ts) (directChatPreviews <> groupChatPreviews)
   where
-    ts :: AChatPreview -> UTCTime
-    ts (AChatPreview _ _ Nothing) = UTCTime (fromGregorian 2122 1 29) (secondsToDiffTime 0) -- TODO Contact/GroupInfo createdAt
-    ts (AChatPreview _ _ (Just (CChatItem _ (ChatItem _ CIMeta {itemTs} _)))) = itemTs
+    ts :: AChat -> UTCTime
+    ts (AChat _ (Chat _ [])) = UTCTime (fromGregorian 2122 1 29) (secondsToDiffTime 0) -- TODO Contact/GroupInfo createdAt
+    ts (AChat _ (Chat _ (CChatItem _ (ChatItem _ CIMeta {itemTs} _) : _))) = itemTs
 
-getDirectChatPreviews_ :: DB.Connection -> User -> IO [AChatPreview]
+getDirectChatPreviews_ :: DB.Connection -> User -> IO [AChat]
 getDirectChatPreviews_ db User {userId} = do
   tz <- getCurrentTimeZone
   map (toDirectChatPreview tz)
@@ -1865,13 +1865,13 @@ getDirectChatPreviews_ db User {userId} = do
       |]
       (Only userId)
   where
-    toDirectChatPreview :: TimeZone -> ContactRow :. MaybeChatItemRow -> AChatPreview
+    toDirectChatPreview :: TimeZone -> ContactRow :. MaybeChatItemRow -> AChat
     toDirectChatPreview tz (contactRow :. ciRow_) =
       let contact = toContact' contactRow
-          ci_ = toMaybeDirectChatItem tz ciRow_
-       in AChatPreview SCTDirect (DirectChat contact) ci_
+          ci_ = toDirectChatItemList tz ciRow_
+       in AChat SCTDirect $ Chat (DirectChat contact) ci_
 
-getGroupChatPreviews_ :: DB.Connection -> User -> IO [AChatPreview]
+getGroupChatPreviews_ :: DB.Connection -> User -> IO [AChat]
 getGroupChatPreviews_ db User {userId, userContactId} = do
   tz <- getCurrentTimeZone
   map (toGroupChatPreview tz)
@@ -1910,12 +1910,12 @@ getGroupChatPreviews_ db User {userId, userContactId} = do
       |]
       (userId, userContactId)
   where
-    toGroupChatPreview :: TimeZone -> GroupInfoRow :. MaybeGroupChatItemRow -> AChatPreview
+    toGroupChatPreview :: TimeZone -> GroupInfoRow :. MaybeGroupChatItemRow -> AChat
     toGroupChatPreview tz (((groupId, localDisplayName, displayName, fullName) :. userMemberRow) :. ciRow_) =
       let membership = toGroupMember userContactId userMemberRow
           groupInfo = GroupInfo {groupId, localDisplayName, groupProfile = GroupProfile {displayName, fullName}, membership}
-          ci_ = toMaybeGroupChatItem tz userContactId ciRow_
-       in AChatPreview SCTGroup (GroupChat groupInfo) ci_
+          ci_ = toGroupChatItemList tz userContactId ciRow_
+       in AChat SCTGroup $ Chat (GroupChat groupInfo) ci_
 
 getDirectChat :: StoreMonad m => SQLiteStore -> UserId -> Int64 -> m (Chat 'CTDirect)
 getDirectChat st userId contactId =
@@ -2051,10 +2051,10 @@ toDirectChatItem tz (itemId, itemTs, itemContent, itemText, createdAt) =
         ACIContent d@SMDSnd ciContent -> CChatItem d $ ChatItem CIDirectSnd ciMeta ciContent
         ACIContent d@SMDRcv ciContent -> CChatItem d $ ChatItem CIDirectRcv ciMeta ciContent
 
-toMaybeDirectChatItem :: TimeZone -> MaybeChatItemRow -> Maybe (CChatItem 'CTDirect)
-toMaybeDirectChatItem tz (Just itemId, Just itemTs, Just itemContent, Just itemText, Just createdAt) =
-  Just $ toDirectChatItem tz (itemId, itemTs, itemContent, itemText, createdAt)
-toMaybeDirectChatItem _ _ = Nothing
+toDirectChatItemList :: TimeZone -> MaybeChatItemRow -> [CChatItem 'CTDirect]
+toDirectChatItemList tz (Just itemId, Just itemTs, Just itemContent, Just itemText, Just createdAt) =
+  [toDirectChatItem tz (itemId, itemTs, itemContent, itemText, createdAt)]
+toDirectChatItemList _ _ = []
 
 type GroupChatItemRow = ChatItemRow :. MaybeGroupMemberRow
 
@@ -2069,10 +2069,10 @@ toGroupChatItem tz userContactId ((itemId, itemTs, itemContent, itemText, create
         (ACIContent d@SMDRcv ciContent, Just member) -> Right $ CChatItem d (ChatItem (CIGroupRcv member) ciMeta ciContent)
         _ -> Left $ SEBadChatItem itemId
 
-toMaybeGroupChatItem :: TimeZone -> Int64 -> MaybeGroupChatItemRow -> Maybe (CChatItem 'CTGroup)
-toMaybeGroupChatItem tz userContactId ((Just itemId, Just itemTs, Just itemContent, Just itemText, Just createdAt) :. memberRow_) =
-  eitherToMaybe $ toGroupChatItem tz userContactId ((itemId, itemTs, itemContent, itemText, createdAt) :. memberRow_)
-toMaybeGroupChatItem _ _ _ = Nothing
+toGroupChatItemList :: TimeZone -> Int64 -> MaybeGroupChatItemRow -> [CChatItem 'CTGroup]
+toGroupChatItemList tz userContactId ((Just itemId, Just itemTs, Just itemContent, Just itemText, Just createdAt) :. memberRow_) =
+  either (const []) (: []) $ toGroupChatItem tz userContactId ((itemId, itemTs, itemContent, itemText, createdAt) :. memberRow_)
+toGroupChatItemList _ _ _ = []
 
 -- | Saves unique local display name based on passed displayName, suffixed with _N if required.
 -- This function should be called inside transaction.
