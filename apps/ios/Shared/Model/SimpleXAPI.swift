@@ -18,6 +18,7 @@ enum ChatCommand {
     case apiGetChats
     case apiGetChat(type: ChatType, id: Int64)
     case apiSendMessage(type: ChatType, id: Int64, msg: MsgContent)
+    case addContact
     case string(String)
 
     var cmdString: String {
@@ -29,6 +30,8 @@ enum ChatCommand {
                 return "/get chat \(type.rawValue)\(id)"
             case let .apiSendMessage(type, id, mc):
                 return "/send msg \(type.rawValue)\(id) \(mc.cmdString)"
+            case .addContact:
+                return "/c"
             case let .string(str):
                 return str
             }
@@ -44,6 +47,7 @@ enum ChatResponse: Decodable, Error {
     case response(type: String, json: String)
     case apiChats(chats: [ChatPreview])
     case apiChat(chat: Chat)
+    case invitation(connReqInvitation: String)
 //    case newSentInvitation
     case contactConnected(contact: Contact)
     case newChatItem(chatItem: AChatItem)
@@ -54,6 +58,7 @@ enum ChatResponse: Decodable, Error {
             case let .response(type, _): return "* \(type)"
             case .apiChats: return "apiChats"
             case .apiChat: return "apiChat"
+            case .invitation: return "invitation"
             case .contactConnected: return "contactConnected"
             case .newChatItem: return "newChatItem"
             }
@@ -66,6 +71,7 @@ enum ChatResponse: Decodable, Error {
             case let .response(_, json): return json
             case let .apiChats(chats): return String(describing: chats)
             case let .apiChat(chat): return String(describing: chat)
+            case let .invitation(connReqInvitation): return connReqInvitation
             case let .contactConnected(contact): return String(describing: contact)
             case let .newChatItem(chatItem): return String(describing: chatItem)
             }
@@ -161,6 +167,14 @@ func apiSendMessage(type: ChatType, id: Int64, msg: MsgContent) throws -> ChatIt
     let r = try chatSendCmd(.apiSendMessage(type: type, id: id, msg: msg))
     switch r {
     case let .newChatItem(aChatItem): return aChatItem.chatItem
+    default: throw r
+    }
+}
+
+func apiAddContact() throws -> String {
+    let r = try chatSendCmd(.addContact)
+    switch r {
+    case let .invitation(connReqInvitation): return connReqInvitation
     default: throw r
     }
 }

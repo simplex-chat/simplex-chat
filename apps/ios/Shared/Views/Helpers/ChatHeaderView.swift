@@ -10,7 +10,10 @@ import SwiftUI
 
 struct ChatHeaderView: View {
     @State private var showAddChat = false
-    @State private var inviteContact = false
+    @State private var addContact = false
+    @State private var addContactAlert = false
+    @State private var addContactError: Error?
+    @State private var connReqInvitation: String = ""
     @State private var scanQRCode = false
     @State private var createGroup = false
 
@@ -24,11 +27,28 @@ struct ChatHeaderView: View {
                 Image(systemName: "square.and.pencil")
             }
             .confirmationDialog("Start new chat", isPresented: $showAddChat, titleVisibility: .visible) {
-                Button("Invite contact") { inviteContact = true }
+                Button("Add contact") {
+                    do {
+                        connReqInvitation = try apiAddContact()
+                        addContact = true
+                    } catch {
+                        addContactAlert = true
+                        addContactError = error
+                        print(error)
+                    }
+                }
                 Button("Scan QR code") { scanQRCode = true }
                 Button("Create group") { createGroup = true }
             }
-            .sheet(isPresented: $inviteContact, content: { InviteContactView() })
+            .sheet(isPresented: $addContact, content: {
+                AddContactView(connReqInvitation: connReqInvitation)
+            })
+            .alert(isPresented: $addContactAlert) {
+                Alert(
+                    title: Text("Connection error"),
+                    message: Text(addContactError?.localizedDescription ?? "")
+                )
+            }
             .sheet(isPresented: $scanQRCode, content: { ScanQRCodeView() })
             .sheet(isPresented: $createGroup, content: { CreateGroupView() })
         }
