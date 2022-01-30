@@ -126,9 +126,23 @@ processChatCommand :: forall m. ChatMonad m => User -> ChatCommand -> m ChatResp
 processChatCommand user@User {userId, profile} = \case
   APIGetChats -> CRApiChats <$> withStore (`getChatPreviews` user)
   APIGetChat cType cId -> case cType of
-    CTDirect -> CRApiDirectChat <$> withStore (\st -> getDirectChat st user cId)
-    CTGroup -> CRApiGroupChat <$> withStore (\st -> getGroupChat st user cId)
+    CTDirect -> CRApiChat . AChat SCTDirect <$> withStore (\st -> getDirectChat st userId cId)
+    CTGroup -> CRApiChat . AChat SCTGroup <$> withStore (\st -> getGroupChat st user cId)
   APIGetChatItems _count -> pure $ CRChatError ChatErrorNotImplemented
+  APISendMessage cType chatId msg -> case cType of
+    CTDirect -> do
+      ct@Contact {localDisplayName = c} <- withStore $ \st -> getContact st userId chatId
+      let mc = MCText $ safeDecodeUtf8 msg
+      ci <- sendDirectChatItem userId ct (XMsgNew mc) (CISndMsgContent mc)
+      setActive $ ActiveC c
+      pure . CRNewChatItem $ AChatItem SCTDirect SMDSnd (DirectChat ct) ci
+    CTGroup -> do
+      group@(Group gInfo@GroupInfo {localDisplayName = gName, membership} _) <- withStore $ \st -> getGroup st user chatId
+      unless (memberActive membership) $ throwChatError CEGroupMemberUserRemoved
+      let mc = MCText $ safeDecodeUtf8 msg
+      ci <- sendGroupChatItem userId group (XMsgNew mc) (CISndMsgContent mc)
+      setActive $ ActiveG gName
+      pure . CRNewChatItem $ AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci
   ChatHelp section -> pure $ CRChatHelp section
   Welcome -> pure $ CRWelcome user
   AddContact -> procCmd $ do
@@ -183,17 +197,14 @@ processChatCommand user@User {userId, profile} = \case
     withAgent $ \a -> rejectContact a agentContactConnId agentInvitationId
     pure $ CRContactRequestRejected cName
   SendMessage cName msg -> do
-    contact <- withStore $ \st -> getContact st userId cName
-    let mc = MCText $ safeDecodeUtf8 msg
-    ci <- sendDirectChatItem userId contact (XMsgNew mc) (CISndMsgContent mc)
-    setActive $ ActiveC cName
-    pure . CRNewChatItem $ AChatItem SCTDirect SMDSnd (DirectChat contact) ci
+    contactId <- withStore $ \st -> getContactIdByName st userId cName
+    processChatCommand user $ APISendMessage CTDirect contactId msg
   NewGroup gProfile -> do
     gVar <- asks idsDrg
     CRGroupCreated <$> withStore (\st -> createNewGroup st gVar user gProfile)
   AddMember gName cName memRole -> do
     -- TODO for large groups: no need to load all members to determine if contact is a member
-    (group, contact) <- withStore $ \st -> (,) <$> getGroup st user gName <*> getContact st userId cName
+    (group, contact) <- withStore $ \st -> (,) <$> getGroupByName st user gName <*> getContactByName st userId cName
     let Group gInfo@GroupInfo {groupId, groupProfile, membership} members = group
         GroupMember {memberRole = userRole, memberId = userMemberId} = membership
     when (userRole < GRAdmin || userRole < memRole) $ throwChatError CEGroupUserRole
@@ -227,7 +238,7 @@ processChatCommand user@User {userId, profile} = \case
       pure $ CRUserAcceptedGroupSent g
   MemberRole _gName _cName _mRole -> throwChatError $ CECommandError "unsupported"
   RemoveMember gName cName -> do
-    Group gInfo@GroupInfo {membership} members <- withStore $ \st -> getGroup st user gName
+    Group gInfo@GroupInfo {membership} members <- withStore $ \st -> getGroupByName st user gName
     case find ((== cName) . (localDisplayName :: GroupMember -> ContactName)) members of
       Nothing -> throwChatError $ CEGroupMemberNotFound cName
       Just m@GroupMember {memberId = mId, memberRole = mRole, memberStatus = mStatus} -> do
@@ -239,14 +250,14 @@ processChatCommand user@User {userId, profile} = \case
           withStore $ \st -> updateGroupMemberStatus st userId m GSMemRemoved
           pure $ CRUserDeletedMember gInfo m
   LeaveGroup gName -> do
-    Group gInfo@GroupInfo {membership} members <- withStore $ \st -> getGroup st user gName
+    Group gInfo@GroupInfo {membership} members <- withStore $ \st -> getGroupByName st user gName
     procCmd $ do
       void $ sendGroupMessage members XGrpLeave
       mapM_ deleteMemberConnection members
       withStore $ \st -> updateGroupMemberStatus st userId membership GSMemLeft
       pure $ CRLeftMemberUser gInfo
   DeleteGroup gName -> do
-    g@(Group gInfo@GroupInfo {membership} members) <- withStore $ \st -> getGroup st user gName
+    g@(Group gInfo@GroupInfo {membership} members) <- withStore $ \st -> getGroupByName st user gName
     let s = memberStatus membership
         canDelete =
           memberRole (membership :: GroupMember) == GROwner
@@ -257,18 +268,14 @@ processChatCommand user@User {userId, profile} = \case
       mapM_ deleteMemberConnection members
       withStore $ \st -> deleteGroup st user g
       pure $ CRGroupDeletedUser gInfo
-  ListMembers gName -> CRGroupMembers <$> withStore (\st -> getGroup st user gName)
+  ListMembers gName -> CRGroupMembers <$> withStore (\st -> getGroupByName st user gName)
   ListGroups -> CRGroupsList <$> withStore (`getUserGroupDetails` user)
   SendGroupMessage gName msg -> do
-    group@(Group gInfo@GroupInfo {membership} _) <- withStore $ \st -> getGroup st user gName
-    unless (memberActive membership) $ throwChatError CEGroupMemberUserRemoved
-    let mc = MCText $ safeDecodeUtf8 msg
-    ci <- sendGroupChatItem userId group (XMsgNew mc) (CISndMsgContent mc)
-    setActive $ ActiveG gName
-    pure . CRNewChatItem $ AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci
+    groupId <- withStore $ \st -> getGroupIdByName st user gName
+    processChatCommand user $ APISendMessage CTGroup groupId msg
   SendFile cName f -> do
     (fileSize, chSize) <- checkSndFile f
-    contact <- withStore $ \st -> getContact st userId cName
+    contact <- withStore $ \st -> getContactByName st userId cName
     (agentConnId, fileConnReq) <- withAgent (`createConnection` SCMInvitation)
     let fileInv = FileInvitation {fileName = takeFileName f, fileSize, fileConnReq}
     SndFileTransfer {fileId} <- withStore $ \st ->
@@ -279,7 +286,7 @@ processChatCommand user@User {userId, profile} = \case
     pure . CRNewChatItem $ AChatItem SCTDirect SMDSnd (DirectChat contact) ci
   SendGroupFile gName f -> do
     (fileSize, chSize) <- checkSndFile f
-    Group gInfo@GroupInfo {membership} members <- withStore $ \st -> getGroup st user gName
+    Group gInfo@GroupInfo {membership} members <- withStore $ \st -> getGroupByName st user gName
     unless (memberActive membership) $ throwChatError CEGroupMemberUserRemoved
     let fileName = takeFileName f
     ms <- forM (filter memberActive members) $ \m -> do

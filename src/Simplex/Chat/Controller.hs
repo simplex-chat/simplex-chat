@@ -80,6 +80,7 @@ data ChatCommand
   = APIGetChats
   | APIGetChat ChatType Int64
   | APIGetChatItems Int
+  | APISendMessage ChatType Int64 ByteString
   | ChatHelp HelpSection
   | Welcome
   | AddContact
@@ -116,8 +117,7 @@ data ChatCommand
 
 data ChatResponse
   = CRApiChats {chats :: [AChatPreview]}
-  | CRApiDirectChat {chat :: Chat 'CTDirect}
-  | CRApiGroupChat {gChat :: Chat 'CTGroup}
+  | CRApiChat {chat :: AChat}
   | CRNewChatItem {chatItem :: AChatItem}
   | CRCmdAccepted {corr :: CorrId}
   | CRChatHelp {helpSection :: HelpSection}
