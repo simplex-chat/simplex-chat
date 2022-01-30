@@ -22,6 +22,7 @@ import Data.Text (Text)
 import GHC.Generics (Generic)
 import Numeric.Natural
 import Simplex.Chat.Messages
+import Simplex.Chat.Protocol
 import Simplex.Chat.Store (StoreError)
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent (AgentClient)
@@ -80,7 +81,7 @@ data ChatCommand
   = APIGetChats
   | APIGetChat ChatType Int64
   | APIGetChatItems Int
-  | APISendMessage ChatType Int64 ByteString
+  | APISendMessage ChatType Int64 MsgContent
   | ChatHelp HelpSection
   | Welcome
   | AddContact

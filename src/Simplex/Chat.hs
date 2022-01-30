@@ -129,17 +129,15 @@ processChatCommand user@User {userId, profile} = \case
     CTDirect -> CRApiChat . AChat SCTDirect <$> withStore (\st -> getDirectChat st userId cId)
     CTGroup -> CRApiChat . AChat SCTGroup <$> withStore (\st -> getGroupChat st user cId)
   APIGetChatItems _count -> pure $ CRChatError ChatErrorNotImplemented
-  APISendMessage cType chatId msg -> case cType of
+  APISendMessage cType chatId mc -> case cType of
     CTDirect -> do
       ct@Contact {localDisplayName = c} <- withStore $ \st -> getContact st userId chatId
-      let mc = MCText $ safeDecodeUtf8 msg
       ci <- sendDirectChatItem userId ct (XMsgNew mc) (CISndMsgContent mc)
       setActive $ ActiveC c
       pure . CRNewChatItem $ AChatItem SCTDirect SMDSnd (DirectChat ct) ci
     CTGroup -> do
       group@(Group gInfo@GroupInfo {localDisplayName = gName, membership} _) <- withStore $ \st -> getGroup st user chatId
       unless (memberActive membership) $ throwChatError CEGroupMemberUserRemoved
-      let mc = MCText $ safeDecodeUtf8 msg
       ci <- sendGroupChatItem userId group (XMsgNew mc) (CISndMsgContent mc)
       setActive $ ActiveG gName
       pure . CRNewChatItem $ AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci
@@ -198,7 +196,8 @@ processChatCommand user@User {userId, profile} = \case
     pure $ CRContactRequestRejected cName
   SendMessage cName msg -> do
     contactId <- withStore $ \st -> getContactIdByName st userId cName
-    processChatCommand user $ APISendMessage CTDirect contactId msg
+    let mc = MCText $ safeDecodeUtf8 msg
+    processChatCommand user $ APISendMessage CTDirect contactId mc
   NewGroup gProfile -> do
     gVar <- asks idsDrg
     CRGroupCreated <$> withStore (\st -> createNewGroup st gVar user gProfile)
@@ -272,7 +271,8 @@ processChatCommand user@User {userId, profile} = \case
   ListGroups -> CRGroupsList <$> withStore (`getUserGroupDetails` user)
   SendGroupMessage gName msg -> do
     groupId <- withStore $ \st -> getGroupIdByName st user gName
-    processChatCommand user $ APISendMessage CTGroup groupId msg
+    let mc = MCText $ safeDecodeUtf8 msg
+    processChatCommand user $ APISendMessage CTGroup groupId mc
   SendFile cName f -> do
     (fileSize, chSize) <- checkSndFile f
     contact <- withStore $ \st -> getContactByName st userId cName
@@ -1303,9 +1303,10 @@ withStore action =
 
 chatCommandP :: Parser ChatCommand
 chatCommandP =
-  "/api/v1/chats" $> APIGetChats
-    <|> "/api/v1/chat/" *> (APIGetChat <$> ("direct/" $> CTDirect <|> "group/" $> CTGroup) <*> A.decimal)
-    <|> "/api/v1/chat/items?count=" *> (APIGetChatItems <$> A.decimal)
+  "/get chats" $> APIGetChats
+    <|> "/get chat " *> (APIGetChat <$> chatTypeP <*> A.decimal)
+    <|> "/get chatItems count=" *> (APIGetChatItems <$> A.decimal)
+    <|> "/send msg " *> (APISendMessage <$> chatTypeP <*> A.decimal <* A.space <*> msgContentP)
     <|> ("/help files" <|> "/help file" <|> "/hf") $> ChatHelp HSFiles
     <|> ("/help groups" <|> "/help group" <|> "/hg") $> ChatHelp HSGroups
     <|> ("/help address" <|> "/ha") $> ChatHelp HSMyAddress
@@ -1323,7 +1324,7 @@ chatCommandP =
     <|> ("/connect " <|> "/c ") *> (Connect <$> ((Just <$> strP) <|> A.takeByteString $> Nothing))
     <|> ("/connect" <|> "/c") $> AddContact
     <|> ("/delete @" <|> "/delete " <|> "/d @" <|> "/d ") *> (DeleteContact <$> displayName)
-    <|> A.char '@' *> (SendMessage <$> displayName <*> (A.space *> A.takeByteString))
+    <|> A.char '@' *> (SendMessage <$> displayName <* A.space <*> A.takeByteString)
     <|> ("/file #" <|> "/f #") *> (SendGroupFile <$> displayName <* A.space <*> filePath)
     <|> ("/file @" <|> "/file " <|> "/f @" <|> "/f ") *> (SendFile <$> displayName <* A.space <*> filePath)
     <|> ("/freceive " <|> "/fr ") *> (ReceiveFile <$> A.decimal <*> optional (A.space *> filePath))
@@ -1342,6 +1343,8 @@ chatCommandP =
     <|> ("/quit" <|> "/q" <|> "/exit") $> QuitChat
     <|> ("/version" <|> "/v") $> ShowVersion
   where
+    chatTypeP = "@" $> CTDirect <|> "#" $> CTGroup
+    msgContentP = "text " *> (MCText . safeDecodeUtf8 <$> A.takeByteString)
     displayName = safeDecodeUtf8 <$> (B.cons <$> A.satisfy refChar <*> A.takeTill (== ' '))
     refChar c = c > ' ' && c /= '#' && c /= '@'
     userProfile = do
