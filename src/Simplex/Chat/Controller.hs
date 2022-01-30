@@ -117,7 +117,7 @@ data ChatCommand
   deriving (Show)
 
 data ChatResponse
-  = CRApiChats {chats :: [AChatPreview]}
+  = CRApiChats {chats :: [AChat]}
   | CRApiChat {chat :: AChat}
   | CRNewChatItem {chatItem :: AChatItem}
   | CRCmdAccepted {corr :: CorrId}

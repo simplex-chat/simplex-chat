@@ -146,13 +146,6 @@ instance ToJSON (Chat c) where
   toJSON = J.genericToJSON J.defaultOptions
   toEncoding = J.genericToEncoding J.defaultOptions
 
-data ChatPreview c = ChatPreview {chatInfo :: ChatInfo c, lastChatItem :: Maybe (CChatItem c)}
-  deriving (Show, Generic)
-
-instance ToJSON (ChatPreview c) where
-  toJSON = J.genericToJSON J.defaultOptions
-  toEncoding = J.genericToEncoding J.defaultOptions
-
 data AChat = forall c. AChat (SChatType c) (Chat c)
 
 deriving instance Show AChat
@@ -160,22 +153,6 @@ deriving instance Show AChat
 instance ToJSON AChat where
   toJSON (AChat _ c) = J.toJSON c
   toEncoding (AChat _ c) = J.toEncoding c
-
--- | type to show the list of chats, with one last message in each
-data AChatPreview = forall c. AChatPreview (SChatType c) (ChatInfo c) (Maybe (CChatItem c))
-
-deriving instance Show AChatPreview
-
-instance ToJSON AChatPreview where
-  toJSON (AChatPreview _ chat ccItem_) = J.toJSON $ JSONAnyChatPreview chat ccItem_
-  toEncoding (AChatPreview _ chat ccItem_) = J.toEncoding $ J.toJSON $ JSONAnyChatPreview chat ccItem_
-
-data JSONAnyChatPreview c d = JSONAnyChatPreview {chatInfo :: ChatInfo c, chatItem :: Maybe (CChatItem c)}
-  deriving (Generic)
-
-instance ToJSON (JSONAnyChatPreview c d) where
-  toJSON = J.genericToJSON J.defaultOptions
-  toEncoding = J.genericToEncoding J.defaultOptions
 
 -- | type to show a mix of messages from multiple chats
 data AChatItem = forall c d. AChatItem (SChatType c) (SMsgDirection d) (ChatInfo c) (ChatItem c d)
