@@ -27,7 +27,9 @@ module Simplex.Chat.Store
     createDirectContact,
     getContactGroupNames,
     deleteContact,
+    getContactByName,
     getContact,
+    getContactIdByName,
     updateUserProfile,
     updateContactProfile,
     getUserContacts,
@@ -50,6 +52,9 @@ module Simplex.Chat.Store
     createGroupInvitation,
     getGroup,
     getGroupInfo,
+    getGroupIdByName,
+    getGroupByName,
+    getGroupInfoByName,
     getGroupMembers,
     deleteGroup,
     getUserGroups,
@@ -306,10 +311,6 @@ deleteContact st userId displayName =
       |]
       [":user_id" := userId, ":display_name" := displayName]
 
-getContact :: StoreMonad m => SQLiteStore -> UserId -> ContactName -> m Contact
-getContact st userId localDisplayName =
-  liftIOEither . withTransaction st $ \db -> runExceptT $ getContact_ db userId localDisplayName
-
 updateUserProfile :: StoreMonad m => SQLiteStore -> User -> Profile -> m ()
 updateUserProfile st User {userId, userContactId, localDisplayName, profile = Profile {displayName}} p'@Profile {displayName = newName}
   | displayName == newName =
@@ -370,54 +371,27 @@ toContact' ((contactId, localDisplayName, viaGroup, displayName, fullName) :. co
       activeConn = toConnection connRow
    in Contact {contactId, localDisplayName, profile, activeConn, viaGroup}
 
+toContactOrError :: (Int64, ContactName, Maybe Int64, ContactName, Text) :. MaybeConnectionRow -> Either StoreError Contact
+toContactOrError ((contactId, localDisplayName, viaGroup, displayName, fullName) :. connRow) =
+  let profile = Profile {displayName, fullName}
+   in case toMaybeConnection connRow of
+        Just activeConn ->
+          Right Contact {contactId, localDisplayName, profile, activeConn, viaGroup}
+        _ -> Left $ SEContactNotReady localDisplayName
+
 -- TODO return the last connection that is ready, not any last connection
 -- requires updating connection status
-getContact_ :: DB.Connection -> UserId -> ContactName -> ExceptT StoreError IO Contact
-getContact_ db userId localDisplayName = do
-  c@Contact {contactId} <- getContactRec_
-  activeConn <- getConnection_ contactId
-  pure $ (c :: Contact) {activeConn}
-  where
-    getContactRec_ :: ExceptT StoreError IO Contact
-    getContactRec_ = ExceptT $ do
-      toContact
-        <$> DB.queryNamed
-          db
-          [sql|
-            SELECT c.contact_id, p.display_name, p.full_name, c.via_group
-            FROM contacts c
-            JOIN contact_profiles p ON c.contact_profile_id = p.contact_profile_id
-            WHERE c.user_id = :user_id AND c.local_display_name = :local_display_name AND c.is_user = :is_user
-          |]
-          [":user_id" := userId, ":local_display_name" := localDisplayName, ":is_user" := False]
-    getConnection_ :: Int64 -> ExceptT StoreError IO Connection
-    getConnection_ contactId = ExceptT $ do
-      connection
-        <$> DB.queryNamed
-          db
-          [sql|
-            SELECT c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact,
-              c.conn_status, c.conn_type, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at
-            FROM connections c
-            WHERE c.user_id = :user_id AND c.contact_id == :contact_id
-            ORDER BY c.connection_id DESC
-            LIMIT 1
-          |]
-          [":user_id" := userId, ":contact_id" := contactId]
-    toContact :: [(Int64, Text, Text, Maybe Int64)] -> Either StoreError Contact
-    toContact [(contactId, displayName, fullName, viaGroup)] =
-      let profile = Profile {displayName, fullName}
-       in Right Contact {contactId, localDisplayName, profile, activeConn = undefined, viaGroup}
-    toContact _ = Left $ SEContactNotFoundByName localDisplayName
-    connection :: [ConnectionRow] -> Either StoreError Connection
-    connection (connRow : _) = Right $ toConnection connRow
-    connection _ = Left $ SEContactNotReady localDisplayName
+getContactByName :: StoreMonad m => SQLiteStore -> UserId -> ContactName -> m Contact
+getContactByName st userId localDisplayName =
+  liftIOEither . withTransaction st $ \db -> runExceptT $ do
+    cId <- ExceptT $ getContactIdByName_ db userId localDisplayName
+    ExceptT $ getContact_ db userId cId
 
 getUserContacts :: MonadUnliftIO m => SQLiteStore -> User -> m [Contact]
 getUserContacts st User {userId} =
   liftIO . withTransaction st $ \db -> do
-    contactNames <- map fromOnly <$> DB.query db "SELECT local_display_name FROM contacts WHERE user_id = ?" (Only userId)
-    rights <$> mapM (runExceptT . getContact_ db userId) contactNames
+    contactIds <- map fromOnly <$> DB.query db "SELECT contact_id FROM contacts WHERE user_id = ?" (Only userId)
+    rights <$> mapM (getContact_ db userId) contactIds
 
 createUserContactLink :: StoreMonad m => SQLiteStore -> UserId -> ConnId -> ConnReqContact -> m ()
 createUserContactLink st userId agentConnId cReq =
@@ -664,12 +638,12 @@ toMaybeConnection _ = Nothing
 getMatchingContacts :: MonadUnliftIO m => SQLiteStore -> UserId -> Contact -> m [Contact]
 getMatchingContacts st userId Contact {contactId, profile = Profile {displayName, fullName}} =
   liftIO . withTransaction st $ \db -> do
-    contactNames <-
+    contactIds <-
       map fromOnly
         <$> DB.queryNamed
           db
           [sql|
-            SELECT ct.local_display_name
+            SELECT ct.contact_id
             FROM contacts ct
             JOIN contact_profiles p ON ct.contact_profile_id = p.contact_profile_id
             WHERE ct.user_id = :user_id AND ct.contact_id != :contact_id
@@ -680,7 +654,7 @@ getMatchingContacts st userId Contact {contactId, profile = Profile {displayName
             ":display_name" := displayName,
             ":full_name" := fullName
           ]
-    rights <$> mapM (runExceptT . getContact_ db userId) contactNames
+    rights <$> mapM (getContact_ db userId) contactIds
 
 createSentProbe :: StoreMonad m => SQLiteStore -> TVar ChaChaDRG -> UserId -> Contact -> m (Probe, Int64)
 createSentProbe st gVar userId _to@Contact {contactId} =
@@ -698,21 +672,21 @@ matchReceivedProbe :: MonadUnliftIO m => SQLiteStore -> UserId -> Contact -> Pro
 matchReceivedProbe st userId _from@Contact {contactId} (Probe probe) =
   liftIO . withTransaction st $ \db -> do
     let probeHash = C.sha256Hash probe
-    contactNames <-
+    contactIds <-
       map fromOnly
         <$> DB.query
           db
           [sql|
-            SELECT c.local_display_name
+            SELECT c.contact_id
             FROM contacts c
             JOIN received_probes r ON r.contact_id = c.contact_id
             WHERE c.user_id = ? AND r.probe_hash = ? AND r.probe IS NULL
           |]
           (userId, probeHash)
     DB.execute db "INSERT INTO received_probes (contact_id, probe, probe_hash, user_id) VALUES (?,?,?,?)" (contactId, probe, probeHash, userId)
-    case contactNames of
+    case contactIds of
       [] -> pure Nothing
-      cName : _ -> eitherToMaybe <$> runExceptT (getContact_ db userId cName)
+      cId : _ -> eitherToMaybe <$> getContact_ db userId cId
 
 matchReceivedProbeHash :: MonadUnliftIO m => SQLiteStore -> UserId -> Contact -> ProbeHash -> m (Maybe (Contact, Probe))
 matchReceivedProbeHash st userId _from@Contact {contactId} (ProbeHash probeHash) =
@@ -721,7 +695,7 @@ matchReceivedProbeHash st userId _from@Contact {contactId} (ProbeHash probeHash)
       DB.query
         db
         [sql|
-          SELECT c.local_display_name, r.probe
+          SELECT c.contact_id, r.probe
           FROM contacts c
           JOIN received_probes r ON r.contact_id = c.contact_id
           WHERE c.user_id = ? AND r.probe_hash = ? AND r.probe IS NOT NULL
@@ -730,28 +704,28 @@ matchReceivedProbeHash st userId _from@Contact {contactId} (ProbeHash probeHash)
     DB.execute db "INSERT INTO received_probes (contact_id, probe_hash, user_id) VALUES (?,?,?)" (contactId, probeHash, userId)
     case namesAndProbes of
       [] -> pure Nothing
-      (cName, probe) : _ ->
+      (cId, probe) : _ ->
         either (const Nothing) (Just . (,Probe probe))
-          <$> runExceptT (getContact_ db userId cName)
+          <$> getContact_ db userId cId
 
 matchSentProbe :: MonadUnliftIO m => SQLiteStore -> UserId -> Contact -> Probe -> m (Maybe Contact)
 matchSentProbe st userId _from@Contact {contactId} (Probe probe) =
   liftIO . withTransaction st $ \db -> do
-    contactNames <-
+    contactIds <-
       map fromOnly
         <$> DB.query
           db
           [sql|
-            SELECT c.local_display_name
+            SELECT c.contact_id
             FROM contacts c
             JOIN sent_probes s ON s.contact_id = c.contact_id
             JOIN sent_probe_hashes h ON h.sent_probe_id = s.sent_probe_id
             WHERE c.user_id = ? AND s.probe = ? AND h.contact_id = ?
           |]
           (userId, probe, contactId)
-    case contactNames of
+    case contactIds of
       [] -> pure Nothing
-      cName : _ -> eitherToMaybe <$> runExceptT (getContact_ db userId cName)
+      cId : _ -> eitherToMaybe <$> getContact_ db userId cId
 
 mergeContactRecords :: MonadUnliftIO m => SQLiteStore -> UserId -> Contact -> Contact -> m ()
 mergeContactRecords st userId Contact {contactId = toContactId} Contact {contactId = fromContactId, localDisplayName} =
@@ -922,15 +896,15 @@ createGroupInvitation ::
   StoreMonad m => SQLiteStore -> User -> Contact -> GroupInvitation -> m GroupInfo
 createGroupInvitation st user@User {userId} contact@Contact {contactId} GroupInvitation {fromMember, invitedMember, connRequest, groupProfile} =
   liftIOEither . withTransaction st $ \db -> do
-    getGroupInvitationLdn_ db >>= \case
+    getInvitationGroupId_ db >>= \case
       Nothing -> createGroupInvitation_ db
       -- TODO treat the case that the invitation details could've changed
-      Just localDisplayName -> getGroupInfo_ db user localDisplayName
+      Just gId -> getGroupInfo_ db user gId
   where
-    getGroupInvitationLdn_ :: DB.Connection -> IO (Maybe GroupName)
-    getGroupInvitationLdn_ db =
+    getInvitationGroupId_ :: DB.Connection -> IO (Maybe Int64)
+    getInvitationGroupId_ db =
       listToMaybe . map fromOnly
-        <$> DB.query db "SELECT local_display_name FROM groups WHERE inv_queue_info = ? AND user_id = ? LIMIT 1;" (connRequest, userId)
+        <$> DB.query db "SELECT group_id FROM groups WHERE inv_queue_info = ? AND user_id = ? LIMIT 1;" (connRequest, userId)
     createGroupInvitation_ :: DB.Connection -> IO (Either StoreError GroupInfo)
     createGroupInvitation_ db = do
       let GroupProfile {displayName, fullName} = groupProfile
@@ -945,13 +919,19 @@ createGroupInvitation st user@User {userId} contact@Contact {contactId} GroupInv
 
 -- TODO return the last connection that is ready, not any last connection
 -- requires updating connection status
-getGroup :: StoreMonad m => SQLiteStore -> User -> GroupName -> m Group
-getGroup st user localDisplayName =
-  liftIOEither . withTransaction st $ \db -> runExceptT $ getGroup_ db user localDisplayName
+getGroupByName :: StoreMonad m => SQLiteStore -> User -> GroupName -> m Group
+getGroupByName st user gName =
+  liftIOEither . withTransaction st $ \db -> runExceptT $ do
+    groupId <- ExceptT $ getGroupIdByName_ db user gName
+    ExceptT $ getGroup_ db user groupId
 
-getGroup_ :: DB.Connection -> User -> GroupName -> ExceptT StoreError IO Group
-getGroup_ db user gName = do
-  gInfo <- ExceptT $ getGroupInfo_ db user gName
+getGroup :: StoreMonad m => SQLiteStore -> User -> Int64 -> m Group
+getGroup st user groupId =
+  liftIOEither . withTransaction st $ \db -> getGroup_ db user groupId
+
+getGroup_ :: DB.Connection -> User -> Int64 -> IO (Either StoreError Group)
+getGroup_ db user groupId = runExceptT $ do
+  gInfo <- ExceptT $ getGroupInfo_ db user groupId
   members <- liftIO $ getGroupMembers_ db user gInfo
   pure $ Group gInfo members
 
@@ -967,8 +947,8 @@ deleteGroup st User {userId} (Group GroupInfo {groupId, localDisplayName} member
 getUserGroups :: MonadUnliftIO m => SQLiteStore -> User -> m [Group]
 getUserGroups st user@User {userId} =
   liftIO . withTransaction st $ \db -> do
-    groupNames <- map fromOnly <$> DB.query db "SELECT local_display_name FROM groups WHERE user_id = ?" (Only userId)
-    rights <$> mapM (runExceptT . getGroup_ db user) groupNames
+    groupIds <- map fromOnly <$> DB.query db "SELECT group_id FROM groups WHERE user_id = ?" (Only userId)
+    rights <$> mapM (getGroup_ db user) groupIds
 
 getUserGroupDetails :: MonadUnliftIO m => SQLiteStore -> User -> m [GroupInfo]
 getUserGroupDetails st User {userId, userContactId} =
@@ -988,32 +968,11 @@ getUserGroupDetails st User {userId, userContactId} =
         |]
         (userId, userContactId)
 
-getGroupInfo :: StoreMonad m => SQLiteStore -> User -> GroupName -> m GroupInfo
-getGroupInfo st user gName = liftIOEither . withTransaction st $ \db -> getGroupInfo_ db user gName
-
-getGroupInfo_ :: DB.Connection -> User -> GroupName -> IO (Either StoreError GroupInfo)
-getGroupInfo_ db User {userId, userContactId} gName =
-  firstRow (toGroupInfo userContactId) (SEGroupNotFoundByName gName) $
-    DB.query
-      db
-      [sql|
-        SELECT
-          -- GroupInfo
-          g.group_id, g.local_display_name,
-          -- GroupInfo {groupProfile}
-          gp.display_name, gp.full_name,
-          -- GroupInfo {membership}
-          mu.group_member_id, mu.group_id, mu.member_id, mu.member_role, mu.member_category,
-          mu.member_status, mu.invited_by, mu.local_display_name, mu.contact_id,
-          -- GroupInfo {membership = GroupMember {memberProfile}}
-          pu.display_name, pu.full_name
-        FROM groups g
-        JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id
-        JOIN group_members mu ON mu.group_id = g.group_id
-        JOIN contact_profiles pu ON pu.contact_profile_id = mu.contact_profile_id
-        WHERE g.local_display_name = ? AND g.user_id = ? AND mu.contact_id = ?
-      |]
-      (gName, userId, userContactId)
+getGroupInfoByName :: StoreMonad m => SQLiteStore -> User -> GroupName -> m GroupInfo
+getGroupInfoByName st user gName =
+  liftIOEither . withTransaction st $ \db -> runExceptT $ do
+    gId <- ExceptT $ getGroupIdByName_ db user gName
+    ExceptT $ getGroupInfo_ db user gId
 
 type GroupInfoRow = (Int64, GroupName, GroupName, Text) :. GroupMemberRow
 
@@ -1057,7 +1016,8 @@ getGroupInvitation :: StoreMonad m => SQLiteStore -> User -> GroupName -> m Rece
 getGroupInvitation st user localDisplayName =
   liftIOEither . withTransaction st $ \db -> runExceptT $ do
     cReq <- getConnRec_ db user
-    Group groupInfo@GroupInfo {membership} members <- getGroup_ db user localDisplayName
+    groupId <- ExceptT $ getGroupIdByName_ db user localDisplayName
+    Group groupInfo@GroupInfo {membership} members <- ExceptT $ getGroup_ db user groupId
     when (memberStatus membership /= GSMemInvited) $ throwError SEGroupAlreadyJoined
     case (cReq, findFromContact (invitedBy membership) members) of
       (Just connRequest, Just fromMember) ->
@@ -1883,10 +1843,8 @@ getDirectChatPreviews_ db User {userId} = do
       [sql|
         SELECT
           -- Contact
-          ct.contact_id, ct.local_display_name, ct.via_group,
-          -- Contact {profile}
-          cp.display_name, cp.full_name,
-          -- Contact {activeConn}
+          ct.contact_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name,
+          -- Connection
           c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.conn_status, c.conn_type,
           c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at,
           -- ChatItem
@@ -1922,20 +1880,16 @@ getGroupChatPreviews_ db User {userId, userContactId} = do
       [sql|
         SELECT
           -- GroupInfo
-          g.group_id, g.local_display_name,
-          -- GroupInfo {groupProfile}
-          gp.display_name, gp.full_name,
-          -- GroupInfo {membership}
+          g.group_id, g.local_display_name, gp.display_name, gp.full_name,
+          -- GroupMember - membership
           mu.group_member_id, mu.group_id, mu.member_id, mu.member_role, mu.member_category,
           mu.member_status, mu.invited_by, mu.local_display_name, mu.contact_id,
-          -- GroupInfo {membership = GroupMember {memberProfile}}
           pu.display_name, pu.full_name,
           -- ChatItem
           ci.chat_item_id, ci.item_ts, ci.item_content, ci.item_text, ci.created_at,
-          -- GroupMember
+          -- Maybe GroupMember - sender
           m.group_member_id, m.group_id, m.member_id, m.member_role, m.member_category,
           m.member_status, m.invited_by, m.local_display_name, m.contact_id,
-          -- GroupMember {memberProfile}
           p.display_name, p.full_name
         FROM groups g
         JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id
@@ -1963,37 +1917,53 @@ getGroupChatPreviews_ db User {userId, userContactId} = do
           ci_ = toMaybeGroupChatItem tz userContactId ciRow_
        in AChatPreview SCTGroup (GroupChat groupInfo) ci_
 
-getDirectChat :: StoreMonad m => SQLiteStore -> User -> Int64 -> m (Chat 'CTDirect)
-getDirectChat st user contactId =
+getDirectChat :: StoreMonad m => SQLiteStore -> UserId -> Int64 -> m (Chat 'CTDirect)
+getDirectChat st userId contactId =
   liftIOEither . withTransaction st $ \db -> runExceptT $ do
-    contact <- ExceptT $ getContact_' db user contactId
-    chatItems <- liftIO $ getDirectChatItems_ db user contactId
+    contact <- ExceptT $ getContact_ db userId contactId
+    chatItems <- liftIO $ getDirectChatItems_ db userId contactId
     pure $ Chat (DirectChat contact) chatItems
 
--- TODO reuse in contact queries
-getContact_' :: DB.Connection -> User -> Int64 -> IO (Either StoreError Contact)
-getContact_' db User {userId} contactId =
-  firstRow toContact' (SEContactNotFound contactId) $
-    DB.query
-      db
-      [sql|
-        SELECT
-          -- Contact
-          ct.contact_id, ct.local_display_name, ct.via_group,
-          -- Contact {profile}
-          cp.display_name, cp.full_name,
-          -- Contact {activeConn}
-          c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.conn_status, c.conn_type,
-          c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at
-        FROM contacts ct
-        JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
-        JOIN connections c ON c.contact_id = ct.contact_id
-        WHERE ct.user_id = ? AND ct.contact_id = ?
-      |]
-      (userId, contactId)
+getContactIdByName :: StoreMonad m => SQLiteStore -> UserId -> ContactName -> m Int64
+getContactIdByName st userId cName =
+  liftIOEither . withTransaction st $ \db -> getContactIdByName_ db userId cName
 
-getDirectChatItems_ :: DB.Connection -> User -> Int64 -> IO [CChatItem 'CTDirect]
-getDirectChatItems_ db User {userId} contactId = do
+getContactIdByName_ :: DB.Connection -> UserId -> ContactName -> IO (Either StoreError Int64)
+getContactIdByName_ db userId cName =
+  firstRow fromOnly (SEContactNotFoundByName cName) $
+    DB.query db "SELECT contact_id FROM contacts WHERE user_id = ? AND local_display_name = ?" (userId, cName)
+
+getContact :: StoreMonad m => SQLiteStore -> UserId -> Int64 -> m Contact
+getContact st userId contactId =
+  liftIOEither . withTransaction st $ \db -> getContact_ db userId contactId
+
+-- TODO return the last connection that is ready, not any last connection
+-- requires updating connection status
+getContact_ :: DB.Connection -> UserId -> Int64 -> IO (Either StoreError Contact)
+getContact_ db userId contactId =
+  join
+    <$> firstRow
+      toContactOrError
+      (SEContactNotFound contactId)
+      ( DB.query
+          db
+          [sql|
+            SELECT
+              -- Contact
+              ct.contact_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name,
+              -- Connection
+              c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.conn_status, c.conn_type,
+              c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at
+            FROM contacts ct
+            JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
+            JOIN connections c ON c.contact_id = ct.contact_id
+            WHERE ct.user_id = ? AND ct.contact_id = ?
+          |]
+          (userId, contactId)
+      )
+
+getDirectChatItems_ :: DB.Connection -> UserId -> Int64 -> IO [CChatItem 'CTDirect]
+getDirectChatItems_ db userId contactId = do
   tz <- getCurrentTimeZone
   map (toDirectChatItem tz)
     <$> DB.query
@@ -2009,26 +1979,27 @@ getDirectChatItems_ db User {userId} contactId = do
 getGroupChat :: StoreMonad m => SQLiteStore -> User -> Int64 -> m (Chat 'CTGroup)
 getGroupChat st user groupId =
   liftIOEither . withTransaction st $ \db -> runExceptT $ do
-    groupInfo <- ExceptT $ getGroupInfo_' db user groupId
+    groupInfo <- ExceptT $ getGroupInfo_ db user groupId
     chatItems <- ExceptT $ getGroupChatItems_ db user groupId
     pure $ Chat (GroupChat groupInfo) chatItems
 
--- TODO reuse in group queries
-getGroupInfo_' :: DB.Connection -> User -> Int64 -> IO (Either StoreError GroupInfo)
-getGroupInfo_' db User {userId, userContactId} groupId =
+getGroupInfo :: StoreMonad m => SQLiteStore -> User -> Int64 -> m GroupInfo
+getGroupInfo st user groupId =
+  liftIOEither . withTransaction st $ \db ->
+    getGroupInfo_ db user groupId
+
+getGroupInfo_ :: DB.Connection -> User -> Int64 -> IO (Either StoreError GroupInfo)
+getGroupInfo_ db User {userId, userContactId} groupId =
   firstRow (toGroupInfo userContactId) (SEGroupNotFound groupId) $
     DB.query
       db
       [sql|
         SELECT
           -- GroupInfo
-          g.group_id, g.local_display_name,
-          -- GroupInfo {groupProfile}
-          gp.display_name, gp.full_name,
-          -- GroupInfo {membership}
+          g.group_id, g.local_display_name, gp.display_name, gp.full_name,
+          -- GroupMember - membership
           mu.group_member_id, mu.group_id, mu.member_id, mu.member_role, mu.member_category,
           mu.member_status, mu.invited_by, mu.local_display_name, mu.contact_id,
-          -- GroupInfo {membership = GroupMember {memberProfile}}
           pu.display_name, pu.full_name
         FROM groups g
         JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id
@@ -2051,7 +2022,6 @@ getGroupChatItems_ db User {userId, userContactId} groupId = do
           -- GroupMember
           m.group_member_id, m.group_id, m.member_id, m.member_role, m.member_category,
           m.member_status, m.invited_by, m.local_display_name, m.contact_id,
-          -- GroupMember {memberProfile}
           p.display_name, p.full_name
         FROM chat_items ci
         LEFT JOIN group_members m ON m.group_member_id = ci.group_member_id
@@ -2060,6 +2030,15 @@ getGroupChatItems_ db User {userId, userContactId} groupId = do
         ORDER BY ci.item_ts ASC
       |]
       (userId, groupId)
+
+getGroupIdByName :: StoreMonad m => SQLiteStore -> User -> GroupName -> m Int64
+getGroupIdByName st user gName =
+  liftIOEither . withTransaction st $ \db -> getGroupIdByName_ db user gName
+
+getGroupIdByName_ :: DB.Connection -> User -> GroupName -> IO (Either StoreError Int64)
+getGroupIdByName_ db User {userId} gName =
+  firstRow fromOnly (SEGroupNotFoundByName gName) $
+    DB.query db "SELECT group_id FROM groups WHERE user_id = ? AND local_display_name = ?" (userId, gName)
 
 type ChatItemRow = (Int64, ChatItemTs, ACIContent, Text, UTCTime)
 
