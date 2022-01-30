@@ -16,20 +16,27 @@ private let jsonEncoder = getJSONEncoder()
 
 enum ChatCommand {
     case apiGetChats
-    case apiGetChatItems(type: ChatType, id: Int64)
+    case apiGetChat(type: ChatType, id: Int64)
+    case apiSendMessage(type: ChatType, id: Int64, msg: MsgContent)
+    case addContact
+    case connect(connReq: String)
     case string(String)
-    case help
 
     var cmdString: String {
         get {
             switch self {
             case .apiGetChats:
-                return "/api/v1/chats"
-            case let .apiGetChatItems(type, id):
-                return "/api/v1/chat/\(type)/\(id)"
+                return "/get chats"
+            case let .apiGetChat(type, id):
+                return "/get chat \(type.rawValue)\(id)"
+            case let .apiSendMessage(type, id, mc):
+                return "/send msg \(type.rawValue)\(id) \(mc.cmdString)"
+            case .addContact:
+                return "/c"
+            case let .connect(connReq):
+                return "/c \(connReq)"
             case let .string(str):
                 return str
-            case .help: return "/help"
             }
         }
     }
@@ -42,7 +49,10 @@ struct APIResponse: Decodable {
 enum ChatResponse: Decodable, Error {
     case response(type: String, json: String)
     case apiChats(chats: [ChatPreview])
-    case apiDirectChat(chat: Chat) // direct/<id> or group/<id>, same as ChatPreview.id
+    case apiChat(chat: Chat)
+    case invitation(connReqInvitation: String)
+    case sentConfirmation
+    case sentInvitation
 //    case newSentInvitation
     case contactConnected(contact: Contact)
     case newChatItem(chatItem: AChatItem)
@@ -52,7 +62,10 @@ enum ChatResponse: Decodable, Error {
             switch self {
             case let .response(type, _): return "* \(type)"
             case .apiChats: return "apiChats"
-            case .apiDirectChat: return "apiDirectChat"
+            case .apiChat: return "apiChat"
+            case .invitation: return "invitation"
+            case .sentConfirmation: return "sentConfirmation"
+            case .sentInvitation: return "sentInvitation"
             case .contactConnected: return "contactConnected"
             case .newChatItem: return "newChatItem"
             }
@@ -64,7 +77,10 @@ enum ChatResponse: Decodable, Error {
             switch self {
             case let .response(_, json): return json
             case let .apiChats(chats): return String(describing: chats)
-            case let .apiDirectChat(chat): return String(describing: chat)
+            case let .apiChat(chat): return String(describing: chat)
+            case let .invitation(connReqInvitation): return connReqInvitation
+            case .sentConfirmation: return "sentConfirmation: no details"
+            case .sentInvitation: return "sentInvitation: no details"
             case let .contactConnected(contact): return String(describing: contact)
             case let .newChatItem(chatItem): return String(describing: chatItem)
             }
@@ -127,6 +143,7 @@ func chatCreateUser(_ p: Profile) -> User? {
 
 func chatSendCmd(_ cmd: ChatCommand) throws -> ChatResponse {
     var c = cmd.cmdString.cString(using: .utf8)!
+    print("command", cmd.cmdString)
 // TODO some mechanism to update model without passing it - maybe Publisher / Subscriber?
 //    DispatchQueue.main.async {
 //        termId += 1
@@ -141,16 +158,33 @@ func chatRecvMsg() throws -> ChatResponse {
 
 func apiGetChats() throws -> [ChatPreview] {
     let r = try chatSendCmd(.apiGetChats)
-    switch r {
-    case let .apiChats(chats): return chats
-    default: throw r
-    }
+    if case let .apiChats(chats) = r { return chats }
+    throw r
 }
 
-func apiGetChatItems(type: ChatType, id: Int64) throws -> Chat {
-    let r = try chatSendCmd(.apiGetChatItems(type: type, id: id))
+func apiGetChat(type: ChatType, id: Int64) throws -> Chat {
+    let r = try chatSendCmd(.apiGetChat(type: type, id: id))
+    if case let .apiChat(chat) = r { return chat }
+    throw r
+}
+
+func apiSendMessage(type: ChatType, id: Int64, msg: MsgContent) throws -> ChatItem {
+    let r = try chatSendCmd(.apiSendMessage(type: type, id: id, msg: msg))
+    if case let .newChatItem(aChatItem) = r { return aChatItem.chatItem }
+    throw r
+}
+
+func apiAddContact() throws -> String {
+    let r = try chatSendCmd(.addContact)
+    if case let .invitation(connReqInvitation) = r { return connReqInvitation }
+    throw r
+}
+
+func apiConnect(connReq: String) throws {
+    let r = try chatSendCmd(.connect(connReq: connReq))
     switch r {
-    case let .apiDirectChat(chat): return chat
+    case .sentConfirmation: return
+    case .sentInvitation: return
     default: throw r
     }
 }

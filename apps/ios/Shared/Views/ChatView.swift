@@ -36,7 +36,14 @@ struct ChatView: View {
     }
 
     func sendMessage(_ msg: String) {
-
+        do {
+            let chatItem = try apiSendMessage(type: chatInfo.chatType, id: chatInfo.apiId, msg: .text(msg))
+            let chat = chatModel.chats[chatInfo.id] ?? Chat(chatInfo: chatInfo, chatItems: [])
+            chatModel.chats[chatInfo.id] = chat
+            chat.chatItems.append(chatItem)
+        } catch {
+            print(error)
+        }
     }
 }
 

@@ -46,8 +46,9 @@ struct ChatListView: View {
                             ChatView(chatInfo: chatPreview.chatInfo)
                                 .onAppear {
                                     do {
-                                        let chat = try apiGetChatItems(type: .direct, id: chatPreview.chatInfo.apiId)
-                                        chatModel.chats[chat.chatInfo.id] = chat
+                                        let ci = chatPreview.chatInfo
+                                        let chat = try apiGetChat(type: ci.chatType, id: ci.apiId)
+                                        chatModel.chats[ci.id] = chat
                                     } catch {
                                         print("apiGetChatItems", error)
                                     }

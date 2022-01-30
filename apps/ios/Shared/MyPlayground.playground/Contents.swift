@@ -79,3 +79,4 @@ struct Test: Decodable {
 
 //jsonDecoder.decode(Test.self, from: "{\"name\":\"hello\",\"id\":1}".data(using: .utf8)!)
 
+"\(ChatType.direct)"

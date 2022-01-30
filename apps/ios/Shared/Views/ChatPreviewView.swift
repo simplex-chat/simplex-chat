@@ -12,7 +12,7 @@ struct ChatPreviewView: View {
     var chatPreview: ChatPreview
     
     var body: some View {
-        Text(chatPreview.chatInfo.displayName)
+        Text(chatPreview.chatInfo.localDisplayName)
     }
 }
 
