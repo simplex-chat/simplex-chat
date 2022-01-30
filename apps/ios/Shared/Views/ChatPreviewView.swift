@@ -12,15 +12,47 @@ struct ChatPreviewView: View {
     var chatPreview: ChatPreview
     
     var body: some View {
-        Text(chatPreview.chatInfo.localDisplayName)
+        let ci = chatPreview.lastChatItem
+        return VStack {
+            HStack {
+                Text(chatPreview.chatInfo.localDisplayName)
+                    .font(.title3)
+                    .fontWeight(.bold)
+                    .padding([.leading, .top], 8)
+                    .padding(.bottom, 1)
+                    .frame(maxHeight: .infinity, alignment: .topLeading)
+                Spacer()
+                if let ci = ci {
+                    Text(getDateFormatter().string(from: ci.meta.itemTs))
+                        .font(.subheadline)
+                        .padding(.trailing, 8)
+                        .frame(minWidth: 60)
+                }
+            }
+            if let ci = ci {
+                Text(ci.content.text)
+                    .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+                    .padding([.leading, .bottom], 8)
+                    .padding(.trailing, 4)
+            }
+        }
     }
 }
 
 struct ChatPreviewView_Previews: PreviewProvider {
     static var previews: some View {
         Group{
-            ChatPreviewView(chatPreview: ChatPreview(chatInfo: sampleDirectChatInfo))
-            ChatPreviewView(chatPreview: ChatPreview(chatInfo: sampleGroupChatInfo))
+            ChatPreviewView(chatPreview: ChatPreview(
+                chatInfo: sampleDirectChatInfo
+            ))
+            ChatPreviewView(chatPreview: ChatPreview(
+                chatInfo: sampleDirectChatInfo,
+                lastChatItem: chatItemSample(1, .directSnd, Date.now, "hello")
+            ))
+            ChatPreviewView(chatPreview: ChatPreview(
+                chatInfo: sampleGroupChatInfo,
+                lastChatItem: chatItemSample(1, .directSnd, Date.now, "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.")
+            ))
         }
         .previewLayout(.fixed(width: 300, height: 70))
     }

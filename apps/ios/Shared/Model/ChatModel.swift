@@ -172,11 +172,30 @@ struct ChatItem: Identifiable, Decodable {
     var id: Int64 { get { meta.itemId } }
 }
 
+func chatItemSample(_ id: Int64, _ dir: CIDirection, _ ts: Date, _ text: String) -> ChatItem {
+    ChatItem(
+       chatDir: dir,
+       meta: ciMetaSample(id, ts, text),
+       content: .sndMsgContent(msgContent: .text(text))
+   )
+}
+
 enum CIDirection: Decodable {
     case directSnd
     case directRcv
     case groupSnd
     case groupRcv(GroupMember)
+
+    var sent: Bool {
+        get {
+            switch self {
+            case .directSnd: return true
+            case .directRcv: return false
+            case .groupSnd: return true
+            case .groupRcv: return false
+            }
+        }
+    }
 }
 
 struct CIMeta: Decodable {
@@ -184,6 +203,15 @@ struct CIMeta: Decodable {
     var itemTs: Date
     var itemText: String
     var createdAt: Date
+}
+
+func ciMetaSample(_ id: Int64, _ ts: Date, _ text: String) -> CIMeta {
+    CIMeta(
+        itemId: id,
+        itemTs: ts,
+        itemText: text,
+        createdAt: ts
+    )
 }
 
 enum CIContent: Decodable {

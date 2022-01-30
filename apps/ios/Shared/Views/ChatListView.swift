@@ -32,7 +32,7 @@ struct ChatListView: View {
 //            }
 
             ChatHeaderView()
-            
+
             NavigationView {
                 List {
                     NavigationLink {
@@ -56,10 +56,11 @@ struct ChatListView: View {
                         } label: {
                             ChatPreviewView(chatPreview: chatPreview)
                         }
+                        .frame(height: 60)
                     }
                 }
             }
-            .navigationViewStyle(.stack)
+            .navigationViewStyle(.automatic)
         }
     }
 }
@@ -67,7 +68,16 @@ struct ChatListView: View {
 //struct ChatListView_Previews: PreviewProvider {
 //    static var previews: some View {
 //        let chatModel = ChatModel()
-//        chatModel.chatPreviews = []
+//        chatModel.chatPreviews = [
+//            ChatPreview(
+//                chatInfo: sampleDirectChatInfo,
+//                lastChatItem: chatItemSample(1, .directSnd, Date.now, "hello")
+//            ),
+//            ChatPreview(
+//                chatInfo: sampleGroupChatInfo,
+//                lastChatItem: chatItemSample(1, .directSnd, Date.now, "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.")
+//            )
+//        ]
 //        return ChatListView(user: sampleUser)
 //            .environmentObject(chatModel)
 //    }
