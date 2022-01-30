@@ -57,8 +57,8 @@ struct ChatPreview: Identifiable, Decodable {
 }
 
 enum ChatType: String {
-    case direct
-    case group
+    case direct = "@"
+    case group = "#"
 }
 
 enum ChatInfo: Identifiable, Codable {
@@ -216,6 +216,15 @@ enum MsgContent {
         }
     }
 
+    var cmdString: String {
+        get {
+            switch self {
+            case let .text(text): return "text \(text)"
+            default: return ""
+            }
+        }
+    }
+
     enum CodingKeys: String, CodingKey {
         case type
         case text
@@ -240,16 +249,3 @@ extension MsgContent: Decodable {
         }
     }
 }
-
-//func parseMsgContent(_ mc: SomeMsgContent) -> MsgContent {
-//    if let type = mc["type"] as? String {
-//        let text_ = mc["text"] as? String
-//        switch type {
-//        case "text":
-//            if let text = text_ { return .text(text) }
-//        case let t:
-//            return .unknown(type: t, text: text_ ?? "unknown item", json: prettyJSON(mc) ?? "error")
-//        }
-//    }
-//    return .invalid(json: prettyJSON(mc) ?? "error")
-//}
