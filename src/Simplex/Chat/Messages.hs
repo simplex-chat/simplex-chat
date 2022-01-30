@@ -153,6 +153,14 @@ instance ToJSON (ChatPreview c) where
   toJSON = J.genericToJSON J.defaultOptions
   toEncoding = J.genericToEncoding J.defaultOptions
 
+data AChat = forall c. AChat (SChatType c) (Chat c)
+
+deriving instance Show AChat
+
+instance ToJSON AChat where
+  toJSON (AChat _ c) = J.toJSON c
+  toEncoding (AChat _ c) = J.toEncoding c
+
 -- | type to show the list of chats, with one last message in each
 data AChatPreview = forall c. AChatPreview (SChatType c) (ChatInfo c) (Maybe (CChatItem c))
 

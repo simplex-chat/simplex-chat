@@ -35,8 +35,7 @@ serializeChatResponse = unlines . map unStyle . responseToView ""
 responseToView :: String -> ChatResponse -> [StyledString]
 responseToView cmd = \case
   CRApiChats chats -> api [sShow chats]
-  CRApiDirectChat chat -> api [sShow chat]
-  CRApiGroupChat gChat -> api [sShow gChat]
+  CRApiChat chat -> api [sShow chat]
   CRNewChatItem (AChatItem _ _ chat item) -> viewChatItem chat item
   CRCmdAccepted _ -> r []
   CRChatHelp section -> case section of
