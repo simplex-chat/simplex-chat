@@ -31,25 +31,25 @@ enum ChatCommand {
         get {
             switch self {
             case .apiGetChats:
-                return "/get chats"
+                return "/_get chats"
             case let .apiGetChat(type, id):
-                return "/get chat \(type.rawValue)\(id)"
+                return "/_get chat \(type.rawValue)\(id)"
             case let .apiSendMessage(type, id, mc):
-                return "/send msg \(type.rawValue)\(id) \(mc.cmdString)"
+                return "/_send \(type.rawValue)\(id) \(mc.cmdString)"
             case .addContact:
-                return "/c"
+                return "/connect"
             case let .connect(connReq):
-                return "/c \(connReq)"
+                return "/connect \(connReq)"
             case let .apiDeleteChat(type, id):
-                return "/_del \(type.rawValue)\(id)"
+                return "/_delete \(type.rawValue)\(id)"
             case let .apiUpdateProfile(profile):
-                return "/p \(profile.displayName) \(profile.fullName)"
+                return "/profile \(profile.displayName) \(profile.fullName)"
             case .createMyAddress:
-                return "/ad"
+                return "/address"
             case .deleteMyAddress:
-                return "/da"
+                return "/delete_address"
             case .showMyAddress:
-                return "/sa"
+                return "/show_address"
             case let .string(str):
                 return str
             }
