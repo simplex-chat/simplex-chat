@@ -12,7 +12,7 @@ import Combine
 final class ChatModel: ObservableObject {
     @Published var currentUser: User?
     @Published var chats: Dictionary<String, Chat> = [:]
-    @Published var chatPreviews: [ChatPreview] = []
+    @Published var chatPreviews: [Chat] = []
     @Published var chatItems: [ChatItem] = []
     @Published var terminalItems: [TerminalItem] = []
 }
@@ -46,15 +46,6 @@ let sampleProfile = Profile(
     displayName: "alice",
     fullName: "Alice"
 )
-
-struct ChatPreview: Identifiable, Decodable {
-    var chatInfo: ChatInfo
-    var lastChatItem: ChatItem?
-
-    var id: String {
-        get { chatInfo.id }
-    }
-}
 
 enum ChatType: String {
     case direct = "@"
@@ -106,7 +97,7 @@ let sampleDirectChatInfo = ChatInfo.direct(contact: sampleContact)
 
 let sampleGroupChatInfo = ChatInfo.group(groupInfo: sampleGroupInfo)
 
-class Chat: Decodable {
+class Chat: Decodable, Identifiable {
     var chatInfo: ChatInfo
     var chatItems: [ChatItem]
 
@@ -114,6 +105,8 @@ class Chat: Decodable {
         self.chatInfo = chatInfo
         self.chatItems = chatItems
     }
+
+    var id: String { get { chatInfo.id } }
 }
 
 struct Contact: Identifiable, Codable {

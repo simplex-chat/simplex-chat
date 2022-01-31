@@ -40,7 +40,7 @@ struct ChatListView: View {
                     } label: {
                         Text("Terminal")
                     }
-                
+
                     ForEach(chatModel.chatPreviews) { chatPreview in
                         NavigationLink {
                             ChatView(chatInfo: chatPreview.chatInfo)

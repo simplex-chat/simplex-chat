@@ -9,10 +9,10 @@
 import SwiftUI
 
 struct ChatPreviewView: View {
-    var chatPreview: ChatPreview
+    var chatPreview: Chat
     
     var body: some View {
-        let ci = chatPreview.lastChatItem
+        let ci = chatPreview.chatItems.last
         return VStack {
             HStack {
                 Text(chatPreview.chatInfo.localDisplayName)
@@ -42,16 +42,17 @@ struct ChatPreviewView: View {
 struct ChatPreviewView_Previews: PreviewProvider {
     static var previews: some View {
         Group{
-            ChatPreviewView(chatPreview: ChatPreview(
-                chatInfo: sampleDirectChatInfo
-            ))
-            ChatPreviewView(chatPreview: ChatPreview(
+            ChatPreviewView(chatPreview: Chat(
                 chatInfo: sampleDirectChatInfo,
-                lastChatItem: chatItemSample(1, .directSnd, Date.now, "hello")
+                chatItems: []
             ))
-            ChatPreviewView(chatPreview: ChatPreview(
+            ChatPreviewView(chatPreview: Chat(
+                chatInfo: sampleDirectChatInfo,
+                chatItems: [chatItemSample(1, .directSnd, Date.now, "hello")]
+            ))
+            ChatPreviewView(chatPreview: Chat(
                 chatInfo: sampleGroupChatInfo,
-                lastChatItem: chatItemSample(1, .directSnd, Date.now, "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.")
+                chatItems: [chatItemSample(1, .directSnd, Date.now, "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.")]
             ))
         }
         .previewLayout(.fixed(width: 300, height: 70))

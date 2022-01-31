@@ -48,7 +48,7 @@ struct APIResponse: Decodable {
 
 enum ChatResponse: Decodable, Error {
     case response(type: String, json: String)
-    case apiChats(chats: [ChatPreview])
+    case apiChats(chats: [Chat])
     case apiChat(chat: Chat)
     case invitation(connReqInvitation: String)
     case sentConfirmation
@@ -156,7 +156,7 @@ func chatRecvMsg() throws -> ChatResponse {
     chatResponse(chat_recv_msg(getChatCtrl())!)
 }
 
-func apiGetChats() throws -> [ChatPreview] {
+func apiGetChats() throws -> [Chat] {
     let r = try chatSendCmd(.apiGetChats)
     if case let .apiChats(chats) = r { return chats }
     throw r
@@ -195,7 +195,7 @@ func processReceivedMsg(_ chatModel: ChatModel, _ res: ChatResponse) {
         switch res {
         case let .contactConnected(contact):
             chatModel.chatPreviews.insert(
-                ChatPreview(chatInfo: .direct(contact: contact)),
+                Chat(chatInfo: .direct(contact: contact), chatItems: []),
                 at: 0
             )
         case let .newChatItem(aChatItem):
