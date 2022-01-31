@@ -16,6 +16,7 @@ final class ChatModel: ObservableObject {
     @Published var chatPreviews: [Chat] = []
     @Published var chatItems: [ChatItem] = []
     @Published var terminalItems: [TerminalItem] = []
+    @Published var userAddress: String?
 }
 
 class User: Codable {

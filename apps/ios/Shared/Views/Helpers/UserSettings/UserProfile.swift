@@ -1,5 +1,5 @@
 //
-//  SettingsProfile.swift
+//  UserProfile.swift
 //  SimpleX
 //
 //  Created by Evgeny Poberezkin on 31/01/2022.
@@ -8,7 +8,7 @@
 
 import SwiftUI
 
-struct SettingsProfile: View {
+struct UserProfile: View {
     @EnvironmentObject var chatModel: ChatModel
     @State private var profile = Profile(displayName: "", fullName: "")
     @State private var editProfile: Bool = false
@@ -76,11 +76,11 @@ struct SettingsProfile: View {
     }
 }
 
-struct SettingsProfile_Previews: PreviewProvider {
+struct UserProfile_Previews: PreviewProvider {
     static var previews: some View {
         let chatModel = ChatModel()
         chatModel.currentUser = sampleUser
-        return SettingsProfile()
+        return UserProfile()
             .environmentObject(chatModel)
     }
 }

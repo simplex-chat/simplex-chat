@@ -30,8 +30,8 @@ struct AddContactView: View {
             Button { shareInvitation = true } label: {
                 Label("Share", systemImage: "square.and.arrow.up")
             }
-                .padding()
-                .shareSheet(isPresented: $shareInvitation, items: [connReqInvitation])
+            .padding()
+            .shareSheet(isPresented: $shareInvitation, items: [connReqInvitation])
         }
     }
 }

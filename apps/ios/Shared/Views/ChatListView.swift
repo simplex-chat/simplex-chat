@@ -25,22 +25,25 @@ struct ChatListView: View {
 //                }
 //            }
 
-            ChatHeaderView(chatId: $chatId)
-
             NavigationView {
-                List {
-                    NavigationLink {
-                        TerminalView()
-                    } label: {
-                        Text("Terminal")
-                    }
+                GeometryReader { geometry in
+                    List {
+                        NavigationLink {
+                            TerminalView()
+                        } label: {
+                            Text("Terminal")
+                        }
 
-                    ForEach(chatModel.chatPreviews) { chatPreview in
-                        NavigationLink(
-                            tag: chatPreview.chatInfo.id,
-                            selection: $chatId,
-                            destination: {
-                                ChatView(chatInfo: chatPreview.chatInfo)
+                        ForEach(chatModel.chatPreviews) { chatPreview in
+                            NavigationLink(
+                                tag: chatPreview.chatInfo.id,
+                                selection: $chatId,
+                                destination: {
+                                    ChatView(
+                                        chatId: $chatId,
+                                        chatInfo: chatPreview.chatInfo,
+                                        width: geometry.size.width
+                                    )
                                     .onAppear {
                                         do {
                                             let ci = chatPreview.chatInfo
@@ -50,24 +53,26 @@ struct ChatListView: View {
                                             print("apiGetChatItems", error)
                                         }
                                     }
-                            }, label: {
-                                ChatPreviewView(chatPreview: chatPreview)
-                                    .alert(isPresented: $showDeleteAlert) {
-                                        deleteChatAlert((chatsToBeDeleted?.first)!)
-                                    }
-                            }
-                        )
-                        .frame(height: 80)
+                                }, label: {
+                                    ChatPreviewView(chatPreview: chatPreview)
+                                        .alert(isPresented: $showDeleteAlert) {
+                                            deleteChatAlert((chatsToBeDeleted?.first)!)
+                                        }
+                                }
+                            )
+                            .frame(height: 80)
+                        }
+                        .onDelete { idx in
+                            chatsToBeDeleted = idx
+                            showDeleteAlert = true
+                        }
                     }
-                    .onDelete { idx in
-                        chatsToBeDeleted = idx
-                        showDeleteAlert = true
-                    }
+                    .padding(0)
+                    .offset(x: -8)
+                    .listStyle(.plain)
+                    .toolbar { ChatListToolbar(width: geometry.size.width) }
+                    .navigationBarTitleDisplayMode(.inline)
                 }
-                .padding(0)
-                .offset(x: -8)
-                .listStyle(.plain)
-                .edgesIgnoringSafeArea(.top)
             }
         }
     }

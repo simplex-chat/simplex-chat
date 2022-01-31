@@ -12,7 +12,7 @@ struct SettingsView: View {
     @EnvironmentObject var chatModel: ChatModel
 
     var body: some View {
-        SettingsProfile()
+        UserProfile()
         UserAddress()
     }
 }
