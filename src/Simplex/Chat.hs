@@ -141,6 +141,18 @@ processChatCommand user@User {userId, profile} = \case
       ci <- sendGroupChatItem userId group (XMsgNew mc) (CISndMsgContent mc)
       setActive $ ActiveG gName
       pure . CRNewChatItem $ AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci
+  APIDeleteContact contactId -> do
+    ct@Contact {localDisplayName} <- withStore $ \st -> getContact st userId contactId
+    withStore (\st -> getContactGroupNames st userId ct) >>= \case
+      [] -> do
+        conns <- withStore $ \st -> getContactConnections st userId ct
+        procCmd $ do
+          withAgent $ \a -> forM_ conns $ \conn ->
+            deleteConnection a (aConnId conn) `catchError` \(_ :: AgentErrorType) -> pure ()
+          withStore $ \st -> deleteContact st userId ct
+          unsetActive $ ActiveC localDisplayName
+          pure $ CRContactDeleted ct
+      gs -> throwChatError $ CEContactGroups ct gs
   ChatHelp section -> pure $ CRChatHelp section
   Welcome -> pure $ CRWelcome user
   AddContact -> procCmd $ do
@@ -157,17 +169,9 @@ processChatCommand user@User {userId, profile} = \case
   ConnectAdmin -> procCmd $ do
     connect adminContactReq $ XContact profile Nothing
     pure CRSentInvitation
-  DeleteContact cName ->
-    withStore (\st -> getContactGroupNames st userId cName) >>= \case
-      [] -> do
-        conns <- withStore $ \st -> getContactConnections st userId cName
-        procCmd $ do
-          withAgent $ \a -> forM_ conns $ \conn ->
-            deleteConnection a (aConnId conn) `catchError` \(_ :: AgentErrorType) -> pure ()
-          withStore $ \st -> deleteContact st userId cName
-          unsetActive $ ActiveC cName
-          pure $ CRContactDeleted cName
-      gs -> throwChatError $ CEContactGroups cName gs
+  DeleteContact cName -> do
+    contactId <- withStore $ \st -> getContactIdByName st userId cName
+    processChatCommand user $ APIDeleteContact contactId
   ListContacts -> CRContactsList <$> withStore (`getUserContacts` user)
   CreateMyAddress -> procCmd $ do
     (connId, cReq) <- withAgent (`createConnection` SCMContact)
@@ -1307,6 +1311,7 @@ chatCommandP =
     <|> "/get chat " *> (APIGetChat <$> chatTypeP <*> A.decimal)
     <|> "/get chatItems count=" *> (APIGetChatItems <$> A.decimal)
     <|> "/send msg " *> (APISendMessage <$> chatTypeP <*> A.decimal <* A.space <*> msgContentP)
+    <|> "/_del @" *> (APIDeleteContact <$> A.decimal)
     <|> ("/help files" <|> "/help file" <|> "/hf") $> ChatHelp HSFiles
     <|> ("/help groups" <|> "/help group" <|> "/hg") $> ChatHelp HSGroups
     <|> ("/help address" <|> "/ha") $> ChatHelp HSMyAddress

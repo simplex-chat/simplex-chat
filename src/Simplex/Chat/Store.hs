@@ -268,8 +268,8 @@ createContact_ db userId connId Profile {displayName, fullName} viaGroup =
     DB.execute db "UPDATE connections SET contact_id = ? WHERE connection_id = ?" (contactId, connId)
     pure (ldn, contactId, profileId)
 
-getContactGroupNames :: MonadUnliftIO m => SQLiteStore -> UserId -> ContactName -> m [GroupName]
-getContactGroupNames st userId displayName =
+getContactGroupNames :: MonadUnliftIO m => SQLiteStore -> UserId -> Contact -> m [GroupName]
+getContactGroupNames st userId Contact {contactId} =
   liftIO . withTransaction st $ \db -> do
     map fromOnly
       <$> DB.query
@@ -278,38 +278,26 @@ getContactGroupNames st userId displayName =
           SELECT DISTINCT g.local_display_name
           FROM groups g
           JOIN group_members m ON m.group_id = g.group_id
-          WHERE g.user_id = ? AND m.local_display_name = ?
+          WHERE g.user_id = ? AND m.contact_id = ?
         |]
-        (userId, displayName)
+        (userId, contactId)
 
-deleteContact :: MonadUnliftIO m => SQLiteStore -> UserId -> ContactName -> m ()
-deleteContact st userId displayName =
+deleteContact :: MonadUnliftIO m => SQLiteStore -> UserId -> Contact -> m ()
+deleteContact st userId Contact {contactId, localDisplayName} =
   liftIO . withTransaction st $ \db -> do
-    DB.executeNamed
+    DB.execute
       db
       [sql|
         DELETE FROM connections WHERE connection_id IN (
           SELECT connection_id
           FROM connections c
-          JOIN contacts cs ON c.contact_id = cs.contact_id
-          WHERE cs.user_id = :user_id AND cs.local_display_name = :display_name
+          JOIN contacts ct ON ct.contact_id = c.contact_id
+          WHERE ct.user_id = ? AND ct.contact_id = ?
         )
       |]
-      [":user_id" := userId, ":display_name" := displayName]
-    DB.executeNamed
-      db
-      [sql|
-        DELETE FROM contacts
-        WHERE user_id = :user_id AND local_display_name = :display_name
-      |]
-      [":user_id" := userId, ":display_name" := displayName]
-    DB.executeNamed
-      db
-      [sql|
-        DELETE FROM display_names
-        WHERE user_id = :user_id AND local_display_name = :display_name
-      |]
-      [":user_id" := userId, ":display_name" := displayName]
+      (userId, contactId)
+    DB.execute db "DELETE FROM contacts WHERE user_id = ? AND contact_id = ?" (userId, contactId)
+    DB.execute db "DELETE FROM display_names WHERE user_id = ? AND local_display_name = ?" (userId, localDisplayName)
 
 updateUserProfile :: StoreMonad m => SQLiteStore -> User -> Profile -> m ()
 updateUserProfile st User {userId, userContactId, localDisplayName, profile = Profile {displayName}} p'@Profile {displayName = newName}
@@ -594,24 +582,22 @@ getPendingConnections st User {userId} =
         |]
         [":user_id" := userId, ":conn_type" := ConnContact]
 
-getContactConnections :: StoreMonad m => SQLiteStore -> UserId -> ContactName -> m [Connection]
-getContactConnections st userId displayName =
+getContactConnections :: StoreMonad m => SQLiteStore -> UserId -> Contact -> m [Connection]
+getContactConnections st userId Contact {contactId} =
   liftIOEither . withTransaction st $ \db ->
     connections
-      <$> DB.queryNamed
+      <$> DB.query
         db
         [sql|
           SELECT c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact,
             c.conn_status, c.conn_type, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at
           FROM connections c
-          JOIN contacts cs ON c.contact_id = cs.contact_id
-          WHERE c.user_id = :user_id
-            AND cs.user_id = :user_id
-            AND cs.local_display_name = :display_name
+          JOIN contacts ct ON ct.contact_id = c.contact_id
+          WHERE c.user_id = ? AND ct.user_id = ? AND ct.contact_id = ?
         |]
-        [":user_id" := userId, ":display_name" := displayName]
+        (userId, userId, contactId)
   where
-    connections [] = Left $ SEContactNotFoundByName displayName
+    connections [] = Left $ SEContactNotFound contactId
     connections rows = Right $ map toConnection rows
 
 type ConnectionRow = (Int64, ConnId, Int, Maybe Int64, ConnStatus, ConnType, Maybe Int64, Maybe Int64, Maybe Int64, Maybe Int64, Maybe Int64, UTCTime)
@@ -1823,18 +1809,18 @@ createNewChatItem st userId chatDirection NewChatItem {createdByMsgId, itemSent,
       CDGroupSnd GroupInfo {groupId} -> (Nothing, Just groupId, Nothing)
       CDGroupRcv GroupInfo {groupId} GroupMember {groupMemberId} -> (Nothing, Just groupId, Just groupMemberId)
 
-getChatPreviews :: MonadUnliftIO m => SQLiteStore -> User -> m [AChatPreview]
+getChatPreviews :: MonadUnliftIO m => SQLiteStore -> User -> m [AChat]
 getChatPreviews st user =
   liftIO . withTransaction st $ \db -> do
     directChatPreviews <- getDirectChatPreviews_ db user
     groupChatPreviews <- getGroupChatPreviews_ db user
     pure $ sortOn (Down . ts) (directChatPreviews <> groupChatPreviews)
   where
-    ts :: AChatPreview -> UTCTime
-    ts (AChatPreview _ _ Nothing) = UTCTime (fromGregorian 2122 1 29) (secondsToDiffTime 0) -- TODO Contact/GroupInfo createdAt
-    ts (AChatPreview _ _ (Just (CChatItem _ (ChatItem _ CIMeta {itemTs} _)))) = itemTs
+    ts :: AChat -> UTCTime
+    ts (AChat _ (Chat _ [])) = UTCTime (fromGregorian 2122 1 29) (secondsToDiffTime 0) -- TODO Contact/GroupInfo createdAt
+    ts (AChat _ (Chat _ (CChatItem _ (ChatItem _ CIMeta {itemTs} _) : _))) = itemTs
 
-getDirectChatPreviews_ :: DB.Connection -> User -> IO [AChatPreview]
+getDirectChatPreviews_ :: DB.Connection -> User -> IO [AChat]
 getDirectChatPreviews_ db User {userId} = do
   tz <- getCurrentTimeZone
   map (toDirectChatPreview tz)
@@ -1861,17 +1847,24 @@ getDirectChatPreviews_ db User {userId} = do
         LEFT JOIN chat_items ci ON ci.contact_id = CIMaxDates.contact_id
                                AND ci.item_ts = CIMaxDates.MaxDate
         WHERE ct.user_id = ?
+          AND c.connection_id IN (
+            SELECT cc.connection_id
+            FROM connections cc
+            WHERE cc.user_id = ct.user_id AND cc.contact_id = ct.contact_id AND (cc.conn_status = ? OR cc.conn_status = ?)
+            ORDER BY cc.connection_id DESC
+            LIMIT 1
+          )
         ORDER BY ci.item_ts DESC
       |]
-      (Only userId)
+      (userId, ConnReady, ConnSndReady)
   where
-    toDirectChatPreview :: TimeZone -> ContactRow :. MaybeChatItemRow -> AChatPreview
+    toDirectChatPreview :: TimeZone -> ContactRow :. MaybeChatItemRow -> AChat
     toDirectChatPreview tz (contactRow :. ciRow_) =
       let contact = toContact' contactRow
-          ci_ = toMaybeDirectChatItem tz ciRow_
-       in AChatPreview SCTDirect (DirectChat contact) ci_
+          ci_ = toDirectChatItemList tz ciRow_
+       in AChat SCTDirect $ Chat (DirectChat contact) ci_
 
-getGroupChatPreviews_ :: DB.Connection -> User -> IO [AChatPreview]
+getGroupChatPreviews_ :: DB.Connection -> User -> IO [AChat]
 getGroupChatPreviews_ db User {userId, userContactId} = do
   tz <- getCurrentTimeZone
   map (toGroupChatPreview tz)
@@ -1910,12 +1903,12 @@ getGroupChatPreviews_ db User {userId, userContactId} = do
       |]
       (userId, userContactId)
   where
-    toGroupChatPreview :: TimeZone -> GroupInfoRow :. MaybeGroupChatItemRow -> AChatPreview
+    toGroupChatPreview :: TimeZone -> GroupInfoRow :. MaybeGroupChatItemRow -> AChat
     toGroupChatPreview tz (((groupId, localDisplayName, displayName, fullName) :. userMemberRow) :. ciRow_) =
       let membership = toGroupMember userContactId userMemberRow
           groupInfo = GroupInfo {groupId, localDisplayName, groupProfile = GroupProfile {displayName, fullName}, membership}
-          ci_ = toMaybeGroupChatItem tz userContactId ciRow_
-       in AChatPreview SCTGroup (GroupChat groupInfo) ci_
+          ci_ = toGroupChatItemList tz userContactId ciRow_
+       in AChat SCTGroup $ Chat (GroupChat groupInfo) ci_
 
 getDirectChat :: StoreMonad m => SQLiteStore -> UserId -> Int64 -> m (Chat 'CTDirect)
 getDirectChat st userId contactId =
@@ -1956,10 +1949,12 @@ getContact_ db userId contactId =
               c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at
             FROM contacts ct
             JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
-            JOIN connections c ON c.contact_id = ct.contact_id
-            WHERE ct.user_id = ? AND ct.contact_id = ?
+            LEFT JOIN connections c ON c.contact_id = ct.contact_id
+            WHERE ct.user_id = ? AND ct.contact_id = ? AND (c.conn_status = ? OR c.conn_status = ?)
+            ORDER BY c.connection_id DESC
+            LIMIT 1
           |]
-          (userId, contactId)
+          (userId, contactId, ConnReady, ConnSndReady)
       )
 
 getDirectChatItems_ :: DB.Connection -> UserId -> Int64 -> IO [CChatItem 'CTDirect]
@@ -2051,10 +2046,10 @@ toDirectChatItem tz (itemId, itemTs, itemContent, itemText, createdAt) =
         ACIContent d@SMDSnd ciContent -> CChatItem d $ ChatItem CIDirectSnd ciMeta ciContent
         ACIContent d@SMDRcv ciContent -> CChatItem d $ ChatItem CIDirectRcv ciMeta ciContent
 
-toMaybeDirectChatItem :: TimeZone -> MaybeChatItemRow -> Maybe (CChatItem 'CTDirect)
-toMaybeDirectChatItem tz (Just itemId, Just itemTs, Just itemContent, Just itemText, Just createdAt) =
-  Just $ toDirectChatItem tz (itemId, itemTs, itemContent, itemText, createdAt)
-toMaybeDirectChatItem _ _ = Nothing
+toDirectChatItemList :: TimeZone -> MaybeChatItemRow -> [CChatItem 'CTDirect]
+toDirectChatItemList tz (Just itemId, Just itemTs, Just itemContent, Just itemText, Just createdAt) =
+  [toDirectChatItem tz (itemId, itemTs, itemContent, itemText, createdAt)]
+toDirectChatItemList _ _ = []
 
 type GroupChatItemRow = ChatItemRow :. MaybeGroupMemberRow
 
@@ -2069,10 +2064,10 @@ toGroupChatItem tz userContactId ((itemId, itemTs, itemContent, itemText, create
         (ACIContent d@SMDRcv ciContent, Just member) -> Right $ CChatItem d (ChatItem (CIGroupRcv member) ciMeta ciContent)
         _ -> Left $ SEBadChatItem itemId
 
-toMaybeGroupChatItem :: TimeZone -> Int64 -> MaybeGroupChatItemRow -> Maybe (CChatItem 'CTGroup)
-toMaybeGroupChatItem tz userContactId ((Just itemId, Just itemTs, Just itemContent, Just itemText, Just createdAt) :. memberRow_) =
-  eitherToMaybe $ toGroupChatItem tz userContactId ((itemId, itemTs, itemContent, itemText, createdAt) :. memberRow_)
-toMaybeGroupChatItem _ _ _ = Nothing
+toGroupChatItemList :: TimeZone -> Int64 -> MaybeGroupChatItemRow -> [CChatItem 'CTGroup]
+toGroupChatItemList tz userContactId ((Just itemId, Just itemTs, Just itemContent, Just itemText, Just createdAt) :. memberRow_) =
+  either (const []) (: []) $ toGroupChatItem tz userContactId ((itemId, itemTs, itemContent, itemText, createdAt) :. memberRow_)
+toGroupChatItemList _ _ _ = []
 
 -- | Saves unique local display name based on passed displayName, suffixed with _N if required.
 -- This function should be called inside transaction.
