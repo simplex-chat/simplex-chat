@@ -268,8 +268,8 @@ createContact_ db userId connId Profile {displayName, fullName} viaGroup =
     DB.execute db "UPDATE connections SET contact_id = ? WHERE connection_id = ?" (contactId, connId)
     pure (ldn, contactId, profileId)
 
-getContactGroupNames :: MonadUnliftIO m => SQLiteStore -> UserId -> ContactName -> m [GroupName]
-getContactGroupNames st userId displayName =
+getContactGroupNames :: MonadUnliftIO m => SQLiteStore -> UserId -> Contact -> m [GroupName]
+getContactGroupNames st userId Contact {contactId} =
   liftIO . withTransaction st $ \db -> do
     map fromOnly
       <$> DB.query
@@ -278,38 +278,26 @@ getContactGroupNames st userId displayName =
           SELECT DISTINCT g.local_display_name
           FROM groups g
           JOIN group_members m ON m.group_id = g.group_id
-          WHERE g.user_id = ? AND m.local_display_name = ?
+          WHERE g.user_id = ? AND m.contact_id = ?
         |]
-        (userId, displayName)
+        (userId, contactId)
 
-deleteContact :: MonadUnliftIO m => SQLiteStore -> UserId -> ContactName -> m ()
-deleteContact st userId displayName =
+deleteContact :: MonadUnliftIO m => SQLiteStore -> UserId -> Contact -> m ()
+deleteContact st userId Contact {contactId, localDisplayName} =
   liftIO . withTransaction st $ \db -> do
-    DB.executeNamed
+    DB.execute
       db
       [sql|
         DELETE FROM connections WHERE connection_id IN (
           SELECT connection_id
           FROM connections c
-          JOIN contacts cs ON c.contact_id = cs.contact_id
-          WHERE cs.user_id = :user_id AND cs.local_display_name = :display_name
+          JOIN contacts ct ON ct.contact_id = c.contact_id
+          WHERE ct.user_id = ? AND ct.contact_id = ?
         )
       |]
-      [":user_id" := userId, ":display_name" := displayName]
-    DB.executeNamed
-      db
-      [sql|
-        DELETE FROM contacts
-        WHERE user_id = :user_id AND local_display_name = :display_name
-      |]
-      [":user_id" := userId, ":display_name" := displayName]
-    DB.executeNamed
-      db
-      [sql|
-        DELETE FROM display_names
-        WHERE user_id = :user_id AND local_display_name = :display_name
-      |]
-      [":user_id" := userId, ":display_name" := displayName]
+      (userId, contactId)
+    DB.execute db "DELETE FROM contacts WHERE user_id = ? AND contact_id = ?" (userId, contactId)
+    DB.execute db "DELETE FROM display_names WHERE user_id = ? AND local_display_name = ?" (userId, localDisplayName)
 
 updateUserProfile :: StoreMonad m => SQLiteStore -> User -> Profile -> m ()
 updateUserProfile st User {userId, userContactId, localDisplayName, profile = Profile {displayName}} p'@Profile {displayName = newName}
@@ -594,24 +582,22 @@ getPendingConnections st User {userId} =
         |]
         [":user_id" := userId, ":conn_type" := ConnContact]
 
-getContactConnections :: StoreMonad m => SQLiteStore -> UserId -> ContactName -> m [Connection]
-getContactConnections st userId displayName =
+getContactConnections :: StoreMonad m => SQLiteStore -> UserId -> Contact -> m [Connection]
+getContactConnections st userId Contact {contactId} =
   liftIOEither . withTransaction st $ \db ->
     connections
-      <$> DB.queryNamed
+      <$> DB.query
         db
         [sql|
           SELECT c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact,
             c.conn_status, c.conn_type, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at
           FROM connections c
-          JOIN contacts cs ON c.contact_id = cs.contact_id
-          WHERE c.user_id = :user_id
-            AND cs.user_id = :user_id
-            AND cs.local_display_name = :display_name
+          JOIN contacts ct ON ct.contact_id = c.contact_id
+          WHERE c.user_id = ? AND ct.user_id = ? AND ct.contact_id = ?
         |]
-        [":user_id" := userId, ":display_name" := displayName]
+        (userId, userId, contactId)
   where
-    connections [] = Left $ SEContactNotFoundByName displayName
+    connections [] = Left $ SEContactNotFound contactId
     connections rows = Right $ map toConnection rows
 
 type ConnectionRow = (Int64, ConnId, Int, Maybe Int64, ConnStatus, ConnType, Maybe Int64, Maybe Int64, Maybe Int64, Maybe Int64, Maybe Int64, UTCTime)
