@@ -36,23 +36,27 @@ struct ChatListView: View {
                     }
 
                     ForEach(chatModel.chatPreviews) { chatPreview in
-                        NavigationLink(tag: chatPreview.chatInfo.id, selection: $chatId, destination: {
-                            ChatView(chatInfo: chatPreview.chatInfo)
-                                .onAppear {
-                                    do {
-                                        let ci = chatPreview.chatInfo
-                                        let chat = try apiGetChat(type: ci.chatType, id: ci.apiId)
-                                        chatModel.chats[ci.id] = chat
-                                    } catch {
-                                        print("apiGetChatItems", error)
+                        NavigationLink(
+                            tag: chatPreview.chatInfo.id,
+                            selection: $chatId,
+                            destination: {
+                                ChatView(chatInfo: chatPreview.chatInfo)
+                                    .onAppear {
+                                        do {
+                                            let ci = chatPreview.chatInfo
+                                            let chat = try apiGetChat(type: ci.chatType, id: ci.apiId)
+                                            chatModel.chats[ci.id] = chat
+                                        } catch {
+                                            print("apiGetChatItems", error)
+                                        }
                                     }
-                                }
-                        }, label: {
-                            ChatPreviewView(chatPreview: chatPreview)
-                                .alert(isPresented: $showDeleteAlert) {
-                                    deleteChatAlert((chatsToBeDeleted?.first)!)
-                                }
-                        })
+                            }, label: {
+                                ChatPreviewView(chatPreview: chatPreview)
+                                    .alert(isPresented: $showDeleteAlert) {
+                                        deleteChatAlert((chatsToBeDeleted?.first)!)
+                                    }
+                            }
+                        )
                         .frame(height: 80)
                     }
                     .onDelete { idx in

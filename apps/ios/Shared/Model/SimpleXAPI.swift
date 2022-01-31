@@ -21,6 +21,7 @@ enum ChatCommand {
     case addContact
     case connect(connReq: String)
     case apiDeleteChat(type: ChatType, id: Int64)
+    case apiUpdateProfile(profile: Profile)
     case string(String)
 
     var cmdString: String {
@@ -38,6 +39,8 @@ enum ChatCommand {
                 return "/c \(connReq)"
             case let .apiDeleteChat(type, id):
                 return "/_del \(type.rawValue)\(id)"
+            case let .apiUpdateProfile(profile):
+                return "/p \(profile.displayName) \(profile.fullName)"
             case let .string(str):
                 return str
             }
@@ -57,6 +60,8 @@ enum ChatResponse: Decodable, Error {
     case sentConfirmation
     case sentInvitation
     case contactDeleted(contact: Contact)
+    case userProfileNoChange
+    case userProfileUpdated(fromProfile: Profile, toProfile: Profile)
 //    case newSentInvitation
     case contactConnected(contact: Contact)
     case newChatItem(chatItem: AChatItem)
@@ -71,6 +76,8 @@ enum ChatResponse: Decodable, Error {
             case .sentConfirmation: return "sentConfirmation"
             case .sentInvitation: return "sentInvitation"
             case .contactDeleted: return "contactDeleted"
+            case .userProfileNoChange: return "userProfileNoChange"
+            case .userProfileUpdated: return "userProfileNoChange"
             case .contactConnected: return "contactConnected"
             case .newChatItem: return "newChatItem"
             }
@@ -87,6 +94,8 @@ enum ChatResponse: Decodable, Error {
             case .sentConfirmation: return "sentConfirmation: no details"
             case .sentInvitation: return "sentInvitation: no details"
             case let .contactDeleted(contact): return String(describing: contact)
+            case .userProfileNoChange: return "userProfileNoChange: no details"
+            case let .userProfileUpdated(_, toProfile): return String(describing: toProfile)
             case let .contactConnected(contact): return String(describing: contact)
             case let .newChatItem(chatItem): return String(describing: chatItem)
             }
@@ -199,6 +208,15 @@ func apiDeleteChat(type: ChatType, id: Int64) throws {
     let r = try chatSendCmd(.apiDeleteChat(type: type, id: id))
     if case .contactDeleted = r { return }
     throw r
+}
+
+func apiUpdateProfile(profile: Profile) throws -> Profile? {
+    let r = try chatSendCmd(.apiUpdateProfile(profile: profile))
+    switch r {
+    case .userProfileNoChange: return nil
+    case let .userProfileUpdated(_, toProfile): return toProfile
+    default: throw r
+    }
 }
 
 func processReceivedMsg(_ chatModel: ChatModel, _ res: ChatResponse) {

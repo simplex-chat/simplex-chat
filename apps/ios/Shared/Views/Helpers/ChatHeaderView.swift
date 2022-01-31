@@ -22,8 +22,7 @@ struct ChatHeaderView: View {
                 Spacer()
                 EmptyView()
             } else {
-//                Button("Edit", action: {})
-                EmptyView()
+                SettingsButton()
                 Spacer()
                 Text("Your chats")
                     .font(.title3)

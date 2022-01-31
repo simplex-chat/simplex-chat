@@ -27,6 +27,7 @@ struct NewChatButton: View {
             Button("Add contact") { addContactAction() }
             Button("Scan QR code") { connectContact = true }
             Button("Create group") { createGroup = true }
+                .disabled(true)
         }
         .sheet(isPresented: $addContact, content: {
             AddContactView(connReqInvitation: connReqInvitation)

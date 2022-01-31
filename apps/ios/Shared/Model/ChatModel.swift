@@ -18,12 +18,20 @@ final class ChatModel: ObservableObject {
     @Published var terminalItems: [TerminalItem] = []
 }
 
-struct User: Codable {
+class User: Codable {
     var userId: Int64
     var userContactId: Int64
     var localDisplayName: ContactName
     var profile: Profile
     var activeUser: Bool
+
+    internal init(userId: Int64, userContactId: Int64, localDisplayName: ContactName, profile: Profile, activeUser: Bool) {
+        self.userId = userId
+        self.userContactId = userContactId
+        self.localDisplayName = localDisplayName
+        self.profile = profile
+        self.activeUser = activeUser
+    }
 }
 
 let sampleUser = User(
