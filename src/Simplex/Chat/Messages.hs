@@ -253,6 +253,7 @@ aciContentJSON = \case
 data SChatType (c :: ChatType) where
   SCTDirect :: SChatType 'CTDirect
   SCTGroup :: SChatType 'CTGroup
+  SCTContactRequest :: SChatType 'CTContactRequest
 
 deriving instance Show (SChatType c)
 
