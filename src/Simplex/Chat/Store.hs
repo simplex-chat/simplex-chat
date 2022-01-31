@@ -468,8 +468,8 @@ getUserContactLink st userId =
     connReq [Only cReq] = Right cReq
     connReq _ = Left SEUserContactLinkNotFound
 
-createContactRequest :: StoreMonad m => SQLiteStore -> UserId -> Int64 -> InvitationId -> Profile -> m ContactName
-createContactRequest st userId userContactId invId Profile {displayName, fullName} =
+createContactRequest :: StoreMonad m => SQLiteStore -> UserId -> Int64 -> InvitationId -> Profile -> m UserContactRequest
+createContactRequest st userId userContactId invId profile@Profile {displayName, fullName} =
   liftIOEither . withTransaction st $ \db ->
     withLocalDisplayName db userId displayName $ \ldn -> do
       DB.execute db "INSERT INTO contact_profiles (display_name, full_name) VALUES (?, ?)" (displayName, fullName)
@@ -481,7 +481,17 @@ createContactRequest st userId userContactId invId Profile {displayName, fullNam
           (user_contact_link_id, agent_invitation_id, contact_profile_id, local_display_name, user_id) VALUES (?,?,?,?,?)
         |]
         (userContactId, invId, profileId, ldn, userId)
-      pure ldn
+      contactRequestId <- insertedRowId db
+      pure
+        UserContactRequest
+          { contactRequestId,
+            agentInvitationId = AgentInvId invId,
+            userContactLinkId = userContactId,
+            agentContactConnId = Nothing,
+            localDisplayName = ldn,
+            profileId,
+            profile
+          }
 
 getContactRequest :: StoreMonad m => SQLiteStore -> UserId -> ContactName -> m UserContactRequest
 getContactRequest st userId localDisplayName =
@@ -490,17 +500,21 @@ getContactRequest st userId localDisplayName =
       <$> DB.query
         db
         [sql|
-          SELECT cr.contact_request_id, cr.agent_invitation_id, cr.user_contact_link_id,
-            c.agent_conn_id, cr.contact_profile_id
+          SELECT
+            cr.contact_request_id, cr.agent_invitation_id, cr.user_contact_link_id,
+            c.agent_conn_id, cr.contact_profile_id, p.display_name, p.full_name
           FROM contact_requests cr
           JOIN connections c USING (user_contact_link_id)
+          JOIN contact_profiles p USING (contact_profile_id)
           WHERE cr.user_id = ?
             AND cr.local_display_name = ?
         |]
         (userId, localDisplayName)
   where
-    contactReq [(contactRequestId, agentInvitationId, userContactLinkId, agentContactConnId, profileId)] =
-      Right UserContactRequest {contactRequestId, agentInvitationId, userContactLinkId, agentContactConnId, profileId, localDisplayName}
+    contactReq :: [(Int64, AgentInvId, Int64, Maybe AgentConnId, Int64, ContactName, Text)] -> Either StoreError UserContactRequest
+    contactReq [(contactRequestId, agentInvitationId, userContactLinkId, agentContactConnId, profileId, displayName, fullName)] = do
+      let profile = Profile {displayName, fullName}
+      Right UserContactRequest {contactRequestId, agentInvitationId, userContactLinkId, agentContactConnId, localDisplayName, profileId, profile}
     contactReq _ = Left $ SEContactRequestNotFound localDisplayName
 
 deleteContactRequest :: MonadUnliftIO m => SQLiteStore -> UserId -> ContactName -> m ()

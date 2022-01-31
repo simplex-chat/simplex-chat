@@ -95,10 +95,10 @@ data UserContactRequest = UserContactRequest
   { contactRequestId :: Int64,
     agentInvitationId :: AgentInvId,
     userContactLinkId :: Int64,
-    agentContactConnId :: AgentConnId,
+    agentContactConnId :: Maybe AgentConnId, -- connection is created on accept
     localDisplayName :: ContactName,
-    profileId :: Int64
-    -- profile :: Profile
+    profileId :: Int64,
+    profile :: Profile
   }
   deriving (Eq, Show, Generic, FromJSON)
 

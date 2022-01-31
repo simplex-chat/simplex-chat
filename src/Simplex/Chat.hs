@@ -158,6 +158,7 @@ processChatCommand user@User {userId, profile} = \case
         gs -> throwChatError $ CEContactGroups ct gs
     CTGroup -> pure $ CRChatCmdError ChatErrorNotImplemented
     CTContactRequest -> pure $ CRChatCmdError ChatErrorNotImplemented
+  APIAcceptContact reqId -> pure $ CRChatCmdError ChatErrorNotImplemented
   ChatHelp section -> pure $ CRChatHelp section
   Welcome -> pure $ CRWelcome user
   AddContact -> procCmd $ do
@@ -198,11 +199,14 @@ processChatCommand user@User {userId, profile} = \case
       withStore $ \st -> createAcceptedContact st userId connId cName profileId
       pure $ CRAcceptingContactRequest cName
   RejectContact cName -> do
-    UserContactRequest {agentContactConnId = AgentConnId connId, agentInvitationId = AgentInvId invId} <- withStore $ \st ->
+    cReq@UserContactRequest {agentContactConnId, agentInvitationId = AgentInvId invId} <- withStore $ \st ->
       getContactRequest st userId cName
         `E.finally` deleteContactRequest st userId cName
-    withAgent $ \a -> rejectContact a connId invId
-    pure $ CRContactRequestRejected cName
+    case agentContactConnId of
+      Nothing -> throwChatError $ CEConnReqNotFound cReq
+      Just (AgentConnId connId) -> do
+        withAgent $ \a -> rejectContact a connId invId
+        pure $ CRContactRequestRejected cName
   SendMessage cName msg -> do
     contactId <- withStore $ \st -> getContactIdByName st userId cName
     let mc = MCText $ safeDecodeUtf8 msg
@@ -773,9 +777,9 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
       where
         profileContactRequest :: InvitationId -> Profile -> m ()
         profileContactRequest invId p = do
-          cName <- withStore $ \st -> createContactRequest st userId userContactLinkId invId p
-          toView $ CRReceivedContactRequest cName p
-          showToast (cName <> "> ") "wants to connect to you"
+          cReq@UserContactRequest {localDisplayName} <- withStore $ \st -> createContactRequest st userId userContactLinkId invId p
+          toView $ CRReceivedContactRequest cReq
+          showToast (localDisplayName <> "> ") "wants to connect to you"
 
     withAckMessage :: ConnId -> MsgMeta -> m () -> m ()
     withAckMessage cId MsgMeta {recipient = (msgId, _)} action =

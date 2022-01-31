@@ -76,7 +76,7 @@ responseToView cmd = \case
   CRUserProfileUpdated p p' -> r' $ viewUserProfileUpdated p p'
   CRContactUpdated c c' -> viewContactUpdated c c'
   CRContactsMerged intoCt mergedCt -> viewContactsMerged intoCt mergedCt
-  CRReceivedContactRequest c p -> viewReceivedContactRequest c p
+  CRReceivedContactRequest UserContactRequest {localDisplayName = c, profile} -> viewReceivedContactRequest c profile
   CRRcvFileStart ft -> receivingFile_ "started" ft
   CRRcvFileComplete ft -> receivingFile_ "completed" ft
   CRRcvFileSndCancelled ft -> viewRcvFileSndCancelled ft
@@ -445,6 +445,7 @@ viewChatError :: ChatError -> [StyledString]
 viewChatError = \case
   ChatError err -> case err of
     CEInvalidConnReq -> viewInvalidConnReq
+    CEConnReqNotFound UserContactRequest {localDisplayName = c} -> ["connection not found for contact request from " <> ttyContact c]
     CEContactGroups Contact {localDisplayName} gNames -> [ttyContact localDisplayName <> ": contact cannot be deleted, it is a member of the group(s) " <> ttyGroups gNames]
     CEGroupDuplicateMember c -> ["contact " <> ttyContact c <> " is already in the group"]
     CEGroupDuplicateMemberId -> ["cannot add member - duplicate member ID"]
