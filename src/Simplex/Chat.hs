@@ -128,7 +128,7 @@ processChatCommand user@User {userId, profile} = \case
   APIGetChat cType cId -> case cType of
     CTDirect -> CRApiChat . AChat SCTDirect <$> withStore (\st -> getDirectChat st userId cId)
     CTGroup -> CRApiChat . AChat SCTGroup <$> withStore (\st -> getGroupChat st user cId)
-    CTContactRequest -> pure $ CRChatCmdError (ChatErrorInvalidChatType CTContactRequest)
+    CTContactRequest -> pure $ CRChatError ChatErrorNotImplemented
   APIGetChatItems _count -> pure $ CRChatError ChatErrorNotImplemented
   APISendMessage cType chatId mc -> case cType of
     CTDirect -> do
@@ -142,7 +142,7 @@ processChatCommand user@User {userId, profile} = \case
       ci <- sendGroupChatItem userId group (XMsgNew mc) (CISndMsgContent mc)
       setActive $ ActiveG gName
       pure . CRNewChatItem $ AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci
-    CTContactRequest -> pure $ CRChatCmdError (ChatErrorInvalidChatType CTContactRequest)
+    CTContactRequest -> pure $ CRChatError ChatErrorNotImplemented
   APIDeleteChat cType chatId -> case cType of
     CTDirect -> do
       ct@Contact {localDisplayName} <- withStore $ \st -> getContact st userId chatId

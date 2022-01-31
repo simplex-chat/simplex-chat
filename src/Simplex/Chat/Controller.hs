@@ -199,7 +199,6 @@ data ChatError
   | ChatErrorMessage {errorMessage :: String}
   | ChatErrorAgent {agentError :: AgentErrorType}
   | ChatErrorStore {storeError :: StoreError}
-  | ChatErrorInvalidChatType {chatType :: ChatType}
   | ChatErrorNotImplemented
   deriving (Show, Exception, Generic)
 

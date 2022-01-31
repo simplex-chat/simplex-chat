@@ -486,7 +486,6 @@ viewChatError = \case
     e -> ["smp agent error: " <> sShow e]
   ChatErrorMessage e -> ["chat message error: " <> sShow e]
   ChatErrorNotImplemented -> ["chat error: not implemented"]
-  ChatErrorInvalidChatType t -> ["invalid chat type: " <> sShow t]
   where
     fileNotFound fileId = ["file " <> sShow fileId <> " not found"]
 
