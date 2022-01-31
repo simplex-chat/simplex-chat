@@ -93,14 +93,17 @@ data UserContact = UserContact
 
 data UserContactRequest = UserContactRequest
   { contactRequestId :: Int64,
-    agentInvitationId :: InvitationId,
+    agentInvitationId :: AgentInvId,
     userContactLinkId :: Int64,
-    agentContactConnId :: ConnId,
+    agentContactConnId :: AgentConnId,
     localDisplayName :: ContactName,
     profileId :: Int64
     -- profile :: Profile
   }
-  deriving (Eq, Show)
+  deriving (Eq, Show, Generic, FromJSON)
+
+instance ToJSON UserContactRequest where
+  toEncoding = J.genericToEncoding J.defaultOptions
 
 type ContactName = Text
 
@@ -517,6 +520,25 @@ instance ToJSON AgentConnId where
 instance FromField AgentConnId where fromField f = AgentConnId <$> fromField f
 
 instance ToField AgentConnId where toField (AgentConnId m) = toField m
+
+newtype AgentInvId = AgentInvId InvitationId
+  deriving (Eq, Show)
+
+instance StrEncoding AgentInvId where
+  strEncode (AgentInvId connId) = strEncode connId
+  strDecode s = AgentInvId <$> strDecode s
+  strP = AgentInvId <$> strP
+
+instance FromJSON AgentInvId where
+  parseJSON = strParseJSON "AgentInvId"
+
+instance ToJSON AgentInvId where
+  toJSON = strToJSON
+  toEncoding = strToJEncoding
+
+instance FromField AgentInvId where fromField f = AgentInvId <$> fromField f
+
+instance ToField AgentInvId where toField (AgentInvId m) = toField m
 
 data FileTransfer = FTSnd {sndFileTransfers :: [SndFileTransfer]} | FTRcv RcvFileTransfer
   deriving (Show, Generic)

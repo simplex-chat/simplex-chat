@@ -36,7 +36,7 @@ import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, enumJSON, sumTypeJSON)
 import Simplex.Messaging.Protocol (MsgBody)
 
-data ChatType = CTDirect | CTGroup
+data ChatType = CTDirect | CTGroup | CTContactRequest
   deriving (Show, Generic)
 
 instance ToJSON ChatType where
@@ -46,12 +46,14 @@ instance ToJSON ChatType where
 data ChatInfo (c :: ChatType) where
   DirectChat :: Contact -> ChatInfo 'CTDirect
   GroupChat :: GroupInfo -> ChatInfo 'CTGroup
+  ContactRequest :: UserContactRequest -> ChatInfo 'CTContactRequest
 
 deriving instance Show (ChatInfo c)
 
 data JSONChatInfo
   = JCInfoDirect {contact :: Contact}
   | JCInfoGroup {groupInfo :: GroupInfo}
+  | JCIInfoContactRequest {contactRequest :: UserContactRequest}
   deriving (Generic)
 
 instance ToJSON JSONChatInfo where
@@ -66,6 +68,7 @@ jsonChatInfo :: ChatInfo c -> JSONChatInfo
 jsonChatInfo = \case
   DirectChat c -> JCInfoDirect c
   GroupChat g -> JCInfoGroup g
+  ContactRequest g -> JCIInfoContactRequest g
 
 data ChatItem (c :: ChatType) (d :: MsgDirection) = ChatItem
   { chatDir :: CIDirection c d,

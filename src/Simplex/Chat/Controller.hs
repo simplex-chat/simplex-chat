@@ -82,9 +82,8 @@ data ChatCommand
   | APIGetChat ChatType Int64
   | APIGetChatItems Int
   | APISendMessage ChatType Int64 MsgContent
-  | APIDeleteContact Int64
+  | APIDeleteChat ChatType Int64
   | -- | APIAcceptContact Int64
-    -- | APIRejectContact Int64
     ChatHelp HelpSection
   | Welcome
   | AddContact

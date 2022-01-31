@@ -128,6 +128,7 @@ processChatCommand user@User {userId, profile} = \case
   APIGetChat cType cId -> case cType of
     CTDirect -> CRApiChat . AChat SCTDirect <$> withStore (\st -> getDirectChat st userId cId)
     CTGroup -> CRApiChat . AChat SCTGroup <$> withStore (\st -> getGroupChat st user cId)
+    CTContactRequest -> pure $ CRChatCmdError ChatErrorNotImplemented
   APIGetChatItems _count -> pure $ CRChatError ChatErrorNotImplemented
   APISendMessage cType chatId mc -> case cType of
     CTDirect -> do
@@ -141,18 +142,22 @@ processChatCommand user@User {userId, profile} = \case
       ci <- sendGroupChatItem userId group (XMsgNew mc) (CISndMsgContent mc)
       setActive $ ActiveG gName
       pure . CRNewChatItem $ AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci
-  APIDeleteContact contactId -> do
-    ct@Contact {localDisplayName} <- withStore $ \st -> getContact st userId contactId
-    withStore (\st -> getContactGroupNames st userId ct) >>= \case
-      [] -> do
-        conns <- withStore $ \st -> getContactConnections st userId ct
-        procCmd $ do
-          withAgent $ \a -> forM_ conns $ \conn ->
-            deleteConnection a (aConnId conn) `catchError` \(_ :: AgentErrorType) -> pure ()
-          withStore $ \st -> deleteContact st userId ct
-          unsetActive $ ActiveC localDisplayName
-          pure $ CRContactDeleted ct
-      gs -> throwChatError $ CEContactGroups ct gs
+    CTContactRequest -> pure $ CRChatCmdError ChatErrorNotImplemented
+  APIDeleteChat cType chatId -> case cType of
+    CTDirect -> do
+      ct@Contact {localDisplayName} <- withStore $ \st -> getContact st userId chatId
+      withStore (\st -> getContactGroupNames st userId ct) >>= \case
+        [] -> do
+          conns <- withStore $ \st -> getContactConnections st userId ct
+          procCmd $ do
+            withAgent $ \a -> forM_ conns $ \conn ->
+              deleteConnection a (aConnId conn) `catchError` \(_ :: AgentErrorType) -> pure ()
+            withStore $ \st -> deleteContact st userId ct
+            unsetActive $ ActiveC localDisplayName
+            pure $ CRContactDeleted ct
+        gs -> throwChatError $ CEContactGroups ct gs
+    CTGroup -> pure $ CRChatCmdError ChatErrorNotImplemented
+    CTContactRequest -> pure $ CRChatCmdError ChatErrorNotImplemented
   ChatHelp section -> pure $ CRChatHelp section
   Welcome -> pure $ CRWelcome user
   AddContact -> procCmd $ do
@@ -171,7 +176,7 @@ processChatCommand user@User {userId, profile} = \case
     pure CRSentInvitation
   DeleteContact cName -> do
     contactId <- withStore $ \st -> getContactIdByName st userId cName
-    processChatCommand user $ APIDeleteContact contactId
+    processChatCommand user $ APIDeleteChat CTDirect contactId
   ListContacts -> CRContactsList <$> withStore (`getUserContacts` user)
   CreateMyAddress -> procCmd $ do
     (connId, cReq) <- withAgent (`createConnection` SCMContact)
@@ -186,17 +191,17 @@ processChatCommand user@User {userId, profile} = \case
       pure CRUserContactLinkDeleted
   ShowMyAddress -> CRUserContactLink <$> withStore (`getUserContactLink` userId)
   AcceptContact cName -> do
-    UserContactRequest {agentInvitationId, profileId} <- withStore $ \st ->
+    UserContactRequest {agentInvitationId = AgentInvId invId, profileId} <- withStore $ \st ->
       getContactRequest st userId cName
     procCmd $ do
-      connId <- withAgent $ \a -> acceptContact a agentInvitationId . directMessage $ XInfo profile
+      connId <- withAgent $ \a -> acceptContact a invId . directMessage $ XInfo profile
       withStore $ \st -> createAcceptedContact st userId connId cName profileId
       pure $ CRAcceptingContactRequest cName
   RejectContact cName -> do
-    UserContactRequest {agentContactConnId, agentInvitationId} <- withStore $ \st ->
+    UserContactRequest {agentContactConnId = AgentConnId connId, agentInvitationId = AgentInvId invId} <- withStore $ \st ->
       getContactRequest st userId cName
         `E.finally` deleteContactRequest st userId cName
-    withAgent $ \a -> rejectContact a agentContactConnId agentInvitationId
+    withAgent $ \a -> rejectContact a connId invId
     pure $ CRContactRequestRejected cName
   SendMessage cName msg -> do
     contactId <- withStore $ \st -> getContactIdByName st userId cName
@@ -1311,7 +1316,7 @@ chatCommandP =
     <|> "/get chat " *> (APIGetChat <$> chatTypeP <*> A.decimal)
     <|> "/get chatItems count=" *> (APIGetChatItems <$> A.decimal)
     <|> "/send msg " *> (APISendMessage <$> chatTypeP <*> A.decimal <* A.space <*> msgContentP)
-    <|> "/_del @" *> (APIDeleteContact <$> A.decimal)
+    <|> "/_del " *> (APIDeleteChat <$> chatTypeP <*> A.decimal)
     <|> ("/help files" <|> "/help file" <|> "/hf") $> ChatHelp HSFiles
     <|> ("/help groups" <|> "/help group" <|> "/hg") $> ChatHelp HSGroups
     <|> ("/help address" <|> "/ha") $> ChatHelp HSMyAddress
@@ -1348,7 +1353,7 @@ chatCommandP =
     <|> ("/quit" <|> "/q" <|> "/exit") $> QuitChat
     <|> ("/version" <|> "/v") $> ShowVersion
   where
-    chatTypeP = "@" $> CTDirect <|> "#" $> CTGroup
+    chatTypeP = A.char '@' $> CTDirect <|> A.char '#' $> CTGroup <|> "<@" $> CTContactRequest
     msgContentP = "text " *> (MCText . safeDecodeUtf8 <$> A.takeByteString)
     displayName = safeDecodeUtf8 <$> (B.cons <$> A.satisfy refChar <*> A.takeTill (== ' '))
     refChar c = c > ' ' && c /= '#' && c /= '@'
