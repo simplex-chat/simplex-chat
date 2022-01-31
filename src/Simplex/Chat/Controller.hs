@@ -210,7 +210,6 @@ instance ToJSON ChatError where
 data ChatErrorType
   = CEGroupUserRole
   | CEInvalidConnReq
-  | CEConnReqNotFound {connReq :: UserContactRequest}
   | CEContactGroups {contact :: Contact, groupNames :: [GroupName]}
   | CEGroupContactRole {contactName :: ContactName}
   | CEGroupDuplicateMember {contactName :: ContactName}

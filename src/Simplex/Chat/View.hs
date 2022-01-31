@@ -445,7 +445,6 @@ viewChatError :: ChatError -> [StyledString]
 viewChatError = \case
   ChatError err -> case err of
     CEInvalidConnReq -> viewInvalidConnReq
-    CEConnReqNotFound UserContactRequest {localDisplayName = c} -> ["connection not found for contact request from " <> ttyContact c]
     CEContactGroups Contact {localDisplayName} gNames -> [ttyContact localDisplayName <> ": contact cannot be deleted, it is a member of the group(s) " <> ttyGroups gNames]
     CEGroupDuplicateMember c -> ["contact " <> ttyContact c <> " is already in the group"]
     CEGroupDuplicateMemberId -> ["cannot add member - duplicate member ID"]

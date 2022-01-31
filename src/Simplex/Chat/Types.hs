@@ -95,7 +95,7 @@ data UserContactRequest = UserContactRequest
   { contactRequestId :: Int64,
     agentInvitationId :: AgentInvId,
     userContactLinkId :: Int64,
-    agentContactConnId :: Maybe AgentConnId, -- connection is created on accept
+    agentContactConnId :: AgentConnId, -- connection id of user contact
     localDisplayName :: ContactName,
     profileId :: Int64,
     profile :: Profile

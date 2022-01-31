@@ -158,14 +158,11 @@ processChatCommand user@User {userId, profile} = \case
         gs -> throwChatError $ CEContactGroups ct gs
     CTGroup -> pure $ CRChatCmdError ChatErrorNotImplemented
     CTContactRequest -> do
-      cReq@UserContactRequest {agentContactConnId, agentInvitationId = AgentInvId invId} <-
+      cReq@UserContactRequest {agentContactConnId = AgentConnId connId, agentInvitationId = AgentInvId invId} <-
         withStore $ \st -> getContactRequest st userId chatId
       withStore $ \st -> deleteContactRequest st userId cReq
-      case agentContactConnId of
-        Nothing -> throwChatError $ CEConnReqNotFound cReq
-        Just (AgentConnId connId) -> do
-          withAgent $ \a -> rejectContact a connId invId
-          pure $ CRContactRequestRejected cReq
+      withAgent $ \a -> rejectContact a connId invId
+      pure $ CRContactRequestRejected cReq
   APIAcceptContact contactRequestId -> do
     ctReq@UserContactRequest {agentInvitationId = AgentInvId invId, localDisplayName = cName, profileId} <- withStore $ \st ->
       getContactRequest st userId contactRequestId

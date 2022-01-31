@@ -470,9 +470,11 @@ getUserContactLink st userId =
     connReq _ = Left SEUserContactLinkNotFound
 
 createContactRequest :: StoreMonad m => SQLiteStore -> UserId -> Int64 -> InvitationId -> Profile -> m UserContactRequest
-createContactRequest st userId userContactId invId profile@Profile {displayName, fullName} =
+createContactRequest st userId userContactId invId Profile {displayName, fullName} =
   liftIOEither . withTransaction st $ \db ->
-    withLocalDisplayName db userId displayName $ \ldn -> do
+    join <$> withLocalDisplayName db userId displayName (createContactRequest' db)
+  where
+    createContactRequest' db ldn = do
       DB.execute db "INSERT INTO contact_profiles (display_name, full_name) VALUES (?, ?)" (displayName, fullName)
       profileId <- insertedRowId db
       DB.execute
@@ -483,36 +485,32 @@ createContactRequest st userId userContactId invId profile@Profile {displayName,
         |]
         (userContactId, invId, profileId, ldn, userId)
       contactRequestId <- insertedRowId db
-      pure
-        UserContactRequest
-          { contactRequestId,
-            agentInvitationId = AgentInvId invId,
-            userContactLinkId = userContactId,
-            agentContactConnId = Nothing,
-            localDisplayName = ldn,
-            profileId,
-            profile
-          }
+      getContactRequest_ db userId contactRequestId
 
 getContactRequest :: StoreMonad m => SQLiteStore -> UserId -> Int64 -> m UserContactRequest
 getContactRequest st userId contactRequestId =
   liftIOEither . withTransaction st $ \db ->
-    contactReq
-      <$> DB.query
-        db
-        [sql|
-          SELECT
-            cr.local_display_name, cr.agent_invitation_id, cr.user_contact_link_id,
-            c.agent_conn_id, cr.contact_profile_id, p.display_name, p.full_name
-          FROM contact_requests cr
-          JOIN connections c USING (user_contact_link_id)
-          JOIN contact_profiles p USING (contact_profile_id)
-          WHERE cr.user_id = ?
-            AND cr.contact_request_id = ?
-        |]
-        (userId, contactRequestId)
+    runExceptT $
+      ExceptT $ getContactRequest_ db userId contactRequestId
+
+getContactRequest_ :: DB.Connection -> UserId -> Int64 -> IO (Either StoreError UserContactRequest)
+getContactRequest_ db userId contactRequestId =
+  contactReq
+    <$> DB.query
+      db
+      [sql|
+        SELECT
+          cr.local_display_name, cr.agent_invitation_id, cr.user_contact_link_id,
+          c.agent_conn_id, cr.contact_profile_id, p.display_name, p.full_name
+        FROM contact_requests cr
+        JOIN connections c USING (user_contact_link_id)
+        JOIN contact_profiles p USING (contact_profile_id)
+        WHERE cr.user_id = ?
+          AND cr.contact_request_id = ?
+      |]
+      (userId, contactRequestId)
   where
-    contactReq :: [(ContactName, AgentInvId, Int64, Maybe AgentConnId, Int64, ContactName, Text)] -> Either StoreError UserContactRequest
+    contactReq :: [(ContactName, AgentInvId, Int64, AgentConnId, Int64, ContactName, Text)] -> Either StoreError UserContactRequest
     contactReq [(localDisplayName, agentInvitationId, userContactLinkId, agentContactConnId, profileId, displayName, fullName)] = do
       let profile = Profile {displayName, fullName}
       Right UserContactRequest {contactRequestId, agentInvitationId, userContactLinkId, agentContactConnId, localDisplayName, profileId, profile}
