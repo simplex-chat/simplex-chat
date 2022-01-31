@@ -1311,6 +1311,7 @@ chatCommandP =
     <|> "/get chat " *> (APIGetChat <$> chatTypeP <*> A.decimal)
     <|> "/get chatItems count=" *> (APIGetChatItems <$> A.decimal)
     <|> "/send msg " *> (APISendMessage <$> chatTypeP <*> A.decimal <* A.space <*> msgContentP)
+    <|> "/_del @" *> (APIDeleteContact <$> A.decimal)
     <|> ("/help files" <|> "/help file" <|> "/hf") $> ChatHelp HSFiles
     <|> ("/help groups" <|> "/help group" <|> "/hg") $> ChatHelp HSGroups
     <|> ("/help address" <|> "/ha") $> ChatHelp HSMyAddress
