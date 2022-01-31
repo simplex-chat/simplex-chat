@@ -82,6 +82,7 @@ data ChatCommand
   | APIGetChat ChatType Int64
   | APIGetChatItems Int
   | APISendMessage ChatType Int64 MsgContent
+  | APIDeleteContact Int64
   | ChatHelp HelpSection
   | Welcome
   | AddContact
@@ -141,7 +142,7 @@ data ChatResponse
   | CRSentInvitation
   | CRContactUpdated {fromContact :: Contact, toContact :: Contact}
   | CRContactsMerged {intoContact :: Contact, mergedContact :: Contact}
-  | CRContactDeleted {contactName :: ContactName} -- TODO
+  | CRContactDeleted {contact :: Contact}
   | CRUserContactLinkCreated {connReqContact :: ConnReqContact}
   | CRUserContactLinkDeleted
   | CRReceivedContactRequest {contactName :: ContactName, profile :: Profile} -- TODO what is the entity here?
@@ -207,7 +208,7 @@ instance ToJSON ChatError where
 data ChatErrorType
   = CEGroupUserRole
   | CEInvalidConnReq
-  | CEContactGroups {contactName :: ContactName, groupNames :: [GroupName]}
+  | CEContactGroups {contact :: Contact, groupNames :: [GroupName]}
   | CEGroupContactRole {contactName :: ContactName}
   | CEGroupDuplicateMember {contactName :: ContactName}
   | CEGroupDuplicateMemberId

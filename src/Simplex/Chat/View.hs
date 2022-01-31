@@ -60,7 +60,7 @@ responseToView cmd = \case
   CRInvitation cReq -> r' $ viewConnReqInvitation cReq
   CRSentConfirmation -> r' ["confirmation sent!"]
   CRSentInvitation -> r' ["connection request sent!"]
-  CRContactDeleted c -> r' [ttyContact c <> ": contact is deleted"]
+  CRContactDeleted Contact {localDisplayName} -> r' [ttyContact localDisplayName <> ": contact is deleted"]
   CRAcceptingContactRequest c -> r' [ttyContact c <> ": accepting contact request..."]
   CRUserContactLinkCreated cReq -> r' $ connReqContact_ "Your new chat address is created!" cReq
   CRUserContactLinkDeleted -> r' viewUserContactLinkDeleted
@@ -445,7 +445,7 @@ viewChatError :: ChatError -> [StyledString]
 viewChatError = \case
   ChatError err -> case err of
     CEInvalidConnReq -> viewInvalidConnReq
-    CEContactGroups c gNames -> [ttyContact c <> ": contact cannot be deleted, it is a member of the group(s) " <> ttyGroups gNames]
+    CEContactGroups Contact {localDisplayName} gNames -> [ttyContact localDisplayName <> ": contact cannot be deleted, it is a member of the group(s) " <> ttyGroups gNames]
     CEGroupDuplicateMember c -> ["contact " <> ttyContact c <> " is already in the group"]
     CEGroupDuplicateMemberId -> ["cannot add member - duplicate member ID"]
     CEGroupUserRole -> ["you have insufficient permissions for this group command"]
