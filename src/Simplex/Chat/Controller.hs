@@ -83,7 +83,9 @@ data ChatCommand
   | APIGetChatItems Int
   | APISendMessage ChatType Int64 MsgContent
   | APIDeleteContact Int64
-  | ChatHelp HelpSection
+  | -- | APIAcceptContact Int64
+    -- | APIRejectContact Int64
+    ChatHelp HelpSection
   | Welcome
   | AddContact
   | Connect (Maybe AConnectionRequestUri)
@@ -129,7 +131,8 @@ data ChatResponse
   | CRContactsList {contacts :: [Contact]}
   | CRUserContactLink {connReqContact :: ConnReqContact}
   | CRContactRequestRejected {contactName :: ContactName} -- TODO
-  | CRUserAcceptedGroupSent {groupInfo :: GroupInfo}
+  | -- | CRContactRequestRejected {contactRequest :: UserContactRequest}
+    CRUserAcceptedGroupSent {groupInfo :: GroupInfo}
   | CRUserDeletedMember {groupInfo :: GroupInfo, member :: GroupMember}
   | CRGroupsList {groups :: [GroupInfo]}
   | CRSentGroupInvitation {groupInfo :: GroupInfo, contact :: Contact}
@@ -145,7 +148,9 @@ data ChatResponse
   | CRContactDeleted {contact :: Contact}
   | CRUserContactLinkCreated {connReqContact :: ConnReqContact}
   | CRUserContactLinkDeleted
-  | CRReceivedContactRequest {contactName :: ContactName, profile :: Profile} -- TODO what is the entity here?
+  | -- CRReceivedContactRequest {contactRequest :: UserContactRequest}
+    CRReceivedContactRequest {contactName :: ContactName, profile :: Profile} -- TODO what is the entity here?
+    -- CRAcceptingContactRequest {contactRequest :: UserContactRequest}
   | CRAcceptingContactRequest {contactName :: ContactName} -- TODO
   | CRLeftMemberUser {groupInfo :: GroupInfo}
   | CRGroupDeletedUser {groupInfo :: GroupInfo}

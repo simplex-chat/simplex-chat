@@ -98,6 +98,7 @@ data UserContactRequest = UserContactRequest
     agentContactConnId :: ConnId,
     localDisplayName :: ContactName,
     profileId :: Int64
+    -- profile :: Profile
   }
   deriving (Eq, Show)
 
