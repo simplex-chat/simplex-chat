@@ -204,7 +204,7 @@ func processReceivedMsg(_ chatModel: ChatModel, _ res: ChatResponse) {
             chatModel.chats[ci.id] = chat
             chat.chatItems.append(aChatItem.chatItem)
         default:
-            print("unsupported response: ", res)
+            print("unsupported response: ", res.responseType)
         }
     }
 }
@@ -216,7 +216,6 @@ private struct UserResponse: Decodable {
 
 private func chatResponse(_ cjson: UnsafePointer<CChar>) -> ChatResponse {
     let s = String.init(cString: cjson)
-    print("chatResponse", s)
     let d = s.data(using: .utf8)!
 // TODO is there a way to do it without copying the data? e.g:
 //    let p = UnsafeMutableRawPointer.init(mutating: UnsafeRawPointer(cjson))
@@ -270,7 +269,6 @@ private func getChatCtrl() -> chat_ctrl {
 
 private func decodeCJSON<T: Decodable>(_ cjson: UnsafePointer<CChar>) -> T? {
     let s = String.init(cString: cjson)
-    print("decodeCJSON", s)
     let d = s.data(using: .utf8)!
 //    let p = UnsafeMutableRawPointer.init(mutating: UnsafeRawPointer(cjson))
 //    let d = Data.init(bytesNoCopy: p, count: strlen(cjson), deallocator: .free)
@@ -286,6 +284,5 @@ private func getJSONObject(_ cjson: UnsafePointer<CChar>) -> NSDictionary? {
 private func encodeCJSON<T: Encodable>(_ value: T) -> [CChar] {
     let data = try! jsonEncoder.encode(value)
     let str = String(decoding: data, as: UTF8.self)
-    print("encodeCJSON", str)
     return str.cString(using: .utf8)!
 }
