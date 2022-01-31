@@ -20,6 +20,8 @@ enum ChatCommand {
     case apiSendMessage(type: ChatType, id: Int64, msg: MsgContent)
     case addContact
     case connect(connReq: String)
+    case apiDeleteChat(type: ChatType, id: Int64)
+    case apiUpdateProfile(profile: Profile)
     case string(String)
 
     var cmdString: String {
@@ -35,6 +37,10 @@ enum ChatCommand {
                 return "/c"
             case let .connect(connReq):
                 return "/c \(connReq)"
+            case let .apiDeleteChat(type, id):
+                return "/_del \(type.rawValue)\(id)"
+            case let .apiUpdateProfile(profile):
+                return "/p \(profile.displayName) \(profile.fullName)"
             case let .string(str):
                 return str
             }
@@ -48,11 +54,14 @@ struct APIResponse: Decodable {
 
 enum ChatResponse: Decodable, Error {
     case response(type: String, json: String)
-    case apiChats(chats: [ChatPreview])
+    case apiChats(chats: [Chat])
     case apiChat(chat: Chat)
     case invitation(connReqInvitation: String)
     case sentConfirmation
     case sentInvitation
+    case contactDeleted(contact: Contact)
+    case userProfileNoChange
+    case userProfileUpdated(fromProfile: Profile, toProfile: Profile)
 //    case newSentInvitation
     case contactConnected(contact: Contact)
     case newChatItem(chatItem: AChatItem)
@@ -66,6 +75,9 @@ enum ChatResponse: Decodable, Error {
             case .invitation: return "invitation"
             case .sentConfirmation: return "sentConfirmation"
             case .sentInvitation: return "sentInvitation"
+            case .contactDeleted: return "contactDeleted"
+            case .userProfileNoChange: return "userProfileNoChange"
+            case .userProfileUpdated: return "userProfileNoChange"
             case .contactConnected: return "contactConnected"
             case .newChatItem: return "newChatItem"
             }
@@ -81,6 +93,9 @@ enum ChatResponse: Decodable, Error {
             case let .invitation(connReqInvitation): return connReqInvitation
             case .sentConfirmation: return "sentConfirmation: no details"
             case .sentInvitation: return "sentInvitation: no details"
+            case let .contactDeleted(contact): return String(describing: contact)
+            case .userProfileNoChange: return "userProfileNoChange: no details"
+            case let .userProfileUpdated(_, toProfile): return String(describing: toProfile)
             case let .contactConnected(contact): return String(describing: contact)
             case let .newChatItem(chatItem): return String(describing: chatItem)
             }
@@ -156,7 +171,7 @@ func chatRecvMsg() throws -> ChatResponse {
     chatResponse(chat_recv_msg(getChatCtrl())!)
 }
 
-func apiGetChats() throws -> [ChatPreview] {
+func apiGetChats() throws -> [Chat] {
     let r = try chatSendCmd(.apiGetChats)
     if case let .apiChats(chats) = r { return chats }
     throw r
@@ -189,13 +204,28 @@ func apiConnect(connReq: String) throws {
     }
 }
 
+func apiDeleteChat(type: ChatType, id: Int64) throws {
+    let r = try chatSendCmd(.apiDeleteChat(type: type, id: id))
+    if case .contactDeleted = r { return }
+    throw r
+}
+
+func apiUpdateProfile(profile: Profile) throws -> Profile? {
+    let r = try chatSendCmd(.apiUpdateProfile(profile: profile))
+    switch r {
+    case .userProfileNoChange: return nil
+    case let .userProfileUpdated(_, toProfile): return toProfile
+    default: throw r
+    }
+}
+
 func processReceivedMsg(_ chatModel: ChatModel, _ res: ChatResponse) {
     DispatchQueue.main.async {
         chatModel.terminalItems.append(.resp(Date.now, res))
         switch res {
         case let .contactConnected(contact):
             chatModel.chatPreviews.insert(
-                ChatPreview(chatInfo: .direct(contact: contact)),
+                Chat(chatInfo: .direct(contact: contact), chatItems: []),
                 at: 0
             )
         case let .newChatItem(aChatItem):
@@ -204,7 +234,7 @@ func processReceivedMsg(_ chatModel: ChatModel, _ res: ChatResponse) {
             chatModel.chats[ci.id] = chat
             chat.chatItems.append(aChatItem.chatItem)
         default:
-            print("unsupported response: ", res)
+            print("unsupported response: ", res.responseType)
         }
     }
 }
@@ -216,7 +246,6 @@ private struct UserResponse: Decodable {
 
 private func chatResponse(_ cjson: UnsafePointer<CChar>) -> ChatResponse {
     let s = String.init(cString: cjson)
-    print("chatResponse", s)
     let d = s.data(using: .utf8)!
 // TODO is there a way to do it without copying the data? e.g:
 //    let p = UnsafeMutableRawPointer.init(mutating: UnsafeRawPointer(cjson))
@@ -270,7 +299,6 @@ private func getChatCtrl() -> chat_ctrl {
 
 private func decodeCJSON<T: Decodable>(_ cjson: UnsafePointer<CChar>) -> T? {
     let s = String.init(cString: cjson)
-    print("decodeCJSON", s)
     let d = s.data(using: .utf8)!
 //    let p = UnsafeMutableRawPointer.init(mutating: UnsafeRawPointer(cjson))
 //    let d = Data.init(bytesNoCopy: p, count: strlen(cjson), deallocator: .free)
@@ -286,6 +314,5 @@ private func getJSONObject(_ cjson: UnsafePointer<CChar>) -> NSDictionary? {
 private func encodeCJSON<T: Encodable>(_ value: T) -> [CChar] {
     let data = try! jsonEncoder.encode(value)
     let str = String(decoding: data, as: UTF8.self)
-    print("encodeCJSON", str)
     return str.cString(using: .utf8)!
 }

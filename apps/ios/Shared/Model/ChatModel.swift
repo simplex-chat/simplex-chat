@@ -8,21 +8,30 @@
 
 import Foundation
 import Combine
+import SwiftUI
 
 final class ChatModel: ObservableObject {
     @Published var currentUser: User?
     @Published var chats: Dictionary<String, Chat> = [:]
-    @Published var chatPreviews: [ChatPreview] = []
+    @Published var chatPreviews: [Chat] = []
     @Published var chatItems: [ChatItem] = []
     @Published var terminalItems: [TerminalItem] = []
 }
 
-struct User: Codable {
+class User: Codable {
     var userId: Int64
     var userContactId: Int64
     var localDisplayName: ContactName
     var profile: Profile
     var activeUser: Bool
+
+    internal init(userId: Int64, userContactId: Int64, localDisplayName: ContactName, profile: Profile, activeUser: Bool) {
+        self.userId = userId
+        self.userContactId = userContactId
+        self.localDisplayName = localDisplayName
+        self.profile = profile
+        self.activeUser = activeUser
+    }
 }
 
 let sampleUser = User(
@@ -46,15 +55,6 @@ let sampleProfile = Profile(
     displayName: "alice",
     fullName: "Alice"
 )
-
-struct ChatPreview: Identifiable, Decodable {
-    var chatInfo: ChatInfo
-    var lastChatItem: ChatItem?
-
-    var id: String {
-        get { chatInfo.id }
-    }
-}
 
 enum ChatType: String {
     case direct = "@"
@@ -106,7 +106,7 @@ let sampleDirectChatInfo = ChatInfo.direct(contact: sampleContact)
 
 let sampleGroupChatInfo = ChatInfo.group(groupInfo: sampleGroupInfo)
 
-class Chat: Decodable {
+class Chat: Decodable, Identifiable {
     var chatInfo: ChatInfo
     var chatItems: [ChatItem]
 
@@ -114,6 +114,8 @@ class Chat: Decodable {
         self.chatInfo = chatInfo
         self.chatItems = chatItems
     }
+
+    var id: String { get { chatInfo.id } }
 }
 
 struct Contact: Identifiable, Codable {
@@ -172,11 +174,30 @@ struct ChatItem: Identifiable, Decodable {
     var id: Int64 { get { meta.itemId } }
 }
 
+func chatItemSample(_ id: Int64, _ dir: CIDirection, _ ts: Date, _ text: String) -> ChatItem {
+    ChatItem(
+       chatDir: dir,
+       meta: ciMetaSample(id, ts, text),
+       content: .sndMsgContent(msgContent: .text(text))
+   )
+}
+
 enum CIDirection: Decodable {
     case directSnd
     case directRcv
     case groupSnd
     case groupRcv(GroupMember)
+
+    var sent: Bool {
+        get {
+            switch self {
+            case .directSnd: return true
+            case .directRcv: return false
+            case .groupSnd: return true
+            case .groupRcv: return false
+            }
+        }
+    }
 }
 
 struct CIMeta: Decodable {
@@ -184,6 +205,15 @@ struct CIMeta: Decodable {
     var itemTs: Date
     var itemText: String
     var createdAt: Date
+}
+
+func ciMetaSample(_ id: Int64, _ ts: Date, _ text: String) -> CIMeta {
+    CIMeta(
+        itemId: id,
+        itemTs: ts,
+        itemText: text,
+        createdAt: ts
+    )
 }
 
 enum CIContent: Decodable {
