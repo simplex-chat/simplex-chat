@@ -19,7 +19,7 @@ final class ChatModel: ObservableObject {
     @Published var userAddress: String?
 }
 
-class User: Codable {
+class User: Decodable {
     var userId: Int64
     var userContactId: Int64
     var localDisplayName: ContactName
@@ -47,7 +47,7 @@ typealias ContactName = String
 
 typealias GroupName = String
 
-struct Profile: Codable {
+struct Profile: Decodable {
     var displayName: String
     var fullName: String
 }
@@ -62,7 +62,7 @@ enum ChatType: String {
     case group = "#"
 }
 
-enum ChatInfo: Identifiable, Codable {
+enum ChatInfo: Identifiable, Decodable {
     case direct(contact: Contact)
     case group(groupInfo: GroupInfo)
     
@@ -119,7 +119,7 @@ class Chat: Decodable, Identifiable {
     var id: String { get { chatInfo.id } }
 }
 
-struct Contact: Identifiable, Codable {
+struct Contact: Identifiable, Decodable {
     var contactId: Int64
     var localDisplayName: ContactName
     var profile: Profile
@@ -134,7 +134,13 @@ let sampleContact = Contact(
     profile: sampleProfile
 )
 
-struct GroupInfo: Identifiable, Codable {
+struct UserContactRequest: Decodable {
+    var contactRequestId: Int64
+    var localDisplayName: ContactName
+    var profile: Profile
+}
+
+struct GroupInfo: Identifiable, Decodable {
     var groupId: Int64
     var localDisplayName: GroupName
     var groupProfile: GroupProfile
@@ -158,7 +164,7 @@ let sampleGroupProfile = GroupProfile(
     fullName: "My Team"
 )
 
-struct GroupMember: Codable {
+struct GroupMember: Decodable {
 
 }
 

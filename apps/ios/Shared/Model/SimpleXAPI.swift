@@ -75,6 +75,9 @@ enum ChatResponse: Decodable, Error {
     case userContactLinkCreated(connReqContact: String)
     case userContactLinkDeleted
     case contactConnected(contact: Contact)
+    case receivedContactRequest(contactRequest: UserContactRequest)
+    case acceptingContactRequest(contactRequest: UserContactRequest)
+    case contactRequestRejected(contactRequest: UserContactRequest)
     case newChatItem(chatItem: AChatItem)
     case chatCmdError(chatError: ChatError)
 
@@ -94,6 +97,9 @@ enum ChatResponse: Decodable, Error {
             case .userContactLinkCreated: return "userContactLinkCreated"
             case .userContactLinkDeleted: return "userContactLinkDeleted"
             case .contactConnected: return "contactConnected"
+            case .receivedContactRequest: return "receivedContactRequest"
+            case .acceptingContactRequest: return "acceptingContactRequest"
+            case .contactRequestRejected: return "contactRequestRejected"
             case .newChatItem: return "newChatItem"
             case .chatCmdError: return "chatCmdError"
             }
@@ -116,6 +122,9 @@ enum ChatResponse: Decodable, Error {
             case let .userContactLinkCreated(connReq): return connReq
             case .userContactLinkDeleted: return noDetails
             case let .contactConnected(contact): return String(describing: contact)
+            case let .receivedContactRequest(contactRequest): return String(describing: contactRequest)
+            case let .acceptingContactRequest(contactRequest): return String(describing: contactRequest)
+            case let .contactRequestRejected(contactRequest): return String(describing: contactRequest)
             case let .newChatItem(chatItem): return String(describing: chatItem)
             case let .chatCmdError(chatError): return String(describing: chatError)
             }
@@ -274,6 +283,8 @@ func processReceivedMsg(_ chatModel: ChatModel, _ res: ChatResponse) {
                 Chat(chatInfo: .direct(contact: contact), chatItems: []),
                 at: 0
             )
+        case let .receivedContactRequest(contactRequest):
+            return // TODO
         case let .newChatItem(aChatItem):
             let ci = aChatItem.chatInfo
             let chat = chatModel.chats[ci.id] ?? Chat(chatInfo: ci, chatItems: [])
