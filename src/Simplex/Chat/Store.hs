@@ -1861,9 +1861,16 @@ getDirectChatPreviews_ db User {userId} = do
         LEFT JOIN chat_items ci ON ci.contact_id = CIMaxDates.contact_id
                                AND ci.item_ts = CIMaxDates.MaxDate
         WHERE ct.user_id = ?
+          AND c.connection_id IN (
+            SELECT cc.connection_id
+            FROM connections cc
+            WHERE cc.user_id = ct.user_id AND cc.contact_id = ct.contact_id AND (cc.conn_status = ? OR cc.conn_status = ?)
+            ORDER BY cc.connection_id DESC
+            LIMIT 1
+          )
         ORDER BY ci.item_ts DESC
       |]
-      (Only userId)
+      (userId, ConnReady, ConnSndReady)
   where
     toDirectChatPreview :: TimeZone -> ContactRow :. MaybeChatItemRow -> AChat
     toDirectChatPreview tz (contactRow :. ciRow_) =
@@ -1956,10 +1963,12 @@ getContact_ db userId contactId =
               c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at
             FROM contacts ct
             JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
-            JOIN connections c ON c.contact_id = ct.contact_id
-            WHERE ct.user_id = ? AND ct.contact_id = ?
+            LEFT JOIN connections c ON c.contact_id = ct.contact_id
+            WHERE ct.user_id = ? AND ct.contact_id = ? AND (c.conn_status = ? OR c.conn_status = ?)
+            ORDER BY c.connection_id DESC
+            LIMIT 1
           |]
-          (userId, contactId)
+          (userId, contactId, ConnReady, ConnSndReady)
       )
 
 getDirectChatItems_ :: DB.Connection -> UserId -> Int64 -> IO [CChatItem 'CTDirect]
