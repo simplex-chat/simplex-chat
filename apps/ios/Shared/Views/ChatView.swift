@@ -34,6 +34,7 @@ struct ChatView: View {
             SendMessageView(sendMessage: sendMessage, inProgress: inProgress)
         }
         .edgesIgnoringSafeArea(.all)
+        .navigationBarHidden(true)
     }
 
     func sendMessage(_ msg: String) {

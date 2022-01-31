@@ -20,6 +20,7 @@ enum ChatCommand {
     case apiSendMessage(type: ChatType, id: Int64, msg: MsgContent)
     case addContact
     case connect(connReq: String)
+    case apiDeleteChat(type: ChatType, id: Int64)
     case string(String)
 
     var cmdString: String {
@@ -35,6 +36,8 @@ enum ChatCommand {
                 return "/c"
             case let .connect(connReq):
                 return "/c \(connReq)"
+            case let .apiDeleteChat(type, id):
+                return "/_del \(type.rawValue)\(id)"
             case let .string(str):
                 return str
             }
@@ -53,6 +56,7 @@ enum ChatResponse: Decodable, Error {
     case invitation(connReqInvitation: String)
     case sentConfirmation
     case sentInvitation
+    case contactDeleted(contact: Contact)
 //    case newSentInvitation
     case contactConnected(contact: Contact)
     case newChatItem(chatItem: AChatItem)
@@ -66,6 +70,7 @@ enum ChatResponse: Decodable, Error {
             case .invitation: return "invitation"
             case .sentConfirmation: return "sentConfirmation"
             case .sentInvitation: return "sentInvitation"
+            case .contactDeleted: return "contactDeleted"
             case .contactConnected: return "contactConnected"
             case .newChatItem: return "newChatItem"
             }
@@ -81,6 +86,7 @@ enum ChatResponse: Decodable, Error {
             case let .invitation(connReqInvitation): return connReqInvitation
             case .sentConfirmation: return "sentConfirmation: no details"
             case .sentInvitation: return "sentInvitation: no details"
+            case let .contactDeleted(contact): return String(describing: contact)
             case let .contactConnected(contact): return String(describing: contact)
             case let .newChatItem(chatItem): return String(describing: chatItem)
             }
@@ -187,6 +193,12 @@ func apiConnect(connReq: String) throws {
     case .sentInvitation: return
     default: throw r
     }
+}
+
+func apiDeleteChat(type: ChatType, id: Int64) throws {
+    let r = try chatSendCmd(.apiDeleteChat(type: type, id: id))
+    if case .contactDeleted = r { return }
+    throw r
 }
 
 func processReceivedMsg(_ chatModel: ChatModel, _ res: ChatResponse) {

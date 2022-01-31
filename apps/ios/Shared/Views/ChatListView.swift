@@ -10,6 +10,10 @@ import SwiftUI
 
 struct ChatListView: View {
     @EnvironmentObject var chatModel: ChatModel
+    @State private var chatId: String?
+    @State private var chatsToBeDeleted: IndexSet?
+    @State private var showDeleteAlert = false
+
     var user: User
 
     var body: some View {
@@ -31,7 +35,7 @@ struct ChatListView: View {
 //                }
 //            }
 
-            ChatHeaderView()
+            ChatHeaderView(chatId: $chatId)
 
             NavigationView {
                 List {
@@ -42,23 +46,28 @@ struct ChatListView: View {
                     }
 
                     ForEach(chatModel.chatPreviews) { chatPreview in
-                        NavigationLink {
+                        NavigationLink(tag: chatPreview.chatInfo.id, selection: $chatId, destination: {
                             ChatView(chatInfo: chatPreview.chatInfo)
                                 .onAppear {
                                     do {
                                         let ci = chatPreview.chatInfo
                                         let chat = try apiGetChat(type: ci.chatType, id: ci.apiId)
-                                        chatModel.currentChat = chat
                                         chatModel.chats[ci.id] = chat
                                     } catch {
                                         print("apiGetChatItems", error)
                                     }
                                 }
-                                .onDisappear() { chatModel.currentChat = nil }
-                        } label: {
+                        }, label: {
                             ChatPreviewView(chatPreview: chatPreview)
-                        }
+                                .alert(isPresented: $showDeleteAlert) {
+                                    deleteChatAlert((chatsToBeDeleted?.first)!)
+                                }
+                        })
                         .frame(height: 80)
+                    }
+                    .onDelete { idx in
+                        chatsToBeDeleted = idx
+                        showDeleteAlert = true
                     }
                 }
                 .padding(0)
@@ -66,6 +75,33 @@ struct ChatListView: View {
                 .listStyle(.plain)
                 .edgesIgnoringSafeArea(.all)
             }
+        }
+    }
+
+    func deleteChatAlert(_ ix: IndexSet.Element) -> Alert {
+        let ci = chatModel.chatPreviews[ix].chatInfo
+        switch ci {
+        case .direct:
+            return Alert(
+                title: Text("Delete contact?"),
+                message: Text("Contact and all messages will be deleted"),
+                primaryButton: .destructive(Text("Delete")) {
+                    do {
+                        try apiDeleteChat(type: ci.chatType, id: ci.apiId)
+                        chatModel.chatPreviews.remove(at: ix)
+                    } catch let error {
+                        print("Error: \(error)")
+                    }
+                    chatsToBeDeleted = nil
+                }, secondaryButton: .cancel() {
+                    chatsToBeDeleted = nil
+                }
+            )
+        case .group:
+            return Alert(
+                title: Text("Delete group"),
+                message: Text("Group deletion is not supported")
+            )
         }
     }
 }

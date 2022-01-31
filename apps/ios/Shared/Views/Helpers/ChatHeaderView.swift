@@ -9,88 +9,46 @@
 import SwiftUI
 
 struct ChatHeaderView: View {
+    @Binding var chatId: String?
     @EnvironmentObject var chatModel: ChatModel
-    @State private var showAddChat = false
-    @State private var addContact = false
-    @State private var addContactAlert = false
-    @State private var addContactError: Error?
-    @State private var connReqInvitation: String = ""
-    @State private var connectContact = false
-    @State private var connectAlert = false
-    @State private var connectError: Error?
-    @State private var createGroup = false
 
     var body: some View {
         HStack {
-            if let chat = chatModel.currentChat {
-                EmptyView()
+            if let cId = chatId {
+                Button { chatId = nil } label: { Image(systemName: "chevron.backward") }
                 Spacer()
-                Text(chat.chatInfo.localDisplayName)
+                Text(chatModel.chats[cId]?.chatInfo.localDisplayName ?? "")
+                Spacer()
+                EmptyView()
             } else {
-                // Button("Edit", action: {})
+//                Button("Edit", action: {})
                 EmptyView()
                 Spacer()
                 Text("Your chats")
+                Spacer()
+                NewChatButton()
             }
-
-            Spacer()
-
-            Button { showAddChat = true } label: {
-                Image(systemName: "square.and.pencil")
-            }
-            .confirmationDialog("Start new chat", isPresented: $showAddChat, titleVisibility: .visible) {
-                Button("Add contact") { addContactAction() }
-                Button("Scan QR code") { connectContact = true }
-                Button("Create group") { createGroup = true }
-            }
-            .sheet(isPresented: $addContact, content: {
-                AddContactView(connReqInvitation: connReqInvitation)
-            })
-            .alert(isPresented: $addContactAlert) {
-                connectionError(addContactError)
-            }
-            .sheet(isPresented: $connectContact, content: {
-                connectContactSheet()
-            })
-            .alert(isPresented: $connectAlert) {
-                connectionError(connectError)
-            }
-            .sheet(isPresented: $createGroup, content: { CreateGroupView() })
         }
         .padding([.horizontal, .top])
-    }
-
-    func addContactAction() {
-        do {
-            connReqInvitation = try apiAddContact()
-            addContact = true
-        } catch {
-            addContactAlert = true
-            addContactError = error
-            print(error)
-        }
-    }
-
-    func connectContactSheet() -> some View {
-        ConnectContactView(completed: { err in
-            connectContact = false
-            if err != nil {
-                connectAlert = true
-                connectError = err
-            }
-        })
-    }
-
-    func connectionError(_ error: Error?) -> Alert {
-        Alert(
-            title: Text("Connection error"),
-            message: Text(error?.localizedDescription ?? "")
-        )
     }
 }
 
 struct ChatHeaderView_Previews: PreviewProvider {
     static var previews: some View {
-        ChatHeaderView()
+        @State var chatId1: String? = "@1"
+        @State var chatId2: String?
+        let chatModel = ChatModel()
+        chatModel.chats = [
+            "@1": Chat(
+                chatInfo: sampleDirectChatInfo,
+                chatItems: [chatItemSample(1, .directSnd, Date.now, "hello")]
+            )
+        ]
+        return Group {
+            ChatHeaderView(chatId: $chatId1)
+            ChatHeaderView(chatId: $chatId2)
+        }
+        .previewLayout(.fixed(width: 300, height: 70))
+        .environmentObject(chatModel)
     }
 }
