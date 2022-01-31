@@ -39,6 +39,7 @@ module Simplex.Chat.Store
     getUserContactLink,
     createContactRequest,
     getContactRequest,
+    getContactRequestIdByName,
     deleteContactRequest,
     createAcceptedContact,
     getLiveSndFileTransfers,
@@ -493,34 +494,40 @@ createContactRequest st userId userContactId invId profile@Profile {displayName,
             profile
           }
 
-getContactRequest :: StoreMonad m => SQLiteStore -> UserId -> ContactName -> m UserContactRequest
-getContactRequest st userId localDisplayName =
+getContactRequest :: StoreMonad m => SQLiteStore -> UserId -> Int64 -> m UserContactRequest
+getContactRequest st userId contactRequestId =
   liftIOEither . withTransaction st $ \db ->
     contactReq
       <$> DB.query
         db
         [sql|
           SELECT
-            cr.contact_request_id, cr.agent_invitation_id, cr.user_contact_link_id,
+            cr.local_display_name, cr.agent_invitation_id, cr.user_contact_link_id,
             c.agent_conn_id, cr.contact_profile_id, p.display_name, p.full_name
           FROM contact_requests cr
           JOIN connections c USING (user_contact_link_id)
           JOIN contact_profiles p USING (contact_profile_id)
           WHERE cr.user_id = ?
-            AND cr.local_display_name = ?
+            AND cr.contact_request_id = ?
         |]
-        (userId, localDisplayName)
+        (userId, contactRequestId)
   where
-    contactReq :: [(Int64, AgentInvId, Int64, Maybe AgentConnId, Int64, ContactName, Text)] -> Either StoreError UserContactRequest
-    contactReq [(contactRequestId, agentInvitationId, userContactLinkId, agentContactConnId, profileId, displayName, fullName)] = do
+    contactReq :: [(ContactName, AgentInvId, Int64, Maybe AgentConnId, Int64, ContactName, Text)] -> Either StoreError UserContactRequest
+    contactReq [(localDisplayName, agentInvitationId, userContactLinkId, agentContactConnId, profileId, displayName, fullName)] = do
       let profile = Profile {displayName, fullName}
       Right UserContactRequest {contactRequestId, agentInvitationId, userContactLinkId, agentContactConnId, localDisplayName, profileId, profile}
-    contactReq _ = Left $ SEContactRequestNotFound localDisplayName
+    contactReq _ = Left $ SEContactRequestNotFound contactRequestId
 
-deleteContactRequest :: MonadUnliftIO m => SQLiteStore -> UserId -> ContactName -> m ()
-deleteContactRequest st userId localDisplayName =
+getContactRequestIdByName :: StoreMonad m => SQLiteStore -> UserId -> ContactName -> m Int64
+getContactRequestIdByName st userId cName =
+  liftIOEither . withTransaction st $ \db ->
+    firstRow fromOnly (SEContactRequestNotFoundByName cName) $
+      DB.query db "SELECT contact_request_id FROM contact_requests WHERE user_id = ? AND local_display_name = ?" (userId, cName)
+
+deleteContactRequest :: MonadUnliftIO m => SQLiteStore -> UserId -> UserContactRequest -> m ()
+deleteContactRequest st userId UserContactRequest {contactRequestId, localDisplayName} =
   liftIO . withTransaction st $ \db -> do
-    DB.execute db "DELETE FROM contact_requests WHERE user_id = ? AND local_display_name = ?" (userId, localDisplayName)
+    DB.execute db "DELETE FROM contact_requests WHERE user_id = ? AND contact_request_id = ?" (userId, contactRequestId)
     DB.execute db "DELETE FROM display_names WHERE user_id = ? AND local_display_name = ?" (userId, localDisplayName)
 
 createAcceptedContact :: MonadUnliftIO m => SQLiteStore -> UserId -> ConnId -> ContactName -> Int64 -> m ()
@@ -2145,7 +2152,8 @@ data StoreError
   | SEContactNotReady {contactName :: ContactName}
   | SEDuplicateContactLink
   | SEUserContactLinkNotFound
-  | SEContactRequestNotFound {contactName :: ContactName}
+  | SEContactRequestNotFound {contactRequestId :: Int64}
+  | SEContactRequestNotFoundByName {contactName :: ContactName}
   | SEGroupNotFound {groupId :: Int64}
   | SEGroupNotFoundByName {groupName :: GroupName}
   | SEGroupWithoutUser

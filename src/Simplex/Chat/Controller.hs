@@ -129,9 +129,8 @@ data ChatResponse
   | CRGroupMembers {group :: Group}
   | CRContactsList {contacts :: [Contact]}
   | CRUserContactLink {connReqContact :: ConnReqContact}
-  | CRContactRequestRejected {contactName :: ContactName} -- TODO
-  | -- | CRContactRequestRejected {contactRequest :: UserContactRequest}
-    CRUserAcceptedGroupSent {groupInfo :: GroupInfo}
+  | CRContactRequestRejected {contactRequest :: UserContactRequest}
+  | CRUserAcceptedGroupSent {groupInfo :: GroupInfo}
   | CRUserDeletedMember {groupInfo :: GroupInfo, member :: GroupMember}
   | CRGroupsList {groups :: [GroupInfo]}
   | CRSentGroupInvitation {groupInfo :: GroupInfo, contact :: Contact}
@@ -148,8 +147,7 @@ data ChatResponse
   | CRUserContactLinkCreated {connReqContact :: ConnReqContact}
   | CRUserContactLinkDeleted
   | CRReceivedContactRequest {contactRequest :: UserContactRequest}
-    -- CRAcceptingContactRequest {contactRequest :: UserContactRequest}
-  | CRAcceptingContactRequest {contactName :: ContactName} -- TODO
+  | CRAcceptingContactRequest {contactRequest :: UserContactRequest}
   | CRLeftMemberUser {groupInfo :: GroupInfo}
   | CRGroupDeletedUser {groupInfo :: GroupInfo}
   | CRRcvFileAccepted {fileTransfer :: RcvFileTransfer, filePath :: FilePath}
@@ -201,6 +199,7 @@ data ChatError
   | ChatErrorMessage {errorMessage :: String}
   | ChatErrorAgent {agentError :: AgentErrorType}
   | ChatErrorStore {storeError :: StoreError}
+  | ChatErrorInvalidChatType {chatType :: ChatType}
   | ChatErrorNotImplemented
   deriving (Show, Exception, Generic)
 
