@@ -47,7 +47,7 @@ responseToView cmd = \case
   CRWelcome user -> r $ chatWelcome user
   CRContactsList cs -> r $ viewContactsList cs
   CRUserContactLink cReq -> r $ connReqContact_ "Your chat address:" cReq
-  CRContactRequestRejected c -> r [ttyContact c <> ": contact request rejected"]
+  CRContactRequestRejected UserContactRequest {localDisplayName = c} -> r [ttyContact c <> ": contact request rejected"]
   CRGroupCreated g -> r $ viewGroupCreated g
   CRGroupMembers g -> r $ viewGroupMembers g
   CRGroupsList gs -> r $ viewGroupsList gs
@@ -61,7 +61,7 @@ responseToView cmd = \case
   CRSentConfirmation -> r' ["confirmation sent!"]
   CRSentInvitation -> r' ["connection request sent!"]
   CRContactDeleted Contact {localDisplayName} -> r' [ttyContact localDisplayName <> ": contact is deleted"]
-  CRAcceptingContactRequest c -> r' [ttyContact c <> ": accepting contact request..."]
+  CRAcceptingContactRequest UserContactRequest {localDisplayName = c} -> r' [ttyContact c <> ": accepting contact request..."]
   CRUserContactLinkCreated cReq -> r' $ connReqContact_ "Your new chat address is created!" cReq
   CRUserContactLinkDeleted -> r' viewUserContactLinkDeleted
   CRUserAcceptedGroupSent _g -> r' [] -- [ttyGroup' g <> ": joining the group..."]
@@ -76,7 +76,7 @@ responseToView cmd = \case
   CRUserProfileUpdated p p' -> r' $ viewUserProfileUpdated p p'
   CRContactUpdated c c' -> viewContactUpdated c c'
   CRContactsMerged intoCt mergedCt -> viewContactsMerged intoCt mergedCt
-  CRReceivedContactRequest c p -> viewReceivedContactRequest c p
+  CRReceivedContactRequest UserContactRequest {localDisplayName = c, profile} -> viewReceivedContactRequest c profile
   CRRcvFileStart ft -> receivingFile_ "started" ft
   CRRcvFileComplete ft -> receivingFile_ "completed" ft
   CRRcvFileSndCancelled ft -> viewRcvFileSndCancelled ft
@@ -479,7 +479,7 @@ viewChatError = \case
     SERcvFileNotFound fileId -> fileNotFound fileId
     SEDuplicateContactLink -> ["you already have chat address, to show: " <> highlight' "/sa"]
     SEUserContactLinkNotFound -> ["no chat address, to create: " <> highlight' "/ad"]
-    SEContactRequestNotFound c -> ["no contact request from " <> ttyContact c]
+    SEContactRequestNotFoundByName c -> ["no contact request from " <> ttyContact c]
     e -> ["chat db error: " <> sShow e]
   ChatErrorAgent err -> case err of
     SMP SMP.AUTH -> ["error: this connection is deleted"]
