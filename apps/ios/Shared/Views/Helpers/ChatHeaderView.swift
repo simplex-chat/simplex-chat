@@ -18,6 +18,7 @@ struct ChatHeaderView: View {
                 Button { chatId = nil } label: { Image(systemName: "chevron.backward") }
                 Spacer()
                 Text(chatModel.chats[cId]?.chatInfo.localDisplayName ?? "")
+                    .font(.title3)
                 Spacer()
                 EmptyView()
             } else {
@@ -25,6 +26,7 @@ struct ChatHeaderView: View {
                 EmptyView()
                 Spacer()
                 Text("Your chats")
+                    .font(.title3)
                 Spacer()
                 NewChatButton()
             }

@@ -17,16 +17,6 @@ struct ChatListView: View {
     var user: User
 
     var body: some View {
-        DispatchQueue.global().async {
-            while(true) {
-                do {
-                    try processReceivedMsg(chatModel, chatRecvMsg())
-                } catch {
-                    print("error receiving message: ", error)
-                }
-            }
-        }
-
         return VStack {
 //            if chatModel.chats.isEmpty {
 //                VStack {
@@ -73,7 +63,7 @@ struct ChatListView: View {
                 .padding(0)
                 .offset(x: -8)
                 .listStyle(.plain)
-                .edgesIgnoringSafeArea(.all)
+                .edgesIgnoringSafeArea(.top)
             }
         }
     }
@@ -106,20 +96,20 @@ struct ChatListView: View {
     }
 }
 
-//struct ChatListView_Previews: PreviewProvider {
-//    static var previews: some View {
-//        let chatModel = ChatModel()
-//        chatModel.chatPreviews = [
-//            Chat(
-//                chatInfo: sampleDirectChatInfo,
-//                chatItems: [chatItemSample(1, .directSnd, Date.now, "hello")]
-//            ),
-//            Chat(
-//                chatInfo: sampleGroupChatInfo,
-//                chatItems: [chatItemSample(1, .directSnd, Date.now, "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.")]
-//            )
-//        ]
-//        return ChatListView(user: sampleUser)
-//            .environmentObject(chatModel)
-//    }
-//}
+struct ChatListView_Previews: PreviewProvider {
+    static var previews: some View {
+        let chatModel = ChatModel()
+        chatModel.chatPreviews = [
+            Chat(
+                chatInfo: sampleDirectChatInfo,
+                chatItems: [chatItemSample(1, .directSnd, Date.now, "hello")]
+            ),
+            Chat(
+                chatInfo: sampleGroupChatInfo,
+                chatItems: [chatItemSample(1, .directSnd, Date.now, "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.")]
+            )
+        ]
+        return ChatListView(user: sampleUser)
+            .environmentObject(chatModel)
+    }
+}
