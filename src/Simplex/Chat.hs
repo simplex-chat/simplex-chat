@@ -142,7 +142,7 @@ processChatCommand user@User {userId, profile} = \case
       ci <- sendGroupChatItem userId group (XMsgNew mc) (CISndMsgContent mc)
       setActive $ ActiveG gName
       pure . CRNewChatItem $ AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci
-    CTContactRequest -> pure $ CRChatError ChatErrorNotImplemented
+    CTContactRequest -> pure . CRChatError . ChatError $ CECommandError "not supported"
   APIDeleteChat cType chatId -> case cType of
     CTDirect -> do
       ct@Contact {localDisplayName} <- withStore $ \st -> getContact st userId chatId
@@ -157,20 +157,21 @@ processChatCommand user@User {userId, profile} = \case
             pure $ CRContactDeleted ct
         gs -> throwChatError $ CEContactGroups ct gs
     CTGroup -> pure $ CRChatCmdError ChatErrorNotImplemented
-    CTContactRequest -> do
-      cReq@UserContactRequest {agentContactConnId = AgentConnId connId, agentInvitationId = AgentInvId invId} <-
-        withStore $ \st ->
-          getContactRequest st userId chatId
-            `E.finally` deleteContactRequest st userId chatId
-      withAgent $ \a -> rejectContact a connId invId
-      pure $ CRContactRequestRejected cReq
-  APIAcceptContact contactRequestId -> do
-    ctReq@UserContactRequest {agentInvitationId = AgentInvId invId, localDisplayName = cName, profileId} <- withStore $ \st ->
-      getContactRequest st userId contactRequestId
+    CTContactRequest -> pure . CRChatError . ChatError $ CECommandError "not supported"
+  APIAcceptContact connReqId -> do
+    cReq@UserContactRequest {agentInvitationId = AgentInvId invId, localDisplayName = cName, profileId} <- withStore $ \st ->
+      getContactRequest st userId connReqId
     procCmd $ do
       connId <- withAgent $ \a -> acceptContact a invId . directMessage $ XInfo profile
       withStore $ \st -> createAcceptedContact st userId connId cName profileId
-      pure $ CRAcceptingContactRequest ctReq
+      pure $ CRAcceptingContactRequest cReq
+  APIRejectContact connReqId -> do
+    cReq@UserContactRequest {agentContactConnId = AgentConnId connId, agentInvitationId = AgentInvId invId} <-
+      withStore $ \st ->
+        getContactRequest st userId connReqId
+          `E.finally` deleteContactRequest st userId connReqId
+    withAgent $ \a -> rejectContact a connId invId
+    pure $ CRContactRequestRejected cReq
   ChatHelp section -> pure $ CRChatHelp section
   Welcome -> pure $ CRWelcome user
   AddContact -> procCmd $ do
@@ -204,11 +205,11 @@ processChatCommand user@User {userId, profile} = \case
       pure CRUserContactLinkDeleted
   ShowMyAddress -> CRUserContactLink <$> withStore (`getUserContactLink` userId)
   AcceptContact cName -> do
-    contactRequestId <- withStore $ \st -> getContactRequestIdByName st userId cName
-    processChatCommand user $ APIAcceptContact contactRequestId
+    connReqId <- withStore $ \st -> getContactRequestIdByName st userId cName
+    processChatCommand user $ APIAcceptContact connReqId
   RejectContact cName -> do
-    contactRequestId <- withStore $ \st -> getContactRequestIdByName st userId cName
-    processChatCommand user $ APIDeleteChat CTContactRequest contactRequestId
+    connReqId <- withStore $ \st -> getContactRequestIdByName st userId cName
+    processChatCommand user $ APIRejectContact connReqId
   SendMessage cName msg -> do
     contactId <- withStore $ \st -> getContactIdByName st userId cName
     let mc = MCText $ safeDecodeUtf8 msg
@@ -1324,6 +1325,7 @@ chatCommandP =
     <|> "/_send " *> (APISendMessage <$> chatTypeP <*> A.decimal <* A.space <*> msgContentP)
     <|> "/_delete " *> (APIDeleteChat <$> chatTypeP <*> A.decimal)
     <|> "/_accept " *> (APIAcceptContact <$> A.decimal)
+    <|> "/_reject " *> (APIRejectContact <$> A.decimal)
     <|> ("/help files" <|> "/help file" <|> "/hf") $> ChatHelp HSFiles
     <|> ("/help groups" <|> "/help group" <|> "/hg") $> ChatHelp HSGroups
     <|> ("/help address" <|> "/ha") $> ChatHelp HSMyAddress
@@ -1360,7 +1362,7 @@ chatCommandP =
     <|> ("/quit" <|> "/q" <|> "/exit") $> QuitChat
     <|> ("/version" <|> "/v") $> ShowVersion
   where
-    chatTypeP = A.char '@' $> CTDirect <|> A.char '#' $> CTGroup <|> "<@" $> CTContactRequest
+    chatTypeP = A.char '@' $> CTDirect <|> A.char '#' $> CTGroup
     msgContentP = "text " *> (MCText . safeDecodeUtf8 <$> A.takeByteString)
     displayName = safeDecodeUtf8 <$> (B.cons <$> A.satisfy refChar <*> A.takeTill (== ' '))
     refChar c = c > ' ' && c /= '#' && c /= '@'
