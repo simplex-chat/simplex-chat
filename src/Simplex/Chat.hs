@@ -1318,12 +1318,12 @@ withStore action =
 
 chatCommandP :: Parser ChatCommand
 chatCommandP =
-  "/get chats" $> APIGetChats
-    <|> "/get chat " *> (APIGetChat <$> chatTypeP <*> A.decimal)
-    <|> "/get chatItems count=" *> (APIGetChatItems <$> A.decimal)
-    <|> "/send msg " *> (APISendMessage <$> chatTypeP <*> A.decimal <* A.space <*> msgContentP)
-    <|> "/_del " *> (APIDeleteChat <$> chatTypeP <*> A.decimal)
-    <|> "/_ac " *> (APIAcceptContact <$> A.decimal)
+  "/_get chats" $> APIGetChats
+    <|> "/_get chat " *> (APIGetChat <$> chatTypeP <*> A.decimal)
+    <|> "/_get items count=" *> (APIGetChatItems <$> A.decimal)
+    <|> "/_send " *> (APISendMessage <$> chatTypeP <*> A.decimal <* A.space <*> msgContentP)
+    <|> "/_delete " *> (APIDeleteChat <$> chatTypeP <*> A.decimal)
+    <|> "/_accept " *> (APIAcceptContact <$> A.decimal)
     <|> ("/help files" <|> "/help file" <|> "/hf") $> ChatHelp HSFiles
     <|> ("/help groups" <|> "/help group" <|> "/hg") $> ChatHelp HSGroups
     <|> ("/help address" <|> "/ha") $> ChatHelp HSMyAddress
