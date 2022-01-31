@@ -12,7 +12,6 @@ private var dateFormatter: DateFormatter?
 
 struct ChatItemView: View {
     var chatItem: ChatItem
-    let rcvColor: Color = Color(UIColor(red: 240/255, green: 240/255, blue: 240/255, alpha: 1.0))
 
     var body: some View {
         let sent = chatItem.chatDir.sent
@@ -23,14 +22,16 @@ struct ChatItemView: View {
                     .padding(.top, 8)
                     .padding(.horizontal, 12)
                     .frame(minWidth: 200, maxWidth: 300, alignment: .leading)
+                    .foregroundColor(sent ? .white : .primary)
                 Text(getDateFormatter().string(from: chatItem.meta.itemTs))
+                    .font(.subheadline)
+                    .foregroundColor(sent ? .white : .secondary)
                     .padding(.bottom, 8)
                     .padding(.horizontal, 12)
                     .frame(minWidth: 200, maxWidth: 300, alignment: .trailing)
             }
         }
-        .foregroundColor(sent ? Color.white : Color.black)
-        .background(sent ? Color.blue : rcvColor)
+        .background(sent ? .blue : Color(uiColor: .tertiarySystemGroupedBackground))
         .cornerRadius(10)
         .padding(.horizontal)
         .frame(

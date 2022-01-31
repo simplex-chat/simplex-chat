@@ -48,11 +48,13 @@ struct ChatListView: View {
                                     do {
                                         let ci = chatPreview.chatInfo
                                         let chat = try apiGetChat(type: ci.chatType, id: ci.apiId)
+                                        chatModel.currentChat = chat
                                         chatModel.chats[ci.id] = chat
                                     } catch {
                                         print("apiGetChatItems", error)
                                     }
                                 }
+                                .onDisappear() { chatModel.currentChat = nil }
                         } label: {
                             ChatPreviewView(chatPreview: chatPreview)
                         }
@@ -64,7 +66,6 @@ struct ChatListView: View {
                 .listStyle(.plain)
                 .edgesIgnoringSafeArea(.all)
             }
-            .navigationViewStyle(.automatic)
         }
     }
 }

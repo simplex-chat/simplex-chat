@@ -18,7 +18,7 @@ struct ChatView: View {
             if let chat: Chat = chatModel.chats[chatInfo.id] {
                 VStack {
                     ScrollView {
-                        LazyVStack {
+                        LazyVStack(spacing: 5) {
                             ForEach(chat.chatItems) {
                                 ChatItemView(chatItem: $0)
                             }
@@ -28,11 +28,12 @@ struct ChatView: View {
             } else {
                 Text("unexpected: chat not found...")
             }
-            
-            Spacer()
+
+            Spacer(minLength: 0)
 
             SendMessageView(sendMessage: sendMessage, inProgress: inProgress)
         }
+        .edgesIgnoringSafeArea(.all)
     }
 
     func sendMessage(_ msg: String) {

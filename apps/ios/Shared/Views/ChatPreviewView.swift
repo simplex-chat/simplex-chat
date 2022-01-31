@@ -28,7 +28,7 @@ struct ChatPreviewView: View {
                         .padding(.trailing, 8)
                         .padding(.top, 4)
                         .frame(minWidth: 60, alignment: .trailing)
-                        .foregroundColor(.gray)
+                        .foregroundColor(.secondary)
                 }
             }
             if let ci = ci {

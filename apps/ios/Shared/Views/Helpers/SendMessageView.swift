@@ -16,11 +16,10 @@ struct SendMessageView: View {
     var body: some View {
         HStack {
             TextField("Message...", text: $command)
-               .textFieldStyle(RoundedBorderTextFieldStyle())
-               .textInputAutocapitalization(.never)
-               .disableAutocorrection(true)
-               .frame(minHeight: 30)
-               .onSubmit(submit)
+                .textFieldStyle(.roundedBorder)
+                .textInputAutocapitalization(.never)
+                .disableAutocorrection(true)
+                .onSubmit(submit)
 
             if (inProgress) {
                 ProgressView()
@@ -31,7 +30,7 @@ struct SendMessageView: View {
             }
         }
         .frame(minHeight: 30)
-        .padding()
+        .padding(12)
     }
 
     func submit() {

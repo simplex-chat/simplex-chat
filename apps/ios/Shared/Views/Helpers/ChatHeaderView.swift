@@ -9,6 +9,7 @@
 import SwiftUI
 
 struct ChatHeaderView: View {
+    @EnvironmentObject var chatModel: ChatModel
     @State private var showAddChat = false
     @State private var addContact = false
     @State private var addContactAlert = false
@@ -21,10 +22,19 @@ struct ChatHeaderView: View {
 
     var body: some View {
         HStack {
-            Button("Edit", action: {})
+            if let chat = chatModel.currentChat {
+                EmptyView()
+                Spacer()
+                Text(chat.chatInfo.localDisplayName)
+            } else {
+                // Button("Edit", action: {})
+                EmptyView()
+                Spacer()
+                Text("Your chats")
+            }
+
             Spacer()
-            Text("Your chats")
-            Spacer()
+
             Button { showAddChat = true } label: {
                 Image(systemName: "square.and.pencil")
             }
@@ -47,8 +57,7 @@ struct ChatHeaderView: View {
             }
             .sheet(isPresented: $createGroup, content: { CreateGroupView() })
         }
-        .padding(.horizontal)
-        .padding(.top)
+        .padding([.horizontal, .top])
     }
 
     func addContactAction() {
