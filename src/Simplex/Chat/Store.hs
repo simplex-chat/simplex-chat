@@ -490,17 +490,16 @@ createContactRequest st userId userContactId invId Profile {displayName, fullNam
 getContactRequest :: StoreMonad m => SQLiteStore -> UserId -> Int64 -> m UserContactRequest
 getContactRequest st userId contactRequestId =
   liftIOEither . withTransaction st $ \db ->
-    runExceptT $
-      ExceptT $ getContactRequest_ db userId contactRequestId
+    getContactRequest_ db userId contactRequestId
 
 getContactRequest_ :: DB.Connection -> UserId -> Int64 -> IO (Either StoreError UserContactRequest)
 getContactRequest_ db userId contactRequestId =
-  contactReq
-    <$> DB.query
+  firstRow toContactRequest (SEContactRequestNotFound contactRequestId) $
+    DB.query
       db
       [sql|
         SELECT
-          cr.local_display_name, cr.agent_invitation_id, cr.user_contact_link_id,
+          cr.contact_request_id, cr.local_display_name, cr.agent_invitation_id, cr.user_contact_link_id,
           c.agent_conn_id, cr.contact_profile_id, p.display_name, p.full_name
         FROM contact_requests cr
         JOIN connections c USING (user_contact_link_id)
@@ -509,12 +508,13 @@ getContactRequest_ db userId contactRequestId =
           AND cr.contact_request_id = ?
       |]
       (userId, contactRequestId)
-  where
-    contactReq :: [(ContactName, AgentInvId, Int64, AgentConnId, Int64, ContactName, Text)] -> Either StoreError UserContactRequest
-    contactReq [(localDisplayName, agentInvitationId, userContactLinkId, agentContactConnId, profileId, displayName, fullName)] = do
-      let profile = Profile {displayName, fullName}
-      Right UserContactRequest {contactRequestId, agentInvitationId, userContactLinkId, agentContactConnId, localDisplayName, profileId, profile}
-    contactReq _ = Left $ SEContactRequestNotFound contactRequestId
+
+type ContactRequestRow = (Int64, ContactName, AgentInvId, Int64, AgentConnId, Int64, ContactName, Text)
+
+toContactRequest :: ContactRequestRow -> UserContactRequest
+toContactRequest (contactRequestId, localDisplayName, agentInvitationId, userContactLinkId, agentContactConnId, profileId, displayName, fullName) = do
+  let profile = Profile {displayName, fullName}
+   in UserContactRequest {contactRequestId, agentInvitationId, userContactLinkId, agentContactConnId, localDisplayName, profileId, profile}
 
 getContactRequestIdByName :: StoreMonad m => SQLiteStore -> UserId -> ContactName -> m Int64
 getContactRequestIdByName st userId cName =
@@ -842,12 +842,10 @@ getConnectionEntity st User {userId, userContactId} agentConnId =
           |]
           (groupMemberId, userId, userContactId)
     toGroupAndMember :: Connection -> GroupInfoRow :. GroupMemberRow -> (GroupInfo, GroupMember)
-    toGroupAndMember c (((groupId, localDisplayName, displayName, fullName) :. userMemberRow) :. memberRow) =
-      let member = toGroupMember userContactId memberRow
-          membership = toGroupMember userContactId userMemberRow
-       in ( GroupInfo {groupId, localDisplayName, groupProfile = GroupProfile {displayName, fullName}, membership},
-            (member :: GroupMember) {activeConn = Just c}
-          )
+    toGroupAndMember c (groupInfoRow :. memberRow) =
+      let groupInfo = toGroupInfo userContactId groupInfoRow
+          member = toGroupMember userContactId memberRow
+       in (groupInfo, (member :: GroupMember) {activeConn = Just c})
     getConnSndFileTransfer_ :: DB.Connection -> Int64 -> Connection -> ExceptT StoreError IO SndFileTransfer
     getConnSndFileTransfer_ db fileId Connection {connId} =
       ExceptT $
@@ -1378,13 +1376,10 @@ getViaGroupMember st User {userId, userContactId} Contact {contactId} =
         (userId, contactId, userContactId)
   where
     toGroupAndMember :: [GroupInfoRow :. GroupMemberRow :. MaybeConnectionRow] -> Maybe (GroupInfo, GroupMember)
-    toGroupAndMember [((groupId, localDisplayName, displayName, fullName) :. userMemberRow) :. memberRow :. connRow] =
-      let member = toGroupMember userContactId memberRow
-          membership = toGroupMember userContactId userMemberRow
-       in Just
-            ( GroupInfo {groupId, localDisplayName, groupProfile = GroupProfile {displayName, fullName}, membership},
-              (member :: GroupMember) {activeConn = toMaybeConnection connRow}
-            )
+    toGroupAndMember [groupInfoRow :. memberRow :. connRow] =
+      let groupInfo = toGroupInfo userContactId groupInfoRow
+          member = toGroupMember userContactId memberRow
+       in Just (groupInfo, (member :: GroupMember) {activeConn = toMaybeConnection connRow})
     toGroupAndMember _ = Nothing
 
 getViaGroupContact :: MonadUnliftIO m => SQLiteStore -> User -> GroupMember -> m (Maybe Contact)
@@ -1840,12 +1835,13 @@ createNewChatItem st userId chatDirection NewChatItem {createdByMsgId, itemSent,
 getChatPreviews :: MonadUnliftIO m => SQLiteStore -> User -> m [AChat]
 getChatPreviews st user =
   liftIO . withTransaction st $ \db -> do
-    directChatPreviews <- getDirectChatPreviews_ db user
-    groupChatPreviews <- getGroupChatPreviews_ db user
-    pure $ sortOn (Down . ts) (directChatPreviews <> groupChatPreviews)
+    directChats <- getDirectChatPreviews_ db user
+    groupChats <- getGroupChatPreviews_ db user
+    cReqChats <- getContactRequestChatPreviews_ db user
+    pure $ sortOn (Down . ts) (directChats <> groupChats <> cReqChats)
   where
     ts :: AChat -> UTCTime
-    ts (AChat _ (Chat _ [])) = UTCTime (fromGregorian 2122 1 29) (secondsToDiffTime 0) -- TODO Contact/GroupInfo createdAt
+    ts (AChat _ (Chat _ [])) = UTCTime (fromGregorian 2122 1 29) (secondsToDiffTime 0) -- TODO Contact/GroupInfo/ContactRequest createdAt
     ts (AChat _ (Chat _ (CChatItem _ (ChatItem _ CIMeta {itemTs} _) : _))) = itemTs
 
 getDirectChatPreviews_ :: DB.Connection -> User -> IO [AChat]
@@ -1932,11 +1928,31 @@ getGroupChatPreviews_ db User {userId, userContactId} = do
       (userId, userContactId)
   where
     toGroupChatPreview :: TimeZone -> GroupInfoRow :. MaybeGroupChatItemRow -> AChat
-    toGroupChatPreview tz (((groupId, localDisplayName, displayName, fullName) :. userMemberRow) :. ciRow_) =
-      let membership = toGroupMember userContactId userMemberRow
-          groupInfo = GroupInfo {groupId, localDisplayName, groupProfile = GroupProfile {displayName, fullName}, membership}
+    toGroupChatPreview tz (groupInfoRow :. ciRow_) =
+      let groupInfo = toGroupInfo userContactId groupInfoRow
           ci_ = toGroupChatItemList tz userContactId ciRow_
        in AChat SCTGroup $ Chat (GroupChat groupInfo) ci_
+
+getContactRequestChatPreviews_ :: DB.Connection -> User -> IO [AChat]
+getContactRequestChatPreviews_ db User {userId} =
+  map toContactRequestChatPreview
+    <$> DB.query
+      db
+      [sql|
+        SELECT
+          cr.contact_request_id, cr.local_display_name, cr.agent_invitation_id, cr.user_contact_link_id,
+          c.agent_conn_id, cr.contact_profile_id, p.display_name, p.full_name
+        FROM contact_requests cr
+        JOIN connections c USING (user_contact_link_id)
+        JOIN contact_profiles p USING (contact_profile_id)
+        WHERE cr.user_id = ?
+      |]
+      (Only userId)
+  where
+    toContactRequestChatPreview :: ContactRequestRow -> AChat
+    toContactRequestChatPreview cReqRow =
+      let cReq = toContactRequest cReqRow
+       in AChat SCTContactRequest $ Chat (ContactRequest cReq) []
 
 getDirectChat :: StoreMonad m => SQLiteStore -> UserId -> Int64 -> m (Chat 'CTDirect)
 getDirectChat st userId contactId =
