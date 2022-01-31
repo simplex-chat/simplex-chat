@@ -159,8 +159,9 @@ processChatCommand user@User {userId, profile} = \case
     CTGroup -> pure $ CRChatCmdError ChatErrorNotImplemented
     CTContactRequest -> do
       cReq@UserContactRequest {agentContactConnId = AgentConnId connId, agentInvitationId = AgentInvId invId} <-
-        withStore $ \st -> getContactRequest st userId chatId
-      withStore $ \st -> deleteContactRequest st userId cReq
+        withStore $ \st ->
+          getContactRequest st userId chatId
+            `E.finally` deleteContactRequest st userId chatId
       withAgent $ \a -> rejectContact a connId invId
       pure $ CRContactRequestRejected cReq
   APIAcceptContact contactRequestId -> do

@@ -522,11 +522,20 @@ getContactRequestIdByName st userId cName =
     firstRow fromOnly (SEContactRequestNotFoundByName cName) $
       DB.query db "SELECT contact_request_id FROM contact_requests WHERE user_id = ? AND local_display_name = ?" (userId, cName)
 
-deleteContactRequest :: MonadUnliftIO m => SQLiteStore -> UserId -> UserContactRequest -> m ()
-deleteContactRequest st userId UserContactRequest {contactRequestId, localDisplayName} =
+deleteContactRequest :: MonadUnliftIO m => SQLiteStore -> UserId -> Int64 -> m ()
+deleteContactRequest st userId contactRequestId =
   liftIO . withTransaction st $ \db -> do
+    DB.execute
+      db
+      [sql|
+        DELETE FROM display_names
+        WHERE user_id = ? AND local_display_name = (
+          SELECT local_display_name FROM contact_requests
+          WHERE user_id = ? AND contact_request_id = ?
+        )
+      |]
+      (userId, userId, contactRequestId)
     DB.execute db "DELETE FROM contact_requests WHERE user_id = ? AND contact_request_id = ?" (userId, contactRequestId)
-    DB.execute db "DELETE FROM display_names WHERE user_id = ? AND local_display_name = ?" (userId, localDisplayName)
 
 createAcceptedContact :: MonadUnliftIO m => SQLiteStore -> UserId -> ConnId -> ContactName -> Int64 -> m ()
 createAcceptedContact st userId agentConnId localDisplayName profileId =
