@@ -132,7 +132,7 @@ processChatCommand user@User {userId, profile} = \case
           ( \st ->
               ( case pagination of
                   CIPLast count -> getDirectChat st user cId count
-                  CIPAfter afterId count -> getDirectChatBefore st user cId afterId count
+                  CIPAfter afterId count -> getDirectChatAfter st user cId afterId count
                   CIPBefore beforeId count -> getDirectChatBefore st user cId beforeId count
               )
           )
@@ -142,7 +142,7 @@ processChatCommand user@User {userId, profile} = \case
           ( \st ->
               ( case pagination of
                   CIPLast count -> getGroupChat st user cId count
-                  CIPAfter afterId count -> getGroupChatBefore st user cId afterId count
+                  CIPAfter afterId count -> getGroupChatAfter st user cId afterId count
                   CIPBefore beforeId count -> getGroupChatBefore st user cId beforeId count
               )
           )
@@ -1338,7 +1338,7 @@ withStore action =
 chatCommandP :: Parser ChatCommand
 chatCommandP =
   "/_get chats" $> APIGetChats
-    <|> "/_get chat " *> (APIGetChat <$> chatTypeP <*> A.decimal <*> ciPaginationP)
+    <|> "/_get chat " *> (APIGetChat <$> chatTypeP <*> A.decimal <* A.space <*> ciPaginationP)
     <|> "/_get items count=" *> (APIGetChatItems <$> A.decimal)
     <|> "/_send " *> (APISendMessage <$> chatTypeP <*> A.decimal <* A.space <*> msgContentP)
     <|> "/_delete " *> (APIDeleteChat <$> chatTypeP <*> A.decimal)

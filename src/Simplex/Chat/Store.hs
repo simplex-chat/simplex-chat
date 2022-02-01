@@ -1988,7 +1988,7 @@ getDirectChatAfter st User {userId} contactId afterChatItemId count =
   liftIOEither . withTransaction st $ \db -> runExceptT $ do
     contact <- ExceptT $ getContact_ db userId contactId
     chatItems <- liftIO $ getDirectChatItemsAfter_ db
-    pure $ Chat (DirectChat contact) (sortOn chatItemTs chatItems)
+    pure $ Chat (DirectChat contact) chatItems
   where
     getDirectChatItemsAfter_ :: DB.Connection -> IO [CChatItem 'CTDirect]
     getDirectChatItemsAfter_ db = do
@@ -2000,7 +2000,7 @@ getDirectChatAfter st User {userId} contactId afterChatItemId count =
             SELECT chat_item_id, item_ts, item_content, item_text, created_at
             FROM chat_items
             WHERE user_id = ? AND contact_id = ? AND chat_item_id > ?
-            ORDER BY item_ts DESC
+            ORDER BY item_ts ASC
             LIMIT ?
           |]
           (userId, contactId, afterChatItemId, count)
@@ -2102,7 +2102,7 @@ getGroupChatAfter st user@User {userId, userContactId} groupId afterChatItemId c
   liftIOEither . withTransaction st $ \db -> runExceptT $ do
     groupInfo <- ExceptT $ getGroupInfo_ db user groupId
     chatItems <- ExceptT $ getGroupChatItemsAfter_ db
-    pure $ Chat (GroupChat groupInfo) (sortOn chatItemTs chatItems)
+    pure $ Chat (GroupChat groupInfo) chatItems
   where
     getGroupChatItemsAfter_ :: DB.Connection -> IO (Either StoreError [CChatItem 'CTGroup])
     getGroupChatItemsAfter_ db = do
@@ -2122,7 +2122,7 @@ getGroupChatAfter st user@User {userId, userContactId} groupId afterChatItemId c
             LEFT JOIN group_members m ON m.group_member_id = ci.group_member_id
             LEFT JOIN contact_profiles p ON p.contact_profile_id = m.contact_profile_id
             WHERE ci.user_id = ? AND ci.group_id = ? AND chat_item_id > ?
-            ORDER BY item_ts DESC
+            ORDER BY item_ts ASC
             LIMIT ?
           |]
           (userId, groupId, afterChatItemId, count)
