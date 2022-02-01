@@ -47,7 +47,7 @@ typealias ContactName = String
 
 typealias GroupName = String
 
-struct Profile: Decodable {
+struct Profile: Codable {
     var displayName: String
     var fullName: String
 }
