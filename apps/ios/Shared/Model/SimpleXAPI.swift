@@ -35,7 +35,7 @@ enum ChatCommand {
             case .apiGetChats:
                 return "/_get chats"
             case let .apiGetChat(type, id):
-                return "/_get chat \(type.rawValue)\(id)"
+                return "/_get chat \(type.rawValue)\(id) count=500"
             case let .apiSendMessage(type, id, mc):
                 return "/_send \(type.rawValue)\(id) \(mc.cmdString)"
             case .addContact:
@@ -296,9 +296,13 @@ func processReceivedMsg(_ chatModel: ChatModel, _ res: ChatResponse) {
         chatModel.terminalItems.append(.resp(Date.now, res))
         switch res {
         case let .contactConnected(contact):
-            let chat = Chat(chatInfo: ChatInfo.direct(contact: contact), chatItems: [])
-            chatModel.chats[contact.id] = chat
-            chatModel.chatPreviews.insert(chat, at: 0)
+            if let chat = chatModel.chats[contact.id] {
+                chat.chatInfo = ChatInfo.direct(contact: contact)
+            } else {
+                let chat = Chat(chatInfo: ChatInfo.direct(contact: contact), chatItems: [])
+                chatModel.chats[contact.id] = chat
+                chatModel.chatPreviews.insert(chat, at: 0)
+            }
         case let .receivedContactRequest(contactRequest):
             let chat = Chat(chatInfo: ChatInfo.contactRequest(contactRequest: contactRequest), chatItems: [])
             chatModel.chats[contactRequest.id] = chat

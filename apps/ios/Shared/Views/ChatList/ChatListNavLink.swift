@@ -12,16 +12,16 @@ struct ChatListNavLink: View {
     @EnvironmentObject var chatModel: ChatModel
 
     @Binding var chatId: String?
-    var chatPreview: Chat
+    @State var chatPreview: Chat
     var width: CGFloat
 
     @State private var showDeleteContactAlert = false
     @State private var showDeleteGroupAlert = false
     @State private var showContactRequestAlert = false
+    @State private var showContactRequestDialog = false
     @State private var alertContact: Contact?
     @State private var alertGroupInfo: GroupInfo?
     @State private var alertContactRequest: UserContactRequest?
-    @State private var alertContactRequestAction: ContactRequestAction?
 
     var body: some View {
         switch chatPreview.chatInfo {
@@ -58,6 +58,7 @@ struct ChatListNavLink: View {
             destination: { chatView() },
             label: { ChatPreviewView(chatPreview: chatPreview) }
         )
+        .disabled(!contact.connected)
         .swipeActions(edge: .trailing, allowsFullSwipe: true) {
             Button(role: .destructive) {
                 alertContact = contact
@@ -96,29 +97,26 @@ struct ChatListNavLink: View {
     private func contactRequestNavLink(_ contactRequest: UserContactRequest) -> some View {
         ChatPreviewView(chatPreview: chatPreview)
         .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-            Button {
-                alertContactRequest = contactRequest
-                alertContactRequestAction = .accept
-                showContactRequestAlert = true
-            } label: {
-                Label("Accept", systemImage: "checkmark")
-            }
-            .tint(.blue)
+            Button { acceptContactRequest(contactRequest) }
+                label: { Label("Accept", systemImage: "checkmark") }
+                .tint(.blue)
             Button(role: .destructive) {
                 alertContactRequest = contactRequest
-                alertContactRequestAction = .reject
                 showContactRequestAlert = true
             } label: {
                 Label("Reject", systemImage: "multiply")
             }
         }
-        .onTapGesture {
-            print("tapped")
-        }
         .alert(isPresented: $showContactRequestAlert) {
-            contactRequestAlert(alertContactRequestAction!, alertContactRequest!)
+            contactRequestAlert(alertContactRequest!)
         }
+        .background(Color(uiColor: .systemBackground))
         .frame(width: width, height: 80)
+        .onTapGesture { showContactRequestDialog = true }
+        .confirmationDialog("Connection request", isPresented: $showContactRequestDialog, titleVisibility: .visible) {
+            Button("Accept contact") { acceptContactRequest(contactRequest) }
+            Button("Reject contact (sender NOT notified)") { rejectContactRequest(contactRequest) }
+        }
     }
 
     private func deleteContactAlert(_ contact: Contact) -> Alert {
@@ -147,54 +145,42 @@ struct ChatListNavLink: View {
         )
     }
 
-    private enum ContactRequestAction {
-        case accept
-        case reject
+    private func contactRequestAlert(_ contactRequest: UserContactRequest) -> Alert {
+        Alert(
+            title: Text("Reject contact request"),
+            message: Text("The sender will NOT be notified"),
+            primaryButton: .destructive(Text("Reject")) {
+                rejectContactRequest(contactRequest)
+                alertContactRequest = nil
+            }, secondaryButton: .cancel {
+                alertContactRequest = nil
+            }
+        )
     }
 
-    private func contactRequestAlert(_ action: ContactRequestAction, _ contactRequest: UserContactRequest) -> Alert {
-        switch action {
-        case .accept:
-            return Alert(
-                title: Text("Accept contact request"),
-                message: Text("The sender will be connected to you"),
-                primaryButton: .default(Text("Accept")) {
-                    do {
-                        let contact = try apiAcceptContactRequest(contactReqId: contactRequest.contactRequestId)
-                        chatModel.chats.removeValue(forKey: contactRequest.id)
-                        chatModel.chatPreviews.removeAll(where: { $0.id == contactRequest.id })
-                        let chat = Chat(chatInfo: ChatInfo.direct(contact: contact), chatItems: [])
-                        chatModel.chats[contact.id] = chat
-                        chatModel.chatPreviews.insert(chat, at: 0)
-                    } catch let error {
-                        print("Error: \(error)")
-                    }
-                    alertContactRequest = nil
-                    alertContactRequestAction = nil
-                }, secondaryButton: .cancel() {
-                    alertContactRequest = nil
-                    alertContactRequestAction = nil
-                }
-            )
-        case .reject:
-            return Alert(
-                title: Text("Reject contact request"),
-                message: Text("The sender will NOT be notified"),
-                primaryButton: .destructive(Text("Reject")) {
-                    do {
-                        try apiRejectContactRequest(contactReqId: contactRequest.contactRequestId)
-                        chatModel.chats.removeValue(forKey: contactRequest.id)
-                        chatModel.chatPreviews.removeAll(where: { $0.id == contactRequest.id })
-                    } catch let error {
-                        print("Error: \(error)")
-                    }
-                    alertContactRequest = nil
-                    alertContactRequestAction = nil
-                }, secondaryButton: .cancel() {
-                    alertContactRequest = nil
-                    alertContactRequestAction = nil
-                }
-            )
+    private func acceptContactRequest(_ contactRequest: UserContactRequest) {
+        do {
+            let contact = try apiAcceptContactRequest(contactReqId: contactRequest.contactRequestId)
+            chatModel.chats.removeValue(forKey: contactRequest.id)
+            let chat = Chat(chatInfo: ChatInfo.direct(contact: contact), chatItems: [])
+            chatModel.chats[contact.id] = chat
+            if let i = chatModel.chatPreviews.firstIndex(where: { $0.id == contactRequest.id }) {
+                chatModel.chatPreviews[i] = chat
+            } else {
+                chatModel.chatPreviews.insert(chat, at: 0)
+            }
+        } catch let error {
+            print("Error: \(error)")
+        }
+    }
+
+    private func rejectContactRequest(_ contactRequest: UserContactRequest) {
+        do {
+            try apiRejectContactRequest(contactReqId: contactRequest.contactRequestId)
+            chatModel.chats.removeValue(forKey: contactRequest.id)
+            chatModel.chatPreviews.removeAll(where: { $0.id == contactRequest.id })
+        } catch let error {
+            print("Error: \(error)")
         }
     }
 }

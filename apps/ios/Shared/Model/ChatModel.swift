@@ -135,6 +135,8 @@ struct Contact: Identifiable, Decodable {
     var viaGroup: Int64?
     
     var id: String { get { "@\(contactId)" } }
+
+    var connected: Bool { get { activeConn.connStatus == "ready" || activeConn.connStatus == "snd-ready" } }
 }
 
 let sampleContact = Contact(
