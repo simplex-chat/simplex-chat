@@ -191,6 +191,12 @@ instance ToJSON CIMeta where toEncoding = J.genericToEncoding J.defaultOptions
 
 type ChatItemId = Int64
 
+data CIPagination
+  = CIPLast Int
+  | CIPAfter ChatItemId Int
+  | CIPBefore ChatItemId Int
+  deriving (Show, Generic)
+
 type ChatItemTs = UTCTime
 
 data CIContent (d :: MsgDirection) where

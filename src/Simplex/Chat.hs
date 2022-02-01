@@ -125,9 +125,27 @@ toView event = do
 processChatCommand :: forall m. ChatMonad m => User -> ChatCommand -> m ChatResponse
 processChatCommand user@User {userId, profile} = \case
   APIGetChats -> CRApiChats <$> withStore (`getChatPreviews` user)
-  APIGetChat cType cId count -> case cType of
-    CTDirect -> CRApiChat . AChat SCTDirect <$> withStore (\st -> getDirectChat st userId cId count)
-    CTGroup -> CRApiChat . AChat SCTGroup <$> withStore (\st -> getGroupChat st user cId count)
+  APIGetChat cType cId pagination -> case cType of
+    CTDirect ->
+      CRApiChat . AChat SCTDirect
+        <$> withStore
+          ( \st ->
+              ( case pagination of
+                  CIPLast count -> getDirectChat st user cId count
+                  CIPAfter afterId count -> getDirectChatBefore st user cId afterId count
+                  CIPBefore beforeId count -> getDirectChatBefore st user cId beforeId count
+              )
+          )
+    CTGroup ->
+      CRApiChat . AChat SCTGroup
+        <$> withStore
+          ( \st ->
+              ( case pagination of
+                  CIPLast count -> getGroupChat st user cId count
+                  CIPAfter afterId count -> getGroupChatBefore st user cId afterId count
+                  CIPBefore beforeId count -> getGroupChatBefore st user cId beforeId count
+              )
+          )
     CTContactRequest -> pure $ CRChatError ChatErrorNotImplemented
   APIGetChatItems _count -> pure $ CRChatError ChatErrorNotImplemented
   APISendMessage cType chatId mc -> case cType of
@@ -1320,7 +1338,7 @@ withStore action =
 chatCommandP :: Parser ChatCommand
 chatCommandP =
   "/_get chats" $> APIGetChats
-    <|> "/_get chat " *> (APIGetChat <$> chatTypeP <*> A.decimal <*> A.decimal)
+    <|> "/_get chat " *> (APIGetChat <$> chatTypeP <*> A.decimal <*> ciPaginationP)
     <|> "/_get items count=" *> (APIGetChatItems <$> A.decimal)
     <|> "/_send " *> (APISendMessage <$> chatTypeP <*> A.decimal <* A.space <*> msgContentP)
     <|> "/_delete " *> (APIDeleteChat <$> chatTypeP <*> A.decimal)
@@ -1363,6 +1381,10 @@ chatCommandP =
     <|> ("/version" <|> "/v") $> ShowVersion
   where
     chatTypeP = A.char '@' $> CTDirect <|> A.char '#' $> CTGroup
+    ciPaginationP =
+      (CIPLast <$ "count=" <*> A.decimal)
+        <|> (CIPAfter <$ "after=" <*> A.decimal <* A.space <* "count=" <*> A.decimal)
+        <|> (CIPBefore <$ "before=" <*> A.decimal <* A.space <* "count=" <*> A.decimal)
     msgContentP = "text " *> (MCText . safeDecodeUtf8 <$> A.takeByteString)
     displayName = safeDecodeUtf8 <$> (B.cons <$> A.satisfy refChar <*> A.takeTill (== ' '))
     refChar c = c > ' ' && c /= '#' && c /= '@'

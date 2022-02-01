@@ -1961,8 +1961,8 @@ getContactRequestChatPreviews_ db User {userId} =
       let cReq = toContactRequest cReqRow
        in AChat SCTContactRequest $ Chat (ContactRequest cReq) []
 
-getDirectChat :: StoreMonad m => SQLiteStore -> UserId -> Int64 -> Int -> m (Chat 'CTDirect)
-getDirectChat st userId contactId count =
+getDirectChat :: StoreMonad m => SQLiteStore -> User -> Int64 -> Int -> m (Chat 'CTDirect)
+getDirectChat st User {userId} contactId count =
   liftIOEither . withTransaction st $ \db -> runExceptT $ do
     contact <- ExceptT $ getContact_ db userId contactId
     chatItems <- liftIO $ getDirectChatItems_ db
@@ -1983,8 +1983,8 @@ getDirectChat st userId contactId count =
           |]
           (userId, contactId, count)
 
-getDirectChatAfter :: StoreMonad m => SQLiteStore -> UserId -> Int64 -> ChatItemId -> Int -> m (Chat 'CTDirect)
-getDirectChatAfter st userId contactId afterChatItemId count =
+getDirectChatAfter :: StoreMonad m => SQLiteStore -> User -> Int64 -> ChatItemId -> Int -> m (Chat 'CTDirect)
+getDirectChatAfter st User {userId} contactId afterChatItemId count =
   liftIOEither . withTransaction st $ \db -> runExceptT $ do
     contact <- ExceptT $ getContact_ db userId contactId
     chatItems <- liftIO $ getDirectChatItemsAfter_ db
@@ -2005,8 +2005,8 @@ getDirectChatAfter st userId contactId afterChatItemId count =
           |]
           (userId, contactId, afterChatItemId, count)
 
-getDirectChatBefore :: StoreMonad m => SQLiteStore -> UserId -> Int64 -> ChatItemId -> Int -> m (Chat 'CTDirect)
-getDirectChatBefore st userId contactId beforeChatItemId count =
+getDirectChatBefore :: StoreMonad m => SQLiteStore -> User -> Int64 -> ChatItemId -> Int -> m (Chat 'CTDirect)
+getDirectChatBefore st User {userId} contactId beforeChatItemId count =
   liftIOEither . withTransaction st $ \db -> runExceptT $ do
     contact <- ExceptT $ getContact_ db userId contactId
     chatItems <- liftIO $ getDirectChatItemsBefore_ db
