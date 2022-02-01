@@ -16,9 +16,10 @@ final class ChatModel: ObservableObject {
     @Published var chatPreviews: [Chat] = []
     @Published var chatItems: [ChatItem] = []
     @Published var terminalItems: [TerminalItem] = []
+    @Published var userAddress: String?
 }
 
-class User: Codable {
+class User: Decodable {
     var userId: Int64
     var userContactId: Int64
     var localDisplayName: ContactName
@@ -59,17 +60,20 @@ let sampleProfile = Profile(
 enum ChatType: String {
     case direct = "@"
     case group = "#"
+    case contactRequest = "<@"
 }
 
-enum ChatInfo: Identifiable, Codable {
+enum ChatInfo: Identifiable, Decodable {
     case direct(contact: Contact)
     case group(groupInfo: GroupInfo)
+    case contactRequest(contactRequest: UserContactRequest)
     
     var localDisplayName: String {
         get {
             switch self {
             case let .direct(contact): return "@\(contact.localDisplayName)"
             case let .group(groupInfo): return "#\(groupInfo.localDisplayName)"
+            case let .contactRequest(contactRequest): return "< @\(contactRequest.localDisplayName)"
             }
         }
     }
@@ -77,8 +81,9 @@ enum ChatInfo: Identifiable, Codable {
     var id: String {
         get {
             switch self {
-            case let .direct(contact): return "@\(contact.contactId)"
-            case let .group(groupInfo): return "#\(groupInfo.groupId)"
+            case let .direct(contact): return contact.id
+            case let .group(groupInfo): return groupInfo.id
+            case let .contactRequest(contactRequest): return contactRequest.id
             }
         }
     }
@@ -88,6 +93,7 @@ enum ChatInfo: Identifiable, Codable {
             switch self {
             case .direct: return .direct
             case .group: return .group
+            case .contactRequest: return .contactRequest
             }
         }
     }
@@ -97,6 +103,7 @@ enum ChatInfo: Identifiable, Codable {
             switch self {
             case let .direct(contact): return contact.contactId
             case let .group(groupInfo): return groupInfo.groupId
+            case let .contactRequest(contactRequest): return contactRequest.contactRequestId
             }
         }
     }
@@ -105,6 +112,8 @@ enum ChatInfo: Identifiable, Codable {
 let sampleDirectChatInfo = ChatInfo.direct(contact: sampleContact)
 
 let sampleGroupChatInfo = ChatInfo.group(groupInfo: sampleGroupInfo)
+
+let sampleContactRequestChatInfo = ChatInfo.contactRequest(contactRequest: sampleContactRequest)
 
 class Chat: Decodable, Identifiable {
     var chatInfo: ChatInfo
@@ -118,22 +127,46 @@ class Chat: Decodable, Identifiable {
     var id: String { get { chatInfo.id } }
 }
 
-struct Contact: Identifiable, Codable {
+struct Contact: Identifiable, Decodable {
     var contactId: Int64
     var localDisplayName: ContactName
     var profile: Profile
+    var activeConn: Connection
     var viaGroup: Int64?
     
     var id: String { get { "@\(contactId)" } }
+
+    var connected: Bool { get { activeConn.connStatus == "ready" || activeConn.connStatus == "snd-ready" } }
 }
 
 let sampleContact = Contact(
     contactId: 1,
     localDisplayName: "alice",
+    profile: sampleProfile,
+    activeConn: sampleConnection
+)
+
+struct Connection: Decodable {
+    var connStatus: String
+}
+
+let sampleConnection = Connection(connStatus: "ready")
+
+struct UserContactRequest: Decodable {
+    var contactRequestId: Int64
+    var localDisplayName: ContactName
+    var profile: Profile
+
+    var id: String { get { "<@\(contactRequestId)" } }
+}
+
+let sampleContactRequest = UserContactRequest(
+    contactRequestId: 1,
+    localDisplayName: "alice",
     profile: sampleProfile
 )
 
-struct GroupInfo: Identifiable, Codable {
+struct GroupInfo: Identifiable, Decodable {
     var groupId: Int64
     var localDisplayName: GroupName
     var groupProfile: GroupProfile
@@ -157,7 +190,7 @@ let sampleGroupProfile = GroupProfile(
     fullName: "My Team"
 )
 
-struct GroupMember: Codable {
+struct GroupMember: Decodable {
 
 }
 

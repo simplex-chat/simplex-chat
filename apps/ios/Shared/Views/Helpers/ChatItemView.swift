@@ -23,6 +23,7 @@ struct ChatItemView: View {
                     .padding(.horizontal, 12)
                     .frame(minWidth: 200, maxWidth: 300, alignment: .leading)
                     .foregroundColor(sent ? .white : .primary)
+                    .textSelection(.enabled)
                 Text(getDateFormatter().string(from: chatItem.meta.itemTs))
                     .font(.subheadline)
                     .foregroundColor(sent ? .white : .secondary)

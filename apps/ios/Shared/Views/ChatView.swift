@@ -10,22 +10,22 @@ import SwiftUI
 
 struct ChatView: View {
     @EnvironmentObject var chatModel: ChatModel
-    @State var inProgress: Bool = false
-
+    @Binding var chatId: String?
     var chatInfo: ChatInfo
+    var width: CGFloat
+    @State private var inProgress: Bool = false
+
     var body: some View {
         VStack {
             if let chat: Chat = chatModel.chats[chatInfo.id] {
-                VStack {
-                    ScrollView {
-                        LazyVStack(spacing: 5) {
-                            ForEach(chat.chatItems) {
-                                ChatItemView(chatItem: $0)
-                            }
+                ScrollView {
+                    LazyVStack(spacing: 5) {
+                        ForEach(chat.chatItems) {
+                            ChatItemView(chatItem: $0)
                         }
                     }
                 }
-            } else {
+           } else {
                 Text("unexpected: chat not found...")
             }
 
@@ -33,8 +33,20 @@ struct ChatView: View {
 
             SendMessageView(sendMessage: sendMessage, inProgress: inProgress)
         }
-        .edgesIgnoringSafeArea(.all)
-        .navigationBarHidden(true)
+        .toolbar {
+            HStack {
+                Button { chatId = nil } label: { Image(systemName: "chevron.backward") }
+                Spacer()
+                Text(chatInfo.localDisplayName)
+                    .font(.title3)
+                Spacer()
+                EmptyView()
+            }
+            .padding(.horizontal)
+            .frame(minWidth: width, maxWidth: .infinity, alignment: .center)
+        }
+        .navigationBarBackButtonHidden(true)
+
     }
 
     func sendMessage(_ msg: String) {
@@ -51,6 +63,7 @@ struct ChatView: View {
 
 struct ChatView_Previews: PreviewProvider {
     static var previews: some View {
+        @State var chatId: String? = "@1"
         let chatModel = ChatModel()
         chatModel.chats = [
             "@1": Chat(
@@ -66,7 +79,7 @@ struct ChatView_Previews: PreviewProvider {
                 ]
             )
         ]
-        return ChatView(chatInfo: sampleDirectChatInfo)
+        return ChatView(chatId: $chatId, chatInfo: sampleDirectChatInfo, width: 300)
             .environmentObject(chatModel)
     }
 }

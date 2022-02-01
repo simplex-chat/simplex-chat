@@ -38,6 +38,13 @@ struct ChatPreviewView: View {
                     .padding(.bottom, 4)
                     .padding(.top, 1)
             }
+//            else if case let .direct(contact) = chatPreview.chatInfo, !contact.connected {
+//                Text("Connecting...")
+//                    .frame(minWidth: 0, maxWidth: .infinity, minHeight: 44, maxHeight: 44, alignment: .topLeading)
+//                    .padding([.leading, .trailing], 8)
+//                    .padding(.bottom, 4)
+//                    .padding(.top, 1)
+//            }
         }
     }
 }

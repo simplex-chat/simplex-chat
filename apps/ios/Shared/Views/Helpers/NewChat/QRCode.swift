@@ -20,6 +20,7 @@ struct QRCode: View {
                     .resizable()
                     .interpolation(.none)
                     .aspectRatio(1, contentMode: .fit)
+                    .textSelection(.enabled)
             }
         }
         .onAppear {

@@ -20,6 +20,7 @@ struct TerminalView: View {
                         NavigationLink {
                             ScrollView {
                                 Text(item.details)
+                                    .textSelection(.enabled)
                             }
                         } label: {
                             Text(item.label)

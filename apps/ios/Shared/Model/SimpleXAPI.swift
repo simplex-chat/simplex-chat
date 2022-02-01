@@ -22,25 +22,40 @@ enum ChatCommand {
     case connect(connReq: String)
     case apiDeleteChat(type: ChatType, id: Int64)
     case apiUpdateProfile(profile: Profile)
+    case createMyAddress
+    case deleteMyAddress
+    case showMyAddress
+    case apiAcceptContact(contactReqId: Int64)
+    case apiRejectContact(contactReqId: Int64)
     case string(String)
 
     var cmdString: String {
         get {
             switch self {
             case .apiGetChats:
-                return "/get chats"
+                return "/_get chats"
             case let .apiGetChat(type, id):
-                return "/get chat \(type.rawValue)\(id)"
+                return "/_get chat \(type.rawValue)\(id) count=500"
             case let .apiSendMessage(type, id, mc):
-                return "/send msg \(type.rawValue)\(id) \(mc.cmdString)"
+                return "/_send \(type.rawValue)\(id) \(mc.cmdString)"
             case .addContact:
-                return "/c"
+                return "/connect"
             case let .connect(connReq):
-                return "/c \(connReq)"
+                return "/connect \(connReq)"
             case let .apiDeleteChat(type, id):
-                return "/_del \(type.rawValue)\(id)"
+                return "/_delete \(type.rawValue)\(id)"
             case let .apiUpdateProfile(profile):
-                return "/p \(profile.displayName) \(profile.fullName)"
+                return "/profile \(profile.displayName) \(profile.fullName)"
+            case .createMyAddress:
+                return "/address"
+            case .deleteMyAddress:
+                return "/delete_address"
+            case .showMyAddress:
+                return "/show_address"
+            case let .apiAcceptContact(contactReqId):
+                return "/_accept \(contactReqId)"
+            case let .apiRejectContact(contactReqId):
+                return "/_reject \(contactReqId)"
             case let .string(str):
                 return str
             }
@@ -62,9 +77,15 @@ enum ChatResponse: Decodable, Error {
     case contactDeleted(contact: Contact)
     case userProfileNoChange
     case userProfileUpdated(fromProfile: Profile, toProfile: Profile)
-//    case newSentInvitation
+    case userContactLink(connReqContact: String)
+    case userContactLinkCreated(connReqContact: String)
+    case userContactLinkDeleted
     case contactConnected(contact: Contact)
+    case receivedContactRequest(contactRequest: UserContactRequest)
+    case acceptingContactRequest(contact: Contact)
+    case contactRequestRejected
     case newChatItem(chatItem: AChatItem)
+    case chatCmdError(chatError: ChatError)
 
     var responseType: String {
         get {
@@ -78,8 +99,15 @@ enum ChatResponse: Decodable, Error {
             case .contactDeleted: return "contactDeleted"
             case .userProfileNoChange: return "userProfileNoChange"
             case .userProfileUpdated: return "userProfileNoChange"
+            case .userContactLink: return "userContactLink"
+            case .userContactLinkCreated: return "userContactLinkCreated"
+            case .userContactLinkDeleted: return "userContactLinkDeleted"
             case .contactConnected: return "contactConnected"
+            case .receivedContactRequest: return "receivedContactRequest"
+            case .acceptingContactRequest: return "acceptingContactRequest"
+            case .contactRequestRejected: return "contactRequestRejected"
             case .newChatItem: return "newChatItem"
+            case .chatCmdError: return "chatCmdError"
             }
         }
     }
@@ -91,16 +119,25 @@ enum ChatResponse: Decodable, Error {
             case let .apiChats(chats): return String(describing: chats)
             case let .apiChat(chat): return String(describing: chat)
             case let .invitation(connReqInvitation): return connReqInvitation
-            case .sentConfirmation: return "sentConfirmation: no details"
-            case .sentInvitation: return "sentInvitation: no details"
+            case .sentConfirmation: return noDetails
+            case .sentInvitation: return noDetails
             case let .contactDeleted(contact): return String(describing: contact)
-            case .userProfileNoChange: return "userProfileNoChange: no details"
+            case .userProfileNoChange: return noDetails
             case let .userProfileUpdated(_, toProfile): return String(describing: toProfile)
+            case let .userContactLink(connReq): return connReq
+            case let .userContactLinkCreated(connReq): return connReq
+            case .userContactLinkDeleted: return noDetails
             case let .contactConnected(contact): return String(describing: contact)
+            case let .receivedContactRequest(contactRequest): return String(describing: contactRequest)
+            case let .acceptingContactRequest(contact): return String(describing: contact)
+            case .contactRequestRejected: return noDetails
             case let .newChatItem(chatItem): return String(describing: chatItem)
+            case let .chatCmdError(chatError): return String(describing: chatError)
             }
         }
     }
+
+    private var noDetails: String { get { "\(responseType): no details" } }
 }
 
 enum TerminalItem: Identifiable {
@@ -219,20 +256,67 @@ func apiUpdateProfile(profile: Profile) throws -> Profile? {
     }
 }
 
+func apiCreateUserAddress() throws -> String {
+    let r = try chatSendCmd(.createMyAddress)
+    if case let .userContactLinkCreated(connReq) = r { return connReq }
+    throw r
+}
+
+func apiDeleteUserAddress() throws {
+    let r = try chatSendCmd(.deleteMyAddress)
+    if case .userContactLinkDeleted = r { return }
+    throw r
+}
+
+func apiGetUserAddress() throws -> String? {
+    let r = try chatSendCmd(.showMyAddress)
+    switch r {
+    case let .userContactLink(connReq):
+        return connReq
+    case .chatCmdError(chatError: .errorStore(storeError: .userContactLinkNotFound)):
+        return nil
+    default: throw r
+    }
+}
+
+func apiAcceptContactRequest(contactReqId: Int64) throws -> Contact {
+    let r = try chatSendCmd(.apiAcceptContact(contactReqId: contactReqId))
+    if case let .acceptingContactRequest(contact) = r { return contact }
+    throw r
+}
+
+func apiRejectContactRequest(contactReqId: Int64) throws {
+    let r = try chatSendCmd(.apiRejectContact(contactReqId: contactReqId))
+    if case .contactRequestRejected = r { return }
+    throw r
+}
+
 func processReceivedMsg(_ chatModel: ChatModel, _ res: ChatResponse) {
     DispatchQueue.main.async {
         chatModel.terminalItems.append(.resp(Date.now, res))
         switch res {
         case let .contactConnected(contact):
-            chatModel.chatPreviews.insert(
-                Chat(chatInfo: .direct(contact: contact), chatItems: []),
-                at: 0
-            )
+            if let chat = chatModel.chats[contact.id] {
+                chat.chatInfo = ChatInfo.direct(contact: contact)
+            } else {
+                let chat = Chat(chatInfo: ChatInfo.direct(contact: contact), chatItems: [])
+                chatModel.chats[contact.id] = chat
+                chatModel.chatPreviews.insert(chat, at: 0)
+            }
+        case let .receivedContactRequest(contactRequest):
+            let chat = Chat(chatInfo: ChatInfo.contactRequest(contactRequest: contactRequest), chatItems: [])
+            chatModel.chats[contactRequest.id] = chat
+            chatModel.chatPreviews.insert(chat, at: 0)
         case let .newChatItem(aChatItem):
             let ci = aChatItem.chatInfo
             let chat = chatModel.chats[ci.id] ?? Chat(chatInfo: ci, chatItems: [])
             chatModel.chats[ci.id] = chat
             chat.chatItems.append(aChatItem.chatItem)
+            if let cp = chatModel.chatPreviews.first(where: { $0.id == ci.id } ) {
+                cp.chatItems = [aChatItem.chatItem]
+            } else {
+                chatModel.chatPreviews.insert(Chat(chatInfo: ci, chatItems: [aChatItem.chatItem]), at: 0)
+            }
         default:
             print("unsupported response: ", res.responseType)
         }
@@ -315,4 +399,14 @@ private func encodeCJSON<T: Encodable>(_ value: T) -> [CChar] {
     let data = try! jsonEncoder.encode(value)
     let str = String(decoding: data, as: UTF8.self)
     return str.cString(using: .utf8)!
+}
+
+enum ChatError: Decodable {
+    case errorStore(storeError: StoreError)
+    // TODO other error cases
+}
+
+enum StoreError: Decodable {
+    case userContactLinkNotFound
+    // TODO other error cases
 }

@@ -9,6 +9,7 @@
 import SwiftUI
 
 struct SettingsButton: View {
+    @EnvironmentObject var chatModel: ChatModel
     @State private var showSettings = false
 
     var body: some View {
@@ -17,6 +18,13 @@ struct SettingsButton: View {
         }
         .sheet(isPresented: $showSettings, content: {
             SettingsView()
+                .onAppear {
+                    do {
+                        chatModel.userAddress = try apiGetUserAddress()
+                    } catch {
+                        print(error)
+                    }
+                }
         })
     }
 }
