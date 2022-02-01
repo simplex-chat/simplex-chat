@@ -1338,7 +1338,7 @@ withStore action =
 chatCommandP :: Parser ChatCommand
 chatCommandP =
   "/_get chats" $> APIGetChats
-    <|> "/_get chat " *> (APIGetChat <$> chatTypeP <*> A.decimal <* A.space <*> ciPaginationP)
+    <|> "/_get chat " *> (APIGetChat <$> chatTypeP <*> A.decimal <* A.space <*> chatPaginationP)
     <|> "/_get items count=" *> (APIGetChatItems <$> A.decimal)
     <|> "/_send " *> (APISendMessage <$> chatTypeP <*> A.decimal <* A.space <*> msgContentP)
     <|> "/_delete " *> (APIDeleteChat <$> chatTypeP <*> A.decimal)
@@ -1381,7 +1381,7 @@ chatCommandP =
     <|> ("/version" <|> "/v") $> ShowVersion
   where
     chatTypeP = A.char '@' $> CTDirect <|> A.char '#' $> CTGroup
-    ciPaginationP =
+    chatPaginationP =
       (CPLast <$ "count=" <*> A.decimal)
         <|> (CPAfter <$ "after=" <*> A.decimal <* A.space <* "count=" <*> A.decimal)
         <|> (CPBefore <$ "before=" <*> A.decimal <* A.space <* "count=" <*> A.decimal)
