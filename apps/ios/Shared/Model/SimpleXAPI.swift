@@ -25,6 +25,8 @@ enum ChatCommand {
     case createMyAddress
     case deleteMyAddress
     case showMyAddress
+    case apiAcceptContact(contactReqId: Int64)
+    case apiRejectContact(contactReqId: Int64)
     case string(String)
 
     var cmdString: String {
@@ -50,6 +52,10 @@ enum ChatCommand {
                 return "/delete_address"
             case .showMyAddress:
                 return "/show_address"
+            case let .apiAcceptContact(contactReqId):
+                return "/_accept \(contactReqId)"
+            case let .apiRejectContact(contactReqId):
+                return "/_reject \(contactReqId)"
             case let .string(str):
                 return str
             }
@@ -76,8 +82,8 @@ enum ChatResponse: Decodable, Error {
     case userContactLinkDeleted
     case contactConnected(contact: Contact)
     case receivedContactRequest(contactRequest: UserContactRequest)
-    case acceptingContactRequest(contactRequest: UserContactRequest)
-    case contactRequestRejected(contactRequest: UserContactRequest)
+    case acceptingContactRequest(contact: Contact)
+    case contactRequestRejected
     case newChatItem(chatItem: AChatItem)
     case chatCmdError(chatError: ChatError)
 
@@ -123,8 +129,8 @@ enum ChatResponse: Decodable, Error {
             case .userContactLinkDeleted: return noDetails
             case let .contactConnected(contact): return String(describing: contact)
             case let .receivedContactRequest(contactRequest): return String(describing: contactRequest)
-            case let .acceptingContactRequest(contactRequest): return String(describing: contactRequest)
-            case let .contactRequestRejected(contactRequest): return String(describing: contactRequest)
+            case let .acceptingContactRequest(contact): return String(describing: contact)
+            case .contactRequestRejected: return noDetails
             case let .newChatItem(chatItem): return String(describing: chatItem)
             case let .chatCmdError(chatError): return String(describing: chatError)
             }
@@ -273,23 +279,40 @@ func apiGetUserAddress() throws -> String? {
     }
 }
 
+func apiAcceptContactRequest(contactReqId: Int64) throws -> Contact {
+    let r = try chatSendCmd(.apiAcceptContact(contactReqId: contactReqId))
+    if case let .acceptingContactRequest(contact) = r { return contact }
+    throw r
+}
+
+func apiRejectContactRequest(contactReqId: Int64) throws {
+    let r = try chatSendCmd(.apiRejectContact(contactReqId: contactReqId))
+    if case .contactRequestRejected = r { return }
+    throw r
+}
 
 func processReceivedMsg(_ chatModel: ChatModel, _ res: ChatResponse) {
     DispatchQueue.main.async {
         chatModel.terminalItems.append(.resp(Date.now, res))
         switch res {
         case let .contactConnected(contact):
-            chatModel.chatPreviews.insert(
-                Chat(chatInfo: .direct(contact: contact), chatItems: []),
-                at: 0
-            )
+            let chat = Chat(chatInfo: ChatInfo.direct(contact: contact), chatItems: [])
+            chatModel.chats[contact.id] = chat
+            chatModel.chatPreviews.insert(chat, at: 0)
         case let .receivedContactRequest(contactRequest):
-            return // TODO
+            let chat = Chat(chatInfo: ChatInfo.contactRequest(contactRequest: contactRequest), chatItems: [])
+            chatModel.chats[contactRequest.id] = chat
+            chatModel.chatPreviews.insert(chat, at: 0)
         case let .newChatItem(aChatItem):
             let ci = aChatItem.chatInfo
             let chat = chatModel.chats[ci.id] ?? Chat(chatInfo: ci, chatItems: [])
             chatModel.chats[ci.id] = chat
             chat.chatItems.append(aChatItem.chatItem)
+            if let cp = chatModel.chatPreviews.first(where: { $0.id == ci.id } ) {
+                cp.chatItems = [aChatItem.chatItem]
+            } else {
+                chatModel.chatPreviews.insert(Chat(chatInfo: ci, chatItems: [aChatItem.chatItem]), at: 0)
+            }
         default:
             print("unsupported response: ", res.responseType)
         }

@@ -60,17 +60,20 @@ let sampleProfile = Profile(
 enum ChatType: String {
     case direct = "@"
     case group = "#"
+    case contactRequest = "<@"
 }
 
 enum ChatInfo: Identifiable, Decodable {
     case direct(contact: Contact)
     case group(groupInfo: GroupInfo)
+    case contactRequest(contactRequest: UserContactRequest)
     
     var localDisplayName: String {
         get {
             switch self {
             case let .direct(contact): return "@\(contact.localDisplayName)"
             case let .group(groupInfo): return "#\(groupInfo.localDisplayName)"
+            case let .contactRequest(contactRequest): return "< @\(contactRequest.localDisplayName)"
             }
         }
     }
@@ -78,8 +81,9 @@ enum ChatInfo: Identifiable, Decodable {
     var id: String {
         get {
             switch self {
-            case let .direct(contact): return "@\(contact.contactId)"
-            case let .group(groupInfo): return "#\(groupInfo.groupId)"
+            case let .direct(contact): return contact.id
+            case let .group(groupInfo): return groupInfo.id
+            case let .contactRequest(contactRequest): return contactRequest.id
             }
         }
     }
@@ -89,6 +93,7 @@ enum ChatInfo: Identifiable, Decodable {
             switch self {
             case .direct: return .direct
             case .group: return .group
+            case .contactRequest: return .contactRequest
             }
         }
     }
@@ -98,6 +103,7 @@ enum ChatInfo: Identifiable, Decodable {
             switch self {
             case let .direct(contact): return contact.contactId
             case let .group(groupInfo): return groupInfo.groupId
+            case let .contactRequest(contactRequest): return contactRequest.contactRequestId
             }
         }
     }
@@ -106,6 +112,8 @@ enum ChatInfo: Identifiable, Decodable {
 let sampleDirectChatInfo = ChatInfo.direct(contact: sampleContact)
 
 let sampleGroupChatInfo = ChatInfo.group(groupInfo: sampleGroupInfo)
+
+let sampleContactRequestChatInfo = ChatInfo.contactRequest(contactRequest: sampleContactRequest)
 
 class Chat: Decodable, Identifiable {
     var chatInfo: ChatInfo
@@ -123,6 +131,7 @@ struct Contact: Identifiable, Decodable {
     var contactId: Int64
     var localDisplayName: ContactName
     var profile: Profile
+    var activeConn: Connection
     var viaGroup: Int64?
     
     var id: String { get { "@\(contactId)" } }
@@ -131,14 +140,29 @@ struct Contact: Identifiable, Decodable {
 let sampleContact = Contact(
     contactId: 1,
     localDisplayName: "alice",
-    profile: sampleProfile
+    profile: sampleProfile,
+    activeConn: sampleConnection
 )
+
+struct Connection: Decodable {
+    var connStatus: String
+}
+
+let sampleConnection = Connection(connStatus: "ready")
 
 struct UserContactRequest: Decodable {
     var contactRequestId: Int64
     var localDisplayName: ContactName
     var profile: Profile
+
+    var id: String { get { "<@\(contactRequestId)" } }
 }
+
+let sampleContactRequest = UserContactRequest(
+    contactRequestId: 1,
+    localDisplayName: "alice",
+    profile: sampleProfile
+)
 
 struct GroupInfo: Identifiable, Decodable {
     var groupId: Int64
