@@ -111,8 +111,10 @@ module Simplex.Chat.Store
     deletePendingGroupMessage,
     createNewChatItem,
     getChatPreviews,
-    getDirectChat,
-    getGroupChat,
+    getDirectChatLimit,
+    getDirectChatRange,
+    getGroupChatLimit,
+    getGroupChatRange,
   )
 where
 
@@ -1954,12 +1956,52 @@ getContactRequestChatPreviews_ db User {userId} =
       let cReq = toContactRequest cReqRow
        in AChat SCTContactRequest $ Chat (ContactRequest cReq) []
 
-getDirectChat :: StoreMonad m => SQLiteStore -> UserId -> Int64 -> m (Chat 'CTDirect)
-getDirectChat st userId contactId =
+getDirectChatLimit :: StoreMonad m => SQLiteStore -> UserId -> Int64 -> Int -> m (Chat 'CTDirect)
+getDirectChatLimit st userId contactId limit =
   liftIOEither . withTransaction st $ \db -> runExceptT $ do
     contact <- ExceptT $ getContact_ db userId contactId
-    chatItems <- liftIO $ getDirectChatItems_ db userId contactId
+    chatItems <- liftIO $ getDirectChatItemsLimit_ db
+    let chatItemsSorted = sortOn chatItemTs chatItems
+    pure $ Chat (DirectChat contact) chatItemsSorted
+  where
+    getDirectChatItemsLimit_ :: DB.Connection -> IO [CChatItem 'CTDirect]
+    getDirectChatItemsLimit_ db = do
+      tz <- getCurrentTimeZone
+      map (toDirectChatItem tz)
+        <$> DB.query
+          db
+          [sql|
+            SELECT chat_item_id, item_ts, item_content, item_text, created_at
+            FROM chat_items
+            WHERE user_id = ? AND contact_id = ?
+            ORDER BY item_ts DESC
+            LIMIT ?
+          |]
+          (userId, contactId, limit)
+
+chatItemTs :: CChatItem d -> UTCTime
+chatItemTs (CChatItem _ (ChatItem _ CIMeta {itemTs} _)) = itemTs
+
+getDirectChatRange :: StoreMonad m => SQLiteStore -> UserId -> Int64 -> ChatItemId -> ChatItemId -> m (Chat 'CTDirect)
+getDirectChatRange st userId contactId from till =
+  liftIOEither . withTransaction st $ \db -> runExceptT $ do
+    contact <- ExceptT $ getContact_ db userId contactId
+    chatItems <- liftIO $ getDirectChatItemsRange_ db
     pure $ Chat (DirectChat contact) chatItems
+  where
+    getDirectChatItemsRange_ :: DB.Connection -> IO [CChatItem 'CTDirect]
+    getDirectChatItemsRange_ db = do
+      tz <- getCurrentTimeZone
+      map (toDirectChatItem tz)
+        <$> DB.query
+          db
+          [sql|
+            SELECT chat_item_id, item_ts, item_content, item_text, created_at
+            FROM chat_items
+            WHERE user_id = ? AND contact_id = ? AND chat_item_id >= ? AND chat_item_id < ?
+            ORDER BY item_ts ASC
+          |]
+          (userId, contactId, from, till)
 
 getContactIdByName :: StoreMonad m => SQLiteStore -> UserId -> ContactName -> m Int64
 getContactIdByName st userId cName =
@@ -2001,26 +2043,65 @@ getContact_ db userId contactId =
           (userId, contactId, ConnReady, ConnSndReady)
       )
 
-getDirectChatItems_ :: DB.Connection -> UserId -> Int64 -> IO [CChatItem 'CTDirect]
-getDirectChatItems_ db userId contactId = do
-  tz <- getCurrentTimeZone
-  map (toDirectChatItem tz)
-    <$> DB.query
-      db
-      [sql|
-        SELECT chat_item_id, item_ts, item_content, item_text, created_at
-        FROM chat_items
-        WHERE user_id = ? AND contact_id = ?
-        ORDER BY item_ts ASC
-      |]
-      (userId, contactId)
-
-getGroupChat :: StoreMonad m => SQLiteStore -> User -> Int64 -> m (Chat 'CTGroup)
-getGroupChat st user groupId =
+getGroupChatLimit :: StoreMonad m => SQLiteStore -> User -> Int64 -> Int -> m (Chat 'CTGroup)
+getGroupChatLimit st user@User {userId, userContactId} groupId limit =
   liftIOEither . withTransaction st $ \db -> runExceptT $ do
     groupInfo <- ExceptT $ getGroupInfo_ db user groupId
-    chatItems <- ExceptT $ getGroupChatItems_ db user groupId
+    chatItems <- ExceptT $ getGroupChatItemsLimit_ db
+    let chatItemsSorted = sortOn chatItemTs chatItems
+    pure $ Chat (GroupChat groupInfo) chatItemsSorted
+  where
+    getGroupChatItemsLimit_ :: DB.Connection -> IO (Either StoreError [CChatItem 'CTGroup])
+    getGroupChatItemsLimit_ db = do
+      tz <- getCurrentTimeZone
+      mapM (toGroupChatItem tz userContactId)
+        <$> DB.query
+          db
+          [sql|
+            SELECT
+              -- ChatItem
+              ci.chat_item_id, ci.item_ts, ci.item_content, ci.item_text, ci.created_at,
+              -- GroupMember
+              m.group_member_id, m.group_id, m.member_id, m.member_role, m.member_category,
+              m.member_status, m.invited_by, m.local_display_name, m.contact_id,
+              p.display_name, p.full_name
+            FROM chat_items ci
+            LEFT JOIN group_members m ON m.group_member_id = ci.group_member_id
+            LEFT JOIN contact_profiles p ON p.contact_profile_id = m.contact_profile_id
+            WHERE ci.user_id = ? AND ci.group_id = ?
+            ORDER BY item_ts DESC
+            LIMIT ?
+          |]
+          (userId, groupId, limit)
+
+getGroupChatRange :: StoreMonad m => SQLiteStore -> User -> Int64 -> ChatItemId -> ChatItemId -> m (Chat 'CTGroup)
+getGroupChatRange st user@User {userId, userContactId} groupId from till =
+  liftIOEither . withTransaction st $ \db -> runExceptT $ do
+    groupInfo <- ExceptT $ getGroupInfo_ db user groupId
+    chatItems <- ExceptT $ getGroupChatItemsRange_ db
     pure $ Chat (GroupChat groupInfo) chatItems
+  where
+    getGroupChatItemsRange_ :: DB.Connection -> IO (Either StoreError [CChatItem 'CTGroup])
+    getGroupChatItemsRange_ db = do
+      tz <- getCurrentTimeZone
+      mapM (toGroupChatItem tz userContactId)
+        <$> DB.query
+          db
+          [sql|
+            SELECT
+              -- ChatItem
+              ci.chat_item_id, ci.item_ts, ci.item_content, ci.item_text, ci.created_at,
+              -- GroupMember
+              m.group_member_id, m.group_id, m.member_id, m.member_role, m.member_category,
+              m.member_status, m.invited_by, m.local_display_name, m.contact_id,
+              p.display_name, p.full_name
+            FROM chat_items ci
+            LEFT JOIN group_members m ON m.group_member_id = ci.group_member_id
+            LEFT JOIN contact_profiles p ON p.contact_profile_id = m.contact_profile_id
+            WHERE ci.user_id = ? AND ci.group_id = ? AND chat_item_id >= ? AND chat_item_id < ?
+            ORDER BY item_ts DESC
+          |]
+          (userId, groupId, from, till)
 
 getGroupInfo :: StoreMonad m => SQLiteStore -> User -> Int64 -> m GroupInfo
 getGroupInfo st user groupId =
@@ -2047,28 +2128,6 @@ getGroupInfo_ db User {userId, userContactId} groupId =
         WHERE g.group_id = ? AND g.user_id = ? AND mu.contact_id = ?
       |]
       (groupId, userId, userContactId)
-
-getGroupChatItems_ :: DB.Connection -> User -> Int64 -> IO (Either StoreError [CChatItem 'CTGroup])
-getGroupChatItems_ db User {userId, userContactId} groupId = do
-  tz <- getCurrentTimeZone
-  mapM (toGroupChatItem tz userContactId)
-    <$> DB.query
-      db
-      [sql|
-        SELECT
-          -- ChatItem
-          ci.chat_item_id, ci.item_ts, ci.item_content, ci.item_text, ci.created_at,
-          -- GroupMember
-          m.group_member_id, m.group_id, m.member_id, m.member_role, m.member_category,
-          m.member_status, m.invited_by, m.local_display_name, m.contact_id,
-          p.display_name, p.full_name
-        FROM chat_items ci
-        LEFT JOIN group_members m ON m.group_member_id = ci.group_member_id
-        LEFT JOIN contact_profiles p ON p.contact_profile_id = m.contact_profile_id
-        WHERE ci.user_id = ? AND ci.group_id = ?
-        ORDER BY ci.item_ts ASC
-      |]
-      (userId, groupId)
 
 getGroupIdByName :: StoreMonad m => SQLiteStore -> User -> GroupName -> m Int64
 getGroupIdByName st user gName =

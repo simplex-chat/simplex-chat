@@ -125,9 +125,9 @@ toView event = do
 processChatCommand :: forall m. ChatMonad m => User -> ChatCommand -> m ChatResponse
 processChatCommand user@User {userId, profile} = \case
   APIGetChats -> CRApiChats <$> withStore (`getChatPreviews` user)
-  APIGetChat cType cId -> case cType of
-    CTDirect -> CRApiChat . AChat SCTDirect <$> withStore (\st -> getDirectChat st userId cId)
-    CTGroup -> CRApiChat . AChat SCTGroup <$> withStore (\st -> getGroupChat st user cId)
+  APIGetChat cType cId limit -> case cType of
+    CTDirect -> CRApiChat . AChat SCTDirect <$> withStore (\st -> getDirectChatLimit st userId cId limit)
+    CTGroup -> CRApiChat . AChat SCTGroup <$> withStore (\st -> getGroupChatLimit st user cId limit)
     CTContactRequest -> pure $ CRChatError ChatErrorNotImplemented
   APIGetChatItems _count -> pure $ CRChatError ChatErrorNotImplemented
   APISendMessage cType chatId mc -> case cType of
@@ -1320,7 +1320,7 @@ withStore action =
 chatCommandP :: Parser ChatCommand
 chatCommandP =
   "/_get chats" $> APIGetChats
-    <|> "/_get chat " *> (APIGetChat <$> chatTypeP <*> A.decimal)
+    <|> "/_get chat " *> (APIGetChat <$> chatTypeP <*> A.decimal <*> A.decimal)
     <|> "/_get items count=" *> (APIGetChatItems <$> A.decimal)
     <|> "/_send " *> (APISendMessage <$> chatTypeP <*> A.decimal <* A.space <*> msgContentP)
     <|> "/_delete " *> (APIDeleteChat <$> chatTypeP <*> A.decimal)
