@@ -148,7 +148,7 @@ data ChatResponse
   | CRUserContactLinkCreated {connReqContact :: ConnReqContact}
   | CRUserContactLinkDeleted
   | CRReceivedContactRequest {contactRequest :: UserContactRequest}
-  | CRAcceptingContactRequest {contactRequest :: UserContactRequest}
+  | CRAcceptingContactRequest {contact :: Contact}
   | CRLeftMemberUser {groupInfo :: GroupInfo}
   | CRGroupDeletedUser {groupInfo :: GroupInfo}
   | CRRcvFileAccepted {fileTransfer :: RcvFileTransfer, filePath :: FilePath}

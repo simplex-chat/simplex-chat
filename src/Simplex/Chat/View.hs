@@ -60,8 +60,8 @@ responseToView cmd = \case
   CRInvitation cReq -> r' $ viewConnReqInvitation cReq
   CRSentConfirmation -> r' ["confirmation sent!"]
   CRSentInvitation -> r' ["connection request sent!"]
-  CRContactDeleted Contact {localDisplayName} -> r' [ttyContact localDisplayName <> ": contact is deleted"]
-  CRAcceptingContactRequest UserContactRequest {localDisplayName = c} -> r' [ttyContact c <> ": accepting contact request..."]
+  CRContactDeleted Contact {localDisplayName = c} -> r' [ttyContact c <> ": contact is deleted"]
+  CRAcceptingContactRequest Contact {localDisplayName = c} -> r' [ttyContact c <> ": accepting contact request..."]
   CRUserContactLinkCreated cReq -> r' $ connReqContact_ "Your new chat address is created!" cReq
   CRUserContactLinkDeleted -> r' viewUserContactLinkDeleted
   CRUserAcceptedGroupSent _g -> r' [] -- [ttyGroup' g <> ": joining the group..."]
