@@ -17,6 +17,8 @@ final class ChatModel: ObservableObject {
     @Published var chatItems: [ChatItem] = []
     @Published var terminalItems: [TerminalItem] = []
     @Published var userAddress: String?
+    @Published var appOpenUrl: URL?
+    @Published var connectViaUrl = false
 }
 
 class User: Decodable {
