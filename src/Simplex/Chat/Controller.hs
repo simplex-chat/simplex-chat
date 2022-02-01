@@ -79,7 +79,7 @@ instance ToJSON HelpSection where
 
 data ChatCommand
   = APIGetChats
-  | APIGetChat ChatType Int64 CIPagination
+  | APIGetChat ChatType Int64 ChatPagination
   | APIGetChatItems Int
   | APISendMessage ChatType Int64 MsgContent
   | APIDeleteChat ChatType Int64

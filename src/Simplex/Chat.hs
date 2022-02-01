@@ -131,9 +131,9 @@ processChatCommand user@User {userId, profile} = \case
         <$> withStore
           ( \st ->
               ( case pagination of
-                  CIPLast count -> getDirectChat st user cId count
-                  CIPAfter afterId count -> getDirectChatAfter st user cId afterId count
-                  CIPBefore beforeId count -> getDirectChatBefore st user cId beforeId count
+                  CPLast count -> getDirectChat st user cId count
+                  CPAfter afterId count -> getDirectChatAfter st user cId afterId count
+                  CPBefore beforeId count -> getDirectChatBefore st user cId beforeId count
               )
           )
     CTGroup ->
@@ -141,9 +141,9 @@ processChatCommand user@User {userId, profile} = \case
         <$> withStore
           ( \st ->
               ( case pagination of
-                  CIPLast count -> getGroupChat st user cId count
-                  CIPAfter afterId count -> getGroupChatAfter st user cId afterId count
-                  CIPBefore beforeId count -> getGroupChatBefore st user cId beforeId count
+                  CPLast count -> getGroupChat st user cId count
+                  CPAfter afterId count -> getGroupChatAfter st user cId afterId count
+                  CPBefore beforeId count -> getGroupChatBefore st user cId beforeId count
               )
           )
     CTContactRequest -> pure $ CRChatError ChatErrorNotImplemented
@@ -1382,9 +1382,9 @@ chatCommandP =
   where
     chatTypeP = A.char '@' $> CTDirect <|> A.char '#' $> CTGroup
     ciPaginationP =
-      (CIPLast <$ "count=" <*> A.decimal)
-        <|> (CIPAfter <$ "after=" <*> A.decimal <* A.space <* "count=" <*> A.decimal)
-        <|> (CIPBefore <$ "before=" <*> A.decimal <* A.space <* "count=" <*> A.decimal)
+      (CPLast <$ "count=" <*> A.decimal)
+        <|> (CPAfter <$ "after=" <*> A.decimal <* A.space <* "count=" <*> A.decimal)
+        <|> (CPBefore <$ "before=" <*> A.decimal <* A.space <* "count=" <*> A.decimal)
     msgContentP = "text " *> (MCText . safeDecodeUtf8 <$> A.takeByteString)
     displayName = safeDecodeUtf8 <$> (B.cons <$> A.satisfy refChar <*> A.takeTill (== ' '))
     refChar c = c > ' ' && c /= '#' && c /= '@'
