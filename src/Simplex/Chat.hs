@@ -125,9 +125,9 @@ toView event = do
 processChatCommand :: forall m. ChatMonad m => User -> ChatCommand -> m ChatResponse
 processChatCommand user@User {userId, profile} = \case
   APIGetChats -> CRApiChats <$> withStore (`getChatPreviews` user)
-  APIGetChat cType cId limit -> case cType of
-    CTDirect -> CRApiChat . AChat SCTDirect <$> withStore (\st -> getDirectChatLimit st userId cId limit)
-    CTGroup -> CRApiChat . AChat SCTGroup <$> withStore (\st -> getGroupChatLimit st user cId limit)
+  APIGetChat cType cId count -> case cType of
+    CTDirect -> CRApiChat . AChat SCTDirect <$> withStore (\st -> getDirectChat st userId cId count)
+    CTGroup -> CRApiChat . AChat SCTGroup <$> withStore (\st -> getGroupChat st user cId count)
     CTContactRequest -> pure $ CRChatError ChatErrorNotImplemented
   APIGetChatItems _count -> pure $ CRChatError ChatErrorNotImplemented
   APISendMessage cType chatId mc -> case cType of
