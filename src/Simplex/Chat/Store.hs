@@ -2121,7 +2121,7 @@ getGroupChatAfter st user@User {userId, userContactId} groupId afterChatItemId c
             FROM chat_items ci
             LEFT JOIN group_members m ON m.group_member_id = ci.group_member_id
             LEFT JOIN contact_profiles p ON p.contact_profile_id = m.contact_profile_id
-            WHERE ci.user_id = ? AND ci.group_id = ? AND chat_item_id > ?
+            WHERE ci.user_id = ? AND ci.group_id = ? AND ci.chat_item_id > ?
             ORDER BY item_ts ASC
             LIMIT ?
           |]
@@ -2151,7 +2151,7 @@ getGroupChatBefore st user@User {userId, userContactId} groupId beforeChatItemId
             FROM chat_items ci
             LEFT JOIN group_members m ON m.group_member_id = ci.group_member_id
             LEFT JOIN contact_profiles p ON p.contact_profile_id = m.contact_profile_id
-            WHERE ci.user_id = ? AND ci.group_id = ? AND chat_item_id < ?
+            WHERE ci.user_id = ? AND ci.group_id = ? AND ci.chat_item_id < ?
             ORDER BY item_ts DESC
             LIMIT ?
           |]
