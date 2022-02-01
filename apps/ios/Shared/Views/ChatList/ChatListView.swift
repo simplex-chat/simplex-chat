@@ -11,11 +11,13 @@ import SwiftUI
 struct ChatListView: View {
     @EnvironmentObject var chatModel: ChatModel
     @State private var chatId: String?
+    @State private var connectAlert = false
+    @State private var connectError: Error?
 
     var user: User
 
     var body: some View {
-        return VStack {
+        VStack {
 //            if chatModel.chats.isEmpty {
 //                VStack {
 //                    Text("Hello chat")
@@ -45,9 +47,48 @@ struct ChatListView: View {
                     .listStyle(.plain)
                     .toolbar { ChatListToolbar(width: geometry.size.width) }
                     .navigationBarTitleDisplayMode(.inline)
+                    .alert(isPresented: $connectAlert) { connectionErrorAlert() }
                 }
             }
+            .alert(isPresented: $chatModel.connectViaUrl) { connectViaUrlAlert() }
         }
+    }
+
+    private func connectViaUrlAlert() -> Alert {
+        if let url = chatModel.appOpenUrl {
+            var path = url.path
+            if (path == "/contact" || path == "/invitation") {
+                path.removeFirst()
+                let link = url.absoluteString.replacingOccurrences(of: "///\(path)", with: "/\(path)")
+                return Alert(
+                    title: Text("Connect via \(path) link?"),
+                    message: Text("Your profile will be sent to the contact that you received this link from: \(link)"),
+                    primaryButton: .default(Text("Connect")) {
+                        do {
+                            try apiConnect(connReq: link)
+                        } catch {
+                            connectAlert = true
+                            connectError = error
+                            print(error)
+                        }
+                        chatModel.appOpenUrl = nil
+                    }, secondaryButton: .cancel() {
+                        chatModel.appOpenUrl = nil
+                    }
+                )
+            } else {
+                return Alert(title: Text("Error: URL not available"))
+            }
+        } else {
+            return Alert(title: Text("Error: URL not available"))
+        }
+    }
+
+    private func connectionErrorAlert() -> Alert {
+        Alert(
+            title: Text("Connection error"),
+            message: Text(connectError?.localizedDescription ?? "")
+        )
     }
 }
 

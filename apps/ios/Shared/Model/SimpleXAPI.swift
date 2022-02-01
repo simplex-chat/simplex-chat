@@ -402,8 +402,13 @@ private func encodeCJSON<T: Encodable>(_ value: T) -> [CChar] {
 }
 
 enum ChatError: Decodable {
+    case error(errorType: ChatErrorType)
     case errorStore(storeError: StoreError)
     // TODO other error cases
+}
+
+enum ChatErrorType: Decodable {
+    case invalidConnReq
 }
 
 enum StoreError: Decodable {

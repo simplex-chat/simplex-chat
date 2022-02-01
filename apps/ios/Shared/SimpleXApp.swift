@@ -19,6 +19,11 @@ struct SimpleXApp: App {
         WindowGroup {
             ContentView()
                 .environmentObject(chatModel)
+                .onOpenURL { url in
+                    chatModel.appOpenUrl = url
+                    chatModel.connectViaUrl = true
+                    print(url)
+                }
                 .onAppear() {
                     chatModel.currentUser = chatGetUser()
                 }
