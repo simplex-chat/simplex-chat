@@ -126,26 +126,8 @@ processChatCommand :: forall m. ChatMonad m => User -> ChatCommand -> m ChatResp
 processChatCommand user@User {userId, profile} = \case
   APIGetChats -> CRApiChats <$> withStore (`getChatPreviews` user)
   APIGetChat cType cId pagination -> case cType of
-    CTDirect ->
-      CRApiChat . AChat SCTDirect
-        <$> withStore
-          ( \st ->
-              ( case pagination of
-                  CPLast count -> getDirectChat st user cId count
-                  CPAfter afterId count -> getDirectChatAfter st user cId afterId count
-                  CPBefore beforeId count -> getDirectChatBefore st user cId beforeId count
-              )
-          )
-    CTGroup ->
-      CRApiChat . AChat SCTGroup
-        <$> withStore
-          ( \st ->
-              ( case pagination of
-                  CPLast count -> getGroupChat st user cId count
-                  CPAfter afterId count -> getGroupChatAfter st user cId afterId count
-                  CPBefore beforeId count -> getGroupChatBefore st user cId beforeId count
-              )
-          )
+    CTDirect -> CRApiChat . AChat SCTDirect <$> withStore (\st -> getDirectChat st user cId pagination)
+    CTGroup -> CRApiChat . AChat SCTGroup <$> withStore (\st -> getGroupChat st user cId pagination)
     CTContactRequest -> pure $ CRChatError ChatErrorNotImplemented
   APIGetChatItems _count -> pure $ CRChatError ChatErrorNotImplemented
   APISendMessage cType chatId mc -> case cType of
