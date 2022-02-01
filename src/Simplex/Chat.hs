@@ -159,12 +159,12 @@ processChatCommand user@User {userId, profile} = \case
     CTGroup -> pure $ CRChatCmdError ChatErrorNotImplemented
     CTContactRequest -> pure . CRChatError . ChatError $ CECommandError "not supported"
   APIAcceptContact connReqId -> do
-    cReq@UserContactRequest {agentInvitationId = AgentInvId invId, localDisplayName = cName, profileId} <- withStore $ \st ->
+    UserContactRequest {agentInvitationId = AgentInvId invId, localDisplayName = cName, profileId, profile = p} <- withStore $ \st ->
       getContactRequest st userId connReqId
     procCmd $ do
       connId <- withAgent $ \a -> acceptContact a invId . directMessage $ XInfo profile
-      withStore $ \st -> createAcceptedContact st userId connId cName profileId
-      pure $ CRAcceptingContactRequest cReq
+      acceptedContact <- withStore $ \st -> createAcceptedContact st userId connId cName profileId p
+      pure $ CRAcceptingContactRequest acceptedContact
   APIRejectContact connReqId -> do
     cReq@UserContactRequest {agentContactConnId = AgentConnId connId, agentInvitationId = AgentInvId invId} <-
       withStore $ \st ->

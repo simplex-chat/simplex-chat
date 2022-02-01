@@ -537,13 +537,14 @@ deleteContactRequest st userId contactRequestId =
       (userId, userId, contactRequestId)
     DB.execute db "DELETE FROM contact_requests WHERE user_id = ? AND contact_request_id = ?" (userId, contactRequestId)
 
-createAcceptedContact :: MonadUnliftIO m => SQLiteStore -> UserId -> ConnId -> ContactName -> Int64 -> m ()
-createAcceptedContact st userId agentConnId localDisplayName profileId =
+createAcceptedContact :: MonadUnliftIO m => SQLiteStore -> UserId -> ConnId -> ContactName -> Int64 -> Profile -> m Contact
+createAcceptedContact st userId agentConnId localDisplayName profileId profile =
   liftIO . withTransaction st $ \db -> do
     DB.execute db "DELETE FROM contact_requests WHERE user_id = ? AND local_display_name = ?" (userId, localDisplayName)
     DB.execute db "INSERT INTO contacts (user_id, local_display_name, contact_profile_id) VALUES (?,?,?)" (userId, localDisplayName, profileId)
     contactId <- insertedRowId db
-    void $ createConnection_ db userId ConnContact (Just contactId) agentConnId Nothing 0
+    activeConn <- createConnection_ db userId ConnContact (Just contactId) agentConnId Nothing 0
+    pure $ Contact {contactId, localDisplayName, profile, activeConn, viaGroup = Nothing}
 
 getLiveSndFileTransfers :: MonadUnliftIO m => SQLiteStore -> User -> m [SndFileTransfer]
 getLiveSndFileTransfers st User {userId} =
@@ -2041,8 +2042,6 @@ getContact :: StoreMonad m => SQLiteStore -> UserId -> Int64 -> m Contact
 getContact st userId contactId =
   liftIOEither . withTransaction st $ \db -> getContact_ db userId contactId
 
--- TODO return the last connection that is ready, not any last connection
--- requires updating connection status
 getContact_ :: DB.Connection -> UserId -> Int64 -> IO (Either StoreError Contact)
 getContact_ db userId contactId =
   join
