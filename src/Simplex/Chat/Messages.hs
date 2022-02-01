@@ -53,7 +53,7 @@ deriving instance Show (ChatInfo c)
 data JSONChatInfo
   = JCInfoDirect {contact :: Contact}
   | JCInfoGroup {groupInfo :: GroupInfo}
-  | JCIInfoContactRequest {contactRequest :: UserContactRequest}
+  | JCInfoContactRequest {contactRequest :: UserContactRequest}
   deriving (Generic)
 
 instance ToJSON JSONChatInfo where
@@ -68,7 +68,7 @@ jsonChatInfo :: ChatInfo c -> JSONChatInfo
 jsonChatInfo = \case
   DirectChat c -> JCInfoDirect c
   GroupChat g -> JCInfoGroup g
-  ContactRequest g -> JCIInfoContactRequest g
+  ContactRequest g -> JCInfoContactRequest g
 
 data ChatItem (c :: ChatType) (d :: MsgDirection) = ChatItem
   { chatDir :: CIDirection c d,
