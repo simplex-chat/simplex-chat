@@ -136,15 +136,13 @@ import Data.Maybe (listToMaybe)
 import Data.Ord (Down (..))
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Time (fromGregorian, secondsToDiffTime)
-import Data.Time.Clock (UTCTime (UTCTime), getCurrentTime)
+import Data.Time.Clock (UTCTime (..), getCurrentTime)
 import Data.Time.LocalTime (TimeZone, getCurrentTimeZone)
 import Database.SQLite.Simple (NamedParam (..), Only (..), Query (..), SQLError, (:.) (..))
 import qualified Database.SQLite.Simple as DB
 import Database.SQLite.Simple.QQ (sql)
 import GHC.Generics (Generic)
 import Simplex.Chat.Messages
-import Simplex.Chat.Messages (CIMeta (createdAt))
 import Simplex.Chat.Migrations.M20220101_initial
 import Simplex.Chat.Migrations.M20220122_v1_1
 import Simplex.Chat.Protocol
