@@ -505,7 +505,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage =
       Just connStatus -> do
         let conn = (entityConnection acEntity) {connStatus}
         withStore $ \st -> updateConnectionStatus st conn connStatus
-        pure acEntity {entityConnection = conn}
+        pure $ updateEntityConnStatus acEntity connStatus
       Nothing -> pure acEntity
 
     isMember :: MemberId -> GroupInfo -> [GroupMember] -> Bool

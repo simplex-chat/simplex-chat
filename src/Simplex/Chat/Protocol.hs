@@ -38,6 +38,16 @@ data ConnectionEntity
   | UserContactConnection {entityConnection :: Connection, userContact :: UserContact}
   deriving (Eq, Show)
 
+updateEntityConnStatus :: ConnectionEntity -> ConnStatus -> ConnectionEntity
+updateEntityConnStatus connEntity connStatus = case connEntity of
+  RcvDirectMsgConnection c ct_ -> RcvDirectMsgConnection (st c) ((\ct -> (ct :: Contact) {activeConn = st c}) <$> ct_)
+  RcvGroupMsgConnection c gInfo m@GroupMember {activeConn = c'} -> RcvGroupMsgConnection (st c) gInfo m {activeConn = st <$> c'}
+  SndFileConnection c ft -> SndFileConnection (st c) ft
+  RcvFileConnection c ft -> RcvFileConnection (st c) ft
+  UserContactConnection c uc -> UserContactConnection (st c) uc
+  where
+    st c = c {connStatus}
+
 -- chat message is sent as JSON with these properties
 data AppMessage = AppMessage
   { event :: Text,
