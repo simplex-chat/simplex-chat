@@ -339,6 +339,8 @@ testGroupDelete =
             cath <## "#team: alice deleted the group"
             cath <## "use /d #team to delete the local copy of the group"
         ]
+      alice ##> "#team hi"
+      alice <## "no group #team"
       bob ##> "/d #team"
       bob <## "#team: you deleted the group"
       cath ##> "#team hi"

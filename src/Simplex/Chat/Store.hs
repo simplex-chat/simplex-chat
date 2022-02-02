@@ -1045,8 +1045,8 @@ getGroup_ db user groupId = runExceptT $ do
 deleteGroup :: MonadUnliftIO m => SQLiteStore -> User -> Group -> m ()
 deleteGroup st User {userId} (Group GroupInfo {groupId, localDisplayName} members) =
   liftIO . withTransaction st $ \db -> do
-    forM_ members $ \m -> DB.execute db "DELETE FROM connections WHERE user_id = ? AND group_member_id = ?" (userId, groupMemberId m)
-    DB.execute db "DELETE FROM group_members WHERE user_id = ? AND group_id = ?" (userId, groupId)
+    -- forM_ members $ \m -> DB.execute db "DELETE FROM connections WHERE user_id = ? AND group_member_id = ?" (userId, groupMemberId m)
+    -- DB.execute db "DELETE FROM group_members WHERE user_id = ? AND group_id = ?" (userId, groupId)
     DB.execute db "DELETE FROM groups WHERE user_id = ? AND group_id = ?" (userId, groupId)
     -- TODO ? delete group profile
     DB.execute db "DELETE FROM display_names WHERE user_id = ? AND local_display_name = ?" (userId, localDisplayName)
