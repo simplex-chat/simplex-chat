@@ -32,7 +32,9 @@ final class ChatModel: ObservableObject {
     }
 
     func addChat(_ chat: Chat) {
-        chats.insert(chat, at: 0)
+        withAnimation {
+            chats.insert(chat, at: 0)
+        }
     }
 
     func updateChatInfo(_ cInfo: ChatInfo) {
@@ -64,7 +66,9 @@ final class ChatModel: ObservableObject {
     }
 
     func removeChat(_ id: String) {
-        chats.removeAll(where: { $0.id == id })
+        withAnimation {
+            chats.removeAll(where: { $0.id == id })
+        }
     }
 }
 

@@ -25,28 +25,30 @@ struct ChatListView: View {
 //            }
 
             NavigationView {
-                GeometryReader { geometry in
-                    List {
-                        NavigationLink {
-                            TerminalView()
-                        } label: {
-                            Text("Terminal")
-                        }
-
-                        ForEach(chatModel.chats) { chat in
-                            ChatListNavLink(
-                                chat: chat,
-                                width: geometry.size.width
-                            )
-                        }
+                List {
+                    NavigationLink {
+                        TerminalView()
+                    } label: {
+                        Text("Terminal")
                     }
-                    .padding(0)
-                    .offset(x: -8)
-                    .listStyle(.plain)
-                    .toolbar { ChatListToolbar(width: geometry.size.width) }
-                    .navigationBarTitleDisplayMode(.inline)
-                    .alert(isPresented: $connectAlert) { connectionErrorAlert() }
+
+                    ForEach(chatModel.chats) { chat in
+                        ChatListNavLink(chat: chat)
+                    }
                 }
+                .padding(0)
+                .offset(x: -8)
+                .listStyle(.plain)
+                .navigationTitle("Your chats")
+                .toolbar {
+                    ToolbarItem(placement: .navigationBarLeading) {
+                        SettingsButton()
+                    }
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        NewChatButton()
+                    }
+                }
+                .alert(isPresented: $connectAlert) { connectionErrorAlert() }
             }
             .alert(isPresented: $chatModel.connectViaUrl) { connectViaUrlAlert() }
         }

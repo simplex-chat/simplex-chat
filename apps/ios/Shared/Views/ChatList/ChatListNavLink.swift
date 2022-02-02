@@ -11,7 +11,6 @@ import SwiftUI
 struct ChatListNavLink: View {
     @EnvironmentObject var chatModel: ChatModel
     @State var chat: Chat
-    var width: CGFloat
 
     @State private var showDeleteContactAlert = false
     @State private var showDeleteGroupAlert = false
@@ -33,10 +32,7 @@ struct ChatListNavLink: View {
     }
 
     private func chatView() -> some View {
-        ChatView(
-            chatInfo: chat.chatInfo,
-            width: width
-        )
+        ChatView(chatInfo: chat.chatInfo)
         .onAppear {
             do {
                 let cInfo = chat.chatInfo
@@ -93,7 +89,7 @@ struct ChatListNavLink: View {
     }
 
     private func contactRequestNavLink(_ contactRequest: UserContactRequest) -> some View {
-        ChatPreviewView(chat: chat)
+        ContactRequestView(contactRequest: contactRequest)
         .swipeActions(edge: .trailing, allowsFullSwipe: true) {
             Button { acceptContactRequest(contactRequest) }
                 label: { Label("Accept", systemImage: "checkmark") }
@@ -108,8 +104,7 @@ struct ChatListNavLink: View {
         .alert(isPresented: $showContactRequestAlert) {
             contactRequestAlert(alertContactRequest!)
         }
-        .background(Color(uiColor: .systemBackground))
-        .frame(width: width, height: 80)
+        .frame(height: 80)
         .onTapGesture { showContactRequestDialog = true }
         .confirmationDialog("Connection request", isPresented: $showContactRequestDialog, titleVisibility: .visible) {
             Button("Accept contact") { acceptContactRequest(contactRequest) }
@@ -182,15 +177,15 @@ struct ChatListNavLink_Previews: PreviewProvider {
             ChatListNavLink(chat: Chat(
                 chatInfo: sampleDirectChatInfo,
                 chatItems: [chatItemSample(1, .directSnd, Date.now, "hello")]
-            ), width: 300)
+            ))
             ChatListNavLink(chat: Chat(
                 chatInfo: sampleDirectChatInfo,
                 chatItems: [chatItemSample(1, .directSnd, Date.now, "hello")]
-            ), width: 300)
+            ))
             ChatListNavLink(chat: Chat(
                 chatInfo: sampleContactRequestChatInfo,
                 chatItems: []
-            ), width: 300)
+            ))
         }
         .previewLayout(.fixed(width: 360, height: 80))
     }

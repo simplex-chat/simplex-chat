@@ -1,5 +1,5 @@
 //
-//  ChatPreviewView.swift
+//  ChatNavLabel.swift
 //  SimpleX
 //
 //  Created by Evgeny Poberezkin on 28/01/2022.
