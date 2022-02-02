@@ -840,6 +840,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage =
     newContentMessage ct@Contact {localDisplayName = c} mc msgId msgMeta = do
       ci <- saveRcvDirectChatItem userId ct msgId msgMeta (CIRcvMsgContent mc)
       toView . CRNewChatItem $ AChatItem SCTDirect SMDRcv (DirectChat ct) ci
+      checkIntegrity msgMeta $ toView . CRMsgIntegrityError
       showToast (c <> "> ") $ msgContentText mc
       setActive $ ActiveC c
 
@@ -847,6 +848,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage =
     newGroupContentMessage gInfo m@GroupMember {localDisplayName = c} mc msgId msgMeta = do
       ci <- saveRcvGroupChatItem userId gInfo m msgId msgMeta (CIRcvMsgContent mc)
       toView . CRNewChatItem $ AChatItem SCTGroup SMDRcv (GroupChat gInfo) ci
+      checkIntegrity msgMeta $ toView . CRMsgIntegrityError
       let g = groupName' gInfo
       showToast ("#" <> g <> " " <> c <> "> ") $ msgContentText mc
       setActive $ ActiveG g
@@ -859,6 +861,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage =
       ci <- saveRcvDirectChatItem userId ct msgId msgMeta (CIRcvFileInvitation ft)
       withStore $ \st -> updateFileTransferChatItemId st fileId $ chatItemId ci
       toView . CRNewChatItem $ AChatItem SCTDirect SMDRcv (DirectChat ct) ci
+      checkIntegrity msgMeta $ toView . CRMsgIntegrityError
       showToast (c <> "> ") "wants to send a file"
       setActive $ ActiveC c
 
@@ -869,6 +872,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage =
       ci <- saveRcvGroupChatItem userId gInfo m msgId msgMeta (CIRcvFileInvitation ft)
       withStore $ \st -> updateFileTransferChatItemId st fileId $ chatItemId ci
       toView . CRNewChatItem $ AChatItem SCTGroup SMDRcv (GroupChat gInfo) ci
+      checkIntegrity msgMeta $ toView . CRMsgIntegrityError
       let g = groupName' gInfo
       showToast ("#" <> g <> " " <> c <> "> ") "wants to send a file"
       setActive $ ActiveG g
@@ -880,6 +884,11 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage =
       gInfo@GroupInfo {localDisplayName = gName} <- withStore $ \st -> createGroupInvitation st user ct inv
       toView $ CRReceivedGroupInvitation gInfo ct memRole
       showToast ("#" <> gName <> " " <> c <> "> ") "invited you to join the group"
+
+    checkIntegrity :: MsgMeta -> (MsgErrorType -> m ()) -> m ()
+    checkIntegrity MsgMeta {integrity} action = case integrity of
+      MsgError e -> action e
+      MsgOk -> pure ()
 
     xInfo :: Contact -> Profile -> m ()
     xInfo c@Contact {profile = p} p' = unless (p == p') $ do

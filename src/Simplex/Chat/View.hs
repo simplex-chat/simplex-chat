@@ -37,6 +37,7 @@ responseToView cmd = \case
   CRApiChats chats -> api [sShow chats]
   CRApiChat chat -> api [sShow chat]
   CRNewChatItem (AChatItem _ _ chat item) -> viewChatItem chat item
+  CRMsgIntegrityError mErr -> viewMsgIntegrityError mErr
   CRCmdAccepted _ -> r []
   CRChatHelp section -> case section of
     HSMain -> r chatHelpInfo
@@ -145,6 +146,18 @@ viewChatItem chat (ChatItem cd meta content) = case (chat, cd) of
     ttyToContact' Contact {localDisplayName = c} = ttyToContact c
     ttyFromContact' Contact {localDisplayName = c} = ttyFromContact c
     ttyFromGroup' g GroupMember {localDisplayName = m} = ttyFromGroup g m
+
+viewMsgIntegrityError :: MsgErrorType -> [StyledString]
+viewMsgIntegrityError err = msgError $ case err of
+  MsgSkipped fromId toId ->
+    "skipped message ID " <> show fromId
+      <> if fromId == toId then "" else ".." <> show toId
+  MsgBadId msgId -> "unexpected message ID " <> show msgId
+  MsgBadHash -> "incorrect message hash"
+  MsgDuplicate -> "duplicate message ID"
+  where
+    msgError :: String -> [StyledString]
+    msgError s = [styled (Colored Red) s]
 
 viewInvalidConnReq :: [StyledString]
 viewInvalidConnReq =
@@ -310,17 +323,6 @@ receivedWithTime_ from CIMeta {localItemTs, createdAt} styledMsg = do
               then "%m-%d" -- if message is from yesterday or before and 6 hours has passed since midnight
               else "%H:%M"
        in styleTime $ formatTime defaultTimeLocale format localTime
-    showIntegrity :: MsgIntegrity -> [StyledString]
-    showIntegrity MsgOk = []
-    showIntegrity (MsgError err) = msgError $ case err of
-      MsgSkipped fromId toId ->
-        "skipped message ID " <> show fromId
-          <> if fromId == toId then "" else ".." <> show toId
-      MsgBadId msgId -> "unexpected message ID " <> show msgId
-      MsgBadHash -> "incorrect message hash"
-      MsgDuplicate -> "duplicate message ID"
-    msgError :: String -> [StyledString]
-    msgError s = [styled (Colored Red) s]
 
 viewSentMessage :: StyledString -> MsgContent -> CIMeta -> [StyledString]
 viewSentMessage to = sentWithTime_ . prependFirst to . ttyMsgContent
