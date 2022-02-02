@@ -144,6 +144,7 @@ import qualified Database.SQLite.Simple as DB
 import Database.SQLite.Simple.QQ (sql)
 import GHC.Generics (Generic)
 import Simplex.Chat.Messages
+import Simplex.Chat.Messages (CIMeta (createdAt))
 import Simplex.Chat.Migrations.M20220101_initial
 import Simplex.Chat.Migrations.M20220122_v1_1
 import Simplex.Chat.Protocol
@@ -2017,8 +2018,10 @@ getChatPreviews st user =
     pure $ sortOn (Down . ts) (directChats <> groupChats <> cReqChats)
   where
     ts :: AChat -> UTCTime
-    ts (AChat _ (Chat _ [])) = UTCTime (fromGregorian 2122 1 29) (secondsToDiffTime 0) -- TODO Contact/GroupInfo/ContactRequest createdAt
     ts (AChat _ (Chat _ (ci : _))) = chatItemTs ci
+    ts (AChat _ (Chat (DirectChat Contact {createdAt}) [])) = createdAt
+    ts (AChat _ (Chat (GroupChat GroupInfo {createdAt}) [])) = createdAt
+    ts (AChat _ (Chat (ContactRequest UserContactRequest {createdAt}) [])) = createdAt
 
 chatItemTs :: CChatItem d -> UTCTime
 chatItemTs (CChatItem _ (ChatItem _ CIMeta {itemTs} _)) = itemTs
