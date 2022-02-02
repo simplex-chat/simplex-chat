@@ -9,6 +9,8 @@
 /* Begin PBXBuildFile section */
 		5C063D2727A4564100AEC577 /* ChatPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C063D2627A4564100AEC577 /* ChatPreviewView.swift */; };
 		5C063D2827A4564100AEC577 /* ChatPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C063D2627A4564100AEC577 /* ChatPreviewView.swift */; };
+		5C116CDC27AABE0400E66D01 /* ContactRequestView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C116CDB27AABE0400E66D01 /* ContactRequestView.swift */; };
+		5C116CDD27AABE0400E66D01 /* ContactRequestView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C116CDB27AABE0400E66D01 /* ContactRequestView.swift */; };
 		5C1A4C1E27A715B700EAD5AD /* ChatItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C1A4C1D27A715B700EAD5AD /* ChatItemView.swift */; };
 		5C1A4C1F27A715B700EAD5AD /* ChatItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C1A4C1D27A715B700EAD5AD /* ChatItemView.swift */; };
 		5C1AEB86279F4A6400247F08 /* libffi.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C1AEB7F279F4A6400247F08 /* libffi.a */; };
@@ -70,8 +72,6 @@
 		5CC1C99327A6C7F5000D9FF6 /* QRCode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CC1C99127A6C7F5000D9FF6 /* QRCode.swift */; };
 		5CC1C99527A6CF7F000D9FF6 /* ShareSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CC1C99427A6CF7F000D9FF6 /* ShareSheet.swift */; };
 		5CC1C99627A6CF7F000D9FF6 /* ShareSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CC1C99427A6CF7F000D9FF6 /* ShareSheet.swift */; };
-		5CCD403127A5F1C600368C90 /* ChatListToolbar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CCD403027A5F1C600368C90 /* ChatListToolbar.swift */; };
-		5CCD403227A5F1C600368C90 /* ChatListToolbar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CCD403027A5F1C600368C90 /* ChatListToolbar.swift */; };
 		5CCD403427A5F6DF00368C90 /* AddContactView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CCD403327A5F6DF00368C90 /* AddContactView.swift */; };
 		5CCD403527A5F6DF00368C90 /* AddContactView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CCD403327A5F6DF00368C90 /* AddContactView.swift */; };
 		5CCD403727A5F9A200368C90 /* ConnectContactView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CCD403627A5F9A200368C90 /* ConnectContactView.swift */; };
@@ -99,6 +99,7 @@
 
 /* Begin PBXFileReference section */
 		5C063D2627A4564100AEC577 /* ChatPreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatPreviewView.swift; sourceTree = "<group>"; };
+		5C116CDB27AABE0400E66D01 /* ContactRequestView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContactRequestView.swift; sourceTree = "<group>"; };
 		5C1A4C1D27A715B700EAD5AD /* ChatItemView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatItemView.swift; sourceTree = "<group>"; };
 		5C1AEB7F279F4A6400247F08 /* libffi.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libffi.a; sourceTree = "<group>"; };
 		5C1AEB80279F4A6400247F08 /* libgmp.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libgmp.a; sourceTree = "<group>"; };
@@ -139,7 +140,6 @@
 		5CB9250C27A9432000ACCCDD /* ChatListNavLink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatListNavLink.swift; sourceTree = "<group>"; };
 		5CC1C99127A6C7F5000D9FF6 /* QRCode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QRCode.swift; sourceTree = "<group>"; };
 		5CC1C99427A6CF7F000D9FF6 /* ShareSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareSheet.swift; sourceTree = "<group>"; };
-		5CCD403027A5F1C600368C90 /* ChatListToolbar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatListToolbar.swift; sourceTree = "<group>"; };
 		5CCD403327A5F6DF00368C90 /* AddContactView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddContactView.swift; sourceTree = "<group>"; };
 		5CCD403627A5F9A200368C90 /* ConnectContactView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectContactView.swift; sourceTree = "<group>"; };
 		5CCD403927A5F9BE00368C90 /* CreateGroupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateGroupView.swift; sourceTree = "<group>"; };
@@ -195,25 +195,24 @@
 		5C2E260D27A30E2400F70299 /* Views */ = {
 			isa = PBXGroup;
 			children = (
-				5C5F4AC227A5E9AF00B51EF1 /* Helpers */,
-				5CA05A4B27974EB60002BEB4 /* WelcomeView.swift */,
+				5C5F4AC227A5E9AF00B51EF1 /* Chat */,
 				5CB9250B27A942F300ACCCDD /* ChatList */,
-				5C063D2627A4564100AEC577 /* ChatPreviewView.swift */,
-				5C2E260E27A30FDC00F70299 /* ChatView.swift */,
+				5CB924DD27A8622200ACCCDD /* NewChat */,
+				5CB924DF27A8678B00ACCCDD /* UserSettings */,
+				5C2E261127A30FEA00F70299 /* TerminalView.swift */,
+				5CA05A4B27974EB60002BEB4 /* WelcomeView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
 		};
-		5C5F4AC227A5E9AF00B51EF1 /* Helpers */ = {
+		5C5F4AC227A5E9AF00B51EF1 /* Chat */ = {
 			isa = PBXGroup;
 			children = (
+				5C2E260E27A30FDC00F70299 /* ChatView.swift */,
 				5C9FD96D27A5D6ED0075386C /* SendMessageView.swift */,
 				5C1A4C1D27A715B700EAD5AD /* ChatItemView.swift */,
-				5CCD403027A5F1C600368C90 /* ChatListToolbar.swift */,
-				5CB924DF27A8678B00ACCCDD /* UserSettings */,
-				5CB924DD27A8622200ACCCDD /* NewChat */,
 			);
-			path = Helpers;
+			path = Chat;
 			sourceTree = "<group>";
 		};
 		5C764E5C279C70B7000C6508 /* Libraries */ = {
@@ -341,8 +340,9 @@
 			isa = PBXGroup;
 			children = (
 				5C2E260A27A30CFA00F70299 /* ChatListView.swift */,
-				5C2E261127A30FEA00F70299 /* TerminalView.swift */,
 				5CB9250C27A9432000ACCCDD /* ChatListNavLink.swift */,
+				5C063D2627A4564100AEC577 /* ChatPreviewView.swift */,
+				5C116CDB27AABE0400E66D01 /* ContactRequestView.swift */,
 			);
 			path = ChatList;
 			sourceTree = "<group>";
@@ -524,7 +524,7 @@
 				5C9FD96B27A56D4D0075386C /* JSON.swift in Sources */,
 				5C9FD96E27A5D6ED0075386C /* SendMessageView.swift in Sources */,
 				5CC1C99227A6C7F5000D9FF6 /* QRCode.swift in Sources */,
-				5CCD403127A5F1C600368C90 /* ChatListToolbar.swift in Sources */,
+				5C116CDC27AABE0400E66D01 /* ContactRequestView.swift in Sources */,
 				5CB9250D27A9432000ACCCDD /* ChatListNavLink.swift in Sources */,
 				5CA059ED279559F40002BEB4 /* ContentView.swift in Sources */,
 				5CCD403427A5F6DF00368C90 /* AddContactView.swift in Sources */,
@@ -556,7 +556,7 @@
 				5C9FD96C27A56D4D0075386C /* JSON.swift in Sources */,
 				5C9FD96F27A5D6ED0075386C /* SendMessageView.swift in Sources */,
 				5CC1C99327A6C7F5000D9FF6 /* QRCode.swift in Sources */,
-				5CCD403227A5F1C600368C90 /* ChatListToolbar.swift in Sources */,
+				5C116CDD27AABE0400E66D01 /* ContactRequestView.swift in Sources */,
 				5CB9250E27A9432000ACCCDD /* ChatListNavLink.swift in Sources */,
 				5CA059EE279559F40002BEB4 /* ContentView.swift in Sources */,
 				5CCD403527A5F6DF00368C90 /* AddContactView.swift in Sources */,

@@ -11,15 +11,18 @@ import SwiftUI
 struct ChatView: View {
     @EnvironmentObject var chatModel: ChatModel
     var chatInfo: ChatInfo
-    var width: CGFloat
     @State private var inProgress: Bool = false
 
     var body: some View {
         VStack {
-            ScrollView {
-                LazyVStack(spacing: 5) {
-                    ForEach(chatModel.chatItems) {
-                        ChatItemView(chatItem: $0)
+            ScrollViewReader { proxy in
+                ScrollView {
+                    VStack {
+                        ForEach(chatModel.chatItems, id: \.id) {
+                            ChatItemView(chatItem: $0)
+                        }
+                        .onAppear { scrollToBottom(proxy) }
+                        .onChange(of: chatModel.chatItems.count) { _ in scrollToBottom(proxy) }
                     }
                 }
             }
@@ -28,22 +31,24 @@ struct ChatView: View {
 
             SendMessageView(sendMessage: sendMessage, inProgress: inProgress)
         }
+        .navigationTitle(chatInfo.localDisplayName)
         .toolbar {
-            HStack {
+            ToolbarItem(placement: .navigationBarLeading) {
                 Button { chatModel.chatId = nil } label: {
                     Image(systemName: "chevron.backward")
                 }
-                Spacer()
-                Text(chatInfo.localDisplayName)
-                    .font(.title3)
-                Spacer()
-                EmptyView()
             }
-            .padding(.horizontal)
-            .frame(minWidth: width, maxWidth: .infinity, alignment: .center)
         }
         .navigationBarBackButtonHidden(true)
 
+    }
+
+    func scrollToBottom(_ proxy: ScrollViewProxy) {
+        if let id = chatModel.chatItems.last?.id {
+            withAnimation {
+                proxy.scrollTo(id, anchor: .bottom)
+            }
+        }
     }
 
     func sendMessage(_ msg: String) {
@@ -69,7 +74,7 @@ struct ChatView_Previews: PreviewProvider {
             chatItemSample(6, .directSnd, Date.now, "how are you?"),
             chatItemSample(7, .directSnd, Date.now, "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.")
         ]
-        return ChatView(chatInfo: sampleDirectChatInfo, width: 300)
+        return ChatView(chatInfo: sampleDirectChatInfo)
             .environmentObject(chatModel)
     }
 }
