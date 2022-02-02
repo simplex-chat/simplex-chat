@@ -117,7 +117,8 @@ responseToView cmd = \case
   where
     api = (highlight cmd :)
     r = (plain cmd :)
-    -- this function should be `r` for "synchronous" command responses
+    -- this function should be `r` for "synchronous", `id` for "asynchronous" command responses
+    -- r' = r
     r' = id
 
 viewChatItem :: ChatInfo c -> ChatItem c d -> [StyledString]
@@ -482,6 +483,7 @@ viewChatError = \case
     SEDuplicateContactLink -> ["you already have chat address, to show: " <> highlight' "/sa"]
     SEUserContactLinkNotFound -> ["no chat address, to create: " <> highlight' "/ad"]
     SEContactRequestNotFoundByName c -> ["no contact request from " <> ttyContact c]
+    SEConnectionNotFound _ -> [] -- TODO mutes delete group error, but also mutes any error from getConnectionEntity
     e -> ["chat db error: " <> sShow e]
   ChatErrorAgent err -> case err of
     SMP SMP.AUTH -> ["error: this connection is deleted"]
