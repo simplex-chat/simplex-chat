@@ -15,7 +15,6 @@ import Simplex.Chat.Controller
 import Simplex.Chat.Types (Profile (..), User (..))
 import Simplex.Chat.Util (unlessM)
 import System.Directory (doesFileExist)
-import System.Timeout (timeout)
 import Test.Hspec
 
 aliceProfile :: Profile
@@ -339,6 +338,8 @@ testGroupDelete =
             cath <## "#team: alice deleted the group"
             cath <## "use /d #team to delete the local copy of the group"
         ]
+      alice ##> "#team hi"
+      alice <## "no group #team"
       bob ##> "/d #team"
       bob <## "#team: you deleted the group"
       cath ##> "#team hi"
@@ -840,7 +841,7 @@ cc <### ls = do
 cc <# line = (dropTime <$> getTermLine cc) `shouldReturn` line
 
 (</) :: TestCC -> Expectation
-(</) cc = timeout 500000 (getTermLine cc) `shouldReturn` Nothing
+(</) = (<// 500000)
 
 (<#?) :: TestCC -> TestCC -> Expectation
 cc1 <#? cc2 = do
@@ -856,9 +857,6 @@ dropTime msg = case splitAt 6 msg of
   ([m, m', ':', s, s', ' '], text) ->
     if all isDigit [m, m', s, s'] then text else error "invalid time"
   _ -> error "invalid time"
-
-getTermLine :: TestCC -> IO String
-getTermLine = atomically . readTQueue . termQ
 
 getInvitation :: TestCC -> IO String
 getInvitation cc = do

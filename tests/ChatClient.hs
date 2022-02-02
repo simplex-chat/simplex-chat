@@ -30,6 +30,7 @@ import System.Directory (createDirectoryIfMissing, removeDirectoryRecursive)
 import qualified System.Terminal as C
 import System.Terminal.Internal (VirtualTerminal (..), VirtualTerminalSettings (..), withVirtualTerminal)
 import System.Timeout (timeout)
+import Test.Hspec (Expectation, shouldReturn)
 
 testDBPrefix :: FilePath
 testDBPrefix = "tests/tmp/test"
@@ -116,9 +117,16 @@ testChatN ps test =
       let envs = zip ps $ map ((testDBPrefix <>) . show) [(1 :: Int) ..]
       tcs <- getTestCCs envs []
       test tcs
+      concurrentlyN_ $ map (<// 100000) tcs
   where
     getTestCCs [] tcs = pure tcs
     getTestCCs ((p, db) : envs') tcs = (:) <$> virtualSimplexChat db p <*> getTestCCs envs' tcs
+
+(<//) :: TestCC -> Int -> Expectation
+(<//) cc t = timeout t (getTermLine cc) `shouldReturn` Nothing
+
+getTermLine :: TestCC -> IO String
+getTermLine = atomically . readTQueue . termQ
 
 testChat2 :: Profile -> Profile -> (TestCC -> TestCC -> IO ()) -> IO ()
 testChat2 p1 p2 test = testChatN [p1, p2] test_
