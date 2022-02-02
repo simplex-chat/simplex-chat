@@ -10,9 +10,7 @@ import SwiftUI
 
 struct ChatListNavLink: View {
     @EnvironmentObject var chatModel: ChatModel
-
-    @Binding var chatId: String?
-    @State var chatPreview: Chat
+    @State var chat: Chat
     var width: CGFloat
 
     @State private var showDeleteContactAlert = false
@@ -24,7 +22,7 @@ struct ChatListNavLink: View {
     @State private var alertContactRequest: UserContactRequest?
 
     var body: some View {
-        switch chatPreview.chatInfo {
+        switch chat.chatInfo {
         case let .direct(contact):
             contactNavLink(contact)
         case let .group(groupInfo):
@@ -36,15 +34,15 @@ struct ChatListNavLink: View {
 
     private func chatView() -> some View {
         ChatView(
-            chatId: $chatId,
-            chatInfo: chatPreview.chatInfo,
+            chatInfo: chat.chatInfo,
             width: width
         )
         .onAppear {
             do {
-                let ci = chatPreview.chatInfo
-                let chat = try apiGetChat(type: ci.chatType, id: ci.apiId)
-                chatModel.chats[ci.id] = chat
+                let cInfo = chat.chatInfo
+                let chat = try apiGetChat(type: cInfo.chatType, id: cInfo.apiId)
+                chatModel.updateChatInfo(chat.chatInfo)
+                chatModel.chatItems = chat.chatItems
             } catch {
                 print("apiGetChatItems", error)
             }
@@ -53,10 +51,10 @@ struct ChatListNavLink: View {
 
     private func contactNavLink(_ contact: Contact) -> some View {
         NavigationLink(
-            tag: chatPreview.chatInfo.id,
-            selection: $chatId,
+            tag: chat.chatInfo.id,
+            selection: $chatModel.chatId,
             destination: { chatView() },
-            label: { ChatPreviewView(chatPreview: chatPreview) }
+            label: { ChatPreviewView(chat: chat) }
         )
         .disabled(!contact.connected)
         .swipeActions(edge: .trailing, allowsFullSwipe: true) {
@@ -75,10 +73,10 @@ struct ChatListNavLink: View {
 
     private func groupNavLink(_ groupInfo: GroupInfo) -> some View {
         NavigationLink(
-            tag: chatPreview.chatInfo.id,
-            selection: $chatId,
+            tag: chat.chatInfo.id,
+            selection: $chatModel.chatId,
             destination: { chatView() },
-            label: { ChatPreviewView(chatPreview: chatPreview) }
+            label: { ChatPreviewView(chat: chat) }
         )
         .swipeActions(edge: .trailing, allowsFullSwipe: true) {
             Button(role: .destructive) {
@@ -95,7 +93,7 @@ struct ChatListNavLink: View {
     }
 
     private func contactRequestNavLink(_ contactRequest: UserContactRequest) -> some View {
-        ChatPreviewView(chatPreview: chatPreview)
+        ChatPreviewView(chat: chat)
         .swipeActions(edge: .trailing, allowsFullSwipe: true) {
             Button { acceptContactRequest(contactRequest) }
                 label: { Label("Accept", systemImage: "checkmark") }
@@ -125,9 +123,8 @@ struct ChatListNavLink: View {
             message: Text("Contact and all messages will be deleted"),
             primaryButton: .destructive(Text("Delete")) {
                 do {
-                    try apiDeleteChat(type: .direct, id: contact.contactId)
-                    chatModel.chats.removeValue(forKey: contact.id)
-                    chatModel.chatPreviews.removeAll(where: { $0.id == contact.id })
+                    try apiDeleteChat(type: .direct, id: contact.apiId)
+                    chatModel.removeChat(contact.id)
                 } catch let error {
                     print("Error: \(error)")
                 }
@@ -160,15 +157,9 @@ struct ChatListNavLink: View {
 
     private func acceptContactRequest(_ contactRequest: UserContactRequest) {
         do {
-            let contact = try apiAcceptContactRequest(contactReqId: contactRequest.contactRequestId)
-            chatModel.chats.removeValue(forKey: contactRequest.id)
+            let contact = try apiAcceptContactRequest(contactReqId: contactRequest.apiId)
             let chat = Chat(chatInfo: ChatInfo.direct(contact: contact), chatItems: [])
-            chatModel.chats[contact.id] = chat
-            if let i = chatModel.chatPreviews.firstIndex(where: { $0.id == contactRequest.id }) {
-                chatModel.chatPreviews[i] = chat
-            } else {
-                chatModel.chatPreviews.insert(chat, at: 0)
-            }
+            chatModel.replaceChat(contactRequest.id, chat)
         } catch let error {
             print("Error: \(error)")
         }
@@ -176,9 +167,8 @@ struct ChatListNavLink: View {
 
     private func rejectContactRequest(_ contactRequest: UserContactRequest) {
         do {
-            try apiRejectContactRequest(contactReqId: contactRequest.contactRequestId)
-            chatModel.chats.removeValue(forKey: contactRequest.id)
-            chatModel.chatPreviews.removeAll(where: { $0.id == contactRequest.id })
+            try apiRejectContactRequest(contactReqId: contactRequest.apiId)
+            chatModel.removeChat(contactRequest.id)
         } catch let error {
             print("Error: \(error)")
         }
@@ -189,15 +179,15 @@ struct ChatListNavLink_Previews: PreviewProvider {
     static var previews: some View {
         @State var chatId: String? = "@1"
         return Group {
-            ChatListNavLink(chatId: $chatId, chatPreview: Chat(
+            ChatListNavLink(chat: Chat(
                 chatInfo: sampleDirectChatInfo,
                 chatItems: [chatItemSample(1, .directSnd, Date.now, "hello")]
             ), width: 300)
-            ChatListNavLink(chatId: $chatId, chatPreview: Chat(
+            ChatListNavLink(chat: Chat(
                 chatInfo: sampleDirectChatInfo,
                 chatItems: [chatItemSample(1, .directSnd, Date.now, "hello")]
             ), width: 300)
-            ChatListNavLink(chatId: $chatId, chatPreview: Chat(
+            ChatListNavLink(chat: Chat(
                 chatInfo: sampleContactRequestChatInfo,
                 chatItems: []
             ), width: 300)

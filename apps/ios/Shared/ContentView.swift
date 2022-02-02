@@ -25,8 +25,7 @@ struct ContentView: View {
                     }
 
                     do {
-                        let chats = try apiGetChats()
-                        chatModel.chatPreviews = chats
+                        chatModel.chats = try apiGetChats()
                     } catch {
                         print(error)
                     }

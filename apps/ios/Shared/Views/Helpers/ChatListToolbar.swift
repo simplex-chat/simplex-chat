@@ -9,7 +9,6 @@
 import SwiftUI
 
 struct ChatListToolbar: View {
-    @EnvironmentObject var chatModel: ChatModel
     var width: CGFloat
 
     var body: some View {
@@ -28,15 +27,7 @@ struct ChatListToolbar: View {
 
 struct ChatListToolbar_Previews: PreviewProvider {
     static var previews: some View {
-        let chatModel = ChatModel()
-        chatModel.chats = [
-            "@1": Chat(
-                chatInfo: sampleDirectChatInfo,
-                chatItems: [chatItemSample(1, .directSnd, Date.now, "hello")]
-            )
-        ]
         return ChatListToolbar(width: 300)
             .previewLayout(.fixed(width: 300, height: 70))
-            .environmentObject(chatModel)
     }
 }

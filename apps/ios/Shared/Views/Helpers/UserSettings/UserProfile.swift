@@ -34,7 +34,7 @@ struct UserProfile: View {
                         .padding(.bottom)
                     HStack(spacing: 20) {
                         Button("Cancel") { editProfile = false }
-                        Button("Save (and notify contacts)") { saveProfile(user) }
+                        Button("Save (and notify contacts)") { saveProfile() }
                     }
                 }
                 .frame(maxWidth: .infinity, minHeight: 120, alignment: .leading)
@@ -63,10 +63,10 @@ struct UserProfile: View {
         .padding()
     }
 
-    func saveProfile(_ user: User) {
+    func saveProfile() {
         do {
             if let newProfile = try apiUpdateProfile(profile: profile) {
-                user.profile = newProfile
+                chatModel.currentUser?.profile = newProfile
                 profile = newProfile
             }
         } catch {

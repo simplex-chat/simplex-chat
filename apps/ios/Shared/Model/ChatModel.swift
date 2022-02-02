@@ -12,29 +12,76 @@ import SwiftUI
 
 final class ChatModel: ObservableObject {
     @Published var currentUser: User?
-    @Published var chats: Dictionary<String, Chat> = [:]
-    @Published var chatPreviews: [Chat] = []
+    // list of chat "previews"
+    @Published var chats: [Chat] = []
+    // current chat
+    @Published var chatId: String?
     @Published var chatItems: [ChatItem] = []
+    // items in the terminal view
     @Published var terminalItems: [TerminalItem] = []
     @Published var userAddress: String?
     @Published var appOpenUrl: URL?
     @Published var connectViaUrl = false
+
+    func hasChat(_ id: String) -> Bool {
+        chats.first(where: { $0.id == id }) != nil
+    }
+
+    func getChat(_ id: String) -> Chat? {
+        chats.first(where: { $0.id == id })
+    }
+
+    func addChat(_ chat: Chat) {
+        chats.insert(chat, at: 0)
+    }
+
+    func updateChatInfo(_ cInfo: ChatInfo) {
+        if let ix = chats.firstIndex(where: { $0.id == cInfo.id }) {
+            chats[ix].chatInfo = cInfo
+        }
+    }
+
+    func replaceChat(_ id: String, _ chat: Chat) {
+        if let ix = chats.firstIndex(where: { $0.id == id }) {
+            chats[ix] = chat
+        } else {
+            // invalid state, correcting
+            chats.insert(chat, at: 0)
+        }
+    }
+
+    func addChatItem(_ cInfo: ChatInfo, _ cItem: ChatItem) {
+        if let ix = chats.firstIndex(where: { $0.id == cInfo.id }) {
+            chats[ix].chatItems = [cItem]
+            if chatId != cInfo.id {
+                let chat = chats.remove(at: ix)
+                chats.insert(chat, at: 0)
+            }
+        }
+        if chatId == cInfo.id {
+            chatItems.append(cItem)
+        }
+    }
+
+    func removeChat(_ id: String) {
+        chats.removeAll(where: { $0.id == id })
+    }
 }
 
-class User: Decodable {
+struct User: Decodable {
     var userId: Int64
     var userContactId: Int64
     var localDisplayName: ContactName
     var profile: Profile
     var activeUser: Bool
 
-    internal init(userId: Int64, userContactId: Int64, localDisplayName: ContactName, profile: Profile, activeUser: Bool) {
-        self.userId = userId
-        self.userContactId = userContactId
-        self.localDisplayName = localDisplayName
-        self.profile = profile
-        self.activeUser = activeUser
-    }
+//    internal init(userId: Int64, userContactId: Int64, localDisplayName: ContactName, profile: Profile, activeUser: Bool) {
+//        self.userId = userId
+//        self.userContactId = userContactId
+//        self.localDisplayName = localDisplayName
+//        self.profile = profile
+//        self.activeUser = activeUser
+//    }
 }
 
 let sampleUser = User(
@@ -103,9 +150,9 @@ enum ChatInfo: Identifiable, Decodable {
     var apiId: Int64 {
         get {
             switch self {
-            case let .direct(contact): return contact.contactId
-            case let .group(groupInfo): return groupInfo.groupId
-            case let .contactRequest(contactRequest): return contactRequest.contactRequestId
+            case let .direct(contact): return contact.apiId
+            case let .group(groupInfo): return groupInfo.apiId
+            case let .contactRequest(contactRequest): return contactRequest.apiId
             }
         }
     }
@@ -117,14 +164,26 @@ let sampleGroupChatInfo = ChatInfo.group(groupInfo: sampleGroupInfo)
 
 let sampleContactRequestChatInfo = ChatInfo.contactRequest(contactRequest: sampleContactRequest)
 
-class Chat: Decodable, Identifiable {
-    var chatInfo: ChatInfo
-    var chatItems: [ChatItem]
+final class Chat: ObservableObject, Identifiable {
+    @Published var chatInfo: ChatInfo
+    @Published var chatItems: [ChatItem]
 
-    init(chatInfo: ChatInfo, chatItems: [ChatItem]) {
+    init(_ cData: ChatData) {
+        self.chatInfo = cData.chatInfo
+        self.chatItems = cData.chatItems
+    }
+
+    init(chatInfo: ChatInfo, chatItems: [ChatItem] = []) {
         self.chatInfo = chatInfo
         self.chatItems = chatItems
     }
+
+    var id: String { get { chatInfo.id } }
+}
+
+struct ChatData: Decodable, Identifiable {
+    var chatInfo: ChatInfo
+    var chatItems: [ChatItem]
 
     var id: String { get { chatInfo.id } }
 }
@@ -137,7 +196,7 @@ struct Contact: Identifiable, Decodable {
     var viaGroup: Int64?
     
     var id: String { get { "@\(contactId)" } }
-
+    var apiId: Int64 { get { contactId } }
     var connected: Bool { get { activeConn.connStatus == "ready" || activeConn.connStatus == "snd-ready" } }
 }
 
@@ -160,6 +219,8 @@ struct UserContactRequest: Decodable {
     var profile: Profile
 
     var id: String { get { "<@\(contactRequestId)" } }
+
+    var apiId: Int64 { get { contactRequestId } }
 }
 
 let sampleContactRequest = UserContactRequest(
@@ -174,6 +235,8 @@ struct GroupInfo: Identifiable, Decodable {
     var groupProfile: GroupProfile
     
     var id: String { get { "#\(groupId)" } }
+
+    var apiId: Int64 { get { groupId } }
 }
 
 let sampleGroupInfo = GroupInfo(
