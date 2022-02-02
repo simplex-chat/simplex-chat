@@ -487,11 +487,8 @@ subscribeUserConnections = void . runExceptT $ do
         forM_ conns $ subscribeConnection a . aConnId
 
 processAgentMessage :: forall m. ChatMonad m => User -> ConnId -> ACommand 'Agent -> m ()
-processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
-  acEntity <- withStore $ \st -> getConnectionEntity st user agentConnId
-  forM_ (agentMsgConnStatus agentMessage) $ \status ->
-    withStore $ \st -> updateConnectionStatus st (fromConnection acEntity) status
-  case acEntity of
+processAgentMessage user@User {userId, profile} agentConnId agentMessage =
+  (withStore (\st -> getConnectionEntity st user agentConnId) >>= updateConnStatus) >>= \case
     RcvDirectMsgConnection conn contact_ ->
       processDirectMessage agentMessage conn contact_
     RcvGroupMsgConnection conn gInfo m ->
@@ -503,6 +500,14 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage = do
     UserContactConnection conn uc ->
       processUserContactRequest agentMessage conn uc
   where
+    updateConnStatus :: ConnectionEntity -> m ConnectionEntity
+    updateConnStatus acEntity = case agentMsgConnStatus agentMessage of
+      Just connStatus -> do
+        let conn = (entityConnection acEntity) {connStatus}
+        withStore $ \st -> updateConnectionStatus st conn connStatus
+        pure acEntity {entityConnection = conn}
+      Nothing -> pure acEntity
+
     isMember :: MemberId -> GroupInfo -> [GroupMember] -> Bool
     isMember memId GroupInfo {membership} members =
       sameMemberId memId membership || isJust (find (sameMemberId memId) members)

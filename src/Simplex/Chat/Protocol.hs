@@ -31,11 +31,11 @@ import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Util ((<$?>))
 
 data ConnectionEntity
-  = RcvDirectMsgConnection Connection (Maybe Contact)
-  | RcvGroupMsgConnection Connection GroupInfo GroupMember
-  | SndFileConnection Connection SndFileTransfer
-  | RcvFileConnection Connection RcvFileTransfer
-  | UserContactConnection Connection UserContact
+  = RcvDirectMsgConnection {entityConnection :: Connection, contact :: Maybe Contact}
+  | RcvGroupMsgConnection {entityConnection :: Connection, groupInfo :: GroupInfo, groupMember :: GroupMember}
+  | SndFileConnection {entityConnection :: Connection, sndFileTransfer :: SndFileTransfer}
+  | RcvFileConnection {entityConnection :: Connection, rcvFileTransfer :: RcvFileTransfer}
+  | UserContactConnection {entityConnection :: Connection, userContact :: UserContact}
   deriving (Eq, Show)
 
 fromConnection :: ConnectionEntity -> Connection
@@ -45,6 +45,14 @@ fromConnection = \case
   SndFileConnection conn _ -> conn
   RcvFileConnection conn _ -> conn
   UserContactConnection conn _ -> conn
+
+-- updateConnStatus :: ConnStatus -> ConnectionEntity -> ConnectionEntity
+-- updateConnStatus connStatus = \case
+--   RcvDirectMsgConnection conn _ -> conn
+--   RcvGroupMsgConnection conn _ _ -> conn
+--   SndFileConnection conn _ -> conn
+--   RcvFileConnection conn _ -> conn
+--   UserContactConnection conn _ -> conn
 
 -- chat message is sent as JSON with these properties
 data AppMessage = AppMessage
