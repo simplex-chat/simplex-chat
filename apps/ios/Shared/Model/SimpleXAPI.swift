@@ -69,8 +69,8 @@ struct APIResponse: Decodable {
 
 enum ChatResponse: Decodable, Error {
     case response(type: String, json: String)
-    case apiChats(chats: [Chat])
-    case apiChat(chat: Chat)
+    case apiChats(chats: [ChatData])
+    case apiChat(chat: ChatData)
     case invitation(connReqInvitation: String)
     case sentConfirmation
     case sentInvitation
@@ -210,13 +210,13 @@ func chatRecvMsg() throws -> ChatResponse {
 
 func apiGetChats() throws -> [Chat] {
     let r = try chatSendCmd(.apiGetChats)
-    if case let .apiChats(chats) = r { return chats }
+    if case let .apiChats(chats) = r { return chats.map { Chat.init($0) } }
     throw r
 }
 
 func apiGetChat(type: ChatType, id: Int64) throws -> Chat {
     let r = try chatSendCmd(.apiGetChat(type: type, id: id))
-    if case let .apiChat(chat) = r { return chat }
+    if case let .apiChat(chat) = r { return Chat.init(chat) }
     throw r
 }
 
@@ -296,27 +296,19 @@ func processReceivedMsg(_ chatModel: ChatModel, _ res: ChatResponse) {
         chatModel.terminalItems.append(.resp(Date.now, res))
         switch res {
         case let .contactConnected(contact):
-            if let chat = chatModel.chats[contact.id] {
-                chat.chatInfo = ChatInfo.direct(contact: contact)
+            let cInfo = ChatInfo.direct(contact: contact)
+            if chatModel.hasChat(contact.id) {
+                chatModel.updateChatInfo(cInfo)
             } else {
-                let chat = Chat(chatInfo: ChatInfo.direct(contact: contact), chatItems: [])
-                chatModel.chats[contact.id] = chat
-                chatModel.chatPreviews.insert(chat, at: 0)
+                chatModel.addChat(Chat(chatInfo: cInfo, chatItems: []))
             }
         case let .receivedContactRequest(contactRequest):
-            let chat = Chat(chatInfo: ChatInfo.contactRequest(contactRequest: contactRequest), chatItems: [])
-            chatModel.chats[contactRequest.id] = chat
-            chatModel.chatPreviews.insert(chat, at: 0)
+            chatModel.addChat(Chat(
+                chatInfo: ChatInfo.contactRequest(contactRequest: contactRequest),
+                chatItems: []
+            ))
         case let .newChatItem(aChatItem):
-            let ci = aChatItem.chatInfo
-            let chat = chatModel.chats[ci.id] ?? Chat(chatInfo: ci, chatItems: [])
-            chatModel.chats[ci.id] = chat
-            chat.chatItems.append(aChatItem.chatItem)
-            if let cp = chatModel.chatPreviews.first(where: { $0.id == ci.id } ) {
-                cp.chatItems = [aChatItem.chatItem]
-            } else {
-                chatModel.chatPreviews.insert(Chat(chatInfo: ci, chatItems: [aChatItem.chatItem]), at: 0)
-            }
+            chatModel.addChatItem(aChatItem.chatInfo, aChatItem.chatItem)
         default:
             print("unsupported response: ", res.responseType)
         }

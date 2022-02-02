@@ -10,7 +10,6 @@ import SwiftUI
 
 struct ChatListView: View {
     @EnvironmentObject var chatModel: ChatModel
-    @State private var chatId: String?
     @State private var connectAlert = false
     @State private var connectError: Error?
 
@@ -34,10 +33,9 @@ struct ChatListView: View {
                             Text("Terminal")
                         }
 
-                        ForEach(chatModel.chatPreviews) { chatPreview in
+                        ForEach(chatModel.chats) { chat in
                             ChatListNavLink(
-                                chatId: $chatId,
-                                chatPreview: chatPreview,
+                                chat: chat,
                                 width: geometry.size.width
                             )
                         }
@@ -95,7 +93,7 @@ struct ChatListView: View {
 struct ChatListView_Previews: PreviewProvider {
     static var previews: some View {
         let chatModel = ChatModel()
-        chatModel.chatPreviews = [
+        chatModel.chats = [
             Chat(
                 chatInfo: sampleDirectChatInfo,
                 chatItems: [chatItemSample(1, .directSnd, Date.now, "hello")]
