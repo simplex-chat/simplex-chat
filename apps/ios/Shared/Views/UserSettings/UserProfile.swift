@@ -17,9 +17,6 @@ struct UserProfile: View {
         let user: User = chatModel.currentUser!
 
         return VStack(alignment: .leading) {
-            Text("Your chat profile")
-                .font(.title)
-                .padding(.bottom)
             Text("Your profile is stored on your device and shared only with your contacts.\nSimpleX servers cannot see your profile.")
                 .padding(.bottom)
             if editProfile {
@@ -61,6 +58,7 @@ struct UserProfile: View {
             }
         }
         .padding()
+        .frame(maxHeight: .infinity, alignment: .top)
     }
 
     func saveProfile() {
