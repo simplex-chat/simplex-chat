@@ -358,17 +358,19 @@ processChatCommand user@User {userId, profile} = \case
   ShowVersion -> pure CRVersionInfo
   where
     procCmd :: m ChatResponse -> m ChatResponse
-    procCmd a = do
-      a
-    -- ! below code would make command responses asynchronous where they can be slow
-    -- ! in View.hs `r'` should be defined as `id` in this case
-    -- gVar <- asks idsDrg
-    -- corrId <- liftIO $ CorrId <$> randomBytes gVar 8
-    -- q <- asks outputQ
-    -- void . forkIO $ atomically . writeTBQueue q =<<
-    --   (Just corrId,) <$> (a `catchError` (pure . CRChatError))
-    -- pure $ CRCmdAccepted corrId
-    -- a corrId
+    procCmd action = do
+      -- below code would make command responses asynchronous where they can be slow
+      -- in View.hs `r'` should be defined as `id` in this case
+      ChatController {chatLock = l, smpAgent = a, outputQ = q, idsDrg = gVar} <- ask
+      corrId <- liftIO $ SMP.CorrId <$> randomBytes gVar 8
+      void . forkIO $
+        withAgentLock a . withLock l $
+          atomically . writeTBQueue q
+            =<< (Just corrId,) <$> (action `catchError` (pure . CRChatError))
+      pure $ CRCmdAccepted corrId
+    -- use function below to make commands "synchronous"
+    -- procCmd :: m ChatResponse -> m ChatResponse
+    -- procCmd action = action
     connect :: ConnectionRequestUri c -> ChatMsgEvent -> m ()
     connect cReq msg = do
       connId <- withAgent $ \a -> joinConnection a cReq $ directMessage msg
