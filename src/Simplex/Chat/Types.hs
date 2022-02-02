@@ -71,7 +71,8 @@ data Contact = Contact
     localDisplayName :: ContactName,
     profile :: Profile,
     activeConn :: Connection,
-    viaGroup :: Maybe Int64
+    viaGroup :: Maybe Int64,
+    createdAt :: UTCTime
   }
   deriving (Eq, Show, Generic, FromJSON)
 

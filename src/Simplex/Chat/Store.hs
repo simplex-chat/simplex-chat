@@ -390,20 +390,20 @@ updateContact_ db userId contactId displayName newName updatedAt = do
     (newName, updatedAt, userId, contactId)
   DB.execute db "DELETE FROM display_names WHERE local_display_name = ? AND user_id = ?" (displayName, userId)
 
-type ContactRow = (Int64, ContactName, Maybe Int64, ContactName, Text) :. ConnectionRow
+type ContactRow = (Int64, ContactName, Maybe Int64, ContactName, Text, UTCTime)
 
-toContact' :: ContactRow -> Contact
-toContact' ((contactId, localDisplayName, viaGroup, displayName, fullName) :. connRow) =
+toContact :: ContactRow :. ConnectionRow -> Contact
+toContact ((contactId, localDisplayName, viaGroup, displayName, fullName, createdAt) :. connRow) =
   let profile = Profile {displayName, fullName}
       activeConn = toConnection connRow
-   in Contact {contactId, localDisplayName, profile, activeConn, viaGroup}
+   in Contact {contactId, localDisplayName, profile, activeConn, viaGroup, createdAt}
 
-toContactOrError :: (Int64, ContactName, Maybe Int64, ContactName, Text) :. MaybeConnectionRow -> Either StoreError Contact
-toContactOrError ((contactId, localDisplayName, viaGroup, displayName, fullName) :. connRow) =
+toContactOrError :: ContactRow :. MaybeConnectionRow -> Either StoreError Contact
+toContactOrError ((contactId, localDisplayName, viaGroup, displayName, fullName, createdAt) :. connRow) =
   let profile = Profile {displayName, fullName}
    in case toMaybeConnection connRow of
         Just activeConn ->
-          Right Contact {contactId, localDisplayName, profile, activeConn, viaGroup}
+          Right Contact {contactId, localDisplayName, profile, activeConn, viaGroup, createdAt}
         _ -> Left $ SEContactNotReady localDisplayName
 
 -- TODO return the last connection that is ready, not any last connection
@@ -595,7 +595,7 @@ createAcceptedContact st userId agentConnId localDisplayName profileId profile =
       (userId, localDisplayName, profileId, currentTs, currentTs)
     contactId <- insertedRowId db
     activeConn <- createConnection_ db userId ConnContact (Just contactId) agentConnId Nothing 0 currentTs
-    pure $ Contact {contactId, localDisplayName, profile, activeConn, viaGroup = Nothing}
+    pure $ Contact {contactId, localDisplayName, profile, activeConn, viaGroup = Nothing, createdAt = currentTs}
 
 getLiveSndFileTransfers :: MonadUnliftIO m => SQLiteStore -> User -> m [SndFileTransfer]
 getLiveSndFileTransfers st User {userId} =
@@ -878,21 +878,21 @@ getConnectionEntity st User {userId, userContactId} agentConnId =
     connection _ = Left . SEConnectionNotFound $ AgentConnId agentConnId
     getContactRec_ :: DB.Connection -> Int64 -> Connection -> ExceptT StoreError IO Contact
     getContactRec_ db contactId c = ExceptT $ do
-      toContact contactId c
+      toContact' contactId c
         <$> DB.query
           db
           [sql|
-            SELECT c.local_display_name, p.display_name, p.full_name, c.via_group
+            SELECT c.local_display_name, p.display_name, p.full_name, c.via_group, c.created_at
             FROM contacts c
             JOIN contact_profiles p ON c.contact_profile_id = p.contact_profile_id
             WHERE c.user_id = ? AND c.contact_id = ?
           |]
           (userId, contactId)
-    toContact :: Int64 -> Connection -> [(ContactName, Text, Text, Maybe Int64)] -> Either StoreError Contact
-    toContact contactId activeConn [(localDisplayName, displayName, fullName, viaGroup)] =
+    toContact' :: Int64 -> Connection -> [(ContactName, Text, Text, Maybe Int64, UTCTime)] -> Either StoreError Contact
+    toContact' contactId activeConn [(localDisplayName, displayName, fullName, viaGroup, createdAt)] =
       let profile = Profile {displayName, fullName}
-       in Right $ Contact {contactId, localDisplayName, profile, activeConn, viaGroup}
-    toContact _ _ _ = Left $ SEInternal "referenced contact not found"
+       in Right $ Contact {contactId, localDisplayName, profile, activeConn, viaGroup, createdAt}
+    toContact' _ _ _ = Left $ SEInternal "referenced contact not found"
     getGroupAndMember_ :: DB.Connection -> Int64 -> Connection -> ExceptT StoreError IO (GroupInfo, GroupMember)
     getGroupAndMember_ db groupMemberId c = ExceptT $ do
       firstRow (toGroupAndMember c) (SEInternal "referenced group member not found") $
@@ -1503,12 +1503,12 @@ getViaGroupMember st User {userId, userContactId} Contact {contactId} =
 getViaGroupContact :: MonadUnliftIO m => SQLiteStore -> User -> GroupMember -> m (Maybe Contact)
 getViaGroupContact st User {userId} GroupMember {groupMemberId} =
   liftIO . withTransaction st $ \db ->
-    toContact
+    toContact'
       <$> DB.query
         db
         [sql|
           SELECT
-            ct.contact_id, ct.local_display_name, p.display_name, p.full_name, ct.via_group,
+            ct.contact_id, ct.local_display_name, p.display_name, p.full_name, ct.via_group, ct.created_at,
             c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact,
             c.conn_status, c.conn_type, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at
           FROM contacts ct
@@ -1524,12 +1524,12 @@ getViaGroupContact st User {userId} GroupMember {groupMemberId} =
         |]
         (userId, groupMemberId)
   where
-    toContact :: [(Int64, ContactName, Text, Text, Maybe Int64) :. ConnectionRow] -> Maybe Contact
-    toContact [(contactId, localDisplayName, displayName, fullName, viaGroup) :. connRow] =
+    toContact' :: [(Int64, ContactName, Text, Text, Maybe Int64, UTCTime) :. ConnectionRow] -> Maybe Contact
+    toContact' [(contactId, localDisplayName, displayName, fullName, viaGroup, createdAt) :. connRow] =
       let profile = Profile {displayName, fullName}
           activeConn = toConnection connRow
-       in Just Contact {contactId, localDisplayName, profile, activeConn, viaGroup}
-    toContact _ = Nothing
+       in Just Contact {contactId, localDisplayName, profile, activeConn, viaGroup, createdAt}
+    toContact' _ = Nothing
 
 createSndFileTransfer :: MonadUnliftIO m => SQLiteStore -> UserId -> Contact -> FilePath -> FileInvitation -> ConnId -> Integer -> m SndFileTransfer
 createSndFileTransfer st userId Contact {contactId, localDisplayName = recipientDisplayName} filePath FileInvitation {fileName, fileSize} acId chunkSize =
@@ -2036,7 +2036,7 @@ getDirectChatPreviews_ db User {userId} = do
       [sql|
         SELECT
           -- Contact
-          ct.contact_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name,
+          ct.contact_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, ct.created_at,
           -- Connection
           c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.conn_status, c.conn_type,
           c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at,
@@ -2065,9 +2065,9 @@ getDirectChatPreviews_ db User {userId} = do
       |]
       (userId, ConnReady, ConnSndReady)
   where
-    toDirectChatPreview :: TimeZone -> ContactRow :. MaybeChatItemRow -> AChat
-    toDirectChatPreview tz (contactRow :. ciRow_) =
-      let contact = toContact' contactRow
+    toDirectChatPreview :: TimeZone -> ContactRow :. ConnectionRow :. MaybeChatItemRow -> AChat
+    toDirectChatPreview tz (contactRow :. connRow :. ciRow_) =
+      let contact = toContact $ contactRow :. connRow
           ci_ = toDirectChatItemList tz ciRow_
        in AChat SCTDirect $ Chat (DirectChat contact) ci_
 
@@ -2232,7 +2232,7 @@ getContact_ db userId contactId =
           [sql|
             SELECT
               -- Contact
-              ct.contact_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name,
+              ct.contact_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, ct.created_at,
               -- Connection
               c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.conn_status, c.conn_type,
               c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at
