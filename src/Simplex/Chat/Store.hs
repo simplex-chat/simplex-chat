@@ -547,7 +547,7 @@ getContactRequest_ db userId contactRequestId =
       [sql|
         SELECT
           cr.contact_request_id, cr.local_display_name, cr.agent_invitation_id, cr.user_contact_link_id,
-          c.agent_conn_id, cr.contact_profile_id, p.display_name, p.full_name
+          c.agent_conn_id, cr.contact_profile_id, p.display_name, p.full_name, cr.created_at
         FROM contact_requests cr
         JOIN connections c USING (user_contact_link_id)
         JOIN contact_profiles p USING (contact_profile_id)
@@ -556,12 +556,12 @@ getContactRequest_ db userId contactRequestId =
       |]
       (userId, contactRequestId)
 
-type ContactRequestRow = (Int64, ContactName, AgentInvId, Int64, AgentConnId, Int64, ContactName, Text)
+type ContactRequestRow = (Int64, ContactName, AgentInvId, Int64, AgentConnId, Int64, ContactName, Text, UTCTime)
 
 toContactRequest :: ContactRequestRow -> UserContactRequest
-toContactRequest (contactRequestId, localDisplayName, agentInvitationId, userContactLinkId, agentContactConnId, profileId, displayName, fullName) = do
+toContactRequest (contactRequestId, localDisplayName, agentInvitationId, userContactLinkId, agentContactConnId, profileId, displayName, fullName, createdAt) = do
   let profile = Profile {displayName, fullName}
-   in UserContactRequest {contactRequestId, agentInvitationId, userContactLinkId, agentContactConnId, localDisplayName, profileId, profile}
+   in UserContactRequest {contactRequestId, agentInvitationId, userContactLinkId, agentContactConnId, localDisplayName, profileId, profile, createdAt}
 
 getContactRequestIdByName :: StoreMonad m => SQLiteStore -> UserId -> ContactName -> m Int64
 getContactRequestIdByName st userId cName =
@@ -901,9 +901,7 @@ getConnectionEntity st User {userId, userContactId} agentConnId =
           [sql|
             SELECT
               -- GroupInfo
-              g.group_id, g.local_display_name,
-              -- GroupInfo {groupProfile}
-              gp.display_name, gp.full_name,
+              g.group_id, g.local_display_name, gp.display_name, gp.full_name, g.created_at,
               -- GroupInfo {membership}
               mu.group_member_id, mu.group_id, mu.member_id, mu.member_role, mu.member_category,
               mu.member_status, mu.invited_by, mu.local_display_name, mu.contact_id,
@@ -992,7 +990,7 @@ createNewGroup st gVar user groupProfile =
     groupId <- insertedRowId db
     memberId <- randomBytes gVar 12
     membership <- createContactMember_ db user groupId user (MemberIdRole (MemberId memberId) GROwner) GCUserMember GSMemCreator IBUser currentTs
-    pure $ Right GroupInfo {groupId, localDisplayName = displayName, groupProfile, membership}
+    pure $ Right GroupInfo {groupId, localDisplayName = displayName, groupProfile, membership, createdAt = currentTs}
 
 -- | creates a new group record for the group the current user was invited to, or returns an existing one
 createGroupInvitation ::
@@ -1025,7 +1023,7 @@ createGroupInvitation st user@User {userId} contact@Contact {contactId} GroupInv
         groupId <- insertedRowId db
         _ <- createContactMember_ db user groupId contact fromMember GCHostMember GSMemInvited IBUnknown currentTs
         membership <- createContactMember_ db user groupId user invitedMember GCUserMember GSMemInvited (IBContact contactId) currentTs
-        pure $ GroupInfo {groupId, localDisplayName, groupProfile, membership}
+        pure $ GroupInfo {groupId, localDisplayName, groupProfile, membership, createdAt = currentTs}
 
 -- TODO return the last connection that is ready, not any last connection
 -- requires updating connection status
@@ -1067,7 +1065,7 @@ getUserGroupDetails st User {userId, userContactId} =
       <$> DB.query
         db
         [sql|
-          SELECT g.group_id, g.local_display_name, gp.display_name, gp.full_name,
+          SELECT g.group_id, g.local_display_name, gp.display_name, gp.full_name, g.created_at,
             m.group_member_id, g.group_id, m.member_id, m.member_role, m.member_category, m.member_status,
             m.invited_by, m.local_display_name, m.contact_id, mp.display_name, mp.full_name
           FROM groups g
@@ -1084,12 +1082,12 @@ getGroupInfoByName st user gName =
     gId <- ExceptT $ getGroupIdByName_ db user gName
     ExceptT $ getGroupInfo_ db user gId
 
-type GroupInfoRow = (Int64, GroupName, GroupName, Text) :. GroupMemberRow
+type GroupInfoRow = (Int64, GroupName, GroupName, Text, UTCTime) :. GroupMemberRow
 
 toGroupInfo :: Int64 -> GroupInfoRow -> GroupInfo
-toGroupInfo userContactId ((groupId, localDisplayName, displayName, fullName) :. userMemberRow) =
+toGroupInfo userContactId ((groupId, localDisplayName, displayName, fullName, createdAt) :. userMemberRow) =
   let membership = toGroupMember userContactId userMemberRow
-   in GroupInfo {groupId, localDisplayName, groupProfile = GroupProfile {displayName, fullName}, membership}
+   in GroupInfo {groupId, localDisplayName, groupProfile = GroupProfile {displayName, fullName}, membership, createdAt}
 
 getGroupMembers :: MonadUnliftIO m => SQLiteStore -> User -> GroupInfo -> m [GroupMember]
 getGroupMembers st user gInfo = liftIO . withTransaction st $ \db -> getGroupMembers_ db user gInfo
@@ -1464,9 +1462,7 @@ getViaGroupMember st User {userId, userContactId} Contact {contactId} =
         [sql|
           SELECT
             -- GroupInfo
-            g.group_id, g.local_display_name,
-            -- GroupInfo {groupProfile}
-            gp.display_name, gp.full_name,
+            g.group_id, g.local_display_name, gp.display_name, gp.full_name, g.created_at,
             -- GroupInfo {membership}
             mu.group_member_id, mu.group_id, mu.member_id, mu.member_role, mu.member_category,
             mu.member_status, mu.invited_by, mu.local_display_name, mu.contact_id,
@@ -2080,7 +2076,7 @@ getGroupChatPreviews_ db User {userId, userContactId} = do
       [sql|
         SELECT
           -- GroupInfo
-          g.group_id, g.local_display_name, gp.display_name, gp.full_name,
+          g.group_id, g.local_display_name, gp.display_name, gp.full_name, g.created_at,
           -- GroupMember - membership
           mu.group_member_id, mu.group_id, mu.member_id, mu.member_role, mu.member_category,
           mu.member_status, mu.invited_by, mu.local_display_name, mu.contact_id,
@@ -2124,7 +2120,7 @@ getContactRequestChatPreviews_ db User {userId} =
       [sql|
         SELECT
           cr.contact_request_id, cr.local_display_name, cr.agent_invitation_id, cr.user_contact_link_id,
-          c.agent_conn_id, cr.contact_profile_id, p.display_name, p.full_name
+          c.agent_conn_id, cr.contact_profile_id, p.display_name, p.full_name, cr.created_at
         FROM contact_requests cr
         JOIN connections c USING (user_contact_link_id)
         JOIN contact_profiles p USING (contact_profile_id)
@@ -2354,7 +2350,7 @@ getGroupInfo_ db User {userId, userContactId} groupId =
       [sql|
         SELECT
           -- GroupInfo
-          g.group_id, g.local_display_name, gp.display_name, gp.full_name,
+          g.group_id, g.local_display_name, gp.display_name, gp.full_name, g.created_at,
           -- GroupMember - membership
           mu.group_member_id, mu.group_id, mu.member_id, mu.member_role, mu.member_category,
           mu.member_status, mu.invited_by, mu.local_display_name, mu.contact_id,

@@ -99,7 +99,8 @@ data UserContactRequest = UserContactRequest
     agentContactConnId :: AgentConnId, -- connection id of user contact
     localDisplayName :: ContactName,
     profileId :: Int64,
-    profile :: Profile
+    profile :: Profile,
+    createdAt :: UTCTime
   }
   deriving (Eq, Show, Generic, FromJSON)
 
@@ -119,7 +120,8 @@ data GroupInfo = GroupInfo
   { groupId :: Int64,
     localDisplayName :: GroupName,
     groupProfile :: GroupProfile,
-    membership :: GroupMember
+    membership :: GroupMember,
+    createdAt :: UTCTime
   }
   deriving (Eq, Show, Generic, FromJSON)
 
