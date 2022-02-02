@@ -15,10 +15,10 @@ module Simplex.Chat.Protocol where
 import Control.Monad ((<=<))
 import Data.Aeson (FromJSON, ToJSON, (.:), (.:?), (.=))
 import qualified Data.Aeson as J
+import qualified Data.Aeson.KeyMap as JM
 import qualified Data.Aeson.Types as JT
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.ByteString.Lazy.Char8 as LB
-import qualified Data.Aeson.KeyMap as JM
 import Data.Text (Text)
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
 import Database.SQLite.Simple.FromField (FromField (..))
@@ -37,22 +37,6 @@ data ConnectionEntity
   | RcvFileConnection {entityConnection :: Connection, rcvFileTransfer :: RcvFileTransfer}
   | UserContactConnection {entityConnection :: Connection, userContact :: UserContact}
   deriving (Eq, Show)
-
-fromConnection :: ConnectionEntity -> Connection
-fromConnection = \case
-  RcvDirectMsgConnection conn _ -> conn
-  RcvGroupMsgConnection conn _ _ -> conn
-  SndFileConnection conn _ -> conn
-  RcvFileConnection conn _ -> conn
-  UserContactConnection conn _ -> conn
-
--- updateConnStatus :: ConnStatus -> ConnectionEntity -> ConnectionEntity
--- updateConnStatus connStatus = \case
---   RcvDirectMsgConnection conn _ -> conn
---   RcvGroupMsgConnection conn _ _ -> conn
---   SndFileConnection conn _ -> conn
---   RcvFileConnection conn _ -> conn
---   UserContactConnection conn _ -> conn
 
 -- chat message is sent as JSON with these properties
 data AppMessage = AppMessage
