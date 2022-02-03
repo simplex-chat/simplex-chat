@@ -9,7 +9,7 @@ import SwiftUI
 
 struct ContentView: View {
     @EnvironmentObject var chatModel: ChatModel
-    
+
     var body: some View {
         if let user = chatModel.currentUser {
             ChatListView(user: user)

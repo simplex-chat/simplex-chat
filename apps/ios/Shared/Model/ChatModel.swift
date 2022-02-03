@@ -56,12 +56,17 @@ final class ChatModel: ObservableObject {
         if let ix = chats.firstIndex(where: { $0.id == cInfo.id }) {
             chats[ix].chatItems = [cItem]
             if chatId != cInfo.id {
-                let chat = chats.remove(at: ix)
-                chats.insert(chat, at: 0)
+                withAnimation {
+                    let chat = chats.remove(at: ix)
+                    chats.insert(chat, at: 0)
+                }
+                if chatId != nil {
+                    // meesage arrived to some other chat
+                }
             }
         }
         if chatId == cInfo.id {
-            chatItems.append(cItem)
+            withAnimation { chatItems.append(cItem) }
         }
     }
 
@@ -326,8 +331,8 @@ enum CIContent: Decodable {
     var text: String {
         get {
             switch self {
-            case let .sndMsgContent(mc): return mc.string
-            case let .rcvMsgContent(mc): return mc.string
+            case let .sndMsgContent(mc): return mc.text
+            case let .rcvMsgContent(mc): return mc.text
             }
         }
     }
@@ -338,7 +343,7 @@ enum MsgContent {
     case unknown(type: String, text: String)
     case invalid(error: String)
 
-    var string: String {
+    var text: String {
         get {
             switch self {
             case let .text(text): return text

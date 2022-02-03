@@ -263,15 +263,15 @@
 		5CA059C2279559F40002BEB4 /* Shared */ = {
 			isa = PBXGroup;
 			children = (
-				5C764E87279CBC8E000C6508 /* Model */,
 				5CA059C3279559F40002BEB4 /* SimpleXApp.swift */,
-				5C2E260927A2C63500F70299 /* MyPlayground.playground */,
-				5C764E7F279C7276000C6508 /* dummy.m */,
 				5CA059C4279559F40002BEB4 /* ContentView.swift */,
+				5C764E87279CBC8E000C6508 /* Model */,
 				5C2E260D27A30E2400F70299 /* Views */,
 				5CA059C5279559F40002BEB4 /* Assets.xcassets */,
 				5C764E7D279C7275000C6508 /* SimpleX (iOS)-Bridging-Header.h */,
 				5C764E7E279C7275000C6508 /* SimpleX (macOS)-Bridging-Header.h */,
+				5C764E7F279C7276000C6508 /* dummy.m */,
+				5C2E260927A2C63500F70299 /* MyPlayground.playground */,
 			);
 			path = Shared;
 			sourceTree = "<group>";

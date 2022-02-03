@@ -12,8 +12,44 @@ struct SettingsView: View {
     @EnvironmentObject var chatModel: ChatModel
 
     var body: some View {
-        UserProfile()
-        UserAddress()
+        let user: User = chatModel.currentUser!
+
+        return NavigationView {
+            List {
+                Section("You") {
+                    NavigationLink {
+                        UserProfile()
+                            .navigationTitle("Your chat profile")
+                    } label: {
+                        HStack {
+                            Image(systemName: "person.crop.circle")
+                                .padding(.trailing, 8)
+                            VStack(alignment: .leading) {
+                                Text(user.profile.displayName)
+                                    .fontWeight(.bold)
+                                    .font(.title2)
+                                Text(user.profile.fullName)
+                            }
+                        }
+                    }
+                    NavigationLink {
+                        UserAddress()
+                            .navigationTitle("Your chat address")
+                    } label: {
+                        HStack {
+                            Image(systemName: "qrcode")
+                                .padding(.trailing, 8)
+                            Text("Your SimpleX contact address")
+                        }
+                    }
+                }
+
+//                Section("Your SimpleX servers") {
+//
+//                }
+            }
+            .navigationTitle("Settings")
+        }
     }
 }
 
