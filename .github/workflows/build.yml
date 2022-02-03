@@ -32,6 +32,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           body: ${{ steps.build_changelog.outputs.changelog }}
+          prerelease: true
           files: |
             LICENSE
           fail_on_unmatched_files: true
