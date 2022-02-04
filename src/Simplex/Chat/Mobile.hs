@@ -40,18 +40,18 @@ foreign export ccall "chat_recv_msg" cChatRecvMsg :: StablePtr ChatController ->
 
 -- | creates or connects to chat store
 cChatInitStore :: CString -> IO (StablePtr ChatStore)
-cChatInitStore fp = peekCString fp >>= chatInitStore >>= newStablePtr
+cChatInitStore fp = peekCAString fp >>= chatInitStore >>= newStablePtr
 
 -- | returns JSON in the form `{"user": <user object>}` or `{}` in case there is no active user (to show dialog to enter displayName/fullName)
 cChatGetUser :: StablePtr ChatStore -> IO CJSONString
-cChatGetUser cc = deRefStablePtr cc >>= chatGetUser >>= newCString
+cChatGetUser cc = deRefStablePtr cc >>= chatGetUser >>= newCAString
 
 -- | accepts Profile JSON, returns JSON `{"user": <user object>}` or `{"error": "<error>"}`
 cChatCreateUser :: StablePtr ChatStore -> CJSONString -> IO CJSONString
 cChatCreateUser cPtr profileCJson = do
   c <- deRefStablePtr cPtr
-  p <- peekCString profileCJson
-  newCString =<< chatCreateUser c p
+  p <- peekCAString profileCJson
+  newCAString =<< chatCreateUser c p
 
 -- | this function starts chat - it cannot be started during initialization right now, as it cannot work without user (to be fixed later)
 cChatStart :: StablePtr ChatStore -> IO (StablePtr ChatController)
@@ -61,12 +61,12 @@ cChatStart st = deRefStablePtr st >>= chatStart >>= newStablePtr
 cChatSendCmd :: StablePtr ChatController -> CString -> IO CJSONString
 cChatSendCmd cPtr cCmd = do
   c <- deRefStablePtr cPtr
-  cmd <- peekCString cCmd
-  newCString =<< chatSendCmd c cmd
+  cmd <- peekCAString cCmd
+  newCAString =<< chatSendCmd c cmd
 
 -- | receive message from chat (blocking)
 cChatRecvMsg :: StablePtr ChatController -> IO CJSONString
-cChatRecvMsg cc = deRefStablePtr cc >>= chatRecvMsg >>= newCString
+cChatRecvMsg cc = deRefStablePtr cc >>= chatRecvMsg >>= newCAString
 
 mobileChatOpts :: ChatOpts
 mobileChatOpts =
