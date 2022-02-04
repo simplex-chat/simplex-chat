@@ -34,6 +34,45 @@ Order of communication to establish message notifications goes as follows:
 6. SimpleX Notification Server sends `s.ok` (`s.resp.ok`?) message to SimpleX Chat client signaling it has subscribed to notifications.
 7. SimpleX Notification Server sends push notifications to SimpleX Chat client on new NMSG notifications from SMP server via provided push notification token.
 
-## Schema migration
-
 ## Implementation plan
+
+https://github.com/simplex-chat/simplexmq/pull/314
+
+Make agent work with postgres:
+- fix issue with writing binary data
+- make all tests pass with postgres
+- revise instances, error handling, transaction settings
+- class abstracting `execute`, `query`, `Only`, error handling, probably more
+- separate migration logic
+  - Q duplicate? (as now)
+  - Q or reuse store methods + store method for `exec`
+- parameterize agent to run either on sqlite or postgres
+- \* move postgres instances to separate package to avoid compiling for mobile app
+- make tests run for both sqlite and postgres
+
+Protocol design:
+- service protocol
+- notifications sub-protocol
+
+Push notifications:
+- investigate sending push notifications to ios, (*) android
+- notification server code running with postgres agent
+  - communication with smp servers
+  - communication with clients
+  - notification specific store
+    - Q same database? same server different database?
+    - Q how to reuse database code? notification specific methods? -> should be unavailable to sqlite agent
+  - Q other areas?
+- notification server deployed
+  - Q deployed where and how (probably a script similar to linode using systemd)
+    - \* should be built on github to be downloaded as binary, can be shortcutted
+  - Q spinning up postgres - postgres server, db, settings (password?)
+  - Q transport - will self signed certificates work for push notifications? or will CA signed certificates be required?
+- notifications at client
+  - client to request notifications from notification server, (*) parameterized
+  - store
+  - client to wake up and selectively subscribe to smp server, then notify
+  - api for wake up, api for response
+    - Q will separarate c binding be needed?
+  - logic in swift, (*) kotlin
+- test & fix
