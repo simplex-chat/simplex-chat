@@ -118,8 +118,8 @@ responseToView cmd = \case
     api = (highlight cmd :)
     r = (plain cmd :)
     -- this function should be `r` for "synchronous", `id` for "asynchronous" command responses
-    -- r' = r
-    r' = id
+    -- r' = id
+    r' = r
 
 viewChatItem :: ChatInfo c -> ChatItem c d -> [StyledString]
 viewChatItem chat (ChatItem cd meta content) = case (chat, cd) of
