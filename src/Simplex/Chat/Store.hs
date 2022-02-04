@@ -2146,7 +2146,7 @@ getDirectChatLast_ :: DB.Connection -> User -> Int64 -> Int -> ExceptT StoreErro
 getDirectChatLast_ db User {userId} contactId count = do
   contact <- ExceptT $ getContact_ db userId contactId
   chatItems <- liftIO getDirectChatItemsLast_
-  pure $ Chat (DirectChat contact) (sortOn chatItemTs chatItems)
+  pure $ Chat (DirectChat contact) (sortOn cchatItemId chatItems)
   where
     getDirectChatItemsLast_ :: IO [CChatItem 'CTDirect]
     getDirectChatItemsLast_ = do
@@ -2162,6 +2162,9 @@ getDirectChatLast_ db User {userId} contactId count = do
             LIMIT ?
           |]
           (userId, contactId, count)
+
+cchatItemId :: CChatItem d -> ChatItemId
+cchatItemId (CChatItem _ chatItem) = chatItemId chatItem
 
 getDirectChatAfter_ :: DB.Connection -> User -> Int64 -> ChatItemId -> Int -> ExceptT StoreError IO (Chat 'CTDirect)
 getDirectChatAfter_ db User {userId} contactId afterChatItemId count = do
@@ -2188,7 +2191,7 @@ getDirectChatBefore_ :: DB.Connection -> User -> Int64 -> ChatItemId -> Int -> E
 getDirectChatBefore_ db User {userId} contactId beforeChatItemId count = do
   contact <- ExceptT $ getContact_ db userId contactId
   chatItems <- liftIO getDirectChatItemsBefore_
-  pure $ Chat (DirectChat contact) (sortOn chatItemTs chatItems)
+  pure $ Chat (DirectChat contact) (sortOn cchatItemId chatItems)
   where
     getDirectChatItemsBefore_ :: IO [CChatItem 'CTDirect]
     getDirectChatItemsBefore_ = do
@@ -2255,7 +2258,7 @@ getGroupChatLast_ :: DB.Connection -> User -> Int64 -> Int -> ExceptT StoreError
 getGroupChatLast_ db user@User {userId, userContactId} groupId count = do
   groupInfo <- ExceptT $ getGroupInfo_ db user groupId
   chatItems <- ExceptT getGroupChatItemsLast_
-  pure $ Chat (GroupChat groupInfo) (sortOn chatItemTs chatItems)
+  pure $ Chat (GroupChat groupInfo) (sortOn cchatItemId chatItems)
   where
     getGroupChatItemsLast_ :: IO (Either StoreError [CChatItem 'CTGroup])
     getGroupChatItemsLast_ = do
@@ -2313,7 +2316,7 @@ getGroupChatBefore_ :: DB.Connection -> User -> Int64 -> ChatItemId -> Int -> Ex
 getGroupChatBefore_ db user@User {userId, userContactId} groupId beforeChatItemId count = do
   groupInfo <- ExceptT $ getGroupInfo_ db user groupId
   chatItems <- ExceptT getGroupChatItemsBefore_
-  pure $ Chat (GroupChat groupInfo) (sortOn chatItemTs chatItems)
+  pure $ Chat (GroupChat groupInfo) (sortOn cchatItemId chatItems)
   where
     getGroupChatItemsBefore_ :: IO (Either StoreError [CChatItem 'CTGroup])
     getGroupChatItemsBefore_ = do
