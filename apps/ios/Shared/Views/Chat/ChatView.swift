@@ -15,14 +15,16 @@ struct ChatView: View {
 
     var body: some View {
         VStack {
-            ScrollViewReader { proxy in
-                ScrollView {
-                    VStack(spacing: 5)  {
-                        ForEach(chatModel.chatItems, id: \.id) {
-                            ChatItemView(chatItem: $0)
+            GeometryReader { g in
+                ScrollViewReader { proxy in
+                    ScrollView {
+                        VStack(spacing: 5)  {
+                            ForEach(chatModel.chatItems, id: \.id) {
+                                ChatItemView(chatItem: $0, width: g.size.width)
+                            }
+                            .onAppear { scrollToBottom(proxy) }
+                            .onChange(of: chatModel.chatItems.count) { _ in scrollToBottom(proxy) }
                         }
-                        .onAppear { scrollToBottom(proxy) }
-                        .onChange(of: chatModel.chatItems.count) { _ in scrollToBottom(proxy) }
                     }
                 }
             }
@@ -31,7 +33,7 @@ struct ChatView: View {
 
             SendMessageView(sendMessage: sendMessage, inProgress: inProgress)
         }
-        .navigationTitle(chatInfo.localDisplayName)
+        .navigationTitle(chatInfo.chatViewName)
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
                 Button { chatModel.chatId = nil } label: {
@@ -68,13 +70,13 @@ struct ChatView_Previews: PreviewProvider {
         let chatModel = ChatModel()
         chatModel.chatId = "@1"
         chatModel.chatItems = [
-            chatItemSample(1, .directSnd, Date.now, "hello"),
-            chatItemSample(2, .directRcv, Date.now, "hi"),
-            chatItemSample(3, .directRcv, Date.now, "hi there"),
-            chatItemSample(4, .directRcv, Date.now, "hello again"),
-            chatItemSample(5, .directSnd, Date.now, "hi there!!!"),
-            chatItemSample(6, .directSnd, Date.now, "how are you?"),
-            chatItemSample(7, .directSnd, Date.now, "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.")
+            chatItemSample(1, .directSnd, .now, "hello"),
+            chatItemSample(2, .directRcv, .now, "hi"),
+            chatItemSample(3, .directRcv, .now, "hi there"),
+            chatItemSample(4, .directRcv, .now, "hello again"),
+            chatItemSample(5, .directSnd, .now, "hi there!!!"),
+            chatItemSample(6, .directSnd, .now, "how are you?"),
+            chatItemSample(7, .directSnd, .now, "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.")
         ]
         return ChatView(chatInfo: sampleDirectChatInfo)
             .environmentObject(chatModel)

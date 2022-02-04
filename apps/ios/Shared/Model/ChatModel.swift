@@ -126,11 +126,25 @@ enum ChatInfo: Identifiable, Decodable {
     var localDisplayName: String {
         get {
             switch self {
-            case let .direct(contact): return "@\(contact.localDisplayName)"
-            case let .group(groupInfo): return "#\(groupInfo.localDisplayName)"
-            case let .contactRequest(contactRequest): return "< @\(contactRequest.localDisplayName)"
+            case let .direct(contact): return contact.localDisplayName
+            case let .group(groupInfo): return groupInfo.localDisplayName
+            case let .contactRequest(contactRequest): return contactRequest.localDisplayName
             }
         }
+    }
+
+    var fullName: String {
+        get {
+            switch self {
+            case let .direct(contact): return contact.profile.fullName
+            case let .group(groupInfo): return groupInfo.groupProfile.fullName
+            case let .contactRequest(contactRequest): return contactRequest.profile.fullName
+            }
+        }
+    }
+
+    var chatViewName: String {
+        get { localDisplayName + (fullName == "" || fullName == localDisplayName ? "" : " / \(fullName)") }
     }
     
     var id: String {
@@ -160,6 +174,14 @@ enum ChatInfo: Identifiable, Decodable {
             case let .group(groupInfo): return groupInfo.apiId
             case let .contactRequest(contactRequest): return contactRequest.apiId
             }
+        }
+    }
+
+    var createdAt: Date {
+        switch self {
+        case let .direct(contact): return contact.createdAt
+        case let .group(groupInfo): return groupInfo.createdAt
+        case let .contactRequest(contactRequest): return contactRequest.createdAt
         }
     }
 }
@@ -200,6 +222,7 @@ struct Contact: Identifiable, Decodable {
     var profile: Profile
     var activeConn: Connection
     var viaGroup: Int64?
+    var createdAt: Date
     
     var id: String { get { "@\(contactId)" } }
     var apiId: Int64 { get { contactId } }
@@ -210,7 +233,8 @@ let sampleContact = Contact(
     contactId: 1,
     localDisplayName: "alice",
     profile: sampleProfile,
-    activeConn: sampleConnection
+    activeConn: sampleConnection,
+    createdAt: .now
 )
 
 struct Connection: Decodable {
@@ -223,6 +247,7 @@ struct UserContactRequest: Decodable {
     var contactRequestId: Int64
     var localDisplayName: ContactName
     var profile: Profile
+    var createdAt: Date
 
     var id: String { get { "<@\(contactRequestId)" } }
 
@@ -232,13 +257,15 @@ struct UserContactRequest: Decodable {
 let sampleContactRequest = UserContactRequest(
     contactRequestId: 1,
     localDisplayName: "alice",
-    profile: sampleProfile
+    profile: sampleProfile,
+    createdAt: .now
 )
 
 struct GroupInfo: Identifiable, Decodable {
     var groupId: Int64
     var localDisplayName: GroupName
     var groupProfile: GroupProfile
+    var createdAt: Date
     
     var id: String { get { "#\(groupId)" } }
 
@@ -248,7 +275,8 @@ struct GroupInfo: Identifiable, Decodable {
 let sampleGroupInfo = GroupInfo(
     groupId: 1,
     localDisplayName: "team",
-    groupProfile: sampleGroupProfile
+    groupProfile: sampleGroupProfile,
+    createdAt: .now
 )
 
 struct GroupProfile: Codable {

@@ -14,7 +14,7 @@ struct ContactRequestView: View {
     var body: some View {
         return VStack(alignment: .leading, spacing: 4) {
             HStack(alignment: .top) {
-                Text("@\(contactRequest.localDisplayName)")
+                Text(ChatInfo.contactRequest(contactRequest: contactRequest).chatViewName)
                     .font(.title3)
                     .fontWeight(.bold)
                     .foregroundColor(.blue)
@@ -22,7 +22,7 @@ struct ContactRequestView: View {
                     .padding(.top, 4)
                     .frame(maxHeight: .infinity, alignment: .topLeading)
                 Spacer()
-                Text("12:34")// getDateFormatter().string(from: cItem.meta.itemTs))
+                Text(getDateFormatter().string(from: contactRequest.createdAt))
                     .font(.subheadline)
                     .padding(.trailing, 28)
                     .padding(.top, 4)
