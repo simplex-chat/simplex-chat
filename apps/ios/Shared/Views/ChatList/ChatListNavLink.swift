@@ -176,11 +176,11 @@ struct ChatListNavLink_Previews: PreviewProvider {
         return Group {
             ChatListNavLink(chat: Chat(
                 chatInfo: sampleDirectChatInfo,
-                chatItems: [chatItemSample(1, .directSnd, Date.now, "hello")]
+                chatItems: [chatItemSample(1, .directSnd, .now, "hello")]
             ))
             ChatListNavLink(chat: Chat(
                 chatInfo: sampleDirectChatInfo,
-                chatItems: [chatItemSample(1, .directSnd, Date.now, "hello")]
+                chatItems: [chatItemSample(1, .directSnd, .now, "hello")]
             ))
             ChatListNavLink(chat: Chat(
                 chatInfo: sampleContactRequestChatInfo,

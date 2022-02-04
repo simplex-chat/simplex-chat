@@ -13,38 +13,46 @@ struct ChatPreviewView: View {
 
     var body: some View {
         let cItem = chat.chatItems.last
-        return VStack(spacing: 4) {
-            HStack(alignment: .top) {
-                Text(chat.chatInfo.localDisplayName)
-                    .font(.title3)
-                    .fontWeight(.bold)
-                    .padding(.leading, 8)
-                    .padding(.top, 4)
-                    .frame(maxHeight: .infinity, alignment: .topLeading)
-                Spacer()
-                if let cItem = cItem {
-                    Text(getDateFormatter().string(from: cItem.meta.itemTs))
+        var iconName: String
+        switch chat.chatInfo {
+        case .direct: iconName = "person.crop.circle.fill"
+        case .group: iconName = "person.2.circle.fill"
+        default: iconName = "circle.fill"
+        }
+        return HStack(spacing: 8) {
+            Image(systemName: iconName)
+                .resizable()
+                .foregroundColor(Color(uiColor: .secondarySystemBackground))
+                .frame(width: 63, height: 63)
+                .padding(.leading, 4)
+            VStack(spacing: 0) {
+                HStack(alignment: .top) {
+                    Text(chat.chatInfo.chatViewName)
+                        .font(.title3)
+                        .fontWeight(.bold)
+                        .frame(maxHeight: .infinity, alignment: .topLeading)
+                    Spacer()
+                    Text(getDateFormatter().string(from: cItem?.meta.itemTs ?? chat.chatInfo.createdAt))
                         .font(.subheadline)
-                        .padding(.trailing, 8)
-                        .padding(.top, 4)
                         .frame(minWidth: 60, alignment: .trailing)
                         .foregroundColor(.secondary)
                 }
+                .padding(.top, 4)
+                .padding(.horizontal, 8)
+
+                if let cItem = cItem {
+                    Text(cItem.content.text)
+                        .frame(minWidth: 0, maxWidth: .infinity, minHeight: 44, maxHeight: 44, alignment: .topLeading)
+                        .padding([.leading, .trailing], 8)
+                        .padding(.bottom, 4)
+                }
+                else if case let .direct(contact) = chat.chatInfo, !contact.connected {
+                    Text("Connecting...")
+                        .frame(minWidth: 0, maxWidth: .infinity, minHeight: 44, maxHeight: 44, alignment: .topLeading)
+                        .padding([.leading, .trailing], 8)
+                        .padding(.bottom, 4)
+                }
             }
-            if let cItem = cItem {
-                Text(cItem.content.text)
-                    .frame(minWidth: 0, maxWidth: .infinity, minHeight: 44, maxHeight: 44, alignment: .topLeading)
-                    .padding([.leading, .trailing], 8)
-                    .padding(.bottom, 4)
-                    .padding(.top, 1)
-            }
-//            else if case let .direct(contact) = chatPreview.chatInfo, !contact.connected {
-//                Text("Connecting...")
-//                    .frame(minWidth: 0, maxWidth: .infinity, minHeight: 44, maxHeight: 44, alignment: .topLeading)
-//                    .padding([.leading, .trailing], 8)
-//                    .padding(.bottom, 4)
-//                    .padding(.top, 1)
-//            }
         }
     }
 }
@@ -58,13 +66,13 @@ struct ChatPreviewView_Previews: PreviewProvider {
             ))
             ChatPreviewView(chat: Chat(
                 chatInfo: sampleDirectChatInfo,
-                chatItems: [chatItemSample(1, .directSnd, Date.now, "hello")]
+                chatItems: [chatItemSample(1, .directSnd, .now, "hello")]
             ))
             ChatPreviewView(chat: Chat(
                 chatInfo: sampleGroupChatInfo,
-                chatItems: [chatItemSample(1, .directSnd, Date.now, "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.")]
+                chatItems: [chatItemSample(1, .directSnd, .now, "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.")]
             ))
         }
-        .previewLayout(.fixed(width: 360, height: 80))
+        .previewLayout(.fixed(width: 360, height: 78))
     }
 }

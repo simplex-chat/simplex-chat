@@ -52,14 +52,14 @@ struct TerminalView: View {
     
     func sendMessage(_ cmdStr: String) {
         let cmd = ChatCommand.string(cmdStr)
-        chatModel.terminalItems.append(.cmd(Date.now, cmd))
+        chatModel.terminalItems.append(.cmd(.now, cmd))
 
         DispatchQueue.global().async {
             inProgress = true
             do {
                 let r = try chatSendCmd(cmd)
                 DispatchQueue.main.async {
-                    chatModel.terminalItems.append(.resp(Date.now, r))
+                    chatModel.terminalItems.append(.resp(.now, r))
                 }
             } catch {
                 print(error)
@@ -73,8 +73,8 @@ struct TerminalView_Previews: PreviewProvider {
     static var previews: some View {
         let chatModel = ChatModel()
         chatModel.terminalItems = [
-            .resp(Date.now, ChatResponse.response(type: "contactSubscribed", json: "{}")),
-            .resp(Date.now, ChatResponse.response(type: "newChatItem", json: "{}"))
+            .resp(.now, ChatResponse.response(type: "contactSubscribed", json: "{}")),
+            .resp(.now, ChatResponse.response(type: "newChatItem", json: "{}"))
         ]
         return NavigationView {
             TerminalView()

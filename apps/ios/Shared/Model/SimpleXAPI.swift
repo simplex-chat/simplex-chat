@@ -84,6 +84,7 @@ enum ChatResponse: Decodable, Error {
     case receivedContactRequest(contactRequest: UserContactRequest)
     case acceptingContactRequest(contact: Contact)
     case contactRequestRejected
+    case contactUpdated(toContact: Contact)
     case newChatItem(chatItem: AChatItem)
     case chatCmdError(chatError: ChatError)
 
@@ -106,6 +107,7 @@ enum ChatResponse: Decodable, Error {
             case .receivedContactRequest: return "receivedContactRequest"
             case .acceptingContactRequest: return "acceptingContactRequest"
             case .contactRequestRejected: return "contactRequestRejected"
+            case .contactUpdated: return "contactUpdated"
             case .newChatItem: return "newChatItem"
             case .chatCmdError: return "chatCmdError"
             }
@@ -131,6 +133,7 @@ enum ChatResponse: Decodable, Error {
             case let .receivedContactRequest(contactRequest): return String(describing: contactRequest)
             case let .acceptingContactRequest(contact): return String(describing: contact)
             case .contactRequestRejected: return noDetails
+            case let .contactUpdated(toContact): return String(describing: toContact)
             case let .newChatItem(chatItem): return String(describing: chatItem)
             case let .chatCmdError(chatError): return String(describing: chatError)
             }
@@ -293,7 +296,7 @@ func apiRejectContactRequest(contactReqId: Int64) throws {
 
 func processReceivedMsg(_ chatModel: ChatModel, _ res: ChatResponse) {
     DispatchQueue.main.async {
-        chatModel.terminalItems.append(.resp(Date.now, res))
+        chatModel.terminalItems.append(.resp(.now, res))
         switch res {
         case let .contactConnected(contact):
             let cInfo = ChatInfo.direct(contact: contact)
@@ -307,6 +310,11 @@ func processReceivedMsg(_ chatModel: ChatModel, _ res: ChatResponse) {
                 chatInfo: ChatInfo.contactRequest(contactRequest: contactRequest),
                 chatItems: []
             ))
+        case let .contactUpdated(toContact):
+            let cInfo = ChatInfo.direct(contact: toContact)
+            if chatModel.hasChat(toContact.id) {
+                chatModel.updateChatInfo(cInfo)
+            }
         case let .newChatItem(aChatItem):
             chatModel.addChatItem(aChatItem.chatInfo, aChatItem.chatItem)
         default:
