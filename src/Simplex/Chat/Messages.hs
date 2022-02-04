@@ -35,6 +35,7 @@ import Simplex.Messaging.Agent.Store.SQLite (fromTextField_)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, enumJSON, sumTypeJSON)
 import Simplex.Messaging.Protocol (MsgBody)
+import Simplex.Chat.Util (safeDecodeUtf8)
 
 data ChatType = CTDirect | CTGroup | CTContactRequest
   deriving (Show, Generic)
@@ -215,7 +216,7 @@ ciContentToText = \case
   CIRcvFileInvitation RcvFileTransfer {fileInvitation = FileInvitation {fileName}} -> "file " <> T.pack fileName
 
 instance ToField (CIContent d) where
-  toField = toField . decodeLatin1 . LB.toStrict . J.encode
+  toField = toField . safeDecodeUtf8 . LB.toStrict . J.encode
 
 instance ToJSON (CIContent d) where
   toJSON = J.toJSON . jsonCIContent
