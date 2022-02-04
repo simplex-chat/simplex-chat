@@ -55,18 +55,15 @@ final class ChatModel: ObservableObject {
     func addChatItem(_ cInfo: ChatInfo, _ cItem: ChatItem) {
         if let ix = chats.firstIndex(where: { $0.id == cInfo.id }) {
             chats[ix].chatItems = [cItem]
-            if chatId != cInfo.id {
-                withAnimation {
-                    let chat = chats.remove(at: ix)
-                    chats.insert(chat, at: 0)
-                }
-                if chatId != nil {
-                    // meesage arrived to some other chat
-                }
+            withAnimation {
+                let chat = chats.remove(at: ix)
+                chats.insert(chat, at: 0)
             }
         }
         if chatId == cInfo.id {
             withAnimation { chatItems.append(cItem) }
+        } else if chatId != nil {
+            // meesage arrived to some other chat, show notification
         }
     }
 

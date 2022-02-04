@@ -17,7 +17,7 @@ struct ChatView: View {
         VStack {
             ScrollViewReader { proxy in
                 ScrollView {
-                    VStack {
+                    VStack(spacing: 5)  {
                         ForEach(chatModel.chatItems, id: \.id) {
                             ChatItemView(chatItem: $0)
                         }
@@ -35,12 +35,14 @@ struct ChatView: View {
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
                 Button { chatModel.chatId = nil } label: {
-                    Image(systemName: "chevron.backward")
+                    HStack(spacing: 4) {
+                        Image(systemName: "chevron.backward")
+                        Text("Chats")
+                    }
                 }
             }
         }
         .navigationBarBackButtonHidden(true)
-
     }
 
     func scrollToBottom(_ proxy: ScrollViewProxy) {
