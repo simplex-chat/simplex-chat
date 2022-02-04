@@ -65,8 +65,8 @@ testAddContact =
       concurrently_
         (bob <## "alice (Alice): contact is connected")
         (alice <## "bob (Bob): contact is connected")
-      alice #> "@bob hello"
-      bob <# "alice> hello"
+      alice #> "@bob hello 🙂"
+      bob <# "alice> hello 🙂"
       bob #> "@alice hi"
       alice <# "bob> hi"
       -- test adding the same contact one more time - local name will be different

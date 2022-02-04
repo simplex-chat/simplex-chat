@@ -34,7 +34,6 @@ import qualified Data.Map.Strict as M
 import Data.Maybe (isJust, mapMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Text.Encoding (encodeUtf8)
 import Data.Time.Clock (UTCTime, getCurrentTime)
 import Data.Time.LocalTime (getCurrentTimeZone)
 import Data.Word (Word32)
@@ -109,8 +108,8 @@ withLock lock =
     (void . atomically $ takeTMVar lock)
     (atomically $ putTMVar lock ())
 
-execChatCommand :: (MonadUnliftIO m, MonadReader ChatController m) => String -> m ChatResponse
-execChatCommand s = case parseAll chatCommandP . B.dropWhileEnd isSpace . encodeUtf8 $ T.pack s of
+execChatCommand :: (MonadUnliftIO m, MonadReader ChatController m) => ByteString -> m ChatResponse
+execChatCommand s = case parseAll chatCommandP $ B.dropWhileEnd isSpace s of
   Left e -> pure . CRChatError . ChatError $ CECommandError e
   Right cmd -> do
     ChatController {chatLock = l, smpAgent = a, currentUser} <- ask

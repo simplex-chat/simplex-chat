@@ -117,7 +117,7 @@ chatStart ChatStore {dbFilePrefix, chatStore} = do
   pure cc
 
 chatSendCmd :: ChatController -> String -> IO JSONString
-chatSendCmd cc s = LB.unpack . J.encode . APIResponse Nothing <$> runReaderT (execChatCommand s) cc
+chatSendCmd cc s = LB.unpack . J.encode . APIResponse Nothing <$> runReaderT (execChatCommand $ B.pack s) cc
 
 chatRecvMsg :: ChatController -> IO JSONString
 chatRecvMsg ChatController {outputQ} = json <$> atomically (readTBQueue outputQ)

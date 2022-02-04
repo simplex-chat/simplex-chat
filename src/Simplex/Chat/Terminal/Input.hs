@@ -9,6 +9,7 @@ import Control.Monad.IO.Unlift
 import Control.Monad.Reader
 import Data.List (dropWhileEnd)
 import qualified Data.Text as T
+import Data.Text.Encoding (encodeUtf8)
 import Simplex.Chat
 import Simplex.Chat.Controller
 import Simplex.Chat.Terminal.Output
@@ -29,7 +30,7 @@ runInputLoop ct = do
   q <- asks inputQ
   forever $ do
     s <- atomically $ readTBQueue q
-    r <- execChatCommand s
+    r <- execChatCommand . encodeUtf8 $ T.pack s
     liftIO . printToTerminal ct $ responseToView s r
 
 runTerminalInput :: (MonadUnliftIO m, MonadReader ChatController m) => ChatTerminal -> m ()
