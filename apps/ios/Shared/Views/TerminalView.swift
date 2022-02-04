@@ -14,26 +14,39 @@ struct TerminalView: View {
     
     var body: some View {
         VStack {
-            ScrollView {
-                LazyVStack {
-                    ForEach(chatModel.terminalItems) { item in
-                        NavigationLink {
-                            ScrollView {
-                                Text(item.details)
-                                    .textSelection(.enabled)
+            ScrollViewReader { proxy in
+                ScrollView {
+                    LazyVStack {
+                        ForEach(chatModel.terminalItems) { item in
+                            NavigationLink {
+                                ScrollView {
+                                    Text(item.details)
+                                        .textSelection(.enabled)
+                                }
+                            } label: {
+                                Text(item.label)
+                                .frame(width: 360, height: 30, alignment: .leading)
                             }
-                        } label: {
-                            Text(item.label)
-                            .frame(width: 360, height: 30, alignment: .leading)
                         }
+                        .onAppear { scrollToBottom(proxy) }
+                        .onChange(of: chatModel.terminalItems.count) { _ in scrollToBottom(proxy) }
                     }
                 }
+
+                Spacer()
+
+                SendMessageView(sendMessage: sendMessage, inProgress: inProgress)
             }
-            .navigationViewStyle(.stack)
+        }
+        .navigationViewStyle(.stack)
+        .navigationTitle("Chat console")
+    }
 
-            Spacer()
-
-            SendMessageView(sendMessage: sendMessage, inProgress: inProgress)
+    func scrollToBottom(_ proxy: ScrollViewProxy) {
+        if let id = chatModel.terminalItems.last?.id {
+            withAnimation {
+                proxy.scrollTo(id, anchor: .bottom)
+            }
         }
     }
     

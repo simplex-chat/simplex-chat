@@ -26,12 +26,6 @@ struct ChatListView: View {
 
             NavigationView {
                 List {
-                    NavigationLink {
-                        TerminalView()
-                    } label: {
-                        Text("Terminal")
-                    }
-
                     ForEach(chatModel.chats) { chat in
                         ChatListNavLink(chat: chat)
                     }

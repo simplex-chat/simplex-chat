@@ -44,11 +44,19 @@ struct SettingsView: View {
                     }
                 }
 
+                Section("Develop") {
+                    NavigationLink {
+                        TerminalView()
+                    } label: {
+                        Text("Chat console")
+                    }
+                }
+
 //                Section("Your SimpleX servers") {
 //
 //                }
             }
-            .navigationTitle("Settings")
+            .navigationTitle("Your settings")
         }
     }
 }
