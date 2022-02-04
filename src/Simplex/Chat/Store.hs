@@ -2146,7 +2146,7 @@ getDirectChatLast_ :: DB.Connection -> User -> Int64 -> Int -> ExceptT StoreErro
 getDirectChatLast_ db User {userId} contactId count = do
   contact <- ExceptT $ getContact_ db userId contactId
   chatItems <- liftIO getDirectChatItemsLast_
-  pure $ Chat (DirectChat contact) (sortOn chatItemTs chatItems)
+  pure $ Chat (DirectChat contact) (reverse chatItems)
   where
     getDirectChatItemsLast_ :: IO [CChatItem 'CTDirect]
     getDirectChatItemsLast_ = do
@@ -2158,7 +2158,7 @@ getDirectChatLast_ db User {userId} contactId count = do
             SELECT chat_item_id, item_ts, item_content, item_text, created_at
             FROM chat_items
             WHERE user_id = ? AND contact_id = ?
-            ORDER BY item_ts DESC
+            ORDER BY chat_item_id DESC
             LIMIT ?
           |]
           (userId, contactId, count)
@@ -2179,7 +2179,7 @@ getDirectChatAfter_ db User {userId} contactId afterChatItemId count = do
             SELECT chat_item_id, item_ts, item_content, item_text, created_at
             FROM chat_items
             WHERE user_id = ? AND contact_id = ? AND chat_item_id > ?
-            ORDER BY item_ts ASC
+            ORDER BY chat_item_id ASC
             LIMIT ?
           |]
           (userId, contactId, afterChatItemId, count)
@@ -2188,7 +2188,7 @@ getDirectChatBefore_ :: DB.Connection -> User -> Int64 -> ChatItemId -> Int -> E
 getDirectChatBefore_ db User {userId} contactId beforeChatItemId count = do
   contact <- ExceptT $ getContact_ db userId contactId
   chatItems <- liftIO getDirectChatItemsBefore_
-  pure $ Chat (DirectChat contact) (sortOn chatItemTs chatItems)
+  pure $ Chat (DirectChat contact) (reverse chatItems)
   where
     getDirectChatItemsBefore_ :: IO [CChatItem 'CTDirect]
     getDirectChatItemsBefore_ = do
@@ -2200,7 +2200,7 @@ getDirectChatBefore_ db User {userId} contactId beforeChatItemId count = do
             SELECT chat_item_id, item_ts, item_content, item_text, created_at
             FROM chat_items
             WHERE user_id = ? AND contact_id = ? AND chat_item_id < ?
-            ORDER BY item_ts DESC
+            ORDER BY chat_item_id DESC
             LIMIT ?
           |]
           (userId, contactId, beforeChatItemId, count)
@@ -2255,7 +2255,7 @@ getGroupChatLast_ :: DB.Connection -> User -> Int64 -> Int -> ExceptT StoreError
 getGroupChatLast_ db user@User {userId, userContactId} groupId count = do
   groupInfo <- ExceptT $ getGroupInfo_ db user groupId
   chatItems <- ExceptT getGroupChatItemsLast_
-  pure $ Chat (GroupChat groupInfo) (sortOn chatItemTs chatItems)
+  pure $ Chat (GroupChat groupInfo) (reverse chatItems)
   where
     getGroupChatItemsLast_ :: IO (Either StoreError [CChatItem 'CTGroup])
     getGroupChatItemsLast_ = do
@@ -2275,7 +2275,7 @@ getGroupChatLast_ db user@User {userId, userContactId} groupId count = do
             LEFT JOIN group_members m ON m.group_member_id = ci.group_member_id
             LEFT JOIN contact_profiles p ON p.contact_profile_id = m.contact_profile_id
             WHERE ci.user_id = ? AND ci.group_id = ?
-            ORDER BY item_ts DESC
+            ORDER BY ci.chat_item_id DESC
             LIMIT ?
           |]
           (userId, groupId, count)
@@ -2304,7 +2304,7 @@ getGroupChatAfter_ db user@User {userId, userContactId} groupId afterChatItemId 
             LEFT JOIN group_members m ON m.group_member_id = ci.group_member_id
             LEFT JOIN contact_profiles p ON p.contact_profile_id = m.contact_profile_id
             WHERE ci.user_id = ? AND ci.group_id = ? AND ci.chat_item_id > ?
-            ORDER BY item_ts ASC
+            ORDER BY ci.chat_item_id ASC
             LIMIT ?
           |]
           (userId, groupId, afterChatItemId, count)
@@ -2313,7 +2313,7 @@ getGroupChatBefore_ :: DB.Connection -> User -> Int64 -> ChatItemId -> Int -> Ex
 getGroupChatBefore_ db user@User {userId, userContactId} groupId beforeChatItemId count = do
   groupInfo <- ExceptT $ getGroupInfo_ db user groupId
   chatItems <- ExceptT getGroupChatItemsBefore_
-  pure $ Chat (GroupChat groupInfo) (sortOn chatItemTs chatItems)
+  pure $ Chat (GroupChat groupInfo) (reverse chatItems)
   where
     getGroupChatItemsBefore_ :: IO (Either StoreError [CChatItem 'CTGroup])
     getGroupChatItemsBefore_ = do
@@ -2333,7 +2333,7 @@ getGroupChatBefore_ db user@User {userId, userContactId} groupId beforeChatItemI
             LEFT JOIN group_members m ON m.group_member_id = ci.group_member_id
             LEFT JOIN contact_profiles p ON p.contact_profile_id = m.contact_profile_id
             WHERE ci.user_id = ? AND ci.group_id = ? AND ci.chat_item_id < ?
-            ORDER BY item_ts DESC
+            ORDER BY ci.chat_item_id DESC
             LIMIT ?
           |]
           (userId, groupId, beforeChatItemId, count)
