@@ -55,9 +55,12 @@ final class ChatModel: ObservableObject {
     func addChatItem(_ cInfo: ChatInfo, _ cItem: ChatItem) {
         if let ix = chats.firstIndex(where: { $0.id == cInfo.id }) {
             chats[ix].chatItems = [cItem]
-            withAnimation {
-                let chat = chats.remove(at: ix)
-                chats.insert(chat, at: 0)
+            if ix > 0 {
+                if chatId == nil {
+                    withAnimation { popChat(ix) }
+                } else {
+                    DispatchQueue.main.async { self.popChat(ix) }
+                }
             }
         }
         if chatId == cInfo.id {
@@ -65,6 +68,11 @@ final class ChatModel: ObservableObject {
         } else if chatId != nil {
             // meesage arrived to some other chat, show notification
         }
+    }
+
+    private func popChat(_ ix: Int) {
+        let chat = chats.remove(at: ix)
+        chats.insert(chat, at: 0)
     }
 
     func removeChat(_ id: String) {

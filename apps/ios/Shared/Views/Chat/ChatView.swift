@@ -45,6 +45,9 @@ struct ChatView: View {
             }
         }
         .navigationBarBackButtonHidden(true)
+        .onTapGesture {
+            UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+        }
     }
 
     func scrollToBottom(_ proxy: ScrollViewProxy) {
@@ -76,7 +79,8 @@ struct ChatView_Previews: PreviewProvider {
             chatItemSample(4, .directRcv, .now, "hello again"),
             chatItemSample(5, .directSnd, .now, "hi there!!!"),
             chatItemSample(6, .directSnd, .now, "how are you?"),
-            chatItemSample(7, .directSnd, .now, "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.")
+            chatItemSample(7, .directSnd, .now, "👍👍👍👍"),
+            chatItemSample(8, .directSnd, .now, "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.")
         ]
         return ChatView(chatInfo: sampleDirectChatInfo)
             .environmentObject(chatModel)

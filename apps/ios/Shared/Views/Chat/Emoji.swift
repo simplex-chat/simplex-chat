@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import SwiftUI
 
 private func isSimpleEmoji(_ c: Character) -> Bool {
     guard let firstScalar = c.unicodeScalars.first else { return false }
@@ -23,5 +24,7 @@ func isEmoji(_ c: Character) -> Bool {
 
 func isShortEmoji(_ str: String) -> Bool {
     let s = str.trimmingCharacters(in: .whitespaces)
-    return s.count <= 3 && s.allSatisfy(isEmoji)
+    return s.count > 0 && s.count <= 4 && s.allSatisfy(isEmoji)
 }
+
+let emojiFont = Font.custom("Emoji", size: 48, relativeTo: .largeTitle)

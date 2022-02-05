@@ -37,8 +37,8 @@ struct ChatItemView_Previews: PreviewProvider {
             ChatItemView(chatItem: chatItemSample(1, .directSnd, .now, "hello"), width: 360)
             ChatItemView(chatItem: chatItemSample(2, .directRcv, .now, "hello there too"), width: 360)
             ChatItemView(chatItem: chatItemSample(1, .directSnd, .now, "🙂"), width: 360)
-            ChatItemView(chatItem: chatItemSample(2, .directRcv, .now, "👍👍👍"), width: 360)
-            ChatItemView(chatItem: chatItemSample(2, .directRcv, .now, "👍👍👍👍"), width: 360)
+            ChatItemView(chatItem: chatItemSample(2, .directRcv, .now, "🙂🙂🙂🙂🙂"), width: 360)
+            ChatItemView(chatItem: chatItemSample(2, .directRcv, .now, "🙂🙂🙂🙂🙂🙂"), width: 360)
         }
         .previewLayout(.fixed(width: 360, height: 70))
     }
