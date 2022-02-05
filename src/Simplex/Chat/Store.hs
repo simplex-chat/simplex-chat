@@ -2096,7 +2096,7 @@ getGroupChatPreviews_ db User {userId, userContactId} = do
           mu.member_status, mu.invited_by, mu.local_display_name, mu.contact_id,
           pu.display_name, pu.full_name,
           -- ChatItem
-          ci.chat_item_id, ci.item_ts, ci.item_content, ci.item_text, ci.created_at,
+          ci.chat_item_id, ci.item_ts, ci.item_content, ci.item_text, ci.item_status, ci.created_at
           -- Maybe GroupMember - sender
           m.group_member_id, m.group_id, m.member_id, m.member_role, m.member_category,
           m.member_status, m.invited_by, m.local_display_name, m.contact_id,
@@ -2158,20 +2158,22 @@ getDirectChat st user contactId pagination =
 getDirectChatLast_ :: DB.Connection -> User -> Int64 -> Int -> ExceptT StoreError IO (Chat 'CTDirect)
 getDirectChatLast_ db User {userId} contactId count = do
   contact <- ExceptT $ getContact_ db userId contactId
-  chatItems <- liftIO getDirectChatItemsLast_
+  chatItems <- ExceptT getDirectChatItemsLast_
   pure $ Chat (DirectChat contact) (reverse chatItems)
   where
-    getDirectChatItemsLast_ :: IO [CChatItem 'CTDirect]
+    getDirectChatItemsLast_ :: IO (Either StoreError [CChatItem 'CTDirect])
     getDirectChatItemsLast_ = do
       tz <- getCurrentTimeZone
-      map (toDirectChatItem tz)
+      mapM (toDirectChatItem tz)
         <$> DB.query
           db
           [sql|
-            SELECT chat_item_id, item_ts, item_content, item_text, created_at
-            FROM chat_items
-            WHERE user_id = ? AND contact_id = ?
-            ORDER BY chat_item_id DESC
+            SELECT
+              -- ChatItem
+              ci.chat_item_id, ci.item_ts, ci.item_content, ci.item_text, ci.item_status, ci.created_at
+            FROM chat_items ci
+            WHERE ci.user_id = ? AND ci.contact_id = ?
+            ORDER BY ci.chat_item_id DESC
             LIMIT ?
           |]
           (userId, contactId, count)
@@ -2179,20 +2181,22 @@ getDirectChatLast_ db User {userId} contactId count = do
 getDirectChatAfter_ :: DB.Connection -> User -> Int64 -> ChatItemId -> Int -> ExceptT StoreError IO (Chat 'CTDirect)
 getDirectChatAfter_ db User {userId} contactId afterChatItemId count = do
   contact <- ExceptT $ getContact_ db userId contactId
-  chatItems <- liftIO getDirectChatItemsAfter_
+  chatItems <- ExceptT getDirectChatItemsAfter_
   pure $ Chat (DirectChat contact) chatItems
   where
-    getDirectChatItemsAfter_ :: IO [CChatItem 'CTDirect]
+    getDirectChatItemsAfter_ :: IO (Either StoreError [CChatItem 'CTDirect])
     getDirectChatItemsAfter_ = do
       tz <- getCurrentTimeZone
-      map (toDirectChatItem tz)
+      mapM (toDirectChatItem tz)
         <$> DB.query
           db
           [sql|
-            SELECT chat_item_id, item_ts, item_content, item_text, created_at
-            FROM chat_items
-            WHERE user_id = ? AND contact_id = ? AND chat_item_id > ?
-            ORDER BY chat_item_id ASC
+            SELECT
+              -- ChatItem
+              ci.chat_item_id, ci.item_ts, ci.item_content, ci.item_text, ci.item_status, ci.created_at
+            FROM chat_items ci
+            WHERE ci.user_id = ? AND ci.contact_id = ? AND ci.chat_item_id > ?
+            ORDER BY ci.chat_item_id ASC
             LIMIT ?
           |]
           (userId, contactId, afterChatItemId, count)
@@ -2200,20 +2204,22 @@ getDirectChatAfter_ db User {userId} contactId afterChatItemId count = do
 getDirectChatBefore_ :: DB.Connection -> User -> Int64 -> ChatItemId -> Int -> ExceptT StoreError IO (Chat 'CTDirect)
 getDirectChatBefore_ db User {userId} contactId beforeChatItemId count = do
   contact <- ExceptT $ getContact_ db userId contactId
-  chatItems <- liftIO getDirectChatItemsBefore_
+  chatItems <- ExceptT getDirectChatItemsBefore_
   pure $ Chat (DirectChat contact) (reverse chatItems)
   where
-    getDirectChatItemsBefore_ :: IO [CChatItem 'CTDirect]
+    getDirectChatItemsBefore_ :: IO (Either StoreError [CChatItem 'CTDirect])
     getDirectChatItemsBefore_ = do
       tz <- getCurrentTimeZone
-      map (toDirectChatItem tz)
+      mapM (toDirectChatItem tz)
         <$> DB.query
           db
           [sql|
-            SELECT chat_item_id, item_ts, item_content, item_text, created_at
-            FROM chat_items
-            WHERE user_id = ? AND contact_id = ? AND chat_item_id < ?
-            ORDER BY chat_item_id DESC
+            SELECT
+              -- ChatItem
+              ci.chat_item_id, ci.item_ts, ci.item_content, ci.item_text, ci.item_status, ci.created_at
+            FROM chat_items ci
+            WHERE ci.user_id = ? AND ci.contact_id = ? AND ci.chat_item_id < ?
+            ORDER BY ci.chat_item_id DESC
             LIMIT ?
           |]
           (userId, contactId, beforeChatItemId, count)
@@ -2279,7 +2285,7 @@ getGroupChatLast_ db user@User {userId, userContactId} groupId count = do
           [sql|
             SELECT
               -- ChatItem
-              ci.chat_item_id, ci.item_ts, ci.item_content, ci.item_text, ci.created_at,
+              ci.chat_item_id, ci.item_ts, ci.item_content, ci.item_text, ci.item_status, ci.created_at
               -- GroupMember
               m.group_member_id, m.group_id, m.member_id, m.member_role, m.member_category,
               m.member_status, m.invited_by, m.local_display_name, m.contact_id,
@@ -2308,7 +2314,7 @@ getGroupChatAfter_ db user@User {userId, userContactId} groupId afterChatItemId 
           [sql|
             SELECT
               -- ChatItem
-              ci.chat_item_id, ci.item_ts, ci.item_content, ci.item_text, ci.created_at,
+              ci.chat_item_id, ci.item_ts, ci.item_content, ci.item_text, ci.item_status, ci.created_at
               -- GroupMember
               m.group_member_id, m.group_id, m.member_id, m.member_role, m.member_category,
               m.member_status, m.invited_by, m.local_display_name, m.contact_id,
@@ -2337,7 +2343,7 @@ getGroupChatBefore_ db user@User {userId, userContactId} groupId beforeChatItemI
           [sql|
             SELECT
               -- ChatItem
-              ci.chat_item_id, ci.item_ts, ci.item_content, ci.item_text, ci.created_at,
+              ci.chat_item_id, ci.item_ts, ci.item_content, ci.item_text, ci.item_status, ci.created_at
               -- GroupMember
               m.group_member_id, m.group_id, m.member_id, m.member_role, m.member_category,
               m.member_status, m.invited_by, m.local_display_name, m.contact_id,
@@ -2396,18 +2402,24 @@ type ChatItemRow = (Int64, ChatItemTs, ACIContent, Text, ACIStatus, UTCTime)
 
 type MaybeChatItemRow = (Maybe Int64, Maybe ChatItemTs, Maybe ACIContent, Maybe Text, Maybe ACIStatus, Maybe UTCTime)
 
-toDirectChatItem :: TimeZone -> ChatItemRow -> CChatItem 'CTDirect
+toDirectChatItem :: TimeZone -> ChatItemRow -> Either StoreError (CChatItem 'CTDirect)
 toDirectChatItem tz (itemId, itemTs, itemContent, itemText, itemStatus, createdAt) =
-  case itemContent of
-    ACIContent d@SMDSnd ciContent -> CChatItem d $ ChatItem CIDirectSnd ciMeta ciContent
-    ACIContent d@SMDRcv ciContent -> CChatItem d $ ChatItem CIDirectRcv ciMeta ciContent
+  case (itemContent, itemStatus) of
+    (ACIContent d@SMDSnd ciContent, ACIStatus d'@SMDSnd ciStatus) -> case testEquality d d' of
+      Just Refl -> Right $ CChatItem d (ChatItem CIDirectSnd (ciMeta ciStatus) ciContent)
+      _ -> badItem
+    (ACIContent d@SMDRcv ciContent, ACIStatus d'@SMDRcv ciStatus) -> case testEquality d d' of
+      Just Refl -> Right $ CChatItem d (ChatItem CIDirectRcv (ciMeta ciStatus) ciContent)
+      _ -> badItem
+    _ -> badItem
   where
-    ciMeta :: MsgDirectionI d => CIMeta d
-    ciMeta = mkCIMeta itemId itemText ciStatusNew tz itemTs createdAt
+    badItem = Left $ SEBadChatItem itemId
+    ciMeta :: CIStatus d -> CIMeta d
+    ciMeta status = mkCIMeta itemId itemText status tz itemTs createdAt
 
 toDirectChatItemList :: TimeZone -> MaybeChatItemRow -> [CChatItem 'CTDirect]
 toDirectChatItemList tz (Just itemId, Just itemTs, Just itemContent, Just itemText, Just itemStatus, Just createdAt) =
-  [toDirectChatItem tz (itemId, itemTs, itemContent, itemText, itemStatus, createdAt)]
+  either (const []) (: []) $ toDirectChatItem tz (itemId, itemTs, itemContent, itemText, itemStatus, createdAt)
 toDirectChatItemList _ _ = []
 
 type GroupChatItemRow = ChatItemRow :. MaybeGroupMemberRow
@@ -2417,15 +2429,13 @@ type MaybeGroupChatItemRow = MaybeChatItemRow :. MaybeGroupMemberRow
 toGroupChatItem :: TimeZone -> Int64 -> GroupChatItemRow -> Either StoreError (CChatItem 'CTGroup)
 toGroupChatItem tz userContactId ((itemId, itemTs, itemContent, itemText, itemStatus, createdAt) :. memberRow_) = do
   let member_ = toMaybeGroupMember userContactId memberRow_
-  case (itemContent, member_) of
-    (ACIContent d@SMDSnd ciContent, Nothing) -> case itemStatus of
-      ACIStatus d' ciStatus -> case testEquality d d' of
-        Just Refl -> Right $ CChatItem d (ChatItem CIGroupSnd (ciMeta ciStatus) ciContent)
-        _ -> badItem
-    (ACIContent d@SMDRcv ciContent, Just member) -> case itemStatus of
-      ACIStatus d' ciStatus -> case testEquality d d' of
-        Just Refl -> Right $ CChatItem d (ChatItem (CIGroupRcv member) (ciMeta ciStatus) ciContent)
-        _ -> badItem
+  case (itemContent, itemStatus, member_) of
+    (ACIContent d@SMDSnd ciContent, ACIStatus d'@SMDSnd ciStatus, Nothing) -> case testEquality d d' of
+      Just Refl -> Right $ CChatItem d (ChatItem CIGroupSnd (ciMeta ciStatus) ciContent)
+      _ -> badItem
+    (ACIContent d@SMDRcv ciContent, ACIStatus d'@SMDRcv ciStatus, Just member) -> case testEquality d d' of
+      Just Refl -> Right $ CChatItem d (ChatItem (CIGroupRcv member) (ciMeta ciStatus) ciContent)
+      _ -> badItem
     _ -> badItem
   where
     badItem = Left $ SEBadChatItem itemId
