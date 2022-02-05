@@ -106,6 +106,7 @@ module Simplex.Chat.Store
     createNewMessageAndRcvMsgDelivery,
     createSndMsgDeliveryEvent,
     createRcvMsgDeliveryEvent,
+    getMessageId,
     createPendingGroupMessage,
     getPendingGroupMessages,
     deletePendingGroupMessage,
@@ -1861,21 +1862,23 @@ createNewMessageAndRcvMsgDelivery st newMsg rcvMsgDelivery =
     createMsgDeliveryEvent_ db msgDeliveryId MDSRcvAgent currentTs
     pure messageId
 
-createSndMsgDeliveryEvent :: StoreMonad m => SQLiteStore -> Int64 -> AgentMsgId -> MsgDeliveryStatus 'MDSnd -> m ()
+createSndMsgDeliveryEvent :: StoreMonad m => SQLiteStore -> Int64 -> AgentMsgId -> MsgDeliveryStatus 'MDSnd -> m MessageId
 createSndMsgDeliveryEvent st connId agentMsgId sndMsgDeliveryStatus =
   liftIOEither . withTransaction st $ \db -> runExceptT $ do
-    msgDeliveryId <- ExceptT $ getMsgDeliveryId_ db connId agentMsgId
+    (msgDeliveryId, messageId) <- ExceptT $ getMessageAndDeliveryIds_ db connId agentMsgId
     liftIO $ do
       currentTs <- getCurrentTime
       createMsgDeliveryEvent_ db msgDeliveryId sndMsgDeliveryStatus currentTs
+    pure messageId
 
-createRcvMsgDeliveryEvent :: StoreMonad m => SQLiteStore -> Int64 -> AgentMsgId -> MsgDeliveryStatus 'MDRcv -> m ()
+createRcvMsgDeliveryEvent :: StoreMonad m => SQLiteStore -> Int64 -> AgentMsgId -> MsgDeliveryStatus 'MDRcv -> m MessageId
 createRcvMsgDeliveryEvent st connId agentMsgId rcvMsgDeliveryStatus =
   liftIOEither . withTransaction st $ \db -> runExceptT $ do
-    msgDeliveryId <- ExceptT $ getMsgDeliveryId_ db connId agentMsgId
+    (msgDeliveryId, messageId) <- ExceptT $ getMessageAndDeliveryIds_ db connId agentMsgId
     liftIO $ do
       currentTs <- getCurrentTime
       createMsgDeliveryEvent_ db msgDeliveryId rcvMsgDeliveryStatus currentTs
+    pure messageId
 
 createNewMessage_ :: DB.Connection -> NewMessage -> UTCTime -> IO MessageId
 createNewMessage_ db NewMessage {direction, cmEventTag, msgBody} createdAt = do
@@ -1924,22 +1927,28 @@ createMsgDeliveryEvent_ db msgDeliveryId msgDeliveryStatus createdAt = do
     |]
     (msgDeliveryId, msgDeliveryStatus, createdAt, createdAt)
 
-getMsgDeliveryId_ :: DB.Connection -> Int64 -> AgentMsgId -> IO (Either StoreError Int64)
-getMsgDeliveryId_ db connId agentMsgId =
-  toMsgDeliveryId
+getMessageId :: StoreMonad m => SQLiteStore -> Int64 -> AgentMsgId -> m MessageId
+getMessageId st connId agentMsgId =
+  liftIOEither . withTransaction st $ \db -> runExceptT $ do
+    (_, messageId) <- ExceptT $ getMessageAndDeliveryIds_ db connId agentMsgId
+    pure messageId
+
+getMessageAndDeliveryIds_ :: DB.Connection -> Int64 -> AgentMsgId -> IO (Either StoreError (Int64, MessageId))
+getMessageAndDeliveryIds_ db connId agentMsgId =
+  toMsgIds
     <$> DB.query
       db
       [sql|
-        SELECT msg_delivery_id
+        SELECT msg_delivery_id, message_id
         FROM msg_deliveries m
         WHERE m.connection_id = ? AND m.agent_msg_id = ?
         LIMIT 1
       |]
       (connId, agentMsgId)
   where
-    toMsgDeliveryId :: [Only Int64] -> Either StoreError Int64
-    toMsgDeliveryId [Only msgDeliveryId] = Right msgDeliveryId
-    toMsgDeliveryId _ = Left $ SENoMsgDelivery connId agentMsgId
+    toMsgIds :: [(Int64, MessageId)] -> Either StoreError (Int64, MessageId)
+    toMsgIds [ids] = Right ids
+    toMsgIds _ = Left $ SENoMsgDelivery connId agentMsgId
 
 createPendingGroupMessage :: MonadUnliftIO m => SQLiteStore -> Int64 -> MessageId -> Maybe Int64 -> m ()
 createPendingGroupMessage st groupMemberId messageId introId_ =

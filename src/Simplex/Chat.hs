@@ -539,8 +539,9 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage =
           ackMsgDeliveryEvent conn meta
         SENT msgId ->
           sentMsgDeliveryEvent conn msgId
+        MERR msgId err ->
+          msgErr conn msgId err
         -- TODO print errors
-        MERR _ _ -> pure ()
         ERR _ -> pure ()
         -- TODO add debugging output
         _ -> pure ()
@@ -602,8 +603,9 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage =
           toView $ CRContactSubscribed ct
           showToast (c <> "> ") "is active"
           setActive $ ActiveC c
+        MERR msgId err ->
+          msgErr conn msgId err
         -- TODO print errors
-        MERR _ _ -> pure ()
         ERR _ -> pure ()
         -- TODO add debugging output
         _ -> pure ()
@@ -689,8 +691,9 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage =
         ackMsgDeliveryEvent conn msgMeta
       SENT msgId ->
         sentMsgDeliveryEvent conn msgId
+      MERR msgId err ->
+        msgErr conn msgId err
       -- TODO print errors
-      MERR _ _ -> pure ()
       ERR _ -> pure ()
       -- TODO add debugging output
       _ -> pure ()
@@ -716,6 +719,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage =
           withStore $ \st -> updateSndFileChunkSent st ft msgId
           unless (fileStatus == FSCancelled) $ sendFileChunk ft
         MERR _ err -> do
+          -- ? msgErr conn msgId err
           cancelSndFileTransfer ft
           case err of
             SMP SMP.AUTH -> unless (fileStatus == FSCancelled) $ toView $ CRSndFileRcvCancelled ft
@@ -728,7 +732,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage =
         _ -> pure ()
 
     processRcvFileConn :: ACommand 'Agent -> Connection -> RcvFileTransfer -> m ()
-    processRcvFileConn agentMsg _conn ft@RcvFileTransfer {fileId, chunkSize} =
+    processRcvFileConn agentMsg conn ft@RcvFileTransfer {fileId, chunkSize} =
       case agentMsg of
         CON -> do
           withStore $ \st -> updateRcvFileStatus st ft FSConnected
@@ -762,14 +766,15 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage =
                       withAgent (`deleteConnection` agentConnId)
                 RcvChunkDuplicate -> pure ()
                 RcvChunkError -> badRcvFileChunk ft $ "incorrect chunk number " <> show chunkNo
-        -- TODO print errors
-        MERR _ _ -> pure ()
+        MERR msgId err ->
+          msgErr conn msgId err -- ?
+          -- TODO print errors
         ERR _ -> pure ()
         -- TODO add debugging output
         _ -> pure ()
 
     processUserContactRequest :: ACommand 'Agent -> Connection -> UserContact -> m ()
-    processUserContactRequest agentMsg _conn UserContact {userContactLinkId} = case agentMsg of
+    processUserContactRequest agentMsg conn UserContact {userContactLinkId} = case agentMsg of
       REQ invId connInfo -> do
         ChatMessage {chatMsgEvent} <- liftEither $ parseChatMessage connInfo
         case chatMsgEvent of
@@ -777,8 +782,9 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage =
           XInfo p -> profileContactRequest invId p
           -- TODO show/log error, other events in contact request
           _ -> pure ()
-      -- TODO print errors
-      MERR _ _ -> pure ()
+      MERR msgId err ->
+        msgErr conn msgId err -- ?
+        -- TODO print errors
       ERR _ -> pure ()
       -- TODO add debugging output
       _ -> pure ()
@@ -795,15 +801,23 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage =
 
     ackMsgDeliveryEvent :: Connection -> MsgMeta -> m ()
     ackMsgDeliveryEvent Connection {connId} MsgMeta {recipient = (msgId, _)} =
-      withStore $ \st -> createRcvMsgDeliveryEvent st connId msgId MDSRcvAcknowledged
+      void $ withStore $ \st -> createRcvMsgDeliveryEvent st connId msgId MDSRcvAcknowledged
 
     sentMsgDeliveryEvent :: Connection -> AgentMsgId -> m ()
     sentMsgDeliveryEvent Connection {connId} msgId = do
-      withStore $ \st -> createSndMsgDeliveryEvent st connId msgId MDSSndSent
-      chatItemId_ <- withStore $ \st -> getChatItemId st msgId
+      messageId <- withStore $ \st -> createSndMsgDeliveryEvent st connId msgId MDSSndSent
+      chatItemId_ <- withStore $ \st -> getChatItemId st messageId
       case chatItemId_ of
         Nothing -> pure ()
         Just chatItemId -> toView $ CRChatItemMSent chatItemId
+
+    msgErr :: Connection -> AgentMsgId -> AgentErrorType -> m ()
+    msgErr Connection {connId} msgId agentError = do
+      messageId <- withStore $ \st -> getMessageId st connId msgId
+      chatItemId_ <- withStore $ \st -> getChatItemId st messageId
+      case chatItemId_ of
+        Nothing -> pure ()
+        Just chatItemId -> toView $ CRChatItemMErr chatItemId agentError
 
     badRcvFileChunk :: RcvFileTransfer -> String -> m ()
     badRcvFileChunk ft@RcvFileTransfer {fileStatus} err =
