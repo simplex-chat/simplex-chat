@@ -32,7 +32,7 @@ struct ChatListNavLink: View {
     }
 
     private func chatView() -> some View {
-        ChatView(chatInfo: chat.chatInfo)
+        ChatView(chat: chat)
         .onAppear {
             do {
                 let cInfo = chat.chatInfo
@@ -52,7 +52,7 @@ struct ChatListNavLink: View {
             destination: { chatView() },
             label: { ChatPreviewView(chat: chat) }
         )
-        .disabled(!contact.connected)
+        .disabled(!contact.ready)
         .swipeActions(edge: .trailing, allowsFullSwipe: true) {
             Button(role: .destructive) {
                 alertContact = contact

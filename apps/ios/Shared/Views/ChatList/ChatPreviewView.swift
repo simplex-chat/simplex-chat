@@ -13,18 +13,21 @@ struct ChatPreviewView: View {
 
     var body: some View {
         let cItem = chat.chatItems.last
-        var iconName: String
-        switch chat.chatInfo {
-        case .direct: iconName = "person.crop.circle.fill"
-        case .group: iconName = "person.2.circle.fill"
-        default: iconName = "circle.fill"
-        }
         return HStack(spacing: 8) {
-            Image(systemName: iconName)
-                .resizable()
-                .foregroundColor(Color(uiColor: .secondarySystemBackground))
-                .frame(width: 63, height: 63)
-                .padding(.leading, 4)
+            ZStack(alignment: .bottomLeading) {
+                ChatInfoImage(chat: chat)
+                    .frame(width: 63, height: 63)
+                if case .direct = chat.chatInfo,
+                   chat.serverInfo.networkStatus == .connected {
+                    Image(systemName: "circle.fill")
+                        .resizable()
+                        .foregroundColor(.green)
+                        .frame(width: 5, height: 5)
+                        .padding([.bottom, .leading], 1)
+                }
+            }
+            .padding(.leading, 4)
+
             VStack(spacing: 0) {
                 HStack(alignment: .top) {
                     Text(chat.chatInfo.chatViewName)
@@ -46,7 +49,7 @@ struct ChatPreviewView: View {
                         .padding([.leading, .trailing], 8)
                         .padding(.bottom, 4)
                 }
-                else if case let .direct(contact) = chat.chatInfo, !contact.connected {
+                else if case let .direct(contact) = chat.chatInfo, !contact.ready {
                     Text("Connecting...")
                         .frame(minWidth: 0, maxWidth: .infinity, minHeight: 44, maxHeight: 44, alignment: .topLeading)
                         .padding([.leading, .trailing], 8)
