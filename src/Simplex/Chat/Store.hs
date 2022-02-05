@@ -2090,7 +2090,7 @@ getGroupChatPreviews_ db User {userId, userContactId} = do
           mu.member_status, mu.invited_by, mu.local_display_name, mu.contact_id,
           pu.display_name, pu.full_name,
           -- ChatItem
-          ci.chat_item_id, ci.item_ts, ci.item_content, ci.item_text, ci.item_status, ci.created_at
+          ci.chat_item_id, ci.item_ts, ci.item_content, ci.item_text, ci.item_status, ci.created_at,
           -- Maybe GroupMember - sender
           m.group_member_id, m.group_id, m.member_id, m.member_role, m.member_category,
           m.member_status, m.invited_by, m.local_display_name, m.contact_id,
@@ -2279,7 +2279,7 @@ getGroupChatLast_ db user@User {userId, userContactId} groupId count = do
           [sql|
             SELECT
               -- ChatItem
-              ci.chat_item_id, ci.item_ts, ci.item_content, ci.item_text, ci.item_status, ci.created_at
+              ci.chat_item_id, ci.item_ts, ci.item_content, ci.item_text, ci.item_status, ci.created_at,
               -- GroupMember
               m.group_member_id, m.group_id, m.member_id, m.member_role, m.member_category,
               m.member_status, m.invited_by, m.local_display_name, m.contact_id,
@@ -2308,7 +2308,7 @@ getGroupChatAfter_ db user@User {userId, userContactId} groupId afterChatItemId 
           [sql|
             SELECT
               -- ChatItem
-              ci.chat_item_id, ci.item_ts, ci.item_content, ci.item_text, ci.item_status, ci.created_at
+              ci.chat_item_id, ci.item_ts, ci.item_content, ci.item_text, ci.item_status, ci.created_at,
               -- GroupMember
               m.group_member_id, m.group_id, m.member_id, m.member_role, m.member_category,
               m.member_status, m.invited_by, m.local_display_name, m.contact_id,
@@ -2337,7 +2337,7 @@ getGroupChatBefore_ db user@User {userId, userContactId} groupId beforeChatItemI
           [sql|
             SELECT
               -- ChatItem
-              ci.chat_item_id, ci.item_ts, ci.item_content, ci.item_text, ci.item_status, ci.created_at
+              ci.chat_item_id, ci.item_ts, ci.item_content, ci.item_text, ci.item_status, ci.created_at,
               -- GroupMember
               m.group_member_id, m.group_id, m.member_id, m.member_role, m.member_category,
               m.member_status, m.invited_by, m.local_display_name, m.contact_id,
