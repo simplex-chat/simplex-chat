@@ -10,6 +10,8 @@ import SwiftUI
 
 struct ChatPreviewView: View {
     @ObservedObject var chat: Chat
+    @Environment(\.colorScheme) var colorScheme
+    var darkGreen = Color(red: 0, green: 0.5, blue: 0)
 
     var body: some View {
         let cItem = chat.chatItems.last
@@ -17,14 +19,14 @@ struct ChatPreviewView: View {
             ZStack(alignment: .bottomLeading) {
                 ChatInfoImage(chat: chat)
                     .frame(width: 63, height: 63)
-                if case .direct = chat.chatInfo,
-                   chat.serverInfo.networkStatus == .connected {
+//                if case .direct = chat.chatInfo,
+//                   chat.serverInfo.networkStatus == .connected {
                     Image(systemName: "circle.fill")
                         .resizable()
-                        .foregroundColor(.green)
+                        .foregroundColor(colorScheme == .dark ? darkGreen : .green)
                         .frame(width: 5, height: 5)
                         .padding([.bottom, .leading], 1)
-                }
+//                }
             }
             .padding(.leading, 4)
 
