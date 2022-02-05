@@ -113,6 +113,7 @@ module Simplex.Chat.Store
     getChatPreviews,
     getDirectChat,
     getGroupChat,
+    getChatItemId,
   )
 where
 
@@ -2372,6 +2373,12 @@ getGroupIdByName_ :: DB.Connection -> User -> GroupName -> IO (Either StoreError
 getGroupIdByName_ db User {userId} gName =
   firstRow fromOnly (SEGroupNotFoundByName gName) $
     DB.query db "SELECT group_id FROM groups WHERE user_id = ? AND local_display_name = ?" (userId, gName)
+
+getChatItemId :: MonadUnliftIO m => SQLiteStore -> MessageId -> m (Maybe ChatItemId)
+getChatItemId st messageId =
+  liftIO . withTransaction st $ \db ->
+    join . listToMaybe . map fromOnly
+      <$> DB.query db "SELECT chat_item_id FROM chat_item_messages WHERE message_id = ?" (Only messageId)
 
 type ChatItemRow = (Int64, ChatItemTs, ACIContent, Text, UTCTime)
 

@@ -30,12 +30,12 @@ import Database.SQLite.Simple.ToField (ToField (..))
 import GHC.Generics (Generic)
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
+import Simplex.Chat.Util (safeDecodeUtf8)
 import Simplex.Messaging.Agent.Protocol (AgentMsgId, MsgMeta (..))
 import Simplex.Messaging.Agent.Store.SQLite (fromTextField_)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, enumJSON, sumTypeJSON)
 import Simplex.Messaging.Protocol (MsgBody)
-import Simplex.Chat.Util (safeDecodeUtf8)
 
 data ChatType = CTDirect | CTGroup | CTContactRequest
   deriving (Show, Generic)
@@ -123,8 +123,8 @@ instance ToJSON (CChatItem c) where
   toJSON (CChatItem _ ci) = J.toJSON ci
   toEncoding (CChatItem _ ci) = J.toEncoding ci
 
-chatItemId :: ChatItem c d -> ChatItemId
-chatItemId ChatItem {meta = CIMeta {itemId}} = itemId
+chatItemId' :: ChatItem c d -> ChatItemId
+chatItemId' ChatItem {meta = CIMeta {itemId}} = itemId
 
 data ChatDirection (c :: ChatType) (d :: MsgDirection) where
   CDDirectSnd :: Contact -> ChatDirection 'CTDirect 'MDSnd

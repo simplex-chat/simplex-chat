@@ -296,7 +296,7 @@ processChatCommand user@User {userId, profile} = \case
     SndFileTransfer {fileId} <- withStore $ \st ->
       createSndFileTransfer st userId contact f fileInv agentConnId chSize
     ci <- sendDirectChatItem userId contact (XFile fileInv) (CISndFileInvitation fileId f)
-    withStore $ \st -> updateFileTransferChatItemId st fileId $ chatItemId ci
+    withStore $ \st -> updateFileTransferChatItemId st fileId $ chatItemId' ci
     setActive $ ActiveC cName
     pure . CRNewChatItem $ AChatItem SCTDirect SMDSnd (DirectChat contact) ci
   SendGroupFile gName f -> do
@@ -798,8 +798,12 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage =
       withStore $ \st -> createRcvMsgDeliveryEvent st connId msgId MDSRcvAcknowledged
 
     sentMsgDeliveryEvent :: Connection -> AgentMsgId -> m ()
-    sentMsgDeliveryEvent Connection {connId} msgId =
+    sentMsgDeliveryEvent Connection {connId} msgId = do
       withStore $ \st -> createSndMsgDeliveryEvent st connId msgId MDSSndSent
+      chatItemId_ <- withStore $ \st -> getChatItemId st msgId
+      case chatItemId_ of
+        Nothing -> pure ()
+        Just chatItemId -> toView $ CRChatItemMSent chatItemId
 
     badRcvFileChunk :: RcvFileTransfer -> String -> m ()
     badRcvFileChunk ft@RcvFileTransfer {fileStatus} err =
@@ -859,7 +863,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage =
       chSize <- asks $ fileChunkSize . config
       ft@RcvFileTransfer {fileId} <- withStore $ \st -> createRcvFileTransfer st userId ct fInv chSize
       ci <- saveRcvDirectChatItem userId ct msgId msgMeta (CIRcvFileInvitation ft)
-      withStore $ \st -> updateFileTransferChatItemId st fileId $ chatItemId ci
+      withStore $ \st -> updateFileTransferChatItemId st fileId $ chatItemId' ci
       toView . CRNewChatItem $ AChatItem SCTDirect SMDRcv (DirectChat ct) ci
       checkIntegrity msgMeta $ toView . CRMsgIntegrityError
       showToast (c <> "> ") "wants to send a file"
@@ -870,7 +874,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage =
       chSize <- asks $ fileChunkSize . config
       ft@RcvFileTransfer {fileId} <- withStore $ \st -> createRcvGroupFileTransfer st userId m fInv chSize
       ci <- saveRcvGroupChatItem userId gInfo m msgId msgMeta (CIRcvFileInvitation ft)
-      withStore $ \st -> updateFileTransferChatItemId st fileId $ chatItemId ci
+      withStore $ \st -> updateFileTransferChatItemId st fileId $ chatItemId' ci
       toView . CRNewChatItem $ AChatItem SCTGroup SMDRcv (GroupChat gInfo) ci
       checkIntegrity msgMeta $ toView . CRMsgIntegrityError
       let g = groupName' gInfo

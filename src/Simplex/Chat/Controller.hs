@@ -123,6 +123,8 @@ data ChatResponse
   = CRApiChats {chats :: [AChat]}
   | CRApiChat {chat :: AChat}
   | CRNewChatItem {chatItem :: AChatItem}
+  | CRChatItemMSent {chatItemId :: ChatItemId}
+  | CRChatItemMErr {chatItemId :: ChatItemId}
   | CRMsgIntegrityError {msgerror :: MsgErrorType} -- TODO make it chat item to support in mobile
   | CRCmdAccepted {corr :: CorrId}
   | CRChatHelp {helpSection :: HelpSection}
