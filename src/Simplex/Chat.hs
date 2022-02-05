@@ -541,9 +541,8 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage =
           messageId <- sentMsgDeliveryEvent conn msgId
           void $ withStore $ \st -> updateDirectChatItemByMessageId st messageId CISSndSent
         -- TODO print errors
-        MERR msgId err -> case err of
-          SMP AUTH -> void $ withStore $ \st -> updateDirectChatItemByAgentMsgId st connId msgId CISSndErrorAuth
-          e -> void $ withStore $ \st -> updateDirectChatItemByAgentMsgId st connId msgId (CISSndError e)
+        MERR msgId err ->
+          void $ withStore $ \st -> updateDirectChatItemByAgentMsgId st connId msgId (agentErrToItemStatus err)
         ERR _ -> pure ()
         -- TODO add debugging output
         _ -> pure ()
@@ -611,19 +610,12 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage =
           showToast (c <> "> ") "is active"
           setActive $ ActiveC c
         -- TODO print errors
-        MERR msgId err -> case err of
-          SMP AUTH -> do
-            cChatItem_ <- withStore $ \st -> updateDirectChatItemByAgentMsgId st connId msgId CISSndErrorAuth
-            case cChatItem_ of
-              Nothing -> pure ()
-              Just (CChatItem _ chatItem@(ChatItem CIDirectSnd _ _)) -> toView $ CRChatItemUpdated $ AChatItem SCTDirect SMDSnd (DirectChat ct) chatItem
-              _ -> pure ()
-          e -> do
-            cChatItem_ <- withStore $ \st -> updateDirectChatItemByAgentMsgId st connId msgId (CISSndError e)
-            case cChatItem_ of
-              Nothing -> pure ()
-              Just (CChatItem _ chatItem@(ChatItem CIDirectSnd _ _)) -> toView $ CRChatItemUpdated $ AChatItem SCTDirect SMDSnd (DirectChat ct) chatItem
-              _ -> pure ()
+        MERR msgId err -> do
+          cChatItem_ <- withStore $ \st -> updateDirectChatItemByAgentMsgId st connId msgId (agentErrToItemStatus err)
+          case cChatItem_ of
+            Nothing -> pure ()
+            Just (CChatItem _ chatItem@(ChatItem CIDirectSnd _ _)) -> toView $ CRChatItemUpdated $ AChatItem SCTDirect SMDSnd (DirectChat ct) chatItem
+            _ -> pure ()
         ERR _ -> pure ()
         -- TODO add debugging output
         _ -> pure ()
@@ -820,6 +812,10 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage =
     sentMsgDeliveryEvent :: Connection -> AgentMsgId -> m MessageId
     sentMsgDeliveryEvent Connection {connId} msgId = do
       withStore $ \st -> createSndMsgDeliveryEvent st connId msgId MDSSndSent
+
+    agentErrToItemStatus :: AgentErrorType -> CIStatus 'MDSnd
+    agentErrToItemStatus (SMP AUTH) = CISSndErrorAuth
+    agentErrToItemStatus err = CISSndError err
 
     badRcvFileChunk :: RcvFileTransfer -> String -> m ()
     badRcvFileChunk ft@RcvFileTransfer {fileStatus} err =
