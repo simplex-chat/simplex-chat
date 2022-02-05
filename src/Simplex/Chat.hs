@@ -51,7 +51,7 @@ import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (parseAll)
-import Simplex.Messaging.Protocol (ErrorType (AUTH), MsgBody)
+import Simplex.Messaging.Protocol (ErrorType (..), MsgBody)
 import qualified Simplex.Messaging.Protocol as SMP
 import Simplex.Messaging.Util (tryError)
 import System.Exit (exitFailure, exitSuccess)
