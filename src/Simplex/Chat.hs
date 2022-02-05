@@ -112,9 +112,9 @@ execChatCommand :: (MonadUnliftIO m, MonadReader ChatController m) => ByteString
 execChatCommand s = case parseAll chatCommandP $ B.dropWhileEnd isSpace s of
   Left e -> pure . CRChatError . ChatError $ CECommandError e
   Right cmd -> do
-    ChatController {chatLock = l, smpAgent = a, currentUser} <- ask
+    ChatController {currentUser} <- ask
     user <- readTVarIO currentUser
-    withAgentLock a . withLock l $ either CRChatCmdError id <$> runExceptT (processChatCommand user cmd)
+    either CRChatCmdError id <$> runExceptT (processChatCommand user cmd)
 
 toView :: ChatMonad m => ChatResponse -> m ()
 toView event = do
@@ -129,7 +129,7 @@ processChatCommand user@User {userId, profile} = \case
     CTGroup -> CRApiChat . AChat SCTGroup <$> withStore (\st -> getGroupChat st user cId pagination)
     CTContactRequest -> pure $ CRChatError ChatErrorNotImplemented
   APIGetChatItems _count -> pure $ CRChatError ChatErrorNotImplemented
-  APISendMessage cType chatId mc -> case cType of
+  APISendMessage cType chatId mc -> withChatLock $ case cType of
     CTDirect -> do
       ct@Contact {localDisplayName = c} <- withStore $ \st -> getContact st userId chatId
       ci <- sendDirectChatItem userId ct (XMsgNew mc) (CISndMsgContent mc)
@@ -148,7 +148,7 @@ processChatCommand user@User {userId, profile} = \case
       withStore (\st -> getContactGroupNames st userId ct) >>= \case
         [] -> do
           conns <- withStore $ \st -> getContactConnections st userId ct
-          procCmd $ do
+          withChatLock . procCmd $ do
             withAgent $ \a -> forM_ conns $ \conn ->
               deleteConnection a (aConnId conn) `catchError` \(_ :: AgentErrorType) -> pure ()
             withStore $ \st -> deleteContact st userId ct
@@ -160,11 +160,11 @@ processChatCommand user@User {userId, profile} = \case
   APIAcceptContact connReqId -> do
     UserContactRequest {agentInvitationId = AgentInvId invId, localDisplayName = cName, profileId, profile = p} <- withStore $ \st ->
       getContactRequest st userId connReqId
-    procCmd $ do
+    withChatLock . procCmd $ do
       connId <- withAgent $ \a -> acceptContact a invId . directMessage $ XInfo profile
       acceptedContact <- withStore $ \st -> createAcceptedContact st userId connId cName profileId p
       pure $ CRAcceptingContactRequest acceptedContact
-  APIRejectContact connReqId -> do
+  APIRejectContact connReqId -> withChatLock $ do
     cReq@UserContactRequest {agentContactConnId = AgentConnId connId, agentInvitationId = AgentInvId invId} <-
       withStore $ \st ->
         getContactRequest st userId connReqId
@@ -173,29 +173,29 @@ processChatCommand user@User {userId, profile} = \case
     pure $ CRContactRequestRejected cReq
   ChatHelp section -> pure $ CRChatHelp section
   Welcome -> pure $ CRWelcome user
-  AddContact -> procCmd $ do
+  AddContact -> withChatLock . procCmd $ do
     (connId, cReq) <- withAgent (`createConnection` SCMInvitation)
     withStore $ \st -> createDirectConnection st userId connId
     pure $ CRInvitation cReq
-  Connect (Just (ACR SCMInvitation cReq)) -> procCmd $ do
+  Connect (Just (ACR SCMInvitation cReq)) -> withChatLock . procCmd $ do
     connect cReq $ XInfo profile
     pure CRSentConfirmation
-  Connect (Just (ACR SCMContact cReq)) -> procCmd $ do
+  Connect (Just (ACR SCMContact cReq)) -> withChatLock . procCmd $ do
     connect cReq $ XContact profile Nothing
     pure CRSentInvitation
   Connect Nothing -> throwChatError CEInvalidConnReq
-  ConnectAdmin -> procCmd $ do
+  ConnectAdmin -> withChatLock . procCmd $ do
     connect adminContactReq $ XContact profile Nothing
     pure CRSentInvitation
   DeleteContact cName -> do
     contactId <- withStore $ \st -> getContactIdByName st userId cName
     processChatCommand user $ APIDeleteChat CTDirect contactId
   ListContacts -> CRContactsList <$> withStore (`getUserContacts` user)
-  CreateMyAddress -> procCmd $ do
+  CreateMyAddress -> withChatLock . procCmd $ do
     (connId, cReq) <- withAgent (`createConnection` SCMContact)
     withStore $ \st -> createUserContactLink st userId connId cReq
     pure $ CRUserContactLinkCreated cReq
-  DeleteMyAddress -> do
+  DeleteMyAddress -> withChatLock $ do
     conns <- withStore $ \st -> getUserContactLinkConnections st userId
     procCmd $ do
       withAgent $ \a -> forM_ conns $ \conn ->
@@ -216,7 +216,7 @@ processChatCommand user@User {userId, profile} = \case
   NewGroup gProfile -> do
     gVar <- asks idsDrg
     CRGroupCreated <$> withStore (\st -> createNewGroup st gVar user gProfile)
-  AddMember gName cName memRole -> do
+  AddMember gName cName memRole -> withChatLock $ do
     -- TODO for large groups: no need to load all members to determine if contact is a member
     (group, contact) <- withStore $ \st -> (,) <$> getGroupByName st user gName <*> getContactByName st userId cName
     let Group gInfo@GroupInfo {groupId, groupProfile, membership} members = group
@@ -243,7 +243,7 @@ processChatCommand user@User {userId, profile} = \case
         | otherwise -> throwChatError $ CEGroupDuplicateMember cName
   JoinGroup gName -> do
     ReceivedGroupInvitation {fromMember, connRequest, groupInfo = g} <- withStore $ \st -> getGroupInvitation st user gName
-    procCmd $ do
+    withChatLock . procCmd $ do
       agentConnId <- withAgent $ \a -> joinConnection a connRequest . directMessage . XGrpAcpt $ memberId (membership g :: GroupMember)
       withStore $ \st -> do
         createMemberConnection st userId fromMember agentConnId
@@ -258,14 +258,14 @@ processChatCommand user@User {userId, profile} = \case
       Just m@GroupMember {memberId = mId, memberRole = mRole, memberStatus = mStatus} -> do
         let userRole = memberRole (membership :: GroupMember)
         when (userRole < GRAdmin || userRole < mRole) $ throwChatError CEGroupUserRole
-        procCmd $ do
+        withChatLock . procCmd $ do
           when (mStatus /= GSMemInvited) . void . sendGroupMessage members $ XGrpMemDel mId
           deleteMemberConnection m
           withStore $ \st -> updateGroupMemberStatus st userId m GSMemRemoved
           pure $ CRUserDeletedMember gInfo m
   LeaveGroup gName -> do
     Group gInfo@GroupInfo {membership} members <- withStore $ \st -> getGroupByName st user gName
-    procCmd $ do
+    withChatLock . procCmd $ do
       void $ sendGroupMessage members XGrpLeave
       mapM_ deleteMemberConnection members
       withStore $ \st -> updateGroupMemberStatus st userId membership GSMemLeft
@@ -277,7 +277,7 @@ processChatCommand user@User {userId, profile} = \case
           memberRole (membership :: GroupMember) == GROwner
             || (s == GSMemRemoved || s == GSMemLeft || s == GSMemGroupDeleted || s == GSMemInvited)
     unless canDelete $ throwChatError CEGroupUserRole
-    procCmd $ do
+    withChatLock . procCmd $ do
       when (memberActive membership) . void $ sendGroupMessage members XGrpDel
       mapM_ deleteMemberConnection members
       withStore $ \st -> deleteGroup st user g
@@ -288,7 +288,7 @@ processChatCommand user@User {userId, profile} = \case
     groupId <- withStore $ \st -> getGroupIdByName st user gName
     let mc = MCText $ safeDecodeUtf8 msg
     processChatCommand user $ APISendMessage CTGroup groupId mc
-  SendFile cName f -> do
+  SendFile cName f -> withChatLock $ do
     (fileSize, chSize) <- checkSndFile f
     contact <- withStore $ \st -> getContactByName st userId cName
     (agentConnId, fileConnReq) <- withAgent (`createConnection` SCMInvitation)
@@ -299,7 +299,7 @@ processChatCommand user@User {userId, profile} = \case
     withStore $ \st -> updateFileTransferChatItemId st fileId $ chatItemId ci
     setActive $ ActiveC cName
     pure . CRNewChatItem $ AChatItem SCTDirect SMDSnd (DirectChat contact) ci
-  SendGroupFile gName f -> do
+  SendGroupFile gName f -> withChatLock $ do
     (fileSize, chSize) <- checkSndFile f
     Group gInfo@GroupInfo {membership} members <- withStore $ \st -> getGroupByName st user gName
     unless (memberActive membership) $ throwChatError CEGroupMemberUserRemoved
@@ -322,7 +322,7 @@ processChatCommand user@User {userId, profile} = \case
   ReceiveFile fileId filePath_ -> do
     ft@RcvFileTransfer {fileInvitation = FileInvitation {fileName, fileConnReq}, fileStatus} <- withStore $ \st -> getRcvFileTransfer st userId fileId
     unless (fileStatus == RFSNew) . throwChatError $ CEFileAlreadyReceiving fileName
-    procCmd $ do
+    withChatLock . procCmd $ do
       tryError (withAgent $ \a -> joinConnection a fileConnReq . directMessage $ XFileAcpt fileName) >>= \case
         Right agentConnId -> do
           filePath <- getRcvFilePath fileId filePath_ fileName
@@ -333,7 +333,7 @@ processChatCommand user@User {userId, profile} = \case
         Left e -> throwError e
   CancelFile fileId -> do
     ft' <- withStore (\st -> getFileTransfer st userId fileId)
-    procCmd $ case ft' of
+    withChatLock . procCmd $ case ft' of
       FTSnd fts -> do
         forM_ fts $ \ft -> cancelSndFileTransfer ft
         pure $ CRSndGroupFileCancelled fts
@@ -350,12 +350,15 @@ processChatCommand user@User {userId, profile} = \case
       let user' = (user :: User) {localDisplayName = displayName, profile = p}
       asks currentUser >>= atomically . (`writeTVar` user')
       contacts <- withStore (`getUserContacts` user)
-      procCmd $ do
+      withChatLock . procCmd $ do
         forM_ contacts $ \ct -> sendDirectMessage (contactConn ct) $ XInfo p
         pure $ CRUserProfileUpdated profile p
   QuitChat -> liftIO exitSuccess
   ShowVersion -> pure CRVersionInfo
   where
+    withChatLock action = do
+      ChatController {chatLock = l, smpAgent = a} <- ask
+      withAgentLock a . withLock l $ action
     -- below code would make command responses asynchronous where they can be slow
     -- in View.hs `r'` should be defined as `id` in this case
     -- procCmd :: m ChatResponse -> m ChatResponse
