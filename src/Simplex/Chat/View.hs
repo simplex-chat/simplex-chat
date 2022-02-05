@@ -38,7 +38,7 @@ responseToView cmd = \case
   CRApiChat chat -> api [sShow chat]
   CRNewChatItem (AChatItem _ _ chat item) -> viewChatItem chat item
   CRChatItemMSent _ -> []
-  CRChatItemMErr _ _ -> []
+  CRChatItemMErr _ e -> viewChatError $ ChatErrorAgent e
   CRMsgIntegrityError mErr -> viewMsgIntegrityError mErr
   CRCmdAccepted _ -> r []
   CRChatHelp section -> case section of
