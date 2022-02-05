@@ -140,6 +140,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (UTCTime (..), getCurrentTime)
 import Data.Time.LocalTime (TimeZone, getCurrentTimeZone)
+import Data.Type.Equality
 import Database.SQLite.Simple (NamedParam (..), Only (..), Query (..), SQLError, (:.) (..))
 import qualified Database.SQLite.Simple as DB
 import Database.SQLite.Simple.QQ (sql)
@@ -147,6 +148,7 @@ import GHC.Generics (Generic)
 import Simplex.Chat.Messages
 import Simplex.Chat.Migrations.M20220101_initial
 import Simplex.Chat.Migrations.M20220122_v1_1
+import Simplex.Chat.Migrations.M20220205_chat_item_status
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Chat.Util (eitherToMaybe)
@@ -162,7 +164,8 @@ import UnliftIO.STM
 schemaMigrations :: [(String, Query)]
 schemaMigrations =
   [ ("20220101_initial", m20220101_initial),
-    ("20220122_v1_1", m20220122_v1_1)
+    ("20220122_v1_1", m20220122_v1_1),
+    ("20220205_chat_item_status", m20220205_chat_item_status)
   ]
 
 -- | The list of migrations in ascending order by date
@@ -1985,20 +1988,20 @@ deletePendingGroupMessage st groupMemberId messageId =
   liftIO . withTransaction st $ \db ->
     DB.execute db "DELETE FROM pending_group_messages WHERE group_member_id = ? AND message_id = ?" (groupMemberId, messageId)
 
-createNewChatItem :: MonadUnliftIO m => SQLiteStore -> UserId -> ChatDirection c d -> NewChatItem d -> m ChatItemId
-createNewChatItem st userId chatDirection NewChatItem {createdByMsgId, itemSent, itemTs, itemContent, itemText, createdAt} =
+createNewChatItem :: (MonadUnliftIO m, MsgDirectionI d) => SQLiteStore -> UserId -> ChatDirection c d -> NewChatItem d -> m ChatItemId
+createNewChatItem st userId chatDirection NewChatItem {createdByMsgId, itemSent, itemTs, itemContent, itemText, itemStatus, createdAt} =
   liftIO . withTransaction st $ \db -> do
     let (contactId_, groupId_, groupMemberId_) = ids
     DB.execute
       db
       [sql|
         INSERT INTO chat_items (
-          user_id, contact_id, group_id, group_member_id,
-          created_by_msg_id, item_sent, item_ts, item_content, item_text, created_at, updated_at
-        ) VALUES (?,?,?,?,?,?,?,?,?,?,?)
+          user_id, contact_id, group_id, group_member_id, created_by_msg_id,
+          item_sent, item_ts, item_content, item_text, item_status, created_at, updated_at
+        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
       |]
-      ( (userId, contactId_, groupId_, groupMemberId_)
-          :. (createdByMsgId, itemSent, itemTs, itemContent, itemText, createdAt, createdAt)
+      ( (userId, contactId_, groupId_, groupMemberId_, createdByMsgId)
+          :. (itemSent, itemTs, itemContent, itemText, itemStatus, createdAt, createdAt)
       )
     ciId <- insertedRowId db
     case createdByMsgId of
@@ -2048,7 +2051,7 @@ getDirectChatPreviews_ db User {userId} = do
           c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.conn_status, c.conn_type,
           c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at,
           -- ChatItem
-          ci.chat_item_id, ci.item_ts, ci.item_content, ci.item_text, ci.created_at
+          ci.chat_item_id, ci.item_ts, ci.item_content, ci.item_text, ci.item_status, ci.created_at
         FROM contacts ct
         JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
         JOIN connections c ON c.contact_id = ct.contact_id
@@ -2389,12 +2392,12 @@ getChatItemId st messageId =
     join . listToMaybe . map fromOnly
       <$> DB.query db "SELECT chat_item_id FROM chat_item_messages WHERE message_id = ?" (Only messageId)
 
-type ChatItemRow = (Int64, ChatItemTs, ACIContent, Text, UTCTime)
+type ChatItemRow = (Int64, ChatItemTs, ACIContent, Text, ACIStatus, UTCTime)
 
-type MaybeChatItemRow = (Maybe Int64, Maybe ChatItemTs, Maybe ACIContent, Maybe Text, Maybe UTCTime)
+type MaybeChatItemRow = (Maybe Int64, Maybe ChatItemTs, Maybe ACIContent, Maybe Text, Maybe ACIStatus, Maybe UTCTime)
 
 toDirectChatItem :: TimeZone -> ChatItemRow -> CChatItem 'CTDirect
-toDirectChatItem tz (itemId, itemTs, itemContent, itemText, createdAt) =
+toDirectChatItem tz (itemId, itemTs, itemContent, itemText, itemStatus, createdAt) =
   case itemContent of
     ACIContent d@SMDSnd ciContent -> CChatItem d $ ChatItem CIDirectSnd ciMeta ciContent
     ACIContent d@SMDRcv ciContent -> CChatItem d $ ChatItem CIDirectRcv ciMeta ciContent
@@ -2403,8 +2406,8 @@ toDirectChatItem tz (itemId, itemTs, itemContent, itemText, createdAt) =
     ciMeta = mkCIMeta itemId itemText ciStatusNew tz itemTs createdAt
 
 toDirectChatItemList :: TimeZone -> MaybeChatItemRow -> [CChatItem 'CTDirect]
-toDirectChatItemList tz (Just itemId, Just itemTs, Just itemContent, Just itemText, Just createdAt) =
-  [toDirectChatItem tz (itemId, itemTs, itemContent, itemText, createdAt)]
+toDirectChatItemList tz (Just itemId, Just itemTs, Just itemContent, Just itemText, Just itemStatus, Just createdAt) =
+  [toDirectChatItem tz (itemId, itemTs, itemContent, itemText, itemStatus, createdAt)]
 toDirectChatItemList _ _ = []
 
 type GroupChatItemRow = ChatItemRow :. MaybeGroupMemberRow
@@ -2412,19 +2415,26 @@ type GroupChatItemRow = ChatItemRow :. MaybeGroupMemberRow
 type MaybeGroupChatItemRow = MaybeChatItemRow :. MaybeGroupMemberRow
 
 toGroupChatItem :: TimeZone -> Int64 -> GroupChatItemRow -> Either StoreError (CChatItem 'CTGroup)
-toGroupChatItem tz userContactId ((itemId, itemTs, itemContent, itemText, createdAt) :. memberRow_) =
+toGroupChatItem tz userContactId ((itemId, itemTs, itemContent, itemText, itemStatus, createdAt) :. memberRow_) = do
   let member_ = toMaybeGroupMember userContactId memberRow_
-   in case (itemContent, member_) of
-        (ACIContent d@SMDSnd ciContent, Nothing) -> Right $ CChatItem d (ChatItem CIGroupSnd ciMeta ciContent)
-        (ACIContent d@SMDRcv ciContent, Just member) -> Right $ CChatItem d (ChatItem (CIGroupRcv member) ciMeta ciContent)
-        _ -> Left $ SEBadChatItem itemId
+  case (itemContent, member_) of
+    (ACIContent d@SMDSnd ciContent, Nothing) -> case itemStatus of
+      ACIStatus d' ciStatus -> case testEquality d d' of
+        Just Refl -> Right $ CChatItem d (ChatItem CIGroupSnd (ciMeta ciStatus) ciContent)
+        _ -> badItem
+    (ACIContent d@SMDRcv ciContent, Just member) -> case itemStatus of
+      ACIStatus d' ciStatus -> case testEquality d d' of
+        Just Refl -> Right $ CChatItem d (ChatItem (CIGroupRcv member) (ciMeta ciStatus) ciContent)
+        _ -> badItem
+    _ -> badItem
   where
-    ciMeta :: MsgDirectionI d => CIMeta d
-    ciMeta = mkCIMeta itemId itemText ciStatusNew tz itemTs createdAt
+    badItem = Left $ SEBadChatItem itemId
+    ciMeta :: CIStatus d -> CIMeta d
+    ciMeta status = mkCIMeta itemId itemText status tz itemTs createdAt
 
 toGroupChatItemList :: TimeZone -> Int64 -> MaybeGroupChatItemRow -> [CChatItem 'CTGroup]
-toGroupChatItemList tz userContactId ((Just itemId, Just itemTs, Just itemContent, Just itemText, Just createdAt) :. memberRow_) =
-  either (const []) (: []) $ toGroupChatItem tz userContactId ((itemId, itemTs, itemContent, itemText, createdAt) :. memberRow_)
+toGroupChatItemList tz userContactId ((Just itemId, Just itemTs, Just itemContent, Just itemText, Just itemStatus, Just createdAt) :. memberRow_) =
+  either (const []) (: []) $ toGroupChatItem tz userContactId ((itemId, itemTs, itemContent, itemText, itemStatus, createdAt) :. memberRow_)
 toGroupChatItemList _ _ _ = []
 
 -- | Saves unique local display name based on passed displayName, suffixed with _N if required.

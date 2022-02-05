@@ -139,6 +139,7 @@ data NewChatItem d = NewChatItem
     itemTs :: ChatItemTs,
     itemContent :: CIContent d,
     itemText :: Text,
+    itemStatus :: CIStatus d,
     createdAt :: UTCTime
   }
   deriving (Show)

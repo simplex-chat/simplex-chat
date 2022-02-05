@@ -1260,6 +1260,7 @@ mkNewChatItem itemContent msgId itemTs createdAt =
       itemTs,
       itemContent,
       itemText = ciContentToText itemContent,
+      itemStatus = ciStatusNew,
       createdAt
     }
 
