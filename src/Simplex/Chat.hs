@@ -807,7 +807,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage =
 
     ackMsgDeliveryEvent :: Connection -> MsgMeta -> m ()
     ackMsgDeliveryEvent Connection {connId} MsgMeta {recipient = (msgId, _)} =
-      void $ withStore $ \st -> createRcvMsgDeliveryEvent st connId msgId MDSRcvAcknowledged
+      withStore $ \st -> createRcvMsgDeliveryEvent st connId msgId MDSRcvAcknowledged
 
     sentMsgDeliveryEvent :: Connection -> AgentMsgId -> m MessageId
     sentMsgDeliveryEvent Connection {connId} msgId = do

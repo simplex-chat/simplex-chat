@@ -1875,14 +1875,13 @@ createSndMsgDeliveryEvent st connId agentMsgId sndMsgDeliveryStatus =
       createMsgDeliveryEvent_ db msgDeliveryId sndMsgDeliveryStatus currentTs
     pure messageId
 
-createRcvMsgDeliveryEvent :: StoreMonad m => SQLiteStore -> Int64 -> AgentMsgId -> MsgDeliveryStatus 'MDRcv -> m MessageId
+createRcvMsgDeliveryEvent :: StoreMonad m => SQLiteStore -> Int64 -> AgentMsgId -> MsgDeliveryStatus 'MDRcv -> m ()
 createRcvMsgDeliveryEvent st connId agentMsgId rcvMsgDeliveryStatus =
   liftIOEither . withTransaction st $ \db -> runExceptT $ do
-    (msgDeliveryId, messageId) <- ExceptT $ getMessageAndDeliveryIds_ db connId agentMsgId
+    (msgDeliveryId, _) <- ExceptT $ getMessageAndDeliveryIds_ db connId agentMsgId
     liftIO $ do
       currentTs <- getCurrentTime
       createMsgDeliveryEvent_ db msgDeliveryId rcvMsgDeliveryStatus currentTs
-    pure messageId
 
 createNewMessage_ :: DB.Connection -> NewMessage -> UTCTime -> IO MessageId
 createNewMessage_ db NewMessage {direction, cmEventTag, msgBody} createdAt = do
