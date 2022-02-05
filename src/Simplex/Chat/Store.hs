@@ -2395,10 +2395,12 @@ type MaybeChatItemRow = (Maybe Int64, Maybe ChatItemTs, Maybe ACIContent, Maybe 
 
 toDirectChatItem :: TimeZone -> ChatItemRow -> CChatItem 'CTDirect
 toDirectChatItem tz (itemId, itemTs, itemContent, itemText, createdAt) =
-  let ciMeta = mkCIMeta itemId itemText tz itemTs createdAt
-   in case itemContent of
-        ACIContent d@SMDSnd ciContent -> CChatItem d $ ChatItem CIDirectSnd ciMeta ciContent
-        ACIContent d@SMDRcv ciContent -> CChatItem d $ ChatItem CIDirectRcv ciMeta ciContent
+  case itemContent of
+    ACIContent d@SMDSnd ciContent -> CChatItem d $ ChatItem CIDirectSnd ciMeta ciContent
+    ACIContent d@SMDRcv ciContent -> CChatItem d $ ChatItem CIDirectRcv ciMeta ciContent
+  where
+    ciMeta :: MsgDirectionI d => CIMeta d
+    ciMeta = mkCIMeta itemId itemText ciStatusNew tz itemTs createdAt
 
 toDirectChatItemList :: TimeZone -> MaybeChatItemRow -> [CChatItem 'CTDirect]
 toDirectChatItemList tz (Just itemId, Just itemTs, Just itemContent, Just itemText, Just createdAt) =
@@ -2411,12 +2413,14 @@ type MaybeGroupChatItemRow = MaybeChatItemRow :. MaybeGroupMemberRow
 
 toGroupChatItem :: TimeZone -> Int64 -> GroupChatItemRow -> Either StoreError (CChatItem 'CTGroup)
 toGroupChatItem tz userContactId ((itemId, itemTs, itemContent, itemText, createdAt) :. memberRow_) =
-  let ciMeta = mkCIMeta itemId itemText tz itemTs createdAt
-      member_ = toMaybeGroupMember userContactId memberRow_
+  let member_ = toMaybeGroupMember userContactId memberRow_
    in case (itemContent, member_) of
         (ACIContent d@SMDSnd ciContent, Nothing) -> Right $ CChatItem d (ChatItem CIGroupSnd ciMeta ciContent)
         (ACIContent d@SMDRcv ciContent, Just member) -> Right $ CChatItem d (ChatItem (CIGroupRcv member) ciMeta ciContent)
         _ -> Left $ SEBadChatItem itemId
+  where
+    ciMeta :: MsgDirectionI d => CIMeta d
+    ciMeta = mkCIMeta itemId itemText ciStatusNew tz itemTs createdAt
 
 toGroupChatItemList :: TimeZone -> Int64 -> MaybeGroupChatItemRow -> [CChatItem 'CTGroup]
 toGroupChatItemList tz userContactId ((Just itemId, Just itemTs, Just itemContent, Just itemText, Just createdAt) :. memberRow_) =

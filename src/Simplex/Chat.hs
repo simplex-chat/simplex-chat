@@ -1246,11 +1246,11 @@ saveRcvGroupChatItem userId g m msgId MsgMeta {broker = (_, brokerTs)} ciContent
   ciMeta <- saveChatItem userId (CDGroupRcv g m) $ mkNewChatItem ciContent msgId brokerTs createdAt
   pure $ ChatItem (CIGroupRcv m) ciMeta ciContent
 
-saveChatItem :: ChatMonad m => UserId -> ChatDirection c d -> NewChatItem d -> m CIMeta
+saveChatItem :: (ChatMonad m, MsgDirectionI d) => UserId -> ChatDirection c d -> NewChatItem d -> m (CIMeta d)
 saveChatItem userId cd ci@NewChatItem {itemTs, itemText, createdAt} = do
   tz <- liftIO getCurrentTimeZone
   ciId <- withStore $ \st -> createNewChatItem st userId cd ci
-  pure $ mkCIMeta ciId itemText tz itemTs createdAt
+  pure $ mkCIMeta ciId itemText ciStatusNew tz itemTs createdAt
 
 mkNewChatItem :: forall d. MsgDirectionI d => CIContent d -> MessageId -> UTCTime -> UTCTime -> NewChatItem d
 mkNewChatItem itemContent msgId itemTs createdAt =
