@@ -106,7 +106,6 @@ module Simplex.Chat.Store
     createNewMessageAndRcvMsgDelivery,
     createSndMsgDeliveryEvent,
     createRcvMsgDeliveryEvent,
-    getMessageId,
     createPendingGroupMessage,
     getPendingGroupMessages,
     deletePendingGroupMessage,
@@ -114,7 +113,9 @@ module Simplex.Chat.Store
     getChatPreviews,
     getDirectChat,
     getGroupChat,
-    getChatItemId,
+    updateDirectChatItemByMessageId,
+    updateDirectChatItemByAgentMsgId,
+    updateDirectChatItem,
   )
 where
 
@@ -186,7 +187,7 @@ checkConstraint err action = action `E.catch` (pure . Left . handleSQLError err)
 handleSQLError :: StoreError -> SQLError -> StoreError
 handleSQLError err e
   | DB.sqlError e == DB.ErrorConstraint = err
-  | otherwise = SEInternal $ show e
+  | otherwise = SEInternalError $ show e
 
 insertedRowId :: DB.Connection -> IO Int64
 insertedRowId db = fromOnly . head <$> DB.query_ db "SELECT last_insert_rowid()"
@@ -856,7 +857,7 @@ getConnectionEntity st User {userId, userContactId} agentConnId =
       Nothing ->
         if connType == ConnContact
           then pure $ RcvDirectMsgConnection c Nothing
-          else throwError $ SEInternal $ "connection " <> show connType <> " without entity"
+          else throwError $ SEInternalError $ "connection " <> show connType <> " without entity"
       Just entId ->
         case connType of
           ConnMember -> uncurry (RcvGroupMsgConnection c) <$> getGroupAndMember_ db entId c
@@ -896,10 +897,10 @@ getConnectionEntity st User {userId, userContactId} agentConnId =
     toContact' contactId activeConn [(localDisplayName, displayName, fullName, viaGroup, createdAt)] =
       let profile = Profile {displayName, fullName}
        in Right $ Contact {contactId, localDisplayName, profile, activeConn, viaGroup, createdAt}
-    toContact' _ _ _ = Left $ SEInternal "referenced contact not found"
+    toContact' _ _ _ = Left $ SEInternalError "referenced contact not found"
     getGroupAndMember_ :: DB.Connection -> Int64 -> Connection -> ExceptT StoreError IO (GroupInfo, GroupMember)
     getGroupAndMember_ db groupMemberId c = ExceptT $ do
-      firstRow (toGroupAndMember c) (SEInternal "referenced group member not found") $
+      firstRow (toGroupAndMember c) (SEInternalError "referenced group member not found") $
         DB.query
           db
           [sql|
@@ -1930,12 +1931,6 @@ createMsgDeliveryEvent_ db msgDeliveryId msgDeliveryStatus createdAt = do
     |]
     (msgDeliveryId, msgDeliveryStatus, createdAt, createdAt)
 
-getMessageId :: StoreMonad m => SQLiteStore -> Int64 -> AgentMsgId -> m MessageId
-getMessageId st connId agentMsgId =
-  liftIOEither . withTransaction st $ \db -> runExceptT $ do
-    (_, messageId) <- ExceptT $ getMessageAndDeliveryIds_ db connId agentMsgId
-    pure messageId
-
 getMessageAndDeliveryIds_ :: DB.Connection -> Int64 -> AgentMsgId -> IO (Either StoreError (Int64, MessageId))
 getMessageAndDeliveryIds_ db connId agentMsgId =
   toMsgIds
@@ -2392,11 +2387,70 @@ getGroupIdByName_ db User {userId} gName =
   firstRow fromOnly (SEGroupNotFoundByName gName) $
     DB.query db "SELECT group_id FROM groups WHERE user_id = ? AND local_display_name = ?" (userId, gName)
 
-getChatItemId :: MonadUnliftIO m => SQLiteStore -> MessageId -> m (Maybe ChatItemId)
-getChatItemId st messageId =
+updateDirectChatItemByMessageId :: (StoreMonad m, MsgDirectionI d) => SQLiteStore -> MessageId -> CIStatus d -> m (Maybe (CChatItem 'CTDirect))
+updateDirectChatItemByMessageId st messageId itemStatus =
   liftIO . withTransaction st $ \db ->
-    join . listToMaybe . map fromOnly
-      <$> DB.query db "SELECT chat_item_id FROM chat_item_messages WHERE message_id = ?" (Only messageId)
+    getChatItemId_ db >>= \case
+      Nothing -> pure Nothing
+      Just itemId -> eitherToMaybe <$> updateDirectChatItem_ db itemId itemStatus
+  where
+    getChatItemId_ :: DB.Connection -> IO (Maybe ChatItemId)
+    getChatItemId_ db =
+      join . listToMaybe . map fromOnly
+        <$> DB.query db "SELECT chat_item_id FROM chat_item_messages WHERE message_id = ?" (Only messageId)
+
+updateDirectChatItemByAgentMsgId :: (StoreMonad m, MsgDirectionI d) => SQLiteStore -> Int64 -> AgentMsgId -> CIStatus d -> m (Maybe (CChatItem 'CTDirect))
+updateDirectChatItemByAgentMsgId st connId msgId itemStatus =
+  liftIO . withTransaction st $ \db -> do
+    getChatItemId_ db >>= \case
+      Nothing -> pure Nothing
+      Just itemId -> eitherToMaybe <$> updateDirectChatItem_ db itemId itemStatus
+  where
+    getChatItemId_ :: DB.Connection -> IO (Maybe ChatItemId)
+    getChatItemId_ db =
+      join . listToMaybe . map fromOnly
+        <$> DB.query
+          db
+          [sql|
+            SELECT chat_item_id
+            FROM chat_item_messages
+            WHERE message_id = (
+              SELECT message_id
+              FROM msg_deliveries
+              WHERE connection_id = ? AND agent_msg_id = ?
+              LIMIT 1
+            )
+          |]
+          (connId, msgId)
+
+updateDirectChatItem :: (StoreMonad m, MsgDirectionI d) => SQLiteStore -> ChatItemId -> CIStatus d -> m (CChatItem 'CTDirect)
+updateDirectChatItem st itemId itemStatus =
+  liftIOEither . withTransaction st $ \db ->
+    updateDirectChatItem_ db itemId itemStatus
+
+updateDirectChatItem_ :: MsgDirectionI d => DB.Connection -> ChatItemId -> CIStatus d -> IO (Either StoreError (CChatItem 'CTDirect))
+updateDirectChatItem_ db itemId itemStatus = do
+  DB.execute db "UPDATE chat_items SET item_status = ? WHERE chat_item_id = ?" (itemStatus, itemId)
+  getDirectChatItem_ db itemId
+
+getDirectChatItem_ :: DB.Connection -> ChatItemId -> IO (Either StoreError (CChatItem 'CTDirect))
+getDirectChatItem_ db itemId = do
+  tz <- getCurrentTimeZone
+  join
+    <$> firstRow
+      (toDirectChatItem tz)
+      (SEChatItemNotFound itemId)
+      ( DB.query
+          db
+          [sql|
+            SELECT
+              -- ChatItem
+              ci.chat_item_id, ci.item_ts, ci.item_content, ci.item_text, ci.item_status, ci.created_at
+            FROM chat_items ci
+            WHERE ci.chat_item_id = ?
+          |]
+          (Only itemId)
+      )
 
 type ChatItemRow = (Int64, ChatItemTs, ACIContent, Text, ACIStatus, UTCTime)
 
@@ -2499,7 +2553,7 @@ createWithRandomBytes size gVar create = tryCreate 3
         Right x -> pure $ Right x
         Left e
           | DB.sqlError e == DB.ErrorConstraint -> tryCreate (n - 1)
-          | otherwise -> pure . Left . SEInternal $ show e
+          | otherwise -> pure . Left . SEInternalError $ show e
 
 randomBytes :: TVar ChaChaDRG -> Int -> IO ByteString
 randomBytes gVar n = B64.encode <$> (atomically . stateTVar gVar $ randomBytesGenerate n)
@@ -2527,9 +2581,10 @@ data StoreError
   | SEConnectionNotFound {agentConnId :: AgentConnId}
   | SEIntroNotFound
   | SEUniqueID
-  | SEInternal {message :: String}
+  | SEInternalError {message :: String}
   | SENoMsgDelivery {connId :: Int64, agentMsgId :: AgentMsgId}
-  | SEBadChatItem {itemId :: Int64}
+  | SEBadChatItem {itemId :: ChatItemId}
+  | SEChatItemNotFound {itemId :: ChatItemId}
   deriving (Show, Exception, Generic)
 
 instance ToJSON StoreError where

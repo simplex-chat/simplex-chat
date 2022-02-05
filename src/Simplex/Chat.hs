@@ -51,7 +51,7 @@ import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (parseAll)
-import Simplex.Messaging.Protocol (MsgBody)
+import Simplex.Messaging.Protocol (ErrorType (AUTH), MsgBody)
 import qualified Simplex.Messaging.Protocol as SMP
 import Simplex.Messaging.Util (tryError)
 import System.Exit (exitFailure, exitSuccess)
@@ -526,7 +526,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage =
       _ -> Nothing
 
     processDirectMessage :: ACommand 'Agent -> Connection -> Maybe Contact -> m ()
-    processDirectMessage agentMsg conn = \case
+    processDirectMessage agentMsg conn@Connection {connId} = \case
       Nothing -> case agentMsg of
         CONF confId connInfo -> do
           saveConnInfo conn connInfo
@@ -537,11 +537,13 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage =
           _ <- saveRcvMSG conn meta msgBody
           withAckMessage agentConnId meta $ pure ()
           ackMsgDeliveryEvent conn meta
-        SENT msgId ->
-          sentMsgDeliveryEvent conn msgId
-        MERR msgId err ->
-          msgErr conn msgId err
+        SENT msgId -> do
+          messageId <- sentMsgDeliveryEvent conn msgId
+          void $ withStore $ \st -> updateDirectChatItemByMessageId st messageId CISSndSent
         -- TODO print errors
+        MERR msgId err -> case err of
+          SMP AUTH -> void $ withStore $ \st -> updateDirectChatItemByAgentMsgId st connId msgId CISSndErrorAuth
+          e -> void $ withStore $ \st -> updateDirectChatItemByAgentMsgId st connId msgId (CISSndError e)
         ERR _ -> pure ()
         -- TODO add debugging output
         _ -> pure ()
@@ -590,8 +592,13 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage =
               when (memberIsReady m) $ do
                 notifyMemberConnected gInfo m
                 when (memberCategory m == GCPreMember) $ probeMatchingContacts ct
-        SENT msgId ->
-          sentMsgDeliveryEvent conn msgId
+        SENT msgId -> do
+          messageId <- sentMsgDeliveryEvent conn msgId
+          cChatItem_ <- withStore $ \st -> updateDirectChatItemByMessageId st messageId CISSndSent
+          case cChatItem_ of
+            Nothing -> pure ()
+            Just (CChatItem _ chatItem@(ChatItem CIDirectSnd _ _)) -> toView $ CRChatItemUpdated $ AChatItem SCTDirect SMDSnd (DirectChat ct) chatItem
+            _ -> pure () -- TODO direction in types on write?
         END -> do
           toView $ CRContactAnotherClient ct
           showToast (c <> "> ") "connected to another client"
@@ -603,9 +610,20 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage =
           toView $ CRContactSubscribed ct
           showToast (c <> "> ") "is active"
           setActive $ ActiveC c
-        MERR msgId err ->
-          msgErr conn msgId err
         -- TODO print errors
+        MERR msgId err -> case err of
+          SMP AUTH -> do
+            cChatItem_ <- withStore $ \st -> updateDirectChatItemByAgentMsgId st connId msgId CISSndErrorAuth
+            case cChatItem_ of
+              Nothing -> pure ()
+              Just (CChatItem _ chatItem@(ChatItem CIDirectSnd _ _)) -> toView $ CRChatItemUpdated $ AChatItem SCTDirect SMDSnd (DirectChat ct) chatItem
+              _ -> pure ()
+          e -> do
+            cChatItem_ <- withStore $ \st -> updateDirectChatItemByAgentMsgId st connId msgId (CISSndError e)
+            case cChatItem_ of
+              Nothing -> pure ()
+              Just (CChatItem _ chatItem@(ChatItem CIDirectSnd _ _)) -> toView $ CRChatItemUpdated $ AChatItem SCTDirect SMDSnd (DirectChat ct) chatItem
+              _ -> pure ()
         ERR _ -> pure ()
         -- TODO add debugging output
         _ -> pure ()
@@ -690,10 +708,9 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage =
             _ -> messageError $ "unsupported message: " <> T.pack (show chatMsgEvent)
         ackMsgDeliveryEvent conn msgMeta
       SENT msgId ->
-        sentMsgDeliveryEvent conn msgId
-      MERR msgId err ->
-        msgErr conn msgId err
+        void $ sentMsgDeliveryEvent conn msgId
       -- TODO print errors
+      MERR _ _ -> pure ()
       ERR _ -> pure ()
       -- TODO add debugging output
       _ -> pure ()
@@ -719,7 +736,6 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage =
           withStore $ \st -> updateSndFileChunkSent st ft msgId
           unless (fileStatus == FSCancelled) $ sendFileChunk ft
         MERR _ err -> do
-          -- ? msgErr conn msgId err
           cancelSndFileTransfer ft
           case err of
             SMP SMP.AUTH -> unless (fileStatus == FSCancelled) $ toView $ CRSndFileRcvCancelled ft
@@ -732,7 +748,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage =
         _ -> pure ()
 
     processRcvFileConn :: ACommand 'Agent -> Connection -> RcvFileTransfer -> m ()
-    processRcvFileConn agentMsg conn ft@RcvFileTransfer {fileId, chunkSize} =
+    processRcvFileConn agentMsg _conn ft@RcvFileTransfer {fileId, chunkSize} =
       case agentMsg of
         CON -> do
           withStore $ \st -> updateRcvFileStatus st ft FSConnected
@@ -766,15 +782,14 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage =
                       withAgent (`deleteConnection` agentConnId)
                 RcvChunkDuplicate -> pure ()
                 RcvChunkError -> badRcvFileChunk ft $ "incorrect chunk number " <> show chunkNo
-        MERR msgId err ->
-          msgErr conn msgId err -- ?
-          -- TODO print errors
+        -- TODO print errors
+        MERR _ _ -> pure ()
         ERR _ -> pure ()
         -- TODO add debugging output
         _ -> pure ()
 
     processUserContactRequest :: ACommand 'Agent -> Connection -> UserContact -> m ()
-    processUserContactRequest agentMsg conn UserContact {userContactLinkId} = case agentMsg of
+    processUserContactRequest agentMsg _conn UserContact {userContactLinkId} = case agentMsg of
       REQ invId connInfo -> do
         ChatMessage {chatMsgEvent} <- liftEither $ parseChatMessage connInfo
         case chatMsgEvent of
@@ -782,9 +797,8 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage =
           XInfo p -> profileContactRequest invId p
           -- TODO show/log error, other events in contact request
           _ -> pure ()
-      MERR msgId err ->
-        msgErr conn msgId err -- ?
-        -- TODO print errors
+      -- TODO print errors
+      MERR _ _ -> pure ()
       ERR _ -> pure ()
       -- TODO add debugging output
       _ -> pure ()
@@ -803,21 +817,9 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage =
     ackMsgDeliveryEvent Connection {connId} MsgMeta {recipient = (msgId, _)} =
       void $ withStore $ \st -> createRcvMsgDeliveryEvent st connId msgId MDSRcvAcknowledged
 
-    sentMsgDeliveryEvent :: Connection -> AgentMsgId -> m ()
+    sentMsgDeliveryEvent :: Connection -> AgentMsgId -> m MessageId
     sentMsgDeliveryEvent Connection {connId} msgId = do
-      messageId <- withStore $ \st -> createSndMsgDeliveryEvent st connId msgId MDSSndSent
-      chatItemId_ <- withStore $ \st -> getChatItemId st messageId
-      case chatItemId_ of
-        Nothing -> pure ()
-        Just chatItemId -> toView $ CRChatItemMSent chatItemId
-
-    msgErr :: Connection -> AgentMsgId -> AgentErrorType -> m ()
-    msgErr Connection {connId} msgId agentError = do
-      messageId <- withStore $ \st -> getMessageId st connId msgId
-      chatItemId_ <- withStore $ \st -> getChatItemId st messageId
-      case chatItemId_ of
-        Nothing -> pure ()
-        Just chatItemId -> toView $ CRChatItemMErr chatItemId agentError
+      withStore $ \st -> createSndMsgDeliveryEvent st connId msgId MDSSndSent
 
     badRcvFileChunk :: RcvFileTransfer -> String -> m ()
     badRcvFileChunk ft@RcvFileTransfer {fileStatus} err =
