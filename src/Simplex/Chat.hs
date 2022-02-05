@@ -810,7 +810,7 @@ processAgentMessage user@User {userId, profile} agentConnId agentMessage =
       withStore $ \st -> createRcvMsgDeliveryEvent st connId msgId MDSRcvAcknowledged
 
     sentMsgDeliveryEvent :: Connection -> AgentMsgId -> m MessageId
-    sentMsgDeliveryEvent Connection {connId} msgId = do
+    sentMsgDeliveryEvent Connection {connId} msgId =
       withStore $ \st -> createSndMsgDeliveryEvent st connId msgId MDSSndSent
 
     agentErrToItemStatus :: AgentErrorType -> CIStatus 'MDSnd
