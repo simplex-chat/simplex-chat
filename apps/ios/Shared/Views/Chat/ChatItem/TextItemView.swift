@@ -46,7 +46,6 @@ struct TextItemView: View {
     private func messageText(_ s: String, sent: Bool = false) -> Text {
         if s == "" { return Text("") }
         let parts = s.split(separator: " ")
-        print(parts)
         var res = wordToText(parts[0], sent)
         var i = 1
         while i < parts.count {

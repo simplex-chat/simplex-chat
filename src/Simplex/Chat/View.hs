@@ -34,8 +34,10 @@ serializeChatResponse = unlines . map unStyle . responseToView ""
 
 responseToView :: String -> ChatResponse -> [StyledString]
 responseToView cmd = \case
-  CRApiChats chats -> api [sShow chats]
-  CRApiChat chat -> api [sShow chat]
+  CRActiveUser User {profile} -> r $ viewUserProfile profile
+  CRChatStarted -> r ["chat started"]
+  CRApiChats chats -> r [sShow chats]
+  CRApiChat chat -> r [sShow chat]
   CRNewChatItem (AChatItem _ _ chat item) -> viewChatItem chat item
   CRMsgIntegrityError mErr -> viewMsgIntegrityError mErr
   CRCmdAccepted _ -> r []
@@ -115,7 +117,6 @@ responseToView cmd = \case
   CRMessageError prefix err -> [plain prefix <> ": " <> plain err]
   CRChatError e -> viewChatError e
   where
-    api = (highlight cmd :)
     r = (plain cmd :)
     -- this function should be `r` for "synchronous", `id` for "asynchronous" command responses
     -- r' = id
@@ -447,7 +448,11 @@ fileProgress chunksNum chunkSize fileSize =
 viewChatError :: ChatError -> [StyledString]
 viewChatError = \case
   ChatError err -> case err of
+    CENoActiveUser -> ["error: active user is required"]
+    CEActiveUserExists -> ["error: active user already exists"]
+    CEChatNotStarted -> ["error: chat not started"]
     CEInvalidConnReq -> viewInvalidConnReq
+    CEInvalidChatMessage e -> ["chat message error: " <> sShow e]
     CEContactGroups Contact {localDisplayName} gNames -> [ttyContact localDisplayName <> ": contact cannot be deleted, it is a member of the group(s) " <> ttyGroups gNames]
     CEGroupDuplicateMember c -> ["contact " <> ttyContact c <> " is already in the group"]
     CEGroupDuplicateMemberId -> ["cannot add member - duplicate member ID"]
@@ -488,8 +493,6 @@ viewChatError = \case
   ChatErrorAgent err -> case err of
     SMP SMP.AUTH -> ["error: this connection is deleted"]
     e -> ["smp agent error: " <> sShow e]
-  ChatErrorMessage e -> ["chat message error: " <> sShow e]
-  ChatErrorNotImplemented -> ["chat error: not implemented"]
   where
     fileNotFound fileId = ["file " <> sShow fileId <> " not found"]
 

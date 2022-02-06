@@ -1,6 +1,9 @@
+{-# LANGUAGE FlexibleContexts #-}
+
 module Simplex.Chat.Terminal where
 
 import Control.Logger.Simple
+import Control.Monad.Except
 import Control.Monad.Reader
 import Simplex.Chat
 import Simplex.Chat.Controller
@@ -11,8 +14,8 @@ import Simplex.Chat.Terminal.Input
 import Simplex.Chat.Terminal.Notification
 import Simplex.Chat.Terminal.Output
 import Simplex.Chat.Types (User)
-import Simplex.Chat.Util (whenM)
 import Simplex.Messaging.Util (raceAny_)
+import UnliftIO (async, waitEither_)
 
 simplexChat :: WithTerminal t => ChatConfig -> ChatOpts -> t -> IO ()
 simplexChat cfg opts t
@@ -27,10 +30,15 @@ simplexChat cfg opts t
       st <- createStore f $ dbPoolSize cfg
       u <- getCreateActiveUser st
       ct <- newChatTerminal t
-      cc <- newChatController st u cfg opts sendNotification'
+      cc <- newChatController st (Just u) cfg opts sendNotification'
       runSimplexChat u ct cc
 
 runSimplexChat :: User -> ChatTerminal -> ChatController -> IO ()
-runSimplexChat u ct = runReaderT $ do
-  whenM (asks firstTime) . liftIO . printToTerminal ct $ chatWelcome u
-  raceAny_ [runTerminalInput ct, runTerminalOutput ct, runInputLoop ct, runChatController]
+runSimplexChat u ct cc = do
+  when (firstTime cc) . printToTerminal ct $ chatWelcome u
+  a1 <- async $ runChatTerminal ct cc
+  a2 <- runReaderT (startChatController u) cc
+  waitEither_ a1 a2
+
+runChatTerminal :: ChatTerminal -> ChatController -> IO ()
+runChatTerminal ct cc = raceAny_ [runTerminalInput ct cc, runTerminalOutput ct cc, runInputLoop ct cc]
