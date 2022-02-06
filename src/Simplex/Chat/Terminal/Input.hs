@@ -25,21 +25,16 @@ getKey =
     Right (KeyEvent key ms) -> pure (key, ms)
     _ -> getKey
 
-runInputLoop :: (MonadUnliftIO m, MonadReader ChatController m) => ChatTerminal -> m ()
-runInputLoop ct = do
-  q <- asks inputQ
-  forever $ do
-    s <- atomically $ readTBQueue q
-    r <- execChatCommand . encodeUtf8 $ T.pack s
-    liftIO . printToTerminal ct $ responseToView s r
+runInputLoop :: ChatTerminal -> ChatController -> IO ()
+runInputLoop ct cc = forever $ do
+  s <- atomically . readTBQueue $ inputQ cc
+  r <- runReaderT (execChatCommand . encodeUtf8 $ T.pack s) cc
+  printToTerminal ct $ responseToView s r
 
-runTerminalInput :: (MonadUnliftIO m, MonadReader ChatController m) => ChatTerminal -> m ()
-runTerminalInput ct = do
-  cc <- ask
-  liftIO $
-    withChatTerm ct $ do
-      updateInput ct
-      receiveFromTTY cc ct
+runTerminalInput :: ChatTerminal -> ChatController -> IO ()
+runTerminalInput ct cc = withChatTerm ct $ do
+  updateInput ct
+  receiveFromTTY cc ct
 
 receiveFromTTY :: MonadTerminal m => ChatController -> ChatTerminal -> m ()
 receiveFromTTY ChatController {inputQ, activeTo} ct@ChatTerminal {termSize, termState} =

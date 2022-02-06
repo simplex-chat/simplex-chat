@@ -46,6 +46,7 @@ library
   build-depends:
       aeson ==2.0.*
     , ansi-terminal >=0.10 && <0.12
+    , async ==2.2.*
     , attoparsec ==0.14.*
     , base >=4.7 && <5
     , base64-bytestring >=1.0 && <1.3
@@ -80,6 +81,7 @@ executable simplex-chat
   build-depends:
       aeson ==2.0.*
     , ansi-terminal >=0.10 && <0.12
+    , async ==2.2.*
     , attoparsec ==0.14.*
     , base >=4.7 && <5
     , base64-bytestring >=1.0 && <1.3
@@ -112,6 +114,7 @@ test-suite simplex-chat-test
       ChatClient
       ChatTests
       MarkdownTests
+      MobileTests
       ProtocolTests
       Paths_simplex_chat
   hs-source-dirs:

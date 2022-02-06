@@ -14,6 +14,7 @@ extra-source-files:
 dependencies:
   - aeson == 2.0.*
   - ansi-terminal >= 0.10 && < 0.12
+  - async == 2.2.*
   - attoparsec == 0.14.*
   - base >= 4.7 && < 5
   - base64-bytestring >= 1.0 && < 1.3
