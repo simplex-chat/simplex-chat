@@ -8,6 +8,10 @@
 
 import SwiftUI
 
+private let emailRegex = try! NSRegularExpression(pattern: "^[a-z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)*$", options: .caseInsensitive)
+
+private let phoneRegex = try! NSRegularExpression(pattern: "^\\+?[0-9\\.\\(\\)\\-]{7,20}$")
+
 struct TextItemView: View {
     var chatItem: ChatItem
     var width: CGFloat
@@ -17,22 +21,25 @@ struct TextItemView: View {
         let sent = chatItem.chatDir.sent
         let minWidth = min(200, width)
         let maxWidth = min(300, width * 0.78)
-        return VStack {
-            messageText(chatItem.content.text, sent: sent)
-                .padding(.top, 8)
+        let meta = getDateFormatter().string(from: chatItem.meta.itemTs)
+
+        return ZStack(alignment: .bottomTrailing) {
+            (messageText(chatItem.content.text, sent: sent) + reserveSpaceForMeta(meta))
+                .padding(.top, 6)
+                .padding(.bottom, 7)
                 .padding(.horizontal, 12)
                 .frame(minWidth: minWidth, maxWidth: maxWidth, alignment: .leading)
                 .foregroundColor(sent ? .white : .primary)
                 .textSelection(.enabled)
-            Text(getDateFormatter().string(from: chatItem.meta.itemTs))
+            Text(meta)
                 .font(.caption)
-                .foregroundColor(sent ? .white : .secondary)
-                .padding(.bottom, 8)
+                .foregroundColor(sent ? Color(uiColor: .secondarySystemBackground) : .secondary)
+                .padding(.bottom, 4)
                 .padding(.horizontal, 12)
-                .frame(minWidth: minWidth, maxWidth: maxWidth, alignment: .trailing)
+                .frame(minWidth: minWidth, maxWidth: maxWidth, alignment: .bottomTrailing)
         }
         .background(sent ? .blue : Color(uiColor: .tertiarySystemGroupedBackground))
-        .cornerRadius(10)
+        .cornerRadius(18)
         .padding(.horizontal)
         .frame(
             minWidth: 200,
@@ -43,7 +50,7 @@ struct TextItemView: View {
         )
     }
 
-    private func messageText(_ s: String, sent: Bool = false) -> Text {
+    private func messageText(_ s: String, sent: Bool) -> Text {
         if s == "" { return Text("") }
         let parts = s.split(separator: " ")
         var res = wordToText(parts[0], sent)
@@ -55,14 +62,22 @@ struct TextItemView: View {
         return res
     }
 
+    private func reserveSpaceForMeta(_ meta: String) -> Text {
+        Text(AttributedString("   \(meta)", attributes: AttributeContainer([
+            .font: UIFont.preferredFont(forTextStyle: .caption1) as Any,
+            .foregroundColor: UIColor.clear as Any,
+        ])))
+    }
+
     private func wordToText(_ s: String.SubSequence, _ sent: Bool) -> Text {
+        let str = String(s)
         switch true {
         case s.starts(with: "http://") || s.starts(with: "https://"):
-            let str = String(s)
-            return Text(AttributedString(str, attributes: AttributeContainer([
-                .link: NSURL(string: str) as Any,
-                .foregroundColor: (sent ? UIColor.white : nil) as Any
-            ]))).underline()
+            return linkText(str, prefix: "", sent: sent)
+        case match(str, emailRegex):
+            return linkText(str, prefix: "mailto:", sent: sent)
+        case match(str, phoneRegex):
+            return linkText(str, prefix: "tel:", sent: sent)
         default:
             if (s.count > 1) {
                 switch true {
@@ -78,6 +93,17 @@ struct TextItemView: View {
         }
     }
 
+    private func match(_ s: String, _ regex: NSRegularExpression) -> Bool {
+        regex.firstMatch(in: s, options: [], range: NSRange(location: 0, length: s.count)) != nil
+    }
+
+    private func linkText(_ s: String, prefix: String, sent: Bool) -> Text {
+        Text(AttributedString(s, attributes: AttributeContainer([
+            .link: NSURL(string: prefix + s) as Any,
+            .foregroundColor: (sent ? UIColor.white : nil) as Any
+        ]))).underline()
+    }
+
     private func mdText(_ s: String.SubSequence) -> Text {
         Text(s[s.index(s.startIndex, offsetBy: 1)..<s.index(s.endIndex, offsetBy: -1)])
     }
@@ -88,8 +114,10 @@ struct TextItemView_Previews: PreviewProvider {
         Group{
             TextItemView(chatItem: chatItemSample(1, .directSnd, .now, "hello"), width: 360)
             TextItemView(chatItem: chatItemSample(2, .directSnd, .now, "https://simplex.chat"), width: 360)
-            TextItemView(chatItem: chatItemSample(2, .directRcv, .now, "hello there too"), width: 360)
+            TextItemView(chatItem: chatItemSample(2, .directRcv, .now, "hello there too!!! this covers -"), width: 360)
+            TextItemView(chatItem: chatItemSample(2, .directRcv, .now, "hello there too!!! this text has the time on the same line "), width: 360)
             TextItemView(chatItem: chatItemSample(2, .directRcv, .now, "https://simplex.chat"), width: 360)
+            TextItemView(chatItem: chatItemSample(2, .directRcv, .now, "chaT@simplex.chat"), width: 360)
         }
         .previewLayout(.fixed(width: 360, height: 70))
     }

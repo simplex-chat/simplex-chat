@@ -201,6 +201,8 @@ func chatRecvMsg() throws -> ChatResponse {
 }
 
 func apiGetActiveUser() throws -> User? {
+    let _ = getChatCtrl()
+    sleep(1)
     let r = try chatSendCmd(.showActiveUser)
     switch r {
     case let .activeUser(user): return user
