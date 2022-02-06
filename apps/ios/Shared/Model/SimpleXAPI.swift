@@ -63,7 +63,7 @@ struct APIResponse: Decodable {
 enum ChatResponse: Decodable, Error {
     case response(type: String, json: String)
     case activeUser(user: User)
-    case agentStarted
+    case chatStarted
     case apiChats(chats: [ChatData])
     case apiChat(chat: ChatData)
     case invitation(connReqInvitation: String)
@@ -92,7 +92,7 @@ enum ChatResponse: Decodable, Error {
             switch self {
             case let .response(type, _): return "* \(type)"
             case .activeUser: return "activeUser"
-            case .agentStarted: return "agentStarted"
+            case .chatStarted: return "chatStarted"
             case .apiChats: return "apiChats"
             case .apiChat: return "apiChat"
             case .invitation: return "invitation"
@@ -124,7 +124,7 @@ enum ChatResponse: Decodable, Error {
             switch self {
             case let .response(_, json): return json
             case let .activeUser(user): return String(describing: user)
-            case .agentStarted: return noDetails
+            case .chatStarted: return noDetails
             case let .apiChats(chats): return String(describing: chats)
             case let .apiChat(chat): return String(describing: chat)
             case let .invitation(connReqInvitation): return connReqInvitation
