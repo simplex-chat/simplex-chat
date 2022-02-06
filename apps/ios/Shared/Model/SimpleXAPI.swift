@@ -9,7 +9,6 @@
 import Foundation
 import UIKit
 
-private var chatStore: chat_store?
 private var chatController: chat_ctrl?
 private let jsonDecoder = getJSONDecoder()
 private let jsonEncoder = getJSONEncoder()
@@ -186,27 +185,6 @@ enum TerminalItem: Identifiable {
     }
 }
 
-func chatGetUser() -> User? {
-    let store = getStore()
-    print("chatGetUser")
-    let r: UserResponse? = decodeCJSON(chat_get_user(store))
-    let user = r?.user
-    if user != nil { initChatCtrl(store) }
-    print("user", user as Any)
-    return user
-}
-
-func chatCreateUser(_ p: Profile) -> User? {
-    let store = getStore()
-    print("chatCreateUser")
-    var str = encodeCJSON(p)
-    chat_create_user(store, &str)
-    let user = chatGetUser()
-    if user != nil { initChatCtrl(store) }
-    print("user", user as Any)
-    return user
-}
-
 func chatSendCmd(_ cmd: ChatCommand) throws -> ChatResponse {
     var c = cmd.cmdString.cString(using: .utf8)!
     print("command", cmd.cmdString)
@@ -220,6 +198,27 @@ func chatSendCmd(_ cmd: ChatCommand) throws -> ChatResponse {
 
 func chatRecvMsg() throws -> ChatResponse {
     chatResponse(chat_recv_msg(getChatCtrl())!)
+}
+
+func apiGetActiveUser() throws -> User? {
+    let r = try chatSendCmd(.showActiveUser)
+    switch r {
+    case let .activeUser(user): return user
+    case .chatCmdError(.error(.noActiveUser)): return nil
+    default: throw r
+    }
+}
+
+func apiCreateActiveUser(_ p: Profile) throws -> User {
+    let r = try chatSendCmd(.createActiveUser(profile: p))
+    if case let .activeUser(user) = r { return user }
+    throw r
+}
+
+func apiStartChat() throws {
+    let r = try chatSendCmd(.startChat)
+    if case .chatStarted = r { return }
+    throw r
 }
 
 func apiGetChats() throws -> [Chat] {
@@ -384,23 +383,12 @@ func prettyJSON(_ obj: NSDictionary) -> String? {
     return nil
 }
 
-private func getStore() -> chat_store {
-    if let store = chatStore { return store }
-    let dataDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!.path + "/mobile_v1"
-    var cstr = dataDir.cString(using: .utf8)!
-    chatStore = chat_init_store(&cstr)
-    return chatStore!
-}
-
-private func initChatCtrl(_ store: chat_store) {
-    if chatController == nil {
-        chatController = chat_start(store)        
-    }
-}
-
 private func getChatCtrl() -> chat_ctrl {
     if let controller = chatController { return controller }
-    fatalError("Chat controller was not started!")
+    let dataDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!.path + "/mobile_v1"
+    var cstr = dataDir.cString(using: .utf8)!
+    chatController = chat_init(&cstr)
+    return chatController!
 }
 
 private func decodeCJSON<T: Decodable>(_ cjson: UnsafePointer<CChar>) -> T? {

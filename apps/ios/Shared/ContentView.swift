@@ -14,20 +14,11 @@ struct ContentView: View {
         if let user = chatModel.currentUser {
             ChatListView(user: user)
                 .onAppear {
-                    DispatchQueue.global().async {
-                        while(true) {
-                            do {
-                                try processReceivedMsg(chatModel, chatRecvMsg())
-                            } catch {
-                                print("error receiving message: ", error)
-                            }
-                        }
-                    }
-
                     do {
+                        try apiStartChat()
                         chatModel.chats = try apiGetChats()
                     } catch {
-                        print(error)
+                        fatalError("Failed to start or load chats: \(error)")
                     }
                 }
         } else {

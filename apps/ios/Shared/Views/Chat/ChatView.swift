@@ -27,6 +27,9 @@ struct ChatView: View {
                             .onChange(of: chatModel.chatItems.count) { _ in scrollToBottom(proxy) }
                         }
                     }
+                    .onTapGesture {
+                        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                    }
                 }
             }
 
@@ -66,9 +69,6 @@ struct ChatView: View {
             }
         }
         .navigationBarBackButtonHidden(true)
-        .onTapGesture {
-            UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
-        }
     }
 
     func scrollToBottom(_ proxy: ScrollViewProxy) {
