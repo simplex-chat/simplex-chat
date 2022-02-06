@@ -8,6 +8,10 @@
 
 import SwiftUI
 
+private let emailRegex = try! NSRegularExpression(pattern: "^[a-z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)*$", options: .caseInsensitive)
+
+private let phoneRegex = try! NSRegularExpression(pattern: "^\\+?[0-9\\.\\(\\)\\-]{7,20}$")
+
 struct TextItemView: View {
     var chatItem: ChatItem
     var width: CGFloat
@@ -66,13 +70,14 @@ struct TextItemView: View {
     }
 
     private func wordToText(_ s: String.SubSequence, _ sent: Bool) -> Text {
+        let str = String(s)
         switch true {
         case s.starts(with: "http://") || s.starts(with: "https://"):
-            let str = String(s)
-            return Text(AttributedString(str, attributes: AttributeContainer([
-                .link: NSURL(string: str) as Any,
-                .foregroundColor: (sent ? UIColor.white : nil) as Any
-            ]))).underline()
+            return linkText(str, prefix: "", sent: sent)
+        case match(str, emailRegex):
+            return linkText(str, prefix: "mailto:", sent: sent)
+        case match(str, phoneRegex):
+            return linkText(str, prefix: "tel:", sent: sent)
         default:
             if (s.count > 1) {
                 switch true {
@@ -88,6 +93,17 @@ struct TextItemView: View {
         }
     }
 
+    private func match(_ s: String, _ regex: NSRegularExpression) -> Bool {
+        regex.firstMatch(in: s, options: [], range: NSRange(location: 0, length: s.count)) != nil
+    }
+
+    private func linkText(_ s: String, prefix: String, sent: Bool) -> Text {
+        Text(AttributedString(s, attributes: AttributeContainer([
+            .link: NSURL(string: prefix + s) as Any,
+            .foregroundColor: (sent ? UIColor.white : nil) as Any
+        ]))).underline()
+    }
+
     private func mdText(_ s: String.SubSequence) -> Text {
         Text(s[s.index(s.startIndex, offsetBy: 1)..<s.index(s.endIndex, offsetBy: -1)])
     }
@@ -101,6 +117,7 @@ struct TextItemView_Previews: PreviewProvider {
             TextItemView(chatItem: chatItemSample(2, .directRcv, .now, "hello there too!!! this covers -"), width: 360)
             TextItemView(chatItem: chatItemSample(2, .directRcv, .now, "hello there too!!! this text has the time on the same line "), width: 360)
             TextItemView(chatItem: chatItemSample(2, .directRcv, .now, "https://simplex.chat"), width: 360)
+            TextItemView(chatItem: chatItemSample(2, .directRcv, .now, "chaT@simplex.chat"), width: 360)
         }
         .previewLayout(.fixed(width: 360, height: 70))
     }
