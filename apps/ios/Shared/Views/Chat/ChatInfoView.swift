@@ -9,7 +9,12 @@
 import SwiftUI
 
 struct ChatInfoView: View {
+    @EnvironmentObject var chatModel: ChatModel
     @ObservedObject var chat: Chat
+    @Binding var showChatInfo: Bool
+    @State private var showDeleteContactAlert = false
+    @State private var alertContact: Contact?
+    @State private var showNetworkStatusInfo = false
 
     var body: some View {
         VStack{
@@ -22,10 +27,36 @@ struct ChatInfoView: View {
             Text(chat.chatInfo.fullName).font(.title)
                 .padding(.bottom)
 
-            if case .direct = chat.chatInfo {
-                HStack {
-                    serverImage()
-                    Text(chat.serverInfo.networkStatus.statusString)
+            if case let .direct(contact) = chat.chatInfo {
+                VStack {
+                    HStack {
+                        Button {
+                            showNetworkStatusInfo.toggle()
+                        } label: {
+                            serverImage()
+                            Text(chat.serverInfo.networkStatus.statusString)
+                                .foregroundColor(.primary)
+                        }
+                    }
+                    if showNetworkStatusInfo {
+                        Text(chat.serverInfo.networkStatus.statusExplanation)
+                            .font(.subheadline)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 64)
+                            .padding(.vertical, 8)
+                    }
+
+                    Spacer()
+                    Button(role: .destructive) {
+                        alertContact = contact
+                        showDeleteContactAlert = true
+                    } label: {
+                        Label("Delete contact", systemImage: "trash")
+                    }
+                    .padding()
+                    .alert(isPresented: $showDeleteContactAlert) {
+                        deleteContactAlert(alertContact!)
+                    }
                 }
             }
         }
@@ -37,12 +68,32 @@ struct ChatInfoView: View {
         return Image(systemName: status.imageName)
             .foregroundColor(status == .connected ? .green : .secondary)
     }
+
+    private func deleteContactAlert(_ contact: Contact) -> Alert {
+        Alert(
+            title: Text("Delete contact?"),
+            message: Text("Contact and all messages will be deleted"),
+            primaryButton: .destructive(Text("Delete")) {
+                do {
+                    try apiDeleteChat(type: .direct, id: contact.apiId)
+                    chatModel.removeChat(contact.id)
+                    showChatInfo = false
+                } catch let error {
+                    print("Error: \(error)")
+                }
+                alertContact = nil
+            }, secondaryButton: .cancel() {
+                alertContact = nil
+            }
+        )
+    }
 }
 
 struct ChatInfoView_Previews: PreviewProvider {
     var chatInfo = sampleDirectChatInfo
 
     static var previews: some View {
-        ChatInfoView(chat: Chat(chatInfo: sampleDirectChatInfo, chatItems: []))
+        @State var showChatInfo = true
+        return ChatInfoView(chat: Chat(chatInfo: sampleDirectChatInfo, chatItems: []), showChatInfo: $showChatInfo)
     }
 }

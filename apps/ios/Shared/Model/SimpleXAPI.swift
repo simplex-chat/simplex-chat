@@ -187,7 +187,6 @@ enum TerminalItem: Identifiable {
 
 func chatSendCmd(_ cmd: ChatCommand) throws -> ChatResponse {
     var c = cmd.cmdString.cString(using: .utf8)!
-    print("command", cmd.cmdString)
 // TODO some mechanism to update model without passing it - maybe Publisher / Subscriber?
 //    DispatchQueue.main.async {
 //        termId += 1

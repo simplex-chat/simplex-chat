@@ -64,7 +64,7 @@ struct ChatView: View {
                     .foregroundColor(.primary)
                 }
                 .sheet(isPresented: $showChatInfo) {
-                    ChatInfoView(chat: chat)
+                    ChatInfoView(chat: chat, showChatInfo: $showChatInfo)
                 }
             }
         }
