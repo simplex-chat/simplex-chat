@@ -2057,13 +2057,13 @@ getDirectChatPreviews_ db User {userId} = do
           AND c.connection_id IN (
             SELECT cc.connection_id
             FROM connections cc
-            WHERE cc.user_id = ct.user_id AND cc.contact_id = ct.contact_id AND (cc.conn_status = ? OR cc.conn_status = ?)
+            WHERE cc.user_id = ct.user_id AND cc.contact_id = ct.contact_id
             ORDER BY cc.connection_id DESC
             LIMIT 1
           )
         ORDER BY ci.item_ts DESC
       |]
-      (userId, ConnReady, ConnSndReady)
+      (Only userId)
   where
     toDirectChatPreview :: TimeZone -> ContactRow :. ConnectionRow :. MaybeChatItemRow -> AChat
     toDirectChatPreview tz (contactRow :. connRow :. ciRow_) =
@@ -2402,10 +2402,10 @@ getChatItemIdByAgentMsgId st connId msgId =
 
 updateDirectChatItem :: (StoreMonad m, MsgDirectionI d) => SQLiteStore -> ChatItemId -> CIStatus d -> m (ChatItem 'CTDirect d)
 updateDirectChatItem st itemId itemStatus =
-  liftIOEither . withTransaction st $ \db -> do
-    ci <- getDirectChatItem_ db itemId
-    DB.execute db "UPDATE chat_items SET item_status = ? WHERE chat_item_id = ?" (itemStatus, itemId)
-    pure ci
+  liftIOEither . withTransaction st $ \db -> runExceptT $ do
+    ci <- ExceptT $ getDirectChatItem_ db itemId
+    liftIO $ DB.execute db "UPDATE chat_items SET item_status = ? WHERE chat_item_id = ?" (itemStatus, itemId)
+    pure $ ci {meta = (meta ci) {itemStatus}}
 
 getDirectChatItem_ :: forall d. MsgDirectionI d => DB.Connection -> ChatItemId -> IO (Either StoreError (ChatItem 'CTDirect d))
 getDirectChatItem_ db itemId = do
