@@ -560,19 +560,10 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
           withAckMessage agentConnId meta $ pure ()
           ackMsgDeliveryEvent conn meta
         SENT msgId -> do
+          -- ? updateDirectChatItem
           sentMsgDeliveryEvent conn msgId
-          chatItemId_ <- withStore $ \st -> getChatItemIdByAgentMsgId st connId msgId
-          case chatItemId_ of
-            Nothing -> pure ()
-            Just chatItemId -> do
-              void $ withStore $ \st -> updateDirectChatItem st chatItemId CISSndSent
         -- TODO print errors
-        MERR msgId err -> do
-          chatItemId_ <- withStore $ \st -> getChatItemIdByAgentMsgId st connId msgId
-          case chatItemId_ of
-            Nothing -> pure ()
-            Just chatItemId -> do
-              void $ withStore $ \st -> updateDirectChatItem st chatItemId (agentErrToItemStatus err)
+        MERR _ _ -> pure () -- ? updateDirectChatItem
         ERR _ -> pure ()
         -- TODO add debugging output
         _ -> pure ()
@@ -628,7 +619,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
             Nothing -> pure ()
             Just chatItemId -> do
               chatItem <- withStore $ \st -> updateDirectChatItem st chatItemId CISSndSent
-              toView $ CRChatItemUpdated $ AChatItem SCTDirect SMDSnd (DirectChat ct) chatItem
+              toView $ CRChatItemUpdated (AChatItem SCTDirect SMDSnd (DirectChat ct) chatItem)
         END -> do
           toView $ CRContactAnotherClient ct
           showToast (c <> "> ") "connected to another client"
@@ -647,7 +638,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
             Nothing -> pure ()
             Just chatItemId -> do
               chatItem <- withStore $ \st -> updateDirectChatItem st chatItemId (agentErrToItemStatus err)
-              toView $ CRChatItemUpdated $ AChatItem SCTDirect SMDSnd (DirectChat ct) chatItem
+              toView $ CRChatItemUpdated (AChatItem SCTDirect SMDSnd (DirectChat ct) chatItem)
         ERR _ -> pure ()
         -- TODO add debugging output
         _ -> pure ()
