@@ -2054,14 +2054,14 @@ getDirectChatPreviews_ db User {userId} = do
         LEFT JOIN chat_items ci ON ci.contact_id = CIMaxDates.contact_id
                                AND ci.item_ts = CIMaxDates.MaxDate
         WHERE ct.user_id = ?
-          AND c.connection_id IN (
+          AND c.connection_id = (
             SELECT cc_connection_id FROM (
               SELECT
                 cc.connection_id AS cc_connection_id,
-                (CASE WHEN cc.conn_status = ? OR cc.conn_status = ? THEN 1 ELSE 0 END) AS cc_conn_ready
+                (CASE WHEN cc.conn_status = ? OR cc.conn_status = ? THEN 1 ELSE 0 END) AS cc_conn_status_ord
               FROM connections cc
               WHERE cc.user_id = ct.user_id AND cc.contact_id = ct.contact_id
-              ORDER BY cc_conn_ready DESC, cc_connection_id DESC
+              ORDER BY cc_conn_status_ord DESC, cc_connection_id DESC
               LIMIT 1
             )
           )
