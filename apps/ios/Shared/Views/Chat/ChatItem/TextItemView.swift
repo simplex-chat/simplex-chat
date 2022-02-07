@@ -12,51 +12,60 @@ private let emailRegex = try! NSRegularExpression(pattern: "^[a-z0-9.!#$%&'*+/=?
 
 private let phoneRegex = try! NSRegularExpression(pattern: "^\\+?[0-9\\.\\(\\)\\-]{7,20}$")
 
+private let sentColorLigth = Color(.sRGB, red: 0.27, green: 0.72, blue: 1, opacity: 0.12)
+private let sentColorDark = Color(.sRGB, red: 0.27, green: 0.72, blue: 1, opacity: 0.17)
+private let linkColor = UIColor(red: 0, green: 0.533, blue: 1, alpha: 1)
+
 struct TextItemView: View {
+    @Environment(\.colorScheme) var colorScheme
     var chatItem: ChatItem
     var width: CGFloat
     private let codeFont = Font.custom("Courier", size: UIFont.preferredFont(forTextStyle: .body).pointSize)
 
     var body: some View {
         let sent = chatItem.chatDir.sent
-        let minWidth = min(200, width)
-        let maxWidth = min(300, width * 0.78)
+//        let minWidth = min(200, width)
+        let maxWidth = width * 0.78
         let meta = getDateFormatter().string(from: chatItem.meta.itemTs)
 
         return ZStack(alignment: .bottomTrailing) {
-            (messageText(chatItem.content.text, sent: sent) + reserveSpaceForMeta(meta))
+            (messageText(chatItem.content.text) + reserveSpaceForMeta(meta))
                 .padding(.top, 6)
                 .padding(.bottom, 7)
                 .padding(.horizontal, 12)
-                .frame(minWidth: minWidth, maxWidth: maxWidth, alignment: .leading)
-                .foregroundColor(sent ? .white : .primary)
+                .frame(minWidth: 0, alignment: .leading)
+//                .foregroundColor(sent ? .white : .primary)
                 .textSelection(.enabled)
+
             Text(meta)
                 .font(.caption)
-                .foregroundColor(sent ? Color(uiColor: .secondarySystemBackground) : .secondary)
+                .foregroundColor(.secondary)
+//                .foregroundColor(sent ? Color(uiColor: .secondarySystemBackground) : .secondary)
                 .padding(.bottom, 4)
                 .padding(.horizontal, 12)
-                .frame(minWidth: minWidth, maxWidth: maxWidth, alignment: .bottomTrailing)
         }
-        .background(sent ? .blue : Color(uiColor: .tertiarySystemGroupedBackground))
+//        .background(sent ? .blue : Color(uiColor: .tertiarySystemGroupedBackground))
+        .background(
+            sent
+            ? (colorScheme == .light ? sentColorLigth : sentColorDark)
+            : Color(uiColor: .tertiarySystemGroupedBackground)
+        )
         .cornerRadius(18)
         .padding(.horizontal)
         .frame(
-            minWidth: 200,
-            maxWidth: .infinity,
-            minHeight: 0,
+            maxWidth: maxWidth,
             maxHeight: .infinity,
             alignment: sent ? .trailing : .leading
         )
     }
 
-    private func messageText(_ s: String, sent: Bool) -> Text {
+    private func messageText(_ s: String) -> Text {
         if s == "" { return Text("") }
         let parts = s.split(separator: " ")
-        var res = wordToText(parts[0], sent)
+        var res = wordToText(parts[0])
         var i = 1
         while i < parts.count {
-            res = res + Text(" ") + wordToText(parts[i], sent)
+            res = res + Text(" ") + wordToText(parts[i])
             i = i + 1
         }
         return res
@@ -69,15 +78,15 @@ struct TextItemView: View {
         ])))
     }
 
-    private func wordToText(_ s: String.SubSequence, _ sent: Bool) -> Text {
+    private func wordToText(_ s: String.SubSequence) -> Text {
         let str = String(s)
         switch true {
         case s.starts(with: "http://") || s.starts(with: "https://"):
-            return linkText(str, prefix: "", sent: sent)
+            return linkText(str, prefix: "")
         case match(str, emailRegex):
-            return linkText(str, prefix: "mailto:", sent: sent)
+            return linkText(str, prefix: "mailto:")
         case match(str, phoneRegex):
-            return linkText(str, prefix: "tel:", sent: sent)
+            return linkText(str, prefix: "tel:")
         default:
             if (s.count > 1) {
                 switch true {
@@ -97,10 +106,10 @@ struct TextItemView: View {
         regex.firstMatch(in: s, options: [], range: NSRange(location: 0, length: s.count)) != nil
     }
 
-    private func linkText(_ s: String, prefix: String, sent: Bool) -> Text {
+    private func linkText(_ s: String, prefix: String) -> Text {
         Text(AttributedString(s, attributes: AttributeContainer([
             .link: NSURL(string: prefix + s) as Any,
-            .foregroundColor: (sent ? UIColor.white : nil) as Any
+            .foregroundColor: linkColor as Any
         ]))).underline()
     }
 

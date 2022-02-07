@@ -21,7 +21,7 @@ struct ChatInfoImage: View {
 
         return Image(systemName: iconName)
             .resizable()
-            .foregroundColor(Color(uiColor: .secondarySystemBackground))
+            .foregroundColor(Color(uiColor: .tertiarySystemGroupedBackground))
     }
 }
 

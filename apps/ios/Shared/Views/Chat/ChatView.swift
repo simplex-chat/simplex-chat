@@ -22,6 +22,7 @@ struct ChatView: View {
                         VStack(spacing: 5)  {
                             ForEach(chatModel.chatItems, id: \.id) {
                                 ChatItemView(chatItem: $0, width: g.size.width)
+                                    .frame(minWidth: 0, maxWidth: .infinity, alignment: $0.chatDir.sent ? .trailing : .leading)
                             }
                             .onAppear { scrollToBottom(proxy) }
                             .onChange(of: chatModel.chatItems.count) { _ in scrollToBottom(proxy) }
