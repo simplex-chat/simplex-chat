@@ -37,6 +37,7 @@ import Simplex.Messaging.Agent.Store.SQLite (fromTextField_)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, enumJSON, sumTypeJSON)
 import Simplex.Messaging.Protocol (MsgBody)
+import Simplex.Messaging.Util ((<$?>))
 
 data ChatType = CTDirect | CTGroup | CTContactRequest
   deriving (Show, Generic)
@@ -116,7 +117,7 @@ jsonCIDirection = \case
   CIGroupSnd -> JCIGroupSnd
   CIGroupRcv m -> JCIGroupRcv m
 
-data CChatItem c = forall d. CChatItem (SMsgDirection d) (ChatItem c d)
+data CChatItem c = forall d. MsgDirectionI d => CChatItem (SMsgDirection d) (ChatItem c d)
 
 deriving instance Show (CChatItem c)
 
@@ -226,11 +227,7 @@ instance MsgDirectionI d => StrEncoding (CIStatus d) where
     CISSndError e -> "snd_error " <> strEncode e
     CISRcvNew -> "rcv_new"
     CISRcvRead -> "rcv_read"
-  strP =
-    strP >>= \(ACIStatus d st) ->
-      case testEquality d (msgDirection @d) of
-        Just Refl -> pure st
-        _ -> fail "bad status"
+  strP = (\(ACIStatus _ st) -> checkDirection st) <$?> strP
 
 instance StrEncoding ACIStatus where
   strEncode (ACIStatus _ s) = strEncode s
@@ -496,3 +493,8 @@ msgDeliveryStatusT' s =
     case testEquality d (msgDirection @d) of
       Just Refl -> Just st
       _ -> Nothing
+
+checkDirection :: forall t d d'. (MsgDirectionI d, MsgDirectionI d') => t d' -> Either String (t d)
+checkDirection x = case testEquality (msgDirection @d) (msgDirection @d') of
+  Just Refl -> Right x
+  Nothing -> Left "bad direction"

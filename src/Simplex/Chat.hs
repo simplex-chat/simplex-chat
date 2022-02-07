@@ -560,11 +560,19 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
           withAckMessage agentConnId meta $ pure ()
           ackMsgDeliveryEvent conn meta
         SENT msgId -> do
-          messageId <- sentMsgDeliveryEvent conn msgId
-          void $ withStore $ \st -> updateDirectChatItemByMessageId st messageId CISSndSent
+          sentMsgDeliveryEvent conn msgId
+          chatItemId_ <- withStore $ \st -> getChatItemIdByAgentMsgId st connId msgId
+          case chatItemId_ of
+            Nothing -> pure ()
+            Just chatItemId -> do
+              void $ withStore $ \st -> updateDirectChatItem st chatItemId CISSndSent
         -- TODO print errors
-        MERR msgId err ->
-          void $ withStore $ \st -> updateDirectChatItemByAgentMsgId st connId msgId (agentErrToItemStatus err)
+        MERR msgId err -> do
+          chatItemId_ <- withStore $ \st -> getChatItemIdByAgentMsgId st connId msgId
+          case chatItemId_ of
+            Nothing -> pure ()
+            Just chatItemId -> do
+              void $ withStore $ \st -> updateDirectChatItem st chatItemId (agentErrToItemStatus err)
         ERR _ -> pure ()
         -- TODO add debugging output
         _ -> pure ()
@@ -614,12 +622,13 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
                 notifyMemberConnected gInfo m
                 when (memberCategory m == GCPreMember) $ probeMatchingContacts ct
         SENT msgId -> do
-          messageId <- sentMsgDeliveryEvent conn msgId
-          cChatItem_ <- withStore $ \st -> updateDirectChatItemByMessageId st messageId CISSndSent
-          case cChatItem_ of
+          sentMsgDeliveryEvent conn msgId
+          chatItemId_ <- withStore $ \st -> getChatItemIdByAgentMsgId st connId msgId
+          case chatItemId_ of
             Nothing -> pure ()
-            Just (CChatItem _ chatItem@(ChatItem CIDirectSnd _ _)) -> toView $ CRChatItemUpdated $ AChatItem SCTDirect SMDSnd (DirectChat ct) chatItem
-            _ -> pure () -- TODO direction in types on write?
+            Just chatItemId -> do
+              chatItem <- withStore $ \st -> updateDirectChatItem st chatItemId CISSndSent
+              toView $ CRChatItemUpdated $ AChatItem SCTDirect SMDSnd (DirectChat ct) chatItem
         END -> do
           toView $ CRContactAnotherClient ct
           showToast (c <> "> ") "connected to another client"
@@ -633,11 +642,12 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
           setActive $ ActiveC c
         -- TODO print errors
         MERR msgId err -> do
-          cChatItem_ <- withStore $ \st -> updateDirectChatItemByAgentMsgId st connId msgId (agentErrToItemStatus err)
-          case cChatItem_ of
+          chatItemId_ <- withStore $ \st -> getChatItemIdByAgentMsgId st connId msgId
+          case chatItemId_ of
             Nothing -> pure ()
-            Just (CChatItem _ chatItem@(ChatItem CIDirectSnd _ _)) -> toView $ CRChatItemUpdated $ AChatItem SCTDirect SMDSnd (DirectChat ct) chatItem
-            _ -> pure ()
+            Just chatItemId -> do
+              chatItem <- withStore $ \st -> updateDirectChatItem st chatItemId (agentErrToItemStatus err)
+              toView $ CRChatItemUpdated $ AChatItem SCTDirect SMDSnd (DirectChat ct) chatItem
         ERR _ -> pure ()
         -- TODO add debugging output
         _ -> pure ()
@@ -722,7 +732,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
             _ -> messageError $ "unsupported message: " <> T.pack (show chatMsgEvent)
         ackMsgDeliveryEvent conn msgMeta
       SENT msgId ->
-        void $ sentMsgDeliveryEvent conn msgId
+        sentMsgDeliveryEvent conn msgId
       -- TODO print errors
       MERR _ _ -> pure ()
       ERR _ -> pure ()
@@ -831,7 +841,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
     ackMsgDeliveryEvent Connection {connId} MsgMeta {recipient = (msgId, _)} =
       withStore $ \st -> createRcvMsgDeliveryEvent st connId msgId MDSRcvAcknowledged
 
-    sentMsgDeliveryEvent :: Connection -> AgentMsgId -> m MessageId
+    sentMsgDeliveryEvent :: Connection -> AgentMsgId -> m ()
     sentMsgDeliveryEvent Connection {connId} msgId =
       withStore $ \st -> createSndMsgDeliveryEvent st connId msgId MDSSndSent
 

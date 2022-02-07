@@ -13,6 +13,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TupleSections #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
 
 module Simplex.Chat.Store
@@ -113,8 +114,7 @@ module Simplex.Chat.Store
     getChatPreviews,
     getDirectChat,
     getGroupChat,
-    updateDirectChatItemByMessageId,
-    updateDirectChatItemByAgentMsgId,
+    getChatItemIdByAgentMsgId,
     updateDirectChatItem,
   )
 where
@@ -128,6 +128,7 @@ import Control.Monad.IO.Unlift
 import Crypto.Random (ChaChaDRG, randomBytesGenerate)
 import Data.Aeson (ToJSON)
 import qualified Data.Aeson as J
+import Data.Bifunctor (first)
 import qualified Data.ByteString.Base64 as B64
 import Data.ByteString.Char8 (ByteString)
 import Data.Either (rights)
@@ -1866,19 +1867,18 @@ createNewMessageAndRcvMsgDelivery st newMsg rcvMsgDelivery =
     createMsgDeliveryEvent_ db msgDeliveryId MDSRcvAgent currentTs
     pure messageId
 
-createSndMsgDeliveryEvent :: StoreMonad m => SQLiteStore -> Int64 -> AgentMsgId -> MsgDeliveryStatus 'MDSnd -> m MessageId
+createSndMsgDeliveryEvent :: StoreMonad m => SQLiteStore -> Int64 -> AgentMsgId -> MsgDeliveryStatus 'MDSnd -> m ()
 createSndMsgDeliveryEvent st connId agentMsgId sndMsgDeliveryStatus =
   liftIOEither . withTransaction st $ \db -> runExceptT $ do
-    (msgDeliveryId, messageId) <- ExceptT $ getMessageAndDeliveryIds_ db connId agentMsgId
+    msgDeliveryId <- ExceptT $ getMsgDeliveryId_ db connId agentMsgId
     liftIO $ do
       currentTs <- getCurrentTime
       createMsgDeliveryEvent_ db msgDeliveryId sndMsgDeliveryStatus currentTs
-    pure messageId
 
 createRcvMsgDeliveryEvent :: StoreMonad m => SQLiteStore -> Int64 -> AgentMsgId -> MsgDeliveryStatus 'MDRcv -> m ()
 createRcvMsgDeliveryEvent st connId agentMsgId rcvMsgDeliveryStatus =
   liftIOEither . withTransaction st $ \db -> runExceptT $ do
-    (msgDeliveryId, _) <- ExceptT $ getMessageAndDeliveryIds_ db connId agentMsgId
+    msgDeliveryId <- ExceptT $ getMsgDeliveryId_ db connId agentMsgId
     liftIO $ do
       currentTs <- getCurrentTime
       createMsgDeliveryEvent_ db msgDeliveryId rcvMsgDeliveryStatus currentTs
@@ -1930,22 +1930,18 @@ createMsgDeliveryEvent_ db msgDeliveryId msgDeliveryStatus createdAt = do
     |]
     (msgDeliveryId, msgDeliveryStatus, createdAt, createdAt)
 
-getMessageAndDeliveryIds_ :: DB.Connection -> Int64 -> AgentMsgId -> IO (Either StoreError (Int64, MessageId))
-getMessageAndDeliveryIds_ db connId agentMsgId =
-  toMsgIds
-    <$> DB.query
+getMsgDeliveryId_ :: DB.Connection -> Int64 -> AgentMsgId -> IO (Either StoreError Int64)
+getMsgDeliveryId_ db connId agentMsgId =
+  firstRow fromOnly (SENoMsgDelivery connId agentMsgId) $
+    DB.query
       db
       [sql|
-        SELECT msg_delivery_id, message_id
+        SELECT msg_delivery_id
         FROM msg_deliveries m
         WHERE m.connection_id = ? AND m.agent_msg_id = ?
         LIMIT 1
       |]
       (connId, agentMsgId)
-  where
-    toMsgIds :: [(Int64, MessageId)] -> Either StoreError (Int64, MessageId)
-    toMsgIds [ids] = Right ids
-    toMsgIds _ = Left $ SENoMsgDelivery connId agentMsgId
 
 createPendingGroupMessage :: MonadUnliftIO m => SQLiteStore -> Int64 -> MessageId -> Maybe Int64 -> m ()
 createPendingGroupMessage st groupMemberId messageId introId_ =
@@ -2386,58 +2382,41 @@ getGroupIdByName_ db User {userId} gName =
   firstRow fromOnly (SEGroupNotFoundByName gName) $
     DB.query db "SELECT group_id FROM groups WHERE user_id = ? AND local_display_name = ?" (userId, gName)
 
-updateDirectChatItemByMessageId :: (StoreMonad m, MsgDirectionI d) => SQLiteStore -> MessageId -> CIStatus d -> m (Maybe (CChatItem 'CTDirect))
-updateDirectChatItemByMessageId st messageId itemStatus =
+getChatItemIdByAgentMsgId :: StoreMonad m => SQLiteStore -> Int64 -> AgentMsgId -> m (Maybe ChatItemId)
+getChatItemIdByAgentMsgId st connId msgId =
   liftIO . withTransaction st $ \db ->
-    getChatItemId_ db >>= \case
-      Nothing -> pure Nothing
-      Just itemId -> eitherToMaybe <$> updateDirectChatItem_ db itemId itemStatus
-  where
-    getChatItemId_ :: DB.Connection -> IO (Maybe ChatItemId)
-    getChatItemId_ db =
-      join . listToMaybe . map fromOnly
-        <$> DB.query db "SELECT chat_item_id FROM chat_item_messages WHERE message_id = ?" (Only messageId)
+    join . listToMaybe . map fromOnly
+      <$> DB.query
+        db
+        [sql|
+          SELECT chat_item_id
+          FROM chat_item_messages
+          WHERE message_id = (
+            SELECT message_id
+            FROM msg_deliveries
+            WHERE connection_id = ? AND agent_msg_id = ?
+            LIMIT 1
+          )
+        |]
+        (connId, msgId)
 
-updateDirectChatItemByAgentMsgId :: (StoreMonad m, MsgDirectionI d) => SQLiteStore -> Int64 -> AgentMsgId -> CIStatus d -> m (Maybe (CChatItem 'CTDirect))
-updateDirectChatItemByAgentMsgId st connId msgId itemStatus =
-  liftIO . withTransaction st $ \db -> do
-    getChatItemId_ db >>= \case
-      Nothing -> pure Nothing
-      Just itemId -> eitherToMaybe <$> updateDirectChatItem_ db itemId itemStatus
-  where
-    getChatItemId_ :: DB.Connection -> IO (Maybe ChatItemId)
-    getChatItemId_ db =
-      join . listToMaybe . map fromOnly
-        <$> DB.query
-          db
-          [sql|
-            SELECT chat_item_id
-            FROM chat_item_messages
-            WHERE message_id = (
-              SELECT message_id
-              FROM msg_deliveries
-              WHERE connection_id = ? AND agent_msg_id = ?
-              LIMIT 1
-            )
-          |]
-          (connId, msgId)
-
-updateDirectChatItem :: (StoreMonad m, MsgDirectionI d) => SQLiteStore -> ChatItemId -> CIStatus d -> m (CChatItem 'CTDirect)
+updateDirectChatItem :: (StoreMonad m, MsgDirectionI d) => SQLiteStore -> ChatItemId -> CIStatus d -> m (ChatItem 'CTDirect d)
 updateDirectChatItem st itemId itemStatus =
   liftIOEither . withTransaction st $ \db ->
     updateDirectChatItem_ db itemId itemStatus
 
-updateDirectChatItem_ :: MsgDirectionI d => DB.Connection -> ChatItemId -> CIStatus d -> IO (Either StoreError (CChatItem 'CTDirect))
+updateDirectChatItem_ :: MsgDirectionI d => DB.Connection -> ChatItemId -> CIStatus d -> IO (Either StoreError (ChatItem 'CTDirect d))
 updateDirectChatItem_ db itemId itemStatus = do
+  ci <- getDirectChatItem_ db itemId
   DB.execute db "UPDATE chat_items SET item_status = ? WHERE chat_item_id = ?" (itemStatus, itemId)
-  getDirectChatItem_ db itemId
+  pure ci
 
-getDirectChatItem_ :: DB.Connection -> ChatItemId -> IO (Either StoreError (CChatItem 'CTDirect))
+getDirectChatItem_ :: forall d. MsgDirectionI d => DB.Connection -> ChatItemId -> IO (Either StoreError (ChatItem 'CTDirect d))
 getDirectChatItem_ db itemId = do
   tz <- getCurrentTimeZone
   join
     <$> firstRow
-      (toDirectChatItem tz)
+      (correctDir <=< toDirectChatItem tz)
       (SEChatItemNotFound itemId)
       ( DB.query
           db
@@ -2450,6 +2429,9 @@ getDirectChatItem_ db itemId = do
           |]
           (Only itemId)
       )
+  where
+    correctDir :: CChatItem c -> Either StoreError (ChatItem c d)
+    correctDir (CChatItem _ ci) = first SEInternalError $ checkDirection ci
 
 type ChatItemRow = (Int64, ChatItemTs, ACIContent, Text, ACIStatus, UTCTime)
 
