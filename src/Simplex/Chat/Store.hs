@@ -2402,14 +2402,10 @@ getChatItemIdByAgentMsgId st connId msgId =
 
 updateDirectChatItem :: (StoreMonad m, MsgDirectionI d) => SQLiteStore -> ChatItemId -> CIStatus d -> m (ChatItem 'CTDirect d)
 updateDirectChatItem st itemId itemStatus =
-  liftIOEither . withTransaction st $ \db ->
-    updateDirectChatItem_ db itemId itemStatus
-
-updateDirectChatItem_ :: MsgDirectionI d => DB.Connection -> ChatItemId -> CIStatus d -> IO (Either StoreError (ChatItem 'CTDirect d))
-updateDirectChatItem_ db itemId itemStatus = do
-  ci <- getDirectChatItem_ db itemId
-  DB.execute db "UPDATE chat_items SET item_status = ? WHERE chat_item_id = ?" (itemStatus, itemId)
-  pure ci
+  liftIOEither . withTransaction st $ \db -> do
+    ci <- getDirectChatItem_ db itemId
+    DB.execute db "UPDATE chat_items SET item_status = ? WHERE chat_item_id = ?" (itemStatus, itemId)
+    pure ci
 
 getDirectChatItem_ :: forall d. MsgDirectionI d => DB.Connection -> ChatItemId -> IO (Either StoreError (ChatItem 'CTDirect d))
 getDirectChatItem_ db itemId = do
