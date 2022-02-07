@@ -237,9 +237,19 @@ final class Chat: ObservableObject, Identifiable {
         var statusString: String {
             get {
                 switch self {
-                case .connected: return "Connected to contact's server"
-                case let .error(err): return "Connecting to contact's server… (error: \(err))"
-                default: return "Connecting to contact's server…"
+                case .connected: return "Server connected"
+                case let .error(err): return "Connecting server… (error: \(err))"
+                default: return "Connecting server…"
+                }
+            }
+        }
+
+        var statusExplanation: String {
+            get {
+                switch self {
+                case .connected: return "You are connected to the server you use to receve messages from this contact."
+                case let .error(err): return "Trying to connect to the server you use to receve messages from this contact (error: \(err))."
+                default: return "Trying to connect to the server you use to receve messages from this contact."
                 }
             }
         }

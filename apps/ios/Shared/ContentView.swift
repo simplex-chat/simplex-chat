@@ -20,6 +20,16 @@ struct ContentView: View {
                     } catch {
                         fatalError("Failed to start or load chats: \(error)")
                     }
+
+                    DispatchQueue.global().async {
+                        while(true) {
+                            do {
+                                try processReceivedMsg(chatModel, chatRecvMsg())
+                            } catch {
+                                print("error receiving message: ", error)
+                            }
+                        }
+                    }
                 }
         } else {
             WelcomeView()

@@ -25,16 +25,6 @@ struct SimpleXApp: App {
                     print(url)
                 }
                 .onAppear() {
-                    DispatchQueue.global().async {
-                        while(true) {
-                            do {
-                                try processReceivedMsg(chatModel, chatRecvMsg())
-                            } catch {
-                                print("error receiving message: ", error)
-                            }
-                        }
-                    }
-
                     do {
                         chatModel.currentUser = try apiGetActiveUser()
                     } catch {
