@@ -220,7 +220,7 @@ processChatCommand = \case
         deleteConnection a (aConnId conn) `catchError` \(_ :: AgentErrorType) -> pure ()
       withStore $ \st -> deleteUserContactLink st userId
       pure CRUserContactLinkDeleted
-  ShowMyAddress -> CRUserContactLink <$> (withUser $ \User {userId} -> withStore (`getUserContactLink` userId))
+  ShowMyAddress -> CRUserContactLink <$> withUser (\User {userId} -> withStore (`getUserContactLink` userId))
   AcceptContact cName -> withUser $ \User {userId} -> do
     connReqId <- withStore $ \st -> getContactRequestIdByName st userId cName
     processChatCommand $ APIAcceptContact connReqId
@@ -300,7 +300,7 @@ processChatCommand = \case
       mapM_ deleteMemberConnection members
       withStore $ \st -> deleteGroup st user g
       pure $ CRGroupDeletedUser gInfo
-  ListMembers gName -> CRGroupMembers <$> (withUser $ \user -> withStore (\st -> getGroupByName st user gName))
+  ListMembers gName -> CRGroupMembers <$> withUser (\user -> withStore (\st -> getGroupByName st user gName))
   ListGroups -> CRGroupsList <$> withUser (\user -> withStore (`getUserGroupDetails` user))
   SendGroupMessage gName msg -> withUser $ \user -> do
     groupId <- withStore $ \st -> getGroupIdByName st user gName
