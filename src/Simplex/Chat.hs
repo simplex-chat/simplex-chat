@@ -559,7 +559,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
           _ <- saveRcvMSG conn meta msgBody
           withAckMessage agentConnId meta $ pure ()
           ackMsgDeliveryEvent conn meta
-        SENT msgId -> do
+        SENT msgId ->
           -- ? updateDirectChatItem
           sentMsgDeliveryEvent conn msgId
         -- TODO print errors
