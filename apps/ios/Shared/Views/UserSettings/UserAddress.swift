@@ -15,7 +15,7 @@ struct UserAddress: View {
 
     var body: some View {
         VStack (alignment: .leading) {
-            Text("You can share your address as a link or as a QR code - anybody will be able to connect to you. You will be able to accept or reject such requests to connect. If you later delete your address you will keep your contacts.")
+            Text("You can share your address as a link or as a QR code - anybody will be able to connect to you, and if you later delete it - you won't lose your contacts.")
                 .padding(.bottom)
             if let userAdress = chatModel.userAddress {
                 QRCode(uri: userAdress)
