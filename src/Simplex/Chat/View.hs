@@ -39,6 +39,7 @@ responseToView cmd = \case
   CRApiChats chats -> r [sShow chats]
   CRApiChat chat -> r [sShow chat]
   CRNewChatItem (AChatItem _ _ chat item) -> viewChatItem chat item
+  CRChatItemUpdated _ -> []
   CRMsgIntegrityError mErr -> viewMsgIntegrityError mErr
   CRCmdAccepted _ -> r []
   CRChatHelp section -> case section of
@@ -308,10 +309,10 @@ viewContactUpdated
     where
       fullNameUpdate = if T.null fullName' || fullName' == n' then " removed full name" else " updated full name: " <> plain fullName'
 
-viewReceivedMessage :: StyledString -> CIMeta -> MsgContent -> [StyledString]
+viewReceivedMessage :: StyledString -> CIMeta d -> MsgContent -> [StyledString]
 viewReceivedMessage from meta mc = receivedWithTime_ from meta (ttyMsgContent mc)
 
-receivedWithTime_ :: StyledString -> CIMeta -> [StyledString] -> [StyledString]
+receivedWithTime_ :: StyledString -> CIMeta d -> [StyledString] -> [StyledString]
 receivedWithTime_ from CIMeta {localItemTs, createdAt} styledMsg = do
   prependFirst (formattedTime <> " " <> from) styledMsg -- ++ showIntegrity mOk
   where
@@ -326,13 +327,13 @@ receivedWithTime_ from CIMeta {localItemTs, createdAt} styledMsg = do
               else "%H:%M"
        in styleTime $ formatTime defaultTimeLocale format localTime
 
-viewSentMessage :: StyledString -> MsgContent -> CIMeta -> [StyledString]
+viewSentMessage :: StyledString -> MsgContent -> CIMeta d -> [StyledString]
 viewSentMessage to = sentWithTime_ . prependFirst to . ttyMsgContent
 
-viewSentFileInvitation :: StyledString -> FileTransferId -> FilePath -> CIMeta -> [StyledString]
+viewSentFileInvitation :: StyledString -> FileTransferId -> FilePath -> CIMeta d -> [StyledString]
 viewSentFileInvitation to fId fPath = sentWithTime_ $ ttySentFile to fId fPath
 
-sentWithTime_ :: [StyledString] -> CIMeta -> [StyledString]
+sentWithTime_ :: [StyledString] -> CIMeta d -> [StyledString]
 sentWithTime_ styledMsg CIMeta {localItemTs} =
   prependFirst (ttyMsgTime localItemTs <> " ") styledMsg
 
@@ -371,7 +372,7 @@ sendingFile_ status ft@SndFileTransfer {recipientDisplayName = c} =
 sndFile :: SndFileTransfer -> StyledString
 sndFile SndFileTransfer {fileId, fileName} = fileTransferStr fileId fileName
 
-viewReceivedFileInvitation :: StyledString -> CIMeta -> RcvFileTransfer -> [StyledString]
+viewReceivedFileInvitation :: StyledString -> CIMeta d -> RcvFileTransfer -> [StyledString]
 viewReceivedFileInvitation from meta ft = receivedWithTime_ from meta (receivedFileInvitation_ ft)
 
 receivedFileInvitation_ :: RcvFileTransfer -> [StyledString]

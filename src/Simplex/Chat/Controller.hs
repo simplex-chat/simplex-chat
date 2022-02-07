@@ -47,6 +47,7 @@ updateStr = "To update run: curl -o- https://raw.githubusercontent.com/simplex-c
 data ChatConfig = ChatConfig
   { agentConfig :: AgentConfig,
     dbPoolSize :: Int,
+    yesToMigrations :: Bool,
     tbqSize :: Natural,
     fileChunkSize :: Integer
   }
@@ -130,6 +131,7 @@ data ChatResponse
   | CRApiChats {chats :: [AChat]}
   | CRApiChat {chat :: AChat}
   | CRNewChatItem {chatItem :: AChatItem}
+  | CRChatItemUpdated {chatItem :: AChatItem}
   | CRMsgIntegrityError {msgerror :: MsgErrorType} -- TODO make it chat item to support in mobile
   | CRCmdAccepted {corr :: CorrId}
   | CRChatHelp {helpSection :: HelpSection}

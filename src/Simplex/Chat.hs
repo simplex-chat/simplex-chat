@@ -51,7 +51,7 @@ import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (parseAll)
-import Simplex.Messaging.Protocol (MsgBody)
+import Simplex.Messaging.Protocol (ErrorType (..), MsgBody)
 import qualified Simplex.Messaging.Protocol as SMP
 import Simplex.Messaging.Util (tryError)
 import System.Exit (exitFailure, exitSuccess)
@@ -73,9 +73,11 @@ defaultChatConfig =
           { tcpPort = undefined, -- agent does not listen to TCP
             smpServers = undefined, -- filled in from options
             dbFile = undefined, -- filled in from options
-            dbPoolSize = 1
+            dbPoolSize = 1,
+            yesToMigrations = False
           },
       dbPoolSize = 1,
+      yesToMigrations = False,
       tbqSize = 16,
       fileChunkSize = 15780
     }
@@ -218,7 +220,7 @@ processChatCommand = \case
         deleteConnection a (aConnId conn) `catchError` \(_ :: AgentErrorType) -> pure ()
       withStore $ \st -> deleteUserContactLink st userId
       pure CRUserContactLinkDeleted
-  ShowMyAddress -> CRUserContactLink <$> (withUser $ \User {userId} -> withStore (`getUserContactLink` userId))
+  ShowMyAddress -> CRUserContactLink <$> withUser (\User {userId} -> withStore (`getUserContactLink` userId))
   AcceptContact cName -> withUser $ \User {userId} -> do
     connReqId <- withStore $ \st -> getContactRequestIdByName st userId cName
     processChatCommand $ APIAcceptContact connReqId
@@ -298,7 +300,7 @@ processChatCommand = \case
       mapM_ deleteMemberConnection members
       withStore $ \st -> deleteGroup st user g
       pure $ CRGroupDeletedUser gInfo
-  ListMembers gName -> CRGroupMembers <$> (withUser $ \user -> withStore (\st -> getGroupByName st user gName))
+  ListMembers gName -> CRGroupMembers <$> withUser (\user -> withStore (\st -> getGroupByName st user gName))
   ListGroups -> CRGroupsList <$> withUser (\user -> withStore (`getUserGroupDetails` user))
   SendGroupMessage gName msg -> withUser $ \user -> do
     groupId <- withStore $ \st -> getGroupIdByName st user gName
@@ -312,7 +314,7 @@ processChatCommand = \case
     SndFileTransfer {fileId} <- withStore $ \st ->
       createSndFileTransfer st userId contact f fileInv agentConnId chSize
     ci <- sendDirectChatItem userId contact (XFile fileInv) (CISndFileInvitation fileId f)
-    withStore $ \st -> updateFileTransferChatItemId st fileId $ chatItemId ci
+    withStore $ \st -> updateFileTransferChatItemId st fileId $ chatItemId' ci
     setActive $ ActiveC cName
     pure . CRNewChatItem $ AChatItem SCTDirect SMDSnd (DirectChat contact) ci
   SendGroupFile gName f -> withUser $ \user@User {userId} -> withChatLock $ do
@@ -546,7 +548,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
       _ -> Nothing
 
     processDirectMessage :: ACommand 'Agent -> Connection -> Maybe Contact -> m ()
-    processDirectMessage agentMsg conn = \case
+    processDirectMessage agentMsg conn@Connection {connId} = \case
       Nothing -> case agentMsg of
         CONF confId connInfo -> do
           saveConnInfo conn connInfo
@@ -558,9 +560,10 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
           withAckMessage agentConnId meta $ pure ()
           ackMsgDeliveryEvent conn meta
         SENT msgId ->
+          -- ? updateDirectChatItem
           sentMsgDeliveryEvent conn msgId
         -- TODO print errors
-        MERR _ _ -> pure ()
+        MERR _ _ -> pure () -- ? updateDirectChatItem
         ERR _ -> pure ()
         -- TODO add debugging output
         _ -> pure ()
@@ -609,8 +612,14 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
               when (memberIsReady m) $ do
                 notifyMemberConnected gInfo m
                 when (memberCategory m == GCPreMember) $ probeMatchingContacts ct
-        SENT msgId ->
+        SENT msgId -> do
           sentMsgDeliveryEvent conn msgId
+          chatItemId_ <- withStore $ \st -> getChatItemIdByAgentMsgId st connId msgId
+          case chatItemId_ of
+            Nothing -> pure ()
+            Just chatItemId -> do
+              chatItem <- withStore $ \st -> updateDirectChatItem st chatItemId CISSndSent
+              toView $ CRChatItemUpdated (AChatItem SCTDirect SMDSnd (DirectChat ct) chatItem)
         END -> do
           toView $ CRContactAnotherClient ct
           showToast (c <> "> ") "connected to another client"
@@ -623,7 +632,13 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
           showToast (c <> "> ") "is active"
           setActive $ ActiveC c
         -- TODO print errors
-        MERR _ _ -> pure ()
+        MERR msgId err -> do
+          chatItemId_ <- withStore $ \st -> getChatItemIdByAgentMsgId st connId msgId
+          case chatItemId_ of
+            Nothing -> pure ()
+            Just chatItemId -> do
+              chatItem <- withStore $ \st -> updateDirectChatItem st chatItemId (agentErrToItemStatus err)
+              toView $ CRChatItemUpdated (AChatItem SCTDirect SMDSnd (DirectChat ct) chatItem)
         ERR _ -> pure ()
         -- TODO add debugging output
         _ -> pure ()
@@ -821,6 +836,10 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
     sentMsgDeliveryEvent Connection {connId} msgId =
       withStore $ \st -> createSndMsgDeliveryEvent st connId msgId MDSSndSent
 
+    agentErrToItemStatus :: AgentErrorType -> CIStatus 'MDSnd
+    agentErrToItemStatus (SMP AUTH) = CISSndErrorAuth
+    agentErrToItemStatus err = CISSndError err
+
     badRcvFileChunk :: RcvFileTransfer -> String -> m ()
     badRcvFileChunk ft@RcvFileTransfer {fileStatus} err =
       case fileStatus of
@@ -879,7 +898,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
       chSize <- asks $ fileChunkSize . config
       ft@RcvFileTransfer {fileId} <- withStore $ \st -> createRcvFileTransfer st userId ct fInv chSize
       ci <- saveRcvDirectChatItem userId ct msgId msgMeta (CIRcvFileInvitation ft)
-      withStore $ \st -> updateFileTransferChatItemId st fileId $ chatItemId ci
+      withStore $ \st -> updateFileTransferChatItemId st fileId $ chatItemId' ci
       toView . CRNewChatItem $ AChatItem SCTDirect SMDRcv (DirectChat ct) ci
       checkIntegrity msgMeta $ toView . CRMsgIntegrityError
       showToast (c <> "> ") "wants to send a file"
@@ -890,7 +909,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
       chSize <- asks $ fileChunkSize . config
       ft@RcvFileTransfer {fileId} <- withStore $ \st -> createRcvGroupFileTransfer st userId m fInv chSize
       ci <- saveRcvGroupChatItem userId gInfo m msgId msgMeta (CIRcvFileInvitation ft)
-      withStore $ \st -> updateFileTransferChatItemId st fileId $ chatItemId ci
+      withStore $ \st -> updateFileTransferChatItemId st fileId $ chatItemId' ci
       toView . CRNewChatItem $ AChatItem SCTGroup SMDRcv (GroupChat gInfo) ci
       checkIntegrity msgMeta $ toView . CRMsgIntegrityError
       let g = groupName' gInfo
@@ -1248,11 +1267,11 @@ saveRcvGroupChatItem userId g m msgId MsgMeta {broker = (_, brokerTs)} ciContent
   ciMeta <- saveChatItem userId (CDGroupRcv g m) $ mkNewChatItem ciContent msgId brokerTs createdAt
   pure $ ChatItem (CIGroupRcv m) ciMeta ciContent
 
-saveChatItem :: ChatMonad m => UserId -> ChatDirection c d -> NewChatItem d -> m CIMeta
+saveChatItem :: (ChatMonad m, MsgDirectionI d) => UserId -> ChatDirection c d -> NewChatItem d -> m (CIMeta d)
 saveChatItem userId cd ci@NewChatItem {itemTs, itemText, createdAt} = do
   tz <- liftIO getCurrentTimeZone
   ciId <- withStore $ \st -> createNewChatItem st userId cd ci
-  pure $ mkCIMeta ciId itemText tz itemTs createdAt
+  pure $ mkCIMeta ciId itemText ciStatusNew tz itemTs createdAt
 
 mkNewChatItem :: forall d. MsgDirectionI d => CIContent d -> MessageId -> UTCTime -> UTCTime -> NewChatItem d
 mkNewChatItem itemContent msgId itemTs createdAt =
@@ -1262,6 +1281,7 @@ mkNewChatItem itemContent msgId itemTs createdAt =
       itemTs,
       itemContent,
       itemText = ciContentToText itemContent,
+      itemStatus = ciStatusNew,
       createdAt
     }
 

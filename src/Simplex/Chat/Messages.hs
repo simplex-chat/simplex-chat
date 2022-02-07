@@ -15,6 +15,7 @@ module Simplex.Chat.Messages where
 
 import Data.Aeson (FromJSON, ToJSON)
 import qualified Data.Aeson as J
+import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.ByteString.Base64 as B64
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Int (Int64)
@@ -30,12 +31,13 @@ import Database.SQLite.Simple.ToField (ToField (..))
 import GHC.Generics (Generic)
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
-import Simplex.Messaging.Agent.Protocol (AgentMsgId, MsgMeta (..))
+import Simplex.Chat.Util (eitherToMaybe, safeDecodeUtf8)
+import Simplex.Messaging.Agent.Protocol (AgentErrorType, AgentMsgId, MsgMeta (..))
 import Simplex.Messaging.Agent.Store.SQLite (fromTextField_)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, enumJSON, sumTypeJSON)
 import Simplex.Messaging.Protocol (MsgBody)
-import Simplex.Chat.Util (safeDecodeUtf8)
+import Simplex.Messaging.Util ((<$?>))
 
 data ChatType = CTDirect | CTGroup | CTContactRequest
   deriving (Show, Generic)
@@ -73,7 +75,7 @@ jsonChatInfo = \case
 
 data ChatItem (c :: ChatType) (d :: MsgDirection) = ChatItem
   { chatDir :: CIDirection c d,
-    meta :: CIMeta,
+    meta :: CIMeta d,
     content :: CIContent d
   }
   deriving (Show, Generic)
@@ -115,7 +117,7 @@ jsonCIDirection = \case
   CIGroupSnd -> JCIGroupSnd
   CIGroupRcv m -> JCIGroupRcv m
 
-data CChatItem c = forall d. CChatItem (SMsgDirection d) (ChatItem c d)
+data CChatItem c = forall d. MsgDirectionI d => CChatItem (SMsgDirection d) (ChatItem c d)
 
 deriving instance Show (CChatItem c)
 
@@ -123,8 +125,8 @@ instance ToJSON (CChatItem c) where
   toJSON (CChatItem _ ci) = J.toJSON ci
   toEncoding (CChatItem _ ci) = J.toEncoding ci
 
-chatItemId :: ChatItem c d -> ChatItemId
-chatItemId ChatItem {meta = CIMeta {itemId}} = itemId
+chatItemId' :: ChatItem c d -> ChatItemId
+chatItemId' ChatItem {meta = CIMeta {itemId}} = itemId
 
 data ChatDirection (c :: ChatType) (d :: MsgDirection) where
   CDDirectSnd :: Contact -> ChatDirection 'CTDirect 'MDSnd
@@ -138,6 +140,7 @@ data NewChatItem d = NewChatItem
     itemTs :: ChatItemTs,
     itemContent :: CIContent d,
     itemText :: Text,
+    itemStatus :: CIStatus d,
     createdAt :: UTCTime
   }
   deriving (Show)
@@ -174,21 +177,91 @@ instance ToJSON (JSONAnyChatItem c d) where
   toJSON = J.genericToJSON J.defaultOptions
   toEncoding = J.genericToEncoding J.defaultOptions
 
-data CIMeta = CIMeta
+data CIMeta (d :: MsgDirection) = CIMeta
   { itemId :: ChatItemId,
     itemTs :: ChatItemTs,
     itemText :: Text,
+    itemStatus :: CIStatus d,
     localItemTs :: ZonedTime,
     createdAt :: UTCTime
   }
-  deriving (Show, Generic, FromJSON)
+  deriving (Show, Generic)
 
-mkCIMeta :: ChatItemId -> Text -> TimeZone -> ChatItemTs -> UTCTime -> CIMeta
-mkCIMeta itemId itemText tz itemTs createdAt =
+mkCIMeta :: ChatItemId -> Text -> CIStatus d -> TimeZone -> ChatItemTs -> UTCTime -> CIMeta d
+mkCIMeta itemId itemText itemStatus tz itemTs createdAt =
   let localItemTs = utcToZonedTime tz itemTs
-   in CIMeta {itemId, itemTs, itemText, localItemTs, createdAt}
+   in CIMeta {itemId, itemTs, itemText, itemStatus, localItemTs, createdAt}
 
-instance ToJSON CIMeta where toEncoding = J.genericToEncoding J.defaultOptions
+instance ToJSON (CIMeta d) where toEncoding = J.genericToEncoding J.defaultOptions
+
+data CIStatus (d :: MsgDirection) where
+  CISSndNew :: CIStatus 'MDSnd
+  CISSndSent :: CIStatus 'MDSnd
+  CISSndErrorAuth :: CIStatus 'MDSnd
+  CISSndError :: AgentErrorType -> CIStatus 'MDSnd
+  CISRcvNew :: CIStatus 'MDRcv
+  CISRcvRead :: CIStatus 'MDRcv
+
+deriving instance Show (CIStatus d)
+
+ciStatusNew :: forall d. MsgDirectionI d => CIStatus d
+ciStatusNew = case msgDirection @d of
+  SMDSnd -> CISSndNew
+  SMDRcv -> CISRcvNew
+
+instance ToJSON (CIStatus d) where
+  toJSON = J.toJSON . jsonCIStatus
+  toEncoding = J.toEncoding . jsonCIStatus
+
+instance MsgDirectionI d => ToField (CIStatus d) where toField = toField . decodeLatin1 . strEncode
+
+instance FromField ACIStatus where fromField = fromTextField_ $ eitherToMaybe . strDecode . encodeUtf8
+
+data ACIStatus = forall d. MsgDirectionI d => ACIStatus (SMsgDirection d) (CIStatus d)
+
+instance MsgDirectionI d => StrEncoding (CIStatus d) where
+  strEncode = \case
+    CISSndNew -> "snd_new"
+    CISSndSent -> "snd_sent"
+    CISSndErrorAuth -> "snd_error_auth"
+    CISSndError e -> "snd_error " <> strEncode e
+    CISRcvNew -> "rcv_new"
+    CISRcvRead -> "rcv_read"
+  strP = (\(ACIStatus _ st) -> checkDirection st) <$?> strP
+
+instance StrEncoding ACIStatus where
+  strEncode (ACIStatus _ s) = strEncode s
+  strP =
+    A.takeTill (== ' ') >>= \case
+      "snd_new" -> pure $ ACIStatus SMDSnd CISSndNew
+      "snd_sent" -> pure $ ACIStatus SMDSnd CISSndSent
+      "snd_error_auth" -> pure $ ACIStatus SMDSnd CISSndErrorAuth
+      "snd_error" -> ACIStatus SMDSnd <$> (A.space *> strP)
+      "rcv_new" -> pure $ ACIStatus SMDRcv CISRcvNew
+      "rcv_read" -> pure $ ACIStatus SMDRcv CISRcvRead
+      _ -> fail "bad status"
+
+data JSONCIStatus
+  = JCISSndNew
+  | JCISSndSent
+  | JCISSndErrorAuth
+  | JCISSndError {agentError :: AgentErrorType}
+  | JCISRcvNew
+  | JCISRcvRead
+  deriving (Show, Generic)
+
+instance ToJSON JSONCIStatus where
+  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "JCIS"
+  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "JCIS"
+
+jsonCIStatus :: CIStatus d -> JSONCIStatus
+jsonCIStatus = \case
+  CISSndNew -> JCISSndNew
+  CISSndSent -> JCISSndSent
+  CISSndErrorAuth -> JCISSndErrorAuth
+  CISSndError e -> JCISSndError e
+  CISRcvNew -> JCISRcvNew
+  CISRcvRead -> JCISRcvRead
 
 type ChatItemId = Int64
 
@@ -420,3 +493,8 @@ msgDeliveryStatusT' s =
     case testEquality d (msgDirection @d) of
       Just Refl -> Just st
       _ -> Nothing
+
+checkDirection :: forall t d d'. (MsgDirectionI d, MsgDirectionI d') => t d' -> Either String (t d)
+checkDirection x = case testEquality (msgDirection @d) (msgDirection @d') of
+  Just Refl -> Right x
+  Nothing -> Left "bad direction"
