@@ -8,6 +8,7 @@
 
 module Simplex.Chat.Controller where
 
+import Control.Concurrent.Async (Async)
 import Control.Exception
 import Control.Monad.Except
 import Control.Monad.IO.Unlift
@@ -55,10 +56,11 @@ data ActiveTo = ActiveNone | ActiveC ContactName | ActiveG GroupName
   deriving (Eq)
 
 data ChatController = ChatController
-  { currentUser :: TVar User,
+  { currentUser :: TVar (Maybe User),
     activeTo :: TVar ActiveTo,
     firstTime :: Bool,
     smpAgent :: AgentClient,
+    agentAsync :: TVar (Maybe (Async ())),
     chatStore :: SQLiteStore,
     idsDrg :: TVar ChaChaDRG,
     inputQ :: TBQueue String,
@@ -79,7 +81,10 @@ instance ToJSON HelpSection where
   toEncoding = J.genericToEncoding . enumJSON $ dropPrefix "HS"
 
 data ChatCommand
-  = APIGetChats
+  = ShowActiveUser
+  | CreateActiveUser Profile
+  | StartChat
+  | APIGetChats
   | APIGetChat ChatType Int64 ChatPagination
   | APIGetChatItems Int
   | APISendMessage ChatType Int64 MsgContent
@@ -121,7 +126,9 @@ data ChatCommand
   deriving (Show)
 
 data ChatResponse
-  = CRApiChats {chats :: [AChat]}
+  = CRActiveUser {user :: User}
+  | CRChatStarted
+  | CRApiChats {chats :: [AChat]}
   | CRApiChat {chat :: AChat}
   | CRNewChatItem {chatItem :: AChatItem}
   | CRChatItemUpdated {chatItem :: AChatItem}
@@ -200,10 +207,8 @@ instance ToJSON ChatResponse where
 
 data ChatError
   = ChatError {errorType :: ChatErrorType}
-  | ChatErrorMessage {errorMessage :: String}
   | ChatErrorAgent {agentError :: AgentErrorType}
   | ChatErrorStore {storeError :: StoreError}
-  | ChatErrorNotImplemented
   deriving (Show, Exception, Generic)
 
 instance ToJSON ChatError where
@@ -211,9 +216,13 @@ instance ToJSON ChatError where
   toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "Chat"
 
 data ChatErrorType
-  = CEGroupUserRole
+  = CENoActiveUser
+  | CEActiveUserExists
+  | CEChatNotStarted
   | CEInvalidConnReq
+  | CEInvalidChatMessage {message :: String}
   | CEContactGroups {contact :: Contact, groupNames :: [GroupName]}
+  | CEGroupUserRole
   | CEGroupContactRole {contactName :: ContactName}
   | CEGroupDuplicateMember {contactName :: ContactName}
   | CEGroupDuplicateMemberId
@@ -241,6 +250,9 @@ instance ToJSON ChatErrorType where
   toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "CE"
 
 type ChatMonad m = (MonadUnliftIO m, MonadReader ChatController m, MonadError ChatError m)
+
+chatCmdError :: String -> ChatResponse
+chatCmdError = CRChatCmdError . ChatError . CECommandError
 
 setActive :: (MonadUnliftIO m, MonadReader ChatController m) => ActiveTo -> m ()
 setActive to = asks activeTo >>= atomically . (`writeTVar` to)

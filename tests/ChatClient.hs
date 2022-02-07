@@ -79,7 +79,7 @@ virtualSimplexChat dbFilePrefix profile = do
   Right user <- runExceptT $ createUser st profile True
   t <- withVirtualTerminal termSettings pure
   ct <- newChatTerminal t
-  cc <- newChatController st user cfg opts {dbFilePrefix} . const $ pure () -- no notifications
+  cc <- newChatController st (Just user) cfg opts {dbFilePrefix} . const $ pure () -- no notifications
   chatAsync <- async $ runSimplexChat user ct cc
   termQ <- newTQueueIO
   termAsync <- async $ readTerminalOutput t termQ
@@ -108,16 +108,18 @@ readTerminalOutput t termQ = do
             then map (dropWhileEnd (== ' ')) diff
             else getDiff_ (n + 1) len win' win
 
-testChatN :: [Profile] -> ([TestCC] -> IO ()) -> IO ()
-testChatN ps test =
+withTmpFiles :: IO () -> IO ()
+withTmpFiles =
   bracket_
     (createDirectoryIfMissing False "tests/tmp")
     (removeDirectoryRecursive "tests/tmp")
-    $ do
-      let envs = zip ps $ map ((testDBPrefix <>) . show) [(1 :: Int) ..]
-      tcs <- getTestCCs envs []
-      test tcs
-      concurrentlyN_ $ map (<// 100000) tcs
+
+testChatN :: [Profile] -> ([TestCC] -> IO ()) -> IO ()
+testChatN ps test = withTmpFiles $ do
+  let envs = zip ps $ map ((testDBPrefix <>) . show) [(1 :: Int) ..]
+  tcs <- getTestCCs envs []
+  test tcs
+  concurrentlyN_ $ map (<// 100000) tcs
   where
     getTestCCs [] tcs = pure tcs
     getTestCCs ((p, db) : envs') tcs = (:) <$> virtualSimplexChat db p <*> getTestCCs envs' tcs

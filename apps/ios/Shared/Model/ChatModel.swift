@@ -31,6 +31,10 @@ final class ChatModel: ObservableObject {
         chats.first(where: { $0.id == id })
     }
 
+    private func getChatIndex(_ id: String) -> Int? {
+        chats.firstIndex(where: { $0.id == id })
+    }
+
     func addChat(_ chat: Chat) {
         withAnimation {
             chats.insert(chat, at: 0)
@@ -38,8 +42,23 @@ final class ChatModel: ObservableObject {
     }
 
     func updateChatInfo(_ cInfo: ChatInfo) {
-        if let ix = chats.firstIndex(where: { $0.id == cInfo.id }) {
+        if let ix = getChatIndex(cInfo.id) {
             chats[ix].chatInfo = cInfo
+        }
+    }
+
+    func updateContact(_ contact: Contact) {
+        let cInfo = ChatInfo.direct(contact: contact)
+        if hasChat(contact.id) {
+            updateChatInfo(cInfo)
+        } else {
+            addChat(Chat(chatInfo: cInfo, chatItems: []))
+        }
+    }
+
+    func updateNetworkStatus(_ contact: Contact, _ status: Chat.NetworkStatus) {
+        if let ix = getChatIndex(contact.id) {
+            chats[ix].serverInfo.networkStatus = status
         }
     }
 
@@ -55,9 +74,12 @@ final class ChatModel: ObservableObject {
     func addChatItem(_ cInfo: ChatInfo, _ cItem: ChatItem) {
         if let ix = chats.firstIndex(where: { $0.id == cInfo.id }) {
             chats[ix].chatItems = [cItem]
-            withAnimation {
-                let chat = chats.remove(at: ix)
-                chats.insert(chat, at: 0)
+            if ix > 0 {
+                if chatId == nil {
+                    withAnimation { popChat(ix) }
+                } else {
+                    DispatchQueue.main.async { self.popChat(ix) }
+                }
             }
         }
         if chatId == cInfo.id {
@@ -65,6 +87,11 @@ final class ChatModel: ObservableObject {
         } else if chatId != nil {
             // meesage arrived to some other chat, show notification
         }
+    }
+
+    private func popChat(_ ix: Int) {
+        let chat = chats.remove(at: ix)
+        chats.insert(chat, at: 0)
     }
 
     func removeChat(_ id: String) {
@@ -195,6 +222,39 @@ let sampleContactRequestChatInfo = ChatInfo.contactRequest(contactRequest: sampl
 final class Chat: ObservableObject, Identifiable {
     @Published var chatInfo: ChatInfo
     @Published var chatItems: [ChatItem]
+    @Published var serverInfo = ServerInfo(networkStatus: .unknown)
+
+    struct ServerInfo: Decodable {
+        var networkStatus: NetworkStatus
+    }
+
+    enum NetworkStatus: Decodable, Equatable {
+        case unknown
+        case connected
+        case disconnected
+        case error(String)
+
+        var statusString: String {
+            get {
+                switch self {
+                case .connected: return "Connected to contact's server"
+                case let .error(err): return "Connecting to contact's server… (error: \(err))"
+                default: return "Connecting to contact's server…"
+                }
+            }
+        }
+
+        var imageName: String {
+            get {
+                switch self {
+                case .unknown: return "circle.dotted"
+                case .connected: return "circle.fill"
+                case .disconnected: return "ellipsis.circle.fill"
+                case .error: return "exclamationmark.circle.fill"
+                }
+            }
+        }
+    }
 
     init(_ cData: ChatData) {
         self.chatInfo = cData.chatInfo
@@ -223,10 +283,10 @@ struct Contact: Identifiable, Decodable {
     var activeConn: Connection
     var viaGroup: Int64?
     var createdAt: Date
-    
+
     var id: String { get { "@\(contactId)" } }
     var apiId: Int64 { get { contactId } }
-    var connected: Bool { get { activeConn.connStatus == "ready" || activeConn.connStatus == "snd-ready" } }
+    var ready: Bool { get { activeConn.connStatus == "ready" || activeConn.connStatus == "snd-ready" } }
 }
 
 let sampleContact = Contact(

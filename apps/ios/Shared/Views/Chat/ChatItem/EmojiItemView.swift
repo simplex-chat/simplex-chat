@@ -15,8 +15,8 @@ struct EmojiItemView: View {
         let sent = chatItem.chatDir.sent
 
         VStack {
-            Text(chatItem.content.text)
-                .font(Font.custom("Emoji", size: 48, relativeTo: .largeTitle))
+            Text(chatItem.content.text.trimmingCharacters(in: .whitespaces))
+                .font(emojiFont)
                 .padding(.top, 8)
                 .padding(.horizontal, 6)
                 .frame(maxWidth: .infinity, alignment: sent ? .trailing : .leading)

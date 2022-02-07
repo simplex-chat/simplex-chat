@@ -72,11 +72,10 @@ withTermLock ChatTerminal {termLock} action = do
   action
   atomically $ putTMVar termLock ()
 
-runTerminalOutput :: (MonadUnliftIO m, MonadReader ChatController m) => ChatTerminal -> m ()
-runTerminalOutput ct = do
-  ChatController {outputQ} <- ask
+runTerminalOutput :: ChatTerminal -> ChatController -> IO ()
+runTerminalOutput ct cc =
   forever $
-    atomically (readTBQueue outputQ) >>= liftIO . printToTerminal ct . responseToView "" . snd
+    atomically (readTBQueue $ outputQ cc) >>= printToTerminal ct . responseToView "" . snd
 
 printToTerminal :: ChatTerminal -> [StyledString] -> IO ()
 printToTerminal ct s =

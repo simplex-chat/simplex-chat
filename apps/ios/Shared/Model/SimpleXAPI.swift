@@ -9,19 +9,21 @@
 import Foundation
 import UIKit
 
-private var chatStore: chat_store?
 private var chatController: chat_ctrl?
 private let jsonDecoder = getJSONDecoder()
 private let jsonEncoder = getJSONEncoder()
 
 enum ChatCommand {
+    case showActiveUser
+    case createActiveUser(profile: Profile)
+    case startChat
     case apiGetChats
     case apiGetChat(type: ChatType, id: Int64)
     case apiSendMessage(type: ChatType, id: Int64, msg: MsgContent)
     case addContact
     case connect(connReq: String)
     case apiDeleteChat(type: ChatType, id: Int64)
-    case apiUpdateProfile(profile: Profile)
+    case updateProfile(profile: Profile)
     case createMyAddress
     case deleteMyAddress
     case showMyAddress
@@ -32,32 +34,22 @@ enum ChatCommand {
     var cmdString: String {
         get {
             switch self {
-            case .apiGetChats:
-                return "/_get chats"
-            case let .apiGetChat(type, id):
-                return "/_get chat \(type.rawValue)\(id) count=500"
-            case let .apiSendMessage(type, id, mc):
-                return "/_send \(type.rawValue)\(id) \(mc.cmdString)"
-            case .addContact:
-                return "/connect"
-            case let .connect(connReq):
-                return "/connect \(connReq)"
-            case let .apiDeleteChat(type, id):
-                return "/_delete \(type.rawValue)\(id)"
-            case let .apiUpdateProfile(profile):
-                return "/profile \(profile.displayName) \(profile.fullName)"
-            case .createMyAddress:
-                return "/address"
-            case .deleteMyAddress:
-                return "/delete_address"
-            case .showMyAddress:
-                return "/show_address"
-            case let .apiAcceptContact(contactReqId):
-                return "/_accept \(contactReqId)"
-            case let .apiRejectContact(contactReqId):
-                return "/_reject \(contactReqId)"
-            case let .string(str):
-                return str
+            case .showActiveUser: return "/u"
+            case let .createActiveUser(profile): return "/u \(profile.displayName) \(profile.fullName)"
+            case .startChat: return "/_start"
+            case .apiGetChats: return "/_get chats"
+            case let .apiGetChat(type, id): return "/_get chat \(type.rawValue)\(id) count=500"
+            case let .apiSendMessage(type, id, mc): return "/_send \(type.rawValue)\(id) \(mc.cmdString)"
+            case .addContact: return "/connect"
+            case let .connect(connReq): return "/connect \(connReq)"
+            case let .apiDeleteChat(type, id): return "/_delete \(type.rawValue)\(id)"
+            case let .updateProfile(profile): return "/profile \(profile.displayName) \(profile.fullName)"
+            case .createMyAddress: return "/address"
+            case .deleteMyAddress: return "/delete_address"
+            case .showMyAddress: return "/show_address"
+            case let .apiAcceptContact(contactReqId): return "/_accept \(contactReqId)"
+            case let .apiRejectContact(contactReqId): return "/_reject \(contactReqId)"
+            case let .string(str): return str
             }
         }
     }
@@ -69,6 +61,8 @@ struct APIResponse: Decodable {
 
 enum ChatResponse: Decodable, Error {
     case response(type: String, json: String)
+    case activeUser(user: User)
+    case chatStarted
     case apiChats(chats: [ChatData])
     case apiChat(chat: ChatData)
     case invitation(connReqInvitation: String)
@@ -85,13 +79,19 @@ enum ChatResponse: Decodable, Error {
     case acceptingContactRequest(contact: Contact)
     case contactRequestRejected
     case contactUpdated(toContact: Contact)
+    case contactSubscribed(contact: Contact)
+    case contactDisconnected(contact: Contact)
+    case contactSubError(contact: Contact, chatError: ChatError)
     case newChatItem(chatItem: AChatItem)
     case chatCmdError(chatError: ChatError)
+    case chatError(chatError: ChatError)
 
     var responseType: String {
         get {
             switch self {
             case let .response(type, _): return "* \(type)"
+            case .activeUser: return "activeUser"
+            case .chatStarted: return "chatStarted"
             case .apiChats: return "apiChats"
             case .apiChat: return "apiChat"
             case .invitation: return "invitation"
@@ -108,8 +108,12 @@ enum ChatResponse: Decodable, Error {
             case .acceptingContactRequest: return "acceptingContactRequest"
             case .contactRequestRejected: return "contactRequestRejected"
             case .contactUpdated: return "contactUpdated"
+            case .contactSubscribed: return "contactSubscribed"
+            case .contactDisconnected: return "contactDisconnected"
+            case .contactSubError: return "contactSubError"
             case .newChatItem: return "newChatItem"
             case .chatCmdError: return "chatCmdError"
+            case .chatError: return "chatError"
             }
         }
     }
@@ -118,6 +122,8 @@ enum ChatResponse: Decodable, Error {
         get {
             switch self {
             case let .response(_, json): return json
+            case let .activeUser(user): return String(describing: user)
+            case .chatStarted: return noDetails
             case let .apiChats(chats): return String(describing: chats)
             case let .apiChat(chat): return String(describing: chat)
             case let .invitation(connReqInvitation): return connReqInvitation
@@ -134,8 +140,12 @@ enum ChatResponse: Decodable, Error {
             case let .acceptingContactRequest(contact): return String(describing: contact)
             case .contactRequestRejected: return noDetails
             case let .contactUpdated(toContact): return String(describing: toContact)
+            case let .contactSubscribed(contact): return String(describing: contact)
+            case let .contactDisconnected(contact): return String(describing: contact)
+            case let .contactSubError(contact, chatError): return "contact:\n\(String(describing: contact))\nerror:\n\(String(describing: chatError))"
             case let .newChatItem(chatItem): return String(describing: chatItem)
             case let .chatCmdError(chatError): return String(describing: chatError)
+            case let .chatError(chatError): return String(describing: chatError)
             }
         }
     }
@@ -175,27 +185,6 @@ enum TerminalItem: Identifiable {
     }
 }
 
-func chatGetUser() -> User? {
-    let store = getStore()
-    print("chatGetUser")
-    let r: UserResponse? = decodeCJSON(chat_get_user(store))
-    let user = r?.user
-    if user != nil { initChatCtrl(store) }
-    print("user", user as Any)
-    return user
-}
-
-func chatCreateUser(_ p: Profile) -> User? {
-    let store = getStore()
-    print("chatCreateUser")
-    var str = encodeCJSON(p)
-    chat_create_user(store, &str)
-    let user = chatGetUser()
-    if user != nil { initChatCtrl(store) }
-    print("user", user as Any)
-    return user
-}
-
 func chatSendCmd(_ cmd: ChatCommand) throws -> ChatResponse {
     var c = cmd.cmdString.cString(using: .utf8)!
     print("command", cmd.cmdString)
@@ -209,6 +198,29 @@ func chatSendCmd(_ cmd: ChatCommand) throws -> ChatResponse {
 
 func chatRecvMsg() throws -> ChatResponse {
     chatResponse(chat_recv_msg(getChatCtrl())!)
+}
+
+func apiGetActiveUser() throws -> User? {
+    let _ = getChatCtrl()
+    sleep(1)
+    let r = try chatSendCmd(.showActiveUser)
+    switch r {
+    case let .activeUser(user): return user
+    case .chatCmdError(.error(.noActiveUser)): return nil
+    default: throw r
+    }
+}
+
+func apiCreateActiveUser(_ p: Profile) throws -> User {
+    let r = try chatSendCmd(.createActiveUser(profile: p))
+    if case let .activeUser(user) = r { return user }
+    throw r
+}
+
+func apiStartChat() throws {
+    let r = try chatSendCmd(.startChat)
+    if case .chatStarted = r { return }
+    throw r
 }
 
 func apiGetChats() throws -> [Chat] {
@@ -251,7 +263,7 @@ func apiDeleteChat(type: ChatType, id: Int64) throws {
 }
 
 func apiUpdateProfile(profile: Profile) throws -> Profile? {
-    let r = try chatSendCmd(.apiUpdateProfile(profile: profile))
+    let r = try chatSendCmd(.updateProfile(profile: profile))
     switch r {
     case .userProfileNoChange: return nil
     case let .userProfileUpdated(_, toProfile): return toProfile
@@ -299,12 +311,8 @@ func processReceivedMsg(_ chatModel: ChatModel, _ res: ChatResponse) {
         chatModel.terminalItems.append(.resp(.now, res))
         switch res {
         case let .contactConnected(contact):
-            let cInfo = ChatInfo.direct(contact: contact)
-            if chatModel.hasChat(contact.id) {
-                chatModel.updateChatInfo(cInfo)
-            } else {
-                chatModel.addChat(Chat(chatInfo: cInfo, chatItems: []))
-            }
+            chatModel.updateContact(contact)
+            chatModel.updateNetworkStatus(contact, .connected)
         case let .receivedContactRequest(contactRequest):
             chatModel.addChat(Chat(
                 chatInfo: ChatInfo.contactRequest(contactRequest: contactRequest),
@@ -315,6 +323,21 @@ func processReceivedMsg(_ chatModel: ChatModel, _ res: ChatResponse) {
             if chatModel.hasChat(toContact.id) {
                 chatModel.updateChatInfo(cInfo)
             }
+        case let .contactSubscribed(contact):
+            chatModel.updateContact(contact)
+            chatModel.updateNetworkStatus(contact, .connected)
+        case let .contactDisconnected(contact):
+            chatModel.updateContact(contact)
+            chatModel.updateNetworkStatus(contact, .disconnected)
+        case let .contactSubError(contact, chatError):
+            chatModel.updateContact(contact)
+            var err: String
+            switch chatError {
+            case .errorAgent(agentError: .BROKER(brokerErr: .NETWORK)): err = "network"
+            case .errorAgent(agentError: .SMP(smpErr: .AUTH)): err = "contact deleted"
+            default: err = String(describing: chatError)
+            }
+            chatModel.updateNetworkStatus(contact, .error(err))
         case let .newChatItem(aChatItem):
             chatModel.addChatItem(aChatItem.chatInfo, aChatItem.chatItem)
         default:
@@ -362,23 +385,12 @@ func prettyJSON(_ obj: NSDictionary) -> String? {
     return nil
 }
 
-private func getStore() -> chat_store {
-    if let store = chatStore { return store }
-    let dataDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!.path + "/mobile_v1"
-    var cstr = dataDir.cString(using: .utf8)!
-    chatStore = chat_init_store(&cstr)
-    return chatStore!
-}
-
-private func initChatCtrl(_ store: chat_store) {
-    if chatController == nil {
-        chatController = chat_start(store)        
-    }
-}
-
 private func getChatCtrl() -> chat_ctrl {
     if let controller = chatController { return controller }
-    fatalError("Chat controller was not started!")
+    let dataDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!.path + "/mobile_v1"
+    var cstr = dataDir.cString(using: .utf8)!
+    chatController = chat_init(&cstr)
+    return chatController!
 }
 
 private func decodeCJSON<T: Decodable>(_ cjson: UnsafePointer<CChar>) -> T? {
@@ -403,15 +415,137 @@ private func encodeCJSON<T: Encodable>(_ value: T) -> [CChar] {
 
 enum ChatError: Decodable {
     case error(errorType: ChatErrorType)
+    case errorAgent(agentError: AgentErrorType)
     case errorStore(storeError: StoreError)
-    // TODO other error cases
 }
 
 enum ChatErrorType: Decodable {
+    case noActiveUser
+    case activeUserExists
+    case chatNotStarted
     case invalidConnReq
+    case invalidChatMessage(message: String)
+    case contactGroups(contact: Contact, groupNames: [GroupName])
+    case groupUserRole
+    case groupContactRole(contactName: ContactName)
+    case groupDuplicateMember(contactName: ContactName)
+    case groupDuplicateMemberId
+    case groupNotJoined(groupInfo: GroupInfo)
+    case groupMemberNotActive
+    case groupMemberUserRemoved
+    case groupMemberNotFound(contactName: ContactName)
+    case groupMemberIntroNotFound(contactName: ContactName)
+    case groupCantResendInvitation(groupInfo: GroupInfo, contactName: ContactName)
+    case groupInternal(message: String)
+    case fileNotFound(message: String)
+    case fileAlreadyReceiving(message: String)
+    case fileAlreadyExists(filePath: String)
+    case fileRead(filePath: String, message: String)
+    case fileWrite(filePath: String, message: String)
+    case fileSend(fileId: Int64, agentError: String)
+    case fileRcvChunk(message: String)
+    case fileInternal(message: String)
+    case agentVersion
+    case commandError(message: String)
 }
 
 enum StoreError: Decodable {
+    case duplicateName
+    case contactNotFound(contactId: Int64)
+    case contactNotFoundByName(contactName: ContactName)
+    case contactNotReady(contactName: ContactName)
+    case duplicateContactLink
     case userContactLinkNotFound
-    // TODO other error cases
+    case contactRequestNotFound(contactRequestId: Int64)
+    case contactRequestNotFoundByName(contactName: ContactName)
+    case groupNotFound(groupId: Int64)
+    case groupNotFoundByName(groupName: GroupName)
+    case groupWithoutUser
+    case duplicateGroupMember
+    case groupAlreadyJoined
+    case groupInvitationNotFound
+    case sndFileNotFound(fileId: Int64)
+    case sndFileInvalid(fileId: Int64)
+    case rcvFileNotFound(fileId: Int64)
+    case fileNotFound(fileId: Int64)
+    case rcvFileInvalid(fileId: Int64)
+    case connectionNotFound(agentConnId: String)
+    case introNotFound
+    case uniqueID
+    case internalError(message: String)
+    case noMsgDelivery(connId: Int64, agentMsgId: String)
+    case badChatItem(itemId: Int64)
+    case chatItemNotFound(itemId: Int64)
+}
+
+enum AgentErrorType: Decodable {
+    case CMD(cmdErr: CommandErrorType)
+    case CONN(connErr: ConnectionErrorType)
+    case SMP(smpErr: SMPErrorType)
+    case BROKER(brokerErr: BrokerErrorType)
+    case AGENT(agentErr: SMPAgentError)
+    case INTERNAL(internalErr: String)
+}
+
+enum CommandErrorType: Decodable {
+    case PROHIBITED
+    case SYNTAX
+    case NO_CONN
+    case SIZE
+    case LARGE
+}
+
+enum ConnectionErrorType: Decodable {
+    case NOT_FOUND
+    case DUPLICATE
+    case SIMPLEX
+    case NOT_ACCEPTED
+    case NOT_AVAILABLE
+}
+
+enum BrokerErrorType: Decodable {
+    case RESPONSE(smpErr: SMPErrorType)
+    case UNEXPECTED
+    case NETWORK
+    case TRANSPORT(transportErr: SMPTransportError)
+    case TIMEOUT
+}
+
+enum SMPErrorType: Decodable {
+    case BLOCK
+    case SESSION
+    case CMD(cmdErr: SMPCommandError)
+    case AUTH
+    case QUOTA
+    case NO_MSG
+    case LARGE_MSG
+    case INTERNAL
+}
+
+enum SMPCommandError: Decodable {
+    case UNKNOWN
+    case SYNTAX
+    case NO_AUTH
+    case HAS_AUTH
+    case NO_QUEUE
+}
+
+enum SMPTransportError: Decodable {
+    case TEBadBlock
+    case TELargeMsg
+    case TEBadSession
+    case TEHandshake(handshakeErr: SMPHandshakeError)
+}
+
+enum SMPHandshakeError: Decodable {
+    case PARSE
+    case VERSION
+    case IDENTITY
+}
+
+enum SMPAgentError: Decodable {
+    case A_MESSAGE
+    case A_PROHIBITED
+    case A_VERSION
+    case A_ENCRYPTION
 }

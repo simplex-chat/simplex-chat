@@ -2557,6 +2557,7 @@ createWithRandomBytes size gVar create = tryCreate 3
 randomBytes :: TVar ChaChaDRG -> Int -> IO ByteString
 randomBytes gVar n = B64.encode <$> (atomically . stateTVar gVar $ randomBytesGenerate n)
 
+-- These error type constructors must be added to mobile apps
 data StoreError
   = SEDuplicateName
   | SEContactNotFound {contactId :: Int64}

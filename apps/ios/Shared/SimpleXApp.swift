@@ -25,7 +25,21 @@ struct SimpleXApp: App {
                     print(url)
                 }
                 .onAppear() {
-                    chatModel.currentUser = chatGetUser()
+                    DispatchQueue.global().async {
+                        while(true) {
+                            do {
+                                try processReceivedMsg(chatModel, chatRecvMsg())
+                            } catch {
+                                print("error receiving message: ", error)
+                            }
+                        }
+                    }
+
+                    do {
+                        chatModel.currentUser = try apiGetActiveUser()
+                    } catch {
+                        fatalError("Failed to initialize chat controller or database: \(error)")
+                    }
                 }
         }
     }

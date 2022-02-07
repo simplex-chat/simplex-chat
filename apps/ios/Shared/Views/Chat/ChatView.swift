@@ -10,8 +10,9 @@ import SwiftUI
 
 struct ChatView: View {
     @EnvironmentObject var chatModel: ChatModel
-    var chatInfo: ChatInfo
+    @ObservedObject var chat: Chat
     @State private var inProgress: Bool = false
+    @State private var showChatInfo = false
 
     var body: some View {
         VStack {
@@ -26,6 +27,9 @@ struct ChatView: View {
                             .onChange(of: chatModel.chatItems.count) { _ in scrollToBottom(proxy) }
                         }
                     }
+                    .onTapGesture {
+                        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                    }
                 }
             }
 
@@ -33,7 +37,8 @@ struct ChatView: View {
 
             SendMessageView(sendMessage: sendMessage, inProgress: inProgress)
         }
-        .navigationTitle(chatInfo.chatViewName)
+        .navigationTitle(chat.chatInfo.chatViewName)
+        .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
                 Button { chatModel.chatId = nil } label: {
@@ -41,6 +46,25 @@ struct ChatView: View {
                         Image(systemName: "chevron.backward")
                         Text("Chats")
                     }
+                }
+            }
+            ToolbarItem(placement: .principal) {
+                Button {
+                    showChatInfo = true
+                } label: {
+                    HStack {
+                        ChatInfoImage(chat: chat)
+                            .frame(width: 32, height: 32)
+                            .padding(.trailing, 4)
+                        VStack {
+                            Text(chat.chatInfo.localDisplayName).font(.headline)
+                            Text(chat.chatInfo.fullName).font(.subheadline)
+                        }
+                    }
+                    .foregroundColor(.primary)
+                }
+                .sheet(isPresented: $showChatInfo) {
+                    ChatInfoView(chat: chat)
                 }
             }
         }
@@ -57,8 +81,8 @@ struct ChatView: View {
 
     func sendMessage(_ msg: String) {
         do {
-            let chatItem = try apiSendMessage(type: chatInfo.chatType, id: chatInfo.apiId, msg: .text(msg))
-            chatModel.addChatItem(chatInfo, chatItem)
+            let chatItem = try apiSendMessage(type: chat.chatInfo.chatType, id: chat.chatInfo.apiId, msg: .text(msg))
+            chatModel.addChatItem(chat.chatInfo, chatItem)
         } catch {
             print(error)
         }
@@ -76,9 +100,10 @@ struct ChatView_Previews: PreviewProvider {
             chatItemSample(4, .directRcv, .now, "hello again"),
             chatItemSample(5, .directSnd, .now, "hi there!!!"),
             chatItemSample(6, .directSnd, .now, "how are you?"),
-            chatItemSample(7, .directSnd, .now, "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.")
+            chatItemSample(7, .directSnd, .now, "👍👍👍👍"),
+            chatItemSample(8, .directSnd, .now, "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.")
         ]
-        return ChatView(chatInfo: sampleDirectChatInfo)
+        return ChatView(chat: Chat(chatInfo: sampleDirectChatInfo, chatItems: []))
             .environmentObject(chatModel)
     }
 }
