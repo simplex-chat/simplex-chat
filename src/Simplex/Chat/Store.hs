@@ -2054,12 +2054,16 @@ getDirectChatPreviews_ db User {userId} = do
         LEFT JOIN chat_items ci ON ci.contact_id = CIMaxDates.contact_id
                                AND ci.item_ts = CIMaxDates.MaxDate
         WHERE ct.user_id = ?
-          AND c.connection_id IN (
-            SELECT cc.connection_id
-            FROM connections cc
-            WHERE cc.user_id = ct.user_id AND cc.contact_id = ct.contact_id AND (cc.conn_status = ? OR cc.conn_status = ?)
-            ORDER BY cc.connection_id DESC
-            LIMIT 1
+          AND c.connection_id = (
+            SELECT cc_connection_id FROM (
+              SELECT
+                cc.connection_id AS cc_connection_id,
+                (CASE WHEN cc.conn_status = ? OR cc.conn_status = ? THEN 1 ELSE 0 END) AS cc_conn_status_ord
+              FROM connections cc
+              WHERE cc.user_id = ct.user_id AND cc.contact_id = ct.contact_id
+              ORDER BY cc_conn_status_ord DESC, cc_connection_id DESC
+              LIMIT 1
+            )
           )
         ORDER BY ci.item_ts DESC
       |]
@@ -2402,10 +2406,10 @@ getChatItemIdByAgentMsgId st connId msgId =
 
 updateDirectChatItem :: (StoreMonad m, MsgDirectionI d) => SQLiteStore -> ChatItemId -> CIStatus d -> m (ChatItem 'CTDirect d)
 updateDirectChatItem st itemId itemStatus =
-  liftIOEither . withTransaction st $ \db -> do
-    ci <- getDirectChatItem_ db itemId
-    DB.execute db "UPDATE chat_items SET item_status = ? WHERE chat_item_id = ?" (itemStatus, itemId)
-    pure ci
+  liftIOEither . withTransaction st $ \db -> runExceptT $ do
+    ci <- ExceptT $ getDirectChatItem_ db itemId
+    liftIO $ DB.execute db "UPDATE chat_items SET item_status = ? WHERE chat_item_id = ?" (itemStatus, itemId)
+    pure ci {meta = (meta ci) {itemStatus}}
 
 getDirectChatItem_ :: forall d. MsgDirectionI d => DB.Connection -> ChatItemId -> IO (Either StoreError (ChatItem 'CTDirect d))
 getDirectChatItem_ db itemId = do
