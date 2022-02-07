@@ -2405,7 +2405,7 @@ updateDirectChatItem st itemId itemStatus =
   liftIOEither . withTransaction st $ \db -> runExceptT $ do
     ci <- ExceptT $ getDirectChatItem_ db itemId
     liftIO $ DB.execute db "UPDATE chat_items SET item_status = ? WHERE chat_item_id = ?" (itemStatus, itemId)
-    pure $ ci {meta = (meta ci) {itemStatus}}
+    pure ci {meta = (meta ci) {itemStatus}}
 
 getDirectChatItem_ :: forall d. MsgDirectionI d => DB.Connection -> ChatItemId -> IO (Either StoreError (ChatItem 'CTDirect d))
 getDirectChatItem_ db itemId = do
