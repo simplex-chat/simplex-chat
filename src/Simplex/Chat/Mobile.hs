@@ -76,6 +76,13 @@ mobileChatOpts =
       logging = False
     }
 
+defaultMobileConfig :: ChatConfig
+defaultMobileConfig =
+  defaultChatConfig
+    { yesToMigrations = True,
+      agentConfig = agentConfig defaultChatConfig {yesToMigrations = True}
+    }
+
 type CJSONString = CString
 
 data ChatStore = ChatStore
@@ -86,7 +93,7 @@ data ChatStore = ChatStore
 chatInitStore :: String -> IO ChatStore
 chatInitStore dbFilePrefix = do
   let f = chatStoreFile dbFilePrefix
-  chatStore <- createStore f $ dbPoolSize defaultChatConfig
+  chatStore <- createStore f (dbPoolSize defaultMobileConfig) (yesToMigrations defaultMobileConfig)
   pure ChatStore {dbFilePrefix, chatStore}
 
 getActiveUser_ :: SQLiteStore -> IO (Maybe User)
@@ -112,7 +119,7 @@ userObject user = jsonObject $ "user" .= user
 chatStart :: ChatStore -> IO ChatController
 chatStart ChatStore {dbFilePrefix, chatStore} = do
   Just user <- getActiveUser_ chatStore
-  cc <- newChatController chatStore user defaultChatConfig mobileChatOpts {dbFilePrefix} . const $ pure ()
+  cc <- newChatController chatStore user defaultMobileConfig mobileChatOpts {dbFilePrefix} . const $ pure ()
   void . forkIO $ runReaderT runChatController cc
   pure cc
 

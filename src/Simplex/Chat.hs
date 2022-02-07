@@ -73,9 +73,11 @@ defaultChatConfig =
           { tcpPort = undefined, -- agent does not listen to TCP
             smpServers = undefined, -- filled in from options
             dbFile = undefined, -- filled in from options
-            dbPoolSize = 1
+            dbPoolSize = 1,
+            yesToMigrations = False
           },
       dbPoolSize = 1,
+      yesToMigrations = False,
       tbqSize = 16,
       fileChunkSize = 15780
     }

@@ -1,3 +1,5 @@
+{-# LANGUAGE NamedFieldPuns #-}
+
 module Simplex.Chat.Terminal where
 
 import Control.Logger.Simple
@@ -15,7 +17,7 @@ import Simplex.Chat.Util (whenM)
 import Simplex.Messaging.Util (raceAny_)
 
 simplexChat :: WithTerminal t => ChatConfig -> ChatOpts -> t -> IO ()
-simplexChat cfg opts t
+simplexChat cfg@ChatConfig {dbPoolSize, yesToMigrations} opts t
   | logging opts = do
     setLogLevel LogInfo -- LogError
     withGlobalLogging logCfg initRun
@@ -24,7 +26,7 @@ simplexChat cfg opts t
     initRun = do
       sendNotification' <- initializeNotifications
       let f = chatStoreFile $ dbFilePrefix opts
-      st <- createStore f $ dbPoolSize cfg
+      st <- createStore f dbPoolSize yesToMigrations
       u <- getCreateActiveUser st
       ct <- newChatTerminal t
       cc <- newChatController st u cfg opts sendNotification'

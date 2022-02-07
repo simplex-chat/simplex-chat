@@ -75,7 +75,7 @@ cfg =
 
 virtualSimplexChat :: FilePath -> Profile -> IO TestCC
 virtualSimplexChat dbFilePrefix profile = do
-  st <- createStore (dbFilePrefix <> "_chat.db") 1
+  st <- createStore (dbFilePrefix <> "_chat.db") 1 False
   Right user <- runExceptT $ createUser st profile True
   t <- withVirtualTerminal termSettings pure
   ct <- newChatTerminal t

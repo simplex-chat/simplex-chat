@@ -46,6 +46,7 @@ updateStr = "To update run: curl -o- https://raw.githubusercontent.com/simplex-c
 data ChatConfig = ChatConfig
   { agentConfig :: AgentConfig,
     dbPoolSize :: Int,
+    yesToMigrations :: Bool,
     tbqSize :: Natural,
     fileChunkSize :: Integer
   }

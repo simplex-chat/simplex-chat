@@ -175,7 +175,7 @@ migrations = sortBy (compare `on` name) $ map migration schemaMigrations
   where
     migration (name, query) = Migration {name = name, up = fromQuery query}
 
-createStore :: FilePath -> Int -> IO SQLiteStore
+createStore :: FilePath -> Int -> Bool -> IO SQLiteStore
 createStore dbFilePath poolSize = createSQLiteStore dbFilePath poolSize migrations
 
 chatStoreFile :: FilePath -> FilePath
