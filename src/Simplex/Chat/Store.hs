@@ -2159,7 +2159,7 @@ getContactRequestChatPreviews_ db User {userId} =
     toContactRequestChatPreview :: ContactRequestRow -> AChat
     toContactRequestChatPreview cReqRow =
       let cReq = toContactRequest cReqRow
-          stats = ChatStats 0 0
+          stats = ChatStats {unreadCount = 0, minUnreadItemId = 0}
        in AChat SCTContactRequest $ Chat (ContactRequest cReq) [] stats
 
 getDirectChat :: StoreMonad m => SQLiteStore -> User -> Int64 -> ChatPagination -> m (Chat 'CTDirect)
@@ -2173,7 +2173,7 @@ getDirectChat st user contactId pagination =
 getDirectChatLast_ :: DB.Connection -> User -> Int64 -> Int -> ExceptT StoreError IO (Chat 'CTDirect)
 getDirectChatLast_ db User {userId} contactId count = do
   contact <- ExceptT $ getContact_ db userId contactId
-  stats <- ExceptT $ getDirectChatStats_ db userId contactId
+  stats <- liftIO $ getDirectChatStats_ db userId contactId
   chatItems <- ExceptT getDirectChatItemsLast_
   pure $ Chat (DirectChat contact) (reverse chatItems) stats
   where
@@ -2197,7 +2197,7 @@ getDirectChatLast_ db User {userId} contactId count = do
 getDirectChatAfter_ :: DB.Connection -> User -> Int64 -> ChatItemId -> Int -> ExceptT StoreError IO (Chat 'CTDirect)
 getDirectChatAfter_ db User {userId} contactId afterChatItemId count = do
   contact <- ExceptT $ getContact_ db userId contactId
-  stats <- ExceptT $ getDirectChatStats_ db userId contactId
+  stats <- liftIO $ getDirectChatStats_ db userId contactId
   chatItems <- ExceptT getDirectChatItemsAfter_
   pure $ Chat (DirectChat contact) chatItems stats
   where
@@ -2221,7 +2221,7 @@ getDirectChatAfter_ db User {userId} contactId afterChatItemId count = do
 getDirectChatBefore_ :: DB.Connection -> User -> Int64 -> ChatItemId -> Int -> ExceptT StoreError IO (Chat 'CTDirect)
 getDirectChatBefore_ db User {userId} contactId beforeChatItemId count = do
   contact <- ExceptT $ getContact_ db userId contactId
-  stats <- ExceptT $ getDirectChatStats_ db userId contactId
+  stats <- liftIO $ getDirectChatStats_ db userId contactId
   chatItems <- ExceptT getDirectChatItemsBefore_
   pure $ Chat (DirectChat contact) (reverse chatItems) stats
   where
@@ -2242,18 +2242,22 @@ getDirectChatBefore_ db User {userId} contactId beforeChatItemId count = do
           |]
           (userId, contactId, beforeChatItemId, count)
 
-getDirectChatStats_ :: DB.Connection -> UserId -> Int64 -> IO (Either StoreError ChatStats)
+getDirectChatStats_ :: DB.Connection -> UserId -> Int64 -> IO ChatStats
 getDirectChatStats_ db userId contactId =
-  firstRow toChatStats (SEContactNotFound contactId) $
-    DB.query
+  toChatStats'
+    <$> DB.query
       db
       [sql|
-        SELECT COALESCE(COUNT(1), 0), COALESCE(MIN(chat_item_id), 0)
+        SELECT COUNT(1), MIN(chat_item_id)
         FROM chat_items
         WHERE user_id = ? AND contact_id = ? AND item_status = ?
         GROUP BY contact_id
       |]
       (userId, contactId, CISRcvNew)
+  where
+    toChatStats' :: [ChatStatsRow] -> ChatStats
+    toChatStats' [statsRow] = toChatStats statsRow
+    toChatStats' _ = ChatStats {unreadCount = 0, minUnreadItemId = 0}
 
 getContactIdByName :: StoreMonad m => SQLiteStore -> UserId -> ContactName -> m Int64
 getContactIdByName st userId cName =
@@ -2304,7 +2308,7 @@ getGroupChat st user groupId pagination =
 getGroupChatLast_ :: DB.Connection -> User -> Int64 -> Int -> ExceptT StoreError IO (Chat 'CTGroup)
 getGroupChatLast_ db user@User {userId, userContactId} groupId count = do
   groupInfo <- ExceptT $ getGroupInfo_ db user groupId
-  stats <- ExceptT $ getGroupChatStats_ db userId groupId
+  stats <- liftIO $ getGroupChatStats_ db userId groupId
   chatItems <- ExceptT getGroupChatItemsLast_
   pure $ Chat (GroupChat groupInfo) (reverse chatItems) stats
   where
@@ -2334,7 +2338,7 @@ getGroupChatLast_ db user@User {userId, userContactId} groupId count = do
 getGroupChatAfter_ :: DB.Connection -> User -> Int64 -> ChatItemId -> Int -> ExceptT StoreError IO (Chat 'CTGroup)
 getGroupChatAfter_ db user@User {userId, userContactId} groupId afterChatItemId count = do
   groupInfo <- ExceptT $ getGroupInfo_ db user groupId
-  stats <- ExceptT $ getGroupChatStats_ db userId groupId
+  stats <- liftIO $ getGroupChatStats_ db userId groupId
   chatItems <- ExceptT getGroupChatItemsAfter_
   pure $ Chat (GroupChat groupInfo) chatItems stats
   where
@@ -2364,7 +2368,7 @@ getGroupChatAfter_ db user@User {userId, userContactId} groupId afterChatItemId 
 getGroupChatBefore_ :: DB.Connection -> User -> Int64 -> ChatItemId -> Int -> ExceptT StoreError IO (Chat 'CTGroup)
 getGroupChatBefore_ db user@User {userId, userContactId} groupId beforeChatItemId count = do
   groupInfo <- ExceptT $ getGroupInfo_ db user groupId
-  stats <- ExceptT $ getGroupChatStats_ db userId groupId
+  stats <- liftIO $ getGroupChatStats_ db userId groupId
   chatItems <- ExceptT getGroupChatItemsBefore_
   pure $ Chat (GroupChat groupInfo) (reverse chatItems) stats
   where
@@ -2391,18 +2395,22 @@ getGroupChatBefore_ db user@User {userId, userContactId} groupId beforeChatItemI
           |]
           (userId, groupId, beforeChatItemId, count)
 
-getGroupChatStats_ :: DB.Connection -> UserId -> Int64 -> IO (Either StoreError ChatStats)
+getGroupChatStats_ :: DB.Connection -> UserId -> Int64 -> IO ChatStats
 getGroupChatStats_ db userId groupId =
-  firstRow toChatStats (SEGroupNotFound groupId) $
-    DB.query
+  toChatStats'
+    <$> DB.query
       db
       [sql|
-        SELECT COALESCE(COUNT(1), 0), COALESCE(MIN(chat_item_id), 0)
+        SELECT COUNT(1), MIN(chat_item_id)
         FROM chat_items
         WHERE user_id = ? AND group_id = ? AND item_status = ?
         GROUP BY group_id
       |]
       (userId, groupId, CISRcvNew)
+  where
+    toChatStats' :: [ChatStatsRow] -> ChatStats
+    toChatStats' [statsRow] = toChatStats statsRow
+    toChatStats' _ = ChatStats {unreadCount = 0, minUnreadItemId = 0}
 
 getGroupInfo :: StoreMonad m => SQLiteStore -> User -> Int64 -> m GroupInfo
 getGroupInfo st user groupId =
