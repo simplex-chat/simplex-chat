@@ -2248,7 +2248,7 @@ getDirectChatStats_ db userId contactId =
     DB.query
       db
       [sql|
-        SELECT COUNT(1), MIN(chat_item_id)
+        SELECT COALESCE(COUNT(1), 0), COALESCE(MIN(chat_item_id), 0)
         FROM chat_items
         WHERE user_id = ? AND contact_id = ? AND item_status = ?
         GROUP BY contact_id
@@ -2397,7 +2397,7 @@ getGroupChatStats_ db userId groupId =
     DB.query
       db
       [sql|
-        SELECT COUNT(1), MIN(chat_item_id)
+        SELECT COALESCE(COUNT(1), 0), COALESCE(MIN(chat_item_id), 0)
         FROM chat_items
         WHERE user_id = ? AND group_id = ? AND item_status = ?
         GROUP BY group_id
