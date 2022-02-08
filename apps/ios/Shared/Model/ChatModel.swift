@@ -451,6 +451,15 @@ struct CIMeta: Decodable {
     }
 }
 
+enum CIStatus: Decodable {
+    case sndNew
+    case sndSent
+    case sndErrorAuth
+    case sndError(agentErrorType: AgentErrorType)
+    case rcvNew
+    case rcvRead
+}
+
 enum CIContent: Decodable {
     case sndMsgContent(msgContent: MsgContent)
     case rcvMsgContent(msgContent: MsgContent)
