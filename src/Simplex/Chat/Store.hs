@@ -2021,10 +2021,10 @@ getChatPreviews st user =
     pure $ sortOn (Down . ts) (directChats <> groupChats <> cReqChats)
   where
     ts :: AChat -> UTCTime
-    ts (AChat _ (Chat _ (ci : _))) = chatItemTs ci
-    ts (AChat _ (Chat (DirectChat Contact {createdAt}) [])) = createdAt
-    ts (AChat _ (Chat (GroupChat GroupInfo {createdAt}) [])) = createdAt
-    ts (AChat _ (Chat (ContactRequest UserContactRequest {createdAt}) [])) = createdAt
+    ts (AChat _ (Chat _ (ci : _) _)) = chatItemTs ci
+    ts (AChat _ (Chat (DirectChat Contact {createdAt}) [] _)) = createdAt
+    ts (AChat _ (Chat (GroupChat GroupInfo {createdAt}) [] _)) = createdAt
+    ts (AChat _ (Chat (ContactRequest UserContactRequest {createdAt}) [] _)) = createdAt
 
 chatItemTs :: CChatItem d -> UTCTime
 chatItemTs (CChatItem _ (ChatItem _ CIMeta {itemTs} _)) = itemTs
@@ -2042,19 +2042,27 @@ getDirectChatPreviews_ db User {userId} = do
           -- Connection
           c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.conn_status, c.conn_type,
           c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at,
+          -- ChatStats
+          ChatStats.UnreadCount, ChatStats.MinUnread,
           -- ChatItem
           ci.chat_item_id, ci.item_ts, ci.item_content, ci.item_text, ci.item_status, ci.created_at
         FROM contacts ct
         JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
         JOIN connections c ON c.contact_id = ct.contact_id
         LEFT JOIN (
-          SELECT contact_id, MAX(item_ts) MaxDate
+          SELECT contact_id, MAX(item_ts) AS MaxDate
           FROM chat_items
           WHERE item_deleted != 1
           GROUP BY contact_id
-        ) CIMaxDates ON CIMaxDates.contact_id = c.contact_id
+        ) CIMaxDates ON CIMaxDates.contact_id = ct.contact_id
         LEFT JOIN chat_items ci ON ci.contact_id = CIMaxDates.contact_id
                                AND ci.item_ts = CIMaxDates.MaxDate
+        LEFT JOIN (
+          SELECT contact_id, COUNT(1) AS UnreadCount, MIN(chat_item_id) AS MinUnread
+          FROM chat_items
+          WHERE item_status = ?
+          GROUP BY contact_id
+        ) ChatStats ON ChatStats.contact_id = ct.contact_id
         WHERE ct.user_id = ?
           AND c.connection_id = (
             SELECT cc_connection_id FROM (
@@ -2069,13 +2077,14 @@ getDirectChatPreviews_ db User {userId} = do
           )
         ORDER BY ci.item_ts DESC
       |]
-      (userId, ConnReady, ConnSndReady)
+      (CISRcvNew, userId, ConnReady, ConnSndReady)
   where
-    toDirectChatPreview :: TimeZone -> ContactRow :. ConnectionRow :. MaybeChatItemRow -> AChat
-    toDirectChatPreview tz (contactRow :. connRow :. ciRow_) =
+    toDirectChatPreview :: TimeZone -> ContactRow :. ConnectionRow :. ChatStatsRow :. MaybeChatItemRow -> AChat
+    toDirectChatPreview tz (contactRow :. connRow :. statsRow :. ciRow_) =
       let contact = toContact $ contactRow :. connRow
           ci_ = toDirectChatItemList tz ciRow_
-       in AChat SCTDirect $ Chat (DirectChat contact) ci_
+          stats = toChatStats statsRow
+       in AChat SCTDirect $ Chat (DirectChat contact) ci_ stats
 
 getGroupChatPreviews_ :: DB.Connection -> User -> IO [AChat]
 getGroupChatPreviews_ db User {userId, userContactId} = do
@@ -2091,6 +2100,8 @@ getGroupChatPreviews_ db User {userId, userContactId} = do
           mu.group_member_id, mu.group_id, mu.member_id, mu.member_role, mu.member_category,
           mu.member_status, mu.invited_by, mu.local_display_name, mu.contact_id,
           pu.display_name, pu.full_name,
+          -- ChatStats
+          ChatStats.UnreadCount, ChatStats.MinUnread,
           -- ChatItem
           ci.chat_item_id, ci.item_ts, ci.item_content, ci.item_text, ci.item_status, ci.created_at,
           -- Maybe GroupMember - sender
@@ -2102,25 +2113,32 @@ getGroupChatPreviews_ db User {userId, userContactId} = do
         JOIN group_members mu ON mu.group_id = g.group_id
         JOIN contact_profiles pu ON pu.contact_profile_id = mu.contact_profile_id
         LEFT JOIN (
-          SELECT group_id, MAX(item_ts) MaxDate
+          SELECT group_id, MAX(item_ts) AS MaxDate
           FROM chat_items
           WHERE item_deleted != 1
           GROUP BY group_id
         ) GIMaxDates ON GIMaxDates.group_id = g.group_id
         LEFT JOIN chat_items ci ON ci.group_id = GIMaxDates.group_id
                                AND ci.item_ts = GIMaxDates.MaxDate
+        LEFT JOIN (
+          SELECT group_id, COUNT(1) AS UnreadCount, MIN(chat_item_id) AS MinUnread
+          FROM chat_items
+          WHERE item_status = ?
+          GROUP BY group_id
+        ) ChatStats ON ChatStats.group_id = g.group_id
         LEFT JOIN group_members m ON m.group_member_id = ci.group_member_id
         LEFT JOIN contact_profiles p ON p.contact_profile_id = m.contact_profile_id
         WHERE g.user_id = ? AND mu.contact_id = ?
         ORDER BY ci.item_ts DESC
       |]
-      (userId, userContactId)
+      (CISRcvNew, userId, userContactId)
   where
-    toGroupChatPreview :: TimeZone -> GroupInfoRow :. MaybeGroupChatItemRow -> AChat
-    toGroupChatPreview tz (groupInfoRow :. ciRow_) =
+    toGroupChatPreview :: TimeZone -> GroupInfoRow :. ChatStatsRow :. MaybeGroupChatItemRow -> AChat
+    toGroupChatPreview tz (groupInfoRow :. statsRow :. ciRow_) =
       let groupInfo = toGroupInfo userContactId groupInfoRow
           ci_ = toGroupChatItemList tz userContactId ciRow_
-       in AChat SCTGroup $ Chat (GroupChat groupInfo) ci_
+          stats = toChatStats statsRow
+       in AChat SCTGroup $ Chat (GroupChat groupInfo) ci_ stats
 
 getContactRequestChatPreviews_ :: DB.Connection -> User -> IO [AChat]
 getContactRequestChatPreviews_ db User {userId} =
@@ -2141,7 +2159,8 @@ getContactRequestChatPreviews_ db User {userId} =
     toContactRequestChatPreview :: ContactRequestRow -> AChat
     toContactRequestChatPreview cReqRow =
       let cReq = toContactRequest cReqRow
-       in AChat SCTContactRequest $ Chat (ContactRequest cReq) []
+          stats = ChatStats 0 0
+       in AChat SCTContactRequest $ Chat (ContactRequest cReq) [] stats
 
 getDirectChat :: StoreMonad m => SQLiteStore -> User -> Int64 -> ChatPagination -> m (Chat 'CTDirect)
 getDirectChat st user contactId pagination =
@@ -2154,8 +2173,9 @@ getDirectChat st user contactId pagination =
 getDirectChatLast_ :: DB.Connection -> User -> Int64 -> Int -> ExceptT StoreError IO (Chat 'CTDirect)
 getDirectChatLast_ db User {userId} contactId count = do
   contact <- ExceptT $ getContact_ db userId contactId
+  stats <- ExceptT $ getDirectChatStats_ db userId contactId
   chatItems <- ExceptT getDirectChatItemsLast_
-  pure $ Chat (DirectChat contact) (reverse chatItems)
+  pure $ Chat (DirectChat contact) (reverse chatItems) stats
   where
     getDirectChatItemsLast_ :: IO (Either StoreError [CChatItem 'CTDirect])
     getDirectChatItemsLast_ = do
@@ -2177,8 +2197,9 @@ getDirectChatLast_ db User {userId} contactId count = do
 getDirectChatAfter_ :: DB.Connection -> User -> Int64 -> ChatItemId -> Int -> ExceptT StoreError IO (Chat 'CTDirect)
 getDirectChatAfter_ db User {userId} contactId afterChatItemId count = do
   contact <- ExceptT $ getContact_ db userId contactId
+  stats <- ExceptT $ getDirectChatStats_ db userId contactId
   chatItems <- ExceptT getDirectChatItemsAfter_
-  pure $ Chat (DirectChat contact) chatItems
+  pure $ Chat (DirectChat contact) chatItems stats
   where
     getDirectChatItemsAfter_ :: IO (Either StoreError [CChatItem 'CTDirect])
     getDirectChatItemsAfter_ = do
@@ -2200,8 +2221,9 @@ getDirectChatAfter_ db User {userId} contactId afterChatItemId count = do
 getDirectChatBefore_ :: DB.Connection -> User -> Int64 -> ChatItemId -> Int -> ExceptT StoreError IO (Chat 'CTDirect)
 getDirectChatBefore_ db User {userId} contactId beforeChatItemId count = do
   contact <- ExceptT $ getContact_ db userId contactId
+  stats <- ExceptT $ getDirectChatStats_ db userId contactId
   chatItems <- ExceptT getDirectChatItemsBefore_
-  pure $ Chat (DirectChat contact) (reverse chatItems)
+  pure $ Chat (DirectChat contact) (reverse chatItems) stats
   where
     getDirectChatItemsBefore_ :: IO (Either StoreError [CChatItem 'CTDirect])
     getDirectChatItemsBefore_ = do
@@ -2219,6 +2241,19 @@ getDirectChatBefore_ db User {userId} contactId beforeChatItemId count = do
             LIMIT ?
           |]
           (userId, contactId, beforeChatItemId, count)
+
+getDirectChatStats_ :: DB.Connection -> UserId -> Int64 -> IO (Either StoreError ChatStats)
+getDirectChatStats_ db userId contactId =
+  firstRow toChatStats (SEContactNotFound contactId) $
+    DB.query
+      db
+      [sql|
+        SELECT COUNT(1), MIN(chat_item_id)
+        FROM chat_items
+        WHERE user_id = ? AND contact_id = ? item_status = ?
+        GROUP BY contact_id
+      |]
+      (userId, contactId, CISRcvNew)
 
 getContactIdByName :: StoreMonad m => SQLiteStore -> UserId -> ContactName -> m Int64
 getContactIdByName st userId cName =
@@ -2269,8 +2304,9 @@ getGroupChat st user groupId pagination =
 getGroupChatLast_ :: DB.Connection -> User -> Int64 -> Int -> ExceptT StoreError IO (Chat 'CTGroup)
 getGroupChatLast_ db user@User {userId, userContactId} groupId count = do
   groupInfo <- ExceptT $ getGroupInfo_ db user groupId
+  stats <- ExceptT $ getGroupChatStats_ db userId groupId
   chatItems <- ExceptT getGroupChatItemsLast_
-  pure $ Chat (GroupChat groupInfo) (reverse chatItems)
+  pure $ Chat (GroupChat groupInfo) (reverse chatItems) stats
   where
     getGroupChatItemsLast_ :: IO (Either StoreError [CChatItem 'CTGroup])
     getGroupChatItemsLast_ = do
@@ -2298,8 +2334,9 @@ getGroupChatLast_ db user@User {userId, userContactId} groupId count = do
 getGroupChatAfter_ :: DB.Connection -> User -> Int64 -> ChatItemId -> Int -> ExceptT StoreError IO (Chat 'CTGroup)
 getGroupChatAfter_ db user@User {userId, userContactId} groupId afterChatItemId count = do
   groupInfo <- ExceptT $ getGroupInfo_ db user groupId
+  stats <- ExceptT $ getGroupChatStats_ db userId groupId
   chatItems <- ExceptT getGroupChatItemsAfter_
-  pure $ Chat (GroupChat groupInfo) chatItems
+  pure $ Chat (GroupChat groupInfo) chatItems stats
   where
     getGroupChatItemsAfter_ :: IO (Either StoreError [CChatItem 'CTGroup])
     getGroupChatItemsAfter_ = do
@@ -2327,8 +2364,9 @@ getGroupChatAfter_ db user@User {userId, userContactId} groupId afterChatItemId 
 getGroupChatBefore_ :: DB.Connection -> User -> Int64 -> ChatItemId -> Int -> ExceptT StoreError IO (Chat 'CTGroup)
 getGroupChatBefore_ db user@User {userId, userContactId} groupId beforeChatItemId count = do
   groupInfo <- ExceptT $ getGroupInfo_ db user groupId
+  stats <- ExceptT $ getGroupChatStats_ db userId groupId
   chatItems <- ExceptT getGroupChatItemsBefore_
-  pure $ Chat (GroupChat groupInfo) (reverse chatItems)
+  pure $ Chat (GroupChat groupInfo) (reverse chatItems) stats
   where
     getGroupChatItemsBefore_ :: IO (Either StoreError [CChatItem 'CTGroup])
     getGroupChatItemsBefore_ = do
@@ -2352,6 +2390,19 @@ getGroupChatBefore_ db user@User {userId, userContactId} groupId beforeChatItemI
             LIMIT ?
           |]
           (userId, groupId, beforeChatItemId, count)
+
+getGroupChatStats_ :: DB.Connection -> UserId -> Int64 -> IO (Either StoreError ChatStats)
+getGroupChatStats_ db userId groupId =
+  firstRow toChatStats (SEGroupNotFound groupId) $
+    DB.query
+      db
+      [sql|
+        SELECT COUNT(1), MIN(chat_item_id)
+        FROM chat_items
+        WHERE user_id = ? AND group_id = ? item_status = ?
+        GROUP BY group_id
+      |]
+      (userId, groupId, CISRcvNew)
 
 getGroupInfo :: StoreMonad m => SQLiteStore -> User -> Int64 -> m GroupInfo
 getGroupInfo st user groupId =
@@ -2459,6 +2510,11 @@ updateGroupChatItemsRead st groupId (fromItemId, toItemId) = do
         WHERE group_id = ? AND chat_item_id >= ? AND chat_item_id <= ? AND item_sent = ?
       |]
       (CISRcvRead, currentTs, groupId, fromItemId, toItemId, SMDRcv)
+
+type ChatStatsRow = (Int, ChatItemId)
+
+toChatStats :: ChatStatsRow -> ChatStats
+toChatStats (unreadCount, minUnreadItemId) = ChatStats {unreadCount, minUnreadItemId}
 
 type ChatItemRow = (Int64, ChatItemTs, ACIContent, Text, ACIStatus, UTCTime)
 
