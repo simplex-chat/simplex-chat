@@ -2043,7 +2043,7 @@ getDirectChatPreviews_ db User {userId} = do
           c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.conn_status, c.conn_type,
           c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at,
           -- ChatStats
-          ChatStats.UnreadCount, ChatStats.MinUnread,
+          COALESCE(ChatStats.UnreadCount, 0), COALESCE(ChatStats.MinUnread, 0),
           -- ChatItem
           ci.chat_item_id, ci.item_ts, ci.item_content, ci.item_text, ci.item_status, ci.created_at
         FROM contacts ct
@@ -2101,7 +2101,7 @@ getGroupChatPreviews_ db User {userId, userContactId} = do
           mu.member_status, mu.invited_by, mu.local_display_name, mu.contact_id,
           pu.display_name, pu.full_name,
           -- ChatStats
-          ChatStats.UnreadCount, ChatStats.MinUnread,
+          COALESCE(ChatStats.UnreadCount, 0), COALESCE(ChatStats.MinUnread, 0),
           -- ChatItem
           ci.chat_item_id, ci.item_ts, ci.item_content, ci.item_text, ci.item_status, ci.created_at,
           -- Maybe GroupMember - sender
