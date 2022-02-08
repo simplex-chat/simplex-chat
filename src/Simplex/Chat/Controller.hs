@@ -173,6 +173,7 @@ data ChatResponse
   | CRSndFileRcvCancelled {sndFileTransfer :: SndFileTransfer}
   | CRSndGroupFileCancelled {sndFileTransfers :: [SndFileTransfer]}
   | CRUserProfileUpdated {fromProfile :: Profile, toProfile :: Profile}
+  | CRContactConnecting {contact :: Contact}
   | CRContactConnected {contact :: Contact}
   | CRContactAnotherClient {contact :: Contact}
   | CRContactDisconnected {contact :: Contact}
@@ -221,6 +222,7 @@ data ChatErrorType
   | CEChatNotStarted
   | CEInvalidConnReq
   | CEInvalidChatMessage {message :: String}
+  | CEUnexpectedChatMessageEvent {chatMsgEvent :: ChatMsgEvent, expected :: [CMEventTag]}
   | CEContactGroups {contact :: Contact, groupNames :: [GroupName]}
   | CEGroupUserRole
   | CEGroupContactRole {contactName :: ContactName}

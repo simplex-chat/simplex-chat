@@ -28,6 +28,7 @@ import Simplex.Chat.Types
 import Simplex.Chat.Util (eitherToMaybe)
 import Simplex.Messaging.Agent.Store.SQLite (fromTextField_)
 import Simplex.Messaging.Encoding.String
+import Simplex.Messaging.Parsers (dropPrefix, sumTypeJSON)
 import Simplex.Messaging.Util ((<$?>))
 
 data ConnectionEntity
@@ -87,7 +88,11 @@ data ChatMsgEvent
   | XInfoProbeCheck ProbeHash
   | XInfoProbeOk Probe
   | XOk
-  deriving (Eq, Show)
+  deriving (Eq, Show, Generic)
+
+instance ToJSON ChatMsgEvent where
+  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "X"
+  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "X"
 
 data MsgContentType = MCText_ | MCUnknown_
 
@@ -167,7 +172,11 @@ data CMEventTag
   | XInfoProbeCheck_
   | XInfoProbeOk_
   | XOk_
-  deriving (Eq, Show)
+  deriving (Eq, Show, Generic)
+
+instance ToJSON CMEventTag where
+  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "X"
+  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "X"
 
 instance StrEncoding CMEventTag where
   strEncode = \case
