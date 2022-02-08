@@ -115,15 +115,15 @@ struct User: Decodable {
 //        self.profile = profile
 //        self.activeUser = activeUser
 //    }
-}
 
-let sampleUser = User(
-    userId: 1,
-    userContactId: 1,
-    localDisplayName: "alice",
-    profile: sampleProfile,
-    activeUser: true
-)
+    static let sampleData = User(
+        userId: 1,
+        userContactId: 1,
+        localDisplayName: "alice",
+        profile: Profile.sampleData,
+        activeUser: true
+    )
+}
 
 typealias ContactName = String
 
@@ -132,12 +132,12 @@ typealias GroupName = String
 struct Profile: Codable {
     var displayName: String
     var fullName: String
-}
 
-let sampleProfile = Profile(
-    displayName: "alice",
-    fullName: "Alice"
-)
+    static let sampleData = Profile(
+        displayName: "alice",
+        fullName: "Alice"
+    )
+}
 
 enum ChatType: String {
     case direct = "@"
@@ -160,6 +160,16 @@ enum ChatInfo: Identifiable, Decodable {
         }
     }
 
+    var displayName: String {
+        get {
+            switch self {
+            case let .direct(contact): return contact.profile.displayName
+            case let .group(groupInfo): return groupInfo.groupProfile.displayName
+            case let .contactRequest(contactRequest): return contactRequest.profile.displayName
+            }
+        }
+    }
+
     var fullName: String {
         get {
             switch self {
@@ -171,7 +181,7 @@ enum ChatInfo: Identifiable, Decodable {
     }
 
     var chatViewName: String {
-        get { localDisplayName + (fullName == "" || fullName == localDisplayName ? "" : " / \(fullName)") }
+        get { displayName + (fullName == "" || fullName == displayName ? "" : " / \(fullName)") }
     }
     
     var id: String {
@@ -211,13 +221,19 @@ enum ChatInfo: Identifiable, Decodable {
         case let .contactRequest(contactRequest): return contactRequest.createdAt
         }
     }
+
+    struct SampleData {
+        var direct: ChatInfo
+        var group: ChatInfo
+        var contactRequest: ChatInfo
+    }
+
+    static var sampleData: ChatInfo.SampleData = SampleData(
+        direct: ChatInfo.direct(contact: Contact.sampleData),
+        group: ChatInfo.group(groupInfo: GroupInfo.sampleData),
+        contactRequest: ChatInfo.contactRequest(contactRequest: UserContactRequest.sampleData)
+    )
 }
-
-let sampleDirectChatInfo = ChatInfo.direct(contact: sampleContact)
-
-let sampleGroupChatInfo = ChatInfo.group(groupInfo: sampleGroupInfo)
-
-let sampleContactRequestChatInfo = ChatInfo.contactRequest(contactRequest: sampleContactRequest)
 
 final class Chat: ObservableObject, Identifiable {
     @Published var chatInfo: ChatInfo
@@ -297,21 +313,21 @@ struct Contact: Identifiable, Decodable {
     var id: String { get { "@\(contactId)" } }
     var apiId: Int64 { get { contactId } }
     var ready: Bool { get { activeConn.connStatus == "ready" || activeConn.connStatus == "snd-ready" } }
-}
 
-let sampleContact = Contact(
-    contactId: 1,
-    localDisplayName: "alice",
-    profile: sampleProfile,
-    activeConn: sampleConnection,
-    createdAt: .now
-)
+    static let sampleData = Contact(
+        contactId: 1,
+        localDisplayName: "alice",
+        profile: Profile.sampleData,
+        activeConn: Connection.sampleData,
+        createdAt: .now
+    )
+}
 
 struct Connection: Decodable {
     var connStatus: String
-}
 
-let sampleConnection = Connection(connStatus: "ready")
+    static let sampleData = Connection(connStatus: "ready")
+}
 
 struct UserContactRequest: Decodable {
     var contactRequestId: Int64
@@ -322,14 +338,14 @@ struct UserContactRequest: Decodable {
     var id: String { get { "<@\(contactRequestId)" } }
 
     var apiId: Int64 { get { contactRequestId } }
-}
 
-let sampleContactRequest = UserContactRequest(
-    contactRequestId: 1,
-    localDisplayName: "alice",
-    profile: sampleProfile,
-    createdAt: .now
-)
+    static let sampleData = UserContactRequest(
+        contactRequestId: 1,
+        localDisplayName: "alice",
+        profile: Profile.sampleData,
+        createdAt: .now
+    )
+}
 
 struct GroupInfo: Identifiable, Decodable {
     var groupId: Int64
@@ -340,27 +356,44 @@ struct GroupInfo: Identifiable, Decodable {
     var id: String { get { "#\(groupId)" } }
 
     var apiId: Int64 { get { groupId } }
-}
 
-let sampleGroupInfo = GroupInfo(
-    groupId: 1,
-    localDisplayName: "team",
-    groupProfile: sampleGroupProfile,
-    createdAt: .now
-)
+    static let sampleData = GroupInfo(
+        groupId: 1,
+        localDisplayName: "team",
+        groupProfile: GroupProfile.sampleData,
+        createdAt: .now
+    )
+}
 
 struct GroupProfile: Codable {
     var displayName: String
     var fullName: String
+
+    static let sampleData = GroupProfile(
+        displayName: "team",
+        fullName: "My Team"
+    )
 }
 
-let sampleGroupProfile = GroupProfile(
-    displayName: "team",
-    fullName: "My Team"
-)
-
 struct GroupMember: Decodable {
+    var groupMemberId: Int64
+    var memberId: String
+//    var memberRole: GroupMemberRole
+//    var memberCategory: GroupMemberCategory
+//    var memberStatus: GroupMemberStatus
+//    var invitedBy: InvitedBy
+    var localDisplayName: ContactName
+    var memberProfile: Profile
+    var memberContactId: Int64?
+//    var activeConn: Connection?
 
+    static let sampleData = GroupMember(
+        groupMemberId: 1,
+        memberId: "abcd",
+        localDisplayName: "alice",
+        memberProfile: Profile.sampleData,
+        memberContactId: 1
+    )
 }
 
 struct AChatItem: Decodable {
@@ -374,21 +407,21 @@ struct ChatItem: Identifiable, Decodable {
     var content: CIContent
     
     var id: Int64 { get { meta.itemId } }
-}
 
-func chatItemSample(_ id: Int64, _ dir: CIDirection, _ ts: Date, _ text: String) -> ChatItem {
-    ChatItem(
-       chatDir: dir,
-       meta: ciMetaSample(id, ts, text),
-       content: .sndMsgContent(msgContent: .text(text))
-   )
+    static func getSample (_ id: Int64, _ dir: CIDirection, _ ts: Date, _ text: String) -> ChatItem {
+        ChatItem(
+           chatDir: dir,
+           meta: CIMeta.getSample(id, ts, text),
+           content: .sndMsgContent(msgContent: .text(text))
+       )
+    }
 }
 
 enum CIDirection: Decodable {
     case directSnd
     case directRcv
     case groupSnd
-    case groupRcv(GroupMember)
+    case groupRcv(groupMember: GroupMember)
 
     var sent: Bool {
         get {
@@ -407,6 +440,15 @@ struct CIMeta: Decodable {
     var itemTs: Date
     var itemText: String
     var createdAt: Date
+
+    static func getSample(_ id: Int64, _ ts: Date, _ text: String) -> CIMeta {
+        CIMeta(
+            itemId: id,
+            itemTs: ts,
+            itemText: text,
+            createdAt: ts
+        )
+    }
 }
 
 enum CIStatus: Decodable {
@@ -416,15 +458,6 @@ enum CIStatus: Decodable {
     case sndError(agentErrorType: AgentErrorType)
     case rcvNew
     case rcvRead
-}
-
-func ciMetaSample(_ id: Int64, _ ts: Date, _ text: String) -> CIMeta {
-    CIMeta(
-        itemId: id,
-        itemTs: ts,
-        itemText: text,
-        createdAt: ts
-    )
 }
 
 enum CIContent: Decodable {

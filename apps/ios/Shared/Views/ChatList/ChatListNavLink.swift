@@ -175,15 +175,15 @@ struct ChatListNavLink_Previews: PreviewProvider {
         @State var chatId: String? = "@1"
         return Group {
             ChatListNavLink(chat: Chat(
-                chatInfo: sampleDirectChatInfo,
-                chatItems: [chatItemSample(1, .directSnd, .now, "hello")]
+                chatInfo: ChatInfo.sampleData.direct,
+                chatItems: [ChatItem.getSample(1, .directSnd, .now, "hello")]
             ))
             ChatListNavLink(chat: Chat(
-                chatInfo: sampleDirectChatInfo,
-                chatItems: [chatItemSample(1, .directSnd, .now, "hello")]
+                chatInfo: ChatInfo.sampleData.direct,
+                chatItems: [ChatItem.getSample(1, .directSnd, .now, "hello")]
             ))
             ChatListNavLink(chat: Chat(
-                chatInfo: sampleContactRequestChatInfo,
+                chatInfo: ChatInfo.sampleData.contactRequest,
                 chatItems: []
             ))
         }

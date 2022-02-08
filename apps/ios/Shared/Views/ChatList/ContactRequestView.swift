@@ -47,7 +47,7 @@ struct ContactRequestView: View {
 
 struct ContactRequestView_Previews: PreviewProvider {
     static var previews: some View {
-        ContactRequestView(contactRequest: sampleContactRequest)
+        ContactRequestView(contactRequest: UserContactRequest.sampleData)
             .previewLayout(.fixed(width: 360, height: 80))
     }
 }

@@ -35,8 +35,8 @@ struct EmojiItemView: View {
 struct EmojiItemView_Previews: PreviewProvider {
     static var previews: some View {
         Group{
-            EmojiItemView(chatItem: chatItemSample(1, .directSnd, .now, "🙂"))
-            EmojiItemView(chatItem: chatItemSample(2, .directRcv, .now, "👍"))
+            EmojiItemView(chatItem: ChatItem.getSample(1, .directSnd, .now, "🙂"))
+            EmojiItemView(chatItem: ChatItem.getSample(2, .directRcv, .now, "👍"))
         }
         .previewLayout(.fixed(width: 360, height: 70))
     }

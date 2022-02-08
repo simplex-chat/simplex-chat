@@ -90,10 +90,8 @@ struct ChatInfoView: View {
 }
 
 struct ChatInfoView_Previews: PreviewProvider {
-    var chatInfo = sampleDirectChatInfo
-
     static var previews: some View {
         @State var showChatInfo = true
-        return ChatInfoView(chat: Chat(chatInfo: sampleDirectChatInfo, chatItems: []), showChatInfo: $showChatInfo)
+        return ChatInfoView(chat: Chat(chatInfo: ChatInfo.sampleData.direct, chatItems: []), showChatInfo: $showChatInfo)
     }
 }
