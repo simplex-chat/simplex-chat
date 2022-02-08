@@ -2250,7 +2250,7 @@ getDirectChatStats_ db userId contactId =
       [sql|
         SELECT COUNT(1), MIN(chat_item_id)
         FROM chat_items
-        WHERE user_id = ? AND contact_id = ? item_status = ?
+        WHERE user_id = ? AND contact_id = ? AND item_status = ?
         GROUP BY contact_id
       |]
       (userId, contactId, CISRcvNew)
@@ -2399,7 +2399,7 @@ getGroupChatStats_ db userId groupId =
       [sql|
         SELECT COUNT(1), MIN(chat_item_id)
         FROM chat_items
-        WHERE user_id = ? AND group_id = ? item_status = ?
+        WHERE user_id = ? AND group_id = ? AND item_status = ?
         GROUP BY group_id
       |]
       (userId, groupId, CISRcvNew)
