@@ -116,6 +116,8 @@ module Simplex.Chat.Store
     getGroupChat,
     getChatItemIdByAgentMsgId,
     updateDirectChatItem,
+    updateDirectChatItemsRead,
+    updateGroupChatItemsRead,
   )
 where
 
@@ -2408,7 +2410,8 @@ updateDirectChatItem :: (StoreMonad m, MsgDirectionI d) => SQLiteStore -> ChatIt
 updateDirectChatItem st itemId itemStatus =
   liftIOEither . withTransaction st $ \db -> runExceptT $ do
     ci <- ExceptT $ getDirectChatItem_ db itemId
-    liftIO $ DB.execute db "UPDATE chat_items SET item_status = ? WHERE chat_item_id = ?" (itemStatus, itemId)
+    currentTs <- liftIO getCurrentTime
+    liftIO $ DB.execute db "UPDATE chat_items SET item_status = ?, updated_at = ? WHERE chat_item_id = ?" (itemStatus, currentTs, itemId)
     pure ci {meta = (meta ci) {itemStatus}}
 
 getDirectChatItem_ :: forall d. MsgDirectionI d => DB.Connection -> ChatItemId -> IO (Either StoreError (ChatItem 'CTDirect d))
@@ -2432,6 +2435,30 @@ getDirectChatItem_ db itemId = do
   where
     correctDir :: CChatItem c -> Either StoreError (ChatItem c d)
     correctDir (CChatItem _ ci) = first SEInternalError $ checkDirection ci
+
+updateDirectChatItemsRead :: (StoreMonad m) => SQLiteStore -> Int64 -> (ChatItemId, ChatItemId) -> m ()
+updateDirectChatItemsRead st contactId (fromItemId, toItemId) = do
+  currentTs <- liftIO getCurrentTime
+  liftIO . withTransaction st $ \db ->
+    DB.execute
+      db
+      [sql|
+        UPDATE chat_items SET item_status = ?, updated_at = ?
+        WHERE contact_id = ? AND chat_item_id >= ? AND chat_item_id <= ? AND item_sent = ?
+      |]
+      (CISRcvRead, currentTs, contactId, fromItemId, toItemId, SMDRcv)
+
+updateGroupChatItemsRead :: (StoreMonad m) => SQLiteStore -> Int64 -> (ChatItemId, ChatItemId) -> m ()
+updateGroupChatItemsRead st groupId (fromItemId, toItemId) = do
+  currentTs <- liftIO getCurrentTime
+  liftIO . withTransaction st $ \db ->
+    DB.execute
+      db
+      [sql|
+        UPDATE chat_items SET item_status = ?, updated_at = ?
+        WHERE group_id = ? AND chat_item_id >= ? AND chat_item_id <= ? AND item_sent = ?
+      |]
+      (CISRcvRead, currentTs, groupId, fromItemId, toItemId, SMDRcv)
 
 type ChatItemRow = (Int64, ChatItemTs, ACIContent, Text, ACIStatus, UTCTime)
 
