@@ -161,8 +161,8 @@ processChatCommand = \case
       pure . CRNewChatItem $ AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci
     CTContactRequest -> pure $ chatCmdError "not supported"
   APIChatRead cType chatId fromToIds -> withChatLock $ case cType of
-    CTDirect -> withStore (\st -> updateDirectChatItemsRead st chatId fromToIds) >> pure CRCmdOk
-    CTGroup -> withStore (\st -> updateGroupChatItemsRead st chatId fromToIds) >> pure CRCmdOk
+    CTDirect -> withStore (\st -> updateDirectChatItemsRead st chatId fromToIds) $> CRCmdOk
+    CTGroup -> withStore (\st -> updateGroupChatItemsRead st chatId fromToIds) $> CRCmdOk
     CTContactRequest -> pure $ chatCmdError "not supported"
   APIDeleteChat cType chatId -> withUser $ \User {userId} -> case cType of
     CTDirect -> do
