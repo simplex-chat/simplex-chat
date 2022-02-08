@@ -409,6 +409,15 @@ struct CIMeta: Decodable {
     var createdAt: Date
 }
 
+enum CIStatus: Decodable {
+    case sndNew
+    case sndSent
+    case sndErrorAuth
+    case sndError(agentErrorType: AgentErrorType)
+    case rcvNew
+    case rcvRead
+}
+
 func ciMetaSample(_ id: Int64, _ ts: Date, _ text: String) -> CIMeta {
     CIMeta(
         itemId: id,
