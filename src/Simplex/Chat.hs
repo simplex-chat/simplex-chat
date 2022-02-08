@@ -551,12 +551,10 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
     processDirectMessage agentMsg conn@Connection {connId} = \case
       Nothing -> case agentMsg of
         CONF confId connInfo -> do
-          ct <- saveConnInfo conn connInfo
+          saveConnInfo conn connInfo
           allowAgentConnection conn confId $ XInfo profile
-          toView $ CRContactConnecting ct
         INFO connInfo -> do
-          ct <- saveConnInfo conn connInfo
-          toView $ CRContactConnecting ct
+          saveConnInfo conn connInfo
         MSG meta msgBody -> do
           _ <- saveRcvMSG conn meta msgBody
           withAckMessage agentConnId meta $ pure ()
@@ -962,14 +960,15 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
       withStore $ \st -> mergeContactRecords st userId to from
       toView $ CRContactsMerged to from
 
-    saveConnInfo :: Connection -> ConnInfo -> m Contact
+    saveConnInfo :: Connection -> ConnInfo -> m ()
     saveConnInfo activeConn connInfo = do
       ChatMessage {chatMsgEvent} <- liftEither $ parseChatMessage connInfo
       case chatMsgEvent of
-        XInfo p ->
-          withStore $ \st -> createDirectContact st userId activeConn p
+        XInfo p -> do
+          ct <- withStore $ \st -> createDirectContact st userId activeConn p
+          toView $ CRContactConnecting ct
         -- TODO other events in SMP confirmation
-        _ -> throwChatError $ CEUnexpectedChatMessageEvent chatMsgEvent [XInfo_]
+        _ -> pure ()
 
     xGrpMemNew :: GroupInfo -> GroupMember -> MemberInfo -> m ()
     xGrpMemNew gInfo m memInfo@(MemberInfo memId _ _) = do

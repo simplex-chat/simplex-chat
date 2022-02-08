@@ -222,7 +222,6 @@ data ChatErrorType
   | CEChatNotStarted
   | CEInvalidConnReq
   | CEInvalidChatMessage {message :: String}
-  | CEUnexpectedChatMessageEvent {chatMsgEvent :: ChatMsgEvent, expected :: [CMEventTag]}
   | CEContactGroups {contact :: Contact, groupNames :: [GroupName]}
   | CEGroupUserRole
   | CEGroupContactRole {contactName :: ContactName}

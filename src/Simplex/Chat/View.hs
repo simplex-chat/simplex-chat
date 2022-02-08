@@ -455,7 +455,6 @@ viewChatError = \case
     CEChatNotStarted -> ["error: chat not started"]
     CEInvalidConnReq -> viewInvalidConnReq
     CEInvalidChatMessage e -> ["chat message error: " <> sShow e]
-    CEUnexpectedChatMessageEvent cme expected -> ["unexpected chat message event tag: " <> sShow (toCMEventTag cme) <> ", expected tags: " <> sShow expected]
     CEContactGroups Contact {localDisplayName} gNames -> [ttyContact localDisplayName <> ": contact cannot be deleted, it is a member of the group(s) " <> ttyGroups gNames]
     CEGroupDuplicateMember c -> ["contact " <> ttyContact c <> " is already in the group"]
     CEGroupDuplicateMemberId -> ["cannot add member - duplicate member ID"]
