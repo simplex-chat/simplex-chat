@@ -160,6 +160,16 @@ enum ChatInfo: Identifiable, Decodable {
         }
     }
 
+    var displayName: String {
+        get {
+            switch self {
+            case let .direct(contact): return contact.profile.displayName
+            case let .group(groupInfo): return groupInfo.groupProfile.displayName
+            case let .contactRequest(contactRequest): return contactRequest.profile.displayName
+            }
+        }
+    }
+
     var fullName: String {
         get {
             switch self {
@@ -171,7 +181,7 @@ enum ChatInfo: Identifiable, Decodable {
     }
 
     var chatViewName: String {
-        get { localDisplayName + (fullName == "" || fullName == localDisplayName ? "" : " / \(fullName)") }
+        get { displayName + (fullName == "" || fullName == displayName ? "" : " / \(fullName)") }
     }
     
     var id: String {

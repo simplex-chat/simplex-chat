@@ -19,7 +19,9 @@ struct ChatView: View {
     @State private var showChatInfo = false
 
     var body: some View {
-        VStack {
+        let cInfo = chat.chatInfo
+
+        return VStack {
             GeometryReader { g in
                 ScrollViewReader { proxy in
                     ScrollView {
@@ -42,7 +44,7 @@ struct ChatView: View {
 
             SendMessageView(sendMessage: sendMessage, inProgress: inProgress)
         }
-        .navigationTitle(chat.chatInfo.chatViewName)
+        .navigationTitle(cInfo.chatViewName)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
@@ -67,8 +69,10 @@ struct ChatView: View {
                         .frame(width: 32, height: 32)
                         .padding(.trailing, 4)
                         VStack {
-                            Text(chat.chatInfo.localDisplayName).font(.headline)
-                            Text(chat.chatInfo.fullName).font(.subheadline)
+                            Text(cInfo.displayName).font(.headline)
+                            if cInfo.fullName != "" && cInfo.displayName != cInfo.fullName {
+                                Text(cInfo.fullName).font(.subheadline)
+                            }
                         }
                     }
                     .foregroundColor(.primary)
