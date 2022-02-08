@@ -29,7 +29,7 @@ struct TextItemView: View {
         let meta = getDateFormatter().string(from: chatItem.meta.itemTs)
 
         return ZStack(alignment: .bottomTrailing) {
-            (messageText(chatItem.content.text) + reserveSpaceForMeta(meta))
+            (messageText(chatItem) + reserveSpaceForMeta(meta))
                 .padding(.top, 6)
                 .padding(.bottom, 7)
                 .padding(.horizontal, 12)
@@ -59,16 +59,26 @@ struct TextItemView: View {
         )
     }
 
-    private func messageText(_ s: String) -> Text {
-        if s == "" { return Text("") }
-        let parts = s.split(separator: " ")
-        var res = wordToText(parts[0])
-        var i = 1
-        while i < parts.count {
-            res = res + Text(" ") + wordToText(parts[i])
-            i = i + 1
+    private func messageText(_ chatItem: ChatItem) -> Text {
+        let s = chatItem.content.text
+        var res: Text
+        if s == "" {
+            res = Text("")
+        } else {
+            let parts = s.split(separator: " ")
+            res = wordToText(parts[0])
+            var i = 1
+            while i < parts.count {
+                res = res + Text(" ") + wordToText(parts[i])
+                i = i + 1
+            }
         }
-        return res
+        if case let .groupRcv(groupMember) = chatItem.chatDir {
+            let member = Text(groupMember.memberProfile.displayName).font(.headline)
+            return member + Text(": ") + res
+        } else {
+            return res
+        }
     }
 
     private func reserveSpaceForMeta(_ meta: String) -> Text {
@@ -122,6 +132,7 @@ struct TextItemView_Previews: PreviewProvider {
     static var previews: some View {
         Group{
             TextItemView(chatItem: ChatItem.getSample(1, .directSnd, .now, "hello"), width: 360)
+            TextItemView(chatItem: ChatItem.getSample(1, .groupRcv(groupMember: GroupMember.sampleData), .now, "hello"), width: 360)
             TextItemView(chatItem: ChatItem.getSample(2, .directSnd, .now, "https://simplex.chat"), width: 360)
             TextItemView(chatItem: ChatItem.getSample(2, .directRcv, .now, "hello there too!!! this covers -"), width: 360)
             TextItemView(chatItem: ChatItem.getSample(2, .directRcv, .now, "hello there too!!! this text has the time on the same line "), width: 360)

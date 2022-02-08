@@ -46,7 +46,7 @@ struct ChatPreviewView: View {
                 .padding(.horizontal, 8)
 
                 if let cItem = cItem {
-                    Text(cItem.content.text)
+                    Text(chatItemText(cItem))
                         .frame(minWidth: 0, maxWidth: .infinity, minHeight: 44, maxHeight: 44, alignment: .topLeading)
                         .padding([.leading, .trailing], 8)
                         .padding(.bottom, 4)
@@ -59,6 +59,14 @@ struct ChatPreviewView: View {
                 }
             }
         }
+    }
+
+    private func chatItemText(_ cItem: ChatItem) -> String {
+        let t = cItem.content.text
+        if case let .groupRcv(groupMember) = cItem.chatDir {
+            return groupMember.memberProfile.displayName + ": " +  t
+        }
+        return t
     }
 }
 

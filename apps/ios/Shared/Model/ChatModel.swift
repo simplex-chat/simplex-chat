@@ -366,7 +366,24 @@ struct GroupProfile: Codable {
 }
 
 struct GroupMember: Decodable {
+    var groupMemberId: Int64
+    var memberId: String
+//    var memberRole: GroupMemberRole
+//    var memberCategory: GroupMemberCategory
+//    var memberStatus: GroupMemberStatus
+//    var invitedBy: InvitedBy
+    var localDisplayName: ContactName
+    var memberProfile: Profile
+    var memberContactId: Int64?
+//    var activeConn: Connection?
 
+    static let sampleData = GroupMember(
+        groupMemberId: 1,
+        memberId: "abcd",
+        localDisplayName: "alice",
+        memberProfile: Profile.sampleData,
+        memberContactId: 1
+    )
 }
 
 struct AChatItem: Decodable {
