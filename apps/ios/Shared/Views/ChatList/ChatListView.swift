@@ -45,6 +45,14 @@ struct ChatListView: View {
                 .alert(isPresented: $connectAlert) { connectionErrorAlert() }
             }
             .alert(isPresented: $chatModel.connectViaUrl) { connectViaUrlAlert() }
+            .onReceive(NtfManager.publisher) { data in
+                // execute other methods when the
+                // Combine publisher with the specified
+                // name received
+                if let content = (data.object as? UNNotificationContent) {
+                    print("**** notification title:\(content.title), subtitle:\(content.subtitle)")
+                }
+            }
         }
     }
 

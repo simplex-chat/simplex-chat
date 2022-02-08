@@ -10,13 +10,16 @@ import SwiftUI
 @main
 struct SimpleXApp: App {
     @StateObject private var chatModel = ChatModel()
-    
+    @Environment(\.scenePhase) var scenePhase
+
     init() {
         hs_init(0, nil)
+        BGManager.shared.register()
+        NtfManager.shared.registerCategories()
     }
 
     var body: some Scene {
-        WindowGroup {
+        return WindowGroup {
             ContentView()
                 .environmentObject(chatModel)
                 .onOpenURL { url in
@@ -25,10 +28,13 @@ struct SimpleXApp: App {
                     print(url)
                 }
                 .onAppear() {
-                    do {
-                        chatModel.currentUser = try apiGetActiveUser()
-                    } catch {
-                        fatalError("Failed to initialize chat controller or database: \(error)")
+                    initializeChat(chatModel)
+                }
+                .onChange(of: scenePhase) { phase in
+                    if phase == .background {
+                        BGManager.shared.schedule(chatModel)
+                    } else {
+                        ChatReceiver.shared.restart(chatModel)
                     }
                 }
         }

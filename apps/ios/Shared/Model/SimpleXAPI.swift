@@ -8,6 +8,8 @@
 
 import Foundation
 import UIKit
+import Dispatch
+import BackgroundTasks
 
 private var chatController: chat_ctrl?
 private let jsonDecoder = getJSONDecoder()
@@ -305,6 +307,53 @@ func apiRejectContactRequest(contactReqId: Int64) throws {
     throw r
 }
 
+func initializeChat(_ chatModel: ChatModel) {
+    do {
+        chatModel.currentUser = try apiGetActiveUser()
+    } catch {
+        fatalError("Failed to initialize chat controller or database: \(error)")
+    }
+}
+
+class ChatReceiver {
+    private var receiveLoop: DispatchWorkItem?
+    private var receiveMessages = true
+    private var wasStarted = false
+
+    static let shared = ChatReceiver()
+
+    func start(_ chatModel: ChatModel, bgTask: BGAppRefreshTask? = nil) {
+        print("*** ChatReceiver start")
+        if receiveLoop != nil { return }
+        wasStarted = true
+        receiveMessages = true
+        let loop = DispatchWorkItem(qos: .default, flags: []) {
+            while self.receiveMessages {
+                do {
+                    try processReceivedMsg(chatModel, chatRecvMsg())
+                } catch {
+                    print("error receiving message: ", error)
+                }
+            }
+            if let task = bgTask { task.setTaskCompleted(success: true) }
+        }
+        receiveLoop = loop
+        DispatchQueue.global().async(execute: loop)
+    }
+
+    func stop() {
+        print("*** ChatReceiver stop")
+        receiveMessages = false
+        receiveLoop?.cancel()
+        receiveLoop = nil
+    }
+
+    func restart(_ chatModel: ChatModel) {
+        print("*** ChatReceiver restart")
+        if wasStarted && receiveLoop == nil { start(chatModel) }
+    }
+}
+
 func processReceivedMsg(_ chatModel: ChatModel, _ res: ChatResponse) {
     DispatchQueue.main.async {
         chatModel.terminalItems.append(.resp(.now, res))
@@ -312,11 +361,13 @@ func processReceivedMsg(_ chatModel: ChatModel, _ res: ChatResponse) {
         case let .contactConnected(contact):
             chatModel.updateContact(contact)
             chatModel.updateNetworkStatus(contact, .connected)
+            NtfManager.shared.notifyContactConnected(contact)
         case let .receivedContactRequest(contactRequest):
             chatModel.addChat(Chat(
                 chatInfo: ChatInfo.contactRequest(contactRequest: contactRequest),
                 chatItems: []
             ))
+            NtfManager.shared.notifyContactRequest(contactRequest)
         case let .contactUpdated(toContact):
             let cInfo = ChatInfo.direct(contact: toContact)
             if chatModel.hasChat(toContact.id) {
@@ -338,7 +389,10 @@ func processReceivedMsg(_ chatModel: ChatModel, _ res: ChatResponse) {
             }
             chatModel.updateNetworkStatus(contact, .error(err))
         case let .newChatItem(aChatItem):
-            chatModel.addChatItem(aChatItem.chatInfo, aChatItem.chatItem)
+            let cInfo = aChatItem.chatInfo
+            let cItem = aChatItem.chatItem
+            chatModel.addChatItem(cInfo, cItem)
+            NtfManager.shared.notifyMessageReceived(cInfo, cItem)
         default:
             print("unsupported response: ", res.responseType)
         }
