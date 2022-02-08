@@ -116,6 +116,8 @@ module Simplex.Chat.Store
     getGroupChat,
     getChatItemIdByAgentMsgId,
     updateDirectChatItem,
+    updateDirectChatItemsRead,
+    updateGroupChatItemsRead,
   )
 where
 
@@ -2432,6 +2434,28 @@ getDirectChatItem_ db itemId = do
   where
     correctDir :: CChatItem c -> Either StoreError (ChatItem c d)
     correctDir (CChatItem _ ci) = first SEInternalError $ checkDirection ci
+
+updateDirectChatItemsRead :: (StoreMonad m) => SQLiteStore -> Int64 -> (ChatItemId, ChatItemId) -> m ()
+updateDirectChatItemsRead st contactId (fromItemId, toItemId) =
+  liftIO . withTransaction st $ \db ->
+    DB.execute
+      db
+      [sql|
+        UPDATE chat_items SET item_status = ?
+        WHERE contact_id = ? AND chat_item_id >= ? AND chat_item_id <= ? AND item_sent = ?
+      |]
+      (CISRcvRead, contactId, fromItemId, toItemId, SMDRcv)
+
+updateGroupChatItemsRead :: (StoreMonad m) => SQLiteStore -> Int64 -> (ChatItemId, ChatItemId) -> m ()
+updateGroupChatItemsRead st groupId (fromItemId, toItemId) =
+  liftIO . withTransaction st $ \db ->
+    DB.execute
+      db
+      [sql|
+        UPDATE chat_items SET item_status = ?
+        WHERE group_id = ? AND chat_item_id >= ? AND chat_item_id <= ? AND item_sent = ?
+      |]
+      (CISRcvRead, groupId, fromItemId, toItemId, SMDRcv)
 
 type ChatItemRow = (Int64, ChatItemTs, ACIContent, Text, ACIStatus, UTCTime)
 

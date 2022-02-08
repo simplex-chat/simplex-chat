@@ -42,6 +42,7 @@ responseToView cmd = \case
   CRChatItemUpdated _ -> []
   CRMsgIntegrityError mErr -> viewMsgIntegrityError mErr
   CRCmdAccepted _ -> r []
+  CRCmdOk -> []
   CRChatHelp section -> case section of
     HSMain -> r chatHelpInfo
     HSFiles -> r filesHelpInfo

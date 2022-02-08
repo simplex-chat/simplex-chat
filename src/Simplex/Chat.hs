@@ -160,6 +160,10 @@ processChatCommand = \case
       setActive $ ActiveG gName
       pure . CRNewChatItem $ AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci
     CTContactRequest -> pure $ chatCmdError "not supported"
+  APIChatRead cType chatId fromToIds -> withChatLock $ case cType of
+    CTDirect -> withStore (\st -> updateDirectChatItemsRead st chatId fromToIds) >> pure CRCmdOk
+    CTGroup -> withStore (\st -> updateGroupChatItemsRead st chatId fromToIds) >> pure CRCmdOk
+    CTContactRequest -> pure $ chatCmdError "not supported"
   APIDeleteChat cType chatId -> withUser $ \User {userId} -> case cType of
     CTDirect -> do
       ct@Contact {localDisplayName} <- withStore $ \st -> getContact st userId chatId
@@ -1393,6 +1397,7 @@ chatCommandP =
     <|> "/_get chat " *> (APIGetChat <$> chatTypeP <*> A.decimal <* A.space <*> chatPaginationP)
     <|> "/_get items count=" *> (APIGetChatItems <$> A.decimal)
     <|> "/_send " *> (APISendMessage <$> chatTypeP <*> A.decimal <* A.space <*> msgContentP)
+    <|> "/_read chat " *> (APIChatRead <$> chatTypeP <*> A.decimal <* A.space <*> ((,) <$> ("from=" *> A.decimal) <* A.space <*> ("to=" *> A.decimal)))
     <|> "/_delete " *> (APIDeleteChat <$> chatTypeP <*> A.decimal)
     <|> "/_accept " *> (APIAcceptContact <$> A.decimal)
     <|> "/_reject " *> (APIRejectContact <$> A.decimal)

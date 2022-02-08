@@ -88,6 +88,7 @@ data ChatCommand
   | APIGetChat ChatType Int64 ChatPagination
   | APIGetChatItems Int
   | APISendMessage ChatType Int64 MsgContent
+  | APIChatRead ChatType Int64 (Int64, Int64)
   | APIDeleteChat ChatType Int64
   | APIAcceptContact Int64
   | APIRejectContact Int64
@@ -134,6 +135,7 @@ data ChatResponse
   | CRChatItemUpdated {chatItem :: AChatItem}
   | CRMsgIntegrityError {msgerror :: MsgErrorType} -- TODO make it chat item to support in mobile
   | CRCmdAccepted {corr :: CorrId}
+  | CRCmdOk
   | CRChatHelp {helpSection :: HelpSection}
   | CRWelcome {user :: User}
   | CRGroupCreated {groupInfo :: GroupInfo}
