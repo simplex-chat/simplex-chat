@@ -2495,9 +2495,9 @@ updateDirectChatItemsRead st contactId (fromItemId, toItemId) = do
       db
       [sql|
         UPDATE chat_items SET item_status = ?, updated_at = ?
-        WHERE contact_id = ? AND chat_item_id >= ? AND chat_item_id <= ? AND item_sent = ?
+        WHERE contact_id = ? AND chat_item_id >= ? AND chat_item_id <= ? AND item_status = ?
       |]
-      (CISRcvRead, currentTs, contactId, fromItemId, toItemId, SMDRcv)
+      (CISRcvRead, currentTs, contactId, fromItemId, toItemId, CISRcvNew)
 
 updateGroupChatItemsRead :: (StoreMonad m) => SQLiteStore -> Int64 -> (ChatItemId, ChatItemId) -> m ()
 updateGroupChatItemsRead st groupId (fromItemId, toItemId) = do
@@ -2507,9 +2507,9 @@ updateGroupChatItemsRead st groupId (fromItemId, toItemId) = do
       db
       [sql|
         UPDATE chat_items SET item_status = ?, updated_at = ?
-        WHERE group_id = ? AND chat_item_id >= ? AND chat_item_id <= ? AND item_sent = ?
+        WHERE group_id = ? AND chat_item_id >= ? AND chat_item_id <= ? AND item_status = ?
       |]
-      (CISRcvRead, currentTs, groupId, fromItemId, toItemId, SMDRcv)
+      (CISRcvRead, currentTs, groupId, fromItemId, toItemId, CISRcvNew)
 
 type ChatStatsRow = (Int, ChatItemId)
 
