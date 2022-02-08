@@ -553,7 +553,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
         CONF confId connInfo -> do
           saveConnInfo conn connInfo
           allowAgentConnection conn confId $ XInfo profile
-        INFO connInfo -> do
+        INFO connInfo ->
           saveConnInfo conn connInfo
         MSG meta msgBody -> do
           _ <- saveRcvMSG conn meta msgBody
@@ -967,7 +967,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
         XInfo p -> do
           ct <- withStore $ \st -> createDirectContact st userId activeConn p
           toView $ CRContactConnecting ct
-        -- TODO other events in SMP confirmation
+        -- TODO show/log error, other events in SMP confirmation
         _ -> pure ()
 
     xGrpMemNew :: GroupInfo -> GroupMember -> MemberInfo -> m ()
