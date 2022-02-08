@@ -64,7 +64,7 @@ struct SettingsView: View {
 struct SettingsView_Previews: PreviewProvider {
     static var previews: some View {
         let chatModel = ChatModel()
-        chatModel.currentUser = sampleUser
+        chatModel.currentUser = User.sampleData
         return SettingsView()
             .environmentObject(chatModel)
     }

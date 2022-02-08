@@ -77,7 +77,7 @@ struct UserProfile: View {
 struct UserProfile_Previews: PreviewProvider {
     static var previews: some View {
         let chatModel = ChatModel()
-        chatModel.currentUser = sampleUser
+        chatModel.currentUser = User.sampleData
         return UserProfile()
             .environmentObject(chatModel)
     }

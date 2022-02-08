@@ -121,12 +121,12 @@ struct TextItemView: View {
 struct TextItemView_Previews: PreviewProvider {
     static var previews: some View {
         Group{
-            TextItemView(chatItem: chatItemSample(1, .directSnd, .now, "hello"), width: 360)
-            TextItemView(chatItem: chatItemSample(2, .directSnd, .now, "https://simplex.chat"), width: 360)
-            TextItemView(chatItem: chatItemSample(2, .directRcv, .now, "hello there too!!! this covers -"), width: 360)
-            TextItemView(chatItem: chatItemSample(2, .directRcv, .now, "hello there too!!! this text has the time on the same line "), width: 360)
-            TextItemView(chatItem: chatItemSample(2, .directRcv, .now, "https://simplex.chat"), width: 360)
-            TextItemView(chatItem: chatItemSample(2, .directRcv, .now, "chaT@simplex.chat"), width: 360)
+            TextItemView(chatItem: ChatItem.getSample(1, .directSnd, .now, "hello"), width: 360)
+            TextItemView(chatItem: ChatItem.getSample(2, .directSnd, .now, "https://simplex.chat"), width: 360)
+            TextItemView(chatItem: ChatItem.getSample(2, .directRcv, .now, "hello there too!!! this covers -"), width: 360)
+            TextItemView(chatItem: ChatItem.getSample(2, .directRcv, .now, "hello there too!!! this text has the time on the same line "), width: 360)
+            TextItemView(chatItem: ChatItem.getSample(2, .directRcv, .now, "https://simplex.chat"), width: 360)
+            TextItemView(chatItem: ChatItem.getSample(2, .directRcv, .now, "chaT@simplex.chat"), width: 360)
         }
         .previewLayout(.fixed(width: 360, height: 70))
     }

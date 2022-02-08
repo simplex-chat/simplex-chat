@@ -34,11 +34,11 @@ func getDateFormatter() -> DateFormatter {
 struct ChatItemView_Previews: PreviewProvider {
     static var previews: some View {
         Group{
-            ChatItemView(chatItem: chatItemSample(1, .directSnd, .now, "hello"), width: 360)
-            ChatItemView(chatItem: chatItemSample(2, .directRcv, .now, "hello there too"), width: 360)
-            ChatItemView(chatItem: chatItemSample(1, .directSnd, .now, "🙂"), width: 360)
-            ChatItemView(chatItem: chatItemSample(2, .directRcv, .now, "🙂🙂🙂🙂🙂"), width: 360)
-            ChatItemView(chatItem: chatItemSample(2, .directRcv, .now, "🙂🙂🙂🙂🙂🙂"), width: 360)
+            ChatItemView(chatItem: ChatItem.getSample(1, .directSnd, .now, "hello"), width: 360)
+            ChatItemView(chatItem: ChatItem.getSample(2, .directRcv, .now, "hello there too"), width: 360)
+            ChatItemView(chatItem: ChatItem.getSample(1, .directSnd, .now, "🙂"), width: 360)
+            ChatItemView(chatItem: ChatItem.getSample(2, .directRcv, .now, "🙂🙂🙂🙂🙂"), width: 360)
+            ChatItemView(chatItem: ChatItem.getSample(2, .directRcv, .now, "🙂🙂🙂🙂🙂🙂"), width: 360)
         }
         .previewLayout(.fixed(width: 360, height: 70))
     }
