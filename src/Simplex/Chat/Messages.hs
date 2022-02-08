@@ -146,7 +146,11 @@ data NewChatItem d = NewChatItem
   deriving (Show)
 
 -- | type to show one chat with messages
-data Chat c = Chat {chatInfo :: ChatInfo c, chatItems :: [CChatItem c]}
+data Chat c = Chat
+  { chatInfo :: ChatInfo c,
+    chatItems :: [CChatItem c],
+    chatStats :: ChatStats
+  }
   deriving (Show, Generic)
 
 instance ToJSON (Chat c) where
@@ -160,6 +164,16 @@ deriving instance Show AChat
 instance ToJSON AChat where
   toJSON (AChat _ c) = J.toJSON c
   toEncoding (AChat _ c) = J.toEncoding c
+
+data ChatStats = ChatStats
+  { unreadCount :: Int,
+    minUnreadItemId :: ChatItemId
+  }
+  deriving (Show, Generic)
+
+instance ToJSON ChatStats where
+  toJSON = J.genericToJSON J.defaultOptions
+  toEncoding = J.genericToEncoding J.defaultOptions
 
 -- | type to show a mix of messages from multiple chats
 data AChatItem = forall c d. AChatItem (SChatType c) (SMsgDirection d) (ChatInfo c) (ChatItem c d)
