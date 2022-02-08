@@ -89,6 +89,7 @@ responseToView cmd = \case
   CRSndFileCancelled ft -> sendingFile_ "cancelled" ft
   CRSndFileRcvCancelled ft@SndFileTransfer {recipientDisplayName = c} ->
     [ttyContact c <> " cancelled receiving " <> sndFile ft]
+  CRContactConnecting _ -> []
   CRContactConnected ct -> [ttyFullContact ct <> ": contact is connected"]
   CRContactAnotherClient c -> [ttyContact' c <> ": contact is connected to another client"]
   CRContactDisconnected c -> [ttyContact' c <> ": disconnected from server (messages will be queued)"]

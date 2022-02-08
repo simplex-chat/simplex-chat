@@ -272,12 +272,12 @@ createConnection_ db userId connType entityId acId viaContact connLevel currentT
   where
     ent ct = if connType == ct then entityId else Nothing
 
-createDirectContact :: StoreMonad m => SQLiteStore -> UserId -> Connection -> Profile -> m ()
-createDirectContact st userId Connection {connId} profile =
-  void $
-    liftIOEither . withTransaction st $ \db -> do
-      currentTs <- getCurrentTime
-      createContact_ db userId connId profile Nothing currentTs
+createDirectContact :: StoreMonad m => SQLiteStore -> UserId -> Connection -> Profile -> m Contact
+createDirectContact st userId activeConn@Connection {connId} profile =
+  liftIOEither . withTransaction st $ \db -> runExceptT $ do
+    createdAt <- liftIO getCurrentTime
+    (localDisplayName, contactId, _) <- ExceptT $ createContact_ db userId connId profile Nothing createdAt
+    pure $ Contact {contactId, localDisplayName, profile, activeConn, viaGroup = Nothing, createdAt}
 
 createContact_ :: DB.Connection -> UserId -> Int64 -> Profile -> Maybe Int64 -> UTCTime -> IO (Either StoreError (Text, Int64, Int64))
 createContact_ db userId connId Profile {displayName, fullName} viaGroup currentTs =

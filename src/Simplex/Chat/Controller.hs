@@ -173,6 +173,7 @@ data ChatResponse
   | CRSndFileRcvCancelled {sndFileTransfer :: SndFileTransfer}
   | CRSndGroupFileCancelled {sndFileTransfers :: [SndFileTransfer]}
   | CRUserProfileUpdated {fromProfile :: Profile, toProfile :: Profile}
+  | CRContactConnecting {contact :: Contact}
   | CRContactConnected {contact :: Contact}
   | CRContactAnotherClient {contact :: Contact}
   | CRContactDisconnected {contact :: Contact}

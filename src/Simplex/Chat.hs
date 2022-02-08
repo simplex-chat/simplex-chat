@@ -964,8 +964,9 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
     saveConnInfo activeConn connInfo = do
       ChatMessage {chatMsgEvent} <- liftEither $ parseChatMessage connInfo
       case chatMsgEvent of
-        XInfo p ->
-          withStore $ \st -> createDirectContact st userId activeConn p
+        XInfo p -> do
+          ct <- withStore $ \st -> createDirectContact st userId activeConn p
+          toView $ CRContactConnecting ct
         -- TODO show/log error, other events in SMP confirmation
         _ -> pure ()
 
