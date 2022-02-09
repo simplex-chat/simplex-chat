@@ -22,7 +22,7 @@ struct SettingsButton: View {
                     do {
                         chatModel.userAddress = try apiGetUserAddress()
                     } catch {
-                        print(error)
+                        print("apiGetUserAddress error: \(error)")
                     }
                 }
         })

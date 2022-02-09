@@ -37,11 +37,11 @@ struct ConnectContactView: View {
                 try apiConnect(connReq: r.string)
                 completed(nil)
             } catch {
-                print(error)
+                print("apiConnect error: \(error)")
                 completed(error)
             }
         case let .failure(e):
-            print(e)
+            print("QR code error: \(e)")
             completed(e)
         }
     }

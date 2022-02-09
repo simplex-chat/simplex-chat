@@ -12,6 +12,8 @@ struct ChatListView: View {
     @EnvironmentObject var chatModel: ChatModel
     @State private var connectAlert = false
     @State private var connectError: Error?
+    @State private var showContactRequestDialog = false
+    @State private var receivedContactRequest: UserContactRequest?
 
     var user: User
 
@@ -45,14 +47,20 @@ struct ChatListView: View {
                 .alert(isPresented: $connectAlert) { connectionErrorAlert() }
             }
             .alert(isPresented: $chatModel.connectViaUrl) { connectViaUrlAlert() }
-            .onReceive(NtfManager.publisher) { data in
-                // execute other methods when the
-                // Combine publisher with the specified
-                // name received
-                if let content = (data.object as? UNNotificationContent) {
-                    print("**** notification title:\(content.title), subtitle:\(content.subtitle)")
+            .onReceive(NtfManager.internalPublisher(ntfCategoryContactRequest)) { data in
+                if let response = data.object as? UNNotificationResponse {
+                    let content = response.notification.request.content
+                    if let chatId = content.userInfo["chatId"] as? String,
+                       case let .contactRequest(contactRequest) = chatModel.getChat(chatId)?.chatInfo {
+                        receivedContactRequest = contactRequest
+                        showContactRequestDialog = true
+                    }
                 }
             }
+        }
+        .confirmationDialog("\(receivedContactRequest?.chatViewName ?? "New contact") wants to connect to you!", isPresented: $showContactRequestDialog, titleVisibility: .visible) {
+            Button("Accept contact") { acceptContactRequest(chatModel, receivedContactRequest!) }
+            Button("Reject contact (sender NOT notified)") { rejectContactRequest(chatModel, receivedContactRequest!) }
         }
     }
 
@@ -71,7 +79,7 @@ struct ChatListView: View {
                         } catch {
                             connectAlert = true
                             connectError = error
-                            print(error)
+                            print("apiConnect error: \(error)")
                         }
                         chatModel.appOpenUrl = nil
                     }, secondaryButton: .cancel() {
@@ -90,6 +98,20 @@ struct ChatListView: View {
         Alert(
             title: Text("Connection error"),
             message: Text(connectError?.localizedDescription ?? "")
+        )
+    }
+
+    private func contactRequestAlert(_ contactRequest: UserContactRequest) -> Alert {
+        Alert(
+            title: Text("Accept contact request?"),
+            message: Text("\(contactRequest.chatViewName) wants to connect to you!"),
+            primaryButton: .default(Text("Accept")) {
+                acceptContactRequest(chatModel, contactRequest)
+                receivedContactRequest = nil
+            },
+            secondaryButton: .cancel {
+                receivedContactRequest = nil
+            }
         )
     }
 }

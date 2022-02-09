@@ -28,3 +28,5 @@ for match in matches {
 let r = try! NSRegularExpression(pattern: "^\\+?[0-9\\.\\(\\)\\-]{7,20}$")
 
 print(r.firstMatch(in: "+44(0)7448-736-790", options: [], range: NSRange(location: 0, length: "+44(0)7448-736-790".count)) == nil)
+
+let action: NtfAction? = NtfAction(rawValue: "NTF_ACT_ACCEPT")

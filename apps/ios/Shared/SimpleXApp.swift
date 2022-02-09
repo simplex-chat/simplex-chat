@@ -29,6 +29,7 @@ struct SimpleXApp: App {
                 }
                 .onAppear() {
                     initializeChat(chatModel)
+                    NtfManager.shared.setModel(chatModel)
                 }
                 .onChange(of: scenePhase) { phase in
                     if phase == .background {

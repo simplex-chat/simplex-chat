@@ -27,7 +27,7 @@ class BGManager {
 
     func schedule(_ chatModel: ChatModel) {
         self.chatModel = chatModel
-        print("*** BGManager schedule")
+        print("*** BGManager schedule", Date.now.formatted())
         let request = BGAppRefreshTaskRequest(identifier: receiveTaskId)
         request.earliestBeginDate = Date(timeIntervalSinceNow: 10 * 60)
         do {

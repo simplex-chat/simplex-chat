@@ -84,6 +84,9 @@ enum ChatResponse: Decodable, Error {
     case contactSubscribed(contact: Contact)
     case contactDisconnected(contact: Contact)
     case contactSubError(contact: Contact, chatError: ChatError)
+    case groupSubscribed(groupInfo: GroupInfo)
+    case groupEmpty(groupInfo: GroupInfo)
+    case userContactLinkSubscribed
     case newChatItem(chatItem: AChatItem)
     case chatCmdError(chatError: ChatError)
     case chatError(chatError: ChatError)
@@ -113,6 +116,9 @@ enum ChatResponse: Decodable, Error {
             case .contactSubscribed: return "contactSubscribed"
             case .contactDisconnected: return "contactDisconnected"
             case .contactSubError: return "contactSubError"
+            case .groupSubscribed: return "groupSubscribed"
+            case .groupEmpty: return "groupEmpty"
+            case .userContactLinkSubscribed: return "userContactLinkSubscribed"
             case .newChatItem: return "newChatItem"
             case .chatCmdError: return "chatCmdError"
             case .chatError: return "chatError"
@@ -145,6 +151,9 @@ enum ChatResponse: Decodable, Error {
             case let .contactSubscribed(contact): return String(describing: contact)
             case let .contactDisconnected(contact): return String(describing: contact)
             case let .contactSubError(contact, chatError): return "contact:\n\(String(describing: contact))\nerror:\n\(String(describing: chatError))"
+            case let .groupSubscribed(groupInfo): return String(describing: groupInfo)
+            case let .groupEmpty(groupInfo): return String(describing: groupInfo)
+            case .userContactLinkSubscribed: return noDetails
             case let .newChatItem(chatItem): return String(describing: chatItem)
             case let .chatCmdError(chatError): return String(describing: chatError)
             case let .chatError(chatError): return String(describing: chatError)
@@ -305,6 +314,25 @@ func apiRejectContactRequest(contactReqId: Int64) throws {
     let r = try chatSendCmd(.apiRejectContact(contactReqId: contactReqId))
     if case .contactRequestRejected = r { return }
     throw r
+}
+
+func acceptContactRequest(_ chatModel: ChatModel, _ contactRequest: UserContactRequest) {
+    do {
+        let contact = try apiAcceptContactRequest(contactReqId: contactRequest.apiId)
+        let chat = Chat(chatInfo: ChatInfo.direct(contact: contact), chatItems: [])
+        chatModel.replaceChat(contactRequest.id, chat)
+    } catch let error {
+        print("Error: \(error)")
+    }
+}
+
+func rejectContactRequest(_ chatModel: ChatModel, _ contactRequest: UserContactRequest) {
+    do {
+        try apiRejectContactRequest(contactReqId: contactRequest.apiId)
+        chatModel.removeChat(contactRequest.id)
+    } catch let error {
+        print("Error: \(error)")
+    }
 }
 
 func initializeChat(_ chatModel: ChatModel) {

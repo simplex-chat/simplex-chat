@@ -68,7 +68,7 @@ struct UserProfile: View {
                 profile = newProfile
             }
         } catch {
-            print(error)
+            print("apiUpdateProfile error: \(error)")
         }
         editProfile = false
     }

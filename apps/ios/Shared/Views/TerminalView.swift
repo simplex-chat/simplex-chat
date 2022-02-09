@@ -62,7 +62,7 @@ struct TerminalView: View {
                     chatModel.terminalItems.append(.resp(.now, r))
                 }
             } catch {
-                print(error)
+                print("chatSendCmd error: \(error)")
             }
             inProgress = false
         }
