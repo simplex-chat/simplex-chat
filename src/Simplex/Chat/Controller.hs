@@ -49,7 +49,8 @@ data ChatConfig = ChatConfig
     dbPoolSize :: Int,
     yesToMigrations :: Bool,
     tbqSize :: Natural,
-    fileChunkSize :: Integer
+    fileChunkSize :: Integer,
+    testView :: Bool
   }
 
 data ActiveTo = ActiveNone | ActiveC ContactName | ActiveG GroupName

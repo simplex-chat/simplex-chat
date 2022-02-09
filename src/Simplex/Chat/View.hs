@@ -19,7 +19,7 @@ import Numeric (showFFloat)
 import Simplex.Chat.Controller
 import Simplex.Chat.Help
 import Simplex.Chat.Markdown
-import Simplex.Chat.Messages
+import Simplex.Chat.Messages hiding (NewChatItem (..))
 import Simplex.Chat.Protocol
 import Simplex.Chat.Store (StoreError (..))
 import Simplex.Chat.Styled
@@ -30,14 +30,14 @@ import qualified Simplex.Messaging.Protocol as SMP
 import System.Console.ANSI.Types
 
 serializeChatResponse :: ChatResponse -> String
-serializeChatResponse = unlines . map unStyle . responseToView ""
+serializeChatResponse = unlines . map unStyle . responseToView "" False
 
-responseToView :: String -> ChatResponse -> [StyledString]
-responseToView cmd = \case
+responseToView :: String -> Bool -> ChatResponse -> [StyledString]
+responseToView cmd testView = \case
   CRActiveUser User {profile} -> r $ viewUserProfile profile
   CRChatStarted -> r ["chat started"]
-  CRApiChats chats -> r [sShow chats]
-  CRApiChat chat -> r [sShow chat]
+  CRApiChats chats -> r $ if testView then testViewChats chats else [sShow chats]
+  CRApiChat chat -> r $ if testView then testViewChat chat else [sShow chat]
   CRNewChatItem (AChatItem _ _ chat item) -> viewChatItem chat item
   CRChatItemUpdated _ -> []
   CRMsgIntegrityError mErr -> viewMsgIntegrityError mErr
@@ -124,6 +124,21 @@ responseToView cmd = \case
     -- this function should be `r` for "synchronous", `id` for "asynchronous" command responses
     -- r' = id
     r' = r
+    testViewChats :: [AChat] -> [StyledString]
+    testViewChats chats = [sShow $ map toChatView chats]
+      where
+        toChatView :: AChat -> (Text, Text)
+        toChatView (AChat _ (Chat (DirectChat Contact {localDisplayName}) items _)) = ("@" <> localDisplayName, toCIPreview items)
+        toChatView (AChat _ (Chat (GroupChat GroupInfo {localDisplayName}) items _)) = ("#" <> localDisplayName, toCIPreview items)
+        toChatView (AChat _ (Chat (ContactRequest UserContactRequest {localDisplayName}) items _)) = ("<@" <> localDisplayName, toCIPreview items)
+        toCIPreview :: [CChatItem c] -> Text
+        toCIPreview ((CChatItem _ ChatItem {meta}) : _) = itemText meta
+        toCIPreview _ = ""
+    testViewChat :: AChat -> [StyledString]
+    testViewChat (AChat _ Chat {chatItems}) = [sShow $ map toChatView chatItems]
+      where
+        toChatView :: CChatItem c -> (Int, Text)
+        toChatView (CChatItem dir ChatItem {meta}) = (msgDirectionInt $ toMsgDirection dir, itemText meta)
 
 viewChatItem :: ChatInfo c -> ChatItem c d -> [StyledString]
 viewChatItem chat (ChatItem cd meta content) = case (chat, cd) of

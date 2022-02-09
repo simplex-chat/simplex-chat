@@ -29,7 +29,8 @@ runInputLoop :: ChatTerminal -> ChatController -> IO ()
 runInputLoop ct cc = forever $ do
   s <- atomically . readTBQueue $ inputQ cc
   r <- runReaderT (execChatCommand . encodeUtf8 $ T.pack s) cc
-  printToTerminal ct $ responseToView s r
+  let testV = testView $ config cc
+  printToTerminal ct $ responseToView s testV r
 
 runTerminalInput :: ChatTerminal -> ChatController -> IO ()
 runTerminalInput ct cc = withChatTerm ct $ do

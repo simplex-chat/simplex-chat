@@ -79,7 +79,8 @@ defaultChatConfig =
       dbPoolSize = 1,
       yesToMigrations = False,
       tbqSize = 16,
-      fileChunkSize = 15780
+      fileChunkSize = 15780,
+      testView = False
     }
 
 logCfg :: LogConfig
