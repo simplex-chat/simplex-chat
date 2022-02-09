@@ -52,17 +52,12 @@ struct TerminalView: View {
     
     func sendMessage(_ cmdStr: String) {
         let cmd = ChatCommand.string(cmdStr)
-        chatModel.terminalItems.append(.cmd(.now, cmd))
-
         DispatchQueue.global().async {
             inProgress = true
             do {
-                let r = try chatSendCmd(cmd)
-                DispatchQueue.main.async {
-                    chatModel.terminalItems.append(.resp(.now, r))
-                }
+                let _ = try chatSendCmd(cmd)
             } catch {
-                print("chatSendCmd error: \(error)")
+                logger.error("TerminalView.sendMessage chatSendCmd error: \(error.localizedDescription)")
             }
             inProgress = false
         }

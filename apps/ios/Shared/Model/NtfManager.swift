@@ -24,26 +24,22 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
     static let shared = NtfManager()
 
     private var granted = false
-    private var chatModel: ChatModel?
     private var prevNtfTime: Dictionary<ChatId, Date> = [:]
 
-    func setModel(_ chatModel: ChatModel) {
-        self.chatModel = chatModel
-    }
 
     // Handle notification when app is in background
     func userNotificationCenter(_ center: UNUserNotificationCenter,
                                 didReceive response: UNNotificationResponse,
                                 withCompletionHandler handler: () -> Void) {
+        logger.debug("NtfManager.userNotificationCenter: didReceive")
         let content = response.notification.request.content
-        if let model = self.chatModel {
-            if content.categoryIdentifier == ntfCategoryContactRequest && response.actionIdentifier == ntfActionAccept,
-               let chatId = content.userInfo["chatId"] as? String,
-               case let .contactRequest(contactRequest) = model.getChat(chatId)?.chatInfo {
-                acceptContactRequest(model, contactRequest)
-            } else {
-                model.chatId = content.targetContentIdentifier
-            }
+        let chatModel = ChatModel.shared
+        if content.categoryIdentifier == ntfCategoryContactRequest && response.actionIdentifier == ntfActionAccept,
+           let chatId = content.userInfo["chatId"] as? String,
+           case let .contactRequest(contactRequest) = chatModel.getChat(chatId)?.chatInfo {
+            acceptContactRequest(contactRequest)
+        } else {
+            chatModel.chatId = content.targetContentIdentifier
         }
         handler()
     }
@@ -52,11 +48,13 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
     func userNotificationCenter(_ center: UNUserNotificationCenter,
                                 willPresent notification: UNNotification,
                                 withCompletionHandler handler: (UNNotificationPresentationOptions) -> Void) {
+        logger.debug("NtfManager.userNotificationCenter: willPresent")
         handler(presentationOptions(notification.request.content))
     }
 
     private func presentationOptions(_ content: UNNotificationContent) -> UNNotificationPresentationOptions {
-        if let model = self.chatModel, UIApplication.shared.applicationState == .active {
+        let model = ChatModel.shared
+        if UIApplication.shared.applicationState == .active {
             switch content.categoryIdentifier {
             case ntfCategoryContactRequest:
                 return [.sound, .banner, .list]
@@ -92,6 +90,7 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
     }
 
     func registerCategories() {
+        logger.debug("NtfManager.registerCategories")
         UNUserNotificationCenter.current().setNotificationCategories([
             UNNotificationCategory(
                 identifier: ntfCategoryContactRequest,
@@ -117,7 +116,8 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
         ])
     }
 
-    func requestPermission(onDeny handler: (()-> Void)? = nil) {
+    func requestAuthorization(onDeny handler: (()-> Void)? = nil) {
+        logger.debug("NtfManager.requestAuthorization")
         let center = UNUserNotificationCenter.current()
         center.getNotificationSettings { settings in
             switch settings.authorizationStatus {
@@ -129,7 +129,7 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
             default:
                 center.requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
                     if let error = error {
-                        print("requestAuthorization error \(error)")
+                        logger.error("NtfManager.requestAuthorization error \(error.localizedDescription)")
                     } else {
                         self.granted = granted
                     }
@@ -140,6 +140,7 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
     }
 
     func notifyContactRequest(_ contactRequest: UserContactRequest) {
+        logger.debug("NtfManager.notifyContactRequest")
         addNotification(
             categoryIdentifier: ntfCategoryContactRequest,
             title: "\(contactRequest.displayName) wants to connect!",
@@ -150,6 +151,7 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
     }
 
     func notifyContactConnected(_ contact: Contact) {
+        logger.debug("NtfManager.notifyContactConnected")
         addNotification(
             categoryIdentifier: ntfCategoryContactConnected,
             title: "\(contact.displayName) is connected!",
@@ -160,6 +162,7 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
     }
 
     func notifyMessageReceived(_ cInfo: ChatInfo, _ cItem: ChatItem) {
+        logger.debug("NtfManager.notifyMessageReceived")
         addNotification(
             categoryIdentifier: ntfCategoryMessageReceived,
             title: "\(cInfo.chatViewName):",
@@ -185,7 +188,7 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
         let trigger = UNTimeIntervalNotificationTrigger(timeInterval: ntfTimeInterval, repeats: false)
         let request = UNNotificationRequest(identifier: appNotificationId, content: content, trigger: trigger)
         UNUserNotificationCenter.current().add(request) { error in
-            if let error = error { print("notification error: \(error)") }
+            if let error = error { logger.error("addNotification error: \(error.localizedDescription)") }
         }
     }
 

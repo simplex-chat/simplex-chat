@@ -40,7 +40,7 @@ struct ChatListNavLink: View {
                 chatModel.updateChatInfo(chat.chatInfo)
                 chatModel.chatItems = chat.chatItems
             } catch {
-                print("apiGetChatItems error: \(error)")
+                logger.error("ChatListNavLink.chatView apiGetChatItems error: \(error.localizedDescription)")
             }
         }
     }
@@ -91,7 +91,7 @@ struct ChatListNavLink: View {
     private func contactRequestNavLink(_ contactRequest: UserContactRequest) -> some View {
         ContactRequestView(contactRequest: contactRequest)
         .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-            Button { acceptContactRequest(chatModel, contactRequest) }
+            Button { acceptContactRequest(contactRequest) }
                 label: { Label("Accept", systemImage: "checkmark") }
                 .tint(.blue)
             Button(role: .destructive) {
@@ -107,8 +107,8 @@ struct ChatListNavLink: View {
         .frame(height: 80)
         .onTapGesture { showContactRequestDialog = true }
         .confirmationDialog("Connection request", isPresented: $showContactRequestDialog, titleVisibility: .visible) {
-            Button("Accept contact") { acceptContactRequest(chatModel, contactRequest) }
-            Button("Reject contact (sender NOT notified)") { rejectContactRequest(chatModel, contactRequest) }
+            Button("Accept contact") { acceptContactRequest(contactRequest) }
+            Button("Reject contact (sender NOT notified)") { rejectContactRequest(contactRequest) }
         }
     }
 
@@ -121,7 +121,7 @@ struct ChatListNavLink: View {
                     try apiDeleteChat(type: .direct, id: contact.apiId)
                     chatModel.removeChat(contact.id)
                 } catch let error {
-                    print("apiDeleteChat error: \(error)")
+                    logger.error("ChatListNavLink.deleteContactAlert apiDeleteChat error: \(error.localizedDescription)")
                 }
                 alertContact = nil
             }, secondaryButton: .cancel() {
@@ -142,7 +142,7 @@ struct ChatListNavLink: View {
             title: Text("Reject contact request"),
             message: Text("The sender will NOT be notified"),
             primaryButton: .destructive(Text("Reject")) {
-                rejectContactRequest(chatModel, contactRequest)
+                rejectContactRequest(contactRequest)
                 alertContactRequest = nil
             }, secondaryButton: .cancel {
                 alertContactRequest = nil

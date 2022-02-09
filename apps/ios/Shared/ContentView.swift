@@ -21,8 +21,8 @@ struct ContentView: View {
                     } catch {
                         fatalError("Failed to start or load chats: \(error)")
                     }
-                    ChatReceiver.shared.start(chatModel)
-                    NtfManager.shared.requestPermission(onDeny: {
+                    ChatReceiver.shared.start()
+                    NtfManager.shared.requestAuthorization(onDeny: {
                         showNotificationAlert = true
                     })
                 }
@@ -41,7 +41,7 @@ struct ContentView: View {
         } else {
             WelcomeView()
         }
-    }    
+    }
 }
 
 

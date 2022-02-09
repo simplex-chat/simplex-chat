@@ -6,10 +6,13 @@
 //
 
 import SwiftUI
+import OSLog
+
+let logger = Logger()
 
 @main
 struct SimpleXApp: App {
-    @StateObject private var chatModel = ChatModel()
+    @StateObject private var chatModel = ChatModel.shared
     @Environment(\.scenePhase) var scenePhase
 
     init() {
@@ -23,19 +26,19 @@ struct SimpleXApp: App {
             ContentView()
                 .environmentObject(chatModel)
                 .onOpenURL { url in
+                    logger.debug("ContentView.onOpenURL: \(url)")
                     chatModel.appOpenUrl = url
                     chatModel.connectViaUrl = true
-                    print(url)
                 }
                 .onAppear() {
-                    initializeChat(chatModel)
-                    NtfManager.shared.setModel(chatModel)
+                    initializeChat()
                 }
                 .onChange(of: scenePhase) { phase in
                     if phase == .background {
-                        BGManager.shared.schedule(chatModel)
+                        BGManager.shared.schedule()
                     } else {
-                        ChatReceiver.shared.restart(chatModel)
+                        BGManager.shared.invalidateStopTimer()
+                        ChatReceiver.shared.restart()
                     }
                 }
         }

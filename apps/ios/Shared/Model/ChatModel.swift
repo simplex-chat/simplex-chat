@@ -22,6 +22,7 @@ final class ChatModel: ObservableObject {
     @Published var userAddress: String?
     @Published var appOpenUrl: URL?
     @Published var connectViaUrl = false
+    static let shared = ChatModel()
 
     func hasChat(_ id: String) -> Bool {
         chats.first(where: { $0.id == id }) != nil

@@ -68,7 +68,7 @@ struct UserProfile: View {
                 profile = newProfile
             }
         } catch {
-            print("apiUpdateProfile error: \(error)")
+            logger.error("UserProfile apiUpdateProfile error: \(error.localizedDescription)")
         }
         editProfile = false
     }

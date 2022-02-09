@@ -22,7 +22,7 @@ struct SettingsButton: View {
                     do {
                         chatModel.userAddress = try apiGetUserAddress()
                     } catch {
-                        print("apiGetUserAddress error: \(error)")
+                        logger.error("SettingsButton apiGetUserAddress error: \(error.localizedDescription)")
                     }
                 }
         })

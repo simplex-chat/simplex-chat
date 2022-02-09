@@ -42,15 +42,17 @@ struct ChatListView: View {
                         NewChatButton()
                     }
                 }
-                .alert(isPresented: $connectAlert) { connectionErrorAlert() }
+                .alert(isPresented: $chatModel.connectViaUrl) { connectViaUrlAlert() }
             }
-            .alert(isPresented: $chatModel.connectViaUrl) { connectViaUrlAlert() }
+            .alert(isPresented: $connectAlert) { connectionErrorAlert() }
         }
     }
 
     private func connectViaUrlAlert() -> Alert {
+        logger.debug("ChatListView.connectViaUrlAlert")
         if let url = chatModel.appOpenUrl {
             var path = url.path
+            logger.debug("ChatListView.connectViaUrlAlert path: \(path)")
             if (path == "/contact" || path == "/invitation") {
                 path.removeFirst()
                 let link = url.absoluteString.replacingOccurrences(of: "///\(path)", with: "/\(path)")
@@ -61,9 +63,11 @@ struct ChatListView: View {
                         do {
                             try apiConnect(connReq: link)
                         } catch {
-                            connectAlert = true
-                            connectError = error
-                            print("apiConnect error: \(error)")
+                            DispatchQueue.main.async {
+                                connectAlert = true
+                                connectError = error
+                                logger.debug("ChatListView.connectViaUrlAlert: apiConnect error: \(error.localizedDescription)")
+                            }
                         }
                         chatModel.appOpenUrl = nil
                     }, secondaryButton: .cancel() {
@@ -71,7 +75,7 @@ struct ChatListView: View {
                     }
                 )
             } else {
-                return Alert(title: Text("Error: URL not available"))
+                return Alert(title: Text("Error: URL is invalid"))
             }
         } else {
             return Alert(title: Text("Error: URL not available"))
