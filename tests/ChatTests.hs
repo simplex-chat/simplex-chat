@@ -2,7 +2,6 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PostfixOperators #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 
 module ChatTests where
 
