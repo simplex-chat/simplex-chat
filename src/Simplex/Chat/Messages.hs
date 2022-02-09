@@ -169,7 +169,7 @@ data ChatStats = ChatStats
   { unreadCount :: Int,
     minUnreadItemId :: ChatItemId
   }
-  deriving (Eq, Show, Generic)
+  deriving (Show, Generic)
 
 instance ToJSON ChatStats where
   toJSON = J.genericToJSON J.defaultOptions
