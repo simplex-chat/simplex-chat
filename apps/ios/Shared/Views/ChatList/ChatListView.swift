@@ -63,11 +63,9 @@ struct ChatListView: View {
                         do {
                             try apiConnect(connReq: link)
                         } catch {
-                            DispatchQueue.main.async {
-                                connectAlert = true
-                                connectError = error
-                                logger.debug("ChatListView.connectViaUrlAlert: apiConnect error: \(error.localizedDescription)")
-                            }
+                            connectAlert = true
+                            connectError = error
+                            logger.debug("ChatListView.connectViaUrlAlert: apiConnect error: \(error.localizedDescription)")
                         }
                         chatModel.appOpenUrl = nil
                     }, secondaryButton: .cancel() {
