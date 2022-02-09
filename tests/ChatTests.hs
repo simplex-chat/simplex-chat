@@ -872,7 +872,7 @@ chat = read
 cc #$$> (cmd, res) = do
   cc ##> cmd
   line <- getTermLine cc
-  let chats = read line :: [(String, String)]
+  let chats = read line
   chats `shouldMatchList` res
 
 send :: TestCC -> String -> IO ()
