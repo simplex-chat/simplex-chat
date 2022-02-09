@@ -40,7 +40,7 @@ import Simplex.Messaging.Protocol (MsgBody)
 import Simplex.Messaging.Util ((<$?>))
 
 data ChatType = CTDirect | CTGroup | CTContactRequest
-  deriving (Show, Generic)
+  deriving (Eq, Show, Generic)
 
 instance ToJSON ChatType where
   toJSON = J.genericToJSON . enumJSON $ dropPrefix "CT"
@@ -52,6 +52,11 @@ data ChatInfo (c :: ChatType) where
   ContactRequest :: UserContactRequest -> ChatInfo 'CTContactRequest
 
 deriving instance Show (ChatInfo c)
+
+chatInfoLdn :: ChatInfo c -> Text
+chatInfoLdn (DirectChat Contact {localDisplayName}) = localDisplayName
+chatInfoLdn (GroupChat GroupInfo {localDisplayName}) = localDisplayName
+chatInfoLdn (ContactRequest UserContactRequest {localDisplayName}) = localDisplayName
 
 data JSONChatInfo
   = JCInfoDirect {contact :: Contact}
@@ -169,7 +174,7 @@ data ChatStats = ChatStats
   { unreadCount :: Int,
     minUnreadItemId :: ChatItemId
   }
-  deriving (Show, Generic)
+  deriving (Eq, Show, Generic)
 
 instance ToJSON ChatStats where
   toJSON = J.genericToJSON J.defaultOptions
@@ -356,6 +361,12 @@ instance TestEquality SChatType where
   testEquality SCTGroup SCTGroup = Just Refl
   testEquality _ _ = Nothing
 
+toChatType :: SChatType c -> ChatType
+toChatType = \case
+  SCTDirect -> CTDirect
+  SCTGroup -> CTGroup
+  SCTContactRequest -> CTContactRequest
+
 class ChatTypeI (c :: ChatType) where
   chatType :: SChatType c
 
@@ -380,7 +391,7 @@ data PendingGroupMessage = PendingGroupMessage
 type MessageId = Int64
 
 data MsgDirection = MDRcv | MDSnd
-  deriving (Show, Generic)
+  deriving (Eq, Show, Generic)
 
 instance FromJSON MsgDirection where
   parseJSON = J.genericParseJSON . enumJSON $ dropPrefix "MD"
