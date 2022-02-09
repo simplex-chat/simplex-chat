@@ -18,23 +18,14 @@ let ntfCategoryMessageReceived = "NTF_CAT_MESSAGE_RECEIVED"
 
 let appNotificationId = "chat.simplex.app.notification"
 
-private let ntfTimeInterval: TimeInterval = 2
+private let ntfTimeInterval: TimeInterval = 1
 
 class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
     static let shared = NtfManager()
 
-    static func internalPublisher(_ categoryIdentifier: String) -> NotificationCenter.Publisher {
-        let name = Notification.Name("\(appNotificationId).\(categoryIdentifier)")
-        return NotificationCenter.default.publisher(for: name)
-    }
-
-    static func internalPost(_ response: UNNotificationResponse) {
-        let name = Notification.Name("\(appNotificationId).\(response.notification.request.content.categoryIdentifier)")
-        NotificationCenter.default.post(name: name , object: response)
-    }
-
     private var granted = false
     private var chatModel: ChatModel?
+    private var prevNtfTime: Dictionary<ChatId, Date> = [:]
 
     func setModel(_ chatModel: ChatModel) {
         self.chatModel = chatModel
@@ -45,27 +36,15 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
                                 didReceive response: UNNotificationResponse,
                                 withCompletionHandler handler: () -> Void) {
         let content = response.notification.request.content
-        if content.categoryIdentifier == ntfCategoryContactRequest {
-            if response.actionIdentifier == ntfActionAccept,
-               let contactRequestId = content.userInfo["contactRequestId"] as? Int64,
+        if let model = self.chatModel {
+            if content.categoryIdentifier == ntfCategoryContactRequest && response.actionIdentifier == ntfActionAccept,
                let chatId = content.userInfo["chatId"] as? String,
-               let model = self.chatModel {
-                do {
-                    let contact = try apiAcceptContactRequest(contactReqId: contactRequestId)
-                    let chat = Chat(chatInfo: ChatInfo.direct(contact: contact), chatItems: [])
-                    model.replaceChat(chatId, chat)
-                } catch let error {
-                    print("apiAcceptContactRequest error: \(error)")
-                }
+               case let .contactRequest(contactRequest) = model.getChat(chatId)?.chatInfo {
+                acceptContactRequest(model, contactRequest)
             } else {
-                NtfManager.internalPost(response)
+                model.chatId = content.targetContentIdentifier
             }
         }
-
-        if let model = self.chatModel {
-            model.chatId = content.targetContentIdentifier
-        }
-
         handler()
     }
 
@@ -73,16 +52,43 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
     func userNotificationCenter(_ center: UNUserNotificationCenter,
                                 willPresent notification: UNNotification,
                                 withCompletionHandler handler: (UNNotificationPresentationOptions) -> Void) {
-        let content = notification.request.content
-        if let model = self.chatModel {
-            if content.categoryIdentifier == ntfCategoryContactRequest || model.chatId != content.targetContentIdentifier {
-                handler([.sound, .banner, .list])
-            } else {
-                handler([.sound, .list])
+        handler(presentationOptions(notification.request.content))
+    }
+
+    private func presentationOptions(_ content: UNNotificationContent) -> UNNotificationPresentationOptions {
+        if let model = self.chatModel, UIApplication.shared.applicationState == .active {
+            switch content.categoryIdentifier {
+            case ntfCategoryContactRequest:
+                return [.sound, .banner, .list]
+            case ntfCategoryContactConnected:
+                return model.chatId == nil ? [.sound, .list] : [.sound, .banner, .list]
+            case ntfCategoryMessageReceived:
+                if model.chatId == nil {
+                    // in the chat list
+                    return recentInTheSameChat(content) ? [] : [.sound, .list]
+                } else if model.chatId == content.targetContentIdentifier {
+                    // in the current chat
+                    return recentInTheSameChat(content) ? [] : [.sound, .list]
+                } else {
+                    // in another chat
+                    return recentInTheSameChat(content) ? [.banner, .list] : [.sound, .banner, .list]
+                }
+            default: return [.sound, .banner, .list]
             }
         } else {
-            handler([.sound, .banner, .list])
+            return [.sound, .banner, .list]
         }
+    }
+
+    private func recentInTheSameChat(_ content: UNNotificationContent) -> Bool {
+        let now = Date.now
+        if let chatId = content.targetContentIdentifier {
+            var res: Bool = false
+            if let t = prevNtfTime[chatId] { res = t.distance(to: now) < 30 }
+            prevNtfTime[chatId] = now
+            return res
+        }
+        return false
     }
 
     func registerCategories() {

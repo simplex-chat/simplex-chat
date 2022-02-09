@@ -154,6 +154,8 @@ extension NamedChat {
     }
 }
 
+typealias ChatId = String
+
 enum ChatInfo: Identifiable, Decodable, NamedChat {
     case direct(contact: Contact)
     case group(groupInfo: GroupInfo)
@@ -189,7 +191,7 @@ enum ChatInfo: Identifiable, Decodable, NamedChat {
         }
     }
 
-    var id: String {
+    var id: ChatId {
         get {
             switch self {
             case let .direct(contact): return contact.id
@@ -297,14 +299,14 @@ final class Chat: ObservableObject, Identifiable {
         self.chatItems = chatItems
     }
 
-    var id: String { get { chatInfo.id } }
+    var id: ChatId { get { chatInfo.id } }
 }
 
 struct ChatData: Decodable, Identifiable {
     var chatInfo: ChatInfo
     var chatItems: [ChatItem]
 
-    var id: String { get { chatInfo.id } }
+    var id: ChatId { get { chatInfo.id } }
 }
 
 struct Contact: Identifiable, Decodable, NamedChat {
@@ -315,7 +317,7 @@ struct Contact: Identifiable, Decodable, NamedChat {
     var viaGroup: Int64?
     var createdAt: Date
 
-    var id: String { get { "@\(contactId)" } }
+    var id: ChatId { get { "@\(contactId)" } }
     var apiId: Int64 { get { contactId } }
     var ready: Bool { get { activeConn.connStatus == "ready" || activeConn.connStatus == "snd-ready" } }
     var displayName: String { get { profile.displayName } }
@@ -342,7 +344,7 @@ struct UserContactRequest: Decodable, NamedChat {
     var profile: Profile
     var createdAt: Date
 
-    var id: String { get { "<@\(contactRequestId)" } }
+    var id: ChatId { get { "<@\(contactRequestId)" } }
     var apiId: Int64 { get { contactRequestId } }
     var displayName: String { get { profile.displayName } }
     var fullName: String { get { profile.fullName } }
@@ -361,7 +363,7 @@ struct GroupInfo: Identifiable, Decodable, NamedChat {
     var groupProfile: GroupProfile
     var createdAt: Date
     
-    var id: String { get { "#\(groupId)" } }
+    var id: ChatId { get { "#\(groupId)" } }
     var apiId: Int64 { get { groupId } }
     var displayName: String { get { groupProfile.displayName } }
     var fullName: String { get { groupProfile.fullName } }
