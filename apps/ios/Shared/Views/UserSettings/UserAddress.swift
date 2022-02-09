@@ -39,7 +39,7 @@ struct UserAddress: View {
                                     try apiDeleteUserAddress()
                                     chatModel.userAddress = nil
                                 } catch let error {
-                                    print("Error: \(error)")
+                                    logger.error("UserAddress apiDeleteUserAddress: \(error.localizedDescription)")
                                 }
                             }, secondaryButton: .cancel()
                         )
@@ -52,7 +52,7 @@ struct UserAddress: View {
                     do {
                         chatModel.userAddress = try apiCreateUserAddress()
                     } catch let error {
-                        print("Error: \(error)")
+                        logger.error("UserAddress apiCreateUserAddress: \(error.localizedDescription)")
                     }
                 } label: { Label("Create address", systemImage: "qrcode") }
                 .frame(maxWidth: .infinity)

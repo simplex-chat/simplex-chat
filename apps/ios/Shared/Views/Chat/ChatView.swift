@@ -98,7 +98,7 @@ struct ChatView: View {
             let chatItem = try apiSendMessage(type: chat.chatInfo.chatType, id: chat.chatInfo.apiId, msg: .text(msg))
             chatModel.addChatItem(chat.chatInfo, chatItem)
         } catch {
-            print(error)
+            logger.error("ChatView.sendMessage apiSendMessage error: \(error.localizedDescription)")
         }
     }
 }

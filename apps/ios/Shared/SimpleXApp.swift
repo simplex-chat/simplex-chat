@@ -6,29 +6,39 @@
 //
 
 import SwiftUI
+import OSLog
+
+let logger = Logger()
 
 @main
 struct SimpleXApp: App {
-    @StateObject private var chatModel = ChatModel()
-    
+    @StateObject private var chatModel = ChatModel.shared
+    @Environment(\.scenePhase) var scenePhase
+
     init() {
         hs_init(0, nil)
+        BGManager.shared.register()
+        NtfManager.shared.registerCategories()
     }
 
     var body: some Scene {
-        WindowGroup {
+        return WindowGroup {
             ContentView()
                 .environmentObject(chatModel)
                 .onOpenURL { url in
+                    logger.debug("ContentView.onOpenURL: \(url)")
                     chatModel.appOpenUrl = url
                     chatModel.connectViaUrl = true
-                    print(url)
                 }
                 .onAppear() {
-                    do {
-                        chatModel.currentUser = try apiGetActiveUser()
-                    } catch {
-                        fatalError("Failed to initialize chat controller or database: \(error)")
+                    initializeChat()
+                }
+                .onChange(of: scenePhase) { phase in
+                    if phase == .background {
+                        BGManager.shared.schedule()
+                    } else {
+                        BGManager.shared.invalidateStopTimer()
+                        ChatReceiver.shared.restart()
                     }
                 }
         }

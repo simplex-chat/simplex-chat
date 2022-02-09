@@ -8,6 +8,8 @@
 
 import Foundation
 import UIKit
+import Dispatch
+import BackgroundTasks
 
 private var chatController: chat_ctrl?
 private let jsonDecoder = getJSONDecoder()
@@ -82,6 +84,9 @@ enum ChatResponse: Decodable, Error {
     case contactSubscribed(contact: Contact)
     case contactDisconnected(contact: Contact)
     case contactSubError(contact: Contact, chatError: ChatError)
+    case groupSubscribed(groupInfo: GroupInfo)
+    case groupEmpty(groupInfo: GroupInfo)
+    case userContactLinkSubscribed
     case newChatItem(chatItem: AChatItem)
     case chatCmdError(chatError: ChatError)
     case chatError(chatError: ChatError)
@@ -111,6 +116,9 @@ enum ChatResponse: Decodable, Error {
             case .contactSubscribed: return "contactSubscribed"
             case .contactDisconnected: return "contactDisconnected"
             case .contactSubError: return "contactSubError"
+            case .groupSubscribed: return "groupSubscribed"
+            case .groupEmpty: return "groupEmpty"
+            case .userContactLinkSubscribed: return "userContactLinkSubscribed"
             case .newChatItem: return "newChatItem"
             case .chatCmdError: return "chatCmdError"
             case .chatError: return "chatError"
@@ -143,6 +151,9 @@ enum ChatResponse: Decodable, Error {
             case let .contactSubscribed(contact): return String(describing: contact)
             case let .contactDisconnected(contact): return String(describing: contact)
             case let .contactSubError(contact, chatError): return "contact:\n\(String(describing: contact))\nerror:\n\(String(describing: chatError))"
+            case let .groupSubscribed(groupInfo): return String(describing: groupInfo)
+            case let .groupEmpty(groupInfo): return String(describing: groupInfo)
+            case .userContactLinkSubscribed: return noDetails
             case let .newChatItem(chatItem): return String(describing: chatItem)
             case let .chatCmdError(chatError): return String(describing: chatError)
             case let .chatError(chatError): return String(describing: chatError)
@@ -187,12 +198,12 @@ enum TerminalItem: Identifiable {
 
 func chatSendCmd(_ cmd: ChatCommand) throws -> ChatResponse {
     var c = cmd.cmdString.cString(using: .utf8)!
-// TODO some mechanism to update model without passing it - maybe Publisher / Subscriber?
-//    DispatchQueue.main.async {
-//        termId += 1
-//        chatModel.terminalItems.append(.cmd(termId, cmd))
-//    }
-    return chatResponse(chat_send_cmd(getChatCtrl(), &c)!)
+    let resp = chatResponse(chat_send_cmd(getChatCtrl(), &c)!)
+    DispatchQueue.main.async {
+        ChatModel.shared.terminalItems.append(.cmd(.now, cmd))
+        ChatModel.shared.terminalItems.append(.resp(.now, resp))
+    }
+    return resp
 }
 
 func chatRecvMsg() throws -> ChatResponse {
@@ -201,7 +212,6 @@ func chatRecvMsg() throws -> ChatResponse {
 
 func apiGetActiveUser() throws -> User? {
     let _ = getChatCtrl()
-    sleep(1)
     let r = try chatSendCmd(.showActiveUser)
     switch r {
     case let .activeUser(user): return user
@@ -305,18 +315,98 @@ func apiRejectContactRequest(contactReqId: Int64) throws {
     throw r
 }
 
-func processReceivedMsg(_ chatModel: ChatModel, _ res: ChatResponse) {
+func acceptContactRequest(_ contactRequest: UserContactRequest) {
+    do {
+        let contact = try apiAcceptContactRequest(contactReqId: contactRequest.apiId)
+        let chat = Chat(chatInfo: ChatInfo.direct(contact: contact), chatItems: [])
+        ChatModel.shared.replaceChat(contactRequest.id, chat)
+    } catch let error {
+        logger.error("acceptContactRequest error: \(error.localizedDescription)")
+    }
+}
+
+func rejectContactRequest(_ contactRequest: UserContactRequest) {
+    do {
+        try apiRejectContactRequest(contactReqId: contactRequest.apiId)
+        ChatModel.shared.removeChat(contactRequest.id)
+    } catch let error {
+        logger.error("rejectContactRequest: \(error.localizedDescription)")
+    }
+}
+
+func initializeChat() {
+    do {
+        ChatModel.shared.currentUser = try apiGetActiveUser()
+    } catch {
+        fatalError("Failed to initialize chat controller or database: \(error)")
+    }
+}
+
+class ChatReceiver {
+    private var receiveLoop: DispatchWorkItem?
+    private var receiveMessages = true
+    private var wasStarted = false
+    private var _canStop = false
+    private var _lastMsgTime = Date.now
+
+    static let shared = ChatReceiver()
+
+    var lastMsgTime: Date { get { _lastMsgTime } }
+
+    func start(bgTask: BGManager.RefreshTask? = nil) {
+        logger.debug("ChatReceiver.start")
+        wasStarted = true
+        receiveMessages = true
+        _canStop = true
+        _lastMsgTime = .now
+        if receiveLoop != nil { return }
+        let loop = DispatchWorkItem(qos: .default, flags: []) {
+            while self.receiveMessages {
+                do {
+                    processReceivedMsg(try chatRecvMsg())
+                    self._lastMsgTime = .now
+                } catch {
+                    logger.error("ChatReceiver.start chatRecvMsg error: \(error.localizedDescription)")
+                }
+            }
+            if let task = bgTask { task.setTaskCompleted(success: true) }
+        }
+        receiveLoop = loop
+        DispatchQueue.global().async(execute: loop)
+    }
+
+    func stop() {
+        logger.debug("ChatReceiver.stop?")
+        if !_canStop { return }
+        receiveMessages = false
+        receiveLoop?.cancel()
+        receiveLoop = nil
+        logger.debug("ChatReceiver.stop: done")
+    }
+
+    func restart() {
+        logger.debug("ChatReceiver.restart?")
+        if wasStarted && receiveLoop == nil { start() }
+        _canStop = false
+    }
+}
+
+func processReceivedMsg(_ res: ChatResponse) {
+    let chatModel = ChatModel.shared
     DispatchQueue.main.async {
         chatModel.terminalItems.append(.resp(.now, res))
+        logger.debug("processReceivedMsg: \(res.responseType)")
         switch res {
         case let .contactConnected(contact):
             chatModel.updateContact(contact)
             chatModel.updateNetworkStatus(contact, .connected)
+            NtfManager.shared.notifyContactConnected(contact)
         case let .receivedContactRequest(contactRequest):
             chatModel.addChat(Chat(
                 chatInfo: ChatInfo.contactRequest(contactRequest: contactRequest),
                 chatItems: []
             ))
+            NtfManager.shared.notifyContactRequest(contactRequest)
         case let .contactUpdated(toContact):
             let cInfo = ChatInfo.direct(contact: toContact)
             if chatModel.hasChat(toContact.id) {
@@ -338,9 +428,12 @@ func processReceivedMsg(_ chatModel: ChatModel, _ res: ChatResponse) {
             }
             chatModel.updateNetworkStatus(contact, .error(err))
         case let .newChatItem(aChatItem):
-            chatModel.addChatItem(aChatItem.chatInfo, aChatItem.chatItem)
+            let cInfo = aChatItem.chatInfo
+            let cItem = aChatItem.chatItem
+            chatModel.addChatItem(cInfo, cItem)
+            NtfManager.shared.notifyMessageReceived(cInfo, cItem)
         default:
-            print("unsupported response: ", res.responseType)
+            logger.debug("unsupported event: \(res.responseType)")
         }
     }
 }
@@ -363,7 +456,7 @@ private func chatResponse(_ cjson: UnsafePointer<CChar>) -> ChatResponse {
         let r = try jsonDecoder.decode(APIResponse.self, from: d)
         return r.resp
     } catch {
-        print (error)
+        logger.error("chatResponse jsonDecoder.decode error: \(error.localizedDescription)")
     }
         
     var type: String?

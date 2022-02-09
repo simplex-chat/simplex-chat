@@ -40,7 +40,7 @@ struct ChatListNavLink: View {
                 chatModel.updateChatInfo(chat.chatInfo)
                 chatModel.chatItems = chat.chatItems
             } catch {
-                print("apiGetChatItems", error)
+                logger.error("ChatListNavLink.chatView apiGetChatItems error: \(error.localizedDescription)")
             }
         }
     }
@@ -121,7 +121,7 @@ struct ChatListNavLink: View {
                     try apiDeleteChat(type: .direct, id: contact.apiId)
                     chatModel.removeChat(contact.id)
                 } catch let error {
-                    print("Error: \(error)")
+                    logger.error("ChatListNavLink.deleteContactAlert apiDeleteChat error: \(error.localizedDescription)")
                 }
                 alertContact = nil
             }, secondaryButton: .cancel() {
@@ -148,25 +148,6 @@ struct ChatListNavLink: View {
                 alertContactRequest = nil
             }
         )
-    }
-
-    private func acceptContactRequest(_ contactRequest: UserContactRequest) {
-        do {
-            let contact = try apiAcceptContactRequest(contactReqId: contactRequest.apiId)
-            let chat = Chat(chatInfo: ChatInfo.direct(contact: contact), chatItems: [])
-            chatModel.replaceChat(contactRequest.id, chat)
-        } catch let error {
-            print("Error: \(error)")
-        }
-    }
-
-    private func rejectContactRequest(_ contactRequest: UserContactRequest) {
-        do {
-            try apiRejectContactRequest(contactReqId: contactRequest.apiId)
-            chatModel.removeChat(contactRequest.id)
-        } catch let error {
-            print("Error: \(error)")
-        }
     }
 }
 

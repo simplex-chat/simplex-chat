@@ -79,7 +79,7 @@ struct ChatInfoView: View {
                     chatModel.removeChat(contact.id)
                     showChatInfo = false
                 } catch let error {
-                    print("Error: \(error)")
+                    logger.error("ChatInfoView.deleteContactAlert apiDeleteChat error: \(error.localizedDescription)")
                 }
                 alertContact = nil
             }, secondaryButton: .cancel() {

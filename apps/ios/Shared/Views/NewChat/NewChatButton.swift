@@ -51,7 +51,7 @@ struct NewChatButton: View {
         } catch {
             addContactAlert = true
             addContactError = error
-            print(error)
+            logger.error("NewChatButton.addContactAction apiAddContact error: \(error.localizedDescription)")
         }
     }
 

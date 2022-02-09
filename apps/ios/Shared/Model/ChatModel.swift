@@ -22,6 +22,7 @@ final class ChatModel: ObservableObject {
     @Published var userAddress: String?
     @Published var appOpenUrl: URL?
     @Published var connectViaUrl = false
+    static let shared = ChatModel()
 
     func hasChat(_ id: String) -> Bool {
         chats.first(where: { $0.id == id }) != nil
@@ -84,8 +85,6 @@ final class ChatModel: ObservableObject {
         }
         if chatId == cInfo.id {
             withAnimation { chatItems.append(cItem) }
-        } else if chatId != nil {
-            // meesage arrived to some other chat, show notification
         }
     }
 
@@ -129,7 +128,7 @@ typealias ContactName = String
 
 typealias GroupName = String
 
-struct Profile: Codable {
+struct Profile: Codable, NamedChat {
     var displayName: String
     var fullName: String
 
@@ -145,7 +144,20 @@ enum ChatType: String {
     case contactRequest = "<@"
 }
 
-enum ChatInfo: Identifiable, Decodable {
+protocol NamedChat {
+    var displayName: String { get }
+    var fullName: String { get }
+}
+
+extension NamedChat {
+    var chatViewName: String {
+        get { displayName + (fullName == "" || fullName == displayName ? "" : " / \(fullName)") }
+    }
+}
+
+typealias ChatId = String
+
+enum ChatInfo: Identifiable, Decodable, NamedChat {
     case direct(contact: Contact)
     case group(groupInfo: GroupInfo)
     case contactRequest(contactRequest: UserContactRequest)
@@ -163,9 +175,9 @@ enum ChatInfo: Identifiable, Decodable {
     var displayName: String {
         get {
             switch self {
-            case let .direct(contact): return contact.profile.displayName
-            case let .group(groupInfo): return groupInfo.groupProfile.displayName
-            case let .contactRequest(contactRequest): return contactRequest.profile.displayName
+            case let .direct(contact): return contact.displayName
+            case let .group(groupInfo): return groupInfo.displayName
+            case let .contactRequest(contactRequest): return contactRequest.displayName
             }
         }
     }
@@ -173,18 +185,14 @@ enum ChatInfo: Identifiable, Decodable {
     var fullName: String {
         get {
             switch self {
-            case let .direct(contact): return contact.profile.fullName
-            case let .group(groupInfo): return groupInfo.groupProfile.fullName
-            case let .contactRequest(contactRequest): return contactRequest.profile.fullName
+            case let .direct(contact): return contact.fullName
+            case let .group(groupInfo): return groupInfo.fullName
+            case let .contactRequest(contactRequest): return contactRequest.fullName
             }
         }
     }
 
-    var chatViewName: String {
-        get { displayName + (fullName == "" || fullName == displayName ? "" : " / \(fullName)") }
-    }
-    
-    var id: String {
+    var id: ChatId {
         get {
             switch self {
             case let .direct(contact): return contact.id
@@ -292,17 +300,17 @@ final class Chat: ObservableObject, Identifiable {
         self.chatItems = chatItems
     }
 
-    var id: String { get { chatInfo.id } }
+    var id: ChatId { get { chatInfo.id } }
 }
 
 struct ChatData: Decodable, Identifiable {
     var chatInfo: ChatInfo
     var chatItems: [ChatItem]
 
-    var id: String { get { chatInfo.id } }
+    var id: ChatId { get { chatInfo.id } }
 }
 
-struct Contact: Identifiable, Decodable {
+struct Contact: Identifiable, Decodable, NamedChat {
     var contactId: Int64
     var localDisplayName: ContactName
     var profile: Profile
@@ -310,9 +318,11 @@ struct Contact: Identifiable, Decodable {
     var viaGroup: Int64?
     var createdAt: Date
 
-    var id: String { get { "@\(contactId)" } }
+    var id: ChatId { get { "@\(contactId)" } }
     var apiId: Int64 { get { contactId } }
     var ready: Bool { get { activeConn.connStatus == "ready" || activeConn.connStatus == "snd-ready" } }
+    var displayName: String { get { profile.displayName } }
+    var fullName: String { get { profile.fullName } }
 
     static let sampleData = Contact(
         contactId: 1,
@@ -329,15 +339,16 @@ struct Connection: Decodable {
     static let sampleData = Connection(connStatus: "ready")
 }
 
-struct UserContactRequest: Decodable {
+struct UserContactRequest: Decodable, NamedChat {
     var contactRequestId: Int64
     var localDisplayName: ContactName
     var profile: Profile
     var createdAt: Date
 
-    var id: String { get { "<@\(contactRequestId)" } }
-
+    var id: ChatId { get { "<@\(contactRequestId)" } }
     var apiId: Int64 { get { contactRequestId } }
+    var displayName: String { get { profile.displayName } }
+    var fullName: String { get { profile.fullName } }
 
     static let sampleData = UserContactRequest(
         contactRequestId: 1,
@@ -347,15 +358,16 @@ struct UserContactRequest: Decodable {
     )
 }
 
-struct GroupInfo: Identifiable, Decodable {
+struct GroupInfo: Identifiable, Decodable, NamedChat {
     var groupId: Int64
     var localDisplayName: GroupName
     var groupProfile: GroupProfile
     var createdAt: Date
     
-    var id: String { get { "#\(groupId)" } }
-
+    var id: ChatId { get { "#\(groupId)" } }
     var apiId: Int64 { get { groupId } }
+    var displayName: String { get { groupProfile.displayName } }
+    var fullName: String { get { groupProfile.fullName } }
 
     static let sampleData = GroupInfo(
         groupId: 1,
@@ -365,7 +377,7 @@ struct GroupInfo: Identifiable, Decodable {
     )
 }
 
-struct GroupProfile: Codable {
+struct GroupProfile: Codable, NamedChat {
     var displayName: String
     var fullName: String
 
