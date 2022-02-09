@@ -79,14 +79,15 @@ defaultChatConfig =
       dbPoolSize = 1,
       yesToMigrations = False,
       tbqSize = 16,
-      fileChunkSize = 15780
+      fileChunkSize = 15780,
+      testView = False
     }
 
 logCfg :: LogConfig
 logCfg = LogConfig {lc_file = Nothing, lc_stderr = True}
 
-newChatController :: SQLiteStore -> Maybe User -> ChatConfig -> ChatOpts -> (Notification -> IO ()) -> Bool -> IO ChatController
-newChatController chatStore user config@ChatConfig {agentConfig = cfg, tbqSize} ChatOpts {dbFilePrefix, smpServers} sendNotification testView = do
+newChatController :: SQLiteStore -> Maybe User -> ChatConfig -> ChatOpts -> (Notification -> IO ()) -> IO ChatController
+newChatController chatStore user config@ChatConfig {agentConfig = cfg, tbqSize} ChatOpts {dbFilePrefix, smpServers} sendNotification = do
   let f = chatStoreFile dbFilePrefix
   activeTo <- newTVarIO ActiveNone
   firstTime <- not <$> doesFileExist f
@@ -100,7 +101,7 @@ newChatController chatStore user config@ChatConfig {agentConfig = cfg, tbqSize} 
   chatLock <- newTMVarIO ()
   sndFiles <- newTVarIO M.empty
   rcvFiles <- newTVarIO M.empty
-  pure ChatController {activeTo, firstTime, currentUser, smpAgent, agentAsync, chatStore, idsDrg, inputQ, outputQ, notifyQ, chatLock, sndFiles, rcvFiles, config, sendNotification, testView}
+  pure ChatController {activeTo, firstTime, currentUser, smpAgent, agentAsync, chatStore, idsDrg, inputQ, outputQ, notifyQ, chatLock, sndFiles, rcvFiles, config, sendNotification}
 
 runChatController :: (MonadUnliftIO m, MonadReader ChatController m) => User -> m ()
 runChatController = race_ notificationSubscriber . agentSubscriber

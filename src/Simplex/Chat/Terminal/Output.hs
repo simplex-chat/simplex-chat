@@ -73,7 +73,7 @@ withTermLock ChatTerminal {termLock} action = do
   atomically $ putTMVar termLock ()
 
 runTerminalOutput :: ChatTerminal -> ChatController -> IO ()
-runTerminalOutput ct cc@ChatController {testView} =
+runTerminalOutput ct cc@ChatController {config = ChatConfig {testView}} =
   forever $
     atomically (readTBQueue $ outputQ cc) >>= printToTerminal ct . responseToView "" testView . snd
 

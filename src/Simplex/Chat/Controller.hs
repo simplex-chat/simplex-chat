@@ -49,7 +49,8 @@ data ChatConfig = ChatConfig
     dbPoolSize :: Int,
     yesToMigrations :: Bool,
     tbqSize :: Natural,
-    fileChunkSize :: Integer
+    fileChunkSize :: Integer,
+    testView :: Bool
   }
 
 data ActiveTo = ActiveNone | ActiveC ContactName | ActiveG GroupName
@@ -70,8 +71,7 @@ data ChatController = ChatController
     chatLock :: TMVar (),
     sndFiles :: TVar (Map Int64 Handle),
     rcvFiles :: TVar (Map Int64 Handle),
-    config :: ChatConfig,
-    testView :: Bool
+    config :: ChatConfig
   }
 
 data HelpSection = HSMain | HSFiles | HSGroups | HSMyAddress | HSMarkdown

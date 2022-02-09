@@ -31,7 +31,7 @@ simplexChat cfg@ChatConfig {dbPoolSize, yesToMigrations} opts t
       st <- createStore f dbPoolSize yesToMigrations
       u <- getCreateActiveUser st
       ct <- newChatTerminal t
-      cc <- newChatController st (Just u) cfg opts sendNotification' False
+      cc <- newChatController st (Just u) cfg opts sendNotification'
       runSimplexChat u ct cc
 
 runSimplexChat :: User -> ChatTerminal -> ChatController -> IO ()

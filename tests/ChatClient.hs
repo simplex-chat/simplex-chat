@@ -70,7 +70,8 @@ cfg :: ChatConfig
 cfg =
   defaultChatConfig
     { agentConfig =
-        aCfg {reconnectInterval = (reconnectInterval aCfg) {initialInterval = 50000}}
+        aCfg {reconnectInterval = (reconnectInterval aCfg) {initialInterval = 50000}},
+      testView = True
     }
 
 virtualSimplexChat :: FilePath -> Profile -> IO TestCC
@@ -79,7 +80,7 @@ virtualSimplexChat dbFilePrefix profile = do
   Right user <- runExceptT $ createUser st profile True
   t <- withVirtualTerminal termSettings pure
   ct <- newChatTerminal t
-  cc <- newChatController st (Just user) cfg opts {dbFilePrefix} (const $ pure ()) True -- no notifications
+  cc <- newChatController st (Just user) cfg opts {dbFilePrefix} (const $ pure ()) -- no notifications
   chatAsync <- async $ runSimplexChat user ct cc
   termQ <- newTQueueIO
   termAsync <- async $ readTerminalOutput t termQ

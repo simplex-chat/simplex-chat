@@ -26,7 +26,7 @@ getKey =
     _ -> getKey
 
 runInputLoop :: ChatTerminal -> ChatController -> IO ()
-runInputLoop ct cc@ChatController {testView} = forever $ do
+runInputLoop ct cc@ChatController {config = ChatConfig {testView}} = forever $ do
   s <- atomically . readTBQueue $ inputQ cc
   r <- runReaderT (execChatCommand . encodeUtf8 $ T.pack s) cc
   printToTerminal ct $ responseToView s testView r
