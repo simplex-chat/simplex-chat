@@ -2054,9 +2054,9 @@ getDirectChatPreviews_ db User {userId} = do
           FROM chat_items
           WHERE item_deleted != 1
           GROUP BY contact_id
-        ) CIMaxIds ON CIMaxIds.contact_id = ct.contact_id
-        LEFT JOIN chat_items ci ON ci.contact_id = CIMaxIds.contact_id
-                               AND ci.chat_item_id = CIMaxIds.MaxId
+        ) MaxIds ON MaxIds.contact_id = ct.contact_id
+        LEFT JOIN chat_items ci ON ci.contact_id = MaxIds.contact_id
+                               AND ci.chat_item_id = MaxIds.MaxId
         LEFT JOIN (
           SELECT contact_id, COUNT(1) AS UnreadCount, MIN(chat_item_id) AS MinUnread
           FROM chat_items
@@ -2117,9 +2117,9 @@ getGroupChatPreviews_ db User {userId, userContactId} = do
           FROM chat_items
           WHERE item_deleted != 1
           GROUP BY group_id
-        ) GIMaxIds ON GIMaxIds.group_id = g.group_id
-        LEFT JOIN chat_items ci ON ci.group_id = GIMaxIds.group_id
-                               AND ci.chat_item_id = GIMaxIds.MaxId
+        ) MaxIds ON MaxIds.group_id = g.group_id
+        LEFT JOIN chat_items ci ON ci.group_id = MaxIds.group_id
+                               AND ci.chat_item_id = MaxIds.MaxId
         LEFT JOIN (
           SELECT group_id, COUNT(1) AS UnreadCount, MIN(chat_item_id) AS MinUnread
           FROM chat_items

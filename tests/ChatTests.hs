@@ -85,6 +85,9 @@ testAddContact =
       alice #$> ("/_get chat @2 count=100", chat, [(1, "hello 🙂"), (0, "hi")])
       bob #$$> ("/_get chats", [("@alice", "hi")])
       bob #$> ("/_get chat @2 count=100", chat, [(0, "hello 🙂"), (1, "hi")])
+      -- pagination
+      alice #$> ("/_get chat @2 after=1 count=100", chat, [(0, "hi")])
+      alice #$> ("/_get chat @2 before=2 count=100", chat, [(1, "hello 🙂")])
       -- read messages
       alice #$> ("/_read chat @2 from=1 to=100", id, "ok")
       bob #$> ("/_read chat @2 from=1 to=100", id, "ok")
@@ -163,6 +166,8 @@ testGroup =
       -- get and read chats
       alice #$$> ("/_get chats", [("#team", "hey team"), ("@cath", ""), ("@bob", "")])
       alice #$> ("/_get chat #1 count=100", chat, [(1, "hello"), (0, "hi there"), (0, "hey team")])
+      alice #$> ("/_get chat #1 after=1 count=100", chat, [(0, "hi there"), (0, "hey team")])
+      alice #$> ("/_get chat #1 before=3 count=100", chat, [(1, "hello"), (0, "hi there")])
       bob #$$> ("/_get chats", [("@cath", "hey"), ("#team", "hey team"), ("@alice", "")])
       bob #$> ("/_get chat #1 count=100", chat, [(0, "hello"), (1, "hi there"), (0, "hey team")])
       cath #$$> ("/_get chats", [("@bob", "hey"), ("#team", "hey team"), ("@alice", "")])
