@@ -70,7 +70,8 @@ data ChatController = ChatController
     chatLock :: TMVar (),
     sndFiles :: TVar (Map Int64 Handle),
     rcvFiles :: TVar (Map Int64 Handle),
-    config :: ChatConfig
+    config :: ChatConfig,
+    testView :: Bool
   }
 
 data HelpSection = HSMain | HSFiles | HSGroups | HSMyAddress | HSMarkdown

@@ -1,13 +1,8 @@
-{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE GADTs #-}
-{-# LANGUAGE KindSignatures #-}
-{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PostfixOperators #-}
-{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module ChatTests where
 
@@ -17,11 +12,8 @@ import Control.Concurrent.STM
 import qualified Data.ByteString as B
 import Data.Char (isDigit)
 import Data.Maybe (fromJust)
-import Data.Text (Text)
 import qualified Data.Text as T
-import Simplex.Chat.Controller
-import Simplex.Chat.Messages hiding (NewChatItem (..))
-import Simplex.Chat.Store (getChatPreviews)
+import Simplex.Chat.Controller (ChatController (..))
 import Simplex.Chat.Types (Profile (..), User (..))
 import Simplex.Chat.Util (unlessM)
 import System.Directory (doesFileExist)
@@ -79,15 +71,7 @@ testAddContact =
       bob <# "alice> hello 🙂"
       bob #> "@alice hi"
       alice <# "bob> hi"
-      assertChats
-        alice
-        [ EC
-            { expType = CTDirect,
-              expLdn = "bob",
-              expItems = [ECI {expDir = MDSnd, expText = "hello 🙂", expStatus = ExpSndSent}],
-              expStats = ChatStats {unreadCount = 1, minUnreadItemId = 2}
-            }
-        ]
+      alice #$> ("/_get chats", chats, [("@bob", "hello 🙂")])
       -- test adding the same contact one more time - local name will be different
       alice ##> "/c"
       inv' <- getInvitation alice
@@ -842,6 +826,17 @@ cc #> cmd = do
   cc `send` cmd
   cc <# cmd
 
+(#$>) :: (Eq a, Show a) => TestCC -> (String, String -> a, a) -> Expectation
+cc #$> (cmd, f, res) = do
+  cc `send` cmd
+  (f <$> getTermLine cc) `shouldReturn` res
+
+chat :: String -> [(Int, String)]
+chat = read
+
+chats :: String -> [(String, String)]
+chats = read
+
 send :: TestCC -> String -> IO ()
 send TestCC {chatController = cc} cmd = atomically $ writeTBQueue (inputQ cc) cmd
 
@@ -896,73 +891,3 @@ getContactLink cc created = do
   cc <## "to show it again: /sa"
   cc <## "to delete it: /da (accepted contacts will remain connected)"
   pure link
-
-data ExpectedChat = EC
-  { expType :: ChatType,
-    expLdn :: Text,
-    expItems :: [ExpectedChatItem],
-    expStats :: ChatStats
-  }
-  deriving (Show)
-
-data ExpectedChatItem = ECI
-  { expDir :: MsgDirection,
-    expText :: Text,
-    expStatus :: ExpectedCIStatus
-  }
-  deriving (Show)
-
-data ExpectedCIStatus
-  = ExpSndNew
-  | ExpSndSent
-  | ExpSndErrorAuth
-  | ExpSndError
-  | ExpRcvNew
-  | ExpRcvRead
-  deriving (Eq, Show)
-
-toExpectedStatus :: CIStatus d -> ExpectedCIStatus
-toExpectedStatus = \case
-  CISSndNew -> ExpSndNew
-  CISSndSent -> ExpSndSent
-  CISSndErrorAuth -> ExpSndErrorAuth
-  CISSndError _ -> ExpSndError
-  CISRcvNew -> ExpRcvNew
-  CISRcvRead -> ExpRcvRead
-
-assertChat :: AChat -> ExpectedChat -> Expectation
-assertChat
-  (AChat cType Chat {chatInfo, chatItems, chatStats})
-  EC {expType, expLdn, expItems, expStats} = do
-    toChatType cType `shouldBe` expType
-    chatInfoLdn chatInfo `shouldBe` expLdn
-    matchItems chatItems expItems
-    chatStats `shouldBe` expStats
-    where
-      matchItems :: [CChatItem ca] -> [ExpectedChatItem] -> Expectation
-      matchItems [] [] = pure ()
-      matchItems (a : as) (e : es) = assertChatItem a e >> matchItems as es
-      matchItems [] (e : _) = expectationFailure $ "more expected items: " <> show e
-      matchItems (a : _) [] = expectationFailure $ "more actual items: " <> show a
-
-assertChatItem :: CChatItem c -> ExpectedChatItem -> Expectation
-assertChatItem
-  (CChatItem dir ChatItem {meta})
-  ECI {expDir, expText, expStatus} = do
-    toMsgDirection dir `shouldBe` expDir
-    itemText meta `shouldBe` expText
-    toExpectedStatus (itemStatus meta) `shouldBe` expStatus
-
-assertChats :: TestCC -> [ExpectedChat] -> Expectation
-assertChats cc expChats = do
-  u <- readTVarIO (currentUser $ chatController cc)
-  let user = fromJust u
-      st = chatStore $ chatController cc
-  chats <- getChatPreviews st user
-  matchChats chats expChats
-  where
-    matchChats :: [AChat] -> [ExpectedChat] -> Expectation
-    matchChats [] [] = pure ()
-    matchChats (a : as) (e : es) = assertChat a e >> matchChats as es
-    matchChats [] (e : _) = expectationFailure $ "more expected chats: " <> show e
-    matchChats (a : _) [] = expectationFailure $ "more actual chats: " <> show a

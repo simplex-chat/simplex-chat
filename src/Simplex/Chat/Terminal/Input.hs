@@ -26,10 +26,10 @@ getKey =
     _ -> getKey
 
 runInputLoop :: ChatTerminal -> ChatController -> IO ()
-runInputLoop ct cc = forever $ do
+runInputLoop ct cc@ChatController {testView} = forever $ do
   s <- atomically . readTBQueue $ inputQ cc
   r <- runReaderT (execChatCommand . encodeUtf8 $ T.pack s) cc
-  printToTerminal ct $ responseToView s r
+  printToTerminal ct $ responseToView s testView r
 
 runTerminalInput :: ChatTerminal -> ChatController -> IO ()
 runTerminalInput ct cc = withChatTerm ct $ do
