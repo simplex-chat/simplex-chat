@@ -67,11 +67,28 @@ testAddContact =
       concurrently_
         (bob <## "alice (Alice): contact is connected")
         (alice <## "bob (Bob): contact is connected")
+      -- empty chats
+      alice #$> ("/_get chats", chats, [("@bob", "")])
+      alice #$> ("/_get chat @2 count=100", chat, [])
+      bob #$> ("/_get chats", chats, [("@alice", "")])
+      bob #$> ("/_get chat @2 count=100", chat, [])
+      -- one message
       alice #> "@bob hello 🙂"
       bob <# "alice> hello 🙂"
+      alice #$> ("/_get chats", chats, [("@bob", "hello 🙂")])
+      alice #$> ("/_get chat @2 count=100", chat, [(1, "hello 🙂")])
+      bob #$> ("/_get chats", chats, [("@alice", "hello 🙂")])
+      bob #$> ("/_get chat @2 count=100", chat, [(0, "hello 🙂")])
+      -- many messages
       bob #> "@alice hi"
       alice <# "bob> hi"
-      alice #$> ("/_get chats", chats, [("@bob", "hello 🙂")])
+      alice #$> ("/_get chats", chats, [("@bob", "hi")])
+      alice #$> ("/_get chat @2 count=100", chat, [(1, "hello 🙂"), (0, "hi")])
+      bob #$> ("/_get chats", chats, [("@alice", "hi")])
+      bob #$> ("/_get chat @2 count=100", chat, [(0, "hello 🙂"), (1, "hi")])
+      -- read messages
+      alice #$> ("/_read chat @2 from=1 to=100", id, "ok")
+      bob #$> ("/_read chat @2 from=1 to=100", id, "ok")
       -- test adding the same contact one more time - local name will be different
       alice ##> "/c"
       inv' <- getInvitation alice
@@ -84,11 +101,15 @@ testAddContact =
       bob <# "alice_1> hello"
       bob #> "@alice_1 hi"
       alice <# "bob_1> hi"
+      -- alice #$> ("/_get chats", chats, [("@bob_1", "hi"), ("@bob", "hi")])
+      -- bob #$> ("/_get chats", chats, [("@alice_1", "hi"), ("@alice", "hi")])
       -- test deleting contact
       alice ##> "/d bob_1"
       alice <## "bob_1: contact is deleted"
       alice ##> "@bob_1 hey"
       alice <## "no contact bob_1"
+      -- alice #$> ("/_get chats", chats, [("@bob", "hi")])
+      -- bob #$> ("/_get chats", chats, [("@alice_1", "hi"), ("@alice", "hi")])
 
 testGroup :: IO ()
 testGroup =
@@ -135,11 +156,21 @@ testGroup =
       concurrently_
         (alice <# "#team bob> hi there")
         (cath <# "#team bob> hi there")
-      cath #> "#team hey"
+      cath #> "#team hey team"
       concurrently_
-        (alice <# "#team cath> hey")
-        (bob <# "#team cath> hey")
+        (alice <# "#team cath> hey team")
+        (bob <# "#team cath> hey team")
       bob <##> cath
+      -- read chats
+      -- alice #$> ("/_get chats", chats, [("#team", "hey team"), ("@cath", ""), ("@bob", "")])
+      alice #$> ("/_get chat #1 count=100", chat, [(1, "hello"), (0, "hi there"), (0, "hey team")])
+      -- bob #$> ("/_get chats", chats, [("@cath", "hey"), ("#team", "hey team"), ("@alice", "")])
+      bob #$> ("/_get chat #1 count=100", chat, [(0, "hello"), (1, "hi there"), (0, "hey team")])
+      -- cath #$> ("/_get chats", chats, [("@bob", "hey"), ("#team", "hey team"), ("@alice", "")])
+      cath #$> ("/_get chat #1 count=100", chat, [(0, "hello"), (0, "hi there"), (1, "hey team")])
+      alice #$> ("/_read chat #1 from=1 to=100", id, "ok")
+      bob #$> ("/_read chat #1 from=1 to=100", id, "ok")
+      cath #$> ("/_read chat #1 from=1 to=100", id, "ok")
       -- list groups
       alice ##> "/gs"
       alice <## "#team"
@@ -663,11 +694,13 @@ testUserContactLink = testChat3 aliceProfile bobProfile cathProfile $
     cLink <- getContactLink alice True
     bob ##> ("/c " <> cLink)
     alice <#? bob
+    alice #$> ("/_get chats", chats, [("<@bob", "")])
     alice ##> "/ac bob"
     alice <## "bob: accepting contact request..."
     concurrently_
       (bob <## "alice (Alice): contact is connected")
       (alice <## "bob (Bob): contact is connected")
+    alice #$> ("/_get chats", chats, [("@bob", "")])
     alice <##> bob
 
     cath ##> ("/c " <> cLink)
@@ -828,7 +861,7 @@ cc #> cmd = do
 
 (#$>) :: (Eq a, Show a) => TestCC -> (String, String -> a, a) -> Expectation
 cc #$> (cmd, f, res) = do
-  cc `send` cmd
+  cc ##> cmd
   (f <$> getTermLine cc) `shouldReturn` res
 
 chat :: String -> [(Int, String)]

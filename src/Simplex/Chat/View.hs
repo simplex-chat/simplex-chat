@@ -36,8 +36,8 @@ responseToView :: String -> Bool -> ChatResponse -> [StyledString]
 responseToView cmd testView = \case
   CRActiveUser User {profile} -> r $ viewUserProfile profile
   CRChatStarted -> r ["chat started"]
-  CRApiChats chats -> if testView then testViewChats chats else r [sShow chats]
-  CRApiChat chat -> if testView then testViewChat chat else r [sShow chat]
+  CRApiChats chats -> if testView then r (testViewChats chats) else r [sShow chats]
+  CRApiChat chat -> if testView then r (testViewChat chat) else r [sShow chat]
   CRNewChatItem (AChatItem _ _ chat item) -> viewChatItem chat item
   CRChatItemUpdated _ -> []
   CRMsgIntegrityError mErr -> viewMsgIntegrityError mErr
