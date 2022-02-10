@@ -345,19 +345,15 @@ func initializeChat() {
 class ChatReceiver {
     private var receiveLoop: DispatchWorkItem?
     private var receiveMessages = true
-    private var wasStarted = false
-    private var _canStop = false
     private var _lastMsgTime = Date.now
 
     static let shared = ChatReceiver()
 
     var lastMsgTime: Date { get { _lastMsgTime } }
 
-    func start(bgTask: BGManager.RefreshTask? = nil) {
+    func start() {
         logger.debug("ChatReceiver.start")
-        wasStarted = true
         receiveMessages = true
-        _canStop = true
         _lastMsgTime = .now
         if receiveLoop != nil { return }
         let loop = DispatchWorkItem(qos: .default, flags: []) {
@@ -369,25 +365,16 @@ class ChatReceiver {
                     logger.error("ChatReceiver.start chatRecvMsg error: \(error.localizedDescription)")
                 }
             }
-            if let task = bgTask { task.setTaskCompleted(success: true) }
         }
         receiveLoop = loop
         DispatchQueue.global().async(execute: loop)
     }
 
     func stop() {
-        logger.debug("ChatReceiver.stop?")
-        if !_canStop { return }
+        logger.debug("ChatReceiver.stop")
         receiveMessages = false
         receiveLoop?.cancel()
         receiveLoop = nil
-        logger.debug("ChatReceiver.stop: done")
-    }
-
-    func restart() {
-        logger.debug("ChatReceiver.restart?")
-        if wasStarted && receiveLoop == nil { start() }
-        _canStop = false
     }
 }
 
