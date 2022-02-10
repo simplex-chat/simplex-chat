@@ -21,7 +21,7 @@ struct NewChatButton: View {
 
     var body: some View {
         Button { showAddChat = true } label: {
-            Image(systemName: "square.and.pencil")
+            Image(systemName: "person.crop.circle.badge.plus")
         }
         .confirmationDialog("Start new chat", isPresented: $showAddChat, titleVisibility: .visible) {
             Button("Add contact") { addContactAction() }

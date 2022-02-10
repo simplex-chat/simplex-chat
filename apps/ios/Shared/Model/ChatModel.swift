@@ -100,7 +100,7 @@ final class ChatModel: ObservableObject {
     }
 }
 
-struct User: Decodable {
+struct User: Decodable, NamedChat {
     var userId: Int64
     var userContactId: Int64
     var localDisplayName: ContactName
@@ -114,6 +114,10 @@ struct User: Decodable {
 //        self.profile = profile
 //        self.activeUser = activeUser
 //    }
+
+    var displayName: String { get { profile.displayName } }
+
+    var fullName: String { get { profile.fullName } }
 
     static let sampleData = User(
         userId: 1,
