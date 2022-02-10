@@ -84,6 +84,12 @@ decodeChatMessageTest = describe "Chat message encoding/decoding" $ do
   it "x.file.acpt" $ "{\"event\":\"x.file.acpt\",\"params\":{\"fileName\":\"photo.jpg\"}}" #==# XFileAcpt "photo.jpg"
   it "x.info" $ "{\"event\":\"x.info\",\"params\":{\"profile\":{\"fullName\":\"Alice\",\"displayName\":\"alice\"}}}" #==# XInfo testProfile Nothing
   it "x.info" $ "{\"event\":\"x.info\",\"params\":{\"profile\":{\"fullName\":\"\",\"displayName\":\"alice\"}}}" #==# XInfo Profile {displayName = "alice", fullName = ""} Nothing
+  it "x.info with xInfoId null" $
+    "{\"event\":\"x.info\",\"params\":{\"xInfoId\":null,\"profile\":{\"fullName\":\"Alice\",\"displayName\":\"alice\"}}}"
+      ==# XInfo testProfile Nothing
+  it "x.info with xInfoId" $
+    "{\"event\":\"x.info\",\"params\":{\"xInfoId\":\"AQIDBA==\",\"profile\":{\"fullName\":\"Alice\",\"displayName\":\"alice\"}}}"
+      #==# XInfo testProfile (Just $ XInfoId "\1\2\3\4")
   it "x.contact without content field" $
     "{\"event\":\"x.contact\",\"params\":{\"profile\":{\"fullName\":\"Alice\",\"displayName\":\"alice\"}}}"
       #==# XContact testProfile Nothing
