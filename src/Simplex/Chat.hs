@@ -25,7 +25,6 @@ import Data.Bifunctor (first)
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.Char (isSpace)
-import Data.Foldable (for_)
 import Data.Functor (($>))
 import Data.Int (Int64)
 import Data.List (find)
@@ -1202,24 +1201,11 @@ createSndMessage chatMsgEvent = do
 directMessage :: ChatMsgEvent -> ByteString
 directMessage chatMsgEvent = strEncode ChatMessage {chatMsgEvent}
 
--- | Asks agent to send message and creates message delivery, throws agent error.
 deliverMessage :: ChatMonad m => Connection -> MsgBody -> MessageId -> m ()
 deliverMessage conn@Connection {connId} msgBody msgId = do
   agentMsgId <- withAgent $ \a -> sendMessage a (aConnId conn) msgBody
   let sndMsgDelivery = SndMsgDelivery {connId, agentMsgId}
   withStore $ \st -> createSndMsgDelivery st sndMsgDelivery msgId
-
--- | Asks agent to send message and creates message delivery, silently ignores agent error.
--- A workaround for group delivery until we treat agent errors (e.g. CONN SIMPLEX).
-deliverMessage' :: ChatMonad m => Connection -> MsgBody -> MessageId -> m ()
-deliverMessage' conn@Connection {connId} msgBody msgId = do
-  a <- asks smpAgent
-  runExceptT (sendMessage a (aConnId conn) msgBody) >>= \case
-    -- TODO print error
-    Left _ -> pure ()
-    Right agentMsgId -> do
-      let sndMsgDelivery = SndMsgDelivery {connId, agentMsgId}
-      withStore $ \st -> createSndMsgDelivery st sndMsgDelivery msgId
 
 sendGroupMessage :: ChatMonad m => [GroupMember] -> ChatMsgEvent -> m MessageId
 sendGroupMessage members chatMsgEvent =
@@ -1233,20 +1219,20 @@ sendXGrpMemInv reMember chatMsgEvent introId =
 sendGroupMessage' :: ChatMonad m => [GroupMember] -> ChatMsgEvent -> Maybe Int64 -> m () -> m MessageId
 sendGroupMessage' members chatMsgEvent introId_ postDeliver = do
   (msgId, msgBody) <- createSndMessage chatMsgEvent
-  for_ (filter memberCurrent members) $ \m@GroupMember {groupMemberId} ->
+  forM_ (filter memberCurrent members) $ \m@GroupMember {groupMemberId} ->
     case memberConn m of
       Nothing -> withStore $ \st -> createPendingGroupMessage st groupMemberId msgId introId_
       Just conn@Connection {connStatus} ->
         if not (connStatus == ConnSndReady || connStatus == ConnReady)
           then unless (connStatus == ConnDeleted) $ withStore (\st -> createPendingGroupMessage st groupMemberId msgId introId_)
-          else deliverMessage' conn msgBody msgId >> postDeliver
+          else (deliverMessage conn msgBody msgId >> postDeliver) `catchError` const (pure ())
   pure msgId
 
 sendPendingGroupMessages :: ChatMonad m => GroupMember -> Connection -> m ()
 sendPendingGroupMessages GroupMember {groupMemberId, localDisplayName} conn = do
   pendingMessages <- withStore $ \st -> getPendingGroupMessages st groupMemberId
   -- TODO ensure order - pending messages interleave with user input messages
-  for_ pendingMessages $ \PendingGroupMessage {msgId, cmEventTag, msgBody, introId_} -> do
+  forM_ pendingMessages $ \PendingGroupMessage {msgId, cmEventTag, msgBody, introId_} -> do
     deliverMessage conn msgBody msgId
     withStore (\st -> deletePendingGroupMessage st groupMemberId msgId)
     when (cmEventTag == XGrpMemFwd_) $ case introId_ of
