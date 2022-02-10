@@ -21,7 +21,7 @@ struct ContentView: View {
                     } catch {
                         fatalError("Failed to start or load chats: \(error)")
                     }
-//                    ChatReceiver.shared.start()
+                    ChatReceiver.shared.start()
                     NtfManager.shared.requestAuthorization(onDeny: {
                         showNotificationAlert = true
                     })
