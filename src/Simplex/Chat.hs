@@ -1219,6 +1219,7 @@ sendXGrpMemInv reMember chatMsgEvent introId =
 sendGroupMessage' :: ChatMonad m => [GroupMember] -> ChatMsgEvent -> Maybe Int64 -> m () -> m MessageId
 sendGroupMessage' members chatMsgEvent introId_ postDeliver = do
   (msgId, msgBody) <- createSndMessage chatMsgEvent
+  -- TODO collect failed deliveries into a single error
   forM_ (filter memberCurrent members) $ \m@GroupMember {groupMemberId} ->
     case memberConn m of
       Nothing -> withStore $ \st -> createPendingGroupMessage st groupMemberId msgId introId_
