@@ -1202,11 +1202,24 @@ createSndMessage chatMsgEvent = do
 directMessage :: ChatMsgEvent -> ByteString
 directMessage chatMsgEvent = strEncode ChatMessage {chatMsgEvent}
 
+-- | Asks agent to send message and creates message delivery, throws agent error.
 deliverMessage :: ChatMonad m => Connection -> MsgBody -> MessageId -> m ()
 deliverMessage conn@Connection {connId} msgBody msgId = do
   agentMsgId <- withAgent $ \a -> sendMessage a (aConnId conn) msgBody
   let sndMsgDelivery = SndMsgDelivery {connId, agentMsgId}
   withStore $ \st -> createSndMsgDelivery st sndMsgDelivery msgId
+
+-- | Asks agent to send message and creates message delivery, silently ignores agent error.
+-- A workaround for group delivery until we treat agent errors (e.g. CONN SIMPLEX).
+deliverMessage' :: ChatMonad m => Connection -> MsgBody -> MessageId -> m ()
+deliverMessage' conn@Connection {connId} msgBody msgId = do
+  a <- asks smpAgent
+  runExceptT (sendMessage a (aConnId conn) msgBody) >>= \case
+    -- TODO print error
+    Left _ -> pure ()
+    Right agentMsgId -> do
+      let sndMsgDelivery = SndMsgDelivery {connId, agentMsgId}
+      withStore $ \st -> createSndMsgDelivery st sndMsgDelivery msgId
 
 sendGroupMessage :: ChatMonad m => [GroupMember] -> ChatMsgEvent -> m MessageId
 sendGroupMessage members chatMsgEvent =
@@ -1223,7 +1236,10 @@ sendGroupMessage' members chatMsgEvent introId_ postDeliver = do
   for_ (filter memberCurrent members) $ \m@GroupMember {groupMemberId} ->
     case memberConn m of
       Nothing -> withStore $ \st -> createPendingGroupMessage st groupMemberId msgId introId_
-      Just conn -> deliverMessage conn msgBody msgId >> postDeliver
+      Just conn@Connection {connStatus} ->
+        if not (connStatus == ConnSndReady || connStatus == ConnReady)
+          then unless (connStatus == ConnDeleted) $ withStore (\st -> createPendingGroupMessage st groupMemberId msgId introId_)
+          else deliverMessage' conn msgBody msgId >> postDeliver
   pure msgId
 
 sendPendingGroupMessages :: ChatMonad m => GroupMember -> Connection -> m ()
