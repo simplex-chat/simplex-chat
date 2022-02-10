@@ -10,7 +10,6 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module Simplex.Chat.Types where
@@ -106,6 +105,25 @@ data UserContactRequest = UserContactRequest
 
 instance ToJSON UserContactRequest where
   toEncoding = J.genericToEncoding J.defaultOptions
+
+newtype XInfoId = XInfoId {unMemberId :: ByteString}
+  deriving (Eq, Show)
+
+instance FromField XInfoId where fromField f = XInfoId <$> fromField f
+
+instance ToField XInfoId where toField (XInfoId m) = toField m
+
+instance StrEncoding XInfoId where
+  strEncode (XInfoId m) = strEncode m
+  strDecode s = XInfoId <$> strDecode s
+  strP = XInfoId <$> strP
+
+instance FromJSON XInfoId where
+  parseJSON = strParseJSON "XInfoId"
+
+instance ToJSON XInfoId where
+  toJSON = strToJSON
+  toEncoding = strToJEncoding
 
 type ContactName = Text
 
