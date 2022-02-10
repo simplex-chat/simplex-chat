@@ -70,7 +70,7 @@ data ChatMsgEvent
   | XFile FileInvitation
   | XFileAcpt String
   | XInfo Profile
-  | XContact Profile (Maybe MsgContent)
+  | XContact Profile (Maybe MsgContent) -- deprecated
   | XGrpInv GroupInvitation
   | XGrpAcpt MemberId
   | XGrpMemNew MemberInfo

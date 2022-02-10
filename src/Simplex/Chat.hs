@@ -203,11 +203,11 @@ processChatCommand = \case
     connect userId cReq $ XInfo profile
     pure CRSentConfirmation
   Connect (Just (ACR SCMContact cReq)) -> withUser $ \User {userId, profile} -> withChatLock . procCmd $ do
-    connect userId cReq $ XContact profile Nothing
+    connect userId cReq $ XInfo profile
     pure CRSentInvitation
   Connect Nothing -> throwChatError CEInvalidConnReq
   ConnectAdmin -> withUser $ \User {userId, profile} -> withChatLock . procCmd $ do
-    connect userId adminContactReq $ XContact profile Nothing
+    connect userId adminContactReq $ XInfo profile
     pure CRSentInvitation
   DeleteContact cName -> withUser $ \User {userId} -> do
     contactId <- withStore $ \st -> getContactIdByName st userId cName
@@ -812,7 +812,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
       REQ invId connInfo -> do
         ChatMessage {chatMsgEvent} <- liftEither $ parseChatMessage connInfo
         case chatMsgEvent of
-          XContact p _ -> profileContactRequest invId p
+          XContact p _ -> profileContactRequest invId p -- for backwards compatibility
           XInfo p -> profileContactRequest invId p
           -- TODO show/log error, other events in contact request
           _ -> pure ()
