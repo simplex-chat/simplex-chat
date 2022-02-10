@@ -25,7 +25,6 @@ import Data.Bifunctor (first)
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.Char (isSpace)
-import Data.Foldable (for_)
 import Data.Functor (($>))
 import Data.Int (Int64)
 import Data.List (find)
@@ -1220,17 +1219,21 @@ sendXGrpMemInv reMember chatMsgEvent introId =
 sendGroupMessage' :: ChatMonad m => [GroupMember] -> ChatMsgEvent -> Maybe Int64 -> m () -> m MessageId
 sendGroupMessage' members chatMsgEvent introId_ postDeliver = do
   (msgId, msgBody) <- createSndMessage chatMsgEvent
-  for_ (filter memberCurrent members) $ \m@GroupMember {groupMemberId} ->
+  -- TODO collect failed deliveries into a single error
+  forM_ (filter memberCurrent members) $ \m@GroupMember {groupMemberId} ->
     case memberConn m of
       Nothing -> withStore $ \st -> createPendingGroupMessage st groupMemberId msgId introId_
-      Just conn -> deliverMessage conn msgBody msgId >> postDeliver
+      Just conn@Connection {connStatus} ->
+        if not (connStatus == ConnSndReady || connStatus == ConnReady)
+          then unless (connStatus == ConnDeleted) $ withStore (\st -> createPendingGroupMessage st groupMemberId msgId introId_)
+          else (deliverMessage conn msgBody msgId >> postDeliver) `catchError` const (pure ())
   pure msgId
 
 sendPendingGroupMessages :: ChatMonad m => GroupMember -> Connection -> m ()
 sendPendingGroupMessages GroupMember {groupMemberId, localDisplayName} conn = do
   pendingMessages <- withStore $ \st -> getPendingGroupMessages st groupMemberId
   -- TODO ensure order - pending messages interleave with user input messages
-  for_ pendingMessages $ \PendingGroupMessage {msgId, cmEventTag, msgBody, introId_} -> do
+  forM_ pendingMessages $ \PendingGroupMessage {msgId, cmEventTag, msgBody, introId_} -> do
     deliverMessage conn msgBody msgId
     withStore (\st -> deletePendingGroupMessage st groupMemberId msgId)
     when (cmEventTag == XGrpMemFwd_) $ case introId_ of
