@@ -36,9 +36,6 @@ struct SimpleXApp: App {
                 .onChange(of: scenePhase) { phase in
                     if phase == .background {
                         BGManager.shared.schedule()
-                    } else {
-                        BGManager.shared.invalidateStopTimer()
-                        ChatReceiver.shared.restart()
                     }
                 }
         }
