@@ -9,45 +9,44 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE StandaloneDeriving #-}
 
 module Simplex.Chat.Protocol where
 
 import Control.Monad ((<=<))
 import Data.Aeson (FromJSON, ToJSON, (.:), (.:?), (.=))
 import qualified Data.Aeson as J
+import qualified Data.Aeson.KeyMap as JM
 import qualified Data.Aeson.Types as JT
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.ByteString.Lazy.Char8 as LB
-import qualified Data.HashMap.Strict as H
 import Data.Text (Text)
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
-import GHC.Generics
+import Database.SQLite.Simple.FromField (FromField (..))
+import Database.SQLite.Simple.ToField (ToField (..))
+import GHC.Generics (Generic)
 import Simplex.Chat.Types
-import Simplex.Messaging.Agent.Protocol
+import Simplex.Chat.Util (eitherToMaybe)
+import Simplex.Messaging.Agent.Store.SQLite (fromTextField_)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Util ((<$?>))
 
-data ChatDirection (p :: AParty) where
-  ReceivedDirectMessage :: Connection -> Maybe Contact -> ChatDirection 'Agent
-  SentDirectMessage :: Contact -> ChatDirection 'Client
-  ReceivedGroupMessage :: Connection -> GroupName -> GroupMember -> ChatDirection 'Agent
-  SentGroupMessage :: GroupName -> ChatDirection 'Client
-  SndFileConnection :: Connection -> SndFileTransfer -> ChatDirection 'Agent
-  RcvFileConnection :: Connection -> RcvFileTransfer -> ChatDirection 'Agent
-  UserContactConnection :: Connection -> UserContact -> ChatDirection 'Agent
+data ConnectionEntity
+  = RcvDirectMsgConnection {entityConnection :: Connection, contact :: Maybe Contact}
+  | RcvGroupMsgConnection {entityConnection :: Connection, groupInfo :: GroupInfo, groupMember :: GroupMember}
+  | SndFileConnection {entityConnection :: Connection, sndFileTransfer :: SndFileTransfer}
+  | RcvFileConnection {entityConnection :: Connection, rcvFileTransfer :: RcvFileTransfer}
+  | UserContactConnection {entityConnection :: Connection, userContact :: UserContact}
+  deriving (Eq, Show)
 
-deriving instance Eq (ChatDirection p)
-
-deriving instance Show (ChatDirection p)
-
-fromConnection :: ChatDirection 'Agent -> Connection
-fromConnection = \case
-  ReceivedDirectMessage conn _ -> conn
-  ReceivedGroupMessage conn _ _ -> conn
-  SndFileConnection conn _ -> conn
-  RcvFileConnection conn _ -> conn
-  UserContactConnection conn _ -> conn
+updateEntityConnStatus :: ConnectionEntity -> ConnStatus -> ConnectionEntity
+updateEntityConnStatus connEntity connStatus = case connEntity of
+  RcvDirectMsgConnection c ct_ -> RcvDirectMsgConnection (st c) ((\ct -> (ct :: Contact) {activeConn = st c}) <$> ct_)
+  RcvGroupMsgConnection c gInfo m@GroupMember {activeConn = c'} -> RcvGroupMsgConnection (st c) gInfo m {activeConn = st <$> c'}
+  SndFileConnection c ft -> SndFileConnection (st c) ft
+  RcvFileConnection c ft -> RcvFileConnection (st c) ft
+  UserContactConnection c uc -> UserContactConnection (st c) uc
+  where
+    st c = c {connStatus}
 
 -- chat message is sent as JSON with these properties
 data AppMessage = AppMessage
@@ -108,8 +107,15 @@ instance ToJSON MsgContentType where
   toJSON = strToJSON
   toEncoding = strToJEncoding
 
+-- TODO - include tag and original JSON into MCUnknown so that information is not lost
+-- so when it serializes back it is the same as it was and chat upgrade makes it readable
 data MsgContent = MCText Text | MCUnknown
   deriving (Eq, Show)
+
+msgContentText :: MsgContent -> Text
+msgContentText = \case
+  MCText t -> t
+  MCUnknown -> unknownMsgType
 
 toMsgContentType :: MsgContent -> MsgContentType
 toMsgContentType = \case
@@ -161,6 +167,7 @@ data CMEventTag
   | XInfoProbeCheck_
   | XInfoProbeOk_
   | XOk_
+  deriving (Eq, Show)
 
 instance StrEncoding CMEventTag where
   strEncode = \case
@@ -234,8 +241,15 @@ toCMEventTag = \case
   XInfoProbeOk _ -> XInfoProbeOk_
   XOk -> XOk_
 
-toChatEventTag :: ChatMsgEvent -> Text
-toChatEventTag = decodeLatin1 . strEncode . toCMEventTag
+cmEventTagT :: Text -> Maybe CMEventTag
+cmEventTagT = eitherToMaybe . strDecode . encodeUtf8
+
+serializeCMEventTag :: CMEventTag -> Text
+serializeCMEventTag = decodeLatin1 . strEncode
+
+instance FromField CMEventTag where fromField = fromTextField_ cmEventTagT
+
+instance ToField CMEventTag where toField = toField . serializeCMEventTag
 
 appToChatMessage :: AppMessage -> Either String ChatMessage
 appToChatMessage AppMessage {event, params} = do
@@ -243,7 +257,7 @@ appToChatMessage AppMessage {event, params} = do
   chatMsgEvent <- msg eventTag
   pure ChatMessage {chatMsgEvent}
   where
-    p :: FromJSON a => Text -> Either String a
+    p :: FromJSON a => J.Key -> Either String a
     p key = JT.parseEither (.: key) params
     msg = \case
       XMsgNew_ -> XMsgNew <$> p "content"
@@ -271,9 +285,9 @@ appToChatMessage AppMessage {event, params} = do
 chatToAppMessage :: ChatMessage -> AppMessage
 chatToAppMessage ChatMessage {chatMsgEvent} = AppMessage {event, params}
   where
-    event = toChatEventTag chatMsgEvent
-    o :: [(Text, J.Value)] -> J.Object
-    o = H.fromList
+    event = serializeCMEventTag . toCMEventTag $ chatMsgEvent
+    o :: [(J.Key, J.Value)] -> J.Object
+    o = JM.fromList
     params = case chatMsgEvent of
       XMsgNew content -> o ["content" .= content]
       XFile fileInv -> o ["file" .= fileInv]
@@ -290,9 +304,9 @@ chatToAppMessage ChatMessage {chatMsgEvent} = AppMessage {event, params}
       XGrpMemCon memId -> o ["memberId" .= memId]
       XGrpMemConAll memId -> o ["memberId" .= memId]
       XGrpMemDel memId -> o ["memberId" .= memId]
-      XGrpLeave -> H.empty
-      XGrpDel -> H.empty
+      XGrpLeave -> JM.empty
+      XGrpDel -> JM.empty
       XInfoProbe probe -> o ["probe" .= probe]
       XInfoProbeCheck probeHash -> o ["probeHash" .= probeHash]
       XInfoProbeOk probe -> o ["probe" .= probe]
-      XOk -> H.empty
+      XOk -> JM.empty

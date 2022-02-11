@@ -18,6 +18,8 @@ import Simplex.Chat
 import Simplex.Chat.Controller (ChatConfig (..), ChatController (..))
 import Simplex.Chat.Options
 import Simplex.Chat.Store
+import Simplex.Chat.Terminal
+import Simplex.Chat.Terminal.Output (newChatTerminal)
 import Simplex.Chat.Types (Profile)
 import Simplex.Messaging.Agent.Env.SQLite
 import Simplex.Messaging.Agent.RetryInterval
@@ -28,6 +30,7 @@ import System.Directory (createDirectoryIfMissing, removeDirectoryRecursive)
 import qualified System.Terminal as C
 import System.Terminal.Internal (VirtualTerminal (..), VirtualTerminalSettings (..), withVirtualTerminal)
 import System.Timeout (timeout)
+import Test.Hspec (Expectation, shouldReturn)
 
 testDBPrefix :: FilePath
 testDBPrefix = "tests/tmp/test"
@@ -38,8 +41,9 @@ serverPort = "5001"
 opts :: ChatOpts
 opts =
   ChatOpts
-    { dbFile = undefined,
-      smpServers = ["smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=@localhost:5001"]
+    { dbFilePrefix = undefined,
+      smpServers = ["smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=@localhost:5001"],
+      logging = False
     }
 
 termSettings :: VirtualTerminalSettings
@@ -66,16 +70,18 @@ cfg :: ChatConfig
 cfg =
   defaultChatConfig
     { agentConfig =
-        aCfg {reconnectInterval = (reconnectInterval aCfg) {initialInterval = 50000}}
+        aCfg {reconnectInterval = (reconnectInterval aCfg) {initialInterval = 50000}},
+      testView = True
     }
 
 virtualSimplexChat :: FilePath -> Profile -> IO TestCC
-virtualSimplexChat dbFile profile = do
-  st <- createStore (dbFile <> "_chat.db") 1
-  void . runExceptT $ createUser st profile True
+virtualSimplexChat dbFilePrefix profile = do
+  st <- createStore (dbFilePrefix <> "_chat.db") 1 False
+  Right user <- runExceptT $ createUser st profile True
   t <- withVirtualTerminal termSettings pure
-  cc <- newChatController cfg opts {dbFile} t . const $ pure () -- no notifications
-  chatAsync <- async $ runSimplexChat cc
+  ct <- newChatTerminal t
+  cc <- newChatController st (Just user) cfg opts {dbFilePrefix} (const $ pure ()) -- no notifications
+  chatAsync <- async $ runSimplexChat user ct cc
   termQ <- newTQueueIO
   termAsync <- async $ readTerminalOutput t termQ
   pure TestCC {chatController = cc, virtualTerminal = t, chatAsync, termAsync, termQ}
@@ -103,18 +109,27 @@ readTerminalOutput t termQ = do
             then map (dropWhileEnd (== ' ')) diff
             else getDiff_ (n + 1) len win' win
 
-testChatN :: [Profile] -> ([TestCC] -> IO ()) -> IO ()
-testChatN ps test =
+withTmpFiles :: IO () -> IO ()
+withTmpFiles =
   bracket_
     (createDirectoryIfMissing False "tests/tmp")
     (removeDirectoryRecursive "tests/tmp")
-    $ do
-      let envs = zip ps $ map ((testDBPrefix <>) . show) [(1 :: Int) ..]
-      tcs <- getTestCCs envs []
-      test tcs
+
+testChatN :: [Profile] -> ([TestCC] -> IO ()) -> IO ()
+testChatN ps test = withTmpFiles $ do
+  let envs = zip ps $ map ((testDBPrefix <>) . show) [(1 :: Int) ..]
+  tcs <- getTestCCs envs []
+  test tcs
+  concurrentlyN_ $ map (<// 100000) tcs
   where
     getTestCCs [] tcs = pure tcs
     getTestCCs ((p, db) : envs') tcs = (:) <$> virtualSimplexChat db p <*> getTestCCs envs' tcs
+
+(<//) :: TestCC -> Int -> Expectation
+(<//) cc t = timeout t (getTermLine cc) `shouldReturn` Nothing
+
+getTermLine :: TestCC -> IO String
+getTermLine = atomically . readTQueue . termQ
 
 testChat2 :: Profile -> Profile -> (TestCC -> TestCC -> IO ()) -> IO ()
 testChat2 p1 p2 test = testChatN [p1, p2] test_

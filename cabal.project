@@ -2,11 +2,20 @@ packages: .
 
 source-repository-package
     type: git
-    location: git://github.com/simplex-chat/hs-tls.git
-    tag: cea6d52c512716ff09adcac86ebc95bb0b3bb797
-    subdir: core
+    location: git://github.com/simplex-chat/simplexmq.git
+    tag: c380c795600b887fcae1614a52fb5cda691b569d
+
+source-repository-package
+    type: git
+    location: git://github.com/simplex-chat/aeson.git
+    tag: 3eb66f9a68f103b5f1489382aad89f5712a64db7
 
 source-repository-package
     type: git
     location: git://github.com/simplex-chat/haskell-terminal.git
-    tag: 5e0759ce4f9655fd3f0d94c76225e6904630dfd3
+    tag: f708b00009b54890172068f168bf98508ffcd495
+
+source-repository-package
+    type: git
+    location: git://github.com/zw3rk/android-support.git
+    tag: 3c3a5ab0b8b137a072c98d3d0937cbdc96918ddb

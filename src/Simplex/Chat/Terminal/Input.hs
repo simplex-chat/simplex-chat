@@ -1,15 +1,19 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
-module Simplex.Chat.Input where
+module Simplex.Chat.Terminal.Input where
 
 import Control.Monad.IO.Unlift
 import Control.Monad.Reader
 import Data.List (dropWhileEnd)
 import qualified Data.Text as T
+import Data.Text.Encoding (encodeUtf8)
+import Simplex.Chat
 import Simplex.Chat.Controller
-import Simplex.Chat.Terminal
+import Simplex.Chat.Terminal.Output
+import Simplex.Chat.View
 import System.Exit (exitSuccess)
 import System.Terminal hiding (insertChars)
 import UnliftIO.STM
@@ -21,16 +25,20 @@ getKey =
     Right (KeyEvent key ms) -> pure (key, ms)
     _ -> getKey
 
-runTerminalInput :: (MonadUnliftIO m, MonadReader ChatController m) => m ()
-runTerminalInput = do
-  ChatController {inputQ, chatTerminal = ct} <- ask
-  liftIO $
-    withChatTerm ct $ do
-      updateInput ct
-      receiveFromTTY inputQ ct
+runInputLoop :: ChatTerminal -> ChatController -> IO ()
+runInputLoop ct cc = forever $ do
+  s <- atomically . readTBQueue $ inputQ cc
+  r <- runReaderT (execChatCommand . encodeUtf8 $ T.pack s) cc
+  let testV = testView $ config cc
+  printToTerminal ct $ responseToView s testV r
 
-receiveFromTTY :: MonadTerminal m => TBQueue InputEvent -> ChatTerminal -> m ()
-receiveFromTTY inputQ ct@ChatTerminal {activeTo, termSize, termState} =
+runTerminalInput :: ChatTerminal -> ChatController -> IO ()
+runTerminalInput ct cc = withChatTerm ct $ do
+  updateInput ct
+  receiveFromTTY cc ct
+
+receiveFromTTY :: MonadTerminal m => ChatController -> ChatTerminal -> m ()
+receiveFromTTY ChatController {inputQ, activeTo} ct@ChatTerminal {termSize, termState} =
   forever $ getKey >>= processKey >> withTermLock ct (updateInput ct)
   where
     processKey :: MonadTerminal m => (Key, Modifiers) -> m ()
@@ -45,7 +53,7 @@ receiveFromTTY inputQ ct@ChatTerminal {activeTo, termSize, termState} =
       ts <- readTVar termState
       let s = inputString ts
       writeTVar termState $ ts {inputString = "", inputPosition = 0, previousInput = s}
-      writeTBQueue inputQ $ InputCommand s
+      writeTBQueue inputQ s
 
 updateTermState :: ActiveTo -> Int -> (Key, Modifiers) -> TerminalState -> TerminalState
 updateTermState ac tw (key, ms) ts@TerminalState {inputString = s, inputPosition = p} = case key of

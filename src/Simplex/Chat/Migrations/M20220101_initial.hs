@@ -1,3 +1,13 @@
+{-# LANGUAGE QuasiQuotes #-}
+
+module Simplex.Chat.Migrations.M20220101_initial where
+
+import Database.SQLite.Simple (Query)
+import Database.SQLite.Simple.QQ (sql)
+
+m20220101_initial :: Query
+m20220101_initial =
+  [sql|
 CREATE TABLE contact_profiles ( -- remote user profile
   contact_profile_id INTEGER PRIMARY KEY,
   display_name TEXT NOT NULL, -- contact name set by remote user (not unique), this name must not contain spaces
@@ -232,11 +242,12 @@ CREATE TABLE contact_requests (
 CREATE TABLE messages (
   message_id INTEGER PRIMARY KEY,
   msg_sent INTEGER NOT NULL, -- 0 for received, 1 for sent
-  chat_msg_event TEXT NOT NULL, -- message event type (the constructor of ChatMsgEvent)
+  chat_msg_event TEXT NOT NULL, -- message event tag (the constructor of CMEventTag)
   msg_body BLOB, -- agent message body as received or sent
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+-- TODO ? agent_msg_id could be NOT NULL now that pending_group_messages are separate
 -- message deliveries communicated with the agent, append only
 CREATE TABLE msg_deliveries (
   msg_delivery_id INTEGER PRIMARY KEY,
@@ -249,7 +260,7 @@ CREATE TABLE msg_deliveries (
 );
 
 -- TODO recovery for received messages with "rcv_agent" status - acknowledge to agent
--- changes of messagy delivery status, append only
+-- changes of message delivery status, append only
 CREATE TABLE msg_delivery_events (
   msg_delivery_event_id INTEGER PRIMARY KEY,
   msg_delivery_id INTEGER NOT NULL REFERENCES msg_deliveries ON DELETE CASCADE, -- non UNIQUE for multiple events per msg delivery
@@ -257,3 +268,4 @@ CREATE TABLE msg_delivery_events (
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   UNIQUE (msg_delivery_id, delivery_status)
 );
+|]

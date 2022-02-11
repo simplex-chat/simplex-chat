@@ -37,17 +37,23 @@ packages:
 extra-deps:
   - cryptostore-0.2.1.0@sha256:9896e2984f36a1c8790f057fd5ce3da4cbcaf8aa73eb2d9277916886978c5b19,3881
   - simple-logger-0.1.0@sha256:be8ede4bd251a9cac776533bae7fb643369ebd826eb948a9a18df1a8dd252ff8,1079
-  # - terminal-0.2.0.0@sha256:de6770ecaae3197c66ac1f0db5a80cf5a5b1d3b64a66a05b50f442de5ad39570,2977
-  - github: simplex-chat/haskell-terminal
-    commit: 5e0759ce4f9655fd3f0d94c76225e6904630dfd3
-  - simplexmq-1.0.0@sha256:34b2004728ae396e3ae449cd090ba7410781e2b3cefc59259915f4ca5daa9ea8,8561
+  - tls-1.5.7@sha256:1cc30253a9696b65a9cafc0317fbf09f7dcea15e3a145ed6c9c0e28c632fa23a,6991
+  # below hackage dependancies are to update Aeson to 2.0.3
+  - OneTuple-0.3.1@sha256:a848c096c9d29e82ffdd30a9998aa2931cbccb3a1bc137539d80f6174d31603e,2262
+  - attoparsec-0.14.4@sha256:79584bdada8b730cb5138fca8c35c76fbef75fc1d1e01e6b1d815a5ee9843191,5810
+  - hashable-1.4.0.2@sha256:0cddd0229d1aac305ea0404409c0bbfab81f075817bd74b8b2929eff58333e55,5005
+  - semialign-1.2.0.1@sha256:0e179b4d3a8eff79001d374d6c91917c6221696b9620f0a4d86852fc6a9b9501,2836
+  - text-short-0.1.5@sha256:962c6228555debdc46f758d0317dea16e5240d01419b42966674b08a5c3d8fa6,3498
+  - time-compat-1.9.6.1@sha256:42d8f2e08e965e1718917d54ad69e1d06bd4b87d66c41dc7410f59313dba4ed1,5033
+  # - simplexmq-1.0.0@sha256:34b2004728ae396e3ae449cd090ba7410781e2b3cefc59259915f4ca5daa9ea8,8561
   # - ../simplexmq
-  # - github: simplex-chat/simplexmq
-  #   commit: bfa4911217b71527a6fbaf73b242b5684aaf9fce
-  - github: simplex-chat/hs-tls
-    commit: cea6d52c512716ff09adcac86ebc95bb0b3bb797
-    subdirs:
-      - core
+  - github: simplex-chat/simplexmq
+    commit: c380c795600b887fcae1614a52fb5cda691b569d
+  # - terminal-0.2.0.0@sha256:de6770ecaae3197c66ac1f0db5a80cf5a5b1d3b64a66a05b50f442de5ad39570,2977
+  - github: simplex-chat/aeson
+    commit: 3eb66f9a68f103b5f1489382aad89f5712a64db7
+  - github: simplex-chat/haskell-terminal
+    commit: f708b00009b54890172068f168bf98508ffcd495
 
 #
 # extra-deps: []

@@ -79,7 +79,7 @@ The routing of messages relies on the knowledge of client devices how user conta
 - Two layers of E2E encryption (double-ratchet for duplex connections, using X3DH key agreement with ephemeral Curve448 keys, and NaCl crypto_box for SMP queues, using Curve25519 keys) and out-of-band passing of recipient keys (see [How to use SimpleX chat](#how-to-use-simplex-chat)).
 - Message integrity validation (via including the digests of the previous messages).
 - Authentication of each command/message by SMP servers with automatically generated Ed448 keys.
-- TLS 1.2 transport encryption.
+- TLS 1.3 transport encryption.
 - Additional encryption of messages from SMP server to recipient to reduce traffic correlation.
 
 Public keys involved in key exchange are not used as identity, they are randomly generated for each contact.
@@ -125,6 +125,8 @@ move <binary> %APPDATA%/local/bin/simplex-chat.exe
 
 ### Build from source
 
+> **Please note:** to build the app use source code from [stable branch](https://github.com/simplex-chat/simplex-chat/tree/stable).
+
 #### Using Docker
 
 On Linux, you can build the chat executable using [docker build with custom output](https://docs.docker.com/engine/reference/commandline/build/#custom-build-outputs):
@@ -132,6 +134,7 @@ On Linux, you can build the chat executable using [docker build with custom outp
 ```shell
 $ git clone git@github.com:simplex-chat/simplex-chat.git
 $ cd simplex-chat
+$ git checkout stable
 $ DOCKER_BUILDKIT=1 docker build --output ~/.local/bin .
 ```
 
@@ -150,6 +153,7 @@ and build the project:
 ```shell
 $ git clone git@github.com:simplex-chat/simplex-chat.git
 $ cd simplex-chat
+$ git checkout stable
 $ stack install
 ```
 

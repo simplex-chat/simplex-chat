@@ -6,6 +6,7 @@ module Simplex.Chat.Styled
     StyledFormat (..),
     styleMarkdown,
     styleMarkdownText,
+    unStyle,
     sLength,
     sShow,
   )
@@ -20,6 +21,7 @@ import Simplex.Chat.Markdown
 import System.Console.ANSI.Types
 
 data StyledString = Styled [SGR] String | StyledString :<>: StyledString
+  deriving (Show)
 
 instance Semigroup StyledString where (<>) = (:<>:)
 
@@ -68,6 +70,10 @@ sgr = \case
   Secret -> [SetColor Foreground Dull Black, SetColor Background Dull Black]
   Snippet -> []
   NoFormat -> []
+
+unStyle :: StyledString -> String
+unStyle (Styled _ s) = s
+unStyle (s1 :<>: s2) = unStyle s1 <> unStyle s2
 
 sLength :: StyledString -> Int
 sLength (Styled _ s) = length s
