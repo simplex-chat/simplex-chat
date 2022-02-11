@@ -203,21 +203,13 @@ processChatCommand = \case
     connId <- withAgent $ \a -> joinConnection a cReq $ directMessage (XInfo profile Nothing)
     withStore $ \st -> createDirectConnection st userId connId
     pure CRSentConfirmation
-  Connect (Just (ACR SCMContact cReq)) -> withUser $ \User {userId, profile} -> withChatLock . procCmd $ do
-    gVar <- asks idsDrg
-    xInfoId <- liftIO $ XInfoId <$> randomBytes gVar 128
-    connId <- withAgent $ \a -> joinConnection a cReq $ directMessage (XInfo profile $ Just xInfoId)
-    let cReqHash = ConnReqUriHash (C.sha256Hash $ strEncode cReq)
-    withStore $ \st -> createDirectConnection' st userId connId cReqHash xInfoId
-    pure CRSentInvitation
+  Connect (Just (ACR SCMContact cReq)) -> withUser $ \User {userId, profile} ->
+    withChatLock . procCmd $
+      connectByAddress userId cReq profile
   Connect Nothing -> throwChatError CEInvalidConnReq
-  ConnectAdmin -> withUser $ \User {userId, profile} -> withChatLock . procCmd $ do
-    gVar <- asks idsDrg
-    xInfoId <- liftIO $ XInfoId <$> randomBytes gVar 128
-    connId <- withAgent $ \a -> joinConnection a adminContactReq $ directMessage (XInfo profile $ Just xInfoId)
-    let cReqHash = ConnReqUriHash (C.sha256Hash $ strEncode adminContactReq)
-    withStore $ \st -> createDirectConnection' st userId connId cReqHash xInfoId
-    pure CRSentInvitation
+  ConnectAdmin -> withUser $ \User {userId, profile} ->
+    withChatLock . procCmd $
+      connectByAddress userId adminContactReq profile
   DeleteContact cName -> withUser $ \User {userId} -> do
     contactId <- withStore $ \st -> getContactIdByName st userId cName
     processChatCommand $ APIDeleteChat CTDirect contactId
@@ -409,6 +401,25 @@ processChatCommand = \case
     -- connect userId cReq cMode profile = do
     --   connId <- withAgent $ \a -> joinConnection a cReq $ directMessage msg
     --   withStore $ \st -> createDirectConnection st userId connId
+    connectByAddress :: UserId -> ConnectionRequestUri 'CMContact -> Profile -> m ChatResponse
+    connectByAddress userId cReq profile = do
+      let cReqHash = ConnReqUriHash (C.sha256Hash $ strEncode cReq)
+      (xInfoId_, contactId_) <- withStore $ \st -> getXInfoIdByUriHash st userId cReqHash
+      case (xInfoId_, contactId_) of
+        (Nothing, _) -> do
+          gVar <- asks idsDrg
+          xInfoId <- liftIO $ XInfoId <$> randomBytes gVar 128
+          connect xInfoId cReqHash
+        (Just xInfoId, Nothing) ->
+          connect xInfoId cReqHash
+        (_, Just contactId) -> do
+          contact <- withStore $ \st -> getContactRec st userId contactId
+          pure $ CRContactAlreadyExists contact
+      where
+        connect xInfoId cReqHash = do
+          connId <- withAgent $ \a -> joinConnection a cReq $ directMessage (XInfo profile $ Just xInfoId)
+          withStore $ \st -> createDirectConnection' st userId connId cReqHash xInfoId
+          pure CRSentInvitation
     contactMember :: Contact -> [GroupMember] -> Maybe GroupMember
     contactMember Contact {contactId} =
       find $ \GroupMember {memberContactId = cId, memberStatus = s} ->

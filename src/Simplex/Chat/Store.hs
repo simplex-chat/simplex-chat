@@ -26,6 +26,8 @@ module Simplex.Chat.Store
     setActiveUser,
     createDirectConnection,
     createDirectConnection',
+    getXInfoIdByUriHash,
+    getContactRec,
     createDirectContact,
     getContactGroupNames,
     deleteContact,
@@ -263,6 +265,61 @@ createDirectConnection' st userId acId cReqHash xInfoId = do
         ) VALUES (?,?,?,?,?,?,?,?)
       |]
       (userId, acId, ConnNew, ConnContact, currentTs, currentTs, cReqHash, xInfoId)
+
+getXInfoIdByUriHash :: MonadUnliftIO m => SQLiteStore -> UserId -> ConnReqUriHash -> m (Maybe XInfoId, Maybe Int64)
+getXInfoIdByUriHash st userId cReqHash =
+  liftIO . withTransaction st $ \db ->
+    getXInfoId db >>= \case
+      Nothing -> pure (Nothing, Nothing)
+      Just xInfoId ->
+        getContactId db >>= \case
+          Nothing -> pure (Just xInfoId, Nothing)
+          Just contactId -> pure (Just xInfoId, Just contactId)
+  where
+    getXInfoId :: DB.Connection -> IO (Maybe XInfoId)
+    getXInfoId db =
+      listToMaybe . map fromOnly
+        <$> DB.query
+          db
+          "SELECT xinfo_identifier FROM connections WHERE via_contact_uri_hash = ? AND user_id = ? LIMIT 1"
+          (cReqHash, userId)
+    getContactId :: DB.Connection -> IO (Maybe Int64)
+    getContactId db =
+      listToMaybe . map fromOnly
+        <$> DB.query
+          db
+          [sql|
+            SELECT contact_id FROM connections
+            WHERE via_contact_uri_hash = ? AND user_id = ?
+              AND contact_id IS NOT NULL
+            LIMIT 1
+          |]
+          (cReqHash, userId)
+
+getContactRec :: StoreMonad m => SQLiteStore -> UserId -> Int64 -> m Contact
+getContactRec st userId contactId =
+  liftIOEither . withTransaction st $ \db ->
+    firstRow
+      toContact
+      (SEContactNotFound contactId)
+      ( DB.query
+          db
+          [sql|
+              SELECT
+                -- Contact
+                ct.contact_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, ct.created_at,
+                -- Connection
+                c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.conn_status, c.conn_type,
+                c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at
+              FROM contacts ct
+              JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
+              LEFT JOIN connections c ON c.contact_id = ct.contact_id
+              WHERE ct.user_id = ? AND ct.contact_id = ? AND
+              ORDER BY c.connection_id DESC
+              LIMIT 1
+            |]
+          (userId, contactId)
+      )
 
 createDirectConnection :: MonadUnliftIO m => SQLiteStore -> UserId -> ConnId -> m ()
 createDirectConnection st userId agentConnId =
