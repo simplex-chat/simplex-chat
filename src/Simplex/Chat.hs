@@ -1181,7 +1181,7 @@ throwChatError = throwError . ChatError
 deleteMemberConnection :: ChatMonad m => GroupMember -> m ()
 deleteMemberConnection m@GroupMember {activeConn} = do
   -- User {userId} <- asks currentUser
-  withAgent $ forM_ (memberConnId m) . suspendConnection
+  withAgent (forM_ (memberConnId m) . suspendConnection) `catchError` const (pure ())
   -- withStore $ \st -> deleteGroupMemberConnection st userId m
   forM_ activeConn $ \conn -> withStore $ \st -> updateConnectionStatus st conn ConnDeleted
 
