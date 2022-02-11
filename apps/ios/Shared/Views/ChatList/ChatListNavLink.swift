@@ -53,7 +53,12 @@ struct ChatListNavLink: View {
             label: { ChatPreviewView(chat: chat) },
             disabled: !contact.ready
         )
-        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+        .swipeActions(edge: .leading) {
+            if chat.chatStats.unreadCount > 0 {
+                markReadButton()
+            }
+        }
+        .swipeActions(edge: .trailing) {
             Button(role: .destructive) {
                 alertContact = contact
                 showDeleteContactAlert = true
@@ -75,6 +80,11 @@ struct ChatListNavLink: View {
             label: { ChatPreviewView(chat: chat) },
             disabled: !groupInfo.ready
         )
+        .swipeActions(edge: .leading) {
+            if chat.chatStats.unreadCount > 0 {
+                markReadButton()
+            }
+        }
         .swipeActions(edge: .trailing, allowsFullSwipe: true) {
             Button(role: .destructive) {
                 alertGroupInfo = groupInfo
@@ -89,12 +99,21 @@ struct ChatListNavLink: View {
         .frame(height: 80)
     }
 
+    private func markReadButton() -> some View {
+        Button {
+            markChatRead(chat)
+        } label: {
+            Label("Read", systemImage: "checkmark")
+        }
+        .tint(Color.accentColor)
+    }
+
     private func contactRequestNavLink(_ contactRequest: UserContactRequest) -> some View {
         ContactRequestView(contactRequest: contactRequest)
         .swipeActions(edge: .trailing, allowsFullSwipe: true) {
             Button { acceptContactRequest(contactRequest) }
                 label: { Label("Accept", systemImage: "checkmark") }
-                .tint(.blue)
+                .tint(Color.accentColor)
             Button(role: .destructive) {
                 alertContactRequest = contactRequest
                 showContactRequestAlert = true

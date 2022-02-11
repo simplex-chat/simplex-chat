@@ -28,8 +28,15 @@ struct ChatView: View {
                                 ChatItemView(chatItem: $0, width: g.size.width)
                                     .frame(minWidth: 0, maxWidth: .infinity, alignment: $0.chatDir.sent ? .trailing : .leading)
                             }
-                            .onAppear { DispatchQueue.main.async { scrollToBottom_(proxy) } }
-                            .onChange(of: chatModel.chatItems.count) { _ in scrollToBottom(proxy) }
+                            .onAppear {
+                                DispatchQueue.main.async {
+                                    scrollToFirstUnread(proxy)
+                                }
+                                markAllRead()
+                            }
+                            .onChange(of: chatModel.chatItems.count) { _ in
+                                scrollToBottom(proxy)
+                            }
                             .onChange(of: keyboardVisible) { _ in
                                 if keyboardVisible {
                                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
@@ -85,6 +92,23 @@ struct ChatView: View {
     func scrollToBottom_(_ proxy: ScrollViewProxy) {
         if let id = chatModel.chatItems.last?.id {
             proxy.scrollTo(id, anchor: .bottom)
+        }
+    }
+
+    // align first unread with the top or the last unread with bottom
+    func scrollToFirstUnread(_ proxy: ScrollViewProxy) {
+        if let cItem = chatModel.chatItems.first(where: { $0.isRcvNew() }) {
+            proxy.scrollTo(cItem.id)
+        } else {
+            scrollToBottom_(proxy)
+        }
+    }
+
+    func markAllRead() {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+            if chatModel.chatId == chat.id {
+                markChatRead(chat)
+            }
         }
     }
 

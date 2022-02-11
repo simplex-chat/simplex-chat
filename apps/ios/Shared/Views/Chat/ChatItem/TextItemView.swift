@@ -12,7 +12,7 @@ private let emailRegex = try! NSRegularExpression(pattern: "^[a-z0-9.!#$%&'*+/=?
 
 private let phoneRegex = try! NSRegularExpression(pattern: "^\\+?[0-9\\.\\(\\)\\-]{7,20}$")
 
-private let sentColorLigth = Color(.sRGB, red: 0.27, green: 0.72, blue: 1, opacity: 0.12)
+private let sentColorLight = Color(.sRGB, red: 0.27, green: 0.72, blue: 1, opacity: 0.12)
 private let sentColorDark = Color(.sRGB, red: 0.27, green: 0.72, blue: 1, opacity: 0.17)
 private let linkColor = UIColor(red: 0, green: 0.533, blue: 1, alpha: 1)
 
@@ -39,7 +39,7 @@ struct TextItemView: View {
         }
         .background(
             sent
-            ? (colorScheme == .light ? sentColorLigth : sentColorDark)
+            ? (colorScheme == .light ? sentColorLight : sentColorDark)
             : Color(uiColor: .tertiarySystemGroupedBackground)
         )
         .cornerRadius(18)

@@ -26,7 +26,7 @@ struct UserAddress: View {
                     .padding()
                     .shareSheet(isPresented: $shareAddressLink, items: [userAdress])
 
-                    Button { deleteAddressAlert = true } label: {
+                    Button(role: .destructive) { deleteAddressAlert = true } label: {
                         Label("Delete address", systemImage: "trash")
                     }
                     .padding()

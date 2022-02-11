@@ -44,8 +44,8 @@ final class ChatModel: ObservableObject {
     }
 
     func updateChatInfo(_ cInfo: ChatInfo) {
-        if let ix = getChatIndex(cInfo.id) {
-            chats[ix].chatInfo = cInfo
+        if let i = getChatIndex(cInfo.id) {
+            chats[i].chatInfo = cInfo
         }
     }
 
@@ -65,8 +65,8 @@ final class ChatModel: ObservableObject {
     }
 
     func replaceChat(_ id: String, _ chat: Chat) {
-        if let ix = getChatIndex(id) {
-            chats[ix] = chat
+        if let i = getChatIndex(id) {
+            chats[i] = chat
         } else {
             // invalid state, correcting
             chats.insert(chat, at: 0)
@@ -75,15 +75,18 @@ final class ChatModel: ObservableObject {
 
     func addChatItem(_ cInfo: ChatInfo, _ cItem: ChatItem) {
         // update previews
-        if let ix = getChatIndex(cInfo.id) {
-            chats[ix].chatItems = [cItem]
-            if ix > 0 {
+        if let i = getChatIndex(cInfo.id) {
+            chats[i].chatItems = [cItem]
+            if case .rcvNew = cItem.meta.itemStatus {
+                chats[i].chatStats.unreadCount = chats[i].chatStats.unreadCount + 1
+            }
+            if i > 0 {
                 if chatId == nil {
-                    withAnimation { popChat_(ix) }
+                    withAnimation { popChat_(i) }
                 } else if chatId == cInfo.id  {
                     chatToTop = cInfo.id
                 } else {
-                    popChat_(ix)
+                    popChat_(i)
                 }
             }
         } else {
@@ -92,6 +95,13 @@ final class ChatModel: ObservableObject {
         // add to current chat
         if chatId == cInfo.id {
             withAnimation { chatItems.append(cItem) }
+            if case .rcvNew = cItem.meta.itemStatus {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                    if self.chatId == cInfo.id {
+                        SimpleX.markChatItemRead(cInfo, cItem)
+                    }
+                }
+            }
         }
     }
 
@@ -109,9 +119,9 @@ final class ChatModel: ObservableObject {
         }
         // update current chat
         if chatId == cInfo.id {
-            if let ix = chatItems.firstIndex(where: { $0.id == cItem.id }) {
+            if let i = chatItems.firstIndex(where: { $0.id == cItem.id }) {
                 withAnimation(.default) {
-                    self.chatItems[ix] = cItem
+                    self.chatItems[i] = cItem
                 }
                 return false
             } else {
@@ -123,14 +133,42 @@ final class ChatModel: ObservableObject {
         }
     }
 
-    func popChat(_ id: String) {
-        if let ix = getChatIndex(id) {
-            popChat_(ix)
+    func markChatItemsRead(_ cInfo: ChatInfo) {
+        // update preview
+        if let chat = getChat(cInfo.id) {
+            chat.chatStats = ChatStats()
+        }
+        // update current chat
+        if chatId == cInfo.id {
+            var i = 0
+            while i < chatItems.count {
+                if case .rcvNew = chatItems[i].meta.itemStatus {
+                    chatItems[i].meta.itemStatus = .rcvRead
+                }
+                i = i + 1
+            }
         }
     }
 
-    private func popChat_(_ ix: Int) {
-        let chat = chats.remove(at: ix)
+    func markChatItemRead(_ cInfo: ChatInfo, _ cItem: ChatItem) {
+        // update preview
+        if let i = getChatIndex(cInfo.id) {
+            chats[i].chatStats.unreadCount = chats[i].chatStats.unreadCount - 1
+        }
+        // update current chat
+        if chatId == cInfo.id, let j = chatItems.firstIndex(where: { $0.id == cItem.id }) {
+            chatItems[j].meta.itemStatus = .rcvRead
+        }
+    }
+
+    func popChat(_ id: String) {
+        if let i = getChatIndex(id) {
+            popChat_(i)
+        }
+    }
+
+    private func popChat_(_ i: Int) {
+        let chat = chats.remove(at: i)
         chats.insert(chat, at: 0)
     }
 
@@ -301,6 +339,7 @@ enum ChatInfo: Identifiable, Decodable, NamedChat {
 final class Chat: ObservableObject, Identifiable {
     @Published var chatInfo: ChatInfo
     @Published var chatItems: [ChatItem]
+    @Published var chatStats: ChatStats
     @Published var serverInfo = ServerInfo(networkStatus: .unknown)
 
     struct ServerInfo: Decodable {
@@ -348,11 +387,13 @@ final class Chat: ObservableObject, Identifiable {
     init(_ cData: ChatData) {
         self.chatInfo = cData.chatInfo
         self.chatItems = cData.chatItems
+        self.chatStats = cData.chatStats
     }
 
-    init(chatInfo: ChatInfo, chatItems: [ChatItem] = []) {
+    init(chatInfo: ChatInfo, chatItems: [ChatItem] = [], chatStats: ChatStats = ChatStats()) {
         self.chatInfo = chatInfo
         self.chatItems = chatItems
+        self.chatStats = chatStats
     }
 
     var id: ChatId { get { chatInfo.id } }
@@ -361,8 +402,14 @@ final class Chat: ObservableObject, Identifiable {
 struct ChatData: Decodable, Identifiable {
     var chatInfo: ChatInfo
     var chatItems: [ChatItem]
+    var chatStats: ChatStats
 
     var id: ChatId { get { chatInfo.id } }
+}
+
+struct ChatStats: Decodable {
+    var unreadCount: Int = 0
+    var minUnreadItemId: Int64 = 0
 }
 
 struct Contact: Identifiable, Decodable, NamedChat {
@@ -479,6 +526,11 @@ struct ChatItem: Identifiable, Decodable {
 
     var timestampText: String { get { meta.timestampText } }
 
+    func isRcvNew() -> Bool {
+        if case .rcvNew = meta.itemStatus { return true }
+        return false
+    }
+
     static func getSample (_ id: Int64, _ dir: CIDirection, _ ts: Date, _ text: String, _ status: CIStatus = .sndNew) -> ChatItem {
         ChatItem(
            chatDir: dir,
@@ -543,16 +595,23 @@ enum CIStatus: Decodable {
 enum CIContent: Decodable {
     case sndMsgContent(msgContent: MsgContent)
     case rcvMsgContent(msgContent: MsgContent)
-    // files etc.
+    case sndFileInvitation(fileId: Int64, filePath: String)
+    case rcvFileInvitation(rcvFileTransfer: RcvFileTransfer)
 
     var text: String {
         get {
             switch self {
             case let .sndMsgContent(mc): return mc.text
             case let .rcvMsgContent(mc): return mc.text
+            case .sndFileInvitation: return "sending files is not supported yet"
+            case .rcvFileInvitation: return  "receiving files is not supported yet"
             }
         }
     }
+}
+
+struct RcvFileTransfer: Decodable {
+
 }
 
 enum MsgContent {

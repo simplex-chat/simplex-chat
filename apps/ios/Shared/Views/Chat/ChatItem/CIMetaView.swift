@@ -13,12 +13,18 @@ struct CIMetaView: View {
 
     var body: some View {
         HStack(alignment: .center, spacing: 4) {
-            switch (chatItem.chatDir, chatItem.meta.itemStatus) {
-            case (.directSnd, .sndSent):
+            switch chatItem.meta.itemStatus {
+            case .sndSent:
                 Image(systemName: "checkmark")
                     .resizable()
                     .aspectRatio(contentMode: .fit)
                     .foregroundColor(.secondary)
+                    .frame(maxHeight: 8)
+            case .rcvNew:
+                Image(systemName: "circlebadge.fill")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .foregroundColor(Color.accentColor)
                     .frame(maxHeight: 8)
             default:
                 EmptyView()
