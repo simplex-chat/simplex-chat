@@ -17,7 +17,7 @@ struct SettingsButton: View {
             Image(systemName: "gearshape")
         }
         .sheet(isPresented: $showSettings, content: {
-            SettingsView()
+            SettingsView(showSettings: $showSettings)
                 .onAppear {
                     do {
                         chatModel.userAddress = try apiGetUserAddress()

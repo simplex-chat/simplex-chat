@@ -11,7 +11,8 @@ import SwiftUI
 struct TerminalView: View {
     @EnvironmentObject var chatModel: ChatModel
     @State var inProgress: Bool = false
-    
+    @FocusState private var keyboardVisible: Bool
+
     var body: some View {
         VStack {
             ScrollViewReader { proxy in
@@ -22,29 +23,45 @@ struct TerminalView: View {
                                 ScrollView {
                                     Text(item.details)
                                         .textSelection(.enabled)
+                                        .padding()
                                 }
                             } label: {
-                                Text(item.label)
-                                .frame(width: 360, height: 30, alignment: .leading)
+                                HStack {
+                                    Text(item.id.formatted(date: .omitted, time: .standard))
+                                    Text(item.label)
+                                        .frame(maxWidth: .infinity, maxHeight: 30, alignment: .leading)
+                                }
+                                .padding(.horizontal)
                             }
                         }
                         .onAppear { scrollToBottom(proxy) }
                         .onChange(of: chatModel.terminalItems.count) { _ in scrollToBottom(proxy) }
+                        .onChange(of: keyboardVisible) { _ in
+                            if keyboardVisible {
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                                    scrollToBottom(proxy, animation: .easeInOut(duration: 1))
+                                }
+                            }
+                        }
                     }
                 }
 
                 Spacer()
 
-                SendMessageView(sendMessage: sendMessage, inProgress: inProgress)
+                SendMessageView(
+                    sendMessage: sendMessage,
+                    inProgress: inProgress,
+                    keyboardVisible: $keyboardVisible
+                )
             }
         }
         .navigationViewStyle(.stack)
         .navigationTitle("Chat console")
     }
 
-    func scrollToBottom(_ proxy: ScrollViewProxy) {
+    func scrollToBottom(_ proxy: ScrollViewProxy, animation: Animation = .default) {
         if let id = chatModel.terminalItems.last?.id {
-            withAnimation {
+            withAnimation(animation) {
                 proxy.scrollTo(id, anchor: .bottom)
             }
         }

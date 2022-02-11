@@ -13,6 +13,7 @@ struct SendMessageView: View {
     var inProgress: Bool = false
     @State private var message: String = "" //Lorem ipsum dolor sit amet, consectetur" // adipiscing elit, sed do eiusmod tempor incididunt ut labor7 et dolore magna aliqua. Ut enim ad minim veniam, quis"// nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat."// Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
     @Namespace var namespace
+    @FocusState.Binding var keyboardVisible: Bool
     @State private var teHeight: CGFloat = 42
     @State private var teFont: Font = .body
     var maxHeight: CGFloat = 360
@@ -31,8 +32,9 @@ struct SendMessageView: View {
                         .background(GeometryReader(content: updateHeight))
                     TextEditor(text: $message)
                         .onSubmit(submit)
+                        .focused($keyboardVisible)
                         .font(teFont)
-                        .textInputAutocapitalization(.never)
+                        .textInputAutocapitalization(.sentences)
                         .padding(.horizontal, 5)
                         .allowsTightening(false)
                         .frame(height: teHeight)
@@ -79,10 +81,15 @@ struct SendMessageView: View {
 
 struct SendMessageView_Previews: PreviewProvider {
     static var previews: some View {
-        VStack {
+        @FocusState var keyboardVisible: Bool
+
+        return VStack {
             Text("")
             Spacer(minLength: 0)
-            SendMessageView(sendMessage: { print ($0) })
+            SendMessageView(
+                sendMessage: { print ($0) },
+                keyboardVisible: $keyboardVisible
+            )
         }
     }
 }

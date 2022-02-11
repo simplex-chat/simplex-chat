@@ -384,17 +384,17 @@ processChatCommand = \case
       withAgentLock a . withLock l $ action
     -- below code would make command responses asynchronous where they can be slow
     -- in View.hs `r'` should be defined as `id` in this case
-    -- procCmd :: m ChatResponse -> m ChatResponse
-    -- procCmd action = do
-    --   ChatController {chatLock = l, smpAgent = a, outputQ = q, idsDrg = gVar} <- ask
-    --   corrId <- liftIO $ SMP.CorrId <$> randomBytes gVar 8
-    --   void . forkIO $
-    --     withAgentLock a . withLock l $
-    --       (atomically . writeTBQueue q) . (Just corrId,) =<< (action `catchError` (pure . CRChatCmdError))
-    --   pure $ CRCmdAccepted corrId
-    -- use function below to make commands "synchronous"
     procCmd :: m ChatResponse -> m ChatResponse
-    procCmd = id
+    procCmd action = do
+      ChatController {chatLock = l, smpAgent = a, outputQ = q, idsDrg = gVar} <- ask
+      corrId <- liftIO $ SMP.CorrId <$> randomBytes gVar 8
+      void . forkIO $
+        withAgentLock a . withLock l $
+          (atomically . writeTBQueue q) . (Just corrId,) =<< (action `catchError` (pure . CRChatError))
+      pure $ CRCmdAccepted corrId
+    -- use function below to make commands "synchronous"
+    -- procCmd :: m ChatResponse -> m ChatResponse
+    -- procCmd = id
     connect :: UserId -> ConnectionRequestUri c -> ChatMsgEvent -> m ()
     connect userId cReq msg = do
       connId <- withAgent $ \a -> joinConnection a cReq $ directMessage msg
