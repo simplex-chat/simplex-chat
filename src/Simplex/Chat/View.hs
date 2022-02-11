@@ -122,8 +122,8 @@ responseToView cmd testView = \case
   where
     r = (plain cmd :)
     -- this function should be `r` for "synchronous", `id` for "asynchronous" command responses
-    -- r' = id
-    r' = r
+    -- r' = r
+    r' = id
     testViewChats :: [AChat] -> [StyledString]
     testViewChats chats = [sShow $ map toChatView chats]
       where
