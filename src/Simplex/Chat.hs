@@ -390,7 +390,7 @@ processChatCommand = \case
       corrId <- liftIO $ SMP.CorrId <$> randomBytes gVar 8
       void . forkIO $
         withAgentLock a . withLock l $
-          (atomically . writeTBQueue q) . (Just corrId,) =<< (action `catchError` (pure . CRChatCmdError))
+          (atomically . writeTBQueue q) . (Just corrId,) =<< (action `catchError` (pure . CRChatError))
       pure $ CRCmdAccepted corrId
     -- use function below to make commands "synchronous"
     -- procCmd :: m ChatResponse -> m ChatResponse
