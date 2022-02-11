@@ -125,6 +125,25 @@ instance ToJSON XInfoId where
   toJSON = strToJSON
   toEncoding = strToJEncoding
 
+newtype ConnReqUriHash = ConnReqUriHash {unConnReqUriHash :: ByteString}
+  deriving (Eq, Show)
+
+instance FromField ConnReqUriHash where fromField f = ConnReqUriHash <$> fromField f
+
+instance ToField ConnReqUriHash where toField (ConnReqUriHash m) = toField m
+
+instance StrEncoding ConnReqUriHash where
+  strEncode (ConnReqUriHash m) = strEncode m
+  strDecode s = ConnReqUriHash <$> strDecode s
+  strP = ConnReqUriHash <$> strP
+
+instance FromJSON ConnReqUriHash where
+  parseJSON = strParseJSON "ConnReqUriHash"
+
+instance ToJSON ConnReqUriHash where
+  toJSON = strToJSON
+  toEncoding = strToJEncoding
+
 type ContactName = Text
 
 type GroupName = Text

@@ -25,6 +25,7 @@ module Simplex.Chat.Store
     getUsers,
     setActiveUser,
     createDirectConnection,
+    createDirectConnection',
     createDirectContact,
     getContactGroupNames,
     deleteContact,
@@ -249,6 +250,20 @@ setActiveUser st userId = do
     DB.execute_ db "UPDATE users SET active_user = 0"
     DB.execute db "UPDATE users SET active_user = 1 WHERE user_id = ?" (Only userId)
 
+createDirectConnection' :: MonadUnliftIO m => SQLiteStore -> UserId -> ConnId -> ConnReqUriHash -> XInfoId -> m ()
+createDirectConnection' st userId acId cReqHash xInfoId = do
+  liftIO . withTransaction st $ \db -> do
+    currentTs <- getCurrentTime
+    DB.execute
+      db
+      [sql|
+        INSERT INTO connections (
+          user_id, agent_conn_id, conn_status, conn_type,
+          created_at, updated_at, via_contact_uri_hash, xinfo_identifier
+        ) VALUES (?,?,?,?,?,?,?,?)
+      |]
+      (userId, acId, ConnNew, ConnContact, currentTs, currentTs, cReqHash, xInfoId)
+
 createDirectConnection :: MonadUnliftIO m => SQLiteStore -> UserId -> ConnId -> m ()
 createDirectConnection st userId agentConnId =
   liftIO . withTransaction st $ \db -> do
@@ -256,7 +271,7 @@ createDirectConnection st userId agentConnId =
     void $ createContactConnection_ db userId agentConnId Nothing 0 currentTs
 
 createContactConnection_ :: DB.Connection -> UserId -> ConnId -> Maybe Int64 -> Int -> UTCTime -> IO Connection
-createContactConnection_ db userId = do createConnection_ db userId ConnContact Nothing
+createContactConnection_ db userId = createConnection_ db userId ConnContact Nothing
 
 createConnection_ :: DB.Connection -> UserId -> ConnType -> Maybe Int64 -> ConnId -> Maybe Int64 -> Int -> UTCTime -> IO Connection
 createConnection_ db userId connType entityId acId viaContact connLevel currentTs = do

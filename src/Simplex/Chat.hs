@@ -199,12 +199,24 @@ processChatCommand = \case
     (connId, cReq) <- withAgent (`createConnection` SCMInvitation)
     withStore $ \st -> createDirectConnection st userId connId
     pure $ CRInvitation cReq
-  Connect (Just (ACR sConnMode cReq)) -> withUser $ \User {userId, profile} -> withChatLock . procCmd $ do
-    connect userId cReq (connMode sConnMode) profile
+  Connect (Just (ACR SCMInvitation cReq)) -> withUser $ \User {userId, profile} -> withChatLock . procCmd $ do
+    connId <- withAgent $ \a -> joinConnection a cReq $ directMessage (XInfo profile Nothing)
+    withStore $ \st -> createDirectConnection st userId connId
     pure CRSentConfirmation
+  Connect (Just (ACR SCMContact cReq)) -> withUser $ \User {userId, profile} -> withChatLock . procCmd $ do
+    gVar <- asks idsDrg
+    xInfoId <- liftIO $ XInfoId <$> randomBytes gVar 128
+    connId <- withAgent $ \a -> joinConnection a cReq $ directMessage (XInfo profile $ Just xInfoId)
+    let cReqHash = ConnReqUriHash (C.sha256Hash $ strEncode cReq)
+    withStore $ \st -> createDirectConnection' st userId connId cReqHash xInfoId
+    pure CRSentInvitation
   Connect Nothing -> throwChatError CEInvalidConnReq
   ConnectAdmin -> withUser $ \User {userId, profile} -> withChatLock . procCmd $ do
-    connect userId adminContactReq CMContact profile
+    gVar <- asks idsDrg
+    xInfoId <- liftIO $ XInfoId <$> randomBytes gVar 128
+    connId <- withAgent $ \a -> joinConnection a adminContactReq $ directMessage (XInfo profile $ Just xInfoId)
+    let cReqHash = ConnReqUriHash (C.sha256Hash $ strEncode adminContactReq)
+    withStore $ \st -> createDirectConnection' st userId connId cReqHash xInfoId
     pure CRSentInvitation
   DeleteContact cName -> withUser $ \User {userId} -> do
     contactId <- withStore $ \st -> getContactIdByName st userId cName
@@ -392,10 +404,11 @@ processChatCommand = \case
     -- use function below to make commands "synchronous"
     -- procCmd :: m ChatResponse -> m ChatResponse
     -- procCmd = id
-    connect :: UserId -> ConnectionRequestUri c -> ConnectionMode -> Profile -> m ()
-    connect userId cReq cMode profile = do
-      connId <- withAgent $ \a -> joinConnection a cReq $ directMessage msg
-      withStore $ \st -> createDirectConnection st userId connId
+    -- TODO refactor
+    -- connect :: UserId -> ConnectionRequestUri c -> ConnectionMode -> Profile -> m ()
+    -- connect userId cReq cMode profile = do
+    --   connId <- withAgent $ \a -> joinConnection a cReq $ directMessage msg
+    --   withStore $ \st -> createDirectConnection st userId connId
     contactMember :: Contact -> [GroupMember] -> Maybe GroupMember
     contactMember Contact {contactId} =
       find $ \GroupMember {memberContactId = cId, memberStatus = s} ->
