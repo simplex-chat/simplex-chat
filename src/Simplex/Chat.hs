@@ -396,11 +396,6 @@ processChatCommand = \case
     -- use function below to make commands "synchronous"
     -- procCmd :: m ChatResponse -> m ChatResponse
     -- procCmd = id
-    -- TODO refactor
-    -- connect :: UserId -> ConnectionRequestUri c -> ConnectionMode -> Profile -> m ()
-    -- connect userId cReq cMode profile = do
-    --   connId <- withAgent $ \a -> joinConnection a cReq $ directMessage msg
-    --   withStore $ \st -> createDirectConnection st userId connId
     connectByAddress :: UserId -> ConnectionRequestUri 'CMContact -> Profile -> m ChatResponse
     connectByAddress userId cReq profile = do
       let cReqHash = ConnReqUriHash (C.sha256Hash $ strEncode cReq)
