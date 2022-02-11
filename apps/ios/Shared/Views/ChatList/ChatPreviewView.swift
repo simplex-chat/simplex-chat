@@ -72,7 +72,7 @@ struct ChatPreviewView: View {
 
 struct ChatPreviewView_Previews: PreviewProvider {
     static var previews: some View {
-        Group{
+        Group {
             ChatPreviewView(chat: Chat(
                 chatInfo: ChatInfo.sampleData.direct,
                 chatItems: []

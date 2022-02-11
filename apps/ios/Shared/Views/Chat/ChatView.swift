@@ -16,6 +16,7 @@ struct ChatView: View {
     @Environment(\.colorScheme) var colorScheme
     @ObservedObject var chat: Chat
     @State private var inProgress: Bool = false
+    @FocusState private var keyboardVisible: Bool
     @State private var showChatInfo = false
 
     var body: some View {
@@ -32,8 +33,16 @@ struct ChatView: View {
                             }
                             .onAppear { scrollToBottom(proxy) }
                             .onChange(of: chatModel.chatItems.count) { _ in scrollToBottom(proxy) }
+                            .onChange(of: keyboardVisible) { _ in
+                                if keyboardVisible {
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                                        scrollToBottom(proxy, animation: .easeInOut(duration: 1))
+                                    }
+                                }
+                            }
                         }
                     }
+                    .coordinateSpace(name: "scrollView")
                     .onTapGesture {
                         UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
                     }
@@ -42,7 +51,11 @@ struct ChatView: View {
 
             Spacer(minLength: 0)
 
-            SendMessageView(sendMessage: sendMessage, inProgress: inProgress)
+            SendMessageView(
+                sendMessage: sendMessage,
+                inProgress: inProgress,
+                keyboardVisible: $keyboardVisible
+            )
         }
         .navigationTitle(cInfo.chatViewName)
         .navigationBarTitleDisplayMode(.inline)
@@ -85,9 +98,9 @@ struct ChatView: View {
         .navigationBarBackButtonHidden(true)
     }
 
-    func scrollToBottom(_ proxy: ScrollViewProxy) {
+    func scrollToBottom(_ proxy: ScrollViewProxy, animation: Animation = .default) {
         if let id = chatModel.chatItems.last?.id {
-            withAnimation {
+            withAnimation(animation) {
                 proxy.scrollTo(id, anchor: .bottom)
             }
         }

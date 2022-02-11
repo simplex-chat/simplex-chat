@@ -12,40 +12,43 @@ struct ChatListView: View {
     @EnvironmentObject var chatModel: ChatModel
     @State private var connectAlert = false
     @State private var connectError: Error?
+    // not really used in this view
+    @State private var showSettings = false
 
     var user: User
 
     var body: some View {
-        VStack {
-//            if chatModel.chats.isEmpty {
-//                VStack {
-//                    Text("Hello chat")
-//                    Text("Active user: \(user.localDisplayName) (\(user.profile.fullName))")
-//                }
-//            }
-
-            NavigationView {
-                List {
-                    ForEach(chatModel.chats) { chat in
-                        ChatListNavLink(chat: chat)
+        NavigationView {
+            List {
+                if chatModel.chats.isEmpty {
+                    VStack(alignment: .leading) {
+                        ChatHelp(showSettings: $showSettings)
+                        HStack {
+                            Text("This text is available in settings")
+                            SettingsButton()
+                        }
+                        .padding(.leading)
                     }
                 }
-                .padding(0)
-                .offset(x: -8)
-                .listStyle(.plain)
-                .navigationTitle("Your chats")
-                .toolbar {
-                    ToolbarItem(placement: .navigationBarLeading) {
-                        SettingsButton()
-                    }
-                    ToolbarItem(placement: .navigationBarTrailing) {
-                        NewChatButton()
-                    }
+                ForEach(chatModel.chats) { chat in
+                    ChatListNavLink(chat: chat)
                 }
-                .alert(isPresented: $chatModel.connectViaUrl) { connectViaUrlAlert() }
             }
-            .alert(isPresented: $connectAlert) { connectionErrorAlert() }
+            .offset(x: -8)
+            .listStyle(.plain)
+            .navigationTitle(chatModel.chats.isEmpty ? "Welcome \(user.displayName)!" : "Your chats")
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    SettingsButton()
+                }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    NewChatButton()
+                }
+            }
+            .alert(isPresented: $chatModel.connectViaUrl) { connectViaUrlAlert() }
         }
+        .navigationViewStyle(.stack)
+        .alert(isPresented: $connectAlert) { connectionErrorAlert() }
     }
 
     private func connectViaUrlAlert() -> Alert {
@@ -106,7 +109,11 @@ struct ChatListView_Previews: PreviewProvider {
             )
 
         ]
-        return ChatListView(user: User.sampleData)
-            .environmentObject(chatModel)
+        return Group {
+            ChatListView(user: User.sampleData)
+                .environmentObject(chatModel)
+            ChatListView(user: User.sampleData)
+                .environmentObject(ChatModel())
+        }
     }
 }
