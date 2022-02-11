@@ -199,15 +199,12 @@ processChatCommand = \case
     (connId, cReq) <- withAgent (`createConnection` SCMInvitation)
     withStore $ \st -> createDirectConnection st userId connId
     pure $ CRInvitation cReq
-  Connect (Just (ACR SCMInvitation cReq)) -> withUser $ \User {userId, profile} -> withChatLock . procCmd $ do
-    connect userId cReq $ XInfo profile Nothing
+  Connect (Just (ACR sConnMode cReq)) -> withUser $ \User {userId, profile} -> withChatLock . procCmd $ do
+    connect userId cReq (connMode sConnMode) profile
     pure CRSentConfirmation
-  Connect (Just (ACR SCMContact cReq)) -> withUser $ \User {userId, profile} -> withChatLock . procCmd $ do
-    connect userId cReq $ XInfo profile Nothing
-    pure CRSentInvitation
   Connect Nothing -> throwChatError CEInvalidConnReq
   ConnectAdmin -> withUser $ \User {userId, profile} -> withChatLock . procCmd $ do
-    connect userId adminContactReq $ XInfo profile Nothing
+    connect userId adminContactReq CMContact profile
     pure CRSentInvitation
   DeleteContact cName -> withUser $ \User {userId} -> do
     contactId <- withStore $ \st -> getContactIdByName st userId cName
@@ -395,8 +392,8 @@ processChatCommand = \case
     -- use function below to make commands "synchronous"
     -- procCmd :: m ChatResponse -> m ChatResponse
     -- procCmd = id
-    connect :: UserId -> ConnectionRequestUri c -> ChatMsgEvent -> m ()
-    connect userId cReq msg = do
+    connect :: UserId -> ConnectionRequestUri c -> ConnectionMode -> Profile -> m ()
+    connect userId cReq cMode profile = do
       connId <- withAgent $ \a -> joinConnection a cReq $ directMessage msg
       withStore $ \st -> createDirectConnection st userId connId
     contactMember :: Contact -> [GroupMember] -> Maybe GroupMember
