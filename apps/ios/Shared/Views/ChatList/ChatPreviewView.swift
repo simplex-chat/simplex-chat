@@ -35,9 +35,10 @@ struct ChatPreviewView: View {
                     Text(chat.chatInfo.chatViewName)
                         .font(.title3)
                         .fontWeight(.bold)
+                        .foregroundColor(chat.chatInfo.ready ? .primary : .secondary)
                         .frame(maxHeight: .infinity, alignment: .topLeading)
                     Spacer()
-                    Text(getDateFormatter().string(from: cItem?.meta.itemTs ?? chat.chatInfo.createdAt))
+                    Text(cItem?.timestampText ?? timestampText(chat.chatInfo.createdAt))
                         .font(.subheadline)
                         .frame(minWidth: 60, alignment: .trailing)
                         .foregroundColor(.secondary)
@@ -48,7 +49,8 @@ struct ChatPreviewView: View {
                 if let cItem = cItem {
                     Text(chatItemText(cItem))
                         .frame(minWidth: 0, maxWidth: .infinity, minHeight: 44, maxHeight: 44, alignment: .topLeading)
-                        .padding([.leading, .trailing], 8)
+                        .padding(.leading, 8)
+                        .padding(.trailing, 24)
                         .padding(.bottom, 4)
                 }
                 else if case let .direct(contact) = chat.chatInfo, !contact.ready {
@@ -79,7 +81,7 @@ struct ChatPreviewView_Previews: PreviewProvider {
             ))
             ChatPreviewView(chat: Chat(
                 chatInfo: ChatInfo.sampleData.direct,
-                chatItems: [ChatItem.getSample(1, .directSnd, .now, "hello")]
+                chatItems: [ChatItem.getSample(1, .directSnd, .now, "hello", .sndSent)]
             ))
             ChatPreviewView(chat: Chat(
                 chatInfo: ChatInfo.sampleData.group,

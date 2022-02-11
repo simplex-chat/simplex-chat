@@ -46,13 +46,13 @@ struct ChatListNavLink: View {
     }
 
     private func contactNavLink(_ contact: Contact) -> some View {
-        NavigationLink(
+        NavLinkPlain(
             tag: chat.chatInfo.id,
             selection: $chatModel.chatId,
             destination: { chatView() },
-            label: { ChatPreviewView(chat: chat) }
+            label: { ChatPreviewView(chat: chat) },
+            disabled: !contact.ready
         )
-        .disabled(!contact.ready)
         .swipeActions(edge: .trailing, allowsFullSwipe: true) {
             Button(role: .destructive) {
                 alertContact = contact
@@ -68,11 +68,12 @@ struct ChatListNavLink: View {
     }
 
     private func groupNavLink(_ groupInfo: GroupInfo) -> some View {
-        NavigationLink(
+        NavLinkPlain(
             tag: chat.chatInfo.id,
             selection: $chatModel.chatId,
             destination: { chatView() },
-            label: { ChatPreviewView(chat: chat) }
+            label: { ChatPreviewView(chat: chat) },
+            disabled: !groupInfo.ready
         )
         .swipeActions(edge: .trailing, allowsFullSwipe: true) {
             Button(role: .destructive) {

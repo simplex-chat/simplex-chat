@@ -17,6 +17,7 @@ final class ChatModel: ObservableObject {
     // current chat
     @Published var chatId: String?
     @Published var chatItems: [ChatItem] = []
+    @Published var chatToTop: String?
     // items in the terminal view
     @Published var terminalItems: [TerminalItem] = []
     @Published var userAddress: String?
@@ -64,7 +65,7 @@ final class ChatModel: ObservableObject {
     }
 
     func replaceChat(_ id: String, _ chat: Chat) {
-        if let ix = chats.firstIndex(where: { $0.id == id }) {
+        if let ix = getChatIndex(id) {
             chats[ix] = chat
         } else {
             // invalid state, correcting
@@ -73,22 +74,62 @@ final class ChatModel: ObservableObject {
     }
 
     func addChatItem(_ cInfo: ChatInfo, _ cItem: ChatItem) {
-        if let ix = chats.firstIndex(where: { $0.id == cInfo.id }) {
+        // update previews
+        if let ix = getChatIndex(cInfo.id) {
             chats[ix].chatItems = [cItem]
             if ix > 0 {
                 if chatId == nil {
-                    withAnimation { popChat(ix) }
+                    withAnimation { popChat_(ix) }
+                } else if chatId == cInfo.id  {
+                    chatToTop = cInfo.id
                 } else {
-                    DispatchQueue.main.async { self.popChat(ix) }
+                    popChat_(ix)
                 }
             }
+        } else {
+            addChat(Chat(chatInfo: cInfo, chatItems: [cItem]))
         }
+        // add to current chat
         if chatId == cInfo.id {
             withAnimation { chatItems.append(cItem) }
         }
     }
 
-    private func popChat(_ ix: Int) {
+    func upsertChatItem(_ cInfo: ChatInfo, _ cItem: ChatItem) -> Bool {
+        // update previews
+        var res: Bool
+        if let chat = getChat(cInfo.id) {
+            if let pItem = chat.chatItems.last, pItem.id == cItem.id {
+                chat.chatItems = [cItem]
+            }
+            res = false
+        } else {
+            addChat(Chat(chatInfo: cInfo, chatItems: [cItem]))
+            res = true
+        }
+        // update current chat
+        if chatId == cInfo.id {
+            if let ix = chatItems.firstIndex(where: { $0.id == cItem.id }) {
+                withAnimation(.default) {
+                    self.chatItems[ix] = cItem
+                }
+                return false
+            } else {
+                withAnimation { chatItems.append(cItem) }
+                return true
+            }
+        } else {
+            return res
+        }
+    }
+
+    func popChat(_ id: String) {
+        if let ix = getChatIndex(id) {
+            popChat_(ix)
+        }
+    }
+
+    private func popChat_(_ ix: Int) {
         let chat = chats.remove(at: ix)
         chats.insert(chat, at: 0)
     }
@@ -226,6 +267,16 @@ enum ChatInfo: Identifiable, Decodable, NamedChat {
         }
     }
 
+    var ready: Bool {
+        get {
+            switch self {
+            case let .direct(contact): return contact.ready
+            case let .group(groupInfo): return groupInfo.ready
+            case let .contactRequest(contactRequest): return contactRequest.ready
+            }
+        }
+    }
+
     var createdAt: Date {
         switch self {
         case let .direct(contact): return contact.createdAt
@@ -351,6 +402,7 @@ struct UserContactRequest: Decodable, NamedChat {
 
     var id: ChatId { get { "<@\(contactRequestId)" } }
     var apiId: Int64 { get { contactRequestId } }
+    var ready: Bool { get { true } }
     var displayName: String { get { profile.displayName } }
     var fullName: String { get { profile.fullName } }
 
@@ -370,6 +422,7 @@ struct GroupInfo: Identifiable, Decodable, NamedChat {
     
     var id: ChatId { get { "#\(groupId)" } }
     var apiId: Int64 { get { groupId } }
+    var ready: Bool { get { true } }
     var displayName: String { get { groupProfile.displayName } }
     var fullName: String { get { groupProfile.fullName } }
 
@@ -424,10 +477,12 @@ struct ChatItem: Identifiable, Decodable {
     
     var id: Int64 { get { meta.itemId } }
 
-    static func getSample (_ id: Int64, _ dir: CIDirection, _ ts: Date, _ text: String) -> ChatItem {
+    var timestampText: String { get { meta.timestampText } }
+
+    static func getSample (_ id: Int64, _ dir: CIDirection, _ ts: Date, _ text: String, _ status: CIStatus = .sndNew) -> ChatItem {
         ChatItem(
            chatDir: dir,
-           meta: CIMeta.getSample(id, ts, text),
+           meta: CIMeta.getSample(id, ts, text, status),
            content: .sndMsgContent(msgContent: .text(text))
        )
     }
@@ -455,23 +510,32 @@ struct CIMeta: Decodable {
     var itemId: Int64
     var itemTs: Date
     var itemText: String
+    var itemStatus: CIStatus
     var createdAt: Date
 
-    static func getSample(_ id: Int64, _ ts: Date, _ text: String) -> CIMeta {
+    var timestampText: String { get { SimpleX.timestampText(itemTs) } }
+
+    static func getSample(_ id: Int64, _ ts: Date, _ text: String, _ status: CIStatus = .sndNew) -> CIMeta {
         CIMeta(
             itemId: id,
             itemTs: ts,
             itemText: text,
+            itemStatus: status,
             createdAt: ts
         )
     }
+}
+
+
+func timestampText(_ date: Date) -> String {
+    date.formatted(date: .omitted, time: .shortened)
 }
 
 enum CIStatus: Decodable {
     case sndNew
     case sndSent
     case sndErrorAuth
-    case sndError(agentErrorType: AgentErrorType)
+    case sndError(agentError: AgentErrorType)
     case rcvNew
     case rcvRead
 }

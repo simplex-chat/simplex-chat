@@ -32,6 +32,13 @@ struct ChatListView: View {
                 }
                 ForEach(chatModel.chats) { chat in
                     ChatListNavLink(chat: chat)
+                        .padding(.trailing, -16)
+                }
+            }
+            .onChange(of: chatModel.chatId) { _ in
+                if chatModel.chatId == nil, let chatId = chatModel.chatToTop {
+                    chatModel.chatToTop = nil
+                    chatModel.popChat(chatId)
                 }
             }
             .offset(x: -8)

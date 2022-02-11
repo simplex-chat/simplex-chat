@@ -40,7 +40,7 @@ enum ChatCommand {
             case let .createActiveUser(profile): return "/u \(profile.displayName) \(profile.fullName)"
             case .startChat: return "/_start"
             case .apiGetChats: return "/_get chats"
-            case let .apiGetChat(type, id): return "/_get chat \(type.rawValue)\(id) count=500"
+            case let .apiGetChat(type, id): return "/_get chat \(type.rawValue)\(id) count=100"
             case let .apiSendMessage(type, id, mc): return "/_send \(type.rawValue)\(id) \(mc.cmdString)"
             case .addContact: return "/connect"
             case let .connect(connReq): return "/connect \(connReq)"
@@ -88,6 +88,7 @@ enum ChatResponse: Decodable, Error {
     case groupEmpty(groupInfo: GroupInfo)
     case userContactLinkSubscribed
     case newChatItem(chatItem: AChatItem)
+    case chatItemUpdated(chatItem: AChatItem)
     case chatCmdError(chatError: ChatError)
     case chatError(chatError: ChatError)
 
@@ -120,6 +121,7 @@ enum ChatResponse: Decodable, Error {
             case .groupEmpty: return "groupEmpty"
             case .userContactLinkSubscribed: return "userContactLinkSubscribed"
             case .newChatItem: return "newChatItem"
+            case .chatItemUpdated: return "chatItemUpdated"
             case .chatCmdError: return "chatCmdError"
             case .chatError: return "chatError"
             }
@@ -155,6 +157,7 @@ enum ChatResponse: Decodable, Error {
             case let .groupEmpty(groupInfo): return String(describing: groupInfo)
             case .userContactLinkSubscribed: return noDetails
             case let .newChatItem(chatItem): return String(describing: chatItem)
+            case let .chatItemUpdated(chatItem): return String(describing: chatItem)
             case let .chatCmdError(chatError): return String(describing: chatError)
             case let .chatError(chatError): return String(describing: chatError)
             }
@@ -419,6 +422,12 @@ func processReceivedMsg(_ res: ChatResponse) {
             let cItem = aChatItem.chatItem
             chatModel.addChatItem(cInfo, cItem)
             NtfManager.shared.notifyMessageReceived(cInfo, cItem)
+        case let .chatItemUpdated(aChatItem):
+            let cInfo = aChatItem.chatInfo
+            let cItem = aChatItem.chatItem
+            if chatModel.upsertChatItem(cInfo, cItem) {
+                NtfManager.shared.notifyMessageReceived(cInfo, cItem)
+            }
         default:
             logger.debug("unsupported event: \(res.responseType)")
         }
