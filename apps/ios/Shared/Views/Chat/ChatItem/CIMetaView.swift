@@ -14,26 +14,25 @@ struct CIMetaView: View {
     var body: some View {
         HStack(alignment: .center, spacing: 4) {
             switch chatItem.meta.itemStatus {
-            case .sndSent:
-                Image(systemName: "checkmark")
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .foregroundColor(.secondary)
-                    .frame(maxHeight: 8)
-            case .rcvNew:
-                Image(systemName: "circlebadge.fill")
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .foregroundColor(Color.accentColor)
-                    .frame(maxHeight: 8)
-            default:
-                EmptyView()
+            case .sndSent: statusImage("checkmark", .secondary)
+            case .sndErrorAuth: statusImage("multiply", .red)
+            case .sndError: statusImage("exclamationmark.triangle.fill", .yellow)
+            case .rcvNew: statusImage("circlebadge.fill", Color.accentColor)
+            default: EmptyView()
             }
 
             Text(chatItem.timestampText)
                 .font(.caption)
                 .foregroundColor(.secondary)
         }
+    }
+
+    private func statusImage(_ systemName: String, _ color: Color) -> some View {
+        Image(systemName: systemName)
+            .resizable()
+            .aspectRatio(contentMode: .fit)
+            .foregroundColor(color)
+            .frame(maxHeight: 8)
     }
 }
 
