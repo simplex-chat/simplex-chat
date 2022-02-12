@@ -179,13 +179,19 @@ processChatCommand = \case
         gs -> throwChatError $ CEContactGroups ct gs
     CTGroup -> pure $ chatCmdError "not implemented"
     CTContactRequest -> pure $ chatCmdError "not supported"
-  APIAcceptContact connReqId -> withUser $ \User {userId, profile} -> do
-    UserContactRequest {agentInvitationId = AgentInvId invId, localDisplayName = cName, profileId, profile = p} <- withStore $ \st ->
-      getContactRequest st userId connReqId
+  APIAcceptContact connReqId -> withUser $ \user@User {userId} -> do
     withChatLock . procCmd $ do
-      connId <- withAgent $ \a -> acceptContact a invId . directMessage $ XInfo profile Nothing
-      acceptedContact <- withStore $ \st -> createAcceptedContact st userId connId cName profileId p
-      pure $ CRAcceptingContactRequest acceptedContact
+      cReq@UserContactRequest {xInfoId} <- withStore $ \st ->
+        getContactRequest st userId connReqId
+      case xInfoId of
+        Nothing -> acceptContactRequest user cReq
+        Just xii -> do
+          (_, contactId_) <- withStore $ \st -> checkContactRequest st userId xii
+          case contactId_ of
+            Nothing -> acceptContactRequest user cReq
+            Just contactId -> do
+              contact <- withStore $ \st -> getContactRec st userId contactId
+              pure $ CRContactRequestAlreadyAccepted contact
   APIRejectContact connReqId -> withUser $ \User {userId} -> withChatLock $ do
     cReq@UserContactRequest {agentContactConnId = AgentConnId connId, agentInvitationId = AgentInvId invId} <-
       withStore $ \st ->
@@ -415,6 +421,11 @@ processChatCommand = \case
           connId <- withAgent $ \a -> joinConnection a cReq $ directMessage (XInfo profile $ Just xInfoId)
           withStore $ \st -> createDirectConnection' st userId connId cReqHash xInfoId
           pure CRSentInvitation
+    acceptContactRequest :: User -> UserContactRequest -> m ChatResponse
+    acceptContactRequest User {userId, profile} UserContactRequest {agentInvitationId = AgentInvId invId, localDisplayName = cName, profileId, profile = p, xInfoId} = do
+      connId <- withAgent $ \a -> acceptContact a invId . directMessage $ XInfo profile Nothing
+      acceptedContact <- withStore $ \st -> createAcceptedContact st userId connId cName profileId p xInfoId
+      pure $ CRAcceptingContactRequest acceptedContact
     contactMember :: Contact -> [GroupMember] -> Maybe GroupMember
     contactMember Contact {contactId} =
       find $ \GroupMember {memberContactId = cId, memberStatus = s} ->

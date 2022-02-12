@@ -694,7 +694,7 @@ getContactRequest_ db userId contactRequestId =
       [sql|
         SELECT
           cr.contact_request_id, cr.local_display_name, cr.agent_invitation_id, cr.user_contact_link_id,
-          c.agent_conn_id, cr.contact_profile_id, p.display_name, p.full_name, cr.created_at
+          c.agent_conn_id, cr.contact_profile_id, p.display_name, p.full_name, cr.created_at, cr.xinfo_identifier
         FROM contact_requests cr
         JOIN connections c USING (user_contact_link_id)
         JOIN contact_profiles p USING (contact_profile_id)
@@ -703,12 +703,12 @@ getContactRequest_ db userId contactRequestId =
       |]
       (userId, contactRequestId)
 
-type ContactRequestRow = (Int64, ContactName, AgentInvId, Int64, AgentConnId, Int64, ContactName, Text, UTCTime)
+type ContactRequestRow = (Int64, ContactName, AgentInvId, Int64, AgentConnId, Int64, ContactName, Text, UTCTime, Maybe XInfoId)
 
 toContactRequest :: ContactRequestRow -> UserContactRequest
-toContactRequest (contactRequestId, localDisplayName, agentInvitationId, userContactLinkId, agentContactConnId, profileId, displayName, fullName, createdAt) = do
+toContactRequest (contactRequestId, localDisplayName, agentInvitationId, userContactLinkId, agentContactConnId, profileId, displayName, fullName, createdAt, xInfoId) = do
   let profile = Profile {displayName, fullName}
-   in UserContactRequest {contactRequestId, agentInvitationId, userContactLinkId, agentContactConnId, localDisplayName, profileId, profile, createdAt}
+   in UserContactRequest {contactRequestId, agentInvitationId, userContactLinkId, agentContactConnId, localDisplayName, profileId, profile, createdAt, xInfoId}
 
 getContactRequestIdByName :: StoreMonad m => SQLiteStore -> UserId -> ContactName -> m Int64
 getContactRequestIdByName st userId cName =
@@ -731,15 +731,15 @@ deleteContactRequest st userId contactRequestId =
       (userId, userId, contactRequestId)
     DB.execute db "DELETE FROM contact_requests WHERE user_id = ? AND contact_request_id = ?" (userId, contactRequestId)
 
-createAcceptedContact :: MonadUnliftIO m => SQLiteStore -> UserId -> ConnId -> ContactName -> Int64 -> Profile -> m Contact
-createAcceptedContact st userId agentConnId localDisplayName profileId profile =
+createAcceptedContact :: MonadUnliftIO m => SQLiteStore -> UserId -> ConnId -> ContactName -> Int64 -> Profile -> Maybe XInfoId -> m Contact
+createAcceptedContact st userId agentConnId localDisplayName profileId profile xInfoId =
   liftIO . withTransaction st $ \db -> do
     DB.execute db "DELETE FROM contact_requests WHERE user_id = ? AND local_display_name = ?" (userId, localDisplayName)
     currentTs <- getCurrentTime
     DB.execute
       db
-      "INSERT INTO contacts (user_id, local_display_name, contact_profile_id, created_at, updated_at) VALUES (?,?,?,?,?)"
-      (userId, localDisplayName, profileId, currentTs, currentTs)
+      "INSERT INTO contacts (user_id, local_display_name, contact_profile_id, created_at, updated_at, xinfo_identifier) VALUES (?,?,?,?,?,?)"
+      (userId, localDisplayName, profileId, currentTs, currentTs, xInfoId)
     contactId <- insertedRowId db
     activeConn <- createConnection_ db userId ConnContact (Just contactId) agentConnId Nothing 0 currentTs
     pure $ Contact {contactId, localDisplayName, profile, activeConn, viaGroup = Nothing, createdAt = currentTs}
@@ -2287,7 +2287,7 @@ getContactRequestChatPreviews_ db User {userId} =
       [sql|
         SELECT
           cr.contact_request_id, cr.local_display_name, cr.agent_invitation_id, cr.user_contact_link_id,
-          c.agent_conn_id, cr.contact_profile_id, p.display_name, p.full_name, cr.created_at
+          c.agent_conn_id, cr.contact_profile_id, p.display_name, p.full_name, cr.created_at, cr.xinfo_identifier
         FROM contact_requests cr
         JOIN connections c USING (user_contact_link_id)
         JOIN contact_profiles p USING (contact_profile_id)

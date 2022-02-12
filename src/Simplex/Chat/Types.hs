@@ -99,7 +99,8 @@ data UserContactRequest = UserContactRequest
     localDisplayName :: ContactName,
     profileId :: Int64,
     profile :: Profile,
-    createdAt :: UTCTime
+    createdAt :: UTCTime,
+    xInfoId :: Maybe XInfoId
   }
   deriving (Eq, Show, Generic, FromJSON)
 
