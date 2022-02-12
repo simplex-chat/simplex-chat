@@ -316,7 +316,7 @@ getContactRec st userId contactId =
               FROM contacts ct
               JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
               LEFT JOIN connections c ON c.contact_id = ct.contact_id
-              WHERE ct.user_id = ? AND ct.contact_id = ? AND
+              WHERE ct.user_id = ? AND ct.contact_id = ?
               ORDER BY c.connection_id DESC
               LIMIT 1
             |]

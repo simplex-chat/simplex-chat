@@ -65,10 +65,10 @@ responseToView cmd testView = \case
   CRInvitation cReq -> r' $ viewConnReqInvitation cReq
   CRSentConfirmation -> r' ["confirmation sent!"]
   CRSentInvitation -> r' ["connection request sent!"]
-  CRContactAlreadyExists c -> r' ["contact " <> ttyContact' c <> " already exists"]
+  CRContactAlreadyExists c -> r' [ttyFullContact c <> ": contact already exists"]
   CRContactDeleted c -> r' [ttyContact' c <> ": contact is deleted"]
-  CRAcceptingContactRequest c -> r' [ttyContact' c <> ": accepting contact request..."]
-  CRContactRequestAlreadyAccepted c -> r' [ttyContact' c <> ": contact request already accepted"]
+  CRAcceptingContactRequest c -> r' [ttyFullContact c <> ": accepting contact request..."]
+  CRContactRequestAlreadyAccepted c -> r' [ttyFullContact c <> ": contact request already accepted"]
   CRUserContactLinkCreated cReq -> r' $ connReqContact_ "Your new chat address is created!" cReq
   CRUserContactLinkDeleted -> r' viewUserContactLinkDeleted
   CRUserAcceptedGroupSent _g -> r' [] -- [ttyGroup' g <> ": joining the group..."]
@@ -84,8 +84,8 @@ responseToView cmd testView = \case
   CRContactUpdated c c' -> viewContactUpdated c c'
   CRContactsMerged intoCt mergedCt -> viewContactsMerged intoCt mergedCt
   CRReceivedContactRequest UserContactRequest {localDisplayName = c, profile} -> viewReceivedContactRequest c profile
-  CRContactRequestUpdated UserContactRequest {localDisplayName = c} -> r' ["contact request from " <> ttyContact c <> " is updated"]
-  CRConnectingContactAlreadyExists c -> r' ["connecting contact " <> ttyContact' c <> " already exists"]
+  CRContactRequestUpdated UserContactRequest {localDisplayName = c} -> r' [ttyContact c <> ": contact request updated"]
+  CRConnectingContactAlreadyExists c -> r' [ttyFullContact c <> ": connecting contact already exists"]
   CRRcvFileStart ft -> receivingFile_ "started" ft
   CRRcvFileComplete ft -> receivingFile_ "completed" ft
   CRRcvFileSndCancelled ft -> viewRcvFileSndCancelled ft

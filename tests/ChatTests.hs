@@ -52,6 +52,7 @@ chatTests = do
     it "send and receive file to group" testGroupFileTransfer
   describe "user contact link" $ do
     it "should create and connect via contact link" testUserContactLink
+    it "should deduplicate contact requests" testDeduplicateContactRequests
     it "should reject contact and delete contact link" testRejectContactAndDeleteUserContact
     it "should delete connection requests when contact link deleted" testDeleteConnectionRequests
 
@@ -700,7 +701,7 @@ testUserContactLink = testChat3 aliceProfile bobProfile cathProfile $
     alice <#? bob
     alice #$$> ("/_get chats", [("<@bob", "")])
     alice ##> "/ac bob"
-    alice <## "bob: accepting contact request..."
+    alice <## "bob (Bob): accepting contact request..."
     concurrently_
       (bob <## "alice (Alice): contact is connected")
       (alice <## "bob (Bob): contact is connected")
@@ -711,7 +712,51 @@ testUserContactLink = testChat3 aliceProfile bobProfile cathProfile $
     alice <#? cath
     alice #$$> ("/_get chats", [("<@cath", ""), ("@bob", "hey")])
     alice ##> "/ac cath"
-    alice <## "cath: accepting contact request..."
+    alice <## "cath (Catherine): accepting contact request..."
+    concurrently_
+      (cath <## "alice (Alice): contact is connected")
+      (alice <## "cath (Catherine): contact is connected")
+    alice #$$> ("/_get chats", [("@cath", ""), ("@bob", "hey")])
+    alice <##> cath
+
+testDeduplicateContactRequests :: IO ()
+testDeduplicateContactRequests = testChat3 aliceProfile bobProfile cathProfile $
+  \alice bob cath -> do
+    alice ##> "/ad"
+    cLink <- getContactLink alice True
+    bob ##> ("/c " <> cLink)
+    alice <#? bob
+    alice #$$> ("/_get chats", [("<@bob", "")])
+    bob ##> ("/c " <> cLink)
+    bob <## "connection request sent!"
+    alice <## "bob: contact request updated"
+    bob ##> ("/c " <> cLink)
+    bob <## "connection request sent!"
+    alice <## "bob: contact request updated"
+    alice #$$> ("/_get chats", [("<@bob", "")])
+    alice ##> "/ac bob"
+    alice <## "bob (Bob): accepting contact request..."
+    concurrently_
+      (bob <## "alice (Alice): contact is connected")
+      (alice <## "bob (Bob): contact is connected")
+    bob ##> ("/c " <> cLink)
+    bob <## "alice (Alice): contact already exists"
+    alice #$$> ("/_get chats", [("@bob", "")])
+    bob #$$> ("/_get chats", [("@alice", "")])
+    alice <##> bob
+    alice #$$> ("/_get chats", [("@bob", "hey")])
+    bob #$$> ("/_get chats", [("@alice", "hey")])
+    bob ##> ("/c " <> cLink)
+    bob <## "alice (Alice): contact already exists"
+    alice <##> bob
+    alice #$> ("/_get chat @2 count=100", chat, [(1, "hi"), (0, "hey"), (1, "hi"), (0, "hey")])
+    bob #$> ("/_get chat @2 count=100", chat, [(0, "hi"), (1, "hey"), (0, "hi"), (1, "hey")])
+
+    cath ##> ("/c " <> cLink)
+    alice <#? cath
+    alice #$$> ("/_get chats", [("<@cath", ""), ("@bob", "hey")])
+    alice ##> "/ac cath"
+    alice <## "cath (Catherine): accepting contact request..."
     concurrently_
       (cath <## "alice (Alice): contact is connected")
       (alice <## "cath (Catherine): contact is connected")
