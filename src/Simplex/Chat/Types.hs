@@ -107,7 +107,7 @@ data UserContactRequest = UserContactRequest
 instance ToJSON UserContactRequest where
   toEncoding = J.genericToEncoding J.defaultOptions
 
-newtype XInfoId = XInfoId {unMemberId :: ByteString}
+newtype XInfoId = XInfoId {unXInfoId :: ByteString}
   deriving (Eq, Show)
 
 instance FromField XInfoId where fromField f = XInfoId <$> fromField f
