@@ -404,7 +404,7 @@ processChatCommand = \case
     -- procCmd = id
     connectByAddress :: UserId -> ConnectionRequestUri 'CMContact -> Profile -> m ChatResponse
     connectByAddress userId cReq profile = do
-      let cReqHash = ConnReqUriHash (C.sha256Hash $ strEncode cReq)
+      let cReqHash = ConnReqUriHash . C.sha256Hash $ strEncode cReq
       (xInfoId_, contactId_) <- withStore $ \st -> getXInfoIdByUriHash st userId cReqHash
       case (xInfoId_, contactId_) of
         (Nothing, _) -> do
