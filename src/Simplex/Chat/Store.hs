@@ -26,8 +26,7 @@ module Simplex.Chat.Store
     setActiveUser,
     createDirectConnection,
     createConnReqConnection,
-    getXInfoIdByUriHash,
-    getContactRec,
+    getConnReqContactXInfoId,
     createDirectContact,
     getContactGroupNames,
     deleteContact,
@@ -41,9 +40,7 @@ module Simplex.Chat.Store
     getUserContactLinkConnections,
     deleteUserContactLink,
     getUserContactLink,
-    checkContactRequest,
-    createContactRequest,
-    updateContactRequest,
+    createOrUpdateContactRequest,
     getContactRequest,
     getContactRequestIdByName,
     deleteContactRequest,
@@ -268,60 +265,63 @@ createConnReqConnection st userId acId cReqHash xInfoId = do
       |]
       (userId, acId, ConnNew, ConnContact, currentTs, currentTs, cReqHash, xInfoId)
 
-getXInfoIdByUriHash :: MonadUnliftIO m => SQLiteStore -> UserId -> ConnReqUriHash -> m (Maybe XInfoId, Maybe Int64)
-getXInfoIdByUriHash st userId cReqHash =
-  liftIO . withTransaction st $ \db ->
-    getXInfoId db >>= \case
-      Nothing -> pure (Nothing, Nothing)
-      Just xInfoId ->
-        getContactId db >>= \case
-          Nothing -> pure (Just xInfoId, Nothing)
-          Just contactId -> pure (Just xInfoId, Just contactId)
-  where
-    getXInfoId :: DB.Connection -> IO (Maybe XInfoId)
-    getXInfoId db =
-      listToMaybe . map fromOnly
-        <$> DB.query
-          db
-          "SELECT xinfo_identifier FROM connections WHERE via_contact_uri_hash = ? AND user_id = ? LIMIT 1"
-          (cReqHash, userId)
-    getContactId :: DB.Connection -> IO (Maybe Int64)
-    getContactId db =
-      listToMaybe . map fromOnly
-        <$> DB.query
-          db
-          [sql|
-            SELECT contact_id FROM connections
-            WHERE via_contact_uri_hash = ? AND user_id = ?
-              AND contact_id IS NOT NULL
-            LIMIT 1
-          |]
-          (cReqHash, userId)
+getConnReqContactXInfoId :: MonadUnliftIO m => SQLiteStore -> UserId -> ConnReqUriHash -> m (Maybe Contact, Maybe XInfoId)
+getConnReqContactXInfoId _st _userId _cReqHash = pure (Nothing, Nothing)
 
-getContactRec :: StoreMonad m => SQLiteStore -> UserId -> Int64 -> m Contact
-getContactRec st userId contactId =
-  liftIOEither . withTransaction st $ \db ->
-    firstRow
-      toContact
-      (SEContactNotFound contactId)
-      ( DB.query
-          db
-          [sql|
-              SELECT
-                -- Contact
-                ct.contact_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, ct.created_at,
-                -- Connection
-                c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.conn_status, c.conn_type,
-                c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at
-              FROM contacts ct
-              JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
-              LEFT JOIN connections c ON c.contact_id = ct.contact_id
-              WHERE ct.user_id = ? AND ct.contact_id = ?
-              ORDER BY c.connection_id DESC
-              LIMIT 1
-            |]
-          (userId, contactId)
-      )
+-- getXInfoIdByUriHash :: MonadUnliftIO m => SQLiteStore -> UserId -> ConnReqUriHash -> m (Maybe XInfoId, Maybe Int64)
+-- getXInfoIdByUriHash st userId cReqHash =
+--   liftIO . withTransaction st $ \db ->
+--     getXInfoId db >>= \case
+--       Nothing -> pure (Nothing, Nothing)
+--       Just xInfoId ->
+--         getContactId db >>= \case
+--           Nothing -> pure (Just xInfoId, Nothing)
+--           Just contactId -> pure (Just xInfoId, Just contactId)
+--   where
+--     getXInfoId :: DB.Connection -> IO (Maybe XInfoId)
+--     getXInfoId db =
+--       listToMaybe . map fromOnly
+--         <$> DB.query
+--           db
+--           "SELECT xinfo_identifier FROM connections WHERE via_contact_uri_hash = ? AND user_id = ? LIMIT 1"
+--           (cReqHash, userId)
+--     getContactId :: DB.Connection -> IO (Maybe Int64)
+--     getContactId db =
+--       listToMaybe . map fromOnly
+--         <$> DB.query
+--           db
+--           [sql|
+--             SELECT contact_id FROM connections
+--             WHERE via_contact_uri_hash = ? AND user_id = ?
+--               AND contact_id IS NOT NULL
+--             LIMIT 1
+--           |]
+--           (cReqHash, userId)
+
+-- getContactRec :: StoreMonad m => SQLiteStore -> UserId -> Int64 -> m Contact
+-- getContactRec st userId contactId =
+--   liftIOEither . withTransaction st $ \db ->
+--     firstRow
+--       toContact
+--       (SEContactNotFound contactId)
+--       ( DB.query
+--           db
+--           [sql|
+--               SELECT
+--                 -- Contact
+--                 ct.contact_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, ct.created_at,
+--                 -- Connection
+--                 c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.conn_status, c.conn_type,
+--                 c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at
+--               FROM contacts ct
+--               JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
+--               LEFT JOIN connections c ON c.contact_id = ct.contact_id
+--               WHERE ct.user_id = ? AND ct.contact_id = ?
+--               ORDER BY c.connection_id DESC
+--               LIMIT 1
+--             |]
+--           (userId, contactId)
+--       )
 
 createDirectConnection :: MonadUnliftIO m => SQLiteStore -> UserId -> ConnId -> m ()
 createDirectConnection st userId agentConnId =
@@ -595,91 +595,94 @@ getUserContactLink st userId =
     connReq [Only cReq] = Right cReq
     connReq _ = Left SEUserContactLinkNotFound
 
-checkContactRequest :: StoreMonad m => SQLiteStore -> UserId -> XInfoId -> m (Maybe Int64, Maybe Int64)
-checkContactRequest st userId xInfoId =
-  liftIO . withTransaction st $ \db -> do
-    cReqId <- getCReqId db
-    contactId <- getContactId db
-    pure (cReqId, contactId)
-  where
-    getCReqId :: DB.Connection -> IO (Maybe Int64)
-    getCReqId db =
-      listToMaybe . map fromOnly
-        <$> DB.query
-          db
-          "SELECT contact_request_id FROM contact_requests WHERE xinfo_identifier = ? AND user_id = ? LIMIT 1"
-          (xInfoId, userId)
-    getContactId :: DB.Connection -> IO (Maybe Int64)
-    getContactId db =
-      listToMaybe . map fromOnly
-        <$> DB.query
-          db
-          "SELECT contact_id FROM contacts WHERE xinfo_identifier = ? AND user_id = ? LIMIT 1"
-          (xInfoId, userId)
+createOrUpdateContactRequest :: StoreMonad m => SQLiteStore -> UserId -> Int64 -> InvitationId -> Profile -> Maybe XInfoId -> m (Either Contact UserContactRequest)
+createOrUpdateContactRequest _st _userId _userContactLinkId _invId _p _xInfoId_ = throwError $ SEInternalError "not implemented"
 
-createContactRequest :: StoreMonad m => SQLiteStore -> UserId -> Int64 -> InvitationId -> Profile -> Maybe XInfoId -> m UserContactRequest
-createContactRequest st userId userContactId invId Profile {displayName, fullName} xInfoId =
-  liftIOEither . withTransaction st $ \db -> do
-    join <$> withLocalDisplayName db userId displayName (createContactRequest' db)
-  where
-    createContactRequest' :: DB.Connection -> Text -> IO (Either StoreError UserContactRequest)
-    createContactRequest' db ldn = do
-      currentTs <- getCurrentTime
-      DB.execute
-        db
-        "INSERT INTO contact_profiles (display_name, full_name, created_at, updated_at) VALUES (?,?,?,?)"
-        (displayName, fullName, currentTs, currentTs)
-      profileId <- insertedRowId db
-      DB.execute
-        db
-        [sql|
-          INSERT INTO contact_requests
-            (user_contact_link_id, agent_invitation_id, contact_profile_id, local_display_name, user_id, created_at, updated_at, xinfo_identifier)
-          VALUES (?,?,?,?,?,?,?,?)
-        |]
-        (userContactId, invId, profileId, ldn, userId, currentTs, currentTs, xInfoId)
-      contactRequestId <- insertedRowId db
-      getContactRequest_ db userId contactRequestId
+-- getContactRequestContact :: StoreMonad m => SQLiteStore -> UserId -> XInfoId -> m (Maybe Contact, Maybe Int64)
+-- getContactRequestContact st userId xInfoId =
+--   liftIO . withTransaction st $ \db -> do
+--     cReqId <- getCReqId db
+--     contactId <- getContactId db
+--     pure (cReqId, contactId)
+--   where
+--     getCReqId :: DB.Connection -> IO (Maybe Int64)
+--     getCReqId db =
+--       listToMaybe . map fromOnly
+--         <$> DB.query
+--           db
+--           "SELECT contact_request_id FROM contact_requests WHERE xinfo_identifier = ? AND user_id = ? LIMIT 1"
+--           (xInfoId, userId)
+--     getContactId :: DB.Connection -> IO (Maybe Int64)
+--     getContactId db =
+--       listToMaybe . map fromOnly
+--         <$> DB.query
+--           db
+--           "SELECT contact_id FROM contacts WHERE xinfo_identifier = ? AND user_id = ? LIMIT 1"
+--           (xInfoId, userId)
 
-updateContactRequest :: StoreMonad m => SQLiteStore -> UserId -> Int64 -> InvitationId -> Profile -> m UserContactRequest
-updateContactRequest st userId cReqId invId Profile {displayName, fullName} =
-  liftIOEither . withTransaction st $ \db -> do
-    currentTs <- getCurrentTime
-    updateCReqProfile db currentTs
-    updateContactRequest' db
-  where
-    updateContactRequest' :: DB.Connection -> IO (Either StoreError UserContactRequest)
-    updateContactRequest' db = do
-      currentTs <- getCurrentTime
-      DB.execute
-        db
-        [sql|
-          UPDATE contact_requests
-          SET agent_invitation_id = ?,
-              local_display_name = ?,
-              updated_at = ?
-          WHERE user_id = ?
-            AND contact_request_id = ?
-        |]
-        (invId, displayName, currentTs, userId, cReqId)
-      getContactRequest_ db userId cReqId
-    updateCReqProfile :: DB.Connection -> UTCTime -> IO ()
-    updateCReqProfile db updatedAt = do
-      DB.execute
-        db
-        [sql|
-          UPDATE contact_profiles
-          SET display_name = ?,
-              full_name = ?,
-              updated_at = ?
-          WHERE contact_profile_id IN (
-            SELECT contact_profile_id
-            FROM contact_requests
-            WHERE user_id = ?
-              AND contact_request_id = ?
-          )
-        |]
-        (displayName, fullName, updatedAt, userId, cReqId)
+-- createContactRequest :: StoreMonad m => SQLiteStore -> UserId -> Int64 -> InvitationId -> Profile -> Maybe XInfoId -> m UserContactRequest
+-- createContactRequest st userId userContactId invId Profile {displayName, fullName} xInfoId =
+--   liftIOEither . withTransaction st $ \db -> do
+--     join <$> withLocalDisplayName db userId displayName (createContactRequest' db)
+--   where
+--     createContactRequest' :: DB.Connection -> Text -> IO (Either StoreError UserContactRequest)
+--     createContactRequest' db ldn = do
+--       currentTs <- getCurrentTime
+--       DB.execute
+--         db
+--         "INSERT INTO contact_profiles (display_name, full_name, created_at, updated_at) VALUES (?,?,?,?)"
+--         (displayName, fullName, currentTs, currentTs)
+--       profileId <- insertedRowId db
+--       DB.execute
+--         db
+--         [sql|
+--           INSERT INTO contact_requests
+--             (user_contact_link_id, agent_invitation_id, contact_profile_id, local_display_name, user_id, created_at, updated_at, xinfo_identifier)
+--           VALUES (?,?,?,?,?,?,?,?)
+--         |]
+--         (userContactId, invId, profileId, ldn, userId, currentTs, currentTs, xInfoId)
+--       contactRequestId <- insertedRowId db
+--       getContactRequest_ db userId contactRequestId
+
+-- updateContactRequest :: StoreMonad m => SQLiteStore -> UserId -> Int64 -> InvitationId -> Profile -> m UserContactRequest
+-- updateContactRequest st userId cReqId invId Profile {displayName, fullName} =
+--   liftIOEither . withTransaction st $ \db -> do
+--     currentTs <- getCurrentTime
+--     updateCReqProfile db currentTs
+--     updateContactRequest' db
+--   where
+--     updateContactRequest' :: DB.Connection -> IO (Either StoreError UserContactRequest)
+--     updateContactRequest' db = do
+--       currentTs <- getCurrentTime
+--       DB.execute
+--         db
+--         [sql|
+--           UPDATE contact_requests
+--           SET agent_invitation_id = ?,
+--               local_display_name = ?,
+--               updated_at = ?
+--           WHERE user_id = ?
+--             AND contact_request_id = ?
+--         |]
+--         (invId, displayName, currentTs, userId, cReqId)
+--       getContactRequest_ db userId cReqId
+--     updateCReqProfile :: DB.Connection -> UTCTime -> IO ()
+--     updateCReqProfile db updatedAt = do
+--       DB.execute
+--         db
+--         [sql|
+--           UPDATE contact_profiles
+--           SET display_name = ?,
+--               full_name = ?,
+--               updated_at = ?
+--           WHERE contact_profile_id IN (
+--             SELECT contact_profile_id
+--             FROM contact_requests
+--             WHERE user_id = ?
+--               AND contact_request_id = ?
+--           )
+--         |]
+--         (displayName, fullName, updatedAt, userId, cReqId)
 
 getContactRequest :: StoreMonad m => SQLiteStore -> UserId -> Int64 -> m UserContactRequest
 getContactRequest st userId contactRequestId =

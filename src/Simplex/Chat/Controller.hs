@@ -162,7 +162,6 @@ data ChatResponse
   | CRUserContactLinkCreated {connReqContact :: ConnReqContact}
   | CRUserContactLinkDeleted
   | CRReceivedContactRequest {contactRequest :: UserContactRequest}
-  | CRContactRequestUpdated {contactRequest :: UserContactRequest}
   | CRAcceptingContactRequest {contact :: Contact}
   | CRContactRequestAlreadyAccepted {contact :: Contact}
   | CRLeftMemberUser {groupInfo :: GroupInfo}

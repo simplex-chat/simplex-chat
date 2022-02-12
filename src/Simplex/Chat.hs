@@ -179,19 +179,13 @@ processChatCommand = \case
         gs -> throwChatError $ CEContactGroups ct gs
     CTGroup -> pure $ chatCmdError "not implemented"
     CTContactRequest -> pure $ chatCmdError "not supported"
-  APIAcceptContact connReqId -> withUser $ \user@User {userId} -> do
+  APIAcceptContact connReqId -> withUser $ \User {userId, profile} -> do
     withChatLock . procCmd $ do
-      cReq@UserContactRequest {xInfoId} <- withStore $ \st ->
+      UserContactRequest {agentInvitationId = AgentInvId invId, localDisplayName = cName, profileId, profile = p, xInfoId} <- withStore $ \st ->
         getContactRequest st userId connReqId
-      case xInfoId of
-        Nothing -> acceptContactRequest user cReq
-        Just xii -> do
-          (_, contactId_) <- withStore $ \st -> checkContactRequest st userId xii
-          case contactId_ of
-            Nothing -> acceptContactRequest user cReq
-            Just contactId -> do
-              contact <- withStore $ \st -> getContactRec st userId contactId
-              pure $ CRContactRequestAlreadyAccepted contact
+      connId <- withAgent $ \a -> acceptContact a invId . directMessage $ XInfo profile Nothing
+      acceptedContact <- withStore $ \st -> createAcceptedContact st userId connId cName profileId p xInfoId
+      pure $ CRAcceptingContactRequest acceptedContact
   APIRejectContact connReqId -> withUser $ \User {userId} -> withChatLock $ do
     cReq@UserContactRequest {agentContactConnId = AgentConnId connId, agentInvitationId = AgentInvId invId} <-
       withStore $ \st ->
@@ -405,27 +399,14 @@ processChatCommand = \case
     connectByAddress :: UserId -> ConnectionRequestUri 'CMContact -> Profile -> m ChatResponse
     connectByAddress userId cReq profile = do
       let cReqHash = ConnReqUriHash . C.sha256Hash $ strEncode cReq
-      (xInfoId_, contactId_) <- withStore $ \st -> getXInfoIdByUriHash st userId cReqHash
-      case (xInfoId_, contactId_) of
-        (Nothing, _) -> do
-          gVar <- asks idsDrg
-          xInfoId <- liftIO $ XInfoId <$> randomBytes gVar 128
-          connect xInfoId cReqHash
-        (Just xInfoId, Nothing) ->
-          connect xInfoId cReqHash
-        (_, Just contactId) -> do
-          contact <- withStore $ \st -> getContactRec st userId contactId
-          pure $ CRContactAlreadyExists contact
-      where
-        connect xInfoId cReqHash = do
+      withStore (\st -> getConnReqContactXInfoId st userId cReqHash) >>= \case
+        (Just contact, _) -> pure $ CRContactAlreadyExists contact
+        (_, xInfoId_) -> do
+          let randomXInfoId = XInfoId <$> (asks idsDrg >>= liftIO . (`randomBytes` 128))
+          xInfoId <- maybe randomXInfoId pure xInfoId_
           connId <- withAgent $ \a -> joinConnection a cReq $ directMessage (XInfo profile $ Just xInfoId)
           withStore $ \st -> createConnReqConnection st userId connId cReqHash xInfoId
           pure CRSentInvitation
-    acceptContactRequest :: User -> UserContactRequest -> m ChatResponse
-    acceptContactRequest User {userId, profile} UserContactRequest {agentInvitationId = AgentInvId invId, localDisplayName = cName, profileId, profile = p, xInfoId} = do
-      connId <- withAgent $ \a -> acceptContact a invId . directMessage $ XInfo profile Nothing
-      acceptedContact <- withStore $ \st -> createAcceptedContact st userId connId cName profileId p xInfoId
-      pure $ CRAcceptingContactRequest acceptedContact
     contactMember :: Contact -> [GroupMember] -> Maybe GroupMember
     contactMember Contact {contactId} =
       find $ \GroupMember {memberContactId = cId, memberStatus = s} ->
@@ -839,10 +820,8 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
       REQ invId connInfo -> do
         ChatMessage {chatMsgEvent} <- liftEither $ parseChatMessage connInfo
         case chatMsgEvent of
-          XContact p _ -> profileContactRequest invId p -- for backwards compatibility
-          XInfo p xInfoId_ -> case xInfoId_ of
-            Nothing -> profileContactRequest invId p
-            Just xInfoId -> profileContactRequestXInfoId invId p xInfoId
+          XContact p _ -> profileContactRequest invId p Nothing
+          XInfo p xInfoId_ -> profileContactRequest invId p xInfoId_
           -- TODO show/log error, other events in contact request
           _ -> pure ()
       -- TODO print errors
@@ -851,25 +830,13 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
       -- TODO add debugging output
       _ -> pure ()
       where
-        profileContactRequest :: InvitationId -> Profile -> m ()
-        profileContactRequest invId p = do
-          cReq@UserContactRequest {localDisplayName} <- withStore $ \st -> createContactRequest st userId userContactLinkId invId p Nothing
-          toView $ CRReceivedContactRequest cReq
-          showToast (localDisplayName <> "> ") "wants to connect to you"
-        profileContactRequestXInfoId :: InvitationId -> Profile -> XInfoId -> m ()
-        profileContactRequestXInfoId invId p xInfoId = do
-          (cReqId_, contactId_) <- withStore $ \st -> checkContactRequest st userId xInfoId
-          case (cReqId_, contactId_) of
-            (Nothing, Nothing) -> do
-              cReq@UserContactRequest {localDisplayName} <- withStore $ \st -> createContactRequest st userId userContactLinkId invId p (Just xInfoId)
+        profileContactRequest :: InvitationId -> Profile -> Maybe XInfoId -> m ()
+        profileContactRequest invId p xInfoId_ = do
+          withStore (\st -> createOrUpdateContactRequest st userId userContactLinkId invId p xInfoId_) >>= \case
+            Left contact -> toView $ CRContactRequestAlreadyAccepted contact
+            Right cReq@UserContactRequest {localDisplayName} -> do
               toView $ CRReceivedContactRequest cReq
               showToast (localDisplayName <> "> ") "wants to connect to you"
-            (Just cReqId, Nothing) -> do
-              cReq <- withStore $ \st -> updateContactRequest st userId cReqId invId p
-              toView $ CRContactRequestUpdated cReq
-            (_, Just contactId) -> do
-              contact <- withStore $ \st -> getContactRec st userId contactId
-              toView $ CRContactRequestAlreadyAccepted contact
 
     withAckMessage :: ConnId -> MsgMeta -> m () -> m ()
     withAckMessage cId MsgMeta {recipient = (msgId, _)} action =

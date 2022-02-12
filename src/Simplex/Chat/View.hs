@@ -68,7 +68,7 @@ responseToView cmd testView = \case
   CRContactAlreadyExists c -> r' [ttyFullContact c <> ": contact already exists"]
   CRContactDeleted c -> r' [ttyContact' c <> ": contact is deleted"]
   CRAcceptingContactRequest c -> r' [ttyFullContact c <> ": accepting contact request..."]
-  CRContactRequestAlreadyAccepted c -> r' [ttyFullContact c <> ": contact request already accepted"]
+  CRContactRequestAlreadyAccepted c -> r' [ttyFullContact c <> ": sent you a duplicate contact request, but you are already connected, no action needed"]
   CRUserContactLinkCreated cReq -> r' $ connReqContact_ "Your new chat address is created!" cReq
   CRUserContactLinkDeleted -> r' viewUserContactLinkDeleted
   CRUserAcceptedGroupSent _g -> r' [] -- [ttyGroup' g <> ": joining the group..."]
@@ -84,7 +84,6 @@ responseToView cmd testView = \case
   CRContactUpdated c c' -> viewContactUpdated c c'
   CRContactsMerged intoCt mergedCt -> viewContactsMerged intoCt mergedCt
   CRReceivedContactRequest UserContactRequest {localDisplayName = c, profile} -> viewReceivedContactRequest c profile
-  CRContactRequestUpdated UserContactRequest {localDisplayName = c} -> r' [ttyContact c <> ": contact request updated"]
   CRRcvFileStart ft -> receivingFile_ "started" ft
   CRRcvFileComplete ft -> receivingFile_ "completed" ft
   CRRcvFileSndCancelled ft -> viewRcvFileSndCancelled ft
