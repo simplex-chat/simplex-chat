@@ -22,7 +22,6 @@ final class ChatModel: ObservableObject {
     @Published var terminalItems: [TerminalItem] = []
     @Published var userAddress: String?
     @Published var appOpenUrl: URL?
-    @Published var connectViaUrl = false
     static let shared = ChatModel()
 
     func hasChat(_ id: String) -> Bool {
@@ -185,14 +184,6 @@ struct User: Decodable, NamedChat {
     var localDisplayName: ContactName
     var profile: Profile
     var activeUser: Bool
-
-//    internal init(userId: Int64, userContactId: Int64, localDisplayName: ContactName, profile: Profile, activeUser: Bool) {
-//        self.userId = userId
-//        self.userContactId = userContactId
-//        self.localDisplayName = localDisplayName
-//        self.profile = profile
-//        self.activeUser = activeUser
-//    }
 
     var displayName: String { get { profile.displayName } }
 

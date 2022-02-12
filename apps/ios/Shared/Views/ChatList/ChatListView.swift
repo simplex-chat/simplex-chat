@@ -10,8 +10,6 @@ import SwiftUI
 
 struct ChatListView: View {
     @EnvironmentObject var chatModel: ChatModel
-    @State private var connectAlert = false
-    @State private var connectError: Error?
     // not really used in this view
     @State private var showSettings = false
 
@@ -41,6 +39,12 @@ struct ChatListView: View {
                     chatModel.popChat(chatId)
                 }
             }
+            .onChange(of: chatModel.appOpenUrl) { _ in
+                if let url = chatModel.appOpenUrl {
+                    chatModel.appOpenUrl = nil
+                    AlertManager.shared.showAlert(connectViaUrlAlert(url))
+                }
+            }
             .offset(x: -8)
             .listStyle(.plain)
             .navigationTitle(chatModel.chats.isEmpty ? "Welcome \(user.displayName)!" : "Your chats")
@@ -52,48 +56,40 @@ struct ChatListView: View {
                     NewChatButton()
                 }
             }
-            .alert(isPresented: $chatModel.connectViaUrl) { connectViaUrlAlert() }
         }
         .navigationViewStyle(.stack)
-        .alert(isPresented: $connectAlert) { connectionErrorAlert() }
     }
 
-    private func connectViaUrlAlert() -> Alert {
-        logger.debug("ChatListView.connectViaUrlAlert")
-        if let url = chatModel.appOpenUrl {
-            var path = url.path
-            logger.debug("ChatListView.connectViaUrlAlert path: \(path)")
-            if (path == "/contact" || path == "/invitation") {
-                path.removeFirst()
-                let link = url.absoluteString.replacingOccurrences(of: "///\(path)", with: "/\(path)")
-                return Alert(
-                    title: Text("Connect via \(path) link?"),
-                    message: Text("Your profile will be sent to the contact that you received this link from: \(link)"),
-                    primaryButton: .default(Text("Connect")) {
+    private func connectViaUrlAlert(_ url: URL) -> Alert {
+        var path = url.path
+        logger.debug("ChatListView.connectViaUrlAlert path: \(path)")
+        if (path == "/contact" || path == "/invitation") {
+            path.removeFirst()
+            let link = url.absoluteString.replacingOccurrences(of: "///\(path)", with: "/\(path)")
+            return Alert(
+                title: Text("Connect via \(path) link?"),
+                message: Text("Your profile will be sent to the contact that you received this link from: \(link)"),
+                primaryButton: .default(Text("Connect")) {
+                    DispatchQueue.main.async {
                         do {
                             try apiConnect(connReq: link)
                         } catch {
-                            connectAlert = true
-                            connectError = error
+                            AlertManager.shared.showAlert(connectionErrorAlert(error))
                             logger.debug("ChatListView.connectViaUrlAlert: apiConnect error: \(error.localizedDescription)")
                         }
-                        chatModel.appOpenUrl = nil
-                    }, secondaryButton: .cancel() {
-                        chatModel.appOpenUrl = nil
                     }
-                )
-            } else {
-                return Alert(title: Text("Error: URL is invalid"))
-            }
+                },
+                secondaryButton: .cancel()
+            )
         } else {
-            return Alert(title: Text("Error: URL not available"))
+            return Alert(title: Text("Error: URL is invalid"))
         }
     }
 
-    private func connectionErrorAlert() -> Alert {
+    private func connectionErrorAlert(_ connectError: Error) -> Alert {
         Alert(
             title: Text("Connection error"),
-            message: Text(connectError?.localizedDescription ?? "")
+            message: Text(connectError.localizedDescription)
         )
     }
 }

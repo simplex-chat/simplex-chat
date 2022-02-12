@@ -10,7 +10,6 @@ import SwiftUI
 
 struct UserAddress: View {
     @EnvironmentObject var chatModel: ChatModel
-    @State private var shareAddressLink = false
     @State private var deleteAddressAlert = false
 
     var body: some View {
@@ -20,11 +19,12 @@ struct UserAddress: View {
             if let userAdress = chatModel.userAddress {
                 QRCode(uri: userAdress)
                 HStack {
-                    Button { shareAddressLink = true } label: {
+                    Button {
+                        showShareSheet(items: [userAdress])
+                    } label: {
                         Label("Share link", systemImage: "square.and.arrow.up")
                     }
                     .padding()
-                    .shareSheet(isPresented: $shareAddressLink, items: [userAdress])
 
                     Button(role: .destructive) { deleteAddressAlert = true } label: {
                         Label("Delete address", systemImage: "trash")
@@ -44,7 +44,6 @@ struct UserAddress: View {
                             }, secondaryButton: .cancel()
                         )
                     }
-                    .shareSheet(isPresented: $shareAddressLink, items: [userAdress])
                 }
                 .frame(maxWidth: .infinity)
             } else {

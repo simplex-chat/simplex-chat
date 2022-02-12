@@ -281,6 +281,7 @@
 			children = (
 				5C971E2027AEBF8300C8A3CE /* ChatInfoImage.swift */,
 				5C7505A427B679EE00BE3227 /* NavLinkPlain.swift */,
+				5CC1C99427A6CF7F000D9FF6 /* ShareSheet.swift */,
 			);
 			path = Helpers;
 			sourceTree = "<group>";
@@ -359,7 +360,6 @@
 				5CCD403627A5F9A200368C90 /* ConnectContactView.swift */,
 				5CCD403927A5F9BE00368C90 /* CreateGroupView.swift */,
 				5CC1C99127A6C7F5000D9FF6 /* QRCode.swift */,
-				5CC1C99427A6CF7F000D9FF6 /* ShareSheet.swift */,
 			);
 			path = NewChat;
 			sourceTree = "<group>";

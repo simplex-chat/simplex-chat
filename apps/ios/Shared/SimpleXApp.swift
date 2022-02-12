@@ -28,7 +28,6 @@ struct SimpleXApp: App {
                 .onOpenURL { url in
                     logger.debug("ContentView.onOpenURL: \(url)")
                     chatModel.appOpenUrl = url
-                    chatModel.connectViaUrl = true
                 }
                 .onAppear() {
                     initializeChat()

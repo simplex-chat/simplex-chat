@@ -11,14 +11,7 @@ import SwiftUI
 struct ChatListNavLink: View {
     @EnvironmentObject var chatModel: ChatModel
     @State var chat: Chat
-
-    @State private var showDeleteContactAlert = false
-    @State private var showDeleteGroupAlert = false
-    @State private var showContactRequestAlert = false
     @State private var showContactRequestDialog = false
-    @State private var alertContact: Contact?
-    @State private var alertGroupInfo: GroupInfo?
-    @State private var alertContactRequest: UserContactRequest?
 
     var body: some View {
         switch chat.chatInfo {
@@ -60,14 +53,10 @@ struct ChatListNavLink: View {
         }
         .swipeActions(edge: .trailing) {
             Button(role: .destructive) {
-                alertContact = contact
-                showDeleteContactAlert = true
+                AlertManager.shared.showAlert(deleteContactAlert(contact))
             } label: {
                 Label("Delete", systemImage: "trash")
             }
-        }
-        .alert(isPresented: $showDeleteContactAlert) {
-            deleteContactAlert(alertContact!)
         }
         .frame(height: 80)
     }
@@ -87,14 +76,10 @@ struct ChatListNavLink: View {
         }
         .swipeActions(edge: .trailing, allowsFullSwipe: true) {
             Button(role: .destructive) {
-                alertGroupInfo = groupInfo
-                showDeleteGroupAlert = true
+                AlertManager.shared.showAlert(deleteGroupAlert(groupInfo))
             } label: {
                 Label("Delete", systemImage: "trash")
             }
-        }
-        .alert(isPresented: $showDeleteGroupAlert) {
-            deleteGroupAlert(alertGroupInfo!)
         }
         .frame(height: 80)
     }
@@ -115,14 +100,10 @@ struct ChatListNavLink: View {
                 label: { Label("Accept", systemImage: "checkmark") }
                 .tint(Color.accentColor)
             Button(role: .destructive) {
-                alertContactRequest = contactRequest
-                showContactRequestAlert = true
+                AlertManager.shared.showAlert(rejectContactRequestAlert(contactRequest))
             } label: {
                 Label("Reject", systemImage: "multiply")
             }
-        }
-        .alert(isPresented: $showContactRequestAlert) {
-            contactRequestAlert(alertContactRequest!)
         }
         .frame(height: 80)
         .onTapGesture { showContactRequestDialog = true }
@@ -143,10 +124,8 @@ struct ChatListNavLink: View {
                 } catch let error {
                     logger.error("ChatListNavLink.deleteContactAlert apiDeleteChat error: \(error.localizedDescription)")
                 }
-                alertContact = nil
-            }, secondaryButton: .cancel() {
-                alertContact = nil
-            }
+            },
+            secondaryButton: .cancel()
         )
     }
 
@@ -157,16 +136,14 @@ struct ChatListNavLink: View {
         )
     }
 
-    private func contactRequestAlert(_ contactRequest: UserContactRequest) -> Alert {
+    private func rejectContactRequestAlert(_ contactRequest: UserContactRequest) -> Alert {
         Alert(
             title: Text("Reject contact request"),
             message: Text("The sender will NOT be notified"),
             primaryButton: .destructive(Text("Reject")) {
                 rejectContactRequest(contactRequest)
-                alertContactRequest = nil
-            }, secondaryButton: .cancel {
-                alertContactRequest = nil
-            }
+            },
+            secondaryButton: .cancel()
         )
     }
 }
