@@ -74,8 +74,9 @@ struct ChatListView: View {
                         do {
                             try apiConnect(connReq: link)
                         } catch {
-                            AlertManager.shared.showAlert(connectionErrorAlert(error))
-                            logger.debug("ChatListView.connectViaUrlAlert: apiConnect error: \(error.localizedDescription)")
+                            let err = error.localizedDescription
+                            AlertManager.shared.showAlertMsg(title: "Connection error", message: err)
+                            logger.debug("ChatListView.connectViaUrlAlert: apiConnect error: \(err)")
                         }
                     }
                 },
@@ -84,13 +85,6 @@ struct ChatListView: View {
         } else {
             return Alert(title: Text("Error: URL is invalid"))
         }
-    }
-
-    private func connectionErrorAlert(_ connectError: Error) -> Alert {
-        Alert(
-            title: Text("Connection error"),
-            message: Text(connectError.localizedDescription)
-        )
     }
 }
 

@@ -49,6 +49,13 @@ struct TextItemView: View {
             maxHeight: .infinity,
             alignment: sent ? .trailing : .leading
         )
+        .onTapGesture {
+            switch chatItem.meta.itemStatus {
+            case .sndErrorAuth: msgDeliveryError("Most likely this contact has deleted the connection with you.")
+            case let .sndError(agentError): msgDeliveryError("Unexpected error: \(String(describing: agentError))")
+            default: return
+            }
+        }
     }
 
     private func messageText(_ chatItem: ChatItem) -> Text {
@@ -116,6 +123,13 @@ struct TextItemView: View {
 
     private func mdText(_ s: String.SubSequence) -> Text {
         Text(s[s.index(s.startIndex, offsetBy: 1)..<s.index(s.endIndex, offsetBy: -1)])
+    }
+
+    private func msgDeliveryError(_ err: String) {
+        AlertManager.shared.showAlertMsg(
+            title: "Message delivery error",
+            message: err
+        )
     }
 }
 

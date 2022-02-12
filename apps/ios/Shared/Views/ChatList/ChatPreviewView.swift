@@ -51,7 +51,7 @@ struct ChatPreviewView: View {
 
                 if let cItem = cItem {
                     ZStack(alignment: .topTrailing) {
-                        Text(chatItemText(cItem))
+                        (itemStatusMark(cItem) + Text(chatItemText(cItem)))
                             .frame(minWidth: 0, maxWidth: .infinity, minHeight: 44, maxHeight: 44, alignment: .topLeading)
                             .padding(.leading, 8)
                             .padding(.trailing, 32)
@@ -74,6 +74,20 @@ struct ChatPreviewView: View {
                         .padding(.bottom, 4)
                 }
             }
+        }
+    }
+
+    private func itemStatusMark(_ cItem: ChatItem) -> Text {
+        switch cItem.meta.itemStatus {
+        case .sndErrorAuth:
+            return Text(Image(systemName: "multiply"))
+                .font(.caption)
+                .foregroundColor(.red) + Text(" ")
+        case .sndError:
+            return Text(Image(systemName: "exclamationmark.triangle.fill"))
+                .font(.caption)
+                .foregroundColor(.yellow) + Text(" ")
+        default: return Text("")
         }
     }
 

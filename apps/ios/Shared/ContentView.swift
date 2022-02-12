@@ -58,6 +58,14 @@ final class AlertManager: ObservableObject {
             self.presentAlert = true
         }
     }
+
+    func showAlertMsg(title: String, message: String? = nil) {
+        if let message = message {
+            showAlert(Alert(title: Text(title), message: Text(message)))
+        } else {
+            showAlert(Alert(title: Text(title)))
+        }
+    }
 }
 
 //struct ContentView_Previews: PreviewProvider {

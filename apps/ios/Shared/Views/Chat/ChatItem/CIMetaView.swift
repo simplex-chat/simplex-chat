@@ -14,10 +14,14 @@ struct CIMetaView: View {
     var body: some View {
         HStack(alignment: .center, spacing: 4) {
             switch chatItem.meta.itemStatus {
-            case .sndSent: statusImage("checkmark", .secondary)
-            case .sndErrorAuth: statusImage("multiply", .red)
-            case .sndError: statusImage("exclamationmark.triangle.fill", .yellow)
-            case .rcvNew: statusImage("circlebadge.fill", Color.accentColor)
+            case .sndSent:
+                statusImage("checkmark", .secondary)
+            case .sndErrorAuth:
+                statusImage("multiply", .red)
+            case .sndError:
+                statusImage("exclamationmark.triangle.fill", .yellow)
+            case .rcvNew:
+                statusImage("circlebadge.fill", Color.accentColor)
             default: EmptyView()
             }
 

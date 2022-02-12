@@ -39,7 +39,7 @@ struct NewChatButton: View {
             connReqInvitation = try apiAddContact()
             addContact = true
         } catch {
-            AlertManager.shared.showAlert(connectionErrorAlert(error))
+            connectionErrorAlert(error)
             logger.error("NewChatButton.addContactAction apiAddContact error: \(error.localizedDescription)")
         }
     }
@@ -48,16 +48,13 @@ struct NewChatButton: View {
         ConnectContactView(completed: { err in
             connectContact = false
             if let error = err {
-                AlertManager.shared.showAlert(connectionErrorAlert(error))
+                connectionErrorAlert(error)
             }
         })
     }
 
-    func connectionErrorAlert(_ error: Error) -> Alert {
-        Alert(
-            title: Text("Connection error"),
-            message: Text(error.localizedDescription)
-        )
+    func connectionErrorAlert(_ error: Error) {
+        AlertManager.shared.showAlertMsg(title: "Connection error", message: error.localizedDescription)
     }
 }
 
