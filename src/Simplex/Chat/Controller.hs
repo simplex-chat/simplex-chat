@@ -155,7 +155,6 @@ data ChatResponse
   | CRInvitation {connReqInvitation :: ConnReqInvitation}
   | CRSentConfirmation
   | CRSentInvitation
-  | CRContactAlreadyExists {contact :: Contact}
   | CRContactUpdated {fromContact :: Contact, toContact :: Contact}
   | CRContactsMerged {intoContact :: Contact, mergedContact :: Contact}
   | CRContactDeleted {contact :: Contact}
@@ -163,6 +162,7 @@ data ChatResponse
   | CRUserContactLinkDeleted
   | CRReceivedContactRequest {contactRequest :: UserContactRequest}
   | CRAcceptingContactRequest {contact :: Contact}
+  | CRContactAlreadyExists {contact :: Contact}
   | CRContactRequestAlreadyAccepted {contact :: Contact}
   | CRLeftMemberUser {groupInfo :: GroupInfo}
   | CRGroupDeletedUser {groupInfo :: GroupInfo}

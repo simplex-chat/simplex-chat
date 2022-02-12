@@ -65,9 +65,9 @@ responseToView cmd testView = \case
   CRInvitation cReq -> r' $ viewConnReqInvitation cReq
   CRSentConfirmation -> r' ["confirmation sent!"]
   CRSentInvitation -> r' ["connection request sent!"]
-  CRContactAlreadyExists c -> r' [ttyFullContact c <> ": contact already exists"]
   CRContactDeleted c -> r' [ttyContact' c <> ": contact is deleted"]
   CRAcceptingContactRequest c -> r' [ttyFullContact c <> ": accepting contact request..."]
+  CRContactAlreadyExists c -> r' [ttyFullContact c <> ": contact already exists"]
   CRContactRequestAlreadyAccepted c -> r' [ttyFullContact c <> ": sent you a duplicate contact request, but you are already connected, no action needed"]
   CRUserContactLinkCreated cReq -> r' $ connReqContact_ "Your new chat address is created!" cReq
   CRUserContactLinkDeleted -> r' viewUserContactLinkDeleted

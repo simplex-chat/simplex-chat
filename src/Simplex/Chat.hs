@@ -179,10 +179,10 @@ processChatCommand = \case
         gs -> throwChatError $ CEContactGroups ct gs
     CTGroup -> pure $ chatCmdError "not implemented"
     CTContactRequest -> pure $ chatCmdError "not supported"
-  APIAcceptContact connReqId -> withUser $ \User {userId, profile} -> do
-    withChatLock . procCmd $ do
-      UserContactRequest {agentInvitationId = AgentInvId invId, localDisplayName = cName, profileId, profile = p, xInfoId} <- withStore $ \st ->
-        getContactRequest st userId connReqId
+  APIAcceptContact connReqId -> withUser $ \User {userId, profile} -> withChatLock $ do
+    UserContactRequest {agentInvitationId = AgentInvId invId, localDisplayName = cName, profileId, profile = p, xInfoId} <-
+      withStore $ \st -> getContactRequest st userId connReqId
+    procCmd $ do
       connId <- withAgent $ \a -> acceptContact a invId . directMessage $ XInfo profile Nothing
       acceptedContact <- withStore $ \st -> createAcceptedContact st userId connId cName profileId p xInfoId
       pure $ CRAcceptingContactRequest acceptedContact

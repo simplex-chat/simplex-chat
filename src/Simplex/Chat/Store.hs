@@ -269,14 +269,12 @@ getConnReqContactXInfoId :: MonadUnliftIO m => SQLiteStore -> UserId -> ConnReqU
 getConnReqContactXInfoId st userId cReqHash = do
   liftIO . withTransaction st $ \db ->
     getContact' db >>= \case
-      Just contact -> pure (Just contact, Nothing)
-      Nothing -> do
-        xInfoId <- getXInfoId db
-        pure (Nothing, xInfoId)
+      c@(Just _) -> pure (c, Nothing)
+      Nothing -> (Nothing,) <$> getXInfoId db
   where
     getContact' :: DB.Connection -> IO (Maybe Contact)
     getContact' db =
-      listToMaybe . map toContact
+      fmap toContact . listToMaybe
         <$> DB.query
           db
           [sql|
@@ -296,7 +294,7 @@ getConnReqContactXInfoId st userId cReqHash = do
           (userId, cReqHash)
     getXInfoId :: DB.Connection -> IO (Maybe XInfoId)
     getXInfoId db =
-      listToMaybe . map fromOnly
+      fmap fromOnly . listToMaybe
         <$> DB.query
           db
           "SELECT xinfo_identifier FROM connections WHERE user_id = ? AND via_contact_uri_hash = ? LIMIT 1"
@@ -575,54 +573,47 @@ getUserContactLink st userId =
     connReq _ = Left SEUserContactLinkNotFound
 
 createOrUpdateContactRequest :: StoreMonad m => SQLiteStore -> UserId -> Int64 -> InvitationId -> Profile -> Maybe XInfoId -> m (Either Contact UserContactRequest)
-createOrUpdateContactRequest st userId userContactLinkId invId Profile {displayName, fullName} xInfoId_ =
-  liftIOEither . withTransaction st $ \db -> runExceptT $
-    case xInfoId_ of
-      Nothing -> do
-        cReq <- ExceptT $ createContactRequest db
-        pure $ Right cReq
-      Just xInfoId -> do
-        contact_ <- liftIO $ getContact' db xInfoId
-        case contact_ of
-          Just contact -> pure $ Left contact
-          Nothing -> do
-            cReq_ <- liftIO $ getContactRequest' db xInfoId
-            case cReq_ of
-              Nothing -> do
-                cReq <- ExceptT $ createContactRequest db
-                pure $ Right cReq
-              Just UserContactRequest {contactRequestId, profile = oldProfile} -> do
-                cReq <- ExceptT $ updateContactRequest db contactRequestId oldProfile
-                pure $ Right cReq
+createOrUpdateContactRequest st userId userContactLinkId invId profile xInfoId_ =
+  liftIOEither . withTransaction st $ \db ->
+    createOrUpdateContactRequest_ db userId userContactLinkId invId profile xInfoId_
+
+createOrUpdateContactRequest_ :: DB.Connection -> UserId -> Int64 -> InvitationId -> Profile -> Maybe XInfoId -> IO (Either StoreError (Either Contact UserContactRequest))
+createOrUpdateContactRequest_ db userId userContactLinkId invId Profile {displayName, fullName} xInfoId_ =
+  maybeM getContact' xInfoId_ >>= \case
+    Just contact -> pure . Right $ Left contact
+    Nothing -> Right <$$> createOrUpdate_
   where
-    createContactRequest :: DB.Connection -> IO (Either StoreError UserContactRequest)
-    createContactRequest db = do
+    maybeM = maybe (pure Nothing)
+    createOrUpdate_ :: IO (Either StoreError UserContactRequest)
+    createOrUpdate_ =
+      maybeM getContactRequest' xInfoId_ >>= \case
+        Nothing -> createContactRequest
+        Just UserContactRequest {contactRequestId, profile = oldProfile} ->
+          updateContactRequest contactRequestId oldProfile
+    createContactRequest :: IO (Either StoreError UserContactRequest)
+    createContactRequest = do
       currentTs <- getCurrentTime
-      join
-        <$> withLocalDisplayName
-          db
-          userId
-          displayName
-          ( \ldn -> do
-              DB.execute
-                db
-                "INSERT INTO contact_profiles (display_name, full_name, created_at, updated_at) VALUES (?,?,?,?)"
-                (displayName, fullName, currentTs, currentTs)
-              profileId <- insertedRowId db
-              DB.execute
-                db
-                [sql|
-                  INSERT INTO contact_requests
-                    (user_contact_link_id, agent_invitation_id, contact_profile_id, local_display_name, user_id, created_at, updated_at, xinfo_identifier)
-                  VALUES (?,?,?,?,?,?,?,?)
-                |]
-                (userContactLinkId, invId, profileId, ldn, userId, currentTs, currentTs, xInfoId_)
-              contactRequestId <- insertedRowId db
-              getContactRequest_ db userId contactRequestId
-          )
-    getContact' :: DB.Connection -> XInfoId -> IO (Maybe Contact)
-    getContact' db xInfoId =
-      listToMaybe . map toContact
+      join <$> withLocalDisplayName db userId displayName (createContactRequest_ currentTs)
+      where
+        createContactRequest_ currentTs ldn = do
+          DB.execute
+            db
+            "INSERT INTO contact_profiles (display_name, full_name, created_at, updated_at) VALUES (?,?,?,?)"
+            (displayName, fullName, currentTs, currentTs)
+          profileId <- insertedRowId db
+          DB.execute
+            db
+            [sql|
+              INSERT INTO contact_requests
+                (user_contact_link_id, agent_invitation_id, contact_profile_id, local_display_name, user_id, created_at, updated_at, xinfo_identifier)
+              VALUES (?,?,?,?,?,?,?,?)
+            |]
+            (userContactLinkId, invId, profileId, ldn, userId, currentTs, currentTs, xInfoId_)
+          contactRequestId <- insertedRowId db
+          getContactRequest_ db userId contactRequestId
+    getContact' :: XInfoId -> IO (Maybe Contact)
+    getContact' xInfoId =
+      fmap toContact . listToMaybe
         <$> DB.query
           db
           [sql|
@@ -640,9 +631,9 @@ createOrUpdateContactRequest st userId userContactLinkId invId Profile {displayN
             LIMIT 1
           |]
           (userId, xInfoId)
-    getContactRequest' :: DB.Connection -> XInfoId -> IO (Maybe UserContactRequest)
-    getContactRequest' db xInfoId =
-      listToMaybe . map toContactRequest
+    getContactRequest' :: XInfoId -> IO (Maybe UserContactRequest)
+    getContactRequest' xInfoId =
+      fmap toContactRequest . listToMaybe
         <$> DB.query
           db
           [sql|
@@ -657,26 +648,14 @@ createOrUpdateContactRequest st userId userContactLinkId invId Profile {displayN
             LIMIT 1
           |]
           (userId, xInfoId)
-    updateContactRequest :: DB.Connection -> Int64 -> Profile -> IO (Either StoreError UserContactRequest)
-    updateContactRequest db cReqId Profile {displayName = oldDisplayName} = do
+    updateContactRequest :: Int64 -> Profile -> IO (Either StoreError UserContactRequest)
+    updateContactRequest cReqId Profile {displayName = oldDisplayName} = do
       currentTs <- liftIO getCurrentTime
-      if displayName /= oldDisplayName
-        then do
-          join
-            <$> withLocalDisplayName
-              db
-              userId
-              displayName
-              ( \ldn -> do
-                  updateCReqProfile ldn currentTs
-                  updateContactRequest' ldn currentTs
-              )
-        else do
-          updateCReqProfile displayName currentTs
-          updateContactRequest' displayName currentTs
+      if displayName == oldDisplayName
+        then updateContactRequest_ currentTs displayName
+        else join <$> withLocalDisplayName db userId displayName (updateContactRequest_ currentTs)
       where
-        updateCReqProfile :: Text -> UTCTime -> IO ()
-        updateCReqProfile ldn updatedAt = do
+        updateContactRequest_ updatedAt ldn = do
           DB.execute
             db
             [sql|
@@ -692,8 +671,6 @@ createOrUpdateContactRequest st userId userContactLinkId invId Profile {displayN
               )
             |]
             (ldn, fullName, updatedAt, userId, cReqId)
-        updateContactRequest' :: Text -> UTCTime -> IO (Either StoreError UserContactRequest)
-        updateContactRequest' ldn updatedAt = do
           DB.execute
             db
             [sql|
