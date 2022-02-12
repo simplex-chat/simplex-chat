@@ -25,7 +25,7 @@ module Simplex.Chat.Store
     getUsers,
     setActiveUser,
     createDirectConnection,
-    createDirectConnection',
+    createConnReqConnection,
     getXInfoIdByUriHash,
     getContactRec,
     createDirectContact,
@@ -254,8 +254,8 @@ setActiveUser st userId = do
     DB.execute_ db "UPDATE users SET active_user = 0"
     DB.execute db "UPDATE users SET active_user = 1 WHERE user_id = ?" (Only userId)
 
-createDirectConnection' :: MonadUnliftIO m => SQLiteStore -> UserId -> ConnId -> ConnReqUriHash -> XInfoId -> m ()
-createDirectConnection' st userId acId cReqHash xInfoId = do
+createConnReqConnection :: MonadUnliftIO m => SQLiteStore -> UserId -> ConnId -> ConnReqUriHash -> XInfoId -> m ()
+createConnReqConnection st userId acId cReqHash xInfoId = do
   liftIO . withTransaction st $ \db -> do
     currentTs <- getCurrentTime
     DB.execute

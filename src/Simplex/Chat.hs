@@ -419,7 +419,7 @@ processChatCommand = \case
       where
         connect xInfoId cReqHash = do
           connId <- withAgent $ \a -> joinConnection a cReq $ directMessage (XInfo profile $ Just xInfoId)
-          withStore $ \st -> createDirectConnection' st userId connId cReqHash xInfoId
+          withStore $ \st -> createConnReqConnection st userId connId cReqHash xInfoId
           pure CRSentInvitation
     acceptContactRequest :: User -> UserContactRequest -> m ChatResponse
     acceptContactRequest User {userId, profile} UserContactRequest {agentInvitationId = AgentInvId invId, localDisplayName = cName, profileId, profile = p, xInfoId} = do
