@@ -28,5 +28,4 @@ func isShortEmoji(_ str: String) -> Bool {
 }
 
 let largeEmojiFont = Font.custom("Emoji", size: 48, relativeTo: .largeTitle)
-
 let mediumEmojiFont = Font.custom("Emoji", size: 36, relativeTo: .largeTitle)

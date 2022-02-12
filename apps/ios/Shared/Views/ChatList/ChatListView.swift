@@ -70,13 +70,9 @@ struct ChatListView: View {
 
     private func filteredChats() -> [Chat] {
         let s = searchText.trimmingCharacters(in: .whitespaces).localizedLowercase
-        if s == "" {
-            return chatModel.chats
-        } else {
-            return chatModel.chats.filter {
-                $0.chatInfo.displayName.localizedLowercase.contains(s) ||
-                $0.chatInfo.fullName.localizedLowercase.contains(s)
-            }
+        return s == ""
+            ? chatModel.chats
+            : chatModel.chats.filter { $0.chatInfo.chatViewName.localizedLowercase.contains(s) }
         }
     }
 
