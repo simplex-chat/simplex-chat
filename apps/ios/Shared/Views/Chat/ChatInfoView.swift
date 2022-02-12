@@ -10,11 +10,9 @@ import SwiftUI
 
 struct ChatInfoView: View {
     @EnvironmentObject var chatModel: ChatModel
+    @ObservedObject var alertManager = AlertManager.shared
     @ObservedObject var chat: Chat
     @Binding var showChatInfo: Bool
-    @State private var showDeleteContactAlert = false
-    @State private var alertContact: Contact?
-    @State private var showNetworkStatusInfo = false
 
     var body: some View {
         VStack{
@@ -30,36 +28,27 @@ struct ChatInfoView: View {
             if case let .direct(contact) = chat.chatInfo {
                 VStack {
                     HStack {
-                        Button {
-                            showNetworkStatusInfo.toggle()
-                        } label: {
-                            serverImage()
-                            Text(chat.serverInfo.networkStatus.statusString)
-                                .foregroundColor(.primary)
-                        }
+                        serverImage()
+                        Text(chat.serverInfo.networkStatus.statusString)
+                            .foregroundColor(.primary)
                     }
-                    if showNetworkStatusInfo {
-                        Text(chat.serverInfo.networkStatus.statusExplanation)
-                            .font(.subheadline)
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal, 64)
-                            .padding(.vertical, 8)
-                    }
+                    Text(chat.serverInfo.networkStatus.statusExplanation)
+                        .font(.subheadline)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 64)
+                        .padding(.vertical, 8)
 
                     Spacer()
                     Button(role: .destructive) {
-                        alertContact = contact
-                        showDeleteContactAlert = true
+                        alertManager.showAlert(deleteContactAlert(contact))
                     } label: {
                         Label("Delete contact", systemImage: "trash")
                     }
                     .padding()
-                    .alert(isPresented: $showDeleteContactAlert) {
-                        deleteContactAlert(alertContact!)
-                    }
                 }
             }
         }
+        .alert(isPresented: $alertManager.presentAlert) { alertManager.alertView! }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
 
@@ -81,10 +70,8 @@ struct ChatInfoView: View {
                 } catch let error {
                     logger.error("ChatInfoView.deleteContactAlert apiDeleteChat error: \(error.localizedDescription)")
                 }
-                alertContact = nil
-            }, secondaryButton: .cancel() {
-                alertContact = nil
-            }
+            },
+            secondaryButton: .cancel()
         )
     }
 }

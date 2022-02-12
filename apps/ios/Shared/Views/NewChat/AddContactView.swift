@@ -11,7 +11,6 @@ import CoreImage.CIFilterBuiltins
 
 struct AddContactView: View {
     var connReqInvitation: String
-    @State private var shareInvitation = false
 
     var body: some View {
         VStack {
@@ -27,11 +26,12 @@ struct AddContactView: View {
                 .font(.subheadline)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal)
-            Button { shareInvitation = true } label: {
-                Label("Share", systemImage: "square.and.arrow.up")
+            Button {
+                showShareSheet(items: [connReqInvitation])
+            } label: {
+                Label("Share invitation link", systemImage: "square.and.arrow.up")
             }
             .padding()
-            .shareSheet(isPresented: $shareInvitation, items: [connReqInvitation])
         }
     }
 }

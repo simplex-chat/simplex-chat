@@ -8,9 +8,6 @@
 
 import SwiftUI
 
-private let chatImageColorLight = Color(red: 0.9, green: 0.9, blue: 0.9)
-private let chatImageColorDark = Color(red: 0.2, green: 0.2, blue: 0.2                                                     )
-
 struct ChatView: View {
     @EnvironmentObject var chatModel: ChatModel
     @Environment(\.colorScheme) var colorScheme
@@ -31,8 +28,15 @@ struct ChatView: View {
                                 ChatItemView(chatItem: $0, width: g.size.width)
                                     .frame(minWidth: 0, maxWidth: .infinity, alignment: $0.chatDir.sent ? .trailing : .leading)
                             }
-                            .onAppear { scrollToBottom(proxy) }
-                            .onChange(of: chatModel.chatItems.count) { _ in scrollToBottom(proxy) }
+                            .onAppear {
+                                DispatchQueue.main.async {
+                                    scrollToFirstUnread(proxy)
+                                }
+                                markAllRead()
+                            }
+                            .onChange(of: chatModel.chatItems.count) { _ in
+                                scrollToBottom(proxy)
+                            }
                             .onChange(of: keyboardVisible) { _ in
                                 if keyboardVisible {
                                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
@@ -42,7 +46,6 @@ struct ChatView: View {
                             }
                         }
                     }
-                    .coordinateSpace(name: "scrollView")
                     .onTapGesture {
                         UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
                     }
@@ -72,23 +75,7 @@ struct ChatView: View {
                 Button {
                     showChatInfo = true
                 } label: {
-                    HStack {
-                        ChatInfoImage(
-                            chat: chat,
-                            color: colorScheme == .dark
-                                    ? chatImageColorDark
-                                    : chatImageColorLight
-                        )
-                        .frame(width: 32, height: 32)
-                        .padding(.trailing, 4)
-                        VStack {
-                            Text(cInfo.displayName).font(.headline)
-                            if cInfo.fullName != "" && cInfo.displayName != cInfo.fullName {
-                                Text(cInfo.fullName).font(.subheadline)
-                            }
-                        }
-                    }
-                    .foregroundColor(.primary)
+                    ChatInfoToolbar(chat: chat)
                 }
                 .sheet(isPresented: $showChatInfo) {
                     ChatInfoView(chat: chat, showChatInfo: $showChatInfo)
@@ -99,9 +86,28 @@ struct ChatView: View {
     }
 
     func scrollToBottom(_ proxy: ScrollViewProxy, animation: Animation = .default) {
+        withAnimation(animation) { scrollToBottom_(proxy) }
+    }
+
+    func scrollToBottom_(_ proxy: ScrollViewProxy) {
         if let id = chatModel.chatItems.last?.id {
-            withAnimation(animation) {
-                proxy.scrollTo(id, anchor: .bottom)
+            proxy.scrollTo(id, anchor: .bottom)
+        }
+    }
+
+    // align first unread with the top or the last unread with bottom
+    func scrollToFirstUnread(_ proxy: ScrollViewProxy) {
+        if let cItem = chatModel.chatItems.first(where: { $0.isRcvNew() }) {
+            proxy.scrollTo(cItem.id)
+        } else {
+            scrollToBottom_(proxy)
+        }
+    }
+
+    func markAllRead() {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+            if chatModel.chatId == chat.id {
+                markChatRead(chat)
             }
         }
     }

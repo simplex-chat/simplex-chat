@@ -31,6 +31,7 @@ enum ChatCommand {
     case showMyAddress
     case apiAcceptContact(contactReqId: Int64)
     case apiRejectContact(contactReqId: Int64)
+    case apiChatRead(type: ChatType, id: Int64, itemRange: (Int64, Int64))
     case string(String)
 
     var cmdString: String {
@@ -40,20 +41,49 @@ enum ChatCommand {
             case let .createActiveUser(profile): return "/u \(profile.displayName) \(profile.fullName)"
             case .startChat: return "/_start"
             case .apiGetChats: return "/_get chats"
-            case let .apiGetChat(type, id): return "/_get chat \(type.rawValue)\(id) count=500"
-            case let .apiSendMessage(type, id, mc): return "/_send \(type.rawValue)\(id) \(mc.cmdString)"
+            case let .apiGetChat(type, id): return "/_get chat \(ref(type, id)) count=100"
+            case let .apiSendMessage(type, id, mc): return "/_send \(ref(type, id)) \(mc.cmdString)"
             case .addContact: return "/connect"
             case let .connect(connReq): return "/connect \(connReq)"
-            case let .apiDeleteChat(type, id): return "/_delete \(type.rawValue)\(id)"
+            case let .apiDeleteChat(type, id): return "/_delete \(ref(type, id))"
             case let .updateProfile(profile): return "/profile \(profile.displayName) \(profile.fullName)"
             case .createMyAddress: return "/address"
             case .deleteMyAddress: return "/delete_address"
             case .showMyAddress: return "/show_address"
             case let .apiAcceptContact(contactReqId): return "/_accept \(contactReqId)"
             case let .apiRejectContact(contactReqId): return "/_reject \(contactReqId)"
+            case let .apiChatRead(type, id, itemRange: (from, to)): return "/_read chat \(ref(type, id)) from=\(from) to=\(to)"
             case let .string(str): return str
             }
         }
+    }
+
+    var cmdType: String {
+        get {
+            switch self {
+            case .showActiveUser: return "showActiveUser"
+            case .createActiveUser: return "createActiveUser"
+            case .startChat: return "startChat"
+            case .apiGetChats: return "apiGetChats"
+            case .apiGetChat: return "apiGetChat"
+            case .apiSendMessage: return "apiSendMessage"
+            case .addContact: return "addContact"
+            case .connect: return "connect"
+            case .apiDeleteChat: return "apiDeleteChat"
+            case .updateProfile: return "updateProfile"
+            case .createMyAddress: return "createMyAddress"
+            case .deleteMyAddress: return "deleteMyAddress"
+            case .showMyAddress: return "showMyAddress"
+            case .apiAcceptContact: return "apiAcceptContact"
+            case .apiRejectContact: return "apiRejectContact"
+            case .apiChatRead: return "apiChatRead"
+            case .string: return "console command"
+            }
+        }
+    }
+
+    func ref(_ type: ChatType, _ id: Int64) -> String {
+        "\(type.rawValue)\(id)"
     }
 }
 
@@ -88,6 +118,8 @@ enum ChatResponse: Decodable, Error {
     case groupEmpty(groupInfo: GroupInfo)
     case userContactLinkSubscribed
     case newChatItem(chatItem: AChatItem)
+    case chatItemUpdated(chatItem: AChatItem)
+    case cmdOk
     case chatCmdError(chatError: ChatError)
     case chatError(chatError: ChatError)
 
@@ -120,6 +152,8 @@ enum ChatResponse: Decodable, Error {
             case .groupEmpty: return "groupEmpty"
             case .userContactLinkSubscribed: return "userContactLinkSubscribed"
             case .newChatItem: return "newChatItem"
+            case .chatItemUpdated: return "chatItemUpdated"
+            case .cmdOk: return "cmdOk"
             case .chatCmdError: return "chatCmdError"
             case .chatError: return "chatError"
             }
@@ -155,6 +189,8 @@ enum ChatResponse: Decodable, Error {
             case let .groupEmpty(groupInfo): return String(describing: groupInfo)
             case .userContactLinkSubscribed: return noDetails
             case let .newChatItem(chatItem): return String(describing: chatItem)
+            case let .chatItemUpdated(chatItem): return String(describing: chatItem)
+            case .cmdOk: return noDetails
             case let .chatCmdError(chatError): return String(describing: chatError)
             case let .chatError(chatError): return String(describing: chatError)
             }
@@ -198,7 +234,9 @@ enum TerminalItem: Identifiable {
 
 func chatSendCmd(_ cmd: ChatCommand) throws -> ChatResponse {
     var c = cmd.cmdString.cString(using: .utf8)!
+    logger.debug("chatSendCmd \(cmd.cmdType)")
     let resp = chatResponse(chat_send_cmd(getChatCtrl(), &c)!)
+    logger.debug("chatSendCmd \(cmd.cmdType): \(resp.responseType)")
     DispatchQueue.main.async {
         ChatModel.shared.terminalItems.append(.cmd(.now, cmd))
         ChatModel.shared.terminalItems.append(.resp(.now, resp))
@@ -315,6 +353,12 @@ func apiRejectContactRequest(contactReqId: Int64) throws {
     throw r
 }
 
+func apiChatRead(type: ChatType, id: Int64, itemRange: (Int64, Int64)) throws {
+    let r = try chatSendCmd(.apiChatRead(type: type, id: id, itemRange: itemRange))
+    if case .cmdOk = r { return }
+    throw r
+}
+
 func acceptContactRequest(_ contactRequest: UserContactRequest) {
     do {
         let contact = try apiAcceptContactRequest(contactReqId: contactRequest.apiId)
@@ -331,6 +375,27 @@ func rejectContactRequest(_ contactRequest: UserContactRequest) {
         ChatModel.shared.removeChat(contactRequest.id)
     } catch let error {
         logger.error("rejectContactRequest: \(error.localizedDescription)")
+    }
+}
+
+func markChatRead(_ chat: Chat) {
+    do {
+        let minItemId = chat.chatStats.minUnreadItemId
+        let itemRange = (minItemId, chat.chatItems.last?.id ?? minItemId)
+        let cInfo = chat.chatInfo
+        try apiChatRead(type: cInfo.chatType, id: cInfo.apiId, itemRange: itemRange)
+        ChatModel.shared.markChatItemsRead(cInfo)
+    } catch {
+        logger.error("markChatRead apiChatRead error: \(error.localizedDescription)")
+    }
+}
+
+func markChatItemRead(_ cInfo: ChatInfo, _ cItem: ChatItem) {
+    do {
+        try apiChatRead(type: cInfo.chatType, id: cInfo.apiId, itemRange: (cItem.id, cItem.id))
+        ChatModel.shared.markChatItemRead(cInfo, cItem)
+    } catch {
+        logger.error("markChatItemRead apiChatRead error: \(error.localizedDescription)")
     }
 }
 
@@ -419,6 +484,12 @@ func processReceivedMsg(_ res: ChatResponse) {
             let cItem = aChatItem.chatItem
             chatModel.addChatItem(cInfo, cItem)
             NtfManager.shared.notifyMessageReceived(cInfo, cItem)
+        case let .chatItemUpdated(aChatItem):
+            let cInfo = aChatItem.chatInfo
+            let cItem = aChatItem.chatItem
+            if chatModel.upsertChatItem(cInfo, cItem) {
+                NtfManager.shared.notifyMessageReceived(cInfo, cItem)
+            }
         default:
             logger.debug("unsupported event: \(res.responseType)")
         }

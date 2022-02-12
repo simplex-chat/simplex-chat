@@ -34,6 +34,12 @@
 		5C75059E27B5CD9300BE3227 /* libffi.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C75059927B5CD9300BE3227 /* libffi.a */; };
 		5C75059F27B5CD9300BE3227 /* libHSsimplex-chat-1.1.1-GMOrBlCwBvRIONTwKLN6tj.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C75059A27B5CD9300BE3227 /* libHSsimplex-chat-1.1.1-GMOrBlCwBvRIONTwKLN6tj.a */; };
 		5C7505A027B5CD9300BE3227 /* libgmpxx.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C75059B27B5CD9300BE3227 /* libgmpxx.a */; };
+		5C7505A227B65FDB00BE3227 /* CIMetaView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C7505A127B65FDB00BE3227 /* CIMetaView.swift */; };
+		5C7505A327B65FDB00BE3227 /* CIMetaView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C7505A127B65FDB00BE3227 /* CIMetaView.swift */; };
+		5C7505A527B679EE00BE3227 /* NavLinkPlain.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C7505A427B679EE00BE3227 /* NavLinkPlain.swift */; };
+		5C7505A627B679EE00BE3227 /* NavLinkPlain.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C7505A427B679EE00BE3227 /* NavLinkPlain.swift */; };
+		5C7505A827B6D34800BE3227 /* ChatInfoToolbar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C7505A727B6D34800BE3227 /* ChatInfoToolbar.swift */; };
+		5C7505A927B6D34800BE3227 /* ChatInfoToolbar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C7505A727B6D34800BE3227 /* ChatInfoToolbar.swift */; };
 		5C764E80279C7276000C6508 /* dummy.m in Sources */ = {isa = PBXBuildFile; fileRef = 5C764E7F279C7276000C6508 /* dummy.m */; };
 		5C764E81279C7276000C6508 /* dummy.m in Sources */ = {isa = PBXBuildFile; fileRef = 5C764E7F279C7276000C6508 /* dummy.m */; };
 		5C764E82279C748B000C6508 /* libiconv.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C764E7B279C71D4000C6508 /* libiconv.tbd */; };
@@ -127,6 +133,9 @@
 		5C75059927B5CD9300BE3227 /* libffi.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libffi.a; sourceTree = "<group>"; };
 		5C75059A27B5CD9300BE3227 /* libHSsimplex-chat-1.1.1-GMOrBlCwBvRIONTwKLN6tj.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = "libHSsimplex-chat-1.1.1-GMOrBlCwBvRIONTwKLN6tj.a"; sourceTree = "<group>"; };
 		5C75059B27B5CD9300BE3227 /* libgmpxx.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libgmpxx.a; sourceTree = "<group>"; };
+		5C7505A127B65FDB00BE3227 /* CIMetaView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CIMetaView.swift; sourceTree = "<group>"; };
+		5C7505A427B679EE00BE3227 /* NavLinkPlain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavLinkPlain.swift; sourceTree = "<group>"; };
+		5C7505A727B6D34800BE3227 /* ChatInfoToolbar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatInfoToolbar.swift; sourceTree = "<group>"; };
 		5C764E7B279C71D4000C6508 /* libiconv.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libiconv.tbd; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS15.2.sdk/usr/lib/libiconv.tbd; sourceTree = DEVELOPER_DIR; };
 		5C764E7C279C71DB000C6508 /* libz.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libz.tbd; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS15.2.sdk/usr/lib/libz.tbd; sourceTree = DEVELOPER_DIR; };
 		5C764E7D279C7275000C6508 /* SimpleX (iOS)-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "SimpleX (iOS)-Bridging-Header.h"; sourceTree = "<group>"; };
@@ -225,6 +234,7 @@
 			children = (
 				5CE4407427ADB657007B033A /* ChatItem */,
 				5C2E260E27A30FDC00F70299 /* ChatView.swift */,
+				5C7505A727B6D34800BE3227 /* ChatInfoToolbar.swift */,
 				5C971E1C27AEBEF600C8A3CE /* ChatInfoView.swift */,
 				5C9FD96D27A5D6ED0075386C /* SendMessageView.swift */,
 				5C1A4C1D27A715B700EAD5AD /* ChatItemView.swift */,
@@ -270,6 +280,8 @@
 			isa = PBXGroup;
 			children = (
 				5C971E2027AEBF8300C8A3CE /* ChatInfoImage.swift */,
+				5C7505A427B679EE00BE3227 /* NavLinkPlain.swift */,
+				5CC1C99427A6CF7F000D9FF6 /* ShareSheet.swift */,
 			);
 			path = Helpers;
 			sourceTree = "<group>";
@@ -348,7 +360,6 @@
 				5CCD403627A5F9A200368C90 /* ConnectContactView.swift */,
 				5CCD403927A5F9BE00368C90 /* CreateGroupView.swift */,
 				5CC1C99127A6C7F5000D9FF6 /* QRCode.swift */,
-				5CC1C99427A6CF7F000D9FF6 /* ShareSheet.swift */,
 			);
 			path = NewChat;
 			sourceTree = "<group>";
@@ -380,6 +391,7 @@
 			isa = PBXGroup;
 			children = (
 				5CE4407527ADB66A007B033A /* TextItemView.swift */,
+				5C7505A127B65FDB00BE3227 /* CIMetaView.swift */,
 				5CE4407827ADB701007B033A /* EmojiItemView.swift */,
 			);
 			path = ChatItem;
@@ -559,6 +571,7 @@
 				5CE4407927ADB701007B033A /* EmojiItemView.swift in Sources */,
 				5C5346A827B59A6A004DF848 /* ChatHelp.swift in Sources */,
 				5C764E80279C7276000C6508 /* dummy.m in Sources */,
+				5C7505A827B6D34800BE3227 /* ChatInfoToolbar.swift in Sources */,
 				5CB924E427A8683A00ACCCDD /* UserAddress.swift in Sources */,
 				5C063D2727A4564100AEC577 /* ChatPreviewView.swift in Sources */,
 				5C35CFCB27B2E91D00FB6C6D /* NtfManager.swift in Sources */,
@@ -570,6 +583,8 @@
 				5CB9250D27A9432000ACCCDD /* ChatListNavLink.swift in Sources */,
 				5CA059ED279559F40002BEB4 /* ContentView.swift in Sources */,
 				5CCD403427A5F6DF00368C90 /* AddContactView.swift in Sources */,
+				5C7505A527B679EE00BE3227 /* NavLinkPlain.swift in Sources */,
+				5C7505A227B65FDB00BE3227 /* CIMetaView.swift in Sources */,
 				5C35CFC827B2782E00FB6C6D /* BGManager.swift in Sources */,
 				5CA05A4C27974EB60002BEB4 /* WelcomeView.swift in Sources */,
 				5C2E260F27A30FDC00F70299 /* ChatView.swift in Sources */,
@@ -599,6 +614,7 @@
 				5CE4407A27ADB701007B033A /* EmojiItemView.swift in Sources */,
 				5C5346A927B59A6A004DF848 /* ChatHelp.swift in Sources */,
 				5C764E81279C7276000C6508 /* dummy.m in Sources */,
+				5C7505A927B6D34800BE3227 /* ChatInfoToolbar.swift in Sources */,
 				5CB924E527A8683A00ACCCDD /* UserAddress.swift in Sources */,
 				5C063D2827A4564100AEC577 /* ChatPreviewView.swift in Sources */,
 				5C35CFCC27B2E91D00FB6C6D /* NtfManager.swift in Sources */,
@@ -610,6 +626,8 @@
 				5CB9250E27A9432000ACCCDD /* ChatListNavLink.swift in Sources */,
 				5CA059EE279559F40002BEB4 /* ContentView.swift in Sources */,
 				5CCD403527A5F6DF00368C90 /* AddContactView.swift in Sources */,
+				5C7505A627B679EE00BE3227 /* NavLinkPlain.swift in Sources */,
+				5C7505A327B65FDB00BE3227 /* CIMetaView.swift in Sources */,
 				5C35CFC927B2782E00FB6C6D /* BGManager.swift in Sources */,
 				5CA05A4D27974EB60002BEB4 /* WelcomeView.swift in Sources */,
 				5C2E261027A30FDC00F70299 /* ChatView.swift in Sources */,
