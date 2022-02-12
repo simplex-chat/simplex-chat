@@ -163,7 +163,7 @@ data ChatResponse
   | CRUserContactLinkDeleted
   | CRReceivedContactRequest {contactRequest :: UserContactRequest}
   | CRContactRequestUpdated {contactRequest :: UserContactRequest}
-  | CRConnectingContactAlreadyExists {contact :: Contact}
+  | CRContactRequestAlreadyHasContact {contact :: Contact}
   | CRAcceptingContactRequest {contact :: Contact}
   | CRContactRequestAlreadyAccepted {contact :: Contact}
   | CRLeftMemberUser {groupInfo :: GroupInfo}

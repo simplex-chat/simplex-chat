@@ -85,7 +85,7 @@ responseToView cmd testView = \case
   CRContactsMerged intoCt mergedCt -> viewContactsMerged intoCt mergedCt
   CRReceivedContactRequest UserContactRequest {localDisplayName = c, profile} -> viewReceivedContactRequest c profile
   CRContactRequestUpdated UserContactRequest {localDisplayName = c} -> r' [ttyContact c <> ": contact request updated"]
-  CRConnectingContactAlreadyExists c -> r' [ttyFullContact c <> ": connecting contact already exists"]
+  CRContactRequestAlreadyHasContact c -> r' [ttyFullContact c <> ": contact request already has contact"]
   CRRcvFileStart ft -> receivingFile_ "started" ft
   CRRcvFileComplete ft -> receivingFile_ "completed" ft
   CRRcvFileSndCancelled ft -> viewRcvFileSndCancelled ft

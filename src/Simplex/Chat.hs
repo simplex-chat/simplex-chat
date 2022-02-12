@@ -869,7 +869,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
               toView $ CRContactRequestUpdated cReq
             (_, Just contactId) -> do
               contact <- withStore $ \st -> getContactRec st userId contactId
-              toView $ CRConnectingContactAlreadyExists contact
+              toView $ CRContactRequestAlreadyHasContact contact
 
     withAckMessage :: ConnId -> MsgMeta -> m () -> m ()
     withAckMessage cId MsgMeta {recipient = (msgId, _)} action =
