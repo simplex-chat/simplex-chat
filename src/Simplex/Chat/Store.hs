@@ -41,7 +41,9 @@ module Simplex.Chat.Store
     getUserContactLinkConnections,
     deleteUserContactLink,
     getUserContactLink,
+    checkContactRequest,
     createContactRequest,
+    updateContactRequest,
     getContactRequest,
     getContactRequestIdByName,
     deleteContactRequest,
@@ -593,11 +595,34 @@ getUserContactLink st userId =
     connReq [Only cReq] = Right cReq
     connReq _ = Left SEUserContactLinkNotFound
 
-createContactRequest :: StoreMonad m => SQLiteStore -> UserId -> Int64 -> InvitationId -> Profile -> m UserContactRequest
-createContactRequest st userId userContactId invId Profile {displayName, fullName} =
-  liftIOEither . withTransaction st $ \db ->
+checkContactRequest :: StoreMonad m => SQLiteStore -> UserId -> XInfoId -> m (Maybe Int64, Maybe Int64)
+checkContactRequest st userId xInfoId =
+  liftIO . withTransaction st $ \db -> do
+    cReqId <- getCReqId db
+    contactId <- getContactId db
+    pure (cReqId, contactId)
+  where
+    getCReqId :: DB.Connection -> IO (Maybe Int64)
+    getCReqId db =
+      listToMaybe . map fromOnly
+        <$> DB.query
+          db
+          "SELECT contact_request_id FROM contact_requests WHERE xinfo_identifier = ? AND user_id = ? LIMIT 1"
+          (xInfoId, userId)
+    getContactId :: DB.Connection -> IO (Maybe Int64)
+    getContactId db =
+      listToMaybe . map fromOnly
+        <$> DB.query
+          db
+          "SELECT contact_id FROM contacts WHERE xinfo_identifier = ? AND user_id = ? LIMIT 1"
+          (xInfoId, userId)
+
+createContactRequest :: StoreMonad m => SQLiteStore -> UserId -> Int64 -> InvitationId -> Profile -> Maybe XInfoId -> m UserContactRequest
+createContactRequest st userId userContactId invId Profile {displayName, fullName} xInfoId =
+  liftIOEither . withTransaction st $ \db -> do
     join <$> withLocalDisplayName db userId displayName (createContactRequest' db)
   where
+    createContactRequest' :: DB.Connection -> Text -> IO (Either StoreError UserContactRequest)
     createContactRequest' db ldn = do
       currentTs <- getCurrentTime
       DB.execute
@@ -609,12 +634,52 @@ createContactRequest st userId userContactId invId Profile {displayName, fullNam
         db
         [sql|
           INSERT INTO contact_requests
-            (user_contact_link_id, agent_invitation_id, contact_profile_id, local_display_name, user_id, created_at, updated_at)
-          VALUES (?,?,?,?,?,?,?)
+            (user_contact_link_id, agent_invitation_id, contact_profile_id, local_display_name, user_id, created_at, updated_at, xinfo_identifier)
+          VALUES (?,?,?,?,?,?,?,?)
         |]
-        (userContactId, invId, profileId, ldn, userId, currentTs, currentTs)
+        (userContactId, invId, profileId, ldn, userId, currentTs, currentTs, xInfoId)
       contactRequestId <- insertedRowId db
       getContactRequest_ db userId contactRequestId
+
+updateContactRequest :: StoreMonad m => SQLiteStore -> UserId -> Int64 -> InvitationId -> Profile -> m UserContactRequest
+updateContactRequest st userId cReqId invId Profile {displayName, fullName} =
+  liftIOEither . withTransaction st $ \db -> do
+    currentTs <- getCurrentTime
+    updateCReqProfile db currentTs
+    updateContactRequest' db
+  where
+    updateContactRequest' :: DB.Connection -> IO (Either StoreError UserContactRequest)
+    updateContactRequest' db = do
+      currentTs <- getCurrentTime
+      DB.execute
+        db
+        [sql|
+          UPDATE contact_requests
+          SET agent_invitation_id = ?,
+              local_display_name = ?,
+              updated_at = ?
+          WHERE user_id = ?
+            AND contact_request_id = ?
+        |]
+        (invId, displayName, currentTs, userId, cReqId)
+      getContactRequest_ db userId cReqId
+    updateCReqProfile :: DB.Connection -> UTCTime -> IO ()
+    updateCReqProfile db updatedAt = do
+      DB.execute
+        db
+        [sql|
+          UPDATE contact_profiles
+          SET display_name = ?,
+              full_name = ?,
+              updated_at = ?
+          WHERE contact_profile_id IN (
+            SELECT contact_profile_id
+            FROM contact_requests
+            WHERE user_id = ?
+              AND contact_request_id = ?
+          )
+        |]
+        (displayName, fullName, updatedAt, userId, cReqId)
 
 getContactRequest :: StoreMonad m => SQLiteStore -> UserId -> Int64 -> m UserContactRequest
 getContactRequest st userId contactRequestId =
