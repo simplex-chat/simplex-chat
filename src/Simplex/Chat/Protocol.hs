@@ -69,8 +69,8 @@ data ChatMsgEvent
   = XMsgNew MsgContent
   | XFile FileInvitation
   | XFileAcpt String
-  | XInfo Profile (Maybe XInfoId)
-  | XContact Profile (Maybe MsgContent) -- deprecated
+  | XInfo Profile
+  | XContact Profile (Maybe XContactId)
   | XGrpInv GroupInvitation
   | XGrpAcpt MemberId
   | XGrpMemNew MemberInfo
@@ -222,7 +222,7 @@ toCMEventTag = \case
   XMsgNew _ -> XMsgNew_
   XFile _ -> XFile_
   XFileAcpt _ -> XFileAcpt_
-  XInfo _ _ -> XInfo_
+  XInfo _ -> XInfo_
   XContact _ _ -> XContact_
   XGrpInv _ -> XGrpInv_
   XGrpAcpt _ -> XGrpAcpt_
@@ -263,8 +263,8 @@ appToChatMessage AppMessage {event, params} = do
       XMsgNew_ -> XMsgNew <$> p "content"
       XFile_ -> XFile <$> p "file"
       XFileAcpt_ -> XFileAcpt <$> p "fileName"
-      XInfo_ -> XInfo <$> p "profile" <*> JT.parseEither (.:? "xInfoId") params
-      XContact_ -> XContact <$> p "profile" <*> JT.parseEither (.:? "content") params
+      XInfo_ -> XInfo <$> p "profile"
+      XContact_ -> XContact <$> p "profile" <*> JT.parseEither (.:? "contactReqId") params
       XGrpInv_ -> XGrpInv <$> p "groupInvitation"
       XGrpAcpt_ -> XGrpAcpt <$> p "memberId"
       XGrpMemNew_ -> XGrpMemNew <$> p "memberInfo"
@@ -292,8 +292,8 @@ chatToAppMessage ChatMessage {chatMsgEvent} = AppMessage {event, params}
       XMsgNew content -> o ["content" .= content]
       XFile fileInv -> o ["file" .= fileInv]
       XFileAcpt fileName -> o ["fileName" .= fileName]
-      XInfo profile xInfoId -> o $ maybe id ((:) . ("xInfoId" .=)) xInfoId ["profile" .= profile]
-      XContact profile content -> o $ maybe id ((:) . ("content" .=)) content ["profile" .= profile]
+      XInfo profile -> o $ ["profile" .= profile]
+      XContact profile xContactId -> o $ maybe id ((:) . ("contactReqId" .=)) xContactId ["profile" .= profile]
       XGrpInv groupInv -> o ["groupInvitation" .= groupInv]
       XGrpAcpt memId -> o ["memberId" .= memId]
       XGrpMemNew memInfo -> o ["memberInfo" .= memInfo]

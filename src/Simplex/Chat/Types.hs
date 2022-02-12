@@ -100,29 +100,29 @@ data UserContactRequest = UserContactRequest
     profileId :: Int64,
     profile :: Profile,
     createdAt :: UTCTime,
-    xInfoId :: Maybe XInfoId
+    xContactId :: Maybe XContactId
   }
   deriving (Eq, Show, Generic, FromJSON)
 
 instance ToJSON UserContactRequest where
   toEncoding = J.genericToEncoding J.defaultOptions
 
-newtype XInfoId = XInfoId {unXInfoId :: ByteString}
+newtype XContactId = XContactId ByteString
   deriving (Eq, Show)
 
-instance FromField XInfoId where fromField f = XInfoId <$> fromField f
+instance FromField XContactId where fromField f = XContactId <$> fromField f
 
-instance ToField XInfoId where toField (XInfoId m) = toField m
+instance ToField XContactId where toField (XContactId m) = toField m
 
-instance StrEncoding XInfoId where
-  strEncode (XInfoId m) = strEncode m
-  strDecode s = XInfoId <$> strDecode s
-  strP = XInfoId <$> strP
+instance StrEncoding XContactId where
+  strEncode (XContactId m) = strEncode m
+  strDecode s = XContactId <$> strDecode s
+  strP = XContactId <$> strP
 
-instance FromJSON XInfoId where
-  parseJSON = strParseJSON "XInfoId"
+instance FromJSON XContactId where
+  parseJSON = strParseJSON "XContactId"
 
-instance ToJSON XInfoId where
+instance ToJSON XContactId where
   toJSON = strToJSON
   toEncoding = strToJEncoding
 

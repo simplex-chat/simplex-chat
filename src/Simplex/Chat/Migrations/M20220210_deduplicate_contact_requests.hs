@@ -13,11 +13,11 @@ m20220210_deduplicate_contact_requests =
 ALTER TABLE connections ADD COLUMN via_contact_uri_hash BLOB;
 CREATE INDEX idx_connections_via_contact_uri_hash ON connections (via_contact_uri_hash);
 
-ALTER TABLE connections ADD COLUMN xinfo_identifier BLOB;
+ALTER TABLE connections ADD COLUMN xcontact_id BLOB;
 
-ALTER TABLE contact_requests ADD COLUMN xinfo_identifier BLOB;
-CREATE INDEX idx_contact_requests_xinfo_identifier ON contact_requests (xinfo_identifier);
+ALTER TABLE contact_requests ADD COLUMN xcontact_id BLOB;
+CREATE INDEX idx_contact_requests_xcontact_id ON contact_requests (xcontact_id);
 
-ALTER TABLE contacts ADD COLUMN xinfo_identifier BLOB;
-CREATE INDEX idx_contacts_xinfo_identifier ON contacts (xinfo_identifier);
+ALTER TABLE contacts ADD COLUMN xcontact_id BLOB;
+CREATE INDEX idx_contacts_xcontact_id ON contacts (xcontact_id);
 |]
