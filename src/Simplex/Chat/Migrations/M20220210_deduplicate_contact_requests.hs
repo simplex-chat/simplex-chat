@@ -12,7 +12,7 @@ m20220210_deduplicate_contact_requests =
 -- null for contact request recipient and for both parties when using one-off invitation
 ALTER TABLE connections ADD COLUMN via_contact_uri_hash BLOB;
 
--- TODO index
+CREATE INDEX idx_connections_via_contact_uri_hash ON connections (via_contact_uri_hash);
 
 ALTER TABLE connections ADD COLUMN xinfo_identifier BLOB;
 
