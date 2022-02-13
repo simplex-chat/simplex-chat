@@ -54,14 +54,15 @@ struct ChatPreviewView: View {
                         (itemStatusMark(cItem) + Text(chatItemText(cItem)))
                             .frame(minWidth: 0, maxWidth: .infinity, minHeight: 44, maxHeight: 44, alignment: .topLeading)
                             .padding(.leading, 8)
-                            .padding(.trailing, 32)
+                            .padding(.trailing, 36)
                             .padding(.bottom, 4)
                         if unread > 0 {
-                            Text(unread > 9 ? "" : "\(unread)")
+                            Text(unread > 999 ? "\(unread / 1000)k" : "\(unread)")
                                 .font(.caption)
                                 .foregroundColor(.white)
-                                .frame(width: 18, height: 18)
-                                .background(Color.accentColor) //Color(.sRGB, red: 0, green: 0.57, blue: 1, opacity: 0.89))
+                                .padding(.horizontal, 4)
+                                .frame(minWidth: 18, minHeight: 18)
+                                .background(Color.accentColor)
                                 .cornerRadius(10)
                         }
                     }
@@ -113,8 +114,8 @@ struct ChatPreviewView_Previews: PreviewProvider {
             ))
             ChatPreviewView(chat: Chat(
                 chatInfo: ChatInfo.sampleData.group,
-                chatItems: [ChatItem.getSample(1, .directSnd, .now, "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.")],
-                chatStats: ChatStats(unreadCount: 3, minUnreadItemId: 0)
+                chatItems: [ChatItem.getSample(1, .directSnd, .now, "Lorem ipsum dolor sit amet, d. consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.")],
+                chatStats: ChatStats(unreadCount: 11, minUnreadItemId: 0)
             ))
         }
         .previewLayout(.fixed(width: 360, height: 78))
