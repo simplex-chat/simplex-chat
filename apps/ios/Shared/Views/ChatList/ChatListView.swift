@@ -12,11 +12,12 @@ struct ChatListView: View {
     @EnvironmentObject var chatModel: ChatModel
     // not really used in this view
     @State private var showSettings = false
+    @State private var searchText = ""
 
     var user: User
 
     var body: some View {
-        NavigationView {
+        let v = NavigationView {
             List {
                 if chatModel.chats.isEmpty {
                     VStack(alignment: .leading) {
@@ -28,7 +29,7 @@ struct ChatListView: View {
                         .padding(.leading)
                     }
                 }
-                ForEach(chatModel.chats) { chat in
+                ForEach(filteredChats()) { chat in
                     ChatListNavLink(chat: chat)
                         .padding(.trailing, -16)
                 }
@@ -48,6 +49,7 @@ struct ChatListView: View {
             .offset(x: -8)
             .listStyle(.plain)
             .navigationTitle(chatModel.chats.isEmpty ? "Welcome \(user.displayName)!" : "Your chats")
+            .navigationBarTitleDisplayMode(chatModel.chats.count > 8 ? .inline : .large)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     SettingsButton()
@@ -58,6 +60,20 @@ struct ChatListView: View {
             }
         }
         .navigationViewStyle(.stack)
+
+        if chatModel.chats.count > 8 {
+            v.searchable(text: $searchText)
+        } else {
+            v
+        }
+    }
+
+    private func filteredChats() -> [Chat] {
+        let s = searchText.trimmingCharacters(in: .whitespaces).localizedLowercase
+        return s == ""
+            ? chatModel.chats
+            : chatModel.chats.filter { $0.chatInfo.chatViewName.localizedLowercase.contains(s) }
+        }
     }
 
     private func connectViaUrlAlert(_ url: URL) -> Alert {

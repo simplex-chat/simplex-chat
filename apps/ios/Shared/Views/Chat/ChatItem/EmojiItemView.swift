@@ -13,10 +13,11 @@ struct EmojiItemView: View {
 
     var body: some View {
         let sent = chatItem.chatDir.sent
+        let s = chatItem.content.text.trimmingCharacters(in: .whitespaces)
 
         VStack(spacing: 1) {
-            Text(chatItem.content.text.trimmingCharacters(in: .whitespaces))
-                .font(emojiFont)
+            Text(s)
+                .font(s.count < 4 ? largeEmojiFont : mediumEmojiFont)
                 .padding(.top, 8)
                 .padding(.horizontal, 6)
                 .frame(maxWidth: .infinity, alignment: sent ? .trailing : .leading)

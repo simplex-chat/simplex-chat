@@ -24,7 +24,8 @@ func isEmoji(_ c: Character) -> Bool {
 
 func isShortEmoji(_ str: String) -> Bool {
     let s = str.trimmingCharacters(in: .whitespaces)
-    return s.count > 0 && s.count <= 4 && s.allSatisfy(isEmoji)
+    return s.count > 0 && s.count <= 5 && s.allSatisfy(isEmoji)
 }
 
-let emojiFont = Font.custom("Emoji", size: 48, relativeTo: .largeTitle)
+let largeEmojiFont = Font.custom("Emoji", size: 48, relativeTo: .largeTitle)
+let mediumEmojiFont = Font.custom("Emoji", size: 36, relativeTo: .largeTitle)
