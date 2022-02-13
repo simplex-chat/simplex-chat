@@ -162,6 +162,8 @@ data ChatResponse
   | CRUserContactLinkDeleted
   | CRReceivedContactRequest {contactRequest :: UserContactRequest}
   | CRAcceptingContactRequest {contact :: Contact}
+  | CRContactAlreadyExists {contact :: Contact}
+  | CRContactRequestAlreadyAccepted {contact :: Contact}
   | CRLeftMemberUser {groupInfo :: GroupInfo}
   | CRGroupDeletedUser {groupInfo :: GroupInfo}
   | CRRcvFileAccepted {fileTransfer :: RcvFileTransfer, filePath :: FilePath}

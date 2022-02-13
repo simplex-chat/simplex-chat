@@ -84,15 +84,18 @@ decodeChatMessageTest = describe "Chat message encoding/decoding" $ do
   it "x.file.acpt" $ "{\"event\":\"x.file.acpt\",\"params\":{\"fileName\":\"photo.jpg\"}}" #==# XFileAcpt "photo.jpg"
   it "x.info" $ "{\"event\":\"x.info\",\"params\":{\"profile\":{\"fullName\":\"Alice\",\"displayName\":\"alice\"}}}" #==# XInfo testProfile
   it "x.info" $ "{\"event\":\"x.info\",\"params\":{\"profile\":{\"fullName\":\"\",\"displayName\":\"alice\"}}}" #==# XInfo Profile {displayName = "alice", fullName = ""}
-  it "x.contact without content field" $
+  it "x.contact with xContactId" $
+    "{\"event\":\"x.contact\",\"params\":{\"contactReqId\":\"AQIDBA==\",\"profile\":{\"fullName\":\"Alice\",\"displayName\":\"alice\"}}}"
+      #==# XContact testProfile (Just $ XContactId "\1\2\3\4")
+  it "x.contact without XContactId" $
     "{\"event\":\"x.contact\",\"params\":{\"profile\":{\"fullName\":\"Alice\",\"displayName\":\"alice\"}}}"
       #==# XContact testProfile Nothing
   it "x.contact with content null" $
     "{\"event\":\"x.contact\",\"params\":{\"content\":null,\"profile\":{\"fullName\":\"Alice\",\"displayName\":\"alice\"}}}"
       ==# XContact testProfile Nothing
-  it "x.contact with content" $
+  it "x.contact with content (ignored)" $
     "{\"event\":\"x.contact\",\"params\":{\"content\":{\"text\":\"hello\",\"type\":\"text\"},\"profile\":{\"fullName\":\"Alice\",\"displayName\":\"alice\"}}}"
-      #==# XContact testProfile (Just $ MCText "hello")
+      ==# XContact testProfile Nothing
   it "x.grp.inv" $
     "{\"event\":\"x.grp.inv\",\"params\":{\"groupInvitation\":{\"connRequest\":\"https://simplex.chat/invitation#/?v=1&smp=smp%3A%2F%2F1234-w%3D%3D%40smp.simplex.im%3A5223%2F3456-w%3D%3D%23MCowBQYDK2VuAyEAjiswwI3O_NlS8Fk3HJUW870EY2bAwmttMBsvRB9eV3o%3D&e2e=v%3D1%26x3dh%3DMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D%2CMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D\",\"invitedMember\":{\"memberRole\":\"member\",\"memberId\":\"BQYHCA==\"},\"groupProfile\":{\"fullName\":\"Team\",\"displayName\":\"team\"},\"fromMember\":{\"memberRole\":\"admin\",\"memberId\":\"AQIDBA==\"}}}}"
       #==# XGrpInv GroupInvitation {fromMember = MemberIdRole (MemberId "\1\2\3\4") GRAdmin, invitedMember = MemberIdRole (MemberId "\5\6\7\8") GRMember, connRequest = testConnReq, groupProfile = testGroupProfile}

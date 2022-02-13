@@ -179,12 +179,12 @@ processChatCommand = \case
         gs -> throwChatError $ CEContactGroups ct gs
     CTGroup -> pure $ chatCmdError "not implemented"
     CTContactRequest -> pure $ chatCmdError "not supported"
-  APIAcceptContact connReqId -> withUser $ \User {userId, profile} -> do
-    UserContactRequest {agentInvitationId = AgentInvId invId, localDisplayName = cName, profileId, profile = p} <- withStore $ \st ->
-      getContactRequest st userId connReqId
-    withChatLock . procCmd $ do
+  APIAcceptContact connReqId -> withUser $ \User {userId, profile} -> withChatLock $ do
+    UserContactRequest {agentInvitationId = AgentInvId invId, localDisplayName = cName, profileId, profile = p, xContactId} <-
+      withStore $ \st -> getContactRequest st userId connReqId
+    procCmd $ do
       connId <- withAgent $ \a -> acceptContact a invId . directMessage $ XInfo profile
-      acceptedContact <- withStore $ \st -> createAcceptedContact st userId connId cName profileId p
+      acceptedContact <- withStore $ \st -> createAcceptedContact st userId connId cName profileId p xContactId
       pure $ CRAcceptingContactRequest acceptedContact
   APIRejectContact connReqId -> withUser $ \User {userId} -> withChatLock $ do
     cReq@UserContactRequest {agentContactConnId = AgentConnId connId, agentInvitationId = AgentInvId invId} <-
@@ -200,15 +200,14 @@ processChatCommand = \case
     withStore $ \st -> createDirectConnection st userId connId
     pure $ CRInvitation cReq
   Connect (Just (ACR SCMInvitation cReq)) -> withUser $ \User {userId, profile} -> withChatLock . procCmd $ do
-    connect userId cReq $ XInfo profile
+    connId <- withAgent $ \a -> joinConnection a cReq . directMessage $ XInfo profile
+    withStore $ \st -> createDirectConnection st userId connId
     pure CRSentConfirmation
-  Connect (Just (ACR SCMContact cReq)) -> withUser $ \User {userId, profile} -> withChatLock . procCmd $ do
-    connect userId cReq $ XContact profile Nothing
-    pure CRSentInvitation
+  Connect (Just (ACR SCMContact cReq)) -> withUser $ \User {userId, profile} ->
+    connectViaContact userId cReq profile
   Connect Nothing -> throwChatError CEInvalidConnReq
-  ConnectAdmin -> withUser $ \User {userId, profile} -> withChatLock . procCmd $ do
-    connect userId adminContactReq $ XContact profile Nothing
-    pure CRSentInvitation
+  ConnectAdmin -> withUser $ \User {userId, profile} ->
+    connectViaContact userId adminContactReq profile
   DeleteContact cName -> withUser $ \User {userId} -> do
     contactId <- withStore $ \st -> getContactIdByName st userId cName
     processChatCommand $ APIDeleteChat CTDirect contactId
@@ -395,10 +394,17 @@ processChatCommand = \case
     -- use function below to make commands "synchronous"
     -- procCmd :: m ChatResponse -> m ChatResponse
     -- procCmd = id
-    connect :: UserId -> ConnectionRequestUri c -> ChatMsgEvent -> m ()
-    connect userId cReq msg = do
-      connId <- withAgent $ \a -> joinConnection a cReq $ directMessage msg
-      withStore $ \st -> createDirectConnection st userId connId
+    connectViaContact :: UserId -> ConnectionRequestUri 'CMContact -> Profile -> m ChatResponse
+    connectViaContact userId cReq profile = withChatLock $ do
+      let cReqHash = ConnReqUriHash . C.sha256Hash $ strEncode cReq
+      withStore (\st -> getConnReqContactXContactId st userId cReqHash) >>= \case
+        (Just contact, _) -> pure $ CRContactAlreadyExists contact
+        (_, xContactId_) -> procCmd $ do
+          let randomXContactId = XContactId <$> (asks idsDrg >>= liftIO . (`randomBytes` 16))
+          xContactId <- maybe randomXContactId pure xContactId_
+          connId <- withAgent $ \a -> joinConnection a cReq $ directMessage (XContact profile $ Just xContactId)
+          withStore $ \st -> createConnReqConnection st userId connId cReqHash xContactId
+          pure CRSentInvitation
     contactMember :: Contact -> [GroupMember] -> Maybe GroupMember
     contactMember Contact {contactId} =
       find $ \GroupMember {memberContactId = cId, memberStatus = s} ->
@@ -812,8 +818,8 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
       REQ invId connInfo -> do
         ChatMessage {chatMsgEvent} <- liftEither $ parseChatMessage connInfo
         case chatMsgEvent of
-          XContact p _ -> profileContactRequest invId p
-          XInfo p -> profileContactRequest invId p
+          XContact p xContactId_ -> profileContactRequest invId p xContactId_
+          XInfo p -> profileContactRequest invId p Nothing
           -- TODO show/log error, other events in contact request
           _ -> pure ()
       -- TODO print errors
@@ -822,11 +828,13 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
       -- TODO add debugging output
       _ -> pure ()
       where
-        profileContactRequest :: InvitationId -> Profile -> m ()
-        profileContactRequest invId p = do
-          cReq@UserContactRequest {localDisplayName} <- withStore $ \st -> createContactRequest st userId userContactLinkId invId p
-          toView $ CRReceivedContactRequest cReq
-          showToast (localDisplayName <> "> ") "wants to connect to you"
+        profileContactRequest :: InvitationId -> Profile -> Maybe XContactId -> m ()
+        profileContactRequest invId p xContactId_ = do
+          withStore (\st -> createOrUpdateContactRequest st userId userContactLinkId invId p xContactId_) >>= \case
+            Left contact -> toView $ CRContactRequestAlreadyAccepted contact
+            Right cReq@UserContactRequest {localDisplayName} -> do
+              toView $ CRReceivedContactRequest cReq
+              showToast (localDisplayName <> "> ") "wants to connect to you"
 
     withAckMessage :: ConnId -> MsgMeta -> m () -> m ()
     withAckMessage cId MsgMeta {recipient = (msgId, _)} action =

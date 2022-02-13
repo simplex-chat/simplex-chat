@@ -5,12 +5,6 @@
 *.so
 *.dylib
 
-# Test binary, built with `go test -c`
-*.test
-
-# Output of the go coverage tool, specifically when used with LiteIDE
-*.out
-
 # Dependency directories (remove the comment below to include it)
 # vendor/
 
@@ -42,9 +36,9 @@ cabal.project.local~
 .ghc.environment.*
 stack.yaml.lock
 
-# Idris
-*.ibc
-
-# chat database
+# Chat database
 *.db
 *.db.bak
+
+# Temporary test files
+tests/tmp
