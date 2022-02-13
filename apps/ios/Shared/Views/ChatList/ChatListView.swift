@@ -73,7 +73,6 @@ struct ChatListView: View {
         return s == ""
             ? chatModel.chats
             : chatModel.chats.filter { $0.chatInfo.chatViewName.localizedLowercase.contains(s) }
-        }
     }
 
     private func connectViaUrlAlert(_ url: URL) -> Alert {
