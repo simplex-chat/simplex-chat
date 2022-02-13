@@ -204,12 +204,10 @@ processChatCommand = \case
     withStore $ \st -> createDirectConnection st userId connId
     pure CRSentConfirmation
   Connect (Just (ACR SCMContact cReq)) -> withUser $ \User {userId, profile} ->
-    withChatLock . procCmd $
-      connectByAddress userId cReq profile
+    connectViaContact userId cReq profile
   Connect Nothing -> throwChatError CEInvalidConnReq
   ConnectAdmin -> withUser $ \User {userId, profile} ->
-    withChatLock . procCmd $
-      connectByAddress userId adminContactReq profile
+    connectViaContact userId adminContactReq profile
   DeleteContact cName -> withUser $ \User {userId} -> do
     contactId <- withStore $ \st -> getContactIdByName st userId cName
     processChatCommand $ APIDeleteChat CTDirect contactId
@@ -396,12 +394,12 @@ processChatCommand = \case
     -- use function below to make commands "synchronous"
     -- procCmd :: m ChatResponse -> m ChatResponse
     -- procCmd = id
-    connectByAddress :: UserId -> ConnectionRequestUri 'CMContact -> Profile -> m ChatResponse
-    connectByAddress userId cReq profile = do
+    connectViaContact :: UserId -> ConnectionRequestUri 'CMContact -> Profile -> m ChatResponse
+    connectViaContact userId cReq profile = withChatLock $ do
       let cReqHash = ConnReqUriHash . C.sha256Hash $ strEncode cReq
       withStore (\st -> getConnReqContactXContactId st userId cReqHash) >>= \case
         (Just contact, _) -> pure $ CRContactAlreadyExists contact
-        (_, xContactId_) -> do
+        (_, xContactId_) -> procCmd $ do
           let randomXContactId = XContactId <$> (asks idsDrg >>= liftIO . (`randomBytes` 16))
           xContactId <- maybe randomXContactId pure xContactId_
           connId <- withAgent $ \a -> joinConnection a cReq $ directMessage (XContact profile $ Just xContactId)
