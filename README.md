@@ -10,11 +10,11 @@ SimpleX - the most private and secure open-source chat and applications platform
 [![Follow on Twitter](https://img.shields.io/twitter/follow/SimpleXChat?style=social)](https://twitter.com/simplexchat)
 [![Join on Reddit](https://img.shields.io/reddit/subreddit-subscribers/SimpleXChat?style=social)](https://www.reddit.com/r/SimpleXChat)
 
-SimpleX Chat is a terminal (command line) UI using [SimpleXMQ](https://github.com/simplex-chat/simplexmq) message broker.
+SimpleX Chat apps (both terminal UI and [iOS public beta](https://testflight.apple.com/join/DWuT2LQu)) use [SimpleXMQ](https://github.com/simplex-chat/simplexmq) message broker.
 
 See [SimpleX overview](https://github.com/simplex-chat/simplexmq/blob/master/protocol/overview-tjr.md) for more information on platform objectives and technical design.
 
-**v1.0.0 is released: [read announcement here](https://github.com/simplex-chat/simplex-chat/blob/master/blog/20220112-simplex-chat-v1-released.md)**
+***SimpleX Chat [public beta for iOS 15 is available via TestFlight](https://testflight.apple.com/join/DWuT2LQu)** - it will help us a lot if you test it! [See the announcement here](https://github.com/simplex-chat/simplex-chat/blob/stable/blog/20220214-simplex-chat-ios-public-beta.md)**
 
 ### :zap: Quick installation
 
