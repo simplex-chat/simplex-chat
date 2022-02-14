@@ -181,7 +181,7 @@ processChatCommand = \case
     CTContactRequest -> pure $ chatCmdError "not supported"
   APIAcceptContact connReqId -> withUser $ \user@User {userId} -> withChatLock $ do
     cReq <- withStore $ \st -> getContactRequest st userId connReqId
-    procCmd $ acceptContactRequest user cReq
+    procCmd $ CRAcceptingContactRequest <$> acceptContactRequest user cReq
   APIRejectContact connReqId -> withUser $ \User {userId} -> withChatLock $ do
     cReq@UserContactRequest {agentContactConnId = AgentConnId connId, agentInvitationId = AgentInvId invId} <-
       withStore $ \st ->
@@ -219,9 +219,8 @@ processChatCommand = \case
         deleteConnection a (aConnId conn) `catchError` \(_ :: AgentErrorType) -> pure ()
       withStore $ \st -> deleteUserContactLink st userId
       pure CRUserContactLinkDeleted
-  ShowMyAddress -> withUser $ \User {userId} -> do
-    (cReqUri, autoAccept) <- withStore (`getUserContactLink` userId)
-    pure $ CRUserContactLink cReqUri autoAccept
+  ShowMyAddress -> withUser $ \User {userId} ->
+    uncurry CRUserContactLink <$> withStore (`getUserContactLink` userId)
   AddressAutoAccept onOff -> withUser $ \User {userId} -> do
     (cReqUri, autoAccept) <- withStore $ \st -> updateUserContactLinkAutoAccept st userId onOff
     pure $ CRUserContactLinkUpdated cReqUri autoAccept
@@ -446,11 +445,10 @@ processChatCommand = \case
               f = filePath `combine` (name <> suffix <> ext)
            in ifM (doesFileExist f) (tryCombine $ n + 1) (pure f)
 
-acceptContactRequest :: ChatMonad m => User -> UserContactRequest -> m ChatResponse
+acceptContactRequest :: ChatMonad m => User -> UserContactRequest -> m Contact
 acceptContactRequest User {userId, profile} UserContactRequest {agentInvitationId = AgentInvId invId, localDisplayName = cName, profileId, profile = p, xContactId} = do
   connId <- withAgent $ \a -> acceptContact a invId . directMessage $ XInfo profile
-  acceptedContact <- withStore $ \st -> createAcceptedContact st userId connId cName profileId p xContactId
-  pure $ CRAcceptingContactRequest acceptedContact
+  withStore $ \st -> createAcceptedContact st userId connId cName profileId p xContactId
 
 agentSubscriber :: (MonadUnliftIO m, MonadReader ChatController m) => User -> m ()
 agentSubscriber user = do
@@ -843,8 +841,8 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
               (_, autoAccept) <- withStore $ \st -> getUserContactLink st userId
               if autoAccept
                 then do
-                  cr <- acceptContactRequest user cReq
-                  toView cr
+                  acceptedContact <- acceptContactRequest user cReq
+                  toView $ CRAcceptingContactRequest acceptedContact
                 else do
                   toView $ CRReceivedContactRequest cReq
                   showToast (localDisplayName <> "> ") "wants to connect to you"
