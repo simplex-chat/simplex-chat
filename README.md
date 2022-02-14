@@ -2,7 +2,7 @@
 
 # SimpleX Chat
 
-SimpleX - the most private and secure open-source chat and applications platform - now with double-ratchet E2E encryption.
+SimpleX - private and secure open-source chat and application platform - public beta for iOS now available!
 
 [![GitHub build](https://github.com/simplex-chat/simplex-chat/workflows/build/badge.svg)](https://github.com/simplex-chat/simplex-chat/actions?query=workflow%3Abuild)
 [![GitHub downloads](https://img.shields.io/github/downloads/simplex-chat/simplex-chat/total)](https://github.com/simplex-chat/simplex-chat/releases)

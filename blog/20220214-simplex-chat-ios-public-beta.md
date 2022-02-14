@@ -16,7 +16,7 @@ You can read more details in our recent [v1 announcement](https://github.com/sim
 
 ## Join our public beta!
 
-Install the app [via TestFlight](https://testflight.apple.com/join/DWuT2LQu), connect to us (via **Connect to SimpleX team** link in the app) and to a couple of friends you usually send messages to - and please let us know what you think!
+Install the app [via TestFlight](https://testflight.apple.com/join/DWuT2LQu), connect to us (via **Connect to SimpleX team** link in the app) and to a couple of your friends you usually send messages to - and please let us know what you think!
 
 We would really appreciate any feedback to improve the app and to decide which additional features should be included in our public release in March.
 
