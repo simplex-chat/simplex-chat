@@ -39,7 +39,9 @@ struct NewChatButton: View {
             connReqInvitation = try apiAddContact()
             addContact = true
         } catch {
-            connectionErrorAlert(error)
+            DispatchQueue.global().async {
+                connectionErrorAlert(error)
+            }
             logger.error("NewChatButton.addContactAction apiAddContact error: \(error.localizedDescription)")
         }
     }
@@ -47,8 +49,12 @@ struct NewChatButton: View {
     func connectContactSheet() -> some View {
         ConnectContactView(completed: { err in
             connectContact = false
-            if let error = err {
-                connectionErrorAlert(error)
+            DispatchQueue.global().async {
+                if let error = err {
+                    connectionErrorAlert(error)
+                } else {
+                    connectionReqSentAlert(.invitation)
+                }
             }
         })
     }
@@ -56,6 +62,21 @@ struct NewChatButton: View {
     func connectionErrorAlert(_ error: Error) {
         AlertManager.shared.showAlertMsg(title: "Connection error", message: error.localizedDescription)
     }
+}
+
+enum ConnReqType: Equatable {
+    case contact
+    case invitation
+}
+
+func connectionReqSentAlert(_ type: ConnReqType) {
+    let whenConnected = type == .contact
+        ? "your connection request is accepted"
+        : "your contact's device is online"
+    AlertManager.shared.showAlertMsg(
+        title: "Connection request sent!",
+        message: "You will be connected when \(whenConnected), please wait or check later!"
+    )
 }
 
 struct NewChatButton_Previews: PreviewProvider {

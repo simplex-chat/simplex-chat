@@ -53,6 +53,7 @@ final class AlertManager: ObservableObject {
     @Published var alertView: Alert?
 
     func showAlert(_ alert: Alert) {
+        logger.debug("AlertManager.showAlert")
         DispatchQueue.main.async {
             self.alertView = alert
             self.presentAlert = true
