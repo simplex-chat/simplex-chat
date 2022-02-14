@@ -61,7 +61,7 @@ responseToView cmd testView = \case
   CRFileTransferStatus ftStatus -> r $ viewFileTransferStatus ftStatus
   CRUserProfile p -> r $ viewUserProfile p
   CRUserProfileNoChange -> r ["user profile did not change"]
-  CRVersionInfo -> r [plain versionStr, plain updateStr]
+  CRVersionInfo _ -> r [plain versionStr, plain updateStr]
   CRChatCmdError e -> r $ viewChatError e
   CRInvitation cReq -> r' $ viewConnReqInvitation cReq
   CRSentConfirmation -> r' ["confirmation sent!"]
