@@ -20,4 +20,6 @@ CREATE INDEX idx_contact_requests_xcontact_id ON contact_requests (xcontact_id);
 
 ALTER TABLE contacts ADD COLUMN xcontact_id BLOB;
 CREATE INDEX idx_contacts_xcontact_id ON contacts (xcontact_id);
+
+ALTER TABLE user_contact_links ADD column auto_accept INTEGER DEFAULT 0;
 |]

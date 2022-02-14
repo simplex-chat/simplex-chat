@@ -179,13 +179,9 @@ processChatCommand = \case
         gs -> throwChatError $ CEContactGroups ct gs
     CTGroup -> pure $ chatCmdError "not implemented"
     CTContactRequest -> pure $ chatCmdError "not supported"
-  APIAcceptContact connReqId -> withUser $ \User {userId, profile} -> withChatLock $ do
-    UserContactRequest {agentInvitationId = AgentInvId invId, localDisplayName = cName, profileId, profile = p, xContactId} <-
-      withStore $ \st -> getContactRequest st userId connReqId
-    procCmd $ do
-      connId <- withAgent $ \a -> acceptContact a invId . directMessage $ XInfo profile
-      acceptedContact <- withStore $ \st -> createAcceptedContact st userId connId cName profileId p xContactId
-      pure $ CRAcceptingContactRequest acceptedContact
+  APIAcceptContact connReqId -> withUser $ \user@User {userId} -> withChatLock $ do
+    cReq <- withStore $ \st -> getContactRequest st userId connReqId
+    procCmd $ CRAcceptingContactRequest <$> acceptContactRequest user cReq
   APIRejectContact connReqId -> withUser $ \User {userId} -> withChatLock $ do
     cReq@UserContactRequest {agentContactConnId = AgentConnId connId, agentInvitationId = AgentInvId invId} <-
       withStore $ \st ->
@@ -223,7 +219,10 @@ processChatCommand = \case
         deleteConnection a (aConnId conn) `catchError` \(_ :: AgentErrorType) -> pure ()
       withStore $ \st -> deleteUserContactLink st userId
       pure CRUserContactLinkDeleted
-  ShowMyAddress -> CRUserContactLink <$> withUser (\User {userId} -> withStore (`getUserContactLink` userId))
+  ShowMyAddress -> withUser $ \User {userId} ->
+    uncurry CRUserContactLink <$> withStore (`getUserContactLink` userId)
+  AddressAutoAccept onOff -> withUser $ \User {userId} -> do
+    uncurry CRUserContactLinkUpdated <$> withStore (\st -> updateUserContactLinkAutoAccept st userId onOff)
   AcceptContact cName -> withUser $ \User {userId} -> do
     connReqId <- withStore $ \st -> getContactRequestIdByName st userId cName
     processChatCommand $ APIAcceptContact connReqId
@@ -444,6 +443,11 @@ processChatCommand = \case
               suffix = if n == 0 then "" else "_" <> show n
               f = filePath `combine` (name <> suffix <> ext)
            in ifM (doesFileExist f) (tryCombine $ n + 1) (pure f)
+
+acceptContactRequest :: ChatMonad m => User -> UserContactRequest -> m Contact
+acceptContactRequest User {userId, profile} UserContactRequest {agentInvitationId = AgentInvId invId, localDisplayName = cName, profileId, profile = p, xContactId} = do
+  connId <- withAgent $ \a -> acceptContact a invId . directMessage $ XInfo profile
+  withStore $ \st -> createAcceptedContact st userId connId cName profileId p xContactId
 
 agentSubscriber :: (MonadUnliftIO m, MonadReader ChatController m) => User -> m ()
 agentSubscriber user = do
@@ -833,8 +837,12 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
           withStore (\st -> createOrUpdateContactRequest st userId userContactLinkId invId p xContactId_) >>= \case
             Left contact -> toView $ CRContactRequestAlreadyAccepted contact
             Right cReq@UserContactRequest {localDisplayName} -> do
-              toView $ CRReceivedContactRequest cReq
-              showToast (localDisplayName <> "> ") "wants to connect to you"
+              (_, autoAccept) <- withStore $ \st -> getUserContactLink st userId
+              if autoAccept
+                then acceptContactRequest user cReq >>= toView . CRAcceptingContactRequest
+                else do
+                  toView $ CRReceivedContactRequest cReq
+                  showToast (localDisplayName <> "> ") "wants to connect to you"
 
     withAckMessage :: ConnId -> MsgMeta -> m () -> m ()
     withAckMessage cId MsgMeta {recipient = (msgId, _)} action =
@@ -1440,6 +1448,7 @@ chatCommandP =
     <|> ("/address" <|> "/ad") $> CreateMyAddress
     <|> ("/delete_address" <|> "/da") $> DeleteMyAddress
     <|> ("/show_address" <|> "/sa") $> ShowMyAddress
+    <|> "/auto_accept " *> (AddressAutoAccept <$> onOffP)
     <|> ("/accept @" <|> "/accept " <|> "/ac @" <|> "/ac ") *> (AcceptContact <$> displayName)
     <|> ("/reject @" <|> "/reject " <|> "/rc @" <|> "/rc ") *> (RejectContact <$> displayName)
     <|> ("/markdown" <|> "/m") $> ChatHelp HSMarkdown
@@ -1457,6 +1466,7 @@ chatCommandP =
     msgContentP = "text " *> (MCText . safeDecodeUtf8 <$> A.takeByteString)
     displayName = safeDecodeUtf8 <$> (B.cons <$> A.satisfy refChar <*> A.takeTill (== ' '))
     refChar c = c > ' ' && c /= '#' && c /= '@'
+    onOffP = ("on" $> True) <|> ("off" $> False)
     userProfile = do
       cName <- displayName
       fullName <- fullNameP cName
