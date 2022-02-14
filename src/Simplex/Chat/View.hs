@@ -51,7 +51,8 @@ responseToView cmd testView = \case
     HSMarkdown -> r markdownInfo
   CRWelcome user -> r $ chatWelcome user
   CRContactsList cs -> r $ viewContactsList cs
-  CRUserContactLink cReq -> r $ connReqContact_ "Your chat address:" cReq
+  CRUserContactLink cReqUri _ -> r $ connReqContact_ "Your chat address:" cReqUri
+  CRUserContactLinkUpdated _ autoAccept -> r ["auto_accept " <> if autoAccept then "on" else "off"]
   CRContactRequestRejected UserContactRequest {localDisplayName = c} -> r [ttyContact c <> ": contact request rejected"]
   CRGroupCreated g -> r $ viewGroupCreated g
   CRGroupMembers g -> r $ viewGroupMembers g
@@ -60,13 +61,15 @@ responseToView cmd testView = \case
   CRFileTransferStatus ftStatus -> r $ viewFileTransferStatus ftStatus
   CRUserProfile p -> r $ viewUserProfile p
   CRUserProfileNoChange -> r ["user profile did not change"]
-  CRVersionInfo -> r [plain versionStr, plain updateStr]
+  CRVersionInfo _ -> r [plain versionStr, plain updateStr]
   CRChatCmdError e -> r $ viewChatError e
   CRInvitation cReq -> r' $ viewConnReqInvitation cReq
   CRSentConfirmation -> r' ["confirmation sent!"]
   CRSentInvitation -> r' ["connection request sent!"]
-  CRContactDeleted Contact {localDisplayName = c} -> r' [ttyContact c <> ": contact is deleted"]
-  CRAcceptingContactRequest Contact {localDisplayName = c} -> r' [ttyContact c <> ": accepting contact request..."]
+  CRContactDeleted c -> r' [ttyContact' c <> ": contact is deleted"]
+  CRAcceptingContactRequest c -> r' [ttyFullContact c <> ": accepting contact request..."]
+  CRContactAlreadyExists c -> r [ttyFullContact c <> ": contact already exists"]
+  CRContactRequestAlreadyAccepted c -> r' [ttyFullContact c <> ": sent you a duplicate contact request, but you are already connected, no action needed"]
   CRUserContactLinkCreated cReq -> r' $ connReqContact_ "Your new chat address is created!" cReq
   CRUserContactLinkDeleted -> r' viewUserContactLinkDeleted
   CRUserAcceptedGroupSent _g -> r' [] -- [ttyGroup' g <> ": joining the group..."]
@@ -471,7 +474,8 @@ viewChatError = \case
     CEChatNotStarted -> ["error: chat not started"]
     CEInvalidConnReq -> viewInvalidConnReq
     CEInvalidChatMessage e -> ["chat message error: " <> sShow e]
-    CEContactGroups Contact {localDisplayName} gNames -> [ttyContact localDisplayName <> ": contact cannot be deleted, it is a member of the group(s) " <> ttyGroups gNames]
+    CEContactNotReady c -> [ttyContact' c <> ": not ready"]
+    CEContactGroups c gNames -> [ttyContact' c <> ": contact cannot be deleted, it is a member of the group(s) " <> ttyGroups gNames]
     CEGroupDuplicateMember c -> ["contact " <> ttyContact c <> " is already in the group"]
     CEGroupDuplicateMemberId -> ["cannot add member - duplicate member ID"]
     CEGroupUserRole -> ["you have insufficient permissions for this group command"]

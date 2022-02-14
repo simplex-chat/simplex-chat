@@ -10,7 +10,6 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module Simplex.Chat.Types where
@@ -100,12 +99,51 @@ data UserContactRequest = UserContactRequest
     localDisplayName :: ContactName,
     profileId :: Int64,
     profile :: Profile,
-    createdAt :: UTCTime
+    createdAt :: UTCTime,
+    xContactId :: Maybe XContactId
   }
   deriving (Eq, Show, Generic, FromJSON)
 
 instance ToJSON UserContactRequest where
   toEncoding = J.genericToEncoding J.defaultOptions
+
+newtype XContactId = XContactId ByteString
+  deriving (Eq, Show)
+
+instance FromField XContactId where fromField f = XContactId <$> fromField f
+
+instance ToField XContactId where toField (XContactId m) = toField m
+
+instance StrEncoding XContactId where
+  strEncode (XContactId m) = strEncode m
+  strDecode s = XContactId <$> strDecode s
+  strP = XContactId <$> strP
+
+instance FromJSON XContactId where
+  parseJSON = strParseJSON "XContactId"
+
+instance ToJSON XContactId where
+  toJSON = strToJSON
+  toEncoding = strToJEncoding
+
+newtype ConnReqUriHash = ConnReqUriHash {unConnReqUriHash :: ByteString}
+  deriving (Eq, Show)
+
+instance FromField ConnReqUriHash where fromField f = ConnReqUriHash <$> fromField f
+
+instance ToField ConnReqUriHash where toField (ConnReqUriHash m) = toField m
+
+instance StrEncoding ConnReqUriHash where
+  strEncode (ConnReqUriHash m) = strEncode m
+  strDecode s = ConnReqUriHash <$> strDecode s
+  strP = ConnReqUriHash <$> strP
+
+instance FromJSON ConnReqUriHash where
+  parseJSON = strParseJSON "ConnReqUriHash"
+
+instance ToJSON ConnReqUriHash where
+  toJSON = strToJSON
+  toEncoding = strToJEncoding
 
 type ContactName = Text
 

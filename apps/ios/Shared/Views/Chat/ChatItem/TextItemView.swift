@@ -12,7 +12,7 @@ private let emailRegex = try! NSRegularExpression(pattern: "^[a-z0-9.!#$%&'*+/=?
 
 private let phoneRegex = try! NSRegularExpression(pattern: "^\\+?[0-9\\.\\(\\)\\-]{7,20}$")
 
-private let sentColorLigth = Color(.sRGB, red: 0.27, green: 0.72, blue: 1, opacity: 0.12)
+private let sentColorLight = Color(.sRGB, red: 0.27, green: 0.72, blue: 1, opacity: 0.12)
 private let sentColorDark = Color(.sRGB, red: 0.27, green: 0.72, blue: 1, opacity: 0.17)
 private let linkColor = UIColor(red: 0, green: 0.533, blue: 1, alpha: 1)
 
@@ -24,30 +24,22 @@ struct TextItemView: View {
 
     var body: some View {
         let sent = chatItem.chatDir.sent
-//        let minWidth = min(200, width)
         let maxWidth = width * 0.78
-        let meta = getDateFormatter().string(from: chatItem.meta.itemTs)
 
         return ZStack(alignment: .bottomTrailing) {
-            (messageText(chatItem) + reserveSpaceForMeta(meta))
-                .padding(.top, 6)
-                .padding(.bottom, 7)
+            (messageText(chatItem) + reserveSpaceForMeta(chatItem.timestampText))
+                .padding(.vertical, 6)
                 .padding(.horizontal, 12)
                 .frame(minWidth: 0, alignment: .leading)
-//                .foregroundColor(sent ? .white : .primary)
                 .textSelection(.enabled)
 
-            Text(meta)
-                .font(.caption)
-                .foregroundColor(.secondary)
-//                .foregroundColor(sent ? Color(uiColor: .secondarySystemBackground) : .secondary)
-                .padding(.bottom, 4)
-                .padding(.horizontal, 12)
+            CIMetaView(chatItem: chatItem)
+                .padding(.trailing, 12)
+                .padding(.bottom, 6)
         }
-//        .background(sent ? .blue : Color(uiColor: .tertiarySystemGroupedBackground))
         .background(
             sent
-            ? (colorScheme == .light ? sentColorLigth : sentColorDark)
+            ? (colorScheme == .light ? sentColorLight : sentColorDark)
             : Color(uiColor: .tertiarySystemGroupedBackground)
         )
         .cornerRadius(18)
@@ -57,6 +49,13 @@ struct TextItemView: View {
             maxHeight: .infinity,
             alignment: sent ? .trailing : .leading
         )
+        .onTapGesture {
+            switch chatItem.meta.itemStatus {
+            case .sndErrorAuth: msgDeliveryError("Most likely this contact has deleted the connection with you.")
+            case let .sndError(agentError): msgDeliveryError("Unexpected error: \(String(describing: agentError))")
+            default: return
+            }
+        }
     }
 
     private func messageText(_ chatItem: ChatItem) -> Text {
@@ -82,10 +81,9 @@ struct TextItemView: View {
     }
 
     private func reserveSpaceForMeta(_ meta: String) -> Text {
-        Text(AttributedString("   \(meta)", attributes: AttributeContainer([
-            .font: UIFont.preferredFont(forTextStyle: .caption1) as Any,
-            .foregroundColor: UIColor.clear as Any,
-        ])))
+       Text("      \(meta)")
+           .font(.caption)
+           .foregroundColor(.clear)
     }
 
     private func wordToText(_ s: String.SubSequence) -> Text {
@@ -126,6 +124,13 @@ struct TextItemView: View {
     private func mdText(_ s: String.SubSequence) -> Text {
         Text(s[s.index(s.startIndex, offsetBy: 1)..<s.index(s.endIndex, offsetBy: -1)])
     }
+
+    private func msgDeliveryError(_ err: String) {
+        AlertManager.shared.showAlertMsg(
+            title: "Message delivery error",
+            message: err
+        )
+    }
 }
 
 struct TextItemView_Previews: PreviewProvider {
@@ -133,7 +138,7 @@ struct TextItemView_Previews: PreviewProvider {
         Group{
             TextItemView(chatItem: ChatItem.getSample(1, .directSnd, .now, "hello"), width: 360)
             TextItemView(chatItem: ChatItem.getSample(1, .groupRcv(groupMember: GroupMember.sampleData), .now, "hello"), width: 360)
-            TextItemView(chatItem: ChatItem.getSample(2, .directSnd, .now, "https://simplex.chat"), width: 360)
+            TextItemView(chatItem: ChatItem.getSample(2, .directSnd, .now, "https://simplex.chat", .sndSent), width: 360)
             TextItemView(chatItem: ChatItem.getSample(2, .directRcv, .now, "hello there too!!! this covers -"), width: 360)
             TextItemView(chatItem: ChatItem.getSample(2, .directRcv, .now, "hello there too!!! this text has the time on the same line "), width: 360)
             TextItemView(chatItem: ChatItem.getSample(2, .directRcv, .now, "https://simplex.chat"), width: 360)

@@ -10,15 +10,14 @@ import SwiftUI
 
 struct ChatListView: View {
     @EnvironmentObject var chatModel: ChatModel
-    @State private var connectAlert = false
-    @State private var connectError: Error?
     // not really used in this view
     @State private var showSettings = false
+    @State private var searchText = ""
 
     var user: User
 
     var body: some View {
-        NavigationView {
+        let v = NavigationView {
             List {
                 if chatModel.chats.isEmpty {
                     VStack(alignment: .leading) {
@@ -30,13 +29,27 @@ struct ChatListView: View {
                         .padding(.leading)
                     }
                 }
-                ForEach(chatModel.chats) { chat in
+                ForEach(filteredChats()) { chat in
                     ChatListNavLink(chat: chat)
+                        .padding(.trailing, -16)
+                }
+            }
+            .onChange(of: chatModel.chatId) { _ in
+                if chatModel.chatId == nil, let chatId = chatModel.chatToTop {
+                    chatModel.chatToTop = nil
+                    chatModel.popChat(chatId)
+                }
+            }
+            .onChange(of: chatModel.appOpenUrl) { _ in
+                if let url = chatModel.appOpenUrl {
+                    chatModel.appOpenUrl = nil
+                    AlertManager.shared.showAlert(connectViaUrlAlert(url))
                 }
             }
             .offset(x: -8)
             .listStyle(.plain)
             .navigationTitle(chatModel.chats.isEmpty ? "Welcome \(user.displayName)!" : "Your chats")
+            .navigationBarTitleDisplayMode(chatModel.chats.count > 8 ? .inline : .large)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     SettingsButton()
@@ -45,49 +58,49 @@ struct ChatListView: View {
                     NewChatButton()
                 }
             }
-            .alert(isPresented: $chatModel.connectViaUrl) { connectViaUrlAlert() }
         }
         .navigationViewStyle(.stack)
-        .alert(isPresented: $connectAlert) { connectionErrorAlert() }
-    }
 
-    private func connectViaUrlAlert() -> Alert {
-        logger.debug("ChatListView.connectViaUrlAlert")
-        if let url = chatModel.appOpenUrl {
-            var path = url.path
-            logger.debug("ChatListView.connectViaUrlAlert path: \(path)")
-            if (path == "/contact" || path == "/invitation") {
-                path.removeFirst()
-                let link = url.absoluteString.replacingOccurrences(of: "///\(path)", with: "/\(path)")
-                return Alert(
-                    title: Text("Connect via \(path) link?"),
-                    message: Text("Your profile will be sent to the contact that you received this link from: \(link)"),
-                    primaryButton: .default(Text("Connect")) {
-                        do {
-                            try apiConnect(connReq: link)
-                        } catch {
-                            connectAlert = true
-                            connectError = error
-                            logger.debug("ChatListView.connectViaUrlAlert: apiConnect error: \(error.localizedDescription)")
-                        }
-                        chatModel.appOpenUrl = nil
-                    }, secondaryButton: .cancel() {
-                        chatModel.appOpenUrl = nil
-                    }
-                )
-            } else {
-                return Alert(title: Text("Error: URL is invalid"))
-            }
+        if chatModel.chats.count > 8 {
+            v.searchable(text: $searchText)
         } else {
-            return Alert(title: Text("Error: URL not available"))
+            v
         }
     }
 
-    private func connectionErrorAlert() -> Alert {
-        Alert(
-            title: Text("Connection error"),
-            message: Text(connectError?.localizedDescription ?? "")
-        )
+    private func filteredChats() -> [Chat] {
+        let s = searchText.trimmingCharacters(in: .whitespaces).localizedLowercase
+        return s == ""
+            ? chatModel.chats
+            : chatModel.chats.filter { $0.chatInfo.chatViewName.localizedLowercase.contains(s) }
+    }
+
+    private func connectViaUrlAlert(_ url: URL) -> Alert {
+        var path = url.path
+        logger.debug("ChatListView.connectViaUrlAlert path: \(path)")
+        if (path == "/contact" || path == "/invitation") {
+            path.removeFirst()
+            let link = url.absoluteString.replacingOccurrences(of: "///\(path)", with: "/\(path)")
+            return Alert(
+                title: Text("Connect via \(path) link?"),
+                message: Text("Your profile will be sent to the contact that you received this link from: \(link)"),
+                primaryButton: .default(Text("Connect")) {
+                    DispatchQueue.main.async {
+                        do {
+                            try apiConnect(connReq: link)
+                            connectionReqSentAlert(path == "contact" ? .contact : .invitation)
+                        } catch {
+                            let err = error.localizedDescription
+                            AlertManager.shared.showAlertMsg(title: "Connection error", message: err)
+                            logger.debug("ChatListView.connectViaUrlAlert: apiConnect error: \(err)")
+                        }
+                    }
+                },
+                secondaryButton: .cancel()
+            )
+        } else {
+            return Alert(title: Text("Error: URL is invalid"))
+        }
     }
 }
 

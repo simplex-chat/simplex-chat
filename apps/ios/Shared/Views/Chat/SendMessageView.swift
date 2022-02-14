@@ -73,7 +73,11 @@ struct SendMessageView: View {
     func updateHeight(_ g: GeometryProxy) -> Color {
         DispatchQueue.main.async {
             teHeight = min(max(g.frame(in: .local).size.height, minHeight), maxHeight)
-            teFont = isShortEmoji(message) ? emojiFont : .body
+            teFont = isShortEmoji(message)
+                ? message.count < 4
+                    ? largeEmojiFont
+                    : mediumEmojiFont
+                : .body
         }
         return Color.clear
     }

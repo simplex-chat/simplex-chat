@@ -8,6 +8,8 @@
 
 import SwiftUI
 
+private let terminalFont = Font.custom("Menlo", size: 16)
+
 struct TerminalView: View {
     @EnvironmentObject var chatModel: ChatModel
     @State var inProgress: Bool = false
@@ -31,6 +33,7 @@ struct TerminalView: View {
                                     Text(item.label)
                                         .frame(maxWidth: .infinity, maxHeight: 30, alignment: .leading)
                                 }
+                                .font(terminalFont)
                                 .padding(.horizontal)
                             }
                         }

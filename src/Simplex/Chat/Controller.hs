@@ -36,7 +36,7 @@ import System.IO (Handle)
 import UnliftIO.STM
 
 versionNumber :: String
-versionNumber = "1.1.1"
+versionNumber = "1.2.0"
 
 versionStr :: String
 versionStr = "SimpleX Chat v" <> versionNumber
@@ -103,6 +103,7 @@ data ChatCommand
   | CreateMyAddress
   | DeleteMyAddress
   | ShowMyAddress
+  | AddressAutoAccept Bool
   | AcceptContact ContactName
   | RejectContact ContactName
   | SendMessage ContactName ByteString
@@ -142,7 +143,8 @@ data ChatResponse
   | CRGroupCreated {groupInfo :: GroupInfo}
   | CRGroupMembers {group :: Group}
   | CRContactsList {contacts :: [Contact]}
-  | CRUserContactLink {connReqContact :: ConnReqContact}
+  | CRUserContactLink {connReqContact :: ConnReqContact, autoAccept :: Bool}
+  | CRUserContactLinkUpdated {connReqContact :: ConnReqContact, autoAccept :: Bool}
   | CRContactRequestRejected {contactRequest :: UserContactRequest}
   | CRUserAcceptedGroupSent {groupInfo :: GroupInfo}
   | CRUserDeletedMember {groupInfo :: GroupInfo, member :: GroupMember}
@@ -151,7 +153,7 @@ data ChatResponse
   | CRFileTransferStatus (FileTransfer, [Integer]) -- TODO refactor this type to FileTransferStatus
   | CRUserProfile {profile :: Profile}
   | CRUserProfileNoChange
-  | CRVersionInfo
+  | CRVersionInfo {version :: String}
   | CRInvitation {connReqInvitation :: ConnReqInvitation}
   | CRSentConfirmation
   | CRSentInvitation
@@ -162,6 +164,8 @@ data ChatResponse
   | CRUserContactLinkDeleted
   | CRReceivedContactRequest {contactRequest :: UserContactRequest}
   | CRAcceptingContactRequest {contact :: Contact}
+  | CRContactAlreadyExists {contact :: Contact}
+  | CRContactRequestAlreadyAccepted {contact :: Contact}
   | CRLeftMemberUser {groupInfo :: GroupInfo}
   | CRGroupDeletedUser {groupInfo :: GroupInfo}
   | CRRcvFileAccepted {fileTransfer :: RcvFileTransfer, filePath :: FilePath}
@@ -225,6 +229,7 @@ data ChatErrorType
   | CEChatNotStarted
   | CEInvalidConnReq
   | CEInvalidChatMessage {message :: String}
+  | CEContactNotReady {contact :: Contact}
   | CEContactGroups {contact :: Contact, groupNames :: [GroupName]}
   | CEGroupUserRole
   | CEGroupContactRole {contactName :: ContactName}

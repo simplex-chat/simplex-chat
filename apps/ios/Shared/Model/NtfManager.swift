@@ -56,10 +56,6 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
         let model = ChatModel.shared
         if UIApplication.shared.applicationState == .active {
             switch content.categoryIdentifier {
-            case ntfCategoryContactRequest:
-                return [.sound, .banner, .list]
-            case ntfCategoryContactConnected:
-                return model.chatId == nil ? [.sound, .list] : [.sound, .banner, .list]
             case ntfCategoryMessageReceived:
                 if model.chatId == nil {
                     // in the chat list

@@ -25,6 +25,8 @@ module Simplex.Chat.Store
     getUsers,
     setActiveUser,
     createDirectConnection,
+    createConnReqConnection,
+    getConnReqContactXContactId,
     createDirectContact,
     getContactGroupNames,
     deleteContact,
@@ -38,7 +40,8 @@ module Simplex.Chat.Store
     getUserContactLinkConnections,
     deleteUserContactLink,
     getUserContactLink,
-    createContactRequest,
+    updateUserContactLinkAutoAccept,
+    createOrUpdateContactRequest,
     getContactRequest,
     getContactRequestIdByName,
     deleteContactRequest,
@@ -153,6 +156,7 @@ import Simplex.Chat.Messages
 import Simplex.Chat.Migrations.M20220101_initial
 import Simplex.Chat.Migrations.M20220122_v1_1
 import Simplex.Chat.Migrations.M20220205_chat_item_status
+import Simplex.Chat.Migrations.M20220210_deduplicate_contact_requests
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Chat.Util (eitherToMaybe)
@@ -169,7 +173,8 @@ schemaMigrations :: [(String, Query)]
 schemaMigrations =
   [ ("20220101_initial", m20220101_initial),
     ("20220122_v1_1", m20220122_v1_1),
-    ("20220205_chat_item_status", m20220205_chat_item_status)
+    ("20220205_chat_item_status", m20220205_chat_item_status),
+    ("20220210_deduplicate_contact_requests", m20220210_deduplicate_contact_requests)
   ]
 
 -- | The list of migrations in ascending order by date
@@ -247,6 +252,55 @@ setActiveUser st userId = do
     DB.execute_ db "UPDATE users SET active_user = 0"
     DB.execute db "UPDATE users SET active_user = 1 WHERE user_id = ?" (Only userId)
 
+createConnReqConnection :: MonadUnliftIO m => SQLiteStore -> UserId -> ConnId -> ConnReqUriHash -> XContactId -> m ()
+createConnReqConnection st userId acId cReqHash xContactId = do
+  liftIO . withTransaction st $ \db -> do
+    currentTs <- getCurrentTime
+    DB.execute
+      db
+      [sql|
+        INSERT INTO connections (
+          user_id, agent_conn_id, conn_status, conn_type,
+          created_at, updated_at, via_contact_uri_hash, xcontact_id
+        ) VALUES (?,?,?,?,?,?,?,?)
+      |]
+      (userId, acId, ConnNew, ConnContact, currentTs, currentTs, cReqHash, xContactId)
+
+getConnReqContactXContactId :: MonadUnliftIO m => SQLiteStore -> UserId -> ConnReqUriHash -> m (Maybe Contact, Maybe XContactId)
+getConnReqContactXContactId st userId cReqHash = do
+  liftIO . withTransaction st $ \db ->
+    getContact' db >>= \case
+      c@(Just _) -> pure (c, Nothing)
+      Nothing -> (Nothing,) <$> getXContactId db
+  where
+    getContact' :: DB.Connection -> IO (Maybe Contact)
+    getContact' db =
+      fmap toContact . listToMaybe
+        <$> DB.query
+          db
+          [sql|
+            SELECT
+              -- Contact
+              ct.contact_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, ct.created_at,
+              -- Connection
+              c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.conn_status, c.conn_type,
+              c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at
+            FROM contacts ct
+            JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
+            JOIN connections c ON c.contact_id = ct.contact_id
+            WHERE ct.user_id = ? AND c.via_contact_uri_hash = ?
+            ORDER BY c.connection_id DESC
+            LIMIT 1
+          |]
+          (userId, cReqHash)
+    getXContactId :: DB.Connection -> IO (Maybe XContactId)
+    getXContactId db =
+      fmap fromOnly . listToMaybe
+        <$> DB.query
+          db
+          "SELECT xcontact_id FROM connections WHERE user_id = ? AND via_contact_uri_hash = ? LIMIT 1"
+          (userId, cReqHash)
+
 createDirectConnection :: MonadUnliftIO m => SQLiteStore -> UserId -> ConnId -> m ()
 createDirectConnection st userId agentConnId =
   liftIO . withTransaction st $ \db -> do
@@ -254,7 +308,7 @@ createDirectConnection st userId agentConnId =
     void $ createContactConnection_ db userId agentConnId Nothing 0 currentTs
 
 createContactConnection_ :: DB.Connection -> UserId -> ConnId -> Maybe Int64 -> Int -> UTCTime -> IO Connection
-createContactConnection_ db userId = do createConnection_ db userId ConnContact Nothing
+createContactConnection_ db userId = createConnection_ db userId ConnContact Nothing
 
 createConnection_ :: DB.Connection -> UserId -> ConnType -> Maybe Int64 -> ConnId -> Maybe Int64 -> Int -> UTCTime -> IO Connection
 createConnection_ db userId connType entityId acId viaContact connLevel currentTs = do
@@ -502,45 +556,154 @@ deleteUserContactLink st userId =
       [":user_id" := userId]
     DB.execute db "DELETE FROM user_contact_links WHERE user_id = ? AND local_display_name = ''" (Only userId)
 
-getUserContactLink :: StoreMonad m => SQLiteStore -> UserId -> m ConnReqContact
+getUserContactLink :: StoreMonad m => SQLiteStore -> UserId -> m (ConnReqContact, Bool)
 getUserContactLink st userId =
   liftIOEither . withTransaction st $ \db ->
-    connReq
-      <$> DB.query
+    getUserContactLink_ db userId
+
+getUserContactLink_ :: DB.Connection -> UserId -> IO (Either StoreError (ConnReqContact, Bool))
+getUserContactLink_ db userId =
+  firstRow id SEUserContactLinkNotFound $
+    DB.query
+      db
+      [sql|
+        SELECT conn_req_contact, auto_accept
+        FROM user_contact_links
+        WHERE user_id = ?
+          AND local_display_name = ''
+      |]
+      (Only userId)
+
+updateUserContactLinkAutoAccept :: StoreMonad m => SQLiteStore -> UserId -> Bool -> m (ConnReqContact, Bool)
+updateUserContactLinkAutoAccept st userId autoAccept = do
+  liftIOEither . withTransaction st $ \db -> runExceptT $ do
+    (cReqUri, _) <- ExceptT $ getUserContactLink_ db userId
+    liftIO $ updateUserContactLinkAutoAccept_ db
+    pure (cReqUri, autoAccept)
+  where
+    updateUserContactLinkAutoAccept_ :: DB.Connection -> IO ()
+    updateUserContactLinkAutoAccept_ db =
+      DB.execute
         db
         [sql|
-          SELECT conn_req_contact
-          FROM user_contact_links
+          UPDATE user_contact_links
+          SET auto_accept = ?
           WHERE user_id = ?
             AND local_display_name = ''
         |]
-        (Only userId)
-  where
-    connReq [Only cReq] = Right cReq
-    connReq _ = Left SEUserContactLinkNotFound
+        (autoAccept, userId)
 
-createContactRequest :: StoreMonad m => SQLiteStore -> UserId -> Int64 -> InvitationId -> Profile -> m UserContactRequest
-createContactRequest st userId userContactId invId Profile {displayName, fullName} =
+createOrUpdateContactRequest :: StoreMonad m => SQLiteStore -> UserId -> Int64 -> InvitationId -> Profile -> Maybe XContactId -> m (Either Contact UserContactRequest)
+createOrUpdateContactRequest st userId userContactLinkId invId profile xContactId_ =
   liftIOEither . withTransaction st $ \db ->
-    join <$> withLocalDisplayName db userId displayName (createContactRequest' db)
+    createOrUpdateContactRequest_ db userId userContactLinkId invId profile xContactId_
+
+createOrUpdateContactRequest_ :: DB.Connection -> UserId -> Int64 -> InvitationId -> Profile -> Maybe XContactId -> IO (Either StoreError (Either Contact UserContactRequest))
+createOrUpdateContactRequest_ db userId userContactLinkId invId Profile {displayName, fullName} xContactId_ =
+  maybeM getContact' xContactId_ >>= \case
+    Just contact -> pure . Right $ Left contact
+    Nothing -> Right <$$> createOrUpdate_
   where
-    createContactRequest' db ldn = do
+    maybeM = maybe (pure Nothing)
+    createOrUpdate_ :: IO (Either StoreError UserContactRequest)
+    createOrUpdate_ =
+      maybeM getContactRequest' xContactId_ >>= \case
+        Nothing -> createContactRequest
+        Just UserContactRequest {contactRequestId, profile = oldProfile} ->
+          updateContactRequest contactRequestId oldProfile
+    createContactRequest :: IO (Either StoreError UserContactRequest)
+    createContactRequest = do
       currentTs <- getCurrentTime
-      DB.execute
-        db
-        "INSERT INTO contact_profiles (display_name, full_name, created_at, updated_at) VALUES (?,?,?,?)"
-        (displayName, fullName, currentTs, currentTs)
-      profileId <- insertedRowId db
-      DB.execute
-        db
-        [sql|
-          INSERT INTO contact_requests
-            (user_contact_link_id, agent_invitation_id, contact_profile_id, local_display_name, user_id, created_at, updated_at)
-          VALUES (?,?,?,?,?,?,?)
-        |]
-        (userContactId, invId, profileId, ldn, userId, currentTs, currentTs)
-      contactRequestId <- insertedRowId db
-      getContactRequest_ db userId contactRequestId
+      join <$> withLocalDisplayName db userId displayName (createContactRequest_ currentTs)
+      where
+        createContactRequest_ currentTs ldn = do
+          DB.execute
+            db
+            "INSERT INTO contact_profiles (display_name, full_name, created_at, updated_at) VALUES (?,?,?,?)"
+            (displayName, fullName, currentTs, currentTs)
+          profileId <- insertedRowId db
+          DB.execute
+            db
+            [sql|
+              INSERT INTO contact_requests
+                (user_contact_link_id, agent_invitation_id, contact_profile_id, local_display_name, user_id, created_at, updated_at, xcontact_id)
+              VALUES (?,?,?,?,?,?,?,?)
+            |]
+            (userContactLinkId, invId, profileId, ldn, userId, currentTs, currentTs, xContactId_)
+          contactRequestId <- insertedRowId db
+          getContactRequest_ db userId contactRequestId
+    getContact' :: XContactId -> IO (Maybe Contact)
+    getContact' xContactId =
+      fmap toContact . listToMaybe
+        <$> DB.query
+          db
+          [sql|
+            SELECT
+              -- Contact
+              ct.contact_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, ct.created_at,
+              -- Connection
+              c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.conn_status, c.conn_type,
+              c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at
+            FROM contacts ct
+            JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
+            LEFT JOIN connections c ON c.contact_id = ct.contact_id
+            WHERE ct.user_id = ? AND ct.xcontact_id = ?
+            ORDER BY c.connection_id DESC
+            LIMIT 1
+          |]
+          (userId, xContactId)
+    getContactRequest' :: XContactId -> IO (Maybe UserContactRequest)
+    getContactRequest' xContactId =
+      fmap toContactRequest . listToMaybe
+        <$> DB.query
+          db
+          [sql|
+            SELECT
+              cr.contact_request_id, cr.local_display_name, cr.agent_invitation_id, cr.user_contact_link_id,
+              c.agent_conn_id, cr.contact_profile_id, p.display_name, p.full_name, cr.created_at, cr.xcontact_id
+            FROM contact_requests cr
+            JOIN connections c USING (user_contact_link_id)
+            JOIN contact_profiles p USING (contact_profile_id)
+            WHERE cr.user_id = ?
+              AND cr.xcontact_id = ?
+            LIMIT 1
+          |]
+          (userId, xContactId)
+    updateContactRequest :: Int64 -> Profile -> IO (Either StoreError UserContactRequest)
+    updateContactRequest cReqId Profile {displayName = oldDisplayName} = do
+      currentTs <- liftIO getCurrentTime
+      if displayName == oldDisplayName
+        then updateContactRequest_ currentTs displayName
+        else join <$> withLocalDisplayName db userId displayName (updateContactRequest_ currentTs)
+      where
+        updateContactRequest_ updatedAt ldn = do
+          DB.execute
+            db
+            [sql|
+              UPDATE contact_profiles
+              SET display_name = ?,
+                  full_name = ?,
+                  updated_at = ?
+              WHERE contact_profile_id IN (
+                SELECT contact_profile_id
+                FROM contact_requests
+                WHERE user_id = ?
+                  AND contact_request_id = ?
+              )
+            |]
+            (ldn, fullName, updatedAt, userId, cReqId)
+          DB.execute
+            db
+            [sql|
+              UPDATE contact_requests
+              SET agent_invitation_id = ?,
+                  local_display_name = ?,
+                  updated_at = ?
+              WHERE user_id = ?
+                AND contact_request_id = ?
+            |]
+            (invId, ldn, updatedAt, userId, cReqId)
+          getContactRequest_ db userId cReqId
 
 getContactRequest :: StoreMonad m => SQLiteStore -> UserId -> Int64 -> m UserContactRequest
 getContactRequest st userId contactRequestId =
@@ -555,7 +718,7 @@ getContactRequest_ db userId contactRequestId =
       [sql|
         SELECT
           cr.contact_request_id, cr.local_display_name, cr.agent_invitation_id, cr.user_contact_link_id,
-          c.agent_conn_id, cr.contact_profile_id, p.display_name, p.full_name, cr.created_at
+          c.agent_conn_id, cr.contact_profile_id, p.display_name, p.full_name, cr.created_at, cr.xcontact_id
         FROM contact_requests cr
         JOIN connections c USING (user_contact_link_id)
         JOIN contact_profiles p USING (contact_profile_id)
@@ -564,12 +727,12 @@ getContactRequest_ db userId contactRequestId =
       |]
       (userId, contactRequestId)
 
-type ContactRequestRow = (Int64, ContactName, AgentInvId, Int64, AgentConnId, Int64, ContactName, Text, UTCTime)
+type ContactRequestRow = (Int64, ContactName, AgentInvId, Int64, AgentConnId, Int64, ContactName, Text, UTCTime, Maybe XContactId)
 
 toContactRequest :: ContactRequestRow -> UserContactRequest
-toContactRequest (contactRequestId, localDisplayName, agentInvitationId, userContactLinkId, agentContactConnId, profileId, displayName, fullName, createdAt) = do
+toContactRequest (contactRequestId, localDisplayName, agentInvitationId, userContactLinkId, agentContactConnId, profileId, displayName, fullName, createdAt, xContactId) = do
   let profile = Profile {displayName, fullName}
-   in UserContactRequest {contactRequestId, agentInvitationId, userContactLinkId, agentContactConnId, localDisplayName, profileId, profile, createdAt}
+   in UserContactRequest {contactRequestId, agentInvitationId, userContactLinkId, agentContactConnId, localDisplayName, profileId, profile, createdAt, xContactId}
 
 getContactRequestIdByName :: StoreMonad m => SQLiteStore -> UserId -> ContactName -> m Int64
 getContactRequestIdByName st userId cName =
@@ -592,15 +755,15 @@ deleteContactRequest st userId contactRequestId =
       (userId, userId, contactRequestId)
     DB.execute db "DELETE FROM contact_requests WHERE user_id = ? AND contact_request_id = ?" (userId, contactRequestId)
 
-createAcceptedContact :: MonadUnliftIO m => SQLiteStore -> UserId -> ConnId -> ContactName -> Int64 -> Profile -> m Contact
-createAcceptedContact st userId agentConnId localDisplayName profileId profile =
+createAcceptedContact :: MonadUnliftIO m => SQLiteStore -> UserId -> ConnId -> ContactName -> Int64 -> Profile -> Maybe XContactId -> m Contact
+createAcceptedContact st userId agentConnId localDisplayName profileId profile xContactId =
   liftIO . withTransaction st $ \db -> do
     DB.execute db "DELETE FROM contact_requests WHERE user_id = ? AND local_display_name = ?" (userId, localDisplayName)
     currentTs <- getCurrentTime
     DB.execute
       db
-      "INSERT INTO contacts (user_id, local_display_name, contact_profile_id, created_at, updated_at) VALUES (?,?,?,?,?)"
-      (userId, localDisplayName, profileId, currentTs, currentTs)
+      "INSERT INTO contacts (user_id, local_display_name, contact_profile_id, created_at, updated_at, xcontact_id) VALUES (?,?,?,?,?,?)"
+      (userId, localDisplayName, profileId, currentTs, currentTs, xContactId)
     contactId <- insertedRowId db
     activeConn <- createConnection_ db userId ConnContact (Just contactId) agentConnId Nothing 0 currentTs
     pure $ Contact {contactId, localDisplayName, profile, activeConn, viaGroup = Nothing, createdAt = currentTs}
@@ -2148,7 +2311,7 @@ getContactRequestChatPreviews_ db User {userId} =
       [sql|
         SELECT
           cr.contact_request_id, cr.local_display_name, cr.agent_invitation_id, cr.user_contact_link_id,
-          c.agent_conn_id, cr.contact_profile_id, p.display_name, p.full_name, cr.created_at
+          c.agent_conn_id, cr.contact_profile_id, p.display_name, p.full_name, cr.created_at, cr.xcontact_id
         FROM contact_requests cr
         JOIN connections c USING (user_contact_link_id)
         JOIN contact_profiles p USING (contact_profile_id)
@@ -2290,9 +2453,18 @@ getContact_ db userId contactId =
             FROM contacts ct
             JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
             LEFT JOIN connections c ON c.contact_id = ct.contact_id
-            WHERE ct.user_id = ? AND ct.contact_id = ? AND (c.conn_status = ? OR c.conn_status = ?)
-            ORDER BY c.connection_id DESC
-            LIMIT 1
+            WHERE ct.user_id = ? AND ct.contact_id = ?
+              AND c.connection_id = (
+                SELECT cc_connection_id FROM (
+                  SELECT
+                    cc.connection_id AS cc_connection_id,
+                    (CASE WHEN cc.conn_status = ? OR cc.conn_status = ? THEN 1 ELSE 0 END) AS cc_conn_status_ord
+                  FROM connections cc
+                  WHERE cc.user_id = ct.user_id AND cc.contact_id = ct.contact_id
+                  ORDER BY cc_conn_status_ord DESC, cc_connection_id DESC
+                  LIMIT 1
+                )
+              )
           |]
           (userId, contactId, ConnReady, ConnSndReady)
       )
