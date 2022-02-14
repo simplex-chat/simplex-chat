@@ -103,6 +103,7 @@ data ChatCommand
   | CreateMyAddress
   | DeleteMyAddress
   | ShowMyAddress
+  | AddressAutoAccept Bool
   | AcceptContact ContactName
   | RejectContact ContactName
   | SendMessage ContactName ByteString
@@ -160,6 +161,7 @@ data ChatResponse
   | CRContactDeleted {contact :: Contact}
   | CRUserContactLinkCreated {connReqContact :: ConnReqContact}
   | CRUserContactLinkDeleted
+  | CRUserContactLinkAutoAccept {onOff :: Bool}
   | CRReceivedContactRequest {contactRequest :: UserContactRequest}
   | CRAcceptingContactRequest {contact :: Contact}
   | CRContactAlreadyExists {contact :: Contact}

@@ -40,6 +40,8 @@ module Simplex.Chat.Store
     getUserContactLinkConnections,
     deleteUserContactLink,
     getUserContactLink,
+    updateUserContactLinkAutoAccept,
+    getUserContactLinkAutoAccept,
     createOrUpdateContactRequest,
     getContactRequest,
     getContactRequestIdByName,
@@ -558,8 +560,8 @@ deleteUserContactLink st userId =
 getUserContactLink :: StoreMonad m => SQLiteStore -> UserId -> m ConnReqContact
 getUserContactLink st userId =
   liftIOEither . withTransaction st $ \db ->
-    connReq
-      <$> DB.query
+    firstRow fromOnly SEUserContactLinkNotFound $
+      DB.query
         db
         [sql|
           SELECT conn_req_contact
@@ -568,9 +570,33 @@ getUserContactLink st userId =
             AND local_display_name = ''
         |]
         (Only userId)
-  where
-    connReq [Only cReq] = Right cReq
-    connReq _ = Left SEUserContactLinkNotFound
+
+updateUserContactLinkAutoAccept :: StoreMonad m => SQLiteStore -> UserId -> Bool -> m ()
+updateUserContactLinkAutoAccept st userId autoAccept = do
+  liftIO . withTransaction st $ \db -> do
+    DB.execute
+      db
+      [sql|
+        UPDATE user_contact_links
+        SET auto_accept = ?
+        WHERE user_id = ?
+          AND local_display_name = ''
+      |]
+      (autoAccept, userId)
+
+getUserContactLinkAutoAccept :: StoreMonad m => SQLiteStore -> UserId -> m Bool
+getUserContactLinkAutoAccept st userId =
+  liftIOEither . withTransaction st $ \db ->
+    firstRow fromOnly SEUserContactLinkNotFound $
+      DB.query
+        db
+        [sql|
+          SELECT auto_accept
+          FROM user_contact_links
+          WHERE user_id = ?
+            AND local_display_name = ''
+        |]
+        (Only userId)
 
 createOrUpdateContactRequest :: StoreMonad m => SQLiteStore -> UserId -> Int64 -> InvitationId -> Profile -> Maybe XContactId -> m (Either Contact UserContactRequest)
 createOrUpdateContactRequest st userId userContactLinkId invId profile xContactId_ =
