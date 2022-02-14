@@ -375,7 +375,7 @@ processChatCommand = \case
           forM_ contacts $ \ct -> sendDirectContactMessage ct $ XInfo p
           pure $ CRUserProfileUpdated profile p
   QuitChat -> liftIO exitSuccess
-  ShowVersion -> pure CRVersionInfo
+  ShowVersion -> pure $ CRVersionInfo versionNumber
   where
     withChatLock action = do
       ChatController {chatLock = l, smpAgent = a} <- ask

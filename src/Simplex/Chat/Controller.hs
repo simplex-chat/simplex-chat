@@ -153,7 +153,7 @@ data ChatResponse
   | CRFileTransferStatus (FileTransfer, [Integer]) -- TODO refactor this type to FileTransferStatus
   | CRUserProfile {profile :: Profile}
   | CRUserProfileNoChange
-  | CRVersionInfo
+  | CRVersionInfo {version :: String}
   | CRInvitation {connReqInvitation :: ConnReqInvitation}
   | CRSentConfirmation
   | CRSentInvitation
