@@ -222,8 +222,7 @@ processChatCommand = \case
   ShowMyAddress -> withUser $ \User {userId} ->
     uncurry CRUserContactLink <$> withStore (`getUserContactLink` userId)
   AddressAutoAccept onOff -> withUser $ \User {userId} -> do
-    (cReqUri, autoAccept) <- withStore $ \st -> updateUserContactLinkAutoAccept st userId onOff
-    pure $ CRUserContactLinkUpdated cReqUri autoAccept
+    uncurry CRUserContactLinkUpdated <$> withStore (\st -> updateUserContactLinkAutoAccept st userId onOff)
   AcceptContact cName -> withUser $ \User {userId} -> do
     connReqId <- withStore $ \st -> getContactRequestIdByName st userId cName
     processChatCommand $ APIAcceptContact connReqId
