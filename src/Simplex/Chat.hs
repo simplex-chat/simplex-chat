@@ -840,9 +840,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
             Right cReq@UserContactRequest {localDisplayName} -> do
               (_, autoAccept) <- withStore $ \st -> getUserContactLink st userId
               if autoAccept
-                then do
-                  acceptedContact <- acceptContactRequest user cReq
-                  toView $ CRAcceptingContactRequest acceptedContact
+                then acceptContactRequest user cReq >>= toView . CRAcceptingContactRequest
                 else do
                   toView $ CRReceivedContactRequest cReq
                   showToast (localDisplayName <> "> ") "wants to connect to you"
