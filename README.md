@@ -14,7 +14,7 @@ SimpleX Chat apps (both terminal UI and [iOS public beta](https://testflight.app
 
 See [SimpleX overview](https://github.com/simplex-chat/simplexmq/blob/master/protocol/overview-tjr.md) for more information on platform objectives and technical design.
 
-***SimpleX Chat [public beta for iOS 15 is available via TestFlight](https://testflight.apple.com/join/DWuT2LQu)** - it will help us a lot if you test it! [See the announcement here](https://github.com/simplex-chat/simplex-chat/blob/stable/blog/20220214-simplex-chat-ios-public-beta.md)**
+***SimpleX Chat [public beta for iOS 15 is available via TestFlight](https://testflight.apple.com/join/DWuT2LQu)** - it will help us a lot if you test it! [See the announcement here](https://github.com/simplex-chat/simplex-chat/blob/stable/blog/20220214-simplex-chat-ios-public-beta.md).*
 
 ### :zap: Quick installation
 
