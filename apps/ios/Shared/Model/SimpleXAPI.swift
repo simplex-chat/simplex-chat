@@ -575,6 +575,7 @@ enum ChatErrorType: Decodable {
     case chatNotStarted
     case invalidConnReq
     case invalidChatMessage(message: String)
+    case contactNotReady(contact: Contact)
     case contactGroups(contact: Contact, groupNames: [GroupName])
     case groupUserRole
     case groupContactRole(contactName: ContactName)
