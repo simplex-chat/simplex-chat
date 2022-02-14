@@ -245,7 +245,7 @@ processChatCommand = \case
     when (memberStatus membership == GSMemInvited) $ throwChatError (CEGroupNotJoined gInfo)
     unless (memberActive membership) $ throwChatError CEGroupMemberNotActive
     let sendInvitation memberId cReq = do
-          void . sendDirectMessage (contactConn contact) $
+          void . sendDirectContactMessage contact $
             XGrpInv $ GroupInvitation (MemberIdRole userMemberId userRole) (MemberIdRole memberId memRole) cReq groupProfile
           setActive $ ActiveG gName
           pure $ CRSentGroupInvitation gInfo contact
@@ -372,7 +372,7 @@ processChatCommand = \case
         asks currentUser >>= atomically . (`writeTVar` Just user')
         contacts <- withStore (`getUserContacts` user)
         withChatLock . procCmd $ do
-          forM_ contacts $ \ct -> sendDirectMessage (contactConn ct) $ XInfo p
+          forM_ contacts $ \ct -> sendDirectContactMessage ct $ XInfo p
           pure $ CRUserProfileUpdated profile p
   QuitChat -> liftIO exitSuccess
   ShowVersion -> pure CRVersionInfo
@@ -548,12 +548,6 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
     isMember memId GroupInfo {membership} members =
       sameMemberId memId membership || isJust (find (sameMemberId memId) members)
 
-    contactIsReady :: Contact -> Bool
-    contactIsReady Contact {activeConn} = connStatus activeConn == ConnReady
-
-    memberIsReady :: GroupMember -> Bool
-    memberIsReady GroupMember {activeConn} = maybe False ((== ConnReady) . connStatus) activeConn
-
     agentMsgConnStatus :: ACommand 'Agent -> Maybe ConnStatus
     agentMsgConnStatus = \case
       CONF {} -> Just ConnRequested
@@ -622,8 +616,8 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
               toView $ CRContactConnected ct
               setActive $ ActiveC c
               showToast (c <> "> ") "connected"
-            Just (gInfo, m) -> do
-              when (memberIsReady m) $ do
+            Just (gInfo, m@GroupMember {activeConn}) -> do
+              when (maybe False ((== ConnReady) . connStatus) activeConn) $ do
                 notifyMemberConnected gInfo m
                 when (memberCategory m == GCPreMember) $ probeMatchingContacts ct
         SENT msgId -> do
@@ -717,8 +711,8 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
               Nothing -> do
                 notifyMemberConnected gInfo m
                 messageError "implementation error: connected member does not have contact"
-              Just ct ->
-                when (contactIsReady ct) $ do
+              Just ct@Contact {activeConn = Connection {connStatus}} ->
+                when (connStatus == ConnReady) $ do
                   notifyMemberConnected gInfo m
                   when (memberCategory m == GCPreMember) $ probeMatchingContacts ct
       MSG msgMeta msgBody -> do
@@ -879,14 +873,14 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
     probeMatchingContacts ct = do
       gVar <- asks idsDrg
       (probe, probeId) <- withStore $ \st -> createSentProbe st gVar userId ct
-      void . sendDirectMessage (contactConn ct) $ XInfoProbe probe
+      void . sendDirectContactMessage ct $ XInfoProbe probe
       cs <- withStore (\st -> getMatchingContacts st userId ct)
       let probeHash = ProbeHash $ C.sha256Hash (unProbe probe)
       forM_ cs $ \c -> sendProbeHash c probeHash probeId `catchError` const (pure ())
       where
         sendProbeHash :: Contact -> ProbeHash -> Int64 -> m ()
         sendProbeHash c probeHash probeId = do
-          void . sendDirectMessage (contactConn c) $ XInfoProbeCheck probeHash
+          void . sendDirectContactMessage c $ XInfoProbeCheck probeHash
           withStore $ \st -> createSentProbeHash st userId probeId c
 
     messageWarning :: Text -> m ()
@@ -967,7 +961,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
     probeMatch :: Contact -> Contact -> Probe -> m ()
     probeMatch c1@Contact {profile = p1} c2@Contact {profile = p2} probe =
       when (p1 == p2) $ do
-        void . sendDirectMessage (contactConn c1) $ XInfoProbeOk probe
+        void . sendDirectContactMessage c1 $ XInfoProbeOk probe
         mergeContacts c1 c2
 
     xInfoProbeOk :: Contact -> Probe -> m ()
@@ -1201,6 +1195,12 @@ deleteMemberConnection m@GroupMember {activeConn} = do
   -- withStore $ \st -> deleteGroupMemberConnection st userId m
   forM_ activeConn $ \conn -> withStore $ \st -> updateConnectionStatus st conn ConnDeleted
 
+sendDirectContactMessage :: ChatMonad m => Contact -> ChatMsgEvent -> m MessageId
+sendDirectContactMessage ct@Contact {activeConn = conn@Connection {connStatus}} chatMsgEvent = do
+  if connStatus == ConnReady || connStatus == ConnSndReady
+    then sendDirectMessage conn chatMsgEvent
+    else throwChatError $ CEContactNotReady ct
+
 sendDirectMessage :: ChatMonad m => Connection -> ChatMsgEvent -> m MessageId
 sendDirectMessage conn chatMsgEvent = do
   (msgId, msgBody) <- createSndMessage chatMsgEvent
@@ -1267,8 +1267,8 @@ saveRcvMSG Connection {connId} agentMsgMeta msgBody = do
   pure (msgId, chatMsgEvent)
 
 sendDirectChatItem :: ChatMonad m => UserId -> Contact -> ChatMsgEvent -> CIContent 'MDSnd -> m (ChatItem 'CTDirect 'MDSnd)
-sendDirectChatItem userId contact@Contact {activeConn} chatMsgEvent ciContent = do
-  msgId <- sendDirectMessage activeConn chatMsgEvent
+sendDirectChatItem userId contact chatMsgEvent ciContent = do
+  msgId <- sendDirectContactMessage contact chatMsgEvent
   createdAt <- liftIO getCurrentTime
   ciMeta <- saveChatItem userId (CDDirectSnd contact) $ mkNewChatItem ciContent msgId createdAt createdAt
   pure $ ChatItem CIDirectSnd ciMeta ciContent
