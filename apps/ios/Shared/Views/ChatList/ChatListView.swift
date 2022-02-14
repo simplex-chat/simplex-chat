@@ -88,6 +88,7 @@ struct ChatListView: View {
                     DispatchQueue.main.async {
                         do {
                             try apiConnect(connReq: link)
+                            connectionReqSentAlert(path == "contact" ? .contact : .invitation)
                         } catch {
                             let err = error.localizedDescription
                             AlertManager.shared.showAlertMsg(title: "Connection error", message: err)
