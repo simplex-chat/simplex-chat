@@ -2453,9 +2453,18 @@ getContact_ db userId contactId =
             FROM contacts ct
             JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
             LEFT JOIN connections c ON c.contact_id = ct.contact_id
-            WHERE ct.user_id = ? AND ct.contact_id = ? AND (c.conn_status = ? OR c.conn_status = ?)
-            ORDER BY c.connection_id DESC
-            LIMIT 1
+            WHERE ct.user_id = ? AND ct.contact_id = ?
+              AND c.connection_id = (
+                SELECT cc_connection_id FROM (
+                  SELECT
+                    cc.connection_id AS cc_connection_id,
+                    (CASE WHEN cc.conn_status = ? OR cc.conn_status = ? THEN 1 ELSE 0 END) AS cc_conn_status_ord
+                  FROM connections cc
+                  WHERE cc.user_id = ct.user_id AND cc.contact_id = ct.contact_id
+                  ORDER BY cc_conn_status_ord DESC, cc_connection_id DESC
+                  LIMIT 1
+                )
+              )
           |]
           (userId, contactId, ConnReady, ConnSndReady)
       )

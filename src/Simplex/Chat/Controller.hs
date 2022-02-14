@@ -229,6 +229,7 @@ data ChatErrorType
   | CEChatNotStarted
   | CEInvalidConnReq
   | CEInvalidChatMessage {message :: String}
+  | CEContactNotReady {contact :: Contact}
   | CEContactGroups {contact :: Contact, groupNames :: [GroupName]}
   | CEGroupUserRole
   | CEGroupContactRole {contactName :: ContactName}
