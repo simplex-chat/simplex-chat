@@ -41,7 +41,6 @@ module Simplex.Chat.Store
     deleteUserContactLink,
     getUserContactLink,
     updateUserContactLinkAutoAccept,
-    getUserContactLinkAutoAccept,
     createOrUpdateContactRequest,
     getContactRequest,
     getContactRequestIdByName,
@@ -557,46 +556,42 @@ deleteUserContactLink st userId =
       [":user_id" := userId]
     DB.execute db "DELETE FROM user_contact_links WHERE user_id = ? AND local_display_name = ''" (Only userId)
 
-getUserContactLink :: StoreMonad m => SQLiteStore -> UserId -> m ConnReqContact
+getUserContactLink :: StoreMonad m => SQLiteStore -> UserId -> m (ConnReqContact, Bool)
 getUserContactLink st userId =
   liftIOEither . withTransaction st $ \db ->
-    firstRow fromOnly SEUserContactLinkNotFound $
-      DB.query
-        db
-        [sql|
-          SELECT conn_req_contact
-          FROM user_contact_links
-          WHERE user_id = ?
-            AND local_display_name = ''
-        |]
-        (Only userId)
+    getUserContactLink_ db userId
 
-updateUserContactLinkAutoAccept :: StoreMonad m => SQLiteStore -> UserId -> Bool -> m ()
-updateUserContactLinkAutoAccept st userId autoAccept = do
-  liftIO . withTransaction st $ \db -> do
-    DB.execute
+getUserContactLink_ :: DB.Connection -> UserId -> IO (Either StoreError (ConnReqContact, Bool))
+getUserContactLink_ db userId =
+  firstRow id SEUserContactLinkNotFound $
+    DB.query
       db
       [sql|
-        UPDATE user_contact_links
-        SET auto_accept = ?
+        SELECT conn_req_contact, auto_accept
+        FROM user_contact_links
         WHERE user_id = ?
           AND local_display_name = ''
       |]
-      (autoAccept, userId)
+      (Only userId)
 
-getUserContactLinkAutoAccept :: StoreMonad m => SQLiteStore -> UserId -> m Bool
-getUserContactLinkAutoAccept st userId =
-  liftIOEither . withTransaction st $ \db ->
-    firstRow fromOnly SEUserContactLinkNotFound $
-      DB.query
+updateUserContactLinkAutoAccept :: StoreMonad m => SQLiteStore -> UserId -> Bool -> m (ConnReqContact, Bool)
+updateUserContactLinkAutoAccept st userId autoAccept = do
+  liftIOEither . withTransaction st $ \db -> runExceptT $ do
+    (cReqUri, _) <- ExceptT $ getUserContactLink_ db userId
+    liftIO $ updateUserContactLinkAutoAccept_ db
+    pure (cReqUri, autoAccept)
+  where
+    updateUserContactLinkAutoAccept_ :: DB.Connection -> IO ()
+    updateUserContactLinkAutoAccept_ db =
+      DB.execute
         db
         [sql|
-          SELECT auto_accept
-          FROM user_contact_links
+          UPDATE user_contact_links
+          SET auto_accept = ?
           WHERE user_id = ?
             AND local_display_name = ''
         |]
-        (Only userId)
+        (autoAccept, userId)
 
 createOrUpdateContactRequest :: StoreMonad m => SQLiteStore -> UserId -> Int64 -> InvitationId -> Profile -> Maybe XContactId -> m (Either Contact UserContactRequest)
 createOrUpdateContactRequest st userId userContactLinkId invId profile xContactId_ =

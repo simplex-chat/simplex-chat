@@ -219,10 +219,12 @@ processChatCommand = \case
         deleteConnection a (aConnId conn) `catchError` \(_ :: AgentErrorType) -> pure ()
       withStore $ \st -> deleteUserContactLink st userId
       pure CRUserContactLinkDeleted
-  ShowMyAddress -> CRUserContactLink <$> withUser (\User {userId} -> withStore (`getUserContactLink` userId))
-  AddressAutoAccept onOff -> withUser $ \User {userId} -> withChatLock . procCmd $ do
-    withStore $ \st -> updateUserContactLinkAutoAccept st userId onOff
-    pure $ CRUserContactLinkAutoAccept onOff
+  ShowMyAddress -> withUser $ \User {userId} -> do
+    (cReqUri, autoAccept) <- withStore (`getUserContactLink` userId)
+    pure $ CRUserContactLink cReqUri autoAccept
+  AddressAutoAccept onOff -> withUser $ \User {userId} -> do
+    (cReqUri, autoAccept) <- withStore $ \st -> updateUserContactLinkAutoAccept st userId onOff
+    pure $ CRUserContactLinkUpdated cReqUri autoAccept
   AcceptContact cName -> withUser $ \User {userId} -> do
     connReqId <- withStore $ \st -> getContactRequestIdByName st userId cName
     processChatCommand $ APIAcceptContact connReqId
@@ -838,7 +840,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
           withStore (\st -> createOrUpdateContactRequest st userId userContactLinkId invId p xContactId_) >>= \case
             Left contact -> toView $ CRContactRequestAlreadyAccepted contact
             Right cReq@UserContactRequest {localDisplayName} -> do
-              autoAccept <- withStore $ \st -> getUserContactLinkAutoAccept st userId
+              (_, autoAccept) <- withStore $ \st -> getUserContactLink st userId
               if autoAccept
                 then do
                   cr <- acceptContactRequest user cReq
@@ -1451,7 +1453,7 @@ chatCommandP =
     <|> ("/address" <|> "/ad") $> CreateMyAddress
     <|> ("/delete_address" <|> "/da") $> DeleteMyAddress
     <|> ("/show_address" <|> "/sa") $> ShowMyAddress
-    <|> "/auto_accept" $> AddressAutoAccept <* A.space <*> onOffP
+    <|> "/auto_accept " *> (AddressAutoAccept <$> onOffP)
     <|> ("/accept @" <|> "/accept " <|> "/ac @" <|> "/ac ") *> (AcceptContact <$> displayName)
     <|> ("/reject @" <|> "/reject " <|> "/rc @" <|> "/rc ") *> (RejectContact <$> displayName)
     <|> ("/markdown" <|> "/m") $> ChatHelp HSMarkdown

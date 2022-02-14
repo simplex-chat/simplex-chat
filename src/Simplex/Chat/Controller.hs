@@ -143,7 +143,8 @@ data ChatResponse
   | CRGroupCreated {groupInfo :: GroupInfo}
   | CRGroupMembers {group :: Group}
   | CRContactsList {contacts :: [Contact]}
-  | CRUserContactLink {connReqContact :: ConnReqContact}
+  | CRUserContactLink {connReqContact :: ConnReqContact, autoAccept :: Bool}
+  | CRUserContactLinkUpdated {connReqContact :: ConnReqContact, autoAccept :: Bool}
   | CRContactRequestRejected {contactRequest :: UserContactRequest}
   | CRUserAcceptedGroupSent {groupInfo :: GroupInfo}
   | CRUserDeletedMember {groupInfo :: GroupInfo, member :: GroupMember}
@@ -161,7 +162,6 @@ data ChatResponse
   | CRContactDeleted {contact :: Contact}
   | CRUserContactLinkCreated {connReqContact :: ConnReqContact}
   | CRUserContactLinkDeleted
-  | CRUserContactLinkAutoAccept {onOff :: Bool}
   | CRReceivedContactRequest {contactRequest :: UserContactRequest}
   | CRAcceptingContactRequest {contact :: Contact}
   | CRContactAlreadyExists {contact :: Contact}

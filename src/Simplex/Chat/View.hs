@@ -51,7 +51,8 @@ responseToView cmd testView = \case
     HSMarkdown -> r markdownInfo
   CRWelcome user -> r $ chatWelcome user
   CRContactsList cs -> r $ viewContactsList cs
-  CRUserContactLink cReq -> r $ connReqContact_ "Your chat address:" cReq
+  CRUserContactLink cReqUri _ -> r $ connReqContact_ "Your chat address:" cReqUri
+  CRUserContactLinkUpdated _ autoAccept -> r ["auto_accept " <> if autoAccept then "on" else "off"]
   CRContactRequestRejected UserContactRequest {localDisplayName = c} -> r [ttyContact c <> ": contact request rejected"]
   CRGroupCreated g -> r $ viewGroupCreated g
   CRGroupMembers g -> r $ viewGroupMembers g
@@ -71,7 +72,6 @@ responseToView cmd testView = \case
   CRContactRequestAlreadyAccepted c -> r' [ttyFullContact c <> ": sent you a duplicate contact request, but you are already connected, no action needed"]
   CRUserContactLinkCreated cReq -> r' $ connReqContact_ "Your new chat address is created!" cReq
   CRUserContactLinkDeleted -> r' viewUserContactLinkDeleted
-  CRUserContactLinkAutoAccept onOff -> r' ["auto_accept " <> if onOff then "on" else "off"]
   CRUserAcceptedGroupSent _g -> r' [] -- [ttyGroup' g <> ": joining the group..."]
   CRUserDeletedMember g m -> r' [ttyGroup' g <> ": you removed " <> ttyMember m <> " from the group"]
   CRLeftMemberUser g -> r' $ [ttyGroup' g <> ": you left the group"] <> groupPreserved g
