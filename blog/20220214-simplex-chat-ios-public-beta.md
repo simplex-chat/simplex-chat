@@ -2,9 +2,7 @@
 
 **Published:** Feb 14, 2022
 
-## The most private and secure chat and application platform - public beta is now available for iPhones with iOS 15.
-
-We are building a new platform for distributed Internet applications where privacy of the messages _and_ the network matter.
+## Private and secure chat and application platform - [public beta is now available](https://testflight.apple.com/join/DWuT2LQu) for iPhones with iOS 15.
 
 Our new iPhone app is very basic - right now it only supports text messages and emojis.
 
@@ -16,26 +14,24 @@ Even though the app is new, it uses the same core code as our terminal app, that
 
 You can read more details in our recent [v1 announcement](https://github.com/simplex-chat/simplex-chat/blob/stable/blog/20220112-simplex-chat-v1-released.md).
 
-## Please help us testing the app!
+## Join our public beta!
 
-Connect to us and connect to a couple of friends you send messages to - and please let us know what you think!
+Install the app [via TestFlight](https://testflight.apple.com/join/DWuT2LQu), connect to us (by choosing **Connect to SimpleX team** link in the app) and to a couple of friends you usually send messages to - and please let us know what you think!
 
-Once you install the app you can connect to the team from the initial screen by choosing **Connect to SimpleX team** link.
-
-It's not very intuitive right now, we are already improving it - when you click Connect button the connection request is sent, but it may take some time before your request is accepted if the team is offline - you would need to check the app later.
-
-We have a limited number of people we can invite to test the app - we would really appreciate as much feedback as possible to improve the app and to decide which additional features should be included in our public release in March.
+We would really appreciate any feedback to improve the app and to decide which additional features should be included in our public release in March.
 
 Should it be:
-- images?
-- or link previews?
+- images,
+- link previews,
 - or maybe something else we couldn't think of.
 
 Please vote on the features you think are the most needed in our [app roadmap](https://app.loopedin.io/simplex).
 
 ## What is SimpleX?
 
-There is currently no messaging application which fully protects users' metadata privacy - in other words, messages could be private, but a third party can discover see who is communicating with whom by examining the connection graph on a central service or via network traffic. SimpleX, at it's core, is designed to be truly distributed with no central server. This allows for high scalability at low cost, and also makes it virtually impossible to snoop on the network graph.
+We are building a new platform for distributed Internet applications where privacy of the messages _and_ the network matter.
+
+We aim to provide the best possible protection of messages and metadata. Today there is no messaging application that works without global user identities, so we belive we provide better metadata privacy than alternatives. SimpleX is designed to be truly distributed with no central server, and without any glogabl user identities. This allows for high scalability at low cost, and also makes it virtually impossible to snoop on the network graph.
 
 The first application built on the platform is Simplex Chat, which for available for terminal (command line in Windows/Mac/Linux) and as iOS public beta - with Android app coming in a few weeks. The platform can easily support a private social network feed and a multitude of other services, which can be developed by the Simplex team or third party developers.
 
