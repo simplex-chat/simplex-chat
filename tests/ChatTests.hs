@@ -9,7 +9,7 @@ import ChatClient
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
 import Control.Concurrent.STM
-import Control.Monad (forever)
+import Control.Monad (forever, when)
 import qualified Data.ByteString as B
 import Data.Char (isDigit)
 import Data.Maybe (fromJust)
@@ -78,12 +78,16 @@ testStressServer =
             testChat2' (i * 2 -1, aliceProfile) (i * 2, bobProfile) $
               \alice bob -> do
                 connectUsers alice bob
-                forever $ do
-                  alice <##> bob
-                  atomically $ modifyTVar sentTVar (+ 2)
-                  threadDelay 500
+                forever $ loop alice bob sentTVar 0
         )
         (take 100 ([1 ..] :: [Int]))
+  where
+    loop :: TestCC -> TestCC -> TVar Int -> Int -> IO ()
+    loop alice bob sentTVar k = do
+      alice <##> bob
+      when (k `mod` 100 == 0) $ atomically $ modifyTVar sentTVar (+ 200)
+      threadDelay 500
+      loop alice bob sentTVar $ k + 1
 
 testAddContact :: IO ()
 testAddContact =
