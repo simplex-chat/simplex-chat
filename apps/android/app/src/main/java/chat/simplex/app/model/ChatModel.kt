@@ -1,8 +1,28 @@
 package chat.simplex.app.model
 
-class ChatModel {
+import android.util.Log
+import androidx.compose.runtime.mutableStateListOf
+import chat.simplex.app.chatSendCmd
+
+class ChatModel(val controller: ChatController) {
   val currentUser: User? = null
-  val terminalItems = mutableListOf<TerminalItem>()
+  var terminalItems = mutableStateListOf<String>()
+    private set
+//    private val store = chatInit(filesDir)
+//    private val controller: Controller by lazy { // Maybe this shouldn't be lazy
+//        this.maybeCreateUser()
+//        chatStart(store)
+//    }
+
+//    fun maybeCreateUser() {
+//        // create user if needed
+//        if(chatGetUser(store) == "{}") {
+//            chatCreateUser(store, """
+//                    {"displayName": "test", "fullName": "android test"}
+//                    """.trimIndent())
+//        }
+//        Log.d("SIMPLEX (user)", chatGetUser(store))
+//    }
 }
 
 enum class ChatType(val type: String) {

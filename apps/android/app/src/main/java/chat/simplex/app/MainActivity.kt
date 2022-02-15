@@ -1,8 +1,7 @@
 package chat.simplex.app
 
-import android.net.LocalServerSocket
+import android.app.Application
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
@@ -12,7 +11,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
 import chat.simplex.app.ui.theme.SimpleXTheme
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
@@ -21,6 +19,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.lifecycle.AndroidViewModel
 
 class MainActivity: ComponentActivity() {
   private val viewModel by viewModels<SimplexViewModel>()
@@ -29,10 +28,14 @@ class MainActivity: ComponentActivity() {
     super.onCreate(savedInstanceState)
     setContent {
       SimpleXTheme {
-        MainPage(viewModel.terminalLog, viewModel::onCmdEntered)
+        MainPage(viewModel)
       }
     }
   }
+}
+
+class SimplexViewModel(application: Application) : AndroidViewModel(application) {
+  val chatModel = getApplication<SimplexApp>().chatModel
 }
 
 @Composable
@@ -64,9 +67,9 @@ fun TerminalLog(terminalLog: List<String>) {
 }
 
 @Composable
-fun MainPage(terminalLog: List<String>, executeCmd: (String) -> Unit) {
+fun MainPage(vm: SimplexViewModel) {
   Column {
-    TerminalLog(terminalLog)
-    CommandInput(executeCmd)
+    TerminalLog(vm.chatModel.terminalItems)
+    CommandInput(vm.chatModel.controller::sendCmd)
   }
 }

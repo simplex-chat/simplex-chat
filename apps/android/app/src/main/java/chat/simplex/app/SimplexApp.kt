@@ -3,15 +3,14 @@ package chat.simplex.app
 import android.app.Application
 import android.net.LocalServerSocket
 import android.util.Log
-import androidx.lifecycle.LiveData
 import chat.simplex.app.model.ChatController
+import chat.simplex.app.model.ChatModel
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.lang.ref.WeakReference
 import java.util.*
 import java.util.concurrent.Semaphore
 import kotlin.concurrent.thread
-import androidx.lifecycle.MutableLiveData
 
 // ghc's rts
 external fun initHS()
@@ -31,7 +30,6 @@ external fun chatRecvMsg(controller: Controller) : String
 class SimplexApp: Application() {
     private lateinit var controller: ChatController
 
-
     override fun onCreate() {
         super.onCreate()
         val filesDir = applicationContext.filesDir.toString()
@@ -43,17 +41,15 @@ class SimplexApp: Application() {
                     """.trimIndent())
         }
         Log.d("SIMPLEX (user)", chatGetUser(store))
-
         controller = ChatController(chatStart(store))
     }
 
-    val messageRepository by lazy {
-        val m = MessageRepository(controller)
-        m.startReceiver()
+    val chatModel by lazy {
+        val m = ChatModel(controller)
+        controller.setModel(m)
+        controller.startReceiver()
         m
     }
-
-
 
     companion object {
         lateinit var weakActivity: WeakReference<MainActivity>

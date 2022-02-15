@@ -1,11 +1,43 @@
 package chat.simplex.app.model
 
+import android.util.Log
+import chat.simplex.app.chatRecvMsg
+import chat.simplex.app.chatSendCmd
 import java.util.*
+import kotlin.concurrent.thread
 
 typealias Controller = Long
 
 class ChatController(val ctrl: Controller) {
+  private lateinit var chatModel: ChatModel
 
+  fun setModel(m: ChatModel) {
+    chatModel = m
+  }
+
+  fun startReceiver() {
+    thread(name="receiver") {
+//            val chatlog = FifoQueue<String>(500)
+      while(true) {
+        val msg = chatRecvMsg(ctrl)
+        Log.d("SIMPLEX RECV", msg)
+        chatModel.terminalItems.add(msg)
+//                val currentText = chatlog.joinToString("\n")
+//                weakActivity.get()?.runOnUiThread {
+//                    val log = weakActivity.get()?.findViewById<TextView>(R.id.chatlog)
+//                    val scroll = weakActivity.get()?.findViewById<ScrollView>(R.id.scroller)
+//                    log?.text = currentText
+//                    scroll?.scrollTo(0, scroll.getChildAt(0).height)
+//                }
+      }
+    }
+  }
+
+  fun sendCmd(cmd: String) {
+    val response = chatSendCmd(ctrl, cmd)
+    Log.d("SIMPLEX SEND", response)
+    chatModel.terminalItems.add(response)
+  }
 }
 
 // Chat Command
