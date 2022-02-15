@@ -50,16 +50,16 @@ jobs:
         include:
           - os: ubuntu-20.04
             cache_path: ~/.stack
-            asset_name: simplex-chat-ubuntu-20_04-x86-64
-          - os: ubuntu-18.04
-            cache_path: ~/.stack
-            asset_name: simplex-chat-ubuntu-18_04-x86-64
-          - os: macos-latest
-            cache_path: ~/.stack
-            asset_name: simplex-chat-macos-x86-64
-          - os: windows-latest
-            cache_path: C:/sr
-            asset_name: simplex-chat-windows-x86-64
+            asset_name: simplex-stress-test
+          # - os: ubuntu-18.04
+          #   cache_path: ~/.stack
+          #   asset_name: simplex-chat-ubuntu-18_04-x86-64
+          # - os: macos-latest
+          #   cache_path: ~/.stack
+          #   asset_name: simplex-chat-macos-x86-64
+          # - os: windows-latest
+          #   cache_path: C:/sr
+          #   asset_name: simplex-chat-windows-x86-64
     steps:
       - name: Clone project
         uses: actions/checkout@v2
@@ -92,7 +92,7 @@ jobs:
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: ${{ steps.unix_build.outputs.local_install_root }}/bin/simplex-chat
+          file: ${{ steps.unix_build.outputs.local_install_root }}/bin/simplex-stress-test
           asset_name: ${{ matrix.asset_name }}
           tag: ${{ github.ref }}
 
