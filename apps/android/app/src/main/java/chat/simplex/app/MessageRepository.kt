@@ -1,18 +1,13 @@
 package chat.simplex.app
 
 import android.util.Log
+import android.widget.ScrollView
+import android.widget.TextView
+import chat.simplex.app.model.ChatController
+import kotlin.concurrent.thread
 
-typealias Controller = Long
-typealias Store = Long
-external fun chatInit(filesDir: String): Store
-external fun chatGetUser(controller: Store) : String
-external fun chatCreateUser(controller: Store, data: String) : String
-external fun chatStart(controller: Store) : Controller
-external fun chatSendCmd(controller: Controller, msg: String) : String
-
-
-class MessageRepository(filesDir: String) {
-
+class MessageRepository(val controller: ChatController) {
+    val terminalLog = mutableListOf<String>()
 //    private val store = chatInit(filesDir)
 //    private val controller: Controller by lazy { // Maybe this shouldn't be lazy
 //        this.maybeCreateUser()
@@ -30,7 +25,24 @@ class MessageRepository(filesDir: String) {
 //    }
 
     fun sendCmd(cmd: String) {
-        println(cmd)
-//        Log.d("SIMPLEXMPLEX SEND", chatSendCmd(controller, cmd))
+        Log.d("SIMPLEX SEND", chatSendCmd(controller.ctrl, cmd))
+    }
+
+    fun startReceiver() {
+        thread(name="receiver") {
+//            val chatlog = FifoQueue<String>(500)
+            while(true) {
+                val msg = chatRecvMsg(controller.ctrl)
+                Log.d("SIMPLEX RECV", msg)
+                terminalLog.add(msg)
+//                val currentText = chatlog.joinToString("\n")
+//                weakActivity.get()?.runOnUiThread {
+//                    val log = weakActivity.get()?.findViewById<TextView>(R.id.chatlog)
+//                    val scroll = weakActivity.get()?.findViewById<ScrollView>(R.id.scroller)
+//                    log?.text = currentText
+//                    scroll?.scrollTo(0, scroll.getChildAt(0).height)
+//                }
+            }
+        }
     }
 }

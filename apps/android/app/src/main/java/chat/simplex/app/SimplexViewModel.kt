@@ -10,8 +10,9 @@ import androidx.lifecycle.AndroidViewModel
 class SimplexViewModel(application: Application) : AndroidViewModel(application) {
     private val messageRepository = getApplication<SimplexApp>().messageRepository
 
+    val terminalLog: List<String> get() = messageRepository.terminalLog
+
     fun onCmdEntered(cmd: String){
         messageRepository.sendCmd(cmd)
     }
-
 }

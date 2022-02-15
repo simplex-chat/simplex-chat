@@ -1,6 +1,8 @@
 package chat.simplex.app
 
+import android.net.LocalServerSocket
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
@@ -17,15 +19,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.material.Text
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 
-class MainActivity : ComponentActivity() {
+class MainActivity: ComponentActivity() {
   private val viewModel by viewModels<SimplexViewModel>()
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
     setContent {
       SimpleXTheme {
-        MainPage(viewModel::onCmdEntered)
+        MainPage(viewModel.terminalLog, viewModel::onCmdEntered)
       }
     }
   }
@@ -38,7 +42,10 @@ fun CommandInput(executeCmd: (String) -> Unit) {
     TextField(value = cmd, onValueChange = { cmd = it }, modifier = Modifier.height(80.dp))
     Spacer(Modifier.height(10.dp))
     Button(
-      onClick = { executeCmd(cmd)  },
+      onClick = {
+        executeCmd(cmd)
+        cmd = ""
+      },
       modifier = Modifier.width(80.dp),
       enabled = cmd.isNotEmpty()
     ) {
@@ -47,8 +54,19 @@ fun CommandInput(executeCmd: (String) -> Unit) {
   }
 }
 
+@Composable
+fun TerminalLog(terminalLog: List<String>) {
+  LazyColumn {
+    items(terminalLog) { item ->
+      Text(item)
+    }
+  }
+}
 
 @Composable
-fun MainPage(executeCmd: (String) -> Unit) {
-  CommandInput(executeCmd)
+fun MainPage(terminalLog: List<String>, executeCmd: (String) -> Unit) {
+  Column {
+    TerminalLog(terminalLog)
+    CommandInput(executeCmd)
+  }
 }

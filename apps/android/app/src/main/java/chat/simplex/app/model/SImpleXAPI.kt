@@ -2,6 +2,12 @@ package chat.simplex.app.model
 
 import java.util.*
 
+typealias Controller = Long
+
+class ChatController(val ctrl: Controller) {
+
+}
+
 // Chat Command
 abstract class CC {
   abstract val cmdString: String
@@ -31,15 +37,11 @@ abstract class CC {
     override val cmdString get() = "/_get chats"
     override val cmdType get() = "ApiGetChats"
   }
-}
 
-enum class ChatType(val type: String) {
-  Direct("@"),
-  Group("#"),
-  ContactRequest("<@")
+  companion object {
+    fun chatRef(type: ChatType, id: String) = "${type}${id}"
+  }
 }
-
-private fun chatRef(type: ChatType, id: String) = "${type}${id}"
 
 // chat response
 abstract class CR {
