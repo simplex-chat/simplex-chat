@@ -3,11 +3,15 @@ package chat.simplex.app
 import android.util.Log
 import android.widget.ScrollView
 import android.widget.TextView
+import androidx.compose.runtime.mutableStateListOf
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
 import chat.simplex.app.model.ChatController
 import kotlin.concurrent.thread
 
 class MessageRepository(val controller: ChatController) {
-    val terminalLog = mutableListOf<String>()
+    var terminalLog = mutableStateListOf<String>()
+     private set
 //    private val store = chatInit(filesDir)
 //    private val controller: Controller by lazy { // Maybe this shouldn't be lazy
 //        this.maybeCreateUser()
@@ -25,7 +29,9 @@ class MessageRepository(val controller: ChatController) {
 //    }
 
     fun sendCmd(cmd: String) {
-        Log.d("SIMPLEX SEND", chatSendCmd(controller.ctrl, cmd))
+        val response = chatSendCmd(controller.ctrl, cmd)
+        Log.d("SIMPLEX SEND", response)
+        terminalLog.add(response)
     }
 
     fun startReceiver() {
