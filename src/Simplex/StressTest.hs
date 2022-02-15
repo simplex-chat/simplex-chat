@@ -39,17 +39,21 @@ testStressServer :: IO ()
 testStressServer =
   withTmpFiles $ do
     sentTVar <- newTVarIO (0 :: Int)
+    connectedTVar <- newTVarIO (0 :: Int)
     concurrentlyN_ $
       forever
         ( do
             threadDelay 5000000
             sent <- readTVarIO sentTVar
-            print $ show sent
+            connected <- readTVarIO connectedTVar
+            print $ "connected: " <> show connected <> " -- sent: " <> show sent
         ) :
       map
         ( \i ->
             testChat2' (i * 2 -1, aliceProfile) (i * 2, bobProfile) $
               \alice bob -> do
+                print $ show i <> " - connected +2"
+                atomically $ modifyTVar connectedTVar (+ 2)
                 connectUsers alice bob
                 loop i alice bob sentTVar 1
         )
