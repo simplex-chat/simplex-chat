@@ -89,6 +89,10 @@ abstract class CR {
     override val responseType get() = "ActiveUser"
     override val details get() = user.toString()
   }
+  // {"resp": {"activeUser": {"user": {<user>}}}}
+  // {"resp": {"anythingElse": <json> }} -> Unknown(type = "anythingElse", json = "<the whole thing including resp>")
+
+  // {"type": "activeUser", "user": <user>}
 }
 
 abstract class TerminalItem(val date: Date) {
