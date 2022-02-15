@@ -67,12 +67,12 @@ testStressServer =
   withTmpFiles $ do
     sentTVar <- newTVarIO (0 :: Int)
     concurrentlyN_ $
-      forever
-        ( do
-            threadDelay 5000000
-            sent <- readTVarIO sentTVar
-            print $ show sent
-        ) :
+      -- forever
+      --   ( do
+      --       threadDelay 5000000
+      --       sent <- readTVarIO sentTVar
+      --       print $ show sent
+      --   ) :
       map
         ( \i ->
             testChat2' (i * 2 -1, aliceProfile) (i * 2, bobProfile) $
@@ -86,8 +86,8 @@ testStressServer =
     loop alice bob sentTVar k = do
       alice `send` "@bob hi"
       bob `send` "@alice hi"
-      when (k `mod` 1000 == 0) $ atomically $ modifyTVar sentTVar (+ 2000)
-      threadDelay 5000
+      -- when (k `mod` 1000 == 0) $ atomically $ modifyTVar sentTVar (+ 2000)
+      threadDelay 500
       loop alice bob sentTVar $ k + 1
 
 testAddContact :: IO ()
