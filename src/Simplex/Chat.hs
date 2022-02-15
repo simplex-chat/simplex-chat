@@ -462,19 +462,19 @@ agentSubscriber user = do
 
 subscribeUserConnections :: (MonadUnliftIO m, MonadReader ChatController m) => User -> m ()
 subscribeUserConnections user@User {userId} = void . runExceptT $ do
-  subscribeContacts
-  subscribeGroups
-  subscribeFiles
-  subscribePendingConnections
-  subscribeUserContactLink
+  void $ async subscribeContacts
+  void $ async subscribeGroups
+  void $ async subscribeFiles
+  void $ async subscribePendingConnections
+  async subscribeUserContactLink
   where
     subscribeContacts = do
       contacts <- withStore (`getUserContacts` user)
       forM_ contacts $ \ct ->
-        (subscribe (contactConnId ct) >> toView (CRContactSubscribed ct)) `catchError` (toView . CRContactSubError ct)
+        async $ (subscribe (contactConnId ct) >> toView (CRContactSubscribed ct)) `catchError` (toView . CRContactSubError ct)
     subscribeGroups = do
       groups <- withStore (`getUserGroups` user)
-      forM_ groups $ \(Group g@GroupInfo {membership} members) -> do
+      forM_ groups $ \(Group g@GroupInfo {membership} members) -> async $ do
         let connectedMembers = mapMaybe (\m -> (m,) <$> memberConnId m) members
         if memberStatus membership == GSMemInvited
           then toView $ CRGroupInvitation g
@@ -486,11 +486,13 @@ subscribeUserConnections user@User {userId} = void . runExceptT $ do
                   else toView $ CRGroupRemoved g
               else do
                 forM_ connectedMembers $ \(GroupMember {localDisplayName = c}, cId) ->
-                  subscribe cId `catchError` (toView . CRMemberSubError g c)
+                  async $ subscribe cId `catchError` (toView . CRMemberSubError g c)
                 toView $ CRGroupSubscribed g
     subscribeFiles = do
-      withStore (`getLiveSndFileTransfers` user) >>= mapM_ subscribeSndFile
-      withStore (`getLiveRcvFileTransfers` user) >>= mapM_ subscribeRcvFile
+      sndFileTransfers <- withStore (`getLiveSndFileTransfers` user)
+      forM_ sndFileTransfers $ \sft -> async $ subscribeSndFile sft
+      rcvFileTransfers <- withStore (`getLiveRcvFileTransfers` user)
+      forM_ rcvFileTransfers $ \rft -> async $ subscribeRcvFile rft
       where
         subscribeSndFile ft@SndFileTransfer {fileId, fileStatus, agentConnId = AgentConnId cId} = do
           subscribe cId `catchError` (toView . CRSndFileSubError ft)
@@ -519,7 +521,7 @@ subscribeUserConnections user@User {userId} = void . runExceptT $ do
     subscribe cId = withAgent (`subscribeConnection` cId)
     subscribeConns conns =
       withAgent $ \a ->
-        forM_ conns $ subscribeConnection a . aConnId
+        forM_ conns $ \c -> async $ subscribeConnection a (aConnId c)
 
 processAgentMessage :: forall m. ChatMonad m => Maybe User -> ConnId -> ACommand 'Agent -> m ()
 processAgentMessage Nothing _ _ = throwChatError CENoActiveUser
