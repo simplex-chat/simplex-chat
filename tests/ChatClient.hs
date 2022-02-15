@@ -23,6 +23,7 @@ import Simplex.Chat.Terminal.Output (newChatTerminal)
 import Simplex.Chat.Types (Profile)
 import Simplex.Messaging.Agent.Env.SQLite
 import Simplex.Messaging.Agent.RetryInterval
+import Simplex.Messaging.Client (SMPClientConfig (..), smpDefaultConfig)
 import Simplex.Messaging.Server (runSMPServerBlocking)
 import Simplex.Messaging.Server.Env.STM
 import Simplex.Messaging.Transport
@@ -42,6 +43,7 @@ opts :: ChatOpts
 opts =
   ChatOpts
     { dbFilePrefix = undefined,
+      -- smp://Ufcpyx7utrV45fUopHVvKh4NECi5Z3Fa1TyL4L7tGgc=@smp7.simplex.im
       smpServers = ["smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=@localhost:5001"],
       logging = False
     }
@@ -70,7 +72,10 @@ cfg :: ChatConfig
 cfg =
   defaultChatConfig
     { agentConfig =
-        aCfg {reconnectInterval = (reconnectInterval aCfg) {initialInterval = 50000}},
+        aCfg
+          { reconnectInterval = (reconnectInterval aCfg) {initialInterval = 50000},
+            smpCfg = smpDefaultConfig {tcpTimeout = 10000000}
+          },
       testView = True
     }
 
@@ -114,6 +119,12 @@ withTmpFiles =
   bracket_
     (createDirectoryIfMissing False "tests/tmp")
     (removeDirectoryRecursive "tests/tmp")
+
+testChat2' :: (Int, Profile) -> (Int, Profile) -> (TestCC -> TestCC -> IO ()) -> IO ()
+testChat2' (i1, p1) (i2, p2) test = do
+  cc1 <- virtualSimplexChat (testDBPrefix <> show i1) p1
+  cc2 <- virtualSimplexChat (testDBPrefix <> show i2) p2
+  test cc1 cc2
 
 testChatN :: [Profile] -> ([TestCC] -> IO ()) -> IO ()
 testChatN ps test = withTmpFiles $ do
