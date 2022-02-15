@@ -80,7 +80,7 @@ testStressServer =
                 connectUsers alice bob
                 loop alice bob sentTVar 0
         )
-        (take 1 ([1 ..] :: [Int]))
+        (take 100 ([1 ..] :: [Int]))
   where
     loop :: TestCC -> TestCC -> TVar Int -> Int -> IO ()
     loop alice bob sentTVar k = do
