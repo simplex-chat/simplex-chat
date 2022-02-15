@@ -78,15 +78,16 @@ testStressServer =
             testChat2' (i * 2 -1, aliceProfile) (i * 2, bobProfile) $
               \alice bob -> do
                 connectUsers alice bob
-                forever $ loop alice bob sentTVar 0
+                loop alice bob sentTVar 0
         )
-        (take 100 ([1 ..] :: [Int]))
+        (take 1 ([1 ..] :: [Int]))
   where
     loop :: TestCC -> TestCC -> TVar Int -> Int -> IO ()
     loop alice bob sentTVar k = do
-      alice <##> bob
-      when (k `mod` 100 == 0) $ atomically $ modifyTVar sentTVar (+ 200)
-      threadDelay 500
+      alice `send` "@bob hi"
+      bob `send` "@alice hi"
+      when (k `mod` 1000 == 0) $ atomically $ modifyTVar sentTVar (+ 2000)
+      threadDelay 5000
       loop alice bob sentTVar $ k + 1
 
 testAddContact :: IO ()
