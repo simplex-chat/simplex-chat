@@ -6,10 +6,8 @@
 module ChatTests where
 
 import ChatClient
-import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
 import Control.Concurrent.STM
-import Control.Monad (forever, when)
 import qualified Data.ByteString as B
 import Data.Char (isDigit)
 import Data.Maybe (fromJust)
@@ -59,36 +57,6 @@ chatTests = do
     it "should deduplicate contact requests with profile change" testDeduplicateContactRequestsProfileChange
     it "should reject contact and delete contact link" testRejectContactAndDeleteUserContact
     it "should delete connection requests when contact link deleted" testDeleteConnectionRequests
-  describe "server stress test" $
-    fit "should stress server with many chats and messages" testStressServer
-
-testStressServer :: IO ()
-testStressServer =
-  withTmpFiles $ do
-    sentTVar <- newTVarIO (0 :: Int)
-    concurrentlyN_ $
-      -- forever
-      --   ( do
-      --       threadDelay 5000000
-      --       sent <- readTVarIO sentTVar
-      --       print $ show sent
-      --   ) :
-      map
-        ( \i ->
-            testChat2' (i * 2 -1, aliceProfile) (i * 2, bobProfile) $
-              \alice bob -> do
-                connectUsers alice bob
-                loop alice bob sentTVar 0
-        )
-        (take 100 ([1 ..] :: [Int]))
-  where
-    loop :: TestCC -> TestCC -> TVar Int -> Int -> IO ()
-    loop alice bob sentTVar k = do
-      alice `send` "@bob hi"
-      bob `send` "@alice hi"
-      -- when (k `mod` 1000 == 0) $ atomically $ modifyTVar sentTVar (+ 2000)
-      threadDelay 500
-      loop alice bob sentTVar $ k + 1
 
 testAddContact :: IO ()
 testAddContact =

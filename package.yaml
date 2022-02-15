@@ -25,7 +25,9 @@ dependencies:
   - directory == 1.3.*
   - exceptions == 0.10.*
   - filepath == 1.4.*
+  - hspec == 2.7.*
   - mtl == 2.2.*
+  - network == 3.1.*
   - optparse-applicative >= 0.15 && < 0.17
   - process == 1.6.*
   - simple-logger == 0.1.*
@@ -49,6 +51,12 @@ executables:
       - simplex-chat
     ghc-options:
       - -threaded
+
+  simplex-stress-test:
+    source-dirs: apps/simplex-stress-test
+    main: Main.hs
+    dependencies:
+      - simplex-chat
 
 tests:
   simplex-chat-test:
