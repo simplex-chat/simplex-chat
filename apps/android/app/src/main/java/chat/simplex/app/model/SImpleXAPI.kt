@@ -76,18 +76,21 @@ abstract class CC {
   }
 }
 
-val json = Json { prettyPrint = true }
+val json = Json {
+  prettyPrint = true
+  ignoreUnknownKeys = true
+}
 
 @Serializable
 class APIResponse(val resp: CR) {
   companion object {
     fun decodeStr(str: String): CR {
       try {
-        return Json.decodeFromString<APIResponse>(str).resp
+        return json.decodeFromString<APIResponse>(str).resp
       } catch(e: Exception) {
         try {
-          val data = Json.parseToJsonElement(str)
-          return CR.Unknown(data.jsonObject["resp"]!!.jsonObject["type"]?.toString() ?: "unknown", json.encodeToString(data))
+          val data = json.parseToJsonElement(str)
+          return CR.Response(data.jsonObject["resp"]!!.jsonObject["type"]?.toString() ?: "invalid", json.encodeToString(data))
         } catch(e: Exception) {
           return CR.Invalid(str)
         }
@@ -105,12 +108,19 @@ sealed class CR {
   @Serializable
   @SerialName("activeUser")
   class ActiveUser(val user: User): CR() {
-    override val responseType get() = "ActiveUser"
+    override val responseType get() = "activeUser"
     override val details get() = user.toString()
   }
 
   @Serializable
-  class Unknown(val type: String, val json: String): CR() {
+  @SerialName("contactSubscribed")
+  class ContactSubscribed(val contact: Contact): CR() {
+    override val responseType get() = "contactSubscribed"
+    override val details get() = contact.toString()
+  }
+
+  @Serializable
+  class Response(val type: String, val json: String): CR() {
     override val responseType get() = "* ${type}"
     override val details get() = json
   }

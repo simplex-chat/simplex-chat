@@ -43,6 +43,7 @@ fun ExampleSerialisation(){
   "resp": {
     "type": "activeUser",
     "user": {
+      "extra": "foo",
       "userId": 1,
       "userContactId": 10,
       "localDisplayName": "test",
