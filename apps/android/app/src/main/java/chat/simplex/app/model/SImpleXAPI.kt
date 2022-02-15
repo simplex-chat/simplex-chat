@@ -76,12 +76,14 @@ abstract class CC {
 abstract class CR {
   abstract val responseType: String
   abstract val details: String
-//}
+
+  @Serializable
   class Unknown(val type: String, val json: String): CR() {
     override val responseType get() = "* ${type}"
     override val details get() = json
   }
 
+  @Serializable
   class ActiveUser(val user: User): CR() {
     override val responseType get() = "ActiveUser"
     override val details get() = user.toString()
