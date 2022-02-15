@@ -32,8 +32,7 @@ class SimplexApp: Application() {
 
     override fun onCreate() {
         super.onCreate()
-        val filesDir = applicationContext.filesDir.toString()
-        val store: Store = chatInit(this.applicationContext.filesDir.toString())
+        val store: Store = chatInit(applicationContext.filesDir.toString())
         // create user if needed
         if (chatGetUser(store) == "{}") {
             chatCreateUser(store, """

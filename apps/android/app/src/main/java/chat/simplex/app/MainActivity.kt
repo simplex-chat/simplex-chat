@@ -20,10 +20,11 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.lifecycle.AndroidViewModel
+import chat.simplex.app.views.TerminalView
+import chat.simplex.app.views.chat.SendMsgView
 
 class MainActivity: ComponentActivity() {
   private val viewModel by viewModels<SimplexViewModel>()
-
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
     setContent {
@@ -39,37 +40,6 @@ class SimplexViewModel(application: Application) : AndroidViewModel(application)
 }
 
 @Composable
-fun CommandInput(executeCmd: (String) -> Unit) {
-  var cmd by remember { mutableStateOf("") }
-  Column {
-    TextField(value = cmd, onValueChange = { cmd = it }, modifier = Modifier.height(80.dp))
-    Spacer(Modifier.height(10.dp))
-    Button(
-      onClick = {
-        executeCmd(cmd)
-        cmd = ""
-      },
-      modifier = Modifier.width(80.dp),
-      enabled = cmd.isNotEmpty()
-    ) {
-      Text("Go")
-    }
-  }
-}
-
-@Composable
-fun TerminalLog(terminalLog: List<String>) {
-  LazyColumn {
-    items(terminalLog) { item ->
-      Text(item)
-    }
-  }
-}
-
-@Composable
 fun MainPage(vm: SimplexViewModel) {
-  Column {
-    TerminalLog(vm.chatModel.terminalItems)
-    CommandInput(vm.chatModel.controller::sendCmd)
-  }
+  TerminalView(vm.chatModel)
 }

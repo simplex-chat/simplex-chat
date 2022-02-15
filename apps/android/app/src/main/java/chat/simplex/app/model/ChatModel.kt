@@ -6,8 +6,7 @@ import chat.simplex.app.chatSendCmd
 
 class ChatModel(val controller: ChatController) {
   val currentUser: User? = null
-  var terminalItems = mutableStateListOf<String>()
-    private set
+  var terminalItems = mutableStateListOf<TerminalItem>()
 //    private val store = chatInit(filesDir)
 //    private val controller: Controller by lazy { // Maybe this shouldn't be lazy
 //        this.maybeCreateUser()
@@ -23,6 +22,17 @@ class ChatModel(val controller: ChatController) {
 //        }
 //        Log.d("SIMPLEX (user)", chatGetUser(store))
 //    }
+
+  companion object {
+    val sampleData: ChatModel get() {
+      val m = ChatModel(ChatController.Mock())
+      m.terminalItems = mutableStateListOf(
+        TerminalItem.Cmd(CC.ShowActiveUser()),
+        TerminalItem.Resp(CR.ActiveUser(User.sampleData))
+      )
+      return m
+    }
+  }
 }
 
 enum class ChatType(val type: String) {

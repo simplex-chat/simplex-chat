@@ -8,7 +8,7 @@ import kotlin.concurrent.thread
 
 typealias Controller = Long
 
-class ChatController(val ctrl: Controller) {
+open class ChatController(val ctrl: Controller) {
   private lateinit var chatModel: ChatModel
 
   fun setModel(m: ChatModel) {
@@ -19,9 +19,9 @@ class ChatController(val ctrl: Controller) {
     thread(name="receiver") {
 //            val chatlog = FifoQueue<String>(500)
       while(true) {
-        val msg = chatRecvMsg(ctrl)
-        Log.d("SIMPLEX RECV", msg)
-        chatModel.terminalItems.add(msg)
+        val json = chatRecvMsg(ctrl)
+        Log.d("SIMPLEX RECV", json)
+        chatModel.terminalItems.add(TerminalItem.Resp(CR.Unknown(type = "Unknown", json = json)))
 //                val currentText = chatlog.joinToString("\n")
 //                weakActivity.get()?.runOnUiThread {
 //                    val log = weakActivity.get()?.findViewById<TextView>(R.id.chatlog)
@@ -36,8 +36,10 @@ class ChatController(val ctrl: Controller) {
   fun sendCmd(cmd: String) {
     val response = chatSendCmd(ctrl, cmd)
     Log.d("SIMPLEX SEND", response)
-    chatModel.terminalItems.add(response)
+    chatModel.terminalItems.add(TerminalItem.Resp(CR.Unknown(type = "Unknown", json = response)))
   }
+
+  class Mock: ChatController(0) {}
 }
 
 // Chat Command
@@ -95,17 +97,25 @@ abstract class CR {
   // {"type": "activeUser", "user": <user>}
 }
 
-abstract class TerminalItem(val date: Date) {
+abstract class TerminalItem {
+  val date = Date()
   abstract val label: String
   abstract val details: String
 
-  class Cmd(val cmd: CC): TerminalItem(date = Date()) {
-    override val label get() = cmd.cmdString
+  class Cmd(val cmd: CC): TerminalItem() {
+    override val label get() = "> ${cmd.cmdString.substring(0, 30)}"
     override val details get() = cmd.cmdString
   }
 
-  class Resp(val resp: CR): TerminalItem(date = Date()) {
-    override val label get() = resp.responseType
+  class Resp(val resp: CR): TerminalItem() {
+    override val label get() = "< ${resp.responseType}"
     override val details get() = resp.details
+  }
+
+  companion object {
+    val sampleData = listOf<TerminalItem>(
+        TerminalItem.Cmd(CC.ShowActiveUser()),
+        TerminalItem.Resp(CR.ActiveUser(User.sampleData))
+    )
   }
 }
