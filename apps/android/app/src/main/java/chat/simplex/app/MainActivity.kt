@@ -5,28 +5,23 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
-import androidx.compose.material.Button
-import androidx.compose.material.TextField
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.ui.Modifier
 import chat.simplex.app.ui.theme.SimpleXTheme
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
-import androidx.compose.material.Text
-import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.lifecycle.AndroidViewModel
 import chat.simplex.app.views.TerminalView
-import chat.simplex.app.views.chat.SendMsgView
+import chat.simplex.app.model.CR
+import chat.simplex.app.model.Profile
+import chat.simplex.app.model.User
+import kotlinx.serialization.*
+import kotlinx.serialization.json.*
+import kotlinx.serialization.modules.*
+
 
 class MainActivity: ComponentActivity() {
   private val viewModel by viewModels<SimplexViewModel>()
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
+//    ExampleSerialisation()  // This is here just to have a simple way to run things.
     setContent {
       SimpleXTheme {
         MainPage(viewModel)
@@ -42,4 +37,27 @@ class SimplexViewModel(application: Application) : AndroidViewModel(application)
 @Composable
 fun MainPage(vm: SimplexViewModel) {
   TerminalView(vm.chatModel)
+}
+
+fun ExampleSerialisation(){
+  val jsonString = """
+  {type: "ActiveUser",
+  "user": {"userId": 1, "userContactId": 10, "localDisplayName": "test", "activeUser": true
+  "profile": {"displayName": "prof", "fullName": "full"}
+  }}
+  """
+
+  val module = SerializersModule {
+    polymorphic(CR::class) {
+      subclass(CR.ActiveUser::class)
+//      defaultDeserializer { CR.Unknown.serializer }
+    }
+  }
+
+  val format = Json { serializersModule = module }
+
+  println(format.encodeToString(CR.ActiveUser(
+    User(1, 10, "test", Profile("p", "full"), true)
+  )))
+
 }

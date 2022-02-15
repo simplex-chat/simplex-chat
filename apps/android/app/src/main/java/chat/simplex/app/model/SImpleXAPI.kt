@@ -3,6 +3,7 @@ package chat.simplex.app.model
 import android.util.Log
 import chat.simplex.app.chatRecvMsg
 import chat.simplex.app.chatSendCmd
+import kotlinx.serialization.Serializable
 import java.util.*
 import kotlin.concurrent.thread
 
@@ -22,13 +23,6 @@ open class ChatController(val ctrl: Controller) {
         val json = chatRecvMsg(ctrl)
         Log.d("SIMPLEX RECV", json)
         chatModel.terminalItems.add(TerminalItem.Resp(CR.Unknown(type = "Unknown", json = json)))
-//                val currentText = chatlog.joinToString("\n")
-//                weakActivity.get()?.runOnUiThread {
-//                    val log = weakActivity.get()?.findViewById<TextView>(R.id.chatlog)
-//                    val scroll = weakActivity.get()?.findViewById<ScrollView>(R.id.scroller)
-//                    log?.text = currentText
-//                    scroll?.scrollTo(0, scroll.getChildAt(0).height)
-//                }
       }
     }
   }
@@ -78,10 +72,11 @@ abstract class CC {
 }
 
 // chat response
+@Serializable
 abstract class CR {
   abstract val responseType: String
   abstract val details: String
-
+//}
   class Unknown(val type: String, val json: String): CR() {
     override val responseType get() = "* ${type}"
     override val details get() = json

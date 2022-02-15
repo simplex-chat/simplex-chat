@@ -1,27 +1,11 @@
 package chat.simplex.app.model
 
-import android.util.Log
 import androidx.compose.runtime.mutableStateListOf
-import chat.simplex.app.chatSendCmd
+import kotlinx.serialization.Serializable
 
 class ChatModel(val controller: ChatController) {
   val currentUser: User? = null
   var terminalItems = mutableStateListOf<TerminalItem>()
-//    private val store = chatInit(filesDir)
-//    private val controller: Controller by lazy { // Maybe this shouldn't be lazy
-//        this.maybeCreateUser()
-//        chatStart(store)
-//    }
-
-//    fun maybeCreateUser() {
-//        // create user if needed
-//        if(chatGetUser(store) == "{}") {
-//            chatCreateUser(store, """
-//                    {"displayName": "test", "fullName": "android test"}
-//                    """.trimIndent())
-//        }
-//        Log.d("SIMPLEX (user)", chatGetUser(store))
-//    }
 
   companion object {
     val sampleData: ChatModel get() {
@@ -41,6 +25,7 @@ enum class ChatType(val type: String) {
   ContactRequest("<@")
 }
 
+@Serializable
 class User (
   val userId: Int,
   val userContactId: Int,
@@ -62,6 +47,7 @@ class User (
   }
 }
 
+@Serializable
 class Profile(
   val displayName: String,
   val fullName: String
