@@ -1,5 +1,7 @@
 package chat.simplex.app.model
 
+import java.util.*
+
 // Chat Command
 abstract class CC {
   abstract val cmdString: String
@@ -52,5 +54,20 @@ abstract class CR {
   class ActiveUser(val user: User): CR() {
     override val responseType get() = "ActiveUser"
     override val details get() = user.toString()
+  }
+}
+
+abstract class TerminalItem(val date: Date) {
+  abstract val label: String
+  abstract val details: String
+
+  class Cmd(val cmd: CC): TerminalItem(date = Date()) {
+    override val label get() = cmd.cmdString
+    override val details get() = cmd.cmdString
+  }
+
+  class Resp(val resp: CR): TerminalItem(date = Date()) {
+    override val label get() = resp.responseType
+    override val details get() = resp.details
   }
 }
