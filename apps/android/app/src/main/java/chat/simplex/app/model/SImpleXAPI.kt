@@ -3,7 +3,11 @@ package chat.simplex.app.model
 import android.util.Log
 import chat.simplex.app.chatRecvMsg
 import chat.simplex.app.chatSendCmd
-import kotlinx.serialization.Serializable
+import kotlinx.serialization.*
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import java.lang.Exception
 import java.util.*
 import kotlin.concurrent.thread
 
@@ -21,22 +25,23 @@ open class ChatController(val ctrl: Controller) {
 //            val chatlog = FifoQueue<String>(500)
       while(true) {
         val json = chatRecvMsg(ctrl)
-        Log.d("SIMPLEX RECV", json)
-        chatModel.terminalItems.add(TerminalItem.Resp(CR.Unknown(type = "Unknown", json = json)))
+        Log.d("SIMPLEX chatRecvMsg: ", json)
+        chatModel.terminalItems.add(TerminalItem.Resp(APIResponse.decodeStr(json)))
       }
     }
   }
 
   fun sendCmd(cmd: String) {
-    val response = chatSendCmd(ctrl, cmd)
-    Log.d("SIMPLEX SEND", response)
-    chatModel.terminalItems.add(TerminalItem.Resp(CR.Unknown(type = "Unknown", json = response)))
+    val json = chatSendCmd(ctrl, cmd)
+    Log.d("SIMPLEX chatSendCmd: ", cmd)
+    Log.d("SIMPLEX chatSendCmd response: ", json)
+    chatModel.terminalItems.add(TerminalItem.Resp(APIResponse.decodeStr(json)))
   }
 
   class Mock: ChatController(0) {}
 }
 
-// Chat Command
+// ChatCommand
 abstract class CC {
   abstract val cmdString: String
   abstract val cmdType: String
@@ -71,11 +76,38 @@ abstract class CC {
   }
 }
 
-// chat response
+val json = Json { prettyPrint = true }
+
 @Serializable
-abstract class CR {
+class APIResponse(val resp: CR) {
+  companion object {
+    fun decodeStr(str: String): CR {
+      try {
+        return Json.decodeFromString<APIResponse>(str).resp
+      } catch(e: Exception) {
+        try {
+          val data = Json.parseToJsonElement(str)
+          return CR.Unknown(data.jsonObject["resp"]!!.jsonObject["type"]?.toString() ?: "unknown", json.encodeToString(data))
+        } catch(e: Exception) {
+          return CR.Invalid(str)
+        }
+      }
+    }
+  }
+}
+
+// ChatResponse
+@Serializable
+sealed class CR {
   abstract val responseType: String
   abstract val details: String
+
+  @Serializable
+  @SerialName("activeUser")
+  class ActiveUser(val user: User): CR() {
+    override val responseType get() = "ActiveUser"
+    override val details get() = user.toString()
+  }
 
   @Serializable
   class Unknown(val type: String, val json: String): CR() {
@@ -84,10 +116,11 @@ abstract class CR {
   }
 
   @Serializable
-  class ActiveUser(val user: User): CR() {
-    override val responseType get() = "ActiveUser"
-    override val details get() = user.toString()
+  class Invalid(val str: String): CR() {
+    override val responseType get() = "* invalid json"
+    override val details get() = str
   }
+
   // {"resp": {"activeUser": {"user": {<user>}}}}
   // {"resp": {"anythingElse": <json> }} -> Unknown(type = "anythingElse", json = "<the whole thing including resp>")
 

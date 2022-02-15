@@ -39,8 +39,9 @@ fun MainPage(vm: SimplexViewModel) {
 
 fun ExampleSerialisation(){
   val jsonString = """
-  {
-    "type": "ActiveUser",
+{
+  "resp": {
+    "type": "activeUser",
     "user": {
       "userId": 1,
       "userContactId": 10,
@@ -52,22 +53,16 @@ fun ExampleSerialisation(){
       }
     }
   }
+}
   """
 
-//  val module = SerializersModule {
-//
-//    polymorphic(CR::class) {
-//      subclass(CR.ActiveUser::class)
-////      defaultDeserializer { CR.Unknown.serializer }
-//    }
-//  }
-
-//  val format = Json {  }
-
-  println(Json.encodeToString(CR.ActiveUser(
+  var resp: CR = CR.ActiveUser(
     User(1, 10, "test", Profile("p", "full"), true)
-  )))
+  )
 
-//  val data = Json.decodeFromString<CR>(jsonString)
-//  println(data)
+  println(Json.encodeToString(resp))
+
+  val data = APIResponse.decodeStr(jsonString)
+  println(data)
+  println(data.responseType)
 }
