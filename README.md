@@ -2,7 +2,7 @@
 
 # SimpleX - the first chat platform that is 100% private by design - it has no access to your connection graph!
 
-Public beta for iOS is [now available TestFlight](https://testflight.apple.com/join/DWuT2LQu)!
+Public beta for iOS is [now available on TestFlight](https://testflight.apple.com/join/DWuT2LQu)!
 
 [![GitHub build](https://github.com/simplex-chat/simplex-chat/workflows/build/badge.svg)](https://github.com/simplex-chat/simplex-chat/actions?query=workflow%3Abuild)
 [![GitHub downloads](https://img.shields.io/github/downloads/simplex-chat/simplex-chat/total)](https://github.com/simplex-chat/simplex-chat/releases)
