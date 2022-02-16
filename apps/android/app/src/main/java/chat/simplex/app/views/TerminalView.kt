@@ -32,7 +32,6 @@ fun TerminalPage(chatModel: ChatModel) {
       )
     ) { entry -> DetailView( entry.arguments?.getString("_details"), navController)}
   }
-
 }
 
 @Composable
@@ -51,7 +50,7 @@ fun TerminalLog(terminalItems: List<TerminalItem>, navController: NavController)
     items(terminalItems) { item ->
       ClickableText(
         AnnotatedString(item.label),
-        onClick={navController.navigate("details/$item.details")}
+        onClick={navController.navigate("details/${item.details}")}
       )
     }
   }
