@@ -744,7 +744,6 @@ testUserContactLinkAutoAccept =
 
       cath ##> ("/c " <> cLink)
       cath <## "connection request sent!"
-      alice <## ""
       alice <## "cath (Catherine): accepting contact request..."
       concurrently_
         (cath <## "alice (Alice): contact is connected")
