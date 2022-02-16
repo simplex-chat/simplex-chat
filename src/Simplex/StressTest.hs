@@ -35,8 +35,8 @@ danProfile = Profile {displayName = "dan", fullName = "Daniel"}
 chatTests :: Spec
 chatTests =
   describe "server stress test" $
-    -- fit "should stress server with many chats and messages" testStressServer
-    fit "server stress test" testStressServerConnectOnly
+    fit "should stress server with many chats and messages" testStressServer
+    -- fit "server stress test" testStressServerConnectOnly
 
 testStressServerConnectOnly :: IO ()
 testStressServerConnectOnly = do
@@ -138,7 +138,7 @@ testStressServer =
       when (k `mod` 100 == 0) $ do
         print $ show i <> " - +200"
         atomically $ modifyTVar sentTVar (+ 200)
-      -- threadDelay 500
+      threadDelay 500000
       loop i alice bob sentTVar $ k + 1
 
 startFileTransfer :: TestCC -> TestCC -> IO ()
