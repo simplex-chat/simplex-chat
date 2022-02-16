@@ -1,8 +1,8 @@
 <img src="images/simplex-chat-logo.svg" alt="SimpleX logo" width="100%">
 
-# SimpleX Chat
+# SimpleX - the first chat platform that is 100% private by design - it has no access to your connection graph!
 
-SimpleX - private and secure open-source chat and application platform - public beta for iOS now available!
+Public beta for iOS is [now available TestFlight](https://testflight.apple.com/join/DWuT2LQu)!
 
 [![GitHub build](https://github.com/simplex-chat/simplex-chat/workflows/build/badge.svg)](https://github.com/simplex-chat/simplex-chat/actions?query=workflow%3Abuild)
 [![GitHub downloads](https://img.shields.io/github/downloads/simplex-chat/simplex-chat/total)](https://github.com/simplex-chat/simplex-chat/releases)
@@ -14,7 +14,7 @@ SimpleX Chat apps (both terminal UI and [iOS public beta](https://testflight.app
 
 See [SimpleX overview](https://github.com/simplex-chat/simplexmq/blob/master/protocol/overview-tjr.md) for more information on platform objectives and technical design.
 
-***SimpleX Chat [public beta for iOS 15 is available via TestFlight](https://testflight.apple.com/join/DWuT2LQu)** - it will help us a lot if you test it! [See the announcement here](https://github.com/simplex-chat/simplex-chat/blob/stable/blog/20220214-simplex-chat-ios-public-beta.md).*
+***SimpleX Chat [public beta for iOS 15 is available on TestFlight](https://testflight.apple.com/join/DWuT2LQu)** - it will help us a lot if you test it! [See the announcement here](https://github.com/simplex-chat/simplex-chat/blob/stable/blog/20220214-simplex-chat-ios-public-beta.md).*
 
 ### :zap: Quick installation
 
