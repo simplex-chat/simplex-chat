@@ -67,7 +67,7 @@ responseToView cmd testView = \case
   CRSentConfirmation -> r' ["confirmation sent!"]
   CRSentInvitation -> r' ["connection request sent!"]
   CRContactDeleted c -> r' [ttyContact' c <> ": contact is deleted"]
-  CRAcceptingContactRequest c -> r' [ttyFullContact c <> ": accepting contact request..."]
+  CRAcceptingContactRequest c -> r [ttyFullContact c <> ": accepting contact request..."]
   CRContactAlreadyExists c -> r [ttyFullContact c <> ": contact already exists"]
   CRContactRequestAlreadyAccepted c -> r' [ttyFullContact c <> ": sent you a duplicate contact request, but you are already connected, no action needed"]
   CRUserContactLinkCreated cReq -> r' $ connReqContact_ "Your new chat address is created!" cReq
@@ -125,8 +125,8 @@ responseToView cmd testView = \case
   where
     r = (plain cmd :)
     -- this function should be `r` for "synchronous", `id` for "asynchronous" command responses
-    -- r' = r
-    r' = id
+    r' = r
+    -- r' = id
     testViewChats :: [AChat] -> [StyledString]
     testViewChats chats = [sShow $ map toChatView chats]
       where
