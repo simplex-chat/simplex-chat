@@ -6,6 +6,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
+import chat.simplex.app.model.CC
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.model.TerminalItem
 import chat.simplex.app.ui.theme.SimpleXTheme
@@ -16,7 +17,9 @@ import chat.simplex.app.views.chat.SendMsgView
 fun TerminalView(chatModel: ChatModel) {
   Column {
     TerminalLog(chatModel.terminalItems)
-    SendMsgView(chatModel.controller::sendCmd)
+    SendMsgView(sendMessage = { cmd ->
+      chatModel.controller.sendCmd(CC.Console(cmd))
+    })
   }
 }
 
