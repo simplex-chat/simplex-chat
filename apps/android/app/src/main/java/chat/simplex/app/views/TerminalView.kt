@@ -9,14 +9,11 @@ import androidx.compose.material.Button
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.navigation.NavController
-import androidx.navigation.NavType
+import androidx.navigation.*
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.navArgument
-import chat.simplex.app.model.ChatModel
-import chat.simplex.app.model.TerminalItem
+import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.chat.SendMsgView
 
@@ -42,7 +39,9 @@ fun TerminalPage(chatModel: ChatModel) {
 fun TerminalView(chatModel: ChatModel, navController: NavController) {
   Column {
     TerminalLog(chatModel.terminalItems, navController)
-    SendMsgView(chatModel.controller::sendCmd)
+    SendMsgView(sendMessage = { cmd ->
+      chatModel.controller.sendCmd(CC.Console(cmd))
+    })
   }
 }
 

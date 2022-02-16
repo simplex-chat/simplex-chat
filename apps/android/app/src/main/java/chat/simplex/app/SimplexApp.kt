@@ -3,8 +3,7 @@ package chat.simplex.app
 import android.app.Application
 import android.net.LocalServerSocket
 import android.util.Log
-import chat.simplex.app.model.ChatController
-import chat.simplex.app.model.ChatModel
+import chat.simplex.app.model.*
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.lang.ref.WeakReference
@@ -18,31 +17,29 @@ external fun initHS()
 external fun pipeStdOutToSocket(socketName: String) : Int
 
 // SimpleX API
-typealias Controller = Long
-typealias Store = Long
-external fun chatInit(filesDir: String): Store
-external fun chatGetUser(controller: Store) : String
-external fun chatCreateUser(controller: Store, data: String) : String
-external fun chatStart(controller: Store) : Controller
-external fun chatSendCmd(controller: Controller, msg: String) : String
-external fun chatRecvMsg(controller: Controller) : String
+typealias ChatCtrl = Long
+external fun chatInit(path: String): ChatCtrl
+external fun chatSendCmd(ctrl: ChatCtrl, msg: String) : String
+external fun chatRecvMsg(ctrl: ChatCtrl) : String
 
 class SimplexApp: Application() {
     private lateinit var controller: ChatController
 
     override fun onCreate() {
         super.onCreate()
-        val store: Store = chatInit(applicationContext.filesDir.toString())
-        // create user if needed
-        if (chatGetUser(store) == "{}") {
-            createUser(store, "test", "android test")
+        controller = ChatController(chatInit(applicationContext.filesDir.toString()))
+        var user = controller.apiGetActiveUser()
+        if (user == null) {
+//            user =  controller.apiCreateActiveUser(Profile("android", "Android test"))
         }
-        Log.d("SIMPLEX (user)", chatGetUser(store))
-        controller = ChatController(chatStart(store))
-    }
-
-    fun createUser(store: Store, displayName: String, fullName: String?){
-        chatCreateUser(store, "{\"displayName:\"$displayName\", \"fullName\":\"$fullName\"}")
+        Log.d("SIMPLEX (user)", user.toString())
+        try {
+            controller.apiStartChat()
+            Log.d("SIMPLEX", "started chat")
+        } catch(e: Error) {
+            Log.d("SIMPLEX", "failed starting chat $e")
+//            throw e
+        }
     }
 
     val chatModel by lazy {

@@ -14,7 +14,7 @@ import kotlin.concurrent.thread
 typealias Controller = Long
 
 open class ChatController(val ctrl: Controller) {
-  private lateinit var chatModel: ChatModel
+  private var chatModel: ChatModel? = null
 
   fun setModel(m: ChatModel) {
     chatModel = m
@@ -26,16 +26,35 @@ open class ChatController(val ctrl: Controller) {
       while(true) {
         val json = chatRecvMsg(ctrl)
         Log.d("SIMPLEX chatRecvMsg: ", json)
-        chatModel.terminalItems.add(TerminalItem.Resp(APIResponse.decodeStr(json)))
+        chatModel?.terminalItems?.add(TerminalItem.Resp(APIResponse.decodeStr(json)))
       }
     }
   }
 
-  fun sendCmd(cmd: String) {
-    val json = chatSendCmd(ctrl, cmd)
-    Log.d("SIMPLEX chatSendCmd: ", cmd)
-    Log.d("SIMPLEX chatSendCmd response: ", json)
-    chatModel.terminalItems.add(TerminalItem.Resp(APIResponse.decodeStr(json)))
+  fun sendCmd(cmd: CC): CR {
+    val c = cmd.cmdString
+    val json = chatSendCmd(ctrl, c)
+    Log.d("SIMPLEX", "sendCmd: $c")
+    Log.d("SIMPLEX", "sendCmd response $json")
+    chatModel?.terminalItems?.add(TerminalItem.Resp(APIResponse.decodeStr(json)))
+    return APIResponse.decodeStr(json)
+  }
+
+  fun apiGetActiveUser(): User? {
+    val r = sendCmd(CC.ShowActiveUser())
+    return if (r is CR.ActiveUser) r.user else null
+  }
+
+  fun apiCreateActiveUser(p: Profile): User {
+    val r = sendCmd(CC.CreateActiveUser(p))
+    if (r is CR.ActiveUser) return r.user
+    throw Error("failed creating user: ${r.toString()}")
+  }
+
+  fun apiStartChat() {
+    val r = sendCmd(CC.StartChat())
+    if (r is CR.ChatStarted) return
+    throw Error("failed starting chat: ${r.toString()}")
   }
 
   class Mock: ChatController(0) {}
@@ -113,6 +132,13 @@ sealed class CR {
   }
 
   @Serializable
+  @SerialName("chatStarted")
+  class ChatStarted: CR() {
+    override val responseType get() = "chatStarted"
+    override val details get() = CR.noDetails(this)
+  }
+
+  @Serializable
   @SerialName("contactSubscribed")
   class ContactSubscribed(val contact: Contact): CR() {
     override val responseType get() = "contactSubscribed"
@@ -121,7 +147,7 @@ sealed class CR {
 
   @Serializable
   class Response(val type: String, val json: String): CR() {
-    override val responseType get() = "* ${type}"
+    override val responseType get() = "* $type"
     override val details get() = json
   }
 
@@ -131,10 +157,9 @@ sealed class CR {
     override val details get() = str
   }
 
-  // {"resp": {"activeUser": {"user": {<user>}}}}
-  // {"resp": {"anythingElse": <json> }} -> Unknown(type = "anythingElse", json = "<the whole thing including resp>")
-
-  // {"type": "activeUser", "user": <user>}
+  companion object {
+    fun noDetails(r: CR): String ="${r.responseType}: no details"
+  }
 }
 
 abstract class TerminalItem {
