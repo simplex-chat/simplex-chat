@@ -19,7 +19,6 @@ class MainActivity: ComponentActivity() {
   private val viewModel by viewModels<SimplexViewModel>()
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
-    ExampleSerialisation()  // This is here just to have a simple way to run things.
     setContent {
       SimpleXTheme {
         MainPage(viewModel)
@@ -35,35 +34,4 @@ class SimplexViewModel(application: Application) : AndroidViewModel(application)
 @Composable
 fun MainPage(vm: SimplexViewModel) {
   TerminalView(vm.chatModel)
-}
-
-fun ExampleSerialisation(){
-  val jsonString = """
-{
-  "resp": {
-    "type": "activeUser",
-    "user": {
-      "extra": "foo",
-      "userId": 1,
-      "userContactId": 10,
-      "localDisplayName": "test",
-      "activeUser": true,
-      "profile": {
-        "displayName": "prof",
-        "fullName": "full"
-      }
-    }
-  }
-}
-  """
-
-  var resp: CR = CR.ActiveUser(
-    User(1, 10, "test", Profile("p", "full"), true)
-  )
-
-  println(Json.encodeToString(resp))
-
-  val data = APIResponse.decodeStr(jsonString)
-  println(data)
-  println(data.responseType)
 }
