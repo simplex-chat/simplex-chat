@@ -4,6 +4,10 @@ import android.app.Application
 import android.net.LocalServerSocket
 import android.util.Log
 import chat.simplex.app.model.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.lang.ref.WeakReference
@@ -28,17 +32,21 @@ class SimplexApp: Application() {
     override fun onCreate() {
         super.onCreate()
         controller = ChatController(chatInit(applicationContext.filesDir.toString()))
-        var user = controller.apiGetActiveUser()
-        if (user == null) {
+        GlobalScope.launch {
+            withContext(Dispatchers.Main) {
+                var user = controller.apiGetActiveUser()
+                if (user == null) {
 //            user =  controller.apiCreateActiveUser(Profile("android", "Android test"))
-        }
-        Log.d("SIMPLEX (user)", user.toString())
-        try {
-            controller.apiStartChat()
-            Log.d("SIMPLEX", "started chat")
-        } catch(e: Error) {
-            Log.d("SIMPLEX", "failed starting chat $e")
+                }
+                Log.d("SIMPLEX (user)", user.toString())
+                try {
+                    controller.apiStartChat()
+                    Log.d("SIMPLEX", "started chat")
+                } catch(e: Error) {
+                    Log.d("SIMPLEX", "failed starting chat $e")
 //            throw e
+                }
+            }
         }
     }
 

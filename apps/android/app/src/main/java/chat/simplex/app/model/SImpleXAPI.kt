@@ -3,18 +3,20 @@ package chat.simplex.app.model
 import android.util.Log
 import chat.simplex.app.chatRecvMsg
 import chat.simplex.app.chatSendCmd
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.*
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
 import java.lang.Exception
 import java.util.*
 import kotlin.concurrent.thread
 
-typealias Controller = Long
+typealias ChatCtrl = Long
 
-open class ChatController(val ctrl: Controller) {
+open class ChatController(val ctrl: ChatCtrl) {
   private var chatModel: ChatModel? = null
+  private val callbacks = mutableMapOf<String, (Error?, CR?) -> Unit>()
 
   fun setModel(m: ChatModel) {
     chatModel = m
@@ -26,34 +28,46 @@ open class ChatController(val ctrl: Controller) {
       while(true) {
         val json = chatRecvMsg(ctrl)
         Log.d("SIMPLEX chatRecvMsg: ", json)
-        chatModel?.terminalItems?.add(TerminalItem.Resp(APIResponse.decodeStr(json)))
+        val r = APIResponse.decodeStr(json)
+        if (r.corr != null) {
+          val cb = callbacks[r.corr]
+          if (cb != null) cb(null, r.resp)
+        }
+        chatModel?.terminalItems?.add(TerminalItem.Resp(r.resp))
       }
     }
   }
 
-  fun sendCmd(cmd: CC): CR {
-    val c = cmd.cmdString
-    val json = chatSendCmd(ctrl, c)
-    Log.d("SIMPLEX", "sendCmd: $c")
-    Log.d("SIMPLEX", "sendCmd response $json")
-    chatModel?.terminalItems?.add(TerminalItem.Resp(APIResponse.decodeStr(json)))
-    return APIResponse.decodeStr(json)
+  suspend fun sendCmd(cmd: CC): CR {
+    return withContext(Dispatchers.IO) {
+      val c = cmd.cmdString
+      chatModel?.terminalItems?.add(TerminalItem.Cmd(cmd))
+      val json = chatSendCmd(ctrl, c)
+      Log.d("SIMPLEX", "sendCmd: $c")
+      Log.d("SIMPLEX", "sendCmd response $json")
+      val r = APIResponse.decodeStr(json)
+      chatModel?.terminalItems?.add(TerminalItem.Resp(r.resp))
+      r.resp
+    }
   }
 
-  fun apiGetActiveUser(): User? {
+  suspend fun apiGetActiveUser(): User? {
     val r = sendCmd(CC.ShowActiveUser())
-    return if (r is CR.ActiveUser) r.user else null
+    if (r is CR.ActiveUser) return r.user
+    Log.d("SIMPLEX", "apiGetActiveUser: ${r.toString()}")
+    return null
   }
 
-  fun apiCreateActiveUser(p: Profile): User {
+  suspend fun apiCreateActiveUser(p: Profile): User {
     val r = sendCmd(CC.CreateActiveUser(p))
     if (r is CR.ActiveUser) return r.user
-    throw Error("failed creating user: ${r.toString()}")
+    Log.d("SIMPLEX", "apiCreateActiveUser: ${r.toString()}")
+    throw Error("user not created ${r.toString()}")
   }
 
-  fun apiStartChat() {
+  suspend fun apiStartChat() {
     val r = sendCmd(CC.StartChat())
-    if (r is CR.ChatStarted) return
+    if (r is CR.ChatStarted ) return
     throw Error("failed starting chat: ${r.toString()}")
   }
 
@@ -101,17 +115,20 @@ val json = Json {
 }
 
 @Serializable
-class APIResponse(val resp: CR) {
+class APIResponse(val resp: CR, val corr: String? = null) {
   companion object {
-    fun decodeStr(str: String): CR {
+    fun decodeStr(str: String): APIResponse {
       try {
-        return json.decodeFromString<APIResponse>(str).resp
+        return json.decodeFromString(str)
       } catch(e: Exception) {
         try {
-          val data = json.parseToJsonElement(str)
-          return CR.Response(data.jsonObject["resp"]!!.jsonObject["type"]?.toString() ?: "invalid", json.encodeToString(data))
+          val data = json.parseToJsonElement(str).jsonObject
+          return APIResponse(
+            resp = CR.Response(data["resp"]!!.jsonObject["type"]?.toString() ?: "invalid", json.encodeToString(data)),
+            corr = data["corr"]?.toString()
+          )
         } catch(e: Exception) {
-          return CR.Invalid(str)
+          return APIResponse(CR.Invalid(str))
         }
       }
     }
@@ -146,6 +163,13 @@ sealed class CR {
   }
 
   @Serializable
+  @SerialName("cmdAccepted")
+  class CmdAccepted(val corr: String): CR() {
+    override val responseType get() = "cmdAccepted"
+    override val details get() = "corrId: $corr"
+  }
+
+  @Serializable
   class Response(val type: String, val json: String): CR() {
     override val responseType get() = "* $type"
     override val details get() = json
@@ -168,7 +192,7 @@ abstract class TerminalItem {
   abstract val details: String
 
   class Cmd(val cmd: CC): TerminalItem() {
-    override val label get() = "> ${cmd.cmdString.substring(0, 30)}"
+    override val label get() = "> ${cmd.cmdString}"
     override val details get() = cmd.cmdString
   }
 
