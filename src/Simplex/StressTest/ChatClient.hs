@@ -13,9 +13,11 @@ import Control.Concurrent.STM
 import Control.Exception (bracket, bracket_)
 import Control.Monad.Except
 import Data.List (dropWhileEnd)
+import Data.Maybe (fromJust)
 import Network.Socket
 import Simplex.Chat
 import Simplex.Chat.Controller (ChatConfig (..), ChatController (..))
+import Simplex.Chat.Mobile (getActiveUser_)
 import Simplex.Chat.Options
 import Simplex.Chat.Store
 import Simplex.Chat.Terminal
@@ -74,7 +76,7 @@ cfg =
     { agentConfig =
         aCfg
           { reconnectInterval = (reconnectInterval aCfg) {initialInterval = 50000},
-            smpCfg = smpDefaultConfig {tcpTimeout = 10000000}
+            smpCfg = smpDefaultConfig {tcpTimeout = 20000000}
           },
       testView = True
     }
@@ -87,6 +89,18 @@ virtualSimplexChat dbFilePrefix profile = do
   ct <- newChatTerminal t
   cc <- newChatController st (Just user) cfg opts {dbFilePrefix} (const $ pure ()) -- no notifications
   chatAsync <- async $ runSimplexChat user ct cc
+  termQ <- newTQueueIO
+  termAsync <- async $ readTerminalOutput t termQ
+  pure TestCC {chatController = cc, virtualTerminal = t, chatAsync, termAsync, termQ}
+
+virtualSimplexChatNoNewUser :: FilePath -> IO TestCC
+virtualSimplexChatNoNewUser dbFilePrefix = do
+  st <- createStore (dbFilePrefix <> "_chat.db") 1 False
+  user_ <- getActiveUser_ st
+  t <- withVirtualTerminal termSettings pure
+  ct <- newChatTerminal t
+  cc <- newChatController st user_ cfg opts {dbFilePrefix} (const $ pure ()) -- no notifications
+  chatAsync <- async $ runSimplexChat (fromJust user_) ct cc
   termQ <- newTQueueIO
   termAsync <- async $ readTerminalOutput t termQ
   pure TestCC {chatController = cc, virtualTerminal = t, chatAsync, termAsync, termQ}
@@ -124,6 +138,12 @@ testChat2' :: (Int, Profile) -> (Int, Profile) -> (TestCC -> TestCC -> IO ()) ->
 testChat2' (i1, p1) (i2, p2) test = do
   cc1 <- virtualSimplexChat (testDBPrefix <> show i1) p1
   cc2 <- virtualSimplexChat (testDBPrefix <> show i2) p2
+  test cc1 cc2
+
+testChat2'' :: Int -> Int -> (TestCC -> TestCC -> IO ()) -> IO ()
+testChat2'' i1 i2 test = do
+  cc1 <- virtualSimplexChatNoNewUser (testDBPrefix <> show i1)
+  cc2 <- virtualSimplexChatNoNewUser (testDBPrefix <> show i2)
   test cc1 cc2
 
 testChatN :: [Profile] -> ([TestCC] -> IO ()) -> IO ()

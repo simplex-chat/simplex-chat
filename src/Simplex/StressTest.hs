@@ -15,7 +15,9 @@ import Data.Maybe (fromJust)
 import qualified Data.Text as T
 import Simplex.Chat.Controller (ChatController (..))
 import Simplex.Chat.Types (Profile (..), User (..))
+import Simplex.Messaging.Agent (disconnectAgentClient)
 import Simplex.StressTest.ChatClient
+import System.Directory
 import Test.Hspec
 
 aliceProfile :: Profile
@@ -33,7 +35,77 @@ danProfile = Profile {displayName = "dan", fullName = "Daniel"}
 chatTests :: Spec
 chatTests =
   describe "server stress test" $
-    fit "should stress server with many chats and messages" testStressServer
+    -- fit "should stress server with many chats and messages" testStressServer
+    fit "server stress test" testStressServerConnectOnly
+
+testStressServerConnectOnly :: IO ()
+testStressServerConnectOnly = do
+  connectionsTVar <- newTVarIO (0 :: Int)
+  concurrentlyN_ $
+    ( do
+        threadDelay 5000000
+        connections <- readTVarIO connectionsTVar
+        print $ "total connections over time: " <> show connections
+    ) :
+    map
+      ( \i -> do
+          dirExists <- doesDirectoryExist "tests/tmp"
+          if not dirExists
+            then do
+              createDirectoryIfMissing False "tests/tmp"
+              testChat2' (i * 2 -1, aliceProfile) (i * 2, bobProfile) $
+                \alice bob -> do
+                  print $ show i <> " - connected +2"
+                  connectUsers alice bob
+                  threadDelay 1000000
+                  atomically $ modifyTVar connectionsTVar (+ 2)
+            else do
+              testChat2'' (i * 2 -1) (i * 2) $
+                \alice bob -> do
+                  print $ show i <> " - connected +2"
+                  alice `send` "/help"
+                  bob `send` "/help"
+                  threadDelay 1000000
+                  atomically $ modifyTVar connectionsTVar (+ 2)
+      )
+      (take 100 ([1 ..] :: [Int]))
+
+-- testStressServerConnectOnly :: IO ()
+-- testStressServerConnectOnly =
+--   withTmpFiles $ do
+--     connectionsTVar <- newTVarIO (0 :: Int)
+--     concurrentlyN_ $
+--       forever
+--         ( do
+--             threadDelay 5000000
+--             connections <- readTVarIO connectionsTVar
+--             print $ "total connections over time: " <> show connections
+--         ) :
+--       map
+--         ( \i -> do
+--             testChat2' (i * 2 -1, aliceProfile) (i * 2, bobProfile) $
+--               \alice bob -> do
+--                 connectUsers alice bob
+--                 atomically $ modifyTVar connectionsTVar (+ 2)
+--                 disconnectAgent alice
+--                 disconnectAgent bob
+--             forever $ do
+--               threadDelay 5000000
+--               testChat2'' (i * 2 -1) (i * 2) $
+--                 \alice bob -> do
+--                   alice `send` "/help"
+--                   bob `send` "/help"
+--                   atomically $ modifyTVar connectionsTVar (+ 2)
+--                   disconnectAgent alice
+--                   disconnectAgent bob
+--                   threadDelay 5000000
+--                   alice `send` "/help"
+--                   bob `send` "/help"
+--         )
+--         (take 1 ([1 ..] :: [Int]))
+--   where
+--     disconnectAgent TestCC {chatController = ChatController {smpAgent}} =
+--       disconnectAgentClient smpAgent
 
 testStressServer :: IO ()
 testStressServer =
