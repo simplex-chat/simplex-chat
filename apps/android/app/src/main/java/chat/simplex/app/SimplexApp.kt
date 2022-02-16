@@ -35,12 +35,14 @@ class SimplexApp: Application() {
         val store: Store = chatInit(applicationContext.filesDir.toString())
         // create user if needed
         if (chatGetUser(store) == "{}") {
-            chatCreateUser(store, """
-                    {"displayName": "test", "fullName": "android test"}
-                    """.trimIndent())
+            createUser(store, "test", "android test")
         }
         Log.d("SIMPLEX (user)", chatGetUser(store))
         controller = ChatController(chatStart(store))
+    }
+
+    fun createUser(store: Store, displayName: String, fullName: String?){
+        chatCreateUser(store, "{\"displayName:\"$displayName\", \"fullName\":\"$fullName\"}")
     }
 
     val chatModel by lazy {
