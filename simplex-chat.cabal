@@ -17,7 +17,7 @@ build-type:     Simple
 extra-source-files:
     README.md
     
-if (os(android))
+if (os(linux))
   ghc-option: -DANDROID
 
 library
