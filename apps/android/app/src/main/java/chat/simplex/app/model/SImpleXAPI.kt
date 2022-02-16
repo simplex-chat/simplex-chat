@@ -14,7 +14,7 @@ import kotlin.concurrent.thread
 typealias Controller = Long
 
 open class ChatController(val ctrl: Controller) {
-  private lateinit var chatModel: ChatModel
+  private var chatModel: ChatModel? = null
 
   fun setModel(m: ChatModel) {
     chatModel = m
@@ -26,7 +26,7 @@ open class ChatController(val ctrl: Controller) {
       while(true) {
         val json = chatRecvMsg(ctrl)
         Log.d("SIMPLEX chatRecvMsg: ", json)
-        chatModel.terminalItems.add(TerminalItem.Resp(APIResponse.decodeStr(json)))
+        chatModel?.terminalItems?.add(TerminalItem.Resp(APIResponse.decodeStr(json)))
       }
     }
   }
@@ -34,9 +34,9 @@ open class ChatController(val ctrl: Controller) {
   fun sendCmd(cmd: CC): CR {
     val c = cmd.cmdString
     val json = chatSendCmd(ctrl, c)
-    Log.d("SIMPLEX chatSendCmd: ", c)
-    Log.d("SIMPLEX chatSendCmd response: ", json)
-    chatModel.terminalItems.add(TerminalItem.Resp(APIResponse.decodeStr(json)))
+    Log.d("SIMPLEX", "sendCmd: $c")
+    Log.d("SIMPLEX", "sendCmd response $json")
+    chatModel?.terminalItems?.add(TerminalItem.Resp(APIResponse.decodeStr(json)))
     return APIResponse.decodeStr(json)
   }
 

@@ -29,13 +29,17 @@ class SimplexApp: Application() {
         super.onCreate()
         controller = ChatController(chatInit(applicationContext.filesDir.toString()))
         var user = controller.apiGetActiveUser()
-        println(user)
         if (user == null) {
-            user =  controller.apiCreateActiveUser(Profile("android", "Android test"))
+//            user =  controller.apiCreateActiveUser(Profile("android", "Android test"))
         }
-//        Log.d("SIMPLEX (user)", user.toString())
-        controller.apiStartChat()
-        Log.d("SIMPLEX", "started chat")
+        Log.d("SIMPLEX (user)", user.toString())
+        try {
+            controller.apiStartChat()
+            Log.d("SIMPLEX", "started chat")
+        } catch(e: Error) {
+            Log.d("SIMPLEX", "failed starting chat $e")
+//            throw e
+        }
     }
 
     val chatModel by lazy {
