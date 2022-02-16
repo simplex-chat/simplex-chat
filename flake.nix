@@ -75,7 +75,7 @@
                      mkdir -p $out/_pkg
                      cp libsupport.so $out/_pkg
                      ${pkgs.patchelf}/bin/patchelf --remove-needed libunwind.so.1 $out/_pkg/libsupport.so
-                     (cd $out/_pkg; ${pkgs.zip}/bin/zip -r -9 $out/pkg.zip *)
+                     (cd $out/_pkg; ${pkgs.zip}/bin/zip -r -9 $out/pkg-android-libsupport.zip *)
                      rm -fR $out/_pkg
 
                      mkdir -p $out/nix-support
@@ -107,7 +107,7 @@
                         ${pkgs.patchelf}/bin/patchelf --remove-needed libunwind.so.1 $out/_pkg/libsimplex.so
 
                         ${pkgs.tree}/bin/tree $out/_pkg
-                        (cd $out/_pkg; ${pkgs.zip}/bin/zip -r -9 $out/pkg.zip *)
+                        (cd $out/_pkg; ${pkgs.zip}/bin/zip -r -9 $out/pkg-android-libsimplex.zip *)
                         rm -fR $out/_pkg
                         mkdir -p $out/nix-support
                         echo "file binary-dist \"$(echo $out/*.zip)\"" \
@@ -134,7 +134,7 @@
                   find ${pkgs.gmp6.override { withStatic = true; }}/lib -name "*.a" -exec cp {} $out/_pkg \;
                   # There is no static libc
                   ${pkgs.tree}/bin/tree $out/_pkg
-                  (cd $out/_pkg; ${pkgs.zip}/bin/zip -r -9 $out/pkg.zip *)
+                  (cd $out/_pkg; ${pkgs.zip}/bin/zip -r -9 $out/pkg-ios-aarch64.zip *)
                   rm -fR $out/_pkg
                   mkdir -p $out/nix-support
                   echo "file binary-dist \"$(echo $out/*.zip)\"" \
@@ -161,7 +161,7 @@
                   find ${pkgs.gmp6.override { withStatic = true; }}/lib -name "*.a" -exec cp {} $out/_pkg \;
                   # There is no static libc
                   ${pkgs.tree}/bin/tree $out/_pkg
-                  (cd $out/_pkg; ${pkgs.zip}/bin/zip -r -9 $out/pkg.zip *)
+                  (cd $out/_pkg; ${pkgs.zip}/bin/zip -r -9 $out/pkg-ios-x86_64.zip *)
                   rm -fR $out/_pkg
                   mkdir -p $out/nix-support
                   echo "file binary-dist \"$(echo $out/*.zip)\"" \
