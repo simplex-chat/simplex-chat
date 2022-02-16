@@ -9,7 +9,7 @@ import androidx.compose.runtime.Composable
 import chat.simplex.app.ui.theme.SimpleXTheme
 import androidx.lifecycle.AndroidViewModel
 import chat.simplex.app.model.*
-import chat.simplex.app.views.TerminalView
+import chat.simplex.app.views.TerminalPage
 import kotlinx.serialization.*
 import kotlinx.serialization.json.*
 import kotlinx.serialization.modules.*
@@ -33,5 +33,6 @@ class SimplexViewModel(application: Application) : AndroidViewModel(application)
 
 @Composable
 fun MainPage(vm: SimplexViewModel) {
-  TerminalView(vm.chatModel)
+
+  TerminalPage(vm.chatModel)
 }
