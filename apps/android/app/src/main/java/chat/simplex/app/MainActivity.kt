@@ -8,11 +8,9 @@ import androidx.activity.viewModels
 import androidx.compose.runtime.Composable
 import chat.simplex.app.ui.theme.SimpleXTheme
 import androidx.lifecycle.AndroidViewModel
-import chat.simplex.app.model.*
-import chat.simplex.app.views.TerminalView
-import kotlinx.serialization.*
-import kotlinx.serialization.json.*
-import kotlinx.serialization.modules.*
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 
 
 class MainActivity: ComponentActivity() {
@@ -21,7 +19,7 @@ class MainActivity: ComponentActivity() {
     super.onCreate(savedInstanceState)
     setContent {
       SimpleXTheme {
-        MainPage(viewModel)
+        Navigation(viewModel = viewModel)
       }
     }
   }
@@ -32,6 +30,21 @@ class SimplexViewModel(application: Application) : AndroidViewModel(application)
 }
 
 @Composable
-fun MainPage(vm: SimplexViewModel) {
-  TerminalView(vm.chatModel)
+fun Navigation(viewModel: SimplexViewModel) {
+  val navController = rememberNavController()
+
+  NavHost(navController=navController, startDestination=Pages.Home.route){
+    composable(route=Pages.Home.route){
+      MainPage(vm = viewModel)
+    }
+//    composable(route=Pages.Welcome.route){
+//      WelcomeView(vm.)
+//    }
+  }
+}
+
+sealed class Pages(val route: String) {
+  object Home : Pages("home")
+  object Terminal : Pages("terminal")
+  object Welcome : Pages("welcome")
 }
