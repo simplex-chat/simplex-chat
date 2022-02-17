@@ -16,9 +16,6 @@ license-file:   LICENSE
 build-type:     Simple
 extra-source-files:
     README.md
-    
-if (os(darwin))
-  ghc-option: -DIOS
 
 library
   exposed-modules:
