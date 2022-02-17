@@ -10,8 +10,8 @@ cd $HOME
 
 # Download stress test binary
 binary="$HOME/simplex-stress-test"
-curl -L -o binary https://github.com/simplex-chat/simplex-chat/releases/download/v1.2.1/simplex-stress-test
-chmod +x binary
+curl -L -o $binary https://github.com/simplex-chat/simplex-chat/releases/download/v1.2.1/simplex-stress-test
+chmod +x $binary
 
 # / Create systemd service
 cat <<EOT >> /etc/systemd/system/simplex-stress-test.service
