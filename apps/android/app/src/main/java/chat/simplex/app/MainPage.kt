@@ -5,6 +5,5 @@ import chat.simplex.app.views.TerminalPage
 
 @Composable
 fun MainPage(vm: SimplexViewModel) {
-
   TerminalPage(vm.chatModel)
 }
