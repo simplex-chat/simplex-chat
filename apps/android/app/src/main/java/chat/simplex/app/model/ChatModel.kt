@@ -1,6 +1,7 @@
 package chat.simplex.app.model
 
 import androidx.compose.runtime.mutableStateListOf
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import java.util.*
 
@@ -271,11 +272,144 @@ class UserContactRequest (
 }
 
 @Serializable
-class ChatItem {
+class AChatItem (
+  val chatInfo: ChatInfo,
+  val chatItem: ChatItem
+)
 
+@Serializable
+class ChatItem (
+  val chatDir: CIDirection,
+  val meta: CIMeta,
+  val content: CIContent
+) {
+  val id: Long get() = meta.itemId
+  //  val timestampText: String get() =  meta.timestampText
+  val isRcvNew: Boolean get() = meta.itemStatus is CIStatus.RcvNew
+
+  companion object {
+    fun getSampleData(id: Long, dir: CIDirection, ts: Date, text: String,status: CIStatus = CIStatus.SndNew()) =
+      ChatItem(
+        chatDir = dir,
+        meta = CIMeta.getSample(id, ts, text, status),
+        content = CIContent.SndMsgContent(msgContent = MsgContent.MCText(text))
+      )
+  }
 }
 
 @Serializable
 sealed class CIDirection {
-  class DirectSnd
+  abstract val sent: Boolean
+
+  @Serializable @SerialName("directSnd")
+  class DirectSnd: CIDirection() {
+    override val sent get() = true
+  }
+
+  @Serializable @SerialName("directRcv")
+  class DirectRcv: CIDirection() {
+    override val sent get() = false
+  }
+
+  @Serializable @SerialName("groupSnd")
+  class GroupSnd: CIDirection() {
+    override val sent get() = true
+  }
+
+  @Serializable @SerialName("GroupRcv")
+  class GroupRcv(val groupMember: GroupMember): CIDirection() {
+    override val sent get() = false
+  }
+}
+
+@Serializable
+class CIMeta (
+  val itemId: Long,
+//  val itemTs: Date,
+  val itemText: String,
+  val itemStatus: CIStatus,
+//  val createdAt: Date
+) {
+//  val timestampText: String get() = getTimestampText(itemTs)
+
+  companion object {
+    fun getSample(id: Long, ts: Date, text: String, status: CIStatus = CIStatus.SndNew()): CIMeta =
+      CIMeta(
+        itemId = id,
+//        itemTs = ts,
+        itemText = text,
+        itemStatus = status,
+//        createdAt = ts
+      )
+  }
+}
+
+// TODO
+fun getTimestampText(d: Date): String = ""
+
+@Serializable
+sealed class CIStatus {
+  @Serializable @SerialName("sndNew")
+  class SndNew: CIStatus()
+
+  @Serializable @SerialName("sndSent")
+  class SndSent: CIStatus()
+
+  @Serializable @SerialName("sndErrorAuth")
+  class SndErrorAuth: CIStatus()
+
+  @Serializable @SerialName("sndError")
+  class SndError(val agentError: AgentErrorType): CIStatus()
+
+  @Serializable @SerialName("rcvNew")
+  class RcvNew: CIStatus()
+
+  @Serializable @SerialName("rcvRead")
+  class RcvRead: CIStatus()
+}
+
+@Serializable
+sealed class CIContent {
+  abstract val text: String
+
+  @Serializable @SerialName("sndMsgContent")
+  class SndMsgContent(val msgContent: MsgContent): CIContent() {
+    override val text get() = msgContent.text
+  }
+
+  @Serializable @SerialName("rcvMsgContent")
+  class RcvMsgContent(val msgContent: MsgContent): CIContent() {
+    override val text get() = msgContent.text
+  }
+
+  @Serializable @SerialName("sndFileInvitation")
+  class SndFileInvitation(val fileId: Long, val filePath: String): CIContent() {
+    override val text get() = "sending files is not supported yet"
+  }
+
+  @Serializable @SerialName("rcvFileInvitation")
+  class RcvFileInvitation(val rcvFileTransfer: RcvFileTransfer): CIContent() {
+    override val text get() = "receiving files is not supported yet"
+  }
+}
+
+@Serializable
+sealed class MsgContent {
+  abstract val text: String
+  abstract val cmdString: String
+
+  @Serializable @SerialName("text")
+  class MCText(override val text: String): MsgContent() {
+    override val cmdString get() = "text $text"
+  }
+}
+
+@Serializable
+class RcvFileTransfer {
+
+}
+
+@Serializable
+class AgentErrorType {
+
 }
