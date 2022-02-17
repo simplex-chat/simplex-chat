@@ -36,7 +36,7 @@ class SimplexApp: Application() {
       withContext(Dispatchers.Main) {
         var user = controller.apiGetActiveUser()
         if (user == null) {
-//      user =  controller.apiCreateActiveUser(Profile("android", "Android test"))
+          user =  controller.apiCreateActiveUser(Profile("android", "Android test"))
         }
         Log.d("SIMPLEX (user)", user.toString())
         try {
