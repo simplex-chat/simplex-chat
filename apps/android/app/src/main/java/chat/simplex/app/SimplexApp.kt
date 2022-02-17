@@ -39,6 +39,7 @@ class SimplexApp: Application() {
           user =  controller.apiCreateActiveUser(Profile("android", "Android test"))
         }
         Log.d("SIMPLEX (user)", user.toString())
+        chatModel.currentUser = user
         try {
           controller.apiStartChat()
           Log.d("SIMPLEX", "started chat")

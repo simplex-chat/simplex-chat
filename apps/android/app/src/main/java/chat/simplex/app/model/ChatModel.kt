@@ -5,7 +5,7 @@ import kotlinx.serialization.Serializable
 import java.util.*
 
 class ChatModel(val controller: ChatController) {
-  val currentUser: User? = null
+  var currentUser: User? = null
   var terminalItems = mutableStateListOf<TerminalItem>()
 
   companion object {
