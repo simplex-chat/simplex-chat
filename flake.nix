@@ -121,7 +121,7 @@
                 # we need threaded here, otherwise all the queing logic doesn't work properly.
                 # for iOS we also use -staticlib, to get one rolled up library.
                 # still needs mac2ios patching of the archives.
-                ghcOptions = [ "-staticlib" "-threaded" ];
+                ghcOptions = [ "-staticlib" "-threaded" "-DIOS" ];
                 postInstall = ''
                   ${pkgs.tree}/bin/tree $out
                   mkdir -p $out/_pkg
@@ -148,7 +148,7 @@
                 # we need threaded here, otherwise all the queing logic doesn't work properly.
                 # for iOS we also use -staticlib, to get one rolled up library.
                 # still needs mac2ios patching of the archives.
-                ghcOptions = [ "-staticlib" "-threaded" ];
+                ghcOptions = [ "-staticlib" "-threaded" "-DIOS" ];
                 postInstall = ''
                   ${pkgs.tree}/bin/tree $out
                   mkdir -p $out/_pkg
