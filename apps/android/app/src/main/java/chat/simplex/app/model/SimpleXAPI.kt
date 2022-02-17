@@ -33,7 +33,7 @@ open class ChatController(val ctrl: ChatCtrl) {
           val cb = callbacks[r.corr]
           if (cb != null) cb(null, r.resp)
         }
-        chatModel?.terminalItems?.add(TerminalItem.Resp(r.resp))
+        chatModel?.terminalItems?.add(TerminalItem.Resp(System.currentTimeMillis(), r.resp))
       }
     }
   }
@@ -41,12 +41,12 @@ open class ChatController(val ctrl: ChatCtrl) {
   suspend fun sendCmd(cmd: CC): CR {
     return withContext(Dispatchers.IO) {
       val c = cmd.cmdString
-      chatModel?.terminalItems?.add(TerminalItem.Cmd(cmd))
+      chatModel?.terminalItems?.add(TerminalItem.Cmd(System.currentTimeMillis(), cmd))
       val json = chatSendCmd(ctrl, c)
       Log.d("SIMPLEX", "sendCmd: $c")
       Log.d("SIMPLEX", "sendCmd response $json")
       val r = APIResponse.decodeStr(json)
-      chatModel?.terminalItems?.add(TerminalItem.Resp(r.resp))
+      chatModel?.terminalItems?.add(TerminalItem.Resp(System.currentTimeMillis(), r.resp))
       r.resp
     }
   }
@@ -187,24 +187,27 @@ sealed class CR {
 }
 
 abstract class TerminalItem {
+  abstract val id: Long
   val date = Date()
   abstract val label: String
   abstract val details: String
 
-  class Cmd(val cmd: CC): TerminalItem() {
+  class Cmd(id: Long, val cmd: CC): TerminalItem() {
+    override val id = id
     override val label get() = "> ${cmd.cmdString}"
     override val details get() = cmd.cmdString
   }
 
-  class Resp(val resp: CR): TerminalItem() {
+  class Resp(id: Long, val resp: CR): TerminalItem() {
+    override val id = id
     override val label get() = "< ${resp.responseType}"
     override val details get() = resp.details
   }
 
   companion object {
     val sampleData = listOf<TerminalItem>(
-        TerminalItem.Cmd(CC.ShowActiveUser()),
-        TerminalItem.Resp(CR.ActiveUser(User.sampleData))
+        TerminalItem.Cmd(0, CC.ShowActiveUser()),
+        TerminalItem.Resp(1, CR.ActiveUser(User.sampleData))
     )
   }
 }

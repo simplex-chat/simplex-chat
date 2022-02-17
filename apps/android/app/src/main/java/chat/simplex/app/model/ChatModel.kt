@@ -12,8 +12,8 @@ class ChatModel(val controller: ChatController) {
     val sampleData: ChatModel get() {
       val m = ChatModel(ChatController.Mock())
       m.terminalItems = mutableStateListOf(
-        TerminalItem.Cmd(CC.ShowActiveUser()),
-        TerminalItem.Resp(CR.ActiveUser(User.sampleData))
+        TerminalItem.Cmd(0, CC.ShowActiveUser()),
+        TerminalItem.Resp(1, CR.ActiveUser(User.sampleData))
       )
       return m
     }
