@@ -23,7 +23,7 @@ import kotlinx.coroutines.withContext
 @Composable
 fun WelcomeView(vm: SimplexViewModel, routeHome: () -> Unit) {
   Column(
-    modifier=Modifier.verticalScroll(rememberScrollState())
+    modifier = Modifier.verticalScroll(rememberScrollState())
   ) {
     Image(
       painter=painterResource(R.drawable.logo), contentDescription = "Simplex Logo",
@@ -60,7 +60,7 @@ fun CreateProfilePanel(vm: SimplexViewModel, routeHome: () -> Unit) {
         }
       }
     },
-    enabled=displayName.isNotEmpty()
+    enabled = displayName.isNotEmpty()
     ) { Text("Create")}
   }
 }

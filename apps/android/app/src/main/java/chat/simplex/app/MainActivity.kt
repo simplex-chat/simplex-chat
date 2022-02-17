@@ -43,15 +43,15 @@ fun Navigation(viewModel: SimplexViewModel) {
     composable(route=Pages.Home.route){
       MainPage(vm = viewModel, navController = navController)
     }
-    composable(route=Pages.Welcome.route){
+    composable(route = Pages.Welcome.route){
       WelcomeView(vm = viewModel) {navController.navigate(Pages.Home.route) { popUpTo(Pages.Home.route) { inclusive = true }}}
     }
-    composable(route=Pages.Terminal.route) {
+    composable(route = Pages.Terminal.route) {
       TerminalView(chatModel = viewModel.chatModel, navController = navController)
     }
     composable(
       Pages.TerminalItemDetails.route + "/{identifier}",
-      arguments=listOf(
+      arguments = listOf(
         navArgument("identifier"){
           type = NavType.LongType
         }
