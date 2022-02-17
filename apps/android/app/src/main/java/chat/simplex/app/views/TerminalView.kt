@@ -5,6 +5,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.ClickableText
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.Text
 import androidx.compose.material.Button
@@ -76,9 +77,11 @@ fun DetailView(identifier: Long, terminalItems: List<TerminalItem>, navControlle
   Column(
     modifier=Modifier.verticalScroll(rememberScrollState())
   ) {
-    Text((terminalItems.filter {it.id == identifier}).first().details)
     Button(onClick = { navController.popBackStack() }) {
       Text("Back")
+    }
+    SelectionContainer {
+      Text((terminalItems.filter { it.id == identifier }).first().details)
     }
   }
 }

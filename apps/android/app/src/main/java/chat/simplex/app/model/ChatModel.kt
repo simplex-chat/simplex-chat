@@ -98,8 +98,8 @@ class Chat (
 
 @Serializable
 sealed class ChatInfo: SomeChat, NamedChat {
-  @Serializable
-  class DirectChat(val contact: Contact): ChatInfo() {
+  @Serializable @SerialName("direct")
+  class Direct(val contact: Contact): ChatInfo() {
     override val localDisplayName get() = contact.localDisplayName
     override val id get() = contact.id
     override val apiId get() = contact.apiId
@@ -108,12 +108,12 @@ sealed class ChatInfo: SomeChat, NamedChat {
     override val fullName get() = contact.displayName
 
     companion object {
-      val sampleData = DirectChat(Contact.sampleData)
+      val sampleData = Direct(Contact.sampleData)
     }
   }
 
-  @Serializable
-  class GroupGhat(val groupInfo: GroupInfo): ChatInfo() {
+  @Serializable @SerialName("group")
+  class Group(val groupInfo: GroupInfo): ChatInfo() {
     override val localDisplayName get() = groupInfo.localDisplayName
     override val id get() = groupInfo.id
     override val apiId get() = groupInfo.apiId
@@ -122,11 +122,11 @@ sealed class ChatInfo: SomeChat, NamedChat {
     override val fullName get() = groupInfo.displayName
 
     companion object {
-      val sampleData = GroupGhat(GroupInfo.sampleData)
+      val sampleData = Group(GroupInfo.sampleData)
     }
   }
 
-  @Serializable
+  @Serializable @SerialName("contactRequest")
   class ContactRequest(val contactRequest: UserContactRequest): ChatInfo() {
     override val localDisplayName get() = contactRequest.localDisplayName
     override val id get() = contactRequest.id
@@ -316,7 +316,7 @@ sealed class CIDirection {
     override val sent get() = true
   }
 
-  @Serializable @SerialName("GroupRcv")
+  @Serializable @SerialName("groupRcv")
   class GroupRcv(val groupMember: GroupMember): CIDirection() {
     override val sent get() = false
   }
