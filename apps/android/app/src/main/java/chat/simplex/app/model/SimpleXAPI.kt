@@ -46,9 +46,10 @@ open class ChatController(val ctrl: ChatCtrl) {
       val c = cmd.cmdString
       chatModel?.terminalItems?.add(TerminalItem.Cmd(System.currentTimeMillis(), cmd))
       val json = chatSendCmd(ctrl, c)
-      Log.d("SIMPLEX", "sendCmd: $c")
-      Log.d("SIMPLEX", "sendCmd response $json")
+      Log.d("SIMPLEX", "sendCmd: ${cmd.cmdType}")
+      Log.d("SIMPLEX", "sendCmd response json $json")
       val r = APIResponse.decodeStr(json)
+      Log.d("SIMPLEX", "sendCmd response type ${r.resp.responseType}")
       chatModel?.terminalItems?.add(TerminalItem.Resp(System.currentTimeMillis(), r.resp))
       r.resp
     }
@@ -74,6 +75,12 @@ open class ChatController(val ctrl: ChatCtrl) {
     throw Error("failed starting chat: ${r.toString()}")
   }
 
+  suspend fun apiGetChats() {
+    val r = sendCmd(CC.ApiGetChats())
+    if (r is CR.ApiChats ) return
+    throw Error("failed getting the list of chats: ${r.toString()}")
+  }
+
   class Mock: ChatController(0) {}
 }
 
@@ -89,26 +96,36 @@ abstract class CC {
 
   class ShowActiveUser: CC() {
     override val cmdString get() = "/u"
-    override val cmdType get() = "ShowActiveUser"
+    override val cmdType get() = "showActiveUser"
   }
 
   class CreateActiveUser(val profile: Profile): CC() {
     override val cmdString get() = "/u ${profile.displayName} ${profile.fullName}"
-    override val cmdType get() = "CreateActiveUser"
+    override val cmdType get() = "createActiveUser"
   }
 
   class StartChat: CC() {
     override val cmdString get() = "/_start"
-    override val cmdType get() = "StartChat"
+    override val cmdType get() = "startChat"
   }
 
   class ApiGetChats: CC() {
     override val cmdString get() = "/_get chats"
-    override val cmdType get() = "ApiGetChats"
+    override val cmdType get() = "apiGetChats"
+  }
+
+  class ApiGetChat(val type: ChatType, val id: Long): CC() {
+    override val cmdString get() = "/_get chat ${CC.chatRef(type, id)} count=100"
+    override val cmdType get() = "apiGetChat"
+  }
+
+  class ApiSendMessage(val type: ChatType, val id: Long, val mc: MsgContent): CC() {
+    override val cmdString get() = "/_send ${CC.chatRef(type, id)} ${mc.cmdString}"
+    override val cmdType get() = "apiGetChat"
   }
 
   companion object {
-    fun chatRef(type: ChatType, id: String) = "${type}${id}"
+    fun chatRef(type: ChatType, id: Long) = "${type}${id}"
   }
 }
 
@@ -144,29 +161,49 @@ sealed class CR {
   abstract val responseType: String
   abstract val details: String
 
-  @Serializable
-  @SerialName("activeUser")
+  @Serializable @SerialName("activeUser")
   class ActiveUser(val user: User): CR() {
     override val responseType get() = "activeUser"
     override val details get() = user.toString()
   }
 
-  @Serializable
-  @SerialName("chatStarted")
+  @Serializable @SerialName("chatStarted")
   class ChatStarted: CR() {
     override val responseType get() = "chatStarted"
     override val details get() = CR.noDetails(this)
   }
 
-  @Serializable
-  @SerialName("contactSubscribed")
+  @Serializable @SerialName("apiChats")
+  class ApiChats(val chats: List<Chat>): CR() {
+    override val responseType get() = "apiChats"
+    override val details get() = chats.toString()
+  }
+
+  @Serializable @SerialName("apiChat")
+  class ApiChat(val chat: Chat): CR() {
+    override val responseType get() = "apiChats"
+    override val details get() = chat.toString()
+  }
+
+  @Serializable @SerialName("contactSubscribed")
   class ContactSubscribed(val contact: Contact): CR() {
     override val responseType get() = "contactSubscribed"
     override val details get() = contact.toString()
   }
 
-  @Serializable
-  @SerialName("cmdAccepted")
+  @Serializable @SerialName("newChatItem")
+  class NewChatItem(val chatItem: AChatItem): CR() {
+    override val responseType get() = "newChatItem"
+    override val details get() = chatItem.toString()
+  }
+
+  @Serializable @SerialName("chatItemUpdated")
+  class ChatItemUpdated(val chatItem: AChatItem): CR() {
+    override val responseType get() = "chatItemUpdated"
+    override val details get() = chatItem.toString()
+  }
+
+  @Serializable @SerialName("cmdAccepted")
   class CmdAccepted(val corr: String): CR() {
     override val responseType get() = "cmdAccepted"
     override val details get() = "corrId: $corr"
