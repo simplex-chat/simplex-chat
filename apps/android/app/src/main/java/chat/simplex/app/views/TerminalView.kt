@@ -77,10 +77,7 @@ fun DetailView(identifier: Long, terminalItems: List<TerminalItem>, navControlle
     modifier=Modifier.verticalScroll(rememberScrollState())
   ) {
     Text((terminalItems.filter {it.id == identifier}).first().details)
-    Button(onClick = {
-      println((terminalItems.filter {it.id == identifier}).first())
-      navController.popBackStack()
-    }) {
+    Button(onClick = { navController.popBackStack() }) {
       Text("Back")
     }
   }
