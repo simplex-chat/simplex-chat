@@ -35,6 +35,7 @@ class SimplexApp: Application() {
     GlobalScope.launch {
       withContext(Dispatchers.Main) {
         var user = controller.apiGetActiveUser()
+        controller.setCurrentUser(user)
         if (user == null) {
 //      user =  controller.apiCreateActiveUser(Profile("android", "Android test"))
         }

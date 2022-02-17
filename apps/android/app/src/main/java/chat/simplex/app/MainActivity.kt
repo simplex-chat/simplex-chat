@@ -20,12 +20,12 @@ import chat.simplex.app.views.WelcomeView
 
 class MainActivity: ComponentActivity() {
   private val viewModel by viewModels<SimplexViewModel>()
+
   override fun onCreate(savedInstanceState: Bundle?) {
-    val route: String = if(viewModel.chatModel.currentUser == null) Pages.Welcome.route else Pages.Home.route
     super.onCreate(savedInstanceState)
     setContent {
       SimpleXTheme {
-        Navigation(viewModel=viewModel, initialRoute=route)
+        Navigation(viewModel=viewModel)
       }
     }
   }
@@ -36,10 +36,10 @@ class SimplexViewModel(application: Application) : AndroidViewModel(application)
 }
 
 @Composable
-fun Navigation(viewModel: SimplexViewModel, initialRoute: String) {
+fun Navigation(viewModel: SimplexViewModel) {
   val navController = rememberNavController()
 
-  NavHost(navController=navController, startDestination=initialRoute){
+  NavHost(navController=navController, startDestination=Pages.Home.route){
     composable(route=Pages.Home.route){
       MainPage(vm = viewModel, navController = navController)
     }

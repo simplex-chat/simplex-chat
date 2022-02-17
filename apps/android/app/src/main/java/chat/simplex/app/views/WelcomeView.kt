@@ -52,11 +52,13 @@ fun CreateProfilePanel(vm: SimplexViewModel, routeHome: () -> Unit) {
     Button(onClick={
       GlobalScope.launch {
         withContext(Dispatchers.Main) {
-          vm.chatModel.controller.apiCreateActiveUser(
+          val user = vm.chatModel.controller.apiCreateActiveUser(
             Profile(displayName, fullName)
           )
-        }}
-      routeHome()
+          vm.chatModel.setCurrentUser(user)
+          routeHome()
+        }
+      }
     },
     enabled=displayName.isNotEmpty()
     ) { Text("Create")}
