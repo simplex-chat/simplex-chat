@@ -8,9 +8,12 @@ import androidx.activity.viewModels
 import androidx.compose.runtime.Composable
 import chat.simplex.app.ui.theme.SimpleXTheme
 import androidx.lifecycle.AndroidViewModel
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
+import chat.simplex.app.views.DetailView
 import chat.simplex.app.views.TerminalView
 import chat.simplex.app.views.WelcomeView
 
@@ -38,14 +41,22 @@ fun Navigation(viewModel: SimplexViewModel, initialRoute: String) {
 
   NavHost(navController=navController, startDestination=initialRoute){
     composable(route=Pages.Home.route){
-      MainPage(vm = viewModel)
+      MainPage(vm = viewModel, navController = navController)
     }
     composable(route=Pages.Welcome.route){
       WelcomeView(vm = viewModel) {navController.navigate(Pages.Home.route) { popUpTo(Pages.Home.route) { inclusive = true }}}
     }
-    composable(route=Pages.Terminal.route){
+    composable(route=Pages.Terminal.route) {
       TerminalView(chatModel = viewModel.chatModel, navController = navController)
     }
+    composable(
+      Pages.TerminalItemDetails.route + "/{identifier}",
+      arguments=listOf(
+        navArgument("identifier"){
+          type = NavType.LongType
+        }
+      )
+    ) { entry -> DetailView( entry.arguments!!.getLong("identifier"), viewModel.chatModel.terminalItems, navController) }
   }
 }
 
@@ -53,4 +64,5 @@ sealed class Pages(val route: String) {
   object Home : Pages("home")
   object Terminal : Pages("terminal")
   object Welcome : Pages("welcome")
+  object TerminalItemDetails : Pages("details")
 }
