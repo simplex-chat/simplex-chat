@@ -18,20 +18,20 @@ import kotlin.concurrent.thread
 typealias ChatCtrl = Long
 
 open class ChatController(val ctrl: ChatCtrl) {
-  private var chatModel: ChatModel? = null
-  private val callbacks = mutableMapOf<String, (Error?, CR?) -> Unit>()
+  var chatModel: ChatModel
 
-  fun setModel(m: ChatModel) {
-    chatModel = m
+  init {
+    chatModel = ChatModel(this)
   }
 
   suspend fun startChat(u: User) {
-    chatModel!!.currentUser = mutableStateOf(u)
+    chatModel.currentUser = mutableStateOf(u)
     Log.d("SIMPLEX (user)", u.toString())
-    apiStartChat()
     try {
+      apiStartChat()
+      chatModel.chats.addAll(apiGetChats())
+      startReceiver()
       Log.d("SIMPLEX", "started chat")
-      chatModel!!.chats = apiGetChats().toMutableStateList()
     } catch(e: Error) {
       Log.d("SIMPLEX", "failed starting chat $e")
       throw e
@@ -45,11 +45,7 @@ open class ChatController(val ctrl: ChatCtrl) {
         val json = chatRecvMsg(ctrl)
         Log.d("SIMPLEX chatRecvMsg: ", json)
         val r = APIResponse.decodeStr(json)
-        if (r.corr != null) {
-          val cb = callbacks[r.corr]
-          if (cb != null) cb(null, r.resp)
-        }
-        chatModel?.terminalItems?.add(TerminalItem.Resp(System.currentTimeMillis(), r.resp))
+        chatModel.terminalItems.add(TerminalItem.Resp(System.currentTimeMillis(), r.resp))
       }
     }
   }
@@ -57,13 +53,15 @@ open class ChatController(val ctrl: ChatCtrl) {
   suspend fun sendCmd(cmd: CC): CR {
     return withContext(Dispatchers.IO) {
       val c = cmd.cmdString
-      chatModel?.terminalItems?.add(TerminalItem.Cmd(System.currentTimeMillis(), cmd))
+      chatModel.terminalItems.add(TerminalItem.Cmd(System.currentTimeMillis(), cmd))
       val json = chatSendCmd(ctrl, c)
       Log.d("SIMPLEX", "sendCmd: ${cmd.cmdType}")
-      Log.d("SIMPLEX", "sendCmd response json $json")
       val r = APIResponse.decodeStr(json)
       Log.d("SIMPLEX", "sendCmd response type ${r.resp.responseType}")
-      chatModel?.terminalItems?.add(TerminalItem.Resp(System.currentTimeMillis(), r.resp))
+      if (r.resp is CR.Response || r.resp is CR.Invalid) {
+        Log.d("SIMPLEX", "sendCmd response json $json")
+      }
+      chatModel.terminalItems.add(TerminalItem.Resp(System.currentTimeMillis(), r.resp))
       r.resp
     }
   }
