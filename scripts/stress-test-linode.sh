@@ -20,7 +20,7 @@ Description=SMP server stress test
 
 [Service]
 Type=simple
-ExecStart=/bin/sh -c "$binary start"
+ExecStart=/bin/sh -c "$binary"
 Restart=always
 RestartSec=3
 
