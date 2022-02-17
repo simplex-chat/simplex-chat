@@ -28,8 +28,8 @@ enum class ChatType(val type: String) {
 
 @Serializable
 class User (
-  val userId: Int,
-  val userContactId: Int,
+  val userId: Long,
+  val userContactId: Long,
   val localDisplayName: String,
   val profile: Profile,
   val activeUser: Boolean
@@ -60,7 +60,7 @@ interface NamedChat {
 interface SomeChat {
   val localDisplayName: String
   val id: ChatId
-  val apiId: Int
+  val apiId: Long
   val ready: Boolean
 }
 
@@ -142,11 +142,11 @@ sealed class ChatInfo: SomeChat, NamedChat {
 
 @Serializable
 class Contact(
-  val contactId: Int,
+  val contactId: Long,
   override val localDisplayName: String,
   val profile: Profile,
   val activeConn: Connection,
-  val viaGroup: Int? = null,
+  val viaGroup: Long? = null,
 // no serializer for type Date?
 //  val createdAt: Date
 ): SomeChat, NamedChat {
@@ -189,7 +189,7 @@ class Profile(
 
 @Serializable
 class GroupInfo (
-  val groupId: Int,
+  val groupId: Long,
   override val localDisplayName: String,
   val groupProfile: GroupProfile,
 //  var createdAt: Date
@@ -225,7 +225,7 @@ class GroupProfile (
 
 @Serializable
 class GroupMember (
-  val groupMemberId: Int,
+  val groupMemberId: Long,
   val memberId: String,
 //    var memberRole: GroupMemberRole
 //    var memberCategory: GroupMemberCategory
@@ -233,7 +233,7 @@ class GroupMember (
 //    var invitedBy: InvitedBy
   val localDisplayName: String,
   val memberProfile: Profile,
-  val memberContactId: Int?
+  val memberContactId: Long?
 //    var activeConn: Connection?
 ) {
   companion object {
@@ -249,7 +249,7 @@ class GroupMember (
 
 @Serializable
 class UserContactRequest (
-  val contactRequestId: Int,
+  val contactRequestId: Long,
   override val localDisplayName: String,
   val profile: Profile
 //  val createdAt: Date
@@ -273,4 +273,9 @@ class UserContactRequest (
 @Serializable
 class ChatItem {
 
+}
+
+@Serializable
+sealed class CIDirection {
+  class DirectSnd
 }
