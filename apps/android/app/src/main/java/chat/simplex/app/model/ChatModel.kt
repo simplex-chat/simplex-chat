@@ -2,14 +2,15 @@ package chat.simplex.app.model
 
 import androidx.compose.runtime.*
 import kotlinx.serialization.*
+import java.util.*
 
 class ChatModel(val controller: ChatController) {
   var currentUser = mutableStateOf<User?>(null)
-  var terminalItems = mutableStateListOf<TerminalItem>()
+  var chats = mutableStateListOf<Chat>()
+  var chatId = mutableStateOf<String?>(null)
+  var chatItems = mutableStateListOf<ChatItem>()
 
-  fun setCurrentUser(u: User?){
-    currentUser = mutableStateOf<User?>(u)
-  }
+  var terminalItems = mutableStateListOf<TerminalItem>()
 
   companion object {
     val sampleData: ChatModel get() {
@@ -36,7 +37,7 @@ class User (
   val localDisplayName: String,
   val profile: Profile,
   val activeUser: Boolean
-) : NamedChat {
+): NamedChat {
   override val displayName: String get() = profile.displayName
   override val fullName: String get() = profile.fullName
 
@@ -61,6 +62,7 @@ interface NamedChat {
 }
 
 interface SomeChat {
+  val chatType: ChatType
   val localDisplayName: String
   val id: ChatId
   val apiId: Long
@@ -102,6 +104,7 @@ class Chat (
 sealed class ChatInfo: SomeChat, NamedChat {
   @Serializable @SerialName("direct")
   class Direct(val contact: Contact): ChatInfo() {
+    override val chatType get() = ChatType.Direct
     override val localDisplayName get() = contact.localDisplayName
     override val id get() = contact.id
     override val apiId get() = contact.apiId
@@ -116,6 +119,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
 
   @Serializable @SerialName("group")
   class Group(val groupInfo: GroupInfo): ChatInfo() {
+    override val chatType get() = ChatType.Group
     override val localDisplayName get() = groupInfo.localDisplayName
     override val id get() = groupInfo.id
     override val apiId get() = groupInfo.apiId
@@ -130,6 +134,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
 
   @Serializable @SerialName("contactRequest")
   class ContactRequest(val contactRequest: UserContactRequest): ChatInfo() {
+    override val chatType get() = ChatType.ContactRequest
     override val localDisplayName get() = contactRequest.localDisplayName
     override val id get() = contactRequest.id
     override val apiId get() = contactRequest.apiId
@@ -153,6 +158,7 @@ class Contact(
 // no serializer for type Date?
 //  val createdAt: Date
 ): SomeChat, NamedChat {
+  override val chatType get() = ChatType.Direct
   override val id get() = "@$contactId"
   override val apiId get() = contactId
   override val ready get() = activeConn.connStatus == "ready" || activeConn.connStatus == "snd-ready"
@@ -197,6 +203,7 @@ class GroupInfo (
   val groupProfile: GroupProfile,
 //  var createdAt: Date
 ): SomeChat, NamedChat {
+  override val chatType get() = ChatType.Group
   override val id get() = "#$groupId"
   override val apiId get() = groupId
   override val ready get() = true
@@ -257,6 +264,7 @@ class UserContactRequest (
   val profile: Profile
 //  val createdAt: Date
 ): SomeChat, NamedChat {
+  override val chatType get() = ChatType.ContactRequest
   override val id get() = "<@$contactRequestId"
   override val apiId get() = contactRequestId
   override val ready get() = true

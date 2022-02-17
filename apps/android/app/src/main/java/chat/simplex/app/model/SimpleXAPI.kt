@@ -1,6 +1,9 @@
 package chat.simplex.app.model
 
 import android.util.Log
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.toMutableStateList
 import chat.simplex.app.chatRecvMsg
 import chat.simplex.app.chatSendCmd
 import kotlinx.coroutines.Dispatchers
@@ -21,8 +24,18 @@ open class ChatController(val ctrl: ChatCtrl) {
   fun setModel(m: ChatModel) {
     chatModel = m
   }
-  suspend fun setCurrentUser(u: User?){
-    chatModel!!.setCurrentUser(u)
+
+  suspend fun startChat(u: User) {
+    chatModel!!.currentUser = mutableStateOf(u)
+    Log.d("SIMPLEX (user)", u.toString())
+    apiStartChat()
+    try {
+      Log.d("SIMPLEX", "started chat")
+      chatModel!!.chats = apiGetChats().toMutableStateList()
+    } catch(e: Error) {
+      Log.d("SIMPLEX", "failed starting chat $e")
+      throw e
+    }
   }
 
   fun startReceiver() {
@@ -75,10 +88,24 @@ open class ChatController(val ctrl: ChatCtrl) {
     throw Error("failed starting chat: ${r.toString()}")
   }
 
-  suspend fun apiGetChats() {
+  suspend fun apiGetChats(): List<Chat> {
     val r = sendCmd(CC.ApiGetChats())
-    if (r is CR.ApiChats ) return
+    if (r is CR.ApiChats ) return r.chats
     throw Error("failed getting the list of chats: ${r.toString()}")
+  }
+
+  suspend fun apiGetChat(type: ChatType, id: Long): Chat? {
+    val r = sendCmd(CC.ApiGetChat(type, id))
+    if (r is CR.ApiChat ) return r.chat
+    Log.d("SIMPLEX", "apiGetChat bad response: ${r.toString()}")
+    return null
+  }
+
+  suspend fun apiSendMessage(type: ChatType, id: Long, mc: MsgContent): AChatItem? {
+    val r = sendCmd(CC.ApiSendMessage(type, id, mc))
+    if (r is CR.NewChatItem ) return r.chatItem
+    Log.d("SIMPLEX", "apiSendMessage bad response: ${r.toString()}")
+    return null
   }
 
   class Mock: ChatController(0) {}
@@ -125,7 +152,7 @@ abstract class CC {
   }
 
   companion object {
-    fun chatRef(type: ChatType, id: Long) = "${type}${id}"
+    fun chatRef(chatType: ChatType, id: Long) = "${chatType.type}${id}"
   }
 }
 

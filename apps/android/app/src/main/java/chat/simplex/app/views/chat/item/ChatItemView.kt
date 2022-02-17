@@ -6,5 +6,5 @@ import chat.simplex.app.model.ChatItem
 
 @Composable
 fun ChatItemView(chatItem: ChatItem) {
-  Text("ChatItemView")
+  Text(chatItem.content.text)
 }

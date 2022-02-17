@@ -31,6 +31,9 @@ import kotlinx.coroutines.withContext
 @Composable
 fun TerminalView(chatModel: ChatModel, navController: NavController) {
   Column {
+    Button(onClick = { navController.popBackStack() }) {
+      Text("Back")
+    }
     TerminalLog(chatModel.terminalItems, navController)
     SendMsgView(sendMessage = { cmd ->
       GlobalScope.launch {
@@ -59,7 +62,7 @@ fun TerminalLog(terminalItems: List<TerminalItem>, navController: NavController)
 @Composable
 fun DetailView(identifier: Long, terminalItems: List<TerminalItem>, navController: NavController){
   Column(
-    modifier=Modifier.verticalScroll(rememberScrollState())
+    modifier = Modifier.verticalScroll(rememberScrollState())
   ) {
     Button(onClick = { navController.popBackStack() }) {
       Text("Back")
