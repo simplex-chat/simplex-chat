@@ -21,6 +21,9 @@ open class ChatController(val ctrl: ChatCtrl) {
   fun setModel(m: ChatModel) {
     chatModel = m
   }
+  suspend fun setCurrentUser(u: User?){
+    chatModel!!.setCurrentUser(u)
+  }
 
   fun startReceiver() {
     thread(name="receiver") {

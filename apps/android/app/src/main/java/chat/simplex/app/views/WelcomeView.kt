@@ -2,6 +2,8 @@ package chat.simplex.app.views
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.res.painterResource
 import androidx.compose.runtime.*
 import androidx.compose.runtime.Composable
@@ -11,11 +13,18 @@ import androidx.compose.material.TextField
 import androidx.compose.material.Button
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.Modifier
-import androidx.navigation.NavController
+import chat.simplex.app.SimplexViewModel
+import chat.simplex.app.model.Profile
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @Composable
-fun WelcomeView(createUser: (data: String) -> String, navController: NavController) {
-  Column {
+fun WelcomeView(vm: SimplexViewModel, routeHome: () -> Unit) {
+  Column(
+    modifier = Modifier.verticalScroll(rememberScrollState())
+  ) {
     Image(
       painter=painterResource(R.drawable.logo), contentDescription = "Simplex Logo",
     )
@@ -24,12 +33,12 @@ fun WelcomeView(createUser: (data: String) -> String, navController: NavControll
     Spacer(Modifier.height(8.dp))
     Text("We don't store any of your contacts or messages (once delivered) on the servers.")
     Spacer(Modifier.height(24.dp))
-    CreateProfilePanel(createUser, navController)
+    CreateProfilePanel(vm, routeHome)
   }
 }
 
 @Composable
-fun CreateProfilePanel(createUser: (data: String) -> String, navController: NavController) {
+fun CreateProfilePanel(vm: SimplexViewModel, routeHome: () -> Unit) {
   var displayName by remember { mutableStateOf("") }
   var fullName by remember { mutableStateOf("") }
 
@@ -37,12 +46,21 @@ fun CreateProfilePanel(createUser: (data: String) -> String, navController: NavC
     Text("Create profile")
     Text("Your profile is stored on your device and shared only with your contacts.")
     Text("Display Name")
-    TextField(value = displayName, onValueChange = { displayName = it }, modifier = Modifier.height(30.dp))
+    TextField(value = displayName, onValueChange = { value -> displayName = value })
     Text("Full Name (Optional)")
-    TextField(value = fullName, onValueChange = { fullName = it }, modifier = Modifier.height(30.dp))
+    TextField(value = fullName, onValueChange = { fullName = it })
     Button(onClick={
-      createUser("{\"displayName\": $displayName, \"fullName\": $fullName}")
-      navController.navigate("home") { popUpTo("home") { inclusive = true }}
-    }) { Text("Create")}
+      GlobalScope.launch {
+        withContext(Dispatchers.Main) {
+          val user = vm.chatModel.controller.apiCreateActiveUser(
+            Profile(displayName, fullName)
+          )
+          vm.chatModel.setCurrentUser(user)
+          routeHome()
+        }
+      }
+    },
+    enabled = displayName.isNotEmpty()
+    ) { Text("Create")}
   }
 }

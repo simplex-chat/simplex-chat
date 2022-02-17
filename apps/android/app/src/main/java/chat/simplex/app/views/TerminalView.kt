@@ -28,22 +28,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 @Composable
-fun TerminalPage(chatModel: ChatModel) {
-  val navController = rememberNavController()
-  NavHost(navController = navController, startDestination = Pages.Terminal.route){
-    composable(Pages.Terminal.route) { TerminalView(chatModel, navController) }
-    composable(
-      "details" + "/{identifier}",
-      arguments=listOf(
-        navArgument("identifier"){
-          type = NavType.LongType
-        }
-      )
-    ) { entry -> DetailView( entry.arguments!!.getLong("identifier"), chatModel.terminalItems, navController) }
-  }
-}
-
-@Composable
 fun TerminalView(chatModel: ChatModel, navController: NavController) {
   Column {
     TerminalLog(chatModel.terminalItems, navController)
