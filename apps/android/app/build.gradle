@@ -67,6 +67,7 @@ dependencies {
     implementation "androidx.compose.ui:ui-tooling-preview:$compose_version"
     implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.3.1'
     implementation 'androidx.activity:activity-compose:1.3.1'
+    implementation 'org.jetbrains.kotlinx:kotlinx-datetime:0.3.2'
     implementation 'org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.2'
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.3'

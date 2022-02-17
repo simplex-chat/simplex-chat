@@ -30,23 +30,18 @@ external fun chatRecvMsg(ctrl: ChatCtrl) : String
 
 class SimplexApp: Application() {
   private lateinit var controller: ChatController
+  lateinit var chatModel: ChatModel
 
   override fun onCreate() {
     super.onCreate()
     controller = ChatController(chatInit(applicationContext.filesDir.toString()))
+    chatModel = controller.chatModel
     GlobalScope.launch {
       withContext(Dispatchers.Main) {
         var user = controller.apiGetActiveUser()
         if (user != null) controller.startChat(user)
       }
     }
-  }
-
-  val chatModel by lazy {
-    val m = ChatModel(controller)
-    controller.setModel(m)
-    controller.startReceiver()
-    m
   }
 
   companion object {

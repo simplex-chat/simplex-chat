@@ -1,8 +1,8 @@
 package chat.simplex.app.model
 
 import androidx.compose.runtime.*
+import kotlinx.datetime.*
 import kotlinx.serialization.*
-import java.util.*
 
 class ChatModel(val controller: ChatController) {
   var currentUser = mutableStateOf<User?>(null)
@@ -155,8 +155,7 @@ class Contact(
   val profile: Profile,
   val activeConn: Connection,
   val viaGroup: Long? = null,
-// no serializer for type Date?
-//  val createdAt: Date
+  val createdAt: Instant
 ): SomeChat, NamedChat {
   override val chatType get() = ChatType.Direct
   override val id get() = "@$contactId"
@@ -170,8 +169,8 @@ class Contact(
       contactId = 1,
       localDisplayName = "alice",
       profile = Profile.sampleData,
-      activeConn = Connection.sampleData
-//      createdAt = Date()
+      activeConn = Connection.sampleData,
+      createdAt = Clock.System.now()
     )
   }
 }
@@ -201,7 +200,7 @@ class GroupInfo (
   val groupId: Long,
   override val localDisplayName: String,
   val groupProfile: GroupProfile,
-//  var createdAt: Date
+  val createdAt: Instant
 ): SomeChat, NamedChat {
   override val chatType get() = ChatType.Group
   override val id get() = "#$groupId"
@@ -215,7 +214,7 @@ class GroupInfo (
       groupId = 1,
       localDisplayName = "team",
       groupProfile = GroupProfile.sampleData,
-//      createdAt: Date()
+      createdAt = Clock.System.now()
     )
   }
 }
@@ -261,8 +260,8 @@ class GroupMember (
 class UserContactRequest (
   val contactRequestId: Long,
   override val localDisplayName: String,
-  val profile: Profile
-//  val createdAt: Date
+  val profile: Profile,
+  val createdAt: Instant
 ): SomeChat, NamedChat {
   override val chatType get() = ChatType.ContactRequest
   override val id get() = "<@$contactRequestId"
@@ -276,7 +275,7 @@ class UserContactRequest (
       contactRequestId = 1,
       localDisplayName = "alice",
       profile = Profile.sampleData,
-//      createdAt: Date()
+      createdAt = Clock.System.now()
     )
   }
 }
@@ -298,7 +297,7 @@ class ChatItem (
   val isRcvNew: Boolean get() = meta.itemStatus is CIStatus.RcvNew
 
   companion object {
-    fun getSampleData(id: Long, dir: CIDirection, ts: Date, text: String,status: CIStatus = CIStatus.SndNew()) =
+    fun getSampleData(id: Long, dir: CIDirection, ts: Instant, text: String,status: CIStatus = CIStatus.SndNew()) =
       ChatItem(
         chatDir = dir,
         meta = CIMeta.getSample(id, ts, text, status),
@@ -335,27 +334,27 @@ sealed class CIDirection {
 @Serializable
 class CIMeta (
   val itemId: Long,
-//  val itemTs: Date,
+  val itemTs: Instant,
   val itemText: String,
   val itemStatus: CIStatus,
-//  val createdAt: Date
+  val createdAt: Instant
 ) {
 //  val timestampText: String get() = getTimestampText(itemTs)
 
   companion object {
-    fun getSample(id: Long, ts: Date, text: String, status: CIStatus = CIStatus.SndNew()): CIMeta =
+    fun getSample(id: Long, ts: Instant, text: String, status: CIStatus = CIStatus.SndNew()): CIMeta =
       CIMeta(
         itemId = id,
-//        itemTs = ts,
+        itemTs = ts,
         itemText = text,
         itemStatus = status,
-//        createdAt = ts
+        createdAt = ts
       )
   }
 }
 
 // TODO
-fun getTimestampText(d: Date): String = ""
+fun getTimestampText(d: Instant): String = ""
 
 @Serializable
 sealed class CIStatus {
