@@ -131,8 +131,8 @@ readTerminalOutput t termQ = do
 withTmpFiles :: IO () -> IO ()
 withTmpFiles =
   bracket_
-    (createDirectoryIfMissing False "tests/tmp")
-    (removeDirectoryRecursive "tests/tmp")
+    (createDirectoryIfMissing False "tests")
+    (removeDirectoryRecursive "test")
 
 testChat2' :: (Int, Profile) -> (Int, Profile) -> (TestCC -> TestCC -> IO ()) -> IO ()
 testChat2' (i1, p1) (i2, p2) test = do
