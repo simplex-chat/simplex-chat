@@ -3,16 +3,24 @@ package chat.simplex.app.views
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.ClickableText
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.Text
 import androidx.compose.material.Button
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.AnnotatedString
 import androidx.navigation.*
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import chat.simplex.app.model.*
+import androidx.navigation.navArgument
+import chat.simplex.app.Pages
+import chat.simplex.app.model.ChatModel
+import chat.simplex.app.model.TerminalItem
+import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.chat.SendMsgView
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
@@ -22,16 +30,16 @@ import kotlinx.coroutines.withContext
 @Composable
 fun TerminalPage(chatModel: ChatModel) {
   val navController = rememberNavController()
-  NavHost(navController = navController, startDestination = "terminalView"){
-    composable("terminalView") { TerminalView(chatModel, navController) }
+  NavHost(navController = navController, startDestination = Pages.Terminal.route){
+    composable(Pages.Terminal.route) { TerminalView(chatModel, navController) }
     composable(
-      "details" + "/{_details}",
+      "details" + "/{identifier}",
       arguments=listOf(
-        navArgument("_details"){
-          type = NavType.StringType
+        navArgument("identifier"){
+          type = NavType.LongType
         }
       )
-    ) { entry -> DetailView( entry.arguments?.getString("_details"), navController) }
+    ) { entry -> DetailView( entry.arguments!!.getLong("identifier"), chatModel.terminalItems, navController) }
   }
 }
 
@@ -57,16 +65,18 @@ fun TerminalLog(terminalItems: List<TerminalItem>, navController: NavController)
     items(terminalItems) { item ->
       ClickableText(
         AnnotatedString(item.label),
-        onClick = { navController.navigate("details/${item.details}") }
+        onClick = { navController.navigate("details/${item.id}") }
       )
     }
   }
 }
 
 @Composable
-fun DetailView(details: String?, navController: NavController){
-  Column {
-    Text("$details")
+fun DetailView(identifier: Long, terminalItems: List<TerminalItem>, navController: NavController){
+  Column(
+    modifier=Modifier.verticalScroll(rememberScrollState())
+  ) {
+    Text((terminalItems.filter {it.id == identifier}).first().details)
     Button(onClick = { navController.popBackStack() }) {
       Text("Back")
     }
