@@ -111,34 +111,37 @@ testStressServer :: IO ()
 testStressServer =
   withTmpFiles $ do
     sentTVar <- newTVarIO (0 :: Int)
-    connectedTVar <- newTVarIO (0 :: Int)
+    tcpConnectionsTVar <- newTVarIO (0 :: Int)
+    userConnectionsTVar <- newTVarIO (0 :: Int)
     concurrentlyN_ $
       forever
         ( do
             threadDelay 5000000
             sent <- readTVarIO sentTVar
-            connected <- readTVarIO connectedTVar
-            print $ "connected: " <> show connected <> " -- sent: " <> show sent
+            tcpConnections <- readTVarIO tcpConnectionsTVar
+            userConnections <- readTVarIO userConnectionsTVar
+            print $ "tcpConnections: " <> show tcpConnections <> " -- userConnections: " <> show userConnections <> " -- sent: " <> show sent
         ) :
       map
         ( \i ->
             testChat2' (i * 2 -1, aliceProfile) (i * 2, bobProfile) $
               \alice bob -> do
-                print $ show i <> " - connected +2"
-                atomically $ modifyTVar connectedTVar (+ 2)
+                print $ show i <> " - tcpConnections +2"
+                atomically $ modifyTVar tcpConnectionsTVar (+ 2)
                 connectUsers alice bob
+                print $ show i <> " - userConnections +2"
+                atomically $ modifyTVar userConnectionsTVar (+ 2)
                 loop i alice bob sentTVar 1
         )
-        (take 100 ([1 ..] :: [Int]))
+        (take 25 ([1 ..] :: [Int]))
   where
     loop :: Int -> TestCC -> TestCC -> TVar Int -> Int -> IO ()
     loop i alice bob sentTVar k = do
-      alice `send` "@bob hi"
-      bob `send` "@alice hi"
+      alice <##> bob
       when (k `mod` 100 == 0) $ do
-        print $ show i <> " - +200"
+        print $ show i <> " - sent +200"
         atomically $ modifyTVar sentTVar (+ 200)
-      threadDelay 500000
+      threadDelay 1000000
       loop i alice bob sentTVar $ k + 1
 
 startFileTransfer :: TestCC -> TestCC -> IO ()

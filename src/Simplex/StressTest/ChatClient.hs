@@ -36,7 +36,7 @@ import System.Timeout (timeout)
 import Test.Hspec (Expectation, shouldReturn)
 
 testDBPrefix :: FilePath
-testDBPrefix = "tests/tmp/test"
+testDBPrefix = "test/test"
 
 serverPort :: ServiceName
 serverPort = "5001"
