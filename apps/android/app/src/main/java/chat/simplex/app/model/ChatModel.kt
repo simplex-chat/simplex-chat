@@ -103,3 +103,11 @@ interface NamedChat {
   val chatViewName: String
     get() = displayName + (if (fullName == "" || fullName == displayName) "" else " / $fullName")
 }
+
+class Chat {
+
+}
+
+class ChatItem {
+
+}
