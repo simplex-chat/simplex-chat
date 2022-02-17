@@ -3,6 +3,8 @@ package chat.simplex.app
 import android.app.Application
 import android.net.LocalServerSocket
 import android.util.Log
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import chat.simplex.app.model.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
@@ -35,19 +37,7 @@ class SimplexApp: Application() {
     GlobalScope.launch {
       withContext(Dispatchers.Main) {
         var user = controller.apiGetActiveUser()
-        controller.setCurrentUser(user)
-        if (user == null) {
-          user =  controller.apiCreateActiveUser(Profile("android", "Android test"))
-        }
-        Log.d("SIMPLEX (user)", user.toString())
-        chatModel.currentUser = user
-        try {
-          controller.apiStartChat()
-          Log.d("SIMPLEX", "started chat")
-        } catch(e: Error) {
-          Log.d("SIMPLEX", "failed starting chat $e")
-//      throw e
-        }
+        if (user != null) controller.startChat(user)
       }
     }
   }

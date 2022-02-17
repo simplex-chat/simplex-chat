@@ -14,6 +14,7 @@ import androidx.compose.material.Button
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.Modifier
 import chat.simplex.app.SimplexViewModel
+import chat.simplex.app.model.ChatModel
 import chat.simplex.app.model.Profile
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
@@ -21,7 +22,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 @Composable
-fun WelcomeView(vm: SimplexViewModel, routeHome: () -> Unit) {
+fun WelcomeView(chatModel: ChatModel, routeHome: () -> Unit) {
   Column(
     modifier = Modifier.verticalScroll(rememberScrollState())
   ) {
@@ -33,12 +34,12 @@ fun WelcomeView(vm: SimplexViewModel, routeHome: () -> Unit) {
     Spacer(Modifier.height(8.dp))
     Text("We don't store any of your contacts or messages (once delivered) on the servers.")
     Spacer(Modifier.height(24.dp))
-    CreateProfilePanel(vm, routeHome)
+    CreateProfilePanel(chatModel, routeHome)
   }
 }
 
 @Composable
-fun CreateProfilePanel(vm: SimplexViewModel, routeHome: () -> Unit) {
+fun CreateProfilePanel(chatModel: ChatModel, routeHome: () -> Unit) {
   var displayName by remember { mutableStateOf("") }
   var fullName by remember { mutableStateOf("") }
 
@@ -52,10 +53,10 @@ fun CreateProfilePanel(vm: SimplexViewModel, routeHome: () -> Unit) {
     Button(onClick={
       GlobalScope.launch {
         withContext(Dispatchers.Main) {
-          val user = vm.chatModel.controller.apiCreateActiveUser(
+          val user = chatModel.controller.apiCreateActiveUser(
             Profile(displayName, fullName)
           )
-          vm.chatModel.setCurrentUser(user)
+          chatModel.controller.startChat(user)
           routeHome()
         }
       }

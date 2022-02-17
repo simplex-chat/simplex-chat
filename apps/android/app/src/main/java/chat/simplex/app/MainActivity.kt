@@ -13,9 +13,10 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import chat.simplex.app.views.DetailView
-import chat.simplex.app.views.TerminalView
-import chat.simplex.app.views.WelcomeView
+import chat.simplex.app.model.ChatModel
+import chat.simplex.app.views.*
+import chat.simplex.app.views.chat.ChatView
+import chat.simplex.app.views.chatlist.*
 
 
 class MainActivity: ComponentActivity() {
@@ -25,7 +26,7 @@ class MainActivity: ComponentActivity() {
     super.onCreate(savedInstanceState)
     setContent {
       SimpleXTheme {
-        Navigation(viewModel=viewModel)
+        Navigation(viewModel.chatModel)
       }
     }
   }
@@ -36,18 +37,28 @@ class SimplexViewModel(application: Application) : AndroidViewModel(application)
 }
 
 @Composable
-fun Navigation(viewModel: SimplexViewModel) {
-  val navController = rememberNavController()
+fun Navigation(chatModel: ChatModel) {
+  val nav = rememberNavController()
 
-  NavHost(navController=navController, startDestination=Pages.Home.route){
+  NavHost(navController = nav, startDestination=Pages.Home.route){
     composable(route=Pages.Home.route){
-      MainPage(vm = viewModel, navController = navController)
+      MainPage(chatModel, nav)
     }
     composable(route = Pages.Welcome.route){
-      WelcomeView(vm = viewModel) {navController.navigate(Pages.Home.route) { popUpTo(Pages.Home.route) { inclusive = true }}}
+      WelcomeView(chatModel) {
+        nav.navigate(Pages.Home.route) {
+          popUpTo(Pages.Home.route) { inclusive = true }
+        }
+      }
+    }
+    composable(route = Pages.Chats.route) {
+      ChatListView(chatModel, nav)
+    }
+    composable(route = Pages.Chat.route) {
+      ChatView(chatModel, nav)
     }
     composable(route = Pages.Terminal.route) {
-      TerminalView(chatModel = viewModel.chatModel, navController = navController)
+      TerminalView(chatModel, navController = nav)
     }
     composable(
       Pages.TerminalItemDetails.route + "/{identifier}",
@@ -56,7 +67,7 @@ fun Navigation(viewModel: SimplexViewModel) {
           type = NavType.LongType
         }
       )
-    ) { entry -> DetailView( entry.arguments!!.getLong("identifier"), viewModel.chatModel.terminalItems, navController) }
+    ) { entry -> DetailView( entry.arguments!!.getLong("identifier"), chatModel.terminalItems, nav) }
   }
 }
 
@@ -65,4 +76,6 @@ sealed class Pages(val route: String) {
   object Terminal : Pages("terminal")
   object Welcome : Pages("welcome")
   object TerminalItemDetails : Pages("details")
+  object Chats: Pages("chats")
+  object Chat: Pages("chat")
 }
