@@ -1,13 +1,15 @@
 package chat.simplex.app.model
 
-import androidx.compose.runtime.mutableStateListOf
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
-import java.util.*
+import androidx.compose.runtime.*
+import kotlinx.serialization.*
 
 class ChatModel(val controller: ChatController) {
-  var currentUser: User? = null
+  var currentUser = mutableStateOf<User?>(null)
   var terminalItems = mutableStateListOf<TerminalItem>()
+
+  fun setCurrentUser(u: User?){
+    currentUser = mutableStateOf<User?>(u)
+  }
 
   companion object {
     val sampleData: ChatModel get() {
