@@ -45,7 +45,7 @@ open class ChatController(val ctrl: ChatCtrl) {
         val json = chatRecvMsg(ctrl)
         Log.d("SIMPLEX chatRecvMsg: ", json)
         val r = APIResponse.decodeStr(json)
-        chatModel.terminalItems.add(TerminalItem.Resp(System.currentTimeMillis(), r.resp))
+        chatModel.terminalItems.add(TerminalItem.resp(r.resp))
       }
     }
   }
@@ -53,7 +53,7 @@ open class ChatController(val ctrl: ChatCtrl) {
   suspend fun sendCmd(cmd: CC): CR {
     return withContext(Dispatchers.IO) {
       val c = cmd.cmdString
-      chatModel.terminalItems.add(TerminalItem.Cmd(System.currentTimeMillis(), cmd))
+      chatModel.terminalItems.add(TerminalItem.cmd(cmd))
       val json = chatSendCmd(ctrl, c)
       Log.d("SIMPLEX", "sendCmd: ${cmd.cmdType}")
       val r = APIResponse.decodeStr(json)
@@ -61,7 +61,7 @@ open class ChatController(val ctrl: ChatCtrl) {
       if (r.resp is CR.Response || r.resp is CR.Invalid) {
         Log.d("SIMPLEX", "sendCmd response json $json")
       }
-      chatModel.terminalItems.add(TerminalItem.Resp(System.currentTimeMillis(), r.resp))
+      chatModel.terminalItems.add(TerminalItem.resp(r.resp))
       r.resp
     }
   }
@@ -274,5 +274,8 @@ abstract class TerminalItem {
         TerminalItem.Cmd(0, CC.ShowActiveUser()),
         TerminalItem.Resp(1, CR.ActiveUser(User.sampleData))
     )
+
+    fun cmd(c: CC) = TerminalItem.Cmd(System.currentTimeMillis(), c)
+    fun resp(r: CR) = TerminalItem.Resp(System.currentTimeMillis(), r)
   }
 }
