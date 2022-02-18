@@ -56,6 +56,7 @@ class ChatModel(val controller: ChatController) {
       if (cItem.meta.itemStatus is CIStatus.RcvNew) {
         chat.chatStats.unreadCount = chat.chatStats.unreadCount + 1
       }
+      chats.set(i, chat.copy())
       if (i > 0) {
         popChat_(i)
       }
@@ -214,6 +215,7 @@ class Chat (
   val serverInfo: ServerInfo = ServerInfo(NetworkStatus.Unknown())
 ) {
   val id: String get() = chatInfo.id
+  fun copy(): Chat = Chat(chatInfo, chatItems, chatStats, serverInfo)
 
   @Serializable
   class ChatStats(var unreadCount: Int = 0, val minUnreadItemId: Long = 0)
