@@ -50,7 +50,7 @@ fun ChatListView(chatModel: ChatModel, nav: NavController) {
     scaffoldState = newChatCtrl.state,
     sheetPeekHeight = 0.dp,
     sheetContent = {
-      NewChatSheet(newChatCtrl, nav)
+      NewChatSheet(chatModel, newChatCtrl, nav)
     }
   ) {
     Column(modifier = Modifier

@@ -55,15 +55,15 @@ fun Navigation(chatModel: ChatModel) {
         }
       }
     }
-    composable(route = Pages.Chats.route) {
+    composable(route = Pages.ChatList.route) {
       ChatListView(chatModel, nav)
     }
     composable(route = Pages.Chat.route) {
       ChatView(chatModel, nav)
     }
-//    composable(route = Pages.AddContact.route) {
-//      AddContactView()
-//    }
+    composable(route = Pages.AddContact.route) {
+      AddContactView(chatModel, nav)
+    }
     composable(route = Pages.Terminal.route) {
       TerminalView(chatModel, navController = nav)
     }
@@ -83,7 +83,7 @@ sealed class Pages(val route: String) {
   object Terminal : Pages("terminal")
   object Welcome : Pages("welcome")
   object TerminalItemDetails : Pages("details")
-  object Chats: Pages("chats")
+  object ChatList: Pages("chats")
   object Chat: Pages("chat")
   object AddContact: Pages("add_contact")
 }

@@ -12,7 +12,7 @@ import chat.simplex.app.views.chatlist.ChatListView
 @Composable
 fun MainPage(chatModel: ChatModel, nav: NavController) {
   if (chatModel.currentUser.value == null) WelcomeView(chatModel) {
-    nav.navigate(Pages.Chats.route)
+    nav.navigate(Pages.ChatList.route)
   }
   else ChatListView(chatModel, nav)
 }

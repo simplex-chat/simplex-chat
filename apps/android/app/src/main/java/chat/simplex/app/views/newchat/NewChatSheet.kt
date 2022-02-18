@@ -12,15 +12,30 @@ import androidx.compose.ui.modifier.modifierLocalConsumer
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import chat.simplex.app.Pages
+import chat.simplex.app.model.ChatController
+import chat.simplex.app.model.ChatModel
 import chat.simplex.app.views.chatlist.ScaffoldController
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @ExperimentalMaterialApi
 @Composable
-fun NewChatSheet(newChatCtrl: ScaffoldController, nav: NavController) {
+fun NewChatSheet(chatModel: ChatModel, newChatCtrl: ScaffoldController, nav: NavController) {
   Column ( Modifier.padding(all = 8.dp) ) {
     Button(onClick = {
-      newChatCtrl.collapse()
-      nav.navigate(Pages.Chat.route)
+      GlobalScope.launch {
+        withContext(Dispatchers.Main) {
+//          show spinner
+          chatModel.connReqInvitation = chatModel.controller.apiAddContact()
+//          hide spinner
+          if (chatModel.connReqInvitation != null) {
+            newChatCtrl.collapse()
+            nav.navigate(Pages.AddContact.route)
+          }
+        }
+      }
     }) {
       Text("Add contact")
     }
