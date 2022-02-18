@@ -1,9 +1,12 @@
 package chat.simplex.app.views.chatlist
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.Button
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
@@ -25,13 +28,13 @@ import kotlinx.coroutines.withContext
 
 @Composable
 fun ChatListView(chatModel: ChatModel, navController: NavController) {
-  Column(modifier = Modifier.padding(all = 8.dp)) {
-    ChatListToolbar()
-    Button (onClick = { navController.navigate(Pages.Terminal.route) }) {
-      Text("Terminal")
+    Column(modifier = Modifier.padding(all = 8.dp)) {
+      ChatListToolbar()
+      ChatList(chatModel, navController)
+      Button(onClick = { navController.navigate(Pages.Terminal.route) }) {
+        Text("Terminal")
+      }
     }
-    ChatList(chatModel, navController)
-  }
 }
 
 @Composable
@@ -39,30 +42,33 @@ fun ChatListToolbar() {
   Text("ChatListToolbar")
 }
 
-@Composable
-fun ChatList(chatModel: ChatModel, navController: NavController) {
-  LazyColumn {
-    items(chatModel.chats) { chat ->
-      Button(onClick = {
-        GlobalScope.launch {
-          withContext(Dispatchers.Main) {
-            val cInfo = chat.chatInfo
-            val chat = chatModel.controller.apiGetChat(cInfo.chatType, cInfo.apiId)
-            if (chat != null ) {
-              chatModel.chatId = mutableStateOf(cInfo.id)
-              chatModel.chatItems = chat.chatItems.toMutableStateList()
-              navController.navigate(Pages.Chat.route)
-            } else {
-              // TODO show error? or will apiGetChat show it
-            }
-          }
-        }
-      }) {
-        ChatPreviewView(chat)
+fun goToChat(chat: Chat, chatModel: ChatModel, navController: NavController) {
+  GlobalScope.launch {
+    withContext(Dispatchers.Main) {
+      val cInfo = chat.chatInfo
+      val chat = chatModel.controller.apiGetChat(cInfo.chatType, cInfo.apiId)
+      if (chat != null ) {
+        chatModel.chatId = mutableStateOf(cInfo.id)
+        chatModel.chatItems = chat.chatItems.toMutableStateList()
+        navController.navigate(Pages.Chat.route)
+      } else {
+        // TODO show error? or will apiGetChat show it
       }
     }
   }
 }
+
+@Composable
+fun ChatList(chatModel: ChatModel, navController: NavController) {
+  LazyColumn(
+    modifier=Modifier.fillMaxWidth()
+  ) {
+    items(chatModel.chats) { chat ->
+      ChatPreviewView(chat) {goToChat(chat, chatModel, navController)}
+    }
+  }
+}
+
 
 //@Preview
 //@Composable
