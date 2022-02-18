@@ -43,9 +43,10 @@ open class ChatController(val ctrl: ChatCtrl) {
 //            val chatlog = FifoQueue<String>(500)
       while(true) {
         val json = chatRecvMsg(ctrl)
-        Log.d("SIMPLEX chatRecvMsg: ", json)
-        val r = APIResponse.decodeStr(json)
-        chatModel.terminalItems.add(TerminalItem.resp(r.resp))
+        val r = APIResponse.decodeStr(json).resp
+        Log.d("SIMPLEX", "chatRecvMsg: ${r.responseType}")
+        if (r is CR.Response || r is CR.Invalid) Log.d("SIMPLEX", "chatRecvMsg json: $json")
+        processReceivedMsg(r)
       }
     }
   }
@@ -104,6 +105,71 @@ open class ChatController(val ctrl: ChatCtrl) {
     if (r is CR.NewChatItem ) return r.chatItem
     Log.d("SIMPLEX", "apiSendMessage bad response: ${r.toString()}")
     return null
+  }
+
+  fun processReceivedMsg(r: CR) {
+    chatModel.terminalItems.add(TerminalItem.resp(r))
+    when {
+//      r is CR.ContactConnected -> return
+//      r is CR.UpdateNetworkStatus -> return
+//      r is CR.ReceivedContactRequest -> return
+//      r is CR.ContactUpdated -> return
+//      r is CR.ContactSubscribed -> return
+//      r is CR.ContactSubError -> return
+//      r is CR.UpdateContact -> return
+      r is CR.NewChatItem -> {
+        val cInfo = r.chatItem.chatInfo
+        val cItem = r.chatItem.chatItem
+        chatModel.addChatItem(cInfo, cItem)
+      }
+//        NtfManager.shared.notifyMessageReceived(cInfo, cItem)
+
+//      switch res {
+//        case let .contactConnected(contact):
+//          chatModel.updateContact(contact)
+//        chatModel.updateNetworkStatus(contact, .connected)
+//          NtfManager.shared.notifyContactConnected(contact)
+//        case let .receivedContactRequest(contactRequest):
+  //        chatModel.addChat(Chat(
+  //          chatInfo: ChatInfo.contactRequest(contactRequest: contactRequest),
+  //        chatItems: []
+  //        ))
+//          NtfManager.shared.notifyContactRequest(contactRequest)
+//        case let .contactUpdated(toContact):
+  //        let cInfo = ChatInfo.direct(contact: toContact)
+  //        if chatModel.hasChat(toContact.id) {
+  //          chatModel.updateChatInfo(cInfo)
+  //        }
+//        case let .contactSubscribed(contact):
+  //        chatModel.updateContact(contact)
+  //        chatModel.updateNetworkStatus(contact, .connected)
+  //        case let .contactDisconnected(contact):
+  //        chatModel.updateContact(contact)
+  //        chatModel.updateNetworkStatus(contact, .disconnected)
+//        case let .contactSubError(contact, chatError):
+//        chatModel.updateContact(contact)
+////        var err: String
+////        switch chatError {
+////          case .errorAgent(agentError: .BROKER(brokerErr: .NETWORK)): err = "network"
+////          case .errorAgent(agentError: .SMP(smpErr: .AUTH)): err = "contact deleted"
+////          default: err = String(describing: chatError)
+////        }
+////        chatModel.updateNetworkStatus(contact, .error(err))
+//        case let .newChatItem(aChatItem):
+  //        let cInfo = aChatItem.chatInfo
+  //            let cItem = aChatItem.chatItem
+  //            chatModel.addChatItem(cInfo, cItem)
+  //        NtfManager.shared.notifyMessageReceived(cInfo, cItem)
+//        case let .chatItemUpdated(aChatItem):
+  //        let cInfo = aChatItem.chatInfo
+  //            let cItem = aChatItem.chatItem
+  //            if chatModel.upsertChatItem(cInfo, cItem) {
+  //              NtfManager.shared.notifyMessageReceived(cInfo, cItem)
+  //            }
+//        default:
+//        logger.debug("unsupported event: \(res.responseType)")
+//      }
+    }
   }
 
   class Mock: ChatController(0) {}

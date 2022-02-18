@@ -12,6 +12,143 @@ class ChatModel(val controller: ChatController) {
 
   var terminalItems = mutableStateListOf<TerminalItem>()
 
+  fun hasChat(id: String): Boolean = chats.firstOrNull() { it.id == id } != null
+  fun getChat(id: String): Chat? = chats.firstOrNull { it.id == id }
+  private fun getChatIndex(id: String): Int = chats.indexOfFirst { it.id == id }
+  fun addChat(chat: Chat) = chats.add(index = 0, chat)
+
+//  func updateChatInfo(_ cInfo: ChatInfo) {
+//    if let i = getChatIndex(cInfo.id) {
+//      chats[i].chatInfo = cInfo
+//    }
+//  }
+//
+//  func updateContact(_ contact: Contact) {
+//    let cInfo = ChatInfo.direct(contact: contact)
+//    if hasChat(contact.id) {
+//      updateChatInfo(cInfo)
+//    } else {
+//      addChat(Chat(chatInfo: cInfo, chatItems: []))
+//    }
+//  }
+//
+//  func updateNetworkStatus(_ contact: Contact, _ status: Chat.NetworkStatus) {
+//    if let ix = getChatIndex(contact.id) {
+//      chats[ix].serverInfo.networkStatus = status
+//    }
+//  }
+//
+//  func replaceChat(_ id: String, _ chat: Chat) {
+//    if let i = getChatIndex(id) {
+//      chats[i] = chat
+//    } else {
+//      // invalid state, correcting
+//      chats.insert(chat, at: 0)
+//    }
+//  }
+
+  fun addChatItem(cInfo: ChatInfo, cItem: ChatItem) {
+    // update previews
+    val i = getChatIndex(cInfo.id)
+    if (i >= 0) {
+      val chat = chats[i]
+      chat.chatItems = arrayListOf(cItem)
+      if (cItem.meta.itemStatus is CIStatus.RcvNew) {
+        chat.chatStats.unreadCount = chat.chatStats.unreadCount + 1
+      }
+      if (i > 0) {
+        popChat_(i)
+      }
+    } else {
+      addChat(Chat(chatInfo = cInfo, chatItems = arrayListOf(cItem)))
+    }
+    // add to current chat
+    if (chatId.value == cInfo.id) {
+      chatItems.add(cItem)
+      if (cItem.meta.itemStatus is CIStatus.RcvNew) {
+        // TODO mark item read via api and model
+//        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+//          if self.chatId == cInfo.id {
+//            SimpleX.markChatItemRead(cInfo, cItem)
+//          }
+//        }
+      }
+    }
+  }
+//
+//  func upsertChatItem(_ cInfo: ChatInfo, _ cItem: ChatItem) -> Bool {
+//    // update previews
+//    var res: Bool
+//    if let chat = getChat(cInfo.id) {
+//      if let pItem = chat.chatItems.last, pItem.id == cItem.id {
+//      chat.chatItems = [cItem]
+//    }
+//      res = false
+//    } else {
+//      addChat(Chat(chatInfo: cInfo, chatItems: [cItem]))
+//      res = true
+//    }
+//    // update current chat
+//    if chatId == cInfo.id {
+//      if let i = chatItems.firstIndex(where: { $0.id == cItem.id }) {
+//      withAnimation(.default) {
+//      self.chatItems[i] = cItem
+//    }
+//      return false
+//    } else {
+//      withAnimation { chatItems.append(cItem) }
+//      return true
+//    }
+//    } else {
+//      return res
+//    }
+//  }
+//
+//  func markChatItemsRead(_ cInfo: ChatInfo) {
+//    // update preview
+//    if let chat = getChat(cInfo.id) {
+//      chat.chatStats = ChatStats()
+//    }
+//    // update current chat
+//    if chatId == cInfo.id {
+//      var i = 0
+//      while i < chatItems.count {
+//        if case .rcvNew = chatItems[i].meta.itemStatus {
+//          chatItems[i].meta.itemStatus = .rcvRead
+//        }
+//        i = i + 1
+//      }
+//    }
+//  }
+//
+//  func markChatItemRead(_ cInfo: ChatInfo, _ cItem: ChatItem) {
+//    // update preview
+//    if let i = getChatIndex(cInfo.id) {
+//      chats[i].chatStats.unreadCount = chats[i].chatStats.unreadCount - 1
+//    }
+//    // update current chat
+//    if chatId == cInfo.id, let j = chatItems.firstIndex(where: { $0.id == cItem.id }) {
+//      chatItems[j].meta.itemStatus = .rcvRead
+//    }
+//  }
+//
+//  func popChat(_ id: String) {
+//    if let i = getChatIndex(id) {
+//      popChat_(i)
+//    }
+//  }
+//
+  private fun popChat_(i: Int) {
+    val chat = chats.removeAt(i)
+    chats.add(index = 0, chat)
+  }
+//
+//  func removeChat(_ id: String) {
+//    withAnimation {
+//      chats.removeAll(where: { $0.id == id })
+//    }
+//  }
+
   companion object {
     val sampleData: ChatModel get() {
       val m = ChatModel(ChatController.Mock())
@@ -72,15 +209,14 @@ interface SomeChat {
 @Serializable
 class Chat (
   val chatInfo: ChatInfo,
-  val chatItems: List<ChatItem>,
-  val chatStats: ChatStats,
+  var chatItems: List<ChatItem>,
+  val chatStats: ChatStats = ChatStats(),
   val serverInfo: ServerInfo = ServerInfo(NetworkStatus.Unknown())
 ) {
+  val id: String get() = chatInfo.id
 
   @Serializable
-  class ChatStats {
-
-  }
+  class ChatStats(var unreadCount: Int = 0, val minUnreadItemId: Long = 0)
 
   @Serializable
   class ServerInfo(val networkStatus: NetworkStatus)
