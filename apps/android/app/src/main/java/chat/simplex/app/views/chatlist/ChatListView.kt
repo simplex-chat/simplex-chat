@@ -55,7 +55,7 @@ fun ChatListView(chatModel: ChatModel, nav: NavController) {
   ) {
     Column(modifier = Modifier
       .padding(vertical = 8.dp)
-      .fillMaxWidth()
+      .fillMaxSize()
       .background(MaterialTheme.colors.background)
     ) {
       ChatListToolbar(newChatCtrl)
@@ -87,7 +87,7 @@ fun ChatListToolbar(newChatSheetCtrl: ScaffoldController) {
     )
     Text(
       "Your chats",
-      color=MaterialTheme.colors.onBackground,
+      color = MaterialTheme.colors.onBackground,
       fontWeight = FontWeight.Bold,
       modifier = Modifier.padding(5.dp)
     )

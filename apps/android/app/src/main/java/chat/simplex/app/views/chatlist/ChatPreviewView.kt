@@ -48,8 +48,8 @@ fun getDisplayTime(t: Instant) : String {
 @Composable
 fun ChatPreviewView(chat: Chat, goToChat: () -> Unit) {
   Surface(
-    border=BorderStroke(0.5.dp, MaterialTheme.colors.secondary),
-    modifier= Modifier
+    border = BorderStroke(0.5.dp, MaterialTheme.colors.secondary),
+    modifier = Modifier
       .fillMaxWidth()
       .clickable(onClick = goToChat)
       .height(80.dp)
@@ -57,7 +57,7 @@ fun ChatPreviewView(chat: Chat, goToChat: () -> Unit) {
     Row(
       modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp),
     ) {
-      Column(verticalArrangement=Arrangement.Center, modifier=Modifier.fillMaxHeight()) {
+      Column(verticalArrangement = Arrangement.Center, modifier = Modifier.fillMaxHeight()) {
         Icon(
           Icons.Filled.Person,
           contentDescription = "Avatar Placeholder",
@@ -71,7 +71,7 @@ fun ChatPreviewView(chat: Chat, goToChat: () -> Unit) {
       }
       Spacer(modifier = Modifier.width(6.dp))
       Column(modifier = Modifier.padding(all = 8.dp)) {
-        Row(horizontalArrangement=Arrangement.SpaceBetween, modifier=Modifier.fillMaxWidth()) {
+        Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
           Text(chat.chatInfo.chatViewName, fontWeight = FontWeight.Bold)
           (
             if (chat.chatItems.count() > 0) {

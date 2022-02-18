@@ -15,7 +15,7 @@ import kotlin.concurrent.thread
 
 typealias ChatCtrl = Long
 
-sealed class ChatController(val ctrl: ChatCtrl) {
+open class ChatController(val ctrl: ChatCtrl) {
   var chatModel = ChatModel(this)
 
   suspend fun startChat(u: User) {
