@@ -1,7 +1,6 @@
 package chat.simplex.app.views.chatlist
 
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.Button
@@ -15,54 +14,80 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import chat.simplex.app.Pages
 import chat.simplex.app.model.*
-import chat.simplex.app.ui.theme.SimpleXTheme
-import chat.simplex.app.views.TerminalView
-import chat.simplex.app.views.chat.SendMsgView
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import androidx.compose.material.Icon
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.text.font.FontWeight
 
 @Composable
 fun ChatListView(chatModel: ChatModel, navController: NavController) {
-  Column(modifier = Modifier.padding(all = 8.dp)) {
-    ChatListToolbar()
-    Button (onClick = { navController.navigate(Pages.Terminal.route) }) {
-      Text("Terminal")
+    Column(modifier = Modifier.padding(vertical = 8.dp).fillMaxWidth()) {
+      ChatListToolbar()
+      ChatList(chatModel, navController)
+      Button(
+        onClick = { navController.navigate(Pages.Terminal.route) },
+        modifier = Modifier.padding(14.dp)
+      ) {
+        Text("Terminal")
+      }
     }
-    ChatList(chatModel, navController)
-  }
 }
 
 @Composable
 fun ChatListToolbar() {
-  Text("ChatListToolbar")
+  Row(
+    horizontalArrangement = Arrangement.SpaceBetween,
+    verticalAlignment = Alignment.CenterVertically,
+    modifier = Modifier
+      .fillMaxWidth()
+      .height(40.dp)) {
+    Icon(
+      Icons.Outlined.Settings,
+      "Settings Cog",
+      modifier = Modifier.padding(horizontal = 10.dp)
+    )
+    Text("Your chats", fontWeight = FontWeight.Bold, modifier = Modifier.padding(5.dp))
+    Icon(
+      Icons.Outlined.PersonAdd,
+      "Add Contact",
+      modifier = Modifier.padding(horizontal = 10.dp)
+    )
+  }
 }
 
-@Composable
-fun ChatList(chatModel: ChatModel, navController: NavController) {
-  LazyColumn {
-    items(chatModel.chats) { chat ->
-      Button(onClick = {
-        GlobalScope.launch {
-          withContext(Dispatchers.Main) {
-            val cInfo = chat.chatInfo
-            val chat = chatModel.controller.apiGetChat(cInfo.chatType, cInfo.apiId)
-            if (chat != null ) {
-              chatModel.chatId = mutableStateOf(cInfo.id)
-              chatModel.chatItems = chat.chatItems.toMutableStateList()
-              navController.navigate(Pages.Chat.route)
-            } else {
-              // TODO show error? or will apiGetChat show it
-            }
-          }
-        }
-      }) {
-        ChatPreviewView(chat)
+
+fun goToChat(chat: Chat, chatModel: ChatModel, navController: NavController) {
+  GlobalScope.launch {
+    withContext(Dispatchers.Main) {
+      val cInfo = chat.chatInfo
+      val chat = chatModel.controller.apiGetChat(cInfo.chatType, cInfo.apiId)
+      if (chat != null ) {
+        chatModel.chatId = mutableStateOf(cInfo.id)
+        chatModel.chatItems = chat.chatItems.toMutableStateList()
+        navController.navigate(Pages.Chat.route)
+      } else {
+        // TODO show error? or will apiGetChat show it
       }
     }
   }
 }
+
+@Composable
+fun ChatList(chatModel: ChatModel, navController: NavController) {
+  LazyColumn(
+    modifier = Modifier.fillMaxWidth()
+  ) {
+    items(chatModel.chats) { chat ->
+      ChatPreviewView(chat) {goToChat(chat, chatModel, navController)}
+    }
+  }
+}
+
 
 //@Preview
 //@Composable
