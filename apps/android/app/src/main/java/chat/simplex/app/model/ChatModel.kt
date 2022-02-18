@@ -212,27 +212,16 @@ interface SomeChat {
 }
 
 @Serializable
-class Chat (
+data class Chat (
   val chatInfo: ChatInfo,
   val chatItems: List<ChatItem>,
   val chatStats: ChatStats = ChatStats(),
   val serverInfo: ServerInfo = ServerInfo(NetworkStatus.Unknown())
 ) {
   val id: String get() = chatInfo.id
-  fun copy(
-    chatInfo: ChatInfo = this.chatInfo,
-    chatItems: List<ChatItem> = this.chatItems,
-    chatStats: ChatStats = this.chatStats,
-    serverInfo: ServerInfo = this.serverInfo
-  ): Chat = Chat(chatInfo, chatItems, chatStats, serverInfo)
 
   @Serializable
-  class ChatStats(val unreadCount: Int = 0, val minUnreadItemId: Long = 0) {
-    fun copy(
-      unreadCount: Int = this.unreadCount,
-      minUnreadItemId: Long = this.minUnreadItemId
-    ): ChatStats = ChatStats(unreadCount, minUnreadItemId)
-  }
+  data class ChatStats(val unreadCount: Int = 0, val minUnreadItemId: Long = 0)
 
   @Serializable
   class ServerInfo(val networkStatus: NetworkStatus)
