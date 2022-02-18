@@ -52,11 +52,15 @@ class ChatModel(val controller: ChatController) {
     val i = getChatIndex(cInfo.id)
     if (i >= 0) {
       val chat = chats[i]
-      chat.chatItems = arrayListOf(cItem)
-      if (cItem.meta.itemStatus is CIStatus.RcvNew) {
-        chat.chatStats.unreadCount = chat.chatStats.unreadCount + 1
-      }
-      chats.set(i, chat.copy())
+      val updatedChat = chat.copy(
+        chatItems = arrayListOf(cItem),
+        chatStats =
+          if (cItem.meta.itemStatus is CIStatus.RcvNew)
+            chat.chatStats.copy(unreadCount = chat.chatStats.unreadCount + 1)
+          else
+            chat.chatStats
+      )
+      chats.set(i, updatedChat)
       if (i > 0) {
         popChat_(i)
       }
@@ -210,15 +214,25 @@ interface SomeChat {
 @Serializable
 class Chat (
   val chatInfo: ChatInfo,
-  var chatItems: List<ChatItem>,
+  val chatItems: List<ChatItem>,
   val chatStats: ChatStats = ChatStats(),
   val serverInfo: ServerInfo = ServerInfo(NetworkStatus.Unknown())
 ) {
   val id: String get() = chatInfo.id
-  fun copy(): Chat = Chat(chatInfo, chatItems, chatStats, serverInfo)
+  fun copy(
+    chatInfo: ChatInfo = this.chatInfo,
+    chatItems: List<ChatItem> = this.chatItems,
+    chatStats: ChatStats = this.chatStats,
+    serverInfo: ServerInfo = this.serverInfo
+  ): Chat = Chat(chatInfo, chatItems, chatStats, serverInfo)
 
   @Serializable
-  class ChatStats(var unreadCount: Int = 0, val minUnreadItemId: Long = 0)
+  class ChatStats(val unreadCount: Int = 0, val minUnreadItemId: Long = 0) {
+    fun copy(
+      unreadCount: Int = this.unreadCount,
+      minUnreadItemId: Long = this.minUnreadItemId
+    ): ChatStats = ChatStats(unreadCount, minUnreadItemId)
+  }
 
   @Serializable
   class ServerInfo(val networkStatus: NetworkStatus)
