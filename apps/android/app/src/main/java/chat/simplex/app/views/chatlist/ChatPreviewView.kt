@@ -22,16 +22,16 @@ import androidx.compose.ui.text.font.*
 import chat.simplex.app.ui.theme.SimpleXTheme
 
 @Composable
-fun ChatPreviewView(chat: Chat, onClick: () -> Unit) {
+fun ChatPreviewView(chat: Chat, goToChat: () -> Unit) {
   Surface(
     border=BorderStroke(0.5.dp, MaterialTheme.colors.secondaryVariant),
     modifier= Modifier
       .fillMaxWidth()
-      .clickable(onClick = onClick)
+      .clickable(onClick = goToChat)
 
   ) {
     Row(
-      modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp),
+      modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp),
       verticalAlignment = Alignment.CenterVertically
     ) {
 
@@ -39,6 +39,7 @@ fun ChatPreviewView(chat: Chat, onClick: () -> Unit) {
         Icons.Filled.Person,
         contentDescription = "Avatar Placeholder",
         modifier = Modifier
+          .size(30.dp)
           .clip(CircleShape)
           .border(1.5.dp, MaterialTheme.colors.secondary, CircleShape)
       )
@@ -64,7 +65,7 @@ fun ChatPreviewViewExample() {
         chatItems = listOf(),
         chatStats = Chat.ChatStats()
       ),
-      onClick = {}
+      goToChat = {}
     )
   }
 }
