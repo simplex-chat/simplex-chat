@@ -58,7 +58,12 @@ fun ChatListToolbar() {
       tint = MaterialTheme.colors.primary,
       modifier = Modifier.padding(horizontal = 10.dp)
     )
-    Text("Your chats", fontWeight = FontWeight.Bold, modifier = Modifier.padding(5.dp))
+    Text(
+      "Your chats",
+      color=MaterialTheme.colors.onBackground,
+      fontWeight = FontWeight.Bold,
+      modifier = Modifier.padding(5.dp)
+    )
     Icon(
       Icons.Outlined.PersonAdd,
       "Add Contact",
