@@ -35,7 +35,7 @@ fun ChatView(chatModel: ChatModel, nav: NavController) {
               mc = MsgContent.MCText(msg)
             )
             // hide "in progress"
-            // TODO add new item
+            if (newItem != null) chatModel.addChatItem(cInfo, newItem.chatItem)
           }
         }
       })

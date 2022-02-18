@@ -35,7 +35,7 @@ import Simplex.Chat.Util (eitherToMaybe, safeDecodeUtf8)
 import Simplex.Messaging.Agent.Protocol (AgentErrorType, AgentMsgId, MsgMeta (..))
 import Simplex.Messaging.Agent.Store.SQLite (fromTextField_)
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Parsers (dropPrefix, enumJSON, sumTypeJSON)
+import Simplex.Messaging.Parsers (dropPrefix, enumJSON, singleFieldJSON, sumTypeJSON)
 import Simplex.Messaging.Protocol (MsgBody)
 import Simplex.Messaging.Util ((<$?>))
 
@@ -302,20 +302,25 @@ ciContentToText = \case
   CISndFileInvitation fId fPath -> "you sent file #" <> T.pack (show fId) <> ": " <> T.pack fPath
   CIRcvFileInvitation RcvFileTransfer {fileInvitation = FileInvitation {fileName}} -> "file " <> T.pack fileName
 
+-- platform independent
 instance ToField (CIContent d) where
-  toField = toField . safeDecodeUtf8 . LB.toStrict . J.encode
+  toField = toField . safeDecodeUtf8 . LB.toStrict . J.encode . dbJsonCIContent
 
+-- platform specific
 instance ToJSON (CIContent d) where
   toJSON = J.toJSON . jsonCIContent
   toEncoding = J.toEncoding . jsonCIContent
 
 data ACIContent = forall d. ACIContent (SMsgDirection d) (CIContent d)
 
+-- platform specific
 instance FromJSON ACIContent where
   parseJSON = fmap aciContentJSON . J.parseJSON
 
-instance FromField ACIContent where fromField = fromTextField_ $ J.decode . LB.fromStrict . encodeUtf8
+-- platform independent
+instance FromField ACIContent where fromField = fromTextField_ $ fmap aciContentDBJSON . J.decode . LB.fromStrict . encodeUtf8
 
+-- platform specific
 data JSONCIContent
   = JCISndMsgContent {msgContent :: MsgContent}
   | JCIRcvMsgContent {msgContent :: MsgContent}
@@ -343,6 +348,35 @@ aciContentJSON = \case
   JCIRcvMsgContent mc -> ACIContent SMDRcv $ CIRcvMsgContent mc
   JCISndFileInvitation fId fPath -> ACIContent SMDSnd $ CISndFileInvitation fId fPath
   JCIRcvFileInvitation ft -> ACIContent SMDRcv $ CIRcvFileInvitation ft
+
+-- platform independent
+data DBJSONCIContent
+  = DBJCISndMsgContent {msgContent :: MsgContent}
+  | DBJCIRcvMsgContent {msgContent :: MsgContent}
+  | DBJCISndFileInvitation {fileId :: FileTransferId, filePath :: FilePath}
+  | DBJCIRcvFileInvitation {rcvFileTransfer :: RcvFileTransfer}
+  deriving (Generic)
+
+instance FromJSON DBJSONCIContent where
+  parseJSON = J.genericParseJSON . singleFieldJSON $ dropPrefix "DBJCI"
+
+instance ToJSON DBJSONCIContent where
+  toJSON = J.genericToJSON . singleFieldJSON $ dropPrefix "DBJCI"
+  toEncoding = J.genericToEncoding . singleFieldJSON $ dropPrefix "DBJCI"
+
+dbJsonCIContent :: CIContent d -> DBJSONCIContent
+dbJsonCIContent = \case
+  CISndMsgContent mc -> DBJCISndMsgContent mc
+  CIRcvMsgContent mc -> DBJCIRcvMsgContent mc
+  CISndFileInvitation fId fPath -> DBJCISndFileInvitation fId fPath
+  CIRcvFileInvitation ft -> DBJCIRcvFileInvitation ft
+
+aciContentDBJSON :: DBJSONCIContent -> ACIContent
+aciContentDBJSON = \case
+  DBJCISndMsgContent mc -> ACIContent SMDSnd $ CISndMsgContent mc
+  DBJCIRcvMsgContent mc -> ACIContent SMDRcv $ CIRcvMsgContent mc
+  DBJCISndFileInvitation fId fPath -> ACIContent SMDSnd $ CISndFileInvitation fId fPath
+  DBJCIRcvFileInvitation ft -> ACIContent SMDRcv $ CIRcvFileInvitation ft
 
 data SChatType (c :: ChatType) where
   SCTDirect :: SChatType 'CTDirect

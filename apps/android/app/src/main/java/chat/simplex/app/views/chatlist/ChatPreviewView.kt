@@ -24,7 +24,6 @@ import chat.simplex.app.ui.theme.SimpleXTheme
 import kotlinx.datetime.Instant
 import kotlinx.datetime.toJavaInstant
 import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 import java.time.Instant as JavaInstant
 import java.util.*
 
