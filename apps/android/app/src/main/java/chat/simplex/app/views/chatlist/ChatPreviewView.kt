@@ -48,7 +48,7 @@ fun ChatPreviewView(chat: Chat, goToChat: () -> Unit) {
       Column(modifier = Modifier.padding(all = 8.dp)) {
         Text(chat.chatInfo.chatViewName, fontWeight = FontWeight.Bold)
         if (chat.chatItems.count() > 0) {
-          Text(chat.chatItems.last().content.text, fontStyle = FontStyle.Italic)
+          Text(chat.chatItems.last().content.text)
         }
       }
     }
