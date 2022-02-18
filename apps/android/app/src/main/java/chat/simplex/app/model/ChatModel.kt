@@ -209,6 +209,7 @@ interface SomeChat {
   val id: ChatId
   val apiId: Long
   val ready: Boolean
+  val createdAt: Instant
 }
 
 @Serializable
@@ -250,6 +251,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
     override val id get() = contact.id
     override val apiId get() = contact.apiId
     override val ready get() = contact.ready
+    override val createdAt get() = contact.createdAt
     override val displayName get() = contact.displayName
     override val fullName get() = contact.displayName
 
@@ -265,6 +267,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
     override val id get() = groupInfo.id
     override val apiId get() = groupInfo.apiId
     override val ready get() = groupInfo.ready
+    override val createdAt get() = groupInfo.createdAt
     override val displayName get() = groupInfo.displayName
     override val fullName get() = groupInfo.displayName
 
@@ -280,6 +283,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
     override val id get() = contactRequest.id
     override val apiId get() = contactRequest.apiId
     override val ready get() = contactRequest.ready
+    override val createdAt get() = contactRequest.createdAt
     override val displayName get() = contactRequest.displayName
     override val fullName get() = contactRequest.displayName
 
@@ -296,7 +300,7 @@ class Contact(
   val profile: Profile,
   val activeConn: Connection,
   val viaGroup: Long? = null,
-  val createdAt: Instant
+  override val createdAt: Instant
 ): SomeChat, NamedChat {
   override val chatType get() = ChatType.Direct
   override val id get() = "@$contactId"
@@ -341,7 +345,7 @@ class GroupInfo (
   val groupId: Long,
   override val localDisplayName: String,
   val groupProfile: GroupProfile,
-  val createdAt: Instant
+  override val createdAt: Instant
 ): SomeChat, NamedChat {
   override val chatType get() = ChatType.Group
   override val id get() = "#$groupId"
@@ -402,7 +406,7 @@ class UserContactRequest (
   val contactRequestId: Long,
   override val localDisplayName: String,
   val profile: Profile,
-  val createdAt: Instant
+  override val createdAt: Instant
 ): SomeChat, NamedChat {
   override val chatType get() = ChatType.ContactRequest
   override val id get() = "<@$contactRequestId"

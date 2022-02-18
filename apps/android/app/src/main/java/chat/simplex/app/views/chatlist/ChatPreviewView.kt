@@ -75,7 +75,7 @@ fun ChatPreviewView(chat: Chat, goToChat: () -> Unit) {
             if (chat.chatItems.count() > 0) {
               Text(getDisplayTime(chat.chatItems.last().meta.itemTs))
             }
-            else Text("")  // TODO
+            else Text(getDisplayTime(chat.chatInfo.createdAt))
           )
         }
         if (chat.chatItems.count() > 0) {
