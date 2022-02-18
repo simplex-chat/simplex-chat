@@ -28,7 +28,6 @@ fun ChatPreviewView(chat: Chat, goToChat: () -> Unit) {
     modifier= Modifier
       .fillMaxWidth()
       .clickable(onClick = goToChat)
-
   ) {
     Row(
       modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp),

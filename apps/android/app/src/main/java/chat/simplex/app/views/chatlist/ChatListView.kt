@@ -1,45 +1,69 @@
 package chat.simplex.app.views.chatlist
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.Button
-import androidx.compose.material.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.toMutableStateList
+import androidx.compose.material.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import chat.simplex.app.Pages
 import chat.simplex.app.model.*
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import androidx.compose.material.Icon
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.font.FontWeight
+import chat.simplex.app.views.newchat.NewChatSheet
+import kotlinx.coroutines.*
 
+
+@ExperimentalMaterialApi
+class ScaffoldController(val state: BottomSheetScaffoldState, val scope: CoroutineScope) {
+  fun expand() = scope.launch { state.bottomSheetState.expand() }
+  fun collapse() = scope.launch { state.bottomSheetState.collapse() }
+}
+
+@ExperimentalMaterialApi
 @Composable
-fun ChatListView(chatModel: ChatModel, navController: NavController) {
-    Column(modifier = Modifier.padding(vertical = 8.dp).fillMaxWidth()) {
-      ChatListToolbar()
-      ChatList(chatModel, navController)
+fun scaffoldController(): ScaffoldController {
+  return ScaffoldController(
+    state = rememberBottomSheetScaffoldState(),
+    scope = rememberCoroutineScope()
+  )
+}
+
+@ExperimentalMaterialApi
+@Composable
+fun ChatListView(chatModel: ChatModel, nav: NavController) {
+  val newChatCtrl = scaffoldController()
+  BottomSheetScaffold(
+    scaffoldState = newChatCtrl.state,
+    sheetPeekHeight = 0.dp,
+    sheetContent = {
+      NewChatSheet(newChatCtrl, nav)
+    }
+  ) {
+    Column(modifier = Modifier
+      .padding(vertical = 8.dp)
+      .fillMaxWidth()) {
+      ChatListToolbar(newChatCtrl)
+      ChatList(chatModel, nav)
       Button(
-        onClick = { navController.navigate(Pages.Terminal.route) },
+        onClick = { nav.navigate(Pages.Terminal.route) },
         modifier = Modifier.padding(14.dp)
       ) {
         Text("Terminal")
       }
     }
+  }
 }
 
+@ExperimentalMaterialApi
 @Composable
-fun ChatListToolbar() {
+fun ChatListToolbar(newChatSheetCtrl: ScaffoldController) {
   Row(
     horizontalArrangement = Arrangement.SpaceBetween,
     verticalAlignment = Alignment.CenterVertically,
@@ -56,6 +80,7 @@ fun ChatListToolbar() {
       Icons.Outlined.PersonAdd,
       "Add Contact",
       modifier = Modifier.padding(horizontal = 10.dp)
+        .clickable { newChatSheetCtrl.expand() }
     )
   }
 }
