@@ -48,6 +48,7 @@ testChatApiNoUser :: IO ()
 testChatApiNoUser = withTmpFiles $ do
   cc <- chatInit testDBPrefix
   chatSendCmd cc "/u" `shouldReturn` noActiveUser
+  print activeUser
   chatSendCmd cc "/_start" `shouldReturn` noActiveUser
   chatSendCmd cc "/u alice Alice" `shouldReturn` activeUser
   chatSendCmd cc "/_start" `shouldReturn` chatStarted
