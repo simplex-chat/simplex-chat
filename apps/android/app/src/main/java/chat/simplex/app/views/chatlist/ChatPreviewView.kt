@@ -21,7 +21,7 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.*
 import androidx.compose.ui.text.style.TextOverflow
-import chat.simplex.app.ui.theme.LightThemeLowlight
+import chat.simplex.app.ui.theme.HighOrLowlight
 import chat.simplex.app.ui.theme.SimpleXTheme
 import kotlinx.datetime.Instant
 import kotlinx.datetime.toJavaInstant
@@ -77,9 +77,9 @@ fun ChatPreviewView(chat: Chat, goToChat: () -> Unit) {
           Text(chat.chatInfo.chatViewName, fontWeight = FontWeight.Bold)
           (
             if (chat.chatItems.count() > 0) {
-              Text(getDisplayTime(chat.chatItems.last().meta.itemTs), color = LightThemeLowlight)
+              Text(getDisplayTime(chat.chatItems.last().meta.itemTs), color = HighOrLowlight)
             }
-            else Text(getDisplayTime(chat.chatInfo.createdAt), color = LightThemeLowlight)
+            else Text(getDisplayTime(chat.chatInfo.createdAt), color = HighOrLowlight)
           )
         }
         if (chat.chatItems.count() > 0) {
