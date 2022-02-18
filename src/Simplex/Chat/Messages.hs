@@ -35,7 +35,7 @@ import Simplex.Chat.Util (eitherToMaybe, safeDecodeUtf8)
 import Simplex.Messaging.Agent.Protocol (AgentErrorType, AgentMsgId, MsgMeta (..))
 import Simplex.Messaging.Agent.Store.SQLite (fromTextField_)
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Parsers (dropPrefix, enumJSON, sumTypeJSON)
+import Simplex.Messaging.Parsers (dropPrefix, enumJSON, singleFieldJSON, sumTypeJSON)
 import Simplex.Messaging.Protocol (MsgBody)
 import Simplex.Messaging.Util ((<$?>))
 
@@ -358,11 +358,11 @@ data DBJSONCIContent
   deriving (Generic)
 
 instance FromJSON DBJSONCIContent where
-  parseJSON = J.genericParseJSON . sumTypeJSON $ dropPrefix "DBJCI"
+  parseJSON = J.genericParseJSON . singleFieldJSON $ dropPrefix "DBJCI"
 
 instance ToJSON DBJSONCIContent where
-  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "DBJCI"
-  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "DBJCI"
+  toJSON = J.genericToJSON . singleFieldJSON $ dropPrefix "DBJCI"
+  toEncoding = J.genericToEncoding . singleFieldJSON $ dropPrefix "DBJCI"
 
 dbJsonCIContent :: CIContent d -> DBJSONCIContent
 dbJsonCIContent = \case
