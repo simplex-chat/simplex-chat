@@ -8,6 +8,7 @@ import androidx.compose.material.Button
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.NavController
 import chat.simplex.app.model.*
 import chat.simplex.app.views.chat.item.ChatItemView
@@ -16,6 +17,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.datetime.Clock
 
 @Composable
 fun ChatView(chatModel: ChatModel, nav: NavController) {
@@ -63,4 +65,41 @@ fun ChatItemsList(chatItems: List<ChatItem>) {
       ChatItemView(cItem)
     }
   }
+}
+
+//@Preview
+//@Composable
+//fun PreviewChatView() {
+//  val itemsList = listOf(
+//    ChatItem.getSampleData(
+//      1, CIDirection.DirectSnd(), Clock.System.now(), "hello"),
+//    ChatItem.getSampleData(
+//      1, CIDirection.DirectRcv(), Clock.System.now(), "hello"),
+//    ChatItem.getSampleData(
+//      1, CIDirection.DirectSnd(), Clock.System.now(), "hello"),
+//    ChatItem.getSampleData(
+//      1, CIDirection.DirectSnd(), Clock.System.now(), "hello"),
+//    ChatItem.getSampleData(
+//      1, CIDirection.DirectRcv(), Clock.System.now(), "hello")
+//  )
+//  val chatModel = ChatModel()
+//  ChatView(chatModel = )
+//}
+
+@Preview
+@Composable
+fun PreviewChatItemsList() {
+  val itemsList = listOf(
+    ChatItem.getSampleData(
+      1, CIDirection.DirectSnd(), Clock.System.now(), "hello"),
+    ChatItem.getSampleData(
+      1, CIDirection.DirectRcv(), Clock.System.now(), "hello"),
+    ChatItem.getSampleData(
+      1, CIDirection.DirectSnd(), Clock.System.now(), "hello"),
+    ChatItem.getSampleData(
+      1, CIDirection.DirectSnd(), Clock.System.now(), "hello"),
+    ChatItem.getSampleData(
+      1, CIDirection.DirectRcv(), Clock.System.now(), "hello")
+  )
+  ChatItemsList(itemsList)
 }

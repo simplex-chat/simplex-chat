@@ -1,10 +1,21 @@
 package chat.simplex.app.views.chat.item
 
-import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
-import chat.simplex.app.model.ChatItem
+import androidx.compose.ui.tooling.preview.Preview
+import chat.simplex.app.model.*
+import kotlinx.datetime.Clock
 
 @Composable
 fun ChatItemView(chatItem: ChatItem) {
-  Text(chatItem.content.text)
+  TextItemView(chatItem)
+}
+
+@Preview
+@Composable
+fun PreviewChatItemView() {
+  ChatItemView(
+    chatItem = ChatItem.getSampleData(
+      1, CIDirection.DirectSnd(), Clock.System.now(), "hello"
+    )
+  )
 }
