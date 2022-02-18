@@ -1,5 +1,6 @@
 package chat.simplex.app.views.chatlist
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -19,6 +20,7 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import androidx.compose.material.Icon
+import androidx.compose.material.MaterialTheme
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.ui.Alignment
@@ -26,7 +28,11 @@ import androidx.compose.ui.text.font.FontWeight
 
 @Composable
 fun ChatListView(chatModel: ChatModel, navController: NavController) {
-    Column(modifier = Modifier.padding(vertical = 8.dp).fillMaxWidth()) {
+    Column(modifier = Modifier
+      .padding(vertical = 8.dp)
+      .fillMaxSize()
+      .background(MaterialTheme.colors.background)
+    ) {
       ChatListToolbar()
       ChatList(chatModel, navController)
       Button(
@@ -49,12 +55,14 @@ fun ChatListToolbar() {
     Icon(
       Icons.Outlined.Settings,
       "Settings Cog",
+      tint = MaterialTheme.colors.primary,
       modifier = Modifier.padding(horizontal = 10.dp)
     )
     Text("Your chats", fontWeight = FontWeight.Bold, modifier = Modifier.padding(5.dp))
     Icon(
       Icons.Outlined.PersonAdd,
       "Add Contact",
+      tint = MaterialTheme.colors.primary,
       modifier = Modifier.padding(horizontal = 10.dp)
     )
   }

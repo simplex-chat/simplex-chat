@@ -2,6 +2,7 @@ package chat.simplex.app.views.chatlist
 
 import android.icu.text.SimpleDateFormat
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -20,6 +21,7 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.*
 import androidx.compose.ui.text.style.TextOverflow
+import chat.simplex.app.ui.theme.LightThemeLowlight
 import chat.simplex.app.ui.theme.SimpleXTheme
 import kotlinx.datetime.Instant
 import kotlinx.datetime.toJavaInstant
@@ -48,7 +50,7 @@ fun getDisplayTime(t: Instant) : String {
 @Composable
 fun ChatPreviewView(chat: Chat, goToChat: () -> Unit) {
   Surface(
-    border=BorderStroke(0.5.dp, MaterialTheme.colors.secondaryVariant),
+    border=BorderStroke(0.5.dp, MaterialTheme.colors.secondary),
     modifier= Modifier
       .fillMaxWidth()
       .clickable(onClick = goToChat)
@@ -61,10 +63,12 @@ fun ChatPreviewView(chat: Chat, goToChat: () -> Unit) {
         Icon(
           Icons.Filled.Person,
           contentDescription = "Avatar Placeholder",
+          tint = MaterialTheme.colors.background,
           modifier = Modifier
-            .size(30.dp)
+            .size(55.dp)
             .clip(CircleShape)
             .border(1.5.dp, MaterialTheme.colors.secondary, CircleShape)
+            .background(MaterialTheme.colors.secondary)
         )
       }
       Spacer(modifier = Modifier.width(6.dp))
@@ -73,9 +77,9 @@ fun ChatPreviewView(chat: Chat, goToChat: () -> Unit) {
           Text(chat.chatInfo.chatViewName, fontWeight = FontWeight.Bold)
           (
             if (chat.chatItems.count() > 0) {
-              Text(getDisplayTime(chat.chatItems.last().meta.itemTs))
+              Text(getDisplayTime(chat.chatItems.last().meta.itemTs), color = LightThemeLowlight)
             }
-            else Text(getDisplayTime(chat.chatInfo.createdAt))
+            else Text(getDisplayTime(chat.chatInfo.createdAt), color = LightThemeLowlight)
           )
         }
         if (chat.chatItems.count() > 0) {
