@@ -49,13 +49,13 @@ fun ChatListToolbar() {
     Icon(
       Icons.Outlined.Settings,
       "Settings Cog",
-      modifier=Modifier.padding(horizontal = 10.dp)
+      modifier = Modifier.padding(horizontal = 10.dp)
     )
-    Text("Your chats", fontWeight = FontWeight.Bold, modifier=Modifier.padding(5.dp))
+    Text("Your chats", fontWeight = FontWeight.Bold, modifier = Modifier.padding(5.dp))
     Icon(
       Icons.Outlined.PersonAdd,
       "Add Contact",
-      modifier=Modifier.padding(horizontal = 10.dp)
+      modifier = Modifier.padding(horizontal = 10.dp)
     )
   }
 }
@@ -80,7 +80,7 @@ fun goToChat(chat: Chat, chatModel: ChatModel, navController: NavController) {
 @Composable
 fun ChatList(chatModel: ChatModel, navController: NavController) {
   LazyColumn(
-    modifier=Modifier.fillMaxWidth()
+    modifier = Modifier.fillMaxWidth()
   ) {
     items(chatModel.chats) { chat ->
       ChatPreviewView(chat) {goToChat(chat, chatModel, navController)}

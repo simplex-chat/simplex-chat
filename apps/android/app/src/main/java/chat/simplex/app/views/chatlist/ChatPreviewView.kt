@@ -44,7 +44,7 @@ fun ChatPreviewView(chat: Chat, goToChat: () -> Unit) {
           .border(1.5.dp, MaterialTheme.colors.secondary, CircleShape)
       )
 
-      Spacer(modifier=Modifier.width(6.dp))
+      Spacer(modifier = Modifier.width(6.dp))
       Column(modifier = Modifier.padding(all = 8.dp)) {
         Text(chat.chatInfo.chatViewName, fontWeight = FontWeight.Bold)
         if (chat.chatItems.count() > 0) {
