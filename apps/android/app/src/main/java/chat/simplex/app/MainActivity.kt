@@ -19,8 +19,10 @@ import chat.simplex.app.views.*
 import chat.simplex.app.views.chat.ChatView
 import chat.simplex.app.views.chatlist.*
 import chat.simplex.app.views.newchat.AddContactView
+import chat.simplex.app.views.newchat.ConnectContactView
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
 
-
+@ExperimentalPermissionsApi
 @ExperimentalMaterialApi
 class MainActivity: ComponentActivity() {
   private val viewModel by viewModels<SimplexViewModel>()
@@ -39,6 +41,7 @@ class SimplexViewModel(application: Application) : AndroidViewModel(application)
   val chatModel = getApplication<SimplexApp>().chatModel
 }
 
+@ExperimentalPermissionsApi
 @ExperimentalMaterialApi
 @Composable
 fun Navigation(chatModel: ChatModel) {
@@ -64,6 +67,9 @@ fun Navigation(chatModel: ChatModel) {
     composable(route = Pages.AddContact.route) {
       AddContactView(chatModel, nav)
     }
+    composable(route = Pages.Connect.route) {
+      ConnectContactView(chatModel, nav)
+    }
     composable(route = Pages.Terminal.route) {
       TerminalView(chatModel, navController = nav)
     }
@@ -86,4 +92,5 @@ sealed class Pages(val route: String) {
   object ChatList: Pages("chats")
   object Chat: Pages("chat")
   object AddContact: Pages("add_contact")
+  object Connect: Pages("connect")
 }

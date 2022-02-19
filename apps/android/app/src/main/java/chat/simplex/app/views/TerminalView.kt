@@ -13,22 +13,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.AnnotatedString
 import androidx.navigation.*
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
 import chat.simplex.app.model.*
-import androidx.navigation.navArgument
-import chat.simplex.app.Pages
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.model.TerminalItem
-import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.chat.SendMsgView
 import chat.simplex.app.views.helpers.withApi
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.DelicateCoroutinesApi
 
+@DelicateCoroutinesApi
 @Composable
 fun TerminalView(chatModel: ChatModel, navController: NavController) {
   Column {

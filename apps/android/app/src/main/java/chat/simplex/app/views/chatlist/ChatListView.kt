@@ -5,25 +5,25 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import chat.simplex.app.Pages
 import chat.simplex.app.model.*
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import chat.simplex.app.views.helpers.withApi
 import chat.simplex.app.views.newchat.NewChatSheet
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import kotlinx.coroutines.*
 
 
@@ -46,6 +46,8 @@ fun scaffoldController(): ScaffoldController {
   )
 }
 
+@DelicateCoroutinesApi
+@ExperimentalPermissionsApi
 @ExperimentalMaterialApi
 @Composable
 fun ChatListView(chatModel: ChatModel, nav: NavController) {
@@ -53,20 +55,31 @@ fun ChatListView(chatModel: ChatModel, nav: NavController) {
   BottomSheetScaffold(
     scaffoldState = newChatCtrl.state,
     sheetPeekHeight = 0.dp,
-    topBar = { ChatListToolbar(newChatCtrl) },
-    sheetContent = { NewChatSheet(chatModel, newChatCtrl, nav) }
+    sheetContent = { NewChatSheet(chatModel, newChatCtrl, nav) },
+    sheetShape = RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp),
   ) {
-    Column(modifier = Modifier
-      .padding(vertical = 8.dp)
-      .fillMaxSize()
-      .background(MaterialTheme.colors.background)
-    ) {
-      ChatList(chatModel, nav)
-      Button(
-        onClick = { nav.navigate(Pages.Terminal.route) },
-        modifier = Modifier.padding(14.dp)
+    Box {
+      Column(
+        modifier = Modifier
+          .padding(vertical = 8.dp)
+          .fillMaxSize()
+          .background(MaterialTheme.colors.background)
       ) {
-        Text("Terminal")
+        ChatListToolbar(newChatCtrl)
+        ChatList(chatModel, nav)
+        Button(
+          onClick = { nav.navigate(Pages.Terminal.route) },
+          modifier = Modifier.padding(14.dp)
+        ) {
+          Text("Terminal")
+        }
+      }
+      if (newChatCtrl.state.bottomSheetState.isExpanded) {
+        Surface(Modifier
+          .fillMaxSize()
+          .clickable { newChatCtrl.collapse() },
+          color = Color.Black.copy(alpha = 0.12F)
+        ) {}
       }
     }
   }
@@ -97,29 +110,30 @@ fun ChatListToolbar(newChatSheetCtrl: ScaffoldController) {
       Icons.Outlined.PersonAdd,
       "Add Contact",
       tint = MaterialTheme.colors.primary,
-      modifier = Modifier.padding(horizontal = 10.dp)
+      modifier = Modifier
+        .padding(horizontal = 10.dp)
         .clickable { newChatSheetCtrl.toggle() }
     )
   }
 }
 
 
-fun goToChat(chat: Chat, chatModel: ChatModel, navController: NavController) {
-  GlobalScope.launch {
-    withContext(Dispatchers.Main) {
-      val cInfo = chat.chatInfo
-      val chat = chatModel.controller.apiGetChat(cInfo.chatType, cInfo.apiId)
-      if (chat != null ) {
-        chatModel.chatId = mutableStateOf(cInfo.id)
-        chatModel.chatItems = chat.chatItems.toMutableStateList()
-        navController.navigate(Pages.Chat.route)
-      } else {
-        // TODO show error? or will apiGetChat show it
-      }
+@DelicateCoroutinesApi
+fun goToChat(chatPreview: Chat, chatModel: ChatModel, navController: NavController) {
+  withApi {
+    val cInfo = chatPreview.chatInfo
+    val chat = chatModel.controller.apiGetChat(cInfo.chatType, cInfo.apiId)
+    if (chat != null ) {
+      chatModel.chatId = mutableStateOf(cInfo.id)
+      chatModel.chatItems = chat.chatItems.toMutableStateList()
+      navController.navigate(Pages.Chat.route)
+    } else {
+      // TODO show error? or will apiGetChat show it
     }
   }
 }
 
+@DelicateCoroutinesApi
 @Composable
 fun ChatList(chatModel: ChatModel, navController: NavController) {
   LazyColumn(

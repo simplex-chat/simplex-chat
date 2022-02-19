@@ -65,16 +65,27 @@ dependencies {
     implementation "androidx.compose.ui:ui:$compose_version"
     implementation "androidx.compose.material:material:$compose_version"
     implementation "androidx.compose.ui:ui-tooling-preview:$compose_version"
-    implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.3.1'
-    implementation 'androidx.activity:activity-compose:1.3.1'
+    implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.4.1'
+    implementation 'androidx.activity:activity-compose:1.4.0'
     implementation 'org.jetbrains.kotlinx:kotlinx-datetime:0.3.2'
     implementation 'org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.2'
     implementation "androidx.compose.material:material-icons-extended:$compose_version"
+    implementation "androidx.navigation:navigation-compose:2.4.1"
+
+    def camerax_version = "1.1.0-beta01"
+    implementation "androidx.camera:camera-core:${camerax_version}"
+    implementation "androidx.camera:camera-camera2:${camerax_version}"
+    implementation "androidx.camera:camera-lifecycle:${camerax_version}"
+    implementation "androidx.camera:camera-view:${camerax_version}"
+    //Barcode
     implementation 'com.google.zxing:core:3.4.0'
+    implementation 'com.google.mlkit:barcode-scanning:17.0.2'
+    //Camera Permission
+    implementation "com.google.accompanist:accompanist-permissions:0.19.0"
+
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.3'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.4.0'
     androidTestImplementation "androidx.compose.ui:ui-test-junit4:$compose_version"
     debugImplementation "androidx.compose.ui:ui-tooling:$compose_version"
-    implementation "androidx.navigation:navigation-compose:2.4.1"
 }

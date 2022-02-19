@@ -29,7 +29,7 @@ fun SimpleButton(text: String, icon: ImageVector, click: () -> Unit) {
       modifier = Modifier.padding(horizontal = 10.dp)
     )
     Text(text,
-      style = MaterialTheme.typography.button,
+      style = MaterialTheme.typography.caption,
       color = MaterialTheme.colors.primary
     )
   }
