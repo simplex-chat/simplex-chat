@@ -21,7 +21,6 @@ fun TextItemView(chatItem: ChatItem) {
   val sent = chatItem.chatDir.sent
   val color = if (sent) SentColorLight else ReceivedColorLight
 
-  // TODO alignment
   Surface(
     shape = RoundedCornerShape(18.dp),
     color = color
