@@ -440,7 +440,7 @@ class ChatItem (
   val content: CIContent
 ) {
   val id: Long get() = meta.itemId
-  val timestampText: String get() =  meta.timestampText
+  val timestampText: String get() = meta.timestampText
   val isRcvNew: Boolean get() = meta.itemStatus is CIStatus.RcvNew
 
   companion object {
@@ -500,6 +500,7 @@ class CIMeta (
   }
 }
 
+// TODO use old api?
 // TODO date for older timestamps
 @SuppressLint("NewApi")
 fun getTimestampText(d: Instant): String {
