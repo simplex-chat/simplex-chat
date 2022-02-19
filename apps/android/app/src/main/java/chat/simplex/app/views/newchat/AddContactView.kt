@@ -15,6 +15,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.*
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -56,14 +58,24 @@ fun AddContactLayout(connReq: String, close: () -> Unit, share: () -> Unit) {
     Text(
       "Show QR code to your contact\nto scan from the app",
       style = MaterialTheme.typography.h2,
-      textAlign = TextAlign.Center
+      textAlign = TextAlign.Center,
+      modifier = Modifier.padding(bottom = 8.dp)
     )
     QRCode(connReq)
     Text(
-      "If you can't show QR code, you can share the invitation link via any channel.\nIt does not have to be secure or private, you just have to know who you are sharing it with.",
+      buildAnnotatedString {
+        append("If you cannot meet in person, you can ")
+        withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
+          append("scan QR code in the video call")
+        }
+        append(", or you can share the invitation link via any other channel.")
+      },
       textAlign = TextAlign.Center,
       style = MaterialTheme.typography.caption,
-      modifier = Modifier.padding(bottom = 16.dp).padding(horizontal = 16.dp)
+      modifier = Modifier
+        .padding(horizontal = 16.dp)
+        .padding(top = 8.dp)
+        .padding(bottom = 16.dp)
     )
     SimpleButton("Share invitation link", icon = Icons.Outlined.Share, click = share)
   }

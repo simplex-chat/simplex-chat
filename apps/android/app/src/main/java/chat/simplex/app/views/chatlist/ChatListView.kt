@@ -25,6 +25,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.font.FontWeight
 import chat.simplex.app.views.helpers.withApi
 import chat.simplex.app.views.newchat.NewChatSheet
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import kotlinx.coroutines.*
 
 
@@ -47,6 +48,7 @@ fun scaffoldController(): ScaffoldController {
   )
 }
 
+@ExperimentalPermissionsApi
 @ExperimentalMaterialApi
 @Composable
 fun ChatListView(chatModel: ChatModel, nav: NavController) {

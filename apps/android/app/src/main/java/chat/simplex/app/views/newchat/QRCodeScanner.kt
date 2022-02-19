@@ -3,10 +3,7 @@ package chat.simplex.app.views.newchat
 import android.Manifest
 import android.util.Log
 import android.view.ViewGroup
-import android.widget.Toast
-import androidx.camera.core.CameraSelector
-import androidx.camera.core.ImageAnalysis
-import androidx.camera.core.Preview
+import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.layout.*
@@ -24,8 +21,6 @@ import com.google.accompanist.permissions.rememberPermissionState
 import com.google.common.util.concurrent.ListenableFuture
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
-import android.annotation.SuppressLint
-import androidx.camera.core.ImageProxy
 import androidx.navigation.NavController
 import chat.simplex.app.model.ChatController
 import chat.simplex.app.views.helpers.CloseSheetBar
@@ -38,46 +33,11 @@ import java.util.concurrent.TimeUnit
 
 // Bar code scanner adapted from https://github.com/MakeItEasyDev/Jetpack-Compose-BarCode-Scanner
 
-@ExperimentalPermissionsApi
 @Composable
-fun CodeScanner(ctrl: ChatController, nav: NavController) {
-  Surface(color = MaterialTheme.colors.background) {
-    Column(
-      horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-      CloseSheetBar({ nav.popBackStack() })
-
-      Spacer(modifier = Modifier.height(10.dp))
-
-      val cameraPermissionState = rememberPermissionState(permission = Manifest.permission.CAMERA)
-
-      Button(
-        onClick = {
-          cameraPermissionState.launchPermissionRequest()
-        }
-      ) {
-        Text(text = "Camera Permission")
-      }
-
-      Spacer(modifier = Modifier.height(10.dp))
-
-      CameraPreview { connReqUri ->
-        withApi {
-          val res = ctrl.apiConnect(connReqUri)
-          // check if it is valid
-          nav.popBackStack()
-        }
-      }
-    }
-  }
-}
-
-@Composable
-fun CameraPreview(onBarcode: (String) -> Unit) {
+fun QRCodeScanner(onBarcode: (String) -> Unit) {
   val context = LocalContext.current
   val lifecycleOwner = LocalLifecycleOwner.current
   var preview by remember { mutableStateOf<Preview?>(null) }
-  val barCodeVal = remember { mutableStateOf("") }
 
   AndroidView(
     factory = { AndroidViewContext ->
@@ -90,8 +50,7 @@ fun CameraPreview(onBarcode: (String) -> Unit) {
         implementationMode = PreviewView.ImplementationMode.COMPATIBLE
       }
     },
-    modifier = Modifier
-      .fillMaxSize(),
+//    modifier = Modifier.fillMaxSize(),
     update = { previewView ->
       val cameraSelector: CameraSelector = CameraSelector.Builder()
         .requireLensFacing(CameraSelector.LENS_FACING_BACK)
@@ -106,31 +65,18 @@ fun CameraPreview(onBarcode: (String) -> Unit) {
         }
         val cameraProvider: ProcessCameraProvider = cameraProviderFuture.get()
         val barcodeAnalyser = BarCodeAnalyser { barcodes ->
-          barcodes.first().rawValue?.let(onBarcode)
-//          barcodes.forEach { barcode ->
-//            barcode.rawValue?.let { barcodeValue ->
-//              barCodeVal.value = barcodeValue
-//              Toast.makeText(context, barcodeValue, Toast.LENGTH_SHORT).show()
-//            }
-//          }
+          barcodes.firstOrNull()?.rawValue?.let(onBarcode)
         }
         val imageAnalysis: ImageAnalysis = ImageAnalysis.Builder()
           .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
           .build()
-          .also {
-            it.setAnalyzer(cameraExecutor, barcodeAnalyser)
-          }
+          .also { it.setAnalyzer(cameraExecutor, barcodeAnalyser) }
 
         try {
           cameraProvider.unbindAll()
-          cameraProvider.bindToLifecycle(
-            lifecycleOwner,
-            cameraSelector,
-            preview,
-            imageAnalysis
-          )
+          cameraProvider.bindToLifecycle(lifecycleOwner, cameraSelector, preview, imageAnalysis)
         } catch (e: Exception) {
-          Log.d("TAG", "CameraPreview: ${e.localizedMessage}")
+          Log.d("SIMPLEX", "CameraPreview: ${e.localizedMessage}")
         }
       }, ContextCompat.getMainExecutor(context))
     }
@@ -142,7 +88,7 @@ class BarCodeAnalyser(
 ): ImageAnalysis.Analyzer {
   private var lastAnalyzedTimeStamp = 0L
 
-  @SuppressLint("UnsafeOptInUsageError")
+  @ExperimentalGetImage
   override fun analyze(image: ImageProxy) {
     val currentTimestamp = System.currentTimeMillis()
     if (currentTimestamp - lastAnalyzedTimeStamp >= TimeUnit.SECONDS.toMillis(1)) {
@@ -158,7 +104,7 @@ class BarCodeAnalyser(
             if (barcodes.isNotEmpty()) {
               onBarcodeDetected(barcodes)
             } else {
-              Log.d("SIMPLEX", "analyze: No barcode Scanned")
+              Log.d("SIMPLEX", "BarcodeAnalyser: No barcode Scanned")
             }
           }
           .addOnFailureListener { exception ->

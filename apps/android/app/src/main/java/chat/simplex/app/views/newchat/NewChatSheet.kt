@@ -1,5 +1,6 @@
 package chat.simplex.app.views.newchat
 
+import android.Manifest
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.Button
@@ -15,10 +16,14 @@ import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.chatlist.ScaffoldController
 import chat.simplex.app.views.helpers.withApi
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.accompanist.permissions.rememberPermissionState
 
+@ExperimentalPermissionsApi
 @ExperimentalMaterialApi
 @Composable
 fun NewChatSheet(chatModel: ChatModel, newChatCtrl: ScaffoldController, nav: NavController) {
+  val cameraPermissionState = rememberPermissionState(permission = Manifest.permission.CAMERA)
   NewChatSheetLayout(
     addContact = {
       withApi {
@@ -33,6 +38,7 @@ fun NewChatSheet(chatModel: ChatModel, newChatCtrl: ScaffoldController, nav: Nav
     },
     scanCode = {
       nav.navigate(Pages.Connect.route)
+      cameraPermissionState.launchPermissionRequest()
     },
     close = {
       newChatCtrl.collapse()
