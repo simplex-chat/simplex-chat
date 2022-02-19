@@ -20,11 +20,9 @@ val ReceivedColorLight = Color(0x1EF1F0F5)
 @Composable
 fun TextItemView(chatItem: ChatItem) {
   val sent = chatItem.chatDir.sent
-  val color = if (sent) SentColorLight else ReceivedColorLight
-
   Surface(
     shape = RoundedCornerShape(18.dp),
-    color = color
+    color = if (sent) SentColorLight else ReceivedColorLight
   ) {
     Box(
       modifier = Modifier.padding(vertical = 6.dp, horizontal = 12.dp)
