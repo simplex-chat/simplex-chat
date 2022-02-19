@@ -45,7 +45,6 @@ class SimplexApp: Application() {
   }
 
   companion object {
-    lateinit var weakActivity: WeakReference<MainActivity>
     init {
       val socketName = "local.socket.address.listen.native.cmd2"
 

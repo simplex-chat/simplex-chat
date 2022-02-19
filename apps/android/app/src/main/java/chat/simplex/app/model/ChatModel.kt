@@ -12,6 +12,7 @@ class ChatModel(val controller: ChatController) {
   var chatId = mutableStateOf<String?>(null)
   var chatItems = mutableStateListOf<ChatItem>()
 
+  var connReqInvitation: String? = null
   var terminalItems = mutableStateListOf<TerminalItem>()
 
   fun hasChat(id: String): Boolean = chats.firstOrNull() { it.id == id } != null
@@ -19,21 +20,20 @@ class ChatModel(val controller: ChatController) {
   private fun getChatIndex(id: String): Int = chats.indexOfFirst { it.id == id }
   fun addChat(chat: Chat) = chats.add(index = 0, chat)
 
-//  func updateChatInfo(_ cInfo: ChatInfo) {
-//    if let i = getChatIndex(cInfo.id) {
-//      chats[i].chatInfo = cInfo
-//    }
-//  }
-//
-//  func updateContact(_ contact: Contact) {
-//    let cInfo = ChatInfo.direct(contact: contact)
-//    if hasChat(contact.id) {
-//      updateChatInfo(cInfo)
-//    } else {
-//      addChat(Chat(chatInfo: cInfo, chatItems: []))
-//    }
-//  }
-//
+  fun updateChatInfo(cInfo: ChatInfo) {
+    val i = getChatIndex(cInfo.id)
+    if (i >= 0) chats[i] = chats[i].copy(chatInfo = cInfo)
+  }
+
+  fun updateContact(contact: Contact) {
+    val cInfo = ChatInfo.Direct(contact)
+    if (hasChat(contact.id)) {
+      updateChatInfo(cInfo)
+    } else {
+      addChat(Chat(chatInfo = cInfo, chatItems = arrayListOf()))
+    }
+  }
+
 //  func updateNetworkStatus(_ contact: Contact, _ status: Chat.NetworkStatus) {
 //    if let ix = getChatIndex(contact.id) {
 //      chats[ix].serverInfo.networkStatus = status
@@ -62,7 +62,7 @@ class ChatModel(val controller: ChatController) {
           else
             chat.chatStats
       )
-      chats.set(i, updatedChat)
+      chats[i] = updatedChat
       if (i > 0) {
         popChat_(i)
       }
