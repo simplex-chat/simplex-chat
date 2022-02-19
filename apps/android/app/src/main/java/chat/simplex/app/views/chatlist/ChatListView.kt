@@ -31,6 +31,10 @@ import kotlinx.coroutines.*
 class ScaffoldController(val state: BottomSheetScaffoldState, val scope: CoroutineScope) {
   fun expand() = scope.launch { state.bottomSheetState.expand() }
   fun collapse() = scope.launch { state.bottomSheetState.collapse() }
+  fun toggle() = scope.launch {
+    val s = state.bottomSheetState
+    if (s.isExpanded) s.collapse() else s.expand()
+  }
 }
 
 @ExperimentalMaterialApi
@@ -49,16 +53,14 @@ fun ChatListView(chatModel: ChatModel, nav: NavController) {
   BottomSheetScaffold(
     scaffoldState = newChatCtrl.state,
     sheetPeekHeight = 0.dp,
-    sheetContent = {
-      NewChatSheet(chatModel, newChatCtrl, nav)
-    }
+    topBar = { ChatListToolbar(newChatCtrl) },
+    sheetContent = { NewChatSheet(chatModel, newChatCtrl, nav) }
   ) {
     Column(modifier = Modifier
       .padding(vertical = 8.dp)
       .fillMaxSize()
       .background(MaterialTheme.colors.background)
     ) {
-      ChatListToolbar(newChatCtrl)
       ChatList(chatModel, nav)
       Button(
         onClick = { nav.navigate(Pages.Terminal.route) },
@@ -96,7 +98,7 @@ fun ChatListToolbar(newChatSheetCtrl: ScaffoldController) {
       "Add Contact",
       tint = MaterialTheme.colors.primary,
       modifier = Modifier.padding(horizontal = 10.dp)
-        .clickable { newChatSheetCtrl.expand() }
+        .clickable { newChatSheetCtrl.toggle() }
     )
   }
 }
