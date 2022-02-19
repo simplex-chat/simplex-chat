@@ -7,12 +7,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.Button
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.MutableState
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.NavController
 import chat.simplex.app.model.*
 import chat.simplex.app.views.chat.item.ChatItemView
-import chat.simplex.app.views.chatlist.ChatPreviewView
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
@@ -23,32 +21,41 @@ import kotlinx.datetime.Clock
 fun ChatView(chatModel: ChatModel, nav: NavController) {
   if (chatModel.chatId.value != null && chatModel.chats.count() > 0) {
     val chat: Chat = chatModel.chats.first { chat -> chat.chatInfo.id == chatModel.chatId.value }
-    Column {
-      ChatInfoToolbar(chat, nav)
-      ChatItemsList(chatModel.chatItems)
-      SendMsgView(sendMessage = { msg ->
-        GlobalScope.launch {
-          withContext(Dispatchers.Main) {
-            // show "in progress"
-            val cInfo = chat.chatInfo
-            val newItem = chatModel.controller.apiSendMessage(
-              type = cInfo.chatType,
-              id = cInfo.apiId,
-              mc = MsgContent.MCText(msg)
-            )
-            // hide "in progress"
-            if (newItem != null) chatModel.addChatItem(cInfo, newItem.chatItem)
-          }
+    ChatViewLayout(chat, chatModel.chatItems, back = { nav.popBackStack() }, sendMessage = { msg ->
+      GlobalScope.launch {
+        withContext(Dispatchers.Main) {
+          // show "in progress"
+          val cInfo = chat.chatInfo
+          val newItem = chatModel.controller.apiSendMessage(
+            type = cInfo.chatType,
+            id = cInfo.apiId,
+            mc = MsgContent.MCText(msg)
+          )
+          // hide "in progress"
+          if (newItem != null) chatModel.addChatItem(cInfo, newItem.chatItem)
         }
-      })
-    }
+      }
+    })
   }
 }
 
 @Composable
-fun ChatInfoToolbar(chat: Chat, nav: NavController) {
+fun ChatViewLayout(
+  chat: Chat, chatItems: List<ChatItem>,
+  back: () -> Unit,
+  sendMessage: (String) -> Unit
+) {
+  Column {
+    ChatInfoToolbar(chat, back)
+    ChatItemsList(chatItems)
+    SendMsgView(sendMessage)
+  }
+}
+
+@Composable
+fun ChatInfoToolbar(chat: Chat, back: () -> Unit) {
   Row {
-    Button(onClick = { nav.popBackStack() }) {
+    Button(onClick = back) {
       Text("Back")
     }
     Column {
@@ -67,39 +74,34 @@ fun ChatItemsList(chatItems: List<ChatItem>) {
   }
 }
 
-//@Preview
-//@Composable
-//fun PreviewChatView() {
-//  val itemsList = listOf(
-//    ChatItem.getSampleData(
-//      1, CIDirection.DirectSnd(), Clock.System.now(), "hello"),
-//    ChatItem.getSampleData(
-//      1, CIDirection.DirectRcv(), Clock.System.now(), "hello"),
-//    ChatItem.getSampleData(
-//      1, CIDirection.DirectSnd(), Clock.System.now(), "hello"),
-//    ChatItem.getSampleData(
-//      1, CIDirection.DirectSnd(), Clock.System.now(), "hello"),
-//    ChatItem.getSampleData(
-//      1, CIDirection.DirectRcv(), Clock.System.now(), "hello")
-//  )
-//  val chatModel = ChatModel()
-//  ChatView(chatModel = )
-//}
-
 @Preview
 @Composable
-fun PreviewChatItemsList() {
-  val itemsList = listOf(
+fun PreviewChatViewLayout() {
+  val chatItems = listOf(
     ChatItem.getSampleData(
-      1, CIDirection.DirectSnd(), Clock.System.now(), "hello"),
+      1, CIDirection.DirectSnd(), Clock.System.now(), "hello"
+    ),
     ChatItem.getSampleData(
-      1, CIDirection.DirectRcv(), Clock.System.now(), "hello"),
+      1, CIDirection.DirectRcv(), Clock.System.now(), "hello"
+    ),
     ChatItem.getSampleData(
-      1, CIDirection.DirectSnd(), Clock.System.now(), "hello"),
+      1, CIDirection.DirectSnd(), Clock.System.now(), "hello"
+    ),
     ChatItem.getSampleData(
-      1, CIDirection.DirectSnd(), Clock.System.now(), "hello"),
+      1, CIDirection.DirectSnd(), Clock.System.now(), "hello"
+    ),
     ChatItem.getSampleData(
-      1, CIDirection.DirectRcv(), Clock.System.now(), "hello")
+      1, CIDirection.DirectRcv(), Clock.System.now(), "hello"
+    )
   )
-  ChatItemsList(itemsList)
+  ChatViewLayout(
+    chat = Chat(
+      chatInfo = ChatInfo.Direct.sampleData,
+      chatItems = chatItems,
+      chatStats = Chat.ChatStats()
+    ),
+    chatItems = chatItems,
+    back = {},
+    sendMessage = {}
+  )
 }
