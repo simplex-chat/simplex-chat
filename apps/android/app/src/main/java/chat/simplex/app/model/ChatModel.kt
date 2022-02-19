@@ -1,8 +1,10 @@
 package chat.simplex.app.model
 
+import android.annotation.SuppressLint
 import androidx.compose.runtime.*
 import kotlinx.datetime.*
 import kotlinx.serialization.*
+import java.time.format.DateTimeFormatter
 
 class ChatModel(val controller: ChatController) {
   var currentUser = mutableStateOf<User?>(null)
@@ -438,7 +440,7 @@ class ChatItem (
   val content: CIContent
 ) {
   val id: Long get() = meta.itemId
-  //  val timestampText: String get() =  meta.timestampText
+  val timestampText: String get() = meta.timestampText
   val isRcvNew: Boolean get() = meta.itemStatus is CIStatus.RcvNew
 
   companion object {
@@ -484,7 +486,7 @@ class CIMeta (
   val itemStatus: CIStatus,
   val createdAt: Instant
 ) {
-//  val timestampText: String get() = getTimestampText(itemTs)
+  val timestampText: String get() = getTimestampText(itemTs)
 
   companion object {
     fun getSample(id: Long, ts: Instant, text: String, status: CIStatus = CIStatus.SndNew()): CIMeta =
@@ -498,8 +500,14 @@ class CIMeta (
   }
 }
 
-// TODO
-fun getTimestampText(d: Instant): String = ""
+// TODO use old api?
+// TODO date for older timestamps
+@SuppressLint("NewApi")
+fun getTimestampText(d: Instant): String {
+  val dt = d.toLocalDateTime(TimeZone.currentSystemDefault()).toJavaLocalDateTime()
+  val formatter = DateTimeFormatter.ofPattern("HH:mm")
+  return dt.format(formatter)
+}
 
 @Serializable
 sealed class CIStatus {

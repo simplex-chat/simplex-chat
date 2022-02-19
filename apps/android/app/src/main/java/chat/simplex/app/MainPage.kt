@@ -7,7 +7,9 @@ import chat.simplex.app.model.ChatModel
 import chat.simplex.app.views.TerminalView
 import chat.simplex.app.views.WelcomeView
 import chat.simplex.app.views.chatlist.ChatListView
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
 
+@ExperimentalPermissionsApi
 @ExperimentalMaterialApi
 @Composable
 fun MainPage(chatModel: ChatModel, nav: NavController) {

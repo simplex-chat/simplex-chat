@@ -18,16 +18,19 @@ import chat.simplex.app.views.newchat.AddContactLayout
 
 @Composable
 fun CloseSheetBar(close: () -> Unit) {
-  Row (Modifier
-      .fillMaxWidth(),
-    horizontalArrangement = Arrangement.End
+  Row (
+    Modifier
+      .fillMaxWidth()
+      .height(40.dp),
+    horizontalArrangement = Arrangement.End,
+    verticalAlignment = Alignment.CenterVertically
   ) {
     Icon(
       Icons.Outlined.Close,
       "Close button",
       tint = MaterialTheme.colors.primary,
       modifier = Modifier
-        .padding(horizontal = 10.dp)
+        .padding(vertical = 10.dp)
         .clickable { close() }
     )
   }
