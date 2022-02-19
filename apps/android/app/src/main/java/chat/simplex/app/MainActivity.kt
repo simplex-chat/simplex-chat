@@ -34,11 +34,6 @@ class MainActivity: ComponentActivity() {
       }
     }
   }
-
-//  override fun onNewIntent(intent: Intent?) {
-//    super.onNewIntent(intent)
-//    navController.handleDeepLink(intent)
-//  }
 }
 
 class SimplexViewModel(application: Application) : AndroidViewModel(application) {
@@ -49,16 +44,13 @@ class SimplexViewModel(application: Application) : AndroidViewModel(application)
 @Composable
 fun Navigation(chatModel: ChatModel) {
   val nav = rememberNavController()
-  val uri = "https://simplex.chat"
+  val uri = "simplex://connect"
 
   NavHost(navController = nav, startDestination=Pages.Home.route){
     composable(route=Pages.Home.route){
       MainPage(chatModel, nav)
     }
-    composable(
-      route = Pages.Welcome.route,
-      deepLinks = listOf(navDeepLink { uriPattern = "simplex://welcome" })
-    ){
+    composable(route = Pages.Welcome.route) {
       WelcomeView(chatModel) {
         nav.navigate(Pages.Home.route) {
           popUpTo(Pages.Home.route) { inclusive = true }
@@ -74,8 +66,22 @@ fun Navigation(chatModel: ChatModel) {
     composable(route = Pages.AddContact.route) {
       AddContactView(chatModel, nav)
     }
+    composable(
+      route = Pages.ConnectWith.route,
+      arguments = listOf(
+        navArgument("version"){
+          type = NavType.IntType
+        },
+        navArgument("address"){
+          type = NavType.StringType
+        }
+      ),
+      deepLinks = listOf(navDeepLink{ uriPattern = "${uri}/?v={version}&smp={address}" })
+    ) {
+      ConnectWithView(it.arguments!!.getString("address")!!)
+    }
     composable(route = Pages.Terminal.route) {
-      TerminalView(chatModel, navController = nav)
+      TerminalView(chatModel,  nav)
     }
     composable(
       Pages.TerminalItemDetails.route + "/{identifier}",
@@ -96,4 +102,5 @@ sealed class Pages(val route: String) {
   object ChatList: Pages("chats")
   object Chat: Pages("chat")
   object AddContact: Pages("add_contact")
+  object ConnectWith: Pages("connect_with")
 }
