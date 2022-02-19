@@ -134,7 +134,7 @@ fun ChatList(chatModel: ChatModel, navController: NavController) {
 
 //@Preview
 //@Composable
-//fun PreviewSendMsgView() {
+//fun PreviewChatListView() {
 //  SimpleXTheme {
 //    ChatListView(
 //      chats = listOf(
