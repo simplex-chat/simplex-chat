@@ -31,7 +31,9 @@ fun NewChatSheet(chatModel: ChatModel, newChatCtrl: ScaffoldController, nav: Nav
         }
       }
     },
-    scanCode = {},
+    scanCode = {
+      nav.navigate(Pages.Connect.route)
+    },
     close = {
       newChatCtrl.collapse()
     }

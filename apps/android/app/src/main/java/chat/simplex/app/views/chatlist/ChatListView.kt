@@ -23,6 +23,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.font.FontWeight
+import chat.simplex.app.views.helpers.withApi
 import chat.simplex.app.views.newchat.NewChatSheet
 import kotlinx.coroutines.*
 
@@ -105,17 +106,15 @@ fun ChatListToolbar(newChatSheetCtrl: ScaffoldController) {
 
 
 fun goToChat(chat: Chat, chatModel: ChatModel, navController: NavController) {
-  GlobalScope.launch {
-    withContext(Dispatchers.Main) {
-      val cInfo = chat.chatInfo
-      val chat = chatModel.controller.apiGetChat(cInfo.chatType, cInfo.apiId)
-      if (chat != null ) {
-        chatModel.chatId = mutableStateOf(cInfo.id)
-        chatModel.chatItems = chat.chatItems.toMutableStateList()
-        navController.navigate(Pages.Chat.route)
-      } else {
-        // TODO show error? or will apiGetChat show it
-      }
+  withApi {
+    val cInfo = chat.chatInfo
+    val chat = chatModel.controller.apiGetChat(cInfo.chatType, cInfo.apiId)
+    if (chat != null ) {
+      chatModel.chatId = mutableStateOf(cInfo.id)
+      chatModel.chatItems = chat.chatItems.toMutableStateList()
+      navController.navigate(Pages.Chat.route)
+    } else {
+      // TODO show error? or will apiGetChat show it
     }
   }
 }
