@@ -18,10 +18,7 @@ import androidx.navigation.NavController
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.chat.item.ChatItemView
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import chat.simplex.app.views.helpers.withApi
 import kotlinx.datetime.Clock
 
 @Composable
@@ -29,18 +26,16 @@ fun ChatView(chatModel: ChatModel, nav: NavController) {
   if (chatModel.chatId.value != null && chatModel.chats.count() > 0) {
     val chat: Chat = chatModel.chats.first { chat -> chat.chatInfo.id == chatModel.chatId.value }
     ChatLayout(chat, chatModel.chatItems, back = { nav.popBackStack() }, sendMessage = { msg ->
-      GlobalScope.launch {
-        withContext(Dispatchers.Main) {
-          // show "in progress"
-          val cInfo = chat.chatInfo
-          val newItem = chatModel.controller.apiSendMessage(
-            type = cInfo.chatType,
-            id = cInfo.apiId,
-            mc = MsgContent.MCText(msg)
-          )
-          // hide "in progress"
-          if (newItem != null) chatModel.addChatItem(cInfo, newItem.chatItem)
-        }
+      withApi {
+        // show "in progress"
+        val cInfo = chat.chatInfo
+        val newItem = chatModel.controller.apiSendMessage(
+          type = cInfo.chatType,
+          id = cInfo.apiId,
+          mc = MsgContent.MCText(msg)
+        )
+        // hide "in progress"
+        if (newItem != null) chatModel.addChatItem(cInfo, newItem.chatItem)
       }
     })
   }

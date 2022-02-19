@@ -13,6 +13,7 @@ import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.SimpleXTheme
 import kotlinx.datetime.*
 
+// TODO move to theme
 val SentColorLight = Color(0x1E45B8FF)
 val ReceivedColorLight = Color(0x1EF1F0F5)
 
