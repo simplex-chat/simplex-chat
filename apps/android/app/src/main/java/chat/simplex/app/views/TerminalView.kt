@@ -23,6 +23,7 @@ import chat.simplex.app.model.ChatModel
 import chat.simplex.app.model.TerminalItem
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.chat.SendMsgView
+import chat.simplex.app.views.helpers.withApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
@@ -36,12 +37,10 @@ fun TerminalView(chatModel: ChatModel, navController: NavController) {
     }
     TerminalLog(chatModel.terminalItems, navController)
     SendMsgView(sendMessage = { cmd ->
-      GlobalScope.launch {
-        withContext(Dispatchers.Main) {
-          // show "in progress"
-          chatModel.controller.sendCmd(CC.Console(cmd))
-          // hide "in progress"
-        }
+      withApi {
+        // show "in progress"
+        chatModel.controller.sendCmd(CC.Console(cmd))
+        // hide "in progress"
       }
     })
   }
