@@ -14,6 +14,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import androidx.navigation.navDeepLink
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.views.*
 import chat.simplex.app.views.chat.ChatView
@@ -33,6 +34,11 @@ class MainActivity: ComponentActivity() {
       }
     }
   }
+
+//  override fun onNewIntent(intent: Intent?) {
+//    super.onNewIntent(intent)
+//    navController.handleDeepLink(intent)
+//  }
 }
 
 class SimplexViewModel(application: Application) : AndroidViewModel(application) {
@@ -43,12 +49,16 @@ class SimplexViewModel(application: Application) : AndroidViewModel(application)
 @Composable
 fun Navigation(chatModel: ChatModel) {
   val nav = rememberNavController()
+  val uri = "https://simplex.chat"
 
   NavHost(navController = nav, startDestination=Pages.Home.route){
     composable(route=Pages.Home.route){
       MainPage(chatModel, nav)
     }
-    composable(route = Pages.Welcome.route){
+    composable(
+      route = Pages.Welcome.route,
+      deepLinks = listOf(navDeepLink { uriPattern = "simplex://welcome" })
+    ){
       WelcomeView(chatModel) {
         nav.navigate(Pages.Home.route) {
           popUpTo(Pages.Home.route) { inclusive = true }
