@@ -19,8 +19,10 @@ import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.chat.item.ChatItemView
 import chat.simplex.app.views.helpers.withApi
+import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.datetime.Clock
 
+@DelicateCoroutinesApi
 @Composable
 fun ChatView(chatModel: ChatModel, nav: NavController) {
   if (chatModel.chatId.value != null && chatModel.chats.count() > 0) {

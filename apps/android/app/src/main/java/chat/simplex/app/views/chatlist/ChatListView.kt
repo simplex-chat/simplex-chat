@@ -9,15 +9,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import chat.simplex.app.Pages
 import chat.simplex.app.model.*
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.icons.Icons
@@ -50,6 +46,7 @@ fun scaffoldController(): ScaffoldController {
   )
 }
 
+@DelicateCoroutinesApi
 @ExperimentalPermissionsApi
 @ExperimentalMaterialApi
 @Composable
@@ -121,9 +118,10 @@ fun ChatListToolbar(newChatSheetCtrl: ScaffoldController) {
 }
 
 
-fun goToChat(chat: Chat, chatModel: ChatModel, navController: NavController) {
+@DelicateCoroutinesApi
+fun goToChat(chatPreview: Chat, chatModel: ChatModel, navController: NavController) {
   withApi {
-    val cInfo = chat.chatInfo
+    val cInfo = chatPreview.chatInfo
     val chat = chatModel.controller.apiGetChat(cInfo.chatType, cInfo.apiId)
     if (chat != null ) {
       chatModel.chatId = mutableStateOf(cInfo.id)
@@ -135,6 +133,7 @@ fun goToChat(chat: Chat, chatModel: ChatModel, navController: NavController) {
   }
 }
 
+@DelicateCoroutinesApi
 @Composable
 fun ChatList(chatModel: ChatModel, navController: NavController) {
   LazyColumn(

@@ -1,11 +1,9 @@
 package chat.simplex.app.views.newchat
 
-import android.Manifest
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.internal.ComposableLambda
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.*
@@ -14,36 +12,29 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import chat.simplex.app.model.ChatController
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.helpers.CloseSheetBar
 import chat.simplex.app.views.helpers.withApi
-import com.google.accompanist.permissions.ExperimentalPermissionsApi
-import com.google.accompanist.permissions.rememberPermissionState
+import kotlinx.coroutines.DelicateCoroutinesApi
 
-@ExperimentalPermissionsApi
+@DelicateCoroutinesApi
 @Composable
 fun ConnectContactView(chatModel: ChatModel, nav: NavController) {
-  val cameraPermissionState = rememberPermissionState(permission = Manifest.permission.CAMERA)
-
-  Column {
-    ConnectContactLayout(
-      qrCodeScanner = {
-        QRCodeScanner { connReqUri ->
-          withApi {
-            val res = chatModel.controller.apiConnect(connReqUri)
-            // check if it is valid
-            nav.popBackStack()
-          }
+  ConnectContactLayout(
+    qrCodeScanner = {
+      QRCodeScanner { connReqUri ->
+        withApi {
+          val res = chatModel.controller.apiConnect(connReqUri)
+          // check if it is valid
+          nav.popBackStack()
         }
-      },
-      close = { nav.popBackStack() }
-    )
-  }
+      }
+    },
+    close = { nav.popBackStack() }
+  )
 }
 
-@ExperimentalPermissionsApi
 @Composable
 fun ConnectContactLayout(qrCodeScanner: @Composable () -> Unit, close: () -> Unit) {
   Column(
@@ -87,7 +78,6 @@ fun ConnectContactLayout(qrCodeScanner: @Composable () -> Unit, close: () -> Uni
   }
 }
 
-@ExperimentalPermissionsApi
 @Preview
 @Composable
 fun PreviewConnectContactLayout() {

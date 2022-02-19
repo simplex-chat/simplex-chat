@@ -27,7 +27,9 @@ import chat.simplex.app.views.chatlist.ScaffoldController
 import chat.simplex.app.views.helpers.withApi
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberPermissionState
+import kotlinx.coroutines.DelicateCoroutinesApi
 
+@DelicateCoroutinesApi
 @ExperimentalPermissionsApi
 @ExperimentalMaterialApi
 @Composable

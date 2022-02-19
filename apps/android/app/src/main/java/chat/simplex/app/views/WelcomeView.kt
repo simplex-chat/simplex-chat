@@ -13,14 +13,12 @@ import androidx.compose.material.TextField
 import androidx.compose.material.Button
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.Modifier
-import chat.simplex.app.SimplexViewModel
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.model.Profile
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import chat.simplex.app.views.helpers.withApi
+import kotlinx.coroutines.DelicateCoroutinesApi
 
+@DelicateCoroutinesApi
 @Composable
 fun WelcomeView(chatModel: ChatModel, routeHome: () -> Unit) {
   Column(
@@ -38,6 +36,7 @@ fun WelcomeView(chatModel: ChatModel, routeHome: () -> Unit) {
   }
 }
 
+@DelicateCoroutinesApi
 @Composable
 fun CreateProfilePanel(chatModel: ChatModel, routeHome: () -> Unit) {
   var displayName by remember { mutableStateOf("") }
@@ -51,14 +50,12 @@ fun CreateProfilePanel(chatModel: ChatModel, routeHome: () -> Unit) {
     Text("Full Name (Optional)")
     TextField(value = fullName, onValueChange = { fullName = it })
     Button(onClick={
-      GlobalScope.launch {
-        withContext(Dispatchers.Main) {
-          val user = chatModel.controller.apiCreateActiveUser(
-            Profile(displayName, fullName)
-          )
-          chatModel.controller.startChat(user)
-          routeHome()
-        }
+      withApi {
+        val user = chatModel.controller.apiCreateActiveUser(
+          Profile(displayName, fullName)
+        )
+        chatModel.controller.startChat(user)
+        routeHome()
       }
     },
     enabled = displayName.isNotEmpty()

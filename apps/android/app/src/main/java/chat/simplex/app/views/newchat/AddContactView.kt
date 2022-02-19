@@ -3,11 +3,8 @@ package chat.simplex.app.views.newchat
 import android.content.Context
 import android.content.Intent
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.Button
 import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Surface
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Share
@@ -21,7 +18,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import chat.simplex.app.Pages
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.ui.theme.SimpleButton
 import chat.simplex.app.ui.theme.SimpleXTheme
