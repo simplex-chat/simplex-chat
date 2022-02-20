@@ -1,7 +1,9 @@
 package chat.simplex.app
 
 import android.app.Application
+import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
@@ -16,8 +18,8 @@ import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.*
 import chat.simplex.app.views.chat.ChatView
 import chat.simplex.app.views.chatlist.ChatListView
-import chat.simplex.app.views.newchat.AddContactView
-import chat.simplex.app.views.newchat.ConnectContactView
+import chat.simplex.app.views.helpers.withApi
+import chat.simplex.app.views.newchat.*
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import kotlinx.coroutines.DelicateCoroutinesApi
 
@@ -25,20 +27,14 @@ import kotlinx.coroutines.DelicateCoroutinesApi
 @ExperimentalPermissionsApi
 @ExperimentalMaterialApi
 class MainActivity: ComponentActivity() {
-  private val viewModel by viewModels<SimplexViewModel>()
+  private val vm by viewModels<SimplexViewModel>()
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
-    println("**** intent?.data")
-    println(intent?.data)
-    println(intent?.action)
-    viewModel.chatModel.appOpenUrl.value = intent?.data
-    if (intent?.data != null) {
-      viewModel.chatModel.alertManager.showAlertMsg("Connect?", message = intent?.data.toString())
-    }
+    withApi { connectIfOpenedViaUri(intent, vm.chatModel) }
     setContent {
       SimpleXTheme {
-        Navigation(viewModel.chatModel)
+        Navigation(vm.chatModel)
       }
     }
   }
@@ -60,9 +56,8 @@ fun MainPage(chatModel: ChatModel, nav: NavController) {
     } else {
       ChatListView(chatModel, nav)
     }
-    if (chatModel.alertManager.presentAlert.value) {
-      chatModel.alertManager.alertView.value?.invoke()
-    }
+    val am = chatModel.alertManager
+    if (am.presentAlert.value) am.alertView.value?.invoke()
   }
 }
 
@@ -119,4 +114,29 @@ sealed class Pages(val route: String) {
   object Chat: Pages("chat")
   object AddContact: Pages("add_contact")
   object Connect: Pages("connect")
+}
+
+@DelicateCoroutinesApi
+suspend fun connectIfOpenedViaUri(intent: Intent?, chatModel: ChatModel) {
+  val uri = intent?.data
+  if (intent?.action == "android.intent.action.VIEW" && uri != null) {
+    Log.d("SIMPLEX", "connectIfOpenedViaUri: opened via link")
+    if (chatModel.currentUser.value == null) {
+      chatModel.appOpenUrl.value = uri
+    } else {
+      withUriAction(chatModel, uri) { action ->
+        chatModel.alertManager.showAlertMsg(
+          title = "Connect via $action link?",
+          text = "Your profile will be sent to the contact that you received this link from.",
+          confirmText = "Connect",
+          onConfirm = {
+            withApi {
+              Log.d("SIMPLEX", "connectIfOpenedViaUri: connecting")
+              connectViaUri(chatModel, action, uri)
+            }
+          }
+        )
+      }
+    }
+  }
 }
