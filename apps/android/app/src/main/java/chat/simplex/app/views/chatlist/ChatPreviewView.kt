@@ -1,6 +1,5 @@
 package chat.simplex.app.views.chatlist
 
-import android.icu.text.SimpleDateFormat
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -14,31 +13,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import chat.simplex.app.model.Chat
-import chat.simplex.app.model.ChatInfo
+import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.HighOrLowlight
 import chat.simplex.app.ui.theme.SimpleXTheme
-import kotlinx.datetime.Instant
-import kotlinx.datetime.toJavaInstant
-import java.time.LocalDateTime
-import java.util.*
-import java.time.Instant as JavaInstant
-
-fun getDisplayTime(t: Instant) : String {
-  val timeFormatter = SimpleDateFormat("HH:mm", Locale.getDefault())
-  val dateFormatter = SimpleDateFormat("dd/MM/y", Locale.getDefault())
-  val timeProvided: JavaInstant = t.toJavaInstant()
-  val tz = TimeZone.getDefault()
-  val dateProvided = LocalDateTime.ofInstant(timeProvided, tz.toZoneId()).toLocalDate()
-  val today = LocalDateTime.now().atZone(tz.toZoneId()).toLocalDate()
-  val yesterday = today.minusDays(1)
-
-  return when (dateProvided) {
-    today -> timeFormatter.format(Date.from(timeProvided))
-    yesterday -> "yesterday"
-    else -> dateFormatter.format(Date.from(timeProvided))
-  }
-}
 
 @Composable
 fun ChatPreviewView(chat: Chat, goToChat: () -> Unit) {
@@ -70,9 +47,9 @@ fun ChatPreviewView(chat: Chat, goToChat: () -> Unit) {
           Text(chat.chatInfo.chatViewName, fontWeight = FontWeight.Bold)
           (
             if (chat.chatItems.count() > 0) {
-              Text(getDisplayTime(chat.chatItems.last().meta.itemTs), color = HighOrLowlight)
+              Text(getTimestampText(chat.chatItems.last().meta.itemTs), color = HighOrLowlight)
             }
-            else Text(getDisplayTime(chat.chatInfo.createdAt), color = HighOrLowlight)
+            else Text(getTimestampText(chat.chatInfo.createdAt), color = HighOrLowlight)
           )
         }
         if (chat.chatItems.count() > 0) {
