@@ -57,7 +57,7 @@ fun DetailView(identifier: Long, terminalItems: List<TerminalItem>, navControlle
       Text("Back")
     }
     SelectionContainer {
-      Text((terminalItems.filter { it.id == identifier }).first().details)
+      Text((terminalItems.firstOrNull { it.id == identifier })?.details ?: "")
     }
   }
 }

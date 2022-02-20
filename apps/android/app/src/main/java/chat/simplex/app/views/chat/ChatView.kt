@@ -11,12 +11,15 @@ import androidx.compose.material.icons.outlined.ArrowBack
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import chat.simplex.app.Pages
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.chat.item.ChatItemView
+import chat.simplex.app.views.helpers.ChatInfoImage
 import chat.simplex.app.views.helpers.withApi
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.datetime.Clock
@@ -25,20 +28,26 @@ import kotlinx.datetime.Clock
 @Composable
 fun ChatView(chatModel: ChatModel, nav: NavController) {
   if (chatModel.chatId.value != null && chatModel.chats.count() > 0) {
-    val chat: Chat = chatModel.chats.first { chat -> chat.chatInfo.id == chatModel.chatId.value }
-    ChatLayout(chat, chatModel.chatItems, back = { nav.popBackStack() }, sendMessage = { msg ->
-      withApi {
-        // show "in progress"
-        val cInfo = chat.chatInfo
-        val newItem = chatModel.controller.apiSendMessage(
-          type = cInfo.chatType,
-          id = cInfo.apiId,
-          mc = MsgContent.MCText(msg)
-        )
-        // hide "in progress"
-        if (newItem != null) chatModel.addChatItem(cInfo, newItem.chatItem)
-      }
-    })
+    val chat: Chat? = chatModel.chats.firstOrNull { chat -> chat.chatInfo.id == chatModel.chatId.value }
+    if (chat != null) {
+      ChatLayout(chat, chatModel.chatItems,
+        back = { nav.popBackStack() },
+        info = { nav.navigate(Pages.ChatInfo.route) },
+        sendMessage = { msg ->
+          withApi {
+            // show "in progress"
+            val cInfo = chat.chatInfo
+            val newItem = chatModel.controller.apiSendMessage(
+              type = cInfo.chatType,
+              id = cInfo.apiId,
+              mc = MsgContent.MCText(msg)
+            )
+            // hide "in progress"
+            if (newItem != null) chatModel.addChatItem(cInfo, newItem.chatItem)
+          }
+        }
+      )
+    }
   }
 }
 
@@ -46,10 +55,11 @@ fun ChatView(chatModel: ChatModel, nav: NavController) {
 fun ChatLayout(
   chat: Chat, chatItems: List<ChatItem>,
   back: () -> Unit,
+  info: () -> Unit,
   sendMessage: (String) -> Unit
 ) {
   Scaffold(
-    topBar = { ChatInfoToolbar(chat, back) },
+    topBar = { ChatInfoToolbar(chat, back, info) },
     bottomBar = { SendMsgView(sendMessage) }
   ) { contentPadding ->
     Box(
@@ -64,9 +74,10 @@ fun ChatLayout(
 }
 
 @Composable
-fun ChatInfoToolbar(chat: Chat, back: () -> Unit) {
-  Box(
-    modifier = Modifier.fillMaxWidth(),
+fun ChatInfoToolbar(chat: Chat, back: () -> Unit, info: () -> Unit) {
+  Box(Modifier
+    .fillMaxWidth()
+    .height(60.dp),
     contentAlignment = Alignment.CenterStart
   ) {
     Icon(
@@ -77,14 +88,23 @@ fun ChatInfoToolbar(chat: Chat, back: () -> Unit) {
         .clickable(onClick = back)
         .padding(start = 16.dp)
     )
-    Column(
-      Modifier
-        .padding(horizontal = 40.dp)
-        .fillMaxWidth(),
-      horizontalAlignment = Alignment.CenterHorizontally
+    Row(Modifier
+      .padding(horizontal = 40.dp)
+      .fillMaxWidth()
+      .clickable(onClick = info),
+      horizontalArrangement = Arrangement.Center,
+      verticalAlignment = Alignment.CenterVertically
     ) {
-      Text(chat.chatInfo.displayName)
-      Text(chat.chatInfo.fullName)
+      val cInfo = chat.chatInfo
+      ChatInfoImage(chat, size = 40.dp)
+      Column(Modifier.padding(start = 8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+      ) {
+        Text(cInfo.displayName, fontWeight = FontWeight.Bold)
+        if (cInfo.fullName != "" && cInfo.fullName != cInfo.displayName) {
+          Text(cInfo.fullName)
+        }
+      }
     }
   }
 }
@@ -127,6 +147,7 @@ fun PreviewChatViewLayout() {
       ),
       chatItems = chatItems,
       back = {},
+      info = {},
       sendMessage = {}
     )
   }

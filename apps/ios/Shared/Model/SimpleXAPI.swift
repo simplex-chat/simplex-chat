@@ -685,10 +685,10 @@ enum SMPCommandError: Decodable {
 }
 
 enum SMPTransportError: Decodable {
-    case TEBadBlock
-    case TELargeMsg
-    case TEBadSession
-    case TEHandshake(handshakeErr: SMPHandshakeError)
+    case badBlock
+    case largeMsg
+    case badSession
+    case handshake(handshakeErr: SMPHandshakeError)
 }
 
 enum SMPHandshakeError: Decodable {

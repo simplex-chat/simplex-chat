@@ -64,13 +64,13 @@ fun ChatListView(chatModel: ChatModel, nav: NavController) {
           .background(MaterialTheme.colors.background)
       ) {
         ChatListToolbar(newChatCtrl)
-        ChatList(chatModel, nav)
         Button(
           onClick = { nav.navigate(Pages.Terminal.route) },
           modifier = Modifier.padding(14.dp)
         ) {
           Text("Terminal")
         }
+        ChatList(chatModel, nav)
       }
       if (newChatCtrl.state.bottomSheetState.isExpanded) {
         Surface(Modifier

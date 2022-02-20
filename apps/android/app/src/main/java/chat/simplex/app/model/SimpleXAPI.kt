@@ -124,9 +124,7 @@ open class ChatController(val ctrl: ChatCtrl, val alertManager: SimplexApp.Alert
         return false
       }
       else -> {
-        val errMsg = "${r.responseType}: ${r.details}"
-        Log.e("SIMPLEX", "apiConnect bad response: $errMsg")
-        alertManager.showAlertMsg("Connection error", errMsg)
+        apiErrorAlert("apiConnect", "Connection error", r)
         return false
       }
     }
@@ -134,8 +132,20 @@ open class ChatController(val ctrl: ChatCtrl, val alertManager: SimplexApp.Alert
 
   suspend fun apiDeleteChat(type: ChatType, id: Long): Boolean {
     val r = sendCmd(CC.ApiDeleteChat(type, id))
-    if (r is CR.ContactDeleted) return true // TODO groups
-    Log.d("SIMPLEX", "apiDeleteChat bad response: ${r.responseType} ${r.details}")
+    when {
+      r is CR.ContactDeleted -> return true // TODO groups
+      r is CR.ChatCmdError -> {
+        val e = r.chatError
+        if (e is ChatError.ChatErrorChat && e.errorType is ChatErrorType.ContactGroups) {
+          alertManager.showAlertMsg(
+            "Can't delete contact!",
+            "Contact ${e.errorType.contact.displayName} cannot be deleted, it is a member of the group(s) ${e.errorType.groupNames}"
+          )
+          return false
+        }
+      }
+    }
+    apiErrorAlert("apiDeleteChat", "Error deleting ${type.chatTypeName}", r)
     return false
   }
 
@@ -193,22 +203,53 @@ open class ChatController(val ctrl: ChatCtrl, val alertManager: SimplexApp.Alert
     return false
   }
 
+  fun apiErrorAlert(method: String, title: String, r: CR) {
+    val errMsg = "${r.responseType}: ${r.details}"
+    Log.e("SIMPLEX", "$method bad response: $errMsg")
+    alertManager.showAlertMsg(title, errMsg)
+  }
+
   fun processReceivedMsg(r: CR) {
     chatModel.terminalItems.add(TerminalItem.resp(r))
     when {
       r is CR.ContactConnected -> chatModel.updateContact(r.contact)
-//      r is CR.UpdateNetworkStatus -> return
 //      r is CR.ReceivedContactRequest -> return
-//      r is CR.ContactUpdated -> return
-//      r is CR.ContactSubscribed -> return
-//      r is CR.ContactSubError -> return
-//      r is CR.UpdateContact -> return
+      r is CR.ContactUpdated -> {
+        val cInfo = ChatInfo.Direct(r.toContact)
+        if (chatModel.hasChat(r.toContact.id)) {
+          chatModel.updateChatInfo(cInfo)
+        }
+      }
+
+      r is CR.ContactSubscribed -> {
+        chatModel.updateContact(r.contact)
+        chatModel.updateNetworkStatus(r.contact, Chat.NetworkStatus.Connected())
+      }
+      r is CR.ContactDisconnected -> {
+        chatModel.updateContact(r.contact)
+        chatModel.updateNetworkStatus(r.contact, Chat.NetworkStatus.Disconnected())
+      }
+      r is CR.ContactSubError -> {
+        chatModel.updateContact(r.contact)
+        val e = r.chatError
+        val err: String =
+          if (e is ChatError.ChatErrorAgent) {
+            val a = e.agentError
+            when {
+              a is AgentErrorType.BROKER && a.brokerErr is BrokerErrorType.NETWORK -> "network"
+              a is AgentErrorType.SMP && a.smpErr is SMPErrorType.AUTH -> "contact deleted"
+              else -> e.string
+            }
+          }
+          else e.string
+        chatModel.updateNetworkStatus(r.contact, Chat.NetworkStatus.Error(err))
+      }
       r is CR.NewChatItem -> {
         val cInfo = r.chatItem.chatInfo
         val cItem = r.chatItem.chatItem
         chatModel.addChatItem(cInfo, cItem)
-      }
 //        NtfManager.shared.notifyMessageReceived(cInfo, cItem)
+      }
 
 //      switch res {
 //        chatModel.updateNetworkStatus(contact, .connected)
@@ -219,31 +260,7 @@ open class ChatController(val ctrl: ChatCtrl, val alertManager: SimplexApp.Alert
   //        chatItems: []
   //        ))
 //          NtfManager.shared.notifyContactRequest(contactRequest)
-//        case let .contactUpdated(toContact):
-  //        let cInfo = ChatInfo.direct(contact: toContact)
-  //        if chatModel.hasChat(toContact.id) {
-  //          chatModel.updateChatInfo(cInfo)
-  //        }
-//        case let .contactSubscribed(contact):
-  //        chatModel.updateContact(contact)
-  //        chatModel.updateNetworkStatus(contact, .connected)
-  //        case let .contactDisconnected(contact):
-  //        chatModel.updateContact(contact)
-  //        chatModel.updateNetworkStatus(contact, .disconnected)
-//        case let .contactSubError(contact, chatError):
-//        chatModel.updateContact(contact)
-////        var err: String
-////        switch chatError {
-////          case .errorAgent(agentError: .BROKER(brokerErr: .NETWORK)): err = "network"
-////          case .errorAgent(agentError: .SMP(smpErr: .AUTH)): err = "contact deleted"
-////          default: err = String(describing: chatError)
-////        }
-////        chatModel.updateNetworkStatus(contact, .error(err))
-//        case let .newChatItem(aChatItem):
-  //        let cInfo = aChatItem.chatInfo
-  //            let cItem = aChatItem.chatItem
-  //            chatModel.addChatItem(cInfo, cItem)
-  //        NtfManager.shared.notifyMessageReceived(cInfo, cItem)
+//
 //        case let .chatItemUpdated(aChatItem):
   //        let cInfo = aChatItem.chatInfo
   //            let cItem = aChatItem.chatItem
@@ -557,13 +574,13 @@ sealed class CR {
   @Serializable @SerialName("chatCmdError")
   class ChatCmdError(val chatError: ChatError): CR() {
     override val responseType get() = "chatCmdError"
-    override val details get() = chatError.toString()
+    override val details get() = chatError.string
   }
 
   @Serializable @SerialName("chatError")
   class ChatRespError(val chatError: ChatError): CR() {
     override val responseType get() = "chatError"
-    override val details get() = chatError.toString()
+    override val details get() = chatError.string
   }
 
   @Serializable
@@ -610,21 +627,186 @@ abstract class TerminalItem {
 
 @Serializable
 sealed class ChatError {
-  @Serializable @SerialName("error")
-  class ChatErrorChat(val errorType: ChatErrorType): ChatError()
-
-  @Serializable @SerialName("errorStore")
-  class ChatErrorStore(val storeError: StoreError): ChatError()
+  val string: String get() = when {
+    this is ChatErrorChat -> "chat ${errorType.string}"
+    this is ChatErrorAgent -> "agent ${agentError.string}"
+    this is ChatErrorStore -> "store ${storeError.string}"
+    else -> "ChatError"
+  }
+  @Serializable @SerialName("error") class ChatErrorChat(val errorType: ChatErrorType): ChatError()
+  @Serializable @SerialName("errorAgent") class ChatErrorAgent(val agentError: AgentErrorType): ChatError()
+  @Serializable @SerialName("errorStore") class ChatErrorStore(val storeError: StoreError): ChatError()
 }
 
 @Serializable
 sealed class ChatErrorType {
-  @Serializable @SerialName("invalidConnReq")
-  class InvalidConnReq: ChatErrorType()
+  val string: String get() = when {
+    this is InvalidConnReq -> "invalidConnReq"
+    this is ContactGroups -> "groupNames $groupNames"
+    else -> "ChatErrorType"
+  }
+  @Serializable @SerialName("invalidConnReq") class InvalidConnReq: ChatErrorType()
+  @Serializable @SerialName("contactGroups") class ContactGroups(val contact: Contact, val groupNames: List<String>): ChatErrorType()
 }
 
 @Serializable
 sealed class StoreError {
-  @Serializable @SerialName("userContactLinkNotFound")
-  class UserContactLinkNotFound: StoreError()
+  val string: String get() = when {
+    this is UserContactLinkNotFound -> "userContactLinkNotFound"
+    else -> "StoreError"
+  }
+  @Serializable @SerialName("userContactLinkNotFound") class UserContactLinkNotFound: StoreError()
+}
+
+@Serializable
+sealed class AgentErrorType {
+  val string: String get() = when {
+    this is CMD -> "CMD ${cmdErr.string}"
+    this is CONN -> "CONN ${connErr.string}"
+    this is SMP -> "SMP ${smpErr.string}"
+    this is BROKER -> "BROKER ${brokerErr.string}"
+    this is AGENT -> "AGENT ${agentErr.string}"
+    this is INTERNAL -> "INTERNAL $internalErr"
+    else -> "AgentErrorType"
+  }
+  @Serializable @SerialName("CMD") class CMD(val cmdErr: CommandErrorType): AgentErrorType()
+  @Serializable @SerialName("CONN") class CONN(val connErr: ConnectionErrorType): AgentErrorType()
+  @Serializable @SerialName("SMP") class SMP(val smpErr: SMPErrorType): AgentErrorType()
+  @Serializable @SerialName("BROKER") class BROKER(val brokerErr: BrokerErrorType): AgentErrorType()
+  @Serializable @SerialName("AGENT") class AGENT(val agentErr: SMPAgentError): AgentErrorType()
+  @Serializable @SerialName("INTERNAL") class INTERNAL(val internalErr: String): AgentErrorType()
+}
+
+@Serializable
+sealed class CommandErrorType {
+  val string: String get() = when {
+    this is PROHIBITED -> "PROHIBITED"
+    this is SYNTAX -> "SYNTAX"
+    this is NO_CONN -> "NO_CONN"
+    this is SIZE -> "SIZE"
+    this is LARGE -> "LARGE"
+    else -> "CommandErrorType"
+  }
+  @Serializable @SerialName("PROHIBITED") class PROHIBITED: CommandErrorType()
+  @Serializable @SerialName("SYNTAX") class SYNTAX: CommandErrorType()
+  @Serializable @SerialName("NO_CONN") class NO_CONN: CommandErrorType()
+  @Serializable @SerialName("SIZE") class SIZE: CommandErrorType()
+  @Serializable @SerialName("LARGE") class LARGE: CommandErrorType()
+}
+
+@Serializable
+sealed class ConnectionErrorType {
+  val string: String get() = when {
+    this is NOT_FOUND -> "NOT_FOUND"
+    this is DUPLICATE -> "DUPLICATE"
+    this is SIMPLEX -> "SIMPLEX"
+    this is NOT_ACCEPTED -> "NOT_ACCEPTED"
+    this is NOT_AVAILABLE -> "NOT_AVAILABLE"
+    else -> "ConnectionErrorType"
+  }
+  @Serializable @SerialName("NOT_FOUND") class NOT_FOUND: ConnectionErrorType()
+  @Serializable @SerialName("DUPLICATE") class DUPLICATE: ConnectionErrorType()
+  @Serializable @SerialName("SIMPLEX") class SIMPLEX: ConnectionErrorType()
+  @Serializable @SerialName("NOT_ACCEPTED") class NOT_ACCEPTED: ConnectionErrorType()
+  @Serializable @SerialName("NOT_AVAILABLE") class NOT_AVAILABLE: ConnectionErrorType()
+}
+
+@Serializable
+sealed class BrokerErrorType {
+  val string: String get() = when {
+    this is RESPONSE -> "RESPONSE ${smpErr.string}"
+    this is UNEXPECTED -> "UNEXPECTED"
+    this is NETWORK -> "NETWORK"
+    this is TRANSPORT -> "TRANSPORT ${transportErr.string}"
+    this is TIMEOUT -> "TIMEOUT"
+    else -> "BrokerErrorType"
+  }
+  @Serializable @SerialName("RESPONSE") class RESPONSE(val smpErr: SMPErrorType): BrokerErrorType()
+  @Serializable @SerialName("UNEXPECTED") class UNEXPECTED: BrokerErrorType()
+  @Serializable @SerialName("NETWORK") class NETWORK: BrokerErrorType()
+  @Serializable @SerialName("TRANSPORT") class TRANSPORT(val transportErr: SMPTransportError): BrokerErrorType()
+  @Serializable @SerialName("TIMEOUT") class TIMEOUT: BrokerErrorType()
+}
+
+@Serializable
+sealed class SMPErrorType {
+  val string: String get() = when {
+    this is BLOCK -> "BLOCK"
+    this is SESSION -> "SESSION"
+    this is CMD -> "CMD ${cmdErr.string}"
+    this is AUTH -> "AUTH"
+    this is QUOTA -> "QUOTA"
+    this is NO_MSG -> "NO_MSG"
+    this is LARGE_MSG -> "LARGE_MSG"
+    this is INTERNAL -> "INTERNAL"
+    else -> "SMPErrorType"
+  }
+  @Serializable @SerialName("BLOCK") class BLOCK: SMPErrorType()
+  @Serializable @SerialName("SESSION") class SESSION: SMPErrorType()
+  @Serializable @SerialName("CMD") class CMD(val cmdErr: SMPCommandError): SMPErrorType()
+  @Serializable @SerialName("AUTH") class AUTH: SMPErrorType()
+  @Serializable @SerialName("QUOTA") class QUOTA: SMPErrorType()
+  @Serializable @SerialName("NO_MSG") class NO_MSG: SMPErrorType()
+  @Serializable @SerialName("LARGE_MSG") class LARGE_MSG: SMPErrorType()
+  @Serializable @SerialName("INTERNAL") class INTERNAL: SMPErrorType()
+}
+
+@Serializable
+sealed class SMPCommandError {
+  val string: String get() = when {
+    this is UNKNOWN -> "UNKNOWN"
+    this is SYNTAX -> "SYNTAX"
+    this is NO_AUTH -> "NO_AUTH"
+    this is HAS_AUTH -> "HAS_AUTH"
+    this is NO_QUEUE -> "NO_QUEUE"
+    else -> "SMPCommandError"
+  }
+  @Serializable @SerialName("UNKNOWN") class UNKNOWN: SMPCommandError()
+  @Serializable @SerialName("SYNTAX") class SYNTAX: SMPCommandError()
+  @Serializable @SerialName("NO_AUTH") class NO_AUTH: SMPCommandError()
+  @Serializable @SerialName("HAS_AUTH") class HAS_AUTH: SMPCommandError()
+  @Serializable @SerialName("NO_QUEUE") class NO_QUEUE: SMPCommandError()
+}
+
+@Serializable
+sealed class SMPTransportError {
+  val string: String get() = when {
+    this is BadBlock -> "badBlock"
+    this is LargeMsg -> "largeMsg"
+    this is BadSession -> "badSession"
+    this is Handshake -> "handshake ${handshakeErr.string}"
+    else -> "SMPTransportError"
+  }
+  @Serializable @SerialName("badBlock") class BadBlock: SMPTransportError()
+  @Serializable @SerialName("largeMsg") class LargeMsg: SMPTransportError()
+  @Serializable @SerialName("badSession") class BadSession: SMPTransportError()
+  @Serializable @SerialName("handshake") class Handshake(val handshakeErr: SMPHandshakeError): SMPTransportError()
+}
+
+@Serializable
+sealed class SMPHandshakeError {
+  val string: String get() = when {
+    this is PARSE -> "PARSE"
+    this is VERSION -> "VERSION"
+    this is IDENTITY -> "IDENTITY"
+    else -> "SMPHandshakeError"
+  }
+  @Serializable @SerialName("PARSE") class PARSE: SMPHandshakeError()
+  @Serializable @SerialName("VERSION") class VERSION: SMPHandshakeError()
+  @Serializable @SerialName("IDENTITY") class IDENTITY: SMPHandshakeError()
+}
+
+@Serializable
+sealed class SMPAgentError {
+  val string: String get() = when {
+    this is A_MESSAGE -> "A_MESSAGE"
+    this is A_PROHIBITED -> "A_PROHIBITED"
+    this is A_VERSION -> "A_VERSION"
+    this is A_ENCRYPTION -> "A_ENCRYPTION"
+    else -> "SMPAgentError"
+  }
+  @Serializable @SerialName("A_MESSAGE") class A_MESSAGE: SMPAgentError()
+  @Serializable @SerialName("A_PROHIBITED") class A_PROHIBITED: SMPAgentError()
+  @Serializable @SerialName("A_VERSION") class A_VERSION: SMPAgentError()
+  @Serializable @SerialName("A_ENCRYPTION") class A_ENCRYPTION: SMPAgentError()
 }

@@ -16,6 +16,7 @@ import androidx.navigation.compose.*
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.*
+import chat.simplex.app.views.chat.ChatInfoView
 import chat.simplex.app.views.chat.ChatView
 import chat.simplex.app.views.chatlist.ChatListView
 import chat.simplex.app.views.helpers.withApi
@@ -50,14 +51,10 @@ class SimplexViewModel(application: Application) : AndroidViewModel(application)
 @ExperimentalMaterialApi
 @Composable
 fun MainPage(chatModel: ChatModel, nav: NavController) {
-  Box {
-    if (chatModel.currentUser.value == null) WelcomeView(chatModel) {
-      nav.navigate(Pages.ChatList.route)
-    } else {
-      ChatListView(chatModel, nav)
-    }
-    val am = chatModel.alertManager
-    if (am.presentAlert.value) am.alertView.value?.invoke()
+  if (chatModel.currentUser.value == null) WelcomeView(chatModel) {
+    nav.navigate(Pages.ChatList.route)
+  } else {
+    ChatListView(chatModel, nav)
   }
 }
 
@@ -68,40 +65,47 @@ fun MainPage(chatModel: ChatModel, nav: NavController) {
 fun Navigation(chatModel: ChatModel) {
   val nav = rememberNavController()
 
-  NavHost(navController = nav, startDestination=Pages.Home.route){
-    composable(route=Pages.Home.route){
-      MainPage(chatModel, nav)
-    }
-    composable(route = Pages.Welcome.route) {
-      WelcomeView(chatModel) {
-        nav.navigate(Pages.Home.route) {
-          popUpTo(Pages.Home.route) { inclusive = true }
+  Box {
+    NavHost(navController = nav, startDestination = Pages.Home.route) {
+      composable(route = Pages.Home.route) {
+        MainPage(chatModel, nav)
+      }
+      composable(route = Pages.Welcome.route) {
+        WelcomeView(chatModel) {
+          nav.navigate(Pages.Home.route) {
+            popUpTo(Pages.Home.route) { inclusive = true }
+          }
         }
       }
+      composable(route = Pages.ChatList.route) {
+        ChatListView(chatModel, nav)
+      }
+      composable(route = Pages.Chat.route) {
+        ChatView(chatModel, nav)
+      }
+      composable(route = Pages.AddContact.route) {
+        AddContactView(chatModel, nav)
+      }
+      composable(route = Pages.Connect.route) {
+        ConnectContactView(chatModel, nav)
+      }
+      composable(route = Pages.ChatInfo.route) {
+        ChatInfoView(chatModel, nav)
+      }
+      composable(route = Pages.Terminal.route) {
+        TerminalView(chatModel, nav)
+      }
+      composable(
+        Pages.TerminalItemDetails.route + "/{identifier}",
+        arguments = listOf(
+          navArgument("identifier") {
+            type = NavType.LongType
+          }
+        )
+      ) { entry -> DetailView(entry.arguments!!.getLong("identifier"), chatModel.terminalItems, nav) }
     }
-    composable(route = Pages.ChatList.route) {
-      ChatListView(chatModel, nav)
-    }
-    composable(route = Pages.Chat.route) {
-      ChatView(chatModel, nav)
-    }
-    composable(route = Pages.AddContact.route) {
-      AddContactView(chatModel, nav)
-    }
-    composable(route = Pages.Connect.route) {
-      ConnectContactView(chatModel, nav)
-    }
-    composable(route = Pages.Terminal.route) {
-      TerminalView(chatModel,  nav)
-    }
-    composable(
-      Pages.TerminalItemDetails.route + "/{identifier}",
-      arguments = listOf(
-        navArgument("identifier"){
-          type = NavType.LongType
-        }
-      )
-    ) { entry -> DetailView( entry.arguments!!.getLong("identifier"), chatModel.terminalItems, nav) }
+    val am = chatModel.alertManager
+    if (am.presentAlert.value) am.alertView.value?.invoke()
   }
 }
 
@@ -114,6 +118,7 @@ sealed class Pages(val route: String) {
   object Chat: Pages("chat")
   object AddContact: Pages("add_contact")
   object Connect: Pages("connect")
+  object ChatInfo: Pages("chat_info")
 }
 
 @DelicateCoroutinesApi

@@ -5,9 +5,12 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import chat.simplex.app.SimplexApp
 import kotlinx.datetime.*
-import kotlinx.datetime.TimeZone
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlin.Boolean
+import kotlin.Int
+import kotlin.Long
+import kotlin.String
 
 class ChatModel(val controller: ChatController, val alertManager: SimplexApp.AlertManager) {
   var currentUser = mutableStateOf<User?>(null)
@@ -39,12 +42,14 @@ class ChatModel(val controller: ChatController, val alertManager: SimplexApp.Ale
     }
   }
 
-//  func updateNetworkStatus(_ contact: Contact, _ status: Chat.NetworkStatus) {
-//    if let ix = getChatIndex(contact.id) {
-//      chats[ix].serverInfo.networkStatus = status
-//    }
-//  }
-//
+  fun updateNetworkStatus(contact: Contact, status: Chat.NetworkStatus) {
+    val i = getChatIndex(contact.id)
+    if (i >= 0) {
+      val chat = chats[i]
+      chats[i] = chat.copy(serverInfo = chat.serverInfo.copy(networkStatus = status))
+    }
+  }
+
 //  func replaceChat(_ id: String, _ chat: Chat) {
 //    if let i = getChatIndex(id) {
 //      chats[i] = chat
@@ -59,7 +64,7 @@ class ChatModel(val controller: ChatController, val alertManager: SimplexApp.Ale
     val i = getChatIndex(cInfo.id)
     if (i >= 0) {
       val chat = chats[i]
-      val updatedChat = chat.copy(
+      chats[i] = chat.copy(
         chatItems = arrayListOf(cItem),
         chatStats =
           if (cItem.meta.itemStatus is CIStatus.RcvNew)
@@ -67,7 +72,6 @@ class ChatModel(val controller: ChatController, val alertManager: SimplexApp.Ale
           else
             chat.chatStats
       )
-      chats[i] = updatedChat
       if (i > 0) {
         popChat_(i)
       }
@@ -154,18 +158,23 @@ class ChatModel(val controller: ChatController, val alertManager: SimplexApp.Ale
     val chat = chats.removeAt(i)
     chats.add(index = 0, chat)
   }
-//
-//  func removeChat(_ id: String) {
-//    withAnimation {
-//      chats.removeAll(where: { $0.id == id })
-//    }
-//  }
+
+  fun removeChat(id: String) {
+    chats.removeAll { it.id == id }
+  }
 }
 
 enum class ChatType(val type: String) {
   Direct("@"),
   Group("#"),
-  ContactRequest("<@")
+  ContactRequest("<@");
+
+  val chatTypeName: String get () =
+    when (this) {
+      Direct -> "contact"
+      Group -> "group"
+      ContactRequest -> "contact request"
+    }
 }
 
 @Serializable
@@ -221,20 +230,22 @@ data class Chat (
   data class ChatStats(val unreadCount: Int = 0, val minUnreadItemId: Long = 0)
 
   @Serializable
-  class ServerInfo(val networkStatus: NetworkStatus)
+  data class ServerInfo(val networkStatus: NetworkStatus)
 
   @Serializable
   sealed class NetworkStatus {
-    abstract val statusString: String
-    abstract val statusExplanation: String
-    abstract val imageName: String
+    val statusString: String get() = if (this is Connected) "Server connected" else "Connecting server…"
+    val statusExplanation: String get() =
+      when {
+        this is Connected -> "You are connected to the server you use to receve messages from this contact."
+        this is Error -> "Trying to connect to the server you use to receve messages from this contact (error: $error)."
+        else -> "Trying to connect to the server you use to receve messages from this contact."
+      }
 
-    @Serializable
-    class Unknown: NetworkStatus() {
-      override val statusString get() = "Server connected"
-      override val statusExplanation get() = "You are connected to the server you use to receve messages from this contact."
-      override val imageName get() = "circle.dotted" // ?
-    }
+    @Serializable @SerialName("unknown") class Unknown: NetworkStatus()
+    @Serializable @SerialName("connected") class Connected: NetworkStatus()
+    @Serializable @SerialName("disconnected") class Disconnected: NetworkStatus()
+    @Serializable @SerialName("error") class Error(val error: String): NetworkStatus()
   }
 }
 
@@ -249,7 +260,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
     override val ready get() = contact.ready
     override val createdAt get() = contact.createdAt
     override val displayName get() = contact.displayName
-    override val fullName get() = contact.displayName
+    override val fullName get() = contact.fullName
 
     companion object {
       val sampleData = Direct(Contact.sampleData)
@@ -265,7 +276,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
     override val ready get() = groupInfo.ready
     override val createdAt get() = groupInfo.createdAt
     override val displayName get() = groupInfo.displayName
-    override val fullName get() = groupInfo.displayName
+    override val fullName get() = groupInfo.fullName
 
     companion object {
       val sampleData = Group(GroupInfo.sampleData)
@@ -281,7 +292,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
     override val ready get() = contactRequest.ready
     override val createdAt get() = contactRequest.createdAt
     override val displayName get() = contactRequest.displayName
-    override val fullName get() = contactRequest.displayName
+    override val fullName get() = contactRequest.fullName
 
     companion object {
       val sampleData = ContactRequest(UserContactRequest.sampleData)
@@ -563,10 +574,5 @@ sealed class MsgContent {
 
 @Serializable
 class RcvFileTransfer {
-
-}
-
-@Serializable
-class AgentErrorType {
 
 }
