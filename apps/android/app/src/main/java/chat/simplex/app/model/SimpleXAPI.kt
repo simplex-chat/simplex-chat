@@ -2,21 +2,19 @@ package chat.simplex.app.model
 
 import android.util.Log
 import androidx.compose.runtime.mutableStateOf
-import chat.simplex.app.chatRecvMsg
-import chat.simplex.app.chatSendCmd
+import chat.simplex.app.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.*
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
-import java.lang.Exception
 import java.util.*
 import kotlin.concurrent.thread
 
 typealias ChatCtrl = Long
 
-open class ChatController(val ctrl: ChatCtrl) {
-  var chatModel = ChatModel(this)
+open class ChatController(val ctrl: ChatCtrl, val alertManager: SimplexApp.AlertManager) {
+  var chatModel = ChatModel(this, alertManager)
 
   suspend fun startChat(u: User) {
     chatModel.currentUser = mutableStateOf(u)
@@ -238,8 +236,6 @@ open class ChatController(val ctrl: ChatCtrl) {
 //      }
     }
   }
-
-  class Mock: ChatController(0) {}
 }
 
 // ChatCommand

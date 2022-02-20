@@ -3,7 +3,7 @@ package chat.simplex.app.views.newchat
 import android.graphics.Bitmap
 import android.graphics.Color
 import androidx.compose.foundation.Image
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.tooling.preview.Preview
 import chat.simplex.app.ui.theme.SimpleXTheme

@@ -3,16 +3,15 @@ package chat.simplex.app
 import android.app.Application
 import android.net.LocalServerSocket
 import android.util.Log
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.snapshots.SnapshotStateList
-import chat.simplex.app.model.*
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import androidx.compose.material.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import chat.simplex.app.model.ChatController
+import chat.simplex.app.model.ChatModel
+import chat.simplex.app.views.helpers.withApi
+import kotlinx.coroutines.DelicateCoroutinesApi
 import java.io.BufferedReader
 import java.io.InputStreamReader
-import java.lang.ref.WeakReference
 import java.util.*
 import java.util.concurrent.Semaphore
 import kotlin.concurrent.thread
@@ -28,19 +27,52 @@ external fun chatInit(path: String): ChatCtrl
 external fun chatSendCmd(ctrl: ChatCtrl, msg: String) : String
 external fun chatRecvMsg(ctrl: ChatCtrl) : String
 
+@DelicateCoroutinesApi
 class SimplexApp: Application() {
   private lateinit var controller: ChatController
   lateinit var chatModel: ChatModel
 
   override fun onCreate() {
     super.onCreate()
-    controller = ChatController(chatInit(applicationContext.filesDir.toString()))
+    val ctrl = chatInit(applicationContext.filesDir.toString())
+    controller = ChatController(ctrl, AlertManager())
     chatModel = controller.chatModel
-    GlobalScope.launch {
-      withContext(Dispatchers.Main) {
-        var user = controller.apiGetActiveUser()
-        if (user != null) controller.startChat(user)
+    withApi {
+      val user = controller.apiGetActiveUser()
+      if (user != null) controller.startChat(user)
+    }
+  }
+
+  class AlertManager {
+    var alertView = mutableStateOf<(@Composable () -> Unit)?>(null)
+    var presentAlert = mutableStateOf<Boolean>(false)
+
+    fun showAlert(alert: @Composable () -> Unit) {
+      Log.d("SIMPLEX", "AlertManager.showAlert")
+      alertView.value = alert
+      presentAlert.value = true
+    }
+
+    fun hideAlert() {
+      presentAlert.value = false
+      alertView.value = null
+    }
+
+    fun showAlertMsg(title: String, message: String? = null) {
+      val text: (@Composable () -> Unit)? = if (message == null) null else { -> Text(message) }
+      showAlert {
+        AlertDialog(
+          onDismissRequest = { hideAlert() },
+          title = { Text(title) },
+          text = text,
+          confirmButton = { ConfirmButton() }
+        )
       }
+    }
+
+    @Composable
+    private fun ConfirmButton() {
+      Button(onClick = { hideAlert() }) { Text("Ok") }
     }
   }
 

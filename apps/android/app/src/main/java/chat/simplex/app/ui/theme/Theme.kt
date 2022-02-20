@@ -1,15 +1,16 @@
 package chat.simplex.app.ui.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.darkColors
-import androidx.compose.material.lightColors
+import androidx.compose.material.*
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
 
 private val DarkColorPalette = darkColors(
   primary = SimplexBlue,
   primaryVariant = SimplexGreen,
   secondary = DarkGray,
+  background = Color.Black,
+  surface = Color.Black
   /*
     background: Color = Color(0xFF121212),
     surface: Color = Color(0xFF121212),
@@ -26,6 +27,8 @@ private val LightColorPalette = lightColors(
   primary = SimplexBlue,
   primaryVariant = SimplexGreen,
   secondary = LightGray,
+  background = Color.White,
+  surface = Color.White
   /* Other default colors to override
     surface = Color.White,
     onPrimary = Color.White,

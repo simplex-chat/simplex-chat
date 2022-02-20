@@ -1,12 +1,16 @@
 package chat.simplex.app.model
 
 import android.annotation.SuppressLint
-import androidx.compose.runtime.*
+import android.net.Uri
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
+import chat.simplex.app.SimplexApp
 import kotlinx.datetime.*
-import kotlinx.serialization.*
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import java.time.format.DateTimeFormatter
 
-class ChatModel(val controller: ChatController) {
+class ChatModel(val controller: ChatController, val alertManager: SimplexApp.AlertManager) {
   var currentUser = mutableStateOf<User?>(null)
   var chats = mutableStateListOf<Chat>()
   var chatId = mutableStateOf<String?>(null)
@@ -14,6 +18,8 @@ class ChatModel(val controller: ChatController) {
 
   var connReqInvitation: String? = null
   var terminalItems = mutableStateListOf<TerminalItem>()
+  // set when app is opened via contact or invitation URI
+  var appOpenUrl = mutableStateOf<Uri?>(null)
 
   fun hasChat(id: String): Boolean = chats.firstOrNull() { it.id == id } != null
   fun getChat(id: String): Chat? = chats.firstOrNull { it.id == id }
@@ -155,17 +161,6 @@ class ChatModel(val controller: ChatController) {
 //      chats.removeAll(where: { $0.id == id })
 //    }
 //  }
-
-  companion object {
-    val sampleData: ChatModel get() {
-      val m = ChatModel(ChatController.Mock())
-      m.terminalItems = mutableStateListOf(
-        TerminalItem.Cmd(0, CC.ShowActiveUser()),
-        TerminalItem.Resp(1, CR.ActiveUser(User.sampleData))
-      )
-      return m
-    }
-  }
 }
 
 enum class ChatType(val type: String) {
