@@ -1,14 +1,13 @@
 package chat.simplex.app.model
 
-import android.annotation.SuppressLint
 import android.net.Uri
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import chat.simplex.app.SimplexApp
 import kotlinx.datetime.*
+import kotlinx.datetime.TimeZone
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import java.time.format.DateTimeFormatter
 
 class ChatModel(val controller: ChatController, val alertManager: SimplexApp.AlertManager) {
   var currentUser = mutableStateOf<User?>(null)
@@ -495,13 +494,14 @@ class CIMeta (
   }
 }
 
-// TODO use old api?
-// TODO date for older timestamps
-@SuppressLint("NewApi")
-fun getTimestampText(d: Instant): String {
-  val dt = d.toLocalDateTime(TimeZone.currentSystemDefault()).toJavaLocalDateTime()
-  val formatter = DateTimeFormatter.ofPattern("HH:mm")
-  return dt.format(formatter)
+fun getTimestampText(t: Instant): String {
+  val tz = TimeZone.currentSystemDefault()
+  val now: LocalDateTime = Clock.System.now().toLocalDateTime(tz)
+  val time: LocalDateTime = t.toLocalDateTime(tz)
+  val recent = now.date == time.date ||
+      (now.date.minus(time.date).days == 1 && now.hour < 12 && time.hour >= 18 )
+  return if (recent) String.format("%02d:%02d", time.hour, time.minute)
+                else String.format("%02d/%02d", time.dayOfMonth, time.monthNumber)
 }
 
 @Serializable
