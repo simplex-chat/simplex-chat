@@ -1,5 +1,6 @@
 package chat.simplex.app.views.newchat
 
+import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
@@ -24,15 +25,49 @@ fun ConnectContactView(chatModel: ChatModel, nav: NavController) {
   ConnectContactLayout(
     qrCodeScanner = {
       QRCodeScanner { connReqUri ->
-        withApi {
-          val res = chatModel.controller.apiConnect(connReqUri)
-          // check if it is valid
-          nav.popBackStack()
+        try {
+          val uri = Uri.parse(connReqUri)
+          withUriAction(chatModel, uri) { action ->
+            connectViaUri(chatModel, action, uri)
+          }
+        } catch(e: RuntimeException) {
+          chatModel.alertManager.showAlertMsg(
+            title = "Invalid QR code",
+            text = "This QR code is not a link!"
+          )
         }
+        nav.popBackStack()
       }
     },
     close = { nav.popBackStack() }
   )
+}
+
+@DelicateCoroutinesApi
+fun withUriAction(chatModel: ChatModel, uri: Uri,
+                  run: suspend (String) -> Unit) {
+  val action = uri.path?.drop(1)
+  if (action == "contact" || action == "invitation") {
+    withApi { run(action) }
+  } else {
+    chatModel.alertManager.showAlertMsg(
+      title = "Invalid link!",
+      text = "This link is not a valid connection link!"
+    )
+  }
+}
+
+suspend fun connectViaUri(chatModel: ChatModel, action: String, uri: Uri) {
+  val r = chatModel.controller.apiConnect(uri.toString())
+  if (r) {
+    val whenConnected =
+      if (action == "contact") "your connection request is accepted"
+      else "your contact's device is online"
+    chatModel.alertManager.showAlertMsg(
+      title = "Connection request sent!",
+      text = "You will be connected when $whenConnected, please wait or check later!"
+    )
+  }
 }
 
 @Composable

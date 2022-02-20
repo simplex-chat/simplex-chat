@@ -7,15 +7,13 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.ClickableText
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.Text
 import androidx.compose.material.Button
+import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.AnnotatedString
-import androidx.navigation.*
+import androidx.navigation.NavController
 import chat.simplex.app.model.*
-import chat.simplex.app.model.ChatModel
-import chat.simplex.app.model.TerminalItem
 import chat.simplex.app.views.chat.SendMsgView
 import chat.simplex.app.views.helpers.withApi
 import kotlinx.coroutines.DelicateCoroutinesApi

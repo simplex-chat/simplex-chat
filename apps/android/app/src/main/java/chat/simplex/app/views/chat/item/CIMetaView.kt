@@ -7,7 +7,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import chat.simplex.app.model.CIDirection
 import chat.simplex.app.model.ChatItem
-import kotlinx.datetime.*
+import kotlinx.datetime.Clock
 
 @Composable
 fun CIMetaView(chatItem: ChatItem) {

@@ -2,21 +2,19 @@ package chat.simplex.app.model
 
 import android.util.Log
 import androidx.compose.runtime.mutableStateOf
-import chat.simplex.app.chatRecvMsg
-import chat.simplex.app.chatSendCmd
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import chat.simplex.app.*
+import kotlinx.coroutines.*
 import kotlinx.serialization.*
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
-import java.lang.Exception
 import java.util.*
 import kotlin.concurrent.thread
 
 typealias ChatCtrl = Long
 
-open class ChatController(val ctrl: ChatCtrl) {
-  var chatModel = ChatModel(this)
+@DelicateCoroutinesApi
+open class ChatController(val ctrl: ChatCtrl, val alertManager: SimplexApp.AlertManager) {
+  var chatModel = ChatModel(this, alertManager)
 
   suspend fun startChat(u: User) {
     chatModel.currentUser = mutableStateOf(u)
@@ -110,9 +108,28 @@ open class ChatController(val ctrl: ChatCtrl) {
 
   suspend fun apiConnect(connReq: String): Boolean  {
     val r = sendCmd(CC.Connect(connReq))
-    if (r is CR.SentConfirmation || r is CR.SentInvitation) return true
-    Log.d("SIMPLEX", "apiConnect bad response: ${r.responseType} ${r.details}")
-    return false
+    when {
+      r is CR.SentConfirmation || r is CR.SentInvitation -> return true
+      r is CR.ContactAlreadyExists -> {
+        alertManager.showAlertMsg("Contact already exists",
+          "You are already connected to ${r.contact.displayName} via this link"
+        )
+        return false
+      }
+      r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorChat
+          && r.chatError.errorType is ChatErrorType.InvalidConnReq -> {
+        alertManager.showAlertMsg("Invalid connection link",
+          "Please check that you used the correct link or ask your contact to send you another one."
+        )
+        return false
+      }
+      else -> {
+        val errMsg = "${r.responseType}: ${r.details}"
+        Log.e("SIMPLEX", "apiConnect bad response: $errMsg")
+        alertManager.showAlertMsg("Connection error", errMsg)
+        return false
+      }
+    }
   }
 
   suspend fun apiDeleteChat(type: ChatType, id: Long): Boolean {
@@ -147,7 +164,7 @@ open class ChatController(val ctrl: ChatCtrl) {
   suspend fun apiGetUserAddress(): String? {
     val r = sendCmd(CC.ShowMyAddress())
     if (r is CR.UserContactLink) return r.connReqContact
-    if (r is CR.ChatCmdError && r.chatError is ChatError.ErrorStore
+    if (r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorStore
       && r.chatError.storeError is StoreError.UserContactLinkNotFound) {
       return null
     }
@@ -238,8 +255,6 @@ open class ChatController(val ctrl: ChatCtrl) {
 //      }
     }
   }
-
-  class Mock: ChatController(0) {}
 }
 
 // ChatCommand
@@ -348,17 +363,17 @@ val json = Json {
 class APIResponse(val resp: CR, val corr: String? = null) {
   companion object {
     fun decodeStr(str: String): APIResponse {
-      try {
-        return json.decodeFromString(str)
+      return try {
+        json.decodeFromString(str)
       } catch(e: Exception) {
         try {
           val data = json.parseToJsonElement(str).jsonObject
-          return APIResponse(
+          APIResponse(
             resp = CR.Response(data["resp"]!!.jsonObject["type"]?.toString() ?: "invalid", json.encodeToString(data)),
             corr = data["corr"]?.toString()
           )
         } catch(e: Exception) {
-          return APIResponse(CR.Invalid(str))
+          APIResponse(CR.Invalid(str))
         }
       }
     }
@@ -411,6 +426,12 @@ sealed class CR {
   class SentInvitation: CR() {
     override val responseType get() = "sentInvitation"
     override val details get() = noDetails()
+  }
+
+  @Serializable @SerialName("contactAlreadyExists")
+  class ContactAlreadyExists(val contact: Contact): CR() {
+    override val responseType get() = "contactAlreadyExists"
+    override val details get() = contact.toString()
   }
 
   @Serializable @SerialName("contactDeleted")
@@ -589,8 +610,17 @@ abstract class TerminalItem {
 
 @Serializable
 sealed class ChatError {
+  @Serializable @SerialName("error")
+  class ChatErrorChat(val errorType: ChatErrorType): ChatError()
+
   @Serializable @SerialName("errorStore")
-  class ErrorStore(val storeError: StoreError): ChatError()
+  class ChatErrorStore(val storeError: StoreError): ChatError()
+}
+
+@Serializable
+sealed class ChatErrorType {
+  @Serializable @SerialName("invalidConnReq")
+  class InvalidConnReq: ChatErrorType()
 }
 
 @Serializable
