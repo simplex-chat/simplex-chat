@@ -25,31 +25,30 @@ fun ConnectContactView(chatModel: ChatModel, nav: NavController) {
   ConnectContactLayout(
     qrCodeScanner = {
       QRCodeScanner { connReqUri ->
-        withApi {
-          try {
-            val uri = Uri.parse(connReqUri)
-            withUriAction(chatModel, uri) { action ->
-              connectViaUri(chatModel, action, uri)
-            }
-          } catch(e: RuntimeException) {
-            chatModel.alertManager.showAlertMsg(
-              title = "Invalid QR code",
-              text = "This QR code is not a link!"
-            )
+        try {
+          val uri = Uri.parse(connReqUri)
+          withUriAction(chatModel, uri) { action ->
+            connectViaUri(chatModel, action, uri)
           }
-          nav.popBackStack()
+        } catch(e: RuntimeException) {
+          chatModel.alertManager.showAlertMsg(
+            title = "Invalid QR code",
+            text = "This QR code is not a link!"
+          )
         }
+        nav.popBackStack()
       }
     },
     close = { nav.popBackStack() }
   )
 }
 
-suspend fun withUriAction(chatModel: ChatModel, uri: Uri,
-                    call: suspend (String) -> Unit) {
+@DelicateCoroutinesApi
+fun withUriAction(chatModel: ChatModel, uri: Uri,
+                  run: suspend (String) -> Unit) {
   val action = uri.path?.drop(1)
   if (action == "contact" || action == "invitation") {
-    call(action)
+    withApi { run(action) }
   } else {
     chatModel.alertManager.showAlertMsg(
       title = "Invalid link!",

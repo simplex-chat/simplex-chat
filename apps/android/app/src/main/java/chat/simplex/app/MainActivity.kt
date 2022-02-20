@@ -31,7 +31,7 @@ class MainActivity: ComponentActivity() {
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
-    withApi { connectIfOpenedViaUri(intent, vm.chatModel) }
+    connectIfOpenedViaUri(intent, vm.chatModel)
     setContent {
       SimpleXTheme {
         Navigation(vm.chatModel)
@@ -117,7 +117,7 @@ sealed class Pages(val route: String) {
 }
 
 @DelicateCoroutinesApi
-suspend fun connectIfOpenedViaUri(intent: Intent?, chatModel: ChatModel) {
+fun connectIfOpenedViaUri(intent: Intent?, chatModel: ChatModel) {
   val uri = intent?.data
   if (intent?.action == "android.intent.action.VIEW" && uri != null) {
     Log.d("SIMPLEX", "connectIfOpenedViaUri: opened via link")
