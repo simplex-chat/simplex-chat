@@ -1,6 +1,5 @@
 package chat.simplex.app.model
 
-import android.accounts.Account
 import android.net.Uri
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -11,7 +10,7 @@ import kotlinx.serialization.Serializable
 
 class ChatModel(val controller: ChatController, val alertManager: SimplexApp.AlertManager) {
   var currentUser = mutableStateOf<User?>(null)
-  var accountStatus = mutableStateOf<AccountStatus>(AccountStatus.NOT_KNOWN)
+  var accountStatus = mutableStateOf<UserStatus>(UserStatus.NOT_KNOWN)
   var chats = mutableStateListOf<Chat>()
   var chatId = mutableStateOf<String?>(null)
   var chatItems = mutableStateListOf<ChatItem>()
@@ -169,10 +168,10 @@ class ChatModel(val controller: ChatController, val alertManager: SimplexApp.Ale
   }
 }
 
-enum class AccountStatus {
+enum class UserStatus {
   NOT_KNOWN,
-  NO_ACCOUNT,
-  ACCOUNT_ACQUIRED
+  NO_USER,
+  USER_KNOWN
 }
 
 enum class ChatType(val type: String) {
