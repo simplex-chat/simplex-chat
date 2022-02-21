@@ -71,6 +71,7 @@ dependencies {
     implementation 'org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.2'
     implementation "androidx.compose.material:material-icons-extended:$compose_version"
     implementation "androidx.navigation:navigation-compose:2.4.1"
+    implementation "com.google.accompanist:accompanist-insets:0.23.0"
 
     def camerax_version = "1.1.0-beta01"
     implementation "androidx.camera:camera-core:${camerax_version}"
@@ -81,7 +82,7 @@ dependencies {
     implementation 'com.google.zxing:core:3.4.0'
     implementation 'com.google.mlkit:barcode-scanning:17.0.2'
     //Camera Permission
-    implementation "com.google.accompanist:accompanist-permissions:0.19.0"
+    implementation "com.google.accompanist:accompanist-permissions:0.23.0"
 
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.3'

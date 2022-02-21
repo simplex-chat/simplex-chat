@@ -13,6 +13,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusState
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.*
 import androidx.compose.ui.tooling.preview.Preview
@@ -31,12 +33,6 @@ fun SendMsgView(sendMessage: (String) -> Unit) {
       capitalization = KeyboardCapitalization.Sentences,
       autoCorrect = true
     ),
-//      shape = RoundedCornerShape(18.dp),
-//      colors = TextFieldDefaults.outlinedTextFieldColors(
-//        backgroundColor = MaterialTheme.colors.background,
-//        focusedBorderColor = LightGray,
-//        unfocusedBorderColor = LightGray
-//      ),
     modifier = Modifier.padding(8.dp),
     decorationBox = { innerTextField ->
       Surface(
