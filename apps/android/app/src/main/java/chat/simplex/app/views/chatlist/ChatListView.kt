@@ -75,10 +75,9 @@ fun ChatListView(chatModel: ChatModel, nav: NavController) {
         ChatList(chatModel, nav)
       }
       if (newChatCtrl.state.bottomSheetState.isExpanded) {
-        Surface(
-          Modifier
-            .fillMaxSize()
-            .clickable { newChatCtrl.collapse() },
+        Surface(Modifier
+          .fillMaxSize()
+          .clickable { newChatCtrl.collapse() },
           color = Color.Black.copy(alpha = 0.12F)
         ) {}
       }
@@ -94,8 +93,7 @@ fun ChatListToolbar(newChatSheetCtrl: ScaffoldController, settings: () -> Unit) 
     verticalAlignment = Alignment.CenterVertically,
     modifier = Modifier
       .fillMaxWidth()
-      .height(40.dp)
-  ) {
+      .height(40.dp)) {
     Icon(
       Icons.Outlined.Settings,
       "Settings Cog",
@@ -126,7 +124,7 @@ fun goToChat(chatPreview: Chat, chatModel: ChatModel, navController: NavControll
   withApi {
     val cInfo = chatPreview.chatInfo
     val chat = chatModel.controller.apiGetChat(cInfo.chatType, cInfo.apiId)
-    if (chat != null) {
+    if (chat != null ) {
       chatModel.chatId = mutableStateOf(cInfo.id)
       chatModel.chatItems = chat.chatItems.toMutableStateList()
       navController.navigate(Pages.Chat.route)
@@ -143,10 +141,12 @@ fun ChatList(chatModel: ChatModel, navController: NavController) {
     modifier = Modifier.fillMaxWidth()
   ) {
     items(chatModel.chats) { chat ->
-      ChatPreviewView(chat) { goToChat(chat, chatModel, navController) }
+      ChatPreviewView(chat) {goToChat(chat, chatModel, navController)}
     }
   }
 }
+
+
 //@Preview
 //@Composable
 //fun PreviewChatListView() {
