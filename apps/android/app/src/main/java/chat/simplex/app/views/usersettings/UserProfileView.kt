@@ -1,10 +1,19 @@
 package chat.simplex.app.views.usersettings
 
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.model.Profile
@@ -48,33 +57,99 @@ fun UserProfileLayout(
   editProfileOn: () -> Unit,
   saveProfile: (String, String) -> Unit,
 ) {
-  Column {
-    Button(onClick = back) { Text("Back") }
+  Column(
+    modifier = Modifier
+      .padding(16.dp)
+      .fillMaxWidth(),
+    horizontalAlignment = Alignment.Start
+  ) {
+    Button(onClick = back) { Text("Back") } // TODO remove (view will be in drawer)
     Text(
       "Your profile is stored on your device and shared only with your contacts.\n" +
-          "SimpleX servers cannot see your profile."
+          "SimpleX servers cannot see your profile.",
+      Modifier.padding(bottom = 24.dp)
     )
     if (editProfile) {
       var displayName by remember { mutableStateOf(profile.displayName) }
       var fullName by remember { mutableStateOf(profile.fullName) }
-      Column {
-        TextField(value = displayName, onValueChange = { displayName = it })
-        TextField(value = fullName, onValueChange = { fullName = it })
+      Column(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.Start
+      ) {
+        // TODO hints
+        BasicTextField(
+          value = displayName,
+          onValueChange = { displayName = it },
+          modifier = Modifier
+            .padding(bottom = 24.dp)
+            .fillMaxWidth(),
+          textStyle = TextStyle(fontSize = 16.sp),
+          keyboardOptions = KeyboardOptions(
+            capitalization = KeyboardCapitalization.None,
+            autoCorrect = false
+          ),
+          singleLine = true
+        )
+        BasicTextField(
+          value = fullName,
+          onValueChange = { fullName = it },
+          modifier = Modifier
+            .padding(bottom = 24.dp)
+            .fillMaxWidth(),
+          textStyle = TextStyle(fontSize = 16.sp),
+          keyboardOptions = KeyboardOptions(
+            capitalization = KeyboardCapitalization.None,
+            autoCorrect = false
+          ),
+          singleLine = true
+        )
         Row {
-          Button(onClick = editProfileOff) { Text("Cancel") }
-          Button(
-            onClick = { saveProfile(displayName, fullName) },
-            enabled = displayName.isNotEmpty()
-          ) {
-            Text("Save (and notify contacts)")
-          }
+          Text(
+            "Cancel",
+            color = MaterialTheme.colors.primary,
+            modifier = Modifier
+              .clickable(onClick = editProfileOff)
+          )
+          Spacer(Modifier.padding(horizontal = 8.dp))
+          Text(
+            "Save (and notify contacts)",
+            color = MaterialTheme.colors.primary,
+            modifier = Modifier
+              .clickable(onClick = { saveProfile(displayName, fullName) })
+          )
         }
       }
     } else {
-      Column {
-        Text("Display name: ${profile.displayName}")
-        Text("Full name: ${profile.fullName}")
-        Button(onClick = editProfileOn) { Text("Edit") }
+      Column(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.Start
+      ) {
+        Row(
+          Modifier.padding(bottom = 24.dp)
+        ) {
+          Text("Display name:")
+          Spacer(Modifier.padding(horizontal = 4.dp))
+          Text(
+            profile.displayName,
+            fontWeight = FontWeight.Bold
+          )
+        }
+        Row(
+          Modifier.padding(bottom = 24.dp)
+        ) {
+          Text("Full name:")
+          Spacer(Modifier.padding(horizontal = 4.dp))
+          Text(
+            profile.fullName,
+            fontWeight = FontWeight.Bold
+          )
+        }
+        Text(
+          "Edit",
+          color = MaterialTheme.colors.primary,
+          modifier = Modifier
+            .clickable(onClick = editProfileOn)
+        )
       }
     }
   }
