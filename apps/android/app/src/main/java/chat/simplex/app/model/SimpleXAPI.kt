@@ -275,96 +275,66 @@ open class ChatController(val ctrl: ChatCtrl, val alertManager: SimplexApp.Alert
 }
 
 // ChatCommand
-abstract class CC {
-  abstract val cmdString: String
-  abstract val cmdType: String
+sealed class CC {
+  class Console(val cmd: String): CC()
+  class ShowActiveUser: CC()
+  class CreateActiveUser(val profile: Profile): CC()
+  class StartChat: CC()
+  class ApiGetChats: CC()
+  class ApiGetChat(val type: ChatType, val id: Long): CC()
+  class ApiSendMessage(val type: ChatType, val id: Long, val mc: MsgContent): CC()
+  class AddContact: CC()
+  class Connect(val connReq: String): CC()
+  class ApiDeleteChat(val type: ChatType, val id: Long): CC()
+  class UpdateProfile(val profile: Profile): CC()
+  class CreateMyAddress: CC()
+  class DeleteMyAddress: CC()
+  class ShowMyAddress: CC()
+  class ApiAcceptContact(val contactReqId: Long): CC()
+  class ApiRejectContact(val contactReqId: Long): CC()
+  class ApiChatRead(val type: ChatType, val id: Long, val range: ItemRange): CC()
 
-  class Console(val cmd: String): CC() {
-    override val cmdString get() = cmd
-    override val cmdType get() = "console command"
+  val cmdString: String get() = when (this) {
+    is Console -> cmd
+    is ShowActiveUser -> "/u"
+    is CreateActiveUser -> "/u ${profile.displayName} ${profile.fullName}"
+    is StartChat -> "/_start"
+    is ApiGetChats -> "/_get chats"
+    is ApiGetChat -> "/_get chat ${chatRef(type, id)} count=100"
+    is ApiSendMessage -> "/_send ${chatRef(type, id)} ${mc.cmdString}"
+    is AddContact -> "/connect"
+    is Connect -> "/connect $connReq"
+    is ApiDeleteChat -> "/_delete ${chatRef(type, id)}"
+    is UpdateProfile -> "/profile ${profile.displayName} ${profile.fullName}"
+    is CreateMyAddress -> "/address"
+    is DeleteMyAddress -> "/delete_address"
+    is ShowMyAddress -> "/show_address"
+    is ApiAcceptContact -> "/_accept $contactReqId"
+    is ApiRejectContact -> "/_reject $contactReqId"
+    is ApiChatRead -> "/_read chat ${chatRef(type, id)} from=${range.from} to=${range.to}"
   }
 
-  class ShowActiveUser: CC() {
-    override val cmdString get() = "/u"
-    override val cmdType get() = "showActiveUser"
+  val cmdType: String get() = when (this) {
+    is Console -> "console command"
+    is ShowActiveUser -> "showActiveUser"
+    is CreateActiveUser -> "createActiveUser"
+    is StartChat -> "startChat"
+    is ApiGetChats -> "apiGetChats"
+    is ApiGetChat -> "apiGetChat"
+    is ApiSendMessage -> "apiSendMessage"
+    is AddContact -> "addContact"
+    is Connect -> "connect"
+    is ApiDeleteChat -> "apiDeleteChat"
+    is UpdateProfile -> "updateProfile"
+    is CreateMyAddress -> "createMyAddress"
+    is DeleteMyAddress -> "deleteMyAddress"
+    is ShowMyAddress -> "showMyAddress"
+    is ApiAcceptContact -> "apiAcceptContact"
+    is ApiRejectContact -> "apiRejectContact"
+    is ApiChatRead -> "apiChatRead"
   }
 
-  class CreateActiveUser(val profile: Profile): CC() {
-    override val cmdString get() = "/u ${profile.displayName} ${profile.fullName}"
-    override val cmdType get() = "createActiveUser"
-  }
-
-  class StartChat: CC() {
-    override val cmdString get() = "/_start"
-    override val cmdType get() = "startChat"
-  }
-
-  class ApiGetChats: CC() {
-    override val cmdString get() = "/_get chats"
-    override val cmdType get() = "apiGetChats"
-  }
-
-  class ApiGetChat(val type: ChatType, val id: Long): CC() {
-    override val cmdString get() = "/_get chat ${chatRef(type, id)} count=100"
-    override val cmdType get() = "apiGetChat"
-  }
-
-  class ApiSendMessage(val type: ChatType, val id: Long, val mc: MsgContent): CC() {
-    override val cmdString get() = "/_send ${chatRef(type, id)} ${mc.cmdString}"
-    override val cmdType get() = "apiGetChat"
-  }
-
-  class AddContact: CC() {
-    override val cmdString get() = "/connect"
-    override val cmdType get() = "addContact"
-  }
-
-  class Connect(val connReq: String): CC() {
-    override val cmdString get() = "/connect $connReq"
-    override val cmdType get() = "connect"
-  }
-
-  class ApiDeleteChat(val type: ChatType, val id: Long): CC() {
-    override val cmdString get() = "/_delete ${chatRef(type, id)}"
-    override val cmdType get() = "apiDeleteChat"
-  }
-
-  class UpdateProfile(val profile: Profile): CC() {
-    override val cmdString get() = "/profile ${profile.displayName} ${profile.fullName}"
-    override val cmdType get() = "updateProfile"
-  }
-
-  class CreateMyAddress: CC() {
-    override val cmdString get() = "/address"
-    override val cmdType get() = "createMyAddress"
-  }
-
-  class DeleteMyAddress: CC() {
-    override val cmdString get() = "/delete_address"
-    override val cmdType get() = "deleteMyAddress"
-  }
-
-  class ShowMyAddress: CC() {
-    override val cmdString get() = "/show_address"
-    override val cmdType get() = "showMyAddress"
-  }
-
-  class ApiAcceptContact(val contactReqId: Long): CC() {
-    override val cmdString get() = "/_accept $contactReqId"
-    override val cmdType get() = "apiAcceptContact"
-  }
-
-  class ApiRejectContact(val contactReqId: Long): CC() {
-    override val cmdString get() = "/_reject $contactReqId"
-    override val cmdType get() = "apiRejectContact"
-  }
-
-  class ApiChatRead(val type: ChatType, val id: Long, val range: ItemRange): CC() {
-    override val cmdString get() = "/_read chat ${chatRef(type, id)} from=${range.from} to=${range.to}"
-    override val cmdType get() = "apiDeleteChat"
-  }
-
-  data class ItemRange(val from: Long, val to: Long)
+  class ItemRange(val from: Long, val to: Long)
 
   companion object {
     fun chatRef(chatType: ChatType, id: Long) = "${chatType.type}${id}"
@@ -400,199 +370,107 @@ class APIResponse(val resp: CR, val corr: String? = null) {
 // ChatResponse
 @Serializable
 sealed class CR {
-  abstract val responseType: String
-  abstract val details: String
+  @Serializable @SerialName("activeUser") class ActiveUser(val user: User): CR()
+  @Serializable @SerialName("chatStarted") class ChatStarted: CR()
+  @Serializable @SerialName("apiChats") class ApiChats(val chats: List<Chat>): CR()
+  @Serializable @SerialName("apiChat") class ApiChat(val chat: Chat): CR()
+  @Serializable @SerialName("invitation") class Invitation(val connReqInvitation: String): CR()
+  @Serializable @SerialName("sentConfirmation") class SentConfirmation: CR()
+  @Serializable @SerialName("sentInvitation") class SentInvitation: CR()
+  @Serializable @SerialName("contactAlreadyExists") class ContactAlreadyExists(val contact: Contact): CR()
+  @Serializable @SerialName("contactDeleted") class ContactDeleted(val contact: Contact): CR()
+  @Serializable @SerialName("userProfileNoChange") class UserProfileNoChange: CR()
+  @Serializable @SerialName("userProfileUpdated") class UserProfileUpdated(val fromProfile: Profile, val toProfile: Profile): CR()
+  @Serializable @SerialName("userContactLink") class UserContactLink(val connReqContact: String): CR()
+  @Serializable @SerialName("userContactLinkCreated") class UserContactLinkCreated(val connReqContact: String): CR()
+  @Serializable @SerialName("userContactLinkDeleted") class UserContactLinkDeleted: CR()
+  @Serializable @SerialName("contactConnected") class ContactConnected(val contact: Contact): CR()
+  @Serializable @SerialName("receivedContactRequest") class ReceivedContactRequest(val contactRequest: UserContactRequest): CR()
+  @Serializable @SerialName("acceptingContactRequest") class AcceptingContactRequest(val contact: Contact): CR()
+  @Serializable @SerialName("contactRequestRejected") class ContactRequestRejected: CR()
+  @Serializable @SerialName("contactUpdated") class ContactUpdated(val toContact: Contact): CR()
+  @Serializable @SerialName("contactSubscribed") class ContactSubscribed(val contact: Contact): CR()
+  @Serializable @SerialName("contactDisconnected") class ContactDisconnected(val contact: Contact): CR()
+  @Serializable @SerialName("contactSubError") class ContactSubError(val contact: Contact, val chatError: ChatError): CR()
+  @Serializable @SerialName("groupSubscribed") class GroupSubscribed(val group: GroupInfo): CR()
+  @Serializable @SerialName("groupEmpty") class GroupEmpty(val group: GroupInfo): CR()
+  @Serializable @SerialName("userContactLinkSubscribed") class UserContactLinkSubscribed: CR()
+  @Serializable @SerialName("newChatItem") class NewChatItem(val chatItem: AChatItem): CR()
+  @Serializable @SerialName("chatItemUpdated") class ChatItemUpdated(val chatItem: AChatItem): CR()
+  @Serializable @SerialName("cmdOk") class CmdOk: CR()
+  @Serializable @SerialName("chatCmdError") class ChatCmdError(val chatError: ChatError): CR()
+  @Serializable @SerialName("chatError") class ChatRespError(val chatError: ChatError): CR()
+  @Serializable class Response(val type: String, val json: String): CR()
+  @Serializable class Invalid(val str: String): CR()
 
-  @Serializable @SerialName("activeUser")
-  class ActiveUser(val user: User): CR() {
-    override val responseType get() = "activeUser"
-    override val details get() = user.toString()
+  val responseType: String get() = when(this) {
+    is ActiveUser -> "activeUser"
+    is ChatStarted -> "chatStarted"
+    is ApiChats -> "apiChats"
+    is ApiChat -> "apiChats"
+    is Invitation -> "invitation"
+    is SentConfirmation -> "sentConfirmation"
+    is SentInvitation -> "sentInvitation"
+    is ContactAlreadyExists -> "contactAlreadyExists"
+    is ContactDeleted -> "contactDeleted"
+    is UserProfileNoChange -> "userProfileNoChange"
+    is UserProfileUpdated -> "userProfileUpdated"
+    is UserContactLink -> "userContactLink"
+    is UserContactLinkCreated -> "userContactLinkCreated"
+    is UserContactLinkDeleted -> "userContactLinkDeleted"
+    is ContactConnected -> "contactConnected"
+    is ReceivedContactRequest -> "receivedContactRequest"
+    is AcceptingContactRequest -> "acceptingContactRequest"
+    is ContactRequestRejected -> "contactRequestRejected"
+    is ContactUpdated -> "contactUpdated"
+    is ContactSubscribed -> "contactSubscribed"
+    is ContactDisconnected -> "contactDisconnected"
+    is ContactSubError -> "contactSubError"
+    is GroupSubscribed -> "groupSubscribed"
+    is GroupEmpty -> "groupEmpty"
+    is UserContactLinkSubscribed -> "userContactLinkSubscribed"
+    is NewChatItem -> "newChatItem"
+    is ChatItemUpdated -> "chatItemUpdated"
+    is CmdOk -> "cmdOk"
+    is ChatCmdError -> "chatCmdError"
+    is ChatRespError -> "chatError"
+    is Response -> "* $type"
+    is Invalid -> "* invalid json"
   }
 
-  @Serializable @SerialName("chatStarted")
-  class ChatStarted: CR() {
-    override val responseType get() = "chatStarted"
-    override val details get() = noDetails()
-  }
-
-  @Serializable @SerialName("apiChats")
-  class ApiChats(val chats: List<Chat>): CR() {
-    override val responseType get() = "apiChats"
-    override val details get() = chats.toString()
-  }
-
-  @Serializable @SerialName("apiChat")
-  class ApiChat(val chat: Chat): CR() {
-    override val responseType get() = "apiChats"
-    override val details get() = chat.toString()
-  }
-
-  @Serializable @SerialName("invitation")
-  class Invitation(val connReqInvitation: String): CR() {
-    override val responseType get() = "invitation"
-    override val details get() = connReqInvitation
-  }
-
-  @Serializable @SerialName("sentConfirmation")
-  class SentConfirmation: CR() {
-    override val responseType get() = "sentConfirmation"
-    override val details get() = noDetails()
-  }
-
-  @Serializable @SerialName("sentInvitation")
-  class SentInvitation: CR() {
-    override val responseType get() = "sentInvitation"
-    override val details get() = noDetails()
-  }
-
-  @Serializable @SerialName("contactAlreadyExists")
-  class ContactAlreadyExists(val contact: Contact): CR() {
-    override val responseType get() = "contactAlreadyExists"
-    override val details get() = contact.toString()
-  }
-
-  @Serializable @SerialName("contactDeleted")
-  class ContactDeleted(val contact: Contact): CR() {
-    override val responseType get() = "contactDeleted"
-    override val details get() = contact.toString()
-  }
-
-  @Serializable @SerialName("userProfileNoChange")
-  class UserProfileNoChange: CR() {
-    override val responseType get() = "userProfileNoChange"
-    override val details get() = noDetails()
-  }
-
-  @Serializable @SerialName("userProfileUpdated")
-  class UserProfileUpdated(val fromProfile: Profile, val toProfile: Profile): CR() {
-    override val responseType get() = "userProfileUpdated"
-    override val details get() = toProfile.toString()
-  }
-
-  @Serializable @SerialName("userContactLink")
-  class UserContactLink(val connReqContact: String): CR() {
-    override val responseType get() = "userContactLink"
-    override val details get() = connReqContact
-  }
-
-  @Serializable @SerialName("userContactLinkCreated")
-  class UserContactLinkCreated(val connReqContact: String): CR() {
-    override val responseType get() = "userContactLinkCreated"
-    override val details get() = connReqContact
-  }
-
-  @Serializable @SerialName("userContactLinkDeleted")
-  class UserContactLinkDeleted: CR() {
-    override val responseType get() = "userContactLinkDeleted"
-    override val details get() = noDetails()
-  }
-
-  @Serializable @SerialName("contactConnected")
-  class ContactConnected(val contact: Contact): CR() {
-    override val responseType get() = "contactConnected"
-    override val details get() = contact.toString()
-  }
-
-  @Serializable @SerialName("receivedContactRequest")
-  class ReceivedContactRequest(val contactRequest: UserContactRequest): CR() {
-    override val responseType get() = "receivedContactRequest"
-    override val details get() = contactRequest.toString()
-  }
-
-  @Serializable @SerialName("acceptingContactRequest")
-  class AcceptingContactRequest(val contact: Contact): CR() {
-    override val responseType get() = "acceptingContactRequest"
-    override val details get() = contact.toString()
-  }
-
-  @Serializable @SerialName("contactRequestRejected")
-  class ContactRequestRejected: CR() {
-    override val responseType get() = "contactRequestRejected"
-    override val details get() = noDetails()
-  }
-
-  @Serializable @SerialName("contactUpdated")
-  class ContactUpdated(val toContact: Contact): CR() {
-    override val responseType get() = "contactUpdated"
-    override val details get() = toContact.toString()
-  }
-
-  @Serializable @SerialName("contactSubscribed")
-  class ContactSubscribed(val contact: Contact): CR() {
-    override val responseType get() = "contactSubscribed"
-    override val details get() = contact.toString()
-  }
-
-  @Serializable @SerialName("contactDisconnected")
-  class ContactDisconnected(val contact: Contact): CR() {
-    override val responseType get() = "contactDisconnected"
-    override val details get() = contact.toString()
-  }
-
-  @Serializable @SerialName("contactSubError")
-  class ContactSubError(val contact: Contact, val chatError: ChatError): CR() {
-    override val responseType get() = "contactSubError"
-    override val details get() = "contact:\n${contact.toString()}\nerror:\n${chatError.toString()}"
-  }
-
-  @Serializable @SerialName("groupSubscribed")
-  class GroupSubscribed(val group: GroupInfo): CR() {
-    override val responseType get() = "groupSubscribed"
-    override val details get() = group.toString()
-  }
-
-  @Serializable @SerialName("groupEmpty")
-  class GroupEmpty(val group: GroupInfo): CR() {
-    override val responseType get() = "groupEmpty"
-    override val details get() = group.toString()
-  }
-
-  @Serializable @SerialName("userContactLinkSubscribed")
-  class UserContactLinkSubscribed: CR() {
-    override val responseType get() = "userContactLinkSubscribed"
-    override val details get() = noDetails()
-  }
-
-  @Serializable @SerialName("newChatItem")
-  class NewChatItem(val chatItem: AChatItem): CR() {
-    override val responseType get() = "newChatItem"
-    override val details get() = chatItem.toString()
-  }
-
-  @Serializable @SerialName("chatItemUpdated")
-  class ChatItemUpdated(val chatItem: AChatItem): CR() {
-    override val responseType get() = "chatItemUpdated"
-    override val details get() = chatItem.toString()
-  }
-
-  @Serializable @SerialName("cmdOk")
-  class CmdOk: CR() {
-    override val responseType get() = "cmdOk"
-    override val details get() = noDetails()
-  }
-
-  @Serializable @SerialName("chatCmdError")
-  class ChatCmdError(val chatError: ChatError): CR() {
-    override val responseType get() = "chatCmdError"
-    override val details get() = chatError.string
-  }
-
-  @Serializable @SerialName("chatError")
-  class ChatRespError(val chatError: ChatError): CR() {
-    override val responseType get() = "chatError"
-    override val details get() = chatError.string
-  }
-
-  @Serializable
-  class Response(val type: String, val json: String): CR() {
-    override val responseType get() = "* $type"
-    override val details get() = json
-  }
-
-  @Serializable
-  class Invalid(val str: String): CR() {
-    override val responseType get() = "* invalid json"
-    override val details get() = str
+  val details: String get() = when(this) {
+    is ActiveUser -> json.encodeToString(user)
+    is ChatStarted -> noDetails()
+    is ApiChats -> json.encodeToString(chats)
+    is ApiChat -> json.encodeToString(chat)
+    is Invitation -> connReqInvitation
+    is SentConfirmation -> noDetails()
+    is SentInvitation -> noDetails()
+    is ContactAlreadyExists -> json.encodeToString(contact)
+    is ContactDeleted -> json.encodeToString(contact)
+    is UserProfileNoChange -> noDetails()
+    is UserProfileUpdated -> json.encodeToString(toProfile)
+    is UserContactLink -> connReqContact
+    is UserContactLinkCreated -> connReqContact
+    is UserContactLinkDeleted -> noDetails()
+    is ContactConnected -> json.encodeToString(contact)
+    is ReceivedContactRequest -> json.encodeToString(contactRequest)
+    is AcceptingContactRequest -> json.encodeToString(contact)
+    is ContactRequestRejected -> noDetails()
+    is ContactUpdated -> json.encodeToString(toContact)
+    is ContactSubscribed -> json.encodeToString(contact)
+    is ContactDisconnected -> json.encodeToString(contact)
+    is ContactSubError -> "error:\n${chatError.string}\ncontact:\n${json.encodeToString(contact)}"
+    is GroupSubscribed -> json.encodeToString(group)
+    is GroupEmpty -> json.encodeToString(group)
+    is UserContactLinkSubscribed -> noDetails()
+    is NewChatItem -> json.encodeToString(chatItem)
+    is ChatItemUpdated -> json.encodeToString(chatItem)
+    is CmdOk -> noDetails()
+    is ChatCmdError -> chatError.string
+    is ChatRespError -> chatError.string
+    is Response -> json
+    is Invalid -> str
   }
 
   fun noDetails(): String ="${responseType}: no details"
@@ -627,11 +505,10 @@ abstract class TerminalItem {
 
 @Serializable
 sealed class ChatError {
-  val string: String get() = when {
-    this is ChatErrorChat -> "chat ${errorType.string}"
-    this is ChatErrorAgent -> "agent ${agentError.string}"
-    this is ChatErrorStore -> "store ${storeError.string}"
-    else -> "ChatError"
+  val string: String get() = when (this) {
+    is ChatErrorChat -> "chat ${errorType.string}"
+    is ChatErrorAgent -> "agent ${agentError.string}"
+    is ChatErrorStore -> "store ${storeError.string}"
   }
   @Serializable @SerialName("error") class ChatErrorChat(val errorType: ChatErrorType): ChatError()
   @Serializable @SerialName("errorAgent") class ChatErrorAgent(val agentError: AgentErrorType): ChatError()
@@ -640,10 +517,9 @@ sealed class ChatError {
 
 @Serializable
 sealed class ChatErrorType {
-  val string: String get() = when {
-    this is InvalidConnReq -> "invalidConnReq"
-    this is ContactGroups -> "groupNames $groupNames"
-    else -> "ChatErrorType"
+  val string: String get() = when (this) {
+    is InvalidConnReq -> "invalidConnReq"
+    is ContactGroups -> "groupNames $groupNames"
   }
   @Serializable @SerialName("invalidConnReq") class InvalidConnReq: ChatErrorType()
   @Serializable @SerialName("contactGroups") class ContactGroups(val contact: Contact, val groupNames: List<String>): ChatErrorType()
@@ -651,23 +527,21 @@ sealed class ChatErrorType {
 
 @Serializable
 sealed class StoreError {
-  val string: String get() = when {
-    this is UserContactLinkNotFound -> "userContactLinkNotFound"
-    else -> "StoreError"
+  val string: String get() = when (this) {
+    is UserContactLinkNotFound -> "userContactLinkNotFound"
   }
   @Serializable @SerialName("userContactLinkNotFound") class UserContactLinkNotFound: StoreError()
 }
 
 @Serializable
 sealed class AgentErrorType {
-  val string: String get() = when {
-    this is CMD -> "CMD ${cmdErr.string}"
-    this is CONN -> "CONN ${connErr.string}"
-    this is SMP -> "SMP ${smpErr.string}"
-    this is BROKER -> "BROKER ${brokerErr.string}"
-    this is AGENT -> "AGENT ${agentErr.string}"
-    this is INTERNAL -> "INTERNAL $internalErr"
-    else -> "AgentErrorType"
+  val string: String get() = when (this) {
+    is CMD -> "CMD ${cmdErr.string}"
+    is CONN -> "CONN ${connErr.string}"
+    is SMP -> "SMP ${smpErr.string}"
+    is BROKER -> "BROKER ${brokerErr.string}"
+    is AGENT -> "AGENT ${agentErr.string}"
+    is INTERNAL -> "INTERNAL $internalErr"
   }
   @Serializable @SerialName("CMD") class CMD(val cmdErr: CommandErrorType): AgentErrorType()
   @Serializable @SerialName("CONN") class CONN(val connErr: ConnectionErrorType): AgentErrorType()
@@ -679,13 +553,12 @@ sealed class AgentErrorType {
 
 @Serializable
 sealed class CommandErrorType {
-  val string: String get() = when {
-    this is PROHIBITED -> "PROHIBITED"
-    this is SYNTAX -> "SYNTAX"
-    this is NO_CONN -> "NO_CONN"
-    this is SIZE -> "SIZE"
-    this is LARGE -> "LARGE"
-    else -> "CommandErrorType"
+  val string: String get() = when (this) {
+    is PROHIBITED -> "PROHIBITED"
+    is SYNTAX -> "SYNTAX"
+    is NO_CONN -> "NO_CONN"
+    is SIZE -> "SIZE"
+    is LARGE -> "LARGE"
   }
   @Serializable @SerialName("PROHIBITED") class PROHIBITED: CommandErrorType()
   @Serializable @SerialName("SYNTAX") class SYNTAX: CommandErrorType()
@@ -696,13 +569,12 @@ sealed class CommandErrorType {
 
 @Serializable
 sealed class ConnectionErrorType {
-  val string: String get() = when {
-    this is NOT_FOUND -> "NOT_FOUND"
-    this is DUPLICATE -> "DUPLICATE"
-    this is SIMPLEX -> "SIMPLEX"
-    this is NOT_ACCEPTED -> "NOT_ACCEPTED"
-    this is NOT_AVAILABLE -> "NOT_AVAILABLE"
-    else -> "ConnectionErrorType"
+  val string: String get() = when (this) {
+    is NOT_FOUND -> "NOT_FOUND"
+    is DUPLICATE -> "DUPLICATE"
+    is SIMPLEX -> "SIMPLEX"
+    is NOT_ACCEPTED -> "NOT_ACCEPTED"
+    is NOT_AVAILABLE -> "NOT_AVAILABLE"
   }
   @Serializable @SerialName("NOT_FOUND") class NOT_FOUND: ConnectionErrorType()
   @Serializable @SerialName("DUPLICATE") class DUPLICATE: ConnectionErrorType()
@@ -713,13 +585,12 @@ sealed class ConnectionErrorType {
 
 @Serializable
 sealed class BrokerErrorType {
-  val string: String get() = when {
-    this is RESPONSE -> "RESPONSE ${smpErr.string}"
-    this is UNEXPECTED -> "UNEXPECTED"
-    this is NETWORK -> "NETWORK"
-    this is TRANSPORT -> "TRANSPORT ${transportErr.string}"
-    this is TIMEOUT -> "TIMEOUT"
-    else -> "BrokerErrorType"
+  val string: String get() = when (this) {
+    is RESPONSE -> "RESPONSE ${smpErr.string}"
+    is UNEXPECTED -> "UNEXPECTED"
+    is NETWORK -> "NETWORK"
+    is TRANSPORT -> "TRANSPORT ${transportErr.string}"
+    is TIMEOUT -> "TIMEOUT"
   }
   @Serializable @SerialName("RESPONSE") class RESPONSE(val smpErr: SMPErrorType): BrokerErrorType()
   @Serializable @SerialName("UNEXPECTED") class UNEXPECTED: BrokerErrorType()
@@ -730,16 +601,15 @@ sealed class BrokerErrorType {
 
 @Serializable
 sealed class SMPErrorType {
-  val string: String get() = when {
-    this is BLOCK -> "BLOCK"
-    this is SESSION -> "SESSION"
-    this is CMD -> "CMD ${cmdErr.string}"
-    this is AUTH -> "AUTH"
-    this is QUOTA -> "QUOTA"
-    this is NO_MSG -> "NO_MSG"
-    this is LARGE_MSG -> "LARGE_MSG"
-    this is INTERNAL -> "INTERNAL"
-    else -> "SMPErrorType"
+  val string: String get() = when (this) {
+    is BLOCK -> "BLOCK"
+    is SESSION -> "SESSION"
+    is CMD -> "CMD ${cmdErr.string}"
+    is AUTH -> "AUTH"
+    is QUOTA -> "QUOTA"
+    is NO_MSG -> "NO_MSG"
+    is LARGE_MSG -> "LARGE_MSG"
+    is INTERNAL -> "INTERNAL"
   }
   @Serializable @SerialName("BLOCK") class BLOCK: SMPErrorType()
   @Serializable @SerialName("SESSION") class SESSION: SMPErrorType()
@@ -753,13 +623,12 @@ sealed class SMPErrorType {
 
 @Serializable
 sealed class SMPCommandError {
-  val string: String get() = when {
-    this is UNKNOWN -> "UNKNOWN"
-    this is SYNTAX -> "SYNTAX"
-    this is NO_AUTH -> "NO_AUTH"
-    this is HAS_AUTH -> "HAS_AUTH"
-    this is NO_QUEUE -> "NO_QUEUE"
-    else -> "SMPCommandError"
+  val string: String get() = when (this) {
+    is UNKNOWN -> "UNKNOWN"
+    is SYNTAX -> "SYNTAX"
+    is NO_AUTH -> "NO_AUTH"
+    is HAS_AUTH -> "HAS_AUTH"
+    is NO_QUEUE -> "NO_QUEUE"
   }
   @Serializable @SerialName("UNKNOWN") class UNKNOWN: SMPCommandError()
   @Serializable @SerialName("SYNTAX") class SYNTAX: SMPCommandError()
@@ -770,12 +639,11 @@ sealed class SMPCommandError {
 
 @Serializable
 sealed class SMPTransportError {
-  val string: String get() = when {
-    this is BadBlock -> "badBlock"
-    this is LargeMsg -> "largeMsg"
-    this is BadSession -> "badSession"
-    this is Handshake -> "handshake ${handshakeErr.string}"
-    else -> "SMPTransportError"
+  val string: String get() = when (this) {
+    is BadBlock -> "badBlock"
+    is LargeMsg -> "largeMsg"
+    is BadSession -> "badSession"
+    is Handshake -> "handshake ${handshakeErr.string}"
   }
   @Serializable @SerialName("badBlock") class BadBlock: SMPTransportError()
   @Serializable @SerialName("largeMsg") class LargeMsg: SMPTransportError()
@@ -785,11 +653,10 @@ sealed class SMPTransportError {
 
 @Serializable
 sealed class SMPHandshakeError {
-  val string: String get() = when {
-    this is PARSE -> "PARSE"
-    this is VERSION -> "VERSION"
-    this is IDENTITY -> "IDENTITY"
-    else -> "SMPHandshakeError"
+  val string: String get() = when (this) {
+    is PARSE -> "PARSE"
+    is VERSION -> "VERSION"
+    is IDENTITY -> "IDENTITY"
   }
   @Serializable @SerialName("PARSE") class PARSE: SMPHandshakeError()
   @Serializable @SerialName("VERSION") class VERSION: SMPHandshakeError()
@@ -798,12 +665,11 @@ sealed class SMPHandshakeError {
 
 @Serializable
 sealed class SMPAgentError {
-  val string: String get() = when {
-    this is A_MESSAGE -> "A_MESSAGE"
-    this is A_PROHIBITED -> "A_PROHIBITED"
-    this is A_VERSION -> "A_VERSION"
-    this is A_ENCRYPTION -> "A_ENCRYPTION"
-    else -> "SMPAgentError"
+  val string: String get() = when (this) {
+    is A_MESSAGE -> "A_MESSAGE"
+    is A_PROHIBITED -> "A_PROHIBITED"
+    is A_VERSION -> "A_VERSION"
+    is A_ENCRYPTION -> "A_ENCRYPTION"
   }
   @Serializable @SerialName("A_MESSAGE") class A_MESSAGE: SMPAgentError()
   @Serializable @SerialName("A_PROHIBITED") class A_PROHIBITED: SMPAgentError()
