@@ -1,5 +1,6 @@
 package chat.simplex.app.model
 
+import android.accounts.Account
 import android.net.Uri
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -14,7 +15,7 @@ import kotlin.String
 
 class ChatModel(val controller: ChatController, val alertManager: SimplexApp.AlertManager) {
   var currentUser = mutableStateOf<User?>(null)
-  var accountStatus = AccountStatus.NOT_KNOWN
+  var accountStatus = mutableStateOf<AccountStatus>(AccountStatus.NOT_KNOWN)
   var chats = mutableStateListOf<Chat>()
   var chatId = mutableStateOf<String?>(null)
   var chatItems = mutableStateListOf<ChatItem>()

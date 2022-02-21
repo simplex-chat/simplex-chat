@@ -9,7 +9,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.foundation.layout.Box
 import androidx.compose.material.ExperimentalMaterialApi
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
 import androidx.lifecycle.AndroidViewModel
 import androidx.navigation.*
 import androidx.navigation.compose.*
@@ -52,7 +52,7 @@ class SimplexViewModel(application: Application) : AndroidViewModel(application)
 @ExperimentalMaterialApi
 @Composable
 fun MainPage(chatModel: ChatModel, nav: NavController) {
-  when (chatModel.accountStatus) {
+  when (chatModel.accountStatus.value) {
     AccountStatus.NOT_KNOWN -> SplashView()
     AccountStatus.NO_ACCOUNT -> WelcomeView(chatModel) { nav.navigate(Pages.ChatList.route) }
     AccountStatus.ACCOUNT_ACQUIRED -> ChatListView(chatModel, nav)
