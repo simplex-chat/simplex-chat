@@ -18,7 +18,7 @@ open class ChatController(val ctrl: ChatCtrl, val alertManager: SimplexApp.Alert
 
   suspend fun startChat(u: User) {
     chatModel.currentUser = mutableStateOf(u)
-    chatModel.accountStatus = mutableStateOf(AccountStatus.ACCOUNT_ACQUIRED)
+    chatModel.accountStatus.value = AccountStatus.ACCOUNT_ACQUIRED
     Log.d("SIMPLEX (user)", u.toString())
     try {
       apiStartChat()
@@ -64,7 +64,7 @@ open class ChatController(val ctrl: ChatCtrl, val alertManager: SimplexApp.Alert
     val r = sendCmd(CC.ShowActiveUser())
     if (r is CR.ActiveUser) { return r.user }
     Log.d("SIMPLEX", "apiGetActiveUser: ${r.responseType} ${r.details}")
-    chatModel.accountStatus = mutableStateOf(AccountStatus.NO_ACCOUNT)
+    chatModel.accountStatus.value = AccountStatus.NO_ACCOUNT
     return null
   }
 

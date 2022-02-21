@@ -13,9 +13,9 @@ import chat.simplex.app.R
 fun SplashView() {
   Box(modifier = Modifier.fillMaxSize()) {
     Image(
-      painter=painterResource(R.drawable.logo),
+      painter = painterResource(R.drawable.logo),
       contentDescription = "Simplex Icon",
-      modifier= Modifier
+      modifier = Modifier
         .height(230.dp)
         .align(Alignment.Center)
     )
