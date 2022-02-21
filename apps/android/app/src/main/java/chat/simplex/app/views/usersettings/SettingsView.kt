@@ -20,7 +20,7 @@ fun SettingsView(chatModel: ChatModel, nav: NavController) {
     SettingsLayout(
       profile = user.profile,
       back = nav::popBackStack,
-      navUserProfile = { nav.navigate(Pages.UserProfile.route) }
+      navigate = nav::navigate
     )
   }
 }
@@ -31,7 +31,7 @@ val simplexTeamUri = "simplex:/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsP
 fun SettingsLayout(
   profile: Profile,
   back: () -> Unit,
-  navUserProfile: () -> Unit
+  navigate: (String) -> Unit
 ) {
   val uriHandler = LocalUriHandler.current
   Column() {
@@ -42,7 +42,7 @@ fun SettingsLayout(
     Spacer(Modifier.height(4.dp))
 
     Text("YOU", style = MaterialTheme.typography.h4)
-    Button(onClick = navUserProfile) {
+    Button(onClick = { navigate(Pages.UserProfile.route) }) {
       Text(profile.displayName)
     }
 
@@ -59,7 +59,7 @@ fun SettingsLayout(
     Spacer(Modifier.height(10.dp))
 
     Text("DEVELOP", style = MaterialTheme.typography.h4)
-    Button(onClick = { println("navigate to console") }) {
+    Button(onClick = { navigate(Pages.Terminal.route) }) {
       Text("Chat console")
     }
     Button(onClick = { uriHandler.openUri("https://github.com/simplex-chat/simplex-chat") }) {
@@ -75,7 +75,7 @@ fun PreviewSettingsLayout() {
     SettingsLayout(
       profile = Profile.sampleData,
       back = {},
-      navUserProfile = {}
+      navigate = {}
     )
   }
 }
