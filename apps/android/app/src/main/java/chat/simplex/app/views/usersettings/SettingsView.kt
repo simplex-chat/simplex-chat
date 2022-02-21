@@ -1,21 +1,34 @@
 package chat.simplex.app.views.usersettings
 
-import androidx.compose.foundation.layout.*
-import androidx.compose.material.*
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.material.Button
+import androidx.compose.material.MaterialTheme
+import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import chat.simplex.app.model.Profile
+import androidx.navigation.NavController
+import chat.simplex.app.Pages
+import chat.simplex.app.model.ChatModel
 
 //@Preview(showBackground = true)
 @Composable
-fun SettingsView(profile: Profile) {
+fun SettingsView(chatModel: ChatModel, nav: NavController) {
+    val user = chatModel.currentUser.value
+    val profile = user!!.profile
     Column() {
+        Button(
+            onClick = { nav.popBackStack() }
+        ) {
+            Text("Back")
+        }
         Text("Your Settings")
         Spacer(Modifier.height(4.dp))
         Text("YOU", style= MaterialTheme.typography.h4)
         Button(
-            onClick = { println(profile.displayName) }
+            onClick = { nav.navigate(Pages.UserProfile.route) }
         ) {
             Text(profile.displayName)
         }

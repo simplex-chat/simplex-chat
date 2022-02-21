@@ -10,7 +10,10 @@ import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.PersonAdd
 import androidx.compose.material.icons.outlined.Settings
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -23,7 +26,9 @@ import chat.simplex.app.model.ChatModel
 import chat.simplex.app.views.helpers.withApi
 import chat.simplex.app.views.newchat.NewChatSheet
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.launch
 
 @ExperimentalMaterialApi
 class ScaffoldController(val state: BottomSheetScaffoldState, val scope: CoroutineScope) {
@@ -63,7 +68,9 @@ fun ChatListView(chatModel: ChatModel, nav: NavController) {
           .fillMaxSize()
           .background(MaterialTheme.colors.background)
       ) {
-        ChatListToolbar(newChatCtrl)
+        ChatListToolbar(
+          newChatCtrl,
+          settings = { nav.navigate(Pages.Settings.route) })
         Button(
           onClick = { nav.navigate(Pages.Terminal.route) },
           modifier = Modifier.padding(14.dp)
@@ -73,9 +80,10 @@ fun ChatListView(chatModel: ChatModel, nav: NavController) {
         ChatList(chatModel, nav)
       }
       if (newChatCtrl.state.bottomSheetState.isExpanded) {
-        Surface(Modifier
-          .fillMaxSize()
-          .clickable { newChatCtrl.collapse() },
+        Surface(
+          Modifier
+            .fillMaxSize()
+            .clickable { newChatCtrl.collapse() },
           color = Color.Black.copy(alpha = 0.12F)
         ) {}
       }
@@ -85,7 +93,7 @@ fun ChatListView(chatModel: ChatModel, nav: NavController) {
 
 @ExperimentalMaterialApi
 @Composable
-fun ChatListToolbar(newChatSheetCtrl: ScaffoldController) {
+fun ChatListToolbar(newChatSheetCtrl: ScaffoldController, settings: () -> Unit) {
   Row(
     horizontalArrangement = Arrangement.SpaceBetween,
     verticalAlignment = Alignment.CenterVertically,
@@ -96,7 +104,9 @@ fun ChatListToolbar(newChatSheetCtrl: ScaffoldController) {
       Icons.Outlined.Settings,
       "Settings Cog",
       tint = MaterialTheme.colors.primary,
-      modifier = Modifier.padding(horizontal = 10.dp)
+      modifier = Modifier
+        .padding(horizontal = 10.dp)
+        .clickable(onClick = settings)
     )
     Text(
       "Your chats",

@@ -11,16 +11,27 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.runtime.Composable
 import androidx.lifecycle.AndroidViewModel
-import androidx.navigation.*
-import androidx.navigation.compose.*
+import androidx.navigation.NavController
+import androidx.navigation.NavType
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.ui.theme.SimpleXTheme
-import chat.simplex.app.views.*
+import chat.simplex.app.views.DetailView
+import chat.simplex.app.views.TerminalView
+import chat.simplex.app.views.WelcomeView
 import chat.simplex.app.views.chat.ChatInfoView
 import chat.simplex.app.views.chat.ChatView
 import chat.simplex.app.views.chatlist.ChatListView
 import chat.simplex.app.views.helpers.withApi
-import chat.simplex.app.views.newchat.*
+import chat.simplex.app.views.newchat.AddContactView
+import chat.simplex.app.views.newchat.ConnectContactView
+import chat.simplex.app.views.newchat.connectViaUri
+import chat.simplex.app.views.newchat.withUriAction
+import chat.simplex.app.views.usersettings.SettingsView
+import chat.simplex.app.views.usersettings.UserProfileView
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import kotlinx.coroutines.DelicateCoroutinesApi
 
@@ -103,6 +114,12 @@ fun Navigation(chatModel: ChatModel) {
           }
         )
       ) { entry -> DetailView(entry.arguments!!.getLong("identifier"), chatModel.terminalItems, nav) }
+      composable(route = Pages.Settings.route) {
+        SettingsView(chatModel, nav)
+      }
+      composable(route = Pages.UserProfile.route) {
+        UserProfileView(chatModel, nav)
+      }
     }
     val am = chatModel.alertManager
     if (am.presentAlert.value) am.alertView.value?.invoke()
@@ -119,6 +136,8 @@ sealed class Pages(val route: String) {
   object AddContact: Pages("add_contact")
   object Connect: Pages("connect")
   object ChatInfo: Pages("chat_info")
+  object Settings: Pages("settings")
+  object UserProfile: Pages("user_profile")
 }
 
 @DelicateCoroutinesApi
