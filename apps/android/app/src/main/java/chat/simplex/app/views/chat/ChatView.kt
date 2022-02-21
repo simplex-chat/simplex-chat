@@ -8,8 +8,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ArrowBack
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
-import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -133,9 +131,9 @@ fun ChatItemsList(chatItems: List<ChatItem>) {
 }
 
 @ExperimentalAnimatedInsets
-@Preview
+@Preview(showBackground = true)
 @Composable
-fun PreviewChatViewLayout() {
+fun PreviewChatLayout() {
   SimpleXTheme {
     val chatItems = listOf(
       ChatItem.getSampleData(

@@ -63,13 +63,9 @@ fun ChatListView(chatModel: ChatModel, nav: NavController) {
           .fillMaxSize()
           .background(MaterialTheme.colors.background)
       ) {
-        ChatListToolbar(newChatCtrl)
-        Button(
-          onClick = { nav.navigate(Pages.Terminal.route) },
-          modifier = Modifier.padding(14.dp)
-        ) {
-          Text("Terminal")
-        }
+        ChatListToolbar(
+          newChatCtrl,
+          settings = { nav.navigate(Pages.Settings.route) })
         ChatList(chatModel, nav)
       }
       if (newChatCtrl.state.bottomSheetState.isExpanded) {
@@ -85,7 +81,7 @@ fun ChatListView(chatModel: ChatModel, nav: NavController) {
 
 @ExperimentalMaterialApi
 @Composable
-fun ChatListToolbar(newChatSheetCtrl: ScaffoldController) {
+fun ChatListToolbar(newChatSheetCtrl: ScaffoldController, settings: () -> Unit) {
   Row(
     horizontalArrangement = Arrangement.SpaceBetween,
     verticalAlignment = Alignment.CenterVertically,
@@ -96,7 +92,9 @@ fun ChatListToolbar(newChatSheetCtrl: ScaffoldController) {
       Icons.Outlined.Settings,
       "Settings Cog",
       tint = MaterialTheme.colors.primary,
-      modifier = Modifier.padding(horizontal = 10.dp)
+      modifier = Modifier
+        .padding(horizontal = 10.dp)
+        .clickable(onClick = settings)
     )
     Text(
       "Your chats",
@@ -115,14 +113,13 @@ fun ChatListToolbar(newChatSheetCtrl: ScaffoldController) {
   }
 }
 
-
 @DelicateCoroutinesApi
 fun goToChat(chatPreview: Chat, chatModel: ChatModel, navController: NavController) {
   withApi {
     val cInfo = chatPreview.chatInfo
     val chat = chatModel.controller.apiGetChat(cInfo.chatType, cInfo.apiId)
     if (chat != null ) {
-      chatModel.chatId = mutableStateOf(cInfo.id)
+      chatModel.chatId.value = cInfo.id
       chatModel.chatItems = chat.chatItems.toMutableStateList()
       navController.navigate(Pages.Chat.route)
     } else {
