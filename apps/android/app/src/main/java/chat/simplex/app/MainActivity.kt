@@ -53,9 +53,9 @@ class SimplexViewModel(application: Application) : AndroidViewModel(application)
 @Composable
 fun MainPage(chatModel: ChatModel, nav: NavController) {
   when (chatModel.accountStatus.value) {
-    AccountStatus.NOT_KNOWN -> SplashView()
-    AccountStatus.NO_ACCOUNT -> WelcomeView(chatModel) { nav.navigate(Pages.ChatList.route) }
     AccountStatus.ACCOUNT_ACQUIRED -> ChatListView(chatModel, nav)
+//    AccountStatus.NOT_KNOWN -> SplashView()
+    else -> WelcomeView(chatModel) { nav.navigate(Pages.ChatList.route) }
   }
 }
 
