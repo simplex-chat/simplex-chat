@@ -211,25 +211,28 @@ open class ChatController(val ctrl: ChatCtrl, val alertManager: SimplexApp.Alert
 
   fun processReceivedMsg(r: CR) {
     chatModel.terminalItems.add(TerminalItem.resp(r))
-    when {
-      r is CR.ContactConnected -> chatModel.updateContact(r.contact)
-//      r is CR.ReceivedContactRequest -> return
-      r is CR.ContactUpdated -> {
+    when (r) {
+      is CR.ContactConnected -> {
+        chatModel.updateContact(r.contact)
+        chatModel.updateNetworkStatus(r.contact, Chat.NetworkStatus.Connected())
+//        NtfManager.shared.notifyContactConnected(contact)
+      }
+//      is CR.ReceivedContactRequest -> return
+      is CR.ContactUpdated -> {
         val cInfo = ChatInfo.Direct(r.toContact)
         if (chatModel.hasChat(r.toContact.id)) {
           chatModel.updateChatInfo(cInfo)
         }
       }
-
-      r is CR.ContactSubscribed -> {
+      is CR.ContactSubscribed -> {
         chatModel.updateContact(r.contact)
         chatModel.updateNetworkStatus(r.contact, Chat.NetworkStatus.Connected())
       }
-      r is CR.ContactDisconnected -> {
+      is CR.ContactDisconnected -> {
         chatModel.updateContact(r.contact)
         chatModel.updateNetworkStatus(r.contact, Chat.NetworkStatus.Disconnected())
       }
-      r is CR.ContactSubError -> {
+      is CR.ContactSubError -> {
         chatModel.updateContact(r.contact)
         val e = r.chatError
         val err: String =
@@ -244,7 +247,7 @@ open class ChatController(val ctrl: ChatCtrl, val alertManager: SimplexApp.Alert
           else e.string
         chatModel.updateNetworkStatus(r.contact, Chat.NetworkStatus.Error(err))
       }
-      r is CR.NewChatItem -> {
+      is CR.NewChatItem -> {
         val cInfo = r.chatItem.chatInfo
         val cItem = r.chatItem.chatItem
         chatModel.addChatItem(cInfo, cItem)
@@ -252,8 +255,6 @@ open class ChatController(val ctrl: ChatCtrl, val alertManager: SimplexApp.Alert
       }
 
 //      switch res {
-//        chatModel.updateNetworkStatus(contact, .connected)
-//          NtfManager.shared.notifyContactConnected(contact)
 //        case let .receivedContactRequest(contactRequest):
   //        chatModel.addChat(Chat(
   //          chatInfo: ChatInfo.contactRequest(contactRequest: contactRequest),
