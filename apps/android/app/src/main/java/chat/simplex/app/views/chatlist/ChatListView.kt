@@ -80,10 +80,9 @@ fun ChatListView(chatModel: ChatModel, nav: NavController) {
         ChatList(chatModel, nav)
       }
       if (newChatCtrl.state.bottomSheetState.isExpanded) {
-        Surface(
-          Modifier
-            .fillMaxSize()
-            .clickable { newChatCtrl.collapse() },
+        Surface(Modifier
+          .fillMaxSize()
+          .clickable { newChatCtrl.collapse() },
           color = Color.Black.copy(alpha = 0.12F)
         ) {}
       }
