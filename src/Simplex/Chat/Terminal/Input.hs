@@ -34,7 +34,7 @@ runInputLoop ct cc = forever $ do
   s <- atomically . readTBQueue $ inputQ cc
   let bs = encodeUtf8 $ T.pack s
       cmd = parseAll chatCommandP $ B.dropWhileEnd isSpace bs
-  unless (isMessage cmd) $ printToTerminal ct [plain s]
+  unless (isMessage cmd) $ echo s
   r <- runReaderT (execChatCommand bs) cc
   case r of
     CRChatCmdError _ -> when (isMessage cmd) $ echo s
