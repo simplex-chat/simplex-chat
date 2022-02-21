@@ -125,7 +125,7 @@ fun goToChat(chatPreview: Chat, chatModel: ChatModel, navController: NavControll
     val cInfo = chatPreview.chatInfo
     val chat = chatModel.controller.apiGetChat(cInfo.chatType, cInfo.apiId)
     if (chat != null ) {
-      chatModel.chatId = mutableStateOf(cInfo.id)
+      chatModel.chatId.value = cInfo.id
       chatModel.chatItems = chat.chatItems.toMutableStateList()
       navController.navigate(Pages.Chat.route)
     } else {

@@ -22,7 +22,7 @@ class ChatModel(val controller: ChatController, val alertManager: SimplexApp.Ale
   fun updateUserProfile(profile: Profile) {
     val user = currentUser.value
     if (user != null) {
-      currentUser = mutableStateOf(user.copy(profile = profile))
+      currentUser.value = user.copy(profile = profile)
     }
   }
 
