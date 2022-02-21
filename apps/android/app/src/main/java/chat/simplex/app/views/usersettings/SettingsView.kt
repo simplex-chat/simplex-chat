@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
@@ -18,11 +19,13 @@ fun SettingsView(chatModel: ChatModel, nav: NavController) {
   if (user != null) {
     SettingsLayout(
       profile = user.profile,
-      back = { nav.popBackStack() },
+      back = nav::popBackStack,
       navUserProfile = { nav.navigate(Pages.UserProfile.route) }
     )
   }
 }
+
+val simplexTeamUri = "simplex:/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23MCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%3D"
 
 @Composable
 fun SettingsLayout(
@@ -30,55 +33,36 @@ fun SettingsLayout(
   back: () -> Unit,
   navUserProfile: () -> Unit
 ) {
+  val uriHandler = LocalUriHandler.current
   Column() {
-    Button(
-      onClick = back
-    ) {
+    Button(onClick = back) {
       Text("Back")
     }
     Text("Your Settings")
     Spacer(Modifier.height(4.dp))
 
     Text("YOU", style = MaterialTheme.typography.h4)
-    Button(
-      onClick = navUserProfile
-    ) {
+    Button(onClick = navUserProfile) {
       Text(profile.displayName)
     }
-    Button(
-      onClick = { println(profile.hashCode()) }
-    ) {
-      Text("Your SimpleX contact address", style = MaterialTheme.typography.body1)
-    }
-    Spacer(Modifier.height(10.dp))
 
     Text("HELP", style = MaterialTheme.typography.h4)
-    Button(
-      onClick = { println("navigate to help") }
-    ) {
+    Button(onClick = { println("navigate to help") }) {
       Text("How to use SimpleX Chat")
     }
-    Button(
-      onClick = { println("start help chat") }
-    ) {
+    Button(onClick = { uriHandler.openUri(simplexTeamUri) }) {
       Text("Get help & advice via chat")
     }
-    Button(
-      onClick = { println("navigate to email") }
-    ) {
+    Button(onClick = { uriHandler.openUri("mailto:chat@simplex.chat") }) {
       Text("Ask questions via email")
     }
     Spacer(Modifier.height(10.dp))
 
     Text("DEVELOP", style = MaterialTheme.typography.h4)
-    Button(
-      onClick = { println("navigate to console") }
-    ) {
+    Button(onClick = { println("navigate to console") }) {
       Text("Chat console")
     }
-    Button(
-      onClick = { println("navigate to github") }
-    ) {
+    Button(onClick = { uriHandler.openUri("https://github.com/simplex-chat/simplex-chat") }) {
       Text("Install SimpleX for terminal")
     }
   }

@@ -18,6 +18,7 @@ import androidx.navigation.NavController
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.model.Profile
 import chat.simplex.app.ui.theme.SimpleXTheme
+import chat.simplex.app.views.helpers.CloseSheetBar
 import chat.simplex.app.views.helpers.withApi
 
 @Composable
@@ -59,11 +60,15 @@ fun UserProfileLayout(
 ) {
   Column(
     modifier = Modifier
-      .padding(16.dp)
+      .padding(horizontal = 8.dp)
       .fillMaxWidth(),
     horizontalAlignment = Alignment.Start
   ) {
-    Button(onClick = back) { Text("Back") } // TODO remove (view will be in drawer)
+    CloseSheetBar(back)
+    Text("Your chat profile",
+      Modifier.padding(bottom = 24.dp),
+      style = MaterialTheme.typography.h1
+    )
     Text(
       "Your profile is stored on your device and shared only with your contacts.\n" +
           "SimpleX servers cannot see your profile.",
