@@ -11,25 +11,16 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.runtime.Composable
 import androidx.lifecycle.AndroidViewModel
-import androidx.navigation.NavController
-import androidx.navigation.NavType
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
-import androidx.navigation.navArgument
+import androidx.navigation.*
+import androidx.navigation.compose.*
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.ui.theme.SimpleXTheme
-import chat.simplex.app.views.DetailView
-import chat.simplex.app.views.TerminalView
-import chat.simplex.app.views.WelcomeView
+import chat.simplex.app.views.*
 import chat.simplex.app.views.chat.ChatInfoView
 import chat.simplex.app.views.chat.ChatView
 import chat.simplex.app.views.chatlist.ChatListView
 import chat.simplex.app.views.helpers.withApi
-import chat.simplex.app.views.newchat.AddContactView
-import chat.simplex.app.views.newchat.ConnectContactView
-import chat.simplex.app.views.newchat.connectViaUri
-import chat.simplex.app.views.newchat.withUriAction
+import chat.simplex.app.views.newchat.*
 import chat.simplex.app.views.usersettings.SettingsView
 import chat.simplex.app.views.usersettings.UserProfileView
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
@@ -53,7 +44,7 @@ class MainActivity: ComponentActivity() {
 }
 
 @DelicateCoroutinesApi
-class SimplexViewModel(application: Application) : AndroidViewModel(application) {
+class SimplexViewModel(application: Application): AndroidViewModel(application) {
   val chatModel = getApplication<SimplexApp>().chatModel
 }
 
@@ -127,10 +118,10 @@ fun Navigation(chatModel: ChatModel) {
 }
 
 sealed class Pages(val route: String) {
-  object Home : Pages("home")
-  object Terminal : Pages("terminal")
-  object Welcome : Pages("welcome")
-  object TerminalItemDetails : Pages("details")
+  object Home: Pages("home")
+  object Terminal: Pages("terminal")
+  object Welcome: Pages("welcome")
+  object TerminalItemDetails: Pages("details")
   object ChatList: Pages("chats")
   object Chat: Pages("chat")
   object AddContact: Pages("add_contact")
