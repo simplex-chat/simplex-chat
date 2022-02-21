@@ -75,9 +75,7 @@ fun ChatLayout(
 
 @Composable
 fun ChatInfoToolbar(chat: Chat, back: () -> Unit, info: () -> Unit) {
-  Box(Modifier
-    .fillMaxWidth()
-    .height(60.dp),
+  Box(Modifier.height(60.dp),
     contentAlignment = Alignment.CenterStart
   ) {
     Icon(

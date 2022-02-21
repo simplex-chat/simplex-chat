@@ -18,15 +18,20 @@ val Typography = Typography(
     fontWeight = FontWeight.Normal,
     fontSize = 24.sp
   ),
+  h3 = TextStyle(
+    fontFamily = FontFamily.Default,
+    fontWeight = FontWeight.Normal,
+    fontSize = 20.sp
+  ),
   body1 = TextStyle(
     fontFamily = FontFamily.Default,
     fontWeight = FontWeight.Normal,
-    fontSize = 16.sp
+    fontSize = 18.sp
   ),
   body2 = TextStyle(
     fontFamily = FontFamily.Default,
     fontWeight = FontWeight.Normal,
-    fontSize = 14.sp
+    fontSize = 16.sp
   ),
   button = TextStyle(
     fontFamily = FontFamily.Default,
