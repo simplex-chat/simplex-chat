@@ -76,7 +76,7 @@ runTerminalOutput :: ChatTerminal -> ChatController -> IO ()
 runTerminalOutput ct cc = do
   let testV = testView $ config cc
   forever $
-    atomically (readTBQueue $ outputQ cc) >>= printToTerminal ct . responseToView "" testV . snd
+    atomically (readTBQueue $ outputQ cc) >>= printToTerminal ct . responseToView testV . snd
 
 printToTerminal :: ChatTerminal -> [StyledString] -> IO ()
 printToTerminal ct s =

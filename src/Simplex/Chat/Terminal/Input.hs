@@ -5,15 +5,19 @@
 
 module Simplex.Chat.Terminal.Input where
 
-import Control.Monad.IO.Unlift
+import Control.Monad.Except
 import Control.Monad.Reader
+import qualified Data.ByteString.Char8 as B
+import Data.Char (isSpace)
 import Data.List (dropWhileEnd)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Simplex.Chat
 import Simplex.Chat.Controller
+import Simplex.Chat.Styled
 import Simplex.Chat.Terminal.Output
 import Simplex.Chat.View
+import Simplex.Messaging.Parsers (parseAll)
 import System.Exit (exitSuccess)
 import System.Terminal hiding (insertChars)
 import UnliftIO.STM
@@ -28,9 +32,23 @@ getKey =
 runInputLoop :: ChatTerminal -> ChatController -> IO ()
 runInputLoop ct cc = forever $ do
   s <- atomically . readTBQueue $ inputQ cc
-  r <- runReaderT (execChatCommand . encodeUtf8 $ T.pack s) cc
+  let bs = encodeUtf8 $ T.pack s
+      cmd = parseAll chatCommandP $ B.dropWhileEnd isSpace bs
+  unless (isMessage cmd) $ echo s
+  r <- runReaderT (execChatCommand bs) cc
+  case r of
+    CRChatCmdError _ -> when (isMessage cmd) $ echo s
+    _ -> pure ()
   let testV = testView $ config cc
-  printToTerminal ct $ responseToView s testV r
+  printToTerminal ct $ responseToView testV r
+  where
+    echo s = printToTerminal ct [plain s]
+    isMessage = \case
+      Right SendMessage {} -> True
+      Right SendGroupMessage {} -> True
+      Right SendFile {} -> True
+      Right SendGroupFile {} -> True
+      _ -> False
 
 runTerminalInput :: ChatTerminal -> ChatController -> IO ()
 runTerminalInput ct cc = withChatTerm ct $ do
