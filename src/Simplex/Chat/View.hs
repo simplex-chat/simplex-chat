@@ -30,58 +30,58 @@ import qualified Simplex.Messaging.Protocol as SMP
 import System.Console.ANSI.Types
 
 serializeChatResponse :: ChatResponse -> String
-serializeChatResponse = unlines . map unStyle . responseToView "" False
+serializeChatResponse = unlines . map unStyle . responseToView False
 
-responseToView :: String -> Bool -> ChatResponse -> [StyledString]
-responseToView cmd testView = \case
-  CRActiveUser User {profile} -> r $ viewUserProfile profile
-  CRChatStarted -> r ["chat started"]
-  CRApiChats chats -> r $ if testView then testViewChats chats else [sShow chats]
-  CRApiChat chat -> r $ if testView then testViewChat chat else [sShow chat]
+responseToView :: Bool -> ChatResponse -> [StyledString]
+responseToView testView = \case
+  CRActiveUser User {profile} -> viewUserProfile profile
+  CRChatStarted -> ["chat started"]
+  CRApiChats chats -> if testView then testViewChats chats else [sShow chats]
+  CRApiChat chat -> if testView then testViewChat chat else [sShow chat]
   CRNewChatItem (AChatItem _ _ chat item) -> viewChatItem chat item
   CRChatItemUpdated _ -> []
   CRMsgIntegrityError mErr -> viewMsgIntegrityError mErr
-  CRCmdAccepted _ -> r []
-  CRCmdOk -> r ["ok"]
+  CRCmdAccepted _ -> []
+  CRCmdOk -> ["ok"]
   CRChatHelp section -> case section of
-    HSMain -> r chatHelpInfo
-    HSFiles -> r filesHelpInfo
-    HSGroups -> r groupsHelpInfo
-    HSMyAddress -> r myAddressHelpInfo
-    HSMarkdown -> r markdownInfo
-  CRWelcome user -> r $ chatWelcome user
-  CRContactsList cs -> r $ viewContactsList cs
-  CRUserContactLink cReqUri _ -> r $ connReqContact_ "Your chat address:" cReqUri
-  CRUserContactLinkUpdated _ autoAccept -> r ["auto_accept " <> if autoAccept then "on" else "off"]
-  CRContactRequestRejected UserContactRequest {localDisplayName = c} -> r [ttyContact c <> ": contact request rejected"]
-  CRGroupCreated g -> r $ viewGroupCreated g
-  CRGroupMembers g -> r $ viewGroupMembers g
-  CRGroupsList gs -> r $ viewGroupsList gs
-  CRSentGroupInvitation g c -> r ["invitation to join the group " <> ttyGroup' g <> " sent to " <> ttyContact' c]
-  CRFileTransferStatus ftStatus -> r $ viewFileTransferStatus ftStatus
-  CRUserProfile p -> r $ viewUserProfile p
-  CRUserProfileNoChange -> r ["user profile did not change"]
-  CRVersionInfo _ -> r [plain versionStr, plain updateStr]
-  CRChatCmdError e -> r $ viewChatError e
-  CRInvitation cReq -> r' $ viewConnReqInvitation cReq
-  CRSentConfirmation -> r' ["confirmation sent!"]
-  CRSentInvitation -> r' ["connection request sent!"]
-  CRContactDeleted c -> r' [ttyContact' c <> ": contact is deleted"]
-  CRAcceptingContactRequest c -> r [ttyFullContact c <> ": accepting contact request..."]
-  CRContactAlreadyExists c -> r [ttyFullContact c <> ": contact already exists"]
-  CRContactRequestAlreadyAccepted c -> r' [ttyFullContact c <> ": sent you a duplicate contact request, but you are already connected, no action needed"]
-  CRUserContactLinkCreated cReq -> r' $ connReqContact_ "Your new chat address is created!" cReq
-  CRUserContactLinkDeleted -> r' viewUserContactLinkDeleted
-  CRUserAcceptedGroupSent _g -> r' [] -- [ttyGroup' g <> ": joining the group..."]
-  CRUserDeletedMember g m -> r' [ttyGroup' g <> ": you removed " <> ttyMember m <> " from the group"]
-  CRLeftMemberUser g -> r' $ [ttyGroup' g <> ": you left the group"] <> groupPreserved g
-  CRGroupDeletedUser g -> r' [ttyGroup' g <> ": you deleted the group"]
+    HSMain -> chatHelpInfo
+    HSFiles -> filesHelpInfo
+    HSGroups -> groupsHelpInfo
+    HSMyAddress -> myAddressHelpInfo
+    HSMarkdown -> markdownInfo
+  CRWelcome user -> chatWelcome user
+  CRContactsList cs -> viewContactsList cs
+  CRUserContactLink cReqUri _ -> connReqContact_ "Your chat address:" cReqUri
+  CRUserContactLinkUpdated _ autoAccept -> ["auto_accept " <> if autoAccept then "on" else "off"]
+  CRContactRequestRejected UserContactRequest {localDisplayName = c} -> [ttyContact c <> ": contact request rejected"]
+  CRGroupCreated g -> viewGroupCreated g
+  CRGroupMembers g -> viewGroupMembers g
+  CRGroupsList gs -> viewGroupsList gs
+  CRSentGroupInvitation g c -> ["invitation to join the group " <> ttyGroup' g <> " sent to " <> ttyContact' c]
+  CRFileTransferStatus ftStatus -> viewFileTransferStatus ftStatus
+  CRUserProfile p -> viewUserProfile p
+  CRUserProfileNoChange -> ["user profile did not change"]
+  CRVersionInfo _ -> [plain versionStr, plain updateStr]
+  CRChatCmdError e -> viewChatError e
+  CRInvitation cReq -> viewConnReqInvitation cReq
+  CRSentConfirmation -> ["confirmation sent!"]
+  CRSentInvitation -> ["connection request sent!"]
+  CRContactDeleted c -> [ttyContact' c <> ": contact is deleted"]
+  CRAcceptingContactRequest c -> [ttyFullContact c <> ": accepting contact request..."]
+  CRContactAlreadyExists c -> [ttyFullContact c <> ": contact already exists"]
+  CRContactRequestAlreadyAccepted c -> [ttyFullContact c <> ": sent you a duplicate contact request, but you are already connected, no action needed"]
+  CRUserContactLinkCreated cReq -> connReqContact_ "Your new chat address is created!" cReq
+  CRUserContactLinkDeleted -> viewUserContactLinkDeleted
+  CRUserAcceptedGroupSent _g -> [] -- [ttyGroup' g <> ": joining the group..."]
+  CRUserDeletedMember g m -> [ttyGroup' g <> ": you removed " <> ttyMember m <> " from the group"]
+  CRLeftMemberUser g -> [ttyGroup' g <> ": you left the group"] <> groupPreserved g
+  CRGroupDeletedUser g -> [ttyGroup' g <> ": you deleted the group"]
   CRRcvFileAccepted RcvFileTransfer {fileId, senderDisplayName = c} filePath ->
-    r' ["saving file " <> sShow fileId <> " from " <> ttyContact c <> " to " <> plain filePath]
-  CRRcvFileAcceptedSndCancelled ft -> r' $ viewRcvFileSndCancelled ft
-  CRSndGroupFileCancelled fts -> r' $ viewSndGroupFileCancelled fts
-  CRRcvFileCancelled ft -> r' $ receivingFile_ "cancelled" ft
-  CRUserProfileUpdated p p' -> r' $ viewUserProfileUpdated p p'
+    ["saving file " <> sShow fileId <> " from " <> ttyContact c <> " to " <> plain filePath]
+  CRRcvFileAcceptedSndCancelled ft -> viewRcvFileSndCancelled ft
+  CRSndGroupFileCancelled fts -> viewSndGroupFileCancelled fts
+  CRRcvFileCancelled ft -> receivingFile_ "cancelled" ft
+  CRUserProfileUpdated p p' -> viewUserProfileUpdated p p'
   CRContactUpdated c c' -> viewContactUpdated c c'
   CRContactsMerged intoCt mergedCt -> viewContactsMerged intoCt mergedCt
   CRReceivedContactRequest UserContactRequest {localDisplayName = c, profile} -> viewReceivedContactRequest c profile
@@ -123,10 +123,6 @@ responseToView cmd testView = \case
   CRMessageError prefix err -> [plain prefix <> ": " <> plain err]
   CRChatError e -> viewChatError e
   where
-    r = (plain cmd :)
-    -- this function should be `r` for "synchronous", `id` for "asynchronous" command responses
-    r' = r
-    -- r' = id
     testViewChats :: [AChat] -> [StyledString]
     testViewChats chats = [sShow $ map toChatView chats]
       where
