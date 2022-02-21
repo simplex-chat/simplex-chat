@@ -4,10 +4,10 @@ import android.util.Log
 import androidx.compose.runtime.mutableStateOf
 import chat.simplex.app.*
 import kotlinx.coroutines.*
+import kotlinx.datetime.*
 import kotlinx.serialization.*
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
-import java.util.*
 import kotlin.concurrent.thread
 
 typealias ChatCtrl = Long
@@ -479,7 +479,7 @@ sealed class CR {
 
 abstract class TerminalItem {
   abstract val id: Long
-  val date = Date()
+  val date: Instant = Clock.System.now()
   abstract val label: String
   abstract val details: String
 
