@@ -14,6 +14,7 @@ import kotlin.String
 
 class ChatModel(val controller: ChatController, val alertManager: SimplexApp.AlertManager) {
   var currentUser = mutableStateOf<User?>(null)
+  var accountStatus = AccountStatus.NOT_KNOWN
   var chats = mutableStateListOf<Chat>()
   var chatId = mutableStateOf<String?>(null)
   var chatItems = mutableStateListOf<ChatItem>()
@@ -162,6 +163,12 @@ class ChatModel(val controller: ChatController, val alertManager: SimplexApp.Ale
   fun removeChat(id: String) {
     chats.removeAll { it.id == id }
   }
+}
+
+enum class AccountStatus {
+  NOT_KNOWN,
+  NO_ACCOUNT,
+  ACCOUNT_ACQUIRED
 }
 
 enum class ChatType(val type: String) {
