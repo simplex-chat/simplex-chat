@@ -35,10 +35,8 @@ fun UserProfileView(chatModel: ChatModel, nav: NavController) {
                   val newProfile = chatModel.controller.apiUpdateProfile(
                     profile = Profile(displayName, fullName)
                   )
-                  print("if (newProfile != null) {")
                   if (newProfile != null) {
                     chatModel.updateUserProfile(newProfile)
-                    print("profile = newProfile")
                     profile = newProfile
                   }
                   editProfile = false
