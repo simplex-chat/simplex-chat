@@ -40,8 +40,8 @@ fun UserProfileView(chatModel: ChatModel, nav: NavController) {
           if (newProfile != null) {
             chatModel.updateUserProfile(newProfile)
             profile = newProfile
-            editProfile = false
           }
+          editProfile = false
         }
       }
     )
