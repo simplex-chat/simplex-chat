@@ -118,9 +118,9 @@ fun ChatItemsList(chatItems: List<ChatItem>) {
   }
 }
 
-@Preview
+@Preview(showBackground = true)
 @Composable
-fun PreviewChatViewLayout() {
+fun PreviewChatLayout() {
   SimpleXTheme {
     val chatItems = listOf(
       ChatItem.getSampleData(

@@ -22,6 +22,8 @@ import chat.simplex.app.views.chat.ChatView
 import chat.simplex.app.views.chatlist.ChatListView
 import chat.simplex.app.views.helpers.withApi
 import chat.simplex.app.views.newchat.*
+import chat.simplex.app.views.usersettings.SettingsView
+import chat.simplex.app.views.usersettings.UserProfileView
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import kotlinx.coroutines.DelicateCoroutinesApi
 
@@ -43,7 +45,7 @@ class MainActivity: ComponentActivity() {
 }
 
 @DelicateCoroutinesApi
-class SimplexViewModel(application: Application) : AndroidViewModel(application) {
+class SimplexViewModel(application: Application): AndroidViewModel(application) {
   val chatModel = getApplication<SimplexApp>().chatModel
 }
 
@@ -104,6 +106,12 @@ fun Navigation(chatModel: ChatModel) {
           }
         )
       ) { entry -> DetailView(entry.arguments!!.getLong("identifier"), chatModel.terminalItems, nav) }
+      composable(route = Pages.Settings.route) {
+        SettingsView(chatModel, nav)
+      }
+      composable(route = Pages.UserProfile.route) {
+        UserProfileView(chatModel, nav)
+      }
     }
     val am = chatModel.alertManager
     if (am.presentAlert.value) am.alertView.value?.invoke()
@@ -111,15 +119,17 @@ fun Navigation(chatModel: ChatModel) {
 }
 
 sealed class Pages(val route: String) {
-  object Home : Pages("home")
-  object Terminal : Pages("terminal")
-  object Welcome : Pages("welcome")
-  object TerminalItemDetails : Pages("details")
+  object Home: Pages("home")
+  object Terminal: Pages("terminal")
+  object Welcome: Pages("welcome")
+  object TerminalItemDetails: Pages("details")
   object ChatList: Pages("chats")
   object Chat: Pages("chat")
   object AddContact: Pages("add_contact")
   object Connect: Pages("connect")
   object ChatInfo: Pages("chat_info")
+  object Settings: Pages("settings")
+  object UserProfile: Pages("user_profile")
 }
 
 @DelicateCoroutinesApi

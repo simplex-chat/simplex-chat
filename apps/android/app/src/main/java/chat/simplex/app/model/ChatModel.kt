@@ -8,10 +8,6 @@ import chat.simplex.app.SimplexApp
 import kotlinx.datetime.*
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlin.Boolean
-import kotlin.Int
-import kotlin.Long
-import kotlin.String
 
 class ChatModel(val controller: ChatController, val alertManager: SimplexApp.AlertManager) {
   var currentUser = mutableStateOf<User?>(null)
@@ -24,6 +20,13 @@ class ChatModel(val controller: ChatController, val alertManager: SimplexApp.Ale
   var terminalItems = mutableStateListOf<TerminalItem>()
   // set when app is opened via contact or invitation URI
   var appOpenUrl = mutableStateOf<Uri?>(null)
+
+  fun updateUserProfile(profile: Profile) {
+    val user = currentUser.value
+    if (user != null) {
+      currentUser.value = user.copy(profile = profile)
+    }
+  }
 
   fun hasChat(id: String): Boolean = chats.firstOrNull() { it.id == id } != null
   fun getChat(id: String): Chat? = chats.firstOrNull { it.id == id }
@@ -186,7 +189,7 @@ enum class ChatType(val type: String) {
 }
 
 @Serializable
-class User (
+data class User(
   val userId: Long,
   val userContactId: Long,
   val localDisplayName: String,
