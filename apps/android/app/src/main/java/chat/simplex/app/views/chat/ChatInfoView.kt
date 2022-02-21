@@ -1,5 +1,6 @@
 package chat.simplex.app.views.chat
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
@@ -52,6 +53,7 @@ fun ChatInfoView(chatModel: ChatModel, nav: NavController) {
 fun ChatInfoLayout(chat: Chat, close: () -> Unit, deleteContact: () -> Unit) {
   Column(Modifier
     .fillMaxSize()
+    .background(MaterialTheme.colors.background)
     .padding(horizontal = 8.dp),
     horizontalAlignment = Alignment.CenterHorizontally
   ) {
@@ -61,10 +63,12 @@ fun ChatInfoLayout(chat: Chat, close: () -> Unit, deleteContact: () -> Unit) {
     val cInfo = chat.chatInfo
     Text(
       cInfo.displayName, style = MaterialTheme.typography.h1,
+      color = MaterialTheme.colors.onBackground,
       modifier = Modifier.padding(top = 32.dp).padding(bottom = 8.dp)
     )
     Text(
       cInfo.fullName, style = MaterialTheme.typography.h2,
+      color = MaterialTheme.colors.onBackground,
       modifier = Modifier.padding(bottom = 16.dp)
     )
 
@@ -75,12 +79,14 @@ fun ChatInfoLayout(chat: Chat, close: () -> Unit, deleteContact: () -> Unit) {
           Text(
             chat.serverInfo.networkStatus.statusString,
             textAlign = TextAlign.Center,
+            color = MaterialTheme.colors.onBackground,
             modifier = Modifier.padding(start = 8.dp)
           )
         }
         Text(
           chat.serverInfo.networkStatus.statusExplanation,
           style = MaterialTheme.typography.body2,
+          color = MaterialTheme.colors.onBackground,
           textAlign = TextAlign.Center,
           modifier = Modifier.padding(top = 16.dp).padding(horizontal = 16.dp)
         )
