@@ -27,7 +27,7 @@ fun SendMsgView(sendMessage: (String) -> Unit) {
   BasicTextField(
     value = cmd,
     onValueChange = { cmd = it },
-    textStyle = MaterialTheme.typography.body1,
+    textStyle = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onBackground),
     maxLines = 16,
     keyboardOptions = KeyboardOptions.Default.copy(
       capitalization = KeyboardCapitalization.Sentences,
@@ -37,7 +37,7 @@ fun SendMsgView(sendMessage: (String) -> Unit) {
     decorationBox = { innerTextField ->
       Surface(
         shape = RoundedCornerShape(18.dp),
-        border = BorderStroke(1.dp, LightGray)
+        border = BorderStroke(1.dp, MaterialTheme.colors.secondary)
       ) {
         Row(
           Modifier.background(MaterialTheme.colors.background),
@@ -75,7 +75,7 @@ fun SendMsgView(sendMessage: (String) -> Unit) {
   )
 }
 
-@Preview
+@Preview(showBackground = true)
 @Composable
 fun PreviewSendMsgView() {
   SimpleXTheme {
