@@ -10,7 +10,7 @@ import kotlinx.serialization.Serializable
 
 class ChatModel(val controller: ChatController, val alertManager: SimplexApp.AlertManager) {
   var currentUser = mutableStateOf<User?>(null)
-  var accountStatus = mutableStateOf<UserStatus>(UserStatus.NOT_KNOWN)
+  var userCreated = mutableStateOf<Boolean?>(null)
   var chats = mutableStateListOf<Chat>()
   var chatId = mutableStateOf<String?>(null)
   var chatItems = mutableStateListOf<ChatItem>()
@@ -166,12 +166,6 @@ class ChatModel(val controller: ChatController, val alertManager: SimplexApp.Ale
   fun removeChat(id: String) {
     chats.removeAll { it.id == id }
   }
-}
-
-enum class UserStatus {
-  NOT_KNOWN,
-  NO_USER,
-  USER_KNOWN
 }
 
 enum class ChatType(val type: String) {

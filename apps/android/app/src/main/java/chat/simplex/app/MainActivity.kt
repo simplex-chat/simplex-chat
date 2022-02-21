@@ -13,7 +13,6 @@ import androidx.compose.runtime.Composable
 import androidx.lifecycle.AndroidViewModel
 import androidx.navigation.*
 import androidx.navigation.compose.*
-import chat.simplex.app.model.UserStatus
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.*
@@ -54,10 +53,10 @@ class SimplexViewModel(application: Application): AndroidViewModel(application) 
 @ExperimentalMaterialApi
 @Composable
 fun MainPage(chatModel: ChatModel, nav: NavController) {
-  when (chatModel.accountStatus.value) {
-    UserStatus.NOT_KNOWN -> SplashView()
-    UserStatus.NO_USER -> WelcomeView(chatModel) { nav.navigate(Pages.ChatList.route) }
-    UserStatus.USER_KNOWN -> ChatListView(chatModel, nav)
+  when (chatModel.userCreated.value) {
+    null -> SplashView()
+    false -> WelcomeView(chatModel) { nav.navigate(Pages.ChatList.route) }
+    true -> ChatListView(chatModel, nav)
   }
 }
 
