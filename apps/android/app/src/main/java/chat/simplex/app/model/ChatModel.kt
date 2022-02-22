@@ -118,23 +118,16 @@ class ChatModel(val controller: ChatController, val alertManager: SimplexApp.Ale
     val chatIdx = getChatIndex(cInfo.id)
     // update current chat
     if (chatId.value == cInfo.id) {
-      var i: Int = 0
-      var startIdx: Long? = null
-      var endIdx: Long? = null
+      var i = 0
       while (i < chatItems.count()) {
         val item = chatItems[i]
         if (item.meta.itemStatus is CIStatus.RcvNew) {
-          startIdx = startIdx ?: item.id
           chatItems[i] = item.copy(meta=item.meta.copy(itemStatus = CIStatus.RcvRead()))
+          withApi {
+            controller.apiChatRead(cInfo.chatType, cInfo.apiId, CC.ItemRange(item.id, item.id))
+          }
         }
-        else endIdx = item.id
         i += 1
-      }
-      if (startIdx != null) {
-        endIdx = endIdx ?: chatItems[i].id
-        withApi {
-          controller.apiChatRead(cInfo.chatType, cInfo.apiId, CC.ItemRange(startIdx, endIdx))
-        }
       }
       val chat = chats[chatIdx]
       chats[chatIdx] = chat.copy(
