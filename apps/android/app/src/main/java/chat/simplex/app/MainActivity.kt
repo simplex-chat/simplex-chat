@@ -23,10 +23,12 @@ import chat.simplex.app.views.helpers.withApi
 import chat.simplex.app.views.newchat.*
 import chat.simplex.app.views.usersettings.SettingsView
 import chat.simplex.app.views.usersettings.UserProfileView
+import com.google.accompanist.insets.ExperimentalAnimatedInsets
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import kotlinx.coroutines.DelicateCoroutinesApi
 
 @DelicateCoroutinesApi
+@ExperimentalAnimatedInsets
 @ExperimentalPermissionsApi
 @ExperimentalMaterialApi
 class MainActivity: ComponentActivity() {
@@ -60,6 +62,7 @@ fun MainPage(chatModel: ChatModel, nav: NavController) {
   }
 }
 
+@ExperimentalAnimatedInsets
 @DelicateCoroutinesApi
 @ExperimentalPermissionsApi
 @ExperimentalMaterialApi

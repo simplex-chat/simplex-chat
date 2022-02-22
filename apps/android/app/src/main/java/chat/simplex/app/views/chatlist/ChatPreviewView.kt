@@ -5,7 +5,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -14,6 +16,7 @@ import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.HighOrLowlight
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.helpers.ChatInfoImage
+import kotlinx.datetime.Clock
 
 @Composable
 fun ChatPreviewView(chat: Chat, goToChat: () -> Unit) {
@@ -22,30 +25,43 @@ fun ChatPreviewView(chat: Chat, goToChat: () -> Unit) {
     modifier = Modifier
       .fillMaxWidth()
       .clickable(onClick = goToChat)
-      .height(80.dp)
+      .height(88.dp)
   ) {
     Row(
       modifier = Modifier
         .fillMaxWidth()
-        .padding(horizontal = 14.dp),
+        .padding(vertical = 8.dp)
+        .padding(start = 8.dp)
+        .padding(end = 12.dp),
+      verticalAlignment = Alignment.Top
     ) {
-      Column(verticalArrangement = Arrangement.Center, modifier = Modifier.fillMaxHeight()) {
-        ChatInfoImage(chat, size = 60.dp)
-      }
-      Spacer(modifier = Modifier.width(6.dp))
-      Column(modifier = Modifier.padding(all = 8.dp)) {
-        Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-          Text(chat.chatInfo.chatViewName, fontWeight = FontWeight.Bold)
-          val ts = chat.chatItems.lastOrNull()?.timestampText ?: getTimestampText(chat.chatInfo.createdAt)
-          Text(ts, color = HighOrLowlight, style = MaterialTheme.typography.body2)
-        }
+      ChatInfoImage(chat, size = 72.dp)
+      Column(modifier = Modifier
+        .padding(horizontal = 8.dp)
+        .weight(1F)) {
+        Text(
+          chat.chatInfo.chatViewName,
+          maxLines = 1,
+          overflow = TextOverflow.Ellipsis,
+          style = MaterialTheme.typography.h3,
+          fontWeight = FontWeight.Bold
+        )
         if (chat.chatItems.count() > 0) {
           Text(
             chat.chatItems.last().content.text,
             maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
+            overflow = TextOverflow.Ellipsis
           )
         }
+      }
+      val ts = chat.chatItems.lastOrNull()?.timestampText ?: getTimestampText(chat.chatInfo.createdAt)
+      Column(Modifier.fillMaxHeight(),
+        verticalArrangement = Arrangement.Top) {
+        Text(ts,
+          color = HighOrLowlight,
+          style = MaterialTheme.typography.body2
+        )
+        // TODO unread count
       }
     }
   }
@@ -58,7 +74,12 @@ fun ChatPreviewViewExample() {
     ChatPreviewView(
       chat = Chat(
         chatInfo = ChatInfo.Direct.sampleData,
-        chatItems = listOf(),
+        chatItems = listOf(ChatItem.getSampleData(
+          1,
+          CIDirection.DirectSnd(),
+          Clock.System.now(),
+          "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat."
+        )),
         chatStats = Chat.ChatStats()
       ),
       goToChat = {}

@@ -1,16 +1,13 @@
 package chat.simplex.app.views.chat
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.*
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ArrowBack
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
+import androidx.compose.runtime.*
+import androidx.compose.ui.*
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -21,9 +18,11 @@ import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.chat.item.ChatItemView
 import chat.simplex.app.views.helpers.ChatInfoImage
 import chat.simplex.app.views.helpers.withApi
-import kotlinx.coroutines.DelicateCoroutinesApi
+import com.google.accompanist.insets.*
+import kotlinx.coroutines.*
 import kotlinx.datetime.Clock
 
+@ExperimentalAnimatedInsets
 @DelicateCoroutinesApi
 @Composable
 fun ChatView(chatModel: ChatModel, nav: NavController) {
@@ -51,6 +50,8 @@ fun ChatView(chatModel: ChatModel, nav: NavController) {
   }
 }
 
+@DelicateCoroutinesApi
+@ExperimentalAnimatedInsets
 @Composable
 fun ChatLayout(
   chat: Chat, chatItems: List<ChatItem>,
@@ -58,26 +59,27 @@ fun ChatLayout(
   info: () -> Unit,
   sendMessage: (String) -> Unit
 ) {
-  Scaffold(
-    topBar = { ChatInfoToolbar(chat, back, info) },
-    bottomBar = { SendMsgView(sendMessage) }
-  ) { contentPadding ->
-    Box(
-      modifier = Modifier
-        .padding(contentPadding)
-        .fillMaxWidth()
-        .background(MaterialTheme.colors.background)
-    ) {
-      ChatItemsList(chatItems)
+  ProvideWindowInsets(windowInsetsAnimationsEnabled = true) {
+    Scaffold(
+      topBar = { ChatInfoToolbar(chat, back, info) },
+      bottomBar = { SendMsgView(sendMessage) },
+      modifier = Modifier.navigationBarsWithImePadding()
+    ) { contentPadding ->
+      Box(
+        modifier = Modifier
+          .padding(contentPadding)
+          .fillMaxWidth()
+          .background(MaterialTheme.colors.background)
+      ) {
+        ChatItemsList(chatItems)
+      }
     }
   }
 }
 
 @Composable
 fun ChatInfoToolbar(chat: Chat, back: () -> Unit, info: () -> Unit) {
-  Box(Modifier
-    .fillMaxWidth()
-    .height(60.dp),
+  Box(Modifier.height(60.dp),
     contentAlignment = Alignment.CenterStart
   ) {
     Icon(
@@ -109,15 +111,26 @@ fun ChatInfoToolbar(chat: Chat, back: () -> Unit, info: () -> Unit) {
   }
 }
 
+@DelicateCoroutinesApi
+@ExperimentalAnimatedInsets
 @Composable
 fun ChatItemsList(chatItems: List<ChatItem>) {
-  LazyColumn {
+  val listState = rememberLazyListState()
+  val scope = rememberCoroutineScope()
+  LazyColumn(state = listState) {
     items(chatItems) { cItem ->
       ChatItemView(cItem)
+    }
+    val len = chatItems.count()
+    if (len > 1) {
+      scope.launch {
+        listState.animateScrollToItem(len - 1)
+      }
     }
   }
 }
 
+@ExperimentalAnimatedInsets
 @Preview(showBackground = true)
 @Composable
 fun PreviewChatLayout() {
