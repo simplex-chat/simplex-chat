@@ -53,10 +53,10 @@ class SimplexViewModel(application: Application): AndroidViewModel(application) 
 @ExperimentalMaterialApi
 @Composable
 fun MainPage(chatModel: ChatModel, nav: NavController) {
-  if (chatModel.currentUser.value == null) WelcomeView(chatModel) {
-    nav.navigate(Pages.ChatList.route)
-  } else {
-    ChatListView(chatModel, nav)
+  when (chatModel.userCreated.value) {
+    null -> SplashView()
+    false -> WelcomeView(chatModel) { nav.navigate(Pages.ChatList.route) }
+    true -> ChatListView(chatModel, nav)
   }
 }
 
