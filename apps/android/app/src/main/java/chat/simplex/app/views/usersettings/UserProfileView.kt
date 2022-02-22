@@ -4,16 +4,15 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.*
+import androidx.compose.material.MaterialTheme
+import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.model.Profile
@@ -65,7 +64,8 @@ fun UserProfileLayout(
     horizontalAlignment = Alignment.Start
   ) {
     CloseSheetBar(back)
-    Text("Your chat profile",
+    Text(
+      "Your chat profile",
       Modifier.padding(bottom = 24.dp),
       style = MaterialTheme.typography.h1
     )
@@ -88,7 +88,7 @@ fun UserProfileLayout(
           modifier = Modifier
             .padding(bottom = 24.dp)
             .fillMaxWidth(),
-          textStyle = TextStyle(fontSize = 16.sp),
+          textStyle = MaterialTheme.typography.h1,
           keyboardOptions = KeyboardOptions(
             capitalization = KeyboardCapitalization.None,
             autoCorrect = false
@@ -101,7 +101,7 @@ fun UserProfileLayout(
           modifier = Modifier
             .padding(bottom = 24.dp)
             .fillMaxWidth(),
-          textStyle = TextStyle(fontSize = 16.sp),
+          textStyle = MaterialTheme.typography.body1,
           keyboardOptions = KeyboardOptions(
             capitalization = KeyboardCapitalization.None,
             autoCorrect = false

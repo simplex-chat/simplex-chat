@@ -22,6 +22,7 @@ import chat.simplex.app.model.Chat
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.views.helpers.withApi
 import chat.simplex.app.views.newchat.NewChatSheet
+import chat.simplex.app.views.usersettings.SettingsView
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import kotlinx.coroutines.*
 
@@ -52,12 +53,29 @@ fun ChatListView(chatModel: ChatModel, nav: NavController) {
   val newChatCtrl = scaffoldController()
   BottomSheetScaffold(
     scaffoldState = newChatCtrl.state,
-    topBar = { ChatListToolbar(newChatCtrl, settings = { nav.navigate(Pages.Settings.route) }) },
     sheetPeekHeight = 0.dp,
     sheetContent = { NewChatSheet(chatModel, newChatCtrl, nav) },
     sheetShape = RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp),
   ) {
-    Box {
+    val scaffoldState = rememberScaffoldState()
+    val scope = rememberCoroutineScope()
+    Scaffold(
+      scaffoldState = scaffoldState,
+      topBar = {
+        ChatListToolbar(
+          newChatCtrl,
+          settings = {
+            scope.launch {
+              scaffoldState.drawerState.apply {
+                if (isClosed) open() else close()
+              }
+            }
+          })
+      },
+      drawerContent = {
+        SettingsView(chatModel, nav)
+      }
+    ) {
       Column(
         modifier = Modifier
           .padding(vertical = 8.dp)
@@ -87,7 +105,8 @@ fun ChatListToolbar(newChatSheetCtrl: ScaffoldController, settings: () -> Unit) 
     modifier = Modifier
       .fillMaxWidth()
       .padding(horizontal = 8.dp)
-      .height(60.dp)) {
+      .height(60.dp)
+  ) {
     IconButton(onClick = settings) {
       Icon(
         Icons.Outlined.Settings,
@@ -118,7 +137,7 @@ fun goToChat(chatPreview: Chat, chatModel: ChatModel, navController: NavControll
   withApi {
     val cInfo = chatPreview.chatInfo
     val chat = chatModel.controller.apiGetChat(cInfo.chatType, cInfo.apiId)
-    if (chat != null ) {
+    if (chat != null) {
       chatModel.chatId.value = cInfo.id
       chatModel.chatItems = chat.chatItems.toMutableStateList()
       navController.navigate(Pages.Chat.route)
@@ -135,12 +154,10 @@ fun ChatList(chatModel: ChatModel, navController: NavController) {
     modifier = Modifier.fillMaxWidth()
   ) {
     items(chatModel.chats) { chat ->
-      ChatPreviewView(chat) {goToChat(chat, chatModel, navController)}
+      ChatPreviewView(chat) { goToChat(chat, chatModel, navController) }
     }
   }
 }
-
-
 //@Preview
 //@Composable
 //fun PreviewChatListView() {
