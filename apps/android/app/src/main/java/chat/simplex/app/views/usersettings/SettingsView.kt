@@ -1,5 +1,7 @@
 package chat.simplex.app.views.usersettings
 
+import android.content.res.Configuration
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
@@ -42,12 +44,14 @@ fun SettingsLayout(
   val uriHandler = LocalUriHandler.current
   Column(
     Modifier
-      .fillMaxWidth()
+      .fillMaxSize()
+      .background(MaterialTheme.colors.background)
       .padding(8.dp)
   ) {
     Text(
       "Your Settings",
       style = MaterialTheme.typography.h1,
+      color = MaterialTheme.colors.onBackground
     )
     Spacer(Modifier.height(24.dp))
 
@@ -56,10 +60,13 @@ fun SettingsLayout(
         Icon(
           Icons.Outlined.AccountCircle,
           contentDescription = "Avatar Placeholder",
-          tint = MaterialTheme.colors.onSurface,
+          tint = MaterialTheme.colors.onBackground,
         )
         Spacer(Modifier.padding(horizontal = 4.dp))
-        Text(profile.displayName, fontWeight = FontWeight.Bold)
+        Text(
+          profile.displayName, fontWeight = FontWeight.Bold,
+          color = MaterialTheme.colors.onBackground
+        )
       },
       func = { navigate(Pages.UserProfile.route) }
     )
@@ -69,10 +76,13 @@ fun SettingsLayout(
         Icon(
           Icons.Outlined.QrCode,
           contentDescription = "Address",
-          tint = MaterialTheme.colors.onSurface,
+          tint = MaterialTheme.colors.onBackground,
         )
         Spacer(Modifier.padding(horizontal = 4.dp))
-        Text("Your SimpleX contact address")
+        Text(
+          "Your SimpleX contact address",
+          color = MaterialTheme.colors.onBackground
+        )
       },
       func = { println("navigate to address") }
     )
@@ -83,10 +93,13 @@ fun SettingsLayout(
         Icon(
           Icons.Outlined.HelpOutline,
           contentDescription = "Help",
-          tint = MaterialTheme.colors.onSurface,
+          tint = MaterialTheme.colors.onBackground,
         )
         Spacer(Modifier.padding(horizontal = 4.dp))
-        Text("How to use SimpleX Chat")
+        Text(
+          "How to use SimpleX Chat",
+          color = MaterialTheme.colors.onBackground
+        )
       },
       func = { println("navigate to help") }
     )
@@ -96,7 +109,7 @@ fun SettingsLayout(
         Icon(
           Icons.Outlined.Tag,
           contentDescription = "SimpleX Team",
-          tint = MaterialTheme.colors.onSurface,
+          tint = MaterialTheme.colors.onBackground,
         )
         Spacer(Modifier.padding(horizontal = 4.dp))
         Text(
@@ -112,7 +125,7 @@ fun SettingsLayout(
         Icon(
           Icons.Outlined.Email,
           contentDescription = "Email",
-          tint = MaterialTheme.colors.onSurface,
+          tint = MaterialTheme.colors.onBackground,
         )
         Spacer(Modifier.padding(horizontal = 4.dp))
         Text(
@@ -129,10 +142,13 @@ fun SettingsLayout(
         Icon(
           painter = painterResource(id = R.drawable.ic_outline_terminal),
           contentDescription = "Chat console",
-          tint = MaterialTheme.colors.onSurface,
+          tint = MaterialTheme.colors.onBackground,
         )
         Spacer(Modifier.padding(horizontal = 4.dp))
-        Text("Chat console")
+        Text(
+          "Chat console",
+          color = MaterialTheme.colors.onBackground
+        )
       },
       func = { navigate(Pages.Terminal.route) }
     )
@@ -142,10 +158,13 @@ fun SettingsLayout(
         Icon(
           painter = painterResource(id = R.drawable.ic_github),
           contentDescription = "GitHub",
-          tint = MaterialTheme.colors.onSurface,
+          tint = MaterialTheme.colors.onBackground,
         )
         Spacer(Modifier.padding(horizontal = 4.dp))
-        Text("Install ")
+        Text(
+          "Install ",
+          color = MaterialTheme.colors.onBackground
+        )
         Text(
           "SimpleX Chat for terminal",
           color = MaterialTheme.colors.primary
@@ -174,6 +193,11 @@ fun SettingsSectionView(content: (@Composable () -> Unit), func: () -> Unit) {
 }
 
 @Preview(showBackground = true)
+@Preview(
+  uiMode = Configuration.UI_MODE_NIGHT_YES,
+  showBackground = true,
+  name = "Dark Mode"
+)
 @Composable
 fun PreviewSettingsLayout() {
   SimpleXTheme {
