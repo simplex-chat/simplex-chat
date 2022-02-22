@@ -58,13 +58,6 @@ fun TerminalLayout(terminalItems: List<TerminalItem> , close: () -> Unit, naviga
       }
     }
   }
-
-
-//  Column {
-//    CloseSheetBar(close)
-//    TerminalLog(terminalItems, navigate)
-//    SendMsgView(sendCommand)
-//  }
 }
 
 @Composable
