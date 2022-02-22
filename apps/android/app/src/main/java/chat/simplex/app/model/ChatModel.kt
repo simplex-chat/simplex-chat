@@ -28,7 +28,7 @@ class ChatModel(val controller: ChatController, val alertManager: SimplexApp.Ale
     }
   }
 
-  fun hasChat(id: String): Boolean = chats.firstOrNull() { it.id == id } != null
+  fun hasChat(id: String): Boolean = chats.firstOrNull { it.id == id } != null
   fun getChat(id: String): Chat? = chats.firstOrNull { it.id == id }
   private fun getChatIndex(id: String): Int = chats.indexOfFirst { it.id == id }
   fun addChat(chat: Chat) = chats.add(index = 0, chat)
@@ -67,13 +67,16 @@ class ChatModel(val controller: ChatController, val alertManager: SimplexApp.Ale
   fun addChatItem(cInfo: ChatInfo, cItem: ChatItem) {
     // update previews
     val i = getChatIndex(cInfo.id)
+    val chat: Chat
     if (i >= 0) {
-      val chat = chats[i]
+      chat = chats[i]
       chats[i] = chat.copy(
         chatItems = arrayListOf(cItem),
         chatStats =
-          if (cItem.meta.itemStatus is CIStatus.RcvNew)
-            chat.chatStats.copy(unreadCount = chat.chatStats.unreadCount + 1)
+          if (cItem.meta.itemStatus is CIStatus.RcvNew) {
+            val minUnreadId = if(chat.chatStats.minUnreadItemId == 0L) cItem.id else chat.chatStats.minUnreadItemId
+            chat.chatStats.copy(unreadCount = chat.chatStats.unreadCount + 1, minUnreadItemId = minUnreadId)
+          }
           else
             chat.chatStats
       )
@@ -119,16 +122,13 @@ class ChatModel(val controller: ChatController, val alertManager: SimplexApp.Ale
         val item = chatItems[i]
         if (item.meta.itemStatus is CIStatus.RcvNew) {
           chatItems[i] = item.copy(meta=item.meta.copy(itemStatus = CIStatus.RcvRead()))
-          withApi {
-            controller.apiChatRead(cInfo.chatType, cInfo.apiId, CC.ItemRange(item.id, item.id))
-          }
         }
         i += 1
       }
       val chat = chats[chatIdx]
       chats[chatIdx] = chat.copy(
         chatItems = chatItems,
-        chatStats = chat.chatStats.copy(unreadCount = 0)
+        chatStats = chat.chatStats.copy(unreadCount = 0, minUnreadItemId = chat.chatItems.last().id + 1)
       )
     }
 

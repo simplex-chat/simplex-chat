@@ -59,7 +59,8 @@ fun ChatPreviewView(chat: Chat, goToChat: () -> Unit) {
         verticalArrangement = Arrangement.Top) {
         Text(ts,
           color = HighOrLowlight,
-          style = MaterialTheme.typography.body2
+          style = MaterialTheme.typography.body2,
+          modifier = Modifier.padding(bottom=5.dp)
         )
 
         if (chat.chatStats.unreadCount > 0) {

@@ -37,12 +37,15 @@ fun ChatView(chatModel: ChatModel, nav: NavController) {
       // TODO a more advanced version would mark as read only if in view
       LaunchedEffect(chat.chatItems) {
         delay(1000L)
-        chatModel.markChatItemsRead(chat.chatInfo)
-        withApi {
-          chatModel.controller.apiChatRead(
-            chat.chatInfo.chatType,
-            chat.chatInfo.apiId,
-            CC.ItemRange(chat.chatStats.minUnreadItemId, chat.chatItems.last().id))
+        if (chat.chatItems.count() > 0) {
+          chatModel.markChatItemsRead(chat.chatInfo)
+          withApi {
+            chatModel.controller.apiChatRead(
+              chat.chatInfo.chatType,
+              chat.chatInfo.apiId,
+              CC.ItemRange(chat.chatStats.minUnreadItemId, chat.chatItems.last().id)
+            )
+          }
         }
       }
       ChatLayout(chat, chatModel.chatItems,
