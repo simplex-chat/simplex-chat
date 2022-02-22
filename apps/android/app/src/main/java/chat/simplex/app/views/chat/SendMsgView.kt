@@ -1,5 +1,6 @@
 package chat.simplex.app.views.chat
 
+import android.content.res.Configuration
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -13,13 +14,11 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.focus.FocusState
-import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.input.*
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import chat.simplex.app.ui.theme.*
+import chat.simplex.app.ui.theme.SimpleXTheme
 
 @Composable
 fun SendMsgView(sendMessage: (String) -> Unit) {
@@ -76,6 +75,11 @@ fun SendMsgView(sendMessage: (String) -> Unit) {
 }
 
 @Preview(showBackground = true)
+@Preview(
+  uiMode = Configuration.UI_MODE_NIGHT_YES,
+  showBackground = true,
+  name = "Dark Mode"
+)
 @Composable
 fun PreviewSendMsgView() {
   SimpleXTheme {

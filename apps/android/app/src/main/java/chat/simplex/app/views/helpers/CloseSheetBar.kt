@@ -1,5 +1,6 @@
 package chat.simplex.app.views.helpers
 
+import android.content.res.Configuration
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
@@ -32,6 +33,11 @@ fun CloseSheetBar(close: () -> Unit) {
 }
 
 @Preview(showBackground = true)
+@Preview(
+  uiMode = Configuration.UI_MODE_NIGHT_YES,
+  showBackground = true,
+  name = "Dark Mode"
+)
 @Composable
 fun PreviewCloseSheetBar() {
   SimpleXTheme {

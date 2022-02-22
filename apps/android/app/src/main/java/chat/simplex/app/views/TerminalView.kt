@@ -1,5 +1,6 @@
 package chat.simplex.app.views
 
+import android.content.res.Configuration
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
@@ -92,6 +93,11 @@ fun DetailView(identifier: Long, terminalItems: List<TerminalItem>, navControlle
 }
 
 @Preview(showBackground = true)
+@Preview(
+  uiMode = Configuration.UI_MODE_NIGHT_YES,
+  showBackground = true,
+  name = "Dark Mode"
+)
 @Composable
 fun PreviewTerminalLayout() {
   SimpleXTheme {
