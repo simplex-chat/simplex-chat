@@ -571,7 +571,11 @@ struct CIMeta: Decodable {
 
 
 func timestampText(_ date: Date) -> String {
-    date.formatted(date: .omitted, time: .shortened)
+    let now = Calendar.current.dateComponents([.day, .hour], from: .now)
+    let dc = Calendar.current.dateComponents([.day, .hour], from: date)
+    return now.day == dc.day || ((now.day ?? 0) - (dc.day ?? 0) == 1 && (dc.hour ?? 0) >= 18 && (now.hour ?? 0) < 12)
+        ? date.formatted(date: .omitted, time: .shortened)
+        : String(date.formatted(date: .numeric, time: .omitted).prefix(5))
 }
 
 enum CIStatus: Decodable {

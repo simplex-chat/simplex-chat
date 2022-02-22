@@ -237,6 +237,9 @@ func chatSendCmd(_ cmd: ChatCommand) throws -> ChatResponse {
     logger.debug("chatSendCmd \(cmd.cmdType)")
     let resp = chatResponse(chat_send_cmd(getChatCtrl(), &c)!)
     logger.debug("chatSendCmd \(cmd.cmdType): \(resp.responseType)")
+    if case let .response(_, json) = resp {
+        logger.debug("chatSendCmd \(cmd.cmdType) response: \(json)")
+    }
     DispatchQueue.main.async {
         ChatModel.shared.terminalItems.append(.cmd(.now, cmd))
         ChatModel.shared.terminalItems.append(.resp(.now, resp))
@@ -682,10 +685,10 @@ enum SMPCommandError: Decodable {
 }
 
 enum SMPTransportError: Decodable {
-    case TEBadBlock
-    case TELargeMsg
-    case TEBadSession
-    case TEHandshake(handshakeErr: SMPHandshakeError)
+    case badBlock
+    case largeMsg
+    case badSession
+    case handshake(handshakeErr: SMPHandshakeError)
 }
 
 enum SMPHandshakeError: Decodable {
