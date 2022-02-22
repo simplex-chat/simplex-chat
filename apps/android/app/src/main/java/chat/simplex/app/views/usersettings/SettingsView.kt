@@ -2,8 +2,7 @@ package chat.simplex.app.views.usersettings
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Text
+import androidx.compose.material.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
@@ -52,6 +51,7 @@ fun SettingsLayout(
       ),
       fontWeight = FontWeight.Bold
     )
+    Divider()
 
     Text(
       "How to use SimpleX Chat",
@@ -59,20 +59,19 @@ fun SettingsLayout(
         onClick = { println("navigate to help") },
       )
     )
-
     Text(
       "Get help & advice via chat",
       modifier = Modifier.clickable(
         onClick = { uriHandler.openUri(simplexTeamUri) },
       )
     )
-
     Text(
       "Ask questions via email",
       modifier = Modifier.clickable(
         onClick = { uriHandler.openUri("mailto:chat@simplex.chat") },
       )
     )
+    Divider()
 
     Text(
       "Chat console",
