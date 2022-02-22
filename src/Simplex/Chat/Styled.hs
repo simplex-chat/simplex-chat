@@ -74,7 +74,7 @@ sgr = \case
   StrikeThrough -> [SetSwapForegroundBackground True]
   Colored (FormatColor c) -> [SetColor Foreground Vivid c]
   Secret -> [SetColor Foreground Dull Black, SetColor Background Dull Black]
-  Snippet -> []
+  _ -> []
 
 unStyle :: StyledString -> String
 unStyle (Styled _ s) = s

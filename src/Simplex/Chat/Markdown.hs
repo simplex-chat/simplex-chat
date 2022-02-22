@@ -32,6 +32,7 @@ data Format
   | Snippet
   | Secret
   | Colored FormatColor
+  | Uri
   deriving (Eq, Show, Generic)
 
 colored :: Color -> Format
@@ -42,7 +43,19 @@ markdown = Markdown . Just
 
 instance ToJSON Format where toEncoding = J.genericToEncoding $ sumTypeJSON fstToLower
 
-instance Semigroup Markdown where (<>) = (:|:)
+instance Semigroup Markdown where
+  m <> (Markdown _ "") = m
+  (Markdown _ "") <> m = m
+  m1@(Markdown f1 s1) <> m2@(Markdown f2 s2)
+    | f1 == f2 = Markdown f1 $ s1 <> s2
+    | otherwise = m1 :|: m2
+  m1@(Markdown f1 s1) <> ms@(Markdown f2 s2 :|: m3)
+    | f1 == f2 = Markdown f1 (s1 <> s2) :|: m3
+    | otherwise = m1 :|: ms
+  ms@(m1 :|: Markdown f2 s2) <> m3@(Markdown f3 s3)
+    | f2 == f3 = m1 :|: Markdown f2 (s2 <> s3)
+    | otherwise = ms :|: m3
+  m1 <> m2 = m1 :|: m2
 
 instance Monoid Markdown where mempty = unmarked ""
 
@@ -125,20 +138,18 @@ parseMarkdown :: Text -> Markdown
 parseMarkdown s = fromRight (unmarked s) $ A.parseOnly (markdownP <* A.endOfInput) s
 
 markdownP :: Parser Markdown
-markdownP = merge <$> A.many' fragmentP
+markdownP = mconcat <$> A.many' fragmentP
   where
-    merge :: [Markdown] -> Markdown
-    merge [] = ""
-    merge fs = foldr1 (:|:) fs
     fragmentP :: Parser Markdown
     fragmentP =
-      A.anyChar >>= \case
-        ' ' -> unmarked . T.cons ' ' <$> A.takeWhile (== ' ')
-        c -> case M.lookup c formats of
-          Just Secret -> secretP
-          Just (Colored (FormatColor White)) -> coloredP
-          Just f -> formattedP c "" f
-          Nothing -> unformattedP c
+      A.peekChar >>= \case
+        Just ' ' -> unmarked <$> A.takeWhile (== ' ')
+        Just c -> case M.lookup c formats of
+          Just Secret -> A.char secretMD *> secretP
+          Just (Colored (FormatColor White)) -> A.char colorMD *> coloredP
+          Just f -> A.char c *> formattedP c "" f
+          Nothing -> wordsP
+        Nothing -> fail ""
     formattedP :: Char -> Text -> Format -> Parser Markdown
     formattedP c p f = do
       s <- A.takeTill (== c)
@@ -166,15 +177,18 @@ markdownP = merge <$> A.many' fragmentP
            in (A.char ' ' *> formattedP colorMD (color `T.snoc` ' ') f)
                 <|> noFormat (colorMD `T.cons` color)
         _ -> noFormat (colorMD `T.cons` color)
-    unformattedP :: Char -> Parser Markdown
-    unformattedP c = unmarked . T.cons c <$> wordsP
-    wordsP :: Parser Text
+    wordsP :: Parser Markdown
     wordsP = do
-      s <- (<>) <$> A.takeTill (== ' ') <*> A.takeWhile (== ' ')
+      word <- wordMD <$> A.takeTill (== ' ')
+      s <- (word <>) <$> (unmarked <$> A.takeWhile (== ' '))
       A.peekChar >>= \case
         Nothing -> pure s
         Just c -> case M.lookup c formats of
           Just _ -> pure s
           Nothing -> (s <>) <$> wordsP
+    wordMD :: Text -> Markdown
+    wordMD s
+      | "http://" `T.isPrefixOf` s || "https://" `T.isPrefixOf` s || "simplex:/" `T.isPrefixOf` s = markdown Uri s
+      | otherwise = unmarked s
     noFormat :: Text -> Parser Markdown
     noFormat = pure . unmarked
