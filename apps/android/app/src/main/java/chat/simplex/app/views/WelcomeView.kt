@@ -17,15 +17,24 @@ import kotlinx.coroutines.DelicateCoroutinesApi
 @Composable
 fun WelcomeView(chatModel: ChatModel, routeHome: () -> Unit) {
   Column(
-    modifier = Modifier.verticalScroll(rememberScrollState())
+    modifier = Modifier
+      .verticalScroll(rememberScrollState())
+      .fillMaxSize()
+      .background(color = MaterialTheme.colors.background)
   ) {
     Image(
-      painter=painterResource(R.drawable.logo), contentDescription = "Simplex Logo",
+      painter = painterResource(R.drawable.logo), contentDescription = "Simplex Logo",
     )
-    Text("You control your chat!")
-    Text("The messaging and application platform protecting your privacy and security.")
+    Text("You control your chat!", color = MaterialTheme.colors.onBackground)
+    Text(
+      "The messaging and application platform protecting your privacy and security.",
+      color = MaterialTheme.colors.onBackground
+    )
     Spacer(Modifier.height(8.dp))
-    Text("We don't store any of your contacts or messages (once delivered) on the servers.")
+    Text(
+      "We don't store any of your contacts or messages (once delivered) on the servers.",
+      color = MaterialTheme.colors.onBackground
+    )
     Spacer(Modifier.height(24.dp))
     CreateProfilePanel(chatModel, routeHome)
   }
@@ -37,12 +46,17 @@ fun CreateProfilePanel(chatModel: ChatModel, routeHome: () -> Unit) {
   var displayName by remember { mutableStateOf("") }
   var fullName by remember { mutableStateOf("") }
 
-  Column {
-    Text("Create profile")
-    Text("Your profile is stored on your device and shared only with your contacts.")
-    Text("Display Name")
+  Column(
+    modifier=Modifier.fillMaxSize()
+  ) {
+    Text("Create profile", color = MaterialTheme.colors.onBackground)
+    Text(
+      "Your profile is stored on your device and shared only with your contacts.",
+      color = MaterialTheme.colors.onBackground
+    )
+    Text("Display Name", color = MaterialTheme.colors.onBackground)
     TextField(value = displayName, onValueChange = { value -> displayName = value })
-    Text("Full Name (Optional)")
+    Text("Full Name (Optional)", color = MaterialTheme.colors.onBackground)
     TextField(value = fullName, onValueChange = { fullName = it })
     Button(onClick={
       withApi {
