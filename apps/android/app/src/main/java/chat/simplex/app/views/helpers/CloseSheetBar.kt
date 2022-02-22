@@ -1,9 +1,7 @@
 package chat.simplex.app.views.helpers
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.Icon
-import androidx.compose.material.MaterialTheme
+import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.runtime.Composable
@@ -18,22 +16,22 @@ fun CloseSheetBar(close: () -> Unit) {
   Row (
     Modifier
       .fillMaxWidth()
-      .height(40.dp),
+      .height(60.dp),
     horizontalArrangement = Arrangement.End,
     verticalAlignment = Alignment.CenterVertically
   ) {
-    Icon(
-      Icons.Outlined.Close,
-      "Close button",
-      tint = MaterialTheme.colors.primary,
-      modifier = Modifier
-        .padding(vertical = 10.dp)
-        .clickable { close() }
-    )
+    IconButton(onClick = close) {
+      Icon(
+        Icons.Outlined.Close,
+        "Close button",
+        tint = MaterialTheme.colors.primary,
+        modifier = Modifier.padding(10.dp)
+      )
+    }
   }
 }
 
-@Preview
+@Preview(showBackground = true)
 @Composable
 fun PreviewCloseSheetBar() {
   SimpleXTheme {

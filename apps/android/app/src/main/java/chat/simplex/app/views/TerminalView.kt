@@ -3,12 +3,11 @@ package chat.simplex.app.views
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
-import androidx.compose.foundation.text.ClickableText
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.*
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.tooling.preview.Preview
@@ -17,15 +16,13 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.SimpleXTheme
-import chat.simplex.app.views.chat.*
-import chat.simplex.app.views.chat.item.ChatItemView
+import chat.simplex.app.views.chat.SendMsgView
 import chat.simplex.app.views.helpers.CloseSheetBar
 import chat.simplex.app.views.helpers.withApi
 import com.google.accompanist.insets.ProvideWindowInsets
 import com.google.accompanist.insets.navigationBarsWithImePadding
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.launch
-import java.time.format.DateTimeFormatter
 
 @DelicateCoroutinesApi
 @Composable
