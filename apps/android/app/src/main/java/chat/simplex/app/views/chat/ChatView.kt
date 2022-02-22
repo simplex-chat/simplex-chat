@@ -7,8 +7,7 @@ import androidx.compose.foundation.lazy.*
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ArrowBack
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -23,9 +22,9 @@ import chat.simplex.app.views.chat.item.ChatItemView
 import chat.simplex.app.views.helpers.ChatInfoImage
 import chat.simplex.app.views.helpers.withApi
 import com.google.accompanist.insets.*
-import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 import kotlinx.datetime.Clock
+import java.util.*
 
 @ExperimentalAnimatedInsets
 @DelicateCoroutinesApi
@@ -34,10 +33,16 @@ fun ChatView(chatModel: ChatModel, nav: NavController) {
   if (chatModel.chatId.value != null && chatModel.chats.count() > 0) {
     val chat: Chat? = chatModel.chats.firstOrNull { chat -> chat.chatInfo.id == chatModel.chatId.value }
     if (chat != null) {
+
+      // TODO a more advanced version would mark as read only if in view
+      // Also this restarts the timer each time a new message appears
+      val scope = rememberCoroutineScope()
+      LaunchedEffect(scope) {
+        delay(1000L)
+        chatModel.markChatItemsRead(chat.chatInfo)
+      }
       ChatLayout(chat, chatModel.chatItems,
         back = {
-          // TODO a more advanced version would mark as read only if in view
-          chatModel.markChatItemsRead(chat.chatInfo)
           nav.popBackStack()
         },
         info = { nav.navigate(Pages.ChatInfo.route) },
@@ -88,7 +93,10 @@ fun ChatLayout(
 
 @Composable
 fun ChatInfoToolbar(chat: Chat, back: () -> Unit, info: () -> Unit) {
-  Box(Modifier.height(60.dp).padding(horizontal = 8.dp),
+  Box(
+    Modifier
+      .height(60.dp)
+      .padding(horizontal = 8.dp),
     contentAlignment = Alignment.CenterStart
   ) {
     IconButton(onClick = back) {
@@ -99,10 +107,11 @@ fun ChatInfoToolbar(chat: Chat, back: () -> Unit, info: () -> Unit) {
         modifier = Modifier.padding(10.dp)
       )
     }
-    Row(Modifier
-      .padding(horizontal = 68.dp)
-      .fillMaxWidth()
-      .clickable(onClick = info),
+    Row(
+      Modifier
+        .padding(horizontal = 68.dp)
+        .fillMaxWidth()
+        .clickable(onClick = info),
       horizontalArrangement = Arrangement.Center,
       verticalAlignment = Alignment.CenterVertically
     ) {
