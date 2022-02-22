@@ -7,6 +7,7 @@
 
 module Simplex.Chat.View where
 
+import qualified Data.Aeson as J
 import Data.Function (on)
 import Data.Int (Int64)
 import Data.List (groupBy, intersperse, sortOn)
@@ -27,6 +28,7 @@ import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Encoding.String
 import qualified Simplex.Messaging.Protocol as SMP
+import Simplex.Messaging.Util (bshow)
 import System.Console.ANSI.Types
 
 serializeChatResponse :: ChatResponse -> String
@@ -36,8 +38,8 @@ responseToView :: Bool -> ChatResponse -> [StyledString]
 responseToView testView = \case
   CRActiveUser User {profile} -> viewUserProfile profile
   CRChatStarted -> ["chat started"]
-  CRApiChats chats -> if testView then testViewChats chats else [sShow chats]
-  CRApiChat chat -> if testView then testViewChat chat else [sShow chat]
+  CRApiChats chats -> if testView then testViewChats chats else [plain . bshow $ J.encode chats]
+  CRApiChat chat -> if testView then testViewChat chat else [plain . bshow $ J.encode chat]
   CRNewChatItem (AChatItem _ _ chat item) -> viewChatItem chat item
   CRChatItemUpdated _ -> []
   CRMsgIntegrityError mErr -> viewMsgIntegrityError mErr
@@ -140,7 +142,7 @@ responseToView testView = \case
         toChatView (CChatItem dir ChatItem {meta}) = (msgDirectionInt $ toMsgDirection dir, itemText meta)
 
 viewChatItem :: ChatInfo c -> ChatItem c d -> [StyledString]
-viewChatItem chat (ChatItem cd meta content) = case (chat, cd) of
+viewChatItem chat (ChatItem cd meta content _) = case (chat, cd) of
   (DirectChat c, CIDirectSnd) -> case content of
     CISndMsgContent mc -> viewSentMessage to mc meta
     CISndFileInvitation fId fPath -> viewSentFileInvitation to fId fPath meta
@@ -176,7 +178,7 @@ viewMsgIntegrityError err = msgError $ case err of
   MsgDuplicate -> "duplicate message ID"
   where
     msgError :: String -> [StyledString]
-    msgError s = [styled (Colored Red) s]
+    msgError s = [styled (colored Red) s]
 
 viewInvalidConnReq :: [StyledString]
 viewInvalidConnReq =
@@ -369,7 +371,7 @@ prependFirst s [] = [s]
 prependFirst s (s' : ss) = (s <> s') : ss
 
 msgPlain :: Text -> [StyledString]
-msgPlain = map styleMarkdownText . T.lines
+msgPlain = map (styleMarkdownList . parseMarkdownList) . T.lines
 
 viewRcvFileSndCancelled :: RcvFileTransfer -> [StyledString]
 viewRcvFileSndCancelled ft@RcvFileTransfer {senderDisplayName = c} =
@@ -515,7 +517,7 @@ viewChatError = \case
     fileNotFound fileId = ["file " <> sShow fileId <> " not found"]
 
 ttyContact :: ContactName -> StyledString
-ttyContact = styled (Colored Green)
+ttyContact = styled (colored Green)
 
 ttyContact' :: Contact -> StyledString
 ttyContact' Contact {localDisplayName = c} = ttyContact c
@@ -535,13 +537,13 @@ ttyFullName :: ContactName -> Text -> StyledString
 ttyFullName c fullName = ttyContact c <> optFullName c fullName
 
 ttyToContact :: ContactName -> StyledString
-ttyToContact c = styled (Colored Cyan) $ "@" <> c <> " "
+ttyToContact c = styled (colored Cyan) $ "@" <> c <> " "
 
 ttyFromContact :: ContactName -> StyledString
-ttyFromContact c = styled (Colored Yellow) $ c <> "> "
+ttyFromContact c = styled (colored Yellow) $ c <> "> "
 
 ttyGroup :: GroupName -> StyledString
-ttyGroup g = styled (Colored Blue) $ "#" <> g
+ttyGroup g = styled (colored Blue) $ "#" <> g
 
 ttyGroup' :: GroupInfo -> StyledString
 ttyGroup' = ttyGroup . groupName'
@@ -556,10 +558,10 @@ ttyFullGroup GroupInfo {localDisplayName = g, groupProfile = GroupProfile {fullN
   ttyGroup g <> optFullName g fullName
 
 ttyFromGroup :: GroupInfo -> ContactName -> StyledString
-ttyFromGroup GroupInfo {localDisplayName = g} c = styled (Colored Yellow) $ "#" <> g <> " " <> c <> "> "
+ttyFromGroup GroupInfo {localDisplayName = g} c = styled (colored Yellow) $ "#" <> g <> " " <> c <> "> "
 
 ttyToGroup :: GroupInfo -> StyledString
-ttyToGroup GroupInfo {localDisplayName = g} = styled (Colored Cyan) $ "#" <> g <> " "
+ttyToGroup GroupInfo {localDisplayName = g} = styled (colored Cyan) $ "#" <> g <> " "
 
 ttyFilePath :: FilePath -> StyledString
 ttyFilePath = plain
@@ -570,7 +572,7 @@ optFullName localDisplayName fullName
   | otherwise = plain (" (" <> fullName <> ")")
 
 highlight :: StyledFormat a => a -> StyledString
-highlight = styled (Colored Cyan)
+highlight = styled (colored Cyan)
 
 highlight' :: String -> StyledString
 highlight' = highlight

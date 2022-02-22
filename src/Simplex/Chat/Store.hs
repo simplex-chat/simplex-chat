@@ -147,11 +147,11 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (UTCTime (..), getCurrentTime)
 import Data.Time.LocalTime (TimeZone, getCurrentTimeZone)
-import Data.Type.Equality
 import Database.SQLite.Simple (NamedParam (..), Only (..), Query (..), SQLError, (:.) (..))
 import qualified Database.SQLite.Simple as DB
 import Database.SQLite.Simple.QQ (sql)
 import GHC.Generics (Generic)
+import Simplex.Chat.Markdown
 import Simplex.Chat.Messages
 import Simplex.Chat.Migrations.M20220101_initial
 import Simplex.Chat.Migrations.M20220122_v1_1
@@ -2184,13 +2184,14 @@ getChatPreviews st user =
     pure $ sortOn (Down . ts) (directChats <> groupChats <> cReqChats)
   where
     ts :: AChat -> UTCTime
-    ts (AChat _ (Chat _ (ci : _) _)) = chatItemTs ci
-    ts (AChat _ (Chat (DirectChat Contact {createdAt}) [] _)) = createdAt
-    ts (AChat _ (Chat (GroupChat GroupInfo {createdAt}) [] _)) = createdAt
-    ts (AChat _ (Chat (ContactRequest UserContactRequest {createdAt}) [] _)) = createdAt
+    ts (AChat _ Chat {chatItems = ci : _}) = chatItemTs ci
+    ts (AChat _ Chat {chatInfo}) = case chatInfo of
+      DirectChat Contact {createdAt} -> createdAt
+      GroupChat GroupInfo {createdAt} -> createdAt
+      ContactRequest UserContactRequest {createdAt} -> createdAt
 
 chatItemTs :: CChatItem d -> UTCTime
-chatItemTs (CChatItem _ (ChatItem _ CIMeta {itemTs} _)) = itemTs
+chatItemTs (CChatItem _ ChatItem {meta = CIMeta {itemTs}}) = itemTs
 
 getDirectChatPreviews_ :: DB.Connection -> User -> IO [AChat]
 getDirectChatPreviews_ db User {userId} = do
@@ -2703,14 +2704,12 @@ type MaybeChatItemRow = (Maybe Int64, Maybe ChatItemTs, Maybe ACIContent, Maybe 
 toDirectChatItem :: TimeZone -> ChatItemRow -> Either StoreError (CChatItem 'CTDirect)
 toDirectChatItem tz (itemId, itemTs, itemContent, itemText, itemStatus, createdAt) =
   case (itemContent, itemStatus) of
-    (ACIContent d@SMDSnd ciContent, ACIStatus d'@SMDSnd ciStatus) -> case testEquality d d' of
-      Just Refl -> Right $ CChatItem d (ChatItem CIDirectSnd (ciMeta ciStatus) ciContent)
-      _ -> badItem
-    (ACIContent d@SMDRcv ciContent, ACIStatus d'@SMDRcv ciStatus) -> case testEquality d d' of
-      Just Refl -> Right $ CChatItem d (ChatItem CIDirectRcv (ciMeta ciStatus) ciContent)
-      _ -> badItem
+    (ACIContent SMDSnd ciContent, ACIStatus SMDSnd ciStatus) -> Right $ cItem SMDSnd CIDirectSnd ciStatus ciContent
+    (ACIContent SMDRcv ciContent, ACIStatus SMDRcv ciStatus) -> Right $ cItem SMDRcv CIDirectRcv ciStatus ciContent
     _ -> badItem
   where
+    cItem :: MsgDirectionI d => SMsgDirection d -> CIDirection c d -> CIStatus d -> CIContent d -> CChatItem c
+    cItem d cid ciStatus ciContent = CChatItem d (ChatItem cid (ciMeta ciStatus) ciContent $ parseMarkdownList itemText)
     badItem = Left $ SEBadChatItem itemId
     ciMeta :: CIStatus d -> CIMeta d
     ciMeta status = mkCIMeta itemId itemText status tz itemTs createdAt
@@ -2728,14 +2727,12 @@ toGroupChatItem :: TimeZone -> Int64 -> GroupChatItemRow -> Either StoreError (C
 toGroupChatItem tz userContactId ((itemId, itemTs, itemContent, itemText, itemStatus, createdAt) :. memberRow_) = do
   let member_ = toMaybeGroupMember userContactId memberRow_
   case (itemContent, itemStatus, member_) of
-    (ACIContent d@SMDSnd ciContent, ACIStatus d'@SMDSnd ciStatus, Nothing) -> case testEquality d d' of
-      Just Refl -> Right $ CChatItem d (ChatItem CIGroupSnd (ciMeta ciStatus) ciContent)
-      _ -> badItem
-    (ACIContent d@SMDRcv ciContent, ACIStatus d'@SMDRcv ciStatus, Just member) -> case testEquality d d' of
-      Just Refl -> Right $ CChatItem d (ChatItem (CIGroupRcv member) (ciMeta ciStatus) ciContent)
-      _ -> badItem
+    (ACIContent SMDSnd ciContent, ACIStatus SMDSnd ciStatus, Nothing) -> Right $ cItem SMDSnd CIGroupSnd ciStatus ciContent
+    (ACIContent SMDRcv ciContent, ACIStatus SMDRcv ciStatus, Just member) -> Right $ cItem SMDRcv (CIGroupRcv member) ciStatus ciContent
     _ -> badItem
   where
+    cItem :: MsgDirectionI d => SMsgDirection d -> CIDirection c d -> CIStatus d -> CIContent d -> CChatItem c
+    cItem d cid ciStatus ciContent = CChatItem d (ChatItem cid (ciMeta ciStatus) ciContent $ parseMarkdownList itemText)
     badItem = Left $ SEBadChatItem itemId
     ciMeta :: CIStatus d -> CIMeta d
     ciMeta status = mkCIMeta itemId itemText status tz itemTs createdAt
