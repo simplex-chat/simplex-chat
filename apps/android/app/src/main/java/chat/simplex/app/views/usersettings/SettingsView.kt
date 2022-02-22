@@ -14,6 +14,7 @@ import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import chat.simplex.app.Pages
@@ -77,13 +78,10 @@ fun SettingsLayout(
           )
         }
       },
-      func = { navigate(Pages.UserProfile.route) }
+      func = { navigate(Pages.UserProfile.route) },
+      height = 60.dp
     )
-    Divider(
-      Modifier
-        .padding(horizontal = 8.dp)
-        .padding(top = 4.dp)
-    )
+    Divider(Modifier.padding(horizontal = 8.dp))
     SettingsSectionView(
       content = {
         Icon(
@@ -189,12 +187,12 @@ fun SettingsLayout(
 }
 
 @Composable
-fun SettingsSectionView(content: (@Composable () -> Unit), func: () -> Unit) {
+fun SettingsSectionView(content: (@Composable () -> Unit), func: () -> Unit, height: Dp = 48.dp) {
   Surface(
     modifier = Modifier
       .fillMaxWidth()
       .clickable(onClick = func)
-      .height(50.dp),
+      .height(height),
   ) {
     Row(
       Modifier.padding(start = 8.dp),
