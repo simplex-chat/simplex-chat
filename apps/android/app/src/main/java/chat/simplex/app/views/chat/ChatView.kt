@@ -35,9 +35,7 @@ fun ChatView(chatModel: ChatModel, nav: NavController) {
     if (chat != null) {
 
       // TODO a more advanced version would mark as read only if in view
-      // Also this restarts the timer each time a new message appears
-      val scope = rememberCoroutineScope()
-      LaunchedEffect(scope) {
+      LaunchedEffect(chat.chatItems) {
         delay(1000L)
         chatModel.markChatItemsRead(chat.chatInfo)
       }

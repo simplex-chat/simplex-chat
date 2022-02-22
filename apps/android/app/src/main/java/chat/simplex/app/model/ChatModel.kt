@@ -110,7 +110,6 @@ class ChatModel(val controller: ChatController, val alertManager: SimplexApp.Ale
     if (j >= -1) {
       val item = chatItems[j]
       chatItems[j] = item.copy(meta=item.meta.copy(itemStatus = CIStatus.RcvRead()))
-
     }
   }
 
