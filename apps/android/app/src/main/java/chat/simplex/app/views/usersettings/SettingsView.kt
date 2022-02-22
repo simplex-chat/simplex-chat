@@ -3,14 +3,19 @@ package chat.simplex.app.views.usersettings
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import chat.simplex.app.Pages
+import chat.simplex.app.R
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.model.Profile
 import chat.simplex.app.ui.theme.SimpleXTheme
@@ -36,56 +41,135 @@ fun SettingsLayout(
 ) {
   val uriHandler = LocalUriHandler.current
   Column(
-    Modifier.fillMaxWidth()
+    Modifier
+      .fillMaxWidth()
+      .padding(8.dp)
   ) {
     Text(
       "Your Settings",
-      style = MaterialTheme.typography.h2,
+      style = MaterialTheme.typography.h1,
     )
-    Spacer(Modifier.height(4.dp))
+    Spacer(Modifier.height(24.dp))
 
-    Text(
-      profile.displayName,
-      modifier = Modifier.clickable(
-        onClick = { navigate(Pages.UserProfile.route) },
-      ),
-      fontWeight = FontWeight.Bold
+    SettingsSectionView(
+      content = {
+        Icon(
+          Icons.Outlined.AccountCircle,
+          contentDescription = "Avatar Placeholder",
+          tint = MaterialTheme.colors.onSurface,
+        )
+        Spacer(Modifier.padding(horizontal = 4.dp))
+        Text(profile.displayName, fontWeight = FontWeight.Bold)
+      },
+      func = { navigate(Pages.UserProfile.route) }
     )
-    Divider()
+    Divider(Modifier.padding(horizontal = 8.dp))
+    SettingsSectionView(
+      content = {
+        Icon(
+          Icons.Outlined.QrCode,
+          contentDescription = "Address",
+          tint = MaterialTheme.colors.onSurface,
+        )
+        Spacer(Modifier.padding(horizontal = 4.dp))
+        Text("Your SimpleX contact address")
+      },
+      func = { println("navigate to address") }
+    )
+    Spacer(Modifier.height(24.dp))
 
-    Text(
-      "How to use SimpleX Chat",
-      modifier = Modifier.clickable(
-        onClick = { println("navigate to help") },
-      )
+    SettingsSectionView(
+      content = {
+        Icon(
+          Icons.Outlined.HelpOutline,
+          contentDescription = "Help",
+          tint = MaterialTheme.colors.onSurface,
+        )
+        Spacer(Modifier.padding(horizontal = 4.dp))
+        Text("How to use SimpleX Chat")
+      },
+      func = { println("navigate to help") }
     )
-    Text(
-      "Get help & advice via chat",
-      modifier = Modifier.clickable(
-        onClick = { uriHandler.openUri(simplexTeamUri) },
-      )
+    Divider(Modifier.padding(horizontal = 8.dp))
+    SettingsSectionView(
+      content = {
+        Icon(
+          Icons.Outlined.Tag,
+          contentDescription = "SimpleX Team",
+          tint = MaterialTheme.colors.onSurface,
+        )
+        Spacer(Modifier.padding(horizontal = 4.dp))
+        Text(
+          "Get help & advice via chat",
+          color = MaterialTheme.colors.primary
+        )
+      },
+      func = { uriHandler.openUri(simplexTeamUri) }
     )
-    Text(
-      "Ask questions via email",
-      modifier = Modifier.clickable(
-        onClick = { uriHandler.openUri("mailto:chat@simplex.chat") },
-      )
+    Divider(Modifier.padding(horizontal = 8.dp))
+    SettingsSectionView(
+      content = {
+        Icon(
+          Icons.Outlined.Email,
+          contentDescription = "Email",
+          tint = MaterialTheme.colors.onSurface,
+        )
+        Spacer(Modifier.padding(horizontal = 4.dp))
+        Text(
+          "Ask questions via email",
+          color = MaterialTheme.colors.primary
+        )
+      },
+      func = { uriHandler.openUri("mailto:chat@simplex.chat") }
     )
-    Divider()
+    Spacer(Modifier.height(24.dp))
 
-    Text(
-      "Chat console",
-      modifier = Modifier.clickable(
-        onClick = { navigate(Pages.Terminal.route) },
-      )
+    SettingsSectionView(
+      content = {
+        Icon(
+          painter = painterResource(id = R.drawable.ic_outline_terminal),
+          contentDescription = "Chat console",
+          tint = MaterialTheme.colors.onSurface,
+        )
+        Spacer(Modifier.padding(horizontal = 4.dp))
+        Text("Chat console")
+      },
+      func = { navigate(Pages.Terminal.route) }
     )
+    Divider(Modifier.padding(horizontal = 8.dp))
+    SettingsSectionView(
+      content = {
+        Icon(
+          painter = painterResource(id = R.drawable.ic_github),
+          contentDescription = "GitHub",
+          tint = MaterialTheme.colors.onSurface,
+        )
+        Spacer(Modifier.padding(horizontal = 4.dp))
+        Text("Install ")
+        Text(
+          "SimpleX Chat for terminal",
+          color = MaterialTheme.colors.primary
+        )
+      },
+      func = { uriHandler.openUri("https://github.com/simplex-chat/simplex-chat") }
+    )
+  }
+}
 
-    Text(
-      "Install SimpleX for terminal",
-      modifier = Modifier.clickable(
-        onClick = { uriHandler.openUri("https://github.com/simplex-chat/simplex-chat") },
-      )
-    )
+@Composable
+fun SettingsSectionView(content: (@Composable () -> Unit), func: () -> Unit) {
+  Surface(
+    modifier = Modifier
+      .fillMaxWidth()
+      .clickable(onClick = func)
+      .height(48.dp),
+  ) {
+    Row(
+      Modifier.padding(start = 8.dp),
+      verticalAlignment = Alignment.CenterVertically
+    ) {
+      content.invoke()
+    }
   }
 }
 

@@ -1,5 +1,6 @@
 package chat.simplex.app.views.usersettings
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.BasicTextField
@@ -59,20 +60,23 @@ fun UserProfileLayout(
 ) {
   Column(
     modifier = Modifier
-      .padding(horizontal = 8.dp)
-      .fillMaxWidth(),
+      .fillMaxSize()
+      .background(MaterialTheme.colors.background)
+      .padding(horizontal = 8.dp),
     horizontalAlignment = Alignment.Start
   ) {
     CloseSheetBar(back)
     Text(
       "Your chat profile",
       Modifier.padding(bottom = 24.dp),
-      style = MaterialTheme.typography.h1
+      style = MaterialTheme.typography.h1,
+      color = MaterialTheme.colors.onBackground
     )
     Text(
       "Your profile is stored on your device and shared only with your contacts.\n" +
           "SimpleX servers cannot see your profile.",
-      Modifier.padding(bottom = 24.dp)
+      Modifier.padding(bottom = 24.dp),
+      color = MaterialTheme.colors.onBackground
     )
     if (editProfile) {
       var displayName by remember { mutableStateOf(profile.displayName) }
@@ -88,7 +92,7 @@ fun UserProfileLayout(
           modifier = Modifier
             .padding(bottom = 24.dp)
             .fillMaxWidth(),
-          textStyle = MaterialTheme.typography.body1,
+          textStyle = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onBackground),
           keyboardOptions = KeyboardOptions(
             capitalization = KeyboardCapitalization.None,
             autoCorrect = false
@@ -101,7 +105,7 @@ fun UserProfileLayout(
           modifier = Modifier
             .padding(bottom = 24.dp)
             .fillMaxWidth(),
-          textStyle = MaterialTheme.typography.body1,
+          textStyle = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onBackground),
           keyboardOptions = KeyboardOptions(
             capitalization = KeyboardCapitalization.None,
             autoCorrect = false
@@ -113,7 +117,7 @@ fun UserProfileLayout(
             "Cancel",
             color = MaterialTheme.colors.primary,
             modifier = Modifier
-              .clickable(onClick = editProfileOff)
+              .clickable(onClick = editProfileOff),
           )
           Spacer(Modifier.padding(horizontal = 8.dp))
           Text(
@@ -132,21 +136,29 @@ fun UserProfileLayout(
         Row(
           Modifier.padding(bottom = 24.dp)
         ) {
-          Text("Display name:")
+          Text(
+            "Display name:",
+            color = MaterialTheme.colors.onBackground
+          )
           Spacer(Modifier.padding(horizontal = 4.dp))
           Text(
             profile.displayName,
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colors.onBackground
           )
         }
         Row(
           Modifier.padding(bottom = 24.dp)
         ) {
-          Text("Full name:")
+          Text(
+            "Full name:",
+            color = MaterialTheme.colors.onBackground
+          )
           Spacer(Modifier.padding(horizontal = 4.dp))
           Text(
             profile.fullName,
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colors.onBackground
           )
         }
         Text(
