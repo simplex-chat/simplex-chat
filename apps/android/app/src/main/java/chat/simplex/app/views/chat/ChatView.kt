@@ -49,9 +49,7 @@ fun ChatView(chatModel: ChatModel, nav: NavController) {
         }
       }
       ChatLayout(chat, chatModel.chatItems,
-        back = {
-          nav.popBackStack()
-        },
+        back = { nav.popBackStack() },
         info = { nav.navigate(Pages.ChatInfo.route) },
         sendMessage = { msg ->
           withApi {
@@ -100,10 +98,7 @@ fun ChatLayout(
 
 @Composable
 fun ChatInfoToolbar(chat: Chat, back: () -> Unit, info: () -> Unit) {
-  Box(
-    Modifier
-      .height(60.dp)
-      .padding(horizontal = 8.dp),
+  Box(Modifier.height(60.dp).padding(horizontal = 8.dp),
     contentAlignment = Alignment.CenterStart
   ) {
     IconButton(onClick = back) {
