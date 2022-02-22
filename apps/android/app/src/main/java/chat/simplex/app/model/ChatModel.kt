@@ -4,7 +4,6 @@ import android.net.Uri
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import chat.simplex.app.SimplexApp
-import chat.simplex.app.views.helpers.withApi
 import kotlinx.datetime.*
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
