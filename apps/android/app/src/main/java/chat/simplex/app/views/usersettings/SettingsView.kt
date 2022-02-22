@@ -64,7 +64,8 @@ fun SettingsLayout(
         )
         Spacer(Modifier.padding(horizontal = 4.dp))
         Text(
-          profile.displayName, fontWeight = FontWeight.Bold,
+          profile.displayName,
+          fontWeight = FontWeight.Bold,
           color = MaterialTheme.colors.onBackground
         )
       },
