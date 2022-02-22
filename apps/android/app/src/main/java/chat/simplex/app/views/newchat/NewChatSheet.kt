@@ -17,7 +17,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import chat.simplex.app.Pages
 import chat.simplex.app.model.ChatModel
-import chat.simplex.app.ui.theme.DarkGray
+import chat.simplex.app.ui.theme.HighOrLowlight
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.chatlist.ScaffoldController
 import chat.simplex.app.views.helpers.withApi
@@ -91,7 +91,7 @@ fun ActionButton(text: String, comment: String, icon: ImageVector, disabled: Boo
       .padding(horizontal = 8.dp),
     horizontalAlignment = Alignment.CenterHorizontally
   ) {
-    val tint = if (disabled) DarkGray else MaterialTheme.colors.primary
+    val tint = if (disabled) HighOrLowlight else MaterialTheme.colors.primary
     Icon(icon, text,
       tint = tint,
       modifier = Modifier
