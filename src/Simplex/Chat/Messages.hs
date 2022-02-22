@@ -29,6 +29,7 @@ import Data.Typeable (Typeable)
 import Database.SQLite.Simple.FromField (FromField (..))
 import Database.SQLite.Simple.ToField (ToField (..))
 import GHC.Generics (Generic)
+import Simplex.Chat.Markdown
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Chat.Util (eitherToMaybe, safeDecodeUtf8)
@@ -76,7 +77,8 @@ jsonChatInfo = \case
 data ChatItem (c :: ChatType) (d :: MsgDirection) = ChatItem
   { chatDir :: CIDirection c d,
     meta :: CIMeta d,
-    content :: CIContent d
+    content :: CIContent d,
+    formattedText :: [FormattedText]
   }
   deriving (Show, Generic)
 
@@ -133,6 +135,13 @@ data ChatDirection (c :: ChatType) (d :: MsgDirection) where
   CDDirectRcv :: Contact -> ChatDirection 'CTDirect 'MDRcv
   CDGroupSnd :: GroupInfo -> ChatDirection 'CTGroup 'MDSnd
   CDGroupRcv :: GroupInfo -> GroupMember -> ChatDirection 'CTGroup 'MDRcv
+
+toCIDirection :: ChatDirection c d -> CIDirection c d
+toCIDirection = \case
+  CDDirectSnd _ -> CIDirectSnd
+  CDDirectRcv _ -> CIDirectRcv
+  CDGroupSnd _ -> CIGroupSnd
+  CDGroupRcv _ m -> CIGroupRcv m
 
 data NewChatItem d = NewChatItem
   { createdByMsgId :: Maybe MessageId,

@@ -20,10 +20,10 @@ import Simplex.Chat.Types (Profile (..), User (..))
 import System.Console.ANSI.Types
 
 highlight :: Text -> Markdown
-highlight = Markdown (Colored Cyan)
+highlight = markdown (colored Cyan)
 
 green :: Text -> Markdown
-green = Markdown (Colored Green)
+green = markdown (colored Green)
 
 indent :: Markdown
 indent = "        "
@@ -150,11 +150,11 @@ markdownInfo =
   map
     styleMarkdown
     [ green "Markdown:",
-      indent <> highlight "*bold*         " <> " - " <> Markdown Bold "bold text",
-      indent <> highlight "_italic_       " <> " - " <> Markdown Italic "italic text" <> " (shown as underlined)",
-      indent <> highlight "+underlined+   " <> " - " <> Markdown Underline "underlined text",
-      indent <> highlight "~strikethrough~" <> " - " <> Markdown StrikeThrough "strikethrough text" <> " (shown as inverse)",
-      indent <> highlight "`code snippet` " <> " - " <> Markdown Snippet "a + b // no *markdown* here",
-      indent <> highlight "!1 text!       " <> " - " <> Markdown (Colored Red) "red text" <> " (1-6: red, green, blue, yellow, cyan, magenta)",
-      indent <> highlight "#secret#       " <> " - " <> Markdown Secret "secret text" <> " (can be copy-pasted)"
+      indent <> highlight "*bold*         " <> " - " <> markdown Bold "bold text",
+      indent <> highlight "_italic_       " <> " - " <> markdown Italic "italic text" <> " (shown as underlined)",
+      indent <> highlight "+underlined+   " <> " - " <> markdown Underline "underlined text",
+      indent <> highlight "~strikethrough~" <> " - " <> markdown StrikeThrough "strikethrough text" <> " (shown as inverse)",
+      indent <> highlight "`code snippet` " <> " - " <> markdown Snippet "a + b // no *markdown* here",
+      indent <> highlight "!1 text!       " <> " - " <> markdown (colored Red) "red text" <> " (1-6: red, green, blue, yellow, cyan, magenta)",
+      indent <> highlight "#secret#       " <> " - " <> markdown Secret "secret text" <> " (can be copy-pasted)"
     ]

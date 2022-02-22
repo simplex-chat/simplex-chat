@@ -1,11 +1,15 @@
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Simplex.Chat.Markdown where
 
 import Control.Applicative ((<|>))
+import Data.Aeson (ToJSON)
+import qualified Data.Aeson as J
 import Data.Attoparsec.Text (Parser)
 import qualified Data.Attoparsec.Text as A
+import Data.Bifunctor (second)
 import Data.Either (fromRight)
 import Data.Functor (($>))
 import Data.Map.Strict (Map)
@@ -13,9 +17,11 @@ import qualified Data.Map.Strict as M
 import Data.String
 import Data.Text (Text)
 import qualified Data.Text as T
+import GHC.Generics
+import Simplex.Messaging.Parsers (fstToLower, sumTypeJSON)
 import System.Console.ANSI.Types
 
-data Markdown = Markdown Format Text | Markdown :|: Markdown
+data Markdown = Markdown (Maybe Format) Text | Markdown :|: Markdown
   deriving (Eq, Show)
 
 data Format
@@ -25,9 +31,16 @@ data Format
   | StrikeThrough
   | Snippet
   | Secret
-  | Colored Color
-  | NoFormat
-  deriving (Eq, Show)
+  | Colored FormatColor
+  deriving (Eq, Show, Generic)
+
+colored :: Color -> Format
+colored = Colored . FormatColor
+
+markdown :: Format -> Text -> Markdown
+markdown = Markdown . Just
+
+instance ToJSON Format where toEncoding = J.genericToEncoding $ sumTypeJSON fstToLower
 
 instance Semigroup Markdown where (<>) = (:|:)
 
@@ -35,8 +48,30 @@ instance Monoid Markdown where mempty = unmarked ""
 
 instance IsString Markdown where fromString = unmarked . T.pack
 
+newtype FormatColor = FormatColor Color
+  deriving (Eq, Show)
+
+instance ToJSON FormatColor where
+  toJSON (FormatColor c) = case c of
+    Red -> "red"
+    Green -> "green"
+    Blue -> "blue"
+    Yellow -> "yellow"
+    Cyan -> "cyan"
+    Magenta -> "magenta"
+    Black -> "black"
+    White -> "white"
+
+data FormattedText = FormattedText {format :: Maybe Format, text :: Text}
+  deriving (Eq, Show, Generic)
+
+instance ToJSON FormattedText where
+  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
+
+type MarkdownList = [FormattedText]
+
 unmarked :: Text -> Markdown
-unmarked = Markdown NoFormat
+unmarked = Markdown Nothing
 
 colorMD :: Char
 colorMD = '!'
@@ -53,12 +88,12 @@ formats =
       ('~', StrikeThrough),
       ('`', Snippet),
       (secretMD, Secret),
-      (colorMD, Colored White)
+      (colorMD, colored White)
     ]
 
-colors :: Map Text Color
+colors :: Map Text FormatColor
 colors =
-  M.fromList
+  M.fromList . map (second FormatColor) $
     [ ("red", Red),
       ("green", Green),
       ("blue", Blue),
@@ -79,6 +114,13 @@ colors =
       ("6", Magenta)
     ]
 
+parseMarkdownList :: Text -> MarkdownList
+parseMarkdownList = markdownToList . parseMarkdown
+
+markdownToList :: Markdown -> MarkdownList
+markdownToList (Markdown f s) = [FormattedText f s]
+markdownToList (m1 :|: m2) = markdownToList m1 <> markdownToList m2
+
 parseMarkdown :: Text -> Markdown
 parseMarkdown s = fromRight (unmarked s) $ A.parseOnly (markdownP <* A.endOfInput) s
 
@@ -94,25 +136,25 @@ markdownP = merge <$> A.many' fragmentP
         ' ' -> unmarked . T.cons ' ' <$> A.takeWhile (== ' ')
         c -> case M.lookup c formats of
           Just Secret -> secretP
-          Just (Colored White) -> coloredP
+          Just (Colored (FormatColor White)) -> coloredP
           Just f -> formattedP c "" f
           Nothing -> unformattedP c
     formattedP :: Char -> Text -> Format -> Parser Markdown
     formattedP c p f = do
       s <- A.takeTill (== c)
-      (A.char c $> markdown c p f s) <|> noFormat (c `T.cons` p <> s)
-    markdown :: Char -> Text -> Format -> Text -> Markdown
-    markdown c p f s
+      (A.char c $> md c p f s) <|> noFormat (c `T.cons` p <> s)
+    md :: Char -> Text -> Format -> Text -> Markdown
+    md c p f s
       | T.null s || T.head s == ' ' || T.last s == ' ' =
         unmarked $ c `T.cons` p <> s `T.snoc` c
-      | otherwise = Markdown f s
+      | otherwise = markdown f s
     secretP :: Parser Markdown
     secretP = secret <$> A.takeWhile (== secretMD) <*> A.takeTill (== secretMD) <*> A.takeWhile (== secretMD)
     secret :: Text -> Text -> Text -> Markdown
     secret b s a
       | T.null a || T.null s || T.head s == ' ' || T.last s == ' ' =
         unmarked $ secretMD `T.cons` ss
-      | otherwise = Markdown Secret $ T.init ss
+      | otherwise = markdown Secret $ T.init ss
       where
         ss = b <> s <> a
     coloredP :: Parser Markdown

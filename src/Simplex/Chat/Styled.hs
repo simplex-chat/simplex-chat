@@ -5,7 +5,7 @@ module Simplex.Chat.Styled
   ( StyledString (..),
     StyledFormat (..),
     styleMarkdown,
-    styleMarkdownText,
+    styleMarkdownList,
     unStyle,
     sLength,
     sShow,
@@ -29,14 +29,20 @@ instance Monoid StyledString where mempty = plain ""
 
 instance IsString StyledString where fromString = plain
 
-styleMarkdownText :: Text -> StyledString
-styleMarkdownText = styleMarkdown . parseMarkdown
-
 styleMarkdown :: Markdown -> StyledString
 styleMarkdown (s1 :|: s2) = styleMarkdown s1 <> styleMarkdown s2
-styleMarkdown (Markdown Snippet s) = '`' `wrap` styled Snippet s
-styleMarkdown (Markdown Secret s) = '#' `wrap` styled Secret s
-styleMarkdown (Markdown f s) = styled f s
+styleMarkdown (Markdown f s) = styleFormat f s
+
+styleMarkdownList :: MarkdownList -> StyledString
+styleMarkdownList [] = plain ""
+styleMarkdownList [FormattedText f s] = styleFormat f s
+styleMarkdownList (FormattedText f s : ts) = styleFormat f s <> styleMarkdownList ts
+
+styleFormat :: Maybe Format -> Text -> StyledString
+styleFormat (Just Snippet) s = '`' `wrap` styled Snippet s
+styleFormat (Just Secret) s = '#' `wrap` styled Secret s
+styleFormat (Just f) s = styled f s
+styleFormat Nothing s = plain s
 
 wrap :: Char -> StyledString -> StyledString
 wrap c s = plain [c] <> s <> plain [c]
@@ -66,10 +72,9 @@ sgr = \case
   Italic -> [SetUnderlining SingleUnderline, SetItalicized True]
   Underline -> [SetUnderlining SingleUnderline]
   StrikeThrough -> [SetSwapForegroundBackground True]
-  Colored c -> [SetColor Foreground Vivid c]
+  Colored (FormatColor c) -> [SetColor Foreground Vivid c]
   Secret -> [SetColor Foreground Dull Black, SetColor Background Dull Black]
   Snippet -> []
-  NoFormat -> []
 
 unStyle :: StyledString -> String
 unStyle (Styled _ s) = s
