@@ -10,6 +10,7 @@ import kotlinx.serialization.Serializable
 
 class ChatModel(val controller: ChatController, val alertManager: SimplexApp.AlertManager) {
   var currentUser = mutableStateOf<User?>(null)
+  var userCreated = mutableStateOf<Boolean?>(null)
   var chats = mutableStateListOf<Chat>()
   var chatId = mutableStateOf<String?>(null)
   var chatItems = mutableStateListOf<ChatItem>()
