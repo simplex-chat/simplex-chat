@@ -38,6 +38,12 @@ fun ChatView(chatModel: ChatModel, nav: NavController) {
       LaunchedEffect(chat.chatItems) {
         delay(1000L)
         chatModel.markChatItemsRead(chat.chatInfo)
+        withApi {
+          chatModel.controller.apiChatRead(
+            chat.chatInfo.chatType,
+            chat.chatInfo.apiId,
+            CC.ItemRange(chat.chatStats.minUnreadItemId, chat.chatItems.last().id))
+        }
       }
       ChatLayout(chat, chatModel.chatItems,
         back = {

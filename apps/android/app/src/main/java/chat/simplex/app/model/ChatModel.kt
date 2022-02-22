@@ -101,9 +101,6 @@ class ChatModel(val controller: ChatController, val alertManager: SimplexApp.Ale
         else
           chat.chatStats
       )
-      withApi {
-        controller.apiChatRead(cInfo.chatType, cInfo.apiId, CC.ItemRange(cItem.id, cItem.id))
-      }
     }
     // update current chat
     val j = chatItems.indexOfFirst {item -> item.id == cItem.id}
