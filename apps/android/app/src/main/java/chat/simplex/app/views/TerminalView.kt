@@ -64,7 +64,6 @@ fun TerminalLayout(terminalItems: List<TerminalItem> , close: () -> Unit, naviga
 fun TerminalLog(terminalItems: List<TerminalItem>, navigate: (String) -> Unit) {
   val listState = rememberLazyListState()
   val scope = rememberCoroutineScope()
-  val df = DateTimeFormatter.ofPattern("HH:mm:ss")
   LazyColumn(state = listState) {
     items(terminalItems) { item ->
         Text("${item.date.toString().subSequence(11, 19)} ${item.label}",
