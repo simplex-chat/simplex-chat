@@ -4,7 +4,8 @@ import android.util.Log
 import androidx.compose.runtime.mutableStateOf
 import chat.simplex.app.*
 import kotlinx.coroutines.*
-import kotlinx.datetime.*
+import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 import kotlinx.serialization.*
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject

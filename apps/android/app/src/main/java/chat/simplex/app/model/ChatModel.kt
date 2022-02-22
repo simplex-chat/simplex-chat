@@ -27,7 +27,7 @@ class ChatModel(val controller: ChatController, val alertManager: SimplexApp.Ale
     }
   }
 
-  fun hasChat(id: String): Boolean = chats.firstOrNull() { it.id == id } != null
+  fun hasChat(id: String): Boolean = chats.firstOrNull { it.id == id } != null
   fun getChat(id: String): Chat? = chats.firstOrNull { it.id == id }
   private fun getChatIndex(id: String): Int = chats.indexOfFirst { it.id == id }
   fun addChat(chat: Chat) = chats.add(index = 0, chat)
@@ -66,13 +66,16 @@ class ChatModel(val controller: ChatController, val alertManager: SimplexApp.Ale
   fun addChatItem(cInfo: ChatInfo, cItem: ChatItem) {
     // update previews
     val i = getChatIndex(cInfo.id)
+    val chat: Chat
     if (i >= 0) {
-      val chat = chats[i]
+      chat = chats[i]
       chats[i] = chat.copy(
         chatItems = arrayListOf(cItem),
         chatStats =
-          if (cItem.meta.itemStatus is CIStatus.RcvNew)
-            chat.chatStats.copy(unreadCount = chat.chatStats.unreadCount + 1)
+          if (cItem.meta.itemStatus is CIStatus.RcvNew) {
+            val minUnreadId = if(chat.chatStats.minUnreadItemId == 0L) cItem.id else chat.chatStats.minUnreadItemId
+            chat.chatStats.copy(unreadCount = chat.chatStats.unreadCount + 1, minUnreadItemId = minUnreadId)
+          }
           else
             chat.chatStats
       )
@@ -85,15 +88,28 @@ class ChatModel(val controller: ChatController, val alertManager: SimplexApp.Ale
     // add to current chat
     if (chatId.value == cInfo.id) {
       chatItems.add(cItem)
-      if (cItem.meta.itemStatus is CIStatus.RcvNew) {
-        // TODO mark item read via api and model
-//        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-//          if self.chatId == cInfo.id {
-//            SimpleX.markChatItemRead(cInfo, cItem)
-//          }
-//        }
-      }
     }
+  }
+
+  fun markChatItemsRead(cInfo: ChatInfo) {
+    val chatIdx = getChatIndex(cInfo.id)
+    // update current chat
+    if (chatId.value == cInfo.id) {
+      var i = 0
+      while (i < chatItems.count()) {
+        val item = chatItems[i]
+        if (item.meta.itemStatus is CIStatus.RcvNew) {
+          chatItems[i] = item.copy(meta=item.meta.copy(itemStatus = CIStatus.RcvRead()))
+        }
+        i += 1
+      }
+      val chat = chats[chatIdx]
+      chats[chatIdx] = chat.copy(
+        chatItems = chatItems,
+        chatStats = chat.chatStats.copy(unreadCount = 0, minUnreadItemId = chat.chatItems.last().id + 1)
+      )
+    }
+
   }
 //
 //  func upsertChatItem(_ cInfo: ChatInfo, _ cItem: ChatItem) -> Bool {
@@ -124,33 +140,6 @@ class ChatModel(val controller: ChatController, val alertManager: SimplexApp.Ale
 //    }
 //  }
 //
-//  func markChatItemsRead(_ cInfo: ChatInfo) {
-//    // update preview
-//    if let chat = getChat(cInfo.id) {
-//      chat.chatStats = ChatStats()
-//    }
-//    // update current chat
-//    if chatId == cInfo.id {
-//      var i = 0
-//      while i < chatItems.count {
-//        if case .rcvNew = chatItems[i].meta.itemStatus {
-//          chatItems[i].meta.itemStatus = .rcvRead
-//        }
-//        i = i + 1
-//      }
-//    }
-//  }
-//
-//  func markChatItemRead(_ cInfo: ChatInfo, _ cItem: ChatItem) {
-//    // update preview
-//    if let i = getChatIndex(cInfo.id) {
-//      chats[i].chatStats.unreadCount = chats[i].chatStats.unreadCount - 1
-//    }
-//    // update current chat
-//    if chatId == cInfo.id, let j = chatItems.firstIndex(where: { $0.id == cItem.id }) {
-//      chatItems[j].meta.itemStatus = .rcvRead
-//    }
-//  }
 //
 //  func popChat(_ id: String) {
 //    if let i = getChatIndex(id) {
@@ -443,7 +432,7 @@ class AChatItem (
 )
 
 @Serializable
-class ChatItem (
+data class ChatItem (
   val chatDir: CIDirection,
   val meta: CIMeta,
   val content: CIContent
@@ -488,7 +477,7 @@ sealed class CIDirection {
 }
 
 @Serializable
-class CIMeta (
+data class CIMeta (
   val itemId: Long,
   val itemTs: Instant,
   val itemText: String,

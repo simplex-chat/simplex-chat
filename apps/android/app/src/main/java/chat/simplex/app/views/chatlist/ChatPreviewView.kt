@@ -1,13 +1,12 @@
 package chat.simplex.app.views.chatlist
 
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -16,6 +15,7 @@ import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.HighOrLowlight
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.helpers.ChatInfoImage
+import chat.simplex.app.views.helpers.badgeLayout
 import kotlinx.datetime.Clock
 
 @Composable
@@ -59,9 +59,22 @@ fun ChatPreviewView(chat: Chat, goToChat: () -> Unit) {
         verticalArrangement = Arrangement.Top) {
         Text(ts,
           color = HighOrLowlight,
-          style = MaterialTheme.typography.body2
+          style = MaterialTheme.typography.body2,
+          modifier = Modifier.padding(bottom=5.dp)
         )
-        // TODO unread count
+
+        if (chat.chatStats.unreadCount > 0) {
+          Text(
+            chat.chatStats.unreadCount.toString(),
+            color = MaterialTheme.colors.onPrimary,
+            style = MaterialTheme.typography.body2,
+            modifier = Modifier
+              .background(MaterialTheme.colors.primary, shape = CircleShape)
+              .align(Alignment.End)
+              .badgeLayout()
+              .padding(2.dp)
+          )
+        }
       }
     }
   }

@@ -8,8 +8,7 @@ import androidx.compose.foundation.lazy.*
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ArrowBack
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -24,9 +23,9 @@ import chat.simplex.app.views.chat.item.ChatItemView
 import chat.simplex.app.views.helpers.ChatInfoImage
 import chat.simplex.app.views.helpers.withApi
 import com.google.accompanist.insets.*
-import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 import kotlinx.datetime.Clock
+import java.util.*
 
 @ExperimentalAnimatedInsets
 @DelicateCoroutinesApi
@@ -35,6 +34,21 @@ fun ChatView(chatModel: ChatModel, nav: NavController) {
   if (chatModel.chatId.value != null && chatModel.chats.count() > 0) {
     val chat: Chat? = chatModel.chats.firstOrNull { chat -> chat.chatInfo.id == chatModel.chatId.value }
     if (chat != null) {
+
+      // TODO a more advanced version would mark as read only if in view
+      LaunchedEffect(chat.chatItems) {
+        delay(1000L)
+        if (chat.chatItems.count() > 0) {
+          chatModel.markChatItemsRead(chat.chatInfo)
+          withApi {
+            chatModel.controller.apiChatRead(
+              chat.chatInfo.chatType,
+              chat.chatInfo.apiId,
+              CC.ItemRange(chat.chatStats.minUnreadItemId, chat.chatItems.last().id)
+            )
+          }
+        }
+      }
       ChatLayout(chat, chatModel.chatItems,
         back = { nav.popBackStack() },
         info = { nav.navigate(Pages.ChatInfo.route) },
@@ -96,10 +110,11 @@ fun ChatInfoToolbar(chat: Chat, back: () -> Unit, info: () -> Unit) {
         modifier = Modifier.padding(10.dp)
       )
     }
-    Row(Modifier
-      .padding(horizontal = 68.dp)
-      .fillMaxWidth()
-      .clickable(onClick = info),
+    Row(
+      Modifier
+        .padding(horizontal = 68.dp)
+        .fillMaxWidth()
+        .clickable(onClick = info),
       horizontalArrangement = Arrangement.Center,
       verticalAlignment = Alignment.CenterVertically
     ) {
