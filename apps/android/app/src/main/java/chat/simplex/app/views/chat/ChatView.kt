@@ -1,14 +1,18 @@
 package chat.simplex.app.views.chat
 
-import androidx.compose.foundation.*
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ArrowBack
-import androidx.compose.runtime.*
-import androidx.compose.ui.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
@@ -19,7 +23,8 @@ import chat.simplex.app.views.chat.item.ChatItemView
 import chat.simplex.app.views.helpers.ChatInfoImage
 import chat.simplex.app.views.helpers.withApi
 import com.google.accompanist.insets.*
-import kotlinx.coroutines.*
+import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 
 @ExperimentalAnimatedInsets
@@ -79,19 +84,19 @@ fun ChatLayout(
 
 @Composable
 fun ChatInfoToolbar(chat: Chat, back: () -> Unit, info: () -> Unit) {
-  Box(Modifier.height(60.dp),
+  Box(Modifier.height(60.dp).padding(horizontal = 8.dp),
     contentAlignment = Alignment.CenterStart
   ) {
-    Icon(
-      Icons.Outlined.ArrowBack,
-      "Back",
-      tint = MaterialTheme.colors.primary,
-      modifier = Modifier
-        .clickable(onClick = back)
-        .padding(start = 16.dp)
-    )
+    IconButton(onClick = back) {
+      Icon(
+        Icons.Outlined.ArrowBack,
+        "Back",
+        tint = MaterialTheme.colors.primary,
+        modifier = Modifier.padding(10.dp)
+      )
+    }
     Row(Modifier
-      .padding(horizontal = 40.dp)
+      .padding(horizontal = 68.dp)
       .fillMaxWidth()
       .clickable(onClick = info),
       horizontalArrangement = Arrangement.Center,
@@ -102,9 +107,11 @@ fun ChatInfoToolbar(chat: Chat, back: () -> Unit, info: () -> Unit) {
       Column(Modifier.padding(start = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally
       ) {
-        Text(cInfo.displayName, fontWeight = FontWeight.Bold)
+        Text(cInfo.displayName, fontWeight = FontWeight.Bold,
+          maxLines = 1, overflow = TextOverflow.Ellipsis)
         if (cInfo.fullName != "" && cInfo.fullName != cInfo.displayName) {
-          Text(cInfo.fullName)
+          Text(cInfo.fullName,
+            maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
       }
     }

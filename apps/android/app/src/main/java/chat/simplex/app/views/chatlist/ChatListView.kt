@@ -52,6 +52,7 @@ fun ChatListView(chatModel: ChatModel, nav: NavController) {
   val newChatCtrl = scaffoldController()
   BottomSheetScaffold(
     scaffoldState = newChatCtrl.state,
+    topBar = { ChatListToolbar(newChatCtrl, settings = { nav.navigate(Pages.Settings.route) }) },
     sheetPeekHeight = 0.dp,
     sheetContent = { NewChatSheet(chatModel, newChatCtrl, nav) },
     sheetShape = RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp),
@@ -63,15 +64,13 @@ fun ChatListView(chatModel: ChatModel, nav: NavController) {
           .fillMaxSize()
           .background(MaterialTheme.colors.background)
       ) {
-        ChatListToolbar(
-          newChatCtrl,
-          settings = { nav.navigate(Pages.Settings.route) })
         ChatList(chatModel, nav)
       }
       if (newChatCtrl.state.bottomSheetState.isExpanded) {
-        Surface(Modifier
-          .fillMaxSize()
-          .clickable { newChatCtrl.collapse() },
+        Surface(
+          Modifier
+            .fillMaxSize()
+            .clickable { newChatCtrl.collapse() },
           color = Color.Black.copy(alpha = 0.12F)
         ) {}
       }
@@ -87,29 +86,30 @@ fun ChatListToolbar(newChatSheetCtrl: ScaffoldController, settings: () -> Unit) 
     verticalAlignment = Alignment.CenterVertically,
     modifier = Modifier
       .fillMaxWidth()
-      .height(40.dp)) {
-    Icon(
-      Icons.Outlined.Settings,
-      "Settings Cog",
-      tint = MaterialTheme.colors.primary,
-      modifier = Modifier
-        .padding(horizontal = 10.dp)
-        .clickable(onClick = settings)
-    )
+      .padding(horizontal = 8.dp)
+      .height(60.dp)) {
+    IconButton(onClick = settings) {
+      Icon(
+        Icons.Outlined.Settings,
+        "Settings",
+        tint = MaterialTheme.colors.primary,
+        modifier = Modifier.padding(10.dp)
+      )
+    }
     Text(
       "Your chats",
       color = MaterialTheme.colors.onBackground,
       fontWeight = FontWeight.Bold,
       modifier = Modifier.padding(5.dp)
     )
-    Icon(
-      Icons.Outlined.PersonAdd,
-      "Add Contact",
-      tint = MaterialTheme.colors.primary,
-      modifier = Modifier
-        .padding(horizontal = 10.dp)
-        .clickable { newChatSheetCtrl.toggle() }
-    )
+    IconButton(onClick = { newChatSheetCtrl.toggle() }) {
+      Icon(
+        Icons.Outlined.PersonAdd,
+        "Add Contact",
+        tint = MaterialTheme.colors.primary,
+        modifier = Modifier.padding(10.dp)
+      )
+    }
   }
 }
 
