@@ -34,6 +34,12 @@ class ScaffoldController(val state: BottomSheetScaffoldState, val scope: Corouti
     val s = state.bottomSheetState
     if (s.isExpanded) s.collapse() else s.expand()
   }
+
+  fun toggleDrawer() = scope.launch {
+    state.drawerState.apply {
+      if (isClosed) open() else close()
+    }
+  }
 }
 
 @ExperimentalMaterialApi
@@ -50,48 +56,37 @@ fun scaffoldController(): ScaffoldController {
 @ExperimentalMaterialApi
 @Composable
 fun ChatListView(chatModel: ChatModel, nav: NavController) {
-  val newChatCtrl = scaffoldController()
+  val scaffoldCtrl = scaffoldController()
   BottomSheetScaffold(
-    scaffoldState = newChatCtrl.state,
+    scaffoldState = scaffoldCtrl.state,
+    topBar = {
+      ChatListToolbar(
+        scaffoldCtrl,
+        settings = { scaffoldCtrl.toggleDrawer() }
+      )
+    },
+    drawerContent = {
+      SettingsView(chatModel, nav)
+    },
     sheetPeekHeight = 0.dp,
-    sheetContent = { NewChatSheet(chatModel, newChatCtrl, nav) },
+    sheetContent = { NewChatSheet(chatModel, scaffoldCtrl, nav) },
     sheetShape = RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp),
   ) {
-    val scaffoldState = rememberScaffoldState()
-    val scope = rememberCoroutineScope()
-    Scaffold(
-      scaffoldState = scaffoldState,
-      topBar = {
-        ChatListToolbar(
-          newChatCtrl,
-          settings = {
-            scope.launch {
-              scaffoldState.drawerState.apply {
-                if (isClosed) open() else close()
-              }
-            }
-          })
-      },
-      drawerContent = {
-        SettingsView(chatModel, nav)
-      }
+    Column(
+      modifier = Modifier
+        .padding(vertical = 8.dp)
+        .fillMaxSize()
+        .background(MaterialTheme.colors.background)
     ) {
-      Column(
-        modifier = Modifier
-          .padding(vertical = 8.dp)
+      ChatList(chatModel, nav)
+    }
+    if (scaffoldCtrl.state.bottomSheetState.isExpanded) {
+      Surface(
+        Modifier
           .fillMaxSize()
-          .background(MaterialTheme.colors.background)
-      ) {
-        ChatList(chatModel, nav)
-      }
-      if (newChatCtrl.state.bottomSheetState.isExpanded) {
-        Surface(
-          Modifier
-            .fillMaxSize()
-            .clickable { newChatCtrl.collapse() },
-          color = Color.Black.copy(alpha = 0.12F)
-        ) {}
-      }
+          .clickable { scaffoldCtrl.collapse() },
+        color = Color.Black.copy(alpha = 0.12F)
+      ) {}
     }
   }
 }
