@@ -27,7 +27,8 @@ private val LightColorPalette = lightColors(
   primary = SimplexBlue,
   primaryVariant = SimplexGreen,
   secondary = LightGray,
-//  background = Color.ste
+//  background = Color.White,
+//  surface = Color.White
   /* Other default colors to override
     surface = Color.White,
     onPrimary = Color.White,
