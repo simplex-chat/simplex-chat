@@ -284,6 +284,13 @@ select * from all_messages_plain where chat_dt > datetime('now', '-15 hours') or
 4. Media server to optimize sending large files to groups.
 5. Channels server for large groups and broadcast channels.
 
+## Featured on 
+![Awesome](https://cdn.rawgit.com/sindresorhus/awesome/d7305f38d29fed78fa85652e3a63e154dd8e8829/media/badge.svg)
+
+- [awesome-haskell](https://github.com/krispo/awesome-haskell#messaging)
+- [awesome-privacy](https://github.com/pluja/awesome-privacy#instant-messaging)
+- [awesome-selfhosted](https://github.com/awesome-selfhosted/awesome-selfhosted#communication---custom-communication-systems)
+
 ## License
 
 [AGPL v3](./LICENSE)
