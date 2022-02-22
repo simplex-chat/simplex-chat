@@ -88,7 +88,7 @@ fun UserProfileLayout(
           modifier = Modifier
             .padding(bottom = 24.dp)
             .fillMaxWidth(),
-          textStyle = MaterialTheme.typography.h1,
+          textStyle = MaterialTheme.typography.body1,
           keyboardOptions = KeyboardOptions(
             capitalization = KeyboardCapitalization.None,
             autoCorrect = false
