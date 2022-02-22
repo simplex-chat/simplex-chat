@@ -21,6 +21,7 @@ import androidx.navigation.NavOptions
 import chat.simplex.app.Pages
 import chat.simplex.app.model.Chat
 import chat.simplex.app.model.ChatModel
+import chat.simplex.app.views.chat.ChatHelpView
 import chat.simplex.app.views.helpers.withApi
 import chat.simplex.app.views.newchat.NewChatSheet
 import chat.simplex.app.views.usersettings.SettingsView
@@ -31,7 +32,7 @@ import kotlinx.coroutines.*
 class ScaffoldController(val state: BottomSheetScaffoldState, val scope: CoroutineScope) {
   fun expand() = scope.launch { state.bottomSheetState.expand() }
   fun collapse() = scope.launch { state.bottomSheetState.collapse() }
-  fun toggle() = scope.launch {
+  fun toggleSheet() = scope.launch {
     val s = state.bottomSheetState
     if (s.isExpanded) s.collapse() else s.expand()
   }
@@ -61,10 +62,7 @@ fun ChatListView(chatModel: ChatModel, nav: NavController) {
   BottomSheetScaffold(
     scaffoldState = scaffoldCtrl.state,
     topBar = {
-      ChatListToolbar(
-        scaffoldCtrl,
-        settings = { scaffoldCtrl.toggleDrawer() }
-      )
+      ChatListToolbar(scaffoldCtrl)
     },
     drawerContent = {
       SettingsView(chatModel, nav)
@@ -79,7 +77,15 @@ fun ChatListView(chatModel: ChatModel, nav: NavController) {
         .fillMaxSize()
         .background(MaterialTheme.colors.background)
     ) {
-      ChatList(chatModel, nav)
+      when (chatModel.chatsLoaded.value) {
+        true -> if (chatModel.chats.isNotEmpty()) {
+          ChatList(chatModel, nav)
+        } else {
+          val user = chatModel.currentUser.value
+          Help(scaffoldCtrl, displayName = user?.profile?.displayName)
+        }
+        else -> ChatList(chatModel, nav)
+      }
     }
     if (scaffoldCtrl.state.bottomSheetState.isExpanded) {
       Surface(
@@ -94,7 +100,41 @@ fun ChatListView(chatModel: ChatModel, nav: NavController) {
 
 @ExperimentalMaterialApi
 @Composable
-fun ChatListToolbar(newChatSheetCtrl: ScaffoldController, settings: () -> Unit) {
+fun Help(scaffoldCtrl: ScaffoldController, displayName: String?) {
+  Column(
+    Modifier
+      .fillMaxWidth()
+      .padding(8.dp)
+  ) {
+    Text(
+      text = if (displayName != null) "Welcome ${displayName}!" else "Welcome!",
+      Modifier.padding(bottom = 24.dp),
+      style = MaterialTheme.typography.h1,
+      color = MaterialTheme.colors.onBackground
+    )
+    ChatHelpView({ scaffoldCtrl.toggleSheet() }, true)
+    Row(
+      Modifier.padding(top = 30.dp),
+      verticalAlignment = Alignment.CenterVertically,
+      horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+      Text(
+        "This text is available in settings",
+        color = MaterialTheme.colors.onBackground
+      )
+      Icon(
+        Icons.Outlined.Settings,
+        "Settings",
+        tint = MaterialTheme.colors.onBackground,
+        modifier = Modifier.clickable(onClick = { scaffoldCtrl.toggleDrawer() })
+      )
+    }
+  }
+}
+
+@ExperimentalMaterialApi
+@Composable
+fun ChatListToolbar(scaffoldCtrl: ScaffoldController) {
   Row(
     horizontalArrangement = Arrangement.SpaceBetween,
     verticalAlignment = Alignment.CenterVertically,
@@ -103,7 +143,7 @@ fun ChatListToolbar(newChatSheetCtrl: ScaffoldController, settings: () -> Unit) 
       .padding(horizontal = 8.dp)
       .height(60.dp)
   ) {
-    IconButton(onClick = settings) {
+    IconButton(onClick = { scaffoldCtrl.toggleDrawer() }) {
       Icon(
         Icons.Outlined.Settings,
         "Settings",
@@ -117,7 +157,7 @@ fun ChatListToolbar(newChatSheetCtrl: ScaffoldController, settings: () -> Unit) 
       fontWeight = FontWeight.Bold,
       modifier = Modifier.padding(5.dp)
     )
-    IconButton(onClick = { newChatSheetCtrl.toggle() }) {
+    IconButton(onClick = { scaffoldCtrl.toggleSheet() }) {
       Icon(
         Icons.Outlined.PersonAdd,
         "Add Contact",

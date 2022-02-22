@@ -11,6 +11,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
@@ -111,7 +112,7 @@ fun SettingsLayout(
           color = MaterialTheme.colors.onBackground
         )
       },
-      func = { println("navigate to help") }
+      func = { navigate(Pages.Help.route) }
     )
     Divider(Modifier.padding(horizontal = 8.dp))
     SettingsSectionView(
@@ -172,12 +173,14 @@ fun SettingsLayout(
         )
         Spacer(Modifier.padding(horizontal = 4.dp))
         Text(
-          "Install ",
-          color = MaterialTheme.colors.onBackground
-        )
-        Text(
-          "SimpleX Chat for terminal",
-          color = MaterialTheme.colors.primary
+          buildAnnotatedString {
+            withStyle(SpanStyle(color = MaterialTheme.colors.onBackground)) {
+              append("Install ")
+            }
+            withStyle(SpanStyle(color = MaterialTheme.colors.primary)) {
+              append("SimpleX Chat for terminal")
+            }
+          }
         )
       },
       func = { uriHandler.openUri("https://github.com/simplex-chat/simplex-chat") }
