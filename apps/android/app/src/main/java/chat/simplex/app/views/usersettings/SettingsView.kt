@@ -20,6 +20,7 @@ import chat.simplex.app.Pages
 import chat.simplex.app.R
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.model.Profile
+import chat.simplex.app.ui.theme.HighOrLowlight
 import chat.simplex.app.ui.theme.SimpleXTheme
 
 @Composable
@@ -53,7 +54,7 @@ fun SettingsLayout(
       style = MaterialTheme.typography.h1,
       color = MaterialTheme.colors.onBackground
     )
-    Spacer(Modifier.height(24.dp))
+    Spacer(Modifier.height(30.dp))
 
     SettingsSectionView(
       content = {
@@ -63,26 +64,37 @@ fun SettingsLayout(
           tint = MaterialTheme.colors.onBackground,
         )
         Spacer(Modifier.padding(horizontal = 4.dp))
-        Text(
-          profile.displayName,
-          fontWeight = FontWeight.Bold,
-          color = MaterialTheme.colors.onBackground
-        )
+        Column {
+          Text(
+            profile.displayName,
+            style = MaterialTheme.typography.caption,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colors.onBackground
+          )
+          Text(
+            profile.fullName,
+            color = MaterialTheme.colors.onBackground
+          )
+        }
       },
       func = { navigate(Pages.UserProfile.route) }
     )
-    Divider(Modifier.padding(horizontal = 8.dp))
+    Divider(
+      Modifier
+        .padding(horizontal = 8.dp)
+        .padding(top = 4.dp)
+    )
     SettingsSectionView(
       content = {
         Icon(
           Icons.Outlined.QrCode,
           contentDescription = "Address",
-          tint = MaterialTheme.colors.onBackground,
+          tint = HighOrLowlight,
         )
         Spacer(Modifier.padding(horizontal = 4.dp))
         Text(
           "Your SimpleX contact address",
-          color = MaterialTheme.colors.onBackground
+          color = HighOrLowlight
         )
       },
       func = { println("navigate to address") }
@@ -182,7 +194,7 @@ fun SettingsSectionView(content: (@Composable () -> Unit), func: () -> Unit) {
     modifier = Modifier
       .fillMaxWidth()
       .clickable(onClick = func)
-      .height(48.dp),
+      .height(50.dp),
   ) {
     Row(
       Modifier.padding(start = 8.dp),
