@@ -77,11 +77,14 @@ fun ChatListView(chatModel: ChatModel, nav: NavController) {
         .background(MaterialTheme.colors.background)
     ) {
       // TODO check chats have been loaded on start?
-      if (chatModel.chats.isNotEmpty()) {
-        ChatList(chatModel, nav)
-      } else {
-        val user = chatModel.currentUser.value
-        Help(scaffoldCtrl, displayName = user?.profile?.displayName)
+      when (chatModel.chatsLoaded.value) {
+        true -> if (chatModel.chats.isNotEmpty()) {
+          ChatList(chatModel, nav)
+        } else {
+          val user = chatModel.currentUser.value
+          Help(scaffoldCtrl, displayName = user?.profile?.displayName)
+        }
+        else -> ChatList(chatModel, nav)
       }
     }
     if (scaffoldCtrl.state.bottomSheetState.isExpanded) {
