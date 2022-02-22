@@ -35,7 +35,11 @@ fun ChatView(chatModel: ChatModel, nav: NavController) {
     val chat: Chat? = chatModel.chats.firstOrNull { chat -> chat.chatInfo.id == chatModel.chatId.value }
     if (chat != null) {
       ChatLayout(chat, chatModel.chatItems,
-        back = { nav.popBackStack() },
+        back = {
+          // TODO a more advanced version would mark as read only if in view
+          chatModel.markChatItemsRead(chat.chatInfo)
+          nav.popBackStack()
+        },
         info = { nav.navigate(Pages.ChatInfo.route) },
         sendMessage = { msg ->
           withApi {

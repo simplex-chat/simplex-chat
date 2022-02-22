@@ -4,6 +4,7 @@ import android.net.Uri
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import chat.simplex.app.SimplexApp
+import chat.simplex.app.views.helpers.withApi
 import kotlinx.datetime.*
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -85,15 +86,63 @@ class ChatModel(val controller: ChatController, val alertManager: SimplexApp.Ale
     // add to current chat
     if (chatId.value == cInfo.id) {
       chatItems.add(cItem)
-      if (cItem.meta.itemStatus is CIStatus.RcvNew) {
-        // TODO mark item read via api and model
-//        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-//          if self.chatId == cInfo.id {
-//            SimpleX.markChatItemRead(cInfo, cItem)
-//          }
-//        }
+    }
+  }
+
+  fun markChatItemRead(cInfo: ChatInfo, cItem: ChatItem) {
+    val i = getChatIndex(cInfo.id)
+    if (i >= 0) {
+      val chat = chats[i]
+      chats[i] = chat.copy(
+        chatItems = arrayListOf(cItem),
+        chatStats =
+        if (cItem.meta.itemStatus is CIStatus.RcvNew)
+          chat.chatStats.copy(unreadCount = chat.chatStats.unreadCount - 1)
+        else
+          chat.chatStats
+      )
+      withApi {
+        controller.apiChatRead(cInfo.chatType, cInfo.apiId, CC.ItemRange(cItem.id, cItem.id))
       }
     }
+    // update current chat
+    val j = chatItems.indexOfFirst {item -> item.id == cItem.id}
+    if (j >= -1) {
+      val item = chatItems[j]
+      chatItems[j] = item.copy(meta=item.meta.copy(itemStatus = CIStatus.RcvRead()))
+
+    }
+  }
+
+  fun markChatItemsRead(cInfo: ChatInfo) {
+    val chatIdx = getChatIndex(cInfo.id)
+    // update current chat
+    if (chatId.value == cInfo.id) {
+      var i: Int = 0
+      var startIdx: Long? = null
+      var endIdx: Long? = null
+      while (i < chatItems.count()) {
+        val item = chatItems[i]
+        if (item.meta.itemStatus is CIStatus.RcvNew) {
+          startIdx = startIdx ?: item.id
+          chatItems[i] = item.copy(meta=item.meta.copy(itemStatus = CIStatus.RcvRead()))
+        }
+        else endIdx = item.id
+        i += 1
+      }
+      if (startIdx != null) {
+        endIdx = endIdx ?: chatItems[i].id
+        withApi {
+          controller.apiChatRead(cInfo.chatType, cInfo.apiId, CC.ItemRange(startIdx, endIdx))
+        }
+      }
+      val chat = chats[chatIdx]
+      chats[chatIdx] = chat.copy(
+        chatItems = chatItems,
+        chatStats = chat.chatStats.copy(unreadCount = 0)
+      )
+    }
+
   }
 //
 //  func upsertChatItem(_ cInfo: ChatInfo, _ cItem: ChatItem) -> Bool {
@@ -124,33 +173,6 @@ class ChatModel(val controller: ChatController, val alertManager: SimplexApp.Ale
 //    }
 //  }
 //
-//  func markChatItemsRead(_ cInfo: ChatInfo) {
-//    // update preview
-//    if let chat = getChat(cInfo.id) {
-//      chat.chatStats = ChatStats()
-//    }
-//    // update current chat
-//    if chatId == cInfo.id {
-//      var i = 0
-//      while i < chatItems.count {
-//        if case .rcvNew = chatItems[i].meta.itemStatus {
-//          chatItems[i].meta.itemStatus = .rcvRead
-//        }
-//        i = i + 1
-//      }
-//    }
-//  }
-//
-//  func markChatItemRead(_ cInfo: ChatInfo, _ cItem: ChatItem) {
-//    // update preview
-//    if let i = getChatIndex(cInfo.id) {
-//      chats[i].chatStats.unreadCount = chats[i].chatStats.unreadCount - 1
-//    }
-//    // update current chat
-//    if chatId == cInfo.id, let j = chatItems.firstIndex(where: { $0.id == cItem.id }) {
-//      chatItems[j].meta.itemStatus = .rcvRead
-//    }
-//  }
 //
 //  func popChat(_ id: String) {
 //    if let i = getChatIndex(id) {
@@ -443,7 +465,7 @@ class AChatItem (
 )
 
 @Serializable
-class ChatItem (
+data class ChatItem (
   val chatDir: CIDirection,
   val meta: CIMeta,
   val content: CIContent
@@ -488,7 +510,7 @@ sealed class CIDirection {
 }
 
 @Serializable
-class CIMeta (
+data class CIMeta (
   val itemId: Long,
   val itemTs: Instant,
   val itemText: String,
