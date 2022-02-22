@@ -11,6 +11,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.HighOrLowlight
 import chat.simplex.app.ui.theme.SimpleXTheme
@@ -60,19 +61,22 @@ fun ChatPreviewView(chat: Chat, goToChat: () -> Unit) {
         Text(ts,
           color = HighOrLowlight,
           style = MaterialTheme.typography.body2,
-          modifier = Modifier.padding(bottom=5.dp)
+          modifier = Modifier.padding(bottom = 5.dp)
         )
 
-        if (chat.chatStats.unreadCount > 0) {
+        val n = chat.chatStats.unreadCount
+        if (n > 0) {
           Text(
-            chat.chatStats.unreadCount.toString(),
+            if (n < 1000) "$n" else "${n / 1000}k",
             color = MaterialTheme.colors.onPrimary,
             style = MaterialTheme.typography.body2,
+            fontSize = 14.sp,
             modifier = Modifier
               .background(MaterialTheme.colors.primary, shape = CircleShape)
               .align(Alignment.End)
               .badgeLayout()
-              .padding(2.dp)
+              .padding(horizontal = 4.dp)
+              .padding(vertical = 2.dp)
           )
         }
       }
