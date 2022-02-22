@@ -76,7 +76,6 @@ fun ChatListView(chatModel: ChatModel, nav: NavController) {
         .fillMaxSize()
         .background(MaterialTheme.colors.background)
     ) {
-      // TODO check chats have been loaded on start?
       when (chatModel.chatsLoaded.value) {
         true -> if (chatModel.chats.isNotEmpty()) {
           ChatList(chatModel, nav)
