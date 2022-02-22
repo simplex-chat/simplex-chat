@@ -92,27 +92,6 @@ class ChatModel(val controller: ChatController, val alertManager: SimplexApp.Ale
     }
   }
 
-  fun markChatItemRead(cInfo: ChatInfo, cItem: ChatItem) {
-    val i = getChatIndex(cInfo.id)
-    if (i >= 0) {
-      val chat = chats[i]
-      chats[i] = chat.copy(
-        chatItems = arrayListOf(cItem),
-        chatStats =
-        if (cItem.meta.itemStatus is CIStatus.RcvNew)
-          chat.chatStats.copy(unreadCount = chat.chatStats.unreadCount - 1)
-        else
-          chat.chatStats
-      )
-    }
-    // update current chat
-    val j = chatItems.indexOfFirst {item -> item.id == cItem.id}
-    if (j >= -1) {
-      val item = chatItems[j]
-      chatItems[j] = item.copy(meta=item.meta.copy(itemStatus = CIStatus.RcvRead()))
-    }
-  }
-
   fun markChatItemsRead(cInfo: ChatInfo) {
     val chatIdx = getChatIndex(cInfo.id)
     // update current chat
