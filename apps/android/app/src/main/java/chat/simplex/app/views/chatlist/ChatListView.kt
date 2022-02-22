@@ -29,28 +29,42 @@ import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import kotlinx.coroutines.*
 
 @ExperimentalMaterialApi
-class ScaffoldController(val state: BottomSheetScaffoldState, val scope: CoroutineScope) {
-  fun expand() = scope.launch { state.bottomSheetState.expand() }
-  fun collapse() = scope.launch { state.bottomSheetState.collapse() }
-  fun toggleSheet() = scope.launch {
-    val s = state.bottomSheetState
-    if (s.isExpanded) s.collapse() else s.expand()
+class ScaffoldController(val scope: CoroutineScope) {
+  lateinit var state: BottomSheetScaffoldState
+  val expanded = mutableStateOf(false)
+
+  fun expand() {
+    expanded.value = true
+    scope.launch { state.bottomSheetState.expand() }
+  }
+
+  fun collapse() {
+    expanded.value = false
+    scope.launch { state.bottomSheetState.collapse() }
+  }
+
+  fun toggleSheet() {
+    if (state.bottomSheetState.isExpanded ?: false) collapse() else expand()
   }
 
   fun toggleDrawer() = scope.launch {
-    state.drawerState.apply {
-      if (isClosed) open() else close()
-    }
+    state.drawerState.apply { if (isClosed) open() else close() }
   }
 }
 
 @ExperimentalMaterialApi
 @Composable
 fun scaffoldController(): ScaffoldController {
-  return ScaffoldController(
-    state = rememberBottomSheetScaffoldState(),
-    scope = rememberCoroutineScope()
+  val ctrl = ScaffoldController(scope = rememberCoroutineScope())
+  val bottomSheetState = rememberBottomSheetState(
+    BottomSheetValue.Collapsed,
+    confirmStateChange = {
+      ctrl.expanded.value = it == BottomSheetValue.Expanded
+      true
+    }
   )
+  ctrl.state = rememberBottomSheetScaffoldState(bottomSheetState = bottomSheetState)
+  return ctrl
 }
 
 @DelicateCoroutinesApi
@@ -61,39 +75,37 @@ fun ChatListView(chatModel: ChatModel, nav: NavController) {
   val scaffoldCtrl = scaffoldController()
   BottomSheetScaffold(
     scaffoldState = scaffoldCtrl.state,
-    topBar = {
-      ChatListToolbar(scaffoldCtrl)
-    },
-    drawerContent = {
-      SettingsView(chatModel, nav)
-    },
+    drawerContent = { SettingsView(chatModel, nav) },
     sheetPeekHeight = 0.dp,
     sheetContent = { NewChatSheet(chatModel, scaffoldCtrl, nav) },
     sheetShape = RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp),
   ) {
-    Column(
-      modifier = Modifier
-        .padding(vertical = 8.dp)
-        .fillMaxSize()
-        .background(MaterialTheme.colors.background)
-    ) {
-      when (chatModel.chatsLoaded.value) {
-        true -> if (chatModel.chats.isNotEmpty()) {
-          ChatList(chatModel, nav)
-        } else {
-          val user = chatModel.currentUser.value
-          Help(scaffoldCtrl, displayName = user?.profile?.displayName)
-        }
-        else -> ChatList(chatModel, nav)
-      }
-    }
-    if (scaffoldCtrl.state.bottomSheetState.isExpanded) {
-      Surface(
-        Modifier
+    Box {
+      Column(
+        modifier = Modifier
+          .padding(vertical = 8.dp)
           .fillMaxSize()
-          .clickable { scaffoldCtrl.collapse() },
-        color = Color.Black.copy(alpha = 0.12F)
-      ) {}
+          .background(MaterialTheme.colors.background)
+      ) {
+        ChatListToolbar(scaffoldCtrl)
+        when (chatModel.chatsLoaded.value) {
+          true -> if (chatModel.chats.isNotEmpty()) {
+            ChatList(chatModel, nav)
+          } else {
+            val user = chatModel.currentUser.value
+            Help(scaffoldCtrl, displayName = user?.profile?.displayName)
+          }
+          else -> ChatList(chatModel, nav)
+        }
+      }
+      if (scaffoldCtrl.expanded.value) {
+        Surface(
+          Modifier
+            .fillMaxSize()
+            .clickable { scaffoldCtrl.collapse() },
+          color = Color.Black.copy(alpha = 0.12F)
+        ) {}
+      }
     }
   }
 }
