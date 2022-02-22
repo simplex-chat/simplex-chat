@@ -24,6 +24,7 @@ open class ChatController(val ctrl: ChatCtrl, val alertManager: SimplexApp.Alert
     try {
       apiStartChat()
       chatModel.chats.addAll(apiGetChats())
+      chatModel.chatsLoaded.value = true
       startReceiver()
       Log.d("SIMPLEX", "started chat")
     } catch(e: Error) {
