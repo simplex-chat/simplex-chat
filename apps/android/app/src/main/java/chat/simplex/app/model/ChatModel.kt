@@ -436,7 +436,8 @@ class AChatItem (
 data class ChatItem (
   val chatDir: CIDirection,
   val meta: CIMeta,
-  val content: CIContent
+  val content: CIContent,
+  val formattedText: List<FormattedText>? = null
 ) {
   val id: Long get() = meta.itemId
   val timestampText: String get() = meta.timestampText
@@ -567,6 +568,33 @@ sealed class MsgContent {
 }
 
 @Serializable
-class RcvFileTransfer {
+class FormattedText(val text: String, val format: Format? = null)
 
+@Serializable
+sealed class Format {
+  @Serializable @SerialName("bold") class Bold: Format()
+  @Serializable @SerialName("italic") class Italic: Format()
+  @Serializable @SerialName("underline") class Underline: Format()
+  @Serializable @SerialName("strikeThrough") class StrikeThrough: Format()
+  @Serializable @SerialName("snippet") class Snippet: Format()
+  @Serializable @SerialName("secret") class Secret: Format()
+  @Serializable @SerialName("colored") class Colored(val formatColor: FormatColor): Format()
+  @Serializable @SerialName("uri") class Uri: Format()
+  @Serializable @SerialName("email") class Email: Format()
+  @Serializable @SerialName("phone") class Phone: Format()
 }
+
+@Serializable
+enum class FormatColor(val color: String) {
+  Red("red"),
+  Green("green"),
+  Blue("blue"),
+  Yellow("yellow"),
+  Cyan("cyan"),
+  Magenta("magenta"),
+  Black("black"),
+  White("white")
+}
+
+@Serializable
+class RcvFileTransfer

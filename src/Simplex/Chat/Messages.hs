@@ -78,7 +78,7 @@ data ChatItem (c :: ChatType) (d :: MsgDirection) = ChatItem
   { chatDir :: CIDirection c d,
     meta :: CIMeta d,
     content :: CIContent d,
-    formattedText :: [FormattedText]
+    formattedText :: Maybe [FormattedText]
   }
   deriving (Show, Generic)
 

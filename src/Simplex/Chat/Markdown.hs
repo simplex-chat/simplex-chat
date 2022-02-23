@@ -14,6 +14,7 @@ import Data.Either (fromRight)
 import Data.Functor (($>))
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
+import Data.Maybe (isNothing)
 import Data.String
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -31,8 +32,10 @@ data Format
   | StrikeThrough
   | Snippet
   | Secret
-  | Colored FormatColor
+  | Colored {formatColor :: FormatColor}
   | Uri
+  | Email
+  | Phone
   deriving (Eq, Show, Generic)
 
 colored :: Color -> Format
@@ -126,6 +129,11 @@ colors =
       ("5", Cyan),
       ("6", Magenta)
     ]
+
+parseMaybeMarkdownList :: Text -> Maybe MarkdownList
+parseMaybeMarkdownList s =
+  let m = markdownToList $ parseMarkdown s
+   in if all (isNothing . format) m then Nothing else Just m
 
 parseMarkdownList :: Text -> MarkdownList
 parseMarkdownList = markdownToList . parseMarkdown

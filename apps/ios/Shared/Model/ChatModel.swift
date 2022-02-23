@@ -512,6 +512,7 @@ struct ChatItem: Identifiable, Decodable {
     var chatDir: CIDirection
     var meta: CIMeta
     var content: CIContent
+    var formattedText: [FormattedText]?
     
     var id: Int64 { get { meta.itemId } }
 
@@ -656,4 +657,35 @@ extension MsgContent: Decodable {
             self = .invalid(error: String(describing: error))
         }
     }
+}
+
+struct FormattedText: Decodable {
+    var text: String
+    var format: Format?
+}
+
+enum Format: Decodable {
+    case bold
+    case italic
+    case underline
+    case strikeThrough
+    case snippet
+    case secret
+    case colored(formatColor: FormatColor)
+    case uri
+    case email
+    case phone
+}
+
+enum FormatColor: Decodable {
+    case red
+    case green
+    case blue
+    case yellow
+    case cyan
+    case magenta
+    case black
+    case white
+
+    // TODO custom decoding, it won't parse as is
 }
