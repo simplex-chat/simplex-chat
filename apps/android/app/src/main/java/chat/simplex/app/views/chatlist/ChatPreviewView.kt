@@ -69,14 +69,13 @@ fun ChatPreviewView(chat: Chat, goToChat: () -> Unit) {
           Text(
             if (n < 1000) "$n" else "${n / 1000}k",
             color = MaterialTheme.colors.onPrimary,
-            style = MaterialTheme.typography.body2,
             fontSize = 14.sp,
             modifier = Modifier
               .background(MaterialTheme.colors.primary, shape = CircleShape)
               .align(Alignment.End)
               .badgeLayout()
-              .padding(horizontal = 4.dp)
-              .padding(vertical = 2.dp)
+              .padding(horizontal = 3.dp)
+              .padding(vertical = 1.dp)
           )
         }
       }
@@ -97,7 +96,7 @@ fun ChatPreviewViewExample() {
           Clock.System.now(),
           "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat."
         )),
-        chatStats = Chat.ChatStats()
+        chatStats = Chat.ChatStats(unreadCount = 3)
       ),
       goToChat = {}
     )

@@ -1295,7 +1295,7 @@ saveChatItem userId cd ci@NewChatItem {itemContent, itemTs, itemText, createdAt}
   tz <- liftIO getCurrentTimeZone
   ciId <- withStore $ \st -> createNewChatItem st userId cd ci
   let ciMeta = mkCIMeta ciId itemText ciStatusNew tz itemTs createdAt
-  pure $ ChatItem (toCIDirection cd) ciMeta itemContent $ parseMarkdownList itemText
+  pure $ ChatItem (toCIDirection cd) ciMeta itemContent $ parseMaybeMarkdownList itemText
 
 mkNewChatItem :: forall d. MsgDirectionI d => CIContent d -> MessageId -> UTCTime -> UTCTime -> NewChatItem d
 mkNewChatItem itemContent msgId itemTs createdAt =
