@@ -83,8 +83,8 @@ data ChatItem (c :: ChatType) (d :: MsgDirection) = ChatItem
   deriving (Show, Generic)
 
 instance ToJSON (ChatItem c d) where
-  toJSON = J.genericToJSON J.defaultOptions
-  toEncoding = J.genericToEncoding J.defaultOptions
+  toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
+  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
 data CIDirection (c :: ChatType) (d :: MsgDirection) where
   CIDirectSnd :: CIDirection 'CTDirect 'MDSnd
