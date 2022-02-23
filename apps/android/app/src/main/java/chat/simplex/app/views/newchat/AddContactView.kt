@@ -1,7 +1,6 @@
 package chat.simplex.app.views.newchat
 
-import android.content.Context
-import android.content.Intent
+import android.content.res.Configuration
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.MaterialTheme
@@ -22,6 +21,7 @@ import chat.simplex.app.model.ChatModel
 import chat.simplex.app.ui.theme.SimpleButton
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.helpers.CloseSheetBar
+import chat.simplex.app.views.helpers.shareText
 
 @Composable
 fun AddContactView(chatModel: ChatModel, nav: NavController) {
@@ -40,54 +40,53 @@ fun AddContactView(chatModel: ChatModel, nav: NavController) {
 fun AddContactLayout(connReq: String, close: () -> Unit, share: () -> Unit) {
   Column(
     modifier = Modifier
-      .padding(horizontal = 8.dp)
       .fillMaxSize()
-      .background(MaterialTheme.colors.background),
-    horizontalAlignment = Alignment.CenterHorizontally
+      .background(MaterialTheme.colors.background)
+      .padding(horizontal = 8.dp),
+    horizontalAlignment = Alignment.CenterHorizontally,
+    verticalArrangement = Arrangement.spacedBy(12.dp)
   ) {
     CloseSheetBar(close)
     Text(
       "Add contact",
       style = MaterialTheme.typography.h1,
-      modifier = Modifier.padding(bottom = 8.dp)
+      color = MaterialTheme.colors.onBackground
     )
     Text(
       "Show QR code to your contact\nto scan from the app",
       style = MaterialTheme.typography.h2,
       textAlign = TextAlign.Center,
-      modifier = Modifier.padding(bottom = 8.dp)
+      color = MaterialTheme.colors.onBackground
     )
     QRCode(connReq)
     Text(
       buildAnnotatedString {
-        append("If you cannot meet in person, you can ")
-        withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
+        withStyle(SpanStyle(color = MaterialTheme.colors.onBackground)) {
+          append("If you cannot meet in person, you can ")
+        }
+        withStyle(SpanStyle(color = MaterialTheme.colors.onBackground, fontWeight = FontWeight.Bold)) {
           append("scan QR code in the video call")
         }
-        append(", or you can share the invitation link via any other channel.")
+        withStyle(SpanStyle(color = MaterialTheme.colors.onBackground)) {
+          append(", or you can share the invitation link via any other channel.")
+        }
       },
       textAlign = TextAlign.Center,
       style = MaterialTheme.typography.caption,
       modifier = Modifier
         .padding(horizontal = 16.dp)
-        .padding(top = 8.dp)
         .padding(bottom = 16.dp)
     )
     SimpleButton("Share invitation link", icon = Icons.Outlined.Share, click = share)
   }
 }
 
-fun shareText(cxt: Context, text: String) {
-  val sendIntent: Intent = Intent().apply {
-    action = Intent.ACTION_SEND
-    putExtra(Intent.EXTRA_TEXT, text)
-    type = "text/plain"
-  }
-  val shareIntent = Intent.createChooser(sendIntent, null)
-  cxt.startActivity(shareIntent)
-}
-
 @Preview
+@Preview(
+  uiMode = Configuration.UI_MODE_NIGHT_YES,
+  showBackground = true,
+  name = "Dark Mode"
+)
 @Composable
 fun PreviewAddContactView() {
   SimpleXTheme {

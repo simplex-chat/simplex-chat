@@ -18,6 +18,7 @@ class ChatModel(val controller: ChatController, val alertManager: SimplexApp.Ale
 
   var connReqInvitation: String? = null
   var terminalItems = mutableStateListOf<TerminalItem>()
+  var userAddress = mutableStateOf<String?>(null)
   // set when app is opened via contact or invitation URI
   var appOpenUrl = mutableStateOf<Uri?>(null)
 

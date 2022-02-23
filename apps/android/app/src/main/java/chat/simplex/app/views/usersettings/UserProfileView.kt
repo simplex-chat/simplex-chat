@@ -179,7 +179,6 @@ fun UserProfileLayout(
   showBackground = true,
   name = "Dark Mode"
 )
-
 @Composable
 fun PreviewUserProfileLayoutEditOff() {
   SimpleXTheme {

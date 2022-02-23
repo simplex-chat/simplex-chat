@@ -23,6 +23,7 @@ open class ChatController(val ctrl: ChatCtrl, val alertManager: SimplexApp.Alert
     Log.d("SIMPLEX (user)", u.toString())
     try {
       apiStartChat()
+      chatModel.userAddress.value = apiGetUserAddress()
       chatModel.chats.addAll(apiGetChats())
       chatModel.chatsLoaded.value = true
       startReceiver()
