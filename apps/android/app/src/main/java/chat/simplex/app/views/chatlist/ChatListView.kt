@@ -17,12 +17,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import androidx.navigation.NavOptions
-import chat.simplex.app.Pages
-import chat.simplex.app.model.Chat
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.views.chat.ChatHelpView
-import chat.simplex.app.views.helpers.withApi
 import chat.simplex.app.views.newchat.NewChatSheet
 import chat.simplex.app.views.usersettings.SettingsView
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
@@ -181,28 +177,14 @@ fun ChatListToolbar(scaffoldCtrl: ScaffoldController) {
 }
 
 @DelicateCoroutinesApi
-fun goToChat(chatPreview: Chat, chatModel: ChatModel, navController: NavController) {
-  withApi {
-    val cInfo = chatPreview.chatInfo
-    val chat = chatModel.controller.apiGetChat(cInfo.chatType, cInfo.apiId)
-    if (chat != null) {
-      chatModel.chatId.value = cInfo.id
-      chatModel.chatItems = chat.chatItems.toMutableStateList()
-      navController.navigate(Pages.Chat.route)
-    } else {
-      // TODO show error? or will apiGetChat show it
-    }
-  }
-}
-
-@DelicateCoroutinesApi
 @Composable
 fun ChatList(chatModel: ChatModel, navController: NavController) {
+  Divider(Modifier.padding(horizontal = 8.dp))
   LazyColumn(
     modifier = Modifier.fillMaxWidth()
   ) {
     items(chatModel.chats) { chat ->
-      ChatPreviewView(chat) { goToChat(chat, chatModel, navController) }
+      ChatListNavLinkView(chat, chatModel, navController)
     }
   }
 }

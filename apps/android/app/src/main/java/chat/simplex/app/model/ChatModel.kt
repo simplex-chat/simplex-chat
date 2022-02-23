@@ -56,14 +56,15 @@ class ChatModel(val controller: ChatController, val alertManager: SimplexApp.Ale
     }
   }
 
-//  func replaceChat(_ id: String, _ chat: Chat) {
-//    if let i = getChatIndex(id) {
-//      chats[i] = chat
-//    } else {
-//      // invalid state, correcting
-//      chats.insert(chat, at: 0)
-//    }
-//  }
+  fun replaceChat(id: String, chat: Chat) {
+    val i = getChatIndex(id)
+    if (i >= 0) {
+      chats[i] = chat
+    } else {
+      // invalid state, correcting
+      chats.add(index = 0, chat)
+    }
+  }
 
   fun addChatItem(cInfo: ChatInfo, cItem: ChatItem) {
     // update previews

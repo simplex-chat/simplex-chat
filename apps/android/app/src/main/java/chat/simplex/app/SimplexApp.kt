@@ -58,8 +58,14 @@ class SimplexApp: Application() {
       alertView.value = null
     }
 
-    fun showAlertMsg(title: String, text: String? = null,
-                     confirmText: String = "Ok", onConfirm: (() -> Unit)? = null) {
+    fun showAlertMsg(
+      title: String,
+      text: String? = null,
+      confirmText: String = "Ok",
+      onConfirm: (() -> Unit)? = null,
+      dismissText: String = "Cancel",
+      onDismiss: (() -> Unit)? = null
+    ) {
       val alertText: (@Composable () -> Unit)? = if (text == null) null else { -> Text(text) }
       showAlert {
         AlertDialog(
@@ -71,6 +77,12 @@ class SimplexApp: Application() {
               onConfirm?.invoke()
               hideAlert()
             }) { Text(confirmText) }
+          },
+          dismissButton = {
+            Button(onClick = {
+              onDismiss?.invoke()
+              hideAlert()
+            }) { Text(dismissText) }
           }
         )
       }
