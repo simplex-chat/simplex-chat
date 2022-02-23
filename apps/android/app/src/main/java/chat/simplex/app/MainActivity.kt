@@ -10,10 +10,11 @@ import androidx.activity.viewModels
 import androidx.compose.foundation.layout.Box
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.text.ExperimentalTextApi
 import androidx.lifecycle.AndroidViewModel
 import androidx.navigation.*
 import androidx.navigation.compose.*
-import chat.simplex.app.model.ChatModel
+import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.*
 import chat.simplex.app.views.chat.ChatInfoView
@@ -25,7 +26,9 @@ import chat.simplex.app.views.usersettings.*
 import com.google.accompanist.insets.ExperimentalAnimatedInsets
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.serialization.decodeFromString
 
+@ExperimentalTextApi
 @DelicateCoroutinesApi
 @ExperimentalAnimatedInsets
 @ExperimentalPermissionsApi
@@ -35,6 +38,7 @@ class MainActivity: ComponentActivity() {
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
+//    testJson()
     connectIfOpenedViaUri(intent, vm.chatModel)
     setContent {
       SimpleXTheme {
@@ -61,6 +65,7 @@ fun MainPage(chatModel: ChatModel, nav: NavController) {
   }
 }
 
+@ExperimentalTextApi
 @ExperimentalAnimatedInsets
 @DelicateCoroutinesApi
 @ExperimentalPermissionsApi
@@ -160,4 +165,12 @@ fun connectIfOpenedViaUri(intent: Intent?, chatModel: ChatModel) {
       }
     }
   }
+}
+
+fun testJson() {
+  val str = """
+    {}
+  """.trimIndent()
+
+  println(json.decodeFromString<ChatItem>(str))
 }

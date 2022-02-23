@@ -59,6 +59,10 @@ fun WelcomeView(chatModel: ChatModel, routeHome: () -> Unit) {
   }
 }
 
+fun isValidDisplayName(name: String) : Boolean {
+  return (name.firstOrNull { it.isWhitespace() }) == null
+}
+
 @DelicateCoroutinesApi
 @Composable
 fun CreateProfilePanel(chatModel: ChatModel, routeHome: () -> Unit) {
@@ -100,6 +104,13 @@ fun CreateProfilePanel(chatModel: ChatModel, routeHome: () -> Unit) {
       ),
       singleLine = true
     )
+    if(!isValidDisplayName(displayName)) {
+      Text(
+        "Display name cannot contain whitespace.",
+        style = MaterialTheme.typography.body1,
+        color = MaterialTheme.colors.error
+      )
+    }
     Spacer(Modifier.height(10.dp))
     Text(
       "Full Name (Optional)",

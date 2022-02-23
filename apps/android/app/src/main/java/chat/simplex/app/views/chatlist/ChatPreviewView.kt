@@ -8,6 +8,7 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.ExperimentalTextApi
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -15,9 +16,11 @@ import androidx.compose.ui.unit.sp
 import chat.simplex.app.model.Chat
 import chat.simplex.app.model.getTimestampText
 import chat.simplex.app.ui.theme.HighOrLowlight
+import chat.simplex.app.views.chat.item.MarkdownText
 import chat.simplex.app.views.helpers.ChatInfoImage
 import chat.simplex.app.views.helpers.badgeLayout
 
+@ExperimentalTextApi
 @Composable
 fun ChatPreviewView(chat: Chat) {
   Row {
@@ -34,9 +37,10 @@ fun ChatPreviewView(chat: Chat) {
         style = MaterialTheme.typography.h3,
         fontWeight = FontWeight.Bold
       )
+
       if (chat.chatItems.count() > 0) {
-        Text(
-          chat.chatItems.last().content.text,
+        MarkdownText(
+          chat.chatItems.last(),
           maxLines = 2,
           overflow = TextOverflow.Ellipsis
         )
@@ -58,14 +62,13 @@ fun ChatPreviewView(chat: Chat) {
         Text(
           if (n < 1000) "$n" else "${n / 1000}k",
           color = MaterialTheme.colors.onPrimary,
-          style = MaterialTheme.typography.body2,
           fontSize = 14.sp,
           modifier = Modifier
             .background(MaterialTheme.colors.primary, shape = CircleShape)
             .align(Alignment.End)
             .badgeLayout()
-            .padding(horizontal = 4.dp)
-            .padding(vertical = 2.dp)
+            .padding(horizontal = 3.dp)
+            .padding(vertical = 1.dp)
         )
       }
     }

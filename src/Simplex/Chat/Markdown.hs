@@ -14,6 +14,7 @@ import Data.Either (fromRight)
 import Data.Functor (($>))
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
+import Data.Maybe (isNothing)
 import Data.String
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -31,8 +32,10 @@ data Format
   | StrikeThrough
   | Snippet
   | Secret
-  | Colored FormatColor
+  | Colored {color :: FormatColor}
   | Uri
+  | Email
+  | Phone
   deriving (Eq, Show, Generic)
 
 colored :: Color -> Format
@@ -127,6 +130,11 @@ colors =
       ("6", Magenta)
     ]
 
+parseMaybeMarkdownList :: Text -> Maybe MarkdownList
+parseMaybeMarkdownList s =
+  let m = markdownToList $ parseMarkdown s
+   in if all (isNothing . format) m then Nothing else Just m
+
 parseMarkdownList :: Text -> MarkdownList
 parseMarkdownList = markdownToList . parseMarkdown
 
@@ -170,13 +178,13 @@ markdownP = mconcat <$> A.many' fragmentP
         ss = b <> s <> a
     coloredP :: Parser Markdown
     coloredP = do
-      color <- A.takeWhile (\c -> c /= ' ' && c /= colorMD)
-      case M.lookup color colors of
+      cStr <- A.takeWhile (\c -> c /= ' ' && c /= colorMD)
+      case M.lookup cStr colors of
         Just c ->
           let f = Colored c
-           in (A.char ' ' *> formattedP colorMD (color `T.snoc` ' ') f)
-                <|> noFormat (colorMD `T.cons` color)
-        _ -> noFormat (colorMD `T.cons` color)
+           in (A.char ' ' *> formattedP colorMD (cStr `T.snoc` ' ') f)
+                <|> noFormat (colorMD `T.cons` cStr)
+        _ -> noFormat (colorMD `T.cons` cStr)
     wordsP :: Parser Markdown
     wordsP = do
       word <- wordMD <$> A.takeTill (== ' ')

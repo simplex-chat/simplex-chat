@@ -2709,7 +2709,7 @@ toDirectChatItem tz (itemId, itemTs, itemContent, itemText, itemStatus, createdA
     _ -> badItem
   where
     cItem :: MsgDirectionI d => SMsgDirection d -> CIDirection c d -> CIStatus d -> CIContent d -> CChatItem c
-    cItem d cid ciStatus ciContent = CChatItem d (ChatItem cid (ciMeta ciStatus) ciContent $ parseMarkdownList itemText)
+    cItem d cid ciStatus ciContent = CChatItem d (ChatItem cid (ciMeta ciStatus) ciContent $ parseMaybeMarkdownList itemText)
     badItem = Left $ SEBadChatItem itemId
     ciMeta :: CIStatus d -> CIMeta d
     ciMeta status = mkCIMeta itemId itemText status tz itemTs createdAt
@@ -2732,7 +2732,7 @@ toGroupChatItem tz userContactId ((itemId, itemTs, itemContent, itemText, itemSt
     _ -> badItem
   where
     cItem :: MsgDirectionI d => SMsgDirection d -> CIDirection c d -> CIStatus d -> CIContent d -> CChatItem c
-    cItem d cid ciStatus ciContent = CChatItem d (ChatItem cid (ciMeta ciStatus) ciContent $ parseMarkdownList itemText)
+    cItem d cid ciStatus ciContent = CChatItem d (ChatItem cid (ciMeta ciStatus) ciContent $ parseMaybeMarkdownList itemText)
     badItem = Left $ SEBadChatItem itemId
     ciMeta :: CIStatus d -> CIMeta d
     ciMeta status = mkCIMeta itemId itemText status tz itemTs createdAt

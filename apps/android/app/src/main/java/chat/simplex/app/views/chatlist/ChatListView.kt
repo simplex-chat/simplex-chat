@@ -14,6 +14,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.ExperimentalTextApi
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
@@ -63,6 +64,7 @@ fun scaffoldController(): ScaffoldController {
   return ctrl
 }
 
+@ExperimentalTextApi
 @DelicateCoroutinesApi
 @ExperimentalPermissionsApi
 @ExperimentalMaterialApi
@@ -176,6 +178,7 @@ fun ChatListToolbar(scaffoldCtrl: ScaffoldController) {
   }
 }
 
+@ExperimentalTextApi
 @DelicateCoroutinesApi
 @Composable
 fun ChatList(chatModel: ChatModel, navController: NavController) {

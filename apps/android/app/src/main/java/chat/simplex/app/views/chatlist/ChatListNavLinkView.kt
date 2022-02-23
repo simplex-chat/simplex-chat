@@ -9,6 +9,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.ExperimentalTextApi
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
@@ -19,6 +20,7 @@ import chat.simplex.app.views.helpers.withApi
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.datetime.Clock
 
+@ExperimentalTextApi
 @Composable
 fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel, nav: NavController) {
   ChatListNavLink(
@@ -73,6 +75,7 @@ fun contactRequestNavLink(contactRequest: ChatInfo.ContactRequest, chatModel: Ch
   )
 }
 
+@ExperimentalTextApi
 @Composable
 fun ChatListNavLink(chat: Chat, action: () -> Unit) {
   ChatListNavLinkLayout(
@@ -112,6 +115,7 @@ fun ChatListNavLinkLayout(content: (@Composable () -> Unit), action: () -> Unit)
   Divider(Modifier.padding(horizontal = 8.dp))
 }
 
+@ExperimentalTextApi
 @Preview
 @Preview(
   uiMode = Configuration.UI_MODE_NIGHT_YES,
@@ -139,6 +143,7 @@ fun PreviewChatListNavLinkDirect() {
   }
 }
 
+@ExperimentalTextApi
 @Preview
 @Preview(
   uiMode = Configuration.UI_MODE_NIGHT_YES,
@@ -166,6 +171,7 @@ fun PreviewChatListNavLinkGroup() {
   }
 }
 
+@ExperimentalTextApi
 @Preview
 @Preview(
   uiMode = Configuration.UI_MODE_NIGHT_YES,
