@@ -34,10 +34,17 @@ fun UserAddressView(chatModel: ChatModel, nav: NavController) {
     },
     share = { userAddress: String -> shareText(cxt, userAddress) },
     deleteAddress = {
-      withApi {
-        chatModel.controller.apiDeleteUserAddress()
-        chatModel.userAddress.value = null
-      }
+      chatModel.alertManager.showAlertMsg(
+        title = "Delete address?",
+        text = "All your contacts will remain connected",
+        confirmText = "Delete",
+        onConfirm = {
+          withApi {
+            chatModel.controller.apiDeleteUserAddress()
+            chatModel.userAddress.value = null
+          }
+        }
+      )
     }
   )
 }
