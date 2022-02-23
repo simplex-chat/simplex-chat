@@ -4,17 +4,18 @@
 
 module Simplex.Chat.Markdown where
 
-import Control.Applicative ((<|>))
+import Control.Applicative (optional, (<|>))
 import Data.Aeson (ToJSON)
 import qualified Data.Aeson as J
 import Data.Attoparsec.Text (Parser)
 import qualified Data.Attoparsec.Text as A
 import Data.Bifunctor (second)
+import Data.Char (isDigit)
 import Data.Either (fromRight)
 import Data.Functor (($>))
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
-import Data.Maybe (isNothing)
+import Data.Maybe (fromMaybe, isNothing)
 import Data.String
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -152,11 +153,14 @@ markdownP = mconcat <$> A.many' fragmentP
     fragmentP =
       A.peekChar >>= \case
         Just ' ' -> unmarked <$> A.takeWhile (== ' ')
-        Just c -> case M.lookup c formats of
-          Just Secret -> A.char secretMD *> secretP
-          Just (Colored (FormatColor White)) -> A.char colorMD *> coloredP
-          Just f -> A.char c *> formattedP c "" f
-          Nothing -> wordP
+        Just '+' -> phoneP <|> wordP
+        Just c
+          | isDigit c -> phoneP <|> wordP
+          | otherwise -> case M.lookup c formats of
+            Just Secret -> A.char secretMD *> secretP
+            Just (Colored (FormatColor White)) -> A.char colorMD *> coloredP
+            Just f -> A.char c *> formattedP c "" f
+            Nothing -> wordP
         Nothing -> fail ""
     formattedP :: Char -> Text -> Format -> Parser Markdown
     formattedP c p f = do
@@ -185,31 +189,23 @@ markdownP = mconcat <$> A.many' fragmentP
            in (A.char ' ' *> formattedP colorMD (cStr `T.snoc` ' ') f)
                 <|> noFormat (colorMD `T.cons` cStr)
         _ -> noFormat (colorMD `T.cons` cStr)
+    phoneP = do
+      country <- optional $ T.cons <$> A.char '+' <*> A.takeWhile1 isDigit
+      code <- optional $ conc4 <$> phoneSep <*> "(" <*> A.takeWhile1 isDigit <*> ")"
+      segments <- mconcat <$> A.many' ((<>) <$> phoneSep <*> A.takeWhile1 isDigit)
+      let s = fromMaybe "" country <> fromMaybe "" code <> segments
+          len = T.length s
+      if 7 <= len && len <= 22 then pure $ markdown Phone s else fail "not phone"
+    conc4 s1 s2 s3 s4 = s1 <> s2 <> s3 <> s4
+    phoneSep = " " <|> "-" <|> "." <|> ""
     wordP :: Parser Markdown
-    wordP =
-      (wordMD <$> A.takeTill (== ' ')) >>= \case
-        Markdown (Just Phone) digits -> phoneP digits
-        word -> pure word
+    wordP = wordMD <$> A.takeTill (== ' ')
     wordMD :: Text -> Markdown
     wordMD s
       | T.null s = unmarked s
       | isUri s = markdown Uri s
-      | isPhoneSegment s = markdown Phone s
       | isEmail s = markdown Email s
       | otherwise = unmarked s
     isUri s = "http://" `T.isPrefixOf` s || "https://" `T.isPrefixOf` s || "simplex:/" `T.isPrefixOf` s
     isEmail s = T.any (== '@') s && Email.isValid (encodeUtf8 s)
-    isPhoneSegment s = (T.head s == '+' && T.all phoneDigit (T.tail s)) || T.all phoneDigit s
-    phoneP digits = do
-      more <- mconcat <$> A.many' phoneSegment
-      let s = digits <> more
-          len = T.length s
-      pure $
-        if 7 <= len && len <= 22
-          then markdown Phone s
-          else unmarked s
-    phoneSegment = do
-      digits <- (<>) <$> " " <*> A.takeWhile phoneDigit
-      if T.length digits > 1 then pure digits else fail "only space"
-    phoneDigit = A.inClass "0123456789.()-"
     noFormat = pure . unmarked
