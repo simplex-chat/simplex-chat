@@ -7,10 +7,15 @@
 
 import SwiftUI
 
+func isValidDisplayName(_ name: String) -> Bool {
+    return !(self.rangeOfCharacter(from: .whitespacesAndNewlines) != nil)
+}
+
 struct WelcomeView: View {
     @EnvironmentObject var chatModel: ChatModel
     @State var displayName: String = ""
     @State var fullName: String = ""
+    @State var errorText: String = ""
 
     var body: some View {
         GeometryReader { g in
@@ -36,6 +41,17 @@ struct WelcomeView: View {
                     .textInputAutocapitalization(.never)
                     .disableAutocorrection(true)
                     .padding(.bottom)
+
+                Text(errorText)
+                    .foregroundColor(.red)
+                    .onChange(of: displayName) {
+                        if isValidDisplayName(displayName) {
+                            errorText = "Display name cannot contain whitespace."
+                        }
+                        else {
+                            errorText = ""
+                        }
+                    }
                 TextField("Full name (optional)", text: $fullName)
                     .textInputAutocapitalization(.never)
                     .disableAutocorrection(true)
