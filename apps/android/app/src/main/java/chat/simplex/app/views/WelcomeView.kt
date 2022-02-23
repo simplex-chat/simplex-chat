@@ -7,11 +7,15 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment.Companion.Center
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.model.Profile
@@ -96,7 +100,8 @@ fun CreateProfilePanel(chatModel: ChatModel, routeHome: () -> Unit) {
         .fillMaxWidth()
         .background(MaterialTheme.colors.secondary)
         .height(40.dp)
-        .clip(RoundedCornerShape(3.dp)),
+        .clip(RoundedCornerShape(3.dp))
+        .padding(8.dp),
       textStyle = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onBackground),
       keyboardOptions = KeyboardOptions(
         capitalization = KeyboardCapitalization.None,
@@ -104,14 +109,15 @@ fun CreateProfilePanel(chatModel: ChatModel, routeHome: () -> Unit) {
       ),
       singleLine = true
     )
-    if(!isValidDisplayName(displayName)) {
-      Text(
-        "Display name cannot contain whitespace.",
-        style = MaterialTheme.typography.body1,
-        color = MaterialTheme.colors.error
-      )
-    }
-    Spacer(Modifier.height(10.dp))
+    val errorText = if(!isValidDisplayName(displayName)) "Display name cannot contain whitespace." else ""
+
+    Text(
+      errorText,
+      fontSize = 15.sp,
+      color = MaterialTheme.colors.error
+    )
+
+    Spacer(Modifier.height(3.dp))
     Text(
       "Full Name (Optional)",
       style = MaterialTheme.typography.h6,
@@ -124,7 +130,8 @@ fun CreateProfilePanel(chatModel: ChatModel, routeHome: () -> Unit) {
         .fillMaxWidth()
         .background(MaterialTheme.colors.secondary)
         .height(40.dp)
-        .clip(RoundedCornerShape(3.dp)),
+        .clip(RoundedCornerShape(3.dp))
+        .padding(8.dp),
       textStyle = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onBackground),
       keyboardOptions = KeyboardOptions(
         capitalization = KeyboardCapitalization.None,
@@ -132,6 +139,7 @@ fun CreateProfilePanel(chatModel: ChatModel, routeHome: () -> Unit) {
       ),
       singleLine = true
     )
+    Spacer(Modifier.height(20.dp))
     Button(onClick = {
       withApi {
         val user = chatModel.controller.apiCreateActiveUser(
