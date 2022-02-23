@@ -18,9 +18,11 @@ import Data.Maybe (isNothing)
 import Data.String
 import Data.Text (Text)
 import qualified Data.Text as T
+import Data.Text.Encoding (encodeUtf8)
 import GHC.Generics
 import Simplex.Messaging.Parsers (fstToLower, sumTypeJSON)
 import System.Console.ANSI.Types
+import qualified Text.Email.Validate as Email
 
 data Markdown = Markdown (Maybe Format) Text | Markdown :|: Markdown
   deriving (Eq, Show)
@@ -28,7 +30,6 @@ data Markdown = Markdown (Maybe Format) Text | Markdown :|: Markdown
 data Format
   = Bold
   | Italic
-  | Underline
   | StrikeThrough
   | Snippet
   | Secret
@@ -100,7 +101,6 @@ formats =
   M.fromList
     [ ('*', Bold),
       ('_', Italic),
-      ('+', Underline),
       ('~', StrikeThrough),
       ('`', Snippet),
       (secretMD, Secret),
@@ -156,7 +156,7 @@ markdownP = mconcat <$> A.many' fragmentP
           Just Secret -> A.char secretMD *> secretP
           Just (Colored (FormatColor White)) -> A.char colorMD *> coloredP
           Just f -> A.char c *> formattedP c "" f
-          Nothing -> wordsP
+          Nothing -> wordP
         Nothing -> fail ""
     formattedP :: Char -> Text -> Format -> Parser Markdown
     formattedP c p f = do
@@ -185,18 +185,31 @@ markdownP = mconcat <$> A.many' fragmentP
            in (A.char ' ' *> formattedP colorMD (cStr `T.snoc` ' ') f)
                 <|> noFormat (colorMD `T.cons` cStr)
         _ -> noFormat (colorMD `T.cons` cStr)
-    wordsP :: Parser Markdown
-    wordsP = do
-      word <- wordMD <$> A.takeTill (== ' ')
-      s <- (word <>) <$> (unmarked <$> A.takeWhile (== ' '))
-      A.peekChar >>= \case
-        Nothing -> pure s
-        Just c -> case M.lookup c formats of
-          Just _ -> pure s
-          Nothing -> (s <>) <$> wordsP
+    wordP :: Parser Markdown
+    wordP =
+      (wordMD <$> A.takeTill (== ' ')) >>= \case
+        Markdown (Just Phone) digits -> phoneP digits
+        word -> pure word
     wordMD :: Text -> Markdown
     wordMD s
-      | "http://" `T.isPrefixOf` s || "https://" `T.isPrefixOf` s || "simplex:/" `T.isPrefixOf` s = markdown Uri s
+      | T.null s = unmarked s
+      | isUri s = markdown Uri s
+      | isPhoneSegment s = markdown Phone s
+      | isEmail s = markdown Email s
       | otherwise = unmarked s
-    noFormat :: Text -> Parser Markdown
+    isUri s = "http://" `T.isPrefixOf` s || "https://" `T.isPrefixOf` s || "simplex:/" `T.isPrefixOf` s
+    isEmail s = T.any (== '@') s && Email.isValid (encodeUtf8 s)
+    isPhoneSegment s = (T.head s == '+' && T.all phoneDigit (T.tail s)) || T.all phoneDigit s
+    phoneP digits = do
+      more <- mconcat <$> A.many' phoneSegment
+      let s = digits <> more
+          len = T.length s
+      pure $
+        if 7 <= len && len <= 22
+          then markdown Phone s
+          else unmarked s
+    phoneSegment = do
+      digits <- (<>) <$> " " <*> A.takeWhile phoneDigit
+      if T.length digits > 1 then pure digits else fail "only space"
+    phoneDigit = A.inClass "0123456789.()-"
     noFormat = pure . unmarked
