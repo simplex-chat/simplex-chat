@@ -5,6 +5,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.ClickableText
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.UriHandler
@@ -14,12 +15,13 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.model.CIDirection
 import chat.simplex.app.model.ChatItem
+import chat.simplex.app.ui.theme.LightGray
 import chat.simplex.app.ui.theme.SimpleXTheme
 import kotlinx.datetime.Clock
 
 // TODO move to theme
 val SentColorLight = Color(0x1E45B8FF)
-val ReceivedColorLight = Color(0x1EF1F0F5)
+val ReceivedColorLight = Color(0x1EB1B0B5)
 
 @ExperimentalTextApi
 @Composable
@@ -32,7 +34,7 @@ fun TextItemView(chatItem: ChatItem, uriHandler: UriHandler? = null) {
     Box(
       modifier = Modifier.padding(vertical = 6.dp, horizontal = 12.dp)
     ) {
-      Column {
+      Box(contentAlignment = Alignment.BottomEnd) {
         MarkdownText(chatItem, uriHandler = uriHandler)
         CIMetaView(chatItem)
       }
@@ -40,18 +42,24 @@ fun TextItemView(chatItem: ChatItem, uriHandler: UriHandler? = null) {
   }
 }
 
+val reserveTimestampStyle = SpanStyle(color = Color.Transparent)
+
 @ExperimentalTextApi
 @Composable
 fun MarkdownText (
   chatItem: ChatItem,
-  style: TextStyle = MaterialTheme.typography.body1,
+  style: TextStyle = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onBackground),
   maxLines: Int = Int.MAX_VALUE,
   overflow: TextOverflow = TextOverflow.Clip,
   uriHandler: UriHandler? = null,
   modifier: Modifier = Modifier
 ) {
   if (chatItem.formattedText == null) {
-    Text(chatItem.content.text, style = style, modifier = modifier, maxLines = maxLines, overflow = overflow)
+    val annotatedText = buildAnnotatedString {
+      append(chatItem.content.text)
+      withStyle(reserveTimestampStyle) { append("  ${chatItem.timestampText}") }
+    }
+    Text(annotatedText, style = style, modifier = modifier, maxLines = maxLines, overflow = overflow)
   } else {
     val annotatedText = buildAnnotatedString {
       for (ft in chatItem.formattedText) {
@@ -67,6 +75,7 @@ fun MarkdownText (
           }
         }
       }
+      withStyle(reserveTimestampStyle) { append("  ${chatItem.timestampText}") }
     }
     if (uriHandler != null) {
       ClickableText(annotatedText, style = style, modifier = modifier, maxLines = maxLines, overflow = overflow,
