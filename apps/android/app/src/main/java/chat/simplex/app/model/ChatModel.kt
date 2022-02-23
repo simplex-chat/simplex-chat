@@ -1,9 +1,14 @@
 package chat.simplex.app.model
 
 import android.net.Uri
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.material.MaterialTheme
+import androidx.compose.runtime.*
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.font.*
+import androidx.compose.ui.text.style.TextDecoration
 import chat.simplex.app.SimplexApp
+import chat.simplex.app.ui.theme.HighOrLowlight
 import kotlinx.datetime.*
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -568,7 +573,14 @@ sealed class MsgContent {
 }
 
 @Serializable
-class FormattedText(val text: String, val format: Format? = null)
+class FormattedText(val text: String, val format: Format? = null) {
+  val link: String? = when (format) {
+    is Format.Uri -> text
+    is Format.Email -> "mailto:$text"
+    is Format.Phone -> "tel:$text"
+    else -> null
+  }
+}
 
 @Serializable
 sealed class Format {
@@ -582,18 +594,46 @@ sealed class Format {
   @Serializable @SerialName("uri") class Uri: Format()
   @Serializable @SerialName("email") class Email: Format()
   @Serializable @SerialName("phone") class Phone: Format()
+
+  val style: SpanStyle @Composable get() = when (this) {
+    is Bold -> SpanStyle(fontWeight = FontWeight.Bold)
+    is Italic -> SpanStyle(fontStyle = FontStyle.Italic)
+    is Underline -> SpanStyle(textDecoration = TextDecoration.Underline)
+    is StrikeThrough -> SpanStyle(textDecoration = TextDecoration.LineThrough)
+    is Snippet -> SpanStyle(fontFamily = FontFamily.Monospace)
+    is Secret -> SpanStyle(color = HighOrLowlight, background = HighOrLowlight)
+    is Colored -> SpanStyle(color = this.formatColor.uiColor)
+    is Uri -> linkStyle
+    is Email -> linkStyle
+    is Phone -> linkStyle
+  }
+
+  companion object {
+    val linkStyle @Composable get() = SpanStyle(color = MaterialTheme.colors.primary, textDecoration = TextDecoration.Underline)
+  }
 }
 
 @Serializable
 enum class FormatColor(val color: String) {
-  Red("red"),
-  Green("green"),
-  Blue("blue"),
-  Yellow("yellow"),
-  Cyan("cyan"),
-  Magenta("magenta"),
-  Black("black"),
-  White("white")
+  red("red"),
+  green("green"),
+  blue("blue"),
+  yellow("yellow"),
+  cyan("cyan"),
+  magenta("magenta"),
+  black("black"),
+  white("white");
+
+  val uiColor: Color @Composable get() = when (this) {
+    red -> Color.Red
+    green -> Color.Green
+    blue -> Color.Blue
+    yellow -> Color.Yellow
+    cyan -> Color.Cyan
+    magenta -> Color.Magenta
+    black -> MaterialTheme.colors.onBackground
+    white -> MaterialTheme.colors.onBackground
+  }
 }
 
 @Serializable

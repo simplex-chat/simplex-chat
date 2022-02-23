@@ -671,7 +671,7 @@ enum Format: Decodable {
     case strikeThrough
     case snippet
     case secret
-    case colored(formatColor: FormatColor)
+    case colored(color: FormatColor)
     case uri
     case email
     case phone

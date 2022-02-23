@@ -32,7 +32,7 @@ data Format
   | StrikeThrough
   | Snippet
   | Secret
-  | Colored {formatColor :: FormatColor}
+  | Colored {color :: FormatColor}
   | Uri
   | Email
   | Phone
@@ -178,13 +178,13 @@ markdownP = mconcat <$> A.many' fragmentP
         ss = b <> s <> a
     coloredP :: Parser Markdown
     coloredP = do
-      color <- A.takeWhile (\c -> c /= ' ' && c /= colorMD)
-      case M.lookup color colors of
+      cStr <- A.takeWhile (\c -> c /= ' ' && c /= colorMD)
+      case M.lookup cStr colors of
         Just c ->
           let f = Colored c
-           in (A.char ' ' *> formattedP colorMD (color `T.snoc` ' ') f)
-                <|> noFormat (colorMD `T.cons` color)
-        _ -> noFormat (colorMD `T.cons` color)
+           in (A.char ' ' *> formattedP colorMD (cStr `T.snoc` ' ') f)
+                <|> noFormat (colorMD `T.cons` cStr)
+        _ -> noFormat (colorMD `T.cons` cStr)
     wordsP :: Parser Markdown
     wordsP = do
       word <- wordMD <$> A.takeTill (== ' ')

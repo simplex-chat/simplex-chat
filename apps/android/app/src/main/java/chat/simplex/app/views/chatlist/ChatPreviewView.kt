@@ -7,6 +7,7 @@ import androidx.compose.material.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.ExperimentalTextApi
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -15,10 +16,12 @@ import androidx.compose.ui.unit.sp
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.HighOrLowlight
 import chat.simplex.app.ui.theme.SimpleXTheme
+import chat.simplex.app.views.chat.item.MarkdownText
 import chat.simplex.app.views.helpers.ChatInfoImage
 import chat.simplex.app.views.helpers.badgeLayout
 import kotlinx.datetime.Clock
 
+@ExperimentalTextApi
 @Composable
 fun ChatPreviewView(chat: Chat, goToChat: () -> Unit) {
   Surface(
@@ -48,8 +51,8 @@ fun ChatPreviewView(chat: Chat, goToChat: () -> Unit) {
           fontWeight = FontWeight.Bold
         )
         if (chat.chatItems.count() > 0) {
-          Text(
-            chat.chatItems.last().content.text,
+          MarkdownText(
+            chat.chatItems.last(),
             maxLines = 2,
             overflow = TextOverflow.Ellipsis
           )
@@ -83,6 +86,7 @@ fun ChatPreviewView(chat: Chat, goToChat: () -> Unit) {
   }
 }
 
+@ExperimentalTextApi
 @Preview
 @Composable
 fun ChatPreviewViewExample() {

@@ -11,6 +11,8 @@ import androidx.compose.material.icons.outlined.ArrowBack
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.text.ExperimentalTextApi
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -25,8 +27,8 @@ import chat.simplex.app.views.helpers.withApi
 import com.google.accompanist.insets.*
 import kotlinx.coroutines.*
 import kotlinx.datetime.Clock
-import java.util.*
 
+@ExperimentalTextApi
 @ExperimentalAnimatedInsets
 @DelicateCoroutinesApi
 @Composable
@@ -34,7 +36,6 @@ fun ChatView(chatModel: ChatModel, nav: NavController) {
   if (chatModel.chatId.value != null && chatModel.chats.count() > 0) {
     val chat: Chat? = chatModel.chats.firstOrNull { chat -> chat.chatInfo.id == chatModel.chatId.value }
     if (chat != null) {
-
       // TODO a more advanced version would mark as read only if in view
       LaunchedEffect(chat.chatItems) {
         delay(1000L)
@@ -70,6 +71,7 @@ fun ChatView(chatModel: ChatModel, nav: NavController) {
   }
 }
 
+@ExperimentalTextApi
 @DelicateCoroutinesApi
 @ExperimentalAnimatedInsets
 @Composable
@@ -134,15 +136,17 @@ fun ChatInfoToolbar(chat: Chat, back: () -> Unit, info: () -> Unit) {
   }
 }
 
+@ExperimentalTextApi
 @DelicateCoroutinesApi
 @ExperimentalAnimatedInsets
 @Composable
 fun ChatItemsList(chatItems: List<ChatItem>) {
   val listState = rememberLazyListState()
   val scope = rememberCoroutineScope()
+  val uriHandler = LocalUriHandler.current
   LazyColumn(state = listState) {
     items(chatItems) { cItem ->
-      ChatItemView(cItem)
+      ChatItemView(cItem, uriHandler)
     }
     val len = chatItems.count()
     if (len > 1) {
@@ -153,6 +157,7 @@ fun ChatItemsList(chatItems: List<ChatItem>) {
   }
 }
 
+@ExperimentalTextApi
 @ExperimentalAnimatedInsets
 @Preview(showBackground = true)
 @Preview(
