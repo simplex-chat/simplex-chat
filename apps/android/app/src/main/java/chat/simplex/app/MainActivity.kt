@@ -22,8 +22,7 @@ import chat.simplex.app.views.chat.ChatView
 import chat.simplex.app.views.chatlist.ChatListView
 import chat.simplex.app.views.helpers.withApi
 import chat.simplex.app.views.newchat.*
-import chat.simplex.app.views.usersettings.HelpView
-import chat.simplex.app.views.usersettings.UserProfileView
+import chat.simplex.app.views.usersettings.*
 import com.google.accompanist.insets.ExperimentalAnimatedInsets
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import kotlinx.coroutines.DelicateCoroutinesApi
@@ -54,6 +53,7 @@ class SimplexViewModel(application: Application): AndroidViewModel(application) 
   val chatModel = getApplication<SimplexApp>().chatModel
 }
 
+@ExperimentalTextApi
 @DelicateCoroutinesApi
 @ExperimentalPermissionsApi
 @ExperimentalMaterialApi
@@ -116,6 +116,9 @@ fun Navigation(chatModel: ChatModel) {
       composable(route = Pages.UserProfile.route) {
         UserProfileView(chatModel, nav)
       }
+      composable(route = Pages.UserAddress.route) {
+        UserAddressView(chatModel, nav)
+      }
       composable(route = Pages.Help.route) {
         HelpView(chatModel, nav)
       }
@@ -136,6 +139,7 @@ sealed class Pages(val route: String) {
   object Connect: Pages("connect")
   object ChatInfo: Pages("chat_info")
   object UserProfile: Pages("user_profile")
+  object UserAddress: Pages("user_address")
   object Help: Pages("help")
 }
 

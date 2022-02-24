@@ -58,8 +58,40 @@ class SimplexApp: Application() {
       alertView.value = null
     }
 
-    fun showAlertMsg(title: String, text: String? = null,
-                     confirmText: String = "Ok", onConfirm: (() -> Unit)? = null) {
+    fun showAlertDialog(
+      title: String,
+      text: String? = null,
+      confirmText: String = "Ok",
+      onConfirm: (() -> Unit)? = null,
+      dismissText: String = "Cancel",
+      onDismiss: (() -> Unit)? = null
+    ) {
+      val alertText: (@Composable () -> Unit)? = if (text == null) null else { -> Text(text) }
+      showAlert {
+        AlertDialog(
+          onDismissRequest = this::hideAlert,
+          title = { Text(title) },
+          text = alertText,
+          confirmButton = {
+            Button(onClick = {
+              onConfirm?.invoke()
+              hideAlert()
+            }) { Text(confirmText) }
+          },
+          dismissButton = {
+            Button(onClick = {
+              onDismiss?.invoke()
+              hideAlert()
+            }) { Text(dismissText) }
+          }
+        )
+      }
+    }
+
+    fun showAlertMsg(
+      title: String, text: String? = null,
+      confirmText: String = "Ok", onConfirm: (() -> Unit)? = null
+    ) {
       val alertText: (@Composable () -> Unit)? = if (text == null) null else { -> Text(text) }
       showAlert {
         AlertDialog(

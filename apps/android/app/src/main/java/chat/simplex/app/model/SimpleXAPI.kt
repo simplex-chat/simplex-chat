@@ -23,6 +23,7 @@ open class ChatController(val ctrl: ChatCtrl, val alertManager: SimplexApp.Alert
     Log.d("SIMPLEX (user)", u.toString())
     try {
       apiStartChat()
+      chatModel.userAddress.value = apiGetUserAddress()
       chatModel.chats.addAll(apiGetChats())
       chatModel.chatsLoaded.value = true
       startReceiver()
@@ -221,7 +222,12 @@ open class ChatController(val ctrl: ChatCtrl, val alertManager: SimplexApp.Alert
         chatModel.updateNetworkStatus(r.contact, Chat.NetworkStatus.Connected())
 //        NtfManager.shared.notifyContactConnected(contact)
       }
-//      is CR.ReceivedContactRequest -> return
+      is CR.ReceivedContactRequest -> {
+        val contactRequest = r.contactRequest
+        val cInfo = ChatInfo.ContactRequest(contactRequest)
+        chatModel.addChat(Chat(chatInfo = cInfo, chatItems = listOf()))
+//        NtfManager.shared.notifyContactRequest(contactRequest)
+      }
       is CR.ContactUpdated -> {
         val cInfo = ChatInfo.Direct(r.toContact)
         if (chatModel.hasChat(r.toContact.id)) {
@@ -257,15 +263,6 @@ open class ChatController(val ctrl: ChatCtrl, val alertManager: SimplexApp.Alert
         chatModel.addChatItem(cInfo, cItem)
 //        NtfManager.shared.notifyMessageReceived(cInfo, cItem)
       }
-
-//      switch res {
-//        case let .receivedContactRequest(contactRequest):
-  //        chatModel.addChat(Chat(
-  //          chatInfo: ChatInfo.contactRequest(contactRequest: contactRequest),
-  //        chatItems: []
-  //        ))
-//          NtfManager.shared.notifyContactRequest(contactRequest)
-//
 //        case let .chatItemUpdated(aChatItem):
   //        let cInfo = aChatItem.chatInfo
   //            let cItem = aChatItem.chatItem

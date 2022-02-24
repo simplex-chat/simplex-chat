@@ -21,7 +21,6 @@ import chat.simplex.app.Pages
 import chat.simplex.app.R
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.model.Profile
-import chat.simplex.app.ui.theme.HighOrLowlight
 import chat.simplex.app.ui.theme.SimpleXTheme
 
 @Composable
@@ -49,6 +48,7 @@ fun SettingsLayout(
       .fillMaxSize()
 //      .background(MaterialTheme.colors.background)
       .padding(8.dp)
+      .padding(top = 16.dp)
   ) {
     Text(
       "Your Settings",
@@ -87,15 +87,15 @@ fun SettingsLayout(
         Icon(
           Icons.Outlined.QrCode,
           contentDescription = "Address",
-          tint = HighOrLowlight,
+          tint = MaterialTheme.colors.onBackground,
         )
         Spacer(Modifier.padding(horizontal = 4.dp))
         Text(
           "Your SimpleX contact address",
-          color = HighOrLowlight
+          color = MaterialTheme.colors.onBackground
         )
       },
-      func = { println("navigate to address") }
+      func = { navigate(Pages.UserAddress.route) }
     )
     Spacer(Modifier.height(24.dp))
 
