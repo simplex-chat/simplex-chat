@@ -53,6 +53,7 @@ class SimplexViewModel(application: Application): AndroidViewModel(application) 
   val chatModel = getApplication<SimplexApp>().chatModel
 }
 
+@ExperimentalTextApi
 @DelicateCoroutinesApi
 @ExperimentalPermissionsApi
 @ExperimentalMaterialApi
