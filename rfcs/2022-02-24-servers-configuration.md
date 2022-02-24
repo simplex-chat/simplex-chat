@@ -1,0 +1,34 @@
+# Server configuration
+
+- in agent:
+  - Agent.Env.SQLite - move smpServers from AgentConfig to Env, make it TVar; keep "initialSmpServers" in AgentConfig?
+  - Agent - getSMPServer to read servers from Env and choose a random server
+  - Agent - new functional api - "useServers"
+  - ~~Agent.Protocol - new ACommand?~~
+- chat core:
+  - db:
+    - new table `servers`, server per row, single semantic field for now - `server_string`, saved/read using ToRow/FromRow, use type SMPServer. Have rowid for future (?)
+    - getServers method
+    - update - truncate and rewrite
+  - ChatCommand GetServers - new ChatResponse with list of SMPServers
+  - ChatCommand SetServers - ChatResponse Ok
+  - ChatCommand RestoreServers (DefaultServers?) - ChatResponse Ok, sets default servers
+    - ? if have checkbox to use defaults "as well" (add to list of custom servers) restore is not needed. Probably we don't need such option though
+  - agent config is populated using getServers
+- mobile chat:
+  - mobileChatOpts to be populated with initial servers on init (getServers)
+  - in ui:
+    - view in settings
+    - GetServers on start to populate (somewhat convoluted to get servers twice.. though we might be doing same for user)
+    - Confirm and Restore buttons
+    - validation
+      - TBD real-time validation
+      - fastest is validation on submit without detailed error
+      - maybe even faster - alternatively have 3 fields for entry per server - fingerprint, host, port - and build server strings (still validate to avoid hard crash?)
+- terminal chat:
+  - option use_default
+  - if use_default is given internally it uses same logic as RestoreServers
+  - if servers is given -> SetServers
+  - both should be disallowed
+  - if no is given existing servers are used
+  - no validation? (chat will crash on write to db if bad servers are provided)
