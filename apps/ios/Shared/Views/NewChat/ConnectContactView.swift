@@ -33,12 +33,14 @@ struct ConnectContactView: View {
     func processQRCode(_ resp: Result<ScanResult, ScanError>) {
         switch resp {
         case let .success(r):
-            do {
-                try apiConnect(connReq: r.string)
-                completed(nil)
-            } catch {
-                logger.error("ConnectContactView.processQRCode apiConnect error: \(error.localizedDescription)")
-                completed(error)
+            Task {
+                do {
+                    try await apiConnect(connReq: r.string)
+                    completed(nil)
+                } catch {
+                    logger.error("ConnectContactView.processQRCode apiConnect error: \(error.localizedDescription)")
+                    completed(error)
+                }
             }
         case let .failure(e):
             logger.error("ConnectContactView.processQRCode QR code error: \(e.localizedDescription)")

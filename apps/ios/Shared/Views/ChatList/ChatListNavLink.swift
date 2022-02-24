@@ -27,13 +27,17 @@ struct ChatListNavLink: View {
     private func chatView() -> some View {
         ChatView(chat: chat)
         .onAppear {
-            do {
-                let cInfo = chat.chatInfo
-                let chat = try apiGetChat(type: cInfo.chatType, id: cInfo.apiId)
-                chatModel.updateChatInfo(chat.chatInfo)
-                chatModel.chatItems = chat.chatItems
-            } catch {
-                logger.error("ChatListNavLink.chatView apiGetChatItems error: \(error.localizedDescription)")
+            Task {
+                do {
+                    let cInfo = chat.chatInfo
+                    let chat = try await apiGetChat(type: cInfo.chatType, id: cInfo.apiId)
+                    DispatchQueue.main.async {
+                        chatModel.updateChatInfo(chat.chatInfo)
+                        chatModel.chatItems = chat.chatItems
+                    }
+                } catch {
+                    logger.error("ChatListNavLink.chatView apiGetChatItems error: \(error.localizedDescription)")
+                }
             }
         }
     }
@@ -86,7 +90,7 @@ struct ChatListNavLink: View {
 
     private func markReadButton() -> some View {
         Button {
-            markChatRead(chat)
+            Task { await markChatRead(chat) }
         } label: {
             Label("Read", systemImage: "checkmark")
         }
@@ -96,7 +100,7 @@ struct ChatListNavLink: View {
     private func contactRequestNavLink(_ contactRequest: UserContactRequest) -> some View {
         ContactRequestView(contactRequest: contactRequest)
         .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-            Button { acceptContactRequest(contactRequest) }
+            Button { Task { await acceptContactRequest(contactRequest) } }
                 label: { Label("Accept", systemImage: "checkmark") }
                 .tint(Color.accentColor)
             Button(role: .destructive) {
@@ -108,8 +112,8 @@ struct ChatListNavLink: View {
         .frame(height: 80)
         .onTapGesture { showContactRequestDialog = true }
         .confirmationDialog("Connection request", isPresented: $showContactRequestDialog, titleVisibility: .visible) {
-            Button("Accept contact") { acceptContactRequest(contactRequest) }
-            Button("Reject contact (sender NOT notified)") { rejectContactRequest(contactRequest) }
+            Button("Accept contact") { Task { await acceptContactRequest(contactRequest) } }
+            Button("Reject contact (sender NOT notified)") { Task { await rejectContactRequest(contactRequest) } }
         }
     }
 
@@ -118,11 +122,15 @@ struct ChatListNavLink: View {
             title: Text("Delete contact?"),
             message: Text("Contact and all messages will be deleted"),
             primaryButton: .destructive(Text("Delete")) {
-                do {
-                    try apiDeleteChat(type: .direct, id: contact.apiId)
-                    chatModel.removeChat(contact.id)
-                } catch let error {
-                    logger.error("ChatListNavLink.deleteContactAlert apiDeleteChat error: \(error.localizedDescription)")
+                Task {
+                    do {
+                        try await apiDeleteChat(type: .direct, id: contact.apiId)
+                        DispatchQueue.main.async {
+                            chatModel.removeChat(contact.id)
+                        }
+                    } catch let error {
+                        logger.error("ChatListNavLink.deleteContactAlert apiDeleteChat error: \(error.localizedDescription)")
+                    }
                 }
             },
             secondaryButton: .cancel()
@@ -141,7 +149,7 @@ struct ChatListNavLink: View {
             title: Text("Reject contact request"),
             message: Text("The sender will NOT be notified"),
             primaryButton: .destructive(Text("Reject")) {
-                rejectContactRequest(contactRequest)
+                Task { await rejectContactRequest(contactRequest) }
             },
             secondaryButton: .cancel()
         )

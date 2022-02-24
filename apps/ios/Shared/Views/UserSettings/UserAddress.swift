@@ -35,11 +35,15 @@ struct UserAddress: View {
                             title: Text("Delete address?"),
                             message: Text("All your contacts will remain connected"),
                             primaryButton: .destructive(Text("Delete")) {
-                                do {
-                                    try apiDeleteUserAddress()
-                                    chatModel.userAddress = nil
-                                } catch let error {
-                                    logger.error("UserAddress apiDeleteUserAddress: \(error.localizedDescription)")
+                                Task {
+                                    do {
+                                        try await apiDeleteUserAddress()
+                                        DispatchQueue.main.async {
+                                            chatModel.userAddress = nil
+                                        }
+                                    } catch let error {
+                                        logger.error("UserAddress apiDeleteUserAddress: \(error.localizedDescription)")
+                                    }
                                 }
                             }, secondaryButton: .cancel()
                         )
@@ -48,10 +52,15 @@ struct UserAddress: View {
                 .frame(maxWidth: .infinity)
             } else {
                 Button {
-                    do {
-                        chatModel.userAddress = try apiCreateUserAddress()
-                    } catch let error {
-                        logger.error("UserAddress apiCreateUserAddress: \(error.localizedDescription)")
+                    Task {
+                        do {
+                            let userAddress = try await apiCreateUserAddress()
+                            DispatchQueue.main.async {
+                                chatModel.userAddress = userAddress
+                            }
+                        } catch let error {
+                            logger.error("UserAddress apiCreateUserAddress: \(error.localizedDescription)")
+                        }
                     }
                 } label: { Label("Create address", systemImage: "qrcode") }
                 .frame(maxWidth: .infinity)
