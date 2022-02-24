@@ -38,7 +38,9 @@ struct UserAddress: View {
                                 Task {
                                     do {
                                         try await apiDeleteUserAddress()
-                                        chatModel.userAddress = nil
+                                        DispatchQueue.main.async {
+                                            chatModel.userAddress = nil
+                                        }
                                     } catch let error {
                                         logger.error("UserAddress apiDeleteUserAddress: \(error.localizedDescription)")
                                     }
@@ -52,7 +54,10 @@ struct UserAddress: View {
                 Button {
                     Task {
                         do {
-                            chatModel.userAddress = try await apiCreateUserAddress()
+                            let userAddress = try await apiCreateUserAddress()
+                            DispatchQueue.main.async {
+                                chatModel.userAddress = userAddress
+                            }
                         } catch let error {
                             logger.error("UserAddress apiCreateUserAddress: \(error.localizedDescription)")
                         }
