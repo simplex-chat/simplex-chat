@@ -280,14 +280,14 @@ processChatCommand = \case
         let userRole = memberRole (membership :: GroupMember)
         when (userRole < GRAdmin || userRole < mRole) $ throwChatError CEGroupUserRole
         withChatLock . procCmd $ do
-          when (mStatus /= GSMemInvited) . void . sendGroupMessage members $ XGrpMemDel mId
+          when (mStatus /= GSMemInvited) . void . sendGroupMessage gInfo members $ XGrpMemDel mId
           deleteMemberConnection m
           withStore $ \st -> updateGroupMemberStatus st userId m GSMemRemoved
           pure $ CRUserDeletedMember gInfo m
   LeaveGroup gName -> withUser $ \user@User {userId} -> do
     Group gInfo@GroupInfo {membership} members <- withStore $ \st -> getGroupByName st user gName
     withChatLock . procCmd $ do
-      void $ sendGroupMessage members XGrpLeave
+      void $ sendGroupMessage gInfo members XGrpLeave
       mapM_ deleteMemberConnection members
       withStore $ \st -> updateGroupMemberStatus st userId membership GSMemLeft
       pure $ CRLeftMemberUser gInfo
@@ -299,7 +299,7 @@ processChatCommand = \case
             || (s == GSMemRemoved || s == GSMemLeft || s == GSMemGroupDeleted || s == GSMemInvited)
     unless canDelete $ throwChatError CEGroupUserRole
     withChatLock . procCmd $ do
-      when (memberActive membership) . void $ sendGroupMessage members XGrpDel
+      when (memberActive membership) . void $ sendGroupMessage gInfo members XGrpDel
       mapM_ deleteMemberConnection members
       withStore $ \st -> deleteGroup st user g
       pure $ CRGroupDeletedUser gInfo
@@ -701,7 +701,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
             setActive $ ActiveG gName
             showToast ("#" <> gName) $ "member " <> localDisplayName (m :: GroupMember) <> " is connected"
             intros <- withStore $ \st -> createIntroductions st members m
-            void . sendGroupMessage members . XGrpMemNew $ memberInfo m
+            void . sendGroupMessage gInfo members . XGrpMemNew $ memberInfo m
             forM_ intros $ \intro@GroupMemberIntro {introId} -> do
               void . sendDirectMessage conn . XGrpMemIntro . memberInfo $ reMember intro
               withStore $ \st -> updateIntroStatus st introId GMIntroSent
@@ -1023,7 +1023,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
             Nothing -> messageError "x.grp.mem.inv error: referenced member does not exists"
             Just reMember -> do
               GroupMemberIntro {introId} <- withStore $ \st -> saveIntroInvitation st reMember m introInv
-              void $ sendXGrpMemInv reMember (XGrpMemFwd (memberInfo m) introInv) introId
+              void $ sendXGrpMemInv gInfo reMember (XGrpMemFwd (memberInfo m) introInv) introId
         _ -> messageError "x.grp.mem.inv can be only sent by invitee member"
 
     xGrpMemFwd :: GroupInfo -> GroupMember -> MemberInfo -> IntroInvitation -> m ()
@@ -1206,16 +1206,16 @@ sendDirectContactMessage ct@Contact {activeConn = conn@Connection {connStatus}} 
     else throwChatError $ CEContactNotReady ct
 
 sendDirectMessage :: ChatMonad m => Connection -> ChatMsgEvent -> m MessageId
-sendDirectMessage conn chatMsgEvent = do
-  (msgId, msgBody) <- createSndMessage chatMsgEvent
+sendDirectMessage conn@Connection {connId} chatMsgEvent = do
+  (msgId, msgBody) <- createSndMessage chatMsgEvent (Just connId) Nothing
   deliverMessage conn msgBody msgId
   pure msgId
 
-createSndMessage :: ChatMonad m => ChatMsgEvent -> m (MessageId, MsgBody)
-createSndMessage chatMsgEvent = do
+createSndMessage :: ChatMonad m => ChatMsgEvent -> Maybe Int64 -> Maybe Int64 -> m (MessageId, MsgBody)
+createSndMessage chatMsgEvent connId_ groupId_ = do
   let msgBody = directMessage chatMsgEvent
       newMsg = NewMessage {direction = MDSnd, cmEventTag = toCMEventTag chatMsgEvent, msgBody}
-  msgId <- withStore $ \st -> createNewMessage st newMsg
+  msgId <- withStore $ \st -> createNewMessage st newMsg connId_ groupId_
   pure (msgId, msgBody)
 
 directMessage :: ChatMsgEvent -> ByteString
@@ -1227,18 +1227,18 @@ deliverMessage conn@Connection {connId} msgBody msgId = do
   let sndMsgDelivery = SndMsgDelivery {connId, agentMsgId}
   withStore $ \st -> createSndMsgDelivery st sndMsgDelivery msgId
 
-sendGroupMessage :: ChatMonad m => [GroupMember] -> ChatMsgEvent -> m MessageId
-sendGroupMessage members chatMsgEvent =
-  sendGroupMessage' members chatMsgEvent Nothing $ pure ()
+sendGroupMessage :: ChatMonad m => GroupInfo -> [GroupMember] -> ChatMsgEvent -> m MessageId
+sendGroupMessage GroupInfo {groupId} members chatMsgEvent =
+  sendGroupMessage' members chatMsgEvent groupId Nothing $ pure ()
 
-sendXGrpMemInv :: ChatMonad m => GroupMember -> ChatMsgEvent -> Int64 -> m MessageId
-sendXGrpMemInv reMember chatMsgEvent introId =
-  sendGroupMessage' [reMember] chatMsgEvent (Just introId) $
+sendXGrpMemInv :: ChatMonad m => GroupInfo -> GroupMember -> ChatMsgEvent -> Int64 -> m MessageId
+sendXGrpMemInv GroupInfo {groupId} reMember chatMsgEvent introId =
+  sendGroupMessage' [reMember] chatMsgEvent groupId (Just introId) $
     withStore (\st -> updateIntroStatus st introId GMIntroInvForwarded)
 
-sendGroupMessage' :: ChatMonad m => [GroupMember] -> ChatMsgEvent -> Maybe Int64 -> m () -> m MessageId
-sendGroupMessage' members chatMsgEvent introId_ postDeliver = do
-  (msgId, msgBody) <- createSndMessage chatMsgEvent
+sendGroupMessage' :: ChatMonad m => [GroupMember] -> ChatMsgEvent -> Int64 -> Maybe Int64 -> m () -> m MessageId
+sendGroupMessage' members chatMsgEvent groupId introId_ postDeliver = do
+  (msgId, msgBody) <- createSndMessage chatMsgEvent Nothing (Just groupId)
   -- TODO collect failed deliveries into a single error
   forM_ (filter memberCurrent members) $ \m@GroupMember {groupMemberId} ->
     case memberConn m of
@@ -1277,7 +1277,7 @@ sendDirectChatItem userId ct chatMsgEvent ciContent = do
 
 sendGroupChatItem :: ChatMonad m => UserId -> Group -> ChatMsgEvent -> CIContent 'MDSnd -> m (ChatItem 'CTGroup 'MDSnd)
 sendGroupChatItem userId (Group g ms) chatMsgEvent ciContent = do
-  msgId <- sendGroupMessage ms chatMsgEvent
+  msgId <- sendGroupMessage g ms chatMsgEvent
   saveSndChatItem userId (CDGroupSnd g) msgId ciContent
 
 saveSndChatItem :: ChatMonad m => UserId -> ChatDirection c 'MDSnd -> MessageId -> CIContent 'MDSnd -> m (ChatItem c 'MDSnd)
