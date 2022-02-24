@@ -6,8 +6,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
@@ -82,19 +81,24 @@ fun TerminalLog(terminalItems: List<TerminalItem>, navigate: (String) -> Unit) {
 @Composable
 fun DetailView(identifier: Long, terminalItems: List<TerminalItem>, navController: NavController){
   val context = LocalContext.current
+  var x by remember { mutableStateOf<Int>(0) }
   Column(
     modifier = Modifier.verticalScroll(rememberScrollState())
   ) {
     Button(onClick = { navController.popBackStack() }) {
       Text("Back")
     }
-    Button(onClick = { notification(
-      context,
-      "SimpleXNotifications",
-      "Test Notification",
-      "Lorem Ipsum Dolor Sit Amet",
-      1
-    ) }) {
+    Button(onClick = {
+      notification(
+        context,
+        "SimpleXNotifications",
+        "Test Notification",
+        "Lorem Ipsum Dolor Sit Amet",
+        x
+    )
+      x += 1
+    }
+    ) {
       Text("Test Notification")
     }
     SelectionContainer {
