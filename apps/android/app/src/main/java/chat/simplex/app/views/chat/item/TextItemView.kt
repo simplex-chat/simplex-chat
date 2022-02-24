@@ -47,11 +47,9 @@ val boldFont = SpanStyle(fontWeight = FontWeight.Bold)
 
 fun appendGroupMember(b: AnnotatedString.Builder, chatItem: ChatItem, groupMemberBold: Boolean) {
   if (chatItem.chatDir is CIDirection.GroupRcv) {
-    if (groupMemberBold) {
-      b.withStyle(boldFont) { append(chatItem.chatDir.groupMember.memberProfile.displayName) }
-    } else {
-      b.append(chatItem.chatDir.groupMember.memberProfile.displayName)
-    }
+    val name = chatItem.chatDir.groupMember.memberProfile.displayName
+    if (groupMemberBold) b.withStyle(boldFont) { append(name) }
+    else b.append(name)
     b.append(": ")
   }
 }
