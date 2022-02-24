@@ -14,7 +14,7 @@ import kotlin.concurrent.thread
 typealias ChatCtrl = Long
 
 @DelicateCoroutinesApi
-open class ChatController(val ctrl: ChatCtrl, val alertManager: SimplexApp.AlertManager) {
+open class ChatController(val ctrl: ChatCtrl, val alertManager: SimplexApp.AlertManager, val ntfManager: NtfManager) {
   var chatModel = ChatModel(this, alertManager)
 
   suspend fun startChat(u: User) {
@@ -137,9 +137,9 @@ open class ChatController(val ctrl: ChatCtrl, val alertManager: SimplexApp.Alert
 
   suspend fun apiDeleteChat(type: ChatType, id: Long): Boolean {
     val r = sendCmd(CC.ApiDeleteChat(type, id))
-    when {
-      r is CR.ContactDeleted -> return true // TODO groups
-      r is CR.ChatCmdError -> {
+    when (r) {
+      is CR.ContactDeleted -> return true // TODO groups
+      is CR.ChatCmdError -> {
         val e = r.chatError
         if (e is ChatError.ChatErrorChat && e.errorType is ChatErrorType.ContactGroups) {
           alertManager.showAlertMsg(
@@ -261,7 +261,7 @@ open class ChatController(val ctrl: ChatCtrl, val alertManager: SimplexApp.Alert
         val cInfo = r.chatItem.chatInfo
         val cItem = r.chatItem.chatItem
         chatModel.addChatItem(cInfo, cItem)
-//        NtfManager.shared.notifyMessageReceived(cInfo, cItem)
+        ntfManager.notifyMessageReceived(cInfo, cItem)
       }
 //        case let .chatItemUpdated(aChatItem):
   //        let cInfo = aChatItem.chatInfo

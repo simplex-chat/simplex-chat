@@ -6,7 +6,6 @@ import android.util.Log
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.ui.platform.LocalContext
 import androidx.work.*
 import chat.simplex.app.model.*
 import chat.simplex.app.views.helpers.withApi
@@ -33,6 +32,7 @@ external fun chatRecvMsg(ctrl: ChatCtrl) : String
 class SimplexApp: Application() {
   private lateinit var controller: ChatController
   lateinit var chatModel: ChatModel
+  private lateinit var ntfManager: NtfManager
 
 
   fun initiateBackgroundWork() {
@@ -50,9 +50,10 @@ class SimplexApp: Application() {
 
   override fun onCreate() {
     super.onCreate()
-    createNotificationChannel("SimpleXNotifications", applicationContext)
+    ntfManager = NtfManager(applicationContext)
+    ntfManager.createNotificationChannel("SimpleXNotifications")
     val ctrl = chatInit(applicationContext.filesDir.toString())
-    controller = ChatController(ctrl, AlertManager())
+    controller = ChatController(ctrl, AlertManager(), ntfManager)
     chatModel = controller.chatModel
     withApi {
       val user = controller.apiGetActiveUser()
