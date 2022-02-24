@@ -9,12 +9,9 @@ import Data.Aeson (ToJSON)
 import qualified Data.Aeson as J
 import Data.Attoparsec.Text (Parser)
 import qualified Data.Attoparsec.Text as A
-import Data.Bifunctor (second)
 import Data.Char (isDigit)
 import Data.Either (fromRight)
 import Data.Functor (($>))
-import Data.Map.Strict (Map)
-import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe, isNothing)
 import Data.String
 import Data.Text (Text)
@@ -91,46 +88,6 @@ type MarkdownList = [FormattedText]
 unmarked :: Text -> Markdown
 unmarked = Markdown Nothing
 
-colorMD :: Char
-colorMD = '!'
-
-secretMD :: Char
-secretMD = '#'
-
-formats :: Map Char Format
-formats =
-  M.fromList
-    [ ('*', Bold),
-      ('_', Italic),
-      ('~', StrikeThrough),
-      ('`', Snippet),
-      (secretMD, Secret),
-      (colorMD, colored White)
-    ]
-
-colors :: Map Text FormatColor
-colors =
-  M.fromList . map (second FormatColor) $
-    [ ("red", Red),
-      ("green", Green),
-      ("blue", Blue),
-      ("yellow", Yellow),
-      ("cyan", Cyan),
-      ("magenta", Magenta),
-      ("r", Red),
-      ("g", Green),
-      ("b", Blue),
-      ("y", Yellow),
-      ("c", Cyan),
-      ("m", Magenta),
-      ("1", Red),
-      ("2", Green),
-      ("3", Blue),
-      ("4", Yellow),
-      ("5", Cyan),
-      ("6", Magenta)
-    ]
-
 parseMaybeMarkdownList :: Text -> Maybe MarkdownList
 parseMaybeMarkdownList s =
   let m = markdownToList $ parseMarkdown s
@@ -152,43 +109,59 @@ markdownP = mconcat <$> A.many' fragmentP
     fragmentP :: Parser Markdown
     fragmentP =
       A.peekChar >>= \case
-        Just ' ' -> unmarked <$> A.takeWhile (== ' ')
-        Just '+' -> phoneP <|> wordP
-        Just c
-          | isDigit c -> phoneP <|> wordP
-          | otherwise -> case M.lookup c formats of
-            Just Secret -> A.char secretMD *> secretP
-            Just (Colored (FormatColor White)) -> A.char colorMD *> coloredP
-            Just f -> A.char c *> formattedP c "" f
-            Nothing -> wordP
+        Just c -> case c of
+          ' ' -> unmarked <$> A.takeWhile (== ' ')
+          '+' -> phoneP <|> wordP
+          '*' -> formattedP '*' Bold
+          '_' -> formattedP '_' Italic
+          '~' -> formattedP '~' StrikeThrough
+          '`' -> formattedP '`' Snippet
+          '#' -> A.char '#' *> secretP
+          '!' -> coloredP <|> wordP
+          _
+            | isDigit c -> phoneP <|> wordP
+            | otherwise -> wordP
         Nothing -> fail ""
-    formattedP :: Char -> Text -> Format -> Parser Markdown
-    formattedP c p f = do
-      s <- A.takeTill (== c)
-      (A.char c $> md c p f s) <|> noFormat (c `T.cons` p <> s)
-    md :: Char -> Text -> Format -> Text -> Markdown
-    md c p f s
+    formattedP :: Char -> Format -> Parser Markdown
+    formattedP c f = do
+      s <- A.char c *> A.takeTill (== c)
+      (A.char c $> md c f s) <|> noFormat (c `T.cons` s)
+    md :: Char -> Format -> Text -> Markdown
+    md c f s
       | T.null s || T.head s == ' ' || T.last s == ' ' =
-        unmarked $ c `T.cons` p <> s `T.snoc` c
+        unmarked $ c `T.cons` s `T.snoc` c
       | otherwise = markdown f s
     secretP :: Parser Markdown
-    secretP = secret <$> A.takeWhile (== secretMD) <*> A.takeTill (== secretMD) <*> A.takeWhile (== secretMD)
+    secretP = secret <$> A.takeWhile (== '#') <*> A.takeTill (== '#') <*> A.takeWhile (== '#')
     secret :: Text -> Text -> Text -> Markdown
     secret b s a
       | T.null a || T.null s || T.head s == ' ' || T.last s == ' ' =
-        unmarked $ secretMD `T.cons` ss
+        unmarked $ '#' `T.cons` ss
       | otherwise = markdown Secret $ T.init ss
       where
         ss = b <> s <> a
     coloredP :: Parser Markdown
     coloredP = do
-      cStr <- A.takeWhile (\c -> c /= ' ' && c /= colorMD)
-      case M.lookup cStr colors of
-        Just c ->
-          let f = Colored c
-           in (A.char ' ' *> formattedP colorMD (cStr `T.snoc` ' ') f)
-                <|> noFormat (colorMD `T.cons` cStr)
-        _ -> noFormat (colorMD `T.cons` cStr)
+      clr <- A.char '!' *> colorP <* A.space
+      s <- ((<>) <$> A.takeWhile1 (\c -> c /= ' ' && c /= '!') <*> A.takeTill (== '!')) <* A.char '!'
+      if T.null s || T.last s == ' '
+        then fail "not colored"
+        else pure $ markdown (colored clr) s
+    colorP =
+      A.anyChar >>= \case
+        'r' -> "ed" $> Red <|> pure Red
+        'g' -> "reen" $> Green <|> pure Green
+        'b' -> "lue" $> Blue <|> pure Blue
+        'y' -> "ellow" $> Yellow <|> pure Yellow
+        'c' -> "yan" $> Cyan <|> pure Cyan
+        'm' -> "agenta" $> Magenta <|> pure Magenta
+        '1' -> pure Red
+        '2' -> pure Green
+        '3' -> pure Blue
+        '4' -> pure Yellow
+        '5' -> pure Cyan
+        '6' -> pure Magenta
+        _ -> fail "not color"
     phoneP = do
       country <- optional $ T.cons <$> A.char '+' <*> A.takeWhile1 isDigit
       code <- optional $ conc4 <$> phoneSep <*> "(" <*> A.takeWhile1 isDigit <*> ")"
