@@ -91,14 +91,6 @@ struct ChatPreviewView: View {
         default: return Text("")
         }
     }
-
-    private func chatItemText(_ cItem: ChatItem) -> String {
-        let t = cItem.content.text
-        if case let .groupRcv(groupMember) = cItem.chatDir {
-            return groupMember.memberProfile.displayName + ": " +  t
-        }
-        return t
-    }
 }
 
 struct ChatPreviewView_Previews: PreviewProvider {

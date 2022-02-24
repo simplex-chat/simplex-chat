@@ -84,7 +84,7 @@ func messageText(_ chatItem: ChatItem, preview: Bool = false) -> Text {
     }
 
     if case let .groupRcv(groupMember) = chatItem.chatDir {
-        let m = Text(groupMember.memberProfile.displayName).font(.headline)
+        let m = Text(groupMember.memberProfile.displayName)
         return (preview ? m : m.font(.headline)) + Text(": ") + res
     } else {
         return res
