@@ -70,7 +70,6 @@ sgr :: Format -> [SGR]
 sgr = \case
   Bold -> [SetConsoleIntensity BoldIntensity]
   Italic -> [SetUnderlining SingleUnderline, SetItalicized True]
-  Underline -> [SetUnderlining SingleUnderline]
   StrikeThrough -> [SetSwapForegroundBackground True]
   Colored (FormatColor c) -> [SetColor Foreground Vivid c]
   Secret -> [SetColor Foreground Dull Black, SetColor Background Dull Black]

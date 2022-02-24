@@ -152,7 +152,6 @@ markdownInfo =
     [ green "Markdown:",
       indent <> highlight "*bold*         " <> " - " <> markdown Bold "bold text",
       indent <> highlight "_italic_       " <> " - " <> markdown Italic "italic text" <> " (shown as underlined)",
-      indent <> highlight "+underlined+   " <> " - " <> markdown Underline "underlined text",
       indent <> highlight "~strikethrough~" <> " - " <> markdown StrikeThrough "strikethrough text" <> " (shown as inverse)",
       indent <> highlight "`code snippet` " <> " - " <> markdown Snippet "a + b // no *markdown* here",
       indent <> highlight "!1 text!       " <> " - " <> markdown (colored Red) "red text" <> " (1-6: red, green, blue, yellow, cyan, magenta)",
