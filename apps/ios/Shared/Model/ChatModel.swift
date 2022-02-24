@@ -676,15 +676,28 @@ enum Format: Decodable {
     case phone
 }
 
-enum FormatColor: Decodable {
-    case red
-    case green
-    case blue
-    case yellow
-    case cyan
-    case magenta
-    case black
-    case white
+enum FormatColor: String, Decodable {
+    case red = "red"
+    case green = "green"
+    case blue = "blue"
+    case yellow = "yellow"
+    case cyan = "cyan"
+    case magenta = "magenta"
+    case black = "black"
+    case white = "white"
 
-    // TODO custom decoding, it won't parse as is
+    var uiColor: Color {
+        get {
+            switch (self) {
+            case .red: return .red
+            case .green: return .green
+            case .blue: return .blue
+            case .yellow: return .yellow
+            case .cyan: return .cyan
+            case .magenta: return .purple
+            case .black: return .primary
+            case .white: return .primary
+            }
+        }
+    }
 }

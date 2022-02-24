@@ -8,13 +8,10 @@
 
 import SwiftUI
 
-private let emailRegex = try! NSRegularExpression(pattern: "^[a-z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)*$", options: .caseInsensitive)
-
-private let phoneRegex = try! NSRegularExpression(pattern: "^\\+?[0-9\\.\\(\\)\\-]{7,20}$")
-
 private let sentColorLight = Color(.sRGB, red: 0.27, green: 0.72, blue: 1, opacity: 0.12)
 private let sentColorDark = Color(.sRGB, red: 0.27, green: 0.72, blue: 1, opacity: 0.17)
-private let linkColor = UIColor(red: 0, green: 0.533, blue: 1, alpha: 1)
+private let uiLinkColor = UIColor(red: 0, green: 0.533, blue: 1, alpha: 1)
+private let linkColor = Color(uiColor: uiLinkColor)
 
 struct TextItemView: View {
     @Environment(\.colorScheme) var colorScheme
@@ -58,71 +55,10 @@ struct TextItemView: View {
         }
     }
 
-    private func messageText(_ chatItem: ChatItem) -> Text {
-        let s = chatItem.content.text
-        var res: Text
-        if s == "" {
-            res = Text("")
-        } else {
-            let parts = s.split(separator: " ")
-            res = wordToText(parts[0])
-            var i = 1
-            while i < parts.count {
-                res = res + Text(" ") + wordToText(parts[i])
-                i = i + 1
-            }
-        }
-        if case let .groupRcv(groupMember) = chatItem.chatDir {
-            let member = Text(groupMember.memberProfile.displayName).font(.headline)
-            return member + Text(": ") + res
-        } else {
-            return res
-        }
-    }
-
     private func reserveSpaceForMeta(_ meta: String) -> Text {
        Text("      \(meta)")
            .font(.caption)
            .foregroundColor(.clear)
-    }
-
-    private func wordToText(_ s: String.SubSequence) -> Text {
-        let str = String(s)
-        switch true {
-        case s.starts(with: "http://") || s.starts(with: "https://"):
-            return linkText(str, prefix: "")
-        case match(str, emailRegex):
-            return linkText(str, prefix: "mailto:")
-        case match(str, phoneRegex):
-            return linkText(str, prefix: "tel:")
-        default:
-            if (s.count > 1) {
-                switch true {
-                case s.first == "*" && s.last == "*": return mdText(s).bold()
-                case s.first == "_" && s.last == "_": return mdText(s).italic()
-                case s.first == "+" && s.last == "+": return mdText(s).underline()
-                case s.first == "~" && s.last == "~": return mdText(s).strikethrough()
-                default: return Text(s)
-                }
-            } else {
-                return Text(s)
-            }
-        }
-    }
-
-    private func match(_ s: String, _ regex: NSRegularExpression) -> Bool {
-        regex.firstMatch(in: s, options: [], range: NSRange(location: 0, length: s.count)) != nil
-    }
-
-    private func linkText(_ s: String, prefix: String) -> Text {
-        Text(AttributedString(s, attributes: AttributeContainer([
-            .link: NSURL(string: prefix + s) as Any,
-            .foregroundColor: linkColor as Any
-        ]))).underline()
-    }
-
-    private func mdText(_ s: String.SubSequence) -> Text {
-        Text(s[s.index(s.startIndex, offsetBy: 1)..<s.index(s.endIndex, offsetBy: -1)])
     }
 
     private func msgDeliveryError(_ err: String) {
@@ -131,6 +67,57 @@ struct TextItemView: View {
             message: err
         )
     }
+}
+
+func messageText(_ chatItem: ChatItem, preview: Bool = false) -> Text {
+    let s = chatItem.content.text
+    var res: Text
+    if let ft = chatItem.formattedText, ft.count > 0 {
+        res = formattedText(ft[0], preview)
+        var i = 1
+        while i < ft.count {
+            res = res + formattedText(ft[i], preview)
+            i = i + 1
+        }
+    } else {
+        res = Text(s)
+    }
+
+    if case let .groupRcv(groupMember) = chatItem.chatDir {
+        let m = Text(groupMember.memberProfile.displayName).font(.headline)
+        return (preview ? m : m.font(.headline)) + Text(": ") + res
+    } else {
+        return res
+    }
+}
+
+private func formattedText(_ ft: FormattedText, _ preview: Bool) -> Text {
+    let t = ft.text
+    if let f = ft.format {
+        switch (f) {
+        case .bold: return Text(t).bold()
+        case .italic: return Text(t).italic()
+        case .strikeThrough: return Text(t).strikethrough()
+        case .snippet: return Text(t).font(.body.monospaced())
+        case .secret: return Text(t).foregroundColor(.clear).underline(color: .primary)
+        case let .colored(color): return Text(t).foregroundColor(color.uiColor)
+        case .uri: return linkText(t, t, preview, prefix: "")
+        case .email: return linkText(t, t, preview, prefix: "mailto:")
+        case .phone: return linkText(t, t.replacingOccurrences(of: " ", with: ""), preview, prefix: "tel:")
+        }
+    } else {
+        return Text(t)
+    }
+}
+
+private func linkText(_ s: String, _ link: String,
+                      _ preview: Bool, prefix: String) -> Text {
+    preview
+    ? Text(s).foregroundColor(linkColor).underline(color: linkColor)
+    : Text(AttributedString(s, attributes: AttributeContainer([
+        .link: NSURL(string: prefix + link) as Any,
+        .foregroundColor: uiLinkColor as Any
+    ]))).underline()
 }
 
 struct TextItemView_Previews: PreviewProvider {

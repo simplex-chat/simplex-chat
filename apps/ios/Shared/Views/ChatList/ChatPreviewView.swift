@@ -51,7 +51,7 @@ struct ChatPreviewView: View {
 
                 if let cItem = cItem {
                     ZStack(alignment: .topTrailing) {
-                        (itemStatusMark(cItem) + Text(chatItemText(cItem)))
+                        (itemStatusMark(cItem) + messageText(cItem, preview: true))
                             .frame(minWidth: 0, maxWidth: .infinity, minHeight: 44, maxHeight: 44, alignment: .topLeading)
                             .padding(.leading, 8)
                             .padding(.trailing, 36)
