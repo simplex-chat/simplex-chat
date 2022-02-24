@@ -45,8 +45,9 @@ class NtfManager(val context: Context) {
       .setSmallIcon(R.mipmap.icon)
       .setContentTitle(title)
       .setContentText(content)
-      .setContentIntent(pendingIntent)
       .setPriority(priority)
+      .setContentIntent(pendingIntent)
+      .setAutoCancel(true)
     with(NotificationManagerCompat.from(context)) {
       notify(notificationId, builder.build())
     }
