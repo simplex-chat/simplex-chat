@@ -11,18 +11,17 @@
       - getServers method
       - update - truncate and rewrite
   - ChatCommand GetServers - new ChatResponse with list of user SMPServers, it may be empty if default are used
-  - ChatCommand SetServers - ChatResponse Ok
-  - ChatCommand RestoreServers (DefaultServers?) - ChatResponse Ok, sets empty
+  - ChatCommand SetServers - ChatResponse Ok (restore default servers is empty set servers list)
   - agent config is populated using getServers, if it's empty default are used
 - mobile chat:
   - mobileChatOpts to be populated with initial servers on init (getServers or default if empty)
   - in ui:
     - view in settings
-    - GetServers on start to populate (somewhat convoluted to get servers twice.. though we might be doing same for user)
+    - GetServers on view open to populate
     - Confirm buttons, Restore button - destructive - clears user servers and default are used
     - validation
       - validation on submit, error with server's string
-      - TBD real-time validation
+      - ~~TBD real-time validation~~
       - ~~fastest is validation on submit without detailed error?~~
       - ~~maybe even faster - alternatively have 3 fields for entry per server - fingerprint, host, port - and build server strings (still validate to avoid hard crash?)?~~
 - terminal chat:
