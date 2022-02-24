@@ -667,7 +667,6 @@ struct FormattedText: Decodable {
 enum Format: Decodable {
     case bold
     case italic
-    case underline
     case strikeThrough
     case snippet
     case secret
