@@ -40,6 +40,7 @@ class MainActivity: ComponentActivity() {
     super.onCreate(savedInstanceState)
 //    testJson()
     connectIfOpenedViaUri(intent, vm.chatModel)
+    vm.app.initiateBackgroundWork()
     setContent {
       SimpleXTheme {
         Navigation(vm.chatModel)
@@ -50,7 +51,8 @@ class MainActivity: ComponentActivity() {
 
 @DelicateCoroutinesApi
 class SimplexViewModel(application: Application): AndroidViewModel(application) {
-  val chatModel = getApplication<SimplexApp>().chatModel
+  val app = getApplication<SimplexApp>()
+  val chatModel = app.chatModel
 }
 
 @ExperimentalTextApi

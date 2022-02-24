@@ -6,14 +6,16 @@ import android.util.Log
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
-import chat.simplex.app.model.ChatController
-import chat.simplex.app.model.ChatModel
+import androidx.compose.ui.platform.LocalContext
+import androidx.work.*
+import chat.simplex.app.model.*
 import chat.simplex.app.views.helpers.withApi
 import kotlinx.coroutines.DelicateCoroutinesApi
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.util.*
 import java.util.concurrent.Semaphore
+import java.util.concurrent.TimeUnit
 import kotlin.concurrent.thread
 
 // ghc's rts
@@ -32,8 +34,23 @@ class SimplexApp: Application() {
   private lateinit var controller: ChatController
   lateinit var chatModel: ChatModel
 
+
+  fun initiateBackgroundWork() {
+    val backgroundConstraints = Constraints.Builder()
+      .setRequiredNetworkType(NetworkType.CONNECTED)
+      .build()
+    val request = OneTimeWorkRequestBuilder<BackgroundAPIWorker>()
+      .setInitialDelay(5, TimeUnit.MINUTES)
+      .setConstraints(backgroundConstraints)
+      .build()
+    WorkManager.getInstance(applicationContext)
+      .enqueue(request)
+  }
+
+
   override fun onCreate() {
     super.onCreate()
+    createNotificationChannel("SimpleXNotifications", applicationContext)
     val ctrl = chatInit(applicationContext.filesDir.toString())
     controller = ChatController(ctrl, AlertManager())
     chatModel = controller.chatModel
