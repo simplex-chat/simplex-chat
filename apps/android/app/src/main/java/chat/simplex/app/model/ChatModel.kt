@@ -586,11 +586,10 @@ class FormattedText(val text: String, val format: Format? = null) {
 sealed class Format {
   @Serializable @SerialName("bold") class Bold: Format()
   @Serializable @SerialName("italic") class Italic: Format()
-  @Serializable @SerialName("underline") class Underline: Format()
   @Serializable @SerialName("strikeThrough") class StrikeThrough: Format()
   @Serializable @SerialName("snippet") class Snippet: Format()
   @Serializable @SerialName("secret") class Secret: Format()
-  @Serializable @SerialName("colored") class Colored(val formatColor: FormatColor): Format()
+  @Serializable @SerialName("colored") class Colored(val color: FormatColor): Format()
   @Serializable @SerialName("uri") class Uri: Format()
   @Serializable @SerialName("email") class Email: Format()
   @Serializable @SerialName("phone") class Phone: Format()
@@ -598,11 +597,10 @@ sealed class Format {
   val style: SpanStyle @Composable get() = when (this) {
     is Bold -> SpanStyle(fontWeight = FontWeight.Bold)
     is Italic -> SpanStyle(fontStyle = FontStyle.Italic)
-    is Underline -> SpanStyle(textDecoration = TextDecoration.Underline)
     is StrikeThrough -> SpanStyle(textDecoration = TextDecoration.LineThrough)
     is Snippet -> SpanStyle(fontFamily = FontFamily.Monospace)
     is Secret -> SpanStyle(color = HighOrLowlight, background = HighOrLowlight)
-    is Colored -> SpanStyle(color = this.formatColor.uiColor)
+    is Colored -> SpanStyle(color = this.color.uiColor)
     is Uri -> linkStyle
     is Email -> linkStyle
     is Phone -> linkStyle

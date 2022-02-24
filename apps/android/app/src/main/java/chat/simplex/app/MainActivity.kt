@@ -10,6 +10,7 @@ import androidx.activity.viewModels
 import androidx.compose.foundation.layout.Box
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.text.ExperimentalTextApi
 import androidx.lifecycle.AndroidViewModel
 import androidx.navigation.*
 import androidx.navigation.compose.*
@@ -28,6 +29,7 @@ import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.serialization.decodeFromString
 
+@ExperimentalTextApi
 @DelicateCoroutinesApi
 @ExperimentalAnimatedInsets
 @ExperimentalPermissionsApi
@@ -64,6 +66,7 @@ fun MainPage(chatModel: ChatModel, nav: NavController) {
   }
 }
 
+@ExperimentalTextApi
 @ExperimentalAnimatedInsets
 @DelicateCoroutinesApi
 @ExperimentalPermissionsApi
