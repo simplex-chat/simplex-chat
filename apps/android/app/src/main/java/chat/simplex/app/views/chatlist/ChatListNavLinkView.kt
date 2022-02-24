@@ -52,7 +52,7 @@ fun chatNavLink(chatPreview: Chat, chatModel: ChatModel, navController: NavContr
 
 @DelicateCoroutinesApi
 fun contactRequestNavLink(contactRequest: ChatInfo.ContactRequest, chatModel: ChatModel, navController: NavController) {
-  chatModel.alertManager.showAlertMsg(
+  chatModel.alertManager.showAlertDialog(
     title = "Accept connection request?",
     text = "If you choose to reject sender will NOT be notified",
     confirmText = "Accept",
