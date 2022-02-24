@@ -7,28 +7,24 @@
   - ~~Agent.Protocol - new ACommand?~~
 - chat core:
   - db:
-    - new table `servers`, server per row, single semantic field for now - `server_string`, saved/read using ToRow/FromRow, use type SMPServer. Have rowid for future (?)
-    - getServers method
-    - update - truncate and rewrite
-  - ChatCommand GetServers - new ChatResponse with list of SMPServers
+    - new table `smp_servers`, server per row, same columns as for agent. Have rowid for future
+      - getServers method
+      - update - truncate and rewrite
+  - ChatCommand GetServers - new ChatResponse with list of user SMPServers, it may be empty if default are used
   - ChatCommand SetServers - ChatResponse Ok
-  - ChatCommand RestoreServers (DefaultServers?) - ChatResponse Ok, sets default servers
-    - ? if have checkbox to use defaults "as well" (add to list of custom servers) restore is not needed. Probably we don't need such option though
-  - agent config is populated using getServers
+  - ChatCommand RestoreServers (DefaultServers?) - ChatResponse Ok, sets empty
+  - agent config is populated using getServers, if it's empty default are used
 - mobile chat:
-  - mobileChatOpts to be populated with initial servers on init (getServers)
+  - mobileChatOpts to be populated with initial servers on init (getServers or default if empty)
   - in ui:
     - view in settings
     - GetServers on start to populate (somewhat convoluted to get servers twice.. though we might be doing same for user)
-    - Confirm and Restore buttons
+    - Confirm buttons, Restore button - destructive - clears user servers and default are used
     - validation
+      - validation on submit, error with server's string
       - TBD real-time validation
-      - fastest is validation on submit without detailed error
-      - maybe even faster - alternatively have 3 fields for entry per server - fingerprint, host, port - and build server strings (still validate to avoid hard crash?)
+      - ~~fastest is validation on submit without detailed error?~~
+      - ~~maybe even faster - alternatively have 3 fields for entry per server - fingerprint, host, port - and build server strings (still validate to avoid hard crash?)?~~
 - terminal chat:
-  - option use_default
-  - if use_default is given internally it uses same logic as RestoreServers
-  - if servers is given -> SetServers
-  - both should be disallowed
-  - if no is given existing servers are used
-  - no validation? (chat will crash on write to db if bad servers are provided)
+  - if -s option is given, these servers are used and getServers is not used for populating agentConfig
+  - if -s option is not provided - same as in mobile - getServers or default if empty
