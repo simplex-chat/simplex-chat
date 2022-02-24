@@ -97,7 +97,7 @@ final class ChatModel: ObservableObject {
             if case .rcvNew = cItem.meta.itemStatus {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
                     if self.chatId == cInfo.id {
-                        SimpleX.markChatItemRead(cInfo, cItem)
+                        Task { await SimpleX.markChatItemRead(cInfo, cItem) }
                     }
                 }
             }
