@@ -9,10 +9,12 @@ import androidx.compose.ui.text.font.*
 import androidx.compose.ui.text.style.TextDecoration
 import chat.simplex.app.SimplexApp
 import chat.simplex.app.ui.theme.*
+import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.datetime.*
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
+@DelicateCoroutinesApi
 class ChatModel(val controller: ChatController, val alertManager: SimplexApp.AlertManager) {
   var currentUser = mutableStateOf<User?>(null)
   var userCreated = mutableStateOf<Boolean?>(null)
@@ -329,6 +331,12 @@ class Contact(
 }
 
 @Serializable
+class ContactSubStatus(
+  val contact: Contact,
+  val contactError: ChatError? = null
+)
+
+@Serializable
 class Connection(val connStatus: String) {
   companion object {
     val sampleData = Connection(connStatus = "ready")
@@ -408,6 +416,12 @@ class GroupMember (
     )
   }
 }
+
+@Serializable
+class MemberSubError (
+  val member: GroupMember,
+  val memberError: ChatError
+)
 
 @Serializable
 class UserContactRequest (

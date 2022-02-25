@@ -243,28 +243,18 @@ open class ChatController(val ctrl: ChatCtrl, val alertManager: SimplexApp.Alert
           chatModel.updateChatInfo(cInfo)
         }
       }
-      is CR.ContactSubscribed -> {
-        chatModel.updateContact(r.contact)
-        chatModel.updateNetworkStatus(r.contact, Chat.NetworkStatus.Connected())
-      }
+      is CR.ContactSubscribed -> processContactSubscribed(r.contact)
       is CR.ContactDisconnected -> {
         chatModel.updateContact(r.contact)
         chatModel.updateNetworkStatus(r.contact, Chat.NetworkStatus.Disconnected())
       }
-      is CR.ContactSubError -> {
-        chatModel.updateContact(r.contact)
-        val e = r.chatError
-        val err: String =
-          if (e is ChatError.ChatErrorAgent) {
-            val a = e.agentError
-            when {
-              a is AgentErrorType.BROKER && a.brokerErr is BrokerErrorType.NETWORK -> "network"
-              a is AgentErrorType.SMP && a.smpErr is SMPErrorType.AUTH -> "contact deleted"
-              else -> e.string
-            }
-          }
-          else e.string
-        chatModel.updateNetworkStatus(r.contact, Chat.NetworkStatus.Error(err))
+      is CR.ContactSubError -> processContactSubError(r.contact, r.chatError)
+      is CR.ContactSubSummary -> {
+        for (sub in r.contactSubscriptions) {
+          val err = sub.contactError
+          if (err == null) processContactSubscribed(sub.contact)
+          else processContactSubError(sub.contact, sub.contactError)
+        }
       }
       is CR.NewChatItem -> {
         val cInfo = r.chatItem.chatInfo
@@ -282,6 +272,27 @@ open class ChatController(val ctrl: ChatCtrl, val alertManager: SimplexApp.Alert
 //        logger.debug("unsupported event: \(res.responseType)")
 //      }
     }
+  }
+
+  fun processContactSubscribed(contact: Contact) {
+    chatModel.updateContact(contact)
+    chatModel.updateNetworkStatus(contact, Chat.NetworkStatus.Connected())
+  }
+
+  fun processContactSubError(contact: Contact, chatError: ChatError) {
+    chatModel.updateContact(contact)
+    val e = chatError
+    val err: String =
+      if (e is ChatError.ChatErrorAgent) {
+        val a = e.agentError
+        when {
+          a is AgentErrorType.BROKER && a.brokerErr is BrokerErrorType.NETWORK -> "network"
+          a is AgentErrorType.SMP && a.smpErr is SMPErrorType.AUTH -> "contact deleted"
+          else -> e.string
+        }
+      }
+      else e.string
+    chatModel.updateNetworkStatus(contact, Chat.NetworkStatus.Error(err))
   }
 }
 
@@ -403,7 +414,9 @@ sealed class CR {
   @Serializable @SerialName("contactSubscribed") class ContactSubscribed(val contact: Contact): CR()
   @Serializable @SerialName("contactDisconnected") class ContactDisconnected(val contact: Contact): CR()
   @Serializable @SerialName("contactSubError") class ContactSubError(val contact: Contact, val chatError: ChatError): CR()
+  @Serializable @SerialName("contactSubSummary") class ContactSubSummary(val contactSubscriptions: List<ContactSubStatus>): CR()
   @Serializable @SerialName("groupSubscribed") class GroupSubscribed(val group: GroupInfo): CR()
+  @Serializable @SerialName("memberSubErrors") class MemberSubErrors(val memberSubErrors: List<MemberSubError>): CR()
   @Serializable @SerialName("groupEmpty") class GroupEmpty(val group: GroupInfo): CR()
   @Serializable @SerialName("userContactLinkSubscribed") class UserContactLinkSubscribed: CR()
   @Serializable @SerialName("newChatItem") class NewChatItem(val chatItem: AChatItem): CR()
@@ -437,7 +450,9 @@ sealed class CR {
     is ContactSubscribed -> "contactSubscribed"
     is ContactDisconnected -> "contactDisconnected"
     is ContactSubError -> "contactSubError"
+    is ContactSubSummary -> "contactSubSummary"
     is GroupSubscribed -> "groupSubscribed"
+    is MemberSubErrors -> "memberSubErrors"
     is GroupEmpty -> "groupEmpty"
     is UserContactLinkSubscribed -> "userContactLinkSubscribed"
     is NewChatItem -> "newChatItem"
@@ -472,7 +487,9 @@ sealed class CR {
     is ContactSubscribed -> json.encodeToString(contact)
     is ContactDisconnected -> json.encodeToString(contact)
     is ContactSubError -> "error:\n${chatError.string}\ncontact:\n${json.encodeToString(contact)}"
+    is ContactSubSummary -> json.encodeToString(contactSubscriptions)
     is GroupSubscribed -> json.encodeToString(group)
+    is MemberSubErrors -> json.encodeToString(memberSubErrors)
     is GroupEmpty -> json.encodeToString(group)
     is UserContactLinkSubscribed -> noDetails()
     is NewChatItem -> json.encodeToString(chatItem)
