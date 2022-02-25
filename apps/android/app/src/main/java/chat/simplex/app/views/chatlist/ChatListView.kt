@@ -71,6 +71,9 @@ fun scaffoldController(): ScaffoldController {
 @ExperimentalMaterialApi
 @Composable
 fun ChatListView(chatModel: ChatModel, nav: NavController) {
+  LaunchedEffect(chatModel.currentlyViewingChatWithId.value){
+    chatModel.currentlyViewingChatWithId.value = null
+  }
   val scaffoldCtrl = scaffoldController()
   BottomSheetScaffold(
     scaffoldState = scaffoldCtrl.state,

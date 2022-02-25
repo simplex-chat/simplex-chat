@@ -270,7 +270,9 @@ open class ChatController(val ctrl: ChatCtrl, val alertManager: SimplexApp.Alert
         val cInfo = r.chatItem.chatInfo
         val cItem = r.chatItem.chatItem
         chatModel.addChatItem(cInfo, cItem)
-        ntfManager.notifyMessageReceived(cInfo, cItem)
+        if (chatModel.currentlyViewingChatWithId.value != cInfo.id) {
+          ntfManager.notifyMessageReceived(cInfo, cItem)
+        }
       }
 //        case let .chatItemUpdated(aChatItem):
   //        let cInfo = aChatItem.chatInfo

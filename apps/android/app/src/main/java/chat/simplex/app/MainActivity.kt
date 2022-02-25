@@ -98,6 +98,7 @@ fun Navigation(chatModel: ChatModel) {
         }
       }
       composable(route = Pages.ChatList.route) {
+        chatModel.currentlyViewingChatWithId.value = null
         ChatListView(chatModel, nav)
       }
       composable(route = Pages.Chat.route) {

@@ -38,6 +38,8 @@ fun ChatView(chatModel: ChatModel, nav: NavController) {
     if (chat != null) {
       // TODO a more advanced version would mark as read only if in view
       LaunchedEffect(chat.chatItems) {
+        chatModel.goToChatWithId.value = null
+        chatModel.currentlyViewingChatWithId.value = chat.id
         delay(1000L)
         if (chat.chatItems.count() > 0) {
           chatModel.markChatItemsRead(chat.chatInfo)
@@ -51,7 +53,11 @@ fun ChatView(chatModel: ChatModel, nav: NavController) {
         }
       }
       ChatLayout(chat, chatModel.chatItems,
-        back = { nav.popBackStack() },
+        back = {
+          // TODO do better by lifecycle hooks
+          chatModel.currentlyViewingChatWithId.value = null
+          nav.popBackStack()
+        },
         info = { nav.navigate(Pages.ChatInfo.route) },
         sendMessage = { msg ->
           withApi {
