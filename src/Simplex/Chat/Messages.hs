@@ -422,7 +422,7 @@ data PendingGroupMessage = PendingGroupMessage
 
 type MessageId = Int64
 
-type EitherConnIdGroupId = Either Int64 Int64
+data ConnOrGroupId = ConnectionId Int64 | GroupId Int64
 
 data MsgDirection = MDRcv | MDSnd
   deriving (Show, Generic)
