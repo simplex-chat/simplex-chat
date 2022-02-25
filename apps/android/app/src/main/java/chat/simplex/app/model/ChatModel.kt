@@ -20,6 +20,7 @@ class ChatModel(val controller: ChatController, val alertManager: SimplexApp.Ale
   var chatsLoaded = mutableStateOf<Boolean?>(null)
   var chatId = mutableStateOf<String?>(null)
   var chatItems = mutableStateListOf<ChatItem>()
+  var goToChatWithId = mutableStateOf<String?>(null)
 
   var connReqInvitation: String? = null
   var terminalItems = mutableStateListOf<TerminalItem>()

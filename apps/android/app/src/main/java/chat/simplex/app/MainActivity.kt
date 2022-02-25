@@ -9,7 +9,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.foundation.layout.Box
 import androidx.compose.material.ExperimentalMaterialApi
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.text.ExperimentalTextApi
 import androidx.lifecycle.AndroidViewModel
 import androidx.navigation.*
@@ -39,7 +39,7 @@ class MainActivity: ComponentActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
 //    testJson()
-    connectIfOpenedViaUri(intent, vm.chatModel)
+    connectIfOpenedWithIntent(intent, vm.chatModel)
     vm.app.initiateBackgroundWork()
     setContent {
       SimpleXTheme {
@@ -76,7 +76,15 @@ fun MainPage(chatModel: ChatModel, nav: NavController) {
 @Composable
 fun Navigation(chatModel: ChatModel) {
   val nav = rememberNavController()
-
+  if (chatModel.goToChatWithId.value != null) {
+    LaunchedEffect(chatModel.goToChatWithId) {
+      chatModel.chatId.value = chatModel.goToChatWithId.value
+      chatModel.goToChatWithId.value = null
+      nav.navigateUp()
+      nav.navigate(Pages.ChatList.route)
+      nav.navigate(Pages.Chat.route)
+    }
+  }
   Box {
     NavHost(navController = nav, startDestination = Pages.Home.route) {
       composable(route = Pages.Home.route) {
@@ -146,8 +154,21 @@ sealed class Pages(val route: String) {
 }
 
 @DelicateCoroutinesApi
-fun connectIfOpenedViaUri(intent: Intent?, chatModel: ChatModel) {
+fun connectIfOpenedWithIntent(intent: Intent?, chatModel: ChatModel) {
   val uri = intent?.data
+  if (intent?.action == "openChatWithId"){
+    val chatId = intent.getStringExtra("chatId",)
+    withApi {
+      val chatPreview = chatModel.getChat(chatId!!)
+      if (chatPreview != null) {
+        val chat = chatModel.controller.apiGetChat(chatPreview.chatInfo.chatType, chatPreview.chatInfo.apiId)
+        if (chat != null) {
+          chatModel.goToChatWithId.value = chat.chatInfo.id
+          chatModel.chatItems = chat.chatItems.toMutableStateList()
+        }
+      }
+    }
+  }
   if (intent?.action == "android.intent.action.VIEW" && uri != null) {
     Log.d("SIMPLEX", "connectIfOpenedViaUri: opened via link")
     if (chatModel.currentUser.value == null) {

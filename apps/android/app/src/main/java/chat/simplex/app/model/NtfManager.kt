@@ -3,8 +3,10 @@ package chat.simplex.app.model
 import android.app.*
 import android.content.Context
 import android.content.Intent
+import androidx.compose.ui.text.ExperimentalTextApi
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import chat.simplex.app.MainActivity
 import chat.simplex.app.R
 
 
@@ -21,12 +23,28 @@ class NtfManager(val context: Context) {
     manager.createNotificationChannel(channel)
   }
 
+  @OptIn(
+    ExperimentalTextApi::class,
+    com.google.accompanist.insets.ExperimentalAnimatedInsets::class,
+    com.google.accompanist.permissions.ExperimentalPermissionsApi::class,
+    androidx.compose.material.ExperimentalMaterialApi::class
+  )
   fun notifyMessageReceived(cInfo: ChatInfo, cItem: ChatItem, channelId: String = "SimpleXNotifications") {
+    val intent = Intent(
+      context,
+      MainActivity::class.java
+    ).apply {
+      flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+    }
+      .putExtra("chatId", cInfo.id)
+      .putExtra("chatType", cInfo.chatType.chatTypeName)
+      .setAction("openChatWithId")
     notify(
       channelId,
       title = cInfo.displayName,
       content = cItem.content.text,
-      notificationId = cItem.hashCode()
+      notificationId = cItem.hashCode(),
+      intent = intent
     )
   }
 
@@ -35,12 +53,13 @@ class NtfManager(val context: Context) {
     title: String,
     content: String,
     notificationId: Int,
+    intent: Intent,
     priority: Int = NotificationCompat.PRIORITY_DEFAULT
   ) {
-    val intent = Intent().apply {
-      flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+    val pendingIntent = TaskStackBuilder.create(context).run {
+      addNextIntentWithParentStack(intent)
+      getPendingIntent(0, PendingIntent.FLAG_IMMUTABLE)
     }
-    val pendingIntent = PendingIntent.getActivity(context, 0, intent, PendingIntent.FLAG_IMMUTABLE)
     val builder = NotificationCompat.Builder(context, channelId)
       .setSmallIcon(R.mipmap.icon)
       .setContentTitle(title)

@@ -18,6 +18,7 @@ import androidx.compose.ui.text.ExperimentalTextApi
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import chat.simplex.app.Pages
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.views.chat.ChatHelpView
 import chat.simplex.app.views.newchat.NewChatSheet
