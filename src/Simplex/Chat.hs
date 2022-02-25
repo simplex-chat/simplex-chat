@@ -80,7 +80,7 @@ defaultChatConfig =
       yesToMigrations = False,
       tbqSize = 64,
       fileChunkSize = 15780,
-      connectionEvents = False,
+      subscriptionEvents = False,
       testView = False
     }
 
@@ -90,7 +90,7 @@ logCfg = LogConfig {lc_file = Nothing, lc_stderr = True}
 newChatController :: SQLiteStore -> Maybe User -> ChatConfig -> ChatOpts -> (Notification -> IO ()) -> IO ChatController
 newChatController chatStore user cfg@ChatConfig {agentConfig = aCfg, tbqSize} ChatOpts {dbFilePrefix, smpServers, logConnections} sendNotification = do
   let f = chatStoreFile dbFilePrefix
-  let config = cfg {connectionEvents = logConnections}
+  let config = cfg {subscriptionEvents = logConnections}
   activeTo <- newTVarIO ActiveNone
   firstTime <- not <$> doesFileExist f
   currentUser <- newTVarIO user
@@ -465,7 +465,7 @@ agentSubscriber user = do
 
 subscribeUserConnections :: (MonadUnliftIO m, MonadReader ChatController m) => User -> m ()
 subscribeUserConnections user@User {userId} = do
-  ce <- asks $ connectionEvents . config
+  ce <- asks $ subscriptionEvents . config
   void . runExceptT . (mapConcurrently_ id) $
     [ subscribeContacts ce,
       subscribeGroups ce,
