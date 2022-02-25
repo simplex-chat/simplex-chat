@@ -2108,6 +2108,21 @@ getMsgDeliveryId_ db connId agentMsgId =
       |]
       (connId, agentMsgId)
 
+deleteContactMessages :: MonadUnliftIO m => SQLiteStore -> Int64 -> m ()
+deleteContactMessages st contactId =
+  liftIO . withTransaction st $ \db ->
+    DB.execute
+      db
+      [sql|
+        DELETE FROM messages WHERE message_id IN (
+          SELECT md.message_id
+          FROM md.msg_delivery_id
+          JOIN connections c ON c.connection_id = md.connection_id
+          WHERE c.contact_id = ?
+        )
+      |]
+      (Only contactId)
+
 createPendingGroupMessage :: MonadUnliftIO m => SQLiteStore -> Int64 -> MessageId -> Maybe Int64 -> m ()
 createPendingGroupMessage st groupMemberId messageId introId_ =
   liftIO . withTransaction st $ \db -> do
