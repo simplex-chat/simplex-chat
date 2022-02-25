@@ -50,35 +50,6 @@ class NtfManager(val context: Context) {
     )
   }
 
-  private fun getMsgNotificationBuilder(
-    channelId: String,
-    title: String,
-    content: String,
-    group: String?,
-    priority: Int,
-    pendingIntent: PendingIntent,
-    groupNotificationText: String? = null,
-  ): NotificationCompat.Builder {
-    val builder = NotificationCompat.Builder(context, channelId)
-      .setSmallIcon(R.mipmap.icon)
-      .setContentTitle(title)
-      .setContentText(content)
-      .setPriority(priority)
-      .setGroup(group)
-      .setGroupAlertBehavior(NotificationCompat.GROUP_ALERT_SUMMARY)
-      .setAutoCancel(true)
-      .setContentIntent(pendingIntent)
-    if (groupNotificationText != null) {
-      builder.setStyle(NotificationCompat.InboxStyle().addLine(content))
-    }
-    else {
-      builder.setStyle(NotificationCompat.InboxStyle()
-        .setSummaryText(groupNotificationText)
-      )
-    }
-    return builder
-  }
-
   private fun notify(
     channelId: String,
     title: String,
@@ -92,19 +63,32 @@ class NtfManager(val context: Context) {
       addNextIntentWithParentStack(intent)
       getPendingIntent(0, PendingIntent.FLAG_IMMUTABLE)
     }
-    val builder = getMsgNotificationBuilder(channelId, title, content, group, priority, pendingIntent)
-
-    // Deal with notifications for the same chat
     val notifications = manager.activeNotifications
     val jointNotifications = notifications.filter { n -> (n.notification.group != null && n.notification.group == group) }
+    val builder = NotificationCompat.Builder(context, channelId)
+        .setSmallIcon(R.mipmap.icon)
+        .setContentTitle(title)
+        .setContentText(content)
+        .setPriority(priority)
+        .setGroup(group)
+        .setGroupAlertBehavior(NotificationCompat.GROUP_ALERT_SUMMARY)
+        .setStyle(NotificationCompat.InboxStyle().addLine(content))
+        .setAutoCancel(true)
+        .setContentIntent(pendingIntent)
+    var groupNotificationBuilder: NotificationCompat.Builder? = null
     val rawCount = jointNotifications.count()
     val msgCount = if (rawCount <= 1) rawCount + 1 else rawCount  // Avoid counting existing collective notification
     val groupNotificationText = if (msgCount > 1) "$msgCount new messages" else "$msgCount new message"
-    val groupNotificationBuilder = getMsgNotificationBuilder(channelId, title, content, group, priority, pendingIntent, groupNotificationText)
-
-    // Send notifications
+    groupNotificationBuilder = NotificationCompat.Builder(context, channelId)
+      .setSmallIcon(R.mipmap.icon)
+      .setContentTitle(title)
+      .setContentText(groupNotificationText)
+      .setStyle(NotificationCompat.InboxStyle()
+        .setSummaryText(groupNotificationText)
+      )
+      .setGroup(group)
+      .setGroupSummary(true)
     with(NotificationManagerCompat.from(context)) {
-      // Cancel solo notification as it doesn't join group. Resend it to be in the group.
       if (rawCount != 0) {
         notify(group.hashCode(), groupNotificationBuilder.build())
       }
@@ -114,6 +98,7 @@ class NtfManager(val context: Context) {
         notify(originalId, jointNotifications[0].notification.clone())
       }
       notify(notificationId, builder.build())
+
     }
   }
 }
