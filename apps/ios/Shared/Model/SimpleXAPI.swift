@@ -535,7 +535,7 @@ private struct UserResponse: Decodable {
     var error: String?
 }
 
-private func chatResponse(_ cjson: UnsafePointer<CChar>) -> ChatResponse {
+private func chatResponse(_ cjson: UnsafeMutablePointer<CChar>) -> ChatResponse {
     let s = String.init(cString: cjson)
     let d = s.data(using: .utf8)!
 // TODO is there a way to do it without copying the data? e.g:
@@ -559,6 +559,7 @@ private func chatResponse(_ cjson: UnsafePointer<CChar>) -> ChatResponse {
         }
         json = prettyJSON(j)
     }
+    free(cjson)
     return ChatResponse.response(type: type ?? "invalid", json: json ?? s)
 }
 
