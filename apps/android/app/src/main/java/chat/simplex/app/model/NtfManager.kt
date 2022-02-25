@@ -8,23 +8,41 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import chat.simplex.app.MainActivity
 import chat.simplex.app.R
+import kotlinx.datetime.Clock
 
 class NtfManager(val context: Context) {
+  companion object {
+    const val MainChannelName: String = "SimpleXNotifications"
+    const val SilentChannelName: String = "SilentSimpleXNotifications"
+  }
   private val manager: NotificationManager = (
       context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
     )
+  private var prevNtfTime = mutableMapOf<Long, Long>()
+  private val msgNtfTimeoutMs = 10000L
 
-  fun createNotificationChannel(channelId: String) {
+  fun createNotificationChannel(channelId: String, quiet: Boolean = false) {
     val name = "SimpleX Chat"
     val desc = "Channel for message notifications"
     val importance = NotificationManager.IMPORTANCE_DEFAULT
-    val channel = NotificationChannel(channelId, name, importance).apply {
+    val channel = NotificationChannel(channelId, name, importance)
+      .apply {
       description = desc
+    }
+    if (quiet) {
+      channel.enableVibration(false)
+      channel.enableLights(false)
+      channel.setSound(null, null)
     }
     manager.createNotificationChannel(channel)
   }
 
-  fun notifyMessageReceived(cInfo: ChatInfo, cItem: ChatItem, channelId: String = "SimpleXNotifications") {
+  fun notifyMessageReceived(cInfo: ChatInfo, cItem: ChatItem) {
+    val now = Clock.System.now().toEpochMilliseconds()
+    val recentNotification = (now - prevNtfTime.getOrDefault(cInfo.apiId, 0) < msgNtfTimeoutMs)
+    prevNtfTime[cInfo.apiId] = now
+    val channelId = if (recentNotification) SilentChannelName else MainChannelName
+
     val pendingIntent = getMsgPendingIntent(cInfo)
 
     val notificationId = cItem.hashCode()
@@ -87,7 +105,6 @@ class NtfManager(val context: Context) {
       .setContentText(content)
       .setPriority(priority)
       .setGroup(group)
-      .setGroupAlertBehavior(NotificationCompat.GROUP_ALERT_SUMMARY)
       .setStyle(NotificationCompat.InboxStyle().addLine(content))
       .setAutoCancel(true)
       .setContentIntent(pendingIntent)
@@ -113,8 +130,11 @@ class NtfManager(val context: Context) {
       )
       .setGroup(group)
       .setGroupSummary(true)
+      .setGroupAlertBehavior(NotificationCompat.GROUP_ALERT_CHILDREN)
       .setContentIntent(pendingIntent)
       .setAutoCancel(true)
       .setOnlyAlertOnce(true)
+      .setSound(null)
+      .setVibrate(null)
   }
 }
