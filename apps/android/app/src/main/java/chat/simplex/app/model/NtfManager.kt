@@ -24,26 +24,8 @@ class NtfManager(val context: Context) {
     manager.createNotificationChannel(channel)
   }
 
-  @OptIn(
-    ExperimentalTextApi::class,
-    com.google.accompanist.insets.ExperimentalAnimatedInsets::class,
-    com.google.accompanist.permissions.ExperimentalPermissionsApi::class,
-    androidx.compose.material.ExperimentalMaterialApi::class
-  )
   fun notifyMessageReceived(cInfo: ChatInfo, cItem: ChatItem, channelId: String = "SimpleXNotifications") {
-    val intent = Intent(
-      context,
-      MainActivity::class.java
-    ).apply {
-      flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-    }
-      .putExtra("chatId", cInfo.id)
-      .putExtra("chatType", cInfo.chatType.chatTypeName)
-      .setAction("openChatWithId")
-    val pendingIntent = TaskStackBuilder.create(context).run {
-      addNextIntentWithParentStack(intent)
-      getPendingIntent(0, PendingIntent.FLAG_IMMUTABLE)
-    }
+    val pendingIntent = getMsgPendingIntent(cInfo)
 
     val notificationId = cItem.hashCode()
     val group = cInfo.id
@@ -69,13 +51,35 @@ class NtfManager(val context: Context) {
     }
   }
 
+  @OptIn(
+    ExperimentalTextApi::class,
+    com.google.accompanist.insets.ExperimentalAnimatedInsets::class,
+    com.google.accompanist.permissions.ExperimentalPermissionsApi::class,
+    androidx.compose.material.ExperimentalMaterialApi::class
+  )
+  private fun getMsgPendingIntent(cInfo: ChatInfo) : PendingIntent{
+    val intent = Intent(
+      context,
+      MainActivity::class.java
+    ).apply {
+      flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+    }
+      .putExtra("chatId", cInfo.id)
+      .putExtra("chatType", cInfo.chatType.chatTypeName)
+      .setAction("openChatWithId")
+    return TaskStackBuilder.create(context).run {
+      addNextIntentWithParentStack(intent)
+      getPendingIntent(0, PendingIntent.FLAG_IMMUTABLE)
+    }
+  }
+
   private fun getNotificationBuilder(
     pendingIntent: PendingIntent,
     priority: Int = NotificationCompat.PRIORITY_DEFAULT,
     channelId: String,
     title: String,
     content: String,
-    group: String? = null
+    group: String? = null,
   ): NotificationCompat.Builder {
     return NotificationCompat.Builder(context, channelId)
       .setSmallIcon(R.mipmap.icon)
@@ -87,6 +91,7 @@ class NtfManager(val context: Context) {
       .setStyle(NotificationCompat.InboxStyle().addLine(content))
       .setAutoCancel(true)
       .setContentIntent(pendingIntent)
+      .setOnlyAlertOnce(true)
   }
 
   private fun getGroupNotificationBuilder(
@@ -110,5 +115,6 @@ class NtfManager(val context: Context) {
       .setGroupSummary(true)
       .setContentIntent(pendingIntent)
       .setAutoCancel(true)
+      .setOnlyAlertOnce(true)
   }
 }
