@@ -55,7 +55,7 @@ class SimplexApp: Application() {
     ntfManager.createNotificationChannel(NtfManager.SilentChannelName, quiet = true)
 
     val ctrl = chatInit(applicationContext.filesDir.toString())
-    controller = ChatController(ctrl, AlertManager(), ntfManager)
+    controller = ChatController(ctrl, AlertManager(), ntfManager, applicationContext)
     chatModel = controller.chatModel
     withApi {
       val user = controller.apiGetActiveUser()

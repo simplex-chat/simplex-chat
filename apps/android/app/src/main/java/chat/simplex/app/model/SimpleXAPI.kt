@@ -1,5 +1,8 @@
 package chat.simplex.app.model
 
+import android.app.ActivityManager
+import android.app.ActivityManager.RunningAppProcessInfo
+import android.content.Context
 import android.util.Log
 import androidx.compose.runtime.mutableStateOf
 import chat.simplex.app.*
@@ -15,7 +18,7 @@ import kotlin.concurrent.thread
 typealias ChatCtrl = Long
 
 @DelicateCoroutinesApi
-open class ChatController(val ctrl: ChatCtrl, val alertManager: SimplexApp.AlertManager, val ntfManager: NtfManager) {
+open class ChatController(val ctrl: ChatCtrl, val alertManager: SimplexApp.AlertManager, val ntfManager: NtfManager val appContext: Context) {
   var chatModel = ChatModel(this, alertManager)
 
   suspend fun startChat(u: User) {
@@ -39,6 +42,18 @@ open class ChatController(val ctrl: ChatCtrl, val alertManager: SimplexApp.Alert
     thread(name="receiver") {
       withApi { recvMspLoop() }
     }
+  }
+
+  open fun isAppOnForeground(context: Context): Boolean {
+    val activityManager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+    val appProcesses = activityManager.runningAppProcesses ?: return false
+    val packageName = context.packageName
+    for (appProcess in appProcesses) {
+      if (appProcess.importance == RunningAppProcessInfo.IMPORTANCE_FOREGROUND && appProcess.processName == packageName) {
+        return true
+      }
+    }
+    return false
   }
 
   suspend fun sendCmd(cmd: CC): CR {
@@ -270,7 +285,8 @@ open class ChatController(val ctrl: ChatCtrl, val alertManager: SimplexApp.Alert
         val cInfo = r.chatItem.chatInfo
         val cItem = r.chatItem.chatItem
         chatModel.addChatItem(cInfo, cItem)
-        if (chatModel.currentlyViewingChatWithId.value != cInfo.id) {
+
+        if (!isAppOnForeground(appContext) || chatModel.currentlyViewingChatWithId.value != cInfo.id) {
           ntfManager.notifyMessageReceived(cInfo, cItem)
         }
       }
