@@ -29,13 +29,14 @@ import Data.Typeable (Typeable)
 import Database.SQLite.Simple.FromField (FromField (..))
 import Database.SQLite.Simple.ToField (ToField (..))
 import GHC.Generics (Generic)
+import Simplex.Chat.Markdown
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Chat.Util (eitherToMaybe, safeDecodeUtf8)
 import Simplex.Messaging.Agent.Protocol (AgentErrorType, AgentMsgId, MsgMeta (..))
 import Simplex.Messaging.Agent.Store.SQLite (fromTextField_)
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Parsers (dropPrefix, enumJSON, sumTypeJSON)
+import Simplex.Messaging.Parsers (dropPrefix, enumJSON, singleFieldJSON, sumTypeJSON)
 import Simplex.Messaging.Protocol (MsgBody)
 import Simplex.Messaging.Util ((<$?>))
 
@@ -76,13 +77,14 @@ jsonChatInfo = \case
 data ChatItem (c :: ChatType) (d :: MsgDirection) = ChatItem
   { chatDir :: CIDirection c d,
     meta :: CIMeta d,
-    content :: CIContent d
+    content :: CIContent d,
+    formattedText :: Maybe [FormattedText]
   }
   deriving (Show, Generic)
 
 instance ToJSON (ChatItem c d) where
-  toJSON = J.genericToJSON J.defaultOptions
-  toEncoding = J.genericToEncoding J.defaultOptions
+  toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
+  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
 data CIDirection (c :: ChatType) (d :: MsgDirection) where
   CIDirectSnd :: CIDirection 'CTDirect 'MDSnd
@@ -133,6 +135,13 @@ data ChatDirection (c :: ChatType) (d :: MsgDirection) where
   CDDirectRcv :: Contact -> ChatDirection 'CTDirect 'MDRcv
   CDGroupSnd :: GroupInfo -> ChatDirection 'CTGroup 'MDSnd
   CDGroupRcv :: GroupInfo -> GroupMember -> ChatDirection 'CTGroup 'MDRcv
+
+toCIDirection :: ChatDirection c d -> CIDirection c d
+toCIDirection = \case
+  CDDirectSnd _ -> CIDirectSnd
+  CDDirectRcv _ -> CIDirectRcv
+  CDGroupSnd _ -> CIGroupSnd
+  CDGroupRcv _ m -> CIGroupRcv m
 
 data NewChatItem d = NewChatItem
   { createdByMsgId :: Maybe MessageId,
@@ -302,20 +311,25 @@ ciContentToText = \case
   CISndFileInvitation fId fPath -> "you sent file #" <> T.pack (show fId) <> ": " <> T.pack fPath
   CIRcvFileInvitation RcvFileTransfer {fileInvitation = FileInvitation {fileName}} -> "file " <> T.pack fileName
 
+-- platform independent
 instance ToField (CIContent d) where
-  toField = toField . safeDecodeUtf8 . LB.toStrict . J.encode
+  toField = toField . safeDecodeUtf8 . LB.toStrict . J.encode . dbJsonCIContent
 
+-- platform specific
 instance ToJSON (CIContent d) where
   toJSON = J.toJSON . jsonCIContent
   toEncoding = J.toEncoding . jsonCIContent
 
 data ACIContent = forall d. ACIContent (SMsgDirection d) (CIContent d)
 
+-- platform specific
 instance FromJSON ACIContent where
   parseJSON = fmap aciContentJSON . J.parseJSON
 
-instance FromField ACIContent where fromField = fromTextField_ $ J.decode . LB.fromStrict . encodeUtf8
+-- platform independent
+instance FromField ACIContent where fromField = fromTextField_ $ fmap aciContentDBJSON . J.decode . LB.fromStrict . encodeUtf8
 
+-- platform specific
 data JSONCIContent
   = JCISndMsgContent {msgContent :: MsgContent}
   | JCIRcvMsgContent {msgContent :: MsgContent}
@@ -343,6 +357,35 @@ aciContentJSON = \case
   JCIRcvMsgContent mc -> ACIContent SMDRcv $ CIRcvMsgContent mc
   JCISndFileInvitation fId fPath -> ACIContent SMDSnd $ CISndFileInvitation fId fPath
   JCIRcvFileInvitation ft -> ACIContent SMDRcv $ CIRcvFileInvitation ft
+
+-- platform independent
+data DBJSONCIContent
+  = DBJCISndMsgContent {msgContent :: MsgContent}
+  | DBJCIRcvMsgContent {msgContent :: MsgContent}
+  | DBJCISndFileInvitation {fileId :: FileTransferId, filePath :: FilePath}
+  | DBJCIRcvFileInvitation {rcvFileTransfer :: RcvFileTransfer}
+  deriving (Generic)
+
+instance FromJSON DBJSONCIContent where
+  parseJSON = J.genericParseJSON . singleFieldJSON $ dropPrefix "DBJCI"
+
+instance ToJSON DBJSONCIContent where
+  toJSON = J.genericToJSON . singleFieldJSON $ dropPrefix "DBJCI"
+  toEncoding = J.genericToEncoding . singleFieldJSON $ dropPrefix "DBJCI"
+
+dbJsonCIContent :: CIContent d -> DBJSONCIContent
+dbJsonCIContent = \case
+  CISndMsgContent mc -> DBJCISndMsgContent mc
+  CIRcvMsgContent mc -> DBJCIRcvMsgContent mc
+  CISndFileInvitation fId fPath -> DBJCISndFileInvitation fId fPath
+  CIRcvFileInvitation ft -> DBJCIRcvFileInvitation ft
+
+aciContentDBJSON :: DBJSONCIContent -> ACIContent
+aciContentDBJSON = \case
+  DBJCISndMsgContent mc -> ACIContent SMDSnd $ CISndMsgContent mc
+  DBJCIRcvMsgContent mc -> ACIContent SMDRcv $ CIRcvMsgContent mc
+  DBJCISndFileInvitation fId fPath -> ACIContent SMDSnd $ CISndFileInvitation fId fPath
+  DBJCIRcvFileInvitation ft -> ACIContent SMDRcv $ CIRcvFileInvitation ft
 
 data SChatType (c :: ChatType) where
   SCTDirect :: SChatType 'CTDirect

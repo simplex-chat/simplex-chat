@@ -107,17 +107,21 @@ struct ChatView: View {
     func markAllRead() {
         DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
             if chatModel.chatId == chat.id {
-                markChatRead(chat)
+                Task { await markChatRead(chat) }
             }
         }
     }
 
     func sendMessage(_ msg: String) {
-        do {
-            let chatItem = try apiSendMessage(type: chat.chatInfo.chatType, id: chat.chatInfo.apiId, msg: .text(msg))
-            chatModel.addChatItem(chat.chatInfo, chatItem)
-        } catch {
-            logger.error("ChatView.sendMessage apiSendMessage error: \(error.localizedDescription)")
+        Task {
+            do {
+                let chatItem = try await apiSendMessage(type: chat.chatInfo.chatType, id: chat.chatInfo.apiId, msg: .text(msg))
+                DispatchQueue.main.async {
+                    chatModel.addChatItem(chat.chatInfo, chatItem)
+                }
+            } catch {
+                logger.error("ChatView.sendMessage apiSendMessage error: \(error.localizedDescription)")
+            }
         }
     }
 }

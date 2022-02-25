@@ -97,7 +97,7 @@ final class ChatModel: ObservableObject {
             if case .rcvNew = cItem.meta.itemStatus {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
                     if self.chatId == cInfo.id {
-                        SimpleX.markChatItemRead(cInfo, cItem)
+                        Task { await SimpleX.markChatItemRead(cInfo, cItem) }
                     }
                 }
             }
@@ -512,6 +512,7 @@ struct ChatItem: Identifiable, Decodable {
     var chatDir: CIDirection
     var meta: CIMeta
     var content: CIContent
+    var formattedText: [FormattedText]?
     
     var id: Int64 { get { meta.itemId } }
 
@@ -571,7 +572,11 @@ struct CIMeta: Decodable {
 
 
 func timestampText(_ date: Date) -> String {
-    date.formatted(date: .omitted, time: .shortened)
+    let now = Calendar.current.dateComponents([.day, .hour], from: .now)
+    let dc = Calendar.current.dateComponents([.day, .hour], from: date)
+    return now.day == dc.day || ((now.day ?? 0) - (dc.day ?? 0) == 1 && (dc.hour ?? 0) >= 18 && (now.hour ?? 0) < 12)
+        ? date.formatted(date: .omitted, time: .shortened)
+        : String(date.formatted(date: .numeric, time: .omitted).prefix(5))
 }
 
 enum CIStatus: Decodable {
@@ -650,6 +655,49 @@ extension MsgContent: Decodable {
             }
         } catch {
             self = .invalid(error: String(describing: error))
+        }
+    }
+}
+
+struct FormattedText: Decodable {
+    var text: String
+    var format: Format?
+}
+
+enum Format: Decodable {
+    case bold
+    case italic
+    case strikeThrough
+    case snippet
+    case secret
+    case colored(color: FormatColor)
+    case uri
+    case email
+    case phone
+}
+
+enum FormatColor: String, Decodable {
+    case red = "red"
+    case green = "green"
+    case blue = "blue"
+    case yellow = "yellow"
+    case cyan = "cyan"
+    case magenta = "magenta"
+    case black = "black"
+    case white = "white"
+
+    var uiColor: Color {
+        get {
+            switch (self) {
+            case .red: return .red
+            case .green: return .green
+            case .blue: return .blue
+            case .yellow: return .yellow
+            case .cyan: return .cyan
+            case .magenta: return .purple
+            case .black: return .primary
+            case .white: return .primary
+            }
         }
     }
 }

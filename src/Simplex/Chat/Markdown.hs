@@ -1,138 +1,184 @@
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Simplex.Chat.Markdown where
 
-import Control.Applicative ((<|>))
+import Control.Applicative (optional, (<|>))
+import Data.Aeson (ToJSON)
+import qualified Data.Aeson as J
 import Data.Attoparsec.Text (Parser)
 import qualified Data.Attoparsec.Text as A
+import Data.Char (isDigit)
 import Data.Either (fromRight)
 import Data.Functor (($>))
-import Data.Map.Strict (Map)
-import qualified Data.Map.Strict as M
+import Data.Maybe (fromMaybe, isNothing)
 import Data.String
 import Data.Text (Text)
 import qualified Data.Text as T
+import Data.Text.Encoding (encodeUtf8)
+import GHC.Generics
+import Simplex.Messaging.Parsers (fstToLower, sumTypeJSON)
 import System.Console.ANSI.Types
+import qualified Text.Email.Validate as Email
 
-data Markdown = Markdown Format Text | Markdown :|: Markdown
+data Markdown = Markdown (Maybe Format) Text | Markdown :|: Markdown
   deriving (Eq, Show)
 
 data Format
   = Bold
   | Italic
-  | Underline
   | StrikeThrough
   | Snippet
   | Secret
-  | Colored Color
-  | NoFormat
-  deriving (Eq, Show)
+  | Colored {color :: FormatColor}
+  | Uri
+  | Email
+  | Phone
+  deriving (Eq, Show, Generic)
 
-instance Semigroup Markdown where (<>) = (:|:)
+colored :: Color -> Format
+colored = Colored . FormatColor
+
+markdown :: Format -> Text -> Markdown
+markdown = Markdown . Just
+
+instance ToJSON Format where toEncoding = J.genericToEncoding $ sumTypeJSON fstToLower
+
+instance Semigroup Markdown where
+  m <> (Markdown _ "") = m
+  (Markdown _ "") <> m = m
+  m1@(Markdown f1 s1) <> m2@(Markdown f2 s2)
+    | f1 == f2 = Markdown f1 $ s1 <> s2
+    | otherwise = m1 :|: m2
+  m1@(Markdown f1 s1) <> ms@(Markdown f2 s2 :|: m3)
+    | f1 == f2 = Markdown f1 (s1 <> s2) :|: m3
+    | otherwise = m1 :|: ms
+  ms@(m1 :|: Markdown f2 s2) <> m3@(Markdown f3 s3)
+    | f2 == f3 = m1 :|: Markdown f2 (s2 <> s3)
+    | otherwise = ms :|: m3
+  m1 <> m2 = m1 :|: m2
 
 instance Monoid Markdown where mempty = unmarked ""
 
 instance IsString Markdown where fromString = unmarked . T.pack
 
+newtype FormatColor = FormatColor Color
+  deriving (Eq, Show)
+
+instance ToJSON FormatColor where
+  toJSON (FormatColor c) = case c of
+    Red -> "red"
+    Green -> "green"
+    Blue -> "blue"
+    Yellow -> "yellow"
+    Cyan -> "cyan"
+    Magenta -> "magenta"
+    Black -> "black"
+    White -> "white"
+
+data FormattedText = FormattedText {format :: Maybe Format, text :: Text}
+  deriving (Eq, Show, Generic)
+
+instance ToJSON FormattedText where
+  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
+
+type MarkdownList = [FormattedText]
+
 unmarked :: Text -> Markdown
-unmarked = Markdown NoFormat
+unmarked = Markdown Nothing
 
-colorMD :: Char
-colorMD = '!'
+parseMaybeMarkdownList :: Text -> Maybe MarkdownList
+parseMaybeMarkdownList s =
+  let m = markdownToList $ parseMarkdown s
+   in if all (isNothing . format) m then Nothing else Just m
 
-secretMD :: Char
-secretMD = '#'
+parseMarkdownList :: Text -> MarkdownList
+parseMarkdownList = markdownToList . parseMarkdown
 
-formats :: Map Char Format
-formats =
-  M.fromList
-    [ ('*', Bold),
-      ('_', Italic),
-      ('+', Underline),
-      ('~', StrikeThrough),
-      ('`', Snippet),
-      (secretMD, Secret),
-      (colorMD, Colored White)
-    ]
-
-colors :: Map Text Color
-colors =
-  M.fromList
-    [ ("red", Red),
-      ("green", Green),
-      ("blue", Blue),
-      ("yellow", Yellow),
-      ("cyan", Cyan),
-      ("magenta", Magenta),
-      ("r", Red),
-      ("g", Green),
-      ("b", Blue),
-      ("y", Yellow),
-      ("c", Cyan),
-      ("m", Magenta),
-      ("1", Red),
-      ("2", Green),
-      ("3", Blue),
-      ("4", Yellow),
-      ("5", Cyan),
-      ("6", Magenta)
-    ]
+markdownToList :: Markdown -> MarkdownList
+markdownToList (Markdown f s) = [FormattedText f s]
+markdownToList (m1 :|: m2) = markdownToList m1 <> markdownToList m2
 
 parseMarkdown :: Text -> Markdown
 parseMarkdown s = fromRight (unmarked s) $ A.parseOnly (markdownP <* A.endOfInput) s
 
 markdownP :: Parser Markdown
-markdownP = merge <$> A.many' fragmentP
+markdownP = mconcat <$> A.many' fragmentP
   where
-    merge :: [Markdown] -> Markdown
-    merge [] = ""
-    merge fs = foldr1 (:|:) fs
     fragmentP :: Parser Markdown
     fragmentP =
-      A.anyChar >>= \case
-        ' ' -> unmarked . T.cons ' ' <$> A.takeWhile (== ' ')
-        c -> case M.lookup c formats of
-          Just Secret -> secretP
-          Just (Colored White) -> coloredP
-          Just f -> formattedP c "" f
-          Nothing -> unformattedP c
-    formattedP :: Char -> Text -> Format -> Parser Markdown
-    formattedP c p f = do
-      s <- A.takeTill (== c)
-      (A.char c $> markdown c p f s) <|> noFormat (c `T.cons` p <> s)
-    markdown :: Char -> Text -> Format -> Text -> Markdown
-    markdown c p f s
+      A.peekChar >>= \case
+        Just c -> case c of
+          ' ' -> unmarked <$> A.takeWhile (== ' ')
+          '+' -> phoneP <|> wordP
+          '*' -> formattedP '*' Bold
+          '_' -> formattedP '_' Italic
+          '~' -> formattedP '~' StrikeThrough
+          '`' -> formattedP '`' Snippet
+          '#' -> A.char '#' *> secretP
+          '!' -> coloredP <|> wordP
+          _
+            | isDigit c -> phoneP <|> wordP
+            | otherwise -> wordP
+        Nothing -> fail ""
+    formattedP :: Char -> Format -> Parser Markdown
+    formattedP c f = do
+      s <- A.char c *> A.takeTill (== c)
+      (A.char c $> md c f s) <|> noFormat (c `T.cons` s)
+    md :: Char -> Format -> Text -> Markdown
+    md c f s
       | T.null s || T.head s == ' ' || T.last s == ' ' =
-        unmarked $ c `T.cons` p <> s `T.snoc` c
-      | otherwise = Markdown f s
+        unmarked $ c `T.cons` s `T.snoc` c
+      | otherwise = markdown f s
     secretP :: Parser Markdown
-    secretP = secret <$> A.takeWhile (== secretMD) <*> A.takeTill (== secretMD) <*> A.takeWhile (== secretMD)
+    secretP = secret <$> A.takeWhile (== '#') <*> A.takeTill (== '#') <*> A.takeWhile (== '#')
     secret :: Text -> Text -> Text -> Markdown
     secret b s a
       | T.null a || T.null s || T.head s == ' ' || T.last s == ' ' =
-        unmarked $ secretMD `T.cons` ss
-      | otherwise = Markdown Secret $ T.init ss
+        unmarked $ '#' `T.cons` ss
+      | otherwise = markdown Secret $ T.init ss
       where
         ss = b <> s <> a
     coloredP :: Parser Markdown
     coloredP = do
-      color <- A.takeWhile (\c -> c /= ' ' && c /= colorMD)
-      case M.lookup color colors of
-        Just c ->
-          let f = Colored c
-           in (A.char ' ' *> formattedP colorMD (color `T.snoc` ' ') f)
-                <|> noFormat (colorMD `T.cons` color)
-        _ -> noFormat (colorMD `T.cons` color)
-    unformattedP :: Char -> Parser Markdown
-    unformattedP c = unmarked . T.cons c <$> wordsP
-    wordsP :: Parser Text
-    wordsP = do
-      s <- (<>) <$> A.takeTill (== ' ') <*> A.takeWhile (== ' ')
-      A.peekChar >>= \case
-        Nothing -> pure s
-        Just c -> case M.lookup c formats of
-          Just _ -> pure s
-          Nothing -> (s <>) <$> wordsP
-    noFormat :: Text -> Parser Markdown
+      clr <- A.char '!' *> colorP <* A.space
+      s <- ((<>) <$> A.takeWhile1 (\c -> c /= ' ' && c /= '!') <*> A.takeTill (== '!')) <* A.char '!'
+      if T.null s || T.last s == ' '
+        then fail "not colored"
+        else pure $ markdown (colored clr) s
+    colorP =
+      A.anyChar >>= \case
+        'r' -> "ed" $> Red <|> pure Red
+        'g' -> "reen" $> Green <|> pure Green
+        'b' -> "lue" $> Blue <|> pure Blue
+        'y' -> "ellow" $> Yellow <|> pure Yellow
+        'c' -> "yan" $> Cyan <|> pure Cyan
+        'm' -> "agenta" $> Magenta <|> pure Magenta
+        '1' -> pure Red
+        '2' -> pure Green
+        '3' -> pure Blue
+        '4' -> pure Yellow
+        '5' -> pure Cyan
+        '6' -> pure Magenta
+        _ -> fail "not color"
+    phoneP = do
+      country <- optional $ T.cons <$> A.char '+' <*> A.takeWhile1 isDigit
+      code <- optional $ conc4 <$> phoneSep <*> "(" <*> A.takeWhile1 isDigit <*> ")"
+      segments <- mconcat <$> A.many' ((<>) <$> phoneSep <*> A.takeWhile1 isDigit)
+      let s = fromMaybe "" country <> fromMaybe "" code <> segments
+          len = T.length s
+      if 7 <= len && len <= 22 then pure $ markdown Phone s else fail "not phone"
+    conc4 s1 s2 s3 s4 = s1 <> s2 <> s3 <> s4
+    phoneSep = " " <|> "-" <|> "." <|> ""
+    wordP :: Parser Markdown
+    wordP = wordMD <$> A.takeTill (== ' ')
+    wordMD :: Text -> Markdown
+    wordMD s
+      | T.null s = unmarked s
+      | isUri s = markdown Uri s
+      | isEmail s = markdown Email s
+      | otherwise = unmarked s
+    isUri s = "http://" `T.isPrefixOf` s || "https://" `T.isPrefixOf` s || "simplex:/" `T.isPrefixOf` s
+    isEmail s = T.any (== '@') s && Email.isValid (encodeUtf8 s)
     noFormat = pure . unmarked

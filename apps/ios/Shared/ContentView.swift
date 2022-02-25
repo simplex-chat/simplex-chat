@@ -13,24 +13,26 @@ struct ContentView: View {
     @State private var showNotificationAlert = false
 
     var body: some View {
-        if let user = chatModel.currentUser {
-            ChatListView(user: user)
-                .onAppear {
-                    do {
-                        try apiStartChat()
-                        chatModel.chats = try apiGetChats()
-                    } catch {
-                        fatalError("Failed to start or load chats: \(error)")
+        ZStack {
+            if let user = chatModel.currentUser {
+                ChatListView(user: user)
+                    .onAppear {
+                        do {
+                            try apiStartChat()
+                            chatModel.chats = try apiGetChats()
+                        } catch {
+                            fatalError("Failed to start or load chats: \(error)")
+                        }
+                        ChatReceiver.shared.start()
+                        NtfManager.shared.requestAuthorization(onDeny: {
+                            alertManager.showAlert(notificationAlert())
+                        })
                     }
-                    ChatReceiver.shared.start()
-                    NtfManager.shared.requestAuthorization(onDeny: {
-                        alertManager.showAlert(notificationAlert())
-                    })
-                }
-                .alert(isPresented: $alertManager.presentAlert) { alertManager.alertView! }
-        } else {
-            WelcomeView()
+            } else {
+                WelcomeView()
+            }
         }
+        .alert(isPresented: $alertManager.presentAlert) { alertManager.alertView! }
     }
 
     func notificationAlert() -> Alert {

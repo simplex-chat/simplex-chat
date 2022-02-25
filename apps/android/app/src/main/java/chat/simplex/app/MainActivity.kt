@@ -1,123 +1,177 @@
 package chat.simplex.app
 
-import android.net.LocalServerSocket
+import android.app.Application
+import android.content.Intent
 import android.os.Bundle
 import android.util.Log
-import android.view.inputmethod.EditorInfo
-import android.widget.ScrollView
-import android.widget.TextView
-import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.widget.AppCompatEditText
-import java.io.BufferedReader
-import java.io.InputStreamReader
-import java.lang.ref.WeakReference
-import java.util.*
-import java.util.concurrent.Semaphore
-import kotlin.concurrent.thread
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.activity.viewModels
+import androidx.compose.foundation.layout.Box
+import androidx.compose.material.ExperimentalMaterialApi
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.text.ExperimentalTextApi
+import androidx.lifecycle.AndroidViewModel
+import androidx.navigation.*
+import androidx.navigation.compose.*
+import chat.simplex.app.model.*
+import chat.simplex.app.ui.theme.SimpleXTheme
+import chat.simplex.app.views.*
+import chat.simplex.app.views.chat.ChatInfoView
+import chat.simplex.app.views.chat.ChatView
+import chat.simplex.app.views.chatlist.ChatListView
+import chat.simplex.app.views.helpers.withApi
+import chat.simplex.app.views.newchat.*
+import chat.simplex.app.views.usersettings.*
+import com.google.accompanist.insets.ExperimentalAnimatedInsets
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.serialization.decodeFromString
 
-// ghc's rts
-external fun initHS()
-// android-support
-external fun pipeStdOutToSocket(socketName: String) : Int
+@ExperimentalTextApi
+@DelicateCoroutinesApi
+@ExperimentalAnimatedInsets
+@ExperimentalPermissionsApi
+@ExperimentalMaterialApi
+class MainActivity: ComponentActivity() {
+  private val vm by viewModels<SimplexViewModel>()
 
-// simplex-chat
-typealias Store = Long
-typealias Controller = Long
-external fun chatInit(filesDir: String): Store
-external fun chatGetUser(controller: Store) : String
-external fun chatCreateUser(controller: Store, data: String) : String
-external fun chatStart(controller: Store) : Controller
-external fun chatSendCmd(controller: Controller, msg: String) : String
-external fun chatRecvMsg(controller: Controller) : String
-
-class MainActivity : AppCompatActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
-    weakActivity = WeakReference(this)
-
     super.onCreate(savedInstanceState)
-    setContentView(R.layout.activity_main)
-
-    val store : Store = chatInit(this.applicationContext.filesDir.toString())
-    // create user if needed
-    if(chatGetUser(store) == "{}") {
-      chatCreateUser(store, """
-                    {"displayName": "test", "fullName": "android test"}
-                    """.trimIndent())
-    }
-    Log.d("SIMPLEX (user)", chatGetUser(store))
-
-    val controller = chatStart(store)
-
-    val cmdinput = this.findViewById<AppCompatEditText>(R.id.cmdInput)
-
-    cmdinput.setOnEditorActionListener { _, actionId, _ ->
-      when (actionId) {
-        EditorInfo.IME_ACTION_SEND -> {
-          Log.d("SIMPLEX SEND", chatSendCmd(controller, cmdinput.text.toString()))
-          cmdinput.text?.clear()
-          true
-        }
-        else -> false
+//    testJson()
+    connectIfOpenedViaUri(intent, vm.chatModel)
+    setContent {
+      SimpleXTheme {
+        Navigation(vm.chatModel)
       }
-    }
-
-    thread(name="receiver") {
-      val chatlog = FifoQueue<String>(500)
-      while(true) {
-        val msg = chatRecvMsg(controller)
-        Log.d("SIMPLEX RECV", msg)
-        chatlog.add(msg)
-        val currentText = chatlog.joinToString("\n")
-        weakActivity.get()?.runOnUiThread {
-          val log = weakActivity.get()?.findViewById<TextView>(R.id.chatlog)
-          val scroll = weakActivity.get()?.findViewById<ScrollView>(R.id.scroller)
-          log?.text = currentText
-          scroll?.scrollTo(0, scroll.getChildAt(0).height)
-        }
-      }
-    }
-  }
-
-  companion object {
-    lateinit var weakActivity : WeakReference<MainActivity>
-    init {
-      val socketName = "local.socket.address.listen.native.cmd2"
-
-      val s = Semaphore(0)
-      thread(name="stdout/stderr pipe") {
-        Log.d("SIMPLEX", "starting server")
-        val server = LocalServerSocket(socketName)
-        Log.d("SIMPLEX", "started server")
-        s.release()
-        val receiver = server.accept()
-        Log.d("SIMPLEX", "started receiver")
-        val logbuffer = FifoQueue<String>(500)
-        if (receiver != null) {
-          val inStream = receiver.inputStream
-          val inStreamReader = InputStreamReader(inStream)
-          val input = BufferedReader(inStreamReader)
-
-          while(true) {
-            val line = input.readLine() ?: break
-            Log.d("SIMPLEX (stdout/stderr)", line)
-            logbuffer.add(line)
-          }
-        }
-      }
-
-      System.loadLibrary("app-lib")
-
-      s.acquire()
-      pipeStdOutToSocket(socketName)
-
-      initHS()
     }
   }
 }
 
-class FifoQueue<E>(private var capacity: Int) : LinkedList<E>() {
-  override fun add(element: E): Boolean {
-    if(size > capacity) removeFirst()
-    return super.add(element)
+@DelicateCoroutinesApi
+class SimplexViewModel(application: Application): AndroidViewModel(application) {
+  val chatModel = getApplication<SimplexApp>().chatModel
+}
+
+@ExperimentalTextApi
+@DelicateCoroutinesApi
+@ExperimentalPermissionsApi
+@ExperimentalMaterialApi
+@Composable
+fun MainPage(chatModel: ChatModel, nav: NavController) {
+  when (chatModel.userCreated.value) {
+    null -> SplashView()
+    false -> WelcomeView(chatModel) { nav.navigate(Pages.ChatList.route) }
+    true -> ChatListView(chatModel, nav)
   }
+}
+
+@ExperimentalTextApi
+@ExperimentalAnimatedInsets
+@DelicateCoroutinesApi
+@ExperimentalPermissionsApi
+@ExperimentalMaterialApi
+@Composable
+fun Navigation(chatModel: ChatModel) {
+  val nav = rememberNavController()
+
+  Box {
+    NavHost(navController = nav, startDestination = Pages.Home.route) {
+      composable(route = Pages.Home.route) {
+        MainPage(chatModel, nav)
+      }
+      composable(route = Pages.Welcome.route) {
+        WelcomeView(chatModel) {
+          nav.navigate(Pages.Home.route) {
+            popUpTo(Pages.Home.route) { inclusive = true }
+          }
+        }
+      }
+      composable(route = Pages.ChatList.route) {
+        ChatListView(chatModel, nav)
+      }
+      composable(route = Pages.Chat.route) {
+        ChatView(chatModel, nav)
+      }
+      composable(route = Pages.AddContact.route) {
+        AddContactView(chatModel, nav)
+      }
+      composable(route = Pages.Connect.route) {
+        ConnectContactView(chatModel, nav)
+      }
+      composable(route = Pages.ChatInfo.route) {
+        ChatInfoView(chatModel, nav)
+      }
+      composable(route = Pages.Terminal.route) {
+        TerminalView(chatModel, nav)
+      }
+      composable(
+        Pages.TerminalItemDetails.route + "/{identifier}",
+        arguments = listOf(
+          navArgument("identifier") {
+            type = NavType.LongType
+          }
+        )
+      ) { entry -> DetailView(entry.arguments!!.getLong("identifier"), chatModel.terminalItems, nav) }
+      composable(route = Pages.UserProfile.route) {
+        UserProfileView(chatModel, nav)
+      }
+      composable(route = Pages.UserAddress.route) {
+        UserAddressView(chatModel, nav)
+      }
+      composable(route = Pages.Help.route) {
+        HelpView(chatModel, nav)
+      }
+    }
+    val am = chatModel.alertManager
+    if (am.presentAlert.value) am.alertView.value?.invoke()
+  }
+}
+
+sealed class Pages(val route: String) {
+  object Home: Pages("home")
+  object Terminal: Pages("terminal")
+  object Welcome: Pages("welcome")
+  object TerminalItemDetails: Pages("details")
+  object ChatList: Pages("chats")
+  object Chat: Pages("chat")
+  object AddContact: Pages("add_contact")
+  object Connect: Pages("connect")
+  object ChatInfo: Pages("chat_info")
+  object UserProfile: Pages("user_profile")
+  object UserAddress: Pages("user_address")
+  object Help: Pages("help")
+}
+
+@DelicateCoroutinesApi
+fun connectIfOpenedViaUri(intent: Intent?, chatModel: ChatModel) {
+  val uri = intent?.data
+  if (intent?.action == "android.intent.action.VIEW" && uri != null) {
+    Log.d("SIMPLEX", "connectIfOpenedViaUri: opened via link")
+    if (chatModel.currentUser.value == null) {
+      chatModel.appOpenUrl.value = uri
+    } else {
+      withUriAction(chatModel, uri) { action ->
+        chatModel.alertManager.showAlertMsg(
+          title = "Connect via $action link?",
+          text = "Your profile will be sent to the contact that you received this link from.",
+          confirmText = "Connect",
+          onConfirm = {
+            withApi {
+              Log.d("SIMPLEX", "connectIfOpenedViaUri: connecting")
+              connectViaUri(chatModel, action, uri)
+            }
+          }
+        )
+      }
+    }
+  }
+}
+
+fun testJson() {
+  val str = """
+    {}
+  """.trimIndent()
+
+  println(json.decodeFromString<ChatItem>(str))
 }

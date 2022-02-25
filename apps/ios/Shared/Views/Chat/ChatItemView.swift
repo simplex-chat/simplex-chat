@@ -8,8 +8,6 @@
 
 import SwiftUI
 
-private var dateFormatter: DateFormatter?
-
 struct ChatItemView: View {
     var chatItem: ChatItem
     var width: CGFloat
@@ -21,14 +19,6 @@ struct ChatItemView: View {
             TextItemView(chatItem: chatItem, width: width)
         }
     }
-}
-
-func getDateFormatter() -> DateFormatter {
-    if let df = dateFormatter { return df }
-    let df = DateFormatter()
-    df.dateFormat = "HH:mm"
-    dateFormatter = df
-    return df
 }
 
 struct ChatItemView_Previews: PreviewProvider {

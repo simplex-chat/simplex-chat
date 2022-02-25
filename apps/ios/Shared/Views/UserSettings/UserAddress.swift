@@ -35,11 +35,15 @@ struct UserAddress: View {
                             title: Text("Delete address?"),
                             message: Text("All your contacts will remain connected"),
                             primaryButton: .destructive(Text("Delete")) {
-                                do {
-                                    try apiDeleteUserAddress()
-                                    chatModel.userAddress = nil
-                                } catch let error {
-                                    logger.error("UserAddress apiDeleteUserAddress: \(error.localizedDescription)")
+                                Task {
+                                    do {
+                                        try await apiDeleteUserAddress()
+                                        DispatchQueue.main.async {
+                                            chatModel.userAddress = nil
+                                        }
+                                    } catch let error {
+                                        logger.error("UserAddress apiDeleteUserAddress: \(error.localizedDescription)")
+                                    }
                                 }
                             }, secondaryButton: .cancel()
                         )
@@ -48,10 +52,15 @@ struct UserAddress: View {
                 .frame(maxWidth: .infinity)
             } else {
                 Button {
-                    do {
-                        chatModel.userAddress = try apiCreateUserAddress()
-                    } catch let error {
-                        logger.error("UserAddress apiCreateUserAddress: \(error.localizedDescription)")
+                    Task {
+                        do {
+                            let userAddress = try await apiCreateUserAddress()
+                            DispatchQueue.main.async {
+                                chatModel.userAddress = userAddress
+                            }
+                        } catch let error {
+                            logger.error("UserAddress apiCreateUserAddress: \(error.localizedDescription)")
+                        }
                     }
                 } label: { Label("Create address", systemImage: "qrcode") }
                 .frame(maxWidth: .infinity)
@@ -66,7 +75,11 @@ struct UserAddress_Previews: PreviewProvider {
     static var previews: some View {
         let chatModel = ChatModel()
         chatModel.userAddress = "https://simplex.chat/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23MCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%3D"
-        return UserAddress()
-            .environmentObject(chatModel)
+        return Group {
+            UserAddress()
+                .environmentObject(chatModel)
+            UserAddress()
+                .environmentObject(ChatModel())
+        }
     }
 }

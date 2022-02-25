@@ -1,5 +1,5 @@
 name: simplex-chat
-version: 1.2.0
+version: 1.2.1
 #synopsis:
 #description:
 homepage: https://github.com/simplex-chat/simplex-chat#readme
@@ -23,6 +23,7 @@ dependencies:
   - containers == 0.6.*
   - cryptonite >= 0.27 && < 0.30
   - directory == 1.3.*
+  - email-validate == 2.3.*
   - exceptions == 0.10.*
   - filepath == 1.4.*
   - mtl == 2.2.*

@@ -75,7 +75,7 @@
                      mkdir -p $out/_pkg
                      cp libsupport.so $out/_pkg
                      ${pkgs.patchelf}/bin/patchelf --remove-needed libunwind.so.1 $out/_pkg/libsupport.so
-                     (cd $out/_pkg; ${pkgs.zip}/bin/zip -r -9 $out/pkg.zip *)
+                     (cd $out/_pkg; ${pkgs.zip}/bin/zip -r -9 $out/pkg-android-libsupport.zip *)
                      rm -fR $out/_pkg
 
                      mkdir -p $out/nix-support
@@ -107,7 +107,7 @@
                         ${pkgs.patchelf}/bin/patchelf --remove-needed libunwind.so.1 $out/_pkg/libsimplex.so
 
                         ${pkgs.tree}/bin/tree $out/_pkg
-                        (cd $out/_pkg; ${pkgs.zip}/bin/zip -r -9 $out/pkg.zip *)
+                        (cd $out/_pkg; ${pkgs.zip}/bin/zip -r -9 $out/pkg-android-libsimplex.zip *)
                         rm -fR $out/_pkg
                         mkdir -p $out/nix-support
                         echo "file binary-dist \"$(echo $out/*.zip)\"" \
@@ -121,7 +121,7 @@
                 # we need threaded here, otherwise all the queing logic doesn't work properly.
                 # for iOS we also use -staticlib, to get one rolled up library.
                 # still needs mac2ios patching of the archives.
-                ghcOptions = [ "-staticlib" "-threaded" ];
+                ghcOptions = [ "-staticlib" "-threaded" "-DIOS" ];
                 postInstall = ''
                   ${pkgs.tree}/bin/tree $out
                   mkdir -p $out/_pkg
@@ -134,7 +134,34 @@
                   find ${pkgs.gmp6.override { withStatic = true; }}/lib -name "*.a" -exec cp {} $out/_pkg \;
                   # There is no static libc
                   ${pkgs.tree}/bin/tree $out/_pkg
-                  (cd $out/_pkg; ${pkgs.zip}/bin/zip -r -9 $out/pkg.zip *)
+                  (cd $out/_pkg; ${pkgs.zip}/bin/zip -r -9 $out/pkg-ios-aarch64.zip *)
+                  rm -fR $out/_pkg
+                  mkdir -p $out/nix-support
+                  echo "file binary-dist \"$(echo $out/*.zip)\"" \
+                      > $out/nix-support/hydra-build-products
+                '';
+              };
+            };
+            "x86_64-darwin" = {
+              "x86_64-darwin:lib:simplex-chat" = (drv pkgs).simplex-chat.components.library.override {
+                smallAddressSpace = true; enableShared = false;
+                # we need threaded here, otherwise all the queing logic doesn't work properly.
+                # for iOS we also use -staticlib, to get one rolled up library.
+                # still needs mac2ios patching of the archives.
+                ghcOptions = [ "-staticlib" "-threaded" "-DIOS" ];
+                postInstall = ''
+                  ${pkgs.tree}/bin/tree $out
+                  mkdir -p $out/_pkg
+                  # copy over includes, we might want those, but maybe not.
+                  # cp -r $out/lib/*/*/include $out/_pkg/
+                  # find the libHS...ghc-X.Y.Z.a static library; this is the
+                  # rolled up one with all dependencies included.
+                  find ./dist -name "libHS*.a" -exec cp {} $out/_pkg \;
+                  find ${pkgs.libffi.overrideAttrs (old: { dontDisableStatic = true; })}/lib -name "*.a" -exec cp {} $out/_pkg \;
+                  find ${pkgs.gmp6.override { withStatic = true; }}/lib -name "*.a" -exec cp {} $out/_pkg \;
+                  # There is no static libc
+                  ${pkgs.tree}/bin/tree $out/_pkg
+                  (cd $out/_pkg; ${pkgs.zip}/bin/zip -r -9 $out/pkg-ios-x86_64.zip *)
                   rm -fR $out/_pkg
                   mkdir -p $out/nix-support
                   echo "file binary-dist \"$(echo $out/*.zip)\"" \
