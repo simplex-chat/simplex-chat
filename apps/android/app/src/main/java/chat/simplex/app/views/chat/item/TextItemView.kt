@@ -3,6 +3,7 @@ package chat.simplex.app.views.chat.item
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.ClickableText
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -71,7 +72,9 @@ fun MarkdownText (
       append(chatItem.content.text)
       withStyle(reserveTimestampStyle) { append("  ${chatItem.timestampText}") }
     }
-    Text(annotatedText, style = style, modifier = modifier, maxLines = maxLines, overflow = overflow)
+    SelectionContainer {
+      Text(annotatedText, style = style, modifier = modifier, maxLines = maxLines, overflow = overflow)
+    }
   } else {
     val annotatedText = buildAnnotatedString {
       appendGroupMember(this, chatItem, groupMemberBold)
@@ -91,14 +94,18 @@ fun MarkdownText (
       withStyle(reserveTimestampStyle) { append("  ${chatItem.timestampText}") }
     }
     if (uriHandler != null) {
-      ClickableText(annotatedText, style = style, modifier = modifier, maxLines = maxLines, overflow = overflow,
-        onClick = { offset ->
-          annotatedText.getStringAnnotations(tag = "URL", start = offset, end = offset)
-            .firstOrNull()?.let { annotation -> uriHandler.openUri(annotation.item) }
-        }
-      )
+      SelectionContainer {
+        ClickableText(annotatedText, style = style, modifier = modifier, maxLines = maxLines, overflow = overflow,
+          onClick = { offset ->
+            annotatedText.getStringAnnotations(tag = "URL", start = offset, end = offset)
+              .firstOrNull()?.let { annotation -> uriHandler.openUri(annotation.item) }
+          }
+        )
+      }
     } else {
-      Text(annotatedText, style = style, modifier = modifier, maxLines = maxLines, overflow = overflow)
+      SelectionContainer {
+        Text(annotatedText, style = style, modifier = modifier, maxLines = maxLines, overflow = overflow)
+      }
     }
   }
 }

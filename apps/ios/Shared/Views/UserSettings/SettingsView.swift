@@ -50,19 +50,25 @@ struct SettingsView: View {
 
                 Section("Help") {
                     NavigationLink {
-                        VStack(alignment: .leading, spacing: 10) {
-                            Text("Welcome \(user.displayName)!")
-                                .font(.largeTitle)
-                                .padding(.leading)
-                            Divider()
-                            ChatHelp(showSettings: $showSettings)
-                        }
-                        .frame(maxHeight: .infinity, alignment: .top)
+                        ChatHelp(showSettings: $showSettings)
+                            .navigationTitle("Welcome \(user.displayName)!")
+                            .frame(maxHeight: .infinity, alignment: .top)
                     } label: {
                         HStack {
                             Image(systemName: "questionmark.circle")
                                 .padding(.trailing, 8)
                             Text("How to use SimpleX Chat")
+                        }
+                    }
+                    NavigationLink {
+                        MarkdownHelp()
+                            .navigationTitle("How to use markdown")
+                            .frame(maxHeight: .infinity, alignment: .top)
+                    } label: {
+                        HStack {
+                            Image(systemName: "textformat")
+                                .padding(.trailing, 4)
+                            Text("Markdown in messages")
                         }
                     }
                     HStack {
