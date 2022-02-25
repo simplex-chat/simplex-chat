@@ -322,7 +322,7 @@ processChatCommand = \case
     pure . CRNewChatItem $ AChatItem SCTDirect SMDSnd (DirectChat contact) ci
   SendGroupFile gName f -> withUser $ \user@User {userId} -> withChatLock $ do
     (fileSize, chSize) <- checkSndFile f
-    Group gInfo@GroupInfo {membership} members <- withStore $ \st -> getGroupByName st user gName
+    Group gInfo@GroupInfo {groupId, membership} members <- withStore $ \st -> getGroupByName st user gName
     unless (memberActive membership) $ throwChatError CEGroupMemberUserRemoved
     let fileName = takeFileName f
     ms <- forM (filter memberActive members) $ \m -> do
@@ -331,7 +331,7 @@ processChatCommand = \case
     fileId <- withStore $ \st -> createSndGroupFileTransfer st userId gInfo ms f fileSize chSize
     -- TODO sendGroupChatItem - same file invitation to all
     forM_ ms $ \(m, _, fileInv) ->
-      traverse (`sendDirectMessage` XFile fileInv) $ memberConn m
+      traverse (\conn -> sendDirectMessage conn (XFile fileInv) (Right groupId)) $ memberConn m
     setActive $ ActiveG gName
     -- this is a hack as we have multiple direct messages instead of one per group
     let ciContent = CISndFileInvitation fileId f
@@ -703,7 +703,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
             intros <- withStore $ \st -> createIntroductions st members m
             void . sendGroupMessage gInfo members . XGrpMemNew $ memberInfo m
             forM_ intros $ \intro@GroupMemberIntro {introId} -> do
-              void . sendDirectMessage conn . XGrpMemIntro . memberInfo $ reMember intro
+              void $ sendDirectMessage conn (XGrpMemIntro . memberInfo $ reMember intro) (Right groupId)
               withStore $ \st -> updateIntroStatus st introId GMIntroSent
           _ -> do
             -- TODO send probe and decide whether to use existing contact connection or the new contact connection
@@ -999,7 +999,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
             toView $ CRJoinedGroupMemberConnecting gInfo m newMember
 
     xGrpMemIntro :: Connection -> GroupInfo -> GroupMember -> MemberInfo -> m ()
-    xGrpMemIntro conn gInfo m memInfo@(MemberInfo memId _ _) = do
+    xGrpMemIntro conn gInfo@GroupInfo {groupId} m memInfo@(MemberInfo memId _ _) = do
       case memberCategory m of
         GCHostMember -> do
           members <- withStore $ \st -> getGroupMembers st user gInfo
@@ -1010,7 +1010,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
               (directConnId, directConnReq) <- withAgent (`createConnection` SCMInvitation)
               newMember <- withStore $ \st -> createIntroReMember st user gInfo m memInfo groupConnId directConnId
               let msg = XGrpMemInv memId IntroInvitation {groupConnReq, directConnReq}
-              void $ sendDirectMessage conn msg
+              void $ sendDirectMessage conn msg (Right groupId)
               withStore $ \st -> updateGroupMemberStatus st userId newMember GSMemIntroInvited
         _ -> messageError "x.grp.mem.intro can be only sent by host member"
 
@@ -1200,14 +1200,14 @@ deleteMemberConnection m@GroupMember {activeConn} = do
   forM_ activeConn $ \conn -> withStore $ \st -> updateConnectionStatus st conn ConnDeleted
 
 sendDirectContactMessage :: ChatMonad m => Contact -> ChatMsgEvent -> m MessageId
-sendDirectContactMessage ct@Contact {activeConn = conn@Connection {connStatus}} chatMsgEvent = do
+sendDirectContactMessage ct@Contact {activeConn = conn@Connection {connId, connStatus}} chatMsgEvent = do
   if connStatus == ConnReady || connStatus == ConnSndReady
-    then sendDirectMessage conn chatMsgEvent
+    then sendDirectMessage conn chatMsgEvent (Left connId)
     else throwChatError $ CEContactNotReady ct
 
-sendDirectMessage :: ChatMonad m => Connection -> ChatMsgEvent -> m MessageId
-sendDirectMessage conn@Connection {connId} chatMsgEvent = do
-  (msgId, msgBody) <- createSndMessage chatMsgEvent (Left connId)
+sendDirectMessage :: ChatMonad m => Connection -> ChatMsgEvent -> EitherConnIdGroupId -> m MessageId
+sendDirectMessage conn chatMsgEvent eitherConnIdGroupId = do
+  (msgId, msgBody) <- createSndMessage chatMsgEvent eitherConnIdGroupId
   deliverMessage conn msgBody msgId
   pure msgId
 
