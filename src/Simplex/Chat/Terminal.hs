@@ -20,7 +20,7 @@ import UnliftIO (async, waitEither_)
 
 simplexChat :: WithTerminal t => ChatConfig -> ChatOpts -> t -> IO ()
 simplexChat cfg@ChatConfig {dbPoolSize, yesToMigrations} opts t
-  | logging opts = do
+  | logAgent opts = do
     setLogLevel LogInfo -- LogError
     withGlobalLogging logCfg initRun
   | otherwise = initRun

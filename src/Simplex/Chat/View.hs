@@ -10,7 +10,8 @@ module Simplex.Chat.View where
 import qualified Data.Aeson as J
 import Data.Function (on)
 import Data.Int (Int64)
-import Data.List (groupBy, intersperse, sortOn)
+import Data.List (groupBy, intersperse, partition, sortOn)
+import Data.Maybe (isJust)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (DiffTime)
@@ -101,6 +102,10 @@ responseToView testView = \case
   CRContactDisconnected c -> [ttyContact' c <> ": disconnected from server (messages will be queued)"]
   CRContactSubscribed c -> [ttyContact' c <> ": connected to server"]
   CRContactSubError c e -> [ttyContact' c <> ": contact error " <> sShow e]
+  CRContactSubSummary summary ->
+    (if null connected then [] else [sShow (length connected) <> " contacts connected (use " <> highlight' "/cs" <> " for the list)"]) <> viewErrorsSummary errors " contact errors"
+    where
+      (errors, connected) = partition (isJust . contactError) summary
   CRGroupInvitation GroupInfo {localDisplayName = ldn, groupProfile = GroupProfile {fullName}} ->
     [groupInvitation ldn fullName]
   CRReceivedGroupInvitation g c role -> viewReceivedGroupInvitation g c role
@@ -115,6 +120,7 @@ responseToView testView = \case
   CRGroupRemoved g -> [ttyFullGroup g <> ": you are no longer a member or group deleted"]
   CRGroupDeleted g m -> [ttyGroup' g <> ": " <> ttyMember m <> " deleted the group", "use " <> highlight ("/d #" <> groupName' g) <> " to delete the local copy of the group"]
   CRMemberSubError g c e -> [ttyGroup' g <> " member " <> ttyContact c <> " error: " <> sShow e]
+  CRMemberSubErrors summary -> viewErrorsSummary summary " group member errors"
   CRGroupSubscribed g -> [ttyFullGroup g <> ": connected to server(s)"]
   CRSndFileSubError SndFileTransfer {fileId, fileName} e ->
     ["sent file " <> sShow fileId <> " (" <> plain fileName <> ") error: " <> sShow e]
@@ -140,6 +146,8 @@ responseToView testView = \case
       where
         toChatView :: CChatItem c -> (Int, Text)
         toChatView (CChatItem dir ChatItem {meta}) = (msgDirectionInt $ toMsgDirection dir, itemText meta)
+    viewErrorsSummary :: [a] -> StyledString -> [StyledString]
+    viewErrorsSummary summary s = if null summary then [] else [styled (colored Red) (T.pack . show $ length summary) <> s <> " (run with -c option to show each error)"]
 
 viewChatItem :: ChatInfo c -> ChatItem c d -> [StyledString]
 viewChatItem chat (ChatItem cd meta content _) = case (chat, cd) of

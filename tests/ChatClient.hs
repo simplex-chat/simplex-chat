@@ -43,7 +43,8 @@ opts =
   ChatOpts
     { dbFilePrefix = undefined,
       smpServers = ["smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=@localhost:5001"],
-      logging = False
+      logConnections = False,
+      logAgent = False
     }
 
 termSettings :: VirtualTerminalSettings
