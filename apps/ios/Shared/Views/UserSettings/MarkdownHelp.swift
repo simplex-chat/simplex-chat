@@ -17,8 +17,13 @@ struct MarkdownHelp: View {
             mdFormat("_italic_", Text("italic text").italic())
             mdFormat("~strike~", Text("strikethrough text").strikethrough())
             mdFormat("`code`", Text("`a = b + c`").font(.body.monospaced()))
-            mdFormat("!1 color!", Text("red text").foregroundColor(.red) + Text(" (") + color("1", .red) + color("2", .green) + color("3", .blue) + color("4", .yellow) + color("5", .cyan) + Text("6").foregroundColor(.purple) + Text(")"))
-            mdFormat("#secret#", Text("secret text").foregroundColor(.clear).underline(color: .primary) + Text(" (can be copied)"))
+            mdFormat("!1 colored!", Text("red text").foregroundColor(.red) + Text(" (") + color("1", .red) + color("2", .green) + color("3", .blue) + color("4", .yellow) + color("5", .cyan) + Text("6").foregroundColor(.purple) + Text(")"))
+            (
+                mdFormat("#secret#", Text("secret text")
+                    .foregroundColor(.clear)
+                    .underline(color: .primary) + Text(" (can be copied)"))
+            )
+            .textSelection(.enabled)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding()
