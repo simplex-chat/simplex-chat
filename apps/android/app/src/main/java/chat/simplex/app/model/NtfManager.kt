@@ -104,7 +104,7 @@ class NtfManager(val context: Context) {
 
     // Send notifications
     with(NotificationManagerCompat.from(context)) {
-      // Cancel solo notification as it doesn't join group. Resend it where needed.
+      // Cancel solo notification as it doesn't join group. Resend it to be in the group.
       if (rawCount != 0) {
         notify(group.hashCode(), groupNotificationBuilder.build())
       }
