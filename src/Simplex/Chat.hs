@@ -476,12 +476,10 @@ subscribeUserConnections user@User {userId} = do
   where
     subscribeContacts ce = do
       contacts <- withStore (`getUserContacts` user)
-      summary <- forConcurrently contacts $ \ct ->
-        ContactSubStatus ct
-          <$> ( (subscribe (contactConnId ct) >> when ce (toView $ CRContactSubscribed ct) $> Nothing)
-                  `catchError` (\e -> when ce (toView $ CRContactSubError ct e) $> Just e)
-              )
-      toView $ CRContactSubSummary summary
+      toView . CRContactSubSummary =<< forConcurrently contacts (\ct -> ContactSubStatus ct <$> subscribeContact ce ct)
+    subscribeContact ce ct =
+      (subscribe (contactConnId ct) >> when ce (toView $ CRContactSubscribed ct) $> Nothing)
+        `catchError` (\e -> when ce (toView $ CRContactSubError ct e) $> Just e)
     subscribeGroups ce = do
       groups <- withStore (`getUserGroups` user)
       toView . CRMemberSubErrors . mconcat =<< forConcurrently groups (subscribeGroup ce)
