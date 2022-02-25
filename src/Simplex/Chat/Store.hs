@@ -157,6 +157,7 @@ import Simplex.Chat.Migrations.M20220101_initial
 import Simplex.Chat.Migrations.M20220122_v1_1
 import Simplex.Chat.Migrations.M20220205_chat_item_status
 import Simplex.Chat.Migrations.M20220210_deduplicate_contact_requests
+import Simplex.Chat.Migrations.M20220224_messages_fks
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Chat.Util (eitherToMaybe)
@@ -174,7 +175,8 @@ schemaMigrations =
   [ ("20220101_initial", m20220101_initial),
     ("20220122_v1_1", m20220122_v1_1),
     ("20220205_chat_item_status", m20220205_chat_item_status),
-    ("20220210_deduplicate_contact_requests", m20220210_deduplicate_contact_requests)
+    ("20220210_deduplicate_contact_requests", m20220210_deduplicate_contact_requests),
+    ("20220224_messages_fks", m20220224_messages_fks)
   ]
 
 -- | The list of migrations in ascending order by date
@@ -2010,11 +2012,11 @@ getSndFileTransfers_ db userId fileId =
         Just recipientDisplayName -> Right SndFileTransfer {fileId, fileStatus, fileName, fileSize, chunkSize, filePath, recipientDisplayName, connId, agentConnId}
         Nothing -> Left $ SESndFileInvalid fileId
 
-createNewMessage :: MonadUnliftIO m => SQLiteStore -> NewMessage -> m MessageId
-createNewMessage st newMsg =
+createNewMessage :: MonadUnliftIO m => SQLiteStore -> NewMessage -> ConnOrGroupId -> m MessageId
+createNewMessage st newMsg connOrGroupId =
   liftIO . withTransaction st $ \db -> do
     currentTs <- getCurrentTime
-    createNewMessage_ db newMsg currentTs
+    createNewMessage_ db newMsg connOrGroupId currentTs
 
 createSndMsgDelivery :: MonadUnliftIO m => SQLiteStore -> SndMsgDelivery -> MessageId -> m ()
 createSndMsgDelivery st sndMsgDelivery messageId =
@@ -2023,11 +2025,11 @@ createSndMsgDelivery st sndMsgDelivery messageId =
     msgDeliveryId <- createSndMsgDelivery_ db sndMsgDelivery messageId currentTs
     createMsgDeliveryEvent_ db msgDeliveryId MDSSndAgent currentTs
 
-createNewMessageAndRcvMsgDelivery :: MonadUnliftIO m => SQLiteStore -> NewMessage -> RcvMsgDelivery -> m MessageId
-createNewMessageAndRcvMsgDelivery st newMsg rcvMsgDelivery =
+createNewMessageAndRcvMsgDelivery :: MonadUnliftIO m => SQLiteStore -> NewMessage -> ConnOrGroupId -> RcvMsgDelivery -> m MessageId
+createNewMessageAndRcvMsgDelivery st newMsg connOrGroupId rcvMsgDelivery =
   liftIO . withTransaction st $ \db -> do
     currentTs <- getCurrentTime
-    messageId <- createNewMessage_ db newMsg currentTs
+    messageId <- createNewMessage_ db newMsg connOrGroupId currentTs
     msgDeliveryId <- createRcvMsgDelivery_ db rcvMsgDelivery messageId currentTs
     createMsgDeliveryEvent_ db msgDeliveryId MDSRcvAgent currentTs
     pure messageId
@@ -2048,17 +2050,21 @@ createRcvMsgDeliveryEvent st connId agentMsgId rcvMsgDeliveryStatus =
       currentTs <- getCurrentTime
       createMsgDeliveryEvent_ db msgDeliveryId rcvMsgDeliveryStatus currentTs
 
-createNewMessage_ :: DB.Connection -> NewMessage -> UTCTime -> IO MessageId
-createNewMessage_ db NewMessage {direction, cmEventTag, msgBody} createdAt = do
+createNewMessage_ :: DB.Connection -> NewMessage -> ConnOrGroupId -> UTCTime -> IO MessageId
+createNewMessage_ db NewMessage {direction, cmEventTag, msgBody} connOrGroupId createdAt = do
   DB.execute
     db
     [sql|
       INSERT INTO messages
-        (msg_sent, chat_msg_event, msg_body, created_at, updated_at)
-      VALUES (?,?,?,?,?)
+        (msg_sent, chat_msg_event, msg_body, created_at, updated_at, connection_id, group_id)
+      VALUES (?,?,?,?,?,?,?)
     |]
-    (direction, cmEventTag, msgBody, createdAt, createdAt)
+    (direction, cmEventTag, msgBody, createdAt, createdAt, connId_, groupId_)
   insertedRowId db
+  where
+    (connId_, groupId_) = case connOrGroupId of
+      ConnectionId connId -> (Just connId, Nothing)
+      GroupId groupId -> (Nothing, Just groupId)
 
 createSndMsgDelivery_ :: DB.Connection -> SndMsgDelivery -> MessageId -> UTCTime -> IO Int64
 createSndMsgDelivery_ db SndMsgDelivery {connId, agentMsgId} messageId createdAt = do
