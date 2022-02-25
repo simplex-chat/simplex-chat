@@ -2012,11 +2012,11 @@ getSndFileTransfers_ db userId fileId =
         Just recipientDisplayName -> Right SndFileTransfer {fileId, fileStatus, fileName, fileSize, chunkSize, filePath, recipientDisplayName, connId, agentConnId}
         Nothing -> Left $ SESndFileInvalid fileId
 
-createNewMessage :: MonadUnliftIO m => SQLiteStore -> NewMessage -> Maybe Int64 -> Maybe Int64 -> m MessageId
-createNewMessage st newMsg connId_ groupId_ =
+createNewMessage :: MonadUnliftIO m => SQLiteStore -> NewMessage -> EitherConnIdGroupId -> m MessageId
+createNewMessage st newMsg eitherConnIdGroupId =
   liftIO . withTransaction st $ \db -> do
     currentTs <- getCurrentTime
-    createNewMessage_ db newMsg connId_ groupId_ currentTs
+    createNewMessage_ db newMsg eitherConnIdGroupId currentTs
 
 createSndMsgDelivery :: MonadUnliftIO m => SQLiteStore -> SndMsgDelivery -> MessageId -> m ()
 createSndMsgDelivery st sndMsgDelivery messageId =
@@ -2025,11 +2025,11 @@ createSndMsgDelivery st sndMsgDelivery messageId =
     msgDeliveryId <- createSndMsgDelivery_ db sndMsgDelivery messageId currentTs
     createMsgDeliveryEvent_ db msgDeliveryId MDSSndAgent currentTs
 
-createNewMessageAndRcvMsgDelivery :: MonadUnliftIO m => SQLiteStore -> NewMessage -> RcvMsgDelivery -> m MessageId
-createNewMessageAndRcvMsgDelivery st newMsg rcvMsgDelivery@RcvMsgDelivery {connId} =
+createNewMessageAndRcvMsgDelivery :: MonadUnliftIO m => SQLiteStore -> NewMessage -> EitherConnIdGroupId -> RcvMsgDelivery -> m MessageId
+createNewMessageAndRcvMsgDelivery st newMsg eitherConnIdGroupId rcvMsgDelivery =
   liftIO . withTransaction st $ \db -> do
     currentTs <- getCurrentTime
-    messageId <- createNewMessage_ db newMsg (Just connId) Nothing currentTs
+    messageId <- createNewMessage_ db newMsg eitherConnIdGroupId currentTs
     msgDeliveryId <- createRcvMsgDelivery_ db rcvMsgDelivery messageId currentTs
     createMsgDeliveryEvent_ db msgDeliveryId MDSRcvAgent currentTs
     pure messageId
@@ -2050,8 +2050,8 @@ createRcvMsgDeliveryEvent st connId agentMsgId rcvMsgDeliveryStatus =
       currentTs <- getCurrentTime
       createMsgDeliveryEvent_ db msgDeliveryId rcvMsgDeliveryStatus currentTs
 
-createNewMessage_ :: DB.Connection -> NewMessage -> Maybe Int64 -> Maybe Int64 -> UTCTime -> IO MessageId
-createNewMessage_ db NewMessage {direction, cmEventTag, msgBody} connId_ groupId_ createdAt = do
+createNewMessage_ :: DB.Connection -> NewMessage -> EitherConnIdGroupId -> UTCTime -> IO MessageId
+createNewMessage_ db NewMessage {direction, cmEventTag, msgBody} eitherConnIdGroupId createdAt = do
   DB.execute
     db
     [sql|
@@ -2061,6 +2061,10 @@ createNewMessage_ db NewMessage {direction, cmEventTag, msgBody} connId_ groupId
     |]
     (direction, cmEventTag, msgBody, createdAt, createdAt, connId_, groupId_)
   insertedRowId db
+  where
+    (connId_, groupId_) = case eitherConnIdGroupId of
+      Left connId -> (Just connId, Nothing)
+      Right groupId -> (Nothing, Just groupId)
 
 createSndMsgDelivery_ :: DB.Connection -> SndMsgDelivery -> MessageId -> UTCTime -> IO Int64
 createSndMsgDelivery_ db SndMsgDelivery {connId, agentMsgId} messageId createdAt = do
