@@ -3,6 +3,7 @@ package chat.simplex.app.model
 import android.util.Log
 import androidx.compose.runtime.mutableStateOf
 import chat.simplex.app.*
+import chat.simplex.app.views.helpers.withApi
 import kotlinx.coroutines.*
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
@@ -36,14 +37,7 @@ open class ChatController(val ctrl: ChatCtrl, val alertManager: SimplexApp.Alert
 
   fun startReceiver() {
     thread(name="receiver") {
-//            val chatlog = FifoQueue<String>(500)
-      while(true) {
-        val json = chatRecvMsg(ctrl)
-        val r = APIResponse.decodeStr(json).resp
-        Log.d("SIMPLEX", "chatRecvMsg: ${r.responseType}")
-        if (r is CR.Response || r is CR.Invalid) Log.d("SIMPLEX", "chatRecvMsg json: $json")
-        processReceivedMsg(r)
-      }
+      withApi { recvMspLoop() }
     }
   }
 
@@ -61,6 +55,21 @@ open class ChatController(val ctrl: ChatCtrl, val alertManager: SimplexApp.Alert
       chatModel.terminalItems.add(TerminalItem.resp(r.resp))
       r.resp
     }
+  }
+
+  suspend fun recvMsg(): CR {
+    return withContext(Dispatchers.IO) {
+      val json = chatRecvMsg(ctrl)
+      val r = APIResponse.decodeStr(json).resp
+      Log.d("SIMPLEX", "chatRecvMsg: ${r.responseType}")
+      if (r is CR.Response || r is CR.Invalid) Log.d("SIMPLEX", "chatRecvMsg json: $json")
+      r
+    }
+  }
+
+  suspend fun recvMspLoop() {
+    processReceivedMsg(recvMsg())
+    recvMspLoop()
   }
 
   suspend fun apiGetActiveUser(): User? {

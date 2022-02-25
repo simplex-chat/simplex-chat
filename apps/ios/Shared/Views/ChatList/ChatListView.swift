@@ -80,19 +80,22 @@ struct ChatListView: View {
         logger.debug("ChatListView.connectViaUrlAlert path: \(path)")
         if (path == "/contact" || path == "/invitation") {
             path.removeFirst()
+            let action = path
             let link = url.absoluteString.replacingOccurrences(of: "///\(path)", with: "/\(path)")
             return Alert(
-                title: Text("Connect via \(path) link?"),
+                title: Text("Connect via \(action) link?"),
                 message: Text("Your profile will be sent to the contact that you received this link from: \(link)"),
                 primaryButton: .default(Text("Connect")) {
                     DispatchQueue.main.async {
-                        do {
-                            try apiConnect(connReq: link)
-                            connectionReqSentAlert(path == "contact" ? .contact : .invitation)
-                        } catch {
-                            let err = error.localizedDescription
-                            AlertManager.shared.showAlertMsg(title: "Connection error", message: err)
-                            logger.debug("ChatListView.connectViaUrlAlert: apiConnect error: \(err)")
+                        Task {
+                            do {
+                                try await apiConnect(connReq: link)
+                                connectionReqSentAlert(action == "contact" ? .contact : .invitation)
+                            } catch {
+                                let err = error.localizedDescription
+                                AlertManager.shared.showAlertMsg(title: "Connection error", message: err)
+                                logger.debug("ChatListView.connectViaUrlAlert: apiConnect error: \(err)")
+                            }
                         }
                     }
                 },

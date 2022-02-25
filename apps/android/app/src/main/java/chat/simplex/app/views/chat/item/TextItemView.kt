@@ -3,6 +3,7 @@ package chat.simplex.app.views.chat.item
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.ClickableText
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -10,11 +11,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.UriHandler
 import androidx.compose.ui.text.*
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import chat.simplex.app.model.CIDirection
-import chat.simplex.app.model.ChatItem
+import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.LightGray
 import chat.simplex.app.ui.theme.SimpleXTheme
 import kotlinx.datetime.Clock
@@ -35,7 +36,7 @@ fun TextItemView(chatItem: ChatItem, uriHandler: UriHandler? = null) {
       modifier = Modifier.padding(vertical = 6.dp, horizontal = 12.dp)
     ) {
       Box(contentAlignment = Alignment.BottomEnd) {
-        MarkdownText(chatItem, uriHandler = uriHandler)
+        MarkdownText(chatItem, uriHandler = uriHandler, groupMemberBold = true)
         CIMetaView(chatItem)
       }
     }
@@ -43,6 +44,16 @@ fun TextItemView(chatItem: ChatItem, uriHandler: UriHandler? = null) {
 }
 
 val reserveTimestampStyle = SpanStyle(color = Color.Transparent)
+val boldFont = SpanStyle(fontWeight = FontWeight.Bold)
+
+fun appendGroupMember(b: AnnotatedString.Builder, chatItem: ChatItem, groupMemberBold: Boolean) {
+  if (chatItem.chatDir is CIDirection.GroupRcv) {
+    val name = chatItem.chatDir.groupMember.memberProfile.displayName
+    if (groupMemberBold) b.withStyle(boldFont) { append(name) }
+    else b.append(name)
+    b.append(": ")
+  }
+}
 
 @ExperimentalTextApi
 @Composable
@@ -52,16 +63,21 @@ fun MarkdownText (
   maxLines: Int = Int.MAX_VALUE,
   overflow: TextOverflow = TextOverflow.Clip,
   uriHandler: UriHandler? = null,
+  groupMemberBold: Boolean = false,
   modifier: Modifier = Modifier
 ) {
   if (chatItem.formattedText == null) {
     val annotatedText = buildAnnotatedString {
+      appendGroupMember(this, chatItem, groupMemberBold)
       append(chatItem.content.text)
       withStyle(reserveTimestampStyle) { append("  ${chatItem.timestampText}") }
     }
-    Text(annotatedText, style = style, modifier = modifier, maxLines = maxLines, overflow = overflow)
+    SelectionContainer {
+      Text(annotatedText, style = style, modifier = modifier, maxLines = maxLines, overflow = overflow)
+    }
   } else {
     val annotatedText = buildAnnotatedString {
+      appendGroupMember(this, chatItem, groupMemberBold)
       for (ft in chatItem.formattedText) {
         if (ft.format == null) append(ft.text)
         else {
@@ -78,14 +94,18 @@ fun MarkdownText (
       withStyle(reserveTimestampStyle) { append("  ${chatItem.timestampText}") }
     }
     if (uriHandler != null) {
-      ClickableText(annotatedText, style = style, modifier = modifier, maxLines = maxLines, overflow = overflow,
-        onClick = { offset ->
-          annotatedText.getStringAnnotations(tag = "URL", start = offset, end = offset)
-            .firstOrNull()?.let { annotation -> uriHandler.openUri(annotation.item) }
-        }
-      )
+      SelectionContainer {
+        ClickableText(annotatedText, style = style, modifier = modifier, maxLines = maxLines, overflow = overflow,
+          onClick = { offset ->
+            annotatedText.getStringAnnotations(tag = "URL", start = offset, end = offset)
+              .firstOrNull()?.let { annotation -> uriHandler.openUri(annotation.item) }
+          }
+        )
+      }
     } else {
-      Text(annotatedText, style = style, modifier = modifier, maxLines = maxLines, overflow = overflow)
+      SelectionContainer {
+        Text(annotatedText, style = style, modifier = modifier, maxLines = maxLines, overflow = overflow)
+      }
     }
   }
 }

@@ -21,7 +21,8 @@ import System.FilePath (combine)
 data ChatOpts = ChatOpts
   { dbFilePrefix :: String,
     smpServers :: NonEmpty SMPServer,
-    logging :: Bool
+    logConnections :: Bool,
+    logAgent :: Bool
   }
 
 defaultSMPServers :: NonEmpty SMPServer
@@ -55,9 +56,14 @@ chatOpts appDir =
           <> value defaultSMPServers
       )
     <*> switch
-      ( long "log"
+      ( long "connections"
+          <> short 'c'
+          <> help "Log every contact and group connection on start"
+      )
+    <*> switch
+      ( long "log-agent"
           <> short 'l'
-          <> help "Enable logging"
+          <> help "Enable logs from SMP agent"
       )
   where
     defaultDbFilePath = combine appDir "simplex_v1"

@@ -63,12 +63,16 @@ struct ChatInfoView: View {
             title: Text("Delete contact?"),
             message: Text("Contact and all messages will be deleted"),
             primaryButton: .destructive(Text("Delete")) {
-                do {
-                    try apiDeleteChat(type: .direct, id: contact.apiId)
-                    chatModel.removeChat(contact.id)
-                    showChatInfo = false
-                } catch let error {
-                    logger.error("ChatInfoView.deleteContactAlert apiDeleteChat error: \(error.localizedDescription)")
+                Task {
+                    do {
+                        try await apiDeleteChat(type: .direct, id: contact.apiId)
+                        DispatchQueue.main.async {
+                            chatModel.removeChat(contact.id)
+                            showChatInfo = false
+                        }
+                    } catch let error {
+                        logger.error("ChatInfoView.deleteContactAlert apiDeleteChat error: \(error.localizedDescription)")
+                    }
                 }
             },
             secondaryButton: .cancel()

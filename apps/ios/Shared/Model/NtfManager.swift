@@ -37,7 +37,7 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
         if content.categoryIdentifier == ntfCategoryContactRequest && response.actionIdentifier == ntfActionAccept,
            let chatId = content.userInfo["chatId"] as? String,
            case let .contactRequest(contactRequest) = chatModel.getChat(chatId)?.chatInfo {
-            acceptContactRequest(contactRequest)
+            Task { await acceptContactRequest(contactRequest) }
         } else {
             chatModel.chatId = content.targetContentIdentifier
         }
