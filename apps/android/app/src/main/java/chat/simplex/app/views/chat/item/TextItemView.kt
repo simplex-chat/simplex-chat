@@ -44,7 +44,7 @@ fun TextItemView(chatItem: ChatItem, uriHandler: UriHandler? = null) {
 }
 
 val reserveTimestampStyle = SpanStyle(color = Color.Transparent)
-val boldFont = SpanStyle(fontWeight = FontWeight.Bold)
+val boldFont = SpanStyle(fontWeight = FontWeight.Medium)
 
 fun appendGroupMember(b: AnnotatedString.Builder, chatItem: ChatItem, groupMemberBold: Boolean) {
   if (chatItem.chatDir is CIDirection.GroupRcv) {

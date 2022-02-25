@@ -1,5 +1,6 @@
 package chat.simplex.app.views.chatlist
 
+import android.content.res.Configuration
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -11,11 +12,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.ExperimentalTextApi
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.app.model.Chat
 import chat.simplex.app.model.getTimestampText
 import chat.simplex.app.ui.theme.HighOrLowlight
+import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.chat.item.MarkdownText
 import chat.simplex.app.views.helpers.ChatInfoImage
 import chat.simplex.app.views.helpers.badgeLayout
@@ -72,5 +75,19 @@ fun ChatPreviewView(chat: Chat) {
         )
       }
     }
+  }
+}
+
+@ExperimentalTextApi
+@Preview(showBackground = true)
+@Preview(
+  uiMode = Configuration.UI_MODE_NIGHT_YES,
+  showBackground = true,
+  name = "Dark Mode"
+)
+@Composable
+fun PreviewChatPreviewView() {
+  SimpleXTheme {
+    ChatPreviewView(Chat.sampleData)
   }
 }

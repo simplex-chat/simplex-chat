@@ -250,6 +250,13 @@ data class Chat (
     @Serializable @SerialName("disconnected") class Disconnected: NetworkStatus()
     @Serializable @SerialName("error") class Error(val error: String): NetworkStatus()
   }
+
+  companion object {
+    val sampleData = Chat(
+      chatInfo = ChatInfo.Direct.sampleData,
+      chatItems = arrayListOf(ChatItem.getSampleData())
+    )
+  }
 }
 
 @Serializable
@@ -465,7 +472,13 @@ data class ChatItem (
   val isRcvNew: Boolean get() = meta.itemStatus is CIStatus.RcvNew
 
   companion object {
-    fun getSampleData(id: Long, dir: CIDirection, ts: Instant, text: String,status: CIStatus = CIStatus.SndNew()) =
+    fun getSampleData(
+      id: Long = 1,
+      dir: CIDirection = CIDirection.DirectSnd(),
+      ts: Instant = Clock.System.now(),
+      text: String = "hello\nthere",
+      status: CIStatus = CIStatus.SndNew()
+    ) =
       ChatItem(
         chatDir = dir,
         meta = CIMeta.getSample(id, ts, text, status),
