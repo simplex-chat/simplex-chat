@@ -40,46 +40,66 @@ class NtfManager(val context: Context) {
       .putExtra("chatId", cInfo.id)
       .putExtra("chatType", cInfo.chatType.chatTypeName)
       .setAction("openChatWithId")
-    notify(
-      channelId,
-      title = cInfo.displayName,
-      content = cItem.content.text,
-      notificationId = cItem.hashCode(),
-      intent = intent,
-      group = cInfo.id
-    )
-  }
-
-  private fun notify(
-    channelId: String,
-    title: String,
-    content: String,
-    notificationId: Int,
-    intent: Intent,
-    group: String? = null,
-    priority: Int = NotificationCompat.PRIORITY_DEFAULT
-  ) {
     val pendingIntent = TaskStackBuilder.create(context).run {
       addNextIntentWithParentStack(intent)
       getPendingIntent(0, PendingIntent.FLAG_IMMUTABLE)
     }
+
+    val notificationId = cItem.hashCode()
+    val group = cInfo.id
+    val notificationGroupId = group.hashCode()
+
     val notifications = manager.activeNotifications
     val jointNotifications = notifications.filter { n -> (n.notification.group != null && n.notification.group == group) }
-    val builder = NotificationCompat.Builder(context, channelId)
-        .setSmallIcon(R.mipmap.icon)
-        .setContentTitle(title)
-        .setContentText(content)
-        .setPriority(priority)
-        .setGroup(group)
-        .setGroupAlertBehavior(NotificationCompat.GROUP_ALERT_SUMMARY)
-        .setStyle(NotificationCompat.InboxStyle().addLine(content))
-        .setAutoCancel(true)
-        .setContentIntent(pendingIntent)
-    var groupNotificationBuilder: NotificationCompat.Builder? = null
     val rawCount = jointNotifications.count()
-    val msgCount = if (rawCount <= 1) rawCount + 1 else rawCount  // Avoid counting existing collective notification
+    val notificationBuilder = getNotificationBuilder(pendingIntent, NotificationCompat.PRIORITY_DEFAULT, channelId, cInfo.displayName, cItem.content.text, group)
+    val notificationGroupBuilder = getGroupNotificationBuilder(rawCount, pendingIntent, channelId, cInfo.displayName, group)
+
+
+    with(NotificationManagerCompat.from(context)) {
+      if (rawCount != 0) {
+        notify(notificationGroupId, notificationGroupBuilder.build())
+      }
+      if (rawCount == 1) {
+        val originalId = jointNotifications[0].id
+        manager.cancel(originalId)
+        notify(originalId, jointNotifications[0].notification.clone())
+      }
+      notify(notificationId, notificationBuilder.build())
+    }
+  }
+
+  private fun getNotificationBuilder(
+    pendingIntent: PendingIntent,
+    priority: Int = NotificationCompat.PRIORITY_DEFAULT,
+    channelId: String,
+    title: String,
+    content: String,
+    group: String? = null
+  ): NotificationCompat.Builder {
+    return NotificationCompat.Builder(context, channelId)
+      .setSmallIcon(R.mipmap.icon)
+      .setContentTitle(title)
+      .setContentText(content)
+      .setPriority(priority)
+      .setGroup(group)
+      .setGroupAlertBehavior(NotificationCompat.GROUP_ALERT_SUMMARY)
+      .setStyle(NotificationCompat.InboxStyle().addLine(content))
+      .setAutoCancel(true)
+      .setContentIntent(pendingIntent)
+  }
+
+  private fun getGroupNotificationBuilder(
+    rawNotificationCount: Int,
+    pendingIntent: PendingIntent,
+    channelId: String,
+    title: String,
+    group: String? = null
+  ): NotificationCompat.Builder {
+    // Avoid counting existing group notification
+    val msgCount = if (rawNotificationCount <= 1) rawNotificationCount + 1 else rawNotificationCount
     val groupNotificationText = if (msgCount > 1) "$msgCount new messages" else "$msgCount new message"
-    groupNotificationBuilder = NotificationCompat.Builder(context, channelId)
+    return NotificationCompat.Builder(context, channelId)
       .setSmallIcon(R.mipmap.icon)
       .setContentTitle(title)
       .setContentText(groupNotificationText)
@@ -88,17 +108,7 @@ class NtfManager(val context: Context) {
       )
       .setGroup(group)
       .setGroupSummary(true)
-    with(NotificationManagerCompat.from(context)) {
-      if (rawCount != 0) {
-        notify(group.hashCode(), groupNotificationBuilder.build())
-      }
-      if (rawCount == 1) {
-        val originalId = jointNotifications[0].id
-        manager.cancel(originalId)
-        notify(originalId, jointNotifications[0].notification.clone())
-      }
-      notify(notificationId, builder.build())
-
-    }
+      .setContentIntent(pendingIntent)
+      .setAutoCancel(true)
   }
 }
