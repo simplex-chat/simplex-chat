@@ -65,3 +65,5 @@ fastlane/test_output
 iOSInjectionProject/
 
 Libraries/
+
+Shared/MyPlayground.playground/*
