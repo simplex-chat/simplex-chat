@@ -167,13 +167,14 @@ processChatCommand = \case
     CTContactRequest -> pure $ chatCmdError "not supported"
   APIDeleteChat cType chatId -> withUser $ \User {userId} -> case cType of
     CTDirect -> do
-      ct@Contact {localDisplayName} <- withStore $ \st -> getContact st userId chatId
+      ct@Contact {contactId, localDisplayName} <- withStore $ \st -> getContact st userId chatId
       withStore (\st -> getContactGroupNames st userId ct) >>= \case
         [] -> do
           conns <- withStore $ \st -> getContactConnections st userId ct
           withChatLock . procCmd $ do
             withAgent $ \a -> forM_ conns $ \conn ->
               deleteConnection a (aConnId conn) `catchError` \(_ :: AgentErrorType) -> pure ()
+            withStore $ \st -> deleteContactMessages st contactId
             withStore $ \st -> deleteContact st userId ct
             unsetActive $ ActiveC localDisplayName
             pure $ CRContactDeleted ct
@@ -292,7 +293,7 @@ processChatCommand = \case
       withStore $ \st -> updateGroupMemberStatus st userId membership GSMemLeft
       pure $ CRLeftMemberUser gInfo
   DeleteGroup gName -> withUser $ \user -> do
-    g@(Group gInfo@GroupInfo {membership} members) <- withStore $ \st -> getGroupByName st user gName
+    g@(Group gInfo@GroupInfo {groupId, membership} members) <- withStore $ \st -> getGroupByName st user gName
     let s = memberStatus membership
         canDelete =
           memberRole (membership :: GroupMember) == GROwner
@@ -300,6 +301,7 @@ processChatCommand = \case
     unless canDelete $ throwChatError CEGroupUserRole
     withChatLock . procCmd $ do
       when (memberActive membership) . void $ sendGroupMessage members XGrpDel
+      withStore $ \st -> deleteGroupMessages st groupId
       mapM_ deleteMemberConnection members
       withStore $ \st -> deleteGroup st user g
       pure $ CRGroupDeletedUser gInfo

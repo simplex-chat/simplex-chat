@@ -110,6 +110,8 @@ module Simplex.Chat.Store
     createNewMessageAndRcvMsgDelivery,
     createSndMsgDeliveryEvent,
     createRcvMsgDeliveryEvent,
+    deleteContactMessages,
+    deleteGroupMessages,
     createPendingGroupMessage,
     getPendingGroupMessages,
     deletePendingGroupMessage,
@@ -2116,12 +2118,28 @@ deleteContactMessages st contactId =
       [sql|
         DELETE FROM messages WHERE message_id IN (
           SELECT md.message_id
-          FROM md.msg_delivery_id
+          FROM msg_deliveries md
           JOIN connections c ON c.connection_id = md.connection_id
           WHERE c.contact_id = ?
         )
       |]
       (Only contactId)
+
+deleteGroupMessages :: MonadUnliftIO m => SQLiteStore -> Int64 -> m ()
+deleteGroupMessages st groupId =
+  liftIO . withTransaction st $ \db ->
+    DB.execute
+      db
+      [sql|
+        DELETE FROM messages WHERE message_id IN (
+          SELECT md.message_id
+          FROM msg_deliveries md
+          JOIN connections c ON c.connection_id = md.connection_id
+          JOIN group_members gm ON gm.group_member_id = c.group_member_id
+          WHERE gm.group_id = ?
+        )
+      |]
+      (Only groupId)
 
 createPendingGroupMessage :: MonadUnliftIO m => SQLiteStore -> Int64 -> MessageId -> Maybe Int64 -> m ()
 createPendingGroupMessage st groupMemberId messageId introId_ =
