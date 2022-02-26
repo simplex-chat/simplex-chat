@@ -466,14 +466,14 @@ agentSubscriber user = do
 subscribeUserConnections :: (MonadUnliftIO m, MonadReader ChatController m) => User -> m ()
 subscribeUserConnections user@User {userId} = do
   ce <- asks $ subscriptionEvents . config
-  void . runExceptT . (mapConcurrently_ id) $
-    [ subscribeContacts ce,
-      subscribeGroups ce,
-      subscribeFiles,
-      subscribePendingConnections,
-      subscribeUserContactLink
-    ]
+  void . runExceptT $ do
+    catchErr $ subscribeContacts ce
+    catchErr $ subscribeUserContactLink
+    catchErr $ subscribeGroups ce
+    catchErr $ subscribeFiles
+    catchErr $ subscribePendingConnections
   where
+    catchErr a = a `catchError` \_ -> pure ()
     subscribeContacts ce = do
       contacts <- withStore (`getUserContacts` user)
       toView . CRContactSubSummary =<< forConcurrently contacts (\ct -> ContactSubStatus ct <$> subscribeContact ce ct)
@@ -482,7 +482,7 @@ subscribeUserConnections user@User {userId} = do
         `catchError` (\e -> when ce (toView $ CRContactSubError ct e) $> Just e)
     subscribeGroups ce = do
       groups <- withStore (`getUserGroups` user)
-      toView . CRMemberSubErrors . mconcat =<< forConcurrently groups (subscribeGroup ce)
+      toView . CRMemberSubErrors . mconcat =<< forM groups (subscribeGroup ce)
     subscribeGroup ce (Group g@GroupInfo {membership} members) = do
       let connectedMembers = mapMaybe (\m -> (m,) <$> memberConnId m) members
       if memberStatus membership == GSMemInvited
