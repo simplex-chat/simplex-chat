@@ -39,6 +39,7 @@ responseToView :: Bool -> ChatResponse -> [StyledString]
 responseToView testView = \case
   CRActiveUser User {profile} -> viewUserProfile profile
   CRChatStarted -> ["chat started"]
+  CRChatRunning -> []
   CRApiChats chats -> if testView then testViewChats chats else [plain . bshow $ J.encode chats]
   CRApiChat chat -> if testView then testViewChat chat else [plain . bshow $ J.encode chat]
   CRNewChatItem (AChatItem _ _ chat item) -> viewChatItem chat item
@@ -103,9 +104,9 @@ responseToView testView = \case
   CRContactSubscribed c -> [ttyContact' c <> ": connected to server"]
   CRContactSubError c e -> [ttyContact' c <> ": contact error " <> sShow e]
   CRContactSubSummary summary ->
-    (if null connected then [] else [sShow (length connected) <> " contacts connected (use " <> highlight' "/cs" <> " for the list)"]) <> viewErrorsSummary errors " contact errors"
+    (if null subscribed then [] else [sShow (length subscribed) <> " contacts connected (use " <> highlight' "/cs" <> " for the list)"]) <> viewErrorsSummary errors " contact errors"
     where
-      (errors, connected) = partition (isJust . contactError) summary
+      (errors, subscribed) = partition (isJust . contactError) summary
   CRGroupInvitation GroupInfo {localDisplayName = ldn, groupProfile = GroupProfile {fullName}} ->
     [groupInvitation ldn fullName]
   CRReceivedGroupInvitation g c role -> viewReceivedGroupInvitation g c role
@@ -122,6 +123,10 @@ responseToView testView = \case
   CRMemberSubError g c e -> [ttyGroup' g <> " member " <> ttyContact c <> " error: " <> sShow e]
   CRMemberSubErrors summary -> viewErrorsSummary summary " group member errors"
   CRGroupSubscribed g -> [ttyFullGroup g <> ": connected to server(s)"]
+  CRPendingSubSummary summary ->
+    (if null subscribed then [] else [sShow (length subscribed) <> " pending connections subscribed"]) <> viewErrorsSummary errors " connection errors"
+    where
+      (errors, subscribed) = partition (isJust . connError) summary
   CRSndFileSubError SndFileTransfer {fileId, fileName} e ->
     ["sent file " <> sShow fileId <> " (" <> plain fileName <> ") error: " <> sShow e]
   CRRcvFileSubError RcvFileTransfer {fileId, fileInvitation = FileInvitation {fileName}} e ->

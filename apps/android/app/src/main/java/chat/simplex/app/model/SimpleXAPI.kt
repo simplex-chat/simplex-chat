@@ -268,9 +268,8 @@ open class ChatController(val ctrl: ChatCtrl, val alertManager: SimplexApp.Alert
   //            if chatModel.upsertChatItem(cInfo, cItem) {
   //              NtfManager.shared.notifyMessageReceived(cInfo, cItem)
   //            }
-//        default:
-//        logger.debug("unsupported event: \(res.responseType)")
-//      }
+      else ->
+        Log.d("SIMPLEX" , "unsupported event: ${r.responseType}")
     }
   }
 
@@ -394,6 +393,7 @@ class APIResponse(val resp: CR, val corr: String? = null) {
 sealed class CR {
   @Serializable @SerialName("activeUser") class ActiveUser(val user: User): CR()
   @Serializable @SerialName("chatStarted") class ChatStarted: CR()
+  @Serializable @SerialName("chatRunning") class ChatRunning: CR()
   @Serializable @SerialName("apiChats") class ApiChats(val chats: List<Chat>): CR()
   @Serializable @SerialName("apiChat") class ApiChat(val chat: Chat): CR()
   @Serializable @SerialName("invitation") class Invitation(val connReqInvitation: String): CR()
@@ -430,6 +430,7 @@ sealed class CR {
   val responseType: String get() = when(this) {
     is ActiveUser -> "activeUser"
     is ChatStarted -> "chatStarted"
+    is ChatRunning -> "chatRunning"
     is ApiChats -> "apiChats"
     is ApiChat -> "apiChats"
     is Invitation -> "invitation"
@@ -467,6 +468,7 @@ sealed class CR {
   val details: String get() = when(this) {
     is ActiveUser -> json.encodeToString(user)
     is ChatStarted -> noDetails()
+    is ChatRunning -> noDetails()
     is ApiChats -> json.encodeToString(chats)
     is ApiChat -> json.encodeToString(chat)
     is Invitation -> connReqInvitation
