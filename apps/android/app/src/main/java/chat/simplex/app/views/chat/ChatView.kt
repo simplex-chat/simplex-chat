@@ -11,12 +11,14 @@ import androidx.compose.material.icons.outlined.ArrowBack
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.ExperimentalTextApi
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.LifecycleOwner
 import androidx.navigation.NavController
 import chat.simplex.app.Pages
 import chat.simplex.app.model.*
@@ -32,14 +34,17 @@ import kotlinx.datetime.Clock
 @ExperimentalAnimatedInsets
 @DelicateCoroutinesApi
 @Composable
-fun ChatView(chatModel: ChatModel, nav: NavController) {
+fun ChatView(chatModel: ChatModel, nav: NavController, lifecycleOwner: LifecycleOwner = LocalLifecycleOwner.current) {
+
+  DisposableEffect(lifecycleOwner) {
+    onDispose { chatModel.chatId.value = null }
+  }
+
   if (chatModel.chatId.value != null && chatModel.chats.count() > 0) {
     val chat: Chat? = chatModel.chats.firstOrNull { chat -> chat.chatInfo.id == chatModel.chatId.value }
     if (chat != null) {
       // TODO a more advanced version would mark as read only if in view
       LaunchedEffect(chat.chatItems) {
-        chatModel.goToChatWithId.value = null
-        chatModel.currentlyViewingChatWithId.value = chat.id
         delay(1000L)
         if (chat.chatItems.count() > 0) {
           chatModel.markChatItemsRead(chat.chatInfo)
@@ -54,8 +59,6 @@ fun ChatView(chatModel: ChatModel, nav: NavController) {
       }
       ChatLayout(chat, chatModel.chatItems,
         back = {
-          // TODO do better by lifecycle hooks
-          chatModel.currentlyViewingChatWithId.value = null
           nav.popBackStack()
         },
         info = { nav.navigate(Pages.ChatInfo.route) },

@@ -18,7 +18,7 @@ import kotlin.concurrent.thread
 typealias ChatCtrl = Long
 
 @DelicateCoroutinesApi
-open class ChatController(val ctrl: ChatCtrl, val alertManager: SimplexApp.AlertManager, val ntfManager: NtfManager val appContext: Context) {
+open class ChatController(val ctrl: ChatCtrl, val alertManager: SimplexApp.AlertManager, val ntfManager: NtfManager, val appContext: Context) {
   var chatModel = ChatModel(this, alertManager)
 
   suspend fun startChat(u: User) {
@@ -286,7 +286,7 @@ open class ChatController(val ctrl: ChatCtrl, val alertManager: SimplexApp.Alert
         val cItem = r.chatItem.chatItem
         chatModel.addChatItem(cInfo, cItem)
 
-        if (!isAppOnForeground(appContext) || chatModel.currentlyViewingChatWithId.value != cInfo.id) {
+        if (!isAppOnForeground(appContext) || chatModel.chatId.value != cInfo.id) {
           ntfManager.notifyMessageReceived(cInfo, cItem)
         }
       }
