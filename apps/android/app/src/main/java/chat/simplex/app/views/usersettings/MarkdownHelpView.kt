@@ -60,7 +60,7 @@ fun MarkdownHelpLayout(back: () -> Unit) {
           })
         }
         Row {
-          MdSyntax("#secret")
+          MdSyntax("#secret#")
           SelectionContainer {
             Text(buildAnnotatedString {
               withStyle(Format.Secret().style) { append("secret text") }
