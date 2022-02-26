@@ -80,6 +80,7 @@ defaultChatConfig =
       yesToMigrations = False,
       tbqSize = 64,
       fileChunkSize = 15780,
+      subscriptionConcurrency = 16,
       subscriptionEvents = False,
       testView = False
     }
@@ -465,25 +466,26 @@ agentSubscriber user = do
 
 subscribeUserConnections :: (MonadUnliftIO m, MonadReader ChatController m) => User -> m ()
 subscribeUserConnections user@User {userId} = do
+  n <- asks $ subscriptionConcurrency . config
   ce <- asks $ subscriptionEvents . config
   void . runExceptT $ do
-    catchErr $ subscribeContacts ce
-    catchErr $ subscribeUserContactLink
-    catchErr $ subscribeGroups ce
-    catchErr $ subscribeFiles
-    catchErr $ subscribePendingConnections
+    catchErr $ subscribeContacts n ce
+    catchErr $ subscribeUserContactLink n
+    catchErr $ subscribeGroups n ce
+    catchErr $ subscribeFiles n
+    catchErr $ subscribePendingConnections n
   where
     catchErr a = a `catchError` \_ -> pure ()
-    subscribeContacts ce = do
+    subscribeContacts n ce = do
       contacts <- withStore (`getUserContacts` user)
-      toView . CRContactSubSummary =<< forConcurrently contacts (\ct -> ContactSubStatus ct <$> subscribeContact ce ct)
+      toView . CRContactSubSummary =<< pooledForConcurrentlyN n contacts (\ct -> ContactSubStatus ct <$> subscribeContact ce ct)
     subscribeContact ce ct =
       (subscribe (contactConnId ct) >> when ce (toView $ CRContactSubscribed ct) $> Nothing)
         `catchError` (\e -> when ce (toView $ CRContactSubError ct e) $> Just e)
-    subscribeGroups ce = do
+    subscribeGroups n ce = do
       groups <- withStore (`getUserGroups` user)
-      toView . CRMemberSubErrors . mconcat =<< forM groups (subscribeGroup ce)
-    subscribeGroup ce (Group g@GroupInfo {membership} members) = do
+      toView . CRMemberSubErrors . mconcat =<< forM groups (subscribeGroup n ce)
+    subscribeGroup n ce (Group g@GroupInfo {membership} members) = do
       let connectedMembers = mapMaybe (\m -> (m,) <$> memberConnId m) members
       if memberStatus membership == GSMemInvited
         then do
@@ -497,15 +499,15 @@ subscribeUserConnections user@User {userId} = do
                 else toView $ CRGroupRemoved g
               pure []
             else do
-              ms <- forConcurrently connectedMembers $ \(m@GroupMember {localDisplayName = c}, cId) ->
+              ms <- pooledForConcurrentlyN n connectedMembers $ \(m@GroupMember {localDisplayName = c}, cId) ->
                 (m,) <$> ((subscribe cId $> Nothing) `catchError` (\e -> when ce (toView $ CRMemberSubError g c e) $> Just e))
               toView $ CRGroupSubscribed g
               pure $ mapMaybe (\(m, e) -> maybe Nothing (Just . MemberSubError m) e) ms
-    subscribeFiles = do
+    subscribeFiles n = do
       sndFileTransfers <- withStore (`getLiveSndFileTransfers` user)
-      forConcurrently_ sndFileTransfers $ \sft -> async $ subscribeSndFile sft
+      pooledForConcurrentlyN_ n sndFileTransfers $ \sft -> subscribeSndFile sft
       rcvFileTransfers <- withStore (`getLiveRcvFileTransfers` user)
-      forConcurrently_ rcvFileTransfers $ \rft -> async $ subscribeRcvFile rft
+      pooledForConcurrentlyN_ n rcvFileTransfers $ \rft -> subscribeRcvFile rft
       where
         subscribeSndFile ft@SndFileTransfer {fileId, fileStatus, agentConnId = AgentConnId cId} = do
           subscribe cId `catchError` (toView . CRSndFileSubError ft)
@@ -524,17 +526,17 @@ subscribeUserConnections user@User {userId} = do
           where
             resume RcvFileInfo {agentConnId = AgentConnId cId} =
               subscribe cId `catchError` (toView . CRRcvFileSubError ft)
-    subscribePendingConnections = do
+    subscribePendingConnections n = do
       cs <- withStore (`getPendingConnections` user)
-      subscribeConns cs `catchError` \_ -> pure ()
-    subscribeUserContactLink = do
+      subscribeConns n cs `catchError` \_ -> pure ()
+    subscribeUserContactLink n = do
       cs <- withStore (`getUserContactLinkConnections` userId)
-      (subscribeConns cs >> toView CRUserContactLinkSubscribed)
+      (subscribeConns n cs >> toView CRUserContactLinkSubscribed)
         `catchError` (toView . CRUserContactLinkSubError)
     subscribe cId = withAgent (`subscribeConnection` cId)
-    subscribeConns conns =
+    subscribeConns n conns =
       withAgent $ \a ->
-        forConcurrently_ conns $ \c -> subscribeConnection a (aConnId c)
+        pooledForConcurrentlyN_ n conns $ \c -> subscribeConnection a (aConnId c)
 
 processAgentMessage :: forall m. ChatMonad m => Maybe User -> ConnId -> ACommand 'Agent -> m ()
 processAgentMessage Nothing _ _ = throwChatError CENoActiveUser

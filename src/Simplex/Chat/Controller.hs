@@ -50,6 +50,7 @@ data ChatConfig = ChatConfig
     yesToMigrations :: Bool,
     tbqSize :: Natural,
     fileChunkSize :: Integer,
+    subscriptionConcurrency :: Int,
     subscriptionEvents :: Bool,
     testView :: Bool
   }
