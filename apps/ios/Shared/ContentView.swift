@@ -13,32 +13,31 @@ struct ContentView: View {
     @State private var showNotificationAlert = false
 
     var body: some View {
-        ZStack {
-            if let user = chatModel.currentUser {
-                ChatListView(user: user)
-                    .onAppear {
-                        do {
-                            try apiStartChat()
-                            chatModel.chats = try apiGetChats()
-                        } catch {
-                            fatalError("Failed to start or load chats: \(error)")
-                        }
-                        ChatReceiver.shared.start()
-                        NtfManager.shared.requestAuthorization(onDeny: {
-                            alertManager.showAlert(notificationAlert())
-                        })
+        if let user = chatModel.currentUser {
+            ChatListView(user: user)
+                .onAppear {
+                    do {
+                        try apiStartChat()
+                        chatModel.chats = try apiGetChats()
+                    } catch {
+                        fatalError("Failed to start or load chats: \(error)")
                     }
-            } else {
-                WelcomeView()
-            }
+                    ChatReceiver.shared.start()
+                    NtfManager.shared.requestAuthorization(onDeny: {
+                        alertManager.showAlert(notificationAlert())
+                    })
+                }
+                .alert(isPresented: $alertManager.presentAlert) { alertManager.alertView! }
+        } else {
+            WelcomeView()
+                .alert(isPresented: $alertManager.presentAlert) { alertManager.alertView! }
         }
-        .alert(isPresented: $alertManager.presentAlert) { alertManager.alertView! }
     }
 
     func notificationAlert() -> Alert {
         Alert(
             title: Text("Notification are disabled!"),
-             message: Text("Please open settings to enable"),
+             message: Text("The app can notify you when you receive messages or contact requests - please open settings to enable."),
              primaryButton: .default(Text("Open Settings")) {
                  DispatchQueue.main.async {
                      UIApplication.shared.open(URL(string: UIApplication.openSettingsURLString)!, options: [:], completionHandler: nil)

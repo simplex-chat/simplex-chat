@@ -144,7 +144,10 @@ processChatCommand = \case
     user <- withStore $ \st -> createUser st p True
     atomically . writeTVar u $ Just user
     pure $ CRActiveUser user
-  StartChat -> withUser' $ \user -> startChatController user $> CRChatStarted
+  StartChat -> withUser' $ \user ->
+    asks agentAsync >>= readTVarIO >>= \case
+      Just _ -> pure CRChatRunning
+      _ -> startChatController user $> CRChatStarted
   APIGetChats -> CRApiChats <$> withUser (\user -> withStore (`getChatPreviews` user))
   APIGetChat cType cId pagination -> withUser $ \user -> case cType of
     CTDirect -> CRApiChat . AChat SCTDirect <$> withStore (\st -> getDirectChat st user cId pagination)
@@ -528,7 +531,9 @@ subscribeUserConnections user@User {userId} = do
               subscribe cId `catchError` (toView . CRRcvFileSubError ft)
     subscribePendingConnections n = do
       cs <- withStore (`getPendingConnections` user)
-      subscribeConns n cs `catchError` \_ -> pure ()
+      summary <- pooledForConcurrentlyN n cs $ \Connection {agentConnId = acId@(AgentConnId cId)} ->
+        PendingSubStatus acId <$> ((subscribe cId $> Nothing) `catchError` (pure . Just))
+      toView $ CRPendingSubSummary summary
     subscribeUserContactLink n = do
       cs <- withStore (`getUserContactLinkConnections` userId)
       (subscribeConns n cs >> toView CRUserContactLinkSubscribed)

@@ -95,6 +95,7 @@ enum ChatResponse: Decodable, Error {
     case response(type: String, json: String)
     case activeUser(user: User)
     case chatStarted
+    case chatRunning
     case apiChats(chats: [ChatData])
     case apiChat(chat: ChatData)
     case invitation(connReqInvitation: String)
@@ -131,6 +132,7 @@ enum ChatResponse: Decodable, Error {
             case let .response(type, _): return "* \(type)"
             case .activeUser: return "activeUser"
             case .chatStarted: return "chatStarted"
+            case .chatRunning: return "chatRunning"
             case .apiChats: return "apiChats"
             case .apiChat: return "apiChat"
             case .invitation: return "invitation"
@@ -170,6 +172,7 @@ enum ChatResponse: Decodable, Error {
             case let .response(_, json): return json
             case let .activeUser(user): return String(describing: user)
             case .chatStarted: return noDetails
+            case .chatRunning: return noDetails
             case let .apiChats(chats): return String(describing: chats)
             case let .apiChat(chat): return String(describing: chat)
             case let .invitation(connReqInvitation): return connReqInvitation
@@ -306,8 +309,8 @@ func apiSendMessage(type: ChatType, id: Int64, msg: MsgContent) async throws -> 
     throw r
 }
 
-func apiAddContact() async throws -> String {
-    let r = await chatSendCmd(.addContact)
+func apiAddContact() throws -> String {
+    let r = chatSendCmdSync(.addContact)
     if case let .invitation(connReqInvitation) = r { return connReqInvitation }
     throw r
 }
@@ -574,7 +577,10 @@ private func getChatCtrl() -> chat_ctrl {
     if let controller = chatController { return controller }
     let dataDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!.path + "/mobile_v1"
     var cstr = dataDir.cString(using: .utf8)!
+    logger.debug("getChatCtrl: chat_init")
+    ChatModel.shared.terminalItems.append(.cmd(.now, .string("chat_init")))
     chatController = chat_init(&cstr)
+    ChatModel.shared.terminalItems.append(.resp(.now, .response(type: "chat_controller", json: "chat_controller: no details")))
     return chatController!
 }
 

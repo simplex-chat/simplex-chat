@@ -133,6 +133,7 @@ data ChatCommand
 data ChatResponse
   = CRActiveUser {user :: User}
   | CRChatStarted
+  | CRChatRunning
   | CRApiChats {chats :: [AChat]}
   | CRApiChat {chat :: AChat}
   | CRNewChatItem {chatItem :: AChatItem}
@@ -204,6 +205,7 @@ data ChatResponse
   | CRMemberSubError {groupInfo :: GroupInfo, contactName :: ContactName, chatError :: ChatError} -- TODO Contact?  or GroupMember?
   | CRMemberSubErrors {memberSubErrors :: [MemberSubError]}
   | CRGroupSubscribed {groupInfo :: GroupInfo}
+  | CRPendingSubSummary {pendingSubStatus :: [PendingSubStatus]}
   | CRSndFileSubError {sndFileTransfer :: SndFileTransfer, chatError :: ChatError}
   | CRRcvFileSubError {rcvFileTransfer :: RcvFileTransfer, chatError :: ChatError}
   | CRUserContactLinkSubscribed
@@ -235,6 +237,16 @@ data MemberSubError = MemberSubError
 
 instance ToJSON MemberSubError where
   toEncoding = J.genericToEncoding J.defaultOptions
+
+data PendingSubStatus = PendingSubStatus
+  { connId :: AgentConnId,
+    connError :: Maybe ChatError
+  }
+  deriving (Show, Generic)
+
+instance ToJSON PendingSubStatus where
+  toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
+  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
 data ChatError
   = ChatError {errorType :: ChatErrorType}
