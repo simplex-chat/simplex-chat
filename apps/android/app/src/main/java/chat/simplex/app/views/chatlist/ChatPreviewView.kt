@@ -9,7 +9,6 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.ExperimentalTextApi
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -23,7 +22,6 @@ import chat.simplex.app.views.chat.item.MarkdownText
 import chat.simplex.app.views.helpers.ChatInfoImage
 import chat.simplex.app.views.helpers.badgeLayout
 
-@ExperimentalTextApi
 @Composable
 fun ChatPreviewView(chat: Chat) {
   Row {
@@ -78,7 +76,6 @@ fun ChatPreviewView(chat: Chat) {
   }
 }
 
-@ExperimentalTextApi
 @Preview(showBackground = true)
 @Preview(
   uiMode = Configuration.UI_MODE_NIGHT_YES,

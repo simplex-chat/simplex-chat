@@ -19,9 +19,7 @@ import chat.simplex.app.Pages
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
-import kotlinx.coroutines.DelicateCoroutinesApi
 
-@DelicateCoroutinesApi
 @Composable
 fun ChatInfoView(chatModel: ChatModel, nav: NavController) {
   val chat = chatModel.chats.firstOrNull { it.id == chatModel.chatId.value }

@@ -7,7 +7,8 @@ import android.util.Log
 import androidx.compose.runtime.mutableStateOf
 import chat.simplex.app.*
 import chat.simplex.app.views.helpers.withApi
-import kotlinx.coroutines.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.serialization.*
@@ -17,7 +18,6 @@ import kotlin.concurrent.thread
 
 typealias ChatCtrl = Long
 
-@DelicateCoroutinesApi
 open class ChatController(val ctrl: ChatCtrl, val alertManager: SimplexApp.AlertManager, val ntfManager: NtfManager, val appContext: Context) {
   var chatModel = ChatModel(this, alertManager)
 

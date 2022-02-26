@@ -9,7 +9,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.ExperimentalTextApi
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
@@ -17,10 +16,8 @@ import chat.simplex.app.Pages
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.helpers.withApi
-import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.datetime.Clock
 
-@ExperimentalTextApi
 @Composable
 fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel, nav: NavController) {
   ChatListNavLink(
@@ -35,7 +32,6 @@ fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel, nav: NavController) {
   )
 }
 
-@DelicateCoroutinesApi
 fun chatNavLink(chatPreview: Chat, chatModel: ChatModel, navController: NavController) {
   withApi {
     val chatInfo = chatPreview.chatInfo
@@ -50,7 +46,6 @@ fun chatNavLink(chatPreview: Chat, chatModel: ChatModel, navController: NavContr
   }
 }
 
-@DelicateCoroutinesApi
 fun contactRequestNavLink(contactRequest: ChatInfo.ContactRequest, chatModel: ChatModel, navController: NavController) {
   chatModel.alertManager.showAlertDialog(
     title = "Accept connection request?",
@@ -75,7 +70,6 @@ fun contactRequestNavLink(contactRequest: ChatInfo.ContactRequest, chatModel: Ch
   )
 }
 
-@ExperimentalTextApi
 @Composable
 fun ChatListNavLink(chat: Chat, action: () -> Unit) {
   ChatListNavLinkLayout(
@@ -115,7 +109,6 @@ fun ChatListNavLinkLayout(content: (@Composable () -> Unit), action: () -> Unit)
   Divider(Modifier.padding(horizontal = 8.dp))
 }
 
-@ExperimentalTextApi
 @Preview
 @Preview(
   uiMode = Configuration.UI_MODE_NIGHT_YES,
@@ -143,7 +136,6 @@ fun PreviewChatListNavLinkDirect() {
   }
 }
 
-@ExperimentalTextApi
 @Preview
 @Preview(
   uiMode = Configuration.UI_MODE_NIGHT_YES,
@@ -171,7 +163,6 @@ fun PreviewChatListNavLinkGroup() {
   }
 }
 
-@ExperimentalTextApi
 @Preview
 @Preview(
   uiMode = Configuration.UI_MODE_NIGHT_YES,

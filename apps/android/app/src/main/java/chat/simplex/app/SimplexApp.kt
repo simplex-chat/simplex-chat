@@ -9,7 +9,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.work.*
 import chat.simplex.app.model.*
 import chat.simplex.app.views.helpers.withApi
-import kotlinx.coroutines.DelicateCoroutinesApi
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.util.*
@@ -28,12 +27,10 @@ external fun chatInit(path: String): ChatCtrl
 external fun chatSendCmd(ctrl: ChatCtrl, msg: String) : String
 external fun chatRecvMsg(ctrl: ChatCtrl) : String
 
-@DelicateCoroutinesApi
 class SimplexApp: Application() {
   private lateinit var controller: ChatController
   lateinit var chatModel: ChatModel
   private lateinit var ntfManager: NtfManager
-
 
   fun initiateBackgroundWork() {
     val backgroundConstraints = Constraints.Builder()
@@ -46,7 +43,6 @@ class SimplexApp: Application() {
     WorkManager.getInstance(applicationContext)
       .enqueue(request)
   }
-
 
   override fun onCreate() {
     super.onCreate()

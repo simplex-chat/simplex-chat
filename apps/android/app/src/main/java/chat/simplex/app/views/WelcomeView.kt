@@ -19,9 +19,7 @@ import chat.simplex.app.model.Profile
 import chat.simplex.app.views.helpers.withApi
 import com.google.accompanist.insets.ProvideWindowInsets
 import com.google.accompanist.insets.navigationBarsWithImePadding
-import kotlinx.coroutines.DelicateCoroutinesApi
 
-@DelicateCoroutinesApi
 @Composable
 fun WelcomeView(chatModel: ChatModel, routeHome: () -> Unit) {
   ProvideWindowInsets(windowInsetsAnimationsEnabled = true) {
@@ -71,7 +69,6 @@ fun isValidDisplayName(name: String) : Boolean {
   return (name.firstOrNull { it.isWhitespace() }) == null
 }
 
-@DelicateCoroutinesApi
 @Composable
 fun CreateProfilePanel(chatModel: ChatModel, routeHome: () -> Unit) {
   var displayName by remember { mutableStateOf("") }

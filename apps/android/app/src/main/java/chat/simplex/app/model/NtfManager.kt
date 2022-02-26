@@ -3,7 +3,6 @@ package chat.simplex.app.model
 import android.app.*
 import android.content.Context
 import android.content.Intent
-import androidx.compose.ui.text.ExperimentalTextApi
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import chat.simplex.app.MainActivity
@@ -69,12 +68,6 @@ class NtfManager(val context: Context) {
     }
   }
 
-  @OptIn(
-    ExperimentalTextApi::class,
-    com.google.accompanist.insets.ExperimentalAnimatedInsets::class,
-    com.google.accompanist.permissions.ExperimentalPermissionsApi::class,
-    androidx.compose.material.ExperimentalMaterialApi::class
-  )
   private fun getMsgPendingIntent(cInfo: ChatInfo) : PendingIntent{
     val intent = Intent(
       context,

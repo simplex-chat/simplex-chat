@@ -12,7 +12,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
-import androidx.compose.ui.text.ExperimentalTextApi
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -24,16 +23,14 @@ import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.chat.item.ChatItemView
 import chat.simplex.app.views.helpers.ChatInfoImage
 import chat.simplex.app.views.helpers.withApi
-import com.google.accompanist.insets.*
-import kotlinx.coroutines.*
+import com.google.accompanist.insets.ProvideWindowInsets
+import com.google.accompanist.insets.navigationBarsWithImePadding
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 
-@ExperimentalTextApi
-@ExperimentalAnimatedInsets
-@DelicateCoroutinesApi
 @Composable
 fun ChatView(chatModel: ChatModel, nav: NavController) {
-
   DisposableEffect(chatModel.chatId.value) {
     onDispose { chatModel.chatId.value = null }
   }
@@ -56,9 +53,7 @@ fun ChatView(chatModel: ChatModel, nav: NavController) {
         }
       }
       ChatLayout(chat, chatModel.chatItems,
-        back = {
-          nav.popBackStack()
-        },
+        back = nav::popBackStack,
         info = { nav.navigate(Pages.ChatInfo.route) },
         sendMessage = { msg ->
           withApi {
@@ -78,9 +73,6 @@ fun ChatView(chatModel: ChatModel, nav: NavController) {
   }
 }
 
-@ExperimentalTextApi
-@DelicateCoroutinesApi
-@ExperimentalAnimatedInsets
 @Composable
 fun ChatLayout(
   chat: Chat, chatItems: List<ChatItem>,
@@ -143,9 +135,6 @@ fun ChatInfoToolbar(chat: Chat, back: () -> Unit, info: () -> Unit) {
   }
 }
 
-@ExperimentalTextApi
-@DelicateCoroutinesApi
-@ExperimentalAnimatedInsets
 @Composable
 fun ChatItemsList(chatItems: List<ChatItem>) {
   val listState = rememberLazyListState()
@@ -164,8 +153,6 @@ fun ChatItemsList(chatItems: List<ChatItem>) {
   }
 }
 
-@ExperimentalTextApi
-@ExperimentalAnimatedInsets
 @Preview(showBackground = true)
 @Preview(
   uiMode = Configuration.UI_MODE_NIGHT_YES,
