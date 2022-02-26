@@ -78,13 +78,13 @@ data ChatItem (c :: ChatType) (d :: MsgDirection) = ChatItem
   { chatDir :: CIDirection c d,
     meta :: CIMeta d,
     content :: CIContent d,
-    formattedText :: [FormattedText]
+    formattedText :: Maybe [FormattedText]
   }
   deriving (Show, Generic)
 
 instance ToJSON (ChatItem c d) where
-  toJSON = J.genericToJSON J.defaultOptions
-  toEncoding = J.genericToEncoding J.defaultOptions
+  toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
+  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
 data CIDirection (c :: ChatType) (d :: MsgDirection) where
   CIDirectSnd :: CIDirection 'CTDirect 'MDSnd
@@ -421,6 +421,8 @@ data PendingGroupMessage = PendingGroupMessage
   }
 
 type MessageId = Int64
+
+data ConnOrGroupId = ConnectionId Int64 | GroupId Int64
 
 data MsgDirection = MDRcv | MDSnd
   deriving (Show, Generic)

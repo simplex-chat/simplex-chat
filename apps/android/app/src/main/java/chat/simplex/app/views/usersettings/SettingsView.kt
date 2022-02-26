@@ -1,6 +1,7 @@
 package chat.simplex.app.views.usersettings
 
 import android.content.res.Configuration
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
@@ -11,6 +12,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
@@ -20,7 +22,6 @@ import chat.simplex.app.Pages
 import chat.simplex.app.R
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.model.Profile
-import chat.simplex.app.ui.theme.HighOrLowlight
 import chat.simplex.app.ui.theme.SimpleXTheme
 
 @Composable
@@ -43,25 +44,28 @@ fun SettingsLayout(
   navigate: (String) -> Unit
 ) {
   val uriHandler = LocalUriHandler.current
-  Column(
+  Surface(
     Modifier
+      .background(MaterialTheme.colors.background)
       .fillMaxSize()
-//      .background(MaterialTheme.colors.background)
-      .padding(8.dp)
   ) {
-    Text(
-      "Your Settings",
-      style = MaterialTheme.typography.h1,
-      color = MaterialTheme.colors.onBackground
-    )
-    Spacer(Modifier.height(30.dp))
+    Column(
+      Modifier
+        .fillMaxSize()
+        .background(MaterialTheme.colors.background)
+        .padding(8.dp)
+        .padding(top = 16.dp)
+    ) {
+      Text(
+        "Your Settings",
+        style = MaterialTheme.typography.h1,
+      )
+      Spacer(Modifier.height(30.dp))
 
-    SettingsSectionView(
-      content = {
+      SettingsSectionView({ navigate(Pages.UserProfile.route) }, 60.dp) {
         Icon(
           Icons.Outlined.AccountCircle,
           contentDescription = "Avatar Placeholder",
-          tint = MaterialTheme.colors.onBackground,
         )
         Spacer(Modifier.padding(horizontal = 4.dp))
         Column {
@@ -69,136 +73,102 @@ fun SettingsLayout(
             profile.displayName,
             style = MaterialTheme.typography.caption,
             fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colors.onBackground
           )
-          Text(
-            profile.fullName,
-            color = MaterialTheme.colors.onBackground
-          )
+          Text(profile.fullName)
         }
-      },
-      func = { navigate(Pages.UserProfile.route) },
-      height = 60.dp
-    )
-    Divider(Modifier.padding(horizontal = 8.dp))
-    SettingsSectionView(
-      content = {
+      }
+      Divider(Modifier.padding(horizontal = 8.dp))
+      SettingsSectionView({ navigate(Pages.UserAddress.route) }) {
         Icon(
           Icons.Outlined.QrCode,
           contentDescription = "Address",
-          tint = HighOrLowlight,
         )
         Spacer(Modifier.padding(horizontal = 4.dp))
-        Text(
-          "Your SimpleX contact address",
-          color = HighOrLowlight
-        )
-      },
-      func = { println("navigate to address") }
-    )
-    Spacer(Modifier.height(24.dp))
+        Text("Your SimpleX contact address")
+      }
+      Spacer(Modifier.height(24.dp))
 
-    SettingsSectionView(
-      content = {
+      SettingsSectionView({ navigate(Pages.Help.route) }) {
         Icon(
           Icons.Outlined.HelpOutline,
-          contentDescription = "Help",
-          tint = MaterialTheme.colors.onBackground,
+          contentDescription = "Chat help",
         )
         Spacer(Modifier.padding(horizontal = 4.dp))
-        Text(
-          "How to use SimpleX Chat",
-          color = MaterialTheme.colors.onBackground
+        Text("How to use SimpleX Chat")
+      }
+      SettingsSectionView({ navigate(Pages.Markdown.route) }) {
+        Icon(
+          Icons.Outlined.TextFormat,
+          contentDescription = "Markdown help",
         )
-      },
-      func = { println("navigate to help") }
-    )
-    Divider(Modifier.padding(horizontal = 8.dp))
-    SettingsSectionView(
-      content = {
+        Spacer(Modifier.padding(horizontal = 4.dp))
+        Text("Markdown in messages")
+      }
+      Divider(Modifier.padding(horizontal = 8.dp))
+      SettingsSectionView({ uriHandler.openUri(simplexTeamUri) }) {
         Icon(
           Icons.Outlined.Tag,
           contentDescription = "SimpleX Team",
-          tint = MaterialTheme.colors.onBackground,
         )
         Spacer(Modifier.padding(horizontal = 4.dp))
         Text(
           "Get help & advice via chat",
           color = MaterialTheme.colors.primary
         )
-      },
-      func = { uriHandler.openUri(simplexTeamUri) }
-    )
-    Divider(Modifier.padding(horizontal = 8.dp))
-    SettingsSectionView(
-      content = {
+      }
+      Divider(Modifier.padding(horizontal = 8.dp))
+      SettingsSectionView({ uriHandler.openUri("mailto:chat@simplex.chat") }) {
         Icon(
           Icons.Outlined.Email,
           contentDescription = "Email",
-          tint = MaterialTheme.colors.onBackground,
         )
         Spacer(Modifier.padding(horizontal = 4.dp))
         Text(
           "Ask questions via email",
           color = MaterialTheme.colors.primary
         )
-      },
-      func = { uriHandler.openUri("mailto:chat@simplex.chat") }
-    )
-    Spacer(Modifier.height(24.dp))
+      }
+      Spacer(Modifier.height(24.dp))
 
-    SettingsSectionView(
-      content = {
+      SettingsSectionView({ navigate(Pages.Terminal.route) }) {
         Icon(
           painter = painterResource(id = R.drawable.ic_outline_terminal),
           contentDescription = "Chat console",
-          tint = MaterialTheme.colors.onBackground,
         )
         Spacer(Modifier.padding(horizontal = 4.dp))
-        Text(
-          "Chat console",
-          color = MaterialTheme.colors.onBackground
-        )
-      },
-      func = { navigate(Pages.Terminal.route) }
-    )
-    Divider(Modifier.padding(horizontal = 8.dp))
-    SettingsSectionView(
-      content = {
+        Text("Chat console")
+      }
+      Divider(Modifier.padding(horizontal = 8.dp))
+      SettingsSectionView({ uriHandler.openUri("https://github.com/simplex-chat/simplex-chat") }) {
         Icon(
           painter = painterResource(id = R.drawable.ic_github),
           contentDescription = "GitHub",
-          tint = MaterialTheme.colors.onBackground,
         )
         Spacer(Modifier.padding(horizontal = 4.dp))
         Text(
-          "Install ",
-          color = MaterialTheme.colors.onBackground
+          buildAnnotatedString {
+            append("Install ")
+            withStyle(SpanStyle(color = MaterialTheme.colors.primary)) {
+              append("SimpleX Chat for terminal")
+            }
+          }
         )
-        Text(
-          "SimpleX Chat for terminal",
-          color = MaterialTheme.colors.primary
-        )
-      },
-      func = { uriHandler.openUri("https://github.com/simplex-chat/simplex-chat") }
-    )
+      }
+    }
   }
 }
 
 @Composable
-fun SettingsSectionView(content: (@Composable () -> Unit), func: () -> Unit, height: Dp = 48.dp) {
-  Surface(
-    modifier = Modifier
+fun SettingsSectionView(func: () -> Unit, height: Dp = 48.dp, content: (@Composable () -> Unit)) {
+  Row(
+    Modifier
+      .padding(start = 8.dp)
       .fillMaxWidth()
       .clickable(onClick = func)
       .height(height),
+    verticalAlignment = Alignment.CenterVertically
   ) {
-    Row(
-      Modifier.padding(start = 8.dp),
-      verticalAlignment = Alignment.CenterVertically
-    ) {
-      content.invoke()
-    }
+    content.invoke()
   }
 }
 

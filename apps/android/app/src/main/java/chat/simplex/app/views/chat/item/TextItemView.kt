@@ -2,24 +2,31 @@ package chat.simplex.app.views.chat.item
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.Surface
-import androidx.compose.material.Text
+import androidx.compose.foundation.text.ClickableText
+import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.material.*
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.UriHandler
+import androidx.compose.ui.text.*
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import chat.simplex.app.model.CIDirection
-import chat.simplex.app.model.ChatItem
+import chat.simplex.app.model.*
+import chat.simplex.app.ui.theme.LightGray
 import chat.simplex.app.ui.theme.SimpleXTheme
 import kotlinx.datetime.Clock
 
 // TODO move to theme
 val SentColorLight = Color(0x1E45B8FF)
-val ReceivedColorLight = Color(0x1EF1F0F5)
+val ReceivedColorLight = Color(0x1EB1B0B5)
 
+@ExperimentalTextApi
 @Composable
-fun TextItemView(chatItem: ChatItem) {
+fun TextItemView(chatItem: ChatItem, uriHandler: UriHandler? = null) {
   val sent = chatItem.chatDir.sent
   Surface(
     shape = RoundedCornerShape(18.dp),
@@ -28,14 +35,82 @@ fun TextItemView(chatItem: ChatItem) {
     Box(
       modifier = Modifier.padding(vertical = 6.dp, horizontal = 12.dp)
     ) {
-      Column {
-        Text(text = chatItem.content.text)
+      Box(contentAlignment = Alignment.BottomEnd) {
+        MarkdownText(chatItem, uriHandler = uriHandler, groupMemberBold = true)
         CIMetaView(chatItem)
       }
     }
   }
 }
 
+val reserveTimestampStyle = SpanStyle(color = Color.Transparent)
+val boldFont = SpanStyle(fontWeight = FontWeight.Medium)
+
+fun appendGroupMember(b: AnnotatedString.Builder, chatItem: ChatItem, groupMemberBold: Boolean) {
+  if (chatItem.chatDir is CIDirection.GroupRcv) {
+    val name = chatItem.chatDir.groupMember.memberProfile.displayName
+    if (groupMemberBold) b.withStyle(boldFont) { append(name) }
+    else b.append(name)
+    b.append(": ")
+  }
+}
+
+@ExperimentalTextApi
+@Composable
+fun MarkdownText (
+  chatItem: ChatItem,
+  style: TextStyle = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onBackground),
+  maxLines: Int = Int.MAX_VALUE,
+  overflow: TextOverflow = TextOverflow.Clip,
+  uriHandler: UriHandler? = null,
+  groupMemberBold: Boolean = false,
+  modifier: Modifier = Modifier
+) {
+  if (chatItem.formattedText == null) {
+    val annotatedText = buildAnnotatedString {
+      appendGroupMember(this, chatItem, groupMemberBold)
+      append(chatItem.content.text)
+      withStyle(reserveTimestampStyle) { append("  ${chatItem.timestampText}") }
+    }
+    SelectionContainer {
+      Text(annotatedText, style = style, modifier = modifier, maxLines = maxLines, overflow = overflow)
+    }
+  } else {
+    val annotatedText = buildAnnotatedString {
+      appendGroupMember(this, chatItem, groupMemberBold)
+      for (ft in chatItem.formattedText) {
+        if (ft.format == null) append(ft.text)
+        else {
+          val link = ft.link
+          if (link != null) {
+            withAnnotation(tag = "URL", annotation = link) {
+              withStyle(ft.format.style) { append(ft.text) }
+            }
+          } else {
+            withStyle(ft.format.style) { append(ft.text) }
+          }
+        }
+      }
+      withStyle(reserveTimestampStyle) { append("  ${chatItem.timestampText}") }
+    }
+    if (uriHandler != null) {
+      SelectionContainer {
+        ClickableText(annotatedText, style = style, modifier = modifier, maxLines = maxLines, overflow = overflow,
+          onClick = { offset ->
+            annotatedText.getStringAnnotations(tag = "URL", start = offset, end = offset)
+              .firstOrNull()?.let { annotation -> uriHandler.openUri(annotation.item) }
+          }
+        )
+      }
+    } else {
+      SelectionContainer {
+        Text(annotatedText, style = style, modifier = modifier, maxLines = maxLines, overflow = overflow)
+      }
+    }
+  }
+}
+
+@ExperimentalTextApi
 @Preview
 @Composable
 fun PreviewTextItemViewSnd() {
@@ -48,6 +123,7 @@ fun PreviewTextItemViewSnd() {
   }
 }
 
+@ExperimentalTextApi
 @Preview
 @Composable
 fun PreviewTextItemViewRcv() {
@@ -60,6 +136,7 @@ fun PreviewTextItemViewRcv() {
   }
 }
 
+@ExperimentalTextApi
 @Preview
 @Composable
 fun PreviewTextItemViewLong() {

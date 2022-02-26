@@ -11,6 +11,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -66,7 +67,10 @@ fun TerminalLog(terminalItems: List<TerminalItem>, navigate: (String) -> Unit) {
     items(terminalItems) { item ->
         Text("${item.date.toString().subSequence(11, 19)} ${item.label}",
           style = TextStyle(fontFamily = FontFamily.Monospace, fontSize = 18.sp, color = MaterialTheme.colors.primary),
-          modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+          maxLines = 1,
+          overflow = TextOverflow.Ellipsis,
+          modifier = Modifier
+            .padding(horizontal = 8.dp, vertical = 4.dp)
             .clickable { navigate("details/${item.id}") })
     }
     val len = terminalItems.count()
@@ -79,15 +83,17 @@ fun TerminalLog(terminalItems: List<TerminalItem>, navigate: (String) -> Unit) {
 }
 
 @Composable
-fun DetailView(identifier: Long, terminalItems: List<TerminalItem>, navController: NavController){
-  Column(
-    modifier = Modifier.verticalScroll(rememberScrollState())
+fun DetailView(identifier: Long, terminalItems: List<TerminalItem>, nav: NavController){
+  Surface(
+    Modifier
+      .background(MaterialTheme.colors.background)
+      .fillMaxSize()
   ) {
-    Button(onClick = { navController.popBackStack() }) {
-      Text("Back")
-    }
-    SelectionContainer {
-      Text((terminalItems.firstOrNull { it.id == identifier })?.details ?: "")
+    Column {
+      CloseSheetBar(nav::popBackStack)
+      SelectionContainer(modifier = Modifier.verticalScroll(rememberScrollState())) {
+        Text((terminalItems.firstOrNull { it.id == identifier })?.details ?: "")
+      }
     }
   }
 }

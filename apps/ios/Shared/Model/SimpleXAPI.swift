@@ -114,7 +114,9 @@ enum ChatResponse: Decodable, Error {
     case contactSubscribed(contact: Contact)
     case contactDisconnected(contact: Contact)
     case contactSubError(contact: Contact, chatError: ChatError)
+    case contactSubSummary(contactSubscriptions: [ContactSubStatus])
     case groupSubscribed(groupInfo: GroupInfo)
+    case memberSubErrors(memberSubErrors: [MemberSubError])
     case groupEmpty(groupInfo: GroupInfo)
     case userContactLinkSubscribed
     case newChatItem(chatItem: AChatItem)
@@ -148,7 +150,9 @@ enum ChatResponse: Decodable, Error {
             case .contactSubscribed: return "contactSubscribed"
             case .contactDisconnected: return "contactDisconnected"
             case .contactSubError: return "contactSubError"
+            case .contactSubSummary: return "contactSubSummary"
             case .groupSubscribed: return "groupSubscribed"
+            case .memberSubErrors: return "memberSubErrors"
             case .groupEmpty: return "groupEmpty"
             case .userContactLinkSubscribed: return "userContactLinkSubscribed"
             case .newChatItem: return "newChatItem"
@@ -185,7 +189,9 @@ enum ChatResponse: Decodable, Error {
             case let .contactSubscribed(contact): return String(describing: contact)
             case let .contactDisconnected(contact): return String(describing: contact)
             case let .contactSubError(contact, chatError): return "contact:\n\(String(describing: contact))\nerror:\n\(String(describing: chatError))"
+            case let .contactSubSummary(contactSubscriptions): return String(describing: contactSubscriptions)
             case let .groupSubscribed(groupInfo): return String(describing: groupInfo)
+            case let .memberSubErrors(memberSubErrors): return String(describing: memberSubErrors)
             case let .groupEmpty(groupInfo): return String(describing: groupInfo)
             case .userContactLinkSubscribed: return noDetails
             case let .newChatItem(chatItem): return String(describing: chatItem)
@@ -232,10 +238,10 @@ enum TerminalItem: Identifiable {
     }
 }
 
-func chatSendCmd(_ cmd: ChatCommand) throws -> ChatResponse {
+func chatSendCmdSync(_ cmd: ChatCommand) -> ChatResponse {
     var c = cmd.cmdString.cString(using: .utf8)!
     logger.debug("chatSendCmd \(cmd.cmdType)")
-    let resp = chatResponse(chat_send_cmd(getChatCtrl(), &c)!)
+    let resp = chatResponse(chat_send_cmd(getChatCtrl(), &c))
     logger.debug("chatSendCmd \(cmd.cmdType): \(resp.responseType)")
     if case let .response(_, json) = resp {
         logger.debug("chatSendCmd \(cmd.cmdType) response: \(json)")
@@ -247,13 +253,22 @@ func chatSendCmd(_ cmd: ChatCommand) throws -> ChatResponse {
     return resp
 }
 
-func chatRecvMsg() throws -> ChatResponse {
-    chatResponse(chat_recv_msg(getChatCtrl())!)
+func chatSendCmd(_ cmd: ChatCommand) async -> ChatResponse {
+    await withCheckedContinuation { cont in
+        cont.resume(returning: chatSendCmdSync(cmd))
+    }
+}
+
+func chatRecvMsg() async -> ChatResponse {
+    await withCheckedContinuation { cont in
+        let resp = chatResponse(chat_recv_msg(getChatCtrl())!)
+        cont.resume(returning: resp)
+    }
 }
 
 func apiGetActiveUser() throws -> User? {
     let _ = getChatCtrl()
-    let r = try chatSendCmd(.showActiveUser)
+    let r = chatSendCmdSync(.showActiveUser)
     switch r {
     case let .activeUser(user): return user
     case .chatCmdError(.error(.noActiveUser)): return nil
@@ -262,43 +277,43 @@ func apiGetActiveUser() throws -> User? {
 }
 
 func apiCreateActiveUser(_ p: Profile) throws -> User {
-    let r = try chatSendCmd(.createActiveUser(profile: p))
+    let r = chatSendCmdSync(.createActiveUser(profile: p))
     if case let .activeUser(user) = r { return user }
     throw r
 }
 
 func apiStartChat() throws {
-    let r = try chatSendCmd(.startChat)
+    let r = chatSendCmdSync(.startChat)
     if case .chatStarted = r { return }
     throw r
 }
 
 func apiGetChats() throws -> [Chat] {
-    let r = try chatSendCmd(.apiGetChats)
+    let r = chatSendCmdSync(.apiGetChats)
     if case let .apiChats(chats) = r { return chats.map { Chat.init($0) } }
     throw r
 }
 
-func apiGetChat(type: ChatType, id: Int64) throws -> Chat {
-    let r = try chatSendCmd(.apiGetChat(type: type, id: id))
+func apiGetChat(type: ChatType, id: Int64) async throws -> Chat {
+    let r = await chatSendCmd(.apiGetChat(type: type, id: id))
     if case let .apiChat(chat) = r { return Chat.init(chat) }
     throw r
 }
 
-func apiSendMessage(type: ChatType, id: Int64, msg: MsgContent) throws -> ChatItem {
-    let r = try chatSendCmd(.apiSendMessage(type: type, id: id, msg: msg))
+func apiSendMessage(type: ChatType, id: Int64, msg: MsgContent) async throws -> ChatItem {
+    let r = await chatSendCmd(.apiSendMessage(type: type, id: id, msg: msg))
     if case let .newChatItem(aChatItem) = r { return aChatItem.chatItem }
     throw r
 }
 
-func apiAddContact() throws -> String {
-    let r = try chatSendCmd(.addContact)
+func apiAddContact() async throws -> String {
+    let r = await chatSendCmd(.addContact)
     if case let .invitation(connReqInvitation) = r { return connReqInvitation }
     throw r
 }
 
-func apiConnect(connReq: String) throws {
-    let r = try chatSendCmd(.connect(connReq: connReq))
+func apiConnect(connReq: String) async throws {
+    let r = await chatSendCmd(.connect(connReq: connReq))
     switch r {
     case .sentConfirmation: return
     case .sentInvitation: return
@@ -306,14 +321,14 @@ func apiConnect(connReq: String) throws {
     }
 }
 
-func apiDeleteChat(type: ChatType, id: Int64) throws {
-    let r = try chatSendCmd(.apiDeleteChat(type: type, id: id))
+func apiDeleteChat(type: ChatType, id: Int64) async throws {
+    let r = await chatSendCmd(.apiDeleteChat(type: type, id: id))
     if case .contactDeleted = r { return }
     throw r
 }
 
-func apiUpdateProfile(profile: Profile) throws -> Profile? {
-    let r = try chatSendCmd(.updateProfile(profile: profile))
+func apiUpdateProfile(profile: Profile) async throws -> Profile? {
+    let r = await chatSendCmd(.updateProfile(profile: profile))
     switch r {
     case .userProfileNoChange: return nil
     case let .userProfileUpdated(_, toProfile): return toProfile
@@ -321,20 +336,20 @@ func apiUpdateProfile(profile: Profile) throws -> Profile? {
     }
 }
 
-func apiCreateUserAddress() throws -> String {
-    let r = try chatSendCmd(.createMyAddress)
+func apiCreateUserAddress() async throws -> String {
+    let r = await chatSendCmd(.createMyAddress)
     if case let .userContactLinkCreated(connReq) = r { return connReq }
     throw r
 }
 
-func apiDeleteUserAddress() throws {
-    let r = try chatSendCmd(.deleteMyAddress)
+func apiDeleteUserAddress() async throws {
+    let r = await chatSendCmd(.deleteMyAddress)
     if case .userContactLinkDeleted = r { return }
     throw r
 }
 
-func apiGetUserAddress() throws -> String? {
-    let r = try chatSendCmd(.showMyAddress)
+func apiGetUserAddress() async throws -> String? {
+    let r = await chatSendCmd(.showMyAddress)
     switch r {
     case let .userContactLink(connReq):
         return connReq
@@ -344,59 +359,59 @@ func apiGetUserAddress() throws -> String? {
     }
 }
 
-func apiAcceptContactRequest(contactReqId: Int64) throws -> Contact {
-    let r = try chatSendCmd(.apiAcceptContact(contactReqId: contactReqId))
+func apiAcceptContactRequest(contactReqId: Int64) async throws -> Contact {
+    let r = await chatSendCmd(.apiAcceptContact(contactReqId: contactReqId))
     if case let .acceptingContactRequest(contact) = r { return contact }
     throw r
 }
 
-func apiRejectContactRequest(contactReqId: Int64) throws {
-    let r = try chatSendCmd(.apiRejectContact(contactReqId: contactReqId))
+func apiRejectContactRequest(contactReqId: Int64) async throws {
+    let r = await chatSendCmd(.apiRejectContact(contactReqId: contactReqId))
     if case .contactRequestRejected = r { return }
     throw r
 }
 
-func apiChatRead(type: ChatType, id: Int64, itemRange: (Int64, Int64)) throws {
-    let r = try chatSendCmd(.apiChatRead(type: type, id: id, itemRange: itemRange))
+func apiChatRead(type: ChatType, id: Int64, itemRange: (Int64, Int64)) async throws {
+    let r = await chatSendCmd(.apiChatRead(type: type, id: id, itemRange: itemRange))
     if case .cmdOk = r { return }
     throw r
 }
 
-func acceptContactRequest(_ contactRequest: UserContactRequest) {
+func acceptContactRequest(_ contactRequest: UserContactRequest) async {
     do {
-        let contact = try apiAcceptContactRequest(contactReqId: contactRequest.apiId)
+        let contact = try await apiAcceptContactRequest(contactReqId: contactRequest.apiId)
         let chat = Chat(chatInfo: ChatInfo.direct(contact: contact), chatItems: [])
-        ChatModel.shared.replaceChat(contactRequest.id, chat)
+        DispatchQueue.main.async { ChatModel.shared.replaceChat(contactRequest.id, chat) }
     } catch let error {
         logger.error("acceptContactRequest error: \(error.localizedDescription)")
     }
 }
 
-func rejectContactRequest(_ contactRequest: UserContactRequest) {
+func rejectContactRequest(_ contactRequest: UserContactRequest) async {
     do {
-        try apiRejectContactRequest(contactReqId: contactRequest.apiId)
-        ChatModel.shared.removeChat(contactRequest.id)
+        try await apiRejectContactRequest(contactReqId: contactRequest.apiId)
+        DispatchQueue.main.async { ChatModel.shared.removeChat(contactRequest.id) }
     } catch let error {
         logger.error("rejectContactRequest: \(error.localizedDescription)")
     }
 }
 
-func markChatRead(_ chat: Chat) {
+func markChatRead(_ chat: Chat) async {
     do {
         let minItemId = chat.chatStats.minUnreadItemId
         let itemRange = (minItemId, chat.chatItems.last?.id ?? minItemId)
         let cInfo = chat.chatInfo
-        try apiChatRead(type: cInfo.chatType, id: cInfo.apiId, itemRange: itemRange)
-        ChatModel.shared.markChatItemsRead(cInfo)
+        try await apiChatRead(type: cInfo.chatType, id: cInfo.apiId, itemRange: itemRange)
+        DispatchQueue.main.async { ChatModel.shared.markChatItemsRead(cInfo) }
     } catch {
         logger.error("markChatRead apiChatRead error: \(error.localizedDescription)")
     }
 }
 
-func markChatItemRead(_ cInfo: ChatInfo, _ cItem: ChatItem) {
+func markChatItemRead(_ cInfo: ChatInfo, _ cItem: ChatItem) async {
     do {
-        try apiChatRead(type: cInfo.chatType, id: cInfo.apiId, itemRange: (cItem.id, cItem.id))
-        ChatModel.shared.markChatItemRead(cInfo, cItem)
+        try await apiChatRead(type: cInfo.chatType, id: cInfo.apiId, itemRange: (cItem.id, cItem.id))
+        DispatchQueue.main.async { ChatModel.shared.markChatItemRead(cInfo, cItem) }
     } catch {
         logger.error("markChatItemRead apiChatRead error: \(error.localizedDescription)")
     }
@@ -411,7 +426,7 @@ func initializeChat() {
 }
 
 class ChatReceiver {
-    private var receiveLoop: DispatchWorkItem?
+    private var receiveLoop: Task<Void, Never>?
     private var receiveMessages = true
     private var _lastMsgTime = Date.now
 
@@ -424,18 +439,16 @@ class ChatReceiver {
         receiveMessages = true
         _lastMsgTime = .now
         if receiveLoop != nil { return }
-        let loop = DispatchWorkItem(qos: .default, flags: []) {
-            while self.receiveMessages {
-                do {
-                    processReceivedMsg(try chatRecvMsg())
-                    self._lastMsgTime = .now
-                } catch {
-                    logger.error("ChatReceiver.start chatRecvMsg error: \(error.localizedDescription)")
-                }
-            }
+        receiveLoop = Task { await receiveMsgLoop() }
+    }
+
+    func receiveMsgLoop() async {
+        let msg = await chatRecvMsg()
+        self._lastMsgTime = .now
+        processReceivedMsg(msg)
+        if self.receiveMessages {
+            await receiveMsgLoop()
         }
-        receiveLoop = loop
-        DispatchQueue.global().async(execute: loop)
     }
 
     func stop() {
@@ -468,20 +481,20 @@ func processReceivedMsg(_ res: ChatResponse) {
                 chatModel.updateChatInfo(cInfo)
             }
         case let .contactSubscribed(contact):
-            chatModel.updateContact(contact)
-            chatModel.updateNetworkStatus(contact, .connected)
+            processContactSubscribed(contact)
         case let .contactDisconnected(contact):
             chatModel.updateContact(contact)
             chatModel.updateNetworkStatus(contact, .disconnected)
         case let .contactSubError(contact, chatError):
-            chatModel.updateContact(contact)
-            var err: String
-            switch chatError {
-            case .errorAgent(agentError: .BROKER(brokerErr: .NETWORK)): err = "network"
-            case .errorAgent(agentError: .SMP(smpErr: .AUTH)): err = "contact deleted"
-            default: err = String(describing: chatError)
+            processContactSubError(contact, chatError)
+        case let .contactSubSummary(contactSubscriptions):
+            for sub in contactSubscriptions {
+                if let err = sub.contactError {
+                    processContactSubError(sub.contact, err)
+                } else {
+                    processContactSubscribed(sub.contact)
+                }
             }
-            chatModel.updateNetworkStatus(contact, .error(err))
         case let .newChatItem(aChatItem):
             let cInfo = aChatItem.chatInfo
             let cItem = aChatItem.chatItem
@@ -499,12 +512,30 @@ func processReceivedMsg(_ res: ChatResponse) {
     }
 }
 
+func processContactSubscribed(_ contact: Contact) {
+    let m = ChatModel.shared
+    m.updateContact(contact)
+    m.updateNetworkStatus(contact, .connected)
+}
+
+func processContactSubError(_ contact: Contact, _ chatError: ChatError) {
+    let m = ChatModel.shared
+    m.updateContact(contact)
+    var err: String
+    switch chatError {
+    case .errorAgent(agentError: .BROKER(brokerErr: .NETWORK)): err = "network"
+    case .errorAgent(agentError: .SMP(smpErr: .AUTH)): err = "contact deleted"
+    default: err = String(describing: chatError)
+    }
+    m.updateNetworkStatus(contact, .error(err))
+}
+
 private struct UserResponse: Decodable {
     var user: User?
     var error: String?
 }
 
-private func chatResponse(_ cjson: UnsafePointer<CChar>) -> ChatResponse {
+private func chatResponse(_ cjson: UnsafeMutablePointer<CChar>) -> ChatResponse {
     let s = String.init(cString: cjson)
     let d = s.data(using: .utf8)!
 // TODO is there a way to do it without copying the data? e.g:
@@ -528,6 +559,7 @@ private func chatResponse(_ cjson: UnsafePointer<CChar>) -> ChatResponse {
         }
         json = prettyJSON(j)
     }
+    free(cjson)
     return ChatResponse.response(type: type ?? "invalid", json: json ?? s)
 }
 

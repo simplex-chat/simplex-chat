@@ -36,7 +36,7 @@ import System.IO (Handle)
 import UnliftIO.STM
 
 versionNumber :: String
-versionNumber = "1.2.1"
+versionNumber = "1.3.0"
 
 versionStr :: String
 versionStr = "SimpleX Chat v" <> versionNumber
@@ -50,6 +50,8 @@ data ChatConfig = ChatConfig
     yesToMigrations :: Bool,
     tbqSize :: Natural,
     fileChunkSize :: Integer,
+    subscriptionConcurrency :: Int,
+    subscriptionEvents :: Bool,
     testView :: Bool
   }
 
@@ -186,6 +188,7 @@ data ChatResponse
   | CRContactDisconnected {contact :: Contact}
   | CRContactSubscribed {contact :: Contact}
   | CRContactSubError {contact :: Contact, chatError :: ChatError}
+  | CRContactSubSummary {contactSubscriptions :: [ContactSubStatus]}
   | CRGroupInvitation {groupInfo :: GroupInfo}
   | CRReceivedGroupInvitation {groupInfo :: GroupInfo, contact :: Contact, memberRole :: GroupMemberRole}
   | CRUserJoinedGroup {groupInfo :: GroupInfo}
@@ -199,6 +202,7 @@ data ChatResponse
   | CRGroupRemoved {groupInfo :: GroupInfo}
   | CRGroupDeleted {groupInfo :: GroupInfo, member :: GroupMember}
   | CRMemberSubError {groupInfo :: GroupInfo, contactName :: ContactName, chatError :: ChatError} -- TODO Contact?  or GroupMember?
+  | CRMemberSubErrors {memberSubErrors :: [MemberSubError]}
   | CRGroupSubscribed {groupInfo :: GroupInfo}
   | CRSndFileSubError {sndFileTransfer :: SndFileTransfer, chatError :: ChatError}
   | CRRcvFileSubError {rcvFileTransfer :: RcvFileTransfer, chatError :: ChatError}
@@ -212,6 +216,25 @@ data ChatResponse
 instance ToJSON ChatResponse where
   toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "CR"
   toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "CR"
+
+data ContactSubStatus = ContactSubStatus
+  { contact :: Contact,
+    contactError :: Maybe ChatError
+  }
+  deriving (Show, Generic)
+
+instance ToJSON ContactSubStatus where
+  toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
+  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
+
+data MemberSubError = MemberSubError
+  { member :: GroupMember,
+    memberError :: ChatError
+  }
+  deriving (Show, Generic)
+
+instance ToJSON MemberSubError where
+  toEncoding = J.genericToEncoding J.defaultOptions
 
 data ChatError
   = ChatError {errorType :: ChatErrorType}

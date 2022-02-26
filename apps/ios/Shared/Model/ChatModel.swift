@@ -97,7 +97,7 @@ final class ChatModel: ObservableObject {
             if case .rcvNew = cItem.meta.itemStatus {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
                     if self.chatId == cInfo.id {
-                        SimpleX.markChatItemRead(cInfo, cItem)
+                        Task { await SimpleX.markChatItemRead(cInfo, cItem) }
                     }
                 }
             }
@@ -426,6 +426,11 @@ struct Contact: Identifiable, Decodable, NamedChat {
     )
 }
 
+struct ContactSubStatus: Decodable {
+    var contact: Contact
+    var contactError: ChatError?
+}
+
 struct Connection: Decodable {
     var connStatus: String
 
@@ -503,6 +508,11 @@ struct GroupMember: Decodable {
     )
 }
 
+struct MemberSubError: Decodable {
+    var member: GroupMember
+    var memberError: ChatError
+}
+
 struct AChatItem: Decodable {
     var chatInfo: ChatInfo
     var chatItem: ChatItem
@@ -512,6 +522,7 @@ struct ChatItem: Identifiable, Decodable {
     var chatDir: CIDirection
     var meta: CIMeta
     var content: CIContent
+    var formattedText: [FormattedText]?
     
     var id: Int64 { get { meta.itemId } }
 
@@ -654,6 +665,49 @@ extension MsgContent: Decodable {
             }
         } catch {
             self = .invalid(error: String(describing: error))
+        }
+    }
+}
+
+struct FormattedText: Decodable {
+    var text: String
+    var format: Format?
+}
+
+enum Format: Decodable {
+    case bold
+    case italic
+    case strikeThrough
+    case snippet
+    case secret
+    case colored(color: FormatColor)
+    case uri
+    case email
+    case phone
+}
+
+enum FormatColor: String, Decodable {
+    case red = "red"
+    case green = "green"
+    case blue = "blue"
+    case yellow = "yellow"
+    case cyan = "cyan"
+    case magenta = "magenta"
+    case black = "black"
+    case white = "white"
+
+    var uiColor: Color {
+        get {
+            switch (self) {
+            case .red: return .red
+            case .green: return .green
+            case .blue: return .blue
+            case .yellow: return .yellow
+            case .cyan: return .cyan
+            case .magenta: return .purple
+            case .black: return .primary
+            case .white: return .primary
+            }
         }
     }
 }

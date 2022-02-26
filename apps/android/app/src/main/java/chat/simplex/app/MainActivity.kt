@@ -10,10 +10,11 @@ import androidx.activity.viewModels
 import androidx.compose.foundation.layout.Box
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.text.ExperimentalTextApi
 import androidx.lifecycle.AndroidViewModel
 import androidx.navigation.*
 import androidx.navigation.compose.*
-import chat.simplex.app.model.ChatModel
+import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.*
 import chat.simplex.app.views.chat.ChatInfoView
@@ -21,12 +22,13 @@ import chat.simplex.app.views.chat.ChatView
 import chat.simplex.app.views.chatlist.ChatListView
 import chat.simplex.app.views.helpers.withApi
 import chat.simplex.app.views.newchat.*
-import chat.simplex.app.views.usersettings.SettingsView
-import chat.simplex.app.views.usersettings.UserProfileView
+import chat.simplex.app.views.usersettings.*
 import com.google.accompanist.insets.ExperimentalAnimatedInsets
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.serialization.decodeFromString
 
+@ExperimentalTextApi
 @DelicateCoroutinesApi
 @ExperimentalAnimatedInsets
 @ExperimentalPermissionsApi
@@ -36,6 +38,7 @@ class MainActivity: ComponentActivity() {
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
+//    testJson()
     connectIfOpenedViaUri(intent, vm.chatModel)
     setContent {
       SimpleXTheme {
@@ -50,6 +53,7 @@ class SimplexViewModel(application: Application): AndroidViewModel(application) 
   val chatModel = getApplication<SimplexApp>().chatModel
 }
 
+@ExperimentalTextApi
 @DelicateCoroutinesApi
 @ExperimentalPermissionsApi
 @ExperimentalMaterialApi
@@ -62,6 +66,7 @@ fun MainPage(chatModel: ChatModel, nav: NavController) {
   }
 }
 
+@ExperimentalTextApi
 @ExperimentalAnimatedInsets
 @DelicateCoroutinesApi
 @ExperimentalPermissionsApi
@@ -108,11 +113,17 @@ fun Navigation(chatModel: ChatModel) {
           }
         )
       ) { entry -> DetailView(entry.arguments!!.getLong("identifier"), chatModel.terminalItems, nav) }
-      composable(route = Pages.Settings.route) {
-        SettingsView(chatModel, nav)
-      }
       composable(route = Pages.UserProfile.route) {
         UserProfileView(chatModel, nav)
+      }
+      composable(route = Pages.UserAddress.route) {
+        UserAddressView(chatModel, nav)
+      }
+      composable(route = Pages.Help.route) {
+        HelpView(chatModel, nav)
+      }
+      composable(route = Pages.Markdown.route) {
+        MarkdownHelpView(nav)
       }
     }
     val am = chatModel.alertManager
@@ -130,8 +141,10 @@ sealed class Pages(val route: String) {
   object AddContact: Pages("add_contact")
   object Connect: Pages("connect")
   object ChatInfo: Pages("chat_info")
-  object Settings: Pages("settings")
   object UserProfile: Pages("user_profile")
+  object UserAddress: Pages("user_address")
+  object Help: Pages("help")
+  object Markdown: Pages("markdown")
 }
 
 @DelicateCoroutinesApi
@@ -157,4 +170,12 @@ fun connectIfOpenedViaUri(intent: Intent?, chatModel: ChatModel) {
       }
     }
   }
+}
+
+fun testJson() {
+  val str = """
+    {}
+  """.trimIndent()
+
+  println(json.decodeFromString<ChatItem>(str))
 }

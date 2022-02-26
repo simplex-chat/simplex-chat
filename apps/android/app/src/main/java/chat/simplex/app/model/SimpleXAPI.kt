@@ -3,6 +3,7 @@ package chat.simplex.app.model
 import android.util.Log
 import androidx.compose.runtime.mutableStateOf
 import chat.simplex.app.*
+import chat.simplex.app.views.helpers.withApi
 import kotlinx.coroutines.*
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
@@ -23,7 +24,9 @@ open class ChatController(val ctrl: ChatCtrl, val alertManager: SimplexApp.Alert
     Log.d("SIMPLEX (user)", u.toString())
     try {
       apiStartChat()
+      chatModel.userAddress.value = apiGetUserAddress()
       chatModel.chats.addAll(apiGetChats())
+      chatModel.chatsLoaded.value = true
       startReceiver()
       Log.d("SIMPLEX", "started chat")
     } catch(e: Error) {
@@ -34,14 +37,7 @@ open class ChatController(val ctrl: ChatCtrl, val alertManager: SimplexApp.Alert
 
   fun startReceiver() {
     thread(name="receiver") {
-//            val chatlog = FifoQueue<String>(500)
-      while(true) {
-        val json = chatRecvMsg(ctrl)
-        val r = APIResponse.decodeStr(json).resp
-        Log.d("SIMPLEX", "chatRecvMsg: ${r.responseType}")
-        if (r is CR.Response || r is CR.Invalid) Log.d("SIMPLEX", "chatRecvMsg json: $json")
-        processReceivedMsg(r)
-      }
+      withApi { recvMspLoop() }
     }
   }
 
@@ -59,6 +55,21 @@ open class ChatController(val ctrl: ChatCtrl, val alertManager: SimplexApp.Alert
       chatModel.terminalItems.add(TerminalItem.resp(r.resp))
       r.resp
     }
+  }
+
+  suspend fun recvMsg(): CR {
+    return withContext(Dispatchers.IO) {
+      val json = chatRecvMsg(ctrl)
+      val r = APIResponse.decodeStr(json).resp
+      Log.d("SIMPLEX", "chatRecvMsg: ${r.responseType}")
+      if (r is CR.Response || r is CR.Invalid) Log.d("SIMPLEX", "chatRecvMsg json: $json")
+      r
+    }
+  }
+
+  suspend fun recvMspLoop() {
+    processReceivedMsg(recvMsg())
+    recvMspLoop()
   }
 
   suspend fun apiGetActiveUser(): User? {
@@ -220,35 +231,30 @@ open class ChatController(val ctrl: ChatCtrl, val alertManager: SimplexApp.Alert
         chatModel.updateNetworkStatus(r.contact, Chat.NetworkStatus.Connected())
 //        NtfManager.shared.notifyContactConnected(contact)
       }
-//      is CR.ReceivedContactRequest -> return
+      is CR.ReceivedContactRequest -> {
+        val contactRequest = r.contactRequest
+        val cInfo = ChatInfo.ContactRequest(contactRequest)
+        chatModel.addChat(Chat(chatInfo = cInfo, chatItems = listOf()))
+//        NtfManager.shared.notifyContactRequest(contactRequest)
+      }
       is CR.ContactUpdated -> {
         val cInfo = ChatInfo.Direct(r.toContact)
         if (chatModel.hasChat(r.toContact.id)) {
           chatModel.updateChatInfo(cInfo)
         }
       }
-      is CR.ContactSubscribed -> {
-        chatModel.updateContact(r.contact)
-        chatModel.updateNetworkStatus(r.contact, Chat.NetworkStatus.Connected())
-      }
+      is CR.ContactSubscribed -> processContactSubscribed(r.contact)
       is CR.ContactDisconnected -> {
         chatModel.updateContact(r.contact)
         chatModel.updateNetworkStatus(r.contact, Chat.NetworkStatus.Disconnected())
       }
-      is CR.ContactSubError -> {
-        chatModel.updateContact(r.contact)
-        val e = r.chatError
-        val err: String =
-          if (e is ChatError.ChatErrorAgent) {
-            val a = e.agentError
-            when {
-              a is AgentErrorType.BROKER && a.brokerErr is BrokerErrorType.NETWORK -> "network"
-              a is AgentErrorType.SMP && a.smpErr is SMPErrorType.AUTH -> "contact deleted"
-              else -> e.string
-            }
-          }
-          else e.string
-        chatModel.updateNetworkStatus(r.contact, Chat.NetworkStatus.Error(err))
+      is CR.ContactSubError -> processContactSubError(r.contact, r.chatError)
+      is CR.ContactSubSummary -> {
+        for (sub in r.contactSubscriptions) {
+          val err = sub.contactError
+          if (err == null) processContactSubscribed(sub.contact)
+          else processContactSubError(sub.contact, sub.contactError)
+        }
       }
       is CR.NewChatItem -> {
         val cInfo = r.chatItem.chatInfo
@@ -256,15 +262,6 @@ open class ChatController(val ctrl: ChatCtrl, val alertManager: SimplexApp.Alert
         chatModel.addChatItem(cInfo, cItem)
 //        NtfManager.shared.notifyMessageReceived(cInfo, cItem)
       }
-
-//      switch res {
-//        case let .receivedContactRequest(contactRequest):
-  //        chatModel.addChat(Chat(
-  //          chatInfo: ChatInfo.contactRequest(contactRequest: contactRequest),
-  //        chatItems: []
-  //        ))
-//          NtfManager.shared.notifyContactRequest(contactRequest)
-//
 //        case let .chatItemUpdated(aChatItem):
   //        let cInfo = aChatItem.chatInfo
   //            let cItem = aChatItem.chatItem
@@ -275,6 +272,27 @@ open class ChatController(val ctrl: ChatCtrl, val alertManager: SimplexApp.Alert
 //        logger.debug("unsupported event: \(res.responseType)")
 //      }
     }
+  }
+
+  fun processContactSubscribed(contact: Contact) {
+    chatModel.updateContact(contact)
+    chatModel.updateNetworkStatus(contact, Chat.NetworkStatus.Connected())
+  }
+
+  fun processContactSubError(contact: Contact, chatError: ChatError) {
+    chatModel.updateContact(contact)
+    val e = chatError
+    val err: String =
+      if (e is ChatError.ChatErrorAgent) {
+        val a = e.agentError
+        when {
+          a is AgentErrorType.BROKER && a.brokerErr is BrokerErrorType.NETWORK -> "network"
+          a is AgentErrorType.SMP && a.smpErr is SMPErrorType.AUTH -> "contact deleted"
+          else -> e.string
+        }
+      }
+      else e.string
+    chatModel.updateNetworkStatus(contact, Chat.NetworkStatus.Error(err))
   }
 }
 
@@ -396,7 +414,9 @@ sealed class CR {
   @Serializable @SerialName("contactSubscribed") class ContactSubscribed(val contact: Contact): CR()
   @Serializable @SerialName("contactDisconnected") class ContactDisconnected(val contact: Contact): CR()
   @Serializable @SerialName("contactSubError") class ContactSubError(val contact: Contact, val chatError: ChatError): CR()
+  @Serializable @SerialName("contactSubSummary") class ContactSubSummary(val contactSubscriptions: List<ContactSubStatus>): CR()
   @Serializable @SerialName("groupSubscribed") class GroupSubscribed(val group: GroupInfo): CR()
+  @Serializable @SerialName("memberSubErrors") class MemberSubErrors(val memberSubErrors: List<MemberSubError>): CR()
   @Serializable @SerialName("groupEmpty") class GroupEmpty(val group: GroupInfo): CR()
   @Serializable @SerialName("userContactLinkSubscribed") class UserContactLinkSubscribed: CR()
   @Serializable @SerialName("newChatItem") class NewChatItem(val chatItem: AChatItem): CR()
@@ -430,7 +450,9 @@ sealed class CR {
     is ContactSubscribed -> "contactSubscribed"
     is ContactDisconnected -> "contactDisconnected"
     is ContactSubError -> "contactSubError"
+    is ContactSubSummary -> "contactSubSummary"
     is GroupSubscribed -> "groupSubscribed"
+    is MemberSubErrors -> "memberSubErrors"
     is GroupEmpty -> "groupEmpty"
     is UserContactLinkSubscribed -> "userContactLinkSubscribed"
     is NewChatItem -> "newChatItem"
@@ -465,7 +487,9 @@ sealed class CR {
     is ContactSubscribed -> json.encodeToString(contact)
     is ContactDisconnected -> json.encodeToString(contact)
     is ContactSubError -> "error:\n${chatError.string}\ncontact:\n${json.encodeToString(contact)}"
+    is ContactSubSummary -> json.encodeToString(contactSubscriptions)
     is GroupSubscribed -> json.encodeToString(group)
+    is MemberSubErrors -> json.encodeToString(memberSubErrors)
     is GroupEmpty -> json.encodeToString(group)
     is UserContactLinkSubscribed -> noDetails()
     is NewChatItem -> json.encodeToString(chatItem)

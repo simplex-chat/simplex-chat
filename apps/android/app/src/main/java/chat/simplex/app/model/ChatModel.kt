@@ -1,22 +1,31 @@
 package chat.simplex.app.model
 
 import android.net.Uri
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.material.MaterialTheme
+import androidx.compose.runtime.*
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.font.*
+import androidx.compose.ui.text.style.TextDecoration
 import chat.simplex.app.SimplexApp
+import chat.simplex.app.ui.theme.*
+import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.datetime.*
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
+@DelicateCoroutinesApi
 class ChatModel(val controller: ChatController, val alertManager: SimplexApp.AlertManager) {
   var currentUser = mutableStateOf<User?>(null)
   var userCreated = mutableStateOf<Boolean?>(null)
   var chats = mutableStateListOf<Chat>()
+  var chatsLoaded = mutableStateOf<Boolean?>(null)
   var chatId = mutableStateOf<String?>(null)
   var chatItems = mutableStateListOf<ChatItem>()
 
   var connReqInvitation: String? = null
   var terminalItems = mutableStateListOf<TerminalItem>()
+  var userAddress = mutableStateOf<String?>(null)
   // set when app is opened via contact or invitation URI
   var appOpenUrl = mutableStateOf<Uri?>(null)
 
@@ -54,14 +63,15 @@ class ChatModel(val controller: ChatController, val alertManager: SimplexApp.Ale
     }
   }
 
-//  func replaceChat(_ id: String, _ chat: Chat) {
-//    if let i = getChatIndex(id) {
-//      chats[i] = chat
-//    } else {
-//      // invalid state, correcting
-//      chats.insert(chat, at: 0)
-//    }
-//  }
+  fun replaceChat(id: String, chat: Chat) {
+    val i = getChatIndex(id)
+    if (i >= 0) {
+      chats[i] = chat
+    } else {
+      // invalid state, correcting
+      chats.add(index = 0, chat)
+    }
+  }
 
   fun addChatItem(cInfo: ChatInfo, cItem: ChatItem) {
     // update previews
@@ -240,6 +250,13 @@ data class Chat (
     @Serializable @SerialName("disconnected") class Disconnected: NetworkStatus()
     @Serializable @SerialName("error") class Error(val error: String): NetworkStatus()
   }
+
+  companion object {
+    val sampleData = Chat(
+      chatInfo = ChatInfo.Direct.sampleData,
+      chatItems = arrayListOf(ChatItem.getSampleData())
+    )
+  }
 }
 
 @Serializable
@@ -319,6 +336,12 @@ class Contact(
     )
   }
 }
+
+@Serializable
+class ContactSubStatus(
+  val contact: Contact,
+  val contactError: ChatError? = null
+)
 
 @Serializable
 class Connection(val connStatus: String) {
@@ -402,6 +425,12 @@ class GroupMember (
 }
 
 @Serializable
+class MemberSubError (
+  val member: GroupMember,
+  val memberError: ChatError
+)
+
+@Serializable
 class UserContactRequest (
   val contactRequestId: Long,
   override val localDisplayName: String,
@@ -435,14 +464,21 @@ class AChatItem (
 data class ChatItem (
   val chatDir: CIDirection,
   val meta: CIMeta,
-  val content: CIContent
+  val content: CIContent,
+  val formattedText: List<FormattedText>? = null
 ) {
   val id: Long get() = meta.itemId
   val timestampText: String get() = meta.timestampText
   val isRcvNew: Boolean get() = meta.itemStatus is CIStatus.RcvNew
 
   companion object {
-    fun getSampleData(id: Long, dir: CIDirection, ts: Instant, text: String,status: CIStatus = CIStatus.SndNew()) =
+    fun getSampleData(
+      id: Long = 1,
+      dir: CIDirection = CIDirection.DirectSnd(),
+      ts: Instant = Clock.System.now(),
+      text: String = "hello\nthere",
+      status: CIStatus = CIStatus.SndNew()
+    ) =
       ChatItem(
         chatDir = dir,
         meta = CIMeta.getSample(id, ts, text, status),
@@ -566,6 +602,66 @@ sealed class MsgContent {
 }
 
 @Serializable
-class RcvFileTransfer {
-
+class FormattedText(val text: String, val format: Format? = null) {
+  val link: String? = when (format) {
+    is Format.Uri -> text
+    is Format.Email -> "mailto:$text"
+    is Format.Phone -> "tel:$text"
+    else -> null
+  }
 }
+
+@Serializable
+sealed class Format {
+  @Serializable @SerialName("bold") class Bold: Format()
+  @Serializable @SerialName("italic") class Italic: Format()
+  @Serializable @SerialName("strikeThrough") class StrikeThrough: Format()
+  @Serializable @SerialName("snippet") class Snippet: Format()
+  @Serializable @SerialName("secret") class Secret: Format()
+  @Serializable @SerialName("colored") class Colored(val color: FormatColor): Format()
+  @Serializable @SerialName("uri") class Uri: Format()
+  @Serializable @SerialName("email") class Email: Format()
+  @Serializable @SerialName("phone") class Phone: Format()
+
+  val style: SpanStyle @Composable get() = when (this) {
+    is Bold -> SpanStyle(fontWeight = FontWeight.Bold)
+    is Italic -> SpanStyle(fontStyle = FontStyle.Italic)
+    is StrikeThrough -> SpanStyle(textDecoration = TextDecoration.LineThrough)
+    is Snippet -> SpanStyle(fontFamily = FontFamily.Monospace)
+    is Secret -> SpanStyle(color = Color.Transparent, background = SecretColor)
+    is Colored -> SpanStyle(color = this.color.uiColor)
+    is Uri -> linkStyle
+    is Email -> linkStyle
+    is Phone -> linkStyle
+  }
+
+  companion object {
+    val linkStyle @Composable get() = SpanStyle(color = MaterialTheme.colors.primary, textDecoration = TextDecoration.Underline)
+  }
+}
+
+@Serializable
+enum class FormatColor(val color: String) {
+  red("red"),
+  green("green"),
+  blue("blue"),
+  yellow("yellow"),
+  cyan("cyan"),
+  magenta("magenta"),
+  black("black"),
+  white("white");
+
+  val uiColor: Color @Composable get() = when (this) {
+    red -> Color.Red
+    green -> Color.Green
+    blue -> Color.Blue
+    yellow -> Color.Yellow
+    cyan -> Color.Cyan
+    magenta -> Color.Magenta
+    black -> MaterialTheme.colors.onBackground
+    white -> MaterialTheme.colors.onBackground
+  }
+}
+
+@Serializable
+class RcvFileTransfer

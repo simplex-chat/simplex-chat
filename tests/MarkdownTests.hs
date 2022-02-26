@@ -14,6 +14,8 @@ markdownTests = do
   secretText
   textColor
   textWithUri
+  textWithEmail
+  textWithPhone
 
 textFormat :: Spec
 textFormat = describe "text format (bold)" do
@@ -141,3 +143,40 @@ textWithUri = describe "text with Uri" do
   it "ignored as markdown" do
     parseMarkdown "_https://simplex.chat" `shouldBe` "_https://simplex.chat"
     parseMarkdown "this is _https://simplex.chat" `shouldBe` "this is _https://simplex.chat"
+
+email :: Text -> Markdown
+email = Markdown $ Just Email
+
+textWithEmail :: Spec
+textWithEmail = describe "text with Email" do
+  it "correct markdown" do
+    parseMarkdown "chat@simplex.chat" `shouldBe` email "chat@simplex.chat"
+    parseMarkdown "test chat@simplex.chat" `shouldBe` "test " <> email "chat@simplex.chat"
+    parseMarkdown "test chat+123@simplex.chat" `shouldBe` "test " <> email "chat+123@simplex.chat"
+    parseMarkdown "test chat.chat+123@simplex.chat" `shouldBe` "test " <> email "chat.chat+123@simplex.chat"
+    parseMarkdown "chat@simplex.chat test" `shouldBe` email "chat@simplex.chat" <> " test"
+    parseMarkdown "test1 chat@simplex.chat test2" `shouldBe` "test1 " <> email "chat@simplex.chat" <> " test2"
+  it "ignored as markdown" do
+    parseMarkdown "chat @simplex.chat" `shouldBe` "chat @simplex.chat"
+    parseMarkdown "this is chat @simplex.chat" `shouldBe` "this is chat @simplex.chat"
+
+phone :: Text -> Markdown
+phone = Markdown $ Just Phone
+
+textWithPhone :: Spec
+textWithPhone = describe "text with Phone" do
+  it "correct markdown" do
+    parseMarkdown "07777777777" `shouldBe` phone "07777777777"
+    parseMarkdown "test 07777777777" `shouldBe` "test " <> phone "07777777777"
+    parseMarkdown "07777777777 test" `shouldBe` phone "07777777777" <> " test"
+    parseMarkdown "test1 07777777777 test2" `shouldBe` "test1 " <> phone "07777777777" <> " test2"
+    parseMarkdown "test 07777 777 777 test" `shouldBe` "test " <> phone "07777 777 777" <> " test"
+    parseMarkdown "test +447777777777 test" `shouldBe` "test " <> phone "+447777777777" <> " test"
+    parseMarkdown "test +44 (0) 7777 777 777 test" `shouldBe` "test " <> phone "+44 (0) 7777 777 777" <> " test"
+    parseMarkdown "test +44-7777-777-777 test" `shouldBe` "test " <> phone "+44-7777-777-777" <> " test"
+    parseMarkdown "test +44 (0) 7777.777.777 https://simplex.chat test"
+      `shouldBe` "test " <> phone "+44 (0) 7777.777.777" <> " " <> uri "https://simplex.chat" <> " test"
+  it "ignored as markdown (too short)" $
+    parseMarkdown "test 077777 test" `shouldBe` "test 077777 test"
+  it "ignored as markdown (double spaces)" $
+    parseMarkdown "test 07777  777  777 test" `shouldBe` "test 07777  777  777 test"
