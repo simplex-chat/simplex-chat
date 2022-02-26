@@ -1,6 +1,7 @@
 package chat.simplex.app.views.chat
 
 import android.content.res.Configuration
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -31,15 +32,17 @@ import kotlinx.datetime.Clock
 
 @Composable
 fun ChatView(chatModel: ChatModel, nav: NavController) {
-  DisposableEffect(chatModel.chatId.value) {
-    onDispose { chatModel.chatId.value = null }
-  }
+//  DisposableEffect(chatModel.chatId.value) {
+//    Log.d("SIMPLEX", "ChatView ${chatModel.chatId.value}: DisposableEffect")
+//    onDispose { chatModel.chatId.value = null }
+//  }
 
   if (chatModel.chatId.value != null && chatModel.chats.count() > 0) {
     val chat: Chat? = chatModel.chats.firstOrNull { chat -> chat.chatInfo.id == chatModel.chatId.value }
     if (chat != null) {
       // TODO a more advanced version would mark as read only if in view
       LaunchedEffect(chat.chatItems) {
+        Log.d("SIMPLEX", "ChatView ${chatModel.chatId.value}: LaunchedEffect")
         delay(1000L)
         if (chat.chatItems.count() > 0) {
           chatModel.markChatItemsRead(chat.chatInfo)

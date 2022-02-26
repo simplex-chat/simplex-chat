@@ -275,7 +275,6 @@ open class ChatController(val ctrl: ChatCtrl, val alertManager: SimplexApp.Alert
         val cInfo = r.chatItem.chatInfo
         val cItem = r.chatItem.chatItem
         chatModel.addChatItem(cInfo, cItem)
-
         if (!isAppOnForeground(appContext) || chatModel.chatId.value != cInfo.id) {
           ntfManager.notifyMessageReceived(cInfo, cItem)
         }
@@ -450,7 +449,7 @@ sealed class CR {
     is ChatStarted -> "chatStarted"
     is ChatRunning -> "chatRunning"
     is ApiChats -> "apiChats"
-    is ApiChat -> "apiChats"
+    is ApiChat -> "apiChat"
     is Invitation -> "invitation"
     is SentConfirmation -> "sentConfirmation"
     is SentInvitation -> "sentInvitation"

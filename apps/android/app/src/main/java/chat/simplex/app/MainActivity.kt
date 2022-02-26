@@ -21,6 +21,7 @@ import chat.simplex.app.views.chatlist.ChatListView
 import chat.simplex.app.views.helpers.withApi
 import chat.simplex.app.views.newchat.*
 import chat.simplex.app.views.usersettings.*
+import kotlinx.coroutines.delay
 import kotlinx.serialization.decodeFromString
 
 class MainActivity: ComponentActivity() {
@@ -30,7 +31,7 @@ class MainActivity: ComponentActivity() {
     super.onCreate(savedInstanceState)
 //    testJson()
     processIntent(intent, vm.chatModel)
-    vm.app.initiateBackgroundWork()
+//    vm.app.initiateBackgroundWork()
     setContent {
       SimpleXTheme {
         Navigation(vm.chatModel)
@@ -110,13 +111,16 @@ fun Navigation(chatModel: ChatModel) {
     val am = chatModel.alertManager
     if (am.presentAlert.value) am.alertView.value?.invoke()
   }
-  if (chatModel.goToChatWithId.value != null) {
-    LaunchedEffect(chatModel.goToChatWithId) {
-      chatModel.chatId.value = chatModel.goToChatWithId.value
-      chatModel.goToChatWithId.value = null
-      nav.navigateUp()
-      nav.navigate(Pages.ChatList.route)
-      nav.navigate(Pages.Chat.route)
+  LaunchedEffect(chatModel.goToChatWithId.value) {
+    withApi {
+      if (chatModel.goToChatWithId.value != null) {
+        Log.d("SIMPLEX", "Navigation: LaunchedEffect ${chatModel.goToChatWithId}")
+        chatModel.chatId.value = chatModel.goToChatWithId.value
+        chatModel.goToChatWithId.value = null
+        //      nav.navigateUp()
+        //      nav.navigate(Pages.ChatList.route)
+        nav.navigate(Pages.Chat.route)
+      }
     }
   }
 }
@@ -139,15 +143,18 @@ sealed class Pages(val route: String) {
 
 fun processIntent(intent: Intent?, chatModel: ChatModel) {
   when (intent?.action) {
-    "openChatWithId" -> {
-      val chatId = intent.getStringExtra("chatId",)
-      withApi {
-        val chatPreview = chatModel.getChat(chatId!!)
-        if (chatPreview != null) {
-          val chat = chatModel.controller.apiGetChat(chatPreview.chatInfo.chatType, chatPreview.chatInfo.apiId)
-          if (chat != null) {
-            chatModel.goToChatWithId.value = chat.chatInfo.id
-            chatModel.chatItems = chat.chatItems.toMutableStateList()
+    NtfManager.OpenChatAction -> {
+      val chatId = intent.getStringExtra("chatId")
+      Log.d("SIMPLEX", "processIntent: OpenChatAction $chatId")
+      if (chatId != null) {
+        withApi {
+          val cInfo = chatModel.getChat(chatId)?.chatInfo
+          if (cInfo != null) {
+            val chat = chatModel.controller.apiGetChat(cInfo.chatType, cInfo.apiId)
+            if (chat != null) {
+              chatModel.goToChatWithId.value = chatId
+              chatModel.chatItems = chat.chatItems.toMutableStateList()
+            }
           }
         }
       }
