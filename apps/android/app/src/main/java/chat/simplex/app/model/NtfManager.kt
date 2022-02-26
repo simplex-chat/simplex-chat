@@ -24,7 +24,7 @@ class NtfManager(val context: Context) {
   fun createNotificationChannel(channelId: String, quiet: Boolean = false) {
     val name = "SimpleX Chat"
     val desc = "Channel for message notifications"
-    val importance = NotificationManager.IMPORTANCE_DEFAULT
+    val importance = NotificationManager.IMPORTANCE_HIGH
     val channel = NotificationChannel(channelId, name, importance)
       .apply {
       description = desc
@@ -52,7 +52,7 @@ class NtfManager(val context: Context) {
     val notifications = manager.activeNotifications
     val jointNotifications = notifications.filter { n -> (n.notification.group != null && n.notification.group == group) }
     val rawCount = jointNotifications.count()
-    val notificationBuilder = getNotificationBuilder(pendingIntent, NotificationCompat.PRIORITY_DEFAULT, channelId, cInfo.displayName, cItem.content.text, group)
+    val notificationBuilder = getNotificationBuilder(pendingIntent, NotificationCompat.PRIORITY_HIGH, channelId, cInfo.displayName, cItem.content.text, group)
     val notificationGroupBuilder = getGroupNotificationBuilder(rawCount, pendingIntent, channelId, cInfo.displayName, group)
 
 
@@ -93,7 +93,7 @@ class NtfManager(val context: Context) {
 
   private fun getNotificationBuilder(
     pendingIntent: PendingIntent,
-    priority: Int = NotificationCompat.PRIORITY_DEFAULT,
+    priority: Int = NotificationCompat.PRIORITY_HIGH,
     channelId: String,
     title: String,
     content: String,
