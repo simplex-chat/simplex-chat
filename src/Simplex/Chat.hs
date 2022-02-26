@@ -532,7 +532,7 @@ subscribeUserConnections user@User {userId} = do
     subscribePendingConnections n = do
       cs <- withStore (`getPendingConnections` user)
       summary <- pooledForConcurrentlyN n cs $ \Connection {agentConnId = acId@(AgentConnId cId)} ->
-        PendingSubStatus acId <$> ((subscribe cId $> Nothing) `catchError` pure . Just)
+        PendingSubStatus acId <$> ((subscribe cId $> Nothing) `catchError` (pure . Just))
       toView $ CRPendingSubSummary summary
     subscribeUserContactLink n = do
       cs <- withStore (`getUserContactLinkConnections` userId)
