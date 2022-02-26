@@ -22,7 +22,7 @@ fun HelpView(chatModel: ChatModel, nav: NavController) {
   if (user != null) {
     HelpLayout(
       displayName = user.profile.displayName,
-      back = { nav.popBackStack() }
+      back = nav::popBackStack
     )
   }
 }
