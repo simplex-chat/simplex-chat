@@ -114,7 +114,9 @@ enum ChatResponse: Decodable, Error {
     case contactSubscribed(contact: Contact)
     case contactDisconnected(contact: Contact)
     case contactSubError(contact: Contact, chatError: ChatError)
+    case contactSubSummary(contactSubscriptions: [ContactSubStatus])
     case groupSubscribed(groupInfo: GroupInfo)
+    case memberSubErrors(memberSubErrors: [MemberSubError])
     case groupEmpty(groupInfo: GroupInfo)
     case userContactLinkSubscribed
     case newChatItem(chatItem: AChatItem)
@@ -148,7 +150,9 @@ enum ChatResponse: Decodable, Error {
             case .contactSubscribed: return "contactSubscribed"
             case .contactDisconnected: return "contactDisconnected"
             case .contactSubError: return "contactSubError"
+            case .contactSubSummary: return "contactSubSummary"
             case .groupSubscribed: return "groupSubscribed"
+            case .memberSubErrors: return "memberSubErrors"
             case .groupEmpty: return "groupEmpty"
             case .userContactLinkSubscribed: return "userContactLinkSubscribed"
             case .newChatItem: return "newChatItem"
@@ -185,7 +189,9 @@ enum ChatResponse: Decodable, Error {
             case let .contactSubscribed(contact): return String(describing: contact)
             case let .contactDisconnected(contact): return String(describing: contact)
             case let .contactSubError(contact, chatError): return "contact:\n\(String(describing: contact))\nerror:\n\(String(describing: chatError))"
+            case let .contactSubSummary(contactSubscriptions): return String(describing: contactSubscriptions)
             case let .groupSubscribed(groupInfo): return String(describing: groupInfo)
+            case let .memberSubErrors(memberSubErrors): return String(describing: memberSubErrors)
             case let .groupEmpty(groupInfo): return String(describing: groupInfo)
             case .userContactLinkSubscribed: return noDetails
             case let .newChatItem(chatItem): return String(describing: chatItem)
@@ -475,20 +481,20 @@ func processReceivedMsg(_ res: ChatResponse) {
                 chatModel.updateChatInfo(cInfo)
             }
         case let .contactSubscribed(contact):
-            chatModel.updateContact(contact)
-            chatModel.updateNetworkStatus(contact, .connected)
+            processContactSubscribed(contact)
         case let .contactDisconnected(contact):
             chatModel.updateContact(contact)
             chatModel.updateNetworkStatus(contact, .disconnected)
         case let .contactSubError(contact, chatError):
-            chatModel.updateContact(contact)
-            var err: String
-            switch chatError {
-            case .errorAgent(agentError: .BROKER(brokerErr: .NETWORK)): err = "network"
-            case .errorAgent(agentError: .SMP(smpErr: .AUTH)): err = "contact deleted"
-            default: err = String(describing: chatError)
+            processContactSubError(contact, chatError)
+        case let .contactSubSummary(contactSubscriptions):
+            for sub in contactSubscriptions {
+                if let err = sub.contactError {
+                    processContactSubError(sub.contact, err)
+                } else {
+                    processContactSubscribed(sub.contact)
+                }
             }
-            chatModel.updateNetworkStatus(contact, .error(err))
         case let .newChatItem(aChatItem):
             let cInfo = aChatItem.chatInfo
             let cItem = aChatItem.chatItem
@@ -506,12 +512,30 @@ func processReceivedMsg(_ res: ChatResponse) {
     }
 }
 
+func processContactSubscribed(_ contact: Contact) {
+    let m = ChatModel.shared
+    m.updateContact(contact)
+    m.updateNetworkStatus(contact, .connected)
+}
+
+func processContactSubError(_ contact: Contact, _ chatError: ChatError) {
+    let m = ChatModel.shared
+    m.updateContact(contact)
+    var err: String
+    switch chatError {
+    case .errorAgent(agentError: .BROKER(brokerErr: .NETWORK)): err = "network"
+    case .errorAgent(agentError: .SMP(smpErr: .AUTH)): err = "contact deleted"
+    default: err = String(describing: chatError)
+    }
+    m.updateNetworkStatus(contact, .error(err))
+}
+
 private struct UserResponse: Decodable {
     var user: User?
     var error: String?
 }
 
-private func chatResponse(_ cjson: UnsafePointer<CChar>) -> ChatResponse {
+private func chatResponse(_ cjson: UnsafeMutablePointer<CChar>) -> ChatResponse {
     let s = String.init(cString: cjson)
     let d = s.data(using: .utf8)!
 // TODO is there a way to do it without copying the data? e.g:
@@ -535,6 +559,7 @@ private func chatResponse(_ cjson: UnsafePointer<CChar>) -> ChatResponse {
         }
         json = prettyJSON(j)
     }
+    free(cjson)
     return ChatResponse.response(type: type ?? "invalid", json: json ?? s)
 }
 

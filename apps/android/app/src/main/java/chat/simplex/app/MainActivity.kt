@@ -132,6 +132,9 @@ fun Navigation(chatModel: ChatModel) {
       composable(route = Pages.Help.route) {
         HelpView(chatModel, nav)
       }
+      composable(route = Pages.Markdown.route) {
+        MarkdownHelpView(nav)
+      }
     }
     val am = chatModel.alertManager
     if (am.presentAlert.value) am.alertView.value?.invoke()
@@ -151,6 +154,7 @@ sealed class Pages(val route: String) {
   object UserProfile: Pages("user_profile")
   object UserAddress: Pages("user_address")
   object Help: Pages("help")
+  object Markdown: Pages("markdown")
 }
 
 @DelicateCoroutinesApi

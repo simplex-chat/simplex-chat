@@ -9,10 +9,12 @@ import androidx.compose.ui.text.font.*
 import androidx.compose.ui.text.style.TextDecoration
 import chat.simplex.app.SimplexApp
 import chat.simplex.app.ui.theme.*
+import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.datetime.*
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
+@DelicateCoroutinesApi
 class ChatModel(val controller: ChatController, val alertManager: SimplexApp.AlertManager) {
   var currentUser = mutableStateOf<User?>(null)
   var userCreated = mutableStateOf<Boolean?>(null)
@@ -249,6 +251,13 @@ data class Chat (
     @Serializable @SerialName("disconnected") class Disconnected: NetworkStatus()
     @Serializable @SerialName("error") class Error(val error: String): NetworkStatus()
   }
+
+  companion object {
+    val sampleData = Chat(
+      chatInfo = ChatInfo.Direct.sampleData,
+      chatItems = arrayListOf(ChatItem.getSampleData())
+    )
+  }
 }
 
 @Serializable
@@ -328,6 +337,12 @@ class Contact(
     )
   }
 }
+
+@Serializable
+class ContactSubStatus(
+  val contact: Contact,
+  val contactError: ChatError? = null
+)
 
 @Serializable
 class Connection(val connStatus: String) {
@@ -411,6 +426,12 @@ class GroupMember (
 }
 
 @Serializable
+class MemberSubError (
+  val member: GroupMember,
+  val memberError: ChatError
+)
+
+@Serializable
 class UserContactRequest (
   val contactRequestId: Long,
   override val localDisplayName: String,
@@ -452,7 +473,13 @@ data class ChatItem (
   val isRcvNew: Boolean get() = meta.itemStatus is CIStatus.RcvNew
 
   companion object {
-    fun getSampleData(id: Long, dir: CIDirection, ts: Instant, text: String,status: CIStatus = CIStatus.SndNew()) =
+    fun getSampleData(
+      id: Long = 1,
+      dir: CIDirection = CIDirection.DirectSnd(),
+      ts: Instant = Clock.System.now(),
+      text: String = "hello\nthere",
+      status: CIStatus = CIStatus.SndNew()
+    ) =
       ChatItem(
         chatDir = dir,
         meta = CIMeta.getSample(id, ts, text, status),

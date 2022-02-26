@@ -426,6 +426,11 @@ struct Contact: Identifiable, Decodable, NamedChat {
     )
 }
 
+struct ContactSubStatus: Decodable {
+    var contact: Contact
+    var contactError: ChatError?
+}
+
 struct Connection: Decodable {
     var connStatus: String
 
@@ -501,6 +506,11 @@ struct GroupMember: Decodable {
         memberProfile: Profile.sampleData,
         memberContactId: 1
     )
+}
+
+struct MemberSubError: Decodable {
+    var member: GroupMember
+    var memberError: ChatError
 }
 
 struct AChatItem: Decodable {
