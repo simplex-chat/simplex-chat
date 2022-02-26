@@ -11,14 +11,12 @@ import androidx.compose.material.icons.outlined.ArrowBack
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.ExperimentalTextApi
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.LifecycleOwner
 import androidx.navigation.NavController
 import chat.simplex.app.Pages
 import chat.simplex.app.model.*
@@ -34,9 +32,9 @@ import kotlinx.datetime.Clock
 @ExperimentalAnimatedInsets
 @DelicateCoroutinesApi
 @Composable
-fun ChatView(chatModel: ChatModel, nav: NavController, lifecycleOwner: LifecycleOwner = LocalLifecycleOwner.current) {
+fun ChatView(chatModel: ChatModel, nav: NavController) {
 
-  DisposableEffect(lifecycleOwner) {
+  DisposableEffect(chatModel.chatId.value) {
     onDispose { chatModel.chatId.value = null }
   }
 
