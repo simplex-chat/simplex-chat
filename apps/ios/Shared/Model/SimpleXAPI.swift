@@ -241,10 +241,36 @@ enum TerminalItem: Identifiable {
     }
 }
 
-func chatSendCmdSync(_ cmd: ChatCommand) -> ChatResponse {
+private func _sendCmd(_ cmd: ChatCommand) -> ChatResponse {
     var c = cmd.cmdString.cString(using: .utf8)!
+    return chatResponse(chat_send_cmd(getChatCtrl(), &c))
+}
+
+private func withBGCompletion(_ bgTaskDelay: Double? = nil, f: @escaping () -> ChatResponse) -> ChatResponse {
+    var id: UIBackgroundTaskIdentifier!
+    let endTask = {
+//        logger.debug("withBGCompletion: endBackgroundTask \(id.rawValue)")
+        if id != .invalid {
+            UIApplication.shared.endBackgroundTask(id)
+            id = .invalid
+        }
+    }
+    id = UIApplication.shared.beginBackgroundTask(expirationHandler: endTask)
+//    logger.debug("withBGCompletion: beginBackgroundTask \(id.rawValue)")
+    let r = f()
+    if let d = bgTaskDelay {
+        DispatchQueue.global().asyncAfter(deadline: .now() + d, execute: endTask)
+    } else {
+        endTask()
+    }
+    return r
+}
+
+func chatSendCmdSync(_ cmd: ChatCommand, bgTask: Bool = true, bgTaskDelay: Double? = nil) -> ChatResponse {
     logger.debug("chatSendCmd \(cmd.cmdType)")
-    let resp = chatResponse(chat_send_cmd(getChatCtrl(), &c))
+    let resp = bgTask
+                ? withBGCompletion(bgTaskDelay) { _sendCmd(cmd) }
+                : _sendCmd(cmd)
     logger.debug("chatSendCmd \(cmd.cmdType): \(resp.responseType)")
     if case let .response(_, json) = resp {
         logger.debug("chatSendCmd \(cmd.cmdType) response: \(json)")
@@ -256,9 +282,9 @@ func chatSendCmdSync(_ cmd: ChatCommand) -> ChatResponse {
     return resp
 }
 
-func chatSendCmd(_ cmd: ChatCommand) async -> ChatResponse {
+func chatSendCmd(_ cmd: ChatCommand, bgTask: Bool = true, bgTaskDelay: Double? = nil) async -> ChatResponse {
     await withCheckedContinuation { cont in
-        cont.resume(returning: chatSendCmdSync(cmd))
+        cont.resume(returning: chatSendCmdSync(cmd, bgTask: bgTask, bgTaskDelay: bgTaskDelay))
     }
 }
 
@@ -304,13 +330,13 @@ func apiGetChat(type: ChatType, id: Int64) async throws -> Chat {
 }
 
 func apiSendMessage(type: ChatType, id: Int64, msg: MsgContent) async throws -> ChatItem {
-    let r = await chatSendCmd(.apiSendMessage(type: type, id: id, msg: msg))
+    let r = await chatSendCmd(.apiSendMessage(type: type, id: id, msg: msg), bgTask: false)
     if case let .newChatItem(aChatItem) = r { return aChatItem.chatItem }
     throw r
 }
 
 func apiAddContact() throws -> String {
-    let r = chatSendCmdSync(.addContact)
+    let r = chatSendCmdSync(.addContact, bgTask: false)
     if case let .invitation(connReqInvitation) = r { return connReqInvitation }
     throw r
 }
@@ -325,7 +351,7 @@ func apiConnect(connReq: String) async throws {
 }
 
 func apiDeleteChat(type: ChatType, id: Int64) async throws {
-    let r = await chatSendCmd(.apiDeleteChat(type: type, id: id))
+    let r = await chatSendCmd(.apiDeleteChat(type: type, id: id), bgTask: false)
     if case .contactDeleted = r { return }
     throw r
 }

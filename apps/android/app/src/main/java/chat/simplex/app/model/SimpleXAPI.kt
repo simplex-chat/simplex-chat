@@ -5,8 +5,7 @@ import android.app.ActivityManager.RunningAppProcessInfo
 import android.content.Context
 import android.util.Log
 import androidx.compose.runtime.mutableStateOf
-import chat.simplex.app.chatRecvMsg
-import chat.simplex.app.chatSendCmd
+import chat.simplex.app.*
 import chat.simplex.app.views.helpers.AlertManager
 import chat.simplex.app.views.helpers.withApi
 import kotlinx.coroutines.Dispatchers
@@ -24,7 +23,7 @@ open class ChatController(val ctrl: ChatCtrl, val ntfManager: NtfManager, val ap
   var chatModel = ChatModel(this)
 
   suspend fun startChat(u: User) {
-    Log.d("SIMPLEX (user)", u.toString())
+    Log.d(TAG, "user: $u")
     try {
       apiStartChat()
       chatModel.userAddress.value = apiGetUserAddress()
@@ -32,9 +31,9 @@ open class ChatController(val ctrl: ChatCtrl, val ntfManager: NtfManager, val ap
       chatModel.currentUser = mutableStateOf(u)
       chatModel.userCreated.value = true
       startReceiver()
-      Log.d("SIMPLEX", "started chat")
+      Log.d(TAG, "started chat")
     } catch(e: Error) {
-      Log.d("SIMPLEX", "failed starting chat $e")
+      Log.e(TAG, "failed starting chat $e")
       throw e
     }
   }
@@ -62,11 +61,11 @@ open class ChatController(val ctrl: ChatCtrl, val ntfManager: NtfManager, val ap
       val c = cmd.cmdString
       chatModel.terminalItems.add(TerminalItem.cmd(cmd))
       val json = chatSendCmd(ctrl, c)
-      Log.d("SIMPLEX", "sendCmd: ${cmd.cmdType}")
+      Log.d(TAG, "sendCmd: ${cmd.cmdType}")
       val r = APIResponse.decodeStr(json)
-      Log.d("SIMPLEX", "sendCmd response type ${r.resp.responseType}")
+      Log.d(TAG, "sendCmd response type ${r.resp.responseType}")
       if (r.resp is CR.Response || r.resp is CR.Invalid) {
-        Log.d("SIMPLEX", "sendCmd response json $json")
+        Log.d(TAG, "sendCmd response json $json")
       }
       chatModel.terminalItems.add(TerminalItem.resp(r.resp))
       r.resp
@@ -77,8 +76,8 @@ open class ChatController(val ctrl: ChatCtrl, val ntfManager: NtfManager, val ap
     return withContext(Dispatchers.IO) {
       val json = chatRecvMsg(ctrl)
       val r = APIResponse.decodeStr(json).resp
-      Log.d("SIMPLEX", "chatRecvMsg: ${r.responseType}")
-      if (r is CR.Response || r is CR.Invalid) Log.d("SIMPLEX", "chatRecvMsg json: $json")
+      Log.d(TAG, "chatRecvMsg: ${r.responseType}")
+      if (r is CR.Response || r is CR.Invalid) Log.d(TAG, "chatRecvMsg json: $json")
       r
     }
   }
@@ -91,7 +90,7 @@ open class ChatController(val ctrl: ChatCtrl, val ntfManager: NtfManager, val ap
   suspend fun apiGetActiveUser(): User? {
     val r = sendCmd(CC.ShowActiveUser())
     if (r is CR.ActiveUser) return r.user
-    Log.d("SIMPLEX", "apiGetActiveUser: ${r.responseType} ${r.details}")
+    Log.d(TAG, "apiGetActiveUser: ${r.responseType} ${r.details}")
     chatModel.userCreated.value = false
     return null
   }
@@ -99,7 +98,7 @@ open class ChatController(val ctrl: ChatCtrl, val ntfManager: NtfManager, val ap
   suspend fun apiCreateActiveUser(p: Profile): User {
     val r = sendCmd(CC.CreateActiveUser(p))
     if (r is CR.ActiveUser) return r.user
-    Log.d("SIMPLEX", "apiCreateActiveUser: ${r.responseType} ${r.details}")
+    Log.d(TAG, "apiCreateActiveUser: ${r.responseType} ${r.details}")
     throw Error("user not created ${r.responseType} ${r.details}")
   }
 
@@ -118,21 +117,21 @@ open class ChatController(val ctrl: ChatCtrl, val ntfManager: NtfManager, val ap
   suspend fun apiGetChat(type: ChatType, id: Long): Chat? {
     val r = sendCmd(CC.ApiGetChat(type, id))
     if (r is CR.ApiChat ) return r.chat
-    Log.d("SIMPLEX", "apiGetChat bad response: ${r.responseType} ${r.details}")
+    Log.e(TAG, "apiGetChat bad response: ${r.responseType} ${r.details}")
     return null
   }
 
   suspend fun apiSendMessage(type: ChatType, id: Long, mc: MsgContent): AChatItem? {
     val r = sendCmd(CC.ApiSendMessage(type, id, mc))
     if (r is CR.NewChatItem ) return r.chatItem
-    Log.d("SIMPLEX", "apiSendMessage bad response: ${r.responseType} ${r.details}")
+    Log.e(TAG, "apiSendMessage bad response: ${r.responseType} ${r.details}")
     return null
   }
 
   suspend fun apiAddContact(): String? {
     val r = sendCmd(CC.AddContact())
     if (r is CR.Invitation) return r.connReqInvitation
-    Log.d("SIMPLEX", "apiAddContact bad response: ${r.responseType} ${r.details}")
+    Log.e(TAG, "apiAddContact bad response: ${r.responseType} ${r.details}")
     return null
   }
 
@@ -182,21 +181,21 @@ open class ChatController(val ctrl: ChatCtrl, val ntfManager: NtfManager, val ap
     val r = sendCmd(CC.UpdateProfile(profile))
     if (r is CR.UserProfileNoChange) return profile
     if (r is CR.UserProfileUpdated) return r.toProfile
-    Log.d("SIMPLEX", "apiUpdateProfile bad response: ${r.responseType} ${r.details}")
+    Log.e(TAG, "apiUpdateProfile bad response: ${r.responseType} ${r.details}")
     return null
   }
 
   suspend fun apiCreateUserAddress(): String? {
     val r = sendCmd(CC.CreateMyAddress())
     if (r is CR.UserContactLinkCreated) return r.connReqContact
-    Log.d("SIMPLEX", "apiCreateUserAddress bad response: ${r.responseType} ${r.details}")
+    Log.e(TAG, "apiCreateUserAddress bad response: ${r.responseType} ${r.details}")
     return null
   }
 
   suspend fun apiDeleteUserAddress(): Boolean {
     val r = sendCmd(CC.DeleteMyAddress())
     if (r is CR.UserContactLinkDeleted) return true
-    Log.d("SIMPLEX", "apiDeleteUserAddress bad response: ${r.responseType} ${r.details}")
+    Log.e(TAG, "apiDeleteUserAddress bad response: ${r.responseType} ${r.details}")
     return false
   }
 
@@ -207,34 +206,34 @@ open class ChatController(val ctrl: ChatCtrl, val ntfManager: NtfManager, val ap
       && r.chatError.storeError is StoreError.UserContactLinkNotFound) {
       return null
     }
-    Log.d("SIMPLEX", "apiGetUserAddress bad response: ${r.responseType} ${r.details}")
+    Log.e(TAG, "apiGetUserAddress bad response: ${r.responseType} ${r.details}")
     return null
   }
 
   suspend fun apiAcceptContactRequest(contactReqId: Long): Contact? {
     val r = sendCmd(CC.ApiAcceptContact(contactReqId))
     if (r is CR.AcceptingContactRequest) return r.contact
-    Log.d("SIMPLEX", "apiAcceptContactRequest bad response: ${r.responseType} ${r.details}")
+    Log.e(TAG, "apiAcceptContactRequest bad response: ${r.responseType} ${r.details}")
     return null
   }
 
   suspend fun apiRejectContactRequest(contactReqId: Long): Boolean {
     val r = sendCmd(CC.ApiRejectContact(contactReqId))
     if (r is CR.ContactRequestRejected) return true
-    Log.d("SIMPLEX", "apiRejectContactRequest bad response: ${r.responseType} ${r.details}")
+    Log.e(TAG, "apiRejectContactRequest bad response: ${r.responseType} ${r.details}")
     return false
   }
 
   suspend fun apiChatRead(type: ChatType, id: Long, range: CC.ItemRange): Boolean {
     val r = sendCmd(CC.ApiChatRead(type, id, range))
     if (r is CR.CmdOk) return true
-    Log.d("SIMPLEX", "apiChatRead bad response: ${r.responseType} ${r.details}")
+    Log.e(TAG, "apiChatRead bad response: ${r.responseType} ${r.details}")
     return false
   }
 
   fun apiErrorAlert(method: String, title: String, r: CR) {
     val errMsg = "${r.responseType}: ${r.details}"
-    Log.e("SIMPLEX", "$method bad response: $errMsg")
+    Log.e(TAG, "$method bad response: $errMsg")
     AlertManager.shared.showAlertMsg(title, errMsg)
   }
 
@@ -286,7 +285,7 @@ open class ChatController(val ctrl: ChatCtrl, val ntfManager: NtfManager, val ap
   //              NtfManager.shared.notifyMessageReceived(cInfo, cItem)
   //            }
       else ->
-        Log.d("SIMPLEX" , "unsupported event: ${r.responseType}")
+        Log.d(TAG , "unsupported event: ${r.responseType}")
     }
   }
 

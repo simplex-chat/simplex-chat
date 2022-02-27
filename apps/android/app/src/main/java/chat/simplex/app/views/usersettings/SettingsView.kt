@@ -30,10 +30,7 @@ fun SettingsView(chatModel: ChatModel) {
   if (user != null) {
     SettingsLayout(
       profile = user.profile,
-//      showModal = { modal -> ModalManager.shared.showModal { modal(chatModel) } },
-      showProfile = { ModalManager.shared.showModal { UserProfileView(chatModel) } },
-      showAddress = { ModalManager.shared.showModal { UserAddressView(chatModel) } },
-      showHelp = { ModalManager.shared.showModal { HelpView(chatModel) } },
+      showModal = { modalView -> { ModalManager.shared.showModal { modalView(chatModel) } } },
       showTerminal = { ModalManager.shared.showCustomModal { close -> TerminalView(chatModel, close) } }
     )
   }
@@ -45,10 +42,7 @@ val simplexTeamUri =
 @Composable
 fun SettingsLayout(
   profile: Profile,
-//  showModal: (modal: @Composable (ChatModel) -> Unit) -> Unit,
-  showProfile: () -> Unit,
-  showAddress: () -> Unit,
-  showHelp: () -> Unit,
+  showModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
   showTerminal: () -> Unit
 ) {
   val uriHandler = LocalUriHandler.current
@@ -67,10 +61,11 @@ fun SettingsLayout(
       Text(
         "Your Settings",
         style = MaterialTheme.typography.h1,
+        modifier = Modifier.padding(start = 8.dp)
       )
       Spacer(Modifier.height(30.dp))
 
-      SettingsSectionView(showProfile, 60.dp) {
+      SettingsSectionView(showModal { UserProfileView(it) }, 60.dp) {
         Icon(
           Icons.Outlined.AccountCircle,
           contentDescription = "Avatar Placeholder",
@@ -86,7 +81,7 @@ fun SettingsLayout(
         }
       }
       Divider(Modifier.padding(horizontal = 8.dp))
-      SettingsSectionView(showAddress) {
+      SettingsSectionView(showModal { UserAddressView(it) }) {
         Icon(
           Icons.Outlined.QrCode,
           contentDescription = "Address",
@@ -96,7 +91,7 @@ fun SettingsLayout(
       }
       Spacer(Modifier.height(24.dp))
 
-      SettingsSectionView(showHelp) {
+      SettingsSectionView(showModal { HelpView(it) }) {
         Icon(
           Icons.Outlined.HelpOutline,
           contentDescription = "Chat help",
@@ -104,7 +99,7 @@ fun SettingsLayout(
         Spacer(Modifier.padding(horizontal = 4.dp))
         Text("How to use SimpleX Chat")
       }
-      SettingsSectionView({ ModalManager.shared.showModal { MarkdownHelpView() } }) {
+      SettingsSectionView(showModal { MarkdownHelpView() }) {
         Icon(
           Icons.Outlined.TextFormat,
           contentDescription = "Markdown help",
@@ -167,12 +162,12 @@ fun SettingsLayout(
 }
 
 @Composable
-fun SettingsSectionView(func: () -> Unit, height: Dp = 48.dp, content: (@Composable () -> Unit)) {
+fun SettingsSectionView(click: () -> Unit, height: Dp = 48.dp, content: (@Composable () -> Unit)) {
   Row(
     Modifier
       .padding(start = 8.dp)
       .fillMaxWidth()
-      .clickable(onClick = func)
+      .clickable(onClick = click)
       .height(height),
     verticalAlignment = Alignment.CenterVertically
   ) {
@@ -191,9 +186,7 @@ fun PreviewSettingsLayout() {
   SimpleXTheme {
     SettingsLayout(
       profile = Profile.sampleData,
-      showProfile = {},
-      showAddress = {},
-      showHelp = {},
+      showModal = {{}},
       showTerminal = {}
     )
   }

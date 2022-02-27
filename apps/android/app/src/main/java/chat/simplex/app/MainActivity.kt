@@ -76,7 +76,7 @@ fun processIntent(intent: Intent?, chatModel: ChatModel) {
   when (intent?.action) {
     NtfManager.OpenChatAction -> {
       val chatId = intent.getStringExtra("chatId")
-      Log.d("SIMPLEX", "processIntent: OpenChatAction $chatId")
+      Log.d(TAG, "processIntent: OpenChatAction $chatId")
       if (chatId != null) {
         val cInfo = chatModel.getChat(chatId)?.chatInfo
         if (cInfo != null) withApi { openChat(chatModel, cInfo) }
@@ -90,7 +90,7 @@ fun processIntent(intent: Intent?, chatModel: ChatModel) {
 }
 
 fun connectIfOpenedViaUri(uri: Uri, chatModel: ChatModel) {
-  Log.d("SIMPLEX", "connectIfOpenedViaUri: opened via link")
+  Log.d(TAG, "connectIfOpenedViaUri: opened via link")
   if (chatModel.currentUser.value == null) {
     // TODO open from chat list view
     chatModel.appOpenUrl.value = uri
@@ -102,7 +102,7 @@ fun connectIfOpenedViaUri(uri: Uri, chatModel: ChatModel) {
         confirmText = "Connect",
         onConfirm = {
           withApi {
-            Log.d("SIMPLEX", "connectIfOpenedViaUri: connecting")
+            Log.d(TAG, "connectIfOpenedViaUri: connecting")
             connectViaUri(chatModel, action, uri)
           }
         }

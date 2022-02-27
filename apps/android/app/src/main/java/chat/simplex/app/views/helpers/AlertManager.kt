@@ -4,13 +4,14 @@ import android.util.Log
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
+import chat.simplex.app.TAG
 
 class AlertManager {
   var alertView = mutableStateOf<(@Composable () -> Unit)?>(null)
   var presentAlert = mutableStateOf<Boolean>(false)
 
   fun showAlert(alert: @Composable () -> Unit) {
-    Log.d("SIMPLEX", "AlertManager.showAlert")
+    Log.d(TAG, "AlertManager.showAlert")
     alertView.value = alert
     presentAlert.value = true
   }
