@@ -2,6 +2,7 @@ package chat.simplex.app.views.chat
 
 import android.content.res.Configuration
 import android.util.Log
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -32,47 +33,43 @@ import kotlinx.datetime.Clock
 
 @Composable
 fun ChatView(chatModel: ChatModel, nav: NavController) {
-//  DisposableEffect(chatModel.chatId.value) {
-//    Log.d("SIMPLEX", "ChatView ${chatModel.chatId.value}: DisposableEffect")
-//    onDispose { chatModel.chatId.value = null }
-//  }
-
-  if (chatModel.chatId.value != null && chatModel.chats.count() > 0) {
-    val chat: Chat? = chatModel.chats.firstOrNull { chat -> chat.chatInfo.id == chatModel.chatId.value }
-    if (chat != null) {
-      // TODO a more advanced version would mark as read only if in view
-      LaunchedEffect(chat.chatItems) {
-        Log.d("SIMPLEX", "ChatView ${chatModel.chatId.value}: LaunchedEffect")
-        delay(1000L)
-        if (chat.chatItems.count() > 0) {
-          chatModel.markChatItemsRead(chat.chatInfo)
-          withApi {
-            chatModel.controller.apiChatRead(
-              chat.chatInfo.chatType,
-              chat.chatInfo.apiId,
-              CC.ItemRange(chat.chatStats.minUnreadItemId, chat.chatItems.last().id)
-            )
-          }
+  val chat: Chat? = chatModel.chats.firstOrNull { chat -> chat.chatInfo.id == chatModel.chatId.value }
+  if (chat == null) {
+    chatModel.chatId.value = null
+  } else {
+    BackHandler { chatModel.chatId.value = null }
+    // TODO a more advanced version would mark as read only if in view
+    LaunchedEffect(chat.chatItems) {
+      Log.d("SIMPLEX", "ChatView ${chatModel.chatId.value}: LaunchedEffect")
+      delay(1000L)
+      if (chat.chatItems.count() > 0) {
+        chatModel.markChatItemsRead(chat.chatInfo)
+        withApi {
+          chatModel.controller.apiChatRead(
+            chat.chatInfo.chatType,
+            chat.chatInfo.apiId,
+            CC.ItemRange(chat.chatStats.minUnreadItemId, chat.chatItems.last().id)
+          )
         }
       }
-      ChatLayout(chat, chatModel.chatItems,
-        back = nav::popBackStack,
-        info = { nav.navigate(Pages.ChatInfo.route) },
-        sendMessage = { msg ->
-          withApi {
-            // show "in progress"
-            val cInfo = chat.chatInfo
-            val newItem = chatModel.controller.apiSendMessage(
-              type = cInfo.chatType,
-              id = cInfo.apiId,
-              mc = MsgContent.MCText(msg)
-            )
-            // hide "in progress"
-            if (newItem != null) chatModel.addChatItem(cInfo, newItem.chatItem)
-          }
-        }
-      )
     }
+    ChatLayout(chat, chatModel.chatItems,
+      back = { chatModel.chatId.value = null },
+      info = { nav.navigate(Pages.ChatInfo.route) },
+      sendMessage = { msg ->
+        withApi {
+          // show "in progress"
+          val cInfo = chat.chatInfo
+          val newItem = chatModel.controller.apiSendMessage(
+            type = cInfo.chatType,
+            id = cInfo.apiId,
+            mc = MsgContent.MCText(msg)
+          )
+          // hide "in progress"
+          if (newItem != null) chatModel.addChatItem(cInfo, newItem.chatItem)
+        }
+      }
+    )
   }
 }
 
@@ -103,7 +100,10 @@ fun ChatLayout(
 
 @Composable
 fun ChatInfoToolbar(chat: Chat, back: () -> Unit, info: () -> Unit) {
-  Box(Modifier.height(60.dp).padding(horizontal = 8.dp),
+  Box(
+    Modifier
+      .height(60.dp)
+      .padding(horizontal = 8.dp),
     contentAlignment = Alignment.CenterStart
   ) {
     IconButton(onClick = back) {

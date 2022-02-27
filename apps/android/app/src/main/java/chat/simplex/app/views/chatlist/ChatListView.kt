@@ -79,14 +79,11 @@ fun ChatListView(chatModel: ChatModel, nav: NavController) {
           .background(MaterialTheme.colors.background)
       ) {
         ChatListToolbar(scaffoldCtrl)
-        when (chatModel.chatsLoaded.value) {
-          true -> if (chatModel.chats.isNotEmpty()) {
-            ChatList(chatModel, nav)
-          } else {
-            val user = chatModel.currentUser.value
-            Help(scaffoldCtrl, displayName = user?.profile?.displayName)
-          }
-          else -> ChatList(chatModel, nav)
+        if (chatModel.chats.isNotEmpty()) {
+          ChatList(chatModel, nav)
+        } else {
+          val user = chatModel.currentUser.value
+          Help(scaffoldCtrl, displayName = user?.profile?.displayName)
         }
       }
       if (scaffoldCtrl.expanded.value) {
@@ -180,15 +177,3 @@ fun ChatList(chatModel: ChatModel, navController: NavController) {
     }
   }
 }
-//@Preview
-//@Composable
-//fun PreviewChatListView() {
-//  SimpleXTheme {
-//    ChatListView(
-//      chats = listOf(
-//        Chat()
-//      ),
-//
-//    )
-//  }
-//}

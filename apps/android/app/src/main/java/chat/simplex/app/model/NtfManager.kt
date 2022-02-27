@@ -45,37 +45,18 @@ class NtfManager(val context: Context) {
     val channelId = if (recentNotification) SilentChannelName else MainChannelName
 
     val pendingIntent = getMsgPendingIntent(cInfo)
-
     val notificationId = Clock.System.now().hashCode()
-//    val group = cInfo.id
-//    val notificationGroupId = group.hashCode()
-
-//    val notifications = manager.activeNotifications
-//    val jointNotifications = notifications.filter { n -> (n.notification.group != null && n.notification.group == group) }
-//    val rawCount = jointNotifications.count()
 
     val builder = NotificationCompat.Builder(context, channelId)
       .setSmallIcon(R.mipmap.icon)
       .setContentTitle(cInfo.displayName)
       .setContentText(cItem.content.text)
       .setPriority(NotificationCompat.PRIORITY_HIGH)
-//      .setGroup(group)
-//      .setStyle(NotificationCompat.InboxStyle().addLine(cItem.content.text))
       .setAutoCancel(true)
       .setContentIntent(pendingIntent)
       .setOnlyAlertOnce(true)
 
-//    val notificationGroupBuilder = getGroupNotificationBuilder(rawCount, pendingIntent, channelId, cInfo.displayName, group)
-
     with(NotificationManagerCompat.from(context)) {
-//      if (rawCount != 0) {
-//        notify(notificationGroupId, notificationBuilder.build())
-//      }
-//      if (rawCount == 1) {
-//        val originalId = jointNotifications[0].id
-//        manager.cancel(originalId)
-//        notify(originalId, jointNotifications[0].notification.clone())
-//      }
       notify(notificationId, builder.build())
     }
   }
@@ -92,31 +73,4 @@ class NtfManager(val context: Context) {
       getPendingIntent(uniqueInt, PendingIntent.FLAG_IMMUTABLE)
     }
   }
-
-//  private fun getGroupNotificationBuilder(
-//    rawNotificationCount: Int,
-//    pendingIntent: PendingIntent,
-//    channelId: String,
-//    title: String,
-//    group: String? = null
-//  ): NotificationCompat.Builder {
-//    // Avoid counting existing group notification
-//    val msgCount = if (rawNotificationCount <= 1) rawNotificationCount + 1 else rawNotificationCount
-//    val groupNotificationText = if (msgCount > 1) "$msgCount new messages" else "$msgCount new message"
-//    return NotificationCompat.Builder(context, channelId)
-//      .setSmallIcon(R.mipmap.icon)
-//      .setContentTitle(title)
-//      .setContentText(groupNotificationText)
-//      .setStyle(NotificationCompat.InboxStyle()
-//        .setSummaryText(groupNotificationText)
-//      )
-//      .setGroup(group)
-//      .setGroupSummary(true)
-//      .setGroupAlertBehavior(NotificationCompat.GROUP_ALERT_CHILDREN)
-//      .setContentIntent(pendingIntent)
-//      .setAutoCancel(true)
-//      .setOnlyAlertOnce(true)
-//      .setSound(null)
-//      .setVibrate(null)
-//  }
 }

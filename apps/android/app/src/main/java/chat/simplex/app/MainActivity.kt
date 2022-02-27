@@ -2,6 +2,7 @@ package chat.simplex.app
 
 import android.app.Application
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
@@ -18,10 +19,10 @@ import chat.simplex.app.views.*
 import chat.simplex.app.views.chat.ChatInfoView
 import chat.simplex.app.views.chat.ChatView
 import chat.simplex.app.views.chatlist.ChatListView
+import chat.simplex.app.views.chatlist.openChat
 import chat.simplex.app.views.helpers.withApi
 import chat.simplex.app.views.newchat.*
 import chat.simplex.app.views.usersettings.*
-import kotlinx.coroutines.delay
 import kotlinx.serialization.decodeFromString
 
 class MainActivity: ComponentActivity() {
@@ -49,31 +50,28 @@ class SimplexViewModel(application: Application): AndroidViewModel(application) 
 fun MainPage(chatModel: ChatModel, nav: NavController) {
   when (chatModel.userCreated.value) {
     null -> SplashView()
-    false -> WelcomeView(chatModel) { nav.navigate(Pages.ChatList.route) }
-    true -> ChatListView(chatModel, nav)
+    false -> WelcomeView(chatModel) // { nav.navigate(Pages.ChatList.route) }
+    true -> if (chatModel.chatId.value == null) {
+      ChatListView(chatModel, nav)
+    } else {
+      ChatView(chatModel, nav)
+    }
   }
 }
 
 @Composable
 fun Navigation(chatModel: ChatModel) {
+  println("*** in Navigation")
   val nav = rememberNavController()
+  val scope = rememberCoroutineScope()
   Box {
     NavHost(navController = nav, startDestination = Pages.Home.route) {
       composable(route = Pages.Home.route) {
+        println("*** composable MainPage")
         MainPage(chatModel, nav)
       }
       composable(route = Pages.Welcome.route) {
-        WelcomeView(chatModel) {
-          nav.navigate(Pages.Home.route) {
-            popUpTo(Pages.Home.route) { inclusive = true }
-          }
-        }
-      }
-      composable(route = Pages.ChatList.route) {
-        ChatListView(chatModel, nav)
-      }
-      composable(route = Pages.Chat.route) {
-        ChatView(chatModel, nav)
+        WelcomeView(chatModel)
       }
       composable(route = Pages.AddContact.route) {
         AddContactView(chatModel, nav)
@@ -111,18 +109,6 @@ fun Navigation(chatModel: ChatModel) {
     val am = chatModel.alertManager
     if (am.presentAlert.value) am.alertView.value?.invoke()
   }
-  LaunchedEffect(chatModel.goToChatWithId.value) {
-    withApi {
-      if (chatModel.goToChatWithId.value != null) {
-        Log.d("SIMPLEX", "Navigation: LaunchedEffect ${chatModel.goToChatWithId}")
-        chatModel.chatId.value = chatModel.goToChatWithId.value
-        chatModel.goToChatWithId.value = null
-        //      nav.navigateUp()
-        //      nav.navigate(Pages.ChatList.route)
-        nav.navigate(Pages.Chat.route)
-      }
-    }
-  }
 }
 
 sealed class Pages(val route: String) {
@@ -130,8 +116,6 @@ sealed class Pages(val route: String) {
   object Terminal: Pages("terminal")
   object Welcome: Pages("welcome")
   object TerminalItemDetails: Pages("details")
-  object ChatList: Pages("chats")
-  object Chat: Pages("chat")
   object AddContact: Pages("add_contact")
   object Connect: Pages("connect")
   object ChatInfo: Pages("chat_info")
@@ -147,41 +131,35 @@ fun processIntent(intent: Intent?, chatModel: ChatModel) {
       val chatId = intent.getStringExtra("chatId")
       Log.d("SIMPLEX", "processIntent: OpenChatAction $chatId")
       if (chatId != null) {
-        withApi {
-          val cInfo = chatModel.getChat(chatId)?.chatInfo
-          if (cInfo != null) {
-            val chat = chatModel.controller.apiGetChat(cInfo.chatType, cInfo.apiId)
-            if (chat != null) {
-              chatModel.goToChatWithId.value = chatId
-              chatModel.chatItems = chat.chatItems.toMutableStateList()
-            }
-          }
-        }
+        val cInfo = chatModel.getChat(chatId)?.chatInfo
+        if (cInfo != null) withApi { openChat(chatModel, cInfo) }
       }
     }
     "android.intent.action.VIEW" -> {
       val uri = intent.data
-      if (uri != null) {
-        Log.d("SIMPLEX", "connectIfOpenedViaUri: opened via link")
-        if (chatModel.currentUser.value == null) {
-          // TODO open from chat list view
-          chatModel.appOpenUrl.value = uri
-        } else {
-          withUriAction(chatModel, uri) { action ->
-            chatModel.alertManager.showAlertMsg(
-              title = "Connect via $action link?",
-              text = "Your profile will be sent to the contact that you received this link from.",
-              confirmText = "Connect",
-              onConfirm = {
-                withApi {
-                  Log.d("SIMPLEX", "connectIfOpenedViaUri: connecting")
-                  connectViaUri(chatModel, action, uri)
-                }
-              }
-            )
+      if (uri != null) connectIfOpenedViaUri(uri, chatModel)
+    }
+  }
+}
+
+fun connectIfOpenedViaUri(uri: Uri, chatModel: ChatModel) {
+  Log.d("SIMPLEX", "connectIfOpenedViaUri: opened via link")
+  if (chatModel.currentUser.value == null) {
+    // TODO open from chat list view
+    chatModel.appOpenUrl.value = uri
+  } else {
+    withUriAction(chatModel, uri) { action ->
+      chatModel.alertManager.showAlertMsg(
+        title = "Connect via $action link?",
+        text = "Your profile will be sent to the contact that you received this link from.",
+        confirmText = "Connect",
+        onConfirm = {
+          withApi {
+            Log.d("SIMPLEX", "connectIfOpenedViaUri: connecting")
+            connectViaUri(chatModel, action, uri)
           }
         }
-      }
+      )
     }
   }
 }

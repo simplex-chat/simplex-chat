@@ -15,7 +15,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import chat.simplex.app.Pages
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
@@ -25,7 +24,7 @@ fun ChatInfoView(chatModel: ChatModel, nav: NavController) {
   val chat = chatModel.chats.firstOrNull { it.id == chatModel.chatId.value }
   if (chat != null) {
     ChatInfoLayout(chat,
-      close = { nav.popBackStack() },
+      close = nav::popBackStack,
       deleteContact = {
         chatModel.alertManager.showAlertMsg(
           title = "Delete contact?",
@@ -37,7 +36,8 @@ fun ChatInfoView(chatModel: ChatModel, nav: NavController) {
               val r = chatModel.controller.apiDeleteChat(cInfo.chatType, cInfo.apiId)
               if (r) {
                 chatModel.removeChat(cInfo.id)
-                nav.navigate(Pages.ChatList.route)
+                chatModel.chatId.value = null
+                nav.popBackStack()
               }
             }
           }

@@ -22,14 +22,13 @@ open class ChatController(val ctrl: ChatCtrl, val alertManager: SimplexApp.Alert
   var chatModel = ChatModel(this, alertManager)
 
   suspend fun startChat(u: User) {
-    chatModel.currentUser = mutableStateOf(u)
-    chatModel.userCreated.value = true
     Log.d("SIMPLEX (user)", u.toString())
     try {
       apiStartChat()
       chatModel.userAddress.value = apiGetUserAddress()
       chatModel.chats.addAll(apiGetChats())
-      chatModel.chatsLoaded.value = true
+      chatModel.currentUser = mutableStateOf(u)
+      chatModel.userCreated.value = true
       startReceiver()
       Log.d("SIMPLEX", "started chat")
     } catch(e: Error) {
