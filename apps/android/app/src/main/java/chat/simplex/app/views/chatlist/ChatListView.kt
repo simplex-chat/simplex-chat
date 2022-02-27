@@ -8,8 +8,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.PersonAdd
-import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -141,7 +140,7 @@ fun ChatListToolbar(scaffoldCtrl: ScaffoldController) {
   ) {
     IconButton(onClick = { scaffoldCtrl.toggleDrawer() }) {
       Icon(
-        Icons.Outlined.Settings,
+        Icons.Outlined.Menu,
         "Settings",
         tint = MaterialTheme.colors.primary,
         modifier = Modifier.padding(10.dp)

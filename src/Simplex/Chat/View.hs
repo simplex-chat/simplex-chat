@@ -123,10 +123,7 @@ responseToView testView = \case
   CRMemberSubError g c e -> [ttyGroup' g <> " member " <> ttyContact c <> " error: " <> sShow e]
   CRMemberSubErrors summary -> viewErrorsSummary summary " group member errors"
   CRGroupSubscribed g -> [ttyFullGroup g <> ": connected to server(s)"]
-  CRPendingSubSummary summary ->
-    (if null subscribed then [] else [sShow (length subscribed) <> " pending connections subscribed"]) <> viewErrorsSummary errors " connection errors"
-    where
-      (errors, subscribed) = partition (isJust . connError) summary
+  CRPendingSubSummary _ -> []
   CRSndFileSubError SndFileTransfer {fileId, fileName} e ->
     ["sent file " <> sShow fileId <> " (" <> plain fileName <> ") error: " <> sShow e]
   CRRcvFileSubError RcvFileTransfer {fileId, fileInvitation = FileInvitation {fileName}} e ->
