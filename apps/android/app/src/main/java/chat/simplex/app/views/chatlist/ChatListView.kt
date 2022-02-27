@@ -16,7 +16,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.views.chat.ChatHelpView
 import chat.simplex.app.views.newchat.NewChatSheet
@@ -74,7 +73,6 @@ fun ChatListView(chatModel: ChatModel) {
     Box {
       Column(
         modifier = Modifier
-          .padding(vertical = 8.dp)
           .fillMaxSize()
           .background(MaterialTheme.colors.background)
       ) {

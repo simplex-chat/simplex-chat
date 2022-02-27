@@ -2,7 +2,7 @@ package chat.simplex.app.views.newchat
 
 import android.content.res.Configuration
 import android.net.Uri
-import androidx.compose.foundation.background
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
@@ -13,24 +13,24 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.ui.theme.SimpleXTheme
-import chat.simplex.app.views.helpers.CloseSheetBar
+import chat.simplex.app.views.helpers.AlertManager
 import chat.simplex.app.views.helpers.withApi
 
 @Composable
 fun ConnectContactView(chatModel: ChatModel, close: () -> Unit) {
+  BackHandler(onBack = close)
   ConnectContactLayout(
     qrCodeScanner = {
       QRCodeScanner { connReqUri ->
         try {
           val uri = Uri.parse(connReqUri)
-          withUriAction(chatModel, uri) { action ->
+          withUriAction(uri) { action ->
             connectViaUri(chatModel, action, uri)
           }
         } catch (e: RuntimeException) {
-          chatModel.alertManager.showAlertMsg(
+          AlertManager.shared.showAlertMsg(
             title = "Invalid QR code",
             text = "This QR code is not a link!"
           )
@@ -42,15 +42,12 @@ fun ConnectContactView(chatModel: ChatModel, close: () -> Unit) {
   )
 }
 
-fun withUriAction(
-  chatModel: ChatModel, uri: Uri,
-  run: suspend (String) -> Unit
-) {
+fun withUriAction(uri: Uri, run: suspend (String) -> Unit) {
   val action = uri.path?.drop(1)
   if (action == "contact" || action == "invitation") {
     withApi { run(action) }
   } else {
-    chatModel.alertManager.showAlertMsg(
+    AlertManager.shared.showAlertMsg(
       title = "Invalid link!",
       text = "This link is not a valid connection link!"
     )
@@ -63,7 +60,7 @@ suspend fun connectViaUri(chatModel: ChatModel, action: String, uri: Uri) {
     val whenConnected =
       if (action == "contact") "your connection request is accepted"
       else "your contact's device is online"
-    chatModel.alertManager.showAlertMsg(
+    AlertManager.shared.showAlertMsg(
       title = "Connection request sent!",
       text = "You will be connected when $whenConnected, please wait or check later!"
     )

@@ -17,8 +17,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
-import chat.simplex.app.*
 import chat.simplex.app.R
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.model.Profile
@@ -31,8 +29,12 @@ fun SettingsView(chatModel: ChatModel) {
   val user = chatModel.currentUser.value
   if (user != null) {
     SettingsLayout(
-      chatModel = chatModel,
-      profile = user.profile
+      profile = user.profile,
+//      showModal = { modal -> ModalManager.shared.showModal { modal(chatModel) } },
+      showProfile = { ModalManager.shared.showModal { UserProfileView(chatModel) } },
+      showAddress = { ModalManager.shared.showModal { UserAddressView(chatModel) } },
+      showHelp = { ModalManager.shared.showModal { HelpView(chatModel) } },
+      showTerminal = { ModalManager.shared.showCustomModal { close -> TerminalView(chatModel, close) } }
     )
   }
 }
@@ -41,7 +43,14 @@ val simplexTeamUri =
   "simplex:/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23MCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%3D"
 
 @Composable
-fun SettingsLayout(chatModel: ChatModel, profile: Profile) {
+fun SettingsLayout(
+  profile: Profile,
+//  showModal: (modal: @Composable (ChatModel) -> Unit) -> Unit,
+  showProfile: () -> Unit,
+  showAddress: () -> Unit,
+  showHelp: () -> Unit,
+  showTerminal: () -> Unit
+) {
   val uriHandler = LocalUriHandler.current
   Surface(
     Modifier
@@ -61,7 +70,7 @@ fun SettingsLayout(chatModel: ChatModel, profile: Profile) {
       )
       Spacer(Modifier.height(30.dp))
 
-      SettingsSectionView({ ModalManager.shared.showModal { UserProfileView(chatModel) } }, 60.dp) {
+      SettingsSectionView(showProfile, 60.dp) {
         Icon(
           Icons.Outlined.AccountCircle,
           contentDescription = "Avatar Placeholder",
@@ -77,7 +86,7 @@ fun SettingsLayout(chatModel: ChatModel, profile: Profile) {
         }
       }
       Divider(Modifier.padding(horizontal = 8.dp))
-      SettingsSectionView({ ModalManager.shared.showModal { UserAddressView(chatModel) } }) {
+      SettingsSectionView(showAddress) {
         Icon(
           Icons.Outlined.QrCode,
           contentDescription = "Address",
@@ -87,7 +96,7 @@ fun SettingsLayout(chatModel: ChatModel, profile: Profile) {
       }
       Spacer(Modifier.height(24.dp))
 
-      SettingsSectionView({ ModalManager.shared.showModal { HelpView(chatModel) } }) {
+      SettingsSectionView(showHelp) {
         Icon(
           Icons.Outlined.HelpOutline,
           contentDescription = "Chat help",
@@ -129,7 +138,7 @@ fun SettingsLayout(chatModel: ChatModel, profile: Profile) {
       }
       Spacer(Modifier.height(24.dp))
 
-      SettingsSectionView({ ModalManager.shared.showCustomModal { close -> TerminalView(chatModel, close) } }) {
+      SettingsSectionView(showTerminal) {
         Icon(
           painter = painterResource(id = R.drawable.ic_outline_terminal),
           contentDescription = "Chat console",
@@ -171,18 +180,21 @@ fun SettingsSectionView(func: () -> Unit, height: Dp = 48.dp, content: (@Composa
   }
 }
 
-//@Preview(showBackground = true)
-//@Preview(
-//  uiMode = Configuration.UI_MODE_NIGHT_YES,
-//  showBackground = true,
-//  name = "Dark Mode"
-//)
-//@Composable
-//fun PreviewSettingsLayout() {
-//  SimpleXTheme {
-//    SettingsLayout(
-//      profile = Profile.sampleData,
-//      navigate = {}
-//    )
-//  }
-//}
+@Preview(showBackground = true)
+@Preview(
+  uiMode = Configuration.UI_MODE_NIGHT_YES,
+  showBackground = true,
+  name = "Dark Mode"
+)
+@Composable
+fun PreviewSettingsLayout() {
+  SimpleXTheme {
+    SettingsLayout(
+      profile = Profile.sampleData,
+      showProfile = {},
+      showAddress = {},
+      showHelp = {},
+      showTerminal = {}
+    )
+  }
+}

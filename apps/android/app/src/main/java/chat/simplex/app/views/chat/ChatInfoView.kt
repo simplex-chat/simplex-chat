@@ -1,5 +1,6 @@
 package chat.simplex.app.views.chat
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
@@ -14,19 +15,19 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
 
 @Composable
 fun ChatInfoView(chatModel: ChatModel, close: () -> Unit) {
+  BackHandler(onBack = close)
   val chat = chatModel.chats.firstOrNull { it.id == chatModel.chatId.value }
   if (chat != null) {
     ChatInfoLayout(chat,
       close = close,
       deleteContact = {
-        chatModel.alertManager.showAlertMsg(
+        AlertManager.shared.showAlertMsg(
           title = "Delete contact?",
           text = "Contact and all messages will be deleted - this cannot be undone!",
           confirmText = "Delete",
@@ -92,7 +93,7 @@ fun ChatInfoLayout(chat: Chat, close: () -> Unit, deleteContact: () -> Unit) {
 
       Spacer(Modifier.weight(1F))
 
-      Box(Modifier.padding(24.dp)) {
+      Box(Modifier.padding(48.dp)) {
         SimpleButton(
           "Delete contact", icon = Icons.Outlined.Delete,
           color = Color.Red,

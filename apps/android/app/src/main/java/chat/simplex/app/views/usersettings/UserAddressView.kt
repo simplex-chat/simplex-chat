@@ -1,7 +1,6 @@
 package chat.simplex.app.views.usersettings
 
 import android.content.res.Configuration
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
@@ -14,7 +13,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.ui.theme.SimpleButton
 import chat.simplex.app.ui.theme.SimpleXTheme
@@ -33,7 +31,7 @@ fun UserAddressView(chatModel: ChatModel) {
     },
     share = { userAddress: String -> shareText(cxt, userAddress) },
     deleteAddress = {
-      chatModel.alertManager.showAlertMsg(
+      AlertManager.shared.showAlertMsg(
         title = "Delete address?",
         text = "All your contacts will remain connected",
         confirmText = "Delete",

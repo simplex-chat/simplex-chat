@@ -1,8 +1,10 @@
 package chat.simplex.app.views
 
 import android.content.res.Configuration
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.*
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.*
@@ -27,6 +29,7 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun TerminalView(chatModel: ChatModel, close: () -> Unit) {
+  BackHandler(onBack = close)
   TerminalLayout(chatModel.terminalItems, close) { cmd ->
     withApi {
       // show "in progress"
@@ -44,7 +47,7 @@ fun TerminalLayout(terminalItems: List<TerminalItem> , close: () -> Unit, sendCo
       bottomBar = { SendMsgView(sendCommand) },
       modifier = Modifier.navigationBarsWithImePadding()
     ) { contentPadding ->
-      Box(
+      Surface(
         modifier = Modifier
           .padding(contentPadding)
           .fillMaxWidth()

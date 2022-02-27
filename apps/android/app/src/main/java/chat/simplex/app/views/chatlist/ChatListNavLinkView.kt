@@ -14,6 +14,7 @@ import androidx.compose.ui.unit.dp
 
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.SimpleXTheme
+import chat.simplex.app.views.helpers.AlertManager
 import chat.simplex.app.views.helpers.withApi
 import kotlinx.datetime.Clock
 
@@ -40,7 +41,7 @@ suspend fun openChat(chatModel: ChatModel, cInfo: ChatInfo) {
 }
 
 fun contactRequestAlertDialog(contactRequest: ChatInfo.ContactRequest, chatModel: ChatModel) {
-  chatModel.alertManager.showAlertDialog(
+  AlertManager.shared.showAlertDialog(
     title = "Accept connection request?",
     text = "If you choose to reject sender will NOT be notified",
     confirmText = "Accept",

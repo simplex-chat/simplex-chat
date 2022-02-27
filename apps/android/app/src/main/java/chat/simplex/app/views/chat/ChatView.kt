@@ -21,7 +21,8 @@ import androidx.compose.ui.unit.dp
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.chat.item.ChatItemView
-import chat.simplex.app.views.helpers.*
+import chat.simplex.app.views.helpers.ChatInfoImage
+import chat.simplex.app.views.helpers.withApi
 import chat.simplex.app.views.newchat.ModalManager
 import com.google.accompanist.insets.ProvideWindowInsets
 import com.google.accompanist.insets.navigationBarsWithImePadding
@@ -84,9 +85,8 @@ fun ChatLayout(
       bottomBar = { SendMsgView(sendMessage) },
       modifier = Modifier.navigationBarsWithImePadding()
     ) { contentPadding ->
-      Box(
+      Surface(
         modifier = Modifier
-          .padding(contentPadding)
           .fillMaxWidth()
           .background(MaterialTheme.colors.background)
       ) {
