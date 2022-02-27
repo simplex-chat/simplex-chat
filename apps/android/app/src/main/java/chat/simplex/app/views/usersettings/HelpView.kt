@@ -17,33 +17,22 @@ import chat.simplex.app.views.chat.ChatHelpView
 import chat.simplex.app.views.helpers.CloseSheetBar
 
 @Composable
-fun HelpView(chatModel: ChatModel, nav: NavController) {
+fun HelpView(chatModel: ChatModel) {
   val user = chatModel.currentUser.value
   if (user != null) {
-    HelpLayout(
-      displayName = user.profile.displayName,
-      back = nav::popBackStack
-    )
+    HelpLayout(displayName = user.profile.displayName)
   }
 }
 
 @Composable
-fun HelpLayout(displayName: String, back: () -> Unit) {
-  Column(
-    modifier = Modifier
-      .fillMaxSize()
-      .background(MaterialTheme.colors.background)
-      .padding(horizontal = 8.dp),
-    horizontalAlignment = Alignment.Start
-  ) {
-    CloseSheetBar(back)
+fun HelpLayout(displayName: String) {
+  Column(horizontalAlignment = Alignment.Start) {
     Text(
       "Welcome $displayName!",
       Modifier.padding(bottom = 24.dp),
       style = MaterialTheme.typography.h1,
-      color = MaterialTheme.colors.onBackground
     )
-    ChatHelpView({}, false)
+    ChatHelpView()
   }
 }
 
@@ -56,9 +45,6 @@ fun HelpLayout(displayName: String, back: () -> Unit) {
 @Composable
 fun PreviewHelpView() {
   SimpleXTheme {
-    HelpLayout(
-      displayName = "Alice",
-      back = {}
-    )
+    HelpLayout(displayName = "Alice")
   }
 }

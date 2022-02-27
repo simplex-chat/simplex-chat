@@ -164,30 +164,6 @@ class SimplexApp: Application() {
   }
 }
 
-class ModalManager {
-  var modalView = mutableStateOf<(@Composable (close: () -> Unit) -> Unit)?>(null)
-  var presentModal = mutableStateOf(false)
-
-  fun showModal(content: @Composable () -> Unit) {
-    showCustomModal { close -> ModalView(close, content) }
-  }
-
-  fun showCustomModal(modal: @Composable (close: () -> Unit) -> Unit) {
-    Log.d("SIMPLEX", "ModalManager.showModal")
-    modalView.value = modal
-    presentModal.value = true
-  }
-
-  fun closeModal() {
-    modalView.value = null
-    presentModal.value = true
-  }
-
-  companion object {
-    val shared = ModalManager()
-  }
-}
-
 class FifoQueue<E>(private var capacity: Int) : LinkedList<E>() {
   override fun add(element: E): Boolean {
     if(size > capacity) removeFirst()

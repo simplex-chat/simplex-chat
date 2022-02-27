@@ -18,14 +18,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
-import chat.simplex.app.ModalManager
-import chat.simplex.app.Pages
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.chat.item.ChatItemView
-import chat.simplex.app.views.helpers.ChatInfoImage
-import chat.simplex.app.views.helpers.withApi
+import chat.simplex.app.views.helpers.*
+import chat.simplex.app.views.newchat.ModalManager
 import com.google.accompanist.insets.ProvideWindowInsets
 import com.google.accompanist.insets.navigationBarsWithImePadding
 import kotlinx.coroutines.delay

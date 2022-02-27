@@ -23,15 +23,16 @@ import chat.simplex.app.R
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.model.Profile
 import chat.simplex.app.ui.theme.SimpleXTheme
+import chat.simplex.app.views.TerminalView
+import chat.simplex.app.views.newchat.ModalManager
 
 @Composable
-fun SettingsView(chatModel: ChatModel, nav: NavController) {
+fun SettingsView(chatModel: ChatModel) {
   val user = chatModel.currentUser.value
   if (user != null) {
     SettingsLayout(
       chatModel = chatModel,
-      profile = user.profile,
-      navigate = nav::navigate
+      profile = user.profile
     )
   }
 }
@@ -40,11 +41,7 @@ val simplexTeamUri =
   "simplex:/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23MCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%3D"
 
 @Composable
-fun SettingsLayout(
-  chatModel: ChatModel,
-  profile: Profile,
-  navigate: (String) -> Unit
-) {
+fun SettingsLayout(chatModel: ChatModel, profile: Profile) {
   val uriHandler = LocalUriHandler.current
   Surface(
     Modifier
@@ -90,7 +87,7 @@ fun SettingsLayout(
       }
       Spacer(Modifier.height(24.dp))
 
-      SettingsSectionView({ navigate(Pages.Help.route) }) {
+      SettingsSectionView({ ModalManager.shared.showModal { HelpView(chatModel) } }) {
         Icon(
           Icons.Outlined.HelpOutline,
           contentDescription = "Chat help",
@@ -132,7 +129,7 @@ fun SettingsLayout(
       }
       Spacer(Modifier.height(24.dp))
 
-      SettingsSectionView({ navigate(Pages.Terminal.route) }) {
+      SettingsSectionView({ ModalManager.shared.showCustomModal { close -> TerminalView(chatModel, close) } }) {
         Icon(
           painter = painterResource(id = R.drawable.ic_outline_terminal),
           contentDescription = "Chat console",

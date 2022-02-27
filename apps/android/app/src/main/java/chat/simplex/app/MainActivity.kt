@@ -8,21 +8,22 @@ import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material.MaterialTheme
+import androidx.compose.material.Surface
 import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
 import androidx.lifecycle.AndroidViewModel
-import androidx.navigation.*
-import androidx.navigation.compose.*
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.*
-import chat.simplex.app.views.chat.ChatInfoView
 import chat.simplex.app.views.chat.ChatView
 import chat.simplex.app.views.chatlist.ChatListView
 import chat.simplex.app.views.chatlist.openChat
 import chat.simplex.app.views.helpers.withApi
 import chat.simplex.app.views.newchat.*
-import chat.simplex.app.views.usersettings.*
 //import kotlinx.serialization.decodeFromString
 
 class MainActivity: ComponentActivity() {
@@ -35,7 +36,13 @@ class MainActivity: ComponentActivity() {
 //    vm.app.initiateBackgroundWork()
     setContent {
       SimpleXTheme {
-        Navigation(vm.chatModel)
+        Surface(
+          Modifier
+            .background(MaterialTheme.colors.background)
+            .fillMaxSize()
+        ) {
+          MainPage(vm.chatModel)
+        }
       }
     }
   }
@@ -47,53 +54,21 @@ class SimplexViewModel(application: Application): AndroidViewModel(application) 
 }
 
 @Composable
-fun MainPage(chatModel: ChatModel, nav: NavController) {
-  when (chatModel.userCreated.value) {
-    null -> SplashView()
-    false -> WelcomeView(chatModel) // { nav.navigate(Pages.ChatList.route) }
-    true -> if (chatModel.chatId.value == null) {
-      ChatListView(chatModel, nav)
-    } else {
-      ChatView(chatModel)
-    }
-  }
-}
-
-@Composable
-fun Navigation(chatModel: ChatModel) {
-  val nav = rememberNavController()
+fun MainPage(chatModel: ChatModel) {
   Box {
-    NavHost(navController = nav, startDestination = Pages.Home.route) {
-      composable(route = Pages.Home.route) {
-        MainPage(chatModel, nav)
-      }
-      composable(route = Pages.Terminal.route) {
-        TerminalView(chatModel, nav)
-      }
-      composable(
-        Pages.TerminalItemDetails.route + "/{identifier}",
-        arguments = listOf(
-          navArgument("identifier") {
-            type = NavType.LongType
-          }
-        )
-      ) { entry -> DetailView(entry.arguments!!.getLong("identifier"), chatModel.terminalItems, nav) }
-      composable(route = Pages.Help.route) {
-        HelpView(chatModel, nav)
+    when (chatModel.userCreated.value) {
+      null -> SplashView()
+      false -> WelcomeView(chatModel) // { nav.navigate(Pages.ChatList.route) }
+      true -> if (chatModel.chatId.value == null) {
+        ChatListView(chatModel)
+      } else {
+        ChatView(chatModel)
       }
     }
+    ModalManager.shared.showInView()
     val am = chatModel.alertManager
     if (am.presentAlert.value) am.alertView.value?.invoke()
-    val mm = ModalManager.shared
-    if (mm.presentModal.value) mm.modalView.value?.invoke(mm::closeModal)
   }
-}
-
-sealed class Pages(val route: String) {
-  object Home: Pages("home")
-  object Terminal: Pages("terminal")
-  object TerminalItemDetails: Pages("details")
-  object Help: Pages("help")
 }
 
 fun processIntent(intent: Intent?, chatModel: ChatModel) {

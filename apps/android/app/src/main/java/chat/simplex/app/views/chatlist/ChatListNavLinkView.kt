@@ -11,20 +11,19 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
-import chat.simplex.app.Pages
+
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.helpers.withApi
 import kotlinx.datetime.Clock
 
 @Composable
-fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel, nav: NavController) {
+fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
   ChatListNavLinkLayout(
     chat = chat,
     click = {
       if (chat.chatInfo is ChatInfo.ContactRequest) {
-        contactRequestAlertDialog(chat.chatInfo, chatModel, nav)
+        contactRequestAlertDialog(chat.chatInfo, chatModel)
       } else {
         withApi { openChat(chatModel, chat.chatInfo) }
       }
@@ -40,7 +39,7 @@ suspend fun openChat(chatModel: ChatModel, cInfo: ChatInfo) {
   }
 }
 
-fun contactRequestAlertDialog(contactRequest: ChatInfo.ContactRequest, chatModel: ChatModel, navController: NavController) {
+fun contactRequestAlertDialog(contactRequest: ChatInfo.ContactRequest, chatModel: ChatModel) {
   chatModel.alertManager.showAlertDialog(
     title = "Accept connection request?",
     text = "If you choose to reject sender will NOT be notified",
