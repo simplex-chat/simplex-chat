@@ -20,7 +20,7 @@ import chat.simplex.app.views.helpers.CloseSheetBar
 import chat.simplex.app.views.helpers.withApi
 
 @Composable
-fun ConnectContactView(chatModel: ChatModel, nav: NavController) {
+fun ConnectContactView(chatModel: ChatModel, close: () -> Unit) {
   ConnectContactLayout(
     qrCodeScanner = {
       QRCodeScanner { connReqUri ->
@@ -35,10 +35,10 @@ fun ConnectContactView(chatModel: ChatModel, nav: NavController) {
             text = "This QR code is not a link!"
           )
         }
-        nav.popBackStack()
+        close()
       }
     },
-    close = { nav.popBackStack() }
+    close = close
   )
 }
 
@@ -72,50 +72,41 @@ suspend fun connectViaUri(chatModel: ChatModel, action: String, uri: Uri) {
 
 @Composable
 fun ConnectContactLayout(qrCodeScanner: @Composable () -> Unit, close: () -> Unit) {
-  Column(
-    modifier = Modifier
-      .fillMaxSize()
-      .background(MaterialTheme.colors.background)
-      .padding(horizontal = 8.dp),
-    horizontalAlignment = Alignment.CenterHorizontally,
-    verticalArrangement = Arrangement.spacedBy(12.dp)
-  ) {
-    CloseSheetBar(close)
-    Text(
-      "Scan QR code",
-      style = MaterialTheme.typography.h1,
-      color = MaterialTheme.colors.onBackground
-    )
-    Text(
-      "Your chat profile will be sent\nto your contact",
-      style = MaterialTheme.typography.h2,
-      textAlign = TextAlign.Center,
-      color = MaterialTheme.colors.onBackground,
-      modifier = Modifier.padding(bottom = 4.dp)
-    )
-    Box(
-      Modifier
-        .fillMaxWidth()
-        .aspectRatio(ratio = 1F)
-    ) { qrCodeScanner() }
-    Text(
-      buildAnnotatedString {
-        withStyle(SpanStyle(color = MaterialTheme.colors.onBackground)) {
+  ModalView(close) {
+    Column(
+      horizontalAlignment = Alignment.CenterHorizontally,
+      verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+      Text(
+        "Scan QR code",
+        style = MaterialTheme.typography.h1,
+      )
+      Text(
+        "Your chat profile will be sent\nto your contact",
+        style = MaterialTheme.typography.h2,
+        textAlign = TextAlign.Center,
+        modifier = Modifier.padding(bottom = 4.dp)
+      )
+      Box(
+        Modifier
+          .fillMaxWidth()
+          .aspectRatio(ratio = 1F)
+      ) { qrCodeScanner() }
+      Text(
+        buildAnnotatedString {
           append("If you cannot meet in person, you can ")
-        }
-        withStyle(SpanStyle(color = MaterialTheme.colors.onBackground, fontWeight = FontWeight.Bold)) {
-          append("scan QR code in the video call")
-        }
-        withStyle(SpanStyle(color = MaterialTheme.colors.onBackground)) {
+          withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
+            append("scan QR code in the video call")
+          }
           append(", or you can create the invitation link.")
-        }
-      },
-      textAlign = TextAlign.Center,
-      style = MaterialTheme.typography.caption,
-      modifier = Modifier
-        .padding(horizontal = 16.dp)
-        .padding(top = 4.dp)
-    )
+        },
+        textAlign = TextAlign.Center,
+        style = MaterialTheme.typography.caption,
+        modifier = Modifier
+          .padding(horizontal = 16.dp)
+          .padding(top = 4.dp)
+      )
+    }
   }
 }
 

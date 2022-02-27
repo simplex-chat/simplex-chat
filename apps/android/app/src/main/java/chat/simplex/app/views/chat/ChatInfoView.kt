@@ -20,11 +20,11 @@ import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
 
 @Composable
-fun ChatInfoView(chatModel: ChatModel, nav: NavController) {
+fun ChatInfoView(chatModel: ChatModel, close: () -> Unit) {
   val chat = chatModel.chats.firstOrNull { it.id == chatModel.chatId.value }
   if (chat != null) {
     ChatInfoLayout(chat,
-      close = nav::popBackStack,
+      close = close,
       deleteContact = {
         chatModel.alertManager.showAlertMsg(
           title = "Delete contact?",
@@ -37,7 +37,7 @@ fun ChatInfoView(chatModel: ChatModel, nav: NavController) {
               if (r) {
                 chatModel.removeChat(cInfo.id)
                 chatModel.chatId.value = null
-                nav.popBackStack()
+                close()
               }
             }
           }

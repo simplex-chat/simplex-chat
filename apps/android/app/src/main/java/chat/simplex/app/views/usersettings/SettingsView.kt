@@ -18,7 +18,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import chat.simplex.app.Pages
+import chat.simplex.app.*
 import chat.simplex.app.R
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.model.Profile
@@ -29,6 +29,7 @@ fun SettingsView(chatModel: ChatModel, nav: NavController) {
   val user = chatModel.currentUser.value
   if (user != null) {
     SettingsLayout(
+      chatModel = chatModel,
       profile = user.profile,
       navigate = nav::navigate
     )
@@ -40,6 +41,7 @@ val simplexTeamUri =
 
 @Composable
 fun SettingsLayout(
+  chatModel: ChatModel,
   profile: Profile,
   navigate: (String) -> Unit
 ) {
@@ -62,7 +64,7 @@ fun SettingsLayout(
       )
       Spacer(Modifier.height(30.dp))
 
-      SettingsSectionView({ navigate(Pages.UserProfile.route) }, 60.dp) {
+      SettingsSectionView({ ModalManager.shared.showModal { UserProfileView(chatModel) } }, 60.dp) {
         Icon(
           Icons.Outlined.AccountCircle,
           contentDescription = "Avatar Placeholder",
@@ -78,7 +80,7 @@ fun SettingsLayout(
         }
       }
       Divider(Modifier.padding(horizontal = 8.dp))
-      SettingsSectionView({ navigate(Pages.UserAddress.route) }) {
+      SettingsSectionView({ ModalManager.shared.showModal { UserAddressView(chatModel) } }) {
         Icon(
           Icons.Outlined.QrCode,
           contentDescription = "Address",
@@ -96,7 +98,7 @@ fun SettingsLayout(
         Spacer(Modifier.padding(horizontal = 4.dp))
         Text("How to use SimpleX Chat")
       }
-      SettingsSectionView({ navigate(Pages.Markdown.route) }) {
+      SettingsSectionView({ ModalManager.shared.showModal { MarkdownHelpView() } }) {
         Icon(
           Icons.Outlined.TextFormat,
           contentDescription = "Markdown help",
@@ -172,18 +174,18 @@ fun SettingsSectionView(func: () -> Unit, height: Dp = 48.dp, content: (@Composa
   }
 }
 
-@Preview(showBackground = true)
-@Preview(
-  uiMode = Configuration.UI_MODE_NIGHT_YES,
-  showBackground = true,
-  name = "Dark Mode"
-)
-@Composable
-fun PreviewSettingsLayout() {
-  SimpleXTheme {
-    SettingsLayout(
-      profile = Profile.sampleData,
-      navigate = {}
-    )
-  }
-}
+//@Preview(showBackground = true)
+//@Preview(
+//  uiMode = Configuration.UI_MODE_NIGHT_YES,
+//  showBackground = true,
+//  name = "Dark Mode"
+//)
+//@Composable
+//fun PreviewSettingsLayout() {
+//  SimpleXTheme {
+//    SettingsLayout(
+//      profile = Profile.sampleData,
+//      navigate = {}
+//    )
+//  }
+//}

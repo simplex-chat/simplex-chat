@@ -23,7 +23,7 @@ import chat.simplex.app.views.chatlist.openChat
 import chat.simplex.app.views.helpers.withApi
 import chat.simplex.app.views.newchat.*
 import chat.simplex.app.views.usersettings.*
-import kotlinx.serialization.decodeFromString
+//import kotlinx.serialization.decodeFromString
 
 class MainActivity: ComponentActivity() {
   private val vm by viewModels<SimplexViewModel>()
@@ -54,33 +54,18 @@ fun MainPage(chatModel: ChatModel, nav: NavController) {
     true -> if (chatModel.chatId.value == null) {
       ChatListView(chatModel, nav)
     } else {
-      ChatView(chatModel, nav)
+      ChatView(chatModel)
     }
   }
 }
 
 @Composable
 fun Navigation(chatModel: ChatModel) {
-  println("*** in Navigation")
   val nav = rememberNavController()
-  val scope = rememberCoroutineScope()
   Box {
     NavHost(navController = nav, startDestination = Pages.Home.route) {
       composable(route = Pages.Home.route) {
-        println("*** composable MainPage")
         MainPage(chatModel, nav)
-      }
-      composable(route = Pages.Welcome.route) {
-        WelcomeView(chatModel)
-      }
-      composable(route = Pages.AddContact.route) {
-        AddContactView(chatModel, nav)
-      }
-      composable(route = Pages.Connect.route) {
-        ConnectContactView(chatModel, nav)
-      }
-      composable(route = Pages.ChatInfo.route) {
-        ChatInfoView(chatModel, nav)
       }
       composable(route = Pages.Terminal.route) {
         TerminalView(chatModel, nav)
@@ -93,36 +78,22 @@ fun Navigation(chatModel: ChatModel) {
           }
         )
       ) { entry -> DetailView(entry.arguments!!.getLong("identifier"), chatModel.terminalItems, nav) }
-      composable(route = Pages.UserProfile.route) {
-        UserProfileView(chatModel, nav)
-      }
-      composable(route = Pages.UserAddress.route) {
-        UserAddressView(chatModel, nav)
-      }
       composable(route = Pages.Help.route) {
         HelpView(chatModel, nav)
-      }
-      composable(route = Pages.Markdown.route) {
-        MarkdownHelpView(nav)
       }
     }
     val am = chatModel.alertManager
     if (am.presentAlert.value) am.alertView.value?.invoke()
+    val mm = ModalManager.shared
+    if (mm.presentModal.value) mm.modalView.value?.invoke(mm::closeModal)
   }
 }
 
 sealed class Pages(val route: String) {
   object Home: Pages("home")
   object Terminal: Pages("terminal")
-  object Welcome: Pages("welcome")
   object TerminalItemDetails: Pages("details")
-  object AddContact: Pages("add_contact")
-  object Connect: Pages("connect")
-  object ChatInfo: Pages("chat_info")
-  object UserProfile: Pages("user_profile")
-  object UserAddress: Pages("user_address")
   object Help: Pages("help")
-  object Markdown: Pages("markdown")
 }
 
 fun processIntent(intent: Intent?, chatModel: ChatModel) {
@@ -164,10 +135,10 @@ fun connectIfOpenedViaUri(uri: Uri, chatModel: ChatModel) {
   }
 }
 
-fun testJson() {
-  val str = """
-    {}
-  """.trimIndent()
-
-  println(json.decodeFromString<ChatItem>(str))
-}
+//fun testJson() {
+//  val str = """
+//    {}
+//  """.trimIndent()
+//
+//  println(json.decodeFromString<ChatItem>(str))
+//}

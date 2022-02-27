@@ -23,7 +23,7 @@ import chat.simplex.app.views.helpers.CloseSheetBar
 import chat.simplex.app.views.helpers.withApi
 
 @Composable
-fun UserProfileView(chatModel: ChatModel, nav: NavController) {
+fun UserProfileView(chatModel: ChatModel) {
   val user = chatModel.currentUser.value
   if (user != null) {
     var editProfile by remember { mutableStateOf(false) }
@@ -31,7 +31,6 @@ fun UserProfileView(chatModel: ChatModel, nav: NavController) {
     UserProfileLayout(
       editProfile = editProfile,
       profile = profile,
-      back = { nav.popBackStack() },
       editProfileOff = { editProfile = false },
       editProfileOn = { editProfile = true },
       saveProfile = { displayName: String, fullName: String ->
@@ -54,19 +53,11 @@ fun UserProfileView(chatModel: ChatModel, nav: NavController) {
 fun UserProfileLayout(
   editProfile: Boolean,
   profile: Profile,
-  back: () -> Unit,
   editProfileOff: () -> Unit,
   editProfileOn: () -> Unit,
   saveProfile: (String, String) -> Unit,
 ) {
-  Column(
-    modifier = Modifier
-      .fillMaxSize()
-      .background(MaterialTheme.colors.background)
-      .padding(horizontal = 8.dp),
-    horizontalAlignment = Alignment.Start
-  ) {
-    CloseSheetBar(back)
+  Column(horizontalAlignment = Alignment.Start) {
     Text(
       "Your chat profile",
       Modifier.padding(bottom = 24.dp),
@@ -185,7 +176,6 @@ fun PreviewUserProfileLayoutEditOff() {
     UserProfileLayout(
       profile = Profile.sampleData,
       editProfile = false,
-      back = {},
       editProfileOff = {},
       editProfileOn = {},
       saveProfile = { _, _ -> }
@@ -205,7 +195,6 @@ fun PreviewUserProfileLayoutEditOn() {
     UserProfileLayout(
       profile = Profile.sampleData,
       editProfile = true,
-      back = {},
       editProfileOff = {},
       editProfileOn = {},
       saveProfile = { _, _ -> }

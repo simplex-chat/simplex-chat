@@ -3,12 +3,18 @@ package chat.simplex.app
 import android.app.Application
 import android.net.LocalServerSocket
 import android.util.Log
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.Modifier
 import androidx.work.*
 import chat.simplex.app.model.*
+import chat.simplex.app.views.helpers.CloseSheetBar
 import chat.simplex.app.views.helpers.withApi
+import chat.simplex.app.views.newchat.ModalView
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.util.*
@@ -155,6 +161,30 @@ class SimplexApp: Application() {
 
       initHS()
     }
+  }
+}
+
+class ModalManager {
+  var modalView = mutableStateOf<(@Composable (close: () -> Unit) -> Unit)?>(null)
+  var presentModal = mutableStateOf(false)
+
+  fun showModal(content: @Composable () -> Unit) {
+    showCustomModal { close -> ModalView(close, content) }
+  }
+
+  fun showCustomModal(modal: @Composable (close: () -> Unit) -> Unit) {
+    Log.d("SIMPLEX", "ModalManager.showModal")
+    modalView.value = modal
+    presentModal.value = true
+  }
+
+  fun closeModal() {
+    modalView.value = null
+    presentModal.value = true
+  }
+
+  companion object {
+    val shared = ModalManager()
   }
 }
 

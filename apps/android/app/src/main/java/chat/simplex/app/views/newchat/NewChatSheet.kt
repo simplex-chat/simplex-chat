@@ -15,6 +15,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import chat.simplex.app.ModalManager
 import chat.simplex.app.Pages
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.ui.theme.HighOrLowlight
@@ -34,13 +35,13 @@ fun NewChatSheet(chatModel: ChatModel, newChatCtrl: ScaffoldController, nav: Nav
         //        hide spinner
         if (chatModel.connReqInvitation != null) {
           newChatCtrl.collapse()
-          nav.navigate(Pages.AddContact.route)
+          ModalManager.shared.showModal { AddContactView(chatModel) }
         }
       }
     },
     scanCode = {
       newChatCtrl.collapse()
-      nav.navigate(Pages.Connect.route)
+      ModalManager.shared.showCustomModal { close -> ConnectContactView(chatModel, close) }
       cameraPermissionState.launchPermissionRequest()
     }
   )
@@ -48,24 +49,34 @@ fun NewChatSheet(chatModel: ChatModel, newChatCtrl: ScaffoldController, nav: Nav
 
 @Composable
 fun NewChatSheetLayout(addContact: () -> Unit, scanCode: () -> Unit) {
-  Row(Modifier
+  Row(
+    Modifier
       .fillMaxWidth()
       .padding(horizontal = 8.dp, vertical = 48.dp),
     horizontalArrangement = Arrangement.SpaceEvenly
   ) {
-    Box(Modifier.weight(1F).fillMaxWidth()) {
+    Box(
+      Modifier
+        .weight(1F)
+        .fillMaxWidth()) {
       ActionButton(
         "Add contact", "(create QR code\nor link)",
         Icons.Outlined.PersonAdd, click = addContact
       )
     }
-    Box(Modifier.weight(1F).fillMaxWidth()) {
+    Box(
+      Modifier
+        .weight(1F)
+        .fillMaxWidth()) {
       ActionButton(
         "Scan QR code", "(in person or in video call)",
         Icons.Outlined.QrCode, click = scanCode
       )
     }
-    Box(Modifier.weight(1F).fillMaxWidth()) {
+    Box(
+      Modifier
+        .weight(1F)
+        .fillMaxWidth()) {
       ActionButton(
         "Create Group", "(coming soon!)",
         Icons.Outlined.GroupAdd, disabled = true

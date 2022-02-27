@@ -18,7 +18,12 @@ import kotlin.concurrent.thread
 
 typealias ChatCtrl = Long
 
-open class ChatController(val ctrl: ChatCtrl, val alertManager: SimplexApp.AlertManager, val ntfManager: NtfManager, val appContext: Context) {
+open class ChatController(
+  val ctrl: ChatCtrl,
+  val alertManager: SimplexApp.AlertManager,
+  val ntfManager: NtfManager,
+  val appContext: Context
+) {
   var chatModel = ChatModel(this, alertManager)
 
   suspend fun startChat(u: User) {
@@ -169,11 +174,10 @@ open class ChatController(val ctrl: ChatCtrl, val alertManager: SimplexApp.Alert
             "Can't delete contact!",
             "Contact ${e.errorType.contact.displayName} cannot be deleted, it is a member of the group(s) ${e.errorType.groupNames}"
           )
-          return false
         }
       }
+      else -> apiErrorAlert("apiDeleteChat", "Error deleting ${type.chatTypeName}", r)
     }
-    apiErrorAlert("apiDeleteChat", "Error deleting ${type.chatTypeName}", r)
     return false
   }
 
