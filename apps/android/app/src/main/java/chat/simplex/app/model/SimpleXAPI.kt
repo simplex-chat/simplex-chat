@@ -5,7 +5,9 @@ import android.app.ActivityManager.RunningAppProcessInfo
 import android.content.Context
 import android.util.Log
 import androidx.compose.runtime.mutableStateOf
-import chat.simplex.app.*
+import chat.simplex.app.chatRecvMsg
+import chat.simplex.app.chatSendCmd
+import chat.simplex.app.views.helpers.AlertManager
 import chat.simplex.app.views.helpers.withApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -18,8 +20,8 @@ import kotlin.concurrent.thread
 
 typealias ChatCtrl = Long
 
-open class ChatController(val ctrl: ChatCtrl, val alertManager: SimplexApp.AlertManager, val ntfManager: NtfManager, val appContext: Context) {
-  var chatModel = ChatModel(this, alertManager)
+open class ChatController(val ctrl: ChatCtrl, val ntfManager: NtfManager, val appContext: Context) {
+  var chatModel = ChatModel(this)
 
   suspend fun startChat(u: User) {
     Log.d("SIMPLEX (user)", u.toString())
@@ -139,14 +141,14 @@ open class ChatController(val ctrl: ChatCtrl, val alertManager: SimplexApp.Alert
     when {
       r is CR.SentConfirmation || r is CR.SentInvitation -> return true
       r is CR.ContactAlreadyExists -> {
-        alertManager.showAlertMsg("Contact already exists",
+        AlertManager.shared.showAlertMsg("Contact already exists",
           "You are already connected to ${r.contact.displayName} via this link"
         )
         return false
       }
       r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorChat
           && r.chatError.errorType is ChatErrorType.InvalidConnReq -> {
-        alertManager.showAlertMsg("Invalid connection link",
+        AlertManager.shared.showAlertMsg("Invalid connection link",
           "Please check that you used the correct link or ask your contact to send you another one."
         )
         return false
@@ -165,15 +167,14 @@ open class ChatController(val ctrl: ChatCtrl, val alertManager: SimplexApp.Alert
       is CR.ChatCmdError -> {
         val e = r.chatError
         if (e is ChatError.ChatErrorChat && e.errorType is ChatErrorType.ContactGroups) {
-          alertManager.showAlertMsg(
+          AlertManager.shared.showAlertMsg(
             "Can't delete contact!",
             "Contact ${e.errorType.contact.displayName} cannot be deleted, it is a member of the group(s) ${e.errorType.groupNames}"
           )
-          return false
         }
       }
+      else -> apiErrorAlert("apiDeleteChat", "Error deleting ${type.chatTypeName}", r)
     }
-    apiErrorAlert("apiDeleteChat", "Error deleting ${type.chatTypeName}", r)
     return false
   }
 
@@ -234,7 +235,7 @@ open class ChatController(val ctrl: ChatCtrl, val alertManager: SimplexApp.Alert
   fun apiErrorAlert(method: String, title: String, r: CR) {
     val errMsg = "${r.responseType}: ${r.details}"
     Log.e("SIMPLEX", "$method bad response: $errMsg")
-    alertManager.showAlertMsg(title, errMsg)
+    AlertManager.shared.showAlertMsg(title, errMsg)
   }
 
   fun processReceivedMsg(r: CR) {

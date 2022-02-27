@@ -8,15 +8,13 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.PersonAdd
-import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.views.chat.ChatHelpView
 import chat.simplex.app.views.newchat.NewChatSheet
@@ -39,7 +37,7 @@ class ScaffoldController(val scope: CoroutineScope) {
   }
 
   fun toggleSheet() {
-    if (state.bottomSheetState.isExpanded ?: false) collapse() else expand()
+    if (state.bottomSheetState.isExpanded) collapse() else expand()
   }
 
   fun toggleDrawer() = scope.launch {
@@ -62,25 +60,24 @@ fun scaffoldController(): ScaffoldController {
 }
 
 @Composable
-fun ChatListView(chatModel: ChatModel, nav: NavController) {
+fun ChatListView(chatModel: ChatModel) {
   val scaffoldCtrl = scaffoldController()
   BottomSheetScaffold(
     scaffoldState = scaffoldCtrl.state,
-    drawerContent = { SettingsView(chatModel, nav) },
+    drawerContent = { SettingsView(chatModel) },
     sheetPeekHeight = 0.dp,
-    sheetContent = { NewChatSheet(chatModel, scaffoldCtrl, nav) },
+    sheetContent = { NewChatSheet(chatModel, scaffoldCtrl) },
     sheetShape = RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp),
   ) {
     Box {
       Column(
         modifier = Modifier
-          .padding(vertical = 8.dp)
           .fillMaxSize()
           .background(MaterialTheme.colors.background)
       ) {
         ChatListToolbar(scaffoldCtrl)
         if (chatModel.chats.isNotEmpty()) {
-          ChatList(chatModel, nav)
+          ChatList(chatModel)
         } else {
           val user = chatModel.currentUser.value
           Help(scaffoldCtrl, displayName = user?.profile?.displayName)
@@ -111,7 +108,7 @@ fun Help(scaffoldCtrl: ScaffoldController, displayName: String?) {
       style = MaterialTheme.typography.h1,
       color = MaterialTheme.colors.onBackground
     )
-    ChatHelpView({ scaffoldCtrl.toggleSheet() }, true)
+    ChatHelpView({ scaffoldCtrl.toggleSheet() })
     Row(
       Modifier.padding(top = 30.dp),
       verticalAlignment = Alignment.CenterVertically,
@@ -143,7 +140,7 @@ fun ChatListToolbar(scaffoldCtrl: ScaffoldController) {
   ) {
     IconButton(onClick = { scaffoldCtrl.toggleDrawer() }) {
       Icon(
-        Icons.Outlined.Settings,
+        Icons.Outlined.Menu,
         "Settings",
         tint = MaterialTheme.colors.primary,
         modifier = Modifier.padding(10.dp)
@@ -167,13 +164,13 @@ fun ChatListToolbar(scaffoldCtrl: ScaffoldController) {
 }
 
 @Composable
-fun ChatList(chatModel: ChatModel, navController: NavController) {
+fun ChatList(chatModel: ChatModel) {
   Divider(Modifier.padding(horizontal = 8.dp))
   LazyColumn(
     modifier = Modifier.fillMaxWidth()
   ) {
     items(chatModel.chats) { chat ->
-      ChatListNavLinkView(chat, chatModel, navController)
+      ChatListNavLinkView(chat, chatModel)
     }
   }
 }

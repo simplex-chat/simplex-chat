@@ -1,7 +1,6 @@
 package chat.simplex.app.views.chat
 
 import android.content.res.Configuration
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
@@ -18,35 +17,28 @@ import androidx.compose.ui.unit.dp
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.usersettings.simplexTeamUri
 
+val bold = SpanStyle(fontWeight = FontWeight.Bold)
+
 @Composable
-fun ChatHelpView(addContact: () -> Unit, doAddContact: Boolean) {
+fun ChatHelpView(addContact: (() -> Unit)? = null) {
   Column(
-    Modifier
-      .fillMaxWidth()
-      .background(MaterialTheme.colors.background),
     horizontalAlignment = Alignment.Start,
     verticalArrangement = Arrangement.spacedBy(10.dp)
   ) {
     val uriHandler = LocalUriHandler.current
 
-    Text(
-      "Thank you for installing SimpleX Chat!",
-      color = MaterialTheme.colors.onBackground
-    )
+    Text("Thank you for installing SimpleX Chat!")
     Text(
       buildAnnotatedString {
-        withStyle(SpanStyle(color = MaterialTheme.colors.onBackground)) {
-          append("You can ")
-        }
+        append("You can ")
         withStyle(SpanStyle(color = MaterialTheme.colors.primary)) {
           append("connect to SimpleX team")
         }
-        withStyle(SpanStyle(color = MaterialTheme.colors.onBackground)) {
-          append(".")
-        }
+        append(".")
       },
-      modifier = Modifier
-        .clickable(onClick = { uriHandler.openUri(simplexTeamUri) })
+      modifier = Modifier.clickable(onClick = {
+        uriHandler.openUri(simplexTeamUri)
+      })
     )
 
     Column(
@@ -56,46 +48,30 @@ fun ChatHelpView(addContact: () -> Unit, doAddContact: Boolean) {
     ) {
       Text(
         "To start a new chat",
-        color = MaterialTheme.colors.onBackground,
         style = MaterialTheme.typography.h2
       )
       Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp)
       ) {
-        Text(
-          "Tap button",
-          color = MaterialTheme.colors.onBackground
-        )
+        Text("Tap button")
         Icon(
           Icons.Outlined.PersonAdd,
           "Add Contact",
-          modifier = if (doAddContact) Modifier.clickable(onClick = addContact) else Modifier,
-          tint = MaterialTheme.colors.onBackground,
+          modifier = if (addContact != null) Modifier.clickable(onClick = addContact) else Modifier,
         )
-        Text(
-          "above, then:",
-          color = MaterialTheme.colors.onBackground
-        )
+        Text("above, then:")
       }
       Text(
         buildAnnotatedString {
-          withStyle(SpanStyle(color = MaterialTheme.colors.onBackground, fontWeight = FontWeight.Bold)) {
-            append("Add new contact")
-          }
-          withStyle(SpanStyle(color = MaterialTheme.colors.onBackground)) {
-            append(": to create your one-time QR Code for your contact.")
-          }
+          withStyle(bold) { append("Add new contact") }
+          append(": to create your one-time QR Code for your contact.")
         }
       )
       Text(
         buildAnnotatedString {
-          withStyle(SpanStyle(color = MaterialTheme.colors.onBackground, fontWeight = FontWeight.Bold)) {
-            append("Scan QR code")
-          }
-          withStyle(SpanStyle(color = MaterialTheme.colors.onBackground)) {
-            append(": to connect to your contact who shows QR code to you.")
-          }
+          withStyle(bold) { append("Scan QR code") }
+          append(": to connect to your contact who shows QR code to you.")
         }
       )
     }
@@ -105,51 +81,22 @@ fun ChatHelpView(addContact: () -> Unit, doAddContact: Boolean) {
       horizontalAlignment = Alignment.Start,
       verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-      Text(
-        "To connect via link",
-        color = MaterialTheme.colors.onBackground,
-        style = MaterialTheme.typography.h2
-      )
-      Text(
-        "If you received SimpleX Chat invitation link you can open it in your browser:",
-        color = MaterialTheme.colors.onBackground
-      )
+      Text("To connect via link", style = MaterialTheme.typography.h2)
+      Text("If you received SimpleX Chat invitation link you can open it in your browser:")
       Text(
         buildAnnotatedString {
-          withStyle(SpanStyle(color = MaterialTheme.colors.onBackground)) {
-            append("\uD83D\uDCBB desktop: scan displayed QR code from the app, via ")
-          }
-          withStyle(
-            SpanStyle(color = MaterialTheme.colors.onBackground, fontWeight = FontWeight.Bold)
-          ) {
-            append("Scan QR code")
-          }
-          withStyle(SpanStyle(color = MaterialTheme.colors.onBackground)) {
-            append(".")
-          }
+          append("\uD83D\uDCBB desktop: scan displayed QR code from the app, via ")
+          withStyle(bold) { append("Scan QR code") }
+          append(".")
         }
       )
       Text(
         buildAnnotatedString {
-          withStyle(SpanStyle(color = MaterialTheme.colors.onBackground)) {
-            append("\uD83D\uDCF1 mobile: tap ")
-          }
-          withStyle(
-            SpanStyle(color = MaterialTheme.colors.onBackground, fontWeight = FontWeight.Bold)
-          ) {
-            append("Open in mobile app")
-          }
-          withStyle(SpanStyle(color = MaterialTheme.colors.onBackground)) {
-            append(", then tap ")
-          }
-          withStyle(
-            SpanStyle(color = MaterialTheme.colors.onBackground, fontWeight = FontWeight.Bold)
-          ) {
-            append("Connect")
-          }
-          withStyle(SpanStyle(color = MaterialTheme.colors.onBackground)) {
-            append(" in the app.")
-          }
+          append("\uD83D\uDCF1 mobile: tap ")
+          withStyle(bold) { append("Open in mobile app") }
+          append(", then tap ")
+          withStyle(bold) { append("Connect") }
+          append(" in the app.")
         }
       )
     }
@@ -165,6 +112,6 @@ fun ChatHelpView(addContact: () -> Unit, doAddContact: Boolean) {
 @Composable
 fun PreviewChatHelpLayout() {
   SimpleXTheme {
-    ChatHelpView({}, false)
+    ChatHelpView({})
   }
 }

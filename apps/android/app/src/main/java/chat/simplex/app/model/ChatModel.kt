@@ -7,13 +7,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.font.*
 import androidx.compose.ui.text.style.TextDecoration
-import chat.simplex.app.SimplexApp
 import chat.simplex.app.ui.theme.SecretColor
 import kotlinx.datetime.*
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
-class ChatModel(val controller: ChatController, val alertManager: SimplexApp.AlertManager) {
+class ChatModel(val controller: ChatController) {
   var currentUser = mutableStateOf<User?>(null)
   var userCreated = mutableStateOf<Boolean?>(null)
   var chats = mutableStateListOf<Chat>()

@@ -58,7 +58,7 @@ fun appendGroupMember(b: AnnotatedString.Builder, chatItem: ChatItem, groupMembe
 @Composable
 fun MarkdownText (
   chatItem: ChatItem,
-  style: TextStyle = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onBackground),
+  style: TextStyle = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onSurface),
   maxLines: Int = Int.MAX_VALUE,
   overflow: TextOverflow = TextOverflow.Clip,
   uriHandler: UriHandler? = null,

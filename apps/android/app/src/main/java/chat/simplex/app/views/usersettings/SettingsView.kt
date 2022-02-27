@@ -17,20 +17,24 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
-import chat.simplex.app.Pages
 import chat.simplex.app.R
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.model.Profile
 import chat.simplex.app.ui.theme.SimpleXTheme
+import chat.simplex.app.views.TerminalView
+import chat.simplex.app.views.newchat.ModalManager
 
 @Composable
-fun SettingsView(chatModel: ChatModel, nav: NavController) {
+fun SettingsView(chatModel: ChatModel) {
   val user = chatModel.currentUser.value
   if (user != null) {
     SettingsLayout(
       profile = user.profile,
-      navigate = nav::navigate
+//      showModal = { modal -> ModalManager.shared.showModal { modal(chatModel) } },
+      showProfile = { ModalManager.shared.showModal { UserProfileView(chatModel) } },
+      showAddress = { ModalManager.shared.showModal { UserAddressView(chatModel) } },
+      showHelp = { ModalManager.shared.showModal { HelpView(chatModel) } },
+      showTerminal = { ModalManager.shared.showCustomModal { close -> TerminalView(chatModel, close) } }
     )
   }
 }
@@ -41,7 +45,11 @@ val simplexTeamUri =
 @Composable
 fun SettingsLayout(
   profile: Profile,
-  navigate: (String) -> Unit
+//  showModal: (modal: @Composable (ChatModel) -> Unit) -> Unit,
+  showProfile: () -> Unit,
+  showAddress: () -> Unit,
+  showHelp: () -> Unit,
+  showTerminal: () -> Unit
 ) {
   val uriHandler = LocalUriHandler.current
   Surface(
@@ -62,7 +70,7 @@ fun SettingsLayout(
       )
       Spacer(Modifier.height(30.dp))
 
-      SettingsSectionView({ navigate(Pages.UserProfile.route) }, 60.dp) {
+      SettingsSectionView(showProfile, 60.dp) {
         Icon(
           Icons.Outlined.AccountCircle,
           contentDescription = "Avatar Placeholder",
@@ -78,7 +86,7 @@ fun SettingsLayout(
         }
       }
       Divider(Modifier.padding(horizontal = 8.dp))
-      SettingsSectionView({ navigate(Pages.UserAddress.route) }) {
+      SettingsSectionView(showAddress) {
         Icon(
           Icons.Outlined.QrCode,
           contentDescription = "Address",
@@ -88,7 +96,7 @@ fun SettingsLayout(
       }
       Spacer(Modifier.height(24.dp))
 
-      SettingsSectionView({ navigate(Pages.Help.route) }) {
+      SettingsSectionView(showHelp) {
         Icon(
           Icons.Outlined.HelpOutline,
           contentDescription = "Chat help",
@@ -96,7 +104,7 @@ fun SettingsLayout(
         Spacer(Modifier.padding(horizontal = 4.dp))
         Text("How to use SimpleX Chat")
       }
-      SettingsSectionView({ navigate(Pages.Markdown.route) }) {
+      SettingsSectionView({ ModalManager.shared.showModal { MarkdownHelpView() } }) {
         Icon(
           Icons.Outlined.TextFormat,
           contentDescription = "Markdown help",
@@ -130,7 +138,7 @@ fun SettingsLayout(
       }
       Spacer(Modifier.height(24.dp))
 
-      SettingsSectionView({ navigate(Pages.Terminal.route) }) {
+      SettingsSectionView(showTerminal) {
         Icon(
           painter = painterResource(id = R.drawable.ic_outline_terminal),
           contentDescription = "Chat console",
@@ -183,7 +191,10 @@ fun PreviewSettingsLayout() {
   SimpleXTheme {
     SettingsLayout(
       profile = Profile.sampleData,
-      navigate = {}
+      showProfile = {},
+      showAddress = {},
+      showHelp = {},
+      showTerminal = {}
     )
   }
 }

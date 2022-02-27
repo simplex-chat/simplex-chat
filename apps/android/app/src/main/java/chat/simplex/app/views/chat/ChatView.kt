@@ -18,13 +18,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
-import chat.simplex.app.Pages
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.chat.item.ChatItemView
 import chat.simplex.app.views.helpers.ChatInfoImage
 import chat.simplex.app.views.helpers.withApi
+import chat.simplex.app.views.newchat.ModalManager
 import com.google.accompanist.insets.ProvideWindowInsets
 import com.google.accompanist.insets.navigationBarsWithImePadding
 import kotlinx.coroutines.delay
@@ -32,7 +31,7 @@ import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 
 @Composable
-fun ChatView(chatModel: ChatModel, nav: NavController) {
+fun ChatView(chatModel: ChatModel) {
   val chat: Chat? = chatModel.chats.firstOrNull { chat -> chat.chatInfo.id == chatModel.chatId.value }
   if (chat == null) {
     chatModel.chatId.value = null
@@ -55,7 +54,7 @@ fun ChatView(chatModel: ChatModel, nav: NavController) {
     }
     ChatLayout(chat, chatModel.chatItems,
       back = { chatModel.chatId.value = null },
-      info = { nav.navigate(Pages.ChatInfo.route) },
+      info = { ModalManager.shared.showCustomModal { close -> ChatInfoView(chatModel, close) } },
       sendMessage = { msg ->
         withApi {
           // show "in progress"
@@ -86,9 +85,8 @@ fun ChatLayout(
       bottomBar = { SendMsgView(sendMessage) },
       modifier = Modifier.navigationBarsWithImePadding()
     ) { contentPadding ->
-      Box(
+      Surface(
         modifier = Modifier
-          .padding(contentPadding)
           .fillMaxWidth()
           .background(MaterialTheme.colors.background)
       ) {
