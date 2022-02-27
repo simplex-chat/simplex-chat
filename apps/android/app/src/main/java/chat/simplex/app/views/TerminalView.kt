@@ -23,10 +23,8 @@ import chat.simplex.app.views.helpers.CloseSheetBar
 import chat.simplex.app.views.helpers.withApi
 import com.google.accompanist.insets.ProvideWindowInsets
 import com.google.accompanist.insets.navigationBarsWithImePadding
-import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.launch
 
-@DelicateCoroutinesApi
 @Composable
 fun TerminalView(chatModel: ChatModel, nav: NavController) {
   TerminalLayout(chatModel.terminalItems, nav::popBackStack, nav::navigate) { cmd ->

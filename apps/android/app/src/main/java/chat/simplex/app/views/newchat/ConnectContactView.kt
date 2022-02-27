@@ -18,9 +18,7 @@ import chat.simplex.app.model.ChatModel
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.helpers.CloseSheetBar
 import chat.simplex.app.views.helpers.withApi
-import kotlinx.coroutines.DelicateCoroutinesApi
 
-@DelicateCoroutinesApi
 @Composable
 fun ConnectContactView(chatModel: ChatModel, nav: NavController) {
   ConnectContactLayout(
@@ -44,7 +42,6 @@ fun ConnectContactView(chatModel: ChatModel, nav: NavController) {
   )
 }
 
-@DelicateCoroutinesApi
 fun withUriAction(
   chatModel: ChatModel, uri: Uri,
   run: suspend (String) -> Unit

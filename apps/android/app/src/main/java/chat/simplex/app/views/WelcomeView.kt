@@ -19,11 +19,9 @@ import chat.simplex.app.model.Profile
 import chat.simplex.app.views.helpers.withApi
 import com.google.accompanist.insets.ProvideWindowInsets
 import com.google.accompanist.insets.navigationBarsWithImePadding
-import kotlinx.coroutines.DelicateCoroutinesApi
 
-@DelicateCoroutinesApi
 @Composable
-fun WelcomeView(chatModel: ChatModel, routeHome: () -> Unit) {
+fun WelcomeView(chatModel: ChatModel) {
   ProvideWindowInsets(windowInsetsAnimationsEnabled = true) {
     Box(
       modifier = Modifier
@@ -60,7 +58,7 @@ fun WelcomeView(chatModel: ChatModel, routeHome: () -> Unit) {
           color = MaterialTheme.colors.onBackground
         )
         Spacer(Modifier.height(24.dp))
-        CreateProfilePanel(chatModel, routeHome)
+        CreateProfilePanel(chatModel)
       }
     }
   }
@@ -71,9 +69,8 @@ fun isValidDisplayName(name: String) : Boolean {
   return (name.firstOrNull { it.isWhitespace() }) == null
 }
 
-@DelicateCoroutinesApi
 @Composable
-fun CreateProfilePanel(chatModel: ChatModel, routeHome: () -> Unit) {
+fun CreateProfilePanel(chatModel: ChatModel) {
   var displayName by remember { mutableStateOf("") }
   var fullName by remember { mutableStateOf("") }
 
@@ -154,10 +151,9 @@ fun CreateProfilePanel(chatModel: ChatModel, routeHome: () -> Unit) {
           Profile(displayName, fullName)
         )
         chatModel.controller.startChat(user)
-        routeHome()
       }
     },
     enabled = displayName.isNotEmpty()
-    ) { Text("Create")}
+    ) { Text("Create") }
   }
 }

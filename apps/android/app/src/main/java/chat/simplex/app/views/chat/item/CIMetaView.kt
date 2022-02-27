@@ -1,6 +1,5 @@
 package chat.simplex.app.views.chat.item
 
-import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview

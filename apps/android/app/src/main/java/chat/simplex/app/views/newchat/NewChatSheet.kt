@@ -21,13 +21,8 @@ import chat.simplex.app.ui.theme.HighOrLowlight
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.chatlist.ScaffoldController
 import chat.simplex.app.views.helpers.withApi
-import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberPermissionState
-import kotlinx.coroutines.DelicateCoroutinesApi
 
-@DelicateCoroutinesApi
-@ExperimentalPermissionsApi
-@ExperimentalMaterialApi
 @Composable
 fun NewChatSheet(chatModel: ChatModel, newChatCtrl: ScaffoldController, nav: NavController) {
   val cameraPermissionState = rememberPermissionState(permission = Manifest.permission.CAMERA)
@@ -47,15 +42,12 @@ fun NewChatSheet(chatModel: ChatModel, newChatCtrl: ScaffoldController, nav: Nav
       newChatCtrl.collapse()
       nav.navigate(Pages.Connect.route)
       cameraPermissionState.launchPermissionRequest()
-    },
-    close = {
-      newChatCtrl.collapse()
     }
   )
 }
 
 @Composable
-fun NewChatSheetLayout(addContact: () -> Unit, scanCode: () -> Unit, close: () -> Unit) {
+fun NewChatSheetLayout(addContact: () -> Unit, scanCode: () -> Unit) {
   Row(Modifier
       .fillMaxWidth()
       .padding(horizontal = 8.dp, vertical = 48.dp),
@@ -116,8 +108,7 @@ fun PreviewNewChatSheet() {
   SimpleXTheme {
     NewChatSheetLayout(
       addContact = {},
-      scanCode = {},
-      close = {},
+      scanCode = {}
     )
   }
 }

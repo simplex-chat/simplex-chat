@@ -1,10 +1,14 @@
 package chat.simplex.app.model
 
+import android.app.ActivityManager
+import android.app.ActivityManager.RunningAppProcessInfo
+import android.content.Context
 import android.util.Log
 import androidx.compose.runtime.mutableStateOf
 import chat.simplex.app.*
 import chat.simplex.app.views.helpers.withApi
-import kotlinx.coroutines.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.serialization.*
@@ -14,19 +18,17 @@ import kotlin.concurrent.thread
 
 typealias ChatCtrl = Long
 
-@DelicateCoroutinesApi
-open class ChatController(val ctrl: ChatCtrl, val alertManager: SimplexApp.AlertManager) {
+open class ChatController(val ctrl: ChatCtrl, val alertManager: SimplexApp.AlertManager, val ntfManager: NtfManager, val appContext: Context) {
   var chatModel = ChatModel(this, alertManager)
 
   suspend fun startChat(u: User) {
-    chatModel.currentUser = mutableStateOf(u)
-    chatModel.userCreated.value = true
     Log.d("SIMPLEX (user)", u.toString())
     try {
       apiStartChat()
       chatModel.userAddress.value = apiGetUserAddress()
       chatModel.chats.addAll(apiGetChats())
-      chatModel.chatsLoaded.value = true
+      chatModel.currentUser = mutableStateOf(u)
+      chatModel.userCreated.value = true
       startReceiver()
       Log.d("SIMPLEX", "started chat")
     } catch(e: Error) {
@@ -39,6 +41,18 @@ open class ChatController(val ctrl: ChatCtrl, val alertManager: SimplexApp.Alert
     thread(name="receiver") {
       withApi { recvMspLoop() }
     }
+  }
+
+  open fun isAppOnForeground(context: Context): Boolean {
+    val activityManager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+    val appProcesses = activityManager.runningAppProcesses ?: return false
+    val packageName = context.packageName
+    for (appProcess in appProcesses) {
+      if (appProcess.importance == RunningAppProcessInfo.IMPORTANCE_FOREGROUND && appProcess.processName == packageName) {
+        return true
+      }
+    }
+    return false
   }
 
   suspend fun sendCmd(cmd: CC): CR {
@@ -146,9 +160,9 @@ open class ChatController(val ctrl: ChatCtrl, val alertManager: SimplexApp.Alert
 
   suspend fun apiDeleteChat(type: ChatType, id: Long): Boolean {
     val r = sendCmd(CC.ApiDeleteChat(type, id))
-    when {
-      r is CR.ContactDeleted -> return true // TODO groups
-      r is CR.ChatCmdError -> {
+    when (r) {
+      is CR.ContactDeleted -> return true // TODO groups
+      is CR.ChatCmdError -> {
         val e = r.chatError
         if (e is ChatError.ChatErrorChat && e.errorType is ChatErrorType.ContactGroups) {
           alertManager.showAlertMsg(
@@ -260,7 +274,9 @@ open class ChatController(val ctrl: ChatCtrl, val alertManager: SimplexApp.Alert
         val cInfo = r.chatItem.chatInfo
         val cItem = r.chatItem.chatItem
         chatModel.addChatItem(cInfo, cItem)
-//        NtfManager.shared.notifyMessageReceived(cInfo, cItem)
+        if (!isAppOnForeground(appContext) || chatModel.chatId.value != cInfo.id) {
+          ntfManager.notifyMessageReceived(cInfo, cItem)
+        }
       }
 //        case let .chatItemUpdated(aChatItem):
   //        let cInfo = aChatItem.chatInfo
@@ -432,7 +448,7 @@ sealed class CR {
     is ChatStarted -> "chatStarted"
     is ChatRunning -> "chatRunning"
     is ApiChats -> "apiChats"
-    is ApiChat -> "apiChats"
+    is ApiChat -> "apiChat"
     is Invitation -> "invitation"
     is SentConfirmation -> "sentConfirmation"
     is SentInvitation -> "sentInvitation"

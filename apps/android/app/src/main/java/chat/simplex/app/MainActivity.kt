@@ -2,15 +2,14 @@ package chat.simplex.app
 
 import android.app.Application
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.foundation.layout.Box
-import androidx.compose.material.ExperimentalMaterialApi
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.text.ExperimentalTextApi
+import androidx.compose.runtime.*
 import androidx.lifecycle.AndroidViewModel
 import androidx.navigation.*
 import androidx.navigation.compose.*
@@ -20,26 +19,20 @@ import chat.simplex.app.views.*
 import chat.simplex.app.views.chat.ChatInfoView
 import chat.simplex.app.views.chat.ChatView
 import chat.simplex.app.views.chatlist.ChatListView
+import chat.simplex.app.views.chatlist.openChat
 import chat.simplex.app.views.helpers.withApi
 import chat.simplex.app.views.newchat.*
 import chat.simplex.app.views.usersettings.*
-import com.google.accompanist.insets.ExperimentalAnimatedInsets
-import com.google.accompanist.permissions.ExperimentalPermissionsApi
-import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.serialization.decodeFromString
 
-@ExperimentalTextApi
-@DelicateCoroutinesApi
-@ExperimentalAnimatedInsets
-@ExperimentalPermissionsApi
-@ExperimentalMaterialApi
 class MainActivity: ComponentActivity() {
   private val vm by viewModels<SimplexViewModel>()
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
 //    testJson()
-    connectIfOpenedViaUri(intent, vm.chatModel)
+    processIntent(intent, vm.chatModel)
+//    vm.app.initiateBackgroundWork()
     setContent {
       SimpleXTheme {
         Navigation(vm.chatModel)
@@ -48,50 +41,37 @@ class MainActivity: ComponentActivity() {
   }
 }
 
-@DelicateCoroutinesApi
 class SimplexViewModel(application: Application): AndroidViewModel(application) {
-  val chatModel = getApplication<SimplexApp>().chatModel
+  val app = getApplication<SimplexApp>()
+  val chatModel = app.chatModel
 }
 
-@ExperimentalTextApi
-@DelicateCoroutinesApi
-@ExperimentalPermissionsApi
-@ExperimentalMaterialApi
 @Composable
 fun MainPage(chatModel: ChatModel, nav: NavController) {
   when (chatModel.userCreated.value) {
     null -> SplashView()
-    false -> WelcomeView(chatModel) { nav.navigate(Pages.ChatList.route) }
-    true -> ChatListView(chatModel, nav)
+    false -> WelcomeView(chatModel) // { nav.navigate(Pages.ChatList.route) }
+    true -> if (chatModel.chatId.value == null) {
+      ChatListView(chatModel, nav)
+    } else {
+      ChatView(chatModel, nav)
+    }
   }
 }
 
-@ExperimentalTextApi
-@ExperimentalAnimatedInsets
-@DelicateCoroutinesApi
-@ExperimentalPermissionsApi
-@ExperimentalMaterialApi
 @Composable
 fun Navigation(chatModel: ChatModel) {
+  println("*** in Navigation")
   val nav = rememberNavController()
-
+  val scope = rememberCoroutineScope()
   Box {
     NavHost(navController = nav, startDestination = Pages.Home.route) {
       composable(route = Pages.Home.route) {
+        println("*** composable MainPage")
         MainPage(chatModel, nav)
       }
       composable(route = Pages.Welcome.route) {
-        WelcomeView(chatModel) {
-          nav.navigate(Pages.Home.route) {
-            popUpTo(Pages.Home.route) { inclusive = true }
-          }
-        }
-      }
-      composable(route = Pages.ChatList.route) {
-        ChatListView(chatModel, nav)
-      }
-      composable(route = Pages.Chat.route) {
-        ChatView(chatModel, nav)
+        WelcomeView(chatModel)
       }
       composable(route = Pages.AddContact.route) {
         AddContactView(chatModel, nav)
@@ -136,8 +116,6 @@ sealed class Pages(val route: String) {
   object Terminal: Pages("terminal")
   object Welcome: Pages("welcome")
   object TerminalItemDetails: Pages("details")
-  object ChatList: Pages("chats")
-  object Chat: Pages("chat")
   object AddContact: Pages("add_contact")
   object Connect: Pages("connect")
   object ChatInfo: Pages("chat_info")
@@ -147,27 +125,41 @@ sealed class Pages(val route: String) {
   object Markdown: Pages("markdown")
 }
 
-@DelicateCoroutinesApi
-fun connectIfOpenedViaUri(intent: Intent?, chatModel: ChatModel) {
-  val uri = intent?.data
-  if (intent?.action == "android.intent.action.VIEW" && uri != null) {
-    Log.d("SIMPLEX", "connectIfOpenedViaUri: opened via link")
-    if (chatModel.currentUser.value == null) {
-      chatModel.appOpenUrl.value = uri
-    } else {
-      withUriAction(chatModel, uri) { action ->
-        chatModel.alertManager.showAlertMsg(
-          title = "Connect via $action link?",
-          text = "Your profile will be sent to the contact that you received this link from.",
-          confirmText = "Connect",
-          onConfirm = {
-            withApi {
-              Log.d("SIMPLEX", "connectIfOpenedViaUri: connecting")
-              connectViaUri(chatModel, action, uri)
-            }
-          }
-        )
+fun processIntent(intent: Intent?, chatModel: ChatModel) {
+  when (intent?.action) {
+    NtfManager.OpenChatAction -> {
+      val chatId = intent.getStringExtra("chatId")
+      Log.d("SIMPLEX", "processIntent: OpenChatAction $chatId")
+      if (chatId != null) {
+        val cInfo = chatModel.getChat(chatId)?.chatInfo
+        if (cInfo != null) withApi { openChat(chatModel, cInfo) }
       }
+    }
+    "android.intent.action.VIEW" -> {
+      val uri = intent.data
+      if (uri != null) connectIfOpenedViaUri(uri, chatModel)
+    }
+  }
+}
+
+fun connectIfOpenedViaUri(uri: Uri, chatModel: ChatModel) {
+  Log.d("SIMPLEX", "connectIfOpenedViaUri: opened via link")
+  if (chatModel.currentUser.value == null) {
+    // TODO open from chat list view
+    chatModel.appOpenUrl.value = uri
+  } else {
+    withUriAction(chatModel, uri) { action ->
+      chatModel.alertManager.showAlertMsg(
+        title = "Connect via $action link?",
+        text = "Your profile will be sent to the contact that you received this link from.",
+        confirmText = "Connect",
+        onConfirm = {
+          withApi {
+            Log.d("SIMPLEX", "connectIfOpenedViaUri: connecting")
+            connectViaUri(chatModel, action, uri)
+          }
+        }
+      )
     }
   }
 }

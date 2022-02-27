@@ -14,7 +14,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.ExperimentalTextApi
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
@@ -22,10 +21,9 @@ import chat.simplex.app.model.ChatModel
 import chat.simplex.app.views.chat.ChatHelpView
 import chat.simplex.app.views.newchat.NewChatSheet
 import chat.simplex.app.views.usersettings.SettingsView
-import com.google.accompanist.permissions.ExperimentalPermissionsApi
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 
-@ExperimentalMaterialApi
 class ScaffoldController(val scope: CoroutineScope) {
   lateinit var state: BottomSheetScaffoldState
   val expanded = mutableStateOf(false)
@@ -49,7 +47,6 @@ class ScaffoldController(val scope: CoroutineScope) {
   }
 }
 
-@ExperimentalMaterialApi
 @Composable
 fun scaffoldController(): ScaffoldController {
   val ctrl = ScaffoldController(scope = rememberCoroutineScope())
@@ -64,10 +61,6 @@ fun scaffoldController(): ScaffoldController {
   return ctrl
 }
 
-@ExperimentalTextApi
-@DelicateCoroutinesApi
-@ExperimentalPermissionsApi
-@ExperimentalMaterialApi
 @Composable
 fun ChatListView(chatModel: ChatModel, nav: NavController) {
   val scaffoldCtrl = scaffoldController()
@@ -86,14 +79,11 @@ fun ChatListView(chatModel: ChatModel, nav: NavController) {
           .background(MaterialTheme.colors.background)
       ) {
         ChatListToolbar(scaffoldCtrl)
-        when (chatModel.chatsLoaded.value) {
-          true -> if (chatModel.chats.isNotEmpty()) {
-            ChatList(chatModel, nav)
-          } else {
-            val user = chatModel.currentUser.value
-            Help(scaffoldCtrl, displayName = user?.profile?.displayName)
-          }
-          else -> ChatList(chatModel, nav)
+        if (chatModel.chats.isNotEmpty()) {
+          ChatList(chatModel, nav)
+        } else {
+          val user = chatModel.currentUser.value
+          Help(scaffoldCtrl, displayName = user?.profile?.displayName)
         }
       }
       if (scaffoldCtrl.expanded.value) {
@@ -108,7 +98,6 @@ fun ChatListView(chatModel: ChatModel, nav: NavController) {
   }
 }
 
-@ExperimentalMaterialApi
 @Composable
 fun Help(scaffoldCtrl: ScaffoldController, displayName: String?) {
   Column(
@@ -142,7 +131,6 @@ fun Help(scaffoldCtrl: ScaffoldController, displayName: String?) {
   }
 }
 
-@ExperimentalMaterialApi
 @Composable
 fun ChatListToolbar(scaffoldCtrl: ScaffoldController) {
   Row(
@@ -178,8 +166,6 @@ fun ChatListToolbar(scaffoldCtrl: ScaffoldController) {
   }
 }
 
-@ExperimentalTextApi
-@DelicateCoroutinesApi
 @Composable
 fun ChatList(chatModel: ChatModel, navController: NavController) {
   Divider(Modifier.padding(horizontal = 8.dp))
@@ -191,15 +177,3 @@ fun ChatList(chatModel: ChatModel, navController: NavController) {
     }
   }
 }
-//@Preview
-//@Composable
-//fun PreviewChatListView() {
-//  SimpleXTheme {
-//    ChatListView(
-//      chats = listOf(
-//        Chat()
-//      ),
-//
-//    )
-//  }
-//}
