@@ -19,7 +19,7 @@ class NtfManager(val context: Context) {
 
   private val manager: NotificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
   private var prevNtfTime = mutableMapOf<String, Long>()
-  private val msgNtfTimeoutMs = 10000L
+  private val msgNtfTimeoutMs = 30000L
 
   init {
     manager.createNotificationChannel(NotificationChannel(
