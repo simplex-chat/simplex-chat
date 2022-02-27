@@ -47,9 +47,6 @@ class SimplexApp: Application() {
   override fun onCreate() {
     super.onCreate()
     ntfManager = NtfManager(applicationContext)
-    ntfManager.createNotificationChannel(NtfManager.MainChannelName)
-    ntfManager.createNotificationChannel(NtfManager.SilentChannelName, quiet = true)
-
     val ctrl = chatInit(applicationContext.filesDir.toString())
     controller = ChatController(ctrl, AlertManager(), ntfManager, applicationContext)
     chatModel = controller.chatModel

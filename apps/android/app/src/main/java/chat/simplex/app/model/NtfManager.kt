@@ -12,29 +12,21 @@ import kotlinx.datetime.Clock
 
 class NtfManager(val context: Context) {
   companion object {
-    const val MainChannelName: String = "SimpleXNotifications"
-    const val SilentChannelName: String = "SilentSimpleXNotifications"
-    const val OpenChatAction: String = "OpenChatAction"
+    const val MessageChannel: String = "chat.simplex.app.MESSAGE_NOTIFICATION"
+    const val MessageGroup: String = "chat.simplex.app.MESSAGE_NOTIFICATION"
+    const val OpenChatAction: String = "chat.simplex.app.OPEN_CHAT"
   }
 
   private val manager: NotificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
   private var prevNtfTime = mutableMapOf<String, Long>()
   private val msgNtfTimeoutMs = 10000L
 
-  fun createNotificationChannel(channelId: String, quiet: Boolean = false) {
-    val name = "SimpleX Chat"
-    val desc = "Channel for message notifications"
-    val importance = NotificationManager.IMPORTANCE_HIGH
-    val channel = NotificationChannel(channelId, name, importance)
-      .apply {
-      description = desc
-    }
-    if (quiet) {
-      channel.enableVibration(false)
-      channel.enableLights(false)
-      channel.setSound(null, null)
-    }
-    manager.createNotificationChannel(channel)
+  init {
+    manager.createNotificationChannel(NotificationChannel(
+      MessageChannel,
+      "SimpleX Chat messages",
+      NotificationManager.IMPORTANCE_HIGH
+    ))
   }
 
   fun notifyMessageReceived(cInfo: ChatInfo, cItem: ChatItem) {
@@ -42,22 +34,32 @@ class NtfManager(val context: Context) {
     val now = Clock.System.now().toEpochMilliseconds()
     val recentNotification = (now - prevNtfTime.getOrDefault(cInfo.id, 0) < msgNtfTimeoutMs)
     prevNtfTime[cInfo.id] = now
-    val channelId = if (recentNotification) SilentChannelName else MainChannelName
 
-    val pendingIntent = getMsgPendingIntent(cInfo)
-    val notificationId = Clock.System.now().hashCode()
-
-    val builder = NotificationCompat.Builder(context, channelId)
-      .setSmallIcon(R.mipmap.icon)
+    val notification = NotificationCompat.Builder(context, MessageChannel)
       .setContentTitle(cInfo.displayName)
       .setContentText(cItem.content.text)
       .setPriority(NotificationCompat.PRIORITY_HIGH)
+      .setGroup(MessageGroup)
+      .setGroupAlertBehavior(NotificationCompat.GROUP_ALERT_CHILDREN)
+      .setSmallIcon(R.drawable.ntf_icon)
+      .setColor(0x88FFFF)
       .setAutoCancel(true)
-      .setContentIntent(pendingIntent)
-      .setOnlyAlertOnce(true)
+      .setContentIntent(getMsgPendingIntent(cInfo))
+      .setSilent(recentNotification)
+      .build()
+
+    val summary = NotificationCompat.Builder(context, MessageChannel)
+      .setSmallIcon(R.drawable.ntf_icon)
+      .setColor(0x88FFFF)
+      .setGroup(MessageGroup)
+      .setGroupAlertBehavior(NotificationCompat.GROUP_ALERT_CHILDREN)
+      .setGroupSummary(true)
+      .build()
 
     with(NotificationManagerCompat.from(context)) {
-      notify(notificationId, builder.build())
+      // using cInfo.id only shows one notification per chat and updates it when the message arrives
+      notify(cInfo.id.hashCode(), notification)
+      notify(0, summary)
     }
   }
 
