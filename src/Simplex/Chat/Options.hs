@@ -28,10 +28,9 @@ data ChatOpts = ChatOpts
 defaultSMPServers :: NonEmpty SMPServer
 defaultSMPServers =
   L.fromList
-    [ "smp://u2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU=@smp4.simplex.im",
-      "smp://hpq7_4gGJiilmz5Rf-CswuU5kZGkm_zOIooSw6yALRg=@smp5.simplex.im",
-      "smp://PQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo=@smp6.simplex.im"
-      -- "smp://Tn1b3Rr7_gErbVt2v50Y_T-PvUAi1BYAMS-62w-k9CI=@139.162.240.237"
+    [ "smp://Ufcpyx7utrV45fUopHVvKh4NECi5Z3Fa1TyL4L7tGgc=@smp7.simplex.im",
+      "smp://0YuTwO05YJWS8rkjn9eLJDjQhFKvIYd8d4xG8X1blIU=@smp8.simplex.im",
+      "smp://SkIkI6EPd2D63F4xFKfHk7I1UGZVNn6k1QWZ5rcyr6w=@smp9.simplex.im"
     ]
 
 chatOpts :: FilePath -> Parser ChatOpts
@@ -51,8 +50,9 @@ chatOpts appDir =
           <> short 's'
           <> metavar "SERVER"
           <> help
-            "Comma separated list of SMP server(s) to use \
-            \(default: smp4.simplex.im,smp5.simplex.im,smp6.simplex.im)"
+            "Comma separated list of SMP server(s) to use, \
+            \if none specified default servers are used \
+            \(see simplexmq Readme for server address format)"
           <> value defaultSMPServers
       )
     <*> switch
