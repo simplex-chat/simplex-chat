@@ -22,6 +22,9 @@ final class ChatModel: ObservableObject {
     @Published var terminalItems: [TerminalItem] = []
     @Published var userAddress: String?
     @Published var appOpenUrl: URL?
+
+    var messageDelivery: Dictionary<Int64, () -> Void> = [:]
+
     static let shared = ChatModel()
 
     func hasChat(_ id: String) -> Bool {

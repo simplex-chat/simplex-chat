@@ -10,6 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import chat.simplex.app.TAG
 import chat.simplex.app.views.helpers.CloseSheetBar
 
 @Composable
@@ -36,7 +37,7 @@ class ModalManager {
   }
 
   fun showCustomModal(modal: @Composable (close: () -> Unit) -> Unit) {
-    Log.d("SIMPLEX", "ModalManager.showModal")
+    Log.d(TAG, "ModalManager.showModal")
     modalViews.add(modal)
     modalCount.value = modalViews.count()
   }

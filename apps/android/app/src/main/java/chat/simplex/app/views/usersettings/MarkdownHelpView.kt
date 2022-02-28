@@ -25,14 +25,14 @@ fun MarkdownHelpView() {
       "You can use markdown to format messages:",
       Modifier.padding(vertical = 16.dp)
     )
-    MdFormat("*bold*", "bold text", Format.Bold())
-    MdFormat("_italic_", "italic text", Format.Italic())
-    MdFormat("~strike~", "strikethrough text", Format.StrikeThrough())
-    MdFormat("`code`", "a = b + c", Format.Snippet())
+    MdFormat("*bold*", "bold", Format.Bold())
+    MdFormat("_italic_", "italic", Format.Italic())
+    MdFormat("~strike~", "strike", Format.StrikeThrough())
+    MdFormat("`a + b`", "a + b", Format.Snippet())
     Row {
       MdSyntax("!1 colored!")
       Text(buildAnnotatedString {
-        withStyle(Format.Colored(FormatColor.red).style) { append("red text") }
+        withStyle(Format.Colored(FormatColor.red).style) { append("colored") }
         append(" (")
         appendColor(this, "1", FormatColor.red, ", ")
         appendColor(this, "2", FormatColor.green, ", ")
@@ -46,7 +46,7 @@ fun MarkdownHelpView() {
       MdSyntax("#secret#")
       SelectionContainer {
         Text(buildAnnotatedString {
-          withStyle(Format.Secret().style) { append("secret text") }
+          withStyle(Format.Secret().style) { append("secret") }
         })
       }
     }

@@ -3,6 +3,7 @@ package chat.simplex.app.model
 import android.content.Context
 import android.util.Log
 import androidx.work.*
+import chat.simplex.app.TAG
 import chat.simplex.app.chatRecvMsg
 import java.util.concurrent.TimeUnit
 
@@ -24,7 +25,7 @@ class BackgroundAPIWorker(appContext: Context, workerParams: WorkerParameters, c
   private fun getNewItems() {
     val json = chatRecvMsg(controller)
     val r = APIResponse.decodeStr(json).resp
-    Log.d("SIMPLEX", "chatRecvMsg: ${r.responseType}")
+    Log.d(TAG, "chatRecvMsg: ${r.responseType}")
   }
 
   private fun buildRequest(): OneTimeWorkRequest {

@@ -8,6 +8,7 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.font.*
 import androidx.compose.ui.text.style.TextDecoration
 import chat.simplex.app.ui.theme.SecretColor
+import chat.simplex.app.ui.theme.SimplexBlue
 import kotlinx.datetime.*
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -650,7 +651,7 @@ enum class FormatColor(val color: String) {
   val uiColor: Color @Composable get() = when (this) {
     red -> Color.Red
     green -> Color.Green
-    blue -> Color.Blue
+    blue -> SimplexBlue
     yellow -> Color.Yellow
     cyan -> Color.Cyan
     magenta -> Color.Magenta
