@@ -45,76 +45,170 @@
             "exe:simplex-chat" = (drv pkgs).simplex-chat.components.exes.simplex-chat;
         } // ({
             "x86_64-linux" =
-                let
-                    androidPkgs = pkgs.pkgsCross.aarch64-android;
-                    # For some reason building libiconv with nixpgks android setup produces
-                    # LANGINFO_CODESET to be found, which is not compatible with android sdk 23;
-                    # so we'll patch up iconv to not include that.
-                    androidIconv = (androidPkgs.libiconv.override { enableStatic = true; }).overrideAttrs (old: {
-                        postConfigure = ''
-                        echo "#undef HAVE_LANGINFO_CODESET" >> libcharset/config.h
-                        echo "#undef HAVE_LANGINFO_CODESET" >> lib/config.h
-                        '';
-                    });
-                    # Similarly to icovn, for reasons beyond my current knowledge, nixpkgs andorid
-                    # toolchain makes configure believe we have MEMFD_CREATE, which we don't in
-                    # sdk 23.
-                    androidFFI = androidPkgs.libffi.overrideAttrs (old: {
-                        dontDisableStatic = true;
-                        hardeningDisable = [ "fortify" ];
-                        postConfigure = ''
-                        echo "#undef HAVE_MEMFD_CREATE" >> aarch64-unknown-linux-android/fficonfig.h
-                        '';
-                    }
-                );in {
-                "aarch64-android:lib:support" = (drv androidPkgs).android-support.components.library.override {
-                   smallAddressSpace = true; enableShared = false;
-                   setupBuildFlags = map (x: "--ghc-option=${x}") [ "-shared" "-o" "libsupport.so" ];
-                   postInstall = ''
-
-                     mkdir -p $out/_pkg
-                     cp libsupport.so $out/_pkg
-                     ${pkgs.patchelf}/bin/patchelf --remove-needed libunwind.so.1 $out/_pkg/libsupport.so
-                     (cd $out/_pkg; ${pkgs.zip}/bin/zip -r -9 $out/pkg-android-libsupport.zip *)
-                     rm -fR $out/_pkg
-
-                     mkdir -p $out/nix-support
-                     echo "file binary-dist \"$(echo $out/*.zip)\"" \
-                           > $out/nix-support/hydra-build-products
-                   '';
-                };
-                "aarch64-android:lib:simplex-chat" = (drv androidPkgs).simplex-chat.components.library.override {
-                    smallAddressSpace = true; enableShared = false;
-                    # for android we build a shared library, passing these arguments is a bit tricky, as
-                    # we want only the threaded rts (HSrts_thr) and ffi to be linked, but not fed into iserv for
-                    # template haskell cross compilation. Thus we just pass them as linker options (-optl).
-                    setupBuildFlags = map (x: "--ghc-option=${x}") [ "-shared" "-o" "libsimplex.so" "-optl-lHSrts_thr" "-optl-lffi"];
-                      postInstall = ''
-                        ${pkgs.tree}/bin/tree $out
-                        mkdir -p $out/_pkg
-                        # copy over includes, we might want those, but maybe not.
-                        # cp -r $out/lib/*/*/include $out/_pkg/
-                        # find the libHS...ghc-X.Y.Z.a static library; this is the
-                        # rolled up one with all dependencies included.
-                        cp libsimplex.so $out/_pkg
-                        # find ./dist -name "lib*.so" -exec cp {} $out/_pkg \;
-                        # find ./dist -name "libHS*-ghc*.a" -exec cp {} $out/_pkg \;
-                        # find ${androidFFI}/lib -name "*.a" -exec cp {} $out/_pkg \;
-                        # find ${androidPkgs.gmp6.override { withStatic = true; }}/lib -name "*.a" -exec cp {} $out/_pkg \;
-                        # find ${androidIconv}/lib -name "*.a" -exec cp {} $out/_pkg \;
-                        # find ${androidPkgs.stdenv.cc.libc}/lib -name "*.a" -exec cp {} $out/_pkg \;
-
-                        ${pkgs.patchelf}/bin/patchelf --remove-needed libunwind.so.1 $out/_pkg/libsimplex.so
-
-                        ${pkgs.tree}/bin/tree $out/_pkg
-                        (cd $out/_pkg; ${pkgs.zip}/bin/zip -r -9 $out/pkg-android-libsimplex.zip *)
-                        rm -fR $out/_pkg
-                        mkdir -p $out/nix-support
-                        echo "file binary-dist \"$(echo $out/*.zip)\"" \
-                           > $out/nix-support/hydra-build-products
+              let
+                  androidPkgs = pkgs.pkgsCross.aarch64-android;
+                  # For some reason building libiconv with nixpgks android setup produces
+                  # LANGINFO_CODESET to be found, which is not compatible with android sdk 23;
+                  # so we'll patch up iconv to not include that.
+                  androidIconv = (androidPkgs.libiconv.override { enableStatic = true; }).overrideAttrs (old: {
+                      postConfigure = ''
+                      echo "#undef HAVE_LANGINFO_CODESET" >> libcharset/config.h
+                      echo "#undef HAVE_LANGINFO_CODESET" >> lib/config.h
                       '';
-                    };
-                };
+                  });
+                  # Similarly to icovn, for reasons beyond my current knowledge, nixpkgs andorid
+                  # toolchain makes configure believe we have MEMFD_CREATE, which we don't in
+                  # sdk 23.
+                  androidFFI = androidPkgs.libffi.overrideAttrs (old: {
+                      dontDisableStatic = true;
+                      hardeningDisable = [ "fortify" ];
+                      postConfigure = ''
+                      echo "#undef HAVE_MEMFD_CREATE" >> aarch64-unknown-linux-android/fficonfig.h
+                      '';
+                  }
+              );in {
+              "aarch64-android:lib:support" = (drv androidPkgs).android-support.components.library.override {
+                smallAddressSpace = true; enableShared = false;
+                setupBuildFlags = map (x: "--ghc-option=${x}") [ "-shared" "-o" "libsupport.so" ];
+                postInstall = ''
+
+                  mkdir -p $out/_pkg
+                  cp libsupport.so $out/_pkg
+                  ${pkgs.patchelf}/bin/patchelf --remove-needed libunwind.so.1 $out/_pkg/libsupport.so
+                  (cd $out/_pkg; ${pkgs.zip}/bin/zip -r -9 $out/pkg-aarch64-android-libsupport.zip *)
+                  rm -fR $out/_pkg
+
+                  mkdir -p $out/nix-support
+                  echo "file binary-dist \"$(echo $out/*.zip)\"" \
+                        > $out/nix-support/hydra-build-products
+                '';
+              };
+              "aarch64-android:lib:simplex-chat" = (drv androidPkgs).simplex-chat.components.library.override {
+                smallAddressSpace = true; enableShared = false;
+                # for android we build a shared library, passing these arguments is a bit tricky, as
+                # we want only the threaded rts (HSrts_thr) and ffi to be linked, but not fed into iserv for
+                # template haskell cross compilation. Thus we just pass them as linker options (-optl).
+                setupBuildFlags = map (x: "--ghc-option=${x}") [ "-shared" "-o" "libsimplex.so" "-optl-lHSrts_thr" "-optl-lffi"];
+                postInstall = ''
+                  ${pkgs.tree}/bin/tree $out
+                  mkdir -p $out/_pkg
+                  # copy over includes, we might want those, but maybe not.
+                  # cp -r $out/lib/*/*/include $out/_pkg/
+                  # find the libHS...ghc-X.Y.Z.a static library; this is the
+                  # rolled up one with all dependencies included.
+                  cp libsimplex.so $out/_pkg
+                  # find ./dist -name "lib*.so" -exec cp {} $out/_pkg \;
+                  # find ./dist -name "libHS*-ghc*.a" -exec cp {} $out/_pkg \;
+                  # find ${androidFFI}/lib -name "*.a" -exec cp {} $out/_pkg \;
+                  # find ${androidPkgs.gmp6.override { withStatic = true; }}/lib -name "*.a" -exec cp {} $out/_pkg \;
+                  # find ${androidIconv}/lib -name "*.a" -exec cp {} $out/_pkg \;
+                  # find ${androidPkgs.stdenv.cc.libc}/lib -name "*.a" -exec cp {} $out/_pkg \;
+
+                  ${pkgs.patchelf}/bin/patchelf --remove-needed libunwind.so.1 $out/_pkg/libsimplex.so
+
+                  ${pkgs.tree}/bin/tree $out/_pkg
+                  (cd $out/_pkg; ${pkgs.zip}/bin/zip -r -9 $out/pkg-aarch64-android-libsimplex.zip *)
+                  rm -fR $out/_pkg
+                  mkdir -p $out/nix-support
+                  echo "file binary-dist \"$(echo $out/*.zip)\"" \
+                      > $out/nix-support/hydra-build-products
+                '';
+              };
+              "x86_64-android:lib:support" = (drv androidPkgs).android-support.components.library.override {
+                smallAddressSpace = true; enableShared = false;
+                setupBuildFlags = map (x: "--ghc-option=${x}") [ "-shared" "-o" "libsupport.so" ];
+                postInstall = ''
+
+                  mkdir -p $out/_pkg
+                  cp libsupport.so $out/_pkg
+                  ${pkgs.patchelf}/bin/patchelf --remove-needed libunwind.so.1 $out/_pkg/libsupport.so
+                  (cd $out/_pkg; ${pkgs.zip}/bin/zip -r -9 $out/pkg-x86_64-android-libsupport.zip *)
+                  rm -fR $out/_pkg
+
+                  mkdir -p $out/nix-support
+                  echo "file binary-dist \"$(echo $out/*.zip)\"" \
+                        > $out/nix-support/hydra-build-products
+                '';
+              };
+              "x86_64-android:lib:simplex-chat" = (drv androidPkgs).simplex-chat.components.library.override {
+                smallAddressSpace = true; enableShared = false;
+                # for android we build a shared library, passing these arguments is a bit tricky, as
+                # we want only the threaded rts (HSrts_thr) and ffi to be linked, but not fed into iserv for
+                # template haskell cross compilation. Thus we just pass them as linker options (-optl).
+                setupBuildFlags = map (x: "--ghc-option=${x}") [ "-shared" "-o" "libsimplex.so" "-optl-lHSrts_thr" "-optl-lffi"];
+                postInstall = ''
+                  ${pkgs.tree}/bin/tree $out
+                  mkdir -p $out/_pkg
+                  # copy over includes, we might want those, but maybe not.
+                  # cp -r $out/lib/*/*/include $out/_pkg/
+                  # find the libHS...ghc-X.Y.Z.a static library; this is the
+                  # rolled up one with all dependencies included.
+                  cp libsimplex.so $out/_pkg
+                  # find ./dist -name "lib*.so" -exec cp {} $out/_pkg \;
+                  # find ./dist -name "libHS*-ghc*.a" -exec cp {} $out/_pkg \;
+                  # find ${androidFFI}/lib -name "*.a" -exec cp {} $out/_pkg \;
+                  # find ${androidPkgs.gmp6.override { withStatic = true; }}/lib -name "*.a" -exec cp {} $out/_pkg \;
+                  # find ${androidIconv}/lib -name "*.a" -exec cp {} $out/_pkg \;
+                  # find ${androidPkgs.stdenv.cc.libc}/lib -name "*.a" -exec cp {} $out/_pkg \;
+
+                  ${pkgs.patchelf}/bin/patchelf --remove-needed libunwind.so.1 $out/_pkg/libsimplex.so
+
+                  ${pkgs.tree}/bin/tree $out/_pkg
+                  (cd $out/_pkg; ${pkgs.zip}/bin/zip -r -9 $out/pkg-x86_64-android-libsimplex.zip *)
+                  rm -fR $out/_pkg
+                  mkdir -p $out/nix-support
+                  echo "file binary-dist \"$(echo $out/*.zip)\"" \
+                      > $out/nix-support/hydra-build-products
+                '';
+              };
+              "x86_64-linux:lib:support" = (drv androidPkgs).android-support.components.library.override {
+                smallAddressSpace = true; enableShared = false;
+                setupBuildFlags = map (x: "--ghc-option=${x}") [ "-shared" "-o" "libsupport.so" ];
+                postInstall = ''
+
+                  mkdir -p $out/_pkg
+                  cp libsupport.so $out/_pkg
+                  ${pkgs.patchelf}/bin/patchelf --remove-needed libunwind.so.1 $out/_pkg/libsupport.so
+                  (cd $out/_pkg; ${pkgs.zip}/bin/zip -r -9 $out/pkg-x86_64-linux-libsupport.zip *)
+                  rm -fR $out/_pkg
+
+                  mkdir -p $out/nix-support
+                  echo "file binary-dist \"$(echo $out/*.zip)\"" \
+                        > $out/nix-support/hydra-build-products
+                '';
+              };
+              "x86_64-linux:lib:simplex-chat" = (drv androidPkgs).simplex-chat.components.library.override {
+                smallAddressSpace = true; enableShared = false;
+                # for android we build a shared library, passing these arguments is a bit tricky, as
+                # we want only the threaded rts (HSrts_thr) and ffi to be linked, but not fed into iserv for
+                # template haskell cross compilation. Thus we just pass them as linker options (-optl).
+                setupBuildFlags = map (x: "--ghc-option=${x}") [ "-shared" "-o" "libsimplex.so" "-optl-lHSrts_thr" "-optl-lffi"];
+                postInstall = ''
+                  ${pkgs.tree}/bin/tree $out
+                  mkdir -p $out/_pkg
+                  # copy over includes, we might want those, but maybe not.
+                  # cp -r $out/lib/*/*/include $out/_pkg/
+                  # find the libHS...ghc-X.Y.Z.a static library; this is the
+                  # rolled up one with all dependencies included.
+                  cp libsimplex.so $out/_pkg
+                  # find ./dist -name "lib*.so" -exec cp {} $out/_pkg \;
+                  # find ./dist -name "libHS*-ghc*.a" -exec cp {} $out/_pkg \;
+                  # find ${androidFFI}/lib -name "*.a" -exec cp {} $out/_pkg \;
+                  # find ${androidPkgs.gmp6.override { withStatic = true; }}/lib -name "*.a" -exec cp {} $out/_pkg \;
+                  # find ${androidIconv}/lib -name "*.a" -exec cp {} $out/_pkg \;
+                  # find ${androidPkgs.stdenv.cc.libc}/lib -name "*.a" -exec cp {} $out/_pkg \;
+
+                  ${pkgs.patchelf}/bin/patchelf --remove-needed libunwind.so.1 $out/_pkg/libsimplex.so
+
+                  ${pkgs.tree}/bin/tree $out/_pkg
+                  (cd $out/_pkg; ${pkgs.zip}/bin/zip -r -9 $out/pkg-x86_64-linux-libsimplex.zip *)
+                  rm -fR $out/_pkg
+                  mkdir -p $out/nix-support
+                  echo "file binary-dist \"$(echo $out/*.zip)\"" \
+                      > $out/nix-support/hydra-build-products
+                '';
+              };
+            };
             "aarch64-darwin" = {
               "aarch64-darwin:lib:simplex-chat" = (drv pkgs).simplex-chat.components.library.override {
                 smallAddressSpace = true; enableShared = false;
