@@ -207,7 +207,7 @@ insertedRowId db = fromOnly . head <$> DB.query_ db "SELECT last_insert_rowid()"
 type StoreMonad m = (MonadUnliftIO m, MonadError StoreError m)
 
 createUser :: StoreMonad m => SQLiteStore -> Profile -> Bool -> m User
-createUser st Profile {displayName, fullName} activeUser =
+createUser st Profile {displayName, fullName, image} activeUser =
   liftIOEither . checkConstraint SEDuplicateName . withTransaction st $ \db -> do
     currentTs <- getCurrentTime
     DB.execute
@@ -230,7 +230,7 @@ createUser st Profile {displayName, fullName} activeUser =
       (profileId, displayName, userId, True, currentTs, currentTs)
     contactId <- insertedRowId db
     DB.execute db "UPDATE users SET contact_id = ? WHERE user_id = ?" (contactId, userId)
-    pure . Right $ toUser (userId, contactId, activeUser, displayName, fullName)
+    pure . Right $ toUser (userId, contactId, activeUser, displayName, fullName, image)
 
 getUsers :: SQLiteStore -> IO [User]
 getUsers st =
@@ -245,9 +245,9 @@ getUsers st =
           JOIN contact_profiles p ON c.contact_profile_id = p.contact_profile_id
         |]
 
-toUser :: (UserId, Int64, Bool, ContactName, Text) -> User
-toUser (userId, userContactId, activeUser, displayName, fullName) =
-  let profile = Profile {displayName, fullName}
+toUser :: (UserId, Int64, Bool, ContactName, Text, Maybe Text) -> User
+toUser (userId, userContactId, activeUser, displayName, fullName, image) =
+  let profile = Profile {displayName, fullName, image}
    in User {userId, userContactId, localDisplayName = displayName, profile, activeUser}
 
 setActiveUser :: MonadUnliftIO m => SQLiteStore -> UserId -> m ()
@@ -340,12 +340,12 @@ createDirectContact st userId activeConn@Connection {connId} profile =
     pure $ Contact {contactId, localDisplayName, profile, activeConn, viaGroup = Nothing, createdAt}
 
 createContact_ :: DB.Connection -> UserId -> Int64 -> Profile -> Maybe Int64 -> UTCTime -> IO (Either StoreError (Text, Int64, Int64))
-createContact_ db userId connId Profile {displayName, fullName} viaGroup currentTs =
+createContact_ db userId connId Profile {displayName, fullName, image} viaGroup currentTs =
   withLocalDisplayName db userId displayName $ \ldn -> do
     DB.execute
       db
-      "INSERT INTO contact_profiles (display_name, full_name, created_at, updated_at) VALUES (?,?,?,?)"
-      (displayName, fullName, currentTs, currentTs)
+      "INSERT INTO contact_profiles (display_name, full_name, image, created_at, updated_at) VALUES (?,?,?,?,?)"
+      (displayName, fullName, image, currentTs, currentTs)
     profileId <- insertedRowId db
     DB.execute
       db
@@ -422,13 +422,14 @@ updateContactProfile_ db userId contactId profile = do
   updateContactProfile_' db userId contactId profile currentTs
 
 updateContactProfile_' :: DB.Connection -> UserId -> Int64 -> Profile -> UTCTime -> IO ()
-updateContactProfile_' db userId contactId Profile {displayName, fullName} updatedAt = do
+updateContactProfile_' db userId contactId Profile {displayName, fullName, image} updatedAt = do
   DB.executeNamed
     db
     [sql|
       UPDATE contact_profiles
       SET display_name = :display_name,
           full_name = :full_name,
+          image = :image,
           updated_at = :updated_at
       WHERE contact_profile_id IN (
         SELECT contact_profile_id
@@ -439,6 +440,7 @@ updateContactProfile_' db userId contactId Profile {displayName, fullName} updat
     |]
     [ ":display_name" := displayName,
       ":full_name" := fullName,
+      ":image" := image,
       ":updated_at" := updatedAt,
       ":user_id" := userId,
       ":contact_id" := contactId
@@ -456,17 +458,17 @@ updateContact_ db userId contactId displayName newName updatedAt = do
     (newName, updatedAt, userId, contactId)
   DB.execute db "DELETE FROM display_names WHERE local_display_name = ? AND user_id = ?" (displayName, userId)
 
-type ContactRow = (Int64, ContactName, Maybe Int64, ContactName, Text, UTCTime)
+type ContactRow = (Int64, ContactName, Maybe Text, Maybe Int64, ContactName, Text, UTCTime)
 
 toContact :: ContactRow :. ConnectionRow -> Contact
-toContact ((contactId, localDisplayName, viaGroup, displayName, fullName, createdAt) :. connRow) =
-  let profile = Profile {displayName, fullName}
+toContact ((contactId, localDisplayName, image, viaGroup, displayName, fullName, createdAt) :. connRow) =
+  let profile = Profile {displayName, fullName, image}
       activeConn = toConnection connRow
    in Contact {contactId, localDisplayName, profile, activeConn, viaGroup, createdAt}
 
 toContactOrError :: ContactRow :. MaybeConnectionRow -> Either StoreError Contact
-toContactOrError ((contactId, localDisplayName, viaGroup, displayName, fullName, createdAt) :. connRow) =
-  let profile = Profile {displayName, fullName}
+toContactOrError ((contactId, localDisplayName, image, viaGroup, displayName, fullName, createdAt) :. connRow) =
+  let profile = Profile {displayName, fullName, image}
    in case toMaybeConnection connRow of
         Just activeConn ->
           Right Contact {contactId, localDisplayName, profile, activeConn, viaGroup, createdAt}
@@ -603,7 +605,7 @@ createOrUpdateContactRequest st userId userContactLinkId invId profile xContactI
     createOrUpdateContactRequest_ db userId userContactLinkId invId profile xContactId_
 
 createOrUpdateContactRequest_ :: DB.Connection -> UserId -> Int64 -> InvitationId -> Profile -> Maybe XContactId -> IO (Either StoreError (Either Contact UserContactRequest))
-createOrUpdateContactRequest_ db userId userContactLinkId invId Profile {displayName, fullName} xContactId_ =
+createOrUpdateContactRequest_ db userId userContactLinkId invId Profile {displayName, fullName, image} xContactId_ =
   maybeM getContact' xContactId_ >>= \case
     Just contact -> pure . Right $ Left contact
     Nothing -> Right <$$> createOrUpdate_
@@ -623,8 +625,8 @@ createOrUpdateContactRequest_ db userId userContactLinkId invId Profile {display
         createContactRequest_ currentTs ldn = do
           DB.execute
             db
-            "INSERT INTO contact_profiles (display_name, full_name, created_at, updated_at) VALUES (?,?,?,?)"
-            (displayName, fullName, currentTs, currentTs)
+            "INSERT INTO contact_profiles (display_name, full_name, image, created_at, updated_at) VALUES (?,?,?,?,?)"
+            (displayName, fullName, image, currentTs, currentTs)
           profileId <- insertedRowId db
           DB.execute
             db
@@ -644,7 +646,7 @@ createOrUpdateContactRequest_ db userId userContactLinkId invId Profile {display
           [sql|
             SELECT
               -- Contact
-              ct.contact_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, ct.created_at,
+              ct.contact_id, ct.local_display_name, ct.image, ct.via_group, cp.display_name, cp.full_name, ct.created_at,
               -- Connection
               c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.conn_status, c.conn_type,
               c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at
@@ -687,6 +689,7 @@ createOrUpdateContactRequest_ db userId userContactLinkId invId Profile {display
               UPDATE contact_profiles
               SET display_name = ?,
                   full_name = ?,
+                  image = ?,
                   updated_at = ?
               WHERE contact_profile_id IN (
                 SELECT contact_profile_id
@@ -695,7 +698,7 @@ createOrUpdateContactRequest_ db userId userContactLinkId invId Profile {display
                   AND contact_request_id = ?
               )
             |]
-            (ldn, fullName, updatedAt, userId, cReqId)
+            (ldn, fullName, image, updatedAt, userId, cReqId)
           DB.execute
             db
             [sql|
@@ -731,11 +734,11 @@ getContactRequest_ db userId contactRequestId =
       |]
       (userId, contactRequestId)
 
-type ContactRequestRow = (Int64, ContactName, AgentInvId, Int64, AgentConnId, Int64, ContactName, Text, UTCTime, Maybe XContactId)
+type ContactRequestRow = (Int64, ContactName, AgentInvId, Int64, AgentConnId, Int64, ContactName, Text, Maybe Text, UTCTime, Maybe XContactId)
 
 toContactRequest :: ContactRequestRow -> UserContactRequest
-toContactRequest (contactRequestId, localDisplayName, agentInvitationId, userContactLinkId, agentContactConnId, profileId, displayName, fullName, createdAt, xContactId) = do
-  let profile = Profile {displayName, fullName}
+toContactRequest (contactRequestId, localDisplayName, agentInvitationId, userContactLinkId, agentContactConnId, profileId, displayName, fullName, image, createdAt, xContactId) = do
+  let profile = Profile {displayName, fullName, image}
    in UserContactRequest {contactRequestId, agentInvitationId, userContactLinkId, agentContactConnId, localDisplayName, profileId, profile, createdAt, xContactId}
 
 getContactRequestIdByName :: StoreMonad m => SQLiteStore -> UserId -> ContactName -> m Int64
@@ -877,7 +880,7 @@ toMaybeConnection (Just connId, Just agentConnId, Just connLevel, viaContact, Ju
 toMaybeConnection _ = Nothing
 
 getMatchingContacts :: MonadUnliftIO m => SQLiteStore -> UserId -> Contact -> m [Contact]
-getMatchingContacts st userId Contact {contactId, profile = Profile {displayName, fullName}} =
+getMatchingContacts st userId Contact {contactId, profile = Profile {displayName, fullName, image}} =
   liftIO . withTransaction st $ \db -> do
     contactIds <-
       map fromOnly
@@ -893,7 +896,8 @@ getMatchingContacts st userId Contact {contactId, profile = Profile {displayName
           [ ":user_id" := userId,
             ":contact_id" := contactId,
             ":display_name" := displayName,
-            ":full_name" := fullName
+            ":full_name" := fullName,
+            ":image" := image
           ]
     rights <$> mapM (getContact_ db userId) contactIds
 
@@ -1057,15 +1061,15 @@ getConnectionEntity st User {userId, userContactId} agentConnId =
         <$> DB.query
           db
           [sql|
-            SELECT c.local_display_name, p.display_name, p.full_name, c.via_group, c.created_at
+            SELECT c.local_display_name, p.display_name, p.full_name, p.image, c.via_group, c.created_at
             FROM contacts c
             JOIN contact_profiles p ON c.contact_profile_id = p.contact_profile_id
             WHERE c.user_id = ? AND c.contact_id = ?
           |]
           (userId, contactId)
-    toContact' :: Int64 -> Connection -> [(ContactName, Text, Text, Maybe Int64, UTCTime)] -> Either StoreError Contact
-    toContact' contactId activeConn [(localDisplayName, displayName, fullName, viaGroup, createdAt)] =
-      let profile = Profile {displayName, fullName}
+    toContact' :: Int64 -> Connection -> [(ContactName, Text, Text, Maybe Text, Maybe Int64, UTCTime)] -> Either StoreError Contact
+    toContact' contactId activeConn [(localDisplayName, displayName, fullName, image, viaGroup, createdAt)] =
+      let profile = Profile {displayName, fullName, image}
        in Right $ Contact {contactId, localDisplayName, profile, activeConn, viaGroup, createdAt}
     toContact' _ _ _ = Left $ SEInternalError "referenced contact not found"
     getGroupAndMember_ :: DB.Connection -> Int64 -> Connection -> ExceptT StoreError IO (GroupInfo, GroupMember)
@@ -1146,7 +1150,7 @@ updateConnectionStatus st Connection {connId} connStatus =
 createNewGroup :: StoreMonad m => SQLiteStore -> TVar ChaChaDRG -> User -> GroupProfile -> m GroupInfo
 createNewGroup st gVar user groupProfile =
   liftIOEither . checkConstraint SEDuplicateName . withTransaction st $ \db -> do
-    let GroupProfile {displayName, fullName} = groupProfile
+    let GroupProfile {displayName, fullName, image} = groupProfile
         uId = userId user
     currentTs <- getCurrentTime
     DB.execute
@@ -1155,8 +1159,8 @@ createNewGroup st gVar user groupProfile =
       (displayName, displayName, uId, currentTs, currentTs)
     DB.execute
       db
-      "INSERT INTO group_profiles (display_name, full_name, created_at, updated_at) VALUES (?,?,?,?)"
-      (displayName, fullName, currentTs, currentTs)
+      "INSERT INTO group_profiles (display_name, full_name, image, created_at, updated_at) VALUES (?,?,?,?,?)"
+      (displayName, fullName, image, currentTs, currentTs)
     profileId <- insertedRowId db
     DB.execute
       db
@@ -1183,13 +1187,13 @@ createGroupInvitation st user@User {userId} contact@Contact {contactId} GroupInv
         <$> DB.query db "SELECT group_id FROM groups WHERE inv_queue_info = ? AND user_id = ? LIMIT 1" (connRequest, userId)
     createGroupInvitation_ :: DB.Connection -> IO (Either StoreError GroupInfo)
     createGroupInvitation_ db = do
-      let GroupProfile {displayName, fullName} = groupProfile
+      let GroupProfile {displayName, fullName, image} = groupProfile
       withLocalDisplayName db userId displayName $ \localDisplayName -> do
         currentTs <- getCurrentTime
         DB.execute
           db
-          "INSERT INTO group_profiles (display_name, full_name, created_at, updated_at) VALUES (?,?,?,?)"
-          (displayName, fullName, currentTs, currentTs)
+          "INSERT INTO group_profiles (display_name, full_name, image, created_at, updated_at) VALUES (?,?,?,?,?)"
+          (displayName, fullName, image, currentTs, currentTs)
         profileId <- insertedRowId db
         DB.execute
           db
@@ -1257,12 +1261,12 @@ getGroupInfoByName st user gName =
     gId <- ExceptT $ getGroupIdByName_ db user gName
     ExceptT $ getGroupInfo_ db user gId
 
-type GroupInfoRow = (Int64, GroupName, GroupName, Text, UTCTime) :. GroupMemberRow
+type GroupInfoRow = (Int64, GroupName, GroupName, Text, Maybe Text, UTCTime) :. GroupMemberRow
 
 toGroupInfo :: Int64 -> GroupInfoRow -> GroupInfo
-toGroupInfo userContactId ((groupId, localDisplayName, displayName, fullName, createdAt) :. userMemberRow) =
+toGroupInfo userContactId ((groupId, localDisplayName, displayName, fullName, image, createdAt) :. userMemberRow) =
   let membership = toGroupMember userContactId userMemberRow
-   in GroupInfo {groupId, localDisplayName, groupProfile = GroupProfile {displayName, fullName}, membership, createdAt}
+   in GroupInfo {groupId, localDisplayName, groupProfile = GroupProfile {displayName, fullName, image}, membership, createdAt}
 
 getGroupMembers :: MonadUnliftIO m => SQLiteStore -> User -> GroupInfo -> m [GroupMember]
 getGroupMembers st user gInfo = liftIO . withTransaction st $ \db -> getGroupMembers_ db user gInfo
@@ -1315,20 +1319,20 @@ getGroupInvitation st user localDisplayName =
     findFromContact (IBContact contactId) = find ((== Just contactId) . memberContactId)
     findFromContact _ = const Nothing
 
-type GroupMemberRow = (Int64, Int64, MemberId, GroupMemberRole, GroupMemberCategory, GroupMemberStatus, Maybe Int64, ContactName, Maybe Int64, ContactName, Text)
+type GroupMemberRow = (Int64, Int64, MemberId, GroupMemberRole, GroupMemberCategory, GroupMemberStatus, Maybe Int64, ContactName, Maybe Int64, ContactName, Text, Maybe Text)
 
-type MaybeGroupMemberRow = (Maybe Int64, Maybe Int64, Maybe MemberId, Maybe GroupMemberRole, Maybe GroupMemberCategory, Maybe GroupMemberStatus, Maybe Int64, Maybe ContactName, Maybe Int64, Maybe ContactName, Maybe Text)
+type MaybeGroupMemberRow = (Maybe Int64, Maybe Int64, Maybe MemberId, Maybe GroupMemberRole, Maybe GroupMemberCategory, Maybe GroupMemberStatus, Maybe Int64, Maybe ContactName, Maybe Int64, Maybe ContactName, Maybe Text, Maybe Text)
 
 toGroupMember :: Int64 -> GroupMemberRow -> GroupMember
-toGroupMember userContactId (groupMemberId, groupId, memberId, memberRole, memberCategory, memberStatus, invitedById, localDisplayName, memberContactId, displayName, fullName) =
-  let memberProfile = Profile {displayName, fullName}
+toGroupMember userContactId (groupMemberId, groupId, memberId, memberRole, memberCategory, memberStatus, invitedById, localDisplayName, memberContactId, displayName, fullName, image) =
+  let memberProfile = Profile {displayName, fullName, image}
       invitedBy = toInvitedBy userContactId invitedById
       activeConn = Nothing
    in GroupMember {..}
 
 toMaybeGroupMember :: Int64 -> MaybeGroupMemberRow -> Maybe GroupMember
-toMaybeGroupMember userContactId (Just groupMemberId, Just groupId, Just memberId, Just memberRole, Just memberCategory, Just memberStatus, invitedById, Just localDisplayName, memberContactId, Just displayName, Just fullName) =
-  Just $ toGroupMember userContactId (groupMemberId, groupId, memberId, memberRole, memberCategory, memberStatus, invitedById, localDisplayName, memberContactId, displayName, fullName)
+toMaybeGroupMember userContactId (Just groupMemberId, Just groupId, Just memberId, Just memberRole, Just memberCategory, Just memberStatus, invitedById, Just localDisplayName, memberContactId, Just displayName, Just fullName, image) =
+  Just $ toGroupMember userContactId (groupMemberId, groupId, memberId, memberRole, memberCategory, memberStatus, invitedById, localDisplayName, memberContactId, displayName, fullName, image)
 toMaybeGroupMember _ _ = Nothing
 
 createContactMember :: StoreMonad m => SQLiteStore -> TVar ChaChaDRG -> User -> Int64 -> Contact -> GroupMemberRole -> ConnId -> ConnReqInvitation -> m GroupMember
@@ -1371,14 +1375,14 @@ updateGroupMemberStatus st userId GroupMember {groupMemberId} memStatus =
 
 -- | add new member with profile
 createNewGroupMember :: StoreMonad m => SQLiteStore -> User -> GroupInfo -> MemberInfo -> GroupMemberCategory -> GroupMemberStatus -> m GroupMember
-createNewGroupMember st user@User {userId} gInfo memInfo@(MemberInfo _ _ Profile {displayName, fullName}) memCategory memStatus =
+createNewGroupMember st user@User {userId} gInfo memInfo@(MemberInfo _ _ Profile {displayName, fullName, image}) memCategory memStatus =
   liftIOEither . withTransaction st $ \db ->
     withLocalDisplayName db userId displayName $ \localDisplayName -> do
       currentTs <- getCurrentTime
       DB.execute
         db
-        "INSERT INTO contact_profiles (display_name, full_name, created_at, updated_at) VALUES (?,?,?,?)"
-        (displayName, fullName, currentTs, currentTs)
+        "INSERT INTO contact_profiles (display_name, full_name, image, created_at, updated_at) VALUES (?,?,?,?,?)"
+        (displayName, fullName, image, currentTs, currentTs)
       memProfileId <- insertedRowId db
       let newMember =
             NewGroupMember
@@ -1679,7 +1683,7 @@ getViaGroupContact st User {userId} GroupMember {groupMemberId} =
         db
         [sql|
           SELECT
-            ct.contact_id, ct.local_display_name, p.display_name, p.full_name, ct.via_group, ct.created_at,
+            ct.contact_id, ct.local_display_name, p.display_name, p.full_name, p.image, ct.via_group, ct.created_at,
             c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact,
             c.conn_status, c.conn_type, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at
           FROM contacts ct
@@ -1695,9 +1699,9 @@ getViaGroupContact st User {userId} GroupMember {groupMemberId} =
         |]
         (userId, groupMemberId)
   where
-    toContact' :: [(Int64, ContactName, Text, Text, Maybe Int64, UTCTime) :. ConnectionRow] -> Maybe Contact
-    toContact' [(contactId, localDisplayName, displayName, fullName, viaGroup, createdAt) :. connRow] =
-      let profile = Profile {displayName, fullName}
+    toContact' :: [(Int64, ContactName, Text, Text, Maybe Text, Maybe Int64, UTCTime) :. ConnectionRow] -> Maybe Contact
+    toContact' [(contactId, localDisplayName, displayName, fullName, image, viaGroup, createdAt) :. connRow] =
+      let profile = Profile {displayName, fullName, image}
           activeConn = toConnection connRow
        in Just Contact {contactId, localDisplayName, profile, activeConn, viaGroup, createdAt}
     toContact' _ = Nothing
@@ -2210,7 +2214,7 @@ getDirectChatPreviews_ db User {userId} = do
       [sql|
         SELECT
           -- Contact
-          ct.contact_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, ct.created_at,
+          ct.contact_id, ct.local_display_name, ct.image, ct.via_group, cp.display_name, cp.full_name, cp.image, ct.created_at,
           -- Connection
           c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.conn_status, c.conn_type,
           c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at,

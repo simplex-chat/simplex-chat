@@ -170,19 +170,21 @@ groupName' GroupInfo {localDisplayName = g} = g
 
 data Profile = Profile
   { displayName :: ContactName,
-    fullName :: Text
+    fullName :: Text,
+    image :: Maybe Text
   }
   deriving (Eq, Show, Generic, FromJSON)
 
-instance ToJSON Profile where toEncoding = J.genericToEncoding J.defaultOptions
+instance ToJSON Profile where toEncoding = J.genericToEncoding J.defaultOptions { J.omitNothingFields = True }
 
 data GroupProfile = GroupProfile
   { displayName :: GroupName,
-    fullName :: Text
+    fullName :: Text,
+    image :: Maybe Text
   }
   deriving (Eq, Show, Generic, FromJSON)
 
-instance ToJSON GroupProfile where toEncoding = J.genericToEncoding J.defaultOptions
+instance ToJSON GroupProfile where toEncoding = J.genericToEncoding J.defaultOptions { J.omitNothingFields = True }
 
 data GroupInvitation = GroupInvitation
   { fromMember :: MemberIdRole,

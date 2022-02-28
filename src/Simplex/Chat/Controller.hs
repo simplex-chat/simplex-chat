@@ -95,6 +95,7 @@ data ChatCommand
   | APIDeleteChat ChatType Int64
   | APIAcceptContact Int64
   | APIRejectContact Int64
+  -- | APIUpdateProfile Profile
   | ChatHelp HelpSection
   | Welcome
   | AddContact

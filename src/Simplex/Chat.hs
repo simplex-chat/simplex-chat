@@ -1356,7 +1356,8 @@ getCreateActiveUser st = do
         loop = do
           displayName <- getContactName
           fullName <- T.pack <$> getWithPrompt "full name (optional)"
-          liftIO (runExceptT $ createUser st Profile {displayName, fullName} True) >>= \case
+          let image = Nothing -- TODO allow image provision
+          liftIO (runExceptT $ createUser st Profile {displayName, fullName, image} True) >>= \case
             Left SEDuplicateName -> do
               putStrLn "chosen display name is already used by another profile on this device, choose another one"
               loop
@@ -1490,11 +1491,13 @@ chatCommandP =
     userProfile = do
       cName <- displayName
       fullName <- fullNameP cName
-      pure Profile {displayName = cName, fullName}
+      let image = Nothing
+      pure Profile {displayName = cName, fullName, image}
     groupProfile = do
       gName <- displayName
       fullName <- fullNameP gName
-      pure GroupProfile {displayName = gName, fullName}
+      let image = Nothing
+      pure GroupProfile {displayName = gName, fullName, image}
     fullNameP name = do
       n <- (A.space *> A.takeByteString) <|> pure ""
       pure $ if B.null n then name else safeDecodeUtf8 n
