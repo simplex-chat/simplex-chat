@@ -28,9 +28,9 @@ data ChatOpts = ChatOpts
 defaultSMPServers :: NonEmpty SMPServer
 defaultSMPServers =
   L.fromList
-    [ "smp://Ufcpyx7utrV45fUopHVvKh4NECi5Z3Fa1TyL4L7tGgc=@smp7.simplex.im",
-      "smp://0YuTwO05YJWS8rkjn9eLJDjQhFKvIYd8d4xG8X1blIU=@smp8.simplex.im",
-      "smp://SkIkI6EPd2D63F4xFKfHk7I1UGZVNn6k1QWZ5rcyr6w=@smp9.simplex.im"
+    [ "smp://0YuTwO05YJWS8rkjn9eLJDjQhFKvIYd8d4xG8X1blIU=@smp8.simplex.im",
+      "smp://SkIkI6EPd2D63F4xFKfHk7I1UGZVNn6k1QWZ5rcyr6w=@smp9.simplex.im",
+      "smp://6iIcWT_dF2zN_w5xzZEY7HI2Prbh3ldP07YTyDexPjE=@smp10.simplex.im"
     ]
 
 chatOpts :: FilePath -> Parser ChatOpts
