@@ -50,9 +50,7 @@ chatOpts appDir =
           <> short 's'
           <> metavar "SERVER"
           <> help
-            "Comma separated list of SMP server(s) to use, \
-            \if none specified default servers are used \
-            \(see simplexmq Readme for server address format)"
+            "Comma separated list of SMP server(s) to use"
           <> value defaultSMPServers
       )
     <*> switch
