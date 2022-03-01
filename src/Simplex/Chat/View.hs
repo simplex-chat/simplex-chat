@@ -327,7 +327,7 @@ viewSMPServers smpServers testView =
         "",
         "use " <> highlight' "/smp_servers <srv1[,srv2,...]>" <> " to switch to custom SMP servers",
         "use " <> highlight' "/smp_servers default" <> " to remove custom SMP servers and use default",
-        "Chat option " <> highlight' "-s" <> " (" <> highlight' "--server" <> ") has precedence over saved SMP servers for chat session"
+        "(chat option " <> highlight' "-s" <> " (" <> highlight' "--server" <> ") has precedence over saved SMP servers for chat session)"
       ]
   where
     customSMPServers =
