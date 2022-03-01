@@ -10,6 +10,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
+import chat.simplex.app.TAG
 import com.google.common.util.concurrent.ListenableFuture
 import com.google.mlkit.vision.barcode.BarcodeScannerOptions
 import com.google.mlkit.vision.barcode.BarcodeScanning
@@ -62,7 +63,7 @@ fun QRCodeScanner(onBarcode: (String) -> Unit) {
           cameraProvider.unbindAll()
           cameraProvider.bindToLifecycle(lifecycleOwner, cameraSelector, preview, imageAnalysis)
         } catch (e: Exception) {
-          Log.d("SIMPLEX", "CameraPreview: ${e.localizedMessage}")
+          Log.d(TAG, "CameraPreview: ${e.localizedMessage}")
         }
       }, ContextCompat.getMainExecutor(context))
     }
@@ -90,11 +91,11 @@ class BarCodeAnalyser(
             if (barcodes.isNotEmpty()) {
               onBarcodeDetected(barcodes)
             } else {
-              Log.d("SIMPLEX", "BarcodeAnalyser: No barcode Scanned")
+              Log.d(TAG, "BarcodeAnalyser: No barcode Scanned")
             }
           }
           .addOnFailureListener { exception ->
-            Log.d("SIMPLEX", "BarcodeAnalyser: Something went wrong $exception")
+            Log.e(TAG, "BarcodeAnalyser: Something went wrong $exception")
           }
           .addOnCompleteListener {
             image.close()

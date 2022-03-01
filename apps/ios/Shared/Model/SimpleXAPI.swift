@@ -241,10 +241,53 @@ enum TerminalItem: Identifiable {
     }
 }
 
-func chatSendCmdSync(_ cmd: ChatCommand) -> ChatResponse {
+private func _sendCmd(_ cmd: ChatCommand) -> ChatResponse {
     var c = cmd.cmdString.cString(using: .utf8)!
+    return chatResponse(chat_send_cmd(getChatCtrl(), &c))
+}
+
+private func beginBGTask(_ handler: (() -> Void)? = nil) -> (() -> Void) {
+    var id: UIBackgroundTaskIdentifier!
+    var running = true
+    let endTask = {
+//        logger.debug("beginBGTask: endTask \(id.rawValue)")
+        if running {
+            running = false
+            if let h = handler {
+//                logger.debug("beginBGTask: user handler")
+                h()
+            }
+            if id != .invalid {
+                UIApplication.shared.endBackgroundTask(id)
+                id = .invalid
+            }
+        }
+    }
+    id = UIApplication.shared.beginBackgroundTask(expirationHandler: endTask)
+//    logger.debug("beginBGTask: \(id.rawValue)")
+    return endTask
+}
+
+let msgDelay: Double = 7.5
+let maxTaskDuration: Double = 15
+
+private func withBGTask(bgDelay: Double? = nil, f: @escaping () -> ChatResponse) -> ChatResponse {
+    let endTask = beginBGTask()
+    DispatchQueue.global().asyncAfter(deadline: .now() + maxTaskDuration, execute: endTask)
+    let r = f()
+    if let d = bgDelay {
+        DispatchQueue.global().asyncAfter(deadline: .now() + d, execute: endTask)
+    } else {
+        endTask()
+    }
+    return r
+}
+
+func chatSendCmdSync(_ cmd: ChatCommand, bgTask: Bool = true, bgDelay: Double? = nil) -> ChatResponse {
     logger.debug("chatSendCmd \(cmd.cmdType)")
-    let resp = chatResponse(chat_send_cmd(getChatCtrl(), &c))
+    let resp = bgTask
+                ? withBGTask(bgDelay: bgDelay) { _sendCmd(cmd) }
+                : _sendCmd(cmd)
     logger.debug("chatSendCmd \(cmd.cmdType): \(resp.responseType)")
     if case let .response(_, json) = resp {
         logger.debug("chatSendCmd \(cmd.cmdType) response: \(json)")
@@ -256,16 +299,19 @@ func chatSendCmdSync(_ cmd: ChatCommand) -> ChatResponse {
     return resp
 }
 
-func chatSendCmd(_ cmd: ChatCommand) async -> ChatResponse {
+func chatSendCmd(_ cmd: ChatCommand, bgTask: Bool = true, bgDelay: Double? = nil) async -> ChatResponse {
     await withCheckedContinuation { cont in
-        cont.resume(returning: chatSendCmdSync(cmd))
+        cont.resume(returning: chatSendCmdSync(cmd, bgTask: bgTask, bgDelay: bgDelay))
     }
 }
 
 func chatRecvMsg() async -> ChatResponse {
     await withCheckedContinuation { cont in
-        let resp = chatResponse(chat_recv_msg(getChatCtrl())!)
-        cont.resume(returning: resp)
+        _ = withBGTask(bgDelay: msgDelay) {
+            let resp = chatResponse(chat_recv_msg(getChatCtrl())!)
+            cont.resume(returning: resp)
+            return resp
+        }
     }
 }
 
@@ -304,13 +350,30 @@ func apiGetChat(type: ChatType, id: Int64) async throws -> Chat {
 }
 
 func apiSendMessage(type: ChatType, id: Int64, msg: MsgContent) async throws -> ChatItem {
-    let r = await chatSendCmd(.apiSendMessage(type: type, id: id, msg: msg))
-    if case let .newChatItem(aChatItem) = r { return aChatItem.chatItem }
+    let chatModel = ChatModel.shared
+    let cmd = ChatCommand.apiSendMessage(type: type, id: id, msg: msg)
+    let r: ChatResponse
+    if type == .direct {
+        var cItem: ChatItem!
+        let endTask = beginBGTask({ if cItem != nil { chatModel.messageDelivery.removeValue(forKey: cItem.id) } })
+        r = await chatSendCmd(cmd, bgTask: false)
+        if case let .newChatItem(aChatItem) = r {
+            cItem = aChatItem.chatItem
+            chatModel.messageDelivery[cItem.id] = endTask
+            return cItem
+        }
+        endTask()
+    } else {
+        r = await chatSendCmd(cmd, bgDelay: msgDelay)
+        if case let .newChatItem(aChatItem) = r {
+            return aChatItem.chatItem
+        }
+    }
     throw r
 }
 
 func apiAddContact() throws -> String {
-    let r = chatSendCmdSync(.addContact)
+    let r = chatSendCmdSync(.addContact, bgTask: false)
     if case let .invitation(connReqInvitation) = r { return connReqInvitation }
     throw r
 }
@@ -325,7 +388,7 @@ func apiConnect(connReq: String) async throws {
 }
 
 func apiDeleteChat(type: ChatType, id: Int64) async throws {
-    let r = await chatSendCmd(.apiDeleteChat(type: type, id: id))
+    let r = await chatSendCmd(.apiDeleteChat(type: type, id: id), bgTask: false)
     if case .contactDeleted = r { return }
     throw r
 }
@@ -450,6 +513,8 @@ class ChatReceiver {
         self._lastMsgTime = .now
         processReceivedMsg(msg)
         if self.receiveMessages {
+            do { try await Task.sleep(nanoseconds: 7_500_000) }
+            catch { logger.error("receiveMsgLoop: Task.sleep error: \(error.localizedDescription)") }
             await receiveMsgLoop()
         }
     }
@@ -508,6 +573,13 @@ func processReceivedMsg(_ res: ChatResponse) {
             let cItem = aChatItem.chatItem
             if chatModel.upsertChatItem(cInfo, cItem) {
                 NtfManager.shared.notifyMessageReceived(cInfo, cItem)
+            } else if let endTask = chatModel.messageDelivery[cItem.id] {
+                switch cItem.meta.itemStatus {
+                case .sndSent: endTask()
+                case .sndErrorAuth: endTask()
+                case .sndError: endTask()
+                default: break
+                }
             }
         default:
             logger.debug("unsupported event: \(res.responseType)")

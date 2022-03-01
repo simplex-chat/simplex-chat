@@ -18,6 +18,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import chat.simplex.app.TAG
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.chat.item.ChatItemView
@@ -39,7 +40,7 @@ fun ChatView(chatModel: ChatModel) {
     BackHandler { chatModel.chatId.value = null }
     // TODO a more advanced version would mark as read only if in view
     LaunchedEffect(chat.chatItems) {
-      Log.d("SIMPLEX", "ChatView ${chatModel.chatId.value}: LaunchedEffect")
+      Log.d(TAG, "ChatView ${chatModel.chatId.value}: LaunchedEffect")
       delay(1000L)
       if (chat.chatItems.count() > 0) {
         chatModel.markChatItemsRead(chat.chatInfo)
@@ -79,18 +80,16 @@ fun ChatLayout(
   info: () -> Unit,
   sendMessage: (String) -> Unit
 ) {
-  ProvideWindowInsets(windowInsetsAnimationsEnabled = true) {
-    Scaffold(
-      topBar = { ChatInfoToolbar(chat, back, info) },
-      bottomBar = { SendMsgView(sendMessage) },
-      modifier = Modifier.navigationBarsWithImePadding()
-    ) { contentPadding ->
-      Surface(
-        modifier = Modifier
-          .fillMaxWidth()
-          .background(MaterialTheme.colors.background)
-      ) {
-        ChatItemsList(chatItems)
+  Surface(Modifier.fillMaxWidth().background(MaterialTheme.colors.background)) {
+    ProvideWindowInsets(windowInsetsAnimationsEnabled = true) {
+      Scaffold(
+        topBar = { ChatInfoToolbar(chat, back, info) },
+        bottomBar = { SendMsgView(sendMessage) },
+        modifier = Modifier.navigationBarsWithImePadding()
+      ) { contentPadding ->
+        Box(Modifier.padding(contentPadding)) {
+          ChatItemsList(chatItems)
+        }
       }
     }
   }

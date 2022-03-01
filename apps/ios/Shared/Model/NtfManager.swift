@@ -178,6 +178,7 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
         if let s = body { content.body = s }
         content.targetContentIdentifier = targetContentIdentifier
         content.userInfo = userInfo
+        // TODO move logic of adding sound here, so it applies to background notifications too
         content.sound = .default
 //        content.interruptionLevel = .active
 //        content.relevanceScore = 0.5 // 0-1

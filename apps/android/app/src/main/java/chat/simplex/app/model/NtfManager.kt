@@ -6,8 +6,7 @@ import android.content.Intent
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
-import chat.simplex.app.MainActivity
-import chat.simplex.app.R
+import chat.simplex.app.*
 import kotlinx.datetime.Clock
 
 class NtfManager(val context: Context) {
@@ -30,7 +29,7 @@ class NtfManager(val context: Context) {
   }
 
   fun notifyMessageReceived(cInfo: ChatInfo, cItem: ChatItem) {
-    Log.d("SIMPLEX", "notifyMessageReceived ${cInfo.id}")
+    Log.d(TAG, "notifyMessageReceived ${cInfo.id}")
     val now = Clock.System.now().toEpochMilliseconds()
     val recentNotification = (now - prevNtfTime.getOrDefault(cInfo.id, 0) < msgNtfTimeoutMs)
     prevNtfTime[cInfo.id] = now
@@ -64,7 +63,7 @@ class NtfManager(val context: Context) {
   }
 
   private fun getMsgPendingIntent(cInfo: ChatInfo) : PendingIntent{
-    Log.d("SIMPLEX", "getMsgPendingIntent ${cInfo.id}")
+    Log.d(TAG, "getMsgPendingIntent ${cInfo.id}")
     val uniqueInt = (System.currentTimeMillis() and 0xfffffff).toInt()
     val intent = Intent(context, MainActivity::class.java)
       .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP)

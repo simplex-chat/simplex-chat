@@ -34,21 +34,15 @@ struct WelcomeView: View {
                     .padding(.bottom)
                 ZStack(alignment: .topLeading) {
                     if !validDisplayName(displayName) {
-                        Button {
-                            AlertManager.shared.showAlertMsg(
-                                title: "Display name",
-                                message: "Display name can't contain spaces"
-                            )
-                        } label: {
-                            Image(systemName: "exclamationmark.circle")
-                                .foregroundColor(.red)
-                                .padding(.top, 4)
-                        }
+                        Image(systemName: "exclamationmark.circle")
+                            .foregroundColor(.red)
+                            .padding(.top, 4)
                     }
                     TextField("Display name", text: $displayName)
                         .textInputAutocapitalization(.never)
                         .disableAutocorrection(true)
                         .padding(.leading, 28)
+                        .padding(.bottom, 2)
                 }
                 .padding(.bottom)
                 TextField("Full name (optional)", text: $fullName)
@@ -68,7 +62,7 @@ struct WelcomeView: View {
                         fatalError("Failed to create user: \(error)")
                     }
                 }
-                .disabled(!validDisplayName(displayName))
+                .disabled(!validDisplayName(displayName) || displayName == "")
             }
         }
         .padding()
