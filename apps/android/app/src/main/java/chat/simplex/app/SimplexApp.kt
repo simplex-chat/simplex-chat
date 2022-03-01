@@ -7,12 +7,10 @@ import androidx.lifecycle.*
 import androidx.work.*
 import chat.simplex.app.model.*
 import chat.simplex.app.views.helpers.withApi
-import kotlinx.datetime.Clock
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.util.*
 import java.util.concurrent.Semaphore
-import java.util.concurrent.TimeUnit
 import kotlin.concurrent.thread
 
 const val TAG = "SIMPLEX"
@@ -28,14 +26,15 @@ external fun chatInit(path: String): ChatCtrl
 external fun chatSendCmd(ctrl: ChatCtrl, msg: String) : String
 external fun chatRecvMsg(ctrl: ChatCtrl) : String
 
-class SimplexApp: Application(), LifecycleEventObserver {
+//class SimplexApp: Application(), LifecycleEventObserver {
+class SimplexApp: Application() {
   private lateinit var controller: ChatController
   lateinit var chatModel: ChatModel
   private lateinit var ntfManager: NtfManager
 
   override fun onCreate() {
     super.onCreate()
-    ProcessLifecycleOwner.get().lifecycle.addObserver(this)
+//    ProcessLifecycleOwner.get().lifecycle.addObserver(this)
     ntfManager = NtfManager(applicationContext)
     val ctrl = chatInit(applicationContext.filesDir.toString())
     controller = ChatController(ctrl, ntfManager, applicationContext)
@@ -46,13 +45,13 @@ class SimplexApp: Application(), LifecycleEventObserver {
     }
   }
 
-  override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
-    Log.d(TAG, "onStateChanged: $event")
-    if (event == Lifecycle.Event.ON_STOP) {
-      Log.e(TAG, "BGManager schedule ${Clock.System.now()}")
-      BGManager.schedule(applicationContext)
-    }
-  }
+//  override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
+//    Log.d(TAG, "onStateChanged: $event")
+//    if (event == Lifecycle.Event.ON_STOP) {
+//      Log.e(TAG, "BGManager schedule ${Clock.System.now()}")
+//      BGManager.schedule(applicationContext)
+//    }
+//  }
 
   companion object {
     init {
