@@ -1,12 +1,12 @@
 {-# LANGUAGE QuasiQuotes #-}
 
-module Simplex.Chat.Migrations.M20220301_servers where
+module Simplex.Chat.Migrations.M20220301_smp_servers where
 
 import Database.SQLite.Simple (Query)
 import Database.SQLite.Simple.QQ (sql)
 
-m20220301_servers :: Query
-m20220301_servers =
+m20220301_smp_servers :: Query
+m20220301_smp_servers =
   [sql|
 CREATE TABLE smp_servers (
   smp_server_id INTEGER PRIMARY KEY,

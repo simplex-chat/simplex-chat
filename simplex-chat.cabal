@@ -29,7 +29,7 @@ library
       Simplex.Chat.Migrations.M20220205_chat_item_status
       Simplex.Chat.Migrations.M20220210_deduplicate_contact_requests
       Simplex.Chat.Migrations.M20220224_messages_fks
-      Simplex.Chat.Migrations.M20220301_servers
+      Simplex.Chat.Migrations.M20220301_smp_servers
       Simplex.Chat.Mobile
       Simplex.Chat.Options
       Simplex.Chat.Protocol
