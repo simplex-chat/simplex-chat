@@ -458,16 +458,16 @@ updateContact_ db userId contactId displayName newName updatedAt = do
     (newName, updatedAt, userId, contactId)
   DB.execute db "DELETE FROM display_names WHERE local_display_name = ? AND user_id = ?" (displayName, userId)
 
-type ContactRow = (Int64, ContactName, Maybe Text, Maybe Int64, ContactName, Text, UTCTime)
+type ContactRow = (Int64, ContactName, Maybe Int64, ContactName, Text, Maybe Text, UTCTime)
 
 toContact :: ContactRow :. ConnectionRow -> Contact
-toContact ((contactId, localDisplayName, image, viaGroup, displayName, fullName, createdAt) :. connRow) =
+toContact ((contactId, localDisplayName, viaGroup, displayName, fullName, image, createdAt) :. connRow) =
   let profile = Profile {displayName, fullName, image}
       activeConn = toConnection connRow
    in Contact {contactId, localDisplayName, profile, activeConn, viaGroup, createdAt}
 
 toContactOrError :: ContactRow :. MaybeConnectionRow -> Either StoreError Contact
-toContactOrError ((contactId, localDisplayName, image, viaGroup, displayName, fullName, createdAt) :. connRow) =
+toContactOrError ((contactId, localDisplayName, viaGroup, displayName, fullName, image, createdAt) :. connRow) =
   let profile = Profile {displayName, fullName, image}
    in case toMaybeConnection connRow of
         Just activeConn ->
@@ -646,7 +646,7 @@ createOrUpdateContactRequest_ db userId userContactLinkId invId Profile {display
           [sql|
             SELECT
               -- Contact
-              ct.contact_id, ct.local_display_name, ct.image, ct.via_group, cp.display_name, cp.full_name, cp.image, ct.created_at,
+              ct.contact_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, ct.created_at,
               -- Connection
               c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.conn_status, c.conn_type,
               c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at
@@ -2214,7 +2214,7 @@ getDirectChatPreviews_ db User {userId} = do
       [sql|
         SELECT
           -- Contact
-          ct.contact_id, ct.local_display_name, ct.image, ct.via_group, cp.display_name, cp.full_name, cp.image, ct.created_at,
+          ct.contact_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, ct.created_at,
           -- Connection
           c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.conn_status, c.conn_type,
           c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at,
