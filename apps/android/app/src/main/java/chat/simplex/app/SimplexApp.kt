@@ -1,13 +1,13 @@
 package chat.simplex.app
 
 import android.app.Application
-import android.content.Context
 import android.net.*
 import android.util.Log
 import androidx.lifecycle.*
 import androidx.work.*
 import chat.simplex.app.model.*
 import chat.simplex.app.views.helpers.withApi
+import kotlinx.datetime.Clock
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.util.*
@@ -33,22 +33,9 @@ class SimplexApp: Application(), LifecycleEventObserver {
   lateinit var chatModel: ChatModel
   private lateinit var ntfManager: NtfManager
 
-  fun initiateBackgroundWork() {
-    val backgroundConstraints = Constraints.Builder()
-      .setRequiredNetworkType(NetworkType.CONNECTED)
-      .build()
-    val request = OneTimeWorkRequestBuilder<BackgroundAPIWorker>()
-      .setInitialDelay(5, TimeUnit.MINUTES)
-      .setConstraints(backgroundConstraints)
-      .build()
-    WorkManager.getInstance(applicationContext)
-      .enqueue(request)
-  }
-
   override fun onCreate() {
     super.onCreate()
     ProcessLifecycleOwner.get().lifecycle.addObserver(this)
-    registerNetworkCallback()
     ntfManager = NtfManager(applicationContext)
     val ctrl = chatInit(applicationContext.filesDir.toString())
     controller = ChatController(ctrl, ntfManager, applicationContext)
@@ -61,27 +48,10 @@ class SimplexApp: Application(), LifecycleEventObserver {
 
   override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
     Log.d(TAG, "onStateChanged: $event")
-  }
-
-  private fun registerNetworkCallback() {
-    val connectivityManager = getSystemService(ConnectivityManager::class.java)
-    connectivityManager.registerDefaultNetworkCallback(object : ConnectivityManager.NetworkCallback() {
-      override fun onAvailable(network: Network) {
-        Log.e(TAG, "The default network is now: " + network)
-      }
-
-      override fun onLost(network: Network) {
-        Log.e(TAG, "The application no longer has a default network. The last default network was " + network)
-      }
-
-      override fun onCapabilitiesChanged(network: Network, networkCapabilities: NetworkCapabilities) {
-        Log.e(TAG, "The default network changed capabilities: " + networkCapabilities)
-      }
-
-      override fun onLinkPropertiesChanged(network: Network, linkProperties: LinkProperties) {
-        Log.e(TAG, "The default network changed link properties: " + linkProperties)
-      }
-    })
+    if (event == Lifecycle.Event.ON_STOP) {
+      Log.e(TAG, "BGManager schedule ${Clock.System.now()}")
+      BGManager.schedule(applicationContext)
+    }
   }
 
   companion object {
