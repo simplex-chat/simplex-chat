@@ -121,6 +121,8 @@ module Simplex.Chat.Store
     updateDirectChatItem,
     updateDirectChatItemsRead,
     updateGroupChatItemsRead,
+    getSMPServers,
+    overwriteSMPServers,
   )
 where
 
@@ -158,10 +160,11 @@ import Simplex.Chat.Migrations.M20220122_v1_1
 import Simplex.Chat.Migrations.M20220205_chat_item_status
 import Simplex.Chat.Migrations.M20220210_deduplicate_contact_requests
 import Simplex.Chat.Migrations.M20220224_messages_fks
+import Simplex.Chat.Migrations.M20220301_smp_servers
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Chat.Util (eitherToMaybe)
-import Simplex.Messaging.Agent.Protocol (AgentMsgId, ConnId, InvitationId, MsgMeta (..))
+import Simplex.Messaging.Agent.Protocol (AgentMsgId, ConnId, InvitationId, MsgMeta (..), SMPServer (..))
 import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore (..), createSQLiteStore, firstRow, withTransaction)
 import Simplex.Messaging.Agent.Store.SQLite.Migrations (Migration (..))
 import qualified Simplex.Messaging.Crypto as C
@@ -176,7 +179,8 @@ schemaMigrations =
     ("20220122_v1_1", m20220122_v1_1),
     ("20220205_chat_item_status", m20220205_chat_item_status),
     ("20220210_deduplicate_contact_requests", m20220210_deduplicate_contact_requests),
-    ("20220224_messages_fks", m20220224_messages_fks)
+    ("20220224_messages_fks", m20220224_messages_fks),
+    ("20220301_smp_servers", m20220301_smp_servers)
   ]
 
 -- | The list of migrations in ascending order by date
@@ -2747,6 +2751,37 @@ toGroupChatItemList :: TimeZone -> Int64 -> MaybeGroupChatItemRow -> [CChatItem 
 toGroupChatItemList tz userContactId ((Just itemId, Just itemTs, Just itemContent, Just itemText, Just itemStatus, Just createdAt) :. memberRow_) =
   either (const []) (: []) $ toGroupChatItem tz userContactId ((itemId, itemTs, itemContent, itemText, itemStatus, createdAt) :. memberRow_)
 toGroupChatItemList _ _ _ = []
+
+getSMPServers :: MonadUnliftIO m => SQLiteStore -> User -> m [SMPServer]
+getSMPServers st User {userId} =
+  liftIO . withTransaction st $ \db ->
+    map toSmpServer
+      <$> DB.query
+        db
+        [sql|
+          SELECT host, port, key_hash
+          FROM smp_servers
+          WHERE user_id = ?;
+        |]
+        (Only userId)
+  where
+    toSmpServer :: (String, String, C.KeyHash) -> SMPServer
+    toSmpServer (host, port, keyHash) = SMPServer host port keyHash
+
+overwriteSMPServers :: MonadUnliftIO m => SQLiteStore -> User -> [SMPServer] -> m ()
+overwriteSMPServers st User {userId} smpServers = do
+  currentTs <- liftIO getCurrentTime
+  liftIO . withTransaction st $ \db -> do
+    DB.execute db "DELETE FROM smp_servers WHERE user_id = ?" (Only userId)
+    forM_ smpServers $ \SMPServer {host, port, keyHash} ->
+      DB.execute
+        db
+        [sql|
+          INSERT INTO smp_servers
+            (host, port, key_hash, user_id, created_at, updated_at)
+          VALUES (?,?,?,?,?,?)
+        |]
+        (host, port, keyHash, userId, currentTs, currentTs)
 
 -- | Saves unique local display name based on passed displayName, suffixed with _N if required.
 -- This function should be called inside transaction.

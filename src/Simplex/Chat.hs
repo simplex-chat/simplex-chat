@@ -28,9 +28,11 @@ import Data.Char (isSpace)
 import Data.Functor (($>))
 import Data.Int (Int64)
 import Data.List (find)
+import Data.List.NonEmpty (NonEmpty, nonEmpty)
+import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
-import Data.Maybe (isJust, mapMaybe)
+import Data.Maybe (fromMaybe, isJust, mapMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (UTCTime, getCurrentTime)
@@ -39,7 +41,7 @@ import Data.Word (Word32)
 import Simplex.Chat.Controller
 import Simplex.Chat.Markdown
 import Simplex.Chat.Messages
-import Simplex.Chat.Options (ChatOpts (..))
+import Simplex.Chat.Options (ChatOpts (..), smpServersP)
 import Simplex.Chat.Protocol
 import Simplex.Chat.Store
 import Simplex.Chat.Types
@@ -71,8 +73,8 @@ defaultChatConfig =
     { agentConfig =
         defaultAgentConfig
           { tcpPort = undefined, -- agent does not listen to TCP
-            smpServers = undefined, -- filled in from options
-            dbFile = undefined, -- filled in from options
+            initialSMPServers = undefined, -- filled in newChatController
+            dbFile = undefined, -- filled in newChatController
             dbPoolSize = 1,
             yesToMigrations = False
           },
@@ -85,6 +87,14 @@ defaultChatConfig =
       testView = False
     }
 
+defaultSMPServers :: NonEmpty SMPServer
+defaultSMPServers =
+  L.fromList
+    [ "smp://0YuTwO05YJWS8rkjn9eLJDjQhFKvIYd8d4xG8X1blIU=@smp8.simplex.im",
+      "smp://SkIkI6EPd2D63F4xFKfHk7I1UGZVNn6k1QWZ5rcyr6w=@smp9.simplex.im",
+      "smp://6iIcWT_dF2zN_w5xzZEY7HI2Prbh3ldP07YTyDexPjE=@smp10.simplex.im"
+    ]
+
 logCfg :: LogConfig
 logCfg = LogConfig {lc_file = Nothing, lc_stderr = True}
 
@@ -95,7 +105,8 @@ newChatController chatStore user cfg@ChatConfig {agentConfig = aCfg, tbqSize} Ch
   activeTo <- newTVarIO ActiveNone
   firstTime <- not <$> doesFileExist f
   currentUser <- newTVarIO user
-  smpAgent <- getSMPAgentClient aCfg {dbFile = dbFilePrefix <> "_agent.db", smpServers}
+  initialSMPServers <- resolveServers
+  smpAgent <- getSMPAgentClient aCfg {dbFile = dbFilePrefix <> "_agent.db", initialSMPServers}
   agentAsync <- newTVarIO Nothing
   idsDrg <- newTVarIO =<< drgNew
   inputQ <- newTBQueueIO tbqSize
@@ -105,6 +116,13 @@ newChatController chatStore user cfg@ChatConfig {agentConfig = aCfg, tbqSize} Ch
   sndFiles <- newTVarIO M.empty
   rcvFiles <- newTVarIO M.empty
   pure ChatController {activeTo, firstTime, currentUser, smpAgent, agentAsync, chatStore, idsDrg, inputQ, outputQ, notifyQ, chatLock, sndFiles, rcvFiles, config, sendNotification}
+  where
+    resolveServers :: IO (NonEmpty SMPServer)
+    resolveServers = case user of
+      Nothing -> pure $ if null smpServers then defaultSMPServers else L.fromList smpServers
+      Just usr -> do
+        userSmpServers <- getSMPServers chatStore usr
+        pure . fromMaybe defaultSMPServers . nonEmpty $ if null smpServers then userSmpServers else smpServers
 
 runChatController :: (MonadUnliftIO m, MonadReader ChatController m) => User -> m ()
 runChatController = race_ notificationSubscriber . agentSubscriber
@@ -196,6 +214,11 @@ processChatCommand = \case
           `E.finally` deleteContactRequest st userId connReqId
     withAgent $ \a -> rejectContact a connId invId
     pure $ CRContactRequestRejected cReq
+  GetUserSMPServers -> CRUserSMPServers <$> withUser (\user -> withStore (`getSMPServers` user))
+  SetUserSMPServers smpServers -> withUser $ \user -> withChatLock $ do
+    withStore $ \st -> overwriteSMPServers st user smpServers
+    withAgent $ \a -> setSMPServers a (fromMaybe defaultSMPServers (nonEmpty smpServers))
+    pure CRCmdOk
   ChatHelp section -> pure $ CRChatHelp section
   Welcome -> withUser $ pure . CRWelcome
   AddContact -> withUser $ \User {userId} -> withChatLock . procCmd $ do
@@ -1441,6 +1464,9 @@ chatCommandP =
     <|> "/_delete " *> (APIDeleteChat <$> chatTypeP <*> A.decimal)
     <|> "/_accept " *> (APIAcceptContact <$> A.decimal)
     <|> "/_reject " *> (APIRejectContact <$> A.decimal)
+    <|> "/smp_servers default" $> SetUserSMPServers []
+    <|> "/smp_servers " *> (SetUserSMPServers <$> smpServersP)
+    <|> "/smp_servers" $> GetUserSMPServers
     <|> ("/help files" <|> "/help file" <|> "/hf") $> ChatHelp HSFiles
     <|> ("/help groups" <|> "/help group" <|> "/hg") $> ChatHelp HSGroups
     <|> ("/help address" <|> "/ha") $> ChatHelp HSMyAddress

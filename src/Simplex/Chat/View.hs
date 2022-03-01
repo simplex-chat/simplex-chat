@@ -8,9 +8,10 @@
 module Simplex.Chat.View where
 
 import qualified Data.Aeson as J
+import qualified Data.ByteString.Char8 as B
 import Data.Function (on)
 import Data.Int (Int64)
-import Data.List (groupBy, intersperse, partition, sortOn)
+import Data.List (groupBy, intercalate, intersperse, partition, sortOn)
 import Data.Maybe (isJust)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -42,6 +43,7 @@ responseToView testView = \case
   CRChatRunning -> []
   CRApiChats chats -> if testView then testViewChats chats else [plain . bshow $ J.encode chats]
   CRApiChat chat -> if testView then testViewChat chat else [plain . bshow $ J.encode chat]
+  CRUserSMPServers smpServers -> viewSMPServers smpServers testView
   CRNewChatItem (AChatItem _ _ chat item) -> viewChatItem chat item
   CRChatItemUpdated _ -> []
   CRMsgIntegrityError mErr -> viewMsgIntegrityError mErr
@@ -315,6 +317,23 @@ viewUserProfile Profile {displayName, fullName} =
     "use " <> highlight' "/p <display name> [<full name>]" <> " to change it",
     "(the updated profile will be sent to all your contacts)"
   ]
+
+viewSMPServers :: [SMPServer] -> Bool -> [StyledString]
+viewSMPServers smpServers testView =
+  if testView
+    then [customSMPServers]
+    else
+      [ customSMPServers,
+        "",
+        "use " <> highlight' "/smp_servers <srv1[,srv2,...]>" <> " to switch to custom SMP servers",
+        "use " <> highlight' "/smp_servers default" <> " to remove custom SMP servers and use default",
+        "(chat option " <> highlight' "-s" <> " (" <> highlight' "--server" <> ") has precedence over saved SMP servers for chat session)"
+      ]
+  where
+    customSMPServers =
+      if null smpServers
+        then "no custom SMP servers saved"
+        else plain $ intercalate ", " (map (B.unpack . strEncode) smpServers)
 
 viewUserProfileUpdated :: Profile -> Profile -> [StyledString]
 viewUserProfileUpdated Profile {displayName = n, fullName} Profile {displayName = n', fullName = fullName'}
