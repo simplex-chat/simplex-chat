@@ -43,7 +43,7 @@ responseToView testView = \case
   CRChatRunning -> []
   CRApiChats chats -> if testView then testViewChats chats else [plain . bshow $ J.encode chats]
   CRApiChat chat -> if testView then testViewChat chat else [plain . bshow $ J.encode chat]
-  CRSmpServers smpServers -> if null smpServers then ["No custom SMP servers saved"] else [plain $ intercalate ", " (map (B.unpack . strEncode) smpServers)]
+  CRUserSMPServers smpServers -> if null smpServers then ["No custom SMP servers saved"] else [plain $ intercalate ", " (map (B.unpack . strEncode) smpServers)]
   CRNewChatItem (AChatItem _ _ chat item) -> viewChatItem chat item
   CRChatItemUpdated _ -> []
   CRMsgIntegrityError mErr -> viewMsgIntegrityError mErr

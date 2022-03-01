@@ -214,8 +214,8 @@ processChatCommand = \case
           `E.finally` deleteContactRequest st userId connReqId
     withAgent $ \a -> rejectContact a connId invId
     pure $ CRContactRequestRejected cReq
-  GetSMPServers -> CRSmpServers <$> withUser (\user -> withStore (`getSMPServers` user))
-  SetSMPServers smpServers -> withUser $ \user -> withChatLock $ do
+  GetUserSMPServers -> CRUserSMPServers <$> withUser (\user -> withStore (`getSMPServers` user))
+  SetUserSMPServers smpServers -> withUser $ \user -> withChatLock $ do
     withStore $ \st -> overwriteSMPServers st user smpServers
     withAgent $ \a -> setSMPServers a (fromMaybe defaultSMPServers (nonEmpty smpServers))
     pure CRCmdOk
@@ -1464,9 +1464,9 @@ chatCommandP =
     <|> "/_delete " *> (APIDeleteChat <$> chatTypeP <*> A.decimal)
     <|> "/_accept " *> (APIAcceptContact <$> A.decimal)
     <|> "/_reject " *> (APIRejectContact <$> A.decimal)
-    <|> "/smp_servers default" $> SetSMPServers []
-    <|> "/smp_servers " *> (SetSMPServers <$> smpServersP)
-    <|> "/smp_servers" $> GetSMPServers
+    <|> "/smp_servers default" $> SetUserSMPServers []
+    <|> "/smp_servers " *> (SetUserSMPServers <$> smpServersP)
+    <|> "/smp_servers" $> GetUserSMPServers
     <|> ("/help files" <|> "/help file" <|> "/hf") $> ChatHelp HSFiles
     <|> ("/help groups" <|> "/help group" <|> "/hg") $> ChatHelp HSGroups
     <|> ("/help address" <|> "/ha") $> ChatHelp HSMyAddress
