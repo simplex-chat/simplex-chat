@@ -221,8 +221,8 @@ createUser st Profile {displayName, fullName, image} activeUser =
       (displayName, displayName, userId, currentTs, currentTs)
     DB.execute
       db
-      "INSERT INTO contact_profiles (display_name, full_name, created_at, updated_at) VALUES (?,?,?,?)"
-      (displayName, fullName, currentTs, currentTs)
+      "INSERT INTO contact_profiles (display_name, full_name, image, created_at, updated_at) VALUES (?,?,?,?,?)"
+      (displayName, fullName, image, currentTs, currentTs)
     profileId <- insertedRowId db
     DB.execute
       db
@@ -239,7 +239,7 @@ getUsers st =
       <$> DB.query_
         db
         [sql|
-          SELECT u.user_id, u.contact_id, u.active_user, u.local_display_name, p.full_name
+          SELECT u.user_id, u.contact_id, u.active_user, u.local_display_name, p.full_name, p.image
           FROM users u
           JOIN contacts c ON u.contact_id = c.contact_id
           JOIN contact_profiles p ON c.contact_profile_id = p.contact_profile_id
@@ -285,7 +285,7 @@ getConnReqContactXContactId st userId cReqHash = do
           [sql|
             SELECT
               -- Contact
-              ct.contact_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, ct.created_at,
+              ct.contact_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, ct.created_at,
               -- Connection
               c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.conn_status, c.conn_type,
               c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at
@@ -646,7 +646,7 @@ createOrUpdateContactRequest_ db userId userContactLinkId invId Profile {display
           [sql|
             SELECT
               -- Contact
-              ct.contact_id, ct.local_display_name, ct.image, ct.via_group, cp.display_name, cp.full_name, ct.created_at,
+              ct.contact_id, ct.local_display_name, ct.image, ct.via_group, cp.display_name, cp.full_name, cp.image, ct.created_at,
               -- Connection
               c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.conn_status, c.conn_type,
               c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at
@@ -666,7 +666,7 @@ createOrUpdateContactRequest_ db userId userContactLinkId invId Profile {display
           [sql|
             SELECT
               cr.contact_request_id, cr.local_display_name, cr.agent_invitation_id, cr.user_contact_link_id,
-              c.agent_conn_id, cr.contact_profile_id, p.display_name, p.full_name, cr.created_at, cr.xcontact_id
+              c.agent_conn_id, cr.contact_profile_id, p.display_name, p.full_name, p.image, cr.created_at, cr.xcontact_id
             FROM contact_requests cr
             JOIN connections c USING (user_contact_link_id)
             JOIN contact_profiles p USING (contact_profile_id)
@@ -725,7 +725,7 @@ getContactRequest_ db userId contactRequestId =
       [sql|
         SELECT
           cr.contact_request_id, cr.local_display_name, cr.agent_invitation_id, cr.user_contact_link_id,
-          c.agent_conn_id, cr.contact_profile_id, p.display_name, p.full_name, cr.created_at, cr.xcontact_id
+          c.agent_conn_id, cr.contact_profile_id, p.display_name, p.full_name, p.image, cr.created_at, cr.xcontact_id
         FROM contact_requests cr
         JOIN connections c USING (user_contact_link_id)
         JOIN contact_profiles p USING (contact_profile_id)
@@ -1080,15 +1080,15 @@ getConnectionEntity st User {userId, userContactId} agentConnId =
           [sql|
             SELECT
               -- GroupInfo
-              g.group_id, g.local_display_name, gp.display_name, gp.full_name, g.created_at,
+              g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.image, g.created_at,
               -- GroupInfo {membership}
               mu.group_member_id, mu.group_id, mu.member_id, mu.member_role, mu.member_category,
               mu.member_status, mu.invited_by, mu.local_display_name, mu.contact_id,
               -- GroupInfo {membership = GroupMember {memberProfile}}
-              pu.display_name, pu.full_name,
+              pu.display_name, pu.full_name, pu.image,
               -- from GroupMember
               m.group_member_id, m.group_id, m.member_id, m.member_role, m.member_category, m.member_status,
-              m.invited_by, m.local_display_name, m.contact_id, p.display_name, p.full_name
+              m.invited_by, m.local_display_name, m.contact_id, p.display_name, p.full_name, p.image
             FROM group_members m
             JOIN contact_profiles p ON p.contact_profile_id = m.contact_profile_id
             JOIN groups g ON g.group_id = m.group_id
@@ -1244,9 +1244,9 @@ getUserGroupDetails st User {userId, userContactId} =
       <$> DB.query
         db
         [sql|
-          SELECT g.group_id, g.local_display_name, gp.display_name, gp.full_name, g.created_at,
+          SELECT g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.image, g.created_at,
             m.group_member_id, g.group_id, m.member_id, m.member_role, m.member_category, m.member_status,
-            m.invited_by, m.local_display_name, m.contact_id, mp.display_name, mp.full_name
+            m.invited_by, m.local_display_name, m.contact_id, mp.display_name, mp.full_name, mp.image
           FROM groups g
           JOIN group_profiles gp USING (group_profile_id)
           JOIN group_members m USING (group_id)
@@ -1279,7 +1279,7 @@ getGroupMembers_ db User {userId, userContactId} GroupInfo {groupId} = do
       [sql|
         SELECT
           m.group_member_id, m.group_id, m.member_id, m.member_role, m.member_category, m.member_status,
-          m.invited_by, m.local_display_name, m.contact_id, p.display_name, p.full_name,
+          m.invited_by, m.local_display_name, m.contact_id, p.display_name, p.full_name, p.image
           c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact,
           c.conn_status, c.conn_type, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at
         FROM group_members m
@@ -1641,15 +1641,15 @@ getViaGroupMember st User {userId, userContactId} Contact {contactId} =
         [sql|
           SELECT
             -- GroupInfo
-            g.group_id, g.local_display_name, gp.display_name, gp.full_name, g.created_at,
+            g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.image, g.created_at,
             -- GroupInfo {membership}
             mu.group_member_id, mu.group_id, mu.member_id, mu.member_role, mu.member_category,
             mu.member_status, mu.invited_by, mu.local_display_name, mu.contact_id,
             -- GroupInfo {membership = GroupMember {memberProfile}}
-            pu.display_name, pu.full_name,
+            pu.display_name, pu.full_name, pu.image,
             -- via GroupMember
             m.group_member_id, m.group_id, m.member_id, m.member_role, m.member_category, m.member_status,
-            m.invited_by, m.local_display_name, m.contact_id, p.display_name, p.full_name,
+            m.invited_by, m.local_display_name, m.contact_id, p.display_name, p.full_name, p.image,
             c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact,
             c.conn_status, c.conn_type, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at
           FROM group_members m
@@ -2271,11 +2271,11 @@ getGroupChatPreviews_ db User {userId, userContactId} = do
       [sql|
         SELECT
           -- GroupInfo
-          g.group_id, g.local_display_name, gp.display_name, gp.full_name, g.created_at,
+          g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.image, g.created_at,
           -- GroupMember - membership
           mu.group_member_id, mu.group_id, mu.member_id, mu.member_role, mu.member_category,
           mu.member_status, mu.invited_by, mu.local_display_name, mu.contact_id,
-          pu.display_name, pu.full_name,
+          pu.display_name, pu.full_name, pu.image,
           -- ChatStats
           COALESCE(ChatStats.UnreadCount, 0), COALESCE(ChatStats.MinUnread, 0),
           -- ChatItem
@@ -2283,7 +2283,7 @@ getGroupChatPreviews_ db User {userId, userContactId} = do
           -- Maybe GroupMember - sender
           m.group_member_id, m.group_id, m.member_id, m.member_role, m.member_category,
           m.member_status, m.invited_by, m.local_display_name, m.contact_id,
-          p.display_name, p.full_name
+          p.display_name, p.full_name, p.image
         FROM groups g
         JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id
         JOIN group_members mu ON mu.group_id = g.group_id
@@ -2324,7 +2324,7 @@ getContactRequestChatPreviews_ db User {userId} =
       [sql|
         SELECT
           cr.contact_request_id, cr.local_display_name, cr.agent_invitation_id, cr.user_contact_link_id,
-          c.agent_conn_id, cr.contact_profile_id, p.display_name, p.full_name, cr.created_at, cr.xcontact_id
+          c.agent_conn_id, cr.contact_profile_id, p.display_name, p.full_name, p.image, cr.created_at, cr.xcontact_id
         FROM contact_requests cr
         JOIN connections c USING (user_contact_link_id)
         JOIN contact_profiles p USING (contact_profile_id)
@@ -2459,7 +2459,7 @@ getContact_ db userId contactId =
           [sql|
             SELECT
               -- Contact
-              ct.contact_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, ct.created_at,
+              ct.contact_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, ct.created_at,
               -- Connection
               c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.conn_status, c.conn_type,
               c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at
@@ -2510,7 +2510,7 @@ getGroupChatLast_ db user@User {userId, userContactId} groupId count = do
               -- GroupMember
               m.group_member_id, m.group_id, m.member_id, m.member_role, m.member_category,
               m.member_status, m.invited_by, m.local_display_name, m.contact_id,
-              p.display_name, p.full_name
+              p.display_name, p.full_name, p.image
             FROM chat_items ci
             LEFT JOIN group_members m ON m.group_member_id = ci.group_member_id
             LEFT JOIN contact_profiles p ON p.contact_profile_id = m.contact_profile_id
@@ -2540,7 +2540,7 @@ getGroupChatAfter_ db user@User {userId, userContactId} groupId afterChatItemId 
               -- GroupMember
               m.group_member_id, m.group_id, m.member_id, m.member_role, m.member_category,
               m.member_status, m.invited_by, m.local_display_name, m.contact_id,
-              p.display_name, p.full_name
+              p.display_name, p.full_name, p.image
             FROM chat_items ci
             LEFT JOIN group_members m ON m.group_member_id = ci.group_member_id
             LEFT JOIN contact_profiles p ON p.contact_profile_id = m.contact_profile_id
@@ -2570,7 +2570,7 @@ getGroupChatBefore_ db user@User {userId, userContactId} groupId beforeChatItemI
               -- GroupMember
               m.group_member_id, m.group_id, m.member_id, m.member_role, m.member_category,
               m.member_status, m.invited_by, m.local_display_name, m.contact_id,
-              p.display_name, p.full_name
+              p.display_name, p.full_name, p.image
             FROM chat_items ci
             LEFT JOIN group_members m ON m.group_member_id = ci.group_member_id
             LEFT JOIN contact_profiles p ON p.contact_profile_id = m.contact_profile_id
@@ -2610,11 +2610,11 @@ getGroupInfo_ db User {userId, userContactId} groupId =
       [sql|
         SELECT
           -- GroupInfo
-          g.group_id, g.local_display_name, gp.display_name, gp.full_name, g.created_at,
+          g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.image, g.created_at,
           -- GroupMember - membership
           mu.group_member_id, mu.group_id, mu.member_id, mu.member_role, mu.member_category,
           mu.member_status, mu.invited_by, mu.local_display_name, mu.contact_id,
-          pu.display_name, pu.full_name
+          pu.display_name, pu.full_name, pu.image
         FROM groups g
         JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id
         JOIN group_members mu ON mu.group_id = g.group_id
