@@ -122,6 +122,7 @@ module Simplex.Chat.Store
     updateDirectChatItemsRead,
     updateGroupChatItemsRead,
     getSmpServers,
+    overwriteSmpServers,
   )
 where
 
@@ -163,7 +164,7 @@ import Simplex.Chat.Migrations.M20220301_servers
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Chat.Util (eitherToMaybe)
-import Simplex.Messaging.Agent.Protocol (AgentMsgId, ConnId, InvitationId, MsgMeta (..), SMPServer (SMPServer))
+import Simplex.Messaging.Agent.Protocol (AgentMsgId, ConnId, InvitationId, MsgMeta (..), SMPServer (..))
 import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore (..), createSQLiteStore, firstRow, withTransaction)
 import Simplex.Messaging.Agent.Store.SQLite.Migrations (Migration (..))
 import qualified Simplex.Messaging.Crypto as C
@@ -2751,18 +2752,6 @@ toGroupChatItemList tz userContactId ((Just itemId, Just itemTs, Just itemConten
   either (const []) (: []) $ toGroupChatItem tz userContactId ((itemId, itemTs, itemContent, itemText, itemStatus, createdAt) :. memberRow_)
 toGroupChatItemList _ _ _ = []
 
-setSmpServers :: MonadUnliftIO m => SQLiteStore -> User -> [SMPServer] -> m ()
-setSmpServers st User {userId} smpServers = do
-  currentTs <- liftIO getCurrentTime
-  liftIO . withTransaction st $ \db -> do
-    DB.execute db "DELETE FROM smp_servers WHERE user_id = ?" (Only userId)
-    DB.execute_ db "UPDATE sqlite_sequence SET seq = 1 WHERE name = 'smp_servers'"
-    DB.execute_ db "VACUUM"
-    DB.executeMany db
-      "insert into users (first_name,last_name) values (?,?)"
-      [("Boris","Karloff"),("Ed","Wood")]
-    pure ()
-
 getSmpServers :: MonadUnliftIO m => SQLiteStore -> User -> m [SMPServer]
 getSmpServers st User {userId} =
   liftIO . withTransaction st $ \db ->
@@ -2778,6 +2767,23 @@ getSmpServers st User {userId} =
   where
     toSmpServer :: (String, String, C.KeyHash) -> SMPServer
     toSmpServer (host, port, keyHash) = SMPServer host port keyHash
+
+overwriteSmpServers :: MonadUnliftIO m => SQLiteStore -> User -> [SMPServer] -> m ()
+overwriteSmpServers st User {userId} smpServers = do
+  currentTs <- liftIO getCurrentTime
+  liftIO . withTransaction st $ \db -> do
+    DB.execute db "DELETE FROM smp_servers WHERE user_id = ?" (Only userId)
+    DB.execute_ db "UPDATE sqlite_sequence SET seq = 1 WHERE name = 'smp_servers'"
+    -- DB.execute_ db "VACUUM"
+    forM_ smpServers $ \SMPServer {host, port, keyHash} ->
+      DB.execute
+        db
+        [sql|
+          INSERT INTO smp_servers
+            (host, port, key_hash, user_id, created_at, updated_at)
+          VALUES (?,?,?,?,?,?)
+        |]
+        (host, port, keyHash, userId, currentTs, currentTs)
 
 -- | Saves unique local display name based on passed displayName, suffixed with _N if required.
 -- This function should be called inside transaction.

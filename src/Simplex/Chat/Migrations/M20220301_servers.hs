@@ -15,6 +15,7 @@ CREATE TABLE smp_servers (
   key_hash BLOB NOT NULL,
   user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
-  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE (host, port)
 );
 |]

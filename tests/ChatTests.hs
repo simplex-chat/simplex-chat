@@ -34,6 +34,8 @@ chatTests :: Spec
 chatTests = do
   describe "direct messages" $
     it "add contact and send/receive message" testAddContact
+  describe "SMP servers" $
+    fit "get and set SMP servers" testGetSetSmpServers
   describe "chat groups" $ do
     it "add contacts, create group and send/receive messages" testGroup
     it "create and join group with 4 members" testGroup2
@@ -51,12 +53,12 @@ chatTests = do
     it "recipient cancelled file transfer" testFileRcvCancel
     it "send and receive file to group" testGroupFileTransfer
   describe "user contact link" $ do
-    it "should create and connect via contact link" testUserContactLink
-    it "should auto accept contact requests" testUserContactLinkAutoAccept
-    it "should deduplicate contact requests" testDeduplicateContactRequests
-    it "should deduplicate contact requests with profile change" testDeduplicateContactRequestsProfileChange
-    it "should reject contact and delete contact link" testRejectContactAndDeleteUserContact
-    it "should delete connection requests when contact link deleted" testDeleteConnectionRequests
+    it "create and connect via contact link" testUserContactLink
+    it "auto accept contact requests" testUserContactLinkAutoAccept
+    it "deduplicate contact requests" testDeduplicateContactRequests
+    it "deduplicate contact requests with profile change" testDeduplicateContactRequestsProfileChange
+    it "reject contact and delete contact link" testRejectContactAndDeleteUserContact
+    it "delete connection requests when contact link deleted" testDeleteConnectionRequests
 
 testAddContact :: IO ()
 testAddContact =
@@ -115,6 +117,15 @@ testAddContact =
       alice <## "no contact bob_1"
       alice #$$> ("/_get chats", [("@bob", "hi")])
       bob #$$> ("/_get chats", [("@alice_1", "hi"), ("@alice", "hi")])
+
+testGetSetSmpServers :: IO ()
+testGetSetSmpServers =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+      alice <##> bob
+      alice #$> ("/smp_servers", id, "No custom servers saved")
+      alice #$> ("/smp_servers smp://1234-w==@smp1.example.im,smp://1234-w==@smp2.example.im", id, "ok")
 
 testGroup :: IO ()
 testGroup =
