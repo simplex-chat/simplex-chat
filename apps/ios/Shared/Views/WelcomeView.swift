@@ -34,16 +34,9 @@ struct WelcomeView: View {
                     .padding(.bottom)
                 ZStack(alignment: .topLeading) {
                     if !validDisplayName(displayName) {
-                        Button {
-                            AlertManager.shared.showAlertMsg(
-                                title: "Display name",
-                                message: "Display name can't contain spaces"
-                            )
-                        } label: {
-                            Image(systemName: "exclamationmark.circle")
-                                .foregroundColor(.red)
-                                .padding(.top, 4)
-                        }
+                        Image(systemName: "exclamationmark.circle")
+                            .foregroundColor(.red)
+                            .padding(.top, 4)
                     }
                     TextField("Display name", text: $displayName)
                         .textInputAutocapitalization(.never)
