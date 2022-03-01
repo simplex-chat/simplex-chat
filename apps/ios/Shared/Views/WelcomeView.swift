@@ -49,6 +49,7 @@ struct WelcomeView: View {
                         .textInputAutocapitalization(.never)
                         .disableAutocorrection(true)
                         .padding(.leading, 28)
+                        .padding(.bottom, 2)
                 }
                 .padding(.bottom)
                 TextField("Full name (optional)", text: $fullName)
@@ -68,7 +69,7 @@ struct WelcomeView: View {
                         fatalError("Failed to create user: \(error)")
                     }
                 }
-                .disabled(!validDisplayName(displayName))
+                .disabled(!validDisplayName(displayName) || displayName == "")
             }
         }
         .padding()
