@@ -132,6 +132,12 @@ testChatN ps test = withTmpFiles $ do
 getTermLine :: TestCC -> IO String
 getTermLine = atomically . readTQueue . termQ
 
+-- Use below to echo virtual terminal
+-- getTermLine cc = do
+--   s <- atomically . readTQueue $ termQ cc
+--   putStrLn s
+--   pure s
+
 testChat2 :: Profile -> Profile -> (TestCC -> TestCC -> IO ()) -> IO ()
 testChat2 p1 p2 test = testChatN [p1, p2] test_
   where

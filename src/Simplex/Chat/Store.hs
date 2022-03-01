@@ -892,6 +892,7 @@ getMatchingContacts st userId Contact {contactId, profile = Profile {displayName
             JOIN contact_profiles p ON ct.contact_profile_id = p.contact_profile_id
             WHERE ct.user_id = :user_id AND ct.contact_id != :contact_id
               AND p.display_name = :display_name AND p.full_name = :full_name
+              AND ((p.image IS NULL AND :image IS NULL) OR p.image = :image)
           |]
           [ ":user_id" := userId,
             ":contact_id" := contactId,
