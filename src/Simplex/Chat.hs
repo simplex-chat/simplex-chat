@@ -122,7 +122,7 @@ newChatController chatStore user cfg@ChatConfig {agentConfig = aCfg, tbqSize} Ch
       Nothing -> pure $ if null smpServers then defaultSMPServers else L.fromList smpServers
       Just usr -> do
         userSmpServers <- getSMPServers chatStore usr
-        pure $ fromMaybe defaultSMPServers (nonEmpty (if null smpServers then userSmpServers else smpServers))
+        pure . fromMaybe defaultSMPServers . nonEmpty $ if null smpServers then userSmpServers else smpServers
 
 runChatController :: (MonadUnliftIO m, MonadReader ChatController m) => User -> m ()
 runChatController = race_ notificationSubscriber . agentSubscriber
