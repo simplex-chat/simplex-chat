@@ -95,8 +95,8 @@ data ChatCommand
   | APIDeleteChat ChatType Int64
   | APIAcceptContact Int64
   | APIRejectContact Int64
-  | GetSmpServers
-  | SetSmpServers [SMPServer]
+  | GetSMPServers
+  | SetSMPServers [SMPServer]
   | ChatHelp HelpSection
   | Welcome
   | AddContact

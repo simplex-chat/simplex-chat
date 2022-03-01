@@ -35,7 +35,7 @@ chatTests = do
   describe "direct messages" $
     it "add contact and send/receive message" testAddContact
   describe "SMP servers" $
-    it "get and set SMP servers" testGetSetSmpServers
+    it "get and set SMP servers" testGetSetSMPServers
   describe "chat groups" $ do
     it "add contacts, create group and send/receive messages" testGroup
     it "create and join group with 4 members" testGroup2
@@ -118,8 +118,8 @@ testAddContact =
       alice #$$> ("/_get chats", [("@bob", "hi")])
       bob #$$> ("/_get chats", [("@alice_1", "hi"), ("@alice", "hi")])
 
-testGetSetSmpServers :: IO ()
-testGetSetSmpServers =
+testGetSetSMPServers :: IO ()
+testGetSetSMPServers =
   testChat2 aliceProfile bobProfile $
     \alice _ -> do
       alice #$> ("/smp_servers", id, "No custom SMP servers saved")

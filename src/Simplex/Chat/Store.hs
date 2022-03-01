@@ -121,8 +121,8 @@ module Simplex.Chat.Store
     updateDirectChatItem,
     updateDirectChatItemsRead,
     updateGroupChatItemsRead,
-    getSmpServers,
-    overwriteSmpServers,
+    getSMPServers,
+    overwriteSMPServers,
   )
 where
 
@@ -2752,8 +2752,8 @@ toGroupChatItemList tz userContactId ((Just itemId, Just itemTs, Just itemConten
   either (const []) (: []) $ toGroupChatItem tz userContactId ((itemId, itemTs, itemContent, itemText, itemStatus, createdAt) :. memberRow_)
 toGroupChatItemList _ _ _ = []
 
-getSmpServers :: MonadUnliftIO m => SQLiteStore -> User -> m [SMPServer]
-getSmpServers st User {userId} =
+getSMPServers :: MonadUnliftIO m => SQLiteStore -> User -> m [SMPServer]
+getSMPServers st User {userId} =
   liftIO . withTransaction st $ \db ->
     map toSmpServer
       <$> DB.query
@@ -2768,8 +2768,8 @@ getSmpServers st User {userId} =
     toSmpServer :: (String, String, C.KeyHash) -> SMPServer
     toSmpServer (host, port, keyHash) = SMPServer host port keyHash
 
-overwriteSmpServers :: MonadUnliftIO m => SQLiteStore -> User -> [SMPServer] -> m ()
-overwriteSmpServers st User {userId} smpServers = do
+overwriteSMPServers :: MonadUnliftIO m => SQLiteStore -> User -> [SMPServer] -> m ()
+overwriteSMPServers st User {userId} smpServers = do
   currentTs <- liftIO getCurrentTime
   liftIO . withTransaction st $ \db -> do
     DB.execute db "DELETE FROM smp_servers WHERE user_id = ?" (Only userId)

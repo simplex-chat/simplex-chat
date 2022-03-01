@@ -73,7 +73,7 @@ defaultChatConfig =
     { agentConfig =
         defaultAgentConfig
           { tcpPort = undefined, -- agent does not listen to TCP
-            initialSmpServers = undefined, -- filled in newChatController
+            initialSMPServers = undefined, -- filled in newChatController
             dbFile = undefined, -- filled in newChatController
             dbPoolSize = 1,
             yesToMigrations = False
@@ -105,8 +105,8 @@ newChatController chatStore user cfg@ChatConfig {agentConfig = aCfg, tbqSize} Ch
   activeTo <- newTVarIO ActiveNone
   firstTime <- not <$> doesFileExist f
   currentUser <- newTVarIO user
-  initialSmpServers <- resolveServers
-  smpAgent <- getSMPAgentClient aCfg {dbFile = dbFilePrefix <> "_agent.db", initialSmpServers}
+  initialSMPServers <- resolveServers
+  smpAgent <- getSMPAgentClient aCfg {dbFile = dbFilePrefix <> "_agent.db", initialSMPServers}
   agentAsync <- newTVarIO Nothing
   idsDrg <- newTVarIO =<< drgNew
   inputQ <- newTBQueueIO tbqSize
@@ -121,7 +121,7 @@ newChatController chatStore user cfg@ChatConfig {agentConfig = aCfg, tbqSize} Ch
     resolveServers = case user of
       Nothing -> pure $ if null smpServers then defaultSMPServers else L.fromList smpServers
       Just usr -> do
-        userSmpServers <- getSmpServers chatStore usr
+        userSmpServers <- getSMPServers chatStore usr
         pure $ fromMaybe defaultSMPServers (nonEmpty (if null smpServers then userSmpServers else smpServers))
 
 runChatController :: (MonadUnliftIO m, MonadReader ChatController m) => User -> m ()
@@ -214,10 +214,10 @@ processChatCommand = \case
           `E.finally` deleteContactRequest st userId connReqId
     withAgent $ \a -> rejectContact a connId invId
     pure $ CRContactRequestRejected cReq
-  GetSmpServers -> CRSmpServers <$> withUser (\user -> withStore (`getSmpServers` user))
-  SetSmpServers smpServers -> withUser $ \user -> withChatLock $ do
-    withStore $ \st -> overwriteSmpServers st user smpServers
-    withAgent $ \a -> setSmpServers a (fromMaybe defaultSMPServers (nonEmpty smpServers))
+  GetSMPServers -> CRSmpServers <$> withUser (\user -> withStore (`getSMPServers` user))
+  SetSMPServers smpServers -> withUser $ \user -> withChatLock $ do
+    withStore $ \st -> overwriteSMPServers st user smpServers
+    withAgent $ \a -> setSMPServers a (fromMaybe defaultSMPServers (nonEmpty smpServers))
     pure CRCmdOk
   ChatHelp section -> pure $ CRChatHelp section
   Welcome -> withUser $ pure . CRWelcome
@@ -1464,9 +1464,9 @@ chatCommandP =
     <|> "/_delete " *> (APIDeleteChat <$> chatTypeP <*> A.decimal)
     <|> "/_accept " *> (APIAcceptContact <$> A.decimal)
     <|> "/_reject " *> (APIRejectContact <$> A.decimal)
-    <|> "/smp_servers default" $> SetSmpServers []
-    <|> "/smp_servers " *> (SetSmpServers <$> smpServersP)
-    <|> "/smp_servers" $> GetSmpServers
+    <|> "/smp_servers default" $> SetSMPServers []
+    <|> "/smp_servers " *> (SetSMPServers <$> smpServersP)
+    <|> "/smp_servers" $> GetSMPServers
     <|> ("/help files" <|> "/help file" <|> "/hf") $> ChatHelp HSFiles
     <|> ("/help groups" <|> "/help group" <|> "/hg") $> ChatHelp HSGroups
     <|> ("/help address" <|> "/ha") $> ChatHelp HSMyAddress
