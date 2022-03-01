@@ -76,7 +76,7 @@ data ChatController = ChatController
     config :: ChatConfig
   }
 
-data HelpSection = HSMain | HSFiles | HSGroups | HSMyAddress | HSMarkdown
+data HelpSection = HSMain | HSFiles | HSGroups | HSMyAddress | HSSmpServers | HSMarkdown
   deriving (Show, Generic)
 
 instance ToJSON HelpSection where

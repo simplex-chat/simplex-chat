@@ -8,9 +8,10 @@
 module Simplex.Chat.View where
 
 import qualified Data.Aeson as J
+import qualified Data.ByteString.Char8 as B
 import Data.Function (on)
 import Data.Int (Int64)
-import Data.List (groupBy, intersperse, partition, sortOn)
+import Data.List (groupBy, intercalate, intersperse, partition, sortOn)
 import Data.Maybe (isJust)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -42,7 +43,7 @@ responseToView testView = \case
   CRChatRunning -> []
   CRApiChats chats -> if testView then testViewChats chats else [plain . bshow $ J.encode chats]
   CRApiChat chat -> if testView then testViewChat chat else [plain . bshow $ J.encode chat]
-  CRSmpServers smpServers -> if null smpServers then ["No custom servers saved"] else [plain . bshow $ J.encode smpServers]
+  CRSmpServers smpServers -> if null smpServers then ["No custom SMP servers saved"] else [plain $ intercalate ", " (map (B.unpack . strEncode) smpServers)]
   CRNewChatItem (AChatItem _ _ chat item) -> viewChatItem chat item
   CRChatItemUpdated _ -> []
   CRMsgIntegrityError mErr -> viewMsgIntegrityError mErr
@@ -53,6 +54,7 @@ responseToView testView = \case
     HSFiles -> filesHelpInfo
     HSGroups -> groupsHelpInfo
     HSMyAddress -> myAddressHelpInfo
+    HSSmpServers -> smpServersHelpInfo
     HSMarkdown -> markdownInfo
   CRWelcome user -> chatWelcome user
   CRContactsList cs -> viewContactsList cs

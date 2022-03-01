@@ -2773,8 +2773,6 @@ overwriteSmpServers st User {userId} smpServers = do
   currentTs <- liftIO getCurrentTime
   liftIO . withTransaction st $ \db -> do
     DB.execute db "DELETE FROM smp_servers WHERE user_id = ?" (Only userId)
-    DB.execute_ db "UPDATE sqlite_sequence SET seq = 1 WHERE name = 'smp_servers'"
-    -- DB.execute_ db "VACUUM"
     forM_ smpServers $ \SMPServer {host, port, keyHash} ->
       DB.execute
         db

@@ -1464,11 +1464,13 @@ chatCommandP =
     <|> "/_delete " *> (APIDeleteChat <$> chatTypeP <*> A.decimal)
     <|> "/_accept " *> (APIAcceptContact <$> A.decimal)
     <|> "/_reject " *> (APIRejectContact <$> A.decimal)
-    <|> "/smp_servers" $> GetSmpServers
+    <|> "/smp_servers default" $> SetSmpServers []
     <|> "/smp_servers " *> (SetSmpServers <$> smpServersP)
+    <|> "/smp_servers" $> GetSmpServers
     <|> ("/help files" <|> "/help file" <|> "/hf") $> ChatHelp HSFiles
     <|> ("/help groups" <|> "/help group" <|> "/hg") $> ChatHelp HSGroups
     <|> ("/help address" <|> "/ha") $> ChatHelp HSMyAddress
+    <|> ("/help smp_servers" <|> "/help smp_server" <|> "/hs") $> ChatHelp HSSmpServers
     <|> ("/help" <|> "/h") $> ChatHelp HSMain
     <|> ("/group #" <|> "/group " <|> "/g #" <|> "/g ") *> (NewGroup <$> groupProfile)
     <|> ("/add #" <|> "/add " <|> "/a #" <|> "/a ") *> (AddMember <$> displayName <* A.space <*> displayName <*> memberRole)

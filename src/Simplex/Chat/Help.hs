@@ -4,6 +4,7 @@
 module Simplex.Chat.Help
   ( chatWelcome,
     chatHelpInfo,
+    smpServersHelpInfo,
     filesHelpInfo,
     groupsHelpInfo,
     myAddressHelpInfo,
@@ -85,8 +86,10 @@ chatHelpInfo =
       "",
       green "Create your address: " <> highlight "/address",
       "",
+      green "Use custom SMP server(s): " <> highlight "/smp_servers <srv>",
+      "",
       green "Other commands:",
-      indent <> highlight "/help <topic>    " <> " - help on: files, groups, address",
+      indent <> highlight "/help <topic>    " <> " - help on: files, groups, address, servers",
       indent <> highlight "/profile         " <> " - show / update user profile",
       indent <> highlight "/delete <contact>" <> " - delete contact and all messages with them",
       indent <> highlight "/contacts        " <> " - list contacts",
@@ -143,6 +146,18 @@ myAddressHelpInfo =
       "Please note: you can receive spam contact requests, but it's safe to delete the address!",
       "",
       "The commands may be abbreviated: " <> listHighlight ["/ad", "/da", "/sa", "/ac", "/rc"]
+    ]
+
+smpServersHelpInfo :: [StyledString]
+smpServersHelpInfo =
+  map
+    styleMarkdown
+    [ green "SMP server management commands:",
+      indent <> highlight "/smp_servers <srv1[,srv2,...]>" <> " - save and use custom SMP servers",
+      indent <> highlight "/smp_servers default          " <> " - remove custom SMP servers and use default",
+      indent <> highlight "/smp_servers                  " <> " - show saved SMP servers",
+      "",
+      "Chat option " <> highlight "-s" <> " (" <> highlight "--server" <> ") has precedence over saved SMP servers for chat session"
     ]
 
 markdownInfo :: [StyledString]
