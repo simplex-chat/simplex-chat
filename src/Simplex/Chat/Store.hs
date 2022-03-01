@@ -1279,7 +1279,7 @@ getGroupMembers_ db User {userId, userContactId} GroupInfo {groupId} = do
       [sql|
         SELECT
           m.group_member_id, m.group_id, m.member_id, m.member_role, m.member_category, m.member_status,
-          m.invited_by, m.local_display_name, m.contact_id, p.display_name, p.full_name, p.image
+          m.invited_by, m.local_display_name, m.contact_id, p.display_name, p.full_name, p.image,
           c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact,
           c.conn_status, c.conn_type, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at
         FROM group_members m
