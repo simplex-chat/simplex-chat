@@ -71,7 +71,7 @@ defaultChatConfig =
     { agentConfig =
         defaultAgentConfig
           { tcpPort = undefined, -- agent does not listen to TCP
-            smpServers = undefined, -- filled in from options
+            initialSmpServers = undefined, -- filled in from options
             dbFile = undefined, -- filled in from options
             dbPoolSize = 1,
             yesToMigrations = False
@@ -95,7 +95,7 @@ newChatController chatStore user cfg@ChatConfig {agentConfig = aCfg, tbqSize} Ch
   activeTo <- newTVarIO ActiveNone
   firstTime <- not <$> doesFileExist f
   currentUser <- newTVarIO user
-  smpAgent <- getSMPAgentClient aCfg {dbFile = dbFilePrefix <> "_agent.db", smpServers}
+  smpAgent <- getSMPAgentClient aCfg {dbFile = dbFilePrefix <> "_agent.db", initialSmpServers = smpServers}
   agentAsync <- newTVarIO Nothing
   idsDrg <- newTVarIO =<< drgNew
   inputQ <- newTBQueueIO tbqSize
