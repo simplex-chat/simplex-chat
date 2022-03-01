@@ -89,7 +89,7 @@ chatHelpInfo =
       green "Use custom SMP server(s): " <> highlight "/smp_servers <srv>",
       "",
       green "Other commands:",
-      indent <> highlight "/help <topic>    " <> " - help on: files, groups, address, servers",
+      indent <> highlight "/help <topic>    " <> " - help on: files, groups, address, smp_servers",
       indent <> highlight "/profile         " <> " - show / update user profile",
       indent <> highlight "/delete <contact>" <> " - delete contact and all messages with them",
       indent <> highlight "/contacts        " <> " - list contacts",
