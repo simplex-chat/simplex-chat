@@ -21,6 +21,7 @@
         sha256map = import ./sha256map.nix;
         modules = [{
           packages.direct-sqlite.patches = [ ./direct-sqlite-2.3.26.patch ];
+          packages.entropy.patches = [ ./entropy.patch ];
         }
         ({ pkgs,lib, ... }: lib.mkIf (pkgs.stdenv.hostPlatform.isAndroid) {
           packages.simplex-chat.components.library.ghcOptions = [ "-pie" ];
