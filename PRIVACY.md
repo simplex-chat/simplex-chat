@@ -30,7 +30,8 @@ The cases when SimpleX Chat may need to share the data we temporarily store on t
 - To enforce applicable Terms, including investigation of potential violations.
 - To detect, prevent, or otherwise address fraud, security, or technical issues.
 - To protect against harm to the rights, property, or safety of SimpleX Chat, our users, or the public as required or permitted by law.
-Updates
+
+### Updates
 
 We will update this privacy policy as needed so that it is current, accurate, and as clear as possible. Your continued use of our Services confirms your acceptance of our updated Privacy Policy.
 
@@ -60,7 +61,7 @@ You accept to our Terms of Service ("Terms") by installing or using any of our a
 
 **Keeping your data secure**. SimpleX Chat is the first messaging platform that is 100% private by design - we neither have ability to access your messages, nor we have information about who you communicate with. That means that you are solely responsible for keeping your device and your user profile safe and secure. If you lose your phone or remove the app, you will not be able to recover the lost data, unless you made a back up.
 
-**Storing the messages on the device**. Currently the messages are stored in the database on the device without encryption - this will be added in the future. It means that if you make a backup of the app and store it unecrypted, the backup provider may be able to access the messages.
+**Storing the messages on the device**. Currently the messages are stored in the database on your device without encryption. It means that if you make a backup of the app and store it unecrypted, the backup provider may be able to access the messages.
 
 **No Access to Emergency Services**. Our Services do not provide access to emergency service providers like the police, fire department, hospitals, or other public safety organizations. Make sure you can contact emergency service providers through a mobile, fixed-line telephone, or other service.
 
@@ -86,4 +87,4 @@ You accept to our Terms of Service ("Terms") by installing or using any of our a
 
 **Ending these Terms**. You may end these Terms with SimpleX Chat at any time by deleting SimpleX Chat app(s) from your device and discontinuing use of our Services. The provisions related to Licenses, Disclaimers, Limitation of Liability, Resolving dispute, Availability, Changes to the terms, Enforcing the terms, and Ending these Terms will survive termination of your relationship with SimpleX Chat.
 
-Updated February 28, 2022
+Updated March 1, 2022
