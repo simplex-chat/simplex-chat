@@ -11,7 +11,7 @@ import qualified Data.Aeson as J
 import Data.Function (on)
 import Data.Int (Int64)
 import Data.List (groupBy, intersperse, partition, sortOn)
-import Data.Maybe (isJust)
+import Data.Maybe (isJust, isNothing)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (DiffTime)
@@ -317,8 +317,9 @@ viewUserProfile Profile {displayName, fullName} =
   ]
 
 viewUserProfileUpdated :: Profile -> Profile -> [StyledString]
-viewUserProfileUpdated Profile {displayName = n, fullName} Profile {displayName = n', fullName = fullName'}
-  | n == n' && fullName == fullName' = []
+viewUserProfileUpdated Profile {displayName = n, fullName, image} Profile {displayName = n', fullName = fullName', image = image'}
+  | n == n' && fullName == fullName' && image == image' = []
+  | n == n' && fullName == fullName' = [(if isNothing image' then "profile image removed" else "profile image updated") <> notified]
   | n == n' = ["user full name " <> (if T.null fullName' || fullName' == n' then "removed" else "changed to " <> plain fullName') <> notified]
   | otherwise = ["user profile is changed to " <> ttyFullName n' fullName' <> notified]
   where

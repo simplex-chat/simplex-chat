@@ -42,8 +42,9 @@ chatTests = do
     it "re-add member in status invited" testGroupReAddInvited
     it "remove contact from group and add again" testGroupRemoveAdd
     it "list groups containing group invitations" testGroupList
-  describe "user profiles" $
+  describe "user profiles" $ do
     it "update user profiles and notify contacts" testUpdateProfile
+    it "update user profiles and notify contacts" testUpdateProfileImage
   describe "sending and receiving files" $ do
     it "send and receive file" testFileTransfer
     it "send and receive a small file" testSmallFileTransfer
@@ -566,6 +567,15 @@ testUpdateProfile =
             bob <## "contact cate changed to cat (Cate)"
             bob <## "use @cat <message> to send messages"
         ]
+
+testUpdateProfileImage :: IO ()
+testUpdateProfileImage =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+      alice ##> "/profile_image iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII"
+      alice <## "profile image updated (your contacts are notified)"
+      (bob </)
 
 testFileTransfer :: IO ()
 testFileTransfer =

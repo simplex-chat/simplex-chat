@@ -1483,9 +1483,9 @@ chatCommandP =
     <|> ("/reject @" <|> "/reject " <|> "/rc @" <|> "/rc ") *> (RejectContact <$> displayName)
     <|> ("/markdown" <|> "/m") $> ChatHelp HSMarkdown
     <|> ("/welcome" <|> "/w") $> Welcome
+    <|> "/profile_image " *> (UpdateProfileImage . safeDecodeUtf8 <$> A.takeByteString)
     <|> ("/profile " <|> "/p ") *> (uncurry UpdateProfile <$> userNames)
     <|> ("/profile" <|> "/p") $> ShowProfile
-    <|> "/profile_image " *> (UpdateProfileImage . safeDecodeUtf8 <$> A.takeByteString)
     <|> ("/quit" <|> "/q" <|> "/exit") $> QuitChat
     <|> ("/version" <|> "/v") $> ShowVersion
   where
