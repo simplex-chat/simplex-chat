@@ -95,7 +95,6 @@ data ChatCommand
   | APIDeleteChat ChatType Int64
   | APIAcceptContact Int64
   | APIRejectContact Int64
-  -- | APIUpdateProfile Profile
   | ChatHelp HelpSection
   | Welcome
   | AddContact
@@ -126,7 +125,8 @@ data ChatCommand
   | CancelFile FileTransferId
   | FileStatus FileTransferId
   | ShowProfile
-  | UpdateProfile Profile
+  | UpdateProfile ContactName Text
+  | UpdateProfileImage Text
   | QuitChat
   | ShowVersion
   deriving (Show)

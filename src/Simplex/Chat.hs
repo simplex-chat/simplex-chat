@@ -370,17 +370,12 @@ processChatCommand = \case
   FileStatus fileId ->
     CRFileTransferStatus <$> withUser (\User {userId} -> withStore $ \st -> getFileTransferProgress st userId fileId)
   ShowProfile -> withUser $ \User {profile} -> pure $ CRUserProfile profile
-  UpdateProfile p@Profile {displayName} -> withUser $ \user@User {profile} ->
-    if p == profile
-      then pure CRUserProfileNoChange
-      else do
-        withStore $ \st -> updateUserProfile st user p
-        let user' = (user :: User) {localDisplayName = displayName, profile = p}
-        asks currentUser >>= atomically . (`writeTVar` Just user')
-        contacts <- withStore (`getUserContacts` user)
-        withChatLock . procCmd $ do
-          forM_ contacts $ \ct -> sendDirectContactMessage ct $ XInfo p
-          pure $ CRUserProfileUpdated profile p
+  UpdateProfile displayName fullName -> withUser $ \user@User {profile} -> do
+    let p = (profile :: Profile) {displayName = displayName, fullName = fullName}
+    updateProfile profile p user
+  UpdateProfileImage _image -> withUser $ \user@User {profile} -> do
+    let p = (profile :: Profile) {image = Just _image}
+    updateProfile profile p user
   QuitChat -> liftIO exitSuccess
   ShowVersion -> pure $ CRVersionInfo versionNumber
   where
@@ -419,6 +414,18 @@ processChatCommand = \case
     checkSndFile f = do
       unlessM (doesFileExist f) . throwChatError $ CEFileNotFound f
       (,) <$> getFileSize f <*> asks (fileChunkSize . config)
+    updateProfile :: Profile -> Profile -> User -> m ChatResponse
+    updateProfile p p'@Profile {displayName} user = do
+      if p' == p
+        then pure CRUserProfileNoChange
+        else do
+          withStore $ \st -> updateUserProfile st user p'
+          let user' = (user :: User) {localDisplayName = displayName, profile = p'}
+          asks currentUser >>= atomically . (`writeTVar` Just user')
+          contacts <- withStore (`getUserContacts` user)
+          withChatLock . procCmd $ do
+            forM_ contacts $ \ct -> sendDirectContactMessage ct $ XInfo p'
+            pure $ CRUserProfileUpdated p p'
     getRcvFilePath :: Int64 -> Maybe FilePath -> String -> m FilePath
     getRcvFilePath fileId filePath fileName = case filePath of
       Nothing -> do
@@ -1476,8 +1483,9 @@ chatCommandP =
     <|> ("/reject @" <|> "/reject " <|> "/rc @" <|> "/rc ") *> (RejectContact <$> displayName)
     <|> ("/markdown" <|> "/m") $> ChatHelp HSMarkdown
     <|> ("/welcome" <|> "/w") $> Welcome
-    <|> ("/profile " <|> "/p ") *> (UpdateProfile <$> userProfile)
+    <|> ("/profile " <|> "/p ") *> (uncurry UpdateProfile <$> userNames)
     <|> ("/profile" <|> "/p") $> ShowProfile
+    <|> "/profile_image " *> (UpdateProfileImage . safeDecodeUtf8 <$> A.takeByteString)
     <|> ("/quit" <|> "/q" <|> "/exit") $> QuitChat
     <|> ("/version" <|> "/v") $> ShowVersion
   where
@@ -1490,11 +1498,14 @@ chatCommandP =
     displayName = safeDecodeUtf8 <$> (B.cons <$> A.satisfy refChar <*> A.takeTill (== ' '))
     refChar c = c > ' ' && c /= '#' && c /= '@'
     onOffP = ("on" $> True) <|> ("off" $> False)
+    userNames = do
+      cName <- displayName
+      fullName <- fullNameP cName
+      pure (cName, fullName)
     userProfile = do
       cName <- displayName
       fullName <- fullNameP cName
-      let image = Nothing
-      pure Profile {displayName = cName, fullName, image}
+      pure Profile {displayName = cName, fullName, image = Nothing}
     groupProfile = do
       gName <- displayName
       fullName <- fullNameP gName
