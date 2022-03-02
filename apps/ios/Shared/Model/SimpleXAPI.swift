@@ -381,8 +381,13 @@ func apiSendMessage(type: ChatType, id: Int64, msg: MsgContent) async throws -> 
     throw r
 }
 
-func getUserSMPServers() async throws -> [String] {
-    let r = await chatSendCmd(.getUserSMPServers)
+//func getUserSMPServers() async throws -> [String] {
+//    let r = await chatSendCmd(.getUserSMPServers)
+//    if case let .userSMPServers(smpServers) = r { return smpServers }
+//    throw r
+//}
+func getUserSMPServers() throws -> [String] {
+    let r = chatSendCmdSync(.getUserSMPServers)
     if case let .userSMPServers(smpServers) = r { return smpServers }
     throw r
 }

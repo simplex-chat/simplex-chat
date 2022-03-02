@@ -27,6 +27,7 @@ open class ChatController(val ctrl: ChatCtrl, val ntfManager: NtfManager, val ap
     try {
       apiStartChat()
       chatModel.userAddress.value = apiGetUserAddress()
+      chatModel.userSMPServers.value = getUserSMPServers()
       chatModel.chats.addAll(apiGetChats())
       chatModel.currentUser = mutableStateOf(u)
       chatModel.userCreated.value = true
