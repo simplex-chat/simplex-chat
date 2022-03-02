@@ -46,6 +46,16 @@ struct SettingsView: View {
                             Text("Your SimpleX contact address")
                         }
                     }
+                    NavigationLink {
+                        SMPServers()
+                            .navigationTitle("SMP servers")
+                    } label: {
+                        HStack {
+                            Image(systemName: "qrcode")
+                                .padding(.trailing, 8)
+                            Text("SMP servers")
+                        }
+                    }
                 }
 
                 Section("Help") {
