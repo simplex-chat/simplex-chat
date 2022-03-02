@@ -22,6 +22,8 @@ enum ChatCommand {
     case apiGetChats
     case apiGetChat(type: ChatType, id: Int64)
     case apiSendMessage(type: ChatType, id: Int64, msg: MsgContent)
+    case getUserSMPServers
+    case setUserSMPServers(smpServers: [String])
     case addContact
     case connect(connReq: String)
     case apiDeleteChat(type: ChatType, id: Int64)
@@ -43,6 +45,13 @@ enum ChatCommand {
             case .apiGetChats: return "/_get chats"
             case let .apiGetChat(type, id): return "/_get chat \(ref(type, id)) count=100"
             case let .apiSendMessage(type, id, mc): return "/_send \(ref(type, id)) \(mc.cmdString)"
+            case .getUserSMPServers: return "/smp_servers"
+            case let .setUserSMPServers(smpServers):
+                if smpServers.isEmpty { return "/smp_servers default" }
+                else {
+                    let smpServersStr = smpServers.joined(separator: ",")
+                    return "/smp_servers \(smpServersStr)"
+                }
             case .addContact: return "/connect"
             case let .connect(connReq): return "/connect \(connReq)"
             case let .apiDeleteChat(type, id): return "/_delete \(ref(type, id))"
@@ -67,6 +76,8 @@ enum ChatCommand {
             case .apiGetChats: return "apiGetChats"
             case .apiGetChat: return "apiGetChat"
             case .apiSendMessage: return "apiSendMessage"
+            case .getUserSMPServers: return "getUserSMPServers"
+            case .setUserSMPServers: return "setUserSMPServers"
             case .addContact: return "addContact"
             case .connect: return "connect"
             case .apiDeleteChat: return "apiDeleteChat"
@@ -98,6 +109,7 @@ enum ChatResponse: Decodable, Error {
     case chatRunning
     case apiChats(chats: [ChatData])
     case apiChat(chat: ChatData)
+    case userSMPServers(smpServers: [String])
     case invitation(connReqInvitation: String)
     case sentConfirmation
     case sentInvitation
@@ -135,6 +147,7 @@ enum ChatResponse: Decodable, Error {
             case .chatRunning: return "chatRunning"
             case .apiChats: return "apiChats"
             case .apiChat: return "apiChat"
+            case .userSMPServers: return "userSMPServers"
             case .invitation: return "invitation"
             case .sentConfirmation: return "sentConfirmation"
             case .sentInvitation: return "sentInvitation"
@@ -175,6 +188,7 @@ enum ChatResponse: Decodable, Error {
             case .chatRunning: return noDetails
             case let .apiChats(chats): return String(describing: chats)
             case let .apiChat(chat): return String(describing: chat)
+            case let .userSMPServers(smpServers): return smpServers.joined(separator: ",")
             case let .invitation(connReqInvitation): return connReqInvitation
             case .sentConfirmation: return noDetails
             case .sentInvitation: return noDetails

@@ -10,8 +10,8 @@ import SwiftUI
 
 struct SMPServers: View {
     @EnvironmentObject var chatModel: ChatModel
-    @State private var isCustomSMPServers: Bool = false // TODO check model
-    @State private var customSMPServers: String = "abc" // TODO check model
+    @State private var isUserSMPServers: Bool = false // TODO check model
+    @State private var userSMPServers: String = "abc" // TODO check model
     @State private var editSMPServers: Bool = true // TODO false is servers exist
 
     var body: some View {
@@ -21,9 +21,9 @@ struct SMPServers: View {
         return VStack(alignment: .leading) {
             Text("You can configure custom SMP servers.")
                 .padding(.bottom)
-            Toggle("Custom SMP servers", isOn: $isCustomSMPServers) // TODO on toggle, alert
+            Toggle("Custom SMP servers", isOn: $isUserSMPServers) // TODO on toggle, alert
 
-            if !isCustomSMPServers {
+            if !isUserSMPServers {
                 VStack(alignment: .leading) {
                     Text("You are using default SMP servers")
                 }
@@ -32,7 +32,7 @@ struct SMPServers: View {
                 // TODO conditionally enable rich text box
                 if editSMPServers {
                     VStack(alignment: .leading) {
-                        TextField("Servers", text: $customSMPServers)
+                        TextField("Servers", text: $userSMPServers)
                             .textInputAutocapitalization(.never)
                             .disableAutocorrection(true)
                             .padding(.bottom)
@@ -43,7 +43,7 @@ struct SMPServers: View {
                     .frame(maxWidth: .infinity, minHeight: 120, alignment: .leading)
                 } else {
                     VStack(alignment: .leading) {
-                        TextField("Servers", text: $customSMPServers)
+                        TextField("Servers", text: $userSMPServers)
                             .textInputAutocapitalization(.never)
                             .disableAutocorrection(true)
                             .padding(.bottom)
