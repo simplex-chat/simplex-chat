@@ -2768,10 +2768,10 @@ getSMPServers st User {userId} =
     toSmpServer :: (String, String, C.KeyHash) -> SMPServer
     toSmpServer (host, port, keyHash) = SMPServer host port keyHash
 
-overwriteSMPServers :: MonadUnliftIO m => SQLiteStore -> User -> [SMPServer] -> m ()
+overwriteSMPServers :: StoreMonad m => SQLiteStore -> User -> [SMPServer] -> m ()
 overwriteSMPServers st User {userId} smpServers = do
-  currentTs <- liftIO getCurrentTime
-  liftIO . withTransaction st $ \db -> do
+  liftIOEither . checkConstraint SEUniqueID . withTransaction st $ \db -> do
+    currentTs <- getCurrentTime
     DB.execute db "DELETE FROM smp_servers WHERE user_id = ?" (Only userId)
     forM_ smpServers $ \SMPServer {host, port, keyHash} ->
       DB.execute
@@ -2782,6 +2782,7 @@ overwriteSMPServers st User {userId} smpServers = do
           VALUES (?,?,?,?,?,?)
         |]
         (host, port, keyHash, userId, currentTs, currentTs)
+    pure $ Right ()
 
 -- | Saves unique local display name based on passed displayName, suffixed with _N if required.
 -- This function should be called inside transaction.
