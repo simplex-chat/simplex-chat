@@ -320,6 +320,8 @@ sealed class CC {
   class ApiGetChats: CC()
   class ApiGetChat(val type: ChatType, val id: Long): CC()
   class ApiSendMessage(val type: ChatType, val id: Long, val mc: MsgContent): CC()
+  class GetUserSMPServers(): CC()
+  class SetUserSMPServers(val smpServersStr: String): CC()
   class AddContact: CC()
   class Connect(val connReq: String): CC()
   class ApiDeleteChat(val type: ChatType, val id: Long): CC()
@@ -339,6 +341,8 @@ sealed class CC {
     is ApiGetChats -> "/_get chats"
     is ApiGetChat -> "/_get chat ${chatRef(type, id)} count=100"
     is ApiSendMessage -> "/_send ${chatRef(type, id)} ${mc.cmdString}"
+    is GetUserSMPServers -> "/smp_servers"
+    is SetUserSMPServers -> "/smp_servers $smpServersStr"
     is AddContact -> "/connect"
     is Connect -> "/connect $connReq"
     is ApiDeleteChat -> "/_delete ${chatRef(type, id)}"
@@ -359,6 +363,8 @@ sealed class CC {
     is ApiGetChats -> "apiGetChats"
     is ApiGetChat -> "apiGetChat"
     is ApiSendMessage -> "apiSendMessage"
+    is GetUserSMPServers -> "getUserSMPServers"
+    is SetUserSMPServers -> "setUserSMPServers"
     is AddContact -> "addContact"
     is Connect -> "connect"
     is ApiDeleteChat -> "apiDeleteChat"
@@ -412,6 +418,7 @@ sealed class CR {
   @Serializable @SerialName("chatRunning") class ChatRunning: CR()
   @Serializable @SerialName("apiChats") class ApiChats(val chats: List<Chat>): CR()
   @Serializable @SerialName("apiChat") class ApiChat(val chat: Chat): CR()
+  @Serializable @SerialName("userSMPServers") class UserSMPServers(val smpServers: List<String>): CR()
   @Serializable @SerialName("invitation") class Invitation(val connReqInvitation: String): CR()
   @Serializable @SerialName("sentConfirmation") class SentConfirmation: CR()
   @Serializable @SerialName("sentInvitation") class SentInvitation: CR()
@@ -449,6 +456,7 @@ sealed class CR {
     is ChatRunning -> "chatRunning"
     is ApiChats -> "apiChats"
     is ApiChat -> "apiChat"
+    is UserSMPServers -> "userSMPServers"
     is Invitation -> "invitation"
     is SentConfirmation -> "sentConfirmation"
     is SentInvitation -> "sentInvitation"
@@ -487,6 +495,7 @@ sealed class CR {
     is ChatRunning -> noDetails()
     is ApiChats -> json.encodeToString(chats)
     is ApiChat -> json.encodeToString(chat)
+    is UserSMPServers -> json.encodeToString(smpServers)
     is Invitation -> connReqInvitation
     is SentConfirmation -> noDetails()
     is SentInvitation -> noDetails()

@@ -23,7 +23,7 @@ enum ChatCommand {
     case apiGetChat(type: ChatType, id: Int64)
     case apiSendMessage(type: ChatType, id: Int64, msg: MsgContent)
     case getUserSMPServers
-    case setUserSMPServers(smpServers: [String])
+    case setUserSMPServers(smpServersStr: String)
     case addContact
     case connect(connReq: String)
     case apiDeleteChat(type: ChatType, id: Int64)
@@ -46,12 +46,7 @@ enum ChatCommand {
             case let .apiGetChat(type, id): return "/_get chat \(ref(type, id)) count=100"
             case let .apiSendMessage(type, id, mc): return "/_send \(ref(type, id)) \(mc.cmdString)"
             case .getUserSMPServers: return "/smp_servers"
-            case let .setUserSMPServers(smpServers):
-                if smpServers.isEmpty { return "/smp_servers default" }
-                else {
-                    let smpServersStr = smpServers.joined(separator: ",")
-                    return "/smp_servers \(smpServersStr)"
-                }
+            case let .setUserSMPServers(smpServersStr): return "/smp_servers \(smpServersStr)"
             case .addContact: return "/connect"
             case let .connect(connReq): return "/connect \(connReq)"
             case let .apiDeleteChat(type, id): return "/_delete \(ref(type, id))"
@@ -188,7 +183,7 @@ enum ChatResponse: Decodable, Error {
             case .chatRunning: return noDetails
             case let .apiChats(chats): return String(describing: chats)
             case let .apiChat(chat): return String(describing: chat)
-            case let .userSMPServers(smpServers): return smpServers.joined(separator: ",")
+            case let .userSMPServers(smpServers): return String(describing: smpServers)
             case let .invitation(connReqInvitation): return connReqInvitation
             case .sentConfirmation: return noDetails
             case .sentInvitation: return noDetails
@@ -383,6 +378,19 @@ func apiSendMessage(type: ChatType, id: Int64, msg: MsgContent) async throws -> 
             return aChatItem.chatItem
         }
     }
+    throw r
+}
+
+func getUserSMPServers() async throws -> [String] {
+    let r = await chatSendCmd(.getUserSMPServers)
+    if case let .userSMPServers(smpServers) = r { return smpServers }
+    throw r
+}
+
+func setUserSMPServers(smpServers: [String]) async throws {
+    let smpServersStr = smpServers.isEmpty ? "default" : smpServers.joined(separator: ",")
+    let r = await chatSendCmd(.setUserSMPServers(smpServersStr: smpServersStr))
+    if case .cmdOk = r { return }
     throw r
 }
 
