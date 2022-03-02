@@ -128,6 +128,21 @@ open class ChatController(val ctrl: ChatCtrl, val ntfManager: NtfManager, val ap
     return null
   }
 
+  suspend fun getUserSMPServers(): List<String>? {
+    val r = sendCmd(CC.GetUserSMPServers())
+    if (r is CR.UserSMPServers) return r.smpServers
+    Log.e(TAG, "getUserSMPServers bad response: ${r.responseType} ${r.details}")
+    return null
+  }
+
+  suspend fun setUserSMPServers(smpServers: List<String>): Boolean {
+    val smpServersStr = if (smpServers.isEmpty()) "default" else smpServers.joinToString(separator = ",")
+    val r = sendCmd(CC.SetUserSMPServers(smpServersStr))
+    if (r is CR.CmdOk) return true
+    Log.e(TAG, "setUserSMPServers bad response: ${r.responseType} ${r.details}")
+    return false
+  }
+
   suspend fun apiAddContact(): String? {
     val r = sendCmd(CC.AddContact())
     if (r is CR.Invitation) return r.connReqInvitation
