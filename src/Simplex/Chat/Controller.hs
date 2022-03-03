@@ -95,6 +95,8 @@ data ChatCommand
   | APIDeleteChat ChatType Int64
   | APIAcceptContact Int64
   | APIRejectContact Int64
+  | GetUserSMPServers
+  | SetUserSMPServers [SMPServer]
   | ChatHelp HelpSection
   | Welcome
   | AddContact
@@ -137,6 +139,7 @@ data ChatResponse
   | CRChatRunning
   | CRApiChats {chats :: [AChat]}
   | CRApiChat {chat :: AChat}
+  | CRUserSMPServers {smpServers :: [SMPServer]}
   | CRNewChatItem {chatItem :: AChatItem}
   | CRChatItemUpdated {chatItem :: AChatItem}
   | CRMsgIntegrityError {msgerror :: MsgErrorType} -- TODO make it chat item to support in mobile
