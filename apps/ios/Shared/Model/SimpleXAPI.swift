@@ -23,7 +23,7 @@ enum ChatCommand {
     case apiGetChat(type: ChatType, id: Int64)
     case apiSendMessage(type: ChatType, id: Int64, msg: MsgContent)
     case getUserSMPServers
-    case setUserSMPServers(smpServersStr: String)
+    case setUserSMPServers(smpServers: [String])
     case addContact
     case connect(connReq: String)
     case apiDeleteChat(type: ChatType, id: Int64)
@@ -46,7 +46,7 @@ enum ChatCommand {
             case let .apiGetChat(type, id): return "/_get chat \(ref(type, id)) count=100"
             case let .apiSendMessage(type, id, mc): return "/_send \(ref(type, id)) \(mc.cmdString)"
             case .getUserSMPServers: return "/smp_servers"
-            case let .setUserSMPServers(smpServersStr): return "/smp_servers \(smpServersStr)"
+            case let .setUserSMPServers(smpServers): return "/smp_servers \(smpServersStr(smpServers: smpServers))"
             case .addContact: return "/connect"
             case let .connect(connReq): return "/connect \(connReq)"
             case let .apiDeleteChat(type, id): return "/_delete \(ref(type, id))"
@@ -90,6 +90,10 @@ enum ChatCommand {
 
     func ref(_ type: ChatType, _ id: Int64) -> String {
         "\(type.rawValue)\(id)"
+    }
+    
+    func smpServersStr(smpServers: [String]) -> String {
+        smpServers.isEmpty ? "default" : smpServers.joined(separator: ",")
     }
 }
 
@@ -381,11 +385,6 @@ func apiSendMessage(type: ChatType, id: Int64, msg: MsgContent) async throws -> 
     throw r
 }
 
-//func getUserSMPServers() async throws -> [String] {
-//    let r = await chatSendCmd(.getUserSMPServers)
-//    if case let .userSMPServers(smpServers) = r { return smpServers }
-//    throw r
-//}
 func getUserSMPServers() throws -> [String] {
     let r = chatSendCmdSync(.getUserSMPServers)
     if case let .userSMPServers(smpServers) = r { return smpServers }
@@ -393,8 +392,7 @@ func getUserSMPServers() throws -> [String] {
 }
 
 func setUserSMPServers(smpServers: [String]) async throws {
-    let smpServersStr = smpServers.isEmpty ? "default" : smpServers.joined(separator: ",")
-    let r = await chatSendCmd(.setUserSMPServers(smpServersStr: smpServersStr))
+    let r = await chatSendCmd(.setUserSMPServers(smpServers: smpServers))
     if case .cmdOk = r { return }
     throw r
 }

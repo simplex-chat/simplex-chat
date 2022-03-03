@@ -137,8 +137,7 @@ open class ChatController(val ctrl: ChatCtrl, val ntfManager: NtfManager, val ap
   }
 
   suspend fun setUserSMPServers(smpServers: List<String>): Boolean {
-    val smpServersStr = if (smpServers.isEmpty()) "default" else smpServers.joinToString(separator = ",")
-    val r = sendCmd(CC.SetUserSMPServers(smpServersStr))
+    val r = sendCmd(CC.SetUserSMPServers(smpServers))
     if (r is CR.CmdOk) return true
     Log.e(TAG, "setUserSMPServers bad response: ${r.responseType} ${r.details}")
     return false
@@ -337,7 +336,7 @@ sealed class CC {
   class ApiGetChat(val type: ChatType, val id: Long): CC()
   class ApiSendMessage(val type: ChatType, val id: Long, val mc: MsgContent): CC()
   class GetUserSMPServers(): CC()
-  class SetUserSMPServers(val smpServersStr: String): CC()
+  class SetUserSMPServers(val smpServers: List<String>): CC()
   class AddContact: CC()
   class Connect(val connReq: String): CC()
   class ApiDeleteChat(val type: ChatType, val id: Long): CC()
@@ -358,7 +357,7 @@ sealed class CC {
     is ApiGetChat -> "/_get chat ${chatRef(type, id)} count=100"
     is ApiSendMessage -> "/_send ${chatRef(type, id)} ${mc.cmdString}"
     is GetUserSMPServers -> "/smp_servers"
-    is SetUserSMPServers -> "/smp_servers $smpServersStr"
+    is SetUserSMPServers -> "/smp_servers ${smpServersStr(smpServers)}"
     is AddContact -> "/connect"
     is Connect -> "/connect $connReq"
     is ApiDeleteChat -> "/_delete ${chatRef(type, id)}"
@@ -397,6 +396,8 @@ sealed class CC {
 
   companion object {
     fun chatRef(chatType: ChatType, id: Long) = "${chatType.type}${id}"
+
+    fun smpServersStr(smpServers: List<String>) = if (smpServers.isEmpty()) "default" else smpServers.joinToString(separator = ",")
   }
 }
 
