@@ -182,7 +182,7 @@ schemaMigrations =
     ("20220210_deduplicate_contact_requests", m20220210_deduplicate_contact_requests),
     ("20220224_messages_fks", m20220224_messages_fks),
     ("20220301_smp_servers", m20220301_smp_servers),
-    ("20220302_profile_images", M20220302_profile_images)
+    ("20220302_profile_images", m20220302_profile_images)
   ]
 
 -- | The list of migrations in ascending order by date
