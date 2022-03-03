@@ -161,7 +161,7 @@ import Simplex.Chat.Migrations.M20220205_chat_item_status
 import Simplex.Chat.Migrations.M20220210_deduplicate_contact_requests
 import Simplex.Chat.Migrations.M20220224_messages_fks
 import Simplex.Chat.Migrations.M20220301_smp_servers
-import Simplex.Chat.Migrations.M20220302_avatars
+import Simplex.Chat.Migrations.M20220302_profile_images
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Chat.Util (eitherToMaybe)
@@ -182,7 +182,7 @@ schemaMigrations =
     ("20220210_deduplicate_contact_requests", m20220210_deduplicate_contact_requests),
     ("20220224_messages_fks", m20220224_messages_fks),
     ("20220301_smp_servers", m20220301_smp_servers),
-    ("20220302_avatars", m20220302_avatars)
+    ("20220302_profile_images", M20220302_profile_images)
   ]
 
 -- | The list of migrations in ascending order by date
