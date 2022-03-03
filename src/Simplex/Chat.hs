@@ -396,10 +396,10 @@ processChatCommand = \case
   ShowProfile -> withUser $ \User {profile} -> pure $ CRUserProfile profile
   UpdateProfile displayName fullName -> withUser $ \user@User {profile} -> do
     let p = (profile :: Profile) {displayName = displayName, fullName = fullName}
-    updateProfile profile p user
-  UpdateProfileImage _image -> withUser $ \user@User {profile} -> do
-    let p = (profile :: Profile) {image = Just _image}
-    updateProfile profile p user
+    updateProfile p user
+  UpdateProfileImage image -> withUser $ \user@User {profile} -> do
+    let p = (profile :: Profile) {image = Just image}
+    updateProfile p user
   QuitChat -> liftIO exitSuccess
   ShowVersion -> pure $ CRVersionInfo versionNumber
   where
@@ -438,8 +438,8 @@ processChatCommand = \case
     checkSndFile f = do
       unlessM (doesFileExist f) . throwChatError $ CEFileNotFound f
       (,) <$> getFileSize f <*> asks (fileChunkSize . config)
-    updateProfile :: Profile -> Profile -> User -> m ChatResponse
-    updateProfile p p'@Profile {displayName} user = do
+    updateProfile :: Profile -> User -> m ChatResponse
+    updateProfile p'@Profile {displayName} user@User {profile = p} = do
       if p' == p
         then pure CRUserProfileNoChange
         else do
@@ -1516,8 +1516,8 @@ chatCommandP =
     <|> ("/quit" <|> "/q" <|> "/exit") $> QuitChat
     <|> ("/version" <|> "/v") $> ShowVersion
   where
-    prefix = (<>) <$> "data:" <*> ("image/png;base64," <|> "image/jpg;base64,")
-    imageP = safeDecodeUtf8 <$> ((<>) <$> prefix <*> (B64.encode <$> base64P))
+    imagePrefix = (<>) <$> "data:" <*> ("image/png;base64," <|> "image/jpg;base64,")
+    imageP = safeDecodeUtf8 <$> ((<>) <$> imagePrefix <*> (B64.encode <$> base64P))
     chatTypeP = A.char '@' $> CTDirect <|> A.char '#' $> CTGroup
     chatPaginationP =
       (CPLast <$ "count=" <*> A.decimal)
@@ -1532,14 +1532,12 @@ chatCommandP =
       fullName <- fullNameP cName
       pure (cName, fullName)
     userProfile = do
-      cName <- displayName
-      fullName <- fullNameP cName
+      (cName, fullName) <- userNames
       pure Profile {displayName = cName, fullName, image = Nothing}
     groupProfile = do
       gName <- displayName
       fullName <- fullNameP gName
-      let image = Nothing
-      pure GroupProfile {displayName = gName, fullName, image}
+      pure GroupProfile {displayName = gName, fullName, image = Nothing}
     fullNameP name = do
       n <- (A.space *> A.takeByteString) <|> pure ""
       pure $ if B.null n then name else safeDecodeUtf8 n

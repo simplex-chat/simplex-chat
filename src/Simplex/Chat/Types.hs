@@ -175,7 +175,9 @@ data Profile = Profile
   }
   deriving (Eq, Show, Generic, FromJSON)
 
-instance ToJSON Profile where toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
+instance ToJSON Profile where
+  toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
+  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
 data GroupProfile = GroupProfile
   { displayName :: GroupName,
@@ -184,7 +186,9 @@ data GroupProfile = GroupProfile
   }
   deriving (Eq, Show, Generic, FromJSON)
 
-instance ToJSON GroupProfile where toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
+instance ToJSON GroupProfile where
+  toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
+  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
 newtype ProfileImage = ProfileImage Text
   deriving (Eq, Show)
