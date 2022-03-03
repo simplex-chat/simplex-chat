@@ -319,7 +319,7 @@ viewUserProfile Profile {displayName, fullName} =
 viewUserProfileUpdated :: Profile -> Profile -> [StyledString]
 viewUserProfileUpdated Profile {displayName = n, fullName, image} Profile {displayName = n', fullName = fullName', image = image'}
   | n == n' && fullName == fullName' && image == image' = []
-  | n == n' && fullName == fullName' = [(if isNothing image' then "profile image removed" else "profile image updated") <> notified]
+  | n == n' && fullName == fullName' = [if isNothing image' then "profile image removed" else "profile image updated"]
   | n == n' = ["user full name " <> (if T.null fullName' || fullName' == n' then "removed" else "changed to " <> plain fullName') <> notified]
   | otherwise = ["user profile is changed to " <> ttyFullName n' fullName' <> notified]
   where
