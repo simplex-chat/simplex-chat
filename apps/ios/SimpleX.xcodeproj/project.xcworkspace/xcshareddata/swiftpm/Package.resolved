@@ -1,0 +1,16 @@
+{
+  "object": {
+    "pins": [
+      {
+        "package": "CodeScanner",
+        "repositoryURL": "https://github.com/twostraws/CodeScanner",
+        "state": {
+          "branch": null,
+          "revision": "c27a66149b7483fe42e2ec6aad61d5c3fffe522d",
+          "version": "2.1.1"
+        }
+      }
+    ]
+  },
+  "version": 1
+}
