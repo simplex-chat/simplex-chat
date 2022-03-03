@@ -10,43 +10,55 @@ import SwiftUI
 
 struct SMPServers: View {
     @EnvironmentObject var chatModel: ChatModel
-    @State private var isUserSMPServers: Bool = false // TODO check model
-    @State private var userSMPServers: String = "abc" // TODO check model
-    @State private var editSMPServers: Bool = true // TODO false is servers exist
+    @State var isUserSMPServers = false
+    @State var editSMPServers = true
+    @State var userSMPServersStr = ""
+    @FocusState private var keyboardVisible: Bool
 
     var body: some View {
-        // TODO read servers from model
-//        let user: User = chatModel.currentUser!
-
         return VStack(alignment: .leading) {
             Text("You can configure custom SMP servers.")
                 .padding(.bottom)
-            Toggle("Custom SMP servers", isOn: $isUserSMPServers) // TODO on toggle, alert
-
+            Toggle("Custom SMP servers", isOn: $isUserSMPServers)
+                .onChange(of: isUserSMPServers) { _ in
+                    if (!isUserSMPServers) {
+                        // TODO alert
+                        saveSMPServers(smpServers: [])
+                    }
+                }
+            
             if !isUserSMPServers {
                 VStack(alignment: .leading) {
-                    Text("You are using default SMP servers")
+                    Text("You are using default SMP servers.")
                 }
-                .frame(maxWidth: .infinity, minHeight: 120, alignment: .leading)
+                .frame(maxWidth: .infinity, alignment: .leading)
             } else {
-                // TODO conditionally enable rich text box
                 if editSMPServers {
                     VStack(alignment: .leading) {
-                        TextField("Servers", text: $userSMPServers)
-                            .textInputAutocapitalization(.never)
-                            .disableAutocorrection(true)
-                            .padding(.bottom)
+                        TextEditor(text: $userSMPServersStr)
+                            .focused($keyboardVisible)
+//                            .font(teFont)
+                            .textInputAutocapitalization(.sentences)
+                            .padding(.horizontal, 5)
+                            .allowsTightening(false)
+                            .lineLimit(5)
+//                            .frame(height: teHeight)
                         HStack(spacing: 20) {
-                            Button("Save") { saveServers() }
+                            Button("Save") { saveUserSMPServers() }
                         }
                     }
                     .frame(maxWidth: .infinity, minHeight: 120, alignment: .leading)
                 } else {
                     VStack(alignment: .leading) {
-                        TextField("Servers", text: $userSMPServers)
-                            .textInputAutocapitalization(.never)
-                            .disableAutocorrection(true)
-                            .padding(.bottom)
+                        TextEditor(text: $userSMPServersStr)
+                            .focused($keyboardVisible)
+//                            .font(teFont)
+                            .textInputAutocapitalization(.sentences)
+                            .padding(.horizontal, 5)
+                            .allowsTightening(false)
+                            .lineLimit(5)
+                            .disabled(true)
+//                            .frame(height: teHeight)
                         Button("Edit") {
 //                            profile = user.profile
                             editSMPServers = true
@@ -57,22 +69,32 @@ struct SMPServers: View {
             }
         }
         .padding()
-        .frame(maxHeight: .infinity, alignment: .top)
-    }
+//        .frame(maxHeight: .infinity, alignment: .top)
 
-    func saveServers() {
+    }
+    
+    func saveUserSMPServers() {
+        let userSMPServers = userSMPServersStr.components(separatedBy: "\n")
+        saveSMPServers(smpServers: userSMPServers)
+    }
+    
+    func saveSMPServers(smpServers: [String]) {
         Task {
-//            do {
-//                if let newProfile = try await apiUpdateProfile(profile: profile) {
-//                    DispatchQueue.main.async {
-//                        chatModel.currentUser?.profile = newProfile
-//                        profile = newProfile
-//                    }
-//                }
-//            } catch {
-//                logger.error("UserProfile apiUpdateProfile error: \(error.localizedDescription)")
-//            }
-            editSMPServers = false
+            do {
+                try await setUserSMPServers(smpServers: smpServers)
+                DispatchQueue.main.async {
+                    chatModel.userSMPServers = smpServers
+                }
+                if smpServers.isEmpty {
+                    isUserSMPServers = false
+                    editSMPServers = true
+                } else {
+                    editSMPServers = false
+                }
+            } catch {
+                logger.error("SMPServers.saveServers setUserSMPServers error: \(error.localizedDescription)")
+                // TODO alert?
+            }
         }
     }
 }

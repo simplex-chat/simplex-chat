@@ -47,11 +47,16 @@ struct SettingsView: View {
                         }
                     }
                     NavigationLink {
-                        SMPServers()
-                            .navigationTitle("SMP servers")
+                        let servers = chatModel.userSMPServers ?? []
+                        SMPServers(
+                            isUserSMPServers: !servers.isEmpty,
+                            editSMPServers: servers.isEmpty,
+                            userSMPServersStr: servers.isEmpty ? "" : servers.joined(separator: "\n")
+                        )
+                        .navigationTitle("SMP servers")
                     } label: {
                         HStack {
-                            Image(systemName: "qrcode")
+                            Image(systemName: "server.rack")
                                 .padding(.trailing, 8)
                             Text("SMP servers")
                         }
