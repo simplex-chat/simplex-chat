@@ -31,7 +31,6 @@ struct ContentView: View {
                 .alert(isPresented: $alertManager.presentAlert) { alertManager.alertView! }
         } else {
             WelcomeView()
-                .alert(isPresented: $alertManager.presentAlert) { alertManager.alertView! }
         }
     }
 

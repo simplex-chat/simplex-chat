@@ -10,8 +10,12 @@ import androidx.compose.ui.text.style.TextDecoration
 import chat.simplex.app.ui.theme.SecretColor
 import chat.simplex.app.ui.theme.SimplexBlue
 import kotlinx.datetime.*
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
+import kotlinx.serialization.*
+import kotlinx.serialization.builtins.IntArraySerializer
+import kotlinx.serialization.descriptors.*
+import kotlinx.serialization.encoding.*
+import kotlinx.serialization.json.*
+import kotlinx.serialization.modules.SerializersModule
 
 class ChatModel(val controller: ChatController) {
   var currentUser = mutableStateOf<User?>(null)
@@ -588,14 +592,57 @@ sealed class CIContent {
   }
 }
 
-@Serializable
+@Serializable(with = MsgContentSerializer::class)
 sealed class MsgContent {
   abstract val text: String
-  abstract val cmdString: String
 
-  @Serializable @SerialName("text")
-  class MCText(override val text: String): MsgContent() {
-    override val cmdString get() = "text $text"
+  class MCText(override val text: String): MsgContent()
+  class MCUnknown(val type: String? = null, override val text: String, val json: JsonElement): MsgContent()
+
+  val cmdString: String get() = when (this) {
+    is MCText -> "text $text"
+    is MCUnknown -> "json $json"
+  }
+}
+
+object MsgContentSerializer : KSerializer<MsgContent> {
+  override val descriptor: SerialDescriptor = buildSerialDescriptor("MsgContent", PolymorphicKind.SEALED) {
+    element("MCText", buildClassSerialDescriptor("MCText") {
+      element<String>("text")
+    })
+    element("MCUnknown", buildClassSerialDescriptor("MCUnknown"))
+  }
+
+  override fun deserialize(decoder: Decoder): MsgContent {
+    require(decoder is JsonDecoder)
+    val json = decoder.decodeJsonElement()
+    return if (json is JsonObject) {
+      if ("type" in json) {
+        val t = json["type"]?.jsonPrimitive?.content ?: ""
+        val text = json["text"]?.jsonPrimitive?.content ?: "unknown message format"
+        when (t) {
+          "text" -> MsgContent.MCText(text)
+          else -> MsgContent.MCUnknown(t, text, json)
+        }
+      } else {
+        MsgContent.MCUnknown(text = "invalid message format", json = json)
+      }
+    } else {
+      MsgContent.MCUnknown(text = "invalid message format", json = json)
+    }
+  }
+
+  override fun serialize(encoder: Encoder, value: MsgContent) {
+    require(encoder is JsonEncoder)
+    val json = when (value) {
+      is MsgContent.MCText ->
+        buildJsonObject {
+          put("type", "text")
+          put("text", value.text)
+        }
+      is MsgContent.MCUnknown -> value.json
+    }
+    encoder.encodeJsonElement(json)
   }
 }
 
