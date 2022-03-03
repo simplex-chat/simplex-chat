@@ -7,7 +7,7 @@ import Database.SQLite.Simple.QQ (sql)
 
 m20220228_avatars :: Query
 m20220228_avatars =
-    [sql|
-    ALTER TABLE contact_profiles ADD COLUMN image BLOB;
-    ALTER TABLE group_profiles ADD COLUMN image BLOB;
+  [sql|
+    ALTER TABLE contact_profiles ADD COLUMN image TEXT;
+    ALTER TABLE group_profiles ADD COLUMN image TEXT;
 |]

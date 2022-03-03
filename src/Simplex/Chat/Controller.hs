@@ -126,7 +126,7 @@ data ChatCommand
   | FileStatus FileTransferId
   | ShowProfile
   | UpdateProfile ContactName Text
-  | UpdateProfileImage Text
+  | UpdateProfileImage ProfileImage
   | QuitChat
   | ShowVersion
   deriving (Show)

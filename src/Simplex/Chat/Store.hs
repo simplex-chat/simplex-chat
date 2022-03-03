@@ -245,7 +245,7 @@ getUsers st =
           JOIN contact_profiles p ON c.contact_profile_id = p.contact_profile_id
         |]
 
-toUser :: (UserId, Int64, Bool, ContactName, Text, Maybe Text) -> User
+toUser :: (UserId, Int64, Bool, ContactName, Text, Maybe ProfileImage) -> User
 toUser (userId, userContactId, activeUser, displayName, fullName, image) =
   let profile = Profile {displayName, fullName, image}
    in User {userId, userContactId, localDisplayName = displayName, profile, activeUser}
@@ -458,7 +458,7 @@ updateContact_ db userId contactId displayName newName updatedAt = do
     (newName, updatedAt, userId, contactId)
   DB.execute db "DELETE FROM display_names WHERE local_display_name = ? AND user_id = ?" (displayName, userId)
 
-type ContactRow = (Int64, ContactName, Maybe Int64, ContactName, Text, Maybe Text, UTCTime)
+type ContactRow = (Int64, ContactName, Maybe Int64, ContactName, Text, Maybe ProfileImage, UTCTime)
 
 toContact :: ContactRow :. ConnectionRow -> Contact
 toContact ((contactId, localDisplayName, viaGroup, displayName, fullName, image, createdAt) :. connRow) =
@@ -734,7 +734,7 @@ getContactRequest_ db userId contactRequestId =
       |]
       (userId, contactRequestId)
 
-type ContactRequestRow = (Int64, ContactName, AgentInvId, Int64, AgentConnId, Int64, ContactName, Text, Maybe Text, UTCTime, Maybe XContactId)
+type ContactRequestRow = (Int64, ContactName, AgentInvId, Int64, AgentConnId, Int64, ContactName, Text, Maybe ProfileImage, UTCTime, Maybe XContactId)
 
 toContactRequest :: ContactRequestRow -> UserContactRequest
 toContactRequest (contactRequestId, localDisplayName, agentInvitationId, userContactLinkId, agentContactConnId, profileId, displayName, fullName, image, createdAt, xContactId) = do
@@ -1068,7 +1068,7 @@ getConnectionEntity st User {userId, userContactId} agentConnId =
             WHERE c.user_id = ? AND c.contact_id = ?
           |]
           (userId, contactId)
-    toContact' :: Int64 -> Connection -> [(ContactName, Text, Text, Maybe Text, Maybe Int64, UTCTime)] -> Either StoreError Contact
+    toContact' :: Int64 -> Connection -> [(ContactName, Text, Text, Maybe ProfileImage, Maybe Int64, UTCTime)] -> Either StoreError Contact
     toContact' contactId activeConn [(localDisplayName, displayName, fullName, image, viaGroup, createdAt)] =
       let profile = Profile {displayName, fullName, image}
        in Right $ Contact {contactId, localDisplayName, profile, activeConn, viaGroup, createdAt}
@@ -1262,7 +1262,7 @@ getGroupInfoByName st user gName =
     gId <- ExceptT $ getGroupIdByName_ db user gName
     ExceptT $ getGroupInfo_ db user gId
 
-type GroupInfoRow = (Int64, GroupName, GroupName, Text, Maybe Text, UTCTime) :. GroupMemberRow
+type GroupInfoRow = (Int64, GroupName, GroupName, Text, Maybe ProfileImage, UTCTime) :. GroupMemberRow
 
 toGroupInfo :: Int64 -> GroupInfoRow -> GroupInfo
 toGroupInfo userContactId ((groupId, localDisplayName, displayName, fullName, image, createdAt) :. userMemberRow) =
@@ -1320,9 +1320,9 @@ getGroupInvitation st user localDisplayName =
     findFromContact (IBContact contactId) = find ((== Just contactId) . memberContactId)
     findFromContact _ = const Nothing
 
-type GroupMemberRow = (Int64, Int64, MemberId, GroupMemberRole, GroupMemberCategory, GroupMemberStatus, Maybe Int64, ContactName, Maybe Int64, ContactName, Text, Maybe Text)
+type GroupMemberRow = (Int64, Int64, MemberId, GroupMemberRole, GroupMemberCategory, GroupMemberStatus, Maybe Int64, ContactName, Maybe Int64, ContactName, Text, Maybe ProfileImage)
 
-type MaybeGroupMemberRow = (Maybe Int64, Maybe Int64, Maybe MemberId, Maybe GroupMemberRole, Maybe GroupMemberCategory, Maybe GroupMemberStatus, Maybe Int64, Maybe ContactName, Maybe Int64, Maybe ContactName, Maybe Text, Maybe Text)
+type MaybeGroupMemberRow = (Maybe Int64, Maybe Int64, Maybe MemberId, Maybe GroupMemberRole, Maybe GroupMemberCategory, Maybe GroupMemberStatus, Maybe Int64, Maybe ContactName, Maybe Int64, Maybe ContactName, Maybe Text, Maybe ProfileImage)
 
 toGroupMember :: Int64 -> GroupMemberRow -> GroupMember
 toGroupMember userContactId (groupMemberId, groupId, memberId, memberRole, memberCategory, memberStatus, invitedById, localDisplayName, memberContactId, displayName, fullName, image) =
@@ -1700,7 +1700,7 @@ getViaGroupContact st User {userId} GroupMember {groupMemberId} =
         |]
         (userId, groupMemberId)
   where
-    toContact' :: [(Int64, ContactName, Text, Text, Maybe Text, Maybe Int64, UTCTime) :. ConnectionRow] -> Maybe Contact
+    toContact' :: [(Int64, ContactName, Text, Text, Maybe ProfileImage, Maybe Int64, UTCTime) :. ConnectionRow] -> Maybe Contact
     toContact' [(contactId, localDisplayName, displayName, fullName, image, viaGroup, createdAt) :. connRow] =
       let profile = Profile {displayName, fullName, image}
           activeConn = toConnection connRow
