@@ -396,10 +396,10 @@ processChatCommand = \case
   ShowProfile -> withUser $ \User {profile} -> pure $ CRUserProfile profile
   UpdateProfile displayName fullName -> withUser $ \user@User {profile} -> do
     let p = (profile :: Profile) {displayName = displayName, fullName = fullName}
-    updateProfile p user
+    updateProfile user p
   UpdateProfileImage image -> withUser $ \user@User {profile} -> do
     let p = (profile :: Profile) {image = Just image}
-    updateProfile p user
+    updateProfile user p
   QuitChat -> liftIO exitSuccess
   ShowVersion -> pure $ CRVersionInfo versionNumber
   where
@@ -438,8 +438,8 @@ processChatCommand = \case
     checkSndFile f = do
       unlessM (doesFileExist f) . throwChatError $ CEFileNotFound f
       (,) <$> getFileSize f <*> asks (fileChunkSize . config)
-    updateProfile :: Profile -> User -> m ChatResponse
-    updateProfile p'@Profile {displayName} user@User {profile = p} = do
+    updateProfile :: User -> Profile -> m ChatResponse
+    updateProfile user@User {profile = p} p'@Profile {displayName} = do
       if p' == p
         then pure CRUserProfileNoChange
         else do
