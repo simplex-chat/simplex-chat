@@ -19,6 +19,7 @@ import qualified Data.Aeson.Encoding as JE
 import qualified Data.Aeson.KeyMap as JM
 import qualified Data.Aeson.Types as JT
 import qualified Data.Attoparsec.ByteString.Char8 as A
+import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
@@ -27,7 +28,7 @@ import Database.SQLite.Simple.FromField (FromField (..))
 import Database.SQLite.Simple.ToField (ToField (..))
 import GHC.Generics (Generic)
 import Simplex.Chat.Types
-import Simplex.Chat.Util (eitherToMaybe)
+import Simplex.Chat.Util (eitherToMaybe, safeDecodeUtf8)
 import Simplex.Messaging.Agent.Store.SQLite (fromTextField_)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Util ((<$?>))
@@ -52,14 +53,47 @@ updateEntityConnStatus connEntity connStatus = case connEntity of
 
 -- chat message is sent as JSON with these properties
 data AppMessage = AppMessage
-  { event :: Text,
+  { msgId :: Maybe SharedMsgId,
+    event :: Text,
     params :: J.Object
   }
   deriving (Generic, FromJSON)
 
-instance ToJSON AppMessage where toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
+instance ToJSON AppMessage where
+  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
+  toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
 
-newtype ChatMessage = ChatMessage {chatMsgEvent :: ChatMsgEvent}
+newtype SharedMsgId = SharedMsgId ByteString
+  deriving (Eq, Show)
+
+instance FromField SharedMsgId where fromField f = SharedMsgId <$> fromField f
+
+instance ToField SharedMsgId where toField (SharedMsgId m) = toField m
+
+instance StrEncoding SharedMsgId where
+  strEncode (SharedMsgId m) = strEncode m
+  strDecode s = SharedMsgId <$> strDecode s
+  strP = SharedMsgId <$> strP
+
+instance FromJSON SharedMsgId where
+  parseJSON = strParseJSON "SharedMsgId"
+
+instance ToJSON SharedMsgId where
+  toJSON = strToJSON
+  toEncoding = strToJEncoding
+
+data MessageRef = MessageRef
+  { msgId :: SharedMsgId,
+    sent :: Bool,
+    memberId :: Maybe MemberId
+  }
+  deriving (Eq, Show, Generic, FromJSON)
+
+instance ToJSON MessageRef where
+  toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
+  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
+
+data ChatMessage = ChatMessage {msgId :: Maybe SharedMsgId, chatMsgEvent :: ChatMsgEvent}
   deriving (Eq, Show)
 
 instance StrEncoding ChatMessage where
@@ -68,7 +102,7 @@ instance StrEncoding ChatMessage where
   strP = strDecode <$?> A.takeByteString
 
 data ChatMsgEvent
-  = XMsgNew MsgContent
+  = XMsgNew {content :: MsgContent, replyTo :: Maybe MessageRef}
   | XFile FileInvitation
   | XFileAcpt String
   | XInfo Profile
@@ -89,6 +123,7 @@ data ChatMsgEvent
   | XInfoProbeCheck ProbeHash
   | XInfoProbeOk Probe
   | XOk
+  | XUnknown {event :: Text, params :: J.Object}
   deriving (Eq, Show)
 
 data MsgContentType = MCText_ | MCUnknown_
@@ -163,6 +198,7 @@ data CMEventTag
   | XInfoProbeCheck_
   | XInfoProbeOk_
   | XOk_
+  | XUnknown_ Text
   deriving (Eq, Show)
 
 instance StrEncoding CMEventTag where
@@ -188,6 +224,7 @@ instance StrEncoding CMEventTag where
     XInfoProbeCheck_ -> "x.info.probe.check"
     XInfoProbeOk_ -> "x.info.probe.ok"
     XOk_ -> "x.ok"
+    XUnknown_ t -> encodeUtf8 t
   strDecode = \case
     "x.msg.new" -> Right XMsgNew_
     "x.file" -> Right XFile_
@@ -210,12 +247,12 @@ instance StrEncoding CMEventTag where
     "x.info.probe.check" -> Right XInfoProbeCheck_
     "x.info.probe.ok" -> Right XInfoProbeOk_
     "x.ok" -> Right XOk_
-    _ -> Left "bad CMEventTag"
+    t -> Right . XUnknown_ $ safeDecodeUtf8 t
   strP = strDecode <$?> A.takeTill (== ' ')
 
 toCMEventTag :: ChatMsgEvent -> CMEventTag
 toCMEventTag = \case
-  XMsgNew _ -> XMsgNew_
+  XMsgNew _ _ -> XMsgNew_
   XFile _ -> XFile_
   XFileAcpt _ -> XFileAcpt_
   XInfo _ -> XInfo_
@@ -236,6 +273,7 @@ toCMEventTag = \case
   XInfoProbeCheck _ -> XInfoProbeCheck_
   XInfoProbeOk _ -> XInfoProbeOk_
   XOk -> XOk_
+  XUnknown t _ -> XUnknown_ t
 
 cmEventTagT :: Text -> Maybe CMEventTag
 cmEventTagT = eitherToMaybe . strDecode . encodeUtf8
@@ -248,19 +286,21 @@ instance FromField CMEventTag where fromField = fromTextField_ cmEventTagT
 instance ToField CMEventTag where toField = toField . serializeCMEventTag
 
 appToChatMessage :: AppMessage -> Either String ChatMessage
-appToChatMessage AppMessage {event, params} = do
+appToChatMessage AppMessage {msgId, event, params} = do
   eventTag <- strDecode $ encodeUtf8 event
   chatMsgEvent <- msg eventTag
-  pure ChatMessage {chatMsgEvent}
+  pure ChatMessage {msgId, chatMsgEvent}
   where
     p :: FromJSON a => J.Key -> Either String a
     p key = JT.parseEither (.: key) params
+    opt :: FromJSON a => J.Key -> Either String (Maybe a)
+    opt key = JT.parseEither (.:? key) params
     msg = \case
-      XMsgNew_ -> XMsgNew <$> p "content"
+      XMsgNew_ -> XMsgNew <$> p "content" <*> opt "replyTo"
       XFile_ -> XFile <$> p "file"
       XFileAcpt_ -> XFileAcpt <$> p "fileName"
       XInfo_ -> XInfo <$> p "profile"
-      XContact_ -> XContact <$> p "profile" <*> JT.parseEither (.:? "contactReqId") params
+      XContact_ -> XContact <$> p "profile" <*> opt "contactReqId"
       XGrpInv_ -> XGrpInv <$> p "groupInvitation"
       XGrpAcpt_ -> XGrpAcpt <$> p "memberId"
       XGrpMemNew_ -> XGrpMemNew <$> p "memberInfo"
@@ -277,19 +317,21 @@ appToChatMessage AppMessage {event, params} = do
       XInfoProbeCheck_ -> XInfoProbeCheck <$> p "probeHash"
       XInfoProbeOk_ -> XInfoProbeOk <$> p "probe"
       XOk_ -> pure XOk
+      XUnknown_ t -> pure $ XUnknown t params
 
 chatToAppMessage :: ChatMessage -> AppMessage
-chatToAppMessage ChatMessage {chatMsgEvent} = AppMessage {event, params}
+chatToAppMessage ChatMessage {msgId, chatMsgEvent} = AppMessage {msgId, event, params}
   where
     event = serializeCMEventTag . toCMEventTag $ chatMsgEvent
     o :: [(J.Key, J.Value)] -> J.Object
     o = JM.fromList
+    key .=? value = maybe id ((:) . (key .=)) value
     params = case chatMsgEvent of
-      XMsgNew content -> o ["content" .= content]
+      XMsgNew content msgRef -> o $ ("replyTo" .=? msgRef) ["content" .= content]
       XFile fileInv -> o ["file" .= fileInv]
       XFileAcpt fileName -> o ["fileName" .= fileName]
       XInfo profile -> o $ ["profile" .= profile]
-      XContact profile xContactId -> o $ maybe id ((:) . ("contactReqId" .=)) xContactId ["profile" .= profile]
+      XContact profile xContactId -> o $ ("contactReqId" .=? xContactId) ["profile" .= profile]
       XGrpInv groupInv -> o ["groupInvitation" .= groupInv]
       XGrpAcpt memId -> o ["memberId" .= memId]
       XGrpMemNew memInfo -> o ["memberInfo" .= memInfo]
@@ -306,3 +348,4 @@ chatToAppMessage ChatMessage {chatMsgEvent} = AppMessage {event, params}
       XInfoProbeCheck probeHash -> o ["probeHash" .= probeHash]
       XInfoProbeOk probe -> o ["probe" .= probe]
       XOk -> JM.empty
+      XUnknown _ ps -> ps

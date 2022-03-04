@@ -176,13 +176,13 @@ processChatCommand = \case
   APISendMessage cType chatId mc -> withUser $ \user@User {userId} -> withChatLock $ case cType of
     CTDirect -> do
       ct@Contact {localDisplayName = c} <- withStore $ \st -> getContact st userId chatId
-      ci <- sendDirectChatItem userId ct (XMsgNew mc) (CISndMsgContent mc)
+      ci <- sendDirectChatItem userId ct (XMsgNew mc Nothing) (CISndMsgContent mc)
       setActive $ ActiveC c
       pure . CRNewChatItem $ AChatItem SCTDirect SMDSnd (DirectChat ct) ci
     CTGroup -> do
       group@(Group gInfo@GroupInfo {localDisplayName = gName, membership} _) <- withStore $ \st -> getGroup st user chatId
       unless (memberActive membership) $ throwChatError CEGroupMemberUserRemoved
-      ci <- sendGroupChatItem userId group (XMsgNew mc) (CISndMsgContent mc)
+      ci <- sendGroupChatItem userId group (XMsgNew mc Nothing) (CISndMsgContent mc)
       setActive $ ActiveG gName
       pure . CRNewChatItem $ AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci
     CTContactRequest -> pure $ chatCmdError "not supported"
@@ -617,7 +617,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
         INFO connInfo ->
           saveConnInfo conn connInfo
         MSG meta msgBody -> do
-          _ <- saveRcvMSG conn meta msgBody (ConnectionId connId)
+          _ <- saveRcvMSG conn (ConnectionId connId) meta msgBody
           withAckMessage agentConnId meta $ pure ()
           ackMsgDeliveryEvent conn meta
         SENT msgId ->
@@ -630,10 +630,10 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
         _ -> pure ()
       Just ct@Contact {localDisplayName = c} -> case agentMsg of
         MSG msgMeta msgBody -> do
-          (msgId, chatMsgEvent) <- saveRcvMSG conn msgMeta msgBody (ConnectionId connId)
+          (msgId, chatMsgEvent) <- saveRcvMSG conn (ConnectionId connId) msgMeta msgBody
           withAckMessage agentConnId msgMeta $
             case chatMsgEvent of
-              XMsgNew mc -> newContentMessage ct mc msgId msgMeta
+              XMsgNew mc _ -> newContentMessage ct mc msgId msgMeta
               XFile fInv -> processFileInvitation ct fInv msgId msgMeta
               XInfo p -> xInfo ct p
               XGrpInv gInv -> processGroupInvitation ct gInv
@@ -769,10 +769,10 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
                   notifyMemberConnected gInfo m
                   when (memberCategory m == GCPreMember) $ probeMatchingContacts ct
       MSG msgMeta msgBody -> do
-        (msgId, chatMsgEvent) <- saveRcvMSG conn msgMeta msgBody (GroupId groupId)
+        (msgId, chatMsgEvent) <- saveRcvMSG conn (GroupId groupId) msgMeta msgBody
         withAckMessage agentConnId msgMeta $
           case chatMsgEvent of
-            XMsgNew mc -> newGroupContentMessage gInfo m mc msgId msgMeta
+            XMsgNew mc _ -> newGroupContentMessage gInfo m mc msgId msgMeta
             XFile fInv -> processGroupFileInvitation gInfo m fInv msgId msgMeta
             XGrpMemNew memInfo -> xGrpMemNew gInfo m memInfo
             XGrpMemIntro memInfo -> xGrpMemIntro conn gInfo m memInfo
@@ -1265,13 +1265,13 @@ sendDirectMessage conn chatMsgEvent connOrGroupId = do
 
 createSndMessage :: ChatMonad m => ChatMsgEvent -> ConnOrGroupId -> m (MessageId, MsgBody)
 createSndMessage chatMsgEvent connOrGroupId = do
-  let msgBody = directMessage chatMsgEvent
-      newMsg = NewMessage {direction = MDSnd, cmEventTag = toCMEventTag chatMsgEvent, msgBody}
-  msgId <- withStore $ \st -> createNewMessage st newMsg connOrGroupId
-  pure (msgId, msgBody)
+  gVar <- asks idsDrg
+  withStore $ \st -> createNewMessage st gVar connOrGroupId $ \sharedMsgId ->
+    let msgBody = strEncode ChatMessage {msgId = Just sharedMsgId, chatMsgEvent}
+     in NewMessage {direction = MDSnd, cmEventTag = toCMEventTag chatMsgEvent, msgBody}
 
 directMessage :: ChatMsgEvent -> ByteString
-directMessage chatMsgEvent = strEncode ChatMessage {chatMsgEvent}
+directMessage chatMsgEvent = strEncode ChatMessage {msgId = Nothing, chatMsgEvent}
 
 deliverMessage :: ChatMonad m => Connection -> MsgBody -> MessageId -> m ()
 deliverMessage conn@Connection {connId} msgBody msgId = do
@@ -1312,14 +1312,14 @@ sendPendingGroupMessages GroupMember {groupMemberId, localDisplayName} conn = do
       Nothing -> throwChatError $ CEGroupMemberIntroNotFound localDisplayName
       Just introId -> withStore (\st -> updateIntroStatus st introId GMIntroInvForwarded)
 
-saveRcvMSG :: ChatMonad m => Connection -> MsgMeta -> MsgBody -> ConnOrGroupId -> m (MessageId, ChatMsgEvent)
-saveRcvMSG Connection {connId} agentMsgMeta msgBody connOrGroupId = do
-  ChatMessage {chatMsgEvent} <- liftEither $ parseChatMessage msgBody
+saveRcvMSG :: ChatMonad m => Connection -> ConnOrGroupId -> MsgMeta -> MsgBody -> m (MessageId, ChatMsgEvent)
+saveRcvMSG Connection {connId} connOrGroupId agentMsgMeta msgBody = do
+  ChatMessage {msgId = sharedMsgId, chatMsgEvent} <- liftEither $ parseChatMessage msgBody
   let agentMsgId = fst $ recipient agentMsgMeta
       cmEventTag = toCMEventTag chatMsgEvent
       newMsg = NewMessage {direction = MDRcv, cmEventTag, msgBody}
       rcvMsgDelivery = RcvMsgDelivery {connId, agentMsgId, agentMsgMeta}
-  msgId <- withStore $ \st -> createNewMessageAndRcvMsgDelivery st newMsg connOrGroupId rcvMsgDelivery
+  msgId <- withStore $ \st -> createNewMessageAndRcvMsgDelivery st connOrGroupId newMsg sharedMsgId rcvMsgDelivery
   pure (msgId, chatMsgEvent)
 
 sendDirectChatItem :: ChatMonad m => UserId -> Contact -> ChatMsgEvent -> CIContent 'MDSnd -> m (ChatItem 'CTDirect 'MDSnd)

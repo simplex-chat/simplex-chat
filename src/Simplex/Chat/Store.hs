@@ -162,6 +162,7 @@ import Simplex.Chat.Migrations.M20220210_deduplicate_contact_requests
 import Simplex.Chat.Migrations.M20220224_messages_fks
 import Simplex.Chat.Migrations.M20220301_smp_servers
 import Simplex.Chat.Migrations.M20220302_profile_images
+import Simplex.Chat.Migrations.M20220304_shared_msg_id
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Chat.Util (eitherToMaybe)
@@ -170,6 +171,7 @@ import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore (..), createSQLiteStore
 import Simplex.Messaging.Agent.Store.SQLite.Migrations (Migration (..))
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Parsers (dropPrefix, sumTypeJSON)
+import Simplex.Messaging.Protocol (MsgBody)
 import Simplex.Messaging.Util (liftIOEither, (<$$>))
 import System.FilePath (takeFileName)
 import UnliftIO.STM
@@ -182,7 +184,8 @@ schemaMigrations =
     ("20220210_deduplicate_contact_requests", m20220210_deduplicate_contact_requests),
     ("20220224_messages_fks", m20220224_messages_fks),
     ("20220301_smp_servers", m20220301_smp_servers),
-    ("20220302_profile_images", m20220302_profile_images)
+    ("20220302_profile_images", m20220302_profile_images),
+    ("20220304_shared_msg_id", m20220304_shared_msg_id)
   ]
 
 -- | The list of migrations in ascending order by date
@@ -2023,11 +2026,30 @@ getSndFileTransfers_ db userId fileId =
         Just recipientDisplayName -> Right SndFileTransfer {fileId, fileStatus, fileName, fileSize, chunkSize, filePath, recipientDisplayName, connId, agentConnId}
         Nothing -> Left $ SESndFileInvalid fileId
 
-createNewMessage :: MonadUnliftIO m => SQLiteStore -> NewMessage -> ConnOrGroupId -> m MessageId
-createNewMessage st newMsg connOrGroupId =
-  liftIO . withTransaction st $ \db -> do
-    currentTs <- getCurrentTime
-    createNewMessage_ db newMsg connOrGroupId currentTs
+createNewMessage :: StoreMonad m => SQLiteStore -> TVar ChaChaDRG -> ConnOrGroupId -> (SharedMsgId -> NewMessage) -> m (MessageId, MsgBody)
+createNewMessage st gVar connOrGroupId mkMessage =
+  liftIOEither . withTransaction st $ \db ->
+    createWithRandomId gVar $ \sharedMsgId -> do
+      createdAt <- getCurrentTime
+      DB.execute
+        db
+        "INSERT INTO messages (msg_sent, chat_msg_event, msg_body, shared_msg_id, created_at, updated_at) VALUES (?,?,?,?,?,?)"
+        (MDSnd, XUnknown_ "", "" :: MsgBody, sharedMsgId, createdAt, createdAt)
+      msgId <- insertedRowId db
+      let NewMessage {direction, cmEventTag, msgBody} = mkMessage $ SharedMsgId sharedMsgId
+      DB.execute
+        db
+        [sql|
+          UPDATE messages
+          SET msg_sent = ?, chat_msg_event = ?, msg_body = ?, connection_id = ?, group_id = ?
+          WHERE message_id = ?
+        |]
+        (direction, cmEventTag, msgBody, connId_, groupId_, msgId)
+      pure (msgId, msgBody)
+  where
+    (connId_, groupId_) = case connOrGroupId of
+      ConnectionId connId -> (Just connId, Nothing)
+      GroupId groupId -> (Nothing, Just groupId)
 
 createSndMsgDelivery :: MonadUnliftIO m => SQLiteStore -> SndMsgDelivery -> MessageId -> m ()
 createSndMsgDelivery st sndMsgDelivery messageId =
@@ -2036,14 +2058,26 @@ createSndMsgDelivery st sndMsgDelivery messageId =
     msgDeliveryId <- createSndMsgDelivery_ db sndMsgDelivery messageId currentTs
     createMsgDeliveryEvent_ db msgDeliveryId MDSSndAgent currentTs
 
-createNewMessageAndRcvMsgDelivery :: MonadUnliftIO m => SQLiteStore -> NewMessage -> ConnOrGroupId -> RcvMsgDelivery -> m MessageId
-createNewMessageAndRcvMsgDelivery st newMsg connOrGroupId rcvMsgDelivery =
+createNewMessageAndRcvMsgDelivery :: MonadUnliftIO m => SQLiteStore -> ConnOrGroupId -> NewMessage -> Maybe SharedMsgId -> RcvMsgDelivery -> m MessageId
+createNewMessageAndRcvMsgDelivery st connOrGroupId NewMessage {direction, cmEventTag, msgBody} sharedMsgId RcvMsgDelivery {connId, agentMsgId, agentMsgMeta} =
   liftIO . withTransaction st $ \db -> do
     currentTs <- getCurrentTime
-    messageId <- createNewMessage_ db newMsg connOrGroupId currentTs
-    msgDeliveryId <- createRcvMsgDelivery_ db rcvMsgDelivery messageId currentTs
+    DB.execute
+      db
+      "INSERT INTO messages (msg_sent, chat_msg_event, msg_body, created_at, updated_at, connection_id, group_id, shared_msg_id) VALUES (?,?,?,?,?,?,?,?)"
+      (direction, cmEventTag, msgBody, currentTs, currentTs, connId_, groupId_, sharedMsgId)
+    messageId <- insertedRowId db
+    DB.execute
+      db
+      "INSERT INTO msg_deliveries (message_id, connection_id, agent_msg_id, agent_msg_meta, chat_ts, created_at, updated_at) VALUES (?,?,?,?,?,?,?)"
+      (messageId, connId, agentMsgId, msgMetaJson agentMsgMeta, snd $ broker agentMsgMeta, currentTs, currentTs)
+    msgDeliveryId <- insertedRowId db
     createMsgDeliveryEvent_ db msgDeliveryId MDSRcvAgent currentTs
     pure messageId
+  where
+    (connId_, groupId_) = case connOrGroupId of
+      ConnectionId connId' -> (Just connId', Nothing)
+      GroupId groupId -> (Nothing, Just groupId)
 
 createSndMsgDeliveryEvent :: StoreMonad m => SQLiteStore -> Int64 -> AgentMsgId -> MsgDeliveryStatus 'MDSnd -> m ()
 createSndMsgDeliveryEvent st connId agentMsgId sndMsgDeliveryStatus =
@@ -2061,22 +2095,6 @@ createRcvMsgDeliveryEvent st connId agentMsgId rcvMsgDeliveryStatus =
       currentTs <- getCurrentTime
       createMsgDeliveryEvent_ db msgDeliveryId rcvMsgDeliveryStatus currentTs
 
-createNewMessage_ :: DB.Connection -> NewMessage -> ConnOrGroupId -> UTCTime -> IO MessageId
-createNewMessage_ db NewMessage {direction, cmEventTag, msgBody} connOrGroupId createdAt = do
-  DB.execute
-    db
-    [sql|
-      INSERT INTO messages
-        (msg_sent, chat_msg_event, msg_body, created_at, updated_at, connection_id, group_id)
-      VALUES (?,?,?,?,?,?,?)
-    |]
-    (direction, cmEventTag, msgBody, createdAt, createdAt, connId_, groupId_)
-  insertedRowId db
-  where
-    (connId_, groupId_) = case connOrGroupId of
-      ConnectionId connId -> (Just connId, Nothing)
-      GroupId groupId -> (Nothing, Just groupId)
-
 createSndMsgDelivery_ :: DB.Connection -> SndMsgDelivery -> MessageId -> UTCTime -> IO Int64
 createSndMsgDelivery_ db SndMsgDelivery {connId, agentMsgId} messageId createdAt = do
   DB.execute
@@ -2087,18 +2105,6 @@ createSndMsgDelivery_ db SndMsgDelivery {connId, agentMsgId} messageId createdAt
       VALUES (?,?,?,NULL,?,?,?)
     |]
     (messageId, connId, agentMsgId, createdAt, createdAt, createdAt)
-  insertedRowId db
-
-createRcvMsgDelivery_ :: DB.Connection -> RcvMsgDelivery -> MessageId -> UTCTime -> IO Int64
-createRcvMsgDelivery_ db RcvMsgDelivery {connId, agentMsgId, agentMsgMeta} messageId createdAt = do
-  DB.execute
-    db
-    [sql|
-      INSERT INTO msg_deliveries
-        (message_id, connection_id, agent_msg_id, agent_msg_meta, chat_ts, created_at, updated_at)
-      VALUES (?,?,?,?,?,?,?)
-    |]
-    (messageId, connId, agentMsgId, msgMetaJson agentMsgMeta, snd $ broker agentMsgMeta, createdAt, createdAt)
   insertedRowId db
 
 createMsgDeliveryEvent_ :: DB.Connection -> Int64 -> MsgDeliveryStatus d -> UTCTime -> IO ()

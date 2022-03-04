@@ -42,7 +42,7 @@ JTD for reply messages:
 ```yaml
 properties:
   msgId: string
-  event: enum: ["x.msg.reply"]
+  event: enum: ["x.msg.new"]
   params:
     properties:
       content:
