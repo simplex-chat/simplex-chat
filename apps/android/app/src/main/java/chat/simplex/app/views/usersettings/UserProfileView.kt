@@ -33,7 +33,7 @@ fun UserProfileView(chatModel: ChatModel) {
       saveProfile = { displayName: String, fullName: String ->
         withApi {
           val newProfile = chatModel.controller.apiUpdateProfile(
-            profile = Profile(displayName, fullName)
+            profile = Profile(displayName, fullName, null)
           )
           if (newProfile != null) {
             chatModel.updateUserProfile(newProfile)

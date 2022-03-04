@@ -1,6 +1,10 @@
 package chat.simplex.app.views.helpers
 
+import android.graphics.BitmapFactory
+import android.util.Base64
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.icons.Icons
@@ -21,11 +25,23 @@ fun ChatInfoImage(chat: Chat, size: Dp) {
     if (chat.chatInfo is ChatInfo.Group) Icons.Filled.SupervisedUserCircle
                                     else Icons.Filled.AccountCircle
   Box(Modifier.size(size)) {
-    Icon(icon,
-      contentDescription = "Avatar Placeholder",
-      tint = MaterialTheme.colors.secondary,
-      modifier = Modifier.fillMaxSize()
-    )
+    if (chat.chatInfo.displayImage != null) {
+      Icon(
+        icon,
+        contentDescription = "Avatar Placeholder",
+        tint = MaterialTheme.colors.secondary,
+        modifier = Modifier.fillMaxSize()
+      )
+    }
+    else {
+      val data = Base64.decode(chat.chatInfo.displayImage!!, 0)
+      // TODO this currently wont work
+      val bitmap = BitmapFactory.decodeByteArray(data, 0, 10).asImageBitmap()
+      Image(
+        bitmap,
+        "display image for profile"
+      )
+    }
   }
 }
 
