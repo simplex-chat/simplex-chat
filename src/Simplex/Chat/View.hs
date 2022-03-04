@@ -12,7 +12,7 @@ import qualified Data.ByteString.Char8 as B
 import Data.Function (on)
 import Data.Int (Int64)
 import Data.List (groupBy, intercalate, intersperse, partition, sortOn)
-import Data.Maybe (isJust)
+import Data.Maybe (isJust, isNothing)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (DiffTime)
@@ -336,8 +336,9 @@ viewSMPServers smpServers testView =
         else plain $ intercalate ", " (map (B.unpack . strEncode) smpServers)
 
 viewUserProfileUpdated :: Profile -> Profile -> [StyledString]
-viewUserProfileUpdated Profile {displayName = n, fullName} Profile {displayName = n', fullName = fullName'}
-  | n == n' && fullName == fullName' = []
+viewUserProfileUpdated Profile {displayName = n, fullName, image} Profile {displayName = n', fullName = fullName', image = image'}
+  | n == n' && fullName == fullName' && image == image' = []
+  | n == n' && fullName == fullName' = [if isNothing image' then "profile image removed" else "profile image updated"]
   | n == n' = ["user full name " <> (if T.null fullName' || fullName' == n' then "removed" else "changed to " <> plain fullName') <> notified]
   | otherwise = ["user profile is changed to " <> ttyFullName n' fullName' <> notified]
   where

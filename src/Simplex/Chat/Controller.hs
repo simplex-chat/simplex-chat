@@ -127,7 +127,8 @@ data ChatCommand
   | CancelFile FileTransferId
   | FileStatus FileTransferId
   | ShowProfile
-  | UpdateProfile Profile
+  | UpdateProfile ContactName Text
+  | UpdateProfileImage ProfileImage
   | QuitChat
   | ShowVersion
   deriving (Show)
