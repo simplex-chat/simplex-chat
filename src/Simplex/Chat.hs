@@ -1387,8 +1387,7 @@ getCreateActiveUser st = do
         loop = do
           displayName <- getContactName
           fullName <- T.pack <$> getWithPrompt "full name (optional)"
-          let image = Nothing -- TODO allow image provision
-          liftIO (runExceptT $ createUser st Profile {displayName, fullName, image} True) >>= \case
+          liftIO (runExceptT $ createUser st Profile {displayName, fullName, image = Nothing} True) >>= \case
             Left SEDuplicateName -> do
               putStrLn "chosen display name is already used by another profile on this device, choose another one"
               loop
