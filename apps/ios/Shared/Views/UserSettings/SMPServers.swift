@@ -8,6 +8,8 @@
 
 import SwiftUI
 
+private let serversFont = Font.custom("Menlo", size: 14)
+
 struct SMPServers: View {
     @EnvironmentObject var chatModel: ChatModel
     @State var isUserSMPServers = false
@@ -17,15 +19,17 @@ struct SMPServers: View {
 
     var body: some View {
         return VStack(alignment: .leading) {
-            Text("You can configure custom SMP servers.")
+            Text("Here you can configure custom SMP servers.")
                 .padding(.bottom)
-            Toggle("Custom SMP servers", isOn: $isUserSMPServers)
+            Toggle("Use custom SMP servers", isOn: $isUserSMPServers)
                 .onChange(of: isUserSMPServers) { _ in
                     if (!isUserSMPServers) {
                         // TODO alert
                         saveSMPServers(smpServers: [])
+                        userSMPServersStr = ""
                     }
                 }
+                .padding(.bottom)
             
             if !isUserSMPServers {
                 VStack(alignment: .leading) {
@@ -33,43 +37,49 @@ struct SMPServers: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             } else {
-                if editSMPServers {
-                    VStack(alignment: .leading) {
+                VStack(alignment: .leading) {
+                    Text("Specify addresses of SMP server(s) to be used for creating new connections. Each address has to be put on a new line.")
+                        .allowsTightening(false)
+                    if editSMPServers {
                         TextEditor(text: $userSMPServersStr)
                             .focused($keyboardVisible)
-//                            .font(teFont)
-                            .textInputAutocapitalization(.sentences)
+                            .font(serversFont)
+                            .textInputAutocapitalization(.never)
                             .padding(.horizontal, 5)
                             .allowsTightening(false)
-                            .lineLimit(5)
-//                            .frame(height: teHeight)
+                            .frame(height: 160)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 10)
+                                    .strokeBorder(.secondary, lineWidth: 0.3, antialiased: true)
+                            )
                         HStack(spacing: 20) {
-                            Button("Save") { saveUserSMPServers() }
+                            Button("Save") {
+                                saveUserSMPServers()
+                            }
                         }
-                    }
-                    .frame(maxWidth: .infinity, minHeight: 120, alignment: .leading)
-                } else {
-                    VStack(alignment: .leading) {
-                        TextEditor(text: $userSMPServersStr)
-                            .focused($keyboardVisible)
-//                            .font(teFont)
-                            .textInputAutocapitalization(.sentences)
-                            .padding(.horizontal, 5)
+                    } else {
+                        // TODO scroll
+                        Text(userSMPServersStr)
+                            .font(serversFont)
+                            .multilineTextAlignment(.leading) // TODO top
+                            .padding(.horizontal, 10)
                             .allowsTightening(false)
-                            .lineLimit(5)
-                            .disabled(true)
-//                            .frame(height: teHeight)
+                            .frame(height: 160)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 20)
+                                    .strokeBorder(.secondary, lineWidth: 0.3, antialiased: true)
+                            )
                         Button("Edit") {
-//                            profile = user.profile
                             editSMPServers = true
                         }
                     }
-                    .frame(maxWidth: .infinity, minHeight: 120, alignment: .leading)
                 }
+                .frame(maxWidth: .infinity, minHeight: 240, alignment: .leading)
             }
         }
         .padding()
-//        .frame(maxHeight: .infinity, alignment: .top)
+        .padding(.top)
+        .frame(maxHeight: .infinity, alignment: .top)
 
     }
     
@@ -92,10 +102,19 @@ struct SMPServers: View {
                     editSMPServers = false
                 }
             } catch {
-                logger.error("SMPServers.saveServers setUserSMPServers error: \(error.localizedDescription)")
-                // TODO alert?
+                let err = error.localizedDescription
+                logger.error("SMPServers.saveServers setUserSMPServers error: \(err)")
+                // keyboardVisible = false
+                saveSMPServersAlert() // TODO Alert is not being shown
             }
         }
+    }
+    
+    func saveSMPServersAlert() {
+        AlertManager.shared.showAlertMsg(
+            title: "Error saving SMP servers",
+            message: "Make sure SMP server addresses are in correct format, line separated and are not duplicated."
+        )
     }
 }
 

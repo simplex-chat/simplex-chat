@@ -53,12 +53,12 @@ struct SettingsView: View {
                             editSMPServers: servers.isEmpty,
                             userSMPServersStr: servers.isEmpty ? "" : servers.joined(separator: "\n")
                         )
-                        .navigationTitle("SMP servers")
+                        .navigationTitle("Your SMP servers")
                     } label: {
                         HStack {
                             Image(systemName: "server.rack")
-                                .padding(.trailing, 8)
-                            Text("SMP servers")
+                                .padding(.trailing, 4)
+                            Text("Your servers")
                         }
                     }
                 }
