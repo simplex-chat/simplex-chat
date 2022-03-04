@@ -15,52 +15,45 @@ The most in-demand feature is replies.
 
 ## Proposed solution
 
-We need to introduce a sequential number for chat items, each sequence separate for a sending user.
+As group message integrity is needed not for chat items, but for messages, the updated proposal is to introduce a random, non-sequential message id, unique per conversation and per sender.
 
-We will add an optional property `chatItem` into messages that can create and `chatItemRef` into messages that refer to chat items (currently it is only x.msg.new and x.file messages that create items and we will add x.msg.reply, x.msg.delete and x.msg.update messages to support mentioned features).
+All above features would rely on this ID, e.g. reply would use the ID of the message that created the item.
 
-JTD schema for `chatItem` property:
+We will add an optional property `msgId` into all chat messages (not only visible to the users) and `msgRef` into messages that need to reference other messages.
+
+JTD schema for `msgId` property:
 
 ```yaml
-properties:
-  seqNo: type: int32
+type: string # base64 encoded 8 byte binary
 ```
 
-JTD schema for `chatItemRef` property:
+JTD schema for `msgRef` property:
 
 ```yaml
 properties:
-  seqNo: type: int32
+  msgId: type: string
   sent: type: boolean # true if it is in reference to the item that the sender of the message originally sent, false for references to received items
 optionalProperties:
   memberId: type: string # base64 member ID of the sender known to all group members for group chats
 ```
 
-JSON for reply messages:
+JTD for reply messages:
 
-```jsonc
-"event": "x.msg.reply" // XMsgNew
-"params":            // MsgContent
-{
-  "content": {
-    "msgType": "text",
-    // field "files" can be represented in content as contentType "file" with length prepended or as complex contentData
-    "text": "<msg text>",
-    "chatItem": {} // optional, for backwards compatibility
-  },
-  "replyTo": {
-    "msgType": "text",
-    "text": "<msg text>", // can be partial text to fit the block size
-    "partial": true, // optional, if partial
-    "chatItemRef": {} // optional, for backwards compatibility
-  }
-}
+```yaml
+properties:
+  msgId: string
+  event: enum: ["x.msg.reply"]
+  params:
+    properties:
+      content:
+        properties:
+          msgType: type: string
+          text:  type: string
+      replyTo:
+        properties:
+          msgRef: ref: msgRef
 ```
 
-This format ensures that
-- replies work on the clients that do not support showing replies (replyTo will be ignored)
-- users can reply to messages sent from the clients not supporting replies
+This format ensures that replies show as normal messages on the clients that do not support showing replies (replyTo will be ignored).
 
 The only feature that would not work in case chatItem/chatItemRef is missing is navigating to the message to which message is in reply to.
-
-Also - we could add reply feature without adding chatItem/chatItemRef - it seems to be orthogonal, and then add chatItem/chatItemRef later to enable navigation.
