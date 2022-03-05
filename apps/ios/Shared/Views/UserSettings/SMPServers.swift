@@ -14,8 +14,8 @@ private let howToUrl = URL(string: "https://github.com/simplex-chat/simplexmq#us
 
 struct SMPServers: View {
     @EnvironmentObject var chatModel: ChatModel
-    @State var isUserSMPServersToggle = false
     @State var isUserSMPServers = false
+    @State var isUserSMPServersToggle = false
     @State var editSMPServers = true
     @State var userSMPServersStr = ""
     @State var showBadServersAlert = false
@@ -118,11 +118,11 @@ struct SMPServers: View {
     }
     
     func initialize() {
-        let servers = chatModel.userSMPServers ?? []
-        isUserSMPServersToggle = !servers.isEmpty
-        isUserSMPServers = !servers.isEmpty
-        editSMPServers = servers.isEmpty
-        userSMPServersStr = servers.isEmpty ? "" : servers.joined(separator: "\n")
+        let userSMPServers = chatModel.userSMPServers ?? []
+        isUserSMPServers = !userSMPServers.isEmpty
+        isUserSMPServersToggle = isUserSMPServers
+        editSMPServers = !isUserSMPServers
+        userSMPServersStr = isUserSMPServers ? userSMPServers.joined(separator: "\n") : ""
     }
     
     func saveUserSMPServers() {
