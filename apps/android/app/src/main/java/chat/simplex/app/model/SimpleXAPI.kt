@@ -27,6 +27,7 @@ open class ChatController(val ctrl: ChatCtrl, val ntfManager: NtfManager, val ap
     try {
       apiStartChat()
       chatModel.userAddress.value = apiGetUserAddress()
+      chatModel.userSMPServers.value = getUserSMPServers()
       chatModel.chats.addAll(apiGetChats())
       chatModel.currentUser = mutableStateOf(u)
       chatModel.userCreated.value = true
@@ -126,6 +127,20 @@ open class ChatController(val ctrl: ChatCtrl, val ntfManager: NtfManager, val ap
     if (r is CR.NewChatItem ) return r.chatItem
     Log.e(TAG, "apiSendMessage bad response: ${r.responseType} ${r.details}")
     return null
+  }
+
+  suspend fun getUserSMPServers(): List<String>? {
+    val r = sendCmd(CC.GetUserSMPServers())
+    if (r is CR.UserSMPServers) return r.smpServers
+    Log.e(TAG, "getUserSMPServers bad response: ${r.responseType} ${r.details}")
+    return null
+  }
+
+  suspend fun setUserSMPServers(smpServers: List<String>): Boolean {
+    val r = sendCmd(CC.SetUserSMPServers(smpServers))
+    if (r is CR.CmdOk) return true
+    Log.e(TAG, "setUserSMPServers bad response: ${r.responseType} ${r.details}")
+    return false
   }
 
   suspend fun apiAddContact(): String? {
@@ -320,6 +335,8 @@ sealed class CC {
   class ApiGetChats: CC()
   class ApiGetChat(val type: ChatType, val id: Long): CC()
   class ApiSendMessage(val type: ChatType, val id: Long, val mc: MsgContent): CC()
+  class GetUserSMPServers(): CC()
+  class SetUserSMPServers(val smpServers: List<String>): CC()
   class AddContact: CC()
   class Connect(val connReq: String): CC()
   class ApiDeleteChat(val type: ChatType, val id: Long): CC()
@@ -339,6 +356,8 @@ sealed class CC {
     is ApiGetChats -> "/_get chats"
     is ApiGetChat -> "/_get chat ${chatRef(type, id)} count=100"
     is ApiSendMessage -> "/_send ${chatRef(type, id)} ${mc.cmdString}"
+    is GetUserSMPServers -> "/smp_servers"
+    is SetUserSMPServers -> "/smp_servers ${smpServersStr(smpServers)}"
     is AddContact -> "/connect"
     is Connect -> "/connect $connReq"
     is ApiDeleteChat -> "/_delete ${chatRef(type, id)}"
@@ -359,6 +378,8 @@ sealed class CC {
     is ApiGetChats -> "apiGetChats"
     is ApiGetChat -> "apiGetChat"
     is ApiSendMessage -> "apiSendMessage"
+    is GetUserSMPServers -> "getUserSMPServers"
+    is SetUserSMPServers -> "setUserSMPServers"
     is AddContact -> "addContact"
     is Connect -> "connect"
     is ApiDeleteChat -> "apiDeleteChat"
@@ -375,6 +396,8 @@ sealed class CC {
 
   companion object {
     fun chatRef(chatType: ChatType, id: Long) = "${chatType.type}${id}"
+
+    fun smpServersStr(smpServers: List<String>) = if (smpServers.isEmpty()) "default" else smpServers.joinToString(separator = ",")
   }
 }
 
@@ -412,6 +435,7 @@ sealed class CR {
   @Serializable @SerialName("chatRunning") class ChatRunning: CR()
   @Serializable @SerialName("apiChats") class ApiChats(val chats: List<Chat>): CR()
   @Serializable @SerialName("apiChat") class ApiChat(val chat: Chat): CR()
+  @Serializable @SerialName("userSMPServers") class UserSMPServers(val smpServers: List<String>): CR()
   @Serializable @SerialName("invitation") class Invitation(val connReqInvitation: String): CR()
   @Serializable @SerialName("sentConfirmation") class SentConfirmation: CR()
   @Serializable @SerialName("sentInvitation") class SentInvitation: CR()
@@ -449,6 +473,7 @@ sealed class CR {
     is ChatRunning -> "chatRunning"
     is ApiChats -> "apiChats"
     is ApiChat -> "apiChat"
+    is UserSMPServers -> "userSMPServers"
     is Invitation -> "invitation"
     is SentConfirmation -> "sentConfirmation"
     is SentInvitation -> "sentInvitation"
@@ -487,6 +512,7 @@ sealed class CR {
     is ChatRunning -> noDetails()
     is ApiChats -> json.encodeToString(chats)
     is ApiChat -> json.encodeToString(chat)
+    is UserSMPServers -> json.encodeToString(smpServers)
     is Invitation -> connReqInvitation
     is SentConfirmation -> noDetails()
     is SentInvitation -> noDetails()
