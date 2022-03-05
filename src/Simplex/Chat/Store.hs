@@ -2509,7 +2509,7 @@ getGroupChatLast_ db user@User {userId, userContactId} groupId count = do
             LEFT JOIN group_members m ON m.group_member_id = ci.group_member_id
             LEFT JOIN contact_profiles p ON p.contact_profile_id = m.contact_profile_id
             WHERE ci.user_id = ? AND ci.group_id = ?
-            ORDER BY ci.item_ts, ci.chat_item_id DESC
+            ORDER BY ci.item_ts DESC, ci.chat_item_id DESC
             LIMIT ?
           |]
           (userId, groupId, count)
@@ -2539,7 +2539,7 @@ getGroupChatAfter_ db user@User {userId, userContactId} groupId afterChatItemId 
             LEFT JOIN group_members m ON m.group_member_id = ci.group_member_id
             LEFT JOIN contact_profiles p ON p.contact_profile_id = m.contact_profile_id
             WHERE ci.user_id = ? AND ci.group_id = ? AND ci.chat_item_id > ?
-            ORDER BY ci.item_ts, ci.chat_item_id ASC
+            ORDER BY ci.item_ts ASC, ci.chat_item_id ASC
             LIMIT ?
           |]
           (userId, groupId, afterChatItemId, count)
@@ -2569,7 +2569,7 @@ getGroupChatBefore_ db user@User {userId, userContactId} groupId beforeChatItemI
             LEFT JOIN group_members m ON m.group_member_id = ci.group_member_id
             LEFT JOIN contact_profiles p ON p.contact_profile_id = m.contact_profile_id
             WHERE ci.user_id = ? AND ci.group_id = ? AND ci.chat_item_id < ?
-            ORDER BY ci.item_ts, ci.chat_item_id DESC
+            ORDER BY ci.item_ts DESC, ci.chat_item_id DESC
             LIMIT ?
           |]
           (userId, groupId, beforeChatItemId, count)
