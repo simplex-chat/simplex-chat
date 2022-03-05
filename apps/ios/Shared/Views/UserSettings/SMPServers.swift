@@ -94,6 +94,7 @@ struct SMPServers: View {
                                 .padding(10)
                                 .frame(minHeight: 0, alignment: .topLeading)
                                 .textSelection(.enabled)
+                                .frame(maxWidth: .infinity, alignment: .leading)
                         }
                         .frame(height: 160)
                         .overlay(
