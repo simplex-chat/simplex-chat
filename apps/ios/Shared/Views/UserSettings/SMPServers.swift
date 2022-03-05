@@ -168,6 +168,7 @@ struct SMPServers: View {
     }
 }
 
+// TODO preview doesn't work
 struct SMPServers_Previews: PreviewProvider {
     static var previews: some View {
         let chatModel = ChatModel()
