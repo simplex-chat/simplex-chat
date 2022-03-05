@@ -42,7 +42,7 @@ struct SMPServers: View {
                 .alert(isPresented: $showResetServersAlert) {
                     Alert(
                         title: Text("Use SimpleX Chat servers?"),
-                        message: Text("Saved SMP servers will be forgotten"),
+                        message: Text("Saved SMP servers will be removed"),
                         primaryButton: .destructive(Text("Confirm")) {
                             saveSMPServers(smpServers: [])
                             isUserSMPServers = false
