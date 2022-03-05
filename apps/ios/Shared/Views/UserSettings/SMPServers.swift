@@ -14,23 +14,46 @@ private let howToUrl = URL(string: "https://github.com/simplex-chat/simplexmq#us
 
 struct SMPServers: View {
     @EnvironmentObject var chatModel: ChatModel
+    @State var isUserSMPServersToggle = false
     @State var isUserSMPServers = false
     @State var editSMPServers = true
     @State var userSMPServersStr = ""
     @State var showBadServersAlert = false
+    @State var showResetServersAlert = false
     @FocusState private var keyboardVisible: Bool
 
     var body: some View {
         return VStack(alignment: .leading) {
-            Toggle("Configure SMP servers", isOn: $isUserSMPServers)
-                .onChange(of: isUserSMPServers) { _ in
-                    if (!isUserSMPServers) {
-                        // TODO alert
-                        saveSMPServers(smpServers: [])
-                        userSMPServersStr = ""
+            Toggle("Configure SMP servers", isOn: $isUserSMPServersToggle)
+                .onChange(of: isUserSMPServersToggle) { _ in
+                    if (isUserSMPServersToggle) {
+                        isUserSMPServers = true
+                    } else {
+                        let servers = chatModel.userSMPServers ?? []
+                        if (!servers.isEmpty) {
+                            showResetServersAlert = true
+                        } else {
+                            isUserSMPServers = false
+                            userSMPServersStr = ""
+                        }
                     }
                 }
                 .padding(.bottom)
+                .alert(isPresented: $showResetServersAlert) {
+                    Alert(
+                        title: Text("Use SimpleX Chat servers?"),
+                        message: Text("Saved SMP servers will be forgotten"),
+                        primaryButton: .destructive(Text("Confirm")) {
+                            saveSMPServers(smpServers: [])
+                            isUserSMPServers = false
+                            userSMPServersStr = ""
+                        }, secondaryButton: .cancel() {
+                            withAnimation() {
+                                isUserSMPServersToggle = true
+                            }
+                        }
+                    )
+                }
             
             if !isUserSMPServers {
                 Text("Using SimpleX Chat servers.")
@@ -59,7 +82,7 @@ struct SMPServers: View {
                                 saveUserSMPServers()
                             }
                             .alert(isPresented: $showBadServersAlert) {
-                                Alert(title: Text("Error saving SMP servers"), message: Text("Make sure SMP server addresses are in correct format, line separated and are not duplicated."))
+                                Alert(title: Text("Error saving SMP servers"), message: Text("Make sure SMP server addresses are in correct format, line separated and are not duplicated"))
                             }
                             Spacer()
                             howToButton()
@@ -94,21 +117,9 @@ struct SMPServers: View {
         .onAppear { initialize() }
     }
     
-    func howToButton() -> some View {
-        Button {
-            DispatchQueue.main.async {
-                UIApplication.shared.open(howToUrl)
-            }
-        } label: {
-            HStack{
-                Text("How to")
-                Image(systemName: "arrow.up.right.circle")
-            }
-        }
-    }
-    
     func initialize() {
         let servers = chatModel.userSMPServers ?? []
+        isUserSMPServersToggle = !servers.isEmpty
         isUserSMPServers = !servers.isEmpty
         editSMPServers = servers.isEmpty
         userSMPServersStr = servers.isEmpty ? "" : servers.joined(separator: "\n")
@@ -142,11 +153,17 @@ struct SMPServers: View {
         }
     }
     
-    func saveSMPServersAlert() {
-        AlertManager.shared.showAlertMsg(
-            title: "Error saving SMP servers",
-            message: "Make sure SMP server addresses are in correct format, line separated and are not duplicated."
-        )
+    func howToButton() -> some View {
+        Button {
+            DispatchQueue.main.async {
+                UIApplication.shared.open(howToUrl)
+            }
+        } label: {
+            HStack{
+                Text("How to")
+                Image(systemName: "arrow.up.right.circle")
+            }
+        }
     }
 }
 
