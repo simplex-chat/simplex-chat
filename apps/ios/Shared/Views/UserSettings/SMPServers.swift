@@ -171,6 +171,7 @@ struct SMPServers_Previews: PreviewProvider {
     static var previews: some View {
         let chatModel = ChatModel()
         chatModel.currentUser = User.sampleData
+        chatModel.userSMPServers = []
         return SMPServers()
             .environmentObject(chatModel)
     }
