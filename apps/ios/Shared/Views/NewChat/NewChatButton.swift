@@ -35,17 +35,19 @@ struct NewChatButton: View {
     }
 
     func addContactAction() {
-        Task {
-            do {
-                connReqInvitation = try await apiAddContact()
-                addContact = true
-            } catch {
-                DispatchQueue.global().async {
-                    connectionErrorAlert(error)
-                }
-                logger.error("NewChatButton.addContactAction apiAddContact error: \(error.localizedDescription)")
+        do {
+            connReqInvitation = try apiAddContact()
+            addContact = true
+        } catch {
+            DispatchQueue.global().async {
+                connectionErrorAlert(error)
             }
+            logger.error("NewChatButton.addContactAction apiAddContact error: \(error.localizedDescription)")
         }
+    }
+    
+    func addContactSheet() -> some View {
+        AddContactView(connReqInvitation: connReqInvitation)
     }
 
     func connectContactSheet() -> some View {

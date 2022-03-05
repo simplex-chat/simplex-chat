@@ -22,6 +22,9 @@ final class ChatModel: ObservableObject {
     @Published var terminalItems: [TerminalItem] = []
     @Published var userAddress: String?
     @Published var appOpenUrl: URL?
+
+    var messageDelivery: Dictionary<Int64, () -> Void> = [:]
+
     static let shared = ChatModel()
 
     func hasChat(_ id: String) -> Bool {
@@ -622,15 +625,14 @@ struct RcvFileTransfer: Decodable {
 
 enum MsgContent {
     case text(String)
+    // TODO include original JSON, possibly using https://github.com/zoul/generic-json-swift
     case unknown(type: String, text: String)
-    case invalid(error: String)
 
     var text: String {
         get {
             switch self {
             case let .text(text): return text
             case let .unknown(_, text): return text
-            case .invalid:  return "invalid"
             }
         }
     }
@@ -652,8 +654,8 @@ enum MsgContent {
 
 extension MsgContent: Decodable {
     init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
         do {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
             let type = try container.decode(String.self, forKey: CodingKeys.type)
             switch type {
             case "text":
@@ -664,7 +666,7 @@ extension MsgContent: Decodable {
                 self = .unknown(type: type, text: text ?? "unknown message format")
             }
         } catch {
-            self = .invalid(error: String(describing: error))
+            self = .unknown(type: "unknown", text: "invalid message format")
         }
     }
 }

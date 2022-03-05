@@ -15,10 +15,12 @@ module Simplex.Chat.Protocol where
 import Control.Monad ((<=<))
 import Data.Aeson (FromJSON, ToJSON, (.:), (.:?), (.=))
 import qualified Data.Aeson as J
+import qualified Data.Aeson.Encoding as JE
 import qualified Data.Aeson.KeyMap as JM
 import qualified Data.Aeson.Types as JT
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.ByteString.Lazy.Char8 as LB
+import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
 import Database.SQLite.Simple.FromField (FromField (..))
@@ -107,26 +109,24 @@ instance ToJSON MsgContentType where
   toJSON = strToJSON
   toEncoding = strToJEncoding
 
--- TODO - include tag and original JSON into MCUnknown so that information is not lost
--- so when it serializes back it is the same as it was and chat upgrade makes it readable
-data MsgContent = MCText Text | MCUnknown
+data MsgContent = MCText Text | MCUnknown J.Value Text
   deriving (Eq, Show)
 
 msgContentText :: MsgContent -> Text
 msgContentText = \case
   MCText t -> t
-  MCUnknown -> unknownMsgType
+  MCUnknown _ t -> t
 
 toMsgContentType :: MsgContent -> MsgContentType
 toMsgContentType = \case
   MCText _ -> MCText_
-  MCUnknown -> MCUnknown_
+  MCUnknown {} -> MCUnknown_
 
 instance FromJSON MsgContent where
-  parseJSON (J.Object v) = do
+  parseJSON jv@(J.Object v) = do
     v .: "type" >>= \case
       MCText_ -> MCText <$> v .: "text"
-      MCUnknown_ -> pure MCUnknown
+      MCUnknown_ -> MCUnknown jv . fromMaybe unknownMsgType <$> v .:? "text"
   parseJSON invalid =
     JT.prependFailure "bad MsgContent, " (JT.typeMismatch "Object" invalid)
 
@@ -134,16 +134,12 @@ unknownMsgType :: Text
 unknownMsgType = "unknown message type"
 
 instance ToJSON MsgContent where
-  toJSON mc =
-    J.object $
-      ("type" .= toMsgContentType mc) : case mc of
-        MCText t -> ["text" .= t]
-        MCUnknown -> ["text" .= unknownMsgType]
-  toEncoding mc =
-    J.pairs $
-      ("type" .= toMsgContentType mc) <> case mc of
-        MCText t -> "text" .= t
-        MCUnknown -> "text" .= unknownMsgType
+  toJSON = \case
+    MCUnknown v _ -> v
+    MCText t -> J.object ["type" .= MCText_, "text" .= t]
+  toEncoding = \case
+    MCUnknown v _ -> JE.value v
+    MCText t -> J.pairs $ "type" .= MCText_ <> "text" .= t
 
 data CMEventTag
   = XMsgNew_

@@ -5,7 +5,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.UriHandler
-import androidx.compose.ui.text.ExperimentalTextApi
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.model.CIDirection
@@ -13,7 +12,6 @@ import chat.simplex.app.model.ChatItem
 import chat.simplex.app.ui.theme.SimpleXTheme
 import kotlinx.datetime.Clock
 
-@ExperimentalTextApi
 @Composable
 fun ChatItemView(chatItem: ChatItem, uriHandler: UriHandler? = null) {
   val sent = chatItem.chatDir.sent
@@ -33,7 +31,6 @@ fun ChatItemView(chatItem: ChatItem, uriHandler: UriHandler? = null) {
   }
 }
 
-@ExperimentalTextApi
 @Preview
 @Composable
 fun PreviewChatItemView() {

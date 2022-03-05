@@ -1,20 +1,19 @@
 package chat.simplex.app
 
 import android.app.Application
-import android.net.LocalServerSocket
+import android.net.*
 import android.util.Log
-import androidx.compose.material.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
-import chat.simplex.app.model.ChatController
-import chat.simplex.app.model.ChatModel
+import androidx.lifecycle.*
+import androidx.work.*
+import chat.simplex.app.model.*
 import chat.simplex.app.views.helpers.withApi
-import kotlinx.coroutines.DelicateCoroutinesApi
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.util.*
 import java.util.concurrent.Semaphore
 import kotlin.concurrent.thread
+
+const val TAG = "SIMPLEX"
 
 // ghc's rts
 external fun initHS()
@@ -27,15 +26,18 @@ external fun chatInit(path: String): ChatCtrl
 external fun chatSendCmd(ctrl: ChatCtrl, msg: String) : String
 external fun chatRecvMsg(ctrl: ChatCtrl) : String
 
-@DelicateCoroutinesApi
+//class SimplexApp: Application(), LifecycleEventObserver {
 class SimplexApp: Application() {
   private lateinit var controller: ChatController
   lateinit var chatModel: ChatModel
+  private lateinit var ntfManager: NtfManager
 
   override fun onCreate() {
     super.onCreate()
+//    ProcessLifecycleOwner.get().lifecycle.addObserver(this)
+    ntfManager = NtfManager(applicationContext)
     val ctrl = chatInit(applicationContext.filesDir.toString())
-    controller = ChatController(ctrl, AlertManager())
+    controller = ChatController(ctrl, ntfManager, applicationContext)
     chatModel = controller.chatModel
     withApi {
       val user = controller.apiGetActiveUser()
@@ -43,71 +45,13 @@ class SimplexApp: Application() {
     }
   }
 
-  class AlertManager {
-    var alertView = mutableStateOf<(@Composable () -> Unit)?>(null)
-    var presentAlert = mutableStateOf<Boolean>(false)
-
-    fun showAlert(alert: @Composable () -> Unit) {
-      Log.d("SIMPLEX", "AlertManager.showAlert")
-      alertView.value = alert
-      presentAlert.value = true
-    }
-
-    fun hideAlert() {
-      presentAlert.value = false
-      alertView.value = null
-    }
-
-    fun showAlertDialog(
-      title: String,
-      text: String? = null,
-      confirmText: String = "Ok",
-      onConfirm: (() -> Unit)? = null,
-      dismissText: String = "Cancel",
-      onDismiss: (() -> Unit)? = null
-    ) {
-      val alertText: (@Composable () -> Unit)? = if (text == null) null else { -> Text(text) }
-      showAlert {
-        AlertDialog(
-          onDismissRequest = this::hideAlert,
-          title = { Text(title) },
-          text = alertText,
-          confirmButton = {
-            Button(onClick = {
-              onConfirm?.invoke()
-              hideAlert()
-            }) { Text(confirmText) }
-          },
-          dismissButton = {
-            Button(onClick = {
-              onDismiss?.invoke()
-              hideAlert()
-            }) { Text(dismissText) }
-          }
-        )
-      }
-    }
-
-    fun showAlertMsg(
-      title: String, text: String? = null,
-      confirmText: String = "Ok", onConfirm: (() -> Unit)? = null
-    ) {
-      val alertText: (@Composable () -> Unit)? = if (text == null) null else { -> Text(text) }
-      showAlert {
-        AlertDialog(
-          onDismissRequest = this::hideAlert,
-          title = { Text(title) },
-          text = alertText,
-          confirmButton = {
-            Button(onClick = {
-              onConfirm?.invoke()
-              hideAlert()
-            }) { Text(confirmText) }
-          }
-        )
-      }
-    }
-  }
+//  override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
+//    Log.d(TAG, "onStateChanged: $event")
+//    if (event == Lifecycle.Event.ON_STOP) {
+//      Log.e(TAG, "BGManager schedule ${Clock.System.now()}")
+//      BGManager.schedule(applicationContext)
+//    }
+//  }
 
   companion object {
     init {
@@ -115,12 +59,12 @@ class SimplexApp: Application() {
 
       val s = Semaphore(0)
       thread(name="stdout/stderr pipe") {
-        Log.d("SIMPLEX", "starting server")
+        Log.d(TAG, "starting server")
         val server = LocalServerSocket(socketName)
-        Log.d("SIMPLEX", "started server")
+        Log.d(TAG, "started server")
         s.release()
         val receiver = server.accept()
-        Log.d("SIMPLEX", "started receiver")
+        Log.d(TAG, "started receiver")
         val logbuffer = FifoQueue<String>(500)
         if (receiver != null) {
           val inStream = receiver.inputStream
@@ -129,7 +73,7 @@ class SimplexApp: Application() {
 
           while(true) {
             val line = input.readLine() ?: break
-            Log.d("SIMPLEX (stdout/stderr)", line)
+            Log.w("$TAG (stdout/stderr)", line)
             logbuffer.add(line)
           }
         }

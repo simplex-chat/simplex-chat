@@ -2,180 +2,119 @@ package chat.simplex.app
 
 import android.app.Application
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
-import androidx.compose.material.ExperimentalMaterialApi
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material.MaterialTheme
+import androidx.compose.material.Surface
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.text.ExperimentalTextApi
+import androidx.compose.ui.Modifier
 import androidx.lifecycle.AndroidViewModel
-import androidx.navigation.*
-import androidx.navigation.compose.*
-import chat.simplex.app.model.*
+import chat.simplex.app.model.ChatModel
+import chat.simplex.app.model.NtfManager
 import chat.simplex.app.ui.theme.SimpleXTheme
-import chat.simplex.app.views.*
-import chat.simplex.app.views.chat.ChatInfoView
+import chat.simplex.app.views.SplashView
+import chat.simplex.app.views.WelcomeView
 import chat.simplex.app.views.chat.ChatView
 import chat.simplex.app.views.chatlist.ChatListView
+import chat.simplex.app.views.chatlist.openChat
+import chat.simplex.app.views.helpers.AlertManager
 import chat.simplex.app.views.helpers.withApi
 import chat.simplex.app.views.newchat.*
-import chat.simplex.app.views.usersettings.*
-import com.google.accompanist.insets.ExperimentalAnimatedInsets
-import com.google.accompanist.permissions.ExperimentalPermissionsApi
-import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.serialization.decodeFromString
 
-@ExperimentalTextApi
-@DelicateCoroutinesApi
-@ExperimentalAnimatedInsets
-@ExperimentalPermissionsApi
-@ExperimentalMaterialApi
+//import kotlinx.serialization.decodeFromString
+
 class MainActivity: ComponentActivity() {
   private val vm by viewModels<SimplexViewModel>()
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
 //    testJson()
-    connectIfOpenedViaUri(intent, vm.chatModel)
+    processIntent(intent, vm.chatModel)
+//    vm.app.initiateBackgroundWork()
     setContent {
       SimpleXTheme {
-        Navigation(vm.chatModel)
-      }
-    }
-  }
-}
-
-@DelicateCoroutinesApi
-class SimplexViewModel(application: Application): AndroidViewModel(application) {
-  val chatModel = getApplication<SimplexApp>().chatModel
-}
-
-@ExperimentalTextApi
-@DelicateCoroutinesApi
-@ExperimentalPermissionsApi
-@ExperimentalMaterialApi
-@Composable
-fun MainPage(chatModel: ChatModel, nav: NavController) {
-  when (chatModel.userCreated.value) {
-    null -> SplashView()
-    false -> WelcomeView(chatModel) { nav.navigate(Pages.ChatList.route) }
-    true -> ChatListView(chatModel, nav)
-  }
-}
-
-@ExperimentalTextApi
-@ExperimentalAnimatedInsets
-@DelicateCoroutinesApi
-@ExperimentalPermissionsApi
-@ExperimentalMaterialApi
-@Composable
-fun Navigation(chatModel: ChatModel) {
-  val nav = rememberNavController()
-
-  Box {
-    NavHost(navController = nav, startDestination = Pages.Home.route) {
-      composable(route = Pages.Home.route) {
-        MainPage(chatModel, nav)
-      }
-      composable(route = Pages.Welcome.route) {
-        WelcomeView(chatModel) {
-          nav.navigate(Pages.Home.route) {
-            popUpTo(Pages.Home.route) { inclusive = true }
-          }
+        Surface(
+          Modifier
+            .background(MaterialTheme.colors.background)
+            .fillMaxSize()
+        ) {
+          MainPage(vm.chatModel)
         }
       }
-      composable(route = Pages.ChatList.route) {
-        ChatListView(chatModel, nav)
-      }
-      composable(route = Pages.Chat.route) {
-        ChatView(chatModel, nav)
-      }
-      composable(route = Pages.AddContact.route) {
-        AddContactView(chatModel, nav)
-      }
-      composable(route = Pages.Connect.route) {
-        ConnectContactView(chatModel, nav)
-      }
-      composable(route = Pages.ChatInfo.route) {
-        ChatInfoView(chatModel, nav)
-      }
-      composable(route = Pages.Terminal.route) {
-        TerminalView(chatModel, nav)
-      }
-      composable(
-        Pages.TerminalItemDetails.route + "/{identifier}",
-        arguments = listOf(
-          navArgument("identifier") {
-            type = NavType.LongType
-          }
-        )
-      ) { entry -> DetailView(entry.arguments!!.getLong("identifier"), chatModel.terminalItems, nav) }
-      composable(route = Pages.UserProfile.route) {
-        UserProfileView(chatModel, nav)
-      }
-      composable(route = Pages.UserAddress.route) {
-        UserAddressView(chatModel, nav)
-      }
-      composable(route = Pages.Help.route) {
-        HelpView(chatModel, nav)
-      }
-      composable(route = Pages.Markdown.route) {
-        MarkdownHelpView(nav)
-      }
-    }
-    val am = chatModel.alertManager
-    if (am.presentAlert.value) am.alertView.value?.invoke()
-  }
-}
-
-sealed class Pages(val route: String) {
-  object Home: Pages("home")
-  object Terminal: Pages("terminal")
-  object Welcome: Pages("welcome")
-  object TerminalItemDetails: Pages("details")
-  object ChatList: Pages("chats")
-  object Chat: Pages("chat")
-  object AddContact: Pages("add_contact")
-  object Connect: Pages("connect")
-  object ChatInfo: Pages("chat_info")
-  object UserProfile: Pages("user_profile")
-  object UserAddress: Pages("user_address")
-  object Help: Pages("help")
-  object Markdown: Pages("markdown")
-}
-
-@DelicateCoroutinesApi
-fun connectIfOpenedViaUri(intent: Intent?, chatModel: ChatModel) {
-  val uri = intent?.data
-  if (intent?.action == "android.intent.action.VIEW" && uri != null) {
-    Log.d("SIMPLEX", "connectIfOpenedViaUri: opened via link")
-    if (chatModel.currentUser.value == null) {
-      chatModel.appOpenUrl.value = uri
-    } else {
-      withUriAction(chatModel, uri) { action ->
-        chatModel.alertManager.showAlertMsg(
-          title = "Connect via $action link?",
-          text = "Your profile will be sent to the contact that you received this link from.",
-          confirmText = "Connect",
-          onConfirm = {
-            withApi {
-              Log.d("SIMPLEX", "connectIfOpenedViaUri: connecting")
-              connectViaUri(chatModel, action, uri)
-            }
-          }
-        )
-      }
     }
   }
 }
 
-fun testJson() {
-  val str = """
-    {}
-  """.trimIndent()
-
-  println(json.decodeFromString<ChatItem>(str))
+class SimplexViewModel(application: Application): AndroidViewModel(application) {
+  val app = getApplication<SimplexApp>()
+  val chatModel = app.chatModel
 }
+
+@Composable
+fun MainPage(chatModel: ChatModel) {
+  Box {
+    when (chatModel.userCreated.value) {
+      null -> SplashView()
+      false -> WelcomeView(chatModel)
+      true ->
+        if (chatModel.chatId.value == null) ChatListView(chatModel)
+        else ChatView(chatModel)
+    }
+    ModalManager.shared.showInView()
+    AlertManager.shared.showInView()
+  }
+}
+
+fun processIntent(intent: Intent?, chatModel: ChatModel) {
+  when (intent?.action) {
+    NtfManager.OpenChatAction -> {
+      val chatId = intent.getStringExtra("chatId")
+      Log.d(TAG, "processIntent: OpenChatAction $chatId")
+      if (chatId != null) {
+        val cInfo = chatModel.getChat(chatId)?.chatInfo
+        if (cInfo != null) withApi { openChat(chatModel, cInfo) }
+      }
+    }
+    "android.intent.action.VIEW" -> {
+      val uri = intent.data
+      if (uri != null) connectIfOpenedViaUri(uri, chatModel)
+    }
+  }
+}
+
+fun connectIfOpenedViaUri(uri: Uri, chatModel: ChatModel) {
+  Log.d(TAG, "connectIfOpenedViaUri: opened via link")
+  if (chatModel.currentUser.value == null) {
+    // TODO open from chat list view
+    chatModel.appOpenUrl.value = uri
+  } else {
+    withUriAction(uri) { action ->
+      AlertManager.shared.showAlertMsg(
+        title = "Connect via $action link?",
+        text = "Your profile will be sent to the contact that you received this link from.",
+        confirmText = "Connect",
+        onConfirm = {
+          withApi {
+            Log.d(TAG, "connectIfOpenedViaUri: connecting")
+            connectViaUri(chatModel, action, uri)
+          }
+        }
+      )
+    }
+  }
+}
+
+//fun testJson() {
+//  val str = """
+//    {}
+//  """.trimIndent()
+//
+//  println(json.decodeFromString<ChatItem>(str))
+//}

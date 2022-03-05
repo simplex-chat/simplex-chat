@@ -1,6 +1,7 @@
 package chat.simplex.app.views.chat.item
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.ClickableText
 import androidx.compose.foundation.text.selection.SelectionContainer
@@ -15,8 +16,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import chat.simplex.app.model.*
-import chat.simplex.app.ui.theme.LightGray
+import chat.simplex.app.model.CIDirection
+import chat.simplex.app.model.ChatItem
 import chat.simplex.app.ui.theme.SimpleXTheme
 import kotlinx.datetime.Clock
 
@@ -24,7 +25,6 @@ import kotlinx.datetime.Clock
 val SentColorLight = Color(0x1E45B8FF)
 val ReceivedColorLight = Color(0x1EB1B0B5)
 
-@ExperimentalTextApi
 @Composable
 fun TextItemView(chatItem: ChatItem, uriHandler: UriHandler? = null) {
   val sent = chatItem.chatDir.sent
@@ -55,11 +55,10 @@ fun appendGroupMember(b: AnnotatedString.Builder, chatItem: ChatItem, groupMembe
   }
 }
 
-@ExperimentalTextApi
 @Composable
 fun MarkdownText (
   chatItem: ChatItem,
-  style: TextStyle = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onBackground),
+  style: TextStyle = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onSurface),
   maxLines: Int = Int.MAX_VALUE,
   overflow: TextOverflow = TextOverflow.Clip,
   uriHandler: UriHandler? = null,
@@ -110,7 +109,6 @@ fun MarkdownText (
   }
 }
 
-@ExperimentalTextApi
 @Preview
 @Composable
 fun PreviewTextItemViewSnd() {
@@ -123,7 +121,6 @@ fun PreviewTextItemViewSnd() {
   }
 }
 
-@ExperimentalTextApi
 @Preview
 @Composable
 fun PreviewTextItemViewRcv() {
@@ -136,7 +133,6 @@ fun PreviewTextItemViewRcv() {
   }
 }
 
-@ExperimentalTextApi
 @Preview
 @Composable
 fun PreviewTextItemViewLong() {

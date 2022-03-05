@@ -15,9 +15,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import chat.simplex.app.ui.theme.HighOrLowlight
 import chat.simplex.app.ui.theme.SimpleXTheme
 
 @Composable
@@ -33,6 +35,7 @@ fun SendMsgView(sendMessage: (String) -> Unit) {
       autoCorrect = true
     ),
     modifier = Modifier.padding(8.dp),
+    cursorBrush = SolidColor(HighOrLowlight),
     decorationBox = { innerTextField ->
       Surface(
         shape = RoundedCornerShape(18.dp),

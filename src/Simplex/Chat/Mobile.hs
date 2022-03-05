@@ -20,6 +20,7 @@ import Simplex.Chat.Controller
 import Simplex.Chat.Options
 import Simplex.Chat.Store
 import Simplex.Chat.Types
+import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (yesToMigrations))
 import Simplex.Messaging.Protocol (CorrId (..))
 
 foreign export ccall "chat_init" cChatInit :: CString -> IO (StablePtr ChatController)
@@ -57,7 +58,7 @@ defaultMobileConfig :: ChatConfig
 defaultMobileConfig =
   defaultChatConfig
     { yesToMigrations = True,
-      agentConfig = agentConfig defaultChatConfig {yesToMigrations = True}
+      agentConfig = (agentConfig defaultChatConfig) {yesToMigrations = True}
     }
 
 type CJSONString = CString
@@ -68,7 +69,7 @@ getActiveUser_ st = find activeUser <$> getUsers st
 chatInit :: String -> IO ChatController
 chatInit dbFilePrefix = do
   let f = chatStoreFile dbFilePrefix
-  chatStore <- createStore f (dbPoolSize defaultMobileConfig) (yesToMigrations defaultMobileConfig)
+  chatStore <- createStore f (dbPoolSize defaultMobileConfig) (yesToMigrations (defaultMobileConfig :: ChatConfig))
   user_ <- getActiveUser_ chatStore
   newChatController chatStore user_ defaultMobileConfig mobileChatOpts {dbFilePrefix} (const $ pure ())
 

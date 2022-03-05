@@ -1,0 +1,30 @@
+diff --git a/cbits/random_initialized.c b/cbits/random_initialized.c
+index 36ac968..ab708b0 100644
+--- a/cbits/random_initialized.c
++++ b/cbits/random_initialized.c
+@@ -5,14 +5,6 @@
+ #include <sys/stat.h>
+ #include <unistd.h>
+
+-#ifdef HAVE_GETENTROPY
+-static int ensure_pool_initialized_getentropy()
+-{
+-    char tmp;
+-    return getentropy(&tmp, sizeof(tmp));
+-}
+-#endif
+-
+ // Poll /dev/random to wait for randomness. This is a proxy for the /dev/urandom
+ // pool being initialized.
+ static int ensure_pool_initialized_poll()
+@@ -45,10 +37,5 @@ static int ensure_pool_initialized_poll()
+ // Returns 0 on success, non-zero on failure.
+ int ensure_pool_initialized()
+ {
+-#ifdef HAVE_GETENTROPY
+-    if (ensure_pool_initialized_getentropy() == 0)
+-        return 0;
+-#endif
+-
+     return ensure_pool_initialized_poll();
+ }

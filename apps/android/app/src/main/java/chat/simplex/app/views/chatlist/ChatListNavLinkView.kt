@@ -9,50 +9,39 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.ExperimentalTextApi
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
-import chat.simplex.app.Pages
+
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.SimpleXTheme
+import chat.simplex.app.views.helpers.AlertManager
 import chat.simplex.app.views.helpers.withApi
-import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.datetime.Clock
 
-@ExperimentalTextApi
 @Composable
-fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel, nav: NavController) {
-  ChatListNavLink(
+fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
+  ChatListNavLinkLayout(
     chat = chat,
-    action = {
-      when (chat.chatInfo) {
-        is ChatInfo.Direct -> chatNavLink(chat, chatModel, nav)
-        is ChatInfo.Group -> chatNavLink(chat, chatModel, nav)
-        is ChatInfo.ContactRequest -> contactRequestNavLink(chat.chatInfo, chatModel, nav)
+    click = {
+      if (chat.chatInfo is ChatInfo.ContactRequest) {
+        contactRequestAlertDialog(chat.chatInfo, chatModel)
+      } else {
+        withApi { openChat(chatModel, chat.chatInfo) }
       }
     }
   )
 }
 
-@DelicateCoroutinesApi
-fun chatNavLink(chatPreview: Chat, chatModel: ChatModel, navController: NavController) {
-  withApi {
-    val chatInfo = chatPreview.chatInfo
-    val chat = chatModel.controller.apiGetChat(chatInfo.chatType, chatInfo.apiId)
-    if (chat != null) {
-      chatModel.chatId.value = chatInfo.id
-      chatModel.chatItems = chat.chatItems.toMutableStateList()
-      navController.navigate(Pages.Chat.route)
-    } else {
-      // TODO show error? or will apiGetChat show it
-    }
+suspend fun openChat(chatModel: ChatModel, cInfo: ChatInfo) {
+  val chat = chatModel.controller.apiGetChat(cInfo.chatType, cInfo.apiId)
+  if (chat != null) {
+    chatModel.chatItems = chat.chatItems.toMutableStateList()
+    chatModel.chatId.value = cInfo.id
   }
 }
 
-@DelicateCoroutinesApi
-fun contactRequestNavLink(contactRequest: ChatInfo.ContactRequest, chatModel: ChatModel, navController: NavController) {
-  chatModel.alertManager.showAlertDialog(
+fun contactRequestAlertDialog(contactRequest: ChatInfo.ContactRequest, chatModel: ChatModel) {
+  AlertManager.shared.showAlertDialog(
     title = "Accept connection request?",
     text = "If you choose to reject sender will NOT be notified",
     confirmText = "Accept",
@@ -75,27 +64,12 @@ fun contactRequestNavLink(contactRequest: ChatInfo.ContactRequest, chatModel: Ch
   )
 }
 
-@ExperimentalTextApi
 @Composable
-fun ChatListNavLink(chat: Chat, action: () -> Unit) {
-  ChatListNavLinkLayout(
-    content = {
-      when (chat.chatInfo) {
-        is ChatInfo.Direct -> ChatPreviewView(chat)
-        is ChatInfo.Group -> ChatPreviewView(chat)
-        is ChatInfo.ContactRequest -> ContactRequestView(chat)
-      }
-    },
-    action = action
-  )
-}
-
-@Composable
-fun ChatListNavLinkLayout(content: (@Composable () -> Unit), action: () -> Unit) {
+fun ChatListNavLinkLayout(chat: Chat, click: () -> Unit) {
   Surface(
     modifier = Modifier
       .fillMaxWidth()
-      .clickable(onClick = action)
+      .clickable(onClick = click)
       .height(88.dp)
   ) {
     Row(
@@ -104,18 +78,18 @@ fun ChatListNavLinkLayout(content: (@Composable () -> Unit), action: () -> Unit)
         .padding(vertical = 8.dp)
         .padding(start = 8.dp)
         .padding(end = 12.dp),
-      verticalAlignment = Alignment.Top,
-//      TODO?
-//      verticalAlignment = Alignment.CenterVertically,
-//      horizontalArrangement = Arrangement.SpaceEvenly
+      verticalAlignment = Alignment.Top
     ) {
-      content.invoke()
+      if (chat.chatInfo is ChatInfo.ContactRequest) {
+        ContactRequestView(chat)
+      } else {
+        ChatPreviewView(chat)
+      }
     }
   }
   Divider(Modifier.padding(horizontal = 8.dp))
 }
 
-@ExperimentalTextApi
 @Preview
 @Preview(
   uiMode = Configuration.UI_MODE_NIGHT_YES,
@@ -125,7 +99,7 @@ fun ChatListNavLinkLayout(content: (@Composable () -> Unit), action: () -> Unit)
 @Composable
 fun PreviewChatListNavLinkDirect() {
   SimpleXTheme {
-    ChatListNavLink(
+    ChatListNavLinkLayout(
       chat = Chat(
         chatInfo = ChatInfo.Direct.sampleData,
         chatItems = listOf(
@@ -138,12 +112,11 @@ fun PreviewChatListNavLinkDirect() {
         ),
         chatStats = Chat.ChatStats()
       ),
-      action = {}
+      click = {}
     )
   }
 }
 
-@ExperimentalTextApi
 @Preview
 @Preview(
   uiMode = Configuration.UI_MODE_NIGHT_YES,
@@ -153,7 +126,7 @@ fun PreviewChatListNavLinkDirect() {
 @Composable
 fun PreviewChatListNavLinkGroup() {
   SimpleXTheme {
-    ChatListNavLink(
+    ChatListNavLinkLayout(
       chat = Chat(
         chatInfo = ChatInfo.Group.sampleData,
         chatItems = listOf(
@@ -166,12 +139,11 @@ fun PreviewChatListNavLinkGroup() {
         ),
         chatStats = Chat.ChatStats()
       ),
-      action = {}
+      click = {}
     )
   }
 }
 
-@ExperimentalTextApi
 @Preview
 @Preview(
   uiMode = Configuration.UI_MODE_NIGHT_YES,
@@ -181,13 +153,13 @@ fun PreviewChatListNavLinkGroup() {
 @Composable
 fun PreviewChatListNavLinkContactRequest() {
   SimpleXTheme {
-    ChatListNavLink(
+    ChatListNavLinkLayout(
       chat = Chat(
         chatInfo = ChatInfo.ContactRequest.sampleData,
         chatItems = listOf(),
         chatStats = Chat.ChatStats()
       ),
-      action = {}
+      click = {}
     )
   }
 }

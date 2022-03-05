@@ -14,22 +14,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
-import chat.simplex.app.Pages
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.ui.theme.HighOrLowlight
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.chatlist.ScaffoldController
 import chat.simplex.app.views.helpers.withApi
-import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberPermissionState
-import kotlinx.coroutines.DelicateCoroutinesApi
 
-@DelicateCoroutinesApi
-@ExperimentalPermissionsApi
-@ExperimentalMaterialApi
 @Composable
-fun NewChatSheet(chatModel: ChatModel, newChatCtrl: ScaffoldController, nav: NavController) {
+fun NewChatSheet(chatModel: ChatModel, newChatCtrl: ScaffoldController) {
   val cameraPermissionState = rememberPermissionState(permission = Manifest.permission.CAMERA)
   NewChatSheetLayout(
     addContact = {
@@ -39,41 +32,48 @@ fun NewChatSheet(chatModel: ChatModel, newChatCtrl: ScaffoldController, nav: Nav
         //        hide spinner
         if (chatModel.connReqInvitation != null) {
           newChatCtrl.collapse()
-          nav.navigate(Pages.AddContact.route)
+          ModalManager.shared.showModal { AddContactView(chatModel) }
         }
       }
     },
     scanCode = {
       newChatCtrl.collapse()
-      nav.navigate(Pages.Connect.route)
+      ModalManager.shared.showCustomModal { close -> ConnectContactView(chatModel, close) }
       cameraPermissionState.launchPermissionRequest()
-    },
-    close = {
-      newChatCtrl.collapse()
     }
   )
 }
 
 @Composable
-fun NewChatSheetLayout(addContact: () -> Unit, scanCode: () -> Unit, close: () -> Unit) {
-  Row(Modifier
+fun NewChatSheetLayout(addContact: () -> Unit, scanCode: () -> Unit) {
+  Row(
+    Modifier
       .fillMaxWidth()
       .padding(horizontal = 8.dp, vertical = 48.dp),
     horizontalArrangement = Arrangement.SpaceEvenly
   ) {
-    Box(Modifier.weight(1F).fillMaxWidth()) {
+    Box(
+      Modifier
+        .weight(1F)
+        .fillMaxWidth()) {
       ActionButton(
         "Add contact", "(create QR code\nor link)",
         Icons.Outlined.PersonAdd, click = addContact
       )
     }
-    Box(Modifier.weight(1F).fillMaxWidth()) {
+    Box(
+      Modifier
+        .weight(1F)
+        .fillMaxWidth()) {
       ActionButton(
         "Scan QR code", "(in person or in video call)",
         Icons.Outlined.QrCode, click = scanCode
       )
     }
-    Box(Modifier.weight(1F).fillMaxWidth()) {
+    Box(
+      Modifier
+        .weight(1F)
+        .fillMaxWidth()) {
       ActionButton(
         "Create Group", "(coming soon!)",
         Icons.Outlined.GroupAdd, disabled = true
@@ -116,8 +116,7 @@ fun PreviewNewChatSheet() {
   SimpleXTheme {
     NewChatSheetLayout(
       addContact = {},
-      scanCode = {},
-      close = {},
+      scanCode = {}
     )
   }
 }

@@ -84,7 +84,7 @@ struct ChatListView: View {
             let link = url.absoluteString.replacingOccurrences(of: "///\(path)", with: "/\(path)")
             return Alert(
                 title: Text("Connect via \(action) link?"),
-                message: Text("Your profile will be sent to the contact that you received this link from: \(link)"),
+                message: Text("Your profile will be sent to the contact that you received this link from"),
                 primaryButton: .default(Text("Connect")) {
                     DispatchQueue.main.async {
                         Task {
