@@ -2198,6 +2198,26 @@ createNewChatItem st userId chatDirection NewChatItem {createdByMsgId, itemSent,
       CDGroupSnd GroupInfo {groupId} -> (Nothing, Just groupId, Nothing)
       CDGroupRcv GroupInfo {groupId} GroupMember {groupMemberId} -> (Nothing, Just groupId, Just groupMemberId)
 
+-- getChatItem :: StoreMonad m => SQLiteStore -> UserId -> ChatType -> Int64 -> ChatItemId -> m RepliedMsg
+-- getChatItem st userId CTDirect chatId chatItemId =
+-- getChatItem st userId CTGroup chatId chatItemId =
+--   liftIOEither . withTransaction st $ \db -> do
+--     DB.query
+--       db
+--       [sql|
+--         SELECT m.chat_item_id
+--         FROM chat_item_messages m
+--         JOIN chat_items c USING (chat_item_id)
+--         WHERE c.contact_id = ? OR c.group_id = ?
+--         ORDER BY m.message_id DESC
+--         LIMIT 1
+--       |]
+--   where
+--     (contactId, groupId) = case cType of
+--       CTDirect -> (Just chatId, Nothing)
+--       CTGroup -> (Nothing, Just chatId)
+--       _ -> (Nothing, Nothing)
+
 getChatPreviews :: MonadUnliftIO m => SQLiteStore -> User -> m [AChat]
 getChatPreviews st user =
   liftIO . withTransaction st $ \db -> do

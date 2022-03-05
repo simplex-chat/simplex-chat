@@ -288,6 +288,9 @@ jsonCIStatus = \case
 
 type ChatItemId = Int64
 
+data CIMode = CIModeNew | CIModeReply ChatItemId | CIModeForward
+  deriving (Show)
+
 data ChatPagination
   = CPLast Int
   | CPAfter ChatItemId Int

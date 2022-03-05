@@ -391,7 +391,8 @@ ttyMsgTime = styleTime . formatTime defaultTimeLocale "%H:%M"
 ttyMsgContent :: MsgContent -> [StyledString]
 ttyMsgContent = \case
   MCText t -> msgPlain t
-  MCUnknown _ t -> msgPlain t
+  MCUnknown {text} -> msgPlain text
+  mc -> msgPlain $ msgContentText mc -- TODO show replies
 
 ttySentFile :: StyledString -> FileTransferId -> FilePath -> [StyledString]
 ttySentFile to fId fPath = ["/f " <> to <> ttyFilePath fPath, "use " <> highlight ("/fc " <> show fId) <> " to cancel sending"]

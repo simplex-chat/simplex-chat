@@ -173,16 +173,16 @@ processChatCommand = \case
     CTGroup -> CRApiChat . AChat SCTGroup <$> withStore (\st -> getGroupChat st user cId pagination)
     CTContactRequest -> pure $ chatCmdError "not implemented"
   APIGetChatItems _pagination -> pure $ chatCmdError "not implemented"
-  APISendMessage cType chatId mc -> withUser $ \user@User {userId} -> withChatLock $ case cType of
+  APISendMessage cType chatId _ciMode mc -> withUser $ \user@User {userId} -> withChatLock $ case cType of
     CTDirect -> do
       ct@Contact {localDisplayName = c} <- withStore $ \st -> getContact st userId chatId
-      ci <- sendDirectChatItem userId ct (XMsgNew mc Nothing) (CISndMsgContent mc)
+      ci <- sendDirectChatItem userId ct (XMsgNew mc) (CISndMsgContent mc)
       setActive $ ActiveC c
       pure . CRNewChatItem $ AChatItem SCTDirect SMDSnd (DirectChat ct) ci
     CTGroup -> do
       group@(Group gInfo@GroupInfo {localDisplayName = gName, membership} _) <- withStore $ \st -> getGroup st user chatId
       unless (memberActive membership) $ throwChatError CEGroupMemberUserRemoved
-      ci <- sendGroupChatItem userId group (XMsgNew mc Nothing) (CISndMsgContent mc)
+      ci <- sendGroupChatItem userId group (XMsgNew mc) (CISndMsgContent mc)
       setActive $ ActiveG gName
       pure . CRNewChatItem $ AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci
     CTContactRequest -> pure $ chatCmdError "not supported"
@@ -263,7 +263,7 @@ processChatCommand = \case
   SendMessage cName msg -> withUser $ \User {userId} -> do
     contactId <- withStore $ \st -> getContactIdByName st userId cName
     let mc = MCText $ safeDecodeUtf8 msg
-    processChatCommand $ APISendMessage CTDirect contactId mc
+    processChatCommand $ APISendMessage CTDirect contactId CIModeNew mc
   NewGroup gProfile -> withUser $ \user -> do
     gVar <- asks idsDrg
     CRGroupCreated <$> withStore (\st -> createNewGroup st gVar user gProfile)
@@ -338,7 +338,7 @@ processChatCommand = \case
   SendGroupMessage gName msg -> withUser $ \user -> do
     groupId <- withStore $ \st -> getGroupIdByName st user gName
     let mc = MCText $ safeDecodeUtf8 msg
-    processChatCommand $ APISendMessage CTGroup groupId mc
+    processChatCommand $ APISendMessage CTGroup groupId CIModeNew mc
   SendFile cName f -> withUser $ \User {userId} -> withChatLock $ do
     (fileSize, chSize) <- checkSndFile f
     contact <- withStore $ \st -> getContactByName st userId cName
@@ -633,7 +633,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
           (msgId, chatMsgEvent) <- saveRcvMSG conn (ConnectionId connId) msgMeta msgBody
           withAckMessage agentConnId msgMeta $
             case chatMsgEvent of
-              XMsgNew mc _ -> newContentMessage ct mc msgId msgMeta
+              XMsgNew mc -> newContentMessage ct mc msgId msgMeta
               XFile fInv -> processFileInvitation ct fInv msgId msgMeta
               XInfo p -> xInfo ct p
               XGrpInv gInv -> processGroupInvitation ct gInv
@@ -772,7 +772,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
         (msgId, chatMsgEvent) <- saveRcvMSG conn (GroupId groupId) msgMeta msgBody
         withAckMessage agentConnId msgMeta $
           case chatMsgEvent of
-            XMsgNew mc _ -> newGroupContentMessage gInfo m mc msgId msgMeta
+            XMsgNew mc -> newGroupContentMessage gInfo m mc msgId msgMeta
             XFile fInv -> processGroupFileInvitation gInfo m fInv msgId msgMeta
             XGrpMemNew memInfo -> xGrpMemNew gInfo m memInfo
             XGrpMemIntro memInfo -> xGrpMemIntro conn gInfo m memInfo
@@ -1469,7 +1469,7 @@ chatCommandP =
     <|> "/_get chats" $> APIGetChats
     <|> "/_get chat " *> (APIGetChat <$> chatTypeP <*> A.decimal <* A.space <*> chatPaginationP)
     <|> "/_get items count=" *> (APIGetChatItems <$> A.decimal)
-    <|> "/_send " *> (APISendMessage <$> chatTypeP <*> A.decimal <* A.space <*> msgContentP)
+    <|> "/_send " *> (APISendMessage <$> chatTypeP <*> A.decimal <*> msgModeP <* A.space <*> msgContentP)
     <|> "/_read chat " *> (APIChatRead <$> chatTypeP <*> A.decimal <* A.space <*> ((,) <$> ("from=" *> A.decimal) <* A.space <*> ("to=" *> A.decimal)))
     <|> "/_delete " *> (APIDeleteChat <$> chatTypeP <*> A.decimal)
     <|> "/_accept " *> (APIAcceptContact <$> A.decimal)
@@ -1522,6 +1522,10 @@ chatCommandP =
       (CPLast <$ "count=" <*> A.decimal)
         <|> (CPAfter <$ "after=" <*> A.decimal <* A.space <* "count=" <*> A.decimal)
         <|> (CPBefore <$ "before=" <*> A.decimal <* A.space <* "count=" <*> A.decimal)
+    msgModeP =
+      CIModeReply <$> (" replyTo=" *> A.decimal)
+        <|> " forward" $> CIModeForward
+        <|> pure CIModeNew
     msgContentP = "text " *> (MCText . safeDecodeUtf8 <$> A.takeByteString)
     displayName = safeDecodeUtf8 <$> (B.cons <$> A.satisfy refChar <*> A.takeTill (== ' '))
     refChar c = c > ' ' && c /= '#' && c /= '@'
