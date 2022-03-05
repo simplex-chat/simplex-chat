@@ -157,10 +157,12 @@ testGroup =
       concurrently_
         (bob <# "#team alice> hello")
         (cath <# "#team alice> hello")
+      threadDelay 1000000 -- server assigns timestamps with one second precision
       bob #> "#team hi there"
       concurrently_
         (alice <# "#team bob> hi there")
         (cath <# "#team bob> hi there")
+      threadDelay 1000000
       cath #> "#team hey team"
       concurrently_
         (alice <# "#team cath> hey team")
