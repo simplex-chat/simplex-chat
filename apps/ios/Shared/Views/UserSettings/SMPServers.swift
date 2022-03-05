@@ -10,18 +10,19 @@ import SwiftUI
 
 private let serversFont = Font.custom("Menlo", size: 14)
 
+private let howToUrl = URL(string: "https://github.com/simplex-chat/simplexmq#using-smp-server-and-smp-agent")!
+
 struct SMPServers: View {
     @EnvironmentObject var chatModel: ChatModel
     @State var isUserSMPServers = false
     @State var editSMPServers = true
     @State var userSMPServersStr = ""
+    @State var showBadServersAlert = false
     @FocusState private var keyboardVisible: Bool
 
     var body: some View {
         return VStack(alignment: .leading) {
-            Text("Here you can configure custom SMP servers.")
-                .padding(.bottom)
-            Toggle("Use custom SMP servers", isOn: $isUserSMPServers)
+            Toggle("Configure SMP servers", isOn: $isUserSMPServers)
                 .onChange(of: isUserSMPServers) { _ in
                     if (!isUserSMPServers) {
                         // TODO alert
@@ -32,55 +33,85 @@ struct SMPServers: View {
                 .padding(.bottom)
             
             if !isUserSMPServers {
-                VStack(alignment: .leading) {
-                    Text("You are using default SMP servers.")
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
+                Text("Using SimpleX Chat servers.")
+                    .frame(maxWidth: .infinity, alignment: .leading)
             } else {
                 VStack(alignment: .leading) {
-                    Text("Specify addresses of SMP server(s) to be used for creating new connections. Each address has to be put on a new line.")
-                        .allowsTightening(false)
+                    Text("Enter one SMP server per line:")
                     if editSMPServers {
                         TextEditor(text: $userSMPServersStr)
                             .focused($keyboardVisible)
                             .font(serversFont)
+                            .disableAutocorrection(true)
                             .textInputAutocapitalization(.never)
                             .padding(.horizontal, 5)
-                            .allowsTightening(false)
+                            .padding(.top, 2)
                             .frame(height: 160)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 10)
                                     .strokeBorder(.secondary, lineWidth: 0.3, antialiased: true)
                             )
                         HStack(spacing: 20) {
+                            Button("Cancel") {
+                                initialize()
+                            }
                             Button("Save") {
                                 saveUserSMPServers()
                             }
+                            .alert(isPresented: $showBadServersAlert) {
+                                Alert(title: Text("Error saving SMP servers"), message: Text("Make sure SMP server addresses are in correct format, line separated and are not duplicated."))
+                            }
+                            Spacer()
+                            howToButton()
                         }
                     } else {
-                        // TODO scroll
-                        Text(userSMPServersStr)
-                            .font(serversFont)
-                            .multilineTextAlignment(.leading) // TODO top
-                            .padding(.horizontal, 10)
-                            .allowsTightening(false)
-                            .frame(height: 160)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 20)
-                                    .strokeBorder(.secondary, lineWidth: 0.3, antialiased: true)
-                            )
-                        Button("Edit") {
-                            editSMPServers = true
+                        ScrollView {
+                            Text(userSMPServersStr)
+                                .font(serversFont)
+                                .padding(10)
+                                .frame(minHeight: 0, alignment: .topLeading)
+                                .textSelection(.enabled)
+                        }
+                        .frame(height: 160)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 10)
+                                .strokeBorder(.secondary, lineWidth: 0.3, antialiased: true)
+                        )
+                        HStack {
+                            Button("Edit") {
+                                editSMPServers = true
+                            }
+                            Spacer()
+                            howToButton()
                         }
                     }
                 }
-                .frame(maxWidth: .infinity, minHeight: 240, alignment: .leading)
+                .frame(maxWidth: .infinity)
             }
         }
         .padding()
-        .padding(.top)
         .frame(maxHeight: .infinity, alignment: .top)
-
+        .onAppear { initialize() }
+    }
+    
+    func howToButton() -> some View {
+        Button {
+            DispatchQueue.main.async {
+                UIApplication.shared.open(howToUrl)
+            }
+        } label: {
+            HStack{
+                Text("How to")
+                Image(systemName: "arrow.up.right.circle")
+            }
+        }
+    }
+    
+    func initialize() {
+        let servers = chatModel.userSMPServers ?? []
+        isUserSMPServers = !servers.isEmpty
+        editSMPServers = servers.isEmpty
+        userSMPServersStr = servers.isEmpty ? "" : servers.joined(separator: "\n")
     }
     
     func saveUserSMPServers() {
@@ -94,18 +125,19 @@ struct SMPServers: View {
                 try await setUserSMPServers(smpServers: smpServers)
                 DispatchQueue.main.async {
                     chatModel.userSMPServers = smpServers
-                }
-                if smpServers.isEmpty {
-                    isUserSMPServers = false
-                    editSMPServers = true
-                } else {
-                    editSMPServers = false
+                    if smpServers.isEmpty {
+                        isUserSMPServers = false
+                        editSMPServers = true
+                    } else {
+                        editSMPServers = false
+                    }
                 }
             } catch {
                 let err = error.localizedDescription
                 logger.error("SMPServers.saveServers setUserSMPServers error: \(err)")
-                // keyboardVisible = false
-                saveSMPServersAlert() // TODO Alert is not being shown
+                DispatchQueue.main.async {
+                    showBadServersAlert = true
+                }
             }
         }
     }

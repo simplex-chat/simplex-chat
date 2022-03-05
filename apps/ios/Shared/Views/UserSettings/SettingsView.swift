@@ -46,19 +46,17 @@ struct SettingsView: View {
                             Text("Your SimpleX contact address")
                         }
                     }
+                }
+                
+                Section("Settings") {
                     NavigationLink {
-                        let servers = chatModel.userSMPServers ?? []
-                        SMPServers(
-                            isUserSMPServers: !servers.isEmpty,
-                            editSMPServers: servers.isEmpty,
-                            userSMPServersStr: servers.isEmpty ? "" : servers.joined(separator: "\n")
-                        )
-                        .navigationTitle("Your SMP servers")
+                        SMPServers()
+                            .navigationTitle("Your SMP servers")
                     } label: {
                         HStack {
                             Image(systemName: "server.rack")
                                 .padding(.trailing, 4)
-                            Text("Your servers")
+                            Text("SMP servers")
                         }
                     }
                 }
