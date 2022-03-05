@@ -25,7 +25,7 @@ fun ChatInfoImage(chat: Chat, size: Dp) {
     if (chat.chatInfo is ChatInfo.Group) Icons.Filled.SupervisedUserCircle
                                     else Icons.Filled.AccountCircle
   Box(Modifier.size(size)) {
-    if (chat.chatInfo.displayImage != null) {
+    if (chat.chatInfo.displayImage == null) {
       Icon(
         icon,
         contentDescription = "Avatar Placeholder",
@@ -34,12 +34,12 @@ fun ChatInfoImage(chat: Chat, size: Dp) {
       )
     }
     else {
-      val data = Base64.decode(chat.chatInfo.displayImage!!, 0)
-      // TODO this currently wont work
-      val bitmap = BitmapFactory.decodeByteArray(data, 0, 10).asImageBitmap()
+      val imageBytes = Base64.decode(chat.chatInfo.displayImage, Base64.DEFAULT)
+      val bitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size).asImageBitmap()
       Image(
         bitmap,
-        "display image for profile"
+        "display image for profile",
+        modifier = Modifier.fillMaxSize()
       )
     }
   }

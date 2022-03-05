@@ -361,13 +361,12 @@ class Connection(val connStatus: String) {
 class Profile(
   val displayName: String,
   val fullName: String,
-  val displayImage: String?
+  val displayImage: String? = null
   ) {
   companion object {
     val sampleData = Profile(
       displayName = "alice",
       fullName = "Alice",
-      displayImage = null
     )
   }
 }
@@ -401,13 +400,12 @@ class GroupInfo (
 class GroupProfile (
   override val displayName: String,
   override val fullName: String,
-  override val displayImage: String?
+  override val displayImage: String? = null
 ): NamedChat {
   companion object {
     val sampleData = GroupProfile(
       displayName = "team",
       fullName = "My Team",
-      displayImage = null
     )
   }
 }
