@@ -153,7 +153,7 @@ fun CreateProfilePanel(chatModel: ChatModel) {
         chatModel.controller.startChat(user)
       }
     },
-    enabled = displayName.isNotEmpty()
+    enabled = (displayName.isNotEmpty() && isValidDisplayName(displayName))
     ) { Text("Create") }
   }
 }
