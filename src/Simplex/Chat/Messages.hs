@@ -150,6 +150,7 @@ data NewChatItem d = NewChatItem
     itemContent :: CIContent d,
     itemText :: Text,
     itemStatus :: CIStatus d,
+    itemSharedMsgId :: Maybe SharedMsgId,
     createdAt :: UTCTime
   }
   deriving (Show)
@@ -205,15 +206,16 @@ data CIMeta (d :: MsgDirection) = CIMeta
     itemTs :: ChatItemTs,
     itemText :: Text,
     itemStatus :: CIStatus d,
+    itemSharedMsgId :: Maybe SharedMsgId,
     localItemTs :: ZonedTime,
     createdAt :: UTCTime
   }
   deriving (Show, Generic)
 
-mkCIMeta :: ChatItemId -> Text -> CIStatus d -> TimeZone -> ChatItemTs -> UTCTime -> CIMeta d
-mkCIMeta itemId itemText itemStatus tz itemTs createdAt =
+mkCIMeta :: ChatItemId -> Text -> CIStatus d -> Maybe SharedMsgId -> TimeZone -> ChatItemTs -> UTCTime -> CIMeta d
+mkCIMeta itemId itemText itemStatus itemSharedMsgId tz itemTs createdAt =
   let localItemTs = utcToZonedTime tz itemTs
-   in CIMeta {itemId, itemTs, itemText, itemStatus, localItemTs, createdAt}
+   in CIMeta {itemId, itemTs, itemText, itemStatus, itemSharedMsgId, localItemTs, createdAt}
 
 instance ToJSON (CIMeta d) where toEncoding = J.genericToEncoding J.defaultOptions
 
@@ -287,9 +289,6 @@ jsonCIStatus = \case
   CISRcvRead -> JCISRcvRead
 
 type ChatItemId = Int64
-
-data CIMode = CIModeNew | CIModeReply ChatItemId | CIModeForward
-  deriving (Show)
 
 data ChatPagination
   = CPLast Int

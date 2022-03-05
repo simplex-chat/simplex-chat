@@ -105,7 +105,7 @@ module Simplex.Chat.Store
     updateFileTransferChatItemId,
     getFileTransfer,
     getFileTransferProgress,
-    createNewMessage,
+    createNewSndMessage,
     createSndMsgDelivery,
     createNewMessageAndRcvMsgDelivery,
     createSndMsgDeliveryEvent,
@@ -114,6 +114,10 @@ module Simplex.Chat.Store
     getPendingGroupMessages,
     deletePendingGroupMessage,
     createNewChatItem,
+    getDirectChatItem,
+    getGroupChatItem,
+    getDirectChatItemByMsgRef,
+    getGroupChatItemByMsgRef,
     getChatPreviews,
     getDirectChat,
     getGroupChat,
@@ -2026,8 +2030,8 @@ getSndFileTransfers_ db userId fileId =
         Just recipientDisplayName -> Right SndFileTransfer {fileId, fileStatus, fileName, fileSize, chunkSize, filePath, recipientDisplayName, connId, agentConnId}
         Nothing -> Left $ SESndFileInvalid fileId
 
-createNewMessage :: StoreMonad m => SQLiteStore -> TVar ChaChaDRG -> ConnOrGroupId -> (SharedMsgId -> NewMessage) -> m (MessageId, MsgBody)
-createNewMessage st gVar connOrGroupId mkMessage =
+createNewSndMessage :: StoreMonad m => SQLiteStore -> TVar ChaChaDRG -> ConnOrGroupId -> (SharedMsgId -> NewMessage) -> m (MessageId, SharedMsgId, MsgBody)
+createNewSndMessage st gVar connOrGroupId mkMessage =
   liftIOEither . withTransaction st $ \db ->
     createWithRandomId gVar $ \sharedMsgId -> do
       createdAt <- getCurrentTime
@@ -2045,7 +2049,7 @@ createNewMessage st gVar connOrGroupId mkMessage =
           WHERE message_id = ?
         |]
         (direction, cmEventTag, msgBody, connId_, groupId_, msgId)
-      pure (msgId, msgBody)
+      pure (msgId, SharedMsgId sharedMsgId, msgBody)
   where
     (connId_, groupId_) = case connOrGroupId of
       ConnectionId connId -> (Just connId, Nothing)
@@ -2198,25 +2202,97 @@ createNewChatItem st userId chatDirection NewChatItem {createdByMsgId, itemSent,
       CDGroupSnd GroupInfo {groupId} -> (Nothing, Just groupId, Nothing)
       CDGroupRcv GroupInfo {groupId} GroupMember {groupMemberId} -> (Nothing, Just groupId, Just groupMemberId)
 
--- getChatItem :: StoreMonad m => SQLiteStore -> UserId -> ChatType -> Int64 -> ChatItemId -> m RepliedMsg
--- getChatItem st userId CTDirect chatId chatItemId =
--- getChatItem st userId CTGroup chatId chatItemId =
---   liftIOEither . withTransaction st $ \db -> do
---     DB.query
---       db
---       [sql|
---         SELECT m.chat_item_id
---         FROM chat_item_messages m
---         JOIN chat_items c USING (chat_item_id)
---         WHERE c.contact_id = ? OR c.group_id = ?
---         ORDER BY m.message_id DESC
---         LIMIT 1
---       |]
---   where
---     (contactId, groupId) = case cType of
---       CTDirect -> (Just chatId, Nothing)
---       CTGroup -> (Nothing, Just chatId)
---       _ -> (Nothing, Nothing)
+getDirectChatItem :: StoreMonad m => SQLiteStore -> User -> Int64 -> ChatItemId -> m (CChatItem 'CTDirect)
+getDirectChatItem st User {userId} contactId itemId =
+  liftIOEither . withTransaction st $ \db -> do
+    tz <- getCurrentTimeZone
+    join
+      <$> firstRow
+        (toDirectChatItem tz)
+        (SEChatItemNotFound itemId)
+        ( DB.query
+            db
+            [sql|
+              SELECT chat_item_id, item_ts, item_content, item_text, item_status, created_at
+              FROM chat_items
+              WHERE user_id = ? AND contact_id = ? AND chat_item_id = ?
+            |]
+            (userId, contactId, itemId)
+        )
+
+getGroupChatItem :: StoreMonad m => SQLiteStore -> User -> Int64 -> ChatItemId -> m (CChatItem 'CTGroup)
+getGroupChatItem st User {userId, userContactId} groupId itemId =
+  liftIOEither . withTransaction st $ \db -> do
+    tz <- getCurrentTimeZone
+    join
+      <$> firstRow
+        (toGroupChatItem tz userContactId)
+        (SEChatItemNotFound itemId)
+        ( DB.query
+            db
+            [sql|
+              SELECT
+                -- ChatItem
+                i.chat_item_id, i.item_ts, i.item_content, i.item_text, i.item_status, i.created_at,
+                -- GroupMember
+                m.group_member_id, m.group_id, m.member_id, m.member_role, m.member_category,
+                m.member_status, m.invited_by, m.local_display_name, m.contact_id,
+                p.display_name, p.full_name, p.image
+              FROM chat_items i
+              LEFT JOIN group_members m ON m.group_member_id = i.group_member_id
+              LEFT JOIN contact_profiles p ON p.contact_profile_id = m.contact_profile_id
+              WHERE i.user_id = ? AND i.group_id = ? AND i.chat_item_id = ?
+            |]
+            (userId, groupId, itemId)
+        )
+
+getDirectChatItemByMsgRef :: StoreMonad m => SQLiteStore -> User -> Int64 -> Bool -> SharedMsgId -> m (CChatItem 'CTDirect)
+getDirectChatItemByMsgRef st User {userId} contactId sentByUser sharedMsgId =
+  liftIOEither . withTransaction st $ \db -> do
+    tz <- getCurrentTimeZone
+    join
+      <$> firstRow
+        (toDirectChatItem tz)
+        SERefChatItemNotFound
+        ( DB.query
+            db
+            [sql|
+              SELECT i.chat_item_id, i.item_ts, i.item_content, i.item_text, i.item_status, i.created_at
+              FROM chat_items i
+              JOIN chat_item_messages im USING (chat_item_id)
+              JOIN messages m USING (message_id)
+              WHERE i.user_id = ? AND i.contact_id = ? AND i.item_sent = ? AND m.shared_msg_id = ?
+            |]
+            (userId, contactId, sentByUser, sharedMsgId)
+        )
+
+getGroupChatItemByMsgRef :: StoreMonad m => SQLiteStore -> User -> Int64 -> MemberId -> SharedMsgId -> m (CChatItem 'CTGroup)
+getGroupChatItemByMsgRef st User {userId, userContactId} groupId sharedMemberId sharedMsgId =
+  liftIOEither . withTransaction st $ \db -> do
+    tz <- getCurrentTimeZone
+    join
+      <$> firstRow
+        (toGroupChatItem tz userContactId)
+        SERefChatItemNotFound
+        ( DB.query
+            db
+            [sql|
+              SELECT
+                -- ChatItem
+                i.chat_item_id, i.item_ts, i.item_content, i.item_text, i.item_status, i.created_at,
+                -- GroupMember
+                m.group_member_id, m.group_id, m.member_id, m.member_role, m.member_category,
+                m.member_status, m.invited_by, m.local_display_name, m.contact_id,
+                p.display_name, p.full_name, p.image
+              FROM chat_items i
+              JOIN chat_item_messages im USING (chat_item_id)
+              JOIN messages m USING (message_id)
+              LEFT JOIN group_members m ON m.group_member_id = i.group_member_id
+              LEFT JOIN contact_profiles p ON p.contact_profile_id = m.contact_profile_id
+              WHERE i.user_id = ? AND i.group_id = ? AND m.member_id = ? AND m.shared_msg_id = ?
+            |]
+            (userId, groupId, sharedMemberId, sharedMsgId)
+        )
 
 getChatPreviews :: MonadUnliftIO m => SQLiteStore -> User -> m [AChat]
 getChatPreviews st user =
@@ -2755,7 +2831,8 @@ toDirectChatItem tz (itemId, itemTs, itemContent, itemText, itemStatus, createdA
     cItem d cid ciStatus ciContent = CChatItem d (ChatItem cid (ciMeta ciStatus) ciContent $ parseMaybeMarkdownList itemText)
     badItem = Left $ SEBadChatItem itemId
     ciMeta :: CIStatus d -> CIMeta d
-    ciMeta status = mkCIMeta itemId itemText status tz itemTs createdAt
+    -- TODO sharedMsgId instead of Nothing
+    ciMeta status = mkCIMeta itemId itemText status Nothing tz itemTs createdAt
 
 toDirectChatItemList :: TimeZone -> MaybeChatItemRow -> [CChatItem 'CTDirect]
 toDirectChatItemList tz (Just itemId, Just itemTs, Just itemContent, Just itemText, Just itemStatus, Just createdAt) =
@@ -2778,7 +2855,8 @@ toGroupChatItem tz userContactId ((itemId, itemTs, itemContent, itemText, itemSt
     cItem d cid ciStatus ciContent = CChatItem d (ChatItem cid (ciMeta ciStatus) ciContent $ parseMaybeMarkdownList itemText)
     badItem = Left $ SEBadChatItem itemId
     ciMeta :: CIStatus d -> CIMeta d
-    ciMeta status = mkCIMeta itemId itemText status tz itemTs createdAt
+    -- TODO sharedMsgId instead of Nothing
+    ciMeta status = mkCIMeta itemId itemText status Nothing tz itemTs createdAt
 
 toGroupChatItemList :: TimeZone -> Int64 -> MaybeGroupChatItemRow -> [CChatItem 'CTGroup]
 toGroupChatItemList tz userContactId ((Just itemId, Just itemTs, Just itemContent, Just itemText, Just itemStatus, Just createdAt) :. memberRow_) =
@@ -2902,6 +2980,7 @@ data StoreError
   | SENoMsgDelivery {connId :: Int64, agentMsgId :: AgentMsgId}
   | SEBadChatItem {itemId :: ChatItemId}
   | SEChatItemNotFound {itemId :: ChatItemId}
+  | SERefChatItemNotFound
   deriving (Show, Exception, Generic)
 
 instance ToJSON StoreError where

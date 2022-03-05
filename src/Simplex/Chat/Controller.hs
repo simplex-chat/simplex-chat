@@ -90,7 +90,7 @@ data ChatCommand
   | APIGetChats
   | APIGetChat ChatType Int64 ChatPagination
   | APIGetChatItems Int
-  | APISendMessage ChatType Int64 CIMode MsgContent
+  | APISendMessage ChatType Int64 MsgContent
   | APIChatRead ChatType Int64 (ChatItemId, ChatItemId)
   | APIDeleteChat ChatType Int64
   | APIAcceptContact Int64

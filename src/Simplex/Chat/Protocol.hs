@@ -141,10 +141,12 @@ data ChatMsgEvent
   | XUnknown {event :: Text, params :: J.Object}
   deriving (Eq, Show)
 
-data RepliedMsg = RepliedMsg {msgRef :: MessageRef, content :: MsgContent}
+data RepliedMsg = RepliedMsg {msgRef :: Maybe MessageRef, content :: MsgContent}
   deriving (Eq, Show, Generic, FromJSON)
 
-instance ToJSON RepliedMsg where toEncoding = J.genericToEncoding J.defaultOptions
+instance ToJSON RepliedMsg where
+  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
+  toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
 
 data MsgContentTag = MCText_ | MCUnknown_ Text
 
