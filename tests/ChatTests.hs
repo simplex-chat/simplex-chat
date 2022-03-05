@@ -6,6 +6,7 @@
 module ChatTests where
 
 import ChatClient
+import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
 import Control.Concurrent.STM
 import qualified Data.ByteString as B
