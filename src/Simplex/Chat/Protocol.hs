@@ -87,12 +87,12 @@ instance ToJSON SharedMsgId where
 
 data MessageRef
   = MsgRefDirect
-      { msgId :: SharedMsgId,
+      { msgId :: Maybe SharedMsgId,
         sentAt :: UTCTime,
         sent :: Bool
       }
   | MsgRefGroup
-      { msgId :: SharedMsgId,
+      { msgId :: Maybe SharedMsgId,
         sentAt :: UTCTime,
         memberId :: MemberId
       }
@@ -141,16 +141,16 @@ data ChatMsgEvent
   | XUnknown {event :: Text, params :: J.Object}
   deriving (Eq, Show)
 
-data RepliedMsg = RepliedMsg {msgRef :: Maybe MessageRef, content :: MsgContent}
+data RepliedMsg = RepliedMsg {msgRef :: MessageRef, content :: MsgContent}
   deriving (Eq, Show, Generic, FromJSON)
 
 instance ToJSON RepliedMsg where
-  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
-  toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
+  toEncoding = J.genericToEncoding J.defaultOptions
+  toJSON = J.genericToJSON J.defaultOptions
 
 cmReplyToMsgRef :: ChatMsgEvent -> Maybe MessageRef
 cmReplyToMsgRef = \case
-  XMsgNew (MCReply (RepliedMsg {msgRef}) _) -> msgRef
+  XMsgNew (MCReply (RepliedMsg {msgRef}) _) -> Just msgRef
   _ -> Nothing
 
 data MsgContentTag = MCText_ | MCUnknown_ Text

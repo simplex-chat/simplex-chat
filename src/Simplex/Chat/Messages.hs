@@ -223,8 +223,8 @@ mkCIMeta itemId itemText itemStatus itemSharedMsgId tz itemTs createdAt =
 instance ToJSON (CIMeta d) where toEncoding = J.genericToEncoding J.defaultOptions
 
 data CIRef (c :: ChatType) where
-  CIRefDirect :: Maybe ChatItemId -> UTCTime -> Bool -> CIRef 'CTDirect
-  CIRefGroup :: Maybe ChatItemId -> UTCTime -> GroupMember -> CIRef 'CTGroup
+  CIRefDirect :: Maybe ChatItemId -> Bool -> CIRef 'CTDirect
+  CIRefGroup :: Maybe ChatItemId -> GroupMember -> CIRef 'CTGroup
 
 deriving instance Show (CIRef c)
 
@@ -233,8 +233,8 @@ instance ToJSON (CIRef c) where
   toEncoding = J.toEncoding . jsonCIRef
 
 data JSONCIRef
-  = JCIRefDirect {itemId_ :: Maybe ChatItemId, sentAt :: UTCTime, sent :: Bool}
-  | JCIRefGroup {itemId_ :: Maybe ChatItemId, sentAt :: UTCTime, member :: GroupMember}
+  = JCIRefDirect {itemId_ :: Maybe ChatItemId, sent :: Bool}
+  | JCIRefGroup {itemId_ :: Maybe ChatItemId, member :: GroupMember}
   deriving (Show, Generic)
 
 instance ToJSON JSONCIRef where
@@ -243,8 +243,8 @@ instance ToJSON JSONCIRef where
 
 jsonCIRef :: CIRef c -> JSONCIRef
 jsonCIRef = \case
-  CIRefDirect itemId_ sentAt sent -> JCIRefDirect {itemId_, sentAt, sent}
-  CIRefGroup itemId_ sentAt member -> JCIRefGroup {itemId_, sentAt, member}
+  CIRefDirect itemId_ sent -> JCIRefDirect {itemId_, sent}
+  CIRefGroup itemId_ member -> JCIRefGroup {itemId_, member}
 
 data CIStatus (d :: MsgDirection) where
   CISSndNew :: CIStatus 'MDSnd
