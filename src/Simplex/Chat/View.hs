@@ -151,34 +151,59 @@ responseToView testView = \case
         toChatView :: CChatItem c -> (Int, Text)
         toChatView (CChatItem dir ChatItem {meta}) = (msgDirectionInt $ toMsgDirection dir, itemText meta)
     viewErrorsSummary :: [a] -> StyledString -> [StyledString]
-    viewErrorsSummary summary s = if null summary then [] else [styled (colored Red) (T.pack . show $ length summary) <> s <> " (run with -c option to show each error)"]
+    viewErrorsSummary summary s = if null summary then [] else [ttyError (T.pack . show $ length summary) <> s <> " (run with -c option to show each error)"]
 
 viewChatItem :: ChatInfo c -> ChatItem c d -> [StyledString]
-viewChatItem chat (ChatItem cd meta content _ _) = case (chat, cd) of
-  (DirectChat c, CIDirectSnd) -> case content of
-    CISndMsgContent mc -> viewSentMessage to mc meta
+viewChatItem chat (ChatItem cd meta ciContent quoteRef _) = case (chat, cd) of
+  (DirectChat c, CIDirectSnd) -> case ciContent of
+    CISndMsgContent mc -> viewSentMessage to quote mc meta where quote = directQuote c id (quoteRef, mc)
     CISndFileInvitation fId fPath -> viewSentFileInvitation to fId fPath meta
     where
       to = ttyToContact' c
-  (DirectChat c, CIDirectRcv) -> case content of
-    CIRcvMsgContent mc -> viewReceivedMessage from meta mc -- mOk
-    CIRcvFileInvitation ft -> viewReceivedFileInvitation from meta ft -- mOk
+  (DirectChat c, CIDirectRcv) -> case ciContent of
+    CIRcvMsgContent mc -> viewReceivedMessage from quote meta mc where quote = directQuote c not (quoteRef, mc)
+    CIRcvFileInvitation ft -> viewReceivedFileInvitation from meta ft
     where
       from = ttyFromContact' c
-  (GroupChat g, CIGroupSnd) -> case content of
-    CISndMsgContent mc -> viewSentMessage to mc meta
+  (GroupChat g, CIGroupSnd) -> case ciContent of
+    CISndMsgContent mc -> viewSentMessage to quote mc meta where quote = groupQuote (quoteRef, mc)
     CISndFileInvitation fId fPath -> viewSentFileInvitation to fId fPath meta
     where
       to = ttyToGroup g
-  (GroupChat g, CIGroupRcv m) -> case content of
-    CIRcvMsgContent mc -> viewReceivedMessage from meta mc -- mOk
-    CIRcvFileInvitation ft -> viewReceivedFileInvitation from meta ft -- mOk
+  (GroupChat g, CIGroupRcv m) -> case ciContent of
+    CIRcvMsgContent mc -> viewReceivedMessage from quote meta mc where quote = groupQuote (quoteRef, mc)
+    CIRcvFileInvitation ft -> viewReceivedFileInvitation from meta ft
     where
       from = ttyFromGroup' g m
   where
-    ttyToContact' Contact {localDisplayName = c} = ttyToContact c
-    ttyFromContact' Contact {localDisplayName = c} = ttyFromContact c
-    ttyFromGroup' g GroupMember {localDisplayName = m} = ttyFromGroup g m
+    directQuote :: Contact -> (Bool -> Bool) -> (Maybe (CIRef 'CTDirect), MsgContent) -> [StyledString]
+    directQuote c op = \case
+      (ciRef, MCReply RepliedMsg {msgRef, content} _) ->
+        prependFirst (badRef msgRef ciRef <> sentBy msgRef ciRef <> " ") $ msgPreview content
+      (Just _, _) -> [ttyError' "unexpected quote ref"]
+      _ -> []
+      where
+        sentBy _ (Just (CIRefDirect _ refSent)) = quoted refSent
+        sentBy MsgRefDirect {sent} _ = quoted $ op sent
+        sentBy _ _ = ""
+        quoted sent = if sent then ">" else ttyQuotedContact c
+        badRef MsgRefDirect {sent} ciRef = case ciRef of
+          Just (CIRefDirect _ refSent) -> if refSent == op sent then "" else ttyError' "inconsistent quote ref (dir) "
+          _ -> ttyError' "missing quote ref "
+        badRef MsgRefGroup {} _ = ttyError' "inconsistent quote ref (group) "
+    groupQuote :: (Maybe (CIRef 'CTGroup), MsgContent) -> [StyledString]
+    groupQuote = \case
+      (Just (CIRefGroup _ m), MCReply RepliedMsg {content} _) ->
+        let quotedMember = if memberCategory m == GCUserMember then ">" else ttyQuotedMember m
+         in prependFirst (quotedMember <> " ") $ msgPreview content
+      (Just _, _) -> [ttyError' "unexpected quote ref"]
+      (_, MCReply RepliedMsg {content} _) -> prependFirst (ttyError' "missing quote ref" <> " > ") $ msgPreview content
+      _ -> []
+    msgPreview = msgPlain . preview . msgContentText
+      where
+        preview t
+          | T.length t <= 60 = t
+          | otherwise = t <> "..."
 
 viewMsgIntegrityError :: MsgErrorType -> [StyledString]
 viewMsgIntegrityError err = msgError $ case err of
@@ -190,7 +215,7 @@ viewMsgIntegrityError err = msgError $ case err of
   MsgDuplicate -> "duplicate message ID"
   where
     msgError :: String -> [StyledString]
-    msgError s = [styled (colored Red) s]
+    msgError s = [ttyError s]
 
 viewInvalidConnReq :: [StyledString]
 viewInvalidConnReq =
@@ -357,12 +382,12 @@ viewContactUpdated
     where
       fullNameUpdate = if T.null fullName' || fullName' == n' then " removed full name" else " updated full name: " <> plain fullName'
 
-viewReceivedMessage :: StyledString -> CIMeta d -> MsgContent -> [StyledString]
-viewReceivedMessage from meta mc = receivedWithTime_ from meta (ttyMsgContent mc)
+viewReceivedMessage :: StyledString -> [StyledString] -> CIMeta d -> MsgContent -> [StyledString]
+viewReceivedMessage from quote meta = receivedWithTime_ from quote meta . ttyMsgContent
 
-receivedWithTime_ :: StyledString -> CIMeta d -> [StyledString] -> [StyledString]
-receivedWithTime_ from CIMeta {localItemTs, createdAt} styledMsg = do
-  prependFirst (formattedTime <> " " <> from) styledMsg -- ++ showIntegrity mOk
+receivedWithTime_ :: StyledString -> [StyledString] -> CIMeta d -> [StyledString] -> [StyledString]
+receivedWithTime_ from quote CIMeta {localItemTs, createdAt} styledMsg = do
+  prependFirst (formattedTime <> " " <> from) (quote <> styledMsg)
   where
     formattedTime :: StyledString
     formattedTime =
@@ -375,8 +400,8 @@ receivedWithTime_ from CIMeta {localItemTs, createdAt} styledMsg = do
               else "%H:%M"
        in styleTime $ formatTime defaultTimeLocale format localTime
 
-viewSentMessage :: StyledString -> MsgContent -> CIMeta d -> [StyledString]
-viewSentMessage to = sentWithTime_ . prependFirst to . ttyMsgContent
+viewSentMessage :: StyledString -> [StyledString] -> MsgContent -> CIMeta d -> [StyledString]
+viewSentMessage to quote mc = sentWithTime_ . prependFirst to $ quote <> ttyMsgContent mc
 
 viewSentFileInvitation :: StyledString -> FileTransferId -> FilePath -> CIMeta d -> [StyledString]
 viewSentFileInvitation to fId fPath = sentWithTime_ $ ttySentFile to fId fPath
@@ -389,10 +414,7 @@ ttyMsgTime :: ZonedTime -> StyledString
 ttyMsgTime = styleTime . formatTime defaultTimeLocale "%H:%M"
 
 ttyMsgContent :: MsgContent -> [StyledString]
-ttyMsgContent = \case
-  MCText t -> msgPlain t
-  MCUnknown {text} -> msgPlain text
-  mc -> msgPlain $ msgContentText mc -- TODO show replies
+ttyMsgContent = msgPlain . msgContentText
 
 ttySentFile :: StyledString -> FileTransferId -> FilePath -> [StyledString]
 ttySentFile to fId fPath = ["/f " <> to <> ttyFilePath fPath, "use " <> highlight ("/fc " <> show fId) <> " to cancel sending"]
@@ -422,7 +444,7 @@ sndFile :: SndFileTransfer -> StyledString
 sndFile SndFileTransfer {fileId, fileName} = fileTransferStr fileId fileName
 
 viewReceivedFileInvitation :: StyledString -> CIMeta d -> RcvFileTransfer -> [StyledString]
-viewReceivedFileInvitation from meta ft = receivedWithTime_ from meta (receivedFileInvitation_ ft)
+viewReceivedFileInvitation from meta ft = receivedWithTime_ from [] meta (receivedFileInvitation_ ft)
 
 receivedFileInvitation_ :: RcvFileTransfer -> [StyledString]
 receivedFileInvitation_ RcvFileTransfer {fileId, fileInvitation = FileInvitation {fileName, fileSize}} =
@@ -524,6 +546,7 @@ viewChatError = \case
     CEFileSend fileId e -> ["error sending file " <> sShow fileId <> ": " <> sShow e]
     CEFileRcvChunk e -> ["error receiving file: " <> plain e]
     CEFileInternal e -> ["file error: " <> plain e]
+    CEInvalidReply -> ["cannot reply to this message"]
     CEAgentVersion -> ["unsupported agent version"]
     CECommandError e -> ["bad chat command: " <> plain e]
   -- e -> ["chat error: " <> sShow e]
@@ -540,6 +563,7 @@ viewChatError = \case
     SEUserContactLinkNotFound -> ["no chat address, to create: " <> highlight' "/ad"]
     SEContactRequestNotFoundByName c -> ["no contact request from " <> ttyContact c]
     SEConnectionNotFound _ -> [] -- TODO mutes delete group error, but also mutes any error from getConnectionEntity
+    SEReplyChatItemNotFound -> ["message not found - reply is not sent"]
     e -> ["chat db error: " <> sShow e]
   ChatErrorAgent err -> case err of
     SMP SMP.AUTH -> ["error: this connection is deleted"]
@@ -548,7 +572,7 @@ viewChatError = \case
     fileNotFound fileId = ["file " <> sShow fileId <> " not found"]
 
 ttyContact :: ContactName -> StyledString
-ttyContact = styled (colored Green)
+ttyContact = styled $ colored Green
 
 ttyContact' :: Contact -> StyledString
 ttyContact' Contact {localDisplayName = c} = ttyContact c
@@ -571,7 +595,19 @@ ttyToContact :: ContactName -> StyledString
 ttyToContact c = styled (colored Cyan) $ "@" <> c <> " "
 
 ttyFromContact :: ContactName -> StyledString
-ttyFromContact c = styled (colored Yellow) $ c <> "> "
+ttyFromContact c = ttyFrom $ c <> "> "
+
+ttyToContact' :: Contact -> StyledString
+ttyToContact' Contact {localDisplayName = c} = ttyToContact c
+
+ttyQuotedContact :: Contact -> StyledString
+ttyQuotedContact Contact {localDisplayName = c} = ttyFrom $ c <> ">"
+
+ttyQuotedMember :: GroupMember -> StyledString
+ttyQuotedMember GroupMember {localDisplayName = c} = ttyFrom $ c <> ">"
+
+ttyFromContact' :: Contact -> StyledString
+ttyFromContact' Contact {localDisplayName = c} = ttyFromContact c
 
 ttyGroup :: GroupName -> StyledString
 ttyGroup g = styled (colored Blue) $ "#" <> g
@@ -589,7 +625,13 @@ ttyFullGroup GroupInfo {localDisplayName = g, groupProfile = GroupProfile {fullN
   ttyGroup g <> optFullName g fullName
 
 ttyFromGroup :: GroupInfo -> ContactName -> StyledString
-ttyFromGroup GroupInfo {localDisplayName = g} c = styled (colored Yellow) $ "#" <> g <> " " <> c <> "> "
+ttyFromGroup GroupInfo {localDisplayName = g} c = ttyFrom $ "#" <> g <> " " <> c <> "> "
+
+ttyFrom :: Text -> StyledString
+ttyFrom = styled $ colored Yellow
+
+ttyFromGroup' :: GroupInfo -> GroupMember -> StyledString
+ttyFromGroup' g GroupMember {localDisplayName = m} = ttyFromGroup g m
 
 ttyToGroup :: GroupInfo -> StyledString
 ttyToGroup GroupInfo {localDisplayName = g} = styled (colored Cyan) $ "#" <> g <> " "
@@ -603,10 +645,16 @@ optFullName localDisplayName fullName
   | otherwise = plain (" (" <> fullName <> ")")
 
 highlight :: StyledFormat a => a -> StyledString
-highlight = styled (colored Cyan)
+highlight = styled $ colored Cyan
 
 highlight' :: String -> StyledString
 highlight' = highlight
 
 styleTime :: String -> StyledString
 styleTime = Styled [SetColor Foreground Vivid Black]
+
+ttyError :: StyledFormat a => a -> StyledString
+ttyError = styled $ colored Red
+
+ttyError' :: String -> StyledString
+ttyError' = ttyError

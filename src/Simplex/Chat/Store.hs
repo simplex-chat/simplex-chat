@@ -114,10 +114,12 @@ module Simplex.Chat.Store
     getPendingGroupMessages,
     deletePendingGroupMessage,
     createNewChatItem,
-    getDirectChatItem,
-    getGroupChatItem,
-    getDirectChatItemByMsgRef,
-    getGroupChatItemByMsgRef,
+    findDirectChatItem,
+    findGroupChatItem,
+    -- getDirectChatItem,
+    -- getGroupChatItem,
+    -- getDirectChatItemByMsgRef,
+    -- getGroupChatItemByMsgRef,
     getChatPreviews,
     getDirectChat,
     getGroupChat,
@@ -2220,7 +2222,7 @@ getChatItemRef_ db User {userId, userContactId} chatDirection = \case
       fmap (`CIRefDirect` sent) . listToMaybe . map fromOnly
         <$> DB.query
           db
-          "SELECT chat_item_id FROM chat_items WHERE userId = ? AND contact_id = ? AND shared_msg_id = ? AND item_sent = ?"
+          "SELECT chat_item_id FROM chat_items WHERE user_id = ? AND contact_id = ? AND shared_msg_id = ? AND item_sent = ?"
           (userId, contactId, msgId, sent)
     getGroupChatItemRef_ :: Int64 -> Maybe SharedMsgId -> MemberId -> IO (Maybe (CIRef 'CTGroup))
     getGroupChatItemRef_ groupId msgId memberId =
@@ -2245,33 +2247,36 @@ getChatItemRef_ db User {userId, userContactId} chatDirection = \case
       let member = toGroupMember userContactId memberRow
        in Just $ CIRefGroup chatItemId member
 
-getDirectChatItem :: StoreMonad m => SQLiteStore -> User -> Int64 -> ChatItemId -> m (CChatItem 'CTDirect)
-getDirectChatItem st User {userId} contactId itemId =
+findDirectChatItem :: StoreMonad m => SQLiteStore -> User -> ContactName -> Text -> m (CChatItem 'CTDirect)
+findDirectChatItem st User {userId} cName replyToMsg =
   liftIOEither . withTransaction st $ \db -> do
     tz <- getCurrentTimeZone
     join
       <$> firstRow
         (toDirectChatItem tz)
-        (SEChatItemNotFound itemId)
+        SEReplyChatItemNotFound
         ( DB.query
             db
             [sql|
               SELECT i.chat_item_id, i.item_ts, i.item_content, i.item_text, i.item_status, i.shared_msg_id, i.created_at, ri.chat_item_id, i.reply_to_sent
               FROM chat_items i
               LEFT JOIN chat_items ri ON i.reply_to_shared_msg_id = ri.shared_msg_id
-              WHERE user_id = ? AND contact_id = ? AND chat_item_id = ?
+              JOIN contacts c ON i.contact_id = c.contact_id
+              WHERE c.user_id = ? AND c.local_display_name = ? AND i.item_text like ?
+              ORDER BY i.chat_item_id DESC
+              LIMIT 1
             |]
-            (userId, contactId, itemId)
+            (userId, cName, replyToMsg <> "%")
         )
 
-getGroupChatItem :: StoreMonad m => SQLiteStore -> User -> Int64 -> ChatItemId -> m (CChatItem 'CTGroup)
-getGroupChatItem st User {userId, userContactId} groupId itemId =
+findGroupChatItem :: StoreMonad m => SQLiteStore -> User -> GroupName -> ContactName -> Text -> m (CChatItem 'CTGroup)
+findGroupChatItem st User {userId, userContactId} gName cName replyToMsg =
   liftIOEither . withTransaction st $ \db -> do
     tz <- getCurrentTimeZone
     join
       <$> firstRow
         (toGroupChatItem tz userContactId)
-        (SEChatItemNotFound itemId)
+        SEReplyChatItemNotFound
         ( DB.query
             db
             [sql|
@@ -2289,72 +2294,16 @@ getGroupChatItem st User {userId, userContactId} groupId itemId =
                 rm.member_status, rm.invited_by, rm.local_display_name, rm.contact_id,
                 rp.display_name, rp.full_name, rp.image
               FROM chat_items i
-              LEFT JOIN group_members m ON m.group_member_id = i.group_member_id
-              LEFT JOIN contact_profiles p ON p.contact_profile_id = m.contact_profile_id
+              JOIN groups g ON g.group_id = i.group_id
+              JOIN group_members m ON m.group_member_id = i.group_member_id
+              JOIN contacts c ON c.contact_id = m.contact_id
+              JOIN contact_profiles p ON p.contact_profile_id = c.contact_profile_id
               LEFT JOIN chat_items ri ON i.reply_to_shared_msg_id = ri.shared_msg_id
               LEFT JOIN group_members rm ON rm.group_member_id = ri.group_member_id
               LEFT JOIN contact_profiles rp ON rp.contact_profile_id = rm.contact_profile_id
-              WHERE i.user_id = ? AND i.group_id = ? AND i.chat_item_id = ?
+              WHERE g.user_id = ? AND g.local_display_name = ? AND c.local_display_name = ? AND i.item_text like ?
             |]
-            (userId, groupId, itemId)
-        )
-
-getDirectChatItemByMsgRef :: StoreMonad m => SQLiteStore -> User -> Int64 -> Bool -> SharedMsgId -> m (CChatItem 'CTDirect)
-getDirectChatItemByMsgRef st User {userId} contactId sentByUser sharedMsgId =
-  liftIOEither . withTransaction st $ \db -> do
-    tz <- getCurrentTimeZone
-    join
-      <$> firstRow
-        (toDirectChatItem tz)
-        SERefChatItemNotFound
-        ( DB.query
-            db
-            [sql|
-              SELECT i.chat_item_id, i.item_ts, i.item_content, i.item_text, i.item_status, i.shared_msg_id, i.created_at, ri.chat_item_id, i.reply_to_sent
-              FROM chat_items i
-              JOIN chat_item_messages im USING (chat_item_id)
-              JOIN messages m USING (message_id)
-              LEFT JOIN chat_items ri ON i.reply_to_shared_msg_id = ri.shared_msg_id
-              WHERE i.user_id = ? AND i.contact_id = ? AND i.item_sent = ? AND m.shared_msg_id = ?
-            |]
-            (userId, contactId, sentByUser, sharedMsgId)
-        )
-
-getGroupChatItemByMsgRef :: StoreMonad m => SQLiteStore -> User -> Int64 -> MemberId -> SharedMsgId -> m (CChatItem 'CTGroup)
-getGroupChatItemByMsgRef st User {userId, userContactId} groupId sharedMemberId sharedMsgId =
-  liftIOEither . withTransaction st $ \db -> do
-    tz <- getCurrentTimeZone
-    join
-      <$> firstRow
-        (toGroupChatItem tz userContactId)
-        SERefChatItemNotFound
-        ( DB.query
-            db
-            [sql|
-              SELECT
-                -- ChatItem
-                i.chat_item_id, i.item_ts, i.item_content, i.item_text, i.item_status, i.shared_msg_id, i.created_at,
-                -- replied ChatItem
-                ri.chat_item_id,
-                -- GroupMember
-                m.group_member_id, m.group_id, m.member_id, m.member_role, m.member_category,
-                m.member_status, m.invited_by, m.local_display_name, m.contact_id,
-                p.display_name, p.full_name, p.image,
-                -- replied GroupMember
-                rm.group_member_id, rm.group_id, rm.member_id, rm.member_role, rm.member_category,
-                rm.member_status, rm.invited_by, rm.local_display_name, rm.contact_id,
-                rp.display_name, rp.full_name, rp.image
-              FROM chat_items i
-              JOIN chat_item_messages im USING (chat_item_id)
-              JOIN messages m USING (message_id)
-              LEFT JOIN group_members m ON m.group_member_id = i.group_member_id
-              LEFT JOIN contact_profiles p ON p.contact_profile_id = m.contact_profile_id
-              LEFT JOIN chat_items ri ON i.reply_to_shared_msg_id = ri.shared_msg_id
-              LEFT JOIN group_members rm ON rm.group_member_id = ri.group_member_id
-              LEFT JOIN contact_profiles rp ON rp.contact_profile_id = rm.contact_profile_id
-              WHERE i.user_id = ? AND i.group_id = ? AND m.member_id = ? AND m.shared_msg_id = ?
-            |]
-            (userId, groupId, sharedMemberId, sharedMsgId)
+            (userId, gName, cName, replyToMsg <> "%")
         )
 
 getChatPreviews :: MonadUnliftIO m => SQLiteStore -> User -> m [AChat]
@@ -3087,7 +3036,7 @@ data StoreError
   | SENoMsgDelivery {connId :: Int64, agentMsgId :: AgentMsgId}
   | SEBadChatItem {itemId :: ChatItemId}
   | SEChatItemNotFound {itemId :: ChatItemId}
-  | SERefChatItemNotFound
+  | SEReplyChatItemNotFound
   deriving (Show, Exception, Generic)
 
 instance ToJSON StoreError where

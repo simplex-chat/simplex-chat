@@ -265,6 +265,19 @@ processChatCommand = \case
     contactId <- withStore $ \st -> getContactIdByName st userId cName
     let mc = MCText $ safeDecodeUtf8 msg
     processChatCommand $ APISendMessage CTDirect contactId mc
+  SendReply cName replyToMsg msg -> withUser $ \user@User {userId} -> do
+    (contactId, ci) <- withStore $ \st -> (,) <$> getContactIdByName st userId cName <*> findDirectChatItem st user cName (safeDecodeUtf8 replyToMsg)
+    case ci of
+      CChatItem _ (ChatItem {meta, content}) -> do
+        let CIMeta {itemTs, itemSharedMsgId} = meta
+        (rmc, sent) <- case content of
+          CISndMsgContent mc -> pure (mc, True)
+          CIRcvMsgContent mc -> pure (mc, False)
+          _ -> throwChatError CEInvalidReply
+        let msgRef = MsgRefDirect {msgId = itemSharedMsgId, sentAt = itemTs, sent}
+            rm = RepliedMsg {msgRef, content = rmc}
+            mc = MCReply rm . MCText $ safeDecodeUtf8 msg
+        processChatCommand $ APISendMessage CTDirect contactId mc
   NewGroup gProfile -> withUser $ \user -> do
     gVar <- asks idsDrg
     CRGroupCreated <$> withStore (\st -> createNewGroup st gVar user gProfile)
@@ -340,6 +353,7 @@ processChatCommand = \case
     groupId <- withStore $ \st -> getGroupIdByName st user gName
     let mc = MCText $ safeDecodeUtf8 msg
     processChatCommand $ APISendMessage CTGroup groupId mc
+  SendGroupReply _gName _cName _replyToMsg _msg -> pure CRCmdOk
   SendFile cName f -> withUser $ \user@User {userId} -> withChatLock $ do
     (fileSize, chSize) <- checkSndFile f
     contact <- withStore $ \st -> getContactByName st userId cName
@@ -1492,11 +1506,13 @@ chatCommandP =
     <|> ("/members #" <|> "/members " <|> "/ms #" <|> "/ms ") *> (ListMembers <$> displayName)
     <|> ("/groups" <|> "/gs") $> ListGroups
     <|> A.char '#' *> (SendGroupMessage <$> displayName <* A.space <*> A.takeByteString)
+    <|> (">#" <|> "> #") *> (SendGroupReply <$> displayName <* " @" <*> displayName <* A.space <*> replyToMsg <*> A.takeByteString)
     <|> ("/contacts" <|> "/cs") $> ListContacts
     <|> ("/connect " <|> "/c ") *> (Connect <$> ((Just <$> strP) <|> A.takeByteString $> Nothing))
     <|> ("/connect" <|> "/c") $> AddContact
     <|> ("/delete @" <|> "/delete " <|> "/d @" <|> "/d ") *> (DeleteContact <$> displayName)
     <|> A.char '@' *> (SendMessage <$> displayName <* A.space <*> A.takeByteString)
+    <|> (">@" <|> "> @") *> (SendReply <$> displayName <* A.space <*> replyToMsg <*> A.takeByteString)
     <|> ("/file #" <|> "/f #") *> (SendGroupFile <$> displayName <* A.space <*> filePath)
     <|> ("/file @" <|> "/file " <|> "/f @" <|> "/f ") *> (SendFile <$> displayName <* A.space <*> filePath)
     <|> ("/freceive " <|> "/fr ") *> (ReceiveFile <$> A.decimal <*> optional (A.space *> filePath))
@@ -1528,6 +1544,7 @@ chatCommandP =
       "text " *> (MCText . safeDecodeUtf8 <$> A.takeByteString)
         <|> "json " *> (J.eitherDecodeStrict' <$?> A.takeByteString)
     displayName = safeDecodeUtf8 <$> (B.cons <$> A.satisfy refChar <*> A.takeTill (== ' '))
+    replyToMsg = A.char '(' *> A.takeTill (== ')') <* A.char ')' <* optional A.space
     refChar c = c > ' ' && c /= '#' && c /= '@'
     onOffP = ("on" $> True) <|> ("off" $> False)
     userNames = do

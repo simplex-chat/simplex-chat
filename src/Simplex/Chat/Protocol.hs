@@ -192,6 +192,12 @@ msgContentTag = \case
   MCText _ -> MCText_
   MCUnknown {tag} -> MCUnknown_ tag
 
+mainMsgContent :: MsgContent -> MsgContent
+mainMsgContent = \case
+  MCReply _ mc -> mainMsgContent mc
+  MCForward mc -> mainMsgContent mc
+  mc -> mc
+
 instance FromJSON MsgContent where
   parseJSON jv@(J.Object v) =
     v .: "type" >>= \case

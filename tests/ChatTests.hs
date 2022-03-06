@@ -33,10 +33,9 @@ danProfile = Profile {displayName = "dan", fullName = "Daniel", image = Nothing}
 
 chatTests :: Spec
 chatTests = do
-  describe "direct messages" $
+  describe "direct messages" $ do
     it "add contact and send/receive message" testAddContact
-  describe "SMP servers" $
-    it "get and set SMP servers" testGetSetSMPServers
+    it "direct message replies" testDirectMessageReply
   describe "chat groups" $ do
     it "add contacts, create group and send/receive messages" testGroup
     it "create and join group with 4 members" testGroup2
@@ -61,6 +60,8 @@ chatTests = do
     it "deduplicate contact requests with profile change" testDeduplicateContactRequestsProfileChange
     it "reject contact and delete contact link" testRejectContactAndDeleteUserContact
     it "delete connection requests when contact link deleted" testDeleteConnectionRequests
+  describe "SMP servers" $
+    it "get and set SMP servers" testGetSetSMPServers
 
 testAddContact :: IO ()
 testAddContact =
@@ -73,31 +74,13 @@ testAddContact =
       concurrently_
         (bob <## "alice (Alice): contact is connected")
         (alice <## "bob (Bob): contact is connected")
-      -- empty chats
-      alice #$$> ("/_get chats", [("@bob", "")])
-      alice #$> ("/_get chat @2 count=100", chat, [])
-      bob #$$> ("/_get chats", [("@alice", "")])
-      bob #$> ("/_get chat @2 count=100", chat, [])
-      -- one message
+      chatsEmpty alice bob
       alice #> "@bob hello 🙂"
       bob <# "alice> hello 🙂"
-      alice #$$> ("/_get chats", [("@bob", "hello 🙂")])
-      alice #$> ("/_get chat @2 count=100", chat, [(1, "hello 🙂")])
-      bob #$$> ("/_get chats", [("@alice", "hello 🙂")])
-      bob #$> ("/_get chat @2 count=100", chat, [(0, "hello 🙂")])
-      -- many messages
+      chatsOneMessage alice bob
       bob #> "@alice hi"
       alice <# "bob> hi"
-      alice #$$> ("/_get chats", [("@bob", "hi")])
-      alice #$> ("/_get chat @2 count=100", chat, [(1, "hello 🙂"), (0, "hi")])
-      bob #$$> ("/_get chats", [("@alice", "hi")])
-      bob #$> ("/_get chat @2 count=100", chat, [(0, "hello 🙂"), (1, "hi")])
-      -- pagination
-      alice #$> ("/_get chat @2 after=1 count=100", chat, [(0, "hi")])
-      alice #$> ("/_get chat @2 before=2 count=100", chat, [(1, "hello 🙂")])
-      -- read messages
-      alice #$> ("/_read chat @2 from=1 to=100", id, "ok")
-      bob #$> ("/_read chat @2 from=1 to=100", id, "ok")
+      chatsManyMessages alice bob
       -- test adding the same contact one more time - local name will be different
       alice ##> "/c"
       inv' <- getInvitation alice
@@ -119,18 +102,44 @@ testAddContact =
       alice <## "no contact bob_1"
       alice #$$> ("/_get chats", [("@bob", "hi")])
       bob #$$> ("/_get chats", [("@alice_1", "hi"), ("@alice", "hi")])
+  where
+    chatsEmpty alice bob = do
+      alice #$$> ("/_get chats", [("@bob", "")])
+      alice #$> ("/_get chat @2 count=100", chat, [])
+      bob #$$> ("/_get chats", [("@alice", "")])
+      bob #$> ("/_get chat @2 count=100", chat, [])
+    chatsOneMessage alice bob = do
+      alice #$$> ("/_get chats", [("@bob", "hello 🙂")])
+      alice #$> ("/_get chat @2 count=100", chat, [(1, "hello 🙂")])
+      bob #$$> ("/_get chats", [("@alice", "hello 🙂")])
+      bob #$> ("/_get chat @2 count=100", chat, [(0, "hello 🙂")])
+    chatsManyMessages alice bob = do
+      alice #$$> ("/_get chats", [("@bob", "hi")])
+      alice #$> ("/_get chat @2 count=100", chat, [(1, "hello 🙂"), (0, "hi")])
+      bob #$$> ("/_get chats", [("@alice", "hi")])
+      bob #$> ("/_get chat @2 count=100", chat, [(0, "hello 🙂"), (1, "hi")])
+      -- pagination
+      alice #$> ("/_get chat @2 after=1 count=100", chat, [(0, "hi")])
+      alice #$> ("/_get chat @2 before=2 count=100", chat, [(1, "hello 🙂")])
+      -- read messages
+      alice #$> ("/_read chat @2 from=1 to=100", id, "ok")
+      bob #$> ("/_read chat @2 from=1 to=100", id, "ok")
 
-testGetSetSMPServers :: IO ()
-testGetSetSMPServers =
+testDirectMessageReply :: IO ()
+testDirectMessageReply = do
   testChat2 aliceProfile bobProfile $
-    \alice _ -> do
-      alice #$> ("/smp_servers", id, "no custom SMP servers saved")
-      alice #$> ("/smp_servers smp://1234-w==@smp1.example.im", id, "ok")
-      alice #$> ("/smp_servers", id, "smp://1234-w==@smp1.example.im")
-      alice #$> ("/smp_servers smp://2345-w==@smp2.example.im,smp://3456-w==@smp3.example.im:5224", id, "ok")
-      alice #$> ("/smp_servers", id, "smp://2345-w==@smp2.example.im, smp://3456-w==@smp3.example.im:5224")
-      alice #$> ("/smp_servers default", id, "ok")
-      alice #$> ("/smp_servers", id, "no custom SMP servers saved")
+    \alice bob -> do
+      connectUsers alice bob
+      alice ##> "/_send @2 json {\"type\": \"text\", \"text\": \"hello! how are you?\"}"
+      alice <# "@bob hello! how are you?"
+      bob <# "alice> hello! how are you?"
+      bob #> "@alice hi!"
+      alice <# "bob> hi!"
+      bob ##> "> @alice (hello) all good - you?"
+      bob <# "@alice alice> hello! how are you?"
+      bob <## "all good - you?"
+      alice <# "bob> > hello! how are you?"
+      alice <## "all good - you?"
 
 testGroup :: IO ()
 testGroup =
@@ -184,18 +193,7 @@ testGroup =
         (alice <# "#team cath> hey team")
         (bob <# "#team cath> hey team")
       bob <##> cath
-      -- get and read chats
-      alice #$$> ("/_get chats", [("#team", "hey team"), ("@cath", ""), ("@bob", "")])
-      alice #$> ("/_get chat #1 count=100", chat, [(1, "hello"), (0, "hi there"), (0, "hey team")])
-      alice #$> ("/_get chat #1 after=1 count=100", chat, [(0, "hi there"), (0, "hey team")])
-      alice #$> ("/_get chat #1 before=3 count=100", chat, [(1, "hello"), (0, "hi there")])
-      bob #$$> ("/_get chats", [("@cath", "hey"), ("#team", "hey team"), ("@alice", "")])
-      bob #$> ("/_get chat #1 count=100", chat, [(0, "hello"), (1, "hi there"), (0, "hey team")])
-      cath #$$> ("/_get chats", [("@bob", "hey"), ("#team", "hey team"), ("@alice", "")])
-      cath #$> ("/_get chat #1 count=100", chat, [(0, "hello"), (0, "hi there"), (1, "hey team")])
-      alice #$> ("/_read chat #1 from=1 to=100", id, "ok")
-      bob #$> ("/_read chat #1 from=1 to=100", id, "ok")
-      cath #$> ("/_read chat #1 from=1 to=100", id, "ok")
+      getReadChats alice bob cath
       -- list groups
       alice ##> "/gs"
       alice <## "#team"
@@ -230,6 +228,19 @@ testGroup =
       cath ##> "#team hello"
       cath <## "you are no longer a member of the group"
       bob <##> cath
+  where
+    getReadChats alice bob cath = do
+      alice #$$> ("/_get chats", [("#team", "hey team"), ("@cath", ""), ("@bob", "")])
+      alice #$> ("/_get chat #1 count=100", chat, [(1, "hello"), (0, "hi there"), (0, "hey team")])
+      alice #$> ("/_get chat #1 after=1 count=100", chat, [(0, "hi there"), (0, "hey team")])
+      alice #$> ("/_get chat #1 before=3 count=100", chat, [(1, "hello"), (0, "hi there")])
+      bob #$$> ("/_get chats", [("@cath", "hey"), ("#team", "hey team"), ("@alice", "")])
+      bob #$> ("/_get chat #1 count=100", chat, [(0, "hello"), (1, "hi there"), (0, "hey team")])
+      cath #$$> ("/_get chats", [("@bob", "hey"), ("#team", "hey team"), ("@alice", "")])
+      cath #$> ("/_get chat #1 count=100", chat, [(0, "hello"), (0, "hi there"), (1, "hey team")])
+      alice #$> ("/_read chat #1 from=1 to=100", id, "ok")
+      bob #$> ("/_read chat #1 from=1 to=100", id, "ok")
+      cath #$> ("/_read chat #1 from=1 to=100", id, "ok")
 
 testGroup2 :: IO ()
 testGroup2 =
@@ -951,6 +962,18 @@ testDeleteConnectionRequests = testChat3 aliceProfile bobProfile cathProfile $
     alice <#? bob
     cath ##> ("/c " <> cLink')
     alice <#? cath
+
+testGetSetSMPServers :: IO ()
+testGetSetSMPServers =
+  testChat2 aliceProfile bobProfile $
+    \alice _ -> do
+      alice #$> ("/smp_servers", id, "no custom SMP servers saved")
+      alice #$> ("/smp_servers smp://1234-w==@smp1.example.im", id, "ok")
+      alice #$> ("/smp_servers", id, "smp://1234-w==@smp1.example.im")
+      alice #$> ("/smp_servers smp://2345-w==@smp2.example.im,smp://3456-w==@smp3.example.im:5224", id, "ok")
+      alice #$> ("/smp_servers", id, "smp://2345-w==@smp2.example.im, smp://3456-w==@smp3.example.im:5224")
+      alice #$> ("/smp_servers default", id, "ok")
+      alice #$> ("/smp_servers", id, "no custom SMP servers saved")
 
 startFileTransfer :: TestCC -> TestCC -> IO ()
 startFileTransfer alice bob = do
