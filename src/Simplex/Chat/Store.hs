@@ -2030,17 +2030,17 @@ getSndFileTransfers_ db userId fileId =
         Just recipientDisplayName -> Right SndFileTransfer {fileId, fileStatus, fileName, fileSize, chunkSize, filePath, recipientDisplayName, connId, agentConnId}
         Nothing -> Left $ SESndFileInvalid fileId
 
-createNewSndMessage :: StoreMonad m => SQLiteStore -> TVar ChaChaDRG -> ConnOrGroupId -> (SharedMsgId -> NewMessage) -> m (MessageId, SharedMsgId, MsgBody)
+createNewSndMessage :: StoreMonad m => SQLiteStore -> TVar ChaChaDRG -> ConnOrGroupId -> (SharedMsgId -> NewMessage) -> m SndMessage
 createNewSndMessage st gVar connOrGroupId mkMessage =
   liftIOEither . withTransaction st $ \db ->
     createWithRandomId gVar $ \sharedMsgId -> do
       createdAt <- getCurrentTime
       DB.execute
         db
-        "INSERT INTO messages (msg_sent, chat_msg_event, msg_body, shared_msg_id, created_at, updated_at) VALUES (?,?,?,?,?,?)"
-        (MDSnd, XUnknown_ "", "" :: MsgBody, sharedMsgId, createdAt, createdAt)
+        "INSERT INTO messages (msg_sent, chat_msg_event, msg_body, shared_msg_id, shared_msg_id_user, created_at, updated_at) VALUES (?,?,?,?,?,?,?)"
+        (MDSnd, XUnknown_ "", "" :: MsgBody, sharedMsgId, Just True, createdAt, createdAt)
       msgId <- insertedRowId db
-      let NewMessage {direction, cmEventTag, msgBody} = mkMessage $ SharedMsgId sharedMsgId
+      let NewMessage {direction, chatMsgEvent, msgBody} = mkMessage $ SharedMsgId sharedMsgId
       DB.execute
         db
         [sql|
@@ -2048,8 +2048,8 @@ createNewSndMessage st gVar connOrGroupId mkMessage =
           SET msg_sent = ?, chat_msg_event = ?, msg_body = ?, connection_id = ?, group_id = ?
           WHERE message_id = ?
         |]
-        (direction, cmEventTag, msgBody, connId_, groupId_, msgId)
-      pure (msgId, SharedMsgId sharedMsgId, msgBody)
+        (direction, toCMEventTag chatMsgEvent, msgBody, connId_, groupId_, msgId)
+      pure SndMessage {msgId, direction, chatMsgEvent, sharedMsgId = SharedMsgId sharedMsgId, msgBody}
   where
     (connId_, groupId_) = case connOrGroupId of
       ConnectionId connId -> (Just connId, Nothing)
@@ -2062,22 +2062,22 @@ createSndMsgDelivery st sndMsgDelivery messageId =
     msgDeliveryId <- createSndMsgDelivery_ db sndMsgDelivery messageId currentTs
     createMsgDeliveryEvent_ db msgDeliveryId MDSSndAgent currentTs
 
-createNewMessageAndRcvMsgDelivery :: MonadUnliftIO m => SQLiteStore -> ConnOrGroupId -> NewMessage -> Maybe SharedMsgId -> RcvMsgDelivery -> m MessageId
-createNewMessageAndRcvMsgDelivery st connOrGroupId NewMessage {direction, cmEventTag, msgBody} sharedMsgId RcvMsgDelivery {connId, agentMsgId, agentMsgMeta} =
+createNewMessageAndRcvMsgDelivery :: MonadUnliftIO m => SQLiteStore -> ConnOrGroupId -> NewMessage -> Maybe SharedMsgId -> RcvMsgDelivery -> m Message
+createNewMessageAndRcvMsgDelivery st connOrGroupId NewMessage {direction, chatMsgEvent, msgBody} sharedMsgId_ RcvMsgDelivery {connId, agentMsgId, agentMsgMeta} =
   liftIO . withTransaction st $ \db -> do
     currentTs <- getCurrentTime
     DB.execute
       db
       "INSERT INTO messages (msg_sent, chat_msg_event, msg_body, created_at, updated_at, connection_id, group_id, shared_msg_id) VALUES (?,?,?,?,?,?,?,?)"
-      (direction, cmEventTag, msgBody, currentTs, currentTs, connId_, groupId_, sharedMsgId)
-    messageId <- insertedRowId db
+      (direction, toCMEventTag chatMsgEvent, msgBody, currentTs, currentTs, connId_, groupId_, sharedMsgId_)
+    msgId <- insertedRowId db
     DB.execute
       db
       "INSERT INTO msg_deliveries (message_id, connection_id, agent_msg_id, agent_msg_meta, chat_ts, created_at, updated_at) VALUES (?,?,?,?,?,?,?)"
-      (messageId, connId, agentMsgId, msgMetaJson agentMsgMeta, snd $ broker agentMsgMeta, currentTs, currentTs)
+      (msgId, connId, agentMsgId, msgMetaJson agentMsgMeta, snd $ broker agentMsgMeta, currentTs, currentTs)
     msgDeliveryId <- insertedRowId db
     createMsgDeliveryEvent_ db msgDeliveryId MDSRcvAgent currentTs
-    pure messageId
+    pure Message {msgId, direction, chatMsgEvent, sharedMsgId_, msgBody}
   where
     (connId_, groupId_) = case connOrGroupId of
       ConnectionId connId' -> (Just connId', Nothing)
@@ -2170,8 +2170,8 @@ deletePendingGroupMessage st groupMemberId messageId =
   liftIO . withTransaction st $ \db ->
     DB.execute db "DELETE FROM pending_group_messages WHERE group_member_id = ? AND message_id = ?" (groupMemberId, messageId)
 
-createNewChatItem :: (MonadUnliftIO m, MsgDirectionI d) => SQLiteStore -> UserId -> ChatDirection c d -> NewChatItem d -> m ChatItemId
-createNewChatItem st userId chatDirection NewChatItem {createdByMsgId, itemSent, itemTs, itemContent, itemText, itemStatus, itemSharedMsgId, createdAt} =
+createNewChatItem :: (MonadUnliftIO m, MsgDirectionI d) => SQLiteStore -> UserId -> ChatDirection c d -> NewChatItem d -> m (ChatItemId, Maybe (CIRef c))
+createNewChatItem st userId chatDirection NewChatItem {createdByMsgId, itemSent, itemTs, itemContent, itemText, itemStatus, itemSharedMsgId, replyTo, createdAt} =
   liftIO . withTransaction st $ \db -> do
     let (contactId_, groupId_, groupMemberId_) = ids
     DB.execute
@@ -2193,7 +2193,8 @@ createNewChatItem st userId chatDirection NewChatItem {createdByMsgId, itemSent,
           db
           "INSERT INTO chat_item_messages (chat_item_id, message_id, created_at, updated_at) VALUES (?,?,?,?)"
           (ciId, msgId, createdAt, createdAt)
-    pure ciId
+    ciRef <- getChatItemRef_ db chatDirection replyTo
+    pure (ciId, ciRef)
   where
     ids :: (Maybe Int64, Maybe Int64, Maybe Int64)
     ids = case chatDirection of
@@ -2201,6 +2202,21 @@ createNewChatItem st userId chatDirection NewChatItem {createdByMsgId, itemSent,
       CDDirectRcv Contact {contactId} -> (Just contactId, Nothing, Nothing)
       CDGroupSnd GroupInfo {groupId} -> (Nothing, Just groupId, Nothing)
       CDGroupRcv GroupInfo {groupId} GroupMember {groupMemberId} -> (Nothing, Just groupId, Just groupMemberId)
+
+getChatItemRef_ :: DB.Connection -> ChatDirection c d -> Maybe MessageRef -> IO (Maybe (CIRef c))
+getChatItemRef_ _db chatDirection = \case
+  Just MsgRefDirect {msgId, sent} -> case chatDirection of
+    CDDirectSnd _ -> getDirectChatItemRef_ msgId sent
+    CDDirectRcv _ -> getDirectChatItemRef_ msgId sent
+    _ -> pure Nothing
+  Just MsgRefGroup {msgId, memberId} -> case chatDirection of
+    CDGroupSnd _ -> getGroupChatItemRef_ msgId memberId
+    CDGroupRcv {} -> getGroupChatItemRef_ msgId memberId
+    _ -> pure Nothing
+  _ -> pure Nothing
+  where
+    getDirectChatItemRef_ _msgId _sent = pure Nothing
+    getGroupChatItemRef_ _msgId _memberId = pure Nothing
 
 getDirectChatItem :: StoreMonad m => SQLiteStore -> User -> Int64 -> ChatItemId -> m (CChatItem 'CTDirect)
 getDirectChatItem st User {userId} contactId itemId =
@@ -2828,7 +2844,8 @@ toDirectChatItem tz (itemId, itemTs, itemContent, itemText, itemStatus, sharedMs
     _ -> badItem
   where
     cItem :: MsgDirectionI d => SMsgDirection d -> CIDirection c d -> CIStatus d -> CIContent d -> CChatItem c
-    cItem d cid ciStatus ciContent = CChatItem d (ChatItem cid (ciMeta ciStatus) ciContent $ parseMaybeMarkdownList itemText)
+    -- TODO CIRef
+    cItem d cid ciStatus ciContent = CChatItem d (ChatItem cid (ciMeta ciStatus) ciContent Nothing $ parseMaybeMarkdownList itemText)
     badItem = Left $ SEBadChatItem itemId
     ciMeta :: CIStatus d -> CIMeta d
     ciMeta status = mkCIMeta itemId itemText status sharedMsgId tz itemTs createdAt
@@ -2851,7 +2868,8 @@ toGroupChatItem tz userContactId ((itemId, itemTs, itemContent, itemText, itemSt
     _ -> badItem
   where
     cItem :: MsgDirectionI d => SMsgDirection d -> CIDirection c d -> CIStatus d -> CIContent d -> CChatItem c
-    cItem d cid ciStatus ciContent = CChatItem d (ChatItem cid (ciMeta ciStatus) ciContent $ parseMaybeMarkdownList itemText)
+    -- TODO CIRef
+    cItem d cid ciStatus ciContent = CChatItem d (ChatItem cid (ciMeta ciStatus) ciContent Nothing $ parseMaybeMarkdownList itemText)
     badItem = Left $ SEBadChatItem itemId
     ciMeta :: CIStatus d -> CIMeta d
     ciMeta status = mkCIMeta itemId itemText status sharedMsgId tz itemTs createdAt

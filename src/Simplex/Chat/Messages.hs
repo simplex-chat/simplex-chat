@@ -7,6 +7,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TypeApplications #-}
@@ -78,6 +79,7 @@ data ChatItem (c :: ChatType) (d :: MsgDirection) = ChatItem
   { chatDir :: CIDirection c d,
     meta :: CIMeta d,
     content :: CIContent d,
+    replyTo :: Maybe (CIRef c),
     formattedText :: Maybe [FormattedText]
   }
   deriving (Show, Generic)
@@ -151,6 +153,7 @@ data NewChatItem d = NewChatItem
     itemText :: Text,
     itemStatus :: CIStatus d,
     itemSharedMsgId :: Maybe SharedMsgId,
+    replyTo :: Maybe MessageRef,
     createdAt :: UTCTime
   }
   deriving (Show)
@@ -218,6 +221,30 @@ mkCIMeta itemId itemText itemStatus itemSharedMsgId tz itemTs createdAt =
    in CIMeta {itemId, itemTs, itemText, itemStatus, itemSharedMsgId, localItemTs, createdAt}
 
 instance ToJSON (CIMeta d) where toEncoding = J.genericToEncoding J.defaultOptions
+
+data CIRef (c :: ChatType) where
+  CIRefDirect :: Maybe ChatItemId -> UTCTime -> Bool -> CIRef 'CTDirect
+  CIRefGroup :: Maybe ChatItemId -> UTCTime -> GroupMember -> CIRef 'CTGroup
+
+deriving instance Show (CIRef c)
+
+instance ToJSON (CIRef c) where
+  toJSON = J.toJSON . jsonCIRef
+  toEncoding = J.toEncoding . jsonCIRef
+
+data JSONCIRef
+  = JCIRefDirect {itemId_ :: Maybe ChatItemId, sentAt :: UTCTime, sent :: Bool}
+  | JCIRefGroup {itemId_ :: Maybe ChatItemId, sentAt :: UTCTime, member :: GroupMember}
+  deriving (Show, Generic)
+
+instance ToJSON JSONCIRef where
+  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "JSONCI"
+  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "JSONCI"
+
+jsonCIRef :: CIRef c -> JSONCIRef
+jsonCIRef = \case
+  CIRefDirect itemId_ sentAt sent -> JCIRefDirect {itemId_, sentAt, sent}
+  CIRefGroup itemId_ sentAt member -> JCIRefGroup {itemId_, sentAt, member}
 
 data CIStatus (d :: MsgDirection) where
   CISSndNew :: CIStatus 'MDSnd
@@ -410,10 +437,29 @@ instance ChatTypeI 'CTGroup where chatType = SCTGroup
 
 data NewMessage = NewMessage
   { direction :: MsgDirection,
-    cmEventTag :: CMEventTag,
+    chatMsgEvent :: ChatMsgEvent,
     msgBody :: MsgBody
   }
   deriving (Show)
+
+data SndMessage = SndMessage
+  { msgId :: MessageId,
+    direction :: MsgDirection,
+    chatMsgEvent :: ChatMsgEvent,
+    sharedMsgId :: SharedMsgId,
+    msgBody :: MsgBody
+  }
+
+data Message = Message
+  { msgId :: MessageId,
+    direction :: MsgDirection,
+    chatMsgEvent :: ChatMsgEvent,
+    sharedMsgId_ :: Maybe SharedMsgId,
+    msgBody :: MsgBody
+  }
+
+anyMessage :: SndMessage -> Message
+anyMessage SndMessage {..} = Message {msgId, direction, chatMsgEvent, sharedMsgId_ = Just sharedMsgId, msgBody}
 
 data PendingGroupMessage = PendingGroupMessage
   { msgId :: MessageId,

@@ -148,6 +148,11 @@ instance ToJSON RepliedMsg where
   toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
 
+cmReplyToMsgRef :: ChatMsgEvent -> Maybe MessageRef
+cmReplyToMsgRef = \case
+  XMsgNew (MCReply (RepliedMsg {msgRef}) _) -> msgRef
+  _ -> Nothing
+
 data MsgContentTag = MCText_ | MCUnknown_ Text
 
 instance StrEncoding MsgContentTag where

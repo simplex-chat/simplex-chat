@@ -154,7 +154,7 @@ responseToView testView = \case
     viewErrorsSummary summary s = if null summary then [] else [styled (colored Red) (T.pack . show $ length summary) <> s <> " (run with -c option to show each error)"]
 
 viewChatItem :: ChatInfo c -> ChatItem c d -> [StyledString]
-viewChatItem chat (ChatItem cd meta content _) = case (chat, cd) of
+viewChatItem chat (ChatItem cd meta content _ _) = case (chat, cd) of
   (DirectChat c, CIDirectSnd) -> case content of
     CISndMsgContent mc -> viewSentMessage to mc meta
     CISndFileInvitation fId fPath -> viewSentFileInvitation to fId fPath meta
