@@ -47,7 +47,6 @@ fun ImageGetter(bitmap: MutableState<Bitmap?>) {
   val cameraLauncher = rememberLauncherForActivityResult(
     contract = ActivityResultContracts.TakePicturePreview()
   ) { btm: Bitmap? ->
-    println("photo taken")
     bitmap.value = btm
   }
 
@@ -80,7 +79,7 @@ fun ImageGetter(bitmap: MutableState<Bitmap?>) {
           horizontalAlignment = Alignment.CenterHorizontally
         ) {
           Text(
-            text = "Add Photo!",
+            text = "Update Profile Image",
             modifier = Modifier
               .fillMaxWidth()
               .padding(15.dp),
@@ -93,7 +92,7 @@ fun ImageGetter(bitmap: MutableState<Bitmap?>) {
               .height(1.dp)
           )
           Text(
-            text = "Take Photo",
+            text = "Camera",
             modifier = Modifier
               .fillMaxWidth()
               .clickable {
@@ -191,5 +190,4 @@ fun ImageGetter(bitmap: MutableState<Bitmap?>) {
       }
     }
   }
-
 }

@@ -2,7 +2,7 @@ package chat.simplex.app.views.usersettings
 
 import android.content.res.Configuration
 import android.graphics.Bitmap
-import androidx.compose.foundation.Image
+import android.util.Base64
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.BasicTextField
@@ -12,8 +12,6 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.tooling.preview.Preview
@@ -21,8 +19,8 @@ import androidx.compose.ui.unit.dp
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.model.Profile
 import chat.simplex.app.ui.theme.SimpleXTheme
-import chat.simplex.app.views.helpers.ImageGetter
-import chat.simplex.app.views.helpers.withApi
+import chat.simplex.app.views.helpers.*
+import java.io.ByteArrayOutputStream
 
 @Composable
 fun UserProfileView(chatModel: ChatModel) {
@@ -59,6 +57,7 @@ fun UserProfileLayout(
   editProfileOn: () -> Unit,
   saveProfile: (String, String) -> Unit,
 ) {
+  val profileImage = remember { mutableStateOf<Bitmap?>(null) }
   Column(horizontalAlignment = Alignment.Start) {
     Text(
       "Your chat profile",
@@ -106,6 +105,7 @@ fun UserProfileLayout(
           ),
           singleLine = true
         )
+        ImageGetter(profileImage)
         Row {
           Text(
             "Cancel",
@@ -127,6 +127,13 @@ fun UserProfileLayout(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.Start
       ) {
+        val stream = ByteArrayOutputStream()
+        var profileImageStr: String? = null
+        if (profileImage.value != null) {
+          profileImage.value?.compress(Bitmap.CompressFormat.PNG, 100, stream)
+          profileImageStr = Base64.encodeToString(stream.toByteArray(), Base64.DEFAULT)
+        }
+        ProfileImage(192.dp, profileImageStr)
         Row(
           Modifier.padding(bottom = 24.dp)
         ) {
@@ -161,21 +168,6 @@ fun UserProfileLayout(
           modifier = Modifier
             .clickable(onClick = editProfileOn)
         )
-        val profileImage = remember { mutableStateOf<Bitmap?>(null) }
-
-        if (profileImage.value != null) {
-          Image(
-            bitmap = profileImage.value!!.asImageBitmap(),
-            contentDescription = "Image",
-            alignment = Alignment.TopCenter,
-            modifier = Modifier
-              .fillMaxWidth()
-              .fillMaxHeight(0.45f)
-              .padding(top = 10.dp),
-            contentScale = ContentScale.Fit
-          )
-        }
-        else {ImageGetter(profileImage)}
       }
     }
   }
