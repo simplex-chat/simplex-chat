@@ -265,22 +265,20 @@ processChatCommand = \case
     contactId <- withStore $ \st -> getContactIdByName st userId cName
     let mc = MCText $ safeDecodeUtf8 msg
     processChatCommand $ APISendMessage CTDirect contactId mc
-  SendMessageQuote cName quotedMsg msg -> withUser $ \user@User {userId} -> do
-    (contactId, ci) <- withStore $ \st ->
+  SendMessageQuote cName (AMsgDirection msgDir) quotedMsg msg -> withUser $ \user@User {userId} -> do
+    (contactId, ChatItem {meta, content}) <- withStore $ \st ->
       (,)
         <$> getContactIdByName st userId cName
-        <*> findDirectChatItem st user cName (safeDecodeUtf8 quotedMsg)
-    case ci of
-      CChatItem _ (ChatItem {meta, content}) -> do
-        let CIMeta {itemTs, itemSharedMsgId} = meta
-        (qmc, sent) <- case content of
-          CISndMsgContent mc -> pure (mc, True)
-          CIRcvMsgContent mc -> pure (mc, False)
-          _ -> throwChatError CEInvalidQuote
-        let msgRef = MsgRefDirect {msgId = itemSharedMsgId, sentAt = itemTs, sent}
-            qm = QuotedMsg {msgRef, content = qmc}
-            mc = MCReply qm . MCText $ safeDecodeUtf8 msg
-        processChatCommand $ APISendMessage CTDirect contactId mc
+        <*> findDirectChatItem st user cName msgDir (safeDecodeUtf8 quotedMsg)
+    let CIMeta {itemTs, itemSharedMsgId} = meta
+    (qmc, sent) <- case (msgDir, content) of
+      (SMDSnd, CISndMsgContent mc) -> pure (mc, True)
+      (SMDRcv, CIRcvMsgContent mc) -> pure (mc, False)
+      _ -> throwChatError CEInvalidQuote
+    let msgRef = MsgRefDirect {msgId = itemSharedMsgId, sentAt = itemTs, sent}
+        qm = QuotedMsg {msgRef, content = qmc}
+        mc = MCReply qm . MCText $ safeDecodeUtf8 msg
+    processChatCommand $ APISendMessage CTDirect contactId mc
   NewGroup gProfile -> withUser $ \user -> do
     gVar <- asks idsDrg
     CRGroupCreated <$> withStore (\st -> createNewGroup st gVar user gProfile)
@@ -1525,13 +1523,14 @@ chatCommandP =
     <|> ("/members #" <|> "/members " <|> "/ms #" <|> "/ms ") *> (ListMembers <$> displayName)
     <|> ("/groups" <|> "/gs") $> ListGroups
     <|> A.char '#' *> (SendGroupMessage <$> displayName <* A.space <*> A.takeByteString)
-    <|> (">#" <|> "> #") *> (SendGroupMessageQuote <$> displayName <* (" @" <|> " ") <*> displayName <* A.space <*> replyToMsg <*> A.takeByteString)
+    <|> (">#" <|> "> #") *> (SendGroupMessageQuote <$> displayName <* (" @" <|> " ") <*> displayName <* A.space <*> quotedMsg <*> A.takeByteString)
     <|> ("/contacts" <|> "/cs") $> ListContacts
     <|> ("/connect " <|> "/c ") *> (Connect <$> ((Just <$> strP) <|> A.takeByteString $> Nothing))
     <|> ("/connect" <|> "/c") $> AddContact
     <|> ("/delete @" <|> "/delete " <|> "/d @" <|> "/d ") *> (DeleteContact <$> displayName)
     <|> A.char '@' *> (SendMessage <$> displayName <* A.space <*> A.takeByteString)
-    <|> (">@" <|> "> @") *> (SendMessageQuote <$> displayName <* A.space <*> replyToMsg <*> A.takeByteString)
+    <|> (">@" <|> "> @") *> sendMsgQuote (AMsgDirection SMDRcv)
+    <|> (">>@" <|> ">> @") *> sendMsgQuote (AMsgDirection SMDSnd)
     <|> ("/file #" <|> "/f #") *> (SendGroupFile <$> displayName <* A.space <*> filePath)
     <|> ("/file @" <|> "/file " <|> "/f @" <|> "/f ") *> (SendFile <$> displayName <* A.space <*> filePath)
     <|> ("/freceive " <|> "/fr ") *> (ReceiveFile <$> A.decimal <*> optional (A.space *> filePath))
@@ -1563,7 +1562,8 @@ chatCommandP =
       "text " *> (MCText . safeDecodeUtf8 <$> A.takeByteString)
         <|> "json " *> (J.eitherDecodeStrict' <$?> A.takeByteString)
     displayName = safeDecodeUtf8 <$> (B.cons <$> A.satisfy refChar <*> A.takeTill (== ' '))
-    replyToMsg = A.char '(' *> A.takeTill (== ')') <* A.char ')' <* optional A.space
+    sendMsgQuote msgDir = (SendMessageQuote <$> displayName <* A.space <*> pure msgDir <*> quotedMsg <*> A.takeByteString)
+    quotedMsg = A.char '(' *> A.takeTill (== ')') <* A.char ')' <* optional A.space
     refChar c = c > ' ' && c /= '#' && c /= '@'
     onOffP = ("on" $> True) <|> ("off" $> False)
     userNames = do

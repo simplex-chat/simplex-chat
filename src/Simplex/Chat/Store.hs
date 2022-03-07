@@ -2254,13 +2254,13 @@ getChatItemRef_ db User {userId, userContactId} chatDirection = \case
           let member = toGroupMember userContactId memberRow
            in Just $ CIQuoteGroup chatItemId sentAt content member
 
-findDirectChatItem :: StoreMonad m => SQLiteStore -> User -> ContactName -> Text -> m (CChatItem 'CTDirect)
-findDirectChatItem st User {userId} cName quotedMsg =
+findDirectChatItem :: forall m d. (StoreMonad m, MsgDirectionI d) => SQLiteStore -> User -> ContactName -> SMsgDirection d -> Text -> m (ChatItem 'CTDirect d)
+findDirectChatItem st User {userId} cName msgDir quotedMsg =
   liftIOEither . withTransaction st $ \db -> do
     tz <- getCurrentTimeZone
     join
       <$> firstRow
-        (toDirectChatItem tz)
+        (correctDir <=< toDirectChatItem tz)
         SEReplyChatItemNotFound
         ( DB.query
             db
@@ -2273,12 +2273,15 @@ findDirectChatItem st User {userId} cName quotedMsg =
               FROM chat_items i
               LEFT JOIN chat_items ri ON i.quoted_shared_msg_id = ri.shared_msg_id
               JOIN contacts c ON i.contact_id = c.contact_id
-              WHERE c.user_id = ? AND c.local_display_name = ? AND i.item_text like ?
+              WHERE c.user_id = ? AND c.local_display_name = ? AND i.item_sent = ? AND i.item_text like ?
               ORDER BY i.chat_item_id DESC
               LIMIT 1
             |]
-            (userId, cName, quotedMsg <> "%")
+            (userId, cName, msgDir, quotedMsg <> "%")
         )
+  where
+    correctDir :: CChatItem c -> Either StoreError (ChatItem c d)
+    correctDir (CChatItem _ ci) = first SEInternalError $ checkDirection ci
 
 findGroupChatItem :: StoreMonad m => SQLiteStore -> User -> GroupName -> ContactName -> Text -> m (CChatItem 'CTGroup)
 findGroupChatItem st User {userId, userContactId} gName cName quotedMsg =

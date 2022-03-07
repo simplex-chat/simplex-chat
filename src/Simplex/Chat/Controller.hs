@@ -111,7 +111,7 @@ data ChatCommand
   | AcceptContact ContactName
   | RejectContact ContactName
   | SendMessage ContactName ByteString
-  | SendMessageQuote {contactName :: ContactName, quotedMsg :: ByteString, message :: ByteString}
+  | SendMessageQuote {contactName :: ContactName, msgDir :: AMsgDirection, quotedMsg :: ByteString, message :: ByteString}
   | NewGroup GroupProfile
   | AddMember GroupName ContactName GroupMemberRole
   | JoinGroup GroupName

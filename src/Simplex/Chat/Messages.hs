@@ -497,10 +497,19 @@ instance TestEquality SMsgDirection where
 
 instance ToField (SMsgDirection d) where toField = toField . msgDirectionInt . toMsgDirection
 
+data AMsgDirection = forall d. MsgDirectionI d => AMsgDirection (SMsgDirection d)
+
+deriving instance Show AMsgDirection
+
 toMsgDirection :: SMsgDirection d -> MsgDirection
 toMsgDirection = \case
   SMDRcv -> MDRcv
   SMDSnd -> MDSnd
+
+fromMsgDirection :: MsgDirection -> AMsgDirection
+fromMsgDirection = \case
+  MDRcv -> AMsgDirection SMDRcv
+  MDSnd -> AMsgDirection SMDSnd
 
 class MsgDirectionI (d :: MsgDirection) where
   msgDirection :: SMsgDirection d
