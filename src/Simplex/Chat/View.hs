@@ -377,8 +377,9 @@ viewReceivedMessage from quote meta = receivedWithTime_ from quote meta . ttyMsg
 
 receivedWithTime_ :: StyledString -> [StyledString] -> CIMeta d -> [StyledString] -> [StyledString]
 receivedWithTime_ from quote CIMeta {localItemTs, createdAt} styledMsg = do
-  prependFirst (formattedTime <> " " <> from) (quote <> styledMsg)
+  prependFirst (formattedTime <> " " <> from) (quote <> prependFirst indent styledMsg)
   where
+    indent = if null quote then "" else "      "
     formattedTime :: StyledString
     formattedTime =
       let localTime = zonedTimeToLocalTime localItemTs
@@ -391,7 +392,9 @@ receivedWithTime_ from quote CIMeta {localItemTs, createdAt} styledMsg = do
        in styleTime $ formatTime defaultTimeLocale format localTime
 
 viewSentMessage :: StyledString -> [StyledString] -> MsgContent -> CIMeta d -> [StyledString]
-viewSentMessage to quote mc = sentWithTime_ . prependFirst to $ quote <> ttyMsgContent mc
+viewSentMessage to quote mc = sentWithTime_ . prependFirst to $ quote <> prependFirst indent (ttyMsgContent mc)
+  where
+    indent = if null quote then "" else "      "
 
 viewSentFileInvitation :: StyledString -> FileTransferId -> FilePath -> CIMeta d -> [StyledString]
 viewSentFileInvitation to fId fPath = sentWithTime_ $ ttySentFile to fId fPath
