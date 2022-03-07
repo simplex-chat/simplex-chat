@@ -80,27 +80,17 @@ fun Base64ImageGetter(base64ImageString: MutableState<String?>) {
   }
 
   ModalBottomSheetLayout(
+    scrimColor=MaterialTheme.colors.onSurface.copy(alpha = 0.0f),
+    modifier = Modifier.fillMaxWidth(),
     sheetContent = {
       Box(
         modifier = Modifier
           .fillMaxWidth()
           .wrapContentHeight()
-          .onFocusChanged { coroutineScope.launch { bottomSheetModalState.hide() } }
+          .onFocusChanged { focusState ->
+            if (!focusState.hasFocus) { coroutineScope.launch { bottomSheetModalState.hide() } }
+    }
       ) {
-//          Row(Modifier
-//            .fillMaxWidth().padding(horizontal = 8.dp, vertical = 6.dp).align(Alignment.End)
-//          ) {
-//            Icon(Icons.Outlined.Close,
-//              "close",
-//            modifier = Modifier
-//              .height(20.dp)
-//              .clickable {
-//                coroutineScope.launch {
-//                  bottomSheetModalState.hide()
-//                }
-//              }
-//          )
-//          }
           Row(
             Modifier
               .fillMaxWidth()
@@ -141,7 +131,6 @@ fun Base64ImageGetter(base64ImageString: MutableState<String?>) {
               }
             }
             ActionButton(null, "Delete Image", icon = Icons.Filled.Delete) {
-              // Todo delete image
               base64ImageString.value = null
             }
           }
