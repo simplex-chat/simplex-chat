@@ -154,51 +154,42 @@ responseToView testView = \case
     viewErrorsSummary summary s = if null summary then [] else [ttyError (T.pack . show $ length summary) <> s <> " (run with -c option to show each error)"]
 
 viewChatItem :: ChatInfo c -> ChatItem c d -> [StyledString]
-viewChatItem chat (ChatItem cd meta ciContent quoteRef _) = case (chat, cd) of
-  (DirectChat c, CIDirectSnd) -> case ciContent of
-    CISndMsgContent mc -> viewSentMessage to quote mc meta where quote = directQuote c id (quoteRef, mc)
-    CISndFileInvitation fId fPath -> viewSentFileInvitation to fId fPath meta
-    where
-      to = ttyToContact' c
-  (DirectChat c, CIDirectRcv) -> case ciContent of
-    CIRcvMsgContent mc -> viewReceivedMessage from quote meta mc where quote = directQuote c not (quoteRef, mc)
-    CIRcvFileInvitation ft -> viewReceivedFileInvitation from meta ft
-    where
-      from = ttyFromContact' c
-  (GroupChat g, CIGroupSnd) -> case ciContent of
-    CISndMsgContent mc -> viewSentMessage to quote mc meta where quote = groupQuote (quoteRef, mc)
-    CISndFileInvitation fId fPath -> viewSentFileInvitation to fId fPath meta
-    where
-      to = ttyToGroup g
-  (GroupChat g, CIGroupRcv m) -> case ciContent of
-    CIRcvMsgContent mc -> viewReceivedMessage from quote meta mc where quote = groupQuote (quoteRef, mc)
-    CIRcvFileInvitation ft -> viewReceivedFileInvitation from meta ft
-    where
-      from = ttyFromGroup' g m
-  where
-    directQuote :: Contact -> (Bool -> Bool) -> (Maybe (CIRef 'CTDirect), MsgContent) -> [StyledString]
-    directQuote c op = \case
-      (ciRef, MCReply RepliedMsg {msgRef, content} _) ->
-        prependFirst (badRef msgRef ciRef <> sentBy msgRef ciRef <> " ") $ msgPreview content
-      (Just _, _) -> [ttyError' "unexpected quote ref"]
-      _ -> []
+viewChatItem chat (ChatItem {chatDir, meta, content, quotedItem}) = case chat of
+  DirectChat c -> case chatDir of
+    CIDirectSnd -> case content of
+      CISndMsgContent mc -> viewSentMessage to quote mc meta
+      CISndFileInvitation fId fPath -> viewSentFileInvitation to fId fPath meta
       where
-        sentBy _ (Just (CIRefDirect _ refSent)) = quoted refSent
-        sentBy MsgRefDirect {sent} _ = quoted $ op sent
-        sentBy _ _ = ""
-        quoted sent = if sent then ">" else ttyQuotedContact c
-        badRef MsgRefDirect {sent} ciRef = case ciRef of
-          Just (CIRefDirect _ refSent) -> if refSent == op sent then "" else ttyError' "inconsistent quote ref (dir) "
-          _ -> ttyError' "missing quote ref "
-        badRef MsgRefGroup {} _ = ttyError' "inconsistent quote ref (group) "
-    groupQuote :: (Maybe (CIRef 'CTGroup), MsgContent) -> [StyledString]
-    groupQuote = \case
-      (Just (CIRefGroup _ m), MCReply RepliedMsg {content} _) ->
-        let quotedMember = if memberCategory m == GCUserMember then ">" else ttyQuotedMember m
-         in prependFirst (quotedMember <> " ") $ msgPreview content
-      (Just _, _) -> [ttyError' "unexpected quote ref"]
-      (_, MCReply RepliedMsg {content} _) -> prependFirst (ttyError' "missing quote ref" <> " > ") $ msgPreview content
-      _ -> []
+        to = ttyToContact' c
+    CIDirectRcv -> case content of
+      CIRcvMsgContent mc -> viewReceivedMessage from quote meta mc
+      CIRcvFileInvitation ft -> viewReceivedFileInvitation from meta ft
+      where
+        from = ttyFromContact' c
+    where
+      quote = maybe [] (directQuote c) quotedItem
+  GroupChat g -> case chatDir of
+    CIGroupSnd -> case content of
+      CISndMsgContent mc -> viewSentMessage to quote mc meta
+      CISndFileInvitation fId fPath -> viewSentFileInvitation to fId fPath meta
+      where
+        to = ttyToGroup g
+    CIGroupRcv m -> case content of
+      CIRcvMsgContent mc -> viewReceivedMessage from quote meta mc
+      CIRcvFileInvitation ft -> viewReceivedFileInvitation from meta ft
+      where
+        from = ttyFromGroup' g m
+    where
+      quote = maybe [] groupQuote quotedItem
+  _ -> []
+  where
+    directQuote :: Contact -> CIQuote 'CTDirect -> [StyledString]
+    directQuote c (CIQuoteDirect _ _ qmc sent) =
+      quoteText qmc $ if sent then ">" else ttyQuotedContact c
+    groupQuote :: CIQuote 'CTGroup -> [StyledString]
+    groupQuote (CIQuoteGroup _ _ qmc m) =
+      quoteText qmc $ if memberCategory m == GCUserMember then ">" else ttyQuotedMember m
+    quoteText qmc sentBy = prependFirst (sentBy <> " ") $ msgPreview qmc
     msgPreview = msgPlain . preview . msgContentText
       where
         preview t
@@ -546,7 +537,7 @@ viewChatError = \case
     CEFileSend fileId e -> ["error sending file " <> sShow fileId <> ": " <> sShow e]
     CEFileRcvChunk e -> ["error receiving file: " <> plain e]
     CEFileInternal e -> ["file error: " <> plain e]
-    CEInvalidReply -> ["cannot reply to this message"]
+    CEInvalidQuote -> ["cannot reply to this message"]
     CEAgentVersion -> ["unsupported agent version"]
     CECommandError e -> ["bad chat command: " <> plain e]
   -- e -> ["chat error: " <> sShow e]

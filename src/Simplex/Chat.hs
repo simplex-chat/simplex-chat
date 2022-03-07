@@ -265,18 +265,21 @@ processChatCommand = \case
     contactId <- withStore $ \st -> getContactIdByName st userId cName
     let mc = MCText $ safeDecodeUtf8 msg
     processChatCommand $ APISendMessage CTDirect contactId mc
-  SendReply cName replyToMsg msg -> withUser $ \user@User {userId} -> do
-    (contactId, ci) <- withStore $ \st -> (,) <$> getContactIdByName st userId cName <*> findDirectChatItem st user cName (safeDecodeUtf8 replyToMsg)
+  SendMessageQuote cName quotedMsg msg -> withUser $ \user@User {userId} -> do
+    (contactId, ci) <- withStore $ \st ->
+      (,)
+        <$> getContactIdByName st userId cName
+        <*> findDirectChatItem st user cName (safeDecodeUtf8 quotedMsg)
     case ci of
       CChatItem _ (ChatItem {meta, content}) -> do
         let CIMeta {itemTs, itemSharedMsgId} = meta
-        (rmc, sent) <- case content of
+        (qmc, sent) <- case content of
           CISndMsgContent mc -> pure (mc, True)
           CIRcvMsgContent mc -> pure (mc, False)
-          _ -> throwChatError CEInvalidReply
+          _ -> throwChatError CEInvalidQuote
         let msgRef = MsgRefDirect {msgId = itemSharedMsgId, sentAt = itemTs, sent}
-            rm = RepliedMsg {msgRef, content = rmc}
-            mc = MCReply rm . MCText $ safeDecodeUtf8 msg
+            qm = QuotedMsg {msgRef, content = qmc}
+            mc = MCReply qm . MCText $ safeDecodeUtf8 msg
         processChatCommand $ APISendMessage CTDirect contactId mc
   NewGroup gProfile -> withUser $ \user -> do
     gVar <- asks idsDrg
@@ -353,7 +356,23 @@ processChatCommand = \case
     groupId <- withStore $ \st -> getGroupIdByName st user gName
     let mc = MCText $ safeDecodeUtf8 msg
     processChatCommand $ APISendMessage CTGroup groupId mc
-  SendGroupReply _gName _cName _replyToMsg _msg -> pure CRCmdOk
+  SendGroupMessageQuote gName cName quotedMsg msg -> withUser $ \user -> do
+    (GroupInfo {groupId, membership}, ci) <-
+      withStore $ \st ->
+        (,)
+          <$> (getGroupIdByName st user gName >>= getGroupInfo st user)
+          <*> findGroupChatItem st user gName cName (safeDecodeUtf8 quotedMsg)
+    case ci of
+      CChatItem _ (ChatItem {chatDir, meta, content}) -> do
+        let CIMeta {itemTs, itemSharedMsgId} = meta
+        (qmc, GroupMember {memberId}) <- case (content, chatDir) of
+          (CISndMsgContent mc, _) -> pure (mc, membership)
+          (CIRcvMsgContent mc, CIGroupRcv m) -> pure (mc, m)
+          _ -> throwChatError CEInvalidQuote
+        let msgRef = MsgRefGroup {msgId = itemSharedMsgId, sentAt = itemTs, memberId}
+            qm = QuotedMsg {msgRef, content = qmc}
+            mc = MCReply qm . MCText $ safeDecodeUtf8 msg
+        processChatCommand $ APISendMessage CTGroup groupId mc
   SendFile cName f -> withUser $ \user@User {userId} -> withChatLock $ do
     (fileSize, chSize) <- checkSndFile f
     contact <- withStore $ \st -> getContactByName st userId cName
@@ -1373,7 +1392,7 @@ mkNewChatItem itemContent Message {msgId, chatMsgEvent, sharedMsgId_ = itemShare
       itemText = ciContentToText itemContent,
       itemStatus = ciStatusNew,
       itemSharedMsgId,
-      replyTo = cmReplyToMsgRef chatMsgEvent,
+      itemQuotedMsg = cmReplyToQuotedMsg chatMsgEvent,
       createdAt
     }
 
@@ -1506,13 +1525,13 @@ chatCommandP =
     <|> ("/members #" <|> "/members " <|> "/ms #" <|> "/ms ") *> (ListMembers <$> displayName)
     <|> ("/groups" <|> "/gs") $> ListGroups
     <|> A.char '#' *> (SendGroupMessage <$> displayName <* A.space <*> A.takeByteString)
-    <|> (">#" <|> "> #") *> (SendGroupReply <$> displayName <* " @" <*> displayName <* A.space <*> replyToMsg <*> A.takeByteString)
+    <|> (">#" <|> "> #") *> (SendGroupMessageQuote <$> displayName <* (" @" <|> " ") <*> displayName <* A.space <*> replyToMsg <*> A.takeByteString)
     <|> ("/contacts" <|> "/cs") $> ListContacts
     <|> ("/connect " <|> "/c ") *> (Connect <$> ((Just <$> strP) <|> A.takeByteString $> Nothing))
     <|> ("/connect" <|> "/c") $> AddContact
     <|> ("/delete @" <|> "/delete " <|> "/d @" <|> "/d ") *> (DeleteContact <$> displayName)
     <|> A.char '@' *> (SendMessage <$> displayName <* A.space <*> A.takeByteString)
-    <|> (">@" <|> "> @") *> (SendReply <$> displayName <* A.space <*> replyToMsg <*> A.takeByteString)
+    <|> (">@" <|> "> @") *> (SendMessageQuote <$> displayName <* A.space <*> replyToMsg <*> A.takeByteString)
     <|> ("/file #" <|> "/f #") *> (SendGroupFile <$> displayName <* A.space <*> filePath)
     <|> ("/file @" <|> "/file " <|> "/f @" <|> "/f ") *> (SendFile <$> displayName <* A.space <*> filePath)
     <|> ("/freceive " <|> "/fr ") *> (ReceiveFile <$> A.decimal <*> optional (A.space *> filePath))

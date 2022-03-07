@@ -11,7 +11,6 @@ import Control.Concurrent.Async (concurrently_)
 import Control.Concurrent.STM
 import qualified Data.ByteString as B
 import Data.Char (isDigit)
-import Data.Maybe (fromJust)
 import qualified Data.Text as T
 import Simplex.Chat.Controller (ChatController (..))
 import Simplex.Chat.Types (Profile (..), ProfileImage (..), User (..))
@@ -35,7 +34,7 @@ chatTests :: Spec
 chatTests = do
   describe "direct messages" $ do
     it "add contact and send/receive message" testAddContact
-    it "direct message replies" testDirectMessageReply
+    it "direct message quoted replies" testDirectMessageQuotedReply
   describe "chat groups" $ do
     it "add contacts, create group and send/receive messages" testGroup
     it "create and join group with 4 members" testGroup2
@@ -44,6 +43,7 @@ chatTests = do
     it "re-add member in status invited" testGroupReAddInvited
     it "remove contact from group and add again" testGroupRemoveAdd
     it "list groups containing group invitations" testGroupList
+    it "group message quoted replies" testGroupMessageQuotedReply
   describe "user profiles" $ do
     it "update user profiles and notify contacts" testUpdateProfile
     it "update user profile with image" testUpdateProfileImage
@@ -125,8 +125,8 @@ testAddContact =
       alice #$> ("/_read chat @2 from=1 to=100", id, "ok")
       bob #$> ("/_read chat @2 from=1 to=100", id, "ok")
 
-testDirectMessageReply :: IO ()
-testDirectMessageReply = do
+testDirectMessageQuotedReply :: IO ()
+testDirectMessageQuotedReply = do
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
       connectUsers alice bob
@@ -553,6 +553,29 @@ testGroupList =
       bob <## "#tennis: you deleted the group"
       bob ##> "/gs"
       bob <## "#team"
+
+testGroupMessageQuotedReply :: IO ()
+testGroupMessageQuotedReply =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+      alice #> "#team hello! how are you?"
+      concurrently_
+        (bob <# "#team alice> hello! how are you?")
+        (cath <# "#team alice> hello! how are you?")
+      bob ##> "> #team @alice (hello) all good, you?"
+      bob <# "#team alice> hello! how are you?"
+      bob <## "all good, you?"
+      concurrently_
+        ( do
+            -- alice <# "#team bob> > hello! how are you?"
+            -- alice <## "all good, you?"
+            alice <# "#team bob> all good, you?"
+        )
+        ( do
+            cath <# "#team bob> alice> hello! how are you?"
+            cath <## "all good, you?"
+        )
 
 testUpdateProfile :: IO ()
 testUpdateProfile =
@@ -1064,9 +1087,6 @@ cc1 <##> cc2 = do
   cc2 <# (name1 <> "> hi")
   cc2 #> ("@" <> name1 <> " hey")
   cc1 <# (name2 <> "> hey")
-
-userName :: TestCC -> IO [Char]
-userName (TestCC ChatController {currentUser} _ _ _ _) = T.unpack . localDisplayName . fromJust <$> readTVarIO currentUser
 
 (##>) :: TestCC -> String -> IO ()
 cc ##> cmd = do

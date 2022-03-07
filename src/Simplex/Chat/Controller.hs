@@ -111,7 +111,7 @@ data ChatCommand
   | AcceptContact ContactName
   | RejectContact ContactName
   | SendMessage ContactName ByteString
-  | SendReply {contactName :: ContactName, replyToMsg :: ByteString, message :: ByteString}
+  | SendMessageQuote {contactName :: ContactName, quotedMsg :: ByteString, message :: ByteString}
   | NewGroup GroupProfile
   | AddMember GroupName ContactName GroupMemberRole
   | JoinGroup GroupName
@@ -122,7 +122,7 @@ data ChatCommand
   | ListMembers GroupName
   | ListGroups
   | SendGroupMessage GroupName ByteString
-  | SendGroupReply {groupName :: GroupName, contactName :: ContactName, replyToMsg :: ByteString, message :: ByteString}
+  | SendGroupMessageQuote {groupName :: GroupName, contactName :: ContactName, quotedMsg :: ByteString, message :: ByteString}
   | SendFile ContactName FilePath
   | SendGroupFile GroupName FilePath
   | ReceiveFile FileTransferId (Maybe FilePath)
@@ -291,7 +291,7 @@ data ChatErrorType
   | CEFileSend {fileId :: FileTransferId, agentError :: AgentErrorType}
   | CEFileRcvChunk {message :: String}
   | CEFileInternal {message :: String}
-  | CEInvalidReply
+  | CEInvalidQuote
   | CEAgentVersion
   | CECommandError {message :: String}
   deriving (Show, Exception, Generic)

@@ -79,7 +79,7 @@ data ChatItem (c :: ChatType) (d :: MsgDirection) = ChatItem
   { chatDir :: CIDirection c d,
     meta :: CIMeta d,
     content :: CIContent d,
-    replyTo :: Maybe (CIRef c),
+    quotedItem :: Maybe (CIQuote c),
     formattedText :: Maybe [FormattedText]
   }
   deriving (Show, Generic)
@@ -153,7 +153,7 @@ data NewChatItem d = NewChatItem
     itemText :: Text,
     itemStatus :: CIStatus d,
     itemSharedMsgId :: Maybe SharedMsgId,
-    replyTo :: Maybe MessageRef,
+    itemQuotedMsg :: Maybe QuotedMsg,
     createdAt :: UTCTime
   }
   deriving (Show)
@@ -222,29 +222,29 @@ mkCIMeta itemId itemText itemStatus itemSharedMsgId tz itemTs createdAt =
 
 instance ToJSON (CIMeta d) where toEncoding = J.genericToEncoding J.defaultOptions
 
-data CIRef (c :: ChatType) where
-  CIRefDirect :: Maybe ChatItemId -> Bool -> CIRef 'CTDirect
-  CIRefGroup :: Maybe ChatItemId -> GroupMember -> CIRef 'CTGroup
+data CIQuote (c :: ChatType) where
+  CIQuoteDirect :: Maybe ChatItemId -> UTCTime -> MsgContent -> Bool -> CIQuote 'CTDirect
+  CIQuoteGroup :: Maybe ChatItemId -> UTCTime -> MsgContent -> GroupMember -> CIQuote 'CTGroup
 
-deriving instance Show (CIRef c)
+deriving instance Show (CIQuote c)
 
-instance ToJSON (CIRef c) where
-  toJSON = J.toJSON . jsonCIRef
-  toEncoding = J.toEncoding . jsonCIRef
+instance ToJSON (CIQuote c) where
+  toJSON = J.toJSON . jsonCIQuote
+  toEncoding = J.toEncoding . jsonCIQuote
 
-data JSONCIRef
-  = JCIRefDirect {itemId_ :: Maybe ChatItemId, sent :: Bool}
-  | JCIRefGroup {itemId_ :: Maybe ChatItemId, member :: GroupMember}
+data JSONCIQuote
+  = JCIQuoteDirect {itemId :: Maybe ChatItemId, sentAt :: UTCTime, content :: MsgContent, sent :: Bool}
+  | JCIQuoteGroup {itemId :: Maybe ChatItemId, sentAt :: UTCTime, content :: MsgContent, member :: GroupMember}
   deriving (Show, Generic)
 
-instance ToJSON JSONCIRef where
-  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "JSONCI"
-  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "JSONCI"
+instance ToJSON JSONCIQuote where
+  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "JCIQuote"
+  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "JCIQuote"
 
-jsonCIRef :: CIRef c -> JSONCIRef
-jsonCIRef = \case
-  CIRefDirect itemId_ sent -> JCIRefDirect {itemId_, sent}
-  CIRefGroup itemId_ member -> JCIRefGroup {itemId_, member}
+jsonCIQuote :: CIQuote c -> JSONCIQuote
+jsonCIQuote = \case
+  CIQuoteDirect itemId sentAt content sent -> JCIQuoteDirect {itemId, sentAt, content, sent}
+  CIQuoteGroup itemId sentAt content member -> JCIQuoteGroup {itemId, sentAt, content, member}
 
 data CIStatus (d :: MsgDirection) where
   CISSndNew :: CIStatus 'MDSnd

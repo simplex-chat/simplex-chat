@@ -141,16 +141,16 @@ data ChatMsgEvent
   | XUnknown {event :: Text, params :: J.Object}
   deriving (Eq, Show)
 
-data RepliedMsg = RepliedMsg {msgRef :: MessageRef, content :: MsgContent}
+data QuotedMsg = QuotedMsg {msgRef :: MessageRef, content :: MsgContent}
   deriving (Eq, Show, Generic, FromJSON)
 
-instance ToJSON RepliedMsg where
+instance ToJSON QuotedMsg where
   toEncoding = J.genericToEncoding J.defaultOptions
   toJSON = J.genericToJSON J.defaultOptions
 
-cmReplyToMsgRef :: ChatMsgEvent -> Maybe MessageRef
-cmReplyToMsgRef = \case
-  XMsgNew (MCReply (RepliedMsg {msgRef}) _) -> Just msgRef
+cmReplyToQuotedMsg :: ChatMsgEvent -> Maybe QuotedMsg
+cmReplyToQuotedMsg = \case
+  XMsgNew (MCReply quotedMsg _) -> Just quotedMsg
   _ -> Nothing
 
 data MsgContentTag = MCText_ | MCUnknown_ Text
@@ -172,7 +172,7 @@ instance ToJSON MsgContentTag where
   toEncoding = strToJEncoding
 
 data MsgContent
-  = MCReply RepliedMsg MsgContent
+  = MCReply QuotedMsg MsgContent
   | MCForward MsgContent
   | MCText Text
   | MCUnknown {tag :: Text, text :: Text, json :: J.Value}
@@ -239,6 +239,12 @@ instance ToJSON MsgContent where
         MCForward mc -> ("forward" .= True) <> mcPairs mc
         MCText t -> "type" .= ("text" :: Text) <> "text" .= t
         MCUnknown {} -> mempty
+
+instance ToField (MsgContent) where
+  toField = toField . safeDecodeUtf8 . LB.toStrict . J.encode
+
+instance FromField MsgContent where
+  fromField = fromTextField_ $ J.decode . LB.fromStrict . encodeUtf8
 
 data CMEventTag
   = XMsgNew_
