@@ -10,18 +10,21 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.result.launch
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.outlined.Collections
+import androidx.compose.material.icons.outlined.PhotoCamera
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
+import chat.simplex.app.views.newchat.ActionButton
 import kotlinx.coroutines.launch
 import java.io.ByteArrayOutputStream
 
@@ -29,14 +32,14 @@ import java.io.ByteArrayOutputStream
 
 fun bitmapToBase64(bitmap: Bitmap): String {
   val stream = ByteArrayOutputStream()
-  bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream)
+  bitmap.compress(Bitmap.CompressFormat.JPEG, 25, stream)
   return Base64.encodeToString(stream.toByteArray(), Base64.DEFAULT)
 }
 
 
 @Composable
 fun Base64ImageGetter(base64ImageString: MutableState<String?>) {
-  val isCameraSelected = remember { mutableStateOf<Boolean> (false) }
+  val isCameraSelected = remember { mutableStateOf (false) }
   val context = LocalContext.current
   val bottomSheetModalState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden)
   val coroutineScope = rememberCoroutineScope()
@@ -82,94 +85,67 @@ fun Base64ImageGetter(base64ImageString: MutableState<String?>) {
         modifier = Modifier
           .fillMaxWidth()
           .wrapContentHeight()
+          .onFocusChanged { coroutineScope.launch { bottomSheetModalState.hide() } }
       ) {
-        Column(
-          verticalArrangement = Arrangement.SpaceEvenly,
-          horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-          Text(
-            text = "Update Profile Image",
-            modifier = Modifier
+//          Row(Modifier
+//            .fillMaxWidth().padding(horizontal = 8.dp, vertical = 6.dp).align(Alignment.End)
+//          ) {
+//            Icon(Icons.Outlined.Close,
+//              "close",
+//            modifier = Modifier
+//              .height(20.dp)
+//              .clickable {
+//                coroutineScope.launch {
+//                  bottomSheetModalState.hide()
+//                }
+//              }
+//          )
+//          }
+          Row(
+            Modifier
               .fillMaxWidth()
-              .padding(15.dp),
-            color = MaterialTheme.colors.primary,
-            fontSize = 20.sp,
-            fontWeight = FontWeight.Bold,
-          )
-          Divider(
-            modifier = Modifier
-              .height(1.dp)
-          )
-          Text(
-            text = "Camera",
-            modifier = Modifier
-              .fillMaxWidth()
-              .clickable {
-                when (PackageManager.PERMISSION_GRANTED) {
-                  ContextCompat.checkSelfPermission(
-                    context, Manifest.permission.CAMERA
-                  ) -> {
-                    cameraLauncher.launch()
-                    coroutineScope.launch {
-                      bottomSheetModalState.hide()
-                    }
-                  }
-                  else -> {
-                    isCameraSelected.value = true
-                    permissionLauncher.launch(Manifest.permission.CAMERA)
+              .padding(horizontal = 8.dp, vertical = 10.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly
+          ) {
+
+            ActionButton(null, "Use Camera", icon = Icons.Outlined.PhotoCamera) {
+              when (PackageManager.PERMISSION_GRANTED) {
+                ContextCompat.checkSelfPermission(
+                  context, Manifest.permission.CAMERA
+                ) -> {
+                  cameraLauncher.launch()
+                  coroutineScope.launch {
+                    bottomSheetModalState.hide()
                   }
                 }
-              }
-              .padding(15.dp),
-            fontSize = 18.sp,
-          )
-          Divider(
-            modifier = Modifier
-              .height(0.5.dp)
-              .fillMaxWidth()
-          )
-          Text(
-            text = "Choose from Gallery",
-            modifier = Modifier
-              .fillMaxWidth()
-              .clickable {
-                when (PackageManager.PERMISSION_GRANTED) {
-                  ContextCompat.checkSelfPermission(
-                    context, Manifest.permission.READ_EXTERNAL_STORAGE
-                  ) -> {
-                    galleryLauncher.launch("image/*")
-                    coroutineScope.launch {
-                      bottomSheetModalState.hide()
-                    }
-                  }
-                  else -> {
-                    isCameraSelected.value = false
-                    permissionLauncher.launch(Manifest.permission.READ_EXTERNAL_STORAGE)
-                  }
+                else -> {
+                  isCameraSelected.value = true
+                  permissionLauncher.launch(Manifest.permission.CAMERA)
                 }
               }
-              .padding(15.dp),
-            fontSize = 18.sp,
-          )
-          Divider(
-            modifier = Modifier
-              .height(0.5.dp)
-              .fillMaxWidth()
-          )
-          Text(
-            text = "Cancel",
-            modifier = Modifier
-              .fillMaxWidth()
-              .clickable {
-                coroutineScope.launch {
-                  bottomSheetModalState.hide()
+            }
+            ActionButton(null, "From Gallery", icon = Icons.Outlined.Collections) {
+              when (PackageManager.PERMISSION_GRANTED) {
+                ContextCompat.checkSelfPermission(
+                  context, Manifest.permission.READ_EXTERNAL_STORAGE
+                ) -> {
+                  galleryLauncher.launch("image/*")
+                  coroutineScope.launch {
+                    bottomSheetModalState.hide()
+                  }
+                }
+                else -> {
+                  isCameraSelected.value = false
+                  permissionLauncher.launch(Manifest.permission.READ_EXTERNAL_STORAGE)
                 }
               }
-              .padding(15.dp),
-            fontSize = 18.sp,
-          )
+            }
+            ActionButton(null, "Delete Image", icon = Icons.Filled.Delete) {
+              // Todo delete image
+              base64ImageString.value = null
+            }
+          }
         }
-      }
     },
     sheetState = bottomSheetModalState,
   ) {
@@ -192,7 +168,7 @@ fun Base64ImageGetter(base64ImageString: MutableState<String?>) {
           .fillMaxWidth(),
       ) {
         Text(
-          text = "Take Picture",
+          text = "Update Profile Image",
           modifier = Modifier.padding(8.dp),
           textAlign = TextAlign.Center,
         )
