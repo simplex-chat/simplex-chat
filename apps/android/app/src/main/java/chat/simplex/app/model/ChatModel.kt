@@ -367,7 +367,7 @@ class Profile(
   companion object {
     val sampleData = Profile(
       displayName = "alice",
-      fullName = "Alice",
+      fullName = "Alice"
     )
   }
 }
@@ -406,7 +406,7 @@ class GroupProfile (
   companion object {
     val sampleData = GroupProfile(
       displayName = "team",
-      fullName = "My Team",
+      fullName = "My Team"
     )
   }
 }
