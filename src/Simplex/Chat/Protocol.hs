@@ -117,7 +117,7 @@ instance StrEncoding ChatMessage where
   strP = strDecode <$?> A.takeByteString
 
 data ChatMsgEvent
-  = XMsgNew MsgContent
+  = XMsgNew MsgContainer
   | XFile FileInvitation
   | XFileAcpt String
   | XInfo Profile
@@ -148,9 +148,9 @@ instance ToJSON QuotedMsg where
   toEncoding = J.genericToEncoding J.defaultOptions
   toJSON = J.genericToJSON J.defaultOptions
 
-cmReplyToQuotedMsg :: ChatMsgEvent -> Maybe QuotedMsg
-cmReplyToQuotedMsg = \case
-  XMsgNew (MCReply quotedMsg _) -> Just quotedMsg
+cmToQuotedMsg :: ChatMsgEvent -> Maybe QuotedMsg
+cmToQuotedMsg = \case
+  XMsgNew (MCQuote quotedMsg _) -> Just quotedMsg
   _ -> Nothing
 
 data MsgContentTag = MCText_ | MCUnknown_ Text
@@ -171,74 +171,79 @@ instance ToJSON MsgContentTag where
   toJSON = strToJSON
   toEncoding = strToJEncoding
 
-data MsgContent
-  = MCReply QuotedMsg MsgContent
+data MsgContainer
+  = MCSimple MsgContent
+  | MCQuote QuotedMsg MsgContent
   | MCForward MsgContent
-  | MCText Text
+  deriving (Eq, Show)
+
+mcContent :: MsgContainer -> MsgContent
+mcContent = \case
+  MCSimple c -> c
+  MCQuote _ c -> c
+  MCForward c -> c
+
+data MsgContent
+  = MCText Text
   | MCUnknown {tag :: Text, text :: Text, json :: J.Value}
   deriving (Eq, Show)
 
 msgContentText :: MsgContent -> Text
 msgContentText = \case
-  MCReply _ mc -> msgContentText mc
-  MCForward mc -> msgContentText mc
   MCText t -> t
   MCUnknown {text} -> text
 
 msgContentTag :: MsgContent -> MsgContentTag
 msgContentTag = \case
-  MCReply _ mc -> msgContentTag mc
-  MCForward mc -> msgContentTag mc
   MCText _ -> MCText_
   MCUnknown {tag} -> MCUnknown_ tag
 
-mainMsgContent :: MsgContent -> MsgContent
-mainMsgContent = \case
-  MCReply _ mc -> mainMsgContent mc
-  MCForward mc -> mainMsgContent mc
-  mc -> mc
+instance FromJSON MsgContainer where
+  parseJSON jv@(J.Object v) =
+    MCQuote <$> v .: "quote" <*> mc
+      <|> (v .: "forward" >>= \f -> (if f then MCForward else MCSimple) <$> mc)
+      <|> MCSimple <$> mc
+    where
+      mc = J.parseJSON jv
+  parseJSON invalid =
+    JT.prependFailure "bad MsgContainer, " (JT.typeMismatch "Object" invalid)
 
 instance FromJSON MsgContent where
   parseJSON jv@(J.Object v) =
     v .: "type" >>= \case
-      MCText_ -> mcMode $ MCText <$> v .: "text"
-      MCUnknown_ tag -> mcMode $ do
+      MCText_ -> MCText <$> v .: "text"
+      MCUnknown_ tag -> do
         text <- fromMaybe unknownMsgType <$> v .:? "text"
         pure MCUnknown {tag, text, json = jv}
-    where
-      mcMode :: JT.Parser MsgContent -> JT.Parser MsgContent
-      mcMode mc =
-        MCReply <$> v .: "replyTo" <*> mc
-          <|> (v .: "forward" >>= \f -> if f then MCForward <$> mc else mc)
-          <|> mc
   parseJSON invalid =
     JT.prependFailure "bad MsgContent, " (JT.typeMismatch "Object" invalid)
 
 unknownMsgType :: Text
 unknownMsgType = "unknown message type"
 
-instance ToJSON MsgContent where
+instance ToJSON MsgContainer where
   toJSON = \case
-    MCUnknown {json} -> json
-    mc -> J.object $ mcPairs mc
-    where
-      mcPairs :: MsgContent -> [JT.Pair]
-      mcPairs = \case
-        MCReply rm mc -> ("replyTo" .= rm) : mcPairs mc
-        MCForward mc -> ("forward" .= True) : mcPairs mc
-        MCText t -> ["type" .= ("text" :: Text), "text" .= t]
-        MCUnknown {} -> []
-
+    MCQuote qm c -> mcToJSON ["quote" .= qm] c
+    MCForward c -> mcToJSON ["forward" .= True] c
+    MCSimple c -> mcToJSON [] c
   toEncoding = \case
-    MCUnknown {json} -> JE.value json
-    mc -> J.pairs $ mcPairs mc
-    where
-      mcPairs :: MsgContent -> JT.Series
-      mcPairs = \case
-        MCReply rm mc -> ("replyTo" .= rm) <> mcPairs mc
-        MCForward mc -> ("forward" .= True) <> mcPairs mc
-        MCText t -> "type" .= ("text" :: Text) <> "text" .= t
-        MCUnknown {} -> mempty
+    MCQuote qm c -> mcToEncoding ("quote" .= qm) c
+    MCForward c -> mcToEncoding ("forward" .= True) c
+    MCSimple c -> mcToEncoding mempty c
+
+instance ToJSON MsgContent where
+  toJSON = mcToJSON []
+  toEncoding = mcToEncoding mempty
+
+mcToJSON :: [JT.Pair] -> MsgContent -> J.Value
+mcToJSON container = \case
+  MCUnknown {json} -> json
+  MCText t -> J.object $ container <> ["type" .= ("text" :: Text), "text" .= t]
+
+mcToEncoding :: JT.Series -> MsgContent -> JT.Encoding
+mcToEncoding container = \case
+  MCUnknown {json} -> JE.value json
+  MCText t -> J.pairs $ container <> "type" .= ("text" :: Text) <> "text" .= t
 
 instance ToField (MsgContent) where
   toField = toField . safeDecodeUtf8 . LB.toStrict . J.encode
