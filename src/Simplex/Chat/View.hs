@@ -161,13 +161,13 @@ viewChatItem chat (ChatItem {chatDir, meta, content, quotedItem}) = case chat of
       CISndFileInvitation fId fPath -> viewSentFileInvitation to fId fPath meta
       where
         to = ttyToContact' c
+        quote = maybe [] (directQuote True) quotedItem
     CIDirectRcv -> case content of
       CIRcvMsgContent mc -> viewReceivedMessage from quote meta mc
       CIRcvFileInvitation ft -> viewReceivedFileInvitation from meta ft
       where
         from = ttyFromContact' c
-    where
-      quote = maybe [] (directQuote c) quotedItem
+        quote = maybe [] (directQuote False) quotedItem
   GroupChat g -> case chatDir of
     CIGroupSnd -> case content of
       CISndMsgContent mc -> viewSentMessage to quote mc meta
@@ -183,12 +183,11 @@ viewChatItem chat (ChatItem {chatDir, meta, content, quotedItem}) = case chat of
       quote = maybe [] groupQuote quotedItem
   _ -> []
   where
-    directQuote :: Contact -> CIQuote 'CTDirect -> [StyledString]
-    directQuote c (CIQuoteDirect _ _ qmc sent) =
-      quoteText qmc $ if sent then ">" else ttyQuotedContact c
+    directQuote :: Bool -> CIQuote 'CTDirect -> [StyledString]
+    directQuote msgSent (CIQuoteDirect _ _ qmc qouteSent) =
+      quoteText qmc $ if msgSent == qouteSent then ">>" else ">"
     groupQuote :: CIQuote 'CTGroup -> [StyledString]
-    groupQuote (CIQuoteGroup _ _ qmc m) =
-      quoteText qmc $ if memberCategory m == GCUserMember then ">" else ttyQuotedMember m
+    groupQuote (CIQuoteGroup _ _ qmc m) = quoteText qmc $ ttyQuotedMember m
     quoteText qmc sentBy = prependFirst (sentBy <> " ") $ msgPreview qmc
     msgPreview = msgPlain . preview . msgContentText
       where

@@ -136,10 +136,15 @@ testDirectMessageQuotedReply = do
       bob #> "@alice hi!"
       alice <# "bob> hi!"
       bob ##> "> @alice (hello) all good - you?"
-      bob <# "@alice alice> hello! how are you?"
+      bob <# "@alice > hello! how are you?"
       bob <## "all good - you?"
       alice <# "bob> > hello! how are you?"
       alice <## "all good - you?"
+      bob ##> ">> @alice (all good) will tell more"
+      bob <# "@alice >> all good - you?"
+      bob <## "will tell more"
+      alice <# "bob> >> all good - you?"
+      alice <## "will tell more"
 
 testGroup :: IO ()
 testGroup =
@@ -568,13 +573,24 @@ testGroupMessageQuotedReply =
       bob <## "all good, you?"
       concurrently_
         ( do
-            -- alice <# "#team bob> > hello! how are you?"
-            -- alice <## "all good, you?"
-            alice <# "#team bob> all good, you?"
+            alice <# "#team bob> alice> hello! how are you?"
+            alice <## "all good, you?"
         )
         ( do
             cath <# "#team bob> alice> hello! how are you?"
             cath <## "all good, you?"
+        )
+      bob ##> "> #team @bob (all good) will tell more"
+      bob <# "#team bob> all good, you?"
+      bob <## "will tell more"
+      concurrently_
+        ( do
+            alice <# "#team bob> bob> all good, you?"
+            alice <## "will tell more"
+        )
+        ( do
+            cath <# "#team bob> bob> all good, you?"
+            cath <## "will tell more"
         )
 
 testUpdateProfile :: IO ()

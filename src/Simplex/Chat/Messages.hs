@@ -271,6 +271,8 @@ instance FromField ACIStatus where fromField = fromTextField_ $ eitherToMaybe . 
 
 data ACIStatus = forall d. MsgDirectionI d => ACIStatus (SMsgDirection d) (CIStatus d)
 
+deriving instance Show ACIStatus
+
 instance MsgDirectionI d => StrEncoding (CIStatus d) where
   strEncode = \case
     CISSndNew -> "snd_new"
@@ -350,6 +352,8 @@ instance ToJSON (CIContent d) where
   toEncoding = J.toEncoding . jsonCIContent
 
 data ACIContent = forall d. ACIContent (SMsgDirection d) (CIContent d)
+
+deriving instance Show ACIContent
 
 -- platform specific
 instance FromJSON ACIContent where
