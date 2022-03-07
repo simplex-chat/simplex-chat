@@ -2,7 +2,6 @@ package chat.simplex.app.views.usersettings
 
 import android.content.res.Configuration
 import android.graphics.Bitmap
-import android.util.Base64
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.BasicTextField
@@ -20,7 +19,6 @@ import chat.simplex.app.model.ChatModel
 import chat.simplex.app.model.Profile
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.helpers.*
-import java.io.ByteArrayOutputStream
 
 @Composable
 fun UserProfileView(chatModel: ChatModel) {
@@ -74,11 +72,13 @@ fun UserProfileLayout(
     if (editProfile) {
       var displayName by remember { mutableStateOf(profile.displayName) }
       var fullName by remember { mutableStateOf(profile.fullName) }
+      var profileImageStr = remember { mutableStateOf(profile.displayImage) }
       Column(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.Start
       ) {
         // TODO hints
+        ProfileImage(192.dp, profileImageStr.value)
         BasicTextField(
           value = displayName,
           onValueChange = { displayName = it },
@@ -105,7 +105,7 @@ fun UserProfileLayout(
           ),
           singleLine = true
         )
-        ImageGetter(profileImage)
+        Base64ImageGetter(profileImageStr)
         Row {
           Text(
             "Cancel",
@@ -127,13 +127,7 @@ fun UserProfileLayout(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.Start
       ) {
-        val stream = ByteArrayOutputStream()
-        var profileImageStr: String? = null
-        if (profileImage.value != null) {
-          profileImage.value?.compress(Bitmap.CompressFormat.PNG, 100, stream)
-          profileImageStr = Base64.encodeToString(stream.toByteArray(), Base64.DEFAULT)
-        }
-        ProfileImage(192.dp, profileImageStr)
+        ProfileImage(192.dp, profile.displayImage)
         Row(
           Modifier.padding(bottom = 24.dp)
         ) {

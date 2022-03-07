@@ -5,6 +5,7 @@ import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.ImageDecoder
 import android.net.Uri
+import android.util.Base64
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -22,12 +23,19 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import kotlinx.coroutines.launch
+import java.io.ByteArrayOutputStream
 
 // Inspired by https://github.com/MakeItEasyDev/Jetpack-Compose-Capture-Image-Or-Choose-from-Gallery
 
+fun bitmapToBase64(bitmap: Bitmap): String {
+  val stream = ByteArrayOutputStream()
+  bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream)
+  return Base64.encodeToString(stream.toByteArray(), Base64.DEFAULT)
+}
+
 
 @Composable
-fun ImageGetter(bitmap: MutableState<Bitmap?>) {
+fun Base64ImageGetter(base64ImageString: MutableState<String?>) {
   val isCameraSelected = remember { mutableStateOf<Boolean> (false) }
   val context = LocalContext.current
   val bottomSheetModalState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden)
@@ -40,14 +48,15 @@ fun ImageGetter(bitmap: MutableState<Bitmap?>) {
   ) { uri: Uri? ->
     if (uri != null) {
       val source = ImageDecoder.createSource(context.contentResolver, uri)
-      bitmap.value = ImageDecoder.decodeBitmap(source)
+      val bitmap = ImageDecoder.decodeBitmap(source)
+      base64ImageString.value = bitmapToBase64(bitmap)
     }
   }
 
   val cameraLauncher = rememberLauncherForActivityResult(
     contract = ActivityResultContracts.TakePicturePreview()
-  ) { btm: Bitmap? ->
-    bitmap.value = btm
+  ) { bitmap: Bitmap? ->
+    if (bitmap != null) base64ImageString.value = bitmapToBase64(bitmap)
   }
 
   val permissionLauncher = rememberLauncherForActivityResult(
