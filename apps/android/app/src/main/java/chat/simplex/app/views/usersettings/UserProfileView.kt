@@ -42,6 +42,18 @@ fun UserProfileView(chatModel: ChatModel) {
           }
           editProfile = false
         }
+      },
+      saveProfileImage = {
+        base64Image: String ->
+        withApi {
+          val newProfile = chatModel.controller.apiUpdateProfileImage(
+            profile = Profile(profile.displayName, profile.fullName, base64Image)
+          )
+          if (newProfile != null) {
+            chatModel.updateUserProfile(newProfile)
+            profile = newProfile
+          }
+        }
       }
     )
   }
@@ -54,6 +66,7 @@ fun UserProfileLayout(
   editProfileOff: () -> Unit,
   editProfileOn: () -> Unit,
   saveProfile: (String, String) -> Unit,
+  saveProfileImage: (String) -> Unit
 ) {
   val bottomSheetModalState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden)
   var displayName = remember { mutableStateOf(profile.displayName) }
@@ -64,7 +77,7 @@ fun UserProfileLayout(
   ModalBottomSheetLayout(
     scrimColor=MaterialTheme.colors.onSurface.copy(alpha = 0.0f),
     modifier = Modifier.fillMaxWidth(),
-    sheetContent = {GetImageOptions(bottomSheetModalState, profileImageStr)},
+    sheetContent = {GetImageOptions(bottomSheetModalState, profileImageStr, saveProfileImage)},
     sheetState = bottomSheetModalState,
   ) {
     Column(horizontalAlignment = Alignment.Start) {
@@ -84,19 +97,17 @@ fun UserProfileLayout(
       Row(modifier = Modifier.fillMaxWidth()) {
         Column(
           horizontalAlignment = Alignment.Start,
-          modifier = Modifier.padding(5.dp)
+          modifier = Modifier.padding(10.dp)
         ) {
-          ProfileImage(80.dp, profileImageStr.value)
+          ProfileImage(70.dp, profileImageStr.value)
         }
-        Column(horizontalAlignment = Alignment.Start) {
+        Column(verticalArrangement = Arrangement.SpaceBetween, modifier = Modifier.padding(10.dp)) {
           Row(
-            Modifier.padding(bottom = 24.dp)
+            Modifier.padding(bottom = 14.dp)
           ) {
             EditableDisplayName(editProfile, profile, displayName)
           }
-          Row(
-            Modifier.padding(bottom = 24.dp)
-          ) {
+          Row {
             EditableFullName(editProfile, profile, fullName)
           }
         }
@@ -149,6 +160,7 @@ fun UserProfileLayout(
               color = MaterialTheme.colors.primary,
               modifier = Modifier
                 .clickable(onClick = editProfileOn)
+                .padding(top=5.dp)
             )
           }
         }
@@ -233,7 +245,8 @@ fun PreviewUserProfileLayoutEditOff() {
       editProfile = false,
       editProfileOff = {},
       editProfileOn = {},
-      saveProfile = { _, _ -> }
+      saveProfile = { _, _ -> },
+      saveProfileImage = { _ -> }
     )
   }
 }
@@ -252,7 +265,8 @@ fun PreviewUserProfileLayoutEditOn() {
       editProfile = true,
       editProfileOff = {},
       editProfileOn = {},
-      saveProfile = { _, _ -> }
+      saveProfile = { _, _ -> },
+      saveProfileImage = { _ -> }
     )
   }
 }

@@ -37,7 +37,8 @@ fun bitmapToBase64(bitmap: Bitmap): String {
 @Composable
 fun GetImageOptions(
   bottomSheetModalState: ModalBottomSheetState,
-  profileImageStr: MutableState<String?>
+  profileImageStr: MutableState<String?>,
+  updateProfileImage: (String) -> Unit
 ) {
   val context = LocalContext.current
   val isCameraSelected = remember { mutableStateOf (false) }
@@ -48,14 +49,24 @@ fun GetImageOptions(
     if (uri != null) {
       val source = ImageDecoder.createSource(context.contentResolver, uri)
       val bitmap = ImageDecoder.decodeBitmap(source)
-      profileImageStr.value = bitmapToBase64(bitmap)
+      val base64Image = bitmapToBase64(bitmap)
+      profileImageStr.value = base64Image
+      withApi {
+        updateProfileImage(base64Image)
+      }
     }
   }
 
   val cameraLauncher = rememberLauncherForActivityResult(
     contract = ActivityResultContracts.TakePicturePreview()
   ) { bitmap: Bitmap? ->
-    if (bitmap != null) profileImageStr.value = bitmapToBase64(bitmap)
+    if (bitmap != null) {
+      val base64Image = bitmapToBase64(bitmap)
+      profileImageStr.value = base64Image
+      withApi {
+        updateProfileImage(base64Image)
+      }
+    }
   }
 
   val permissionLauncher = rememberLauncherForActivityResult(
@@ -81,7 +92,9 @@ fun GetImageOptions(
       .fillMaxWidth()
       .wrapContentHeight()
       .onFocusChanged { focusState ->
-        if (!focusState.hasFocus) { coroutineScope.launch { bottomSheetModalState.hide() } }
+        if (!focusState.hasFocus) {
+          coroutineScope.launch { bottomSheetModalState.hide() }
+        }
       }
   ) {
     Row(

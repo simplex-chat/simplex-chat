@@ -22,6 +22,7 @@ import chat.simplex.app.model.ChatModel
 import chat.simplex.app.model.Profile
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.TerminalView
+import chat.simplex.app.views.helpers.ProfileImage
 import chat.simplex.app.views.newchat.ModalManager
 
 @Composable
@@ -66,10 +67,7 @@ fun SettingsLayout(
       Spacer(Modifier.height(30.dp))
 
       SettingsSectionView(showModal { UserProfileView(it) }, 60.dp) {
-        Icon(
-          Icons.Outlined.AccountCircle,
-          contentDescription = "Avatar Placeholder",
-        )
+        ProfileImage(size = 40.dp, profile.displayImage)
         Spacer(Modifier.padding(horizontal = 4.dp))
         Column {
           Text(
