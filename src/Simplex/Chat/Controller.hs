@@ -36,7 +36,7 @@ import System.IO (Handle)
 import UnliftIO.STM
 
 versionNumber :: String
-versionNumber = "1.3.0"
+versionNumber = "1.3.1"
 
 versionStr :: String
 versionStr = "SimpleX Chat v" <> versionNumber
@@ -95,6 +95,8 @@ data ChatCommand
   | APIDeleteChat ChatType Int64
   | APIAcceptContact Int64
   | APIRejectContact Int64
+  | GetUserSMPServers
+  | SetUserSMPServers [SMPServer]
   | ChatHelp HelpSection
   | Welcome
   | AddContact
@@ -125,7 +127,8 @@ data ChatCommand
   | CancelFile FileTransferId
   | FileStatus FileTransferId
   | ShowProfile
-  | UpdateProfile Profile
+  | UpdateProfile ContactName Text
+  | UpdateProfileImage ProfileImage
   | QuitChat
   | ShowVersion
   deriving (Show)
@@ -136,6 +139,7 @@ data ChatResponse
   | CRChatRunning
   | CRApiChats {chats :: [AChat]}
   | CRApiChat {chat :: AChat}
+  | CRUserSMPServers {smpServers :: [SMPServer]}
   | CRNewChatItem {chatItem :: AChatItem}
   | CRChatItemUpdated {chatItem :: AChatItem}
   | CRMsgIntegrityError {msgerror :: MsgErrorType} -- TODO make it chat item to support in mobile

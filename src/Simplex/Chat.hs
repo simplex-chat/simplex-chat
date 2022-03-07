@@ -22,15 +22,18 @@ import Crypto.Random (drgNew)
 import Data.Attoparsec.ByteString.Char8 (Parser)
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.Bifunctor (first)
+import qualified Data.ByteString.Base64 as B64
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.Char (isSpace)
 import Data.Functor (($>))
 import Data.Int (Int64)
 import Data.List (find)
+import Data.List.NonEmpty (NonEmpty, nonEmpty)
+import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
-import Data.Maybe (isJust, mapMaybe)
+import Data.Maybe (fromMaybe, isJust, mapMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (UTCTime, getCurrentTime)
@@ -39,7 +42,7 @@ import Data.Word (Word32)
 import Simplex.Chat.Controller
 import Simplex.Chat.Markdown
 import Simplex.Chat.Messages
-import Simplex.Chat.Options (ChatOpts (..))
+import Simplex.Chat.Options (ChatOpts (..), smpServersP)
 import Simplex.Chat.Protocol
 import Simplex.Chat.Store
 import Simplex.Chat.Types
@@ -50,7 +53,7 @@ import Simplex.Messaging.Agent.Protocol
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Parsers (parseAll)
+import Simplex.Messaging.Parsers (base64P, parseAll)
 import Simplex.Messaging.Protocol (ErrorType (..), MsgBody)
 import qualified Simplex.Messaging.Protocol as SMP
 import Simplex.Messaging.Util (tryError)
@@ -71,8 +74,8 @@ defaultChatConfig =
     { agentConfig =
         defaultAgentConfig
           { tcpPort = undefined, -- agent does not listen to TCP
-            smpServers = undefined, -- filled in from options
-            dbFile = undefined, -- filled in from options
+            initialSMPServers = undefined, -- filled in newChatController
+            dbFile = undefined, -- filled in newChatController
             dbPoolSize = 1,
             yesToMigrations = False
           },
@@ -85,6 +88,14 @@ defaultChatConfig =
       testView = False
     }
 
+defaultSMPServers :: NonEmpty SMPServer
+defaultSMPServers =
+  L.fromList
+    [ "smp://0YuTwO05YJWS8rkjn9eLJDjQhFKvIYd8d4xG8X1blIU=@smp8.simplex.im",
+      "smp://SkIkI6EPd2D63F4xFKfHk7I1UGZVNn6k1QWZ5rcyr6w=@smp9.simplex.im",
+      "smp://6iIcWT_dF2zN_w5xzZEY7HI2Prbh3ldP07YTyDexPjE=@smp10.simplex.im"
+    ]
+
 logCfg :: LogConfig
 logCfg = LogConfig {lc_file = Nothing, lc_stderr = True}
 
@@ -95,7 +106,8 @@ newChatController chatStore user cfg@ChatConfig {agentConfig = aCfg, tbqSize} Ch
   activeTo <- newTVarIO ActiveNone
   firstTime <- not <$> doesFileExist f
   currentUser <- newTVarIO user
-  smpAgent <- getSMPAgentClient aCfg {dbFile = dbFilePrefix <> "_agent.db", smpServers}
+  initialSMPServers <- resolveServers
+  smpAgent <- getSMPAgentClient aCfg {dbFile = dbFilePrefix <> "_agent.db", initialSMPServers}
   agentAsync <- newTVarIO Nothing
   idsDrg <- newTVarIO =<< drgNew
   inputQ <- newTBQueueIO tbqSize
@@ -105,6 +117,13 @@ newChatController chatStore user cfg@ChatConfig {agentConfig = aCfg, tbqSize} Ch
   sndFiles <- newTVarIO M.empty
   rcvFiles <- newTVarIO M.empty
   pure ChatController {activeTo, firstTime, currentUser, smpAgent, agentAsync, chatStore, idsDrg, inputQ, outputQ, notifyQ, chatLock, sndFiles, rcvFiles, config, sendNotification}
+  where
+    resolveServers :: IO (NonEmpty SMPServer)
+    resolveServers = case user of
+      Nothing -> pure $ if null smpServers then defaultSMPServers else L.fromList smpServers
+      Just usr -> do
+        userSmpServers <- getSMPServers chatStore usr
+        pure . fromMaybe defaultSMPServers . nonEmpty $ if null smpServers then userSmpServers else smpServers
 
 runChatController :: (MonadUnliftIO m, MonadReader ChatController m) => User -> m ()
 runChatController = race_ notificationSubscriber . agentSubscriber
@@ -196,6 +215,11 @@ processChatCommand = \case
           `E.finally` deleteContactRequest st userId connReqId
     withAgent $ \a -> rejectContact a connId invId
     pure $ CRContactRequestRejected cReq
+  GetUserSMPServers -> CRUserSMPServers <$> withUser (\user -> withStore (`getSMPServers` user))
+  SetUserSMPServers smpServers -> withUser $ \user -> withChatLock $ do
+    withStore $ \st -> overwriteSMPServers st user smpServers
+    withAgent $ \a -> setSMPServers a (fromMaybe defaultSMPServers (nonEmpty smpServers))
+    pure CRCmdOk
   ChatHelp section -> pure $ CRChatHelp section
   Welcome -> withUser $ pure . CRWelcome
   AddContact -> withUser $ \User {userId} -> withChatLock . procCmd $ do
@@ -370,17 +394,12 @@ processChatCommand = \case
   FileStatus fileId ->
     CRFileTransferStatus <$> withUser (\User {userId} -> withStore $ \st -> getFileTransferProgress st userId fileId)
   ShowProfile -> withUser $ \User {profile} -> pure $ CRUserProfile profile
-  UpdateProfile p@Profile {displayName} -> withUser $ \user@User {profile} ->
-    if p == profile
-      then pure CRUserProfileNoChange
-      else do
-        withStore $ \st -> updateUserProfile st user p
-        let user' = (user :: User) {localDisplayName = displayName, profile = p}
-        asks currentUser >>= atomically . (`writeTVar` Just user')
-        contacts <- withStore (`getUserContacts` user)
-        withChatLock . procCmd $ do
-          forM_ contacts $ \ct -> sendDirectContactMessage ct $ XInfo p
-          pure $ CRUserProfileUpdated profile p
+  UpdateProfile displayName fullName -> withUser $ \user@User {profile} -> do
+    let p = (profile :: Profile) {displayName = displayName, fullName = fullName}
+    updateProfile user p
+  UpdateProfileImage image -> withUser $ \user@User {profile} -> do
+    let p = (profile :: Profile) {image = Just image}
+    updateProfile user p
   QuitChat -> liftIO exitSuccess
   ShowVersion -> pure $ CRVersionInfo versionNumber
   where
@@ -419,6 +438,18 @@ processChatCommand = \case
     checkSndFile f = do
       unlessM (doesFileExist f) . throwChatError $ CEFileNotFound f
       (,) <$> getFileSize f <*> asks (fileChunkSize . config)
+    updateProfile :: User -> Profile -> m ChatResponse
+    updateProfile user@User {profile = p} p'@Profile {displayName} = do
+      if p' == p
+        then pure CRUserProfileNoChange
+        else do
+          withStore $ \st -> updateUserProfile st user p'
+          let user' = (user :: User) {localDisplayName = displayName, profile = p'}
+          asks currentUser >>= atomically . (`writeTVar` Just user')
+          contacts <- withStore (`getUserContacts` user)
+          withChatLock . procCmd $ do
+            forM_ contacts $ \ct -> sendDirectContactMessage ct $ XInfo p'
+            pure $ CRUserProfileUpdated p p'
     getRcvFilePath :: Int64 -> Maybe FilePath -> String -> m FilePath
     getRcvFilePath fileId filePath fileName = case filePath of
       Nothing -> do
@@ -1356,7 +1387,7 @@ getCreateActiveUser st = do
         loop = do
           displayName <- getContactName
           fullName <- T.pack <$> getWithPrompt "full name (optional)"
-          liftIO (runExceptT $ createUser st Profile {displayName, fullName} True) >>= \case
+          liftIO (runExceptT $ createUser st Profile {displayName, fullName, image = Nothing} True) >>= \case
             Left SEDuplicateName -> do
               putStrLn "chosen display name is already used by another profile on this device, choose another one"
               loop
@@ -1426,6 +1457,8 @@ withStore ::
 withStore action =
   asks chatStore
     >>= runExceptT . action
+    -- use this line instead of above to log query errors
+    -- >>= (\st -> runExceptT $ action st `E.catch` \(e :: E.SomeException) -> liftIO (print e) >> E.throwIO e)
     >>= liftEither . first ChatErrorStore
 
 chatCommandP :: Parser ChatCommand
@@ -1441,6 +1474,9 @@ chatCommandP =
     <|> "/_delete " *> (APIDeleteChat <$> chatTypeP <*> A.decimal)
     <|> "/_accept " *> (APIAcceptContact <$> A.decimal)
     <|> "/_reject " *> (APIRejectContact <$> A.decimal)
+    <|> "/smp_servers default" $> SetUserSMPServers []
+    <|> "/smp_servers " *> (SetUserSMPServers <$> smpServersP)
+    <|> "/smp_servers" $> GetUserSMPServers
     <|> ("/help files" <|> "/help file" <|> "/hf") $> ChatHelp HSFiles
     <|> ("/help groups" <|> "/help group" <|> "/hg") $> ChatHelp HSGroups
     <|> ("/help address" <|> "/ha") $> ChatHelp HSMyAddress
@@ -1473,11 +1509,14 @@ chatCommandP =
     <|> ("/reject @" <|> "/reject " <|> "/rc @" <|> "/rc ") *> (RejectContact <$> displayName)
     <|> ("/markdown" <|> "/m") $> ChatHelp HSMarkdown
     <|> ("/welcome" <|> "/w") $> Welcome
-    <|> ("/profile " <|> "/p ") *> (UpdateProfile <$> userProfile)
+    <|> "/profile_image " *> (UpdateProfileImage . ProfileImage <$> imageP)
+    <|> ("/profile " <|> "/p ") *> (uncurry UpdateProfile <$> userNames)
     <|> ("/profile" <|> "/p") $> ShowProfile
     <|> ("/quit" <|> "/q" <|> "/exit") $> QuitChat
     <|> ("/version" <|> "/v") $> ShowVersion
   where
+    imagePrefix = (<>) <$> "data:" <*> ("image/png;base64," <|> "image/jpg;base64,")
+    imageP = safeDecodeUtf8 <$> ((<>) <$> imagePrefix <*> (B64.encode <$> base64P))
     chatTypeP = A.char '@' $> CTDirect <|> A.char '#' $> CTGroup
     chatPaginationP =
       (CPLast <$ "count=" <*> A.decimal)
@@ -1487,14 +1526,17 @@ chatCommandP =
     displayName = safeDecodeUtf8 <$> (B.cons <$> A.satisfy refChar <*> A.takeTill (== ' '))
     refChar c = c > ' ' && c /= '#' && c /= '@'
     onOffP = ("on" $> True) <|> ("off" $> False)
-    userProfile = do
+    userNames = do
       cName <- displayName
       fullName <- fullNameP cName
-      pure Profile {displayName = cName, fullName}
+      pure (cName, fullName)
+    userProfile = do
+      (cName, fullName) <- userNames
+      pure Profile {displayName = cName, fullName, image = Nothing}
     groupProfile = do
       gName <- displayName
       fullName <- fullNameP gName
-      pure GroupProfile {displayName = gName, fullName}
+      pure GroupProfile {displayName = gName, fullName, image = Nothing}
     fullNameP name = do
       n <- (A.space *> A.takeByteString) <|> pure ""
       pure $ if B.null n then name else safeDecodeUtf8 n

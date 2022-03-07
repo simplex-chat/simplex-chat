@@ -27,6 +27,7 @@ class ChatModel(val controller: ChatController) {
   var connReqInvitation: String? = null
   var terminalItems = mutableStateListOf<TerminalItem>()
   var userAddress = mutableStateOf<String?>(null)
+  var userSMPServers = mutableStateOf<(List<String>)?>(null)
   // set when app is opened via contact or invitation URI
   var appOpenUrl = mutableStateOf<Uri?>(null)
 
