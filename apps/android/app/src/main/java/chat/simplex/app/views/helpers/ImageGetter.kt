@@ -9,15 +9,12 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.result.launch
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -31,7 +28,6 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun ImageGetter(bitmap: MutableState<Bitmap?>) {
-  val imageUri = remember { mutableStateOf<Uri?>(null) }
   val isCameraSelected = remember { mutableStateOf<Boolean> (false) }
   val context = LocalContext.current
   val bottomSheetModalState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden)
@@ -42,15 +38,17 @@ fun ImageGetter(bitmap: MutableState<Bitmap?>) {
   val galleryLauncher = rememberLauncherForActivityResult(
     contract = ActivityResultContracts.GetContent()
   ) { uri: Uri? ->
-    imageUri.value = uri
-    bitmap.value = null
+    if (uri != null) {
+      val source = ImageDecoder.createSource(context.contentResolver, uri)
+      bitmap.value = ImageDecoder.decodeBitmap(source)
+    }
   }
 
   val cameraLauncher = rememberLauncherForActivityResult(
     contract = ActivityResultContracts.TakePicturePreview()
   ) { btm: Bitmap? ->
+    println("photo taken")
     bitmap.value = btm
-    imageUri.value = null
   }
 
   val permissionLauncher = rememberLauncherForActivityResult(
@@ -137,7 +135,7 @@ fun ImageGetter(bitmap: MutableState<Bitmap?>) {
                     }
                   }
                   else -> {
-                    isCameraSelected = false
+                    isCameraSelected.value = false
                     permissionLauncher.launch(Manifest.permission.READ_EXTERNAL_STORAGE)
                   }
                 }
@@ -194,69 +192,4 @@ fun ImageGetter(bitmap: MutableState<Bitmap?>) {
     }
   }
 
-  imageUri.value?.let {
-        val source = ImageDecoder.createSource(context.contentResolver, it)
-        ImageDecoder.decodeBitmap(source)
-    }
-
-    bitmap.value?.let { it ->
-      Image(
-        bitmap = it.asImageBitmap(),
-        contentDescription = "Image",
-        alignment = Alignment.TopCenter,
-        modifier = Modifier
-          .fillMaxWidth()
-          .fillMaxHeight(0.45f)
-          .padding(top = 10.dp),
-        contentScale = ContentScale.Fit
-      )
-    }
-  }
-
-
-
-//@Composable
-//fun ImageGetter(fromGallery: Boolean = false) {
-//  var imageUri: Uri? = null
-//  var bitmap: Bitmap? = null
-//  val result = remember { mutableStateOf<Bitmap?>(null)}
-//  if (fromGallery) getImageFromGallery(result)
-//  else getImageFromCamera(result)
-//}
-
-//@Composable
-//fun getImageFromGallery(result: MutableState<Bitmap?>) {
-//  val context = LocalContext.current
-//  val uri = remember { mutableStateOf<Uri?>(null) }
-//  // TODO set up downsampling/scaling to avoid too large an image.
-//  val bitmapOptions = BitmapFactory.Options()
-//  bitmapOptions.outMimeType = "jpg"
-//  val launcher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) {
-//    uri.value = it
-//    if (uri.value != null) {
-//      val inputStream = context.contentResolver.openInputStream(uri.value!!)
-//      result.value = BitmapFactory.decodeStream(inputStream, null, bitmapOptions)
-//    }
-//  }
-//  @Composable
-//  fun LaunchGallery() {
-//    SideEffect {
-//      launcher.launch("image/*")
-//    }
-//  }
-//  return LaunchGallery()
-//}
-//
-//@Composable
-//fun getImageFromCamera(result: MutableState<Bitmap?>) {
-//  val launcher = rememberLauncherForActivityResult(ActivityResultContracts.TakePicturePreview()) {
-//    result.value = it
-//  }
-//  @Composable
-//  fun LaunchCamera() {
-//    SideEffect {
-//      launcher.launch(null)
-//    }
-//  }
-//  return LaunchCamera()
-//}
+}
