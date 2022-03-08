@@ -11,11 +11,10 @@ import chat.simplex.app.ui.theme.SecretColor
 import chat.simplex.app.ui.theme.SimplexBlue
 import kotlinx.datetime.*
 import kotlinx.serialization.*
-import kotlinx.serialization.builtins.IntArraySerializer
 import kotlinx.serialization.descriptors.*
-import kotlinx.serialization.encoding.*
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.*
-import kotlinx.serialization.modules.SerializersModule
 
 class ChatModel(val controller: ChatController) {
   var currentUser = mutableStateOf<User?>(null)
