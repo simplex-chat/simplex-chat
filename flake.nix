@@ -1,6 +1,6 @@
 {
   description = "nix flake for simplex-chat";
-  inputs.nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable"; #angerman/nixpkgs/patch-1"; # based on 21.11, still need this, until everything is merged into 21.11.
+  inputs.nixpkgs.url = "github:angerman/nixpkgs?ref=angerman/nixpkgs-unstable-1"; #angerman/nixpkgs/patch-1"; # based on 21.11, still need this, until everything is merged into 21.11.
   inputs.haskellNix.url = "github:input-output-hk/haskell.nix?ref=angerman/try-no-libcharset";
   inputs.haskellNix.inputs.nixpkgs.follows = "nixpkgs";
   inputs.flake-utils.url = "github:numtide/flake-utils";
