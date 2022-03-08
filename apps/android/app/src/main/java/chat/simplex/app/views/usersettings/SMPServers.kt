@@ -21,8 +21,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.app.model.ChatModel
-import chat.simplex.app.ui.theme.HighOrLowlight
-import chat.simplex.app.ui.theme.SimpleXTheme
+import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.AlertManager
 import chat.simplex.app.views.helpers.withApi
 
@@ -120,7 +119,8 @@ fun SMPServersLayout(
         checked = isUserSMPServers,
         onCheckedChange = isUserSMPServersOnOff,
         colors = SwitchDefaults.colors(
-          checkedThumbColor = MaterialTheme.colors.primary
+          checkedThumbColor = MaterialTheme.colors.primary,
+          uncheckedThumbColor = HighOrLowlight
         ),
       )
     }
@@ -133,7 +133,10 @@ fun SMPServersLayout(
         BasicTextField(
           value = userSMPServersStr,
           onValueChange = editUserSMPServersStr,
-          textStyle = TextStyle(fontFamily = FontFamily.Monospace, fontSize = 14.sp),
+          textStyle = TextStyle(
+            fontFamily = FontFamily.Monospace, fontSize = 14.sp,
+            color = MaterialTheme.colors.onBackground
+          ),
           keyboardOptions = KeyboardOptions.Default.copy(
             capitalization = KeyboardCapitalization.None,
             autoCorrect = false
