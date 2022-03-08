@@ -138,9 +138,17 @@ open class ChatController(val ctrl: ChatCtrl, val ntfManager: NtfManager, val ap
 
   suspend fun setUserSMPServers(smpServers: List<String>): Boolean {
     val r = sendCmd(CC.SetUserSMPServers(smpServers))
-    if (r is CR.CmdOk) return true
-    Log.e(TAG, "setUserSMPServers bad response: ${r.responseType} ${r.details}")
-    return false
+    return when (r) {
+      is CR.CmdOk -> true
+      else -> {
+        Log.e(TAG, "setUserSMPServers bad response: ${r.responseType} ${r.details}")
+        AlertManager.shared.showAlertMsg(
+          "Error saving SMP servers",
+          "Make sure SMP server addresses are in correct format, line separated and are not duplicated"
+        )
+        false
+      }
+    }
   }
 
   suspend fun apiAddContact(): String? {
