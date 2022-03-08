@@ -2,15 +2,25 @@
 
 **Published:** March 8, 2022
 
-## Simplex Chat is the first chat platform that is 100% private by design - SimpleX no access to your connections graph
+## SimpleX Chat is the first chat platform that is 100% private by design - it has no access to your connections graph
 
 We have now released iPhone and Android apps to [Apple AppStore](https://apps.apple.com/us/app/simplex-chat/id1605771084) and [Google Play Store](https://play.google.com/store/apps/details?id=chat.simplex.app), [APK for Android](https://github.com/simplex-chat/website/raw/master/simplex.apk) is also available for direct download.
 
 **Please note**: the current version is only supported on iPhone 8+ and on Android 10+ - we are planning to add support for iPad and older devices very soon, and we will announce it on our [Reddit](https://www.reddit.com/r/SimpleXChat/) and [Twitter](https://twitter.com/SimpleXChat) channels - please subscribe to follow our updates there.
 
+## What is SimpleX
+
+We are building a new platform for distributed Internet applications where privacy of the messages _and_ the network matter.
+
+We aim to provide the best possible protection of messages and metadata. Today there is no messaging application that works without global user identities, so we believe we provide better metadata privacy than alternatives. SimpleX is designed to be truly distributed with no central server, and without any global user identities. This allows for high scalability at low cost, and also makes it virtually impossible to snoop on the network graph.
+
+The first application built on the platform is Simplex Chat. The platform can easily support a private social network feed and a multitude of other services, which can be developed by the Simplex team or third party developers.
+
+Further details on platform objectives and technical design are available [in SimpleX platform overview](https://github.com/simplex-chat/simplexmq/blob/master/protocol/overview-tjr.md).
+
 ## Why we are building it
 
-Evgeny (SimpleX Chat founder): I have been working on this platform for a long time to provide a place where all people can communicate freely with each other, without fear of persecution because of what they said and to whom they are connected with. Not sharing information about your connections is very important, particularly for people living in oppressive regimes. Because of the terrible conflict between Russia and Ukraine, people of both countries – I have friends and family there – could be at risk when sharing their opinions or just from being connected to people who were prosecuted. Every messenger app that knows who you are can end up sharing all of your connections with undesirable third parties, either as a result of a court order or as a result of attack - so even Signal, which has strong encryption, cannot protect your connection graph. I hope our messenger can help people living in the oppressive regimes to express their opinions without fear and risk of prosecution.
+Evgeny (SimpleX Chat founder): I have been working on this platform for a long time to provide a place where all people can communicate freely with each other, without fear of persecution because of what they said and who they are connected with. Not sharing information about your connections is very important, particularly for people living in oppressive regimes. Because of the terrible conflict between Russia and Ukraine, people of both countries – I have friends and family there – could be at risk when sharing their opinions or just from being connected to people who were prosecuted. Every messenger app that knows who you are can end up sharing all of your connections with undesirable third parties, either as a result of a court order or as a result of attack - so even Signal, which has strong encryption, cannot protect your connection graph. I hope our messenger can help people living in the oppressive regimes to express their opinions without fear and risk of prosecution.
 
 ## Huge thanks to our testers!
 
@@ -24,7 +34,7 @@ You can always migrate from a public App Store version to a TestFlight version. 
 
 ## It's not all new - our core code has been used for a long time by a few thousand people in our terminal app.
 
-The apps uses the same same core code as our terminal app, that was used and stabilized over a long time, and it provides the same level of privacy and security that has been available since the release of v1 earlier this year:
+The apps use the same core code as our terminal app, that was used and stabilized over a long time, and it provides the same level of privacy and security that has been available since the release of v1 earlier this year:
 - [double-ratchet](https://www.signal.org/docs/specifications/doubleratchet/) E2E encryption.
 - separate keys for each contact.
 - additional layer of E2E encryption in each message queue (to prevent traffic correlation when multiple queues are used in a conversation - something we plan later this year).
@@ -54,15 +64,3 @@ Once you install the app, you can connect to anybody:
 - sending images and files - image preview will be sent via the servers, so it can be asynchronous, and large files/full resolution images via WebRTC, so both devices will have to be online.
 
 Please let us know what else you think is important and if you find any bugs.
-
-## What is SimpleX?
-
-We are building a new platform for distributed Internet applications where privacy of the messages _and_ the network matter.
-
-We aim to provide the best possible protection of messages and metadata. Today there is no messaging application that works without global user identities, so we believe we provide better metadata privacy than alternatives. SimpleX is designed to be truly distributed with no central server, and without any global user identities. This allows for high scalability at low cost, and also makes it virtually impossible to snoop on the network graph.
-
-The first application built on the platform is Simplex Chat, which is available for terminal (command line in Windows/Mac/Linux) and as iOS public beta - with Android app coming in a few weeks. The platform can easily support a private social network feed and a multitude of other services, which can be developed by the Simplex team or third party developers.
-
-SimpleX also allows people to host their own servers to have control of their chat data. SimpleX servers are exceptionally lightweight and require a single process with the initial memory footprint of under 20 Mb, which grows as the server adds in-memory queues (even with 10,000 queues it uses less than 50Mb, not accounting for messages). It should be considered though that while self-hosting the servers provides more control, it may reduce meta-data privacy, as it is easier to correlate the traffic of servers with small number of messages coming through.
-
-Further details on platform objectives and technical design are available [in SimpleX platform overview](https://github.com/simplex-chat/simplexmq/blob/master/protocol/overview-tjr.md).
