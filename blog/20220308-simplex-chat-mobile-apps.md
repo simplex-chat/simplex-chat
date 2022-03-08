@@ -6,6 +6,8 @@
 
 We have now released iPhone and Android apps to [Apple AppStore](https://apps.apple.com/us/app/simplex-chat/id1605771084) and [Google Play Store](https://play.google.com/store/apps/details?id=chat.simplex.app), [APK for Android](https://github.com/simplex-chat/website/raw/master/simplex.apk) is also available for direct download.
 
+**Please note**: the current version is only supported on iPhone 8+ and on Android 10+ - we are planning to add support for iPad and older devices very soon, and we will announce it on our [Reddit](https://www.reddit.com/r/SimpleXChat/) and [Twitter](https://twitter.com/SimpleXChat) channels - please subscribe to follow our updates there.
+
 ## Why we are building it
 
 Evgeny (SimpleX Chat founder): I have been working on this platform for a long time to provide a place where all people can communicate freely with each other, without fear of persecution because of what they said and to whom they are connected with. Not sharing information about your connections is very important, particularly for people living in oppressive regimes. Because of the terrible conflict between Russia and Ukraine, people of both countries – I have friends and family there – could be at risk when sharing their opinions or just from being connected to people who were prosecuted. Every messenger app that knows who you are can end up sharing all of your connections with undesirable third parties, either as a result of a court order or as a result of attack - so even Signal, which has strong encryption, cannot protect your connection graph. I hope our messenger can help people living in the oppressive regimes to express their opinions without fear and risk of prosecution.
@@ -29,6 +31,8 @@ The apps uses the same same core code as our terminal app, that was used and sta
 - additional encryption of messages delivered from servers to recipients (also to prevent traffic correlation).
 
 You can read more technical details in our recent [v1 announcement](https://github.com/simplex-chat/simplex-chat/blob/stable/blog/20220112-simplex-chat-v1-released.md).
+
+A big thank you to [@angerman](https://github.com/angerman) for making it possible to compile our Haskell code to mobile platforms and getting it approved on app stores - it has been a non-trivial project, and it is still ongoing.
 
 ## Install the apps and make a private connection!
 
