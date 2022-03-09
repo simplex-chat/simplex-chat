@@ -11,6 +11,8 @@ import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ArrowBack
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.mapSaver
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
@@ -80,7 +82,10 @@ fun ChatLayout(
   info: () -> Unit,
   sendMessage: (String) -> Unit
 ) {
-  Surface(Modifier.fillMaxWidth().background(MaterialTheme.colors.background)) {
+  Surface(
+    Modifier
+      .fillMaxWidth()
+      .background(MaterialTheme.colors.background)) {
     ProvideWindowInsets(windowInsetsAnimationsEnabled = true) {
       Scaffold(
         topBar = { ChatInfoToolbar(chat, back, info) },
@@ -135,10 +140,23 @@ fun ChatInfoToolbar(chat: Chat, back: () -> Unit, info: () -> Unit) {
   }
 }
 
+data class MessageListState(val scrolled: Boolean, val msgCount: Int)
+
+val MessageListStateSaver = run {
+  val scrolledKey = "scrolled"
+  val countKey = "msgCount"
+  mapSaver(
+    save = { mapOf(scrolledKey to it.scrolled, countKey to it.msgCount)},
+    restore = { MessageListState(it[scrolledKey] as Boolean, it[countKey] as Int) }
+  )
+}
+
 @Composable
 fun ChatItemsList(chatItems: List<ChatItem>) {
   val listState = rememberLazyListState()
-  var scrolled = false
+  var messageListState = rememberSaveable(stateSaver = MessageListStateSaver) {
+    mutableStateOf(MessageListState(false, chatItems.count()))
+  }
   val scope = rememberCoroutineScope()
   val uriHandler = LocalUriHandler.current
   LazyColumn(state = listState) {
@@ -146,9 +164,9 @@ fun ChatItemsList(chatItems: List<ChatItem>) {
       ChatItemView(cItem, uriHandler)
     }
     val len = chatItems.count()
-    if (len > 1 && !scrolled) {
+    if (len > 1 && (!messageListState.value.scrolled || len != messageListState.value.msgCount)) {
       scope.launch {
-        scrolled = true
+        messageListState.value = MessageListState(true, chatItems.count())
         listState.animateScrollToItem(len - 1)
       }
     }
