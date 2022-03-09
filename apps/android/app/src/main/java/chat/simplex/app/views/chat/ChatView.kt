@@ -138,6 +138,7 @@ fun ChatInfoToolbar(chat: Chat, back: () -> Unit, info: () -> Unit) {
 @Composable
 fun ChatItemsList(chatItems: List<ChatItem>) {
   val listState = rememberLazyListState()
+  var scrolled = false
   val scope = rememberCoroutineScope()
   val uriHandler = LocalUriHandler.current
   LazyColumn(state = listState) {
@@ -145,8 +146,9 @@ fun ChatItemsList(chatItems: List<ChatItem>) {
       ChatItemView(cItem, uriHandler)
     }
     val len = chatItems.count()
-    if (len > 1) {
+    if (len > 1 && !scrolled) {
       scope.launch {
+        scrolled = true
         listState.animateScrollToItem(len - 1)
       }
     }
