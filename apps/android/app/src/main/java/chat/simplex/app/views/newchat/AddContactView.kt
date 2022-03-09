@@ -36,7 +36,7 @@ fun AddContactView(chatModel: ChatModel) {
 fun AddContactLayout(connReq: String, share: () -> Unit) {
   Column(
     horizontalAlignment = Alignment.CenterHorizontally,
-    verticalArrangement = Arrangement.spacedBy(12.dp)
+    verticalArrangement = Arrangement.SpaceBetween
   ) {
     Text(
       "Add contact",
