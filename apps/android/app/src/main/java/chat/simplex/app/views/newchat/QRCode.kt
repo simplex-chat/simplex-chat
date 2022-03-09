@@ -20,7 +20,7 @@ fun QRCode(connReq: String) {
   Image(
     bitmap = qrCodeBitmap(connReq, 1024).asImageBitmap(),
     contentDescription = "QR Code",
-    modifier=Modifier.fillMaxHeight(0.5f).padding(vertical = 5.dp)
+    modifier = Modifier.fillMaxHeight(0.5f).padding(vertical = 5.dp)
   )
 }
 
