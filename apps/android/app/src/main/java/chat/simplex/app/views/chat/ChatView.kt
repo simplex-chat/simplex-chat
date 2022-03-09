@@ -5,6 +5,7 @@ import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
 import androidx.compose.material.*
@@ -140,14 +141,15 @@ fun ChatInfoToolbar(chat: Chat, back: () -> Unit, info: () -> Unit) {
   }
 }
 
-data class MessageListState(val scrolled: Boolean, val msgCount: Int)
+data class MessageListState(val scrolled: Boolean, val msgCount: Int, val keyboardOffset: Int)
 
 val MessageListStateSaver = run {
   val scrolledKey = "scrolled"
   val countKey = "msgCount"
+  val keyboardKey = "keyboardOffset"
   mapSaver(
-    save = { mapOf(scrolledKey to it.scrolled, countKey to it.msgCount)},
-    restore = { MessageListState(it[scrolledKey] as Boolean, it[countKey] as Int) }
+    save = { mapOf(scrolledKey to it.scrolled, countKey to it.msgCount, keyboardKey to it.keyboardOffset) },
+    restore = { MessageListState(it[scrolledKey] as Boolean, it[countKey] as Int, it[keyboardKey] as Int) }
   )
 }
 
@@ -155,7 +157,7 @@ val MessageListStateSaver = run {
 fun ChatItemsList(chatItems: List<ChatItem>) {
   val listState = rememberLazyListState()
   var messageListState = rememberSaveable(stateSaver = MessageListStateSaver) {
-    mutableStateOf(MessageListState(false, chatItems.count()))
+    mutableStateOf(MessageListState(false, chatItems.count(), listState.layoutInfo.viewportEndOffset))
   }
   val scope = rememberCoroutineScope()
   val uriHandler = LocalUriHandler.current
@@ -164,9 +166,16 @@ fun ChatItemsList(chatItems: List<ChatItem>) {
       ChatItemView(cItem, uriHandler)
     }
     val len = chatItems.count()
+    if(listState.layoutInfo.viewportEndOffset != messageListState.value.keyboardOffset) {
+      scope.launch {
+        val scrollBy = maxOf(messageListState.value.keyboardOffset.toFloat() - listState.layoutInfo.viewportEndOffset.toFloat(), 0f)
+        listState.scrollBy( scrollBy)
+        messageListState.value = messageListState.value.copy(keyboardOffset = listState.layoutInfo.viewportEndOffset)
+      }
+    }
     if (len > 1 && (!messageListState.value.scrolled || len != messageListState.value.msgCount)) {
       scope.launch {
-        messageListState.value = MessageListState(true, chatItems.count())
+        messageListState.value = MessageListState(true, chatItems.count(), listState.layoutInfo.viewportEndOffset)
         listState.animateScrollToItem(len - 1)
       }
     }
