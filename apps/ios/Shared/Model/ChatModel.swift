@@ -529,7 +529,7 @@ struct ChatItem: Identifiable, Decodable {
     
     var id: Int64 { get { meta.itemId } }
 
-    var timestampText: String { get { meta.timestampText } }
+    var timestampText: Text { get { meta.timestampText } }
 
     func isRcvNew() -> Bool {
         if case .rcvNew = meta.itemStatus { return true }
@@ -570,7 +570,7 @@ struct CIMeta: Decodable {
     var itemStatus: CIStatus
     var createdAt: Date
 
-    var timestampText: String { get { SimpleX.timestampText(itemTs) } }
+    var timestampText: Text { get { SimpleX.timestampText(itemTs) } }
 
     static func getSample(_ id: Int64, _ ts: Date, _ text: String, _ status: CIStatus = .sndNew) -> CIMeta {
         CIMeta(
@@ -583,13 +583,14 @@ struct CIMeta: Decodable {
     }
 }
 
+let msgTimeFormat = Date.FormatStyle.dateTime.hour().minute()
+let msgDateFormat = Date.FormatStyle.dateTime.day(.twoDigits).month(.twoDigits)
 
-func timestampText(_ date: Date) -> String {
+func timestampText(_ date: Date) -> Text {
     let now = Calendar.current.dateComponents([.day, .hour], from: .now)
     let dc = Calendar.current.dateComponents([.day, .hour], from: date)
-    return now.day == dc.day || ((now.day ?? 0) - (dc.day ?? 0) == 1 && (dc.hour ?? 0) >= 18 && (now.hour ?? 0) < 12)
-        ? date.formatted(date: .omitted, time: .shortened)
-        : String(date.formatted(date: .numeric, time: .omitted).prefix(5))
+    let recent = now.day == dc.day || ((now.day ?? 0) - (dc.day ?? 0) == 1 && (dc.hour ?? 0) >= 18 && (now.hour ?? 0) < 12)
+    return Text(date, format: recent ? msgTimeFormat : msgDateFormat)
 }
 
 enum CIStatus: Decodable {
