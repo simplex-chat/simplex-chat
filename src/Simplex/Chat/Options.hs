@@ -3,14 +3,12 @@
 module Simplex.Chat.Options
   ( ChatOpts (..),
     getChatOpts,
-    defaultSMPServers,
+    smpServersP,
   )
 where
 
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.ByteString.Char8 as B
-import Data.List.NonEmpty (NonEmpty)
-import qualified Data.List.NonEmpty as L
 import Options.Applicative
 import Simplex.Chat.Controller (updateStr, versionStr)
 import Simplex.Messaging.Agent.Protocol (SMPServer (..))
@@ -20,18 +18,10 @@ import System.FilePath (combine)
 
 data ChatOpts = ChatOpts
   { dbFilePrefix :: String,
-    smpServers :: NonEmpty SMPServer,
+    smpServers :: [SMPServer],
     logConnections :: Bool,
     logAgent :: Bool
   }
-
-defaultSMPServers :: NonEmpty SMPServer
-defaultSMPServers =
-  L.fromList
-    [ "smp://0YuTwO05YJWS8rkjn9eLJDjQhFKvIYd8d4xG8X1blIU=@smp8.simplex.im",
-      "smp://SkIkI6EPd2D63F4xFKfHk7I1UGZVNn6k1QWZ5rcyr6w=@smp9.simplex.im",
-      "smp://6iIcWT_dF2zN_w5xzZEY7HI2Prbh3ldP07YTyDexPjE=@smp10.simplex.im"
-    ]
 
 chatOpts :: FilePath -> Parser ChatOpts
 chatOpts appDir =
@@ -45,13 +35,13 @@ chatOpts appDir =
           <> showDefault
       )
     <*> option
-      parseSMPServer
+      parseSMPServers
       ( long "server"
           <> short 's'
           <> metavar "SERVER"
           <> help
             "Comma separated list of SMP server(s) to use"
-          <> value defaultSMPServers
+          <> value []
       )
     <*> switch
       ( long "connections"
@@ -66,10 +56,11 @@ chatOpts appDir =
   where
     defaultDbFilePath = combine appDir "simplex_v1"
 
-parseSMPServer :: ReadM (NonEmpty SMPServer)
-parseSMPServer = eitherReader $ parseAll servers . B.pack
-  where
-    servers = L.fromList <$> strP `A.sepBy1` A.char ','
+parseSMPServers :: ReadM [SMPServer]
+parseSMPServers = eitherReader $ parseAll smpServersP . B.pack
+
+smpServersP :: A.Parser [SMPServer]
+smpServersP = strP `A.sepBy1` A.char ','
 
 getChatOpts :: FilePath -> IO ChatOpts
 getChatOpts appDir =

@@ -18,6 +18,7 @@ struct ContentView: View {
                 .onAppear {
                     do {
                         try apiStartChat()
+                        chatModel.userSMPServers = try getUserSMPServers()
                         chatModel.chats = try apiGetChats()
                     } catch {
                         fatalError("Failed to start or load chats: \(error)")

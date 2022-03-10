@@ -21,6 +21,7 @@ final class ChatModel: ObservableObject {
     // items in the terminal view
     @Published var terminalItems: [TerminalItem] = []
     @Published var userAddress: String?
+    @Published var userSMPServers: [String]?
     @Published var appOpenUrl: URL?
 
     var messageDelivery: Dictionary<Int64, () -> Void> = [:]
