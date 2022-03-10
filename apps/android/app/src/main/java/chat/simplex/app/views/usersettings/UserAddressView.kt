@@ -59,27 +59,27 @@ fun UserAddressLayout(
   ) {
     Text(
       "Your chat address",
-      Modifier.padding(bottom = 24.dp),
+      Modifier.padding(bottom = 16.dp),
       style = MaterialTheme.typography.h1,
     )
     Text(
       "You can share your address as a link or as a QR code - anybody will be able to connect to you, " +
           "and if you later delete it - you won't lose your contacts.",
-      Modifier.padding(bottom = 24.dp),
+      Modifier.padding(bottom = 12.dp),
     )
     Column(
-      Modifier
-        .fillMaxWidth()
-        .padding(top = 12.dp),
+      Modifier.fillMaxWidth(),
       horizontalAlignment = Alignment.CenterHorizontally,
-      verticalArrangement = Arrangement.spacedBy(24.dp)
+      verticalArrangement = Arrangement.SpaceEvenly
     ) {
       if (userAddress == null) {
         SimpleButton("Create address", icon = Icons.Outlined.QrCode, click = createAddress)
       } else {
-        QRCode(userAddress)
+        QRCode(userAddress, Modifier.weight(1f, fill = false).aspectRatio(1f))
         Row(
-          horizontalArrangement = Arrangement.spacedBy(12.dp)
+          horizontalArrangement = Arrangement.spacedBy(10.dp),
+          verticalAlignment = Alignment.CenterVertically,
+          modifier = Modifier.padding(vertical = 10.dp)
         ) {
           SimpleButton(
             "Share link",

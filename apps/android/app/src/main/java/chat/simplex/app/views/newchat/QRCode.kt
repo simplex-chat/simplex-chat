@@ -3,24 +3,21 @@ package chat.simplex.app.views.newchat
 import android.graphics.Bitmap
 import android.graphics.Color
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
 import chat.simplex.app.ui.theme.SimpleXTheme
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.EncodeHintType
 import com.google.zxing.qrcode.QRCodeWriter
 
 @Composable
-fun QRCode(connReq: String) {
+fun QRCode(connReq: String, modifier: Modifier = Modifier) {
   Image(
     bitmap = qrCodeBitmap(connReq, 1024).asImageBitmap(),
     contentDescription = "QR Code",
-    modifier = Modifier.fillMaxHeight(0.5f).padding(vertical = 5.dp)
+    modifier = modifier
   )
 }
 

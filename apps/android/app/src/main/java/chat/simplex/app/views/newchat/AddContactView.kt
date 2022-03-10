@@ -15,6 +15,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.ui.theme.SimpleButton
 import chat.simplex.app.ui.theme.SimpleXTheme
@@ -34,35 +35,44 @@ fun AddContactView(chatModel: ChatModel) {
 
 @Composable
 fun AddContactLayout(connReq: String, share: () -> Unit) {
-  Column(
-    horizontalAlignment = Alignment.CenterHorizontally,
-    verticalArrangement = Arrangement.SpaceBetween
-  ) {
-    Text(
-      "Add contact",
-      style = MaterialTheme.typography.h1,
-    )
-    Text(
-      "Show QR code to your contact\nto scan from the app",
-      style = MaterialTheme.typography.h2,
-      textAlign = TextAlign.Center,
-    )
-    QRCode(connReq)
-    Text(
-      buildAnnotatedString {
-        append("If you cannot meet in person, you can ")
-        withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
-          append("scan QR code in the video call")
-        }
-        append(", or you can share the invitation link via any other channel.")
-      },
-      textAlign = TextAlign.Center,
-      style = MaterialTheme.typography.caption,
-      modifier = Modifier
-        .padding(horizontal = 16.dp)
-        .padding(bottom = 16.dp)
-    )
-    SimpleButton("Share invitation link", icon = Icons.Outlined.Share, click = share)
+  BoxWithConstraints {
+    val screenHeight = maxHeight
+    Column(
+      horizontalAlignment = Alignment.CenterHorizontally,
+      verticalArrangement = Arrangement.SpaceBetween,
+    ) {
+      Text(
+        "Add contact",
+        style = MaterialTheme.typography.h1,
+      )
+      Text(
+        "Show QR code to your contact\nto scan from the app",
+        style = MaterialTheme.typography.h2.copy(fontSize = if(screenHeight > 600.dp) 26.sp else 20.sp),
+        textAlign = TextAlign.Center,
+      )
+      QRCode(
+        connReq, Modifier
+          .weight(1f, fill = false)
+          .aspectRatio(1f)
+          .padding(3.dp)
+      )
+      Text(
+        buildAnnotatedString {
+          append("If you cannot meet in person, you can ")
+          withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
+            append("scan QR code in the video call")
+          }
+          append(", or you can share the invitation link via any other channel.")
+        },
+        textAlign = TextAlign.Center,
+        style = MaterialTheme.typography.caption.copy(fontSize=if(screenHeight > 600.dp) 20.sp else 16.sp),
+        modifier = Modifier
+          .padding(horizontal = 16.dp)
+          .padding(bottom = if(screenHeight > 600.dp) 16.dp else 8.dp)
+      )
+      SimpleButton("Share invitation link", icon = Icons.Outlined.Share, click = share)
+      Spacer(Modifier.height(10.dp))
+    }
   }
 }
 
