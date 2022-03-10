@@ -55,8 +55,8 @@ struct TextItemView: View {
         }
     }
 
-    private func reserveSpaceForMeta(_ meta: String) -> Text {
-       Text("      \(meta)")
+    private func reserveSpaceForMeta(_ meta: Text) -> Text {
+       (Text("      ") + meta)
            .font(.caption)
            .foregroundColor(.clear)
     }

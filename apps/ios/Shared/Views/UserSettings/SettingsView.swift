@@ -47,6 +47,19 @@ struct SettingsView: View {
                         }
                     }
                 }
+                
+                Section("Settings") {
+                    NavigationLink {
+                        SMPServers()
+                            .navigationTitle("Your SMP servers")
+                    } label: {
+                        HStack {
+                            Image(systemName: "server.rack")
+                                .padding(.trailing, 4)
+                            Text("SMP servers")
+                        }
+                    }
+                }
 
                 Section("Help") {
                     NavigationLink {

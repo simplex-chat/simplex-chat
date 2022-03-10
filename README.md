@@ -1,8 +1,6 @@
 <img src="images/simplex-chat-logo.svg" alt="SimpleX logo" width="100%">
 
-# SimpleX Chat
-
-SimpleX - private and secure open-source chat and application platform - public beta for iOS now available!
+# SimpleX - the first chat platform that is 100% private by design - it has no access to your connection graph!
 
 [![GitHub build](https://github.com/simplex-chat/simplex-chat/workflows/build/badge.svg)](https://github.com/simplex-chat/simplex-chat/actions?query=workflow%3Abuild)
 [![GitHub downloads](https://img.shields.io/github/downloads/simplex-chat/simplex-chat/total)](https://github.com/simplex-chat/simplex-chat/releases)
@@ -10,13 +8,23 @@ SimpleX - private and secure open-source chat and application platform - public 
 [![Follow on Twitter](https://img.shields.io/twitter/follow/SimpleXChat?style=social)](https://twitter.com/simplexchat)
 [![Join on Reddit](https://img.shields.io/reddit/subreddit-subscribers/SimpleXChat?style=social)](https://www.reddit.com/r/SimpleXChat)
 
-SimpleX Chat apps (both terminal UI and [iOS public beta](https://testflight.apple.com/join/DWuT2LQu)) use [SimpleXMQ](https://github.com/simplex-chat/simplexmq) message broker.
+[<img src="https://github.com/simplex-chat/.github/blob/master/profile/images/apple_store.svg" alt="iOS app" height="42">](https://apps.apple.com/us/app/simplex-chat/id1605771084)
+&nbsp;
+[![Android app](https://github.com/simplex-chat/.github/blob/master/profile/images/google_play.svg)](https://play.google.com/store/apps/details?id=chat.simplex.app)
+&nbsp;
+[<img src="https://github.com/simplex-chat/.github/blob/master/profile/images/testflight.png" alt="iOS TestFlight" height="41">](https://testflight.apple.com/join/DWuT2LQu)
+&nbsp;
+[<img src="https://github.com/simplex-chat/.github/blob/master/profile/images/apk_icon.png" alt="iOS TestFlight" height="41">](https://github.com/simplex-chat/website/raw/master/simplex.apk)
+
+- 🖲 Protects your messages and metadata - who you talk to and when.
+- 🔐 Double ratchet encryption.
+- 📱 Mobile apps for Android ([Google Play](https://play.google.com/store/apps/details?id=chat.simplex.app), [APK](https://github.com/simplex-chat/website/raw/master/simplex.apk)) and [iOS](https://apps.apple.com/us/app/simplex-chat/id1605771084). [See the announcement here](https://github.com/simplex-chat/simplex-chat/blob/master/blog/20220308-simplex-chat-mobile-apps.md).
+- 🚀 [TestFlight preview for iOS](https://testflight.apple.com/join/DWuT2LQu) with the new features 1-2 weeks earlier - **limited to 10,000 users**!
+- 🖥 Available as a [terminal (console) app / CLI](https://github.com/simplex-chat/simplex-chat) on Linux, MacOS, Windows.
 
 See [SimpleX overview](https://github.com/simplex-chat/simplexmq/blob/master/protocol/overview-tjr.md) for more information on platform objectives and technical design.
 
-***SimpleX Chat [public beta for iOS 15 is available via TestFlight](https://testflight.apple.com/join/DWuT2LQu)** - it will help us a lot if you test it! [See the announcement here](https://github.com/simplex-chat/simplex-chat/blob/stable/blog/20220214-simplex-chat-ios-public-beta.md).*
-
-### :zap: Quick installation
+### :zap: Quick installation of a terminal app
 
 ```sh
 curl -o- https://raw.githubusercontent.com/simplex-chat/simplex-chat/master/install.sh | bash

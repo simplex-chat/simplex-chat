@@ -25,7 +25,7 @@ struct CIMetaView: View {
             default: EmptyView()
             }
 
-            Text(chatItem.timestampText)
+            chatItem.timestampText
                 .font(.caption)
                 .foregroundColor(.secondary)
         }

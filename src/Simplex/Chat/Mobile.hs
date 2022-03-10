@@ -49,7 +49,7 @@ mobileChatOpts :: ChatOpts
 mobileChatOpts =
   ChatOpts
     { dbFilePrefix = "simplex_v1", -- two database files will be created: simplex_v1_chat.db and simplex_v1_agent.db
-      smpServers = defaultSMPServers,
+      smpServers = [],
       logConnections = False,
       logAgent = False
     }
