@@ -54,7 +54,7 @@ fun AddContactLayout(connReq: String, share: () -> Unit) {
         connReq, Modifier
           .weight(1f, fill = false)
           .aspectRatio(1f)
-          .padding(3.dp)
+          .padding(vertical = 3.dp)
       )
       Text(
         buildAnnotatedString {
