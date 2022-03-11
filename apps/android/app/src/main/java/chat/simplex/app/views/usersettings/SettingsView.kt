@@ -65,7 +65,7 @@ fun SettingsLayout(
       )
       Spacer(Modifier.height(30.dp))
 
-      SettingsSectionView(showModal { UserProfileView(it) }, 60.dp) {
+      SettingsSectionView(showModal { UserProfileView(it) }, 56.dp) {
         Icon(
           Icons.Outlined.AccountCircle,
           contentDescription = "Avatar Placeholder",
@@ -172,7 +172,7 @@ fun SettingsLayout(
 }
 
 @Composable
-fun SettingsSectionView(click: () -> Unit, height: Dp = 48.dp, content: (@Composable () -> Unit)) {
+fun SettingsSectionView(click: () -> Unit, height: Dp = 46.dp, content: (@Composable () -> Unit)) {
   Row(
     Modifier
       .padding(start = 8.dp)
