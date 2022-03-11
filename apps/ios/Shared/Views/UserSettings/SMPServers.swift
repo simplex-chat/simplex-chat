@@ -69,7 +69,7 @@ struct SMPServers: View {
                             .textInputAutocapitalization(.never)
                             .padding(.horizontal, 5)
                             .padding(.top, 2)
-                            .frame(height: 160)
+                            .frame(height: 112)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 10)
                                     .strokeBorder(.secondary, lineWidth: 0.3, antialiased: true)
