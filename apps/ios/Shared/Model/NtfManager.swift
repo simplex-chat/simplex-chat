@@ -168,12 +168,12 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
         )
     }
     
-    func hideSecrets(_ cItem: ChatItem) -> String? {
+    func hideSecrets(_ cItem: ChatItem) -> String {
         if let md = cItem.formattedText {
             var res = ""
             for ft in md {
                 if case .secret = ft.format {
-                    res = res + "___"
+                    res = res + "..."
                 } else {
                     res = res + ft.text
                 }
