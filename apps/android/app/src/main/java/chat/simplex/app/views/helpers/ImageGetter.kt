@@ -30,8 +30,11 @@ import java.io.ByteArrayOutputStream
 
 fun bitmapToBase64(bitmap: Bitmap): String {
   val stream = ByteArrayOutputStream()
-  bitmap.compress(Bitmap.CompressFormat.JPEG, 25, stream)
-  return Base64.encodeToString(stream.toByteArray(), Base64.DEFAULT)
+  val baseHeight = 96
+  val width = baseHeight * bitmap.width / bitmap.height
+  val resizedImage = Bitmap.createScaledBitmap(bitmap, baseHeight, width, false)
+  resizedImage.compress(Bitmap.CompressFormat.JPEG, 75, stream)
+  return Base64.encodeToString(stream.toByteArray(), Base64.NO_WRAP)
 }
 
 @Composable
