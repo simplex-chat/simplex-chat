@@ -59,7 +59,7 @@ fun SettingsLayout(
         .padding(top = 16.dp)
     ) {
       Text(
-        "Your Settings",
+        "Your settings",
         style = MaterialTheme.typography.h1,
         modifier = Modifier.padding(start = 8.dp)
       )
