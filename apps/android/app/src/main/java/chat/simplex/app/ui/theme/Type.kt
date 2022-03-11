@@ -21,12 +21,12 @@ val Typography = Typography(
   h3 = TextStyle(
     fontFamily = FontFamily.Default,
     fontWeight = FontWeight.Normal,
-    fontSize = 20.sp
+    fontSize = 19.sp
   ),
   body1 = TextStyle(
     fontFamily = FontFamily.Default,
     fontWeight = FontWeight.Normal,
-    fontSize = 18.sp
+    fontSize = 17.sp
   ),
   body2 = TextStyle(
     fontFamily = FontFamily.Default,
