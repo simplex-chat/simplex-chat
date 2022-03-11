@@ -25,7 +25,7 @@ struct WelcomeView: View {
                     .padding(.bottom)
                 Text("The messaging and application platform 100% private by design!")
                     .padding(.bottom, 8)
-                Text("Your profile, contacts or messages (once delivered) are only stored locally on your device.")
+                Text("Your profile, contacts and messages (once delivered) are only stored locally on your device.")
                     .padding(.bottom, 8)
                 Text("Create profile")
                     .font(.largeTitle)
