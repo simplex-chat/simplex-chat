@@ -26,7 +26,7 @@ val Typography = Typography(
   h3 = TextStyle(
     fontFamily = Inter,
     fontWeight = FontWeight.Normal,
-    fontSize = 20.sp
+    fontSize = 19.sp
   ),
   body1 = TextStyle(
     fontFamily = Inter,
