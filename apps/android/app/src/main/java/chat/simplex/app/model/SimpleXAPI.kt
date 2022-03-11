@@ -208,6 +208,14 @@ open class ChatController(val ctrl: ChatCtrl, val ntfManager: NtfManager, val ap
     return null
   }
 
+  suspend fun apiUpdateProfileImage(profile: Profile) : Profile? {
+    val r = sendCmd(CC.UpdateProfileImage(profile))
+    if (r is CR.UserProfileNoChange) return profile
+    if (r is CR.UserProfileUpdated) return r.toProfile
+    Log.e(TAG, "apiUpdateProfileImage bad response: ${r.responseType} ${r.details}")
+    return null
+  }
+
   suspend fun apiCreateUserAddress(): String? {
     val r = sendCmd(CC.CreateMyAddress())
     if (r is CR.UserContactLinkCreated) return r.connReqContact
@@ -349,6 +357,7 @@ sealed class CC {
   class Connect(val connReq: String): CC()
   class ApiDeleteChat(val type: ChatType, val id: Long): CC()
   class UpdateProfile(val profile: Profile): CC()
+  class UpdateProfileImage(val profile: Profile): CC()
   class CreateMyAddress: CC()
   class DeleteMyAddress: CC()
   class ShowMyAddress: CC()
@@ -370,6 +379,7 @@ sealed class CC {
     is Connect -> "/connect $connReq"
     is ApiDeleteChat -> "/_delete ${chatRef(type, id)}"
     is UpdateProfile -> "/profile ${profile.displayName} ${profile.fullName}"
+    is UpdateProfileImage -> "/profile_image data:image/jpg;base64,${profile.displayImage}"
     is CreateMyAddress -> "/address"
     is DeleteMyAddress -> "/delete_address"
     is ShowMyAddress -> "/show_address"
@@ -392,6 +402,7 @@ sealed class CC {
     is Connect -> "connect"
     is ApiDeleteChat -> "apiDeleteChat"
     is UpdateProfile -> "updateProfile"
+    is UpdateProfileImage -> "updateProfileImage"
     is CreateMyAddress -> "createMyAddress"
     is DeleteMyAddress -> "deleteMyAddress"
     is ShowMyAddress -> "showMyAddress"
