@@ -11,6 +11,8 @@ import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ArrowBack
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.mapSaver
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
@@ -22,8 +24,7 @@ import chat.simplex.app.TAG
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.chat.item.ChatItemView
-import chat.simplex.app.views.helpers.ChatInfoImage
-import chat.simplex.app.views.helpers.withApi
+import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.newchat.ModalManager
 import com.google.accompanist.insets.ProvideWindowInsets
 import com.google.accompanist.insets.navigationBarsWithImePadding
@@ -80,7 +81,10 @@ fun ChatLayout(
   info: () -> Unit,
   sendMessage: (String) -> Unit
 ) {
-  Surface(Modifier.fillMaxWidth().background(MaterialTheme.colors.background)) {
+  Surface(
+    Modifier
+      .fillMaxWidth()
+      .background(MaterialTheme.colors.background)) {
     ProvideWindowInsets(windowInsetsAnimationsEnabled = true) {
       Scaffold(
         topBar = { ChatInfoToolbar(chat, back, info) },
@@ -135,9 +139,25 @@ fun ChatInfoToolbar(chat: Chat, back: () -> Unit, info: () -> Unit) {
   }
 }
 
+data class CIListState(val scrolled: Boolean, val itemCount: Int, val keyboardState: KeyboardState)
+
+val CIListStateSaver = run {
+  val scrolledKey = "scrolled"
+  val countKey = "itemCount"
+  val keyboardKey = "keyboardState"
+  mapSaver(
+    save = { mapOf(scrolledKey to it.scrolled, countKey to it.itemCount, keyboardKey to it.keyboardState) },
+    restore = { CIListState(it[scrolledKey] as Boolean, it[countKey] as Int, it[keyboardKey] as KeyboardState) }
+  )
+}
+
 @Composable
 fun ChatItemsList(chatItems: List<ChatItem>) {
   val listState = rememberLazyListState()
+  val keyboardState by getKeyboardState()
+  val ciListState = rememberSaveable(stateSaver = CIListStateSaver) {
+    mutableStateOf(CIListState(false, chatItems.count(), keyboardState))
+  }
   val scope = rememberCoroutineScope()
   val uriHandler = LocalUriHandler.current
   LazyColumn(state = listState) {
@@ -145,8 +165,9 @@ fun ChatItemsList(chatItems: List<ChatItem>) {
       ChatItemView(cItem, uriHandler)
     }
     val len = chatItems.count()
-    if (len > 1) {
+    if (keyboardState != ciListState.value.keyboardState || !ciListState.value.scrolled || len != ciListState.value.itemCount) {
       scope.launch {
+        ciListState.value = CIListState(true, len, keyboardState)
         listState.animateScrollToItem(len - 1)
       }
     }

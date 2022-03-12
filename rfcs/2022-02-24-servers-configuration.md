@@ -1,0 +1,29 @@
+# Server configuration
+
+- in agent:
+  - Agent.Env.SQLite - move smpServers from AgentConfig to Env, make it TVar; keep "initialSmpServers" in AgentConfig?
+  - Agent - getSMPServer to read servers from Env and choose a random server
+  - Agent - new functional api - "useServers"
+  - ~~Agent.Protocol - new ACommand?~~
+- chat core:
+  - db:
+    - new table `smp_servers`, server per row, same columns as for agent. Have rowid for future
+      - getServers method
+      - update - truncate and rewrite
+  - ChatCommand GetServers - new ChatResponse with list of user SMPServers, it may be empty if default are used
+  - ChatCommand SetServers - ChatResponse Ok (restore default servers is empty set servers list)
+  - agent config is populated using getServers, if it's empty default are used
+- mobile chat:
+  - mobileChatOpts to be populated with initial servers on init (getServers or default if empty)
+  - in ui:
+    - view in settings
+    - GetServers on view open to populate
+    - Confirm buttons, Restore button - destructive - clears user servers and default are used
+    - validation
+      - validation on submit, error with server's string
+      - ~~TBD real-time validation~~
+      - ~~fastest is validation on submit without detailed error?~~
+      - ~~maybe even faster - alternatively have 3 fields for entry per server - fingerprint, host, port - and build server strings (still validate to avoid hard crash?)?~~
+- terminal chat:
+  - if -s option is given, these servers are used and getServers is not used for populating agentConfig
+  - if -s option is not provided - same as in mobile - getServers or default if empty

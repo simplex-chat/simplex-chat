@@ -99,6 +99,7 @@ fun SettingsLayout(
         Spacer(Modifier.padding(horizontal = 4.dp))
         Text("How to use SimpleX Chat")
       }
+      Divider(Modifier.padding(horizontal = 8.dp))
       SettingsSectionView(showModal { MarkdownHelpView() }) {
         Icon(
           Icons.Outlined.TextFormat,
@@ -133,6 +134,15 @@ fun SettingsLayout(
       }
       Spacer(Modifier.height(24.dp))
 
+      SettingsSectionView(showModal { SMPServersView(it) }) {
+        Icon(
+          Icons.Outlined.Dns,
+          contentDescription = "SMP servers",
+        )
+        Spacer(Modifier.padding(horizontal = 4.dp))
+        Text("SMP servers")
+      }
+      Divider(Modifier.padding(horizontal = 8.dp))
       SettingsSectionView(showTerminal) {
         Icon(
           painter = painterResource(id = R.drawable.ic_outline_terminal),
