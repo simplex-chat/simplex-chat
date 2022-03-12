@@ -16,6 +16,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import chat.simplex.app.model.CIDirection
 import chat.simplex.app.model.ChatItem
 import chat.simplex.app.ui.theme.SimpleXTheme
@@ -58,7 +59,7 @@ fun appendGroupMember(b: AnnotatedString.Builder, chatItem: ChatItem, groupMembe
 @Composable
 fun MarkdownText (
   chatItem: ChatItem,
-  style: TextStyle = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onSurface),
+  style: TextStyle = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onSurface, lineHeight = 22.sp),
   maxLines: Int = Int.MAX_VALUE,
   overflow: TextOverflow = TextOverflow.Clip,
   uriHandler: UriHandler? = null,
