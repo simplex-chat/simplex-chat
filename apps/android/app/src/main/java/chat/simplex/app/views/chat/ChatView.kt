@@ -5,7 +5,6 @@ import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
 import androidx.compose.material.*
@@ -25,8 +24,7 @@ import chat.simplex.app.TAG
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.chat.item.ChatItemView
-import chat.simplex.app.views.helpers.ChatInfoImage
-import chat.simplex.app.views.helpers.withApi
+import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.newchat.ModalManager
 import com.google.accompanist.insets.ProvideWindowInsets
 import com.google.accompanist.insets.navigationBarsWithImePadding
@@ -141,23 +139,24 @@ fun ChatInfoToolbar(chat: Chat, back: () -> Unit, info: () -> Unit) {
   }
 }
 
-data class MessageListState(val scrolled: Boolean, val msgCount: Int, val keyboardOffset: Int)
+data class CIListState(val scrolled: Boolean, val itemCount: Int, val keyboardState: KeyboardState)
 
-val MessageListStateSaver = run {
+val CIListStateSaver = run {
   val scrolledKey = "scrolled"
-  val countKey = "msgCount"
-  val keyboardKey = "keyboardOffset"
+  val countKey = "itemCount"
+  val keyboardKey = "keyboardState"
   mapSaver(
-    save = { mapOf(scrolledKey to it.scrolled, countKey to it.msgCount, keyboardKey to it.keyboardOffset) },
-    restore = { MessageListState(it[scrolledKey] as Boolean, it[countKey] as Int, it[keyboardKey] as Int) }
+    save = { mapOf(scrolledKey to it.scrolled, countKey to it.itemCount, keyboardKey to it.keyboardState) },
+    restore = { CIListState(it[scrolledKey] as Boolean, it[countKey] as Int, it[keyboardKey] as KeyboardState) }
   )
 }
 
 @Composable
 fun ChatItemsList(chatItems: List<ChatItem>) {
   val listState = rememberLazyListState()
-  var messageListState = rememberSaveable(stateSaver = MessageListStateSaver) {
-    mutableStateOf(MessageListState(false, chatItems.count(), listState.layoutInfo.viewportEndOffset))
+  val keyboardState by getKeyboardState()
+  val ciListState = rememberSaveable(stateSaver = CIListStateSaver) {
+    mutableStateOf(CIListState(false, chatItems.count(), keyboardState))
   }
   val scope = rememberCoroutineScope()
   val uriHandler = LocalUriHandler.current
@@ -166,16 +165,9 @@ fun ChatItemsList(chatItems: List<ChatItem>) {
       ChatItemView(cItem, uriHandler)
     }
     val len = chatItems.count()
-    if(listState.layoutInfo.viewportEndOffset != messageListState.value.keyboardOffset) {
+    if (keyboardState != ciListState.value.keyboardState || !ciListState.value.scrolled || len != ciListState.value.itemCount) {
       scope.launch {
-        val scrollBy = maxOf(messageListState.value.keyboardOffset.toFloat() - listState.layoutInfo.viewportEndOffset.toFloat(), 0f)
-        listState.scrollBy( scrollBy)
-        messageListState.value = messageListState.value.copy(keyboardOffset = listState.layoutInfo.viewportEndOffset)
-      }
-    }
-    if (len > 1 && (!messageListState.value.scrolled || len != messageListState.value.msgCount)) {
-      scope.launch {
-        messageListState.value = MessageListState(true, chatItems.count(), listState.layoutInfo.viewportEndOffset)
+        ciListState.value = CIListState(true, len, keyboardState)
         listState.animateScrollToItem(len - 1)
       }
     }
