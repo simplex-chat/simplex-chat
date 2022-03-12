@@ -1,10 +1,8 @@
 package chat.simplex.app
 
 import android.app.Application
-import android.net.*
+import android.net.LocalServerSocket
 import android.util.Log
-import androidx.lifecycle.*
-import androidx.work.*
 import chat.simplex.app.model.*
 import chat.simplex.app.views.helpers.withApi
 import java.io.BufferedReader
