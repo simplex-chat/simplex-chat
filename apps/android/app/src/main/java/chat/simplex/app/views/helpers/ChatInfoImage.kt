@@ -1,7 +1,5 @@
 package chat.simplex.app.views.helpers
 
-import android.graphics.BitmapFactory
-import android.util.Base64
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -43,10 +41,9 @@ fun ProfileImage(size: Dp, displayImage: String? = null,  defaultIcon: ImageVect
       )
     }
     else {
-      val imageBytes = Base64.decode(displayImage, Base64.NO_WRAP)
-      val bitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size).asImageBitmap()
+      val imageBitmap = base64ToBitmap(displayImage).asImageBitmap()
       Image(
-        bitmap,
+        imageBitmap,
         "display image for profile",
         contentScale = ContentScale.Crop,
         modifier = Modifier.size(size).clip(CircleShape)

@@ -379,7 +379,7 @@ sealed class CC {
     is Connect -> "/connect $connReq"
     is ApiDeleteChat -> "/_delete ${chatRef(type, id)}"
     is UpdateProfile -> "/profile ${profile.displayName} ${profile.fullName}"
-    is UpdateProfileImage -> "/profile_image data:image/jpg;base64,${profile.displayImage}"
+    is UpdateProfileImage -> "/profile_image ${profile.displayImage}"
     is CreateMyAddress -> "/address"
     is DeleteMyAddress -> "/delete_address"
     is ShowMyAddress -> "/show_address"

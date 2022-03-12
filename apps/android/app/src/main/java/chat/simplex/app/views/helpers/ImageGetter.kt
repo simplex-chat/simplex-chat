@@ -2,8 +2,7 @@ package chat.simplex.app.views.helpers
 
 import android.Manifest
 import android.content.pm.PackageManager
-import android.graphics.Bitmap
-import android.graphics.ImageDecoder
+import android.graphics.*
 import android.net.Uri
 import android.util.Base64
 import android.widget.Toast
@@ -13,7 +12,6 @@ import androidx.activity.result.launch
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.ModalBottomSheetState
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.outlined.Collections
 import androidx.compose.material.icons.outlined.PhotoCamera
 import androidx.compose.runtime.*
@@ -34,7 +32,15 @@ fun bitmapToBase64(bitmap: Bitmap): String {
   val width = baseHeight * bitmap.width / bitmap.height
   val resizedImage = Bitmap.createScaledBitmap(bitmap, baseHeight, width, false)
   resizedImage.compress(Bitmap.CompressFormat.JPEG, 75, stream)
-  return Base64.encodeToString(stream.toByteArray(), Base64.NO_WRAP)
+  return "data:image/jpg;base64," + Base64.encodeToString(stream.toByteArray(), Base64.NO_WRAP)
+}
+
+fun base64ToBitmap(base64ImageString: String) : Bitmap {
+  val imageString = base64ImageString
+    .removePrefix("data:image/png;base64,")
+    .removePrefix("data:image/jpg;base64,")
+  val imageBytes = Base64.decode(imageString, Base64.NO_WRAP)
+  return BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
 }
 
 @Composable
@@ -139,9 +145,9 @@ fun GetImageOptions(
           }
         }
       }
-      ActionButton(null, "Delete Image", icon = Icons.Filled.Delete) {
-        profileImageStr.value = null
-      }
+//      ActionButton(null, "Delete Image", icon = Icons.Filled.Delete) {
+//        profileImageStr.value = null
+//      }
     }
   }
 }
