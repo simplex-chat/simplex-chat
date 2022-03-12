@@ -15,10 +15,30 @@ struct UserProfile: View {
 
     var body: some View {
         let user: User = chatModel.currentUser!
+        let color = Color(uiColor: .tertiarySystemGroupedBackground)
 
         return VStack(alignment: .leading) {
             Text("Your profile is stored on your device and shared only with your contacts.\nSimpleX servers cannot see your profile.")
                 .padding(.bottom)
+            
+            ZStack(alignment: .center) {
+                Image(systemName: "person.crop.circle.fill")
+                    .resizable()
+                    .foregroundColor(color)
+                    .frame(width: 192, height: 192)
+                // if editing or no_image {
+                Button {
+                    // add or replace image
+                } label: {
+                    Image(systemName: "camera")
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 48)
+                }
+                // }
+            }
+            .frame(maxWidth: .infinity, alignment: .center)
+            
             if editProfile {
                 VStack(alignment: .leading) {
                     TextField("Display name", text: $profile.displayName)
