@@ -2229,7 +2229,9 @@ getChatItemRef_ db User {userId, userContactId} chatDirection = \case
           (userId, contactId, msgId, sent)
       where
         ciRefDirect :: Maybe ChatItemId -> CIQuote 'CTDirect
-        ciRefDirect chatItemId = CIQuoteDirect chatItemId sentAt content sent
+        ciRefDirect chatItemId =
+          let quote = CIQuoteData chatItemId sentAt content . parseMaybeMarkdownList $ msgContentText content
+           in CIQuoteDirect quote sent
     getGroupChatItemRef_ :: UTCTime -> MsgContent -> Int64 -> Maybe SharedMsgId -> MemberId -> IO (Maybe (CIQuote 'CTGroup))
     getGroupChatItemRef_ sentAt content groupId msgId memberId = do
       ciRefGroup
@@ -2253,7 +2255,8 @@ getChatItemRef_ db User {userId, userContactId} chatDirection = \case
         ciRefGroup [] = Nothing
         ciRefGroup ((Only chatItemId :. memberRow) : _) =
           let member = toGroupMember userContactId memberRow
-           in Just $ CIQuoteGroup chatItemId sentAt content member
+              quote = CIQuoteData chatItemId sentAt content . parseMaybeMarkdownList $ msgContentText content
+           in Just $ CIQuoteGroup quote member
 
 findDirectChatItem :: forall m d. (StoreMonad m, MsgDirectionI d) => SQLiteStore -> User -> ContactName -> SMsgDirection d -> Text -> m (ChatItem 'CTDirect d)
 findDirectChatItem st User {userId} cName msgDir quotedMsg =
@@ -2901,40 +2904,46 @@ type ChatItemRow = (Int64, ChatItemTs, ACIContent, Text, ACIStatus, Maybe Shared
 
 type MaybeChatItemRow = (Maybe Int64, Maybe ChatItemTs, Maybe ACIContent, Maybe Text, Maybe ACIStatus, Maybe SharedMsgId, Maybe UTCTime)
 
-type DirectQuote = (Maybe ChatItemId, Maybe UTCTime, Maybe MsgContent, Maybe Bool)
+type QuoteDataRow = (Maybe ChatItemId, Maybe UTCTime, Maybe MsgContent)
+
+type DirectQuote = QuoteDataRow :. Only (Maybe Bool)
 
 type DirectChatItemRow = ChatItemRow :. DirectQuote
 
 type MaybeDirectChatItemRow = MaybeChatItemRow :. DirectQuote
 
+toQuoteData :: QuoteDataRow -> Maybe CIQuoteData
+toQuoteData (quotedItemId, quotedSentAt, quotedMsgContent) =
+  CIQuoteData quotedItemId <$> quotedSentAt <*> quotedMsgContent <*> (parseMaybeMarkdownList . msgContentText <$> quotedMsgContent)
+
 toDirectChatItem :: TimeZone -> DirectChatItemRow -> Either StoreError (CChatItem 'CTDirect)
-toDirectChatItem tz ((itemId, itemTs, itemContent, itemText, itemStatus, sharedMsgId, createdAt) :. (quotedItemId, quotedSentAt, quotedMsgContent, quotedSent)) =
+toDirectChatItem tz ((itemId, itemTs, itemContent, itemText, itemStatus, sharedMsgId, createdAt) :. quoteRow :. Only quotedSent) =
   case (itemContent, itemStatus) of
     (ACIContent SMDSnd ciContent, ACIStatus SMDSnd ciStatus) -> Right $ cItem SMDSnd CIDirectSnd ciStatus ciContent
     (ACIContent SMDRcv ciContent, ACIStatus SMDRcv ciStatus) -> Right $ cItem SMDRcv CIDirectRcv ciStatus ciContent
     _ -> badItem
   where
     cItem :: MsgDirectionI d => SMsgDirection d -> CIDirection 'CTDirect d -> CIStatus d -> CIContent d -> CChatItem 'CTDirect
-    cItem d cid ciStatus ciContent =
-      let quote = CIQuoteDirect quotedItemId <$> quotedSentAt <*> quotedMsgContent <*> quotedSent
-       in CChatItem d . ChatItem cid (ciMeta ciStatus) ciContent quote $ parseMaybeMarkdownList itemText
+    cItem d chatDir ciStatus content =
+      let quotedItem = CIQuoteDirect <$> toQuoteData quoteRow <*> quotedSent
+       in CChatItem d ChatItem {chatDir, meta = ciMeta ciStatus, content, formattedText = parseMaybeMarkdownList itemText, quotedItem}
     badItem = Left $ SEBadChatItem itemId
     ciMeta :: CIStatus d -> CIMeta d
     ciMeta status = mkCIMeta itemId itemText status sharedMsgId tz itemTs createdAt
 
 toDirectChatItemList :: TimeZone -> MaybeDirectChatItemRow -> [CChatItem 'CTDirect]
-toDirectChatItemList tz ((Just itemId, Just itemTs, Just itemContent, Just itemText, Just itemStatus, sharedMsgId, Just createdAt) :. quoteRow) =
-  either (const []) (: []) $ toDirectChatItem tz ((itemId, itemTs, itemContent, itemText, itemStatus, sharedMsgId, createdAt) :. quoteRow)
+toDirectChatItemList tz ((Just itemId, Just itemTs, Just itemContent, Just itemText, Just itemStatus, sharedMsgId, Just createdAt) :. quoteRow :. Only quotedSent) =
+  either (const []) (: []) $ toDirectChatItem tz ((itemId, itemTs, itemContent, itemText, itemStatus, sharedMsgId, createdAt) :. quoteRow :. Only quotedSent)
 toDirectChatItemList _ _ = []
 
-type GroupQuote = (Maybe ChatItemId, Maybe UTCTime, Maybe MsgContent) :. MaybeGroupMemberRow
+type GroupQuote = QuoteDataRow :. MaybeGroupMemberRow
 
 type GroupChatItemRow = ChatItemRow :. MaybeGroupMemberRow :. GroupQuote
 
 type MaybeGroupChatItemRow = MaybeChatItemRow :. MaybeGroupMemberRow :. GroupQuote
 
 toGroupChatItem :: TimeZone -> Int64 -> GroupChatItemRow -> Either StoreError (CChatItem 'CTGroup)
-toGroupChatItem tz userContactId ((itemId, itemTs, itemContent, itemText, itemStatus, sharedMsgId, createdAt) :. memberRow_ :. (quotedItemId, quotedSentAt, quotedMsgContent) :. quotedMemberRow_) = do
+toGroupChatItem tz userContactId ((itemId, itemTs, itemContent, itemText, itemStatus, sharedMsgId, createdAt) :. memberRow_ :. quoteRow :. quotedMemberRow_) = do
   let member_ = toMaybeGroupMember userContactId memberRow_
   let quotedMember_ = toMaybeGroupMember userContactId quotedMemberRow_
   case (itemContent, itemStatus, member_) of
@@ -2943,9 +2952,9 @@ toGroupChatItem tz userContactId ((itemId, itemTs, itemContent, itemText, itemSt
     _ -> badItem
   where
     cItem :: MsgDirectionI d => SMsgDirection d -> CIDirection 'CTGroup d -> CIStatus d -> CIContent d -> Maybe GroupMember -> CChatItem 'CTGroup
-    cItem d cid ciStatus ciContent quotedMember_ =
-      let quote = CIQuoteGroup quotedItemId <$> quotedSentAt <*> quotedMsgContent <*> quotedMember_
-       in CChatItem d . ChatItem cid (ciMeta ciStatus) ciContent quote $ parseMaybeMarkdownList itemText
+    cItem d chatDir ciStatus content quotedMember_ =
+      let quotedItem = CIQuoteGroup <$> toQuoteData quoteRow <*> quotedMember_
+       in CChatItem d ChatItem {chatDir, meta = ciMeta ciStatus, content, formattedText = parseMaybeMarkdownList itemText, quotedItem}
     badItem = Left $ SEBadChatItem itemId
     ciMeta :: CIStatus d -> CIMeta d
     ciMeta status = mkCIMeta itemId itemText status sharedMsgId tz itemTs createdAt

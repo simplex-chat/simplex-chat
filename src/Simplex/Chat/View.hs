@@ -184,10 +184,10 @@ viewChatItem chat (ChatItem {chatDir, meta, content, quotedItem}) = case chat of
   _ -> []
   where
     directQuote :: Bool -> CIQuote 'CTDirect -> [StyledString]
-    directQuote msgSent (CIQuoteDirect _ _ qmc qouteSent) =
+    directQuote msgSent (CIQuoteDirect CIQuoteData {content = qmc} qouteSent) =
       quoteText qmc $ if msgSent == qouteSent then ">>" else ">"
     groupQuote :: CIQuote 'CTGroup -> [StyledString]
-    groupQuote (CIQuoteGroup _ _ qmc m) = quoteText qmc $ ttyQuotedMember m
+    groupQuote (CIQuoteGroup CIQuoteData {content = qmc} m) = quoteText qmc $ ttyQuotedMember m
     quoteText qmc sentBy = prependFirst (sentBy <> " ") $ msgPreview qmc
     msgPreview = msgPlain . preview . msgContentText
       where

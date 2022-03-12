@@ -1376,11 +1376,11 @@ saveRcvChatItem user cd msg MsgMeta {broker = (_, brokerTs)} ciContent = do
   saveChatItem user cd $ mkNewChatItem ciContent msg brokerTs createdAt
 
 saveChatItem :: (ChatMonad m, MsgDirectionI d) => User -> ChatDirection c d -> NewChatItem d -> m (ChatItem c d)
-saveChatItem user cd ci@NewChatItem {itemContent, itemTs, itemText, itemSharedMsgId, createdAt} = do
+saveChatItem user cd ci@NewChatItem {itemContent = content, itemTs, itemText, itemSharedMsgId, createdAt} = do
   tz <- liftIO getCurrentTimeZone
-  (ciId, ciRef) <- withStore $ \st -> createNewChatItem st user cd ci
-  let ciMeta = mkCIMeta ciId itemText ciStatusNew itemSharedMsgId tz itemTs createdAt
-  pure $ ChatItem (toCIDirection cd) ciMeta itemContent ciRef $ parseMaybeMarkdownList itemText
+  (ciId, quotedItem) <- withStore $ \st -> createNewChatItem st user cd ci
+  let meta = mkCIMeta ciId itemText ciStatusNew itemSharedMsgId tz itemTs createdAt
+  pure $ ChatItem {chatDir = toCIDirection cd, meta, content, formattedText = parseMaybeMarkdownList itemText, quotedItem}
 
 mkNewChatItem :: forall d. MsgDirectionI d => CIContent d -> Message -> UTCTime -> UTCTime -> NewChatItem d
 mkNewChatItem itemContent Message {msgId, chatMsgEvent, sharedMsgId_ = itemSharedMsgId} itemTs createdAt =

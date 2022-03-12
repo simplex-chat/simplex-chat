@@ -79,8 +79,8 @@ data ChatItem (c :: ChatType) (d :: MsgDirection) = ChatItem
   { chatDir :: CIDirection c d,
     meta :: CIMeta d,
     content :: CIContent d,
-    quotedItem :: Maybe (CIQuote c),
-    formattedText :: Maybe [FormattedText]
+    formattedText :: Maybe MarkdownList,
+    quotedItem :: Maybe (CIQuote c)
   }
   deriving (Show, Generic)
 
@@ -222,9 +222,21 @@ mkCIMeta itemId itemText itemStatus itemSharedMsgId tz itemTs createdAt =
 
 instance ToJSON (CIMeta d) where toEncoding = J.genericToEncoding J.defaultOptions
 
+data CIQuoteData = CIQuoteData
+  { itemId :: Maybe ChatItemId,
+    sentAt :: UTCTime,
+    content :: MsgContent,
+    formattedText :: Maybe MarkdownList
+  }
+  deriving (Show, Generic)
+
+instance ToJSON CIQuoteData where
+  toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
+  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
+
 data CIQuote (c :: ChatType) where
-  CIQuoteDirect :: Maybe ChatItemId -> UTCTime -> MsgContent -> Bool -> CIQuote 'CTDirect
-  CIQuoteGroup :: Maybe ChatItemId -> UTCTime -> MsgContent -> GroupMember -> CIQuote 'CTGroup
+  CIQuoteDirect :: CIQuoteData -> Bool -> CIQuote 'CTDirect
+  CIQuoteGroup :: CIQuoteData -> GroupMember -> CIQuote 'CTGroup
 
 deriving instance Show (CIQuote c)
 
@@ -233,8 +245,8 @@ instance ToJSON (CIQuote c) where
   toEncoding = J.toEncoding . jsonCIQuote
 
 data JSONCIQuote
-  = JCIQuoteDirect {itemId :: Maybe ChatItemId, sentAt :: UTCTime, content :: MsgContent, sent :: Bool}
-  | JCIQuoteGroup {itemId :: Maybe ChatItemId, sentAt :: UTCTime, content :: MsgContent, member :: GroupMember}
+  = JCIQuoteDirect {quote :: CIQuoteData, sent :: Bool}
+  | JCIQuoteGroup {quote :: CIQuoteData, member :: GroupMember}
   deriving (Show, Generic)
 
 instance ToJSON JSONCIQuote where
@@ -243,8 +255,8 @@ instance ToJSON JSONCIQuote where
 
 jsonCIQuote :: CIQuote c -> JSONCIQuote
 jsonCIQuote = \case
-  CIQuoteDirect itemId sentAt content sent -> JCIQuoteDirect {itemId, sentAt, content, sent}
-  CIQuoteGroup itemId sentAt content member -> JCIQuoteGroup {itemId, sentAt, content, member}
+  CIQuoteDirect quote sent -> JCIQuoteDirect {quote, sent}
+  CIQuoteGroup quote member -> JCIQuoteGroup {quote, member}
 
 data CIStatus (d :: MsgDirection) where
   CISSndNew :: CIStatus 'MDSnd
