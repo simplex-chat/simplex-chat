@@ -448,7 +448,10 @@ processChatCommand = \case
           asks currentUser >>= atomically . (`writeTVar` Just user')
           contacts <- withStore (`getUserContacts` user)
           withChatLock . procCmd $ do
-            forM_ contacts $ \ct -> sendDirectContactMessage ct $ XInfo p'
+            forM_ contacts $ \ct ->
+              let s = connStatus $ activeConn (ct :: Contact)
+               in when (s == ConnReady || s == ConnSndReady) $
+                    void (sendDirectContactMessage ct $ XInfo p') `catchError` (toView . CRChatError)
             pure $ CRUserProfileUpdated p p'
     getRcvFilePath :: Int64 -> Maybe FilePath -> String -> m FilePath
     getRcvFilePath fileId filePath fileName = case filePath of
