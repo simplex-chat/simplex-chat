@@ -21,12 +21,26 @@ struct ChatView: View {
 
         return VStack {
             GeometryReader { g in
+                let maxWidth = g.size.width * 0.78
                 ScrollViewReader { proxy in
                     ScrollView {
-                        VStack(spacing: 5)  {
-                            ForEach(chatModel.chatItems, id: \.id) {
-                                ChatItemView(chatItem: $0, width: g.size.width)
-                                    .frame(minWidth: 0, maxWidth: .infinity, alignment: $0.chatDir.sent ? .trailing : .leading)
+                        LazyVStack(spacing: 5)  {
+                            ForEach(chatModel.chatItems) { ci in
+                                let alignment: Alignment = ci.chatDir.sent ? .trailing : .leading
+                                ChatItemView(chatItem: ci)
+                                    .contextMenu {
+                                        Button {
+                                        } label: { Label("Reply", systemImage: "arrowshape.turn.up.left") }
+                                        Button {
+                                            showShareSheet(items: [ci.content.text])
+                                        } label: { Label("Share", systemImage: "square.and.arrow.up") }
+                                        Button {
+                                            UIPasteboard.general.string = ci.content.text
+                                        } label: { Label("Copy", systemImage: "doc.on.doc") }
+                                    }
+                                    .padding(.horizontal)
+                                    .frame(maxWidth: maxWidth, maxHeight: .infinity, alignment: alignment)
+                                    .frame(minWidth: 0, maxWidth: .infinity, alignment: alignment)
                             }
                             .onAppear {
                                 DispatchQueue.main.async {

@@ -526,6 +526,7 @@ struct ChatItem: Identifiable, Decodable {
     var chatDir: CIDirection
     var meta: CIMeta
     var content: CIContent
+    var quotedItem: CIQuote?
     var formattedText: [FormattedText]?
     
     var id: Int64 { get { meta.itemId } }
@@ -623,6 +624,18 @@ enum CIContent: Decodable {
 
 struct RcvFileTransfer: Decodable {
 
+}
+
+enum CIQuote: Decodable {
+    case direct(quote: CIQuoteData, sent: Bool)
+    case group(quote: CIQuoteData, member: GroupMember)
+}
+
+struct CIQuoteData: Decodable {
+    var itemId: Int64?
+    var sentAt: Date
+    var content: MsgContent
+    var formattedText: [FormattedText]?
 }
 
 enum MsgContent {

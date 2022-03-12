@@ -16,14 +16,10 @@ private let linkColor = Color(uiColor: uiLinkColor)
 struct TextItemView: View {
     @Environment(\.colorScheme) var colorScheme
     var chatItem: ChatItem
-    var width: CGFloat
     private let codeFont = Font.custom("Courier", size: UIFont.preferredFont(forTextStyle: .body).pointSize)
 
     var body: some View {
-        let sent = chatItem.chatDir.sent
-        let maxWidth = width * 0.78
-
-        return ZStack(alignment: .bottomTrailing) {
+        let v = ZStack(alignment: .bottomTrailing) {
             (messageText(chatItem) + reserveSpaceForMeta(chatItem.timestampText))
                 .padding(.vertical, 6)
                 .padding(.horizontal, 12)
@@ -35,23 +31,18 @@ struct TextItemView: View {
                 .padding(.bottom, 6)
         }
         .background(
-            sent
+            chatItem.chatDir.sent
             ? (colorScheme == .light ? sentColorLight : sentColorDark)
             : Color(uiColor: .tertiarySystemGroupedBackground)
         )
         .cornerRadius(18)
-        .padding(.horizontal)
-        .frame(
-            maxWidth: maxWidth,
-            maxHeight: .infinity,
-            alignment: sent ? .trailing : .leading
-        )
-        .onTapGesture {
-            switch chatItem.meta.itemStatus {
-            case .sndErrorAuth: msgDeliveryError("Most likely this contact has deleted the connection with you.")
-            case let .sndError(agentError): msgDeliveryError("Unexpected error: \(String(describing: agentError))")
-            default: return
-            }
+
+        switch chatItem.meta.itemStatus {
+        case .sndErrorAuth:
+            v.onTapGesture { msgDeliveryError("Most likely this contact has deleted the connection with you.") }
+        case let .sndError(agentError):
+            v.onTapGesture { msgDeliveryError("Unexpected error: \(String(describing: agentError))") }
+        default: v
         }
     }
 
@@ -123,13 +114,13 @@ private func linkText(_ s: String, _ link: String,
 struct TextItemView_Previews: PreviewProvider {
     static var previews: some View {
         Group{
-            TextItemView(chatItem: ChatItem.getSample(1, .directSnd, .now, "hello"), width: 360)
-            TextItemView(chatItem: ChatItem.getSample(1, .groupRcv(groupMember: GroupMember.sampleData), .now, "hello"), width: 360)
-            TextItemView(chatItem: ChatItem.getSample(2, .directSnd, .now, "https://simplex.chat", .sndSent), width: 360)
-            TextItemView(chatItem: ChatItem.getSample(2, .directRcv, .now, "hello there too!!! this covers -"), width: 360)
-            TextItemView(chatItem: ChatItem.getSample(2, .directRcv, .now, "hello there too!!! this text has the time on the same line "), width: 360)
-            TextItemView(chatItem: ChatItem.getSample(2, .directRcv, .now, "https://simplex.chat"), width: 360)
-            TextItemView(chatItem: ChatItem.getSample(2, .directRcv, .now, "chaT@simplex.chat"), width: 360)
+            TextItemView(chatItem: ChatItem.getSample(1, .directSnd, .now, "hello"))
+            TextItemView(chatItem: ChatItem.getSample(1, .groupRcv(groupMember: GroupMember.sampleData), .now, "hello"))
+            TextItemView(chatItem: ChatItem.getSample(2, .directSnd, .now, "https://simplex.chat", .sndSent))
+            TextItemView(chatItem: ChatItem.getSample(2, .directRcv, .now, "hello there too!!! this covers -"))
+            TextItemView(chatItem: ChatItem.getSample(2, .directRcv, .now, "hello there too!!! this text has the time on the same line "))
+            TextItemView(chatItem: ChatItem.getSample(2, .directRcv, .now, "https://simplex.chat"))
+            TextItemView(chatItem: ChatItem.getSample(2, .directRcv, .now, "chaT@simplex.chat"))
         }
         .previewLayout(.fixed(width: 360, height: 70))
     }
