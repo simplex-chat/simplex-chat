@@ -569,39 +569,39 @@ testGroupMessageQuotedReply =
         (bob <# "#team alice> hello! how are you?")
         (cath <# "#team alice> hello! how are you?")
       bob `send` "> #team @alice (hello) hello, all good, you?"
-      bob <# "#team alice> hello! how are you?"
+      bob <# "#team > alice hello! how are you?"
       bob <## "      hello, all good, you?"
       concurrently_
         ( do
-            alice <# "#team bob> alice> hello! how are you?"
+            alice <# "#team bob> > alice hello! how are you?"
             alice <## "      hello, all good, you?"
         )
         ( do
-            cath <# "#team bob> alice> hello! how are you?"
+            cath <# "#team bob> > alice hello! how are you?"
             cath <## "      hello, all good, you?"
         )
-      bob `send` "> #team @bob (hello, all good) will tell more"
-      bob <# "#team bob> hello, all good, you?"
+      bob `send` "> #team bob (hello, all good) will tell more"
+      bob <# "#team > bob hello, all good, you?"
       bob <## "      will tell more"
       concurrently_
         ( do
-            alice <# "#team bob> bob> hello, all good, you?"
+            alice <# "#team bob> > bob hello, all good, you?"
             alice <## "      will tell more"
         )
         ( do
-            cath <# "#team bob> bob> hello, all good, you?"
+            cath <# "#team bob> > bob hello, all good, you?"
             cath <## "      will tell more"
         )
       cath `send` "> #team bob (hello) hi there!"
-      cath <# "#team bob> hello, all good, you?"
+      cath <# "#team > bob hello, all good, you?"
       cath <## "      hi there!"
       concurrently_
         ( do
-            alice <# "#team cath> bob> hello, all good, you?"
+            alice <# "#team cath> > bob hello, all good, you?"
             alice <## "      hi there!"
         )
         ( do
-            bob <# "#team cath> bob> hello, all good, you?"
+            bob <# "#team cath> > bob hello, all good, you?"
             bob <## "      hi there!"
         )
 

@@ -597,7 +597,7 @@ ttyQuotedContact :: Contact -> StyledString
 ttyQuotedContact Contact {localDisplayName = c} = ttyFrom $ c <> ">"
 
 ttyQuotedMember :: GroupMember -> StyledString
-ttyQuotedMember GroupMember {localDisplayName = c} = ttyFrom $ c <> ">"
+ttyQuotedMember GroupMember {localDisplayName = c} = "> " <> ttyFrom c
 
 ttyFromContact' :: Contact -> StyledString
 ttyFromContact' Contact {localDisplayName = c} = ttyFromContact c
