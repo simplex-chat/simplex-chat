@@ -990,19 +990,19 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
     newContentMessage :: Contact -> MsgContainer -> Message -> MsgMeta -> m ()
     newContentMessage ct@Contact {localDisplayName = c} mc msg msgMeta = do
       let content = mcContent mc
-      ci <- saveRcvChatItem user (CDDirectRcv ct) msg msgMeta (CIRcvMsgContent content)
+      ci@ChatItem {formattedText} <- saveRcvChatItem user (CDDirectRcv ct) msg msgMeta (CIRcvMsgContent content)
       toView . CRNewChatItem $ AChatItem SCTDirect SMDRcv (DirectChat ct) ci
       checkIntegrity msgMeta $ toView . CRMsgIntegrityError
-      showToast (c <> "> ") $ msgContentText content
+      showMsgToast (c <> "> ") content formattedText
       setActive $ ActiveC c
 
     newGroupContentMessage :: GroupInfo -> GroupMember -> MsgContainer -> Message -> MsgMeta -> m ()
     newGroupContentMessage gInfo m@GroupMember {localDisplayName = c} mc msg msgMeta = do
       let content = mcContent mc
-      ci <- saveRcvChatItem user (CDGroupRcv gInfo m) msg msgMeta (CIRcvMsgContent content)
+      ci@ChatItem {formattedText} <- saveRcvChatItem user (CDGroupRcv gInfo m) msg msgMeta (CIRcvMsgContent content)
       groupMsgToView gInfo ci msgMeta
       let g = groupName' gInfo
-      showToast ("#" <> g <> " " <> c <> "> ") $ msgContentText content
+      showMsgToast ("#" <> g <> " " <> c <> "> ") content formattedText
       setActive $ ActiveG g
 
     processFileInvitation :: Contact -> FileInvitation -> Message -> MsgMeta -> m ()
@@ -1470,6 +1470,13 @@ getCreateActiveUser st = do
         else pure $ T.pack displayName
     getWithPrompt :: String -> IO String
     getWithPrompt s = putStr (s <> ": ") >> hFlush stdout >> getLine
+
+showMsgToast :: (MonadUnliftIO m, MonadReader ChatController m) => Text -> MsgContent -> Maybe MarkdownList -> m ()
+showMsgToast from mc md_ = showToast from $ maybe (msgContentText mc) (mconcat . map hideSecret) md_
+  where
+    hideSecret :: FormattedText -> Text
+    hideSecret FormattedText {format = Just Secret} = "..."
+    hideSecret FormattedText {text} = text
 
 showToast :: (MonadUnliftIO m, MonadReader ChatController m) => Text -> Text -> m ()
 showToast title text = atomically . (`writeTBQueue` Notification {title, text}) =<< asks notifyQ
