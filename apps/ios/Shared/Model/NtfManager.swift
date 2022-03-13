@@ -162,10 +162,26 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
         addNotification(
             categoryIdentifier: ntfCategoryMessageReceived,
             title: "\(cInfo.chatViewName):",
-            body: cItem.content.text,
+            body: hideSecrets(cItem),
             targetContentIdentifier: cInfo.id
 //            userInfo: ["chatId": cInfo.id, "chatItemId": cItem.id]
         )
+    }
+    
+    func hideSecrets(_ cItem: ChatItem) -> String {
+        if let md = cItem.formattedText {
+            var res = ""
+            for ft in md {
+                if case .secret = ft.format {
+                    res = res + "..."
+                } else {
+                    res = res + ft.text
+                }
+            }
+            return res
+        } else {
+            return cItem.content.text
+        }
     }
 
     private func addNotification(categoryIdentifier: String, title: String, subtitle: String? = nil, body: String? = nil,

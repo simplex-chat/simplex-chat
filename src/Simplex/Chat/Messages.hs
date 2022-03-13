@@ -7,6 +7,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TypeApplications #-}
@@ -78,7 +79,8 @@ data ChatItem (c :: ChatType) (d :: MsgDirection) = ChatItem
   { chatDir :: CIDirection c d,
     meta :: CIMeta d,
     content :: CIContent d,
-    formattedText :: Maybe [FormattedText]
+    formattedText :: Maybe MarkdownList,
+    quotedItem :: Maybe (CIQuote c)
   }
   deriving (Show, Generic)
 
@@ -150,6 +152,8 @@ data NewChatItem d = NewChatItem
     itemContent :: CIContent d,
     itemText :: Text,
     itemStatus :: CIStatus d,
+    itemSharedMsgId :: Maybe SharedMsgId,
+    itemQuotedMsg :: Maybe QuotedMsg,
     createdAt :: UTCTime
   }
   deriving (Show)
@@ -205,17 +209,54 @@ data CIMeta (d :: MsgDirection) = CIMeta
     itemTs :: ChatItemTs,
     itemText :: Text,
     itemStatus :: CIStatus d,
+    itemSharedMsgId :: Maybe SharedMsgId,
     localItemTs :: ZonedTime,
     createdAt :: UTCTime
   }
   deriving (Show, Generic)
 
-mkCIMeta :: ChatItemId -> Text -> CIStatus d -> TimeZone -> ChatItemTs -> UTCTime -> CIMeta d
-mkCIMeta itemId itemText itemStatus tz itemTs createdAt =
+mkCIMeta :: ChatItemId -> Text -> CIStatus d -> Maybe SharedMsgId -> TimeZone -> ChatItemTs -> UTCTime -> CIMeta d
+mkCIMeta itemId itemText itemStatus itemSharedMsgId tz itemTs createdAt =
   let localItemTs = utcToZonedTime tz itemTs
-   in CIMeta {itemId, itemTs, itemText, itemStatus, localItemTs, createdAt}
+   in CIMeta {itemId, itemTs, itemText, itemStatus, itemSharedMsgId, localItemTs, createdAt}
 
 instance ToJSON (CIMeta d) where toEncoding = J.genericToEncoding J.defaultOptions
+
+data CIQuoteData = CIQuoteData
+  { itemId :: Maybe ChatItemId,
+    sentAt :: UTCTime,
+    content :: MsgContent,
+    formattedText :: Maybe MarkdownList
+  }
+  deriving (Show, Generic)
+
+instance ToJSON CIQuoteData where
+  toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
+  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
+
+data CIQuote (c :: ChatType) where
+  CIQuoteDirect :: CIQuoteData -> Bool -> CIQuote 'CTDirect
+  CIQuoteGroup :: CIQuoteData -> GroupMember -> CIQuote 'CTGroup
+
+deriving instance Show (CIQuote c)
+
+instance ToJSON (CIQuote c) where
+  toJSON = J.toJSON . jsonCIQuote
+  toEncoding = J.toEncoding . jsonCIQuote
+
+data JSONCIQuote
+  = JCIQuoteDirect {quote :: CIQuoteData, sent :: Bool}
+  | JCIQuoteGroup {quote :: CIQuoteData, member :: GroupMember}
+  deriving (Show, Generic)
+
+instance ToJSON JSONCIQuote where
+  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "JCIQuote"
+  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "JCIQuote"
+
+jsonCIQuote :: CIQuote c -> JSONCIQuote
+jsonCIQuote = \case
+  CIQuoteDirect quote sent -> JCIQuoteDirect {quote, sent}
+  CIQuoteGroup quote member -> JCIQuoteGroup {quote, member}
 
 data CIStatus (d :: MsgDirection) where
   CISSndNew :: CIStatus 'MDSnd
@@ -241,6 +282,8 @@ instance MsgDirectionI d => ToField (CIStatus d) where toField = toField . decod
 instance FromField ACIStatus where fromField = fromTextField_ $ eitherToMaybe . strDecode . encodeUtf8
 
 data ACIStatus = forall d. MsgDirectionI d => ACIStatus (SMsgDirection d) (CIStatus d)
+
+deriving instance Show ACIStatus
 
 instance MsgDirectionI d => StrEncoding (CIStatus d) where
   strEncode = \case
@@ -321,6 +364,8 @@ instance ToJSON (CIContent d) where
   toEncoding = J.toEncoding . jsonCIContent
 
 data ACIContent = forall d. ACIContent (SMsgDirection d) (CIContent d)
+
+deriving instance Show ACIContent
 
 -- platform specific
 instance FromJSON ACIContent where
@@ -408,10 +453,29 @@ instance ChatTypeI 'CTGroup where chatType = SCTGroup
 
 data NewMessage = NewMessage
   { direction :: MsgDirection,
-    cmEventTag :: CMEventTag,
+    chatMsgEvent :: ChatMsgEvent,
     msgBody :: MsgBody
   }
   deriving (Show)
+
+data SndMessage = SndMessage
+  { msgId :: MessageId,
+    direction :: MsgDirection,
+    chatMsgEvent :: ChatMsgEvent,
+    sharedMsgId :: SharedMsgId,
+    msgBody :: MsgBody
+  }
+
+data Message = Message
+  { msgId :: MessageId,
+    direction :: MsgDirection,
+    chatMsgEvent :: ChatMsgEvent,
+    sharedMsgId_ :: Maybe SharedMsgId,
+    msgBody :: MsgBody
+  }
+
+anyMessage :: SndMessage -> Message
+anyMessage SndMessage {..} = Message {msgId, direction, chatMsgEvent, sharedMsgId_ = Just sharedMsgId, msgBody}
 
 data PendingGroupMessage = PendingGroupMessage
   { msgId :: MessageId,
@@ -449,10 +513,19 @@ instance TestEquality SMsgDirection where
 
 instance ToField (SMsgDirection d) where toField = toField . msgDirectionInt . toMsgDirection
 
+data AMsgDirection = forall d. MsgDirectionI d => AMsgDirection (SMsgDirection d)
+
+deriving instance Show AMsgDirection
+
 toMsgDirection :: SMsgDirection d -> MsgDirection
 toMsgDirection = \case
   SMDRcv -> MDRcv
   SMDSnd -> MDSnd
+
+fromMsgDirection :: MsgDirection -> AMsgDirection
+fromMsgDirection = \case
+  MDRcv -> AMsgDirection SMDRcv
+  MDSnd -> AMsgDirection SMDSnd
 
 class MsgDirectionI (d :: MsgDirection) where
   msgDirection :: SMsgDirection d
