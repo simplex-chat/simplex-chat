@@ -114,12 +114,14 @@ module Simplex.Chat.Store
     getPendingGroupMessages,
     deletePendingGroupMessage,
     createNewChatItem,
-    findDirectChatItem,
-    findGroupChatItem,
     getChatPreviews,
     getDirectChat,
     getGroupChat,
     getChatItemIdByAgentMsgId,
+    getDirectChatItem,
+    getGroupChatItem,
+    getDirectChatItemIdByText,
+    getGroupChatItemIdByText,
     updateDirectChatItem,
     updateDirectChatItemsRead,
     updateGroupChatItemsRead,
@@ -2259,85 +2261,6 @@ getChatItemRef_ db User {userId, userContactId} chatDirection = \case
               quote = CIQuoteData chatItemId sentAt content . parseMaybeMarkdownList $ msgContentText content
            in Just $ CIQuoteGroup quote member
 
-findDirectChatItem :: forall m d. (StoreMonad m, MsgDirectionI d) => SQLiteStore -> User -> ContactName -> SMsgDirection d -> Text -> m (ChatItem 'CTDirect d)
-findDirectChatItem st User {userId} cName msgDir quotedMsg =
-  liftIOEither . withTransaction st $ \db -> do
-    tz <- getCurrentTimeZone
-    join
-      <$> firstRow
-        (correctDir <=< toDirectChatItem tz)
-        SEReplyChatItemNotFound
-        ( DB.query
-            db
-            [sql|
-              SELECT
-                -- ChatItem
-                i.chat_item_id, i.item_ts, i.item_content, i.item_text, i.item_status, i.shared_msg_id, i.created_at,
-                -- DirectQuote
-                ri.chat_item_id, i.quoted_sent_at, i.quoted_content, i.quoted_sent
-              FROM chat_items i
-              LEFT JOIN chat_items ri ON i.quoted_shared_msg_id = ri.shared_msg_id
-              JOIN contacts c ON i.contact_id = c.contact_id
-              WHERE c.user_id = ? AND c.local_display_name = ? AND i.item_sent = ? AND i.item_text like ?
-              ORDER BY i.chat_item_id DESC
-              LIMIT 1
-            |]
-            (userId, cName, msgDir, quotedMsg <> "%")
-        )
-  where
-    correctDir :: CChatItem c -> Either StoreError (ChatItem c d)
-    correctDir (CChatItem _ ci) = first SEInternalError $ checkDirection ci
-
-findGroupChatItem :: StoreMonad m => SQLiteStore -> User -> GroupName -> ContactName -> Text -> m (CChatItem 'CTGroup)
-findGroupChatItem st User {userId, userContactId} gName cName quotedMsg =
-  liftIOEither . withTransaction st $ \db -> do
-    tz <- getCurrentTimeZone
-    join
-      <$> firstRow
-        (toGroupChatItem tz userContactId)
-        SEReplyChatItemNotFound
-        ( DB.queryNamed
-            db
-            [sql|
-              SELECT
-                -- ChatItem
-                i.chat_item_id, i.item_ts, i.item_content, i.item_text, i.item_status, i.shared_msg_id, i.created_at,
-                -- GroupMember
-                m.group_member_id, m.group_id, m.member_id, m.member_role, m.member_category,
-                m.member_status, m.invited_by, m.local_display_name, m.contact_id,
-                p.display_name, p.full_name, p.image,
-                -- quoted ChatItem
-                ri.chat_item_id, i.quoted_sent_at, i.quoted_content,
-                -- quoted GroupMember
-                rm.group_member_id, rm.group_id, rm.member_id, rm.member_role, rm.member_category,
-                rm.member_status, rm.invited_by, rm.local_display_name, rm.contact_id,
-                rp.display_name, rp.full_name, rp.image
-              FROM chat_items i
-              JOIN groups g ON g.group_id = i.group_id
-              JOIN group_members m ON g.group_id = m.group_id
-                                  AND ( i.group_member_id = m.group_member_id
-                                        OR (i.group_member_id IS NULL AND m.member_category = :member_category)
-                                      )
-              JOIN contacts c ON c.contact_id = m.contact_id
-              JOIN contact_profiles p ON p.contact_profile_id = c.contact_profile_id
-              LEFT JOIN chat_items ri ON i.quoted_shared_msg_id = ri.shared_msg_id
-              LEFT JOIN group_members rm ON rm.group_member_id = ri.group_member_id
-              LEFT JOIN contact_profiles rp ON rp.contact_profile_id = rm.contact_profile_id
-              WHERE g.user_id = :user_id
-                AND g.local_display_name = :group_name
-                AND c.local_display_name = :member_name
-                AND i.item_text like :item_text
-              ORDER BY i.chat_item_id DESC
-              LIMIT 1
-            |]
-            [ ":member_category" := GCUserMember,
-              ":user_id" := userId,
-              ":group_name" := gName,
-              ":member_name" := cName,
-              ":item_text" := (quotedMsg <> "%")
-            ]
-        )
-
 getChatPreviews :: MonadUnliftIO m => SQLiteStore -> User -> m [AChat]
 getChatPreviews st user =
   liftIO . withTransaction st $ \db -> do
@@ -2849,38 +2772,118 @@ getChatItemIdByAgentMsgId st connId msgId =
         |]
         (connId, msgId)
 
-updateDirectChatItem :: (StoreMonad m, MsgDirectionI d) => SQLiteStore -> ChatItemId -> CIStatus d -> m (ChatItem 'CTDirect d)
-updateDirectChatItem st itemId itemStatus =
+updateDirectChatItem :: forall m d. (StoreMonad m, MsgDirectionI d) => SQLiteStore -> UserId -> Int64 -> ChatItemId -> CIStatus d -> m (ChatItem 'CTDirect d)
+updateDirectChatItem st userId contactId itemId itemStatus =
   liftIOEither . withTransaction st $ \db -> runExceptT $ do
-    ci <- ExceptT $ getDirectChatItem_ db itemId
+    ci <- ExceptT $ (correctDir =<<) <$> getDirectChatItem_ db userId contactId itemId
     currentTs <- liftIO getCurrentTime
-    liftIO $ DB.execute db "UPDATE chat_items SET item_status = ?, updated_at = ? WHERE chat_item_id = ?" (itemStatus, currentTs, itemId)
+    liftIO $ DB.execute db "UPDATE chat_items SET item_status = ?, updated_at = ? WHERE user_id = ? AND contact_id = ? AND chat_item_id = ?" (itemStatus, currentTs, userId, contactId, itemId)
     pure ci {meta = (meta ci) {itemStatus}}
-
-getDirectChatItem_ :: forall d. MsgDirectionI d => DB.Connection -> ChatItemId -> IO (Either StoreError (ChatItem 'CTDirect d))
-getDirectChatItem_ db itemId = do
-  tz <- getCurrentTimeZone
-  join
-    <$> firstRow
-      (correctDir <=< toDirectChatItem tz)
-      (SEChatItemNotFound itemId)
-      ( DB.query
-          db
-          [sql|
-            SELECT
-              -- ChatItem
-              i.chat_item_id, i.item_ts, i.item_content, i.item_text, i.item_status, i.shared_msg_id, i.created_at,
-              -- DirectQuote
-              ri.chat_item_id, i.quoted_sent_at, i.quoted_content, i.quoted_sent
-            FROM chat_items i
-            LEFT JOIN chat_items ri ON i.quoted_shared_msg_id = ri.shared_msg_id
-            WHERE i.chat_item_id = ?
-          |]
-          (Only itemId)
-      )
   where
     correctDir :: CChatItem c -> Either StoreError (ChatItem c d)
     correctDir (CChatItem _ ci) = first SEInternalError $ checkDirection ci
+
+getDirectChatItem :: StoreMonad m => SQLiteStore -> UserId -> Int64 -> ChatItemId -> m (CChatItem 'CTDirect)
+getDirectChatItem st userId contactId itemId =
+  liftIOEither . withTransaction st $ \db -> getDirectChatItem_ db userId contactId itemId
+
+getDirectChatItem_ :: DB.Connection -> UserId -> Int64 -> ChatItemId -> IO (Either StoreError (CChatItem 'CTDirect))
+getDirectChatItem_ db userId contactId itemId = do
+  tz <- getCurrentTimeZone
+  join <$> firstRow (toDirectChatItem tz) (SEChatItemNotFound itemId) getItem
+  where
+    getItem =
+      DB.query
+        db
+        [sql|
+          SELECT
+            -- ChatItem
+            i.chat_item_id, i.item_ts, i.item_content, i.item_text, i.item_status, i.shared_msg_id, i.created_at,
+            -- DirectQuote
+            ri.chat_item_id, i.quoted_sent_at, i.quoted_content, i.quoted_sent
+          FROM chat_items i
+          LEFT JOIN chat_items ri ON i.quoted_shared_msg_id = ri.shared_msg_id
+          WHERE i.user_id = ? AND i.contact_id = ? AND i.chat_item_id = ?
+        |]
+        (userId, contactId, itemId)
+
+getDirectChatItemIdByText :: StoreMonad m => SQLiteStore -> UserId -> Int64 -> SMsgDirection d -> Text -> m ChatItemId
+getDirectChatItemIdByText st userId contactId msgDir quotedMsg =
+  liftIOEither . withTransaction st $ \db ->
+    firstRow fromOnly SEQuotedChatItemNotFound $
+      DB.query
+        db
+        [sql|
+          SELECT chat_item_id
+          FROM chat_items
+          WHERE user_id = ? AND contact_id = ? AND item_sent = ? AND item_text like ?
+          ORDER BY chat_item_id DESC
+          LIMIT 1
+        |]
+        (userId, contactId, msgDir, quotedMsg <> "%")
+
+getGroupChatItem :: StoreMonad m => SQLiteStore -> User -> Int64 -> ChatItemId -> m (CChatItem 'CTGroup)
+getGroupChatItem st User {userId, userContactId} groupId itemId =
+  liftIOEither . withTransaction st $ \db -> do
+    tz <- getCurrentTimeZone
+    join <$> firstRow (toGroupChatItem tz userContactId) (SEChatItemNotFound itemId) (getItem db)
+  where
+    getItem db =
+      DB.query
+        db
+        [sql|
+          SELECT
+            -- ChatItem
+            i.chat_item_id, i.item_ts, i.item_content, i.item_text, i.item_status, i.shared_msg_id, i.created_at,
+            -- GroupMember
+            m.group_member_id, m.group_id, m.member_id, m.member_role, m.member_category,
+            m.member_status, m.invited_by, m.local_display_name, m.contact_id,
+            p.display_name, p.full_name, p.image,
+            -- quoted ChatItem
+            ri.chat_item_id, i.quoted_sent_at, i.quoted_content,
+            -- quoted GroupMember
+            rm.group_member_id, rm.group_id, rm.member_id, rm.member_role, rm.member_category,
+            rm.member_status, rm.invited_by, rm.local_display_name, rm.contact_id,
+            rp.display_name, rp.full_name, rp.image
+          FROM chat_items i
+          LEFT JOIN group_members m ON m.group_member_id = i.group_member_id
+          LEFT JOIN contact_profiles p ON p.contact_profile_id = m.contact_profile_id
+          LEFT JOIN chat_items ri ON i.quoted_shared_msg_id = ri.shared_msg_id
+          LEFT JOIN group_members rm ON rm.group_member_id = ri.group_member_id
+          LEFT JOIN contact_profiles rp ON rp.contact_profile_id = rm.contact_profile_id
+          WHERE i.user_id = ? AND i.group_id = ? AND i.chat_item_id = ?
+        |]
+        (userId, groupId, itemId)
+
+getGroupChatItemIdByText :: StoreMonad m => SQLiteStore -> User -> Int64 -> ContactName -> Text -> m ChatItemId
+getGroupChatItemIdByText st User {userId, localDisplayName = userName} groupId cName quotedMsg =
+  liftIOEither . withTransaction st $ \db ->
+    firstRow fromOnly SEQuotedChatItemNotFound $
+      if userName == cName
+        then
+          DB.query
+            db
+            [sql|
+              SELECT chat_item_id
+              FROM chat_items
+              WHERE user_id = ? AND group_id = ? AND group_member_id IS NULL AND item_text like ?
+              ORDER BY chat_item_id DESC
+              LIMIT 1
+            |]
+            (userId, groupId, quotedMsg <> "%")
+        else
+          DB.query
+            db
+            [sql|
+              SELECT i.chat_item_id
+              FROM chat_items i
+              JOIN group_members m ON m.group_member_id = i.group_member_id
+              JOIN contacts c ON c.contact_id = m.contact_id
+              WHERE i.user_id = ? AND i.group_id = ? AND c.local_display_name = ? AND i.item_text like ?
+              ORDER BY i.chat_item_id DESC
+              LIMIT 1
+            |]
+            (userId, groupId, cName, quotedMsg <> "%")
 
 updateDirectChatItemsRead :: (StoreMonad m) => SQLiteStore -> Int64 -> (ChatItemId, ChatItemId) -> m ()
 updateDirectChatItemsRead st contactId (fromItemId, toItemId) = do
@@ -3092,7 +3095,7 @@ data StoreError
   | SENoMsgDelivery {connId :: Int64, agentMsgId :: AgentMsgId}
   | SEBadChatItem {itemId :: ChatItemId}
   | SEChatItemNotFound {itemId :: ChatItemId}
-  | SEReplyChatItemNotFound
+  | SEQuotedChatItemNotFound
   deriving (Show, Exception, Generic)
 
 instance ToJSON StoreError where

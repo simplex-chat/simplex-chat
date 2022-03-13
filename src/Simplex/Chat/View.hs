@@ -556,7 +556,7 @@ viewChatError = \case
     SEUserContactLinkNotFound -> ["no chat address, to create: " <> highlight' "/ad"]
     SEContactRequestNotFoundByName c -> ["no contact request from " <> ttyContact c]
     SEConnectionNotFound _ -> [] -- TODO mutes delete group error, but also mutes any error from getConnectionEntity
-    SEReplyChatItemNotFound -> ["message not found - reply is not sent"]
+    SEQuotedChatItemNotFound -> ["message not found - reply is not sent"]
     e -> ["chat db error: " <> sShow e]
   ChatErrorAgent err -> case err of
     SMP SMP.AUTH -> ["error: this connection is deleted"]

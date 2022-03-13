@@ -176,16 +176,37 @@ processChatCommand = \case
   APIGetChatItems _pagination -> pure $ chatCmdError "not implemented"
   APISendMessage cType chatId mc -> withUser $ \user@User {userId} -> withChatLock $ case cType of
     CTDirect -> do
-      ct@Contact {localDisplayName = c} <- withStore $ \st -> getContact st userId chatId
-      ci <- sendDirectChatItem user ct (XMsgNew mc) (CISndMsgContent $ mcContent mc)
-      setActive $ ActiveC c
-      pure . CRNewChatItem $ AChatItem SCTDirect SMDSnd (DirectChat ct) ci
+      ct <- withStore $ \st -> getContact st userId chatId
+      sendNewMsg user ct (MCSimple mc) mc
     CTGroup -> do
-      group@(Group gInfo@GroupInfo {localDisplayName = gName, membership} _) <- withStore $ \st -> getGroup st user chatId
+      group@(Group GroupInfo {membership} _) <- withStore $ \st -> getGroup st user chatId
       unless (memberActive membership) $ throwChatError CEGroupMemberUserRemoved
-      ci <- sendGroupChatItem user group (XMsgNew mc) (CISndMsgContent $ mcContent mc)
-      setActive $ ActiveG gName
-      pure . CRNewChatItem $ AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci
+      sendNewGroupMsg user group (MCSimple mc) mc
+    CTContactRequest -> pure $ chatCmdError "not supported"
+  APISendMessageQuote cType chatId quotedItemId mc -> withUser $ \user@User {userId} -> withChatLock $ case cType of
+    CTDirect -> do
+      (ct, ci) <- withStore $ \st -> (,) <$> getContact st userId chatId <*> getDirectChatItem st userId chatId quotedItemId
+      case ci of
+        CChatItem _ (ChatItem {meta, content}) -> do
+          let CIMeta {itemTs, itemSharedMsgId} = meta
+          (qmc, sent) <- case content of
+            CISndMsgContent qmc -> pure (qmc, True)
+            CIRcvMsgContent qmc -> pure (qmc, False)
+            _ -> throwChatError CEInvalidQuote
+          let msgRef = MsgRefDirect {msgId = itemSharedMsgId, sentAt = itemTs, sent}
+          sendNewMsg user ct (MCQuote QuotedMsg {msgRef, content = qmc} mc) mc
+    CTGroup -> do
+      group@(Group GroupInfo {membership} _) <- withStore $ \st -> getGroup st user chatId
+      unless (memberActive membership) $ throwChatError CEGroupMemberUserRemoved
+      withStore (\st -> getGroupChatItem st user chatId quotedItemId) >>= \case
+        CChatItem _ (ChatItem {chatDir, meta, content}) -> do
+          let CIMeta {itemTs, itemSharedMsgId} = meta
+          (qmc, GroupMember {memberId}) <- case (content, chatDir) of
+            (CISndMsgContent qmc, _) -> pure (qmc, membership)
+            (CIRcvMsgContent qmc, CIGroupRcv m) -> pure (qmc, m)
+            _ -> throwChatError CEInvalidQuote
+          let msgRef = MsgRefGroup {msgId = itemSharedMsgId, sentAt = itemTs, memberId}
+          sendNewGroupMsg user group (MCQuote QuotedMsg {msgRef, content = qmc} mc) mc
     CTContactRequest -> pure $ chatCmdError "not supported"
   APIChatRead cType chatId fromToIds -> withChatLock $ case cType of
     CTDirect -> withStore (\st -> updateDirectChatItemsRead st chatId fromToIds) $> CRCmdOk
@@ -263,22 +284,13 @@ processChatCommand = \case
     processChatCommand $ APIRejectContact connReqId
   SendMessage cName msg -> withUser $ \User {userId} -> do
     contactId <- withStore $ \st -> getContactIdByName st userId cName
-    let mc = MCSimple . MCText $ safeDecodeUtf8 msg
+    let mc = MCText $ safeDecodeUtf8 msg
     processChatCommand $ APISendMessage CTDirect contactId mc
-  SendMessageQuote cName (AMsgDirection msgDir) quotedMsg msg -> withUser $ \user@User {userId} -> do
-    (contactId, ChatItem {meta, content}) <- withStore $ \st ->
-      (,)
-        <$> getContactIdByName st userId cName
-        <*> findDirectChatItem st user cName msgDir (safeDecodeUtf8 quotedMsg)
-    let CIMeta {itemTs, itemSharedMsgId} = meta
-    (qmc, sent) <- case (msgDir, content) of
-      (SMDSnd, CISndMsgContent mc) -> pure (mc, True)
-      (SMDRcv, CIRcvMsgContent mc) -> pure (mc, False)
-      _ -> throwChatError CEInvalidQuote
-    let msgRef = MsgRefDirect {msgId = itemSharedMsgId, sentAt = itemTs, sent}
-        qm = QuotedMsg {msgRef, content = qmc}
-        mc = MCQuote qm . MCText $ safeDecodeUtf8 msg
-    processChatCommand $ APISendMessage CTDirect contactId mc
+  SendMessageQuote cName (AMsgDirection msgDir) quotedMsg msg -> withUser $ \User {userId} -> do
+    contactId <- withStore $ \st -> getContactIdByName st userId cName
+    quotedItemId <- withStore $ \st -> getDirectChatItemIdByText st userId contactId msgDir (safeDecodeUtf8 quotedMsg)
+    let mc = MCText $ safeDecodeUtf8 msg
+    processChatCommand $ APISendMessageQuote CTDirect contactId quotedItemId mc
   NewGroup gProfile -> withUser $ \user -> do
     gVar <- asks idsDrg
     CRGroupCreated <$> withStore (\st -> createNewGroup st gVar user gProfile)
@@ -352,25 +364,13 @@ processChatCommand = \case
   ListGroups -> CRGroupsList <$> withUser (\user -> withStore (`getUserGroupDetails` user))
   SendGroupMessage gName msg -> withUser $ \user -> do
     groupId <- withStore $ \st -> getGroupIdByName st user gName
-    let mc = MCSimple . MCText $ safeDecodeUtf8 msg
+    let mc = MCText $ safeDecodeUtf8 msg
     processChatCommand $ APISendMessage CTGroup groupId mc
   SendGroupMessageQuote gName cName quotedMsg msg -> withUser $ \user -> do
-    (GroupInfo {groupId, membership}, ci) <-
-      withStore $ \st ->
-        (,)
-          <$> (getGroupIdByName st user gName >>= getGroupInfo st user)
-          <*> findGroupChatItem st user gName cName (safeDecodeUtf8 quotedMsg)
-    case ci of
-      CChatItem _ (ChatItem {chatDir, meta, content}) -> do
-        let CIMeta {itemTs, itemSharedMsgId} = meta
-        (qmc, GroupMember {memberId}) <- case (content, chatDir) of
-          (CISndMsgContent mc, _) -> pure (mc, membership)
-          (CIRcvMsgContent mc, CIGroupRcv m) -> pure (mc, m)
-          _ -> throwChatError CEInvalidQuote
-        let msgRef = MsgRefGroup {msgId = itemSharedMsgId, sentAt = itemTs, memberId}
-            qm = QuotedMsg {msgRef, content = qmc}
-            mc = MCQuote qm . MCText $ safeDecodeUtf8 msg
-        processChatCommand $ APISendMessage CTGroup groupId mc
+    groupId <- withStore $ \st -> getGroupIdByName st user gName
+    quotedItemId <- withStore $ \st -> getGroupChatItemIdByText st user groupId cName (safeDecodeUtf8 quotedMsg)
+    let mc = MCText $ safeDecodeUtf8 msg
+    processChatCommand $ APISendMessageQuote CTGroup groupId quotedItemId mc
   SendFile cName f -> withUser $ \user@User {userId} -> withChatLock $ do
     (fileSize, chSize) <- checkSndFile f
     contact <- withStore $ \st -> getContactByName st userId cName
@@ -463,6 +463,15 @@ processChatCommand = \case
           connId <- withAgent $ \a -> joinConnection a cReq $ directMessage (XContact profile $ Just xContactId)
           withStore $ \st -> createConnReqConnection st userId connId cReqHash xContactId
           pure CRSentInvitation
+    sendNewMsg user ct@Contact {localDisplayName = c} msgContainer mc = do
+      ci <- sendDirectChatItem user ct (XMsgNew msgContainer) (CISndMsgContent mc)
+      setActive $ ActiveC c
+      pure . CRNewChatItem $ AChatItem SCTDirect SMDSnd (DirectChat ct) ci
+    sendNewGroupMsg user g@(Group gInfo@GroupInfo {localDisplayName = gName} _) msgContainer mc = do
+      ci <- sendGroupChatItem user g (XMsgNew msgContainer) (CISndMsgContent mc)
+      setActive $ ActiveG gName
+      pure . CRNewChatItem $ AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci
+
     contactMember :: Contact -> [GroupMember] -> Maybe GroupMember
     contactMember Contact {contactId} =
       find $ \GroupMember {memberContactId = cId, memberStatus = s} ->
@@ -661,7 +670,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
         ERR _ -> pure ()
         -- TODO add debugging output
         _ -> pure ()
-      Just ct@Contact {localDisplayName = c} -> case agentMsg of
+      Just ct@Contact {localDisplayName = c, contactId} -> case agentMsg of
         MSG msgMeta msgBody -> do
           msg@Message {chatMsgEvent} <- saveRcvMSG conn (ConnectionId connId) msgMeta msgBody
           withAckMessage agentConnId msgMeta $
@@ -712,7 +721,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
           case chatItemId_ of
             Nothing -> pure ()
             Just chatItemId -> do
-              chatItem <- withStore $ \st -> updateDirectChatItem st chatItemId CISSndSent
+              chatItem <- withStore $ \st -> updateDirectChatItem st userId contactId chatItemId CISSndSent
               toView $ CRChatItemUpdated (AChatItem SCTDirect SMDSnd (DirectChat ct) chatItem)
         END -> do
           toView $ CRContactAnotherClient ct
@@ -731,7 +740,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
           case chatItemId_ of
             Nothing -> pure ()
             Just chatItemId -> do
-              chatItem <- withStore $ \st -> updateDirectChatItem st chatItemId (agentErrToItemStatus err)
+              chatItem <- withStore $ \st -> updateDirectChatItem st userId contactId chatItemId (agentErrToItemStatus err)
               toView $ CRChatItemUpdated (AChatItem SCTDirect SMDSnd (DirectChat ct) chatItem)
         ERR _ -> pure ()
         -- TODO add debugging output
@@ -1504,7 +1513,8 @@ chatCommandP =
     <|> "/_get chats" $> APIGetChats
     <|> "/_get chat " *> (APIGetChat <$> chatTypeP <*> A.decimal <* A.space <*> chatPaginationP)
     <|> "/_get items count=" *> (APIGetChatItems <$> A.decimal)
-    <|> "/_send " *> (APISendMessage <$> chatTypeP <*> A.decimal <* A.space <*> msgContainerP)
+    <|> "/_send " *> (APISendMessage <$> chatTypeP <*> A.decimal <* A.space <*> msgContentP)
+    <|> "/_send_quote" *> (APISendMessageQuote <$> chatTypeP <*> A.decimal <* A.space <*> A.decimal <* A.space <*> msgContentP)
     <|> "/_read chat " *> (APIChatRead <$> chatTypeP <*> A.decimal <* A.space <*> ((,) <$> ("from=" *> A.decimal) <* A.space <*> ("to=" *> A.decimal)))
     <|> "/_delete " *> (APIDeleteChat <$> chatTypeP <*> A.decimal)
     <|> "/_accept " *> (APIAcceptContact <$> A.decimal)
@@ -1560,8 +1570,8 @@ chatCommandP =
       (CPLast <$ "count=" <*> A.decimal)
         <|> (CPAfter <$ "after=" <*> A.decimal <* A.space <* "count=" <*> A.decimal)
         <|> (CPBefore <$ "before=" <*> A.decimal <* A.space <* "count=" <*> A.decimal)
-    msgContainerP =
-      "text " *> (MCSimple . MCText . safeDecodeUtf8 <$> A.takeByteString)
+    msgContentP =
+      "text " *> (MCText . safeDecodeUtf8 <$> A.takeByteString)
         <|> "json " *> (J.eitherDecodeStrict' <$?> A.takeByteString)
     displayName = safeDecodeUtf8 <$> (B.cons <$> A.satisfy refChar <*> A.takeTill (== ' '))
     sendMsgQuote msgDir = (SendMessageQuote <$> displayName <* A.space <*> pure msgDir <*> quotedMsg <*> A.takeByteString)

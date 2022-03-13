@@ -198,10 +198,6 @@ msgContentTag = \case
   MCText _ -> MCText_
   MCUnknown {tag} -> MCUnknown_ tag
 
-instance FromJSON MsgContainer where
-  parseJSON (J.Object v) = parseMsgContainer v
-  parseJSON invalid = JT.prependFailure "bad MsgContainer, " (JT.typeMismatch "Object" invalid)
-
 parseMsgContainer :: J.Object -> JT.Parser MsgContainer
 parseMsgContainer v =
   MCQuote <$> v .: "quote" <*> mc
