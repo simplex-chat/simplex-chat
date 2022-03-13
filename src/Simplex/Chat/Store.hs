@@ -2247,7 +2247,8 @@ getChatItemRef_ db User {userId, userContactId} chatDirection = \case
             JOIN contact_profiles p USING (contact_profile_id)
             LEFT JOIN chat_items i ON i.group_id = m.group_id
                                   AND (m.group_member_id = i.group_member_id OR i.group_member_id IS NULL)
-            WHERE i.shared_msg_id = ? AND m.user_id = ? AND m.group_id = ? AND m.member_id = ?
+            WHERE (i.shared_msg_id = ? OR i.shared_msg_id IS NULL)
+              AND m.user_id = ? AND m.group_id = ? AND m.member_id = ?
           |]
           (msgId, userId, groupId, memberId)
       where
@@ -2295,7 +2296,7 @@ findGroupChatItem st User {userId, userContactId} gName cName quotedMsg =
       <$> firstRow
         (toGroupChatItem tz userContactId)
         SEReplyChatItemNotFound
-        ( DB.query
+        ( DB.queryNamed
             db
             [sql|
               SELECT
@@ -2314,17 +2315,27 @@ findGroupChatItem st User {userId, userContactId} gName cName quotedMsg =
               FROM chat_items i
               JOIN groups g ON g.group_id = i.group_id
               JOIN group_members m ON g.group_id = m.group_id
-                                  AND (i.group_member_id = m.group_member_id OR i.group_member_id IS NULL)
+                                  AND ( i.group_member_id = m.group_member_id
+                                        OR (i.group_member_id IS NULL AND m.member_category = :member_category)
+                                      )
               JOIN contacts c ON c.contact_id = m.contact_id
               JOIN contact_profiles p ON p.contact_profile_id = c.contact_profile_id
               LEFT JOIN chat_items ri ON i.quoted_shared_msg_id = ri.shared_msg_id
               LEFT JOIN group_members rm ON rm.group_member_id = ri.group_member_id
               LEFT JOIN contact_profiles rp ON rp.contact_profile_id = rm.contact_profile_id
-              WHERE g.user_id = ? AND g.local_display_name = ? AND c.local_display_name = ? AND i.item_text like ?
+              WHERE g.user_id = :user_id
+                AND g.local_display_name = :group_name
+                AND c.local_display_name = :member_name
+                AND i.item_text like :item_text
               ORDER BY i.chat_item_id DESC
               LIMIT 1
             |]
-            (userId, gName, cName, quotedMsg <> "%")
+            [ ":member_category" := GCUserMember,
+              ":user_id" := userId,
+              ":group_name" := gName,
+              ":member_name" := cName,
+              ":item_text" := (quotedMsg <> "%")
+            ]
         )
 
 getChatPreviews :: MonadUnliftIO m => SQLiteStore -> User -> m [AChat]
