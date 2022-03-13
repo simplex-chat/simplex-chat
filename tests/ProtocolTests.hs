@@ -7,6 +7,7 @@ module ProtocolTests where
 
 import qualified Data.Aeson as J
 import Data.ByteString.Char8 (ByteString)
+import Data.Time.Clock.System (SystemTime (..), systemToUTCTime)
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Protocol
@@ -54,15 +55,26 @@ testE2ERatchetParams = E2ERatchetParamsUri e2eEncryptVRange testDhPubKey testDhP
 testConnReq :: ConnectionRequestUri 'CMInvitation
 testConnReq = CRInvitationUri connReqData testE2ERatchetParams
 
+(==##) :: ByteString -> ChatMessage -> Expectation
+s ==## msg = do
+  strDecode s `shouldBe` Right msg
+  parseAll strP s `shouldBe` Right msg
+
+(##==) :: ByteString -> ChatMessage -> Expectation
+s ##== msg =
+  J.eitherDecodeStrict' (strEncode msg)
+    `shouldBe` (J.eitherDecodeStrict' s :: Either String J.Value)
+
+(##==##) :: ByteString -> ChatMessage -> Expectation
+s ##==## msg = do
+  s ##== msg
+  s ==## msg
+
 (==#) :: ByteString -> ChatMsgEvent -> Expectation
-s ==# msg = do
-  strDecode s `shouldBe` Right (ChatMessage Nothing msg)
-  parseAll strP s `shouldBe` Right (ChatMessage Nothing msg)
+s ==# msg = s ==## (ChatMessage Nothing msg)
 
 (#==) :: ByteString -> ChatMsgEvent -> Expectation
-s #== msg =
-  J.eitherDecodeStrict' (strEncode $ ChatMessage Nothing msg)
-    `shouldBe` (J.eitherDecodeStrict' s :: Either String J.Value)
+s #== msg = s ##== (ChatMessage Nothing msg)
 
 (#==#) :: ByteString -> ChatMsgEvent -> Expectation
 s #==# msg = do
@@ -78,6 +90,23 @@ testGroupProfile = GroupProfile {displayName = "team", fullName = "Team", image 
 decodeChatMessageTest :: Spec
 decodeChatMessageTest = describe "Chat message encoding/decoding" $ do
   it "x.msg.new" $ "{\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello\",\"type\":\"text\"}}}" #==# XMsgNew (MCSimple $ MCText "hello")
+  it "x.msg.new" $ "{\"msgId\":\"AQIDBA==\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello\",\"type\":\"text\"}}}" ##==## (ChatMessage (Just $ SharedMsgId "\1\2\3\4") (XMsgNew . MCSimple $ MCText "hello"))
+  it "x.msg.new" $
+    "{\"msgId\":\"AQIDBA==\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello to you too\",\"type\":\"text\"},\"quote\":{\"content\":{\"text\":\"hello there!\",\"type\":\"text\"},\"msgRef\":{\"msgId\":\"BQYHCA==\",\"sent\":true,\"sentAt\":\"1970-01-01T00:00:01.000000001Z\",\"type\":\"direct\"}}}}"
+      ##==## ( ChatMessage
+                 (Just $ SharedMsgId "\1\2\3\4")
+                 ( XMsgNew $
+                     MCQuote
+                       ( QuotedMsg
+                           (MsgRefDirect (Just $ SharedMsgId "\5\6\7\8") (systemToUTCTime $ MkSystemTime 1 1) True)
+                           $ MCText "hello there!"
+                       )
+                       (MCText "hello to you too")
+                 )
+             )
+  it "x.msg.new" $
+    "{\"msgId\":\"AQIDBA==\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello\",\"type\":\"text\"},\"forward\":true}}"
+      ##==## (ChatMessage (Just $ SharedMsgId "\1\2\3\4") (XMsgNew . MCForward $ MCText "hello"))
   it "x.file" $
     "{\"event\":\"x.file\",\"params\":{\"file\":{\"fileConnReq\":\"https://simplex.chat/invitation#/?v=1&smp=smp%3A%2F%2F1234-w%3D%3D%40smp.simplex.im%3A5223%2F3456-w%3D%3D%23MCowBQYDK2VuAyEAjiswwI3O_NlS8Fk3HJUW870EY2bAwmttMBsvRB9eV3o%3D&e2e=v%3D1%26x3dh%3DMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D%2CMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D\",\"fileSize\":12345,\"fileName\":\"photo.jpg\"}}}"
       #==# XFile FileInvitation {fileName = "photo.jpg", fileSize = 12345, fileConnReq = testConnReq}

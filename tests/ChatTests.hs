@@ -130,7 +130,7 @@ testDirectMessageQuotedReply = do
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
       connectUsers alice bob
-      alice ##> "/_send @2 json {\"type\": \"text\", \"text\": \"hello! how are you?\"}"
+      alice ##> "/_send @2 json {\"content\": {\"type\": \"text\", \"text\": \"hello! how are you?\"}}"
       alice <# "@bob hello! how are you?"
       bob <# "alice> hello! how are you?"
       bob #> "@alice hi!"
