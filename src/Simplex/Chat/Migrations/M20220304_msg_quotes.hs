@@ -1,12 +1,12 @@
 {-# LANGUAGE QuasiQuotes #-}
 
-module Simplex.Chat.Migrations.M20220304_shared_msg_id where
+module Simplex.Chat.Migrations.M20220304_msg_quotes where
 
 import Database.SQLite.Simple (Query)
 import Database.SQLite.Simple.QQ (sql)
 
-m20220304_shared_msg_id :: Query
-m20220304_shared_msg_id =
+m20220304_msg_quotes :: Query
+m20220304_msg_quotes =
   [sql|
     ALTER TABLE messages ADD COLUMN shared_msg_id BLOB;
     ALTER TABLE messages ADD COLUMN shared_msg_id_user INTEGER; -- 1 for user messages, NULL for received messages
