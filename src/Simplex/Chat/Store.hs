@@ -2211,8 +2211,8 @@ createNewChatItem st user@User {userId} chatDirection NewChatItem {createdByMsgI
 getChatItemRef_ :: DB.Connection -> User -> ChatDirection c d -> Maybe QuotedMsg -> IO (Maybe (CIQuote c))
 getChatItemRef_ db User {userId, userContactId} chatDirection = \case
   Just QuotedMsg {msgRef = MsgRefDirect {msgId, sentAt, sent}, content} -> case chatDirection of
-    CDDirectSnd Contact {contactId} -> getDirectChatItemRef_ sentAt content contactId msgId sent
-    CDDirectRcv Contact {contactId} -> getDirectChatItemRef_ sentAt content contactId msgId $ not sent
+    CDDirectSnd Contact {contactId} -> Just <$> getDirectChatItemRef_ sentAt content contactId msgId sent
+    CDDirectRcv Contact {contactId} -> Just <$> getDirectChatItemRef_ sentAt content contactId msgId (not sent)
     _ -> pure Nothing
   Just QuotedMsg {msgRef = MsgRefGroup {msgId, sentAt, memberId}, content} -> case chatDirection of
     CDGroupSnd GroupInfo {groupId} -> getGroupChatItemRef_ sentAt content groupId msgId memberId
@@ -2220,9 +2220,9 @@ getChatItemRef_ db User {userId, userContactId} chatDirection = \case
     _ -> pure Nothing
   _ -> pure Nothing
   where
-    getDirectChatItemRef_ :: UTCTime -> MsgContent -> Int64 -> Maybe SharedMsgId -> Bool -> IO (Maybe (CIQuote 'CTDirect))
+    getDirectChatItemRef_ :: UTCTime -> MsgContent -> Int64 -> Maybe SharedMsgId -> Bool -> IO (CIQuote 'CTDirect)
     getDirectChatItemRef_ sentAt content contactId msgId sent = do
-      fmap ciRefDirect . listToMaybe . map fromOnly
+      ciRefDirect . listToMaybe . map fromOnly
         <$> DB.query
           db
           "SELECT chat_item_id FROM chat_items WHERE user_id = ? AND contact_id = ? AND shared_msg_id = ? AND item_sent = ?"
