@@ -165,7 +165,7 @@ fun ChatItemsList(chatItems: List<ChatItem>) {
       ChatItemView(cItem, uriHandler)
     }
     val len = chatItems.count()
-    if (keyboardState != ciListState.value.keyboardState || !ciListState.value.scrolled || len != ciListState.value.itemCount) {
+    if (len > 1 && (keyboardState != ciListState.value.keyboardState || !ciListState.value.scrolled || len != ciListState.value.itemCount)) {
       scope.launch {
         ciListState.value = CIListState(true, len, keyboardState)
         listState.animateScrollToItem(len - 1)
