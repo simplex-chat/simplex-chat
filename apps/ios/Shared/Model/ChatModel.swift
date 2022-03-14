@@ -526,9 +526,9 @@ struct ChatItem: Identifiable, Decodable {
     var chatDir: CIDirection
     var meta: CIMeta
     var content: CIContent
-    var quotedItem: CIQuote?
     var formattedText: [FormattedText]?
-    
+    var quotedItem: CIQuote?
+
     var id: Int64 { get { meta.itemId } }
 
     var timestampText: Text { get { meta.timestampText } }
@@ -538,11 +538,22 @@ struct ChatItem: Identifiable, Decodable {
         return false
     }
 
-    static func getSample (_ id: Int64, _ dir: CIDirection, _ ts: Date, _ text: String, _ status: CIStatus = .sndNew) -> ChatItem {
+    var memberDisplayName: String? {
+        get {
+            if case let .groupRcv(groupMember) = chatDir {
+                return groupMember.memberProfile.displayName
+            } else {
+                return nil
+            }
+        }
+    }
+    
+    static func getSample (_ id: Int64, _ dir: CIDirection, _ ts: Date, _ text: String, _ status: CIStatus = .sndNew, quotedItem: CIQuote? = nil) -> ChatItem {
         ChatItem(
            chatDir: dir,
            meta: CIMeta.getSample(id, ts, text, status),
-           content: .sndMsgContent(msgContent: .text(text))
+           content: .sndMsgContent(msgContent: .text(text)),
+           quotedItem: quotedItem
        )
     }
 }
@@ -604,7 +615,11 @@ enum CIStatus: Decodable {
     case rcvRead
 }
 
-enum CIContent: Decodable {
+protocol ItemContent {
+    var text: String { get }
+}
+
+enum CIContent: Decodable, ItemContent {
     case sndMsgContent(msgContent: MsgContent)
     case rcvMsgContent(msgContent: MsgContent)
     case sndFileInvitation(fileId: Int64, filePath: String)
@@ -626,9 +641,37 @@ struct RcvFileTransfer: Decodable {
 
 }
 
-enum CIQuote: Decodable {
+enum CIQuote: Decodable, ItemContent {
     case direct(quote: CIQuoteData, sent: Bool)
     case group(quote: CIQuoteData, member: GroupMember)
+
+    var quote: CIQuoteData {
+        get {
+            switch (self) {
+            case let .direct(quote, _): return quote
+            case let .group(quote, _): return quote
+            }
+        }
+    }
+
+    var text: String { get { quote.content.text } }
+
+    var sender: String? {
+        get {
+            switch (self) {
+            case let .direct(_, sent): return sent ? "you" : nil
+            case let .group(_, member): return member.memberProfile.displayName
+            }
+        }
+    }
+
+    static func getSampleDirect(_ itemId: Int64, _ sentAt: Date, _ text: String, sent: Bool = false) -> CIQuote {
+        .direct(quote: .getSample(itemId, sentAt, text), sent: sent)
+    }
+
+    static func getSampleGroup(_ itemId: Int64, _ sentAt: Date, _ text: String, _ member: GroupMember = GroupMember.sampleData) -> CIQuote {
+        .group(quote: .getSample(itemId, sentAt, text), member: member)
+    }
 }
 
 struct CIQuoteData: Decodable {
@@ -636,6 +679,10 @@ struct CIQuoteData: Decodable {
     var sentAt: Date
     var content: MsgContent
     var formattedText: [FormattedText]?
+    
+    static func getSample(_ itemId: Int64, _ sentAt: Date, _ text: String) -> CIQuoteData {
+        CIQuoteData(itemId: itemId, sentAt: sentAt, content: .text(text))
+    }
 }
 
 enum MsgContent {

@@ -12,10 +12,10 @@ struct ChatItemView: View {
     var chatItem: ChatItem
 
     var body: some View {
-        if (isShortEmoji(chatItem.content.text)) {
+        if (chatItem.quotedItem == nil && isShortEmoji(chatItem.content.text)) {
             EmojiItemView(chatItem: chatItem)
         } else {
-            TextItemView(chatItem: chatItem)
+            FramedItemView(chatItem: chatItem)
         }
     }
 }

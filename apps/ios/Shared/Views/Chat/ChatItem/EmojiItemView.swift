@@ -12,11 +12,8 @@ struct EmojiItemView: View {
     var chatItem: ChatItem
 
     var body: some View {
-        let s = chatItem.content.text.trimmingCharacters(in: .whitespaces)
-
         VStack(spacing: 1) {
-            Text(s)
-                .font(s.count < 4 ? largeEmojiFont : mediumEmojiFont)
+            emojiText(chatItem.content.text)
                 .padding(.top, 8)
                 .padding(.horizontal, 6)
             CIMetaView(chatItem: chatItem)
@@ -24,6 +21,11 @@ struct EmojiItemView: View {
                 .padding(.horizontal, 12)
         }
     }
+}
+
+func emojiText(_ text: String) -> Text {
+    let s = text.trimmingCharacters(in: .whitespaces)
+    return Text(s).font(s.count < 4 ? largeEmojiFont : mediumEmojiFont)
 }
 
 struct EmojiItemView_Previews: PreviewProvider {
