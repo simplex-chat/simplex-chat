@@ -9,14 +9,14 @@
 import SwiftUI
 
 private let sentColorLight = Color(.sRGB, red: 0.27, green: 0.72, blue: 1, opacity: 0.12)
-private let sentColorDark = Color(.sRGB, red: 0.27, green: 0.72, blue: 1, opacity: 0.09)
-private let sentQuoteColorLight = Color(.sRGB, red: 0.27, green: 0.72, blue: 1, opacity: 0.09)
-private let sentQuoteColorDark = Color(.sRGB, red: 0.27, green: 0.72, blue: 1, opacity: 0.17)
+private let sentColorDark = Color(.sRGB, red: 0.27, green: 0.72, blue: 1, opacity: 0.17)
+private let sentQuoteColorLight = Color(.sRGB, red: 0.27, green: 0.72, blue: 1, opacity: 0.11)
+private let sentQuoteColorDark = Color(.sRGB, red: 0.27, green: 0.72, blue: 1, opacity: 0.09)
 
 struct FramedItemView: View {
     @Environment(\.colorScheme) var colorScheme
     var chatItem: ChatItem
-    @State var maxMsgWidth: CGFloat = 0
+    @State var msgWidth: CGFloat = 0
     private let codeFont = Font.custom("Courier", size: UIFont.preferredFont(forTextStyle: .body).pointSize)
 
     var body: some View {
@@ -31,7 +31,7 @@ struct FramedItemView: View {
                     .font(.subheadline)
                     .padding(.vertical, 6)
                     .padding(.horizontal, 12)
-                    .frame(minWidth: maxMsgWidth, alignment: .leading)
+                    .frame(minWidth: msgWidth, alignment: .leading)
                     .background(
                         chatItem.chatDir.sent
                         ? (colorScheme == .light ? sentQuoteColorLight : sentQuoteColorDark)
@@ -45,11 +45,11 @@ struct FramedItemView: View {
                         emojiText(chatItem.content.text)
                         Text("")
                     }
-                    .padding(.top, 6)
-                    .padding(.bottom, 8)
+                    .padding(.vertical, 6)
                     .padding(.horizontal, 12)
-                    .frame(minWidth: maxMsgWidth, alignment: .center)
                     .overlay(DetermineWidth())
+                    .frame(minWidth: msgWidth, alignment: .center)
+                    .padding(.bottom, 2)
                 } else {
                     MsgContentView(
                         content: chatItem.content,
@@ -59,12 +59,12 @@ struct FramedItemView: View {
                     )
                     .padding(.vertical, 6)
                     .padding(.horizontal, 12)
-                    .frame(minWidth: maxMsgWidth, alignment: .leading)
-                    .textSelection(.enabled)
                     .overlay(DetermineWidth())
+                    .frame(minWidth: 0, alignment: .leading)
+                    .textSelection(.enabled)
                 }
             }
-            .onPreferenceChange(DetermineWidth.Key.self) { maxMsgWidth = $0 }
+            .onPreferenceChange(DetermineWidth.Key.self) { msgWidth = $0 }
             
             CIMetaView(chatItem: chatItem)
                 .padding(.trailing, 12)
