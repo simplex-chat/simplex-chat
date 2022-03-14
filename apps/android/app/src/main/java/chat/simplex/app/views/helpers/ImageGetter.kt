@@ -23,15 +23,32 @@ import androidx.core.content.ContextCompat
 import chat.simplex.app.views.newchat.ActionButton
 import kotlinx.coroutines.launch
 import java.io.ByteArrayOutputStream
+import java.lang.Integer.min
 
 // Inspired by https://github.com/MakeItEasyDev/Jetpack-Compose-Capture-Image-Or-Choose-from-Gallery
 
-fun bitmapToBase64(bitmap: Bitmap): String {
+fun bitmapToBase64(bitmap: Bitmap, squareCrop: Boolean = false): String {
   val stream = ByteArrayOutputStream()
-  val baseHeight = 96
-  val width = baseHeight * bitmap.width / bitmap.height
-  val resizedImage = Bitmap.createScaledBitmap(bitmap, baseHeight, width, false)
-  resizedImage.compress(Bitmap.CompressFormat.JPEG, 75, stream)
+  var height: Int
+  var width: Int
+  var xOffset: Int
+  var yOffset: Int
+  val baseScale = 96
+  if (bitmap.height > bitmap.width) {
+    height = baseScale
+    width = height * bitmap.width / bitmap.height
+    xOffset = 0
+    yOffset = (height - width) / 2
+  }
+  else {
+    width = baseScale
+    height = width * bitmap.height / bitmap.width
+    xOffset = (width - height) / 2
+    yOffset = 0
+  }
+  val resizedImage = Bitmap.createScaledBitmap(bitmap, width, height, false)
+  val croppedImage = Bitmap.createBitmap(resizedImage, xOffset, yOffset, min(width, height), min(width, height))
+  croppedImage.compress(Bitmap.CompressFormat.JPEG, 75, stream)
   return "data:image/jpg;base64," + Base64.encodeToString(stream.toByteArray(), Base64.NO_WRAP)
 }
 
