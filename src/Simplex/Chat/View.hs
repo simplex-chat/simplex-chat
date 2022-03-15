@@ -4,6 +4,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeApplications, ScopedTypeVariables, TupleSections #-}
 
 module Simplex.Chat.View where
 
@@ -32,6 +33,7 @@ import Simplex.Messaging.Encoding.String
 import qualified Simplex.Messaging.Protocol as SMP
 import Simplex.Messaging.Util (bshow)
 import System.Console.ANSI.Types
+import Data.Type.Equality (testEquality)
 
 serializeChatResponse :: ChatResponse -> String
 serializeChatResponse = unlines . map unStyle . responseToView False
@@ -148,12 +150,16 @@ responseToView testView = \case
     testViewChat :: AChat -> [StyledString]
     testViewChat (AChat _ Chat {chatItems}) = [sShow $ map toChatView chatItems]
       where
-        toChatView :: CChatItem c -> (Int, Text)
-        toChatView (CChatItem dir ChatItem {meta}) = (msgDirectionInt $ toMsgDirection dir, itemText meta)
+        toChatView :: CChatItem c -> ((Int, Text), Maybe (Int, Text))
+        toChatView (CChatItem dir ChatItem{meta, quotedItem}) =
+          ((msgDirectionInt $ toMsgDirection dir, itemText meta),) $ case quotedItem of
+            Nothing -> Nothing
+            Just CIQuote' {chatDir = CCIDirection quoteDir _, content}  ->
+              Just (msgDirectionInt $ toMsgDirection quoteDir, msgContentText content)
     viewErrorsSummary :: [a] -> StyledString -> [StyledString]
     viewErrorsSummary summary s = if null summary then [] else [ttyError (T.pack . show $ length summary) <> s <> " (run with -c option to show each error)"]
 
-viewChatItem :: ChatInfo c -> ChatItem c d -> [StyledString]
+viewChatItem :: MsgDirectionI d => ChatInfo c -> ChatItem c d -> [StyledString]
 viewChatItem chat (ChatItem {chatDir, meta, content, quotedItem}) = case chat of
   DirectChat c -> case chatDir of
     CIDirectSnd -> case content of
@@ -161,13 +167,13 @@ viewChatItem chat (ChatItem {chatDir, meta, content, quotedItem}) = case chat of
       CISndFileInvitation fId fPath -> viewSentFileInvitation to fId fPath meta
       where
         to = ttyToContact' c
-        quote = maybe [] (directQuote True) quotedItem
     CIDirectRcv -> case content of
       CIRcvMsgContent mc -> viewReceivedMessage from quote meta mc
       CIRcvFileInvitation ft -> viewReceivedFileInvitation from meta ft
       where
         from = ttyFromContact' c
-        quote = maybe [] (directQuote False) quotedItem
+    where
+      quote = maybe [] (directQuote chatDir) quotedItem
   GroupChat g -> case chatDir of
     CIGroupSnd -> case content of
       CISndMsgContent mc -> viewSentMessage to quote mc meta
@@ -180,14 +186,18 @@ viewChatItem chat (ChatItem {chatDir, meta, content, quotedItem}) = case chat of
       where
         from = ttyFromGroup' g m
     where
-      quote = maybe [] groupQuote quotedItem
+      quote = maybe [] (groupQuote g) quotedItem
   _ -> []
   where
-    directQuote :: Bool -> CIQuote 'CTDirect -> [StyledString]
-    directQuote msgSent (CIQuoteDirect CIQuoteData {content = qmc} qouteSent) =
-      quoteText qmc $ if msgSent == qouteSent then ">>" else ">"
-    groupQuote :: CIQuote 'CTGroup -> [StyledString]
-    groupQuote (CIQuoteGroup CIQuoteData {content = qmc} m) = quoteText qmc $ ttyQuotedMember m
+    directQuote :: forall d'. MsgDirectionI d' => CIDirection 'CTDirect d' -> CIQuote' 'CTDirect -> [StyledString]
+    directQuote _ (CIQuote' {content = qmc, chatDir = CCIDirection qouteDir _}) =
+      quoteText qmc $ if isJust $ testEquality (msgDirection @d') qouteDir then ">>" else ">"
+    groupQuote :: GroupInfo -> CIQuote' 'CTGroup -> [StyledString]
+    groupQuote g (CIQuote' {content = qmc, chatDir = CCIDirection _ quoteDir}) = quoteText qmc . ttyQuotedMember $ sentByMember g quoteDir -- $ ttyQuotedMember m
+    sentByMember :: GroupInfo -> CIDirection 'CTGroup d' -> GroupMember
+    sentByMember GroupInfo {membership} = \case
+      CIGroupSnd -> membership
+      CIGroupRcv m -> m
     quoteText qmc sentBy = prependFirst (sentBy <> " ") $ msgPreview qmc
     msgPreview = msgPlain . preview . msgContentText
       where

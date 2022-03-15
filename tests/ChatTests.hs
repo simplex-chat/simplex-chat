@@ -140,11 +140,15 @@ testDirectMessageQuotedReply = do
       bob <## "      all good - you?"
       alice <# "bob> > hello! how are you?"
       alice <## "      all good - you?"
+      bob #$> ("/_get chat @2 count=1", chat', [((1, "all good - you?"), Just (0, "hello! how are you?"))])
+      alice #$> ("/_get chat @2 count=1", chat', [((0, "all good - you?"), Just (1, "hello! how are you?"))])
       bob `send` ">> @alice (all good) will tell more"
       bob <# "@alice >> all good - you?"
       bob <## "      will tell more"
       alice <# "bob> >> all good - you?"
       alice <## "      will tell more"
+      bob #$> ("/_get chat @2 count=1", chat', [((1, "will tell more"), Just (1, "all good - you?"))])
+      alice #$> ("/_get chat @2 count=1", chat', [((0, "will tell more"), Just (0, "all good - you?"))])
 
 testGroup :: IO ()
 testGroup =
@@ -568,6 +572,7 @@ testGroupMessageQuotedReply =
       concurrently_
         (bob <# "#team alice> hello! how are you?")
         (cath <# "#team alice> hello! how are you?")
+      threadDelay 1000000
       bob `send` "> #team @alice (hello) hello, all good, you?"
       bob <# "#team > alice hello! how are you?"
       bob <## "      hello, all good, you?"
@@ -580,6 +585,9 @@ testGroupMessageQuotedReply =
             cath <# "#team bob> > alice hello! how are you?"
             cath <## "      hello, all good, you?"
         )
+      bob #$> ("/_get chat #1 count=100", chat', [((0, "hello! how are you?"), Nothing), ((1, "hello, all good, you?"), Just (0, "hello! how are you?"))])
+      alice #$> ("/_get chat #1 count=100", chat', [((1, "hello! how are you?"), Nothing), ((0, "hello, all good, you?"), Just (1, "hello! how are you?"))])
+      cath #$> ("/_get chat #1 count=100", chat', [((0, "hello! how are you?"), Nothing), ((0, "hello, all good, you?"), Just (0, "hello! how are you?"))])
       bob `send` "> #team bob (hello, all good) will tell more"
       bob <# "#team > bob hello, all good, you?"
       bob <## "      will tell more"
@@ -592,6 +600,10 @@ testGroupMessageQuotedReply =
             cath <# "#team bob> > bob hello, all good, you?"
             cath <## "      will tell more"
         )
+      bob #$> ("/_get chat #1 count=1", chat', [((1, "will tell more"), Just (1, "hello, all good, you?"))])
+      alice #$> ("/_get chat #1 count=1", chat', [((0, "will tell more"), Just (0, "hello, all good, you?"))])
+      cath #$> ("/_get chat #1 count=1", chat', [((0, "will tell more"), Just (0, "hello, all good, you?"))])
+      threadDelay 1000000
       cath `send` "> #team bob (hello) hi there!"
       cath <# "#team > bob hello, all good, you?"
       cath <## "      hi there!"
@@ -604,6 +616,9 @@ testGroupMessageQuotedReply =
             bob <# "#team cath> > bob hello, all good, you?"
             bob <## "      hi there!"
         )
+      cath #$> ("/_get chat #1 count=1", chat', [((1, "hi there!"), Just (0, "hello, all good, you?"))])
+      alice #$> ("/_get chat #1 count=1", chat', [((0, "hi there!"), Just (0, "hello, all good, you?"))])
+      bob #$> ("/_get chat #1 count=1", chat', [((0, "hi there!"), Just (1, "hello, all good, you?"))])
 
 testUpdateProfile :: IO ()
 testUpdateProfile =
@@ -1132,7 +1147,10 @@ cc #$> (cmd, f, res) = do
   (f <$> getTermLine cc) `shouldReturn` res
 
 chat :: String -> [(Int, String)]
-chat = read
+chat = map fst . chat'
+
+chat' :: String -> [((Int, String), Maybe (Int, String))]
+chat' = read
 
 (#$$>) :: TestCC -> (String, [(String, String)]) -> Expectation
 cc #$$> (cmd, res) = do

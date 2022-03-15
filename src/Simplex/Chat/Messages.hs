@@ -80,7 +80,7 @@ data ChatItem (c :: ChatType) (d :: MsgDirection) = ChatItem
     meta :: CIMeta d,
     content :: CIContent d,
     formattedText :: Maybe MarkdownList,
-    quotedItem :: Maybe (CIQuote c)
+    quotedItem :: Maybe (CIQuote' c)
   }
   deriving (Show, Generic)
 
@@ -120,6 +120,14 @@ jsonCIDirection = \case
   CIDirectRcv -> JCIDirectRcv
   CIGroupSnd -> JCIGroupSnd
   CIGroupRcv m -> JCIGroupRcv m
+
+data CCIDirection (c :: ChatType) = forall d. MsgDirectionI d => CCIDirection (SMsgDirection d) (CIDirection c d)
+
+deriving instance Show (CCIDirection c)
+
+instance ToJSON (CCIDirection c) where
+  toJSON (CCIDirection _ d) = J.toJSON d
+  toEncoding (CCIDirection _ d) = J.toEncoding d
 
 data CChatItem c = forall d. MsgDirectionI d => CChatItem (SMsgDirection d) (ChatItem c d)
 
@@ -189,7 +197,7 @@ instance ToJSON ChatStats where
   toEncoding = J.genericToEncoding J.defaultOptions
 
 -- | type to show a mix of messages from multiple chats
-data AChatItem = forall c d. AChatItem (SChatType c) (SMsgDirection d) (ChatInfo c) (ChatItem c d)
+data AChatItem = forall c d. MsgDirectionI d => AChatItem (SChatType c) (SMsgDirection d) (ChatInfo c) (ChatItem c d)
 
 deriving instance Show AChatItem
 
@@ -222,41 +230,60 @@ mkCIMeta itemId itemText itemStatus itemSharedMsgId tz itemTs createdAt =
 
 instance ToJSON (CIMeta d) where toEncoding = J.genericToEncoding J.defaultOptions
 
-data CIQuoteData = CIQuoteData
-  { itemId :: Maybe ChatItemId,
+data CIQuote' c = CIQuote'
+  { chatDir :: CCIDirection c,
+    itemId :: Maybe ChatItemId,
+    sharedMsgId :: Maybe SharedMsgId,
     sentAt :: UTCTime,
     content :: MsgContent,
     formattedText :: Maybe MarkdownList
   }
   deriving (Show, Generic)
 
-instance ToJSON CIQuoteData where
+instance ToJSON (CIQuote' c) where
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
   toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
-data CIQuote (c :: ChatType) where
-  CIQuoteDirect :: CIQuoteData -> Bool -> CIQuote 'CTDirect
-  CIQuoteGroup :: CIQuoteData -> GroupMember -> CIQuote 'CTGroup
+-- data CIQuoteData = CIQuoteData
+--   { itemId :: Maybe ChatItemId,
+--     sentAt :: UTCTime,
+--     content :: MsgContent,
+--     formattedText :: Maybe MarkdownList
+--   }
+--   deriving (Show, Generic)
 
-deriving instance Show (CIQuote c)
+-- instance ToJSON CIQuoteData where
+--   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
+--   toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
-instance ToJSON (CIQuote c) where
-  toJSON = J.toJSON . jsonCIQuote
-  toEncoding = J.toEncoding . jsonCIQuote
+-- data CIQuote (c :: ChatType) where
+--   CIQuoteDirect :: CIQuoteData -> Bool -> CIQuote 'CTDirect
+--   CIQuoteGroup :: CIQuoteData -> GroupMember -> CIQuote 'CTGroup
 
-data JSONCIQuote
-  = JCIQuoteDirect {quote :: CIQuoteData, sent :: Bool}
-  | JCIQuoteGroup {quote :: CIQuoteData, member :: GroupMember}
-  deriving (Show, Generic)
+-- deriving instance Show (CIQuote c)
 
-instance ToJSON JSONCIQuote where
-  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "JCIQuote"
-  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "JCIQuote"
+-- instance ToJSON (CIQuote c) where
+--   toJSON = J.toJSON . jsonCIQuote
+--   toEncoding = J.toEncoding . jsonCIQuote
 
-jsonCIQuote :: CIQuote c -> JSONCIQuote
-jsonCIQuote = \case
-  CIQuoteDirect quote sent -> JCIQuoteDirect {quote, sent}
-  CIQuoteGroup quote member -> JCIQuoteGroup {quote, member}
+-- quoteData :: CIQuote c -> CIQuoteData
+-- quoteData = \case
+--   CIQuoteDirect qd _ -> qd
+--   CIQuoteGroup qd _ -> qd
+
+-- data JSONCIQuote
+--   = JCIQuoteDirect {quote :: CIQuoteData, sent :: Bool}
+--   | JCIQuoteGroup {quote :: CIQuoteData, member :: GroupMember}
+--   deriving (Show, Generic)
+
+-- instance ToJSON JSONCIQuote where
+--   toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "JCIQuote"
+--   toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "JCIQuote"
+
+-- jsonCIQuote :: CIQuote c -> JSONCIQuote
+-- jsonCIQuote = \case
+--   CIQuoteDirect quote sent -> JCIQuoteDirect {quote, sent}
+--   CIQuoteGroup quote member -> JCIQuoteGroup {quote, member}
 
 data CIStatus (d :: MsgDirection) where
   CISSndNew :: CIStatus 'MDSnd
@@ -452,30 +479,24 @@ instance ChatTypeI 'CTDirect where chatType = SCTDirect
 instance ChatTypeI 'CTGroup where chatType = SCTGroup
 
 data NewMessage = NewMessage
-  { direction :: MsgDirection,
-    chatMsgEvent :: ChatMsgEvent,
+  { chatMsgEvent :: ChatMsgEvent,
     msgBody :: MsgBody
   }
   deriving (Show)
 
 data SndMessage = SndMessage
   { msgId :: MessageId,
-    direction :: MsgDirection,
     chatMsgEvent :: ChatMsgEvent,
     sharedMsgId :: SharedMsgId,
     msgBody :: MsgBody
   }
 
-data Message = Message
+data RcvMessage = RcvMessage
   { msgId :: MessageId,
-    direction :: MsgDirection,
     chatMsgEvent :: ChatMsgEvent,
     sharedMsgId_ :: Maybe SharedMsgId,
     msgBody :: MsgBody
   }
-
-anyMessage :: SndMessage -> Message
-anyMessage SndMessage {..} = Message {msgId, direction, chatMsgEvent, sharedMsgId_ = Just sharedMsgId, msgBody}
 
 data PendingGroupMessage = PendingGroupMessage
   { msgId :: MessageId,
