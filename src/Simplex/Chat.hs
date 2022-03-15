@@ -404,7 +404,7 @@ processChatCommand = \case
       traverse (\conn -> sendDirectMessage conn (XFile fileInv) (GroupId groupId)) $ memberConn m
     setActive $ ActiveG gName
     -- this is a hack as we have multiple direct messages instead of one per group
-    let msg = SndMessage {msgId = 0, chatMsgEvent = XOk, sharedMsgId = SharedMsgId "", msgBody = ""}
+    let msg = SndMessage {msgId = 0, sharedMsgId = SharedMsgId "", msgBody = ""}
         ciContent = CISndFileInvitation fileId f
     cItem@ChatItem {meta = CIMeta {itemId}} <- saveSndChatItem user (CDGroupSnd gInfo) msg ciContent Nothing
     withStore $ \st -> updateFileTransferChatItemId st fileId itemId

@@ -2050,7 +2050,7 @@ createNewSndMessage st gVar connOrGroupId mkMessage =
           WHERE message_id = ?
         |]
         (MDSnd, toCMEventTag chatMsgEvent, msgBody, connId_, groupId_, msgId)
-      pure SndMessage {msgId, chatMsgEvent, sharedMsgId = SharedMsgId sharedMsgId, msgBody}
+      pure SndMessage {msgId, sharedMsgId = SharedMsgId sharedMsgId, msgBody}
   where
     (connId_, groupId_) = case connOrGroupId of
       ConnectionId connId -> (Just connId, Nothing)
