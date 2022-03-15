@@ -195,7 +195,7 @@ processChatCommand = \case
           where
             send_ :: CCIDirection 'CTDirect -> Bool -> MsgContent -> m ChatResponse
             send_ chatDir sent qmc =
-              let quotedItem = CIQuote' {chatDir, itemId = Just quotedItemId, sharedMsgId = itemSharedMsgId, sentAt = itemTs, content = qmc, formattedText}
+              let quotedItem = CIQuote {chatDir, itemId = Just quotedItemId, sharedMsgId = itemSharedMsgId, sentAt = itemTs, content = qmc, formattedText}
                   msgRef = MsgRef {msgId = itemSharedMsgId, sentAt = itemTs, sent, memberId = Nothing}
                in sendNewMsg user ct (MCQuote QuotedMsg {msgRef, content = qmc} mc) mc (Just quotedItem)
     CTGroup -> do
@@ -212,7 +212,7 @@ processChatCommand = \case
             send_ :: forall d. MsgDirectionI d => CIDirection 'CTGroup d -> Bool -> GroupMember -> MsgContent -> m ChatResponse
             send_ d sent GroupMember {memberId} content =
               let cd = CCIDirection (msgDirection @d) d
-                  quotedItem = CIQuote' {chatDir = cd, itemId = Just quotedItemId, sharedMsgId = itemSharedMsgId, sentAt = itemTs, content, formattedText}
+                  quotedItem = CIQuote {chatDir = cd, itemId = Just quotedItemId, sharedMsgId = itemSharedMsgId, sentAt = itemTs, content, formattedText}
                   msgRef = MsgRef {msgId = itemSharedMsgId, sentAt = itemTs, sent, memberId = Just memberId}
                in sendNewGroupMsg user group (MCQuote QuotedMsg {msgRef, content} mc) mc (Just quotedItem)
     CTContactRequest -> pure $ chatCmdError "not supported"
@@ -1372,17 +1372,17 @@ saveRcvMSG Connection {connId} connOrGroupId agentMsgMeta msgBody = do
       rcvMsgDelivery = RcvMsgDelivery {connId, agentMsgId, agentMsgMeta}
   withStore $ \st -> createNewMessageAndRcvMsgDelivery st connOrGroupId newMsg sharedMsgId_ rcvMsgDelivery
 
-sendDirectChatItem :: ChatMonad m => User -> Contact -> ChatMsgEvent -> CIContent 'MDSnd -> Maybe (CIQuote' 'CTDirect) -> m (ChatItem 'CTDirect 'MDSnd)
+sendDirectChatItem :: ChatMonad m => User -> Contact -> ChatMsgEvent -> CIContent 'MDSnd -> Maybe (CIQuote 'CTDirect) -> m (ChatItem 'CTDirect 'MDSnd)
 sendDirectChatItem user ct chatMsgEvent ciContent quotedItem = do
   msg <- sendDirectContactMessage ct chatMsgEvent
   saveSndChatItem user (CDDirectSnd ct) msg ciContent quotedItem
 
-sendGroupChatItem :: ChatMonad m => User -> Group -> ChatMsgEvent -> CIContent 'MDSnd -> Maybe (CIQuote' 'CTGroup) -> m (ChatItem 'CTGroup 'MDSnd)
+sendGroupChatItem :: ChatMonad m => User -> Group -> ChatMsgEvent -> CIContent 'MDSnd -> Maybe (CIQuote 'CTGroup) -> m (ChatItem 'CTGroup 'MDSnd)
 sendGroupChatItem user (Group g ms) chatMsgEvent ciContent quotedItem = do
   msg <- sendGroupMessage g ms chatMsgEvent
   saveSndChatItem user (CDGroupSnd g) msg ciContent quotedItem
 
-saveSndChatItem :: ChatMonad m => User -> ChatDirection c 'MDSnd -> SndMessage -> CIContent 'MDSnd -> Maybe (CIQuote' c) -> m (ChatItem c 'MDSnd)
+saveSndChatItem :: ChatMonad m => User -> ChatDirection c 'MDSnd -> SndMessage -> CIContent 'MDSnd -> Maybe (CIQuote c) -> m (ChatItem c 'MDSnd)
 saveSndChatItem user cd msg@SndMessage {sharedMsgId} content quotedItem = do
   createdAt <- liftIO getCurrentTime
   ciId <- withStore $ \st -> createNewSndChatItem st user cd msg content quotedItem createdAt
@@ -1394,7 +1394,7 @@ saveRcvChatItem user cd msg@RcvMessage {sharedMsgId_} MsgMeta {broker = (_, brok
   (ciId, quotedItem) <- withStore $ \st -> createNewRcvChatItem st user cd msg content brokerTs createdAt -- createNewChatItem st user cd $ mkNewChatItem content msg brokerTs createdAt
   liftIO $ mkChatItem cd ciId content quotedItem sharedMsgId_ brokerTs createdAt
 
-mkChatItem :: MsgDirectionI d => ChatDirection c d -> ChatItemId -> CIContent d -> Maybe (CIQuote' c) -> Maybe SharedMsgId -> ChatItemTs -> UTCTime -> IO (ChatItem c d)
+mkChatItem :: MsgDirectionI d => ChatDirection c d -> ChatItemId -> CIContent d -> Maybe (CIQuote c) -> Maybe SharedMsgId -> ChatItemTs -> UTCTime -> IO (ChatItem c d)
 mkChatItem cd ciId content quotedItem sharedMsgId itemTs createdAt = do
   tz <- getCurrentTimeZone
   let itemText = ciContentToText content

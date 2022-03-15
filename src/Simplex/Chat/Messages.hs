@@ -80,7 +80,7 @@ data ChatItem (c :: ChatType) (d :: MsgDirection) = ChatItem
     meta :: CIMeta d,
     content :: CIContent d,
     formattedText :: Maybe MarkdownList,
-    quotedItem :: Maybe (CIQuote' c)
+    quotedItem :: Maybe (CIQuote c)
   }
   deriving (Show, Generic)
 
@@ -230,7 +230,7 @@ mkCIMeta itemId itemText itemStatus itemSharedMsgId tz itemTs createdAt =
 
 instance ToJSON (CIMeta d) where toEncoding = J.genericToEncoding J.defaultOptions
 
-data CIQuote' c = CIQuote'
+data CIQuote (c :: ChatType) = CIQuote
   { chatDir :: CCIDirection c,
     itemId :: Maybe ChatItemId,
     sharedMsgId :: Maybe SharedMsgId,
@@ -240,7 +240,7 @@ data CIQuote' c = CIQuote'
   }
   deriving (Show, Generic)
 
-instance ToJSON (CIQuote' c) where
+instance ToJSON (CIQuote c) where
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
   toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 

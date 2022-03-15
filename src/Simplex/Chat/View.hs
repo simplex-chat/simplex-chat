@@ -154,7 +154,7 @@ responseToView testView = \case
         toChatView (CChatItem dir ChatItem{meta, quotedItem}) =
           ((msgDirectionInt $ toMsgDirection dir, itemText meta),) $ case quotedItem of
             Nothing -> Nothing
-            Just CIQuote' {chatDir = CCIDirection quoteDir _, content}  ->
+            Just CIQuote {chatDir = CCIDirection quoteDir _, content}  ->
               Just (msgDirectionInt $ toMsgDirection quoteDir, msgContentText content)
     viewErrorsSummary :: [a] -> StyledString -> [StyledString]
     viewErrorsSummary summary s = if null summary then [] else [ttyError (T.pack . show $ length summary) <> s <> " (run with -c option to show each error)"]
@@ -189,11 +189,11 @@ viewChatItem chat (ChatItem {chatDir, meta, content, quotedItem}) = case chat of
       quote = maybe [] (groupQuote g) quotedItem
   _ -> []
   where
-    directQuote :: forall d'. MsgDirectionI d' => CIDirection 'CTDirect d' -> CIQuote' 'CTDirect -> [StyledString]
-    directQuote _ (CIQuote' {content = qmc, chatDir = CCIDirection qouteDir _}) =
+    directQuote :: forall d'. MsgDirectionI d' => CIDirection 'CTDirect d' -> CIQuote 'CTDirect -> [StyledString]
+    directQuote _ (CIQuote {content = qmc, chatDir = CCIDirection qouteDir _}) =
       quoteText qmc $ if isJust $ testEquality (msgDirection @d') qouteDir then ">>" else ">"
-    groupQuote :: GroupInfo -> CIQuote' 'CTGroup -> [StyledString]
-    groupQuote g (CIQuote' {content = qmc, chatDir = CCIDirection _ quoteDir}) = quoteText qmc . ttyQuotedMember $ sentByMember g quoteDir -- $ ttyQuotedMember m
+    groupQuote :: GroupInfo -> CIQuote 'CTGroup -> [StyledString]
+    groupQuote g (CIQuote {content = qmc, chatDir = CCIDirection _ quoteDir}) = quoteText qmc . ttyQuotedMember $ sentByMember g quoteDir -- $ ttyQuotedMember m
     sentByMember :: GroupInfo -> CIDirection 'CTGroup d' -> GroupMember
     sentByMember GroupInfo {membership} = \case
       CIGroupSnd -> membership
