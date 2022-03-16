@@ -18,7 +18,7 @@ m20220304_msg_quotes =
     ALTER TABLE chat_items ADD COLUMN quoted_shared_msg_id BLOB; -- from MessageRef in QuotedMsg
     ALTER TABLE chat_items ADD COLUMN quoted_sent_at TEXT; -- from MessageRef in QuotedMsg
     ALTER TABLE chat_items ADD COLUMN quoted_content TEXT; -- from MsgContent in QuotedMsg (JSON)
-    ALTER TABLE chat_items ADD COLUMN quoted_sent INTEGER; -- from MessageRef, 1 for sent, 0 for received, NULL for group items (or not reply messages)
+    ALTER TABLE chat_items ADD COLUMN quoted_sent INTEGER; -- from MessageRef, 1 for sent, 0 for received, NULL for messages without quote
     ALTER TABLE chat_items ADD COLUMN quoted_member_id BLOB; -- from MessageRef
     CREATE INDEX idx_chat_items_shared_msg_id ON chat_items (shared_msg_id);
 |]
