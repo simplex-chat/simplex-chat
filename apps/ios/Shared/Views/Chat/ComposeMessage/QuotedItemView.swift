@@ -39,7 +39,7 @@ struct QuotedItemView: View {
             return Text(qi.content.text)
         }
     }
- }
+}
 
 struct QuotedItemView_Previews: PreviewProvider {
     static var previews: some View {

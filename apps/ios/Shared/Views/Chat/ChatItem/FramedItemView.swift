@@ -17,7 +17,6 @@ struct FramedItemView: View {
     @Environment(\.colorScheme) var colorScheme
     var chatItem: ChatItem
     @State var msgWidth: CGFloat = 0
-    private let codeFont = Font.custom("Courier", size: UIFont.preferredFont(forTextStyle: .body).pointSize)
 
     var body: some View {
         let v = ZStack(alignment: .bottomTrailing) {

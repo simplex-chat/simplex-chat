@@ -122,8 +122,10 @@ open class ChatController(val ctrl: ChatCtrl, val ntfManager: NtfManager, val ap
     return null
   }
 
-  suspend fun apiSendMessage(type: ChatType, id: Long, mc: MsgContent): AChatItem? {
-    val r = sendCmd(CC.ApiSendMessage(type, id, mc))
+  suspend fun apiSendMessage(type: ChatType, id: Long, quotedItemId: Long? = null, mc: MsgContent): AChatItem? {
+    val cmd = if (quotedItemId == null) CC.ApiSendMessage(type, id, mc)
+              else CC.ApiSendMessageQuote(type, id, quotedItemId, mc)
+    val r = sendCmd(cmd)
     if (r is CR.NewChatItem ) return r.chatItem
     Log.e(TAG, "apiSendMessage bad response: ${r.responseType} ${r.details}")
     return null
@@ -343,6 +345,7 @@ sealed class CC {
   class ApiGetChats: CC()
   class ApiGetChat(val type: ChatType, val id: Long): CC()
   class ApiSendMessage(val type: ChatType, val id: Long, val mc: MsgContent): CC()
+  class ApiSendMessageQuote(val type: ChatType, val id: Long, val itemId: Long, val mc: MsgContent): CC()
   class GetUserSMPServers(): CC()
   class SetUserSMPServers(val smpServers: List<String>): CC()
   class AddContact: CC()
@@ -364,6 +367,7 @@ sealed class CC {
     is ApiGetChats -> "/_get chats"
     is ApiGetChat -> "/_get chat ${chatRef(type, id)} count=100"
     is ApiSendMessage -> "/_send ${chatRef(type, id)} ${mc.cmdString}"
+    is ApiSendMessageQuote -> "/_send_quote ${chatRef(type, id)} $itemId ${mc.cmdString}"
     is GetUserSMPServers -> "/smp_servers"
     is SetUserSMPServers -> "/smp_servers ${smpServersStr(smpServers)}"
     is AddContact -> "/connect"
@@ -386,6 +390,7 @@ sealed class CC {
     is ApiGetChats -> "apiGetChats"
     is ApiGetChat -> "apiGetChat"
     is ApiSendMessage -> "apiSendMessage"
+    is ApiSendMessageQuote -> "apiSendMessageQuote"
     is GetUserSMPServers -> "getUserSMPServers"
     is SetUserSMPServers -> "setUserSMPServers"
     is AddContact -> "addContact"
@@ -422,6 +427,7 @@ class APIResponse(val resp: CR, val corr: String? = null) {
         json.decodeFromString(str)
       } catch(e: Exception) {
         try {
+          Log.d(TAG, e.localizedMessage)
           val data = json.parseToJsonElement(str).jsonObject
           APIResponse(
             resp = CR.Response(data["resp"]!!.jsonObject["type"]?.toString() ?: "invalid", json.encodeToString(data)),

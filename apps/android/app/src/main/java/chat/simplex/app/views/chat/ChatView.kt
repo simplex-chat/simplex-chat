@@ -3,25 +3,26 @@ package chat.simplex.app.views.chat
 import android.content.res.Configuration
 import android.util.Log
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.ArrowBack
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.mapSaver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.*
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.TAG
 import chat.simplex.app.model.*
+import chat.simplex.app.ui.theme.HighOrLowlight
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.chat.item.ChatItemView
 import chat.simplex.app.views.helpers.*
@@ -35,9 +36,11 @@ import kotlinx.datetime.Clock
 @Composable
 fun ChatView(chatModel: ChatModel) {
   val chat: Chat? = chatModel.chats.firstOrNull { chat -> chat.chatInfo.id == chatModel.chatId.value }
-  if (chat == null) {
+  val user = chatModel.currentUser.value
+  if (chat == null || user == null) {
     chatModel.chatId.value = null
   } else {
+    val quotedItem = remember { mutableStateOf<ChatItem?>(null) }
     BackHandler { chatModel.chatId.value = null }
     // TODO a more advanced version would mark as read only if in view
     LaunchedEffect(chat.chatItems) {
@@ -54,7 +57,7 @@ fun ChatView(chatModel: ChatModel) {
         }
       }
     }
-    ChatLayout(chat, chatModel.chatItems,
+    ChatLayout(user, chat, chatModel.chatItems, quotedItem,
       back = { chatModel.chatId.value = null },
       info = { ModalManager.shared.showCustomModal { close -> ChatInfoView(chatModel, close) } },
       sendMessage = { msg ->
@@ -64,8 +67,10 @@ fun ChatView(chatModel: ChatModel) {
           val newItem = chatModel.controller.apiSendMessage(
             type = cInfo.chatType,
             id = cInfo.apiId,
+            quotedItemId = quotedItem.value?.meta?.itemId,
             mc = MsgContent.MCText(msg)
           )
+          quotedItem.value = null
           // hide "in progress"
           if (newItem != null) chatModel.addChatItem(cInfo, newItem.chatItem)
         }
@@ -76,7 +81,10 @@ fun ChatView(chatModel: ChatModel) {
 
 @Composable
 fun ChatLayout(
-  chat: Chat, chatItems: List<ChatItem>,
+  user: User,
+  chat: Chat,
+  chatItems: List<ChatItem>,
+  quotedItem: MutableState<ChatItem?>,
   back: () -> Unit,
   info: () -> Unit,
   sendMessage: (String) -> Unit
@@ -88,11 +96,11 @@ fun ChatLayout(
     ProvideWindowInsets(windowInsetsAnimationsEnabled = true) {
       Scaffold(
         topBar = { ChatInfoToolbar(chat, back, info) },
-        bottomBar = { SendMsgView(sendMessage) },
+        bottomBar = { ComposeView(quotedItem, sendMessage) },
         modifier = Modifier.navigationBarsWithImePadding()
       ) { contentPadding ->
         Box(Modifier.padding(contentPadding)) {
-          ChatItemsList(chatItems)
+          ChatItemsList(user, chatItems, quotedItem)
         }
       }
     }
@@ -152,7 +160,7 @@ val CIListStateSaver = run {
 }
 
 @Composable
-fun ChatItemsList(chatItems: List<ChatItem>) {
+fun ChatItemsList(user: User, chatItems: List<ChatItem>, quotedItem: MutableState<ChatItem?>) {
   val listState = rememberLazyListState()
   val keyboardState by getKeyboardState()
   val ciListState = rememberSaveable(stateSaver = CIListStateSaver) {
@@ -160,9 +168,40 @@ fun ChatItemsList(chatItems: List<ChatItem>) {
   }
   val scope = rememberCoroutineScope()
   val uriHandler = LocalUriHandler.current
+  val cxt = LocalContext.current
   LazyColumn(state = listState) {
     items(chatItems) { cItem ->
-      ChatItemView(cItem, uriHandler)
+      val sent = cItem.chatDir.sent
+      val alignment = if (sent) Alignment.CenterEnd else Alignment.CenterStart
+      var showMenu by remember { mutableStateOf(false) }
+      Box(
+        modifier = Modifier
+          .padding(bottom = 4.dp)
+          .fillMaxWidth()
+          .padding(
+            start = if (sent) 60.dp else 16.dp,
+            end = if (sent) 16.dp else 60.dp,
+          ),
+        contentAlignment = alignment,
+      ) {
+        Column(Modifier.combinedClickable(onLongClick = { showMenu = true }, onClick = {})) {
+          ChatItemView(user, cItem, uriHandler)
+          DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
+            ItemAction("Reply", Icons.Outlined.Reply, onClick = {
+              quotedItem.value = cItem
+              showMenu = false
+            })
+            ItemAction("Share", Icons.Outlined.Share, onClick = {
+              shareText(cxt, cItem.content.text)
+              showMenu = false
+            })
+            ItemAction("Copy", Icons.Outlined.ContentCopy,  onClick = {
+              copyText(cxt, cItem.content.text)
+              showMenu = false
+            })
+          }
+        }
+      }
     }
     val len = chatItems.count()
     if (len > 1 && (keyboardState != ciListState.value.keyboardState || !ciListState.value.scrolled || len != ciListState.value.itemCount)) {
@@ -170,6 +209,18 @@ fun ChatItemsList(chatItems: List<ChatItem>) {
         ciListState.value = CIListState(true, len, keyboardState)
         listState.animateScrollToItem(len - 1)
       }
+    }
+  }
+}
+
+@Composable
+private fun ItemAction(text: String, icon: ImageVector, onClick: () -> Unit) {
+  DropdownMenuItem(onClick) {
+    Row {
+      Text(text, modifier = Modifier
+        .fillMaxWidth()
+        .weight(1F))
+      Icon(icon, text, tint = HighOrLowlight)
     }
   }
 }
@@ -201,12 +252,14 @@ fun PreviewChatLayout() {
       )
     )
     ChatLayout(
+      user = User.sampleData,
       chat = Chat(
         chatInfo = ChatInfo.Direct.sampleData,
         chatItems = chatItems,
         chatStats = Chat.ChatStats()
       ),
       chatItems = chatItems,
+      quotedItem = remember { mutableStateOf(null) },
       back = {},
       info = {},
       sendMessage = {}
