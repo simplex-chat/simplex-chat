@@ -2248,6 +2248,7 @@ getChatItemQuote_ db User {userId, userContactId} chatDirection QuotedMsg {msgRe
           | otherwise -> getGroupChatItemQuote_ groupId mId
         _ -> pure . ciQuote Nothing $ CIQGroupRcv Nothing
   where
+    ciQuote :: Maybe ChatItemId -> CIQDirection c -> CIQuote c
     ciQuote itemId dir = CIQuote dir itemId msgId sentAt content . parseMaybeMarkdownList $ msgContentText content
     getDirectChatItemQuote_ :: Int64 -> Bool -> IO (CIQuote 'CTDirect)
     getDirectChatItemQuote_ contactId userSent = do
