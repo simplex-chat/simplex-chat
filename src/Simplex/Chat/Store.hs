@@ -2258,9 +2258,7 @@ getChatItemQuote_ db User {userId, userContactId} chatDirection QuotedMsg {msgRe
           (userId, contactId, msgId, userSent)
       where
         ciQuoteDirect :: Maybe ChatItemId -> CIQuote 'CTDirect
-        ciQuoteDirect chatItemId =
-          let direction = if userSent then CIQDirectSnd else CIQDirectRcv
-           in CIQuote direction chatItemId msgId sentAt content . parseMaybeMarkdownList $ msgContentText content
+        ciQuoteDirect = (`ciQuote` if userSent then CIQDirectSnd else CIQDirectRcv)
     getUserGroupChatItemId_ :: Int64 -> IO (Maybe ChatItemId)
     getUserGroupChatItemId_ groupId =
       listToMaybe . map fromOnly
@@ -2298,7 +2296,7 @@ getChatItemQuote_ db User {userId, userContactId} chatDirection QuotedMsg {msgRe
       where
         ciQuoteGroup :: [Only (Maybe ChatItemId) :. GroupMemberRow] -> CIQuote 'CTGroup
         ciQuoteGroup [] = ciQuote Nothing $ CIQGroupRcv Nothing
-        ciQuoteGroup ((Only chatItemId :. memberRow) : _) = ciQuote chatItemId . CIQGroupRcv . Just $ toGroupMember userContactId memberRow
+        ciQuoteGroup ((Only itemId :. memberRow) : _) = ciQuote itemId . CIQGroupRcv . Just $ toGroupMember userContactId memberRow
 
 getChatPreviews :: MonadUnliftIO m => SQLiteStore -> User -> m [AChat]
 getChatPreviews st user =
