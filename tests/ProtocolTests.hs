@@ -92,13 +92,13 @@ decodeChatMessageTest = describe "Chat message encoding/decoding" $ do
   it "x.msg.new" $ "{\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello\",\"type\":\"text\"}}}" #==# XMsgNew (MCSimple $ MCText "hello")
   it "x.msg.new" $ "{\"msgId\":\"AQIDBA==\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello\",\"type\":\"text\"}}}" ##==## (ChatMessage (Just $ SharedMsgId "\1\2\3\4") (XMsgNew . MCSimple $ MCText "hello"))
   it "x.msg.new" $
-    "{\"msgId\":\"AQIDBA==\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello to you too\",\"type\":\"text\"},\"quote\":{\"content\":{\"text\":\"hello there!\",\"type\":\"text\"},\"msgRef\":{\"msgId\":\"BQYHCA==\",\"sent\":true,\"sentAt\":\"1970-01-01T00:00:01.000000001Z\",\"type\":\"direct\"}}}}"
+    "{\"msgId\":\"AQIDBA==\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello to you too\",\"type\":\"text\"},\"quote\":{\"content\":{\"text\":\"hello there!\",\"type\":\"text\"},\"msgRef\":{\"msgId\":\"BQYHCA==\",\"sent\":true,\"sentAt\":\"1970-01-01T00:00:01.000000001Z\"}}}}"
       ##==## ( ChatMessage
                  (Just $ SharedMsgId "\1\2\3\4")
                  ( XMsgNew $
                      MCQuote
                        ( QuotedMsg
-                           (MsgRefDirect (Just $ SharedMsgId "\5\6\7\8") (systemToUTCTime $ MkSystemTime 1 1) True)
+                           (MsgRef (Just $ SharedMsgId "\5\6\7\8") (systemToUTCTime $ MkSystemTime 1 1) True Nothing)
                            $ MCText "hello there!"
                        )
                        (MCText "hello to you too")

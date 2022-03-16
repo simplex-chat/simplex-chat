@@ -33,7 +33,6 @@ import Simplex.Chat.Types
 import Simplex.Chat.Util (eitherToMaybe, safeDecodeUtf8)
 import Simplex.Messaging.Agent.Store.SQLite (fromTextField_)
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Parsers (dropPrefix, taggedObjectJSON)
 import Simplex.Messaging.Util ((<$?>))
 
 data ConnectionEntity
@@ -85,28 +84,20 @@ instance ToJSON SharedMsgId where
   toJSON = strToJSON
   toEncoding = strToJEncoding
 
-data MessageRef
-  = MsgRefDirect
-      { msgId :: Maybe SharedMsgId,
-        sentAt :: UTCTime,
-        sent :: Bool
-      }
-  | MsgRefGroup
-      { msgId :: Maybe SharedMsgId,
-        sentAt :: UTCTime,
-        memberId :: MemberId
-      }
+data MsgRef = MsgRef
+  { msgId :: Maybe SharedMsgId,
+    sentAt :: UTCTime,
+    sent :: Bool,
+    memberId :: Maybe MemberId -- must be present in all group message references, both referencing sent and received
+  }
   deriving (Eq, Show, Generic)
 
-msgRefJSONOpts :: J.Options
-msgRefJSONOpts = taggedObjectJSON $ dropPrefix "MsgRef"
+instance FromJSON MsgRef where
+  parseJSON = J.genericParseJSON J.defaultOptions {J.omitNothingFields = True}
 
-instance FromJSON MessageRef where
-  parseJSON = J.genericParseJSON msgRefJSONOpts
-
-instance ToJSON MessageRef where
-  toJSON = J.genericToJSON msgRefJSONOpts
-  toEncoding = J.genericToEncoding msgRefJSONOpts
+instance ToJSON MsgRef where
+  toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
+  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
 data ChatMessage = ChatMessage {msgId :: Maybe SharedMsgId, chatMsgEvent :: ChatMsgEvent}
   deriving (Eq, Show)
@@ -141,7 +132,7 @@ data ChatMsgEvent
   | XUnknown {event :: Text, params :: J.Object}
   deriving (Eq, Show)
 
-data QuotedMsg = QuotedMsg {msgRef :: MessageRef, content :: MsgContent}
+data QuotedMsg = QuotedMsg {msgRef :: MsgRef, content :: MsgContent}
   deriving (Eq, Show, Generic, FromJSON)
 
 instance ToJSON QuotedMsg where

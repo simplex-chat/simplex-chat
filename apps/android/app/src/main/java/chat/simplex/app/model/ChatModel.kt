@@ -241,9 +241,9 @@ data class Chat (
     val statusString: String get() = if (this is Connected) "Server connected" else "Connecting server…"
     val statusExplanation: String get() =
       when {
-        this is Connected -> "You are connected to the server you use to receve messages from this contact."
-        this is Error -> "Trying to connect to the server you use to receve messages from this contact (error: $error)."
-        else -> "Trying to connect to the server you use to receve messages from this contact."
+        this is Connected -> "You are connected to the server used to receive messages from this contact."
+        this is Error -> "Trying to connect to the server used to receive messages from this contact (error: $error)."
+        else -> "Trying to connect to the server used to receive messages from this contact."
       }
 
     @Serializable @SerialName("unknown") class Unknown: NetworkStatus()

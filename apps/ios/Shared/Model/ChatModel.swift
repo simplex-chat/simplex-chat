@@ -360,9 +360,9 @@ final class Chat: ObservableObject, Identifiable {
         var statusExplanation: String {
             get {
                 switch self {
-                case .connected: return "You are connected to the server you use to receve messages from this contact."
-                case let .error(err): return "Trying to connect to the server you use to receve messages from this contact (error: \(err))."
-                default: return "Trying to connect to the server you use to receve messages from this contact."
+                case .connected: return "You are connected to the server used to receive messages from this contact."
+                case let .error(err): return "Trying to connect to the server used to receive messages from this contact (error: \(err))."
+                default: return "Trying to connect to the server used to receive messages from this contact."
                 }
             }
         }

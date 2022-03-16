@@ -36,7 +36,7 @@ class NtfManager(val context: Context) {
 
     val notification = NotificationCompat.Builder(context, MessageChannel)
       .setContentTitle(cInfo.displayName)
-      .setContentText(cItem.content.text)
+      .setContentText(hideSecrets(cItem))
       .setPriority(NotificationCompat.PRIORITY_HIGH)
       .setGroup(MessageGroup)
       .setGroupAlertBehavior(NotificationCompat.GROUP_ALERT_CHILDREN)
@@ -59,6 +59,19 @@ class NtfManager(val context: Context) {
       // using cInfo.id only shows one notification per chat and updates it when the message arrives
       notify(cInfo.id.hashCode(), notification)
       notify(0, summary)
+    }
+  }
+
+  private fun hideSecrets(cItem: ChatItem): String {
+    val md = cItem.formattedText
+    return if (md == null) {
+      cItem.content.text
+    } else {
+      var res = ""
+      for (ft in md) {
+        res += if (ft.format is Format.Secret) "..." else ft.text
+      }
+      res
     }
   }
 

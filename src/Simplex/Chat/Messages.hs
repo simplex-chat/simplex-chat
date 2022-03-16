@@ -103,9 +103,6 @@ data JSONCIDirection
   | JCIGroupRcv {groupMember :: GroupMember}
   deriving (Generic, Show)
 
-instance FromJSON JSONCIDirection where
-  parseJSON = J.genericParseJSON . sumTypeJSON $ dropPrefix "JCI"
-
 instance ToJSON JSONCIDirection where
   toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "JCI"
   toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "JCI"
@@ -189,7 +186,7 @@ instance ToJSON ChatStats where
   toEncoding = J.genericToEncoding J.defaultOptions
 
 -- | type to show a mix of messages from multiple chats
-data AChatItem = forall c d. AChatItem (SChatType c) (SMsgDirection d) (ChatInfo c) (ChatItem c d)
+data AChatItem = forall c d. MsgDirectionI d => AChatItem (SChatType c) (SMsgDirection d) (ChatInfo c) (ChatItem c d)
 
 deriving instance Show AChatItem
 
@@ -222,41 +219,46 @@ mkCIMeta itemId itemText itemStatus itemSharedMsgId tz itemTs createdAt =
 
 instance ToJSON (CIMeta d) where toEncoding = J.genericToEncoding J.defaultOptions
 
-data CIQuoteData = CIQuoteData
-  { itemId :: Maybe ChatItemId,
+data CIQuote (c :: ChatType) = CIQuote
+  { chatDir :: CIQDirection c,
+    itemId :: Maybe ChatItemId, -- Nothing in case MsgRef references the item the user did not receive yet
+    sharedMsgId :: Maybe SharedMsgId, -- Nothing for the messages from the old clients
     sentAt :: UTCTime,
     content :: MsgContent,
     formattedText :: Maybe MarkdownList
   }
   deriving (Show, Generic)
 
-instance ToJSON CIQuoteData where
+instance ToJSON (CIQuote c) where
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
   toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
-data CIQuote (c :: ChatType) where
-  CIQuoteDirect :: CIQuoteData -> Bool -> CIQuote 'CTDirect
-  CIQuoteGroup :: CIQuoteData -> GroupMember -> CIQuote 'CTGroup
+data CIQDirection (c :: ChatType) where
+  CIQDirectSnd :: CIQDirection 'CTDirect
+  CIQDirectRcv :: CIQDirection 'CTDirect
+  CIQGroupSnd :: CIQDirection 'CTGroup
+  CIQGroupRcv :: Maybe GroupMember -> CIQDirection 'CTGroup -- member can be Nothing in case MsgRef has memberId that the user is not notified about yet
 
-deriving instance Show (CIQuote c)
+deriving instance Show (CIQDirection c)
 
-instance ToJSON (CIQuote c) where
-  toJSON = J.toJSON . jsonCIQuote
-  toEncoding = J.toEncoding . jsonCIQuote
+instance ToJSON (CIQDirection c) where
+  toJSON = J.toJSON . jsonCIQDirection
+  toEncoding = J.toEncoding . jsonCIQDirection
 
-data JSONCIQuote
-  = JCIQuoteDirect {quote :: CIQuoteData, sent :: Bool}
-  | JCIQuoteGroup {quote :: CIQuoteData, member :: GroupMember}
-  deriving (Show, Generic)
+jsonCIQDirection :: CIQDirection c -> Maybe JSONCIDirection
+jsonCIQDirection = \case
+  CIQDirectSnd -> Just JCIDirectSnd
+  CIQDirectRcv -> Just JCIDirectRcv
+  CIQGroupSnd -> Just JCIGroupSnd
+  CIQGroupRcv (Just m) -> Just $ JCIGroupRcv m
+  CIQGroupRcv Nothing -> Nothing
 
-instance ToJSON JSONCIQuote where
-  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "JCIQuote"
-  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "JCIQuote"
-
-jsonCIQuote :: CIQuote c -> JSONCIQuote
-jsonCIQuote = \case
-  CIQuoteDirect quote sent -> JCIQuoteDirect {quote, sent}
-  CIQuoteGroup quote member -> JCIQuoteGroup {quote, member}
+quoteMsgDirection :: CIQDirection c -> MsgDirection
+quoteMsgDirection = \case
+  CIQDirectSnd -> MDSnd
+  CIQDirectRcv -> MDRcv
+  CIQGroupSnd -> MDSnd
+  CIQGroupRcv _ -> MDRcv
 
 data CIStatus (d :: MsgDirection) where
   CISSndNew :: CIStatus 'MDSnd
@@ -452,30 +454,23 @@ instance ChatTypeI 'CTDirect where chatType = SCTDirect
 instance ChatTypeI 'CTGroup where chatType = SCTGroup
 
 data NewMessage = NewMessage
-  { direction :: MsgDirection,
-    chatMsgEvent :: ChatMsgEvent,
+  { chatMsgEvent :: ChatMsgEvent,
     msgBody :: MsgBody
   }
   deriving (Show)
 
 data SndMessage = SndMessage
   { msgId :: MessageId,
-    direction :: MsgDirection,
-    chatMsgEvent :: ChatMsgEvent,
     sharedMsgId :: SharedMsgId,
     msgBody :: MsgBody
   }
 
-data Message = Message
+data RcvMessage = RcvMessage
   { msgId :: MessageId,
-    direction :: MsgDirection,
     chatMsgEvent :: ChatMsgEvent,
     sharedMsgId_ :: Maybe SharedMsgId,
     msgBody :: MsgBody
   }
-
-anyMessage :: SndMessage -> Message
-anyMessage SndMessage {..} = Message {msgId, direction, chatMsgEvent, sharedMsgId_ = Just sharedMsgId, msgBody}
 
 data PendingGroupMessage = PendingGroupMessage
   { msgId :: MessageId,
@@ -489,7 +484,7 @@ type MessageId = Int64
 data ConnOrGroupId = ConnectionId Int64 | GroupId Int64
 
 data MsgDirection = MDRcv | MDSnd
-  deriving (Show, Generic)
+  deriving (Eq, Show, Generic)
 
 instance FromJSON MsgDirection where
   parseJSON = J.genericParseJSON . enumJSON $ dropPrefix "MD"
