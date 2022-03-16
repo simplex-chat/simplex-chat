@@ -4,7 +4,9 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TypeApplications, ScopedTypeVariables, TupleSections #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TupleSections #-}
+{-# LANGUAGE TypeApplications #-}
 
 module Simplex.Chat.View where
 
@@ -33,7 +35,6 @@ import Simplex.Messaging.Encoding.String
 import qualified Simplex.Messaging.Protocol as SMP
 import Simplex.Messaging.Util (bshow)
 import System.Console.ANSI.Types
-import Data.Type.Equality (testEquality)
 
 serializeChatResponse :: ChatResponse -> String
 serializeChatResponse = unlines . map unStyle . responseToView False
@@ -151,11 +152,11 @@ responseToView testView = \case
     testViewChat (AChat _ Chat {chatItems}) = [sShow $ map toChatView chatItems]
       where
         toChatView :: CChatItem c -> ((Int, Text), Maybe (Int, Text))
-        toChatView (CChatItem dir ChatItem{meta, quotedItem}) =
+        toChatView (CChatItem dir ChatItem {meta, quotedItem}) =
           ((msgDirectionInt $ toMsgDirection dir, itemText meta),) $ case quotedItem of
             Nothing -> Nothing
-            Just CIQuote {chatDir = CCIDirection quoteDir _, content}  ->
-              Just (msgDirectionInt $ toMsgDirection quoteDir, msgContentText content)
+            Just CIQuote {chatDir = quoteDir, content} ->
+              Just (msgDirectionInt $ quoteMsgDirection quoteDir, msgContentText content)
     viewErrorsSummary :: [a] -> StyledString -> [StyledString]
     viewErrorsSummary summary s = if null summary then [] else [ttyError (T.pack . show $ length summary) <> s <> " (run with -c option to show each error)"]
 
@@ -190,14 +191,14 @@ viewChatItem chat (ChatItem {chatDir, meta, content, quotedItem}) = case chat of
   _ -> []
   where
     directQuote :: forall d'. MsgDirectionI d' => CIDirection 'CTDirect d' -> CIQuote 'CTDirect -> [StyledString]
-    directQuote _ (CIQuote {content = qmc, chatDir = CCIDirection qouteDir _}) =
-      quoteText qmc $ if isJust $ testEquality (msgDirection @d') qouteDir then ">>" else ">"
+    directQuote _ (CIQuote {content = qmc, chatDir = qouteDir}) =
+      quoteText qmc $ if toMsgDirection (msgDirection @d') == quoteMsgDirection qouteDir then ">>" else ">"
     groupQuote :: GroupInfo -> CIQuote 'CTGroup -> [StyledString]
-    groupQuote g (CIQuote {content = qmc, chatDir = CCIDirection _ quoteDir}) = quoteText qmc . ttyQuotedMember $ sentByMember g quoteDir -- $ ttyQuotedMember m
-    sentByMember :: GroupInfo -> CIDirection 'CTGroup d' -> GroupMember
+    groupQuote g (CIQuote {content = qmc, chatDir = quoteDir}) = quoteText qmc . ttyQuotedMember $ sentByMember g quoteDir
+    sentByMember :: GroupInfo -> CIQDirection 'CTGroup -> Maybe GroupMember
     sentByMember GroupInfo {membership} = \case
-      CIGroupSnd -> membership
-      CIGroupRcv m -> m
+      CIQGroupSnd -> Just membership
+      CIQGroupRcv m -> m
     quoteText qmc sentBy = prependFirst (sentBy <> " ") $ msgPreview qmc
     msgPreview = msgPlain . preview . msgContentText
       where
@@ -606,8 +607,9 @@ ttyToContact' Contact {localDisplayName = c} = ttyToContact c
 ttyQuotedContact :: Contact -> StyledString
 ttyQuotedContact Contact {localDisplayName = c} = ttyFrom $ c <> ">"
 
-ttyQuotedMember :: GroupMember -> StyledString
-ttyQuotedMember GroupMember {localDisplayName = c} = "> " <> ttyFrom c
+ttyQuotedMember :: Maybe GroupMember -> StyledString
+ttyQuotedMember (Just GroupMember {localDisplayName = c}) = "> " <> ttyFrom c
+ttyQuotedMember _ = "> " <> ttyFrom "?"
 
 ttyFromContact' :: Contact -> StyledString
 ttyFromContact' Contact {localDisplayName = c} = ttyFromContact c

@@ -189,11 +189,11 @@ processChatCommand = \case
       case qci of
         CChatItem _ (ChatItem {meta = CIMeta {itemTs, itemSharedMsgId}, content = ciContent, formattedText}) -> do
           case ciContent of
-            CISndMsgContent qmc -> send_ (CCIDirection SMDSnd CIDirectSnd) True qmc
-            CIRcvMsgContent qmc -> send_ (CCIDirection SMDRcv CIDirectRcv) False qmc
+            CISndMsgContent qmc -> send_ CIQDirectSnd True qmc
+            CIRcvMsgContent qmc -> send_ CIQDirectRcv False qmc
             _ -> throwChatError CEInvalidQuote
           where
-            send_ :: CCIDirection 'CTDirect -> Bool -> MsgContent -> m ChatResponse
+            send_ :: CIQDirection 'CTDirect -> Bool -> MsgContent -> m ChatResponse
             send_ chatDir sent qmc =
               let quotedItem = CIQuote {chatDir, itemId = Just quotedItemId, sharedMsgId = itemSharedMsgId, sentAt = itemTs, content = qmc, formattedText}
                   msgRef = MsgRef {msgId = itemSharedMsgId, sentAt = itemTs, sent, memberId = Nothing}
@@ -205,14 +205,13 @@ processChatCommand = \case
       case qci of
         CChatItem _ (ChatItem {chatDir, meta = CIMeta {itemTs, itemSharedMsgId}, content = ciContent, formattedText}) -> do
           case (ciContent, chatDir) of
-            (CISndMsgContent qmc, d) -> send_ d True membership qmc
-            (CIRcvMsgContent qmc, d@(CIGroupRcv m)) -> send_ d False m qmc
+            (CISndMsgContent qmc, _) -> send_ CIQGroupSnd True membership qmc
+            (CIRcvMsgContent qmc, CIGroupRcv m) -> send_ (CIQGroupRcv $ Just m) False m qmc
             _ -> throwChatError CEInvalidQuote
           where
-            send_ :: forall d. MsgDirectionI d => CIDirection 'CTGroup d -> Bool -> GroupMember -> MsgContent -> m ChatResponse
-            send_ d sent GroupMember {memberId} content =
-              let cd = CCIDirection (msgDirection @d) d
-                  quotedItem = CIQuote {chatDir = cd, itemId = Just quotedItemId, sharedMsgId = itemSharedMsgId, sentAt = itemTs, content, formattedText}
+            send_ :: CIQDirection 'CTGroup -> Bool -> GroupMember -> MsgContent -> m ChatResponse
+            send_ qd sent GroupMember {memberId} content =
+              let quotedItem = CIQuote {chatDir = qd, itemId = Just quotedItemId, sharedMsgId = itemSharedMsgId, sentAt = itemTs, content, formattedText}
                   msgRef = MsgRef {msgId = itemSharedMsgId, sentAt = itemTs, sent, memberId = Just memberId}
                in sendNewGroupMsg user group (MCQuote QuotedMsg {msgRef, content} mc) mc (Just quotedItem)
     CTContactRequest -> pure $ chatCmdError "not supported"
