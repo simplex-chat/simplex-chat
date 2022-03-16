@@ -2194,7 +2194,7 @@ createNewRcvChatItem :: MonadUnliftIO m => SQLiteStore -> User -> ChatDirection 
 createNewRcvChatItem st user chatDirection RcvMessage {msgId, chatMsgEvent, sharedMsgId_} ciContent itemTs createdAt =
   liftIO . withTransaction st $ \db -> do
     ciId <- createNewChatItem_ db user chatDirection (Just msgId) sharedMsgId_ ciContent quoteRow itemTs createdAt
-    quotedItem <- join <$> mapM (getChatItemQuote_ db user chatDirection) quotedMsg
+    quotedItem <- mapM (getChatItemQuote_ db user chatDirection) quotedMsg
     pure (ciId, quotedItem)
   where
     quotedMsg = cmToQuotedMsg chatMsgEvent
@@ -2236,16 +2236,19 @@ createNewChatItem_ db User {userId} chatDirection msgId sharedMsgId ciContent qu
       CDGroupRcv GroupInfo {groupId} GroupMember {groupMemberId} -> (Nothing, Just groupId, Just groupMemberId)
       CDGroupSnd GroupInfo {groupId} -> (Nothing, Just groupId, Nothing)
 
-getChatItemQuote_ :: DB.Connection -> User -> ChatDirection c 'MDRcv -> QuotedMsg -> IO (Maybe (CIQuote c))
+getChatItemQuote_ :: DB.Connection -> User -> ChatDirection c 'MDRcv -> QuotedMsg -> IO (CIQuote c)
 getChatItemQuote_ db User {userId, userContactId} chatDirection QuotedMsg {msgRef = MsgRef {msgId, sentAt, sent, memberId}, content} =
   case chatDirection of
-    CDDirectRcv Contact {contactId} ->
-      Just <$> getDirectChatItemQuote_ contactId (not sent)
-    CDGroupRcv GroupInfo {groupId} _ ->
+    CDDirectRcv Contact {contactId} -> getDirectChatItemQuote_ contactId (not sent)
+    CDGroupRcv GroupInfo {groupId, membership = GroupMember {memberId = userMemberId}} sender@GroupMember {memberId = senderMemberId} ->
       case memberId of
-        Just mId -> getGroupChatItemQuote_ groupId mId
-        _ -> pure . Just . CIQuote (CIQGroupRcv Nothing) Nothing msgId sentAt content . parseMaybeMarkdownList $ msgContentText content
+        Just mId
+          | mId == userMemberId -> (`ciQuote` CIQGroupSnd) <$> getUserGroupChatItemId_ groupId
+          | mId == senderMemberId -> (`ciQuote` CIQGroupRcv (Just sender)) <$> getGroupChatItemId_ groupId mId
+          | otherwise -> getGroupChatItemQuote_ groupId mId
+        _ -> pure . ciQuote Nothing $ CIQGroupRcv Nothing
   where
+    ciQuote itemId dir = CIQuote dir itemId msgId sentAt content . parseMaybeMarkdownList $ msgContentText content
     getDirectChatItemQuote_ :: Int64 -> Bool -> IO (CIQuote 'CTDirect)
     getDirectChatItemQuote_ contactId userSent = do
       ciQuoteDirect . listToMaybe . map fromOnly
@@ -2258,7 +2261,21 @@ getChatItemQuote_ db User {userId, userContactId} chatDirection QuotedMsg {msgRe
         ciQuoteDirect chatItemId =
           let direction = if userSent then CIQDirectSnd else CIQDirectRcv
            in CIQuote direction chatItemId msgId sentAt content . parseMaybeMarkdownList $ msgContentText content
-    getGroupChatItemQuote_ :: Int64 -> MemberId -> IO (Maybe (CIQuote 'CTGroup))
+    getUserGroupChatItemId_ :: Int64 -> IO (Maybe ChatItemId)
+    getUserGroupChatItemId_ groupId =
+      listToMaybe . map fromOnly
+        <$> DB.query
+          db
+          "SELECT chat_item_id FROM chat_items WHERE user_id = ? AND group_id = ? AND shared_msg_id = ? AND item_sent = ? AND group_member_id IS NULL"
+          (userId, groupId, msgId, MDSnd)
+    getGroupChatItemId_ :: Int64 -> MemberId -> IO (Maybe ChatItemId)
+    getGroupChatItemId_ groupId mId =
+      listToMaybe . map fromOnly
+        <$> DB.query
+          db
+          "SELECT chat_item_id FROM chat_items WHERE user_id = ? AND group_id = ? AND shared_msg_id = ? AND item_sent = ? AND group_member_id = ?"
+          (userId, groupId, msgId, MDRcv, mId)
+    getGroupChatItemQuote_ :: Int64 -> MemberId -> IO (CIQuote 'CTGroup)
     getGroupChatItemQuote_ groupId mId = do
       ciQuoteGroup
         <$> DB.queryNamed
@@ -2273,21 +2290,15 @@ getChatItemQuote_ db User {userId, userContactId} chatDirection QuotedMsg {msgRe
             JOIN contact_profiles p ON m.contact_profile_id = p.contact_profile_id
             LEFT JOIN contacts c ON m.contact_id = c.contact_id
             LEFT JOIN chat_items i ON i.group_id = m.group_id
-                                      AND ( m.group_member_id = i.group_member_id
-                                            OR (i.group_member_id IS NULL AND i.item_sent = 1 AND c.contact_id = :user_contact_id)
-                                          )
+                                      AND m.group_member_id = i.group_member_id
                                       AND i.shared_msg_id = :msg_id
             WHERE m.user_id = :user_id AND m.group_id = :group_id AND m.member_id = :member_id
           |]
-          [":user_id" := userId, ":user_contact_id" := userContactId, ":group_id" := groupId, ":member_id" := mId, ":msg_id" := msgId]
+          [":user_id" := userId, ":group_id" := groupId, ":member_id" := mId, ":msg_id" := msgId]
       where
-        ciQuoteGroup :: [Only (Maybe ChatItemId) :. GroupMemberRow] -> Maybe (CIQuote 'CTGroup)
-        ciQuoteGroup [] = ciQoute Nothing $ CIQGroupRcv Nothing
-        ciQuoteGroup ((Only chatItemId :. memberRow) : _) = ciQoute chatItemId . direction $ toGroupMember userContactId memberRow
-        ciQoute itemId dir = Just . CIQuote dir itemId msgId sentAt content . parseMaybeMarkdownList $ msgContentText content
-        direction m@GroupMember {memberContactId}
-          | memberContactId == Just userContactId = CIQGroupSnd
-          | otherwise = CIQGroupRcv $ Just m
+        ciQuoteGroup :: [Only (Maybe ChatItemId) :. GroupMemberRow] -> CIQuote 'CTGroup
+        ciQuoteGroup [] = ciQuote Nothing $ CIQGroupRcv Nothing
+        ciQuoteGroup ((Only chatItemId :. memberRow) : _) = ciQuote chatItemId . CIQGroupRcv . Just $ toGroupMember userContactId memberRow
 
 getChatPreviews :: MonadUnliftIO m => SQLiteStore -> User -> m [AChat]
 getChatPreviews st user =
