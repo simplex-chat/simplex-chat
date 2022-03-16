@@ -100,9 +100,9 @@ struct FramedItemView_Previews: PreviewProvider {
     static var previews: some View {
         Group{
             FramedItemView(chatItem: ChatItem.getSample(1, .directSnd, .now, "hello"))
-            FramedItemView(chatItem: ChatItem.getSample(1, .groupRcv(groupMember: GroupMember.sampleData), .now, "hello", quotedItem: CIQuote.getSampleDirect(1, .now, "hi", sent: true)))
-            FramedItemView(chatItem: ChatItem.getSample(2, .directSnd, .now, "https://simplex.chat", .sndSent, quotedItem: CIQuote.getSampleDirect(1, .now, "hi")))
-            FramedItemView(chatItem: ChatItem.getSample(2, .directSnd, .now, "👍", .sndSent, quotedItem: CIQuote.getSampleDirect(1, .now, "Hello too")))
+            FramedItemView(chatItem: ChatItem.getSample(1, .groupRcv(groupMember: GroupMember.sampleData), .now, "hello", quotedItem: CIQuote.getSample(1, .now, "hi", chatDir: .directSnd)))
+            FramedItemView(chatItem: ChatItem.getSample(2, .directSnd, .now, "https://simplex.chat", .sndSent, quotedItem: CIQuote.getSample(1, .now, "hi", chatDir: .directRcv)))
+            FramedItemView(chatItem: ChatItem.getSample(2, .directSnd, .now, "👍", .sndSent, quotedItem: CIQuote.getSample(1, .now, "Hello too", chatDir: .directRcv)))
             FramedItemView(chatItem: ChatItem.getSample(2, .directRcv, .now, "hello there too!!! this covers -"))
             FramedItemView(chatItem: ChatItem.getSample(2, .directRcv, .now, "hello there too!!! this text has the time on the same line "))
             FramedItemView(chatItem: ChatItem.getSample(2, .directRcv, .now, "https://simplex.chat"))

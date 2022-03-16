@@ -641,47 +641,30 @@ struct RcvFileTransfer: Decodable {
 
 }
 
-enum CIQuote: Decodable, ItemContent {
-    case direct(quote: CIQuoteData, sent: Bool)
-    case group(quote: CIQuoteData, member: GroupMember)
-
-    var quote: CIQuoteData {
-        get {
-            switch (self) {
-            case let .direct(quote, _): return quote
-            case let .group(quote, _): return quote
-            }
-        }
-    }
-
-    var text: String { get { quote.content.text } }
-
-    var sender: String? {
-        get {
-            switch (self) {
-            case let .direct(_, sent): return sent ? "you" : nil
-            case let .group(_, member): return member.memberProfile.displayName
-            }
-        }
-    }
-
-    static func getSampleDirect(_ itemId: Int64, _ sentAt: Date, _ text: String, sent: Bool = false) -> CIQuote {
-        .direct(quote: .getSample(itemId, sentAt, text), sent: sent)
-    }
-
-    static func getSampleGroup(_ itemId: Int64, _ sentAt: Date, _ text: String, _ member: GroupMember = GroupMember.sampleData) -> CIQuote {
-        .group(quote: .getSample(itemId, sentAt, text), member: member)
-    }
-}
-
-struct CIQuoteData: Decodable {
+struct CIQuote: Decodable, ItemContent {
+    var chatDir: CIDirection?
     var itemId: Int64?
+    var sharedMsgId: String? = nil
     var sentAt: Date
     var content: MsgContent
     var formattedText: [FormattedText]?
     
-    static func getSample(_ itemId: Int64, _ sentAt: Date, _ text: String) -> CIQuoteData {
-        CIQuoteData(itemId: itemId, sentAt: sentAt, content: .text(text))
+    var text: String { get { content.text } }
+
+    var sender: String? {
+        get {
+            switch (chatDir) {
+            case .directSnd: return "you"
+            case .directRcv: return nil
+            case .groupSnd: return ChatModel.shared.currentUser?.displayName
+            case let .groupRcv(member): return member.memberProfile.displayName
+            case nil: return nil
+            }
+        }
+    }
+
+    static func getSample(_ itemId: Int64?, _ sentAt: Date, _ text: String, chatDir: CIDirection?) -> CIQuote {
+        CIQuote(chatDir: chatDir, itemId: itemId, sentAt: sentAt, content: .text(text))
     }
 }
 
