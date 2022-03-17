@@ -16,7 +16,8 @@ import androidx.compose.material.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.AndroidViewModel
-import chat.simplex.app.model.*
+import chat.simplex.app.model.ChatModel
+import chat.simplex.app.model.NtfManager
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.SplashView
 import chat.simplex.app.views.WelcomeView
@@ -26,7 +27,6 @@ import chat.simplex.app.views.chatlist.openChat
 import chat.simplex.app.views.helpers.AlertManager
 import chat.simplex.app.views.helpers.withApi
 import chat.simplex.app.views.newchat.*
-import kotlinx.serialization.decodeFromString
 
 //import kotlinx.serialization.decodeFromString
 
