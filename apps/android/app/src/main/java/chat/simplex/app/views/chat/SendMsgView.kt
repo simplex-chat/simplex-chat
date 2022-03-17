@@ -78,6 +78,7 @@ fun SendMsgView(sendMessage: (String) -> Unit) {
                 if (msg.isNotEmpty()) {
                   sendMessage(msg)
                   msg = ""
+                  textStyle = smallFont
                 }
               }
           )
