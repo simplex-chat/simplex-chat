@@ -11,7 +11,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.model.ChatModel
@@ -99,7 +98,22 @@ fun UserProfileLayout(
           horizontalAlignment = Alignment.Start,
           modifier = Modifier.padding(10.dp)
         ) {
-          ProfileImage(70.dp, profileImageStr.value)
+          Box(modifier = Modifier.clickable {
+            if (editProfile) {
+              coroutineScope.launch {
+                if (!bottomSheetModalState.isVisible) {
+                  bottomSheetModalState.show()
+                } else {
+                  bottomSheetModalState.hide()
+                }
+              }
+            }
+            else {
+              // TODO show larger image
+            }
+          }){
+            ProfileImage(70.dp, profileImageStr.value, editable = editProfile)
+          }
         }
         Column(verticalArrangement = Arrangement.SpaceBetween, modifier = Modifier.padding(10.dp)) {
           Row(
@@ -113,28 +127,6 @@ fun UserProfileLayout(
         }
       }
         if (editProfile) {
-
-          Button(
-            onClick = {
-              coroutineScope.launch {
-                if (!bottomSheetModalState.isVisible) {
-                  bottomSheetModalState.show()
-                } else {
-                  bottomSheetModalState.hide()
-                }
-              }
-            },
-            modifier = Modifier
-              .padding(8.dp)
-              .fillMaxWidth(),
-          ) {
-            Text(
-              text = "Update Profile Image",
-              modifier = Modifier.padding(8.dp),
-              textAlign = TextAlign.Center,
-            )
-          }
-
           Row {
             Text(
               "Cancel",

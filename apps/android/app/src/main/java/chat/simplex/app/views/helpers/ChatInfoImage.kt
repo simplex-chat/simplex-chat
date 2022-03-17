@@ -1,6 +1,7 @@
 package chat.simplex.app.views.helpers
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.Icon
@@ -8,9 +9,12 @@ import androidx.compose.material.MaterialTheme
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.SupervisedUserCircle
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
@@ -30,7 +34,12 @@ fun ChatInfoImage(chat: Chat, size: Dp) {
 }
 
 @Composable
-fun ProfileImage(size: Dp, displayImage: String? = null,  defaultIcon: ImageVector = Icons.Filled.AccountCircle) {
+fun ProfileImage(
+  size: Dp,
+  displayImage: String? = null,
+  defaultIcon: ImageVector = Icons.Filled.AccountCircle,
+  editable: Boolean = false
+) {
   Box(Modifier.size(size)) {
     if (displayImage == null) {
       Icon(
@@ -47,6 +56,23 @@ fun ProfileImage(size: Dp, displayImage: String? = null,  defaultIcon: ImageVect
         "display image for profile",
         contentScale = ContentScale.Crop,
         modifier = Modifier.size(size).clip(CircleShape)
+      )
+    }
+    if (editable) {
+      if (displayImage != null) {
+        // Only do background if image unknown. Prettier this way.
+        Icon(
+          defaultIcon,
+          contentDescription = "Background Hack",
+          tint = MaterialTheme.colors.secondary.copy(alpha=0.0f),
+          modifier = Modifier.size(size).clip(CircleShape).background(Color.White.copy(alpha=0.2f))
+        )
+      }
+      Icon(
+        Icons.Outlined.Edit,
+        contentDescription = "Edit Overlay",
+        tint = MaterialTheme.colors.primary,
+        modifier = Modifier.size(size.times(0.7f)).align(Alignment.Center)
       )
     }
   }
