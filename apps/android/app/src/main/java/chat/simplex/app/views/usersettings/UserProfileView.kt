@@ -89,7 +89,7 @@ fun UserProfileLayout(
         interactionSource = remember { MutableInteractionSource() },
         onClick = { profileImageExpanded = false }
       ),
-    sheetContent = {GetImageOptions(bottomSheetModalState, profileImageStr, saveProfileImage)},
+    sheetContent = { GetImageOptions(bottomSheetModalState, profileImageStr) },
     sheetState = bottomSheetModalState,
   ) {
     Column(horizontalAlignment = Alignment.Start) {
@@ -160,7 +160,10 @@ fun UserProfileLayout(
                 modifier = Modifier
                   .clickable(onClick = {
                     saveProfile(displayName.value, fullName.value)
-                    originalImageStr.value = profileImageStr.value
+                    if (profileImageStr.value != null && originalImageStr.value != profileImageStr.value){
+                      saveProfileImage(profileImageStr.value!!)
+                      originalImageStr.value = profileImageStr.value
+                    }
                   })
               )
             }

@@ -106,7 +106,6 @@ class CustomTakePicturePreview : ActivityResultContract<Void?, Bitmap?>() {
 fun GetImageOptions(
   bottomSheetModalState: ModalBottomSheetState,
   profileImageStr: MutableState<String?>,
-  updateProfileImage: (String) -> Unit
 ) {
   val context = LocalContext.current
   val isCameraSelected = remember { mutableStateOf (false) }
@@ -119,9 +118,6 @@ fun GetImageOptions(
       val bitmap = ImageDecoder.decodeBitmap(source)
       val base64Image = bitmapToBase64(bitmap)
       profileImageStr.value = base64Image
-      withApi {
-        updateProfileImage(base64Image)
-      }
     }
   }
 
@@ -131,9 +127,6 @@ fun GetImageOptions(
     if (bitmap != null) {
       val base64Image = bitmapToBase64(bitmap)
       profileImageStr.value = base64Image
-      withApi {
-        updateProfileImage(base64Image)
-      }
     }
   }
 
