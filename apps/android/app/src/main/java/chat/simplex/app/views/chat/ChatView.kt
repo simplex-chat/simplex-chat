@@ -179,8 +179,8 @@ fun ChatItemsList(user: User, chatItems: List<ChatItem>, quotedItem: MutableStat
           .padding(bottom = 4.dp)
           .fillMaxWidth()
           .padding(
-            start = if (sent) 60.dp else 16.dp,
-            end = if (sent) 16.dp else 60.dp,
+            start = if (sent) 86.dp else 16.dp,
+            end = if (sent) 16.dp else 86.dp,
           ),
         contentAlignment = alignment,
       ) {

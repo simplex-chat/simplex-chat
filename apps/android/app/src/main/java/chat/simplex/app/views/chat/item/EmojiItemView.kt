@@ -21,13 +21,13 @@ fun EmojiItemView(chatItem: ChatItem) {
     Modifier.padding(vertical = 8.dp, horizontal = 12.dp),
     horizontalAlignment = Alignment.CenterHorizontally
   ) {
-    emojiText(chatItem.content.text)
+    EmojiText(chatItem.content.text)
     CIMetaView(chatItem)
   }
 }
 
 @Composable
-fun emojiText(text: String) {
+fun EmojiText(text: String) {
   val s = text.trim()
   Text(s, style = if (s.codePoints().count() < 4) largeEmojiFont else mediumEmojiFont)
 }
