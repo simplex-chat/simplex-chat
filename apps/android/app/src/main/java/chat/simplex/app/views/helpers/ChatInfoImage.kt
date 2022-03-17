@@ -71,7 +71,7 @@ fun ProfileImage(
       Icon(
         Icons.Outlined.Edit,
         contentDescription = "Edit Overlay",
-        tint = MaterialTheme.colors.primary,
+        tint = MaterialTheme.colors.primary.copy(alpha=0.8f),
         modifier = Modifier.size(size.times(0.7f)).align(Alignment.Center)
       )
     }
