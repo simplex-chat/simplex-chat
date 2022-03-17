@@ -103,7 +103,7 @@ fun UserProfileLayout(
         color = MaterialTheme.colors.onBackground
       )
       Text(
-        "Your profile is stored on your device and shared only with your contacts.\n" +
+        "Your profile is stored on your device and shared only with your contacts.\n\n" +
             "SimpleX servers cannot see your profile.",
         Modifier.padding(bottom = 24.dp),
         color = MaterialTheme.colors.onBackground
