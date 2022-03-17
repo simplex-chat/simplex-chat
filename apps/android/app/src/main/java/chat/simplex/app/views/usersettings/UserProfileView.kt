@@ -84,7 +84,7 @@ fun UserProfileLayout(
   val profileImageSize by animateDpAsState(if (profileImageExpanded) expandedProfileImageSize else 70.dp)
 
   ModalBottomSheetLayout(
-    scrimColor=MaterialTheme.colors.onSurface.copy(alpha = 0.0f),
+    scrimColor = MaterialTheme.colors.onSurface.copy(alpha = 0.0f),
     modifier = Modifier
       .fillMaxWidth()
       .clickable(
