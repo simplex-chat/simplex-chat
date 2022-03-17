@@ -17,6 +17,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import chat.simplex.app.BuildConfig
 import chat.simplex.app.R
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.model.Profile
@@ -116,7 +117,7 @@ fun SettingsLayout(
         )
         Spacer(Modifier.padding(horizontal = 4.dp))
         Text(
-          "Get help & advice via chat",
+          "Chat with the founder",
           color = MaterialTheme.colors.primary
         )
       }
@@ -128,7 +129,7 @@ fun SettingsLayout(
         )
         Spacer(Modifier.padding(horizontal = 4.dp))
         Text(
-          "Ask questions via email",
+          "Send us email",
           color = MaterialTheme.colors.primary
         )
       }
@@ -166,6 +167,10 @@ fun SettingsLayout(
             }
           }
         )
+      }
+      Divider(Modifier.padding(horizontal = 8.dp))
+      SettingsSectionView(click = {}) {
+        Text("v${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})")
       }
     }
   }
