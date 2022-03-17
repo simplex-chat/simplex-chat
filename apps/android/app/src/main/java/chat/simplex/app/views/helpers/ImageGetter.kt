@@ -9,6 +9,7 @@ import android.graphics.*
 import android.net.Uri
 import android.provider.MediaStore
 import android.util.Base64
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContract
@@ -27,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import chat.simplex.app.BuildConfig
+import chat.simplex.app.TAG
 import chat.simplex.app.views.newchat.ActionButton
 import kotlinx.coroutines.launch
 import java.io.ByteArrayOutputStream
@@ -89,13 +91,13 @@ class CustomTakePicturePreview : ActivityResultContract<Void?, Bitmap?>() {
     input: Void?
   ): SynchronousResult<Bitmap?>? = null
 
-  override fun parseResult(resultCode: Int, intent: Intent?): Bitmap {
-    if (resultCode == Activity.RESULT_OK && uri != null) {
+  override fun parseResult(resultCode: Int, intent: Intent?): Bitmap? {
+    return if (resultCode == Activity.RESULT_OK && uri != null) {
       val source = ImageDecoder.createSource(externalContext.contentResolver, uri!!)
-      return ImageDecoder.decodeBitmap(source)
-    }
-    else {
-      throw Exception("Getting image from camera failed.")
+      ImageDecoder.decodeBitmap(source)
+    } else {
+      Log.e( TAG, "Getting image from camera cancelled or failed.")
+      null
     }
   }
 }
