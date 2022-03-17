@@ -41,6 +41,7 @@ android {
     kotlinOptions {
         jvmTarget = '1.8'
         freeCompilerArgs += "-opt-in=kotlinx.coroutines.DelicateCoroutinesApi"
+        freeCompilerArgs += "-opt-in=androidx.compose.foundation.ExperimentalFoundationApi"
         freeCompilerArgs += "-opt-in=androidx.compose.ui.text.ExperimentalTextApi"
         freeCompilerArgs += "-opt-in=androidx.compose.material.ExperimentalMaterialApi"
         freeCompilerArgs += "-opt-in=com.google.accompanist.insets.ExperimentalAnimatedInsets"

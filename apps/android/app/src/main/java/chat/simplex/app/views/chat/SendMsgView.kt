@@ -21,14 +21,24 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.ui.theme.HighOrLowlight
 import chat.simplex.app.ui.theme.SimpleXTheme
+import chat.simplex.app.views.chat.item.*
 
 @Composable
 fun SendMsgView(sendMessage: (String) -> Unit) {
-  var cmd by remember { mutableStateOf("") }
+  var msg by remember { mutableStateOf("") }
+  val smallFont = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onBackground)
+  var textStyle by remember { mutableStateOf(smallFont) }
   BasicTextField(
-    value = cmd,
-    onValueChange = { cmd = it },
-    textStyle = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onBackground),
+    value = msg,
+    onValueChange = {
+      msg = it
+      textStyle = if(isShortEmoji(it)) {
+        if (it.codePoints().count() < 4) largeEmojiFont else mediumEmojiFont
+      } else {
+        smallFont
+      }
+    },
+    textStyle = textStyle,
     maxLines = 16,
     keyboardOptions = KeyboardOptions.Default.copy(
       capitalization = KeyboardCapitalization.Sentences,
@@ -54,7 +64,7 @@ fun SendMsgView(sendMessage: (String) -> Unit) {
           ) {
             innerTextField()
           }
-          val color = if (cmd.isNotEmpty()) MaterialTheme.colors.primary else Color.Gray
+          val color = if (msg.isNotEmpty()) MaterialTheme.colors.primary else Color.Gray
           Icon(
             Icons.Outlined.ArrowUpward,
             "Send Message",
@@ -65,9 +75,9 @@ fun SendMsgView(sendMessage: (String) -> Unit) {
               .clip(CircleShape)
               .background(color)
               .clickable {
-                if (cmd.isNotEmpty()) {
-                  sendMessage(cmd)
-                  cmd = ""
+                if (msg.isNotEmpty()) {
+                  sendMessage(msg)
+                  msg = ""
                 }
               }
           )

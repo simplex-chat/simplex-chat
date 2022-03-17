@@ -527,7 +527,8 @@ struct ChatItem: Identifiable, Decodable {
     var meta: CIMeta
     var content: CIContent
     var formattedText: [FormattedText]?
-    
+    var quotedItem: CIQuote?
+
     var id: Int64 { get { meta.itemId } }
 
     var timestampText: Text { get { meta.timestampText } }
@@ -537,11 +538,22 @@ struct ChatItem: Identifiable, Decodable {
         return false
     }
 
-    static func getSample (_ id: Int64, _ dir: CIDirection, _ ts: Date, _ text: String, _ status: CIStatus = .sndNew) -> ChatItem {
+    var memberDisplayName: String? {
+        get {
+            if case let .groupRcv(groupMember) = chatDir {
+                return groupMember.memberProfile.displayName
+            } else {
+                return nil
+            }
+        }
+    }
+    
+    static func getSample (_ id: Int64, _ dir: CIDirection, _ ts: Date, _ text: String, _ status: CIStatus = .sndNew, quotedItem: CIQuote? = nil) -> ChatItem {
         ChatItem(
            chatDir: dir,
            meta: CIMeta.getSample(id, ts, text, status),
-           content: .sndMsgContent(msgContent: .text(text))
+           content: .sndMsgContent(msgContent: .text(text)),
+           quotedItem: quotedItem
        )
     }
 }
@@ -603,7 +615,11 @@ enum CIStatus: Decodable {
     case rcvRead
 }
 
-enum CIContent: Decodable {
+protocol ItemContent {
+    var text: String { get }
+}
+
+enum CIContent: Decodable, ItemContent {
     case sndMsgContent(msgContent: MsgContent)
     case rcvMsgContent(msgContent: MsgContent)
     case sndFileInvitation(fileId: Int64, filePath: String)
@@ -623,6 +639,33 @@ enum CIContent: Decodable {
 
 struct RcvFileTransfer: Decodable {
 
+}
+
+struct CIQuote: Decodable, ItemContent {
+    var chatDir: CIDirection?
+    var itemId: Int64?
+    var sharedMsgId: String? = nil
+    var sentAt: Date
+    var content: MsgContent
+    var formattedText: [FormattedText]?
+    
+    var text: String { get { content.text } }
+
+    var sender: String? {
+        get {
+            switch (chatDir) {
+            case .directSnd: return "you"
+            case .directRcv: return nil
+            case .groupSnd: return ChatModel.shared.currentUser?.displayName
+            case let .groupRcv(member): return member.memberProfile.displayName
+            case nil: return nil
+            }
+        }
+    }
+
+    static func getSample(_ itemId: Int64?, _ sentAt: Date, _ text: String, chatDir: CIDirection?) -> CIQuote {
+        CIQuote(chatDir: chatDir, itemId: itemId, sentAt: sentAt, content: .text(text))
+    }
 }
 
 enum MsgContent {
