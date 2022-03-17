@@ -172,37 +172,7 @@ fun ChatItemsList(user: User, chatItems: List<ChatItem>, quotedItem: MutableStat
   val cxt = LocalContext.current
   LazyColumn(state = listState) {
     items(chatItems) { cItem ->
-      val sent = cItem.chatDir.sent
-      val alignment = if (sent) Alignment.CenterEnd else Alignment.CenterStart
-      var showMenu by remember { mutableStateOf(false) }
-      Box(
-        modifier = Modifier
-          .padding(bottom = 4.dp)
-          .fillMaxWidth()
-          .padding(
-            start = if (sent) 86.dp else 16.dp,
-            end = if (sent) 16.dp else 86.dp,
-          ),
-        contentAlignment = alignment,
-      ) {
-        Column(Modifier.combinedClickable(onLongClick = { showMenu = true }, onClick = {})) {
-          ChatItemView(user, cItem, uriHandler)
-          DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
-            ItemAction("Reply", Icons.Outlined.Reply, onClick = {
-              quotedItem.value = cItem
-              showMenu = false
-            })
-            ItemAction("Share", Icons.Outlined.Share, onClick = {
-              shareText(cxt, cItem.content.text)
-              showMenu = false
-            })
-            ItemAction("Copy", Icons.Outlined.ContentCopy,  onClick = {
-              copyText(cxt, cItem.content.text)
-              showMenu = false
-            })
-          }
-        }
-      }
+      ChatItemView(user, cItem, quotedItem, cxt, uriHandler)
     }
     val len = chatItems.count()
     if (len > 1 && (keyboardState != ciListState.value.keyboardState || !ciListState.value.scrolled || len != ciListState.value.itemCount)) {
@@ -210,18 +180,6 @@ fun ChatItemsList(user: User, chatItems: List<ChatItem>, quotedItem: MutableStat
         ciListState.value = CIListState(true, len, keyboardState)
         listState.animateScrollToItem(len - 1)
       }
-    }
-  }
-}
-
-@Composable
-private fun ItemAction(text: String, icon: ImageVector, onClick: () -> Unit) {
-  DropdownMenuItem(onClick) {
-    Row {
-      Text(text, modifier = Modifier
-        .fillMaxWidth()
-        .weight(1F))
-      Icon(icon, text, tint = HighOrLowlight)
     }
   }
 }

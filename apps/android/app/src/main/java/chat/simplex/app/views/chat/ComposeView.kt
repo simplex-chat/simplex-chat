@@ -9,7 +9,6 @@ import chat.simplex.app.model.ChatItem
 fun ComposeView(quotedItem: MutableState<ChatItem?>, sendMessage: (String) -> Unit) {
   Column {
     QuotedItemView(quotedItem)
-//    .transition(.move(edge: .bottom))
     SendMsgView(sendMessage)
   }
 }
