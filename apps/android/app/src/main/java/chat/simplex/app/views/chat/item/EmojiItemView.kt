@@ -32,12 +32,6 @@ fun EmojiText(text: String) {
 }
 
 private fun isSimpleEmoji(c: Int): Boolean = c > 0x238C
-//  guard let firstScalar = c.unicodeScalars.first else { return false }
-//  return firstScalar.properties.isEmoji && firstScalar.value > 0x238C
-//}
-
-//private fun isCombinedIntoEmoji(c: Char): Boolean =
-//  c.unicodeScalars.count > 1 && c.unicodeScalars.first?.properties.isEmoji ?? false
 
 fun isEmoji(c: Int): Boolean = isSimpleEmoji(c) // || isCombinedIntoEmoji(c)
 

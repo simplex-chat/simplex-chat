@@ -49,17 +49,14 @@ fun MarkdownText (
   if (formattedText == null) {
     val annotatedText = buildAnnotatedString {
       appendSender(this, sender, senderBold)
-//      appendGroupMember(this, chatItem, senderBold)
       append(content.text)
       if (metaText != null) withStyle(reserveTimestampStyle) { append("  $metaText") }
-        // {chatItem.timestampText}
     }
     Text(annotatedText, style = style, modifier = modifier, maxLines = maxLines, overflow = overflow)
   } else {
     var hasLinks = false
     val annotatedText = buildAnnotatedString {
       appendSender(this, sender, senderBold)
-//      appendGroupMember(this, chatItem, senderBold)
       for (ft in formattedText) {
         if (ft.format == null) append(ft.text)
         else {
@@ -75,7 +72,6 @@ fun MarkdownText (
         }
       }
       if (metaText != null) withStyle(reserveTimestampStyle) { append("  $metaText") }
-      // {chatItem.timestampText}
     }
     if (hasLinks && uriHandler != null) {
       ClickableText(annotatedText, style = style, modifier = modifier, maxLines = maxLines, overflow = overflow,
