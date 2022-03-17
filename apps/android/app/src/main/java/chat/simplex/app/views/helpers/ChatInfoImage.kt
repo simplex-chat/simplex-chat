@@ -9,7 +9,7 @@ import androidx.compose.material.MaterialTheme
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.SupervisedUserCircle
-import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.PhotoCamera
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -69,10 +69,10 @@ fun ProfileImage(
         )
       }
       Icon(
-        Icons.Outlined.Edit,
+        Icons.Outlined.PhotoCamera,
         contentDescription = "Edit Overlay",
         tint = MaterialTheme.colors.primary.copy(alpha=0.8f),
-        modifier = Modifier.size(size.times(0.7f)).align(Alignment.Center)
+        modifier = Modifier.size(size.times(0.6f)).align(Alignment.Center)
       )
     }
   }
