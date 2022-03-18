@@ -37,7 +37,7 @@ import java.lang.Integer.min
 
 // Inspired by https://github.com/MakeItEasyDev/Jetpack-Compose-Capture-Image-Or-Choose-from-Gallery
 
-fun bitmapToBase64(bitmap: Bitmap, squareCrop: Boolean = false): String {
+fun bitmapToBase64(bitmap: Bitmap, squareCrop: Boolean = true): String {
   val stream = ByteArrayOutputStream()
   val height: Int
   val width: Int
@@ -56,11 +56,14 @@ fun bitmapToBase64(bitmap: Bitmap, squareCrop: Boolean = false): String {
     xOffset = (width - height) / 2
     yOffset = 0
   }
-  val resizedImage = Bitmap.createScaledBitmap(bitmap, width, height, false)
+  var processedImage = Bitmap.createScaledBitmap(bitmap, width, height, false)
   val side = min(width, height)
-  val croppedImage = Bitmap.createBitmap(
-    resizedImage, xOffset, yOffset, side, side)
-  croppedImage.compress(Bitmap.CompressFormat.JPEG, 75, stream)
+  if (squareCrop) {
+    processedImage = Bitmap.createBitmap(
+      processedImage, xOffset, yOffset, side, side
+    )
+  }
+  processedImage.compress(Bitmap.CompressFormat.JPEG, 75, stream)
   return "data:image/jpg;base64," + Base64.encodeToString(stream.toByteArray(), Base64.NO_WRAP)
 }
 
@@ -94,9 +97,12 @@ class CustomTakePicturePreview : ActivityResultContract<Void?, Bitmap?>() {
   override fun parseResult(resultCode: Int, intent: Intent?): Bitmap? {
     return if (resultCode == Activity.RESULT_OK && uri != null) {
       val source = ImageDecoder.createSource(externalContext.contentResolver, uri!!)
-      ImageDecoder.decodeBitmap(source)
+      val bitmap = ImageDecoder.decodeBitmap(source)
+      tmpFile?.delete()
+      bitmap
     } else {
       Log.e( TAG, "Getting image from camera cancelled or failed.")
+      tmpFile?.delete()
       null
     }
   }

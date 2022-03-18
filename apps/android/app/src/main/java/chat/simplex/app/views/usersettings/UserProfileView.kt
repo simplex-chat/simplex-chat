@@ -38,13 +38,12 @@ fun UserProfileView(chatModel: ChatModel) {
       saveProfile = { displayName: String, fullName: String ->
         withApi {
           val newProfile = chatModel.controller.apiUpdateProfile(
-            profile = Profile(displayName, fullName, null)
+            profile = Profile(displayName, fullName, profile.displayImage)
           )
           if (newProfile != null) {
             chatModel.updateUserProfile(newProfile)
             profile = newProfile
           }
-          editProfile = false
         }
       },
       saveProfileImage = {
@@ -57,6 +56,7 @@ fun UserProfileView(chatModel: ChatModel) {
             chatModel.updateUserProfile(newProfile)
             profile = newProfile
           }
+          editProfile = false
         }
       }
     )
@@ -171,7 +171,6 @@ fun UserProfileLayout(
             }
           } else {
             Row(
-//              modifier = Modifier.fillMaxHeight(),
               verticalAlignment = Alignment.Bottom
             ) {
               Text(
