@@ -11,7 +11,6 @@ import Control.Concurrent.Async (concurrently_)
 import Control.Concurrent.STM
 import qualified Data.ByteString as B
 import Data.Char (isDigit)
-import Data.Maybe (fromJust)
 import qualified Data.Text as T
 import Simplex.Chat.Controller (ChatController (..))
 import Simplex.Chat.Types (Profile (..), ProfileImage (..), User (..))
@@ -33,10 +32,9 @@ danProfile = Profile {displayName = "dan", fullName = "Daniel", image = Nothing}
 
 chatTests :: Spec
 chatTests = do
-  describe "direct messages" $
+  describe "direct messages" $ do
     it "add contact and send/receive message" testAddContact
-  describe "SMP servers" $
-    it "get and set SMP servers" testGetSetSMPServers
+    it "direct message quoted replies" testDirectMessageQuotedReply
   describe "chat groups" $ do
     it "add contacts, create group and send/receive messages" testGroup
     it "create and join group with 4 members" testGroup2
@@ -45,6 +43,7 @@ chatTests = do
     it "re-add member in status invited" testGroupReAddInvited
     it "remove contact from group and add again" testGroupRemoveAdd
     it "list groups containing group invitations" testGroupList
+    it "group message quoted replies" testGroupMessageQuotedReply
   describe "user profiles" $ do
     it "update user profiles and notify contacts" testUpdateProfile
     it "update user profile with image" testUpdateProfileImage
@@ -61,6 +60,8 @@ chatTests = do
     it "deduplicate contact requests with profile change" testDeduplicateContactRequestsProfileChange
     it "reject contact and delete contact link" testRejectContactAndDeleteUserContact
     it "delete connection requests when contact link deleted" testDeleteConnectionRequests
+  describe "SMP servers" $
+    it "get and set SMP servers" testGetSetSMPServers
 
 testAddContact :: IO ()
 testAddContact =
@@ -73,31 +74,13 @@ testAddContact =
       concurrently_
         (bob <## "alice (Alice): contact is connected")
         (alice <## "bob (Bob): contact is connected")
-      -- empty chats
-      alice #$$> ("/_get chats", [("@bob", "")])
-      alice #$> ("/_get chat @2 count=100", chat, [])
-      bob #$$> ("/_get chats", [("@alice", "")])
-      bob #$> ("/_get chat @2 count=100", chat, [])
-      -- one message
+      chatsEmpty alice bob
       alice #> "@bob hello 🙂"
       bob <# "alice> hello 🙂"
-      alice #$$> ("/_get chats", [("@bob", "hello 🙂")])
-      alice #$> ("/_get chat @2 count=100", chat, [(1, "hello 🙂")])
-      bob #$$> ("/_get chats", [("@alice", "hello 🙂")])
-      bob #$> ("/_get chat @2 count=100", chat, [(0, "hello 🙂")])
-      -- many messages
+      chatsOneMessage alice bob
       bob #> "@alice hi"
       alice <# "bob> hi"
-      alice #$$> ("/_get chats", [("@bob", "hi")])
-      alice #$> ("/_get chat @2 count=100", chat, [(1, "hello 🙂"), (0, "hi")])
-      bob #$$> ("/_get chats", [("@alice", "hi")])
-      bob #$> ("/_get chat @2 count=100", chat, [(0, "hello 🙂"), (1, "hi")])
-      -- pagination
-      alice #$> ("/_get chat @2 after=1 count=100", chat, [(0, "hi")])
-      alice #$> ("/_get chat @2 before=2 count=100", chat, [(1, "hello 🙂")])
-      -- read messages
-      alice #$> ("/_read chat @2 from=1 to=100", id, "ok")
-      bob #$> ("/_read chat @2 from=1 to=100", id, "ok")
+      chatsManyMessages alice bob
       -- test adding the same contact one more time - local name will be different
       alice ##> "/c"
       inv' <- getInvitation alice
@@ -119,18 +102,53 @@ testAddContact =
       alice <## "no contact bob_1"
       alice #$$> ("/_get chats", [("@bob", "hi")])
       bob #$$> ("/_get chats", [("@alice_1", "hi"), ("@alice", "hi")])
+  where
+    chatsEmpty alice bob = do
+      alice #$$> ("/_get chats", [("@bob", "")])
+      alice #$> ("/_get chat @2 count=100", chat, [])
+      bob #$$> ("/_get chats", [("@alice", "")])
+      bob #$> ("/_get chat @2 count=100", chat, [])
+    chatsOneMessage alice bob = do
+      alice #$$> ("/_get chats", [("@bob", "hello 🙂")])
+      alice #$> ("/_get chat @2 count=100", chat, [(1, "hello 🙂")])
+      bob #$$> ("/_get chats", [("@alice", "hello 🙂")])
+      bob #$> ("/_get chat @2 count=100", chat, [(0, "hello 🙂")])
+    chatsManyMessages alice bob = do
+      alice #$$> ("/_get chats", [("@bob", "hi")])
+      alice #$> ("/_get chat @2 count=100", chat, [(1, "hello 🙂"), (0, "hi")])
+      bob #$$> ("/_get chats", [("@alice", "hi")])
+      bob #$> ("/_get chat @2 count=100", chat, [(0, "hello 🙂"), (1, "hi")])
+      -- pagination
+      alice #$> ("/_get chat @2 after=1 count=100", chat, [(0, "hi")])
+      alice #$> ("/_get chat @2 before=2 count=100", chat, [(1, "hello 🙂")])
+      -- read messages
+      alice #$> ("/_read chat @2 from=1 to=100", id, "ok")
+      bob #$> ("/_read chat @2 from=1 to=100", id, "ok")
 
-testGetSetSMPServers :: IO ()
-testGetSetSMPServers =
+testDirectMessageQuotedReply :: IO ()
+testDirectMessageQuotedReply = do
   testChat2 aliceProfile bobProfile $
-    \alice _ -> do
-      alice #$> ("/smp_servers", id, "no custom SMP servers saved")
-      alice #$> ("/smp_servers smp://1234-w==@smp1.example.im", id, "ok")
-      alice #$> ("/smp_servers", id, "smp://1234-w==@smp1.example.im")
-      alice #$> ("/smp_servers smp://2345-w==@smp2.example.im,smp://3456-w==@smp3.example.im:5224", id, "ok")
-      alice #$> ("/smp_servers", id, "smp://2345-w==@smp2.example.im, smp://3456-w==@smp3.example.im:5224")
-      alice #$> ("/smp_servers default", id, "ok")
-      alice #$> ("/smp_servers", id, "no custom SMP servers saved")
+    \alice bob -> do
+      connectUsers alice bob
+      alice ##> "/_send @2 json {\"type\": \"text\", \"text\": \"hello! how are you?\"}"
+      alice <# "@bob hello! how are you?"
+      bob <# "alice> hello! how are you?"
+      bob #> "@alice hi!"
+      alice <# "bob> hi!"
+      bob `send` "> @alice (hello) all good - you?"
+      bob <# "@alice > hello! how are you?"
+      bob <## "      all good - you?"
+      alice <# "bob> > hello! how are you?"
+      alice <## "      all good - you?"
+      bob #$> ("/_get chat @2 count=1", chat', [((1, "all good - you?"), Just (0, "hello! how are you?"))])
+      alice #$> ("/_get chat @2 count=1", chat', [((0, "all good - you?"), Just (1, "hello! how are you?"))])
+      bob `send` ">> @alice (all good) will tell more"
+      bob <# "@alice >> all good - you?"
+      bob <## "      will tell more"
+      alice <# "bob> >> all good - you?"
+      alice <## "      will tell more"
+      bob #$> ("/_get chat @2 count=1", chat', [((1, "will tell more"), Just (1, "all good - you?"))])
+      alice #$> ("/_get chat @2 count=1", chat', [((0, "will tell more"), Just (0, "all good - you?"))])
 
 testGroup :: IO ()
 testGroup =
@@ -184,18 +202,7 @@ testGroup =
         (alice <# "#team cath> hey team")
         (bob <# "#team cath> hey team")
       bob <##> cath
-      -- get and read chats
-      alice #$$> ("/_get chats", [("#team", "hey team"), ("@cath", ""), ("@bob", "")])
-      alice #$> ("/_get chat #1 count=100", chat, [(1, "hello"), (0, "hi there"), (0, "hey team")])
-      alice #$> ("/_get chat #1 after=1 count=100", chat, [(0, "hi there"), (0, "hey team")])
-      alice #$> ("/_get chat #1 before=3 count=100", chat, [(1, "hello"), (0, "hi there")])
-      bob #$$> ("/_get chats", [("@cath", "hey"), ("#team", "hey team"), ("@alice", "")])
-      bob #$> ("/_get chat #1 count=100", chat, [(0, "hello"), (1, "hi there"), (0, "hey team")])
-      cath #$$> ("/_get chats", [("@bob", "hey"), ("#team", "hey team"), ("@alice", "")])
-      cath #$> ("/_get chat #1 count=100", chat, [(0, "hello"), (0, "hi there"), (1, "hey team")])
-      alice #$> ("/_read chat #1 from=1 to=100", id, "ok")
-      bob #$> ("/_read chat #1 from=1 to=100", id, "ok")
-      cath #$> ("/_read chat #1 from=1 to=100", id, "ok")
+      getReadChats alice bob cath
       -- list groups
       alice ##> "/gs"
       alice <## "#team"
@@ -230,6 +237,19 @@ testGroup =
       cath ##> "#team hello"
       cath <## "you are no longer a member of the group"
       bob <##> cath
+  where
+    getReadChats alice bob cath = do
+      alice #$$> ("/_get chats", [("#team", "hey team"), ("@cath", ""), ("@bob", "")])
+      alice #$> ("/_get chat #1 count=100", chat, [(1, "hello"), (0, "hi there"), (0, "hey team")])
+      alice #$> ("/_get chat #1 after=1 count=100", chat, [(0, "hi there"), (0, "hey team")])
+      alice #$> ("/_get chat #1 before=3 count=100", chat, [(1, "hello"), (0, "hi there")])
+      bob #$$> ("/_get chats", [("@cath", "hey"), ("#team", "hey team"), ("@alice", "")])
+      bob #$> ("/_get chat #1 count=100", chat, [(0, "hello"), (1, "hi there"), (0, "hey team")])
+      cath #$$> ("/_get chats", [("@bob", "hey"), ("#team", "hey team"), ("@alice", "")])
+      cath #$> ("/_get chat #1 count=100", chat, [(0, "hello"), (0, "hi there"), (1, "hey team")])
+      alice #$> ("/_read chat #1 from=1 to=100", id, "ok")
+      bob #$> ("/_read chat #1 from=1 to=100", id, "ok")
+      cath #$> ("/_read chat #1 from=1 to=100", id, "ok")
 
 testGroup2 :: IO ()
 testGroup2 =
@@ -542,6 +562,63 @@ testGroupList =
       bob <## "#tennis: you deleted the group"
       bob ##> "/gs"
       bob <## "#team"
+
+testGroupMessageQuotedReply :: IO ()
+testGroupMessageQuotedReply =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+      alice #> "#team hello! how are you?"
+      concurrently_
+        (bob <# "#team alice> hello! how are you?")
+        (cath <# "#team alice> hello! how are you?")
+      threadDelay 1000000
+      bob `send` "> #team @alice (hello) hello, all good, you?"
+      bob <# "#team > alice hello! how are you?"
+      bob <## "      hello, all good, you?"
+      concurrently_
+        ( do
+            alice <# "#team bob> > alice hello! how are you?"
+            alice <## "      hello, all good, you?"
+        )
+        ( do
+            cath <# "#team bob> > alice hello! how are you?"
+            cath <## "      hello, all good, you?"
+        )
+      bob #$> ("/_get chat #1 count=100", chat', [((0, "hello! how are you?"), Nothing), ((1, "hello, all good, you?"), Just (0, "hello! how are you?"))])
+      alice #$> ("/_get chat #1 count=100", chat', [((1, "hello! how are you?"), Nothing), ((0, "hello, all good, you?"), Just (1, "hello! how are you?"))])
+      cath #$> ("/_get chat #1 count=100", chat', [((0, "hello! how are you?"), Nothing), ((0, "hello, all good, you?"), Just (0, "hello! how are you?"))])
+      bob `send` "> #team bob (hello, all good) will tell more"
+      bob <# "#team > bob hello, all good, you?"
+      bob <## "      will tell more"
+      concurrently_
+        ( do
+            alice <# "#team bob> > bob hello, all good, you?"
+            alice <## "      will tell more"
+        )
+        ( do
+            cath <# "#team bob> > bob hello, all good, you?"
+            cath <## "      will tell more"
+        )
+      bob #$> ("/_get chat #1 count=1", chat', [((1, "will tell more"), Just (1, "hello, all good, you?"))])
+      alice #$> ("/_get chat #1 count=1", chat', [((0, "will tell more"), Just (0, "hello, all good, you?"))])
+      cath #$> ("/_get chat #1 count=1", chat', [((0, "will tell more"), Just (0, "hello, all good, you?"))])
+      threadDelay 1000000
+      cath `send` "> #team bob (hello) hi there!"
+      cath <# "#team > bob hello, all good, you?"
+      cath <## "      hi there!"
+      concurrently_
+        ( do
+            alice <# "#team cath> > bob hello, all good, you?"
+            alice <## "      hi there!"
+        )
+        ( do
+            bob <# "#team cath> > bob hello, all good, you?"
+            bob <## "      hi there!"
+        )
+      cath #$> ("/_get chat #1 count=1", chat', [((1, "hi there!"), Just (0, "hello, all good, you?"))])
+      alice #$> ("/_get chat #1 count=1", chat', [((0, "hi there!"), Just (0, "hello, all good, you?"))])
+      bob #$> ("/_get chat #1 count=1", chat', [((0, "hi there!"), Just (1, "hello, all good, you?"))])
 
 testUpdateProfile :: IO ()
 testUpdateProfile =
@@ -952,6 +1029,18 @@ testDeleteConnectionRequests = testChat3 aliceProfile bobProfile cathProfile $
     cath ##> ("/c " <> cLink')
     alice <#? cath
 
+testGetSetSMPServers :: IO ()
+testGetSetSMPServers =
+  testChat2 aliceProfile bobProfile $
+    \alice _ -> do
+      alice #$> ("/smp_servers", id, "no custom SMP servers saved")
+      alice #$> ("/smp_servers smp://1234-w==@smp1.example.im", id, "ok")
+      alice #$> ("/smp_servers", id, "smp://1234-w==@smp1.example.im")
+      alice #$> ("/smp_servers smp://2345-w==@smp2.example.im,smp://3456-w==@smp3.example.im:5224", id, "ok")
+      alice #$> ("/smp_servers", id, "smp://2345-w==@smp2.example.im, smp://3456-w==@smp3.example.im:5224")
+      alice #$> ("/smp_servers default", id, "ok")
+      alice #$> ("/smp_servers", id, "no custom SMP servers saved")
+
 startFileTransfer :: TestCC -> TestCC -> IO ()
 startFileTransfer alice bob = do
   alice #> "/f @bob ./tests/fixtures/test.jpg"
@@ -1042,9 +1131,6 @@ cc1 <##> cc2 = do
   cc2 #> ("@" <> name1 <> " hey")
   cc1 <# (name2 <> "> hey")
 
-userName :: TestCC -> IO [Char]
-userName (TestCC ChatController {currentUser} _ _ _ _) = T.unpack . localDisplayName . fromJust <$> readTVarIO currentUser
-
 (##>) :: TestCC -> String -> IO ()
 cc ##> cmd = do
   cc `send` cmd
@@ -1061,7 +1147,10 @@ cc #$> (cmd, f, res) = do
   (f <$> getTermLine cc) `shouldReturn` res
 
 chat :: String -> [(Int, String)]
-chat = read
+chat = map fst . chat'
+
+chat' :: String -> [((Int, String), Maybe (Int, String))]
+chat' = read
 
 (#$$>) :: TestCC -> (String, [(String, String)]) -> Expectation
 cc #$$> (cmd, res) = do

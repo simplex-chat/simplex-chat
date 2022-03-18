@@ -36,7 +36,7 @@ import System.IO (Handle)
 import UnliftIO.STM
 
 versionNumber :: String
-versionNumber = "1.3.1"
+versionNumber = "1.3.2"
 
 versionStr :: String
 versionStr = "SimpleX Chat v" <> versionNumber
@@ -91,6 +91,7 @@ data ChatCommand
   | APIGetChat ChatType Int64 ChatPagination
   | APIGetChatItems Int
   | APISendMessage ChatType Int64 MsgContent
+  | APISendMessageQuote ChatType Int64 ChatItemId MsgContent
   | APIChatRead ChatType Int64 (ChatItemId, ChatItemId)
   | APIDeleteChat ChatType Int64
   | APIAcceptContact Int64
@@ -111,6 +112,7 @@ data ChatCommand
   | AcceptContact ContactName
   | RejectContact ContactName
   | SendMessage ContactName ByteString
+  | SendMessageQuote {contactName :: ContactName, msgDir :: AMsgDirection, quotedMsg :: ByteString, message :: ByteString}
   | NewGroup GroupProfile
   | AddMember GroupName ContactName GroupMemberRole
   | JoinGroup GroupName
@@ -121,6 +123,7 @@ data ChatCommand
   | ListMembers GroupName
   | ListGroups
   | SendGroupMessage GroupName ByteString
+  | SendGroupMessageQuote {groupName :: GroupName, contactName :: ContactName, quotedMsg :: ByteString, message :: ByteString}
   | SendFile ContactName FilePath
   | SendGroupFile GroupName FilePath
   | ReceiveFile FileTransferId (Maybe FilePath)
@@ -289,6 +292,7 @@ data ChatErrorType
   | CEFileSend {fileId :: FileTransferId, agentError :: AgentErrorType}
   | CEFileRcvChunk {message :: String}
   | CEFileInternal {message :: String}
+  | CEInvalidQuote
   | CEAgentVersion
   | CECommandError {message :: String}
   deriving (Show, Exception, Generic)

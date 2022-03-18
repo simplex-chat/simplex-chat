@@ -1,48 +1,17 @@
 package chat.simplex.app.views.chat.item
 
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.ClickableText
-import androidx.compose.foundation.text.selection.SelectionContainer
-import androidx.compose.material.*
+import androidx.compose.material.MaterialTheme
+import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.UriHandler
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import chat.simplex.app.model.CIDirection
-import chat.simplex.app.model.ChatItem
-import chat.simplex.app.ui.theme.SimpleXTheme
-import kotlinx.datetime.Clock
-
-// TODO move to theme
-val SentColorLight = Color(0x1E45B8FF)
-val ReceivedColorLight = Color(0x1EB1B0B5)
-
-@Composable
-fun TextItemView(chatItem: ChatItem, uriHandler: UriHandler? = null) {
-  val sent = chatItem.chatDir.sent
-  Surface(
-    shape = RoundedCornerShape(18.dp),
-    color = if (sent) SentColorLight else ReceivedColorLight
-  ) {
-    Box(
-      modifier = Modifier.padding(vertical = 6.dp, horizontal = 12.dp)
-    ) {
-      Box(contentAlignment = Alignment.BottomEnd) {
-        MarkdownText(chatItem, uriHandler = uriHandler, groupMemberBold = true)
-        CIMetaView(chatItem)
-      }
-    }
-  }
-}
+import chat.simplex.app.model.*
 
 val reserveTimestampStyle = SpanStyle(color = Color.Transparent)
 val boldFont = SpanStyle(fontWeight = FontWeight.Medium)
@@ -56,33 +25,44 @@ fun appendGroupMember(b: AnnotatedString.Builder, chatItem: ChatItem, groupMembe
   }
 }
 
+fun appendSender(b: AnnotatedString.Builder, sender: String?, senderBold: Boolean) {
+  if (sender != null) {
+    if (senderBold) b.withStyle(boldFont) { append(sender) }
+    else b.append(sender)
+    b.append(": ")
+  }
+}
+
 @Composable
 fun MarkdownText (
-  chatItem: ChatItem,
+  content: ItemContent,
+  formattedText: List<FormattedText>? = null,
+  sender: String? = null,
+  metaText: String? = null,
   style: TextStyle = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onSurface, lineHeight = 22.sp),
   maxLines: Int = Int.MAX_VALUE,
   overflow: TextOverflow = TextOverflow.Clip,
   uriHandler: UriHandler? = null,
-  groupMemberBold: Boolean = false,
+  senderBold: Boolean = false,
   modifier: Modifier = Modifier
 ) {
-  if (chatItem.formattedText == null) {
+  if (formattedText == null) {
     val annotatedText = buildAnnotatedString {
-      appendGroupMember(this, chatItem, groupMemberBold)
-      append(chatItem.content.text)
-      withStyle(reserveTimestampStyle) { append("  ${chatItem.timestampText}") }
+      appendSender(this, sender, senderBold)
+      append(content.text)
+      if (metaText != null) withStyle(reserveTimestampStyle) { append("  $metaText") }
     }
-    SelectionContainer {
-      Text(annotatedText, style = style, modifier = modifier, maxLines = maxLines, overflow = overflow)
-    }
+    Text(annotatedText, style = style, modifier = modifier, maxLines = maxLines, overflow = overflow)
   } else {
+    var hasLinks = false
     val annotatedText = buildAnnotatedString {
-      appendGroupMember(this, chatItem, groupMemberBold)
-      for (ft in chatItem.formattedText) {
+      appendSender(this, sender, senderBold)
+      for (ft in formattedText) {
         if (ft.format == null) append(ft.text)
         else {
           val link = ft.link
           if (link != null) {
+            hasLinks = true
             withAnnotation(tag = "URL", annotation = link) {
               withStyle(ft.format.style) { append(ft.text) }
             }
@@ -91,60 +71,17 @@ fun MarkdownText (
           }
         }
       }
-      withStyle(reserveTimestampStyle) { append("  ${chatItem.timestampText}") }
+      if (metaText != null) withStyle(reserveTimestampStyle) { append("  $metaText") }
     }
-    if (uriHandler != null) {
-      SelectionContainer {
-        ClickableText(annotatedText, style = style, modifier = modifier, maxLines = maxLines, overflow = overflow,
-          onClick = { offset ->
-            annotatedText.getStringAnnotations(tag = "URL", start = offset, end = offset)
-              .firstOrNull()?.let { annotation -> uriHandler.openUri(annotation.item) }
-          }
-        )
-      }
+    if (hasLinks && uriHandler != null) {
+      ClickableText(annotatedText, style = style, modifier = modifier, maxLines = maxLines, overflow = overflow,
+        onClick = { offset ->
+          annotatedText.getStringAnnotations(tag = "URL", start = offset, end = offset)
+            .firstOrNull()?.let { annotation -> uriHandler.openUri(annotation.item) }
+        }
+      )
     } else {
-      SelectionContainer {
-        Text(annotatedText, style = style, modifier = modifier, maxLines = maxLines, overflow = overflow)
-      }
+      Text(annotatedText, style = style, modifier = modifier, maxLines = maxLines, overflow = overflow)
     }
-  }
-}
-
-@Preview
-@Composable
-fun PreviewTextItemViewSnd() {
-  SimpleXTheme {
-    TextItemView(
-      chatItem = ChatItem.getSampleData(
-        1, CIDirection.DirectSnd(), Clock.System.now(), "hello"
-      )
-    )
-  }
-}
-
-@Preview
-@Composable
-fun PreviewTextItemViewRcv() {
-  SimpleXTheme {
-    TextItemView(
-      chatItem = ChatItem.getSampleData(
-        1, CIDirection.DirectRcv(), Clock.System.now(), "hello"
-      )
-    )
-  }
-}
-
-@Preview
-@Composable
-fun PreviewTextItemViewLong() {
-  SimpleXTheme {
-    TextItemView(
-      chatItem = ChatItem.getSampleData(
-        1,
-        CIDirection.DirectSnd(),
-        Clock.System.now(),
-        "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
-      )
-    )
   }
 }

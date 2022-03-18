@@ -39,9 +39,11 @@ fun ChatPreviewView(chat: Chat) {
         fontWeight = FontWeight.Bold
       )
 
-      if (chat.chatItems.count() > 0) {
+      val ci = chat.chatItems.lastOrNull()
+      if (ci != null) {
         MarkdownText(
-          chat.chatItems.last(),
+          ci.content,  ci.formattedText, ci.memberDisplayName,
+          metaText = ci.timestampText,
           maxLines = 2,
           overflow = TextOverflow.Ellipsis
         )
