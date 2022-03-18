@@ -18,7 +18,7 @@ struct ChatHelp: View {
 
             HStack(spacing: 4) {
                 Text("You can")
-                Button("connect to SimpleX team.") {
+                Button("connect to SimpleX Chat founder.") {
                     showSettings = false
                     DispatchQueue.main.async {
                         UIApplication.shared.open(simplexTeamURL)
