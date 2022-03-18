@@ -56,9 +56,9 @@ fun bitmapToBase64(bitmap: Bitmap, squareCrop: Boolean = true): String {
   }
   var image = bitmap
   while (image.width / 2 > width) {
-    image = Bitmap.createScaledBitmap(image, image.width / 2, image.height / 2, false)
+    image = Bitmap.createScaledBitmap(image, image.width / 2, image.height / 2, true)
   }
-  image = Bitmap.createScaledBitmap(image, width, height, false)
+  image = Bitmap.createScaledBitmap(image, width, height, true)
   if (squareCrop) {
 //    val side = min(width, height)
     image = Bitmap.createBitmap(image, xOffset, yOffset, size, size)
