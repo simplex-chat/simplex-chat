@@ -38,7 +38,6 @@ import java.lang.Integer.min
 // Inspired by https://github.com/MakeItEasyDev/Jetpack-Compose-Capture-Image-Or-Choose-from-Gallery
 
 fun bitmapToBase64(bitmap: Bitmap, squareCrop: Boolean = true): String {
-  val stream = ByteArrayOutputStream()
   val height: Int
   val width: Int
   val xOffset: Int
@@ -55,14 +54,17 @@ fun bitmapToBase64(bitmap: Bitmap, squareCrop: Boolean = true): String {
     xOffset = 0
     yOffset = (height - width) / 2
   }
-  var processedImage = Bitmap.createScaledBitmap(bitmap, width, height, false)
+  var image = bitmap
+  while (image.width / 2 > width) {
+    image = Bitmap.createScaledBitmap(image, image.width / 2, image.height / 2, false)
+  }
+  image = Bitmap.createScaledBitmap(image, width, height, false)
   if (squareCrop) {
 //    val side = min(width, height)
-    processedImage = Bitmap.createBitmap(
-      processedImage, xOffset, yOffset, size, size
-    )
+    image = Bitmap.createBitmap(image, xOffset, yOffset, size, size)
   }
-  processedImage.compress(Bitmap.CompressFormat.JPEG, 85, stream)
+  val stream = ByteArrayOutputStream()
+  image.compress(Bitmap.CompressFormat.JPEG, 85, stream)
   return "data:image/jpg;base64," + Base64.encodeToString(stream.toByteArray(), Base64.NO_WRAP)
 }
 
