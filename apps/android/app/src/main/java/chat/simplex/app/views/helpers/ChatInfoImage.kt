@@ -54,7 +54,7 @@ fun ProfileImage(
         imageBitmap,
         "display image for profile",
         contentScale = ContentScale.Crop,
-        modifier = Modifier.size(size).clip(CircleShape)
+        modifier = Modifier.size(size).padding(size / 12).clip(CircleShape)
       )
     }
     if (editable) {

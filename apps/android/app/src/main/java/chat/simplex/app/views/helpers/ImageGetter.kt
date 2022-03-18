@@ -43,27 +43,26 @@ fun bitmapToBase64(bitmap: Bitmap, squareCrop: Boolean = true): String {
   val width: Int
   val xOffset: Int
   val yOffset: Int
-  val baseScale = 96
-  if (bitmap.height > bitmap.width) {
-    height = baseScale
+  val size = 128
+  if (bitmap.height < bitmap.width) {
+    height = size
     width = height * bitmap.width / bitmap.height
+    xOffset = (width - height) / 2
+    yOffset = 0
+  } else {
+    width = size
+    height = width * bitmap.height / bitmap.width
     xOffset = 0
     yOffset = (height - width) / 2
   }
-  else {
-    width = baseScale
-    height = width * bitmap.height / bitmap.width
-    xOffset = (width - height) / 2
-    yOffset = 0
-  }
   var processedImage = Bitmap.createScaledBitmap(bitmap, width, height, false)
-  val side = min(width, height)
   if (squareCrop) {
+//    val side = min(width, height)
     processedImage = Bitmap.createBitmap(
-      processedImage, xOffset, yOffset, side, side
+      processedImage, xOffset, yOffset, size, size
     )
   }
-  processedImage.compress(Bitmap.CompressFormat.JPEG, 75, stream)
+  processedImage.compress(Bitmap.CompressFormat.JPEG, 85, stream)
   return "data:image/jpg;base64," + Base64.encodeToString(stream.toByteArray(), Base64.NO_WRAP)
 }
 
