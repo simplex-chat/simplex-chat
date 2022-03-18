@@ -187,7 +187,7 @@ processChatCommand = \case
     CTDirect -> do
       (ct, qci) <- withStore $ \st -> (,) <$> getContact st userId chatId <*> getDirectChatItem st userId chatId quotedItemId
       case qci of
-        CChatItem _ (ChatItem {meta = CIMeta {itemTs, itemSharedMsgId}, content = ciContent, formattedText}) -> do
+        CChatItem _ ChatItem {meta = CIMeta {itemTs, itemSharedMsgId}, content = ciContent, formattedText} -> do
           case ciContent of
             CISndMsgContent qmc -> send_ CIQDirectSnd True qmc
             CIRcvMsgContent qmc -> send_ CIQDirectRcv False qmc
@@ -203,7 +203,7 @@ processChatCommand = \case
       unless (memberActive membership) $ throwChatError CEGroupMemberUserRemoved
       qci <- withStore $ \st -> getGroupChatItem st user chatId quotedItemId
       case qci of
-        CChatItem _ (ChatItem {chatDir, meta = CIMeta {itemTs, itemSharedMsgId}, content = ciContent, formattedText}) -> do
+        CChatItem _ ChatItem {chatDir, meta = CIMeta {itemTs, itemSharedMsgId}, content = ciContent, formattedText} -> do
           case (ciContent, chatDir) of
             (CISndMsgContent qmc, _) -> send_ CIQGroupSnd True membership qmc
             (CIRcvMsgContent qmc, CIGroupRcv m) -> send_ (CIQGroupRcv $ Just m) False m qmc
@@ -585,7 +585,7 @@ subscribeUserConnections user@User {userId} = do
               ms <- pooledForConcurrentlyN n connectedMembers $ \(m@GroupMember {localDisplayName = c}, cId) ->
                 (m,) <$> ((subscribe cId $> Nothing) `catchError` (\e -> when ce (toView $ CRMemberSubError g c e) $> Just e))
               toView $ CRGroupSubscribed g
-              pure $ mapMaybe (\(m, e) -> maybe Nothing (Just . MemberSubError m) e) ms
+              pure $ mapMaybe (\(m, e) -> (Just . MemberSubError m) =<< e) ms
     subscribeFiles n = do
       sndFileTransfers <- withStore (`getLiveSndFileTransfers` user)
       pooledForConcurrentlyN_ n sndFileTransfers $ \sft -> subscribeSndFile sft
@@ -1538,7 +1538,8 @@ chatCommandP =
     <|> ("/members #" <|> "/members " <|> "/ms #" <|> "/ms ") *> (ListMembers <$> displayName)
     <|> ("/groups" <|> "/gs") $> ListGroups
     <|> A.char '#' *> (SendGroupMessage <$> displayName <* A.space <*> A.takeByteString)
-    <|> (">#" <|> "> #") *> (SendGroupMessageQuote <$> displayName <* (" @" <|> " ") <*> displayName <* A.space <*> quotedMsg <*> A.takeByteString)
+    <|> (">#" <|> "> #") *> (SendGroupMessageQuote <$> displayName <* A.space <*> pure Nothing <*> quotedMsg <*> A.takeByteString)
+    <|> (">#" <|> "> #") *> (SendGroupMessageQuote <$> displayName <* A.space <* optional (A.char '@') <*> (Just <$> displayName) <* A.space <*> quotedMsg <*> A.takeByteString)
     <|> ("/contacts" <|> "/cs") $> ListContacts
     <|> ("/connect " <|> "/c ") *> (Connect <$> ((Just <$> strP) <|> A.takeByteString $> Nothing))
     <|> ("/connect" <|> "/c") $> AddContact
@@ -1577,7 +1578,7 @@ chatCommandP =
       "text " *> (MCText . safeDecodeUtf8 <$> A.takeByteString)
         <|> "json " *> (J.eitherDecodeStrict' <$?> A.takeByteString)
     displayName = safeDecodeUtf8 <$> (B.cons <$> A.satisfy refChar <*> A.takeTill (== ' '))
-    sendMsgQuote msgDir = (SendMessageQuote <$> displayName <* A.space <*> pure msgDir <*> quotedMsg <*> A.takeByteString)
+    sendMsgQuote msgDir = SendMessageQuote <$> displayName <* A.space <*> pure msgDir <*> quotedMsg <*> A.takeByteString
     quotedMsg = A.char '(' *> A.takeTill (== ')') <* A.char ')' <* optional A.space
     refChar c = c > ' ' && c /= '#' && c /= '@'
     onOffP = ("on" $> True) <|> ("off" $> False)

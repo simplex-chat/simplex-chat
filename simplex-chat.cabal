@@ -127,7 +127,7 @@ test-suite simplex-chat-test
       Paths_simplex_chat
   hs-source-dirs:
       tests
-  ghc-options: -Wall -Wcompat -Werror=incomplete-patterns -Wredundant-constraints -Wincomplete-record-updates -Wincomplete-uni-patterns -Wunused-type-patterns
+  ghc-options: -Wall -Wcompat -Werror=incomplete-patterns -Wredundant-constraints -Wincomplete-record-updates -Wincomplete-uni-patterns -Wunused-type-patterns -threaded
   build-depends:
       aeson ==2.0.*
     , ansi-terminal >=0.10 && <0.12

@@ -110,7 +110,7 @@ responseToView testView = \case
   CRContactSubscribed c -> [ttyContact' c <> ": connected to server"]
   CRContactSubError c e -> [ttyContact' c <> ": contact error " <> sShow e]
   CRContactSubSummary summary ->
-    (if null subscribed then [] else [sShow (length subscribed) <> " contacts connected (use " <> highlight' "/cs" <> " for the list)"]) <> viewErrorsSummary errors " contact errors"
+    [sShow (length subscribed) <> " contacts connected (use " <> highlight' "/cs" <> " for the list)" | not (null subscribed)] <> viewErrorsSummary errors " contact errors"
     where
       (errors, subscribed) = partition (isJust . contactError) summary
   CRGroupInvitation GroupInfo {localDisplayName = ldn, groupProfile = GroupProfile {fullName}} ->
@@ -159,10 +159,10 @@ responseToView testView = \case
             Just CIQuote {chatDir = quoteDir, content} ->
               Just (msgDirectionInt $ quoteMsgDirection quoteDir, msgContentText content)
     viewErrorsSummary :: [a] -> StyledString -> [StyledString]
-    viewErrorsSummary summary s = if null summary then [] else [ttyError (T.pack . show $ length summary) <> s <> " (run with -c option to show each error)"]
+    viewErrorsSummary summary s = [ttyError (T.pack . show $ length summary) <> s <> " (run with -c option to show each error)" | not (null summary)]
 
 viewChatItem :: MsgDirectionI d => ChatInfo c -> ChatItem c d -> [StyledString]
-viewChatItem chat (ChatItem {chatDir, meta, content, quotedItem}) = case chat of
+viewChatItem chat ChatItem {chatDir, meta, content, quotedItem} = case chat of
   DirectChat c -> case chatDir of
     CIDirectSnd -> case content of
       CISndMsgContent mc -> viewSentMessage to quote mc meta
@@ -192,10 +192,10 @@ viewChatItem chat (ChatItem {chatDir, meta, content, quotedItem}) = case chat of
   _ -> []
   where
     directQuote :: forall d'. MsgDirectionI d' => CIDirection 'CTDirect d' -> CIQuote 'CTDirect -> [StyledString]
-    directQuote _ (CIQuote {content = qmc, chatDir = qouteDir}) =
+    directQuote _ CIQuote {content = qmc, chatDir = qouteDir} =
       quoteText qmc $ if toMsgDirection (msgDirection @d') == quoteMsgDirection qouteDir then ">>" else ">"
     groupQuote :: GroupInfo -> CIQuote 'CTGroup -> [StyledString]
-    groupQuote g (CIQuote {content = qmc, chatDir = quoteDir}) = quoteText qmc . ttyQuotedMember $ sentByMember g quoteDir
+    groupQuote g CIQuote {content = qmc, chatDir = quoteDir} = quoteText qmc . ttyQuotedMember $ sentByMember g quoteDir
     sentByMember :: GroupInfo -> CIQDirection 'CTGroup -> Maybe GroupMember
     sentByMember GroupInfo {membership} = \case
       CIQGroupSnd -> Just membership

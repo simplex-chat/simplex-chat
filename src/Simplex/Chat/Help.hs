@@ -147,10 +147,12 @@ quotesHelpInfo :: [StyledString]
 quotesHelpInfo =
   map
     styleMarkdown
-    [ green "Sending replies to messages:",
-      indent <> highlight "> @alice (hi) <msg>      " <> " - to reply to alice's most recent message that starts with \"hi\"",
-      indent <> highlight ">> @alice (hi) <msg>     " <> " - to quote your own most recent message to alice that starts with \"hi\"",
-      indent <> highlight "> #team @alice (hi) <msg>" <> " - to quote alice's most recent message (that starts with \"hi\") in the group #team"
+    [ green "Sending replies to messages",
+      "To quote a message that starts with \"hi\":",
+      indent <> highlight "> @alice (hi) <msg>      " <> " - to reply to alice's most recent message",
+      indent <> highlight ">> @alice (hi) <msg>     " <> " - to quote user's most recent message to alice",
+      indent <> highlight "> #team (hi) <msg>       " <> " - to quote most recent message in the group from any member",
+      indent <> highlight "> #team @alice (hi) <msg>" <> " - to quote alice's most recent message in the group #team"
     ]
 
 markdownInfo :: [StyledString]

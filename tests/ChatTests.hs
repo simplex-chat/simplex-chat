@@ -619,6 +619,18 @@ testGroupMessageQuotedReply =
       cath #$> ("/_get chat #1 count=1", chat', [((1, "hi there!"), Just (0, "hello, all good, you?"))])
       alice #$> ("/_get chat #1 count=1", chat', [((0, "hi there!"), Just (0, "hello, all good, you?"))])
       bob #$> ("/_get chat #1 count=1", chat', [((0, "hi there!"), Just (1, "hello, all good, you?"))])
+      alice `send ` "> #team (will tell) go on"
+      alice <# "#team > bob will tell more"
+      alice <## "      go on"
+      concurrently_
+        ( do
+            bob <# "#team alice> > bob will tell more"
+            bob <## "      go on"
+        )
+        ( do
+            cath <# "#team alice> > bob will tell more"
+            cath <## "      go on"
+        )
 
 testUpdateProfile :: IO ()
 testUpdateProfile =
