@@ -54,6 +54,7 @@ extra-deps:
     commit: 3eb66f9a68f103b5f1489382aad89f5712a64db7
   - github: simplex-chat/haskell-terminal
     commit: f708b00009b54890172068f168bf98508ffcd495
+
 #
 # extra-deps: []
 
