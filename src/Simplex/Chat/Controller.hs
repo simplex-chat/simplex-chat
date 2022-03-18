@@ -20,8 +20,10 @@ import Data.ByteString.Char8 (ByteString)
 import Data.Int (Int64)
 import Data.Map.Strict (Map)
 import Data.Text (Text)
+import Data.Version (showVersion)
 import GHC.Generics (Generic)
 import Numeric.Natural
+import qualified Paths_simplex_chat as SC
 import Simplex.Chat.Messages
 import Simplex.Chat.Protocol
 import Simplex.Chat.Store (StoreError)
@@ -36,7 +38,7 @@ import System.IO (Handle)
 import UnliftIO.STM
 
 versionNumber :: String
-versionNumber = "1.3.2"
+versionNumber = showVersion SC.version
 
 versionStr :: String
 versionStr = "SimpleX Chat v" <> versionNumber
