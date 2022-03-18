@@ -30,7 +30,7 @@ fun ChatInfoImage(chat: Chat, size: Dp) {
   val icon =
     if (chat.chatInfo is ChatInfo.Group) Icons.Filled.SupervisedUserCircle
                                     else Icons.Filled.AccountCircle
-  ProfileImage(size, chat.chatInfo.displayImage, icon)
+  ProfileImage(size, chat.chatInfo.image, icon)
 }
 
 @Composable

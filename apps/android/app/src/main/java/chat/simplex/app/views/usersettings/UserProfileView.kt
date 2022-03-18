@@ -75,8 +75,8 @@ fun UserProfileLayout(
   val bottomSheetModalState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden)
   var displayName = remember { mutableStateOf(profile.displayName) }
   var fullName = remember { mutableStateOf(profile.fullName) }
-  var profileImageStr = remember { mutableStateOf(profile.displayImage) }
-  var originalImageStr = remember { mutableStateOf(profile.displayImage) }
+  var profileImageStr = remember { mutableStateOf(profile.image) }
+  var originalImageStr = remember { mutableStateOf(profile.image) }
   val coroutineScope = rememberCoroutineScope()
   var profileImageExpanded by remember { mutableStateOf(false) }
   var expandedProfileImageSize = LocalContext.current.resources.configuration.screenWidthDp.dp.times(0.9f)

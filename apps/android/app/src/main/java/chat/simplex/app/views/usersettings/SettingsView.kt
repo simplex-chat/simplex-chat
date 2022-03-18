@@ -68,7 +68,7 @@ fun SettingsLayout(
       Spacer(Modifier.height(30.dp))
 
       SettingsSectionView(showModal { UserProfileView(it) }, 60.dp) {
-        ProfileImage(size = 40.dp, profile.displayImage)
+        ProfileImage(size = 40.dp, profile.image)
         Spacer(Modifier.padding(horizontal = 4.dp))
         Column {
           Text(
