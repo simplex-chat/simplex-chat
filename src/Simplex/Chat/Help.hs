@@ -7,6 +7,7 @@ module Simplex.Chat.Help
     filesHelpInfo,
     groupsHelpInfo,
     myAddressHelpInfo,
+    quotesHelpInfo,
     markdownInfo,
   )
 where
@@ -82,7 +83,7 @@ chatHelpInfo =
       green "Create your address: " <> highlight "/address",
       "",
       green "Other commands:",
-      indent <> highlight "/help <topic>    " <> " - help on: files, groups, address, smp_servers",
+      indent <> highlight "/help <topic>    " <> " - help on: files, groups, address, replies, smp_servers",
       indent <> highlight "/profile         " <> " - show / update user profile",
       indent <> highlight "/delete <contact>" <> " - delete contact and all messages with them",
       indent <> highlight "/contacts        " <> " - list contacts",
@@ -140,6 +141,16 @@ myAddressHelpInfo =
       "Please note: you can receive spam contact requests, but it's safe to delete the address!",
       "",
       "The commands may be abbreviated: " <> listHighlight ["/ad", "/da", "/sa", "/ac", "/rc"]
+    ]
+
+quotesHelpInfo :: [StyledString]
+quotesHelpInfo =
+  map
+    styleMarkdown
+    [ green "Sending replies to messages:",
+      indent <> highlight "> @alice (hi) <msg>      " <> " - to reply to alice's most recent message that starts with \"hi\"",
+      indent <> highlight ">> @alice (hi) <msg>     " <> " - to quote your own most recent message to alice that starts with \"hi\"",
+      indent <> highlight "> #team @alice (hi) <msg>" <> " - to quote alice's most recent message (that starts with \"hi\") in the group #team"
     ]
 
 markdownInfo :: [StyledString]

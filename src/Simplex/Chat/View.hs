@@ -57,6 +57,7 @@ responseToView testView = \case
     HSFiles -> filesHelpInfo
     HSGroups -> groupsHelpInfo
     HSMyAddress -> myAddressHelpInfo
+    HSQuotes -> quotesHelpInfo
     HSMarkdown -> markdownInfo
   CRWelcome user -> chatWelcome user
   CRContactsList cs -> viewContactsList cs
