@@ -167,7 +167,7 @@ fun GetImageOptions(
     Row(
       Modifier
         .fillMaxWidth()
-        .padding(horizontal = 8.dp, vertical = 10.dp),
+        .padding(horizontal = 8.dp, vertical = 30.dp),
       horizontalArrangement = Arrangement.SpaceEvenly
     ) {
 

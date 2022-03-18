@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.*
@@ -13,6 +14,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -22,15 +24,17 @@ import chat.simplex.app.model.ChatModel
 import chat.simplex.app.model.Profile
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.helpers.*
+import chat.simplex.app.views.newchat.ModalView
 import kotlinx.coroutines.launch
 
 @Composable
-fun UserProfileView(chatModel: ChatModel) {
+fun UserProfileView(chatModel: ChatModel, close: () -> Unit) {
   val user = chatModel.currentUser.value
   if (user != null) {
     var editProfile by remember { mutableStateOf(false) }
     var profile by remember { mutableStateOf(user.profile) }
     UserProfileLayout(
+      close = close,
       editProfile = editProfile,
       profile = profile,
       editProfileOff = { editProfile = false },
@@ -65,6 +69,7 @@ fun UserProfileView(chatModel: ChatModel) {
 
 @Composable
 fun UserProfileLayout(
+  close: () -> Unit,
   editProfile: Boolean,
   profile: Profile,
   editProfileOff: () -> Unit,
@@ -83,7 +88,7 @@ fun UserProfileLayout(
   val profileImageSize by animateDpAsState(if (profileImageExpanded) expandedProfileImageSize else 70.dp)
 
   ModalBottomSheetLayout(
-    scrimColor = MaterialTheme.colors.onSurface.copy(alpha = 0.0f),
+    scrimColor = Color.Black.copy(alpha = 0.12F),
     modifier = Modifier
       .fillMaxWidth()
       .clickable(
@@ -93,102 +98,104 @@ fun UserProfileLayout(
       ),
     sheetContent = { GetImageOptions(bottomSheetModalState, profileImageStr) },
     sheetState = bottomSheetModalState,
+    sheetShape = RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp)
   ) {
-    Column(horizontalAlignment = Alignment.Start, modifier = Modifier.padding(16.dp)) {
-      Text(
-        "Your chat profile",
-        Modifier.padding(bottom = 24.dp),
-        style = MaterialTheme.typography.h1,
-        color = MaterialTheme.colors.onBackground
-      )
-      Text(
-        "Your profile is stored on your device and shared only with your contacts.\n\n" +
-            "SimpleX servers cannot see your profile.",
-        Modifier.padding(bottom = 24.dp),
-        color = MaterialTheme.colors.onBackground
-      )
-      // TODO hints
-      Box {
-        Column(modifier = Modifier.fillMaxHeight()){
-          Row(modifier = Modifier.fillMaxWidth()) {
-            Column(
-              horizontalAlignment = Alignment.Start,
-              modifier = Modifier.padding(10.dp)
-            ) {
-              Box(modifier = Modifier
-                .clip(CircleShape)
-                .clickable {
-                  if (editProfile) {
-                    coroutineScope.launch {
-                      if (!bottomSheetModalState.isVisible) {
-                        bottomSheetModalState.show()
-                      } else {
-                        bottomSheetModalState.hide()
-                      }
-                    }
-                  } else {
-                    profileImageExpanded = !profileImageExpanded
-                  }
-                }) {
-                ProfileImage(70.dp, profileImageStr.value, editable = editProfile)
-              }
-            }
-            Column(verticalArrangement = Arrangement.SpaceBetween, modifier = Modifier.padding(10.dp)) {
-              Row(
-                Modifier.padding(bottom = 14.dp)
+    ModalView(close = close) {
+      Column(horizontalAlignment = Alignment.Start) {
+        Text(
+          "Your chat profile",
+          Modifier.padding(bottom = 24.dp),
+          style = MaterialTheme.typography.h1,
+          color = MaterialTheme.colors.onBackground
+        )
+        Text(
+          "Your profile is stored on your device and shared only with your contacts.\n\n" +
+              "SimpleX servers cannot see your profile.",
+          Modifier.padding(bottom = 24.dp),
+          color = MaterialTheme.colors.onBackground
+        )
+        // TODO hints
+        Box {
+          Column(modifier = Modifier.fillMaxHeight()) {
+            Row(modifier = Modifier.fillMaxWidth()) {
+              Column(
+                horizontalAlignment = Alignment.Start,
+                modifier = Modifier.padding(10.dp)
               ) {
-                EditableDisplayName(editProfile, profile, displayName)
-              }
-              Row {
-                EditableFullName(editProfile, profile, fullName)
-              }
-            }
-          }
-          if (editProfile) {
-            Row {
-              Text(
-                "Cancel",
-                color = MaterialTheme.colors.primary,
-                modifier = Modifier
-                  .clickable(onClick = {
-                    editProfileOff()
-                    profileImageStr.value = originalImageStr.value
-                  }),
-              )
-              Spacer(Modifier.padding(horizontal = 8.dp))
-              Text(
-                "Save (and notify contacts)",
-                color = MaterialTheme.colors.primary,
-                modifier = Modifier
-                  .clickable(onClick = {
-                    saveProfile(displayName.value, fullName.value)
-                    if (profileImageStr.value != null && originalImageStr.value != profileImageStr.value){
-                      saveProfileImage(profileImageStr.value!!)
-                      originalImageStr.value = profileImageStr.value
+                Box(modifier = Modifier
+                  .clip(CircleShape)
+                  .clickable {
+                    if (editProfile) {
+                      coroutineScope.launch {
+                        if (!bottomSheetModalState.isVisible) {
+                          bottomSheetModalState.show()
+                        } else {
+                          bottomSheetModalState.hide()
+                        }
+                      }
+                    } else {
+                      profileImageExpanded = !profileImageExpanded
                     }
-                  })
-              )
+                  }) {
+                  ProfileImage(70.dp, profileImageStr.value, editable = editProfile)
+                }
+              }
+              Column(verticalArrangement = Arrangement.SpaceBetween, modifier = Modifier.padding(10.dp)) {
+                Row(
+                  Modifier.padding(bottom = 14.dp)
+                ) {
+                  EditableDisplayName(editProfile, profile, displayName)
+                }
+                Row {
+                  EditableFullName(editProfile, profile, fullName)
+                }
+              }
             }
-          } else {
-            Row(
-              verticalAlignment = Alignment.Bottom
-            ) {
-              Text(
-                "Edit",
-                color = MaterialTheme.colors.primary,
-                modifier = Modifier
-                  .clickable(onClick = {
-                    profileImageExpanded = false
-                    editProfileOn()
-                  })
-                  .padding(top = 5.dp)
-              )
+            if (editProfile) {
+              Row {
+                Text(
+                  "Cancel",
+                  color = MaterialTheme.colors.primary,
+                  modifier = Modifier
+                    .clickable(onClick = {
+                      editProfileOff()
+                      profileImageStr.value = originalImageStr.value
+                    }),
+                )
+                Spacer(Modifier.padding(horizontal = 8.dp))
+                Text(
+                  "Save (and notify contacts)",
+                  color = MaterialTheme.colors.primary,
+                  modifier = Modifier
+                    .clickable(onClick = {
+                      saveProfile(displayName.value, fullName.value)
+                      if (profileImageStr.value != null && originalImageStr.value != profileImageStr.value) {
+                        saveProfileImage(profileImageStr.value!!)
+                        originalImageStr.value = profileImageStr.value
+                      }
+                    })
+                )
+              }
+            } else {
+              Row(
+                verticalAlignment = Alignment.Bottom
+              ) {
+                Text(
+                  "Edit",
+                  color = MaterialTheme.colors.primary,
+                  modifier = Modifier
+                    .clickable(onClick = {
+                      profileImageExpanded = false
+                      editProfileOn()
+                    })
+                    .padding(top = 5.dp)
+                )
+              }
             }
-
           }
-        }
-        if (!editProfile && profileImageExpanded) {
-          ProfileImage(profileImageSize, profileImageStr.value, editable = false)
+          if (!editProfile && profileImageExpanded) {
+            ProfileImage(profileImageSize, profileImageStr.value, editable = false)
+          }
         }
       }
     }
@@ -268,6 +275,7 @@ fun EditableFullName(editMode: Boolean, profile: Profile, fullName: MutableState
 fun PreviewUserProfileLayoutEditOff() {
   SimpleXTheme {
     UserProfileLayout(
+      close = {},
       profile = Profile.sampleData,
       editProfile = false,
       editProfileOff = {},
@@ -288,6 +296,7 @@ fun PreviewUserProfileLayoutEditOff() {
 fun PreviewUserProfileLayoutEditOn() {
   SimpleXTheme {
     UserProfileLayout(
+      close = {},
       profile = Profile.sampleData,
       editProfile = true,
       editProfileOff = {},

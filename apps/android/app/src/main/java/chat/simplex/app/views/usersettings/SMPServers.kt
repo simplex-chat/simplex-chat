@@ -103,7 +103,7 @@ fun SMPServersLayout(
   editOn: () -> Unit,
 ) {
   Column(
-    Modifier.fillMaxWidth().padding(16.dp),
+    Modifier.fillMaxWidth(),
     horizontalAlignment = Alignment.Start,
     verticalArrangement = Arrangement.spacedBy(8.dp)
   ) {

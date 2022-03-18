@@ -33,6 +33,7 @@ fun SettingsView(chatModel: ChatModel) {
     SettingsLayout(
       profile = user.profile,
       showModal = { modalView -> { ModalManager.shared.showModal { modalView(chatModel) } } },
+      showCustomModal = { modalView -> { ModalManager.shared.showCustomModal { close -> modalView(chatModel, close) } } },
       showTerminal = { ModalManager.shared.showCustomModal { close -> TerminalView(chatModel, close) } }
     )
   }
@@ -45,6 +46,7 @@ val simplexTeamUri =
 fun SettingsLayout(
   profile: Profile,
   showModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
+  showCustomModal: (@Composable (ChatModel, () -> Unit) -> Unit) -> (() -> Unit),
   showTerminal: () -> Unit
 ) {
   val uriHandler = LocalUriHandler.current
@@ -67,7 +69,7 @@ fun SettingsLayout(
       )
       Spacer(Modifier.height(30.dp))
 
-      SettingsSectionView(showModal { UserProfileView(it) }, 60.dp) {
+      SettingsSectionView(showCustomModal { chatModel, close -> UserProfileView(chatModel, close) }, 60.dp) {
         ProfileImage(size = 40.dp, profile.image)
         Spacer(Modifier.padding(horizontal = 4.dp))
         Column {
@@ -184,7 +186,7 @@ fun SettingsSectionView(click: () -> Unit, height: Dp = 48.dp, content: (@Compos
       .height(height),
     verticalAlignment = Alignment.CenterVertically
   ) {
-    content.invoke()
+    content()
   }
 }
 
@@ -200,6 +202,7 @@ fun PreviewSettingsLayout() {
     SettingsLayout(
       profile = Profile.sampleData,
       showModal = {{}},
+      showCustomModal = {{}},
       showTerminal = {}
     )
   }

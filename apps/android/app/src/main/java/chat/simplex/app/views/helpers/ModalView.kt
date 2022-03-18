@@ -9,6 +9,7 @@ import androidx.compose.material.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import chat.simplex.app.TAG
 import chat.simplex.app.views.helpers.CloseSheetBar
 
@@ -22,7 +23,7 @@ fun ModalView(close: () -> Unit, content: @Composable () -> Unit) {
   ) {
     Column {
       CloseSheetBar(close)
-      Box { content() }
+      Box(Modifier.padding(horizontal = 16.dp)) { content() }
     }
   }
 }

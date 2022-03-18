@@ -48,8 +48,7 @@ fun ProfileImage(
         tint = MaterialTheme.colors.secondary,
         modifier = Modifier.fillMaxSize()
       )
-    }
-    else {
+    } else {
       val imageBitmap = base64ToBitmap(displayImage).asImageBitmap()
       Image(
         imageBitmap,
