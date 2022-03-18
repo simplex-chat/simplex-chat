@@ -17,7 +17,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.model.Profile
@@ -95,7 +94,7 @@ fun UserProfileLayout(
     sheetContent = { GetImageOptions(bottomSheetModalState, profileImageStr) },
     sheetState = bottomSheetModalState,
   ) {
-    Column(horizontalAlignment = Alignment.Start) {
+    Column(horizontalAlignment = Alignment.Start, modifier = Modifier.padding(16.dp)) {
       Text(
         "Your chat profile",
         Modifier.padding(bottom = 24.dp),

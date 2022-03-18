@@ -21,7 +21,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.app.model.ChatModel
-import chat.simplex.app.ui.theme.*
+import chat.simplex.app.ui.theme.HighOrLowlight
+import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.helpers.AlertManager
 import chat.simplex.app.views.helpers.withApi
 
@@ -102,7 +103,7 @@ fun SMPServersLayout(
   editOn: () -> Unit,
 ) {
   Column(
-    Modifier.fillMaxWidth(),
+    Modifier.fillMaxWidth().padding(16.dp),
     horizontalAlignment = Alignment.Start,
     verticalArrangement = Arrangement.spacedBy(8.dp)
   ) {

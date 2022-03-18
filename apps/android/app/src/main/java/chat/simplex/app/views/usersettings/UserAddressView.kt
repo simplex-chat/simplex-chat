@@ -55,7 +55,8 @@ fun UserAddressLayout(
 ) {
   Column(
     horizontalAlignment = Alignment.Start,
-    verticalArrangement = Arrangement.Top
+    verticalArrangement = Arrangement.Top,
+    modifier = Modifier.padding(16.dp)
   ) {
     Text(
       "Your chat address",

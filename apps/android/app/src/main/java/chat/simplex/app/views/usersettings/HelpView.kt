@@ -24,7 +24,10 @@ fun HelpView(chatModel: ChatModel) {
 
 @Composable
 fun HelpLayout(displayName: String) {
-  Column(horizontalAlignment = Alignment.Start) {
+  Column(
+    horizontalAlignment = Alignment.Start,
+    modifier = Modifier.padding(16.dp)
+  ) {
     Text(
       "Welcome $displayName!",
       Modifier.padding(bottom = 24.dp),
