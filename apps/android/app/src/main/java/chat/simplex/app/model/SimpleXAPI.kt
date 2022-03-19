@@ -19,19 +19,18 @@ import kotlin.concurrent.thread
 
 typealias ChatCtrl = Long
 
-open class ChatController(val ctrl: ChatCtrl, val ntfManager: NtfManager, val appContext: Context) {
+open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: NtfManager, val appContext: Context) {
   var chatModel = ChatModel(this)
 
-  suspend fun startChat(u: User) {
-    Log.d(TAG, "user: $u")
+  suspend fun startChat(user: User) {
+    Log.d(TAG, "user: $user")
     try {
       apiStartChat()
       chatModel.userAddress.value = apiGetUserAddress()
       chatModel.userSMPServers.value = getUserSMPServers()
       chatModel.chats.addAll(apiGetChats())
-      chatModel.currentUser = mutableStateOf(u)
+      chatModel.currentUser = mutableStateOf(user)
       chatModel.userCreated.value = true
-      startReceiver()
       Log.d(TAG, "started chat")
     } catch(e: Error) {
       Log.e(TAG, "failed starting chat $e")
@@ -105,7 +104,7 @@ open class ChatController(val ctrl: ChatCtrl, val ntfManager: NtfManager, val ap
 
   suspend fun apiStartChat() {
     val r = sendCmd(CC.StartChat())
-    if (r is CR.ChatStarted ) return
+    if (r is CR.ChatStarted || r is CR.ChatRunning) return
     throw Error("failed starting chat: ${r.responseType} ${r.details}")
   }
 

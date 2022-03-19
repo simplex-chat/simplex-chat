@@ -16,6 +16,7 @@ import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.model.Profile
+import chat.simplex.app.SimplexService
 import chat.simplex.app.views.helpers.withApi
 import com.google.accompanist.insets.ProvideWindowInsets
 import com.google.accompanist.insets.navigationBarsWithImePadding
@@ -151,6 +152,7 @@ fun CreateProfilePanel(chatModel: ChatModel) {
           Profile(displayName, fullName, null)
         )
         chatModel.controller.startChat(user)
+        SimplexService.start(chatModel.controller.appContext)
       }
     },
     enabled = (displayName.isNotEmpty() && isValidDisplayName(displayName))

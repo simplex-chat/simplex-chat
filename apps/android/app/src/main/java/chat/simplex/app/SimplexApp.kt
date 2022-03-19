@@ -26,20 +26,28 @@ external fun chatRecvMsg(ctrl: ChatCtrl) : String
 
 //class SimplexApp: Application(), LifecycleEventObserver {
 class SimplexApp: Application() {
-  private lateinit var controller: ChatController
-  lateinit var chatModel: ChatModel
-  private lateinit var ntfManager: NtfManager
+  val chatController: ChatController by lazy {
+    val ctrl = chatInit(applicationContext.filesDir.toString())
+    ChatController(ctrl, ntfManager, applicationContext)
+  }
+
+  val chatModel: ChatModel by lazy {
+    chatController.chatModel
+  }
+
+  private val ntfManager: NtfManager by lazy {
+    NtfManager(applicationContext)
+  }
 
   override fun onCreate() {
     super.onCreate()
 //    ProcessLifecycleOwner.get().lifecycle.addObserver(this)
-    ntfManager = NtfManager(applicationContext)
-    val ctrl = chatInit(applicationContext.filesDir.toString())
-    controller = ChatController(ctrl, ntfManager, applicationContext)
-    chatModel = controller.chatModel
     withApi {
-      val user = controller.apiGetActiveUser()
-      if (user != null) controller.startChat(user)
+      val user = chatController.apiGetActiveUser()
+      if (user != null) {
+        chatController.startChat(user)
+        SimplexService.start(applicationContext)
+      }
     }
   }
 
