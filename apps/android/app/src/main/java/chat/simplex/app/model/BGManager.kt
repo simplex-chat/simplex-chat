@@ -4,10 +4,8 @@ import android.content.Context
 import android.util.Log
 import androidx.work.*
 import chat.simplex.app.TAG
-import chat.simplex.app.chatRecvMsg
 import kotlinx.datetime.Clock
 import java.time.Duration
-import java.util.concurrent.TimeUnit
 
 class BGManager(appContext: Context, workerParams: WorkerParameters): //, ctrl: ChatCtrl):
   Worker(appContext, workerParams) {

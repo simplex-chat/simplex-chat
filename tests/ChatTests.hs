@@ -670,6 +670,8 @@ testUpdateProfileImage =
       -- Note we currently don't support removing profile image.
       alice ##> "/profile_image data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII="
       alice <## "profile image updated"
+      alice ##> "/profile_image"
+      alice <## "profile image removed"
       (bob </)
 
 testFileTransfer :: IO ()

@@ -466,11 +466,16 @@ data class ChatItem (
   val chatDir: CIDirection,
   val meta: CIMeta,
   val content: CIContent,
-  val formattedText: List<FormattedText>? = null
+  val formattedText: List<FormattedText>? = null,
+  val quotedItem: CIQuote? = null
 ) {
   val id: Long get() = meta.itemId
   val timestampText: String get() = meta.timestampText
   val isRcvNew: Boolean get() = meta.itemStatus is CIStatus.RcvNew
+
+  val memberDisplayName: String? get() =
+    if (chatDir is CIDirection.GroupRcv) chatDir.groupMember.memberProfile.displayName
+    else null
 
   companion object {
     fun getSampleData(
@@ -478,12 +483,14 @@ data class ChatItem (
       dir: CIDirection = CIDirection.DirectSnd(),
       ts: Instant = Clock.System.now(),
       text: String = "hello\nthere",
-      status: CIStatus = CIStatus.SndNew()
+      status: CIStatus = CIStatus.SndNew(),
+      quotedItem: CIQuote? = null
     ) =
       ChatItem(
         chatDir = dir,
         meta = CIMeta.getSample(id, ts, text, status),
-        content = CIContent.SndMsgContent(msgContent = MsgContent.MCText(text))
+        content = CIContent.SndMsgContent(msgContent = MsgContent.MCText(text)),
+        quotedItem = quotedItem
       )
   }
 }
@@ -566,9 +573,13 @@ sealed class CIStatus {
   class RcvRead: CIStatus()
 }
 
+interface ItemContent {
+  val text: String
+}
+
 @Serializable
-sealed class CIContent {
-  abstract val text: String
+sealed class CIContent: ItemContent {
+  abstract override val text: String
 
   @Serializable @SerialName("sndMsgContent")
   class SndMsgContent(val msgContent: MsgContent): CIContent() {
@@ -588,6 +599,31 @@ sealed class CIContent {
   @Serializable @SerialName("rcvFileInvitation")
   class RcvFileInvitation(val rcvFileTransfer: RcvFileTransfer): CIContent() {
     override val text get() = "receiving files is not supported yet"
+  }
+}
+
+@Serializable
+class CIQuote (
+  val chatDir: CIDirection? = null,
+  val itemId: Long? = null,
+  val sharedMsgId: String? = null,
+  val sentAt: Instant,
+  val content: MsgContent,
+  val formattedText: List<FormattedText>? = null
+): ItemContent {
+  override val text: String get() = content.text
+
+  fun sender(user: User): String? = when (chatDir) {
+    is CIDirection.DirectSnd -> "you"
+    is CIDirection.DirectRcv -> null
+    is CIDirection.GroupSnd -> user.displayName
+    is CIDirection.GroupRcv -> chatDir.groupMember.memberProfile.displayName
+    null -> null
+  }
+
+  companion object {
+    fun getSample(itemId: Long?, sentAt: Instant, text: String, chatDir: CIDirection?): CIQuote =
+      CIQuote(chatDir = chatDir, itemId = itemId, sentAt = sentAt, content = MsgContent.MCText(text))
   }
 }
 

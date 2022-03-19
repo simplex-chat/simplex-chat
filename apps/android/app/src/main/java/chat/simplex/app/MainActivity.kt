@@ -112,9 +112,8 @@ fun connectIfOpenedViaUri(uri: Uri, chatModel: ChatModel) {
 }
 
 //fun testJson() {
-//  val str = """
-//    {}
+//  val str: String = """
 //  """.trimIndent()
 //
-//  println(json.decodeFromString<ChatItem>(str))
+//  println(json.decodeFromString<APIResponse>(str))
 //}
