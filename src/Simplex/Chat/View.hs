@@ -48,7 +48,8 @@ responseToView testView = \case
   CRApiChat chat -> if testView then testViewChat chat else [plain . bshow $ J.encode chat]
   CRUserSMPServers smpServers -> viewSMPServers smpServers testView
   CRNewChatItem (AChatItem _ _ chat item) -> viewChatItem chat item
-  CRChatItemUpdated _ -> []
+  CRChatItemUpdated _ -> [] -- TODO split message status update
+  CRChatItemDeleted _ -> [] -- TODO
   CRMsgIntegrityError mErr -> viewMsgIntegrityError mErr
   CRCmdAccepted _ -> []
   CRCmdOk -> ["ok"]
@@ -166,11 +167,13 @@ viewChatItem chat ChatItem {chatDir, meta, content, quotedItem} = case chat of
   DirectChat c -> case chatDir of
     CIDirectSnd -> case content of
       CISndMsgContent mc -> viewSentMessage to quote mc meta
+      CISndMsgDeleted _mc -> []
       CISndFileInvitation fId fPath -> viewSentFileInvitation to fId fPath meta
       where
         to = ttyToContact' c
     CIDirectRcv -> case content of
       CIRcvMsgContent mc -> viewReceivedMessage from quote meta mc
+      CIRcvMsgDeleted _mc -> []
       CIRcvFileInvitation ft -> viewReceivedFileInvitation from meta ft
       where
         from = ttyFromContact' c
@@ -179,11 +182,13 @@ viewChatItem chat ChatItem {chatDir, meta, content, quotedItem} = case chat of
   GroupChat g -> case chatDir of
     CIGroupSnd -> case content of
       CISndMsgContent mc -> viewSentMessage to quote mc meta
+      CISndMsgDeleted _mc -> []
       CISndFileInvitation fId fPath -> viewSentFileInvitation to fId fPath meta
       where
         to = ttyToGroup g
     CIGroupRcv m -> case content of
       CIRcvMsgContent mc -> viewReceivedMessage from quote meta mc
+      CIRcvMsgDeleted _mc -> []
       CIRcvFileInvitation ft -> viewReceivedFileInvitation from meta ft
       where
         from = ttyFromGroup' g m

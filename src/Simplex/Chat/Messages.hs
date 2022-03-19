@@ -343,6 +343,8 @@ type ChatItemTs = UTCTime
 data CIContent (d :: MsgDirection) where
   CISndMsgContent :: MsgContent -> CIContent 'MDSnd
   CIRcvMsgContent :: MsgContent -> CIContent 'MDRcv
+  CISndMsgDeleted :: MsgContent -> CIContent 'MDSnd
+  CIRcvMsgDeleted :: MsgContent -> CIContent 'MDRcv
   CISndFileInvitation :: FileTransferId -> FilePath -> CIContent 'MDSnd
   CIRcvFileInvitation :: RcvFileTransfer -> CIContent 'MDRcv
 
@@ -352,6 +354,8 @@ ciContentToText :: CIContent d -> Text
 ciContentToText = \case
   CISndMsgContent mc -> msgContentText mc
   CIRcvMsgContent mc -> msgContentText mc
+  CISndMsgDeleted _ -> "this message is deleted"
+  CIRcvMsgDeleted _ -> "this message is deleted"
   CISndFileInvitation fId fPath -> "you sent file #" <> T.pack (show fId) <> ": " <> T.pack fPath
   CIRcvFileInvitation RcvFileTransfer {fileInvitation = FileInvitation {fileName}} -> "file " <> T.pack fileName
 
@@ -379,6 +383,8 @@ instance FromField ACIContent where fromField = fromTextField_ $ fmap aciContent
 data JSONCIContent
   = JCISndMsgContent {msgContent :: MsgContent}
   | JCIRcvMsgContent {msgContent :: MsgContent}
+  | JCISndMsgDeleted {msgContent :: MsgContent}
+  | JCIRcvMsgDeleted {msgContent :: MsgContent}
   | JCISndFileInvitation {fileId :: FileTransferId, filePath :: FilePath}
   | JCIRcvFileInvitation {rcvFileTransfer :: RcvFileTransfer}
   deriving (Generic)
@@ -394,6 +400,8 @@ jsonCIContent :: CIContent d -> JSONCIContent
 jsonCIContent = \case
   CISndMsgContent mc -> JCISndMsgContent mc
   CIRcvMsgContent mc -> JCIRcvMsgContent mc
+  CISndMsgDeleted mc -> JCISndMsgDeleted mc
+  CIRcvMsgDeleted mc -> JCIRcvMsgDeleted mc
   CISndFileInvitation fId fPath -> JCISndFileInvitation fId fPath
   CIRcvFileInvitation ft -> JCIRcvFileInvitation ft
 
@@ -401,6 +409,8 @@ aciContentJSON :: JSONCIContent -> ACIContent
 aciContentJSON = \case
   JCISndMsgContent mc -> ACIContent SMDSnd $ CISndMsgContent mc
   JCIRcvMsgContent mc -> ACIContent SMDRcv $ CIRcvMsgContent mc
+  JCISndMsgDeleted mc -> ACIContent SMDSnd $ CISndMsgDeleted mc
+  JCIRcvMsgDeleted mc -> ACIContent SMDRcv $ CIRcvMsgDeleted mc
   JCISndFileInvitation fId fPath -> ACIContent SMDSnd $ CISndFileInvitation fId fPath
   JCIRcvFileInvitation ft -> ACIContent SMDRcv $ CIRcvFileInvitation ft
 
@@ -408,6 +418,8 @@ aciContentJSON = \case
 data DBJSONCIContent
   = DBJCISndMsgContent {msgContent :: MsgContent}
   | DBJCIRcvMsgContent {msgContent :: MsgContent}
+  | DBJCISndMsgDeleted {msgContent :: MsgContent}
+  | DBJCIRcvMsgDeleted {msgContent :: MsgContent}
   | DBJCISndFileInvitation {fileId :: FileTransferId, filePath :: FilePath}
   | DBJCIRcvFileInvitation {rcvFileTransfer :: RcvFileTransfer}
   deriving (Generic)
@@ -423,6 +435,8 @@ dbJsonCIContent :: CIContent d -> DBJSONCIContent
 dbJsonCIContent = \case
   CISndMsgContent mc -> DBJCISndMsgContent mc
   CIRcvMsgContent mc -> DBJCIRcvMsgContent mc
+  CISndMsgDeleted mc -> DBJCISndMsgDeleted mc
+  CIRcvMsgDeleted mc -> DBJCIRcvMsgDeleted mc
   CISndFileInvitation fId fPath -> DBJCISndFileInvitation fId fPath
   CIRcvFileInvitation ft -> DBJCIRcvFileInvitation ft
 
@@ -430,6 +444,8 @@ aciContentDBJSON :: DBJSONCIContent -> ACIContent
 aciContentDBJSON = \case
   DBJCISndMsgContent mc -> ACIContent SMDSnd $ CISndMsgContent mc
   DBJCIRcvMsgContent mc -> ACIContent SMDRcv $ CIRcvMsgContent mc
+  DBJCISndMsgDeleted ciId -> ACIContent SMDSnd $ CISndMsgDeleted ciId
+  DBJCIRcvMsgDeleted ciId -> ACIContent SMDRcv $ CIRcvMsgDeleted ciId
   DBJCISndFileInvitation fId fPath -> ACIContent SMDSnd $ CISndFileInvitation fId fPath
   DBJCIRcvFileInvitation ft -> ACIContent SMDRcv $ CIRcvFileInvitation ft
 

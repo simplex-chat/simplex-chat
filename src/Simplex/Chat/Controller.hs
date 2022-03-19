@@ -81,6 +81,9 @@ data ChatController = ChatController
 data HelpSection = HSMain | HSFiles | HSGroups | HSMyAddress | HSMarkdown | HSQuotes
   deriving (Show, Generic)
 
+data MsgDeleteMode = MDBroadcast | MDInternal
+  deriving (Show, Generic)
+
 instance ToJSON HelpSection where
   toJSON = J.genericToJSON . enumJSON $ dropPrefix "HS"
   toEncoding = J.genericToEncoding . enumJSON $ dropPrefix "HS"
@@ -94,6 +97,8 @@ data ChatCommand
   | APIGetChatItems Int
   | APISendMessage ChatType Int64 MsgContent
   | APISendMessageQuote ChatType Int64 ChatItemId MsgContent
+  | APIUpdateMessage  ChatType Int64 ChatItemId MsgContent
+  | APIDeleteMessage  ChatType Int64 ChatItemId MsgDeleteMode
   | APIChatRead ChatType Int64 (ChatItemId, ChatItemId)
   | APIDeleteChat ChatType Int64
   | APIAcceptContact Int64
@@ -147,6 +152,7 @@ data ChatResponse
   | CRUserSMPServers {smpServers :: [SMPServer]}
   | CRNewChatItem {chatItem :: AChatItem}
   | CRChatItemUpdated {chatItem :: AChatItem}
+  | CRChatItemDeleted {chatItem :: AChatItem}
   | CRMsgIntegrityError {msgerror :: MsgErrorType} -- TODO make it chat item to support in mobile
   | CRCmdAccepted {corr :: CorrId}
   | CRCmdOk
