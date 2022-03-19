@@ -436,7 +436,7 @@ processChatCommand = \case
     let p = (profile :: Profile) {displayName = displayName, fullName = fullName}
     updateProfile user p
   UpdateProfileImage image -> withUser $ \user@User {profile} -> do
-    let p = (profile :: Profile) {image = Just image}
+    let p = (profile :: Profile) {image}
     updateProfile user p
   QuitChat -> liftIO exitSuccess
   ShowVersion -> pure $ CRVersionInfo versionNumber
@@ -1561,7 +1561,8 @@ chatCommandP =
     <|> ("/reject @" <|> "/reject " <|> "/rc @" <|> "/rc ") *> (RejectContact <$> displayName)
     <|> ("/markdown" <|> "/m") $> ChatHelp HSMarkdown
     <|> ("/welcome" <|> "/w") $> Welcome
-    <|> "/profile_image " *> (UpdateProfileImage . ProfileImage <$> imageP)
+    <|> "/profile_image " *> (UpdateProfileImage . Just . ProfileImage <$> imageP)
+    <|> "/profile_image" $> UpdateProfileImage Nothing
     <|> ("/profile " <|> "/p ") *> (uncurry UpdateProfile <$> userNames)
     <|> ("/profile" <|> "/p") $> ShowProfile
     <|> ("/quit" <|> "/q" <|> "/exit") $> QuitChat
