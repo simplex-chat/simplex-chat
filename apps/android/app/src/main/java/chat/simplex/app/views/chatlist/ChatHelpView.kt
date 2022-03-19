@@ -32,7 +32,7 @@ fun ChatHelpView(addContact: (() -> Unit)? = null) {
       buildAnnotatedString {
         append("You can ")
         withStyle(SpanStyle(color = MaterialTheme.colors.primary)) {
-          append("connect to SimpleX team")
+          append("connect to SimpleX Chat founder")
         }
         append(".")
       },

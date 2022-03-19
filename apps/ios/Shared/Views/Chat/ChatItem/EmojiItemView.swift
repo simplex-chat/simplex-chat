@@ -12,23 +12,20 @@ struct EmojiItemView: View {
     var chatItem: ChatItem
 
     var body: some View {
-        let sent = chatItem.chatDir.sent
-        let s = chatItem.content.text.trimmingCharacters(in: .whitespaces)
-
         VStack(spacing: 1) {
-            Text(s)
-                .font(s.count < 4 ? largeEmojiFont : mediumEmojiFont)
+            emojiText(chatItem.content.text)
                 .padding(.top, 8)
                 .padding(.horizontal, 6)
-                .frame(maxWidth: .infinity, alignment: sent ? .trailing : .leading)
             CIMetaView(chatItem: chatItem)
                 .padding(.bottom, 8)
                 .padding(.horizontal, 12)
-                .frame(maxWidth: .infinity, alignment: sent ? .trailing : .leading)
         }
-        .padding(.horizontal)
-        .frame(maxWidth: .infinity, alignment: sent ? .trailing : .leading)
     }
+}
+
+func emojiText(_ text: String) -> Text {
+    let s = text.trimmingCharacters(in: .whitespaces)
+    return Text(s).font(s.count < 4 ? largeEmojiFont : mediumEmojiFont)
 }
 
 struct EmojiItemView_Previews: PreviewProvider {

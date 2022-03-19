@@ -48,6 +48,8 @@ runInputLoop ct cc = forever $ do
       Right SendGroupMessage {} -> True
       Right SendFile {} -> True
       Right SendGroupFile {} -> True
+      Right SendMessageQuote {} -> True
+      Right SendGroupMessageQuote {} -> True
       _ -> False
 
 runTerminalInput :: ChatTerminal -> ChatController -> IO ()
@@ -98,8 +100,10 @@ updateTermState ac tw (key, ms) ts@TerminalState {inputString = s, inputPosition
   _ -> ts
   where
     insertCharsWithContact cs
-      | null s && cs /= "@" && cs /= "#" && cs /= "/" =
+      | null s && cs /= "@" && cs /= "#" && cs /= "/" && cs /= ">" =
         insertChars $ contactPrefix <> cs
+      | s == ">" && cs == " " =
+        insertChars $ cs <> contactPrefix
       | otherwise = insertChars cs
     insertChars = ts' . if p >= length s then append else insert
     append cs = let s' = s <> cs in (s', length s')

@@ -22,6 +22,7 @@ enum ChatCommand {
     case apiGetChats
     case apiGetChat(type: ChatType, id: Int64)
     case apiSendMessage(type: ChatType, id: Int64, msg: MsgContent)
+    case apiSendMessageQuote(type: ChatType, id: Int64, itemId: Int64, msg: MsgContent)
     case getUserSMPServers
     case setUserSMPServers(smpServers: [String])
     case addContact
@@ -45,6 +46,7 @@ enum ChatCommand {
             case .apiGetChats: return "/_get chats"
             case let .apiGetChat(type, id): return "/_get chat \(ref(type, id)) count=100"
             case let .apiSendMessage(type, id, mc): return "/_send \(ref(type, id)) \(mc.cmdString)"
+            case let .apiSendMessageQuote(type, id, itemId, mc): return "/_send_quote \(ref(type, id)) \(itemId) \(mc.cmdString)"
             case .getUserSMPServers: return "/smp_servers"
             case let .setUserSMPServers(smpServers): return "/smp_servers \(smpServersStr(smpServers: smpServers))"
             case .addContact: return "/connect"
@@ -71,6 +73,7 @@ enum ChatCommand {
             case .apiGetChats: return "apiGetChats"
             case .apiGetChat: return "apiGetChat"
             case .apiSendMessage: return "apiSendMessage"
+            case .apiSendMessageQuote: return "apiSendMessageQuote"
             case .getUserSMPServers: return "getUserSMPServers"
             case .setUserSMPServers: return "setUserSMPServers"
             case .addContact: return "addContact"
@@ -362,9 +365,14 @@ func apiGetChat(type: ChatType, id: Int64) async throws -> Chat {
     throw r
 }
 
-func apiSendMessage(type: ChatType, id: Int64, msg: MsgContent) async throws -> ChatItem {
+func apiSendMessage(type: ChatType, id: Int64, quotedItemId: Int64?, msg: MsgContent) async throws -> ChatItem {
     let chatModel = ChatModel.shared
-    let cmd = ChatCommand.apiSendMessage(type: type, id: id, msg: msg)
+    let cmd: ChatCommand
+    if let itemId = quotedItemId {
+        cmd = .apiSendMessageQuote(type: type, id: id, itemId: itemId, msg: msg)
+    } else {
+        cmd = .apiSendMessage(type: type, id: id, msg: msg)
+    }
     let r: ChatResponse
     if type == .direct {
         var cItem: ChatItem!

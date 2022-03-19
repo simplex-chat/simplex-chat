@@ -78,7 +78,8 @@ data ChatItem (c :: ChatType) (d :: MsgDirection) = ChatItem
   { chatDir :: CIDirection c d,
     meta :: CIMeta d,
     content :: CIContent d,
-    formattedText :: Maybe [FormattedText]
+    formattedText :: Maybe MarkdownList,
+    quotedItem :: Maybe (CIQuote c)
   }
   deriving (Show, Generic)
 
@@ -100,9 +101,6 @@ data JSONCIDirection
   | JCIGroupSnd
   | JCIGroupRcv {groupMember :: GroupMember}
   deriving (Generic, Show)
-
-instance FromJSON JSONCIDirection where
-  parseJSON = J.genericParseJSON . sumTypeJSON $ dropPrefix "JCI"
 
 instance ToJSON JSONCIDirection where
   toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "JCI"
@@ -150,6 +148,8 @@ data NewChatItem d = NewChatItem
     itemContent :: CIContent d,
     itemText :: Text,
     itemStatus :: CIStatus d,
+    itemSharedMsgId :: Maybe SharedMsgId,
+    itemQuotedMsg :: Maybe QuotedMsg,
     createdAt :: UTCTime
   }
   deriving (Show)
@@ -185,7 +185,7 @@ instance ToJSON ChatStats where
   toEncoding = J.genericToEncoding J.defaultOptions
 
 -- | type to show a mix of messages from multiple chats
-data AChatItem = forall c d. AChatItem (SChatType c) (SMsgDirection d) (ChatInfo c) (ChatItem c d)
+data AChatItem = forall c d. MsgDirectionI d => AChatItem (SChatType c) (SMsgDirection d) (ChatInfo c) (ChatItem c d)
 
 deriving instance Show AChatItem
 
@@ -205,17 +205,59 @@ data CIMeta (d :: MsgDirection) = CIMeta
     itemTs :: ChatItemTs,
     itemText :: Text,
     itemStatus :: CIStatus d,
+    itemSharedMsgId :: Maybe SharedMsgId,
     localItemTs :: ZonedTime,
     createdAt :: UTCTime
   }
   deriving (Show, Generic)
 
-mkCIMeta :: ChatItemId -> Text -> CIStatus d -> TimeZone -> ChatItemTs -> UTCTime -> CIMeta d
-mkCIMeta itemId itemText itemStatus tz itemTs createdAt =
+mkCIMeta :: ChatItemId -> Text -> CIStatus d -> Maybe SharedMsgId -> TimeZone -> ChatItemTs -> UTCTime -> CIMeta d
+mkCIMeta itemId itemText itemStatus itemSharedMsgId tz itemTs createdAt =
   let localItemTs = utcToZonedTime tz itemTs
-   in CIMeta {itemId, itemTs, itemText, itemStatus, localItemTs, createdAt}
+   in CIMeta {itemId, itemTs, itemText, itemStatus, itemSharedMsgId, localItemTs, createdAt}
 
 instance ToJSON (CIMeta d) where toEncoding = J.genericToEncoding J.defaultOptions
+
+data CIQuote (c :: ChatType) = CIQuote
+  { chatDir :: CIQDirection c,
+    itemId :: Maybe ChatItemId, -- Nothing in case MsgRef references the item the user did not receive yet
+    sharedMsgId :: Maybe SharedMsgId, -- Nothing for the messages from the old clients
+    sentAt :: UTCTime,
+    content :: MsgContent,
+    formattedText :: Maybe MarkdownList
+  }
+  deriving (Show, Generic)
+
+instance ToJSON (CIQuote c) where
+  toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
+  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
+
+data CIQDirection (c :: ChatType) where
+  CIQDirectSnd :: CIQDirection 'CTDirect
+  CIQDirectRcv :: CIQDirection 'CTDirect
+  CIQGroupSnd :: CIQDirection 'CTGroup
+  CIQGroupRcv :: Maybe GroupMember -> CIQDirection 'CTGroup -- member can be Nothing in case MsgRef has memberId that the user is not notified about yet
+
+deriving instance Show (CIQDirection c)
+
+instance ToJSON (CIQDirection c) where
+  toJSON = J.toJSON . jsonCIQDirection
+  toEncoding = J.toEncoding . jsonCIQDirection
+
+jsonCIQDirection :: CIQDirection c -> Maybe JSONCIDirection
+jsonCIQDirection = \case
+  CIQDirectSnd -> Just JCIDirectSnd
+  CIQDirectRcv -> Just JCIDirectRcv
+  CIQGroupSnd -> Just JCIGroupSnd
+  CIQGroupRcv (Just m) -> Just $ JCIGroupRcv m
+  CIQGroupRcv Nothing -> Nothing
+
+quoteMsgDirection :: CIQDirection c -> MsgDirection
+quoteMsgDirection = \case
+  CIQDirectSnd -> MDSnd
+  CIQDirectRcv -> MDRcv
+  CIQGroupSnd -> MDSnd
+  CIQGroupRcv _ -> MDRcv
 
 data CIStatus (d :: MsgDirection) where
   CISSndNew :: CIStatus 'MDSnd
@@ -241,6 +283,8 @@ instance MsgDirectionI d => ToField (CIStatus d) where toField = toField . decod
 instance FromField ACIStatus where fromField = fromTextField_ $ eitherToMaybe . strDecode . encodeUtf8
 
 data ACIStatus = forall d. MsgDirectionI d => ACIStatus (SMsgDirection d) (CIStatus d)
+
+deriving instance Show ACIStatus
 
 instance MsgDirectionI d => StrEncoding (CIStatus d) where
   strEncode = \case
@@ -321,6 +365,8 @@ instance ToJSON (CIContent d) where
   toEncoding = J.toEncoding . jsonCIContent
 
 data ACIContent = forall d. ACIContent (SMsgDirection d) (CIContent d)
+
+deriving instance Show ACIContent
 
 -- platform specific
 instance FromJSON ACIContent where
@@ -407,11 +453,23 @@ instance ChatTypeI 'CTDirect where chatType = SCTDirect
 instance ChatTypeI 'CTGroup where chatType = SCTGroup
 
 data NewMessage = NewMessage
-  { direction :: MsgDirection,
-    cmEventTag :: CMEventTag,
+  { chatMsgEvent :: ChatMsgEvent,
     msgBody :: MsgBody
   }
   deriving (Show)
+
+data SndMessage = SndMessage
+  { msgId :: MessageId,
+    sharedMsgId :: SharedMsgId,
+    msgBody :: MsgBody
+  }
+
+data RcvMessage = RcvMessage
+  { msgId :: MessageId,
+    chatMsgEvent :: ChatMsgEvent,
+    sharedMsgId_ :: Maybe SharedMsgId,
+    msgBody :: MsgBody
+  }
 
 data PendingGroupMessage = PendingGroupMessage
   { msgId :: MessageId,
@@ -425,7 +483,7 @@ type MessageId = Int64
 data ConnOrGroupId = ConnectionId Int64 | GroupId Int64
 
 data MsgDirection = MDRcv | MDSnd
-  deriving (Show, Generic)
+  deriving (Eq, Show, Generic)
 
 instance FromJSON MsgDirection where
   parseJSON = J.genericParseJSON . enumJSON $ dropPrefix "MD"
@@ -449,10 +507,19 @@ instance TestEquality SMsgDirection where
 
 instance ToField (SMsgDirection d) where toField = toField . msgDirectionInt . toMsgDirection
 
+data AMsgDirection = forall d. MsgDirectionI d => AMsgDirection (SMsgDirection d)
+
+deriving instance Show AMsgDirection
+
 toMsgDirection :: SMsgDirection d -> MsgDirection
 toMsgDirection = \case
   SMDRcv -> MDRcv
   SMDSnd -> MDSnd
+
+fromMsgDirection :: MsgDirection -> AMsgDirection
+fromMsgDirection = \case
+  MDRcv -> AMsgDirection SMDRcv
+  MDSnd -> AMsgDirection SMDSnd
 
 class MsgDirectionI (d :: MsgDirection) where
   msgDirection :: SMsgDirection d

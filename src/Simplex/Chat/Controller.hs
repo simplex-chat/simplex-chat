@@ -20,8 +20,10 @@ import Data.ByteString.Char8 (ByteString)
 import Data.Int (Int64)
 import Data.Map.Strict (Map)
 import Data.Text (Text)
+import Data.Version (showVersion)
 import GHC.Generics (Generic)
 import Numeric.Natural
+import qualified Paths_simplex_chat as SC
 import Simplex.Chat.Messages
 import Simplex.Chat.Protocol
 import Simplex.Chat.Store (StoreError)
@@ -36,7 +38,7 @@ import System.IO (Handle)
 import UnliftIO.STM
 
 versionNumber :: String
-versionNumber = "1.3.2"
+versionNumber = showVersion SC.version
 
 versionStr :: String
 versionStr = "SimpleX Chat v" <> versionNumber
@@ -76,7 +78,7 @@ data ChatController = ChatController
     config :: ChatConfig
   }
 
-data HelpSection = HSMain | HSFiles | HSGroups | HSMyAddress | HSMarkdown
+data HelpSection = HSMain | HSFiles | HSGroups | HSMyAddress | HSMarkdown | HSQuotes
   deriving (Show, Generic)
 
 instance ToJSON HelpSection where
@@ -91,6 +93,7 @@ data ChatCommand
   | APIGetChat ChatType Int64 ChatPagination
   | APIGetChatItems Int
   | APISendMessage ChatType Int64 MsgContent
+  | APISendMessageQuote ChatType Int64 ChatItemId MsgContent
   | APIChatRead ChatType Int64 (ChatItemId, ChatItemId)
   | APIDeleteChat ChatType Int64
   | APIAcceptContact Int64
@@ -111,6 +114,7 @@ data ChatCommand
   | AcceptContact ContactName
   | RejectContact ContactName
   | SendMessage ContactName ByteString
+  | SendMessageQuote {contactName :: ContactName, msgDir :: AMsgDirection, quotedMsg :: ByteString, message :: ByteString}
   | NewGroup GroupProfile
   | AddMember GroupName ContactName GroupMemberRole
   | JoinGroup GroupName
@@ -121,6 +125,7 @@ data ChatCommand
   | ListMembers GroupName
   | ListGroups
   | SendGroupMessage GroupName ByteString
+  | SendGroupMessageQuote {groupName :: GroupName, contactName_ :: Maybe ContactName, quotedMsg :: ByteString, message :: ByteString}
   | SendFile ContactName FilePath
   | SendGroupFile GroupName FilePath
   | ReceiveFile FileTransferId (Maybe FilePath)
@@ -128,7 +133,7 @@ data ChatCommand
   | FileStatus FileTransferId
   | ShowProfile
   | UpdateProfile ContactName Text
-  | UpdateProfileImage ProfileImage
+  | UpdateProfileImage (Maybe ProfileImage)
   | QuitChat
   | ShowVersion
   deriving (Show)
@@ -289,6 +294,7 @@ data ChatErrorType
   | CEFileSend {fileId :: FileTransferId, agentError :: AgentErrorType}
   | CEFileRcvChunk {message :: String}
   | CEFileInternal {message :: String}
+  | CEInvalidQuote
   | CEAgentVersion
   | CECommandError {message :: String}
   deriving (Show, Exception, Generic)

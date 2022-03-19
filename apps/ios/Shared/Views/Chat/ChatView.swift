@@ -12,6 +12,7 @@ struct ChatView: View {
     @EnvironmentObject var chatModel: ChatModel
     @Environment(\.colorScheme) var colorScheme
     @ObservedObject var chat: Chat
+    @State var quotedItem: ChatItem? = nil
     @State private var inProgress: Bool = false
     @FocusState private var keyboardVisible: Bool
     @State private var showChatInfo = false
@@ -21,12 +22,27 @@ struct ChatView: View {
 
         return VStack {
             GeometryReader { g in
+                let maxWidth = g.size.width * 0.78
                 ScrollViewReader { proxy in
                     ScrollView {
-                        VStack(spacing: 5)  {
-                            ForEach(chatModel.chatItems, id: \.id) {
-                                ChatItemView(chatItem: $0, width: g.size.width)
-                                    .frame(minWidth: 0, maxWidth: .infinity, alignment: $0.chatDir.sent ? .trailing : .leading)
+                        LazyVStack(spacing: 5)  {
+                            ForEach(chatModel.chatItems) { ci in
+                                let alignment: Alignment = ci.chatDir.sent ? .trailing : .leading
+                                ChatItemView(chatItem: ci)
+                                    .contextMenu {
+                                        Button {
+                                            withAnimation { quotedItem = ci }
+                                        } label: { Label("Reply", systemImage: "arrowshape.turn.up.left") }
+                                        Button {
+                                            showShareSheet(items: [ci.content.text])
+                                        } label: { Label("Share", systemImage: "square.and.arrow.up") }
+                                        Button {
+                                            UIPasteboard.general.string = ci.content.text
+                                        } label: { Label("Copy", systemImage: "doc.on.doc") }
+                                    }
+                                    .padding(.horizontal)
+                                    .frame(maxWidth: maxWidth, maxHeight: .infinity, alignment: alignment)
+                                    .frame(minWidth: 0, maxWidth: .infinity, alignment: alignment)
                             }
                             .onAppear {
                                 DispatchQueue.main.async {
@@ -54,7 +70,8 @@ struct ChatView: View {
 
             Spacer(minLength: 0)
 
-            SendMessageView(
+            ComposeView(
+                quotedItem: $quotedItem,
                 sendMessage: sendMessage,
                 inProgress: inProgress,
                 keyboardVisible: $keyboardVisible
@@ -115,8 +132,14 @@ struct ChatView: View {
     func sendMessage(_ msg: String) {
         Task {
             do {
-                let chatItem = try await apiSendMessage(type: chat.chatInfo.chatType, id: chat.chatInfo.apiId, msg: .text(msg))
+                let chatItem = try await apiSendMessage(
+                    type: chat.chatInfo.chatType,
+                    id: chat.chatInfo.apiId,
+                    quotedItemId: quotedItem?.meta.itemId,
+                    msg: .text(msg)
+                )
                 DispatchQueue.main.async {
+                    quotedItem = nil
                     chatModel.addChatItem(chat.chatInfo, chatItem)
                 }
             } catch {
