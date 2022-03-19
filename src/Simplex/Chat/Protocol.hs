@@ -224,7 +224,7 @@ instance ToJSON MsgContent where
     MCUnknown {json} -> JE.value $ J.Object json
     MCText t -> J.pairs $ "type" .= MCText_ <> "text" .= t
 
-instance ToField (MsgContent) where
+instance ToField MsgContent where
   toField = toField . safeDecodeUtf8 . LB.toStrict . J.encode
 
 instance FromField MsgContent where
@@ -384,7 +384,7 @@ chatToAppMessage ChatMessage {msgId, chatMsgEvent} = AppMessage {msgId, event, p
       XMsgNew container -> msgContainerJSON container
       XFile fileInv -> o ["file" .= fileInv]
       XFileAcpt fileName -> o ["fileName" .= fileName]
-      XInfo profile -> o $ ["profile" .= profile]
+      XInfo profile -> o ["profile" .= profile]
       XContact profile xContactId -> o $ ("contactReqId" .=? xContactId) ["profile" .= profile]
       XGrpInv groupInv -> o ["groupInvitation" .= groupInv]
       XGrpAcpt memId -> o ["memberId" .= memId]

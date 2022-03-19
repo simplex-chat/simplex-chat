@@ -20,8 +20,10 @@ import Data.ByteString.Char8 (ByteString)
 import Data.Int (Int64)
 import Data.Map.Strict (Map)
 import Data.Text (Text)
+import Data.Version (showVersion)
 import GHC.Generics (Generic)
 import Numeric.Natural
+import qualified Paths_simplex_chat as SC
 import Simplex.Chat.Messages
 import Simplex.Chat.Protocol
 import Simplex.Chat.Store (StoreError)
@@ -36,7 +38,7 @@ import System.IO (Handle)
 import UnliftIO.STM
 
 versionNumber :: String
-versionNumber = "1.3.2"
+versionNumber = showVersion SC.version
 
 versionStr :: String
 versionStr = "SimpleX Chat v" <> versionNumber
@@ -76,7 +78,7 @@ data ChatController = ChatController
     config :: ChatConfig
   }
 
-data HelpSection = HSMain | HSFiles | HSGroups | HSMyAddress | HSMarkdown
+data HelpSection = HSMain | HSFiles | HSGroups | HSMyAddress | HSMarkdown | HSQuotes
   deriving (Show, Generic)
 
 instance ToJSON HelpSection where
@@ -123,7 +125,7 @@ data ChatCommand
   | ListMembers GroupName
   | ListGroups
   | SendGroupMessage GroupName ByteString
-  | SendGroupMessageQuote {groupName :: GroupName, contactName :: ContactName, quotedMsg :: ByteString, message :: ByteString}
+  | SendGroupMessageQuote {groupName :: GroupName, contactName_ :: Maybe ContactName, quotedMsg :: ByteString, message :: ByteString}
   | SendFile ContactName FilePath
   | SendGroupFile GroupName FilePath
   | ReceiveFile FileTransferId (Maybe FilePath)

@@ -2893,35 +2893,50 @@ getGroupChatItem st User {userId, userContactId} groupId itemId =
         |]
         (userId, groupId, itemId)
 
-getGroupChatItemIdByText :: StoreMonad m => SQLiteStore -> User -> Int64 -> ContactName -> Text -> m ChatItemId
-getGroupChatItemIdByText st User {userId, localDisplayName = userName} groupId cName quotedMsg =
+getGroupChatItemIdByText :: StoreMonad m => SQLiteStore -> User -> Int64 -> Maybe ContactName -> Text -> m ChatItemId
+getGroupChatItemIdByText st User {userId, localDisplayName = userName} groupId contactName_ quotedMsg =
   liftIOEither . withTransaction st $ \db ->
-    firstRow fromOnly SEQuotedChatItemNotFound $
-      if userName == cName
-        then
-          DB.query
-            db
-            [sql|
-              SELECT chat_item_id
-              FROM chat_items
-              WHERE user_id = ? AND group_id = ? AND group_member_id IS NULL AND item_text like ?
-              ORDER BY chat_item_id DESC
-              LIMIT 1
-            |]
-            (userId, groupId, quotedMsg <> "%")
-        else
-          DB.query
-            db
-            [sql|
-              SELECT i.chat_item_id
-              FROM chat_items i
-              JOIN group_members m ON m.group_member_id = i.group_member_id
-              JOIN contacts c ON c.contact_id = m.contact_id
-              WHERE i.user_id = ? AND i.group_id = ? AND c.local_display_name = ? AND i.item_text like ?
-              ORDER BY i.chat_item_id DESC
-              LIMIT 1
-            |]
-            (userId, groupId, cName, quotedMsg <> "%")
+    firstRow fromOnly SEQuotedChatItemNotFound $ case contactName_ of
+      Nothing -> anyMemberChatItem_ db
+      Just cName
+        | userName == cName -> userChatItem_ db
+        | otherwise -> memberChatItem_ db cName
+  where
+    anyMemberChatItem_ db =
+      DB.query
+        db
+        [sql|
+          SELECT chat_item_id
+          FROM chat_items
+          WHERE user_id = ? AND group_id = ? AND item_text like ?
+          ORDER BY chat_item_id DESC
+          LIMIT 1
+        |]
+        (userId, groupId, quotedMsg <> "%")
+    userChatItem_ db =
+      DB.query
+        db
+        [sql|
+          SELECT chat_item_id
+          FROM chat_items
+          WHERE user_id = ? AND group_id = ? AND group_member_id IS NULL AND item_text like ?
+          ORDER BY chat_item_id DESC
+          LIMIT 1
+        |]
+        (userId, groupId, quotedMsg <> "%")
+    memberChatItem_ db cName =
+      DB.query
+        db
+        [sql|
+          SELECT i.chat_item_id
+          FROM chat_items i
+          JOIN group_members m ON m.group_member_id = i.group_member_id
+          JOIN contacts c ON c.contact_id = m.contact_id
+          WHERE i.user_id = ? AND i.group_id = ? AND c.local_display_name = ? AND i.item_text like ?
+          ORDER BY i.chat_item_id DESC
+          LIMIT 1
+        |]
+        (userId, groupId, cName, quotedMsg <> "%")
 
 updateDirectChatItemsRead :: (StoreMonad m) => SQLiteStore -> Int64 -> (ChatItemId, ChatItemId) -> m ()
 updateDirectChatItemsRead st contactId (fromItemId, toItemId) = do
