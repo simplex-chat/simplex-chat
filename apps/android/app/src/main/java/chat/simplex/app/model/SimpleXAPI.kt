@@ -28,7 +28,9 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
       apiStartChat()
       chatModel.userAddress.value = apiGetUserAddress()
       chatModel.userSMPServers.value = getUserSMPServers()
-      chatModel.chats.addAll(apiGetChats())
+      val chats = apiGetChats()
+      chatModel.chats.clear()
+      chatModel.chats.addAll(chats)
       chatModel.currentUser = mutableStateOf(user)
       chatModel.userCreated.value = true
       Log.d(TAG, "started chat")
