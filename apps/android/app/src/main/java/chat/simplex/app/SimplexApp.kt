@@ -1,8 +1,11 @@
 package chat.simplex.app
 
 import android.app.Application
+import android.content.Context
+import android.content.SharedPreferences
 import android.net.LocalServerSocket
 import android.util.Log
+import androidx.lifecycle.*
 import chat.simplex.app.model.*
 import chat.simplex.app.views.helpers.withApi
 import java.io.BufferedReader
@@ -24,8 +27,7 @@ external fun chatInit(path: String): ChatCtrl
 external fun chatSendCmd(ctrl: ChatCtrl, msg: String) : String
 external fun chatRecvMsg(ctrl: ChatCtrl) : String
 
-//class SimplexApp: Application(), LifecycleEventObserver {
-class SimplexApp: Application() {
+class SimplexApp: Application(), LifecycleEventObserver {
   val chatController: ChatController by lazy {
     val ctrl = chatInit(applicationContext.filesDir.toString())
     ChatController(ctrl, ntfManager, applicationContext)
@@ -41,7 +43,7 @@ class SimplexApp: Application() {
 
   override fun onCreate() {
     super.onCreate()
-//    ProcessLifecycleOwner.get().lifecycle.addObserver(this)
+    ProcessLifecycleOwner.get().lifecycle.addObserver(this)
     withApi {
       val user = chatController.apiGetActiveUser()
       if (user != null) {
@@ -51,13 +53,17 @@ class SimplexApp: Application() {
     }
   }
 
-//  override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
-//    Log.d(TAG, "onStateChanged: $event")
-//    if (event == Lifecycle.Event.ON_STOP) {
-//      Log.e(TAG, "BGManager schedule ${Clock.System.now()}")
-//      BGManager.schedule(applicationContext)
-//    }
-//  }
+  override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
+    Log.d(TAG, "onStateChanged: $event")
+    withApi {
+      when (event) {
+        Lifecycle.Event.ON_STOP ->
+          if (!chatController.getRunServiceInBackground()) SimplexService.stop(applicationContext)
+        Lifecycle.Event.ON_START ->
+          SimplexService.start(applicationContext)
+      }
+    }
+  }
 
   companion object {
     init {

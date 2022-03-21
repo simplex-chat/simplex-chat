@@ -77,9 +77,6 @@ class SimplexService: Service() {
 
   private fun stopService() {
     Log.d(TAG, "Stopping foreground service")
-
-// TODO stop simplex chat here?
-
     try {
       wakeLock?.let {
         while (it.isHeld) it.release() // release all, in case acquired more than once
@@ -161,8 +158,10 @@ class SimplexService: Service() {
         Log.d(TAG, "ServiceStartWorker: Failed, no application found (work ID: $id)")
         return Result.failure()
       }
-      Log.d(TAG, "ServiceStartWorker: Starting foreground service (work ID: $id)")
-      start(context)
+      if (getServiceState(context) == ServiceState.STARTED) {
+        Log.d(TAG, "ServiceStartWorker: Starting foreground service (work ID: $id)")
+        start(context)
+      }
       return Result.success()
     }
   }
@@ -179,12 +178,15 @@ class SimplexService: Service() {
 
   companion object {
     const val TAG = "SIMPLEX_SERVICE"
-    const val NOTIFICATION_CHANNEL_ID = "chat.simplex.app.service.SIMPLEX_SERVICE_NOTIFICATION"
+    const val NOTIFICATION_CHANNEL_ID = "chat.simplex.app.SIMPLEX_SERVICE_NOTIFICATION"
     const val NOTIFICATION_CHANNEL_NAME = "SimpleX Chat service"
     const val SIMPLEX_SERVICE_ID = 6789
+    const val SERVICE_START_WORKER_VERSION = BuildConfig.VERSION_CODE
+    const val SERVICE_START_WORKER_INTERVAL_MINUTES = 3 * 60L
+    const val SERVICE_START_WORKER_WORK_NAME_PERIODIC = "SimplexAutoRestartWorkerPeriodic" // Do not change!
 
     private const val WAKE_LOCK_TAG = "SimplexService::lock"
-    private const val SHARED_PREFS_ID = "chat.simplex.app.service.SIMPLEX_SERVICE_PREFS"
+    private const val SHARED_PREFS_ID = "chat.simplex.app.SIMPLEX_SERVICE_PREFS"
     private const val SHARED_PREFS_SERVICE_STATE = "SIMPLEX_SERVICE_STATE"
     private const val WORK_NAME_ONCE = "ServiceStartWorkerOnce"
 
@@ -195,10 +197,15 @@ class SimplexService: Service() {
       workManager.enqueueUniqueWork(WORK_NAME_ONCE, ExistingWorkPolicy.KEEP, startServiceRequest) // Unique avoids races!
     }
 
-    suspend fun start(context: Context) {
+    suspend fun start(context: Context) = serviceAction(context, Action.START)
+
+    suspend fun stop(context: Context) = serviceAction(context, Action.STOP)
+
+    private suspend fun serviceAction(context: Context, action: Action) {
+      Log.d(TAG, "SimplexService serviceAction: ${action.name}")
       withContext(Dispatchers.IO) {
         Intent(context, SimplexService::class.java).also {
-          it.action = Action.START.name
+          it.action = action.name
           ContextCompat.startForegroundService(context, it)
         }
       }

@@ -29,6 +29,7 @@ class ChatModel(val controller: ChatController) {
   var userSMPServers = mutableStateOf<(List<String>)?>(null)
   // set when app is opened via contact or invitation URI
   var appOpenUrl = mutableStateOf<Uri?>(null)
+  var runServiceInBackground = mutableStateOf(true)
 
   fun updateUserProfile(profile: Profile) {
     val user = currentUser.value

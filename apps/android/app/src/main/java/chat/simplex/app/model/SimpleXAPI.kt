@@ -3,6 +3,7 @@ package chat.simplex.app.model
 import android.app.ActivityManager
 import android.app.ActivityManager.RunningAppProcessInfo
 import android.content.Context
+import android.content.SharedPreferences
 import android.util.Log
 import androidx.compose.runtime.mutableStateOf
 import chat.simplex.app.*
@@ -21,6 +22,11 @@ typealias ChatCtrl = Long
 
 open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: NtfManager, val appContext: Context) {
   var chatModel = ChatModel(this)
+  private val sharedPreferences: SharedPreferences  = appContext.getSharedPreferences(SHARED_PREFS_ID, Context.MODE_PRIVATE)
+
+  init {
+    chatModel.runServiceInBackground.value = getRunServiceInBackground()
+  }
 
   suspend fun startChat(user: User) {
     Log.d(TAG, "user: $user")
@@ -359,6 +365,26 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
       }
       else e.string
     chatModel.updateNetworkStatus(contact, Chat.NetworkStatus.Error(err))
+  }
+
+  fun getAutoRestartWorkerVersion(): Int = sharedPreferences.getInt(SHARED_PREFS_AUTO_RESTART_WORKER_VERSION, 0)
+
+  fun setAutoRestartWorkerVersion(version: Int) =
+    sharedPreferences.edit()
+      .putInt(SHARED_PREFS_AUTO_RESTART_WORKER_VERSION, version)
+      .apply()
+
+  fun getRunServiceInBackground(): Boolean = sharedPreferences.getBoolean(SHARED_PREFS_RUN_SERVICE_IN_BACKGROUND, true)
+
+  fun setRunServiceInBackground(runService: Boolean) =
+    sharedPreferences.edit()
+      .putBoolean(SHARED_PREFS_RUN_SERVICE_IN_BACKGROUND, runService)
+      .apply()
+
+  companion object {
+    private const val SHARED_PREFS_ID = "chat.simplex.app.SIMPLEX_APP_PREFS"
+    private const val SHARED_PREFS_AUTO_RESTART_WORKER_VERSION = "AutoRestartWorkerVersion"
+    private const val SHARED_PREFS_RUN_SERVICE_IN_BACKGROUND = "RunServiceInBackground"
   }
 }
 
