@@ -215,9 +215,33 @@ processChatCommand = \case
                   msgRef = MsgRef {msgId = itemSharedMsgId, sentAt = itemTs, sent, memberId = Just memberId}
                in sendNewGroupMsg user group (MCQuote QuotedMsg {msgRef, content} mc) mc (Just quotedItem)
     CTContactRequest -> pure $ chatCmdError "not supported"
-  APIUpdateMessage cType _chatId _itemId _mc -> withUser $ \_user -> withChatLock $ case cType of
-    CTDirect -> pure CRCmdOk
-    CTGroup -> pure CRCmdOk
+  APIUpdateMessage cType chatId itemId mc -> withUser $ \user@User {userId} -> withChatLock $ case cType of
+    CTDirect -> do
+      (ct@Contact {contactId, localDisplayName = c}, ci) <- withStore $ \st -> (,) <$> getContact st userId chatId <*> getDirectChatItem st userId chatId itemId
+      case ci of
+        CChatItem SMDSnd ChatItem {meta = CIMeta {itemSharedMsgId}, content = ciContent} -> do
+          case (ciContent, itemSharedMsgId) of
+            (CISndMsgContent _, Just itemSharedMId) -> do
+              SndMessage {msgId} <- sendDirectContactMessage ct (XMsgUpdate itemSharedMId mc)
+              updCi <- withStore $ \st -> updateDirectChatItemContent st userId contactId itemId (CISndMsgContent mc) msgId
+              setActive $ ActiveC c
+              pure . CRChatItemUpdated $ AChatItem SCTDirect SMDSnd (DirectChat ct) updCi
+            _ -> throwChatError CEInvalidMessageUpdate
+        CChatItem SMDRcv _ -> throwChatError CEInvalidMessageUpdate
+    CTGroup -> do
+      Group gInfo@GroupInfo {groupId, localDisplayName = gName, membership} ms <- withStore $ \st -> getGroup st user chatId
+      unless (memberActive membership) $ throwChatError CEGroupMemberUserRemoved
+      ci <- withStore $ \st -> getGroupChatItem st user chatId itemId
+      case ci of
+        CChatItem SMDSnd ChatItem {meta = CIMeta {itemSharedMsgId}, content = ciContent} -> do
+          case (ciContent, itemSharedMsgId) of
+            (CISndMsgContent _, Just itemSharedMId) -> do
+              SndMessage {msgId} <- sendGroupMessage gInfo ms (XMsgUpdate itemSharedMId mc)
+              updCi <- withStore $ \st -> updateGroupChatItemContent st user groupId itemId (CISndMsgContent mc) msgId
+              setActive $ ActiveG gName
+              pure . CRChatItemUpdated $ AChatItem SCTGroup SMDSnd (GroupChat gInfo) updCi
+            _ -> throwChatError CEInvalidMessageUpdate
+        CChatItem SMDRcv _ -> throwChatError CEInvalidMessageUpdate
     CTContactRequest -> pure $ chatCmdError "not supported"
   APIDeleteMessage cType _chatId _itemId _mode -> withUser $ \_user -> withChatLock $ case cType of
     CTDirect -> pure CRCmdOk
@@ -678,10 +702,10 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
           withAckMessage agentConnId meta $ pure ()
           ackMsgDeliveryEvent conn meta
         SENT msgId ->
-          -- ? updateDirectChatItem
+          -- ? updateDirectChatItemStatus
           sentMsgDeliveryEvent conn msgId
         -- TODO print errors
-        MERR _ _ -> pure () -- ? updateDirectChatItem
+        MERR _ _ -> pure () -- ? updateDirectChatItemStatus
         ERR _ -> pure ()
         -- TODO add debugging output
         _ -> pure ()
@@ -691,6 +715,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
           withAckMessage agentConnId msgMeta $
             case chatMsgEvent of
               XMsgNew mc -> newContentMessage ct mc msg msgMeta
+              XMsgUpdate sharedMsgId mContent -> messageUpdate ct sharedMsgId mContent msg msgMeta
               XFile fInv -> processFileInvitation ct fInv msg msgMeta
               XInfo p -> xInfo ct p
               XGrpInv gInv -> processGroupInvitation ct gInv
@@ -736,8 +761,8 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
           case chatItemId_ of
             Nothing -> pure ()
             Just chatItemId -> do
-              chatItem <- withStore $ \st -> updateDirectChatItem st userId contactId chatItemId CISSndSent
-              toView $ CRChatItemUpdated (AChatItem SCTDirect SMDSnd (DirectChat ct) chatItem)
+              chatItem <- withStore $ \st -> updateDirectChatItemStatus st userId contactId chatItemId CISSndSent
+              toView $ CRChatItemStatusUpdated (AChatItem SCTDirect SMDSnd (DirectChat ct) chatItem)
         END -> do
           toView $ CRContactAnotherClient ct
           showToast (c <> "> ") "connected to another client"
@@ -755,8 +780,8 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
           case chatItemId_ of
             Nothing -> pure ()
             Just chatItemId -> do
-              chatItem <- withStore $ \st -> updateDirectChatItem st userId contactId chatItemId (agentErrToItemStatus err)
-              toView $ CRChatItemUpdated (AChatItem SCTDirect SMDSnd (DirectChat ct) chatItem)
+              chatItem <- withStore $ \st -> updateDirectChatItemStatus st userId contactId chatItemId (agentErrToItemStatus err)
+              toView $ CRChatItemStatusUpdated (AChatItem SCTDirect SMDSnd (DirectChat ct) chatItem)
         ERR _ -> pure ()
         -- TODO add debugging output
         _ -> pure ()
@@ -1006,6 +1031,14 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
       toView . CRNewChatItem $ AChatItem SCTDirect SMDRcv (DirectChat ct) ci
       checkIntegrity msgMeta $ toView . CRMsgIntegrityError
       showMsgToast (c <> "> ") content formattedText
+      setActive $ ActiveC c
+
+    messageUpdate :: Contact -> SharedMsgId -> MsgContent -> RcvMessage -> MsgMeta -> m ()
+    messageUpdate ct@Contact {contactId, localDisplayName = c} sharedMsgId mc msg msgMeta = do
+      -- TODO getDirectChatItemIdBySharedMsgId
+      -- updCi <- withStore $ \st -> updateDirectChatItemContent st userId contactId itemId (CISndMsgContent mc) msgId
+      -- toView . CRChatItemUpdated $ AChatItem SCTDirect SMDRcv (DirectChat ct) updCi
+      checkIntegrity msgMeta $ toView . CRMsgIntegrityError
       setActive $ ActiveC c
 
     newGroupContentMessage :: GroupInfo -> GroupMember -> MsgContainer -> RcvMessage -> MsgMeta -> m ()
@@ -1405,7 +1438,7 @@ mkChatItem :: MsgDirectionI d => ChatDirection c d -> ChatItemId -> CIContent d 
 mkChatItem cd ciId content quotedItem sharedMsgId itemTs createdAt = do
   tz <- getCurrentTimeZone
   let itemText = ciContentToText content
-      meta = mkCIMeta ciId itemText ciStatusNew sharedMsgId tz itemTs createdAt
+      meta = mkCIMeta ciId itemText ciStatusNew sharedMsgId False False tz itemTs createdAt
   pure ChatItem {chatDir = toCIDirection cd, meta, content, formattedText = parseMaybeMarkdownList itemText, quotedItem}
 
 allowAgentConnection :: ChatMonad m => Connection -> ConfirmationId -> ChatMsgEvent -> m ()
@@ -1588,7 +1621,7 @@ chatCommandP =
     msgContentP =
       "text " *> (MCText . safeDecodeUtf8 <$> A.takeByteString)
         <|> "json " *> (J.eitherDecodeStrict' <$?> A.takeByteString)
-    msgDeleteMode = "broadcast" $> MDBroadcast  <|> "internal" $> MDInternal
+    msgDeleteMode = "broadcast" $> MDBroadcast <|> "internal" $> MDInternal
     displayName = safeDecodeUtf8 <$> (B.cons <$> A.satisfy refChar <*> A.takeTill (== ' '))
     sendMsgQuote msgDir = SendMessageQuote <$> displayName <* A.space <*> pure msgDir <*> quotedMsg <*> A.takeByteString
     quotedMsg = A.char '(' *> A.takeTill (== ')') <* A.char ')' <* optional A.space

@@ -206,15 +206,17 @@ data CIMeta (d :: MsgDirection) = CIMeta
     itemText :: Text,
     itemStatus :: CIStatus d,
     itemSharedMsgId :: Maybe SharedMsgId,
+    itemDeleted :: Bool,
+    itemEdited :: Bool,
     localItemTs :: ZonedTime,
     createdAt :: UTCTime
   }
   deriving (Show, Generic)
 
-mkCIMeta :: ChatItemId -> Text -> CIStatus d -> Maybe SharedMsgId -> TimeZone -> ChatItemTs -> UTCTime -> CIMeta d
-mkCIMeta itemId itemText itemStatus itemSharedMsgId tz itemTs createdAt =
+mkCIMeta :: ChatItemId -> Text -> CIStatus d -> Maybe SharedMsgId -> Bool -> Bool -> TimeZone -> ChatItemTs -> UTCTime -> CIMeta d
+mkCIMeta itemId itemText itemStatus itemSharedMsgId itemDeleted itemEdited tz itemTs createdAt =
   let localItemTs = utcToZonedTime tz itemTs
-   in CIMeta {itemId, itemTs, itemText, itemStatus, itemSharedMsgId, localItemTs, createdAt}
+   in CIMeta {itemId, itemTs, itemText, itemStatus, itemSharedMsgId, itemDeleted, itemEdited, localItemTs, createdAt}
 
 instance ToJSON (CIMeta d) where toEncoding = J.genericToEncoding J.defaultOptions
 

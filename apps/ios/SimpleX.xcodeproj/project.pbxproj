@@ -9,16 +9,6 @@
 /* Begin PBXBuildFile section */
 		5C063D2727A4564100AEC577 /* ChatPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C063D2627A4564100AEC577 /* ChatPreviewView.swift */; };
 		5C063D2827A4564100AEC577 /* ChatPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C063D2627A4564100AEC577 /* ChatPreviewView.swift */; };
-		5C0E5EF627E24676003DE3D0 /* libHSsimplex-chat-1.3.2-6OWqTXVUCEWLoNzSi0aRKj.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C0E5EF127E24676003DE3D0 /* libHSsimplex-chat-1.3.2-6OWqTXVUCEWLoNzSi0aRKj.a */; };
-		5C0E5EF727E24676003DE3D0 /* libHSsimplex-chat-1.3.2-6OWqTXVUCEWLoNzSi0aRKj.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C0E5EF127E24676003DE3D0 /* libHSsimplex-chat-1.3.2-6OWqTXVUCEWLoNzSi0aRKj.a */; };
-		5C0E5EF827E24676003DE3D0 /* libffi.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C0E5EF227E24676003DE3D0 /* libffi.a */; };
-		5C0E5EF927E24676003DE3D0 /* libffi.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C0E5EF227E24676003DE3D0 /* libffi.a */; };
-		5C0E5EFA27E24676003DE3D0 /* libHSsimplex-chat-1.3.2-6OWqTXVUCEWLoNzSi0aRKj-ghc8.10.7.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C0E5EF327E24676003DE3D0 /* libHSsimplex-chat-1.3.2-6OWqTXVUCEWLoNzSi0aRKj-ghc8.10.7.a */; };
-		5C0E5EFB27E24676003DE3D0 /* libHSsimplex-chat-1.3.2-6OWqTXVUCEWLoNzSi0aRKj-ghc8.10.7.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C0E5EF327E24676003DE3D0 /* libHSsimplex-chat-1.3.2-6OWqTXVUCEWLoNzSi0aRKj-ghc8.10.7.a */; };
-		5C0E5EFC27E24676003DE3D0 /* libgmp.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C0E5EF427E24676003DE3D0 /* libgmp.a */; };
-		5C0E5EFD27E24676003DE3D0 /* libgmp.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C0E5EF427E24676003DE3D0 /* libgmp.a */; };
-		5C0E5EFE27E24676003DE3D0 /* libgmpxx.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C0E5EF527E24676003DE3D0 /* libgmpxx.a */; };
-		5C0E5EFF27E24676003DE3D0 /* libgmpxx.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C0E5EF527E24676003DE3D0 /* libgmpxx.a */; };
 		5C116CDC27AABE0400E66D01 /* ContactRequestView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C116CDB27AABE0400E66D01 /* ContactRequestView.swift */; };
 		5C116CDD27AABE0400E66D01 /* ContactRequestView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C116CDB27AABE0400E66D01 /* ContactRequestView.swift */; };
 		5C1A4C1E27A715B700EAD5AD /* ChatItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C1A4C1D27A715B700EAD5AD /* ChatItemView.swift */; };
@@ -112,6 +102,11 @@
 		5CEACCEE27DEA495000BD591 /* MsgContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CEACCEC27DEA495000BD591 /* MsgContentView.swift */; };
 		640F50E327CF991C001E05C2 /* SMPServers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 640F50E227CF991C001E05C2 /* SMPServers.swift */; };
 		640F50E427CF991C001E05C2 /* SMPServers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 640F50E227CF991C001E05C2 /* SMPServers.swift */; };
+		648A4CD927E8AFB1002F9A27 /* libgmp.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 648A4CD427E8AFB1002F9A27 /* libgmp.a */; };
+		648A4CDA27E8AFB1002F9A27 /* libffi.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 648A4CD527E8AFB1002F9A27 /* libffi.a */; };
+		648A4CDB27E8AFB1002F9A27 /* libgmpxx.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 648A4CD627E8AFB1002F9A27 /* libgmpxx.a */; };
+		648A4CDC27E8AFB1002F9A27 /* libHSsimplex-chat-1.3.3-ILT6I8E75GnANrGUR83jRh-ghc8.10.7.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 648A4CD727E8AFB1002F9A27 /* libHSsimplex-chat-1.3.3-ILT6I8E75GnANrGUR83jRh-ghc8.10.7.a */; };
+		648A4CDD27E8AFB1002F9A27 /* libHSsimplex-chat-1.3.3-ILT6I8E75GnANrGUR83jRh.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 648A4CD827E8AFB1002F9A27 /* libHSsimplex-chat-1.3.3-ILT6I8E75GnANrGUR83jRh.a */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -133,11 +128,6 @@
 
 /* Begin PBXFileReference section */
 		5C063D2627A4564100AEC577 /* ChatPreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatPreviewView.swift; sourceTree = "<group>"; };
-		5C0E5EF127E24676003DE3D0 /* libHSsimplex-chat-1.3.2-6OWqTXVUCEWLoNzSi0aRKj.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = "libHSsimplex-chat-1.3.2-6OWqTXVUCEWLoNzSi0aRKj.a"; sourceTree = "<group>"; };
-		5C0E5EF227E24676003DE3D0 /* libffi.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libffi.a; sourceTree = "<group>"; };
-		5C0E5EF327E24676003DE3D0 /* libHSsimplex-chat-1.3.2-6OWqTXVUCEWLoNzSi0aRKj-ghc8.10.7.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = "libHSsimplex-chat-1.3.2-6OWqTXVUCEWLoNzSi0aRKj-ghc8.10.7.a"; sourceTree = "<group>"; };
-		5C0E5EF427E24676003DE3D0 /* libgmp.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libgmp.a; sourceTree = "<group>"; };
-		5C0E5EF527E24676003DE3D0 /* libgmpxx.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libgmpxx.a; sourceTree = "<group>"; };
 		5C116CDB27AABE0400E66D01 /* ContactRequestView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContactRequestView.swift; sourceTree = "<group>"; };
 		5C1A4C1D27A715B700EAD5AD /* ChatItemView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatItemView.swift; sourceTree = "<group>"; };
 		5C2E260627A2941F00F70299 /* SimpleXAPI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimpleXAPI.swift; sourceTree = "<group>"; };
@@ -193,6 +183,11 @@
 		5CEACCE627DE97B6000BD591 /* QuotedItemView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuotedItemView.swift; sourceTree = "<group>"; };
 		5CEACCEC27DEA495000BD591 /* MsgContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MsgContentView.swift; sourceTree = "<group>"; };
 		640F50E227CF991C001E05C2 /* SMPServers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SMPServers.swift; sourceTree = "<group>"; };
+		648A4CD427E8AFB1002F9A27 /* libgmp.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libgmp.a; sourceTree = "<group>"; };
+		648A4CD527E8AFB1002F9A27 /* libffi.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libffi.a; sourceTree = "<group>"; };
+		648A4CD627E8AFB1002F9A27 /* libgmpxx.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libgmpxx.a; sourceTree = "<group>"; };
+		648A4CD727E8AFB1002F9A27 /* libHSsimplex-chat-1.3.3-ILT6I8E75GnANrGUR83jRh-ghc8.10.7.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = "libHSsimplex-chat-1.3.3-ILT6I8E75GnANrGUR83jRh-ghc8.10.7.a"; sourceTree = "<group>"; };
+		648A4CD827E8AFB1002F9A27 /* libHSsimplex-chat-1.3.3-ILT6I8E75GnANrGUR83jRh.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = "libHSsimplex-chat-1.3.3-ILT6I8E75GnANrGUR83jRh.a"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -200,14 +195,14 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				648A4CDC27E8AFB1002F9A27 /* libHSsimplex-chat-1.3.3-ILT6I8E75GnANrGUR83jRh-ghc8.10.7.a in Frameworks */,
+				648A4CDD27E8AFB1002F9A27 /* libHSsimplex-chat-1.3.3-ILT6I8E75GnANrGUR83jRh.a in Frameworks */,
+				648A4CDB27E8AFB1002F9A27 /* libgmpxx.a in Frameworks */,
 				5C8F01CD27A6F0D8007D2C8D /* CodeScanner in Frameworks */,
-				5C0E5EFC27E24676003DE3D0 /* libgmp.a in Frameworks */,
 				5C764E83279C748B000C6508 /* libz.tbd in Frameworks */,
-				5C0E5EF627E24676003DE3D0 /* libHSsimplex-chat-1.3.2-6OWqTXVUCEWLoNzSi0aRKj.a in Frameworks */,
-				5C0E5EFE27E24676003DE3D0 /* libgmpxx.a in Frameworks */,
-				5C0E5EF827E24676003DE3D0 /* libffi.a in Frameworks */,
+				648A4CD927E8AFB1002F9A27 /* libgmp.a in Frameworks */,
+				648A4CDA27E8AFB1002F9A27 /* libffi.a in Frameworks */,
 				5C764E82279C748B000C6508 /* libiconv.tbd in Frameworks */,
-				5C0E5EFA27E24676003DE3D0 /* libHSsimplex-chat-1.3.2-6OWqTXVUCEWLoNzSi0aRKj-ghc8.10.7.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -216,12 +211,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				5C764E85279C748C000C6508 /* libz.tbd in Frameworks */,
-				5C0E5EF727E24676003DE3D0 /* libHSsimplex-chat-1.3.2-6OWqTXVUCEWLoNzSi0aRKj.a in Frameworks */,
 				5C764E84279C748C000C6508 /* libiconv.tbd in Frameworks */,
-				5C0E5EFB27E24676003DE3D0 /* libHSsimplex-chat-1.3.2-6OWqTXVUCEWLoNzSi0aRKj-ghc8.10.7.a in Frameworks */,
-				5C0E5EFD27E24676003DE3D0 /* libgmp.a in Frameworks */,
-				5C0E5EF927E24676003DE3D0 /* libffi.a in Frameworks */,
-				5C0E5EFF27E24676003DE3D0 /* libgmpxx.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -273,11 +263,11 @@
 		5C764E5C279C70B7000C6508 /* Libraries */ = {
 			isa = PBXGroup;
 			children = (
-				5C0E5EF227E24676003DE3D0 /* libffi.a */,
-				5C0E5EF427E24676003DE3D0 /* libgmp.a */,
-				5C0E5EF527E24676003DE3D0 /* libgmpxx.a */,
-				5C0E5EF327E24676003DE3D0 /* libHSsimplex-chat-1.3.2-6OWqTXVUCEWLoNzSi0aRKj-ghc8.10.7.a */,
-				5C0E5EF127E24676003DE3D0 /* libHSsimplex-chat-1.3.2-6OWqTXVUCEWLoNzSi0aRKj.a */,
+				648A4CD527E8AFB1002F9A27 /* libffi.a */,
+				648A4CD427E8AFB1002F9A27 /* libgmp.a */,
+				648A4CD627E8AFB1002F9A27 /* libgmpxx.a */,
+				648A4CD727E8AFB1002F9A27 /* libHSsimplex-chat-1.3.3-ILT6I8E75GnANrGUR83jRh-ghc8.10.7.a */,
+				648A4CD827E8AFB1002F9A27 /* libHSsimplex-chat-1.3.3-ILT6I8E75GnANrGUR83jRh.a */,
 			);
 			path = Libraries;
 			sourceTree = "<group>";

@@ -48,7 +48,8 @@ responseToView testView = \case
   CRApiChat chat -> if testView then testViewChat chat else [plain . bshow $ J.encode chat]
   CRUserSMPServers smpServers -> viewSMPServers smpServers testView
   CRNewChatItem (AChatItem _ _ chat item) -> viewChatItem chat item
-  CRChatItemUpdated _ -> [] -- TODO split message status update
+  CRChatItemStatusUpdated _ -> []
+  CRChatItemUpdated _ -> [] -- TODO
   CRChatItemDeleted _ -> [] -- TODO
   CRMsgIntegrityError mErr -> viewMsgIntegrityError mErr
   CRCmdAccepted _ -> []
@@ -557,6 +558,7 @@ viewChatError = \case
     CEFileRcvChunk e -> ["error receiving file: " <> plain e]
     CEFileInternal e -> ["file error: " <> plain e]
     CEInvalidQuote -> ["cannot reply to this message"]
+    CEInvalidMessageUpdate -> ["cannot update this message"]
     CEAgentVersion -> ["unsupported agent version"]
     CECommandError e -> ["bad chat command: " <> plain e]
   -- e -> ["chat error: " <> sShow e]
