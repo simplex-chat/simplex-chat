@@ -14,9 +14,9 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
+import chat.simplex.app.SimplexService
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.model.Profile
-import chat.simplex.app.SimplexService
 import chat.simplex.app.views.helpers.withApi
 import com.google.accompanist.insets.ProvideWindowInsets
 import com.google.accompanist.insets.navigationBarsWithImePadding

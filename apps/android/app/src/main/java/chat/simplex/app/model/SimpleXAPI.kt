@@ -47,6 +47,7 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
   }
 
   fun startReceiver() {
+    Log.d(TAG, "ChatController startReceiver")
     thread(name="receiver") {
       withApi { recvMspLoop() }
     }

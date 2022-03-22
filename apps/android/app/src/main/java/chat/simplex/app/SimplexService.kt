@@ -18,6 +18,7 @@ import kotlinx.coroutines.withContext
 class SimplexService: Service() {
   private var wakeLock: PowerManager.WakeLock? = null
   private var isServiceStarted = false
+  private var isStartingService = false
   private var notificationManager: NotificationManager? = null
   private var serviceNotification: Notification? = null
   private val chatController by lazy { (application as SimplexApp).chatController }
@@ -57,20 +58,27 @@ class SimplexService: Service() {
   }
 
   private fun startService() {
-    if (isServiceStarted) return
-    Log.d(TAG, "Starting foreground service")
-    isServiceStarted = true
-    saveServiceState(this, ServiceState.STARTED)
-    wakeLock = (getSystemService(Context.POWER_SERVICE) as PowerManager).run {
-      newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, WAKE_LOCK_TAG).apply {
-        acquire()
-      }
-    }
+    Log.d(TAG, "SimplexService startService")
+    if (isServiceStarted || isStartingService) return
+    val self = this
+    isStartingService = true
     withApi {
-      val user = chatController.apiGetActiveUser()
-      if (user != null) {
-        chatController.startChat(user)
-        chatController.startReceiver()
+      try {
+        val user = chatController.apiGetActiveUser()
+        if (user != null) {
+          Log.w(TAG, "Starting foreground service")
+          chatController.startChat(user)
+          chatController.startReceiver()
+          isServiceStarted = true
+          saveServiceState(self, ServiceState.STARTED)
+          wakeLock = (getSystemService(Context.POWER_SERVICE) as PowerManager).run {
+            newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, WAKE_LOCK_TAG).apply {
+              acquire()
+            }
+          }
+        }
+      } finally {
+        isStartingService = false
       }
     }
   }
