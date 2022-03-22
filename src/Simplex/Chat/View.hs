@@ -49,7 +49,7 @@ responseToView testView = \case
   CRUserSMPServers smpServers -> viewSMPServers smpServers testView
   CRNewChatItem (AChatItem _ _ chat item) -> viewChatItem chat item
   CRChatItemStatusUpdated _ -> []
-  CRChatItemUpdated _ -> [] -- TODO
+  CRChatItemUpdated (AChatItem _ _ chat item) -> viewMessageUpdate chat item
   CRChatItemDeleted _ -> [] -- TODO
   CRMsgIntegrityError mErr -> viewMsgIntegrityError mErr
   CRCmdAccepted _ -> []
@@ -196,22 +196,49 @@ viewChatItem chat ChatItem {chatDir, meta, content, quotedItem} = case chat of
     where
       quote = maybe [] (groupQuote g) quotedItem
   _ -> []
-  where
-    directQuote :: forall d'. MsgDirectionI d' => CIDirection 'CTDirect d' -> CIQuote 'CTDirect -> [StyledString]
-    directQuote _ CIQuote {content = qmc, chatDir = qouteDir} =
-      quoteText qmc $ if toMsgDirection (msgDirection @d') == quoteMsgDirection qouteDir then ">>" else ">"
-    groupQuote :: GroupInfo -> CIQuote 'CTGroup -> [StyledString]
-    groupQuote g CIQuote {content = qmc, chatDir = quoteDir} = quoteText qmc . ttyQuotedMember $ sentByMember g quoteDir
-    sentByMember :: GroupInfo -> CIQDirection 'CTGroup -> Maybe GroupMember
-    sentByMember GroupInfo {membership} = \case
-      CIQGroupSnd -> Just membership
-      CIQGroupRcv m -> m
-    quoteText qmc sentBy = prependFirst (sentBy <> " ") $ msgPreview qmc
-    msgPreview = msgPlain . preview . msgContentText
+
+viewMessageUpdate :: MsgDirectionI d => ChatInfo c -> ChatItem c d -> [StyledString]
+viewMessageUpdate chat ChatItem {chatDir, meta, content, quotedItem} = case chat of
+  DirectChat Contact {localDisplayName = c} -> case chatDir of
+    CIDirectRcv -> case content of
+      CIRcvMsgContent mc -> viewReceivedMessage from quote meta mc
+      _ -> []
       where
-        preview t
-          | T.length t <= 60 = t
-          | otherwise = t <> "..."
+        from = ttyFromContact (c <> " [edited]")
+        quote = maybe [] (directQuote chatDir) quotedItem
+    CIDirectSnd -> []
+  GroupChat g -> case chatDir of
+    CIGroupRcv GroupMember {localDisplayName = m} -> case content of
+      CIRcvMsgContent mc -> viewReceivedMessage from quote meta mc
+      _ -> []
+      where
+        from = ttyFromGroup g (m <> " [edited]")
+        quote = maybe [] (groupQuote g) quotedItem
+    CIGroupSnd -> []
+    where
+  _ -> []
+
+directQuote :: forall d'. MsgDirectionI d' => CIDirection 'CTDirect d' -> CIQuote 'CTDirect -> [StyledString]
+directQuote _ CIQuote {content = qmc, chatDir = quoteDir} =
+  quoteText qmc $ if toMsgDirection (msgDirection @d') == quoteMsgDirection quoteDir then ">>" else ">"
+
+groupQuote :: GroupInfo -> CIQuote 'CTGroup -> [StyledString]
+groupQuote g CIQuote {content = qmc, chatDir = quoteDir} = quoteText qmc . ttyQuotedMember $ sentByMember g quoteDir
+
+sentByMember :: GroupInfo -> CIQDirection 'CTGroup -> Maybe GroupMember
+sentByMember GroupInfo {membership} = \case
+  CIQGroupSnd -> Just membership
+  CIQGroupRcv m -> m
+
+quoteText :: MsgContent -> StyledString -> [StyledString]
+quoteText qmc sentBy = prependFirst (sentBy <> " ") $ msgPreview qmc
+
+msgPreview :: MsgContent -> [StyledString]
+msgPreview = msgPlain . preview . msgContentText
+  where
+    preview t
+      | T.length t <= 60 = t
+      | otherwise = t <> "..."
 
 viewMsgIntegrityError :: MsgErrorType -> [StyledString]
 viewMsgIntegrityError err = msgError $ case err of

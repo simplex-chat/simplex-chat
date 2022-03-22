@@ -855,6 +855,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
         withAckMessage agentConnId msgMeta $
           case chatMsgEvent of
             XMsgNew mc -> newGroupContentMessage gInfo m mc msg msgMeta
+            XMsgUpdate sharedMsgId mContent -> groupMessageUpdate gInfo sharedMsgId mContent msg
             XFile fInv -> processGroupFileInvitation gInfo m fInv msg msgMeta
             XGrpMemNew memInfo -> xGrpMemNew gInfo m memInfo
             XGrpMemIntro memInfo -> xGrpMemIntro conn gInfo m memInfo
@@ -1034,10 +1035,9 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
       setActive $ ActiveC c
 
     messageUpdate :: Contact -> SharedMsgId -> MsgContent -> RcvMessage -> MsgMeta -> m ()
-    messageUpdate ct@Contact {contactId, localDisplayName = c} sharedMsgId mc msg msgMeta = do
-      -- TODO getDirectChatItemIdBySharedMsgId
-      -- updCi <- withStore $ \st -> updateDirectChatItemContent st userId contactId itemId (CISndMsgContent mc) msgId
-      -- toView . CRChatItemUpdated $ AChatItem SCTDirect SMDRcv (DirectChat ct) updCi
+    messageUpdate ct@Contact {contactId, localDisplayName = c} sharedMsgId mc RcvMessage {msgId} msgMeta = do
+      updCi <- withStore $ \st -> updateDirectChatItemContentBySharedMsgId st userId contactId sharedMsgId (CIRcvMsgContent mc) msgId
+      toView . CRChatItemUpdated $ AChatItem SCTDirect SMDRcv (DirectChat ct) updCi
       checkIntegrity msgMeta $ toView . CRMsgIntegrityError
       setActive $ ActiveC c
 
@@ -1048,6 +1048,13 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
       groupMsgToView gInfo ci msgMeta
       let g = groupName' gInfo
       showMsgToast ("#" <> g <> " " <> c <> "> ") content formattedText
+      setActive $ ActiveG g
+
+    groupMessageUpdate :: GroupInfo -> SharedMsgId -> MsgContent -> RcvMessage -> m ()
+    groupMessageUpdate gInfo@GroupInfo {groupId} sharedMsgId mc RcvMessage {msgId} = do
+      updCi <- withStore $ \st -> updateGroupChatItemContentBySharedMsgId st user groupId sharedMsgId (CIRcvMsgContent mc) msgId
+      toView . CRChatItemUpdated $ AChatItem SCTGroup SMDRcv (GroupChat gInfo) updCi
+      let g = groupName' gInfo
       setActive $ ActiveG g
 
     processFileInvitation :: Contact -> FileInvitation -> RcvMessage -> MsgMeta -> m ()

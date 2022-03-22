@@ -125,8 +125,10 @@ module Simplex.Chat.Store
     getGroupChatItemIdByText,
     updateDirectChatItemStatus,
     updateDirectChatItemContent,
+    updateDirectChatItemContentBySharedMsgId,
     updateDirectChatItemsRead,
     updateGroupChatItemContent,
+    updateGroupChatItemContentBySharedMsgId,
     updateGroupChatItemsRead,
     getSMPServers,
     overwriteSMPServers,
@@ -2827,24 +2829,47 @@ updateDirectChatItemStatus st userId contactId itemId itemStatus =
 
 updateDirectChatItemContent :: forall m d. (StoreMonad m, MsgDirectionI d) => SQLiteStore -> UserId -> Int64 -> ChatItemId -> CIContent d -> MessageId -> m (ChatItem 'CTDirect d)
 updateDirectChatItemContent st userId contactId itemId newContent msgId =
-  liftIOEither . withTransaction st $ \db -> runExceptT $ do
-    ci <- ExceptT $ (correctDir =<<) <$> getDirectChatItem_ db userId contactId itemId
-    currentTs <- liftIO getCurrentTime
-    let newText = ciContentToText newContent
-    liftIO $
-      DB.execute
-        db
-        [sql|
-          UPDATE chat_items
-          SET item_content = ?, item_text = ?, item_edited = 1, updated_at = ?
-          WHERE user_id = ? AND contact_id = ? AND chat_item_id = ?
-        |]
-        (newContent, newText, currentTs, userId, contactId, itemId)
-    liftIO $ DB.execute db "INSERT INTO chat_item_messages (chat_item_id, message_id, created_at, updated_at) VALUES (?,?,?,?)" (itemId, msgId, currentTs, currentTs)
-    pure ci {content = newContent, meta = (meta ci) {itemText = newText}, formattedText = parseMaybeMarkdownList newText}
+  liftIOEither . withTransaction st $ \db -> updateDirectChatItemContent_ db userId contactId itemId newContent msgId
+
+updateDirectChatItemContent_ :: forall d. (MsgDirectionI d) => DB.Connection -> UserId -> Int64 -> ChatItemId -> CIContent d -> MessageId -> IO (Either StoreError (ChatItem 'CTDirect d))
+updateDirectChatItemContent_ db userId contactId itemId newContent msgId = runExceptT $ do
+  ci <- ExceptT $ (correctDir =<<) <$> getDirectChatItem_ db userId contactId itemId
+  currentTs <- liftIO getCurrentTime
+  let newText = ciContentToText newContent
+  liftIO $
+    DB.execute
+      db
+      [sql|
+        UPDATE chat_items
+        SET item_content = ?, item_text = ?, item_edited = 1, updated_at = ?
+        WHERE user_id = ? AND contact_id = ? AND chat_item_id = ?
+      |]
+      (newContent, newText, currentTs, userId, contactId, itemId)
+  liftIO $ DB.execute db "INSERT INTO chat_item_messages (chat_item_id, message_id, created_at, updated_at) VALUES (?,?,?,?)" (itemId, msgId, currentTs, currentTs)
+  pure ci {content = newContent, meta = (meta ci) {itemText = newText}, formattedText = parseMaybeMarkdownList newText}
   where
     correctDir :: CChatItem c -> Either StoreError (ChatItem c d)
     correctDir (CChatItem _ ci) = first SEInternalError $ checkDirection ci
+
+updateDirectChatItemContentBySharedMsgId :: forall m d. (StoreMonad m, MsgDirectionI d) => SQLiteStore -> UserId -> Int64 -> SharedMsgId -> CIContent d -> MessageId -> m (ChatItem 'CTDirect d)
+updateDirectChatItemContentBySharedMsgId st userId contactId sharedMsgId newContent msgId =
+  liftIOEither . withTransaction st $ \db -> runExceptT $ do
+    itemId <- ExceptT $ getDirectChatItemIdBySharedMsgId_ db userId contactId sharedMsgId
+    liftIOEither $ updateDirectChatItemContent_ db userId contactId itemId newContent msgId
+
+getDirectChatItemIdBySharedMsgId_ :: DB.Connection -> UserId -> Int64 -> SharedMsgId -> IO (Either StoreError Int64)
+getDirectChatItemIdBySharedMsgId_ db userId contactId sharedMsgId =
+  firstRow fromOnly (SEChatItemSharedMsgIdNotFound sharedMsgId) $
+    DB.query
+      db
+      [sql|
+        SELECT chat_item_id
+        FROM chat_items
+        WHERE user_id = ? AND contact_id = ? AND shared_msg_id = ?
+        ORDER BY chat_item_id DESC
+        LIMIT 1
+      |]
+      (userId, contactId, sharedMsgId)
 
 getDirectChatItem :: StoreMonad m => SQLiteStore -> UserId -> Int64 -> ChatItemId -> m (CChatItem 'CTDirect)
 getDirectChatItem st userId contactId itemId =
@@ -2886,25 +2911,48 @@ getDirectChatItemIdByText st userId contactId msgDir quotedMsg =
         (userId, contactId, msgDir, quotedMsg <> "%")
 
 updateGroupChatItemContent :: forall m d. (StoreMonad m, MsgDirectionI d) => SQLiteStore -> User -> Int64 -> ChatItemId -> CIContent d -> MessageId -> m (ChatItem 'CTGroup d)
-updateGroupChatItemContent st user@User {userId} groupId itemId newContent msgId =
-  liftIOEither . withTransaction st $ \db -> runExceptT $ do
-    ci <- ExceptT $ (correctDir =<<) <$> getGroupChatItem_ db user groupId itemId
-    currentTs <- liftIO getCurrentTime
-    let newText = ciContentToText newContent
-    liftIO $
-      DB.execute
-        db
-        [sql|
-          UPDATE chat_items
-          SET item_content = ?, item_text = ?, item_edited = 1, updated_at = ?
-          WHERE user_id = ? AND group_id = ? AND chat_item_id = ?
-        |]
-        (newContent, newText, currentTs, userId, groupId, itemId)
-    liftIO $ DB.execute db "INSERT INTO chat_item_messages (chat_item_id, message_id, created_at, updated_at) VALUES (?,?,?,?)" (itemId, msgId, currentTs, currentTs)
-    pure ci {content = newContent, meta = (meta ci) {itemText = newText}, formattedText = parseMaybeMarkdownList newText}
+updateGroupChatItemContent st user groupId itemId newContent msgId =
+  liftIOEither . withTransaction st $ \db -> updateGroupChatItemContent_ db user groupId itemId newContent msgId
+
+updateGroupChatItemContent_ :: forall d. (MsgDirectionI d) => DB.Connection -> User -> Int64 -> ChatItemId -> CIContent d -> MessageId -> IO (Either StoreError (ChatItem 'CTGroup d))
+updateGroupChatItemContent_ db user@User {userId} groupId itemId newContent msgId = runExceptT $ do
+  ci <- ExceptT $ (correctDir =<<) <$> getGroupChatItem_ db user groupId itemId
+  currentTs <- liftIO getCurrentTime
+  let newText = ciContentToText newContent
+  liftIO $
+    DB.execute
+      db
+      [sql|
+        UPDATE chat_items
+        SET item_content = ?, item_text = ?, item_edited = 1, updated_at = ?
+        WHERE user_id = ? AND group_id = ? AND chat_item_id = ?
+      |]
+      (newContent, newText, currentTs, userId, groupId, itemId)
+  liftIO $ DB.execute db "INSERT INTO chat_item_messages (chat_item_id, message_id, created_at, updated_at) VALUES (?,?,?,?)" (itemId, msgId, currentTs, currentTs)
+  pure ci {content = newContent, meta = (meta ci) {itemText = newText}, formattedText = parseMaybeMarkdownList newText}
   where
     correctDir :: CChatItem c -> Either StoreError (ChatItem c d)
     correctDir (CChatItem _ ci) = first SEInternalError $ checkDirection ci
+
+updateGroupChatItemContentBySharedMsgId :: forall m d. (StoreMonad m, MsgDirectionI d) => SQLiteStore -> User -> Int64 -> SharedMsgId -> CIContent d -> MessageId -> m (ChatItem 'CTGroup d)
+updateGroupChatItemContentBySharedMsgId st user groupId sharedMsgId newContent msgId =
+  liftIOEither . withTransaction st $ \db -> runExceptT $ do
+    itemId <- ExceptT $ getGroupChatItemIdBySharedMsgId_ db user groupId sharedMsgId
+    liftIOEither $ updateGroupChatItemContent_ db user groupId itemId newContent msgId
+
+getGroupChatItemIdBySharedMsgId_ :: DB.Connection -> User -> Int64 -> SharedMsgId -> IO (Either StoreError Int64)
+getGroupChatItemIdBySharedMsgId_ db User {userId} groupId sharedMsgId =
+  firstRow fromOnly (SEChatItemSharedMsgIdNotFound sharedMsgId) $
+    DB.query
+      db
+      [sql|
+        SELECT chat_item_id
+        FROM chat_items
+        WHERE user_id = ? AND group_id = ? AND shared_msg_id = ?
+        ORDER BY chat_item_id DESC
+        LIMIT 1
+      |]
+      (userId, groupId, sharedMsgId)
 
 getGroupChatItem :: StoreMonad m => SQLiteStore -> User -> Int64 -> ChatItemId -> m (CChatItem 'CTGroup)
 getGroupChatItem st user groupId itemId =
@@ -3209,6 +3257,7 @@ data StoreError
   | SEBadChatItem {itemId :: ChatItemId}
   | SEChatItemNotFound {itemId :: ChatItemId}
   | SEQuotedChatItemNotFound
+  | SEChatItemSharedMsgIdNotFound {sharedMsgId :: SharedMsgId}
   deriving (Show, Exception, Generic)
 
 instance ToJSON StoreError where
