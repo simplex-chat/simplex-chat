@@ -69,8 +69,8 @@ fun SettingsLayout(
       )
       Spacer(Modifier.height(30.dp))
 
-      SettingsSectionView(showCustomModal { chatModel, close -> UserProfileView(chatModel, close) }, 60.dp) {
-        ProfileImage(size = 40.dp, profile.image)
+      SettingsSectionView(showCustomModal { chatModel, close -> UserProfileView(chatModel, close) }, 80.dp) {
+        ProfileImage(size = 60.dp, profile.image)
         Spacer(Modifier.padding(horizontal = 4.dp))
         Column {
           Text(

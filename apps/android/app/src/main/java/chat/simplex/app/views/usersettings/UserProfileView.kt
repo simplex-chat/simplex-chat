@@ -1,21 +1,21 @@
 package chat.simplex.app.views.usersettings
 
 import android.content.res.Configuration
-import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.PhotoCamera
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.tooling.preview.Preview
@@ -31,36 +31,22 @@ import kotlinx.coroutines.launch
 fun UserProfileView(chatModel: ChatModel, close: () -> Unit) {
   val user = chatModel.currentUser.value
   if (user != null) {
-    var editProfile by remember { mutableStateOf(false) }
+    var editProfile = remember { mutableStateOf(false) }
     var profile by remember { mutableStateOf(user.profile) }
     UserProfileLayout(
       close = close,
       editProfile = editProfile,
       profile = profile,
-      editProfileOff = { editProfile = false },
-      editProfileOn = { editProfile = true },
-      saveProfile = { displayName: String, fullName: String ->
+      saveProfile = { displayName, fullName, image ->
         withApi {
-          val newProfile = chatModel.controller.apiUpdateProfile(
-            profile = Profile(displayName, fullName, profile.image)
-          )
+          if (image != null) chatModel.controller.apiUpdateProfileImage(image)
+          val p = Profile(displayName, fullName, image)
+          val newProfile = chatModel.controller.apiUpdateProfile(p)
           if (newProfile != null) {
             chatModel.updateUserProfile(newProfile)
             profile = newProfile
           }
-        }
-      },
-      saveProfileImage = {
-        base64Image: String ->
-        withApi {
-          val newProfile = chatModel.controller.apiUpdateProfileImage(
-            profile = Profile(profile.displayName, profile.fullName, base64Image)
-          )
-          if (newProfile != null) {
-            chatModel.updateUserProfile(newProfile)
-            profile = newProfile
-          }
-          editProfile = false
+          editProfile.value = false
         }
       }
     )
@@ -70,33 +56,22 @@ fun UserProfileView(chatModel: ChatModel, close: () -> Unit) {
 @Composable
 fun UserProfileLayout(
   close: () -> Unit,
-  editProfile: Boolean,
+  editProfile: MutableState<Boolean>,
   profile: Profile,
-  editProfileOff: () -> Unit,
-  editProfileOn: () -> Unit,
-  saveProfile: (String, String) -> Unit,
-  saveProfileImage: (String) -> Unit
+  saveProfile: (String, String, String?) -> Unit,
 ) {
   val bottomSheetModalState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden)
-  var displayName = remember { mutableStateOf(profile.displayName) }
-  var fullName = remember { mutableStateOf(profile.fullName) }
-  var profileImageStr = remember { mutableStateOf(profile.image) }
-  var originalImageStr = remember { mutableStateOf(profile.image) }
-  val coroutineScope = rememberCoroutineScope()
-  var profileImageExpanded by remember { mutableStateOf(false) }
-  var expandedProfileImageSize = LocalContext.current.resources.configuration.screenWidthDp.dp.times(0.9f)
-  val profileImageSize by animateDpAsState(if (profileImageExpanded) expandedProfileImageSize else 70.dp)
+  val displayName = remember { mutableStateOf(profile.displayName) }
+  val fullName = remember { mutableStateOf(profile.fullName) }
+  val profileImage = remember { mutableStateOf(profile.image) }
+  val scope = rememberCoroutineScope()
 
   ModalBottomSheetLayout(
     scrimColor = Color.Black.copy(alpha = 0.12F),
-    modifier = Modifier
-      .fillMaxWidth()
-      .clickable(
-        indication = null,
-        interactionSource = remember { MutableInteractionSource() },
-        onClick = { profileImageExpanded = false }
-      ),
-    sheetContent = { GetImageOptions(bottomSheetModalState, profileImageStr) },
+    modifier = Modifier.fillMaxWidth(),
+    sheetContent = { GetImageBottomSheet(profileImage, hideBottomSheet = {
+      scope.launch { bottomSheetModalState.hide() }
+    }) },
     sheetState = bottomSheetModalState,
     sheetShape = RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp)
   ) {
@@ -114,87 +89,60 @@ fun UserProfileLayout(
           Modifier.padding(bottom = 24.dp),
           color = MaterialTheme.colors.onBackground
         )
-        // TODO hints
-        Box {
-          Column(modifier = Modifier.fillMaxHeight()) {
-            Row(modifier = Modifier.fillMaxWidth()) {
-              Column(
-                horizontalAlignment = Alignment.Start,
-                modifier = Modifier.padding(10.dp)
-              ) {
-                Box(modifier = Modifier
-                  .clip(CircleShape)
-                  .clickable {
-                    if (editProfile) {
-                      coroutineScope.launch {
-                        if (!bottomSheetModalState.isVisible) {
-                          bottomSheetModalState.show()
-                        } else {
-                          bottomSheetModalState.hide()
-                        }
-                      }
-                    } else {
-                      profileImageExpanded = !profileImageExpanded
-                    }
-                  }) {
-                  ProfileImage(70.dp, profileImageStr.value, editable = editProfile)
+        if (editProfile.value) {
+          Column(
+            Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.Start
+          ) {
+            Box(
+              Modifier.fillMaxWidth().padding(bottom = 24.dp),
+              contentAlignment = Alignment.Center
+            ) {
+              Box(contentAlignment = Alignment.TopEnd) {
+                Box(contentAlignment = Alignment.Center) {
+                  ProfileImage(192.dp, profileImage.value)
+                  EditImageButton { scope.launch { bottomSheetModalState.show() } }
                 }
-              }
-              Column(verticalArrangement = Arrangement.SpaceBetween, modifier = Modifier.padding(10.dp)) {
-                Row(
-                  Modifier.padding(bottom = 14.dp)
-                ) {
-                  EditableDisplayName(editProfile, profile, displayName)
-                }
-                Row {
-                  EditableFullName(editProfile, profile, fullName)
+                if (profileImage.value != null) {
+                  DeleteImageButton { profileImage.value = null }
                 }
               }
             }
-            if (editProfile) {
-              Row {
-                Text(
-                  "Cancel",
-                  color = MaterialTheme.colors.primary,
-                  modifier = Modifier
-                    .clickable(onClick = {
-                      editProfileOff()
-                      profileImageStr.value = originalImageStr.value
-                    }),
-                )
-                Spacer(Modifier.padding(horizontal = 8.dp))
-                Text(
-                  "Save (and notify contacts)",
-                  color = MaterialTheme.colors.primary,
-                  modifier = Modifier
-                    .clickable(onClick = {
-                      saveProfile(displayName.value, fullName.value)
-                      if (profileImageStr.value != null && originalImageStr.value != profileImageStr.value) {
-                        saveProfileImage(profileImageStr.value!!)
-                        originalImageStr.value = profileImageStr.value
-                      }
-                    })
-                )
+            ProfileNameTextField(displayName)
+            ProfileNameTextField(fullName)
+            Row {
+              TextButton("Cancel") {
+                displayName.value = profile.displayName
+                fullName.value = profile.fullName
+                profileImage.value = profile.image
+                editProfile.value = false
               }
-            } else {
-              Row(
-                verticalAlignment = Alignment.Bottom
-              ) {
-                Text(
-                  "Edit",
-                  color = MaterialTheme.colors.primary,
-                  modifier = Modifier
-                    .clickable(onClick = {
-                      profileImageExpanded = false
-                      editProfileOn()
-                    })
-                    .padding(top = 5.dp)
-                )
+              Spacer(Modifier.padding(horizontal = 8.dp))
+              TextButton("Save (and notify contacts)") {
+                saveProfile(displayName.value, fullName.value, profileImage.value)
               }
             }
           }
-          if (!editProfile && profileImageExpanded) {
-            ProfileImage(profileImageSize, profileImageStr.value, editable = false)
+        } else {
+          Column(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.Start
+          ) {
+            Box(
+              Modifier
+                .fillMaxWidth()
+                .padding(bottom = 24.dp), contentAlignment = Alignment.Center) {
+              ProfileImage(192.dp, profile.image)
+              if (profile.image == null) {
+                EditImageButton {
+                  editProfile.value = true
+                  scope.launch { bottomSheetModalState.show() }
+                }
+              }
+            }
+            ProfileNameRow("Display name:", profile.displayName)
+            ProfileNameRow("Full name:", profile.fullName)
+            TextButton("Edit") { editProfile.value = true }
           }
         }
       }
@@ -202,68 +150,73 @@ fun UserProfileLayout(
   }
 }
 
+@Composable
+private fun ProfileNameTextField(name: MutableState<String>) {
+  BasicTextField(
+    value = name.value,
+    onValueChange = { name.value = it },
+    modifier = Modifier
+      .padding(bottom = 24.dp)
+      .fillMaxWidth(),
+    textStyle = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onBackground),
+    keyboardOptions = KeyboardOptions(
+      capitalization = KeyboardCapitalization.None,
+      autoCorrect = false
+    ),
+    singleLine = true
+  )
+}
 
 @Composable
-fun EditableDisplayName(editMode: Boolean, profile: Profile, displayName: MutableState<String>){
-  if (editMode) {
-    BasicTextField(
-      value = displayName.value,
-      onValueChange = { displayName.value = it },
-      modifier = Modifier
-        .fillMaxWidth(),
-      textStyle = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onBackground),
-      keyboardOptions = KeyboardOptions(
-        capitalization = KeyboardCapitalization.None,
-        autoCorrect = false
-      ),
-      singleLine = true
-    )
-  }
-  else {
+private fun ProfileNameRow(label: String, text: String) {
+  Row(Modifier.padding(bottom = 24.dp)) {
     Text(
-      "Display name:",
+      label,
       color = MaterialTheme.colors.onBackground
     )
     Spacer(Modifier.padding(horizontal = 4.dp))
     Text(
-      profile.displayName,
+      text,
       fontWeight = FontWeight.Bold,
       color = MaterialTheme.colors.onBackground
     )
   }
 }
 
+@Composable
+private fun TextButton(text: String, click: () -> Unit) {
+  Text(
+    text,
+    color = MaterialTheme.colors.primary,
+    modifier = Modifier.clickable(onClick = click),
+  )
+}
 
 @Composable
-fun EditableFullName(editMode: Boolean, profile: Profile, fullName: MutableState<String>){
-  if (editMode) {
-    BasicTextField(
-      value = fullName.value,
-      onValueChange = { fullName.value = it },
-      modifier = Modifier
-        .fillMaxWidth(),
-      textStyle = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onBackground),
-      keyboardOptions = KeyboardOptions(
-        capitalization = KeyboardCapitalization.None,
-        autoCorrect = false
-      ),
-      singleLine = true
-    )
-  }
-  else {
-    Text(
-      "Full name:",
-      color = MaterialTheme.colors.onBackground
-    )
-    Spacer(Modifier.padding(horizontal = 4.dp))
-    Text(
-      profile.fullName,
-      fontWeight = FontWeight.Bold,
-      color = MaterialTheme.colors.onBackground
+fun EditImageButton(click: () -> Unit) {
+  IconButton(
+    onClick = click,
+    modifier = Modifier.background(Color(1f, 1f, 1f, 0.2f), shape = CircleShape)
+  ) {
+    Icon(
+      Icons.Outlined.PhotoCamera,
+      contentDescription = "Edit image",
+      tint = MaterialTheme.colors.primary,
+      modifier = Modifier.size(36.dp)
     )
   }
 }
 
+@Composable
+fun DeleteImageButton(click: () -> Unit) {
+  IconButton(onClick = click) {
+    Icon(
+      Icons.Outlined.Close,
+      contentDescription = "Delete image",
+      tint = MaterialTheme.colors.primary,
+    )
+  }
+}
 
 @Preview(showBackground = true)
 @Preview(
@@ -277,11 +230,8 @@ fun PreviewUserProfileLayoutEditOff() {
     UserProfileLayout(
       close = {},
       profile = Profile.sampleData,
-      editProfile = false,
-      editProfileOff = {},
-      editProfileOn = {},
-      saveProfile = { _, _ -> },
-      saveProfileImage = { _ -> }
+      editProfile = remember { mutableStateOf(false) },
+      saveProfile = { _, _, _ -> }
     )
   }
 }
@@ -298,11 +248,8 @@ fun PreviewUserProfileLayoutEditOn() {
     UserProfileLayout(
       close = {},
       profile = Profile.sampleData,
-      editProfile = true,
-      editProfileOff = {},
-      editProfileOn = {},
-      saveProfile = { _, _ -> },
-      saveProfileImage = { _ -> }
+      editProfile = remember { mutableStateOf(true) },
+      saveProfile = {_, _, _ ->}
     )
   }
 }

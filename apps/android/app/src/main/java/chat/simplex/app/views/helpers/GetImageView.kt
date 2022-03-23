@@ -11,12 +11,12 @@ import android.provider.MediaStore
 import android.util.Base64
 import android.util.Log
 import android.widget.Toast
+import androidx.activity.compose.ManagedActivityResultLauncher
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContract
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.CallSuper
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.ModalBottomSheetState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Collections
 import androidx.compose.material.icons.outlined.PhotoCamera
@@ -30,10 +30,8 @@ import androidx.core.content.FileProvider
 import chat.simplex.app.BuildConfig
 import chat.simplex.app.TAG
 import chat.simplex.app.views.newchat.ActionButton
-import kotlinx.coroutines.launch
 import java.io.ByteArrayOutputStream
 import java.io.File
-import java.lang.Integer.min
 
 // Inspired by https://github.com/MakeItEasyDev/Jetpack-Compose-Capture-Image-Or-Choose-from-Gallery
 
@@ -60,7 +58,6 @@ fun bitmapToBase64(bitmap: Bitmap, squareCrop: Boolean = true): String {
   }
   image = Bitmap.createScaledBitmap(image, width, height, true)
   if (squareCrop) {
-//    val side = min(width, height)
     image = Bitmap.createBitmap(image, xOffset, yOffset, size, size)
   }
   val stream = ByteArrayOutputStream()
@@ -110,59 +107,53 @@ class CustomTakePicturePreview : ActivityResultContract<Void?, Bitmap?>() {
 }
 
 @Composable
-fun GetImageOptions(
-  bottomSheetModalState: ModalBottomSheetState,
+fun rememberGalleryLauncher(cb: (Uri?) -> Unit): ManagedActivityResultLauncher<String, Uri?> =
+  rememberLauncherForActivityResult(contract = ActivityResultContracts.GetContent(), cb)
+
+@Composable
+fun rememberCameraLauncher(cb: (Bitmap?) -> Unit): ManagedActivityResultLauncher<Void?, Bitmap?> =
+  rememberLauncherForActivityResult(contract = CustomTakePicturePreview(), cb)
+
+@Composable
+fun rememberPermissionLauncher(cb: (Boolean) -> Unit): ManagedActivityResultLauncher<String, Boolean> =
+  rememberLauncherForActivityResult(contract = ActivityResultContracts.RequestPermission(), cb)
+
+@Composable
+fun GetImageBottomSheet(
   profileImageStr: MutableState<String?>,
+  hideBottomSheet: () -> Unit
 ) {
   val context = LocalContext.current
   val isCameraSelected = remember { mutableStateOf (false) }
-  val coroutineScope = rememberCoroutineScope()
-  val galleryLauncher = rememberLauncherForActivityResult(
-    contract = ActivityResultContracts.GetContent()
-  ) { uri: Uri? ->
+
+  val galleryLauncher = rememberGalleryLauncher { uri: Uri? ->
     if (uri != null) {
       val source = ImageDecoder.createSource(context.contentResolver, uri)
       val bitmap = ImageDecoder.decodeBitmap(source)
-      val base64Image = bitmapToBase64(bitmap)
-      profileImageStr.value = base64Image
+      profileImageStr.value = bitmapToBase64(bitmap)
     }
   }
 
-  val cameraLauncher = rememberLauncherForActivityResult(
-    contract = CustomTakePicturePreview()
-  ) { bitmap: Bitmap? ->
-    if (bitmap != null) {
-      val base64Image = bitmapToBase64(bitmap)
-      profileImageStr.value = base64Image
-    }
+  val cameraLauncher = rememberCameraLauncher { bitmap: Bitmap? ->
+    if (bitmap != null) profileImageStr.value = bitmapToBase64(bitmap)
   }
 
-  val permissionLauncher = rememberLauncherForActivityResult(
-    contract = ActivityResultContracts.RequestPermission()
-  ) { isGranted: Boolean ->
+  val permissionLauncher = rememberPermissionLauncher { isGranted: Boolean ->
     if (isGranted) {
-      if (isCameraSelected.value) {
-        cameraLauncher.launch(null)
-      } else {
-        galleryLauncher.launch("image/*")
-      }
-      coroutineScope.launch {
-        bottomSheetModalState.hide()
-      }
+      if (isCameraSelected.value) cameraLauncher.launch(null)
+      else galleryLauncher.launch("image/*")
+      hideBottomSheet()
     } else {
       Toast.makeText(context, "Permission Denied!", Toast.LENGTH_SHORT).show()
     }
   }
-
 
   Box(
     modifier = Modifier
       .fillMaxWidth()
       .wrapContentHeight()
       .onFocusChanged { focusState ->
-        if (!focusState.hasFocus) {
-          coroutineScope.launch { bottomSheetModalState.hide() }
-        }
+        if (!focusState.hasFocus) hideBottomSheet()
       }
   ) {
     Row(
@@ -171,16 +162,11 @@ fun GetImageOptions(
         .padding(horizontal = 8.dp, vertical = 30.dp),
       horizontalArrangement = Arrangement.SpaceEvenly
     ) {
-
       ActionButton(null, "Use Camera", icon = Icons.Outlined.PhotoCamera) {
         when (PackageManager.PERMISSION_GRANTED) {
-          ContextCompat.checkSelfPermission(
-            context, Manifest.permission.CAMERA
-          ) -> {
+          ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) -> {
             cameraLauncher.launch(null)
-            coroutineScope.launch {
-              bottomSheetModalState.hide()
-            }
+            hideBottomSheet()
           }
           else -> {
             isCameraSelected.value = true
@@ -190,13 +176,9 @@ fun GetImageOptions(
       }
       ActionButton(null, "From Gallery", icon = Icons.Outlined.Collections) {
         when (PackageManager.PERMISSION_GRANTED) {
-          ContextCompat.checkSelfPermission(
-            context, Manifest.permission.READ_EXTERNAL_STORAGE
-          ) -> {
+          ContextCompat.checkSelfPermission(context, Manifest.permission.READ_EXTERNAL_STORAGE) -> {
             galleryLauncher.launch("image/*")
-            coroutineScope.launch {
-              bottomSheetModalState.hide()
-            }
+            hideBottomSheet()
           }
           else -> {
             isCameraSelected.value = false
@@ -204,9 +186,6 @@ fun GetImageOptions(
           }
         }
       }
-//      ActionButton(null, "Delete Image", icon = Icons.Filled.Delete) {
-//        profileImageStr.value = null
-//      }
     }
   }
 }

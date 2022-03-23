@@ -30,13 +30,6 @@ class ChatModel(val controller: ChatController) {
   // set when app is opened via contact or invitation URI
   var appOpenUrl = mutableStateOf<Uri?>(null)
 
-  fun updateUserProfile(profile: Profile) {
-    val user = currentUser.value
-    if (user != null) {
-      currentUser.value = user.copy(profile = profile)
-    }
-  }
-
   fun hasChat(id: String): Boolean = chats.firstOrNull { it.id == id } != null
   fun getChat(id: String): Chat? = chats.firstOrNull { it.id == id }
   private fun getChatIndex(id: String): Int = chats.indexOfFirst { it.id == id }
@@ -165,6 +158,13 @@ class ChatModel(val controller: ChatController) {
 
   fun removeChat(id: String) {
     chats.removeAll { it.id == id }
+  }
+
+  fun updateUserProfile(profile: Profile) {
+    val user = currentUser.value
+    if (user != null) {
+      currentUser.value = user.copy(profile = profile)
+    }
   }
 }
 

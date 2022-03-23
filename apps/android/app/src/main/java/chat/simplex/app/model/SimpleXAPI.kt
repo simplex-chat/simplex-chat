@@ -210,12 +210,11 @@ open class ChatController(val ctrl: ChatCtrl, val ntfManager: NtfManager, val ap
     return null
   }
 
-  suspend fun apiUpdateProfileImage(profile: Profile) : Profile? {
-    val r = sendCmd(CC.UpdateProfileImage(profile))
-    if (r is CR.UserProfileNoChange) return profile
-    if (r is CR.UserProfileUpdated) return r.toProfile
+  suspend fun apiUpdateProfileImage(image: String): Boolean {
+    val r = sendCmd(CC.UpdateProfileImage(image))
+    if (r is CR.UserProfileNoChange || r is CR.UserProfileUpdated) return true
     Log.e(TAG, "apiUpdateProfileImage bad response: ${r.responseType} ${r.details}")
-    return null
+    return false
   }
 
   suspend fun apiCreateUserAddress(): String? {
@@ -360,7 +359,7 @@ sealed class CC {
   class Connect(val connReq: String): CC()
   class ApiDeleteChat(val type: ChatType, val id: Long): CC()
   class UpdateProfile(val profile: Profile): CC()
-  class UpdateProfileImage(val profile: Profile): CC()
+  class UpdateProfileImage(val image: String): CC()
   class CreateMyAddress: CC()
   class DeleteMyAddress: CC()
   class ShowMyAddress: CC()
@@ -383,7 +382,7 @@ sealed class CC {
     is Connect -> "/connect $connReq"
     is ApiDeleteChat -> "/_delete ${chatRef(type, id)}"
     is UpdateProfile -> "/profile ${profile.displayName} ${profile.fullName}"
-    is UpdateProfileImage -> "/profile_image ${profile.image}"
+    is UpdateProfileImage -> "/profile_image $image"
     is CreateMyAddress -> "/address"
     is DeleteMyAddress -> "/delete_address"
     is ShowMyAddress -> "/show_address"
