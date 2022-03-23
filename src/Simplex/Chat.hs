@@ -276,6 +276,7 @@ processChatCommand = \case
           `E.finally` deleteContactRequest st userId connReqId
     withAgent $ \a -> rejectContact a connId invId
     pure $ CRContactRequestRejected cReq
+  APIUpdateProfile profile -> withUser (`updateProfile` profile)
   GetUserSMPServers -> CRUserSMPServers <$> withUser (\user -> withStore (`getSMPServers` user))
   SetUserSMPServers smpServers -> withUser $ \user -> withChatLock $ do
     withStore $ \st -> overwriteSMPServers st user smpServers
@@ -1572,6 +1573,7 @@ chatCommandP =
     <|> "/_delete " *> (APIDeleteChat <$> chatTypeP <*> A.decimal)
     <|> "/_accept " *> (APIAcceptContact <$> A.decimal)
     <|> "/_reject " *> (APIRejectContact <$> A.decimal)
+    <|> "/_profile " *> (APIUpdateProfile <$> jsonP)
     <|> "/smp_servers default" $> SetUserSMPServers []
     <|> "/smp_servers " *> (SetUserSMPServers <$> smpServersP)
     <|> "/smp_servers" $> GetUserSMPServers
@@ -1628,7 +1630,7 @@ chatCommandP =
         <|> (CPBefore <$ "before=" <*> A.decimal <* A.space <* "count=" <*> A.decimal)
     msgContentP =
       "text " *> (MCText . safeDecodeUtf8 <$> A.takeByteString)
-        <|> "json " *> (J.eitherDecodeStrict' <$?> A.takeByteString)
+        <|> "json " *> jsonP
     msgDeleteMode = "broadcast" $> MDBroadcast <|> "internal" $> MDInternal
     displayName = safeDecodeUtf8 <$> (B.cons <$> A.satisfy refChar <*> A.takeTill (== ' '))
     sendMsgQuote msgDir = SendMessageQuote <$> displayName <* A.space <*> pure msgDir <*> quotedMsg <*> A.takeByteString
@@ -1642,6 +1644,8 @@ chatCommandP =
     userProfile = do
       (cName, fullName) <- userNames
       pure Profile {displayName = cName, fullName, image = Nothing}
+    jsonP :: J.FromJSON a => Parser a
+    jsonP = J.eitherDecodeStrict' <$?> A.takeByteString
     groupProfile = do
       gName <- displayName
       fullName <- fullNameP gName

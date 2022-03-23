@@ -794,11 +794,14 @@ testUpdateProfileImage =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
       connectUsers alice bob
-      -- Note we currently don't support removing profile image.
       alice ##> "/profile_image data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII="
       alice <## "profile image updated"
       alice ##> "/profile_image"
       alice <## "profile image removed"
+      alice ##> "/_profile {\"displayName\": \"alice2\", \"fullName\": \"\"}"
+      alice <## "user profile is changed to alice2 (your contacts are notified)"
+      bob <## "contact alice changed to alice2"
+      bob <## "use @alice2 <message> to send messages"
       (bob </)
 
 testFileTransfer :: IO ()
