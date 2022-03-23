@@ -359,8 +359,8 @@ func apiGetChats() throws -> [Chat] {
     throw r
 }
 
-func apiGetChat(type: ChatType, id: Int64) async throws -> Chat {
-    let r = await chatSendCmd(.apiGetChat(type: type, id: id))
+func apiGetChat(type: ChatType, id: Int64) throws -> Chat {
+    let r = chatSendCmdSync(.apiGetChat(type: type, id: id))
     if case let .apiChat(chat) = r { return Chat.init(chat) }
     throw r
 }

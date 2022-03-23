@@ -35,6 +35,7 @@ chatTests = do
   describe "direct messages" $ do
     it "add contact and send/receive message" testAddContact
     it "direct message quoted replies" testDirectMessageQuotedReply
+    it "direct message update" testDirectMessageUpdate
   describe "chat groups" $ do
     it "add contacts, create group and send/receive messages" testGroup
     it "create and join group with 4 members" testGroup2
@@ -44,6 +45,7 @@ chatTests = do
     it "remove contact from group and add again" testGroupRemoveAdd
     it "list groups containing group invitations" testGroupList
     it "group message quoted replies" testGroupMessageQuotedReply
+    it "group message update" testGroupMessageUpdate
   describe "user profiles" $ do
     it "update user profiles and notify contacts" testUpdateProfile
     it "update user profile with image" testUpdateProfileImage
@@ -149,6 +151,59 @@ testDirectMessageQuotedReply = do
       alice <## "      will tell more"
       bob #$> ("/_get chat @2 count=1", chat', [((1, "will tell more"), Just (1, "all good - you?"))])
       alice #$> ("/_get chat @2 count=1", chat', [((0, "will tell more"), Just (0, "all good - you?"))])
+
+testDirectMessageUpdate :: IO ()
+testDirectMessageUpdate = do
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+
+      -- msg id 1
+      alice #> "@bob hello 🙂"
+      bob <# "alice> hello 🙂"
+
+      -- msg id 2
+      bob `send` "> @alice (hello) hi alice"
+      bob <# "@alice > hello 🙂"
+      bob <## "      hi alice"
+      alice <# "bob> > hello 🙂"
+      alice <## "      hi alice"
+
+      alice #$> ("/_get chat @2 count=100", chat', [((1, "hello 🙂"), Nothing), ((0, "hi alice"), Just (1, "hello 🙂"))])
+      bob #$> ("/_get chat @2 count=100", chat', [((0, "hello 🙂"), Nothing), ((1, "hi alice"), Just (0, "hello 🙂"))])
+
+      alice ##> "/_update item @2 1 text hey 👋"
+      bob <# "alice> [edited] hey 👋"
+
+      alice #$> ("/_get chat @2 count=100", chat', [((1, "hey 👋"), Nothing), ((0, "hi alice"), Just (1, "hello 🙂"))])
+      bob #$> ("/_get chat @2 count=100", chat', [((0, "hey 👋"), Nothing), ((1, "hi alice"), Just (0, "hello 🙂"))])
+
+      -- msg id 3
+      bob `send` "> @alice (hey) hey alice"
+      bob <# "@alice > hey 👋"
+      bob <## "      hey alice"
+      alice <# "bob> > hey 👋"
+      alice <## "      hey alice"
+
+      alice #$> ("/_get chat @2 count=100", chat', [((1, "hey 👋"), Nothing), ((0, "hi alice"), Just (1, "hello 🙂")), ((0, "hey alice"), Just (1, "hey 👋"))])
+      bob #$> ("/_get chat @2 count=100", chat', [((0, "hey 👋"), Nothing), ((1, "hi alice"), Just (0, "hello 🙂")), ((1, "hey alice"), Just (0, "hey 👋"))])
+
+      alice ##> "/_update item @2 1 text greetings 🤝"
+      bob <# "alice> [edited] greetings 🤝"
+
+      alice #$> ("/_get chat @2 count=100", chat', [((1, "greetings 🤝"), Nothing), ((0, "hi alice"), Just (1, "hello 🙂")), ((0, "hey alice"), Just (1, "hey 👋"))])
+      bob #$> ("/_get chat @2 count=100", chat', [((0, "greetings 🤝"), Nothing), ((1, "hi alice"), Just (0, "hello 🙂")), ((1, "hey alice"), Just (0, "hey 👋"))])
+
+      bob ##> "/_update item @2 2 text hey Alice"
+      alice <# "bob> [edited] > hello 🙂"
+      alice <## "      hey Alice"
+
+      bob ##> "/_update item @2 3 text greetings Alice"
+      alice <# "bob> [edited] > hey 👋"
+      alice <## "      greetings Alice"
+
+      alice #$> ("/_get chat @2 count=100", chat', [((1, "greetings 🤝"), Nothing), ((0, "hey Alice"), Just (1, "hello 🙂")), ((0, "greetings Alice"), Just (1, "hey 👋"))])
+      bob #$> ("/_get chat @2 count=100", chat', [((0, "greetings 🤝"), Nothing), ((1, "hey Alice"), Just (0, "hello 🙂")), ((1, "greetings Alice"), Just (0, "hey 👋"))])
 
 testGroup :: IO ()
 testGroup =
@@ -619,6 +674,78 @@ testGroupMessageQuotedReply =
       cath #$> ("/_get chat #1 count=1", chat', [((1, "hi there!"), Just (0, "hello, all good, you?"))])
       alice #$> ("/_get chat #1 count=1", chat', [((0, "hi there!"), Just (0, "hello, all good, you?"))])
       bob #$> ("/_get chat #1 count=1", chat', [((0, "hi there!"), Just (1, "hello, all good, you?"))])
+      alice `send` "> #team (will tell) go on"
+      alice <# "#team > bob will tell more"
+      alice <## "      go on"
+      concurrently_
+        ( do
+            bob <# "#team alice> > bob will tell more"
+            bob <## "      go on"
+        )
+        ( do
+            cath <# "#team alice> > bob will tell more"
+            cath <## "      go on"
+        )
+
+testGroupMessageUpdate :: IO ()
+testGroupMessageUpdate = do
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+      alice #> "#team hello!"
+      concurrently_
+        (bob <# "#team alice> hello!")
+        (cath <# "#team alice> hello!")
+
+      alice ##> "/_update item #1 1 text hey 👋"
+      concurrently_
+        (bob <# "#team alice> [edited] hey 👋")
+        (cath <# "#team alice> [edited] hey 👋")
+
+      alice #$> ("/_get chat #1 count=100", chat', [((1, "hey 👋"), Nothing)])
+      bob #$> ("/_get chat #1 count=100", chat', [((0, "hey 👋"), Nothing)])
+      cath #$> ("/_get chat #1 count=100", chat', [((0, "hey 👋"), Nothing)])
+
+      threadDelay 1000000
+      bob `send` "> #team @alice (hey) hi alice"
+      bob <# "#team > alice hey 👋"
+      bob <## "      hi alice"
+      concurrently_
+        ( do
+            alice <# "#team bob> > alice hey 👋"
+            alice <## "      hi alice"
+        )
+        ( do
+            cath <# "#team bob> > alice hey 👋"
+            cath <## "      hi alice"
+        )
+
+      alice #$> ("/_get chat #1 count=100", chat', [((1, "hey 👋"), Nothing), ((0, "hi alice"), Just (1, "hey 👋"))])
+      bob #$> ("/_get chat #1 count=100", chat', [((0, "hey 👋"), Nothing), ((1, "hi alice"), Just (0, "hey 👋"))])
+      cath #$> ("/_get chat #1 count=100", chat', [((0, "hey 👋"), Nothing), ((0, "hi alice"), Just (0, "hey 👋"))])
+
+      alice ##> "/_update item #1 1 text greetings 🤝"
+      concurrently_
+        (bob <# "#team alice> [edited] greetings 🤝")
+        (cath <# "#team alice> [edited] greetings 🤝")
+
+      threadDelay 1000000
+      cath `send` "> #team @alice (greetings) greetings!"
+      cath <# "#team > alice greetings 🤝"
+      cath <## "      greetings!"
+      concurrently_
+        ( do
+            alice <# "#team cath> > alice greetings 🤝"
+            alice <## "      greetings!"
+        )
+        ( do
+            bob <# "#team cath> > alice greetings 🤝"
+            bob <## "      greetings!"
+        )
+
+      alice #$> ("/_get chat #1 count=100", chat', [((1, "greetings 🤝"), Nothing), ((0, "hi alice"), Just (1, "hey 👋")), ((0, "greetings!"), Just (1, "greetings 🤝"))])
+      bob #$> ("/_get chat #1 count=100", chat', [((0, "greetings 🤝"), Nothing), ((1, "hi alice"), Just (0, "hey 👋")), ((0, "greetings!"), Just (0, "greetings 🤝"))])
+      cath #$> ("/_get chat #1 count=100", chat', [((0, "greetings 🤝"), Nothing), ((0, "hi alice"), Just (0, "hey 👋")), ((1, "greetings!"), Just (0, "greetings 🤝"))])
 
 testUpdateProfile :: IO ()
 testUpdateProfile =
@@ -670,6 +797,8 @@ testUpdateProfileImage =
       -- Note we currently don't support removing profile image.
       alice ##> "/profile_image data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII="
       alice <## "profile image updated"
+      alice ##> "/profile_image"
+      alice <## "profile image removed"
       (bob </)
 
 testFileTransfer :: IO ()

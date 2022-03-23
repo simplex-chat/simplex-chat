@@ -20,8 +20,10 @@ import Data.ByteString.Char8 (ByteString)
 import Data.Int (Int64)
 import Data.Map.Strict (Map)
 import Data.Text (Text)
+import Data.Version (showVersion)
 import GHC.Generics (Generic)
 import Numeric.Natural
+import qualified Paths_simplex_chat as SC
 import Simplex.Chat.Messages
 import Simplex.Chat.Protocol
 import Simplex.Chat.Store (StoreError)
@@ -36,7 +38,7 @@ import System.IO (Handle)
 import UnliftIO.STM
 
 versionNumber :: String
-versionNumber = "1.3.2"
+versionNumber = showVersion SC.version
 
 versionStr :: String
 versionStr = "SimpleX Chat v" <> versionNumber
@@ -76,7 +78,10 @@ data ChatController = ChatController
     config :: ChatConfig
   }
 
-data HelpSection = HSMain | HSFiles | HSGroups | HSMyAddress | HSMarkdown
+data HelpSection = HSMain | HSFiles | HSGroups | HSMyAddress | HSMarkdown | HSQuotes
+  deriving (Show, Generic)
+
+data MsgDeleteMode = MDBroadcast | MDInternal
   deriving (Show, Generic)
 
 instance ToJSON HelpSection where
@@ -92,6 +97,8 @@ data ChatCommand
   | APIGetChatItems Int
   | APISendMessage ChatType Int64 MsgContent
   | APISendMessageQuote ChatType Int64 ChatItemId MsgContent
+  | APIUpdateMessage ChatType Int64 ChatItemId MsgContent
+  | APIDeleteMessage ChatType Int64 ChatItemId MsgDeleteMode
   | APIChatRead ChatType Int64 (ChatItemId, ChatItemId)
   | APIDeleteChat ChatType Int64
   | APIAcceptContact Int64
@@ -123,7 +130,7 @@ data ChatCommand
   | ListMembers GroupName
   | ListGroups
   | SendGroupMessage GroupName ByteString
-  | SendGroupMessageQuote {groupName :: GroupName, contactName :: ContactName, quotedMsg :: ByteString, message :: ByteString}
+  | SendGroupMessageQuote {groupName :: GroupName, contactName_ :: Maybe ContactName, quotedMsg :: ByteString, message :: ByteString}
   | SendFile ContactName FilePath
   | SendGroupFile GroupName FilePath
   | ReceiveFile FileTransferId (Maybe FilePath)
@@ -131,7 +138,7 @@ data ChatCommand
   | FileStatus FileTransferId
   | ShowProfile
   | UpdateProfile ContactName Text
-  | UpdateProfileImage ProfileImage
+  | UpdateProfileImage (Maybe ProfileImage)
   | QuitChat
   | ShowVersion
   deriving (Show)
@@ -144,7 +151,9 @@ data ChatResponse
   | CRApiChat {chat :: AChat}
   | CRUserSMPServers {smpServers :: [SMPServer]}
   | CRNewChatItem {chatItem :: AChatItem}
+  | CRChatItemStatusUpdated {chatItem :: AChatItem}
   | CRChatItemUpdated {chatItem :: AChatItem}
+  | CRChatItemDeleted {chatItem :: AChatItem}
   | CRMsgIntegrityError {msgerror :: MsgErrorType} -- TODO make it chat item to support in mobile
   | CRCmdAccepted {corr :: CorrId}
   | CRCmdOk
@@ -293,6 +302,7 @@ data ChatErrorType
   | CEFileRcvChunk {message :: String}
   | CEFileInternal {message :: String}
   | CEInvalidQuote
+  | CEInvalidMessageUpdate
   | CEAgentVersion
   | CECommandError {message :: String}
   deriving (Show, Exception, Generic)

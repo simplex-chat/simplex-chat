@@ -5,7 +5,7 @@ cabal-version: 1.12
 -- see: https://github.com/sol/hpack
 
 name:           simplex-chat
-version:        1.3.2
+version:        1.3.3
 category:       Web, System, Services, Cryptography
 homepage:       https://github.com/simplex-chat/simplex-chat#readme
 author:         simplex.chat
@@ -32,6 +32,7 @@ library
       Simplex.Chat.Migrations.M20220301_smp_servers
       Simplex.Chat.Migrations.M20220302_profile_images
       Simplex.Chat.Migrations.M20220304_msg_quotes
+      Simplex.Chat.Migrations.M20220321_chat_item_edited
       Simplex.Chat.Mobile
       Simplex.Chat.Options
       Simplex.Chat.Protocol
@@ -127,7 +128,7 @@ test-suite simplex-chat-test
       Paths_simplex_chat
   hs-source-dirs:
       tests
-  ghc-options: -Wall -Wcompat -Werror=incomplete-patterns -Wredundant-constraints -Wincomplete-record-updates -Wincomplete-uni-patterns -Wunused-type-patterns
+  ghc-options: -Wall -Wcompat -Werror=incomplete-patterns -Wredundant-constraints -Wincomplete-record-updates -Wincomplete-uni-patterns -Wunused-type-patterns -threaded
   build-depends:
       aeson ==2.0.*
     , ansi-terminal >=0.10 && <0.12

@@ -109,6 +109,8 @@ instance StrEncoding ChatMessage where
 
 data ChatMsgEvent
   = XMsgNew MsgContainer
+  | XMsgUpdate SharedMsgId MsgContent
+  | XMsgDel SharedMsgId
   | XFile FileInvitation
   | XFileAcpt String
   | XInfo Profile
@@ -224,7 +226,7 @@ instance ToJSON MsgContent where
     MCUnknown {json} -> JE.value $ J.Object json
     MCText t -> J.pairs $ "type" .= MCText_ <> "text" .= t
 
-instance ToField (MsgContent) where
+instance ToField MsgContent where
   toField = toField . safeDecodeUtf8 . LB.toStrict . J.encode
 
 instance FromField MsgContent where
@@ -232,6 +234,8 @@ instance FromField MsgContent where
 
 data CMEventTag
   = XMsgNew_
+  | XMsgUpdate_
+  | XMsgDel_
   | XFile_
   | XFileAcpt_
   | XInfo_
@@ -258,6 +262,8 @@ data CMEventTag
 instance StrEncoding CMEventTag where
   strEncode = \case
     XMsgNew_ -> "x.msg.new"
+    XMsgUpdate_ -> "x.msg.update"
+    XMsgDel_ -> "x.msg.del"
     XFile_ -> "x.file"
     XFileAcpt_ -> "x.file.acpt"
     XInfo_ -> "x.info"
@@ -281,6 +287,8 @@ instance StrEncoding CMEventTag where
     XUnknown_ t -> encodeUtf8 t
   strDecode = \case
     "x.msg.new" -> Right XMsgNew_
+    "x.msg.update" -> Right XMsgUpdate_
+    "x.msg.del" -> Right XMsgDel_
     "x.file" -> Right XFile_
     "x.file.acpt" -> Right XFileAcpt_
     "x.info" -> Right XInfo_
@@ -307,6 +315,8 @@ instance StrEncoding CMEventTag where
 toCMEventTag :: ChatMsgEvent -> CMEventTag
 toCMEventTag = \case
   XMsgNew _ -> XMsgNew_
+  XMsgUpdate _ _ -> XMsgUpdate_
+  XMsgDel _ -> XMsgDel_
   XFile _ -> XFile_
   XFileAcpt _ -> XFileAcpt_
   XInfo _ -> XInfo_
@@ -350,7 +360,9 @@ appToChatMessage AppMessage {msgId, event, params} = do
     opt :: FromJSON a => J.Key -> Either String (Maybe a)
     opt key = JT.parseEither (.:? key) params
     msg = \case
-      XMsgNew_ -> XMsgNew <$> JT.parseEither parseMsgContainer params
+      XMsgNew_ -> XMsgNew <$> JT.parseEither parseMsgContainer params  
+      XMsgUpdate_ -> XMsgUpdate <$> p "msgId" <*> p "content"
+      XMsgDel_ -> XMsgDel <$> p "msgId"
       XFile_ -> XFile <$> p "file"
       XFileAcpt_ -> XFileAcpt <$> p "fileName"
       XInfo_ -> XInfo <$> p "profile"
@@ -382,9 +394,11 @@ chatToAppMessage ChatMessage {msgId, chatMsgEvent} = AppMessage {msgId, event, p
     key .=? value = maybe id ((:) . (key .=)) value
     params = case chatMsgEvent of
       XMsgNew container -> msgContainerJSON container
+      XMsgUpdate msgId' content ->  o ["msgId" .= msgId', "content" .= content]
+      XMsgDel msgId' ->  o ["msgId" .= msgId']
       XFile fileInv -> o ["file" .= fileInv]
       XFileAcpt fileName -> o ["fileName" .= fileName]
-      XInfo profile -> o $ ["profile" .= profile]
+      XInfo profile -> o ["profile" .= profile]
       XContact profile xContactId -> o $ ("contactReqId" .=? xContactId) ["profile" .= profile]
       XGrpInv groupInv -> o ["groupInvitation" .= groupInv]
       XGrpAcpt memId -> o ["memberId" .= memId]
