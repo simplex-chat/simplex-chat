@@ -13,6 +13,10 @@ struct CIMetaView: View {
 
     var body: some View {
         HStack(alignment: .center, spacing: 4) {
+            if chatItem.meta.itemEdited {
+                statusImage("pencil", .secondary)
+            }
+
             switch chatItem.meta.itemStatus {
             case .sndSent:
                 statusImage("checkmark", .secondary)

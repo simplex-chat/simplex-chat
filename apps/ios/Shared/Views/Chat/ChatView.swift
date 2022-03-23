@@ -13,6 +13,7 @@ struct ChatView: View {
     @Environment(\.colorScheme) var colorScheme
     @ObservedObject var chat: Chat
     @State var quotedItem: ChatItem? = nil
+    @State var editingItem: ChatItem? = nil
     @State private var inProgress: Bool = false
     @FocusState private var keyboardVisible: Bool
     @State private var showChatInfo = false
@@ -39,6 +40,11 @@ struct ChatView: View {
                                         Button {
                                             UIPasteboard.general.string = ci.content.text
                                         } label: { Label("Copy", systemImage: "doc.on.doc") }
+                                        if (ci.chatDir.sent && ci.meta.editable) {
+                                            Button {
+                                                withAnimation { editingItem = ci }
+                                            } label: { Label("Edit", systemImage: "square.and.pencil") }
+                                        }
                                     }
                                     .padding(.horizontal)
                                     .frame(maxWidth: maxWidth, maxHeight: .infinity, alignment: alignment)
@@ -72,6 +78,7 @@ struct ChatView: View {
 
             ComposeView(
                 quotedItem: $quotedItem,
+                editingItem: $editingItem,
                 sendMessage: sendMessage,
                 inProgress: inProgress,
                 keyboardVisible: $keyboardVisible
@@ -131,19 +138,38 @@ struct ChatView: View {
 
     func sendMessage(_ msg: String) {
         Task {
-            do {
-                let chatItem = try await apiSendMessage(
-                    type: chat.chatInfo.chatType,
-                    id: chat.chatInfo.apiId,
-                    quotedItemId: quotedItem?.meta.itemId,
-                    msg: .text(msg)
-                )
-                DispatchQueue.main.async {
-                    quotedItem = nil
-                    chatModel.addChatItem(chat.chatInfo, chatItem)
+            if editingItem != nil {
+                do {
+                    let editingItemId = editingItem?.id
+                    let chatItem = try await apiUpdateMessage(
+                        type: chat.chatInfo.chatType,
+                        id: chat.chatInfo.apiId,
+                        itemId: editingItemId,
+                        msg: .text(msg)
+                    )
+                    DispatchQueue.main.async {
+                        editingItem = nil
+                        // this is done on chat response
+                        // chatModel.upsertChatItem(chat.chatInfo, chatItem)
+                    }
+                } catch {
+                    logger.error("ChatView.sendMessage apiUpdateMessage error: \(error.localizedDescription)")
                 }
-            } catch {
-                logger.error("ChatView.sendMessage apiSendMessage error: \(error.localizedDescription)")
+            } else {
+                do {
+                    let chatItem = try await apiSendMessage(
+                        type: chat.chatInfo.chatType,
+                        id: chat.chatInfo.apiId,
+                        quotedItemId: quotedItem?.meta.itemId,
+                        msg: .text(msg)
+                    )
+                    DispatchQueue.main.async {
+                        quotedItem = nil
+                        chatModel.addChatItem(chat.chatInfo, chatItem)
+                    }
+                } catch {
+                    logger.error("ChatView.sendMessage apiSendMessage error: \(error.localizedDescription)")
+                }
             }
         }
     }

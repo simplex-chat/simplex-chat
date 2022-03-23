@@ -10,6 +10,7 @@ import SwiftUI
 
 struct ComposeView: View {
     @Binding var quotedItem: ChatItem?
+    @Binding var editingItem: ChatItem?
     var sendMessage: (String) -> Void
     var inProgress: Bool = false
     @FocusState.Binding var keyboardVisible: Bool
@@ -17,6 +18,8 @@ struct ComposeView: View {
     var body: some View {
         VStack(spacing: 0) {
             QuotedItemView(quotedItem: $quotedItem)
+                .transition(.move(edge: .bottom))
+            EditingItemView(editingItem: $editingItem)
                 .transition(.move(edge: .bottom))
             SendMessageView(
                 sendMessage: sendMessage,
@@ -31,12 +34,22 @@ struct ComposeView: View {
 struct ComposeView_Previews: PreviewProvider {
     static var previews: some View {
         @FocusState var keyboardVisible: Bool
-        @State var quotedItem: ChatItem? = ChatItem.getSample(1, .directSnd, .now, "hello")
+        @State var item: ChatItem? = ChatItem.getSample(1, .directSnd, .now, "hello")
+        @State var nilItem: ChatItem? = nil
 
-        return ComposeView(
-            quotedItem: $quotedItem,
-            sendMessage: { print ($0) },
-            keyboardVisible: $keyboardVisible
-        )
+        return Group {
+            ComposeView(
+                quotedItem: $item,
+                editingItem: $nilItem,
+                sendMessage: { print ($0) },
+                keyboardVisible: $keyboardVisible
+            )
+            ComposeView(
+                quotedItem: $nilItem,
+                editingItem: $item,
+                sendMessage: { print ($0) },
+                keyboardVisible: $keyboardVisible
+            )
+        }
     }
 }
