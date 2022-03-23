@@ -22,7 +22,7 @@ import Data.Int (Int64)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
-import Data.Time.Clock (UTCTime)
+import Data.Time.Clock (UTCTime, diffUTCTime, nominalDay)
 import Data.Time.LocalTime (TimeZone, ZonedTime, utcToZonedTime)
 import Data.Type.Equality
 import Data.Typeable (Typeable)
@@ -208,15 +208,17 @@ data CIMeta (d :: MsgDirection) = CIMeta
     itemSharedMsgId :: Maybe SharedMsgId,
     itemDeleted :: Bool,
     itemEdited :: Bool,
+    editable :: Bool,
     localItemTs :: ZonedTime,
     createdAt :: UTCTime
   }
   deriving (Show, Generic)
 
-mkCIMeta :: ChatItemId -> Text -> CIStatus d -> Maybe SharedMsgId -> Bool -> Bool -> TimeZone -> ChatItemTs -> UTCTime -> CIMeta d
-mkCIMeta itemId itemText itemStatus itemSharedMsgId itemDeleted itemEdited tz itemTs createdAt =
+mkCIMeta :: ChatItemId -> Text -> CIStatus d -> Maybe SharedMsgId -> Bool -> Bool -> TimeZone -> UTCTime -> ChatItemTs -> UTCTime -> CIMeta d
+mkCIMeta itemId itemText itemStatus itemSharedMsgId itemDeleted itemEdited tz currentTs itemTs createdAt =
   let localItemTs = utcToZonedTime tz itemTs
-   in CIMeta {itemId, itemTs, itemText, itemStatus, itemSharedMsgId, itemDeleted, itemEdited, localItemTs, createdAt}
+      editable = diffUTCTime currentTs itemTs < nominalDay
+   in CIMeta {itemId, itemTs, itemText, itemStatus, itemSharedMsgId, itemDeleted, itemEdited, editable, localItemTs, createdAt}
 
 instance ToJSON (CIMeta d) where toEncoding = J.genericToEncoding J.defaultOptions
 

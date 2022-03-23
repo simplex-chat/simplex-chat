@@ -173,7 +173,7 @@ testDirectMessageUpdate = do
       bob #$> ("/_get chat @2 count=100", chat', [((0, "hello 🙂"), Nothing), ((1, "hi alice"), Just (0, "hello 🙂"))])
 
       alice ##> "/_update item @2 1 text hey 👋"
-      bob <# "alice [edited]> hey 👋"
+      bob <# "alice> [edited] hey 👋"
 
       alice #$> ("/_get chat @2 count=100", chat', [((1, "hey 👋"), Nothing), ((0, "hi alice"), Just (1, "hello 🙂"))])
       bob #$> ("/_get chat @2 count=100", chat', [((0, "hey 👋"), Nothing), ((1, "hi alice"), Just (0, "hello 🙂"))])
@@ -189,17 +189,17 @@ testDirectMessageUpdate = do
       bob #$> ("/_get chat @2 count=100", chat', [((0, "hey 👋"), Nothing), ((1, "hi alice"), Just (0, "hello 🙂")), ((1, "hey alice"), Just (0, "hey 👋"))])
 
       alice ##> "/_update item @2 1 text greetings 🤝"
-      bob <# "alice [edited]> greetings 🤝"
+      bob <# "alice> [edited] greetings 🤝"
 
       alice #$> ("/_get chat @2 count=100", chat', [((1, "greetings 🤝"), Nothing), ((0, "hi alice"), Just (1, "hello 🙂")), ((0, "hey alice"), Just (1, "hey 👋"))])
       bob #$> ("/_get chat @2 count=100", chat', [((0, "greetings 🤝"), Nothing), ((1, "hi alice"), Just (0, "hello 🙂")), ((1, "hey alice"), Just (0, "hey 👋"))])
 
       bob ##> "/_update item @2 2 text hey Alice"
-      alice <# "bob [edited]> > hello 🙂"
+      alice <# "bob> [edited] > hello 🙂"
       alice <## "      hey Alice"
 
       bob ##> "/_update item @2 3 text greetings Alice"
-      alice <# "bob [edited]> > hey 👋"
+      alice <# "bob> [edited] > hey 👋"
       alice <## "      greetings Alice"
 
       alice #$> ("/_get chat @2 count=100", chat', [((1, "greetings 🤝"), Nothing), ((0, "hey Alice"), Just (1, "hello 🙂")), ((0, "greetings Alice"), Just (1, "hey 👋"))])
@@ -699,8 +699,8 @@ testGroupMessageUpdate = do
 
       alice ##> "/_update item #1 1 text hey 👋"
       concurrently_
-        (bob <# "#team alice [edited]> hey 👋")
-        (cath <# "#team alice [edited]> hey 👋")
+        (bob <# "#team alice> [edited] hey 👋")
+        (cath <# "#team alice> [edited] hey 👋")
 
       alice #$> ("/_get chat #1 count=100", chat', [((1, "hey 👋"), Nothing)])
       bob #$> ("/_get chat #1 count=100", chat', [((0, "hey 👋"), Nothing)])
@@ -726,8 +726,8 @@ testGroupMessageUpdate = do
 
       alice ##> "/_update item #1 1 text greetings 🤝"
       concurrently_
-        (bob <# "#team alice [edited]> greetings 🤝")
-        (cath <# "#team alice [edited]> greetings 🤝")
+        (bob <# "#team alice> [edited] greetings 🤝")
+        (cath <# "#team alice> [edited] greetings 🤝")
 
       threadDelay 1000000
       cath `send` "> #team @alice (greetings) greetings!"

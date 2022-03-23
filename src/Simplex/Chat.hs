@@ -223,7 +223,7 @@ processChatCommand = \case
           case (ciContent, itemSharedMsgId) of
             (CISndMsgContent _, Just itemSharedMId) -> do
               SndMessage {msgId} <- sendDirectContactMessage ct (XMsgUpdate itemSharedMId mc)
-              updCi <- withStore $ \st -> updateDirectChatItemContent st userId contactId itemId (CISndMsgContent mc) msgId
+              updCi <- withStore $ \st -> updateDirectChatItem st userId contactId itemId (CISndMsgContent mc) msgId
               setActive $ ActiveC c
               pure . CRChatItemUpdated $ AChatItem SCTDirect SMDSnd (DirectChat ct) updCi
             _ -> throwChatError CEInvalidMessageUpdate
@@ -237,7 +237,7 @@ processChatCommand = \case
           case (ciContent, itemSharedMsgId) of
             (CISndMsgContent _, Just itemSharedMId) -> do
               SndMessage {msgId} <- sendGroupMessage gInfo ms (XMsgUpdate itemSharedMId mc)
-              updCi <- withStore $ \st -> updateGroupChatItemContent st user groupId itemId (CISndMsgContent mc) msgId
+              updCi <- withStore $ \st -> updateGroupChatItem st user groupId itemId (CISndMsgContent mc) msgId
               setActive $ ActiveG gName
               pure . CRChatItemUpdated $ AChatItem SCTGroup SMDSnd (GroupChat gInfo) updCi
             _ -> throwChatError CEInvalidMessageUpdate
@@ -1036,7 +1036,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
 
     messageUpdate :: Contact -> SharedMsgId -> MsgContent -> RcvMessage -> MsgMeta -> m ()
     messageUpdate ct@Contact {contactId, localDisplayName = c} sharedMsgId mc RcvMessage {msgId} msgMeta = do
-      updCi <- withStore $ \st -> updateDirectChatItemContentBySharedMsgId st userId contactId sharedMsgId (CIRcvMsgContent mc) msgId
+      updCi <- withStore $ \st -> updateDirectChatItemByMsgId st userId contactId sharedMsgId (CIRcvMsgContent mc) msgId
       toView . CRChatItemUpdated $ AChatItem SCTDirect SMDRcv (DirectChat ct) updCi
       checkIntegrity msgMeta $ toView . CRMsgIntegrityError
       setActive $ ActiveC c
@@ -1052,7 +1052,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
 
     groupMessageUpdate :: GroupInfo -> SharedMsgId -> MsgContent -> RcvMessage -> m ()
     groupMessageUpdate gInfo@GroupInfo {groupId} sharedMsgId mc RcvMessage {msgId} = do
-      updCi <- withStore $ \st -> updateGroupChatItemContentBySharedMsgId st user groupId sharedMsgId (CIRcvMsgContent mc) msgId
+      updCi <- withStore $ \st -> updateGroupChatItemByMsgId st user groupId sharedMsgId (CIRcvMsgContent mc) msgId
       toView . CRChatItemUpdated $ AChatItem SCTGroup SMDRcv (GroupChat gInfo) updCi
       let g = groupName' gInfo
       setActive $ ActiveG g
@@ -1444,8 +1444,9 @@ saveRcvChatItem user cd msg@RcvMessage {sharedMsgId_} MsgMeta {broker = (_, brok
 mkChatItem :: MsgDirectionI d => ChatDirection c d -> ChatItemId -> CIContent d -> Maybe (CIQuote c) -> Maybe SharedMsgId -> ChatItemTs -> UTCTime -> IO (ChatItem c d)
 mkChatItem cd ciId content quotedItem sharedMsgId itemTs createdAt = do
   tz <- getCurrentTimeZone
+  currentTs <- liftIO getCurrentTime
   let itemText = ciContentToText content
-      meta = mkCIMeta ciId itemText ciStatusNew sharedMsgId False False tz itemTs createdAt
+      meta = mkCIMeta ciId itemText ciStatusNew sharedMsgId False False tz currentTs itemTs createdAt
   pure ChatItem {chatDir = toCIDirection cd, meta, content, formattedText = parseMaybeMarkdownList itemText, quotedItem}
 
 allowAgentConnection :: ChatMonad m => Connection -> ConfirmationId -> ChatMsgEvent -> m ()

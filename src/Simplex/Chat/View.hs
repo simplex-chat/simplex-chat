@@ -204,7 +204,7 @@ viewMessageUpdate chat ChatItem {chatDir, meta, content, quotedItem} = case chat
       CIRcvMsgContent mc -> viewReceivedMessage from quote meta mc
       _ -> []
       where
-        from = ttyFromContact (c <> " [edited]")
+        from = ttyFromContactEdited c
         quote = maybe [] (directQuote chatDir) quotedItem
     CIDirectSnd -> []
   GroupChat g -> case chatDir of
@@ -212,7 +212,7 @@ viewMessageUpdate chat ChatItem {chatDir, meta, content, quotedItem} = case chat
       CIRcvMsgContent mc -> viewReceivedMessage from quote meta mc
       _ -> []
       where
-        from = ttyFromGroup g (m <> " [edited]")
+        from = ttyFromGroupEdited g m
         quote = maybe [] (groupQuote g) quotedItem
     CIGroupSnd -> []
     where
@@ -636,6 +636,9 @@ ttyToContact c = styled (colored Cyan) $ "@" <> c <> " "
 ttyFromContact :: ContactName -> StyledString
 ttyFromContact c = ttyFrom $ c <> "> "
 
+ttyFromContactEdited :: ContactName -> StyledString
+ttyFromContactEdited c = ttyFrom $ c <> "> [edited] "
+
 ttyToContact' :: Contact -> StyledString
 ttyToContact' Contact {localDisplayName = c} = ttyToContact c
 
@@ -666,6 +669,9 @@ ttyFullGroup GroupInfo {localDisplayName = g, groupProfile = GroupProfile {fullN
 
 ttyFromGroup :: GroupInfo -> ContactName -> StyledString
 ttyFromGroup GroupInfo {localDisplayName = g} c = ttyFrom $ "#" <> g <> " " <> c <> "> "
+
+ttyFromGroupEdited :: GroupInfo -> ContactName -> StyledString
+ttyFromGroupEdited GroupInfo {localDisplayName = g} c = ttyFrom $ "#" <> g <> " " <> c <> "> [edited] "
 
 ttyFrom :: Text -> StyledString
 ttyFrom = styled $ colored Yellow
