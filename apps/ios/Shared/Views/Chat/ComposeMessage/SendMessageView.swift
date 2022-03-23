@@ -14,6 +14,7 @@ struct SendMessageView: View {
     @State private var message: String = "" //Lorem ipsum dolor sit amet, consectetur" // adipiscing elit, sed do eiusmod tempor incididunt ut labor7 et dolore magna aliqua. Ut enim ad minim veniam, quis"// nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat."// Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
     @Namespace var namespace
     @FocusState.Binding var keyboardVisible: Bool
+    @Binding var editingItem: ChatItem?
     @State private var teHeight: CGFloat = 42
     @State private var teFont: Font = .body
     var maxHeight: CGFloat = 360
@@ -47,7 +48,7 @@ struct SendMessageView: View {
                         .padding([.bottom, .trailing], 3)
                 } else {
                     Button(action: submit) {
-                        Image(systemName: "arrow.up.circle.fill")
+                        Image(systemName: (editingItem != nil) ? "checkmark.circle.fill" : "arrow.up.circle.fill")
                             .resizable()
                             .foregroundColor(.accentColor)
                     }
@@ -86,14 +87,28 @@ struct SendMessageView: View {
 struct SendMessageView_Previews: PreviewProvider {
     static var previews: some View {
         @FocusState var keyboardVisible: Bool
+        @State var item: ChatItem? = ChatItem.getSample(1, .directSnd, .now, "hello")
+        @State var nilItem: ChatItem? = nil
 
-        return VStack {
-            Text("")
-            Spacer(minLength: 0)
-            SendMessageView(
-                sendMessage: { print ($0) },
-                keyboardVisible: $keyboardVisible
-            )
+        return Group {
+            VStack {
+                Text("")
+                Spacer(minLength: 0)
+                SendMessageView(
+                    sendMessage: { print ($0) },
+                    keyboardVisible: $keyboardVisible,
+                    editingItem: $nilItem
+                )
+            }
+            VStack {
+                Text("")
+                Spacer(minLength: 0)
+                SendMessageView(
+                    sendMessage: { print ($0) },
+                    keyboardVisible: $keyboardVisible,
+                    editingItem: $item
+                )
+            }
         }
     }
 }

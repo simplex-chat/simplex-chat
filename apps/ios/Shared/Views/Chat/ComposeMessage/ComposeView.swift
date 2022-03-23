@@ -24,7 +24,8 @@ struct ComposeView: View {
             SendMessageView(
                 sendMessage: sendMessage,
                 inProgress: inProgress,
-                keyboardVisible: $keyboardVisible
+                keyboardVisible: $keyboardVisible,
+                editingItem: $editingItem
             )
             .background(.background)
         }
