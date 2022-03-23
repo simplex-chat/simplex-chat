@@ -138,9 +138,9 @@ struct ChatView: View {
 
     func sendMessage(_ msg: String) {
         Task {
-            if editingItem != nil {
+            if let ei = editingItem {
                 do {
-                    let editingItemId = editingItem?.id
+                    let editingItemId = ei.id
                     let chatItem = try await apiUpdateMessage(
                         type: chat.chatInfo.chatType,
                         id: chat.chatInfo.apiId,
@@ -149,8 +149,7 @@ struct ChatView: View {
                     )
                     DispatchQueue.main.async {
                         editingItem = nil
-                        // this is done on chat response
-                        // chatModel.upsertChatItem(chat.chatInfo, chatItem)
+                        let _ = chatModel.upsertChatItem(chat.chatInfo, chatItem)
                     }
                 } catch {
                     logger.error("ChatView.sendMessage apiUpdateMessage error: \(error.localizedDescription)")

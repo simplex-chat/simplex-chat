@@ -644,8 +644,8 @@ func processReceivedMsg(_ res: ChatResponse) {
                 }
             }
         case let .chatItemUpdated(aChatItem):
-            let cInfo = aChatItem.chatInfo
             let cItem = aChatItem.chatItem
+            let cInfo = aChatItem.chatInfo
             let _ = chatModel.upsertChatItem(cInfo, cItem)
         case .chatItemDeleted(_):
             // TODO let .chatItemDeleted(aChatItem)
