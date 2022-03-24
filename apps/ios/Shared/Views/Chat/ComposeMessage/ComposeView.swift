@@ -25,7 +25,7 @@ struct ComposeView: View {
                 sendMessage: sendMessage,
                 inProgress: inProgress,
                 keyboardVisible: $keyboardVisible,
-                sendButtonIcon: editingItem != nil ? "checkmark.circle.fill" : "arrow.up.circle.fill"
+                editing: editingItem != nil
             )
             .background(.background)
         }

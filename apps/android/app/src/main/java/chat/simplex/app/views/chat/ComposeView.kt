@@ -6,9 +6,10 @@ import androidx.compose.runtime.MutableState
 import chat.simplex.app.model.ChatItem
 
 @Composable
-fun ComposeView(quotedItem: MutableState<ChatItem?>, sendMessage: (String) -> Unit) {
+fun ComposeView(quotedItem: MutableState<ChatItem?>, editingItem: MutableState<ChatItem?>, sendMessage: (String) -> Unit) {
   Column {
     QuotedItemView(quotedItem)
-    SendMsgView(sendMessage)
+    EditingItemView(editingItem)
+    SendMsgView(sendMessage, editing = (editingItem != null))
   }
 }

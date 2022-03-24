@@ -131,6 +131,20 @@ open class ChatController(val ctrl: ChatCtrl, val ntfManager: NtfManager, val ap
     return null
   }
 
+  suspend fun apiUpdateMessage(type: ChatType, id: Long, itemId: Long, mc: MsgContent): AChatItem? {
+    val r = sendCmd(CC.ApiUpdateMessage(type, id, itemId, mc))
+    if (r is CR.ChatItemUpdated) return r.chatItem
+    Log.e(TAG, "apiUpdateMessage bad response: ${r.responseType} ${r.details}")
+    return null
+  }
+
+  suspend fun apiDeleteMessage(type: ChatType, id: Long, itemId: Long, mode: MsgDeleteMode): AChatItem? {
+    val r = sendCmd(CC.ApiDeleteMessage(type, id, itemId, mode))
+    if (r is CR.ChatItemDeleted) return r.chatItem
+    Log.e(TAG, "apiDeleteMessage bad response: ${r.responseType} ${r.details}")
+    return null
+  }
+
   suspend fun getUserSMPServers(): List<String>? {
     val r = sendCmd(CC.GetUserSMPServers())
     if (r is CR.UserSMPServers) return r.smpServers
@@ -303,12 +317,23 @@ open class ChatController(val ctrl: ChatCtrl, val ntfManager: NtfManager, val ap
           ntfManager.notifyMessageReceived(cInfo, cItem)
         }
       }
-//        case let .chatItemUpdated(aChatItem):
-  //        let cInfo = aChatItem.chatInfo
-  //            let cItem = aChatItem.chatItem
-  //            if chatModel.upsertChatItem(cInfo, cItem) {
-  //              NtfManager.shared.notifyMessageReceived(cInfo, cItem)
-  //            }
+      is CR.ChatItemStatusUpdated -> {
+        val cInfo = r.chatItem.chatInfo
+        val cItem = r.chatItem.chatItem
+        if (chatModel.upsertChatItem(cInfo, cItem)) {
+          ntfManager.notifyMessageReceived(cInfo, cItem)
+        }
+      }
+      is CR.ChatItemUpdated -> {
+        val cInfo = r.chatItem.chatInfo
+        val cItem = r.chatItem.chatItem
+        if (chatModel.upsertChatItem(cInfo, cItem)) {
+          ntfManager.notifyMessageReceived(cInfo, cItem)
+        }
+      }
+      is CR.ChatItemDeleted -> {
+        // TODO
+      }
       else ->
         Log.d(TAG , "unsupported event: ${r.responseType}")
     }
@@ -336,6 +361,11 @@ open class ChatController(val ctrl: ChatCtrl, val ntfManager: NtfManager, val ap
   }
 }
 
+enum class MsgDeleteMode(val mode: String) {
+  Broadcast("broadcast"),
+  Internal("internal");
+}
+
 // ChatCommand
 sealed class CC {
   class Console(val cmd: String): CC()
@@ -346,6 +376,8 @@ sealed class CC {
   class ApiGetChat(val type: ChatType, val id: Long): CC()
   class ApiSendMessage(val type: ChatType, val id: Long, val mc: MsgContent): CC()
   class ApiSendMessageQuote(val type: ChatType, val id: Long, val itemId: Long, val mc: MsgContent): CC()
+  class ApiUpdateMessage(val type: ChatType, val id: Long, val itemId: Long, val mc: MsgContent): CC()
+  class ApiDeleteMessage(val type: ChatType, val id: Long, val itemId: Long, val mode: MsgDeleteMode): CC()
   class GetUserSMPServers(): CC()
   class SetUserSMPServers(val smpServers: List<String>): CC()
   class AddContact: CC()
@@ -368,6 +400,8 @@ sealed class CC {
     is ApiGetChat -> "/_get chat ${chatRef(type, id)} count=100"
     is ApiSendMessage -> "/_send ${chatRef(type, id)} ${mc.cmdString}"
     is ApiSendMessageQuote -> "/_send_quote ${chatRef(type, id)} $itemId ${mc.cmdString}"
+    is ApiUpdateMessage -> "/_update item ${chatRef(type, id)} $itemId ${mc.cmdString}"
+    is ApiDeleteMessage -> "/_delete item ${chatRef(type, id)} $itemId $mode"
     is GetUserSMPServers -> "/smp_servers"
     is SetUserSMPServers -> "/smp_servers ${smpServersStr(smpServers)}"
     is AddContact -> "/connect"
@@ -391,6 +425,8 @@ sealed class CC {
     is ApiGetChat -> "apiGetChat"
     is ApiSendMessage -> "apiSendMessage"
     is ApiSendMessageQuote -> "apiSendMessageQuote"
+    is ApiUpdateMessage -> "apiUpdateMessage"
+    is ApiDeleteMessage -> "apiDeleteMessage"
     is GetUserSMPServers -> "getUserSMPServers"
     is SetUserSMPServers -> "setUserSMPServers"
     is AddContact -> "addContact"
@@ -474,7 +510,9 @@ sealed class CR {
   @Serializable @SerialName("groupEmpty") class GroupEmpty(val group: GroupInfo): CR()
   @Serializable @SerialName("userContactLinkSubscribed") class UserContactLinkSubscribed: CR()
   @Serializable @SerialName("newChatItem") class NewChatItem(val chatItem: AChatItem): CR()
+  @Serializable @SerialName("chatItemStatusUpdated") class ChatItemStatusUpdated(val chatItem: AChatItem): CR()
   @Serializable @SerialName("chatItemUpdated") class ChatItemUpdated(val chatItem: AChatItem): CR()
+  @Serializable @SerialName("chatItemDeleted") class ChatItemDeleted(val chatItem: AChatItem): CR()
   @Serializable @SerialName("cmdOk") class CmdOk: CR()
   @Serializable @SerialName("chatCmdError") class ChatCmdError(val chatError: ChatError): CR()
   @Serializable @SerialName("chatError") class ChatRespError(val chatError: ChatError): CR()
@@ -512,7 +550,9 @@ sealed class CR {
     is GroupEmpty -> "groupEmpty"
     is UserContactLinkSubscribed -> "userContactLinkSubscribed"
     is NewChatItem -> "newChatItem"
+    is ChatItemStatusUpdated -> "chatItemStatusUpdated"
     is ChatItemUpdated -> "chatItemUpdated"
+    is ChatItemDeleted -> "chatItemDeleted"
     is CmdOk -> "cmdOk"
     is ChatCmdError -> "chatCmdError"
     is ChatRespError -> "chatError"
@@ -551,7 +591,9 @@ sealed class CR {
     is GroupEmpty -> json.encodeToString(group)
     is UserContactLinkSubscribed -> noDetails()
     is NewChatItem -> json.encodeToString(chatItem)
+    is ChatItemStatusUpdated -> json.encodeToString(chatItem)
     is ChatItemUpdated -> json.encodeToString(chatItem)
+    is ChatItemDeleted -> json.encodeToString(chatItem)
     is CmdOk -> noDetails()
     is ChatCmdError -> chatError.string
     is ChatRespError -> chatError.string

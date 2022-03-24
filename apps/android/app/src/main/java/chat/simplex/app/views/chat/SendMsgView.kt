@@ -9,6 +9,7 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.outlined.ArrowUpward
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -24,7 +25,7 @@ import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.chat.item.*
 
 @Composable
-fun SendMsgView(sendMessage: (String) -> Unit) {
+fun SendMsgView(sendMessage: (String) -> Unit, editing: Boolean) {
   var msg by remember { mutableStateOf("") }
   val smallFont = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onBackground)
   var textStyle by remember { mutableStateOf(smallFont) }
@@ -32,7 +33,7 @@ fun SendMsgView(sendMessage: (String) -> Unit) {
     value = msg,
     onValueChange = {
       msg = it
-      textStyle = if(isShortEmoji(it)) {
+      textStyle = if (isShortEmoji(it)) {
         if (it.codePoints().count() < 4) largeEmojiFont else mediumEmojiFont
       } else {
         smallFont
@@ -66,7 +67,7 @@ fun SendMsgView(sendMessage: (String) -> Unit) {
           }
           val color = if (msg.isNotEmpty()) MaterialTheme.colors.primary else Color.Gray
           Icon(
-            Icons.Outlined.ArrowUpward,
+            if (editing) Icons.Filled.Check else Icons.Outlined.ArrowUpward,
             "Send Message",
             tint = Color.White,
             modifier = Modifier
@@ -98,7 +99,24 @@ fun SendMsgView(sendMessage: (String) -> Unit) {
 fun PreviewSendMsgView() {
   SimpleXTheme {
     SendMsgView(
-      sendMessage = { msg -> println(msg) }
+      sendMessage = { msg -> println(msg) },
+      editing = false
+    )
+  }
+}
+
+@Preview(showBackground = true)
+@Preview(
+  uiMode = Configuration.UI_MODE_NIGHT_YES,
+  showBackground = true,
+  name = "Dark Mode"
+)
+@Composable
+fun PreviewSendMsgViewEditing() {
+  SimpleXTheme {
+    SendMsgView(
+      sendMessage = { msg -> println(msg) },
+      editing = true
     )
   }
 }

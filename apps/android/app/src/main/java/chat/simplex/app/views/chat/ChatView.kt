@@ -14,7 +14,6 @@ import androidx.compose.runtime.saveable.mapSaver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
@@ -23,7 +22,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.TAG
 import chat.simplex.app.model.*
-import chat.simplex.app.ui.theme.HighOrLowlight
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.chat.item.ChatItemView
 import chat.simplex.app.views.helpers.*
@@ -42,6 +40,7 @@ fun ChatView(chatModel: ChatModel) {
     chatModel.chatId.value = null
   } else {
     val quotedItem = remember { mutableStateOf<ChatItem?>(null) }
+    val editingItem = remember { mutableStateOf<ChatItem?>(null) }
     BackHandler { chatModel.chatId.value = null }
     // TODO a more advanced version would mark as read only if in view
     LaunchedEffect(chat.chatItems) {
@@ -58,22 +57,39 @@ fun ChatView(chatModel: ChatModel) {
         }
       }
     }
-    ChatLayout(user, chat, chatModel.chatItems, quotedItem,
+    ChatLayout(user, chat, chatModel.chatItems, quotedItem, editingItem,
       back = { chatModel.chatId.value = null },
       info = { ModalManager.shared.showCustomModal { close -> ChatInfoView(chatModel, close) } },
       sendMessage = { msg ->
-        withApi {
-          // show "in progress"
-          val cInfo = chat.chatInfo
-          val newItem = chatModel.controller.apiSendMessage(
-            type = cInfo.chatType,
-            id = cInfo.apiId,
-            quotedItemId = quotedItem.value?.meta?.itemId,
-            mc = MsgContent.MCText(msg)
-          )
-          quotedItem.value = null
-          // hide "in progress"
-          if (newItem != null) chatModel.addChatItem(cInfo, newItem.chatItem)
+        val ei = editingItem.value
+        if (ei != null) {
+          withApi {
+            // show "in progress"
+            val cInfo = chat.chatInfo
+            val updatedItem = chatModel.controller.apiUpdateMessage(
+              type = cInfo.chatType,
+              id = cInfo.apiId,
+              itemId = ei.meta.itemId,
+              mc = MsgContent.MCText(msg)
+            )
+            editingItem.value = null
+            // hide "in progress"
+            if (updatedItem != null) chatModel.upsertChatItem(cInfo, updatedItem.chatItem)
+          }
+        } else {
+          withApi {
+            // show "in progress"
+            val cInfo = chat.chatInfo
+            val newItem = chatModel.controller.apiSendMessage(
+              type = cInfo.chatType,
+              id = cInfo.apiId,
+              quotedItemId = quotedItem.value?.meta?.itemId,
+              mc = MsgContent.MCText(msg)
+            )
+            quotedItem.value = null
+            // hide "in progress"
+            if (newItem != null) chatModel.addChatItem(cInfo, newItem.chatItem)
+          }
         }
       }
     )
@@ -86,6 +102,7 @@ fun ChatLayout(
   chat: Chat,
   chatItems: List<ChatItem>,
   quotedItem: MutableState<ChatItem?>,
+  editingItem: MutableState<ChatItem?>,
   back: () -> Unit,
   info: () -> Unit,
   sendMessage: (String) -> Unit
@@ -97,11 +114,11 @@ fun ChatLayout(
     ProvideWindowInsets(windowInsetsAnimationsEnabled = true) {
       Scaffold(
         topBar = { ChatInfoToolbar(chat, back, info) },
-        bottomBar = { ComposeView(quotedItem, sendMessage) },
+        bottomBar = { ComposeView(quotedItem, editingItem, sendMessage) },
         modifier = Modifier.navigationBarsWithImePadding()
       ) { contentPadding ->
         Box(Modifier.padding(contentPadding)) {
-          ChatItemsList(user, chatItems, quotedItem)
+          ChatItemsList(user, chatItems, quotedItem, editingItem)
         }
       }
     }
@@ -161,7 +178,7 @@ val CIListStateSaver = run {
 }
 
 @Composable
-fun ChatItemsList(user: User, chatItems: List<ChatItem>, quotedItem: MutableState<ChatItem?>) {
+fun ChatItemsList(user: User, chatItems: List<ChatItem>, quotedItem: MutableState<ChatItem?>, editingItem: MutableState<ChatItem?>) {
   val listState = rememberLazyListState()
   val keyboardState by getKeyboardState()
   val ciListState = rememberSaveable(stateSaver = CIListStateSaver) {
@@ -172,7 +189,7 @@ fun ChatItemsList(user: User, chatItems: List<ChatItem>, quotedItem: MutableStat
   val cxt = LocalContext.current
   LazyColumn(state = listState) {
     items(chatItems) { cItem ->
-      ChatItemView(user, cItem, quotedItem, cxt, uriHandler)
+      ChatItemView(user, cItem, quotedItem, editingItem, cxt, uriHandler)
     }
     val len = chatItems.count()
     if (len > 1 && (keyboardState != ciListState.value.keyboardState || !ciListState.value.scrolled || len != ciListState.value.itemCount)) {
@@ -219,6 +236,7 @@ fun PreviewChatLayout() {
       ),
       chatItems = chatItems,
       quotedItem = remember { mutableStateOf(null) },
+      editingItem = remember { mutableStateOf(null) },
       back = {},
       info = {},
       sendMessage = {}

@@ -646,7 +646,9 @@ func processReceivedMsg(_ res: ChatResponse) {
         case let .chatItemUpdated(aChatItem):
             let cItem = aChatItem.chatItem
             let cInfo = aChatItem.chatInfo
-            let _ = chatModel.upsertChatItem(cInfo, cItem)
+            if chatModel.upsertChatItem(cInfo, cItem) {
+                NtfManager.shared.notifyMessageReceived(cInfo, cItem)
+            }
         case .chatItemDeleted(_):
             // TODO let .chatItemDeleted(aChatItem)
             return

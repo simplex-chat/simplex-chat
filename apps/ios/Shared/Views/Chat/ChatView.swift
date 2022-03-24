@@ -140,11 +140,10 @@ struct ChatView: View {
         Task {
             if let ei = editingItem {
                 do {
-                    let editingItemId = ei.id
                     let chatItem = try await apiUpdateMessage(
                         type: chat.chatInfo.chatType,
                         id: chat.chatInfo.apiId,
-                        itemId: editingItemId,
+                        itemId: ei.id,
                         msg: .text(msg)
                     )
                     DispatchQueue.main.async {

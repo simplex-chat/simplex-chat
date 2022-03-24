@@ -8,8 +8,6 @@ import androidx.compose.material.icons.outlined.Close
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.model.CIDirection
@@ -19,27 +17,29 @@ import chat.simplex.app.views.chat.item.*
 import kotlinx.datetime.Clock
 
 @Composable
-fun QuotedItemView(quotedItem: MutableState<ChatItem?>) {
-  val qi = quotedItem.value
-  if (qi != null) {
-    val sent = qi.chatDir.sent
+fun EditingItemView(editingItem: MutableState<ChatItem?>) {
+  val ei = editingItem.value
+  if (ei != null) {
+    val sent = ei.chatDir.sent
     Row(
-      Modifier.padding(top = 8.dp)
+      Modifier
+        .padding(top = 8.dp)
         .background(if (sent) SentColorLight else ReceivedColorLight),
       verticalAlignment = Alignment.CenterVertically
     ) {
       Box(
-        Modifier.padding(start = 16.dp)
+        Modifier
+          .padding(start = 16.dp)
           .padding(vertical = 12.dp)
           .fillMaxWidth()
           .weight(1F)
       ) {
-        QuoteText(qi)
+        Text(ei.content.text, maxLines = 3)
       }
-      IconButton(onClick = { quotedItem.value = null }) {
+      IconButton(onClick = { editingItem.value = null }) {
         Icon(
           Icons.Outlined.Close,
-          "Remove quote",
+          "Cancel editing",
           tint = MaterialTheme.colors.primary,
           modifier = Modifier.padding(10.dp)
         )
@@ -48,29 +48,17 @@ fun QuotedItemView(quotedItem: MutableState<ChatItem?>) {
   }
 }
 
-@Composable
-private fun QuoteText(qi: ChatItem) {
-  val member = qi.memberDisplayName
-  if (member == null) {
-    Text(qi.content.text, maxLines = 3)
-  } else {
-    val annotatedText = buildAnnotatedString {
-      withStyle(boldFont) { append(member) }
-      append(": ${qi.content.text}")
-    }
-    Text(annotatedText, maxLines = 3)
-  }
-}
-
 @Preview
 @Composable
-fun PreviewQuotedItemView() {
+fun PreviewEditingItemView() {
   SimpleXTheme {
-    QuotedItemView(
-      quotedItem = remember {
-        mutableStateOf(ChatItem.getSampleData(
-          1, CIDirection.DirectRcv(), Clock.System.now(), "hello"
-        ))
+    EditingItemView(
+      editingItem = remember {
+        mutableStateOf(
+          ChatItem.getSampleData(
+            1, CIDirection.DirectRcv(), Clock.System.now(), "hello"
+          )
+        )
       }
     )
   }

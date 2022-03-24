@@ -56,7 +56,7 @@ struct TerminalView: View {
                     sendMessage: sendMessage,
                     inProgress: inProgress,
                     keyboardVisible: $keyboardVisible,
-                    sendButtonIcon: "arrow.up.circle.fill"
+                    editing: false
                 )
             }
         }
