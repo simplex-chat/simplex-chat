@@ -160,7 +160,7 @@ enum ChatResponse: Decodable, Error {
             case .sentInvitation: return "sentInvitation"
             case .contactDeleted: return "contactDeleted"
             case .userProfileNoChange: return "userProfileNoChange"
-            case .userProfileUpdated: return "userProfileNoChange"
+            case .userProfileUpdated: return "userProfileUpdated"
             case .userContactLink: return "userContactLink"
             case .userContactLinkCreated: return "userContactLinkCreated"
             case .userContactLinkDeleted: return "userContactLinkDeleted"

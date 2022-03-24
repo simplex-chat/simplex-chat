@@ -30,15 +30,18 @@ struct SettingsView: View {
                             .navigationTitle("Your chat profile")
                     } label: {
                         HStack {
-                            Image(systemName: "person.crop.circle")
+                            ProfileImage(imageStr: user.image)
+                                .frame(width: 44, height: 44)
                                 .padding(.trailing, 8)
+                                .padding(.vertical, 6)
                             VStack(alignment: .leading) {
-                                Text(user.profile.displayName)
+                                Text(user.displayName)
                                     .fontWeight(.bold)
                                     .font(.title2)
-                                Text(user.profile.fullName)
+                                Text(user.fullName)
                             }
                         }
+                        .padding(.leading, -4)
                     }
                     NavigationLink {
                         UserAddress()
