@@ -92,9 +92,9 @@ So, with the notification servers added, our network design will look like this:
                         |                              |
                         |                              |   (can be self-hosted now)
 +--------------+        |                              |      +----------------+
-| SimpleX Chat |       -------------- TLS ----------------    | SimpleX        |
+| SimpleX Chat |       -------------- TLS ---------------     | SimpleX        |
 |    client    |------> SimpleX Messaging Protocol (SMP) ---> | Messaging      |
-+--------------+        -----------------------------------   | Server         |
++--------------+       ----------------------------------     | Server         |
      ^    |             |                              |      +----------------+
      |    |             |                              |            |   |
      |    |             |                              |            | S | T
@@ -102,16 +102,16 @@ So, with the notification servers added, our network design will look like this:
      |    |             |                              |            | P | S
      |    |             |                              |            |   |
      |    |             |                              |      +----------------+       +----------------+
-     |    |            -------------- TLS ----------------    | SimpleX        |       | SimpleX        |
+     |    |            -------------- TLS ---------------     | SimpleX        |       | SimpleX        |
      |    |----------->     Notifications management    ----> | Notifications  | ----> | Push           |
-     |                 -----------------------------------    | Subscriber     |       | Server         |
+     |                 ----------------------------------     | Subscriber     |       | Server         |
      |                  |                              |      +----------------+       +----------------+
      |                  |                              |     (can be self-hosted                |
      |                  |                              |        in the future)                  |
      |                  |                              |                                        V
-     |                 -------------- TLS ----------------                             +-----------------+
+     |                 -------------- TLS ---------------                              +-----------------+
      |-----------------       Notification delivery     <----------------------------- | Apple PN server |
-                       -----------------------------------                             +-----------------+
+                       ----------------------------------                              +-----------------+
                         |                              |
 ```
 
