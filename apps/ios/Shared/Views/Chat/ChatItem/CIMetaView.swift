@@ -14,9 +14,10 @@ struct CIMetaView: View {
     var body: some View {
         HStack(alignment: .center, spacing: 4) {
             if chatItem.meta.itemEdited {
-                statusImage("pencil", .secondary)
+                Text("edited").font(.caption)
+                    .foregroundColor(.secondary)
             }
-
+            
             switch chatItem.meta.itemStatus {
             case .sndSent:
                 statusImage("checkmark", .secondary)
@@ -46,6 +47,9 @@ struct CIMetaView: View {
 
 struct CIMetaView_Previews: PreviewProvider {
     static var previews: some View {
-        CIMetaView(chatItem: ChatItem.getSample(2, .directSnd, .now, "https://simplex.chat", .sndSent))
+        return Group {
+            CIMetaView(chatItem: ChatItem.getSample(2, .directSnd, .now, "https://simplex.chat", .sndSent))
+            CIMetaView(chatItem: ChatItem.getSample(2, .directSnd, .now, "https://simplex.chat", .sndSent, false, true))
+        }
     }
 }
