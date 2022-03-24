@@ -29,6 +29,7 @@ enum ChatCommand {
     case connect(connReq: String)
     case apiDeleteChat(type: ChatType, id: Int64)
     case updateProfile(profile: Profile)
+    case updateProfileImage(image: String?)
     case createMyAddress
     case deleteMyAddress
     case showMyAddress
@@ -53,6 +54,9 @@ enum ChatCommand {
             case let .connect(connReq): return "/connect \(connReq)"
             case let .apiDeleteChat(type, id): return "/_delete \(ref(type, id))"
             case let .updateProfile(profile): return "/profile \(profile.displayName) \(profile.fullName)"
+            case let .updateProfileImage(image): return image == nil ? "/profile_image" : "/profile_image \(image!)"
+//            with the updated core:
+//            case let .updateProfile(profile): return "/_profile \(encodeJSON(profile))"
             case .createMyAddress: return "/address"
             case .deleteMyAddress: return "/delete_address"
             case .showMyAddress: return "/show_address"
@@ -80,6 +84,7 @@ enum ChatCommand {
             case .connect: return "connect"
             case .apiDeleteChat: return "apiDeleteChat"
             case .updateProfile: return "updateProfile"
+            case .updateProfileImage: return "updateProfileImage"
             case .createMyAddress: return "createMyAddress"
             case .deleteMyAddress: return "deleteMyAddress"
             case .showMyAddress: return "showMyAddress"
@@ -426,11 +431,20 @@ func apiDeleteChat(type: ChatType, id: Int64) async throws {
     throw r
 }
 
-func apiUpdateProfile(profile: Profile) async throws -> Profile? {
+func apiUpdateProfile(profile: Profile) async throws -> Profile {
     let r = await chatSendCmd(.updateProfile(profile: profile))
     switch r {
-    case .userProfileNoChange: return nil
+    case .userProfileNoChange: return profile
     case let .userProfileUpdated(_, toProfile): return toProfile
+    default: throw r
+    }
+}
+
+func apiUpdateProfileImage(image: String?) async throws {
+    let r = await chatSendCmd(.updateProfileImage(image: image))
+    switch r {
+    case .userProfileNoChange: return
+    case .userProfileUpdated: return
     default: throw r
     }
 }
@@ -703,10 +717,13 @@ private func getJSONObject(_ cjson: UnsafePointer<CChar>) -> NSDictionary? {
     return try? JSONSerialization.jsonObject(with: d) as? NSDictionary
 }
 
-private func encodeCJSON<T: Encodable>(_ value: T) -> [CChar] {
+private func encodeJSON<T: Encodable>(_ value: T) -> String {
     let data = try! jsonEncoder.encode(value)
-    let str = String(decoding: data, as: UTF8.self)
-    return str.cString(using: .utf8)!
+    return String(decoding: data, as: UTF8.self)
+}
+
+private func encodeCJSON<T: Encodable>(_ value: T) -> [CChar] {
+    encodeJSON(value).cString(using: .utf8)!
 }
 
 enum ChatError: Decodable {
