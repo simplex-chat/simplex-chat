@@ -19,27 +19,38 @@ import chat.simplex.app.views.chat.item.*
 import kotlinx.datetime.Clock
 
 @Composable
-fun QuotedItemView(quotedItem: MutableState<ChatItem?>) {
-  val qi = quotedItem.value
-  if (qi != null) {
-    val sent = qi.chatDir.sent
+fun ContextItemView(
+  contextItem: MutableState<ChatItem?>,
+  editing: Boolean = false,
+  resetMessage: () -> Unit = {}
+) {
+  val cxtItem = contextItem.value
+  if (cxtItem != null) {
+    val sent = cxtItem.chatDir.sent
     Row(
-      Modifier.padding(top = 8.dp)
+      Modifier
+        .padding(top = 8.dp)
         .background(if (sent) SentColorLight else ReceivedColorLight),
       verticalAlignment = Alignment.CenterVertically
     ) {
       Box(
-        Modifier.padding(start = 16.dp)
+        Modifier
+          .padding(start = 16.dp)
           .padding(vertical = 12.dp)
           .fillMaxWidth()
           .weight(1F)
       ) {
-        QuoteText(qi)
+        ContextItemText(cxtItem)
       }
-      IconButton(onClick = { quotedItem.value = null }) {
+      IconButton(onClick = {
+        contextItem.value = null
+        if (editing) {
+          resetMessage()
+        }
+      }) {
         Icon(
           Icons.Outlined.Close,
-          "Remove quote",
+          contentDescription = "Cancel",
           tint = MaterialTheme.colors.primary,
           modifier = Modifier.padding(10.dp)
         )
@@ -49,14 +60,14 @@ fun QuotedItemView(quotedItem: MutableState<ChatItem?>) {
 }
 
 @Composable
-private fun QuoteText(qi: ChatItem) {
-  val member = qi.memberDisplayName
+private fun ContextItemText(cxtItem: ChatItem) {
+  val member = cxtItem.memberDisplayName
   if (member == null) {
-    Text(qi.content.text, maxLines = 3)
+    Text(cxtItem.content.text, maxLines = 3)
   } else {
     val annotatedText = buildAnnotatedString {
       withStyle(boldFont) { append(member) }
-      append(": ${qi.content.text}")
+      append(": ${cxtItem.content.text}")
     }
     Text(annotatedText, maxLines = 3)
   }
@@ -64,13 +75,15 @@ private fun QuoteText(qi: ChatItem) {
 
 @Preview
 @Composable
-fun PreviewTextItemViewEmoji() {
+fun PreviewContextItemView() {
   SimpleXTheme {
-    QuotedItemView(
-      quotedItem = remember {
-        mutableStateOf(ChatItem.getSampleData(
-          1, CIDirection.DirectRcv(), Clock.System.now(), "hello"
-        ))
+    ContextItemView(
+      contextItem = remember {
+        mutableStateOf(
+          ChatItem.getSampleData(
+            1, CIDirection.DirectRcv(), Clock.System.now(), "hello"
+          )
+        )
       }
     )
   }

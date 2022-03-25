@@ -15,6 +15,11 @@ private var chatController: chat_ctrl?
 private let jsonDecoder = getJSONDecoder()
 private let jsonEncoder = getJSONEncoder()
 
+enum MsgDeleteMode: String {
+    case mdBroadcast = "broadcast"
+    case mdInternal = "internal"
+}
+
 enum ChatCommand {
     case showActiveUser
     case createActiveUser(profile: Profile)
@@ -23,12 +28,14 @@ enum ChatCommand {
     case apiGetChat(type: ChatType, id: Int64)
     case apiSendMessage(type: ChatType, id: Int64, msg: MsgContent)
     case apiSendMessageQuote(type: ChatType, id: Int64, itemId: Int64, msg: MsgContent)
+    case apiUpdateMessage(type: ChatType, id: Int64, itemId: Int64, msg: MsgContent)
+    case apiDeleteMessage(type: ChatType, id: Int64, itemId: Int64, mode: MsgDeleteMode)
     case getUserSMPServers
     case setUserSMPServers(smpServers: [String])
     case addContact
     case connect(connReq: String)
     case apiDeleteChat(type: ChatType, id: Int64)
-    case updateProfile(profile: Profile)
+    case apiUpdateProfile(profile: Profile)
     case createMyAddress
     case deleteMyAddress
     case showMyAddress
@@ -47,12 +54,14 @@ enum ChatCommand {
             case let .apiGetChat(type, id): return "/_get chat \(ref(type, id)) count=100"
             case let .apiSendMessage(type, id, mc): return "/_send \(ref(type, id)) \(mc.cmdString)"
             case let .apiSendMessageQuote(type, id, itemId, mc): return "/_send_quote \(ref(type, id)) \(itemId) \(mc.cmdString)"
+            case let .apiUpdateMessage(type, id, itemId, mc): return "/_update item \(ref(type, id)) \(itemId) \(mc.cmdString)"
+            case let .apiDeleteMessage(type, id, itemId, mode): return "/_delete item \(ref(type, id)) \(itemId) \(mode.rawValue)"
             case .getUserSMPServers: return "/smp_servers"
             case let .setUserSMPServers(smpServers): return "/smp_servers \(smpServersStr(smpServers: smpServers))"
             case .addContact: return "/connect"
             case let .connect(connReq): return "/connect \(connReq)"
             case let .apiDeleteChat(type, id): return "/_delete \(ref(type, id))"
-            case let .updateProfile(profile): return "/profile \(profile.displayName) \(profile.fullName)"
+            case let .apiUpdateProfile(profile): return "/_profile \(encodeJSON(profile))"
             case .createMyAddress: return "/address"
             case .deleteMyAddress: return "/delete_address"
             case .showMyAddress: return "/show_address"
@@ -74,12 +83,14 @@ enum ChatCommand {
             case .apiGetChat: return "apiGetChat"
             case .apiSendMessage: return "apiSendMessage"
             case .apiSendMessageQuote: return "apiSendMessageQuote"
+            case .apiUpdateMessage: return "apiUpdateMessage"
+            case .apiDeleteMessage: return "apiDeleteMessage"
             case .getUserSMPServers: return "getUserSMPServers"
             case .setUserSMPServers: return "setUserSMPServers"
             case .addContact: return "addContact"
             case .connect: return "connect"
             case .apiDeleteChat: return "apiDeleteChat"
-            case .updateProfile: return "updateProfile"
+            case .apiUpdateProfile: return "apiUpdateProfile"
             case .createMyAddress: return "createMyAddress"
             case .deleteMyAddress: return "deleteMyAddress"
             case .showMyAddress: return "showMyAddress"
@@ -135,7 +146,9 @@ enum ChatResponse: Decodable, Error {
     case groupEmpty(groupInfo: GroupInfo)
     case userContactLinkSubscribed
     case newChatItem(chatItem: AChatItem)
+    case chatItemStatusUpdated(chatItem: AChatItem)
     case chatItemUpdated(chatItem: AChatItem)
+    case chatItemDeleted(chatItem: AChatItem)
     case cmdOk
     case chatCmdError(chatError: ChatError)
     case chatError(chatError: ChatError)
@@ -155,7 +168,7 @@ enum ChatResponse: Decodable, Error {
             case .sentInvitation: return "sentInvitation"
             case .contactDeleted: return "contactDeleted"
             case .userProfileNoChange: return "userProfileNoChange"
-            case .userProfileUpdated: return "userProfileNoChange"
+            case .userProfileUpdated: return "userProfileUpdated"
             case .userContactLink: return "userContactLink"
             case .userContactLinkCreated: return "userContactLinkCreated"
             case .userContactLinkDeleted: return "userContactLinkDeleted"
@@ -173,7 +186,9 @@ enum ChatResponse: Decodable, Error {
             case .groupEmpty: return "groupEmpty"
             case .userContactLinkSubscribed: return "userContactLinkSubscribed"
             case .newChatItem: return "newChatItem"
+            case .chatItemStatusUpdated: return "chatItemStatusUpdated"
             case .chatItemUpdated: return "chatItemUpdated"
+            case .chatItemDeleted: return "chatItemDeleted"
             case .cmdOk: return "cmdOk"
             case .chatCmdError: return "chatCmdError"
             case .chatError: return "chatError"
@@ -214,7 +229,9 @@ enum ChatResponse: Decodable, Error {
             case let .groupEmpty(groupInfo): return String(describing: groupInfo)
             case .userContactLinkSubscribed: return noDetails
             case let .newChatItem(chatItem): return String(describing: chatItem)
+            case let .chatItemStatusUpdated(chatItem): return String(describing: chatItem)
             case let .chatItemUpdated(chatItem): return String(describing: chatItem)
+            case let .chatItemDeleted(chatItem): return String(describing: chatItem)
             case .cmdOk: return noDetails
             case let .chatCmdError(chatError): return String(describing: chatError)
             case let .chatError(chatError): return String(describing: chatError)
@@ -393,6 +410,18 @@ func apiSendMessage(type: ChatType, id: Int64, quotedItemId: Int64?, msg: MsgCon
     throw r
 }
 
+func apiUpdateMessage(type: ChatType, id: Int64, itemId: Int64, msg: MsgContent) async throws -> ChatItem {
+    let r = await chatSendCmd(.apiUpdateMessage(type: type, id: id, itemId: itemId, msg: msg), bgDelay: msgDelay)
+    if case let .chatItemUpdated(aChatItem) = r { return aChatItem.chatItem }
+    throw r
+}
+
+func apiDeleteMessage(type: ChatType, id: Int64, itemId: Int64, mode: MsgDeleteMode) async throws -> ChatItem {
+    let r = await chatSendCmd(.apiDeleteMessage(type: type, id: id, itemId: itemId, mode: mode), bgDelay: msgDelay)
+    if case let .chatItemUpdated(aChatItem) = r { return aChatItem.chatItem }
+    throw r
+}
+
 func getUserSMPServers() throws -> [String] {
     let r = chatSendCmdSync(.getUserSMPServers)
     if case let .userSMPServers(smpServers) = r { return smpServers }
@@ -427,7 +456,7 @@ func apiDeleteChat(type: ChatType, id: Int64) async throws {
 }
 
 func apiUpdateProfile(profile: Profile) async throws -> Profile? {
-    let r = await chatSendCmd(.updateProfile(profile: profile))
+    let r = await chatSendCmd(.apiUpdateProfile(profile: profile))
     switch r {
     case .userProfileNoChange: return nil
     case let .userProfileUpdated(_, toProfile): return toProfile
@@ -601,7 +630,7 @@ func processReceivedMsg(_ res: ChatResponse) {
             let cItem = aChatItem.chatItem
             chatModel.addChatItem(cInfo, cItem)
             NtfManager.shared.notifyMessageReceived(cInfo, cItem)
-        case let .chatItemUpdated(aChatItem):
+        case let .chatItemStatusUpdated(aChatItem):
             let cInfo = aChatItem.chatInfo
             let cItem = aChatItem.chatItem
             if chatModel.upsertChatItem(cInfo, cItem) {
@@ -614,6 +643,15 @@ func processReceivedMsg(_ res: ChatResponse) {
                 default: break
                 }
             }
+        case let .chatItemUpdated(aChatItem):
+            let cInfo = aChatItem.chatInfo
+            let cItem = aChatItem.chatItem
+            if chatModel.upsertChatItem(cInfo, cItem) {
+                NtfManager.shared.notifyMessageReceived(cInfo, cItem)
+            }
+        case .chatItemDeleted(_):
+            // TODO let .chatItemDeleted(aChatItem)
+            return
         default:
             logger.debug("unsupported event: \(res.responseType)")
         }
@@ -703,10 +741,13 @@ private func getJSONObject(_ cjson: UnsafePointer<CChar>) -> NSDictionary? {
     return try? JSONSerialization.jsonObject(with: d) as? NSDictionary
 }
 
-private func encodeCJSON<T: Encodable>(_ value: T) -> [CChar] {
+private func encodeJSON<T: Encodable>(_ value: T) -> String {
     let data = try! jsonEncoder.encode(value)
-    let str = String(decoding: data, as: UTF8.self)
-    return str.cString(using: .utf8)!
+    return String(decoding: data, as: UTF8.self)
+}
+
+private func encodeCJSON<T: Encodable>(_ value: T) -> [CChar] {
+    encodeJSON(value).cString(using: .utf8)!
 }
 
 enum ChatError: Decodable {
@@ -742,6 +783,8 @@ enum ChatErrorType: Decodable {
     case fileSend(fileId: Int64, agentError: String)
     case fileRcvChunk(message: String)
     case fileInternal(message: String)
+    case invalidQuote
+    case invalidMessageUpdate
     case agentVersion
     case commandError(message: String)
 }
@@ -773,6 +816,8 @@ enum StoreError: Decodable {
     case noMsgDelivery(connId: Int64, agentMsgId: String)
     case badChatItem(itemId: Int64)
     case chatItemNotFound(itemId: Int64)
+    case quotedChatItemNotFound
+    case chatItemSharedMsgIdNotFound(sharedMsgId: String)
 }
 
 enum AgentErrorType: Decodable {
