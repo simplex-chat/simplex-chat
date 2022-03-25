@@ -16,6 +16,7 @@ private let sentQuoteColorDark = Color(.sRGB, red: 0.27, green: 0.72, blue: 1, o
 struct FramedItemView: View {
     @Environment(\.colorScheme) var colorScheme
     var chatItem: ChatItem
+    var prevItem: ChatItem? = nil
     @State var msgWidth: CGFloat = 0
 
     var body: some View {

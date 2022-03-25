@@ -164,6 +164,14 @@ final class ChatModel: ObservableObject {
         }
     }
 
+    func getPrevChatItem(_ ci: ChatItem) -> ChatItem? {
+        if let i = chatItems.firstIndex(where: { $0.id == ci.id }), i > 0  {
+            return chatItems[i - 1]
+        } else {
+            return nil
+        }
+    }
+    
     func popChat(_ id: String) {
         if let i = getChatIndex(id) {
             popChat_(i)

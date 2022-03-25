@@ -8,6 +8,8 @@
 
 import SwiftUI
 
+private let memberImageSize: CGFloat = 34
+
 struct ChatView: View {
     @EnvironmentObject var chatModel: ChatModel
     @Environment(\.colorScheme) var colorScheme
@@ -24,13 +26,13 @@ struct ChatView: View {
 
         return VStack {
             GeometryReader { g in
-                let maxWidth = g.size.width * 0.78
+                let maxWidth = g.size.width * 0.78 - (cInfo.chatType == .group ? 40 : 0)
                 ScrollViewReader { proxy in
                     ScrollView {
                         LazyVStack(spacing: 5)  {
                             ForEach(chatModel.chatItems) { ci in
                                 let alignment: Alignment = ci.chatDir.sent ? .trailing : .leading
-                                ChatItemView(chatItem: ci)
+                                let v = ChatItemView(chatItem: ci)
                                     .contextMenu {
                                         Button {
                                             withAnimation {
@@ -54,9 +56,30 @@ struct ChatView: View {
                                             } label: { Label("Edit", systemImage: "square.and.pencil") }
                                         }
                                     }
-                                    .padding(.horizontal)
                                     .frame(maxWidth: maxWidth, maxHeight: .infinity, alignment: alignment)
                                     .frame(minWidth: 0, maxWidth: .infinity, alignment: alignment)
+                                if case let .groupRcv(member) = ci.chatDir {
+                                    let prevItem = chatModel.getPrevChatItem(ci)
+                                    HStack(alignment: .top, spacing: 0) {
+                                        switch (prevItem?.chatDir) {
+                                        case .groupSnd:
+                                            memberImage(member)
+                                        case let .groupRcv(prevMember):
+                                            if prevMember.groupMemberId != member.groupMemberId {
+                                                memberImage(member)
+                                            } else {
+                                                noMemberImage()
+                                            }
+                                        default:
+                                            noMemberImage()
+                                        }
+                                        v.padding(.leading, 8)
+                                    }
+                                    .padding(.trailing)
+                                    .padding(.leading, 12)
+                                } else {
+                                    v.padding(.horizontal)
+                                }
                             }
                             .onAppear {
                                 DispatchQueue.main.async {
@@ -118,7 +141,16 @@ struct ChatView: View {
         }
         .navigationBarBackButtonHidden(true)
     }
+    
+    private func memberImage(_ member: GroupMember) -> some View {
+        ProfileImage(imageStr: member.memberProfile.image)
+            .frame(width: memberImageSize, height: memberImageSize)
+    }
 
+    private func noMemberImage() -> some View {
+        Rectangle().fill(.clear).frame(width: memberImageSize, height: memberImageSize)
+    }
+    
     func scrollToBottom(_ proxy: ScrollViewProxy, animation: Animation = .default) {
         withAnimation(animation) { scrollToBottom_(proxy) }
     }
