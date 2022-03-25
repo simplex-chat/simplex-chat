@@ -191,6 +191,7 @@ data class User(
 ): NamedChat {
   override val displayName: String get() = profile.displayName
   override val fullName: String get() = profile.fullName
+  override val image: String? get() = profile.image
 
   companion object {
     val sampleData = User(
@@ -208,6 +209,7 @@ typealias ChatId = String
 interface NamedChat {
   val displayName: String
   val fullName: String
+  val image: String?
   val chatViewName: String
     get() = displayName + (if (fullName == "" || fullName == displayName) "" else " / $fullName")
 }
@@ -272,6 +274,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
     override val createdAt get() = contact.createdAt
     override val displayName get() = contact.displayName
     override val fullName get() = contact.fullName
+    override val image get() = contact.image
 
     companion object {
       val sampleData = Direct(Contact.sampleData)
@@ -288,6 +291,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
     override val createdAt get() = groupInfo.createdAt
     override val displayName get() = groupInfo.displayName
     override val fullName get() = groupInfo.fullName
+    override val image get() = groupInfo.image
 
     companion object {
       val sampleData = Group(GroupInfo.sampleData)
@@ -304,6 +308,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
     override val createdAt get() = contactRequest.createdAt
     override val displayName get() = contactRequest.displayName
     override val fullName get() = contactRequest.fullName
+    override val image get() = contactRequest.image
 
     companion object {
       val sampleData = ContactRequest(UserContactRequest.sampleData)
@@ -326,6 +331,7 @@ class Contact(
   override val ready get() = activeConn.connStatus == "ready" || activeConn.connStatus == "snd-ready"
   override val displayName get() = profile.displayName
   override val fullName get() = profile.fullName
+  override val image get() = profile.image
 
   companion object {
     val sampleData = Contact(
@@ -354,7 +360,8 @@ class Connection(val connStatus: String) {
 @Serializable
 class Profile(
   val displayName: String,
-  val fullName: String
+  val fullName: String,
+  val image: String? = null
   ) {
   companion object {
     val sampleData = Profile(
@@ -377,6 +384,7 @@ class GroupInfo (
   override val ready get() = true
   override val displayName get() = groupProfile.displayName
   override val fullName get() = groupProfile.fullName
+  override val image get() = groupProfile.image
 
   companion object {
     val sampleData = GroupInfo(
@@ -391,7 +399,8 @@ class GroupInfo (
 @Serializable
 class GroupProfile (
   override val displayName: String,
-  override val fullName: String
+  override val fullName: String,
+  override val image: String? = null
 ): NamedChat {
   companion object {
     val sampleData = GroupProfile(
@@ -444,6 +453,7 @@ class UserContactRequest (
   override val ready get() = true
   override val displayName get() = profile.displayName
   override val fullName get() = profile.fullName
+  override val image get() = profile.image
 
   companion object {
     val sampleData = UserContactRequest(
@@ -641,6 +651,7 @@ sealed class MsgContent {
 }
 
 object MsgContentSerializer : KSerializer<MsgContent> {
+  @OptIn(InternalSerializationApi::class)
   override val descriptor: SerialDescriptor = buildSerialDescriptor("MsgContent", PolymorphicKind.SEALED) {
     element("MCText", buildClassSerialDescriptor("MCText") {
       element<String>("text")

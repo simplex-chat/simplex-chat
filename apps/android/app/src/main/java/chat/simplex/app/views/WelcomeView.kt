@@ -148,7 +148,7 @@ fun CreateProfilePanel(chatModel: ChatModel) {
     Button(onClick = {
       withApi {
         val user = chatModel.controller.apiCreateActiveUser(
-          Profile(displayName, fullName)
+          Profile(displayName, fullName, null)
         )
         chatModel.controller.startChat(user)
       }

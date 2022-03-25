@@ -16,7 +16,7 @@ import chat.simplex.app.ui.theme.SimpleXTheme
 
 @Composable
 fun MarkdownHelpView() {
-  Column(Modifier.padding(horizontal = 16.dp)) {
+  Column {
     Text(
       "How to use markdown",
       style = MaterialTheme.typography.h1,

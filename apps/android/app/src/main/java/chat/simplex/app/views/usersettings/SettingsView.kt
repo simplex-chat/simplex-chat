@@ -23,6 +23,7 @@ import chat.simplex.app.model.ChatModel
 import chat.simplex.app.model.Profile
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.TerminalView
+import chat.simplex.app.views.helpers.ProfileImage
 import chat.simplex.app.views.newchat.ModalManager
 
 @Composable
@@ -32,6 +33,7 @@ fun SettingsView(chatModel: ChatModel) {
     SettingsLayout(
       profile = user.profile,
       showModal = { modalView -> { ModalManager.shared.showModal { modalView(chatModel) } } },
+      showCustomModal = { modalView -> { ModalManager.shared.showCustomModal { close -> modalView(chatModel, close) } } },
       showTerminal = { ModalManager.shared.showCustomModal { close -> TerminalView(chatModel, close) } }
     )
   }
@@ -44,6 +46,7 @@ val simplexTeamUri =
 fun SettingsLayout(
   profile: Profile,
   showModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
+  showCustomModal: (@Composable (ChatModel, () -> Unit) -> Unit) -> (() -> Unit),
   showTerminal: () -> Unit
 ) {
   val uriHandler = LocalUriHandler.current
@@ -66,11 +69,8 @@ fun SettingsLayout(
       )
       Spacer(Modifier.height(30.dp))
 
-      SettingsSectionView(showModal { UserProfileView(it) }, 60.dp) {
-        Icon(
-          Icons.Outlined.AccountCircle,
-          contentDescription = "Avatar Placeholder",
-        )
+      SettingsSectionView(showCustomModal { chatModel, close -> UserProfileView(chatModel, close) }, 80.dp) {
+        ProfileImage(size = 60.dp, profile.image)
         Spacer(Modifier.padding(horizontal = 4.dp))
         Column {
           Text(
@@ -186,7 +186,7 @@ fun SettingsSectionView(click: () -> Unit, height: Dp = 48.dp, content: (@Compos
       .height(height),
     verticalAlignment = Alignment.CenterVertically
   ) {
-    content.invoke()
+    content()
   }
 }
 
@@ -202,6 +202,7 @@ fun PreviewSettingsLayout() {
     SettingsLayout(
       profile = Profile.sampleData,
       showModal = {{}},
+      showCustomModal = {{}},
       showTerminal = {}
     )
   }
