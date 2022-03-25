@@ -14,10 +14,9 @@ struct CIMetaView: View {
     var body: some View {
         HStack(alignment: .center, spacing: 4) {
             if chatItem.meta.itemEdited {
-                Text("edited").font(.caption)
-                    .foregroundColor(.secondary)
+                statusImage("pencil", .secondary, 9)
             }
-            
+
             switch chatItem.meta.itemStatus {
             case .sndSent:
                 statusImage("checkmark", .secondary)
@@ -36,12 +35,12 @@ struct CIMetaView: View {
         }
     }
 
-    private func statusImage(_ systemName: String, _ color: Color) -> some View {
+    private func statusImage(_ systemName: String, _ color: Color, _ maxHeight: CGFloat = 8) -> some View {
         Image(systemName: systemName)
             .resizable()
             .aspectRatio(contentMode: .fit)
             .foregroundColor(color)
-            .frame(maxHeight: 8)
+            .frame(maxHeight: maxHeight)
     }
 }
 

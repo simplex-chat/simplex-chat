@@ -39,6 +39,7 @@ fun MarkdownText (
   formattedText: List<FormattedText>? = null,
   sender: String? = null,
   metaText: String? = null,
+  edited: Boolean = false,
   style: TextStyle = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onSurface, lineHeight = 22.sp),
   maxLines: Int = Int.MAX_VALUE,
   overflow: TextOverflow = TextOverflow.Clip,
@@ -47,10 +48,11 @@ fun MarkdownText (
   modifier: Modifier = Modifier
 ) {
   if (formattedText == null) {
+    val reserve = if (edited) "      " else "   "
     val annotatedText = buildAnnotatedString {
       appendSender(this, sender, senderBold)
       append(content.text)
-      if (metaText != null) withStyle(reserveTimestampStyle) { append("  $metaText") }
+      if (metaText != null) withStyle(reserveTimestampStyle) { append(reserve + metaText) }
     }
     Text(annotatedText, style = style, modifier = modifier, maxLines = maxLines, overflow = overflow)
   } else {

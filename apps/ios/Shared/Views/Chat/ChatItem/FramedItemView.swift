@@ -54,7 +54,8 @@ struct FramedItemView: View {
                         content: chatItem.content,
                         formattedText: chatItem.formattedText,
                         sender: chatItem.memberDisplayName,
-                        metaText: chatItem.timestampText
+                        metaText: chatItem.timestampText,
+                        edited: chatItem.meta.itemEdited
                     )
                     .padding(.vertical, 6)
                     .padding(.horizontal, 12)
@@ -63,14 +64,15 @@ struct FramedItemView: View {
                     .textSelection(.enabled)
                 }
             }
-            .onPreferenceChange(DetermineWidth.Key.self) { msgWidth = $0 }
             
             CIMetaView(chatItem: chatItem)
-                .padding(.trailing, 12)
+                .padding(.horizontal, 12)
                 .padding(.bottom, 6)
+                .overlay(DetermineWidth())
         }
         .background(chatItemFrameColor(chatItem, colorScheme))
         .cornerRadius(18)
+        .onPreferenceChange(DetermineWidth.Key.self) { msgWidth = $0 }
 
         switch chatItem.meta.itemStatus {
         case .sndErrorAuth:
@@ -106,6 +108,22 @@ struct FramedItemView_Previews: PreviewProvider {
             FramedItemView(chatItem: ChatItem.getSample(2, .directRcv, .now, "hello there too!!! this text has the time on the same line "))
             FramedItemView(chatItem: ChatItem.getSample(2, .directRcv, .now, "https://simplex.chat"))
             FramedItemView(chatItem: ChatItem.getSample(2, .directRcv, .now, "chaT@simplex.chat"))
+        }
+        .previewLayout(.fixed(width: 360, height: 200))
+    }
+}
+
+struct FramedItemViewEdited_Previews: PreviewProvider {
+    static var previews: some View {
+        Group{
+            FramedItemView(chatItem: ChatItem.getSample(1, .directSnd, .now, "hello", .sndSent, false, true))
+            FramedItemView(chatItem: ChatItem.getSample(1, .groupRcv(groupMember: GroupMember.sampleData), .now, "hello", quotedItem: CIQuote.getSample(1, .now, "hi", chatDir: .directSnd), false, true))
+            FramedItemView(chatItem: ChatItem.getSample(2, .directSnd, .now, "https://simplex.chat", .sndSent, quotedItem: CIQuote.getSample(1, .now, "hi", chatDir: .directRcv), false, true))
+            FramedItemView(chatItem: ChatItem.getSample(2, .directSnd, .now, "👍", .sndSent, quotedItem: CIQuote.getSample(1, .now, "Hello too", chatDir: .directRcv), false, true))
+            FramedItemView(chatItem: ChatItem.getSample(2, .directRcv, .now, "hello there too!!! this covers -", .rcvRead, false, true))
+            FramedItemView(chatItem: ChatItem.getSample(2, .directRcv, .now, "hello there too!!! this text has the time on the same line ", .rcvRead, false, true))
+            FramedItemView(chatItem: ChatItem.getSample(2, .directRcv, .now, "https://simplex.chat", .rcvRead, false, true))
+            FramedItemView(chatItem: ChatItem.getSample(2, .directRcv, .now, "chaT@simplex.chat", .rcvRead, false, true))
         }
         .previewLayout(.fixed(width: 360, height: 200))
     }
