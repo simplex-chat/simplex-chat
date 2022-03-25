@@ -47,8 +47,8 @@ fun MarkdownText (
   senderBold: Boolean = false,
   modifier: Modifier = Modifier
 ) {
+  val reserve = if (edited) "      " else "   "
   if (formattedText == null) {
-    val reserve = if (edited) "      " else "   "
     val annotatedText = buildAnnotatedString {
       appendSender(this, sender, senderBold)
       append(content.text)
@@ -73,7 +73,7 @@ fun MarkdownText (
           }
         }
       }
-      if (metaText != null) withStyle(reserveTimestampStyle) { append("  $metaText") }
+      if (metaText != null) withStyle(reserveTimestampStyle) { append(reserve + metaText) }
     }
     if (hasLinks && uriHandler != null) {
       ClickableText(annotatedText, style = style, modifier = modifier, maxLines = maxLines, overflow = overflow,

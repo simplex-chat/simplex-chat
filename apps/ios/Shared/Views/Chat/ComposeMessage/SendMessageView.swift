@@ -11,7 +11,7 @@ import SwiftUI
 struct SendMessageView: View {
     var sendMessage: (String) -> Void
     var inProgress: Bool = false
-    @State private var message: String = "" //Lorem ipsum dolor sit amet, consectetur" // adipiscing elit, sed do eiusmod tempor incididunt ut labor7 et dolore magna aliqua. Ut enim ad minim veniam, quis"// nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat."// Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
+    @Binding var message: String //Lorem ipsum dolor sit amet, consectetur" // adipiscing elit, sed do eiusmod tempor incididunt ut labor7 et dolore magna aliqua. Ut enim ad minim veniam, quis"// nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat."// Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
     @Namespace var namespace
     @FocusState.Binding var keyboardVisible: Bool
     @Binding var editing: Bool
@@ -86,6 +86,7 @@ struct SendMessageView: View {
 
 struct SendMessageView_Previews: PreviewProvider {
     static var previews: some View {
+        @State var message: String = ""
         @FocusState var keyboardVisible: Bool
         @State var editingOff: Bool = false
         @State var editingOn: Bool = true
@@ -98,6 +99,7 @@ struct SendMessageView_Previews: PreviewProvider {
                 Spacer(minLength: 0)
                 SendMessageView(
                     sendMessage: { print ($0) },
+                    message: $message,
                     keyboardVisible: $keyboardVisible,
                     editing: $editingOff
                 )
@@ -107,6 +109,7 @@ struct SendMessageView_Previews: PreviewProvider {
                 Spacer(minLength: 0)
                 SendMessageView(
                     sendMessage: { print ($0) },
+                    message: $message,
                     keyboardVisible: $keyboardVisible,
                     editing: $editingOn
                 )

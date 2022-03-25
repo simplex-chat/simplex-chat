@@ -11,6 +11,8 @@ import SwiftUI
 struct ContextItemView: View {
     @Environment(\.colorScheme) var colorScheme
     @Binding var contextItem: ChatItem?
+    @Binding var editing: Bool
+    var resetMessage: () -> Void = {}
 
     var body: some View {
         if let cxtItem = contextItem {
@@ -18,7 +20,10 @@ struct ContextItemView: View {
                 contextText(cxtItem).lineLimit(3)
                 Spacer()
                 Button {
-                    withAnimation { contextItem = nil }
+                    withAnimation {
+                        contextItem = nil
+                        if editing { resetMessage() }
+                    }
                 } label: {
                     Image(systemName: "multiply")
                 }
@@ -44,6 +49,7 @@ struct ContextItemView: View {
 struct ContextItemView_Previews: PreviewProvider {
     static var previews: some View {
         @State var contextItem: ChatItem? = ChatItem.getSample(1, .directSnd, .now, "hello")
-        return ContextItemView(contextItem: $contextItem)
+        @State var editing: Bool = false
+        return ContextItemView(contextItem: $contextItem, editing: $editing)
     }
 }

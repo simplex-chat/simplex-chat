@@ -12,6 +12,7 @@ struct ChatView: View {
     @EnvironmentObject var chatModel: ChatModel
     @Environment(\.colorScheme) var colorScheme
     @ObservedObject var chat: Chat
+    @State var message: String = ""
     @State var quotedItem: ChatItem? = nil
     @State var editingItem: ChatItem? = nil
     @State private var inProgress: Bool = false
@@ -48,6 +49,7 @@ struct ChatView: View {
                                                 withAnimation {
                                                     quotedItem = nil
                                                     editingItem = ci
+                                                    message = ci.content.text
                                                 }
                                             } label: { Label("Edit", systemImage: "square.and.pencil") }
                                         }
@@ -83,9 +85,11 @@ struct ChatView: View {
             Spacer(minLength: 0)
 
             ComposeView(
+                message: $message,
                 quotedItem: $quotedItem,
                 editingItem: $editingItem,
                 sendMessage: sendMessage,
+                resetMessage: { message = "" },
                 inProgress: inProgress,
                 keyboardVisible: $keyboardVisible
             )
