@@ -564,10 +564,10 @@ struct ChatItem: Identifiable, Decodable {
         }
     }
     
-    static func getSample (_ id: Int64, _ dir: CIDirection, _ ts: Date, _ text: String, _ status: CIStatus = .sndNew, quotedItem: CIQuote? = nil) -> ChatItem {
+    static func getSample (_ id: Int64, _ dir: CIDirection, _ ts: Date, _ text: String, _ status: CIStatus = .sndNew, quotedItem: CIQuote? = nil, _ itemDeleted: Bool = false, _ itemEdited: Bool = false, _ editable: Bool = true) -> ChatItem {
         ChatItem(
            chatDir: dir,
-           meta: CIMeta.getSample(id, ts, text, status),
+           meta: CIMeta.getSample(id, ts, text, status, itemDeleted, itemEdited, editable),
            content: .sndMsgContent(msgContent: .text(text)),
            quotedItem: quotedItem
        )
@@ -598,16 +598,22 @@ struct CIMeta: Decodable {
     var itemText: String
     var itemStatus: CIStatus
     var createdAt: Date
+    var itemDeleted: Bool
+    var itemEdited: Bool
+    var editable: Bool
 
     var timestampText: Text { get { SimpleX.timestampText(itemTs) } }
 
-    static func getSample(_ id: Int64, _ ts: Date, _ text: String, _ status: CIStatus = .sndNew) -> CIMeta {
+    static func getSample(_ id: Int64, _ ts: Date, _ text: String, _ status: CIStatus = .sndNew, _ itemDeleted: Bool = false, _ itemEdited: Bool = false, _ editable: Bool = true) -> CIMeta {
         CIMeta(
             itemId: id,
             itemTs: ts,
             itemText: text,
             itemStatus: status,
-            createdAt: ts
+            createdAt: ts,
+            itemDeleted: itemDeleted,
+            itemEdited: itemEdited,
+            editable: editable
         )
     }
 }

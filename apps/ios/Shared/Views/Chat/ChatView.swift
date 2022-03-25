@@ -12,7 +12,9 @@ struct ChatView: View {
     @EnvironmentObject var chatModel: ChatModel
     @Environment(\.colorScheme) var colorScheme
     @ObservedObject var chat: Chat
+    @State var message: String = ""
     @State var quotedItem: ChatItem? = nil
+    @State var editingItem: ChatItem? = nil
     @State private var inProgress: Bool = false
     @FocusState private var keyboardVisible: Bool
     @State private var showChatInfo = false
@@ -31,7 +33,10 @@ struct ChatView: View {
                                 ChatItemView(chatItem: ci)
                                     .contextMenu {
                                         Button {
-                                            withAnimation { quotedItem = ci }
+                                            withAnimation {
+                                                editingItem = nil
+                                                quotedItem = ci
+                                            }
                                         } label: { Label("Reply", systemImage: "arrowshape.turn.up.left") }
                                         Button {
                                             showShareSheet(items: [ci.content.text])
@@ -39,6 +44,15 @@ struct ChatView: View {
                                         Button {
                                             UIPasteboard.general.string = ci.content.text
                                         } label: { Label("Copy", systemImage: "doc.on.doc") }
+                                        if (ci.chatDir.sent && ci.meta.editable) {
+                                            Button {
+                                                withAnimation {
+                                                    quotedItem = nil
+                                                    editingItem = ci
+                                                    message = ci.content.text
+                                                }
+                                            } label: { Label("Edit", systemImage: "square.and.pencil") }
+                                        }
                                     }
                                     .padding(.horizontal)
                                     .frame(maxWidth: maxWidth, maxHeight: .infinity, alignment: alignment)
@@ -71,8 +85,11 @@ struct ChatView: View {
             Spacer(minLength: 0)
 
             ComposeView(
+                message: $message,
                 quotedItem: $quotedItem,
+                editingItem: $editingItem,
                 sendMessage: sendMessage,
+                resetMessage: { message = "" },
                 inProgress: inProgress,
                 keyboardVisible: $keyboardVisible
             )
@@ -134,18 +151,31 @@ struct ChatView: View {
         Task {
             logger.debug("ChatView sendMessage: in Task")
             do {
-                let chatItem = try await apiSendMessage(
-                    type: chat.chatInfo.chatType,
-                    id: chat.chatInfo.apiId,
-                    quotedItemId: quotedItem?.meta.itemId,
-                    msg: .text(msg)
-                )
-                DispatchQueue.main.async {
-                    quotedItem = nil
-                    chatModel.addChatItem(chat.chatInfo, chatItem)
+                if let ei = editingItem {
+                    let chatItem = try await apiUpdateMessage(
+                        type: chat.chatInfo.chatType,
+                        id: chat.chatInfo.apiId,
+                        itemId: ei.id,
+                        msg: .text(msg)
+                    )
+                    DispatchQueue.main.async {
+                        editingItem = nil
+                        let _ = chatModel.upsertChatItem(chat.chatInfo, chatItem)
+                    }
+                } else {
+                    let chatItem = try await apiSendMessage(
+                        type: chat.chatInfo.chatType,
+                        id: chat.chatInfo.apiId,
+                        quotedItemId: quotedItem?.meta.itemId,
+                        msg: .text(msg)
+                    )
+                    DispatchQueue.main.async {
+                        quotedItem = nil
+                        chatModel.addChatItem(chat.chatInfo, chatItem)
+                    }
                 }
             } catch {
-                logger.error("ChatView.sendMessage apiSendMessage error: \(error.localizedDescription)")
+                logger.error("ChatView.sendMessage error: \(error.localizedDescription)")
             }
         }
     }

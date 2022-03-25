@@ -16,20 +16,22 @@ struct MsgContentView: View {
     var formattedText: [FormattedText]? = nil
     var sender: String? = nil
     var metaText: Text? = nil
+    var edited: Bool = false
 
-    var body: some View {        
+    var body: some View {
         let v = messageText(content, formattedText, sender)
         if let mt = metaText {
-            return v + reserveSpaceForMeta(mt)
+            return v + reserveSpaceForMeta(mt, edited)
         } else {
             return v
         }
     }
     
-    private func reserveSpaceForMeta(_ meta: Text) -> Text {
-       (Text("      ") + meta)
-           .font(.caption)
-           .foregroundColor(.clear)
+    private func reserveSpaceForMeta(_ meta: Text, _ edited: Bool) -> Text {
+        let reserve = edited ? "          " : "      "
+        return (Text(reserve) + meta)
+            .font(.caption)
+            .foregroundColor(.clear)
     }
 }
 

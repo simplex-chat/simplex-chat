@@ -9,6 +9,7 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.outlined.ArrowUpward
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -24,15 +25,14 @@ import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.chat.item.*
 
 @Composable
-fun SendMsgView(sendMessage: (String) -> Unit) {
-  var msg by remember { mutableStateOf("") }
+fun SendMsgView(msg: MutableState<String>, sendMessage: (String) -> Unit, editing: Boolean = false) {
   val smallFont = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onBackground)
   var textStyle by remember { mutableStateOf(smallFont) }
   BasicTextField(
-    value = msg,
+    value = msg.value,
     onValueChange = {
-      msg = it
-      textStyle = if(isShortEmoji(it)) {
+      msg.value = it
+      textStyle = if (isShortEmoji(it)) {
         if (it.codePoints().count() < 4) largeEmojiFont else mediumEmojiFont
       } else {
         smallFont
@@ -64,9 +64,9 @@ fun SendMsgView(sendMessage: (String) -> Unit) {
           ) {
             innerTextField()
           }
-          val color = if (msg.isNotEmpty()) MaterialTheme.colors.primary else Color.Gray
+          val color = if (msg.value.isNotEmpty()) MaterialTheme.colors.primary else Color.Gray
           Icon(
-            Icons.Outlined.ArrowUpward,
+            if (editing) Icons.Filled.Check else Icons.Outlined.ArrowUpward,
             "Send Message",
             tint = Color.White,
             modifier = Modifier
@@ -75,9 +75,9 @@ fun SendMsgView(sendMessage: (String) -> Unit) {
               .clip(CircleShape)
               .background(color)
               .clickable {
-                if (msg.isNotEmpty()) {
-                  sendMessage(msg)
-                  msg = ""
+                if (msg.value.isNotEmpty()) {
+                  sendMessage(msg.value)
+                  msg.value = ""
                   textStyle = smallFont
                 }
               }
@@ -98,7 +98,25 @@ fun SendMsgView(sendMessage: (String) -> Unit) {
 fun PreviewSendMsgView() {
   SimpleXTheme {
     SendMsgView(
+      msg = remember { mutableStateOf("") },
       sendMessage = { msg -> println(msg) }
+    )
+  }
+}
+
+@Preview(showBackground = true)
+@Preview(
+  uiMode = Configuration.UI_MODE_NIGHT_YES,
+  showBackground = true,
+  name = "Dark Mode"
+)
+@Composable
+fun PreviewSendMsgViewEditing() {
+  SimpleXTheme {
+    SendMsgView(
+      msg = remember { mutableStateOf("") },
+      sendMessage = { msg -> println(msg) },
+      editing = true
     )
   }
 }

@@ -13,7 +13,9 @@ private let terminalFont = Font.custom("Menlo", size: 16)
 struct TerminalView: View {
     @EnvironmentObject var chatModel: ChatModel
     @State var inProgress: Bool = false
+    @State var message: String = ""
     @FocusState private var keyboardVisible: Bool
+    @State var editing: Bool = false
 
     var body: some View {
         VStack {
@@ -54,7 +56,9 @@ struct TerminalView: View {
                 SendMessageView(
                     sendMessage: sendMessage,
                     inProgress: inProgress,
-                    keyboardVisible: $keyboardVisible
+                    message: $message,
+                    keyboardVisible: $keyboardVisible,
+                    editing: $editing
                 )
             }
         }

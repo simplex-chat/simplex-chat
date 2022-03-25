@@ -41,6 +41,8 @@ fun ChatView(chatModel: ChatModel) {
     chatModel.chatId.value = null
   } else {
     val quotedItem = remember { mutableStateOf<ChatItem?>(null) }
+    val editingItem = remember { mutableStateOf<ChatItem?>(null) }
+    var msg = remember { mutableStateOf("") }
     BackHandler { chatModel.chatId.value = null }
     // TODO a more advanced version would mark as read only if in view
     LaunchedEffect(chat.chatItems) {
@@ -57,24 +59,37 @@ fun ChatView(chatModel: ChatModel) {
         }
       }
     }
-    ChatLayout(user, chat, chatModel.chatItems, quotedItem,
+    ChatLayout(user, chat, chatModel.chatItems, msg, quotedItem, editingItem,
       back = { chatModel.chatId.value = null },
       info = { ModalManager.shared.showCustomModal { close -> ChatInfoView(chatModel, close) } },
       sendMessage = { msg ->
         withApi {
           // show "in progress"
           val cInfo = chat.chatInfo
-          val newItem = chatModel.controller.apiSendMessage(
-            type = cInfo.chatType,
-            id = cInfo.apiId,
-            quotedItemId = quotedItem.value?.meta?.itemId,
-            mc = MsgContent.MCText(msg)
-          )
-          quotedItem.value = null
+          val ei = editingItem.value
+          if (ei != null) {
+            val updatedItem = chatModel.controller.apiUpdateMessage(
+              type = cInfo.chatType,
+              id = cInfo.apiId,
+              itemId = ei.meta.itemId,
+              mc = MsgContent.MCText(msg)
+            )
+            if (updatedItem != null) chatModel.upsertChatItem(cInfo, updatedItem.chatItem)
+          } else {
+            val newItem = chatModel.controller.apiSendMessage(
+              type = cInfo.chatType,
+              id = cInfo.apiId,
+              quotedItemId = quotedItem.value?.meta?.itemId,
+              mc = MsgContent.MCText(msg)
+            )
+            if (newItem != null) chatModel.addChatItem(cInfo, newItem.chatItem)
+          }
           // hide "in progress"
-          if (newItem != null) chatModel.addChatItem(cInfo, newItem.chatItem)
+          editingItem.value = null
+          quotedItem.value = null
         }
-      }
+      },
+      resetMessage = { msg.value = "" }
     )
   }
 }
@@ -84,23 +99,27 @@ fun ChatLayout(
   user: User,
   chat: Chat,
   chatItems: List<ChatItem>,
+  msg: MutableState<String>,
   quotedItem: MutableState<ChatItem?>,
+  editingItem: MutableState<ChatItem?>,
   back: () -> Unit,
   info: () -> Unit,
-  sendMessage: (String) -> Unit
+  sendMessage: (String) -> Unit,
+  resetMessage: () -> Unit
 ) {
   Surface(
     Modifier
       .fillMaxWidth()
-      .background(MaterialTheme.colors.background)) {
+      .background(MaterialTheme.colors.background)
+  ) {
     ProvideWindowInsets(windowInsetsAnimationsEnabled = true) {
       Scaffold(
         topBar = { ChatInfoToolbar(chat, back, info) },
-        bottomBar = { ComposeView(quotedItem, sendMessage) },
+        bottomBar = { ComposeView(msg, quotedItem, editingItem, sendMessage, resetMessage) },
         modifier = Modifier.navigationBarsWithImePadding()
       ) { contentPadding ->
         Box(Modifier.padding(contentPadding)) {
-          ChatItemsList(user, chatItems, quotedItem)
+          ChatItemsList(user, chatItems, msg, quotedItem, editingItem)
         }
       }
     }
@@ -133,14 +152,19 @@ fun ChatInfoToolbar(chat: Chat, back: () -> Unit, info: () -> Unit) {
     ) {
       val cInfo = chat.chatInfo
       ChatInfoImage(chat, size = 40.dp)
-      Column(Modifier.padding(start = 8.dp),
+      Column(
+        Modifier.padding(start = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally
       ) {
-        Text(cInfo.displayName, fontWeight = FontWeight.Bold,
-          maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Text(
+          cInfo.displayName, fontWeight = FontWeight.Bold,
+          maxLines = 1, overflow = TextOverflow.Ellipsis
+        )
         if (cInfo.fullName != "" && cInfo.fullName != cInfo.displayName) {
-          Text(cInfo.fullName,
-            maxLines = 1, overflow = TextOverflow.Ellipsis)
+          Text(
+            cInfo.fullName,
+            maxLines = 1, overflow = TextOverflow.Ellipsis
+          )
         }
       }
     }
@@ -160,7 +184,13 @@ val CIListStateSaver = run {
 }
 
 @Composable
-fun ChatItemsList(user: User, chatItems: List<ChatItem>, quotedItem: MutableState<ChatItem?>) {
+fun ChatItemsList(
+  user: User,
+  chatItems: List<ChatItem>,
+  msg: MutableState<String>,
+  quotedItem: MutableState<ChatItem?>,
+  editingItem: MutableState<ChatItem?>
+) {
   val listState = rememberLazyListState()
   val keyboardState by getKeyboardState()
   val ciListState = rememberSaveable(stateSaver = CIListStateSaver) {
@@ -171,7 +201,7 @@ fun ChatItemsList(user: User, chatItems: List<ChatItem>, quotedItem: MutableStat
   val cxt = LocalContext.current
   LazyColumn(state = listState) {
     items(chatItems) { cItem ->
-      ChatItemView(user, cItem, quotedItem, cxt, uriHandler)
+      ChatItemView(user, cItem, msg, quotedItem, editingItem, cxt, uriHandler)
     }
     val len = chatItems.count()
     if (len > 1 && (keyboardState != ciListState.value.keyboardState || !ciListState.value.scrolled || len != ciListState.value.itemCount)) {
@@ -217,10 +247,13 @@ fun PreviewChatLayout() {
         chatStats = Chat.ChatStats()
       ),
       chatItems = chatItems,
+      msg = remember { mutableStateOf("") },
       quotedItem = remember { mutableStateOf(null) },
+      editingItem = remember { mutableStateOf(null) },
       back = {},
       info = {},
-      sendMessage = {}
+      sendMessage = {},
+      resetMessage = {}
     )
   }
 }

@@ -102,6 +102,37 @@ class ChatModel(val controller: ChatController) {
     }
   }
 
+  fun upsertChatItem(cInfo: ChatInfo, cItem: ChatItem): Boolean {
+    // update previews
+    val i = getChatIndex(cInfo.id)
+    val chat: Chat
+    val res: Boolean
+    if (i >= 0) {
+      chat = chats[i]
+      val pItem = chat.chatItems.last()
+      if (pItem.id == cItem.id) {
+        chats[i] = chat.copy(chatItems = arrayListOf(cItem))
+      }
+      res = false
+    } else {
+      addChat(Chat(chatInfo = cInfo, chatItems = arrayListOf(cItem)))
+      res = true
+    }
+    // update current chat
+    if (chatId.value == cInfo.id) {
+      val itemIndex = chatItems.indexOfFirst { it.id == cItem.id }
+      if (itemIndex >= 0) {
+        chatItems[itemIndex] = cItem
+        return false
+      } else {
+        chatItems.add(cItem)
+        return true
+      }
+    } else {
+      return res
+    }
+  }
+
   fun markChatItemsRead(cInfo: ChatInfo) {
     val chatIdx = getChatIndex(cInfo.id)
     // update current chat
@@ -122,42 +153,13 @@ class ChatModel(val controller: ChatController) {
     }
 
   }
-//
-//  func upsertChatItem(_ cInfo: ChatInfo, _ cItem: ChatItem) -> Bool {
-//    // update previews
-//    var res: Bool
-//    if let chat = getChat(cInfo.id) {
-//      if let pItem = chat.chatItems.last, pItem.id == cItem.id {
-//      chat.chatItems = [cItem]
-//    }
-//      res = false
-//    } else {
-//      addChat(Chat(chatInfo: cInfo, chatItems: [cItem]))
-//      res = true
-//    }
-//    // update current chat
-//    if chatId == cInfo.id {
-//      if let i = chatItems.firstIndex(where: { $0.id == cItem.id }) {
-//      withAnimation(.default) {
-//      self.chatItems[i] = cItem
-//    }
-//      return false
-//    } else {
-//      withAnimation { chatItems.append(cItem) }
-//      return true
-//    }
-//    } else {
-//      return res
-//    }
-//  }
-//
-//
+
 //  func popChat(_ id: String) {
 //    if let i = getChatIndex(id) {
 //      popChat_(i)
 //    }
 //  }
-//
+
   private fun popChat_(i: Int) {
     val chat = chats.removeAt(i)
     chats.add(index = 0, chat)
@@ -494,11 +496,14 @@ data class ChatItem (
       ts: Instant = Clock.System.now(),
       text: String = "hello\nthere",
       status: CIStatus = CIStatus.SndNew(),
-      quotedItem: CIQuote? = null
+      quotedItem: CIQuote? = null,
+      itemDeleted: Boolean = false,
+      itemEdited: Boolean = false,
+      editable: Boolean = true
     ) =
       ChatItem(
         chatDir = dir,
-        meta = CIMeta.getSample(id, ts, text, status),
+        meta = CIMeta.getSample(id, ts, text, status, itemDeleted, itemEdited, editable),
         content = CIContent.SndMsgContent(msgContent = MsgContent.MCText(text)),
         quotedItem = quotedItem
       )
@@ -536,18 +541,27 @@ data class CIMeta (
   val itemTs: Instant,
   val itemText: String,
   val itemStatus: CIStatus,
-  val createdAt: Instant
+  val createdAt: Instant,
+  val itemDeleted: Boolean,
+  val itemEdited: Boolean,
+  val editable: Boolean
 ) {
   val timestampText: String get() = getTimestampText(itemTs)
 
   companion object {
-    fun getSample(id: Long, ts: Instant, text: String, status: CIStatus = CIStatus.SndNew()): CIMeta =
+    fun getSample(
+      id: Long, ts: Instant, text: String, status: CIStatus = CIStatus.SndNew(),
+      itemDeleted: Boolean = false, itemEdited: Boolean = false, editable: Boolean = true
+    ): CIMeta =
       CIMeta(
         itemId = id,
         itemTs = ts,
         itemText = text,
         itemStatus = status,
-        createdAt = ts
+        createdAt = ts,
+        itemDeleted = itemDeleted,
+        itemEdited = itemEdited,
+        editable = editable
       )
   }
 }

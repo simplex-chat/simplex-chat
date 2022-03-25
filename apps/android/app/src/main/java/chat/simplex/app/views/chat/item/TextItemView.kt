@@ -39,6 +39,7 @@ fun MarkdownText (
   formattedText: List<FormattedText>? = null,
   sender: String? = null,
   metaText: String? = null,
+  edited: Boolean = false,
   style: TextStyle = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onSurface, lineHeight = 22.sp),
   maxLines: Int = Int.MAX_VALUE,
   overflow: TextOverflow = TextOverflow.Clip,
@@ -46,11 +47,12 @@ fun MarkdownText (
   senderBold: Boolean = false,
   modifier: Modifier = Modifier
 ) {
+  val reserve = if (edited) "      " else "   "
   if (formattedText == null) {
     val annotatedText = buildAnnotatedString {
       appendSender(this, sender, senderBold)
       append(content.text)
-      if (metaText != null) withStyle(reserveTimestampStyle) { append("  $metaText") }
+      if (metaText != null) withStyle(reserveTimestampStyle) { append(reserve + metaText) }
     }
     Text(annotatedText, style = style, modifier = modifier, maxLines = maxLines, overflow = overflow)
   } else {
@@ -71,7 +73,7 @@ fun MarkdownText (
           }
         }
       }
-      if (metaText != null) withStyle(reserveTimestampStyle) { append("  $metaText") }
+      if (metaText != null) withStyle(reserveTimestampStyle) { append(reserve + metaText) }
     }
     if (hasLinks && uriHandler != null) {
       ClickableText(annotatedText, style = style, modifier = modifier, maxLines = maxLines, overflow = overflow,
