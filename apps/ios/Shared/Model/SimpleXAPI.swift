@@ -644,8 +644,8 @@ func processReceivedMsg(_ res: ChatResponse) {
                 }
             }
         case let .chatItemUpdated(aChatItem):
-            let cItem = aChatItem.chatItem
             let cInfo = aChatItem.chatInfo
+            let cItem = aChatItem.chatItem
             if chatModel.upsertChatItem(cInfo, cItem) {
                 NtfManager.shared.notifyMessageReceived(cInfo, cItem)
             }

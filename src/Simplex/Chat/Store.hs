@@ -2854,7 +2854,7 @@ updateDirectChatItem_ db userId contactId itemId newContent msgId = runExceptT $
       |]
       (newContent, newText, currentTs, userId, contactId, itemId)
   liftIO $ DB.execute db "INSERT INTO chat_item_messages (chat_item_id, message_id, created_at, updated_at) VALUES (?,?,?,?)" (itemId, msgId, currentTs, currentTs)
-  pure ci {content = newContent, meta = (meta ci) {itemText = newText}, formattedText = parseMaybeMarkdownList newText}
+  pure ci {content = newContent, meta = (meta ci) {itemText = newText, itemEdited = True}, formattedText = parseMaybeMarkdownList newText}
   where
     correctDir :: CChatItem c -> Either StoreError (ChatItem c d)
     correctDir (CChatItem _ ci) = first SEInternalError $ checkDirection ci
@@ -2938,7 +2938,7 @@ updateGroupChatItem_ db user@User {userId} groupId itemId newContent msgId = run
       |]
       (newContent, newText, currentTs, userId, groupId, itemId)
   liftIO $ DB.execute db "INSERT INTO chat_item_messages (chat_item_id, message_id, created_at, updated_at) VALUES (?,?,?,?)" (itemId, msgId, currentTs, currentTs)
-  pure ci {content = newContent, meta = (meta ci) {itemText = newText}, formattedText = parseMaybeMarkdownList newText}
+  pure ci {content = newContent, meta = (meta ci) {itemText = newText, itemEdited = True}, formattedText = parseMaybeMarkdownList newText}
   where
     correctDir :: CChatItem c -> Either StoreError (ChatItem c d)
     correctDir (CChatItem _ ci) = first SEInternalError $ checkDirection ci
