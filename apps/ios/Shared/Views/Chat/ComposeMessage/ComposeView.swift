@@ -38,7 +38,6 @@ struct ComposeView: View {
             .background(.background)
         }
         .onChange(of: editingItem == nil) { _ in
-//            withAnimation { editing = (editingItem != nil) }
             editing = (editingItem != nil)
         }
     }
