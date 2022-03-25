@@ -9,8 +9,15 @@ import chat.simplex.app.model.ChatItem
 @Composable
 fun ComposeView(quotedItem: MutableState<ChatItem?>, editingItem: MutableState<ChatItem?>, sendMessage: (String) -> Unit) {
   Column {
-    QuotedItemView(quotedItem)
-    EditingItemView(editingItem)
+    when {
+      quotedItem.value != null -> {
+        RelatedItemView(quotedItem)
+      }
+      editingItem.value != null -> {
+        RelatedItemView(editingItem)
+      }
+      else -> { }
+    }
     SendMsgView(sendMessage, editingItem.value != null)
   }
 }

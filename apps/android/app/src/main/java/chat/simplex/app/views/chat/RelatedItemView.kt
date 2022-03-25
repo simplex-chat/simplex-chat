@@ -8,6 +8,8 @@ import androidx.compose.material.icons.outlined.Close
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.model.CIDirection
@@ -17,10 +19,10 @@ import chat.simplex.app.views.chat.item.*
 import kotlinx.datetime.Clock
 
 @Composable
-fun EditingItemView(editingItem: MutableState<ChatItem?>) {
-  val ei = editingItem.value
-  if (ei != null) {
-    val sent = ei.chatDir.sent
+fun RelatedItemView(relatedItem: MutableState<ChatItem?>) {
+  val ri = relatedItem.value
+  if (ri != null) {
+    val sent = ri.chatDir.sent
     Row(
       Modifier
         .padding(top = 8.dp)
@@ -34,12 +36,12 @@ fun EditingItemView(editingItem: MutableState<ChatItem?>) {
           .fillMaxWidth()
           .weight(1F)
       ) {
-        Text(ei.content.text, maxLines = 3)
+        RelatedItemText(ri)
       }
-      IconButton(onClick = { editingItem.value = null }) {
+      IconButton(onClick = { relatedItem.value = null }) {
         Icon(
           Icons.Outlined.Close,
-          "Cancel editing",
+          contentDescription = "Cancel",
           tint = MaterialTheme.colors.primary,
           modifier = Modifier.padding(10.dp)
         )
@@ -48,12 +50,26 @@ fun EditingItemView(editingItem: MutableState<ChatItem?>) {
   }
 }
 
+@Composable
+private fun RelatedItemText(ri: ChatItem) {
+  val member = ri.memberDisplayName
+  if (member == null) {
+    Text(ri.content.text, maxLines = 3)
+  } else {
+    val annotatedText = buildAnnotatedString {
+      withStyle(boldFont) { append(member) }
+      append(": ${ri.content.text}")
+    }
+    Text(annotatedText, maxLines = 3)
+  }
+}
+
 @Preview
 @Composable
-fun PreviewEditingItemView() {
+fun PreviewRelatedItemView() {
   SimpleXTheme {
-    EditingItemView(
-      editingItem = remember {
+    RelatedItemView(
+      relatedItem = remember {
         mutableStateOf(
           ChatItem.getSampleData(
             1, CIDirection.DirectRcv(), Clock.System.now(), "hello"
