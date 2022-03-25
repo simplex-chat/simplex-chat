@@ -1,9 +1,12 @@
 package chat.simplex.app.views.usersettings
 
 import android.content.res.Configuration
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import android.widget.ScrollView
+import androidx.compose.foundation.*
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.scrollable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -23,8 +26,11 @@ import androidx.compose.ui.unit.dp
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.model.Profile
 import chat.simplex.app.ui.theme.SimpleXTheme
+import chat.simplex.app.views.chat.CIListState
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.newchat.ModalView
+import com.google.accompanist.insets.ProvideWindowInsets
+import com.google.accompanist.insets.navigationBarsWithImePadding
 import kotlinx.coroutines.launch
 
 @Composable
@@ -64,84 +70,107 @@ fun UserProfileLayout(
   val fullName = remember { mutableStateOf(profile.fullName) }
   val profileImage = remember { mutableStateOf(profile.image) }
   val scope = rememberCoroutineScope()
+  val scrollState = rememberScrollState()
+  val keyboardState by getKeyboardState()
+  var savedKeyboardState by remember { mutableStateOf(keyboardState) }
 
-  ModalBottomSheetLayout(
-    scrimColor = Color.Black.copy(alpha = 0.12F),
-    modifier = Modifier.fillMaxWidth(),
-    sheetContent = { GetImageBottomSheet(profileImage, hideBottomSheet = {
-      scope.launch { bottomSheetModalState.hide() }
-    }) },
-    sheetState = bottomSheetModalState,
-    sheetShape = RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp)
-  ) {
-    ModalView(close = close) {
-      Column(horizontalAlignment = Alignment.Start) {
-        Text(
-          "Your chat profile",
-          Modifier.padding(bottom = 24.dp),
-          style = MaterialTheme.typography.h1,
-          color = MaterialTheme.colors.onBackground
-        )
-        Text(
-          "Your profile is stored on your device and shared only with your contacts.\n\n" +
-              "SimpleX servers cannot see your profile.",
-          Modifier.padding(bottom = 24.dp),
-          color = MaterialTheme.colors.onBackground
-        )
-        if (editProfile.value) {
-          Column(
-            Modifier.fillMaxWidth(),
-            horizontalAlignment = Alignment.Start
-          ) {
-            Box(
-              Modifier.fillMaxWidth().padding(bottom = 24.dp),
-              contentAlignment = Alignment.Center
+  ProvideWindowInsets(windowInsetsAnimationsEnabled = true) {
+    ModalBottomSheetLayout(
+      scrimColor = Color.Black.copy(alpha = 0.12F),
+      modifier = Modifier.navigationBarsWithImePadding(),
+      sheetContent = {
+        GetImageBottomSheet(profileImage, hideBottomSheet = {
+          scope.launch { bottomSheetModalState.hide() }
+        })
+      },
+      sheetState = bottomSheetModalState,
+      sheetShape = RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp)
+    ) {
+      ModalView(close = close) {
+        Column(
+          Modifier
+            .verticalScroll(scrollState)
+            .padding(bottom = 16.dp),
+          horizontalAlignment = Alignment.Start
+        ) {
+          Text(
+            "Your chat profile",
+            Modifier.padding(bottom = 24.dp),
+            style = MaterialTheme.typography.h1,
+            color = MaterialTheme.colors.onBackground
+          )
+          Text(
+            "Your profile is stored on your device and shared only with your contacts.\n\n" +
+                "SimpleX servers cannot see your profile.",
+            Modifier.padding(bottom = 24.dp),
+            color = MaterialTheme.colors.onBackground
+          )
+          if (editProfile.value) {
+            Column(
+              Modifier.fillMaxWidth(),
+              horizontalAlignment = Alignment.Start
             ) {
-              Box(contentAlignment = Alignment.TopEnd) {
-                Box(contentAlignment = Alignment.Center) {
-                  ProfileImage(192.dp, profileImage.value)
-                  EditImageButton { scope.launch { bottomSheetModalState.show() } }
+              Box(
+                Modifier
+                  .fillMaxWidth()
+                  .padding(bottom = 24.dp),
+                contentAlignment = Alignment.Center
+              ) {
+                Box(contentAlignment = Alignment.TopEnd) {
+                  Box(contentAlignment = Alignment.Center) {
+                    ProfileImage(192.dp, profileImage.value)
+                    EditImageButton { scope.launch { bottomSheetModalState.show() } }
+                  }
+                  if (profileImage.value != null) {
+                    DeleteImageButton { profileImage.value = null }
+                  }
                 }
-                if (profileImage.value != null) {
-                  DeleteImageButton { profileImage.value = null }
+              }
+              ProfileNameTextField(displayName)
+              ProfileNameTextField(fullName)
+              Row {
+                TextButton("Cancel") {
+                  displayName.value = profile.displayName
+                  fullName.value = profile.fullName
+                  profileImage.value = profile.image
+                  editProfile.value = false
+                }
+                Spacer(Modifier.padding(horizontal = 8.dp))
+                TextButton("Save (and notify contacts)") {
+                  saveProfile(displayName.value, fullName.value, profileImage.value)
                 }
               }
             }
-            ProfileNameTextField(displayName)
-            ProfileNameTextField(fullName)
-            Row {
-              TextButton("Cancel") {
-                displayName.value = profile.displayName
-                fullName.value = profile.fullName
-                profileImage.value = profile.image
-                editProfile.value = false
+          } else {
+            Column(
+              modifier = Modifier.fillMaxWidth(),
+              horizontalAlignment = Alignment.Start
+            ) {
+              Box(
+                Modifier
+                  .fillMaxWidth()
+                  .padding(bottom = 24.dp), contentAlignment = Alignment.Center
+              ) {
+                ProfileImage(192.dp, profile.image)
+                if (profile.image == null) {
+                  EditImageButton {
+                    editProfile.value = true
+                    scope.launch { bottomSheetModalState.show() }
+                  }
+                }
               }
-              Spacer(Modifier.padding(horizontal = 8.dp))
-              TextButton("Save (and notify contacts)") {
-                saveProfile(displayName.value, fullName.value, profileImage.value)
-              }
+              ProfileNameRow("Display name:", profile.displayName)
+              ProfileNameRow("Full name:", profile.fullName)
+              TextButton("Edit") { editProfile.value = true }
             }
           }
-        } else {
-          Column(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalAlignment = Alignment.Start
-          ) {
-            Box(
-              Modifier
-                .fillMaxWidth()
-                .padding(bottom = 24.dp), contentAlignment = Alignment.Center) {
-              ProfileImage(192.dp, profile.image)
-              if (profile.image == null) {
-                EditImageButton {
-                  editProfile.value = true
-                  scope.launch { bottomSheetModalState.show() }
-                }
+          if (savedKeyboardState != keyboardState) {
+            LaunchedEffect(keyboardState) {
+              scope.launch {
+                savedKeyboardState = keyboardState
+                scrollState.animateScrollTo(scrollState.maxValue)
               }
             }
-            ProfileNameRow("Display name:", profile.displayName)
-            ProfileNameRow("Full name:", profile.fullName)
-            TextButton("Edit") { editProfile.value = true }
           }
         }
       }
