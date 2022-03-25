@@ -8,12 +8,20 @@
 
 import SwiftUI
 
+// TODO
+//enum ComposeState {
+//    case plain
+//    case quoted(quotedItem: ChatItem)
+//    case editing(editingItem: ChatItem)
+//}
+
 struct ComposeView: View {
     @Binding var quotedItem: ChatItem?
     @Binding var editingItem: ChatItem?
     var sendMessage: (String) -> Void
     var inProgress: Bool = false
     @FocusState.Binding var keyboardVisible: Bool
+    @State var editing: Bool = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -25,9 +33,13 @@ struct ComposeView: View {
                 sendMessage: sendMessage,
                 inProgress: inProgress,
                 keyboardVisible: $keyboardVisible,
-                editing: editingItem != nil
+                editing: $editing
             )
             .background(.background)
+        }
+        .onChange(of: editingItem == nil) { _ in
+//            withAnimation { editing = (editingItem != nil) }
+            editing = (editingItem != nil)
         }
     }
 }

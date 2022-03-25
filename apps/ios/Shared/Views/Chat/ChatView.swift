@@ -32,7 +32,10 @@ struct ChatView: View {
                                 ChatItemView(chatItem: ci)
                                     .contextMenu {
                                         Button {
-                                            withAnimation { quotedItem = ci }
+                                            withAnimation {
+                                                editingItem = nil
+                                                quotedItem = ci
+                                            }
                                         } label: { Label("Reply", systemImage: "arrowshape.turn.up.left") }
                                         Button {
                                             showShareSheet(items: [ci.content.text])
@@ -42,7 +45,10 @@ struct ChatView: View {
                                         } label: { Label("Copy", systemImage: "doc.on.doc") }
                                         if (ci.chatDir.sent && ci.meta.editable) {
                                             Button {
-                                                withAnimation { editingItem = ci }
+                                                withAnimation {
+                                                    quotedItem = nil
+                                                    editingItem = ci
+                                                }
                                             } label: { Label("Edit", systemImage: "square.and.pencil") }
                                         }
                                     }

@@ -14,7 +14,7 @@ struct TerminalView: View {
     @EnvironmentObject var chatModel: ChatModel
     @State var inProgress: Bool = false
     @FocusState private var keyboardVisible: Bool
-    @State var editingItem: ChatItem? = nil
+    @State var editingOff: Bool = false
 
     var body: some View {
         VStack {
@@ -56,7 +56,7 @@ struct TerminalView: View {
                     sendMessage: sendMessage,
                     inProgress: inProgress,
                     keyboardVisible: $keyboardVisible,
-                    editing: false
+                    editing: $editingOff
                 )
             }
         }

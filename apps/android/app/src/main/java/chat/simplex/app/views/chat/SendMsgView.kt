@@ -1,5 +1,6 @@
 package chat.simplex.app.views.chat
 
+import android.annotation.SuppressLint
 import android.content.res.Configuration
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -20,12 +21,13 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import chat.simplex.app.model.ChatItem
 import chat.simplex.app.ui.theme.HighOrLowlight
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.chat.item.*
 
 @Composable
-fun SendMsgView(sendMessage: (String) -> Unit, editing: Boolean) {
+fun SendMsgView(sendMessage: (String) -> Unit, editingItem: MutableState<ChatItem?>) {
   var msg by remember { mutableStateOf("") }
   val smallFont = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onBackground)
   var textStyle by remember { mutableStateOf(smallFont) }
@@ -67,7 +69,7 @@ fun SendMsgView(sendMessage: (String) -> Unit, editing: Boolean) {
           }
           val color = if (msg.isNotEmpty()) MaterialTheme.colors.primary else Color.Gray
           Icon(
-            if (editing) Icons.Filled.Check else Icons.Outlined.ArrowUpward,
+            if (editingItem.value != null) Icons.Filled.Check else Icons.Outlined.ArrowUpward,
             "Send Message",
             tint = Color.White,
             modifier = Modifier
@@ -89,6 +91,7 @@ fun SendMsgView(sendMessage: (String) -> Unit, editing: Boolean) {
   )
 }
 
+@SuppressLint("UnrememberedMutableState")
 @Preview(showBackground = true)
 @Preview(
   uiMode = Configuration.UI_MODE_NIGHT_YES,
@@ -100,11 +103,12 @@ fun PreviewSendMsgView() {
   SimpleXTheme {
     SendMsgView(
       sendMessage = { msg -> println(msg) },
-      editing = false
+      editingItem = mutableStateOf(null)
     )
   }
 }
 
+@SuppressLint("UnrememberedMutableState")
 @Preview(showBackground = true)
 @Preview(
   uiMode = Configuration.UI_MODE_NIGHT_YES,
@@ -116,7 +120,7 @@ fun PreviewSendMsgViewEditing() {
   SimpleXTheme {
     SendMsgView(
       sendMessage = { msg -> println(msg) },
-      editing = true
+      editingItem = mutableStateOf(null)
     )
   }
 }

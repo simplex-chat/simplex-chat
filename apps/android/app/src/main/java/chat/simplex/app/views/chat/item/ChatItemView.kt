@@ -52,6 +52,7 @@ fun ChatItemView(
       }
       DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
         ItemAction("Reply", Icons.Outlined.Reply, onClick = {
+          editingItem.value = null
           quotedItem.value = cItem
           showMenu = false
         })
@@ -65,6 +66,7 @@ fun ChatItemView(
         })
         if (cItem.chatDir.sent && cItem.meta.editable) {
           ItemAction("Edit", Icons.Filled.Edit, onClick = {
+            quotedItem.value = null
             editingItem.value = cItem
             showMenu = false
           })
