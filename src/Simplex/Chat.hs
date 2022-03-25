@@ -243,8 +243,15 @@ processChatCommand = \case
             _ -> throwChatError CEInvalidMessageUpdate
         CChatItem SMDRcv _ -> throwChatError CEInvalidMessageUpdate
     CTContactRequest -> pure $ chatCmdError "not supported"
-  APIDeleteMessage cType _chatId _itemId _mode -> withUser $ \_user -> withChatLock $ case cType of
-    CTDirect -> pure CRCmdOk
+  APIDeleteMessage cType chatId itemId mode -> withUser $ \user@User {userId} -> withChatLock $ case cType of
+    CTDirect -> do
+      ct@Contact {contactId} <- withStore $ \st -> getContact st userId chatId
+      case mode of
+        MDInternal -> do
+          -- delCi <- withStore $ \st -> deleteDirectChatItemContent st userId contactId itemId
+          -- pure $ CRChatItemDeleted delCi
+          pure CRCmdOk
+        MDBroadcast -> pure $ chatCmdError "not supported"
     CTGroup -> pure CRCmdOk
     CTContactRequest -> pure $ chatCmdError "not supported"
   APIChatRead cType chatId fromToIds -> withChatLock $ case cType of

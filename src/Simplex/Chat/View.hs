@@ -168,13 +168,13 @@ viewChatItem chat ChatItem {chatDir, meta, content, quotedItem} = case chat of
   DirectChat c -> case chatDir of
     CIDirectSnd -> case content of
       CISndMsgContent mc -> viewSentMessage to quote mc meta
-      CISndMsgDeleted _mc -> []
+      CISndDeleted -> []
       CISndFileInvitation fId fPath -> viewSentFileInvitation to fId fPath meta
       where
         to = ttyToContact' c
     CIDirectRcv -> case content of
       CIRcvMsgContent mc -> viewReceivedMessage from quote meta mc
-      CIRcvMsgDeleted _mc -> []
+      CIRcvDeleted -> []
       CIRcvFileInvitation ft -> viewReceivedFileInvitation from meta ft
       where
         from = ttyFromContact' c
@@ -183,13 +183,13 @@ viewChatItem chat ChatItem {chatDir, meta, content, quotedItem} = case chat of
   GroupChat g -> case chatDir of
     CIGroupSnd -> case content of
       CISndMsgContent mc -> viewSentMessage to quote mc meta
-      CISndMsgDeleted _mc -> []
+      CISndDeleted -> []
       CISndFileInvitation fId fPath -> viewSentFileInvitation to fId fPath meta
       where
         to = ttyToGroup g
     CIGroupRcv m -> case content of
       CIRcvMsgContent mc -> viewReceivedMessage from quote meta mc
-      CIRcvMsgDeleted _mc -> []
+      CIRcvDeleted -> []
       CIRcvFileInvitation ft -> viewReceivedFileInvitation from meta ft
       where
         from = ttyFromGroup' g m
