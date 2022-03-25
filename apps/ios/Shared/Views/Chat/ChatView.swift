@@ -144,8 +144,8 @@ struct ChatView: View {
 
     func sendMessage(_ msg: String) {
         Task {
-            if let ei = editingItem {
-                do {
+            do {
+                if let ei = editingItem {
                     let chatItem = try await apiUpdateMessage(
                         type: chat.chatInfo.chatType,
                         id: chat.chatInfo.apiId,
@@ -156,11 +156,7 @@ struct ChatView: View {
                         editingItem = nil
                         let _ = chatModel.upsertChatItem(chat.chatInfo, chatItem)
                     }
-                } catch {
-                    logger.error("ChatView.sendMessage apiUpdateMessage error: \(error.localizedDescription)")
-                }
-            } else {
-                do {
+                } else {
                     let chatItem = try await apiSendMessage(
                         type: chat.chatInfo.chatType,
                         id: chat.chatInfo.apiId,
@@ -171,9 +167,9 @@ struct ChatView: View {
                         quotedItem = nil
                         chatModel.addChatItem(chat.chatInfo, chatItem)
                     }
-                } catch {
-                    logger.error("ChatView.sendMessage apiSendMessage error: \(error.localizedDescription)")
                 }
+            } catch {
+                logger.error("ChatView.sendMessage error: \(error.localizedDescription)")
             }
         }
     }

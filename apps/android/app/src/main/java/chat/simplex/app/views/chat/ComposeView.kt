@@ -17,10 +17,10 @@ fun ComposeView(
   Column {
     when {
       quotedItem.value != null -> {
-        RelatedItemView(quotedItem)
+        ContextItemView(quotedItem)
       }
       editingItem.value != null -> {
-        RelatedItemView(editingItem, editing = editingItem.value != null, resetMessage)
+        ContextItemView(editingItem, editing = editingItem.value != null, resetMessage)
       }
       else -> {}
     }

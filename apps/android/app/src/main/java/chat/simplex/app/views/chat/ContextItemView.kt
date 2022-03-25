@@ -19,14 +19,14 @@ import chat.simplex.app.views.chat.item.*
 import kotlinx.datetime.Clock
 
 @Composable
-fun RelatedItemView(
-  relatedItem: MutableState<ChatItem?>,
+fun ContextItemView(
+  contextItem: MutableState<ChatItem?>,
   editing: Boolean = false,
   resetMessage: () -> Unit = {}
 ) {
-  val ri = relatedItem.value
-  if (ri != null) {
-    val sent = ri.chatDir.sent
+  val cxtItem = contextItem.value
+  if (cxtItem != null) {
+    val sent = cxtItem.chatDir.sent
     Row(
       Modifier
         .padding(top = 8.dp)
@@ -40,10 +40,10 @@ fun RelatedItemView(
           .fillMaxWidth()
           .weight(1F)
       ) {
-        RelatedItemText(ri)
+        ContextItemText(cxtItem)
       }
       IconButton(onClick = {
-        relatedItem.value = null
+        contextItem.value = null
         if (editing) {
           resetMessage()
         }
@@ -60,14 +60,14 @@ fun RelatedItemView(
 }
 
 @Composable
-private fun RelatedItemText(ri: ChatItem) {
-  val member = ri.memberDisplayName
+private fun ContextItemText(cxtItem: ChatItem) {
+  val member = cxtItem.memberDisplayName
   if (member == null) {
-    Text(ri.content.text, maxLines = 3)
+    Text(cxtItem.content.text, maxLines = 3)
   } else {
     val annotatedText = buildAnnotatedString {
       withStyle(boldFont) { append(member) }
-      append(": ${ri.content.text}")
+      append(": ${cxtItem.content.text}")
     }
     Text(annotatedText, maxLines = 3)
   }
@@ -75,10 +75,10 @@ private fun RelatedItemText(ri: ChatItem) {
 
 @Preview
 @Composable
-fun PreviewRelatedItemView() {
+fun PreviewContextItemView() {
   SimpleXTheme {
-    RelatedItemView(
-      relatedItem = remember {
+    ContextItemView(
+      contextItem = remember {
         mutableStateOf(
           ChatItem.getSampleData(
             1, CIDirection.DirectRcv(), Clock.System.now(), "hello"

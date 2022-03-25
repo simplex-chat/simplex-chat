@@ -25,10 +25,11 @@ struct ComposeView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            QuotedItemView(quotedItem: $quotedItem)
-                .transition(.move(edge: .bottom))
-            EditingItemView(editingItem: $editingItem)
-                .transition(.move(edge: .bottom))
+            if (quotedItem != nil) {
+                ContextItemView(contextItem: $quotedItem)
+            } else if (editingItem != nil) {
+                ContextItemView(contextItem: $editingItem)
+            }
             SendMessageView(
                 sendMessage: sendMessage,
                 inProgress: inProgress,
