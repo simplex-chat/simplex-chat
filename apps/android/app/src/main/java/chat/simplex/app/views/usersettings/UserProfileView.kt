@@ -39,7 +39,6 @@ fun UserProfileView(chatModel: ChatModel, close: () -> Unit) {
       profile = profile,
       saveProfile = { displayName, fullName, image ->
         withApi {
-          if (image != null) chatModel.controller.apiUpdateProfileImage(image)
           val p = Profile(displayName, fullName, image)
           val newProfile = chatModel.controller.apiUpdateProfile(p)
           if (newProfile != null) {

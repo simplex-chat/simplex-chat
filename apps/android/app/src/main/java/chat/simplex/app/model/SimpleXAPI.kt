@@ -203,18 +203,11 @@ open class ChatController(val ctrl: ChatCtrl, val ntfManager: NtfManager, val ap
   }
 
   suspend fun apiUpdateProfile(profile: Profile): Profile? {
-    val r = sendCmd(CC.UpdateProfile(profile))
+    val r = sendCmd(CC.ApiUpdateProfile(profile))
     if (r is CR.UserProfileNoChange) return profile
     if (r is CR.UserProfileUpdated) return r.toProfile
     Log.e(TAG, "apiUpdateProfile bad response: ${r.responseType} ${r.details}")
     return null
-  }
-
-  suspend fun apiUpdateProfileImage(image: String): Boolean {
-    val r = sendCmd(CC.UpdateProfileImage(image))
-    if (r is CR.UserProfileNoChange || r is CR.UserProfileUpdated) return true
-    Log.e(TAG, "apiUpdateProfileImage bad response: ${r.responseType} ${r.details}")
-    return false
   }
 
   suspend fun apiCreateUserAddress(): String? {
@@ -358,8 +351,7 @@ sealed class CC {
   class AddContact: CC()
   class Connect(val connReq: String): CC()
   class ApiDeleteChat(val type: ChatType, val id: Long): CC()
-  class UpdateProfile(val profile: Profile): CC()
-  class UpdateProfileImage(val image: String): CC()
+  class ApiUpdateProfile(val profile: Profile): CC()
   class CreateMyAddress: CC()
   class DeleteMyAddress: CC()
   class ShowMyAddress: CC()
@@ -381,8 +373,7 @@ sealed class CC {
     is AddContact -> "/connect"
     is Connect -> "/connect $connReq"
     is ApiDeleteChat -> "/_delete ${chatRef(type, id)}"
-    is UpdateProfile -> "/profile ${profile.displayName} ${profile.fullName}"
-    is UpdateProfileImage -> "/profile_image $image"
+    is ApiUpdateProfile -> "/_profile ${json.encodeToString(profile)}"
     is CreateMyAddress -> "/address"
     is DeleteMyAddress -> "/delete_address"
     is ShowMyAddress -> "/show_address"
@@ -405,8 +396,7 @@ sealed class CC {
     is AddContact -> "addContact"
     is Connect -> "connect"
     is ApiDeleteChat -> "apiDeleteChat"
-    is UpdateProfile -> "updateProfile"
-    is UpdateProfileImage -> "updateProfileImage"
+    is ApiUpdateProfile -> "updateProfile"
     is CreateMyAddress -> "createMyAddress"
     is DeleteMyAddress -> "deleteMyAddress"
     is ShowMyAddress -> "showMyAddress"
