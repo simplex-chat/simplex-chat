@@ -36,20 +36,16 @@ import java.io.File
 // Inspired by https://github.com/MakeItEasyDev/Jetpack-Compose-Capture-Image-Or-Choose-from-Gallery
 
 fun bitmapToBase64(bitmap: Bitmap, squareCrop: Boolean = true): String {
-  val height: Int
-  val width: Int
-  val xOffset: Int
-  val yOffset: Int
-  val size = 128
+  val size = 104
+  var height = size
+  var width = size
+  var xOffset = 0
+  var yOffset = 0
   if (bitmap.height < bitmap.width) {
-    height = size
     width = height * bitmap.width / bitmap.height
     xOffset = (width - height) / 2
-    yOffset = 0
   } else {
-    width = size
     height = width * bitmap.height / bitmap.width
-    xOffset = 0
     yOffset = (height - width) / 2
   }
   var image = bitmap

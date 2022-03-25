@@ -92,9 +92,9 @@ struct UserProfile: View {
         }
         .onChange(of: pickedImage) { image in
             if let image = image,
-               let data = resizeToSquare(image, 128).jpegData(compressionQuality: 0.85) {
+               let data = resizeToSquare(image, 104).jpegData(compressionQuality: 0.85) {
                 let imageStr = "data:image/jpg;base64,\(data.base64EncodedString())"
-                if imageStr.count <= 12000 {
+                if imageStr.count <= 12500 {
                     profile.image = imageStr
                 } else {
                     logger.error("UserProfile: resized image is too big \(imageStr.count)")
@@ -181,7 +181,7 @@ func resize(_ image: UIImage, to newSize: CGSize) -> UIImage {
 }
 
 func resizeToSquare(_ image: UIImage, _ side: CGFloat) -> UIImage {
-    resize(image, to: CGSize(width: 128, height: 128))
+    resize(image, to: CGSize(width: side, height: side))
 }
 
 struct UserProfile_Previews: PreviewProvider {
