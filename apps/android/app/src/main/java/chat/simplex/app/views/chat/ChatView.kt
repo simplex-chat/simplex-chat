@@ -61,35 +61,30 @@ fun ChatView(chatModel: ChatModel) {
       back = { chatModel.chatId.value = null },
       info = { ModalManager.shared.showCustomModal { close -> ChatInfoView(chatModel, close) } },
       sendMessage = { msg ->
-        val ei = editingItem.value
-        if (ei != null) {
-          withApi {
-            // show "in progress"
-            val cInfo = chat.chatInfo
+        withApi {
+          // show "in progress"
+          val cInfo = chat.chatInfo
+          val ei = editingItem.value
+          if (ei != null) {
             val updatedItem = chatModel.controller.apiUpdateMessage(
               type = cInfo.chatType,
               id = cInfo.apiId,
               itemId = ei.meta.itemId,
               mc = MsgContent.MCText(msg)
             )
-            editingItem.value = null
-            // hide "in progress"
             if (updatedItem != null) chatModel.upsertChatItem(cInfo, updatedItem.chatItem)
-          }
-        } else {
-          withApi {
-            // show "in progress"
-            val cInfo = chat.chatInfo
+          } else {
             val newItem = chatModel.controller.apiSendMessage(
               type = cInfo.chatType,
               id = cInfo.apiId,
               quotedItemId = quotedItem.value?.meta?.itemId,
               mc = MsgContent.MCText(msg)
             )
-            quotedItem.value = null
-            // hide "in progress"
             if (newItem != null) chatModel.addChatItem(cInfo, newItem.chatItem)
           }
+          // hide "in progress"
+          editingItem.value = null
+          quotedItem.value = null
         }
       }
     )

@@ -11,6 +11,6 @@ fun ComposeView(quotedItem: MutableState<ChatItem?>, editingItem: MutableState<C
   Column {
     QuotedItemView(quotedItem)
     EditingItemView(editingItem)
-    SendMsgView(sendMessage, editingItem)
+    SendMsgView(sendMessage, editingItem.value != null)
   }
 }

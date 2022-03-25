@@ -39,13 +39,12 @@ fun TerminalView(chatModel: ChatModel, close: () -> Unit) {
   }
 }
 
-@SuppressLint("UnrememberedMutableState")
 @Composable
 fun TerminalLayout(terminalItems: List<TerminalItem>, close: () -> Unit, sendCommand: (String) -> Unit) {
   ProvideWindowInsets(windowInsetsAnimationsEnabled = true) {
     Scaffold(
       topBar = { CloseSheetBar(close) },
-      bottomBar = { SendMsgView(sendCommand, editingItem = mutableStateOf(null)) },
+      bottomBar = { SendMsgView(sendCommand) },
       modifier = Modifier.navigationBarsWithImePadding()
     ) { contentPadding ->
       Surface(
