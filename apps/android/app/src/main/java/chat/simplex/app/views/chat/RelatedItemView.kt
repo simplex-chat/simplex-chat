@@ -19,7 +19,11 @@ import chat.simplex.app.views.chat.item.*
 import kotlinx.datetime.Clock
 
 @Composable
-fun RelatedItemView(relatedItem: MutableState<ChatItem?>) {
+fun RelatedItemView(
+  relatedItem: MutableState<ChatItem?>,
+  editing: Boolean = false,
+  resetMessage: () -> Unit = {}
+) {
   val ri = relatedItem.value
   if (ri != null) {
     val sent = ri.chatDir.sent
@@ -38,7 +42,12 @@ fun RelatedItemView(relatedItem: MutableState<ChatItem?>) {
       ) {
         RelatedItemText(ri)
       }
-      IconButton(onClick = { relatedItem.value = null }) {
+      IconButton(onClick = {
+        relatedItem.value = null
+        if (editing) {
+          resetMessage()
+        }
+      }) {
         Icon(
           Icons.Outlined.Close,
           contentDescription = "Cancel",

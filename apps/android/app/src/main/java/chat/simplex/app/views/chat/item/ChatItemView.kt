@@ -26,6 +26,7 @@ import kotlinx.datetime.Clock
 fun ChatItemView(
   user: User,
   cItem: ChatItem,
+  msg: MutableState<String>,
   quotedItem: MutableState<ChatItem?>,
   editingItem: MutableState<ChatItem?>,
   cxt: Context,
@@ -68,6 +69,7 @@ fun ChatItemView(
           ItemAction("Edit", Icons.Filled.Edit, onClick = {
             quotedItem.value = null
             editingItem.value = cItem
+            msg.value = cItem.content.text
             showMenu = false
           })
         }
@@ -99,6 +101,7 @@ fun PreviewChatItemView() {
       ChatItem.getSampleData(
         1, CIDirection.DirectSnd(), Clock.System.now(), "hello"
       ),
+      msg = remember { mutableStateOf("") },
       quotedItem = remember { mutableStateOf(null) },
       editingItem = remember { mutableStateOf(null) },
       cxt = LocalContext.current

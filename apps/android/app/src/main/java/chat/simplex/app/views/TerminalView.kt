@@ -44,7 +44,7 @@ fun TerminalLayout(terminalItems: List<TerminalItem>, close: () -> Unit, sendCom
   ProvideWindowInsets(windowInsetsAnimationsEnabled = true) {
     Scaffold(
       topBar = { CloseSheetBar(close) },
-      bottomBar = { SendMsgView(sendCommand) },
+      bottomBar = { SendMsgView(msg = remember { mutableStateOf("") }, sendCommand) },
       modifier = Modifier.navigationBarsWithImePadding()
     ) { contentPadding ->
       Surface(
