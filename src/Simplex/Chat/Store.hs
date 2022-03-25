@@ -176,7 +176,7 @@ import Simplex.Chat.Migrations.M20220321_chat_item_edited
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Chat.Util (eitherToMaybe)
-import Simplex.Messaging.Agent.Protocol (AgentMsgId, ConnId, InvitationId, MsgMeta (..), SMPServer (..))
+import Simplex.Messaging.Agent.Protocol (AConnectionRequestUri, AgentMsgId, ConnId, InvitationId, MsgMeta (..), SMPServer (..))
 import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore (..), createSQLiteStore, firstRow, withTransaction)
 import Simplex.Messaging.Agent.Store.SQLite.Migrations (Migration (..))
 import qualified Simplex.Messaging.Crypto as C
@@ -1877,7 +1877,7 @@ getRcvFileTransfer_ db userId fileId =
       (userId, fileId)
   where
     rcvFileTransfer ::
-      [(FileStatus, ConnReqInvitation, String, Integer, Integer, Maybe ContactName, Maybe ContactName, Maybe FilePath, Maybe Int64, Maybe AgentConnId)] ->
+      [(FileStatus, AConnectionRequestUri, String, Integer, Integer, Maybe ContactName, Maybe ContactName, Maybe FilePath, Maybe Int64, Maybe AgentConnId)] ->
       Either StoreError RcvFileTransfer
     rcvFileTransfer [(fileStatus', fileConnReq, fileName, fileSize, chunkSize, contactName_, memberName_, filePath_, connId_, agentConnId_)] =
       let fileInv = FileInvitation {fileName, fileSize, fileConnReq}
