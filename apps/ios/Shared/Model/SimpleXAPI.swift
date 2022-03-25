@@ -28,7 +28,7 @@ enum ChatCommand {
     case addContact
     case connect(connReq: String)
     case apiDeleteChat(type: ChatType, id: Int64)
-    case updateProfile(profile: Profile)
+    case apiUpdateProfile(profile: Profile)
     case createMyAddress
     case deleteMyAddress
     case showMyAddress
@@ -52,7 +52,7 @@ enum ChatCommand {
             case .addContact: return "/connect"
             case let .connect(connReq): return "/connect \(connReq)"
             case let .apiDeleteChat(type, id): return "/_delete \(ref(type, id))"
-            case let .updateProfile(profile): return "/profile \(profile.displayName) \(profile.fullName)"
+            case let .apiUpdateProfile(profile): return "/_profile \(encodeJSON(profile))"
             case .createMyAddress: return "/address"
             case .deleteMyAddress: return "/delete_address"
             case .showMyAddress: return "/show_address"
@@ -79,7 +79,7 @@ enum ChatCommand {
             case .addContact: return "addContact"
             case .connect: return "connect"
             case .apiDeleteChat: return "apiDeleteChat"
-            case .updateProfile: return "updateProfile"
+            case .apiUpdateProfile: return "apiUpdateProfile"
             case .createMyAddress: return "createMyAddress"
             case .deleteMyAddress: return "deleteMyAddress"
             case .showMyAddress: return "showMyAddress"
@@ -155,7 +155,7 @@ enum ChatResponse: Decodable, Error {
             case .sentInvitation: return "sentInvitation"
             case .contactDeleted: return "contactDeleted"
             case .userProfileNoChange: return "userProfileNoChange"
-            case .userProfileUpdated: return "userProfileNoChange"
+            case .userProfileUpdated: return "userProfileUpdated"
             case .userContactLink: return "userContactLink"
             case .userContactLinkCreated: return "userContactLinkCreated"
             case .userContactLinkDeleted: return "userContactLinkDeleted"
@@ -427,7 +427,7 @@ func apiDeleteChat(type: ChatType, id: Int64) async throws {
 }
 
 func apiUpdateProfile(profile: Profile) async throws -> Profile? {
-    let r = await chatSendCmd(.updateProfile(profile: profile))
+    let r = await chatSendCmd(.apiUpdateProfile(profile: profile))
     switch r {
     case .userProfileNoChange: return nil
     case let .userProfileUpdated(_, toProfile): return toProfile
@@ -703,10 +703,13 @@ private func getJSONObject(_ cjson: UnsafePointer<CChar>) -> NSDictionary? {
     return try? JSONSerialization.jsonObject(with: d) as? NSDictionary
 }
 
-private func encodeCJSON<T: Encodable>(_ value: T) -> [CChar] {
+private func encodeJSON<T: Encodable>(_ value: T) -> String {
     let data = try! jsonEncoder.encode(value)
-    let str = String(decoding: data, as: UTF8.self)
-    return str.cString(using: .utf8)!
+    return String(decoding: data, as: UTF8.self)
+}
+
+private func encodeCJSON<T: Encodable>(_ value: T) -> [CChar] {
+    encodeJSON(value).cString(using: .utf8)!
 }
 
 enum ChatError: Decodable {

@@ -130,7 +130,9 @@ struct ChatView: View {
     }
 
     func sendMessage(_ msg: String) {
+        logger.debug("ChatView sendMessage")
         Task {
+            logger.debug("ChatView sendMessage: in Task")
             do {
                 let chatItem = try await apiSendMessage(
                     type: chat.chatInfo.chatType,

@@ -19,10 +19,11 @@ struct ChatInfoImage: View {
         case .group: iconName = "person.2.circle.fill"
         default: iconName = "circle.fill"
         }
-
-        return Image(systemName: iconName)
-            .resizable()
-            .foregroundColor(color)
+        return ProfileImage(
+            imageStr: chat.chatInfo.image,
+            iconName: iconName,
+            color: color
+        )
     }
 }
 
