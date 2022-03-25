@@ -146,11 +146,11 @@ struct UserProfile: View {
     func saveProfile() {
         Task {
             do {
-                try await apiUpdateProfileImage(image: profile.image)
-                let newProfile = try await apiUpdateProfile(profile: profile)
-                DispatchQueue.main.async {
-                    chatModel.currentUser?.profile = newProfile
-                    profile = newProfile
+                if let newProfile = try await apiUpdateProfile(profile: profile) {
+                    DispatchQueue.main.async {
+                        chatModel.currentUser?.profile = newProfile
+                        profile = newProfile
+                    }
                 }
             } catch {
                 logger.error("UserProfile apiUpdateProfile error: \(error.localizedDescription)")

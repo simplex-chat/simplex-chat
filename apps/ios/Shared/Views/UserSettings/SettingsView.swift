@@ -32,7 +32,7 @@ struct SettingsView: View {
                         HStack {
                             ProfileImage(imageStr: user.image)
                                 .frame(width: 44, height: 44)
-                                .padding(.trailing, 8)
+                                .padding(.trailing, 6)
                                 .padding(.vertical, 6)
                             VStack(alignment: .leading) {
                                 Text(user.displayName)
@@ -41,7 +41,7 @@ struct SettingsView: View {
                                 Text(user.fullName)
                             }
                         }
-                        .padding(.leading, -4)
+                        .padding(.leading, -8)
                     }
                     NavigationLink {
                         UserAddress()
