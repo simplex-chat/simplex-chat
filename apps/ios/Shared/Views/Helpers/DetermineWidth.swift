@@ -11,12 +11,12 @@ import SwiftUI
 struct DetermineWidth: View {
     typealias Key = MaximumWidthPreferenceKey
     var body: some View {
-        GeometryReader {
-            proxy in
+        GeometryReader { proxy in
             Color.clear
-                .anchorPreference(key: Key.self, value: .bounds) {
-                    anchor in proxy[anchor].size.width
-                }
+                .preference(
+                    key: MaximumWidthPreferenceKey.self,
+                    value: proxy.size.width
+                )
         }
     }
 }

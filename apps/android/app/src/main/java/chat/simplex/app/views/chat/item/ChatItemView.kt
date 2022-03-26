@@ -65,14 +65,14 @@ fun ChatItemView(
           copyText(cxt, cItem.content.text)
           showMenu = false
         })
-        if (cItem.chatDir.sent && cItem.meta.editable) {
-          ItemAction("Edit", Icons.Filled.Edit, onClick = {
-            quotedItem.value = null
-            editingItem.value = cItem
-            msg.value = cItem.content.text
-            showMenu = false
-          })
-        }
+//        if (cItem.chatDir.sent && cItem.meta.editable) {
+//          ItemAction("Edit", Icons.Filled.Edit, onClick = {
+//            quotedItem.value = null
+//            editingItem.value = cItem
+//            msg.value = cItem.content.text
+//            showMenu = false
+//          })
+//        }
       }
     }
   }
