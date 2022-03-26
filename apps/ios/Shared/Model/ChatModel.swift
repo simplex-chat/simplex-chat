@@ -190,8 +190,8 @@ struct User: Decodable, NamedChat {
     var activeUser: Bool
 
     var displayName: String { get { profile.displayName } }
-
     var fullName: String { get { profile.fullName } }
+    var image: String? { get { profile.image } }
 
     static let sampleData = User(
         userId: 1,
@@ -209,6 +209,7 @@ typealias GroupName = String
 struct Profile: Codable, NamedChat {
     var displayName: String
     var fullName: String
+    var image: String?
 
     static let sampleData = Profile(
         displayName: "alice",
@@ -225,6 +226,7 @@ enum ChatType: String {
 protocol NamedChat {
     var displayName: String { get }
     var fullName: String { get }
+    var image: String? { get }
 }
 
 extension NamedChat {
@@ -266,6 +268,16 @@ enum ChatInfo: Identifiable, Decodable, NamedChat {
             case let .direct(contact): return contact.fullName
             case let .group(groupInfo): return groupInfo.fullName
             case let .contactRequest(contactRequest): return contactRequest.fullName
+            }
+        }
+    }
+
+    var image: String? {
+        get {
+            switch self {
+            case let .direct(contact): return contact.image
+            case let .group(groupInfo): return groupInfo.image
+            case let .contactRequest(contactRequest): return contactRequest.image
             }
         }
     }
@@ -420,6 +432,7 @@ struct Contact: Identifiable, Decodable, NamedChat {
     var ready: Bool { get { activeConn.connStatus == "ready" || activeConn.connStatus == "snd-ready" } }
     var displayName: String { get { profile.displayName } }
     var fullName: String { get { profile.fullName } }
+    var image: String? { get { profile.image } }
 
     static let sampleData = Contact(
         contactId: 1,
@@ -452,6 +465,7 @@ struct UserContactRequest: Decodable, NamedChat {
     var ready: Bool { get { true } }
     var displayName: String { get { profile.displayName } }
     var fullName: String { get { profile.fullName } }
+    var image: String? { get { profile.image } }
 
     static let sampleData = UserContactRequest(
         contactRequestId: 1,
@@ -472,6 +486,7 @@ struct GroupInfo: Identifiable, Decodable, NamedChat {
     var ready: Bool { get { true } }
     var displayName: String { get { groupProfile.displayName } }
     var fullName: String { get { groupProfile.fullName } }
+    var image: String? { get { groupProfile.image } }
 
     static let sampleData = GroupInfo(
         groupId: 1,
@@ -484,6 +499,7 @@ struct GroupInfo: Identifiable, Decodable, NamedChat {
 struct GroupProfile: Codable, NamedChat {
     var displayName: String
     var fullName: String
+    var image: String?
 
     static let sampleData = GroupProfile(
         displayName: "team",
@@ -548,10 +564,10 @@ struct ChatItem: Identifiable, Decodable {
         }
     }
     
-    static func getSample (_ id: Int64, _ dir: CIDirection, _ ts: Date, _ text: String, _ status: CIStatus = .sndNew, quotedItem: CIQuote? = nil) -> ChatItem {
+    static func getSample (_ id: Int64, _ dir: CIDirection, _ ts: Date, _ text: String, _ status: CIStatus = .sndNew, quotedItem: CIQuote? = nil, _ itemDeleted: Bool = false, _ itemEdited: Bool = false, _ editable: Bool = true) -> ChatItem {
         ChatItem(
            chatDir: dir,
-           meta: CIMeta.getSample(id, ts, text, status),
+           meta: CIMeta.getSample(id, ts, text, status, itemDeleted, itemEdited, editable),
            content: .sndMsgContent(msgContent: .text(text)),
            quotedItem: quotedItem
        )
@@ -582,16 +598,22 @@ struct CIMeta: Decodable {
     var itemText: String
     var itemStatus: CIStatus
     var createdAt: Date
+    var itemDeleted: Bool
+    var itemEdited: Bool
+    var editable: Bool
 
     var timestampText: Text { get { SimpleX.timestampText(itemTs) } }
 
-    static func getSample(_ id: Int64, _ ts: Date, _ text: String, _ status: CIStatus = .sndNew) -> CIMeta {
+    static func getSample(_ id: Int64, _ ts: Date, _ text: String, _ status: CIStatus = .sndNew, _ itemDeleted: Bool = false, _ itemEdited: Bool = false, _ editable: Bool = true) -> CIMeta {
         CIMeta(
             itemId: id,
             itemTs: ts,
             itemText: text,
             itemStatus: status,
-            createdAt: ts
+            createdAt: ts,
+            itemDeleted: itemDeleted,
+            itemEdited: itemEdited,
+            editable: editable
         )
     }
 }
