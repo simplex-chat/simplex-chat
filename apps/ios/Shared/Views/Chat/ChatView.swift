@@ -44,15 +44,15 @@ struct ChatView: View {
                                         Button {
                                             UIPasteboard.general.string = ci.content.text
                                         } label: { Label("Copy", systemImage: "doc.on.doc") }
-                                        if (ci.chatDir.sent && ci.meta.editable) {
-                                            Button {
-                                                withAnimation {
-                                                    quotedItem = nil
-                                                    editingItem = ci
-                                                    message = ci.content.text
-                                                }
-                                            } label: { Label("Edit", systemImage: "square.and.pencil") }
-                                        }
+//                                        if (ci.chatDir.sent && ci.meta.editable) {
+//                                            Button {
+//                                                withAnimation {
+//                                                    quotedItem = nil
+//                                                    editingItem = ci
+//                                                    message = ci.content.text
+//                                                }
+//                                            } label: { Label("Edit", systemImage: "square.and.pencil") }
+//                                        }
                                     }
                                     .padding(.horizontal)
                                     .frame(maxWidth: maxWidth, maxHeight: .infinity, alignment: alignment)
