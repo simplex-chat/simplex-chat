@@ -14,6 +14,7 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
+import chat.simplex.app.SimplexService
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.model.Profile
 import chat.simplex.app.views.helpers.withApi
@@ -151,6 +152,7 @@ fun CreateProfilePanel(chatModel: ChatModel) {
           Profile(displayName, fullName, null)
         )
         chatModel.controller.startChat(user)
+        SimplexService.start(chatModel.controller.appContext)
       }
     },
     enabled = (displayName.isNotEmpty() && isValidDisplayName(displayName))

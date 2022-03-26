@@ -1,3 +1,7 @@
 <resources>
   <string name="app_name">SimpleX</string>
+
+  <!-- SimpleX Chat foreground Service -->
+  <string name="simplex_service_notification_title">SimpleX Chat service</string>
+  <string name="simplex_service_notification_text">Waiting for incoming messages</string>
 </resources>
