@@ -215,7 +215,7 @@ processChatCommand = \case
                   msgRef = MsgRef {msgId = itemSharedMsgId, sentAt = itemTs, sent, memberId = Just memberId}
                in sendNewGroupMsg user group (MCQuote QuotedMsg {msgRef, content} mc) mc (Just quotedItem)
     CTContactRequest -> pure $ chatCmdError "not supported"
-  APIUpdateMessage cType chatId itemId mc -> withUser $ \user@User {userId} -> withChatLock $ case cType of
+  APIUpdateChatItem cType chatId itemId mc -> withUser $ \user@User {userId} -> withChatLock $ case cType of
     CTDirect -> do
       (ct@Contact {contactId, localDisplayName = c}, ci) <- withStore $ \st -> (,) <$> getContact st userId chatId <*> getDirectChatItem st userId chatId itemId
       case ci of
@@ -226,8 +226,8 @@ processChatCommand = \case
               updCi <- withStore $ \st -> updateDirectChatItem st userId contactId itemId (CISndMsgContent mc) msgId
               setActive $ ActiveC c
               pure . CRChatItemUpdated $ AChatItem SCTDirect SMDSnd (DirectChat ct) updCi
-            _ -> throwChatError CEInvalidMessageUpdate
-        CChatItem SMDRcv _ -> throwChatError CEInvalidMessageUpdate
+            _ -> throwChatError CEInvalidChatItemUpdate
+        CChatItem SMDRcv _ -> throwChatError CEInvalidChatItemUpdate
     CTGroup -> do
       Group gInfo@GroupInfo {groupId, localDisplayName = gName, membership} ms <- withStore $ \st -> getGroup st user chatId
       unless (memberActive membership) $ throwChatError CEGroupMemberUserRemoved
@@ -240,36 +240,36 @@ processChatCommand = \case
               updCi <- withStore $ \st -> updateGroupChatItem st user groupId itemId (CISndMsgContent mc) msgId
               setActive $ ActiveG gName
               pure . CRChatItemUpdated $ AChatItem SCTGroup SMDSnd (GroupChat gInfo) updCi
-            _ -> throwChatError CEInvalidMessageUpdate
-        CChatItem SMDRcv _ -> throwChatError CEInvalidMessageUpdate
+            _ -> throwChatError CEInvalidChatItemUpdate
+        CChatItem SMDRcv _ -> throwChatError CEInvalidChatItemUpdate
     CTContactRequest -> pure $ chatCmdError "not supported"
-  APIDeleteMessage cType chatId itemId mode -> withUser $ \user@User {userId} -> withChatLock $ case cType of
+  APIDeleteChatItem cType chatId itemId mode -> withUser $ \user@User {userId} -> withChatLock $ case cType of
     CTDirect -> do
       (ct@Contact {localDisplayName = c}, CChatItem msgDir deletedItem@ChatItem {meta = CIMeta {itemSharedMsgId}}) <- withStore $ \st -> (,) <$> getContact st userId chatId <*> getDirectChatItem st userId chatId itemId
       case (mode, msgDir, itemSharedMsgId) of
-        (MDMInternal, _, _) -> do
+        (CIDMInternal, _, _) -> do
           toCi <- withStore $ \st -> deleteDirectChatItemInternal st userId ct itemId
           pure $ CRChatItemDeleted (AChatItem SCTDirect msgDir (DirectChat ct) deletedItem) toCi
-        (MDMBroadcast, SMDSnd, Just itemSharedMId) -> do
+        (CIDMBroadcast, SMDSnd, Just itemSharedMId) -> do
           SndMessage {msgId} <- sendDirectContactMessage ct (XMsgDel itemSharedMId)
           toCi <- withStore $ \st -> deleteDirectChatItemSndBroadcast st userId ct itemId msgId
           setActive $ ActiveC c
           pure $ CRChatItemDeleted (AChatItem SCTDirect msgDir (DirectChat ct) deletedItem) toCi
-        (MDMBroadcast, _, _) -> throwChatError CEInvalidMessageDelete
+        (CIDMBroadcast, _, _) -> throwChatError CEInvalidChatItemDelete
     CTGroup -> do
       Group gInfo@GroupInfo {localDisplayName = gName, membership} ms <- withStore $ \st -> getGroup st user chatId
       unless (memberActive membership) $ throwChatError CEGroupMemberUserRemoved
       CChatItem msgDir deletedItem@ChatItem {meta = CIMeta {itemSharedMsgId}} <- withStore $ \st -> getGroupChatItem st user chatId itemId
       case (mode, msgDir, itemSharedMsgId) of
-        (MDMInternal, _, _) -> do
+        (CIDMInternal, _, _) -> do
           toCi <- withStore $ \st -> deleteGroupChatItemInternal st user gInfo itemId
           pure $ CRChatItemDeleted (AChatItem SCTGroup msgDir (GroupChat gInfo) deletedItem) toCi
-        (MDMBroadcast, SMDSnd, Just itemSharedMId) -> do
+        (CIDMBroadcast, SMDSnd, Just itemSharedMId) -> do
           SndMessage {msgId} <- sendGroupMessage gInfo ms (XMsgDel itemSharedMId)
           toCi <- withStore $ \st -> deleteGroupChatItemSndBroadcast st user gInfo itemId msgId
           setActive $ ActiveG gName
           pure $ CRChatItemDeleted (AChatItem SCTGroup msgDir (GroupChat gInfo) deletedItem) toCi
-        (MDMBroadcast, _, _) -> throwChatError CEInvalidMessageDelete
+        (CIDMBroadcast, _, _) -> throwChatError CEInvalidChatItemDelete
     CTContactRequest -> pure $ chatCmdError "not supported"
   APIChatRead cType chatId fromToIds -> withChatLock $ case cType of
     CTDirect -> withStore (\st -> updateDirectChatItemsRead st chatId fromToIds) $> CRCmdOk
@@ -1627,8 +1627,8 @@ chatCommandP =
     <|> "/_get items count=" *> (APIGetChatItems <$> A.decimal)
     <|> "/_send " *> (APISendMessage <$> chatTypeP <*> A.decimal <* A.space <*> msgContentP)
     <|> "/_send_quote " *> (APISendMessageQuote <$> chatTypeP <*> A.decimal <* A.space <*> A.decimal <* A.space <*> msgContentP)
-    <|> "/_update item " *> (APIUpdateMessage <$> chatTypeP <*> A.decimal <* A.space <*> A.decimal <* A.space <*> msgContentP)
-    <|> "/_delete item " *> (APIDeleteMessage <$> chatTypeP <*> A.decimal <* A.space <*> A.decimal <* A.space <*> msgDeleteMode)
+    <|> "/_update item " *> (APIUpdateChatItem <$> chatTypeP <*> A.decimal <* A.space <*> A.decimal <* A.space <*> msgContentP)
+    <|> "/_delete item " *> (APIDeleteChatItem <$> chatTypeP <*> A.decimal <* A.space <*> A.decimal <* A.space <*> ciDeleteMode)
     <|> "/_read chat " *> (APIChatRead <$> chatTypeP <*> A.decimal <* A.space <*> ((,) <$> ("from=" *> A.decimal) <* A.space <*> ("to=" *> A.decimal)))
     <|> "/_delete " *> (APIDeleteChat <$> chatTypeP <*> A.decimal)
     <|> "/_accept " *> (APIAcceptContact <$> A.decimal)
@@ -1691,7 +1691,7 @@ chatCommandP =
     msgContentP =
       "text " *> (MCText . safeDecodeUtf8 <$> A.takeByteString)
         <|> "json " *> jsonP
-    msgDeleteMode = "broadcast" $> MDMBroadcast <|> "internal" $> MDMInternal
+    ciDeleteMode = "broadcast" $> CIDMBroadcast <|> "internal" $> CIDMInternal
     displayName = safeDecodeUtf8 <$> (B.cons <$> A.satisfy refChar <*> A.takeTill (== ' '))
     sendMsgQuote msgDir = SendMessageQuote <$> displayName <* A.space <*> pure msgDir <*> quotedMsg <*> A.takeByteString
     quotedMsg = A.char '(' *> A.takeTill (== ')') <* A.char ')' <* optional A.space

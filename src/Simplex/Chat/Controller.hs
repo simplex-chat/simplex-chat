@@ -94,8 +94,8 @@ data ChatCommand
   | APIGetChatItems Int
   | APISendMessage ChatType Int64 MsgContent
   | APISendMessageQuote ChatType Int64 ChatItemId MsgContent
-  | APIUpdateMessage ChatType Int64 ChatItemId MsgContent
-  | APIDeleteMessage ChatType Int64 ChatItemId MsgDeleteMode
+  | APIUpdateChatItem ChatType Int64 ChatItemId MsgContent
+  | APIDeleteChatItem ChatType Int64 ChatItemId CIDeleteMode
   | APIChatRead ChatType Int64 (ChatItemId, ChatItemId)
   | APIDeleteChat ChatType Int64
   | APIAcceptContact Int64
@@ -300,8 +300,8 @@ data ChatErrorType
   | CEFileRcvChunk {message :: String}
   | CEFileInternal {message :: String}
   | CEInvalidQuote
-  | CEInvalidMessageUpdate
-  | CEInvalidMessageDelete
+  | CEInvalidChatItemUpdate
+  | CEInvalidChatItemDelete
   | CEAgentVersion
   | CECommandError {message :: String}
   deriving (Show, Exception, Generic)

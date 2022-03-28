@@ -174,7 +174,7 @@ testDirectMessageUpdate =
       alice #$> ("/_get chat @2 count=100", chat', [((1, "hello 🙂"), Nothing), ((0, "hi alice"), Just (1, "hello 🙂"))])
       bob #$> ("/_get chat @2 count=100", chat', [((0, "hello 🙂"), Nothing), ((1, "hi alice"), Just (0, "hello 🙂"))])
 
-      alice #$> ("/_update item @2 1 text hey 👋", id, "message updated")
+      alice #$> ("/_update item @2 1 text hey 👋", id, "item updated")
       bob <# "alice> [edited] hey 👋"
 
       alice #$> ("/_get chat @2 count=100", chat', [((1, "hey 👋"), Nothing), ((0, "hi alice"), Just (1, "hello 🙂"))])
@@ -190,19 +190,19 @@ testDirectMessageUpdate =
       alice #$> ("/_get chat @2 count=100", chat', [((1, "hey 👋"), Nothing), ((0, "hi alice"), Just (1, "hello 🙂")), ((0, "hey alice"), Just (1, "hey 👋"))])
       bob #$> ("/_get chat @2 count=100", chat', [((0, "hey 👋"), Nothing), ((1, "hi alice"), Just (0, "hello 🙂")), ((1, "hey alice"), Just (0, "hey 👋"))])
 
-      alice #$> ("/_update item @2 1 text greetings 🤝", id, "message updated")
+      alice #$> ("/_update item @2 1 text greetings 🤝", id, "item updated")
       bob <# "alice> [edited] greetings 🤝"
 
-      alice #$> ("/_update item @2 2 text updating bob's message", id, "cannot update this message")
+      alice #$> ("/_update item @2 2 text updating bob's message", id, "cannot update this item")
 
       alice #$> ("/_get chat @2 count=100", chat', [((1, "greetings 🤝"), Nothing), ((0, "hi alice"), Just (1, "hello 🙂")), ((0, "hey alice"), Just (1, "hey 👋"))])
       bob #$> ("/_get chat @2 count=100", chat', [((0, "greetings 🤝"), Nothing), ((1, "hi alice"), Just (0, "hello 🙂")), ((1, "hey alice"), Just (0, "hey 👋"))])
 
-      bob #$> ("/_update item @2 2 text hey Alice", id, "message updated")
+      bob #$> ("/_update item @2 2 text hey Alice", id, "item updated")
       alice <# "bob> [edited] > hello 🙂"
       alice <## "      hey Alice"
 
-      bob #$> ("/_update item @2 3 text greetings Alice", id, "message updated")
+      bob #$> ("/_update item @2 3 text greetings Alice", id, "item updated")
       alice <# "bob> [edited] > hey 👋"
       alice <## "      greetings Alice"
 
@@ -226,16 +226,16 @@ testDirectMessageDelete =
       alice <# "bob> > hello 🙂"
       alice <## "      hey alic"
 
-      alice #$> ("/_delete item @2 1 internal", id, "message deleted")
-      alice #$> ("/_delete item @2 2 internal", id, "message deleted")
+      alice #$> ("/_delete item @2 1 internal", id, "item deleted")
+      alice #$> ("/_delete item @2 2 internal", id, "item deleted")
 
       alice #$$> ("/_get chats", [("@bob", "")])
       alice #$> ("/_get chat @2 count=100", chat, [])
 
-      alice #$> ("/_update item @2 1 text updating deleted message", id, "cannot update this message")
+      alice #$> ("/_update item @2 1 text updating deleted message", id, "cannot update this item")
       alice #$> ("/_send_quote @2 1 text quoting deleted message", id, "cannot reply to this message")
 
-      bob #$> ("/_update item @2 2 text hey alice", id, "message updated")
+      bob #$> ("/_update item @2 2 text hey alice", id, "item updated")
       alice <# "bob> [edited] hey alice"
 
       alice #$$> ("/_get chats", [("@bob", "hey alice")])
@@ -245,14 +245,14 @@ testDirectMessageDelete =
       bob #> "@alice how are you?"
       alice <# "bob> how are you?"
 
-      bob #$> ("/_delete item @2 3 broadcast", id, "message deleted")
+      bob #$> ("/_delete item @2 3 broadcast", id, "item deleted")
       alice <# "bob> [deleted] how are you?"
 
-      alice #$> ("/_delete item @2 1 broadcast", id, "message deleted")
+      alice #$> ("/_delete item @2 1 broadcast", id, "item deleted")
       bob <# "alice> [deleted] hello 🙂"
 
-      alice #$> ("/_delete item @2 2 broadcast", id, "cannot delete this message")
-      alice #$> ("/_delete item @2 2 internal", id, "message deleted")
+      alice #$> ("/_delete item @2 2 broadcast", id, "cannot delete this item")
+      alice #$> ("/_delete item @2 2 internal", id, "item deleted")
 
       alice #$$> ("/_get chats", [("@bob", "this item is deleted (broadcast)")])
       alice #$> ("/_get chat @2 count=100", chat, [(0, "this item is deleted (broadcast)")])
@@ -752,7 +752,7 @@ testGroupMessageUpdate =
         (bob <# "#team alice> hello!")
         (cath <# "#team alice> hello!")
 
-      alice #$> ("/_update item #1 1 text hey 👋", id, "message updated")
+      alice #$> ("/_update item #1 1 text hey 👋", id, "item updated")
       concurrently_
         (bob <# "#team alice> [edited] hey 👋")
         (cath <# "#team alice> [edited] hey 👋")
@@ -780,12 +780,12 @@ testGroupMessageUpdate =
       bob #$> ("/_get chat #1 count=100", chat', [((0, "hey 👋"), Nothing), ((1, "hi alice"), Just (0, "hey 👋"))])
       cath #$> ("/_get chat #1 count=100", chat', [((0, "hey 👋"), Nothing), ((0, "hi alice"), Just (0, "hey 👋"))])
 
-      alice #$> ("/_update item #1 1 text greetings 🤝", id, "message updated")
+      alice #$> ("/_update item #1 1 text greetings 🤝", id, "item updated")
       concurrently_
         (bob <# "#team alice> [edited] greetings 🤝")
         (cath <# "#team alice> [edited] greetings 🤝")
 
-      alice #$> ("/_update item #1 2 text updating bob's message", id, "cannot update this message")
+      alice #$> ("/_update item #1 2 text updating bob's message", id, "cannot update this item")
 
       threadDelay 1000000
       cath `send` "> #team @alice (greetings) greetings!"
@@ -816,13 +816,13 @@ testGroupMessageDelete =
         (bob <# "#team alice> hello!")
         (cath <# "#team alice> hello!")
 
-      alice #$> ("/_delete item #1 1 internal", id, "message deleted")
+      alice #$> ("/_delete item #1 1 internal", id, "item deleted")
 
       alice #$> ("/_get chat #1 count=100", chat, [])
       bob #$> ("/_get chat #1 count=100", chat, [(0, "hello!")])
       cath #$> ("/_get chat #1 count=100", chat, [(0, "hello!")])
 
-      alice #$> ("/_update item #1 1 text updating deleted message", id, "cannot update this message")
+      alice #$> ("/_update item #1 1 text updating deleted message", id, "cannot update this item")
       alice #$> ("/_send_quote #1 1 text quoting deleted message", id, "cannot reply to this message")
 
       threadDelay 1000000
@@ -844,18 +844,18 @@ testGroupMessageDelete =
       bob #$> ("/_get chat #1 count=100", chat', [((0, "hello!"), Nothing), ((1, "hi alic"), Just (0, "hello!"))])
       cath #$> ("/_get chat #1 count=100", chat', [((0, "hello!"), Nothing), ((0, "hi alic"), Just (0, "hello!"))])
 
-      alice #$> ("/_delete item #1 1 broadcast", id, "message deleted")
+      alice #$> ("/_delete item #1 1 broadcast", id, "item deleted")
       concurrently_
         (bob <# "#team alice> [deleted] hello!")
         (cath <# "#team alice> [deleted] hello!")
 
-      alice #$> ("/_delete item #1 2 internal", id, "message deleted")
+      alice #$> ("/_delete item #1 2 internal", id, "item deleted")
 
       alice #$> ("/_get chat #1 count=100", chat', [])
       bob #$> ("/_get chat #1 count=100", chat', [((0, "this item is deleted (broadcast)"), Nothing), ((1, "hi alic"), Just (0, "hello!"))])
       cath #$> ("/_get chat #1 count=100", chat', [((0, "this item is deleted (broadcast)"), Nothing), ((0, "hi alic"), Just (0, "hello!"))])
 
-      bob #$> ("/_update item #1 2 text hi alice", id, "message updated")
+      bob #$> ("/_update item #1 2 text hi alice", id, "item updated")
       concurrently_
         (alice <# "#team bob> [edited] hi alice")
         ( do
@@ -874,13 +874,13 @@ testGroupMessageDelete =
         (alice <# "#team cath> how are you?")
         (bob <# "#team cath> how are you?")
 
-      cath #$> ("/_delete item #1 3 broadcast", id, "message deleted")
+      cath #$> ("/_delete item #1 3 broadcast", id, "item deleted")
       concurrently_
         (alice <# "#team cath> [deleted] how are you?")
         (bob <# "#team cath> [deleted] how are you?")
 
-      alice #$> ("/_delete item #1 2 broadcast", id, "cannot delete this message")
-      alice #$> ("/_delete item #1 2 internal", id, "message deleted")
+      alice #$> ("/_delete item #1 2 broadcast", id, "cannot delete this item")
+      alice #$> ("/_delete item #1 2 internal", id, "item deleted")
 
       alice #$> ("/_get chat #1 count=100", chat', [((0, "this item is deleted (broadcast)"), Nothing)])
       bob #$> ("/_get chat #1 count=100", chat', [((0, "this item is deleted (broadcast)"), Nothing), ((1, "hi alice"), Just (0, "hello!")), ((0, "this item is deleted (broadcast)"), Nothing)])

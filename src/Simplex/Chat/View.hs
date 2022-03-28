@@ -49,8 +49,8 @@ responseToView testView = \case
   CRUserSMPServers smpServers -> viewSMPServers smpServers testView
   CRNewChatItem (AChatItem _ _ chat item) -> viewChatItem chat item
   CRChatItemStatusUpdated _ -> []
-  CRChatItemUpdated (AChatItem _ _ chat item) -> viewMessageUpdate chat item
-  CRChatItemDeleted (AChatItem _ _ chat deletedItem) (AChatItem _ _ _ toItem) -> viewMessageDelete chat deletedItem toItem
+  CRChatItemUpdated (AChatItem _ _ chat item) -> viewItemUpdate chat item
+  CRChatItemDeleted (AChatItem _ _ chat deletedItem) (AChatItem _ _ _ toItem) -> viewItemDelete chat deletedItem toItem
   CRMsgIntegrityError mErr -> viewMsgIntegrityError mErr
   CRCmdAccepted _ -> []
   CRCmdOk -> ["ok"]
@@ -197,8 +197,8 @@ viewChatItem chat ChatItem {chatDir, meta, content, quotedItem} = case chat of
       quote = maybe [] (groupQuote g) quotedItem
   _ -> []
 
-viewMessageUpdate :: MsgDirectionI d => ChatInfo c -> ChatItem c d -> [StyledString]
-viewMessageUpdate chat ChatItem {chatDir, meta, content, quotedItem} = case chat of
+viewItemUpdate :: MsgDirectionI d => ChatInfo c -> ChatItem c d -> [StyledString]
+viewItemUpdate chat ChatItem {chatDir, meta, content, quotedItem} = case chat of
   DirectChat Contact {localDisplayName = c} -> case chatDir of
     CIDirectRcv -> case content of
       CIRcvMsgContent mc -> viewReceivedMessage from quote meta mc
@@ -206,7 +206,7 @@ viewMessageUpdate chat ChatItem {chatDir, meta, content, quotedItem} = case chat
       where
         from = ttyFromContactEdited c
         quote = maybe [] (directQuote chatDir) quotedItem
-    CIDirectSnd -> ["message updated"]
+    CIDirectSnd -> ["item updated"]
   GroupChat g -> case chatDir of
     CIGroupRcv GroupMember {localDisplayName = m} -> case content of
       CIRcvMsgContent mc -> viewReceivedMessage from quote meta mc
@@ -214,22 +214,22 @@ viewMessageUpdate chat ChatItem {chatDir, meta, content, quotedItem} = case chat
       where
         from = ttyFromGroupEdited g m
         quote = maybe [] (groupQuote g) quotedItem
-    CIGroupSnd -> ["message updated"]
+    CIGroupSnd -> ["item updated"]
   _ -> []
 
-viewMessageDelete :: ChatInfo c -> ChatItem c d -> ChatItem c' d' -> [StyledString]
-viewMessageDelete chat ChatItem {chatDir, meta, content = deletedContent} ChatItem {content = toContent} = case chat of
+viewItemDelete :: ChatInfo c -> ChatItem c d -> ChatItem c' d' -> [StyledString]
+viewItemDelete chat ChatItem {chatDir, meta, content = deletedContent} ChatItem {content = toContent} = case chat of
   DirectChat Contact {localDisplayName = c} -> case (chatDir, deletedContent, toContent) of
     (CIDirectRcv, CIRcvMsgContent mc, CIRcvDeleted mode) -> case mode of
-      MDMBroadcast -> viewReceivedMessage (ttyFromContactDeleted c) [] meta mc
-      MDMInternal -> ["message deleted"]
-    (CIDirectSnd, _, _) -> ["message deleted"]
+      CIDMBroadcast -> viewReceivedMessage (ttyFromContactDeleted c) [] meta mc
+      CIDMInternal -> ["item deleted"]
+    (CIDirectSnd, _, _) -> ["item deleted"]
     _ -> []
   GroupChat g -> case (chatDir, deletedContent, toContent) of
     (CIGroupRcv GroupMember {localDisplayName = m}, CIRcvMsgContent mc, CIRcvDeleted mode) -> case mode of
-      MDMBroadcast -> viewReceivedMessage (ttyFromGroupDeleted g m) [] meta mc
-      MDMInternal -> ["message deleted"]
-    (CIGroupSnd, _, _) -> ["message deleted"]
+      CIDMBroadcast -> viewReceivedMessage (ttyFromGroupDeleted g m) [] meta mc
+      CIDMInternal -> ["item deleted"]
+    (CIGroupSnd, _, _) -> ["item deleted"]
     _ -> []
   _ -> []
 
@@ -600,8 +600,8 @@ viewChatError = \case
     CEFileRcvChunk e -> ["error receiving file: " <> plain e]
     CEFileInternal e -> ["file error: " <> plain e]
     CEInvalidQuote -> ["cannot reply to this message"]
-    CEInvalidMessageUpdate -> ["cannot update this message"]
-    CEInvalidMessageDelete -> ["cannot delete this message"]
+    CEInvalidChatItemUpdate -> ["cannot update this item"]
+    CEInvalidChatItemDelete -> ["cannot delete this item"]
     CEAgentVersion -> ["unsupported agent version"]
     CECommandError e -> ["bad chat command: " <> plain e]
   -- e -> ["chat error: " <> sShow e]
