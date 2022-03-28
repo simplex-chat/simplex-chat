@@ -245,14 +245,31 @@ processChatCommand = \case
     CTContactRequest -> pure $ chatCmdError "not supported"
   APIDeleteMessage cType chatId itemId mode -> withUser $ \user@User {userId} -> withChatLock $ case cType of
     CTDirect -> do
-      ct@Contact {contactId} <- withStore $ \st -> getContact st userId chatId
-      case mode of
-        MDInternal -> do
-          -- delCi <- withStore $ \st -> deleteDirectChatItemContent st userId contactId itemId
-          -- pure $ CRChatItemDeleted delCi
-          pure CRCmdOk
-        MDBroadcast -> pure $ chatCmdError "not supported"
-    CTGroup -> pure CRCmdOk
+      (ct@Contact {localDisplayName = c}, CChatItem msgDir deletedItem@ChatItem {meta = CIMeta {itemSharedMsgId}}) <- withStore $ \st -> (,) <$> getContact st userId chatId <*> getDirectChatItem st userId chatId itemId
+      case (mode, msgDir, itemSharedMsgId) of
+        (MDMInternal, _, _) -> do
+          toCi <- withStore $ \st -> deleteDirectChatItemInternal st userId ct itemId
+          pure $ CRChatItemDeleted (AChatItem SCTDirect msgDir (DirectChat ct) deletedItem) toCi
+        (MDMBroadcast, SMDSnd, Just itemSharedMId) -> do
+          SndMessage {msgId} <- sendDirectContactMessage ct (XMsgDel itemSharedMId)
+          toCi <- withStore $ \st -> deleteDirectChatItemSndBroadcast st userId ct itemId msgId
+          setActive $ ActiveC c
+          pure $ CRChatItemDeleted (AChatItem SCTDirect msgDir (DirectChat ct) deletedItem) toCi
+        (MDMBroadcast, _, _) -> throwChatError CEInvalidMessageDelete
+    CTGroup -> do
+      Group gInfo@GroupInfo {localDisplayName = gName, membership} ms <- withStore $ \st -> getGroup st user chatId
+      unless (memberActive membership) $ throwChatError CEGroupMemberUserRemoved
+      CChatItem msgDir deletedItem@ChatItem {meta = CIMeta {itemSharedMsgId}} <- withStore $ \st -> getGroupChatItem st user chatId itemId
+      case (mode, msgDir, itemSharedMsgId) of
+        (MDMInternal, _, _) -> do
+          toCi <- withStore $ \st -> deleteGroupChatItemInternal st user gInfo itemId
+          pure $ CRChatItemDeleted (AChatItem SCTGroup msgDir (GroupChat gInfo) deletedItem) toCi
+        (MDMBroadcast, SMDSnd, Just itemSharedMId) -> do
+          SndMessage {msgId} <- sendGroupMessage gInfo ms (XMsgDel itemSharedMId)
+          toCi <- withStore $ \st -> deleteGroupChatItemSndBroadcast st user gInfo itemId msgId
+          setActive $ ActiveG gName
+          pure $ CRChatItemDeleted (AChatItem SCTGroup msgDir (GroupChat gInfo) deletedItem) toCi
+        (MDMBroadcast, _, _) -> throwChatError CEInvalidMessageDelete
     CTContactRequest -> pure $ chatCmdError "not supported"
   APIChatRead cType chatId fromToIds -> withChatLock $ case cType of
     CTDirect -> withStore (\st -> updateDirectChatItemsRead st chatId fromToIds) $> CRCmdOk
@@ -724,6 +741,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
             case chatMsgEvent of
               XMsgNew mc -> newContentMessage ct mc msg msgMeta
               XMsgUpdate sharedMsgId mContent -> messageUpdate ct sharedMsgId mContent msg msgMeta
+              XMsgDel sharedMsgId -> messageDelete ct sharedMsgId msg msgMeta
               XFile fInv -> processFileInvitation ct fInv msg msgMeta
               XInfo p -> xInfo ct p
               XGrpInv gInv -> processGroupInvitation ct gInv
@@ -863,7 +881,8 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
         withAckMessage agentConnId msgMeta $
           case chatMsgEvent of
             XMsgNew mc -> newGroupContentMessage gInfo m mc msg msgMeta
-            XMsgUpdate sharedMsgId mContent -> groupMessageUpdate gInfo sharedMsgId mContent msg
+            XMsgUpdate sharedMsgId mContent -> groupMessageUpdate gInfo m sharedMsgId mContent msg
+            XMsgDel sharedMsgId -> groupMessageDelete gInfo m sharedMsgId msg
             XFile fInv -> processGroupFileInvitation gInfo m fInv msg msgMeta
             XGrpMemNew memInfo -> xGrpMemNew gInfo m memInfo
             XGrpMemIntro memInfo -> xGrpMemIntro conn gInfo m memInfo
@@ -1043,11 +1062,28 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
       setActive $ ActiveC c
 
     messageUpdate :: Contact -> SharedMsgId -> MsgContent -> RcvMessage -> MsgMeta -> m ()
-    messageUpdate ct@Contact {contactId, localDisplayName = c} sharedMsgId mc RcvMessage {msgId} msgMeta = do
-      updCi <- withStore $ \st -> updateDirectChatItemByMsgId st userId contactId sharedMsgId (CIRcvMsgContent mc) msgId
-      toView . CRChatItemUpdated $ AChatItem SCTDirect SMDRcv (DirectChat ct) updCi
-      checkIntegrity msgMeta $ toView . CRMsgIntegrityError
-      setActive $ ActiveC c
+    messageUpdate ct@Contact {contactId} sharedMsgId mc RcvMessage {msgId} msgMeta = do
+      CChatItem msgDir ChatItem {meta = CIMeta {itemId}} <- withStore $ \st -> getDirectChatItemBySharedMsgId st userId contactId sharedMsgId
+      case msgDir of
+        SMDRcv -> do
+          updCi <- withStore $ \st -> updateDirectChatItem st userId contactId itemId (CIRcvMsgContent mc) msgId
+          toView . CRChatItemUpdated $ AChatItem SCTDirect SMDRcv (DirectChat ct) updCi
+          checkIntegrity msgMeta $ toView . CRMsgIntegrityError
+        SMDSnd -> do
+          messageError "x.msg.update: contact attempted invalid message update"
+          checkIntegrity msgMeta $ toView . CRMsgIntegrityError
+
+    messageDelete :: Contact -> SharedMsgId -> RcvMessage -> MsgMeta -> m ()
+    messageDelete ct@Contact {contactId} sharedMsgId RcvMessage {msgId} msgMeta = do
+      CChatItem msgDir deletedItem@ChatItem {meta = CIMeta {itemId}} <- withStore $ \st -> getDirectChatItemBySharedMsgId st userId contactId sharedMsgId
+      case msgDir of
+        SMDRcv -> do
+          toCi <- withStore $ \st -> deleteDirectChatItemRcvBroadcast st userId ct itemId msgId
+          toView $ CRChatItemDeleted (AChatItem SCTDirect SMDRcv (DirectChat ct) deletedItem) toCi
+          checkIntegrity msgMeta $ toView . CRMsgIntegrityError
+        SMDSnd -> do
+          messageError "x.msg.del: contact attempted invalid message delete"
+          checkIntegrity msgMeta $ toView . CRMsgIntegrityError
 
     newGroupContentMessage :: GroupInfo -> GroupMember -> MsgContainer -> RcvMessage -> MsgMeta -> m ()
     newGroupContentMessage gInfo m@GroupMember {localDisplayName = c} mc msg msgMeta = do
@@ -1058,12 +1094,29 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
       showMsgToast ("#" <> g <> " " <> c <> "> ") content formattedText
       setActive $ ActiveG g
 
-    groupMessageUpdate :: GroupInfo -> SharedMsgId -> MsgContent -> RcvMessage -> m ()
-    groupMessageUpdate gInfo@GroupInfo {groupId} sharedMsgId mc RcvMessage {msgId} = do
-      updCi <- withStore $ \st -> updateGroupChatItemByMsgId st user groupId sharedMsgId (CIRcvMsgContent mc) msgId
-      toView . CRChatItemUpdated $ AChatItem SCTGroup SMDRcv (GroupChat gInfo) updCi
-      let g = groupName' gInfo
-      setActive $ ActiveG g
+    groupMessageUpdate :: GroupInfo -> GroupMember -> SharedMsgId -> MsgContent -> RcvMessage -> m ()
+    groupMessageUpdate gInfo@GroupInfo {groupId} GroupMember {memberId} sharedMsgId mc RcvMessage {msgId} = do
+      CChatItem msgDir ChatItem {chatDir, meta = CIMeta {itemId}} <- withStore $ \st -> getGroupChatItemBySharedMsgId st user groupId sharedMsgId
+      case (msgDir, chatDir) of
+        (SMDRcv, CIGroupRcv m) ->
+          if sameMemberId memberId m
+            then do
+              updCi <- withStore $ \st -> updateGroupChatItem st user groupId itemId (CIRcvMsgContent mc) msgId
+              toView . CRChatItemUpdated $ AChatItem SCTGroup SMDRcv (GroupChat gInfo) updCi
+            else messageError "x.msg.update: group member attempted to update a message of another member"
+        (SMDSnd, _) -> messageError "x.msg.update: group member attempted invalid message update"
+
+    groupMessageDelete :: GroupInfo -> GroupMember -> SharedMsgId -> RcvMessage -> m ()
+    groupMessageDelete gInfo@GroupInfo {groupId} GroupMember {memberId} sharedMsgId RcvMessage {msgId} = do
+      CChatItem msgDir deletedItem@ChatItem {chatDir, meta = CIMeta {itemId}} <- withStore $ \st -> getGroupChatItemBySharedMsgId st user groupId sharedMsgId
+      case (msgDir, chatDir) of
+        (SMDRcv, CIGroupRcv m) ->
+          if sameMemberId memberId m
+            then do
+              toCi <- withStore $ \st -> deleteGroupChatItemRcvBroadcast st user gInfo itemId msgId
+              toView $ CRChatItemDeleted (AChatItem SCTGroup SMDRcv (GroupChat gInfo) deletedItem) toCi
+            else messageError "x.msg.del: group member attempted to delete a message of another member"
+        (SMDSnd, _) -> messageError "x.msg.del: group member attempted invalid message delete"
 
     processFileInvitation :: Contact -> FileInvitation -> RcvMessage -> MsgMeta -> m ()
     processFileInvitation ct@Contact {localDisplayName = c} fInv msg msgMeta = do
@@ -1179,7 +1232,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
         GCInviteeMember -> do
           members <- withStore $ \st -> getGroupMembers st user gInfo
           case find (sameMemberId memId) members of
-            Nothing -> messageError "x.grp.mem.inv error: referenced member does not exists"
+            Nothing -> messageError "x.grp.mem.inv error: referenced member does not exist"
             Just reMember -> do
               GroupMemberIntro {introId} <- withStore $ \st -> saveIntroInvitation st reMember m introInv
               void $ sendXGrpMemInv gInfo reMember (XGrpMemFwd (memberInfo m) introInv) introId
@@ -1638,7 +1691,7 @@ chatCommandP =
     msgContentP =
       "text " *> (MCText . safeDecodeUtf8 <$> A.takeByteString)
         <|> "json " *> jsonP
-    msgDeleteMode = "broadcast" $> MDBroadcast <|> "internal" $> MDInternal
+    msgDeleteMode = "broadcast" $> MDMBroadcast <|> "internal" $> MDMInternal
     displayName = safeDecodeUtf8 <$> (B.cons <$> A.satisfy refChar <*> A.takeTill (== ' '))
     sendMsgQuote msgDir = SendMessageQuote <$> displayName <* A.space <*> pure msgDir <*> quotedMsg <*> A.takeByteString
     quotedMsg = A.char '(' *> A.takeTill (== ')') <* A.char ')' <* optional A.space

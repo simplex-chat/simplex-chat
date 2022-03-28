@@ -81,9 +81,6 @@ data ChatController = ChatController
 data HelpSection = HSMain | HSFiles | HSGroups | HSMyAddress | HSMarkdown | HSQuotes
   deriving (Show, Generic)
 
-data MsgDeleteMode = MDBroadcast | MDInternal
-  deriving (Show, Generic)
-
 instance ToJSON HelpSection where
   toJSON = J.genericToJSON . enumJSON $ dropPrefix "HS"
   toEncoding = J.genericToEncoding . enumJSON $ dropPrefix "HS"
@@ -154,7 +151,7 @@ data ChatResponse
   | CRNewChatItem {chatItem :: AChatItem}
   | CRChatItemStatusUpdated {chatItem :: AChatItem}
   | CRChatItemUpdated {chatItem :: AChatItem}
-  | CRChatItemDeleted {chatItem :: AChatItem}
+  | CRChatItemDeleted {deletedChatItem :: AChatItem, toChatItem :: AChatItem}
   | CRMsgIntegrityError {msgerror :: MsgErrorType} -- TODO make it chat item to support in mobile
   | CRCmdAccepted {corr :: CorrId}
   | CRCmdOk
@@ -304,6 +301,7 @@ data ChatErrorType
   | CEFileInternal {message :: String}
   | CEInvalidQuote
   | CEInvalidMessageUpdate
+  | CEInvalidMessageDelete
   | CEAgentVersion
   | CECommandError {message :: String}
   deriving (Show, Exception, Generic)
