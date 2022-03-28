@@ -2510,7 +2510,7 @@ getDirectChatLast_ db User {userId} contactId count = do
               ri.chat_item_id, i.quoted_shared_msg_id, i.quoted_sent_at, i.quoted_content, i.quoted_sent
             FROM chat_items i
             LEFT JOIN chat_items ri ON i.quoted_shared_msg_id = ri.shared_msg_id
-            WHERE i.user_id = ? AND i.contact_id = ?
+            WHERE i.user_id = ? AND i.contact_id = ? AND i.item_deleted != 1
             ORDER BY i.chat_item_id DESC
             LIMIT ?
           |]
@@ -2538,7 +2538,7 @@ getDirectChatAfter_ db User {userId} contactId afterChatItemId count = do
               ri.chat_item_id, i.quoted_shared_msg_id, i.quoted_sent_at, i.quoted_content, i.quoted_sent
             FROM chat_items i
             LEFT JOIN chat_items ri ON i.quoted_shared_msg_id = ri.shared_msg_id
-            WHERE i.user_id = ? AND i.contact_id = ? AND i.chat_item_id > ?
+            WHERE i.user_id = ? AND i.contact_id = ? AND i.chat_item_id > ? AND i.item_deleted != 1
             ORDER BY i.chat_item_id ASC
             LIMIT ?
           |]
@@ -2566,7 +2566,7 @@ getDirectChatBefore_ db User {userId} contactId beforeChatItemId count = do
               ri.chat_item_id, i.quoted_shared_msg_id, i.quoted_sent_at, i.quoted_content, i.quoted_sent
             FROM chat_items i
             LEFT JOIN chat_items ri ON i.quoted_shared_msg_id = ri.shared_msg_id
-            WHERE i.user_id = ? AND i.contact_id = ? AND i.chat_item_id < ?
+            WHERE i.user_id = ? AND i.contact_id = ? AND i.chat_item_id < ? AND i.item_deleted != 1
             ORDER BY i.chat_item_id DESC
             LIMIT ?
           |]
@@ -2580,7 +2580,7 @@ getDirectChatStats_ db userId contactId =
       [sql|
         SELECT COUNT(1), MIN(chat_item_id)
         FROM chat_items
-        WHERE user_id = ? AND contact_id = ? AND item_status = ?
+        WHERE user_id = ? AND contact_id = ? AND item_status = ? AND item_deleted != 1
         GROUP BY contact_id
       |]
       (userId, contactId, CISRcvNew)
@@ -2678,7 +2678,7 @@ getGroupChatLast_ db user@User {userId, userContactId} groupId count = do
             LEFT JOIN chat_items ri ON i.quoted_shared_msg_id = ri.shared_msg_id
             LEFT JOIN group_members rm ON rm.group_member_id = ri.group_member_id
             LEFT JOIN contact_profiles rp ON rp.contact_profile_id = rm.contact_profile_id
-            WHERE i.user_id = ? AND i.group_id = ?
+            WHERE i.user_id = ? AND i.group_id = ? AND i.item_deleted != 1
             ORDER BY i.item_ts DESC, i.chat_item_id DESC
             LIMIT ?
           |]
@@ -2718,7 +2718,7 @@ getGroupChatAfter_ db user@User {userId, userContactId} groupId afterChatItemId 
             LEFT JOIN chat_items ri ON i.quoted_shared_msg_id = ri.shared_msg_id
             LEFT JOIN group_members rm ON rm.group_member_id = ri.group_member_id
             LEFT JOIN contact_profiles rp ON rp.contact_profile_id = rm.contact_profile_id
-            WHERE i.user_id = ? AND i.group_id = ? AND i.chat_item_id > ?
+            WHERE i.user_id = ? AND i.group_id = ? AND i.chat_item_id > ? AND i.item_deleted != 1
             ORDER BY i.item_ts ASC, i.chat_item_id ASC
             LIMIT ?
           |]
@@ -2758,7 +2758,7 @@ getGroupChatBefore_ db user@User {userId, userContactId} groupId beforeChatItemI
             LEFT JOIN chat_items ri ON i.quoted_shared_msg_id = ri.shared_msg_id
             LEFT JOIN group_members rm ON rm.group_member_id = ri.group_member_id
             LEFT JOIN contact_profiles rp ON rp.contact_profile_id = rm.contact_profile_id
-            WHERE i.user_id = ? AND i.group_id = ? AND i.chat_item_id < ?
+            WHERE i.user_id = ? AND i.group_id = ? AND i.chat_item_id < ? AND i.item_deleted != 1
             ORDER BY i.item_ts DESC, i.chat_item_id DESC
             LIMIT ?
           |]
@@ -2772,7 +2772,7 @@ getGroupChatStats_ db userId groupId =
       [sql|
         SELECT COUNT(1), MIN(chat_item_id)
         FROM chat_items
-        WHERE user_id = ? AND group_id = ? AND item_status = ?
+        WHERE user_id = ? AND group_id = ? AND item_status = ? AND item_deleted != 1
         GROUP BY group_id
       |]
       (userId, groupId, CISRcvNew)
@@ -2859,7 +2859,7 @@ updateDirectChatItem_ db userId contactId itemId newContent msgId = runExceptT $
       db
       [sql|
         UPDATE chat_items
-        SET item_content = ?, item_text = ?, item_edited = 1, updated_at = ?
+        SET item_content = ?, item_text = ?, item_deleted = 0, item_edited = 1, updated_at = ?
         WHERE user_id = ? AND contact_id = ? AND chat_item_id = ?
       |]
       (newContent, newText, currentTs, userId, contactId, itemId)
@@ -2913,7 +2913,7 @@ deleteDirectChatItem_ :: DB.Connection -> UserId -> Contact -> ChatItemId -> Msg
 deleteDirectChatItem_ db userId ct@Contact {contactId} itemId mode itemDeleted currentTs = runExceptT $ do
   (CChatItem msgDir ci) <- ExceptT $ getDirectChatItem_ db userId contactId itemId
   let toContent = msgDirToDeletedContent_ msgDir mode
-  liftIO $
+  liftIO $ do
     DB.execute
       db
       [sql|
@@ -2922,9 +2922,21 @@ deleteDirectChatItem_ db userId ct@Contact {contactId} itemId mode itemDeleted c
         WHERE user_id = ? AND contact_id = ? AND chat_item_id = ?
       |]
       (toContent, toText, itemDeleted, currentTs, userId, contactId, itemId)
+    when itemDeleted $ deleteQuote_ db itemId
   pure $ AChatItem SCTDirect msgDir (DirectChat ct) (ci {content = toContent, meta = (meta ci) {itemText = toText, itemDeleted}, formattedText = Nothing})
   where
     toText = msgDeleteModeToText mode
+
+deleteQuote_ :: DB.Connection -> ChatItemId -> IO ()
+deleteQuote_ db itemId =
+  DB.execute
+    db
+    [sql|
+      UPDATE chat_items
+      SET quoted_shared_msg_id = NULL, quoted_sent_at = NULL, quoted_content = NULL, quoted_sent = NULL, quoted_member_id = NULL
+      WHERE chat_item_id = ?
+    |]
+    (Only itemId)
 
 msgDirToDeletedContent_ :: SMsgDirection d -> MsgDeleteMode -> CIContent d
 msgDirToDeletedContent_ msgDir mode = case msgDir of
@@ -3005,7 +3017,7 @@ updateGroupChatItem_ db user@User {userId} groupId itemId newContent msgId = run
       db
       [sql|
         UPDATE chat_items
-        SET item_content = ?, item_text = ?, item_edited = 1, updated_at = ?
+        SET item_content = ?, item_text = ?, item_deleted = 0, item_edited = 1, updated_at = ?
         WHERE user_id = ? AND group_id = ? AND chat_item_id = ?
       |]
       (newContent, newText, currentTs, userId, groupId, itemId)
@@ -3046,7 +3058,7 @@ deleteGroupChatItem_ :: DB.Connection -> User -> GroupInfo -> ChatItemId -> MsgD
 deleteGroupChatItem_ db user@User {userId} gInfo@GroupInfo {groupId} itemId mode itemDeleted currentTs = runExceptT $ do
   (CChatItem msgDir ci) <- ExceptT $ getGroupChatItem_ db user groupId itemId
   let toContent = msgDirToDeletedContent_ msgDir mode
-  liftIO $
+  liftIO $ do
     DB.execute
       db
       [sql|
@@ -3055,6 +3067,7 @@ deleteGroupChatItem_ db user@User {userId} gInfo@GroupInfo {groupId} itemId mode
         WHERE user_id = ? AND group_id = ? AND chat_item_id = ?
       |]
       (toContent, toText, itemDeleted, currentTs, userId, groupId, itemId)
+    when itemDeleted $ deleteQuote_ db itemId
   pure $ AChatItem SCTGroup msgDir (GroupChat gInfo) (ci {content = toContent, meta = (meta ci) {itemText = toText, itemDeleted}, formattedText = Nothing})
   where
     toText = msgDeleteModeToText mode
@@ -3222,10 +3235,10 @@ toDirectChatItem tz currentTs ((itemId, itemTs, itemContent, itemText, itemStatu
   where
     cItem :: MsgDirectionI d => SMsgDirection d -> CIDirection 'CTDirect d -> CIStatus d -> CIContent d -> CChatItem 'CTDirect
     cItem d chatDir ciStatus content =
-      CChatItem d ChatItem {chatDir, meta = ciMeta ciStatus, content, formattedText = parseMaybeMarkdownList itemText, quotedItem = toDirectQuote quoteRow}
+      CChatItem d ChatItem {chatDir, meta = ciMeta content ciStatus, content, formattedText = parseMaybeMarkdownList itemText, quotedItem = toDirectQuote quoteRow}
     badItem = Left $ SEBadChatItem itemId
-    ciMeta :: CIStatus d -> CIMeta d
-    ciMeta status = mkCIMeta itemId itemText status sharedMsgId itemDeleted (fromMaybe False itemEdited) tz currentTs itemTs createdAt
+    ciMeta :: CIContent d -> CIStatus d -> CIMeta d
+    ciMeta content status = mkCIMeta itemId content itemText status sharedMsgId itemDeleted (fromMaybe False itemEdited) tz currentTs itemTs createdAt
 
 toDirectChatItemList :: TimeZone -> UTCTime -> MaybeChatItemRow :. QuoteRow -> [CChatItem 'CTDirect]
 toDirectChatItemList tz currentTs ((Just itemId, Just itemTs, Just itemContent, Just itemText, Just itemStatus, sharedMsgId, Just itemDeleted, itemEdited, Just createdAt) :. quoteRow) =
@@ -3255,10 +3268,10 @@ toGroupChatItem tz currentTs userContactId ((itemId, itemTs, itemContent, itemTe
   where
     cItem :: MsgDirectionI d => SMsgDirection d -> CIDirection 'CTGroup d -> CIStatus d -> CIContent d -> Maybe GroupMember -> CChatItem 'CTGroup
     cItem d chatDir ciStatus content quotedMember_ =
-      CChatItem d ChatItem {chatDir, meta = ciMeta ciStatus, content, formattedText = parseMaybeMarkdownList itemText, quotedItem = toGroupQuote quoteRow quotedMember_}
+      CChatItem d ChatItem {chatDir, meta = ciMeta content ciStatus, content, formattedText = parseMaybeMarkdownList itemText, quotedItem = toGroupQuote quoteRow quotedMember_}
     badItem = Left $ SEBadChatItem itemId
-    ciMeta :: CIStatus d -> CIMeta d
-    ciMeta status = mkCIMeta itemId itemText status sharedMsgId itemDeleted (fromMaybe False itemEdited) tz currentTs itemTs createdAt
+    ciMeta :: CIContent d -> CIStatus d -> CIMeta d
+    ciMeta content status = mkCIMeta itemId content itemText status sharedMsgId itemDeleted (fromMaybe False itemEdited) tz currentTs itemTs createdAt
 
 toGroupChatItemList :: TimeZone -> UTCTime -> Int64 -> MaybeGroupChatItemRow -> [CChatItem 'CTGroup]
 toGroupChatItemList tz currentTs userContactId ((Just itemId, Just itemTs, Just itemContent, Just itemText, Just itemStatus, sharedMsgId, Just itemDeleted, itemEdited, Just createdAt) :. memberRow_ :. quoteRow :. quotedMemberRow_) =

@@ -1507,7 +1507,7 @@ mkChatItem cd ciId content quotedItem sharedMsgId itemTs createdAt = do
   tz <- getCurrentTimeZone
   currentTs <- liftIO getCurrentTime
   let itemText = ciContentToText content
-      meta = mkCIMeta ciId itemText ciStatusNew sharedMsgId False False tz currentTs itemTs createdAt
+      meta = mkCIMeta ciId content itemText ciStatusNew sharedMsgId False False tz currentTs itemTs createdAt
   pure ChatItem {chatDir = toCIDirection cd, meta, content, formattedText = parseMaybeMarkdownList itemText, quotedItem}
 
 allowAgentConnection :: ChatMonad m => Connection -> ConfirmationId -> ChatMsgEvent -> m ()

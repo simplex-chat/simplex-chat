@@ -50,7 +50,7 @@ responseToView testView = \case
   CRNewChatItem (AChatItem _ _ chat item) -> viewChatItem chat item
   CRChatItemStatusUpdated _ -> []
   CRChatItemUpdated (AChatItem _ _ chat item) -> viewMessageUpdate chat item
-  CRChatItemDeleted _ _ -> [] -- TODO
+  CRChatItemDeleted (AChatItem _ _ chat deletedItem) (AChatItem _ _ _ toItem) -> viewMessageDelete chat deletedItem toItem
   CRMsgIntegrityError mErr -> viewMsgIntegrityError mErr
   CRCmdAccepted _ -> []
   CRCmdOk -> ["ok"]
@@ -206,7 +206,7 @@ viewMessageUpdate chat ChatItem {chatDir, meta, content, quotedItem} = case chat
       where
         from = ttyFromContactEdited c
         quote = maybe [] (directQuote chatDir) quotedItem
-    CIDirectSnd -> []
+    CIDirectSnd -> ["message updated"]
   GroupChat g -> case chatDir of
     CIGroupRcv GroupMember {localDisplayName = m} -> case content of
       CIRcvMsgContent mc -> viewReceivedMessage from quote meta mc
@@ -214,8 +214,23 @@ viewMessageUpdate chat ChatItem {chatDir, meta, content, quotedItem} = case chat
       where
         from = ttyFromGroupEdited g m
         quote = maybe [] (groupQuote g) quotedItem
-    CIGroupSnd -> []
-    where
+    CIGroupSnd -> ["message updated"]
+  _ -> []
+
+viewMessageDelete :: ChatInfo c -> ChatItem c d -> ChatItem c' d' -> [StyledString]
+viewMessageDelete chat ChatItem {chatDir, meta, content = deletedContent} ChatItem {content = toContent} = case chat of
+  DirectChat Contact {localDisplayName = c} -> case (chatDir, deletedContent, toContent) of
+    (CIDirectRcv, CIRcvMsgContent mc, CIRcvDeleted mode) -> case mode of
+      MDMBroadcast -> viewReceivedMessage (ttyFromContactDeleted c) [] meta mc
+      MDMInternal -> ["message deleted"]
+    (CIDirectSnd, _, _) -> ["message deleted"]
+    _ -> []
+  GroupChat g -> case (chatDir, deletedContent, toContent) of
+    (CIGroupRcv GroupMember {localDisplayName = m}, CIRcvMsgContent mc, CIRcvDeleted mode) -> case mode of
+      MDMBroadcast -> viewReceivedMessage (ttyFromGroupDeleted g m) [] meta mc
+      MDMInternal -> ["message deleted"]
+    (CIGroupSnd, _, _) -> ["message deleted"]
+    _ -> []
   _ -> []
 
 directQuote :: forall d'. MsgDirectionI d' => CIDirection 'CTDirect d' -> CIQuote 'CTDirect -> [StyledString]
@@ -640,6 +655,9 @@ ttyFromContact c = ttyFrom $ c <> "> "
 ttyFromContactEdited :: ContactName -> StyledString
 ttyFromContactEdited c = ttyFrom $ c <> "> [edited] "
 
+ttyFromContactDeleted :: ContactName -> StyledString
+ttyFromContactDeleted c = ttyFrom $ c <> "> [deleted] "
+
 ttyToContact' :: Contact -> StyledString
 ttyToContact' Contact {localDisplayName = c} = ttyToContact c
 
@@ -673,6 +691,9 @@ ttyFromGroup GroupInfo {localDisplayName = g} c = ttyFrom $ "#" <> g <> " " <> c
 
 ttyFromGroupEdited :: GroupInfo -> ContactName -> StyledString
 ttyFromGroupEdited GroupInfo {localDisplayName = g} c = ttyFrom $ "#" <> g <> " " <> c <> "> [edited] "
+
+ttyFromGroupDeleted :: GroupInfo -> ContactName -> StyledString
+ttyFromGroupDeleted GroupInfo {localDisplayName = g} c = ttyFrom $ "#" <> g <> " " <> c <> "> [deleted] "
 
 ttyFrom :: Text -> StyledString
 ttyFrom = styled $ colored Yellow
