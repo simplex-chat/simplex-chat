@@ -3,6 +3,7 @@ package chat.simplex.app.model
 import android.app.ActivityManager
 import android.app.ActivityManager.RunningAppProcessInfo
 import android.content.Context
+import android.content.SharedPreferences
 import android.util.Log
 import androidx.compose.runtime.mutableStateOf
 import chat.simplex.app.*
@@ -19,19 +20,25 @@ import kotlin.concurrent.thread
 
 typealias ChatCtrl = Long
 
-open class ChatController(val ctrl: ChatCtrl, val ntfManager: NtfManager, val appContext: Context) {
+open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: NtfManager, val appContext: Context) {
   var chatModel = ChatModel(this)
+  private val sharedPreferences: SharedPreferences  = appContext.getSharedPreferences(SHARED_PREFS_ID, Context.MODE_PRIVATE)
 
-  suspend fun startChat(u: User) {
-    Log.d(TAG, "user: $u")
+  init {
+    chatModel.runServiceInBackground.value = getRunServiceInBackground()
+  }
+
+  suspend fun startChat(user: User) {
+    Log.d(TAG, "user: $user")
     try {
       apiStartChat()
       chatModel.userAddress.value = apiGetUserAddress()
       chatModel.userSMPServers.value = getUserSMPServers()
-      chatModel.chats.addAll(apiGetChats())
-      chatModel.currentUser = mutableStateOf(u)
+      val chats = apiGetChats()
+      chatModel.chats.clear()
+      chatModel.chats.addAll(chats)
+      chatModel.currentUser = mutableStateOf(user)
       chatModel.userCreated.value = true
-      startReceiver()
       Log.d(TAG, "started chat")
     } catch(e: Error) {
       Log.e(TAG, "failed starting chat $e")
@@ -40,6 +47,7 @@ open class ChatController(val ctrl: ChatCtrl, val ntfManager: NtfManager, val ap
   }
 
   fun startReceiver() {
+    Log.d(TAG, "ChatController startReceiver")
     thread(name="receiver") {
       withApi { recvMspLoop() }
     }
@@ -105,7 +113,7 @@ open class ChatController(val ctrl: ChatCtrl, val ntfManager: NtfManager, val ap
 
   suspend fun apiStartChat() {
     val r = sendCmd(CC.StartChat())
-    if (r is CR.ChatStarted ) return
+    if (r is CR.ChatStarted || r is CR.ChatRunning) return
     throw Error("failed starting chat: ${r.responseType} ${r.details}")
   }
 
@@ -358,6 +366,26 @@ open class ChatController(val ctrl: ChatCtrl, val ntfManager: NtfManager, val ap
       }
       else e.string
     chatModel.updateNetworkStatus(contact, Chat.NetworkStatus.Error(err))
+  }
+
+  fun getAutoRestartWorkerVersion(): Int = sharedPreferences.getInt(SHARED_PREFS_AUTO_RESTART_WORKER_VERSION, 0)
+
+  fun setAutoRestartWorkerVersion(version: Int) =
+    sharedPreferences.edit()
+      .putInt(SHARED_PREFS_AUTO_RESTART_WORKER_VERSION, version)
+      .apply()
+
+  fun getRunServiceInBackground(): Boolean = sharedPreferences.getBoolean(SHARED_PREFS_RUN_SERVICE_IN_BACKGROUND, true)
+
+  fun setRunServiceInBackground(runService: Boolean) =
+    sharedPreferences.edit()
+      .putBoolean(SHARED_PREFS_RUN_SERVICE_IN_BACKGROUND, runService)
+      .apply()
+
+  companion object {
+    private const val SHARED_PREFS_ID = "chat.simplex.app.SIMPLEX_APP_PREFS"
+    private const val SHARED_PREFS_AUTO_RESTART_WORKER_VERSION = "AutoRestartWorkerVersion"
+    private const val SHARED_PREFS_RUN_SERVICE_IN_BACKGROUND = "RunServiceInBackground"
   }
 }
 

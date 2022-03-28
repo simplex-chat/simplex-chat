@@ -36,6 +36,7 @@ chatTests = do
     it "add contact and send/receive message" testAddContact
     it "direct message quoted replies" testDirectMessageQuotedReply
     it "direct message update" testDirectMessageUpdate
+    it "direct message delete" testDirectMessageDelete
   describe "chat groups" $ do
     it "add contacts, create group and send/receive messages" testGroup
     it "create and join group with 4 members" testGroup2
@@ -46,6 +47,7 @@ chatTests = do
     it "list groups containing group invitations" testGroupList
     it "group message quoted replies" testGroupMessageQuotedReply
     it "group message update" testGroupMessageUpdate
+    it "group message delete" testGroupMessageDelete
   describe "user profiles" $ do
     it "update user profiles and notify contacts" testUpdateProfile
     it "update user profile with image" testUpdateProfileImage
@@ -128,7 +130,7 @@ testAddContact =
       bob #$> ("/_read chat @2 from=1 to=100", id, "ok")
 
 testDirectMessageQuotedReply :: IO ()
-testDirectMessageQuotedReply = do
+testDirectMessageQuotedReply =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
       connectUsers alice bob
@@ -153,7 +155,7 @@ testDirectMessageQuotedReply = do
       alice #$> ("/_get chat @2 count=1", chat', [((0, "will tell more"), Just (0, "all good - you?"))])
 
 testDirectMessageUpdate :: IO ()
-testDirectMessageUpdate = do
+testDirectMessageUpdate =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
       connectUsers alice bob
@@ -172,7 +174,7 @@ testDirectMessageUpdate = do
       alice #$> ("/_get chat @2 count=100", chat', [((1, "hello 🙂"), Nothing), ((0, "hi alice"), Just (1, "hello 🙂"))])
       bob #$> ("/_get chat @2 count=100", chat', [((0, "hello 🙂"), Nothing), ((1, "hi alice"), Just (0, "hello 🙂"))])
 
-      alice ##> "/_update item @2 1 text hey 👋"
+      alice #$> ("/_update item @2 1 text hey 👋", id, "item updated")
       bob <# "alice> [edited] hey 👋"
 
       alice #$> ("/_get chat @2 count=100", chat', [((1, "hey 👋"), Nothing), ((0, "hi alice"), Just (1, "hello 🙂"))])
@@ -188,22 +190,74 @@ testDirectMessageUpdate = do
       alice #$> ("/_get chat @2 count=100", chat', [((1, "hey 👋"), Nothing), ((0, "hi alice"), Just (1, "hello 🙂")), ((0, "hey alice"), Just (1, "hey 👋"))])
       bob #$> ("/_get chat @2 count=100", chat', [((0, "hey 👋"), Nothing), ((1, "hi alice"), Just (0, "hello 🙂")), ((1, "hey alice"), Just (0, "hey 👋"))])
 
-      alice ##> "/_update item @2 1 text greetings 🤝"
+      alice #$> ("/_update item @2 1 text greetings 🤝", id, "item updated")
       bob <# "alice> [edited] greetings 🤝"
+
+      alice #$> ("/_update item @2 2 text updating bob's message", id, "cannot update this item")
 
       alice #$> ("/_get chat @2 count=100", chat', [((1, "greetings 🤝"), Nothing), ((0, "hi alice"), Just (1, "hello 🙂")), ((0, "hey alice"), Just (1, "hey 👋"))])
       bob #$> ("/_get chat @2 count=100", chat', [((0, "greetings 🤝"), Nothing), ((1, "hi alice"), Just (0, "hello 🙂")), ((1, "hey alice"), Just (0, "hey 👋"))])
 
-      bob ##> "/_update item @2 2 text hey Alice"
+      bob #$> ("/_update item @2 2 text hey Alice", id, "item updated")
       alice <# "bob> [edited] > hello 🙂"
       alice <## "      hey Alice"
 
-      bob ##> "/_update item @2 3 text greetings Alice"
+      bob #$> ("/_update item @2 3 text greetings Alice", id, "item updated")
       alice <# "bob> [edited] > hey 👋"
       alice <## "      greetings Alice"
 
       alice #$> ("/_get chat @2 count=100", chat', [((1, "greetings 🤝"), Nothing), ((0, "hey Alice"), Just (1, "hello 🙂")), ((0, "greetings Alice"), Just (1, "hey 👋"))])
       bob #$> ("/_get chat @2 count=100", chat', [((0, "greetings 🤝"), Nothing), ((1, "hey Alice"), Just (0, "hello 🙂")), ((1, "greetings Alice"), Just (0, "hey 👋"))])
+
+testDirectMessageDelete :: IO ()
+testDirectMessageDelete =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+
+      -- msg id 1
+      alice #> "@bob hello 🙂"
+      bob <# "alice> hello 🙂"
+
+      -- msg id 2
+      bob `send` "> @alice (hello) hey alic"
+      bob <# "@alice > hello 🙂"
+      bob <## "      hey alic"
+      alice <# "bob> > hello 🙂"
+      alice <## "      hey alic"
+
+      alice #$> ("/_delete item @2 1 internal", id, "item deleted")
+      alice #$> ("/_delete item @2 2 internal", id, "item deleted")
+
+      alice #$$> ("/_get chats", [("@bob", "")])
+      alice #$> ("/_get chat @2 count=100", chat, [])
+
+      alice #$> ("/_update item @2 1 text updating deleted message", id, "cannot update this item")
+      alice #$> ("/_send_quote @2 1 text quoting deleted message", id, "cannot reply to this message")
+
+      bob #$> ("/_update item @2 2 text hey alice", id, "item updated")
+      alice <# "bob> [edited] hey alice"
+
+      alice #$$> ("/_get chats", [("@bob", "hey alice")])
+      alice #$> ("/_get chat @2 count=100", chat, [(0, "hey alice")])
+
+      -- msg id 3
+      bob #> "@alice how are you?"
+      alice <# "bob> how are you?"
+
+      bob #$> ("/_delete item @2 3 broadcast", id, "item deleted")
+      alice <# "bob> [deleted] how are you?"
+
+      alice #$> ("/_delete item @2 1 broadcast", id, "item deleted")
+      bob <# "alice> [deleted] hello 🙂"
+
+      alice #$> ("/_delete item @2 2 broadcast", id, "cannot delete this item")
+      alice #$> ("/_delete item @2 2 internal", id, "item deleted")
+
+      alice #$$> ("/_get chats", [("@bob", "this item is deleted (broadcast)")])
+      alice #$> ("/_get chat @2 count=100", chat, [(0, "this item is deleted (broadcast)")])
+      bob #$$> ("/_get chats", [("@alice", "hey alice")])
+      bob #$> ("/_get chat @2 count=100", chat', [((0, "this item is deleted (broadcast)"), Nothing), ((1, "hey alice"), (Just (0, "hello 🙂")))])
 
 testGroup :: IO ()
 testGroup =
@@ -688,16 +742,17 @@ testGroupMessageQuotedReply =
         )
 
 testGroupMessageUpdate :: IO ()
-testGroupMessageUpdate = do
+testGroupMessageUpdate =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup3 "team" alice bob cath
+      -- msg id 1
       alice #> "#team hello!"
       concurrently_
         (bob <# "#team alice> hello!")
         (cath <# "#team alice> hello!")
 
-      alice ##> "/_update item #1 1 text hey 👋"
+      alice #$> ("/_update item #1 1 text hey 👋", id, "item updated")
       concurrently_
         (bob <# "#team alice> [edited] hey 👋")
         (cath <# "#team alice> [edited] hey 👋")
@@ -707,6 +762,7 @@ testGroupMessageUpdate = do
       cath #$> ("/_get chat #1 count=100", chat', [((0, "hey 👋"), Nothing)])
 
       threadDelay 1000000
+      -- msg id 2
       bob `send` "> #team @alice (hey) hi alice"
       bob <# "#team > alice hey 👋"
       bob <## "      hi alice"
@@ -724,10 +780,12 @@ testGroupMessageUpdate = do
       bob #$> ("/_get chat #1 count=100", chat', [((0, "hey 👋"), Nothing), ((1, "hi alice"), Just (0, "hey 👋"))])
       cath #$> ("/_get chat #1 count=100", chat', [((0, "hey 👋"), Nothing), ((0, "hi alice"), Just (0, "hey 👋"))])
 
-      alice ##> "/_update item #1 1 text greetings 🤝"
+      alice #$> ("/_update item #1 1 text greetings 🤝", id, "item updated")
       concurrently_
         (bob <# "#team alice> [edited] greetings 🤝")
         (cath <# "#team alice> [edited] greetings 🤝")
+
+      alice #$> ("/_update item #1 2 text updating bob's message", id, "cannot update this item")
 
       threadDelay 1000000
       cath `send` "> #team @alice (greetings) greetings!"
@@ -746,6 +804,87 @@ testGroupMessageUpdate = do
       alice #$> ("/_get chat #1 count=100", chat', [((1, "greetings 🤝"), Nothing), ((0, "hi alice"), Just (1, "hey 👋")), ((0, "greetings!"), Just (1, "greetings 🤝"))])
       bob #$> ("/_get chat #1 count=100", chat', [((0, "greetings 🤝"), Nothing), ((1, "hi alice"), Just (0, "hey 👋")), ((0, "greetings!"), Just (0, "greetings 🤝"))])
       cath #$> ("/_get chat #1 count=100", chat', [((0, "greetings 🤝"), Nothing), ((0, "hi alice"), Just (0, "hey 👋")), ((1, "greetings!"), Just (0, "greetings 🤝"))])
+
+testGroupMessageDelete :: IO ()
+testGroupMessageDelete =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+      -- msg id 1
+      alice #> "#team hello!"
+      concurrently_
+        (bob <# "#team alice> hello!")
+        (cath <# "#team alice> hello!")
+
+      alice #$> ("/_delete item #1 1 internal", id, "item deleted")
+
+      alice #$> ("/_get chat #1 count=100", chat, [])
+      bob #$> ("/_get chat #1 count=100", chat, [(0, "hello!")])
+      cath #$> ("/_get chat #1 count=100", chat, [(0, "hello!")])
+
+      alice #$> ("/_update item #1 1 text updating deleted message", id, "cannot update this item")
+      alice #$> ("/_send_quote #1 1 text quoting deleted message", id, "cannot reply to this message")
+
+      threadDelay 1000000
+      -- msg id 2
+      bob `send` "> #team @alice (hello) hi alic"
+      bob <# "#team > alice hello!"
+      bob <## "      hi alic"
+      concurrently_
+        ( do
+            alice <# "#team bob> > alice hello!"
+            alice <## "      hi alic"
+        )
+        ( do
+            cath <# "#team bob> > alice hello!"
+            cath <## "      hi alic"
+        )
+
+      alice #$> ("/_get chat #1 count=100", chat', [((0, "hi alic"), Just (1, "hello!"))])
+      bob #$> ("/_get chat #1 count=100", chat', [((0, "hello!"), Nothing), ((1, "hi alic"), Just (0, "hello!"))])
+      cath #$> ("/_get chat #1 count=100", chat', [((0, "hello!"), Nothing), ((0, "hi alic"), Just (0, "hello!"))])
+
+      alice #$> ("/_delete item #1 1 broadcast", id, "item deleted")
+      concurrently_
+        (bob <# "#team alice> [deleted] hello!")
+        (cath <# "#team alice> [deleted] hello!")
+
+      alice #$> ("/_delete item #1 2 internal", id, "item deleted")
+
+      alice #$> ("/_get chat #1 count=100", chat', [])
+      bob #$> ("/_get chat #1 count=100", chat', [((0, "this item is deleted (broadcast)"), Nothing), ((1, "hi alic"), Just (0, "hello!"))])
+      cath #$> ("/_get chat #1 count=100", chat', [((0, "this item is deleted (broadcast)"), Nothing), ((0, "hi alic"), Just (0, "hello!"))])
+
+      bob #$> ("/_update item #1 2 text hi alice", id, "item updated")
+      concurrently_
+        (alice <# "#team bob> [edited] hi alice")
+        ( do
+            cath <# "#team bob> [edited] > alice hello!"
+            cath <## "      hi alice"
+        )
+
+      alice #$> ("/_get chat #1 count=100", chat', [((0, "hi alice"), Nothing)])
+      bob #$> ("/_get chat #1 count=100", chat', [((0, "this item is deleted (broadcast)"), Nothing), ((1, "hi alice"), Just (0, "hello!"))])
+      cath #$> ("/_get chat #1 count=100", chat', [((0, "this item is deleted (broadcast)"), Nothing), ((0, "hi alice"), Just (0, "hello!"))])
+
+      threadDelay 1000000
+      -- msg id 3
+      cath #> "#team how are you?"
+      concurrently_
+        (alice <# "#team cath> how are you?")
+        (bob <# "#team cath> how are you?")
+
+      cath #$> ("/_delete item #1 3 broadcast", id, "item deleted")
+      concurrently_
+        (alice <# "#team cath> [deleted] how are you?")
+        (bob <# "#team cath> [deleted] how are you?")
+
+      alice #$> ("/_delete item #1 2 broadcast", id, "cannot delete this item")
+      alice #$> ("/_delete item #1 2 internal", id, "item deleted")
+
+      alice #$> ("/_get chat #1 count=100", chat', [((0, "this item is deleted (broadcast)"), Nothing)])
+      bob #$> ("/_get chat #1 count=100", chat', [((0, "this item is deleted (broadcast)"), Nothing), ((1, "hi alice"), Just (0, "hello!")), ((0, "this item is deleted (broadcast)"), Nothing)])
+      cath #$> ("/_get chat #1 count=100", chat', [((0, "this item is deleted (broadcast)"), Nothing), ((0, "hi alice"), Just (0, "hello!"))])
 
 testUpdateProfile :: IO ()
 testUpdateProfile =
