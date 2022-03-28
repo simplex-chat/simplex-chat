@@ -444,8 +444,8 @@ aciContentJSON = \case
 data DBJSONCIContent
   = DBJCISndMsgContent {msgContent :: MsgContent}
   | DBJCIRcvMsgContent {msgContent :: MsgContent}
-  | DBJCISndDeleted {ciDeleteMode :: CIDeleteMode}
-  | DBJCIRcvDeleted {ciDeleteMode :: CIDeleteMode}
+  | DBJCISndDeleted {deleteMode :: CIDeleteMode}
+  | DBJCIRcvDeleted {deleteMode :: CIDeleteMode}
   | DBJCISndFileInvitation {fileId :: FileTransferId, filePath :: FilePath}
   | DBJCIRcvFileInvitation {rcvFileTransfer :: RcvFileTransfer}
   deriving (Generic)
