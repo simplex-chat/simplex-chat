@@ -12,6 +12,7 @@ import qualified Data.Attoparsec.Text as A
 import Data.Char (isDigit)
 import Data.Either (fromRight)
 import Data.Functor (($>))
+import Data.List (intercalate)
 import Data.Maybe (fromMaybe, isNothing)
 import Data.String
 import Data.Text (Text)
@@ -89,9 +90,10 @@ unmarked :: Text -> Markdown
 unmarked = Markdown Nothing
 
 parseMaybeMarkdownList :: Text -> Maybe MarkdownList
-parseMaybeMarkdownList s =
-  let m = markdownToList $ parseMarkdown s
-   in if all (isNothing . format) m then Nothing else Just m
+parseMaybeMarkdownList s = if all (isNothing . format) m then Nothing else Just m
+  where
+    m = intercalate newline . map (markdownToList . parseMarkdown) $ T.lines s
+    newline = [FormattedText Nothing "\n"]
 
 parseMarkdownList :: Text -> MarkdownList
 parseMarkdownList = markdownToList . parseMarkdown
