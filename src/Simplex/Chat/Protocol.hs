@@ -111,6 +111,7 @@ data ChatMsgEvent
   = XMsgNew MsgContainer
   | XMsgUpdate SharedMsgId MsgContent
   | XMsgDel SharedMsgId
+  | XMsgDeleted
   | XFile FileInvitation
   | XFileAcpt String
   | XInfo Profile
@@ -236,6 +237,7 @@ data CMEventTag
   = XMsgNew_
   | XMsgUpdate_
   | XMsgDel_
+  | XMsgDeleted_
   | XFile_
   | XFileAcpt_
   | XInfo_
@@ -264,6 +266,7 @@ instance StrEncoding CMEventTag where
     XMsgNew_ -> "x.msg.new"
     XMsgUpdate_ -> "x.msg.update"
     XMsgDel_ -> "x.msg.del"
+    XMsgDeleted_ -> "x.msg.deleted"
     XFile_ -> "x.file"
     XFileAcpt_ -> "x.file.acpt"
     XInfo_ -> "x.info"
@@ -289,6 +292,7 @@ instance StrEncoding CMEventTag where
     "x.msg.new" -> Right XMsgNew_
     "x.msg.update" -> Right XMsgUpdate_
     "x.msg.del" -> Right XMsgDel_
+    "x.msg.deleted" -> Right XMsgDeleted_
     "x.file" -> Right XFile_
     "x.file.acpt" -> Right XFileAcpt_
     "x.info" -> Right XInfo_
@@ -317,6 +321,7 @@ toCMEventTag = \case
   XMsgNew _ -> XMsgNew_
   XMsgUpdate _ _ -> XMsgUpdate_
   XMsgDel _ -> XMsgDel_
+  XMsgDeleted -> XMsgDeleted_
   XFile _ -> XFile_
   XFileAcpt _ -> XFileAcpt_
   XInfo _ -> XInfo_
@@ -360,9 +365,10 @@ appToChatMessage AppMessage {msgId, event, params} = do
     opt :: FromJSON a => J.Key -> Either String (Maybe a)
     opt key = JT.parseEither (.:? key) params
     msg = \case
-      XMsgNew_ -> XMsgNew <$> JT.parseEither parseMsgContainer params  
+      XMsgNew_ -> XMsgNew <$> JT.parseEither parseMsgContainer params
       XMsgUpdate_ -> XMsgUpdate <$> p "msgId" <*> p "content"
       XMsgDel_ -> XMsgDel <$> p "msgId"
+      XMsgDeleted_ -> pure XMsgDeleted
       XFile_ -> XFile <$> p "file"
       XFileAcpt_ -> XFileAcpt <$> p "fileName"
       XInfo_ -> XInfo <$> p "profile"
@@ -394,8 +400,9 @@ chatToAppMessage ChatMessage {msgId, chatMsgEvent} = AppMessage {msgId, event, p
     key .=? value = maybe id ((:) . (key .=)) value
     params = case chatMsgEvent of
       XMsgNew container -> msgContainerJSON container
-      XMsgUpdate msgId' content ->  o ["msgId" .= msgId', "content" .= content]
-      XMsgDel msgId' ->  o ["msgId" .= msgId']
+      XMsgUpdate msgId' content -> o ["msgId" .= msgId', "content" .= content]
+      XMsgDel msgId' -> o ["msgId" .= msgId']
+      XMsgDeleted -> JM.empty
       XFile fileInv -> o ["file" .= fileInv]
       XFileAcpt fileName -> o ["fileName" .= fileName]
       XInfo profile -> o ["profile" .= profile]
