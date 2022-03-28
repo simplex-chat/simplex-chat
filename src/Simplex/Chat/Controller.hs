@@ -20,6 +20,7 @@ import Data.ByteString.Char8 (ByteString)
 import Data.Int (Int64)
 import Data.Map.Strict (Map)
 import Data.Text (Text)
+import Data.Time (ZonedTime)
 import Data.Version (showVersion)
 import GHC.Generics (Generic)
 import Numeric.Natural
@@ -107,7 +108,7 @@ data ChatCommand
   | Welcome
   | AddContact
   | Connect (Maybe AConnectionRequestUri)
-  | ConnectAdmin
+  | ConnectSimplex
   | DeleteContact ContactName
   | ListContacts
   | CreateMyAddress
@@ -118,6 +119,7 @@ data ChatCommand
   | RejectContact ContactName
   | SendMessage ContactName ByteString
   | SendMessageQuote {contactName :: ContactName, msgDir :: AMsgDirection, quotedMsg :: ByteString, message :: ByteString}
+  | SendMessageBroadcast ByteString
   | NewGroup GroupProfile
   | AddMember GroupName ContactName GroupMemberRole
   | JoinGroup GroupName
@@ -152,6 +154,7 @@ data ChatResponse
   | CRChatItemStatusUpdated {chatItem :: AChatItem}
   | CRChatItemUpdated {chatItem :: AChatItem}
   | CRChatItemDeleted {deletedChatItem :: AChatItem, toChatItem :: AChatItem}
+  | CRBroadcastSent MsgContent Int ZonedTime
   | CRMsgIntegrityError {msgerror :: MsgErrorType} -- TODO make it chat item to support in mobile
   | CRCmdAccepted {corr :: CorrId}
   | CRCmdOk

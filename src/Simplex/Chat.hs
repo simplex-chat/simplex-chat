@@ -38,7 +38,7 @@ import Data.Maybe (fromMaybe, isJust, mapMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (UTCTime, getCurrentTime)
-import Data.Time.LocalTime (getCurrentTimeZone)
+import Data.Time.LocalTime (getCurrentTimeZone, getZonedTime)
 import Data.Word (Word32)
 import Simplex.Chat.Controller
 import Simplex.Chat.Markdown
@@ -319,7 +319,7 @@ processChatCommand = \case
   Connect (Just (ACR SCMContact cReq)) -> withUser $ \User {userId, profile} ->
     connectViaContact userId cReq profile
   Connect Nothing -> throwChatError CEInvalidConnReq
-  ConnectAdmin -> withUser $ \User {userId, profile} ->
+  ConnectSimplex -> withUser $ \User {userId, profile} ->
     connectViaContact userId adminContactReq profile
   DeleteContact cName -> withUser $ \User {userId} -> do
     contactId <- withStore $ \st -> getContactIdByName st userId cName
@@ -350,6 +350,15 @@ processChatCommand = \case
     contactId <- withStore $ \st -> getContactIdByName st userId cName
     let mc = MCText $ safeDecodeUtf8 msg
     processChatCommand $ APISendMessage CTDirect contactId mc
+  SendMessageBroadcast msg -> withUser $ \user -> do
+    contacts <- withStore (`getUserContacts` user)
+    withChatLock . procCmd $ do
+      let mc = MCText $ safeDecodeUtf8 msg
+          cts = filter isReady contacts
+      forM_ cts $ \ct ->
+        void (sendDirectChatItem user ct (XMsgNew $ MCSimple mc) (CISndMsgContent mc) Nothing)
+          `catchError` (toView . CRChatError)
+      CRBroadcastSent mc (length cts) <$> liftIO getZonedTime
   SendMessageQuote cName (AMsgDirection msgDir) quotedMsg msg -> withUser $ \User {userId} -> do
     contactId <- withStore $ \st -> getContactIdByName st userId cName
     quotedItemId <- withStore $ \st -> getDirectChatItemIdByText st userId contactId msgDir (safeDecodeUtf8 quotedMsg)
@@ -542,20 +551,21 @@ processChatCommand = \case
       unlessM (doesFileExist f) . throwChatError $ CEFileNotFound f
       (,) <$> getFileSize f <*> asks (fileChunkSize . config)
     updateProfile :: User -> Profile -> m ChatResponse
-    updateProfile user@User {profile = p} p'@Profile {displayName} = do
-      if p' == p
-        then pure CRUserProfileNoChange
-        else do
-          withStore $ \st -> updateUserProfile st user p'
-          let user' = (user :: User) {localDisplayName = displayName, profile = p'}
-          asks currentUser >>= atomically . (`writeTVar` Just user')
-          contacts <- withStore (`getUserContacts` user)
-          withChatLock . procCmd $ do
-            forM_ contacts $ \ct ->
-              let s = connStatus $ activeConn (ct :: Contact)
-               in when (s == ConnReady || s == ConnSndReady) $
-                    void (sendDirectContactMessage ct $ XInfo p') `catchError` (toView . CRChatError)
-            pure $ CRUserProfileUpdated p p'
+    updateProfile user@User {profile = p} p'@Profile {displayName}
+      | p' == p = pure CRUserProfileNoChange
+      | otherwise = do
+        withStore $ \st -> updateUserProfile st user p'
+        let user' = (user :: User) {localDisplayName = displayName, profile = p'}
+        asks currentUser >>= atomically . (`writeTVar` Just user')
+        contacts <- filter isReady <$> withStore (`getUserContacts` user)
+        withChatLock . procCmd $ do
+          forM_ contacts $ \ct ->
+            void (sendDirectContactMessage ct $ XInfo p') `catchError` (toView . CRChatError)
+          pure $ CRUserProfileUpdated p p'
+    isReady :: Contact -> Bool
+    isReady ct =
+      let s = connStatus $ activeConn (ct :: Contact)
+       in s == ConnReady || s == ConnSndReady
     getRcvFilePath :: Int64 -> Maybe FilePath -> String -> m FilePath
     getRcvFilePath fileId filePath fileName = case filePath of
       Nothing -> do
@@ -1660,12 +1670,13 @@ chatCommandP =
     <|> A.char '@' *> (SendMessage <$> displayName <* A.space <*> A.takeByteString)
     <|> (">@" <|> "> @") *> sendMsgQuote (AMsgDirection SMDRcv)
     <|> (">>@" <|> ">> @") *> sendMsgQuote (AMsgDirection SMDSnd)
+    <|> "/feed " *> (SendMessageBroadcast <$> A.takeByteString)
     <|> ("/file #" <|> "/f #") *> (SendGroupFile <$> displayName <* A.space <*> filePath)
     <|> ("/file @" <|> "/file " <|> "/f @" <|> "/f ") *> (SendFile <$> displayName <* A.space <*> filePath)
     <|> ("/freceive " <|> "/fr ") *> (ReceiveFile <$> A.decimal <*> optional (A.space *> filePath))
     <|> ("/fcancel " <|> "/fc ") *> (CancelFile <$> A.decimal)
     <|> ("/fstatus " <|> "/fs ") *> (FileStatus <$> A.decimal)
-    <|> "/simplex" $> ConnectAdmin
+    <|> "/simplex" $> ConnectSimplex
     <|> ("/address" <|> "/ad") $> CreateMyAddress
     <|> ("/delete_address" <|> "/da") $> DeleteMyAddress
     <|> ("/show_address" <|> "/sa") $> ShowMyAddress
