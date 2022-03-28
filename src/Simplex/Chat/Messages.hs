@@ -409,8 +409,8 @@ instance FromField ACIContent where fromField = fromTextField_ $ fmap aciContent
 data JSONCIContent
   = JCISndMsgContent {msgContent :: MsgContent}
   | JCIRcvMsgContent {msgContent :: MsgContent}
-  | JCISndDeleted {ciDeleteMode :: CIDeleteMode}
-  | JCIRcvDeleted {ciDeleteMode :: CIDeleteMode}
+  | JCISndDeleted {deleteMode :: CIDeleteMode}
+  | JCIRcvDeleted {deleteMode :: CIDeleteMode}
   | JCISndFileInvitation {fileId :: FileTransferId, filePath :: FilePath}
   | JCIRcvFileInvitation {rcvFileTransfer :: RcvFileTransfer}
   deriving (Generic)
