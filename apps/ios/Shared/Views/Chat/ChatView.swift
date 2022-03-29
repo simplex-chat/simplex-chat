@@ -18,6 +18,7 @@ struct ChatView: View {
     @State private var inProgress: Bool = false
     @FocusState private var keyboardVisible: Bool
     @State private var showChatInfo = false
+    @State private var showDeleteMessage = false
 
     var body: some View {
         let cInfo = chat.chatInfo
@@ -32,37 +33,38 @@ struct ChatView: View {
                                 let alignment: Alignment = ci.chatDir.sent ? .trailing : .leading
                                 ChatItemView(chatItem: ci)
                                     .contextMenu {
-                                        Button {
-                                            withAnimation {
-                                                editingItem = nil
-                                                quotedItem = ci
-                                            }
-                                        } label: { Label("Reply", systemImage: "arrowshape.turn.up.left") }
-                                        Button {
-                                            showShareSheet(items: [ci.content.text])
-                                        } label: { Label("Share", systemImage: "square.and.arrow.up") }
-                                        Button {
-                                            UIPasteboard.general.string = ci.content.text
-                                        } label: { Label("Copy", systemImage: "doc.on.doc") }
-//                                        if ci.meta.editable {
-//                                            Button {
-//                                                withAnimation {
-//                                                    quotedItem = nil
-//                                                    editingItem = ci
-//                                                    message = ci.content.text
-//                                                }
-//                                            } label: { Label("Edit", systemImage: "square.and.pencil") }
-//                                        }
-                                        if ci.meta.editable {
+                                        if ci.isMsgContent() {
                                             Button {
                                                 withAnimation {
-                                                    quotedItem = nil
-                                                    editingItem = ci
-                                                    message = ci.content.text
+                                                    editingItem = nil
+                                                    quotedItem = ci
                                                 }
-                                            } label: { Label("Edit", systemImage: "square.and.pencil") }
+                                            } label: { Label("Reply", systemImage: "arrowshape.turn.up.left") }
+                                            Button {
+                                                showShareSheet(items: [ci.content.text])
+                                            } label: { Label("Share", systemImage: "square.and.arrow.up") }
+                                            Button {
+                                                UIPasteboard.general.string = ci.content.text
+                                            } label: { Label("Copy", systemImage: "doc.on.doc") }
+                                            if ci.meta.editable {
+                                                Button {
+                                                    withAnimation {
+                                                        quotedItem = nil
+                                                        editingItem = ci
+                                                        message = ci.content.text
+                                                    }
+                                                } label: { Label("Edit", systemImage: "square.and.pencil") }
+                                            }
+                                            Button { showDeleteMessage = true } label: {
+                                                Label("Delete", systemImage: "xmark.bin")
+                                            }
                                         }
-
+                                    }
+                                    .confirmationDialog("Delete message?", isPresented: $showDeleteMessage, titleVisibility: .visible) {
+                                        Button("Delete for Me") { deleteMessage(ci.id, .cidmInternal) }
+                                        if ci.meta.editable {
+                                            Button("Delete for Everyone") { deleteMessage(ci.id, .cidmBroadcast) }
+                                        }
                                     }
                                     .padding(.horizontal)
                                     .frame(maxWidth: maxWidth, maxHeight: .infinity, alignment: alignment)
@@ -189,6 +191,26 @@ struct ChatView: View {
             }
         }
     }
+    
+    func deleteMessage(_ itemId: Int64, _ mode: CIDeleteMode) {
+        logger.debug("ChatView deleteMessage")
+        Task {
+            logger.debug("ChatView deleteMessage: in Task")
+            do {
+                let deletedItem = try await apiDeleteChatItem(
+                    type: chat.chatInfo.chatType,
+                    id: chat.chatInfo.apiId,
+                    itemId: itemId,
+                    mode: mode
+                )
+                DispatchQueue.main.async {
+                    let _ = chatModel.removeChatItem(chat.chatInfo, deletedItem)
+                }
+            } catch {
+                logger.error("ChatView.deleteMessage error: \(error.localizedDescription)")
+            }
+        }
+    }
 }
 
 struct ChatView_Previews: PreviewProvider {
@@ -199,11 +221,12 @@ struct ChatView_Previews: PreviewProvider {
             ChatItem.getSample(1, .directSnd, .now, "hello"),
             ChatItem.getSample(2, .directRcv, .now, "hi"),
             ChatItem.getSample(3, .directRcv, .now, "hi there"),
-            ChatItem.getSample(4, .directRcv, .now, "hello again"),
-            ChatItem.getSample(5, .directSnd, .now, "hi there!!!"),
-            ChatItem.getSample(6, .directSnd, .now, "how are you?"),
-            ChatItem.getSample(7, .directSnd, .now, "👍👍👍👍"),
-            ChatItem.getSample(8, .directSnd, .now, "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.")
+            ChatItem.getDeletedContentSample(4),
+            ChatItem.getSample(5, .directRcv, .now, "hello again"),
+            ChatItem.getSample(6, .directSnd, .now, "hi there!!!"),
+            ChatItem.getSample(7, .directSnd, .now, "how are you?"),
+            ChatItem.getSample(8, .directSnd, .now, "👍👍👍👍"),
+            ChatItem.getSample(9, .directSnd, .now, "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.")
         ]
         return ChatView(chat: Chat(chatInfo: ChatInfo.sampleData.direct, chatItems: []))
             .environmentObject(chatModel)

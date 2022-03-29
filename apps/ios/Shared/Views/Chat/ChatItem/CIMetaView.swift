@@ -10,23 +10,26 @@ import SwiftUI
 
 struct CIMetaView: View {
     var chatItem: ChatItem
+    var onlyTime: Bool = false
 
     var body: some View {
         HStack(alignment: .center, spacing: 4) {
-            if chatItem.meta.itemEdited {
-                statusImage("pencil", .secondary, 9)
-            }
+            if !onlyTime {
+                if chatItem.meta.itemEdited {
+                    statusImage("pencil", .secondary, 9)
+                }
 
-            switch chatItem.meta.itemStatus {
-            case .sndSent:
-                statusImage("checkmark", .secondary)
-            case .sndErrorAuth:
-                statusImage("multiply", .red)
-            case .sndError:
-                statusImage("exclamationmark.triangle.fill", .yellow)
-            case .rcvNew:
-                statusImage("circlebadge.fill", Color.accentColor)
-            default: EmptyView()
+                switch chatItem.meta.itemStatus {
+                case .sndSent:
+                    statusImage("checkmark", .secondary)
+                case .sndErrorAuth:
+                    statusImage("multiply", .red)
+                case .sndError:
+                    statusImage("exclamationmark.triangle.fill", .yellow)
+                case .rcvNew:
+                    statusImage("circlebadge.fill", Color.accentColor)
+                default: EmptyView()
+                }
             }
 
             chatItem.timestampText
