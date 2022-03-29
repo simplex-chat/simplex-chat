@@ -49,8 +49,9 @@ responseToView testView = \case
   CRUserSMPServers smpServers -> viewSMPServers smpServers testView
   CRNewChatItem (AChatItem _ _ chat item) -> viewChatItem chat item
   CRChatItemStatusUpdated _ -> []
-  CRChatItemUpdated (AChatItem _ _ chat item) -> viewMessageUpdate chat item
-  CRChatItemDeleted _ -> [] -- TODO
+  CRChatItemUpdated (AChatItem _ _ chat item) -> viewItemUpdate chat item
+  CRChatItemDeleted (AChatItem _ _ chat deletedItem) (AChatItem _ _ _ toItem) -> viewItemDelete chat deletedItem toItem
+  CRBroadcastSent mc n ts -> viewSentBroadcast mc n ts
   CRMsgIntegrityError mErr -> viewMsgIntegrityError mErr
   CRCmdAccepted _ -> []
   CRCmdOk -> ["ok"]
@@ -168,13 +169,13 @@ viewChatItem chat ChatItem {chatDir, meta, content, quotedItem} = case chat of
   DirectChat c -> case chatDir of
     CIDirectSnd -> case content of
       CISndMsgContent mc -> viewSentMessage to quote mc meta
-      CISndMsgDeleted _mc -> []
+      CISndDeleted _ -> []
       CISndFileInvitation fId fPath -> viewSentFileInvitation to fId fPath meta
       where
         to = ttyToContact' c
     CIDirectRcv -> case content of
       CIRcvMsgContent mc -> viewReceivedMessage from quote meta mc
-      CIRcvMsgDeleted _mc -> []
+      CIRcvDeleted _ -> []
       CIRcvFileInvitation ft -> viewReceivedFileInvitation from meta ft
       where
         from = ttyFromContact' c
@@ -183,13 +184,13 @@ viewChatItem chat ChatItem {chatDir, meta, content, quotedItem} = case chat of
   GroupChat g -> case chatDir of
     CIGroupSnd -> case content of
       CISndMsgContent mc -> viewSentMessage to quote mc meta
-      CISndMsgDeleted _mc -> []
+      CISndDeleted _ -> []
       CISndFileInvitation fId fPath -> viewSentFileInvitation to fId fPath meta
       where
         to = ttyToGroup g
     CIGroupRcv m -> case content of
       CIRcvMsgContent mc -> viewReceivedMessage from quote meta mc
-      CIRcvMsgDeleted _mc -> []
+      CIRcvDeleted _ -> []
       CIRcvFileInvitation ft -> viewReceivedFileInvitation from meta ft
       where
         from = ttyFromGroup' g m
@@ -197,8 +198,8 @@ viewChatItem chat ChatItem {chatDir, meta, content, quotedItem} = case chat of
       quote = maybe [] (groupQuote g) quotedItem
   _ -> []
 
-viewMessageUpdate :: MsgDirectionI d => ChatInfo c -> ChatItem c d -> [StyledString]
-viewMessageUpdate chat ChatItem {chatDir, meta, content, quotedItem} = case chat of
+viewItemUpdate :: MsgDirectionI d => ChatInfo c -> ChatItem c d -> [StyledString]
+viewItemUpdate chat ChatItem {chatDir, meta, content, quotedItem} = case chat of
   DirectChat Contact {localDisplayName = c} -> case chatDir of
     CIDirectRcv -> case content of
       CIRcvMsgContent mc -> viewReceivedMessage from quote meta mc
@@ -206,7 +207,7 @@ viewMessageUpdate chat ChatItem {chatDir, meta, content, quotedItem} = case chat
       where
         from = ttyFromContactEdited c
         quote = maybe [] (directQuote chatDir) quotedItem
-    CIDirectSnd -> []
+    CIDirectSnd -> ["item updated"]
   GroupChat g -> case chatDir of
     CIGroupRcv GroupMember {localDisplayName = m} -> case content of
       CIRcvMsgContent mc -> viewReceivedMessage from quote meta mc
@@ -214,8 +215,23 @@ viewMessageUpdate chat ChatItem {chatDir, meta, content, quotedItem} = case chat
       where
         from = ttyFromGroupEdited g m
         quote = maybe [] (groupQuote g) quotedItem
-    CIGroupSnd -> []
-    where
+    CIGroupSnd -> ["item updated"]
+  _ -> []
+
+viewItemDelete :: ChatInfo c -> ChatItem c d -> ChatItem c' d' -> [StyledString]
+viewItemDelete chat ChatItem {chatDir, meta, content = deletedContent} ChatItem {content = toContent} = case chat of
+  DirectChat Contact {localDisplayName = c} -> case (chatDir, deletedContent, toContent) of
+    (CIDirectRcv, CIRcvMsgContent mc, CIRcvDeleted mode) -> case mode of
+      CIDMBroadcast -> viewReceivedMessage (ttyFromContactDeleted c) [] meta mc
+      CIDMInternal -> ["item deleted"]
+    (CIDirectSnd, _, _) -> ["item deleted"]
+    _ -> []
+  GroupChat g -> case (chatDir, deletedContent, toContent) of
+    (CIGroupRcv GroupMember {localDisplayName = m}, CIRcvMsgContent mc, CIRcvDeleted mode) -> case mode of
+      CIDMBroadcast -> viewReceivedMessage (ttyFromGroupDeleted g m) [] meta mc
+      CIDMInternal -> ["item deleted"]
+    (CIGroupSnd, _, _) -> ["item deleted"]
+    _ -> []
   _ -> []
 
 directQuote :: forall d'. MsgDirectionI d' => CIDirection 'CTDirect d' -> CIQuote 'CTDirect -> [StyledString]
@@ -441,6 +457,9 @@ viewSentMessage to quote mc = sentWithTime_ . prependFirst to $ quote <> prepend
   where
     indent = if null quote then "" else "      "
 
+viewSentBroadcast :: MsgContent -> Int -> ZonedTime -> [StyledString]
+viewSentBroadcast mc n ts = prependFirst (highlight' "/feed" <> " (" <> sShow n <> ") " <> ttyMsgTime ts <> " ") (ttyMsgContent mc)
+
 viewSentFileInvitation :: StyledString -> FileTransferId -> FilePath -> CIMeta d -> [StyledString]
 viewSentFileInvitation to fId fPath = sentWithTime_ $ ttySentFile to fId fPath
 
@@ -585,7 +604,8 @@ viewChatError = \case
     CEFileRcvChunk e -> ["error receiving file: " <> plain e]
     CEFileInternal e -> ["file error: " <> plain e]
     CEInvalidQuote -> ["cannot reply to this message"]
-    CEInvalidMessageUpdate -> ["cannot update this message"]
+    CEInvalidChatItemUpdate -> ["cannot update this item"]
+    CEInvalidChatItemDelete -> ["cannot delete this item"]
     CEAgentVersion -> ["unsupported agent version"]
     CECommandError e -> ["bad chat command: " <> plain e]
   -- e -> ["chat error: " <> sShow e]
@@ -639,6 +659,9 @@ ttyFromContact c = ttyFrom $ c <> "> "
 ttyFromContactEdited :: ContactName -> StyledString
 ttyFromContactEdited c = ttyFrom $ c <> "> [edited] "
 
+ttyFromContactDeleted :: ContactName -> StyledString
+ttyFromContactDeleted c = ttyFrom $ c <> "> [deleted] "
+
 ttyToContact' :: Contact -> StyledString
 ttyToContact' Contact {localDisplayName = c} = ttyToContact c
 
@@ -672,6 +695,9 @@ ttyFromGroup GroupInfo {localDisplayName = g} c = ttyFrom $ "#" <> g <> " " <> c
 
 ttyFromGroupEdited :: GroupInfo -> ContactName -> StyledString
 ttyFromGroupEdited GroupInfo {localDisplayName = g} c = ttyFrom $ "#" <> g <> " " <> c <> "> [edited] "
+
+ttyFromGroupDeleted :: GroupInfo -> ContactName -> StyledString
+ttyFromGroupDeleted GroupInfo {localDisplayName = g} c = ttyFrom $ "#" <> g <> " " <> c <> "> [deleted] "
 
 ttyFrom :: Text -> StyledString
 ttyFrom = styled $ colored Yellow
