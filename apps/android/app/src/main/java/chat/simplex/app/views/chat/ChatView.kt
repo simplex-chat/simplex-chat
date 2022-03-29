@@ -68,7 +68,7 @@ fun ChatView(chatModel: ChatModel) {
           val cInfo = chat.chatInfo
           val ei = editingItem.value
           if (ei != null) {
-            val updatedItem = chatModel.controller.apiUpdateMessage(
+            val updatedItem = chatModel.controller.apiUpdateChatItem(
               type = cInfo.chatType,
               id = cInfo.apiId,
               itemId = ei.meta.itemId,

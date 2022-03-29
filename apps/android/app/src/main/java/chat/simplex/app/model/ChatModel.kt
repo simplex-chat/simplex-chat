@@ -134,6 +134,26 @@ class ChatModel(val controller: ChatController) {
     }
   }
 
+  fun removeChatItem(cInfo: ChatInfo, cItem: ChatItem) {
+    // update previews
+    val i = getChatIndex(cInfo.id)
+    val chat: Chat
+    if (i >= 0) {
+      chat = chats[i]
+      val pItem = chat.chatItems.last()
+      if (pItem.id == cItem.id) {
+        chats[i] = chat.copy(chatItems = arrayListOf(cItem))
+      }
+    }
+    // remove from current chat
+    if (chatId.value == cInfo.id) {
+      val itemIndex = chatItems.indexOfFirst { it.id == cItem.id }
+      if (itemIndex >= 0) {
+        chatItems.removeAt(itemIndex)
+      }
+    }
+  }
+
   fun markChatItemsRead(cInfo: ChatInfo) {
     val chatIdx = getChatIndex(cInfo.id)
     // update current chat
@@ -490,6 +510,20 @@ data class ChatItem (
     if (chatDir is CIDirection.GroupRcv) chatDir.groupMember.memberProfile.displayName
     else null
 
+  val isMsgContent: Boolean get() =
+    when (content) {
+      is CIContent.SndMsgContent -> true
+      is CIContent.RcvMsgContent -> true
+      else -> false
+    }
+
+  val isDeletedContent: Boolean get() =
+    when (content) {
+      is CIContent.SndDeleted -> true
+      is CIContent.RcvDeleted -> true
+      else -> false
+    }
+
   companion object {
     fun getSampleData(
       id: Long = 1,
@@ -598,6 +632,11 @@ sealed class CIStatus {
   class RcvRead: CIStatus()
 }
 
+enum class CIDeleteMode(val mode: String) {
+  Broadcast("broadcast"),
+  Internal("internal");
+}
+
 interface ItemContent {
   val text: String
 }
@@ -614,6 +653,16 @@ sealed class CIContent: ItemContent {
   @Serializable @SerialName("rcvMsgContent")
   class RcvMsgContent(val msgContent: MsgContent): CIContent() {
     override val text get() = msgContent.text
+  }
+
+  @Serializable @SerialName("sndDeleted")
+  class SndDeleted(val deleteMode: CIDeleteMode): CIContent() {
+    override val text get() = "This message was deleted."
+  }
+
+  @Serializable @SerialName("rcvDeleted")
+  class RcvDeleted(val deleteMode: CIDeleteMode): CIContent() {
+    override val text get() = "This message was deleted."
   }
 
   @Serializable @SerialName("sndFileInvitation")
