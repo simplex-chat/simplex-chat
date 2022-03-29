@@ -50,6 +50,7 @@ runInputLoop ct cc = forever $ do
       Right SendGroupFile {} -> True
       Right SendMessageQuote {} -> True
       Right SendGroupMessageQuote {} -> True
+      Right SendMessageBroadcast {} -> True
       _ -> False
 
 runTerminalInput :: ChatTerminal -> ChatController -> IO ()
