@@ -527,6 +527,16 @@ struct GroupMember: Decodable {
     var memberContactId: Int64?
 //    var activeConn: Connection?
 
+    var directChatId: ChatId? {
+        get {
+            if let chatId = memberContactId {
+                return "@\(chatId)"
+            } else {
+                return nil
+            }
+        }
+    }
+
     static let sampleData = GroupMember(
         groupMemberId: 1,
         memberId: "abcd",

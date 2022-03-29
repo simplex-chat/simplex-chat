@@ -26,59 +26,29 @@ struct ChatView: View {
 
         return VStack {
             GeometryReader { g in
-                let maxWidth = g.size.width * 0.78 - (cInfo.chatType == .group ? 40 : 0)
+                let maxWidth =
+                    cInfo.chatType == .group
+                    ? (g.size.width - 28) * 0.84 - 42
+                    : (g.size.width - 32) * 0.84
                 ScrollViewReader { proxy in
                     ScrollView {
                         LazyVStack(spacing: 5)  {
                             ForEach(chatModel.chatItems) { ci in
-                                let alignment: Alignment = ci.chatDir.sent ? .trailing : .leading
-                                let v = ChatItemView(chatItem: ci)
-                                    .contextMenu {
-                                        Button {
-                                            withAnimation {
-                                                editingItem = nil
-                                                quotedItem = ci
-                                            }
-                                        } label: { Label("Reply", systemImage: "arrowshape.turn.up.left") }
-                                        Button {
-                                            showShareSheet(items: [ci.content.text])
-                                        } label: { Label("Share", systemImage: "square.and.arrow.up") }
-                                        Button {
-                                            UIPasteboard.general.string = ci.content.text
-                                        } label: { Label("Copy", systemImage: "doc.on.doc") }
-                                        if (ci.chatDir.sent && ci.meta.editable) {
-                                            Button {
-                                                withAnimation {
-                                                    quotedItem = nil
-                                                    editingItem = ci
-                                                    message = ci.content.text
-                                                }
-                                            } label: { Label("Edit", systemImage: "square.and.pencil") }
-                                        }
-                                    }
-                                    .frame(maxWidth: maxWidth, maxHeight: .infinity, alignment: alignment)
-                                    .frame(minWidth: 0, maxWidth: .infinity, alignment: alignment)
                                 if case let .groupRcv(member) = ci.chatDir {
                                     let prevItem = chatModel.getPrevChatItem(ci)
                                     HStack(alignment: .top, spacing: 0) {
-                                        switch (prevItem?.chatDir) {
-                                        case .groupSnd:
+                                        if showMemberImage(member, prevItem) {
                                             memberImage(member)
-                                        case let .groupRcv(prevMember):
-                                            if prevMember.groupMemberId != member.groupMemberId {
-                                                memberImage(member)
-                                            } else {
-                                                noMemberImage()
-                                            }
-                                        default:
+                                            chatItemWithMenu(ci, maxWidth, showMember: true).padding(.leading, 8)
+                                        } else {
                                             noMemberImage()
+                                            chatItemWithMenu(ci, maxWidth).padding(.leading, 8)
                                         }
-                                        v.padding(.leading, 8)
                                     }
                                     .padding(.trailing)
                                     .padding(.leading, 12)
                                 } else {
-                                    v.padding(.horizontal)
+                                    chatItemWithMenu(ci, maxWidth).padding(.horizontal)
                                 }
                             }
                             .onAppear {
@@ -141,7 +111,45 @@ struct ChatView: View {
         }
         .navigationBarBackButtonHidden(true)
     }
+
+    private func chatItemWithMenu(_ ci: ChatItem, _ maxWidth: CGFloat, showMember: Bool = false) -> some View {
+        let alignment: Alignment = ci.chatDir.sent ? .trailing : .leading
+        return ChatItemView(chatItem: ci, showMember: showMember)
+            .contextMenu {
+                Button {
+                    withAnimation {
+                        editingItem = nil
+                        quotedItem = ci
+                    }
+                } label: { Label("Reply", systemImage: "arrowshape.turn.up.left") }
+                Button {
+                    showShareSheet(items: [ci.content.text])
+                } label: { Label("Share", systemImage: "square.and.arrow.up") }
+                Button {
+                    UIPasteboard.general.string = ci.content.text
+                } label: { Label("Copy", systemImage: "doc.on.doc") }
+                if (ci.chatDir.sent && ci.meta.editable) {
+                    Button {
+                        withAnimation {
+                            quotedItem = nil
+                            editingItem = ci
+                            message = ci.content.text
+                        }
+                    } label: { Label("Edit", systemImage: "square.and.pencil") }
+                }
+            }
+            .frame(maxWidth: maxWidth, maxHeight: .infinity, alignment: alignment)
+            .frame(minWidth: 0, maxWidth: .infinity, alignment: alignment)
+    }
     
+    private func showMemberImage(_ member: GroupMember, _ prevItem: ChatItem?) -> Bool {
+        switch (prevItem?.chatDir) {
+        case .groupSnd: return true
+        case let .groupRcv(prevMember): return prevMember.groupMemberId != member.groupMemberId
+        default: return false
+        }
+    }
+
     private func memberImage(_ member: GroupMember) -> some View {
         ProfileImage(imageStr: member.memberProfile.image)
             .frame(width: memberImageSize, height: memberImageSize)

@@ -10,12 +10,13 @@ import SwiftUI
 
 struct ChatItemView: View {
     var chatItem: ChatItem
+    var showMember = false
 
     var body: some View {
         if (chatItem.quotedItem == nil && isShortEmoji(chatItem.content.text)) {
             EmojiItemView(chatItem: chatItem)
         } else {
-            FramedItemView(chatItem: chatItem)
+            FramedItemView(chatItem: chatItem, showMember: showMember)
         }
     }
 }
