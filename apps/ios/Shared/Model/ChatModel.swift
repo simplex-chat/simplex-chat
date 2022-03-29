@@ -135,6 +135,23 @@ final class ChatModel: ObservableObject {
             return res
         }
     }
+    
+    func removeChatItem(_ cInfo: ChatInfo, _ cItem: ChatItem) {
+        // update previews
+        if let chat = getChat(cInfo.id) {
+            if let pItem = chat.chatItems.last, pItem.id == cItem.id {
+                chat.chatItems = [cItem]
+            }
+        }
+        // remove from current chat
+        if chatId == cInfo.id {
+            if let i = chatItems.firstIndex(where: { $0.id == cItem.id }) {
+                _ = withAnimation {
+                    self.chatItems.remove(at: i)
+                }
+            }
+        }
+    }
 
     func markChatItemsRead(_ cInfo: ChatInfo) {
         // update preview
@@ -637,6 +654,11 @@ enum CIStatus: Decodable {
     case rcvRead
 }
 
+enum CIDeleteMode: String, Decodable {
+    case cidmBroadcast = "broadcast"
+    case cidmInternal = "internal"
+}
+
 protocol ItemContent {
     var text: String { get }
 }
@@ -644,6 +666,8 @@ protocol ItemContent {
 enum CIContent: Decodable, ItemContent {
     case sndMsgContent(msgContent: MsgContent)
     case rcvMsgContent(msgContent: MsgContent)
+    case sndDeleted(deleteMode: CIDeleteMode)
+    case rcvDeleted(deleteMode: CIDeleteMode)
     case sndFileInvitation(fileId: Int64, filePath: String)
     case rcvFileInvitation(rcvFileTransfer: RcvFileTransfer)
 
@@ -652,6 +676,8 @@ enum CIContent: Decodable, ItemContent {
             switch self {
             case let .sndMsgContent(mc): return mc.text
             case let .rcvMsgContent(mc): return mc.text
+            case let .sndDeleted(deleteMode): return "this item is deleted (\(deleteMode))"
+            case let .rcvDeleted(deleteMode): return "this item is deleted (\(deleteMode))"
             case .sndFileInvitation: return "sending files is not supported yet"
             case .rcvFileInvitation: return  "receiving files is not supported yet"
             }

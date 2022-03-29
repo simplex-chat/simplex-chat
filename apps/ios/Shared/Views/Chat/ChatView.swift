@@ -44,7 +44,7 @@ struct ChatView: View {
                                         Button {
                                             UIPasteboard.general.string = ci.content.text
                                         } label: { Label("Copy", systemImage: "doc.on.doc") }
-//                                        if (ci.chatDir.sent && ci.meta.editable) {
+//                                        if ci.meta.editable {
 //                                            Button {
 //                                                withAnimation {
 //                                                    quotedItem = nil
@@ -53,6 +53,16 @@ struct ChatView: View {
 //                                                }
 //                                            } label: { Label("Edit", systemImage: "square.and.pencil") }
 //                                        }
+                                        if ci.meta.editable {
+                                            Button {
+                                                withAnimation {
+                                                    quotedItem = nil
+                                                    editingItem = ci
+                                                    message = ci.content.text
+                                                }
+                                            } label: { Label("Edit", systemImage: "square.and.pencil") }
+                                        }
+
                                     }
                                     .padding(.horizontal)
                                     .frame(maxWidth: maxWidth, maxHeight: .infinity, alignment: alignment)
@@ -152,7 +162,7 @@ struct ChatView: View {
             logger.debug("ChatView sendMessage: in Task")
             do {
                 if let ei = editingItem {
-                    let chatItem = try await apiUpdateMessage(
+                    let chatItem = try await apiUpdateChatItem(
                         type: chat.chatInfo.chatType,
                         id: chat.chatInfo.apiId,
                         itemId: ei.id,
