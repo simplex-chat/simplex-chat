@@ -37,13 +37,15 @@ struct ChatView: View {
                                 if case let .groupRcv(member) = ci.chatDir {
                                     let prevItem = chatModel.getPrevChatItem(ci)
                                     HStack(alignment: .top, spacing: 0) {
-                                        if showMemberImage(member, prevItem) {
-                                            memberImage(member)
-                                            chatItemWithMenu(ci, maxWidth, showMember: true).padding(.leading, 8)
+                                        let showMember = showMemberImage(member, prevItem)
+                                        if showMember {
+                                            ProfileImage(imageStr: member.memberProfile.image)
+                                                .frame(width: memberImageSize, height: memberImageSize)
                                         } else {
-                                            noMemberImage()
-                                            chatItemWithMenu(ci, maxWidth).padding(.leading, 8)
+                                            Rectangle().fill(.clear)
+                                                .frame(width: memberImageSize, height: memberImageSize)
                                         }
+                                        chatItemWithMenu(ci, maxWidth, showMember: showMember).padding(.leading, 8)
                                     }
                                     .padding(.trailing)
                                     .padding(.leading, 12)
@@ -150,15 +152,6 @@ struct ChatView: View {
         }
     }
 
-    private func memberImage(_ member: GroupMember) -> some View {
-        ProfileImage(imageStr: member.memberProfile.image)
-            .frame(width: memberImageSize, height: memberImageSize)
-    }
-
-    private func noMemberImage() -> some View {
-        Rectangle().fill(.clear).frame(width: memberImageSize, height: memberImageSize)
-    }
-    
     func scrollToBottom(_ proxy: ScrollViewProxy, animation: Animation = .default) {
         withAnimation(animation) { scrollToBottom_(proxy) }
     }

@@ -38,11 +38,7 @@ fun ChatItemView(
   Box(
     modifier = Modifier
       .padding(bottom = 4.dp)
-      .fillMaxWidth()
-      .padding(
-        start = if (sent) 86.dp else 16.dp,
-        end = if (sent) 16.dp else 86.dp,
-      ),
+      .fillMaxWidth(),
     contentAlignment = alignment,
   ) {
     Column(Modifier.combinedClickable(onLongClick = { showMenu = true }, onClick = {})) {
