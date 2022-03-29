@@ -51,6 +51,7 @@ responseToView testView = \case
   CRChatItemStatusUpdated _ -> []
   CRChatItemUpdated (AChatItem _ _ chat item) -> viewItemUpdate chat item
   CRChatItemDeleted (AChatItem _ _ chat deletedItem) (AChatItem _ _ _ toItem) -> viewItemDelete chat deletedItem toItem
+  CRBroadcastSent mc n ts -> viewSentBroadcast mc n ts
   CRMsgIntegrityError mErr -> viewMsgIntegrityError mErr
   CRCmdAccepted _ -> []
   CRCmdOk -> ["ok"]
@@ -455,6 +456,9 @@ viewSentMessage :: StyledString -> [StyledString] -> MsgContent -> CIMeta d -> [
 viewSentMessage to quote mc = sentWithTime_ . prependFirst to $ quote <> prependFirst indent (ttyMsgContent mc)
   where
     indent = if null quote then "" else "      "
+
+viewSentBroadcast :: MsgContent -> Int -> ZonedTime -> [StyledString]
+viewSentBroadcast mc n ts = prependFirst (highlight' "/feed" <> " (" <> sShow n <> ") " <> ttyMsgTime ts <> " ") (ttyMsgContent mc)
 
 viewSentFileInvitation :: StyledString -> FileTransferId -> FilePath -> CIMeta d -> [StyledString]
 viewSentFileInvitation to fId fPath = sentWithTime_ $ ttySentFile to fId fPath
