@@ -16,6 +16,7 @@ markdownTests = do
   textWithUri
   textWithEmail
   textWithPhone
+  multilineMarkdownList
 
 textFormat :: Spec
 textFormat = describe "text format (bold)" do
@@ -180,3 +181,13 @@ textWithPhone = describe "text with Phone" do
     parseMarkdown "test 077777 test" `shouldBe` "test 077777 test"
   it "ignored as markdown (double spaces)" $
     parseMarkdown "test 07777  777  777 test" `shouldBe` "test 07777  777  777 test"
+
+uri' :: Text -> FormattedText
+uri' = FormattedText $ Just Uri
+
+multilineMarkdownList :: Spec
+multilineMarkdownList = describe "multiline markdown" do
+  it "correct markdown" do
+    parseMaybeMarkdownList "http://simplex.chat\nhttp://app.simplex.chat" `shouldBe` Just [uri' "http://simplex.chat", "\n", uri' "http://app.simplex.chat"]
+  it "no markdown" do
+    parseMaybeMarkdownList "not a\nmarkdown" `shouldBe` Nothing
