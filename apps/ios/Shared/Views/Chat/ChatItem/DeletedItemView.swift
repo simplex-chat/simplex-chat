@@ -30,7 +30,7 @@ struct DeletedItemView: View {
         .background(Color(uiColor: .systemBackground))
         .overlay(
             RoundedRectangle(cornerRadius: 18)
-                .stroke(.secondary, lineWidth: 1)
+                .stroke(.quaternary, lineWidth: 1)
         )
     }
 }
