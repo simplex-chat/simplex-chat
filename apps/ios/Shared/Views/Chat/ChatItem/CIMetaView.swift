@@ -10,11 +10,10 @@ import SwiftUI
 
 struct CIMetaView: View {
     var chatItem: ChatItem
-    var onlyTime: Bool = false
 
     var body: some View {
         HStack(alignment: .center, spacing: 4) {
-            if !onlyTime {
+            if !chatItem.isDeletedContent() {
                 if chatItem.meta.itemEdited {
                     statusImage("pencil", .secondary, 9)
                 }
@@ -52,6 +51,8 @@ struct CIMetaView_Previews: PreviewProvider {
         return Group {
             CIMetaView(chatItem: ChatItem.getSample(2, .directSnd, .now, "https://simplex.chat", .sndSent))
             CIMetaView(chatItem: ChatItem.getSample(2, .directSnd, .now, "https://simplex.chat", .sndSent, false, true))
+            CIMetaView(chatItem: ChatItem.getDeletedContentSample())
         }
+        .previewLayout(.fixed(width: 360, height: 100))
     }
 }

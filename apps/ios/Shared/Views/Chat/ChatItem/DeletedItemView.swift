@@ -23,7 +23,7 @@ struct DeletedItemView: View {
                     .frame(minWidth: 0, alignment: .leading)
                     .textSelection(.disabled)
             }
-            CIMetaView(chatItem: chatItem, onlyTime: true)
+            CIMetaView(chatItem: chatItem)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
         }

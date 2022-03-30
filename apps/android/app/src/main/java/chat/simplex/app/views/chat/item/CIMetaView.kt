@@ -22,13 +22,16 @@ fun CIMetaView(chatItem: ChatItem) {
     horizontalArrangement = Arrangement.spacedBy(4.dp),
     verticalAlignment = Alignment.CenterVertically
   ) {
-    if (chatItem.meta.itemEdited) {
-      Icon(
-        Icons.Filled.Edit,
-        modifier = Modifier.height(12.dp),
-        contentDescription = "Edited",
-        tint = HighOrLowlight,
-      )
+    if (!chatItem.isDeletedContent) {
+      if (chatItem.meta.itemEdited) {
+        Icon(
+          Icons.Filled.Edit,
+          modifier = Modifier.height(12.dp),
+          contentDescription = "Edited",
+          tint = HighOrLowlight,
+        )
+      }
+      // TODO status
     }
     Text(
       chatItem.timestampText,
@@ -56,5 +59,13 @@ fun PreviewCIMetaViewEdited() {
       1, CIDirection.DirectSnd(), Clock.System.now(), "hello",
       itemEdited = true
     )
+  )
+}
+
+@Preview
+@Composable
+fun PreviewCIMetaViewDeletedContent() {
+  CIMetaView(
+    chatItem = ChatItem.getDeletedContentSampleData()
   )
 }

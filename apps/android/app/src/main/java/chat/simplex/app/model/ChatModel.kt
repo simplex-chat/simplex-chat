@@ -542,6 +542,20 @@ data class ChatItem (
         content = CIContent.SndMsgContent(msgContent = MsgContent.MCText(text)),
         quotedItem = quotedItem
       )
+
+    fun getDeletedContentSampleData(
+      id: Long = 1,
+      dir: CIDirection = CIDirection.DirectRcv(),
+      ts: Instant = Clock.System.now(),
+      text: String = "this item is deleted",
+      status: CIStatus = CIStatus.RcvRead()
+    ) =
+      ChatItem(
+        chatDir = dir,
+        meta = CIMeta.getSample(id, ts, text, status, false, false, false),
+        content = CIContent.RcvDeleted(deleteMode = CIDeleteMode.Broadcast),
+        quotedItem = null
+      )
   }
 }
 
