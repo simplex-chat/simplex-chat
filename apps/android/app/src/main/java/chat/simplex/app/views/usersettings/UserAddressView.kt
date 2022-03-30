@@ -33,7 +33,7 @@ fun UserAddressView(chatModel: ChatModel) {
     deleteAddress = {
       AlertManager.shared.showAlertMsg(
         title = "Delete address?",
-        text = "All your contacts will remain connected",
+        text = "All your contacts will remain connected.",
         confirmText = "Delete",
         onConfirm = {
           withApi {

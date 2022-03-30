@@ -21,6 +21,22 @@ class AlertManager {
     alertView.value = null
   }
 
+  fun showAlertDialogButtons(
+    title: String,
+    text: String? = null,
+    buttons: @Composable () -> Unit,
+  ) {
+    val alertText: (@Composable () -> Unit)? = if (text == null) null else { -> Text(text) }
+    showAlert {
+      AlertDialog(
+        onDismissRequest = this::hideAlert,
+        title = { Text(title) },
+        text = alertText,
+        buttons = buttons
+      )
+    }
+  }
+
   fun showAlertDialog(
     title: String,
     text: String? = null,
