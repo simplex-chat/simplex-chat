@@ -27,7 +27,7 @@ fun DeletedItemView(ci: ChatItem) {
         Modifier
           .width(IntrinsicSize.Max)
           .padding(vertical = 6.dp, horizontal = 12.dp)
-          .padding(bottom = 18.dp),
+          .padding(bottom = 22.dp),
         horizontalAlignment = Alignment.Start
       ) {
         Text(ci.content.text, style = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onSurface, lineHeight = 22.sp))

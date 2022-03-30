@@ -17,6 +17,7 @@ struct ChatView: View {
     @State var message: String = ""
     @State var quotedItem: ChatItem? = nil
     @State var editingItem: ChatItem? = nil
+    @State var deletingItem: ChatItem? = nil
     @State private var inProgress: Bool = false
     @FocusState private var keyboardVisible: Bool
     @State private var showChatInfo = false
@@ -141,15 +142,20 @@ struct ChatView: View {
                             }
                         } label: { Label("Edit", systemImage: "square.and.pencil") }
                     }
-                    Button { showDeleteMessage = true } label: {
+                    Button {
+                        showDeleteMessage = true
+                        deletingItem = ci
+                    } label: {
                         Label("Delete", systemImage: "xmark.bin")
                     }
                 }
             }
             .confirmationDialog("Delete message?", isPresented: $showDeleteMessage, titleVisibility: .visible) {
-                Button("Delete for Me") { deleteMessage(ci.id, .cidmInternal) }
-                if ci.meta.editable {
-                    Button("Delete for Everyone") { deleteMessage(ci.id, .cidmBroadcast) }
+                Button("Delete for Me") { deleteMessage(.cidmInternal) }
+                if let di = deletingItem {
+                    if di.meta.editable {
+                        Button("Delete for Everyone") { deleteMessage(.cidmBroadcast) }
+                    }
                 }
             }
             .frame(maxWidth: maxWidth, maxHeight: .infinity, alignment: alignment)
@@ -225,19 +231,22 @@ struct ChatView: View {
         }
     }
     
-    func deleteMessage(_ itemId: Int64, _ mode: CIDeleteMode) {
+    func deleteMessage(_ mode: CIDeleteMode) {
         logger.debug("ChatView deleteMessage")
         Task {
             logger.debug("ChatView deleteMessage: in Task")
             do {
-                let deletedItem = try await apiDeleteChatItem(
-                    type: chat.chatInfo.chatType,
-                    id: chat.chatInfo.apiId,
-                    itemId: itemId,
-                    mode: mode
-                )
-                DispatchQueue.main.async {
-                    let _ = chatModel.removeChatItem(chat.chatInfo, deletedItem)
+                if let di = deletingItem {
+                    let toItem = try await apiDeleteChatItem(
+                        type: chat.chatInfo.chatType,
+                        id: chat.chatInfo.apiId,
+                        itemId: di.id,
+                        mode: mode
+                    )
+                    DispatchQueue.main.async {
+                        deletingItem = nil
+                        let _ = chatModel.removeChatItem(chat.chatInfo, toItem)
+                    }
                 }
             } catch {
                 logger.error("ChatView.deleteMessage error: \(error.localizedDescription)")

@@ -553,7 +553,7 @@ data class ChatItem (
       ChatItem(
         chatDir = dir,
         meta = CIMeta.getSample(id, ts, text, status, false, false, false),
-        content = CIContent.RcvDeleted(deleteMode = CIDeleteMode.Broadcast),
+        content = CIContent.RcvDeleted(deleteMode = CIDeleteMode.cidmBroadcast),
         quotedItem = null
       )
   }
@@ -646,9 +646,10 @@ sealed class CIStatus {
   class RcvRead: CIStatus()
 }
 
-enum class CIDeleteMode(val mode: String) {
-  Broadcast("broadcast"),
-  Internal("internal");
+@Serializable
+enum class CIDeleteMode(val deleteMode: String) {
+  @SerialName("internal") cidmInternal("internal"),
+  @SerialName("broadcast") cidmBroadcast("broadcast");
 }
 
 interface ItemContent {

@@ -102,13 +102,13 @@ fun ChatView(chatModel: ChatModel) {
       deleteMessage = { itemId, mode ->
         withApi {
           val cInfo = chat.chatInfo
-          val deletedItem = chatModel.controller.apiDeleteChatItem(
+          val toItem = chatModel.controller.apiDeleteChatItem(
             type = cInfo.chatType,
             id = cInfo.apiId,
             itemId = itemId,
             mode = mode
           )
-          if (deletedItem != null) chatModel.removeChatItem(cInfo, deletedItem.chatItem)
+          if (toItem != null) chatModel.removeChatItem(cInfo, toItem.chatItem)
         }
       }
     )

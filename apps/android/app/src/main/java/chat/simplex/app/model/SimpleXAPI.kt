@@ -431,7 +431,7 @@ sealed class CC {
     is ApiSendMessage -> "/_send ${chatRef(type, id)} ${mc.cmdString}"
     is ApiSendMessageQuote -> "/_send_quote ${chatRef(type, id)} $itemId ${mc.cmdString}"
     is ApiUpdateChatItem -> "/_update item ${chatRef(type, id)} $itemId ${mc.cmdString}"
-    is ApiDeleteChatItem -> "/_delete item ${chatRef(type, id)} $itemId $mode"
+    is ApiDeleteChatItem -> "/_delete item ${chatRef(type, id)} $itemId ${mode.deleteMode}"
     is GetUserSMPServers -> "/smp_servers"
     is SetUserSMPServers -> "/smp_servers ${smpServersStr(smpServers)}"
     is AddContact -> "/connect"

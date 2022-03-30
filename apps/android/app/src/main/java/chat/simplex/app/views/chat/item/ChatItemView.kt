@@ -112,12 +112,12 @@ fun deleteMessageAlertDialog(chatItem: ChatItem, deleteMessage: (Long, CIDeleteM
           horizontalArrangement = Arrangement.End
         ) {
           Button(onClick = {
-            deleteMessage(chatItem.id, CIDeleteMode.Internal)
+            deleteMessage(chatItem.id, CIDeleteMode.cidmInternal)
             AlertManager.shared.hideAlert()
           }) { Text("Delete for Me") }
           if (chatItem.meta.editable) {
             Button(onClick = {
-              deleteMessage(chatItem.id, CIDeleteMode.Broadcast)
+              deleteMessage(chatItem.id, CIDeleteMode.cidmBroadcast)
               AlertManager.shared.hideAlert()
             }) { Text("Delete for Everyone") }
           }
