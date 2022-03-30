@@ -628,7 +628,11 @@ func processReceivedMsg(_ res: ChatResponse) {
         case let .chatItemStatusUpdated(aChatItem):
             let cInfo = aChatItem.chatInfo
             let cItem = aChatItem.chatItem
-            if chatModel.upsertChatItem(cInfo, cItem) {
+            var res = false
+            if !cItem.isDeletedContent() {
+                res = chatModel.upsertChatItem(cInfo, cItem)
+            }
+            if res {
                 NtfManager.shared.notifyMessageReceived(cInfo, cItem)
             } else if let endTask = chatModel.messageDelivery[cItem.id] {
                 switch cItem.meta.itemStatus {

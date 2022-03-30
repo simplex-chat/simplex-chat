@@ -328,7 +328,11 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
       is CR.ChatItemStatusUpdated -> {
         val cInfo = r.chatItem.chatInfo
         val cItem = r.chatItem.chatItem
-        if (chatModel.upsertChatItem(cInfo, cItem)) {
+        var res = false
+        if (!cItem.isDeletedContent) {
+          res = chatModel.upsertChatItem(cInfo, cItem)
+        }
+        if (res) {
           ntfManager.notifyMessageReceived(cInfo, cItem)
         }
       }
