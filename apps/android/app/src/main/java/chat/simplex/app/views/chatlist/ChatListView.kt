@@ -76,6 +76,7 @@ fun ChatListView(chatModel: ChatModel) {
           .background(MaterialTheme.colors.background)
       ) {
         ChatListToolbar(scaffoldCtrl)
+        Divider(Modifier.padding(horizontal = 8.dp))
         if (chatModel.chats.isNotEmpty()) {
           ChatList(chatModel)
         } else {
@@ -100,7 +101,7 @@ fun Help(scaffoldCtrl: ScaffoldController, displayName: String?) {
   Column(
     Modifier
       .fillMaxWidth()
-      .padding(8.dp)
+      .padding(16.dp)
   ) {
     Text(
       text = if (displayName != null) "Welcome ${displayName}!" else "Welcome!",
@@ -149,7 +150,7 @@ fun ChatListToolbar(scaffoldCtrl: ScaffoldController) {
     Text(
       "Your chats",
       color = MaterialTheme.colors.onBackground,
-      fontWeight = FontWeight.Bold,
+      fontWeight = FontWeight.SemiBold,
       modifier = Modifier.padding(5.dp)
     )
     IconButton(onClick = { scaffoldCtrl.toggleSheet() }) {
@@ -165,7 +166,6 @@ fun ChatListToolbar(scaffoldCtrl: ScaffoldController) {
 
 @Composable
 fun ChatList(chatModel: ChatModel) {
-  Divider(Modifier.padding(horizontal = 8.dp))
   LazyColumn(
     modifier = Modifier.fillMaxWidth()
   ) {

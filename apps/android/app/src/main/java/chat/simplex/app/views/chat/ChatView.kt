@@ -180,7 +180,7 @@ fun ChatInfoToolbar(chat: Chat, back: () -> Unit, info: () -> Unit) {
         horizontalAlignment = Alignment.CenterHorizontally
       ) {
         Text(
-          cInfo.displayName, fontWeight = FontWeight.Bold,
+          cInfo.displayName, fontWeight = FontWeight.SemiBold,
           maxLines = 1, overflow = TextOverflow.Ellipsis
         )
         if (cInfo.fullName != "" && cInfo.fullName != cInfo.displayName) {
