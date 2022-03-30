@@ -23,7 +23,7 @@ val SentQuoteColorLight = Color(0x2545B8FF)
 val ReceivedQuoteColorLight = Color(0x25B1B0B5)
 
 @Composable
-fun FramedItemView(user: User, ci: ChatItem, uriHandler: UriHandler? = null) {
+fun FramedItemView(user: User, ci: ChatItem, uriHandler: UriHandler? = null, showMember: Boolean = false) {
   val sent = ci.chatDir.sent
   Surface(
     shape = RoundedCornerShape(18.dp),
@@ -58,7 +58,7 @@ fun FramedItemView(user: User, ci: ChatItem, uriHandler: UriHandler? = null) {
             }
           } else {
             MarkdownText(
-              ci.content, ci.formattedText, ci.memberDisplayName,
+              ci.content, ci.formattedText, if (showMember) ci.memberDisplayName else null,
               metaText = ci.timestampText, edited = ci.meta.itemEdited, uriHandler = uriHandler, senderBold = true
             )
           }

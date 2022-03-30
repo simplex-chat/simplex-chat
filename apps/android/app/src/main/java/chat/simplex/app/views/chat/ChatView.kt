@@ -232,7 +232,7 @@ fun ChatItemsList(
             } else {
               Spacer(Modifier.size(42.dp))
             }
-            ChatItemView(user, cItem, msg, quotedItem, editingItem, cxt, uriHandler) // , showMember = showMember)
+            ChatItemView(user, cItem, msg, quotedItem, editingItem, cxt, uriHandler, showMember = showMember)
           }
         } else {
           Box(Modifier.padding(start = 86.dp, end = 12.dp)) {
