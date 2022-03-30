@@ -10,6 +10,7 @@ import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.UriHandler
@@ -75,10 +76,15 @@ fun ChatItemView(
               showMenu = false
             })
           }
-          ItemAction("Delete", Icons.Outlined.Delete, onClick = {
-            showMenu = false
-            deleteMessageAlertDialog(cItem, deleteMessage = deleteMessage)
-          })
+          ItemAction(
+            "Delete",
+            Icons.Outlined.Delete,
+            onClick = {
+              showMenu = false
+              deleteMessageAlertDialog(cItem, deleteMessage = deleteMessage)
+            },
+            color = Color.Red
+          )
         }
       }
     }
@@ -86,15 +92,17 @@ fun ChatItemView(
 }
 
 @Composable
-private fun ItemAction(text: String, icon: ImageVector, onClick: () -> Unit) {
+private fun ItemAction(text: String, icon: ImageVector, onClick: () -> Unit, color: Color = HighOrLowlight) {
   DropdownMenuItem(onClick) {
     Row {
       Text(
-        text, modifier = Modifier
+        text,
+        modifier = Modifier
           .fillMaxWidth()
-          .weight(1F)
+          .weight(1F),
+        color = color
       )
-      Icon(icon, text, tint = HighOrLowlight)
+      Icon(icon, text, tint = color)
     }
   }
 }
