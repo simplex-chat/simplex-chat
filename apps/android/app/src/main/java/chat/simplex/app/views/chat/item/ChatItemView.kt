@@ -18,8 +18,7 @@ import androidx.compose.ui.unit.dp
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.HighOrLowlight
 import chat.simplex.app.ui.theme.SimpleXTheme
-import chat.simplex.app.views.helpers.copyText
-import chat.simplex.app.views.helpers.shareText
+import chat.simplex.app.views.helpers.*
 import kotlinx.datetime.Clock
 
 @Composable
@@ -32,6 +31,7 @@ fun ChatItemView(
   cxt: Context,
   uriHandler: UriHandler? = null,
   showMember: Boolean = false,
+  deleteMessage: (Long, CIDeleteMode) -> Unit
 ) {
   val sent = cItem.chatDir.sent
   val alignment = if (sent) Alignment.CenterEnd else Alignment.CenterStart
@@ -43,33 +43,43 @@ fun ChatItemView(
     contentAlignment = alignment,
   ) {
     Column(Modifier.combinedClickable(onLongClick = { showMenu = true }, onClick = {})) {
-      if (cItem.quotedItem == null && isShortEmoji(cItem.content.text)) {
-        EmojiItemView(cItem)
-      } else {
-        FramedItemView(user, cItem, uriHandler, showMember = showMember)
+      if (cItem.isMsgContent) {
+        if (cItem.quotedItem == null && isShortEmoji(cItem.content.text)) {
+          EmojiItemView(cItem)
+        } else {
+          FramedItemView(user, cItem, uriHandler, showMember = showMember)
+        }
+      } else if (cItem.isDeletedContent) {
+        DeletedItemView(cItem)
       }
-      DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
-        ItemAction("Reply", Icons.Outlined.Reply, onClick = {
-          editingItem.value = null
-          quotedItem.value = cItem
-          showMenu = false
-        })
-        ItemAction("Share", Icons.Outlined.Share, onClick = {
-          shareText(cxt, cItem.content.text)
-          showMenu = false
-        })
-        ItemAction("Copy", Icons.Outlined.ContentCopy, onClick = {
-          copyText(cxt, cItem.content.text)
-          showMenu = false
-        })
-//        if (cItem.chatDir.sent && cItem.meta.editable) {
-//          ItemAction("Edit", Icons.Filled.Edit, onClick = {
-//            quotedItem.value = null
-//            editingItem.value = cItem
-//            msg.value = cItem.content.text
-//            showMenu = false
-//          })
-//        }
+      if (cItem.isMsgContent) {
+        DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
+          ItemAction("Reply", Icons.Outlined.Reply, onClick = {
+            editingItem.value = null
+            quotedItem.value = cItem
+            showMenu = false
+          })
+          ItemAction("Share", Icons.Outlined.Share, onClick = {
+            shareText(cxt, cItem.content.text)
+            showMenu = false
+          })
+          ItemAction("Copy", Icons.Outlined.ContentCopy, onClick = {
+            copyText(cxt, cItem.content.text)
+            showMenu = false
+          })
+          if (cItem.chatDir.sent && cItem.meta.editable) {
+            ItemAction("Edit", Icons.Filled.Edit, onClick = {
+              quotedItem.value = null
+              editingItem.value = cItem
+              msg.value = cItem.content.text
+              showMenu = false
+            })
+          }
+          ItemAction("Delete", Icons.Outlined.Delete, onClick = {
+            showMenu = false
+            deleteMessageAlertDialog(cItem, deleteMessage = deleteMessage)
+          })
+        }
       }
     }
   }
@@ -89,6 +99,34 @@ private fun ItemAction(text: String, icon: ImageVector, onClick: () -> Unit) {
   }
 }
 
+fun deleteMessageAlertDialog(chatItem: ChatItem, deleteMessage: (Long, CIDeleteMode) -> Unit) {
+  AlertManager.shared.showAlertDialogButtons(
+    title = "Delete message?",
+    buttons = {
+      Box(
+        Modifier
+          .fillMaxWidth()
+          .padding(horizontal = 8.dp, vertical = 2.dp)
+      ) {
+        Row(
+          horizontalArrangement = Arrangement.End
+        ) {
+          Button(onClick = {
+            deleteMessage(chatItem.id, CIDeleteMode.Internal)
+            AlertManager.shared.hideAlert()
+          }) { Text("Delete for Me") }
+          if (chatItem.meta.editable) {
+            Button(onClick = {
+              deleteMessage(chatItem.id, CIDeleteMode.Broadcast)
+              AlertManager.shared.hideAlert()
+            }) { Text("Delete for Everyone") }
+          }
+        }
+      }
+    }
+  )
+}
+
 @Preview
 @Composable
 fun PreviewChatItemView() {
@@ -101,7 +139,24 @@ fun PreviewChatItemView() {
       msg = remember { mutableStateOf("") },
       quotedItem = remember { mutableStateOf(null) },
       editingItem = remember { mutableStateOf(null) },
-      cxt = LocalContext.current
+      cxt = LocalContext.current,
+      deleteMessage = { _, _ -> }
+    )
+  }
+}
+
+@Preview
+@Composable
+fun PreviewChatItemViewDeletedContent() {
+  SimpleXTheme {
+    ChatItemView(
+      User.sampleData,
+      ChatItem.getDeletedContentSampleData(),
+      msg = remember { mutableStateOf("") },
+      quotedItem = remember { mutableStateOf(null) },
+      editingItem = remember { mutableStateOf(null) },
+      cxt = LocalContext.current,
+      deleteMessage = { _, _ -> }
     )
   }
 }

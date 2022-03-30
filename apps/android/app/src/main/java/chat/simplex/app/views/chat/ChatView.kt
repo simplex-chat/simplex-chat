@@ -98,7 +98,19 @@ fun ChatView(chatModel: ChatModel) {
           quotedItem.value = null
         }
       },
-      resetMessage = { msg.value = "" }
+      resetMessage = { msg.value = "" },
+      deleteMessage = { itemId, mode ->
+        withApi {
+          val cInfo = chat.chatInfo
+          val deletedItem = chatModel.controller.apiDeleteChatItem(
+            type = cInfo.chatType,
+            id = cInfo.apiId,
+            itemId = itemId,
+            mode = mode
+          )
+          if (deletedItem != null) chatModel.removeChatItem(cInfo, deletedItem.chatItem)
+        }
+      }
     )
   }
 }
@@ -115,7 +127,8 @@ fun ChatLayout(
   info: () -> Unit,
   openDirectChat: (Long) -> Unit,
   sendMessage: (String) -> Unit,
-  resetMessage: () -> Unit
+  resetMessage: () -> Unit,
+  deleteMessage: (Long, CIDeleteMode) -> Unit
 ) {
   Surface(
     Modifier
@@ -129,7 +142,7 @@ fun ChatLayout(
         modifier = Modifier.navigationBarsWithImePadding()
       ) { contentPadding ->
         Box(Modifier.padding(contentPadding)) {
-          ChatItemsList(user, chat, chatItems, msg, quotedItem, editingItem, openDirectChat)
+          ChatItemsList(user, chat, chatItems, msg, quotedItem, editingItem, openDirectChat, deleteMessage)
         }
       }
     }
@@ -201,7 +214,8 @@ fun ChatItemsList(
   msg: MutableState<String>,
   quotedItem: MutableState<ChatItem?>,
   editingItem: MutableState<ChatItem?>,
-  openDirectChat: (Long) -> Unit
+  openDirectChat: (Long) -> Unit,
+  deleteMessage: (Long, CIDeleteMode) -> Unit
 ) {
   val listState = rememberLazyListState()
   val keyboardState by getKeyboardState()
@@ -224,7 +238,10 @@ fun ChatItemsList(
               if (contactId == null) {
                 MemberImage(member)
               } else {
-                Box(Modifier.clip(CircleShape).clickable { openDirectChat(contactId) }) {
+                Box(
+                  Modifier
+                    .clip(CircleShape)
+                    .clickable { openDirectChat(contactId) }) {
                   MemberImage(member)
                 }
               }
@@ -232,20 +249,22 @@ fun ChatItemsList(
             } else {
               Spacer(Modifier.size(42.dp))
             }
-            ChatItemView(user, cItem, msg, quotedItem, editingItem, cxt, uriHandler, showMember = showMember)
+            ChatItemView(user, cItem, msg, quotedItem, editingItem, cxt, uriHandler, showMember = showMember, deleteMessage = deleteMessage)
           }
         } else {
           Box(Modifier.padding(start = 86.dp, end = 12.dp)) {
-            ChatItemView(user, cItem, msg, quotedItem, editingItem, cxt, uriHandler)
+            ChatItemView(user, cItem, msg, quotedItem, editingItem, cxt, uriHandler, deleteMessage = deleteMessage)
           }
         }
       } else { // direct message
         val sent = cItem.chatDir.sent
-        Box(Modifier.padding(
-          start = if (sent) 76.dp else 12.dp,
-          end = if (sent) 12.dp else 76.dp,
-        )) {
-          ChatItemView(user, cItem, msg, quotedItem, editingItem, cxt, uriHandler)
+        Box(
+          Modifier.padding(
+            start = if (sent) 76.dp else 12.dp,
+            end = if (sent) 12.dp else 76.dp,
+          )
+        ) {
+          ChatItemView(user, cItem, msg, quotedItem, editingItem, cxt, uriHandler, deleteMessage = deleteMessage)
         }
       }
     }
@@ -287,14 +306,15 @@ fun PreviewChatLayout() {
       ChatItem.getSampleData(
         2, CIDirection.DirectRcv(), Clock.System.now(), "hello"
       ),
-      ChatItem.getSampleData(
-        3, CIDirection.DirectSnd(), Clock.System.now(), "hello"
-      ),
+      ChatItem.getDeletedContentSampleData(3),
       ChatItem.getSampleData(
         4, CIDirection.DirectSnd(), Clock.System.now(), "hello"
       ),
       ChatItem.getSampleData(
-        5, CIDirection.DirectRcv(), Clock.System.now(), "hello"
+        5, CIDirection.DirectSnd(), Clock.System.now(), "hello"
+      ),
+      ChatItem.getSampleData(
+        6, CIDirection.DirectRcv(), Clock.System.now(), "hello"
       )
     )
     ChatLayout(
@@ -312,7 +332,8 @@ fun PreviewChatLayout() {
       info = {},
       openDirectChat = {},
       sendMessage = {},
-      resetMessage = {}
+      resetMessage = {},
+      deleteMessage = { _, _ -> }
     )
   }
 }
@@ -328,14 +349,15 @@ fun PreviewGroupChatLayout() {
       ChatItem.getSampleData(
         2, CIDirection.GroupRcv(GroupMember.sampleData), Clock.System.now(), "hello"
       ),
+      ChatItem.getDeletedContentSampleData(3),
       ChatItem.getSampleData(
-        3, CIDirection.GroupRcv(GroupMember.sampleData), Clock.System.now(), "hello"
+        4, CIDirection.GroupRcv(GroupMember.sampleData), Clock.System.now(), "hello"
       ),
       ChatItem.getSampleData(
-        4, CIDirection.GroupSnd(), Clock.System.now(), "hello"
+        5, CIDirection.GroupSnd(), Clock.System.now(), "hello"
       ),
       ChatItem.getSampleData(
-        5, CIDirection.GroupRcv(GroupMember.sampleData), Clock.System.now(), "hello"
+        6, CIDirection.GroupRcv(GroupMember.sampleData), Clock.System.now(), "hello"
       )
     )
     ChatLayout(
@@ -353,7 +375,8 @@ fun PreviewGroupChatLayout() {
       info = {},
       openDirectChat = {},
       sendMessage = {},
-      resetMessage = {}
+      resetMessage = {},
+      deleteMessage = { _, _ -> }
     )
   }
 }
