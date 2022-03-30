@@ -136,6 +136,23 @@ final class ChatModel: ObservableObject {
             return res
         }
     }
+    
+    func removeChatItem(_ cInfo: ChatInfo, _ cItem: ChatItem) {
+        // update previews
+        if let chat = getChat(cInfo.id) {
+            if let pItem = chat.chatItems.last, pItem.id == cItem.id {
+                chat.chatItems = [cItem]
+            }
+        }
+        // remove from current chat
+        if chatId == cInfo.id {
+            if let i = chatItems.firstIndex(where: { $0.id == cItem.id }) {
+                _ = withAnimation {
+                    self.chatItems.remove(at: i)
+                }
+            }
+        }
+    }
 
     func markChatItemsRead(_ cInfo: ChatInfo) {
         // update preview
@@ -572,6 +589,22 @@ struct ChatItem: Identifiable, Decodable {
         if case .rcvNew = meta.itemStatus { return true }
         return false
     }
+    
+    func isMsgContent() -> Bool {
+        switch content {
+        case .sndMsgContent: return true
+        case .rcvMsgContent: return true
+        default: return false
+        }
+    }
+
+    func isDeletedContent() -> Bool {
+        switch content {
+        case .sndDeleted: return true
+        case .rcvDeleted: return true
+        default: return false
+        }
+    }
 
     var memberDisplayName: String? {
         get {
@@ -585,10 +618,19 @@ struct ChatItem: Identifiable, Decodable {
     
     static func getSample (_ id: Int64, _ dir: CIDirection, _ ts: Date, _ text: String, _ status: CIStatus = .sndNew, quotedItem: CIQuote? = nil, _ itemDeleted: Bool = false, _ itemEdited: Bool = false, _ editable: Bool = true) -> ChatItem {
         ChatItem(
-           chatDir: dir,
-           meta: CIMeta.getSample(id, ts, text, status, itemDeleted, itemEdited, editable),
-           content: .sndMsgContent(msgContent: .text(text)),
-           quotedItem: quotedItem
+            chatDir: dir,
+            meta: CIMeta.getSample(id, ts, text, status, itemDeleted, itemEdited, editable),
+            content: .sndMsgContent(msgContent: .text(text)),
+            quotedItem: quotedItem
+       )
+    }
+    
+    static func getDeletedContentSample (_ id: Int64 = 1, dir: CIDirection = .directRcv, _ ts: Date = .now, _ text: String = "this item is deleted", _ status: CIStatus = .rcvRead) -> ChatItem {
+        ChatItem(
+            chatDir: dir,
+            meta: CIMeta.getSample(id, ts, text, status, false, false, false),
+            content: .rcvDeleted(deleteMode: .cidmBroadcast),
+            quotedItem: nil
        )
     }
 }
@@ -656,6 +698,11 @@ enum CIStatus: Decodable {
     case rcvRead
 }
 
+enum CIDeleteMode: String, Decodable {
+    case cidmBroadcast = "broadcast"
+    case cidmInternal = "internal"
+}
+
 protocol ItemContent {
     var text: String { get }
 }
@@ -663,6 +710,8 @@ protocol ItemContent {
 enum CIContent: Decodable, ItemContent {
     case sndMsgContent(msgContent: MsgContent)
     case rcvMsgContent(msgContent: MsgContent)
+    case sndDeleted(deleteMode: CIDeleteMode)
+    case rcvDeleted(deleteMode: CIDeleteMode)
     case sndFileInvitation(fileId: Int64, filePath: String)
     case rcvFileInvitation(rcvFileTransfer: RcvFileTransfer)
 
@@ -671,6 +720,8 @@ enum CIContent: Decodable, ItemContent {
             switch self {
             case let .sndMsgContent(mc): return mc.text
             case let .rcvMsgContent(mc): return mc.text
+            case .sndDeleted: return "deleted"
+            case .rcvDeleted: return "deleted"
             case .sndFileInvitation: return "sending files is not supported yet"
             case .rcvFileInvitation: return  "receiving files is not supported yet"
             }
