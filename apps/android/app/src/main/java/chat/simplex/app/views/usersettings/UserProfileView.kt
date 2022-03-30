@@ -1,12 +1,8 @@
 package chat.simplex.app.views.usersettings
 
 import android.content.res.Configuration
-import android.widget.ScrollView
 import androidx.compose.foundation.*
-import androidx.compose.foundation.gestures.Orientation
-import androidx.compose.foundation.gestures.scrollable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -26,7 +22,6 @@ import androidx.compose.ui.unit.dp
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.model.Profile
 import chat.simplex.app.ui.theme.SimpleXTheme
-import chat.simplex.app.views.chat.CIListState
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.newchat.ModalView
 import com.google.accompanist.insets.ProvideWindowInsets

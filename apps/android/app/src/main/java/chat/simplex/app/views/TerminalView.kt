@@ -1,6 +1,5 @@
 package chat.simplex.app.views
 
-import android.annotation.SuppressLint
 import android.content.res.Configuration
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.*

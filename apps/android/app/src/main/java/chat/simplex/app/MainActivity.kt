@@ -40,7 +40,6 @@ class MainActivity: ComponentActivity() {
     super.onCreate(savedInstanceState)
 //    testJson()
     processIntent(intent, vm.chatModel)
-//    vm.app.initiateBackgroundWork()
     setContent {
       SimpleXTheme {
         Surface(

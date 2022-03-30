@@ -154,10 +154,10 @@ fun SettingsLayout(
       SettingsSectionView() {
         Icon(
           Icons.Outlined.Bolt,
-          contentDescription = "Instant notifications",
+          contentDescription = "Private notifications",
         )
         Spacer(Modifier.padding(horizontal = 4.dp))
-        Text("Instant notifications", Modifier
+        Text("Private notifications", Modifier
           .padding(end = 24.dp)
           .fillMaxWidth()
           .weight(1F))
