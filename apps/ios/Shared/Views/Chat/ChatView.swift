@@ -39,7 +39,7 @@ struct ChatView: View {
                                 if case let .groupRcv(member) = ci.chatDir {
                                     let prevItem = chatModel.getPrevChatItem(ci)
                                     HStack(alignment: .top, spacing: 0) {
-                                        let showMember = showMemberImage(member, prevItem)
+                                        let showMember = prevItem == nil || showMemberImage(member, prevItem)
                                         if showMember {
                                             ProfileImage(imageStr: member.memberProfile.image)
                                                 .frame(width: memberImageSize, height: memberImageSize)

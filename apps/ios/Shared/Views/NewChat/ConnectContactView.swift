@@ -17,7 +17,7 @@ struct ConnectContactView: View {
             Text("Scan QR code")
                 .font(.title)
                 .padding(.bottom)
-            Text("Your chat profile will be sent to your contact.")
+            Text("Your chat profile will be sent to your contact")
                 .font(.title2)
                 .multilineTextAlignment(.center)
                 .padding()
