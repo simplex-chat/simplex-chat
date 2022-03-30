@@ -241,7 +241,8 @@ fun ChatItemsList(
                 Box(
                   Modifier
                     .clip(CircleShape)
-                    .clickable { openDirectChat(contactId) }) {
+                    .clickable { openDirectChat(contactId) }
+                ) {
                   MemberImage(member)
                 }
               }
@@ -280,9 +281,7 @@ fun ChatItemsList(
 
 fun showMemberImage(member: GroupMember, prevItem: ChatItem?): Boolean {
   return prevItem == null || prevItem.chatDir is CIDirection.GroupSnd ||
-    ( prevItem.chatDir is CIDirection.GroupRcv &&
-      prevItem.chatDir.groupMember.groupMemberId != member.groupMemberId
-    )
+      (prevItem.chatDir is CIDirection.GroupRcv && prevItem.chatDir.groupMember.groupMemberId != member.groupMemberId)
 }
 
 @Composable
