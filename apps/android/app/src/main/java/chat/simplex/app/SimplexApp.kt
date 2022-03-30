@@ -1,8 +1,6 @@
 package chat.simplex.app
 
 import android.app.Application
-import android.content.Context
-import android.content.SharedPreferences
 import android.net.LocalServerSocket
 import android.util.Log
 import androidx.lifecycle.*
@@ -49,6 +47,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
       if (user != null) {
         chatController.startChat(user)
         SimplexService.start(applicationContext)
+        chatController.showBackgroundServiceNotice()
       }
     }
   }
