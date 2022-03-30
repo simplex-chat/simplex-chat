@@ -11,32 +11,41 @@ import SwiftUI
 struct DeletedItemView: View {
     @Environment(\.colorScheme) var colorScheme
     var chatItem: ChatItem
-    @State var msgWidth: CGFloat = 0
+    var showMember = false
 
     var body: some View {
-        ZStack(alignment: .bottomTrailing) {
-            VStack(alignment: .leading, spacing: 0) {
-                Text(chatItem.content.text)
-                    .padding(.vertical, 6)
-                    .padding(.horizontal, 12)
-                    .padding(.bottom, 18)
-                    .frame(minWidth: 0, alignment: .leading)
-                    .textSelection(.disabled)
+        HStack(alignment: .bottom, spacing: 0) {
+            if showMember, let member = chatItem.memberDisplayName {
+                Text(member).fontWeight(.medium) + Text(": ")
             }
+            Text(chatItem.content.text)
+                .foregroundColor(.secondary)
+                .italic()
             CIMetaView(chatItem: chatItem)
                 .padding(.horizontal, 12)
-                .padding(.vertical, 6)
         }
-        .background(Color(uiColor: .systemBackground))
-        .overlay(
-            RoundedRectangle(cornerRadius: 18)
-                .stroke(.quaternary, lineWidth: 1)
-        )
+        .padding(.leading, 12)
+        .padding(.vertical, 6)
+        .background(Color(uiColor: .tertiarySystemGroupedBackground))
+        .cornerRadius(18)
+        .textSelection(.disabled)
+//        .background(Color(uiColor: .systemBackground))
+//        .overlay(
+//            RoundedRectangle(cornerRadius: 18)
+//                .stroke(.quaternary, lineWidth: 1)
+//        )
     }
 }
 
 struct DeletedItemView_Previews: PreviewProvider {
     static var previews: some View {
-        DeletedItemView(chatItem: ChatItem.getDeletedContentSample())
+        Group {
+            DeletedItemView(chatItem: ChatItem.getDeletedContentSample())
+            DeletedItemView(
+                chatItem: ChatItem.getDeletedContentSample(dir: .groupRcv(groupMember: GroupMember.sampleData)),
+                showMember: true
+            )
+        }
+        .previewLayout(.fixed(width: 360, height: 200))
     }
 }

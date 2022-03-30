@@ -142,19 +142,22 @@ struct ChatView: View {
                             }
                         } label: { Label("Edit", systemImage: "square.and.pencil") }
                     }
-                    Button {
+                    Button(role: .destructive) {
                         showDeleteMessage = true
                         deletingItem = ci
                     } label: {
-                        Label("Delete", systemImage: "xmark.bin")
+                        Label("Delete", systemImage: "trash")
                     }
                 }
             }
             .confirmationDialog("Delete message?", isPresented: $showDeleteMessage, titleVisibility: .visible) {
-                Button("Delete for Me") { deleteMessage(.cidmInternal) }
+                Button("Delete for Me", role: .destructive) {
+                    deleteMessage(.cidmInternal)
+                }
                 if let di = deletingItem {
                     if di.meta.editable {
-                        Button("Delete for Everyone") { deleteMessage(.cidmBroadcast) }
+                        Button("Delete for Everyone",role: .destructive) { deleteMessage(.cidmBroadcast)
+                        }
                     }
                 }
             }

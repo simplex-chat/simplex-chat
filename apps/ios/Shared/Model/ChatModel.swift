@@ -624,7 +624,7 @@ struct ChatItem: Identifiable, Decodable {
        )
     }
     
-    static func getDeletedContentSample (_ id: Int64 = 1, _ dir: CIDirection = .directRcv, _ ts: Date = .now, _ text: String = "this item is deleted", _ status: CIStatus = .rcvRead) -> ChatItem {
+    static func getDeletedContentSample (_ id: Int64 = 1, dir: CIDirection = .directRcv, _ ts: Date = .now, _ text: String = "this item is deleted", _ status: CIStatus = .rcvRead) -> ChatItem {
         ChatItem(
             chatDir: dir,
             meta: CIMeta.getSample(id, ts, text, status, false, false, false),
@@ -719,8 +719,8 @@ enum CIContent: Decodable, ItemContent {
             switch self {
             case let .sndMsgContent(mc): return mc.text
             case let .rcvMsgContent(mc): return mc.text
-            case .sndDeleted: return "This message was deleted."
-            case .rcvDeleted: return "This message was deleted."
+            case .sndDeleted: return "deleted"
+            case .rcvDeleted: return "deleted"
             case .sndFileInvitation: return "sending files is not supported yet"
             case .rcvFileInvitation: return  "receiving files is not supported yet"
             }

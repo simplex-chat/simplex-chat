@@ -20,7 +20,7 @@ struct ChatItemView: View {
                 FramedItemView(chatItem: chatItem, showMember: showMember)
             }
         } else if chatItem.isDeletedContent() {
-            DeletedItemView(chatItem: chatItem)
+            DeletedItemView(chatItem: chatItem, showMember: showMember)
         }
     }
 }
