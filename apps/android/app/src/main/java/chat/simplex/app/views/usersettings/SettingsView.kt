@@ -71,7 +71,7 @@ fun SettingsLayout(
         .padding(top = 16.dp)
     ) {
       Text(
-        "Your Settings",
+        "Your settings",
         style = MaterialTheme.typography.h1,
         modifier = Modifier.padding(start = 8.dp)
       )
@@ -151,6 +151,7 @@ fun SettingsLayout(
         Spacer(Modifier.padding(horizontal = 4.dp))
         Text("SMP servers")
       }
+      Divider(Modifier.padding(horizontal = 8.dp))
       SettingsSectionView() {
         Icon(
           Icons.Outlined.Bolt,
@@ -205,7 +206,7 @@ fun SettingsLayout(
 }
 
 @Composable
-fun SettingsSectionView(click: (() -> Unit)? = null, height: Dp = 48.dp, content: (@Composable () -> Unit)) {
+fun SettingsSectionView(click: (() -> Unit)? = null, height: Dp = 46.dp, content: (@Composable () -> Unit)) {
   val modifier = Modifier
     .padding(start = 8.dp)
     .fillMaxWidth()
