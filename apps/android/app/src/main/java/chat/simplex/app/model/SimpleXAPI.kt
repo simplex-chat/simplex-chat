@@ -5,7 +5,15 @@ import android.app.ActivityManager.RunningAppProcessInfo
 import android.content.Context
 import android.content.SharedPreferences
 import android.util.Log
+import androidx.compose.foundation.layout.*
+import androidx.compose.material.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Bolt
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.*
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import chat.simplex.app.*
 import chat.simplex.app.views.helpers.AlertManager
 import chat.simplex.app.views.helpers.withApi
@@ -379,6 +387,51 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
     chatModel.updateNetworkStatus(contact, Chat.NetworkStatus.Error(err))
   }
 
+  fun showBackgroundServiceNotice() {
+    if (!getBackgroundServiceNoticeShown()) {
+      AlertManager.shared.showAlert {
+        AlertDialog(
+          onDismissRequest = AlertManager.shared::hideAlert,
+          title = {
+            Row {
+              Icon(
+                Icons.Outlined.Bolt,
+                contentDescription = "Instant notifications",
+              )
+              Text("Private instant notifications!", fontWeight = FontWeight.Bold)
+            }
+          },
+          text = {
+            Column {
+              Text(
+                buildAnnotatedString {
+                  append("To preserve your privacy instead of push notifications the app has a ")
+                  withStyle(SpanStyle(fontWeight = FontWeight.Medium)) {
+                    append("SimpleX background service")
+                  }
+                  append(" – it uses only a few percents of battery a day.")
+                },
+                Modifier.padding(bottom = 8.dp)
+              )
+              Text(
+                buildAnnotatedString {
+                  withStyle(SpanStyle(fontWeight = FontWeight.Medium)) {
+                    append("It can be disabled via settings")
+                  }
+                  append(" – notification would still be shown while the app is running.")
+                }
+              )
+            }
+          },
+          confirmButton = {
+            Button(onClick = AlertManager.shared::hideAlert) { Text("Ok") }
+          }
+        )
+      }
+      setBackgroundServiceNoticeShown()
+    }
+  }
+
   fun getAutoRestartWorkerVersion(): Int = sharedPreferences.getInt(SHARED_PREFS_AUTO_RESTART_WORKER_VERSION, 0)
 
   fun setAutoRestartWorkerVersion(version: Int) =
@@ -393,10 +446,18 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
       .putBoolean(SHARED_PREFS_RUN_SERVICE_IN_BACKGROUND, runService)
       .apply()
 
+  fun getBackgroundServiceNoticeShown(): Boolean = sharedPreferences.getBoolean(SHARED_PREFS_SERVICE_NOTICE_SHOWN, false)
+
+  fun setBackgroundServiceNoticeShown() =
+    sharedPreferences.edit()
+      .putBoolean(SHARED_PREFS_SERVICE_NOTICE_SHOWN, true)
+      .apply()
+
   companion object {
     private const val SHARED_PREFS_ID = "chat.simplex.app.SIMPLEX_APP_PREFS"
     private const val SHARED_PREFS_AUTO_RESTART_WORKER_VERSION = "AutoRestartWorkerVersion"
     private const val SHARED_PREFS_RUN_SERVICE_IN_BACKGROUND = "RunServiceInBackground"
+    private const val SHARED_PREFS_SERVICE_NOTICE_SHOWN = "BackgroundServiceNoticeShown"
   }
 }
 

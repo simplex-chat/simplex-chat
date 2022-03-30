@@ -153,6 +153,7 @@ fun CreateProfilePanel(chatModel: ChatModel) {
         )
         chatModel.controller.startChat(user)
         SimplexService.start(chatModel.controller.appContext)
+        chatModel.controller.showBackgroundServiceNotice()
       }
     },
     enabled = (displayName.isNotEmpty() && isValidDisplayName(displayName))
