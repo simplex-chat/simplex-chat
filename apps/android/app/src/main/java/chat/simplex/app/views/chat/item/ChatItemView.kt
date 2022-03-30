@@ -110,11 +110,7 @@ private fun ItemAction(text: String, icon: ImageVector, onClick: () -> Unit, col
 fun deleteMessageAlertDialog(chatItem: ChatItem, deleteMessage: (Long, CIDeleteMode) -> Unit) {
   AlertManager.shared.showAlertDialogButtons(
     title = "Delete message?",
-    text = if (chatItem.meta.editable) {
-      "Message will be deleted locally. If you choose to delete for Everyone it will be marked as deleted for them."
-    } else {
-      "Message will be deleted locally."
-    },
+    text = "Message will be deleted - this cannot be undone!",
     buttons = {
       Row(
         Modifier
