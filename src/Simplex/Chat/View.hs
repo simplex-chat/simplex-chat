@@ -253,8 +253,8 @@ msgPreview :: MsgContent -> [StyledString]
 msgPreview = msgPlain . preview . msgContentText
   where
     preview t
-      | T.length t <= 60 = t
-      | otherwise = t <> "..."
+      | T.length t <= 120 = t
+      | otherwise = T.take 120 t <> "..."
 
 viewMsgIntegrityError :: MsgErrorType -> [StyledString]
 viewMsgIntegrityError err = msgError $ case err of

@@ -30,7 +30,8 @@ fun ChatItemView(
   quotedItem: MutableState<ChatItem?>,
   editingItem: MutableState<ChatItem?>,
   cxt: Context,
-  uriHandler: UriHandler? = null
+  uriHandler: UriHandler? = null,
+  showMember: Boolean = false,
 ) {
   val sent = cItem.chatDir.sent
   val alignment = if (sent) Alignment.CenterEnd else Alignment.CenterStart
@@ -38,18 +39,14 @@ fun ChatItemView(
   Box(
     modifier = Modifier
       .padding(bottom = 4.dp)
-      .fillMaxWidth()
-      .padding(
-        start = if (sent) 86.dp else 16.dp,
-        end = if (sent) 16.dp else 86.dp,
-      ),
+      .fillMaxWidth(),
     contentAlignment = alignment,
   ) {
     Column(Modifier.combinedClickable(onLongClick = { showMenu = true }, onClick = {})) {
       if (cItem.quotedItem == null && isShortEmoji(cItem.content.text)) {
         EmojiItemView(cItem)
       } else {
-        FramedItemView(user, cItem, uriHandler)
+        FramedItemView(user, cItem, uriHandler, showMember = showMember)
       }
       DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
         ItemAction("Reply", Icons.Outlined.Reply, onClick = {
