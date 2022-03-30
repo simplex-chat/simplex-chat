@@ -3,14 +3,13 @@ package chat.simplex.app.views.chat
 import android.content.res.Configuration
 import android.util.Log
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.ArrowBack
+import androidx.compose.material.icons.outlined.ArrowBackIos
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.mapSaver
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -25,7 +24,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.TAG
 import chat.simplex.app.model.*
-import chat.simplex.app.ui.theme.SimpleXTheme
+import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.chat.item.ChatItemView
 import chat.simplex.app.views.chatlist.openChat
 import chat.simplex.app.views.helpers.*
@@ -151,46 +150,51 @@ fun ChatLayout(
 
 @Composable
 fun ChatInfoToolbar(chat: Chat, back: () -> Unit, info: () -> Unit) {
-  Box(
-    Modifier
-      .height(60.dp)
-      .padding(horizontal = 8.dp),
-    contentAlignment = Alignment.CenterStart
-  ) {
-    IconButton(onClick = back) {
-      Icon(
-        Icons.Outlined.ArrowBack,
-        "Back",
-        tint = MaterialTheme.colors.primary,
-        modifier = Modifier.padding(10.dp)
-      )
-    }
-    Row(
+  Column {
+    Box(
       Modifier
-        .padding(horizontal = 68.dp)
         .fillMaxWidth()
-        .clickable(onClick = info),
-      horizontalArrangement = Arrangement.Center,
-      verticalAlignment = Alignment.CenterVertically
+        .height(52.dp)
+        .background(if (isSystemInDarkTheme()) ToolbarDark else ToolbarLight)
+        .padding(horizontal = 8.dp),
+      contentAlignment = Alignment.CenterStart,
     ) {
-      val cInfo = chat.chatInfo
-      ChatInfoImage(chat, size = 40.dp)
-      Column(
-        Modifier.padding(start = 8.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-      ) {
-        Text(
-          cInfo.displayName, fontWeight = FontWeight.SemiBold,
-          maxLines = 1, overflow = TextOverflow.Ellipsis
+      IconButton(onClick = back) {
+        Icon(
+          Icons.Outlined.ArrowBackIos,
+          "Back",
+          tint = MaterialTheme.colors.primary,
+          modifier = Modifier.padding(10.dp)
         )
-        if (cInfo.fullName != "" && cInfo.fullName != cInfo.displayName) {
+      }
+      Row(
+        Modifier
+          .padding(horizontal = 68.dp)
+          .fillMaxWidth()
+          .clickable(onClick = info),
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically
+      ) {
+        val cInfo = chat.chatInfo
+        ChatInfoImage(chat, size = 40.dp)
+        Column(
+          Modifier.padding(start = 8.dp),
+          horizontalAlignment = Alignment.CenterHorizontally
+        ) {
           Text(
-            cInfo.fullName,
+            cInfo.displayName, fontWeight = FontWeight.SemiBold,
             maxLines = 1, overflow = TextOverflow.Ellipsis
           )
+          if (cInfo.fullName != "" && cInfo.fullName != cInfo.displayName) {
+            Text(
+              cInfo.fullName,
+              maxLines = 1, overflow = TextOverflow.Ellipsis
+            )
+          }
         }
       }
     }
+    Divider()
   }
 }
 
@@ -227,6 +231,9 @@ fun ChatItemsList(
   val cxt = LocalContext.current
   LazyColumn(state = listState) {
     itemsIndexed(chatItems) { i, cItem ->
+      if (i == 0) {
+        Spacer(Modifier.size(8.dp))
+      }
       if (chat.chatInfo is ChatInfo.Group) {
         if (cItem.chatDir is CIDirection.GroupRcv) {
           val prevItem = if (i > 0) chatItems[i - 1] else null

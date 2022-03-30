@@ -1,7 +1,6 @@
 package chat.simplex.app.views.chatlist
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -16,6 +15,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.model.ChatModel
+import chat.simplex.app.ui.theme.ToolbarDark
+import chat.simplex.app.ui.theme.ToolbarLight
 import chat.simplex.app.views.chat.ChatHelpView
 import chat.simplex.app.views.newchat.NewChatSheet
 import chat.simplex.app.views.usersettings.SettingsView
@@ -76,7 +77,7 @@ fun ChatListView(chatModel: ChatModel) {
           .background(MaterialTheme.colors.background)
       ) {
         ChatListToolbar(scaffoldCtrl)
-        Divider(Modifier.padding(horizontal = 8.dp))
+        Divider()
         if (chatModel.chats.isNotEmpty()) {
           ChatList(chatModel)
         } else {
@@ -136,8 +137,9 @@ fun ChatListToolbar(scaffoldCtrl: ScaffoldController) {
     verticalAlignment = Alignment.CenterVertically,
     modifier = Modifier
       .fillMaxWidth()
+      .height(52.dp)
+      .background(if (isSystemInDarkTheme()) ToolbarDark else ToolbarLight)
       .padding(horizontal = 8.dp)
-      .height(60.dp)
   ) {
     IconButton(onClick = { scaffoldCtrl.toggleDrawer() }) {
       Icon(
