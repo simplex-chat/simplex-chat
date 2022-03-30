@@ -43,11 +43,11 @@ fun AddContactLayout(connReq: String, share: () -> Unit) {
     ) {
       Text(
         "Add contact",
-        style = MaterialTheme.typography.h1,
+        style = MaterialTheme.typography.h1.copy(fontWeight = FontWeight.Normal),
       )
       Text(
         "Show QR code to your contact\nto scan from the app",
-        style = MaterialTheme.typography.h2.copy(fontSize = if(screenHeight > 600.dp) 26.sp else 20.sp),
+        style = MaterialTheme.typography.h3,
         textAlign = TextAlign.Center,
       )
       QRCode(
