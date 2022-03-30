@@ -51,7 +51,7 @@ fun ChatItemView(
           FramedItemView(user, cItem, uriHandler, showMember = showMember)
         }
       } else if (cItem.isDeletedContent) {
-        DeletedItemView(cItem)
+        DeletedItemView(cItem, showMember = showMember)
       }
       if (cItem.isMsgContent) {
         DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
@@ -125,13 +125,13 @@ fun deleteMessageAlertDialog(chatItem: ChatItem, deleteMessage: (Long, CIDeleteM
         Button(onClick = {
           deleteMessage(chatItem.id, CIDeleteMode.cidmInternal)
           AlertManager.shared.hideAlert()
-        }) { Text("Delete for Me") }
+        }) { Text("For me only") }
         if (chatItem.meta.editable) {
           Spacer(Modifier.padding(horizontal = 4.dp))
           Button(onClick = {
             deleteMessage(chatItem.id, CIDeleteMode.cidmBroadcast)
             AlertManager.shared.hideAlert()
-          }) { Text("Delete for Everyone") }
+          }) { Text("For everyone") }
         }
       }
     }

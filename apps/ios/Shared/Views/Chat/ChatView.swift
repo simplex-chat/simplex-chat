@@ -151,12 +151,12 @@ struct ChatView: View {
                 }
             }
             .confirmationDialog("Delete message?", isPresented: $showDeleteMessage, titleVisibility: .visible) {
-                Button("Delete for Me", role: .destructive) {
+                Button("Delete for me", role: .destructive) {
                     deleteMessage(.cidmInternal)
                 }
                 if let di = deletingItem {
                     if di.meta.editable {
-                        Button("Delete for Everyone",role: .destructive) { deleteMessage(.cidmBroadcast)
+                        Button("Delete for everyone",role: .destructive) { deleteMessage(.cidmBroadcast)
                         }
                     }
                 }

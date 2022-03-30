@@ -2,12 +2,15 @@ package chat.simplex.app.views.chat.item
 
 import android.content.res.Configuration
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.*
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.tooling.preview.*
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -16,25 +19,24 @@ import chat.simplex.app.ui.theme.HighOrLowlight
 import chat.simplex.app.ui.theme.SimpleXTheme
 
 @Composable
-fun DeletedItemView(ci: ChatItem) {
+fun DeletedItemView(ci: ChatItem, showMember: Boolean = false) {
   Surface(
     shape = RoundedCornerShape(18.dp),
-    color = MaterialTheme.colors.background,
-    border = BorderStroke(1.dp, MaterialTheme.colors.secondary)
+    color = ReceivedColorLight,
   ) {
-    Box(contentAlignment = Alignment.BottomEnd) {
-      Column(
-        Modifier
-          .width(IntrinsicSize.Max)
-          .padding(vertical = 6.dp, horizontal = 12.dp)
-          .padding(bottom = 22.dp),
-        horizontalAlignment = Alignment.Start
-      ) {
-        Text(ci.content.text, style = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onSurface, lineHeight = 22.sp))
-      }
-      Box(Modifier.padding(vertical = 6.dp, horizontal = 12.dp)) {
-        CIMetaView(ci)
-      }
+    Row(
+      Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+      verticalAlignment = Alignment.Bottom
+    ) {
+      Text(
+        buildAnnotatedString {
+          appendSender(this, if (showMember) ci.memberDisplayName else null, true)
+          withStyle(SpanStyle(fontStyle = FontStyle.Italic, color = HighOrLowlight)) { append(ci.content.text) }
+        },
+        style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp),
+        modifier = Modifier.padding(end = 8.dp)
+      )
+      CIMetaView(ci)
     }
   }
 }

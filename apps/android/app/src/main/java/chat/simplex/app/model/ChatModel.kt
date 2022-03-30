@@ -672,12 +672,12 @@ sealed class CIContent: ItemContent {
 
   @Serializable @SerialName("sndDeleted")
   class SndDeleted(val deleteMode: CIDeleteMode): CIContent() {
-    override val text get() = "This message was deleted."
+    override val text get() = "deleted"
   }
 
   @Serializable @SerialName("rcvDeleted")
   class RcvDeleted(val deleteMode: CIDeleteMode): CIContent() {
-    override val text get() = "This message was deleted."
+    override val text get() = "deleted"
   }
 
   @Serializable @SerialName("sndFileInvitation")
