@@ -387,18 +387,18 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
                 Icons.Outlined.Bolt,
                 contentDescription = "Instant notifications",
               )
-              Text("Instant message notifications!", fontWeight = FontWeight.Bold)
+              Text("Private instant notifications!", fontWeight = FontWeight.Bold)
             }
           },
           text = {
             Column {
               Text(
                 buildAnnotatedString {
-                  append("Never miss a message with a new ")
+                  append("To preserve your privacy instead of push notifications the app has a ")
                   withStyle(SpanStyle(fontWeight = FontWeight.Medium)) {
                     append("SimpleX background service")
                   }
-                  append(" – it uses only a few percents of battery a day!")
+                  append(" – it uses only a few percents of battery a day.")
                 },
                 Modifier.padding(bottom = 8.dp)
               )
