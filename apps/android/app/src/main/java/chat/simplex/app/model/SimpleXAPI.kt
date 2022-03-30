@@ -168,7 +168,7 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
         Log.e(TAG, "setUserSMPServers bad response: ${r.responseType} ${r.details}")
         AlertManager.shared.showAlertMsg(
           "Error saving SMP servers",
-          "Make sure SMP server addresses are in correct format, line separated and are not duplicated"
+          "Make sure SMP server addresses are in correct format, line separated and are not duplicated."
         )
         false
       }
@@ -188,7 +188,7 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
       r is CR.SentConfirmation || r is CR.SentInvitation -> return true
       r is CR.ContactAlreadyExists -> {
         AlertManager.shared.showAlertMsg("Contact already exists",
-          "You are already connected to ${r.contact.displayName} via this link"
+          "You are already connected to ${r.contact.displayName} via this link."
         )
         return false
       }
@@ -215,7 +215,7 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
         if (e is ChatError.ChatErrorChat && e.errorType is ChatErrorType.ContactGroups) {
           AlertManager.shared.showAlertMsg(
             "Can't delete contact!",
-            "Contact ${e.errorType.contact.displayName} cannot be deleted, it is a member of the group(s) ${e.errorType.groupNames}"
+            "Contact ${e.errorType.contact.displayName} cannot be deleted, it is a member of the group(s) ${e.errorType.groupNames}."
           )
         }
       }

@@ -102,25 +102,28 @@ private fun ItemAction(text: String, icon: ImageVector, onClick: () -> Unit) {
 fun deleteMessageAlertDialog(chatItem: ChatItem, deleteMessage: (Long, CIDeleteMode) -> Unit) {
   AlertManager.shared.showAlertDialogButtons(
     title = "Delete message?",
+    text = if (chatItem.meta.editable) {
+      "Message will be deleted locally. If you choose to delete for Everyone it will be marked as deleted for them."
+    } else {
+      "Message will be deleted locally."
+    },
     buttons = {
-      Box(
+      Row(
         Modifier
           .fillMaxWidth()
-          .padding(horizontal = 8.dp, vertical = 2.dp)
+          .padding(horizontal = 8.dp, vertical = 2.dp),
+        horizontalArrangement = Arrangement.End,
       ) {
-        Row(
-          horizontalArrangement = Arrangement.End
-        ) {
+        Button(onClick = {
+          deleteMessage(chatItem.id, CIDeleteMode.cidmInternal)
+          AlertManager.shared.hideAlert()
+        }) { Text("Delete for Me") }
+        if (chatItem.meta.editable) {
+          Spacer(Modifier.padding(horizontal = 4.dp))
           Button(onClick = {
-            deleteMessage(chatItem.id, CIDeleteMode.cidmInternal)
+            deleteMessage(chatItem.id, CIDeleteMode.cidmBroadcast)
             AlertManager.shared.hideAlert()
-          }) { Text("Delete for Me") }
-          if (chatItem.meta.editable) {
-            Button(onClick = {
-              deleteMessage(chatItem.id, CIDeleteMode.cidmBroadcast)
-              AlertManager.shared.hideAlert()
-            }) { Text("Delete for Everyone") }
-          }
+          }) { Text("Delete for Everyone") }
         }
       }
     }
