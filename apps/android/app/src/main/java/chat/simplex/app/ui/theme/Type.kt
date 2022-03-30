@@ -11,11 +11,8 @@ val Inter = FontFamily(
   Font(R.font.inter_regular),
   Font(R.font.inter_italic, style = FontStyle.Italic),
   Font(R.font.inter_bold, weight = FontWeight.Bold),
-  Font(R.font.inter_bold_italic, weight = FontWeight.Bold, style = FontStyle.Italic),
   Font(R.font.inter_semi_bold, weight = FontWeight.SemiBold),
-  Font(R.font.inter_semi_bold_italic, weight = FontWeight.SemiBold, style = FontStyle.Italic),
   Font(R.font.inter_medium, weight = FontWeight.Medium),
-  Font(R.font.inter_medium_italic, weight = FontWeight.Medium, style = FontStyle.Italic),
 )
 
 // Set of Material typography styles to start with
