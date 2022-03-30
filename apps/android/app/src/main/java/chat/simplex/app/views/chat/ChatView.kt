@@ -7,6 +7,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ArrowBack
@@ -15,6 +16,7 @@ import androidx.compose.runtime.saveable.mapSaver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
@@ -25,6 +27,7 @@ import chat.simplex.app.TAG
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.chat.item.ChatItemView
+import chat.simplex.app.views.chatlist.openChat
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.newchat.ModalManager
 import com.google.accompanist.insets.ProvideWindowInsets
@@ -62,6 +65,12 @@ fun ChatView(chatModel: ChatModel) {
     ChatLayout(user, chat, chatModel.chatItems, msg, quotedItem, editingItem,
       back = { chatModel.chatId.value = null },
       info = { ModalManager.shared.showCustomModal { close -> ChatInfoView(chatModel, close) } },
+      openDirectChat = { contactId ->
+        val c = chatModel.chats.firstOrNull {
+          it.chatInfo is ChatInfo.Direct && it.chatInfo.contact.contactId == contactId
+        }
+        if (c != null) withApi { openChat(chatModel, c.chatInfo) }
+      },
       sendMessage = { msg ->
         withApi {
           // show "in progress"
@@ -104,6 +113,7 @@ fun ChatLayout(
   editingItem: MutableState<ChatItem?>,
   back: () -> Unit,
   info: () -> Unit,
+  openDirectChat: (Long) -> Unit,
   sendMessage: (String) -> Unit,
   resetMessage: () -> Unit
 ) {
@@ -119,7 +129,7 @@ fun ChatLayout(
         modifier = Modifier.navigationBarsWithImePadding()
       ) { contentPadding ->
         Box(Modifier.padding(contentPadding)) {
-          ChatItemsList(user, chatItems, msg, quotedItem, editingItem)
+          ChatItemsList(user, chat, chatItems, msg, quotedItem, editingItem, openDirectChat)
         }
       }
     }
@@ -186,10 +196,12 @@ val CIListStateSaver = run {
 @Composable
 fun ChatItemsList(
   user: User,
+  chat: Chat,
   chatItems: List<ChatItem>,
   msg: MutableState<String>,
   quotedItem: MutableState<ChatItem?>,
-  editingItem: MutableState<ChatItem?>
+  editingItem: MutableState<ChatItem?>,
+  openDirectChat: (Long) -> Unit
 ) {
   val listState = rememberLazyListState()
   val keyboardState by getKeyboardState()
@@ -200,8 +212,42 @@ fun ChatItemsList(
   val uriHandler = LocalUriHandler.current
   val cxt = LocalContext.current
   LazyColumn(state = listState) {
-    items(chatItems) { cItem ->
-      ChatItemView(user, cItem, msg, quotedItem, editingItem, cxt, uriHandler)
+    itemsIndexed(chatItems) { i, cItem ->
+      if (chat.chatInfo is ChatInfo.Group) {
+        if (cItem.chatDir is CIDirection.GroupRcv) {
+          val prevItem = if (i > 0) chatItems[i - 1] else null
+          val member = cItem.chatDir.groupMember
+          val showMember = showMemberImage(member, prevItem)
+          Row(Modifier.padding(start = 8.dp, end = 66.dp)) {
+            if (showMember) {
+              val contactId = member.memberContactId
+              if (contactId == null) {
+                MemberImage(member)
+              } else {
+                Box(Modifier.clip(CircleShape).clickable { openDirectChat(contactId) }) {
+                  MemberImage(member)
+                }
+              }
+              Spacer(Modifier.size(4.dp))
+            } else {
+              Spacer(Modifier.size(42.dp))
+            }
+            ChatItemView(user, cItem, msg, quotedItem, editingItem, cxt, uriHandler, showMember = showMember)
+          }
+        } else {
+          Box(Modifier.padding(start = 86.dp, end = 12.dp)) {
+            ChatItemView(user, cItem, msg, quotedItem, editingItem, cxt, uriHandler)
+          }
+        }
+      } else { // direct message
+        val sent = cItem.chatDir.sent
+        Box(Modifier.padding(
+          start = if (sent) 76.dp else 12.dp,
+          end = if (sent) 12.dp else 76.dp,
+        )) {
+          ChatItemView(user, cItem, msg, quotedItem, editingItem, cxt, uriHandler)
+        }
+      }
     }
     val len = chatItems.count()
     if (len > 1 && (keyboardState != ciListState.value.keyboardState || !ciListState.value.scrolled || len != ciListState.value.itemCount)) {
@@ -211,6 +257,18 @@ fun ChatItemsList(
       }
     }
   }
+}
+
+fun showMemberImage(member: GroupMember, prevItem: ChatItem?): Boolean {
+  return prevItem == null || prevItem.chatDir is CIDirection.GroupSnd ||
+    ( prevItem.chatDir is CIDirection.GroupRcv &&
+      prevItem.chatDir.groupMember.groupMemberId != member.groupMemberId
+    )
+}
+
+@Composable
+fun MemberImage(member: GroupMember) {
+  ProfileImage(38.dp, member.memberProfile.image)
 }
 
 @Preview(showBackground = true)
@@ -252,6 +310,48 @@ fun PreviewChatLayout() {
       editingItem = remember { mutableStateOf(null) },
       back = {},
       info = {},
+      openDirectChat = {},
+      sendMessage = {},
+      resetMessage = {}
+    )
+  }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun PreviewGroupChatLayout() {
+  SimpleXTheme {
+    val chatItems = listOf(
+      ChatItem.getSampleData(
+        1, CIDirection.GroupSnd(), Clock.System.now(), "hello"
+      ),
+      ChatItem.getSampleData(
+        2, CIDirection.GroupRcv(GroupMember.sampleData), Clock.System.now(), "hello"
+      ),
+      ChatItem.getSampleData(
+        3, CIDirection.GroupRcv(GroupMember.sampleData), Clock.System.now(), "hello"
+      ),
+      ChatItem.getSampleData(
+        4, CIDirection.GroupSnd(), Clock.System.now(), "hello"
+      ),
+      ChatItem.getSampleData(
+        5, CIDirection.GroupRcv(GroupMember.sampleData), Clock.System.now(), "hello"
+      )
+    )
+    ChatLayout(
+      user = User.sampleData,
+      chat = Chat(
+        chatInfo = ChatInfo.Group.sampleData,
+        chatItems = chatItems,
+        chatStats = Chat.ChatStats()
+      ),
+      chatItems = chatItems,
+      msg = remember { mutableStateOf("") },
+      quotedItem = remember { mutableStateOf(null) },
+      editingItem = remember { mutableStateOf(null) },
+      back = {},
+      info = {},
+      openDirectChat = {},
       sendMessage = {},
       resetMessage = {}
     )

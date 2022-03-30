@@ -8,6 +8,8 @@
 
 import SwiftUI
 
+private let memberImageSize: CGFloat = 34
+
 struct ChatView: View {
     @EnvironmentObject var chatModel: ChatModel
     @Environment(\.colorScheme) var colorScheme
@@ -25,50 +27,32 @@ struct ChatView: View {
 
         return VStack {
             GeometryReader { g in
-                let maxWidth = g.size.width * 0.78
+                let maxWidth =
+                    cInfo.chatType == .group
+                    ? (g.size.width - 28) * 0.84 - 42
+                    : (g.size.width - 32) * 0.84
                 ScrollViewReader { proxy in
                     ScrollView {
                         LazyVStack(spacing: 5)  {
                             ForEach(chatModel.chatItems) { ci in
-                                let alignment: Alignment = ci.chatDir.sent ? .trailing : .leading
-                                ChatItemView(chatItem: ci)
-                                    .contextMenu {
-                                        if ci.isMsgContent() {
-                                            Button {
-                                                withAnimation {
-                                                    editingItem = nil
-                                                    quotedItem = ci
-                                                }
-                                            } label: { Label("Reply", systemImage: "arrowshape.turn.up.left") }
-                                            Button {
-                                                showShareSheet(items: [ci.content.text])
-                                            } label: { Label("Share", systemImage: "square.and.arrow.up") }
-                                            Button {
-                                                UIPasteboard.general.string = ci.content.text
-                                            } label: { Label("Copy", systemImage: "doc.on.doc") }
-                                            if ci.meta.editable {
-                                                Button {
-                                                    withAnimation {
-                                                        quotedItem = nil
-                                                        editingItem = ci
-                                                        message = ci.content.text
-                                                    }
-                                                } label: { Label("Edit", systemImage: "square.and.pencil") }
-                                            }
-                                            Button { showDeleteMessage = true } label: {
-                                                Label("Delete", systemImage: "xmark.bin")
-                                            }
+                                if case let .groupRcv(member) = ci.chatDir {
+                                    let prevItem = chatModel.getPrevChatItem(ci)
+                                    HStack(alignment: .top, spacing: 0) {
+                                        let showMember = showMemberImage(member, prevItem)
+                                        if showMember {
+                                            ProfileImage(imageStr: member.memberProfile.image)
+                                                .frame(width: memberImageSize, height: memberImageSize)
+                                        } else {
+                                            Rectangle().fill(.clear)
+                                                .frame(width: memberImageSize, height: memberImageSize)
                                         }
+                                        chatItemWithMenu(ci, maxWidth, showMember: showMember).padding(.leading, 8)
                                     }
-                                    .confirmationDialog("Delete message?", isPresented: $showDeleteMessage, titleVisibility: .visible) {
-                                        Button("Delete for Me") { deleteMessage(ci.id, .cidmInternal) }
-                                        if ci.meta.editable {
-                                            Button("Delete for Everyone") { deleteMessage(ci.id, .cidmBroadcast) }
-                                        }
-                                    }
-                                    .padding(.horizontal)
-                                    .frame(maxWidth: maxWidth, maxHeight: .infinity, alignment: alignment)
-                                    .frame(minWidth: 0, maxWidth: .infinity, alignment: alignment)
+                                    .padding(.trailing)
+                                    .padding(.leading, 12)
+                                } else {
+                                    chatItemWithMenu(ci, maxWidth).padding(.horizontal)
+                                }
                             }
                             .onAppear {
                                 DispatchQueue.main.async {
@@ -129,6 +113,55 @@ struct ChatView: View {
             }
         }
         .navigationBarBackButtonHidden(true)
+    }
+
+    private func chatItemWithMenu(_ ci: ChatItem, _ maxWidth: CGFloat, showMember: Bool = false) -> some View {
+        let alignment: Alignment = ci.chatDir.sent ? .trailing : .leading
+        return ChatItemView(chatItem: ci, showMember: showMember)
+            .contextMenu {
+                if ci.isMsgContent() {
+                    Button {
+                        withAnimation {
+                            editingItem = nil
+                            quotedItem = ci
+                        }
+                    } label: { Label("Reply", systemImage: "arrowshape.turn.up.left") }
+                    Button {
+                        showShareSheet(items: [ci.content.text])
+                    } label: { Label("Share", systemImage: "square.and.arrow.up") }
+                    Button {
+                        UIPasteboard.general.string = ci.content.text
+                    } label: { Label("Copy", systemImage: "doc.on.doc") }
+                    if ci.meta.editable {
+                        Button {
+                            withAnimation {
+                                quotedItem = nil
+                                editingItem = ci
+                                message = ci.content.text
+                            }
+                        } label: { Label("Edit", systemImage: "square.and.pencil") }
+                    }
+                    Button { showDeleteMessage = true } label: {
+                        Label("Delete", systemImage: "xmark.bin")
+                    }
+                }
+            }
+            .confirmationDialog("Delete message?", isPresented: $showDeleteMessage, titleVisibility: .visible) {
+                Button("Delete for Me") { deleteMessage(ci.id, .cidmInternal) }
+                if ci.meta.editable {
+                    Button("Delete for Everyone") { deleteMessage(ci.id, .cidmBroadcast) }
+                }
+            }
+            .frame(maxWidth: maxWidth, maxHeight: .infinity, alignment: alignment)
+            .frame(minWidth: 0, maxWidth: .infinity, alignment: alignment)
+    }
+    
+    private func showMemberImage(_ member: GroupMember, _ prevItem: ChatItem?) -> Bool {
+        switch (prevItem?.chatDir) {
+        case .groupSnd: return true
+        case let .groupRcv(prevMember): return prevMember.groupMemberId != member.groupMemberId
+        default: return false
+        }
     }
 
     func scrollToBottom(_ proxy: ScrollViewProxy, animation: Animation = .default) {
