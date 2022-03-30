@@ -24,4 +24,16 @@ class AppDelegate: NSObject, UIApplicationDelegate {
     func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
         logger.error("AppDelegate: didFailToRegisterForRemoteNotificationsWithError \(error.localizedDescription)")
     }
+
+    func application(_ application: UIApplication,
+                              didReceiveRemoteNotification userInfo: [AnyHashable : Any],
+                              fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
+        logger.debug("AppDelegate: didReceiveRemoteNotification")
+        let completionHandler = BGManager.shared.completionHandler {
+            logger.debug("AppDelegate: completed BGManager.receiveMessages")
+            completionHandler(.newData)
+        }
+
+        BGManager.shared.receiveMessages(completionHandler)
+    }
 }
