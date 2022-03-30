@@ -8,8 +8,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
@@ -40,11 +39,11 @@ fun TerminalView(chatModel: ChatModel, close: () -> Unit) {
 }
 
 @Composable
-fun TerminalLayout(terminalItems: List<TerminalItem> , close: () -> Unit, sendCommand: (String) -> Unit) {
+fun TerminalLayout(terminalItems: List<TerminalItem>, close: () -> Unit, sendCommand: (String) -> Unit) {
   ProvideWindowInsets(windowInsetsAnimationsEnabled = true) {
     Scaffold(
       topBar = { CloseSheetBar(close) },
-      bottomBar = { SendMsgView(sendCommand) },
+      bottomBar = { SendMsgView(msg = remember { mutableStateOf("") }, sendCommand) },
       modifier = Modifier.navigationBarsWithImePadding()
     ) { contentPadding ->
       Surface(

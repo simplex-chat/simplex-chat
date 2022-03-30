@@ -21,7 +21,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.app.model.ChatModel
-import chat.simplex.app.ui.theme.*
+import chat.simplex.app.ui.theme.HighOrLowlight
+import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.helpers.AlertManager
 import chat.simplex.app.views.helpers.withApi
 
@@ -60,7 +61,7 @@ fun SMPServersView(chatModel: ChatModel) {
             if (userSMPServers.isNotEmpty()) {
               AlertManager.shared.showAlertMsg(
                 title = "Use SimpleX Chat servers?",
-                text = "Saved SMP servers will be removed",
+                text = "Saved SMP servers will be removed.",
                 confirmText = "Confirm",
                 onConfirm = {
                   saveSMPServers(listOf())

@@ -36,6 +36,7 @@ packages:
 #
 extra-deps:
   - cryptostore-0.2.1.0@sha256:9896e2984f36a1c8790f057fd5ce3da4cbcaf8aa73eb2d9277916886978c5b19,3881
+  - network-3.1.2.7@sha256:e3d78b13db9512aeb106e44a334ab42b7aa48d26c097299084084cb8be5c5568,4888
   - simple-logger-0.1.0@sha256:be8ede4bd251a9cac776533bae7fb643369ebd826eb948a9a18df1a8dd252ff8,1079
   - tls-1.5.7@sha256:1cc30253a9696b65a9cafc0317fbf09f7dcea15e3a145ed6c9c0e28c632fa23a,6991
   # below hackage dependancies are to update Aeson to 2.0.3
@@ -48,13 +49,12 @@ extra-deps:
   # - simplexmq-1.0.0@sha256:34b2004728ae396e3ae449cd090ba7410781e2b3cefc59259915f4ca5daa9ea8,8561
   # - ../simplexmq
   - github: simplex-chat/simplexmq
-    commit: 5c6ec96d6477371d8e617bcc71e6ecbcdd5c78cc
+    commit: b6e87e4a3e4d8d6f0d4b41ec13b3787f8d1c5189
   # - terminal-0.2.0.0@sha256:de6770ecaae3197c66ac1f0db5a80cf5a5b1d3b64a66a05b50f442de5ad39570,2977
   - github: simplex-chat/aeson
     commit: 3eb66f9a68f103b5f1489382aad89f5712a64db7
   - github: simplex-chat/haskell-terminal
     commit: f708b00009b54890172068f168bf98508ffcd495
-
 #
 # extra-deps: []
 

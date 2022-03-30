@@ -4,6 +4,11 @@
 
   <uses-feature android:name="android.hardware.camera" />
   <uses-permission android:name="android.permission.CAMERA" />
+  <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+  <uses-permission android:name="android.permission.WAKE_LOCK"/>
+  <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+  <uses-permission android:name="android.permission.VIBRATE"/>
   <uses-permission android:name="android.permission.INTERNET" />
   <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
   <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
@@ -15,6 +20,8 @@
     android:label="@string/app_name"
     android:supportsRtl="true"
     android:theme="@style/Theme.SimpleX">
+
+    <!-- Main activity -->
     <activity
       android:name=".MainActivity"
       android:exported="true"
@@ -26,6 +33,7 @@
         <category android:name="android.intent.category.LAUNCHER" />
       </intent-filter>
 
+      <!-- open simplex:/ connection URI -->
       <intent-filter>
         <action android:name="android.intent.action.VIEW" />
         <category android:name="android.intent.category.DEFAULT" />
@@ -33,6 +41,39 @@
         <data android:scheme="simplex" />
       </intent-filter>
     </activity>
-  </application>
 
+    <provider
+        android:name="androidx.core.content.FileProvider"
+        android:authorities="chat.simplex.app.provider"
+        android:exported="false"
+        android:grantUriPermissions="true">
+      <meta-data
+          android:name="android.support.FILE_PROVIDER_PATHS"
+          android:resource="@xml/file_paths"/>
+    </provider>
+
+    <!-- SimplexService foreground service -->
+    <service
+        android:name=".SimplexService"
+        android:enabled="true"
+        android:exported="false"
+        android:stopWithTask="false">
+    </service>
+
+    <!-- SimplexService restart on reboot -->
+    <receiver
+        android:name=".SimplexService$StartReceiver"
+        android:enabled="true"
+        android:exported="true">
+      <intent-filter>
+        <action android:name="android.intent.action.BOOT_COMPLETED"/>
+      </intent-filter>
+    </receiver>
+
+    <!-- SimplexService restart on destruction -->
+    <receiver
+        android:name=".SimplexService$AutoRestartReceiver"
+        android:enabled="true"
+        android:exported="false"/>
+  </application>
 </manifest>

@@ -12,6 +12,7 @@ import qualified Data.Attoparsec.Text as A
 import Data.Char (isDigit)
 import Data.Either (fromRight)
 import Data.Functor (($>))
+import Data.List (intercalate)
 import Data.Maybe (fromMaybe, isNothing)
 import Data.String
 import Data.Text (Text)
@@ -83,6 +84,9 @@ data FormattedText = FormattedText {format :: Maybe Format, text :: Text}
 instance ToJSON FormattedText where
   toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
+instance IsString FormattedText where
+  fromString = FormattedText Nothing . T.pack
+
 type MarkdownList = [FormattedText]
 
 unmarked :: Text -> Markdown
@@ -90,7 +94,7 @@ unmarked = Markdown Nothing
 
 parseMaybeMarkdownList :: Text -> Maybe MarkdownList
 parseMaybeMarkdownList s =
-  let m = markdownToList $ parseMarkdown s
+  let m = intercalate ["\n"] . map (markdownToList . parseMarkdown) $ T.lines s
    in if all (isNothing . format) m then Nothing else Just m
 
 parseMarkdownList :: Text -> MarkdownList

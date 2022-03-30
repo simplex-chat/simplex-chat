@@ -3,8 +3,17 @@ package chat.simplex.app.model
 import android.app.ActivityManager
 import android.app.ActivityManager.RunningAppProcessInfo
 import android.content.Context
+import android.content.SharedPreferences
 import android.util.Log
+import androidx.compose.foundation.layout.*
+import androidx.compose.material.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Bolt
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.*
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import chat.simplex.app.*
 import chat.simplex.app.views.helpers.AlertManager
 import chat.simplex.app.views.helpers.withApi
@@ -19,19 +28,25 @@ import kotlin.concurrent.thread
 
 typealias ChatCtrl = Long
 
-open class ChatController(val ctrl: ChatCtrl, val ntfManager: NtfManager, val appContext: Context) {
+open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: NtfManager, val appContext: Context) {
   var chatModel = ChatModel(this)
+  private val sharedPreferences: SharedPreferences  = appContext.getSharedPreferences(SHARED_PREFS_ID, Context.MODE_PRIVATE)
 
-  suspend fun startChat(u: User) {
-    Log.d(TAG, "user: $u")
+  init {
+    chatModel.runServiceInBackground.value = getRunServiceInBackground()
+  }
+
+  suspend fun startChat(user: User) {
+    Log.d(TAG, "user: $user")
     try {
       apiStartChat()
       chatModel.userAddress.value = apiGetUserAddress()
       chatModel.userSMPServers.value = getUserSMPServers()
-      chatModel.chats.addAll(apiGetChats())
-      chatModel.currentUser = mutableStateOf(u)
+      val chats = apiGetChats()
+      chatModel.chats.clear()
+      chatModel.chats.addAll(chats)
+      chatModel.currentUser = mutableStateOf(user)
       chatModel.userCreated.value = true
-      startReceiver()
       Log.d(TAG, "started chat")
     } catch(e: Error) {
       Log.e(TAG, "failed starting chat $e")
@@ -40,6 +55,7 @@ open class ChatController(val ctrl: ChatCtrl, val ntfManager: NtfManager, val ap
   }
 
   fun startReceiver() {
+    Log.d(TAG, "ChatController startReceiver")
     thread(name="receiver") {
       withApi { recvMspLoop() }
     }
@@ -105,7 +121,7 @@ open class ChatController(val ctrl: ChatCtrl, val ntfManager: NtfManager, val ap
 
   suspend fun apiStartChat() {
     val r = sendCmd(CC.StartChat())
-    if (r is CR.ChatStarted ) return
+    if (r is CR.ChatStarted || r is CR.ChatRunning) return
     throw Error("failed starting chat: ${r.responseType} ${r.details}")
   }
 
@@ -122,10 +138,26 @@ open class ChatController(val ctrl: ChatCtrl, val ntfManager: NtfManager, val ap
     return null
   }
 
-  suspend fun apiSendMessage(type: ChatType, id: Long, mc: MsgContent): AChatItem? {
-    val r = sendCmd(CC.ApiSendMessage(type, id, mc))
+  suspend fun apiSendMessage(type: ChatType, id: Long, quotedItemId: Long? = null, mc: MsgContent): AChatItem? {
+    val cmd = if (quotedItemId == null) CC.ApiSendMessage(type, id, mc)
+              else CC.ApiSendMessageQuote(type, id, quotedItemId, mc)
+    val r = sendCmd(cmd)
     if (r is CR.NewChatItem ) return r.chatItem
     Log.e(TAG, "apiSendMessage bad response: ${r.responseType} ${r.details}")
+    return null
+  }
+
+  suspend fun apiUpdateChatItem(type: ChatType, id: Long, itemId: Long, mc: MsgContent): AChatItem? {
+    val r = sendCmd(CC.ApiUpdateChatItem(type, id, itemId, mc))
+    if (r is CR.ChatItemUpdated) return r.chatItem
+    Log.e(TAG, "apiUpdateChatItem bad response: ${r.responseType} ${r.details}")
+    return null
+  }
+
+  suspend fun apiDeleteChatItem(type: ChatType, id: Long, itemId: Long, mode: CIDeleteMode): AChatItem? {
+    val r = sendCmd(CC.ApiDeleteChatItem(type, id, itemId, mode))
+    if (r is CR.ChatItemDeleted) return r.toChatItem
+    Log.e(TAG, "apiDeleteChatItem bad response: ${r.responseType} ${r.details}")
     return null
   }
 
@@ -144,7 +176,7 @@ open class ChatController(val ctrl: ChatCtrl, val ntfManager: NtfManager, val ap
         Log.e(TAG, "setUserSMPServers bad response: ${r.responseType} ${r.details}")
         AlertManager.shared.showAlertMsg(
           "Error saving SMP servers",
-          "Make sure SMP server addresses are in correct format, line separated and are not duplicated"
+          "Make sure SMP server addresses are in correct format, line separated and are not duplicated."
         )
         false
       }
@@ -164,7 +196,7 @@ open class ChatController(val ctrl: ChatCtrl, val ntfManager: NtfManager, val ap
       r is CR.SentConfirmation || r is CR.SentInvitation -> return true
       r is CR.ContactAlreadyExists -> {
         AlertManager.shared.showAlertMsg("Contact already exists",
-          "You are already connected to ${r.contact.displayName} via this link"
+          "You are already connected to ${r.contact.displayName} via this link."
         )
         return false
       }
@@ -191,7 +223,7 @@ open class ChatController(val ctrl: ChatCtrl, val ntfManager: NtfManager, val ap
         if (e is ChatError.ChatErrorChat && e.errorType is ChatErrorType.ContactGroups) {
           AlertManager.shared.showAlertMsg(
             "Can't delete contact!",
-            "Contact ${e.errorType.contact.displayName} cannot be deleted, it is a member of the group(s) ${e.errorType.groupNames}"
+            "Contact ${e.errorType.contact.displayName} cannot be deleted, it is a member of the group(s) ${e.errorType.groupNames}."
           )
         }
       }
@@ -201,7 +233,7 @@ open class ChatController(val ctrl: ChatCtrl, val ntfManager: NtfManager, val ap
   }
 
   suspend fun apiUpdateProfile(profile: Profile): Profile? {
-    val r = sendCmd(CC.UpdateProfile(profile))
+    val r = sendCmd(CC.ApiUpdateProfile(profile))
     if (r is CR.UserProfileNoChange) return profile
     if (r is CR.UserProfileUpdated) return r.toProfile
     Log.e(TAG, "apiUpdateProfile bad response: ${r.responseType} ${r.details}")
@@ -301,12 +333,34 @@ open class ChatController(val ctrl: ChatCtrl, val ntfManager: NtfManager, val ap
           ntfManager.notifyMessageReceived(cInfo, cItem)
         }
       }
-//        case let .chatItemUpdated(aChatItem):
-  //        let cInfo = aChatItem.chatInfo
-  //            let cItem = aChatItem.chatItem
-  //            if chatModel.upsertChatItem(cInfo, cItem) {
-  //              NtfManager.shared.notifyMessageReceived(cInfo, cItem)
-  //            }
+      is CR.ChatItemStatusUpdated -> {
+        val cInfo = r.chatItem.chatInfo
+        val cItem = r.chatItem.chatItem
+        var res = false
+        if (!cItem.isDeletedContent) {
+          res = chatModel.upsertChatItem(cInfo, cItem)
+        }
+        if (res) {
+          ntfManager.notifyMessageReceived(cInfo, cItem)
+        }
+      }
+      is CR.ChatItemUpdated -> {
+        val cInfo = r.chatItem.chatInfo
+        val cItem = r.chatItem.chatItem
+        if (chatModel.upsertChatItem(cInfo, cItem)) {
+          ntfManager.notifyMessageReceived(cInfo, cItem)
+        }
+      }
+      is CR.ChatItemDeleted -> {
+        val cInfo = r.toChatItem.chatInfo
+        val cItem = r.toChatItem.chatItem
+        if (cItem.meta.itemDeleted) {
+          chatModel.removeChatItem(cInfo, cItem)
+        } else {
+          // currently only broadcast deletion of rcv message can be received, and only this case should happen
+          chatModel.upsertChatItem(cInfo, cItem)
+        }
+      }
       else ->
         Log.d(TAG , "unsupported event: ${r.responseType}")
     }
@@ -332,6 +386,79 @@ open class ChatController(val ctrl: ChatCtrl, val ntfManager: NtfManager, val ap
       else e.string
     chatModel.updateNetworkStatus(contact, Chat.NetworkStatus.Error(err))
   }
+
+  fun showBackgroundServiceNotice() {
+    if (!getBackgroundServiceNoticeShown()) {
+      AlertManager.shared.showAlert {
+        AlertDialog(
+          onDismissRequest = AlertManager.shared::hideAlert,
+          title = {
+            Row {
+              Icon(
+                Icons.Outlined.Bolt,
+                contentDescription = "Instant notifications",
+              )
+              Text("Private instant notifications!", fontWeight = FontWeight.Bold)
+            }
+          },
+          text = {
+            Column {
+              Text(
+                buildAnnotatedString {
+                  append("To preserve your privacy instead of push notifications the app has a ")
+                  withStyle(SpanStyle(fontWeight = FontWeight.Medium)) {
+                    append("SimpleX background service")
+                  }
+                  append(" – it uses only a few percents of battery a day.")
+                },
+                Modifier.padding(bottom = 8.dp)
+              )
+              Text(
+                buildAnnotatedString {
+                  withStyle(SpanStyle(fontWeight = FontWeight.Medium)) {
+                    append("It can be disabled via settings")
+                  }
+                  append(" – notification would still be shown while the app is running.")
+                }
+              )
+            }
+          },
+          confirmButton = {
+            Button(onClick = AlertManager.shared::hideAlert) { Text("Ok") }
+          }
+        )
+      }
+      setBackgroundServiceNoticeShown()
+    }
+  }
+
+  fun getAutoRestartWorkerVersion(): Int = sharedPreferences.getInt(SHARED_PREFS_AUTO_RESTART_WORKER_VERSION, 0)
+
+  fun setAutoRestartWorkerVersion(version: Int) =
+    sharedPreferences.edit()
+      .putInt(SHARED_PREFS_AUTO_RESTART_WORKER_VERSION, version)
+      .apply()
+
+  fun getRunServiceInBackground(): Boolean = sharedPreferences.getBoolean(SHARED_PREFS_RUN_SERVICE_IN_BACKGROUND, true)
+
+  fun setRunServiceInBackground(runService: Boolean) =
+    sharedPreferences.edit()
+      .putBoolean(SHARED_PREFS_RUN_SERVICE_IN_BACKGROUND, runService)
+      .apply()
+
+  fun getBackgroundServiceNoticeShown(): Boolean = sharedPreferences.getBoolean(SHARED_PREFS_SERVICE_NOTICE_SHOWN, false)
+
+  fun setBackgroundServiceNoticeShown() =
+    sharedPreferences.edit()
+      .putBoolean(SHARED_PREFS_SERVICE_NOTICE_SHOWN, true)
+      .apply()
+
+  companion object {
+    private const val SHARED_PREFS_ID = "chat.simplex.app.SIMPLEX_APP_PREFS"
+    private const val SHARED_PREFS_AUTO_RESTART_WORKER_VERSION = "AutoRestartWorkerVersion"
+    private const val SHARED_PREFS_RUN_SERVICE_IN_BACKGROUND = "RunServiceInBackground"
+    private const val SHARED_PREFS_SERVICE_NOTICE_SHOWN = "BackgroundServiceNoticeShown"
+  }
 }
 
 // ChatCommand
@@ -343,12 +470,15 @@ sealed class CC {
   class ApiGetChats: CC()
   class ApiGetChat(val type: ChatType, val id: Long): CC()
   class ApiSendMessage(val type: ChatType, val id: Long, val mc: MsgContent): CC()
+  class ApiSendMessageQuote(val type: ChatType, val id: Long, val itemId: Long, val mc: MsgContent): CC()
+  class ApiUpdateChatItem(val type: ChatType, val id: Long, val itemId: Long, val mc: MsgContent): CC()
+  class ApiDeleteChatItem(val type: ChatType, val id: Long, val itemId: Long, val mode: CIDeleteMode): CC()
   class GetUserSMPServers(): CC()
   class SetUserSMPServers(val smpServers: List<String>): CC()
   class AddContact: CC()
   class Connect(val connReq: String): CC()
   class ApiDeleteChat(val type: ChatType, val id: Long): CC()
-  class UpdateProfile(val profile: Profile): CC()
+  class ApiUpdateProfile(val profile: Profile): CC()
   class CreateMyAddress: CC()
   class DeleteMyAddress: CC()
   class ShowMyAddress: CC()
@@ -364,12 +494,15 @@ sealed class CC {
     is ApiGetChats -> "/_get chats"
     is ApiGetChat -> "/_get chat ${chatRef(type, id)} count=100"
     is ApiSendMessage -> "/_send ${chatRef(type, id)} ${mc.cmdString}"
+    is ApiSendMessageQuote -> "/_send_quote ${chatRef(type, id)} $itemId ${mc.cmdString}"
+    is ApiUpdateChatItem -> "/_update item ${chatRef(type, id)} $itemId ${mc.cmdString}"
+    is ApiDeleteChatItem -> "/_delete item ${chatRef(type, id)} $itemId ${mode.deleteMode}"
     is GetUserSMPServers -> "/smp_servers"
     is SetUserSMPServers -> "/smp_servers ${smpServersStr(smpServers)}"
     is AddContact -> "/connect"
     is Connect -> "/connect $connReq"
     is ApiDeleteChat -> "/_delete ${chatRef(type, id)}"
-    is UpdateProfile -> "/profile ${profile.displayName} ${profile.fullName}"
+    is ApiUpdateProfile -> "/_profile ${json.encodeToString(profile)}"
     is CreateMyAddress -> "/address"
     is DeleteMyAddress -> "/delete_address"
     is ShowMyAddress -> "/show_address"
@@ -386,12 +519,15 @@ sealed class CC {
     is ApiGetChats -> "apiGetChats"
     is ApiGetChat -> "apiGetChat"
     is ApiSendMessage -> "apiSendMessage"
+    is ApiSendMessageQuote -> "apiSendMessageQuote"
+    is ApiUpdateChatItem -> "apiUpdateChatItem"
+    is ApiDeleteChatItem -> "apiDeleteChatItem"
     is GetUserSMPServers -> "getUserSMPServers"
     is SetUserSMPServers -> "setUserSMPServers"
     is AddContact -> "addContact"
     is Connect -> "connect"
     is ApiDeleteChat -> "apiDeleteChat"
-    is UpdateProfile -> "updateProfile"
+    is ApiUpdateProfile -> "updateProfile"
     is CreateMyAddress -> "createMyAddress"
     is DeleteMyAddress -> "deleteMyAddress"
     is ShowMyAddress -> "showMyAddress"
@@ -422,6 +558,7 @@ class APIResponse(val resp: CR, val corr: String? = null) {
         json.decodeFromString(str)
       } catch(e: Exception) {
         try {
+          Log.d(TAG, e.localizedMessage)
           val data = json.parseToJsonElement(str).jsonObject
           APIResponse(
             resp = CR.Response(data["resp"]!!.jsonObject["type"]?.toString() ?: "invalid", json.encodeToString(data)),
@@ -468,7 +605,9 @@ sealed class CR {
   @Serializable @SerialName("groupEmpty") class GroupEmpty(val group: GroupInfo): CR()
   @Serializable @SerialName("userContactLinkSubscribed") class UserContactLinkSubscribed: CR()
   @Serializable @SerialName("newChatItem") class NewChatItem(val chatItem: AChatItem): CR()
+  @Serializable @SerialName("chatItemStatusUpdated") class ChatItemStatusUpdated(val chatItem: AChatItem): CR()
   @Serializable @SerialName("chatItemUpdated") class ChatItemUpdated(val chatItem: AChatItem): CR()
+  @Serializable @SerialName("chatItemDeleted") class ChatItemDeleted(val deletedChatItem: AChatItem, val toChatItem: AChatItem): CR()
   @Serializable @SerialName("cmdOk") class CmdOk: CR()
   @Serializable @SerialName("chatCmdError") class ChatCmdError(val chatError: ChatError): CR()
   @Serializable @SerialName("chatError") class ChatRespError(val chatError: ChatError): CR()
@@ -506,7 +645,9 @@ sealed class CR {
     is GroupEmpty -> "groupEmpty"
     is UserContactLinkSubscribed -> "userContactLinkSubscribed"
     is NewChatItem -> "newChatItem"
+    is ChatItemStatusUpdated -> "chatItemStatusUpdated"
     is ChatItemUpdated -> "chatItemUpdated"
+    is ChatItemDeleted -> "chatItemDeleted"
     is CmdOk -> "cmdOk"
     is ChatCmdError -> "chatCmdError"
     is ChatRespError -> "chatError"
@@ -545,7 +686,9 @@ sealed class CR {
     is GroupEmpty -> json.encodeToString(group)
     is UserContactLinkSubscribed -> noDetails()
     is NewChatItem -> json.encodeToString(chatItem)
+    is ChatItemStatusUpdated -> json.encodeToString(chatItem)
     is ChatItemUpdated -> json.encodeToString(chatItem)
+    is ChatItemDeleted -> "deletedChatItem:\n${json.encodeToString(deletedChatItem)}\ntoChatItem:\n${json.encodeToString(toChatItem)}"
     is CmdOk -> noDetails()
     is ChatCmdError -> chatError.string
     is ChatRespError -> chatError.string

@@ -13,6 +13,8 @@ import Control.Concurrent.STM
 import Control.Exception (bracket, bracket_)
 import Control.Monad.Except
 import Data.List (dropWhileEnd)
+import Data.Maybe (fromJust)
+import qualified Data.Text as T
 import Network.Socket
 import Simplex.Chat
 import Simplex.Chat.Controller (ChatConfig (..), ChatController (..))
@@ -20,7 +22,7 @@ import Simplex.Chat.Options
 import Simplex.Chat.Store
 import Simplex.Chat.Terminal
 import Simplex.Chat.Terminal.Output (newChatTerminal)
-import Simplex.Chat.Types (Profile)
+import Simplex.Chat.Types (Profile, User (..))
 import Simplex.Messaging.Agent.Env.SQLite
 import Simplex.Messaging.Agent.RetryInterval
 import Simplex.Messaging.Server (runSMPServerBlocking)
@@ -132,11 +134,15 @@ testChatN ps test = withTmpFiles $ do
 getTermLine :: TestCC -> IO String
 getTermLine = atomically . readTQueue . termQ
 
--- Use below to echo virtual terminal
+-- Use code below to echo virtual terminal
 -- getTermLine cc = do
 --   s <- atomically . readTQueue $ termQ cc
---   putStrLn s
+--   name <- userName cc
+--   putStrLn $ name <> ": " <> s
 --   pure s
+
+userName :: TestCC -> IO [Char]
+userName (TestCC ChatController {currentUser} _ _ _ _) = T.unpack . localDisplayName . fromJust <$> readTVarIO currentUser
 
 testChat2 :: Profile -> Profile -> (TestCC -> TestCC -> IO ()) -> IO ()
 testChat2 p1 p2 test = testChatN [p1, p2] test_

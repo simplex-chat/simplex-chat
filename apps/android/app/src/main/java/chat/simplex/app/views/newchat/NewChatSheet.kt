@@ -83,7 +83,7 @@ fun NewChatSheetLayout(addContact: () -> Unit, scanCode: () -> Unit) {
 }
 
 @Composable
-fun ActionButton(text: String, comment: String, icon: ImageVector, disabled: Boolean = false,
+fun ActionButton(text: String?, comment: String?, icon: ImageVector, disabled: Boolean = false,
                  click: () -> Unit = {}) {
   Column(
     Modifier
@@ -97,16 +97,22 @@ fun ActionButton(text: String, comment: String, icon: ImageVector, disabled: Boo
       modifier = Modifier
         .size(40.dp)
         .padding(bottom = 8.dp))
-    Text(text,
-      textAlign = TextAlign.Center,
-      fontWeight = FontWeight.Bold,
-      color = tint,
-      modifier = Modifier.padding(bottom = 4.dp)
-    )
-    Text(comment,
-      textAlign = TextAlign.Center,
-      style = MaterialTheme.typography.body2
-    )
+    if (text != null) {
+      Text(
+        text,
+        textAlign = TextAlign.Center,
+        fontWeight = FontWeight.Bold,
+        color = tint,
+        modifier = Modifier.padding(bottom = 4.dp)
+      )
+    }
+    if (comment != null) {
+      Text(
+        comment,
+        textAlign = TextAlign.Center,
+        style = MaterialTheme.typography.body2
+      )
+    }
   }
 }
 

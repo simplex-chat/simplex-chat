@@ -29,6 +29,7 @@ class ChatModel(val controller: ChatController) {
   var userSMPServers = mutableStateOf<(List<String>)?>(null)
   // set when app is opened via contact or invitation URI
   var appOpenUrl = mutableStateOf<Uri?>(null)
+  var runServiceInBackground = mutableStateOf(true)
 
   fun updateUserProfile(profile: Profile) {
     val user = currentUser.value
@@ -102,6 +103,57 @@ class ChatModel(val controller: ChatController) {
     }
   }
 
+  fun upsertChatItem(cInfo: ChatInfo, cItem: ChatItem): Boolean {
+    // update previews
+    val i = getChatIndex(cInfo.id)
+    val chat: Chat
+    val res: Boolean
+    if (i >= 0) {
+      chat = chats[i]
+      val pItem = chat.chatItems.last()
+      if (pItem.id == cItem.id) {
+        chats[i] = chat.copy(chatItems = arrayListOf(cItem))
+      }
+      res = false
+    } else {
+      addChat(Chat(chatInfo = cInfo, chatItems = arrayListOf(cItem)))
+      res = true
+    }
+    // update current chat
+    if (chatId.value == cInfo.id) {
+      val itemIndex = chatItems.indexOfFirst { it.id == cItem.id }
+      if (itemIndex >= 0) {
+        chatItems[itemIndex] = cItem
+        return false
+      } else {
+        chatItems.add(cItem)
+        return true
+      }
+    } else {
+      return res
+    }
+  }
+
+  fun removeChatItem(cInfo: ChatInfo, cItem: ChatItem) {
+    // update previews
+    val i = getChatIndex(cInfo.id)
+    val chat: Chat
+    if (i >= 0) {
+      chat = chats[i]
+      val pItem = chat.chatItems.last()
+      if (pItem.id == cItem.id) {
+        chats[i] = chat.copy(chatItems = arrayListOf(cItem))
+      }
+    }
+    // remove from current chat
+    if (chatId.value == cInfo.id) {
+      val itemIndex = chatItems.indexOfFirst { it.id == cItem.id }
+      if (itemIndex >= 0) {
+        chatItems.removeAt(itemIndex)
+      }
+    }
+  }
+
   fun markChatItemsRead(cInfo: ChatInfo) {
     val chatIdx = getChatIndex(cInfo.id)
     // update current chat
@@ -122,42 +174,13 @@ class ChatModel(val controller: ChatController) {
     }
 
   }
-//
-//  func upsertChatItem(_ cInfo: ChatInfo, _ cItem: ChatItem) -> Bool {
-//    // update previews
-//    var res: Bool
-//    if let chat = getChat(cInfo.id) {
-//      if let pItem = chat.chatItems.last, pItem.id == cItem.id {
-//      chat.chatItems = [cItem]
-//    }
-//      res = false
-//    } else {
-//      addChat(Chat(chatInfo: cInfo, chatItems: [cItem]))
-//      res = true
-//    }
-//    // update current chat
-//    if chatId == cInfo.id {
-//      if let i = chatItems.firstIndex(where: { $0.id == cItem.id }) {
-//      withAnimation(.default) {
-//      self.chatItems[i] = cItem
-//    }
-//      return false
-//    } else {
-//      withAnimation { chatItems.append(cItem) }
-//      return true
-//    }
-//    } else {
-//      return res
-//    }
-//  }
-//
-//
+
 //  func popChat(_ id: String) {
 //    if let i = getChatIndex(id) {
 //      popChat_(i)
 //    }
 //  }
-//
+
   private fun popChat_(i: Int) {
     val chat = chats.removeAt(i)
     chats.add(index = 0, chat)
@@ -191,6 +214,7 @@ data class User(
 ): NamedChat {
   override val displayName: String get() = profile.displayName
   override val fullName: String get() = profile.fullName
+  override val image: String? get() = profile.image
 
   companion object {
     val sampleData = User(
@@ -208,6 +232,7 @@ typealias ChatId = String
 interface NamedChat {
   val displayName: String
   val fullName: String
+  val image: String?
   val chatViewName: String
     get() = displayName + (if (fullName == "" || fullName == displayName) "" else " / $fullName")
 }
@@ -241,9 +266,9 @@ data class Chat (
     val statusString: String get() = if (this is Connected) "Server connected" else "Connecting server…"
     val statusExplanation: String get() =
       when {
-        this is Connected -> "You are connected to the server you use to receve messages from this contact."
-        this is Error -> "Trying to connect to the server you use to receve messages from this contact (error: $error)."
-        else -> "Trying to connect to the server you use to receve messages from this contact."
+        this is Connected -> "You are connected to the server used to receive messages from this contact."
+        this is Error -> "Trying to connect to the server used to receive messages from this contact (error: $error)."
+        else -> "Trying to connect to the server used to receive messages from this contact."
       }
 
     @Serializable @SerialName("unknown") class Unknown: NetworkStatus()
@@ -272,6 +297,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
     override val createdAt get() = contact.createdAt
     override val displayName get() = contact.displayName
     override val fullName get() = contact.fullName
+    override val image get() = contact.image
 
     companion object {
       val sampleData = Direct(Contact.sampleData)
@@ -288,6 +314,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
     override val createdAt get() = groupInfo.createdAt
     override val displayName get() = groupInfo.displayName
     override val fullName get() = groupInfo.fullName
+    override val image get() = groupInfo.image
 
     companion object {
       val sampleData = Group(GroupInfo.sampleData)
@@ -304,6 +331,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
     override val createdAt get() = contactRequest.createdAt
     override val displayName get() = contactRequest.displayName
     override val fullName get() = contactRequest.fullName
+    override val image get() = contactRequest.image
 
     companion object {
       val sampleData = ContactRequest(UserContactRequest.sampleData)
@@ -326,6 +354,7 @@ class Contact(
   override val ready get() = activeConn.connStatus == "ready" || activeConn.connStatus == "snd-ready"
   override val displayName get() = profile.displayName
   override val fullName get() = profile.fullName
+  override val image get() = profile.image
 
   companion object {
     val sampleData = Contact(
@@ -354,7 +383,8 @@ class Connection(val connStatus: String) {
 @Serializable
 class Profile(
   val displayName: String,
-  val fullName: String
+  val fullName: String,
+  val image: String? = null
   ) {
   companion object {
     val sampleData = Profile(
@@ -377,6 +407,7 @@ class GroupInfo (
   override val ready get() = true
   override val displayName get() = groupProfile.displayName
   override val fullName get() = groupProfile.fullName
+  override val image get() = groupProfile.image
 
   companion object {
     val sampleData = GroupInfo(
@@ -391,7 +422,8 @@ class GroupInfo (
 @Serializable
 class GroupProfile (
   override val displayName: String,
-  override val fullName: String
+  override val fullName: String,
+  override val image: String? = null
 ): NamedChat {
   companion object {
     val sampleData = GroupProfile(
@@ -444,6 +476,7 @@ class UserContactRequest (
   override val ready get() = true
   override val displayName get() = profile.displayName
   override val fullName get() = profile.fullName
+  override val image get() = profile.image
 
   companion object {
     val sampleData = UserContactRequest(
@@ -466,11 +499,30 @@ data class ChatItem (
   val chatDir: CIDirection,
   val meta: CIMeta,
   val content: CIContent,
-  val formattedText: List<FormattedText>? = null
+  val formattedText: List<FormattedText>? = null,
+  val quotedItem: CIQuote? = null
 ) {
   val id: Long get() = meta.itemId
   val timestampText: String get() = meta.timestampText
   val isRcvNew: Boolean get() = meta.itemStatus is CIStatus.RcvNew
+
+  val memberDisplayName: String? get() =
+    if (chatDir is CIDirection.GroupRcv) chatDir.groupMember.memberProfile.displayName
+    else null
+
+  val isMsgContent: Boolean get() =
+    when (content) {
+      is CIContent.SndMsgContent -> true
+      is CIContent.RcvMsgContent -> true
+      else -> false
+    }
+
+  val isDeletedContent: Boolean get() =
+    when (content) {
+      is CIContent.SndDeleted -> true
+      is CIContent.RcvDeleted -> true
+      else -> false
+    }
 
   companion object {
     fun getSampleData(
@@ -478,12 +530,31 @@ data class ChatItem (
       dir: CIDirection = CIDirection.DirectSnd(),
       ts: Instant = Clock.System.now(),
       text: String = "hello\nthere",
-      status: CIStatus = CIStatus.SndNew()
+      status: CIStatus = CIStatus.SndNew(),
+      quotedItem: CIQuote? = null,
+      itemDeleted: Boolean = false,
+      itemEdited: Boolean = false,
+      editable: Boolean = true
     ) =
       ChatItem(
         chatDir = dir,
-        meta = CIMeta.getSample(id, ts, text, status),
-        content = CIContent.SndMsgContent(msgContent = MsgContent.MCText(text))
+        meta = CIMeta.getSample(id, ts, text, status, itemDeleted, itemEdited, editable),
+        content = CIContent.SndMsgContent(msgContent = MsgContent.MCText(text)),
+        quotedItem = quotedItem
+      )
+
+    fun getDeletedContentSampleData(
+      id: Long = 1,
+      dir: CIDirection = CIDirection.DirectRcv(),
+      ts: Instant = Clock.System.now(),
+      text: String = "this item is deleted",
+      status: CIStatus = CIStatus.RcvRead()
+    ) =
+      ChatItem(
+        chatDir = dir,
+        meta = CIMeta.getSample(id, ts, text, status, false, false, false),
+        content = CIContent.RcvDeleted(deleteMode = CIDeleteMode.cidmBroadcast),
+        quotedItem = null
       )
   }
 }
@@ -519,18 +590,27 @@ data class CIMeta (
   val itemTs: Instant,
   val itemText: String,
   val itemStatus: CIStatus,
-  val createdAt: Instant
+  val createdAt: Instant,
+  val itemDeleted: Boolean,
+  val itemEdited: Boolean,
+  val editable: Boolean
 ) {
   val timestampText: String get() = getTimestampText(itemTs)
 
   companion object {
-    fun getSample(id: Long, ts: Instant, text: String, status: CIStatus = CIStatus.SndNew()): CIMeta =
+    fun getSample(
+      id: Long, ts: Instant, text: String, status: CIStatus = CIStatus.SndNew(),
+      itemDeleted: Boolean = false, itemEdited: Boolean = false, editable: Boolean = true
+    ): CIMeta =
       CIMeta(
         itemId = id,
         itemTs = ts,
         itemText = text,
         itemStatus = status,
-        createdAt = ts
+        createdAt = ts,
+        itemDeleted = itemDeleted,
+        itemEdited = itemEdited,
+        editable = editable
       )
   }
 }
@@ -567,8 +647,18 @@ sealed class CIStatus {
 }
 
 @Serializable
-sealed class CIContent {
-  abstract val text: String
+enum class CIDeleteMode(val deleteMode: String) {
+  @SerialName("internal") cidmInternal("internal"),
+  @SerialName("broadcast") cidmBroadcast("broadcast");
+}
+
+interface ItemContent {
+  val text: String
+}
+
+@Serializable
+sealed class CIContent: ItemContent {
+  abstract override val text: String
 
   @Serializable @SerialName("sndMsgContent")
   class SndMsgContent(val msgContent: MsgContent): CIContent() {
@@ -580,6 +670,16 @@ sealed class CIContent {
     override val text get() = msgContent.text
   }
 
+  @Serializable @SerialName("sndDeleted")
+  class SndDeleted(val deleteMode: CIDeleteMode): CIContent() {
+    override val text get() = "deleted"
+  }
+
+  @Serializable @SerialName("rcvDeleted")
+  class RcvDeleted(val deleteMode: CIDeleteMode): CIContent() {
+    override val text get() = "deleted"
+  }
+
   @Serializable @SerialName("sndFileInvitation")
   class SndFileInvitation(val fileId: Long, val filePath: String): CIContent() {
     override val text get() = "sending files is not supported yet"
@@ -588,6 +688,31 @@ sealed class CIContent {
   @Serializable @SerialName("rcvFileInvitation")
   class RcvFileInvitation(val rcvFileTransfer: RcvFileTransfer): CIContent() {
     override val text get() = "receiving files is not supported yet"
+  }
+}
+
+@Serializable
+class CIQuote (
+  val chatDir: CIDirection? = null,
+  val itemId: Long? = null,
+  val sharedMsgId: String? = null,
+  val sentAt: Instant,
+  val content: MsgContent,
+  val formattedText: List<FormattedText>? = null
+): ItemContent {
+  override val text: String get() = content.text
+
+  fun sender(user: User): String? = when (chatDir) {
+    is CIDirection.DirectSnd -> "you"
+    is CIDirection.DirectRcv -> null
+    is CIDirection.GroupSnd -> user.displayName
+    is CIDirection.GroupRcv -> chatDir.groupMember.memberProfile.displayName
+    null -> null
+  }
+
+  companion object {
+    fun getSample(itemId: Long?, sentAt: Instant, text: String, chatDir: CIDirection?): CIQuote =
+      CIQuote(chatDir = chatDir, itemId = itemId, sentAt = sentAt, content = MsgContent.MCText(text))
   }
 }
 
@@ -605,6 +730,7 @@ sealed class MsgContent {
 }
 
 object MsgContentSerializer : KSerializer<MsgContent> {
+  @OptIn(InternalSerializationApi::class)
   override val descriptor: SerialDescriptor = buildSerialDescriptor("MsgContent", PolymorphicKind.SEALED) {
     element("MCText", buildClassSerialDescriptor("MCText") {
       element<String>("text")

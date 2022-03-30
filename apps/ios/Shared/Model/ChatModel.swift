@@ -135,6 +135,23 @@ final class ChatModel: ObservableObject {
             return res
         }
     }
+    
+    func removeChatItem(_ cInfo: ChatInfo, _ cItem: ChatItem) {
+        // update previews
+        if let chat = getChat(cInfo.id) {
+            if let pItem = chat.chatItems.last, pItem.id == cItem.id {
+                chat.chatItems = [cItem]
+            }
+        }
+        // remove from current chat
+        if chatId == cInfo.id {
+            if let i = chatItems.firstIndex(where: { $0.id == cItem.id }) {
+                _ = withAnimation {
+                    self.chatItems.remove(at: i)
+                }
+            }
+        }
+    }
 
     func markChatItemsRead(_ cInfo: ChatInfo) {
         // update preview
@@ -164,6 +181,14 @@ final class ChatModel: ObservableObject {
         }
     }
 
+    func getPrevChatItem(_ ci: ChatItem) -> ChatItem? {
+        if let i = chatItems.firstIndex(where: { $0.id == ci.id }), i > 0  {
+            return chatItems[i - 1]
+        } else {
+            return nil
+        }
+    }
+    
     func popChat(_ id: String) {
         if let i = getChatIndex(id) {
             popChat_(i)
@@ -190,8 +215,8 @@ struct User: Decodable, NamedChat {
     var activeUser: Bool
 
     var displayName: String { get { profile.displayName } }
-
     var fullName: String { get { profile.fullName } }
+    var image: String? { get { profile.image } }
 
     static let sampleData = User(
         userId: 1,
@@ -209,6 +234,7 @@ typealias GroupName = String
 struct Profile: Codable, NamedChat {
     var displayName: String
     var fullName: String
+    var image: String?
 
     static let sampleData = Profile(
         displayName: "alice",
@@ -225,6 +251,7 @@ enum ChatType: String {
 protocol NamedChat {
     var displayName: String { get }
     var fullName: String { get }
+    var image: String? { get }
 }
 
 extension NamedChat {
@@ -266,6 +293,16 @@ enum ChatInfo: Identifiable, Decodable, NamedChat {
             case let .direct(contact): return contact.fullName
             case let .group(groupInfo): return groupInfo.fullName
             case let .contactRequest(contactRequest): return contactRequest.fullName
+            }
+        }
+    }
+
+    var image: String? {
+        get {
+            switch self {
+            case let .direct(contact): return contact.image
+            case let .group(groupInfo): return groupInfo.image
+            case let .contactRequest(contactRequest): return contactRequest.image
             }
         }
     }
@@ -360,9 +397,9 @@ final class Chat: ObservableObject, Identifiable {
         var statusExplanation: String {
             get {
                 switch self {
-                case .connected: return "You are connected to the server you use to receve messages from this contact."
-                case let .error(err): return "Trying to connect to the server you use to receve messages from this contact (error: \(err))."
-                default: return "Trying to connect to the server you use to receve messages from this contact."
+                case .connected: return "You are connected to the server used to receive messages from this contact."
+                case let .error(err): return "Trying to connect to the server used to receive messages from this contact (error: \(err))."
+                default: return "Trying to connect to the server used to receive messages from this contact."
                 }
             }
         }
@@ -420,6 +457,7 @@ struct Contact: Identifiable, Decodable, NamedChat {
     var ready: Bool { get { activeConn.connStatus == "ready" || activeConn.connStatus == "snd-ready" } }
     var displayName: String { get { profile.displayName } }
     var fullName: String { get { profile.fullName } }
+    var image: String? { get { profile.image } }
 
     static let sampleData = Contact(
         contactId: 1,
@@ -452,6 +490,7 @@ struct UserContactRequest: Decodable, NamedChat {
     var ready: Bool { get { true } }
     var displayName: String { get { profile.displayName } }
     var fullName: String { get { profile.fullName } }
+    var image: String? { get { profile.image } }
 
     static let sampleData = UserContactRequest(
         contactRequestId: 1,
@@ -472,6 +511,7 @@ struct GroupInfo: Identifiable, Decodable, NamedChat {
     var ready: Bool { get { true } }
     var displayName: String { get { groupProfile.displayName } }
     var fullName: String { get { groupProfile.fullName } }
+    var image: String? { get { groupProfile.image } }
 
     static let sampleData = GroupInfo(
         groupId: 1,
@@ -484,6 +524,7 @@ struct GroupInfo: Identifiable, Decodable, NamedChat {
 struct GroupProfile: Codable, NamedChat {
     var displayName: String
     var fullName: String
+    var image: String?
 
     static let sampleData = GroupProfile(
         displayName: "team",
@@ -502,6 +543,16 @@ struct GroupMember: Decodable {
     var memberProfile: Profile
     var memberContactId: Int64?
 //    var activeConn: Connection?
+
+    var directChatId: ChatId? {
+        get {
+            if let chatId = memberContactId {
+                return "@\(chatId)"
+            } else {
+                return nil
+            }
+        }
+    }
 
     static let sampleData = GroupMember(
         groupMemberId: 1,
@@ -527,7 +578,8 @@ struct ChatItem: Identifiable, Decodable {
     var meta: CIMeta
     var content: CIContent
     var formattedText: [FormattedText]?
-    
+    var quotedItem: CIQuote?
+
     var id: Int64 { get { meta.itemId } }
 
     var timestampText: Text { get { meta.timestampText } }
@@ -536,12 +588,48 @@ struct ChatItem: Identifiable, Decodable {
         if case .rcvNew = meta.itemStatus { return true }
         return false
     }
+    
+    func isMsgContent() -> Bool {
+        switch content {
+        case .sndMsgContent: return true
+        case .rcvMsgContent: return true
+        default: return false
+        }
+    }
 
-    static func getSample (_ id: Int64, _ dir: CIDirection, _ ts: Date, _ text: String, _ status: CIStatus = .sndNew) -> ChatItem {
+    func isDeletedContent() -> Bool {
+        switch content {
+        case .sndDeleted: return true
+        case .rcvDeleted: return true
+        default: return false
+        }
+    }
+
+    var memberDisplayName: String? {
+        get {
+            if case let .groupRcv(groupMember) = chatDir {
+                return groupMember.memberProfile.displayName
+            } else {
+                return nil
+            }
+        }
+    }
+    
+    static func getSample (_ id: Int64, _ dir: CIDirection, _ ts: Date, _ text: String, _ status: CIStatus = .sndNew, quotedItem: CIQuote? = nil, _ itemDeleted: Bool = false, _ itemEdited: Bool = false, _ editable: Bool = true) -> ChatItem {
         ChatItem(
-           chatDir: dir,
-           meta: CIMeta.getSample(id, ts, text, status),
-           content: .sndMsgContent(msgContent: .text(text))
+            chatDir: dir,
+            meta: CIMeta.getSample(id, ts, text, status, itemDeleted, itemEdited, editable),
+            content: .sndMsgContent(msgContent: .text(text)),
+            quotedItem: quotedItem
+       )
+    }
+    
+    static func getDeletedContentSample (_ id: Int64 = 1, dir: CIDirection = .directRcv, _ ts: Date = .now, _ text: String = "this item is deleted", _ status: CIStatus = .rcvRead) -> ChatItem {
+        ChatItem(
+            chatDir: dir,
+            meta: CIMeta.getSample(id, ts, text, status, false, false, false),
+            content: .rcvDeleted(deleteMode: .cidmBroadcast),
+            quotedItem: nil
        )
     }
 }
@@ -570,16 +658,22 @@ struct CIMeta: Decodable {
     var itemText: String
     var itemStatus: CIStatus
     var createdAt: Date
+    var itemDeleted: Bool
+    var itemEdited: Bool
+    var editable: Bool
 
     var timestampText: Text { get { SimpleX.timestampText(itemTs) } }
 
-    static func getSample(_ id: Int64, _ ts: Date, _ text: String, _ status: CIStatus = .sndNew) -> CIMeta {
+    static func getSample(_ id: Int64, _ ts: Date, _ text: String, _ status: CIStatus = .sndNew, _ itemDeleted: Bool = false, _ itemEdited: Bool = false, _ editable: Bool = true) -> CIMeta {
         CIMeta(
             itemId: id,
             itemTs: ts,
             itemText: text,
             itemStatus: status,
-            createdAt: ts
+            createdAt: ts,
+            itemDeleted: itemDeleted,
+            itemEdited: itemEdited,
+            editable: editable
         )
     }
 }
@@ -603,9 +697,20 @@ enum CIStatus: Decodable {
     case rcvRead
 }
 
-enum CIContent: Decodable {
+enum CIDeleteMode: String, Decodable {
+    case cidmBroadcast = "broadcast"
+    case cidmInternal = "internal"
+}
+
+protocol ItemContent {
+    var text: String { get }
+}
+
+enum CIContent: Decodable, ItemContent {
     case sndMsgContent(msgContent: MsgContent)
     case rcvMsgContent(msgContent: MsgContent)
+    case sndDeleted(deleteMode: CIDeleteMode)
+    case rcvDeleted(deleteMode: CIDeleteMode)
     case sndFileInvitation(fileId: Int64, filePath: String)
     case rcvFileInvitation(rcvFileTransfer: RcvFileTransfer)
 
@@ -614,6 +719,8 @@ enum CIContent: Decodable {
             switch self {
             case let .sndMsgContent(mc): return mc.text
             case let .rcvMsgContent(mc): return mc.text
+            case .sndDeleted: return "deleted"
+            case .rcvDeleted: return "deleted"
             case .sndFileInvitation: return "sending files is not supported yet"
             case .rcvFileInvitation: return  "receiving files is not supported yet"
             }
@@ -623,6 +730,33 @@ enum CIContent: Decodable {
 
 struct RcvFileTransfer: Decodable {
 
+}
+
+struct CIQuote: Decodable, ItemContent {
+    var chatDir: CIDirection?
+    var itemId: Int64?
+    var sharedMsgId: String? = nil
+    var sentAt: Date
+    var content: MsgContent
+    var formattedText: [FormattedText]?
+    
+    var text: String { get { content.text } }
+
+    var sender: String? {
+        get {
+            switch (chatDir) {
+            case .directSnd: return "you"
+            case .directRcv: return nil
+            case .groupSnd: return ChatModel.shared.currentUser?.displayName
+            case let .groupRcv(member): return member.memberProfile.displayName
+            case nil: return nil
+            }
+        }
+    }
+
+    static func getSample(_ itemId: Int64?, _ sentAt: Date, _ text: String, chatDir: CIDirection?) -> CIQuote {
+        CIQuote(chatDir: chatDir, itemId: itemId, sentAt: sentAt, content: .text(text))
+    }
 }
 
 enum MsgContent {

@@ -13,16 +13,22 @@ struct CIMetaView: View {
 
     var body: some View {
         HStack(alignment: .center, spacing: 4) {
-            switch chatItem.meta.itemStatus {
-            case .sndSent:
-                statusImage("checkmark", .secondary)
-            case .sndErrorAuth:
-                statusImage("multiply", .red)
-            case .sndError:
-                statusImage("exclamationmark.triangle.fill", .yellow)
-            case .rcvNew:
-                statusImage("circlebadge.fill", Color.accentColor)
-            default: EmptyView()
+            if !chatItem.isDeletedContent() {
+                if chatItem.meta.itemEdited {
+                    statusImage("pencil", .secondary, 9)
+                }
+
+                switch chatItem.meta.itemStatus {
+                case .sndSent:
+                    statusImage("checkmark", .secondary)
+                case .sndErrorAuth:
+                    statusImage("multiply", .red)
+                case .sndError:
+                    statusImage("exclamationmark.triangle.fill", .yellow)
+                case .rcvNew:
+                    statusImage("circlebadge.fill", Color.accentColor)
+                default: EmptyView()
+                }
             }
 
             chatItem.timestampText
@@ -31,17 +37,22 @@ struct CIMetaView: View {
         }
     }
 
-    private func statusImage(_ systemName: String, _ color: Color) -> some View {
+    private func statusImage(_ systemName: String, _ color: Color, _ maxHeight: CGFloat = 8) -> some View {
         Image(systemName: systemName)
             .resizable()
             .aspectRatio(contentMode: .fit)
             .foregroundColor(color)
-            .frame(maxHeight: 8)
+            .frame(maxHeight: maxHeight)
     }
 }
 
 struct CIMetaView_Previews: PreviewProvider {
     static var previews: some View {
-        CIMetaView(chatItem: ChatItem.getSample(2, .directSnd, .now, "https://simplex.chat", .sndSent))
+        return Group {
+            CIMetaView(chatItem: ChatItem.getSample(2, .directSnd, .now, "https://simplex.chat", .sndSent))
+            CIMetaView(chatItem: ChatItem.getSample(2, .directSnd, .now, "https://simplex.chat", .sndSent, false, true))
+            CIMetaView(chatItem: ChatItem.getDeletedContentSample())
+        }
+        .previewLayout(.fixed(width: 360, height: 100))
     }
 }

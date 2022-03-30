@@ -10,6 +10,10 @@ import SwiftUI
 
 let simplexTeamURL = URL(string: "simplex:/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23MCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%3D")!
 
+let appVersion = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
+
+let appBuild = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion")  as? String
+
 struct SettingsView: View {
     @Environment(\.colorScheme) var colorScheme
     @EnvironmentObject var chatModel: ChatModel
@@ -26,15 +30,18 @@ struct SettingsView: View {
                             .navigationTitle("Your chat profile")
                     } label: {
                         HStack {
-                            Image(systemName: "person.crop.circle")
-                                .padding(.trailing, 8)
+                            ProfileImage(imageStr: user.image)
+                                .frame(width: 44, height: 44)
+                                .padding(.trailing, 6)
+                                .padding(.vertical, 6)
                             VStack(alignment: .leading) {
-                                Text(user.profile.displayName)
+                                Text(user.displayName)
                                     .fontWeight(.bold)
                                     .font(.title2)
-                                Text(user.profile.fullName)
+                                Text(user.fullName)
                             }
                         }
+                        .padding(.leading, -8)
                     }
                     NavigationLink {
                         UserAddress()
@@ -93,13 +100,13 @@ struct SettingsView: View {
                                 UIApplication.shared.open(simplexTeamURL)
                             }
                         } label: {
-                            Text("Get help & advice via chat")
+                            Text("Chat with the founder")
                         }
                     }
                     HStack {
                         Image(systemName: "envelope")
                             .padding(.trailing, 4)
-                        Text("[Ask questions via email](mailto:chat@simplex.chat)")
+                        Text("[Send us email](mailto:chat@simplex.chat)")
                     }
                 }
 
@@ -121,11 +128,8 @@ struct SettingsView: View {
                             .padding(.trailing, 8)
                         Text("Install [SimpleX Chat for terminal](https://github.com/simplex-chat/simplex-chat)")
                     }
+                    Text("v\(appVersion ?? "?") (\(appBuild ?? "?"))")
                 }
-
-//                Section("Your SimpleX servers") {
-//
-//                }
             }
             .navigationTitle("Your settings")
         }

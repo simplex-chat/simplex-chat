@@ -31,7 +31,7 @@ val Typography = Typography(
   body1 = TextStyle(
     fontFamily = Inter,
     fontWeight = FontWeight.Normal,
-    fontSize = 16.sp
+    fontSize = 17.sp
   ),
   body2 = TextStyle(
     fontFamily = Inter,

@@ -22,7 +22,7 @@ import Data.Int (Int64)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
-import Data.Time.Clock (UTCTime)
+import Data.Time.Clock (UTCTime, diffUTCTime, nominalDay)
 import Data.Time.LocalTime (TimeZone, ZonedTime, utcToZonedTime)
 import Data.Type.Equality
 import Data.Typeable (Typeable)
@@ -78,7 +78,8 @@ data ChatItem (c :: ChatType) (d :: MsgDirection) = ChatItem
   { chatDir :: CIDirection c d,
     meta :: CIMeta d,
     content :: CIContent d,
-    formattedText :: Maybe [FormattedText]
+    formattedText :: Maybe MarkdownList,
+    quotedItem :: Maybe (CIQuote c)
   }
   deriving (Show, Generic)
 
@@ -100,9 +101,6 @@ data JSONCIDirection
   | JCIGroupSnd
   | JCIGroupRcv {groupMember :: GroupMember}
   deriving (Generic, Show)
-
-instance FromJSON JSONCIDirection where
-  parseJSON = J.genericParseJSON . sumTypeJSON $ dropPrefix "JCI"
 
 instance ToJSON JSONCIDirection where
   toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "JCI"
@@ -150,6 +148,8 @@ data NewChatItem d = NewChatItem
     itemContent :: CIContent d,
     itemText :: Text,
     itemStatus :: CIStatus d,
+    itemSharedMsgId :: Maybe SharedMsgId,
+    itemQuotedMsg :: Maybe QuotedMsg,
     createdAt :: UTCTime
   }
   deriving (Show)
@@ -185,7 +185,7 @@ instance ToJSON ChatStats where
   toEncoding = J.genericToEncoding J.defaultOptions
 
 -- | type to show a mix of messages from multiple chats
-data AChatItem = forall c d. AChatItem (SChatType c) (SMsgDirection d) (ChatInfo c) (ChatItem c d)
+data AChatItem = forall c d. MsgDirectionI d => AChatItem (SChatType c) (SMsgDirection d) (ChatInfo c) (ChatItem c d)
 
 deriving instance Show AChatItem
 
@@ -205,17 +205,65 @@ data CIMeta (d :: MsgDirection) = CIMeta
     itemTs :: ChatItemTs,
     itemText :: Text,
     itemStatus :: CIStatus d,
+    itemSharedMsgId :: Maybe SharedMsgId,
+    itemDeleted :: Bool,
+    itemEdited :: Bool,
+    editable :: Bool,
     localItemTs :: ZonedTime,
     createdAt :: UTCTime
   }
   deriving (Show, Generic)
 
-mkCIMeta :: ChatItemId -> Text -> CIStatus d -> TimeZone -> ChatItemTs -> UTCTime -> CIMeta d
-mkCIMeta itemId itemText itemStatus tz itemTs createdAt =
+mkCIMeta :: ChatItemId -> CIContent d -> Text -> CIStatus d -> Maybe SharedMsgId -> Bool -> Bool -> TimeZone -> UTCTime -> ChatItemTs -> UTCTime -> CIMeta d
+mkCIMeta itemId itemContent itemText itemStatus itemSharedMsgId itemDeleted itemEdited tz currentTs itemTs createdAt =
   let localItemTs = utcToZonedTime tz itemTs
-   in CIMeta {itemId, itemTs, itemText, itemStatus, localItemTs, createdAt}
+      editable = case itemContent of
+        CISndMsgContent _ -> diffUTCTime currentTs itemTs < nominalDay
+        _ -> False
+   in CIMeta {itemId, itemTs, itemText, itemStatus, itemSharedMsgId, itemDeleted, itemEdited, editable, localItemTs, createdAt}
 
 instance ToJSON (CIMeta d) where toEncoding = J.genericToEncoding J.defaultOptions
+
+data CIQuote (c :: ChatType) = CIQuote
+  { chatDir :: CIQDirection c,
+    itemId :: Maybe ChatItemId, -- Nothing in case MsgRef references the item the user did not receive yet
+    sharedMsgId :: Maybe SharedMsgId, -- Nothing for the messages from the old clients
+    sentAt :: UTCTime,
+    content :: MsgContent,
+    formattedText :: Maybe MarkdownList
+  }
+  deriving (Show, Generic)
+
+instance ToJSON (CIQuote c) where
+  toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
+  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
+
+data CIQDirection (c :: ChatType) where
+  CIQDirectSnd :: CIQDirection 'CTDirect
+  CIQDirectRcv :: CIQDirection 'CTDirect
+  CIQGroupSnd :: CIQDirection 'CTGroup
+  CIQGroupRcv :: Maybe GroupMember -> CIQDirection 'CTGroup -- member can be Nothing in case MsgRef has memberId that the user is not notified about yet
+
+deriving instance Show (CIQDirection c)
+
+instance ToJSON (CIQDirection c) where
+  toJSON = J.toJSON . jsonCIQDirection
+  toEncoding = J.toEncoding . jsonCIQDirection
+
+jsonCIQDirection :: CIQDirection c -> Maybe JSONCIDirection
+jsonCIQDirection = \case
+  CIQDirectSnd -> Just JCIDirectSnd
+  CIQDirectRcv -> Just JCIDirectRcv
+  CIQGroupSnd -> Just JCIGroupSnd
+  CIQGroupRcv (Just m) -> Just $ JCIGroupRcv m
+  CIQGroupRcv Nothing -> Nothing
+
+quoteMsgDirection :: CIQDirection c -> MsgDirection
+quoteMsgDirection = \case
+  CIQDirectSnd -> MDSnd
+  CIQDirectRcv -> MDRcv
+  CIQGroupSnd -> MDSnd
+  CIQGroupRcv _ -> MDRcv
 
 data CIStatus (d :: MsgDirection) where
   CISSndNew :: CIStatus 'MDSnd
@@ -241,6 +289,8 @@ instance MsgDirectionI d => ToField (CIStatus d) where toField = toField . decod
 instance FromField ACIStatus where fromField = fromTextField_ $ eitherToMaybe . strDecode . encodeUtf8
 
 data ACIStatus = forall d. MsgDirectionI d => ACIStatus (SMsgDirection d) (CIStatus d)
+
+deriving instance Show ACIStatus
 
 instance MsgDirectionI d => StrEncoding (CIStatus d) where
   strEncode = \case
@@ -288,17 +338,34 @@ jsonCIStatus = \case
 
 type ChatItemId = Int64
 
+type ChatItemTs = UTCTime
+
 data ChatPagination
   = CPLast Int
   | CPAfter ChatItemId Int
   | CPBefore ChatItemId Int
   deriving (Show)
 
-type ChatItemTs = UTCTime
+data CIDeleteMode = CIDMBroadcast | CIDMInternal
+  deriving (Show, Generic)
+
+instance ToJSON CIDeleteMode where
+  toJSON = J.genericToJSON . enumJSON $ dropPrefix "CIDM"
+  toEncoding = J.genericToEncoding . enumJSON $ dropPrefix "CIDM"
+
+instance FromJSON CIDeleteMode where
+  parseJSON = J.genericParseJSON . enumJSON $ dropPrefix "CIDM"
+
+ciDeleteModeToText :: CIDeleteMode -> Text
+ciDeleteModeToText = \case
+  CIDMBroadcast -> "this item is deleted (broadcast)"
+  CIDMInternal -> "this item is deleted (internal)"
 
 data CIContent (d :: MsgDirection) where
   CISndMsgContent :: MsgContent -> CIContent 'MDSnd
   CIRcvMsgContent :: MsgContent -> CIContent 'MDRcv
+  CISndDeleted :: CIDeleteMode -> CIContent 'MDSnd
+  CIRcvDeleted :: CIDeleteMode -> CIContent 'MDRcv
   CISndFileInvitation :: FileTransferId -> FilePath -> CIContent 'MDSnd
   CIRcvFileInvitation :: RcvFileTransfer -> CIContent 'MDRcv
 
@@ -308,8 +375,15 @@ ciContentToText :: CIContent d -> Text
 ciContentToText = \case
   CISndMsgContent mc -> msgContentText mc
   CIRcvMsgContent mc -> msgContentText mc
+  CISndDeleted cidm -> ciDeleteModeToText cidm
+  CIRcvDeleted cidm -> ciDeleteModeToText cidm
   CISndFileInvitation fId fPath -> "you sent file #" <> T.pack (show fId) <> ": " <> T.pack fPath
   CIRcvFileInvitation RcvFileTransfer {fileInvitation = FileInvitation {fileName}} -> "file " <> T.pack fileName
+
+msgDirToDeletedContent_ :: SMsgDirection d -> CIDeleteMode -> CIContent d
+msgDirToDeletedContent_ msgDir mode = case msgDir of
+  SMDRcv -> CIRcvDeleted mode
+  SMDSnd -> CISndDeleted mode
 
 -- platform independent
 instance ToField (CIContent d) where
@@ -322,6 +396,8 @@ instance ToJSON (CIContent d) where
 
 data ACIContent = forall d. ACIContent (SMsgDirection d) (CIContent d)
 
+deriving instance Show ACIContent
+
 -- platform specific
 instance FromJSON ACIContent where
   parseJSON = fmap aciContentJSON . J.parseJSON
@@ -333,6 +409,8 @@ instance FromField ACIContent where fromField = fromTextField_ $ fmap aciContent
 data JSONCIContent
   = JCISndMsgContent {msgContent :: MsgContent}
   | JCIRcvMsgContent {msgContent :: MsgContent}
+  | JCISndDeleted {deleteMode :: CIDeleteMode}
+  | JCIRcvDeleted {deleteMode :: CIDeleteMode}
   | JCISndFileInvitation {fileId :: FileTransferId, filePath :: FilePath}
   | JCIRcvFileInvitation {rcvFileTransfer :: RcvFileTransfer}
   deriving (Generic)
@@ -348,6 +426,8 @@ jsonCIContent :: CIContent d -> JSONCIContent
 jsonCIContent = \case
   CISndMsgContent mc -> JCISndMsgContent mc
   CIRcvMsgContent mc -> JCIRcvMsgContent mc
+  CISndDeleted cidm -> JCISndDeleted cidm
+  CIRcvDeleted cidm -> JCIRcvDeleted cidm
   CISndFileInvitation fId fPath -> JCISndFileInvitation fId fPath
   CIRcvFileInvitation ft -> JCIRcvFileInvitation ft
 
@@ -355,6 +435,8 @@ aciContentJSON :: JSONCIContent -> ACIContent
 aciContentJSON = \case
   JCISndMsgContent mc -> ACIContent SMDSnd $ CISndMsgContent mc
   JCIRcvMsgContent mc -> ACIContent SMDRcv $ CIRcvMsgContent mc
+  JCISndDeleted cidm -> ACIContent SMDSnd $ CISndDeleted cidm
+  JCIRcvDeleted cidm -> ACIContent SMDRcv $ CIRcvDeleted cidm
   JCISndFileInvitation fId fPath -> ACIContent SMDSnd $ CISndFileInvitation fId fPath
   JCIRcvFileInvitation ft -> ACIContent SMDRcv $ CIRcvFileInvitation ft
 
@@ -362,6 +444,8 @@ aciContentJSON = \case
 data DBJSONCIContent
   = DBJCISndMsgContent {msgContent :: MsgContent}
   | DBJCIRcvMsgContent {msgContent :: MsgContent}
+  | DBJCISndDeleted {deleteMode :: CIDeleteMode}
+  | DBJCIRcvDeleted {deleteMode :: CIDeleteMode}
   | DBJCISndFileInvitation {fileId :: FileTransferId, filePath :: FilePath}
   | DBJCIRcvFileInvitation {rcvFileTransfer :: RcvFileTransfer}
   deriving (Generic)
@@ -377,6 +461,8 @@ dbJsonCIContent :: CIContent d -> DBJSONCIContent
 dbJsonCIContent = \case
   CISndMsgContent mc -> DBJCISndMsgContent mc
   CIRcvMsgContent mc -> DBJCIRcvMsgContent mc
+  CISndDeleted cidm -> DBJCISndDeleted cidm
+  CIRcvDeleted cidm -> DBJCIRcvDeleted cidm
   CISndFileInvitation fId fPath -> DBJCISndFileInvitation fId fPath
   CIRcvFileInvitation ft -> DBJCIRcvFileInvitation ft
 
@@ -384,6 +470,8 @@ aciContentDBJSON :: DBJSONCIContent -> ACIContent
 aciContentDBJSON = \case
   DBJCISndMsgContent mc -> ACIContent SMDSnd $ CISndMsgContent mc
   DBJCIRcvMsgContent mc -> ACIContent SMDRcv $ CIRcvMsgContent mc
+  DBJCISndDeleted cidm -> ACIContent SMDSnd $ CISndDeleted cidm
+  DBJCIRcvDeleted cidm -> ACIContent SMDRcv $ CIRcvDeleted cidm
   DBJCISndFileInvitation fId fPath -> ACIContent SMDSnd $ CISndFileInvitation fId fPath
   DBJCIRcvFileInvitation ft -> ACIContent SMDRcv $ CIRcvFileInvitation ft
 
@@ -407,11 +495,23 @@ instance ChatTypeI 'CTDirect where chatType = SCTDirect
 instance ChatTypeI 'CTGroup where chatType = SCTGroup
 
 data NewMessage = NewMessage
-  { direction :: MsgDirection,
-    cmEventTag :: CMEventTag,
+  { chatMsgEvent :: ChatMsgEvent,
     msgBody :: MsgBody
   }
   deriving (Show)
+
+data SndMessage = SndMessage
+  { msgId :: MessageId,
+    sharedMsgId :: SharedMsgId,
+    msgBody :: MsgBody
+  }
+
+data RcvMessage = RcvMessage
+  { msgId :: MessageId,
+    chatMsgEvent :: ChatMsgEvent,
+    sharedMsgId_ :: Maybe SharedMsgId,
+    msgBody :: MsgBody
+  }
 
 data PendingGroupMessage = PendingGroupMessage
   { msgId :: MessageId,
@@ -425,7 +525,7 @@ type MessageId = Int64
 data ConnOrGroupId = ConnectionId Int64 | GroupId Int64
 
 data MsgDirection = MDRcv | MDSnd
-  deriving (Show, Generic)
+  deriving (Eq, Show, Generic)
 
 instance FromJSON MsgDirection where
   parseJSON = J.genericParseJSON . enumJSON $ dropPrefix "MD"
@@ -449,10 +549,19 @@ instance TestEquality SMsgDirection where
 
 instance ToField (SMsgDirection d) where toField = toField . msgDirectionInt . toMsgDirection
 
+data AMsgDirection = forall d. MsgDirectionI d => AMsgDirection (SMsgDirection d)
+
+deriving instance Show AMsgDirection
+
 toMsgDirection :: SMsgDirection d -> MsgDirection
 toMsgDirection = \case
   SMDRcv -> MDRcv
   SMDSnd -> MDSnd
+
+fromMsgDirection :: MsgDirection -> AMsgDirection
+fromMsgDirection = \case
+  MDRcv -> AMsgDirection SMDRcv
+  MDSnd -> AMsgDirection SMDSnd
 
 class MsgDirectionI (d :: MsgDirection) where
   msgDirection :: SMsgDirection d
