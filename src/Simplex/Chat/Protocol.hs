@@ -9,6 +9,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE StandaloneDeriving #-}
 
 module Simplex.Chat.Protocol where
 
@@ -33,6 +34,7 @@ import Simplex.Chat.Types
 import Simplex.Chat.Util (eitherToMaybe, safeDecodeUtf8)
 import Simplex.Messaging.Agent.Store.SQLite (fromTextField_)
 import Simplex.Messaging.Encoding.String
+import Simplex.Messaging.Parsers (dropPrefix, taggedObjectJSON)
 import Simplex.Messaging.Util ((<$?>))
 
 data ConnectionEntity
@@ -112,6 +114,7 @@ data ChatMsgEvent
   | XMsgUpdate SharedMsgId MsgContent
   | XMsgDel SharedMsgId
   | XMsgDeleted
+  | XMsgAtch SharedMsgId MCAttachment
   | XFile FileInvitation
   | XFileAcpt String
   | XInfo Profile
@@ -147,14 +150,16 @@ cmToQuotedMsg = \case
   XMsgNew (MCQuote quotedMsg _) -> Just quotedMsg
   _ -> Nothing
 
-data MsgContentTag = MCText_ | MCUnknown_ Text
+data MsgContentTag = MCText_ | MCImage_ | MCUnknown_ Text
 
 instance StrEncoding MsgContentTag where
   strEncode = \case
     MCText_ -> "text"
+    MCImage_ -> "image"
     MCUnknown_ t -> encodeUtf8 t
   strDecode = \case
     "text" -> Right MCText_
+    "image" -> Right MCImage_
     t -> Right . MCUnknown_ $ safeDecodeUtf8 t
   strP = strDecode <$?> A.takeTill (== ' ')
 
@@ -177,19 +182,40 @@ mcContent = \case
   MCQuote _ c -> c
   MCForward c -> c
 
+newtype BinaryData = BinaryData ByteString
+  deriving (Eq, Show)
+
+instance Semigroup BinaryData where
+  BinaryData d1 <> BinaryData d2 = BinaryData $ d1 <> d2
+
+instance StrEncoding BinaryData where
+  strEncode (BinaryData m) = strEncode m
+  strDecode s = BinaryData <$> strDecode s
+  strP = BinaryData <$> strP
+
+instance FromJSON BinaryData where
+  parseJSON = strParseJSON "BinaryData"
+
+instance ToJSON BinaryData where
+  toJSON = strToJSON
+  toEncoding = strToJEncoding
+
 data MsgContent
   = MCText Text
+  | MCImage {image :: BinaryData, text :: Text}
   | MCUnknown {tag :: Text, text :: Text, json :: J.Object}
   deriving (Eq, Show)
 
 msgContentText :: MsgContent -> Text
 msgContentText = \case
   MCText t -> t
+  MCImage _ t -> t
   MCUnknown {text} -> text
 
 msgContentTag :: MsgContent -> MsgContentTag
 msgContentTag = \case
   MCText _ -> MCText_
+  MCImage {} -> MCImage_
   MCUnknown {tag} -> MCUnknown_ tag
 
 parseMsgContainer :: J.Object -> JT.Parser MsgContainer
@@ -200,10 +226,29 @@ parseMsgContainer v =
   where
     mc = v .: "content"
 
+data MCAttachment = MCAText {textPart :: Text} | MCAImage {imagePart :: BinaryData}
+  deriving (Eq, Show, Generic)
+
+instance ToJSON MCAttachment where
+  toJSON = J.genericToJSON . taggedObjectJSON $ dropPrefix "MCA"
+  toEncoding = J.genericToEncoding . taggedObjectJSON $ dropPrefix "MCA"
+
+instance FromJSON MCAttachment where
+  parseJSON = J.genericParseJSON . taggedObjectJSON $ dropPrefix "MCA"
+
+attachContent :: MsgContent -> MCAttachment -> Maybe MsgContent
+attachContent MCImage {image = i, text} (MCAImage i') = Just MCImage {image = i <> i', text}
+attachContent (MCText t) (MCAText t') = Just (MCText $ t <> t')
+attachContent _ _ = Nothing
+
 instance FromJSON MsgContent where
   parseJSON (J.Object v) =
     v .: "type" >>= \case
       MCText_ -> MCText <$> v .: "text"
+      MCImage_ -> do
+        image <- v .: "image"
+        text <- v .: "text"
+        pure MCImage {image, text}
       MCUnknown_ tag -> do
         text <- fromMaybe unknownMsgType <$> v .:? "text"
         pure MCUnknown {tag, text, json = v}
@@ -223,9 +268,11 @@ instance ToJSON MsgContent where
   toJSON = \case
     MCUnknown {json} -> J.Object json
     MCText t -> J.object ["type" .= MCText_, "text" .= t]
+    MCImage {image, text} -> J.object ["type" .= MCImage_, "image" .= image, "text" .= text]
   toEncoding = \case
     MCUnknown {json} -> JE.value $ J.Object json
     MCText t -> J.pairs $ "type" .= MCText_ <> "text" .= t
+    MCImage {image, text} -> J.pairs $ "type" .= MCImage_ <> "image" .= image <> "text" .= text
 
 instance ToField MsgContent where
   toField = toField . safeDecodeUtf8 . LB.toStrict . J.encode
@@ -238,6 +285,7 @@ data CMEventTag
   | XMsgUpdate_
   | XMsgDel_
   | XMsgDeleted_
+  | XMsgAtch_
   | XFile_
   | XFileAcpt_
   | XInfo_
@@ -267,6 +315,7 @@ instance StrEncoding CMEventTag where
     XMsgUpdate_ -> "x.msg.update"
     XMsgDel_ -> "x.msg.del"
     XMsgDeleted_ -> "x.msg.deleted"
+    XMsgAtch_ -> "x.msg.atch"
     XFile_ -> "x.file"
     XFileAcpt_ -> "x.file.acpt"
     XInfo_ -> "x.info"
@@ -293,6 +342,7 @@ instance StrEncoding CMEventTag where
     "x.msg.update" -> Right XMsgUpdate_
     "x.msg.del" -> Right XMsgDel_
     "x.msg.deleted" -> Right XMsgDeleted_
+    "x.msg.atch" -> Right XMsgAtch_
     "x.file" -> Right XFile_
     "x.file.acpt" -> Right XFileAcpt_
     "x.info" -> Right XInfo_
@@ -322,6 +372,7 @@ toCMEventTag = \case
   XMsgUpdate _ _ -> XMsgUpdate_
   XMsgDel _ -> XMsgDel_
   XMsgDeleted -> XMsgDeleted_
+  XMsgAtch _ _ -> XMsgAtch_
   XFile _ -> XFile_
   XFileAcpt _ -> XFileAcpt_
   XInfo _ -> XInfo_
@@ -369,6 +420,7 @@ appToChatMessage AppMessage {msgId, event, params} = do
       XMsgUpdate_ -> XMsgUpdate <$> p "msgId" <*> p "content"
       XMsgDel_ -> XMsgDel <$> p "msgId"
       XMsgDeleted_ -> pure XMsgDeleted
+      XMsgAtch_ -> XMsgAtch <$> p "msgId" <*> p "attachment"
       XFile_ -> XFile <$> p "file"
       XFileAcpt_ -> XFileAcpt <$> p "fileName"
       XInfo_ -> XInfo <$> p "profile"
@@ -403,6 +455,7 @@ chatToAppMessage ChatMessage {msgId, chatMsgEvent} = AppMessage {msgId, event, p
       XMsgUpdate msgId' content -> o ["msgId" .= msgId', "content" .= content]
       XMsgDel msgId' -> o ["msgId" .= msgId']
       XMsgDeleted -> JM.empty
+      XMsgAtch msgId' atch -> o ["msgId" .= msgId', "attachment" .= atch]
       XFile fileInv -> o ["file" .= fileInv]
       XFileAcpt fileName -> o ["fileName" .= fileName]
       XInfo profile -> o ["profile" .= profile]
