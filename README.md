@@ -22,7 +22,7 @@
 - 🔐 Double ratchet encryption.
 - 📱 Mobile apps for Android ([Google Play](https://play.google.com/store/apps/details?id=chat.simplex.app), [APK](https://github.com/simplex-chat/website/raw/master/simplex.apk)) and [iOS](https://apps.apple.com/us/app/simplex-chat/id1605771084). [See the announcement here](https://github.com/simplex-chat/simplex-chat/blob/master/blog/20220308-simplex-chat-mobile-apps.md).
 - 🚀 [TestFlight preview for iOS](https://testflight.apple.com/join/DWuT2LQu) with the new features 1-2 weeks earlier - **limited to 10,000 users**!
-- 🖥 Available as a [terminal (console) app / CLI](https://github.com/simplex-chat/simplex-chat) on Linux, MacOS, Windows.
+- 🖥 Available as a [terminal (console) app / CLI](#zap-quick-installation-of-a-terminal-app) on Linux, MacOS, Windows.
 
 See [SimpleX overview](https://github.com/simplex-chat/simplexmq/blob/master/protocol/overview-tjr.md) for more information on platform objectives and technical design.
 
