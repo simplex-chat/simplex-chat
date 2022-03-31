@@ -61,7 +61,7 @@ fun SMPServersView(chatModel: ChatModel) {
             if (userSMPServers.isNotEmpty()) {
               AlertManager.shared.showAlertMsg(
                 title = "Use SimpleX Chat servers?",
-                text = "Saved SMP servers will be removed",
+                text = "Saved SMP servers will be removed.",
                 confirmText = "Confirm",
                 onConfirm = {
                   saveSMPServers(listOf())

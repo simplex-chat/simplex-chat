@@ -12,6 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -61,7 +62,7 @@ fun ChatInfoLayout(chat: Chat, close: () -> Unit, deleteContact: () -> Unit) {
     ChatInfoImage(chat, size = 192.dp)
     val cInfo = chat.chatInfo
     Text(
-      cInfo.displayName, style = MaterialTheme.typography.h1,
+      cInfo.displayName, style = MaterialTheme.typography.h1.copy(fontWeight = FontWeight.Normal),
       color = MaterialTheme.colors.onBackground,
       modifier = Modifier.padding(top = 32.dp).padding(bottom = 8.dp)
     )
