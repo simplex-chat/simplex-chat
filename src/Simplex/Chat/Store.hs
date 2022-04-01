@@ -87,8 +87,13 @@ module Simplex.Chat.Store
     matchReceivedProbeHash,
     matchSentProbe,
     mergeContactRecords,
-    createSndFileTransfer,
-    createSndGroupFileTransfer,
+    createSndFileTransfer, -- old file protocol
+    createSndFileTransferV2,
+    createSndFileTransferV2Connection,
+    createSndGroupFileTransfer, -- old file protocol
+    createSndGroupFileTransferV2,
+    getSharedMsgIdByFileId,
+    getFileIdBySharedMsgId,
     updateSndFileStatus,
     createSndFileChunk,
     updateSndFileChunkMsg,
@@ -1748,6 +1753,28 @@ createSndFileTransfer st userId Contact {contactId, localDisplayName = recipient
       (fileId, fileStatus, connId, currentTs, currentTs)
     pure SndFileTransfer {fileId, fileName, filePath, fileSize, chunkSize, recipientDisplayName, connId, fileStatus, agentConnId = AgentConnId acId}
 
+createSndFileTransferV2 :: MonadUnliftIO m => SQLiteStore -> UserId -> Contact -> FilePath -> FileInvitation -> Integer -> m Int64
+createSndFileTransferV2 st userId Contact {contactId} filePath FileInvitation {fileName, fileSize} chunkSize =
+  liftIO . withTransaction st $ \db -> do
+    currentTs <- getCurrentTime
+    DB.execute
+      db
+      "INSERT INTO files (user_id, contact_id, file_name, file_path, file_size, chunk_size, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?)"
+      (userId, contactId, fileName, filePath, fileSize, chunkSize, currentTs, currentTs)
+    insertedRowId db
+
+createSndFileTransferV2Connection :: MonadUnliftIO m => SQLiteStore -> UserId -> Int64 -> ConnId -> m ()
+createSndFileTransferV2Connection st userId fileId acId =
+  liftIO . withTransaction st $ \db -> do
+    currentTs <- getCurrentTime
+    Connection {connId} <- createSndFileConnection_ db userId fileId acId
+    let fileStatus = FSNew
+    DB.execute
+      db
+      "INSERT INTO snd_files (file_id, file_status, connection_id, created_at, updated_at) VALUES (?,?,?,?,?)"
+      (fileId, fileStatus, connId, currentTs, currentTs)
+    -- pure SndFileTransfer {fileId, fileName, filePath, fileSize, chunkSize, recipientDisplayName, connId, fileStatus, agentConnId = AgentConnId acId}
+
 createSndGroupFileTransfer :: MonadUnliftIO m => SQLiteStore -> UserId -> GroupInfo -> [(GroupMember, ConnId, FileInvitation)] -> FilePath -> Integer -> Integer -> m Int64
 createSndGroupFileTransfer st userId GroupInfo {groupId} ms filePath fileSize chunkSize =
   liftIO . withTransaction st $ \db -> do
@@ -1765,6 +1792,44 @@ createSndGroupFileTransfer st userId GroupInfo {groupId} ms filePath fileSize ch
         "INSERT INTO snd_files (file_id, file_status, connection_id, group_member_id, created_at, updated_at) VALUES (?,?,?,?,?,?)"
         (fileId, FSNew, connId, groupMemberId, currentTs, currentTs)
     pure fileId
+
+createSndGroupFileTransferV2 :: MonadUnliftIO m => SQLiteStore -> UserId -> GroupInfo -> FilePath -> FileInvitation -> Integer -> m Int64
+createSndGroupFileTransferV2 st userId GroupInfo {groupId} filePath FileInvitation {fileName, fileSize} chunkSize =
+  liftIO . withTransaction st $ \db -> do
+    currentTs <- getCurrentTime
+    DB.execute
+      db
+      "INSERT INTO files (user_id, group_id, file_name, file_path, file_size, chunk_size, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?)"
+      (userId, groupId, fileName, filePath, fileSize, chunkSize, currentTs, currentTs)
+    insertedRowId db
+
+getSharedMsgIdByFileId :: StoreMonad m => SQLiteStore -> UserId -> Int64 -> m SharedMsgId
+getSharedMsgIdByFileId st userId fileId =
+  liftIOEither . withTransaction st $ \db ->
+    firstRow fromOnly (SESharedMsgIdNotFoundByFileId fileId) $
+      DB.query
+        db
+        [sql|
+          SELECT i.shared_msg_id
+          FROM chat_items i
+          JOIN files f ON f.chat_item_id = i.chat_item_id
+          WHERE f.user_id = ? AND f.file_id = ?
+        |]
+        (userId, fileId)
+
+getFileIdBySharedMsgId :: StoreMonad m => SQLiteStore -> UserId -> SharedMsgId -> m Int64
+getFileIdBySharedMsgId st userId sharedMsgId =
+  liftIOEither . withTransaction st $ \db ->
+    firstRow fromOnly (SEFileIdNotFoundBySharedMsgId sharedMsgId) $
+      DB.query
+        db
+        [sql|
+          SELECT f.file_id
+          FROM files f
+          JOIN chat_items i ON i.chat_item_id = f.chat_item_id
+          WHERE i.user_id = ? AND i.shared_msg_id = ?
+        |]
+        (userId, sharedMsgId)
 
 createSndFileConnection_ :: DB.Connection -> UserId -> Int64 -> ConnId -> IO Connection
 createSndFileConnection_ db userId fileId agentConnId = do
@@ -3380,6 +3445,8 @@ data StoreError
   | SERcvFileNotFound {fileId :: FileTransferId}
   | SEFileNotFound {fileId :: FileTransferId}
   | SERcvFileInvalid {fileId :: FileTransferId}
+  | SESharedMsgIdNotFoundByFileId {fileId :: FileTransferId}
+  | SEFileIdNotFoundBySharedMsgId {sharedMsgId :: SharedMsgId}
   | SEConnectionNotFound {agentConnId :: AgentConnId}
   | SEIntroNotFound
   | SEUniqueID

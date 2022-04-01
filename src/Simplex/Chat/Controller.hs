@@ -136,7 +136,9 @@ data ChatCommand
   | DeleteGroupMessage GroupName ByteString
   | EditGroupMessage {groupName :: ContactName, editedMsg :: ByteString, message :: ByteString}
   | SendFile ContactName FilePath
+  | SendFileInv ContactName FilePath
   | SendGroupFile GroupName FilePath
+  | SendGroupFileInv GroupName FilePath
   | ReceiveFile FileTransferId (Maybe FilePath)
   | CancelFile FileTransferId
   | FileStatus FileTransferId
@@ -192,7 +194,8 @@ data ChatResponse
   | CRContactRequestAlreadyAccepted {contact :: Contact}
   | CRLeftMemberUser {groupInfo :: GroupInfo}
   | CRGroupDeletedUser {groupInfo :: GroupInfo}
-  | CRRcvFileAccepted {fileTransfer :: RcvFileTransfer, filePath :: FilePath}
+  | CRFileInvAccepted {sndFileTransfer :: SndFileTransfer, filePath :: FilePath} -- new file protocol
+  | CRRcvFileAccepted {fileTransfer :: RcvFileTransfer, filePath :: FilePath} -- old file protocol
   | CRRcvFileAcceptedSndCancelled {rcvFileTransfer :: RcvFileTransfer}
   | CRRcvFileStart {rcvFileTransfer :: RcvFileTransfer}
   | CRRcvFileComplete {rcvFileTransfer :: RcvFileTransfer}

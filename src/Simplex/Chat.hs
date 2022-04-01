@@ -462,6 +462,7 @@ processChatCommand = \case
     editedItemId <- withStore $ \st -> getGroupChatItemIdByText st user groupId (Just localDisplayName) (safeDecodeUtf8 editedMsg)
     let mc = MCText $ safeDecodeUtf8 msg
     processChatCommand $ APIUpdateChatItem CTGroup groupId editedItemId mc
+  -- old file protocol
   SendFile cName f -> withUser $ \user@User {userId} -> withChatLock $ do
     (fileSize, chSize) <- checkSndFile f
     contact <- withStore $ \st -> getContactByName st userId cName
@@ -473,6 +474,18 @@ processChatCommand = \case
     withStore $ \st -> updateFileTransferChatItemId st fileId $ chatItemId' ci
     setActive $ ActiveC cName
     pure . CRNewChatItem $ AChatItem SCTDirect SMDSnd (DirectChat contact) ci
+  -- new file protocol
+  SendFileInv cName f -> withUser $ \user@User {userId} -> withChatLock $ do
+    (fileSize, chSize) <- checkSndFile f
+    contact <- withStore $ \st -> getContactByName st userId cName
+    let fileInv = FileInvitation {fileName = takeFileName f, fileSize, fileConnReq = Nothing}
+    fileId <- withStore $ \st -> createSndFileTransferV2 st userId contact f fileInv chSize
+    -- TODO on acceptance: createSndFileConnection_
+    ci <- sendDirectChatItem user contact (XFile fileInv) (CISndFileInvitation fileId f) Nothing
+    withStore $ \st -> updateFileTransferChatItemId st fileId $ chatItemId' ci
+    setActive $ ActiveC cName
+    pure . CRNewChatItem $ AChatItem SCTDirect SMDSnd (DirectChat contact) ci
+  -- old file protocol
   SendGroupFile gName f -> withUser $ \user@User {userId} -> withChatLock $ do
     (fileSize, chSize) <- checkSndFile f
     Group gInfo@GroupInfo {groupId, membership} members <- withStore $ \st -> getGroupByName st user gName
@@ -492,12 +505,24 @@ processChatCommand = \case
     cItem@ChatItem {meta = CIMeta {itemId}} <- saveSndChatItem user (CDGroupSnd gInfo) msg ciContent Nothing
     withStore $ \st -> updateFileTransferChatItemId st fileId itemId
     pure . CRNewChatItem $ AChatItem SCTGroup SMDSnd (GroupChat gInfo) cItem
+  -- new file protocol
+  SendGroupFileInv gName f -> withUser $ \user@User {userId} -> withChatLock $ do
+    (fileSize, chSize) <- checkSndFile f
+    g@(Group gInfo@GroupInfo {membership} _) <- withStore $ \st -> getGroupByName st user gName
+    unless (memberActive membership) $ throwChatError CEGroupMemberUserRemoved
+    let fileInv = FileInvitation {fileName = takeFileName f, fileSize, fileConnReq = Nothing}
+    fileId <- withStore $ \st -> createSndGroupFileTransferV2 st userId gInfo f fileInv chSize
+    ci <- sendGroupChatItem user g (XFile fileInv) (CISndFileInvitation fileId f) Nothing
+    withStore $ \st -> updateFileTransferChatItemId st fileId $ chatItemId' ci
+    setActive $ ActiveG gName
+    pure . CRNewChatItem $ AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci
   ReceiveFile fileId filePath_ -> withUser $ \User {userId} -> do
-    ft@RcvFileTransfer {fileInvitation = FileInvitation {fileName, fileConnReq}, fileStatus} <- withStore $ \st -> getRcvFileTransfer st userId fileId
+    ft@RcvFileTransfer {fileInvitation = FileInvitation {fileName, fileConnReq}, fileStatus, senderDisplayName} <- withStore $ \st -> getRcvFileTransfer st userId fileId
+    unless (fileStatus == RFSNew) . throwChatError $ CEFileAlreadyReceiving fileName
     case fileConnReq of
-      Just connReq -> do
-        unless (fileStatus == RFSNew) . throwChatError $ CEFileAlreadyReceiving fileName
-        withChatLock . procCmd $ do
+      -- old file protocol
+      Just connReq ->
+        withChatLock . procCmd $
           tryError (withAgent $ \a -> joinConnection a connReq . directMessage $ XFileAcpt fileName) >>= \case
             Right agentConnId -> do
               filePath <- getRcvFilePath fileId filePath_ fileName
@@ -506,7 +531,16 @@ processChatCommand = \case
             Left (ChatErrorAgent (SMP SMP.AUTH)) -> pure $ CRRcvFileAcceptedSndCancelled ft
             Left (ChatErrorAgent (CONN DUPLICATE)) -> pure $ CRRcvFileAcceptedSndCancelled ft
             Left e -> throwError e
-      Nothing -> throwChatError $ CECommandError "unsupported"
+      -- new file protocol
+      Nothing ->
+        withChatLock . procCmd $ do
+          ct <- withStore $ \st -> getContactByName st userId senderDisplayName
+          sharedMsgId <- withStore $ \st -> getSharedMsgIdByFileId st userId fileId
+          (agentConnId, fileInvConnReq) <- withAgent (`createConnection` SCMInvitation)
+          filePath <- getRcvFilePath fileId filePath_ fileName
+          withStore $ \st -> acceptRcvFileTransfer st userId fileId agentConnId filePath
+          void $ sendDirectContactMessage ct $ XFileAcptInv sharedMsgId fileInvConnReq fileName
+          pure $ CRRcvFileAccepted ft filePath
   CancelFile fileId -> withUser $ \User {userId} -> do
     ft' <- withStore (\st -> getFileTransfer st userId fileId)
     withChatLock . procCmd $ case ft' of
@@ -774,6 +808,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
               XMsgUpdate sharedMsgId mContent -> messageUpdate ct sharedMsgId mContent msg msgMeta
               XMsgDel sharedMsgId -> messageDelete ct sharedMsgId msg msgMeta
               XFile fInv -> processFileInvitation ct fInv msg msgMeta
+              XFileAcptInv sharedMsgId fileConnReq fName -> processFileInvAcceptance ct sharedMsgId fileConnReq fName msg msgMeta
               XInfo p -> xInfo ct p
               XGrpInv gInv -> processGroupInvitation ct gInv
               XInfoProbe probe -> xInfoProbe ct probe
@@ -944,7 +979,8 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
                 withStore $ \st -> updateSndFileStatus st ft FSAccepted
                 allowAgentConnection conn confId XOk
               | otherwise -> messageError "x.file.acpt: fileName is different from expected"
-            _ -> messageError "CONF from file connection must have x.file.acpt"
+            -- _ -> messageError "CONF from file connection must have x.file.acpt"
+            _ -> pure ()
         CON -> do
           withStore $ \st -> updateSndFileStatus st ft FSConnected
           toView $ CRSndFileStart ft
@@ -1171,6 +1207,20 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
       let g = groupName' gInfo
       showToast ("#" <> g <> " " <> c <> "> ") "wants to send a file"
       setActive $ ActiveG g
+
+    processFileInvAcceptance :: Contact -> SharedMsgId -> ConnReqInvitation -> String -> RcvMessage -> MsgMeta -> m ()
+    -- processFileInvAcceptance :: Contact -> FileInvitation -> RcvMessage -> MsgMeta -> m ()
+    processFileInvAcceptance ct@Contact {localDisplayName = c} sharedMsgId fileConnReq fName msg msgMeta = do
+      checkIntegrity msgMeta $ toView . CRMsgIntegrityError
+      tryError (withAgent $ \a -> joinConnection a fileConnReq . directMessage $ XOk) >>= \case
+        Right acId -> do
+          fileId <- withStore $ \st -> getFileIdBySharedMsgId st userId sharedMsgId
+          withStore $ \st -> createSndFileTransferV2Connection st userId fileId acId
+          -- toView $ CRFileInvAccepted SndFileTransfer
+          toView CRCmdOk
+        -- Left (ChatErrorAgent (SMP SMP.AUTH)) -> pure $ CRRcvFileAcceptedSndCancelled ft
+        -- Left (ChatErrorAgent (CONN DUPLICATE)) -> pure $ CRRcvFileAcceptedSndCancelled ft
+        Left e -> throwError e
 
     groupMsgToView :: GroupInfo -> ChatItem 'CTGroup 'MDRcv -> MsgMeta -> m ()
     groupMsgToView gInfo ci msgMeta = do
@@ -1697,7 +1747,9 @@ chatCommandP =
     <|> ("!@" <|> "! @") *> (EditMessage <$> displayName <* A.space <*> quotedMsg <*> A.takeByteString)
     <|> "/feed " *> (SendMessageBroadcast <$> A.takeByteString)
     <|> ("/file #" <|> "/f #") *> (SendGroupFile <$> displayName <* A.space <*> filePath)
+    <|> ("/file_v2 #" <|> "/f_v2 #") *> (SendGroupFileInv <$> displayName <* A.space <*> filePath)
     <|> ("/file @" <|> "/file " <|> "/f @" <|> "/f ") *> (SendFile <$> displayName <* A.space <*> filePath)
+    <|> ("/file_v2 @" <|> "/file_v2 " <|> "/f_v2 @" <|> "/f_v2 ") *> (SendFileInv <$> displayName <* A.space <*> filePath)
     <|> ("/freceive " <|> "/fr ") *> (ReceiveFile <$> A.decimal <*> optional (A.space *> filePath))
     <|> ("/fcancel " <|> "/fc ") *> (CancelFile <$> A.decimal)
     <|> ("/fstatus " <|> "/fs ") *> (FileStatus <$> A.decimal)
