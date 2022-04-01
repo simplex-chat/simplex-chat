@@ -101,7 +101,11 @@ struct UserProfile: View {
                     logger.error("UserProfile: resized image is too big \(imageStr.count)")
                 }
                if let tmpImageUrl = tmpImageUrl {
-                   try! FileManager.default.removeItem(at: tmpImageUrl)
+                   do {
+                       try FileManager.default.removeItem(at: tmpImageUrl)
+                   } catch let error as NSError {
+                       logger.error("File Deletion Error: \(error.domain)")
+                   }
                }
             } else {
                 profile.image = nil
