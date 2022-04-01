@@ -31,7 +31,7 @@ import Database.SQLite.Simple.Internal (Field (..))
 import Database.SQLite.Simple.Ok (Ok (Ok))
 import Database.SQLite.Simple.ToField (ToField (..))
 import GHC.Generics (Generic)
-import Simplex.Messaging.Agent.Protocol (AConnectionRequestUri, ConnId, ConnectionMode (..), ConnectionRequestUri, InvitationId)
+import Simplex.Messaging.Agent.Protocol (ConnId, ConnectionMode (..), ConnectionRequestUri, InvitationId)
 import Simplex.Messaging.Agent.Store.SQLite (fromTextField_)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, sumTypeJSON)
@@ -522,7 +522,7 @@ type FileTransferId = Int64
 data FileInvitation = FileInvitation
   { fileName :: String,
     fileSize :: Integer,
-    fileConnReq :: AConnectionRequestUri
+    fileConnReq :: ConnReqInvitation
   }
   deriving (Eq, Show, Generic, FromJSON)
 
