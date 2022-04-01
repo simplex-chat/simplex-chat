@@ -522,7 +522,7 @@ type FileTransferId = Int64
 data FileInvitation = FileInvitation
   { fileName :: String,
     fileSize :: Integer,
-    fileConnReq :: ConnReqInvitation
+    fileConnReq :: Maybe ConnReqInvitation
   }
   deriving (Eq, Show, Generic, FromJSON)
 

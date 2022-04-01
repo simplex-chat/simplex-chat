@@ -466,7 +466,7 @@ processChatCommand = \case
     (fileSize, chSize) <- checkSndFile f
     contact <- withStore $ \st -> getContactByName st userId cName
     (agentConnId, fileConnReq) <- withAgent (`createConnection` SCMInvitation)
-    let fileInv = FileInvitation {fileName = takeFileName f, fileSize, fileConnReq}
+    let fileInv = FileInvitation {fileName = takeFileName f, fileSize, fileConnReq = Just fileConnReq}
     SndFileTransfer {fileId} <- withStore $ \st ->
       createSndFileTransfer st userId contact f fileInv agentConnId chSize
     ci <- sendDirectChatItem user contact (XFile fileInv) (CISndFileInvitation fileId f) Nothing
@@ -480,7 +480,7 @@ processChatCommand = \case
     let fileName = takeFileName f
     ms <- forM (filter memberActive members) $ \m -> do
       (connId, fileConnReq) <- withAgent (`createConnection` SCMInvitation)
-      pure (m, connId, FileInvitation {fileName, fileSize, fileConnReq})
+      pure (m, connId, FileInvitation {fileName, fileSize, fileConnReq = Just fileConnReq})
     fileId <- withStore $ \st -> createSndGroupFileTransfer st userId gInfo ms f fileSize chSize
     -- TODO sendGroupChatItem - same file invitation to all
     forM_ ms $ \(m, _, fileInv) ->
@@ -494,16 +494,19 @@ processChatCommand = \case
     pure . CRNewChatItem $ AChatItem SCTGroup SMDSnd (GroupChat gInfo) cItem
   ReceiveFile fileId filePath_ -> withUser $ \User {userId} -> do
     ft@RcvFileTransfer {fileInvitation = FileInvitation {fileName, fileConnReq}, fileStatus} <- withStore $ \st -> getRcvFileTransfer st userId fileId
-    unless (fileStatus == RFSNew) . throwChatError $ CEFileAlreadyReceiving fileName
-    withChatLock . procCmd $ do
-      tryError (withAgent $ \a -> joinConnection a fileConnReq . directMessage $ XFileAcpt fileName) >>= \case
-        Right agentConnId -> do
-          filePath <- getRcvFilePath fileId filePath_ fileName
-          withStore $ \st -> acceptRcvFileTransfer st userId fileId agentConnId filePath
-          pure $ CRRcvFileAccepted ft filePath
-        Left (ChatErrorAgent (SMP SMP.AUTH)) -> pure $ CRRcvFileAcceptedSndCancelled ft
-        Left (ChatErrorAgent (CONN DUPLICATE)) -> pure $ CRRcvFileAcceptedSndCancelled ft
-        Left e -> throwError e
+    case fileConnReq of
+      Just connReq -> do
+        unless (fileStatus == RFSNew) . throwChatError $ CEFileAlreadyReceiving fileName
+        withChatLock . procCmd $ do
+          tryError (withAgent $ \a -> joinConnection a connReq . directMessage $ XFileAcpt fileName) >>= \case
+            Right agentConnId -> do
+              filePath <- getRcvFilePath fileId filePath_ fileName
+              withStore $ \st -> acceptRcvFileTransfer st userId fileId agentConnId filePath
+              pure $ CRRcvFileAccepted ft filePath
+            Left (ChatErrorAgent (SMP SMP.AUTH)) -> pure $ CRRcvFileAcceptedSndCancelled ft
+            Left (ChatErrorAgent (CONN DUPLICATE)) -> pure $ CRRcvFileAcceptedSndCancelled ft
+            Left e -> throwError e
+      Nothing -> throwChatError $ CECommandError "unsupported"
   CancelFile fileId -> withUser $ \User {userId} -> do
     ft' <- withStore (\st -> getFileTransfer st userId fileId)
     withChatLock . procCmd $ case ft' of
