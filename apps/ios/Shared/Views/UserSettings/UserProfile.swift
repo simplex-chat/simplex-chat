@@ -16,6 +16,7 @@ struct UserProfile: View {
     @State private var showImagePicker = false
     @State private var imageSource: UIImagePickerController.SourceType = .photoLibrary
     @State private var pickedImage: UIImage? = nil
+    @State private var tmpImageUrl: URL? = nil
 
     var body: some View {
         let user: User = chatModel.currentUser!
@@ -88,7 +89,7 @@ struct UserProfile: View {
             }
         }
         .sheet(isPresented: $showImagePicker) {
-            ImagePicker(source: imageSource, image: $pickedImage)
+            ImagePicker(source: imageSource, image: $pickedImage, imageUrl: $tmpImageUrl)
         }
         .onChange(of: pickedImage) { image in
             if let image = image,
@@ -99,6 +100,9 @@ struct UserProfile: View {
                 } else {
                     logger.error("UserProfile: resized image is too big \(imageStr.count)")
                 }
+               if let tmpImageUrl = tmpImageUrl {
+                   try! FileManager.default.removeItem(at: tmpImageUrl)
+               }
             } else {
                 profile.image = nil
             }
