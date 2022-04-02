@@ -47,7 +47,9 @@ runInputLoop ct cc = forever $ do
       Right SendMessage {} -> True
       Right SendGroupMessage {} -> True
       Right SendFile {} -> True
+      Right SendFileInv {} -> True
       Right SendGroupFile {} -> True
+      Right SendGroupFileInv {} -> True
       Right SendMessageQuote {} -> True
       Right SendGroupMessageQuote {} -> True
       Right SendMessageBroadcast {} -> True

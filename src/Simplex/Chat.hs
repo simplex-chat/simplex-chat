@@ -533,6 +533,8 @@ processChatCommand = \case
       -- new file protocol
       Nothing ->
         withChatLock . procCmd $ do
+          -- TODO ? add group member to RcvFileTransfer, if in loaded RcvFileTransfer group member is present
+          -- TODO ? send XFileAcptInv to respective group connection; on sender's side save group_member_id
           ct <- withStore $ \st -> getContactByName st userId senderDisplayName
           sharedMsgId <- withStore $ \st -> getSharedMsgIdByFileId st userId fileId
           (agentConnId, fileInvConnReq) <- withAgent (`createConnection` SCMInvitation)
@@ -1708,9 +1710,9 @@ withStore ::
   m a
 withStore action =
   asks chatStore
-    >>= runExceptT . action
+    -- >>= runExceptT . action
     -- use this line instead of above to log query errors
-    -- >>= (\st -> runExceptT $ action st `E.catch` \(e :: E.SomeException) -> liftIO (print e) >> E.throwIO e)
+    >>= (\st -> runExceptT $ action st `E.catch` \(e :: E.SomeException) -> liftIO (print e) >> E.throwIO e)
     >>= liftEither . first ChatErrorStore
 
 chatCommandP :: Parser ChatCommand

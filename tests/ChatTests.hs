@@ -58,7 +58,7 @@ chatTests = do
     it "recipient cancelled file transfer" testFileRcvCancel
     it "send and receive file to group" testGroupFileTransfer
   fdescribe "sending and receiving files v2" $ do
-    fit "send and receive file" testFileTransferV2
+    it "send and receive file" testFileTransferV2
     it "send and receive a small file" testSmallFileTransferV2
     it "sender cancelled file transfer" testFileSndCancelV2
     it "recipient cancelled file transfer" testFileRcvCancelV2
@@ -1099,7 +1099,8 @@ testSmallFileTransferV2 =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
       connectUsers alice bob
-      alice #> "/f_v2 @bob ./tests/fixtures/test.txt"
+      alice `send` "/f_v2 @bob ./tests/fixtures/test.txt"
+      alice <# "/f @bob ./tests/fixtures/test.txt"
       alice <## "use /fc 1 to cancel sending"
       bob <# "alice> sends file test.txt (11 bytes / 11 bytes)"
       bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
@@ -1165,7 +1166,8 @@ testGroupFileTransferV2 =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup3 "team" alice bob cath
-      alice #> "/f_v2 #team ./tests/fixtures/test.jpg"
+      alice `send` "/f_v2 #team ./tests/fixtures/test.jpg"
+      alice <# "/f #team ./tests/fixtures/test.jpg"
       alice <## "use /fc 1 to cancel sending"
       concurrentlyN_
         [ do
@@ -1459,7 +1461,8 @@ startFileTransfer alice bob = do
 
 startFileTransferV2 :: TestCC -> TestCC -> IO ()
 startFileTransferV2 alice bob = do
-  alice #> "/f_v2 @bob ./tests/fixtures/test.jpg"
+  alice `send` "/f_v2 @bob ./tests/fixtures/test.jpg"
+  alice <# "/f @bob ./tests/fixtures/test.jpg"
   alice <## "use /fc 1 to cancel sending"
   bob <# "alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
   bob <## "use /fr 1 [<dir>/ | <path>] to receive it"

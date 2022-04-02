@@ -1054,7 +1054,8 @@ mergeContactRecords st userId Contact {contactId = toContactId} Contact {contact
     DB.execute db "DELETE FROM display_names WHERE local_display_name = ? AND user_id = ?" (localDisplayName, userId)
 
 getConnectionEntity :: StoreMonad m => SQLiteStore -> User -> ConnId -> m ConnectionEntity
-getConnectionEntity st User {userId, userContactId} agentConnId =
+getConnectionEntity st User {userId, userContactId} agentConnId = do
+  liftIO $ print "getConnectionEntity"
   liftIOEither . withTransaction st $ \db -> runExceptT $ do
     c@Connection {connType, entityId} <- getConnection_ db
     case entityId of
@@ -2084,7 +2085,8 @@ getFileTransfer_ db userId fileId =
     fileTransfer _ = pure . Left $ SEFileNotFound fileId
 
 getSndFileTransfers_ :: DB.Connection -> UserId -> Int64 -> IO (Either StoreError [SndFileTransfer])
-getSndFileTransfers_ db userId fileId =
+getSndFileTransfers_ db userId fileId = do
+  print "getSndFileTransfers_"
   sndFileTransfers
     <$> DB.query
       db
