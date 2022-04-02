@@ -480,7 +480,6 @@ processChatCommand = \case
     contact <- withStore $ \st -> getContactByName st userId cName
     let fileInv = FileInvitation {fileName = takeFileName f, fileSize, fileConnReq = Nothing}
     fileId <- withStore $ \st -> createSndFileTransferV2 st userId contact f fileInv chSize
-    -- TODO on acceptance: createSndFileConnection_
     ci <- sendDirectChatItem user contact (XFile fileInv) (CISndFileInvitation fileId f) Nothing
     withStore $ \st -> updateFileTransferChatItemId st fileId $ chatItemId' ci
     setActive $ ActiveC cName
@@ -522,7 +521,7 @@ processChatCommand = \case
     case fileConnReq of
       -- old file protocol
       Just connReq ->
-        withChatLock . procCmd $
+        withChatLock . procCmd $ do
           tryError (withAgent $ \a -> joinConnection a connReq . directMessage $ XFileAcpt fileName) >>= \case
             Right agentConnId -> do
               filePath <- getRcvFilePath fileId filePath_ fileName
@@ -970,6 +969,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
     processSndFileConn :: ACommand 'Agent -> Connection -> SndFileTransfer -> m ()
     processSndFileConn agentMsg conn ft@SndFileTransfer {fileId, fileName, fileStatus} =
       case agentMsg of
+        -- old file protocol
         CONF confId connInfo -> do
           ChatMessage {chatMsgEvent} <- liftEither $ parseChatMessage connInfo
           case chatMsgEvent of
@@ -1001,8 +1001,24 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
         _ -> pure ()
 
     processRcvFileConn :: ACommand 'Agent -> Connection -> RcvFileTransfer -> m ()
-    processRcvFileConn agentMsg _conn ft@RcvFileTransfer {fileId, chunkSize} =
+    processRcvFileConn agentMsg conn ft@RcvFileTransfer {fileId, chunkSize} =
       case agentMsg of
+        -- new file protocol
+        CONF confId connInfo -> do
+          ChatMessage {chatMsgEvent} <- liftEither $ parseChatMessage connInfo
+          case chatMsgEvent of
+            XOk -> do
+              -- withStore $ \st -> updateSndFileStatus st ft FSAccepted
+              allowAgentConnection conn confId XOk
+            -- TODO different event?
+            -- -- TODO save XFileAcpt message
+            -- XFileAcpt name
+            --   | name == fileName -> do
+            --     withStore $ \st -> updateSndFileStatus st ft FSAccepted
+            --     allowAgentConnection conn confId XOk
+            --   | otherwise -> messageError "x.file.acpt: fileName is different from expected"
+            -- _ -> messageError "CONF from file connection must have x.file.acpt"
+            _ -> pure ()
         CON -> do
           withStore $ \st -> updateRcvFileStatus st ft FSConnected
           toView $ CRRcvFileStart ft
@@ -1217,7 +1233,6 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
           fileId <- withStore $ \st -> getFileIdBySharedMsgId st userId sharedMsgId
           withStore $ \st -> createSndFileTransferV2Connection st userId fileId acId
           -- toView $ CRFileInvAccepted SndFileTransfer
-          toView CRCmdOk
         -- Left (ChatErrorAgent (SMP SMP.AUTH)) -> pure $ CRRcvFileAcceptedSndCancelled ft
         -- Left (ChatErrorAgent (CONN DUPLICATE)) -> pure $ CRRcvFileAcceptedSndCancelled ft
         Left e -> throwError e

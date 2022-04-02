@@ -58,7 +58,7 @@ chatTests = do
     it "recipient cancelled file transfer" testFileRcvCancel
     it "send and receive file to group" testGroupFileTransfer
   fdescribe "sending and receiving files v2" $ do
-    it "send and receive file" testFileTransferV2
+    fit "send and receive file" testFileTransferV2
     it "send and receive a small file" testSmallFileTransferV2
     it "sender cancelled file transfer" testFileSndCancelV2
     it "recipient cancelled file transfer" testFileRcvCancelV2
