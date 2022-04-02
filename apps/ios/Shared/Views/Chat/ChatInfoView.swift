@@ -13,6 +13,8 @@ struct ChatInfoView: View {
     @ObservedObject var alertManager = AlertManager.shared
     @ObservedObject var chat: Chat
     @Binding var showChatInfo: Bool
+    @State var showDeleteAlert = false
+    @State var deletingContact: Contact?
 
     var body: some View {
         VStack{
@@ -40,7 +42,8 @@ struct ChatInfoView: View {
 
                     Spacer()
                     Button(role: .destructive) {
-                        alertManager.showAlert(deleteContactAlert(contact))
+                        deletingContact = contact
+                        showDeleteAlert = true
                     } label: {
                         Label("Delete contact", systemImage: "trash")
                     }
@@ -48,7 +51,7 @@ struct ChatInfoView: View {
                 }
             }
         }
-        .alert(isPresented: $alertManager.presentAlert) { alertManager.alertView! }
+        .alert(isPresented: $showDeleteAlert) { deleteContactAlert(deletingContact!) }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
 
