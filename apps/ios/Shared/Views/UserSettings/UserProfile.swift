@@ -89,7 +89,9 @@ struct UserProfile: View {
             }
         }
         .sheet(isPresented: $showImagePicker) {
-            ImagePicker(source: imageSource, image: $pickedImage, imageUrl: $tmpImageUrl)
+            ImagePicker(source: imageSource, image: $pickedImage, imageUrl: $tmpImageUrl) {
+                didSelectItem in showImagePicker = false
+            }
         }
         .onChange(of: pickedImage) { image in
             if let image = image,
