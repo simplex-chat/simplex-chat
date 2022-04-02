@@ -121,6 +121,7 @@ enum ChatResponse: Decodable, Error {
     case invitation(connReqInvitation: String)
     case sentConfirmation
     case sentInvitation
+    case contactAlreadyExists(contact: Contact)
     case contactDeleted(contact: Contact)
     case userProfileNoChange
     case userProfileUpdated(fromProfile: Profile, toProfile: Profile)
@@ -161,6 +162,7 @@ enum ChatResponse: Decodable, Error {
             case .invitation: return "invitation"
             case .sentConfirmation: return "sentConfirmation"
             case .sentInvitation: return "sentInvitation"
+            case .contactAlreadyExists: return "contactAlreadyExists"
             case .contactDeleted: return "contactDeleted"
             case .userProfileNoChange: return "userProfileNoChange"
             case .userProfileUpdated: return "userProfileUpdated"
@@ -204,6 +206,7 @@ enum ChatResponse: Decodable, Error {
             case let .invitation(connReqInvitation): return connReqInvitation
             case .sentConfirmation: return noDetails
             case .sentInvitation: return noDetails
+            case let .contactAlreadyExists(contact): return String(describing: contact)
             case let .contactDeleted(contact): return String(describing: contact)
             case .userProfileNoChange: return noDetails
             case let .userProfileUpdated(_, toProfile): return String(describing: toProfile)
@@ -435,11 +438,36 @@ func apiAddContact() throws -> String {
     throw r
 }
 
-func apiConnect(connReq: String) async throws {
+func apiConnect(connReq: String) async throws -> Bool {
     let r = await chatSendCmd(.connect(connReq: connReq))
+    let am = AlertManager.shared
     switch r {
-    case .sentConfirmation: return
-    case .sentInvitation: return
+    case .sentConfirmation: return true
+    case .sentInvitation: return true
+    case let .contactAlreadyExists(contact):
+        am.showAlertMsg(
+            title: "Contact already exists",
+            message: "You are already connected to \(contact.displayName) via this link."
+        )
+        return false
+    case .chatCmdError(.error(.invalidConnReq)):
+        am.showAlertMsg(
+            title: "Invalid connection link",
+            message: "Please check that you used the correct link or ask your contact to send you another one."
+        )
+        return false
+    case .chatCmdError(.errorAgent(.BROKER(.TIMEOUT))):
+        am.showAlertMsg(
+            title: "Connection timeout",
+            message: "Please check your network connection and try again"
+        )
+        return false
+    case .chatCmdError(.errorAgent(.BROKER(.NETWORK))):
+        am.showAlertMsg(
+            title: "Connection error",
+            message: "Please check your network connection and try again"
+        )
+        return false
     default: throw r
     }
 }
