@@ -405,11 +405,11 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
             Column {
               Text(
                 buildAnnotatedString {
-                  append("To preserve your privacy instead of push notifications the app has a ")
+                  append("To preserve your privacy, instead of push notifications the app has a ")
                   withStyle(SpanStyle(fontWeight = FontWeight.Medium)) {
                     append("SimpleX background service")
                   }
-                  append(" – it uses only a few percents of battery a day.")
+                  append(" – it uses a few percent of the battery per day.")
                 },
                 Modifier.padding(bottom = 8.dp)
               )
@@ -418,7 +418,7 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
                   withStyle(SpanStyle(fontWeight = FontWeight.Medium)) {
                     append("It can be disabled via settings")
                   }
-                  append(" – notification would still be shown while the app is running.")
+                  append(" – notifications will still be shown while the app is running.")
                 }
               )
             }
