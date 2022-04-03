@@ -7,7 +7,7 @@ module Simplex.Chat.Help
     filesHelpInfo,
     groupsHelpInfo,
     myAddressHelpInfo,
-    quotesHelpInfo,
+    messagesHelpInfo,
     markdownInfo,
   )
 where
@@ -83,7 +83,7 @@ chatHelpInfo =
       green "Create your address: " <> highlight "/address",
       "",
       green "Other commands:",
-      indent <> highlight "/help <topic>    " <> " - help on: files, groups, address, replies, smp_servers",
+      indent <> highlight "/help <topic>    " <> " - help on: messages, files, groups, address",
       indent <> highlight "/profile         " <> " - show / update user profile",
       indent <> highlight "/delete <contact>" <> " - delete contact and all messages with them",
       indent <> highlight "/contacts        " <> " - list contacts",
@@ -143,8 +143,8 @@ myAddressHelpInfo =
       "The commands may be abbreviated: " <> listHighlight ["/ad", "/da", "/sa", "/ac", "/rc"]
     ]
 
-quotesHelpInfo :: [StyledString]
-quotesHelpInfo =
+messagesHelpInfo :: [StyledString]
+messagesHelpInfo =
   map
     styleMarkdown
     [ green "Sending replies to messages",
@@ -152,7 +152,17 @@ quotesHelpInfo =
       indent <> highlight "> @alice (hi) <msg>      " <> " - to reply to alice's most recent message",
       indent <> highlight ">> @alice (hi) <msg>     " <> " - to quote user's most recent message to alice",
       indent <> highlight "> #team (hi) <msg>       " <> " - to quote most recent message in the group from any member",
-      indent <> highlight "> #team @alice (hi) <msg>" <> " - to quote alice's most recent message in the group #team"
+      indent <> highlight "> #team @alice (hi) <msg>" <> " - to quote alice's most recent message in the group #team",
+      "",
+      green "Deleting sent messages (for everyone)",
+      "To delete a message that starts with \"hi\":",
+      indent <> highlight "\\ @alice hi              " <> " - to delete your message to alice",
+      indent <> highlight "\\ #team hi               " <> " - to delete your message in the group #team",
+      "",
+      green "Editing sent messages",
+      "To edit a message that starts with \"hi\":",
+      indent <> highlight "! @alice (hi) <new msg>  " <> " - to edit your message to alice",
+      indent <> highlight "! #team (hi) <new msg>   " <> " - to edit your message in the group #team"
     ]
 
 markdownInfo :: [StyledString]
