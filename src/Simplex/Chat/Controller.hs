@@ -79,7 +79,7 @@ data ChatController = ChatController
     config :: ChatConfig
   }
 
-data HelpSection = HSMain | HSFiles | HSGroups | HSMyAddress | HSMarkdown | HSQuotes
+data HelpSection = HSMain | HSFiles | HSGroups | HSMyAddress | HSMarkdown | HSMessages
   deriving (Show, Generic)
 
 instance ToJSON HelpSection where
@@ -120,6 +120,8 @@ data ChatCommand
   | SendMessage ContactName ByteString
   | SendMessageQuote {contactName :: ContactName, msgDir :: AMsgDirection, quotedMsg :: ByteString, message :: ByteString}
   | SendMessageBroadcast ByteString
+  | DeleteMessage ContactName ByteString
+  | EditMessage {contactName :: ContactName, editedMsg :: ByteString, message :: ByteString}
   | NewGroup GroupProfile
   | AddMember GroupName ContactName GroupMemberRole
   | JoinGroup GroupName
@@ -131,6 +133,8 @@ data ChatCommand
   | ListGroups
   | SendGroupMessage GroupName ByteString
   | SendGroupMessageQuote {groupName :: GroupName, contactName_ :: Maybe ContactName, quotedMsg :: ByteString, message :: ByteString}
+  | DeleteGroupMessage GroupName ByteString
+  | EditGroupMessage {groupName :: ContactName, editedMsg :: ByteString, message :: ByteString}
   | SendFile ContactName FilePath
   | SendGroupFile GroupName FilePath
   | ReceiveFile FileTransferId (Maybe FilePath)

@@ -60,7 +60,7 @@ responseToView testView = \case
     HSFiles -> filesHelpInfo
     HSGroups -> groupsHelpInfo
     HSMyAddress -> myAddressHelpInfo
-    HSQuotes -> quotesHelpInfo
+    HSMessages -> messagesHelpInfo
     HSMarkdown -> markdownInfo
   CRWelcome user -> chatWelcome user
   CRContactsList cs -> viewContactsList cs
@@ -207,7 +207,7 @@ viewItemUpdate chat ChatItem {chatDir, meta, content, quotedItem} = case chat of
       where
         from = ttyFromContactEdited c
         quote = maybe [] (directQuote chatDir) quotedItem
-    CIDirectSnd -> ["item updated"]
+    CIDirectSnd -> ["message updated"]
   GroupChat g -> case chatDir of
     CIGroupRcv GroupMember {localDisplayName = m} -> case content of
       CIRcvMsgContent mc -> viewReceivedMessage from quote meta mc
@@ -215,7 +215,7 @@ viewItemUpdate chat ChatItem {chatDir, meta, content, quotedItem} = case chat of
       where
         from = ttyFromGroupEdited g m
         quote = maybe [] (groupQuote g) quotedItem
-    CIGroupSnd -> ["item updated"]
+    CIGroupSnd -> ["message updated"]
   _ -> []
 
 viewItemDelete :: ChatInfo c -> ChatItem c d -> ChatItem c' d' -> [StyledString]
@@ -223,14 +223,14 @@ viewItemDelete chat ChatItem {chatDir, meta, content = deletedContent} ChatItem 
   DirectChat Contact {localDisplayName = c} -> case (chatDir, deletedContent, toContent) of
     (CIDirectRcv, CIRcvMsgContent mc, CIRcvDeleted mode) -> case mode of
       CIDMBroadcast -> viewReceivedMessage (ttyFromContactDeleted c) [] meta mc
-      CIDMInternal -> ["item deleted"]
-    (CIDirectSnd, _, _) -> ["item deleted"]
+      CIDMInternal -> ["message deleted"]
+    (CIDirectSnd, _, _) -> ["message deleted"]
     _ -> []
   GroupChat g -> case (chatDir, deletedContent, toContent) of
     (CIGroupRcv GroupMember {localDisplayName = m}, CIRcvMsgContent mc, CIRcvDeleted mode) -> case mode of
       CIDMBroadcast -> viewReceivedMessage (ttyFromGroupDeleted g m) [] meta mc
-      CIDMInternal -> ["item deleted"]
-    (CIGroupSnd, _, _) -> ["item deleted"]
+      CIDMInternal -> ["message deleted"]
+    (CIGroupSnd, _, _) -> ["message deleted"]
     _ -> []
   _ -> []
 

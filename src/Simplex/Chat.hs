@@ -364,6 +364,15 @@ processChatCommand = \case
     quotedItemId <- withStore $ \st -> getDirectChatItemIdByText st userId contactId msgDir (safeDecodeUtf8 quotedMsg)
     let mc = MCText $ safeDecodeUtf8 msg
     processChatCommand $ APISendMessageQuote CTDirect contactId quotedItemId mc
+  DeleteMessage cName deletedMsg -> withUser $ \User {userId} -> do
+    contactId <- withStore $ \st -> getContactIdByName st userId cName
+    deletedItemId <- withStore $ \st -> getDirectChatItemIdByText st userId contactId SMDSnd (safeDecodeUtf8 deletedMsg)
+    processChatCommand $ APIDeleteChatItem CTDirect contactId deletedItemId CIDMBroadcast
+  EditMessage cName editedMsg msg -> withUser $ \User {userId} -> do
+    contactId <- withStore $ \st -> getContactIdByName st userId cName
+    editedItemId <- withStore $ \st -> getDirectChatItemIdByText st userId contactId SMDSnd (safeDecodeUtf8 editedMsg)
+    let mc = MCText $ safeDecodeUtf8 msg
+    processChatCommand $ APIUpdateChatItem CTDirect contactId editedItemId mc
   NewGroup gProfile -> withUser $ \user -> do
     gVar <- asks idsDrg
     CRGroupCreated <$> withStore (\st -> createNewGroup st gVar user gProfile)
@@ -444,6 +453,15 @@ processChatCommand = \case
     quotedItemId <- withStore $ \st -> getGroupChatItemIdByText st user groupId cName (safeDecodeUtf8 quotedMsg)
     let mc = MCText $ safeDecodeUtf8 msg
     processChatCommand $ APISendMessageQuote CTGroup groupId quotedItemId mc
+  DeleteGroupMessage gName deletedMsg -> withUser $ \user@User {localDisplayName} -> do
+    groupId <- withStore $ \st -> getGroupIdByName st user gName
+    deletedItemId <- withStore $ \st -> getGroupChatItemIdByText st user groupId (Just localDisplayName) (safeDecodeUtf8 deletedMsg)
+    processChatCommand $ APIDeleteChatItem CTGroup groupId deletedItemId CIDMBroadcast
+  EditGroupMessage gName editedMsg msg -> withUser $ \user@User {localDisplayName} -> do
+    groupId <- withStore $ \st -> getGroupIdByName st user gName
+    editedItemId <- withStore $ \st -> getGroupChatItemIdByText st user groupId (Just localDisplayName) (safeDecodeUtf8 editedMsg)
+    let mc = MCText $ safeDecodeUtf8 msg
+    processChatCommand $ APIUpdateChatItem CTGroup groupId editedItemId mc
   SendFile cName f -> withUser $ \user@User {userId} -> withChatLock $ do
     (fileSize, chSize) <- checkSndFile f
     contact <- withStore $ \st -> getContactByName st userId cName
@@ -1650,7 +1668,7 @@ chatCommandP =
     <|> ("/help files" <|> "/help file" <|> "/hf") $> ChatHelp HSFiles
     <|> ("/help groups" <|> "/help group" <|> "/hg") $> ChatHelp HSGroups
     <|> ("/help address" <|> "/ha") $> ChatHelp HSMyAddress
-    <|> ("/help replies" <|> "/hr") $> ChatHelp HSQuotes
+    <|> ("/help messages" <|> "/hm") $> ChatHelp HSMessages
     <|> ("/help" <|> "/h") $> ChatHelp HSMain
     <|> ("/group #" <|> "/group " <|> "/g #" <|> "/g ") *> (NewGroup <$> groupProfile)
     <|> ("/add #" <|> "/add " <|> "/a #" <|> "/a ") *> (AddMember <$> displayName <* A.space <*> displayName <*> memberRole)
@@ -1663,6 +1681,8 @@ chatCommandP =
     <|> A.char '#' *> (SendGroupMessage <$> displayName <* A.space <*> A.takeByteString)
     <|> (">#" <|> "> #") *> (SendGroupMessageQuote <$> displayName <* A.space <*> pure Nothing <*> quotedMsg <*> A.takeByteString)
     <|> (">#" <|> "> #") *> (SendGroupMessageQuote <$> displayName <* A.space <* optional (A.char '@') <*> (Just <$> displayName) <* A.space <*> quotedMsg <*> A.takeByteString)
+    <|> ("\\#" <|> "\\ #") *> (DeleteGroupMessage <$> displayName <* A.space <*> A.takeByteString)
+    <|> ("!#" <|> "! #") *> (EditGroupMessage <$> displayName <* A.space <*> quotedMsg <*> A.takeByteString)
     <|> ("/contacts" <|> "/cs") $> ListContacts
     <|> ("/connect " <|> "/c ") *> (Connect <$> ((Just <$> strP) <|> A.takeByteString $> Nothing))
     <|> ("/connect" <|> "/c") $> AddContact
@@ -1670,6 +1690,8 @@ chatCommandP =
     <|> A.char '@' *> (SendMessage <$> displayName <* A.space <*> A.takeByteString)
     <|> (">@" <|> "> @") *> sendMsgQuote (AMsgDirection SMDRcv)
     <|> (">>@" <|> ">> @") *> sendMsgQuote (AMsgDirection SMDSnd)
+    <|> ("\\@" <|> "\\ @") *> (DeleteMessage <$> displayName <* A.space <*> A.takeByteString)
+    <|> ("!@" <|> "! @") *> (EditMessage <$> displayName <* A.space <*> quotedMsg <*> A.takeByteString)
     <|> "/feed " *> (SendMessageBroadcast <$> A.takeByteString)
     <|> ("/file #" <|> "/f #") *> (SendGroupFile <$> displayName <* A.space <*> filePath)
     <|> ("/file @" <|> "/file " <|> "/f @" <|> "/f ") *> (SendFile <$> displayName <* A.space <*> filePath)
