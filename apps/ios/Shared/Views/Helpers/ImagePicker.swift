@@ -31,12 +31,13 @@ struct FromGalleryImagePicker: UIViewControllerRepresentable {
             guard !results.isEmpty else {
                 return
             }
-            // TODO dont force unwrap
-            let chosenImageProvider = results.first!.itemProvider
-            if chosenImageProvider.canLoadObject(ofClass: UIImage.self) {
-                chosenImageProvider.loadObject(ofClass: UIImage.self)  { [weak self] image, error in
-                    DispatchQueue.main.async {
-                        self?.loadImage(object: image, error: error)
+
+            if let chosenImageProvider = results.first?.itemProvider {
+                if chosenImageProvider.canLoadObject(ofClass: UIImage.self) {
+                    chosenImageProvider.loadObject(ofClass: UIImage.self)  { [weak self] image, error in
+                        DispatchQueue.main.async {
+                            self?.loadImage(object: image, error: error)
+                        }
                     }
                 }
             }
