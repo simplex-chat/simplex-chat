@@ -51,6 +51,14 @@ executables:
     ghc-options:
       - -threaded
 
+  simplex-bot:
+    source-dirs: apps/simplex-bot
+    main: Main.hs
+    dependencies:
+      - simplex-chat
+    ghc-options:
+      - -threaded
+
 tests:
   simplex-chat-test:
     source-dirs: tests
