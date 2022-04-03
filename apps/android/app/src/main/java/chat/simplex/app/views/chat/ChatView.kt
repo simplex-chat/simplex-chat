@@ -3,18 +3,19 @@ package chat.simplex.app.views.chat
 import android.content.res.Configuration
 import android.util.Log
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.ArrowBack
+import androidx.compose.material.icons.outlined.ArrowBackIos
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.mapSaver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
@@ -23,8 +24,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.TAG
 import chat.simplex.app.model.*
-import chat.simplex.app.ui.theme.SimpleXTheme
+import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.chat.item.ChatItemView
+import chat.simplex.app.views.chatlist.openChat
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.newchat.ModalManager
 import com.google.accompanist.insets.ProvideWindowInsets
@@ -62,13 +64,19 @@ fun ChatView(chatModel: ChatModel) {
     ChatLayout(user, chat, chatModel.chatItems, msg, quotedItem, editingItem,
       back = { chatModel.chatId.value = null },
       info = { ModalManager.shared.showCustomModal { close -> ChatInfoView(chatModel, close) } },
+      openDirectChat = { contactId ->
+        val c = chatModel.chats.firstOrNull {
+          it.chatInfo is ChatInfo.Direct && it.chatInfo.contact.contactId == contactId
+        }
+        if (c != null) withApi { openChat(chatModel, c.chatInfo) }
+      },
       sendMessage = { msg ->
         withApi {
           // show "in progress"
           val cInfo = chat.chatInfo
           val ei = editingItem.value
           if (ei != null) {
-            val updatedItem = chatModel.controller.apiUpdateMessage(
+            val updatedItem = chatModel.controller.apiUpdateChatItem(
               type = cInfo.chatType,
               id = cInfo.apiId,
               itemId = ei.meta.itemId,
@@ -89,7 +97,19 @@ fun ChatView(chatModel: ChatModel) {
           quotedItem.value = null
         }
       },
-      resetMessage = { msg.value = "" }
+      resetMessage = { msg.value = "" },
+      deleteMessage = { itemId, mode ->
+        withApi {
+          val cInfo = chat.chatInfo
+          val toItem = chatModel.controller.apiDeleteChatItem(
+            type = cInfo.chatType,
+            id = cInfo.apiId,
+            itemId = itemId,
+            mode = mode
+          )
+          if (toItem != null) chatModel.removeChatItem(cInfo, toItem.chatItem)
+        }
+      }
     )
   }
 }
@@ -104,8 +124,10 @@ fun ChatLayout(
   editingItem: MutableState<ChatItem?>,
   back: () -> Unit,
   info: () -> Unit,
+  openDirectChat: (Long) -> Unit,
   sendMessage: (String) -> Unit,
-  resetMessage: () -> Unit
+  resetMessage: () -> Unit,
+  deleteMessage: (Long, CIDeleteMode) -> Unit
 ) {
   Surface(
     Modifier
@@ -119,7 +141,7 @@ fun ChatLayout(
         modifier = Modifier.navigationBarsWithImePadding()
       ) { contentPadding ->
         Box(Modifier.padding(contentPadding)) {
-          ChatItemsList(user, chatItems, msg, quotedItem, editingItem)
+          ChatItemsList(user, chat, chatItems, msg, quotedItem, editingItem, openDirectChat, deleteMessage)
         }
       }
     }
@@ -128,46 +150,51 @@ fun ChatLayout(
 
 @Composable
 fun ChatInfoToolbar(chat: Chat, back: () -> Unit, info: () -> Unit) {
-  Box(
-    Modifier
-      .height(60.dp)
-      .padding(horizontal = 8.dp),
-    contentAlignment = Alignment.CenterStart
-  ) {
-    IconButton(onClick = back) {
-      Icon(
-        Icons.Outlined.ArrowBack,
-        "Back",
-        tint = MaterialTheme.colors.primary,
-        modifier = Modifier.padding(10.dp)
-      )
-    }
-    Row(
+  Column {
+    Box(
       Modifier
-        .padding(horizontal = 68.dp)
         .fillMaxWidth()
-        .clickable(onClick = info),
-      horizontalArrangement = Arrangement.Center,
-      verticalAlignment = Alignment.CenterVertically
+        .height(52.dp)
+        .background(if (isSystemInDarkTheme()) ToolbarDark else ToolbarLight)
+        .padding(horizontal = 8.dp),
+      contentAlignment = Alignment.CenterStart,
     ) {
-      val cInfo = chat.chatInfo
-      ChatInfoImage(chat, size = 40.dp)
-      Column(
-        Modifier.padding(start = 8.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-      ) {
-        Text(
-          cInfo.displayName, fontWeight = FontWeight.Bold,
-          maxLines = 1, overflow = TextOverflow.Ellipsis
+      IconButton(onClick = back) {
+        Icon(
+          Icons.Outlined.ArrowBackIos,
+          "Back",
+          tint = MaterialTheme.colors.primary,
+          modifier = Modifier.padding(10.dp)
         )
-        if (cInfo.fullName != "" && cInfo.fullName != cInfo.displayName) {
+      }
+      Row(
+        Modifier
+          .padding(horizontal = 68.dp)
+          .fillMaxWidth()
+          .clickable(onClick = info),
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically
+      ) {
+        val cInfo = chat.chatInfo
+        ChatInfoImage(chat, size = 40.dp)
+        Column(
+          Modifier.padding(start = 8.dp),
+          horizontalAlignment = Alignment.CenterHorizontally
+        ) {
           Text(
-            cInfo.fullName,
+            cInfo.displayName, fontWeight = FontWeight.SemiBold,
             maxLines = 1, overflow = TextOverflow.Ellipsis
           )
+          if (cInfo.fullName != "" && cInfo.fullName != cInfo.displayName) {
+            Text(
+              cInfo.fullName,
+              maxLines = 1, overflow = TextOverflow.Ellipsis
+            )
+          }
         }
       }
     }
+    Divider()
   }
 }
 
@@ -186,10 +213,13 @@ val CIListStateSaver = run {
 @Composable
 fun ChatItemsList(
   user: User,
+  chat: Chat,
   chatItems: List<ChatItem>,
   msg: MutableState<String>,
   quotedItem: MutableState<ChatItem?>,
-  editingItem: MutableState<ChatItem?>
+  editingItem: MutableState<ChatItem?>,
+  openDirectChat: (Long) -> Unit,
+  deleteMessage: (Long, CIDeleteMode) -> Unit
 ) {
   val listState = rememberLazyListState()
   val keyboardState by getKeyboardState()
@@ -200,8 +230,51 @@ fun ChatItemsList(
   val uriHandler = LocalUriHandler.current
   val cxt = LocalContext.current
   LazyColumn(state = listState) {
-    items(chatItems) { cItem ->
-      ChatItemView(user, cItem, msg, quotedItem, editingItem, cxt, uriHandler)
+    itemsIndexed(chatItems) { i, cItem ->
+      if (i == 0) {
+        Spacer(Modifier.size(8.dp))
+      }
+      if (chat.chatInfo is ChatInfo.Group) {
+        if (cItem.chatDir is CIDirection.GroupRcv) {
+          val prevItem = if (i > 0) chatItems[i - 1] else null
+          val member = cItem.chatDir.groupMember
+          val showMember = showMemberImage(member, prevItem)
+          Row(Modifier.padding(start = 8.dp, end = 66.dp)) {
+            if (showMember) {
+              val contactId = member.memberContactId
+              if (contactId == null) {
+                MemberImage(member)
+              } else {
+                Box(
+                  Modifier
+                    .clip(CircleShape)
+                    .clickable { openDirectChat(contactId) }
+                ) {
+                  MemberImage(member)
+                }
+              }
+              Spacer(Modifier.size(4.dp))
+            } else {
+              Spacer(Modifier.size(42.dp))
+            }
+            ChatItemView(user, cItem, msg, quotedItem, editingItem, cxt, uriHandler, showMember = showMember, deleteMessage = deleteMessage)
+          }
+        } else {
+          Box(Modifier.padding(start = 86.dp, end = 12.dp)) {
+            ChatItemView(user, cItem, msg, quotedItem, editingItem, cxt, uriHandler, deleteMessage = deleteMessage)
+          }
+        }
+      } else { // direct message
+        val sent = cItem.chatDir.sent
+        Box(
+          Modifier.padding(
+            start = if (sent) 76.dp else 12.dp,
+            end = if (sent) 12.dp else 76.dp,
+          )
+        ) {
+          ChatItemView(user, cItem, msg, quotedItem, editingItem, cxt, uriHandler, deleteMessage = deleteMessage)
+        }
+      }
     }
     val len = chatItems.count()
     if (len > 1 && (keyboardState != ciListState.value.keyboardState || !ciListState.value.scrolled || len != ciListState.value.itemCount)) {
@@ -211,6 +284,16 @@ fun ChatItemsList(
       }
     }
   }
+}
+
+fun showMemberImage(member: GroupMember, prevItem: ChatItem?): Boolean {
+  return prevItem == null || prevItem.chatDir is CIDirection.GroupSnd ||
+      (prevItem.chatDir is CIDirection.GroupRcv && prevItem.chatDir.groupMember.groupMemberId != member.groupMemberId)
+}
+
+@Composable
+fun MemberImage(member: GroupMember) {
+  ProfileImage(38.dp, member.memberProfile.image)
 }
 
 @Preview(showBackground = true)
@@ -229,14 +312,15 @@ fun PreviewChatLayout() {
       ChatItem.getSampleData(
         2, CIDirection.DirectRcv(), Clock.System.now(), "hello"
       ),
-      ChatItem.getSampleData(
-        3, CIDirection.DirectSnd(), Clock.System.now(), "hello"
-      ),
+      ChatItem.getDeletedContentSampleData(3),
       ChatItem.getSampleData(
         4, CIDirection.DirectSnd(), Clock.System.now(), "hello"
       ),
       ChatItem.getSampleData(
-        5, CIDirection.DirectRcv(), Clock.System.now(), "hello"
+        5, CIDirection.DirectSnd(), Clock.System.now(), "hello"
+      ),
+      ChatItem.getSampleData(
+        6, CIDirection.DirectRcv(), Clock.System.now(), "hello"
       )
     )
     ChatLayout(
@@ -252,8 +336,53 @@ fun PreviewChatLayout() {
       editingItem = remember { mutableStateOf(null) },
       back = {},
       info = {},
+      openDirectChat = {},
       sendMessage = {},
-      resetMessage = {}
+      resetMessage = {},
+      deleteMessage = { _, _ -> }
+    )
+  }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun PreviewGroupChatLayout() {
+  SimpleXTheme {
+    val chatItems = listOf(
+      ChatItem.getSampleData(
+        1, CIDirection.GroupSnd(), Clock.System.now(), "hello"
+      ),
+      ChatItem.getSampleData(
+        2, CIDirection.GroupRcv(GroupMember.sampleData), Clock.System.now(), "hello"
+      ),
+      ChatItem.getDeletedContentSampleData(3),
+      ChatItem.getSampleData(
+        4, CIDirection.GroupRcv(GroupMember.sampleData), Clock.System.now(), "hello"
+      ),
+      ChatItem.getSampleData(
+        5, CIDirection.GroupSnd(), Clock.System.now(), "hello"
+      ),
+      ChatItem.getSampleData(
+        6, CIDirection.GroupRcv(GroupMember.sampleData), Clock.System.now(), "hello"
+      )
+    )
+    ChatLayout(
+      user = User.sampleData,
+      chat = Chat(
+        chatInfo = ChatInfo.Group.sampleData,
+        chatItems = chatItems,
+        chatStats = Chat.ChatStats()
+      ),
+      chatItems = chatItems,
+      msg = remember { mutableStateOf("") },
+      quotedItem = remember { mutableStateOf(null) },
+      editingItem = remember { mutableStateOf(null) },
+      back = {},
+      info = {},
+      openDirectChat = {},
+      sendMessage = {},
+      resetMessage = {},
+      deleteMessage = { _, _ -> }
     )
   }
 }

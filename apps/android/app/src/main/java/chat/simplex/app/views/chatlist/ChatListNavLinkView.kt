@@ -43,7 +43,7 @@ suspend fun openChat(chatModel: ChatModel, cInfo: ChatInfo) {
 fun contactRequestAlertDialog(contactRequest: ChatInfo.ContactRequest, chatModel: ChatModel) {
   AlertManager.shared.showAlertDialog(
     title = "Accept connection request?",
-    text = "If you choose to reject sender will NOT be notified",
+    text = "If you choose to reject sender will NOT be notified.",
     confirmText = "Accept",
     onConfirm = {
       withApi {

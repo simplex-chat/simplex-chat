@@ -29,6 +29,7 @@ class ChatModel(val controller: ChatController) {
   var userSMPServers = mutableStateOf<(List<String>)?>(null)
   // set when app is opened via contact or invitation URI
   var appOpenUrl = mutableStateOf<Uri?>(null)
+  var runServiceInBackground = mutableStateOf(true)
 
   fun updateUserProfile(profile: Profile) {
     val user = currentUser.value
@@ -130,6 +131,26 @@ class ChatModel(val controller: ChatController) {
       }
     } else {
       return res
+    }
+  }
+
+  fun removeChatItem(cInfo: ChatInfo, cItem: ChatItem) {
+    // update previews
+    val i = getChatIndex(cInfo.id)
+    val chat: Chat
+    if (i >= 0) {
+      chat = chats[i]
+      val pItem = chat.chatItems.last()
+      if (pItem.id == cItem.id) {
+        chats[i] = chat.copy(chatItems = arrayListOf(cItem))
+      }
+    }
+    // remove from current chat
+    if (chatId.value == cInfo.id) {
+      val itemIndex = chatItems.indexOfFirst { it.id == cItem.id }
+      if (itemIndex >= 0) {
+        chatItems.removeAt(itemIndex)
+      }
     }
   }
 
@@ -489,6 +510,20 @@ data class ChatItem (
     if (chatDir is CIDirection.GroupRcv) chatDir.groupMember.memberProfile.displayName
     else null
 
+  val isMsgContent: Boolean get() =
+    when (content) {
+      is CIContent.SndMsgContent -> true
+      is CIContent.RcvMsgContent -> true
+      else -> false
+    }
+
+  val isDeletedContent: Boolean get() =
+    when (content) {
+      is CIContent.SndDeleted -> true
+      is CIContent.RcvDeleted -> true
+      else -> false
+    }
+
   companion object {
     fun getSampleData(
       id: Long = 1,
@@ -506,6 +541,20 @@ data class ChatItem (
         meta = CIMeta.getSample(id, ts, text, status, itemDeleted, itemEdited, editable),
         content = CIContent.SndMsgContent(msgContent = MsgContent.MCText(text)),
         quotedItem = quotedItem
+      )
+
+    fun getDeletedContentSampleData(
+      id: Long = 1,
+      dir: CIDirection = CIDirection.DirectRcv(),
+      ts: Instant = Clock.System.now(),
+      text: String = "this item is deleted",
+      status: CIStatus = CIStatus.RcvRead()
+    ) =
+      ChatItem(
+        chatDir = dir,
+        meta = CIMeta.getSample(id, ts, text, status, false, false, false),
+        content = CIContent.RcvDeleted(deleteMode = CIDeleteMode.cidmBroadcast),
+        quotedItem = null
       )
   }
 }
@@ -597,6 +646,12 @@ sealed class CIStatus {
   class RcvRead: CIStatus()
 }
 
+@Serializable
+enum class CIDeleteMode(val deleteMode: String) {
+  @SerialName("internal") cidmInternal("internal"),
+  @SerialName("broadcast") cidmBroadcast("broadcast");
+}
+
 interface ItemContent {
   val text: String
 }
@@ -613,6 +668,16 @@ sealed class CIContent: ItemContent {
   @Serializable @SerialName("rcvMsgContent")
   class RcvMsgContent(val msgContent: MsgContent): CIContent() {
     override val text get() = msgContent.text
+  }
+
+  @Serializable @SerialName("sndDeleted")
+  class SndDeleted(val deleteMode: CIDeleteMode): CIContent() {
+    override val text get() = "deleted"
+  }
+
+  @Serializable @SerialName("rcvDeleted")
+  class RcvDeleted(val deleteMode: CIDeleteMode): CIContent() {
+    override val text get() = "deleted"
   }
 
   @Serializable @SerialName("sndFileInvitation")

@@ -2,45 +2,54 @@ package chat.simplex.app.ui.theme
 
 import androidx.compose.material.Typography
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.font.*
 import androidx.compose.ui.unit.sp
+import chat.simplex.app.R
+
+// https://github.com/rsms/inter
+val Inter = FontFamily(
+  Font(R.font.inter_regular),
+  Font(R.font.inter_italic, style = FontStyle.Italic),
+  Font(R.font.inter_bold, weight = FontWeight.Bold),
+  Font(R.font.inter_semi_bold, weight = FontWeight.SemiBold),
+  Font(R.font.inter_medium, weight = FontWeight.Medium),
+)
 
 // Set of Material typography styles to start with
 val Typography = Typography(
   h1 = TextStyle(
-    fontFamily = FontFamily.Default,
-    fontWeight = FontWeight.Normal,
+    fontFamily = Inter,
+    fontWeight = FontWeight.Bold,
     fontSize = 32.sp,
   ),
   h2 = TextStyle(
-    fontFamily = FontFamily.Default,
+    fontFamily = Inter,
     fontWeight = FontWeight.Normal,
     fontSize = 24.sp
   ),
   h3 = TextStyle(
-    fontFamily = FontFamily.Default,
+    fontFamily = Inter,
     fontWeight = FontWeight.Normal,
     fontSize = 19.sp
   ),
   body1 = TextStyle(
-    fontFamily = FontFamily.Default,
-    fontWeight = FontWeight.Normal,
-    fontSize = 17.sp
-  ),
-  body2 = TextStyle(
-    fontFamily = FontFamily.Default,
+    fontFamily = Inter,
     fontWeight = FontWeight.Normal,
     fontSize = 16.sp
   ),
+  body2 = TextStyle(
+    fontFamily = Inter,
+    fontWeight = FontWeight.Normal,
+    fontSize = 14.sp
+  ),
   button = TextStyle(
-    fontFamily = FontFamily.Default,
+    fontFamily = Inter,
     fontWeight = FontWeight.Normal,
     fontSize = 16.sp,
   ),
   caption = TextStyle(
-    fontFamily = FontFamily.Default,
+    fontFamily = Inter,
     fontWeight = FontWeight.Normal,
-    fontSize = 20.sp
+    fontSize = 18.sp
   )
 )
