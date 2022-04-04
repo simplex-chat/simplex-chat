@@ -533,7 +533,7 @@ fileTransferStr :: Int64 -> String -> StyledString
 fileTransferStr fileId fileName = "file " <> sShow fileId <> " (" <> ttyFilePath fileName <> ")"
 
 viewFileTransferStatus :: (FileTransfer, [Integer]) -> [StyledString]
-viewFileTransferStatus (FTSnd [ft@SndFileTransfer {fileStatus, fileSize, chunkSize}], chunksNum) =
+viewFileTransferStatus (FTSnd _ [ft@SndFileTransfer {fileStatus, fileSize, chunkSize}], chunksNum) =
   ["sending " <> sndFile ft <> " " <> sndStatus]
   where
     sndStatus = case fileStatus of
@@ -542,8 +542,8 @@ viewFileTransferStatus (FTSnd [ft@SndFileTransfer {fileStatus, fileSize, chunkSi
       FSConnected -> "progress " <> fileProgress chunksNum chunkSize fileSize
       FSComplete -> "complete"
       FSCancelled -> "cancelled"
-viewFileTransferStatus (FTSnd [], _) = ["no file transfers (empty group)"]
-viewFileTransferStatus (FTSnd fts@(ft : _), chunksNum) =
+viewFileTransferStatus (FTSnd FileTransferMeta {fileId, fileName} [], _) = ["sending " <> fileTransferStr fileId fileName <> ": no file transfers"]
+viewFileTransferStatus (FTSnd _ fts@(ft : _), chunksNum) =
   case concatMap membersTransferStatus $ groupBy ((==) `on` fs) $ sortOn fs fts of
     [membersStatus] -> ["sending " <> sndFile ft <> " " <> membersStatus]
     membersStatuses -> ("sending " <> sndFile ft <> ": ") : map ("  " <>) membersStatuses
@@ -567,8 +567,6 @@ viewFileTransferStatus (FTRcv ft@RcvFileTransfer {fileId, fileInvitation = FileI
       RFSConnected _ -> "progress " <> fileProgress chunksNum chunkSize fileSize
       RFSComplete RcvFileInfo {filePath} -> "complete, path: " <> plain filePath
       RFSCancelled RcvFileInfo {filePath} -> "cancelled, received part path: " <> plain filePath
-viewFileTransferStatus (FTSndPending SndPendingFileTransfer {fileId, fileName}, _) =
-  ["sending " <> fileTransferStr fileId fileName <> " " <> "not accepted yet"]
 
 listMembers :: [SndFileTransfer] -> StyledString
 listMembers = mconcat . intersperse ", " . map (ttyContact . recipientDisplayName)

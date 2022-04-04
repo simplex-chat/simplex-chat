@@ -558,15 +558,15 @@ processChatCommand = \case
   CancelFile fileId -> withUser $ \User {userId} -> do
     ft' <- withStore (\st -> getFileTransfer st userId fileId)
     withChatLock . procCmd $ case ft' of
-      FTSnd fts -> do
+      FTSnd _ [] -> do
+        withStore $ \st -> deleteFileTransfer st userId fileId
+        pure $ CRSndGroupFileCancelled []
+      FTSnd _ fts -> do
         forM_ fts $ \ft -> cancelSndFileTransfer ft
         pure $ CRSndGroupFileCancelled fts
       FTRcv ft -> do
         cancelRcvFileTransfer ft
         pure $ CRRcvFileCancelled ft
-      FTSndPending _ -> do
-        withStore $ \st -> deleteFileTransfer st userId fileId
-        pure $ CRSndGroupFileCancelled []
   FileStatus fileId ->
     CRFileTransferStatus <$> withUser (\User {userId} -> withStore $ \st -> getFileTransferProgress st userId fileId)
   ShowProfile -> withUser $ \User {profile} -> pure $ CRUserProfile profile

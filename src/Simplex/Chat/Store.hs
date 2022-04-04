@@ -1155,7 +1155,7 @@ getConnectionEntity st User {userId, userContactId} agentConnId = do
     sndFileTransfer_ :: Int64 -> Int64 -> [(FileStatus, String, Integer, Integer, FilePath, Maybe ContactName, Maybe ContactName)] -> Either StoreError SndFileTransfer
     sndFileTransfer_ fileId connId [(fileStatus, fileName, fileSize, chunkSize, filePath, contactName_, memberName_)] =
       case contactName_ <|> memberName_ of
-        Just recipientDisplayName -> Right SndFileTransfer {fileId, fileStatus, fileName, fileSize, chunkSize, filePath, recipientDisplayName, connId, agentConnId = AgentConnId agentConnId}
+        Just recipientDisplayName -> Right SndFileTransfer {fileId = fileId, fileStatus, fileName, fileSize, chunkSize, filePath, recipientDisplayName, connId, agentConnId = AgentConnId agentConnId}
         Nothing -> Left $ SESndFileInvalid fileId
     sndFileTransfer_ fileId _ _ = Left $ SESndFileNotFound fileId
     getUserContact_ :: DB.Connection -> Int64 -> ExceptT StoreError IO UserContact
@@ -2137,9 +2137,9 @@ getFileTransferProgress st userId fileId =
     ft <- ExceptT $ getFileTransfer_ db userId fileId
     liftIO $
       (ft,) . map fromOnly <$> case ft of
-        FTSnd _ -> DB.query db "SELECT COUNT(*) FROM snd_file_chunks WHERE file_id = ? and chunk_sent = 1 GROUP BY connection_id" (Only fileId)
+        FTSnd _ [] -> pure [Only 0]
+        FTSnd _ _ -> DB.query db "SELECT COUNT(*) FROM snd_file_chunks WHERE file_id = ? and chunk_sent = 1 GROUP BY connection_id" (Only fileId)
         FTRcv _ -> DB.query db "SELECT COUNT(*) FROM rcv_file_chunks WHERE file_id = ? AND chunk_stored = 1" (Only fileId)
-        FTSndPending _ -> pure [Only 0]
 
 getFileTransfer_ :: DB.Connection -> UserId -> Int64 -> IO (Either StoreError FileTransfer)
 getFileTransfer_ db userId fileId =
@@ -2156,9 +2156,14 @@ getFileTransfer_ db userId fileId =
       (userId, fileId)
   where
     fileTransfer :: [(Maybe Int64, Maybe Int64)] -> IO (Either StoreError FileTransfer)
-    fileTransfer ((Just _, Nothing) : _) = FTSnd <$$> getSndFileTransfers_ db userId fileId
+    fileTransfer [(Nothing, Nothing)] = runExceptT $ do
+      fileTransferMeta <- ExceptT $ getFileTransferMeta_ db userId fileId
+      pure FTSnd {fileTransferMeta, sndFileTransfers = []}
+    fileTransfer ((Just _, Nothing) : _) = runExceptT $ do
+      fileTransferMeta <- ExceptT $ getFileTransferMeta_ db userId fileId
+      sndFileTransfers <- ExceptT $ getSndFileTransfers_ db userId fileId
+      pure FTSnd {fileTransferMeta, sndFileTransfers}
     fileTransfer [(Nothing, Just _)] = FTRcv <$$> getRcvFileTransfer_ db userId fileId
-    fileTransfer [(Nothing, Nothing)] = FTSndPending <$$> getSndPendingFileTransfer_ db userId fileId
     fileTransfer _ = pure . Left $ SEFileNotFound fileId
 
 getSndFileTransfers_ :: DB.Connection -> UserId -> Int64 -> IO (Either StoreError [SndFileTransfer])
@@ -2187,10 +2192,9 @@ getSndFileTransfers_ db userId fileId = do
         Just recipientDisplayName -> Right SndFileTransfer {fileId, fileStatus, fileName, fileSize, chunkSize, filePath, recipientDisplayName, connId, agentConnId}
         Nothing -> Left $ SESndFileInvalid fileId
 
--- new file protocol
-getSndPendingFileTransfer_ :: DB.Connection -> UserId -> Int64 -> IO (Either StoreError SndPendingFileTransfer)
-getSndPendingFileTransfer_ db userId fileId =
-  firstRow sndPendingFileTransfer (SEFileNotFound fileId) $
+getFileTransferMeta_ :: DB.Connection -> UserId -> Int64 -> IO (Either StoreError FileTransferMeta)
+getFileTransferMeta_ db userId fileId =
+  firstRow fileTransferMeta (SEFileNotFound fileId) $
     DB.query
       db
       [sql|
@@ -2200,9 +2204,9 @@ getSndPendingFileTransfer_ db userId fileId =
       |]
       (userId, fileId)
   where
-    sndPendingFileTransfer :: (String, Integer, Integer, FilePath) -> SndPendingFileTransfer
-    sndPendingFileTransfer (fileName, fileSize, chunkSize, filePath) =
-      SndPendingFileTransfer {fileId, fileName, filePath, fileSize, chunkSize}
+    fileTransferMeta :: (String, Integer, Integer, FilePath) -> FileTransferMeta
+    fileTransferMeta (fileName, fileSize, chunkSize, filePath) =
+      FileTransferMeta {fileId, fileName, filePath, fileSize, chunkSize}
 
 createNewSndMessage :: StoreMonad m => SQLiteStore -> TVar ChaChaDRG -> ConnOrGroupId -> (SharedMsgId -> NewMessage) -> m SndMessage
 createNewSndMessage st gVar connOrGroupId mkMessage =

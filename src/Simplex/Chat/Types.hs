@@ -615,14 +615,27 @@ instance FromField AgentInvId where fromField f = AgentInvId <$> fromField f
 instance ToField AgentInvId where toField (AgentInvId m) = toField m
 
 data FileTransfer
-  = FTSnd {sndFileTransfers :: [SndFileTransfer]}
+  = FTSnd
+      { fileTransferMeta :: FileTransferMeta,
+        sndFileTransfers :: [SndFileTransfer]
+      }
   | FTRcv {rcvFileTransfer :: RcvFileTransfer}
-  | FTSndPending SndPendingFileTransfer
   deriving (Show, Generic)
 
 instance ToJSON FileTransfer where
   toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "FT"
   toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "FT"
+
+data FileTransferMeta = FileTransferMeta
+  { fileId :: FileTransferId,
+    fileName :: String,
+    filePath :: String,
+    fileSize :: Integer,
+    chunkSize :: Integer
+  }
+  deriving (Eq, Show, Generic)
+
+instance ToJSON FileTransferMeta where toEncoding = J.genericToEncoding J.defaultOptions
 
 data FileStatus = FSNew | FSAccepted | FSConnected | FSComplete | FSCancelled deriving (Eq, Ord, Show)
 

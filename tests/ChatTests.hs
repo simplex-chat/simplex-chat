@@ -62,7 +62,7 @@ chatTests = do
     it "send and receive a small file" testSmallFileTransferV2
     it "sender cancelled file transfer" testFileSndCancelV2
     it "recipient cancelled file transfer" testFileRcvCancelV2
-    fit "send and receive file to group" testGroupFileTransferV2
+    it "send and receive file to group" testGroupFileTransferV2
   describe "user contact link" $ do
     it "create and connect via contact link" testUserContactLink
     it "auto accept contact requests" testUserContactLinkAutoAccept
@@ -1178,7 +1178,7 @@ testGroupFileTransferV2 =
             cath <## "use /fr 1 [<dir>/ | <path>] to receive it"
         ]
       alice ##> "/fs 1"
-      getTermLine alice >>= (`shouldStartWith` "sending file 1 (test.jpg) not accepted")
+      getTermLine alice >>= (`shouldStartWith` "sending file 1 (test.jpg): no file transfers")
       bob ##> "/fr 1 ./tests/tmp/"
       bob <## "saving file 1 from alice to ./tests/tmp/test.jpg"
       concurrentlyN_
