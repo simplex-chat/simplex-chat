@@ -567,6 +567,8 @@ viewFileTransferStatus (FTRcv ft@RcvFileTransfer {fileId, fileInvitation = FileI
       RFSConnected _ -> "progress " <> fileProgress chunksNum chunkSize fileSize
       RFSComplete RcvFileInfo {filePath} -> "complete, path: " <> plain filePath
       RFSCancelled RcvFileInfo {filePath} -> "cancelled, received part path: " <> plain filePath
+viewFileTransferStatus (FTSndPending SndPendingFileTransfer {fileId, fileName}, _) =
+  ["sending " <> fileTransferStr fileId fileName <> " " <> "not accepted yet"]
 
 listMembers :: [SndFileTransfer] -> StyledString
 listMembers = mconcat . intersperse ", " . map (ttyContact . recipientDisplayName)

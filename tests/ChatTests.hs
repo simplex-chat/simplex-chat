@@ -1186,8 +1186,7 @@ testGroupFileTransferV2 =
             alice <## "started sending file 1 (test.jpg) to bob"
             alice <## "completed sending file 1 (test.jpg) to bob"
             alice ##> "/fs 1"
-            alice <## "sending file 1 (test.jpg):"
-            alice <### ["  complete: bob", "  not accepted: cath"],
+            alice <## "sending file 1 (test.jpg) complete",
           do
             bob <## "started receiving file 1 (test.jpg) from alice"
             bob <## "completed receiving file 1 (test.jpg) from alice"

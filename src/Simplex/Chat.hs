@@ -564,6 +564,9 @@ processChatCommand = \case
       FTRcv ft -> do
         cancelRcvFileTransfer ft
         pure $ CRRcvFileCancelled ft
+      FTSndPending _ -> do
+        withStore $ \st -> deleteFileTransfer st userId fileId
+        pure $ CRSndGroupFileCancelled []
   FileStatus fileId ->
     CRFileTransferStatus <$> withUser (\User {userId} -> withStore $ \st -> getFileTransferProgress st userId fileId)
   ShowProfile -> withUser $ \User {profile} -> pure $ CRUserProfile profile

@@ -94,6 +94,7 @@ module Simplex.Chat.Store
     createSndGroupFileTransfer, -- old file protocol
     createSndGroupFileTransferV2,
     createSndGroupFileTransferV2Connection,
+    deleteFileTransfer,
     getSharedMsgIdByFileId,
     getFileIdBySharedMsgId,
     updateSndFileStatus,
@@ -1147,7 +1148,7 @@ getConnectionEntity st User {userId, userContactId} agentConnId = do
               FROM snd_files s
               JOIN files f USING (file_id)
               LEFT JOIN contacts cs USING (contact_id)
-              LEFT JOIN group_members m USING (group_member_id)    
+              LEFT JOIN group_members m USING (group_member_id)
               WHERE f.user_id = ? AND f.file_id = ? AND s.connection_id = ?
             |]
             (userId, fileId, connId)
@@ -1873,6 +1874,11 @@ createSndGroupFileTransferV2Connection st userId fileId acId GroupMember {groupM
       "INSERT INTO snd_files (file_id, file_status, connection_id, group_member_id, created_at, updated_at) VALUES (?,?,?,?,?,?)"
       (fileId, fileStatus, connId, groupMemberId, currentTs, currentTs)
 
+deleteFileTransfer :: MonadUnliftIO m => SQLiteStore -> UserId -> Int64 -> m ()
+deleteFileTransfer st userId fileId =
+  liftIO . withTransaction st $ \db ->
+    DB.execute db "DELETE FROM files WHERE user_id = ? AND file_id = ?" (userId, fileId)
+
 getSharedMsgIdByFileId :: StoreMonad m => SQLiteStore -> UserId -> Int64 -> m SharedMsgId
 getSharedMsgIdByFileId st userId fileId =
   liftIOEither . withTransaction st $ \db ->
@@ -2133,6 +2139,7 @@ getFileTransferProgress st userId fileId =
       (ft,) . map fromOnly <$> case ft of
         FTSnd _ -> DB.query db "SELECT COUNT(*) FROM snd_file_chunks WHERE file_id = ? and chunk_sent = 1 GROUP BY connection_id" (Only fileId)
         FTRcv _ -> DB.query db "SELECT COUNT(*) FROM rcv_file_chunks WHERE file_id = ? AND chunk_stored = 1" (Only fileId)
+        FTSndPending _ -> pure [Only 0]
 
 getFileTransfer_ :: DB.Connection -> UserId -> Int64 -> IO (Either StoreError FileTransfer)
 getFileTransfer_ db userId fileId =
@@ -2151,6 +2158,7 @@ getFileTransfer_ db userId fileId =
     fileTransfer :: [(Maybe Int64, Maybe Int64)] -> IO (Either StoreError FileTransfer)
     fileTransfer ((Just _, Nothing) : _) = FTSnd <$$> getSndFileTransfers_ db userId fileId
     fileTransfer [(Nothing, Just _)] = FTRcv <$$> getRcvFileTransfer_ db userId fileId
+    fileTransfer [(Nothing, Nothing)] = FTSndPending <$$> getSndPendingFileTransfer_ db userId fileId
     fileTransfer _ = pure . Left $ SEFileNotFound fileId
 
 getSndFileTransfers_ :: DB.Connection -> UserId -> Int64 -> IO (Either StoreError [SndFileTransfer])
@@ -2178,6 +2186,23 @@ getSndFileTransfers_ db userId fileId = do
       case contactName_ <|> memberName_ of
         Just recipientDisplayName -> Right SndFileTransfer {fileId, fileStatus, fileName, fileSize, chunkSize, filePath, recipientDisplayName, connId, agentConnId}
         Nothing -> Left $ SESndFileInvalid fileId
+
+-- new file protocol
+getSndPendingFileTransfer_ :: DB.Connection -> UserId -> Int64 -> IO (Either StoreError SndPendingFileTransfer)
+getSndPendingFileTransfer_ db userId fileId =
+  firstRow sndPendingFileTransfer (SEFileNotFound fileId) $
+    DB.query
+      db
+      [sql|
+        SELECT f.file_name, f.file_size, f.chunk_size, f.file_path
+        FROM files f
+        WHERE f.user_id = ? AND f.file_id = ?
+      |]
+      (userId, fileId)
+  where
+    sndPendingFileTransfer :: (String, Integer, Integer, FilePath) -> SndPendingFileTransfer
+    sndPendingFileTransfer (fileName, fileSize, chunkSize, filePath) =
+      SndPendingFileTransfer {fileId, fileName, filePath, fileSize, chunkSize}
 
 createNewSndMessage :: StoreMonad m => SQLiteStore -> TVar ChaChaDRG -> ConnOrGroupId -> (SharedMsgId -> NewMessage) -> m SndMessage
 createNewSndMessage st gVar connOrGroupId mkMessage =
