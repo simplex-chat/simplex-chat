@@ -1827,11 +1827,10 @@ createSndFileTransferV2Connection st userId fileId acId =
   liftIO . withTransaction st $ \db -> do
     currentTs <- getCurrentTime
     Connection {connId} <- createSndFileConnection_ db userId fileId acId
-    let fileStatus = FSNew
     DB.execute
       db
       "INSERT INTO snd_files (file_id, file_status, connection_id, created_at, updated_at) VALUES (?,?,?,?,?)"
-      (fileId, fileStatus, connId, currentTs, currentTs)
+      (fileId, FSAccepted, connId, currentTs, currentTs)
 
 createSndGroupFileTransfer :: MonadUnliftIO m => SQLiteStore -> UserId -> GroupInfo -> [(GroupMember, ConnId, FileInvitation)] -> FilePath -> Integer -> Integer -> m Int64
 createSndGroupFileTransfer st userId GroupInfo {groupId} ms filePath fileSize chunkSize =
@@ -1866,11 +1865,10 @@ createSndGroupFileTransferV2Connection st userId fileId acId GroupMember {groupM
   liftIO . withTransaction st $ \db -> do
     currentTs <- getCurrentTime
     Connection {connId} <- createSndFileConnection_ db userId fileId acId
-    let fileStatus = FSNew
     DB.execute
       db
       "INSERT INTO snd_files (file_id, file_status, connection_id, group_member_id, created_at, updated_at) VALUES (?,?,?,?,?,?)"
-      (fileId, fileStatus, connId, groupMemberId, currentTs, currentTs)
+      (fileId, FSAccepted, connId, groupMemberId, currentTs, currentTs)
 
 deleteFileTransfer :: MonadUnliftIO m => SQLiteStore -> UserId -> Int64 -> m ()
 deleteFileTransfer st userId fileId =
