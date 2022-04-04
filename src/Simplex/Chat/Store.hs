@@ -1155,7 +1155,7 @@ getConnectionEntity st User {userId, userContactId} agentConnId =
     sndFileTransfer_ :: Int64 -> Int64 -> [(FileStatus, String, Integer, Integer, FilePath, Maybe ContactName, Maybe ContactName)] -> Either StoreError SndFileTransfer
     sndFileTransfer_ fileId connId [(fileStatus, fileName, fileSize, chunkSize, filePath, contactName_, memberName_)] =
       case contactName_ <|> memberName_ of
-        Just recipientDisplayName -> Right SndFileTransfer {fileId = fileId, fileStatus, fileName, fileSize, chunkSize, filePath, recipientDisplayName, connId, agentConnId = AgentConnId agentConnId}
+        Just recipientDisplayName -> Right SndFileTransfer {fileId, fileStatus, fileName, fileSize, chunkSize, filePath, recipientDisplayName, connId, agentConnId = AgentConnId agentConnId}
         Nothing -> Left $ SESndFileInvalid fileId
     sndFileTransfer_ fileId _ _ = Left $ SESndFileNotFound fileId
     getUserContact_ :: DB.Connection -> Int64 -> ExceptT StoreError IO UserContact
