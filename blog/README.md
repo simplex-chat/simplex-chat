@@ -1,5 +1,9 @@
 # Blog
 
+Apr 04, 2022 [Instant notifications for SimpleX Chat mobile apps](https://github.com/simplex-chat/simplex-chat/blob/stable/blog/20220404-simplex-chat-instant-notifications.md)
+
+Mar 08, 2022 [Mobile apps for iOS and Android released!](https://github.com/simplex-chat/simplex-chat/blob/stable/blog/20220308-simplex-chat-mobile-apps.md)
+
 Feb 14, 2022. [SimpleX Chat: join our public beta for iOS!](https://github.com/simplex-chat/simplex-chat/blob/stable/blog/20220214-simplex-chat-ios-public-beta.md)
 
 Jan 12, 2022. [SimpleX Chat v1 released: the most private and secure chat and application platform](https://github.com/simplex-chat/simplex-chat/blob/stable/blog/20220112-simplex-chat-v1-released.md)
