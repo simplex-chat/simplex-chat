@@ -89,7 +89,6 @@ responseToView testView = \case
   CRUserDeletedMember g m -> [ttyGroup' g <> ": you removed " <> ttyMember m <> " from the group"]
   CRLeftMemberUser g -> [ttyGroup' g <> ": you left the group"] <> groupPreserved g
   CRGroupDeletedUser g -> [ttyGroup' g <> ": you deleted the group"]
-  CRFileInvAccepted _ _ -> []
   CRRcvFileAccepted RcvFileTransfer {fileId, senderDisplayName = c} filePath ->
     ["saving file " <> sShow fileId <> " from " <> ttyContact c <> " to " <> plain filePath]
   CRRcvFileAcceptedSndCancelled ft -> viewRcvFileSndCancelled ft

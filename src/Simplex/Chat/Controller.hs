@@ -194,7 +194,6 @@ data ChatResponse
   | CRContactRequestAlreadyAccepted {contact :: Contact}
   | CRLeftMemberUser {groupInfo :: GroupInfo}
   | CRGroupDeletedUser {groupInfo :: GroupInfo}
-  | CRFileInvAccepted {sndFileTransfer :: SndFileTransfer, filePath :: FilePath} -- new file protocol
   | CRRcvFileAccepted {fileTransfer :: RcvFileTransfer, filePath :: FilePath} -- old file protocol
   | CRRcvFileAcceptedSndCancelled {rcvFileTransfer :: RcvFileTransfer}
   | CRRcvFileStart {rcvFileTransfer :: RcvFileTransfer}
