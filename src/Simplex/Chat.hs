@@ -532,29 +532,27 @@ processChatCommand = \case
             Left e -> throwError e
       -- new file protocol
       Nothing ->
-        -- TODO ? refactor
         case grpMemberId of
           Nothing ->
             withChatLock . procCmd $ do
               ct <- withStore $ \st -> getContactByName st userId senderDisplayName
-              sharedMsgId <- withStore $ \st -> getSharedMsgIdByFileId st userId fileId
-              (agentConnId, fileInvConnReq) <- withAgent (`createConnection` SCMInvitation)
-              filePath <- getRcvFilePath fileId filePath_ fileName
-              withStore $ \st -> acceptRcvFileTransfer st userId fileId agentConnId filePath
-              void $ sendDirectContactMessage ct $ XFileAcptInv sharedMsgId fileInvConnReq fileName
-              pure $ CRRcvFileAccepted ft filePath
+              acceptFileV2 $ \sharedMsgId fileInvConnReq -> sendDirectContactMessage ct $ XFileAcptInv sharedMsgId fileInvConnReq fileName
           Just memId ->
             withChatLock . procCmd $ do
               (GroupInfo {groupId}, GroupMember {activeConn}) <- withStore $ \st -> getGroupAndMember st user memId
               case activeConn of
-                Nothing -> throwChatError CEGroupMemberNotActive -- should not happen
-                Just conn -> do
-                  sharedMsgId <- withStore $ \st -> getSharedMsgIdByFileId st userId fileId
-                  (agentConnId, fileInvConnReq) <- withAgent (`createConnection` SCMInvitation)
-                  filePath <- getRcvFilePath fileId filePath_ fileName
-                  withStore $ \st -> acceptRcvFileTransfer st userId fileId agentConnId filePath
-                  void $ sendDirectMessage conn (XFileAcptInv sharedMsgId fileInvConnReq fileName) (GroupId groupId)
-                  pure $ CRRcvFileAccepted ft filePath
+                Just conn ->
+                  acceptFileV2 $ \sharedMsgId fileInvConnReq -> sendDirectMessage conn (XFileAcptInv sharedMsgId fileInvConnReq fileName) (GroupId groupId)
+                _ -> throwChatError $ CEFileInternal "member connection not active" -- should not happen
+        where
+          acceptFileV2 :: (SharedMsgId -> ConnReqInvitation -> m SndMessage) -> m ChatResponse
+          acceptFileV2 sendXFileAcptInv = do
+            sharedMsgId <- withStore $ \st -> getSharedMsgIdByFileId st userId fileId
+            (agentConnId, fileInvConnReq) <- withAgent (`createConnection` SCMInvitation)
+            filePath <- getRcvFilePath fileId filePath_ fileName
+            withStore $ \st -> acceptRcvFileTransfer st userId fileId agentConnId filePath
+            void $ sendXFileAcptInv sharedMsgId fileInvConnReq
+            pure $ CRRcvFileAccepted ft filePath
   CancelFile fileId -> withUser $ \User {userId} -> do
     ft' <- withStore (\st -> getFileTransfer st userId fileId)
     withChatLock . procCmd $ case ft' of
