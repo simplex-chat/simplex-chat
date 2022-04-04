@@ -555,20 +555,18 @@ processChatCommand = \case
             pure $ CRRcvFileAccepted ft filePath
   CancelFile fileId -> withUser $ \User {userId} -> do
     ft' <- withStore (\st -> getFileTransfer st userId fileId)
-    withChatLock . procCmd $ case ft' of
-      -- TODO Currently if sender cancels v2 file transfer recipient won't know about it. Some options:
-      -- TODO - Send cancel for v2 files? (have to distinguish somehow else rather than by empty transfer list for subsequent group transfers)
-      -- TODO - On receiver's side don't create empty file immediately on receive, instead create it on the first block
-      FTSnd ftm [] -> do
-        withStore $ \st -> deleteFileTransfer st userId fileId
-        pure $ CRSndGroupFileCancelled ftm []
-      FTSnd ftm fts -> do
-        forM_ fts $ \ft -> cancelSndFileTransfer ft
-        withStore $ \st -> deleteFileTransfer st userId fileId -- for subsequent group transfers in v2 file transfer
-        pure $ CRSndGroupFileCancelled ftm fts
-      FTRcv ft -> do
-        cancelRcvFileTransfer ft
-        pure $ CRRcvFileCancelled ft
+    withChatLock . procCmd $ do
+      unless (fileTransferCancelled ft') $
+        withStore $ \st -> updateFileCancelled st userId fileId
+      case ft' of
+        FTSnd ftm [] -> do
+          pure $ CRSndGroupFileCancelled ftm []
+        FTSnd ftm fts -> do
+          forM_ fts $ \ft -> cancelSndFileTransfer ft
+          pure $ CRSndGroupFileCancelled ftm fts
+        FTRcv ft -> do
+          cancelRcvFileTransfer ft
+          pure $ CRRcvFileCancelled ft
   FileStatus fileId ->
     CRFileTransferStatus <$> withUser (\User {userId} -> withStore $ \st -> getFileTransferProgress st userId fileId)
   ShowProfile -> withUser $ \User {profile} -> pure $ CRUserProfile profile
@@ -1239,14 +1237,17 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
       checkIntegrity msgMeta $ toView . CRMsgIntegrityError
       fileId <- withStore $ \st -> getFileIdBySharedMsgId st userId contactId sharedMsgId
       withStore (\st -> getFileTransfer st userId fileId) >>= \case
-        FTSnd FileTransferMeta {fileName} _ ->
-          if fName == fileName
+        FTSnd FileTransferMeta {fileName, cancelled} _ ->
+          if not cancelled
             then
-              tryError (withAgent $ \a -> joinConnection a fileConnReq . directMessage $ XOk) >>= \case
-                Right acId ->
-                  withStore $ \st -> createSndFileTransferV2Connection st userId fileId acId
-                Left e -> throwError e
-            else messageError "x.file.acpt.inv: fileName is different from expected"
+              if fName == fileName
+                then
+                  tryError (withAgent $ \a -> joinConnection a fileConnReq . directMessage $ XOk) >>= \case
+                    Right acId ->
+                      withStore $ \st -> createSndFileTransferV2Connection st userId fileId acId
+                    Left e -> throwError e
+                else messageError "x.file.acpt.inv: fileName is different from expected"
+            else pure () -- TODO send "file cancelled" message
         _ -> messageError "x.file.acpt.inv: bad file direction"
 
     xFileAcptInvGroup :: GroupInfo -> GroupMember -> SharedMsgId -> ConnReqInvitation -> String -> MsgMeta -> m ()
@@ -1254,14 +1255,17 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
       checkIntegrity msgMeta $ toView . CRMsgIntegrityError
       fileId <- withStore $ \st -> getGroupFileIdBySharedMsgId st userId groupId sharedMsgId
       withStore (\st -> getFileTransfer st userId fileId) >>= \case
-        FTSnd FileTransferMeta {fileName} _ ->
-          if fName == fileName
+        FTSnd FileTransferMeta {fileName, cancelled} _ ->
+          if not cancelled
             then
-              tryError (withAgent $ \a -> joinConnection a fileConnReq . directMessage $ XOk) >>= \case
-                Right acId ->
-                  withStore $ \st -> createSndGroupFileTransferV2Connection st userId fileId acId m
-                Left e -> throwError e
-            else messageError "x.file.acpt.inv: fileName is different from expected"
+              if fName == fileName
+                then
+                  tryError (withAgent $ \a -> joinConnection a fileConnReq . directMessage $ XOk) >>= \case
+                    Right acId ->
+                      withStore $ \st -> createSndGroupFileTransferV2Connection st userId fileId acId m
+                    Left e -> throwError e
+                else messageError "x.file.acpt.inv: fileName is different from expected"
+            else pure () -- TODO send "file cancelled" message
         _ -> messageError "x.file.acpt.inv: bad file direction"
 
     groupMsgToView :: GroupInfo -> ChatItem 'CTGroup 'MDRcv -> MsgMeta -> m ()

@@ -1001,7 +1001,8 @@ testFileSndCancel =
         [ do
             alice <## "cancelled sending file 1 (test.jpg) to bob"
             alice ##> "/fs 1"
-            alice <## "file 1 not found",
+            alice <## "sending file 1 (test.jpg) cancelled: bob"
+            alice <## "file transfer cancelled",
           do
             bob <## "alice cancelled sending file 1 (test.jpg)"
             bob ##> "/fs 1"
@@ -1027,7 +1028,7 @@ testFileRcvCancel =
           do
             alice <## "bob cancelled receiving file 1 (test.jpg)"
             alice ##> "/fs 1"
-            alice <## "sending file 1 (test.jpg) cancelled"
+            alice <## "sending file 1 (test.jpg) cancelled: bob"
         ]
       checkPartialTransfer
   where
@@ -1129,7 +1130,8 @@ testFileSndCancelV2 =
         [ do
             alice <## "cancelled sending file 1 (test.jpg) to bob"
             alice ##> "/fs 1"
-            alice <## "file 1 not found",
+            alice <## "sending file 1 (test.jpg) cancelled: bob"
+            alice <## "file transfer cancelled",
           do
             bob <## "alice cancelled sending file 1 (test.jpg)"
             bob ##> "/fs 1"
@@ -1155,7 +1157,7 @@ testFileRcvCancelV2 =
           do
             alice <## "bob cancelled receiving file 1 (test.jpg)"
             alice ##> "/fs 1"
-            alice <## "sending file 1 (test.jpg) cancelled"
+            alice <## "sending file 1 (test.jpg) cancelled: bob"
         ]
       checkPartialTransfer
   where
@@ -1186,7 +1188,7 @@ testGroupFileTransferV2 =
             alice <## "started sending file 1 (test.jpg) to bob"
             alice <## "completed sending file 1 (test.jpg) to bob"
             alice ##> "/fs 1"
-            alice <## "sending file 1 (test.jpg) complete",
+            alice <## "sending file 1 (test.jpg) complete: bob",
           do
             bob <## "started receiving file 1 (test.jpg) from alice"
             bob <## "completed receiving file 1 (test.jpg) from alice"

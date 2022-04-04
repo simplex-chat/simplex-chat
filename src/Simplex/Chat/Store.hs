@@ -94,7 +94,7 @@ module Simplex.Chat.Store
     createSndGroupFileTransfer, -- old file protocol
     createSndGroupFileTransferV2,
     createSndGroupFileTransferV2Connection,
-    deleteFileTransfer,
+    updateFileCancelled,
     getSharedMsgIdByFileId,
     getFileIdBySharedMsgId,
     getGroupFileIdBySharedMsgId,
@@ -188,6 +188,7 @@ import Simplex.Chat.Migrations.M20220301_smp_servers
 import Simplex.Chat.Migrations.M20220302_profile_images
 import Simplex.Chat.Migrations.M20220304_msg_quotes
 import Simplex.Chat.Migrations.M20220321_chat_item_edited
+import Simplex.Chat.Migrations.M20220404_files_cancelled
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Chat.Util (eitherToMaybe)
@@ -211,7 +212,8 @@ schemaMigrations =
     ("20220301_smp_servers", m20220301_smp_servers),
     ("20220302_profile_images", m20220302_profile_images),
     ("20220304_msg_quotes", m20220304_msg_quotes),
-    ("20220321_chat_item_edited", m20220321_chat_item_edited)
+    ("20220321_chat_item_edited", m20220321_chat_item_edited),
+    ("20220404_files_cancelled", m20220404_files_cancelled)
   ]
 
 -- | The list of migrations in ascending order by date
@@ -1856,10 +1858,11 @@ createSndGroupFileTransferV2Connection st userId fileId acId GroupMember {groupM
       "INSERT INTO snd_files (file_id, file_status, connection_id, group_member_id, created_at, updated_at) VALUES (?,?,?,?,?,?)"
       (fileId, FSAccepted, connId, groupMemberId, currentTs, currentTs)
 
-deleteFileTransfer :: MonadUnliftIO m => SQLiteStore -> UserId -> Int64 -> m ()
-deleteFileTransfer st userId fileId =
-  liftIO . withTransaction st $ \db ->
-    DB.execute db "DELETE FROM files WHERE user_id = ? AND file_id = ?" (userId, fileId)
+updateFileCancelled :: MonadUnliftIO m => SQLiteStore -> UserId -> Int64 -> m ()
+updateFileCancelled st userId fileId =
+  liftIO . withTransaction st $ \db -> do
+    currentTs <- getCurrentTime
+    DB.execute db "UPDATE files SET cancelled = 1, updated_at = ? WHERE user_id = ? AND file_id = ?" (currentTs, userId, fileId)
 
 getSharedMsgIdByFileId :: StoreMonad m => SQLiteStore -> UserId -> Int64 -> m SharedMsgId
 getSharedMsgIdByFileId st userId fileId =
@@ -1979,7 +1982,7 @@ createRcvFileTransfer st userId Contact {contactId, localDisplayName = c} f@File
       db
       "INSERT INTO rcv_files (file_id, file_status, file_queue_info, created_at, updated_at) VALUES (?,?,?,?,?)"
       (fileId, FSNew, fileConnReq, currentTs, currentTs)
-    pure RcvFileTransfer {fileId, fileInvitation = f, fileStatus = RFSNew, senderDisplayName = c, chunkSize, grpMemberId = Nothing}
+    pure RcvFileTransfer {fileId, fileInvitation = f, fileStatus = RFSNew, senderDisplayName = c, chunkSize, cancelled = False, grpMemberId = Nothing}
 
 createRcvGroupFileTransfer :: MonadUnliftIO m => SQLiteStore -> UserId -> GroupMember -> FileInvitation -> Integer -> m RcvFileTransfer
 createRcvGroupFileTransfer st userId GroupMember {groupId, groupMemberId, localDisplayName = c} f@FileInvitation {fileName, fileSize, fileConnReq} chunkSize =
@@ -1994,7 +1997,7 @@ createRcvGroupFileTransfer st userId GroupMember {groupId, groupMemberId, localD
       db
       "INSERT INTO rcv_files (file_id, file_status, file_queue_info, group_member_id, created_at, updated_at) VALUES (?,?,?,?,?,?)"
       (fileId, FSNew, fileConnReq, groupMemberId, currentTs, currentTs)
-    pure RcvFileTransfer {fileId, fileInvitation = f, fileStatus = RFSNew, senderDisplayName = c, chunkSize, grpMemberId = Just groupMemberId}
+    pure RcvFileTransfer {fileId, fileInvitation = f, fileStatus = RFSNew, senderDisplayName = c, chunkSize, cancelled = False, grpMemberId = Just groupMemberId}
 
 getRcvFileTransfer :: StoreMonad m => SQLiteStore -> UserId -> Int64 -> m RcvFileTransfer
 getRcvFileTransfer st userId fileId =
@@ -2008,7 +2011,7 @@ getRcvFileTransfer_ db userId fileId =
       db
       [sql|
           SELECT r.file_status, r.file_queue_info, r.group_member_id, f.file_name,
-            f.file_size, f.chunk_size, cs.local_display_name, m.local_display_name,
+            f.file_size, f.chunk_size, f.cancelled, cs.local_display_name, m.local_display_name,
             f.file_path, c.connection_id, c.agent_conn_id
           FROM rcv_files r
           JOIN files f USING (file_id)
@@ -2020,16 +2023,16 @@ getRcvFileTransfer_ db userId fileId =
       (userId, fileId)
   where
     rcvFileTransfer ::
-      [(FileStatus, Maybe ConnReqInvitation, Maybe Int64, String, Integer, Integer, Maybe ContactName, Maybe ContactName, Maybe FilePath, Maybe Int64, Maybe AgentConnId)] ->
+      [(FileStatus, Maybe ConnReqInvitation, Maybe Int64, String, Integer, Integer, Maybe Bool, Maybe ContactName, Maybe ContactName, Maybe FilePath, Maybe Int64, Maybe AgentConnId)] ->
       Either StoreError RcvFileTransfer
-    rcvFileTransfer [(fileStatus', fileConnReq, grpMemberId, fileName, fileSize, chunkSize, contactName_, memberName_, filePath_, connId_, agentConnId_)] =
+    rcvFileTransfer [(fileStatus', fileConnReq, grpMemberId, fileName, fileSize, chunkSize, cancelled_, contactName_, memberName_, filePath_, connId_, agentConnId_)] =
       let fileInv = FileInvitation {fileName, fileSize, fileConnReq}
           fileInfo = (filePath_, connId_, agentConnId_)
        in case contactName_ <|> memberName_ of
             Nothing -> Left $ SERcvFileInvalid fileId
             Just name ->
               case fileStatus' of
-                FSNew -> Right RcvFileTransfer {fileId, fileInvitation = fileInv, fileStatus = RFSNew, senderDisplayName = name, chunkSize, grpMemberId}
+                FSNew -> Right RcvFileTransfer {fileId, fileInvitation = fileInv, fileStatus = RFSNew, senderDisplayName = name, chunkSize, cancelled, grpMemberId}
                 FSAccepted -> ft name fileInv RFSAccepted fileInfo
                 FSConnected -> ft name fileInv RFSConnected fileInfo
                 FSComplete -> ft name fileInv RFSComplete fileInfo
@@ -2040,6 +2043,7 @@ getRcvFileTransfer_ db userId fileId =
             let fileStatus = rfs RcvFileInfo {filePath, connId, agentConnId}
              in Right RcvFileTransfer {..}
           _ -> Left $ SERcvFileInvalid fileId
+        cancelled = fromMaybe False cancelled_
     rcvFileTransfer _ = Left $ SERcvFileNotFound fileId
 
 acceptRcvFileTransfer :: StoreMonad m => SQLiteStore -> UserId -> Int64 -> ConnId -> FilePath -> m ()
@@ -2193,15 +2197,15 @@ getFileTransferMeta_ db userId fileId =
     DB.query
       db
       [sql|
-        SELECT f.file_name, f.file_size, f.chunk_size, f.file_path
+        SELECT f.file_name, f.file_size, f.chunk_size, f.file_path, f.cancelled
         FROM files f
         WHERE f.user_id = ? AND f.file_id = ?
       |]
       (userId, fileId)
   where
-    fileTransferMeta :: (String, Integer, Integer, FilePath) -> FileTransferMeta
-    fileTransferMeta (fileName, fileSize, chunkSize, filePath) =
-      FileTransferMeta {fileId, fileName, filePath, fileSize, chunkSize}
+    fileTransferMeta :: (String, Integer, Integer, FilePath, Maybe Bool) -> FileTransferMeta
+    fileTransferMeta (fileName, fileSize, chunkSize, filePath, cancelled_) =
+      FileTransferMeta {fileId, fileName, filePath, fileSize, chunkSize, cancelled = fromMaybe False cancelled_}
 
 createNewSndMessage :: StoreMonad m => SQLiteStore -> TVar ChaChaDRG -> ConnOrGroupId -> (SharedMsgId -> NewMessage) -> m SndMessage
 createNewSndMessage st gVar connOrGroupId mkMessage =

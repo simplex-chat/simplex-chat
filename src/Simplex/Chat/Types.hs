@@ -534,6 +534,7 @@ data RcvFileTransfer = RcvFileTransfer
     fileStatus :: RcvFileStatus,
     senderDisplayName :: ContactName,
     chunkSize :: Integer,
+    cancelled :: Bool,
     grpMemberId :: Maybe Int64
   }
   deriving (Eq, Show, Generic, FromJSON)
@@ -619,11 +620,16 @@ data FileTransferMeta = FileTransferMeta
     fileName :: String,
     filePath :: String,
     fileSize :: Integer,
-    chunkSize :: Integer
+    chunkSize :: Integer,
+    cancelled :: Bool
   }
   deriving (Eq, Show, Generic)
 
 instance ToJSON FileTransferMeta where toEncoding = J.genericToEncoding J.defaultOptions
+
+fileTransferCancelled :: FileTransfer -> Bool
+fileTransferCancelled (FTSnd FileTransferMeta {cancelled} _) = cancelled
+fileTransferCancelled (FTRcv RcvFileTransfer {cancelled}) = cancelled
 
 data FileStatus = FSNew | FSAccepted | FSConnected | FSComplete | FSCancelled deriving (Eq, Ord, Show)
 

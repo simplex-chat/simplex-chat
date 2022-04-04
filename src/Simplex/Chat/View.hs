@@ -491,7 +491,7 @@ viewSndGroupFileCancelled :: FileTransferMeta -> [SndFileTransfer] -> [StyledStr
 viewSndGroupFileCancelled FileTransferMeta {fileId, fileName} fts =
   case filter (\SndFileTransfer {fileStatus = s} -> s /= FSCancelled && s /= FSComplete) fts of
     [] -> ["cancelled sending " <> fileTransferStr fileId fileName]
-    ts -> ["cancelled sending " <> fileTransferStr fileId fileName <> " to " <> listMembers ts]
+    ts -> ["cancelled sending " <> fileTransferStr fileId fileName <> " to " <> listRecipients ts]
 
 sendingFile_ :: StyledString -> SndFileTransfer -> [StyledString]
 sendingFile_ status ft@SndFileTransfer {recipientDisplayName = c} =
@@ -532,24 +532,20 @@ fileTransferStr :: Int64 -> String -> StyledString
 fileTransferStr fileId fileName = "file " <> sShow fileId <> " (" <> ttyFilePath fileName <> ")"
 
 viewFileTransferStatus :: (FileTransfer, [Integer]) -> [StyledString]
-viewFileTransferStatus (FTSnd _ [ft@SndFileTransfer {fileStatus, fileSize, chunkSize}], chunksNum) =
-  ["sending " <> sndFile ft <> " " <> sndStatus]
+viewFileTransferStatus (FTSnd FileTransferMeta {fileId, fileName, cancelled} [], _) =
+  [ "sending " <> fileTransferStr fileId fileName <> ": no file transfers"
+      <> if cancelled then ", file transfer cancelled" else ""
+  ]
+viewFileTransferStatus (FTSnd FileTransferMeta {cancelled} fts@(ft : _), chunksNum) =
+  recipientStatuses <> ["file transfer cancelled" | cancelled]
   where
-    sndStatus = case fileStatus of
-      FSNew -> "not accepted yet"
-      FSAccepted -> "just started"
-      FSConnected -> "progress " <> fileProgress chunksNum chunkSize fileSize
-      FSComplete -> "complete"
-      FSCancelled -> "cancelled"
-viewFileTransferStatus (FTSnd FileTransferMeta {fileId, fileName} [], _) = ["sending " <> fileTransferStr fileId fileName <> ": no file transfers"]
-viewFileTransferStatus (FTSnd _ fts@(ft : _), chunksNum) =
-  case concatMap membersTransferStatus $ groupBy ((==) `on` fs) $ sortOn fs fts of
-    [membersStatus] -> ["sending " <> sndFile ft <> " " <> membersStatus]
-    membersStatuses -> ("sending " <> sndFile ft <> ": ") : map ("  " <>) membersStatuses
-  where
+    recipientStatuses =
+      case concatMap recipientsTransferStatus $ groupBy ((==) `on` fs) $ sortOn fs fts of
+        [recipientsStatus] -> ["sending " <> sndFile ft <> " " <> recipientsStatus]
+        recipientsStatuses -> ("sending " <> sndFile ft <> ": ") : map ("  " <>) recipientsStatuses
     fs = fileStatus :: SndFileTransfer -> FileStatus
-    membersTransferStatus [] = []
-    membersTransferStatus ts@(SndFileTransfer {fileStatus, fileSize, chunkSize} : _) = [sndStatus <> ": " <> listMembers ts]
+    recipientsTransferStatus [] = []
+    recipientsTransferStatus ts@(SndFileTransfer {fileStatus, fileSize, chunkSize} : _) = [sndStatus <> ": " <> listRecipients ts]
       where
         sndStatus = case fileStatus of
           FSNew -> "not accepted"
@@ -567,8 +563,8 @@ viewFileTransferStatus (FTRcv ft@RcvFileTransfer {fileId, fileInvitation = FileI
       RFSComplete RcvFileInfo {filePath} -> "complete, path: " <> plain filePath
       RFSCancelled RcvFileInfo {filePath} -> "cancelled, received part path: " <> plain filePath
 
-listMembers :: [SndFileTransfer] -> StyledString
-listMembers = mconcat . intersperse ", " . map (ttyContact . recipientDisplayName)
+listRecipients :: [SndFileTransfer] -> StyledString
+listRecipients = mconcat . intersperse ", " . map (ttyContact . recipientDisplayName)
 
 fileProgress :: [Integer] -> Integer -> Integer -> StyledString
 fileProgress chunksNum chunkSize fileSize =
