@@ -409,7 +409,7 @@ chatToAppMessage ChatMessage {msgId, chatMsgEvent} = AppMessage {msgId, event, p
       XMsgUpdate msgId' content -> o ["msgId" .= msgId', "content" .= content]
       XMsgDel msgId' -> o ["msgId" .= msgId']
       XMsgDeleted -> JM.empty
-      XFile fileInv -> o ["file" .= fileInv]
+      XFile fileInv -> o ["file" .= fileInvitationJSON fileInv]
       XFileAcpt fileName -> o ["fileName" .= fileName]
       XFileAcptInv sharedMsgId fileConnReq fileName -> o ["msgId" .= sharedMsgId, "fileConnReq" .= fileConnReq, "fileName" .= fileName]
       XInfo profile -> o ["profile" .= profile]
@@ -431,3 +431,8 @@ chatToAppMessage ChatMessage {msgId, chatMsgEvent} = AppMessage {msgId, event, p
       XInfoProbeOk probe -> o ["probe" .= probe]
       XOk -> JM.empty
       XUnknown _ ps -> ps
+
+fileInvitationJSON :: FileInvitation -> J.Object
+fileInvitationJSON FileInvitation {fileName, fileSize, fileConnReq} = case fileConnReq of
+  Nothing -> JM.fromList ["fileName" .= fileName, "fileSize" .= fileSize]
+  Just fConnReq -> JM.fromList ["fileName" .= fileName, "fileSize" .= fileSize, "fileConnReq" .= fConnReq]
