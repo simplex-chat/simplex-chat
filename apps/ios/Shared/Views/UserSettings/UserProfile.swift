@@ -14,7 +14,7 @@ struct UserProfile: View {
     @State private var editProfile = false
     @State private var showChooseSource = false
     @State private var showImagePicker = false
-    @State private var imageSource: ImageSelectionMethod = .imageLibrary
+    @State private var imageSource: ImageSource = .imageLibrary
     @State private var chosenImage: UIImage? = nil
 
     var body: some View {

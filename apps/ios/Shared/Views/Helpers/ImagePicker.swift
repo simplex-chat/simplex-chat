@@ -9,7 +9,7 @@
 import SwiftUI
 import PhotosUI
 
-enum ImageSelectionMethod {
+enum ImageSource {
     case imageLibrary
     case camera
 }
