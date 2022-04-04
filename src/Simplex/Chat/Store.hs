@@ -1215,20 +1215,6 @@ getGroupAndMember st User {userId, userContactId} groupMemberId =
           member = toGroupMember userContactId memberRow
        in (groupInfo, (member :: GroupMember) {activeConn = toMaybeConnection connRow})
 
--- getGroupMemberConnection :: StoreMonad m => SQLiteStore -> UserId -> Int64 -> m Connection
--- getGroupMemberConnection st userId groupMemberId =
---   liftIOEither . withTransaction st $ \db ->
---     firstRow toConnection (SEGroupMemberConnectionNotFound groupMemberId) $
---       DB.query
---         db
---         [sql|
---           SELECT connection_id, agent_conn_id, conn_level, via_contact,
---             conn_status, conn_type, contact_id, group_member_id, snd_file_id, rcv_file_id, user_contact_link_id, created_at
---           FROM connections
---           WHERE user_id = ? AND group_member_id = ?
---         |]
---         (userId, groupMemberId)
-
 updateConnectionStatus :: MonadUnliftIO m => SQLiteStore -> Connection -> ConnStatus -> m ()
 updateConnectionStatus st Connection {connId} connStatus =
   liftIO . withTransaction st $ \db -> do
