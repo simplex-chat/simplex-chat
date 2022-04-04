@@ -533,7 +533,8 @@ data RcvFileTransfer = RcvFileTransfer
     fileInvitation :: FileInvitation,
     fileStatus :: RcvFileStatus,
     senderDisplayName :: ContactName,
-    chunkSize :: Integer
+    chunkSize :: Integer,
+    grpMemberId :: Maybe Int64
   }
   deriving (Eq, Show, Generic, FromJSON)
 

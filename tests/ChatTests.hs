@@ -57,12 +57,12 @@ chatTests = do
     it "sender cancelled file transfer" testFileSndCancel
     it "recipient cancelled file transfer" testFileRcvCancel
     it "send and receive file to group" testGroupFileTransfer
-  fdescribe "sending and receiving files v2" $ do
+  describe "sending and receiving files v2" $ do
     it "send and receive file" testFileTransferV2
     it "send and receive a small file" testSmallFileTransferV2
     it "sender cancelled file transfer" testFileSndCancelV2
     it "recipient cancelled file transfer" testFileRcvCancelV2
-    it "send and receive file to group" testGroupFileTransferV2
+    fit "send and receive file to group" testGroupFileTransferV2
   describe "user contact link" $ do
     it "create and connect via contact link" testUserContactLink
     it "auto accept contact requests" testUserContactLinkAutoAccept
