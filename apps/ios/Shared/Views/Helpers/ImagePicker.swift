@@ -9,20 +9,20 @@
 import SwiftUI
 import PhotosUI
 
-enum ImageSelectionMethod: Equatable {
-    case gallery
+enum ImageSelectionMethod {
+    case library
     case camera
 }
 
-struct FromGalleryImagePicker: UIViewControllerRepresentable {
+struct LibraryImagePicker: UIViewControllerRepresentable {
     typealias UIViewControllerType = PHPickerViewController
     @Binding var image: UIImage?
     var didFinishPicking: (_ didSelectItems: Bool) -> Void
 
     class Coordinator: PHPickerViewControllerDelegate {
-        let parent: FromGalleryImagePicker
+        let parent: LibraryImagePicker
 
-        init(_ parent: FromGalleryImagePicker) {
+        init(_ parent: LibraryImagePicker) {
             self.parent = parent
         }
 
@@ -70,14 +70,14 @@ struct FromGalleryImagePicker: UIViewControllerRepresentable {
 }
 
 
-struct FromCameraImagePicker: UIViewControllerRepresentable {
+struct CameraImagePicker: UIViewControllerRepresentable {
     @Environment(\.presentationMode) var presentationMode
     @Binding var image: UIImage?
 
     class Coordinator: NSObject, UINavigationControllerDelegate, UIImagePickerControllerDelegate {
-        let parent: FromCameraImagePicker
+        let parent: CameraImagePicker
 
-        init(_ parent: FromCameraImagePicker) {
+        init(_ parent: CameraImagePicker) {
             self.parent = parent
         }
 
@@ -94,7 +94,7 @@ struct FromCameraImagePicker: UIViewControllerRepresentable {
         Coordinator(self)
     }
 
-    func makeUIViewController(context: UIViewControllerRepresentableContext<FromCameraImagePicker>) -> UIImagePickerController {
+    func makeUIViewController(context: UIViewControllerRepresentableContext<CameraImagePicker>) -> UIImagePickerController {
         let picker = UIImagePickerController()
         picker.sourceType = .camera
         picker.allowsEditing = false
@@ -102,7 +102,7 @@ struct FromCameraImagePicker: UIViewControllerRepresentable {
         return picker
     }
 
-    func updateUIViewController(_ uiViewController: UIImagePickerController, context: UIViewControllerRepresentableContext<FromCameraImagePicker>) {
+    func updateUIViewController(_ uiViewController: UIImagePickerController, context: UIViewControllerRepresentableContext<CameraImagePicker>) {
 
     }
 }
