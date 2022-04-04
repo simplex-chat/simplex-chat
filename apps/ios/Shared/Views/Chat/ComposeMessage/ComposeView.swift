@@ -24,9 +24,13 @@ struct ComposeView: View {
     var inProgress: Bool = false
     @FocusState.Binding var keyboardVisible: Bool
     @State var editing: Bool = false
+    @State var hyperlink: String? = nil
 
     var body: some View {
         VStack(spacing: 0) {
+            if (hyperlink != nil) {
+                LinkPreview(hyperlink)
+            }
             if (quotedItem != nil) {
                 ContextItemView(contextItem: $quotedItem, editing: $editing)
             } else if (editingItem != nil) {
@@ -37,7 +41,8 @@ struct ComposeView: View {
                 inProgress: inProgress,
                 message: $message,
                 keyboardVisible: $keyboardVisible,
-                editing: $editing
+                editing: $editing,
+                hyperlink: $hyperlink
             )
             .background(.background)
         }

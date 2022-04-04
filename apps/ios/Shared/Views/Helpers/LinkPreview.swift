@@ -55,22 +55,26 @@ func encodeLinkMetadataForAPI(metadata: LPLinkMetadata) -> LinkMetadata {
 }
 
 struct LinkPreview: View {
-    let metadata: LinkMetadata
+    let link: String
 
     var body: some View {
-        if let image = metadata.image,
-           let data = Data(base64Encoded: dropImagePrefix(image)),
-           let uiImage = UIImage(data: data) {
-            Image(uiImage: uiImage)
-                .resizable()
-        } else {
-            if let title = metadata.title {
-                Text(title)
+        if let url = URL(string: link),
+           let metadata = getMetaDataForURL(url: url) {
+            let previewData = encodeLinkMetadataForAPI(metadata: metadata)
+            if let image = previewData.image,
+               let data = Data(base64Encoded: dropImagePrefix(image)),
+               let uiImage = UIImage(data: data) {
+                Image(uiImage: uiImage)
+                    .resizable()
+            } else {
+                if let title = metadata.title {
+                    Text(title)
+                }
+                else {
+                    Text("")
+                }
+                Text(metadata.description)
             }
-            else {
-                Text("")
-            }
-            Text(metadata.description)
         }
     }
 }
