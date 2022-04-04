@@ -25,6 +25,7 @@ import Data.Version (showVersion)
 import GHC.Generics (Generic)
 import Numeric.Natural
 import qualified Paths_simplex_chat as SC
+import Simplex.Chat.Markdown (MarkdownList)
 import Simplex.Chat.Messages
 import Simplex.Chat.Protocol
 import Simplex.Chat.Store (StoreError)
@@ -102,6 +103,7 @@ data ChatCommand
   | APIAcceptContact Int64
   | APIRejectContact Int64
   | APIUpdateProfile Profile
+  | APIParseMarkdown Text
   | GetUserSMPServers
   | SetUserSMPServers [SMPServer]
   | ChatHelp HelpSection
@@ -138,7 +140,7 @@ data ChatCommand
   | FileStatus FileTransferId
   | ShowProfile
   | UpdateProfile ContactName Text
-  | UpdateProfileImage (Maybe ProfileImage)
+  | UpdateProfileImage (Maybe ImageData)
   | QuitChat
   | ShowVersion
   deriving (Show)
@@ -149,6 +151,7 @@ data ChatResponse
   | CRChatRunning
   | CRApiChats {chats :: [AChat]}
   | CRApiChat {chat :: AChat}
+  | CRApiParsedMarkdown {formattedText :: Maybe MarkdownList}
   | CRUserSMPServers {smpServers :: [SMPServer]}
   | CRNewChatItem {chatItem :: AChatItem}
   | CRChatItemStatusUpdated {chatItem :: AChatItem}

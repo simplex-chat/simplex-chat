@@ -301,6 +301,7 @@ processChatCommand = \case
     withAgent $ \a -> rejectContact a connId invId
     pure $ CRContactRequestRejected cReq
   APIUpdateProfile profile -> withUser (`updateProfile` profile)
+  APIParseMarkdown text -> pure . CRApiParsedMarkdown $ parseMaybeMarkdownList text
   GetUserSMPServers -> CRUserSMPServers <$> withUser (\user -> withStore (`getSMPServers` user))
   SetUserSMPServers smpServers -> withUser $ \user -> withChatLock $ do
     withStore $ \st -> overwriteSMPServers st user smpServers
@@ -1644,6 +1645,7 @@ chatCommandP =
     <|> "/_accept " *> (APIAcceptContact <$> A.decimal)
     <|> "/_reject " *> (APIRejectContact <$> A.decimal)
     <|> "/_profile " *> (APIUpdateProfile <$> jsonP)
+    <|> "/_parse " *> (APIParseMarkdown . safeDecodeUtf8 <$> A.takeByteString)
     <|> "/smp_servers default" $> SetUserSMPServers []
     <|> "/smp_servers " *> (SetUserSMPServers <$> smpServersP)
     <|> "/smp_servers" $> GetUserSMPServers
@@ -1685,7 +1687,7 @@ chatCommandP =
     <|> ("/reject @" <|> "/reject " <|> "/rc @" <|> "/rc ") *> (RejectContact <$> displayName)
     <|> ("/markdown" <|> "/m") $> ChatHelp HSMarkdown
     <|> ("/welcome" <|> "/w") $> Welcome
-    <|> "/profile_image " *> (UpdateProfileImage . Just . ProfileImage <$> imageP)
+    <|> "/profile_image " *> (UpdateProfileImage . Just . ImageData <$> imageP)
     <|> "/profile_image" $> UpdateProfileImage Nothing
     <|> ("/profile " <|> "/p ") *> (uncurry UpdateProfile <$> userNames)
     <|> ("/profile" <|> "/p") $> ShowProfile

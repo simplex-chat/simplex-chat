@@ -46,6 +46,7 @@ responseToView testView = \case
   CRChatRunning -> []
   CRApiChats chats -> if testView then testViewChats chats else [plain . bshow $ J.encode chats]
   CRApiChat chat -> if testView then testViewChat chat else [plain . bshow $ J.encode chat]
+  CRApiParsedMarkdown ft -> [plain . bshow $ J.encode ft]
   CRUserSMPServers smpServers -> viewSMPServers smpServers testView
   CRNewChatItem (AChatItem _ _ chat item) -> viewChatItem chat item
   CRChatItemStatusUpdated _ -> []
