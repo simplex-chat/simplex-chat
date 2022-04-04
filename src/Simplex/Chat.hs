@@ -556,6 +556,9 @@ processChatCommand = \case
   CancelFile fileId -> withUser $ \User {userId} -> do
     ft' <- withStore (\st -> getFileTransfer st userId fileId)
     withChatLock . procCmd $ case ft' of
+      -- TODO Currently if sender cancels v2 file transfer recipient won't know about it. Some options:
+      -- TODO - Send cancel for v2 files? (have to distinguish somehow else rather than by empty transfer list for subsequent group transfers)
+      -- TODO - On receiver's side don't create empty file immediately on receive, instead create it on the first block
       FTSnd ftm [] -> do
         withStore $ \st -> deleteFileTransfer st userId fileId
         pure $ CRSndGroupFileCancelled ftm []
@@ -1023,8 +1026,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
         CONF confId connInfo -> do
           ChatMessage {chatMsgEvent} <- liftEither $ parseChatMessage connInfo
           case chatMsgEvent of
-            XOk -> do
-              allowAgentConnection conn confId XOk
+            XOk -> allowAgentConnection conn confId XOk
             _ -> pure ()
         CON -> do
           withStore $ \st -> updateRcvFileStatus st ft FSConnected
