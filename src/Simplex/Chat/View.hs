@@ -93,7 +93,7 @@ responseToView testView = \case
   CRRcvFileAccepted RcvFileTransfer {fileId, senderDisplayName = c} filePath ->
     ["saving file " <> sShow fileId <> " from " <> ttyContact c <> " to " <> plain filePath]
   CRRcvFileAcceptedSndCancelled ft -> viewRcvFileSndCancelled ft
-  CRSndGroupFileCancelled fts -> viewSndGroupFileCancelled fts
+  CRSndGroupFileCancelled ftm fts -> viewSndGroupFileCancelled ftm fts
   CRRcvFileCancelled ft -> receivingFile_ "cancelled" ft
   CRUserProfileUpdated p p' -> viewUserProfileUpdated p p'
   CRContactUpdated c c' -> viewContactUpdated c c'
@@ -488,11 +488,11 @@ viewRcvFileSndCancelled :: RcvFileTransfer -> [StyledString]
 viewRcvFileSndCancelled ft@RcvFileTransfer {senderDisplayName = c} =
   [ttyContact c <> " cancelled sending " <> rcvFile ft]
 
-viewSndGroupFileCancelled :: [SndFileTransfer] -> [StyledString]
-viewSndGroupFileCancelled fts =
+viewSndGroupFileCancelled :: FileTransferMeta -> [SndFileTransfer] -> [StyledString]
+viewSndGroupFileCancelled FileTransferMeta {fileId, fileName} fts =
   case filter (\SndFileTransfer {fileStatus = s} -> s /= FSCancelled && s /= FSComplete) fts of
-    [] -> ["sending file can't be cancelled"]
-    ts@(ft : _) -> ["cancelled sending " <> sndFile ft <> " to " <> listMembers ts]
+    [] -> ["cancelled sending " <> fileTransferStr fileId fileName]
+    ts -> ["cancelled sending " <> fileTransferStr fileId fileName <> " to " <> listMembers ts]
 
 sendingFile_ :: StyledString -> SndFileTransfer -> [StyledString]
 sendingFile_ status ft@SndFileTransfer {recipientDisplayName = c} =
@@ -622,6 +622,7 @@ viewChatError = \case
     SEDuplicateContactLink -> ["you already have chat address, to show: " <> highlight' "/sa"]
     SEUserContactLinkNotFound -> ["no chat address, to create: " <> highlight' "/ad"]
     SEContactRequestNotFoundByName c -> ["no contact request from " <> ttyContact c]
+    SEFileIdNotFoundBySharedMsgId _ -> [] -- recipient tried to accept cancelled file
     SEConnectionNotFound _ -> [] -- TODO mutes delete group error, but also mutes any error from getConnectionEntity
     SEQuotedChatItemNotFound -> ["message not found - reply is not sent"]
     e -> ["chat db error: " <> sShow e]

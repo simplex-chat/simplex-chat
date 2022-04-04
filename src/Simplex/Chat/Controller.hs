@@ -205,7 +205,7 @@ data ChatResponse
   | CRSndFileComplete {sndFileTransfer :: SndFileTransfer}
   | CRSndFileCancelled {sndFileTransfer :: SndFileTransfer}
   | CRSndFileRcvCancelled {sndFileTransfer :: SndFileTransfer}
-  | CRSndGroupFileCancelled {sndFileTransfers :: [SndFileTransfer]}
+  | CRSndGroupFileCancelled {fileTransferMeta :: FileTransferMeta, sndFileTransfers :: [SndFileTransfer]}
   | CRUserProfileUpdated {fromProfile :: Profile, toProfile :: Profile}
   | CRContactConnecting {contact :: Contact}
   | CRContactConnected {contact :: Contact}

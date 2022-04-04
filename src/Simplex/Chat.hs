@@ -556,12 +556,12 @@ processChatCommand = \case
   CancelFile fileId -> withUser $ \User {userId} -> do
     ft' <- withStore (\st -> getFileTransfer st userId fileId)
     withChatLock . procCmd $ case ft' of
-      FTSnd _ [] -> do
+      FTSnd ftm [] -> do
         withStore $ \st -> deleteFileTransfer st userId fileId
-        pure $ CRSndGroupFileCancelled []
-      FTSnd _ fts -> do
+        pure $ CRSndGroupFileCancelled ftm []
+      FTSnd ftm fts -> do
         forM_ fts $ \ft -> cancelSndFileTransfer ft
-        pure $ CRSndGroupFileCancelled fts
+        pure $ CRSndGroupFileCancelled ftm fts
       FTRcv ft -> do
         cancelRcvFileTransfer ft
         pure $ CRRcvFileCancelled ft
