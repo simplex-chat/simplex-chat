@@ -14,7 +14,6 @@ struct LinkMetadata: Codable {
     var url: URL?
     var title: String?
     var description: String
-    var icon: String?
     var image: String?
 }
 
@@ -32,21 +31,7 @@ func getMetaDataForURL(url: URL) -> LPLinkMetadata? {
 }
 
 func encodeLinkMetadataForAPI(metadata: LPLinkMetadata) -> LinkMetadata {
-    var icon: UIImage? = nil
     var image: UIImage? = nil
-
-    if let iconProvider = metadata.iconProvider {
-        if iconProvider.canLoadObject(ofClass: UIImage.self) {
-            iconProvider.loadObject(ofClass: UIImage.self) { object, error in
-                DispatchQueue.main.async {
-                    if let error = error {
-                        logger.error("Couldn't load icon from link metadata with error: \(error.localizedDescription)")
-                    }
-                    icon = object as? UIImage
-                }
-            }
-        }
-    }
 
     if let imageProvider = metadata.imageProvider {
         if imageProvider.canLoadObject(ofClass: UIImage.self) {
@@ -65,7 +50,27 @@ func encodeLinkMetadataForAPI(metadata: LPLinkMetadata) -> LinkMetadata {
         url: metadata.url,
         title: metadata.title,
         description: metadata.description,
-        icon: resizeAndCompressImage(image: icon),
         image: resizeAndCompressImage(image: image)
     )
+}
+
+struct LinkPreview: View {
+    let metadata: LinkMetadata
+
+    var body: some View {
+        if let image = metadata.image,
+           let data = Data(base64Encoded: dropImagePrefix(image)),
+           let uiImage = UIImage(data: data) {
+            Image(uiImage: uiImage)
+                .resizable()
+        } else {
+            if let title = metadata.title {
+                Text(title)
+            }
+            else {
+                Text("")
+            }
+            Text(metadata.description)
+        }
+    }
 }
