@@ -517,18 +517,6 @@ data SndFileTransfer = SndFileTransfer
 
 instance ToJSON SndFileTransfer where toEncoding = J.genericToEncoding J.defaultOptions
 
--- new file protocol - snd file transfer that wasn't accepted
-data SndPendingFileTransfer = SndPendingFileTransfer
-  { fileId :: FileTransferId,
-    fileName :: String,
-    filePath :: String,
-    fileSize :: Integer,
-    chunkSize :: Integer
-  }
-  deriving (Eq, Show, Generic)
-
-instance ToJSON SndPendingFileTransfer where toEncoding = J.genericToEncoding J.defaultOptions
-
 type FileTransferId = Int64
 
 data FileInvitation = FileInvitation

@@ -545,7 +545,7 @@ processChatCommand = \case
               pure $ CRRcvFileAccepted ft filePath
           Just memId ->
             withChatLock . procCmd $ do
-              (GroupInfo{groupId}, GroupMember {activeConn}) <- withStore $ \st -> getGroupAndMember st user memId
+              (GroupInfo {groupId}, GroupMember {activeConn}) <- withStore $ \st -> getGroupAndMember st user memId
               case activeConn of
                 Nothing -> throwChatError CEGroupMemberNotActive -- should not happen
                 Just conn -> do
@@ -825,7 +825,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
               XMsgUpdate sharedMsgId mContent -> messageUpdate ct sharedMsgId mContent msg msgMeta
               XMsgDel sharedMsgId -> messageDelete ct sharedMsgId msg msgMeta
               XFile fInv -> processFileInvitation ct fInv msg msgMeta
-              XFileAcptInv sharedMsgId fileConnReq fName -> processFileInvAcceptance ct sharedMsgId fileConnReq fName msg msgMeta
+              XFileAcptInv sharedMsgId fileConnReq fName -> xFileAcptInv ct sharedMsgId fileConnReq fName msgMeta
               XInfo p -> xInfo ct p
               XGrpInv gInv -> processGroupInvitation ct gInv
               XInfoProbe probe -> xInfoProbe ct probe
@@ -967,7 +967,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
             XMsgUpdate sharedMsgId mContent -> groupMessageUpdate gInfo m sharedMsgId mContent msg
             XMsgDel sharedMsgId -> groupMessageDelete gInfo m sharedMsgId msg
             XFile fInv -> processGroupFileInvitation gInfo m fInv msg msgMeta
-            XFileAcptInv sharedMsgId fileConnReq fName -> processGroupFileInvAcceptance gInfo m sharedMsgId fileConnReq fName msg msgMeta
+            XFileAcptInv sharedMsgId fileConnReq fName -> xFileAcptInvGroup gInfo m sharedMsgId fileConnReq fName msgMeta
             XGrpMemNew memInfo -> xGrpMemNew gInfo m memInfo
             XGrpMemIntro memInfo -> xGrpMemIntro conn gInfo m memInfo
             XGrpMemInv memId introInv -> xGrpMemInv gInfo m memId introInv
@@ -998,8 +998,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
                 withStore $ \st -> updateSndFileStatus st ft FSAccepted
                 allowAgentConnection conn confId XOk
               | otherwise -> messageError "x.file.acpt: fileName is different from expected"
-            -- _ -> messageError "CONF from file connection must have x.file.acpt"
-            _ -> pure ()
+            _ -> messageError "CONF from file connection must have x.file.acpt"
         CON -> do
           withStore $ \st -> updateSndFileStatus st ft FSConnected
           toView $ CRSndFileStart ft
@@ -1027,16 +1026,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
           ChatMessage {chatMsgEvent} <- liftEither $ parseChatMessage connInfo
           case chatMsgEvent of
             XOk -> do
-              -- withStore $ \st -> updateSndFileStatus st ft FSAccepted
               allowAgentConnection conn confId XOk
-            -- TODO different event?
-            -- -- TODO save XFileAcpt message
-            -- XFileAcpt name
-            --   | name == fileName -> do
-            --     withStore $ \st -> updateSndFileStatus st ft FSAccepted
-            --     allowAgentConnection conn confId XOk
-            --   | otherwise -> messageError "x.file.acpt: fileName is different from expected"
-            -- _ -> messageError "CONF from file connection must have x.file.acpt"
             _ -> pure ()
         CON -> do
           withStore $ \st -> updateRcvFileStatus st ft FSConnected
@@ -1243,29 +1233,35 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
       showToast ("#" <> g <> " " <> c <> "> ") "wants to send a file"
       setActive $ ActiveG g
 
-    processFileInvAcceptance :: Contact -> SharedMsgId -> ConnReqInvitation -> String -> RcvMessage -> MsgMeta -> m ()
-    processFileInvAcceptance ct@Contact {localDisplayName = c} sharedMsgId fileConnReq fName msg msgMeta = do
+    xFileAcptInv :: Contact -> SharedMsgId -> ConnReqInvitation -> String -> MsgMeta -> m ()
+    xFileAcptInv Contact {contactId} sharedMsgId fileConnReq fName msgMeta = do
       checkIntegrity msgMeta $ toView . CRMsgIntegrityError
-      tryError (withAgent $ \a -> joinConnection a fileConnReq . directMessage $ XOk) >>= \case
-        Right acId -> do
-          fileId <- withStore $ \st -> getFileIdBySharedMsgId st userId sharedMsgId
-          withStore $ \st -> createSndFileTransferV2Connection st userId fileId acId
-          -- toView $ CRFileInvAccepted SndFileTransfer
-        -- Left (ChatErrorAgent (SMP SMP.AUTH)) -> pure $ CRRcvFileAcceptedSndCancelled ft
-        -- Left (ChatErrorAgent (CONN DUPLICATE)) -> pure $ CRRcvFileAcceptedSndCancelled ft
-        Left e -> throwError e
+      fileId <- withStore $ \st -> getFileIdBySharedMsgId st userId contactId sharedMsgId
+      withStore (\st -> getFileTransfer st userId fileId) >>= \case
+        FTSnd FileTransferMeta {fileName} _ ->
+          if fName == fileName
+            then
+              tryError (withAgent $ \a -> joinConnection a fileConnReq . directMessage $ XOk) >>= \case
+                Right acId ->
+                  withStore $ \st -> createSndFileTransferV2Connection st userId fileId acId
+                Left e -> throwError e
+            else messageError "x.file.acpt.inv: fileName is different from expected"
+        _ -> messageError "x.file.acpt.inv: bad file direction"
 
-    processGroupFileInvAcceptance :: GroupInfo -> GroupMember -> SharedMsgId -> ConnReqInvitation -> String -> RcvMessage -> MsgMeta -> m ()
-    processGroupFileInvAcceptance gInfo m@GroupMember {localDisplayName = c} sharedMsgId fileConnReq fName msg msgMeta = do
+    xFileAcptInvGroup :: GroupInfo -> GroupMember -> SharedMsgId -> ConnReqInvitation -> String -> MsgMeta -> m ()
+    xFileAcptInvGroup GroupInfo {groupId} m sharedMsgId fileConnReq fName msgMeta = do
       checkIntegrity msgMeta $ toView . CRMsgIntegrityError
-      tryError (withAgent $ \a -> joinConnection a fileConnReq . directMessage $ XOk) >>= \case
-        Right acId -> do
-          fileId <- withStore $ \st -> getFileIdBySharedMsgId st userId sharedMsgId
-          withStore $ \st -> createSndGroupFileTransferV2Connection st userId fileId acId m
-          -- toView $ CRFileInvAccepted SndFileTransfer
-        -- Left (ChatErrorAgent (SMP SMP.AUTH)) -> pure $ CRRcvFileAcceptedSndCancelled ft
-        -- Left (ChatErrorAgent (CONN DUPLICATE)) -> pure $ CRRcvFileAcceptedSndCancelled ft
-        Left e -> throwError e
+      fileId <- withStore $ \st -> getGroupFileIdBySharedMsgId st userId groupId sharedMsgId
+      withStore (\st -> getFileTransfer st userId fileId) >>= \case
+        FTSnd FileTransferMeta {fileName} _ ->
+          if fName == fileName
+            then
+              tryError (withAgent $ \a -> joinConnection a fileConnReq . directMessage $ XOk) >>= \case
+                Right acId ->
+                  withStore $ \st -> createSndGroupFileTransferV2Connection st userId fileId acId m
+                Left e -> throwError e
+            else messageError "x.file.acpt.inv: fileName is different from expected"
+        _ -> messageError "x.file.acpt.inv: bad file direction"
 
     groupMsgToView :: GroupInfo -> ChatItem 'CTGroup 'MDRcv -> MsgMeta -> m ()
     groupMsgToView gInfo ci msgMeta = do
