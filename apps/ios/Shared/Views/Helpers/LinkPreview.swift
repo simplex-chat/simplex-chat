@@ -69,8 +69,3 @@ func encodeLinkMetadataForAPI(metadata: LPLinkMetadata) -> LinkMetadata {
         image: resizeAndCompressImage(image: image)
     )
 }
-
-func encodeLinkMetadataForPresentation(metadata: LinkMetadata) -> LPLinkMetadata {
-    // TODO
-    return LPLinkMetadata()
-}
