@@ -1,7 +1,4 @@
-{-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE OverloadedStrings #-}
 
 module Main where
 
@@ -21,7 +18,7 @@ main = do
 welcomeGetOpts :: IO ChatOpts
 welcomeGetOpts = do
   appDir <- getAppUserDataDirectory "simplex"
-  opts@ChatOpts {dbFilePrefix} <- getChatOpts appDir
+  opts@ChatOpts {dbFilePrefix} <- getChatOpts appDir "simplex_v1"
   putStrLn $ "SimpleX Chat v" ++ versionNumber
   putStrLn $ "db: " <> dbFilePrefix <> "_chat.db, " <> dbFilePrefix <> "_agent.db"
   putStrLn "type \"/help\" or \"/h\" for usage info"
