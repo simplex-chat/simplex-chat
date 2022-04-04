@@ -1001,7 +1001,7 @@ testFileSndCancel =
         [ do
             alice <## "cancelled sending file 1 (test.jpg) to bob"
             alice ##> "/fs 1"
-            alice <## "sending file 1 (test.jpg) cancelled",
+            alice <## "file 1 not found",
           do
             bob <## "alice cancelled sending file 1 (test.jpg)"
             bob ##> "/fs 1"
@@ -1129,7 +1129,7 @@ testFileSndCancelV2 =
         [ do
             alice <## "cancelled sending file 1 (test.jpg) to bob"
             alice ##> "/fs 1"
-            alice <## "sending file 1 (test.jpg) cancelled",
+            alice <## "file 1 not found",
           do
             bob <## "alice cancelled sending file 1 (test.jpg)"
             bob ##> "/fs 1"

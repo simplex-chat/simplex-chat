@@ -564,6 +564,7 @@ processChatCommand = \case
         pure $ CRSndGroupFileCancelled ftm []
       FTSnd ftm fts -> do
         forM_ fts $ \ft -> cancelSndFileTransfer ft
+        withStore $ \st -> deleteFileTransfer st userId fileId -- for subsequent group transfers in v2 file transfer
         pure $ CRSndGroupFileCancelled ftm fts
       FTRcv ft -> do
         cancelRcvFileTransfer ft
