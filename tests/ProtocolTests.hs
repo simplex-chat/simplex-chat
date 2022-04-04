@@ -82,7 +82,7 @@ s #==# msg = do
   s ==# msg
 
 testProfile :: Profile
-testProfile = Profile {displayName = "alice", fullName = "Alice", image = Just (ProfileImage "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=")}
+testProfile = Profile {displayName = "alice", fullName = "Alice", image = Just (ImageData "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=")}
 
 testGroupProfile :: GroupProfile
 testGroupProfile = GroupProfile {displayName = "team", fullName = "Team", image = Nothing}
@@ -90,6 +90,9 @@ testGroupProfile = GroupProfile {displayName = "team", fullName = "Team", image 
 decodeChatMessageTest :: Spec
 decodeChatMessageTest = describe "Chat message encoding/decoding" $ do
   it "x.msg.new" $ "{\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello\",\"type\":\"text\"}}}" #==# XMsgNew (MCSimple $ MCText "hello")
+  it "x.msg.new" $
+    "{\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"https://simplex.chat\",\"type\":\"link\",\"preview\":{\"description\":\"SimpleX Chat\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgA\",\"title\":\"SimpleX Chat\",\"uri\":\"https://simplex.chat\"}}}}"
+      #==# XMsgNew (MCSimple $ MCLink "https://simplex.chat" $ LinkPreview {uri = "https://simplex.chat", title = "SimpleX Chat", description = "SimpleX Chat", image = ImageData "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgA"})
   it "x.msg.new" $ "{\"msgId\":\"AQIDBA==\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello\",\"type\":\"text\"}}}" ##==## (ChatMessage (Just $ SharedMsgId "\1\2\3\4") (XMsgNew . MCSimple $ MCText "hello"))
   it "x.msg.new" $
     "{\"msgId\":\"AQIDBA==\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello to you too\",\"type\":\"text\"},\"quote\":{\"content\":{\"text\":\"hello there!\",\"type\":\"text\"},\"msgRef\":{\"msgId\":\"BQYHCA==\",\"sent\":true,\"sentAt\":\"1970-01-01T00:00:01.000000001Z\"}}}}"

@@ -171,7 +171,7 @@ groupName' GroupInfo {localDisplayName = g} = g
 data Profile = Profile
   { displayName :: ContactName,
     fullName :: Text,
-    image :: Maybe ProfileImage
+    image :: Maybe ImageData
   }
   deriving (Eq, Show, Generic, FromJSON)
 
@@ -182,7 +182,7 @@ instance ToJSON Profile where
 data GroupProfile = GroupProfile
   { displayName :: GroupName,
     fullName :: Text,
-    image :: Maybe ProfileImage
+    image :: Maybe ImageData
   }
   deriving (Eq, Show, Generic, FromJSON)
 
@@ -190,19 +190,19 @@ instance ToJSON GroupProfile where
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
   toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
-newtype ProfileImage = ProfileImage Text
+newtype ImageData = ImageData Text
   deriving (Eq, Show)
 
-instance FromJSON ProfileImage where
-  parseJSON = fmap ProfileImage . J.parseJSON
+instance FromJSON ImageData where
+  parseJSON = fmap ImageData . J.parseJSON
 
-instance ToJSON ProfileImage where
-  toJSON (ProfileImage t) = J.toJSON t
-  toEncoding (ProfileImage t) = J.toEncoding t
+instance ToJSON ImageData where
+  toJSON (ImageData t) = J.toJSON t
+  toEncoding (ImageData t) = J.toEncoding t
 
-instance ToField ProfileImage where toField (ProfileImage t) = toField t
+instance ToField ImageData where toField (ImageData t) = toField t
 
-instance FromField ProfileImage where fromField = fmap ProfileImage . fromField
+instance FromField ImageData where fromField = fmap ImageData . fromField
 
 data GroupInvitation = GroupInvitation
   { fromMember :: MemberIdRole,
