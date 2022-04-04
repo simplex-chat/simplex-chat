@@ -14,7 +14,7 @@ struct UserProfile: View {
     @State private var editProfile = false
     @State private var showChooseSource = false
     @State private var showImagePicker = false
-    @State private var imageSource: ImageSelectionMethod = .library
+    @State private var imageSource: ImageSelectionMethod = .imageLibrary
     @State private var chosenImage: UIImage? = nil
 
     var body: some View {
@@ -83,13 +83,13 @@ struct UserProfile: View {
                 showImagePicker = true
             }
             Button("Choose from library") {
-                imageSource = .library
+                imageSource = .imageLibrary
                 showImagePicker = true
             }
         }
         .sheet(isPresented: $showImagePicker) {
             switch imageSource {
-            case .library:
+            case .imageLibrary:
                 LibraryImagePicker(image: $chosenImage) {
                     didSelectItem in showImagePicker = false
                 }
