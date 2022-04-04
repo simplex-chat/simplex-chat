@@ -48,7 +48,7 @@ So, how can we operate without identities and still have instant notifications?
 
 ## We've cracked it for Android!
 
-After some research into how push notifications work on Android, and open-source altetnatives to Google push notifications, we discovered how to avoid sharing device tokens with any servers.
+After some research into how push notifications work on Android, and open-source alternatives to Google push notifications, we discovered how to avoid sharing device tokens with any servers.
 
 We have implemented message reception as a background service (in Android terminology, a "foreground service" showing a notification icon when the service is running) following the same design as [ntfy.sh](https://github.com/binwiederhier/ntfy-android) created by [Philipp Heckel](https://github.com/binwiederhier), who, in turn, credits the design to [the blog post by Roberto Huertas](https://robertohuertas.com/2019/06/29/android_foreground_services/). Big thanks to them!
 
