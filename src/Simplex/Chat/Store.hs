@@ -52,6 +52,7 @@ module Simplex.Chat.Store
     getPendingConnections,
     getContactConnections,
     getConnectionEntity,
+    getGroupAndMember,
     updateConnectionStatus,
     createNewGroup,
     createGroupInvitation,
@@ -87,8 +88,16 @@ module Simplex.Chat.Store
     matchReceivedProbeHash,
     matchSentProbe,
     mergeContactRecords,
-    createSndFileTransfer,
-    createSndGroupFileTransfer,
+    createSndFileTransfer, -- old file protocol
+    createSndFileTransferV2,
+    createSndFileTransferV2Connection,
+    createSndGroupFileTransfer, -- old file protocol
+    createSndGroupFileTransferV2,
+    createSndGroupFileTransferV2Connection,
+    updateFileCancelled,
+    getSharedMsgIdByFileId,
+    getFileIdBySharedMsgId,
+    getGroupFileIdBySharedMsgId,
     updateSndFileStatus,
     createSndFileChunk,
     updateSndFileChunkMsg,
@@ -179,10 +188,11 @@ import Simplex.Chat.Migrations.M20220301_smp_servers
 import Simplex.Chat.Migrations.M20220302_profile_images
 import Simplex.Chat.Migrations.M20220304_msg_quotes
 import Simplex.Chat.Migrations.M20220321_chat_item_edited
+import Simplex.Chat.Migrations.M20220404_files_cancelled
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Chat.Util (eitherToMaybe)
-import Simplex.Messaging.Agent.Protocol (AConnectionRequestUri, AgentMsgId, ConnId, InvitationId, MsgMeta (..), SMPServer (..))
+import Simplex.Messaging.Agent.Protocol (AgentMsgId, ConnId, InvitationId, MsgMeta (..), SMPServer (..))
 import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore (..), createSQLiteStore, firstRow, withTransaction)
 import Simplex.Messaging.Agent.Store.SQLite.Migrations (Migration (..))
 import qualified Simplex.Messaging.Crypto as C
@@ -202,7 +212,8 @@ schemaMigrations =
     ("20220301_smp_servers", m20220301_smp_servers),
     ("20220302_profile_images", m20220302_profile_images),
     ("20220304_msg_quotes", m20220304_msg_quotes),
-    ("20220321_chat_item_edited", m20220321_chat_item_edited)
+    ("20220321_chat_item_edited", m20220321_chat_item_edited),
+    ("20220404_files_cancelled", m20220404_files_cancelled)
   ]
 
 -- | The list of migrations in ascending order by date
@@ -269,7 +280,7 @@ getUsers st =
           JOIN contact_profiles p ON c.contact_profile_id = p.contact_profile_id
         |]
 
-toUser :: (UserId, Int64, Bool, ContactName, Text, Maybe ProfileImage) -> User
+toUser :: (UserId, Int64, Bool, ContactName, Text, Maybe ImageData) -> User
 toUser (userId, userContactId, activeUser, displayName, fullName, image) =
   let profile = Profile {displayName, fullName, image}
    in User {userId, userContactId, localDisplayName = displayName, profile, activeUser}
@@ -482,7 +493,7 @@ updateContact_ db userId contactId displayName newName updatedAt = do
     (newName, updatedAt, userId, contactId)
   DB.execute db "DELETE FROM display_names WHERE local_display_name = ? AND user_id = ?" (displayName, userId)
 
-type ContactRow = (Int64, ContactName, Maybe Int64, ContactName, Text, Maybe ProfileImage, UTCTime)
+type ContactRow = (Int64, ContactName, Maybe Int64, ContactName, Text, Maybe ImageData, UTCTime)
 
 toContact :: ContactRow :. ConnectionRow -> Contact
 toContact ((contactId, localDisplayName, viaGroup, displayName, fullName, image, createdAt) :. connRow) =
@@ -758,7 +769,7 @@ getContactRequest_ db userId contactRequestId =
       |]
       (userId, contactRequestId)
 
-type ContactRequestRow = (Int64, ContactName, AgentInvId, Int64, AgentConnId, Int64, ContactName, Text, Maybe ProfileImage, UTCTime, Maybe XContactId)
+type ContactRequestRow = (Int64, ContactName, AgentInvId, Int64, AgentConnId, Int64, ContactName, Text, Maybe ImageData, UTCTime, Maybe XContactId)
 
 toContactRequest :: ContactRequestRow -> UserContactRequest
 toContactRequest (contactRequestId, localDisplayName, agentInvitationId, userContactLinkId, agentContactConnId, profileId, displayName, fullName, image, createdAt, xContactId) = do
@@ -1092,7 +1103,7 @@ getConnectionEntity st User {userId, userContactId} agentConnId =
             WHERE c.user_id = ? AND c.contact_id = ?
           |]
           (userId, contactId)
-    toContact' :: Int64 -> Connection -> [(ContactName, Text, Text, Maybe ProfileImage, Maybe Int64, UTCTime)] -> Either StoreError Contact
+    toContact' :: Int64 -> Connection -> [(ContactName, Text, Text, Maybe ImageData, Maybe Int64, UTCTime)] -> Either StoreError Contact
     toContact' contactId activeConn [(localDisplayName, displayName, fullName, image, viaGroup, createdAt)] =
       let profile = Profile {displayName, fullName, image}
        in Right $ Contact {contactId, localDisplayName, profile, activeConn, viaGroup, createdAt}
@@ -1139,7 +1150,7 @@ getConnectionEntity st User {userId, userContactId} agentConnId =
               FROM snd_files s
               JOIN files f USING (file_id)
               LEFT JOIN contacts cs USING (contact_id)
-              LEFT JOIN group_members m USING (group_member_id)    
+              LEFT JOIN group_members m USING (group_member_id)
               WHERE f.user_id = ? AND f.file_id = ? AND s.connection_id = ?
             |]
             (userId, fileId, connId)
@@ -1164,6 +1175,47 @@ getConnectionEntity st User {userId, userContactId} agentConnId =
         userContact_ :: [Only ConnReqContact] -> Either StoreError UserContact
         userContact_ [Only cReq] = Right UserContact {userContactLinkId, connReqContact = cReq}
         userContact_ _ = Left SEUserContactLinkNotFound
+
+getGroupAndMember :: StoreMonad m => SQLiteStore -> User -> Int64 -> m (GroupInfo, GroupMember)
+getGroupAndMember st User {userId, userContactId} groupMemberId =
+  liftIOEither . withTransaction st $ \db ->
+    firstRow toGroupAndMember (SEInternalError "referenced group member not found") $
+      DB.query
+        db
+        [sql|
+          SELECT
+            -- GroupInfo
+            g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.image, g.created_at,
+            -- GroupInfo {membership}
+            mu.group_member_id, mu.group_id, mu.member_id, mu.member_role, mu.member_category,
+            mu.member_status, mu.invited_by, mu.local_display_name, mu.contact_id,
+            -- GroupInfo {membership = GroupMember {memberProfile}}
+            pu.display_name, pu.full_name, pu.image,
+            -- from GroupMember
+            m.group_member_id, m.group_id, m.member_id, m.member_role, m.member_category, m.member_status,
+            m.invited_by, m.local_display_name, m.contact_id, p.display_name, p.full_name, p.image,
+            c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact,
+            c.conn_status, c.conn_type, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at
+          FROM group_members m
+          JOIN contact_profiles p ON p.contact_profile_id = m.contact_profile_id
+          JOIN groups g ON g.group_id = m.group_id
+          JOIN group_profiles gp USING (group_profile_id)
+          JOIN group_members mu ON g.group_id = mu.group_id
+          JOIN contact_profiles pu ON pu.contact_profile_id = mu.contact_profile_id
+          LEFT JOIN connections c ON c.connection_id = (
+            SELECT max(cc.connection_id)
+            FROM connections cc
+            where cc.group_member_id = m.group_member_id
+          )
+          WHERE m.group_member_id = ? AND g.user_id = ? AND mu.contact_id = ?
+        |]
+        (groupMemberId, userId, userContactId)
+  where
+    toGroupAndMember :: (GroupInfoRow :. GroupMemberRow :. MaybeConnectionRow) -> (GroupInfo, GroupMember)
+    toGroupAndMember (groupInfoRow :. memberRow :. connRow) =
+      let groupInfo = toGroupInfo userContactId groupInfoRow
+          member = toGroupMember userContactId memberRow
+       in (groupInfo, (member :: GroupMember) {activeConn = toMaybeConnection connRow})
 
 updateConnectionStatus :: MonadUnliftIO m => SQLiteStore -> Connection -> ConnStatus -> m ()
 updateConnectionStatus st Connection {connId} connStatus =
@@ -1286,7 +1338,7 @@ getGroupInfoByName st user gName =
     gId <- ExceptT $ getGroupIdByName_ db user gName
     ExceptT $ getGroupInfo_ db user gId
 
-type GroupInfoRow = (Int64, GroupName, GroupName, Text, Maybe ProfileImage, UTCTime) :. GroupMemberRow
+type GroupInfoRow = (Int64, GroupName, GroupName, Text, Maybe ImageData, UTCTime) :. GroupMemberRow
 
 toGroupInfo :: Int64 -> GroupInfoRow -> GroupInfo
 toGroupInfo userContactId ((groupId, localDisplayName, displayName, fullName, image, createdAt) :. userMemberRow) =
@@ -1344,9 +1396,9 @@ getGroupInvitation st user localDisplayName =
     findFromContact (IBContact contactId) = find ((== Just contactId) . memberContactId)
     findFromContact _ = const Nothing
 
-type GroupMemberRow = (Int64, Int64, MemberId, GroupMemberRole, GroupMemberCategory, GroupMemberStatus, Maybe Int64, ContactName, Maybe Int64, ContactName, Text, Maybe ProfileImage)
+type GroupMemberRow = (Int64, Int64, MemberId, GroupMemberRole, GroupMemberCategory, GroupMemberStatus, Maybe Int64, ContactName, Maybe Int64, ContactName, Text, Maybe ImageData)
 
-type MaybeGroupMemberRow = (Maybe Int64, Maybe Int64, Maybe MemberId, Maybe GroupMemberRole, Maybe GroupMemberCategory, Maybe GroupMemberStatus, Maybe Int64, Maybe ContactName, Maybe Int64, Maybe ContactName, Maybe Text, Maybe ProfileImage)
+type MaybeGroupMemberRow = (Maybe Int64, Maybe Int64, Maybe MemberId, Maybe GroupMemberRole, Maybe GroupMemberCategory, Maybe GroupMemberStatus, Maybe Int64, Maybe ContactName, Maybe Int64, Maybe ContactName, Maybe Text, Maybe ImageData)
 
 toGroupMember :: Int64 -> GroupMemberRow -> GroupMember
 toGroupMember userContactId (groupMemberId, groupId, memberId, memberRole, memberCategory, memberStatus, invitedById, localDisplayName, memberContactId, displayName, fullName, image) =
@@ -1724,7 +1776,7 @@ getViaGroupContact st User {userId} GroupMember {groupMemberId} =
         |]
         (userId, groupMemberId)
   where
-    toContact' :: [(Int64, ContactName, Text, Text, Maybe ProfileImage, Maybe Int64, UTCTime) :. ConnectionRow] -> Maybe Contact
+    toContact' :: [(Int64, ContactName, Text, Text, Maybe ImageData, Maybe Int64, UTCTime) :. ConnectionRow] -> Maybe Contact
     toContact' [(contactId, localDisplayName, displayName, fullName, image, viaGroup, createdAt) :. connRow] =
       let profile = Profile {displayName, fullName, image}
           activeConn = toConnection connRow
@@ -1748,6 +1800,26 @@ createSndFileTransfer st userId Contact {contactId, localDisplayName = recipient
       (fileId, fileStatus, connId, currentTs, currentTs)
     pure SndFileTransfer {fileId, fileName, filePath, fileSize, chunkSize, recipientDisplayName, connId, fileStatus, agentConnId = AgentConnId acId}
 
+createSndFileTransferV2 :: MonadUnliftIO m => SQLiteStore -> UserId -> Contact -> FilePath -> FileInvitation -> Integer -> m Int64
+createSndFileTransferV2 st userId Contact {contactId} filePath FileInvitation {fileName, fileSize} chunkSize =
+  liftIO . withTransaction st $ \db -> do
+    currentTs <- getCurrentTime
+    DB.execute
+      db
+      "INSERT INTO files (user_id, contact_id, file_name, file_path, file_size, chunk_size, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?)"
+      (userId, contactId, fileName, filePath, fileSize, chunkSize, currentTs, currentTs)
+    insertedRowId db
+
+createSndFileTransferV2Connection :: MonadUnliftIO m => SQLiteStore -> UserId -> Int64 -> ConnId -> m ()
+createSndFileTransferV2Connection st userId fileId acId =
+  liftIO . withTransaction st $ \db -> do
+    currentTs <- getCurrentTime
+    Connection {connId} <- createSndFileConnection_ db userId fileId acId
+    DB.execute
+      db
+      "INSERT INTO snd_files (file_id, file_status, connection_id, created_at, updated_at) VALUES (?,?,?,?,?)"
+      (fileId, FSAccepted, connId, currentTs, currentTs)
+
 createSndGroupFileTransfer :: MonadUnliftIO m => SQLiteStore -> UserId -> GroupInfo -> [(GroupMember, ConnId, FileInvitation)] -> FilePath -> Integer -> Integer -> m Int64
 createSndGroupFileTransfer st userId GroupInfo {groupId} ms filePath fileSize chunkSize =
   liftIO . withTransaction st $ \db -> do
@@ -1765,6 +1837,74 @@ createSndGroupFileTransfer st userId GroupInfo {groupId} ms filePath fileSize ch
         "INSERT INTO snd_files (file_id, file_status, connection_id, group_member_id, created_at, updated_at) VALUES (?,?,?,?,?,?)"
         (fileId, FSNew, connId, groupMemberId, currentTs, currentTs)
     pure fileId
+
+createSndGroupFileTransferV2 :: MonadUnliftIO m => SQLiteStore -> UserId -> GroupInfo -> FilePath -> FileInvitation -> Integer -> m Int64
+createSndGroupFileTransferV2 st userId GroupInfo {groupId} filePath FileInvitation {fileName, fileSize} chunkSize =
+  liftIO . withTransaction st $ \db -> do
+    currentTs <- getCurrentTime
+    DB.execute
+      db
+      "INSERT INTO files (user_id, group_id, file_name, file_path, file_size, chunk_size, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?)"
+      (userId, groupId, fileName, filePath, fileSize, chunkSize, currentTs, currentTs)
+    insertedRowId db
+
+createSndGroupFileTransferV2Connection :: MonadUnliftIO m => SQLiteStore -> UserId -> Int64 -> ConnId -> GroupMember -> m ()
+createSndGroupFileTransferV2Connection st userId fileId acId GroupMember {groupMemberId} =
+  liftIO . withTransaction st $ \db -> do
+    currentTs <- getCurrentTime
+    Connection {connId} <- createSndFileConnection_ db userId fileId acId
+    DB.execute
+      db
+      "INSERT INTO snd_files (file_id, file_status, connection_id, group_member_id, created_at, updated_at) VALUES (?,?,?,?,?,?)"
+      (fileId, FSAccepted, connId, groupMemberId, currentTs, currentTs)
+
+updateFileCancelled :: MonadUnliftIO m => SQLiteStore -> UserId -> Int64 -> m ()
+updateFileCancelled st userId fileId =
+  liftIO . withTransaction st $ \db -> do
+    currentTs <- getCurrentTime
+    DB.execute db "UPDATE files SET cancelled = 1, updated_at = ? WHERE user_id = ? AND file_id = ?" (currentTs, userId, fileId)
+
+getSharedMsgIdByFileId :: StoreMonad m => SQLiteStore -> UserId -> Int64 -> m SharedMsgId
+getSharedMsgIdByFileId st userId fileId =
+  liftIOEither . withTransaction st $ \db ->
+    firstRow fromOnly (SESharedMsgIdNotFoundByFileId fileId) $
+      DB.query
+        db
+        [sql|
+          SELECT i.shared_msg_id
+          FROM chat_items i
+          JOIN files f ON f.chat_item_id = i.chat_item_id
+          WHERE f.user_id = ? AND f.file_id = ?
+        |]
+        (userId, fileId)
+
+getFileIdBySharedMsgId :: StoreMonad m => SQLiteStore -> Int64 -> UserId -> SharedMsgId -> m Int64
+getFileIdBySharedMsgId st userId contactId sharedMsgId =
+  liftIOEither . withTransaction st $ \db ->
+    firstRow fromOnly (SEFileIdNotFoundBySharedMsgId sharedMsgId) $
+      DB.query
+        db
+        [sql|
+          SELECT f.file_id
+          FROM files f
+          JOIN chat_items i ON i.chat_item_id = f.chat_item_id
+          WHERE i.user_id = ? AND i.contact_id = ? AND i.shared_msg_id = ?
+        |]
+        (userId, contactId, sharedMsgId)
+
+getGroupFileIdBySharedMsgId :: StoreMonad m => SQLiteStore -> Int64 -> UserId -> SharedMsgId -> m Int64
+getGroupFileIdBySharedMsgId st userId groupId sharedMsgId =
+  liftIOEither . withTransaction st $ \db ->
+    firstRow fromOnly (SEFileIdNotFoundBySharedMsgId sharedMsgId) $
+      DB.query
+        db
+        [sql|
+          SELECT f.file_id
+          FROM files f
+          JOIN chat_items i ON i.chat_item_id = f.chat_item_id
+          WHERE i.user_id = ? AND i.group_id = ? AND i.shared_msg_id = ?
+        |]
+        (userId, groupId, sharedMsgId)
 
 createSndFileConnection_ :: DB.Connection -> UserId -> Int64 -> ConnId -> IO Connection
 createSndFileConnection_ db userId fileId agentConnId = do
@@ -1842,7 +1982,7 @@ createRcvFileTransfer st userId Contact {contactId, localDisplayName = c} f@File
       db
       "INSERT INTO rcv_files (file_id, file_status, file_queue_info, created_at, updated_at) VALUES (?,?,?,?,?)"
       (fileId, FSNew, fileConnReq, currentTs, currentTs)
-    pure RcvFileTransfer {fileId, fileInvitation = f, fileStatus = RFSNew, senderDisplayName = c, chunkSize}
+    pure RcvFileTransfer {fileId, fileInvitation = f, fileStatus = RFSNew, senderDisplayName = c, chunkSize, cancelled = False, grpMemberId = Nothing}
 
 createRcvGroupFileTransfer :: MonadUnliftIO m => SQLiteStore -> UserId -> GroupMember -> FileInvitation -> Integer -> m RcvFileTransfer
 createRcvGroupFileTransfer st userId GroupMember {groupId, groupMemberId, localDisplayName = c} f@FileInvitation {fileName, fileSize, fileConnReq} chunkSize =
@@ -1857,7 +1997,7 @@ createRcvGroupFileTransfer st userId GroupMember {groupId, groupMemberId, localD
       db
       "INSERT INTO rcv_files (file_id, file_status, file_queue_info, group_member_id, created_at, updated_at) VALUES (?,?,?,?,?,?)"
       (fileId, FSNew, fileConnReq, groupMemberId, currentTs, currentTs)
-    pure RcvFileTransfer {fileId, fileInvitation = f, fileStatus = RFSNew, senderDisplayName = c, chunkSize}
+    pure RcvFileTransfer {fileId, fileInvitation = f, fileStatus = RFSNew, senderDisplayName = c, chunkSize, cancelled = False, grpMemberId = Just groupMemberId}
 
 getRcvFileTransfer :: StoreMonad m => SQLiteStore -> UserId -> Int64 -> m RcvFileTransfer
 getRcvFileTransfer st userId fileId =
@@ -1870,8 +2010,8 @@ getRcvFileTransfer_ db userId fileId =
     <$> DB.query
       db
       [sql|
-          SELECT r.file_status, r.file_queue_info, f.file_name,
-            f.file_size, f.chunk_size, cs.local_display_name, m.local_display_name,
+          SELECT r.file_status, r.file_queue_info, r.group_member_id, f.file_name,
+            f.file_size, f.chunk_size, f.cancelled, cs.local_display_name, m.local_display_name,
             f.file_path, c.connection_id, c.agent_conn_id
           FROM rcv_files r
           JOIN files f USING (file_id)
@@ -1883,16 +2023,16 @@ getRcvFileTransfer_ db userId fileId =
       (userId, fileId)
   where
     rcvFileTransfer ::
-      [(FileStatus, AConnectionRequestUri, String, Integer, Integer, Maybe ContactName, Maybe ContactName, Maybe FilePath, Maybe Int64, Maybe AgentConnId)] ->
+      [(FileStatus, Maybe ConnReqInvitation, Maybe Int64, String, Integer, Integer, Maybe Bool, Maybe ContactName, Maybe ContactName, Maybe FilePath, Maybe Int64, Maybe AgentConnId)] ->
       Either StoreError RcvFileTransfer
-    rcvFileTransfer [(fileStatus', fileConnReq, fileName, fileSize, chunkSize, contactName_, memberName_, filePath_, connId_, agentConnId_)] =
+    rcvFileTransfer [(fileStatus', fileConnReq, grpMemberId, fileName, fileSize, chunkSize, cancelled_, contactName_, memberName_, filePath_, connId_, agentConnId_)] =
       let fileInv = FileInvitation {fileName, fileSize, fileConnReq}
           fileInfo = (filePath_, connId_, agentConnId_)
        in case contactName_ <|> memberName_ of
             Nothing -> Left $ SERcvFileInvalid fileId
             Just name ->
               case fileStatus' of
-                FSNew -> Right RcvFileTransfer {fileId, fileInvitation = fileInv, fileStatus = RFSNew, senderDisplayName = name, chunkSize}
+                FSNew -> Right RcvFileTransfer {fileId, fileInvitation = fileInv, fileStatus = RFSNew, senderDisplayName = name, chunkSize, cancelled, grpMemberId}
                 FSAccepted -> ft name fileInv RFSAccepted fileInfo
                 FSConnected -> ft name fileInv RFSConnected fileInfo
                 FSComplete -> ft name fileInv RFSComplete fileInfo
@@ -1903,6 +2043,7 @@ getRcvFileTransfer_ db userId fileId =
             let fileStatus = rfs RcvFileInfo {filePath, connId, agentConnId}
              in Right RcvFileTransfer {..}
           _ -> Left $ SERcvFileInvalid fileId
+        cancelled = fromMaybe False cancelled_
     rcvFileTransfer _ = Left $ SERcvFileNotFound fileId
 
 acceptRcvFileTransfer :: StoreMonad m => SQLiteStore -> UserId -> Int64 -> ConnId -> FilePath -> m ()
@@ -1996,7 +2137,8 @@ getFileTransferProgress st userId fileId =
     ft <- ExceptT $ getFileTransfer_ db userId fileId
     liftIO $
       (ft,) . map fromOnly <$> case ft of
-        FTSnd _ -> DB.query db "SELECT COUNT(*) FROM snd_file_chunks WHERE file_id = ? and chunk_sent = 1 GROUP BY connection_id" (Only fileId)
+        FTSnd _ [] -> pure [Only 0]
+        FTSnd _ _ -> DB.query db "SELECT COUNT(*) FROM snd_file_chunks WHERE file_id = ? and chunk_sent = 1 GROUP BY connection_id" (Only fileId)
         FTRcv _ -> DB.query db "SELECT COUNT(*) FROM rcv_file_chunks WHERE file_id = ? AND chunk_stored = 1" (Only fileId)
 
 getFileTransfer_ :: DB.Connection -> UserId -> Int64 -> IO (Either StoreError FileTransfer)
@@ -2014,7 +2156,13 @@ getFileTransfer_ db userId fileId =
       (userId, fileId)
   where
     fileTransfer :: [(Maybe Int64, Maybe Int64)] -> IO (Either StoreError FileTransfer)
-    fileTransfer ((Just _, Nothing) : _) = FTSnd <$$> getSndFileTransfers_ db userId fileId
+    fileTransfer [(Nothing, Nothing)] = runExceptT $ do
+      fileTransferMeta <- ExceptT $ getFileTransferMeta_ db userId fileId
+      pure FTSnd {fileTransferMeta, sndFileTransfers = []}
+    fileTransfer ((Just _, Nothing) : _) = runExceptT $ do
+      fileTransferMeta <- ExceptT $ getFileTransferMeta_ db userId fileId
+      sndFileTransfers <- ExceptT $ getSndFileTransfers_ db userId fileId
+      pure FTSnd {fileTransferMeta, sndFileTransfers}
     fileTransfer [(Nothing, Just _)] = FTRcv <$$> getRcvFileTransfer_ db userId fileId
     fileTransfer _ = pure . Left $ SEFileNotFound fileId
 
@@ -2042,6 +2190,22 @@ getSndFileTransfers_ db userId fileId =
       case contactName_ <|> memberName_ of
         Just recipientDisplayName -> Right SndFileTransfer {fileId, fileStatus, fileName, fileSize, chunkSize, filePath, recipientDisplayName, connId, agentConnId}
         Nothing -> Left $ SESndFileInvalid fileId
+
+getFileTransferMeta_ :: DB.Connection -> UserId -> Int64 -> IO (Either StoreError FileTransferMeta)
+getFileTransferMeta_ db userId fileId =
+  firstRow fileTransferMeta (SEFileNotFound fileId) $
+    DB.query
+      db
+      [sql|
+        SELECT f.file_name, f.file_size, f.chunk_size, f.file_path, f.cancelled
+        FROM files f
+        WHERE f.user_id = ? AND f.file_id = ?
+      |]
+      (userId, fileId)
+  where
+    fileTransferMeta :: (String, Integer, Integer, FilePath, Maybe Bool) -> FileTransferMeta
+    fileTransferMeta (fileName, fileSize, chunkSize, filePath, cancelled_) =
+      FileTransferMeta {fileId, fileName, filePath, fileSize, chunkSize, cancelled = fromMaybe False cancelled_}
 
 createNewSndMessage :: StoreMonad m => SQLiteStore -> TVar ChaChaDRG -> ConnOrGroupId -> (SharedMsgId -> NewMessage) -> m SndMessage
 createNewSndMessage st gVar connOrGroupId mkMessage =
@@ -3380,6 +3544,8 @@ data StoreError
   | SERcvFileNotFound {fileId :: FileTransferId}
   | SEFileNotFound {fileId :: FileTransferId}
   | SERcvFileInvalid {fileId :: FileTransferId}
+  | SESharedMsgIdNotFoundByFileId {fileId :: FileTransferId}
+  | SEFileIdNotFoundBySharedMsgId {sharedMsgId :: SharedMsgId}
   | SEConnectionNotFound {agentConnId :: AgentConnId}
   | SEIntroNotFound
   | SEUniqueID

@@ -54,10 +54,11 @@ struct NewChatButton: View {
         ConnectContactView(completed: { err in
             connectContact = false
             DispatchQueue.global().async {
-                if let error = err {
+                switch (err) {
+                case let .success(ok):
+                    if ok { connectionReqSentAlert(.invitation) }
+                case let .failure(error):
                     connectionErrorAlert(error)
-                } else {
-                    connectionReqSentAlert(.invitation)
                 }
             }
         })

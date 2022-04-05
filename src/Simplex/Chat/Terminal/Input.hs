@@ -47,7 +47,9 @@ runInputLoop ct cc = forever $ do
       Right SendMessage {} -> True
       Right SendGroupMessage {} -> True
       Right SendFile {} -> True
+      Right SendFileInv {} -> True
       Right SendGroupFile {} -> True
+      Right SendGroupFileInv {} -> True
       Right SendMessageQuote {} -> True
       Right SendGroupMessageQuote {} -> True
       Right SendMessageBroadcast {} -> True
@@ -101,9 +103,9 @@ updateTermState ac tw (key, ms) ts@TerminalState {inputString = s, inputPosition
   _ -> ts
   where
     insertCharsWithContact cs
-      | null s && cs /= "@" && cs /= "#" && cs /= "/" && cs /= ">" =
+      | null s && cs /= "@" && cs /= "#" && cs /= "/" && cs /= ">" && cs /= "\\" && cs /= "!" =
         insertChars $ contactPrefix <> cs
-      | s == ">" && cs == " " =
+      | (s == ">" || s == "\\" || s == "!") && cs == " " =
         insertChars $ cs <> contactPrefix
       | otherwise = insertChars cs
     insertChars = ts' . if p >= length s then append else insert
