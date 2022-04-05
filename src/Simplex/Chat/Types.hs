@@ -31,7 +31,7 @@ import Database.SQLite.Simple.Internal (Field (..))
 import Database.SQLite.Simple.Ok (Ok (Ok))
 import Database.SQLite.Simple.ToField (ToField (..))
 import GHC.Generics (Generic)
-import Simplex.Messaging.Agent.Protocol (AConnectionRequestUri, ConnId, ConnectionMode (..), ConnectionRequestUri, InvitationId)
+import Simplex.Messaging.Agent.Protocol (ConnId, ConnectionMode (..), ConnectionRequestUri, InvitationId)
 import Simplex.Messaging.Agent.Store.SQLite (fromTextField_)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, sumTypeJSON)
@@ -171,7 +171,7 @@ groupName' GroupInfo {localDisplayName = g} = g
 data Profile = Profile
   { displayName :: ContactName,
     fullName :: Text,
-    image :: Maybe ProfileImage
+    image :: Maybe ImageData
   }
   deriving (Eq, Show, Generic, FromJSON)
 
@@ -182,7 +182,7 @@ instance ToJSON Profile where
 data GroupProfile = GroupProfile
   { displayName :: GroupName,
     fullName :: Text,
-    image :: Maybe ProfileImage
+    image :: Maybe ImageData
   }
   deriving (Eq, Show, Generic, FromJSON)
 
@@ -190,19 +190,19 @@ instance ToJSON GroupProfile where
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
   toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
-newtype ProfileImage = ProfileImage Text
+newtype ImageData = ImageData Text
   deriving (Eq, Show)
 
-instance FromJSON ProfileImage where
-  parseJSON = fmap ProfileImage . J.parseJSON
+instance FromJSON ImageData where
+  parseJSON = fmap ImageData . J.parseJSON
 
-instance ToJSON ProfileImage where
-  toJSON (ProfileImage t) = J.toJSON t
-  toEncoding (ProfileImage t) = J.toEncoding t
+instance ToJSON ImageData where
+  toJSON (ImageData t) = J.toJSON t
+  toEncoding (ImageData t) = J.toEncoding t
 
-instance ToField ProfileImage where toField (ProfileImage t) = toField t
+instance ToField ImageData where toField (ImageData t) = toField t
 
-instance FromField ProfileImage where fromField = fmap ProfileImage . fromField
+instance FromField ImageData where fromField = fmap ImageData . fromField
 
 data GroupInvitation = GroupInvitation
   { fromMember :: MemberIdRole,
@@ -522,7 +522,7 @@ type FileTransferId = Int64
 data FileInvitation = FileInvitation
   { fileName :: String,
     fileSize :: Integer,
-    fileConnReq :: AConnectionRequestUri
+    fileConnReq :: Maybe ConnReqInvitation
   }
   deriving (Eq, Show, Generic, FromJSON)
 
@@ -533,7 +533,9 @@ data RcvFileTransfer = RcvFileTransfer
     fileInvitation :: FileInvitation,
     fileStatus :: RcvFileStatus,
     senderDisplayName :: ContactName,
-    chunkSize :: Integer
+    chunkSize :: Integer,
+    cancelled :: Bool,
+    grpMemberId :: Maybe Int64
   }
   deriving (Eq, Show, Generic, FromJSON)
 
@@ -601,12 +603,33 @@ instance FromField AgentInvId where fromField f = AgentInvId <$> fromField f
 
 instance ToField AgentInvId where toField (AgentInvId m) = toField m
 
-data FileTransfer = FTSnd {sndFileTransfers :: [SndFileTransfer]} | FTRcv RcvFileTransfer
+data FileTransfer
+  = FTSnd
+      { fileTransferMeta :: FileTransferMeta,
+        sndFileTransfers :: [SndFileTransfer]
+      }
+  | FTRcv {rcvFileTransfer :: RcvFileTransfer}
   deriving (Show, Generic)
 
 instance ToJSON FileTransfer where
   toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "FT"
   toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "FT"
+
+data FileTransferMeta = FileTransferMeta
+  { fileId :: FileTransferId,
+    fileName :: String,
+    filePath :: String,
+    fileSize :: Integer,
+    chunkSize :: Integer,
+    cancelled :: Bool
+  }
+  deriving (Eq, Show, Generic)
+
+instance ToJSON FileTransferMeta where toEncoding = J.genericToEncoding J.defaultOptions
+
+fileTransferCancelled :: FileTransfer -> Bool
+fileTransferCancelled (FTSnd FileTransferMeta {cancelled} _) = cancelled
+fileTransferCancelled (FTRcv RcvFileTransfer {cancelled}) = cancelled
 
 data FileStatus = FSNew | FSAccepted | FSConnected | FSComplete | FSCancelled deriving (Eq, Ord, Show)
 
