@@ -12,7 +12,7 @@ testDB :: FilePath
 testDB = "tests/tmp/test_chat.db"
 
 schema :: FilePath
-schema = "chat_schema.sql"
+schema = "src/Simplex/Chat/Migrations/chat_schema.sql"
 
 schemaDumpTest :: Spec
 schemaDumpTest =
