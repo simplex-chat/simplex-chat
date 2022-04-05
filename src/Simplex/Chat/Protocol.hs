@@ -145,19 +145,21 @@ instance ToJSON QuotedMsg where
 
 cmToQuotedMsg :: ChatMsgEvent -> Maybe QuotedMsg
 cmToQuotedMsg = \case
-  XMsgNew (MCQuote quotedMsg _) -> Just quotedMsg
+  XMsgNew (MCQuote quotedMsg _ _) -> Just quotedMsg
   _ -> Nothing
 
-data MsgContentTag = MCText_ | MCLink_ | MCUnknown_ Text
+data MsgContentTag = MCText_ | MCLink_ | MCImage_ | MCUnknown_ Text
 
 instance StrEncoding MsgContentTag where
   strEncode = \case
     MCText_ -> "text"
     MCLink_ -> "link"
+    MCImage_ -> "image"
     MCUnknown_ t -> encodeUtf8 t
   strDecode = \case
     "text" -> Right MCText_
     "link" -> Right MCLink_
+    "image" -> Right MCImage_
     t -> Right . MCUnknown_ $ safeDecodeUtf8 t
   strP = strDecode <$?> A.takeTill (== ' ')
 
@@ -169,16 +171,16 @@ instance ToJSON MsgContentTag where
   toEncoding = strToJEncoding
 
 data MsgContainer
-  = MCSimple MsgContent
-  | MCQuote QuotedMsg MsgContent
-  | MCForward MsgContent
+  = MCSimple MsgContent (Maybe FileInvitation)
+  | MCQuote QuotedMsg MsgContent (Maybe FileInvitation)
+  | MCForward MsgContent (Maybe FileInvitation)
   deriving (Eq, Show)
 
 mcContent :: MsgContainer -> MsgContent
 mcContent = \case
-  MCSimple c -> c
-  MCQuote _ c -> c
-  MCForward c -> c
+  MCSimple c _ -> c
+  MCQuote _ c _ -> c
+  MCForward c _ -> c
 
 data LinkPreview = LinkPreview {uri :: Text, title :: Text, description :: Text, image :: ImageData}
   deriving (Eq, Show, Generic)
@@ -190,9 +192,14 @@ instance ToJSON LinkPreview where
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
   toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
+data LocalMsgContent
+  = LMCContent MsgContent
+  | LMCImage Text ImageData FileInvitation FilePath
+
 data MsgContent
   = MCText Text
   | MCLink {text :: Text, preview :: LinkPreview}
+  | MCImage {text :: Text, image :: ImageData}
   | MCUnknown {tag :: Text, text :: Text, json :: J.Object}
   deriving (Eq, Show)
 
@@ -200,21 +207,24 @@ msgContentText :: MsgContent -> Text
 msgContentText = \case
   MCText t -> t
   MCLink {text} -> text
+  MCImage {text} -> text
   MCUnknown {text} -> text
 
 msgContentTag :: MsgContent -> MsgContentTag
 msgContentTag = \case
   MCText _ -> MCText_
   MCLink {} -> MCLink_
+  MCImage {} -> MCImage_
   MCUnknown {tag} -> MCUnknown_ tag
 
 parseMsgContainer :: J.Object -> JT.Parser MsgContainer
 parseMsgContainer v =
-  MCQuote <$> v .: "quote" <*> mc
-    <|> (v .: "forward" >>= \f -> (if f then MCForward else MCSimple) <$> mc)
-    <|> MCSimple <$> mc
+  MCQuote <$> v .: "quote" <*> mc <*> file
+    <|> (v .: "forward" >>= \f -> (if f then MCForward else MCSimple) <$> mc <*> file)
+    <|> MCSimple <$> mc <*> file
   where
     mc = v .: "content"
+    file = v .:? "file"
 
 instance FromJSON MsgContent where
   parseJSON (J.Object v) =
@@ -224,6 +234,10 @@ instance FromJSON MsgContent where
         text <- v .: "text"
         preview <- v .: "preview"
         pure MCLink {text, preview}
+      MCImage_ -> do
+        text <- v .: "text"
+        image <- v .: "image"
+        pure MCImage {image, text}
       MCUnknown_ tag -> do
         text <- fromMaybe unknownMsgType <$> v .:? "text"
         pure MCUnknown {tag, text, json = v}
@@ -235,19 +249,25 @@ unknownMsgType = "unknown message type"
 
 msgContainerJSON :: MsgContainer -> J.Object
 msgContainerJSON = \case
-  MCQuote qm c -> JM.fromList ["quote" .= qm, "content" .= c]
-  MCForward c -> JM.fromList ["forward" .= True, "content" .= c]
-  MCSimple c -> JM.fromList ["content" .= c]
+  MCQuote qm c file -> JM.fromList $ withFile ["quote" .= qm, "content" .= c] file
+  MCForward c file -> JM.fromList $ withFile ["forward" .= True, "content" .= c] file
+  MCSimple c file -> JM.fromList $ withFile ["content" .= c] file
+  where
+    withFile l = \case
+      Nothing -> l
+      Just f -> l <> ["file" .= fileInvitationJSON f]
 
 instance ToJSON MsgContent where
   toJSON = \case
     MCUnknown {json} -> J.Object json
     MCText t -> J.object ["type" .= MCText_, "text" .= t]
     MCLink {text, preview} -> J.object ["type" .= MCLink_, "text" .= text, "preview" .= preview]
+    MCImage {text, image} -> J.object ["type" .= MCImage_, "text" .= text, "image" .= image]
   toEncoding = \case
     MCUnknown {json} -> JE.value $ J.Object json
     MCText t -> J.pairs $ "type" .= MCText_ <> "text" .= t
     MCLink {text, preview} -> J.pairs $ "type" .= MCLink_ <> "text" .= text <> "preview" .= preview
+    MCImage {text, image} -> J.pairs $ "type" .= MCImage_ <> "text" .= text <> "image" .= image
 
 instance ToField MsgContent where
   toField = toField . safeDecodeUtf8 . LB.toStrict . J.encode
