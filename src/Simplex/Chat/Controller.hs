@@ -25,6 +25,7 @@ import Data.Version (showVersion)
 import GHC.Generics (Generic)
 import Numeric.Natural
 import qualified Paths_simplex_chat as SC
+import Simplex.Chat.Markdown (MarkdownList)
 import Simplex.Chat.Messages
 import Simplex.Chat.Protocol
 import Simplex.Chat.Store (StoreError)
@@ -102,6 +103,7 @@ data ChatCommand
   | APIAcceptContact Int64
   | APIRejectContact Int64
   | APIUpdateProfile Profile
+  | APIParseMarkdown Text
   | GetUserSMPServers
   | SetUserSMPServers [SMPServer]
   | ChatHelp HelpSection
@@ -136,13 +138,15 @@ data ChatCommand
   | DeleteGroupMessage GroupName ByteString
   | EditGroupMessage {groupName :: ContactName, editedMsg :: ByteString, message :: ByteString}
   | SendFile ContactName FilePath
+  | SendFileInv ContactName FilePath
   | SendGroupFile GroupName FilePath
+  | SendGroupFileInv GroupName FilePath
   | ReceiveFile FileTransferId (Maybe FilePath)
   | CancelFile FileTransferId
   | FileStatus FileTransferId
   | ShowProfile
   | UpdateProfile ContactName Text
-  | UpdateProfileImage (Maybe ProfileImage)
+  | UpdateProfileImage (Maybe ImageData)
   | QuitChat
   | ShowVersion
   deriving (Show)
@@ -153,6 +157,7 @@ data ChatResponse
   | CRChatRunning
   | CRApiChats {chats :: [AChat]}
   | CRApiChat {chat :: AChat}
+  | CRApiParsedMarkdown {formattedText :: Maybe MarkdownList}
   | CRUserSMPServers {smpServers :: [SMPServer]}
   | CRNewChatItem {chatItem :: AChatItem}
   | CRChatItemStatusUpdated {chatItem :: AChatItem}
@@ -202,7 +207,7 @@ data ChatResponse
   | CRSndFileComplete {sndFileTransfer :: SndFileTransfer}
   | CRSndFileCancelled {sndFileTransfer :: SndFileTransfer}
   | CRSndFileRcvCancelled {sndFileTransfer :: SndFileTransfer}
-  | CRSndGroupFileCancelled {sndFileTransfers :: [SndFileTransfer]}
+  | CRSndGroupFileCancelled {fileTransferMeta :: FileTransferMeta, sndFileTransfers :: [SndFileTransfer]}
   | CRUserProfileUpdated {fromProfile :: Profile, toProfile :: Profile}
   | CRContactConnecting {contact :: Contact}
   | CRContactConnected {contact :: Contact}

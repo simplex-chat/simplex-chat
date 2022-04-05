@@ -14,9 +14,8 @@ struct UserProfile: View {
     @State private var editProfile = false
     @State private var showChooseSource = false
     @State private var showImagePicker = false
-    @State private var imageSource: UIImagePickerController.SourceType = .photoLibrary
-    @State private var pickedImage: UIImage? = nil
-    @State private var tmpImageUrl: URL? = nil
+    @State private var imageSource: ImageSource = .imageLibrary
+    @State private var chosenImage: UIImage? = nil
 
     var body: some View {
         let user: User = chatModel.currentUser!
@@ -84,14 +83,21 @@ struct UserProfile: View {
                 showImagePicker = true
             }
             Button("Choose from library") {
-                imageSource = .photoLibrary
+                imageSource = .imageLibrary
                 showImagePicker = true
             }
         }
         .sheet(isPresented: $showImagePicker) {
-            ImagePicker(source: imageSource, image: $pickedImage, imageUrl: $tmpImageUrl)
+            switch imageSource {
+            case .imageLibrary:
+                LibraryImagePicker(image: $chosenImage) {
+                    didSelectItem in showImagePicker = false
+                }
+            case .camera:
+                CameraImagePicker(image: $chosenImage)
+            }
         }
-        .onChange(of: pickedImage) { image in
+        .onChange(of: chosenImage) { image in
             if let image = image,
                let data = resizeToSquare(image, 104).jpegData(compressionQuality: 0.85) {
                 let imageStr = "data:image/jpg;base64,\(data.base64EncodedString())"
@@ -99,13 +105,6 @@ struct UserProfile: View {
                     profile.image = imageStr
                 } else {
                     logger.error("UserProfile: resized image is too big \(imageStr.count)")
-                }
-                if let tmpImageUrl = tmpImageUrl {
-                    do {
-                        try FileManager.default.removeItem(at: tmpImageUrl)
-                    } catch {
-                        logger.error("UserProfile: file deletion error \(error.localizedDescription)")
-                    }
                 }
             } else {
                 profile.image = nil
