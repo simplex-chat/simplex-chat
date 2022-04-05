@@ -201,6 +201,7 @@ test-suite simplex-chat-test
       MarkdownTests
       MobileTests
       ProtocolTests
+      SchemaDump
       Paths_simplex_chat
   hs-source-dirs:
       tests
