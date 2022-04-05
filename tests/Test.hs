@@ -3,6 +3,7 @@ import ChatTests
 import MarkdownTests
 import MobileTests
 import ProtocolTests
+import SchemaDump
 import Test.Hspec
 
 main :: IO ()
@@ -11,3 +12,4 @@ main = withSmpServer . hspec $ do
   describe "SimpleX chat protocol" protocolTests
   describe "Mobile API Tests" mobileTests
   describe "SimpleX chat client" chatTests
+  describe "Schema dump" schemaDumpTest
