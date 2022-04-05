@@ -135,6 +135,7 @@ getTermLine :: TestCC -> IO String
 getTermLine = atomically . readTQueue . termQ
 
 -- Use code below to echo virtual terminal
+-- getTermLine :: TestCC -> IO String
 -- getTermLine cc = do
 --   s <- atomically . readTQueue $ termQ cc
 --   name <- userName cc

@@ -138,7 +138,9 @@ data ChatCommand
   | DeleteGroupMessage GroupName ByteString
   | EditGroupMessage {groupName :: ContactName, editedMsg :: ByteString, message :: ByteString}
   | SendFile ContactName FilePath
+  | SendFileInv ContactName FilePath
   | SendGroupFile GroupName FilePath
+  | SendGroupFileInv GroupName FilePath
   | ReceiveFile FileTransferId (Maybe FilePath)
   | CancelFile FileTransferId
   | FileStatus FileTransferId
@@ -205,7 +207,7 @@ data ChatResponse
   | CRSndFileComplete {sndFileTransfer :: SndFileTransfer}
   | CRSndFileCancelled {sndFileTransfer :: SndFileTransfer}
   | CRSndFileRcvCancelled {sndFileTransfer :: SndFileTransfer}
-  | CRSndGroupFileCancelled {sndFileTransfers :: [SndFileTransfer]}
+  | CRSndGroupFileCancelled {fileTransferMeta :: FileTransferMeta, sndFileTransfers :: [SndFileTransfer]}
   | CRUserProfileUpdated {fromProfile :: Profile, toProfile :: Profile}
   | CRContactConnecting {contact :: Contact}
   | CRContactConnected {contact :: Contact}

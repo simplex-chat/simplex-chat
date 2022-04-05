@@ -113,7 +113,8 @@ data ChatMsgEvent
   | XMsgDel SharedMsgId
   | XMsgDeleted
   | XFile FileInvitation
-  | XFileAcpt String
+  | XFileAcpt String -- old file protocol
+  | XFileAcptInv SharedMsgId ConnReqInvitation String -- new file protocol
   | XInfo Profile
   | XContact Profile (Maybe XContactId)
   | XGrpInv GroupInvitation
@@ -261,6 +262,7 @@ data CMEventTag
   | XMsgDeleted_
   | XFile_
   | XFileAcpt_
+  | XFileAcptInv_
   | XInfo_
   | XContact_
   | XGrpInv_
@@ -290,6 +292,7 @@ instance StrEncoding CMEventTag where
     XMsgDeleted_ -> "x.msg.deleted"
     XFile_ -> "x.file"
     XFileAcpt_ -> "x.file.acpt"
+    XFileAcptInv_ -> "x.file.acpt.inv"
     XInfo_ -> "x.info"
     XContact_ -> "x.contact"
     XGrpInv_ -> "x.grp.inv"
@@ -316,6 +319,7 @@ instance StrEncoding CMEventTag where
     "x.msg.deleted" -> Right XMsgDeleted_
     "x.file" -> Right XFile_
     "x.file.acpt" -> Right XFileAcpt_
+    "x.file.acpt.inv" -> Right XFileAcptInv_
     "x.info" -> Right XInfo_
     "x.contact" -> Right XContact_
     "x.grp.inv" -> Right XGrpInv_
@@ -345,6 +349,7 @@ toCMEventTag = \case
   XMsgDeleted -> XMsgDeleted_
   XFile _ -> XFile_
   XFileAcpt _ -> XFileAcpt_
+  XFileAcptInv {} -> XFileAcptInv_
   XInfo _ -> XInfo_
   XContact _ _ -> XContact_
   XGrpInv _ -> XGrpInv_
@@ -392,6 +397,7 @@ appToChatMessage AppMessage {msgId, event, params} = do
       XMsgDeleted_ -> pure XMsgDeleted
       XFile_ -> XFile <$> p "file"
       XFileAcpt_ -> XFileAcpt <$> p "fileName"
+      XFileAcptInv_ -> XFileAcptInv <$> p "msgId" <*> p "fileConnReq" <*> p "fileName"
       XInfo_ -> XInfo <$> p "profile"
       XContact_ -> XContact <$> p "profile" <*> opt "contactReqId"
       XGrpInv_ -> XGrpInv <$> p "groupInvitation"
@@ -424,8 +430,9 @@ chatToAppMessage ChatMessage {msgId, chatMsgEvent} = AppMessage {msgId, event, p
       XMsgUpdate msgId' content -> o ["msgId" .= msgId', "content" .= content]
       XMsgDel msgId' -> o ["msgId" .= msgId']
       XMsgDeleted -> JM.empty
-      XFile fileInv -> o ["file" .= fileInv]
+      XFile fileInv -> o ["file" .= fileInvitationJSON fileInv]
       XFileAcpt fileName -> o ["fileName" .= fileName]
+      XFileAcptInv sharedMsgId fileConnReq fileName -> o ["msgId" .= sharedMsgId, "fileConnReq" .= fileConnReq, "fileName" .= fileName]
       XInfo profile -> o ["profile" .= profile]
       XContact profile xContactId -> o $ ("contactReqId" .=? xContactId) ["profile" .= profile]
       XGrpInv groupInv -> o ["groupInvitation" .= groupInv]
@@ -445,3 +452,8 @@ chatToAppMessage ChatMessage {msgId, chatMsgEvent} = AppMessage {msgId, event, p
       XInfoProbeOk probe -> o ["probe" .= probe]
       XOk -> JM.empty
       XUnknown _ ps -> ps
+
+fileInvitationJSON :: FileInvitation -> J.Object
+fileInvitationJSON FileInvitation {fileName, fileSize, fileConnReq} = case fileConnReq of
+  Nothing -> JM.fromList ["fileName" .= fileName, "fileSize" .= fileSize]
+  Just fConnReq -> JM.fromList ["fileName" .= fileName, "fileSize" .= fileSize, "fileConnReq" .= fConnReq]
