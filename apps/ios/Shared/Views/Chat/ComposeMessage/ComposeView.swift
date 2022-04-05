@@ -29,7 +29,7 @@ struct ComposeView: View {
     @State var linkUrl: URL? = nil
     
     
-    private func isActiveLink(link: String) -> Bool {
+    private func isValidLink(link: String) -> Bool {
         return !(link.starts(with: "https://simplex.chat") || link.starts(with: "http://simplex.chat") || link.starts(with: "simplex.chat"))
     }
     
@@ -46,7 +46,8 @@ struct ComposeView: View {
         Task {
             do {
                 if let parsedMsg = try await apiParseMarkdown(text: msg),
-                    let link = parsedMsg.first(where: { $0.format == .uri }){
+                   let link = parsedMsg.first(where: { $0.format == .uri }),
+                   isValidLink(link: link.text) {
                         linkUrl = URL(string: link.text)
                     }
             } catch {
