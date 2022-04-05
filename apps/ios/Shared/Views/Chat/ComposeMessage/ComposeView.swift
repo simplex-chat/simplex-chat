@@ -7,6 +7,7 @@
 //
 
 import SwiftUI
+import LinkPresentation
 
 // TODO
 //enum ComposeState {
@@ -24,13 +25,41 @@ struct ComposeView: View {
     var inProgress: Bool = false
     @FocusState.Binding var keyboardVisible: Bool
     @State var editing: Bool = false
-//    @State var hyperlink: String? = nil
+    @State var linkMetadata: LPLinkMetadata? = nil
+    @State var linkUrl: URL? = nil
+    
+    
+    private func isActiveLink(link: String) -> Bool {
+        return !(link.starts(with: "https://simplex.chat") || link.starts(with: "http://simplex.chat") || link.starts(with: "simplex.chat"))
+    }
+    
+    private func getMetadata(_ url: URL) {
+        LPMetadataProvider().startFetchingMetadata(for: url){ metadata, error in
+            if let e = error {
+                logger.error("Error retrieving link metadata: \(e.localizedDescription)")
+            }
+            linkMetadata = metadata
+        }
+    }
+    
+    func parseMessage(_ msg: String) {
+        Task {
+            do {
+                if let parsedMsg = try await apiParseMarkdown(text: msg),
+                    let link = parsedMsg.first(where: { $0.format == .uri }){
+                        linkUrl = URL(string: link.text)
+                    }
+            } catch {
+                logger.error("MessageParsing error: \(error.localizedDescription)")
+            }
+        }
+    }
 
     var body: some View {
         VStack(spacing: 0) {
-//            if (hyperlink != nil) {
-//                LinkPreview(hyperlink)
-//            }
+            if let metadata = linkMetadata {
+                LinkPreview(metadata: metadata)
+            }
             if (quotedItem != nil) {
                 ContextItemView(contextItem: $quotedItem, editing: $editing)
             } else if (editingItem != nil) {
@@ -42,9 +71,17 @@ struct ComposeView: View {
                 message: $message,
                 keyboardVisible: $keyboardVisible,
                 editing: $editing
-//                hyperlink: $hyperlink
             )
             .background(.background)
+        }
+        .onChange(of: message) {
+            _ in
+            if  message.count > 0 {
+                parseMessage(message)
+                if let url = linkUrl {
+                    getMetadata(url)
+                }
+            }
         }
         .onChange(of: editingItem == nil) { _ in
             editing = (editingItem != nil)

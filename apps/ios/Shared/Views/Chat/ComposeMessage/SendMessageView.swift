@@ -15,7 +15,6 @@ struct SendMessageView: View {
     @Namespace var namespace
     @FocusState.Binding var keyboardVisible: Bool
     @Binding var editing: Bool
-//    @Binding var hyperlink: String?
     @State private var teHeight: CGFloat = 42
     @State private var teFont: Font = .body
     var maxHeight: CGFloat = 360
@@ -104,7 +103,6 @@ struct SendMessageView_Previews: PreviewProvider {
                     message: $message,
                     keyboardVisible: $keyboardVisible,
                     editing: $editingOff
-//                    hyperlink: $hyperlink
                 )
             }
             VStack {
@@ -115,7 +113,6 @@ struct SendMessageView_Previews: PreviewProvider {
                     message: $message,
                     keyboardVisible: $keyboardVisible,
                     editing: $editingOn
-//                    hyperlink: $hyperlink
                 )
             }
         }

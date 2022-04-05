@@ -812,7 +812,7 @@ struct FormattedText: Decodable {
     var format: Format?
 }
 
-enum Format: Decodable {
+enum Format: Decodable, Equatable {
     case bold
     case italic
     case strikeThrough

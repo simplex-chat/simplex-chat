@@ -17,18 +17,6 @@ struct LinkMetadata: Codable {
     var image: String?
 }
 
-// TODO caching
-func getMetaDataForURL(url: URL) -> LPLinkMetadata? {
-    let metadataProvider = LPMetadataProvider()
-    var collectedMetadata: LPLinkMetadata? = nil
-    metadataProvider.startFetchingMetadata(for: url){ metadata, error in
-        if error != nil {
-            return
-        }
-        collectedMetadata = metadata
-    }
-    return collectedMetadata
-}
 
 func encodeLinkMetadataForAPI(metadata: LPLinkMetadata) -> LinkMetadata {
     var image: UIImage? = nil
@@ -55,18 +43,19 @@ func encodeLinkMetadataForAPI(metadata: LPLinkMetadata) -> LinkMetadata {
 }
 
 struct LinkPreview: View {
-    let link: String
+    @Environment(\.colorScheme) var colorScheme
+    let metadata: LPLinkMetadata
 
     var body: some View {
-        if let url = URL(string: link),
-           let metadata = getMetaDataForURL(url: url) {
-            let previewData = encodeLinkMetadataForAPI(metadata: metadata)
-            if let image = previewData.image,
-               let data = Data(base64Encoded: dropImagePrefix(image)),
-               let uiImage = UIImage(data: data) {
+        HStack {
+           if let previewData = encodeLinkMetadataForAPI(metadata: metadata),
+              let image = previewData.image,
+              let data = Data(base64Encoded: dropImagePrefix(image)),
+              let uiImage = UIImage(data: data) {
                 Image(uiImage: uiImage)
                     .resizable()
-            } else {
+            }
+            VStack {
                 if let title = metadata.title {
                     Text(title)
                 }
@@ -78,3 +67,9 @@ struct LinkPreview: View {
         }
     }
 }
+
+//struct LinkPreview_Previews: PreviewProvider {
+//    static var previews: some View {
+//
+//    }
+//}
