@@ -2,7 +2,7 @@
 
 module SchemaDump where
 
-import ChatClient
+import ChatClient (withTmpFiles)
 import Control.Monad (void)
 import Simplex.Chat.Store (createStore)
 import System.Process (readCreateProcess, shell)
