@@ -3,7 +3,7 @@ packages: .
 source-repository-package
     type: git
     location: https://github.com/simplex-chat/simplexmq.git
-    tag: 3ba1926b1e5ab32451a2239831d614492d40c9be
+    tag: 85d602b6f1c9e256c82a3c6064a677c299648e27
 
 source-repository-package
     type: git

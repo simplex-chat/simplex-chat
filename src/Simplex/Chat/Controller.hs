@@ -34,6 +34,7 @@ import Simplex.Messaging.Agent (AgentClient)
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig)
 import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore)
+import Simplex.Messaging.Notifications.Protocol (DeviceToken (..), NtfRegistrationCode)
 import Simplex.Messaging.Parsers (dropPrefix, enumJSON, sumTypeJSON)
 import Simplex.Messaging.Protocol (CorrId)
 import System.IO (Handle)
@@ -104,6 +105,8 @@ data ChatCommand
   | APIRejectContact Int64
   | APIUpdateProfile Profile
   | APIParseMarkdown Text
+  | APIRegisterToken DeviceToken
+  | APIVerifyToken DeviceToken NtfRegistrationCode
   | GetUserSMPServers
   | SetUserSMPServers [SMPServer]
   | ChatHelp HelpSection

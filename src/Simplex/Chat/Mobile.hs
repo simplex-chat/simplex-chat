@@ -55,11 +55,7 @@ mobileChatOpts =
     }
 
 defaultMobileConfig :: ChatConfig
-defaultMobileConfig =
-  defaultChatConfig
-    { yesToMigrations = True,
-      agentConfig = (agentConfig defaultChatConfig) {yesToMigrations = True}
-    }
+defaultMobileConfig = defaultChatConfig {yesToMigrations = True}
 
 type CJSONString = CString
 
