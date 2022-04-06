@@ -79,7 +79,8 @@ data ChatItem (c :: ChatType) (d :: MsgDirection) = ChatItem
     meta :: CIMeta d,
     content :: CIContent d,
     formattedText :: Maybe MarkdownList,
-    quotedItem :: Maybe (CIQuote c)
+    quotedItem :: Maybe (CIQuote c),
+    file :: Maybe FilePath
   }
   deriving (Show, Generic)
 
