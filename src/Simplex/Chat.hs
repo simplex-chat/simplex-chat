@@ -1755,8 +1755,8 @@ chatCommandP =
     <|> "/_get chats" $> APIGetChats
     <|> "/_get chat " *> (APIGetChat <$> chatTypeP <*> A.decimal <* A.space <*> chatPaginationP)
     <|> "/_get items count=" *> (APIGetChatItems <$> A.decimal)
-    <|> "/_send " *> (APISendMessage <$> chatTypeP <*> A.decimal <*> optFilePath <* A.space <*> msgContentP)
-    <|> "/_send_quote " *> (APISendMessageQuote <$> chatTypeP <*> A.decimal <* A.space <*> A.decimal <*> optFilePath <* A.space <*> msgContentP)
+    <|> "/_send " *> (APISendMessage <$> chatTypeP <*> A.decimal <*> optional filePathP <* A.space <*> msgContentP)
+    <|> "/_send_quote " *> (APISendMessageQuote <$> chatTypeP <*> A.decimal <* A.space <*> A.decimal <*> optional filePathP <* A.space <*> msgContentP)
     <|> "/_update item " *> (APIUpdateChatItem <$> chatTypeP <*> A.decimal <* A.space <*> A.decimal <* A.space <*> msgContentP)
     <|> "/_delete item " *> (APIDeleteChatItem <$> chatTypeP <*> A.decimal <* A.space <*> A.decimal <* A.space <*> ciDeleteMode)
     <|> "/_read chat " *> (APIChatRead <$> chatTypeP <*> A.decimal <* A.space <*> ((,) <$> ("from=" *> A.decimal) <* A.space <*> ("to=" *> A.decimal)))
@@ -1852,9 +1852,7 @@ chatCommandP =
       n <- (A.space *> A.takeByteString) <|> pure ""
       pure $ if B.null n then name else safeDecodeUtf8 n
     filePath = T.unpack . safeDecodeUtf8 <$> A.takeByteString
-    optFilePath = do
-      f <- (" file" *> A.takeByteString) <|> pure ""
-      pure $ if B.null f then Nothing else Just ((T.unpack . safeDecodeUtf8) f)
+    filePathP = " file " *> (T.unpack . safeDecodeUtf8 <$> A.takeByteString)
     memberRole =
       (" owner" $> GROwner)
         <|> (" admin" $> GRAdmin)
