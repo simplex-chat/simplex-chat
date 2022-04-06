@@ -192,10 +192,6 @@ instance ToJSON LinkPreview where
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
   toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
-data LocalMsgContent
-  = LMCContent MsgContent
-  | LMCImage Text ImageData FileInvitation FilePath
-
 data MsgContent
   = MCText Text
   | MCLink {text :: Text, preview :: LinkPreview}
