@@ -145,7 +145,7 @@ instance ToJSON QuotedMsg where
 
 cmToQuotedMsg :: ChatMsgEvent -> Maybe QuotedMsg
 cmToQuotedMsg = \case
-  XMsgNew (MCQuote quotedMsg _ _) -> Just quotedMsg
+  XMsgNew (MCQuote quotedMsg _) -> Just quotedMsg
   _ -> Nothing
 
 data MsgContentTag = MCText_ | MCLink_ | MCImage_ | MCUnknown_ Text
@@ -171,16 +171,16 @@ instance ToJSON MsgContentTag where
   toEncoding = strToJEncoding
 
 data MsgContainer
-  = MCSimple MsgContent (Maybe FileInvitation)
-  | MCQuote QuotedMsg MsgContent (Maybe FileInvitation)
-  | MCForward MsgContent (Maybe FileInvitation)
+  = MCSimple ExtMsgContent
+  | MCQuote QuotedMsg ExtMsgContent
+  | MCForward ExtMsgContent
   deriving (Eq, Show)
 
 mcContent :: MsgContainer -> MsgContent
 mcContent = \case
-  MCSimple c _ -> c
-  MCQuote _ c _ -> c
-  MCForward c _ -> c
+  MCSimple (ExtMsgContent c _) -> c
+  MCQuote _ (ExtMsgContent c _) -> c
+  MCForward (ExtMsgContent c _) -> c
 
 data LinkPreview = LinkPreview {uri :: Text, title :: Text, description :: Text, image :: ImageData}
   deriving (Eq, Show, Generic)
@@ -213,14 +213,16 @@ msgContentTag = \case
   MCImage {} -> MCImage_
   MCUnknown {tag} -> MCUnknown_ tag
 
+data ExtMsgContent = ExtMsgContent MsgContent (Maybe FileInvitation)
+  deriving (Eq, Show)
+
 parseMsgContainer :: J.Object -> JT.Parser MsgContainer
 parseMsgContainer v =
-  MCQuote <$> v .: "quote" <*> mc <*> file
-    <|> (v .: "forward" >>= \f -> (if f then MCForward else MCSimple) <$> mc <*> file)
-    <|> MCSimple <$> mc <*> file
+  MCQuote <$> v .: "quote" <*> mc
+    <|> (v .: "forward" >>= \f -> (if f then MCForward else MCSimple) <$> mc)
+    <|> MCSimple <$> mc
   where
-    mc = v .: "content"
-    file = v .:? "file"
+    mc = ExtMsgContent <$> v .: "content" <*> v .:? "file"
 
 instance FromJSON MsgContent where
   parseJSON (J.Object v) =
@@ -245,9 +247,9 @@ unknownMsgType = "unknown message type"
 
 msgContainerJSON :: MsgContainer -> J.Object
 msgContainerJSON = \case
-  MCQuote qm c file -> JM.fromList $ withFile ["quote" .= qm, "content" .= c] file
-  MCForward c file -> JM.fromList $ withFile ["forward" .= True, "content" .= c] file
-  MCSimple c file -> JM.fromList $ withFile ["content" .= c] file
+  MCQuote qm (ExtMsgContent c file) -> JM.fromList $ withFile ["quote" .= qm, "content" .= c] file
+  MCForward (ExtMsgContent c file) -> JM.fromList $ withFile ["forward" .= True, "content" .= c] file
+  MCSimple (ExtMsgContent c file) -> JM.fromList $ withFile ["content" .= c] file
   where
     withFile l = \case
       Nothing -> l

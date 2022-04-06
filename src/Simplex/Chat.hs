@@ -174,17 +174,17 @@ processChatCommand = \case
     CTGroup -> CRApiChat . AChat SCTGroup <$> withStore (\st -> getGroupChat st user cId pagination)
     CTContactRequest -> pure $ chatCmdError "not implemented"
   APIGetChatItems _pagination -> pure $ chatCmdError "not implemented"
-  APISendMessage cType chatId file mc -> withUser $ \user@User {userId} -> withChatLock $ case cType of
+  APISendMessage cType chatId _file mc -> withUser $ \user@User {userId} -> withChatLock $ case cType of
     -- TODO send message with file attachment; initiate file transfer
     CTDirect -> do
       ct <- withStore $ \st -> getContact st userId chatId
-      sendNewMsg user ct (MCSimple mc Nothing) mc Nothing
+      sendNewMsg user ct (MCSimple (ExtMsgContent mc Nothing)) mc Nothing
     CTGroup -> do
       group@(Group GroupInfo {membership} _) <- withStore $ \st -> getGroup st user chatId
       unless (memberActive membership) $ throwChatError CEGroupMemberUserRemoved
-      sendNewGroupMsg user group (MCSimple mc Nothing) mc Nothing
+      sendNewGroupMsg user group (MCSimple (ExtMsgContent mc Nothing)) mc Nothing
     CTContactRequest -> pure $ chatCmdError "not supported"
-  APISendMessageQuote cType chatId quotedItemId file mc -> withUser $ \user@User {userId} -> withChatLock $ case cType of
+  APISendMessageQuote cType chatId quotedItemId _file mc -> withUser $ \user@User {userId} -> withChatLock $ case cType of
     -- TODO send message with file attachment; initiate file transfer
     CTDirect -> do
       (ct, qci) <- withStore $ \st -> (,) <$> getContact st userId chatId <*> getDirectChatItem st userId chatId quotedItemId
@@ -199,7 +199,7 @@ processChatCommand = \case
             send_ chatDir sent qmc =
               let quotedItem = CIQuote {chatDir, itemId = Just quotedItemId, sharedMsgId = itemSharedMsgId, sentAt = itemTs, content = qmc, formattedText}
                   msgRef = MsgRef {msgId = itemSharedMsgId, sentAt = itemTs, sent, memberId = Nothing}
-               in sendNewMsg user ct (MCQuote QuotedMsg {msgRef, content = qmc} mc Nothing) mc (Just quotedItem)
+               in sendNewMsg user ct (MCQuote QuotedMsg {msgRef, content = qmc} (ExtMsgContent mc Nothing)) mc (Just quotedItem)
     CTGroup -> do
       group@(Group GroupInfo {membership} _) <- withStore $ \st -> getGroup st user chatId
       unless (memberActive membership) $ throwChatError CEGroupMemberUserRemoved
@@ -215,7 +215,7 @@ processChatCommand = \case
             send_ qd sent GroupMember {memberId} content =
               let quotedItem = CIQuote {chatDir = qd, itemId = Just quotedItemId, sharedMsgId = itemSharedMsgId, sentAt = itemTs, content, formattedText}
                   msgRef = MsgRef {msgId = itemSharedMsgId, sentAt = itemTs, sent, memberId = Just memberId}
-               in sendNewGroupMsg user group (MCQuote QuotedMsg {msgRef, content} mc Nothing) mc (Just quotedItem)
+               in sendNewGroupMsg user group (MCQuote QuotedMsg {msgRef, content} (ExtMsgContent mc Nothing)) mc (Just quotedItem)
     CTContactRequest -> pure $ chatCmdError "not supported"
   APIUpdateChatItem cType chatId itemId mc -> withUser $ \user@User {userId} -> withChatLock $ case cType of
     CTDirect -> do
@@ -359,7 +359,7 @@ processChatCommand = \case
       let mc = MCText $ safeDecodeUtf8 msg
           cts = filter isReady contacts
       forM_ cts $ \ct ->
-        void (sendDirectChatItem user ct (XMsgNew $ MCSimple mc Nothing) (CISndMsgContent mc) Nothing)
+        void (sendDirectChatItem user ct (XMsgNew $ MCSimple (ExtMsgContent mc Nothing)) (CISndMsgContent mc) Nothing)
           `catchError` (toView . CRChatError)
       CRBroadcastSent mc (length cts) <$> liftIO getZonedTime
   SendMessageQuote cName (AMsgDirection msgDir) quotedMsg msg -> withUser $ \User {userId} -> do
@@ -1852,7 +1852,7 @@ chatCommandP =
       n <- (A.space *> A.takeByteString) <|> pure ""
       pure $ if B.null n then name else safeDecodeUtf8 n
     filePath = T.unpack . safeDecodeUtf8 <$> A.takeByteString
-    filePathTagged = " file " *> filePath
+    filePathTagged = " file " *> (T.unpack . safeDecodeUtf8 <$> A.takeTill (== ' '))
     memberRole =
       (" owner" $> GROwner)
         <|> (" admin" $> GRAdmin)
