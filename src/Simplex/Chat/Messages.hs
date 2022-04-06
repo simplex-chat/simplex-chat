@@ -80,7 +80,7 @@ data ChatItem (c :: ChatType) (d :: MsgDirection) = ChatItem
     content :: CIContent d,
     formattedText :: Maybe MarkdownList,
     quotedItem :: Maybe (CIQuote c),
-    file :: Maybe FilePath
+    file :: Maybe CIFile
   }
   deriving (Show, Generic)
 
@@ -265,6 +265,16 @@ quoteMsgDirection = \case
   CIQDirectRcv -> MDRcv
   CIQGroupSnd -> MDSnd
   CIQGroupRcv _ -> MDRcv
+
+data CIFile = CIFile
+  { file :: FilePath, -- local file path
+    fileLoaded :: Bool
+  }
+  deriving (Show, Generic)
+
+instance ToJSON CIFile where
+  toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
+  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
 data CIStatus (d :: MsgDirection) where
   CISSndNew :: CIStatus 'MDSnd
