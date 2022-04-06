@@ -21,24 +21,38 @@ struct LinkMetadata: Codable {
 
 func encodeLinkMetadataForAPI(metadata: LPLinkMetadata) -> LinkMetadata {
     var image: UIImage? = nil
-    if let imageProvider = metadata.imageProvider {
-        if imageProvider.canLoadObject(ofClass: UIImage.self) {
-            imageProvider.loadPreviewImage() { object, error in
-                DispatchQueue.main.async {
-                    if let error = error {
-                        logger.error("Couldn't load image preview from link metadata with error: \(error.localizedDescription)")
-                    }
-                    image = object as? UIImage
-                }
-            }
-        }
-    }
-    return LinkMetadata(
+    var linkMetadata = LinkMetadata(
         url: metadata.url,
         originalUrl: metadata.originalURL,
         title: metadata.title,
-        image: resizeAndCompressImage(image: image)
+        image: nil //resizeAndCompressImage(image: image)
     )
+    let group = DispatchGroup()
+    group.enter()
+    if let imageProvider = metadata.imageProvider {
+        if imageProvider.canLoadObject(ofClass: UIImage.self) {
+            imageProvider.loadObject(ofClass: UIImage.self) { object, error in
+                DispatchQueue.main.async {
+                    if let error = error {
+                        logger.error("Couldn't load image preview from link metadata with error: \(error.localizedDescription)")
+                        group.leave()
+                    }
+                    image = object as? UIImage
+                    print("IMAGE: ", image as Any)
+                    linkMetadata.image = resizeAndCompressImage(image: image)
+                    group.leave()
+                }
+            }
+        }
+        else {
+            group.leave()
+        }
+    }
+    else {
+        group.leave()
+    }
+    group.wait()
+    return linkMetadata
 }
 
 struct LinkPreview: View {
@@ -47,11 +61,10 @@ struct LinkPreview: View {
 
     var body: some View {
         HStack {
-           if let image = metadata.image,
+            if let image = metadata.image,
               let data = Data(base64Encoded: dropImagePrefix(image)),
               let uiImage = UIImage(data: data) {
-                Image(uiImage: uiImage)
-                    .resizable()
+                Image(uiImage: uiImage).frame(maxHeight: 8)
            }
             VStack {
                 if let url = metadata.originalUrl?.absoluteString {
@@ -67,7 +80,7 @@ struct LinkPreview: View {
                     Text("")
                 }
             }
-        }
+        }.background(.background)
     }
 }
 
