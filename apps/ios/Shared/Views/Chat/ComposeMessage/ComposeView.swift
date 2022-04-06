@@ -25,7 +25,7 @@ struct ComposeView: View {
     var inProgress: Bool = false
     @FocusState.Binding var keyboardVisible: Bool
     @State var editing: Bool = false
-    @State var linkMetadata: LPLinkMetadata? = nil
+    @State var linkMetadata: LinkMetadata? = nil
     @State var linkUrl: URL? = nil
     
     
@@ -34,11 +34,13 @@ struct ComposeView: View {
     }
     
     private func getMetadata(_ url: URL) {
-        LPMetadataProvider().startFetchingMetadata(for: url){ metadata, error in
+        LPMetadataProvider().startFetchingMetadata(for: url){ md, error in
             if let e = error {
                 logger.error("Error retrieving link metadata: \(e.localizedDescription)")
             }
-            linkMetadata = metadata
+            if let metadata = md {
+                linkMetadata = encodeLinkMetadataForAPI(metadata: metadata)
+            }
         }
     }
     
