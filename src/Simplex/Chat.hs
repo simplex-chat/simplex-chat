@@ -581,9 +581,15 @@ processChatCommand = \case
     withStore $ \st -> updateFileTransferChatItemId st fileId $ chatItemId' ci
     setActive $ ActiveG gName
     pure . CRNewChatItem $ AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci
-  ReceiveFile fileId filePath_ -> withUser $ \user ->
-    withChatLock . procCmd $
-      receiveFile user fileId filePath_
+  ReceiveFile fileId filePath_ -> withUser $ \user@User {userId} ->
+    withChatLock . procCmd $ do
+      ft <- withStore $ \st -> getRcvFileTransfer st userId fileId
+      (CRRcvFileAccepted ft <$> receiveFile user ft filePath_) `catchError` processError ft
+    where
+      processError ft = \case
+        ChatErrorAgent (SMP SMP.AUTH) -> pure $ CRRcvFileAcceptedSndCancelled ft
+        ChatErrorAgent (CONN DUPLICATE) -> pure $ CRRcvFileAcceptedSndCancelled ft
+        e -> throwError e
   CancelFile fileId -> withUser $ \User {userId} -> do
     ft' <- withStore (\st -> getFileTransfer st userId fileId)
     withChatLock . procCmd $ do
@@ -675,9 +681,8 @@ acceptContactRequest User {userId, profile} UserContactRequest {agentInvitationI
   connId <- withAgent $ \a -> acceptContact a invId . directMessage $ XInfo profile
   withStore $ \st -> createAcceptedContact st userId connId cName profileId p xContactId
 
-receiveFile :: forall m. ChatMonad m => User -> Int64 -> Maybe FilePath -> m ChatResponse
-receiveFile user@User {userId} fileId filePath_ = do
-  ft@RcvFileTransfer {fileInvitation = FileInvitation {fileName, fileConnReq}, fileStatus, senderDisplayName, grpMemberId} <- withStore $ \st -> getRcvFileTransfer st userId fileId
+receiveFile :: forall m. ChatMonad m => User -> RcvFileTransfer -> Maybe FilePath -> m FilePath
+receiveFile user@User {userId} RcvFileTransfer {fileId, fileInvitation = FileInvitation {fileName, fileConnReq}, fileStatus, senderDisplayName, grpMemberId} filePath_ = do
   unless (fileStatus == RFSNew) . throwChatError $ CEFileAlreadyReceiving fileName
   case fileConnReq of
     -- old file protocol
@@ -686,9 +691,7 @@ receiveFile user@User {userId} fileId filePath_ = do
         Right agentConnId -> do
           filePath <- getRcvFilePath filePath_ fileName
           withStore $ \st -> acceptRcvFileTransfer st userId fileId agentConnId filePath
-          pure $ CRRcvFileAccepted ft filePath
-        Left (ChatErrorAgent (SMP SMP.AUTH)) -> pure $ CRRcvFileAcceptedSndCancelled ft
-        Left (ChatErrorAgent (CONN DUPLICATE)) -> pure $ CRRcvFileAcceptedSndCancelled ft
+          pure filePath
         Left e -> throwError e
     -- new file protocol
     Nothing ->
@@ -703,17 +706,17 @@ receiveFile user@User {userId} fileId filePath_ = do
               acceptFileV2 $ \sharedMsgId fileInvConnReq -> sendDirectMessage conn (XFileAcptInv sharedMsgId fileInvConnReq fileName) (GroupId groupId)
             _ -> throwChatError $ CEFileInternal "member connection not active" -- should not happen
       where
-        acceptFileV2 :: (SharedMsgId -> ConnReqInvitation -> m SndMessage) -> m ChatResponse
+        acceptFileV2 :: (SharedMsgId -> ConnReqInvitation -> m SndMessage) -> m FilePath
         acceptFileV2 sendXFileAcptInv = do
           sharedMsgId <- withStore $ \st -> getSharedMsgIdByFileId st userId fileId
           (agentConnId, fileInvConnReq) <- withAgent (`createConnection` SCMInvitation)
           filePath <- getRcvFilePath filePath_ fileName
           withStore $ \st -> acceptRcvFileTransfer st userId fileId agentConnId filePath
           void $ sendXFileAcptInv sharedMsgId fileInvConnReq
-          pure $ CRRcvFileAccepted ft filePath
+          pure filePath
   where
     getRcvFilePath :: Maybe FilePath -> String -> m FilePath
-    getRcvFilePath fPath_ fileName = case fPath_ of
+    getRcvFilePath fPath_ fName = case fPath_ of
       Nothing -> do
         dir <- (`combine` "Downloads") <$> getHomeDirectory
         ifM (doesDirectoryExist dir) (pure dir) getTemporaryDirectory
@@ -739,7 +742,7 @@ receiveFile user@User {userId} fileId filePath_ = do
         uniqueCombine filePath = tryCombine (0 :: Int)
           where
             tryCombine n =
-              let (name, ext) = splitExtensions fileName
+              let (name, ext) = splitExtensions fName
                   suffix = if n == 0 then "" else "_" <> show n
                   f = filePath `combine` (name <> suffix <> ext)
                in ifM (doesFileExist f) (tryCombine $ n + 1) (pure f)
@@ -1230,9 +1233,11 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
           if fAutoAccept
             then do
               -- newContentMessage with fileInv Nothing
-              -- TODO CIFile
-              ci@ChatItem {formattedText} <- saveRcvChatItem user (CDDirectRcv ct) msg msgMeta (CIRcvMsgContent content) Nothing
-              r <- receiveFile user fileId Nothing
+              filePath <- receiveFile user ft Nothing
+              let ciFile = Just $ CIFile {file = filePath, loaded = False}
+              ci@ChatItem {formattedText} <- saveRcvChatItem user (CDDirectRcv ct) msg msgMeta (CIRcvMsgContent content) ciFile
+              -- processFileInvitation
+              withStore $ \st -> updateFileTransferChatItemId st fileId $ chatItemId' ci
               toView . CRNewChatItem $ AChatItem SCTDirect SMDRcv (DirectChat ct) ci
               checkIntegrity msgMeta $ toView . CRMsgIntegrityError
               showMsgToast (c <> "> ") content formattedText
