@@ -176,11 +176,11 @@ data MsgContainer
   | MCForward ExtMsgContent
   deriving (Eq, Show)
 
-mcContent :: MsgContainer -> MsgContent
-mcContent = \case
-  MCSimple (ExtMsgContent c _) -> c
-  MCQuote _ (ExtMsgContent c _) -> c
-  MCForward (ExtMsgContent c _) -> c
+mcExtMsgContent :: MsgContainer -> ExtMsgContent
+mcExtMsgContent = \case
+  MCSimple c -> c
+  MCQuote _ c -> c
+  MCForward c -> c
 
 data LinkPreview = LinkPreview {uri :: Text, title :: Text, description :: Text, image :: ImageData}
   deriving (Eq, Show, Generic)
