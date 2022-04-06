@@ -174,7 +174,7 @@ processChatCommand = \case
     CTGroup -> CRApiChat . AChat SCTGroup <$> withStore (\st -> getGroupChat st user cId pagination)
     CTContactRequest -> pure $ chatCmdError "not implemented"
   APIGetChatItems _pagination -> pure $ chatCmdError "not implemented"
-  APISendMessage cType chatId _file mc -> withUser $ \user@User {userId} -> withChatLock $ case cType of
+  APISendMessage cType chatId file mc -> withUser $ \user@User {userId} -> withChatLock $ case cType of
     -- TODO send message with file attachment; initiate file transfer
     CTDirect -> do
       ct <- withStore $ \st -> getContact st userId chatId
@@ -184,7 +184,7 @@ processChatCommand = \case
       unless (memberActive membership) $ throwChatError CEGroupMemberUserRemoved
       sendNewGroupMsg user group (MCSimple (ExtMsgContent mc Nothing)) mc Nothing
     CTContactRequest -> pure $ chatCmdError "not supported"
-  APISendMessageQuote cType chatId quotedItemId _file mc -> withUser $ \user@User {userId} -> withChatLock $ case cType of
+  APISendMessageQuote cType chatId quotedItemId file mc -> withUser $ \user@User {userId} -> withChatLock $ case cType of
     -- TODO send message with file attachment; initiate file transfer
     CTDirect -> do
       (ct, qci) <- withStore $ \st -> (,) <$> getContact st userId chatId <*> getDirectChatItem st userId chatId quotedItemId
