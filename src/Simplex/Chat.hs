@@ -1232,7 +1232,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
               -- newContentMessage with fileInv Nothing
               -- TODO CIFile
               ci@ChatItem {formattedText} <- saveRcvChatItem user (CDDirectRcv ct) msg msgMeta (CIRcvMsgContent content) Nothing
-              -- r <- receiveFile user fileId
+              r <- receiveFile user fileId Nothing
               toView . CRNewChatItem $ AChatItem SCTDirect SMDRcv (DirectChat ct) ci
               checkIntegrity msgMeta $ toView . CRMsgIntegrityError
               showMsgToast (c <> "> ") content formattedText
