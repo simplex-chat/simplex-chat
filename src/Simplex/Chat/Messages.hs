@@ -268,7 +268,7 @@ quoteMsgDirection = \case
 
 data CIFile = CIFile
   { file :: FilePath, -- local file path
-    fileLoaded :: Bool
+    loaded :: Bool
   }
   deriving (Show, Generic)
 
