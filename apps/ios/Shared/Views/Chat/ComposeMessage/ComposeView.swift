@@ -34,17 +34,6 @@ struct ComposeView: View {
         return !(link.starts(with: "https://simplex.chat") || link.starts(with: "http://simplex.chat") || link.starts(with: "simplex.chat"))
     }
     
-    private func getMetadata(_ url: URL) {
-        LPMetadataProvider().startFetchingMetadata(for: url){ md, error in
-            if let e = error {
-                logger.error("Error retrieving link metadata: \(e.localizedDescription)")
-            }
-            if let metadata = md {
-                linkPreview = encodeLinkMetadataForAPI(metadata: metadata)
-            }
-        }
-    }
-    
     func parseMessage(_ msg: String) {
         Task {
             do {
@@ -83,7 +72,7 @@ struct ComposeView: View {
             if  message.count > 0 {
                 parseMessage(message)
                 if let url = linkUrl {
-                    getMetadata(url)
+                    Task { linkPreview = await getLinkMetadata(url: url) }
                 }
             }
         }

@@ -10,40 +10,36 @@ import SwiftUI
 import LinkPresentation
 
 
-// TODO return LinkPreview?
-func encodeLinkMetadataForAPI(metadata: LPLinkMetadata) -> LinkPreview {
-    var image: UIImage? = nil
-    var linkMetadata = LinkPreview(
-        uri: metadata.url!,
-        title: metadata.title!,
-        image: nil //resizeAndCompressImage(image: image)
-    )
-    let group = DispatchGroup()
-    group.enter()
-    if let imageProvider = metadata.imageProvider {
-        if imageProvider.canLoadObject(ofClass: UIImage.self) {
-            imageProvider.loadObject(ofClass: UIImage.self) { object, error in
-                DispatchQueue.main.async {
+func getLinkMetadata(url: URL) async -> LinkPreview? {
+    return await withCheckedContinuation { continuation in
+        LPMetadataProvider().startFetchingMetadata(for: url){ metadata, error in
+            if let e = error {
+                logger.error("Error retrieving link metadata: \(e.localizedDescription)")
+            }
+            if let metadata = metadata,
+               let imageProvider = metadata.imageProvider,
+               imageProvider.canLoadObject(ofClass: UIImage.self) {
+                imageProvider.loadObject(ofClass: UIImage.self){ object, error in
+                    var linkPreview: LinkPreview? = nil
                     if let error = error {
                         logger.error("Couldn't load image preview from link metadata with error: \(error.localizedDescription)")
-                        group.leave()
                     }
-                    image = object as? UIImage
-                    print("IMAGE: ", image as Any)
-                    linkMetadata.image = resizeAndCompressImage(image: image)
-                    group.leave()
+                    else {
+                        let image = object as? UIImage
+                        if let image = image,
+                           let title = metadata.title,
+                           let uri = metadata.originalURL {
+                            linkPreview = LinkPreview(uri: uri, title: title, image: resizeAndCompressImage(image: image))
+                        }
+                    }
+                    continuation.resume(returning: linkPreview)
                 }
             }
-        }
-        else {
-            group.leave()
+            else {
+                continuation.resume(returning: nil)
+            }
         }
     }
-    else {
-        group.leave()
-    }
-    group.wait()
-    return linkMetadata
 }
 
 struct LinkPreviewView: View {
