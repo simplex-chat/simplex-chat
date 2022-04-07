@@ -156,12 +156,17 @@ responseToView testView = \case
     testViewChat :: AChat -> [StyledString]
     testViewChat (AChat _ Chat {chatItems}) = [sShow $ map toChatView chatItems]
       where
-        toChatView :: CChatItem c -> ((Int, Text), Maybe (Int, Text))
-        toChatView (CChatItem dir ChatItem {meta, quotedItem}) =
-          ((msgDirectionInt $ toMsgDirection dir, itemText meta),) $ case quotedItem of
-            Nothing -> Nothing
-            Just CIQuote {chatDir = quoteDir, content} ->
-              Just (msgDirectionInt $ quoteMsgDirection quoteDir, msgContentText content)
+        toChatView :: CChatItem c -> ((Int, Text), Maybe (Int, Text), Maybe String)
+        toChatView (CChatItem dir ChatItem {meta, quotedItem, file}) =
+          ((msgDirectionInt $ toMsgDirection dir, itemText meta), qItem, fPath)
+          where
+            qItem = case quotedItem of
+              Nothing -> Nothing
+              Just CIQuote {chatDir = quoteDir, content} ->
+                Just (msgDirectionInt $ quoteMsgDirection quoteDir, msgContentText content)
+            fPath = case file of
+              Just CIFile {filePath = Just fp} -> Just fp
+              _ -> Nothing
     viewErrorsSummary :: [a] -> StyledString -> [StyledString]
     viewErrorsSummary summary s = [ttyError (T.pack . show $ length summary) <> s <> " (run with -c option to show each error)" | not (null summary)]
 
