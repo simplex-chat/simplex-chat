@@ -20,12 +20,13 @@ struct ComposeView: View {
     @Binding var message: String
     @Binding var quotedItem: ChatItem?
     @Binding var editingItem: ChatItem?
+    @Binding var linkPreview: LinkPreview?
+
     var sendMessage: (String) -> Void
     var resetMessage: () -> Void
     var inProgress: Bool = false
     @FocusState.Binding var keyboardVisible: Bool
     @State var editing: Bool = false
-    @State var linkMetadata: LinkMetadata? = nil
     @State var linkUrl: URL? = nil
     
     
@@ -39,7 +40,7 @@ struct ComposeView: View {
                 logger.error("Error retrieving link metadata: \(e.localizedDescription)")
             }
             if let metadata = md {
-                linkMetadata = encodeLinkMetadataForAPI(metadata: metadata)
+                linkPreview = encodeLinkMetadataForAPI(metadata: metadata)
             }
         }
     }
@@ -60,8 +61,8 @@ struct ComposeView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            if let metadata = linkMetadata {
-                LinkPreview(metadata: metadata)
+            if let metadata = linkPreview {
+                LinkPreviewView(metadata: metadata)
             }
             if (quotedItem != nil) {
                 ContextItemView(contextItem: $quotedItem, editing: $editing)
@@ -98,12 +99,14 @@ struct ComposeView_Previews: PreviewProvider {
         @FocusState var keyboardVisible: Bool
         @State var item: ChatItem? = ChatItem.getSample(1, .directSnd, .now, "hello")
         @State var nilItem: ChatItem? = nil
+        @State var linkPreview: LinkPreview? = nil
 
         return Group {
             ComposeView(
                 message: $message,
                 quotedItem: $item,
                 editingItem: $nilItem,
+                linkPreview: $linkPreview,
                 sendMessage: { print ($0) },
                 resetMessage: {},
                 keyboardVisible: $keyboardVisible
@@ -112,6 +115,7 @@ struct ComposeView_Previews: PreviewProvider {
                 message: $message,
                 quotedItem: $nilItem,
                 editingItem: $item,
+                linkPreview: $linkPreview,
                 sendMessage: { print ($0) },
                 resetMessage: {},
                 keyboardVisible: $keyboardVisible

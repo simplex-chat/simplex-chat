@@ -13,7 +13,7 @@ import BackgroundTasks
 
 private var chatController: chat_ctrl?
 private let jsonDecoder = getJSONDecoder()
-private let jsonEncoder = getJSONEncoder()
+let jsonEncoder = getJSONEncoder()
 
 enum ChatCommand {
     case showActiveUser
@@ -786,7 +786,7 @@ private func getJSONObject(_ cjson: UnsafePointer<CChar>) -> NSDictionary? {
     return try? JSONSerialization.jsonObject(with: d) as? NSDictionary
 }
 
-private func encodeJSON<T: Encodable>(_ value: T) -> String {
+func encodeJSON<T: Encodable>(_ value: T) -> String {
     let data = try! jsonEncoder.encode(value)
     return String(decoding: data, as: UTF8.self)
 }

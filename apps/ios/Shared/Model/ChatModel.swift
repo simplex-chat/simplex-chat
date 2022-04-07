@@ -761,6 +761,7 @@ struct CIQuote: Decodable, ItemContent {
 
 enum MsgContent {
     case text(String)
+    case link(text: String, preview: LinkPreview)
     // TODO include original JSON, possibly using https://github.com/zoul/generic-json-swift
     case unknown(type: String, text: String)
 
@@ -768,6 +769,7 @@ enum MsgContent {
         get {
             switch self {
             case let .text(text): return text
+            case let .link(text, _): return text
             case let .unknown(_, text): return text
             }
         }
@@ -777,6 +779,8 @@ enum MsgContent {
         get {
             switch self {
             case let .text(text): return "text \(text)"
+            case let .link(text: text, preview: preview):
+                return "json {\"type\":\"link\",\"text\":\(encodeJSON(text)),\"preview\":\(encodeJSON(preview))}"
             default: return ""
             }
         }
@@ -785,9 +789,11 @@ enum MsgContent {
     enum CodingKeys: String, CodingKey {
         case type
         case text
+        case preview
     }
 }
 
+// TODO define Encodable
 extension MsgContent: Decodable {
     init(from decoder: Decoder) throws {
         do {
@@ -797,6 +803,10 @@ extension MsgContent: Decodable {
             case "text":
                 let text = try container.decode(String.self, forKey: CodingKeys.text)
                 self = .text(text)
+            case "link":
+                let text = try container.decode(String.self, forKey: CodingKeys.text)
+                let preview = try container.decode(LinkPreview.self, forKey: CodingKeys.preview)
+                self = .link(text: text, preview: preview)
             default:
                 let text = try? container.decode(String.self, forKey: CodingKeys.text)
                 self = .unknown(type: type, text: text ?? "unknown message format")
@@ -848,4 +858,13 @@ enum FormatColor: String, Decodable {
             }
         }
     }
+}
+
+// Struct to use with simplex API
+struct LinkPreview: Codable {
+    var uri: URL
+    var title: String
+    // TODO remove once optional in haskell
+    var description: String = ""
+    var image: String?
 }

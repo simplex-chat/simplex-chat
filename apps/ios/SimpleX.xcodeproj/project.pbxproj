@@ -7,8 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		3CDBCF4227FAE51000354CDD /* LinkPreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CDBCF4127FAE51000354CDD /* LinkPreview.swift */; };
-		3CDBCF4327FAE51000354CDD /* LinkPreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CDBCF4127FAE51000354CDD /* LinkPreview.swift */; };
+		3CDBCF4227FAE51000354CDD /* LinkPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CDBCF4127FAE51000354CDD /* LinkPreviewView.swift */; };
+		3CDBCF4327FAE51000354CDD /* LinkPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CDBCF4127FAE51000354CDD /* LinkPreviewView.swift */; };
 		5C063D2727A4564100AEC577 /* ChatPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C063D2627A4564100AEC577 /* ChatPreviewView.swift */; };
 		5C063D2827A4564100AEC577 /* ChatPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C063D2627A4564100AEC577 /* ChatPreviewView.swift */; };
 		5C116CDC27AABE0400E66D01 /* ContactRequestView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C116CDB27AABE0400E66D01 /* ContactRequestView.swift */; };
@@ -140,7 +140,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		3CDBCF4127FAE51000354CDD /* LinkPreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinkPreview.swift; sourceTree = "<group>"; };
+		3CDBCF4127FAE51000354CDD /* LinkPreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinkPreviewView.swift; sourceTree = "<group>"; };
 		5C063D2627A4564100AEC577 /* ChatPreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatPreviewView.swift; sourceTree = "<group>"; };
 		5C116CDB27AABE0400E66D01 /* ContactRequestView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContactRequestView.swift; sourceTree = "<group>"; };
 		5C1A4C1D27A715B700EAD5AD /* ChatItemView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatItemView.swift; sourceTree = "<group>"; };
@@ -324,7 +324,7 @@
 				5C3A88CD27DF50170060F1C2 /* DetermineWidth.swift */,
 				5C5F2B6C27EBC3FE006A9D5F /* ImagePicker.swift */,
 				5C5F2B6F27EBC704006A9D5F /* ProfileImage.swift */,
-				3CDBCF4127FAE51000354CDD /* LinkPreview.swift */,
+				3CDBCF4127FAE51000354CDD /* LinkPreviewView.swift */,
 			);
 			path = Helpers;
 			sourceTree = "<group>";
@@ -626,7 +626,7 @@
 				5CB924E127A867BA00ACCCDD /* UserProfile.swift in Sources */,
 				5CE4407927ADB701007B033A /* EmojiItemView.swift in Sources */,
 				5C5346A827B59A6A004DF848 /* ChatHelp.swift in Sources */,
-				3CDBCF4227FAE51000354CDD /* LinkPreview.swift in Sources */,
+				3CDBCF4227FAE51000354CDD /* LinkPreviewView.swift in Sources */,
 				5C764E80279C7276000C6508 /* dummy.m in Sources */,
 				5C7505A827B6D34800BE3227 /* ChatInfoToolbar.swift in Sources */,
 				5C3A88D127DF57800060F1C2 /* FramedItemView.swift in Sources */,
@@ -679,7 +679,7 @@
 				5CB924E227A867BA00ACCCDD /* UserProfile.swift in Sources */,
 				5CE4407A27ADB701007B033A /* EmojiItemView.swift in Sources */,
 				5C5346A927B59A6A004DF848 /* ChatHelp.swift in Sources */,
-				3CDBCF4327FAE51000354CDD /* LinkPreview.swift in Sources */,
+				3CDBCF4327FAE51000354CDD /* LinkPreviewView.swift in Sources */,
 				5C764E81279C7276000C6508 /* dummy.m in Sources */,
 				5C7505A927B6D34800BE3227 /* ChatInfoToolbar.swift in Sources */,
 				5C3A88D227DF57800060F1C2 /* FramedItemView.swift in Sources */,

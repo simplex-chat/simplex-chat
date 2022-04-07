@@ -10,21 +10,12 @@ import SwiftUI
 import LinkPresentation
 
 
-// Struct to use with simplex API
-struct LinkMetadata: Codable {
-    var url: URL?
-    var originalUrl: URL?
-    var title: String?
-    var image: String?
-}
-
-
-func encodeLinkMetadataForAPI(metadata: LPLinkMetadata) -> LinkMetadata {
+// TODO return LinkPreview?
+func encodeLinkMetadataForAPI(metadata: LPLinkMetadata) -> LinkPreview {
     var image: UIImage? = nil
-    var linkMetadata = LinkMetadata(
-        url: metadata.url,
-        originalUrl: metadata.originalURL,
-        title: metadata.title,
+    var linkMetadata = LinkPreview(
+        uri: metadata.url!,
+        title: metadata.title!,
         image: nil //resizeAndCompressImage(image: image)
     )
     let group = DispatchGroup()
@@ -55,9 +46,9 @@ func encodeLinkMetadataForAPI(metadata: LPLinkMetadata) -> LinkMetadata {
     return linkMetadata
 }
 
-struct LinkPreview: View {
+struct LinkPreviewView: View {
     @Environment(\.colorScheme) var colorScheme
-    let metadata: LinkMetadata
+    let metadata: LinkPreview
 
     var body: some View {
         HStack {
@@ -67,7 +58,7 @@ struct LinkPreview: View {
                 Image(uiImage: uiImage).frame(maxHeight: 8)
            }
             VStack {
-                if let url = metadata.originalUrl?.absoluteString {
+                if let url = metadata.uri.absoluteString {
                     Text(url)
                 }
                 else {
