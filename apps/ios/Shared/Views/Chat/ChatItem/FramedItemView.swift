@@ -51,6 +51,9 @@ struct FramedItemView: View {
                     .frame(minWidth: msgWidth, alignment: .center)
                     .padding(.bottom, 2)
                 } else {
+                    if case let .link(_, preview) = chatItem.content.msgContent {
+                        LinkPreviewView(metadata: preview)
+                    }
                     MsgContentView(
                         content: chatItem.content,
                         formattedText: chatItem.formattedText,

@@ -726,6 +726,15 @@ enum CIContent: Decodable, ItemContent {
             }
         }
     }
+    var msgContent: MsgContent? {
+        get {
+            switch self {
+            case let .sndMsgContent(mc): return mc
+            case let .rcvMsgContent(mc): return mc
+            default: return nil
+            }
+        }
+    }
 }
 
 struct RcvFileTransfer: Decodable {
