@@ -42,9 +42,10 @@ func getLinkMetadata(url: URL) async -> LinkPreview? {
     }
 }
 
-struct LinkPreviewView: View {
+struct SmallLinkPreviewView: View {
     @Environment(\.colorScheme) var colorScheme
     let metadata: LinkPreview
+    var cancelPreview: (() -> Void)? = nil
 
     var body: some View {
         HStack {
@@ -54,14 +55,14 @@ struct LinkPreviewView: View {
                 Image(uiImage: uiImage).frame(maxHeight: 8)
            }
             VStack {
-                if let url = metadata.uri.absoluteString {
-                    Text(url)
+                if let title = metadata.title {
+                    Text(title).fontWeight(.bold)
                 }
                 else {
                     Text("")
                 }
-                if let title = metadata.title {
-                    Text(title)
+                if let url = metadata.uri.absoluteString {
+                    Text(url).foregroundColor(.gray)
                 }
                 else {
                     Text("")

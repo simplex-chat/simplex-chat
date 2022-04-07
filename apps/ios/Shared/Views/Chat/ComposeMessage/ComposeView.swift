@@ -28,12 +28,17 @@ struct ComposeView: View {
     @FocusState.Binding var keyboardVisible: Bool
     @State var editing: Bool = false
     @State var linkUrl: URL? = nil
+    @State var previewCancelled: Bool = false
     
     
     private func isValidLink(link: String) -> Bool {
         return !(link.starts(with: "https://simplex.chat") || link.starts(with: "http://simplex.chat") || link.starts(with: "simplex.chat"))
     }
     
+    func cancelPreview() {
+        previewCancelled = true
+    }
+
     func parseMessage(_ msg: String) {
         Task {
             do {
@@ -50,8 +55,8 @@ struct ComposeView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            if let metadata = linkPreview {
-                LinkPreviewView(metadata: metadata)
+            if !previewCancelled, let metadata = linkPreview {
+                SmallLinkPreviewView(metadata: metadata, cancelPreview: cancelPreview)
             }
             if (quotedItem != nil) {
                 ContextItemView(contextItem: $quotedItem, editing: $editing)
