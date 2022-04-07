@@ -63,6 +63,8 @@ chatTests = do
     it "sender cancelled file transfer" testFileSndCancelV2
     it "recipient cancelled file transfer" testFileRcvCancelV2
     it "send and receive file to group" testGroupFileTransferV2
+  describe "messages with files" $ do
+    it "send and receive direct message with image" testDirectImage
   describe "user contact link" $ do
     it "create and connect via contact link" testUserContactLink
     it "auto accept contact requests" testUserContactLinkAutoAccept
@@ -1205,6 +1207,35 @@ testGroupFileTransferV2 =
             cath <## "started receiving file 1 (test.jpg) from alice"
             cath <## "completed receiving file 1 (test.jpg) from alice"
         ]
+
+testDirectImage :: IO ()
+testDirectImage =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+      alice ##> "/_send @2 file ./tests/fixtures/test.jpg text hi! here's an image"
+      alice <# "@bob hi! here's an image"
+      alice <# "/f @bob ./tests/fixtures/test.jpg"
+      alice <## "use /fc 1 to cancel sending"
+      bob <# "alice> hi! here's an image"
+      bob <# "alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
+      bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+      bob ##> "/fr 1 ./tests/tmp"
+      bob <## "saving file 1 from alice to ./tests/tmp/test.jpg"
+      concurrently_
+        (bob <## "started receiving file 1 (test.jpg) from alice")
+        (alice <## "started sending file 1 (test.jpg) to bob")
+      concurrentlyN_
+        [ do
+            bob #> "@alice receiving here..."
+            bob <## "completed receiving file 1 (test.jpg) from alice",
+          do
+            alice <# "bob> receiving here..."
+            alice <## "completed sending file 1 (test.jpg) to bob"
+        ]
+      src <- B.readFile "./tests/fixtures/test.jpg"
+      dest <- B.readFile "./tests/tmp/test.jpg"
+      dest `shouldBe` src
 
 testUserContactLink :: IO ()
 testUserContactLink = testChat3 aliceProfile bobProfile cathProfile $

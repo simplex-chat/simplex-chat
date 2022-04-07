@@ -166,33 +166,33 @@ responseToView testView = \case
     viewErrorsSummary summary s = [ttyError (T.pack . show $ length summary) <> s <> " (run with -c option to show each error)" | not (null summary)]
 
 viewChatItem :: MsgDirectionI d => ChatInfo c -> ChatItem c d -> [StyledString]
-viewChatItem chat ChatItem {chatDir, meta, content, quotedItem} = case chat of
+viewChatItem chat ChatItem {chatDir, meta, content, quotedItem, file} = case chat of
   DirectChat c -> case chatDir of
     CIDirectSnd -> case content of
-      CISndMsgContent mc -> viewSentMessage to quote mc meta
+      CISndMsgContent mc -> viewSentMessage to quote mc file meta
       CISndDeleted _ -> []
       CISndFileInvitation fId fPath -> viewSentFileInvitation to fId fPath meta
       where
         to = ttyToContact' c
     CIDirectRcv -> case content of
-      CIRcvMsgContent mc -> viewReceivedMessage from quote meta mc
+      CIRcvMsgContent mc -> viewReceivedMessage from quote mc file meta
       CIRcvDeleted _ -> []
-      CIRcvFileInvitation ft -> viewReceivedFileInvitation from meta ft
+      CIRcvFileInvitation RcvFileTransfer {fileId, fileInvitation = FileInvitation {fileName, fileSize}} -> viewReceivedFileInvitation from fileId fileName fileSize meta
       where
         from = ttyFromContact' c
     where
       quote = maybe [] (directQuote chatDir) quotedItem
   GroupChat g -> case chatDir of
     CIGroupSnd -> case content of
-      CISndMsgContent mc -> viewSentMessage to quote mc meta
+      CISndMsgContent mc -> viewSentMessage to quote mc file meta
       CISndDeleted _ -> []
       CISndFileInvitation fId fPath -> viewSentFileInvitation to fId fPath meta
       where
         to = ttyToGroup g
     CIGroupRcv m -> case content of
-      CIRcvMsgContent mc -> viewReceivedMessage from quote meta mc
+      CIRcvMsgContent mc -> viewReceivedMessage from quote mc file meta
       CIRcvDeleted _ -> []
-      CIRcvFileInvitation ft -> viewReceivedFileInvitation from meta ft
+      CIRcvFileInvitation RcvFileTransfer {fileId, fileInvitation = FileInvitation {fileName, fileSize}} -> viewReceivedFileInvitation from fileId fileName fileSize meta
       where
         from = ttyFromGroup' g m
     where
@@ -203,7 +203,7 @@ viewItemUpdate :: MsgDirectionI d => ChatInfo c -> ChatItem c d -> [StyledString
 viewItemUpdate chat ChatItem {chatDir, meta, content, quotedItem} = case chat of
   DirectChat Contact {localDisplayName = c} -> case chatDir of
     CIDirectRcv -> case content of
-      CIRcvMsgContent mc -> viewReceivedMessage from quote meta mc
+      CIRcvMsgContent mc -> viewReceivedMessage from quote mc Nothing meta
       _ -> []
       where
         from = ttyFromContactEdited c
@@ -211,7 +211,7 @@ viewItemUpdate chat ChatItem {chatDir, meta, content, quotedItem} = case chat of
     CIDirectSnd -> ["message updated"]
   GroupChat g -> case chatDir of
     CIGroupRcv GroupMember {localDisplayName = m} -> case content of
-      CIRcvMsgContent mc -> viewReceivedMessage from quote meta mc
+      CIRcvMsgContent mc -> viewReceivedMessage from quote mc Nothing meta
       _ -> []
       where
         from = ttyFromGroupEdited g m
@@ -223,13 +223,13 @@ viewItemDelete :: ChatInfo c -> ChatItem c d -> ChatItem c' d' -> [StyledString]
 viewItemDelete chat ChatItem {chatDir, meta, content = deletedContent} ChatItem {content = toContent} = case chat of
   DirectChat Contact {localDisplayName = c} -> case (chatDir, deletedContent, toContent) of
     (CIDirectRcv, CIRcvMsgContent mc, CIRcvDeleted mode) -> case mode of
-      CIDMBroadcast -> viewReceivedMessage (ttyFromContactDeleted c) [] meta mc
+      CIDMBroadcast -> viewReceivedMessage (ttyFromContactDeleted c) [] mc Nothing meta
       CIDMInternal -> ["message deleted"]
     (CIDirectSnd, _, _) -> ["message deleted"]
     _ -> []
   GroupChat g -> case (chatDir, deletedContent, toContent) of
     (CIGroupRcv GroupMember {localDisplayName = m}, CIRcvMsgContent mc, CIRcvDeleted mode) -> case mode of
-      CIDMBroadcast -> viewReceivedMessage (ttyFromGroupDeleted g m) [] meta mc
+      CIDMBroadcast -> viewReceivedMessage (ttyFromGroupDeleted g m) [] mc Nothing meta
       CIDMInternal -> ["message deleted"]
     (CIGroupSnd, _, _) -> ["message deleted"]
     _ -> []
@@ -434,8 +434,13 @@ viewContactUpdated
     where
       fullNameUpdate = if T.null fullName' || fullName' == n' then " removed full name" else " updated full name: " <> plain fullName'
 
-viewReceivedMessage :: StyledString -> [StyledString] -> CIMeta d -> MsgContent -> [StyledString]
-viewReceivedMessage from quote meta = receivedWithTime_ from quote meta . ttyMsgContent
+viewReceivedMessage :: StyledString -> [StyledString] -> MsgContent -> Maybe (CIFile d) -> CIMeta d -> [StyledString]
+viewReceivedMessage from quote mc file meta =
+  withFile $ receivedWithTime_ from quote meta (ttyMsgContent mc)
+  where
+    withFile l = case file of
+      Just CIFile {fileId, fileName, fileSize} -> l <> viewReceivedFileInvitation from fileId fileName fileSize meta
+      _ -> l
 
 receivedWithTime_ :: StyledString -> [StyledString] -> CIMeta d -> [StyledString] -> [StyledString]
 receivedWithTime_ from quote CIMeta {localItemTs, createdAt} styledMsg = do
@@ -453,10 +458,14 @@ receivedWithTime_ from quote CIMeta {localItemTs, createdAt} styledMsg = do
               else "%H:%M"
        in styleTime $ formatTime defaultTimeLocale format localTime
 
-viewSentMessage :: StyledString -> [StyledString] -> MsgContent -> CIMeta d -> [StyledString]
-viewSentMessage to quote mc = sentWithTime_ . prependFirst to $ quote <> prependFirst indent (ttyMsgContent mc)
+viewSentMessage :: StyledString -> [StyledString] -> MsgContent -> Maybe (CIFile d) -> CIMeta d -> [StyledString]
+viewSentMessage to quote mc file meta =
+  withFile $ sentWithTime_ (prependFirst to $ quote <> prependFirst indent (ttyMsgContent mc)) meta
   where
     indent = if null quote then "" else "      "
+    withFile l = case file of
+      Just CIFile {fileId, filePath = Just fPath} -> l <> viewSentFileInvitation to fileId fPath meta
+      _ -> l
 
 viewSentBroadcast :: MsgContent -> Int -> ZonedTime -> [StyledString]
 viewSentBroadcast mc n ts = prependFirst (highlight' "/feed" <> " (" <> sShow n <> ") " <> ttyMsgTime ts <> " ") (ttyMsgContent mc)
@@ -501,11 +510,11 @@ sendingFile_ status ft@SndFileTransfer {recipientDisplayName = c} =
 sndFile :: SndFileTransfer -> StyledString
 sndFile SndFileTransfer {fileId, fileName} = fileTransferStr fileId fileName
 
-viewReceivedFileInvitation :: StyledString -> CIMeta d -> RcvFileTransfer -> [StyledString]
-viewReceivedFileInvitation from meta ft = receivedWithTime_ from [] meta (receivedFileInvitation_ ft)
+viewReceivedFileInvitation :: StyledString -> Int64 -> String -> Integer -> CIMeta d -> [StyledString]
+viewReceivedFileInvitation from fileId fileName fileSize meta = receivedWithTime_ from [] meta (receivedFileInvitation_ fileId fileName fileSize)
 
-receivedFileInvitation_ :: RcvFileTransfer -> [StyledString]
-receivedFileInvitation_ RcvFileTransfer {fileId, fileInvitation = FileInvitation {fileName, fileSize}} =
+receivedFileInvitation_ :: Int64 -> String -> Integer -> [StyledString]
+receivedFileInvitation_ fileId fileName fileSize =
   [ "sends file " <> ttyFilePath fileName <> " (" <> humanReadableSize fileSize <> " / " <> sShow fileSize <> " bytes)",
     "use " <> highlight ("/fr " <> show fileId <> " [<dir>/ | <path>]") <> " to receive it"
   ]
