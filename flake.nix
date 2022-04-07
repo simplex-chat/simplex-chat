@@ -8,7 +8,7 @@
     let systems = [ "x86_64-linux" "x86_64-darwin" "aarch64-linux" "aarch64-darwin" ]; in
     flake-utils.lib.eachSystem systems (system:
       let pkgs = haskellNix.legacyPackages.${system}; in
-      let drv = pkgs': pkgs'.haskell-nix.project {
+      let drv' = { extra-modules, pkgs', ... }: pkgs'.haskell-nix.project {
         compiler-nix-name = "ghc8107";
         index-state = "2022-01-24T00:00:00Z";
         # We need this, to specify we want the cabal project.
@@ -25,8 +25,10 @@
         }
         ({ pkgs,lib, ... }: lib.mkIf (pkgs.stdenv.hostPlatform.isAndroid) {
           packages.simplex-chat.components.library.ghcOptions = [ "-pie" ];
-        })];
+        })] ++ extra-modules;
       }; in
+      # by defualt we don't need to pass extra-modules.
+      let drv = pkgs': drv' { extra-modules = []; inherit pkgs' }; in
       # This will package up all *.a in $out into a pkg.zip that can
       # be downloaded from hydra.
       let withHydraLibPkg = pkg: pkg.overrideAttrs (old: {
@@ -211,7 +213,8 @@
               };
             };
             "aarch64-darwin" = {
-              "aarch64-darwin:lib:simplex-chat" = (drv pkgs).simplex-chat.components.library.override {
+              # this is the aarch64-darwin iOS build (to be patched with mac2ios)
+              "aarch64-darwin-ios:lib:simplex-chat" = (drv' { pkgs' = pkgs; extra-modules = [{ packages.simplexmq.flags.swiftJSON = true; }] } ).simplex-chat.components.library.override {
                 smallAddressSpace = true; enableShared = false;
                 # we need threaded here, otherwise all the queing logic doesn't work properly.
                 # for iOS we also use -staticlib, to get one rolled up library.
@@ -229,7 +232,33 @@
                   find ${pkgs.gmp6.override { withStatic = true; }}/lib -name "*.a" -exec cp {} $out/_pkg \;
                   # There is no static libc
                   ${pkgs.tree}/bin/tree $out/_pkg
-                  (cd $out/_pkg; ${pkgs.zip}/bin/zip -r -9 $out/pkg-ios-aarch64.zip *)
+                  (cd $out/_pkg; ${pkgs.zip}/bin/zip -r -9 $out/pkg-ios-aarch64-swift-json.zip *)
+                  rm -fR $out/_pkg
+                  mkdir -p $out/nix-support
+                  echo "file binary-dist \"$(echo $out/*.zip)\"" \
+                      > $out/nix-support/hydra-build-products
+                '';
+              };
+	            # This is the aarch64-darwin build with tagged JSON format (for Mac & Flutter)
+              "aarch64-darwin:lib:simplex-chat" = (drv pkgs).simplex-chat.components.library.override {
+                smallAddressSpace = true; enableShared = false;
+                # we need threaded here, otherwise all the queing logic doesn't work properly.
+                # for iOS we also use -staticlib, to get one rolled up library.
+                # still needs mac2ios patching of the archives.
+                ghcOptions = [ "-staticlib" "-threaded" ];
+                postInstall = ''
+                  ${pkgs.tree}/bin/tree $out
+                  mkdir -p $out/_pkg
+                  # copy over includes, we might want those, but maybe not.
+                  # cp -r $out/lib/*/*/include $out/_pkg/
+                  # find the libHS...ghc-X.Y.Z.a static library; this is the
+                  # rolled up one with all dependencies included.
+                  find ./dist -name "libHS*.a" -exec cp {} $out/_pkg \;
+                  find ${pkgs.libffi.overrideAttrs (old: { dontDisableStatic = true; })}/lib -name "*.a" -exec cp {} $out/_pkg \;
+                  find ${pkgs.gmp6.override { withStatic = true; }}/lib -name "*.a" -exec cp {} $out/_pkg \;
+                  # There is no static libc
+                  ${pkgs.tree}/bin/tree $out/_pkg
+                  (cd $out/_pkg; ${pkgs.zip}/bin/zip -r -9 $out/pkg-ios-aarch64-tagged-json.zip *)
                   rm -fR $out/_pkg
                   mkdir -p $out/nix-support
                   echo "file binary-dist \"$(echo $out/*.zip)\"" \
