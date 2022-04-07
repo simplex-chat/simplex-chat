@@ -267,7 +267,8 @@ quoteMsgDirection = \case
   CIQGroupRcv _ -> MDRcv
 
 data CIFile (d :: MsgDirection) = CIFile
-  { file :: Maybe FilePath, -- local file path
+  { fileId :: Int64,
+    filePath :: Maybe FilePath, -- local file path
     fileStatus :: CIFileStatus d
   }
   deriving (Show, Generic)
