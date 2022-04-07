@@ -185,12 +185,13 @@ processChatCommand = \case
           -- SendFile
           (fileSize, chSize) <- checkSndFile f
           (agentConnId, fileConnReq) <- withAgent (`createConnection` SCMInvitation)
-          let fileInv = FileInvitation {fileName = takeFileName f, fileSize, fileConnReq = Just fileConnReq}
+          let fileName = takeFileName f
+              fileInvitation = FileInvitation {fileName, fileSize, fileConnReq = Just fileConnReq}
           SndFileTransfer {fileId} <- withStore $ \st ->
-            createSndFileTransfer st userId ct f fileInv agentConnId chSize
-          let ciFile = Just $ CIFile {fileId, filePath = Just f, fileStatus = CIFSSndStored}
+            createSndFileTransfer st userId ct f fileInvitation agentConnId chSize
+          let ciFile = Just $ CIFile {fileId, fileName, fileSize, filePath = Just f, fileStatus = CIFSSndStored}
           -- SendFile with different event and CIContent; sendNewMsg if parameterized with file
-          ci <- sendDirectChatItem user ct (XMsgNew (MCSimple (ExtMsgContent mc (Just fileInv)))) (CISndMsgContent mc) ciFile Nothing
+          ci <- sendDirectChatItem user ct (XMsgNew (MCSimple (ExtMsgContent mc (Just fileInvitation)))) (CISndMsgContent mc) ciFile Nothing
           -- SendFile
           withStore $ \st -> updateFileTransferChatItemId st fileId $ chatItemId' ci
           -- SendFile & sendNewMsg
@@ -205,11 +206,12 @@ processChatCommand = \case
         Just f -> do
           -- SendGroupFileInv
           (fileSize, chSize) <- checkSndFile f
-          let fileInv = FileInvitation {fileName = takeFileName f, fileSize, fileConnReq = Nothing}
-          fileId <- withStore $ \st -> createSndGroupFileTransferV2 st userId gInfo f fileInv chSize
-          let ciFile = Just $ CIFile {fileId, filePath = Just f, fileStatus = CIFSSndStored}
+          let fileName = takeFileName f
+              fileInvitation = FileInvitation {fileName, fileSize, fileConnReq = Nothing}
+          fileId <- withStore $ \st -> createSndGroupFileTransferV2 st userId gInfo f fileInvitation chSize
+          let ciFile = Just $ CIFile {fileId, fileName, fileSize, filePath = Just f, fileStatus = CIFSSndStored}
           -- SendGroupFileInv with different event and CIContent; sendNewGroupMsg if parameterized with file
-          ci <- sendGroupChatItem user g (XMsgNew (MCSimple (ExtMsgContent mc (Just fileInv)))) (CISndMsgContent mc) ciFile Nothing
+          ci <- sendGroupChatItem user g (XMsgNew (MCSimple (ExtMsgContent mc (Just fileInvitation)))) (CISndMsgContent mc) ciFile Nothing
           -- SendGroupFileInv
           withStore $ \st -> updateFileTransferChatItemId st fileId $ chatItemId' ci
           -- SendGroupFileInv & sendNewGroupMsg
@@ -230,12 +232,13 @@ processChatCommand = \case
           -- SendFile
           (fileSize, chSize) <- checkSndFile f
           (agentConnId, fileConnReq) <- withAgent (`createConnection` SCMInvitation)
-          let fileInv = FileInvitation {fileName = takeFileName f, fileSize, fileConnReq = Just fileConnReq}
+          let fileName = takeFileName f
+              fileInvitation = FileInvitation {fileName, fileSize, fileConnReq = Just fileConnReq}
           SndFileTransfer {fileId} <- withStore $ \st ->
-            createSndFileTransfer st userId ct f fileInv agentConnId chSize
-          let ciFile = Just $ CIFile {fileId, filePath = Just f, fileStatus = CIFSSndStored}
+            createSndFileTransfer st userId ct f fileInvitation agentConnId chSize
+          let ciFile = Just $ CIFile {fileId, fileName, fileSize, filePath = Just f, fileStatus = CIFSSndStored}
           -- SendFile with different event and CIContent; sendNewMsg if parameterized with file
-          ci <- sendDirectChatItem user ct (XMsgNew (MCSimple (ExtMsgContent mc (Just fileInv)))) (CISndMsgContent mc) ciFile (Just quotedItem)
+          ci <- sendDirectChatItem user ct (XMsgNew (MCSimple (ExtMsgContent mc (Just fileInvitation)))) (CISndMsgContent mc) ciFile (Just quotedItem)
           -- SendFile
           withStore $ \st -> updateFileTransferChatItemId st fileId $ chatItemId' ci
           -- SendFile & sendNewMsg
@@ -260,9 +263,10 @@ processChatCommand = \case
         Just f -> do
           -- SendGroupFileInv
           (fileSize, chSize) <- checkSndFile f
-          let fileInv = FileInvitation {fileName = takeFileName f, fileSize, fileConnReq = Nothing}
-          fileId <- withStore $ \st -> createSndGroupFileTransferV2 st userId gInfo f fileInv chSize
-          let ciFile = Just $ CIFile {fileId, filePath = Just f, fileStatus = CIFSSndStored}
+          let fileName = takeFileName f
+              fileInvitation = FileInvitation {fileName, fileSize, fileConnReq = Nothing}
+          fileId <- withStore $ \st -> createSndGroupFileTransferV2 st userId gInfo f fileInvitation chSize
+          let ciFile = Just $ CIFile {fileId, fileName, fileSize, filePath = Just f, fileStatus = CIFSSndStored}
           -- SendGroupFileInv with different event and CIContent; sendNewGroupMsg if parameterized with file
           ci <- sendGroupChatItem user g (XMsgNew (MCQuote QuotedMsg {msgRef, content = qmc} (ExtMsgContent mc Nothing))) (CISndMsgContent mc) ciFile (Just quotedItem)
           -- SendGroupFileInv
@@ -1234,16 +1238,16 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
           checkIntegrity msgMeta $ toView . CRMsgIntegrityError
           showMsgToast (c <> "> ") content formattedText
           setActive $ ActiveC c
-        Just fInv -> do
+        Just fileInvitation@FileInvitation {fileName, fileSize} -> do
           -- processFileInvitation
           chSize <- asks $ fileChunkSize . config
-          ft@RcvFileTransfer {fileId} <- withStore $ \st -> createRcvFileTransfer st userId ct fInv chSize
+          ft@RcvFileTransfer {fileId} <- withStore $ \st -> createRcvFileTransfer st userId ct fileInvitation chSize
           fAutoAccept <- asks $ fileAutoAccept . config
           if fAutoAccept
             then do
               -- ? mobile may require configurable path
               filePath <- acceptFileReceive user ft Nothing
-              let ciFile = Just $ CIFile {fileId, filePath = Just filePath, fileStatus = CIFSRcvTransfer}
+              let ciFile = Just $ CIFile {fileId, fileName, fileSize, filePath = Just filePath, fileStatus = CIFSRcvTransfer}
               ci@ChatItem {formattedText} <- saveRcvChatItem user (CDDirectRcv ct) msg msgMeta (CIRcvMsgContent content) ciFile
               -- processFileInvitation
               withStore $ \st -> updateFileTransferChatItemId st fileId $ chatItemId' ci
@@ -1253,7 +1257,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
               showMsgToast (c <> "> ") content formattedText
               setActive $ ActiveC c
             else do
-              let ciFile = Just $ CIFile {fileId, filePath = Nothing, fileStatus = CIFSRcvInvitation}
+              let ciFile = Just $ CIFile {fileId, fileName, fileSize, filePath = Nothing, fileStatus = CIFSRcvInvitation}
               ci@ChatItem {formattedText} <- saveRcvChatItem user (CDDirectRcv ct) msg msgMeta (CIRcvMsgContent content) ciFile
               -- processFileInvitation
               withStore $ \st -> updateFileTransferChatItemId st fileId $ chatItemId' ci
@@ -1297,16 +1301,16 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
           let g = groupName' gInfo
           showMsgToast ("#" <> g <> " " <> c <> "> ") content formattedText
           setActive $ ActiveG g
-        Just fInv -> do
+        Just fileInvitation@FileInvitation {fileName, fileSize} -> do
           -- processGroupFileInvitation
           chSize <- asks $ fileChunkSize . config
-          ft@RcvFileTransfer {fileId} <- withStore $ \st -> createRcvGroupFileTransfer st userId m fInv chSize
+          ft@RcvFileTransfer {fileId} <- withStore $ \st -> createRcvGroupFileTransfer st userId m fileInvitation chSize
           fAutoAccept <- asks $ fileAutoAccept . config
           if fAutoAccept
             then do
               -- ? mobile may require configurable path
               filePath <- acceptFileReceive user ft Nothing
-              let ciFile = Just $ CIFile {fileId, filePath = Just filePath, fileStatus = CIFSRcvTransfer}
+              let ciFile = Just $ CIFile {fileId, fileName, fileSize, filePath = Just filePath, fileStatus = CIFSRcvTransfer}
               ci@ChatItem {formattedText} <- saveRcvChatItem user (CDGroupRcv gInfo m) msg msgMeta (CIRcvMsgContent content) ciFile
               -- processGroupFileInvitation
               withStore $ \st -> updateFileTransferChatItemId st fileId $ chatItemId' ci
@@ -1316,7 +1320,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
               showMsgToast ("#" <> g <> " " <> c <> "> ") content formattedText
               setActive $ ActiveG g
             else do
-              let ciFile = Just $ CIFile {fileId, filePath = Nothing, fileStatus = CIFSRcvInvitation}
+              let ciFile = Just $ CIFile {fileId, fileName, fileSize, filePath = Nothing, fileStatus = CIFSRcvInvitation}
               ci@ChatItem {formattedText} <- saveRcvChatItem user (CDGroupRcv gInfo m) msg msgMeta (CIRcvMsgContent content) ciFile
               -- processGroupFileInvitation
               withStore $ \st -> updateFileTransferChatItemId st fileId $ chatItemId' ci

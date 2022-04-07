@@ -268,6 +268,8 @@ quoteMsgDirection = \case
 
 data CIFile (d :: MsgDirection) = CIFile
   { fileId :: Int64,
+    fileName :: String,
+    fileSize :: Integer,
     filePath :: Maybe FilePath, -- local file path
     fileStatus :: CIFileStatus d
   }
