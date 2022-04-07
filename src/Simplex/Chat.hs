@@ -188,7 +188,7 @@ processChatCommand = \case
           let fileInv = FileInvitation {fileName = takeFileName f, fileSize, fileConnReq = Just fileConnReq}
           SndFileTransfer {fileId} <- withStore $ \st ->
             createSndFileTransfer st userId ct f fileInv agentConnId chSize
-          let ciFile = Just $ CIFile {file = f, loaded = True}
+          let ciFile = Just $ CIFile {file = Just f, fileStatus = CIFSStored}
           -- SendFile with different event and CIContent; sendNewMsg if parameterized with file
           ci <- sendDirectChatItem user ct (XMsgNew (MCSimple (ExtMsgContent mc (Just fileInv)))) (CISndMsgContent mc) ciFile Nothing
           -- SendFile
@@ -207,7 +207,7 @@ processChatCommand = \case
           (fileSize, chSize) <- checkSndFile f
           let fileInv = FileInvitation {fileName = takeFileName f, fileSize, fileConnReq = Nothing}
           fileId <- withStore $ \st -> createSndGroupFileTransferV2 st userId gInfo f fileInv chSize
-          let ciFile = Just $ CIFile {file = f, loaded = True}
+          let ciFile = Just $ CIFile {file = Just f, fileStatus = CIFSStored}
           -- SendGroupFileInv with different event and CIContent; sendNewGroupMsg if parameterized with file
           ci <- sendGroupChatItem user g (XMsgNew (MCSimple (ExtMsgContent mc (Just fileInv)))) (CISndMsgContent mc) ciFile Nothing
           -- SendGroupFileInv
@@ -233,7 +233,7 @@ processChatCommand = \case
           let fileInv = FileInvitation {fileName = takeFileName f, fileSize, fileConnReq = Just fileConnReq}
           SndFileTransfer {fileId} <- withStore $ \st ->
             createSndFileTransfer st userId ct f fileInv agentConnId chSize
-          let ciFile = Just $ CIFile {file = f, loaded = True}
+          let ciFile = Just $ CIFile {file = Just f, fileStatus = CIFSStored}
           -- SendFile with different event and CIContent; sendNewMsg if parameterized with file
           ci <- sendDirectChatItem user ct (XMsgNew (MCSimple (ExtMsgContent mc (Just fileInv)))) (CISndMsgContent mc) ciFile (Just quotedItem)
           -- SendFile
@@ -262,7 +262,7 @@ processChatCommand = \case
           (fileSize, chSize) <- checkSndFile f
           let fileInv = FileInvitation {fileName = takeFileName f, fileSize, fileConnReq = Nothing}
           fileId <- withStore $ \st -> createSndGroupFileTransferV2 st userId gInfo f fileInv chSize
-          let ciFile = Just $ CIFile {file = f, loaded = True}
+          let ciFile = Just $ CIFile {file = Just f, fileStatus = CIFSStored}
           -- SendGroupFileInv with different event and CIContent; sendNewGroupMsg if parameterized with file
           ci <- sendGroupChatItem user g (XMsgNew (MCQuote QuotedMsg {msgRef, content = qmc} (ExtMsgContent mc Nothing))) (CISndMsgContent mc) ciFile (Just quotedItem)
           -- SendGroupFileInv
@@ -584,7 +584,7 @@ processChatCommand = \case
   ReceiveFile fileId filePath_ -> withUser $ \user@User {userId} ->
     withChatLock . procCmd $ do
       ft <- withStore $ \st -> getRcvFileTransfer st userId fileId
-      (CRRcvFileAccepted ft <$> receiveFile user ft filePath_) `catchError` processError ft
+      (CRRcvFileAccepted ft <$> acceptFileReceive user ft filePath_) `catchError` processError ft
     where
       processError ft = \case
         ChatErrorAgent (SMP SMP.AUTH) -> pure $ CRRcvFileAcceptedSndCancelled ft
@@ -681,8 +681,8 @@ acceptContactRequest User {userId, profile} UserContactRequest {agentInvitationI
   connId <- withAgent $ \a -> acceptContact a invId . directMessage $ XInfo profile
   withStore $ \st -> createAcceptedContact st userId connId cName profileId p xContactId
 
-receiveFile :: forall m. ChatMonad m => User -> RcvFileTransfer -> Maybe FilePath -> m FilePath
-receiveFile user@User {userId} RcvFileTransfer {fileId, fileInvitation = FileInvitation {fileName, fileConnReq}, fileStatus, senderDisplayName, grpMemberId} filePath_ = do
+acceptFileReceive :: forall m. ChatMonad m => User -> RcvFileTransfer -> Maybe FilePath -> m FilePath
+acceptFileReceive user@User {userId} RcvFileTransfer {fileId, fileInvitation = FileInvitation {fileName, fileConnReq}, fileStatus, senderDisplayName, grpMemberId} filePath_ = do
   unless (fileStatus == RFSNew) . throwChatError $ CEFileAlreadyReceiving fileName
   case fileConnReq of
     -- old file protocol
@@ -690,6 +690,7 @@ receiveFile user@User {userId} RcvFileTransfer {fileId, fileInvitation = FileInv
       tryError (withAgent $ \a -> joinConnection a connReq . directMessage $ XFileAcpt fileName) >>= \case
         Right agentConnId -> do
           filePath <- getRcvFilePath filePath_ fileName
+          -- TODO update CIFileStatus to CIFSReceivingTransfer
           withStore $ \st -> acceptRcvFileTransfer st userId fileId agentConnId filePath
           pure filePath
         Left e -> throwError e
@@ -1232,20 +1233,22 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
           fAutoAccept <- asks $ fileAutoAccept . config
           if fAutoAccept
             then do
-              -- newContentMessage with fileInv Nothing
-              filePath <- receiveFile user ft Nothing
-              let ciFile = Just $ CIFile {file = filePath, loaded = False}
+              filePath <- acceptFileReceive user ft Nothing
+              let ciFile = Just $ CIFile {file = Just filePath, fileStatus = CIFSReceivingTransfer}
               ci@ChatItem {formattedText} <- saveRcvChatItem user (CDDirectRcv ct) msg msgMeta (CIRcvMsgContent content) ciFile
               -- processFileInvitation
               withStore $ \st -> updateFileTransferChatItemId st fileId $ chatItemId' ci
+              -- newContentMessage with fileInv Nothing
               toView . CRNewChatItem $ AChatItem SCTDirect SMDRcv (DirectChat ct) ci
               checkIntegrity msgMeta $ toView . CRMsgIntegrityError
               showMsgToast (c <> "> ") content formattedText
               setActive $ ActiveC c
             else do
+              let ciFile = Just $ CIFile {file = Nothing, fileStatus = CIFSInvitationReceived}
+              ci@ChatItem {formattedText} <- saveRcvChatItem user (CDDirectRcv ct) msg msgMeta (CIRcvMsgContent content) ciFile
+              -- processFileInvitation
+              withStore $ \st -> updateFileTransferChatItemId st fileId $ chatItemId' ci
               -- newContentMessage with fileInv Nothing
-              -- TODO CIFile
-              ci@ChatItem {formattedText} <- saveRcvChatItem user (CDDirectRcv ct) msg msgMeta (CIRcvMsgContent content) Nothing
               toView . CRNewChatItem $ AChatItem SCTDirect SMDRcv (DirectChat ct) ci
               checkIntegrity msgMeta $ toView . CRMsgIntegrityError
               showMsgToast (c <> "> ") content formattedText

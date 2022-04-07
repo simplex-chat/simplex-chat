@@ -267,14 +267,45 @@ quoteMsgDirection = \case
   CIQGroupRcv _ -> MDRcv
 
 data CIFile = CIFile
-  { file :: FilePath, -- local file path
-    loaded :: Bool
+  { file :: Maybe FilePath, -- local file path
+    fileStatus :: CIFileStatus
   }
   deriving (Show, Generic)
 
 instance ToJSON CIFile where
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
   toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
+
+data CIFileStatus
+  = CIFSInvitationReceived
+  | CIFSReceivingTransfer
+  | CIFSStored -- snd file transfer is always stored
+  deriving (Eq, Show, Generic)
+
+instance FromJSON CIFileStatus where
+  parseJSON = J.genericParseJSON . enumJSON $ dropPrefix "CIFS"
+
+instance ToJSON CIFileStatus where
+  toJSON = J.genericToJSON . enumJSON $ dropPrefix "CIFS"
+  toEncoding = J.genericToEncoding . enumJSON $ dropPrefix "CIFS"
+
+instance FromField CIFileStatus where
+  fromField = fromTextField_ ciFileStatusT
+
+instance ToField CIFileStatus where toField = toField . serializeCIFileStatus
+
+serializeCIFileStatus :: CIFileStatus -> Text
+serializeCIFileStatus = \case
+  CIFSInvitationReceived -> "invitation_received"
+  CIFSReceivingTransfer -> "receiving_transfer"
+  CIFSStored -> "stored"
+
+ciFileStatusT :: Text -> Maybe CIFileStatus
+ciFileStatusT = \case
+  "invitation_received" -> Just CIFSInvitationReceived
+  "receiving_transfer" -> Just CIFSReceivingTransfer
+  "stored" -> Just CIFSStored
+  _ -> Nothing
 
 data CIStatus (d :: MsgDirection) where
   CISSndNew :: CIStatus 'MDSnd
