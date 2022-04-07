@@ -16,7 +16,6 @@ struct TerminalView: View {
     @State var message: String = ""
     @FocusState private var keyboardVisible: Bool
     @State var editing: Bool = false
-    @State var hyperlink: String? = nil
 
     var body: some View {
         VStack {
