@@ -23,7 +23,7 @@ final class ChatModel: ObservableObject {
     @Published var userAddress: String?
     @Published var userSMPServers: [String]?
     @Published var appOpenUrl: URL?
-    @Published var deviceToken: Data?
+    @Published var deviceToken: String?
 
     var messageDelivery: Dictionary<Int64, () -> Void> = [:]
 

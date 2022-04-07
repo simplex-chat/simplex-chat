@@ -54,7 +54,7 @@ import Simplex.Messaging.Agent.Protocol
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Notifications.Protocol (DeviceToken (..), PushPlatform (..))
+import Simplex.Messaging.Notifications.Protocol (DeviceToken (..), NtfRegCode (..), PushProvider (..))
 import Simplex.Messaging.Parsers (base64P, parseAll)
 import Simplex.Messaging.Protocol (ErrorType (..), MsgBody)
 import qualified Simplex.Messaging.Protocol as SMP
@@ -1769,7 +1769,7 @@ chatCommandP =
     <|> "/_profile " *> (APIUpdateProfile <$> jsonP)
     <|> "/_parse " *> (APIParseMarkdown . safeDecodeUtf8 <$> A.takeByteString)
     <|> "/_ntf register " *> (APIRegisterToken <$> tokenP)
-    <|> "/_ntf verify " *> (APIVerifyToken <$> tokenP <* A.space <*> base64P)
+    <|> "/_ntf verify " *> (APIVerifyToken <$> tokenP <* A.space <*> (NtfRegCode <$> base64P))
     <|> "/smp_servers default" $> SetUserSMPServers []
     <|> "/smp_servers " *> (SetUserSMPServers <$> smpServersP)
     <|> "/smp_servers" $> GetUserSMPServers

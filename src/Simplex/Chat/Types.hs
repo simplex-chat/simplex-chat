@@ -32,9 +32,8 @@ import Database.SQLite.Simple.Ok (Ok (Ok))
 import Database.SQLite.Simple.ToField (ToField (..))
 import GHC.Generics (Generic)
 import Simplex.Messaging.Agent.Protocol (ConnId, ConnectionMode (..), ConnectionRequestUri, InvitationId)
-import Simplex.Messaging.Agent.Store.SQLite (fromTextField_)
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Parsers (dropPrefix, sumTypeJSON)
+import Simplex.Messaging.Parsers (dropPrefix, fromTextField_, sumTypeJSON)
 import Simplex.Messaging.Util ((<$?>))
 
 class IsContact a where
@@ -398,25 +397,25 @@ data GroupMemberCategory
   | GCPostMember -- member who joined after the user to whom the user was introduced (user receives x.grp.mem.new announcing these members and then x.grp.mem.fwd with invitation from these members)
   deriving (Eq, Show)
 
-instance FromField GroupMemberCategory where fromField = fromTextField_ decodeText
+instance FromField GroupMemberCategory where fromField = fromTextField_ textDecode
 
-instance ToField GroupMemberCategory where toField = toField . encodeText
+instance ToField GroupMemberCategory where toField = toField . textEncode
 
 instance FromJSON GroupMemberCategory where parseJSON = textParseJSON "GroupMemberCategory"
 
 instance ToJSON GroupMemberCategory where
-  toJSON = J.String . encodeText
-  toEncoding = JE.text . encodeText
+  toJSON = J.String . textEncode
+  toEncoding = JE.text . textEncode
 
 instance TextEncoding GroupMemberCategory where
-  decodeText = \case
+  textDecode = \case
     "user" -> Just GCUserMember
     "invitee" -> Just GCInviteeMember
     "host" -> Just GCHostMember
     "pre" -> Just GCPreMember
     "post" -> Just GCPostMember
     _ -> Nothing
-  encodeText = \case
+  textEncode = \case
     GCUserMember -> "user"
     GCInviteeMember -> "invitee"
     GCHostMember -> "host"
@@ -437,15 +436,15 @@ data GroupMemberStatus
   | GSMemCreator -- user member that created the group (only GCUserMember)
   deriving (Eq, Show, Ord)
 
-instance FromField GroupMemberStatus where fromField = fromTextField_ decodeText
+instance FromField GroupMemberStatus where fromField = fromTextField_ textDecode
 
-instance ToField GroupMemberStatus where toField = toField . encodeText
+instance ToField GroupMemberStatus where toField = toField . textEncode
 
 instance FromJSON GroupMemberStatus where parseJSON = textParseJSON "GroupMemberStatus"
 
 instance ToJSON GroupMemberStatus where
-  toJSON = J.String . encodeText
-  toEncoding = JE.text . encodeText
+  toJSON = J.String . textEncode
+  toEncoding = JE.text . textEncode
 
 memberActive :: GroupMember -> Bool
 memberActive m = case memberStatus m of
@@ -476,7 +475,7 @@ memberCurrent m = case memberStatus m of
   GSMemCreator -> True
 
 instance TextEncoding GroupMemberStatus where
-  decodeText = \case
+  textDecode = \case
     "removed" -> Just GSMemRemoved
     "left" -> Just GSMemLeft
     "deleted" -> Just GSMemGroupDeleted
@@ -489,7 +488,7 @@ instance TextEncoding GroupMemberStatus where
     "complete" -> Just GSMemComplete
     "creator" -> Just GSMemCreator
     _ -> Nothing
-  encodeText = \case
+  textEncode = \case
     GSMemRemoved -> "removed"
     GSMemLeft -> "left"
     GSMemGroupDeleted -> "deleted"
@@ -633,25 +632,25 @@ fileTransferCancelled (FTRcv RcvFileTransfer {cancelled}) = cancelled
 
 data FileStatus = FSNew | FSAccepted | FSConnected | FSComplete | FSCancelled deriving (Eq, Ord, Show)
 
-instance FromField FileStatus where fromField = fromTextField_ decodeText
+instance FromField FileStatus where fromField = fromTextField_ textDecode
 
-instance ToField FileStatus where toField = toField . encodeText
+instance ToField FileStatus where toField = toField . textEncode
 
 instance FromJSON FileStatus where parseJSON = textParseJSON "FileStatus"
 
 instance ToJSON FileStatus where
-  toJSON = J.String . encodeText
-  toEncoding = JE.text . encodeText
+  toJSON = J.String . textEncode
+  toEncoding = JE.text . textEncode
 
 instance TextEncoding FileStatus where
-  decodeText = \case
+  textDecode = \case
     "new" -> Just FSNew
     "accepted" -> Just FSAccepted
     "connected" -> Just FSConnected
     "complete" -> Just FSComplete
     "cancelled" -> Just FSCancelled
     _ -> Nothing
-  encodeText = \case
+  textEncode = \case
     FSNew -> "new"
     FSAccepted -> "accepted"
     FSConnected -> "connected"
@@ -701,18 +700,18 @@ data ConnStatus
     ConnDeleted
   deriving (Eq, Show)
 
-instance FromField ConnStatus where fromField = fromTextField_ decodeText
+instance FromField ConnStatus where fromField = fromTextField_ textDecode
 
-instance ToField ConnStatus where toField = toField . encodeText
+instance ToField ConnStatus where toField = toField . textEncode
 
 instance FromJSON ConnStatus where parseJSON = textParseJSON "ConnStatus"
 
 instance ToJSON ConnStatus where
-  toJSON = J.String . encodeText
-  toEncoding = JE.text . encodeText
+  toJSON = J.String . textEncode
+  toEncoding = JE.text . textEncode
 
 instance TextEncoding ConnStatus where
-  decodeText = \case
+  textDecode = \case
     "new" -> Just ConnNew
     "joined" -> Just ConnJoined
     "requested" -> Just ConnRequested
@@ -721,7 +720,7 @@ instance TextEncoding ConnStatus where
     "ready" -> Just ConnReady
     "deleted" -> Just ConnDeleted
     _ -> Nothing
-  encodeText = \case
+  textEncode = \case
     ConnNew -> "new"
     ConnJoined -> "joined"
     ConnRequested -> "requested"
@@ -733,25 +732,25 @@ instance TextEncoding ConnStatus where
 data ConnType = ConnContact | ConnMember | ConnSndFile | ConnRcvFile | ConnUserContact
   deriving (Eq, Show)
 
-instance FromField ConnType where fromField = fromTextField_ decodeText
+instance FromField ConnType where fromField = fromTextField_ textDecode
 
-instance ToField ConnType where toField = toField . encodeText
+instance ToField ConnType where toField = toField . textEncode
 
 instance FromJSON ConnType where parseJSON = textParseJSON "ConnType"
 
 instance ToJSON ConnType where
-  toJSON = J.String . encodeText
-  toEncoding = JE.text . encodeText
+  toJSON = J.String . textEncode
+  toEncoding = JE.text . textEncode
 
 instance TextEncoding ConnType where
-  decodeText = \case
+  textDecode = \case
     "contact" -> Just ConnContact
     "member" -> Just ConnMember
     "snd_file" -> Just ConnSndFile
     "rcv_file" -> Just ConnRcvFile
     "user_contact" -> Just ConnUserContact
     _ -> Nothing
-  encodeText = \case
+  textEncode = \case
     ConnContact -> "contact"
     ConnMember -> "member"
     ConnSndFile -> "snd_file"
@@ -812,9 +811,5 @@ data Notification = Notification {title :: Text, text :: Text}
 
 type JSONString = String
 
-class TextEncoding a where
-  encodeText :: a -> Text
-  decodeText :: Text -> Maybe a
-
 textParseJSON :: TextEncoding a => String -> J.Value -> JT.Parser a
-textParseJSON name = J.withText name $ maybe (fail $ "bad " <> name) pure . decodeText
+textParseJSON name = J.withText name $ maybe (fail $ "bad " <> name) pure . textDecode

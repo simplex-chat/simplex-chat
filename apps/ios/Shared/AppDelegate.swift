@@ -17,8 +17,9 @@ class AppDelegate: NSObject, UIApplicationDelegate {
     }
 
     func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
-        ChatModel.shared.deviceToken = deviceToken
-        logger.debug("AppDelegate: didRegisterForRemoteNotificationsWithDeviceToken \(deviceToken.map { String(format: "%02hhx", $0) }.joined())")
+        let token = deviceToken.map { String(format: "%02hhx", $0) }.joined()
+        ChatModel.shared.deviceToken = token
+        logger.debug("AppDelegate: didRegisterForRemoteNotificationsWithDeviceToken \(token)")
     }
 
     func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {

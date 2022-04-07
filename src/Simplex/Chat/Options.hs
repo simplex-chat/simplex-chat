@@ -11,7 +11,7 @@ import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.ByteString.Char8 as B
 import Options.Applicative
 import Simplex.Chat.Controller (updateStr, versionStr)
-import Simplex.Messaging.Agent.Protocol (SMPServer (..))
+import Simplex.Messaging.Agent.Protocol (SMPServer)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (parseAll)
 import System.FilePath (combine)
