@@ -175,16 +175,18 @@ processChatCommand = \case
     CTGroup -> CRApiChat . AChat SCTGroup <$> withStore (\st -> getGroupChat st user cId pagination)
     CTContactRequest -> pure $ chatCmdError "not implemented"
   APIGetChatItems _pagination -> pure $ chatCmdError "not implemented"
-  APISendMessage cType chatId mc -> withUser $ \user@User {userId} -> withChatLock $ case cType of
+  APISendMessage cType chatId _file mc -> withUser $ \user@User {userId} -> withChatLock $ case cType of
+    -- TODO send message with file attachment; initiate file transfer
     CTDirect -> do
       ct <- withStore $ \st -> getContact st userId chatId
-      sendNewMsg user ct (MCSimple mc) mc Nothing
+      sendNewMsg user ct (MCSimple (ExtMsgContent mc Nothing)) mc Nothing
     CTGroup -> do
       group@(Group GroupInfo {membership} _) <- withStore $ \st -> getGroup st user chatId
       unless (memberActive membership) $ throwChatError CEGroupMemberUserRemoved
-      sendNewGroupMsg user group (MCSimple mc) mc Nothing
+      sendNewGroupMsg user group (MCSimple (ExtMsgContent mc Nothing)) mc Nothing
     CTContactRequest -> pure $ chatCmdError "not supported"
-  APISendMessageQuote cType chatId quotedItemId mc -> withUser $ \user@User {userId} -> withChatLock $ case cType of
+  APISendMessageQuote cType chatId quotedItemId _file mc -> withUser $ \user@User {userId} -> withChatLock $ case cType of
+    -- TODO send message with file attachment; initiate file transfer
     CTDirect -> do
       (ct, qci) <- withStore $ \st -> (,) <$> getContact st userId chatId <*> getDirectChatItem st userId chatId quotedItemId
       case qci of
@@ -198,7 +200,7 @@ processChatCommand = \case
             send_ chatDir sent qmc =
               let quotedItem = CIQuote {chatDir, itemId = Just quotedItemId, sharedMsgId = itemSharedMsgId, sentAt = itemTs, content = qmc, formattedText}
                   msgRef = MsgRef {msgId = itemSharedMsgId, sentAt = itemTs, sent, memberId = Nothing}
-               in sendNewMsg user ct (MCQuote QuotedMsg {msgRef, content = qmc} mc) mc (Just quotedItem)
+               in sendNewMsg user ct (MCQuote QuotedMsg {msgRef, content = qmc} (ExtMsgContent mc Nothing)) mc (Just quotedItem)
     CTGroup -> do
       group@(Group GroupInfo {membership} _) <- withStore $ \st -> getGroup st user chatId
       unless (memberActive membership) $ throwChatError CEGroupMemberUserRemoved
@@ -214,7 +216,7 @@ processChatCommand = \case
             send_ qd sent GroupMember {memberId} content =
               let quotedItem = CIQuote {chatDir = qd, itemId = Just quotedItemId, sharedMsgId = itemSharedMsgId, sentAt = itemTs, content, formattedText}
                   msgRef = MsgRef {msgId = itemSharedMsgId, sentAt = itemTs, sent, memberId = Just memberId}
-               in sendNewGroupMsg user group (MCQuote QuotedMsg {msgRef, content} mc) mc (Just quotedItem)
+               in sendNewGroupMsg user group (MCQuote QuotedMsg {msgRef, content} (ExtMsgContent mc Nothing)) mc (Just quotedItem)
     CTContactRequest -> pure $ chatCmdError "not supported"
   APIUpdateChatItem cType chatId itemId mc -> withUser $ \user@User {userId} -> withChatLock $ case cType of
     CTDirect -> do
@@ -353,21 +355,21 @@ processChatCommand = \case
   SendMessage cName msg -> withUser $ \User {userId} -> do
     contactId <- withStore $ \st -> getContactIdByName st userId cName
     let mc = MCText $ safeDecodeUtf8 msg
-    processChatCommand $ APISendMessage CTDirect contactId mc
+    processChatCommand $ APISendMessage CTDirect contactId Nothing mc
   SendMessageBroadcast msg -> withUser $ \user -> do
     contacts <- withStore (`getUserContacts` user)
     withChatLock . procCmd $ do
       let mc = MCText $ safeDecodeUtf8 msg
           cts = filter isReady contacts
       forM_ cts $ \ct ->
-        void (sendDirectChatItem user ct (XMsgNew $ MCSimple mc) (CISndMsgContent mc) Nothing)
+        void (sendDirectChatItem user ct (XMsgNew $ MCSimple (ExtMsgContent mc Nothing)) (CISndMsgContent mc) Nothing)
           `catchError` (toView . CRChatError)
       CRBroadcastSent mc (length cts) <$> liftIO getZonedTime
   SendMessageQuote cName (AMsgDirection msgDir) quotedMsg msg -> withUser $ \User {userId} -> do
     contactId <- withStore $ \st -> getContactIdByName st userId cName
     quotedItemId <- withStore $ \st -> getDirectChatItemIdByText st userId contactId msgDir (safeDecodeUtf8 quotedMsg)
     let mc = MCText $ safeDecodeUtf8 msg
-    processChatCommand $ APISendMessageQuote CTDirect contactId quotedItemId mc
+    processChatCommand $ APISendMessageQuote CTDirect contactId quotedItemId Nothing mc
   DeleteMessage cName deletedMsg -> withUser $ \User {userId} -> do
     contactId <- withStore $ \st -> getContactIdByName st userId cName
     deletedItemId <- withStore $ \st -> getDirectChatItemIdByText st userId contactId SMDSnd (safeDecodeUtf8 deletedMsg)
@@ -451,12 +453,12 @@ processChatCommand = \case
   SendGroupMessage gName msg -> withUser $ \user -> do
     groupId <- withStore $ \st -> getGroupIdByName st user gName
     let mc = MCText $ safeDecodeUtf8 msg
-    processChatCommand $ APISendMessage CTGroup groupId mc
+    processChatCommand $ APISendMessage CTGroup groupId Nothing mc
   SendGroupMessageQuote gName cName quotedMsg msg -> withUser $ \user -> do
     groupId <- withStore $ \st -> getGroupIdByName st user gName
     quotedItemId <- withStore $ \st -> getGroupChatItemIdByText st user groupId cName (safeDecodeUtf8 quotedMsg)
     let mc = MCText $ safeDecodeUtf8 msg
-    processChatCommand $ APISendMessageQuote CTGroup groupId quotedItemId mc
+    processChatCommand $ APISendMessageQuote CTGroup groupId quotedItemId Nothing mc
   DeleteGroupMessage gName deletedMsg -> withUser $ \user@User {localDisplayName} -> do
     groupId <- withStore $ \st -> getGroupIdByName st user gName
     deletedItemId <- withStore $ \st -> getGroupChatItemIdByText st user groupId (Just localDisplayName) (safeDecodeUtf8 deletedMsg)
@@ -1639,7 +1641,7 @@ mkChatItem cd ciId content quotedItem sharedMsgId itemTs createdAt = do
   currentTs <- liftIO getCurrentTime
   let itemText = ciContentToText content
       meta = mkCIMeta ciId content itemText ciStatusNew sharedMsgId False False tz currentTs itemTs createdAt
-  pure ChatItem {chatDir = toCIDirection cd, meta, content, formattedText = parseMaybeMarkdownList itemText, quotedItem}
+  pure ChatItem {chatDir = toCIDirection cd, meta, content, formattedText = parseMaybeMarkdownList itemText, quotedItem, file = Nothing}
 
 allowAgentConnection :: ChatMonad m => Connection -> ConfirmationId -> ChatMsgEvent -> m ()
 allowAgentConnection conn confId msg = do
@@ -1756,8 +1758,8 @@ chatCommandP =
     <|> "/_get chats" $> APIGetChats
     <|> "/_get chat " *> (APIGetChat <$> chatTypeP <*> A.decimal <* A.space <*> chatPaginationP)
     <|> "/_get items count=" *> (APIGetChatItems <$> A.decimal)
-    <|> "/_send " *> (APISendMessage <$> chatTypeP <*> A.decimal <* A.space <*> msgContentP)
-    <|> "/_send_quote " *> (APISendMessageQuote <$> chatTypeP <*> A.decimal <* A.space <*> A.decimal <* A.space <*> msgContentP)
+    <|> "/_send " *> (APISendMessage <$> chatTypeP <*> A.decimal <*> optional filePathTagged <* A.space <*> msgContentP)
+    <|> "/_send_quote " *> (APISendMessageQuote <$> chatTypeP <*> A.decimal <* A.space <*> A.decimal <*> optional filePathTagged <* A.space <*> msgContentP)
     <|> "/_update item " *> (APIUpdateChatItem <$> chatTypeP <*> A.decimal <* A.space <*> A.decimal <* A.space <*> msgContentP)
     <|> "/_delete item " *> (APIDeleteChatItem <$> chatTypeP <*> A.decimal <* A.space <*> A.decimal <* A.space <*> ciDeleteMode)
     <|> "/_read chat " *> (APIChatRead <$> chatTypeP <*> A.decimal <* A.space <*> ((,) <$> ("from=" *> A.decimal) <* A.space <*> ("to=" *> A.decimal)))
@@ -1859,6 +1861,7 @@ chatCommandP =
       n <- (A.space *> A.takeByteString) <|> pure ""
       pure $ if B.null n then name else safeDecodeUtf8 n
     filePath = T.unpack . safeDecodeUtf8 <$> A.takeByteString
+    filePathTagged = " file " *> (T.unpack . safeDecodeUtf8 <$> A.takeTill (== ' '))
     memberRole =
       (" owner" $> GROwner)
         <|> (" admin" $> GRAdmin)
