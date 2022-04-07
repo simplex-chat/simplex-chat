@@ -52,7 +52,7 @@ struct FramedItemView: View {
                     .padding(.bottom, 2)
                 } else {
                     if case let .link(_, preview) = chatItem.content.msgContent {
-                        SmallLinkPreviewView(metadata: preview)
+                        LargeLinkPreviewView(metadata: preview)
                     }
                     MsgContentView(
                         content: chatItem.content,
