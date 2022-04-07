@@ -28,7 +28,7 @@
         })] ++ extra-modules;
       }; in
       # by defualt we don't need to pass extra-modules.
-      let drv = pkgs': drv' { extra-modules = []; inherit pkgs' }; in
+      let drv = pkgs': drv' { extra-modules = []; inherit pkgs'; }; in
       # This will package up all *.a in $out into a pkg.zip that can
       # be downloaded from hydra.
       let withHydraLibPkg = pkg: pkg.overrideAttrs (old: {
