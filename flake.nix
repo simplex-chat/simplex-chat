@@ -213,7 +213,7 @@
               };
             };
             "aarch64-darwin" = {
-              # this is the aarch64-darwin iOS build (still needs the libraries to be mutilated with mac2ios
+              # this is the aarch64-darwin iOS build (to be patched with mac2ios)
               "aarch64-darwin-ios:lib:simplex-chat" = (drv' { pkgs' = pkgs; extra-modules = [{ packages.simplexmq.flags.swiftJSON = true; }] } ).simplex-chat.components.library.override {
                 smallAddressSpace = true; enableShared = false;
                 # we need threaded here, otherwise all the queing logic doesn't work properly.
@@ -232,14 +232,14 @@
                   find ${pkgs.gmp6.override { withStatic = true; }}/lib -name "*.a" -exec cp {} $out/_pkg \;
                   # There is no static libc
                   ${pkgs.tree}/bin/tree $out/_pkg
-                  (cd $out/_pkg; ${pkgs.zip}/bin/zip -r -9 $out/pkg-ios-aarch64.zip *)
+                  (cd $out/_pkg; ${pkgs.zip}/bin/zip -r -9 $out/pkg-ios-aarch64-swift-json.zip *)
                   rm -fR $out/_pkg
                   mkdir -p $out/nix-support
                   echo "file binary-dist \"$(echo $out/*.zip)\"" \
                       > $out/nix-support/hydra-build-products
                 '';
               };
-	      # This is the aarch64-darwin macOS native build
+	            # This is the aarch64-darwin build with tagged JSON format (for Mac & Flutter)
               "aarch64-darwin:lib:simplex-chat" = (drv pkgs).simplex-chat.components.library.override {
                 smallAddressSpace = true; enableShared = false;
                 # we need threaded here, otherwise all the queing logic doesn't work properly.
@@ -258,7 +258,7 @@
                   find ${pkgs.gmp6.override { withStatic = true; }}/lib -name "*.a" -exec cp {} $out/_pkg \;
                   # There is no static libc
                   ${pkgs.tree}/bin/tree $out/_pkg
-                  (cd $out/_pkg; ${pkgs.zip}/bin/zip -r -9 $out/pkg-ios-aarch64.zip *)
+                  (cd $out/_pkg; ${pkgs.zip}/bin/zip -r -9 $out/pkg-ios-aarch64-tagged-json.zip *)
                   rm -fR $out/_pkg
                   mkdir -p $out/nix-support
                   echo "file binary-dist \"$(echo $out/*.zip)\"" \
