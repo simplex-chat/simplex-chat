@@ -48,13 +48,13 @@ struct SmallLinkPreviewView: View {
     var cancelPreview: (() -> Void)? = nil
 
     var body: some View {
-        HStack {
+        HStack(alignment: .top, spacing: 0) {
             if let image = metadata.image,
               let data = Data(base64Encoded: dropImagePrefix(image)),
               let uiImage = UIImage(data: data) {
                 Image(uiImage: uiImage).frame(maxWidth: 1.5, maxHeight: 1.1)
            }
-            VStack {
+            VStack(spacing: 0) {
                 if let title = metadata.title {
                     Text(title).fontWeight(.bold)
                 }
@@ -70,10 +70,10 @@ struct SmallLinkPreviewView: View {
             }
             if let cancelPreview = cancelPreview {
                 Button { cancelPreview() } label: {
-                    Image(systemName: "xmark")
+                    Image(systemName: "xmark").foregroundColor(.gray)
                 }.frame(alignment: Alignment.topTrailing)
             }
-        }.background(.background).fixedSize(horizontal: true, vertical: false).overlay(DetermineWidth())
+        }.background(.background)
     }
 }
 

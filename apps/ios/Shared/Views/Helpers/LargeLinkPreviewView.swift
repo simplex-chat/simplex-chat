@@ -13,28 +13,26 @@ struct LargeLinkPreviewView: View {
     let metadata: LinkPreview
 
     var body: some View {
-        HStack {
-            
+        VStack {
             if let image = metadata.image,
               let data = Data(base64Encoded: dropImagePrefix(image)),
               let uiImage = UIImage(data: data) {
                 Image(uiImage: uiImage).frame(maxWidth: 1.5, maxHeight: 1.1)
-           }
-            VStack {
-                if let title = metadata.title {
-                    Text(title).fontWeight(.bold)
-                }
-                else {
-                    Text("")
-                }
-                if let url = metadata.uri.absoluteString {
-                    Text(url).foregroundColor(.gray)
-                }
-                else {
-                    Text("")
-                }
             }
-        }.background(.background).fixedSize(horizontal: true, vertical: false).overlay(DetermineWidth())
+
+            if let title = metadata.title {
+                Text(title).fontWeight(.bold)
+            }
+            else {
+                Text("")
+            }
+            if let url = metadata.uri.absoluteString {
+                Text(url).foregroundColor(.gray)
+            }
+            else {
+                Text("")
+            }
+        }.background(.background).fixedSize(horizontal: true, vertical: false)
     }
 }
 
