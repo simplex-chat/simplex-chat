@@ -95,6 +95,7 @@ module Simplex.Chat.Store
     createSndGroupFileTransferV2,
     createSndGroupFileTransferV2Connection,
     updateFileCancelled,
+    updateCIFileStatus,
     getSharedMsgIdByFileId,
     getFileIdBySharedMsgId,
     getGroupFileIdBySharedMsgId,
@@ -188,7 +189,7 @@ import Simplex.Chat.Migrations.M20220301_smp_servers
 import Simplex.Chat.Migrations.M20220302_profile_images
 import Simplex.Chat.Migrations.M20220304_msg_quotes
 import Simplex.Chat.Migrations.M20220321_chat_item_edited
-import Simplex.Chat.Migrations.M20220404_files_cancelled
+import Simplex.Chat.Migrations.M20220404_files_status_fields
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Chat.Util (eitherToMaybe)
@@ -213,7 +214,7 @@ schemaMigrations =
     ("20220302_profile_images", m20220302_profile_images),
     ("20220304_msg_quotes", m20220304_msg_quotes),
     ("20220321_chat_item_edited", m20220321_chat_item_edited),
-    ("20220404_files_cancelled", m20220404_files_cancelled)
+    ("20220404_files_status_fields", m20220404_files_status_fields)
   ]
 
 -- | The list of migrations in ascending order by date
@@ -1789,8 +1790,8 @@ createSndFileTransfer st userId Contact {contactId, localDisplayName = recipient
     currentTs <- getCurrentTime
     DB.execute
       db
-      "INSERT INTO files (user_id, contact_id, file_name, file_path, file_size, chunk_size, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?)"
-      (userId, contactId, fileName, filePath, fileSize, chunkSize, currentTs, currentTs)
+      "INSERT INTO files (user_id, contact_id, file_name, file_path, file_size, chunk_size, ci_file_status, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?)"
+      (userId, contactId, fileName, filePath, fileSize, chunkSize, CIFSSndStored, currentTs, currentTs)
     fileId <- insertedRowId db
     Connection {connId} <- createSndFileConnection_ db userId fileId acId
     let fileStatus = FSNew
@@ -1806,8 +1807,8 @@ createSndFileTransferV2 st userId Contact {contactId} filePath FileInvitation {f
     currentTs <- getCurrentTime
     DB.execute
       db
-      "INSERT INTO files (user_id, contact_id, file_name, file_path, file_size, chunk_size, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?)"
-      (userId, contactId, fileName, filePath, fileSize, chunkSize, currentTs, currentTs)
+      "INSERT INTO files (user_id, contact_id, file_name, file_path, file_size, chunk_size, ci_file_status, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?)"
+      (userId, contactId, fileName, filePath, fileSize, chunkSize, CIFSSndStored, currentTs, currentTs)
     insertedRowId db
 
 createSndFileTransferV2Connection :: MonadUnliftIO m => SQLiteStore -> UserId -> Int64 -> ConnId -> m ()
@@ -1827,8 +1828,8 @@ createSndGroupFileTransfer st userId GroupInfo {groupId} ms filePath fileSize ch
     currentTs <- getCurrentTime
     DB.execute
       db
-      "INSERT INTO files (user_id, group_id, file_name, file_path, file_size, chunk_size, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?)"
-      (userId, groupId, fileName, filePath, fileSize, chunkSize, currentTs, currentTs)
+      "INSERT INTO files (user_id, group_id, file_name, file_path, file_size, chunk_size, ci_file_status, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?)"
+      (userId, groupId, fileName, filePath, fileSize, chunkSize, CIFSSndStored, currentTs, currentTs)
     fileId <- insertedRowId db
     forM_ ms $ \(GroupMember {groupMemberId}, agentConnId, _) -> do
       Connection {connId} <- createSndFileConnection_ db userId fileId agentConnId
@@ -1844,8 +1845,8 @@ createSndGroupFileTransferV2 st userId GroupInfo {groupId} filePath FileInvitati
     currentTs <- getCurrentTime
     DB.execute
       db
-      "INSERT INTO files (user_id, group_id, file_name, file_path, file_size, chunk_size, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?)"
-      (userId, groupId, fileName, filePath, fileSize, chunkSize, currentTs, currentTs)
+      "INSERT INTO files (user_id, group_id, file_name, file_path, file_size, chunk_size, ci_file_status, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?)"
+      (userId, groupId, fileName, filePath, fileSize, chunkSize, CIFSSndStored, currentTs, currentTs)
     insertedRowId db
 
 createSndGroupFileTransferV2Connection :: MonadUnliftIO m => SQLiteStore -> UserId -> Int64 -> ConnId -> GroupMember -> m ()
@@ -1863,6 +1864,12 @@ updateFileCancelled st userId fileId =
   liftIO . withTransaction st $ \db -> do
     currentTs <- getCurrentTime
     DB.execute db "UPDATE files SET cancelled = 1, updated_at = ? WHERE user_id = ? AND file_id = ?" (currentTs, userId, fileId)
+
+updateCIFileStatus :: MsgDirectionI d => MonadUnliftIO m => SQLiteStore -> UserId -> Int64 -> CIFileStatus d -> m ()
+updateCIFileStatus st userId fileId ciFileStatus =
+  liftIO . withTransaction st $ \db -> do
+    currentTs <- getCurrentTime
+    DB.execute db "UPDATE files SET ci_file_status = ?, updated_at = ? WHERE user_id = ? AND file_id = ?" (ciFileStatus, currentTs, userId, fileId)
 
 getSharedMsgIdByFileId :: StoreMonad m => SQLiteStore -> UserId -> Int64 -> m SharedMsgId
 getSharedMsgIdByFileId st userId fileId =
@@ -1975,8 +1982,8 @@ createRcvFileTransfer st userId Contact {contactId, localDisplayName = c} f@File
     currentTs <- getCurrentTime
     DB.execute
       db
-      "INSERT INTO files (user_id, contact_id, file_name, file_size, chunk_size, created_at, updated_at) VALUES (?,?,?,?,?,?,?)"
-      (userId, contactId, fileName, fileSize, chunkSize, currentTs, currentTs)
+      "INSERT INTO files (user_id, contact_id, file_name, file_size, chunk_size, ci_file_status, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?)"
+      (userId, contactId, fileName, fileSize, chunkSize, CIFSRcvInvitation, currentTs, currentTs)
     fileId <- insertedRowId db
     DB.execute
       db
@@ -2052,8 +2059,8 @@ acceptRcvFileTransfer st userId fileId agentConnId filePath =
     currentTs <- getCurrentTime
     DB.execute
       db
-      "UPDATE files SET file_path = ?, updated_at = ? WHERE user_id = ? AND file_id = ?"
-      (filePath, currentTs, userId, fileId)
+      "UPDATE files SET file_path = ?, ci_file_status = ?, updated_at = ? WHERE user_id = ? AND file_id = ?"
+      (filePath, CIFSRcvTransfer, currentTs, userId, fileId)
     DB.execute
       db
       "UPDATE rcv_files SET file_status = ?, updated_at = ? WHERE file_id = ?"

@@ -134,7 +134,7 @@ CREATE TABLE files (
   chunk_size INTEGER NOT NULL,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE
-, chat_item_id INTEGER DEFAULT NULL REFERENCES chat_items ON DELETE CASCADE, updated_at TEXT CHECK (updated_at NOT NULL), cancelled INTEGER);
+, chat_item_id INTEGER DEFAULT NULL REFERENCES chat_items ON DELETE CASCADE, updated_at TEXT CHECK (updated_at NOT NULL), cancelled INTEGER, ci_file_status TEXT);
 CREATE TABLE snd_files (
   file_id INTEGER NOT NULL REFERENCES files ON DELETE CASCADE,
   connection_id INTEGER NOT NULL REFERENCES connections ON DELETE CASCADE,

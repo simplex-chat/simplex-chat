@@ -80,7 +80,7 @@ data ChatItem (c :: ChatType) (d :: MsgDirection) = ChatItem
     content :: CIContent d,
     formattedText :: Maybe MarkdownList,
     quotedItem :: Maybe (CIQuote c),
-    file :: Maybe CIFile
+    file :: Maybe (CIFile d)
   }
   deriving (Show, Generic)
 
@@ -266,46 +266,81 @@ quoteMsgDirection = \case
   CIQGroupSnd -> MDSnd
   CIQGroupRcv _ -> MDRcv
 
-data CIFile = CIFile
+data CIFile (d :: MsgDirection) = CIFile
   { file :: Maybe FilePath, -- local file path
-    fileStatus :: CIFileStatus
+    fileStatus :: CIFileStatus d
   }
   deriving (Show, Generic)
 
-instance ToJSON CIFile where
+instance ToJSON (CIFile d) where
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
   toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
-data CIFileStatus
-  = CIFSInvitationReceived
-  | CIFSReceivingTransfer
-  | CIFSStored -- snd file transfer is always stored
-  deriving (Eq, Show, Generic)
+data CIFileStatus (d :: MsgDirection) where
+  CIFSSndStored :: CIFileStatus 'MDSnd
+  CIFSSndCancelled :: CIFileStatus 'MDSnd
+  CIFSRcvInvitation :: CIFileStatus 'MDRcv
+  CIFSRcvTransfer :: CIFileStatus 'MDRcv
+  CIFSRcvComplete :: CIFileStatus 'MDRcv
+  CIFSRcvCancelled :: CIFileStatus 'MDRcv
 
-instance FromJSON CIFileStatus where
-  parseJSON = J.genericParseJSON . enumJSON $ dropPrefix "CIFS"
+deriving instance Show (CIFileStatus d)
 
-instance ToJSON CIFileStatus where
-  toJSON = J.genericToJSON . enumJSON $ dropPrefix "CIFS"
-  toEncoding = J.genericToEncoding . enumJSON $ dropPrefix "CIFS"
+instance ToJSON (CIFileStatus d) where
+  toJSON = J.toJSON . jsonCIFileStatus
+  toEncoding = J.toEncoding . jsonCIFileStatus
 
-instance FromField CIFileStatus where
-  fromField = fromTextField_ ciFileStatusT
+instance MsgDirectionI d => ToField (CIFileStatus d) where toField = toField . decodeLatin1 . strEncode
 
-instance ToField CIFileStatus where toField = toField . serializeCIFileStatus
+instance FromField ACIFileStatus where fromField = fromTextField_ $ eitherToMaybe . strDecode . encodeUtf8
 
-serializeCIFileStatus :: CIFileStatus -> Text
-serializeCIFileStatus = \case
-  CIFSInvitationReceived -> "invitation_received"
-  CIFSReceivingTransfer -> "receiving_transfer"
-  CIFSStored -> "stored"
+data ACIFileStatus = forall d. MsgDirectionI d => ACIFileStatus (SMsgDirection d) (CIFileStatus d)
 
-ciFileStatusT :: Text -> Maybe CIFileStatus
-ciFileStatusT = \case
-  "invitation_received" -> Just CIFSInvitationReceived
-  "receiving_transfer" -> Just CIFSReceivingTransfer
-  "stored" -> Just CIFSStored
-  _ -> Nothing
+deriving instance Show ACIFileStatus
+
+instance MsgDirectionI d => StrEncoding (CIFileStatus d) where
+  strEncode = \case
+    CIFSSndStored -> "snd_stored"
+    CIFSSndCancelled -> "snd_cancelled"
+    CIFSRcvInvitation -> "rcv_invitation"
+    CIFSRcvTransfer -> "rcv_transfer"
+    CIFSRcvComplete -> "rcv_complete"
+    CIFSRcvCancelled -> "rcv_cancelled"
+  strP = (\(ACIFileStatus _ st) -> checkDirection st) <$?> strP
+
+instance StrEncoding ACIFileStatus where
+  strEncode (ACIFileStatus _ s) = strEncode s
+  strP =
+    A.takeTill (== ' ') >>= \case
+      "snd_stored" -> pure $ ACIFileStatus SMDSnd CIFSSndStored
+      "snd_cancelled" -> pure $ ACIFileStatus SMDSnd CIFSSndCancelled
+      "rcv_invitation" -> pure $ ACIFileStatus SMDRcv CIFSRcvInvitation
+      "rcv_transfer" -> pure $ ACIFileStatus SMDRcv CIFSRcvTransfer
+      "rcv_complete" -> pure $ ACIFileStatus SMDRcv CIFSRcvComplete
+      "rcv_cancelled" -> pure $ ACIFileStatus SMDRcv CIFSRcvCancelled
+      _ -> fail "bad file status"
+
+data JSONCIFileStatus
+  = JCIFSSndStored
+  | JCIFSSndCancelled
+  | JCIFSRcvInvitation
+  | JCIFSRcvTransfer
+  | JCIFSRcvComplete
+  | JCIFSRcvCancelled
+  deriving (Show, Generic)
+
+instance ToJSON JSONCIFileStatus where
+  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "JCIFS"
+  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "JCIFS"
+
+jsonCIFileStatus :: CIFileStatus d -> JSONCIFileStatus
+jsonCIFileStatus = \case
+  CIFSSndStored -> JCIFSSndStored
+  CIFSSndCancelled -> JCIFSSndCancelled
+  CIFSRcvInvitation -> JCIFSRcvInvitation
+  CIFSRcvTransfer -> JCIFSRcvTransfer
+  CIFSRcvComplete -> JCIFSRcvComplete
+  CIFSRcvCancelled -> JCIFSRcvCancelled
 
 data CIStatus (d :: MsgDirection) where
   CISSndNew :: CIStatus 'MDSnd
