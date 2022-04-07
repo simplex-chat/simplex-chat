@@ -29,7 +29,7 @@ func getLinkMetadata(url: URL) async -> LinkPreview? {
                         if let image = image,
                            let title = metadata.title,
                            let uri = metadata.originalURL {
-                            linkPreview = LinkPreview(uri: uri, title: title, image: resizeAndCompressImage(image: image))
+                            linkPreview = LinkPreview(uri: uri, title: title, image: resizeAndCompressImage(image: image, maxHeight: 96))
                         }
                     }
                     continuation.resume(returning: linkPreview)

@@ -98,7 +98,7 @@ struct UserProfile: View {
             }
         }
         .onChange(of: chosenImage) { image in
-            profile.image = resizeAndCompressImage(image: image)
+            profile.image = resizeCropCompressImage(image: image)
         }
     }
 

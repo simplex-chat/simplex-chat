@@ -41,15 +41,62 @@ func resizeToSquare(_ image: UIImage, _ side: CGFloat) -> UIImage {
     resize(image, to: CGSize(width: side, height: side))
 }
 
-func resizeAndCompressImage(image: UIImage?, side: CGFloat = 104, compressionQuality: CGFloat = 0.85, maxSize: Int = 12500) -> String? {
+func resizeCropCompressImage(image: UIImage?, side: CGFloat = 104, compressionQuality: CGFloat = 0.85, maxSize: Int = 12500) -> String? {
     if let image = image,
        let data = resizeToSquare(image, side).jpegData(compressionQuality: compressionQuality) {
         let imageStr = "data:image/jpg;base64,\(data.base64EncodedString())"
         if imageStr.count <= maxSize {
             return imageStr
         } else {
+            logger.error("resizeCropCompressImage: resized image is too big \(imageStr.count)")
+        }
+    }
+    return nil
+}
+
+func resizeAndCompressImage(
+    image: UIImage?,
+    maxHeight: CGFloat? = nil,
+    maxWidth: CGFloat? = nil,
+    compressionQuality: CGFloat = 0.85,
+    maxSize: Int = 12500
+) -> String? {
+    if let image = image {
+        var resizedImage: UIImage
+        var imageData: Data? = nil
+        // resize base on the most restrictive maximum given the image dimensions
+        var targetHeight: CGFloat? = maxHeight
+        var targetWidth: CGFloat? = maxWidth
+        if let maxHeight = maxHeight, let maxWidth = maxWidth {
+            let aspectRatio = image.size.width / image.size.height
+            let ratioOfMaxs = maxWidth / maxHeight
+            if ratioOfMaxs > aspectRatio {
+                targetWidth = maxWidth
+                targetHeight = nil
+            }
+            else {
+                targetWidth = nil
+                targetHeight = maxHeight
+            }
+        }
+        if let height = targetHeight {
+            let width = image.size.width * (height / image.size.height)
+            resizedImage = resize(image, to: CGSize(width: width, height: height))
+            imageData = resizedImage.jpegData(compressionQuality: compressionQuality)
+        }
+        if let width = targetWidth {
+            let height = image.size.height * (width / image.size.width)
+            resizedImage = resize(image, to: CGSize(width: width, height: height))
+            imageData = resizedImage.jpegData(compressionQuality: compressionQuality)
+        }
+       if let data = imageData {
+        let imageStr = "data:image/jpg;base64,\(data.base64EncodedString())"
+        if imageStr.count <= maxSize {
+            return imageStr
+        } else {
             logger.error("resizeAndCompressImage: resized image is too big \(imageStr.count)")
         }
+       }
     }
     return nil
 }
