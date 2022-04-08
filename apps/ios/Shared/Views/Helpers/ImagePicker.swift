@@ -17,7 +17,7 @@ func dropImagePrefix(_ s: String) -> String {
     dropPrefix(dropPrefix(s, "data:image/png;base64,"), "data:image/jpg;base64,")
 }
 
-func resize(_ image: UIImage, to newSize: CGSize) -> UIImage {
+func resizeAndCrop(_ image: UIImage, to newSize: CGSize) -> UIImage {
     let format = UIGraphicsImageRendererFormat()
     format.scale = 1.0
     format.opaque = true
@@ -37,70 +37,35 @@ func resize(_ image: UIImage, to newSize: CGSize) -> UIImage {
     }
 }
 
-func resizeToSquare(_ image: UIImage, _ side: CGFloat) -> UIImage {
-    resize(image, to: CGSize(width: side, height: side))
+func cropToSquare(_ image: UIImage) -> UIImage {
+    let side = min(image.size.width, image.size.height)
+    return resizeAndCrop(image, to: CGSize(width: side, height: side))
 }
 
-func resizeCropCompressImage(image: UIImage?, side: CGFloat = 104, compressionQuality: CGFloat = 0.85, maxSize: Int = 12500) -> String? {
-    if let image = image,
-       let data = resizeToSquare(image, side).jpegData(compressionQuality: compressionQuality) {
-        let imageStr = "data:image/jpg;base64,\(data.base64EncodedString())"
-        if imageStr.count <= maxSize {
-            return imageStr
-        } else {
-            logger.error("resizeCropCompressImage: resized image is too big \(imageStr.count)")
-        }
+func resizeImageToDataSize(_ image: UIImage, maxSize: Int) -> String? {
+    let size = image.size
+    var imageStr = compressImage(image)
+    var resized = image
+    var ratio: CGFloat = 1
+    var dataSize = imageStr?.count ?? 0
+    logger.debug("resizeImageToDataSize: initial size \(String(describing: size)), data size \(dataSize)")
+    while dataSize != 0 && dataSize > maxSize {
+        ratio *= sqrt(CGFloat(dataSize / maxSize) * 1.2)
+        resized = resizeAndCrop(resized, to: CGSize(width: size.width / ratio, height: size.height / ratio))
+        imageStr = compressImage(resized)
+        dataSize = imageStr?.count ?? 0
+        logger.debug("resizeImageToDataSize: ratio \(ratio)")
+    }
+    logger.debug("resizeImageToDataSize: final size \(String(describing: resized.size)), data size \(dataSize)")
+    return imageStr
+}
+
+func compressImage(_ image: UIImage, _ compressionQuality: CGFloat = 0.85) -> String? {
+    if let data = image.jpegData(compressionQuality: compressionQuality) {
+        return "data:image/jpg;base64,\(data.base64EncodedString())"
     }
     return nil
 }
-
-func resizeAndCompressImage(
-    image: UIImage?,
-    maxHeight: CGFloat? = nil,
-    maxWidth: CGFloat? = nil,
-    compressionQuality: CGFloat = 0.85,
-    maxSize: Int = 12500
-) -> String? {
-    if let image = image {
-        var resizedImage: UIImage
-        var imageData: Data? = nil
-        // resize base on the most restrictive maximum given the image dimensions
-        var targetHeight: CGFloat? = maxHeight
-        var targetWidth: CGFloat? = maxWidth
-        if let maxHeight = maxHeight, let maxWidth = maxWidth {
-            let aspectRatio = image.size.width / image.size.height
-            let ratioOfMaxs = maxWidth / maxHeight
-            if ratioOfMaxs > aspectRatio {
-                targetWidth = maxWidth
-                targetHeight = nil
-            }
-            else {
-                targetWidth = nil
-                targetHeight = maxHeight
-            }
-        }
-        if let height = targetHeight {
-            let width = image.size.width * (height / image.size.height)
-            resizedImage = resize(image, to: CGSize(width: width, height: height))
-            imageData = resizedImage.jpegData(compressionQuality: compressionQuality)
-        }
-        if let width = targetWidth {
-            let height = image.size.height * (width / image.size.width)
-            resizedImage = resize(image, to: CGSize(width: width, height: height))
-            imageData = resizedImage.jpegData(compressionQuality: compressionQuality)
-        }
-       if let data = imageData {
-        let imageStr = "data:image/jpg;base64,\(data.base64EncodedString())"
-        if imageStr.count <= maxSize {
-            return imageStr
-        } else {
-            logger.error("resizeAndCompressImage: resized image is too big \(imageStr.count)")
-        }
-       }
-    }
-    return nil
-}
-
 
 enum ImageSource {
     case imageLibrary

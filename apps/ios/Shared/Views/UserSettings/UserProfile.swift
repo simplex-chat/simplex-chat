@@ -98,7 +98,11 @@ struct UserProfile: View {
             }
         }
         .onChange(of: chosenImage) { image in
-            profile.image = resizeCropCompressImage(image: image)
+            if let image = image {
+                profile.image = resizeImageToDataSize(cropToSquare(image), maxSize: 12500)
+            } else {
+                profile.image = nil
+            }
         }
     }
 

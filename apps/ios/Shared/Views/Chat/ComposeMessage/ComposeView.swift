@@ -30,8 +30,7 @@ struct ComposeView: View {
     @State var linkUrl: URL? = nil
     @State var prevLinkUrl: URL? = nil
     @State var cancelledLinks: Set<String> = []
-    @State var previewCancelled: Bool = false
-    
+
     
     private func isValidLink(link: String) -> Bool {
         return !(link.starts(with: "https://simplex.chat") || link.starts(with: "http://simplex.chat"))
@@ -63,8 +62,8 @@ struct ComposeView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            if !previewCancelled, let metadata = linkPreview {
-                ComposeLinkPreviewView(metadata: metadata, cancelPreview: cancelPreview)
+            if let metadata = linkPreview {
+                ComposeLinkView(linkPreview: metadata, cancelPreview: cancelPreview)
             }
             if (quotedItem != nil) {
                 ContextItemView(contextItem: $quotedItem, editing: $editing)
@@ -85,7 +84,7 @@ struct ComposeView: View {
                 prevLinkUrl = linkUrl
                 linkUrl = parseMessage(message)
                 if let url = linkUrl, prevLinkUrl == linkUrl {
-                    getLinkMetadata(url: url) { linkPreview = $0 }
+                    getLinkPrivew(url: url) { linkPreview = $0 }
                 } else {
                     linkPreview = nil
                 }
