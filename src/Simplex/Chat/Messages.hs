@@ -20,7 +20,6 @@ import qualified Data.ByteString.Base64 as B64
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Int (Int64)
 import Data.Text (Text)
-import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
 import Data.Time.Clock (UTCTime, diffUTCTime, nominalDay)
 import Data.Time.LocalTime (TimeZone, ZonedTime, utcToZonedTime)
@@ -446,8 +445,6 @@ data CIContent (d :: MsgDirection) where
   CIRcvMsgContent :: MsgContent -> CIContent 'MDRcv
   CISndDeleted :: CIDeleteMode -> CIContent 'MDSnd
   CIRcvDeleted :: CIDeleteMode -> CIContent 'MDRcv
-  CISndFileInvitation :: FileTransferId -> FilePath -> CIContent 'MDSnd
-  CIRcvFileInvitation :: RcvFileTransfer -> CIContent 'MDRcv
 
 deriving instance Show (CIContent d)
 
@@ -457,8 +454,6 @@ ciContentToText = \case
   CIRcvMsgContent mc -> msgContentText mc
   CISndDeleted cidm -> ciDeleteModeToText cidm
   CIRcvDeleted cidm -> ciDeleteModeToText cidm
-  CISndFileInvitation fId fPath -> "you sent file #" <> T.pack (show fId) <> ": " <> T.pack fPath
-  CIRcvFileInvitation RcvFileTransfer {fileInvitation = FileInvitation {fileName}} -> "file " <> T.pack fileName
 
 msgDirToDeletedContent_ :: SMsgDirection d -> CIDeleteMode -> CIContent d
 msgDirToDeletedContent_ msgDir mode = case msgDir of
@@ -491,8 +486,6 @@ data JSONCIContent
   | JCIRcvMsgContent {msgContent :: MsgContent}
   | JCISndDeleted {deleteMode :: CIDeleteMode}
   | JCIRcvDeleted {deleteMode :: CIDeleteMode}
-  | JCISndFileInvitation {fileId :: FileTransferId, filePath :: FilePath}
-  | JCIRcvFileInvitation {rcvFileTransfer :: RcvFileTransfer}
   deriving (Generic)
 
 instance FromJSON JSONCIContent where
@@ -508,8 +501,6 @@ jsonCIContent = \case
   CIRcvMsgContent mc -> JCIRcvMsgContent mc
   CISndDeleted cidm -> JCISndDeleted cidm
   CIRcvDeleted cidm -> JCIRcvDeleted cidm
-  CISndFileInvitation fId fPath -> JCISndFileInvitation fId fPath
-  CIRcvFileInvitation ft -> JCIRcvFileInvitation ft
 
 aciContentJSON :: JSONCIContent -> ACIContent
 aciContentJSON = \case
@@ -517,8 +508,6 @@ aciContentJSON = \case
   JCIRcvMsgContent mc -> ACIContent SMDRcv $ CIRcvMsgContent mc
   JCISndDeleted cidm -> ACIContent SMDSnd $ CISndDeleted cidm
   JCIRcvDeleted cidm -> ACIContent SMDRcv $ CIRcvDeleted cidm
-  JCISndFileInvitation fId fPath -> ACIContent SMDSnd $ CISndFileInvitation fId fPath
-  JCIRcvFileInvitation ft -> ACIContent SMDRcv $ CIRcvFileInvitation ft
 
 -- platform independent
 data DBJSONCIContent
@@ -526,8 +515,6 @@ data DBJSONCIContent
   | DBJCIRcvMsgContent {msgContent :: MsgContent}
   | DBJCISndDeleted {deleteMode :: CIDeleteMode}
   | DBJCIRcvDeleted {deleteMode :: CIDeleteMode}
-  | DBJCISndFileInvitation {fileId :: FileTransferId, filePath :: FilePath}
-  | DBJCIRcvFileInvitation {rcvFileTransfer :: RcvFileTransfer}
   deriving (Generic)
 
 instance FromJSON DBJSONCIContent where
@@ -543,8 +530,6 @@ dbJsonCIContent = \case
   CIRcvMsgContent mc -> DBJCIRcvMsgContent mc
   CISndDeleted cidm -> DBJCISndDeleted cidm
   CIRcvDeleted cidm -> DBJCIRcvDeleted cidm
-  CISndFileInvitation fId fPath -> DBJCISndFileInvitation fId fPath
-  CIRcvFileInvitation ft -> DBJCIRcvFileInvitation ft
 
 aciContentDBJSON :: DBJSONCIContent -> ACIContent
 aciContentDBJSON = \case
@@ -552,8 +537,6 @@ aciContentDBJSON = \case
   DBJCIRcvMsgContent mc -> ACIContent SMDRcv $ CIRcvMsgContent mc
   DBJCISndDeleted cidm -> ACIContent SMDSnd $ CISndDeleted cidm
   DBJCIRcvDeleted cidm -> ACIContent SMDRcv $ CIRcvDeleted cidm
-  DBJCISndFileInvitation fId fPath -> ACIContent SMDSnd $ CISndFileInvitation fId fPath
-  DBJCIRcvFileInvitation ft -> ACIContent SMDRcv $ CIRcvFileInvitation ft
 
 data SChatType (c :: ChatType) where
   SCTDirect :: SChatType 'CTDirect

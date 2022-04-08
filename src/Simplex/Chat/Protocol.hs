@@ -112,7 +112,7 @@ data ChatMsgEvent
   | XMsgUpdate SharedMsgId MsgContent
   | XMsgDel SharedMsgId
   | XMsgDeleted
-  | XFile FileInvitation
+  | XFile FileInvitation -- TODO discontinue
   | XFileAcpt String -- old file protocol
   | XFileAcptInv SharedMsgId ConnReqInvitation String -- new file protocol
   | XInfo Profile
