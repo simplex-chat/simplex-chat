@@ -29,6 +29,7 @@ struct ComposeView: View {
     @State var editing: Bool = false
     @State var linkUrl: URL? = nil
     @State var prevLinkUrl: URL? = nil
+    @State var pendingPreview: URL? = nil
     @State var cancelledLinks: Set<String> = []
 
     
@@ -71,7 +72,10 @@ struct ComposeView: View {
                 ContextItemView(contextItem: $editingItem, editing: $editing, resetMessage: resetMessage)
             }
             SendMessageView(
-                sendMessage: sendMessage,
+                sendMessage: { text in
+                    sendMessage(text)
+                    resetLinkPreview()
+                },
                 inProgress: inProgress,
                 message: $message,
                 keyboardVisible: $keyboardVisible,
@@ -83,21 +87,43 @@ struct ComposeView: View {
             if message.count > 0 {
                 prevLinkUrl = linkUrl
                 linkUrl = parseMessage(message)
-                if let url = linkUrl, prevLinkUrl == linkUrl {
-                    getLinkPrivew(url: url) { linkPreview = $0 }
+                if let url = linkUrl {
+                    if prevLinkUrl == linkUrl {
+                        loadLinkPreview(url)
+                    } else {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                            loadLinkPreview(url)
+                        }
+                    }
                 } else {
                     linkPreview = nil
                 }
             } else {
-                prevLinkUrl = nil
-                linkUrl = nil
-                linkPreview = nil
-                cancelledLinks = []
+                resetLinkPreview()
             }
         }
         .onChange(of: editingItem == nil) { _ in
             editing = (editingItem != nil)
         }
+    }
+
+    func loadLinkPreview(_ url: URL) {
+        if url != linkPreview?.uri && url != pendingPreview {
+            pendingPreview = url
+            getLinkPrivew(url: url) { lp in
+                if pendingPreview == url {
+                    linkPreview = lp
+                    pendingPreview = nil
+                }
+            }
+        }
+    }
+
+    func resetLinkPreview() {
+        linkUrl = nil
+        prevLinkUrl = nil
+        pendingPreview = nil
+        cancelledLinks = []
     }
 }
 
