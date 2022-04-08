@@ -69,6 +69,7 @@ getActiveUser_ st = find activeUser <$> getUsers st
 
 chatInit :: String -> IO ChatController
 chatInit dbFilePrefix = do
+  -- TODO ? init with fileDefaultDownloadPath and set it in defaultMobileConfig
   let f = chatStoreFile dbFilePrefix
   chatStore <- createStore f (dbPoolSize defaultMobileConfig) (yesToMigrations (defaultMobileConfig :: ChatConfig))
   user_ <- getActiveUser_ chatStore

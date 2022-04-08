@@ -69,16 +69,17 @@ data TestCC = TestCC
 aCfg :: AgentConfig
 aCfg = agentConfig defaultChatConfig
 
-cfg :: ChatConfig
-cfg =
+defaultTestCfg :: ChatConfig
+defaultTestCfg =
   defaultChatConfig
     { agentConfig =
         aCfg {reconnectInterval = (reconnectInterval aCfg) {initialInterval = 50000}},
-      testView = True
+      testView = True,
+      fileDefaultDownloadPath = Just "./tests/tmp"
     }
 
-virtualSimplexChat :: FilePath -> Profile -> IO TestCC
-virtualSimplexChat dbFilePrefix profile = do
+virtualSimplexChat :: Profile -> ChatConfig -> FilePath -> IO TestCC
+virtualSimplexChat profile cfg dbFilePrefix = do
   st <- createStore (dbFilePrefix <> "_chat.db") 1 False
   Right user <- runExceptT $ createUser st profile True
   t <- withVirtualTerminal termSettings pure
@@ -118,15 +119,17 @@ withTmpFiles =
     (createDirectoryIfMissing False "tests/tmp")
     (removeDirectoryRecursive "tests/tmp")
 
-testChatN :: [Profile] -> ([TestCC] -> IO ()) -> IO ()
-testChatN ps test = withTmpFiles $ do
-  let envs = zip ps $ map ((testDBPrefix <>) . show) [(1 :: Int) ..]
+testChatN :: [(Profile, ChatConfig)] -> ([TestCC] -> IO ()) -> IO ()
+testChatN profilesConfigs test = withTmpFiles $ do
+  let (ps, cfgs) = unzip profilesConfigs
+      envs = zip3 ps cfgs $ map ((testDBPrefix <>) . show) [(1 :: Int) ..]
   tcs <- getTestCCs envs []
   test tcs
   concurrentlyN_ $ map (<// 100000) tcs
   where
+    getTestCCs :: [(Profile, ChatConfig, FilePath)] -> [TestCC] -> IO [TestCC]
     getTestCCs [] tcs = pure tcs
-    getTestCCs ((p, db) : envs') tcs = (:) <$> virtualSimplexChat db p <*> getTestCCs envs' tcs
+    getTestCCs ((p, cfg, db) : envs') tcs = (:) <$> virtualSimplexChat p cfg db <*> getTestCCs envs' tcs
 
 (<//) :: TestCC -> Int -> Expectation
 (<//) cc t = timeout t (getTermLine cc) `shouldReturn` Nothing
@@ -146,21 +149,27 @@ userName :: TestCC -> IO [Char]
 userName (TestCC ChatController {currentUser} _ _ _ _) = T.unpack . localDisplayName . fromJust <$> readTVarIO currentUser
 
 testChat2 :: Profile -> Profile -> (TestCC -> TestCC -> IO ()) -> IO ()
-testChat2 p1 p2 test = testChatN [p1, p2] test_
+testChat2 p1 p2 = testChat2' (p1, defaultTestCfg) (p2, defaultTestCfg)
+
+testChat2' :: (Profile, ChatConfig) -> (Profile, ChatConfig) -> (TestCC -> TestCC -> IO ()) -> IO ()
+testChat2' (p1, cfg1) (p2, cfg2) test = testChatN [(p1, cfg1), (p2, cfg2)] test_
   where
     test_ :: [TestCC] -> IO ()
     test_ [tc1, tc2] = test tc1 tc2
     test_ _ = error "expected 2 chat clients"
 
 testChat3 :: Profile -> Profile -> Profile -> (TestCC -> TestCC -> TestCC -> IO ()) -> IO ()
-testChat3 p1 p2 p3 test = testChatN [p1, p2, p3] test_
+testChat3 p1 p2 p3 = testChat3' (p1, defaultTestCfg) (p2, defaultTestCfg) (p3, defaultTestCfg)
+
+testChat3' :: (Profile, ChatConfig) -> (Profile, ChatConfig) -> (Profile, ChatConfig) -> (TestCC -> TestCC -> TestCC -> IO ()) -> IO ()
+testChat3' (p1, cfg1) (p2, cfg2) (p3, cfg3) test = testChatN [(p1, cfg1), (p2, cfg2), (p3, cfg3)] test_
   where
     test_ :: [TestCC] -> IO ()
     test_ [tc1, tc2, tc3] = test tc1 tc2 tc3
     test_ _ = error "expected 3 chat clients"
 
 testChat4 :: Profile -> Profile -> Profile -> Profile -> (TestCC -> TestCC -> TestCC -> TestCC -> IO ()) -> IO ()
-testChat4 p1 p2 p3 p4 test = testChatN [p1, p2, p3, p4] test_
+testChat4 p1 p2 p3 p4 test = testChatN [(p1, defaultTestCfg), (p2, defaultTestCfg), (p3, defaultTestCfg), (p4, defaultTestCfg)] test_
   where
     test_ :: [TestCC] -> IO ()
     test_ [tc1, tc2, tc3, tc4] = test tc1 tc2 tc3 tc4

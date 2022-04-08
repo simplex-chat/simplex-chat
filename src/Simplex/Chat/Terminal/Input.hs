@@ -40,7 +40,8 @@ runInputLoop ct cc = forever $ do
     CRChatCmdError _ -> when (isMessage cmd) $ echo s
     _ -> pure ()
   let testV = testView $ config cc
-  printToTerminal ct $ responseToView testV r
+      fAutoAccept = fileAutoAccept $ config cc
+  printToTerminal ct $ responseToView fAutoAccept testV r
   where
     echo s = printToTerminal ct [plain s]
     isMessage = \case

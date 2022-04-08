@@ -85,6 +85,7 @@ defaultChatConfig =
       tbqSize = 64,
       fileChunkSize = 15780,
       fileAutoAccept = False,
+      fileDefaultDownloadPath = Nothing,
       subscriptionConcurrency = 16,
       subscriptionEvents = False,
       testView = False
@@ -730,7 +731,10 @@ acceptFileReceive user@User {userId} RcvFileTransfer {fileId, fileInvitation = F
     getRcvFilePath :: Maybe FilePath -> String -> m FilePath
     getRcvFilePath fPath_ fName = case fPath_ of
       Nothing -> do
-        dir <- (`combine` "Downloads") <$> getHomeDirectory
+        defaultPath <- asks $ fileDefaultDownloadPath . config
+        dir <- case defaultPath of
+          Just path -> pure path
+          Nothing -> (`combine` "Downloads") <$> getHomeDirectory
         ifM (doesDirectoryExist dir) (pure dir) getTemporaryDirectory
           >>= uniqueCombine
           >>= createEmptyFile
@@ -1245,7 +1249,6 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
           fAutoAccept <- asks $ fileAutoAccept . config
           if fAutoAccept
             then do
-              -- ? mobile may require configurable path
               filePath <- acceptFileReceive user ft Nothing
               let ciFile = Just $ CIFile {fileId, fileName, fileSize, filePath = Just filePath, fileStatus = CIFSRcvTransfer}
               ci@ChatItem {formattedText} <- saveRcvChatItem user (CDDirectRcv ct) msg msgMeta (CIRcvMsgContent content) ciFile
@@ -1308,7 +1311,6 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
           fAutoAccept <- asks $ fileAutoAccept . config
           if fAutoAccept
             then do
-              -- ? mobile may require configurable path
               filePath <- acceptFileReceive user ft Nothing
               let ciFile = Just $ CIFile {fileId, fileName, fileSize, filePath = Just filePath, fileStatus = CIFSRcvTransfer}
               ci@ChatItem {formattedText} <- saveRcvChatItem user (CDGroupRcv gInfo m) msg msgMeta (CIRcvMsgContent content) ciFile
