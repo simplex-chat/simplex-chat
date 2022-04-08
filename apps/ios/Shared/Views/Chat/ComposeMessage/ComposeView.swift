@@ -7,7 +7,6 @@
 //
 
 import SwiftUI
-import LinkPresentation
 
 // TODO
 //enum ComposeState {
@@ -29,7 +28,7 @@ struct ComposeView: View {
     @State var editing: Bool = false
     @State var linkUrl: URL? = nil
     @State var prevLinkUrl: URL? = nil
-    @State var pendingPreview: URL? = nil
+    @State var pendingLinkUrl: URL? = nil
     @State var cancelledLinks: Set<String> = []
 
     
@@ -108,12 +107,12 @@ struct ComposeView: View {
     }
 
     func loadLinkPreview(_ url: URL) {
-        if url != linkPreview?.uri && url != pendingPreview {
-            pendingPreview = url
+        if url != linkPreview?.uri && url != pendingLinkUrl {
+            pendingLinkUrl = url
             getLinkPrivew(url: url) { lp in
-                if pendingPreview == url {
+                if pendingLinkUrl == url {
                     linkPreview = lp
-                    pendingPreview = nil
+                    pendingLinkUrl = nil
                 }
             }
         }
@@ -122,7 +121,7 @@ struct ComposeView: View {
     func resetLinkPreview() {
         linkUrl = nil
         prevLinkUrl = nil
-        pendingPreview = nil
+        pendingLinkUrl = nil
         cancelledLinks = []
     }
 }

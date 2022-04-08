@@ -53,7 +53,7 @@ struct ComposeLinkView: View {
                     .aspectRatio(contentMode: .fit)
                     .frame(maxWidth: 80, maxHeight: 60)
             }
-            VStack(alignment: .center, spacing: 0) {
+            VStack(alignment: .center, spacing: 4) {
                 Text(linkPreview.title)
                     .lineLimit(1)
                 Text(linkPreview.uri.absoluteString)
