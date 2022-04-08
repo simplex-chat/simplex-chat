@@ -240,6 +240,13 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
     return null
   }
 
+  suspend fun apiParseMarkdown(text: String): List<FormattedText>? {
+    val r = sendCmd(CC.ApiParseMarkdown(text))
+    if (r is CR.ParsedMarkdown) return r.formattedText
+    Log.e(TAG, "apiParseMarkdown bad response: ${r.responseType} ${r.details}")
+    return null
+  }
+
   suspend fun apiCreateUserAddress(): String? {
     val r = sendCmd(CC.CreateMyAddress())
     if (r is CR.UserContactLinkCreated) return r.connReqContact
@@ -479,6 +486,7 @@ sealed class CC {
   class Connect(val connReq: String): CC()
   class ApiDeleteChat(val type: ChatType, val id: Long): CC()
   class ApiUpdateProfile(val profile: Profile): CC()
+  class ApiParseMarkdown(val text: String): CC()
   class CreateMyAddress: CC()
   class DeleteMyAddress: CC()
   class ShowMyAddress: CC()
@@ -503,6 +511,7 @@ sealed class CC {
     is Connect -> "/connect $connReq"
     is ApiDeleteChat -> "/_delete ${chatRef(type, id)}"
     is ApiUpdateProfile -> "/_profile ${json.encodeToString(profile)}"
+    is ApiParseMarkdown -> "/_parse $text"
     is CreateMyAddress -> "/address"
     is DeleteMyAddress -> "/delete_address"
     is ShowMyAddress -> "/show_address"
@@ -528,6 +537,7 @@ sealed class CC {
     is Connect -> "connect"
     is ApiDeleteChat -> "apiDeleteChat"
     is ApiUpdateProfile -> "updateProfile"
+    is ApiParseMarkdown -> "apiParseMarkdown"
     is CreateMyAddress -> "createMyAddress"
     is DeleteMyAddress -> "deleteMyAddress"
     is ShowMyAddress -> "showMyAddress"
@@ -588,6 +598,7 @@ sealed class CR {
   @Serializable @SerialName("contactDeleted") class ContactDeleted(val contact: Contact): CR()
   @Serializable @SerialName("userProfileNoChange") class UserProfileNoChange: CR()
   @Serializable @SerialName("userProfileUpdated") class UserProfileUpdated(val fromProfile: Profile, val toProfile: Profile): CR()
+  @Serializable @SerialName("parsedMarkdown") class ParsedMarkdown(val formattedText: List<FormattedText>?): CR()
   @Serializable @SerialName("userContactLink") class UserContactLink(val connReqContact: String): CR()
   @Serializable @SerialName("userContactLinkCreated") class UserContactLinkCreated(val connReqContact: String): CR()
   @Serializable @SerialName("userContactLinkDeleted") class UserContactLinkDeleted: CR()
@@ -628,6 +639,7 @@ sealed class CR {
     is ContactDeleted -> "contactDeleted"
     is UserProfileNoChange -> "userProfileNoChange"
     is UserProfileUpdated -> "userProfileUpdated"
+    is ParsedMarkdown -> "parsedMarkdown"
     is UserContactLink -> "userContactLink"
     is UserContactLinkCreated -> "userContactLinkCreated"
     is UserContactLinkDeleted -> "userContactLinkDeleted"
@@ -669,6 +681,7 @@ sealed class CR {
     is ContactDeleted -> json.encodeToString(contact)
     is UserProfileNoChange -> noDetails()
     is UserProfileUpdated -> json.encodeToString(toProfile)
+    is ParsedMarkdown -> json.encodeToString(formattedText)
     is UserContactLink -> connReqContact
     is UserContactLinkCreated -> connReqContact
     is UserContactLinkDeleted -> noDetails()

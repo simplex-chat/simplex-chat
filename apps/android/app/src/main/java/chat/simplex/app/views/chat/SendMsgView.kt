@@ -20,18 +20,42 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import chat.simplex.app.model.LinkPreview
 import chat.simplex.app.ui.theme.HighOrLowlight
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.chat.item.*
+import chat.simplex.app.views.helpers.getLinkPreview
+import chat.simplex.app.views.helpers.withApi
 
 @Composable
-fun SendMsgView(msg: MutableState<String>, sendMessage: (String) -> Unit, editing: Boolean = false) {
+fun SendMsgView(
+  msg: MutableState<String>,
+  linkPreview: MutableState<LinkPreview?>,
+  cancelledLinks: MutableSet<String>,
+  parseMessage: (String) -> String?,
+  sendMessage: (String) -> Unit,
+  editing: Boolean = false
+) {
   val smallFont = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onBackground)
   var textStyle by remember { mutableStateOf(smallFont) }
+  var currentLink = remember { mutableStateOf<String?>(null) }
+  var prevLink = remember { mutableStateOf<String?>(null) }
   BasicTextField(
     value = msg.value,
     onValueChange = {
       msg.value = it
+      if (msg.value.isNotEmpty()) {
+        prevLink.value = currentLink.value
+        currentLink.value  = parseMessage(msg.value)
+        if (currentLink.value  != null && currentLink.value != prevLink.value && (linkPreview.value == null)) {
+          withApi { linkPreview.value = getLinkPreview(currentLink.value) }
+        }
+      } else {
+        prevLink.value = null
+        currentLink.value = null
+        linkPreview.value = null
+        cancelledLinks.clear()
+      }
       textStyle = if (isShortEmoji(it)) {
         if (it.codePoints().count() < 4) largeEmojiFont else mediumEmojiFont
       } else {
@@ -99,6 +123,9 @@ fun PreviewSendMsgView() {
   SimpleXTheme {
     SendMsgView(
       msg = remember { mutableStateOf("") },
+      linkPreview = remember {mutableStateOf<LinkPreview?>(null) },
+      cancelledLinks = mutableSetOf(),
+      parseMessage = { _ -> null },
       sendMessage = { msg -> println(msg) }
     )
   }
@@ -115,7 +142,10 @@ fun PreviewSendMsgViewEditing() {
   SimpleXTheme {
     SendMsgView(
       msg = remember { mutableStateOf("") },
+      linkPreview = remember {mutableStateOf<LinkPreview?>(null) },
+      cancelledLinks = mutableSetOf(),
       sendMessage = { msg -> println(msg) },
+      parseMessage = { null },
       editing = true
     )
   }

@@ -458,6 +458,14 @@ class GroupMember (
 }
 
 @Serializable
+class LinkPreview (
+  val uri: String,
+  val title: String,
+  val description: String = "", // TODO remove default once optional in haskell
+  val image: String
+)
+
+@Serializable
 class MemberSubError (
   val member: GroupMember,
   val memberError: ChatError
@@ -659,35 +667,40 @@ interface ItemContent {
 @Serializable
 sealed class CIContent: ItemContent {
   abstract override val text: String
+  abstract val msgContent: MsgContent?
 
   @Serializable @SerialName("sndMsgContent")
-  class SndMsgContent(val msgContent: MsgContent): CIContent() {
+  class SndMsgContent(override val msgContent: MsgContent): CIContent() {
     override val text get() = msgContent.text
   }
 
   @Serializable @SerialName("rcvMsgContent")
-  class RcvMsgContent(val msgContent: MsgContent): CIContent() {
+  class RcvMsgContent(override val msgContent: MsgContent): CIContent() {
     override val text get() = msgContent.text
   }
 
   @Serializable @SerialName("sndDeleted")
   class SndDeleted(val deleteMode: CIDeleteMode): CIContent() {
     override val text get() = "deleted"
+    override val msgContent get() = null
   }
 
   @Serializable @SerialName("rcvDeleted")
   class RcvDeleted(val deleteMode: CIDeleteMode): CIContent() {
     override val text get() = "deleted"
+    override val msgContent get() = null
   }
 
   @Serializable @SerialName("sndFileInvitation")
   class SndFileInvitation(val fileId: Long, val filePath: String): CIContent() {
     override val text get() = "sending files is not supported yet"
+    override val msgContent get() = null
   }
 
   @Serializable @SerialName("rcvFileInvitation")
   class RcvFileInvitation(val rcvFileTransfer: RcvFileTransfer): CIContent() {
     override val text get() = "receiving files is not supported yet"
+    override val msgContent get() = null
   }
 }
 
@@ -721,10 +734,12 @@ sealed class MsgContent {
   abstract val text: String
 
   class MCText(override val text: String): MsgContent()
+  class MCLink(override val text: String, val linkPreview: LinkPreview): MsgContent()
   class MCUnknown(val type: String? = null, override val text: String, val json: JsonElement): MsgContent()
 
   val cmdString: String get() = when (this) {
     is MCText -> "text $text"
+    is MCLink -> "json {\"type\":\"link\",\"text\":${json.encodeToString(text)},\"preview\":${json.encodeToString(linkPreview)}}"
     is MCUnknown -> "json $json"
   }
 }
@@ -734,6 +749,10 @@ object MsgContentSerializer : KSerializer<MsgContent> {
   override val descriptor: SerialDescriptor = buildSerialDescriptor("MsgContent", PolymorphicKind.SEALED) {
     element("MCText", buildClassSerialDescriptor("MCText") {
       element<String>("text")
+    })
+    element("MCLink", buildClassSerialDescriptor("MCLink") {
+      element<String>("text")
+      element<String>("linkPreview")
     })
     element("MCUnknown", buildClassSerialDescriptor("MCUnknown"))
   }
@@ -761,6 +780,12 @@ object MsgContentSerializer : KSerializer<MsgContent> {
     require(encoder is JsonEncoder)
     val json = when (value) {
       is MsgContent.MCText ->
+        buildJsonObject {
+          put("type", "text")
+          put("text", value.text)
+        }
+      is MsgContent.MCLink ->
+        // TODO update
         buildJsonObject {
           put("type", "text")
           put("text", value.text)

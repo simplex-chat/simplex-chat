@@ -15,6 +15,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.SimpleXTheme
+import chat.simplex.app.views.helpers.ChatItemLinkPreview
 import kotlinx.datetime.Clock
 
 val SentColorLight = Color(0x1E45B8FF)
@@ -57,6 +58,10 @@ fun FramedItemView(user: User, ci: ChatItem, uriHandler: UriHandler? = null, sho
               Text("")
             }
           } else {
+            if (ci.content.msgContent is MsgContent.MCLink) {
+              val linkContent = (ci.content.msgContent as MsgContent.MCLink)
+              ChatItemLinkPreview(metadata = linkContent.linkPreview)
+            }
             MarkdownText(
               ci.content, ci.formattedText, if (showMember) ci.memberDisplayName else null,
               metaText = ci.timestampText, edited = ci.meta.itemEdited, uriHandler = uriHandler, senderBold = true
