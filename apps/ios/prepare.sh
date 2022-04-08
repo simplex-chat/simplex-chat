@@ -3,7 +3,7 @@
 # the binaries folder should be in ~/Downloads folder
 rm -rf ./apps/ios/Libraries/mac ./apps/ios/Libraries/ios ./apps/ios/Libraries/sim
 mkdir -p ./apps/ios/Libraries/mac ./apps/ios/Libraries/ios ./apps/ios/Libraries/sim
-cp ~/Downloads/pkg-ios-aarch64/* ./apps/ios/Libraries/mac
+cp ~/Downloads/pkg-ios-aarch64-swift-json/* ./apps/ios/Libraries/mac
 chmod +w ./apps/ios/Libraries/mac/*
 cp ./apps/ios/Libraries/mac/* ./apps/ios/Libraries/ios
 cp ./apps/ios/Libraries/mac/* ./apps/ios/Libraries/sim
