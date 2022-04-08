@@ -493,8 +493,8 @@ func apiUpdateProfile(profile: Profile) async throws -> Profile? {
     }
 }
 
-func apiParseMarkdown(text: String) async throws -> [FormattedText]? {
-    let r = await chatSendCmd(.apiParseMarkdown(text: text))
+func apiParseMarkdown(text: String) throws -> [FormattedText]? {
+    let r = chatSendCmdSync(.apiParseMarkdown(text: text))
     if case let .apiParsedMarkdown(formattedText) = r { return formattedText }
     throw r
 }

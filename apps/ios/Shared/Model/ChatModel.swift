@@ -875,5 +875,5 @@ struct LinkPreview: Codable {
     var title: String
     // TODO remove once optional in haskell
     var description: String = ""
-    var image: String?
+    var image: String
 }

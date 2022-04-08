@@ -28,35 +28,43 @@ struct ComposeView: View {
     @FocusState.Binding var keyboardVisible: Bool
     @State var editing: Bool = false
     @State var linkUrl: URL? = nil
+    @State var prevLinkUrl: URL? = nil
+    @State var cancelledLinks: Set<String> = []
     @State var previewCancelled: Bool = false
     
     
     private func isValidLink(link: String) -> Bool {
-        return !(link.starts(with: "https://simplex.chat") || link.starts(with: "http://simplex.chat") || link.starts(with: "simplex.chat"))
+        return !(link.starts(with: "https://simplex.chat") || link.starts(with: "http://simplex.chat"))
     }
     
     func cancelPreview() {
-        previewCancelled = true
+        if let uri = linkPreview?.uri.absoluteString {
+            cancelledLinks.insert(uri)
+        }
+        linkPreview = nil
     }
 
-    func parseMessage(_ msg: String) {
-        Task {
-            do {
-                if let parsedMsg = try await apiParseMarkdown(text: msg),
-                   let link = parsedMsg.first(where: { $0.format == .uri }),
-                   isValidLink(link: link.text) {
-                        linkUrl = URL(string: link.text)
-                    }
-            } catch {
-                logger.error("MessageParsing error: \(error.localizedDescription)")
+    func parseMessage(_ msg: String) -> URL? {
+        do {
+            if let parsedMsg = try apiParseMarkdown(text: msg),
+               let link = parsedMsg.first(where: {
+                   $0.format == .uri && !cancelledLinks.contains($0.text)
+               }),
+               isValidLink(link: link.text) {
+                return URL(string: link.text)
+            } else {
+                return nil
             }
+        } catch {
+            logger.error("apiParseMarkdown error: \(error.localizedDescription)")
+            return nil
         }
     }
 
     var body: some View {
         VStack(spacing: 0) {
             if !previewCancelled, let metadata = linkPreview {
-                SmallLinkPreviewView(metadata: metadata, cancelPreview: cancelPreview)
+                ComposeLinkPreviewView(metadata: metadata, cancelPreview: cancelPreview)
             }
             if (quotedItem != nil) {
                 ContextItemView(contextItem: $quotedItem, editing: $editing)
@@ -72,13 +80,20 @@ struct ComposeView: View {
             )
             .background(.background)
         }
-        .onChange(of: message) {
-            _ in
-            if  message.count > 0 {
-                parseMessage(message)
-                if let url = linkUrl {
-                    Task { linkPreview = await getLinkMetadata(url: url) }
+        .onChange(of: message) { _ in
+            if message.count > 0 {
+                prevLinkUrl = linkUrl
+                linkUrl = parseMessage(message)
+                if let url = linkUrl, prevLinkUrl == linkUrl {
+                    getLinkMetadata(url: url) { linkPreview = $0 }
+                } else {
+                    linkPreview = nil
                 }
+            } else {
+                prevLinkUrl = nil
+                linkUrl = nil
+                linkPreview = nil
+                cancelledLinks = []
             }
         }
         .onChange(of: editingItem == nil) { _ in

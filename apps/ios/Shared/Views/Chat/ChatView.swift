@@ -216,6 +216,7 @@ struct ChatView: View {
                     )
                     DispatchQueue.main.async {
                         editingItem = nil
+                        linkPreview = nil
                         let _ = chatModel.upsertChatItem(chat.chatInfo, chatItem)
                     }
                 } else {
@@ -233,6 +234,7 @@ struct ChatView: View {
                     )
                     DispatchQueue.main.async {
                         quotedItem = nil
+                        linkPreview = nil
                         chatModel.addChatItem(chat.chatInfo, chatItem)
                     }
                 }
