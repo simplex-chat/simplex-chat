@@ -68,7 +68,7 @@ class SimplexService: Service() {
         if (user != null) {
           Log.w(TAG, "Starting foreground service")
           chatController.startChat(user)
-          chatController.startReceiver()
+          chatController.startMsgReceiver()
           isServiceStarted = true
           saveServiceState(self, ServiceState.STARTED)
           wakeLock = (getSystemService(Context.POWER_SERVICE) as PowerManager).run {
@@ -184,6 +184,11 @@ class SimplexService: Service() {
     STOPPED,
   }
 
+  enum class ServiceStatus {
+    OK,
+    CRASH,
+  }
+
   companion object {
     const val TAG = "SIMPLEX_SERVICE"
     const val NOTIFICATION_CHANNEL_ID = "chat.simplex.app.SIMPLEX_SERVICE_NOTIFICATION"
@@ -196,6 +201,7 @@ class SimplexService: Service() {
     private const val WAKE_LOCK_TAG = "SimplexService::lock"
     private const val SHARED_PREFS_ID = "chat.simplex.app.SIMPLEX_SERVICE_PREFS"
     private const val SHARED_PREFS_SERVICE_STATE = "SIMPLEX_SERVICE_STATE"
+    private const val SHARED_PREFS_SERVICE_STATUS = "SIMPLEX_SERVICE_STATUS"
     private const val WORK_NAME_ONCE = "ServiceStartWorkerOnce"
 
     fun scheduleStart(context: Context) {
@@ -214,7 +220,13 @@ class SimplexService: Service() {
       withContext(Dispatchers.IO) {
         Intent(context, SimplexService::class.java).also {
           it.action = action.name
-          ContextCompat.startForegroundService(context, it)
+          try {
+            ContextCompat.startForegroundService(context, it)
+            saveServiceStatus(context, ServiceStatus.OK)
+          } catch(err: Error) {
+            Log.e(TAG, "startForegroundService error: $err")
+            saveServiceStatus(context, ServiceStatus.CRASH)
+          }
         }
       }
     }
@@ -235,6 +247,18 @@ class SimplexService: Service() {
       val value = getPreferences(context)
         .getString(SHARED_PREFS_SERVICE_STATE, ServiceState.STOPPED.name)
       return ServiceState.valueOf(value!!)
+    }
+
+    fun saveServiceStatus(context: Context, state: ServiceStatus) {
+      getPreferences(context).edit()
+        .putString(SHARED_PREFS_SERVICE_STATUS, state.name)
+        .apply()
+    }
+
+    fun getServiceStatus(context: Context): ServiceStatus {
+      val value = getPreferences(context)
+        .getString(SHARED_PREFS_SERVICE_STATUS, ServiceStatus.OK.name)
+      return ServiceStatus.valueOf(value!!)
     }
 
     private fun getPreferences(context: Context): SharedPreferences = context.getSharedPreferences(SHARED_PREFS_ID, Context.MODE_PRIVATE)

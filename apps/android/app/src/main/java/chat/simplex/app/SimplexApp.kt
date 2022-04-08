@@ -47,6 +47,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
       if (user != null) {
         chatController.startChat(user)
         SimplexService.start(applicationContext)
+        chatController.checkServiceStatus(applicationContext)
         chatController.showBackgroundServiceNotice()
       }
     }

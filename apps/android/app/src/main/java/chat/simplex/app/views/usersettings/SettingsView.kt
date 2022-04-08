@@ -10,6 +10,7 @@ import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.*
@@ -17,13 +18,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import chat.simplex.app.BuildConfig
+import chat.simplex.app.*
 import chat.simplex.app.R
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.model.Profile
 import chat.simplex.app.ui.theme.HighOrLowlight
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.TerminalView
+import chat.simplex.app.views.helpers.AlertManager
 import chat.simplex.app.views.helpers.ProfileImage
 import chat.simplex.app.views.newchat.ModalManager
 
@@ -34,6 +36,7 @@ fun SettingsView(chatModel: ChatModel) {
     SettingsLayout(
       profile = user.profile,
       runServiceInBackground = chatModel.runServiceInBackground,
+      serviceStatus = chatModel.serviceStatus,
       setRunServiceInBackground = { on ->
         chatModel.controller.setRunServiceInBackground(on)
         chatModel.runServiceInBackground.value = on
@@ -52,6 +55,7 @@ val simplexTeamUri =
 fun SettingsLayout(
   profile: Profile,
   runServiceInBackground: MutableState<Boolean>,
+  serviceStatus: MutableState<SimplexService.ServiceStatus?>,
   setRunServiceInBackground: (Boolean) -> Unit,
   showModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
   showCustomModal: (@Composable (ChatModel, () -> Unit) -> Unit) -> (() -> Unit),
@@ -157,11 +161,22 @@ fun SettingsLayout(
           Icons.Outlined.Bolt,
           contentDescription = "Private notifications",
         )
-        Spacer(Modifier.padding(horizontal = 4.dp))
         Text("Private notifications", Modifier
-          .padding(end = 24.dp)
           .fillMaxWidth()
           .weight(1F))
+        if (runServiceInBackground.value && serviceStatus.value == SimplexService.ServiceStatus.CRASH) {
+          IconButton(onClick = {
+            AlertManager.shared.showAlertMsg(
+              "Background service error",
+              "Your system settings prohibit the app starting background service to receive the messages.\nPlease change SimpleX app power consumption settings for the service to start")
+          }) {
+            Icon(
+              Icons.Outlined.Error,
+              tint = Color.Red,
+              contentDescription = "Service crashed",
+            )
+          }
+        }
         Switch(
           checked = runServiceInBackground.value,
           onCheckedChange = { setRunServiceInBackground(it) },
@@ -231,6 +246,7 @@ fun PreviewSettingsLayout() {
     SettingsLayout(
       profile = Profile.sampleData,
       runServiceInBackground = remember { mutableStateOf(true) },
+      serviceStatus = remember { mutableStateOf(SimplexService.ServiceStatus.CRASH) },
       setRunServiceInBackground = {},
       showModal = {{}},
       showCustomModal = {{}},

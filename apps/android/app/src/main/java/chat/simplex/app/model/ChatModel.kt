@@ -7,6 +7,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.font.*
 import androidx.compose.ui.text.style.TextDecoration
+import chat.simplex.app.SimplexService
 import chat.simplex.app.ui.theme.SecretColor
 import chat.simplex.app.ui.theme.SimplexBlue
 import kotlinx.datetime.*
@@ -30,6 +31,7 @@ class ChatModel(val controller: ChatController) {
   // set when app is opened via contact or invitation URI
   var appOpenUrl = mutableStateOf<Uri?>(null)
   var runServiceInBackground = mutableStateOf(true)
+  var serviceStatus = mutableStateOf<SimplexService.ServiceStatus?>(null)
 
   fun updateUserProfile(profile: Profile) {
     val user = currentUser.value

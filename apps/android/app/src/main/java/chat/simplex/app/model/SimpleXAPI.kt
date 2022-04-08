@@ -30,6 +30,7 @@ typealias ChatCtrl = Long
 
 open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: NtfManager, val appContext: Context) {
   var chatModel = ChatModel(this)
+  private var receiverStarted = false
   private val sharedPreferences: SharedPreferences  = appContext.getSharedPreferences(SHARED_PREFS_ID, Context.MODE_PRIVATE)
 
   init {
@@ -47,6 +48,7 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
       chatModel.chats.addAll(chats)
       chatModel.currentUser = mutableStateOf(user)
       chatModel.userCreated.value = true
+      startMsgReceiver()
       Log.d(TAG, "started chat")
     } catch(e: Error) {
       Log.e(TAG, "failed starting chat $e")
@@ -54,10 +56,19 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
     }
   }
 
-  fun startReceiver() {
+  fun startMsgReceiver() {
     Log.d(TAG, "ChatController startReceiver")
+    if (receiverStarted) return
+    receiverStarted = true
     thread(name="receiver") {
       withApi { recvMspLoop() }
+    }
+  }
+
+  fun checkServiceStatus(context: Context) {
+    chatModel.serviceStatus.value = SimplexService.getServiceStatus(context)
+    if (chatModel.serviceStatus.value == SimplexService.ServiceStatus.CRASH) {
+      startMsgReceiver()
     }
   }
 
