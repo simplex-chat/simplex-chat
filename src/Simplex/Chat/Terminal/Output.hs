@@ -75,9 +75,8 @@ withTermLock ChatTerminal {termLock} action = do
 runTerminalOutput :: ChatTerminal -> ChatController -> IO ()
 runTerminalOutput ct cc = do
   let testV = testView $ config cc
-      fAutoAccept = fileAutoAccept $ config cc
   forever $
-    atomically (readTBQueue $ outputQ cc) >>= printToTerminal ct . responseToView fAutoAccept testV . snd
+    atomically (readTBQueue $ outputQ cc) >>= printToTerminal ct . responseToView testV . snd
 
 printToTerminal :: ChatTerminal -> [StyledString] -> IO ()
 printToTerminal ct s =

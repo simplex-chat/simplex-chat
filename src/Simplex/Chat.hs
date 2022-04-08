@@ -1256,6 +1256,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
               withStore $ \st -> updateFileTransferChatItemId st fileId $ chatItemId' ci
               -- newContentMessage with fileInv Nothing
               toView . CRNewChatItem $ AChatItem SCTDirect SMDRcv (DirectChat ct) ci
+              toView $ CRRcvFileAccepted ft filePath
               checkIntegrity msgMeta $ toView . CRMsgIntegrityError
               showMsgToast (c <> "> ") content formattedText
               setActive $ ActiveC c
@@ -1318,6 +1319,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
               withStore $ \st -> updateFileTransferChatItemId st fileId $ chatItemId' ci
               -- newGroupContentMessage with fileInv Nothing
               groupMsgToView gInfo ci msgMeta
+              toView $ CRRcvFileAccepted ft filePath
               let g = groupName' gInfo
               showMsgToast ("#" <> g <> " " <> c <> "> ") content formattedText
               setActive $ ActiveG g

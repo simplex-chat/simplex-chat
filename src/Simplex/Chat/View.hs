@@ -37,10 +37,10 @@ import Simplex.Messaging.Util (bshow)
 import System.Console.ANSI.Types
 
 serializeChatResponse :: ChatResponse -> String
-serializeChatResponse = unlines . map unStyle . responseToView False False
+serializeChatResponse = unlines . map unStyle . responseToView False
 
-responseToView :: Bool -> Bool -> ChatResponse -> [StyledString]
-responseToView fileAutoAccept testView = \case
+responseToView :: Bool -> ChatResponse -> [StyledString]
+responseToView testView = \case
   CRActiveUser User {profile} -> viewUserProfile profile
   CRChatStarted -> ["chat started"]
   CRChatRunning -> []
@@ -48,7 +48,7 @@ responseToView fileAutoAccept testView = \case
   CRApiChat chat -> if testView then testViewChat chat else [plain . bshow $ J.encode chat]
   CRApiParsedMarkdown ft -> [plain . bshow $ J.encode ft]
   CRUserSMPServers smpServers -> viewSMPServers smpServers testView
-  CRNewChatItem (AChatItem _ _ chat item) -> viewChatItem chat item fileAutoAccept
+  CRNewChatItem (AChatItem _ _ chat item) -> viewChatItem chat item
   CRChatItemStatusUpdated _ -> []
   CRChatItemUpdated (AChatItem _ _ chat item) -> viewItemUpdate chat item
   CRChatItemDeleted (AChatItem _ _ chat deletedItem) (AChatItem _ _ _ toItem) -> viewItemDelete chat deletedItem toItem
@@ -170,8 +170,8 @@ responseToView fileAutoAccept testView = \case
     viewErrorsSummary :: [a] -> StyledString -> [StyledString]
     viewErrorsSummary summary s = [ttyError (T.pack . show $ length summary) <> s <> " (run with -c option to show each error)" | not (null summary)]
 
-viewChatItem :: MsgDirectionI d => ChatInfo c -> ChatItem c d -> Bool -> [StyledString]
-viewChatItem chat ChatItem {chatDir, meta, content, quotedItem, file} fileAutoAccept = case chat of
+viewChatItem :: MsgDirectionI d => ChatInfo c -> ChatItem c d -> [StyledString]
+viewChatItem chat ChatItem {chatDir, meta, content, quotedItem, file} = case chat of
   DirectChat c -> case chatDir of
     CIDirectSnd -> case content of
       CISndMsgContent mc -> withSndFile to $ viewSentMessage to quote mc meta
@@ -209,7 +209,7 @@ viewChatItem chat ChatItem {chatDir, meta, content, quotedItem, file} fileAutoAc
       Just CIFile {fileId, filePath = Just fPath} -> l <> viewSentFileInvitation to fileId fPath meta
       _ -> l
     withRcvFile from l = case file of
-      Just f -> l <> viewReceivedFileInvitation from f fileAutoAccept meta
+      Just f -> l <> viewReceivedFileInvitation from f meta
       _ -> l
 
 viewItemUpdate :: MsgDirectionI d => ChatInfo c -> ChatItem c d -> [StyledString]
@@ -514,17 +514,15 @@ sendingFile_ status ft@SndFileTransfer {recipientDisplayName = c} =
 sndFile :: SndFileTransfer -> StyledString
 sndFile SndFileTransfer {fileId, fileName} = fileTransferStr fileId fileName
 
-viewReceivedFileInvitation :: StyledString -> CIFile d -> Bool -> CIMeta d -> [StyledString]
-viewReceivedFileInvitation from file fileAutoAccept meta = receivedWithTime_ from [] meta (receivedFileInvitation_ file fileAutoAccept)
+viewReceivedFileInvitation :: StyledString -> CIFile d -> CIMeta d -> [StyledString]
+viewReceivedFileInvitation from file meta = receivedWithTime_ from [] meta (receivedFileInvitation_ file)
 
-receivedFileInvitation_ :: CIFile d -> Bool -> [StyledString]
-receivedFileInvitation_ CIFile {fileId, fileName, fileSize, filePath} fileAutoAccept =
-  ["sends file " <> ttyFilePath fileName <> " (" <> humanReadableSize fileSize <> " / " <> sShow fileSize <> " bytes)"]
-    <> if fileAutoAccept
-      then case filePath of
-        Just fp -> ["saving file " <> sShow fileId <> " to " <> plain fp]
-        Nothing -> []
-      else ["use " <> highlight ("/fr " <> show fileId <> " [<dir>/ | <path>]") <> " to receive it"]
+receivedFileInvitation_ :: CIFile d -> [StyledString]
+receivedFileInvitation_ CIFile {fileId, fileName, fileSize} =
+  [ "sends file " <> ttyFilePath fileName <> " (" <> humanReadableSize fileSize <> " / " <> sShow fileSize <> " bytes)",
+    -- below is printed for auto-accepted files as well; auto-accept is disabled in terminal though so in reality it never happens
+    "use " <> highlight ("/fr " <> show fileId <> " [<dir>/ | <path>]") <> " to receive it"
+  ]
 
 -- TODO remove
 viewReceivedFileInvitation' :: StyledString -> RcvFileTransfer -> CIMeta d -> [StyledString]
