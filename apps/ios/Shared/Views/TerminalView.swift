@@ -10,6 +10,8 @@ import SwiftUI
 
 private let terminalFont = Font.custom("Menlo", size: 16)
 
+private let maxItemSize: Int = 50000
+
 struct TerminalView: View {
     @EnvironmentObject var chatModel: ChatModel
     @State var inProgress: Bool = false
@@ -24,10 +26,17 @@ struct TerminalView: View {
                     LazyVStack {
                         ForEach(chatModel.terminalItems) { item in
                             NavigationLink {
+                                let s = item.details
                                 ScrollView {
-                                    Text(item.details)
-                                        .textSelection(.enabled)
+                                    Text(s.prefix(maxItemSize))
                                         .padding()
+                                }
+                                .toolbar {
+                                    ToolbarItem(placement: .navigationBarTrailing) {
+                                        Button { showShareSheet(items: [s]) } label: {
+                                            Image(systemName: "square.and.arrow.up")
+                                        }
+                                    }
                                 }
                             } label: {
                                 HStack {
