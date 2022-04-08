@@ -26,14 +26,6 @@ struct ProfileImage: View {
                 .foregroundColor(color)
         }
     }
-
-    func dropPrefix(_ s: String, _ prefix: String) -> String {
-        s.hasPrefix(prefix) ? String(s.dropFirst(prefix.count)) : s
-    }
-
-    func dropImagePrefix(_ s: String) -> String {
-        dropPrefix(dropPrefix(s, "data:image/png;base64,"), "data:image/jpg;base64,")
-    }
 }
 
 struct ProfileImage_Previews: PreviewProvider {
