@@ -47,8 +47,8 @@ fun SendMsgView(
       if (msg.value.isNotEmpty()) {
         prevLink.value = currentLink.value
         currentLink.value  = parseMessage(msg.value)
-        if (currentLink.value  != null && currentLink.value != prevLink.value && (linkPreview.value == null)) {
-          withApi { linkPreview.value = getLinkPreview(currentLink.value) }
+        if (currentLink.value != null && currentLink.value != prevLink.value && (linkPreview.value == null)) {
+          currentLink.value?.let { url -> withApi { linkPreview.value = getLinkPreview(url) } }
         }
       } else {
         prevLink.value = null

@@ -752,7 +752,7 @@ object MsgContentSerializer : KSerializer<MsgContent> {
     })
     element("MCLink", buildClassSerialDescriptor("MCLink") {
       element<String>("text")
-      element<String>("linkPreview")
+      element<String>("preview")
     })
     element("MCUnknown", buildClassSerialDescriptor("MCUnknown"))
   }
@@ -766,6 +766,10 @@ object MsgContentSerializer : KSerializer<MsgContent> {
         val text = json["text"]?.jsonPrimitive?.content ?: "unknown message format"
         when (t) {
           "text" -> MsgContent.MCText(text)
+//          "preview" -> {
+//            val preview = json["preview"] // TODO custom parsing look up KSerializer docs
+//            MsgContent.MCLink(text, preview)
+//          }
           else -> MsgContent.MCUnknown(t, text, json)
         }
       } else {

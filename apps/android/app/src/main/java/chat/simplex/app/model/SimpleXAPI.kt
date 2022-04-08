@@ -15,8 +15,7 @@ import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.*
-import chat.simplex.app.views.helpers.AlertManager
-import chat.simplex.app.views.helpers.withApi
+import chat.simplex.app.views.helpers.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
@@ -639,7 +638,7 @@ sealed class CR {
     is ContactDeleted -> "contactDeleted"
     is UserProfileNoChange -> "userProfileNoChange"
     is UserProfileUpdated -> "userProfileUpdated"
-    is ParsedMarkdown -> "parsedMarkdown"
+    is ParsedMarkdown -> "apiParsedMarkdown"
     is UserContactLink -> "userContactLink"
     is UserContactLinkCreated -> "userContactLinkCreated"
     is UserContactLinkDeleted -> "userContactLinkDeleted"
