@@ -109,7 +109,7 @@ struct ComposeView: View {
     func loadLinkPreview(_ url: URL) {
         if url != linkPreview?.uri && url != pendingLinkUrl {
             pendingLinkUrl = url
-            getLinkPrivew(url: url) { lp in
+            getLinkPreview(url: url) { lp in
                 if pendingLinkUrl == url {
                     linkPreview = lp
                     pendingLinkUrl = nil

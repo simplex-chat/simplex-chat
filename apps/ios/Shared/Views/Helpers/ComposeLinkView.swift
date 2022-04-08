@@ -10,7 +10,7 @@ import SwiftUI
 import LinkPresentation
 
 
-func getLinkPrivew(url: URL, cb: @escaping (LinkPreview?) -> Void) {
+func getLinkPreview(url: URL, cb: @escaping (LinkPreview?) -> Void) {
     logger.debug("getLinkMetadata: fetching URL preview")
     LPMetadataProvider().startFetchingMetadata(for: url){ metadata, error in
         if let e = error {
