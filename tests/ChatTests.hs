@@ -1242,10 +1242,8 @@ testImageSend =
     \alice bob -> do
       connectUsers alice bob
       alice ##> "/_send @2 file ./tests/fixtures/test.jpg json {\"text\":\"\",\"type\":\"image\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\"}"
-      alice <# "@bob"
       alice <# "/f @bob ./tests/fixtures/test.jpg"
       alice <## "use /fc 1 to cancel sending"
-      bob <# "alice>"
       bob <# "alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
       bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
       bob ##> "/fr 1 ./tests/tmp"
@@ -1268,16 +1266,13 @@ testGroupImageSend =
     \alice bob cath -> do
       createGroup3 "team" alice bob cath
       alice ##> "/_send #1 file ./tests/fixtures/test.jpg json {\"text\":\"\",\"type\":\"image\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\"}"
-      alice <# "#team"
       alice <# "/f #team ./tests/fixtures/test.jpg"
       alice <## "use /fc 1 to cancel sending"
       concurrentlyN_
         [ do
-            bob <# "#team alice>"
             bob <# "#team alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
             bob <## "use /fr 1 [<dir>/ | <path>] to receive it",
           do
-            cath <# "#team alice>"
             cath <# "#team alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
             cath <## "use /fr 1 [<dir>/ | <path>] to receive it"
         ]

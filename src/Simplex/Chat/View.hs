@@ -174,13 +174,13 @@ viewChatItem :: MsgDirectionI d => ChatInfo c -> ChatItem c d -> [StyledString]
 viewChatItem chat ChatItem {chatDir, meta, content, quotedItem, file} = case chat of
   DirectChat c -> case chatDir of
     CIDirectSnd -> case content of
-      CISndMsgContent mc -> withSndFile to $ viewSentMessage to quote mc meta
+      CISndMsgContent mc -> withSndFile to $ sndMsg to quote mc
       CISndDeleted _ -> []
       CISndFileInvitation fId fPath -> viewSentFileInvitation to fId fPath meta
       where
         to = ttyToContact' c
     CIDirectRcv -> case content of
-      CIRcvMsgContent mc -> withRcvFile from $ viewReceivedMessage from quote mc meta
+      CIRcvMsgContent mc -> withRcvFile from $ rcvMsg from quote mc
       CIRcvDeleted _ -> []
       CIRcvFileInvitation ft -> viewReceivedFileInvitation' from ft meta
       where
@@ -189,13 +189,13 @@ viewChatItem chat ChatItem {chatDir, meta, content, quotedItem, file} = case cha
       quote = maybe [] (directQuote chatDir) quotedItem
   GroupChat g -> case chatDir of
     CIGroupSnd -> case content of
-      CISndMsgContent mc -> withSndFile to $ viewSentMessage to quote mc meta
+      CISndMsgContent mc -> withSndFile to $ sndMsg to quote mc
       CISndDeleted _ -> []
       CISndFileInvitation fId fPath -> viewSentFileInvitation to fId fPath meta
       where
         to = ttyToGroup g
     CIGroupRcv m -> case content of
-      CIRcvMsgContent mc -> withRcvFile from $ viewReceivedMessage from quote mc meta
+      CIRcvMsgContent mc -> withRcvFile from $ rcvMsg from quote mc
       CIRcvDeleted _ -> []
       CIRcvFileInvitation ft -> viewReceivedFileInvitation' from ft meta
       where
@@ -204,10 +204,22 @@ viewChatItem chat ChatItem {chatDir, meta, content, quotedItem, file} = case cha
       quote = maybe [] (groupQuote g) quotedItem
   _ -> []
   where
+    sndMsg to quote mc = do
+      let mcText = msgContentText mc
+      case (mcText, file) of
+        ("", Nothing) -> viewSentMessage to quote mc meta
+        ("", Just _) -> []
+        (_, _) -> viewSentMessage to quote mc meta
     withSndFile to l = case file of
       -- TODO pass CIFile
       Just CIFile {fileId, filePath = Just fPath} -> l <> viewSentFileInvitation to fileId fPath meta
       _ -> l
+    rcvMsg from quote mc = do
+      let mcText = msgContentText mc
+      case (mcText, file) of
+        ("", Nothing) -> viewReceivedMessage from quote mc meta
+        ("", Just _) -> []
+        (_, _) -> viewReceivedMessage from quote mc meta
     withRcvFile from l = case file of
       Just f -> l <> viewReceivedFileInvitation from f meta
       _ -> l

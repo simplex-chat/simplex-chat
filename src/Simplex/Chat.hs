@@ -532,28 +532,24 @@ processChatCommand = \case
     let mc = MCText $ safeDecodeUtf8 msg
     processChatCommand $ APIUpdateChatItem CTGroup groupId editedItemId mc
   -- old file protocol
-  SendFile cName f -> withUser $ \user@User {userId} -> withChatLock $ do
-    ct <- withStore $ \st -> getContactByName st userId cName
-    (fileSize, chSize) <- checkSndFile f
-    (agentConnId, fileConnReq) <- withAgent (`createConnection` SCMInvitation)
-    let fileInv = FileInvitation {fileName = takeFileName f, fileSize, fileConnReq = Just fileConnReq}
-    SndFileTransfer {fileId} <- withStore $ \st ->
-      createSndFileTransfer st userId ct f fileInv agentConnId chSize
-    ci <- sendDirectChatItem user ct (XFile fileInv) (CISndFileInvitation fileId f) Nothing Nothing
-    withStore $ \st -> updateFileTransferChatItemId st fileId $ chatItemId' ci
-    setActive $ ActiveC cName
-    pure . CRNewChatItem $ AChatItem SCTDirect SMDSnd (DirectChat ct) ci
-  -- new file protocol
+  SendFile cName f -> withUser $ \User {userId} -> do
+    contactId <- withStore $ \st -> getContactIdByName st userId cName
+    processChatCommand $ APISendMessage CTDirect contactId (Just f) (MCText "")
+  -- new file protocol (not used for direct files)
   SendFileInv cName f -> withUser $ \user@User {userId} -> withChatLock $ do
     ct <- withStore $ \st -> getContactByName st userId cName
     (fileSize, chSize) <- checkSndFile f
-    let fileInv = FileInvitation {fileName = takeFileName f, fileSize, fileConnReq = Nothing}
-    fileId <- withStore $ \st -> createSndFileTransferV2 st userId ct f fileInv chSize
-    ci <- sendDirectChatItem user ct (XFile fileInv) (CISndFileInvitation fileId f) Nothing Nothing
+    let fileName = takeFileName f
+        fileInvitation = FileInvitation {fileName, fileSize, fileConnReq = Nothing}
+    fileId <- withStore $ \st -> createSndFileTransferV2 st userId ct f fileInvitation chSize
+    let mc = MCText ""
+        ciFile = Just $ CIFile {fileId, fileName, fileSize, filePath = Just f, fileStatus = CIFSSndStored}
+    ci <- sendDirectChatItem user ct (XMsgNew (MCSimple (ExtMsgContent mc (Just fileInvitation)))) (CISndMsgContent mc) ciFile Nothing
     withStore $ \st -> updateFileTransferChatItemId st fileId $ chatItemId' ci
     setActive $ ActiveC cName
     pure . CRNewChatItem $ AChatItem SCTDirect SMDSnd (DirectChat ct) ci
   -- old file protocol
+  -- TODO discontinue
   SendGroupFile gName f -> withUser $ \user@User {userId} -> withChatLock $ do
     Group gInfo@GroupInfo {groupId, membership} members <- withStore $ \st -> getGroupByName st user gName
     unless (memberActive membership) $ throwChatError CEGroupMemberUserRemoved
@@ -563,27 +559,20 @@ processChatCommand = \case
       (connId, fileConnReq) <- withAgent (`createConnection` SCMInvitation)
       pure (m, connId, FileInvitation {fileName, fileSize, fileConnReq = Just fileConnReq})
     fileId <- withStore $ \st -> createSndGroupFileTransfer st userId gInfo ms f fileSize chSize
-    -- TODO sendGroupChatItem - same file invitation to all
-    forM_ ms $ \(m, _, fileInv) ->
-      traverse (\conn -> sendDirectMessage conn (XFile fileInv) (GroupId groupId)) $ memberConn m
+    let mc = MCText ""
+    forM_ ms $ \(m, _, fileInvitation) ->
+      traverse (\conn -> sendDirectMessage conn (XMsgNew (MCSimple (ExtMsgContent mc (Just fileInvitation)))) (GroupId groupId)) $ memberConn m
     setActive $ ActiveG gName
     -- this is a hack as we have multiple direct messages instead of one per group
     let msg = SndMessage {msgId = 0, sharedMsgId = SharedMsgId "", msgBody = ""}
-        ciContent = CISndFileInvitation fileId f
-    cItem@ChatItem {meta = CIMeta {itemId}} <- saveSndChatItem user (CDGroupSnd gInfo) msg ciContent Nothing Nothing
+        ciFile = Just $ CIFile {fileId, fileName, fileSize, filePath = Just f, fileStatus = CIFSSndStored}
+    ci@ChatItem {meta = CIMeta {itemId}} <- saveSndChatItem user (CDGroupSnd gInfo) msg (CISndMsgContent mc) ciFile Nothing
     withStore $ \st -> updateFileTransferChatItemId st fileId itemId
-    pure . CRNewChatItem $ AChatItem SCTGroup SMDSnd (GroupChat gInfo) cItem
-  -- new file protocol
-  SendGroupFileInv gName f -> withUser $ \user@User {userId} -> withChatLock $ do
-    g@(Group gInfo@GroupInfo {membership} _) <- withStore $ \st -> getGroupByName st user gName
-    unless (memberActive membership) $ throwChatError CEGroupMemberUserRemoved
-    (fileSize, chSize) <- checkSndFile f
-    let fileInv = FileInvitation {fileName = takeFileName f, fileSize, fileConnReq = Nothing}
-    fileId <- withStore $ \st -> createSndGroupFileTransferV2 st userId gInfo f fileInv chSize
-    ci <- sendGroupChatItem user g (XFile fileInv) (CISndFileInvitation fileId f) Nothing Nothing
-    withStore $ \st -> updateFileTransferChatItemId st fileId $ chatItemId' ci
-    setActive $ ActiveG gName
     pure . CRNewChatItem $ AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci
+  -- new file protocol
+  SendGroupFileInv gName f -> withUser $ \user -> do
+    groupId <- withStore $ \st -> getGroupIdByName st user gName
+    processChatCommand $ APISendMessage CTGroup groupId (Just f) (MCText "")
   ReceiveFile fileId filePath_ -> withUser $ \user@User {userId} ->
     withChatLock . procCmd $ do
       ft <- withStore $ \st -> getRcvFileTransfer st userId fileId
@@ -907,6 +896,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
               XMsgNew mc -> newContentMessage ct mc msg msgMeta
               XMsgUpdate sharedMsgId mContent -> messageUpdate ct sharedMsgId mContent msg msgMeta
               XMsgDel sharedMsgId -> messageDelete ct sharedMsgId msg msgMeta
+              -- TODO discontinue XFile
               XFile fInv -> processFileInvitation ct fInv msg msgMeta
               XFileAcptInv sharedMsgId fileConnReq fName -> xFileAcptInv ct sharedMsgId fileConnReq fName msgMeta
               XInfo p -> xInfo ct p
@@ -1049,6 +1039,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
             XMsgNew mc -> newGroupContentMessage gInfo m mc msg msgMeta
             XMsgUpdate sharedMsgId mContent -> groupMessageUpdate gInfo m sharedMsgId mContent msg
             XMsgDel sharedMsgId -> groupMessageDelete gInfo m sharedMsgId msg
+            -- TODO discontinue XFile
             XFile fInv -> processGroupFileInvitation gInfo m fInv msg msgMeta
             XFileAcptInv sharedMsgId fileConnReq fName -> xFileAcptInvGroup gInfo m sharedMsgId fileConnReq fName msgMeta
             XGrpMemNew memInfo -> xGrpMemNew gInfo m memInfo
@@ -1322,25 +1313,27 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
             else messageError "x.msg.del: group member attempted to delete a message of another member"
         (SMDSnd, _) -> messageError "x.msg.del: group member attempted invalid message delete"
 
-    -- TODO send file via XMsgNew instead of XFile
+    -- TODO remove once XFile is discontinued
     processFileInvitation :: Contact -> FileInvitation -> RcvMessage -> MsgMeta -> m ()
-    processFileInvitation ct@Contact {localDisplayName = c} fInv msg msgMeta = do
+    processFileInvitation ct@Contact {localDisplayName = c} fInv@FileInvitation {fileName, fileSize} msg msgMeta = do
       -- TODO chunk size has to be sent as part of invitation
       chSize <- asks $ fileChunkSize . config
-      ft@RcvFileTransfer {fileId} <- withStore $ \st -> createRcvFileTransfer st userId ct fInv chSize
-      ci <- saveRcvChatItem user (CDDirectRcv ct) msg msgMeta (CIRcvFileInvitation ft) Nothing
+      RcvFileTransfer {fileId} <- withStore $ \st -> createRcvFileTransfer st userId ct fInv chSize
+      let ciFile = Just $ CIFile {fileId, fileName, fileSize, filePath = Nothing, fileStatus = CIFSRcvInvitation}
+      ci <- saveRcvChatItem user (CDDirectRcv ct) msg msgMeta (CIRcvMsgContent $ MCText "") ciFile
       withStore $ \st -> updateFileTransferChatItemId st fileId $ chatItemId' ci
       toView . CRNewChatItem $ AChatItem SCTDirect SMDRcv (DirectChat ct) ci
       checkIntegrity msgMeta $ toView . CRMsgIntegrityError
       showToast (c <> "> ") "wants to send a file"
       setActive $ ActiveC c
 
-    -- TODO send file via XMsgNew instead of XFile
+    -- TODO remove once XFile is discontinued
     processGroupFileInvitation :: GroupInfo -> GroupMember -> FileInvitation -> RcvMessage -> MsgMeta -> m ()
-    processGroupFileInvitation gInfo m@GroupMember {localDisplayName = c} fInv msg msgMeta = do
+    processGroupFileInvitation gInfo m@GroupMember {localDisplayName = c} fInv@FileInvitation {fileName, fileSize} msg msgMeta = do
       chSize <- asks $ fileChunkSize . config
-      ft@RcvFileTransfer {fileId} <- withStore $ \st -> createRcvGroupFileTransfer st userId m fInv chSize
-      ci <- saveRcvChatItem user (CDGroupRcv gInfo m) msg msgMeta (CIRcvFileInvitation ft) Nothing
+      RcvFileTransfer {fileId} <- withStore $ \st -> createRcvGroupFileTransfer st userId m fInv chSize
+      let ciFile = Just $ CIFile {fileId, fileName, fileSize, filePath = Nothing, fileStatus = CIFSRcvInvitation}
+      ci <- saveRcvChatItem user (CDGroupRcv gInfo m) msg msgMeta (CIRcvMsgContent $ MCText "") ciFile
       withStore $ \st -> updateFileTransferChatItemId st fileId $ chatItemId' ci
       groupMsgToView gInfo ci msgMeta
       let g = groupName' gInfo
