@@ -58,8 +58,7 @@ defaultMobileConfig :: ChatConfig
 defaultMobileConfig =
   defaultChatConfig
     { agentConfig = (agentConfig defaultChatConfig) {yesToMigrations = True},
-      yesToMigrations = True,
-      fileAutoAccept = True
+      yesToMigrations = True
     }
 
 type CJSONString = CString
@@ -69,7 +68,6 @@ getActiveUser_ st = find activeUser <$> getUsers st
 
 chatInit :: String -> IO ChatController
 chatInit dbFilePrefix = do
-  -- TODO ? init with fileDefaultDownloadPath and set it in defaultMobileConfig
   let f = chatStoreFile dbFilePrefix
   chatStore <- createStore f (dbPoolSize defaultMobileConfig) (yesToMigrations (defaultMobileConfig :: ChatConfig))
   user_ <- getActiveUser_ chatStore

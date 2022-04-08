@@ -54,8 +54,6 @@ data ChatConfig = ChatConfig
     yesToMigrations :: Bool,
     tbqSize :: Natural,
     fileChunkSize :: Integer,
-    fileAutoAccept :: Bool,
-    fileDefaultDownloadPath :: Maybe FilePath,
     subscriptionConcurrency :: Int,
     subscriptionEvents :: Bool,
     testView :: Bool

@@ -84,8 +84,6 @@ defaultChatConfig =
       yesToMigrations = False,
       tbqSize = 64,
       fileChunkSize = 15780,
-      fileAutoAccept = False,
-      fileDefaultDownloadPath = Nothing,
       subscriptionConcurrency = 16,
       subscriptionEvents = False,
       testView = False
@@ -731,10 +729,7 @@ acceptFileReceive user@User {userId} RcvFileTransfer {fileId, fileInvitation = F
     getRcvFilePath :: Maybe FilePath -> String -> m FilePath
     getRcvFilePath fPath_ fName = case fPath_ of
       Nothing -> do
-        defaultPath <- asks $ fileDefaultDownloadPath . config
-        dir <- case defaultPath of
-          Just path -> pure path
-          Nothing -> (`combine` "Downloads") <$> getHomeDirectory
+        dir <- (`combine` "Downloads") <$> getHomeDirectory
         ifM (doesDirectoryExist dir) (pure dir) getTemporaryDirectory
           >>= uniqueCombine
           >>= createEmptyFile
@@ -1245,31 +1240,15 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
         Just fileInvitation@FileInvitation {fileName, fileSize} -> do
           -- processFileInvitation
           chSize <- asks $ fileChunkSize . config
-          ft@RcvFileTransfer {fileId} <- withStore $ \st -> createRcvFileTransfer st userId ct fileInvitation chSize
-          fAutoAccept <- asks $ fileAutoAccept . config
-          if fAutoAccept
-            then do
-              filePath <- acceptFileReceive user ft Nothing
-              let ciFile = Just $ CIFile {fileId, fileName, fileSize, filePath = Just filePath, fileStatus = CIFSRcvTransfer}
-              ci@ChatItem {formattedText} <- saveRcvChatItem user (CDDirectRcv ct) msg msgMeta (CIRcvMsgContent content) ciFile
-              -- processFileInvitation
-              withStore $ \st -> updateFileTransferChatItemId st fileId $ chatItemId' ci
-              -- newContentMessage with fileInv Nothing
-              toView . CRNewChatItem $ AChatItem SCTDirect SMDRcv (DirectChat ct) ci
-              toView $ CRRcvFileAccepted ft filePath
-              checkIntegrity msgMeta $ toView . CRMsgIntegrityError
-              showMsgToast (c <> "> ") content formattedText
-              setActive $ ActiveC c
-            else do
-              let ciFile = Just $ CIFile {fileId, fileName, fileSize, filePath = Nothing, fileStatus = CIFSRcvInvitation}
-              ci@ChatItem {formattedText} <- saveRcvChatItem user (CDDirectRcv ct) msg msgMeta (CIRcvMsgContent content) ciFile
-              -- processFileInvitation
-              withStore $ \st -> updateFileTransferChatItemId st fileId $ chatItemId' ci
-              -- newContentMessage with fileInv Nothing
-              toView . CRNewChatItem $ AChatItem SCTDirect SMDRcv (DirectChat ct) ci
-              checkIntegrity msgMeta $ toView . CRMsgIntegrityError
-              showMsgToast (c <> "> ") content formattedText
-              setActive $ ActiveC c
+          RcvFileTransfer {fileId} <- withStore $ \st -> createRcvFileTransfer st userId ct fileInvitation chSize
+          let ciFile = Just $ CIFile {fileId, fileName, fileSize, filePath = Nothing, fileStatus = CIFSRcvInvitation}
+          ci@ChatItem {formattedText} <- saveRcvChatItem user (CDDirectRcv ct) msg msgMeta (CIRcvMsgContent content) ciFile
+          withStore $ \st -> updateFileTransferChatItemId st fileId $ chatItemId' ci
+          -- newContentMessage with fileInv Nothing
+          toView . CRNewChatItem $ AChatItem SCTDirect SMDRcv (DirectChat ct) ci
+          checkIntegrity msgMeta $ toView . CRMsgIntegrityError
+          showMsgToast (c <> "> ") content formattedText
+          setActive $ ActiveC c
 
     messageUpdate :: Contact -> SharedMsgId -> MsgContent -> RcvMessage -> MsgMeta -> m ()
     messageUpdate ct@Contact {contactId} sharedMsgId mc RcvMessage {msgId} msgMeta = do
@@ -1308,31 +1287,16 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
         Just fileInvitation@FileInvitation {fileName, fileSize} -> do
           -- processGroupFileInvitation
           chSize <- asks $ fileChunkSize . config
-          ft@RcvFileTransfer {fileId} <- withStore $ \st -> createRcvGroupFileTransfer st userId m fileInvitation chSize
-          fAutoAccept <- asks $ fileAutoAccept . config
-          if fAutoAccept
-            then do
-              filePath <- acceptFileReceive user ft Nothing
-              let ciFile = Just $ CIFile {fileId, fileName, fileSize, filePath = Just filePath, fileStatus = CIFSRcvTransfer}
-              ci@ChatItem {formattedText} <- saveRcvChatItem user (CDGroupRcv gInfo m) msg msgMeta (CIRcvMsgContent content) ciFile
-              -- processGroupFileInvitation
-              withStore $ \st -> updateFileTransferChatItemId st fileId $ chatItemId' ci
-              -- newGroupContentMessage with fileInv Nothing
-              groupMsgToView gInfo ci msgMeta
-              toView $ CRRcvFileAccepted ft filePath
-              let g = groupName' gInfo
-              showMsgToast ("#" <> g <> " " <> c <> "> ") content formattedText
-              setActive $ ActiveG g
-            else do
-              let ciFile = Just $ CIFile {fileId, fileName, fileSize, filePath = Nothing, fileStatus = CIFSRcvInvitation}
-              ci@ChatItem {formattedText} <- saveRcvChatItem user (CDGroupRcv gInfo m) msg msgMeta (CIRcvMsgContent content) ciFile
-              -- processGroupFileInvitation
-              withStore $ \st -> updateFileTransferChatItemId st fileId $ chatItemId' ci
-              -- newGroupContentMessage with fileInv Nothing
-              groupMsgToView gInfo ci msgMeta
-              let g = groupName' gInfo
-              showMsgToast ("#" <> g <> " " <> c <> "> ") content formattedText
-              setActive $ ActiveG g
+          RcvFileTransfer {fileId} <- withStore $ \st -> createRcvGroupFileTransfer st userId m fileInvitation chSize
+          let ciFile = Just $ CIFile {fileId, fileName, fileSize, filePath = Nothing, fileStatus = CIFSRcvInvitation}
+          ci@ChatItem {formattedText} <- saveRcvChatItem user (CDGroupRcv gInfo m) msg msgMeta (CIRcvMsgContent content) ciFile
+          -- processGroupFileInvitation
+          withStore $ \st -> updateFileTransferChatItemId st fileId $ chatItemId' ci
+          -- newGroupContentMessage with fileInv Nothing
+          groupMsgToView gInfo ci msgMeta
+          let g = groupName' gInfo
+          showMsgToast ("#" <> g <> " " <> c <> "> ") content formattedText
+          setActive $ ActiveG g
 
     groupMessageUpdate :: GroupInfo -> GroupMember -> SharedMsgId -> MsgContent -> RcvMessage -> m ()
     groupMessageUpdate gInfo@GroupInfo {groupId} GroupMember {memberId} sharedMsgId mc RcvMessage {msgId} = do

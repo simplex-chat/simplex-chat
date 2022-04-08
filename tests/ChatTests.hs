@@ -12,7 +12,7 @@ import Control.Concurrent.STM
 import qualified Data.ByteString as B
 import Data.Char (isDigit)
 import qualified Data.Text as T
-import Simplex.Chat.Controller (ChatConfig (..), ChatController (..))
+import Simplex.Chat.Controller (ChatController (..))
 import Simplex.Chat.Types (ImageData (..), Profile (..), User (..))
 import Simplex.Chat.Util (unlessM)
 import System.Directory (doesFileExist)
@@ -65,8 +65,6 @@ chatTests = do
     it "send and receive file to group" testGroupFileTransferV2
   describe "messages with files" $ do
     it "send and receive direct message with file" testDirectMessageWithFile
-    it "send and receive direct message with file (auto accept)" testDirectMessageWithFileAutoAccept
-    it "send and receive direct image (auto accept)" testDirectMessageWithFileAutoAccept
   describe "user contact link" $ do
     it "create and connect via contact link" testUserContactLink
     it "auto accept contact requests" testUserContactLinkAutoAccept
@@ -1223,56 +1221,6 @@ testDirectMessageWithFile =
       bob <# "alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
       bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
       bob ##> "/fr 1 ./tests/tmp"
-      bob <## "saving file 1 from alice to ./tests/tmp/test.jpg"
-      concurrently_
-        (bob <## "started receiving file 1 (test.jpg) from alice")
-        (alice <## "started sending file 1 (test.jpg) to bob")
-      concurrently_
-        (bob <## "completed receiving file 1 (test.jpg) from alice")
-        (alice <## "completed sending file 1 (test.jpg) to bob")
-      src <- B.readFile "./tests/fixtures/test.jpg"
-      dest <- B.readFile "./tests/tmp/test.jpg"
-      dest `shouldBe` src
-      alice #$> ("/_get chat @2 count=100", chatF, [((1, "hi, sending a file"), Just "./tests/fixtures/test.jpg")])
-      bob #$> ("/_get chat @2 count=100", chatF, [((0, "hi, sending a file"), Just "./tests/tmp/test.jpg")])
-
-testDirectMessageWithFileAutoAccept :: IO ()
-testDirectMessageWithFileAutoAccept =
-  testChat2' (aliceProfile, defaultTestCfg) (bobProfile, defaultTestCfg {fileAutoAccept = True}) $
-    \alice bob -> do
-      connectUsers alice bob
-      alice ##> "/_send @2 file ./tests/fixtures/test.jpg text hi, sending a file"
-      alice <# "@bob hi, sending a file"
-      alice <# "/f @bob ./tests/fixtures/test.jpg"
-      alice <## "use /fc 1 to cancel sending"
-      bob <# "alice> hi, sending a file"
-      bob <# "alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
-      bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
-      bob <## "saving file 1 from alice to ./tests/tmp/test.jpg"
-      concurrently_
-        (bob <## "started receiving file 1 (test.jpg) from alice")
-        (alice <## "started sending file 1 (test.jpg) to bob")
-      concurrently_
-        (bob <## "completed receiving file 1 (test.jpg) from alice")
-        (alice <## "completed sending file 1 (test.jpg) to bob")
-      src <- B.readFile "./tests/fixtures/test.jpg"
-      dest <- B.readFile "./tests/tmp/test.jpg"
-      dest `shouldBe` src
-      alice #$> ("/_get chat @2 count=100", chatF, [((1, "hi, sending a file"), Just "./tests/fixtures/test.jpg")])
-      bob #$> ("/_get chat @2 count=100", chatF, [((0, "hi, sending a file"), Just "./tests/tmp/test.jpg")])
-
-testDirectImage :: IO ()
-testDirectImage =
-  testChat2' (aliceProfile, defaultTestCfg) (bobProfile, defaultTestCfg {fileAutoAccept = True}) $
-    \alice bob -> do
-      connectUsers alice bob
-      alice ##> "/_send @2 file ./tests/fixtures/test.jpg text hi, sending a file"
-      alice <# "@bob hi, sending a file"
-      alice <# "/f @bob ./tests/fixtures/test.jpg"
-      alice <## "use /fc 1 to cancel sending"
-      bob <# "alice> hi, sending a file"
-      bob <# "alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
-      bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
       bob <## "saving file 1 from alice to ./tests/tmp/test.jpg"
       concurrently_
         (bob <## "started receiving file 1 (test.jpg) from alice")
