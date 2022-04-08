@@ -16,28 +16,28 @@ mobileTests = do
     it "start new chat with existing user" testChatApi
 
 noActiveUser :: String
-#if defined(darwin_HOST_OS)
+#if defined(darwin_HOST_OS) && defined(swiftJSON)
 noActiveUser = "{\"resp\":{\"chatCmdError\":{\"chatError\":{\"error\":{\"errorType\":{\"noActiveUser\":{}}}}}}}"
 #else
 noActiveUser = "{\"resp\":{\"type\":\"chatCmdError\",\"chatError\":{\"type\":\"error\",\"errorType\":{\"type\":\"noActiveUser\"}}}}"
 #endif
 
 activeUserExists :: String
-#if defined(darwin_HOST_OS)
+#if defined(darwin_HOST_OS) && defined(swiftJSON)
 activeUserExists = "{\"resp\":{\"chatCmdError\":{\"chatError\":{\"error\":{\"errorType\":{\"activeUserExists\":{}}}}}}}"
 #else
 activeUserExists = "{\"resp\":{\"type\":\"chatCmdError\",\"chatError\":{\"type\":\"error\",\"errorType\":{\"type\":\"activeUserExists\"}}}}"
 #endif
 
 activeUser :: String
-#if defined(darwin_HOST_OS)
+#if defined(darwin_HOST_OS) && defined(swiftJSON)
 activeUser = "{\"resp\":{\"activeUser\":{\"user\":{\"userId\":1,\"userContactId\":1,\"localDisplayName\":\"alice\",\"profile\":{\"displayName\":\"alice\",\"fullName\":\"Alice\"},\"activeUser\":true}}}}"
 #else
 activeUser = "{\"resp\":{\"type\":\"activeUser\",\"user\":{\"userId\":1,\"userContactId\":1,\"localDisplayName\":\"alice\",\"profile\":{\"displayName\":\"alice\",\"fullName\":\"Alice\"},\"activeUser\":true}}}"
 #endif
 
 chatStarted :: String
-#if defined(darwin_HOST_OS)
+#if defined(darwin_HOST_OS) && defined(swiftJSON)
 chatStarted = "{\"resp\":{\"chatStarted\":{}}}"
 #else
 chatStarted = "{\"resp\":{\"type\":\"chatStarted\"}}"
