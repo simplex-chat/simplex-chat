@@ -202,7 +202,7 @@ processChatCommand = \case
           Just quotedItemId -> do
             CChatItem _ ChatItem {meta = CIMeta {itemTs, itemSharedMsgId}, content = ciContent, formattedText} <-
               withStore $ \st -> getDirectChatItem st userId chatId quotedItemId
-            (qmc, qd, sent) <- eitherToMonadError $ quoteData ciContent
+            (qmc, qd, sent) <- liftEither $ quoteData ciContent
             let msgRef = MsgRef {msgId = itemSharedMsgId, sentAt = itemTs, sent, memberId = Nothing}
                 quotedItem = CIQuote {chatDir = qd, itemId = Just quotedItemId, sharedMsgId = itemSharedMsgId, sentAt = itemTs, content = qmc, formattedText}
             pure (MCQuote QuotedMsg {msgRef, content = qmc} (ExtMsgContent mc fileInvitation_), Just quotedItem)
@@ -238,7 +238,7 @@ processChatCommand = \case
           Just quotedItemId -> do
             CChatItem _ ChatItem {chatDir, meta = CIMeta {itemTs, itemSharedMsgId}, content = ciContent, formattedText} <-
               withStore $ \st -> getGroupChatItem st user chatId quotedItemId
-            (qmc, qd, sent, GroupMember {memberId}) <- eitherToMonadError $ quoteData ciContent chatDir membership
+            (qmc, qd, sent, GroupMember {memberId}) <- liftEither $ quoteData ciContent chatDir membership
             let msgRef = MsgRef {msgId = itemSharedMsgId, sentAt = itemTs, sent, memberId = Just memberId}
                 quotedItem = CIQuote {chatDir = qd, itemId = Just quotedItemId, sharedMsgId = itemSharedMsgId, sentAt = itemTs, content = qmc, formattedText}
             pure (MCQuote QuotedMsg {msgRef, content = qmc} (ExtMsgContent mc fileInvitation_), Just quotedItem)
@@ -252,9 +252,6 @@ processChatCommand = \case
       unzipMaybe :: Maybe (a, b) -> (Maybe a, Maybe b)
       unzipMaybe Nothing = (Nothing, Nothing)
       unzipMaybe (Just (a, b)) = (Just a, Just b)
-      eitherToMonadError :: MonadError e m => Either e a -> m a
-      eitherToMonadError (Left x) = throwError x
-      eitherToMonadError (Right x) = return x
   -- TODO discontinue
   APISendMessageQuote cType chatId quotedItemId mc ->
     processChatCommand $ APISendMessage cType chatId Nothing (Just quotedItemId) mc
