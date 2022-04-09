@@ -75,7 +75,9 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
   suspend fun sendCmd(cmd: CC): CR {
     return withContext(Dispatchers.IO) {
       val c = cmd.cmdString
-      chatModel.terminalItems.add(TerminalItem.cmd(cmd))
+      if (cmd !is CC.ApiParseMarkdown) {
+        chatModel.terminalItems.add(TerminalItem.cmd(cmd))
+      }
       val json = chatSendCmd(ctrl, c)
       Log.d(TAG, "sendCmd: ${cmd.cmdType}")
       val r = APIResponse.decodeStr(json)
@@ -83,7 +85,9 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
       if (r.resp is CR.Response || r.resp is CR.Invalid) {
         Log.d(TAG, "sendCmd response json $json")
       }
-      chatModel.terminalItems.add(TerminalItem.resp(r.resp))
+      if (r.resp !is CR.ParsedMarkdown) {
+        chatModel.terminalItems.add(TerminalItem.resp(r.resp))
+      }
       r.resp
     }
   }
