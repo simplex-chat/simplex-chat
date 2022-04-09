@@ -203,7 +203,6 @@ viewChatItem chat ChatItem {chatDir, meta, content, quotedItem, file} = case cha
     sndMsg to quote mc = do
       let mcText = msgContentText mc
       case (mcText, file) of
-        ("", Nothing) -> viewSentMessage to quote mc meta
         ("", Just _) -> []
         (_, _) -> viewSentMessage to quote mc meta
     withSndFile to l = case file of
@@ -213,7 +212,6 @@ viewChatItem chat ChatItem {chatDir, meta, content, quotedItem, file} = case cha
     rcvMsg from quote mc = do
       let mcText = msgContentText mc
       case (mcText, file) of
-        ("", Nothing) -> viewReceivedMessage from quote mc meta
         ("", Just _) -> []
         (_, _) -> viewReceivedMessage from quote mc meta
     withRcvFile from l = case file of
