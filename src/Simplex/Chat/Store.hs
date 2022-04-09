@@ -1784,8 +1784,8 @@ getViaGroupContact st User {userId} GroupMember {groupMemberId} =
        in Just Contact {contactId, localDisplayName, profile, activeConn, viaGroup, createdAt}
     toContact' _ = Nothing
 
-createSndFileTransfer :: MonadUnliftIO m => SQLiteStore -> UserId -> Contact -> FilePath -> FileInvitation -> ConnId -> Integer -> m SndFileTransfer
-createSndFileTransfer st userId Contact {contactId, localDisplayName = recipientDisplayName} filePath FileInvitation {fileName, fileSize} acId chunkSize =
+createSndFileTransfer :: MonadUnliftIO m => SQLiteStore -> UserId -> Contact -> FilePath -> FileInvitation -> ConnId -> Integer -> m Int64
+createSndFileTransfer st userId Contact {contactId} filePath FileInvitation {fileName, fileSize} acId chunkSize =
   liftIO . withTransaction st $ \db -> do
     currentTs <- getCurrentTime
     DB.execute
@@ -1799,7 +1799,7 @@ createSndFileTransfer st userId Contact {contactId, localDisplayName = recipient
       db
       "INSERT INTO snd_files (file_id, file_status, connection_id, created_at, updated_at) VALUES (?,?,?,?,?)"
       (fileId, fileStatus, connId, currentTs, currentTs)
-    pure SndFileTransfer {fileId, fileName, filePath, fileSize, chunkSize, recipientDisplayName, connId, fileStatus, agentConnId = AgentConnId acId}
+    pure fileId
 
 createSndFileTransferV2 :: MonadUnliftIO m => SQLiteStore -> UserId -> Contact -> FilePath -> FileInvitation -> Integer -> m Int64
 createSndFileTransferV2 st userId Contact {contactId} filePath FileInvitation {fileName, fileSize} chunkSize =
