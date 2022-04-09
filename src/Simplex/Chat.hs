@@ -250,9 +250,6 @@ processChatCommand = \case
             quoteData _ _ _ = Left $ ChatError CEInvalidQuote
     CTContactRequest -> pure $ chatCmdError "not supported"
     where
-      linkFileToChatItem :: Maybe (CIFile 'MDSnd) -> ChatItem c 'MDSnd -> m ()
-      linkFileToChatItem (Just CIFile {fileId}) ci = withStore $ \st -> updateFileTransferChatItemId st fileId $ chatItemId' ci
-      linkFileToChatItem _ _ = pure ()
       unzipMaybe :: Maybe (a, b) -> (Maybe a, Maybe b)
       unzipMaybe Nothing = (Nothing, Nothing)
       unzipMaybe (Just (a, b)) = (Just a, Just b)
@@ -652,6 +649,10 @@ processChatCommand = \case
       let s = connStatus $ activeConn (ct :: Contact)
        in s == ConnReady || s == ConnSndReady
 
+linkFileToChatItem :: ChatMonad m => Maybe (CIFile d) -> ChatItem c d -> m ()
+linkFileToChatItem (Just CIFile {fileId}) ci = withStore $ \st -> updateFileTransferChatItemId st fileId $ chatItemId' ci
+linkFileToChatItem _ _ = pure ()
+
 acceptContactRequest :: ChatMonad m => User -> UserContactRequest -> m Contact
 acceptContactRequest User {userId, profile} UserContactRequest {agentInvitationId = AgentInvId invId, localDisplayName = cName, profileId, profile = p, xContactId} = do
   connId <- withAgent $ \a -> acceptContact a invId . directMessage $ XInfo profile
@@ -873,7 +874,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
               XMsgUpdate sharedMsgId mContent -> messageUpdate ct sharedMsgId mContent msg msgMeta
               XMsgDel sharedMsgId -> messageDelete ct sharedMsgId msg msgMeta
               -- TODO discontinue XFile
-              XFile fInv -> processFileInvitation ct fInv msg msgMeta
+              XFile fInv -> processFileInvitation' ct fInv msg msgMeta
               XFileAcptInv sharedMsgId fileConnReq fName -> xFileAcptInv ct sharedMsgId fileConnReq fName msgMeta
               XInfo p -> xInfo ct p
               XGrpInv gInv -> processGroupInvitation ct gInv
@@ -1016,7 +1017,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
             XMsgUpdate sharedMsgId mContent -> groupMessageUpdate gInfo m sharedMsgId mContent msg
             XMsgDel sharedMsgId -> groupMessageDelete gInfo m sharedMsgId msg
             -- TODO discontinue XFile
-            XFile fInv -> processGroupFileInvitation gInfo m fInv msg msgMeta
+            XFile fInv -> processGroupFileInvitation' gInfo m fInv msg msgMeta
             XFileAcptInv sharedMsgId fileConnReq fName -> xFileAcptInvGroup gInfo m sharedMsgId fileConnReq fName msgMeta
             XGrpMemNew memInfo -> xGrpMemNew gInfo m memInfo
             XGrpMemIntro memInfo -> xGrpMemIntro conn gInfo m memInfo
@@ -1196,26 +1197,23 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
 
     newContentMessage :: Contact -> MsgContainer -> RcvMessage -> MsgMeta -> m ()
     newContentMessage ct@Contact {localDisplayName = c} mc msg msgMeta = do
-      let (ExtMsgContent content fileInv) = mcExtMsgContent mc
-      case fileInv of
-        Nothing -> do
-          ci@ChatItem {formattedText} <- saveRcvChatItem user (CDDirectRcv ct) msg msgMeta (CIRcvMsgContent content) Nothing
-          toView . CRNewChatItem $ AChatItem SCTDirect SMDRcv (DirectChat ct) ci
-          checkIntegrity msgMeta $ toView . CRMsgIntegrityError
-          showMsgToast (c <> "> ") content formattedText
-          setActive $ ActiveC c
-        Just fileInvitation@FileInvitation {fileName, fileSize} -> do
-          -- processFileInvitation
-          chSize <- asks $ fileChunkSize . config
-          RcvFileTransfer {fileId} <- withStore $ \st -> createRcvFileTransfer st userId ct fileInvitation chSize
-          let ciFile = Just $ CIFile {fileId, fileName, fileSize, filePath = Nothing, fileStatus = CIFSRcvInvitation}
-          ci@ChatItem {formattedText} <- saveRcvChatItem user (CDDirectRcv ct) msg msgMeta (CIRcvMsgContent content) ciFile
-          withStore $ \st -> updateFileTransferChatItemId st fileId $ chatItemId' ci
-          -- newContentMessage with fileInv Nothing
-          toView . CRNewChatItem $ AChatItem SCTDirect SMDRcv (DirectChat ct) ci
-          checkIntegrity msgMeta $ toView . CRMsgIntegrityError
-          showMsgToast (c <> "> ") content formattedText
-          setActive $ ActiveC c
+      let (ExtMsgContent content fileInvitation_) = mcExtMsgContent mc
+      ciFile_ <- processFileInvitation fileInvitation_
+      ci@ChatItem {formattedText} <- saveRcvChatItem user (CDDirectRcv ct) msg msgMeta (CIRcvMsgContent content) ciFile_
+      linkFileToChatItem ciFile_ ci
+      toView . CRNewChatItem $ AChatItem SCTDirect SMDRcv (DirectChat ct) ci
+      checkIntegrity msgMeta $ toView . CRMsgIntegrityError
+      showMsgToast (c <> "> ") content formattedText
+      setActive $ ActiveC c
+      where
+        processFileInvitation :: Maybe FileInvitation -> m (Maybe (CIFile 'MDRcv))
+        processFileInvitation fileInvitation_ = case fileInvitation_ of
+          Nothing -> pure Nothing
+          Just fileInvitation@FileInvitation {fileName, fileSize} -> do
+            chSize <- asks $ fileChunkSize . config
+            RcvFileTransfer {fileId} <- withStore $ \st -> createRcvFileTransfer st userId ct fileInvitation chSize
+            let ciFile = CIFile {fileId, fileName, fileSize, filePath = Nothing, fileStatus = CIFSRcvInvitation}
+            pure $ Just ciFile
 
     messageUpdate :: Contact -> SharedMsgId -> MsgContent -> RcvMessage -> MsgMeta -> m ()
     messageUpdate ct@Contact {contactId} sharedMsgId mc RcvMessage {msgId} msgMeta = do
@@ -1243,27 +1241,23 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
 
     newGroupContentMessage :: GroupInfo -> GroupMember -> MsgContainer -> RcvMessage -> MsgMeta -> m ()
     newGroupContentMessage gInfo m@GroupMember {localDisplayName = c} mc msg msgMeta = do
-      let (ExtMsgContent content fileInv) = mcExtMsgContent mc
-      case fileInv of
-        Nothing -> do
-          ci@ChatItem {formattedText} <- saveRcvChatItem user (CDGroupRcv gInfo m) msg msgMeta (CIRcvMsgContent content) Nothing
-          groupMsgToView gInfo ci msgMeta
-          let g = groupName' gInfo
-          showMsgToast ("#" <> g <> " " <> c <> "> ") content formattedText
-          setActive $ ActiveG g
-        Just fileInvitation@FileInvitation {fileName, fileSize} -> do
-          -- processGroupFileInvitation
-          chSize <- asks $ fileChunkSize . config
-          RcvFileTransfer {fileId} <- withStore $ \st -> createRcvGroupFileTransfer st userId m fileInvitation chSize
-          let ciFile = Just $ CIFile {fileId, fileName, fileSize, filePath = Nothing, fileStatus = CIFSRcvInvitation}
-          ci@ChatItem {formattedText} <- saveRcvChatItem user (CDGroupRcv gInfo m) msg msgMeta (CIRcvMsgContent content) ciFile
-          -- processGroupFileInvitation
-          withStore $ \st -> updateFileTransferChatItemId st fileId $ chatItemId' ci
-          -- newGroupContentMessage with fileInv Nothing
-          groupMsgToView gInfo ci msgMeta
-          let g = groupName' gInfo
-          showMsgToast ("#" <> g <> " " <> c <> "> ") content formattedText
-          setActive $ ActiveG g
+      let (ExtMsgContent content fileInvitation_) = mcExtMsgContent mc
+      ciFile_ <- processFileInvitation fileInvitation_
+      ci@ChatItem {formattedText} <- saveRcvChatItem user (CDGroupRcv gInfo m) msg msgMeta (CIRcvMsgContent content) ciFile_
+      linkFileToChatItem ciFile_ ci
+      groupMsgToView gInfo ci msgMeta
+      let g = groupName' gInfo
+      showMsgToast ("#" <> g <> " " <> c <> "> ") content formattedText
+      setActive $ ActiveG g
+      where
+        processFileInvitation :: Maybe FileInvitation -> m (Maybe (CIFile 'MDRcv))
+        processFileInvitation fileInvitation_ = case fileInvitation_ of
+          Nothing -> pure Nothing
+          Just fileInvitation@FileInvitation {fileName, fileSize} -> do
+            chSize <- asks $ fileChunkSize . config
+            RcvFileTransfer {fileId} <- withStore $ \st -> createRcvGroupFileTransfer st userId m fileInvitation chSize
+            let ciFile = CIFile {fileId, fileName, fileSize, filePath = Nothing, fileStatus = CIFSRcvInvitation}
+            pure $ Just ciFile
 
     groupMessageUpdate :: GroupInfo -> GroupMember -> SharedMsgId -> MsgContent -> RcvMessage -> m ()
     groupMessageUpdate gInfo@GroupInfo {groupId} GroupMember {memberId} sharedMsgId mc RcvMessage {msgId} = do
@@ -1290,8 +1284,8 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
         (SMDSnd, _) -> messageError "x.msg.del: group member attempted invalid message delete"
 
     -- TODO remove once XFile is discontinued
-    processFileInvitation :: Contact -> FileInvitation -> RcvMessage -> MsgMeta -> m ()
-    processFileInvitation ct@Contact {localDisplayName = c} fInv@FileInvitation {fileName, fileSize} msg msgMeta = do
+    processFileInvitation' :: Contact -> FileInvitation -> RcvMessage -> MsgMeta -> m ()
+    processFileInvitation' ct@Contact {localDisplayName = c} fInv@FileInvitation {fileName, fileSize} msg msgMeta = do
       -- TODO chunk size has to be sent as part of invitation
       chSize <- asks $ fileChunkSize . config
       RcvFileTransfer {fileId} <- withStore $ \st -> createRcvFileTransfer st userId ct fInv chSize
@@ -1304,8 +1298,8 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
       setActive $ ActiveC c
 
     -- TODO remove once XFile is discontinued
-    processGroupFileInvitation :: GroupInfo -> GroupMember -> FileInvitation -> RcvMessage -> MsgMeta -> m ()
-    processGroupFileInvitation gInfo m@GroupMember {localDisplayName = c} fInv@FileInvitation {fileName, fileSize} msg msgMeta = do
+    processGroupFileInvitation' :: GroupInfo -> GroupMember -> FileInvitation -> RcvMessage -> MsgMeta -> m ()
+    processGroupFileInvitation' gInfo m@GroupMember {localDisplayName = c} fInv@FileInvitation {fileName, fileSize} msg msgMeta = do
       chSize <- asks $ fileChunkSize . config
       RcvFileTransfer {fileId} <- withStore $ \st -> createRcvGroupFileTransfer st userId m fInv chSize
       let ciFile = Just $ CIFile {fileId, fileName, fileSize, filePath = Nothing, fileStatus = CIFSRcvInvitation}
