@@ -1,6 +1,7 @@
 package chat.simplex.app.views.chat
 
 import android.content.res.Configuration
+import android.util.Log
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -20,12 +21,14 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import chat.simplex.app.TAG
 import chat.simplex.app.model.LinkPreview
 import chat.simplex.app.ui.theme.HighOrLowlight
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.chat.item.*
 import chat.simplex.app.views.helpers.getLinkPreview
 import chat.simplex.app.views.helpers.withApi
+import kotlinx.coroutines.withTimeout
 
 @Composable
 fun SendMsgView(
@@ -40,6 +43,23 @@ fun SendMsgView(
   var textStyle by remember { mutableStateOf(smallFont) }
   var currentLink = remember { mutableStateOf<String?>(null) }
   var prevLink = remember { mutableStateOf<String?>(null) }
+  var pendingLink = remember { mutableStateOf<String?>(null) }
+
+  fun resetLinkPreview() {
+    currentLink.value = null
+    prevLink.value = null
+    pendingLink.value = null
+    cancelledLinks.clear()
+  }
+
+  fun linkRequestCondition(): Boolean {
+    val linkExists = currentLink.value != null
+    val linkStable = currentLink.value == prevLink.value
+    val linkNotAlreadyLoaded = (linkPreview.value?.uri != currentLink.value)
+    val linkNotPending = (currentLink.value != pendingLink.value)
+    return linkExists && linkStable && linkNotAlreadyLoaded && linkNotPending
+  }
+
   BasicTextField(
     value = msg.value,
     onValueChange = {
@@ -47,14 +67,25 @@ fun SendMsgView(
       if (msg.value.isNotEmpty()) {
         prevLink.value = currentLink.value
         currentLink.value  = parseMessage(msg.value)
-        if (currentLink.value != null && currentLink.value != prevLink.value && (linkPreview.value == null)) {
-          currentLink.value?.let { url -> withApi { linkPreview.value = getLinkPreview(url) } }
+        if (linkRequestCondition()) {
+          currentLink.value?.let { url -> withApi {
+            try {
+              withTimeout(1500L) {
+                pendingLink.value = url
+                val preview = getLinkPreview(url)
+                if (pendingLink.value == url) {
+                  linkPreview.value = preview
+                  pendingLink.value = null
+                }
+              }
+            } catch(e: Exception) {
+              Log.e(TAG, "timeout getting link preview ${e.localizedMessage}")
+              linkPreview.value = null
+            }
+          } }
         }
       } else {
-        prevLink.value = null
-        currentLink.value = null
-        linkPreview.value = null
-        cancelledLinks.clear()
+        resetLinkPreview()
       }
       textStyle = if (isShortEmoji(it)) {
         if (it.codePoints().count() < 4) largeEmojiFont else mediumEmojiFont
