@@ -83,7 +83,7 @@ data ChatItem (c :: ChatType) (d :: MsgDirection) = ChatItem
   }
   deriving (Show, Generic)
 
-instance ToJSON (ChatItem c d) where
+instance MsgDirectionI d => ToJSON (ChatItem c d) where
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
   toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
@@ -196,7 +196,7 @@ instance ToJSON AChatItem where
 data JSONAnyChatItem c d = JSONAnyChatItem {chatInfo :: ChatInfo c, chatItem :: ChatItem c d}
   deriving (Generic)
 
-instance ToJSON (JSONAnyChatItem c d) where
+instance MsgDirectionI d => ToJSON (JSONAnyChatItem c d) where
   toJSON = J.genericToJSON J.defaultOptions
   toEncoding = J.genericToEncoding J.defaultOptions
 
@@ -274,7 +274,7 @@ data CIFile (d :: MsgDirection) = CIFile
   }
   deriving (Show, Generic)
 
-instance ToJSON (CIFile d) where
+instance MsgDirectionI d => ToJSON (CIFile d) where
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
   toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
@@ -288,9 +288,9 @@ data CIFileStatus (d :: MsgDirection) where
 
 deriving instance Show (CIFileStatus d)
 
-instance ToJSON (CIFileStatus d) where
-  toJSON = J.toJSON . jsonCIFileStatus
-  toEncoding = J.toEncoding . jsonCIFileStatus
+instance MsgDirectionI d => ToJSON (CIFileStatus d) where
+  toJSON = J.toJSON . strToJSON
+  toEncoding = J.toEncoding . strToJSON
 
 instance MsgDirectionI d => ToField (CIFileStatus d) where toField = toField . decodeLatin1 . strEncode
 
@@ -321,28 +321,6 @@ instance StrEncoding ACIFileStatus where
       "rcv_complete" -> pure $ ACIFileStatus SMDRcv CIFSRcvComplete
       "rcv_cancelled" -> pure $ ACIFileStatus SMDRcv CIFSRcvCancelled
       _ -> fail "bad file status"
-
-data JSONCIFileStatus
-  = JCIFSSndStored
-  | JCIFSSndCancelled
-  | JCIFSRcvInvitation
-  | JCIFSRcvTransfer
-  | JCIFSRcvComplete
-  | JCIFSRcvCancelled
-  deriving (Show, Generic)
-
-instance ToJSON JSONCIFileStatus where
-  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "JCIFS"
-  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "JCIFS"
-
-jsonCIFileStatus :: CIFileStatus d -> JSONCIFileStatus
-jsonCIFileStatus = \case
-  CIFSSndStored -> JCIFSSndStored
-  CIFSSndCancelled -> JCIFSSndCancelled
-  CIFSRcvInvitation -> JCIFSRcvInvitation
-  CIFSRcvTransfer -> JCIFSRcvTransfer
-  CIFSRcvComplete -> JCIFSRcvComplete
-  CIFSRcvCancelled -> JCIFSRcvCancelled
 
 data CIStatus (d :: MsgDirection) where
   CISSndNew :: CIStatus 'MDSnd
