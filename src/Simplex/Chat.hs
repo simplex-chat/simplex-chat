@@ -250,8 +250,7 @@ processChatCommand = \case
     CTContactRequest -> pure $ chatCmdError "not supported"
     where
       unzipMaybe :: Maybe (a, b) -> (Maybe a, Maybe b)
-      unzipMaybe Nothing = (Nothing, Nothing)
-      unzipMaybe (Just (a, b)) = (Just a, Just b)
+      unzipMaybe t = (fst <$> t, snd <$> t)
   -- TODO discontinue
   APISendMessageQuote cType chatId quotedItemId mc ->
     processChatCommand $ APISendMessage cType chatId Nothing (Just quotedItemId) mc
