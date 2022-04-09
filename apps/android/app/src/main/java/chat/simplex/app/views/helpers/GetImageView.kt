@@ -32,33 +32,70 @@ import chat.simplex.app.TAG
 import chat.simplex.app.views.newchat.ActionButton
 import java.io.ByteArrayOutputStream
 import java.io.File
+import kotlin.math.min
+import kotlin.math.sqrt
 
 // Inspired by https://github.com/MakeItEasyDev/Jetpack-Compose-Capture-Image-Or-Choose-from-Gallery
 
-fun bitmapToBase64(bitmap: Bitmap, squareCrop: Boolean = true): String {
-  val size = 104
-  var height = size
-  var width = size
+private fun cropToSquare(image: Bitmap): Bitmap {
   var xOffset = 0
   var yOffset = 0
-  if (bitmap.height < bitmap.width) {
-    width = height * bitmap.width / bitmap.height
-    xOffset = (width - height) / 2
+  val side = min(image.height, image.width)
+  if (image.height < image.width) {
+    xOffset = (image.width - side) / 2
   } else {
-    height = width * bitmap.height / bitmap.width
-    yOffset = (height - width) / 2
+    yOffset = (image.height - side) / 2
   }
+  return Bitmap.createBitmap(image, xOffset, yOffset, side, side)
+}
+
+private fun scaleBitmap(bitmap: Bitmap, maxWidth: Int): Bitmap {
   var image = bitmap
-  while (image.width / 2 > width) {
+  var height = bitmap.height * maxWidth / bitmap.width
+
+  while (image.width / 2 > maxWidth) {
     image = Bitmap.createScaledBitmap(image, image.width / 2, image.height / 2, true)
   }
-  image = Bitmap.createScaledBitmap(image, width, height, true)
-  if (squareCrop) {
-    image = Bitmap.createBitmap(image, xOffset, yOffset, size, size)
+  image = Bitmap.createScaledBitmap(image, maxWidth, height, true)
+  return image
+}
+
+private fun getImageStringLength(im: Bitmap): Int {
+  val imageString = bitmapImageToBase64String(im.copy(im.config, false))
+  return imageString.length
+}
+
+fun compressImageForBase64(image: Bitmap, maxStringLength: Int): Bitmap {
+  var outImage = image
+  var targetWidth: Int
+  var ratio = 1.0
+  var clippedRatio: Double
+  var dataSize = getImageStringLength(outImage)
+  while (dataSize > maxStringLength) {
+    ratio *= sqrt((dataSize.toDouble() / maxStringLength.toDouble()))
+    clippedRatio = min(ratio, 1.5)
+    targetWidth = (outImage.width.toDouble() / clippedRatio).toInt()
+    outImage = scaleBitmap(outImage, targetWidth)
+    dataSize = getImageStringLength(outImage)
   }
+  return outImage
+}
+
+private fun bitmapImageToBase64String(bitmap: Bitmap): String {
   val stream = ByteArrayOutputStream()
-  image.compress(Bitmap.CompressFormat.JPEG, 85, stream)
+  bitmap.compress(Bitmap.CompressFormat.JPEG, 85, stream)
   return "data:image/jpg;base64," + Base64.encodeToString(stream.toByteArray(), Base64.NO_WRAP)
+}
+
+fun bitmapToBase64(bitmap: Bitmap, maxStringLength: Int? = 12500, squareCrop: Boolean = false): String {
+  var image = bitmap
+  if (squareCrop) {
+    image = cropToSquare(image)
+  }
+  if (maxStringLength != null) {
+    image = compressImageForBase64(image, maxStringLength)
+  }
+  return bitmapImageToBase64String(image)
 }
 
 fun base64ToBitmap(base64ImageString: String) : Bitmap {
@@ -126,12 +163,12 @@ fun GetImageBottomSheet(
     if (uri != null) {
       val source = ImageDecoder.createSource(context.contentResolver, uri)
       val bitmap = ImageDecoder.decodeBitmap(source)
-      profileImageStr.value = bitmapToBase64(bitmap)
+      profileImageStr.value = bitmapToBase64(bitmap, squareCrop = true)
     }
   }
 
   val cameraLauncher = rememberCameraLauncher { bitmap: Bitmap? ->
-    if (bitmap != null) profileImageStr.value = bitmapToBase64(bitmap)
+    if (bitmap != null) profileImageStr.value = bitmapToBase64(bitmap, squareCrop = true)
   }
 
   val permissionLauncher = rememberPermissionLauncher { isGranted: Boolean ->

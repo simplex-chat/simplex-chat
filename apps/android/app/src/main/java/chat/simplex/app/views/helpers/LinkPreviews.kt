@@ -25,7 +25,7 @@ suspend fun getLinkPreview(url: String): LinkPreview? {
         try {
           val stream = java.net.URL(imageUri).openStream()
           val image = BitmapFactory.decodeStream(stream)
-          val encodedImage = bitmapToBase64(image)
+          val encodedImage = bitmapToBase64(image, maxStringLength = 14000)
           val description = ogTags.firstOrNull {
             it.attr("property") == "og:description"
           }?.attr("content") ?: ""
