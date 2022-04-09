@@ -204,7 +204,7 @@ viewChatItem chat ChatItem {chatDir, meta, content, quotedItem, file} = case cha
       let mcText = msgContentText mc
       case (mcText, file) of
         ("", Just _) -> []
-        (_, _) -> viewSentMessage to quote mc meta
+        _ -> viewSentMessage to quote mc meta
     withSndFile to l = case file of
       -- TODO pass CIFile
       Just CIFile {fileId, filePath = Just fPath} -> l <> viewSentFileInvitation to fileId fPath meta
@@ -213,7 +213,7 @@ viewChatItem chat ChatItem {chatDir, meta, content, quotedItem, file} = case cha
       let mcText = msgContentText mc
       case (mcText, file) of
         ("", Just _) -> []
-        (_, _) -> viewReceivedMessage from quote mc meta
+        _ -> viewReceivedMessage from quote mc meta
     withRcvFile from l = case file of
       Just f -> l <> viewReceivedFileInvitation from f meta
       _ -> l
