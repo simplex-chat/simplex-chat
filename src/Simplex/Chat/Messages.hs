@@ -289,8 +289,8 @@ data CIFileStatus (d :: MsgDirection) where
 deriving instance Show (CIFileStatus d)
 
 instance MsgDirectionI d => ToJSON (CIFileStatus d) where
-  toJSON = J.toJSON . strToJSON
-  toEncoding = J.toEncoding . strToJSON
+  toJSON = strToJSON
+  toEncoding = strToJEncoding
 
 instance MsgDirectionI d => ToField (CIFileStatus d) where toField = toField . decodeLatin1 . strEncode
 
