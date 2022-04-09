@@ -179,7 +179,8 @@ processChatCommand = \case
       ct@Contact {localDisplayName = c} <- withStore $ \st -> getContact st userId chatId
       (fileInvitation_, ciFile_) <- unzipMaybe <$> setupSndFileTransfer ct
       (msgContainer, quotedItem_) <- prepareMsg fileInvitation_
-      ci <- sendDirectChatItem user ct (XMsgNew msgContainer) (CISndMsgContent mc) ciFile_ quotedItem_
+      msg <- sendDirectContactMessage ct (XMsgNew msgContainer)
+      ci <- saveSndChatItem user (CDDirectSnd ct) msg (CISndMsgContent mc) ciFile_ quotedItem_
       linkFileToChatItem ciFile_ ci
       setActive $ ActiveC c
       pure . CRNewChatItem $ AChatItem SCTDirect SMDSnd (DirectChat ct) ci
@@ -212,11 +213,12 @@ processChatCommand = \case
             quoteData (CIRcvMsgContent qmc) = Right (qmc, CIQDirectRcv, False)
             quoteData _ = Left $ ChatError CEInvalidQuote
     CTGroup -> do
-      g@(Group gInfo@GroupInfo {membership, localDisplayName = gName} _) <- withStore $ \st -> getGroup st user chatId
+      Group gInfo@GroupInfo {membership, localDisplayName = gName} ms <- withStore $ \st -> getGroup st user chatId
       unless (memberActive membership) $ throwChatError CEGroupMemberUserRemoved
       (fileInvitation_, ciFile_) <- unzipMaybe <$> setupSndFileTransfer gInfo
       (msgContainer, quotedItem_) <- prepareMsg fileInvitation_ membership
-      ci <- sendGroupChatItem user g (XMsgNew msgContainer) (CISndMsgContent mc) ciFile_ quotedItem_
+      msg <- sendGroupMessage gInfo ms (XMsgNew msgContainer)
+      ci <- saveSndChatItem user (CDGroupSnd gInfo) msg (CISndMsgContent mc) ciFile_ quotedItem_
       linkFileToChatItem ciFile_ ci
       setActive $ ActiveG gName
       pure . CRNewChatItem $ AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci
@@ -402,7 +404,11 @@ processChatCommand = \case
       let mc = MCText $ safeDecodeUtf8 msg
           cts = filter isReady contacts
       forM_ cts $ \ct ->
-        void (sendDirectChatItem user ct (XMsgNew $ MCSimple (ExtMsgContent mc Nothing)) (CISndMsgContent mc) Nothing Nothing)
+        void
+          ( do
+              sndMsg <- sendDirectContactMessage ct (XMsgNew $ MCSimple (ExtMsgContent mc Nothing))
+              saveSndChatItem user (CDDirectSnd ct) sndMsg (CISndMsgContent mc) Nothing Nothing
+          )
           `catchError` (toView . CRChatError)
       CRBroadcastSent mc (length cts) <$> liftIO getZonedTime
   SendMessageQuote cName (AMsgDirection msgDir) quotedMsg msg -> withUser $ \User {userId} -> do
@@ -521,7 +527,8 @@ processChatCommand = \case
     fileId <- withStore $ \st -> createSndFileTransferV2 st userId ct f fileInvitation chSize
     let mc = MCText ""
         ciFile = Just $ CIFile {fileId, fileName, fileSize, filePath = Just f, fileStatus = CIFSSndStored}
-    ci <- sendDirectChatItem user ct (XMsgNew (MCSimple (ExtMsgContent mc (Just fileInvitation)))) (CISndMsgContent mc) ciFile Nothing
+    msg <- sendDirectContactMessage ct (XMsgNew (MCSimple (ExtMsgContent mc (Just fileInvitation))))
+    ci <- saveSndChatItem user (CDDirectSnd ct) msg (CISndMsgContent mc) ciFile Nothing
     withStore $ \st -> updateFileTransferChatItemId st fileId $ chatItemId' ci
     setActive $ ActiveC cName
     pure . CRNewChatItem $ AChatItem SCTDirect SMDSnd (DirectChat ct) ci
@@ -1683,16 +1690,6 @@ saveRcvMSG Connection {connId} connOrGroupId agentMsgMeta msgBody = do
       newMsg = NewMessage {chatMsgEvent, msgBody}
       rcvMsgDelivery = RcvMsgDelivery {connId, agentMsgId, agentMsgMeta}
   withStore $ \st -> createNewMessageAndRcvMsgDelivery st connOrGroupId newMsg sharedMsgId_ rcvMsgDelivery
-
-sendDirectChatItem :: ChatMonad m => User -> Contact -> ChatMsgEvent -> CIContent 'MDSnd -> Maybe (CIFile 'MDSnd) -> Maybe (CIQuote 'CTDirect) -> m (ChatItem 'CTDirect 'MDSnd)
-sendDirectChatItem user ct chatMsgEvent ciContent ciFile quotedItem = do
-  msg <- sendDirectContactMessage ct chatMsgEvent
-  saveSndChatItem user (CDDirectSnd ct) msg ciContent ciFile quotedItem
-
-sendGroupChatItem :: ChatMonad m => User -> Group -> ChatMsgEvent -> CIContent 'MDSnd -> Maybe (CIFile 'MDSnd) -> Maybe (CIQuote 'CTGroup) -> m (ChatItem 'CTGroup 'MDSnd)
-sendGroupChatItem user (Group g ms) chatMsgEvent ciContent ciFile quotedItem = do
-  msg <- sendGroupMessage g ms chatMsgEvent
-  saveSndChatItem user (CDGroupSnd g) msg ciContent ciFile quotedItem
 
 saveSndChatItem :: ChatMonad m => User -> ChatDirection c 'MDSnd -> SndMessage -> CIContent 'MDSnd -> Maybe (CIFile 'MDSnd) -> Maybe (CIQuote c) -> m (ChatItem c 'MDSnd)
 saveSndChatItem user cd msg@SndMessage {sharedMsgId} content ciFile quotedItem = do
