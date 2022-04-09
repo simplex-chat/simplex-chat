@@ -243,7 +243,7 @@ testDirectMessageDelete =
       alice #$> ("/_get chat @2 count=100", chat, [])
 
       alice #$> ("/_update item @2 1 text updating deleted message", id, "cannot update this item")
-      alice #$> ("/_send_quote @2 1 text quoting deleted message", id, "cannot reply to this message")
+      alice #$> ("/_send @2 quotedItemId 1 text quoting deleted message", id, "cannot reply to this message")
 
       bob #$> ("/_update item @2 2 text hey alice", id, "message updated")
       alice <# "bob> [edited] hey alice"
@@ -833,7 +833,7 @@ testGroupMessageDelete =
       cath #$> ("/_get chat #1 count=100", chat, [(0, "hello!")])
 
       alice #$> ("/_update item #1 1 text updating deleted message", id, "cannot update this item")
-      alice #$> ("/_send_quote #1 1 text quoting deleted message", id, "cannot reply to this message")
+      alice #$> ("/_send #1 quotedItemId 1 text quoting deleted message", id, "cannot reply to this message")
 
       threadDelay 1000000
       -- msg id 2
