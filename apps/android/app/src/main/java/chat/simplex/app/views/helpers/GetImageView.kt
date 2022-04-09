@@ -61,7 +61,7 @@ private fun scaleBitmap(bitmap: Bitmap, maxWidth: Int): Bitmap {
 }
 
 private fun getImageStringLength(im: Bitmap): Int {
-  val imageString = bitmapImageToBase64String(im.copy(im.config, false))
+  val imageString = bitmapImageToBase64String(im)
   return imageString.length
 }
 
