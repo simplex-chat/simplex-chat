@@ -655,14 +655,14 @@ acceptContactRequest User {userId, profile} UserContactRequest {agentInvitationI
   withStore $ \st -> createAcceptedContact st userId connId cName profileId p xContactId
 
 acceptFileReceive :: forall m. ChatMonad m => User -> RcvFileTransfer -> Maybe FilePath -> m FilePath
-acceptFileReceive user@User {userId} RcvFileTransfer {fileId, fileInvitation = FileInvitation {fileName, fileConnReq}, fileStatus, senderDisplayName, grpMemberId} filePath_ = do
-  unless (fileStatus == RFSNew) . throwChatError $ CEFileAlreadyReceiving fileName
+acceptFileReceive user@User {userId} RcvFileTransfer {fileId, fileInvitation = FileInvitation {fileName = fName, fileConnReq}, fileStatus, senderDisplayName, grpMemberId} filePath_ = do
+  unless (fileStatus == RFSNew) . throwChatError $ CEFileAlreadyReceiving fName
   case fileConnReq of
     -- old file protocol
     Just connReq ->
-      tryError (withAgent $ \a -> joinConnection a connReq . directMessage $ XFileAcpt fileName) >>= \case
+      tryError (withAgent $ \a -> joinConnection a connReq . directMessage $ XFileAcpt fName) >>= \case
         Right agentConnId -> do
-          filePath <- getRcvFilePath filePath_ fileName
+          filePath <- getRcvFilePath filePath_ fName
           withStore $ \st -> acceptRcvFileTransfer st userId fileId agentConnId filePath
           pure filePath
         Left e -> throwError e
@@ -671,34 +671,34 @@ acceptFileReceive user@User {userId} RcvFileTransfer {fileId, fileInvitation = F
       case grpMemberId of
         Nothing -> do
           ct <- withStore $ \st -> getContactByName st userId senderDisplayName
-          acceptFileV2 $ \sharedMsgId fileInvConnReq -> sendDirectContactMessage ct $ XFileAcptInv sharedMsgId fileInvConnReq fileName
+          acceptFileV2 $ \sharedMsgId fileInvConnReq -> sendDirectContactMessage ct $ XFileAcptInv sharedMsgId fileInvConnReq fName
         Just memId -> do
           (GroupInfo {groupId}, GroupMember {activeConn}) <- withStore $ \st -> getGroupAndMember st user memId
           case activeConn of
             Just conn ->
-              acceptFileV2 $ \sharedMsgId fileInvConnReq -> sendDirectMessage conn (XFileAcptInv sharedMsgId fileInvConnReq fileName) (GroupId groupId)
+              acceptFileV2 $ \sharedMsgId fileInvConnReq -> sendDirectMessage conn (XFileAcptInv sharedMsgId fileInvConnReq fName) (GroupId groupId)
             _ -> throwChatError $ CEFileInternal "member connection not active" -- should not happen
       where
         acceptFileV2 :: (SharedMsgId -> ConnReqInvitation -> m SndMessage) -> m FilePath
         acceptFileV2 sendXFileAcptInv = do
           sharedMsgId <- withStore $ \st -> getSharedMsgIdByFileId st userId fileId
           (agentConnId, fileInvConnReq) <- withAgent (`createConnection` SCMInvitation)
-          filePath <- getRcvFilePath filePath_ fileName
+          filePath <- getRcvFilePath filePath_ fName
           withStore $ \st -> acceptRcvFileTransfer st userId fileId agentConnId filePath
           void $ sendXFileAcptInv sharedMsgId fileInvConnReq
           pure filePath
   where
     getRcvFilePath :: Maybe FilePath -> String -> m FilePath
-    getRcvFilePath fPath_ fName = case fPath_ of
+    getRcvFilePath fPath_ fn = case fPath_ of
       Nothing -> do
         dir <- (`combine` "Downloads") <$> getHomeDirectory
         ifM (doesDirectoryExist dir) (pure dir) getTemporaryDirectory
-          >>= uniqueCombine
+          >>= (`uniqueCombine` fn)
           >>= createEmptyFile
       Just fPath ->
         ifM
           (doesDirectoryExist fPath)
-          (uniqueCombine fPath >>= createEmptyFile)
+          (fPath `uniqueCombine` fn >>= createEmptyFile)
           $ ifM
             (doesFileExist fPath)
             (throwChatError $ CEFileAlreadyExists fPath)
@@ -711,11 +711,11 @@ acceptFileReceive user@User {userId} RcvFileTransfer {fileId, fileInvitation = F
           h <- getFileHandle fileId fPath rcvFiles AppendMode
           liftIO $ B.hPut h "" >> hFlush h
           pure fPath
-        uniqueCombine :: FilePath -> m FilePath
-        uniqueCombine filePath = tryCombine (0 :: Int)
+        uniqueCombine :: FilePath -> String -> m FilePath
+        uniqueCombine filePath fileName = tryCombine (0 :: Int)
           where
             tryCombine n =
-              let (name, ext) = splitExtensions fName
+              let (name, ext) = splitExtensions fileName
                   suffix = if n == 0 then "" else "_" <> show n
                   f = filePath `combine` (name <> suffix <> ext)
                in ifM (doesFileExist f) (tryCombine $ n + 1) (pure f)
