@@ -766,10 +766,10 @@ object MsgContentSerializer : KSerializer<MsgContent> {
         val text = json["text"]?.jsonPrimitive?.content ?: "unknown message format"
         when (t) {
           "text" -> MsgContent.MCText(text)
-//          "preview" -> {
-//            val preview = json["preview"] // TODO custom parsing look up KSerializer docs
-//            MsgContent.MCLink(text, preview)
-//          }
+          "preview" -> {
+            val preview = Json.decodeFromString<LinkPreview>(json["preview"].toString())
+            MsgContent.MCLink(text, preview)
+          }
           else -> MsgContent.MCUnknown(t, text, json)
         }
       } else {

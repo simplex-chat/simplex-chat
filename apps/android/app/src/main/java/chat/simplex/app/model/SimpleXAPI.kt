@@ -597,7 +597,7 @@ sealed class CR {
   @Serializable @SerialName("contactDeleted") class ContactDeleted(val contact: Contact): CR()
   @Serializable @SerialName("userProfileNoChange") class UserProfileNoChange: CR()
   @Serializable @SerialName("userProfileUpdated") class UserProfileUpdated(val fromProfile: Profile, val toProfile: Profile): CR()
-  @Serializable @SerialName("parsedMarkdown") class ParsedMarkdown(val formattedText: List<FormattedText>?): CR()
+  @Serializable @SerialName("apiParsedMarkdown") class ParsedMarkdown(val formattedText: List<FormattedText>? = null): CR()
   @Serializable @SerialName("userContactLink") class UserContactLink(val connReqContact: String): CR()
   @Serializable @SerialName("userContactLinkCreated") class UserContactLinkCreated(val connReqContact: String): CR()
   @Serializable @SerialName("userContactLinkDeleted") class UserContactLinkDeleted: CR()
