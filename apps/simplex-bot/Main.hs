@@ -5,6 +5,7 @@ module Main where
 import Simplex.Chat
 import Simplex.Chat.Bot
 import Simplex.Chat.Controller (versionNumber)
+import Simplex.Chat.Core
 import Simplex.Chat.Options
 import System.Directory (getAppUserDataDirectory)
 import Text.Read
@@ -12,7 +13,7 @@ import Text.Read
 main :: IO ()
 main = do
   opts <- welcomeGetOpts
-  simplexChatBot defaultChatConfig opts $
+  simplexChatCore defaultChatConfig opts Nothing $
     chatBotRepl "Hello! I am a simple squaring bot - if you send me a number, I will calculate its square" $ \msg ->
       case readMaybe msg :: Maybe Integer of
         Just n -> msg <> " * " <> msg <> " = " <> show (n * n)

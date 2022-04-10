@@ -100,10 +100,11 @@ defaultSMPServers =
 logCfg :: LogConfig
 logCfg = LogConfig {lc_file = Nothing, lc_stderr = True}
 
-newChatController :: SQLiteStore -> Maybe User -> ChatConfig -> ChatOpts -> (Notification -> IO ()) -> IO ChatController
-newChatController chatStore user cfg@ChatConfig {agentConfig = aCfg, tbqSize} ChatOpts {dbFilePrefix, smpServers, logConnections} sendNotification = do
+newChatController :: SQLiteStore -> Maybe User -> ChatConfig -> ChatOpts -> Maybe (Notification -> IO ()) -> IO ChatController
+newChatController chatStore user cfg@ChatConfig {agentConfig = aCfg, tbqSize} ChatOpts {dbFilePrefix, smpServers, logConnections} sendToast = do
   let f = chatStoreFile dbFilePrefix
-  let config = cfg {subscriptionEvents = logConnections}
+      config = cfg {subscriptionEvents = logConnections}
+      sendNotification = fromMaybe (const $ pure ()) sendToast
   activeTo <- newTVarIO ActiveNone
   firstTime <- not <$> doesFileExist f
   currentUser <- newTVarIO user
