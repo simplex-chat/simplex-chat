@@ -806,7 +806,7 @@ subscribeUserConnections user@User {userId} = do
       withAgent $ \a ->
         pooledForConcurrentlyN_ n conns $ \c -> subscribeConnection a (aConnId c)
 
-processAgentMessage :: forall m. (ChatMonad m) => Maybe User -> ConnId -> ACommand 'Agent -> m ()
+processAgentMessage :: forall m. ChatMonad m => Maybe User -> ConnId -> ACommand 'Agent -> m ()
 processAgentMessage Nothing _ _ = throwChatError CENoActiveUser
 processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage =
   (withStore (\st -> getConnectionEntity st user agentConnId) >>= updateConnStatus) >>= \case
