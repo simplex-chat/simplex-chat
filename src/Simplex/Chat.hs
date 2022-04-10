@@ -654,15 +654,6 @@ processChatCommand = \case
       let s = connStatus $ activeConn (ct :: Contact)
        in s == ConnReady || s == ConnSndReady
 
--- linkFileToChatItem :: ChatMonad m => Maybe (CIFile d) -> ChatItem c d -> m ()
--- linkFileToChatItem (Just CIFile {fileId}) ci = withStore $ \st -> updateFileTransferChatItemId st fileId $ chatItemId' ci
--- linkFileToChatItem _ _ = pure ()
-
-acceptContactRequest :: ChatMonad m => User -> UserContactRequest -> m Contact
-acceptContactRequest User {userId, profile} UserContactRequest {agentInvitationId = AgentInvId invId, localDisplayName = cName, profileId, profile = p, xContactId} = do
-  connId <- withAgent $ \a -> acceptContact a invId . directMessage $ XInfo profile
-  withStore $ \st -> createAcceptedContact st userId connId cName profileId p xContactId
-
 acceptFileReceive :: forall m. ChatMonad m => User -> RcvFileTransfer -> Maybe FilePath -> m FilePath
 acceptFileReceive user@User {userId} RcvFileTransfer {fileId, fileInvitation = FileInvitation {fileName = fName, fileConnReq}, fileStatus, senderDisplayName, grpMemberId} filePath_ = do
   unless (fileStatus == RFSNew) . throwChatError $ CEFileAlreadyReceiving fName
@@ -728,6 +719,11 @@ acceptFileReceive user@User {userId} RcvFileTransfer {fileId, fileInvitation = F
                   suffix = if n == 0 then "" else "_" <> show n
                   f = filePath `combine` (name <> suffix <> ext)
                in ifM (doesFileExist f) (tryCombine $ n + 1) (pure f)
+
+acceptContactRequest :: ChatMonad m => User -> UserContactRequest -> m Contact
+acceptContactRequest User {userId, profile} UserContactRequest {agentInvitationId = AgentInvId invId, localDisplayName = cName, profileId, profile = p, xContactId} = do
+  connId <- withAgent $ \a -> acceptContact a invId . directMessage $ XInfo profile
+  withStore $ \st -> createAcceptedContact st userId connId cName profileId p xContactId
 
 agentSubscriber :: (MonadUnliftIO m, MonadReader ChatController m) => User -> m ()
 agentSubscriber user = do
