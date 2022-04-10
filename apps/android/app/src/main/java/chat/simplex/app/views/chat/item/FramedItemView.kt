@@ -15,7 +15,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.SimpleXTheme
-import chat.simplex.app.views.helpers.ChatItemLinkPreview
+import chat.simplex.app.views.helpers.ChatItemLinkView
 import kotlinx.datetime.Clock
 
 val SentColorLight = Color(0x1E45B8FF)
@@ -46,8 +46,8 @@ fun FramedItemView(user: User, ci: ChatItem, uriHandler: UriHandler? = null, sho
             )
           }
         }
-        Box(Modifier.padding(vertical = 6.dp, horizontal = 12.dp)) {
-          if (ci.formattedText == null && isShortEmoji(ci.content.text)) {
+        if (ci.formattedText == null && isShortEmoji(ci.content.text)) {
+          Box(Modifier.padding(vertical = 6.dp, horizontal = 12.dp)) {
             Column(
               Modifier
                 .padding(bottom = 2.dp)
@@ -57,15 +57,19 @@ fun FramedItemView(user: User, ci: ChatItem, uriHandler: UriHandler? = null, sho
               EmojiText(ci.content.text)
               Text("")
             }
-          } else {
-            if (ci.content.msgContent is MsgContent.MCLink) {
-              val linkContent = (ci.content.msgContent as MsgContent.MCLink)
-              ChatItemLinkPreview(metadata = linkContent.linkPreview)
+          }
+        } else {
+          Column(Modifier.fillMaxWidth()) {
+            val mc = ci.content.msgContent
+            if (mc is MsgContent.MCLink) {
+              ChatItemLinkView(mc.preview)
             }
-            MarkdownText(
-              ci.content, ci.formattedText, if (showMember) ci.memberDisplayName else null,
-              metaText = ci.timestampText, edited = ci.meta.itemEdited, uriHandler = uriHandler, senderBold = true
-            )
+            Box(Modifier.padding(vertical = 6.dp, horizontal = 12.dp)) {
+              MarkdownText(
+                ci.content, ci.formattedText, if (showMember) ci.memberDisplayName else null,
+                metaText = ci.timestampText, edited = ci.meta.itemEdited, uriHandler = uriHandler, senderBold = true
+              )
+            }
           }
         }
       }

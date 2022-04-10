@@ -461,7 +461,7 @@ class GroupMember (
 class LinkPreview (
   val uri: String,
   val title: String,
-  val description: String = "", // TODO remove default once optional in haskell
+  val description: String,
   val image: String
 ) {
   companion object {
@@ -738,17 +738,23 @@ class CIQuote (
   }
 }
 
+@Suppress("SERIALIZER_TYPE_INCOMPATIBLE")
 @Serializable(with = MsgContentSerializer::class)
 sealed class MsgContent {
   abstract val text: String
 
+  @Serializable(with = MsgContentSerializer::class)
   class MCText(override val text: String): MsgContent()
-  class MCLink(override val text: String, val linkPreview: LinkPreview): MsgContent()
+
+  @Serializable(with = MsgContentSerializer::class)
+  class MCLink(override val text: String, val preview: LinkPreview): MsgContent()
+
+  @Serializable(with = MsgContentSerializer::class)
   class MCUnknown(val type: String? = null, override val text: String, val json: JsonElement): MsgContent()
 
   val cmdString: String get() = when (this) {
     is MCText -> "text $text"
-    is MCLink -> "json {\"type\":\"link\",\"text\":${json.encodeToString(text)},\"preview\":${json.encodeToString(linkPreview)}}"
+    is MCLink -> "json ${json.encodeToString(this)}"
     is MCUnknown -> "json $json"
   }
 }
@@ -775,7 +781,7 @@ object MsgContentSerializer : KSerializer<MsgContent> {
         val text = json["text"]?.jsonPrimitive?.content ?: "unknown message format"
         when (t) {
           "text" -> MsgContent.MCText(text)
-          "preview" -> {
+          "link" -> {
             val preview = Json.decodeFromString<LinkPreview>(json["preview"].toString())
             MsgContent.MCLink(text, preview)
           }
@@ -798,10 +804,10 @@ object MsgContentSerializer : KSerializer<MsgContent> {
           put("text", value.text)
         }
       is MsgContent.MCLink ->
-        // TODO update
         buildJsonObject {
-          put("type", "text")
+          put("type", "link")
           put("text", value.text)
+          put("preview", json.encodeToJsonElement(value.preview))
         }
       is MsgContent.MCUnknown -> value.json
     }

@@ -2,8 +2,8 @@ package chat.simplex.app.views.helpers
 
 import android.content.res.Configuration
 import android.graphics.BitmapFactory
-import android.text.Layout
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
@@ -12,11 +12,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import chat.simplex.app.model.LinkPreview
+import chat.simplex.app.ui.theme.HighOrLowlight
 import chat.simplex.app.ui.theme.SimpleXTheme
+import chat.simplex.app.views.chat.item.SentColorLight
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.jsoup.Jsoup
@@ -37,14 +41,14 @@ suspend fun getLinkPreview(url: String): LinkPreview? {
       if (imageUri != null) {
         try {
           val stream = java.net.URL(imageUri).openStream()
-          val image = BitmapFactory.decodeStream(stream)
-          val encodedImage = bitmapToBase64(image, maxStringLength = 14000)
-          val description = ogTags.firstOrNull {
-            it.attr("property") == "og:description"
-          }?.attr("content") ?: ""
+          val image = resizeImageToDataSize(BitmapFactory.decodeStream(stream), maxDataSize = 14000)
+//          TODO add once supported in iOS
+//          val description = ogTags.firstOrNull {
+//            it.attr("property") == "og:description"
+//          }?.attr("content") ?: ""
           val title = ogTags.firstOrNull { it.attr("property") == "og:title" }?.attr("content")
           if (title != null) {
-            return@withContext LinkPreview(url, title, description, encodedImage)
+            return@withContext LinkPreview(url, title, description = "", image)
           }
         } catch (e: Exception) {
           e.printStackTrace()
@@ -60,49 +64,51 @@ suspend fun getLinkPreview(url: String): LinkPreview? {
 
 
 @Composable
-fun ComposeLinkPreview(metadata: LinkPreview, cancelPreview: () -> Unit) {
-  Row(verticalAlignment = Alignment.CenterVertically) {
-    val imageBitmap = base64ToBitmap(metadata.image).asImageBitmap()
+fun ComposeLinkView(linkPreview: LinkPreview, cancelPreview: () -> Unit) {
+  Row(
+    Modifier.fillMaxWidth().padding(top = 8.dp).background(SentColorLight),
+    verticalAlignment = Alignment.CenterVertically
+  ) {
+    val imageBitmap = base64ToBitmap(linkPreview.image).asImageBitmap()
     Image(
       imageBitmap,
       "preview image",
+      modifier = Modifier.width(80.dp).height(60.dp).padding(end = 8.dp)
     )
-    Column {
-      Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-        Text(metadata.title)
-        IconButton(onClick = cancelPreview, modifier = Modifier.padding(0.dp)) {
-          Icon(
-            Icons.Outlined.Close,
-            contentDescription = "Cancel Preview",
-            tint = MaterialTheme.colors.primary,
-          )
-
-        }
-      }
-      Text(metadata.description, maxLines = 1, overflow = TextOverflow.Ellipsis)
+    Column(Modifier.fillMaxWidth().weight(1F)) {
+      Text(linkPreview.title, maxLines = 1, overflow = TextOverflow.Ellipsis)
       Text(
-        metadata.uri,
-        style = MaterialTheme.typography.subtitle2.copy(color = MaterialTheme.colors.secondaryVariant)
+        linkPreview.uri, maxLines = 1, overflow = TextOverflow.Ellipsis,
+        style = MaterialTheme.typography.body2
+      )
+    }
+    IconButton(onClick = cancelPreview, modifier = Modifier.padding(0.dp)) {
+      Icon(
+        Icons.Outlined.Close,
+        contentDescription = "Cancel Preview",
+        tint = MaterialTheme.colors.primary,
+        modifier = Modifier.padding(10.dp)
       )
     }
   }
 }
 
 @Composable
-fun ChatItemLinkPreview(metadata: LinkPreview) {
+fun ChatItemLinkView(linkPreview: LinkPreview) {
   Column {
-    val imageBitmap = base64ToBitmap(metadata.image).asImageBitmap()
     Image(
-      imageBitmap,
-      "preview image",
-      modifier = Modifier.fillMaxWidth()
+      base64ToBitmap(linkPreview.image).asImageBitmap(),
+      "link image",
+      modifier = Modifier.fillMaxWidth(),
+      contentScale = ContentScale.FillWidth,
     )
-    Text(metadata.title)
-    Text(metadata.description, maxLines = 1, overflow = TextOverflow.Ellipsis)
-    Text(
-      metadata.uri,
-      style = MaterialTheme.typography.subtitle2.copy(color = MaterialTheme.colors.secondaryVariant)
-    )
+    Column(Modifier.padding(top = 6.dp).padding(horizontal = 12.dp)) {
+      Text(linkPreview.title, maxLines = 3, overflow = TextOverflow.Ellipsis, lineHeight = 22.sp, modifier = Modifier.padding(bottom = 4.dp))
+      if (linkPreview.description != "") {
+        Text(linkPreview.description, maxLines = 12, overflow = TextOverflow.Ellipsis, fontSize = 14.sp, lineHeight = 20.sp)
+      }
+      Text(linkPreview.uri, maxLines = 1, overflow = TextOverflow.Ellipsis, fontSize = 12.sp, color = HighOrLowlight)
+    }
   }
 }
 
@@ -111,12 +117,12 @@ fun ChatItemLinkPreview(metadata: LinkPreview) {
 @Preview(
   uiMode = Configuration.UI_MODE_NIGHT_YES,
   showBackground = true,
-  name = "Chat Item Link Preview (Dark Mode)"
+  name = "ChatItemLinkView (Dark Mode)"
 )
 @Composable
-fun PreviewChatItemLinkPreview() {
+fun PreviewChatItemLinkView() {
   SimpleXTheme {
-    ChatItemLinkPreview(LinkPreview.sampleData)
+    ChatItemLinkView(LinkPreview.sampleData)
   }
 }
 
@@ -124,11 +130,11 @@ fun PreviewChatItemLinkPreview() {
 @Preview(
   uiMode = Configuration.UI_MODE_NIGHT_YES,
   showBackground = true,
-  name = "Compose Link Preview (Dark Mode)"
+  name = "ComposeLinkView (Dark Mode)"
 )
 @Composable
-fun PreviewComposeLinkPreview() {
+fun PreviewComposeLinkView() {
   SimpleXTheme {
-    ComposeLinkPreview(LinkPreview.sampleData) { -> }
+    ComposeLinkView(LinkPreview.sampleData) { -> }
   }
 }

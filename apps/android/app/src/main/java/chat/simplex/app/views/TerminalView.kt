@@ -47,8 +47,8 @@ fun TerminalLayout(terminalItems: List<TerminalItem>, close: () -> Unit, sendCom
         SendMsgView(
           msg = remember { mutableStateOf("") },
           linkPreview = remember { mutableStateOf(null) },
-          cancelledLinks = mutableSetOf(),
-          parseMessage = { null },
+          cancelledLinks = remember { mutableSetOf() },
+          parseMarkdown = { null },
           sendMessage = sendCommand
         )
       },

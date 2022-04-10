@@ -49,53 +49,24 @@ private fun cropToSquare(image: Bitmap): Bitmap {
   return Bitmap.createBitmap(image, xOffset, yOffset, side, side)
 }
 
-private fun scaleBitmap(bitmap: Bitmap, maxWidth: Int): Bitmap {
-  var image = bitmap
-  var height = bitmap.height * maxWidth / bitmap.width
-
-  while (image.width / 2 > maxWidth) {
-    image = Bitmap.createScaledBitmap(image, image.width / 2, image.height / 2, true)
+fun resizeImageToDataSize(image: Bitmap, maxDataSize: Int): String {
+  var img = image
+  var str = compressImage(img)
+  while (str.length > maxDataSize) {
+    val ratio = sqrt(str.length.toDouble() / maxDataSize.toDouble())
+    val clippedRatio = min(ratio, 2.0)
+    val width = (img.width.toDouble() / clippedRatio).toInt()
+    val height = img.height * width / img.width
+    img = Bitmap.createScaledBitmap(img, width, height, true)
+    str = compressImage(img)
   }
-  image = Bitmap.createScaledBitmap(image, maxWidth, height, true)
-  return image
+  return str
 }
 
-private fun getImageStringLength(im: Bitmap): Int {
-  val imageString = bitmapImageToBase64String(im)
-  return imageString.length
-}
-
-fun compressImageForBase64(image: Bitmap, maxStringLength: Int): Bitmap {
-  var outImage = image
-  var targetWidth: Int
-  var ratio = 1.0
-  var clippedRatio: Double
-  var dataSize = getImageStringLength(outImage)
-  while (dataSize > maxStringLength) {
-    ratio *= sqrt((dataSize.toDouble() / maxStringLength.toDouble()))
-    clippedRatio = min(ratio, 1.5)
-    targetWidth = (outImage.width.toDouble() / clippedRatio).toInt()
-    outImage = scaleBitmap(outImage, targetWidth)
-    dataSize = getImageStringLength(outImage)
-  }
-  return outImage
-}
-
-private fun bitmapImageToBase64String(bitmap: Bitmap): String {
+private fun compressImage(bitmap: Bitmap): String {
   val stream = ByteArrayOutputStream()
   bitmap.compress(Bitmap.CompressFormat.JPEG, 85, stream)
   return "data:image/jpg;base64," + Base64.encodeToString(stream.toByteArray(), Base64.NO_WRAP)
-}
-
-fun bitmapToBase64(bitmap: Bitmap, maxStringLength: Int? = 12500, squareCrop: Boolean = false): String {
-  var image = bitmap
-  if (squareCrop) {
-    image = cropToSquare(image)
-  }
-  if (maxStringLength != null) {
-    image = compressImageForBase64(image, maxStringLength)
-  }
-  return bitmapImageToBase64String(image)
 }
 
 fun base64ToBitmap(base64ImageString: String) : Bitmap {
@@ -163,12 +134,12 @@ fun GetImageBottomSheet(
     if (uri != null) {
       val source = ImageDecoder.createSource(context.contentResolver, uri)
       val bitmap = ImageDecoder.decodeBitmap(source)
-      profileImageStr.value = bitmapToBase64(bitmap, squareCrop = true)
+      profileImageStr.value = resizeImageToDataSize(cropToSquare(bitmap), maxDataSize = 12500)
     }
   }
 
   val cameraLauncher = rememberCameraLauncher { bitmap: Bitmap? ->
-    if (bitmap != null) profileImageStr.value = bitmapToBase64(bitmap, squareCrop = true)
+    if (bitmap != null) profileImageStr.value = resizeImageToDataSize(cropToSquare(bitmap), maxDataSize = 12500)
   }
 
   val permissionLauncher = rememberPermissionLauncher { isGranted: Boolean ->

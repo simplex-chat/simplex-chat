@@ -2,9 +2,8 @@ package chat.simplex.app.views.chat
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Modifier
 import chat.simplex.app.model.*
-import chat.simplex.app.views.helpers.ComposeLinkPreview
+import chat.simplex.app.views.helpers.ComposeLinkView
 
 // TODO ComposeState
 
@@ -18,7 +17,7 @@ fun ComposeView(
   resetMessage: () -> Unit,
   parseMarkdown: (String) -> List<FormattedText>?
 ) {
-  var cancelledLinks = mutableSetOf<String>()
+  val cancelledLinks = remember { mutableSetOf<String>() }
 
   fun cancelPreview() {
     val uri = linkPreview.value?.uri
@@ -28,27 +27,9 @@ fun ComposeView(
     linkPreview.value = null
   }
 
-  fun isValidLink(link: String): Boolean {
-    return !(link.startsWith("https://simplex.chat",true) || link.startsWith("http://simplex.chat", true))
-  }
-
-  fun parseMessage(msg: String): String? {
-    val parsedMsg = parseMarkdown(msg)
-    if (parsedMsg != null){
-      val link = parsedMsg.firstOrNull {
-          item -> (item.format is Format.Uri && (item.link != null) && !(cancelledLinks.contains(item.link)) && isValidLink(item.link))
-      }
-      return link?.link
-    }
-    return null
-  }
-
   Column {
-    when {
-      linkPreview.value != null -> {
-        ComposeLinkPreview(linkPreview.value!!) { cancelPreview() }
-      }
-    }
+    val lp = linkPreview.value
+    if (lp != null) ComposeLinkView(lp, ::cancelPreview)
     when {
       quotedItem.value != null -> {
         ContextItemView(quotedItem)
@@ -58,6 +39,6 @@ fun ComposeView(
       }
       else -> {}
     }
-    SendMsgView(msg, linkPreview, cancelledLinks, { text -> parseMessage(text) }, sendMessage, editing = editingItem.value != null)
+    SendMsgView(msg, linkPreview, cancelledLinks, parseMarkdown, sendMessage, editing = editingItem.value != null)
   }
 }
