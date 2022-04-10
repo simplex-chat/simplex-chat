@@ -3416,11 +3416,11 @@ toQuote (quotedItemId, quotedSharedMsgId, quotedSentAt, quotedMsgContent, _) dir
 toDirectChatItem :: TimeZone -> UTCTime -> ChatItemRow :. QuoteRow -> Either StoreError (CChatItem 'CTDirect)
 toDirectChatItem tz currentTs (((itemId, itemTs, itemContent, itemText, itemStatus, sharedMsgId, itemDeleted, itemEdited, createdAt) :. (fileId_, fileName_, fileSize_, filePath, fileStatus_)) :. quoteRow) =
   case (itemContent, itemStatus, fileStatus_) of
-    (ACIContent SMDSnd ciContent, ACIStatus SMDSnd ciStatus, Just (ACIFileStatus SMDSnd fileStatus)) ->
+    (ACIContent SMDSnd ciContent, ACIStatus SMDSnd ciStatus, Just (AFS SMDSnd fileStatus)) ->
       Right $ cItem SMDSnd CIDirectSnd ciStatus ciContent (maybeCIFile fileStatus)
     (ACIContent SMDSnd ciContent, ACIStatus SMDSnd ciStatus, Nothing) ->
       Right $ cItem SMDSnd CIDirectSnd ciStatus ciContent Nothing
-    (ACIContent SMDRcv ciContent, ACIStatus SMDRcv ciStatus, Just (ACIFileStatus SMDRcv fileStatus)) ->
+    (ACIContent SMDRcv ciContent, ACIStatus SMDRcv ciStatus, Just (AFS SMDRcv fileStatus)) ->
       Right $ cItem SMDRcv CIDirectRcv ciStatus ciContent (maybeCIFile fileStatus)
     (ACIContent SMDRcv ciContent, ACIStatus SMDRcv ciStatus, Nothing) ->
       Right $ cItem SMDRcv CIDirectRcv ciStatus ciContent Nothing
@@ -3460,11 +3460,11 @@ toGroupChatItem tz currentTs userContactId (((itemId, itemTs, itemContent, itemT
   let member_ = toMaybeGroupMember userContactId memberRow_
   let quotedMember_ = toMaybeGroupMember userContactId quotedMemberRow_
   case (itemContent, itemStatus, member_, fileStatus_) of
-    (ACIContent SMDSnd ciContent, ACIStatus SMDSnd ciStatus, _, Just (ACIFileStatus SMDSnd fileStatus)) ->
+    (ACIContent SMDSnd ciContent, ACIStatus SMDSnd ciStatus, _, Just (AFS SMDSnd fileStatus)) ->
       Right $ cItem SMDSnd CIGroupSnd ciStatus ciContent quotedMember_ (maybeCIFile fileStatus)
     (ACIContent SMDSnd ciContent, ACIStatus SMDSnd ciStatus, _, Nothing) ->
       Right $ cItem SMDSnd CIGroupSnd ciStatus ciContent quotedMember_ Nothing
-    (ACIContent SMDRcv ciContent, ACIStatus SMDRcv ciStatus, Just member, Just (ACIFileStatus SMDRcv fileStatus)) ->
+    (ACIContent SMDRcv ciContent, ACIStatus SMDRcv ciStatus, Just member, Just (AFS SMDRcv fileStatus)) ->
       Right $ cItem SMDRcv (CIGroupRcv member) ciStatus ciContent quotedMember_ (maybeCIFile fileStatus)
     (ACIContent SMDRcv ciContent, ACIStatus SMDRcv ciStatus, Just member, Nothing) ->
       Right $ cItem SMDRcv (CIGroupRcv member) ciStatus ciContent quotedMember_ Nothing

@@ -296,7 +296,7 @@ instance MsgDirectionI d => ToField (CIFileStatus d) where toField = toField . d
 
 instance FromField ACIFileStatus where fromField = fromTextField_ $ eitherToMaybe . strDecode . encodeUtf8
 
-data ACIFileStatus = forall d. MsgDirectionI d => ACIFileStatus (SMsgDirection d) (CIFileStatus d)
+data ACIFileStatus = forall d. MsgDirectionI d => AFS (SMsgDirection d) (CIFileStatus d)
 
 deriving instance Show ACIFileStatus
 
@@ -308,18 +308,18 @@ instance MsgDirectionI d => StrEncoding (CIFileStatus d) where
     CIFSRcvTransfer -> "rcv_transfer"
     CIFSRcvComplete -> "rcv_complete"
     CIFSRcvCancelled -> "rcv_cancelled"
-  strP = (\(ACIFileStatus _ st) -> checkDirection st) <$?> strP
+  strP = (\(AFS _ st) -> checkDirection st) <$?> strP
 
 instance StrEncoding ACIFileStatus where
-  strEncode (ACIFileStatus _ s) = strEncode s
+  strEncode (AFS _ s) = strEncode s
   strP =
     A.takeTill (== ' ') >>= \case
-      "snd_stored" -> pure $ ACIFileStatus SMDSnd CIFSSndStored
-      "snd_cancelled" -> pure $ ACIFileStatus SMDSnd CIFSSndCancelled
-      "rcv_invitation" -> pure $ ACIFileStatus SMDRcv CIFSRcvInvitation
-      "rcv_transfer" -> pure $ ACIFileStatus SMDRcv CIFSRcvTransfer
-      "rcv_complete" -> pure $ ACIFileStatus SMDRcv CIFSRcvComplete
-      "rcv_cancelled" -> pure $ ACIFileStatus SMDRcv CIFSRcvCancelled
+      "snd_stored" -> pure $ AFS SMDSnd CIFSSndStored
+      "snd_cancelled" -> pure $ AFS SMDSnd CIFSSndCancelled
+      "rcv_invitation" -> pure $ AFS SMDRcv CIFSRcvInvitation
+      "rcv_transfer" -> pure $ AFS SMDRcv CIFSRcvTransfer
+      "rcv_complete" -> pure $ AFS SMDRcv CIFSRcvComplete
+      "rcv_cancelled" -> pure $ AFS SMDRcv CIFSRcvCancelled
       _ -> fail "bad file status"
 
 data CIStatus (d :: MsgDirection) where
