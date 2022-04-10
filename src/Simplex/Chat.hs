@@ -537,7 +537,7 @@ processChatCommand = \case
     fileId <- withStore $ \st -> createSndGroupFileTransfer st userId gInfo ms f fileSize chSize
     let mc = MCText ""
     forM_ ms $ \(m, _, fileInvitation) ->
-      traverse (\conn -> sendDirectMessage conn (XMsgNew (MCSimple (ExtMsgContent mc (Just fileInvitation)))) (GroupId groupId)) $ memberConn m
+      traverse (\conn -> sendDirectMessage conn (XMsgNew . MCSimple . ExtMsgContent mc $ Just fileInvitation) (GroupId groupId)) $ memberConn m
     setActive $ ActiveG gName
     -- this is a hack as we have multiple direct messages instead of one per group
     let msg = SndMessage {msgId = 0, sharedMsgId = SharedMsgId "", msgBody = ""}
