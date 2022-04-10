@@ -51,5 +51,5 @@ mySquaringBot _user cc = do
           Just n -> msg <> " * " <> msg <> " = " <> show (n * n)
       _ -> pure ()
   where
-    sendMsg Contact {contactId} msg = runChatCmd cc $ "/_send @" <> show contactId <> " text " <> msg
+    sendMsg Contact {contactId} msg = sendChatCmd cc $ "/_send @" <> show contactId <> " text " <> msg
     contactConnected Contact {localDisplayName} = putStrLn $ T.unpack localDisplayName <> " connected"

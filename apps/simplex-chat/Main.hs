@@ -22,7 +22,7 @@ main = do
       t <- withTerminal pure
       simplexChatTerminal defaultChatConfig opts t
     else simplexChatCore defaultChatConfig opts Nothing $ \_ cc -> do
-      r <- runChatCmd cc chatCmd
+      r <- sendChatCmd cc chatCmd
       putStrLn $ serializeChatResponse r
       threadDelay $ chatCmdDelay opts * 1000000
 

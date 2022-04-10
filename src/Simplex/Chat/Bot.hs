@@ -13,7 +13,6 @@ import qualified Data.Text as T
 import Simplex.Chat.Controller
 import Simplex.Chat.Core
 import Simplex.Chat.Messages
-import Simplex.Chat.Options (ChatOpts (..))
 import Simplex.Chat.Store
 import Simplex.Chat.Types (Contact (..), User (..))
 import Simplex.Messaging.Encoding.String (strEncode)
@@ -33,20 +32,20 @@ chatBotRepl welcome answer _user cc = do
         void . sendMsg contact $ answer msg
       _ -> pure ()
   where
-    sendMsg Contact {contactId} msg = runChatCmd cc $ "/_send @" <> show contactId <> " text " <> msg
+    sendMsg Contact {contactId} msg = sendChatCmd cc $ "/_send @" <> show contactId <> " text " <> msg
     contactConnected Contact {localDisplayName} = putStrLn $ T.unpack localDisplayName <> " connected"
 
 initializeBotAddress :: ChatController -> IO ()
 initializeBotAddress cc = do
-  runChatCmd cc "/show_address" >>= \case
+  sendChatCmd cc "/show_address" >>= \case
     CRUserContactLink uri _ -> showBotAddress uri
     CRChatCmdError (ChatErrorStore SEUserContactLinkNotFound) -> do
       putStrLn $ "No bot address, creating..."
-      runChatCmd cc "/address" >>= \case
+      sendChatCmd cc "/address" >>= \case
         CRUserContactLinkCreated uri -> showBotAddress uri
         _ -> putStrLn "can't create bot address" >> exitFailure
     _ -> putStrLn "unexpected response" >> exitFailure
   where
     showBotAddress uri = do
       putStrLn $ "Bot's contact address is: " <> B.unpack (strEncode uri)
-      void $ runChatCmd cc "/auto_accept on"
+      void $ sendChatCmd cc "/auto_accept on"

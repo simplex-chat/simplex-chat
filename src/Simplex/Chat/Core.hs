@@ -16,7 +16,7 @@ import Simplex.Chat.Types
 import UnliftIO.Async
 
 simplexChatCore :: ChatConfig -> ChatOpts -> Maybe (Notification -> IO ()) -> (User -> ChatController -> IO ()) -> IO ()
-simplexChatCore cfg@ChatConfig {dbPoolSize, yesToMigrations} opts sendToast runChat
+simplexChatCore cfg@ChatConfig {dbPoolSize, yesToMigrations} opts sendToast chat
   | logAgent opts = do
     setLogLevel LogInfo -- LogError
     withGlobalLogging logCfg initRun
@@ -27,9 +27,13 @@ simplexChatCore cfg@ChatConfig {dbPoolSize, yesToMigrations} opts sendToast runC
       st <- createStore f dbPoolSize yesToMigrations
       u <- getCreateActiveUser st
       cc <- newChatController st (Just u) cfg opts $ fromMaybe (const $ pure ()) sendToast
-      a1 <- async $ runChat u cc
-      a2 <- runReaderT (startChatController u) cc
-      waitEither_ a1 a2
+      runSimplexChat u cc chat
 
-runChatCmd :: ChatController -> String -> IO ChatResponse
-runChatCmd cc s = runReaderT (execChatCommand . encodeUtf8 $ T.pack s) cc
+runSimplexChat :: User -> ChatController -> (User -> ChatController -> IO ()) -> IO ()
+runSimplexChat u cc chat = do
+  a1 <- async $ chat u cc
+  a2 <- runReaderT (startChatController u) cc
+  waitEither_ a1 a2
+
+sendChatCmd :: ChatController -> String -> IO ChatResponse
+sendChatCmd cc s = runReaderT (execChatCommand . encodeUtf8 $ T.pack s) cc

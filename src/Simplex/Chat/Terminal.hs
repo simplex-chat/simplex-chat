@@ -19,4 +19,7 @@ simplexChatTerminal cfg opts t = do
   simplexChatCore cfg opts (Just sendToast) $ \u cc -> do
     ct <- newChatTerminal t
     when (firstTime cc) . printToTerminal ct $ chatWelcome u
-    raceAny_ [runTerminalInput ct cc, runTerminalOutput ct cc, runInputLoop ct cc]
+    runChatTerminal ct cc
+
+runChatTerminal :: ChatTerminal -> ChatController -> IO ()
+runChatTerminal ct cc = raceAny_ [runTerminalInput ct cc, runTerminalOutput ct cc, runInputLoop ct cc]

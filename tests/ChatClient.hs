@@ -18,6 +18,7 @@ import qualified Data.Text as T
 import Network.Socket
 import Simplex.Chat
 import Simplex.Chat.Controller (ChatConfig (..), ChatController (..))
+import Simplex.Chat.Core
 import Simplex.Chat.Options
 import Simplex.Chat.Store
 import Simplex.Chat.Terminal
@@ -46,7 +47,9 @@ opts =
     { dbFilePrefix = undefined,
       smpServers = ["smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=@localhost:5001"],
       logConnections = False,
-      logAgent = False
+      logAgent = False,
+      chatCmd = "",
+      chatCmdDelay = 3
     }
 
 termSettings :: VirtualTerminalSettings
@@ -84,7 +87,7 @@ virtualSimplexChat dbFilePrefix profile = do
   t <- withVirtualTerminal termSettings pure
   ct <- newChatTerminal t
   cc <- newChatController st (Just user) cfg opts {dbFilePrefix} (const $ pure ()) -- no notifications
-  chatAsync <- async $ runSimplexChat user ct cc
+  chatAsync <- async . runSimplexChat user cc . const $ runChatTerminal ct
   termQ <- newTQueueIO
   termAsync <- async $ readTerminalOutput t termQ
   pure TestCC {chatController = cc, virtualTerminal = t, chatAsync, termAsync, termQ}
