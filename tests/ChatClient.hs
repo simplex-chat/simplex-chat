@@ -125,6 +125,7 @@ testChatN ps test = withTmpFiles $ do
   test tcs
   concurrentlyN_ $ map (<// 100000) tcs
   where
+    getTestCCs :: [(Profile, FilePath)] -> [TestCC] -> IO [TestCC]
     getTestCCs [] tcs = pure tcs
     getTestCCs ((p, db) : envs') tcs = (:) <$> virtualSimplexChat db p <*> getTestCCs envs' tcs
 

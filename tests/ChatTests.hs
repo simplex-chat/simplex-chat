@@ -63,6 +63,12 @@ chatTests = do
     it "sender cancelled file transfer" testFileSndCancelV2
     it "recipient cancelled file transfer" testFileRcvCancelV2
     it "send and receive file to group" testGroupFileTransferV2
+  describe "messages with files" $ do
+    it "send and receive message with file" testMessageWithFile
+    it "send and receive image" testSendImage
+    it "send and receive image with text and quote" testSendImageWithTextAndQuote
+    it "send and receive image to group" testGroupSendImage
+    it "send and receive image with text and quote to group" testGroupSendImageWithTextAndQuote
   describe "user contact link" $ do
     it "create and connect via contact link" testUserContactLink
     it "auto accept contact requests" testUserContactLinkAutoAccept
@@ -239,7 +245,7 @@ testDirectMessageDelete =
       alice #$> ("/_get chat @2 count=100", chat, [])
 
       alice #$> ("/_update item @2 1 text updating deleted message", id, "cannot update this item")
-      alice #$> ("/_send_quote @2 1 text quoting deleted message", id, "cannot reply to this message")
+      alice #$> ("/_send @2 quoted 1 text quoting deleted message", id, "cannot reply to this message")
 
       bob #$> ("/_update item @2 2 text hey alice", id, "message updated")
       alice <# "bob> [edited] hey alice"
@@ -829,7 +835,7 @@ testGroupMessageDelete =
       cath #$> ("/_get chat #1 count=100", chat, [(0, "hello!")])
 
       alice #$> ("/_update item #1 1 text updating deleted message", id, "cannot update this item")
-      alice #$> ("/_send_quote #1 1 text quoting deleted message", id, "cannot reply to this message")
+      alice #$> ("/_send #1 quoted 1 text quoting deleted message", id, "cannot reply to this message")
 
       threadDelay 1000000
       -- msg id 2
@@ -1206,6 +1212,192 @@ testGroupFileTransferV2 =
             cath <## "completed receiving file 1 (test.jpg) from alice"
         ]
 
+testMessageWithFile :: IO ()
+testMessageWithFile =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+      alice ##> "/_send @2 file ./tests/fixtures/test.jpg text hi, sending a file"
+      alice <# "@bob hi, sending a file"
+      alice <# "/f @bob ./tests/fixtures/test.jpg"
+      alice <## "use /fc 1 to cancel sending"
+      bob <# "alice> hi, sending a file"
+      bob <# "alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
+      bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+      bob ##> "/fr 1 ./tests/tmp"
+      bob <## "saving file 1 from alice to ./tests/tmp/test.jpg"
+      concurrently_
+        (bob <## "started receiving file 1 (test.jpg) from alice")
+        (alice <## "started sending file 1 (test.jpg) to bob")
+      concurrently_
+        (bob <## "completed receiving file 1 (test.jpg) from alice")
+        (alice <## "completed sending file 1 (test.jpg) to bob")
+      src <- B.readFile "./tests/fixtures/test.jpg"
+      dest <- B.readFile "./tests/tmp/test.jpg"
+      dest `shouldBe` src
+      alice #$> ("/_get chat @2 count=100", chatF, [((1, "hi, sending a file"), Just "./tests/fixtures/test.jpg")])
+      bob #$> ("/_get chat @2 count=100", chatF, [((0, "hi, sending a file"), Just "./tests/tmp/test.jpg")])
+
+testSendImage :: IO ()
+testSendImage =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+      alice ##> "/_send @2 file ./tests/fixtures/test.jpg json {\"text\":\"\",\"type\":\"image\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\"}"
+      alice <# "/f @bob ./tests/fixtures/test.jpg"
+      alice <## "use /fc 1 to cancel sending"
+      bob <# "alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
+      bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+      bob ##> "/fr 1 ./tests/tmp"
+      bob <## "saving file 1 from alice to ./tests/tmp/test.jpg"
+      concurrently_
+        (bob <## "started receiving file 1 (test.jpg) from alice")
+        (alice <## "started sending file 1 (test.jpg) to bob")
+      concurrently_
+        (bob <## "completed receiving file 1 (test.jpg) from alice")
+        (alice <## "completed sending file 1 (test.jpg) to bob")
+      src <- B.readFile "./tests/fixtures/test.jpg"
+      dest <- B.readFile "./tests/tmp/test.jpg"
+      dest `shouldBe` src
+      alice #$> ("/_get chat @2 count=100", chatF, [((1, ""), Just "./tests/fixtures/test.jpg")])
+      bob #$> ("/_get chat @2 count=100", chatF, [((0, ""), Just "./tests/tmp/test.jpg")])
+
+testSendImageWithTextAndQuote :: IO ()
+testSendImageWithTextAndQuote =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+      bob #> "@alice hi alice"
+      alice <# "bob> hi alice"
+      alice ##> "/_send @2 file ./tests/fixtures/test.jpg quoted 1 json {\"text\":\"hey bob\",\"type\":\"image\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\"}"
+      alice <# "@bob > hi alice"
+      alice <## "      hey bob"
+      alice <# "/f @bob ./tests/fixtures/test.jpg"
+      alice <## "use /fc 1 to cancel sending"
+      bob <# "alice> > hi alice"
+      bob <## "      hey bob"
+      bob <# "alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
+      bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+      bob ##> "/fr 1 ./tests/tmp"
+      bob <## "saving file 1 from alice to ./tests/tmp/test.jpg"
+      concurrently_
+        (bob <## "started receiving file 1 (test.jpg) from alice")
+        (alice <## "started sending file 1 (test.jpg) to bob")
+      concurrently_
+        (bob <## "completed receiving file 1 (test.jpg) from alice")
+        (alice <## "completed sending file 1 (test.jpg) to bob")
+      src <- B.readFile "./tests/fixtures/test.jpg"
+      dest <- B.readFile "./tests/tmp/test.jpg"
+      dest `shouldBe` src
+      alice #$> ("/_get chat @2 count=100", chat'', [((0, "hi alice"), Nothing, Nothing), ((1, "hey bob"), Just (0, "hi alice"), Just "./tests/fixtures/test.jpg")])
+      alice #$$> ("/_get chats", [("@bob", "hey bob")])
+      bob #$> ("/_get chat @2 count=100", chat'', [((1, "hi alice"), Nothing, Nothing), ((0, "hey bob"), Just (1, "hi alice"), Just "./tests/tmp/test.jpg")])
+      bob #$$> ("/_get chats", [("@alice", "hey bob")])
+
+testGroupSendImage :: IO ()
+testGroupSendImage =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+      alice ##> "/_send #1 file ./tests/fixtures/test.jpg json {\"text\":\"\",\"type\":\"image\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\"}"
+      alice <# "/f #team ./tests/fixtures/test.jpg"
+      alice <## "use /fc 1 to cancel sending"
+      concurrentlyN_
+        [ do
+            bob <# "#team alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
+            bob <## "use /fr 1 [<dir>/ | <path>] to receive it",
+          do
+            cath <# "#team alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
+            cath <## "use /fr 1 [<dir>/ | <path>] to receive it"
+        ]
+      bob ##> "/fr 1 ./tests/tmp/"
+      bob <## "saving file 1 from alice to ./tests/tmp/test.jpg"
+      concurrentlyN_
+        [ do
+            alice <## "started sending file 1 (test.jpg) to bob"
+            alice <## "completed sending file 1 (test.jpg) to bob",
+          do
+            bob <## "started receiving file 1 (test.jpg) from alice"
+            bob <## "completed receiving file 1 (test.jpg) from alice"
+        ]
+      cath ##> "/fr 1 ./tests/tmp/"
+      cath <## "saving file 1 from alice to ./tests/tmp/test_1.jpg"
+      concurrentlyN_
+        [ do
+            alice <## "started sending file 1 (test.jpg) to cath"
+            alice <## "completed sending file 1 (test.jpg) to cath",
+          do
+            cath <## "started receiving file 1 (test.jpg) from alice"
+            cath <## "completed receiving file 1 (test.jpg) from alice"
+        ]
+      src <- B.readFile "./tests/fixtures/test.jpg"
+      dest <- B.readFile "./tests/tmp/test.jpg"
+      dest `shouldBe` src
+      dest2 <- B.readFile "./tests/tmp/test_1.jpg"
+      dest2 `shouldBe` src
+      alice #$> ("/_get chat #1 count=100", chatF, [((1, ""), Just "./tests/fixtures/test.jpg")])
+      bob #$> ("/_get chat #1 count=100", chatF, [((0, ""), Just "./tests/tmp/test.jpg")])
+      cath #$> ("/_get chat #1 count=100", chatF, [((0, ""), Just "./tests/tmp/test_1.jpg")])
+
+testGroupSendImageWithTextAndQuote :: IO ()
+testGroupSendImageWithTextAndQuote =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+      bob #> "#team hi team"
+      concurrently_
+        (alice <# "#team bob> hi team")
+        (cath <# "#team bob> hi team")
+      threadDelay 1000000
+      alice ##> "/_send #1 file ./tests/fixtures/test.jpg quoted 1 json {\"text\":\"hey bob\",\"type\":\"image\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\"}"
+      alice <# "#team > bob hi team"
+      alice <## "      hey bob"
+      alice <# "/f #team ./tests/fixtures/test.jpg"
+      alice <## "use /fc 1 to cancel sending"
+      concurrentlyN_
+        [ do
+            bob <# "#team alice> > bob hi team"
+            bob <## "      hey bob"
+            bob <# "#team alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
+            bob <## "use /fr 1 [<dir>/ | <path>] to receive it",
+          do
+            cath <# "#team alice> > bob hi team"
+            cath <## "      hey bob"
+            cath <# "#team alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
+            cath <## "use /fr 1 [<dir>/ | <path>] to receive it"
+        ]
+      bob ##> "/fr 1 ./tests/tmp/"
+      bob <## "saving file 1 from alice to ./tests/tmp/test.jpg"
+      concurrentlyN_
+        [ do
+            alice <## "started sending file 1 (test.jpg) to bob"
+            alice <## "completed sending file 1 (test.jpg) to bob",
+          do
+            bob <## "started receiving file 1 (test.jpg) from alice"
+            bob <## "completed receiving file 1 (test.jpg) from alice"
+        ]
+      cath ##> "/fr 1 ./tests/tmp/"
+      cath <## "saving file 1 from alice to ./tests/tmp/test_1.jpg"
+      concurrentlyN_
+        [ do
+            alice <## "started sending file 1 (test.jpg) to cath"
+            alice <## "completed sending file 1 (test.jpg) to cath",
+          do
+            cath <## "started receiving file 1 (test.jpg) from alice"
+            cath <## "completed receiving file 1 (test.jpg) from alice"
+        ]
+      src <- B.readFile "./tests/fixtures/test.jpg"
+      dest <- B.readFile "./tests/tmp/test.jpg"
+      dest `shouldBe` src
+      dest2 <- B.readFile "./tests/tmp/test_1.jpg"
+      dest2 `shouldBe` src
+      alice #$> ("/_get chat #1 count=100", chat'', [((0, "hi team"), Nothing, Nothing), ((1, "hey bob"), Just (0, "hi team"), Just "./tests/fixtures/test.jpg")])
+      alice #$$> ("/_get chats", [("#team", "hey bob"), ("@bob", ""), ("@cath", "")])
+      bob #$> ("/_get chat #1 count=100", chat'', [((1, "hi team"), Nothing, Nothing), ((0, "hey bob"), Just (1, "hi team"), Just "./tests/tmp/test.jpg")])
+      bob #$$> ("/_get chats", [("#team", "hey bob"), ("@alice", ""), ("@cath", "")])
+      cath #$> ("/_get chat #1 count=100", chat'', [((0, "hi team"), Nothing, Nothing), ((0, "hey bob"), Just (0, "hi team"), Just "./tests/tmp/test_1.jpg")])
+      cath #$$> ("/_get chats", [("#team", "hey bob"), ("@alice", ""), ("@bob", "")])
+
 testUserContactLink :: IO ()
 testUserContactLink = testChat3 aliceProfile bobProfile cathProfile $
   \alice bob cath -> do
@@ -1567,10 +1759,16 @@ cc #$> (cmd, f, res) = do
   (f <$> getTermLine cc) `shouldReturn` res
 
 chat :: String -> [(Int, String)]
-chat = map fst . chat'
+chat = map (\(a, _, _) -> a) . chat''
 
 chat' :: String -> [((Int, String), Maybe (Int, String))]
-chat' = read
+chat' = map (\(a, b, _) -> (a, b)) . chat''
+
+chatF :: String -> [((Int, String), Maybe String)]
+chatF = map (\(a, _, c) -> (a, c)) . chat''
+
+chat'' :: String -> [((Int, String), Maybe (Int, String), Maybe String)]
+chat'' = read
 
 (#$$>) :: TestCC -> (String, [(String, String)]) -> Expectation
 cc #$$> (cmd, res) = do
