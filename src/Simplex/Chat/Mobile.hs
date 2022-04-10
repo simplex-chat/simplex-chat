@@ -73,7 +73,7 @@ chatInit dbFilePrefix = do
   let f = chatStoreFile dbFilePrefix
   chatStore <- createStore f (dbPoolSize defaultMobileConfig) (yesToMigrations (defaultMobileConfig :: ChatConfig))
   user_ <- getActiveUser_ chatStore
-  newChatController chatStore user_ defaultMobileConfig mobileChatOpts {dbFilePrefix} (const $ pure ())
+  newChatController chatStore user_ defaultMobileConfig mobileChatOpts {dbFilePrefix} Nothing
 
 chatSendCmd :: ChatController -> String -> IO JSONString
 chatSendCmd cc s = LB.unpack . J.encode . APIResponse Nothing <$> runReaderT (execChatCommand $ B.pack s) cc

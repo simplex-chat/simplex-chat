@@ -86,7 +86,7 @@ virtualSimplexChat dbFilePrefix profile = do
   Right user <- runExceptT $ createUser st profile True
   t <- withVirtualTerminal termSettings pure
   ct <- newChatTerminal t
-  cc <- newChatController st (Just user) cfg opts {dbFilePrefix} (const $ pure ()) -- no notifications
+  cc <- newChatController st (Just user) cfg opts {dbFilePrefix} Nothing -- no notifications
   chatAsync <- async . runSimplexChat user cc . const $ runChatTerminal ct
   termQ <- newTQueueIO
   termAsync <- async $ readTerminalOutput t termQ

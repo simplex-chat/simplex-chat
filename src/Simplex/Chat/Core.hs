@@ -5,7 +5,6 @@ module Simplex.Chat.Core where
 
 import Control.Logger.Simple
 import Control.Monad.Reader
-import Data.Maybe (fromMaybe)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Simplex.Chat
@@ -26,7 +25,7 @@ simplexChatCore cfg@ChatConfig {dbPoolSize, yesToMigrations} opts sendToast chat
       let f = chatStoreFile $ dbFilePrefix opts
       st <- createStore f dbPoolSize yesToMigrations
       u <- getCreateActiveUser st
-      cc <- newChatController st (Just u) cfg opts $ fromMaybe (const $ pure ()) sendToast
+      cc <- newChatController st (Just u) cfg opts sendToast
       runSimplexChat u cc chat
 
 runSimplexChat :: User -> ChatController -> (User -> ChatController -> IO ()) -> IO ()
