@@ -507,9 +507,24 @@ processChatCommand = \case
     let mc = MCText $ safeDecodeUtf8 msg
     processChatCommand $ APIUpdateChatItem CTGroup groupId editedItemId mc
   -- old file protocol
-  SendFile cName f -> withUser $ \User {userId} -> do
-    contactId <- withStore $ \st -> getContactIdByName st userId cName
-    processChatCommand $ APISendMessage CTDirect contactId (Just f) Nothing (MCText "")
+  -- SendFile cName f -> withUser $ \User {userId} -> do
+  --   contactId <- withStore $ \st -> getContactIdByName st userId cName
+  --   processChatCommand $ APISendMessage CTDirect contactId (Just f) Nothing (MCText "")
+  -- TODO replace with code above when switching from XFile
+  SendFile cName f -> withUser $ \user@User {userId} -> withChatLock $ do
+    (fileSize, chSize) <- checkSndFile f
+    contact <- withStore $ \st -> getContactByName st userId cName
+    (agentConnId, fileConnReq) <- withAgent (`createConnection` SCMInvitation)
+    let fileName = takeFileName f
+        fileInv = FileInvitation {fileName = takeFileName f, fileSize, fileConnReq = Just fileConnReq}
+    fileId <- withStore $ \st ->
+      createSndFileTransfer st userId contact f fileInv agentConnId chSize
+    msg <- sendDirectContactMessage contact (XFile fileInv)
+    let ciFile = CIFile {fileId, fileName, fileSize, filePath = Just f, fileStatus = CIFSSndStored}
+    ci <- saveSndChatItem user (CDDirectSnd contact) msg (CISndMsgContent $ MCText "") (Just ciFile) Nothing
+    withStore $ \st -> updateFileTransferChatItemId st fileId $ chatItemId' ci
+    setActive $ ActiveC cName
+    pure . CRNewChatItem $ AChatItem SCTDirect SMDSnd (DirectChat contact) ci
   -- new file protocol (not used for direct files)
   SendFileInv cName f -> withUser $ \user@User {userId} -> withChatLock $ do
     ct <- withStore $ \st -> getContactByName st userId cName
@@ -535,14 +550,13 @@ processChatCommand = \case
       (connId, fileConnReq) <- withAgent (`createConnection` SCMInvitation)
       pure (m, connId, FileInvitation {fileName, fileSize, fileConnReq = Just fileConnReq})
     fileId <- withStore $ \st -> createSndGroupFileTransfer st userId gInfo ms f fileSize chSize
-    let mc = MCText ""
     forM_ ms $ \(m, _, fileInvitation) ->
-      traverse (\conn -> sendDirectMessage conn (XMsgNew . MCSimple . ExtMsgContent mc $ Just fileInvitation) (GroupId groupId)) $ memberConn m
+      traverse (\conn -> sendDirectMessage conn (XFile fileInvitation) (GroupId groupId)) $ memberConn m
     setActive $ ActiveG gName
     -- this is a hack as we have multiple direct messages instead of one per group
     let msg = SndMessage {msgId = 0, sharedMsgId = SharedMsgId "", msgBody = ""}
         ciFile = Just $ CIFile {fileId, fileName, fileSize, filePath = Just f, fileStatus = CIFSSndStored}
-    ci@ChatItem {meta = CIMeta {itemId}} <- saveSndChatItem user (CDGroupSnd gInfo) msg (CISndMsgContent mc) ciFile Nothing
+    ci@ChatItem {meta = CIMeta {itemId}} <- saveSndChatItem user (CDGroupSnd gInfo) msg (CISndMsgContent $ MCText "") ciFile Nothing
     withStore $ \st -> updateFileTransferChatItemId st fileId itemId
     pure . CRNewChatItem $ AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci
   -- new file protocol
