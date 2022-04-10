@@ -205,8 +205,9 @@ processChatCommand = \case
           Just quotedItemId -> do
             CChatItem _ ChatItem {meta = CIMeta {itemTs, itemSharedMsgId}, content = ciContent, formattedText} <-
               withStore $ \st -> getDirectChatItem st userId chatId quotedItemId
-            (qmc, qd, sent) <- liftEither $ quoteData ciContent
+            (origQmc, qd, sent) <- liftEither $ quoteData ciContent
             let msgRef = MsgRef {msgId = itemSharedMsgId, sentAt = itemTs, sent, memberId = Nothing}
+                qmc = quoteContent origQmc mc
                 quotedItem = CIQuote {chatDir = qd, itemId = Just quotedItemId, sharedMsgId = itemSharedMsgId, sentAt = itemTs, content = qmc, formattedText}
             pure (MCQuote QuotedMsg {msgRef, content = qmc} (ExtMsgContent mc fileInvitation_), Just quotedItem)
           where
@@ -240,8 +241,9 @@ processChatCommand = \case
           Just quotedItemId -> do
             CChatItem _ ChatItem {chatDir, meta = CIMeta {itemTs, itemSharedMsgId}, content = ciContent, formattedText} <-
               withStore $ \st -> getGroupChatItem st user chatId quotedItemId
-            (qmc, qd, sent, GroupMember {memberId}) <- liftEither $ quoteData ciContent chatDir membership
+            (origQmc, qd, sent, GroupMember {memberId}) <- liftEither $ quoteData ciContent chatDir membership
             let msgRef = MsgRef {msgId = itemSharedMsgId, sentAt = itemTs, sent, memberId = Just memberId}
+                qmc = quoteContent origQmc mc
                 quotedItem = CIQuote {chatDir = qd, itemId = Just quotedItemId, sharedMsgId = itemSharedMsgId, sentAt = itemTs, content = qmc, formattedText}
             pure (MCQuote QuotedMsg {msgRef, content = qmc} (ExtMsgContent mc fileInvitation_), Just quotedItem)
           where
@@ -251,6 +253,9 @@ processChatCommand = \case
             quoteData _ _ _ = Left $ ChatError CEInvalidQuote
     CTContactRequest -> pure $ chatCmdError "not supported"
     where
+      quoteContent qmc = \case
+        MCText _ -> qmc
+        _ -> MCText $ msgContentText qmc
       unzipMaybe :: Maybe (a, b) -> (Maybe a, Maybe b)
       unzipMaybe t = (fst <$> t, snd <$> t)
   -- TODO discontinue
