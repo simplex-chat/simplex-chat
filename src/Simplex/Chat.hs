@@ -572,9 +572,6 @@ processChatCommand = \case
     ft' <- withStore (\st -> getFileTransfer st userId fileId)
     withChatLock . procCmd $ do
       case ft' of
-        FTSnd ftm [] -> do
-          cancelFileTransfer userId ft' CIFSSndCancelled
-          pure $ CRSndGroupFileCancelled ftm []
         FTSnd ftm fts -> do
           cancelFileTransfer userId ft' CIFSSndCancelled
           forM_ fts $ \ft -> cancelSndFileTransfer ft
