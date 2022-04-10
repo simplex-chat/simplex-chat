@@ -1906,7 +1906,7 @@ chatCommandP =
       pure $ if B.null n then name else safeDecodeUtf8 n
     filePath = T.unpack . safeDecodeUtf8 <$> A.takeByteString
     filePathTagged = " file " *> (T.unpack . safeDecodeUtf8 <$> A.takeTill (== ' '))
-    quotedItemIdTagged = " quotedItemId " *> A.decimal
+    quotedItemIdTagged = " quoted " *> A.decimal
     memberRole =
       (" owner" $> GROwner)
         <|> (" admin" $> GRAdmin)
