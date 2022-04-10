@@ -51,7 +51,9 @@ mobileChatOpts =
     { dbFilePrefix = "simplex_v1", -- two database files will be created: simplex_v1_chat.db and simplex_v1_agent.db
       smpServers = [],
       logConnections = False,
-      logAgent = False
+      logAgent = False,
+      chatCmd = "",
+      chatCmdDelay = 3
     }
 
 defaultMobileConfig :: ChatConfig
