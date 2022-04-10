@@ -22,6 +22,7 @@ library
       Simplex.Chat
       Simplex.Chat.Bot
       Simplex.Chat.Controller
+      Simplex.Chat.Core
       Simplex.Chat.Help
       Simplex.Chat.Markdown
       Simplex.Chat.Messages

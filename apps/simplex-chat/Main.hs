@@ -4,16 +4,13 @@ module Main where
 
 import Control.Concurrent (threadDelay)
 import Simplex.Chat
-import Simplex.Chat.Bot
-import Simplex.Chat.Controller (ChatConfig, versionNumber)
+import Simplex.Chat.Controller (versionNumber)
+import Simplex.Chat.Core
 import Simplex.Chat.Options
 import Simplex.Chat.Terminal
 import Simplex.Chat.View (serializeChatResponse)
 import System.Directory (getAppUserDataDirectory)
 import System.Terminal (withTerminal)
-
-cfg :: ChatConfig
-cfg = defaultChatConfig
 
 main :: IO ()
 main = do
@@ -23,9 +20,9 @@ main = do
     then do
       welcome opts
       t <- withTerminal pure
-      simplexChat cfg opts t
-    else simplexChatBot cfg opts $ \_ cc -> do
-      r <- sendCmd cc chatCmd
+      simplexChatTerminal defaultChatConfig opts t
+    else simplexChatCore defaultChatConfig opts Nothing $ \_ cc -> do
+      r <- runChatCmd cc chatCmd
       putStrLn $ serializeChatResponse r
       threadDelay $ chatCmdDelay opts * 1000000
 
