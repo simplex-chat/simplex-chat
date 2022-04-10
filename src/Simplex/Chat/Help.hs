@@ -160,7 +160,8 @@ messagesHelpInfo =
       indent <> highlight "\\ #team hi               " <> " - to delete your message in the group #team",
       "",
       green "Editing sent messages",
-      "To edit a message that starts with \"hi\":",
+      "To edit your last message press up arrow, edit (keep the initial ! symbol) and press enter.",
+      "To edit your most recent message that starts with \"hi\":",
       indent <> highlight "! @alice (hi) <new msg>  " <> " - to edit your message to alice",
       indent <> highlight "! #team (hi) <new msg>   " <> " - to edit your message in the group #team"
     ]

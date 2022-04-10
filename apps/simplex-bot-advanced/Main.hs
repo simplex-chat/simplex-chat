@@ -14,6 +14,7 @@ import qualified Data.Text as T
 import Simplex.Chat
 import Simplex.Chat.Bot
 import Simplex.Chat.Controller
+import Simplex.Chat.Core
 import Simplex.Chat.Messages
 import Simplex.Chat.Options
 import Simplex.Chat.Types
@@ -23,7 +24,7 @@ import Text.Read
 main :: IO ()
 main = do
   opts <- welcomeGetOpts
-  simplexChatBot defaultChatConfig opts mySquaringBot
+  simplexChatCore defaultChatConfig opts Nothing mySquaringBot
 
 welcomeGetOpts :: IO ChatOpts
 welcomeGetOpts = do
@@ -50,5 +51,5 @@ mySquaringBot _user cc = do
           Just n -> msg <> " * " <> msg <> " = " <> show (n * n)
       _ -> pure ()
   where
-    sendMsg Contact {contactId} msg = sendCmd cc $ "/_send @" <> show contactId <> " text " <> msg
+    sendMsg Contact {contactId} msg = sendChatCmd cc $ "/_send @" <> show contactId <> " text " <> msg
     contactConnected Contact {localDisplayName} = putStrLn $ T.unpack localDisplayName <> " connected"

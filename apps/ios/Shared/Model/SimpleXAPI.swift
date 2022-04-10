@@ -329,9 +329,11 @@ func chatSendCmdSync(_ cmd: ChatCommand, bgTask: Bool = true, bgDelay: Double? =
     if case let .response(_, json) = resp {
         logger.debug("chatSendCmd \(cmd.cmdType) response: \(json)")
     }
-    DispatchQueue.main.async {
-        ChatModel.shared.terminalItems.append(.cmd(.now, cmd))
-        ChatModel.shared.terminalItems.append(.resp(.now, resp))
+    if case .apiParseMarkdown = cmd {} else {
+        DispatchQueue.main.async {
+            ChatModel.shared.terminalItems.append(.cmd(.now, cmd))
+            ChatModel.shared.terminalItems.append(.resp(.now, resp))
+        }
     }
     return resp
 }
