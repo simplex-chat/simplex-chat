@@ -79,7 +79,9 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
         chatModel.terminalItems.add(TerminalItem.cmd(cmd))
       }
       val json = chatSendCmd(ctrl, c)
-      Log.d(TAG, "sendCmd: ${cmd.cmdType}")
+      if (cmd !is CC.ApiParseMarkdown) {
+        Log.d(TAG, "sendCmd: ${cmd.cmdType}")
+      }
       val r = APIResponse.decodeStr(json)
       Log.d(TAG, "sendCmd response type ${r.resp.responseType}")
       if (r.resp is CR.Response || r.resp is CR.Invalid) {

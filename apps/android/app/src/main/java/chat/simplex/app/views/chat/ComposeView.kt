@@ -1,7 +1,8 @@
 package chat.simplex.app.views.chat
 
-import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
 import chat.simplex.app.model.*
 import chat.simplex.app.views.helpers.ComposeLinkPreview
 

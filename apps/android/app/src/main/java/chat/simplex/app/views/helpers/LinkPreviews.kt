@@ -1,9 +1,22 @@
 package chat.simplex.app.views.helpers
 
+import android.content.res.Configuration
 import android.graphics.BitmapFactory
-import androidx.compose.material.Text
+import android.text.Layout
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.*
+import androidx.compose.material.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Close
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import chat.simplex.app.model.LinkPreview
+import chat.simplex.app.ui.theme.SimpleXTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.jsoup.Jsoup
@@ -47,11 +60,75 @@ suspend fun getLinkPreview(url: String): LinkPreview? {
 
 
 @Composable
-fun ChatItemLinkPreview(metadata: LinkPreview) {
-  Text(metadata.title)
+fun ComposeLinkPreview(metadata: LinkPreview, cancelPreview: () -> Unit) {
+  Row(verticalAlignment = Alignment.CenterVertically) {
+    val imageBitmap = base64ToBitmap(metadata.image).asImageBitmap()
+    Image(
+      imageBitmap,
+      "preview image",
+    )
+    Column {
+      Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+        Text(metadata.title)
+        IconButton(onClick = cancelPreview, modifier = Modifier.padding(0.dp)) {
+          Icon(
+            Icons.Outlined.Close,
+            contentDescription = "Cancel Preview",
+            tint = MaterialTheme.colors.primary,
+          )
+
+        }
+      }
+      Text(metadata.description, maxLines = 1, overflow = TextOverflow.Ellipsis)
+      Text(
+        metadata.uri,
+        style = MaterialTheme.typography.subtitle2.copy(color = MaterialTheme.colors.secondaryVariant)
+      )
+    }
+  }
 }
 
 @Composable
-fun ComposeLinkPreview(metadata: LinkPreview, cancelPreview: () -> Unit) {
-  Text(metadata.title)
+fun ChatItemLinkPreview(metadata: LinkPreview) {
+  Column {
+    val imageBitmap = base64ToBitmap(metadata.image).asImageBitmap()
+    Image(
+      imageBitmap,
+      "preview image",
+      modifier = Modifier.fillMaxWidth()
+    )
+    Text(metadata.title)
+    Text(metadata.description, maxLines = 1, overflow = TextOverflow.Ellipsis)
+    Text(
+      metadata.uri,
+      style = MaterialTheme.typography.subtitle2.copy(color = MaterialTheme.colors.secondaryVariant)
+    )
+  }
+}
+
+
+@Preview(showBackground = true)
+@Preview(
+  uiMode = Configuration.UI_MODE_NIGHT_YES,
+  showBackground = true,
+  name = "Chat Item Link Preview (Dark Mode)"
+)
+@Composable
+fun PreviewChatItemLinkPreview() {
+  SimpleXTheme {
+    ChatItemLinkPreview(LinkPreview.sampleData)
+  }
+}
+
+@Preview(showBackground = true)
+@Preview(
+  uiMode = Configuration.UI_MODE_NIGHT_YES,
+  showBackground = true,
+  name = "Compose Link Preview (Dark Mode)"
+)
+@Composable
+fun PreviewComposeLinkPreview() {
+  SimpleXTheme {
+    ComposeLinkPreview(LinkPreview.sampleData) { -> }
+  }
 }
