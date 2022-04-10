@@ -146,9 +146,12 @@ withLock lock =
     (atomically $ putTMVar lock ())
 
 execChatCommand :: (MonadUnliftIO m, MonadReader ChatController m) => ByteString -> m ChatResponse
-execChatCommand s = case parseAll chatCommandP $ B.dropWhileEnd isSpace s of
+execChatCommand s = case parseChatCommand s of
   Left e -> pure $ chatCmdError e
   Right cmd -> either CRChatCmdError id <$> runExceptT (processChatCommand cmd)
+
+parseChatCommand :: ByteString -> Either String ChatCommand
+parseChatCommand = parseAll chatCommandP . B.dropWhileEnd isSpace
 
 toView :: ChatMonad m => ChatResponse -> m ()
 toView event = do
@@ -1839,7 +1842,7 @@ chatCommandP =
     <|> (">#" <|> "> #") *> (SendGroupMessageQuote <$> displayName <* A.space <*> pure Nothing <*> quotedMsg <*> A.takeByteString)
     <|> (">#" <|> "> #") *> (SendGroupMessageQuote <$> displayName <* A.space <* optional (A.char '@') <*> (Just <$> displayName) <* A.space <*> quotedMsg <*> A.takeByteString)
     <|> ("\\#" <|> "\\ #") *> (DeleteGroupMessage <$> displayName <* A.space <*> A.takeByteString)
-    <|> ("!#" <|> "! #") *> (EditGroupMessage <$> displayName <* A.space <*> quotedMsg <*> A.takeByteString)
+    <|> ("!#" <|> "! #") *> (EditGroupMessage <$> displayName <* A.space <*> (quotedMsg <|> pure "") <*> A.takeByteString)
     <|> ("/contacts" <|> "/cs") $> ListContacts
     <|> ("/connect " <|> "/c ") *> (Connect <$> ((Just <$> strP) <|> A.takeByteString $> Nothing))
     <|> ("/connect" <|> "/c") $> AddContact
@@ -1848,7 +1851,7 @@ chatCommandP =
     <|> (">@" <|> "> @") *> sendMsgQuote (AMsgDirection SMDRcv)
     <|> (">>@" <|> ">> @") *> sendMsgQuote (AMsgDirection SMDSnd)
     <|> ("\\@" <|> "\\ @") *> (DeleteMessage <$> displayName <* A.space <*> A.takeByteString)
-    <|> ("!@" <|> "! @") *> (EditMessage <$> displayName <* A.space <*> quotedMsg <*> A.takeByteString)
+    <|> ("!@" <|> "! @") *> (EditMessage <$> displayName <* A.space <*> (quotedMsg <|> pure "") <*> A.takeByteString)
     <|> "/feed " *> (SendMessageBroadcast <$> A.takeByteString)
     <|> ("/file #" <|> "/f #") *> (SendGroupFile <$> displayName <* A.space <*> filePath)
     <|> ("/file_v2 #" <|> "/f_v2 #") *> (SendGroupFileInv <$> displayName <* A.space <*> filePath)
