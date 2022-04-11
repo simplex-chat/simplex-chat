@@ -32,34 +32,6 @@ struct ComposeView: View {
     @State var cancelledLinks: Set<String> = []
 
     
-    private func isValidLink(link: String) -> Bool {
-        return !(link.starts(with: "https://simplex.chat") || link.starts(with: "http://simplex.chat"))
-    }
-    
-    func cancelPreview() {
-        if let uri = linkPreview?.uri.absoluteString {
-            cancelledLinks.insert(uri)
-        }
-        linkPreview = nil
-    }
-
-    func parseMessage(_ msg: String) -> URL? {
-        do {
-            if let parsedMsg = try apiParseMarkdown(text: msg),
-               let link = parsedMsg.first(where: {
-                   $0.format == .uri && !cancelledLinks.contains($0.text)
-               }),
-               isValidLink(link: link.text) {
-                return URL(string: link.text)
-            } else {
-                return nil
-            }
-        } catch {
-            logger.error("apiParseMarkdown error: \(error.localizedDescription)")
-            return nil
-        }
-    }
-
     var body: some View {
         VStack(spacing: 0) {
             if let metadata = linkPreview {
@@ -84,19 +56,7 @@ struct ComposeView: View {
         }
         .onChange(of: message) { _ in
             if message.count > 0 {
-                prevLinkUrl = linkUrl
-                linkUrl = parseMessage(message)
-                if let url = linkUrl {
-                    if prevLinkUrl == linkUrl {
-                        loadLinkPreview(url)
-                    } else {
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-                            loadLinkPreview(url)
-                        }
-                    }
-                } else {
-                    linkPreview = nil
-                }
+                showLinkPreview(message)
             } else {
                 resetLinkPreview()
             }
@@ -106,9 +66,52 @@ struct ComposeView: View {
         }
     }
 
-    func loadLinkPreview(_ url: URL) {
-        if url != linkPreview?.uri && url != pendingLinkUrl {
-            pendingLinkUrl = url
+    private func showLinkPreview(_ s: String) {
+        prevLinkUrl = linkUrl
+        linkUrl = parseMessage(s)
+        if let url = linkUrl {
+            if url != linkPreview?.uri && url != pendingLinkUrl {
+                pendingLinkUrl = url
+                if prevLinkUrl == url {
+                    loadLinkPreview(url)
+                } else {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                        loadLinkPreview(url)
+                    }
+                }
+            }
+        } else {
+            linkPreview = nil
+        }
+    }
+
+    private func parseMessage(_ msg: String) -> URL? {
+        do {
+            let parsedMsg = try apiParseMarkdown(text: msg)
+            let uri = parsedMsg?.first(where: { ft in
+               ft.format == .uri && !cancelledLinks.contains(ft.text) && !isSimplexLink(ft.text)
+            })
+            if let uri = uri { return URL(string: uri.text) }
+            else { return nil }
+        } catch {
+            logger.error("apiParseMarkdown error: \(error.localizedDescription)")
+            return nil
+        }
+    }
+
+    private func isSimplexLink(_ link: String) -> Bool {
+        link.starts(with: "https://simplex.chat") || link.starts(with: "http://simplex.chat")
+    }
+
+    private func cancelPreview() {
+        if let uri = linkPreview?.uri.absoluteString {
+            cancelledLinks.insert(uri)
+        }
+        linkPreview = nil
+    }
+
+    private func loadLinkPreview(_ url: URL) {
+        if pendingLinkUrl == url {
             getLinkPreview(url: url) { lp in
                 if pendingLinkUrl == url {
                     linkPreview = lp
@@ -118,7 +121,7 @@ struct ComposeView: View {
         }
     }
 
-    func resetLinkPreview() {
+    private func resetLinkPreview() {
         linkUrl = nil
         prevLinkUrl = nil
         pendingLinkUrl = nil

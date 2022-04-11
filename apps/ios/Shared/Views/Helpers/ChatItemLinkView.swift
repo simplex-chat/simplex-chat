@@ -22,14 +22,18 @@ struct ChatItemLinkView: View {
             }
             VStack(alignment: .leading, spacing: 6) {
                 Text(linkPreview.title)
-                    .lineLimit(2)
-                    .padding(.horizontal, 12)
+                    .lineLimit(3)
+//                if linkPreview.description != "" {
+//                    Text(linkPreview.description)
+//                        .font(.subheadline)
+//                        .lineLimit(12)
+//                }
                 Text(linkPreview.uri.absoluteString)
                     .font(.caption)
                     .lineLimit(1)
                     .foregroundColor(.secondary)
-                    .padding(.horizontal, 12)
             }
+            .padding(.horizontal, 12)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
