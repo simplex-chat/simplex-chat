@@ -1,14 +1,14 @@
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module Simplex.Chat.Terminal.Input where
 
 import Control.Monad.Except
 import Control.Monad.Reader
-import qualified Data.ByteString.Char8 as B
-import Data.Char (isSpace)
 import Data.List (dropWhileEnd)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
@@ -16,8 +16,8 @@ import Simplex.Chat
 import Simplex.Chat.Controller
 import Simplex.Chat.Styled
 import Simplex.Chat.Terminal.Output
+import Simplex.Chat.Util (safeDecodeUtf8)
 import Simplex.Chat.View
-import Simplex.Messaging.Parsers (parseAll)
 import System.Exit (exitSuccess)
 import System.Terminal hiding (insertChars)
 import UnliftIO.STM
@@ -33,7 +33,7 @@ runInputLoop :: ChatTerminal -> ChatController -> IO ()
 runInputLoop ct cc = forever $ do
   s <- atomically . readTBQueue $ inputQ cc
   let bs = encodeUtf8 $ T.pack s
-      cmd = parseAll chatCommandP $ B.dropWhileEnd isSpace bs
+      cmd = parseChatCommand bs
   unless (isMessage cmd) $ echo s
   r <- runReaderT (execChatCommand bs) cc
   case r of
@@ -94,7 +94,7 @@ updateTermState ac tw (key, ms) ts@TerminalState {inputString = s, inputPosition
     Leftwards -> setPosition leftPos
     Rightwards -> setPosition rightPos
     Upwards
-      | ms == mempty && null s -> let s' = previousInput ts in ts' (s', length s')
+      | ms == mempty && null s -> let s' = upArrowCmd $ previousInput ts in ts' (s', length s')
       | ms == mempty -> let p' = p - tw in if p' > 0 then setPosition p' else ts
       | otherwise -> ts
     Downwards
@@ -135,6 +135,14 @@ updateTermState ac tw (key, ms) ts@TerminalState {inputString = s, inputPosition
       | ms == ctrlKey = nextWordPos
       | ms == altKey = nextWordPos
       | otherwise = p
+    upArrowCmd inp = case parseChatCommand . encodeUtf8 $ T.pack inp of
+      Left _ -> inp
+      Right cmd -> case cmd of
+        SendMessage {} -> "! " <> inp
+        SendGroupMessage {} -> "! " <> inp
+        SendMessageQuote {contactName, message} -> T.unpack $ "! @" <> contactName <> " " <> safeDecodeUtf8 message
+        SendGroupMessageQuote {groupName, message} -> T.unpack $ "! #" <> groupName <> " " <> safeDecodeUtf8 message
+        _ -> inp
     setPosition p' = ts' (s, p')
     prevWordPos
       | p == 0 || null s = p

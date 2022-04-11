@@ -22,6 +22,7 @@ library
       Simplex.Chat
       Simplex.Chat.Bot
       Simplex.Chat.Controller
+      Simplex.Chat.Core
       Simplex.Chat.Help
       Simplex.Chat.Markdown
       Simplex.Chat.Messages
@@ -34,7 +35,7 @@ library
       Simplex.Chat.Migrations.M20220302_profile_images
       Simplex.Chat.Migrations.M20220304_msg_quotes
       Simplex.Chat.Migrations.M20220321_chat_item_edited
-      Simplex.Chat.Migrations.M20220404_files_cancelled
+      Simplex.Chat.Migrations.M20220404_files_status_fields
       Simplex.Chat.Mobile
       Simplex.Chat.Options
       Simplex.Chat.Protocol

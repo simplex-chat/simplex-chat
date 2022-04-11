@@ -91,7 +91,6 @@ struct SendMessageView_Previews: PreviewProvider {
         @State var editingOff: Bool = false
         @State var editingOn: Bool = true
         @State var item: ChatItem? = ChatItem.getSample(1, .directSnd, .now, "hello")
-        @State var nilItem: ChatItem? = nil
 
         return Group {
             VStack {

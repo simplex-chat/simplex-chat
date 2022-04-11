@@ -94,8 +94,8 @@ data ChatCommand
   | APIGetChats
   | APIGetChat ChatType Int64 ChatPagination
   | APIGetChatItems Int
-  | APISendMessage ChatType Int64 MsgContent
-  | APISendMessageQuote ChatType Int64 ChatItemId MsgContent
+  | APISendMessage ChatType Int64 (Maybe FilePath) (Maybe ChatItemId) MsgContent
+  | APISendMessageQuote ChatType Int64 ChatItemId MsgContent -- TODO discontinue
   | APIUpdateChatItem ChatType Int64 ChatItemId MsgContent
   | APIDeleteChatItem ChatType Int64 ChatItemId CIDeleteMode
   | APIChatRead ChatType Int64 (ChatItemId, ChatItemId)

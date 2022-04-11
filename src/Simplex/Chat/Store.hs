@@ -95,6 +95,7 @@ module Simplex.Chat.Store
     createSndGroupFileTransferV2,
     createSndGroupFileTransferV2Connection,
     updateFileCancelled,
+    updateCIFileStatus,
     getSharedMsgIdByFileId,
     getFileIdBySharedMsgId,
     getGroupFileIdBySharedMsgId,
@@ -188,7 +189,7 @@ import Simplex.Chat.Migrations.M20220301_smp_servers
 import Simplex.Chat.Migrations.M20220302_profile_images
 import Simplex.Chat.Migrations.M20220304_msg_quotes
 import Simplex.Chat.Migrations.M20220321_chat_item_edited
-import Simplex.Chat.Migrations.M20220404_files_cancelled
+import Simplex.Chat.Migrations.M20220404_files_status_fields
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Chat.Util (eitherToMaybe)
@@ -213,7 +214,7 @@ schemaMigrations =
     ("20220302_profile_images", m20220302_profile_images),
     ("20220304_msg_quotes", m20220304_msg_quotes),
     ("20220321_chat_item_edited", m20220321_chat_item_edited),
-    ("20220404_files_cancelled", m20220404_files_cancelled)
+    ("20220404_files_status_fields", m20220404_files_status_fields)
   ]
 
 -- | The list of migrations in ascending order by date
@@ -1783,14 +1784,14 @@ getViaGroupContact st User {userId} GroupMember {groupMemberId} =
        in Just Contact {contactId, localDisplayName, profile, activeConn, viaGroup, createdAt}
     toContact' _ = Nothing
 
-createSndFileTransfer :: MonadUnliftIO m => SQLiteStore -> UserId -> Contact -> FilePath -> FileInvitation -> ConnId -> Integer -> m SndFileTransfer
-createSndFileTransfer st userId Contact {contactId, localDisplayName = recipientDisplayName} filePath FileInvitation {fileName, fileSize} acId chunkSize =
+createSndFileTransfer :: MonadUnliftIO m => SQLiteStore -> UserId -> Contact -> FilePath -> FileInvitation -> ConnId -> Integer -> m Int64
+createSndFileTransfer st userId Contact {contactId} filePath FileInvitation {fileName, fileSize} acId chunkSize =
   liftIO . withTransaction st $ \db -> do
     currentTs <- getCurrentTime
     DB.execute
       db
-      "INSERT INTO files (user_id, contact_id, file_name, file_path, file_size, chunk_size, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?)"
-      (userId, contactId, fileName, filePath, fileSize, chunkSize, currentTs, currentTs)
+      "INSERT INTO files (user_id, contact_id, file_name, file_path, file_size, chunk_size, ci_file_status, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?)"
+      (userId, contactId, fileName, filePath, fileSize, chunkSize, CIFSSndStored, currentTs, currentTs)
     fileId <- insertedRowId db
     Connection {connId} <- createSndFileConnection_ db userId fileId acId
     let fileStatus = FSNew
@@ -1798,7 +1799,7 @@ createSndFileTransfer st userId Contact {contactId, localDisplayName = recipient
       db
       "INSERT INTO snd_files (file_id, file_status, connection_id, created_at, updated_at) VALUES (?,?,?,?,?)"
       (fileId, fileStatus, connId, currentTs, currentTs)
-    pure SndFileTransfer {fileId, fileName, filePath, fileSize, chunkSize, recipientDisplayName, connId, fileStatus, agentConnId = AgentConnId acId}
+    pure fileId
 
 createSndFileTransferV2 :: MonadUnliftIO m => SQLiteStore -> UserId -> Contact -> FilePath -> FileInvitation -> Integer -> m Int64
 createSndFileTransferV2 st userId Contact {contactId} filePath FileInvitation {fileName, fileSize} chunkSize =
@@ -1806,8 +1807,8 @@ createSndFileTransferV2 st userId Contact {contactId} filePath FileInvitation {f
     currentTs <- getCurrentTime
     DB.execute
       db
-      "INSERT INTO files (user_id, contact_id, file_name, file_path, file_size, chunk_size, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?)"
-      (userId, contactId, fileName, filePath, fileSize, chunkSize, currentTs, currentTs)
+      "INSERT INTO files (user_id, contact_id, file_name, file_path, file_size, chunk_size, ci_file_status, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?)"
+      (userId, contactId, fileName, filePath, fileSize, chunkSize, CIFSSndStored, currentTs, currentTs)
     insertedRowId db
 
 createSndFileTransferV2Connection :: MonadUnliftIO m => SQLiteStore -> UserId -> Int64 -> ConnId -> m ()
@@ -1827,8 +1828,8 @@ createSndGroupFileTransfer st userId GroupInfo {groupId} ms filePath fileSize ch
     currentTs <- getCurrentTime
     DB.execute
       db
-      "INSERT INTO files (user_id, group_id, file_name, file_path, file_size, chunk_size, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?)"
-      (userId, groupId, fileName, filePath, fileSize, chunkSize, currentTs, currentTs)
+      "INSERT INTO files (user_id, group_id, file_name, file_path, file_size, chunk_size, ci_file_status, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?)"
+      (userId, groupId, fileName, filePath, fileSize, chunkSize, CIFSSndStored, currentTs, currentTs)
     fileId <- insertedRowId db
     forM_ ms $ \(GroupMember {groupMemberId}, agentConnId, _) -> do
       Connection {connId} <- createSndFileConnection_ db userId fileId agentConnId
@@ -1844,8 +1845,8 @@ createSndGroupFileTransferV2 st userId GroupInfo {groupId} filePath FileInvitati
     currentTs <- getCurrentTime
     DB.execute
       db
-      "INSERT INTO files (user_id, group_id, file_name, file_path, file_size, chunk_size, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?)"
-      (userId, groupId, fileName, filePath, fileSize, chunkSize, currentTs, currentTs)
+      "INSERT INTO files (user_id, group_id, file_name, file_path, file_size, chunk_size, ci_file_status, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?)"
+      (userId, groupId, fileName, filePath, fileSize, chunkSize, CIFSSndStored, currentTs, currentTs)
     insertedRowId db
 
 createSndGroupFileTransferV2Connection :: MonadUnliftIO m => SQLiteStore -> UserId -> Int64 -> ConnId -> GroupMember -> m ()
@@ -1863,6 +1864,12 @@ updateFileCancelled st userId fileId =
   liftIO . withTransaction st $ \db -> do
     currentTs <- getCurrentTime
     DB.execute db "UPDATE files SET cancelled = 1, updated_at = ? WHERE user_id = ? AND file_id = ?" (currentTs, userId, fileId)
+
+updateCIFileStatus :: MsgDirectionI d => MonadUnliftIO m => SQLiteStore -> UserId -> Int64 -> CIFileStatus d -> m ()
+updateCIFileStatus st userId fileId ciFileStatus =
+  liftIO . withTransaction st $ \db -> do
+    currentTs <- getCurrentTime
+    DB.execute db "UPDATE files SET ci_file_status = ?, updated_at = ? WHERE user_id = ? AND file_id = ?" (ciFileStatus, currentTs, userId, fileId)
 
 getSharedMsgIdByFileId :: StoreMonad m => SQLiteStore -> UserId -> Int64 -> m SharedMsgId
 getSharedMsgIdByFileId st userId fileId =
@@ -1975,8 +1982,8 @@ createRcvFileTransfer st userId Contact {contactId, localDisplayName = c} f@File
     currentTs <- getCurrentTime
     DB.execute
       db
-      "INSERT INTO files (user_id, contact_id, file_name, file_size, chunk_size, created_at, updated_at) VALUES (?,?,?,?,?,?,?)"
-      (userId, contactId, fileName, fileSize, chunkSize, currentTs, currentTs)
+      "INSERT INTO files (user_id, contact_id, file_name, file_size, chunk_size, ci_file_status, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?)"
+      (userId, contactId, fileName, fileSize, chunkSize, CIFSRcvInvitation, currentTs, currentTs)
     fileId <- insertedRowId db
     DB.execute
       db
@@ -2052,8 +2059,8 @@ acceptRcvFileTransfer st userId fileId agentConnId filePath =
     currentTs <- getCurrentTime
     DB.execute
       db
-      "UPDATE files SET file_path = ?, updated_at = ? WHERE user_id = ? AND file_id = ?"
-      (filePath, currentTs, userId, fileId)
+      "UPDATE files SET file_path = ?, ci_file_status = ?, updated_at = ? WHERE user_id = ? AND file_id = ?"
+      (filePath, CIFSRcvTransfer, currentTs, userId, fileId)
     DB.execute
       db
       "UPDATE rcv_files SET file_status = ?, updated_at = ? WHERE file_id = ?"
@@ -2512,6 +2519,8 @@ getDirectChatPreviews_ db User {userId} = do
           COALESCE(ChatStats.UnreadCount, 0), COALESCE(ChatStats.MinUnread, 0),
           -- ChatItem
           i.chat_item_id, i.item_ts, i.item_content, i.item_text, i.item_status, i.shared_msg_id, i.item_deleted, i.item_edited, i.created_at,
+          -- CIFile
+          f.file_id, f.file_name, f.file_size, f.file_path, f.ci_file_status,
           -- DirectQuote
           ri.chat_item_id, i.quoted_shared_msg_id, i.quoted_sent_at, i.quoted_content, i.quoted_sent
         FROM contacts ct
@@ -2525,6 +2534,7 @@ getDirectChatPreviews_ db User {userId} = do
         ) MaxIds ON MaxIds.contact_id = ct.contact_id
         LEFT JOIN chat_items i ON i.contact_id = MaxIds.contact_id
                                AND i.chat_item_id = MaxIds.MaxId
+        LEFT JOIN files f ON f.chat_item_id = i.chat_item_id
         LEFT JOIN (
           SELECT contact_id, COUNT(1) AS UnreadCount, MIN(chat_item_id) AS MinUnread
           FROM chat_items
@@ -2574,6 +2584,8 @@ getGroupChatPreviews_ db User {userId, userContactId} = do
           COALESCE(ChatStats.UnreadCount, 0), COALESCE(ChatStats.MinUnread, 0),
           -- ChatItem
           i.chat_item_id, i.item_ts, i.item_content, i.item_text, i.item_status, i.shared_msg_id, i.item_deleted, i.item_edited, i.created_at,
+          -- CIFile
+          f.file_id, f.file_name, f.file_size, f.file_path, f.ci_file_status,
           -- Maybe GroupMember - sender
           m.group_member_id, m.group_id, m.member_id, m.member_role, m.member_category,
           m.member_status, m.invited_by, m.local_display_name, m.contact_id,
@@ -2596,6 +2608,7 @@ getGroupChatPreviews_ db User {userId, userContactId} = do
         ) MaxIds ON MaxIds.group_id = g.group_id
         LEFT JOIN chat_items i ON i.group_id = MaxIds.group_id
                                AND i.chat_item_id = MaxIds.MaxId
+        LEFT JOIN files f ON f.chat_item_id = i.chat_item_id
         LEFT JOIN (
           SELECT group_id, COUNT(1) AS UnreadCount, MIN(chat_item_id) AS MinUnread
           FROM chat_items
@@ -2667,9 +2680,12 @@ getDirectChatLast_ db User {userId} contactId count = do
             SELECT
               -- ChatItem
               i.chat_item_id, i.item_ts, i.item_content, i.item_text, i.item_status, i.shared_msg_id, i.item_deleted, i.item_edited, i.created_at,
+              -- CIFile
+              f.file_id, f.file_name, f.file_size, f.file_path, f.ci_file_status,
               -- DirectQuote
               ri.chat_item_id, i.quoted_shared_msg_id, i.quoted_sent_at, i.quoted_content, i.quoted_sent
             FROM chat_items i
+            LEFT JOIN files f ON f.chat_item_id = i.chat_item_id
             LEFT JOIN chat_items ri ON i.quoted_shared_msg_id = ri.shared_msg_id
             WHERE i.user_id = ? AND i.contact_id = ? AND i.item_deleted != 1
             ORDER BY i.chat_item_id DESC
@@ -2695,9 +2711,12 @@ getDirectChatAfter_ db User {userId} contactId afterChatItemId count = do
             SELECT
               -- ChatItem
               i.chat_item_id, i.item_ts, i.item_content, i.item_text, i.item_status, i.shared_msg_id, i.item_deleted, i.item_edited, i.created_at,
+              -- CIFile
+              f.file_id, f.file_name, f.file_size, f.file_path, f.ci_file_status,
               -- DirectQuote
               ri.chat_item_id, i.quoted_shared_msg_id, i.quoted_sent_at, i.quoted_content, i.quoted_sent
             FROM chat_items i
+            LEFT JOIN files f ON f.chat_item_id = i.chat_item_id
             LEFT JOIN chat_items ri ON i.quoted_shared_msg_id = ri.shared_msg_id
             WHERE i.user_id = ? AND i.contact_id = ? AND i.chat_item_id > ? AND i.item_deleted != 1
             ORDER BY i.chat_item_id ASC
@@ -2723,9 +2742,12 @@ getDirectChatBefore_ db User {userId} contactId beforeChatItemId count = do
             SELECT
               -- ChatItem
               i.chat_item_id, i.item_ts, i.item_content, i.item_text, i.item_status, i.shared_msg_id, i.item_deleted, i.item_edited, i.created_at,
+              -- CIFile
+              f.file_id, f.file_name, f.file_size, f.file_path, f.ci_file_status,
               -- DirectQuote
               ri.chat_item_id, i.quoted_shared_msg_id, i.quoted_sent_at, i.quoted_content, i.quoted_sent
             FROM chat_items i
+            LEFT JOIN files f ON f.chat_item_id = i.chat_item_id
             LEFT JOIN chat_items ri ON i.quoted_shared_msg_id = ri.shared_msg_id
             WHERE i.user_id = ? AND i.contact_id = ? AND i.chat_item_id < ? AND i.item_deleted != 1
             ORDER BY i.chat_item_id DESC
@@ -2823,6 +2845,8 @@ getGroupChatLast_ db user@User {userId, userContactId} groupId count = do
             SELECT
               -- ChatItem
               i.chat_item_id, i.item_ts, i.item_content, i.item_text, i.item_status, i.shared_msg_id, i.item_deleted, i.item_edited, i.created_at,
+              -- CIFile
+              f.file_id, f.file_name, f.file_size, f.file_path, f.ci_file_status,
               -- GroupMember
               m.group_member_id, m.group_id, m.member_id, m.member_role, m.member_category,
               m.member_status, m.invited_by, m.local_display_name, m.contact_id,
@@ -2834,6 +2858,7 @@ getGroupChatLast_ db user@User {userId, userContactId} groupId count = do
               rm.member_status, rm.invited_by, rm.local_display_name, rm.contact_id,
               rp.display_name, rp.full_name, rp.image
             FROM chat_items i
+            LEFT JOIN files f ON f.chat_item_id = i.chat_item_id
             LEFT JOIN group_members m ON m.group_member_id = i.group_member_id
             LEFT JOIN contact_profiles p ON p.contact_profile_id = m.contact_profile_id
             LEFT JOIN chat_items ri ON i.quoted_shared_msg_id = ri.shared_msg_id
@@ -2863,6 +2888,8 @@ getGroupChatAfter_ db user@User {userId, userContactId} groupId afterChatItemId 
             SELECT
               -- ChatItem
               i.chat_item_id, i.item_ts, i.item_content, i.item_text, i.item_status, i.shared_msg_id, i.item_deleted, i.item_edited, i.created_at,
+              -- CIFile
+              f.file_id, f.file_name, f.file_size, f.file_path, f.ci_file_status,
               -- GroupMember
               m.group_member_id, m.group_id, m.member_id, m.member_role, m.member_category,
               m.member_status, m.invited_by, m.local_display_name, m.contact_id,
@@ -2874,6 +2901,7 @@ getGroupChatAfter_ db user@User {userId, userContactId} groupId afterChatItemId 
               rm.member_status, rm.invited_by, rm.local_display_name, rm.contact_id,
               rp.display_name, rp.full_name, rp.image
             FROM chat_items i
+            LEFT JOIN files f ON f.chat_item_id = i.chat_item_id
             LEFT JOIN group_members m ON m.group_member_id = i.group_member_id
             LEFT JOIN contact_profiles p ON p.contact_profile_id = m.contact_profile_id
             LEFT JOIN chat_items ri ON i.quoted_shared_msg_id = ri.shared_msg_id
@@ -2903,6 +2931,8 @@ getGroupChatBefore_ db user@User {userId, userContactId} groupId beforeChatItemI
             SELECT
               -- ChatItem
               i.chat_item_id, i.item_ts, i.item_content, i.item_text, i.item_status, i.shared_msg_id, i.item_deleted, i.item_edited, i.created_at,
+              -- CIFile
+              f.file_id, f.file_name, f.file_size, f.file_path, f.ci_file_status,
               -- GroupMember
               m.group_member_id, m.group_id, m.member_id, m.member_role, m.member_category,
               m.member_status, m.invited_by, m.local_display_name, m.contact_id,
@@ -2914,6 +2944,7 @@ getGroupChatBefore_ db user@User {userId, userContactId} groupId beforeChatItemI
               rm.member_status, rm.invited_by, rm.local_display_name, rm.contact_id,
               rp.display_name, rp.full_name, rp.image
             FROM chat_items i
+            LEFT JOIN files f ON f.chat_item_id = i.chat_item_id
             LEFT JOIN group_members m ON m.group_member_id = i.group_member_id
             LEFT JOIN contact_profiles p ON p.contact_profile_id = m.contact_profile_id
             LEFT JOIN chat_items ri ON i.quoted_shared_msg_id = ri.shared_msg_id
@@ -3138,9 +3169,12 @@ getDirectChatItem_ db userId contactId itemId = do
           SELECT
             -- ChatItem
             i.chat_item_id, i.item_ts, i.item_content, i.item_text, i.item_status, i.shared_msg_id, i.item_deleted, i.item_edited, i.created_at,
+            -- CIFile
+            f.file_id, f.file_name, f.file_size, f.file_path, f.ci_file_status,
             -- DirectQuote
             ri.chat_item_id, i.quoted_shared_msg_id, i.quoted_sent_at, i.quoted_content, i.quoted_sent
           FROM chat_items i
+          LEFT JOIN files f ON f.chat_item_id = i.chat_item_id
           LEFT JOIN chat_items ri ON i.quoted_shared_msg_id = ri.shared_msg_id
           WHERE i.user_id = ? AND i.contact_id = ? AND i.chat_item_id = ?
         |]
@@ -3265,6 +3299,8 @@ getGroupChatItem_ db User {userId, userContactId} groupId itemId = do
           SELECT
             -- ChatItem
             i.chat_item_id, i.item_ts, i.item_content, i.item_text, i.item_status, i.shared_msg_id, i.item_deleted, i.item_edited, i.created_at,
+            -- CIFile
+            f.file_id, f.file_name, f.file_size, f.file_path, f.ci_file_status,
             -- GroupMember
             m.group_member_id, m.group_id, m.member_id, m.member_role, m.member_category,
             m.member_status, m.invited_by, m.local_display_name, m.contact_id,
@@ -3276,6 +3312,7 @@ getGroupChatItem_ db User {userId, userContactId} groupId itemId = do
             rm.member_status, rm.invited_by, rm.local_display_name, rm.contact_id,
             rp.display_name, rp.full_name, rp.image
           FROM chat_items i
+          LEFT JOIN files f ON f.chat_item_id = i.chat_item_id
           LEFT JOIN group_members m ON m.group_member_id = i.group_member_id
           LEFT JOIN contact_profiles p ON p.contact_profile_id = m.contact_profile_id
           LEFT JOIN chat_items ri ON i.quoted_shared_msg_id = ri.shared_msg_id
@@ -3359,19 +3396,13 @@ type ChatStatsRow = (Int, ChatItemId)
 toChatStats :: ChatStatsRow -> ChatStats
 toChatStats (unreadCount, minUnreadItemId) = ChatStats {unreadCount, minUnreadItemId}
 
-type ChatItemRow = (Int64, ChatItemTs, ACIContent, Text, ACIStatus, Maybe SharedMsgId, Bool, Maybe Bool, UTCTime)
+type MaybeCIFIleRow = (Maybe Int64, Maybe String, Maybe Integer, Maybe FilePath, Maybe ACIFileStatus)
 
-type MaybeChatItemRow = (Maybe Int64, Maybe ChatItemTs, Maybe ACIContent, Maybe Text, Maybe ACIStatus, Maybe SharedMsgId, Maybe Bool, Maybe Bool, Maybe UTCTime)
+type ChatItemRow = (Int64, ChatItemTs, ACIContent, Text, ACIStatus, Maybe SharedMsgId, Bool, Maybe Bool, UTCTime) :. MaybeCIFIleRow
+
+type MaybeChatItemRow = (Maybe Int64, Maybe ChatItemTs, Maybe ACIContent, Maybe Text, Maybe ACIStatus, Maybe SharedMsgId, Maybe Bool, Maybe Bool, Maybe UTCTime) :. MaybeCIFIleRow
 
 type QuoteRow = (Maybe ChatItemId, Maybe SharedMsgId, Maybe UTCTime, Maybe MsgContent, Maybe Bool)
-
--- type DirectChatItemRow = ChatItemRow :. DirectQuoteRow
-
--- type MaybeDirectChatItemRow = MaybeChatItemRow :. DirectQuoteRow
-
--- toQuoteData :: QuoteDataRow -> Maybe CIQuoteData
--- toQuoteData (quotedItemId, quotedSentAt, quotedMsgContent) =
---   CIQuoteData quotedItemId <$> quotedSentAt <*> quotedMsgContent <*> (parseMaybeMarkdownList . msgContentText <$> quotedMsgContent)
 
 toDirectQuote :: QuoteRow -> Maybe (CIQuote 'CTDirect)
 toDirectQuote qr@(_, _, _, _, quotedSent) = toQuote qr $ direction <$> quotedSent
@@ -3383,22 +3414,33 @@ toQuote (quotedItemId, quotedSharedMsgId, quotedSentAt, quotedMsgContent, _) dir
   CIQuote <$> dir <*> pure quotedItemId <*> pure quotedSharedMsgId <*> quotedSentAt <*> quotedMsgContent <*> (parseMaybeMarkdownList . msgContentText <$> quotedMsgContent)
 
 toDirectChatItem :: TimeZone -> UTCTime -> ChatItemRow :. QuoteRow -> Either StoreError (CChatItem 'CTDirect)
-toDirectChatItem tz currentTs ((itemId, itemTs, itemContent, itemText, itemStatus, sharedMsgId, itemDeleted, itemEdited, createdAt) :. quoteRow) =
-  case (itemContent, itemStatus) of
-    (ACIContent SMDSnd ciContent, ACIStatus SMDSnd ciStatus) -> Right $ cItem SMDSnd CIDirectSnd ciStatus ciContent
-    (ACIContent SMDRcv ciContent, ACIStatus SMDRcv ciStatus) -> Right $ cItem SMDRcv CIDirectRcv ciStatus ciContent
+toDirectChatItem tz currentTs (((itemId, itemTs, itemContent, itemText, itemStatus, sharedMsgId, itemDeleted, itemEdited, createdAt) :. (fileId_, fileName_, fileSize_, filePath, fileStatus_)) :. quoteRow) =
+  case (itemContent, itemStatus, fileStatus_) of
+    (ACIContent SMDSnd ciContent, ACIStatus SMDSnd ciStatus, Just (AFS SMDSnd fileStatus)) ->
+      Right $ cItem SMDSnd CIDirectSnd ciStatus ciContent (maybeCIFile fileStatus)
+    (ACIContent SMDSnd ciContent, ACIStatus SMDSnd ciStatus, Nothing) ->
+      Right $ cItem SMDSnd CIDirectSnd ciStatus ciContent Nothing
+    (ACIContent SMDRcv ciContent, ACIStatus SMDRcv ciStatus, Just (AFS SMDRcv fileStatus)) ->
+      Right $ cItem SMDRcv CIDirectRcv ciStatus ciContent (maybeCIFile fileStatus)
+    (ACIContent SMDRcv ciContent, ACIStatus SMDRcv ciStatus, Nothing) ->
+      Right $ cItem SMDRcv CIDirectRcv ciStatus ciContent Nothing
     _ -> badItem
   where
-    cItem :: MsgDirectionI d => SMsgDirection d -> CIDirection 'CTDirect d -> CIStatus d -> CIContent d -> CChatItem 'CTDirect
-    cItem d chatDir ciStatus content =
-      CChatItem d ChatItem {chatDir, meta = ciMeta content ciStatus, content, formattedText = parseMaybeMarkdownList itemText, quotedItem = toDirectQuote quoteRow}
+    maybeCIFile :: CIFileStatus d -> Maybe (CIFile d)
+    maybeCIFile fileStatus =
+      case (fileId_, fileName_, fileSize_) of
+        (Just fileId, Just fileName, Just fileSize) -> Just CIFile {fileId, fileName, fileSize, filePath, fileStatus}
+        _ -> Nothing
+    cItem :: MsgDirectionI d => SMsgDirection d -> CIDirection 'CTDirect d -> CIStatus d -> CIContent d -> Maybe (CIFile d) -> CChatItem 'CTDirect
+    cItem d chatDir ciStatus content file =
+      CChatItem d ChatItem {chatDir, meta = ciMeta content ciStatus, content, formattedText = parseMaybeMarkdownList itemText, quotedItem = toDirectQuote quoteRow, file}
     badItem = Left $ SEBadChatItem itemId
     ciMeta :: CIContent d -> CIStatus d -> CIMeta d
     ciMeta content status = mkCIMeta itemId content itemText status sharedMsgId itemDeleted (fromMaybe False itemEdited) tz currentTs itemTs createdAt
 
 toDirectChatItemList :: TimeZone -> UTCTime -> MaybeChatItemRow :. QuoteRow -> [CChatItem 'CTDirect]
-toDirectChatItemList tz currentTs ((Just itemId, Just itemTs, Just itemContent, Just itemText, Just itemStatus, sharedMsgId, Just itemDeleted, itemEdited, Just createdAt) :. quoteRow) =
-  either (const []) (: []) $ toDirectChatItem tz currentTs ((itemId, itemTs, itemContent, itemText, itemStatus, sharedMsgId, itemDeleted, itemEdited, createdAt) :. quoteRow)
+toDirectChatItemList tz currentTs (((Just itemId, Just itemTs, Just itemContent, Just itemText, Just itemStatus, sharedMsgId, Just itemDeleted, itemEdited, Just createdAt) :. fileRow) :. quoteRow) =
+  either (const []) (: []) $ toDirectChatItem tz currentTs (((itemId, itemTs, itemContent, itemText, itemStatus, sharedMsgId, itemDeleted, itemEdited, createdAt) :. fileRow) :. quoteRow)
 toDirectChatItemList _ _ _ = []
 
 type GroupQuoteRow = QuoteRow :. MaybeGroupMemberRow
@@ -3414,24 +3456,35 @@ toGroupQuote qr@(_, _, _, _, quotedSent) quotedMember_ = toQuote qr $ direction 
     direction _ _ = Nothing
 
 toGroupChatItem :: TimeZone -> UTCTime -> Int64 -> ChatItemRow :. MaybeGroupMemberRow :. GroupQuoteRow -> Either StoreError (CChatItem 'CTGroup)
-toGroupChatItem tz currentTs userContactId ((itemId, itemTs, itemContent, itemText, itemStatus, sharedMsgId, itemDeleted, itemEdited, createdAt) :. memberRow_ :. quoteRow :. quotedMemberRow_) = do
+toGroupChatItem tz currentTs userContactId (((itemId, itemTs, itemContent, itemText, itemStatus, sharedMsgId, itemDeleted, itemEdited, createdAt) :. (fileId_, fileName_, fileSize_, filePath, fileStatus_)) :. memberRow_ :. quoteRow :. quotedMemberRow_) = do
   let member_ = toMaybeGroupMember userContactId memberRow_
   let quotedMember_ = toMaybeGroupMember userContactId quotedMemberRow_
-  case (itemContent, itemStatus, member_) of
-    (ACIContent SMDSnd ciContent, ACIStatus SMDSnd ciStatus, _) -> Right $ cItem SMDSnd CIGroupSnd ciStatus ciContent quotedMember_
-    (ACIContent SMDRcv ciContent, ACIStatus SMDRcv ciStatus, Just member) -> Right $ cItem SMDRcv (CIGroupRcv member) ciStatus ciContent quotedMember_
+  case (itemContent, itemStatus, member_, fileStatus_) of
+    (ACIContent SMDSnd ciContent, ACIStatus SMDSnd ciStatus, _, Just (AFS SMDSnd fileStatus)) ->
+      Right $ cItem SMDSnd CIGroupSnd ciStatus ciContent quotedMember_ (maybeCIFile fileStatus)
+    (ACIContent SMDSnd ciContent, ACIStatus SMDSnd ciStatus, _, Nothing) ->
+      Right $ cItem SMDSnd CIGroupSnd ciStatus ciContent quotedMember_ Nothing
+    (ACIContent SMDRcv ciContent, ACIStatus SMDRcv ciStatus, Just member, Just (AFS SMDRcv fileStatus)) ->
+      Right $ cItem SMDRcv (CIGroupRcv member) ciStatus ciContent quotedMember_ (maybeCIFile fileStatus)
+    (ACIContent SMDRcv ciContent, ACIStatus SMDRcv ciStatus, Just member, Nothing) ->
+      Right $ cItem SMDRcv (CIGroupRcv member) ciStatus ciContent quotedMember_ Nothing
     _ -> badItem
   where
-    cItem :: MsgDirectionI d => SMsgDirection d -> CIDirection 'CTGroup d -> CIStatus d -> CIContent d -> Maybe GroupMember -> CChatItem 'CTGroup
-    cItem d chatDir ciStatus content quotedMember_ =
-      CChatItem d ChatItem {chatDir, meta = ciMeta content ciStatus, content, formattedText = parseMaybeMarkdownList itemText, quotedItem = toGroupQuote quoteRow quotedMember_}
+    maybeCIFile :: CIFileStatus d -> Maybe (CIFile d)
+    maybeCIFile fileStatus =
+      case (fileId_, fileName_, fileSize_) of
+        (Just fileId, Just fileName, Just fileSize) -> Just CIFile {fileId, fileName, fileSize, filePath, fileStatus}
+        _ -> Nothing
+    cItem :: MsgDirectionI d => SMsgDirection d -> CIDirection 'CTGroup d -> CIStatus d -> CIContent d -> Maybe GroupMember -> Maybe (CIFile d) -> CChatItem 'CTGroup
+    cItem d chatDir ciStatus content quotedMember_ file =
+      CChatItem d ChatItem {chatDir, meta = ciMeta content ciStatus, content, formattedText = parseMaybeMarkdownList itemText, quotedItem = toGroupQuote quoteRow quotedMember_, file}
     badItem = Left $ SEBadChatItem itemId
     ciMeta :: CIContent d -> CIStatus d -> CIMeta d
     ciMeta content status = mkCIMeta itemId content itemText status sharedMsgId itemDeleted (fromMaybe False itemEdited) tz currentTs itemTs createdAt
 
 toGroupChatItemList :: TimeZone -> UTCTime -> Int64 -> MaybeGroupChatItemRow -> [CChatItem 'CTGroup]
-toGroupChatItemList tz currentTs userContactId ((Just itemId, Just itemTs, Just itemContent, Just itemText, Just itemStatus, sharedMsgId, Just itemDeleted, itemEdited, Just createdAt) :. memberRow_ :. quoteRow :. quotedMemberRow_) =
-  either (const []) (: []) $ toGroupChatItem tz currentTs userContactId ((itemId, itemTs, itemContent, itemText, itemStatus, sharedMsgId, itemDeleted, itemEdited, createdAt) :. memberRow_ :. quoteRow :. quotedMemberRow_)
+toGroupChatItemList tz currentTs userContactId (((Just itemId, Just itemTs, Just itemContent, Just itemText, Just itemStatus, sharedMsgId, Just itemDeleted, itemEdited, Just createdAt) :. fileRow) :. memberRow_ :. quoteRow :. quotedMemberRow_) =
+  either (const []) (: []) $ toGroupChatItem tz currentTs userContactId (((itemId, itemTs, itemContent, itemText, itemStatus, sharedMsgId, itemDeleted, itemEdited, createdAt) :. fileRow) :. memberRow_ :. quoteRow :. quotedMemberRow_)
 toGroupChatItemList _ _ _ _ = []
 
 getSMPServers :: MonadUnliftIO m => SQLiteStore -> User -> m [SMPServer]
