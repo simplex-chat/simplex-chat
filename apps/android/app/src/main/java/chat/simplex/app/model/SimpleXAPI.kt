@@ -15,8 +15,7 @@ import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.*
-import chat.simplex.app.views.helpers.AlertManager
-import chat.simplex.app.views.helpers.withApi
+import chat.simplex.app.views.helpers.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
@@ -76,15 +75,19 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
   suspend fun sendCmd(cmd: CC): CR {
     return withContext(Dispatchers.IO) {
       val c = cmd.cmdString
-      chatModel.terminalItems.add(TerminalItem.cmd(cmd))
+      if (cmd !is CC.ApiParseMarkdown) {
+        chatModel.terminalItems.add(TerminalItem.cmd(cmd))
+        Log.d(TAG, "sendCmd: ${cmd.cmdType}")
+      }
       val json = chatSendCmd(ctrl, c)
-      Log.d(TAG, "sendCmd: ${cmd.cmdType}")
       val r = APIResponse.decodeStr(json)
       Log.d(TAG, "sendCmd response type ${r.resp.responseType}")
       if (r.resp is CR.Response || r.resp is CR.Invalid) {
         Log.d(TAG, "sendCmd response json $json")
       }
-      chatModel.terminalItems.add(TerminalItem.resp(r.resp))
+      if (r.resp !is CR.ParsedMarkdown) {
+        chatModel.terminalItems.add(TerminalItem.resp(r.resp))
+      }
       r.resp
     }
   }
@@ -237,6 +240,13 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
     if (r is CR.UserProfileNoChange) return profile
     if (r is CR.UserProfileUpdated) return r.toProfile
     Log.e(TAG, "apiUpdateProfile bad response: ${r.responseType} ${r.details}")
+    return null
+  }
+
+  suspend fun apiParseMarkdown(text: String): List<FormattedText>? {
+    val r = sendCmd(CC.ApiParseMarkdown(text))
+    if (r is CR.ParsedMarkdown) return r.formattedText
+    Log.e(TAG, "apiParseMarkdown bad response: ${r.responseType} ${r.details}")
     return null
   }
 
@@ -479,6 +489,7 @@ sealed class CC {
   class Connect(val connReq: String): CC()
   class ApiDeleteChat(val type: ChatType, val id: Long): CC()
   class ApiUpdateProfile(val profile: Profile): CC()
+  class ApiParseMarkdown(val text: String): CC()
   class CreateMyAddress: CC()
   class DeleteMyAddress: CC()
   class ShowMyAddress: CC()
@@ -503,6 +514,7 @@ sealed class CC {
     is Connect -> "/connect $connReq"
     is ApiDeleteChat -> "/_delete ${chatRef(type, id)}"
     is ApiUpdateProfile -> "/_profile ${json.encodeToString(profile)}"
+    is ApiParseMarkdown -> "/_parse $text"
     is CreateMyAddress -> "/address"
     is DeleteMyAddress -> "/delete_address"
     is ShowMyAddress -> "/show_address"
@@ -528,6 +540,7 @@ sealed class CC {
     is Connect -> "connect"
     is ApiDeleteChat -> "apiDeleteChat"
     is ApiUpdateProfile -> "updateProfile"
+    is ApiParseMarkdown -> "apiParseMarkdown"
     is CreateMyAddress -> "createMyAddress"
     is DeleteMyAddress -> "deleteMyAddress"
     is ShowMyAddress -> "showMyAddress"
@@ -588,6 +601,7 @@ sealed class CR {
   @Serializable @SerialName("contactDeleted") class ContactDeleted(val contact: Contact): CR()
   @Serializable @SerialName("userProfileNoChange") class UserProfileNoChange: CR()
   @Serializable @SerialName("userProfileUpdated") class UserProfileUpdated(val fromProfile: Profile, val toProfile: Profile): CR()
+  @Serializable @SerialName("apiParsedMarkdown") class ParsedMarkdown(val formattedText: List<FormattedText>? = null): CR()
   @Serializable @SerialName("userContactLink") class UserContactLink(val connReqContact: String): CR()
   @Serializable @SerialName("userContactLinkCreated") class UserContactLinkCreated(val connReqContact: String): CR()
   @Serializable @SerialName("userContactLinkDeleted") class UserContactLinkDeleted: CR()
@@ -628,6 +642,7 @@ sealed class CR {
     is ContactDeleted -> "contactDeleted"
     is UserProfileNoChange -> "userProfileNoChange"
     is UserProfileUpdated -> "userProfileUpdated"
+    is ParsedMarkdown -> "apiParsedMarkdown"
     is UserContactLink -> "userContactLink"
     is UserContactLinkCreated -> "userContactLinkCreated"
     is UserContactLinkDeleted -> "userContactLinkDeleted"
@@ -669,6 +684,7 @@ sealed class CR {
     is ContactDeleted -> json.encodeToString(contact)
     is UserProfileNoChange -> noDetails()
     is UserProfileUpdated -> json.encodeToString(toProfile)
+    is ParsedMarkdown -> json.encodeToString(formattedText)
     is UserContactLink -> connReqContact
     is UserContactLinkCreated -> connReqContact
     is UserContactLinkDeleted -> noDetails()
