@@ -214,7 +214,7 @@ processChatCommand = \case
             quoteData :: CIContent d -> m (MsgContent, CIQDirection 'CTDirect, Bool)
             quoteData (CISndMsgContent qmc) = pure (qmc, CIQDirectSnd, True)
             quoteData (CIRcvMsgContent qmc) = pure (qmc, CIQDirectRcv, False)
-            quoteData _ = throwError $ ChatError CEInvalidQuote
+            quoteData _ = throwChatError CEInvalidQuote
     CTGroup -> do
       Group gInfo@GroupInfo {membership, localDisplayName = gName} ms <- withStore $ \st -> getGroup st user chatId
       unless (memberActive membership) $ throwChatError CEGroupMemberUserRemoved
@@ -250,7 +250,7 @@ processChatCommand = \case
             quoteData :: CIContent d -> CIDirection 'CTGroup d -> GroupMember -> m (MsgContent, CIQDirection 'CTGroup, Bool, GroupMember)
             quoteData (CISndMsgContent qmc) CIGroupSnd membership' = pure (qmc, CIQGroupSnd, True, membership')
             quoteData (CIRcvMsgContent qmc) (CIGroupRcv m) _ = pure (qmc, CIQGroupRcv $ Just m, False, m)
-            quoteData _ _ _ = throwError $ ChatError CEInvalidQuote
+            quoteData _ _ _ = throwChatError CEInvalidQuote
     CTContactRequest -> pure $ chatCmdError "not supported"
     where
       quoteContent qmc = \case
