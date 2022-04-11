@@ -30,11 +30,13 @@
 
 **Unlike any other messaging platform, SimpleX, has no identifiers assigned to the users** - we do not use phone numbers (like Signal or WhatsApp), email addresses, usernames (like Telegram), public keys or even random numbers (like all other messengers) to identify our users - in fact, we do not even know how many users we have.
 
-To deliver messages instead of user identifiers used by other platforms SimpleX uses the addresses of ephemeral message queues. Using SimpleX is like having several different email addresses or phone numbers to communicate with each (!) contact you have, never using the same address for more than one contact, but without the hassle of managing all these addresses. This approach protects the privacy of who are you communicating with, hiding it from SimpleX platform servers and any observers. You can further improve your privacy by configuring your network access to connect SimpleX servers via some overlay transport network, e.g. Tor.
+To deliver messages instead of user identifiers used by other platforms SimpleX uses the addresses of ephemeral message queues. Using SimpleX is like having several different email addresses or phone numbers to communicate with each (!) contact you have, never using the same address for more than one contact, but without the hassle of managing all these addresses.
+
+This approach protects the privacy of who are you communicating with, hiding it from SimpleX platform servers and any observers. You can further improve your privacy by configuring your network access to connect SimpleX servers via some overlay transport network, e.g. Tor.
 
 ### Protection against spam or abuse
 
-As you would have no identifier on SimpleX platform, you cannot be contacted unless you share a one-time invitation link or an optional temporary user address. Even with the user address, while it makes it possible to send spam contact requests, you can change it or completely delete it without losing any of your connections.
+As you would have no identifier on SimpleX platform, you cannot be contacted unless you share a one-time invitation link or an optional temporary user address. Even with the optinal user addresses, while they make it possible to send spam contact requests, you can change or completely delete it without losing any of your connections.
 
 ### Complete ownership and control of your data
 
@@ -44,7 +46,13 @@ We use portable database format that can be used on all supported devices - we w
 
 ### Nobody owns SimpleX network or hosts user accounts
 
-You can use SimpleX with your own servers, and communicate with people using the servers we pre-configured in the apps or any other SimpleX servers. Unlike federated networks, like email, XMPP or Matrix, SimpleX servers do not store user accounts - they simply relay messages to the recipients, protecting the privacy of both senders and resipients - there are no identifiers or encrypted messages in common between sent and received traffic of the server, thanks to the additional encryption layer for delivered messages, so whoever is observing server traffic cannot see who is communicating with whom (other than by message time).
+You can use SimpleX with your own servers and still communicate with people using the servers that are pre-configured in the apps or any other SimpleX servers. Unlike federated networks (email, XMPP or Matrix), SimpleX servers do not store user accounts, they simply relay messages to the recipients, protecting the privacy of both senders and resipients. There are no identifiers or encrypted messages in common between sent and received traffic of the server, thanks to the additional encryption layer for delivered messages. So if anybody is observing server traffic, they cannot determine who is communicating with whom (other than by message time).
+
+SimpleX platform uses an open public protocol, and will provide an SDK to create chat bots, allowing implementation of services that users can interact with via SimpleX mobile apps.
+
+## What people say
+
+TODO
 
 ## News and updates
 
@@ -63,10 +71,6 @@ You need to share a link or scan a QR code (in person or during a video call) to
 The channel through which you share the link does not have to be secure - it is enough that you can confirm who sent you the message and that your connection is established.
 
 <img src="https://github.com/simplex-chat/.github/blob/master/profile/images/conversation.png" alt="Make a private connection" width="594" height="360">
-
-## What people say
-
-...
 
 ## :zap: Quick installation of a terminal app
 
