@@ -46,6 +46,16 @@ We use portable database format that can be used on all supported devices - we w
 
 You can use SimpleX with your own servers, and communicate with people using the servers we pre-configured in the apps or any other SimpleX servers. Unlike federated networks, like email, XMPP or Matrix, SimpleX servers do not store user accounts - they simply relay messages to the recipients, protecting the privacy of both senders and resipients - there are no identifiers or encrypted messages in common between sent and received traffic of the server, thanks to the additional encryption layer for delivered messages, so whoever is observing server traffic cannot see who is communicating with whom (other than by message time).
 
+## News and updates
+
+[Apr 04, 2022. Instant notifications for SimpleX Chat mobile apps](./blog/20220404-simplex-chat-instant-notifications.md). We would really appreciate any feedback on the design we are implementing.
+
+[Mar 08, 2022 Mobile apps for iOS and Android released](./blog/20220308-simplex-chat-mobile-apps.md)
+
+[Feb 14, 2022. SimpleX Chat: join our public beta for iOS](./blog/20220214-simplex-chat-ios-public-beta.md)
+
+[All updates](./blog)
+
 ## Make a private connection
 
 You need to share a link or scan a QR code (in person or during a video call) to make a connection and start messaging.
@@ -81,16 +91,6 @@ Unlike federated networks, the participating server nodes **do not have records 
 The routing of messages relies on the data stored in client devices about which disposbale queues are used for user's contacts and groups.
 
 See [SimpleX whitepaper](https://github.com/simplex-chat/simplexmq/blob/master/protocol/overview-tjr.md) for more information on platform objectives and technical design.
-
-## News and updates
-
-[Apr 04, 2022. Instant notifications for SimpleX Chat mobile apps](./blog/20220404-simplex-chat-instant-notifications.md). We would really appreciate any feedback on the design we are implementing.
-
-[Mar 08, 2022 Mobile apps for iOS and Android released](./blog/20220308-simplex-chat-mobile-apps.md)
-
-[Feb 14, 2022. SimpleX Chat: join our public beta for iOS](./blog/20220214-simplex-chat-ios-public-beta.md)
-
-[All updates](./blog)
 
 ## Roadmap
 
