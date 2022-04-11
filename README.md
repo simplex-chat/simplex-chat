@@ -30,31 +30,31 @@ Everyone should care about privacy and security of their communications - even o
 
 ### Full privacy of your identity, profile, contacts and metadata
 
-**Unlike any other existing messaging platform, SimpleX, has no identifiers assigned to the users** - SimpleX does not use phone numbers (like Signal or WhatsApp), domain-based addresses (like XMPP or Matrix), usernames (like Telegram), public keys or even random numbers (like all other messengers) to identify its users - we do not even know how many people use SimpleX.
+**Unlike any other existing messaging platform, SimpleX has no identifiers assigned to the users** - it does not use phone numbers (like Signal or WhatsApp), domain-based addresses (like email, XMPP or Matrix), usernames (like Telegram), public keys or even random numbers (like all other messengers) to identify its users - we do not even know how many people use SimpleX.
 
 To deliver the messages instead of user identifiers that all other platforms use, SimpleX uses the addresses of unidirectional (simplex) message queues. Using SimpleX is like having a different email address or a phone number for each contact you have, but without the hassle of managing all these addresses. In the near future SimpleX apps will also change the message queues automatically, moving the conversations from one server to another, to provide even better privacy to the users.
 
-This approach protects the privacy of who are you communicating with, hiding it from SimpleX platform servers and from any observers. You can further improve your privacy by configuring your network access to connect SimpleX servers via some overlay transport network, e.g. Tor.
+This approach protects the privacy of who are you communicating with, hiding it from SimpleX platform servers and from any observers. You can further improve your privacy by configuring your network access to connect to SimpleX servers via some overlay transport network, e.g. Tor.
 
 ### The best protection against spam and abuse
 
-As you would have no identifier on SimpleX platform, you cannot be contacted unless you share a one-time invitation link or an optional temporary user address. Even with the optinal user addresses, while they make it possible to send spam contact requests, you can change or completely delete it without losing any of your connections.
+As you have no identifier on SimpleX platform, you cannot be contacted unless you share a one-time invitation link or an optional temporary user address. Even with the optinal user addresses, while they can be used to send spam contact requests, you can change or completely delete it without losing any of your connections.
 
 ### Complete ownership, control and security of your data
 
 SimpleX stores all user data on client devices, the messages are only held temporarily on SimpleX relay servers until they are received.
 
-We use portable database format that can be used on all supported devices - we will soon add the ability to export the database from mobile apps so it can be used on another device.
+We use portable database format that can be used on all supported devices - we will soon add the ability to export the chat database from the mobile app so it can be used on another device.
 
-Unlike servers of federated networks (email, XMPP or Matrix), SimpleX servers do not store user accounts, they simply relay messages to the recipients, protecting the privacy of both parties. There are no identifiers or encrypted messages in common between sent and received traffic of the server, thanks to the additional encryption layer for delivered messages. So if anybody is observing server traffic, they cannot determine who is communicating with whom (other than by message time).
+Unlike servers of federated networks (email, XMPP or Matrix), SimpleX servers do not store user accounts, they simply relay messages to the recipients, protecting the privacy of both parties. There are no identifiers or encrypted messages in common between sent and received traffic of the server, thanks to the additional encryption layer for delivered messages. So if anybody is observing server traffic, they cannot easily determine who is communicating with whom (see [SimpleX whitepaper](https://github.com/simplex-chat/simplexmq/blob/master/protocol/overview-tjr.md) for the known traffic correlation attacks).
 
 ### Users own SimpleX network
 
 You can use SimpleX with your own servers and still communicate with people using the servers that are pre-configured in the apps or any other SimpleX servers.
 
-SimpleX platform uses an open public protocol, and provides SDK to create chat bots, allowing implementation of services that users can interact with via SimpleX mobile apps – we are really looking forward to see what SimpleX services will be built.
+SimpleX platform uses an open protocol and provides SDK to create chat bots, allowing implementation of services that users can interact with via SimpleX Chat apps – we are really looking forward to see what SimpleX services can be built.
 
-If you are considering developing on SimpleX platform, please get in touch - we will provide advice and support.
+If you are considering developing with SimpleX platform, whether to build chat bot service for SimpleX apps users or to integrate SimpleX Chat library in your mobile apps, please get in touch for any advice and support.
 
 ## News and updates
 
@@ -88,24 +88,24 @@ Read more about [installing and using the terminal app](./docs/CLI.md).
 
 ## SimpleX Platform design
 
-SimpleX is a client-server network that uses redundant, disposable message relay nodes to asynchronously pass messages via unidirectional (simplex) message queues, providing recipient and sender anonymity.
+SimpleX is a client-server network with a unique network topology that uses redundant, disposable message relay nodes to asynchronously pass messages via unidirectional (simplex) message queues, providing recipient and sender anonymity.
 
-Unlike P2P networks, all messages are passed through one or several servers, that do not even need to have persistence. In fact, the current [SMP server implementation](https://github.com/simplex-chat/simplexmq#smp-server) uses in-memory message storage, persisting only the queue records. SimpleX provides better metadata protection than P2P designs, as no global participant identifiers are required, and avoids many [problems of P2P networks](./docs/COMPARISON.md#comparison-with-p2p-messaging-protocols).
+Unlike P2P networks, all messages are passed through one or several server nodes, that do not even need to have persistence. In fact, the current [SMP server implementation](https://github.com/simplex-chat/simplexmq#smp-server) uses in-memory message storage, persisting only the queue records. SimpleX provides better metadata protection than P2P designs, as no global participant identifiers are used to deliver messages, and avoids [the problems of P2P networks](./docs/COMPARISON.md#comparison-with-p2p-messaging-protocols).
 
-Unlike federated networks, the server nodes **do not have records of the users**, **do not communicate with each other** and **do not store messages** after they are delivered to the recipients. There is no way to discover the full list of participating servers. SimpleX network design avoids the problem of metadata visibility that all federated networks have and better protects the network, as servers do not communicate with each other.
+Unlike federated networks, the server nodes **do not have records of the users**, **do not communicate with each other** and **do not store messages** after they are delivered to the recipients. There is no way to discover the full list of servers participating in SimpleX network. This design avoids the problem of metadata visibility that all federated networks have and better protects from the network-wide attacks.
 
-The routing of messages relies on the data stored in client devices about which message queues are used for user's contacts and groups.
+Only the client devices have information about users, their contacts and groups.
 
 See [SimpleX whitepaper](https://github.com/simplex-chat/simplexmq/blob/master/protocol/overview-tjr.md) for more information on platform objectives and technical design.
 
 ## Roadmap
 
-- ✅ Easy to deploy SimpleX server with in-memory message storage, without any dependencies - it can run on 256Mb Linux node.
-- ✅ Terminal client with groups and files support.
+- ✅ Easy to deploy SimpleX server with in-memory message storage, without any dependencies.
+- ✅ Terminal (console) client with groups and files support.
 - ✅ One-click SimpleX server deployment on Linode.
 - ✅ End-to-end encryption using double-ratchet protocol with additional encryption layer.
 - ✅ Mobile apps v1 for Android and iOS.
-- ✅ Private instant notifications for Android, using background service.
+- ✅ Private instant notifications for Android using background service.
 - ✅ Haskell chat bot templates
 - 🏗 Privacy preserving instant notifications for iOS using Apple Push Notification service (in progress).
 - 🏗 Mobile app v2 - supporting files, images and groups etc. (in progress).
