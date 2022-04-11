@@ -205,16 +205,16 @@ processChatCommand = \case
           Just quotedItemId -> do
             CChatItem _ ChatItem {meta = CIMeta {itemTs, itemSharedMsgId}, content = ciContent, formattedText} <-
               withStore $ \st -> getDirectChatItem st userId chatId quotedItemId
-            (origQmc, qd, sent) <- liftEither $ quoteData ciContent
+            (origQmc, qd, sent) <- quoteData ciContent
             let msgRef = MsgRef {msgId = itemSharedMsgId, sentAt = itemTs, sent, memberId = Nothing}
                 qmc = quoteContent origQmc mc
                 quotedItem = CIQuote {chatDir = qd, itemId = Just quotedItemId, sharedMsgId = itemSharedMsgId, sentAt = itemTs, content = qmc, formattedText}
             pure (MCQuote QuotedMsg {msgRef, content = qmc} (ExtMsgContent mc fileInvitation_), Just quotedItem)
           where
-            quoteData :: CIContent d -> Either ChatError (MsgContent, CIQDirection 'CTDirect, Bool)
-            quoteData (CISndMsgContent qmc) = Right (qmc, CIQDirectSnd, True)
-            quoteData (CIRcvMsgContent qmc) = Right (qmc, CIQDirectRcv, False)
-            quoteData _ = Left $ ChatError CEInvalidQuote
+            quoteData :: CIContent d -> m (MsgContent, CIQDirection 'CTDirect, Bool)
+            quoteData (CISndMsgContent qmc) = pure (qmc, CIQDirectSnd, True)
+            quoteData (CIRcvMsgContent qmc) = pure (qmc, CIQDirectRcv, False)
+            quoteData _ = throwChatError CEInvalidQuote
     CTGroup -> do
       Group gInfo@GroupInfo {membership, localDisplayName = gName} ms <- withStore $ \st -> getGroup st user chatId
       unless (memberActive membership) $ throwChatError CEGroupMemberUserRemoved
@@ -241,16 +241,16 @@ processChatCommand = \case
           Just quotedItemId -> do
             CChatItem _ ChatItem {chatDir, meta = CIMeta {itemTs, itemSharedMsgId}, content = ciContent, formattedText} <-
               withStore $ \st -> getGroupChatItem st user chatId quotedItemId
-            (origQmc, qd, sent, GroupMember {memberId}) <- liftEither $ quoteData ciContent chatDir membership
+            (origQmc, qd, sent, GroupMember {memberId}) <- quoteData ciContent chatDir membership
             let msgRef = MsgRef {msgId = itemSharedMsgId, sentAt = itemTs, sent, memberId = Just memberId}
                 qmc = quoteContent origQmc mc
                 quotedItem = CIQuote {chatDir = qd, itemId = Just quotedItemId, sharedMsgId = itemSharedMsgId, sentAt = itemTs, content = qmc, formattedText}
             pure (MCQuote QuotedMsg {msgRef, content = qmc} (ExtMsgContent mc fileInvitation_), Just quotedItem)
           where
-            quoteData :: CIContent d -> CIDirection 'CTGroup d -> GroupMember -> Either ChatError (MsgContent, CIQDirection 'CTGroup, Bool, GroupMember)
-            quoteData (CISndMsgContent qmc) CIGroupSnd membership' = Right (qmc, CIQGroupSnd, True, membership')
-            quoteData (CIRcvMsgContent qmc) (CIGroupRcv m) _ = Right (qmc, CIQGroupRcv $ Just m, False, m)
-            quoteData _ _ _ = Left $ ChatError CEInvalidQuote
+            quoteData :: CIContent d -> CIDirection 'CTGroup d -> GroupMember -> m (MsgContent, CIQDirection 'CTGroup, Bool, GroupMember)
+            quoteData (CISndMsgContent qmc) CIGroupSnd membership' = pure (qmc, CIQGroupSnd, True, membership')
+            quoteData (CIRcvMsgContent qmc) (CIGroupRcv m) _ = pure (qmc, CIQGroupRcv $ Just m, False, m)
+            quoteData _ _ _ = throwChatError CEInvalidQuote
     CTContactRequest -> pure $ chatCmdError "not supported"
     where
       quoteContent qmc = \case
