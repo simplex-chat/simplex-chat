@@ -229,6 +229,7 @@ struct ChatView: View {
                     let chatItem = try await apiSendMessage(
                         type: chat.chatInfo.chatType,
                         id: chat.chatInfo.apiId,
+                        file: nil,
                         quotedItemId: quotedItem?.meta.itemId,
                         msg: mc
                     )
