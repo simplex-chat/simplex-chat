@@ -196,7 +196,7 @@ SimpleX chat stores all your contacts and conversations in a local SQLite databa
 You can view and search your chat history by querying your database. Run the below script to create message views in your database.
 
 ```sh
-curl -o- https://raw.githubusercontent.com/simplex-chat/simplex-chat/stable/message_views.sql | sqlite3 ~/.simplex/simplex_v1_chat.db
+curl -o- https://raw.githubusercontent.com/simplex-chat/simplex-chat/stable/scripts/message_views.sql | sqlite3 ~/.simplex/simplex_v1_chat.db
 ```
 
 Open SQLite Command Line Shell:
