@@ -17,47 +17,48 @@ func dropImagePrefix(_ s: String) -> String {
     dropPrefix(dropPrefix(s, "data:image/png;base64,"), "data:image/jpg;base64,")
 }
 
-func resizeAndCrop(_ image: UIImage, to newSize: CGSize) -> UIImage {
+private func resizeImage(_ image: UIImage, newBounds: CGRect, drawIn: CGRect) -> UIImage {
     let format = UIGraphicsImageRendererFormat()
     format.scale = 1.0
     format.opaque = true
-    return UIGraphicsImageRenderer(bounds: CGRect(origin: .zero, size: newSize), format: format).image { _ in
-        let size = image.size
-        let hScale = newSize.height / size.height
-        let vScale = newSize.width / size.width
-        let scale = max(hScale, vScale) // scaleToFill
-        let resizeSize = CGSize(width: size.width * scale, height: size.height * scale)
-        var middle = CGPoint.zero
-        if resizeSize.width > newSize.width {
-            middle.x -= (resizeSize.width - newSize.width) / 2
-        } else if resizeSize.height > newSize.height {
-            middle.y -= (resizeSize.height - newSize.height) / 2
-        }
-        image.draw(in: CGRect(origin: middle, size: resizeSize))
+    return UIGraphicsImageRenderer(bounds: newBounds, format: format).image { _ in
+        image.draw(in: drawIn)
     }
 }
 
 func cropToSquare(_ image: UIImage) -> UIImage {
-    let side = min(image.size.width, image.size.height)
-    return resizeAndCrop(image, to: CGSize(width: side, height: side))
+    let size = image.size
+    let side = min(size.width, size.height)
+    let newSize = CGSize(width: side, height: side)
+    var origin = CGPoint.zero
+    if size.width > side {
+        origin.x -= (size.width - side) / 2
+    } else if size.height > side {
+        origin.y -= (size.height - side) / 2
+    }
+    return resizeImage(image, newBounds: CGRect(origin: .zero, size: newSize), drawIn: CGRect(origin: origin, size: size))
 }
 
-func resizeImageToDataSize(_ image: UIImage, maxSize: Int) -> String? {
-    let size = image.size
-    var imageStr = compressImage(image)
-    var resized = image
-    var ratio: CGFloat = 1
-    var dataSize = imageStr?.count ?? 0
-    logger.debug("resizeImageToDataSize: initial size \(String(describing: size)), data size \(dataSize)")
-    while dataSize != 0 && dataSize > maxSize {
-        ratio *= sqrt(CGFloat(dataSize / maxSize) * 1.2)
-        resized = resizeAndCrop(resized, to: CGSize(width: size.width / ratio, height: size.height / ratio))
-        imageStr = compressImage(resized)
-        dataSize = imageStr?.count ?? 0
-        logger.debug("resizeImageToDataSize: ratio \(ratio)")
+
+func reduceSize(_ image: UIImage, ratio: CGFloat) -> UIImage {
+    let newSize = CGSize(width: floor(image.size.width / ratio), height: floor(image.size.height / ratio))
+    let bounds = CGRect(origin: .zero, size: newSize)
+    return resizeImage(image, newBounds: bounds, drawIn: bounds)
+}
+
+func resizeImageToDataSize(_ image: UIImage, maxDataSize: Int) -> String? {
+    var img = image
+    var str = compressImage(img)
+    var dataSize = str?.count ?? 0
+    while dataSize != 0 && dataSize > maxDataSize {
+        let ratio = sqrt(Double(dataSize) / Double(maxDataSize))
+        let clippedRatio = min(ratio, 2.0)
+        img = reduceSize(img, ratio: clippedRatio)
+        str = compressImage(img)
+        dataSize = str?.count ?? 0
     }
-    logger.debug("resizeImageToDataSize: final size \(String(describing: resized.size)), data size \(dataSize)")
-    return imageStr
+    logger.debug("resizeImageToDataSize final \(dataSize)")
+    return str
 }
 
 func compressImage(_ image: UIImage, _ compressionQuality: CGFloat = 0.85) -> String? {
