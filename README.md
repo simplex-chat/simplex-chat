@@ -70,7 +70,7 @@ Once the chat client is installed, simply run `simplex-chat` from your terminal.
 
 ![simplex-chat](./images/connection.gif)
 
-Read more about installing and using the terminal app on [this page](./CLI.md).
+Read more about installing and using the terminal app on [this page](./docs/CLI.md).
 
 ## SimpleX Platform design
 
