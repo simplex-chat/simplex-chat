@@ -1,6 +1,7 @@
 package chat.simplex.app.views.chat
 
 import android.content.res.Configuration
+import android.util.Log
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -20,22 +21,83 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import chat.simplex.app.TAG
+import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.HighOrLowlight
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.chat.item.*
+import chat.simplex.app.views.helpers.getLinkPreview
+import chat.simplex.app.views.helpers.withApi
+import kotlinx.coroutines.delay
 
 @Composable
-fun SendMsgView(msg: MutableState<String>, sendMessage: (String) -> Unit, editing: Boolean = false) {
+fun SendMsgView(
+  msg: MutableState<String>,
+  linkPreview: MutableState<LinkPreview?>,
+  cancelledLinks: MutableSet<String>,
+  parseMarkdown: (String) -> List<FormattedText>?,
+  sendMessage: (String) -> Unit,
+  editing: Boolean = false
+) {
   val smallFont = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onBackground)
   var textStyle by remember { mutableStateOf(smallFont) }
+  val linkUrl = remember { mutableStateOf<String?>(null) }
+  val prevLinkUrl = remember { mutableStateOf<String?>(null) }
+  val pendingLinkUrl = remember { mutableStateOf<String?>(null) }
+
+  fun isSimplexLink(link: String): Boolean =
+    link.startsWith("https://simplex.chat",true) || link.startsWith("http://simplex.chat", true)
+
+  fun parseMessage(msg: String): String? {
+    val parsedMsg = parseMarkdown(msg)
+    val link = parsedMsg?.firstOrNull { ft -> ft.format is Format.Uri && !cancelledLinks.contains(ft.text) && !isSimplexLink(ft.text) }
+    return link?.text
+  }
+
+  fun loadLinkPreview(url: String, wait: Long? = null) {
+    if (pendingLinkUrl.value == url) {
+      withApi {
+        if (wait != null) delay(wait)
+        val lp = getLinkPreview(url)
+        if (pendingLinkUrl.value == url) {
+          linkPreview.value = lp
+          pendingLinkUrl.value = null
+        }
+      }
+    }
+  }
+
+  fun showLinkPreview(s: String) {
+    prevLinkUrl.value = linkUrl.value
+    linkUrl.value = parseMessage(s)
+    val url = linkUrl.value
+    if (url != null) {
+      if (url != linkPreview.value?.uri && url != pendingLinkUrl.value) {
+        pendingLinkUrl.value = url
+        loadLinkPreview(url, wait = if (prevLinkUrl.value == url) null else 1500L)
+      }
+    } else {
+      linkPreview.value = null
+    }
+  }
+
+  fun resetLinkPreview() {
+    linkUrl.value = null
+    prevLinkUrl.value = null
+    pendingLinkUrl.value = null
+    cancelledLinks.clear()
+  }
+
   BasicTextField(
     value = msg.value,
-    onValueChange = {
-      msg.value = it
-      textStyle = if (isShortEmoji(it)) {
-        if (it.codePoints().count() < 4) largeEmojiFont else mediumEmojiFont
+    onValueChange = { s ->
+      msg.value = s
+      if (isShortEmoji(s)) {
+        textStyle = if (s.codePoints().count() < 4) largeEmojiFont else mediumEmojiFont
       } else {
-        smallFont
+        textStyle = smallFont
+        if (s.isNotEmpty()) showLinkPreview(s)
+        else resetLinkPreview()
       }
     },
     textStyle = textStyle,
@@ -99,6 +161,9 @@ fun PreviewSendMsgView() {
   SimpleXTheme {
     SendMsgView(
       msg = remember { mutableStateOf("") },
+      linkPreview = remember {mutableStateOf<LinkPreview?>(null) },
+      cancelledLinks = mutableSetOf(),
+      parseMarkdown = { null },
       sendMessage = { msg -> println(msg) }
     )
   }
@@ -115,7 +180,10 @@ fun PreviewSendMsgViewEditing() {
   SimpleXTheme {
     SendMsgView(
       msg = remember { mutableStateOf("") },
+      linkPreview = remember {mutableStateOf<LinkPreview?>(null) },
+      cancelledLinks = mutableSetOf(),
       sendMessage = { msg -> println(msg) },
+      parseMarkdown = { null },
       editing = true
     )
   }

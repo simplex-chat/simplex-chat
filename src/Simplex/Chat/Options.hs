@@ -1,3 +1,5 @@
+{-# LANGUAGE ApplicativeDo #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Simplex.Chat.Options
@@ -20,13 +22,15 @@ data ChatOpts = ChatOpts
   { dbFilePrefix :: String,
     smpServers :: [SMPServer],
     logConnections :: Bool,
-    logAgent :: Bool
+    logAgent :: Bool,
+    chatCmd :: String,
+    chatCmdDelay :: Int
   }
 
 chatOpts :: FilePath -> FilePath -> Parser ChatOpts
-chatOpts appDir defaultDbFileName =
-  ChatOpts
-    <$> strOption
+chatOpts appDir defaultDbFileName = do
+  dbFilePrefix <-
+    strOption
       ( long "database"
           <> short 'd'
           <> metavar "DB_FILE"
@@ -34,7 +38,8 @@ chatOpts appDir defaultDbFileName =
           <> value defaultDbFilePath
           <> showDefault
       )
-    <*> option
+  smpServers <-
+    option
       parseSMPServers
       ( long "server"
           <> short 's'
@@ -43,16 +48,37 @@ chatOpts appDir defaultDbFileName =
             "Comma separated list of SMP server(s) to use"
           <> value []
       )
-    <*> switch
+  logConnections <-
+    switch
       ( long "connections"
           <> short 'c'
           <> help "Log every contact and group connection on start"
       )
-    <*> switch
+  logAgent <-
+    switch
       ( long "log-agent"
           <> short 'l'
           <> help "Enable logs from SMP agent"
       )
+  chatCmd <-
+    strOption
+      ( long "execute"
+          <> short 'e'
+          <> metavar "COMMAND"
+          <> help "Execute chat command (received messages won't be logged) and exit"
+          <> value ""
+      )
+  chatCmdDelay <-
+    option
+      auto
+      ( long "time"
+          <> short 't'
+          <> metavar "TIME"
+          <> help "Time to wait after sending chat command before exiting, seconds"
+          <> value 3
+          <> showDefault
+      )
+  pure ChatOpts {dbFilePrefix, smpServers, logConnections, logAgent, chatCmd, chatCmdDelay}
   where
     defaultDbFilePath = combine appDir defaultDbFileName
 

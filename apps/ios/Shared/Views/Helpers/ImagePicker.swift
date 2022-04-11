@@ -9,6 +9,65 @@
 import SwiftUI
 import PhotosUI
 
+func dropPrefix(_ s: String, _ prefix: String) -> String {
+    s.hasPrefix(prefix) ? String(s.dropFirst(prefix.count)) : s
+}
+
+func dropImagePrefix(_ s: String) -> String {
+    dropPrefix(dropPrefix(s, "data:image/png;base64,"), "data:image/jpg;base64,")
+}
+
+private func resizeImage(_ image: UIImage, newBounds: CGRect, drawIn: CGRect) -> UIImage {
+    let format = UIGraphicsImageRendererFormat()
+    format.scale = 1.0
+    format.opaque = true
+    return UIGraphicsImageRenderer(bounds: newBounds, format: format).image { _ in
+        image.draw(in: drawIn)
+    }
+}
+
+func cropToSquare(_ image: UIImage) -> UIImage {
+    let size = image.size
+    let side = min(size.width, size.height)
+    let newSize = CGSize(width: side, height: side)
+    var origin = CGPoint.zero
+    if size.width > side {
+        origin.x -= (size.width - side) / 2
+    } else if size.height > side {
+        origin.y -= (size.height - side) / 2
+    }
+    return resizeImage(image, newBounds: CGRect(origin: .zero, size: newSize), drawIn: CGRect(origin: origin, size: size))
+}
+
+
+func reduceSize(_ image: UIImage, ratio: CGFloat) -> UIImage {
+    let newSize = CGSize(width: floor(image.size.width / ratio), height: floor(image.size.height / ratio))
+    let bounds = CGRect(origin: .zero, size: newSize)
+    return resizeImage(image, newBounds: bounds, drawIn: bounds)
+}
+
+func resizeImageToDataSize(_ image: UIImage, maxDataSize: Int) -> String? {
+    var img = image
+    var str = compressImage(img)
+    var dataSize = str?.count ?? 0
+    while dataSize != 0 && dataSize > maxDataSize {
+        let ratio = sqrt(Double(dataSize) / Double(maxDataSize))
+        let clippedRatio = min(ratio, 2.0)
+        img = reduceSize(img, ratio: clippedRatio)
+        str = compressImage(img)
+        dataSize = str?.count ?? 0
+    }
+    logger.debug("resizeImageToDataSize final \(dataSize)")
+    return str
+}
+
+func compressImage(_ image: UIImage, _ compressionQuality: CGFloat = 0.85) -> String? {
+    if let data = image.jpegData(compressionQuality: compressionQuality) {
+        return "data:image/jpg;base64,\(data.base64EncodedString())"
+    }
+    return nil
+}
+
 enum ImageSource {
     case imageLibrary
     case camera
