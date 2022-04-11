@@ -38,7 +38,7 @@ As you would have no identifier on SimpleX platform, you cannot be contacted unl
 
 ### Complete ownership and control of your data
 
-SimpleX stores all user data on client devices, the messages are only held temporarily on SimpleX relay serverss until they are received.
+SimpleX stores all user data on client devices, the messages are only held temporarily on SimpleX relay servers until they are received.
 
 We use portable database format that can be used on all supported devices - we will soon add the ability to export the database from mobile apps so it can be used on another device.
 
@@ -88,7 +88,7 @@ Unlike P2P networks, all messages are passed through one or several (for redunda
 
 Unlike federated networks, the participating server nodes **do not have records of the users**, **do not communicate with each other** and **do not store messages** after they are delivered to the recipients, and there is no way to discover the full list of participating servers. SimpleX network design avoids the problem of metadata visibility that federated networks have and better protects the network, as servers do not communicate with each other. Each server node provides unidirectional "dumb pipes" to the users, that do access authorization without authenticating the users, on a per-resource basis, having no knowledge of the the users or their contacts. Each message queue is assigned two epheneral Ed448 keys - one for receiver and one for sender - and each queue access is authorized with a signature created using a respective key's private counterpart.
 
-The routing of messages relies on the data stored in client devices about which disposbale queues are used for user's contacts and groups.
+The routing of messages relies on the data stored in client devices about which disposable queues are used for user's contacts and groups.
 
 See [SimpleX whitepaper](https://github.com/simplex-chat/simplexmq/blob/master/protocol/overview-tjr.md) for more information on platform objectives and technical design.
 
