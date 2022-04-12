@@ -57,7 +57,7 @@ We plan that SimpleX platform will grow into the platform for any distributed In
 You already can:
 
 - use SimpleX Chat library to integrate chat functionality into your apps.
-- use SimpleX Chat bot templates in Haskell to build your own chat bot services (TypeScript SDK is coming soon)
+- use SimpleX Chat bot templates in Haskell to build your own chat bot services (TypeScript SDK is coming soon).
 
 If you are considering developing with SimpleX platform please get in touch for any advice and support.
 
