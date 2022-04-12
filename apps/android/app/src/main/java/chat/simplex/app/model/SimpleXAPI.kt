@@ -73,6 +73,10 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
     return false
   }
 
+  fun cancelNotificationsForChat(chatId: String) {
+    ntfManager.cancelNotificationsForChat(chatId)
+  }
+
   suspend fun sendCmd(cmd: CC): CR {
     return withContext(Dispatchers.IO) {
       val c = cmd.cmdString

@@ -29,6 +29,17 @@ class NtfManager(val context: Context) {
     ))
   }
 
+  fun cancelNotificationsForChat(chatId: String) {
+    prevNtfTime.remove(chatId)
+    val msgNtfs = manager.activeNotifications.filter {
+      ntf -> ntf.notification.channelId == MessageChannel
+    }
+    manager.cancel(chatId.hashCode())
+    if (msgNtfs.count() == 1) {
+      manager.cancel(0)
+    }
+  }
+
   fun notifyMessageReceived(cInfo: ChatInfo, cItem: ChatItem) {
     Log.d(TAG, "notifyMessageReceived ${cInfo.id}")
     val now = Clock.System.now().toEpochMilliseconds()
@@ -64,7 +75,7 @@ class NtfManager(val context: Context) {
     }
   }
 
-  private fun hideSecrets(cItem: ChatItem): String {
+  private fun hideSecrets(cItem: ChatItem) : String {
     val md = cItem.formattedText
     return if (md == null) {
       cItem.content.text
