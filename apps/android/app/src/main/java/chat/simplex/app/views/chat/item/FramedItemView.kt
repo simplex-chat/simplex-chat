@@ -73,7 +73,7 @@ fun FramedItemView(user: User, ci: ChatItem, uriHandler: UriHandler? = null, sho
           }
         }
       }
-      Box(Modifier.padding(bottom = 6.dp, end = 12.dp)) {
+      Box(Modifier.padding(start = 4.dp, bottom = 6.dp, end = 12.dp)) {
         CIMetaView(ci)
       }
     }
