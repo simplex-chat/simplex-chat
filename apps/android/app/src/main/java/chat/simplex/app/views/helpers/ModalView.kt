@@ -43,7 +43,7 @@ class ModalManager {
   }
 
   fun closeModal() {
-    if (!modalViews.isEmpty()) {
+    if (modalViews.isNotEmpty()) {
       modalViews.removeAt(modalViews.count() - 1)
     }
     modalCount.value = modalViews.count()

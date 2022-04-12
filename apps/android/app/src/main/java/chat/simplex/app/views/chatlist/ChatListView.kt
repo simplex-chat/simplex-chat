@@ -18,6 +18,7 @@ import chat.simplex.app.model.ChatModel
 import chat.simplex.app.ui.theme.ToolbarDark
 import chat.simplex.app.ui.theme.ToolbarLight
 import chat.simplex.app.views.chat.ChatHelpView
+import chat.simplex.app.views.newchat.ModalManager
 import chat.simplex.app.views.newchat.NewChatSheet
 import chat.simplex.app.views.usersettings.SettingsView
 import kotlinx.coroutines.CoroutineScope
@@ -63,6 +64,11 @@ fun scaffoldController(): ScaffoldController {
 @Composable
 fun ChatListView(chatModel: ChatModel) {
   val scaffoldCtrl = scaffoldController()
+  if (chatModel.clearOverlays.value) {
+    scaffoldCtrl.collapse()
+    ModalManager.shared.closeModal()
+    chatModel.clearOverlays.value = false
+  }
   BottomSheetScaffold(
     scaffoldState = scaffoldCtrl.state,
     drawerContent = { SettingsView(chatModel) },

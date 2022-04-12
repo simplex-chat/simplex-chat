@@ -14,6 +14,7 @@ class NtfManager(val context: Context) {
     const val MessageChannel: String = "chat.simplex.app.MESSAGE_NOTIFICATION"
     const val MessageGroup: String = "chat.simplex.app.MESSAGE_NOTIFICATION"
     const val OpenChatAction: String = "chat.simplex.app.OPEN_CHAT"
+    const val ShowChatsAction: String = "chat.simplex.app.SHOW_CHATS"
   }
 
   private val manager: NotificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -26,6 +27,18 @@ class NtfManager(val context: Context) {
       "SimpleX Chat messages",
       NotificationManager.IMPORTANCE_HIGH
     ))
+  }
+
+  fun cancelNotificationsForChat(chatId: String) {
+    prevNtfTime.remove(chatId)
+    manager.cancel(chatId.hashCode())
+    val msgNtfs = manager.activeNotifications.filter {
+      ntf -> ntf.notification.channelId == MessageChannel
+    }
+    if (msgNtfs.count() == 1) {
+      // Have a group notification with no children so cancel it
+      manager.cancel(0)
+    }
   }
 
   fun notifyMessageReceived(cInfo: ChatInfo, cItem: ChatItem) {
@@ -53,6 +66,7 @@ class NtfManager(val context: Context) {
       .setGroup(MessageGroup)
       .setGroupAlertBehavior(NotificationCompat.GROUP_ALERT_CHILDREN)
       .setGroupSummary(true)
+      .setContentIntent(getSummaryNtfIntent())
       .build()
 
     with(NotificationManagerCompat.from(context)) {
@@ -62,7 +76,7 @@ class NtfManager(val context: Context) {
     }
   }
 
-  private fun hideSecrets(cItem: ChatItem): String {
+  private fun hideSecrets(cItem: ChatItem) : String {
     val md = cItem.formattedText
     return if (md == null) {
       cItem.content.text
@@ -82,6 +96,18 @@ class NtfManager(val context: Context) {
       .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP)
       .putExtra("chatId", cInfo.id)
       .setAction(OpenChatAction)
+    return TaskStackBuilder.create(context).run {
+      addNextIntentWithParentStack(intent)
+      getPendingIntent(uniqueInt, PendingIntent.FLAG_IMMUTABLE)
+    }
+  }
+
+  private fun getSummaryNtfIntent() : PendingIntent{
+    Log.d(TAG, "getSummaryNtfIntent")
+    val uniqueInt = (System.currentTimeMillis() and 0xfffffff).toInt()
+    val intent = Intent(context, MainActivity::class.java)
+      .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+      .setAction(ShowChatsAction)
     return TaskStackBuilder.create(context).run {
       addNextIntentWithParentStack(intent)
       getPendingIntent(uniqueInt, PendingIntent.FLAG_IMMUTABLE)
