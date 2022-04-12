@@ -27,6 +27,10 @@ class ChatModel(val controller: ChatController) {
   var terminalItems = mutableStateListOf<TerminalItem>()
   var userAddress = mutableStateOf<String?>(null)
   var userSMPServers = mutableStateOf<(List<String>)?>(null)
+
+  // set when app opened from external intent
+  var clearOverlays = mutableStateOf<Boolean>(false)
+
   // set when app is opened via contact or invitation URI
   var appOpenUrl = mutableStateOf<Uri?>(null)
   var runServiceInBackground = mutableStateOf(true)
