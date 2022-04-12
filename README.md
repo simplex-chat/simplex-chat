@@ -24,9 +24,15 @@
 - 🚀 [TestFlight preview for iOS](https://testflight.apple.com/join/DWuT2LQu) with the new features 1-2 weeks earlier - **limited to 10,000 users**!
 - 🖥 Available as a terminal (console) app / CLI on Linux, MacOS, Windows.
 
-## SimpleX unique approach to privacy and security
+## Why privacy of communications matter
 
-Everyone should care about privacy and security of their communications - even ordinary conversations can put you in danger.
+Everyone should care about privacy and security of their communications - ordinary conversations can put you in danger even if you are innocent.
+
+One of the most shocking stories is the experience of [Mohamedou Ould Slahi](https://en.wikipedia.org/wiki/Mohamedou_Ould_Slahi) that he wrote about in his memoir and that is shown in The Mauritanian movie. He was put into Guantanamo camp, without trial, and was tortured there for 15 years after a phone call to his relative in Afghanistan, under suspicion of being involved in 9/11 attacks, even though he lived in Germany since 10 years prior to the attacks.
+
+This is not enough to use an end-to-end encrypted messenger, we all should use the messengers that protect the privacy of our personal networks - who we are connected with.
+
+## SimpleX unique approach to privacy and security
 
 ### Full privacy of your identity, profile, contacts and metadata
 
