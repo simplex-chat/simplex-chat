@@ -47,7 +47,7 @@ fun MarkdownText (
   senderBold: Boolean = false,
   modifier: Modifier = Modifier
 ) {
-  val reserve = if (edited) "      " else "   "
+  val reserve = if (edited) "        " else "    "
   if (formattedText == null) {
     val annotatedText = buildAnnotatedString {
       appendSender(this, sender, senderBold)
