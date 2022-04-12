@@ -26,11 +26,11 @@
 
 ## Why privacy of communications matter
 
-Everyone should care about privacy and security of their communications - ordinary conversations can put you in danger even if you are innocent.
+Everyone should care about privacy and security of their communications - innocuous conversations can put you in danger even even if there is nothing to hide.
 
-One of the most shocking stories is the experience of [Mohamedou Ould Slahi](https://en.wikipedia.org/wiki/Mohamedou_Ould_Slahi) that he wrote about in his memoir and that is shown in The Mauritanian movie. He was put into Guantanamo camp, without trial, and was tortured there for 15 years after a phone call to his relative in Afghanistan, under suspicion of being involved in 9/11 attacks, even though he lived in Germany since 10 years prior to the attacks.
+One of the most shocking stories is the experience of [Mohamedou Ould Slahi](https://en.wikipedia.org/wiki/Mohamedou_Ould_Slahi) that he wrote about in his memoir and that is shown in The Mauritanian movie. He was put into Guantanamo camp, without trial, and was tortured there for 15 years after a phone call to his relative in Afghanistan, under suspicion of being involved in 9/11 attacks, even though he lived in Germany for the 10 years prior to the attacks.
 
-This is not enough to use an end-to-end encrypted messenger, we all should use the messengers that protect the privacy of our personal networks - who we are connected with.
+It is not enough to use an end-to-end encrypted messenger, we all should use the messengers that protect the privacy of our personal networks - who we are connected with.
 
 ## SimpleX unique approach to privacy and security
 
@@ -52,7 +52,7 @@ You can use SimpleX with your own servers and still communicate with people usin
 
 ## For developers
 
-We plan that SimpleX platform will grow into the platform for any distributed Internet applications, allowing to build any services that people can access via chat, with custom web-based UI widgets that anybody with a basic HTML/CSS/JavaScript knowledge can create in a few hours.
+We plan that the SimpleX platform will grow into the platform supporting any distributed Internet application. This will allow you to build any service that people can access via chat, with custom web-based UI widgets that anybody with basic HTML/CSS/JavaScript knowledge can create in a few hours.
 
 You already can:
 

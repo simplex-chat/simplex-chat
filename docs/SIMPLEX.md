@@ -34,7 +34,7 @@ This approach protects the privacy of who are you communicating with, hiding it 
 
 ### The best protection against spam and abuse
 
-As you have no identifier on SimpleX platform, you cannot be contacted unless you share a one-time invitation link or an optional temporary user address. Even with the optinal user addresses, while they can be used to send spam contact requests, you can change or completely delete it without losing any of your connections.
+As you have no identifier on SimpleX platform, you cannot be contacted unless you share a one-time invitation link or an optional temporary user address. Even with the optional user addresses, while they can be used to send spam contact requests, you can change or completely delete it without losing any of your connections.
 
 ### Complete ownership, control and security of your data
 
