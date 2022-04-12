@@ -103,6 +103,9 @@ fun processIntent(intent: Intent?, chatModel: ChatModel) {
         if (cInfo != null) withApi { openChat(chatModel, cInfo) }
       }
     }
+    NtfManager.ShowChatsAction -> {
+      Log.d(TAG, "processIntent: ShowChatsAction")
+    }
     "android.intent.action.VIEW" -> {
       val uri = intent.data
       if (uri != null) connectIfOpenedViaUri(uri, chatModel)
