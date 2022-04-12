@@ -19,15 +19,12 @@ import kotlinx.datetime.Clock
 
 @Composable
 fun CIMetaView(chatItem: ChatItem) {
-  Row(
-    horizontalArrangement = Arrangement.spacedBy(4.dp),
-    verticalAlignment = Alignment.CenterVertically
-  ) {
+  Row(verticalAlignment = Alignment.CenterVertically) {
     if (!chatItem.isDeletedContent) {
       if (chatItem.meta.itemEdited) {
         Icon(
           Icons.Filled.Edit,
-          modifier = Modifier.height(12.dp),
+          modifier = Modifier.height(12.dp).padding(end = 1.dp),
           contentDescription = "Edited",
           tint = HighOrLowlight,
         )
@@ -37,7 +34,8 @@ fun CIMetaView(chatItem: ChatItem) {
     Text(
       chatItem.timestampText,
       color = HighOrLowlight,
-      fontSize = 14.sp
+      fontSize = 14.sp,
+      modifier = Modifier.padding(start = 3.dp)
     )
   }
 }
@@ -130,9 +128,21 @@ fun PreviewCIMetaViewEdited() {
 fun PreviewCIMetaViewEditedUnread() {
   CIMetaView(
     chatItem = ChatItem.getSampleData(
-      1, CIDirection.DirectSnd(), Clock.System.now(), "hello",
+      1, CIDirection.DirectRcv(), Clock.System.now(), "hello",
       itemEdited = true,
       status=CIStatus.RcvNew()
+    )
+  )
+}
+
+@Preview
+@Composable
+fun PreviewCIMetaViewEditedSent() {
+  CIMetaView(
+    chatItem = ChatItem.getSampleData(
+      1, CIDirection.DirectSnd(), Clock.System.now(), "hello",
+      itemEdited = true,
+      status=CIStatus.SndSent()
     )
   )
 }
