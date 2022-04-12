@@ -31,11 +31,12 @@ class NtfManager(val context: Context) {
 
   fun cancelNotificationsForChat(chatId: String) {
     prevNtfTime.remove(chatId)
+    manager.cancel(chatId.hashCode())
     val msgNtfs = manager.activeNotifications.filter {
       ntf -> ntf.notification.channelId == MessageChannel
     }
-    manager.cancel(chatId.hashCode())
     if (msgNtfs.count() == 1) {
+      // Have a group notification with no children so cancel it
       manager.cancel(0)
     }
   }

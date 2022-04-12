@@ -30,7 +30,7 @@ typealias ChatCtrl = Long
 
 open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: NtfManager, val appContext: Context) {
   var chatModel = ChatModel(this)
-  private val sharedPreferences: SharedPreferences  = appContext.getSharedPreferences(SHARED_PREFS_ID, Context.MODE_PRIVATE)
+  private val sharedPreferences: SharedPreferences = appContext.getSharedPreferences(SHARED_PREFS_ID, Context.MODE_PRIVATE)
 
   init {
     chatModel.runServiceInBackground.value = getRunServiceInBackground()
