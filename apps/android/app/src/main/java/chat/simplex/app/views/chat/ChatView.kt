@@ -53,6 +53,7 @@ fun ChatView(chatModel: ChatModel) {
       delay(1000L)
       if (chat.chatItems.count() > 0) {
         chatModel.markChatItemsRead(chat.chatInfo)
+        chatModel.controller.cancelNotificationsForChat(chat.id)
         withApi {
           chatModel.controller.apiChatRead(
             chat.chatInfo.chatType,
