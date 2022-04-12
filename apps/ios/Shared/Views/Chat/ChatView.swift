@@ -24,6 +24,9 @@ struct ChatView: View {
     @State private var showChatInfo = false
     @State private var showDeleteMessage = false
 
+    @State private var chosenImage: UIImage? = nil
+    @State private var imagePreview: String? = nil
+
     var body: some View {
         let cInfo = chat.chatInfo
 
@@ -90,7 +93,9 @@ struct ChatView: View {
                 sendMessage: sendMessage,
                 resetMessage: { message = "" },
                 inProgress: inProgress,
-                keyboardVisible: $keyboardVisible
+                keyboardVisible: $keyboardVisible,
+                chosenImage: $chosenImage,
+                imagePreview: $imagePreview
             )
         }
         .navigationTitle(cInfo.chatViewName)
@@ -221,7 +226,13 @@ struct ChatView: View {
                     }
                 } else {
                     let mc: MsgContent
-                    if let preview = linkPreview {
+                    var file: String? = nil
+                    if let preview = imagePreview,
+                       let uiImage = chosenImage,
+                       let savedFile = saveImage(uiImage) {
+                        mc = .image(text: text, image: preview)
+                        file = savedFile
+                    } else if let preview = linkPreview {
                         mc = .link(text: text, preview: preview)
                     } else {
                         mc = .text(text)
@@ -229,7 +240,7 @@ struct ChatView: View {
                     let chatItem = try await apiSendMessage(
                         type: chat.chatInfo.chatType,
                         id: chat.chatInfo.apiId,
-                        file: nil,
+                        file: file,
                         quotedItemId: quotedItem?.meta.itemId,
                         msg: mc
                     )
@@ -243,6 +254,30 @@ struct ChatView: View {
                 logger.error("ChatView.sendMessage error: \(error.localizedDescription)")
             }
         }
+    }
+
+    func saveImage(_ uiImage: UIImage) -> String? {
+        if let imageResized = resizeImageToDataSize(uiImage, maxDataSize: 160000),
+           let dataResized = Data(base64Encoded: dropImagePrefix(imageResized)),
+           let jpegData = UIImage(data: dataResized)?.jpegData(compressionQuality: 1) {
+            let imgName = "IMG_\(Date().timeIntervalSince1970).jpg"
+            let filename = getDocumentsDirectory().appendingPathComponent(imgName)
+            do {
+                try jpegData.write(to: filename)
+                return filename.path
+            } catch {
+                logger.error("ChatView.saveImage error: \(error.localizedDescription)")
+                return nil
+            }
+        }
+        return nil
+    }
+
+    func getDocumentsDirectory() -> URL {
+        let path = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+        return path
+//        let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
+//        return paths[0]
     }
     
     func deleteMessage(_ mode: CIDeleteMode) {

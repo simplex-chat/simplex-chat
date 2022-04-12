@@ -62,7 +62,6 @@ struct SendMessageView: View {
                 .strokeBorder(.secondary, lineWidth: 0.3, antialiased: true)
                 .frame(height: teHeight)
         }
-        .padding(.horizontal, 12)
         .padding(.vertical, 8)
     }
 

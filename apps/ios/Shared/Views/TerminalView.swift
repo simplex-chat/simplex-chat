@@ -69,6 +69,7 @@ struct TerminalView: View {
                     keyboardVisible: $keyboardVisible,
                     editing: $editing
                 )
+                .padding(.horizontal, 12)
             }
         }
         .navigationViewStyle(.stack)

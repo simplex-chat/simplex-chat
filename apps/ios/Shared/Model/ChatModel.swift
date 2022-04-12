@@ -775,13 +775,13 @@ struct CIFile: Decodable {
     }
 }
 
-enum CIFileStatus: Decodable {
-    case sndStored
-    case sndCancelled
-    case rcvInvitation
-    case rcvTransfer
-    case rcvComplete
-    case rcvCancelled
+enum CIFileStatus: String, Decodable {
+    case sndStored = "snd_stored"
+    case sndCancelled = "snd_cancelled"
+    case rcvInvitation = "rcv_invitation"
+    case rcvTransfer = "rcv_transfer"
+    case rcvComplete = "rcv_complete"
+    case rcvCancelled = "rcv_cancelled"
 }
 
 enum MsgContent {
@@ -819,6 +819,7 @@ enum MsgContent {
         case type
         case text
         case preview
+        case image
     }
 }
 
@@ -836,6 +837,10 @@ extension MsgContent: Decodable {
                 let text = try container.decode(String.self, forKey: CodingKeys.text)
                 let preview = try container.decode(LinkPreview.self, forKey: CodingKeys.preview)
                 self = .link(text: text, preview: preview)
+            case "image":
+                let text = try container.decode(String.self, forKey: CodingKeys.text)
+                let image = try container.decode(String.self, forKey: CodingKeys.image)
+                self = .image(text: text, image: image)
             default:
                 let text = try? container.decode(String.self, forKey: CodingKeys.text)
                 self = .unknown(type: type, text: text ?? "unknown message format")
