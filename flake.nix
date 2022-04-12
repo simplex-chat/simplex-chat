@@ -18,9 +18,9 @@
           name = "simplex-chat";
           src = ./.;
         };
-        sha256map = import ./sha256map.nix;
+        sha256map = import ./scripts/nix/sha256map.nix;
         modules = [{
-          packages.direct-sqlite.patches = [ ./direct-sqlite-2.3.26.patch ];
+          packages.direct-sqlite.patches = [ ./scripts/nix/direct-sqlite-2.3.26.patch ];
         }
         ({ pkgs,lib, ... }: lib.mkIf (pkgs.stdenv.hostPlatform.isAndroid) {
           packages.simplex-chat.components.library.ghcOptions = [ "-pie" ];
@@ -272,7 +272,7 @@
           name = "update-sha256map";
           runtimeInputs = [ pkgs.nix-prefetch-git pkgs.jq pkgs.gawk ];
           text = ''
-            gawk -f update-sha256.awk cabal.project > sha256map.nix
+            gawk -f ./scripts/nix/update-sha256.awk cabal.project > ./scripts/nix/sha256map.nix
           '';
         }; in
 	pkgs.mkShell {
