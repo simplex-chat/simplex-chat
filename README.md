@@ -52,7 +52,7 @@ You can use SimpleX with your own servers and still communicate with people usin
 
 ## For developers
 
-We plan that SimpleX platform will grow into the platform for any distributed Internet applications platform, allowing to build any services that people can access via chat, with custom web-based UI widgets that anybody with a basic HTML/CSS/JavaScript knowledge can create in a few hours.
+We plan that SimpleX platform will grow into the platform for any distributed Internet applications, allowing to build any services that people can access via chat, with custom web-based UI widgets that anybody with a basic HTML/CSS/JavaScript knowledge can create in a few hours.
 
 You already can:
 
