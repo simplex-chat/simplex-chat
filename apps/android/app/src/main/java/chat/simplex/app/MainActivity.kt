@@ -100,11 +100,13 @@ fun processIntent(intent: Intent?, chatModel: ChatModel) {
       Log.d(TAG, "processIntent: OpenChatAction $chatId")
       if (chatId != null) {
         val cInfo = chatModel.getChat(chatId)?.chatInfo
+        chatModel.clearOverlays.value = true
         if (cInfo != null) withApi { openChat(chatModel, cInfo) }
       }
     }
     NtfManager.ShowChatsAction -> {
       Log.d(TAG, "processIntent: ShowChatsAction")
+      chatModel.clearOverlays.value = true
     }
     "android.intent.action.VIEW" -> {
       val uri = intent.data
