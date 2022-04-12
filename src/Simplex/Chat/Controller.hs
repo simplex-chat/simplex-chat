@@ -20,6 +20,7 @@ import Data.ByteString.Char8 (ByteString)
 import Data.Int (Int64)
 import Data.Map.Strict (Map)
 import Data.Text (Text)
+import Data.Time (ZonedTime)
 import Data.Version (showVersion)
 import GHC.Generics (Generic)
 import Numeric.Natural
@@ -78,10 +79,7 @@ data ChatController = ChatController
     config :: ChatConfig
   }
 
-data HelpSection = HSMain | HSFiles | HSGroups | HSMyAddress | HSMarkdown | HSQuotes
-  deriving (Show, Generic)
-
-data MsgDeleteMode = MDBroadcast | MDInternal
+data HelpSection = HSMain | HSFiles | HSGroups | HSMyAddress | HSMarkdown | HSMessages
   deriving (Show, Generic)
 
 instance ToJSON HelpSection where
@@ -97,8 +95,8 @@ data ChatCommand
   | APIGetChatItems Int
   | APISendMessage ChatType Int64 MsgContent
   | APISendMessageQuote ChatType Int64 ChatItemId MsgContent
-  | APIUpdateMessage ChatType Int64 ChatItemId MsgContent
-  | APIDeleteMessage ChatType Int64 ChatItemId MsgDeleteMode
+  | APIUpdateChatItem ChatType Int64 ChatItemId MsgContent
+  | APIDeleteChatItem ChatType Int64 ChatItemId CIDeleteMode
   | APIChatRead ChatType Int64 (ChatItemId, ChatItemId)
   | APIDeleteChat ChatType Int64
   | APIAcceptContact Int64
@@ -110,7 +108,7 @@ data ChatCommand
   | Welcome
   | AddContact
   | Connect (Maybe AConnectionRequestUri)
-  | ConnectAdmin
+  | ConnectSimplex
   | DeleteContact ContactName
   | ListContacts
   | CreateMyAddress
@@ -121,6 +119,9 @@ data ChatCommand
   | RejectContact ContactName
   | SendMessage ContactName ByteString
   | SendMessageQuote {contactName :: ContactName, msgDir :: AMsgDirection, quotedMsg :: ByteString, message :: ByteString}
+  | SendMessageBroadcast ByteString
+  | DeleteMessage ContactName ByteString
+  | EditMessage {contactName :: ContactName, editedMsg :: ByteString, message :: ByteString}
   | NewGroup GroupProfile
   | AddMember GroupName ContactName GroupMemberRole
   | JoinGroup GroupName
@@ -132,6 +133,8 @@ data ChatCommand
   | ListGroups
   | SendGroupMessage GroupName ByteString
   | SendGroupMessageQuote {groupName :: GroupName, contactName_ :: Maybe ContactName, quotedMsg :: ByteString, message :: ByteString}
+  | DeleteGroupMessage GroupName ByteString
+  | EditGroupMessage {groupName :: ContactName, editedMsg :: ByteString, message :: ByteString}
   | SendFile ContactName FilePath
   | SendGroupFile GroupName FilePath
   | ReceiveFile FileTransferId (Maybe FilePath)
@@ -154,7 +157,8 @@ data ChatResponse
   | CRNewChatItem {chatItem :: AChatItem}
   | CRChatItemStatusUpdated {chatItem :: AChatItem}
   | CRChatItemUpdated {chatItem :: AChatItem}
-  | CRChatItemDeleted {chatItem :: AChatItem}
+  | CRChatItemDeleted {deletedChatItem :: AChatItem, toChatItem :: AChatItem}
+  | CRBroadcastSent MsgContent Int ZonedTime
   | CRMsgIntegrityError {msgerror :: MsgErrorType} -- TODO make it chat item to support in mobile
   | CRCmdAccepted {corr :: CorrId}
   | CRCmdOk
@@ -303,7 +307,8 @@ data ChatErrorType
   | CEFileRcvChunk {message :: String}
   | CEFileInternal {message :: String}
   | CEInvalidQuote
-  | CEInvalidMessageUpdate
+  | CEInvalidChatItemUpdate
+  | CEInvalidChatItemDelete
   | CEAgentVersion
   | CECommandError {message :: String}
   deriving (Show, Exception, Generic)

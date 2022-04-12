@@ -76,11 +76,11 @@ fun ConnectContactLayout(qrCodeScanner: @Composable () -> Unit, close: () -> Uni
     ) {
       Text(
         "Scan QR code",
-        style = MaterialTheme.typography.h1,
+        style = MaterialTheme.typography.h1.copy(fontWeight = FontWeight.Normal),
       )
       Text(
         "Your chat profile will be sent\nto your contact",
-        style = MaterialTheme.typography.h2,
+        style = MaterialTheme.typography.h3,
         textAlign = TextAlign.Center,
         modifier = Modifier.padding(bottom = 4.dp)
       )

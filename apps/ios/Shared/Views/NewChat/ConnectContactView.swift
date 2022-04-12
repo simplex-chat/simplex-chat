@@ -10,14 +10,14 @@ import SwiftUI
 import CodeScanner
 
 struct ConnectContactView: View {
-    var completed: ((Error?) -> Void)
+    var completed: ((Result<Bool, Error>) -> Void)
 
     var body: some View {
         VStack {
             Text("Scan QR code")
                 .font(.title)
                 .padding(.bottom)
-            Text("Your chat profile will be sent to your contact.")
+            Text("Your chat profile will be sent to your contact")
                 .font(.title2)
                 .multilineTextAlignment(.center)
                 .padding()
@@ -35,16 +35,16 @@ struct ConnectContactView: View {
         case let .success(r):
             Task {
                 do {
-                    try await apiConnect(connReq: r.string)
-                    completed(nil)
+                    let ok = try await apiConnect(connReq: r.string)
+                    completed(.success(ok))
                 } catch {
                     logger.error("ConnectContactView.processQRCode apiConnect error: \(error.localizedDescription)")
-                    completed(error)
+                    completed(.failure(error))
                 }
             }
         case let .failure(e):
             logger.error("ConnectContactView.processQRCode QR code error: \(e.localizedDescription)")
-            completed(e)
+            completed(.failure(e))
         }
     }
 }

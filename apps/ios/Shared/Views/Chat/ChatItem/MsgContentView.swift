@@ -16,7 +16,7 @@ struct MsgContentView: View {
     var formattedText: [FormattedText]? = nil
     var sender: String? = nil
     var metaText: Text? = nil
-    var edited: Bool = false
+    var edited = false
 
     var body: some View {
         let v = messageText(content, formattedText, sender)

@@ -23,8 +23,8 @@ data ChatOpts = ChatOpts
     logAgent :: Bool
   }
 
-chatOpts :: FilePath -> Parser ChatOpts
-chatOpts appDir =
+chatOpts :: FilePath -> FilePath -> Parser ChatOpts
+chatOpts appDir defaultDbFileName =
   ChatOpts
     <$> strOption
       ( long "database"
@@ -54,7 +54,7 @@ chatOpts appDir =
           <> help "Enable logs from SMP agent"
       )
   where
-    defaultDbFilePath = combine appDir "simplex_v1"
+    defaultDbFilePath = combine appDir defaultDbFileName
 
 parseSMPServers :: ReadM [SMPServer]
 parseSMPServers = eitherReader $ parseAll smpServersP . B.pack
@@ -62,11 +62,11 @@ parseSMPServers = eitherReader $ parseAll smpServersP . B.pack
 smpServersP :: A.Parser [SMPServer]
 smpServersP = strP `A.sepBy1` A.char ','
 
-getChatOpts :: FilePath -> IO ChatOpts
-getChatOpts appDir =
+getChatOpts :: FilePath -> FilePath -> IO ChatOpts
+getChatOpts appDir defaultDbFileName =
   execParser $
     info
-      (helper <*> versionOption <*> chatOpts appDir)
+      (helper <*> versionOption <*> chatOpts appDir defaultDbFileName)
       (header versionStr <> fullDesc <> progDesc "Start chat with DB_FILE file and use SERVER as SMP server")
   where
     versionOption = infoOption versionAndUpdate (long "version" <> short 'v' <> help "Show version")
