@@ -26,7 +26,7 @@
 
 ## Why privacy of communications matter
 
-Everyone should care about privacy and security of their communications - innocuous conversations can put you in danger even even if there is nothing to hide.
+Everyone should care about privacy and security of their communications - innocuous conversations can put you in danger even if there is nothing to hide.
 
 One of the most shocking stories is the experience of [Mohamedou Ould Slahi](https://en.wikipedia.org/wiki/Mohamedou_Ould_Slahi) that he wrote about in his memoir and that is shown in The Mauritanian movie. He was put into Guantanamo camp, without trial, and was tortured there for 15 years after a phone call to his relative in Afghanistan, under suspicion of being involved in 9/11 attacks, even though he lived in Germany for the 10 years prior to the attacks.
 
@@ -36,7 +36,7 @@ It is not enough to use an end-to-end encrypted messenger, we all should use the
 
 ### Full privacy of your identity, profile, contacts and metadata
 
-**Unlike any other existing messaging platform, SimpleX has no identifiers assigned to the users** - not even even random numbers. This protects the privacy of who are you communicating with, hiding it from SimpleX platform servers and from any observers. [Read more](./docs/SIMPLEX.md#full-privacy-of-your-identity-profile-contacts-and-metadata).
+**Unlike any other existing messaging platform, SimpleX has no identifiers assigned to the users** - not even random numbers. This protects the privacy of who are you communicating with, hiding it from SimpleX platform servers and from any observers. [Read more](./docs/SIMPLEX.md#full-privacy-of-your-identity-profile-contacts-and-metadata).
 
 ### The best protection against spam and abuse
 
