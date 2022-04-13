@@ -7,7 +7,6 @@
   <string name="connect_via_contact_link">Connect via contact link?</string>
   <string name="connect_via_invitation_link">Connect via invitation link?</string>
   <string name="profile_will_be_sent_to_contact_sending_link">Your profile will be sent to the contact that you received this link from.</string>
-  <string name="connect">Connect</string>
 
   <!-- Server info - ChatModel.kt -->
   <string name="server_connected">Server connected</string>
@@ -82,12 +81,13 @@
   <string name="send_message">Send Message</string>
 
   <!-- General Actions / Responses -->
+  <string name="accept">Accept</string>
   <string name="back">Back</string>
   <string name="cancel">Cancel</string>
-  <string name="accept">Accept</string>
-  <string name="reject">Reject</string>
   <string name="confirm">Confirm</string>
+  <string name="connect">Connect</string>
   <string name="create">Create</string>
+  <string name="reject">Reject</string>
   <string name="save">Save</string>
   <string name="ok">Ok</string>
   <string name="permission_denied">Permission Denied!</string>
