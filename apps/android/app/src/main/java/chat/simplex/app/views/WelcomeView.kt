@@ -17,6 +17,7 @@ import chat.simplex.app.R
 import chat.simplex.app.SimplexService
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.model.Profile
+import chat.simplex.app.views.helpers.generalGetString
 import chat.simplex.app.views.helpers.withApi
 import com.google.accompanist.insets.ProvideWindowInsets
 import com.google.accompanist.insets.navigationBarsWithImePadding
@@ -39,22 +40,22 @@ fun WelcomeView(chatModel: ChatModel) {
       ) {
         Image(
           painter = painterResource(R.drawable.logo),
-          contentDescription = "Simplex Logo",
+          contentDescription = generalGetString(R.string.simplex_logo),
           modifier = Modifier.padding(vertical = 15.dp)
         )
         Text(
-          "You control your chat!",
+          generalGetString(R.string.you_control_your_chat),
           style = MaterialTheme.typography.h4,
           color = MaterialTheme.colors.onBackground
         )
         Text(
-          "The messaging and application platform protecting your privacy and security.",
+          generalGetString(R.string.the_messaging_and_app_platform_protecting_your_privacy_and_security),
           style = MaterialTheme.typography.body1,
           color = MaterialTheme.colors.onBackground
         )
         Spacer(Modifier.height(8.dp))
         Text(
-          "We don't store any of your contacts or messages (once delivered) on the servers.",
+          generalGetString(R.string.we_do_not_store_contacts_or_messages_on_servers),
           style = MaterialTheme.typography.body1,
           color = MaterialTheme.colors.onBackground
         )
@@ -79,19 +80,19 @@ fun CreateProfilePanel(chatModel: ChatModel) {
     modifier=Modifier.fillMaxSize()
   ) {
     Text(
-      "Create profile",
+      generalGetString(R.string.create_profile),
       style = MaterialTheme.typography.h4,
       color = MaterialTheme.colors.onBackground,
       modifier = Modifier.padding(vertical = 5.dp)
     )
     Text(
-      "Your profile is stored on your device and shared only with your contacts.",
+      generalGetString(R.string.your_profile_is_stored_on_your_decide_and_shared_only_with_your_contacts),
       style = MaterialTheme.typography.body1,
       color = MaterialTheme.colors.onBackground
     )
     Spacer(Modifier.height(10.dp))
     Text(
-      "Display Name",
+      generalGetString(R.string.display_name),
       style = MaterialTheme.typography.h6,
       color = MaterialTheme.colors.onBackground,
       modifier = Modifier.padding(bottom = 3.dp)
@@ -113,7 +114,7 @@ fun CreateProfilePanel(chatModel: ChatModel) {
       ),
       singleLine = true
     )
-    val errorText = if(!isValidDisplayName(displayName)) "Display name cannot contain whitespace." else ""
+    val errorText = if(!isValidDisplayName(displayName)) generalGetString(R.string.display_name_cannot_contain_whitespace) else ""
 
     Text(
       errorText,
@@ -123,7 +124,7 @@ fun CreateProfilePanel(chatModel: ChatModel) {
 
     Spacer(Modifier.height(3.dp))
     Text(
-      "Full Name (Optional)",
+      generalGetString(R.string.full_name_optional__prompt),
       style = MaterialTheme.typography.h6,
       color = MaterialTheme.colors.onBackground,
       modifier = Modifier.padding(bottom = 5.dp)
@@ -157,6 +158,6 @@ fun CreateProfilePanel(chatModel: ChatModel) {
       }
     },
     enabled = (displayName.isNotEmpty() && isValidDisplayName(displayName))
-    ) { Text("Create") }
+    ) { Text(generalGetString(R.string.create)) }
   }
 }

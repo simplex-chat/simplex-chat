@@ -10,29 +10,38 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.*
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import chat.simplex.app.R
 import chat.simplex.app.model.Format
 import chat.simplex.app.model.FormatColor
 import chat.simplex.app.ui.theme.SimpleXTheme
+import chat.simplex.app.views.helpers.generalGetString
 
 @Composable
 fun MarkdownHelpView() {
   Column {
     Text(
-      "How to use markdown",
+      generalGetString(R.string.how_to_use_markdown),
       style = MaterialTheme.typography.h1,
     )
     Text(
-      "You can use markdown to format messages:",
+      generalGetString(R.string.you_can_use_markdown_to_format_messages__prompt),
       Modifier.padding(vertical = 16.dp)
     )
-    MdFormat("*bold*", "bold", Format.Bold())
-    MdFormat("_italic_", "italic", Format.Italic())
-    MdFormat("~strike~", "strike", Format.StrikeThrough())
-    MdFormat("`a + b`", "a + b", Format.Snippet())
+    val bold = generalGetString(R.string.bold)
+    val italic = generalGetString(R.string.italic)
+    val strikethrough = generalGetString(R.string.strikethrough)
+    val equation = generalGetString(R.string.a_plus_b)
+    val colored = generalGetString(R.string.colored)
+    val secret = generalGetString(R.string.secret)
+
+    MdFormat("*$bold*", bold, Format.Bold())
+    MdFormat("_${italic}_", italic, Format.Italic())
+    MdFormat("~$strikethrough~", strikethrough, Format.StrikeThrough())
+    MdFormat("`$equation`", equation, Format.Snippet())
     Row {
-      MdSyntax("!1 colored!")
+      MdSyntax("!1 $colored!")
       Text(buildAnnotatedString {
-        withStyle(Format.Colored(FormatColor.red).style) { append("colored") }
+        withStyle(Format.Colored(FormatColor.red).style) { append(colored) }
         append(" (")
         appendColor(this, "1", FormatColor.red, ", ")
         appendColor(this, "2", FormatColor.green, ", ")
@@ -43,10 +52,10 @@ fun MarkdownHelpView() {
       })
     }
     Row {
-      MdSyntax("#secret#")
+      MdSyntax("#$secret#")
       SelectionContainer {
         Text(buildAnnotatedString {
-          withStyle(Format.Secret().style) { append("secret") }
+          withStyle(Format.Secret().style) { append(secret) }
         })
       }
     }

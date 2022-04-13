@@ -1,7 +1,6 @@
 package chat.simplex.app.views.chat
 
 import android.content.res.Configuration
-import android.util.Log
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -21,13 +20,12 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import chat.simplex.app.TAG
+import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.HighOrLowlight
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.chat.item.*
-import chat.simplex.app.views.helpers.getLinkPreview
-import chat.simplex.app.views.helpers.withApi
+import chat.simplex.app.views.helpers.*
 import kotlinx.coroutines.delay
 
 @Composable
@@ -129,7 +127,7 @@ fun SendMsgView(
           val color = if (msg.value.isNotEmpty()) MaterialTheme.colors.primary else Color.Gray
           Icon(
             if (editing) Icons.Filled.Check else Icons.Outlined.ArrowUpward,
-            "Send Message",
+            generalGetString(R.string.send_message),
             tint = Color.White,
             modifier = Modifier
               .size(36.dp)

@@ -11,11 +11,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-
+import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.SimpleXTheme
-import chat.simplex.app.views.helpers.AlertManager
-import chat.simplex.app.views.helpers.withApi
+import chat.simplex.app.views.helpers.*
 import kotlinx.datetime.Clock
 
 @Composable
@@ -42,9 +41,9 @@ suspend fun openChat(chatModel: ChatModel, cInfo: ChatInfo) {
 
 fun contactRequestAlertDialog(contactRequest: ChatInfo.ContactRequest, chatModel: ChatModel) {
   AlertManager.shared.showAlertDialog(
-    title = "Accept connection request?",
-    text = "If you choose to reject sender will NOT be notified.",
-    confirmText = "Accept",
+    title = generalGetString(R.string.accept_connection_request__question),
+    text = generalGetString(R.string.if_you_choose_to_reject_the_sender_will_not_be_notified),
+    confirmText = generalGetString(R.string.accept),
     onConfirm = {
       withApi {
         val contact = chatModel.controller.apiAcceptContactRequest(contactRequest.apiId)
@@ -54,7 +53,7 @@ fun contactRequestAlertDialog(contactRequest: ChatInfo.ContactRequest, chatModel
         }
       }
     },
-    dismissText = "Reject",
+    dismissText = generalGetString(R.string.reject),
     onDismiss = {
       withApi {
         chatModel.controller.apiRejectContactRequest(contactRequest.apiId)

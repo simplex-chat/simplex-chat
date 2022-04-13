@@ -10,6 +10,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import chat.simplex.app.R
 import chat.simplex.app.ui.theme.SimpleXTheme
 
 @Composable
@@ -24,7 +25,7 @@ fun CloseSheetBar(close: () -> Unit) {
     IconButton(onClick = close) {
       Icon(
         Icons.Outlined.Close,
-        "Close button",
+        generalGetString(R.string.close_button),
         tint = MaterialTheme.colors.primary,
         modifier = Modifier.padding(10.dp)
       )

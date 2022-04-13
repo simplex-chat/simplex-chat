@@ -12,9 +12,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.HighOrLowlight
 import chat.simplex.app.ui.theme.SimplexBlue
+import chat.simplex.app.views.helpers.generalGetString
 import kotlinx.datetime.Clock
 
 @Composable
@@ -25,7 +27,7 @@ fun CIMetaView(chatItem: ChatItem) {
         Icon(
           Icons.Filled.Edit,
           modifier = Modifier.height(12.dp).padding(end = 1.dp),
-          contentDescription = "Edited",
+          contentDescription = generalGetString(R.string.edited),
           tint = HighOrLowlight,
         )
       }
@@ -45,16 +47,16 @@ fun CIMetaView(chatItem: ChatItem) {
 fun CIStatusView(status: CIStatus) {
   when (status) {
     is CIStatus.SndSent -> {
-      Icon(Icons.Filled.Check, "sent", Modifier.height(12.dp), tint = HighOrLowlight)
+      Icon(Icons.Filled.Check, generalGetString(R.string.sent_msg_status_sent), Modifier.height(12.dp), tint = HighOrLowlight)
     }
     is CIStatus.SndErrorAuth -> {
-      Icon(Icons.Filled.Close, "unauthorized send", Modifier.height(12.dp), tint = Color.Red)
+      Icon(Icons.Filled.Close,  generalGetString(R.string.sent_msg_status_unauthorized_send), Modifier.height(12.dp), tint = Color.Red)
     }
     is CIStatus.SndError -> {
-      Icon(Icons.Filled.WarningAmber, "send failed", Modifier.height(12.dp), tint = Color.Yellow)
+      Icon(Icons.Filled.WarningAmber, generalGetString(R.string.sent_msg_status_send_failed), Modifier.height(12.dp), tint = Color.Yellow)
     }
     is CIStatus.RcvNew -> {
-      Icon(Icons.Filled.Circle, "unread", Modifier.height(12.dp), tint = SimplexBlue)
+      Icon(Icons.Filled.Circle, generalGetString(R.string.received_msg_status_unread), Modifier.height(12.dp), tint = SimplexBlue)
     }
     else -> {}
   }

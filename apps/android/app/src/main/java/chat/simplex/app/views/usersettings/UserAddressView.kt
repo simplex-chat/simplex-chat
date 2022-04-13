@@ -13,6 +13,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import chat.simplex.app.R
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.ui.theme.SimpleButton
 import chat.simplex.app.ui.theme.SimpleXTheme
@@ -32,9 +33,9 @@ fun UserAddressView(chatModel: ChatModel) {
     share = { userAddress: String -> shareText(cxt, userAddress) },
     deleteAddress = {
       AlertManager.shared.showAlertMsg(
-        title = "Delete address?",
-        text = "All your contacts will remain connected.",
-        confirmText = "Delete",
+        title = generalGetString(R.string.delete_address__question),
+        text = generalGetString(R.string.all_your_contacts_will_remain_connected),
+        confirmText = generalGetString(R.string.delete),
         onConfirm = {
           withApi {
             chatModel.controller.apiDeleteUserAddress()
@@ -58,13 +59,12 @@ fun UserAddressLayout(
     verticalArrangement = Arrangement.Top
   ) {
     Text(
-      "Your chat address",
+      generalGetString(R.string.your_chat_address),
       Modifier.padding(bottom = 16.dp),
       style = MaterialTheme.typography.h1,
     )
     Text(
-      "You can share your address as a link or as a QR code - anybody will be able to connect to you, " +
-          "and if you later delete it - you won't lose your contacts.",
+      generalGetString(R.string.you_can_share_your_address_anybody_will_be_able_to_connect_deletion_wont_lose_contacts),
       Modifier.padding(bottom = 12.dp),
     )
     Column(
@@ -73,7 +73,7 @@ fun UserAddressLayout(
       verticalArrangement = Arrangement.SpaceEvenly
     ) {
       if (userAddress == null) {
-        SimpleButton("Create address", icon = Icons.Outlined.QrCode, click = createAddress)
+        SimpleButton(generalGetString(R.string.create_address), icon = Icons.Outlined.QrCode, click = createAddress)
       } else {
         QRCode(userAddress, Modifier.weight(1f, fill = false).aspectRatio(1f))
         Row(
@@ -82,11 +82,11 @@ fun UserAddressLayout(
           modifier = Modifier.padding(vertical = 10.dp)
         ) {
           SimpleButton(
-            "Share link",
+            generalGetString(R.string.share_link),
             icon = Icons.Outlined.Share,
             click = { share(userAddress) })
           SimpleButton(
-            "Delete address",
+            generalGetString(R.string.share_link),
             icon = Icons.Outlined.Delete,
             color = Color.Red,
             click = deleteAddress

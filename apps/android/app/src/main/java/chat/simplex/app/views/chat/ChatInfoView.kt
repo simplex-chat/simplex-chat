@@ -16,6 +16,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
@@ -29,9 +30,9 @@ fun ChatInfoView(chatModel: ChatModel, close: () -> Unit) {
       close = close,
       deleteContact = {
         AlertManager.shared.showAlertMsg(
-          title = "Delete contact?",
-          text = "Contact and all messages will be deleted - this cannot be undone!",
-          confirmText = "Delete",
+          title = generalGetString(R.string.delete_contact__question),
+          text = generalGetString(R.string.delete_contact__question),
+          confirmText = generalGetString(R.string.delete),
           onConfirm = {
             val cInfo = chat.chatInfo
             withApi {
@@ -96,7 +97,8 @@ fun ChatInfoLayout(chat: Chat, close: () -> Unit, deleteContact: () -> Unit) {
 
       Box(Modifier.padding(48.dp)) {
         SimpleButton(
-          "Delete contact", icon = Icons.Outlined.Delete,
+          generalGetString(R.string.delete_contact),
+          icon = Icons.Outlined.Delete,
           color = Color.Red,
           click = deleteContact
         )
@@ -110,13 +112,13 @@ fun ServerImage(chat: Chat) {
   val status = chat.serverInfo.networkStatus
   when {
     status is Chat.NetworkStatus.Connected ->
-      Icon(Icons.Filled.Circle, "Connected", tint = MaterialTheme.colors.primaryVariant)
+      Icon(Icons.Filled.Circle, generalGetString(R.string.server_connection_status_connected), tint = MaterialTheme.colors.primaryVariant)
     status is Chat.NetworkStatus.Disconnected ->
-      Icon(Icons.Filled.Pending, "Disconnected", tint = HighOrLowlight)
+      Icon(Icons.Filled.Pending, generalGetString(R.string.server_connection_status_disconnected), tint = HighOrLowlight)
     status is Chat.NetworkStatus.Error ->
-      Icon(Icons.Filled.Error, "Error", tint = HighOrLowlight)
+      Icon(Icons.Filled.Error, generalGetString(R.string.server_connection_status_error), tint = HighOrLowlight)
     else ->
-      Icon(Icons.Outlined.Circle, "Pending", tint = HighOrLowlight)
+      Icon(Icons.Outlined.Circle, generalGetString(R.string.server_connection_status_pending), tint = HighOrLowlight)
   }
 }
 

@@ -12,10 +12,12 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import chat.simplex.app.R
 import chat.simplex.app.model.CIDirection
 import chat.simplex.app.model.ChatItem
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.chat.item.*
+import chat.simplex.app.views.helpers.generalGetString
 import kotlinx.datetime.Clock
 
 @Composable
@@ -50,7 +52,7 @@ fun ContextItemView(
       }) {
         Icon(
           Icons.Outlined.Close,
-          contentDescription = "Cancel",
+          contentDescription = generalGetString(R.string.cancel),
           tint = MaterialTheme.colors.primary,
           modifier = Modifier.padding(10.dp)
         )

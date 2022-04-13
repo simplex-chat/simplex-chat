@@ -8,10 +8,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import chat.simplex.app.R
 import chat.simplex.app.model.Chat
 import chat.simplex.app.model.getTimestampText
 import chat.simplex.app.ui.theme.HighOrLowlight
 import chat.simplex.app.views.helpers.ChatInfoImage
+import chat.simplex.app.views.helpers.generalGetString
 
 @Composable
 fun ContactRequestView(chat: Chat) {
@@ -31,7 +33,7 @@ fun ContactRequestView(chat: Chat) {
         color = MaterialTheme.colors.primary
       )
       Text(
-        "wants to connect to you!",
+        generalGetString(R.string.wants_to_connect_with_you),
         maxLines = 2,
         overflow = TextOverflow.Ellipsis
       )

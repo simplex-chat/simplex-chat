@@ -7,7 +7,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.tooling.preview.Preview
+import chat.simplex.app.R
 import chat.simplex.app.ui.theme.SimpleXTheme
+import chat.simplex.app.views.helpers.generalGetString
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.EncodeHintType
 import com.google.zxing.qrcode.QRCodeWriter
@@ -16,7 +18,7 @@ import com.google.zxing.qrcode.QRCodeWriter
 fun QRCode(connReq: String, modifier: Modifier = Modifier) {
   Image(
     bitmap = qrCodeBitmap(connReq, 1024).asImageBitmap(),
-    contentDescription = "QR Code",
+    contentDescription = generalGetString(R.string.qr_code),
     modifier = modifier
   )
 }
