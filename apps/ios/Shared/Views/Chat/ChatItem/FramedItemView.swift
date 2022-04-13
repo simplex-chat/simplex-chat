@@ -52,7 +52,7 @@ struct FramedItemView: View {
                     .padding(.bottom, 2)
                 } else {
                     if case let .image(_, image) = chatItem.content.msgContent {
-                        ChatItemImageView(image: image, file: chatItem.file?.filePath)
+                        ChatItemImageView(image: image, file: chatItem.file)
                     } else if case let .link(_, preview) = chatItem.content.msgContent {
                         ChatItemLinkView(linkPreview: preview)
                     }

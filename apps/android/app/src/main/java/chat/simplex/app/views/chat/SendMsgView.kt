@@ -106,7 +106,7 @@ fun SendMsgView(
       capitalization = KeyboardCapitalization.Sentences,
       autoCorrect = true
     ),
-    modifier = Modifier.padding(8.dp),
+    modifier = Modifier.padding(vertical = 8.dp),
     cursorBrush = SolidColor(HighOrLowlight),
     decorationBox = { innerTextField ->
       Surface(

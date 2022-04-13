@@ -773,6 +773,17 @@ struct CIFile: Decodable {
     static func getSample(_ fileId: Int64, _ fileName: String, _ fileSize: Int64, filePath: String?, fileStatus: CIFileStatus = .sndStored) -> CIFile {
         CIFile(fileId: fileId, fileName: fileName, fileSize: fileSize, filePath: filePath, fileStatus: fileStatus)
     }
+
+    var stored: Bool {
+        get {
+            switch self.fileStatus {
+            case .sndStored: return true
+            case .sndCancelled: return true
+            case .rcvComplete: return true
+            default: return false
+            }
+        }
+    }
 }
 
 enum CIFileStatus: String, Decodable {

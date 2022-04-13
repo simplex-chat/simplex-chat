@@ -517,7 +517,8 @@ data class ChatItem (
   val meta: CIMeta,
   val content: CIContent,
   val formattedText: List<FormattedText>? = null,
-  val quotedItem: CIQuote? = null
+  val quotedItem: CIQuote? = null,
+  val file: CIFile? = null
 ) {
   val id: Long get() = meta.itemId
   val timestampText: String get() = meta.timestampText
@@ -549,6 +550,7 @@ data class ChatItem (
       text: String = "hello\nthere",
       status: CIStatus = CIStatus.SndNew(),
       quotedItem: CIQuote? = null,
+      file: CIFile? = null,
       itemDeleted: Boolean = false,
       itemEdited: Boolean = false,
       editable: Boolean = true
@@ -557,7 +559,8 @@ data class ChatItem (
         chatDir = dir,
         meta = CIMeta.getSample(id, ts, text, status, itemDeleted, itemEdited, editable),
         content = CIContent.SndMsgContent(msgContent = MsgContent.MCText(text)),
-        quotedItem = quotedItem
+        quotedItem = quotedItem,
+        file = file
       )
 
     fun getDeletedContentSampleData(
@@ -569,9 +572,10 @@ data class ChatItem (
     ) =
       ChatItem(
         chatDir = dir,
-        meta = CIMeta.getSample(id, ts, text, status, false, false, false),
+        meta = CIMeta.getSample(id, ts, text, status, itemDeleted = false, itemEdited = false, editable = false),
         content = CIContent.RcvDeleted(deleteMode = CIDeleteMode.cidmBroadcast),
-        quotedItem = null
+        quotedItem = null,
+        file = null
       )
   }
 }
@@ -699,18 +703,6 @@ sealed class CIContent: ItemContent {
     override val text get() = "deleted"
     override val msgContent get() = null
   }
-
-  @Serializable @SerialName("sndFileInvitation")
-  class SndFileInvitation(val fileId: Long, val filePath: String): CIContent() {
-    override val text get() = "sending files is not supported yet"
-    override val msgContent get() = null
-  }
-
-  @Serializable @SerialName("rcvFileInvitation")
-  class RcvFileInvitation(val rcvFileTransfer: RcvFileTransfer): CIContent() {
-    override val text get() = "receiving files is not supported yet"
-    override val msgContent get() = null
-  }
 }
 
 @Serializable
@@ -738,6 +730,37 @@ class CIQuote (
   }
 }
 
+@Serializable
+class CIFile(
+  val fileId: Long,
+  val fileName: String,
+  val fileSize: Long,
+  val filePath: String? = null,
+  val fileStatus: CIFileStatus
+) {
+  val stored: Boolean = when (fileStatus) {
+    CIFileStatus.SndStored -> true
+    CIFileStatus.SndCancelled -> true
+    CIFileStatus.RcvComplete -> true
+    else -> false
+  }
+
+  companion object {
+    fun getSample(fileId: Long, fileName: String, fileSize: Long, filePath: String?, fileStatus: CIFileStatus = CIFileStatus.SndStored): CIFile =
+      CIFile(fileId = fileId, fileName = fileName, fileSize = fileSize, filePath = filePath, fileStatus = fileStatus)
+  }
+}
+
+@Serializable
+enum class CIFileStatus {
+  @SerialName("snd_stored") SndStored,
+  @SerialName("snd_cancelled") SndCancelled,
+  @SerialName("rcv_invitation") RcvInvitation,
+  @SerialName("rcv_transfer") RcvTransfer,
+  @SerialName("rcv_complete") RcvComplete,
+  @SerialName("rcv_cancelled") RcvCancelled;
+}
+
 @Suppress("SERIALIZER_TYPE_INCOMPATIBLE")
 @Serializable(with = MsgContentSerializer::class)
 sealed class MsgContent {
@@ -750,11 +773,15 @@ sealed class MsgContent {
   class MCLink(override val text: String, val preview: LinkPreview): MsgContent()
 
   @Serializable(with = MsgContentSerializer::class)
+  class MCImage(override val text: String, val image: String): MsgContent()
+
+  @Serializable(with = MsgContentSerializer::class)
   class MCUnknown(val type: String? = null, override val text: String, val json: JsonElement): MsgContent()
 
   val cmdString: String get() = when (this) {
     is MCText -> "text $text"
     is MCLink -> "json ${json.encodeToString(this)}"
+    is MCImage -> "json ${json.encodeToString(this)}"
     is MCUnknown -> "json $json"
   }
 }
@@ -768,6 +795,10 @@ object MsgContentSerializer : KSerializer<MsgContent> {
     element("MCLink", buildClassSerialDescriptor("MCLink") {
       element<String>("text")
       element<String>("preview")
+    })
+    element("MCImage", buildClassSerialDescriptor("MCImage") {
+      element<String>("text")
+      element<String>("image")
     })
     element("MCUnknown", buildClassSerialDescriptor("MCUnknown"))
   }
@@ -784,6 +815,10 @@ object MsgContentSerializer : KSerializer<MsgContent> {
           "link" -> {
             val preview = Json.decodeFromString<LinkPreview>(json["preview"].toString())
             MsgContent.MCLink(text, preview)
+          }
+          "image" -> {
+            val image = json["image"]?.jsonPrimitive?.content ?: "unknown message format"
+            MsgContent.MCImage(text, image)
           }
           else -> MsgContent.MCUnknown(t, text, json)
         }
@@ -808,6 +843,12 @@ object MsgContentSerializer : KSerializer<MsgContent> {
           put("type", "link")
           put("text", value.text)
           put("preview", json.encodeToJsonElement(value.preview))
+        }
+      is MsgContent.MCImage ->
+        buildJsonObject {
+          put("type", "image")
+          put("text", value.text)
+          put("image", value.image)
         }
       is MsgContent.MCUnknown -> value.json
     }
@@ -876,6 +917,3 @@ enum class FormatColor(val color: String) {
     white -> MaterialTheme.colors.onBackground
   }
 }
-
-@Serializable
-class RcvFileTransfer

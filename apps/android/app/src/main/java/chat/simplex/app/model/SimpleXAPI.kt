@@ -141,9 +141,8 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
     return null
   }
 
-  suspend fun apiSendMessage(type: ChatType, id: Long, quotedItemId: Long? = null, mc: MsgContent): AChatItem? {
-    val cmd = if (quotedItemId == null) CC.ApiSendMessage(type, id, mc)
-              else CC.ApiSendMessageQuote(type, id, quotedItemId, mc)
+  suspend fun apiSendMessage(type: ChatType, id: Long, file: String? = null, quotedItemId: Long? = null, mc: MsgContent): AChatItem? {
+    val cmd = CC.ApiSendMessage(type, id, file, quotedItemId, mc)
     val r = sendCmd(cmd)
     if (r is CR.NewChatItem ) return r.chatItem
     Log.e(TAG, "apiSendMessage bad response: ${r.responseType} ${r.details}")
@@ -479,8 +478,7 @@ sealed class CC {
   class StartChat: CC()
   class ApiGetChats: CC()
   class ApiGetChat(val type: ChatType, val id: Long): CC()
-  class ApiSendMessage(val type: ChatType, val id: Long, val mc: MsgContent): CC()
-  class ApiSendMessageQuote(val type: ChatType, val id: Long, val itemId: Long, val mc: MsgContent): CC()
+  class ApiSendMessage(val type: ChatType, val id: Long, val file: String?, val quotedItemId: Long?, val mc: MsgContent): CC()
   class ApiUpdateChatItem(val type: ChatType, val id: Long, val itemId: Long, val mc: MsgContent): CC()
   class ApiDeleteChatItem(val type: ChatType, val id: Long, val itemId: Long, val mode: CIDeleteMode): CC()
   class GetUserSMPServers(): CC()
@@ -504,8 +502,13 @@ sealed class CC {
     is StartChat -> "/_start"
     is ApiGetChats -> "/_get chats"
     is ApiGetChat -> "/_get chat ${chatRef(type, id)} count=100"
-    is ApiSendMessage -> "/_send ${chatRef(type, id)} ${mc.cmdString}"
-    is ApiSendMessageQuote -> "/_send_quote ${chatRef(type, id)} $itemId ${mc.cmdString}"
+    is ApiSendMessage -> when {
+      file == null && quotedItemId == null -> "/_send ${chatRef(type, id)} ${mc.cmdString}"
+      file != null && quotedItemId == null -> "/_send ${chatRef(type, id)} file $file ${mc.cmdString}"
+      file == null && quotedItemId != null -> "/_send ${chatRef(type, id)} quoted $quotedItemId ${mc.cmdString}"
+      file != null && quotedItemId != null -> "/_send ${chatRef(type, id)} file $file quoted $quotedItemId ${mc.cmdString}"
+      else -> throw Exception()
+    }
     is ApiUpdateChatItem -> "/_update item ${chatRef(type, id)} $itemId ${mc.cmdString}"
     is ApiDeleteChatItem -> "/_delete item ${chatRef(type, id)} $itemId ${mode.deleteMode}"
     is GetUserSMPServers -> "/smp_servers"
@@ -531,7 +534,6 @@ sealed class CC {
     is ApiGetChats -> "apiGetChats"
     is ApiGetChat -> "apiGetChat"
     is ApiSendMessage -> "apiSendMessage"
-    is ApiSendMessageQuote -> "apiSendMessageQuote"
     is ApiUpdateChatItem -> "apiUpdateChatItem"
     is ApiDeleteChatItem -> "apiDeleteChatItem"
     is GetUserSMPServers -> "getUserSMPServers"

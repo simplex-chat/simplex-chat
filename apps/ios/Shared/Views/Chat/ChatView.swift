@@ -260,8 +260,9 @@ struct ChatView: View {
         if let imageResized = resizeImageToDataSize(uiImage, maxDataSize: 160000),
            let dataResized = Data(base64Encoded: dropImagePrefix(imageResized)),
            let jpegData = UIImage(data: dataResized)?.jpegData(compressionQuality: 1) {
-            let imgName = "IMG_\(Date().timeIntervalSince1970).jpg"
-            let filename = getDocumentsDirectory().appendingPathComponent(imgName)
+            let millisecondsSince1970 = Int64((Date().timeIntervalSince1970 * 1000.0).rounded())
+            let imageName = "image_\(millisecondsSince1970).jpg"
+            let filename = getDocumentsDirectory().appendingPathComponent(imageName)
             do {
                 try jpegData.write(to: filename)
                 return filename.path

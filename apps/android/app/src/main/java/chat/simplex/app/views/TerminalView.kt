@@ -3,8 +3,7 @@ package chat.simplex.app.views
 import android.content.res.Configuration
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.*
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.*
@@ -44,13 +43,15 @@ fun TerminalLayout(terminalItems: List<TerminalItem>, close: () -> Unit, sendCom
     Scaffold(
       topBar = { CloseSheetBar(close) },
       bottomBar = {
-        SendMsgView(
-          msg = remember { mutableStateOf("") },
-          linkPreview = remember { mutableStateOf(null) },
-          cancelledLinks = remember { mutableSetOf() },
-          parseMarkdown = { null },
-          sendMessage = sendCommand
-        )
+        Box(Modifier.padding(horizontal = 8.dp)) {
+          SendMsgView(
+            msg = remember { mutableStateOf("") },
+            linkPreview = remember { mutableStateOf(null) },
+            cancelledLinks = remember { mutableSetOf() },
+            parseMarkdown = { null },
+            sendMessage = sendCommand
+          )
+        }
       },
       modifier = Modifier.navigationBarsWithImePadding()
     ) { contentPadding ->

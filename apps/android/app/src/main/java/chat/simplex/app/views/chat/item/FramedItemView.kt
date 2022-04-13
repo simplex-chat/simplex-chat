@@ -1,5 +1,6 @@
 package chat.simplex.app.views.chat.item
 
+import ChatItemImageView
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -61,7 +62,9 @@ fun FramedItemView(user: User, ci: ChatItem, uriHandler: UriHandler? = null, sho
         } else {
           Column(Modifier.fillMaxWidth()) {
             val mc = ci.content.msgContent
-            if (mc is MsgContent.MCLink) {
+            if (mc is MsgContent.MCImage) {
+              ChatItemImageView(image = mc.image, file = ci.file)
+            } else if (mc is MsgContent.MCLink) {
               ChatItemLinkView(mc.preview)
             }
             Box(Modifier.padding(vertical = 6.dp, horizontal = 12.dp)) {
