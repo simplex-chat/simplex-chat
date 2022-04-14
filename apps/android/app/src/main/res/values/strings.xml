@@ -186,7 +186,7 @@
   <string name="your_chat_address">Your chat address</string>
   <string name="you_can_share_your_address_anybody_will_be_able_to_connect_deletion_wont_lose_contacts">You can share your address as a link or as a QR code - anybody will be able to connect to you, and if you later delete it - you won\'t lose your contacts.</string>
 
-  <!-- User profile detials - UserProfileView.kt -->
+  <!-- User profile details - UserProfileView.kt -->
   <string name="display_name__field">Display name:</string>
   <string name="full_name__field">"Full name:</string>
   <string name="your_chat_profile">Your chat profile</string>
