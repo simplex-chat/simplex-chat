@@ -669,8 +669,7 @@ processChatCommand = \case
 filePathToUse :: ChatMonad m => FilePath -> m FilePath
 filePathToUse f = do
   ff <- asks filesFolder
-  filesFolder_ <- readTVarIO ff
-  case filesFolder_ of
+  readTVarIO ff >>= \case
     Nothing -> pure f
     Just filesFolder -> pure $ filesFolder <> "/" <> f
 
@@ -712,17 +711,17 @@ acceptFileReceive user@User {userId} RcvFileTransfer {fileId, fileInvitation = F
     getRcvFilePath fPath_ fn = case fPath_ of
       Nothing -> do
         ff <- asks filesFolder
-        filesFolder_ <- readTVarIO ff
-        dir <- case filesFolder_ of
+        readTVarIO ff >>= \case
           Nothing -> do
-            downloads <- (`combine` "Downloads") <$> getHomeDirectory
-            ifM (doesDirectoryExist downloads) (pure downloads) getTemporaryDirectory
-          Just filesFolder -> pure filesFolder
-        dir `uniqueCombine` fn
-          >>= createEmptyFile
-          >>= \f -> case filesFolder_ of
-            Nothing -> pure f
-            Just _ -> pure $ takeFileName f
+            dir <- (`combine` "Downloads") <$> getHomeDirectory
+            ifM (doesDirectoryExist dir) (pure dir) getTemporaryDirectory
+              >>= (`uniqueCombine` fn)
+              >>= createEmptyFile
+          Just filesFolder ->
+            do
+              filesFolder `uniqueCombine` fn
+              >>= createEmptyFile
+              >>= pure <$> takeFileName
       Just fPath ->
         ifM
           (doesDirectoryExist fPath)
