@@ -139,9 +139,8 @@
 
   <!-- Content Descriptions -->
   <string name="close_button">Close button</string>
-  <string name="preview_image">preview image</string>
-  <string name="cancel_preview">Cancel Preview</string>
-  <string name="link_image">link image</string>
+  <string name="link_preview_image">link preview image</string>
+  <string name="cancel_link_preview">cancel link Preview</string>
   <string name="settings">Settings</string>
   <string name="qr_code">QR Code</string>
   <string name="address"><xliff:g id="appName">SimpleX</xliff:g> Address</string>

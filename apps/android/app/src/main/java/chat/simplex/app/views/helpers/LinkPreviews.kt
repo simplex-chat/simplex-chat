@@ -73,7 +73,7 @@ fun ComposeLinkView(linkPreview: LinkPreview, cancelPreview: () -> Unit) {
     val imageBitmap = base64ToBitmap(linkPreview.image).asImageBitmap()
     Image(
       imageBitmap,
-      generalGetString(R.string.preview_image),
+      generalGetString(R.string.link_preview_image),
       modifier = Modifier.width(80.dp).height(60.dp).padding(end = 8.dp)
     )
     Column(Modifier.fillMaxWidth().weight(1F)) {
@@ -86,7 +86,7 @@ fun ComposeLinkView(linkPreview: LinkPreview, cancelPreview: () -> Unit) {
     IconButton(onClick = cancelPreview, modifier = Modifier.padding(0.dp)) {
       Icon(
         Icons.Outlined.Close,
-        contentDescription = generalGetString(R.string.cancel_preview),
+        contentDescription = generalGetString(R.string.cancel_link_preview),
         tint = MaterialTheme.colors.primary,
         modifier = Modifier.padding(10.dp)
       )
@@ -99,7 +99,7 @@ fun ChatItemLinkView(linkPreview: LinkPreview) {
   Column {
     Image(
       base64ToBitmap(linkPreview.image).asImageBitmap(),
-      generalGetString(R.string.link_image),
+      generalGetString(R.string.link_preview_image),
       modifier = Modifier.fillMaxWidth(),
       contentScale = ContentScale.FillWidth,
     )
