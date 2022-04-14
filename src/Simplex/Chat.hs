@@ -64,7 +64,7 @@ import System.IO (Handle, IOMode (..), SeekMode (..), hFlush, openFile, stdout)
 import Text.Read (readMaybe)
 import UnliftIO.Async
 import UnliftIO.Concurrent (forkIO, threadDelay)
-import UnliftIO.Directory (createDirectoryIfMissing, doesDirectoryExist, doesFileExist, getFileSize, getHomeDirectory, getTemporaryDirectory)
+import UnliftIO.Directory (createDirectoryIfMissing, doesDirectoryExist, doesFileExist, getFileSize, getHomeDirectory, getTemporaryDirectory, removeFile, removePathForcibly)
 import qualified UnliftIO.Exception as E
 import UnliftIO.IO (hClose, hSeek, hTell)
 import UnliftIO.STM
@@ -297,13 +297,15 @@ processChatCommand = \case
     CTContactRequest -> pure $ chatCmdError "not supported"
   APIDeleteChatItem cType chatId itemId mode -> withUser $ \user@User {userId} -> withChatLock $ case cType of
     CTDirect -> do
-      (ct@Contact {localDisplayName = c}, CChatItem msgDir deletedItem@ChatItem {meta = CIMeta {itemSharedMsgId}}) <- withStore $ \st -> (,) <$> getContact st userId chatId <*> getDirectChatItem st userId chatId itemId
+      (ct@Contact {localDisplayName = c}, CChatItem msgDir deletedItem@ChatItem {meta = CIMeta {itemSharedMsgId}, file}) <- withStore $ \st -> (,) <$> getContact st userId chatId <*> getDirectChatItem st userId chatId itemId
       case (mode, msgDir, itemSharedMsgId) of
         (CIDMInternal, _, _) -> do
+          deleteFile file
           toCi <- withStore $ \st -> deleteDirectChatItemInternal st userId ct itemId
           pure $ CRChatItemDeleted (AChatItem SCTDirect msgDir (DirectChat ct) deletedItem) toCi
         (CIDMBroadcast, SMDSnd, Just itemSharedMId) -> do
           SndMessage {msgId} <- sendDirectContactMessage ct (XMsgDel itemSharedMId)
+          deleteFile file
           toCi <- withStore $ \st -> deleteDirectChatItemSndBroadcast st userId ct itemId msgId
           setActive $ ActiveC c
           pure $ CRChatItemDeleted (AChatItem SCTDirect msgDir (DirectChat ct) deletedItem) toCi
@@ -323,6 +325,10 @@ processChatCommand = \case
           pure $ CRChatItemDeleted (AChatItem SCTGroup msgDir (GroupChat gInfo) deletedItem) toCi
         (CIDMBroadcast, _, _) -> throwChatError CEInvalidChatItemDelete
     CTContactRequest -> pure $ chatCmdError "not supported"
+    where
+      deleteFile :: MsgDirectionI d => Maybe (CIFile d) -> m ()
+      deleteFile (Just CIFile {fileId, filePath, fileStatus}) = deleteFiles [(fileId, filePath, AFS msgDirection fileStatus)]
+      deleteFile Nothing = pure ()
   APIChatRead cType chatId fromToIds -> withChatLock $ case cType of
     CTDirect -> withStore (\st -> updateDirectChatItemsRead st chatId fromToIds) $> CRCmdOk
     CTGroup -> withStore (\st -> updateGroupChatItemsRead st chatId fromToIds) $> CRCmdOk
@@ -332,8 +338,10 @@ processChatCommand = \case
       ct@Contact {localDisplayName} <- withStore $ \st -> getContact st userId chatId
       withStore (\st -> getContactGroupNames st userId ct) >>= \case
         [] -> do
+          files <- withStore $ \st -> getContactFiles st userId ct
           conns <- withStore $ \st -> getContactConnections st userId ct
           withChatLock . procCmd $ do
+            deleteFiles files
             withAgent $ \a -> forM_ conns $ \conn ->
               deleteConnection a (aConnId conn) `catchError` \(_ :: AgentErrorType) -> pure ()
             withStore $ \st -> deleteContact st userId ct
@@ -676,6 +684,23 @@ toFSFilePath f = do
   readTVarIO ff >>= \case
     Nothing -> pure f
     Just filesFolder -> pure $ filesFolder <> "/" <> f
+
+deleteFiles :: ChatMonad m => [(Int64, Maybe FilePath, ACIFileStatus)] -> m ()
+deleteFiles files = do
+  ff <- asks filesFolder
+  readTVarIO ff >>= \case
+    Nothing -> pure () -- only delete files if filesFolder is set (i.e. on mobile devices)
+    Just filesFolder ->
+      forM_ files $ \(fileId, filePath_, status) -> do
+        case status of
+          AFS _ CIFSRcvTransfer -> closeFileHandle fileId rcvFiles
+          _ -> pure ()
+        case filePath_ of
+          Just filePath -> do
+            let fsFilePath = filesFolder <> "/" <> filePath
+            removeFile fsFilePath `E.catch` \(_ :: E.SomeException) ->
+              removePathForcibly fsFilePath `E.catch` \(_ :: E.SomeException) -> pure ()
+          Nothing -> pure ()
 
 acceptFileReceive :: forall m. ChatMonad m => User -> RcvFileTransfer -> Maybe FilePath -> m FilePath
 acceptFileReceive user@User {userId} RcvFileTransfer {fileId, fileInvitation = FileInvitation {fileName = fName, fileConnReq}, fileStatus, senderDisplayName, grpMemberId} filePath_ = do
@@ -1264,6 +1289,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
       CChatItem msgDir deletedItem@ChatItem {meta = CIMeta {itemId}} <- withStore $ \st -> getDirectChatItemBySharedMsgId st userId contactId sharedMsgId
       case msgDir of
         SMDRcv -> do
+          -- TODO either allow to locally delete items that were broadcast deleted by sender, or delete attached files
           toCi <- withStore $ \st -> deleteDirectChatItemRcvBroadcast st userId ct itemId msgId
           toView $ CRChatItemDeleted (AChatItem SCTDirect SMDRcv (DirectChat ct) deletedItem) toCi
           checkIntegrity msgMeta $ toView . CRMsgIntegrityError

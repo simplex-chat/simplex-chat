@@ -115,6 +115,7 @@ module Simplex.Chat.Store
     updateFileTransferChatItemId,
     getFileTransfer,
     getFileTransferProgress,
+    getContactFiles,
     createNewSndMessage,
     createSndMsgDelivery,
     createNewMessageAndRcvMsgDelivery,
@@ -2213,6 +2214,19 @@ getFileTransferMeta_ db userId fileId =
     fileTransferMeta :: (String, Integer, Integer, FilePath, Maybe Bool) -> FileTransferMeta
     fileTransferMeta (fileName, fileSize, chunkSize, filePath, cancelled_) =
       FileTransferMeta {fileId, fileName, filePath, fileSize, chunkSize, cancelled = fromMaybe False cancelled_}
+
+getContactFiles :: MonadUnliftIO m => SQLiteStore -> UserId -> Contact -> m [(Int64, Maybe FilePath, ACIFileStatus)]
+getContactFiles st userId Contact {contactId} =
+  liftIO . withTransaction st $ \db ->
+    DB.query
+      db
+      [sql|
+        SELECT f.file_id, f.file_path, f.ci_file_status
+        FROM chat_items i
+        JOIN files f ON f.chat_item_id = i.chat_item_id
+        WHERE i.user_id = ? AND i.contact_id = ?
+      |]
+      (userId, contactId)
 
 createNewSndMessage :: StoreMonad m => SQLiteStore -> TVar ChaChaDRG -> ConnOrGroupId -> (SharedMsgId -> NewMessage) -> m SndMessage
 createNewSndMessage st gVar connOrGroupId mkMessage =

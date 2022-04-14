@@ -12,7 +12,7 @@ import Control.Concurrent.STM
 import qualified Data.ByteString as B
 import Data.Char (isDigit)
 import qualified Data.Text as T
-import Simplex.Chat.Controller (ChatConfig (..), ChatController (..))
+import Simplex.Chat.Controller (ChatController (..))
 import Simplex.Chat.Types (ImageData (..), Profile (..), User (..))
 import Simplex.Chat.Util (unlessM)
 import System.Directory (doesFileExist)
@@ -1265,10 +1265,8 @@ testSendImage =
 
 testSendImageWithFilesFolders :: IO ()
 testSendImageWithFilesFolders =
-  testChat2'
-    (aliceProfile, defaultTestCfg) -- {filesFolder = Just "./tests/fixtures"})
-    (bobProfile, defaultTestCfg) -- {filesFolder = Just "./tests/tmp"})
-    $ \alice bob -> do
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
       connectUsers alice bob
       alice #$> ("/_set_files_folder ./tests/fixtures", id, "ok")
       bob #$> ("/_set_files_folder ./tests/tmp", id, "ok")
@@ -1290,6 +1288,10 @@ testSendImageWithFilesFolders =
       dest `shouldBe` src
       alice #$> ("/_get chat @2 count=100", chatF, [((1, ""), Just "test.jpg")])
       bob #$> ("/_get chat @2 count=100", chatF, [((0, ""), Just "test.jpg")])
+      bob ##> "/d alice"
+      bob <## "alice: contact is deleted"
+      fileExists <- doesFileExist "./tests/tmp/test.jpg"
+      fileExists `shouldBe` False
 
 testSendImageWithTextAndQuote :: IO ()
 testSendImageWithTextAndQuote =
