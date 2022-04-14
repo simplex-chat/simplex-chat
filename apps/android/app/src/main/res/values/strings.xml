@@ -41,7 +41,7 @@
   <string name="private_instant_notifications">Private instant notifications!</string>
 
   <!-- SimpleX Chat foreground Service -->
-  <string name="simplex_service_notification_title"><xliff:g id="appName">SimpleX Chat</xliff:g> service</string>
+  <string name="simplex_service_notification_title"><xliff:g id="appNameFull">SimpleX Chat</xliff:g> service</string>
   <string name="simplex_service_notification_text">Waiting for incoming messages</string>
 
   <!-- Chat Actions - ChatItemView.kt (and general) -->
@@ -110,8 +110,8 @@
   <string name="save_and_notify_contacts">Save (and notify contacts)</string>
 
   <!-- help - ChatHelpView.kt -->
-  <string name="thank_you_for_installing_simplex">Thank you for installing <xliff:g id="appName">SimpleX Chat</xliff:g>!</string>
-  <string name="you_can_connect_to_simplex_chat_founder">You can <font color="#0088ff">connect to <xliff:g id="appName">SimpleX Chat</xliff:g> founder</font>.</string>
+  <string name="thank_you_for_installing_simplex">Thank you for installing <xliff:g id="appNameFull">SimpleX Chat</xliff:g>!</string>
+  <string name="you_can_connect_to_simplex_chat_founder">You can <font color="#0088ff">connect to <xliff:g id="appNameFull">SimpleX Chat</xliff:g> founder</font>.</string>
   <string name="to_start_a_new_chat_help_header">To start a new chat</string>
   <string name="tap_button">Tap button</string>
   <string name="above_then_preposition_continuation">above, then:</string>
@@ -140,10 +140,10 @@
   <string name="link_image">link image</string>
   <string name="settings">Settings</string>
   <string name="qr_code">QR Code</string>
-  <string name="address"><xliff:g>SimpleX</xliff:g> Address</string>
+  <string name="address"><xliff:g id="appName">SimpleX</xliff:g> Address</string>
   <string name="help">help</string>
-  <string name="simplex_team"><xliff:g>SimpleX</xliff:g> Team</string>
-  <string name="simplex_logo"><xliff:g>SimpleX</xliff:g> Logo</string>
+  <string name="simplex_team"><xliff:g id="appName">SimpleX</xliff:g> Team</string>
+  <string name="simplex_logo"><xliff:g id="appName">SimpleX</xliff:g> Logo</string>
   <string name="email">Email</string>
 
   <!-- Add Contact Details - AddContactView.kt -->
@@ -162,8 +162,8 @@
 
   <!-- settings - SettingsView.kt -->
   <string name="your_settings">Your settings</string>
-  <string name="your_simplex_contact_address">Your <xliff:g>SimpleX</xliff:g> contact address</string>
-  <string name="how_to_use_simplex_chat">How to use <xliff:g id="appName">SimpleX Chat</xliff:g></string>
+  <string name="your_simplex_contact_address">Your <xliff:g id="appName">SimpleX</xliff:g> contact address</string>
+  <string name="how_to_use_simplex_chat">How to use <xliff:g id="appNameFull">SimpleX Chat</xliff:g></string>
   <string name="markdown_help">Markdown help</string>
   <string name="markdown_in_messages">Markdown in messages</string>
   <string name="chat_with_the_founder">Chat with the founder</string>
@@ -171,12 +171,12 @@
   <string name="private_notifications">Private notifications</string>
   <string name="chat_console">Chat console</string>
   <string name="smp_servers">SMP servers</string>
-  <string name="install_simplex_chat_for_terminal">Install <font color="#0088ff"><xliff:g>SimpleX Chat</xliff:g> for terminal</font></string>
-  <string name="use_simplex_chat_servers__question">Use <xliff:g id="appName">SimpleX Chat</xliff:g> servers?</string>
+  <string name="install_simplex_chat_for_terminal">Install <font color="#0088ff"><xliff:g id="appNameFull">SimpleX Chat</xliff:g> for terminal</font></string>
+  <string name="use_simplex_chat_servers__question">Use <xliff:g id="appNameFull">SimpleX Chat</xliff:g> servers?</string>
   <string name="saved_SMP_servers_will_br_removed">Saved SMP servers will be removed.</string>
   <string name="your_SMP_servers">Your SMP servers</string>
   <string name="configure_SMP_servers">Configure SMP servers</string>
-  <string name="using_simplex_chat_servers">Using <xliff:g id="appName">SimpleX Chat</xliff:g> servers.</string>
+  <string name="using_simplex_chat_servers">Using <xliff:g id="appNameFull">SimpleX Chat</xliff:g> servers.</string>
   <string name="enter_one_SMP_server_per_line">Enter one SMP server per line:</string>
   <string name="how_to">How to</string>
 
@@ -190,7 +190,7 @@
   <string name="display_name__field">Display name:</string>
   <string name="full_name__field">"Full name:</string>
   <string name="your_chat_profile">Your chat profile</string>
-  <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Your profile is stored on your device and shared only with your contacts.\n\nSimpleX servers cannot see your profile.</string>
+  <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Your profile is stored on your device and shared only with your contacts.\n\n<xliff:g id="appName">SimpleX</xliff:g> servers cannot see your profile.</string>
 
   <!-- Welcome Prompts - WelcomeView.kt -->
   <string name="you_control_your_chat">You control your chat!</string>
