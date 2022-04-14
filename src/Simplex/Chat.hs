@@ -747,8 +747,7 @@ acceptFileReceive user@User {userId} RcvFileTransfer {fileId, fileInvitation = F
               >>= (`uniqueCombine` fn)
               >>= createEmptyFile
           Just filesFolder ->
-            do
-              filesFolder `uniqueCombine` fn
+            filesFolder `uniqueCombine` fn
               >>= createEmptyFile
               >>= pure <$> takeFileName
       Just fPath ->
