@@ -12,7 +12,7 @@
   <string name="server_connected">Server connected</string>
   <string name="server_connecting">Connecting server…</string>
   <string name="connected_to_server_to_receive_messages_from_contact">You are connected to the server used to receive messages from this contact.</string>
-  <string name="trying_to_connect_to_server_to_receive_messages_with_error">Trying to connect to the server used to receive messages from this contact (error: %1).</string>
+  <string name="trying_to_connect_to_server_to_receive_messages_with_error">Trying to connect to the server used to receive messages from this contact (error: <xliff:g id="errorMsg">%1$s</xliff:g>).</string>
   <string name="trying_to_connect_to_server_to_receive_messages">Trying to connect to the server used to receive messages from this contact.</string>
   <string name="this_item_is_deleted">this item is deleted</string>
 
@@ -34,7 +34,7 @@
   <string name="invalid_connection_link">Invalid connection link</string>
   <string name="please_check_correct_link_and_maybe_ask_for_a_new_one">Please check that you used the correct link or ask your contact to send you another one.</string>
   <string name="cannot_delete_contact">Can\'t delete contact!</string>
-  <string name="contact_cannot_be_deleted_as_they_are_in_groups">Contact <xliff:g id="contactName" example="Jane Doe">%1$s!</xliff:g> cannot be deleted, they are a member of the group(s) <xliff:g id="groups" example="[team, chess club]">%2</xliff:g>.</string>
+  <string name="contact_cannot_be_deleted_as_they_are_in_groups">Contact <xliff:g id="contactName" example="Jane Doe">%1$s!</xliff:g> cannot be deleted, they are a member of the group(s) <xliff:g id="groups" example="[team, chess club]">%2$s</xliff:g>.</string>
 
   <!-- Background Service Info - SimpleXAPI.kt -->
   <string name="private_instant_notifications">Private instant notifications!</string>
