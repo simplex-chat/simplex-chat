@@ -64,7 +64,7 @@ import System.IO (Handle, IOMode (..), SeekMode (..), hFlush, openFile, stdout)
 import Text.Read (readMaybe)
 import UnliftIO.Async
 import UnliftIO.Concurrent (forkIO, threadDelay)
-import UnliftIO.Directory (doesDirectoryExist, doesFileExist, getFileSize, getHomeDirectory, getTemporaryDirectory)
+import UnliftIO.Directory (createDirectoryIfMissing, doesDirectoryExist, doesFileExist, getFileSize, getHomeDirectory, getTemporaryDirectory)
 import qualified UnliftIO.Exception as E
 import UnliftIO.IO (hClose, hSeek, hTell)
 import UnliftIO.STM
@@ -174,6 +174,7 @@ processChatCommand = \case
       Just _ -> pure CRChatRunning
       _ -> startChatController user $> CRChatStarted
   SetFilesFolder filesFolder' -> withUser' $ \_ -> do
+    createDirectoryIfMissing True filesFolder'
     ff <- asks filesFolder
     atomically . writeTVar ff $ Just filesFolder'
     pure CRCmdOk
@@ -646,9 +647,9 @@ processChatCommand = \case
         cId == Just contactId && s /= GSMemRemoved && s /= GSMemLeft
     checkSndFile :: FilePath -> m (Integer, Integer)
     checkSndFile f = do
-      filePathUsed <- filePathToUse f
-      unlessM (doesFileExist filePathUsed) . throwChatError $ CEFileNotFound f
-      (,) <$> getFileSize filePathUsed <*> asks (fileChunkSize . config)
+      fsFilePath <- toFSFilePath f
+      unlessM (doesFileExist fsFilePath) . throwChatError $ CEFileNotFound f
+      (,) <$> getFileSize fsFilePath <*> asks (fileChunkSize . config)
     updateProfile :: User -> Profile -> m ChatResponse
     updateProfile user@User {profile = p} p'@Profile {displayName}
       | p' == p = pure CRUserProfileNoChange
@@ -666,8 +667,11 @@ processChatCommand = \case
       let s = connStatus $ activeConn (ct :: Contact)
        in s == ConnReady || s == ConnSndReady
 
-filePathToUse :: ChatMonad m => FilePath -> m FilePath
-filePathToUse f = do
+-- mobile clients use file paths relative to app directory (e.g. for the reason ios app directory changes on updates),
+-- so we have to differentiate between the file path stored in db and communicated with frontend, and the file path
+-- used during file transfer for actual operations with file system
+toFSFilePath :: ChatMonad m => FilePath -> m FilePath
+toFSFilePath f = do
   ff <- asks filesFolder
   readTVarIO ff >>= \case
     Nothing -> pure f
@@ -1538,11 +1542,11 @@ sendFileChunkNo ft@SndFileTransfer {agentConnId = AgentConnId acId} chunkNo = do
 
 readFileChunk :: ChatMonad m => SndFileTransfer -> Integer -> m ByteString
 readFileChunk SndFileTransfer {fileId, filePath, chunkSize} chunkNo = do
-  filePathUsed <- filePathToUse filePath
-  read_ filePathUsed `E.catch` (throwChatError . CEFileRead filePath . (show :: E.SomeException -> String))
+  fsFilePath <- toFSFilePath filePath
+  read_ fsFilePath `E.catch` (throwChatError . CEFileRead filePath . (show :: E.SomeException -> String))
   where
-    read_ fPathUsed = do
-      h <- getFileHandle fileId fPathUsed sndFiles ReadMode
+    read_ fsFilePath = do
+      h <- getFileHandle fileId fsFilePath sndFiles ReadMode
       pos <- hTell h
       let pos' = (chunkNo - 1) * chunkSize
       when (pos /= pos') $ hSeek h AbsoluteSeek pos'
@@ -1571,8 +1575,8 @@ appendFileChunk :: ChatMonad m => RcvFileTransfer -> Integer -> ByteString -> m 
 appendFileChunk ft@RcvFileTransfer {fileId, fileStatus} chunkNo chunk =
   case fileStatus of
     RFSConnected RcvFileInfo {filePath} -> do
-      filePathUsed <- filePathToUse filePath
-      append_ filePath filePathUsed
+      fsFilePath <- toFSFilePath filePath
+      append_ filePath fsFilePath
     RFSCancelled _ -> pure ()
     _ -> throwChatError $ CEFileInternal "receiving file transfer not in progress"
   where
