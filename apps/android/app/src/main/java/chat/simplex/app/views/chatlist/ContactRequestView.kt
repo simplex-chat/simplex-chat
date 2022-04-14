@@ -33,7 +33,7 @@ fun ContactRequestView(chat: Chat) {
         color = MaterialTheme.colors.primary
       )
       Text(
-        generalGetString(R.string.wants_to_connect_with_you),
+        generalGetString(R.string.contact_wants_to_connect_with_you),
         maxLines = 2,
         overflow = TextOverflow.Ellipsis
       )

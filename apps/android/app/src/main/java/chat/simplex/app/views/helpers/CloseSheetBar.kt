@@ -25,7 +25,7 @@ fun CloseSheetBar(close: () -> Unit) {
     IconButton(onClick = close) {
       Icon(
         Icons.Outlined.Close,
-        generalGetString(R.string.close_button),
+        generalGetString(R.string.icon_descr_close_button),
         tint = MaterialTheme.colors.primary,
         modifier = Modifier.padding(10.dp)
       )

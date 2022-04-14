@@ -570,7 +570,7 @@ data class ChatItem (
       id: Long = 1,
       dir: CIDirection = CIDirection.DirectRcv(),
       ts: Instant = Clock.System.now(),
-      text: String = generalGetString(R.string.this_item_is_deleted),
+      text: String = "this item is deleted", // sample not localized
       status: CIStatus = CIStatus.RcvRead()
     ) =
       ChatItem(

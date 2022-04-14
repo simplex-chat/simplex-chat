@@ -413,7 +413,7 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
             Row {
               Icon(
                 Icons.Outlined.Bolt,
-                contentDescription = generalGetString(R.string.instant_notifications),
+                contentDescription = generalGetString(R.string.icon_descr_instant_notifications),
               )
               Text(generalGetString(R.string.private_instant_notifications), fontWeight = FontWeight.Bold)
             }

@@ -18,7 +18,7 @@ import com.google.zxing.qrcode.QRCodeWriter
 fun QRCode(connReq: String, modifier: Modifier = Modifier) {
   Image(
     bitmap = qrCodeBitmap(connReq, 1024).asImageBitmap(),
-    contentDescription = generalGetString(R.string.qr_code),
+    contentDescription = generalGetString(R.string.image_descr_qr_code),
     modifier = modifier
   )
 }

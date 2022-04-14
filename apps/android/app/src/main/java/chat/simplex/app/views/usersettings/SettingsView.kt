@@ -91,7 +91,7 @@ fun SettingsLayout(
       SettingsSectionView(showModal { UserAddressView(it) }) {
         Icon(
           Icons.Outlined.QrCode,
-          contentDescription = generalGetString(R.string.address),
+          contentDescription = generalGetString(R.string.icon_descr_address),
         )
         Spacer(Modifier.padding(horizontal = 4.dp))
         Text(generalGetString(R.string.your_simplex_contact_address))
@@ -101,7 +101,7 @@ fun SettingsLayout(
       SettingsSectionView(showModal { HelpView(it) }) {
         Icon(
           Icons.Outlined.HelpOutline,
-          contentDescription = generalGetString(R.string.help),
+          contentDescription = generalGetString(R.string.icon_descr_help),
         )
         Spacer(Modifier.padding(horizontal = 4.dp))
         Text(generalGetString(R.string.how_to_use_simplex_chat))
@@ -119,7 +119,7 @@ fun SettingsLayout(
       SettingsSectionView({ uriHandler.openUri(simplexTeamUri) }) {
         Icon(
           Icons.Outlined.Tag,
-          contentDescription = generalGetString(R.string.simplex_team),
+          contentDescription = generalGetString(R.string.icon_descr_simplex_team),
         )
         Spacer(Modifier.padding(horizontal = 4.dp))
         Text(
@@ -131,7 +131,7 @@ fun SettingsLayout(
       SettingsSectionView({ uriHandler.openUri("mailto:chat@simplex.chat") }) {
         Icon(
           Icons.Outlined.Email,
-          contentDescription = generalGetString(R.string.email),
+          contentDescription = generalGetString(R.string.icon_descr_email),
         )
         Spacer(Modifier.padding(horizontal = 4.dp))
         Text(

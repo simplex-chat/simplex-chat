@@ -43,7 +43,7 @@ fun contactRequestAlertDialog(contactRequest: ChatInfo.ContactRequest, chatModel
   AlertManager.shared.showAlertDialog(
     title = generalGetString(R.string.accept_connection_request__question),
     text = generalGetString(R.string.if_you_choose_to_reject_the_sender_will_not_be_notified),
-    confirmText = generalGetString(R.string.accept_verb),
+    confirmText = generalGetString(R.string.accept_contact_button),
     onConfirm = {
       withApi {
         val contact = chatModel.controller.apiAcceptContactRequest(contactRequest.apiId)
@@ -53,7 +53,7 @@ fun contactRequestAlertDialog(contactRequest: ChatInfo.ContactRequest, chatModel
         }
       }
     },
-    dismissText = generalGetString(R.string.reject_verb),
+    dismissText = generalGetString(R.string.reject_contact_button),
     onDismiss = {
       withApi {
         chatModel.controller.apiRejectContactRequest(contactRequest.apiId)

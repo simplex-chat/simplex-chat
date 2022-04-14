@@ -40,7 +40,7 @@ fun ProfileImage(
     if (image == null) {
       Icon(
         icon,
-        contentDescription = generalGetString(R.string.profile_image_placeholder),
+        contentDescription = generalGetString(R.string.icon_descr_profile_image_placeholder),
         tint = MaterialTheme.colors.secondary,
         modifier = Modifier.fillMaxSize()
       )
@@ -48,7 +48,7 @@ fun ProfileImage(
       val imageBitmap = base64ToBitmap(image).asImageBitmap()
       Image(
         imageBitmap,
-        generalGetString(R.string.profile_image),
+        generalGetString(R.string.image_descr_profile_image),
         contentScale = ContentScale.Crop,
         modifier = Modifier.size(size).padding(size / 12).clip(CircleShape)
       )

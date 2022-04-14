@@ -132,7 +132,7 @@ fun Help(scaffoldCtrl: ScaffoldController, displayName: String?) {
       )
       Icon(
         Icons.Outlined.Settings,
-        generalGetString(R.string.settings),
+        generalGetString(R.string.icon_descr_settings),
         tint = MaterialTheme.colors.onBackground,
         modifier = Modifier.clickable(onClick = { scaffoldCtrl.toggleDrawer() })
       )
@@ -154,7 +154,7 @@ fun ChatListToolbar(scaffoldCtrl: ScaffoldController) {
     IconButton(onClick = { scaffoldCtrl.toggleDrawer() }) {
       Icon(
         Icons.Outlined.Menu,
-        generalGetString(R.string.settings),
+        generalGetString(R.string.icon_descr_settings),
         tint = MaterialTheme.colors.primary,
         modifier = Modifier.padding(10.dp)
       )

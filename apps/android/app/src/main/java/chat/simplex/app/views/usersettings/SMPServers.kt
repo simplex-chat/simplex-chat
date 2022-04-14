@@ -180,7 +180,7 @@ fun SMPServersLayout(
               )
               Spacer(Modifier.padding(horizontal = 8.dp))
               Text(
-                generalGetString(R.string.save_verb),
+                generalGetString(R.string.save_servers_button),
                 color = MaterialTheme.colors.primary,
                 modifier = Modifier.clickable(onClick = {
                   val servers = userSMPServersStr.split("\n")

@@ -97,7 +97,7 @@ fun ChatInfoLayout(chat: Chat, close: () -> Unit, deleteContact: () -> Unit) {
 
       Box(Modifier.padding(48.dp)) {
         SimpleButton(
-          generalGetString(R.string.delete_contact),
+          generalGetString(R.string.button_delete_contact),
           icon = Icons.Outlined.Delete,
           color = Color.Red,
           click = deleteContact
@@ -112,13 +112,13 @@ fun ServerImage(chat: Chat) {
   val status = chat.serverInfo.networkStatus
   when {
     status is Chat.NetworkStatus.Connected ->
-      Icon(Icons.Filled.Circle, generalGetString(R.string.server_connection_status_connected), tint = MaterialTheme.colors.primaryVariant)
+      Icon(Icons.Filled.Circle, generalGetString(R.string.icon_descr_server_status_connected), tint = MaterialTheme.colors.primaryVariant)
     status is Chat.NetworkStatus.Disconnected ->
-      Icon(Icons.Filled.Pending, generalGetString(R.string.server_connection_status_disconnected), tint = HighOrLowlight)
+      Icon(Icons.Filled.Pending, generalGetString(R.string.icon_descr_server_status_disconnected), tint = HighOrLowlight)
     status is Chat.NetworkStatus.Error ->
-      Icon(Icons.Filled.Error, generalGetString(R.string.server_connection_status_error), tint = HighOrLowlight)
+      Icon(Icons.Filled.Error, generalGetString(R.string.icon_descr_server_status_error), tint = HighOrLowlight)
     else ->
-      Icon(Icons.Outlined.Circle, generalGetString(R.string.server_connection_status_pending), tint = HighOrLowlight)
+      Icon(Icons.Outlined.Circle, generalGetString(R.string.icon_descr_server_status_pending), tint = HighOrLowlight)
   }
 }
 

@@ -40,7 +40,7 @@ fun WelcomeView(chatModel: ChatModel) {
       ) {
         Image(
           painter = painterResource(R.drawable.logo),
-          contentDescription = generalGetString(R.string.simplex_logo),
+          contentDescription = generalGetString(R.string.image_descr_simplex_logo),
           modifier = Modifier.padding(vertical = 15.dp)
         )
         Text(
@@ -158,6 +158,6 @@ fun CreateProfilePanel(chatModel: ChatModel) {
       }
     },
     enabled = (displayName.isNotEmpty() && isValidDisplayName(displayName))
-    ) { Text(generalGetString(R.string.create_verb)) }
+    ) { Text(generalGetString(R.string.create_profile_button)) }
   }
 }

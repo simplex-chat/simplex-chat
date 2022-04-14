@@ -27,7 +27,7 @@ fun CIMetaView(chatItem: ChatItem) {
         Icon(
           Icons.Filled.Edit,
           modifier = Modifier.height(12.dp).padding(end = 1.dp),
-          contentDescription = generalGetString(R.string.edited),
+          contentDescription = generalGetString(R.string.icon_descr_edited),
           tint = HighOrLowlight,
         )
       }
@@ -47,16 +47,16 @@ fun CIMetaView(chatItem: ChatItem) {
 fun CIStatusView(status: CIStatus) {
   when (status) {
     is CIStatus.SndSent -> {
-      Icon(Icons.Filled.Check, generalGetString(R.string.sent_msg_status_sent), Modifier.height(12.dp), tint = HighOrLowlight)
+      Icon(Icons.Filled.Check, generalGetString(R.string.icon_descr_sent_msg_status_sent), Modifier.height(12.dp), tint = HighOrLowlight)
     }
     is CIStatus.SndErrorAuth -> {
-      Icon(Icons.Filled.Close,  generalGetString(R.string.sent_msg_status_unauthorized_send), Modifier.height(12.dp), tint = Color.Red)
+      Icon(Icons.Filled.Close,  generalGetString(R.string.icon_descr_sent_msg_status_unauthorized_send), Modifier.height(12.dp), tint = Color.Red)
     }
     is CIStatus.SndError -> {
-      Icon(Icons.Filled.WarningAmber, generalGetString(R.string.sent_msg_status_send_failed), Modifier.height(12.dp), tint = Color.Yellow)
+      Icon(Icons.Filled.WarningAmber, generalGetString(R.string.icon_descr_sent_msg_status_send_failed), Modifier.height(12.dp), tint = Color.Yellow)
     }
     is CIStatus.RcvNew -> {
-      Icon(Icons.Filled.Circle, generalGetString(R.string.received_msg_status_unread), Modifier.height(12.dp), tint = SimplexBlue)
+      Icon(Icons.Filled.Circle, generalGetString(R.string.icon_descr_received_msg_status_unread), Modifier.height(12.dp), tint = SimplexBlue)
     }
     else -> {}
   }

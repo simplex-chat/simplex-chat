@@ -127,7 +127,7 @@ fun SendMsgView(
           val color = if (msg.value.isNotEmpty()) MaterialTheme.colors.primary else Color.Gray
           Icon(
             if (editing) Icons.Filled.Check else Icons.Outlined.ArrowUpward,
-            generalGetString(R.string.send_message),
+            generalGetString(R.string.icon_descr_send_message),
             tint = Color.White,
             modifier = Modifier
               .size(36.dp)

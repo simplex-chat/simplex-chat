@@ -56,15 +56,11 @@ fun withUriAction(uri: Uri, run: suspend (String) -> Unit) {
 suspend fun connectViaUri(chatModel: ChatModel, action: String, uri: Uri) {
   val r = chatModel.controller.apiConnect(uri.toString())
   if (r) {
-    val whenConnected =
-      if (action == "contact") generalGetString(R.string.your_connection_request_is_accepted)
-      else generalGetString(R.string.your_contacts_device_is_online)
     AlertManager.shared.showAlertMsg(
       title = generalGetString(R.string.connection_request_sent),
-      text = String.format(
-        generalGetString(R.string.you_will_be_connected_when_condition_please_wait_or_check_later),
-        whenConnected
-      )
+      text =
+        if (action == "contact") generalGetString(R.string.you_will_be_connected_when_your_connection_request_is_accepted)
+        else generalGetString(R.string.you_will_be_connected_when_your_contacts_device_is_online)
     )
   }
 }
@@ -92,7 +88,7 @@ fun ConnectContactLayout(qrCodeScanner: @Composable () -> Unit, close: () -> Uni
           .aspectRatio(ratio = 1F)
       ) { qrCodeScanner() }
       Text(
-        annotatedStringResource(R.string.if_you_cannot_meet_in_person_scan_QR_on_video_or_use_invitation_link)
+        annotatedStringResource(R.string.if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link)
       )
     }
   }

@@ -133,7 +133,7 @@ fun connectIfOpenedViaUri(uri: Uri, chatModel: ChatModel) {
       AlertManager.shared.showAlertMsg(
         title = title,
         text = generalGetString(R.string.profile_will_be_sent_to_contact_sending_link),
-        confirmText = generalGetString(R.string.connect_verb),
+        confirmText = generalGetString(R.string.connect_via_link_verb),
         onConfirm = {
           withApi {
             Log.d(TAG, "connectIfOpenedViaUri: connecting")

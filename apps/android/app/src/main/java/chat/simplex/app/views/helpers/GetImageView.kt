@@ -148,7 +148,7 @@ fun GetImageBottomSheet(
       else galleryLauncher.launch("image/*")
       hideBottomSheet()
     } else {
-      Toast.makeText(context, generalGetString(R.string.permission_denied), Toast.LENGTH_SHORT).show()
+      Toast.makeText(context, generalGetString(R.string.toast_camera_permission_denied), Toast.LENGTH_SHORT).show()
     }
   }
 
@@ -166,7 +166,7 @@ fun GetImageBottomSheet(
         .padding(horizontal = 8.dp, vertical = 30.dp),
       horizontalArrangement = Arrangement.SpaceEvenly
     ) {
-      ActionButton(null, generalGetString(R.string.use_camera), icon = Icons.Outlined.PhotoCamera) {
+      ActionButton(null, generalGetString(R.string.use_camera_button), icon = Icons.Outlined.PhotoCamera) {
         when (PackageManager.PERMISSION_GRANTED) {
           ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) -> {
             cameraLauncher.launch(null)
@@ -178,7 +178,7 @@ fun GetImageBottomSheet(
           }
         }
       }
-      ActionButton(null, generalGetString(R.string.from_gallery), icon = Icons.Outlined.Collections) {
+      ActionButton(null, generalGetString(R.string.from_gallery_button), icon = Icons.Outlined.Collections) {
         when (PackageManager.PERMISSION_GRANTED) {
           ContextCompat.checkSelfPermission(context, Manifest.permission.READ_EXTERNAL_STORAGE) -> {
             galleryLauncher.launch("image/*")

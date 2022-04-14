@@ -51,7 +51,7 @@ fun ChatHelpView(addContact: (() -> Unit)? = null) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp)
       ) {
-        Text(generalGetString(R.string.tap_button))
+        Text(generalGetString(R.string.chat_help_tap_button))
         Icon(
           Icons.Outlined.PersonAdd,
           generalGetString(R.string.add_contact),
