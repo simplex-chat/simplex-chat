@@ -123,7 +123,7 @@ fun UserProfileLayout(
               ProfileNameTextField(displayName)
               ProfileNameTextField(fullName)
               Row {
-                TextButton(generalGetString(R.string.cancel)) {
+                TextButton(generalGetString(R.string.cancel_verb)) {
                   displayName.value = profile.displayName
                   fullName.value = profile.fullName
                   profileImage.value = profile.image
@@ -155,7 +155,7 @@ fun UserProfileLayout(
               }
               ProfileNameRow(generalGetString(R.string.display_name__field), profile.displayName)
               ProfileNameRow(generalGetString(R.string.full_name__field), profile.fullName)
-              TextButton(generalGetString(R.string.edit)) { editProfile.value = true }
+              TextButton(generalGetString(R.string.edit_verb)) { editProfile.value = true }
             }
           }
           if (savedKeyboardState != keyboardState) {

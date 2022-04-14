@@ -35,7 +35,7 @@ fun UserAddressView(chatModel: ChatModel) {
       AlertManager.shared.showAlertMsg(
         title = generalGetString(R.string.delete_address__question),
         text = generalGetString(R.string.all_your_contacts_will_remain_connected),
-        confirmText = generalGetString(R.string.delete),
+        confirmText = generalGetString(R.string.delete_verb),
         onConfirm = {
           withApi {
             chatModel.controller.apiDeleteUserAddress()

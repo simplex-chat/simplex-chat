@@ -158,6 +158,6 @@ fun CreateProfilePanel(chatModel: ChatModel) {
       }
     },
     enabled = (displayName.isNotEmpty() && isValidDisplayName(displayName))
-    ) { Text(generalGetString(R.string.create)) }
+    ) { Text(generalGetString(R.string.create_verb)) }
   }
 }

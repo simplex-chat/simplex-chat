@@ -396,7 +396,7 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
         val a = e.agentError
         when {
           a is AgentErrorType.BROKER && a.brokerErr is BrokerErrorType.NETWORK -> "network"
-          a is AgentErrorType.SMP && a.smpErr is SMPErrorType.AUTH -> "contact deleted"  // todo translate?
+          a is AgentErrorType.SMP && a.smpErr is SMPErrorType.AUTH -> "contact deleted"
           else -> e.string
         }
       }

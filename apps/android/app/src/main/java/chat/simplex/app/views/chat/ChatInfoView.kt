@@ -32,7 +32,7 @@ fun ChatInfoView(chatModel: ChatModel, close: () -> Unit) {
         AlertManager.shared.showAlertMsg(
           title = generalGetString(R.string.delete_contact__question),
           text = generalGetString(R.string.delete_contact_all_messages_deleted_cannot_undo_warning),
-          confirmText = generalGetString(R.string.delete),
+          confirmText = generalGetString(R.string.delete_verb),
           onConfirm = {
             val cInfo = chat.chatInfo
             withApi {

@@ -52,7 +52,7 @@ fun ContextItemView(
       }) {
         Icon(
           Icons.Outlined.Close,
-          contentDescription = generalGetString(R.string.cancel),
+          contentDescription = generalGetString(R.string.cancel_verb),
           tint = MaterialTheme.colors.primary,
           modifier = Modifier.padding(10.dp)
         )

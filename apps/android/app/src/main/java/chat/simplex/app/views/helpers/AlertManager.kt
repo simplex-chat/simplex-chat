@@ -43,7 +43,7 @@ class AlertManager {
     text: String? = null,
     confirmText: String = generalGetString(R.string.ok),
     onConfirm: (() -> Unit)? = null,
-    dismissText: String = generalGetString(R.string.cancel),
+    dismissText: String = generalGetString(R.string.cancel_verb),
     onDismiss: (() -> Unit)? = null
   ) {
     val alertText: (@Composable () -> Unit)? = if (text == null) null else { -> Text(text) }

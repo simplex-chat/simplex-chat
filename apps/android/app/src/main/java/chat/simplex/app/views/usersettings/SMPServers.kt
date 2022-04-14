@@ -62,7 +62,7 @@ fun SMPServersView(chatModel: ChatModel) {
               AlertManager.shared.showAlertMsg(
                 title = generalGetString(R.string.use_simplex_chat_servers__question),
                 text = generalGetString(R.string.saved_SMP_servers_will_br_removed),
-                confirmText = generalGetString(R.string.confirm),
+                confirmText = generalGetString(R.string.confirm_verb),
                 onConfirm = {
                   saveSMPServers(listOf())
                   isUserSMPServers = false
@@ -173,14 +173,14 @@ fun SMPServersLayout(
           Column(horizontalAlignment = Alignment.Start) {
             Row {
               Text(
-                generalGetString(R.string.cancel),
+                generalGetString(R.string.cancel_verb),
                 color = MaterialTheme.colors.primary,
                 modifier = Modifier
                   .clickable(onClick = cancelEdit)
               )
               Spacer(Modifier.padding(horizontal = 8.dp))
               Text(
-                generalGetString(R.string.save),
+                generalGetString(R.string.save_verb),
                 color = MaterialTheme.colors.primary,
                 modifier = Modifier.clickable(onClick = {
                   val servers = userSMPServersStr.split("\n")
@@ -219,7 +219,7 @@ fun SMPServersLayout(
         ) {
           Column(horizontalAlignment = Alignment.Start) {
             Text(
-              generalGetString(R.string.edit),
+              generalGetString(R.string.edit_verb),
               color = MaterialTheme.colors.primary,
               modifier = Modifier
                 .clickable(onClick = editOn)

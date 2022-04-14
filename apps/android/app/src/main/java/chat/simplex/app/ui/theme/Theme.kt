@@ -5,7 +5,7 @@ import androidx.compose.material.*
 import androidx.compose.runtime.Composable
 
 private val DarkColorPalette = darkColors(
-  primary = SimplexBlue,
+  primary = SimplexBlue,  // If this value changes also need to update #0088ff in string resource files
   primaryVariant = SimplexGreen,
   secondary = DarkGray,
 //  background = Color.Black,
@@ -20,7 +20,7 @@ private val DarkColorPalette = darkColors(
 //  onError: Color = Color.Black,
 )
 private val LightColorPalette = lightColors(
-  primary = SimplexBlue,
+  primary = SimplexBlue,  // If this value changes also need to update #0088ff in string resource files
   primaryVariant = SimplexGreen,
   secondary = LightGray,
 //  background = Color.White,

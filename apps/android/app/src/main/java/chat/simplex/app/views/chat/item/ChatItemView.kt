@@ -55,21 +55,21 @@ fun ChatItemView(
       }
       if (cItem.isMsgContent) {
         DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
-          ItemAction(generalGetString(R.string.reply), Icons.Outlined.Reply, onClick = {
+          ItemAction(generalGetString(R.string.reply_verb), Icons.Outlined.Reply, onClick = {
             editingItem.value = null
             quotedItem.value = cItem
             showMenu = false
           })
-          ItemAction(generalGetString(R.string.share), Icons.Outlined.Share, onClick = {
+          ItemAction(generalGetString(R.string.share_verb), Icons.Outlined.Share, onClick = {
             shareText(cxt, cItem.content.text)
             showMenu = false
           })
-          ItemAction(generalGetString(R.string.copy), Icons.Outlined.ContentCopy, onClick = {
+          ItemAction(generalGetString(R.string.copy_verb), Icons.Outlined.ContentCopy, onClick = {
             copyText(cxt, cItem.content.text)
             showMenu = false
           })
           if (cItem.chatDir.sent && cItem.meta.editable) {
-            ItemAction(generalGetString(R.string.edit), Icons.Filled.Edit, onClick = {
+            ItemAction(generalGetString(R.string.edit_verb), Icons.Filled.Edit, onClick = {
               quotedItem.value = null
               editingItem.value = cItem
               msg.value = cItem.content.text
@@ -77,7 +77,7 @@ fun ChatItemView(
             })
           }
           ItemAction(
-            generalGetString(R.string.delete),
+            generalGetString(R.string.delete_verb),
             Icons.Outlined.Delete,
             onClick = {
               showMenu = false

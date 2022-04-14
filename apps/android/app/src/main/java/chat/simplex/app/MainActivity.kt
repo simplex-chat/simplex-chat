@@ -126,14 +126,14 @@ fun connectIfOpenedViaUri(uri: Uri, chatModel: ChatModel) {
         "contact" -> generalGetString(R.string.connect_via_contact_link)
         "invitation" -> generalGetString(R.string.connect_via_invitation_link)
         else -> {
-          Log.e(TAG, "URI has unexpected action. Alert shown.")  // TODO make action enum-like?
-          ""
+          Log.e(TAG, "URI has unexpected action. Alert shown.")
+          action
         }
       }
       AlertManager.shared.showAlertMsg(
         title = title,
         text = generalGetString(R.string.profile_will_be_sent_to_contact_sending_link),
-        confirmText = generalGetString(R.string.connect),
+        confirmText = generalGetString(R.string.connect_verb),
         onConfirm = {
           withApi {
             Log.d(TAG, "connectIfOpenedViaUri: connecting")
