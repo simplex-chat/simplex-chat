@@ -142,6 +142,8 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		3C6908A3280832D50052C41A /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
+		3C6908A52808330D0052C41A /* ru */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ru; path = ru.lproj/Localizable.strings; sourceTree = "<group>"; };
 		3CDBCF4127FAE51000354CDD /* ComposeLinkView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComposeLinkView.swift; sourceTree = "<group>"; };
 		3CDBCF4727FF621E00354CDD /* ChatItemLinkView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatItemLinkView.swift; sourceTree = "<group>"; };
 		5C063D2627A4564100AEC577 /* ChatPreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatPreviewView.swift; sourceTree = "<group>"; };
@@ -336,6 +338,7 @@
 		5CA059BD279559F40002BEB4 = {
 			isa = PBXGroup;
 			children = (
+				3C6908A4280832D50052C41A /* Localizable.strings */,
 				5C422A7C27A9A6FA0097A1E1 /* SimpleX (iOS).entitlements */,
 				5C764E5C279C70B7000C6508 /* Libraries */,
 				5CA059C2279559F40002BEB4 /* Shared */,
@@ -569,6 +572,7 @@
 			knownRegions = (
 				en,
 				Base,
+				ru,
 			);
 			mainGroup = 5CA059BD279559F40002BEB4;
 			packageReferences = (
@@ -760,6 +764,18 @@
 			targetProxy = 5CA059E4279559F40002BEB4 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
+
+/* Begin PBXVariantGroup section */
+		3C6908A4280832D50052C41A /* Localizable.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				3C6908A3280832D50052C41A /* en */,
+				3C6908A52808330D0052C41A /* ru */,
+			);
+			name = Localizable.strings;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
 		5CA059F1279559F40002BEB4 /* Debug */ = {
