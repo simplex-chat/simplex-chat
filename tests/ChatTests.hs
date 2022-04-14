@@ -1262,6 +1262,11 @@ testSendImage =
       dest `shouldBe` src
       alice #$> ("/_get chat @2 count=100", chatF, [((1, ""), Just "./tests/fixtures/test.jpg")])
       bob #$> ("/_get chat @2 count=100", chatF, [((0, ""), Just "./tests/tmp/test.jpg")])
+      -- deleting contact without files folder set should not remove file
+      bob ##> "/d alice"
+      bob <## "alice: contact is deleted"
+      fileExists <- doesFileExist "./tests/tmp/test.jpg"
+      fileExists `shouldBe` True
 
 testSendImageWithFilesFolders :: IO ()
 testSendImageWithFilesFolders =
@@ -1288,6 +1293,7 @@ testSendImageWithFilesFolders =
       dest `shouldBe` src
       alice #$> ("/_get chat @2 count=100", chatF, [((1, ""), Just "test.jpg")])
       bob #$> ("/_get chat @2 count=100", chatF, [((0, ""), Just "test.jpg")])
+      -- deleting contact with files folder set should remove file
       bob ##> "/d alice"
       bob <## "alice: contact is deleted"
       fileExists <- doesFileExist "./tests/tmp/test.jpg"
