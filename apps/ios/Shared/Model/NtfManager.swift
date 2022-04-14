@@ -101,7 +101,7 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
                 identifier: ntfCategoryContactConnected,
                 actions: [],
                 intentIdentifiers: [],
-                hiddenPreviewsBodyPlaceholder: NSLocalizedString("contact is connected", comment: <#T##String#>)
+                hiddenPreviewsBodyPlaceholder: NSLocalizedString("contact is connected", comment: "")
             ),
             UNNotificationCategory(
                 identifier: ntfCategoryMessageReceived,
