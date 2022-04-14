@@ -1159,11 +1159,12 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
                     then badRcvFileChunk ft "incorrect chunk size"
                     else do
                       appendFileChunk ft chunkNo chunk
-                      withStore $ \st -> do
+                      ci <- withStore $ \st -> do
                         updateRcvFileStatus st ft FSComplete
                         updateCIFileStatus st userId fileId CIFSRcvComplete
                         deleteRcvFileChunks st ft
-                      toView $ CRRcvFileComplete ft
+                        getChatItemByFileId st user fileId
+                      toView $ CRRcvFileComplete ci
                       closeFileHandle fileId rcvFiles
                       withAgent (`deleteConnection` agentConnId)
                 RcvChunkDuplicate -> pure ()

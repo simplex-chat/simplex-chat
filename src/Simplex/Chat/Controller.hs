@@ -202,7 +202,7 @@ data ChatResponse
   | CRRcvFileAccepted {fileTransfer :: RcvFileTransfer, filePath :: FilePath}
   | CRRcvFileAcceptedSndCancelled {rcvFileTransfer :: RcvFileTransfer}
   | CRRcvFileStart {rcvFileTransfer :: RcvFileTransfer}
-  | CRRcvFileComplete {rcvFileTransfer :: RcvFileTransfer}
+  | CRRcvFileComplete {chatItem :: AChatItem}
   | CRRcvFileCancelled {rcvFileTransfer :: RcvFileTransfer}
   | CRRcvFileSndCancelled {rcvFileTransfer :: RcvFileTransfer}
   | CRSndFileStart {sndFileTransfer :: SndFileTransfer}
