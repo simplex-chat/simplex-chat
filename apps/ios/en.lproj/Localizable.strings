@@ -6,6 +6,9 @@
   Copyright © 2022 SimpleX Chat. All rights reserved.
 */
 
+// Date Locale
+"date locale" = "en_US_POSIX";
+
 // notification alert - ContentView.swift
 "notifications are disabled" = "Notifications are disabled!";
 "app can notify for messages or contact requests" = "The app can notify you when you receive messages or contact requests - please open settings to enable.";
@@ -39,9 +42,21 @@
 "connection error" = "Connection error";
 "please check network connection and try again" = "Please check your network connection and try again";
 
+// Notifications - NtfManager.swift
+"contact is connected" = "Contact is connected";
+"new message" = "New message";
+"CONTACT_NAME wants to connect" = "%s wants to connect!";
+"accept contact request from CONTACT_NAME" = "Accept contact request from %s?";
+"DISPLAY_NAME is connected" = "%s is connected!";
+"you can now send messages to DISPLAY_NAME" = "You can now send messages to %s";
+
 
 "SMP servers" = "SMP servers";
 
 // General
 "you (pronoun)" = "you";
 "no details" = "no details";
+"new contact request" = "New contact request";
+
+// Actions
+"accept (verb)" = "Accept";

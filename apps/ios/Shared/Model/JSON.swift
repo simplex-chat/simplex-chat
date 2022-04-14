@@ -31,7 +31,7 @@ func getJSONEncoder() -> JSONEncoder {
 
 private func getDateFormatter(_ format: String) -> DateFormatter {
     let df = DateFormatter()
-    df.locale = Locale(identifier: "en_US_POSIX")
+    df.locale = Locale(identifier: NSLocalizedString("date locale", comment: ""))
     df.dateFormat = format
     df.timeZone = TimeZone(secondsFromGMT: 0)
     return df
