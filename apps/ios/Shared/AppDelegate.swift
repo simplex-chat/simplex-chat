@@ -27,14 +27,33 @@ class AppDelegate: NSObject, UIApplicationDelegate {
     }
 
     func application(_ application: UIApplication,
-                              didReceiveRemoteNotification userInfo: [AnyHashable : Any],
-                              fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
+                     didReceiveRemoteNotification userInfo: [AnyHashable : Any],
+                     fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
         logger.debug("AppDelegate: didReceiveRemoteNotification")
-        let completionHandler = BGManager.shared.completionHandler {
+        print(userInfo)
+        if let ntfData = userInfo["notificationData"] as? [AnyHashable : Any] {
+            if let verification = ntfData["verification"] as? String {
+                logger.debug("AppDelegate: didReceiveRemoteNotification: verification, confirming \(verification)")
+                // TODO send to chat
+                completionHandler(.newData)
+            } else if let checkMessages = ntfData["checkMessages"] as? Bool, checkMessages {
+                // TODO check if app in background
+                logger.debug("AppDelegate: didReceiveRemoteNotification: checkMessages")
+                receiveMessages(completionHandler)
+            } else if let smpQueue = ntfData["checkMessage"] as? String {
+                // TODO check if app in background
+                logger.debug("AppDelegate: didReceiveRemoteNotification: checkMessage \(smpQueue)")
+                receiveMessages(completionHandler)
+            }
+        }
+    }
+
+    private func receiveMessages(_ completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
+        let complete = BGManager.shared.completionHandler {
             logger.debug("AppDelegate: completed BGManager.receiveMessages")
             completionHandler(.newData)
         }
 
-        BGManager.shared.receiveMessages(completionHandler)
+        BGManager.shared.receiveMessages(complete)
     }
 }

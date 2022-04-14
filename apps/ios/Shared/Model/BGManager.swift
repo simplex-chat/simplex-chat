@@ -51,7 +51,7 @@ class BGManager {
     }
 
     func completionHandler(_ complete: @escaping () -> Void) -> ((String) -> Void) {
-        return { reason in
+        { reason in
             logger.debug("BGManager.completionHandler: \(reason)")
             if !self.completed {
                 self.completed = true
