@@ -53,6 +53,7 @@ data ChatConfig = ChatConfig
     dbPoolSize :: Int,
     yesToMigrations :: Bool,
     tbqSize :: Natural,
+    filesFolder :: Maybe FilePath, -- path to files folder for mobile apps
     fileChunkSize :: Integer,
     subscriptionConcurrency :: Int,
     subscriptionEvents :: Bool,

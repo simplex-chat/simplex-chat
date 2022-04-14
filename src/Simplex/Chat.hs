@@ -83,6 +83,7 @@ defaultChatConfig =
       dbPoolSize = 1,
       yesToMigrations = False,
       tbqSize = 64,
+      filesFolder = Nothing,
       fileChunkSize = 15780,
       subscriptionConcurrency = 16,
       subscriptionEvents = False,
@@ -641,8 +642,9 @@ processChatCommand = \case
         cId == Just contactId && s /= GSMemRemoved && s /= GSMemLeft
     checkSndFile :: FilePath -> m (Integer, Integer)
     checkSndFile f = do
-      unlessM (doesFileExist f) . throwChatError $ CEFileNotFound f
-      (,) <$> getFileSize f <*> asks (fileChunkSize . config)
+      filePathUsed <- filePathToUse f
+      unlessM (doesFileExist filePathUsed) . throwChatError $ CEFileNotFound f
+      (,) <$> getFileSize filePathUsed <*> asks (fileChunkSize . config)
     updateProfile :: User -> Profile -> m ChatResponse
     updateProfile user@User {profile = p} p'@Profile {displayName}
       | p' == p = pure CRUserProfileNoChange
@@ -659,6 +661,13 @@ processChatCommand = \case
     isReady ct =
       let s = connStatus $ activeConn (ct :: Contact)
        in s == ConnReady || s == ConnSndReady
+
+filePathToUse :: ChatMonad m => FilePath -> m FilePath
+filePathToUse f = do
+  filesFolder_ <- asks $ filesFolder . config
+  case filesFolder_ of
+    Nothing -> pure f
+    Just filesFolder -> pure $ filesFolder <> "/" <> f
 
 acceptFileReceive :: forall m. ChatMonad m => User -> RcvFileTransfer -> Maybe FilePath -> m FilePath
 acceptFileReceive user@User {userId} RcvFileTransfer {fileId, fileInvitation = FileInvitation {fileName = fName, fileConnReq}, fileStatus, senderDisplayName, grpMemberId} filePath_ = do
@@ -697,10 +706,17 @@ acceptFileReceive user@User {userId} RcvFileTransfer {fileId, fileInvitation = F
     getRcvFilePath :: Maybe FilePath -> String -> m FilePath
     getRcvFilePath fPath_ fn = case fPath_ of
       Nothing -> do
-        dir <- (`combine` "Downloads") <$> getHomeDirectory
-        ifM (doesDirectoryExist dir) (pure dir) getTemporaryDirectory
-          >>= (`uniqueCombine` fn)
+        filesFolder_ <- asks $ filesFolder . config
+        dir <- case filesFolder_ of
+          Nothing -> do
+            downloads <- (`combine` "Downloads") <$> getHomeDirectory
+            ifM (doesDirectoryExist downloads) (pure downloads) getTemporaryDirectory
+          Just filesFolder -> pure filesFolder
+        dir `uniqueCombine` fn
           >>= createEmptyFile
+          >>= \f -> case filesFolder_ of
+            Nothing -> pure f
+            Just _ -> pure $ takeFileName f
       Just fPath ->
         ifM
           (doesDirectoryExist fPath)
@@ -1516,11 +1532,12 @@ sendFileChunkNo ft@SndFileTransfer {agentConnId = AgentConnId acId} chunkNo = do
   withStore $ \st -> updateSndFileChunkMsg st ft chunkNo msgId
 
 readFileChunk :: ChatMonad m => SndFileTransfer -> Integer -> m ByteString
-readFileChunk SndFileTransfer {fileId, filePath, chunkSize} chunkNo =
-  read_ `E.catch` (throwChatError . CEFileRead filePath . (show :: E.SomeException -> String))
+readFileChunk SndFileTransfer {fileId, filePath, chunkSize} chunkNo = do
+  filePathUsed <- filePathToUse filePath
+  read_ filePathUsed `E.catch` (throwChatError . CEFileRead filePath . (show :: E.SomeException -> String))
   where
-    read_ = do
-      h <- getFileHandle fileId filePath sndFiles ReadMode
+    read_ fPathUsed = do
+      h <- getFileHandle fileId fPathUsed sndFiles ReadMode
       pos <- hTell h
       let pos' = (chunkNo - 1) * chunkSize
       when (pos /= pos') $ hSeek h AbsoluteSeek pos'
@@ -1548,12 +1565,14 @@ parseFileChunk msg =
 appendFileChunk :: ChatMonad m => RcvFileTransfer -> Integer -> ByteString -> m ()
 appendFileChunk ft@RcvFileTransfer {fileId, fileStatus} chunkNo chunk =
   case fileStatus of
-    RFSConnected RcvFileInfo {filePath} -> append_ filePath
+    RFSConnected RcvFileInfo {filePath} -> do
+      filePathUsed <- filePathToUse filePath
+      append_ filePath filePathUsed
     RFSCancelled _ -> pure ()
     _ -> throwChatError $ CEFileInternal "receiving file transfer not in progress"
   where
-    append_ fPath = do
-      h <- getFileHandle fileId fPath rcvFiles AppendMode
+    append_ fPath fPathUsed = do
+      h <- getFileHandle fileId fPathUsed rcvFiles AppendMode
       E.try (liftIO $ B.hPut h chunk >> hFlush h) >>= \case
         Left (e :: E.SomeException) -> throwChatError . CEFileWrite fPath $ show e
         Right () -> withStore $ \st -> updatedRcvFileChunkStored st ft chunkNo
