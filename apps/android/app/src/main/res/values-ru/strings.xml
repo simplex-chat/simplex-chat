@@ -180,7 +180,8 @@
     <string name="delete_address__question">Удалить адрес?</string>
     <string name="all_your_contacts_will_remain_connected">Все контакты, которые соединились через этот адрес, сохранятся.</string>
     <string name="your_chat_address">Ваш адрес</string>
-    <string name="you_can_share_your_address_anybody_will_be_able_to_connect_deletion_wont_lose_contacts">Вы можете использовать Ваш адрес как ссылку или как QR код - кто угодно сможет соединиться с Вами.\nВы сможете удалить адрес, сохранив контакты, которые через него соединились.</string>
+    <string name="you_can_share_your_address_anybody_will_be_able_to_connect">Вы можете использовать Ваш адрес как ссылку или как QR код - кто угодно сможет соединиться с Вами.</string>
+    <string name="if_you_delete_address_you_wont_lose_contacts">Вы сможете удалить адрес, сохранив контакты, которые через него соединились.</string>
     <string name="share_link">Поделиться\nссылкой</string>
     <string name="delete_address">Удалить\nадрес</string>
 

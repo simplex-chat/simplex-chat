@@ -180,7 +180,8 @@
   <string name="delete_address__question">Delete address?</string>
   <string name="all_your_contacts_will_remain_connected">All your contacts will remain connected.</string>
   <string name="your_chat_address">Your chat address</string>
-  <string name="you_can_share_your_address_anybody_will_be_able_to_connect_deletion_wont_lose_contacts">You can share your address as a link or as a QR code - anybody will be able to connect to you.\nIf you later delete it - you won\'t lose your contacts.</string>
+  <string name="you_can_share_your_address_anybody_will_be_able_to_connect">You can share your address as a link or as a QR code - anybody will be able to connect to you.</string>
+  <string name="if_you_delete_address_you_wont_lose_contacts">If you later delete it - you won\'t lose your contacts.</string>
   <string name="share_link">Share link</string>
   <string name="delete_address">Delete address</string>
 
