@@ -243,7 +243,7 @@ enum ChatResponse: Decodable, Error {
         }
     }
 
-    private var noDetails: String { get { "\(responseType): no details" } }
+    private var noDetails: String { get { "\(responseType): \(NSLocalizedString("no details", comment: ""))" } }
 }
 
 enum TerminalItem: Identifiable {
@@ -454,26 +454,26 @@ func apiConnect(connReq: String) async throws -> Bool {
     case .sentInvitation: return true
     case let .contactAlreadyExists(contact):
         am.showAlertMsg(
-            title: "Contact already exists",
-            message: "You are already connected to \(contact.displayName) via this link."
+            title: NSLocalizedString("contact already exists", comment: ""),
+            message: String.localizedStringWithFormat(NSLocalizedString("you are already connected to CONTACT via this link", comment: ""), contact.displayName)
         )
         return false
     case .chatCmdError(.error(.invalidConnReq)):
         am.showAlertMsg(
-            title: "Invalid connection link",
-            message: "Please check that you used the correct link or ask your contact to send you another one."
+            title: NSLocalizedString("invalid connection link", comment: ""),
+            message: NSLocalizedString("please check that you used the correct link or ask for another one", comment: "")
         )
         return false
     case .chatCmdError(.errorAgent(.BROKER(.TIMEOUT))):
         am.showAlertMsg(
-            title: "Connection timeout",
-            message: "Please check your network connection and try again"
+            title: NSLocalizedString("connection timeout", comment: ""),
+            message: NSLocalizedString("please check network connection and try again", comment: "")
         )
         return false
     case .chatCmdError(.errorAgent(.BROKER(.NETWORK))):
         am.showAlertMsg(
-            title: "Connection error",
-            message: "Please check your network connection and try again"
+            title: NSLocalizedString("connection error", comment: ""),
+            message: NSLocalizedString("please check network connection and try again", comment: "")
         )
         return false
     default: throw r

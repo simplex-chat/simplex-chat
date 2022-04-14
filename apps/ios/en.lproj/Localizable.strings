@@ -30,9 +30,18 @@
 "this item is deleted" = "this item is deleted";
 "deleted (adjective)" = "deleted";
 
+// API Information - SimpleXAPI.swift
+"contact already exists" = "Contact already exists";
+"you are already connected to CONTACT via this link" = "You are already connected to %s via this link.";
+"invalid connection link" = "Invalid connection link";
+"please check that you used the correct link or ask for another one" = "Please check that you used the correct link or ask your contact to send you another one.";
+"connection timeout" = "Connection timeout";
+"connection error" = "Connection error";
+"please check network connection and try again" = "Please check your network connection and try again";
+
 
 "SMP servers" = "SMP servers";
 
-
 // General
 "you (pronoun)" = "you";
+"no details" = "no details";
