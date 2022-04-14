@@ -37,8 +37,8 @@ struct ContentView: View {
     func notificationAlert() -> Alert {
         Alert(
             title: Text(NSLocalizedString("notifications are disabled", comment: "notifications disabled")),
-             message: Text("The app can notify you when you receive messages or contact requests - please open settings to enable."),
-             primaryButton: .default(Text("Open Settings")) {
+             message: Text(NSLocalizedString("app can notify for messages or contact requests", comment: "")),
+            primaryButton: .default(Text(NSLocalizedString("Open Settings", comment: ""))) {
                  DispatchQueue.main.async {
                      UIApplication.shared.open(URL(string: UIApplication.openSettingsURLString)!, options: [:], completionHandler: nil)
                  }

@@ -6,3 +6,5 @@
   Copyright © 2022 SimpleX Chat. All rights reserved.
 */
 "notifications are disabled" = "Notifications are disabled!";
+"open settings" = "Open Settings";
+"app can notify for messages or contact requests" = "The app can notify you when you receive messages or contact requests - please open settings to enable.";
