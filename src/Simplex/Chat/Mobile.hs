@@ -7,7 +7,6 @@
 module Simplex.Chat.Mobile where
 
 import Control.Concurrent.STM
-import qualified Control.Exception as E
 import Control.Monad.Reader
 import Data.Aeson (ToJSON (..))
 import qualified Data.Aeson as J
@@ -24,7 +23,6 @@ import Simplex.Chat.Store
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (yesToMigrations))
 import Simplex.Messaging.Protocol (CorrId (..))
-import System.Directory (copyFile, createDirectoryIfMissing, doesFileExist, removeFile)
 
 foreign export ccall "chat_init" cChatInit :: CString -> IO (StablePtr ChatController)
 
@@ -72,27 +70,11 @@ getActiveUser_ :: SQLiteStore -> IO (Maybe User)
 getActiveUser_ st = find activeUser <$> getUsers st
 
 chatInit :: String -> IO ChatController
-chatInit filesFolder = do
-  moveDbFilesToFilesFolder -- one time migration to make android file paths parallel to those on ios
-  let dbFilePrefix = filesFolder <> "/mobile_v1"
+chatInit dbFilePrefix = do
   let f = chatStoreFile dbFilePrefix
   chatStore <- createStore f (dbPoolSize defaultMobileConfig) (yesToMigrations (defaultMobileConfig :: ChatConfig))
   user_ <- getActiveUser_ chatStore
-  newChatController chatStore user_ defaultMobileConfig {filesFolder = Just filesFolder} mobileChatOpts {dbFilePrefix} Nothing
-  where
-    moveDbFilesToFilesFolder :: IO ()
-    moveDbFilesToFilesFolder = do
-      createDirectoryIfMissing False filesFolder
-      moveFileIfExists (filesFolder <> "_chat.db") (filesFolder <> "/mobile_v1_chat.db")
-      moveFileIfExists (filesFolder <> "_chat.db.bak") (filesFolder <> "/mobile_v1_chat.db.bak")
-      moveFileIfExists (filesFolder <> "_agent.db") (filesFolder <> "/mobile_v1_agent.db")
-      moveFileIfExists (filesFolder <> "_agent.db.bak") (filesFolder <> "/mobile_v1_agent.db.bak")
-    moveFileIfExists :: FilePath -> FilePath -> IO ()
-    moveFileIfExists file mvFile = do
-      fileExists <- doesFileExist file
-      when fileExists $ do
-        copyFile file mvFile
-        removeFile file `E.catch` \(_ :: E.SomeException) -> pure () -- don't catch?
+  newChatController chatStore user_ defaultMobileConfig mobileChatOpts {dbFilePrefix} Nothing
 
 chatSendCmd :: ChatController -> String -> IO JSONString
 chatSendCmd cc s = LB.unpack . J.encode . APIResponse Nothing <$> runReaderT (execChatCommand $ B.pack s) cc

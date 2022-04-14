@@ -53,7 +53,6 @@ data ChatConfig = ChatConfig
     dbPoolSize :: Int,
     yesToMigrations :: Bool,
     tbqSize :: Natural,
-    filesFolder :: Maybe FilePath, -- path to files folder for mobile apps
     fileChunkSize :: Integer,
     subscriptionConcurrency :: Int,
     subscriptionEvents :: Bool,
@@ -78,7 +77,8 @@ data ChatController = ChatController
     chatLock :: TMVar (),
     sndFiles :: TVar (Map Int64 Handle),
     rcvFiles :: TVar (Map Int64 Handle),
-    config :: ChatConfig
+    config :: ChatConfig,
+    filesFolder :: TVar (Maybe FilePath) -- path to files folder for mobile apps
   }
 
 data HelpSection = HSMain | HSFiles | HSGroups | HSMyAddress | HSMarkdown | HSMessages
@@ -92,6 +92,7 @@ data ChatCommand
   = ShowActiveUser
   | CreateActiveUser Profile
   | StartChat
+  | SetFilesFolder FilePath
   | APIGetChats
   | APIGetChat ChatType Int64 ChatPagination
   | APIGetChatItems Int

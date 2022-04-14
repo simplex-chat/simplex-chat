@@ -765,7 +765,7 @@ func prettyJSON(_ obj: NSDictionary) -> String? {
 
 private func getChatCtrl() -> chat_ctrl {
     if let controller = chatController { return controller }
-    let dataDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!.path
+    let dataDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!.path + "/mobile_v1"
     var cstr = dataDir.cString(using: .utf8)!
     logger.debug("getChatCtrl: chat_init")
     ChatModel.shared.terminalItems.append(.cmd(.now, .string("chat_init")))

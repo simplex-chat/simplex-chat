@@ -83,7 +83,6 @@ defaultChatConfig =
       dbPoolSize = 1,
       yesToMigrations = False,
       tbqSize = 64,
-      filesFolder = Nothing,
       fileChunkSize = 15780,
       subscriptionConcurrency = 16,
       subscriptionEvents = False,
@@ -119,7 +118,8 @@ newChatController chatStore user cfg@ChatConfig {agentConfig = aCfg, tbqSize} Ch
   chatLock <- newTMVarIO ()
   sndFiles <- newTVarIO M.empty
   rcvFiles <- newTVarIO M.empty
-  pure ChatController {activeTo, firstTime, currentUser, smpAgent, agentAsync, chatStore, idsDrg, inputQ, outputQ, notifyQ, chatLock, sndFiles, rcvFiles, config, sendNotification}
+  filesFolder <- newTVarIO Nothing
+  pure ChatController {activeTo, firstTime, currentUser, smpAgent, agentAsync, chatStore, idsDrg, inputQ, outputQ, notifyQ, chatLock, sndFiles, rcvFiles, config, sendNotification, filesFolder}
   where
     resolveServers :: IO (NonEmpty SMPServer)
     resolveServers = case user of
@@ -173,6 +173,10 @@ processChatCommand = \case
     asks agentAsync >>= readTVarIO >>= \case
       Just _ -> pure CRChatRunning
       _ -> startChatController user $> CRChatStarted
+  SetFilesFolder filesFolder' -> withUser' $ \_ -> do
+    ff <- asks filesFolder
+    atomically . writeTVar ff $ Just filesFolder'
+    pure CRCmdOk
   APIGetChats -> CRApiChats <$> withUser (\user -> withStore (`getChatPreviews` user))
   APIGetChat cType cId pagination -> withUser $ \user -> case cType of
     CTDirect -> CRApiChat . AChat SCTDirect <$> withStore (\st -> getDirectChat st user cId pagination)
@@ -664,7 +668,8 @@ processChatCommand = \case
 
 filePathToUse :: ChatMonad m => FilePath -> m FilePath
 filePathToUse f = do
-  filesFolder_ <- asks $ filesFolder . config
+  ff <- asks filesFolder
+  filesFolder_ <- readTVarIO ff
   case filesFolder_ of
     Nothing -> pure f
     Just filesFolder -> pure $ filesFolder <> "/" <> f
@@ -706,7 +711,8 @@ acceptFileReceive user@User {userId} RcvFileTransfer {fileId, fileInvitation = F
     getRcvFilePath :: Maybe FilePath -> String -> m FilePath
     getRcvFilePath fPath_ fn = case fPath_ of
       Nothing -> do
-        filesFolder_ <- asks $ filesFolder . config
+        ff <- asks filesFolder
+        filesFolder_ <- readTVarIO ff
         dir <- case filesFolder_ of
           Nothing -> do
             downloads <- (`combine` "Downloads") <$> getHomeDirectory
@@ -1834,6 +1840,7 @@ chatCommandP =
   ("/user " <|> "/u ") *> (CreateActiveUser <$> userProfile)
     <|> ("/user" <|> "/u") $> ShowActiveUser
     <|> "/_start" $> StartChat
+    <|> "/_set_files_folder " *> (SetFilesFolder <$> filePath)
     <|> "/_get chats" $> APIGetChats
     <|> "/_get chat " *> (APIGetChat <$> chatTypeP <*> A.decimal <* A.space <*> chatPaginationP)
     <|> "/_get items count=" *> (APIGetChatItems <$> A.decimal)
