@@ -65,7 +65,7 @@ fun MarkdownHelpView() {
 @Composable
 fun MdSyntax(markdown: String) {
   Text(markdown, Modifier
-    .width(100.dp)
+    .width(120.dp)
     .padding(bottom = 4.dp))
 }
 

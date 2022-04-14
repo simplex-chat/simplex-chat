@@ -127,7 +127,7 @@ fun SMPServersLayout(
     }
 
     if (!isUserSMPServers) {
-      Text(generalGetString(R.string.using_simplex_chat_servers))
+      Text(generalGetString(R.string.using_simplex_chat_servers), lineHeight = 22.sp)
     } else {
       Text(generalGetString(R.string.enter_one_SMP_server_per_line))
       if (editSMPServers) {

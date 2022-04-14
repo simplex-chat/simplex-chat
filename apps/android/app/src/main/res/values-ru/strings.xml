@@ -165,7 +165,7 @@
     <string name="private_notifications">Безопасные уведомления</string>
     <string name="chat_console">Чат консоль</string>
     <string name="smp_servers">SMP серверы</string>
-    <string name="install_simplex_chat_for_terminal">Установите <font color="#0088ff"><xliff:g id="appNameFull">SimpleX Chat</xliff:g> для терминала</font></string>
+    <string name="install_simplex_chat_for_terminal"><font color="#0088ff"><xliff:g id="appNameFull">SimpleX Chat</xliff:g> для терминала</font></string>
     <string name="use_simplex_chat_servers__question">Использовать серверы предосталенные <xliff:g id="appNameFull">SimpleX Chat</xliff:g> servers?</string>
     <string name="saved_SMP_servers_will_br_removed">Сохраненные SMP серверы будут удалены.</string>
     <string name="your_SMP_servers">Ваши SMP серверы</string>
@@ -180,9 +180,9 @@
     <string name="delete_address__question">Удалить адрес?</string>
     <string name="all_your_contacts_will_remain_connected">Все контакты, которые соединились через этот адрес, сохранятся.</string>
     <string name="your_chat_address">Ваш адрес</string>
-    <string name="you_can_share_your_address_anybody_will_be_able_to_connect_deletion_wont_lose_contacts">Вы можете использовать Ваш адрес как ссылку или как QR код - кто угодно сможет соединиться с Вами. Вы сможете удалить адрес, сохранив контакты, которые через него соединились.</string>
-    <string name="share_link">Поделиться ссылкой</string>
-    <string name="delete_address">Удалить адрес</string>
+    <string name="you_can_share_your_address_anybody_will_be_able_to_connect_deletion_wont_lose_contacts">Вы можете использовать Ваш адрес как ссылку или как QR код - кто угодно сможет соединиться с Вами.\nВы сможете удалить адрес, сохранив контакты, которые через него соединились.</string>
+    <string name="share_link">Поделиться\nссылкой</string>
+    <string name="delete_address">Удалить\nадрес</string>
 
     <!-- User profile details - UserProfileView.kt -->
     <string name="display_name__field">Имя профиля:</string>

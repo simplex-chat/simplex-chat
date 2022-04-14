@@ -86,7 +86,7 @@ fun UserAddressLayout(
             icon = Icons.Outlined.Share,
             click = { share(userAddress) })
           SimpleButton(
-            generalGetString(R.string.share_link),
+            generalGetString(R.string.delete_address),
             icon = Icons.Outlined.Delete,
             color = Color.Red,
             click = deleteAddress

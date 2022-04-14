@@ -60,7 +60,7 @@ fun AddContactLayout(connReq: String, share: () -> Unit) {
       Text(
         generalGetString(R.string.if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel),
         textAlign = TextAlign.Center,
-        style = MaterialTheme.typography.caption.copy(fontSize=if(screenHeight > 600.dp) 20.sp else 16.sp),
+        lineHeight = 22.sp,
         modifier = Modifier
           .padding(horizontal = 16.dp)
           .padding(bottom = if(screenHeight > 600.dp) 16.dp else 8.dp)

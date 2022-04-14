@@ -19,6 +19,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.model.Profile
@@ -97,7 +98,8 @@ fun UserProfileLayout(
           Text(
             generalGetString(R.string.your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it),
             Modifier.padding(bottom = 24.dp),
-            color = MaterialTheme.colors.onBackground
+            color = MaterialTheme.colors.onBackground,
+            lineHeight = 22.sp
           )
           if (editProfile.value) {
             Column(

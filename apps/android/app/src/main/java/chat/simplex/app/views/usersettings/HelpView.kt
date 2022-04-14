@@ -3,6 +3,8 @@ package chat.simplex.app.views.usersettings
 import android.content.res.Configuration
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
@@ -26,7 +28,10 @@ fun HelpView(chatModel: ChatModel) {
 
 @Composable
 fun HelpLayout(displayName: String) {
-  Column(horizontalAlignment = Alignment.Start) {
+  Column(
+    Modifier.verticalScroll(rememberScrollState()),
+    horizontalAlignment = Alignment.Start
+  ){
     Text(
       String.format(generalGetString(R.string.personal_welcome), displayName),
       Modifier.padding(bottom = 24.dp),

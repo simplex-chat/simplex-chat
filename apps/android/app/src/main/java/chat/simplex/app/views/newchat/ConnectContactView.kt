@@ -12,6 +12,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.ui.theme.SimpleXTheme
@@ -88,7 +89,8 @@ fun ConnectContactLayout(qrCodeScanner: @Composable () -> Unit, close: () -> Uni
           .aspectRatio(ratio = 1F)
       ) { qrCodeScanner() }
       Text(
-        annotatedStringResource(R.string.if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link)
+        annotatedStringResource(R.string.if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link),
+        lineHeight = 22.sp
       )
     }
   }
