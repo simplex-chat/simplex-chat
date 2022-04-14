@@ -413,7 +413,7 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
             Row {
               Icon(
                 Icons.Outlined.Bolt,
-                contentDescription = "Instant notifications",
+                contentDescription = generalGetString(R.string.instant_notifications),
               )
               Text(generalGetString(R.string.private_instant_notifications), fontWeight = FontWeight.Bold)
             }
@@ -421,27 +421,14 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
           text = {
             Column {
               Text(
-                buildAnnotatedString {
-                  append("To preserve your privacy, instead of push notifications the app has a ") // todo discuss and handle non-bold fontweight
-                  withStyle(SpanStyle(fontWeight = FontWeight.Medium)) {
-                    append("SimpleX background service")
-                  }
-                  append(" – it uses a few percent of the battery per day.")
-                },
+                annotatedStringResource(R.string.to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery),
                 Modifier.padding(bottom = 8.dp)
               )
-              Text(
-                buildAnnotatedString {
-                  withStyle(SpanStyle(fontWeight = FontWeight.Medium)) {
-                    append("It can be disabled via settings")
-                  }
-                  append(" – notifications will still be shown while the app is running.")
-                }
-              )
+              Text(annotatedStringResource(R.string.it_can_disabled_via_settings_notifications_still_shown))
             }
           },
           confirmButton = {
-            Button(onClick = AlertManager.shared::hideAlert) { Text("Ok") }
+            Button(onClick = AlertManager.shared::hideAlert) { Text(generalGetString(R.string.ok)) }
           }
         )
       }

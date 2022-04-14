@@ -273,7 +273,7 @@ data class Chat (
     val statusExplanation: String get() =
       when (this) {
         is Connected -> generalGetString(R.string.connected_to_server_to_receive_messages_from_contact)
-        is Error -> String.format(generalGetString(R.string.trying_to_connect_to_server_to_receive_messages_with_error), error) // todo validate formatting
+        is Error -> String.format(generalGetString(R.string.trying_to_connect_to_server_to_receive_messages_with_error), error)
         else -> generalGetString(R.string.trying_to_connect_to_server_to_receive_messages)
       }
 
