@@ -1,0 +1,213 @@
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="app_name"><xliff:g id="appName">SimpleX</xliff:g></string>
+
+    <string name="thousand_abbreviation">k</string>
+
+    <!-- Connect via Link - MainActivity.kt -->
+    <string name="connect_via_contact_link">Connect via contact link?</string>
+    <string name="connect_via_invitation_link">Connect via invitation link?</string>
+    <string name="profile_will_be_sent_to_contact_sending_link">Your profile will be sent to the contact that you received this link from.</string>
+
+    <!-- Server info - ChatModel.kt -->
+    <string name="server_connected">Server connected</string>
+    <string name="server_connecting">Connecting server…</string>
+    <string name="connected_to_server_to_receive_messages_from_contact">You are connected to the server used to receive messages from this contact.</string>
+    <string name="trying_to_connect_to_server_to_receive_messages_with_error">Trying to connect to the server used to receive messages from this contact (error: %1).</string>
+    <string name="trying_to_connect_to_server_to_receive_messages">Trying to connect to the server used to receive messages from this contact.</string>
+    <string name="this_item_is_deleted">this item is deleted</string>
+
+    <!-- Item Content - ChatModel.kt -->
+    <string name="deleted_description">deleted</string>
+    <string name="sending_files_not_yet_supported">sending files is not supported yet</string>
+    <string name="receiving_files_not_yet_supported">receiving files is not supported yet</string>
+    <string name="sender_you_pronoun">you</string>
+    <string name="unknown_message_format">unknown message format</string>
+    <string name="invalid_message_format">invalid message format</string>
+
+    <!-- SMP Server Information - SimpleXAPI.kt -->
+    <string name="error_saving_smp_servers">Error saving SMP servers</string>
+    <string name="ensure_smp_server_address_are_correct_format_and_unique">Make sure SMP server addresses are in correct format, line separated and are not duplicated.</string>
+
+    <!-- API Error Responses - SimpleXAPI.kt -->
+    <string name="contact_already_exists">Contact already exists</string>
+    <string name="you_are_already_connected_to_vName_via_this_link">You are already connected to <xliff:g id="contactName" example="Alice">%1$s!</xliff:g> via this link.</string>
+    <string name="invalid_connection_link">Invalid connection link</string>
+    <string name="please_check_correct_link_and_maybe_ask_for_a_new_one">Please check that you used the correct link or ask your contact to send you another one.</string>
+    <string name="cannot_delete_contact">Can\'t delete contact!</string>
+    <string name="contact_cannot_be_deleted_as_they_are_in_groups">Contact <xliff:g id="contactName" example="Jane Doe">%1$s!</xliff:g> cannot be deleted, they are a member of the group(s) <xliff:g id="groups" example="[team, chess club]">%2</xliff:g>.</string>
+
+    <!-- Background Service Info - SimpleXAPI.kt -->
+    <string name="private_instant_notifications">Private instant notifications!</string>
+
+    <!-- SimpleX Chat foreground Service -->
+    <string name="simplex_service_notification_title"><xliff:g id="appNameFull">SimpleX Chat</xliff:g> service</string>
+    <string name="simplex_service_notification_text">Waiting for incoming messages</string>
+
+    <!-- Chat Actions - ChatItemView.kt (and general) -->
+    <string name="reply_verb">Reply</string>
+    <string name="share_verb">Share</string>
+    <string name="copy_verb">Copy</string>
+    <string name="edit_verb">Edit</string>
+    <string name="delete_verb">Delete</string>
+    <string name="delete_message__question">Delete message?</string>
+    <string name="delete_message_cannot_be_undone_warning">Message will be deleted - this cannot be undone!</string>
+    <string name="for_me_only">For me only</string>
+    <string name="for_everybody">For everybody</string>
+
+    <!-- CIMetaView.kt -->
+    <string name="edited">Edited</string>
+    <string name="sent_msg_status_sent">sent</string>
+    <string name="sent_msg_status_unauthorized_send">unauthorized send</string>
+    <string name="sent_msg_status_send_failed">send failed</string>
+    <string name="received_msg_status_unread">unread</string>
+
+    <!-- ChatListView.kt -->
+    <string name="personal_welcome">Welcome <xliff:g>%1$s</xliff:g>!</string>
+    <string name="welcome">Welcome!</string>
+    <string name="this_text_is_available_in_settings">This text is available in settings</string>
+    <string name="your_chats">Your chats</string>
+
+    <!-- Chat Info Actions - ChatInfoView.kt -->
+    <string name="delete_contact__question">Delete contact?</string>
+    <string name="delete_contact_all_messages_deleted_cannot_undo_warning">Contact and all messages will be deleted - this cannot be undone!</string>
+    <string name="delete_contact">Delete contact</string>
+    <string name="server_connection_status_connected">Connected</string>
+    <string name="server_connection_status_disconnected">Disconnected</string>
+    <string name="server_connection_status_error">Error</string>
+    <string name="server_connection_status_pending">Pending</string>
+
+    <!-- Message Actions - SendMsgView.kt -->
+    <string name="send_message">Send Message</string>
+
+    <!-- General Actions / Responses -->
+    <string name="accept_verb">Accept</string>
+    <string name="back">Back</string>
+    <string name="cancel_verb">Cancel</string>
+    <string name="confirm_verb">Confirm</string>
+    <string name="connect_verb">Connect</string>
+    <string name="create_verb">Create</string>
+    <string name="reject_verb">Reject</string>
+    <string name="save_verb">Save</string>
+    <string name="ok">Ok</string>
+    <string name="permission_denied">Permission Denied!</string>
+    <string name="use_camera">Use Camera</string>
+    <string name="from_gallery">From Gallery</string>
+    <string name="no_details">no details</string>
+    <string name="add_contact">Add contact</string>
+    <string name="share_invitation_link">Share invitation link</string>
+    <string name="scan_QR_code">Scan QR code</string>
+    <string name="create_QR_code_or_link__bracketed__multiline">(create QR code\nor link)</string>
+    <string name="in_person_or_in_video_call__bracketed">(in person or in video call)</string>
+    <string name="create_group">Create Group</string>
+    <string name="create_profile">Create profile</string>
+    <string name="coming_soon__bracketed">(coming soon!)</string>
+    <string name="create_address">Create address</string>
+    <string name="share_link">Share link</string>
+    <string name="delete_address">Delete address</string>
+    <string name="edit_image">Edit image</string>
+    <string name="delete_image">Delete image</string>
+    <string name="save_and_notify_contacts">Save (and notify contacts)</string>
+
+    <!-- help - ChatHelpView.kt -->
+    <string name="thank_you_for_installing_simplex">Thank you for installing <xliff:g id="appNameFull">SimpleX Chat</xliff:g>!</string>
+    <string name="you_can_connect_to_simplex_chat_founder">You can <font color="#0088ff">connect to <xliff:g id="appNameFull">SimpleX Chat</xliff:g> founder</font>.</string>
+    <string name="to_start_a_new_chat_help_header">To start a new chat</string>
+    <string name="tap_button">Tap button</string>
+    <string name="above_then_preposition_continuation">above, then:</string>
+    <string name="add_new_contact_to_create_one_time_QR_code"><b>Add new contact</b>: to create your one-time QR Code for your contact.</string>
+    <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><b>Scan QR code</b>: to connect to your contact who shows QR code to you.</string>
+    <string name="to_connect_via_link_title">To connect via link</string>
+    <string name="if_you_received_simplex_invitation_link_you_can_open_in_browser">If you received <xliff:g id="appName">SimpleX Chat</xliff:g> invitation link, you can open it in your browser:</string>
+    <string name="desktop_scan_QR_code_from_app_via_scan_QR_code">💻 desktop: scan displayed QR code from the app, via <b>Scan QR code</b>.</string>
+    <string name="mobile_tap_open_in_mobile_app_then_tap_connect_in_app">📱 mobile: tap <b>Open in mobile app</b>, then tap <b>Connect</b> in the app.</string>
+
+    <!-- Contact Request Alert Dialogue - CharListNavLinkView.kt -->
+    <string name="accept_connection_request__question">Accept connection request?</string>
+    <string name="if_you_choose_to_reject_the_sender_will_not_be_notified">If you choose to reject sender will NOT be notified.</string>
+
+    <!-- Contact Request Information - ContactRequestView.kt -->
+    <string name="wants_to_connect_with_you">wants to connect to you!</string>
+
+    <!-- Image Placeholder - ChatInfoImage.kt -->
+    <string name="profile_image_placeholder">profile image placeholder</string>
+    <string name="profile_image">profile image</string>
+
+    <!-- Content Descriptions -->
+    <string name="close_button">Close button</string>
+    <string name="preview_image">preview image</string>
+    <string name="cancel_preview">Cancel Preview</string>
+    <string name="link_image">link image</string>
+    <string name="settings">Settings</string>
+    <string name="qr_code">QR Code</string>
+    <string name="address"><xliff:g id="appName">SimpleX</xliff:g> Address</string>
+    <string name="help">help</string>
+    <string name="simplex_team"><xliff:g id="appName">SimpleX</xliff:g> Team</string>
+    <string name="simplex_logo"><xliff:g id="appName">SimpleX</xliff:g> Logo</string>
+    <string name="email">Email</string>
+
+    <!-- Add Contact Details - AddContactView.kt -->
+    <string name="invalid_QR_code">Invalid QR code</string>
+    <string name="this_QR_code_is_not_a_link">This QR code is not a link!</string>
+    <string name="invalid_contact_link">Invalid link!</string>
+    <string name="this_link_is_not_a_valid_connection_link">This link is not a valid connection link!</string>
+    <string name="your_connection_request_is_accepted">your connection request is accepted</string>
+    <string name="your_contacts_device_is_online">your contact\'s device is online</string>
+    <string name="connection_request_sent">Connection request sent!</string>
+    <string name="you_will_be_connected_when_condition_please_wait_or_check_later">You will be connected when <xliff:g id="waitCondition">%1$s</xliff:g>, please wait or check later!</string>
+    <string name="show_QR_code_for_your_contact_to_scan_from_the_app__multiline">Show QR code for your contact\nto scan from the app</string>
+    <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_via_another_channel">If you cannot meet in person, you can <b>scan QR code in the video call</b>, or you can share the invitation link via any other channel.</string>
+    <string name="your_chat_profile_will_be_sent_to_your_contact">Your chat profile will be sent\nto your contact</string>
+    <string name="if_you_cannot_meet_in_person_scan_QR_on_video_or_use_invitation_link">If you cannot meet in person, you can <b>scan QR code in the video call</b>, or you can create the invitation link.</string>
+
+    <!-- settings - SettingsView.kt -->
+    <string name="your_settings">Your settings</string>
+    <string name="your_simplex_contact_address">Your <xliff:g id="appName">SimpleX</xliff:g> contact address</string>
+    <string name="how_to_use_simplex_chat">How to use <xliff:g id="appNameFull">SimpleX Chat</xliff:g></string>
+    <string name="markdown_help">Markdown help</string>
+    <string name="markdown_in_messages">Markdown in messages</string>
+    <string name="chat_with_the_founder">Chat with the founder</string>
+    <string name="send_us_an_email">Send us an email</string>
+    <string name="private_notifications">Private notifications</string>
+    <string name="chat_console">Chat console</string>
+    <string name="smp_servers">SMP servers</string>
+    <string name="install_simplex_chat_for_terminal">Install <font color="#0088ff"><xliff:g id="appNameFull">SimpleX Chat</xliff:g> for terminal</font></string>
+    <string name="use_simplex_chat_servers__question">Use <xliff:g id="appNameFull">SimpleX Chat</xliff:g> servers?</string>
+    <string name="saved_SMP_servers_will_br_removed">Saved SMP servers will be removed.</string>
+    <string name="your_SMP_servers">Your SMP servers</string>
+    <string name="configure_SMP_servers">Configure SMP servers</string>
+    <string name="using_simplex_chat_servers">Using <xliff:g id="appNameFull">SimpleX Chat</xliff:g> servers.</string>
+    <string name="enter_one_SMP_server_per_line">Enter one SMP server per line:</string>
+    <string name="how_to">How to</string>
+
+    <!-- Address Items - UserAddressView.kt -->
+    <string name="delete_address__question">Delete address?</string>
+    <string name="all_your_contacts_will_remain_connected">All your contacts will remain connected.</string>
+    <string name="your_chat_address">Your chat address</string>
+    <string name="you_can_share_your_address_anybody_will_be_able_to_connect_deletion_wont_lose_contacts">You can share your address as a link or as a QR code - anybody will be able to connect to you, and if you later delete it - you won\'t lose your contacts.</string>
+
+    <!-- User profile details - UserProfileView.kt -->
+    <string name="display_name__field">Display name:</string>
+    <string name="full_name__field">"Full name:</string>
+    <string name="your_chat_profile">Your chat profile</string>
+    <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Your profile is stored on your device and shared only with your contacts.\n\n<xliff:g id="appName">SimpleX</xliff:g> servers cannot see your profile.</string>
+
+    <!-- Welcome Prompts - WelcomeView.kt -->
+    <string name="you_control_your_chat">You control your chat!</string>
+    <string name="the_messaging_and_app_platform_protecting_your_privacy_and_security">The messaging and application platform protecting your privacy and security.</string>
+    <string name="we_do_not_store_contacts_or_messages_on_servers">We don\'t store any of your contacts or messages (once delivered) on the servers.</string>
+    <string name="full_name_optional__prompt">Full Name (Optional)</string>
+    <string name="display_name_cannot_contain_whitespace">Display name cannot contain whitespace.</string>
+    <string name="display_name">Display Name</string>
+    <string name="your_profile_is_stored_on_your_decide_and_shared_only_with_your_contacts">Your profile is stored on your device and shared only with your contacts.</string>
+
+    <!-- markdown demo - MarkdownHelpView.kt -->
+    <string name="how_to_use_markdown">How to use markdown</string>
+    <string name="you_can_use_markdown_to_format_messages__prompt">You can use markdown to format messages:</string>
+    <string name="bold">bold</string>
+    <string name="italic">italic</string>
+    <string name="strikethrough">strike</string>
+    <string name="a_plus_b">a + b</string>
+    <string name="colored">colored</string>
+    <string name="secret">secret</string>
+
+</resources>
