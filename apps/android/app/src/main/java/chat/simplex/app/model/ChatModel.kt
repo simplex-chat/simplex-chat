@@ -552,7 +552,7 @@ data class ChatItem (
       id: Long = 1,
       dir: CIDirection = CIDirection.DirectSnd(),
       ts: Instant = Clock.System.now(),
-      text: String = generalGetString(R.string.hello_there__multiline),
+      text: String = "hello\nthere",
       status: CIStatus = CIStatus.SndNew(),
       quotedItem: CIQuote? = null,
       itemDeleted: Boolean = false,

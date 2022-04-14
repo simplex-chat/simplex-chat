@@ -56,6 +56,10 @@ fun getKeyboardState(): State<KeyboardState> {
 // Resource to annotated string from
 // https://stackoverflow.com/questions/68549248/android-jetpack-compose-how-to-show-styled-text-from-string-resources
 
+fun generalGetString(id: Int) : String {
+  return SimplexApp.context.getString(id)
+}
+
 @Composable
 @ReadOnlyComposable
 private fun resources(): Resources {
@@ -190,8 +194,4 @@ private fun spannableStringToAnnotatedString(
   } else {
     AnnotatedString(text.toString())
   }
-}
-
-fun generalGetString(id: Int) : String {
-  return SimplexApp.context.getString(id)
 }
