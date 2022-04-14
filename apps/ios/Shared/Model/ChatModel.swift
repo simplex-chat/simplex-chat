@@ -386,10 +386,11 @@ final class Chat: ObservableObject, Identifiable {
 
         var statusString: String {
             get {
+                // TODO validate formatting string with error
                 switch self {
-                case .connected: return "Server connected"
-                case let .error(err): return "Connecting server… (error: \(err))"
-                default: return "Connecting server…"
+                case .connected: return NSLocalizedString("server connected", comment: "")
+                case let .error(err): return String.localizedStringWithFormat(NSLocalizedString("connecting server… (error: e)", comment: ""), err)
+                default: return NSLocalizedString("server connecting", comment: "")
                 }
             }
         }
@@ -397,9 +398,9 @@ final class Chat: ObservableObject, Identifiable {
         var statusExplanation: String {
             get {
                 switch self {
-                case .connected: return "You are connected to the server used to receive messages from this contact."
-                case let .error(err): return "Trying to connect to the server used to receive messages from this contact (error: \(err))."
-                default: return "Trying to connect to the server used to receive messages from this contact."
+                case .connected: return NSLocalizedString("connected to server to receive messages from contact", comment: "")
+                case let .error(err): return String.localizedStringWithFormat(NSLocalizedString("trying to connect to server to receive messages from contact", comment: ""), err)
+                default: return NSLocalizedString("trying to connect to server to receive messages", comment: "")
                 }
             }
         }
@@ -624,7 +625,7 @@ struct ChatItem: Identifiable, Decodable {
        )
     }
     
-    static func getDeletedContentSample (_ id: Int64 = 1, dir: CIDirection = .directRcv, _ ts: Date = .now, _ text: String = "this item is deleted", _ status: CIStatus = .rcvRead) -> ChatItem {
+    static func getDeletedContentSample (_ id: Int64 = 1, dir: CIDirection = .directRcv, _ ts: Date = .now, _ text: String = NSLocalizedString("this item is deleted", comment: ""), _ status: CIStatus = .rcvRead) -> ChatItem {
         ChatItem(
             chatDir: dir,
             meta: CIMeta.getSample(id, ts, text, status, false, false, false),
@@ -719,10 +720,10 @@ enum CIContent: Decodable, ItemContent {
             switch self {
             case let .sndMsgContent(mc): return mc.text
             case let .rcvMsgContent(mc): return mc.text
-            case .sndDeleted: return "deleted"
-            case .rcvDeleted: return "deleted"
-            case .sndFileInvitation: return "sending files is not supported yet"
-            case .rcvFileInvitation: return  "receiving files is not supported yet"
+            case .sndDeleted: return NSLocalizedString("deleted (adjective)", comment: "")
+            case .rcvDeleted: return NSLocalizedString("deleted (adjective)", comment: "")
+            case .sndFileInvitation: return NSLocalizedString("sending files is not supported yet", comment: "")
+            case .rcvFileInvitation: return NSLocalizedString("receiving files is not supported yet", comment: "")
             }
         }
     }
@@ -754,7 +755,7 @@ struct CIQuote: Decodable, ItemContent {
     var sender: String? {
         get {
             switch (chatDir) {
-            case .directSnd: return "you"
+            case .directSnd: return NSLocalizedString("you (pronoun)", comment: "")
             case .directRcv: return nil
             case .groupSnd: return ChatModel.shared.currentUser?.displayName
             case let .groupRcv(member): return member.memberProfile.displayName
@@ -818,10 +819,10 @@ extension MsgContent: Decodable {
                 self = .link(text: text, preview: preview)
             default:
                 let text = try? container.decode(String.self, forKey: CodingKeys.text)
-                self = .unknown(type: type, text: text ?? "unknown message format")
+                self = .unknown(type: type, text: text ?? NSLocalizedString("unknown message format (decoding)", comment: ""))
             }
         } catch {
-            self = .unknown(type: "unknown", text: "invalid message format")
+            self = .unknown(type: "unknown", text: NSLocalizedString("invalid message format", comment: ""))
         }
     }
 }

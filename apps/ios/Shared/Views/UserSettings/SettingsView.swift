@@ -63,7 +63,7 @@ struct SettingsView: View {
                         HStack {
                             Image(systemName: "server.rack")
                                 .padding(.trailing, 4)
-                            Text("SMP servers")
+                            Text(NSLocalizedString("SMP servers", comment: ""))
                         }
                     }
                 }

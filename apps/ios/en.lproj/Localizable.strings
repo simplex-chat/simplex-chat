@@ -5,6 +5,34 @@
   Created by Ian Davies on 14/04/2022.
   Copyright © 2022 SimpleX Chat. All rights reserved.
 */
+
+// notification alert - ContentView.swift
 "notifications are disabled" = "Notifications are disabled!";
-"open settings" = "Open Settings";
 "app can notify for messages or contact requests" = "The app can notify you when you receive messages or contact requests - please open settings to enable.";
+"open settings" = "Open Settings";
+
+
+// Server status - ChatModel.swift
+"server connected" = "Server connected";
+"server connecting" = "Connecting server…";
+"connecting server… (error: e)" = "Connecting server… (error: %s)";
+"connected to server to receive messages from contact" = "You are connected to the server used to receive messages from this contact.";
+"trying to connect to server to receive messages" = "Trying to connect to the server used to receive messages from this contact.";
+"trying to connect to server to receive messages from contact" = "Trying to connect to the server used to receive messages from this contact (error: %s).";
+
+// Message status - ChatModel.swift
+"sending files is not supported yet" = "sending files is not supported yet";
+"receiving files is not supported yet" = "receiving files is not supported yet";
+"unknown message format (decoding)" = "unknown message format";
+"invalid message format (decoding)" = "invalid message format";
+
+// Descriptions
+"this item is deleted" = "this item is deleted";
+"deleted (adjective)" = "deleted";
+
+
+"SMP servers" = "SMP servers";
+
+
+// General
+"you (pronoun)" = "you";
