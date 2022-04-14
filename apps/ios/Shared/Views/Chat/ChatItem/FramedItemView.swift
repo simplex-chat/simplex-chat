@@ -80,7 +80,7 @@ struct FramedItemView: View {
 
         switch chatItem.meta.itemStatus {
         case .sndErrorAuth:
-            v.onTapGesture { msgDeliveryError("Most likely this contact has deleted the connection with you.") }
+            v.onTapGesture { msgDeliveryError(NSLocalizedString("most likely this contact has deleted the connection with you", comment: "")) }
         case let .sndError(agentError):
             v.onTapGesture { msgDeliveryError("Unexpected error: \(String(describing: agentError))") }
         default: v
@@ -89,7 +89,7 @@ struct FramedItemView: View {
 
     private func msgDeliveryError(_ err: String) {
         AlertManager.shared.showAlertMsg(
-            title: "Message delivery error",
+            title: NSLocalizedString("message delivery error", comment: ""),
             message: err
         )
     }

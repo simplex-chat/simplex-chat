@@ -50,6 +50,10 @@
 "DISPLAY_NAME is connected" = "%s is connected!";
 "you can now send messages to DISPLAY_NAME" = "You can now send messages to %s";
 
+// Chat Information - FramedItemView.swift
+"most likely this contact has deleted the connection with you" = "Most likely this contact has deleted the connection with you.";
+"message delivery error" = "Message delivery error";
+
 
 "SMP servers" = "SMP servers";
 
