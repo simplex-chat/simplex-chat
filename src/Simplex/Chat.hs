@@ -682,6 +682,16 @@ processChatCommand = \case
     -- perform an action only if filesFolder is set (i.e. on mobile devices)
     withFilesFolder :: (FilePath -> m ()) -> m ()
     withFilesFolder action = asks filesFolder >>= readTVarIO >>= mapM_ action
+    deleteFiles :: FilePath -> [(Int64, Maybe FilePath, ACIFileStatus)] -> m ()
+    deleteFiles filesFolder files =
+      forM_ files $ \(fileId, filePath_, status) -> do
+        case status of
+          AFS _ CIFSRcvTransfer -> closeFileHandle fileId rcvFiles
+          _ -> pure ()
+        forM_ filePath_ $ \filePath -> do
+          let fsFilePath = filesFolder <> "/" <> filePath
+          removeFile fsFilePath `E.catch` \(_ :: E.SomeException) ->
+            removePathForcibly fsFilePath `E.catch` \(_ :: E.SomeException) -> pure ()
 
 -- mobile clients use file paths relative to app directory (e.g. for the reason ios app directory changes on updates),
 -- so we have to differentiate between the file path stored in db and communicated with frontend, and the file path
@@ -689,17 +699,6 @@ processChatCommand = \case
 toFSFilePath :: ChatMonad m => FilePath -> m FilePath
 toFSFilePath f =
   maybe f (<> "/" <> f) <$> (readTVarIO =<< asks filesFolder)
-
-deleteFiles :: ChatMonad m => FilePath -> [(Int64, Maybe FilePath, ACIFileStatus)] -> m ()
-deleteFiles filesFolder files =
-  forM_ files $ \(fileId, filePath_, status) -> do
-    case status of
-      AFS _ CIFSRcvTransfer -> closeFileHandle fileId rcvFiles
-      _ -> pure ()
-    forM_ filePath_ $ \filePath -> do
-      let fsFilePath = filesFolder <> "/" <> filePath
-      removeFile fsFilePath `E.catch` \(_ :: E.SomeException) ->
-        removePathForcibly fsFilePath `E.catch` \(_ :: E.SomeException) -> pure ()
 
 acceptFileReceive :: forall m. ChatMonad m => User -> RcvFileTransfer -> Maybe FilePath -> m FilePath
 acceptFileReceive user@User {userId} RcvFileTransfer {fileId, fileInvitation = FileInvitation {fileName = fName, fileConnReq}, fileStatus, senderDisplayName, grpMemberId} filePath_ = do
