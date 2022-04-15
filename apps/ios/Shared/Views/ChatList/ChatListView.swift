@@ -20,18 +20,12 @@ struct ChatListView: View {
         let v = NavigationView {
             List {
                 if chatModel.chats.isEmpty {
-                    VStack(alignment: .leading) {
-                        ChatHelp(showSettings: $showSettings)
-                        HStack {
-                            Text("This text is available in settings")
-                            SettingsButton()
-                        }
-                        .padding(.leading)
+                    ChatHelp(showSettings: $showSettings)
+                } else {
+                    ForEach(filteredChats()) { chat in
+                        ChatListNavLink(chat: chat)
+                            .padding(.trailing, -16)
                     }
-                }
-                ForEach(filteredChats()) { chat in
-                    ChatListNavLink(chat: chat)
-                        .padding(.trailing, -16)
                 }
             }
             .onChange(of: chatModel.chatId) { _ in

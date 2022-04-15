@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.2" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 http://docs.oasis-open.org/xliff/v1.2/os/xliff-core-1.2-strict.xsd">
-  <file original="en.lproj/Localizable.strings" datatype="plaintext" source-language="en" target-language="ru">
+  <file original="en.lproj/Localizable.strings" source-language="en" target-language="ru" datatype="plaintext">
     <header>
       <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="13.3" build-num="13E113"/>
     </header>
@@ -30,6 +30,16 @@
         <target>#секрет#</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="%@ is connected!" xml:space="preserve">
+        <source>%@ is connected!</source>
+        <target>Установлено соединение с %@!</target>
+        <note>notification title</note>
+      </trans-unit>
+      <trans-unit id="%@ wants to connect!" xml:space="preserve">
+        <source>%@ wants to connect!</source>
+        <target>%@ хочет соединиться!</target>
+        <note>notification title</note>
+      </trans-unit>
       <trans-unit id="%lld" xml:space="preserve">
         <source>%lld</source>
         <target>%lld</target>
@@ -39,16 +49,6 @@
         <source>%lldk</source>
         <target>%lldk</target>
         <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="(contact.displayName) is connected!" xml:space="preserve">
-        <source>(contact.displayName) is connected!</source>
-        <target>(contact.displayName) соединён!</target>
-        <note>notification title</note>
-      </trans-unit>
-      <trans-unit id="(contactRequest.displayName) wants to connect!" xml:space="preserve">
-        <source>(contactRequest.displayName) wants to connect!</source>
-        <target>(contactRequest.displayName) хочет соединиться!</target>
-        <note>notification title</note>
       </trans-unit>
       <trans-unit id="(shared only with your contacts)" xml:space="preserve">
         <source>(shared only with your contacts)</source>
@@ -105,9 +105,9 @@
         <target>Принять запрос</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Accept contact request from (contactRequest.chatViewName)?" xml:space="preserve">
-        <source>Accept contact request from (contactRequest.chatViewName)?</source>
-        <target>Принять запрос на соединение от (contactRequest.chatViewName)?</target>
+      <trans-unit id="Accept contact request from %@?" xml:space="preserve">
+        <source>Accept contact request from %@?</source>
+        <target>Принять запрос на соединение от %@?</target>
         <note>notification body</note>
       </trans-unit>
       <trans-unit id="Add contact" xml:space="preserve">
@@ -437,7 +437,7 @@
       </trans-unit>
       <trans-unit id="Reject contact (sender NOT notified)" xml:space="preserve">
         <source>Reject contact (sender NOT notified)</source>
-        <target>Отклонить запрос (отправитель не будет уведомлен)</target>
+        <target>Отклонить (не уведомляя отправителя)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Reject contact request" xml:space="preserve">
@@ -542,9 +542,9 @@ to scan from the app</source>
         <target>Отправитель не будет уведомлён</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="This text is available in settings" xml:space="preserve">
-        <source>This text is available in settings</source>
-        <target>Этот текст можно найти в Настройках</target>
+      <trans-unit id="To ask any questions and to receive updates:" xml:space="preserve">
+        <source>To ask any questions and to receive updates:</source>
+        <target>Задать вопросы и получать уведомления о новых версиях:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="To connect via link" xml:space="preserve">
@@ -602,14 +602,9 @@ to scan from the app</source>
         <target>Установлено соединение с сервером, через который Вы получается сообщения от этого контакта.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can" xml:space="preserve">
-        <source>You can</source>
-        <target>Вы можете</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="You can now send messages to (contact.chatViewName)" xml:space="preserve">
-        <source>You can now send messages to (contact.chatViewName)</source>
-        <target>Теперь вы можете отправлять сообщения (contact.chatViewName)</target>
+      <trans-unit id="You can now send messages to %@" xml:space="preserve">
+        <source>You can now send messages to %@</source>
+        <target>Вы теперь можете отправлять сообщения %@</target>
         <note>notification body</note>
       </trans-unit>
       <trans-unit id="You can share your address as a link or as a QR code - anybody will be able to connect to you. You won't lose your contacts if you later delete it." xml:space="preserve">
@@ -719,9 +714,9 @@ SimpleX серверы не могут получить доступ к Ваше
         <target>цвет</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="connect to SimpleX Chat developers to ask any questions and to receive updates." xml:space="preserve">
-        <source>connect to SimpleX Chat developers to ask any questions and to receive updates.</source>
-        <target>Вы можете соединиться с разработчиками, чтобы задать любые вопросы или получать уведомления о новых версиях.</target>
+      <trans-unit id="connect to SimpleX Chat developers." xml:space="preserve">
+        <source>connect to SimpleX Chat developers.</source>
+        <target>соединиться с разработчиками.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="deleted" xml:space="preserve">
@@ -771,7 +766,7 @@ SimpleX серверы не могут получить доступ к Ваше
       </trans-unit>
       <trans-unit id="💻 desktop: scan displayed QR code from the app, via **Scan QR code**." xml:space="preserve">
         <source>💻 desktop: scan displayed QR code from the app, via **Scan QR code**.</source>
-        <target>💻 на компьютере: сосканируйте показанный QR код из приложения через **Сканировать QR код**.</target>
+        <target>💻 на компьютере: сосканируйте QR код из приложения через **Сканировать QR код**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="📱 mobile: tap **Open in mobile app**, then tap **Connect** in the app." xml:space="preserve">
@@ -781,7 +776,7 @@ SimpleX серверы не могут получить доступ к Ваше
       </trans-unit>
     </body>
   </file>
-  <file original="en.lproj/SimpleX--iOS--InfoPlist.strings" datatype="plaintext" source-language="en" target-language="ru">
+  <file original="en.lproj/SimpleX--iOS--InfoPlist.strings" source-language="en" target-language="ru" datatype="plaintext">
     <header>
       <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="13.3" build-num="13E113"/>
     </header>

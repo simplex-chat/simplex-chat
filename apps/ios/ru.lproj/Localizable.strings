@@ -22,12 +22,6 @@
 /* No comment provided by engineer. */
 "!1 colored!" = "!1 цвет!";
 
-/* notification title */
-"(contact.displayName) is connected!" = "(contact.displayName) соединён!";
-
-/* notification title */
-"(contactRequest.displayName) wants to connect!" = "(contactRequest.displayName) хочет соединиться!";
-
 /* No comment provided by engineer. */
 "(shared only with your contacts)" = "(отправляется только вашим контактам)";
 
@@ -49,6 +43,12 @@
 /* No comment provided by engineer. */
 "#secret#" = "#секрет#";
 
+/* notification title */
+"%@ is connected!" = "Установлено соединение с %@!";
+
+/* notification title */
+"%@ wants to connect!" = "%@ хочет соединиться!";
+
 /* No comment provided by engineer. */
 "%lld" = "%lld";
 
@@ -62,7 +62,7 @@
 "~strike~" = "\\~зачеркнуть~";
 
 /* No comment provided by engineer. */
-"💻 desktop: scan displayed QR code from the app, via **Scan QR code**." = "💻 на компьютере: сосканируйте показанный QR код из приложения через **Сканировать QR код**.";
+"💻 desktop: scan displayed QR code from the app, via **Scan QR code**." = "💻 на компьютере: сосканируйте QR код из приложения через **Сканировать QR код**.";
 
 /* No comment provided by engineer. */
 "📱 mobile: tap **Open in mobile app**, then tap **Connect** in the app." = "📱 на мобильном: намжите кнопку **Open in mobile app** на веб странице, затем нажмите **Соединиться** в приложении.";
@@ -80,7 +80,7 @@
 "Accept contact" = "Принять запрос";
 
 /* notification body */
-"Accept contact request from (contactRequest.chatViewName)?" = "Принять запрос на соединение от (contactRequest.chatViewName)?";
+"Accept contact request from %@?" = "Принять запрос на соединение от %@?";
 
 /* No comment provided by engineer. */
 "Add contact" = "Добавить контакт";
@@ -119,7 +119,7 @@
 "Connect" = "Соединиться";
 
 /* No comment provided by engineer. */
-"connect to SimpleX Chat developers to ask any questions and to receive updates." = "Вы можете соединиться с разработчиками, чтобы задать любые вопросы или получать уведомления о новых версиях.";
+"connect to SimpleX Chat developers." = "соединиться с разработчиками.";
 
 /* No comment provided by engineer. */
 "Connect via %@ link?" = "Соединиться через %@ ссылку?";
@@ -296,7 +296,7 @@
 "Reject" = "Отклонить";
 
 /* No comment provided by engineer. */
-"Reject contact (sender NOT notified)" = "Отклонить запрос (отправитель не будет уведомлен)";
+"Reject contact (sender NOT notified)" = "Отклонить (не уведомляя отправителя)";
 
 /* No comment provided by engineer. */
 "Reject contact request" = "Отклонить запрос";
@@ -368,7 +368,7 @@
 "The sender will NOT be notified" = "Отправитель не будет уведомлён";
 
 /* No comment provided by engineer. */
-"This text is available in settings" = "Этот текст можно найти в Настройках";
+"To ask any questions and to receive updates:" = "Задать вопросы и получать уведомления о новых версиях:";
 
 /* No comment provided by engineer. */
 "To connect via link" = "Соединиться через ссылку";
@@ -409,11 +409,8 @@
 /* No comment provided by engineer. */
 "You are connected to the server used to receive messages from this contact." = "Установлено соединение с сервером, через который Вы получается сообщения от этого контакта.";
 
-/* No comment provided by engineer. */
-"You can" = "Вы можете";
-
 /* notification body */
-"You can now send messages to (contact.chatViewName)" = "Теперь вы можете отправлять сообщения (contact.chatViewName)";
+"You can now send messages to %@" = "Вы теперь можете отправлять сообщения %@";
 
 /* No comment provided by engineer. */
 "You can share your address as a link or as a QR code - anybody will be able to connect to you. You won't lose your contacts if you later delete it." = "Вы можете использовать Ваш адрес как ссылку или как QR код - кто угодно сможет соединиться с Вами. Вы сможете удалить адрес, сохранив контакты, которые через него соединились.";
