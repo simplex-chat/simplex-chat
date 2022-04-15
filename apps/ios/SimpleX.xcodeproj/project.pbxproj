@@ -231,6 +231,8 @@
 			files = (
 				5C764E85279C748C000C6508 /* libz.tbd in Frameworks */,
 				5C764E84279C748C000C6508 /* libiconv.tbd in Frameworks */,
+				5C411599280048E90054D6CB /* libHSsimplex-chat-1.5.0-3uBn0HoMpg08OGLfasXsOx.a in Frameworks */,
+				5C41159B280048E90054D6CB /* libffi.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

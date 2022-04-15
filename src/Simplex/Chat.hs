@@ -64,7 +64,7 @@ import System.IO (Handle, IOMode (..), SeekMode (..), hFlush, openFile, stdout)
 import Text.Read (readMaybe)
 import UnliftIO.Async
 import UnliftIO.Concurrent (forkIO, threadDelay)
-import UnliftIO.Directory (doesDirectoryExist, doesFileExist, getFileSize, getHomeDirectory, getTemporaryDirectory)
+import UnliftIO.Directory
 import qualified UnliftIO.Exception as E
 import UnliftIO.IO (hClose, hSeek, hTell)
 import UnliftIO.STM
@@ -118,7 +118,8 @@ newChatController chatStore user cfg@ChatConfig {agentConfig = aCfg, tbqSize} Ch
   chatLock <- newTMVarIO ()
   sndFiles <- newTVarIO M.empty
   rcvFiles <- newTVarIO M.empty
-  pure ChatController {activeTo, firstTime, currentUser, smpAgent, agentAsync, chatStore, idsDrg, inputQ, outputQ, notifyQ, chatLock, sndFiles, rcvFiles, config, sendNotification}
+  filesFolder <- newTVarIO Nothing
+  pure ChatController {activeTo, firstTime, currentUser, smpAgent, agentAsync, chatStore, idsDrg, inputQ, outputQ, notifyQ, chatLock, sndFiles, rcvFiles, config, sendNotification, filesFolder}
   where
     resolveServers :: IO (NonEmpty SMPServer)
     resolveServers = case user of
@@ -172,6 +173,11 @@ processChatCommand = \case
     asks agentAsync >>= readTVarIO >>= \case
       Just _ -> pure CRChatRunning
       _ -> startChatController user $> CRChatStarted
+  SetFilesFolder filesFolder' -> withUser $ \_ -> do
+    createDirectoryIfMissing True filesFolder'
+    ff <- asks filesFolder
+    atomically . writeTVar ff $ Just filesFolder'
+    pure CRCmdOk
   APIGetChats -> CRApiChats <$> withUser (\user -> withStore (`getChatPreviews` user))
   APIGetChat cType cId pagination -> withUser $ \user -> case cType of
     CTDirect -> CRApiChat . AChat SCTDirect <$> withStore (\st -> getDirectChat st user cId pagination)
@@ -291,13 +297,15 @@ processChatCommand = \case
     CTContactRequest -> pure $ chatCmdError "not supported"
   APIDeleteChatItem cType chatId itemId mode -> withUser $ \user@User {userId} -> withChatLock $ case cType of
     CTDirect -> do
-      (ct@Contact {localDisplayName = c}, CChatItem msgDir deletedItem@ChatItem {meta = CIMeta {itemSharedMsgId}}) <- withStore $ \st -> (,) <$> getContact st userId chatId <*> getDirectChatItem st userId chatId itemId
+      (ct@Contact {localDisplayName = c}, CChatItem msgDir deletedItem@ChatItem {meta = CIMeta {itemSharedMsgId}, file}) <- withStore $ \st -> (,) <$> getContact st userId chatId <*> getDirectChatItem st userId chatId itemId
       case (mode, msgDir, itemSharedMsgId) of
         (CIDMInternal, _, _) -> do
+          deleteFile userId file
           toCi <- withStore $ \st -> deleteDirectChatItemInternal st userId ct itemId
           pure $ CRChatItemDeleted (AChatItem SCTDirect msgDir (DirectChat ct) deletedItem) toCi
         (CIDMBroadcast, SMDSnd, Just itemSharedMId) -> do
           SndMessage {msgId} <- sendDirectContactMessage ct (XMsgDel itemSharedMId)
+          deleteFile userId file
           toCi <- withStore $ \st -> deleteDirectChatItemSndBroadcast st userId ct itemId msgId
           setActive $ ActiveC c
           pure $ CRChatItemDeleted (AChatItem SCTDirect msgDir (DirectChat ct) deletedItem) toCi
@@ -305,18 +313,27 @@ processChatCommand = \case
     CTGroup -> do
       Group gInfo@GroupInfo {localDisplayName = gName, membership} ms <- withStore $ \st -> getGroup st user chatId
       unless (memberActive membership) $ throwChatError CEGroupMemberUserRemoved
-      CChatItem msgDir deletedItem@ChatItem {meta = CIMeta {itemSharedMsgId}} <- withStore $ \st -> getGroupChatItem st user chatId itemId
+      CChatItem msgDir deletedItem@ChatItem {meta = CIMeta {itemSharedMsgId}, file} <- withStore $ \st -> getGroupChatItem st user chatId itemId
       case (mode, msgDir, itemSharedMsgId) of
         (CIDMInternal, _, _) -> do
+          deleteFile userId file
           toCi <- withStore $ \st -> deleteGroupChatItemInternal st user gInfo itemId
           pure $ CRChatItemDeleted (AChatItem SCTGroup msgDir (GroupChat gInfo) deletedItem) toCi
         (CIDMBroadcast, SMDSnd, Just itemSharedMId) -> do
           SndMessage {msgId} <- sendGroupMessage gInfo ms (XMsgDel itemSharedMId)
+          deleteFile userId file
           toCi <- withStore $ \st -> deleteGroupChatItemSndBroadcast st user gInfo itemId msgId
           setActive $ ActiveG gName
           pure $ CRChatItemDeleted (AChatItem SCTGroup msgDir (GroupChat gInfo) deletedItem) toCi
         (CIDMBroadcast, _, _) -> throwChatError CEInvalidChatItemDelete
     CTContactRequest -> pure $ chatCmdError "not supported"
+    where
+      deleteFile :: MsgDirectionI d => UserId -> Maybe (CIFile d) -> m ()
+      deleteFile userId file =
+        forM_ file $ \CIFile {fileId, filePath, fileStatus} -> do
+          cancelFiles userId [(fileId, AFS msgDirection fileStatus)]
+          withFilesFolder $ \filesFolder ->
+            deleteFiles filesFolder [filePath]
   APIChatRead cType chatId fromToIds -> withChatLock $ case cType of
     CTDirect -> withStore (\st -> updateDirectChatItemsRead st chatId fromToIds) $> CRCmdOk
     CTGroup -> withStore (\st -> updateGroupChatItemsRead st chatId fromToIds) $> CRCmdOk
@@ -326,8 +343,12 @@ processChatCommand = \case
       ct@Contact {localDisplayName} <- withStore $ \st -> getContact st userId chatId
       withStore (\st -> getContactGroupNames st userId ct) >>= \case
         [] -> do
+          files <- withStore $ \st -> getContactFiles st userId ct
           conns <- withStore $ \st -> getContactConnections st userId ct
           withChatLock . procCmd $ do
+            cancelFiles userId (map (\(fId, fStatus, _) -> (fId, fStatus)) files)
+            withFilesFolder $ \filesFolder -> do
+              deleteFiles filesFolder (map (\(_, _, fPath) -> fPath) files)
             withAgent $ \a -> forM_ conns $ \conn ->
               deleteConnection a (aConnId conn) `catchError` \(_ :: AgentErrorType) -> pure ()
             withStore $ \st -> deleteContact st userId ct
@@ -578,24 +599,8 @@ processChatCommand = \case
         ChatErrorAgent (CONN DUPLICATE) -> pure $ CRRcvFileAcceptedSndCancelled ft
         e -> throwError e
   CancelFile fileId -> withUser $ \User {userId} -> do
-    ft' <- withStore (\st -> getFileTransfer st userId fileId)
-    withChatLock . procCmd $ do
-      case ft' of
-        FTSnd ftm fts -> do
-          cancelFileTransfer userId ft' CIFSSndCancelled
-          forM_ fts $ \ft -> cancelSndFileTransfer ft
-          pure $ CRSndGroupFileCancelled ftm fts
-        FTRcv ft -> do
-          cancelFileTransfer userId ft' CIFSRcvCancelled
-          cancelRcvFileTransfer ft
-          pure $ CRRcvFileCancelled ft
-    where
-      cancelFileTransfer :: MsgDirectionI d => UserId -> FileTransfer -> CIFileStatus d -> m ()
-      cancelFileTransfer userId ft ciFileStatus =
-        unless (fileTransferCancelled ft) $
-          withStore $ \st -> do
-            updateFileCancelled st userId fileId
-            updateCIFileStatus st userId fileId ciFileStatus
+    ft <- withStore (\st -> getFileTransfer st userId fileId)
+    withChatLock . procCmd $ cancelFile userId fileId ft
   FileStatus fileId ->
     CRFileTransferStatus <$> withUser (\User {userId} -> withStore $ \st -> getFileTransferProgress st userId fileId)
   ShowProfile -> withUser $ \User {profile} -> pure $ CRUserProfile profile
@@ -641,8 +646,9 @@ processChatCommand = \case
         cId == Just contactId && s /= GSMemRemoved && s /= GSMemLeft
     checkSndFile :: FilePath -> m (Integer, Integer)
     checkSndFile f = do
-      unlessM (doesFileExist f) . throwChatError $ CEFileNotFound f
-      (,) <$> getFileSize f <*> asks (fileChunkSize . config)
+      fsFilePath <- toFSFilePath f
+      unlessM (doesFileExist fsFilePath) . throwChatError $ CEFileNotFound f
+      (,) <$> getFileSize fsFilePath <*> asks (fileChunkSize . config)
     updateProfile :: User -> Profile -> m ChatResponse
     updateProfile user@User {profile = p} p'@Profile {displayName}
       | p' == p = pure CRUserProfileNoChange
@@ -659,6 +665,53 @@ processChatCommand = \case
     isReady ct =
       let s = connStatus $ activeConn (ct :: Contact)
        in s == ConnReady || s == ConnSndReady
+    -- perform an action only if filesFolder is set (i.e. on mobile devices)
+    withFilesFolder :: (FilePath -> m ()) -> m ()
+    withFilesFolder action = asks filesFolder >>= readTVarIO >>= mapM_ action
+    deleteFiles :: FilePath -> [Maybe FilePath] -> m ()
+    deleteFiles filesFolder filePaths =
+      forM_ filePaths $ \filePath_ ->
+        forM_ filePath_ $ \filePath -> do
+          let fsFilePath = filesFolder <> "/" <> filePath
+          removeFile fsFilePath `E.catch` \(_ :: E.SomeException) ->
+            removePathForcibly fsFilePath `E.catch` \(_ :: E.SomeException) -> pure ()
+    cancelFiles :: UserId -> [(Int64, ACIFileStatus)] -> m ()
+    cancelFiles userId files =
+      forM_ files $ \(fileId, status) -> do
+        case status of
+          AFS _ CIFSSndStored -> cancelById fileId
+          AFS _ CIFSRcvInvitation -> cancelById fileId
+          AFS _ CIFSRcvTransfer -> cancelById fileId
+          _ -> pure ()
+      where
+        cancelById fileId = do
+          ft <- withStore (\st -> getFileTransfer st userId fileId)
+          void $ cancelFile userId fileId ft
+    cancelFile :: UserId -> Int64 -> FileTransfer -> m ChatResponse
+    cancelFile userId fileId ft =
+      case ft of
+        FTSnd ftm fts -> do
+          cancelFileTransfer CIFSSndCancelled
+          forM_ fts $ \ft' -> cancelSndFileTransfer ft'
+          pure $ CRSndGroupFileCancelled ftm fts
+        FTRcv ftr -> do
+          cancelFileTransfer CIFSRcvCancelled
+          cancelRcvFileTransfer ftr
+          pure $ CRRcvFileCancelled ftr
+      where
+        cancelFileTransfer :: MsgDirectionI d => CIFileStatus d -> m ()
+        cancelFileTransfer ciFileStatus =
+          unless (fileTransferCancelled ft) $
+            withStore $ \st -> do
+              updateFileCancelled st userId fileId
+              updateCIFileStatus st userId fileId ciFileStatus
+
+-- mobile clients use file paths relative to app directory (e.g. for the reason ios app directory changes on updates),
+-- so we have to differentiate between the file path stored in db and communicated with frontend, and the file path
+-- used during file transfer for actual operations with file system
+toFSFilePath :: ChatMonad m => FilePath -> m FilePath
+toFSFilePath f =
+  maybe f (<> "/" <> f) <$> (readTVarIO =<< asks filesFolder)
 
 acceptFileReceive :: forall m. ChatMonad m => User -> RcvFileTransfer -> Maybe FilePath -> m FilePath
 acceptFileReceive user@User {userId} RcvFileTransfer {fileId, fileInvitation = FileInvitation {fileName = fName, fileConnReq}, fileStatus, senderDisplayName, grpMemberId} filePath_ = do
@@ -696,11 +749,17 @@ acceptFileReceive user@User {userId} RcvFileTransfer {fileId, fileInvitation = F
   where
     getRcvFilePath :: Maybe FilePath -> String -> m FilePath
     getRcvFilePath fPath_ fn = case fPath_ of
-      Nothing -> do
-        dir <- (`combine` "Downloads") <$> getHomeDirectory
-        ifM (doesDirectoryExist dir) (pure dir) getTemporaryDirectory
-          >>= (`uniqueCombine` fn)
-          >>= createEmptyFile
+      Nothing ->
+        asks filesFolder >>= readTVarIO >>= \case
+          Nothing -> do
+            dir <- (`combine` "Downloads") <$> getHomeDirectory
+            ifM (doesDirectoryExist dir) (pure dir) getTemporaryDirectory
+              >>= (`uniqueCombine` fn)
+              >>= createEmptyFile
+          Just filesFolder ->
+            filesFolder `uniqueCombine` fn
+              >>= createEmptyFile
+              >>= pure <$> takeFileName
       Just fPath ->
         ifM
           (doesDirectoryExist fPath)
@@ -1109,11 +1168,12 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
                     then badRcvFileChunk ft "incorrect chunk size"
                     else do
                       appendFileChunk ft chunkNo chunk
-                      withStore $ \st -> do
+                      ci <- withStore $ \st -> do
                         updateRcvFileStatus st ft FSComplete
                         updateCIFileStatus st userId fileId CIFSRcvComplete
                         deleteRcvFileChunks st ft
-                      toView $ CRRcvFileComplete ft
+                        getChatItemByFileId st user fileId
+                      toView $ CRRcvFileComplete ci
                       closeFileHandle fileId rcvFiles
                       withAgent (`deleteConnection` agentConnId)
                 RcvChunkDuplicate -> pure ()
@@ -1239,6 +1299,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
       CChatItem msgDir deletedItem@ChatItem {meta = CIMeta {itemId}} <- withStore $ \st -> getDirectChatItemBySharedMsgId st userId contactId sharedMsgId
       case msgDir of
         SMDRcv -> do
+          -- TODO allow to locally delete items that were broadcast deleted by sender
           toCi <- withStore $ \st -> deleteDirectChatItemRcvBroadcast st userId ct itemId msgId
           toView $ CRChatItemDeleted (AChatItem SCTDirect SMDRcv (DirectChat ct) deletedItem) toCi
           checkIntegrity msgMeta $ toView . CRMsgIntegrityError
@@ -1516,11 +1577,12 @@ sendFileChunkNo ft@SndFileTransfer {agentConnId = AgentConnId acId} chunkNo = do
   withStore $ \st -> updateSndFileChunkMsg st ft chunkNo msgId
 
 readFileChunk :: ChatMonad m => SndFileTransfer -> Integer -> m ByteString
-readFileChunk SndFileTransfer {fileId, filePath, chunkSize} chunkNo =
-  read_ `E.catch` (throwChatError . CEFileRead filePath . (show :: E.SomeException -> String))
+readFileChunk SndFileTransfer {fileId, filePath, chunkSize} chunkNo = do
+  fsFilePath <- toFSFilePath filePath
+  read_ fsFilePath `E.catch` (throwChatError . CEFileRead filePath . (show :: E.SomeException -> String))
   where
-    read_ = do
-      h <- getFileHandle fileId filePath sndFiles ReadMode
+    read_ fsFilePath = do
+      h <- getFileHandle fileId fsFilePath sndFiles ReadMode
       pos <- hTell h
       let pos' = (chunkNo - 1) * chunkSize
       when (pos /= pos') $ hSeek h AbsoluteSeek pos'
@@ -1548,12 +1610,14 @@ parseFileChunk msg =
 appendFileChunk :: ChatMonad m => RcvFileTransfer -> Integer -> ByteString -> m ()
 appendFileChunk ft@RcvFileTransfer {fileId, fileStatus} chunkNo chunk =
   case fileStatus of
-    RFSConnected RcvFileInfo {filePath} -> append_ filePath
+    RFSConnected RcvFileInfo {filePath} -> do
+      fsFilePath <- toFSFilePath filePath
+      append_ filePath fsFilePath
     RFSCancelled _ -> pure ()
     _ -> throwChatError $ CEFileInternal "receiving file transfer not in progress"
   where
-    append_ fPath = do
-      h <- getFileHandle fileId fPath rcvFiles AppendMode
+    append_ fPath fPathUsed = do
+      h <- getFileHandle fileId fPathUsed rcvFiles AppendMode
       E.try (liftIO $ B.hPut h chunk >> hFlush h) >>= \case
         Left (e :: E.SomeException) -> throwChatError . CEFileWrite fPath $ show e
         Right () -> withStore $ \st -> updatedRcvFileChunkStored st ft chunkNo
@@ -1815,6 +1879,7 @@ chatCommandP =
   ("/user " <|> "/u ") *> (CreateActiveUser <$> userProfile)
     <|> ("/user" <|> "/u") $> ShowActiveUser
     <|> "/_start" $> StartChat
+    <|> "/_files_folder " *> (SetFilesFolder <$> filePath)
     <|> "/_get chats" $> APIGetChats
     <|> "/_get chat " *> (APIGetChat <$> chatTypeP <*> A.decimal <* A.space <*> chatPaginationP)
     <|> "/_get items count=" *> (APIGetChatItems <$> A.decimal)

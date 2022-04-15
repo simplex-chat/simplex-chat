@@ -48,7 +48,7 @@ cChatRecvMsg cc = deRefStablePtr cc >>= chatRecvMsg >>= newCAString
 mobileChatOpts :: ChatOpts
 mobileChatOpts =
   ChatOpts
-    { dbFilePrefix = "simplex_v1", -- two database files will be created: simplex_v1_chat.db and simplex_v1_agent.db
+    { dbFilePrefix = undefined,
       smpServers = [],
       logConnections = False,
       logAgent = False,
