@@ -415,9 +415,9 @@
         <target>Please check that you used the correct link or ask your contact to send you another one.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Please check your network connection and try again" xml:space="preserve">
-        <source>Please check your network connection and try again</source>
-        <target>Please check your network connection and try again</target>
+      <trans-unit id="Please check your network connection and try again." xml:space="preserve">
+        <source>Please check your network connection and try again.</source>
+        <target>Please check your network connection and try again.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Profile image" xml:space="preserve">
@@ -612,9 +612,9 @@ to scan from the app</target>
         <target>You can now send messages to (contact.chatViewName)</target>
         <note>notification body</note>
       </trans-unit>
-      <trans-unit id="You can share your address as a link or as a QR code - anybody will be able to connect to you, and if you later delete it - you won't lose your contacts." xml:space="preserve">
-        <source>You can share your address as a link or as a QR code - anybody will be able to connect to you, and if you later delete it - you won't lose your contacts.</source>
-        <target>You can share your address as a link or as a QR code - anybody will be able to connect to you, and if you later delete it - you won't lose your contacts.</target>
+      <trans-unit id="You can share your address as a link or as a QR code - anybody will be able to connect to you. You won't lose your contacts if you later delete it." xml:space="preserve">
+        <source>You can share your address as a link or as a QR code - anybody will be able to connect to you. You won't lose your contacts if you later delete it.</source>
+        <target>You can share your address as a link or as a QR code - anybody will be able to connect to you. You won't lose your contacts if you later delete it.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can use markdown to format messages:" xml:space="preserve">

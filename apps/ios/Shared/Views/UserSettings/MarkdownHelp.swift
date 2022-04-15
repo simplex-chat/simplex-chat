@@ -32,7 +32,7 @@ struct MarkdownHelp: View {
 
 private func mdFormat(_ format: LocalizedStringKey, _ example: Text) -> some View {
     HStack {
-        Text(format).frame(width: 88, alignment: .leading)
+        Text(format).frame(width: 120, alignment: .leading)
         example
     }
 }
