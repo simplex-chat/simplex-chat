@@ -14,9 +14,43 @@ The concentration of the communication in a small number of centralized platform
 
 ## Proposed solution
 
-Proposed stack of protocols solves these problems by making both messages and contacts stored only on client devices, reducing the role of the servers to simple message relays that only require authorization of messages sent to the queues, but do NOT require user authentication - not only the messages but also the metadata is protected becuse users do not have any identifiers assiged to them - unlike with any other platforms.
+Proposed stack of protocols solves these problems by making both messages and contacts stored only on client devices, reducing the role of the servers to simple message relays that only require authorization of messages sent to the queues, but do NOT require user authentication - not only the messages but also the metadata is protected because users do not have any identifiers assigned to them - unlike with any other platforms.
 
 See [SimpleX whitepaper](https://github.com/simplex-chat/simplexmq/blob/master/protocol/overview-tjr.md) for more information on platform objectives and technical design.
+
+## Why use SimpleX
+
+## SimpleX unique approach to privacy and security
+
+Everyone should care about privacy and security of their communications - even ordinary conversations can put you in danger.
+
+### Full privacy of your identity, profile, contacts and metadata
+
+**Unlike any other existing messaging platform, SimpleX has no identifiers assigned to the users** - it does not use phone numbers (like Signal or WhatsApp), domain-based addresses (like email, XMPP or Matrix), usernames (like Telegram), public keys or even random numbers (like all other messengers) to identify its users - we do not even know how many people use SimpleX.
+
+To deliver the messages instead of user identifiers that all other platforms use, SimpleX uses the addresses of unidirectional (simplex) message queues. Using SimpleX is like having a different email address or a phone number for each contact you have, but without the hassle of managing all these addresses. In the near future SimpleX apps will also change the message queues automatically, moving the conversations from one server to another, to provide even better privacy to the users.
+
+This approach protects the privacy of who are you communicating with, hiding it from SimpleX platform servers and from any observers. You can further improve your privacy by configuring your network access to connect to SimpleX servers via some overlay transport network, e.g. Tor.
+
+### The best protection against spam and abuse
+
+As you have no identifier on SimpleX platform, you cannot be contacted unless you share a one-time invitation link or an optional temporary user address. Even with the optional user addresses, while they can be used to send spam contact requests, you can change or completely delete it without losing any of your connections.
+
+### Complete ownership, control and security of your data
+
+SimpleX stores all user data on client devices, the messages are only held temporarily on SimpleX relay servers until they are received.
+
+We use portable database format that can be used on all supported devices - we will soon add the ability to export the chat database from the mobile app so it can be used on another device.
+
+Unlike servers of federated networks (email, XMPP or Matrix), SimpleX servers do not store user accounts, they simply relay messages to the recipients, protecting the privacy of both parties. There are no identifiers or encrypted messages in common between sent and received traffic of the server, thanks to the additional encryption layer for delivered messages. So if anybody is observing server traffic, they cannot easily determine who is communicating with whom (see [SimpleX whitepaper](https://github.com/simplex-chat/simplexmq/blob/master/protocol/overview-tjr.md) for the known traffic correlation attacks).
+
+### Users own SimpleX network
+
+You can use SimpleX with your own servers and still communicate with people using the servers that are pre-configured in the apps or any other SimpleX servers.
+
+SimpleX platform uses an open protocol and provides SDK to create chat bots, allowing implementation of services that users can interact with via SimpleX Chat apps – we are really looking forward to see what SimpleX services can be built.
+
+If you are considering developing with the SimpleX platform, whether for chat bot services for SimpleX app users or to integrate the SimpleX Chat library into your mobile apps, please get in touch for any advice and support.
 
 ## Comparison with other protocols
 
@@ -39,9 +73,9 @@ See [SimpleX whitepaper](https://github.com/simplex-chat/simplexmq/blob/master/p
 
 There are several P2P chat/messaging protocols and implementations that aim to solve privacy and centralisation problem, but they have their own set of problems that makes them less reliable than the proposed design, more complex to implement and analyse and more vulnerable to attacks.
 
-1. [P2P][9] networks use some variant of [DHT][10] to route messages/requests through the network. DHT implementations have complex designs that have to balance reliability, delivery guarantee and latency. The proposeddesign has both better delivery guarantees and lower latency (the message is passed multiple times in parallel, through one node each time, using servers chosen by the recipient, while in P2P networks the message is passed through `O(log N)` nodes sequentially, using nodes chosen by the algorithm).
+1. [P2P][9] networks use some variant of [DHT][10] to route messages/requests through the network. DHT implementations have complex designs that have to balance reliability, delivery guarantee and latency. The proposed design has both better delivery guarantees and lower latency (the message is passed multiple times in parallel, through one node each time, using servers chosen by the recipient, while in P2P networks the message is passed through `O(log N)` nodes sequentially, using nodes chosen by the algorithm).
 
-2. The proposed design, unlike most P2P networks, has no global user identitifiers of any kind, even temporary.
+2. The proposed design, unlike most P2P networks, has no global user identifiers of any kind, even temporary.
 
 3. P2P itself does not solve [MITM attack][2] problem, and most existing solutions do not use out-of-band messages for the initial key exchange. The proposed design uses out-of-band messages or, in some cases, pre-existing secure and trusted connections for the initial key exchange.
 

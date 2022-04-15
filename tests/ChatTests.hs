@@ -66,6 +66,7 @@ chatTests = do
   describe "messages with files" $ do
     it "send and receive message with file" testMessageWithFile
     it "send and receive image" testSendImage
+    it "send and receive image with files folders (for mobile)" testSendImageWithFilesFolders
     it "send and receive image with text and quote" testSendImageWithTextAndQuote
     it "send and receive image to group" testGroupSendImage
     it "send and receive image with text and quote to group" testGroupSendImageWithTextAndQuote
@@ -1261,6 +1262,42 @@ testSendImage =
       dest `shouldBe` src
       alice #$> ("/_get chat @2 count=100", chatF, [((1, ""), Just "./tests/fixtures/test.jpg")])
       bob #$> ("/_get chat @2 count=100", chatF, [((0, ""), Just "./tests/tmp/test.jpg")])
+      -- deleting contact without files folder set should not remove file
+      bob ##> "/d alice"
+      bob <## "alice: contact is deleted"
+      fileExists <- doesFileExist "./tests/tmp/test.jpg"
+      fileExists `shouldBe` True
+
+testSendImageWithFilesFolders :: IO ()
+testSendImageWithFilesFolders =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+      alice #$> ("/_files_folder ./tests/fixtures", id, "ok")
+      bob #$> ("/_files_folder ./tests/tmp", id, "ok")
+      alice ##> "/_send @2 file test.jpg json {\"text\":\"\",\"type\":\"image\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\"}"
+      alice <# "/f @bob test.jpg"
+      alice <## "use /fc 1 to cancel sending"
+      bob <# "alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
+      bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+      bob ##> "/fr 1"
+      bob <## "saving file 1 from alice to test.jpg"
+      concurrently_
+        (bob <## "started receiving file 1 (test.jpg) from alice")
+        (alice <## "started sending file 1 (test.jpg) to bob")
+      concurrently_
+        (bob <## "completed receiving file 1 (test.jpg) from alice")
+        (alice <## "completed sending file 1 (test.jpg) to bob")
+      src <- B.readFile "./tests/fixtures/test.jpg"
+      dest <- B.readFile "./tests/tmp/test.jpg"
+      dest `shouldBe` src
+      alice #$> ("/_get chat @2 count=100", chatF, [((1, ""), Just "test.jpg")])
+      bob #$> ("/_get chat @2 count=100", chatF, [((0, ""), Just "test.jpg")])
+      -- deleting contact with files folder set should remove file
+      bob ##> "/d alice"
+      bob <## "alice: contact is deleted"
+      fileExists <- doesFileExist "./tests/tmp/test.jpg"
+      fileExists `shouldBe` False
 
 testSendImageWithTextAndQuote :: IO ()
 testSendImageWithTextAndQuote =

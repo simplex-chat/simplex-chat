@@ -115,6 +115,7 @@ module Simplex.Chat.Store
     updateFileTransferChatItemId,
     getFileTransfer,
     getFileTransferProgress,
+    getContactFiles,
     createNewSndMessage,
     createSndMsgDelivery,
     createNewMessageAndRcvMsgDelivery,
@@ -135,6 +136,7 @@ module Simplex.Chat.Store
     getGroupChatItemBySharedMsgId,
     getDirectChatItemIdByText,
     getGroupChatItemIdByText,
+    getChatItemByFileId,
     updateDirectChatItemStatus,
     updateDirectChatItem,
     deleteDirectChatItemInternal,
@@ -2214,6 +2216,19 @@ getFileTransferMeta_ db userId fileId =
     fileTransferMeta (fileName, fileSize, chunkSize, filePath, cancelled_) =
       FileTransferMeta {fileId, fileName, filePath, fileSize, chunkSize, cancelled = fromMaybe False cancelled_}
 
+getContactFiles :: MonadUnliftIO m => SQLiteStore -> UserId -> Contact -> m [(Int64, Maybe FilePath, ACIFileStatus)]
+getContactFiles st userId Contact {contactId} =
+  liftIO . withTransaction st $ \db ->
+    DB.query
+      db
+      [sql|
+        SELECT f.file_id, f.file_path, f.ci_file_status
+        FROM chat_items i
+        JOIN files f ON f.chat_item_id = i.chat_item_id
+        WHERE i.user_id = ? AND i.contact_id = ?
+      |]
+      (userId, contactId)
+
 createNewSndMessage :: StoreMonad m => SQLiteStore -> TVar ChaChaDRG -> ConnOrGroupId -> (SharedMsgId -> NewMessage) -> m SndMessage
 createNewSndMessage st gVar connOrGroupId mkMessage =
   liftIOEither . withTransaction st $ \db ->
@@ -3367,6 +3382,35 @@ getGroupChatItemIdByText st User {userId, localDisplayName = userName} groupId c
         |]
         (userId, groupId, cName, quotedMsg <> "%")
 
+getChatItemByFileId :: StoreMonad m => SQLiteStore -> User -> Int64 -> m AChatItem
+getChatItemByFileId st user@User {userId} fileId = do
+  liftIOEither . withTransaction st $ \db -> runExceptT $ do
+    r <- ExceptT $ getChatItemIdByFileId_ db userId fileId
+    case r of
+      (itemId, Just contactId, Nothing) -> do
+        ct <- ExceptT $ getContact_ db userId contactId
+        (CChatItem msgDir ci) <- ExceptT $ getDirectChatItem_ db userId contactId itemId
+        pure $ AChatItem SCTDirect msgDir (DirectChat ct) ci
+      (itemId, Nothing, Just groupId) -> do
+        gInfo <- ExceptT $ getGroupInfo_ db user groupId
+        (CChatItem msgDir ci) <- ExceptT $ getGroupChatItem_ db user groupId itemId
+        pure $ AChatItem SCTGroup msgDir (GroupChat gInfo) ci
+      _ -> throwError $ SEChatItemNotFoundByFileId fileId
+
+getChatItemIdByFileId_ :: DB.Connection -> UserId -> Int64 -> IO (Either StoreError (ChatItemId, Maybe Int64, Maybe Int64))
+getChatItemIdByFileId_ db userId fileId =
+  firstRow id (SEChatItemNotFoundByFileId fileId) $
+    DB.query
+      db
+      [sql|
+        SELECT i.chat_item_id, i.contact_id, i.group_id
+        FROM chat_items i
+        JOIN files f ON f.chat_item_id = i.chat_item_id
+        WHERE f.user_id = ? AND f.file_id = ?
+        LIMIT 1
+      |]
+      (userId, fileId)
+
 updateDirectChatItemsRead :: (StoreMonad m) => SQLiteStore -> Int64 -> (ChatItemId, ChatItemId) -> m ()
 updateDirectChatItemsRead st contactId (fromItemId, toItemId) = do
   currentTs <- liftIO getCurrentTime
@@ -3608,6 +3652,7 @@ data StoreError
   | SEChatItemNotFound {itemId :: ChatItemId}
   | SEQuotedChatItemNotFound
   | SEChatItemSharedMsgIdNotFound {sharedMsgId :: SharedMsgId}
+  | SEChatItemNotFoundByFileId {fileId :: FileTransferId}
   deriving (Show, Exception, Generic)
 
 instance ToJSON StoreError where
