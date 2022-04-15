@@ -384,7 +384,7 @@ final class Chat: ObservableObject, Identifiable {
         case disconnected
         case error(String)
 
-        var statusString: String {
+        var statusString: LocalizedStringKey {
             get {
                 switch self {
                 case .connected: return "Server connected"
@@ -394,7 +394,7 @@ final class Chat: ObservableObject, Identifiable {
             }
         }
 
-        var statusExplanation: String {
+        var statusExplanation: LocalizedStringKey {
             get {
                 switch self {
                 case .connected: return "You are connected to the server used to receive messages from this contact."
@@ -719,10 +719,10 @@ enum CIContent: Decodable, ItemContent {
             switch self {
             case let .sndMsgContent(mc): return mc.text
             case let .rcvMsgContent(mc): return mc.text
-            case .sndDeleted: return "deleted"
-            case .rcvDeleted: return "deleted"
-            case .sndFileInvitation: return "sending files is not supported yet"
-            case .rcvFileInvitation: return  "receiving files is not supported yet"
+            case .sndDeleted: return NSLocalizedString("deleted", comment: "deleted chat item")
+            case .rcvDeleted: return NSLocalizedString("deleted", comment: "deleted chat item")
+            case .sndFileInvitation: return NSLocalizedString("sending files is not supported yet", comment: "to be removed")
+            case .rcvFileInvitation: return  NSLocalizedString("receiving files is not supported yet", comment: "to be removed")
             }
         }
     }

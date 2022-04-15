@@ -61,7 +61,7 @@ final class AlertManager: ObservableObject {
         }
     }
 
-    func showAlertMsg(title: String, message: String? = nil) {
+    func showAlertMsg(title: LocalizedStringKey, message: LocalizedStringKey? = nil) {
         if let message = message {
             showAlert(Alert(title: Text(title), message: Text(message)))
         } else {

@@ -95,7 +95,7 @@ struct ChatListView: View {
                                 }
                             } catch {
                                 let err = error.localizedDescription
-                                AlertManager.shared.showAlertMsg(title: "Connection error", message: err)
+                                AlertManager.shared.showAlertMsg(title: "Connection error", message: "Error: \(err)")
                                 logger.debug("ChatListView.connectViaUrlAlert: apiConnect error: \(err)")
                             }
                         }

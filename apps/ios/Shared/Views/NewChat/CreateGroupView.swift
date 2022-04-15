@@ -10,7 +10,7 @@ import SwiftUI
 
 struct CreateGroupView: View {
     var body: some View {
-        Text("CreateGroupView")
+        EmptyView()
     }
 }
 
