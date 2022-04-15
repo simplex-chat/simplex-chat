@@ -5,7 +5,7 @@
 
     <!-- Connect via Link - MainActivity.kt -->
     <string name="connect_via_contact_link">Соединиться через ссылку-контакт?</string>
-    <string name="connect_via_invitation_link">Соединится через ссылку-приглашение?</string>
+    <string name="connect_via_invitation_link">Соединиться через ссылку-приглашение?</string>
     <string name="profile_will_be_sent_to_contact_sending_link">Ваш профиль будет отправлен контакту, от которого Вы получили эту ссылку.</string>
     <string name="connect_via_link_verb">Соединиться</string>
 
