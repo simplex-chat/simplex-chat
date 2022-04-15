@@ -100,7 +100,7 @@ responseToView testView = \case
   CRContactsMerged intoCt mergedCt -> viewContactsMerged intoCt mergedCt
   CRReceivedContactRequest UserContactRequest {localDisplayName = c, profile} -> viewReceivedContactRequest c profile
   CRRcvFileStart ft -> receivingFile_ "started" ft
-  CRRcvFileComplete ft -> receivingFile_ "completed" ft
+  CRRcvFileComplete ci -> receivingFile_' "completed" ci
   CRRcvFileSndCancelled ft -> viewRcvFileSndCancelled ft
   CRSndFileStart ft -> sendingFile_ "started" ft
   CRSndFileComplete ft -> sendingFile_ "completed" ft
@@ -547,6 +547,13 @@ humanReadableSize size
     kB = 1024
     mB = kB * 1024
     gB = mB * 1024
+
+receivingFile_' :: StyledString -> AChatItem -> [StyledString]
+receivingFile_' status (AChatItem _ _ (DirectChat Contact {localDisplayName = c}) ChatItem {file = Just CIFile {fileId, fileName}, chatDir = CIDirectRcv}) =
+  [status <> " receiving " <> fileTransferStr fileId fileName <> " from " <> ttyContact c]
+receivingFile_' status (AChatItem _ _ _ ChatItem {file = Just CIFile {fileId, fileName}, chatDir = CIGroupRcv GroupMember {localDisplayName = m}}) =
+  [status <> " receiving " <> fileTransferStr fileId fileName <> " from " <> ttyContact m]
+receivingFile_' status _ = [status <> " receiving file"] -- shouldn't happen
 
 receivingFile_ :: StyledString -> RcvFileTransfer -> [StyledString]
 receivingFile_ status ft@RcvFileTransfer {senderDisplayName = c} =

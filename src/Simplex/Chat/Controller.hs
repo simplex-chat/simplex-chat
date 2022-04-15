@@ -77,7 +77,8 @@ data ChatController = ChatController
     chatLock :: TMVar (),
     sndFiles :: TVar (Map Int64 Handle),
     rcvFiles :: TVar (Map Int64 Handle),
-    config :: ChatConfig
+    config :: ChatConfig,
+    filesFolder :: TVar (Maybe FilePath) -- path to files folder for mobile apps
   }
 
 data HelpSection = HSMain | HSFiles | HSGroups | HSMyAddress | HSMarkdown | HSMessages
@@ -91,6 +92,7 @@ data ChatCommand
   = ShowActiveUser
   | CreateActiveUser Profile
   | StartChat
+  | SetFilesFolder FilePath
   | APIGetChats
   | APIGetChat ChatType Int64 ChatPagination
   | APIGetChatItems Int
@@ -200,7 +202,7 @@ data ChatResponse
   | CRRcvFileAccepted {fileTransfer :: RcvFileTransfer, filePath :: FilePath}
   | CRRcvFileAcceptedSndCancelled {rcvFileTransfer :: RcvFileTransfer}
   | CRRcvFileStart {rcvFileTransfer :: RcvFileTransfer}
-  | CRRcvFileComplete {rcvFileTransfer :: RcvFileTransfer}
+  | CRRcvFileComplete {chatItem :: AChatItem}
   | CRRcvFileCancelled {rcvFileTransfer :: RcvFileTransfer}
   | CRRcvFileSndCancelled {rcvFileTransfer :: RcvFileTransfer}
   | CRSndFileStart {sndFileTransfer :: SndFileTransfer}
