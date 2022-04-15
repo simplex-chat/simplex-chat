@@ -1273,8 +1273,8 @@ testSendImageWithFilesFolders =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
       connectUsers alice bob
-      alice #$> ("/_set_files_folder ./tests/fixtures", id, "ok")
-      bob #$> ("/_set_files_folder ./tests/tmp", id, "ok")
+      alice #$> ("/_files_folder ./tests/fixtures", id, "ok")
+      bob #$> ("/_files_folder ./tests/tmp", id, "ok")
       alice ##> "/_send @2 file test.jpg json {\"text\":\"\",\"type\":\"image\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\"}"
       alice <# "/f @bob test.jpg"
       alice <## "use /fc 1 to cancel sending"
