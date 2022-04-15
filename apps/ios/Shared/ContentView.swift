@@ -19,6 +19,7 @@ struct ContentView: View {
                     do {
                         try apiStartChat()
                         try apiSetFilesFolder(filesFolder: getAppFilesDirectory().path)
+                        chatModel.userAddress = try apiGetUserAddress()
                         chatModel.userSMPServers = try getUserSMPServers()
                         chatModel.chats = try apiGetChats()
                     } catch {

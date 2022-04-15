@@ -520,8 +520,8 @@ func apiDeleteUserAddress() async throws {
     throw r
 }
 
-func apiGetUserAddress() async throws -> String? {
-    let r = await chatSendCmd(.showMyAddress)
+func apiGetUserAddress() throws -> String? {
+    let r = chatSendCmdSync(.showMyAddress)
     switch r {
     case let .userContactLink(connReq):
         return connReq
