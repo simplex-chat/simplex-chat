@@ -300,12 +300,12 @@ processChatCommand = \case
       (ct@Contact {localDisplayName = c}, CChatItem msgDir deletedItem@ChatItem {meta = CIMeta {itemSharedMsgId}, file}) <- withStore $ \st -> (,) <$> getContact st userId chatId <*> getDirectChatItem st userId chatId itemId
       case (mode, msgDir, itemSharedMsgId) of
         (CIDMInternal, _, _) -> do
-          deleteFile file
+          deleteFile userId file
           toCi <- withStore $ \st -> deleteDirectChatItemInternal st userId ct itemId
           pure $ CRChatItemDeleted (AChatItem SCTDirect msgDir (DirectChat ct) deletedItem) toCi
         (CIDMBroadcast, SMDSnd, Just itemSharedMId) -> do
           SndMessage {msgId} <- sendDirectContactMessage ct (XMsgDel itemSharedMId)
-          deleteFile file
+          deleteFile userId file
           toCi <- withStore $ \st -> deleteDirectChatItemSndBroadcast st userId ct itemId msgId
           setActive $ ActiveC c
           pure $ CRChatItemDeleted (AChatItem SCTDirect msgDir (DirectChat ct) deletedItem) toCi
@@ -316,23 +316,23 @@ processChatCommand = \case
       CChatItem msgDir deletedItem@ChatItem {meta = CIMeta {itemSharedMsgId}, file} <- withStore $ \st -> getGroupChatItem st user chatId itemId
       case (mode, msgDir, itemSharedMsgId) of
         (CIDMInternal, _, _) -> do
-          deleteFile file
+          deleteFile userId file
           toCi <- withStore $ \st -> deleteGroupChatItemInternal st user gInfo itemId
           pure $ CRChatItemDeleted (AChatItem SCTGroup msgDir (GroupChat gInfo) deletedItem) toCi
         (CIDMBroadcast, SMDSnd, Just itemSharedMId) -> do
           SndMessage {msgId} <- sendGroupMessage gInfo ms (XMsgDel itemSharedMId)
-          deleteFile file
+          deleteFile userId file
           toCi <- withStore $ \st -> deleteGroupChatItemSndBroadcast st user gInfo itemId msgId
           setActive $ ActiveG gName
           pure $ CRChatItemDeleted (AChatItem SCTGroup msgDir (GroupChat gInfo) deletedItem) toCi
         (CIDMBroadcast, _, _) -> throwChatError CEInvalidChatItemDelete
     CTContactRequest -> pure $ chatCmdError "not supported"
     where
-      deleteFile :: MsgDirectionI d => Maybe (CIFile d) -> m ()
-      deleteFile file =
+      deleteFile :: MsgDirectionI d => UserId -> Maybe (CIFile d) -> m ()
+      deleteFile userId file =
         forM_ file $ \CIFile {fileId, filePath, fileStatus} ->
           withFilesFolder $ \filesFolder ->
-            deleteFiles filesFolder [(fileId, filePath, AFS msgDirection fileStatus)]
+            deleteFiles userId filesFolder [(fileId, filePath, AFS msgDirection fileStatus)]
   APIChatRead cType chatId fromToIds -> withChatLock $ case cType of
     CTDirect -> withStore (\st -> updateDirectChatItemsRead st chatId fromToIds) $> CRCmdOk
     CTGroup -> withStore (\st -> updateGroupChatItemsRead st chatId fromToIds) $> CRCmdOk
@@ -346,7 +346,7 @@ processChatCommand = \case
           withChatLock . procCmd $ do
             withFilesFolder $ \filesFolder -> do
               files <- withStore $ \st -> getContactFiles st userId ct
-              deleteFiles filesFolder files
+              deleteFiles userId filesFolder files
             withAgent $ \a -> forM_ conns $ \conn ->
               deleteConnection a (aConnId conn) `catchError` \(_ :: AgentErrorType) -> pure ()
             withStore $ \st -> deleteContact st userId ct
@@ -597,24 +597,8 @@ processChatCommand = \case
         ChatErrorAgent (CONN DUPLICATE) -> pure $ CRRcvFileAcceptedSndCancelled ft
         e -> throwError e
   CancelFile fileId -> withUser $ \User {userId} -> do
-    ft' <- withStore (\st -> getFileTransfer st userId fileId)
-    withChatLock . procCmd $ do
-      case ft' of
-        FTSnd ftm fts -> do
-          cancelFileTransfer userId ft' CIFSSndCancelled
-          forM_ fts $ \ft -> cancelSndFileTransfer ft
-          pure $ CRSndGroupFileCancelled ftm fts
-        FTRcv ft -> do
-          cancelFileTransfer userId ft' CIFSRcvCancelled
-          cancelRcvFileTransfer ft
-          pure $ CRRcvFileCancelled ft
-    where
-      cancelFileTransfer :: MsgDirectionI d => UserId -> FileTransfer -> CIFileStatus d -> m ()
-      cancelFileTransfer userId ft ciFileStatus =
-        unless (fileTransferCancelled ft) $
-          withStore $ \st -> do
-            updateFileCancelled st userId fileId
-            updateCIFileStatus st userId fileId ciFileStatus
+    ft <- withStore (\st -> getFileTransfer st userId fileId)
+    withChatLock . procCmd $ cancelFile userId fileId ft
   FileStatus fileId ->
     CRFileTransferStatus <$> withUser (\User {userId} -> withStore $ \st -> getFileTransferProgress st userId fileId)
   ShowProfile -> withUser $ \User {profile} -> pure $ CRUserProfile profile
@@ -682,16 +666,40 @@ processChatCommand = \case
     -- perform an action only if filesFolder is set (i.e. on mobile devices)
     withFilesFolder :: (FilePath -> m ()) -> m ()
     withFilesFolder action = asks filesFolder >>= readTVarIO >>= mapM_ action
-    deleteFiles :: FilePath -> [(Int64, Maybe FilePath, ACIFileStatus)] -> m ()
-    deleteFiles filesFolder files =
+    deleteFiles :: UserId -> FilePath -> [(Int64, Maybe FilePath, ACIFileStatus)] -> m ()
+    deleteFiles userId filesFolder files =
       forM_ files $ \(fileId, filePath_, status) -> do
         case status of
-          AFS _ CIFSRcvTransfer -> closeFileHandle fileId rcvFiles
+          AFS _ CIFSSndStored -> cancelById fileId
+          AFS _ CIFSRcvInvitation -> cancelById fileId
+          AFS _ CIFSRcvTransfer -> cancelById fileId
           _ -> pure ()
         forM_ filePath_ $ \filePath -> do
           let fsFilePath = filesFolder <> "/" <> filePath
           removeFile fsFilePath `E.catch` \(_ :: E.SomeException) ->
             removePathForcibly fsFilePath `E.catch` \(_ :: E.SomeException) -> pure ()
+      where
+        cancelById fileId = do
+          ft <- withStore (\st -> getFileTransfer st userId fileId)
+          void $ cancelFile userId fileId ft
+    cancelFile :: UserId -> Int64 -> FileTransfer -> m ChatResponse
+    cancelFile userId fileId ft =
+      case ft of
+        FTSnd ftm fts -> do
+          cancelFileTransfer CIFSSndCancelled
+          forM_ fts $ \ft' -> cancelSndFileTransfer ft'
+          pure $ CRSndGroupFileCancelled ftm fts
+        FTRcv ftr -> do
+          cancelFileTransfer CIFSRcvCancelled
+          cancelRcvFileTransfer ftr
+          pure $ CRRcvFileCancelled ftr
+      where
+        cancelFileTransfer :: MsgDirectionI d => CIFileStatus d -> m ()
+        cancelFileTransfer ciFileStatus =
+          unless (fileTransferCancelled ft) $
+            withStore $ \st -> do
+              updateFileCancelled st userId fileId
+              updateCIFileStatus st userId fileId ciFileStatus
 
 -- mobile clients use file paths relative to app directory (e.g. for the reason ios app directory changes on updates),
 -- so we have to differentiate between the file path stored in db and communicated with frontend, and the file path
