@@ -1,5 +1,6 @@
 package chat.simplex.app.views.helpers
 
+import android.content.Context
 import android.graphics.Rect
 import android.view.ViewTreeObserver
 import androidx.compose.runtime.*
@@ -37,4 +38,12 @@ fun getKeyboardState(): State<KeyboardState> {
   }
 
   return keyboardState
+}
+
+fun getFilesDirectory(context: Context): String {
+  return context.filesDir.toString()
+}
+
+fun getAppFilesDirectory(context: Context): String {
+  return getFilesDirectory(context) + "/app_files"
 }

@@ -12,20 +12,25 @@ import androidx.core.content.FileProvider
 import chat.simplex.app.BuildConfig
 import chat.simplex.app.model.CIFile
 import chat.simplex.app.views.helpers.base64ToBitmap
+import chat.simplex.app.views.helpers.getAppFilesDirectory
 import java.io.*
 
 @Composable
 fun ChatItemImageView(image: String, file: CIFile?) {
   Column {
-    val imageBitmap = if (
-      file?.filePath != null &&
-      File(file.filePath).exists() &&
-      file.stored // TODO more advanced approach would be to send progressive jpeg and only check for filepath
-    ) {
+    val imageBitmap = if (file?.filePath != null) {
       val context = LocalContext.current
-      try {
-        getBitmapFromUri(context, file.filePath)
-      } catch (e: Exception) {
+      val filePath = getAppFilesDirectory(context) + "/" + file.filePath
+      if (
+        File(filePath).exists() &&
+        file.stored // TODO more advanced approach would be to send progressive jpeg and only check for filepath
+      ) {
+        try {
+          getBitmapFromUri(context, filePath)
+        } catch (e: Exception) {
+          base64ToBitmap(image)
+        }
+      } else {
         base64ToBitmap(image)
       }
     } else {

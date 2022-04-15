@@ -39,6 +39,7 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
     Log.d(TAG, "user: $user")
     try {
       apiStartChat()
+      apiSetFilesFolder(getAppFilesDirectory(appContext))
       chatModel.userAddress.value = apiGetUserAddress()
       chatModel.userSMPServers.value = getUserSMPServers()
       val chats = apiGetChats()
@@ -130,6 +131,12 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
     val r = sendCmd(CC.StartChat())
     if (r is CR.ChatStarted || r is CR.ChatRunning) return
     throw Error("failed starting chat: ${r.responseType} ${r.details}")
+  }
+
+  suspend fun apiSetFilesFolder(filesFolder: String) {
+    val r = sendCmd(CC.SetFilesFolder(filesFolder))
+    if (r is CR.CmdOk) return
+    throw Error("failed to set files folder: ${r.responseType} ${r.details}")
   }
 
   suspend fun apiGetChats(): List<Chat> {
@@ -480,6 +487,7 @@ sealed class CC {
   class ShowActiveUser: CC()
   class CreateActiveUser(val profile: Profile): CC()
   class StartChat: CC()
+  class SetFilesFolder(val filesFolder: String): CC()
   class ApiGetChats: CC()
   class ApiGetChat(val type: ChatType, val id: Long): CC()
   class ApiSendMessage(val type: ChatType, val id: Long, val file: String?, val quotedItemId: Long?, val mc: MsgContent): CC()
@@ -504,6 +512,7 @@ sealed class CC {
     is ShowActiveUser -> "/u"
     is CreateActiveUser -> "/u ${profile.displayName} ${profile.fullName}"
     is StartChat -> "/_start"
+    is SetFilesFolder -> "/_files_folder $filesFolder"
     is ApiGetChats -> "/_get chats"
     is ApiGetChat -> "/_get chat ${chatRef(type, id)} count=100"
     is ApiSendMessage -> when {
@@ -535,6 +544,7 @@ sealed class CC {
     is ShowActiveUser -> "showActiveUser"
     is CreateActiveUser -> "createActiveUser"
     is StartChat -> "startChat"
+    is SetFilesFolder -> "setFilesFolder"
     is ApiGetChats -> "apiGetChats"
     is ApiGetChat -> "apiGetChat"
     is ApiSendMessage -> "apiSendMessage"

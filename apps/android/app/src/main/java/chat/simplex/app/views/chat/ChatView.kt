@@ -147,13 +147,13 @@ fun ChatView(chatModel: ChatModel) {
 
 fun saveImage(context: Context, image: Bitmap): String {
   val imageResized = base64ToBitmap(resizeImageToDataSize(image, 160000))
-  val imageName = "image_${System.currentTimeMillis()}.jpg"
-  val file = File(context.filesDir, imageName)
+  val fileToSave = "image_${System.currentTimeMillis()}.jpg"
+  val file = File(getAppFilesDirectory(context) + "/" + fileToSave)
   val output = FileOutputStream(file)
   imageResized.compress(Bitmap.CompressFormat.JPEG, 100, output)
   output.flush()
   output.close()
-  return file.absolutePath
+  return fileToSave
 }
 
 @Composable
