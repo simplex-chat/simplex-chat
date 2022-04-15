@@ -64,7 +64,7 @@ import System.IO (Handle, IOMode (..), SeekMode (..), hFlush, openFile, stdout)
 import Text.Read (readMaybe)
 import UnliftIO.Async
 import UnliftIO.Concurrent (forkIO, threadDelay)
-import UnliftIO.Directory (createDirectoryIfMissing, doesDirectoryExist, doesFileExist, getFileSize, getHomeDirectory, getTemporaryDirectory, removeFile, removePathForcibly)
+import UnliftIO.Directory
 import qualified UnliftIO.Exception as E
 import UnliftIO.IO (hClose, hSeek, hTell)
 import UnliftIO.STM
@@ -679,28 +679,25 @@ processChatCommand = \case
 -- so we have to differentiate between the file path stored in db and communicated with frontend, and the file path
 -- used during file transfer for actual operations with file system
 toFSFilePath :: ChatMonad m => FilePath -> m FilePath
-toFSFilePath f = do
-  ff <- asks filesFolder
-  readTVarIO ff >>= \case
-    Nothing -> pure f
-    Just filesFolder -> pure $ filesFolder <> "/" <> f
+toFSFilePath f =
+  maybe f (<> "/" <> f) <$> (readTVarIO =<< asks filesFolder)
 
 deleteFiles :: ChatMonad m => [(Int64, Maybe FilePath, ACIFileStatus)] -> m ()
-deleteFiles files = do
-  ff <- asks filesFolder
-  readTVarIO ff >>= \case
-    Nothing -> pure () -- only delete files if filesFolder is set (i.e. on mobile devices)
-    Just filesFolder ->
-      forM_ files $ \(fileId, filePath_, status) -> do
-        case status of
-          AFS _ CIFSRcvTransfer -> closeFileHandle fileId rcvFiles
-          _ -> pure ()
-        case filePath_ of
-          Just filePath -> do
-            let fsFilePath = filesFolder <> "/" <> filePath
-            removeFile fsFilePath `E.catch` \(_ :: E.SomeException) ->
-              removePathForcibly fsFilePath `E.catch` \(_ :: E.SomeException) -> pure ()
-          Nothing -> pure ()
+deleteFiles files =
+  -- TODO this needs to be refactored to only be called if filesFolder is set (and filesFolder should be passed)
+  -- only delete files if filesFolder is set (i.e. on mobile devices)
+  asks filesFolder >>= readTVarIO
+    >>= mapM_
+      ( \filesFolder ->
+          forM_ files $ \(fileId, filePath_, status) -> do
+            case status of
+              AFS _ CIFSRcvTransfer -> closeFileHandle fileId rcvFiles
+              _ -> pure ()
+            forM_ filePath_ $ \filePath -> do
+              let fsFilePath = filesFolder <> "/" <> filePath
+              removeFile fsFilePath `E.catch` \(_ :: E.SomeException) ->
+                removePathForcibly fsFilePath `E.catch` \(_ :: E.SomeException) -> pure ()
+      )
 
 acceptFileReceive :: forall m. ChatMonad m => User -> RcvFileTransfer -> Maybe FilePath -> m FilePath
 acceptFileReceive user@User {userId} RcvFileTransfer {fileId, fileInvitation = FileInvitation {fileName = fName, fileConnReq}, fileStatus, senderDisplayName, grpMemberId} filePath_ = do
@@ -738,9 +735,8 @@ acceptFileReceive user@User {userId} RcvFileTransfer {fileId, fileInvitation = F
   where
     getRcvFilePath :: Maybe FilePath -> String -> m FilePath
     getRcvFilePath fPath_ fn = case fPath_ of
-      Nothing -> do
-        ff <- asks filesFolder
-        readTVarIO ff >>= \case
+      Nothing ->
+        asks filesFolder >>= readTVarIO >>= \case
           Nothing -> do
             dir <- (`combine` "Downloads") <$> getHomeDirectory
             ifM (doesDirectoryExist dir) (pure dir) getTemporaryDirectory
