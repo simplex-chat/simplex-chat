@@ -22,25 +22,25 @@
     <string name="receiving_files_not_yet_supported">получение файлов не поддерживается</string>
     <string name="sender_you_pronoun">Вы</string>
     <string name="unknown_message_format">неизвестный формат сообщения</string>
-    <string name="invalid_message_format">ошибочный формат сообщения</string>
+    <string name="invalid_message_format">неверный формат сообщения</string>
 
     <!-- SMP Server Information - SimpleXAPI.kt -->
     <string name="error_saving_smp_servers">Ошибка при сохранении SMP серверов</string>
-    <string name="ensure_smp_server_address_are_correct_format_and_unique">Пожалуйста, проверьте, что адреса SMP серверов имеют правильный формат, каждый адрес на отельной строке и не повторяется.</string>
+    <string name="ensure_smp_server_address_are_correct_format_and_unique">Пожалуйста, проверьте, что адреса SMP серверов имеют правильный формат, каждый адрес на отдельной строке и не повторяется.</string>
 
     <!-- API Error Responses - SimpleXAPI.kt -->
     <string name="contact_already_exists">Существующий контакт</string>
     <string name="you_are_already_connected_to_vName_via_this_link">Вы уже соединены с <xliff:g id="contactName" example="Alice">%1$s!</xliff:g> через эту ссылку.</string>
     <string name="invalid_connection_link">Ошибка в ссылке контакта</string>
-    <string name="please_check_correct_link_and_maybe_ask_for_a_new_one">Пожалуйста, проверьте, что Вы использовали правильную ссылку, или попросите, чтобы Ваш контакт отправил Вам новую.</string>
+    <string name="please_check_correct_link_and_maybe_ask_for_a_new_one">Пожалуйста, проверьте, что Вы использовали правильную ссылку, или попросите Ваш контакт отправить Вам новую ссылку.</string>
     <string name="cannot_delete_contact">Невозможно удалить контакт!</string>
-    <string name="contact_cannot_be_deleted_as_they_are_in_groups">Контакт <xliff:g id="contactName" example="Jane Doe">%1$s!</xliff:g> не может быть удален, это член групп(ы) <xliff:g id="groups" example="[team, chess club]">%2$s</xliff:g>.</string>
+    <string name="contact_cannot_be_deleted_as_they_are_in_groups">Контакт <xliff:g id="contactName" example="Jane Doe">%1$s!</xliff:g> не может быть удален, так как является членом групп(ы) <xliff:g id="groups" example="[team, chess club]">%2$s</xliff:g>.</string>
     <string name="icon_descr_instant_notifications">Мгновенные уведомления</string>
 
     <!-- background service notice - SimpleXAPI.kt -->
-    <string name="private_instant_notifications">Безопасные мгновенные уведомления!</string>
-    <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery">Чтобы защитить Ваши личные данные, вместо уведомлений от сервера приложение запускает <b>фоновый <xliff:g id="appName">SimpleX</xliff:g> сервис</b>, который использует несколько процентов батареи в день.</string>
-    <string name="it_can_disabled_via_settings_notifications_still_shown"><b>Он может быть выключен через Установки</b> – в этом случае уведомления о сообщениях будут показаны только в то время когда приложение запущено.</string>
+    <string name="private_instant_notifications">Приватные мгновенные уведомления!</string>
+    <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery">Чтобы защитить Ваши личные данные, вместо уведомлений от сервера приложение запускает <b>фоновый сервис <xliff:g id="appName">SimpleX</xliff:g></b>, который потребляет несколько процентов батареи в день.</string>
+    <string name="it_can_disabled_via_settings_notifications_still_shown"><b>Он может быть выключен через Настройки</b> – вы продолжите получать уведомления о сообщениях пока приложение запущено.</string>
 
     <!-- SimpleX Chat foreground Service -->
     <string name="simplex_service_notification_title"><xliff:g id="appNameFull">SimpleX Chat</xliff:g> сервис</string>
@@ -67,17 +67,17 @@
     <!-- ChatListView.kt -->
     <string name="personal_welcome">Здравствуйте <xliff:g>%1$s</xliff:g>!</string>
     <string name="welcome">Здравствуйте!</string>
-    <string name="this_text_is_available_in_settings">Этот текст можно найти в Установках</string>
+    <string name="this_text_is_available_in_settings">Этот текст можно найти в Настройках</string>
     <string name="your_chats">Ваши чаты</string>
 
     <!-- Chat Info Actions - ChatInfoView.kt -->
     <string name="delete_contact__question">Удалить контакт?</string>
-    <string name="delete_contact_all_messages_deleted_cannot_undo_warning">Контакт и все сообщения будут удалены - это действие не может быть отменено!</string>
+    <string name="delete_contact_all_messages_deleted_cannot_undo_warning">Контакт и все сообщения будут удалены - это действие нельзя отменить!</string>
     <string name="button_delete_contact">Удалить контакт</string>
-    <string name="icon_descr_server_status_connected">Соединен</string>
-    <string name="icon_descr_server_status_disconnected">Не соединен</string>
-    <string name="icon_descr_server_status_error">Ошибка</string>
-    <string name="icon_descr_server_status_pending">Ожидается соединение</string>
+    <string name="icon_descr_server_status_connected">Соединение с сервером установлено</string>
+    <string name="icon_descr_server_status_disconnected">Соединение с сервером не установлено</string>
+    <string name="icon_descr_server_status_error">Ошибка соединения с сервером</string>
+    <string name="icon_descr_server_status_pending">Ожидается соединение с сервером</string>
 
     <!-- Message Actions - SendMsgView.kt -->
     <string name="icon_descr_send_message">Отправить сообщение</string>
@@ -87,7 +87,7 @@
     <string name="cancel_verb">Отменить</string>
     <string name="confirm_verb">Подтвердить</string>
     <string name="ok">Oк</string>
-    <string name="no_details">no details</string>
+    <string name="no_details">нет описания</string>
     <string name="add_contact">Добавить контакт</string>
     <string name="scan_QR_code">Сканировать QR код</string>
 
@@ -103,70 +103,70 @@
     <string name="from_gallery_button">Открыть галерею</string>
 
     <!-- help - ChatHelpView.kt -->
-    <string name="thank_you_for_installing_simplex">Спасибо за то, что Вы установили <xliff:g id="appNameFull">SimpleX Chat</xliff:g>!</string>
-    <string name="you_can_connect_to_simplex_chat_founder">Вы можете <font color="#0088ff">соединиться с <xliff:g id="appNameFull">SimpleX Chat</xliff:g> девелоперами</font>, чтобы задать любые вопросы или получать уведомления о новых версиях.</string>
+    <string name="thank_you_for_installing_simplex">Спасибо что установили <xliff:g id="appNameFull">SimpleX Chat</xliff:g>!</string>
+    <string name="you_can_connect_to_simplex_chat_founder">Вы можете <font color="#0088ff">соединиться с разработчиками</font>, чтобы задать любые вопросы или получать уведомления о новых версиях.</string>
     <string name="to_start_a_new_chat_help_header">Чтобы начать новый чат</string>
     <string name="chat_help_tap_button">Нажмите кнопку</string>
     <string name="above_then_preposition_continuation">сверху, затем:</string>
     <string name="add_new_contact_to_create_one_time_QR_code"><b>Добавить новый контакт</b>: чтобы создать одноразовый QR код/ссылку для Вашего контакта.</string>
     <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><b>Сканировать QR код</b>: чтобы соединиться с Вашим контактом (который показывает Вам QR код).</string>
     <string name="to_connect_via_link_title">Чтобы соединиться через ссылку</string>
-    <string name="if_you_received_simplex_invitation_link_you_can_open_in_browser">Если Вы получили <xliff:g id="appName">SimpleX Chat</xliff:g> ссылку, Вы можете открыть ее в браузере:</string>
+    <string name="if_you_received_simplex_invitation_link_you_can_open_in_browser">Если Вы получили ссылку с приглашением из <xliff:g id="appName">SimpleX Chat</xliff:g>, Вы можете открыть ее в браузере:</string>
     <string name="desktop_scan_QR_code_from_app_via_scan_QR_code">💻 на компьютере: сосканируйте показанный QR код из приложения через <b>Сканировать QR код</b>.</string>
     <string name="mobile_tap_open_in_mobile_app_then_tap_connect_in_app">📱 на мобильном: намжите кнопку <b>Open in mobile app</b> на веб странице, затем нажмите <b>Соединиться</b> в приложении.</string>
 
     <!-- Contact Request Alert Dialogue - CharListNavLinkView.kt -->
-    <string name="accept_connection_request__question">Разрешить соединиться?</string>
-    <string name="if_you_choose_to_reject_the_sender_will_not_be_notified">Если вы запретите соединение, отправитель НЕ получит уведомление.</string>
-    <string name="accept_contact_button">Разрешить</string>
-    <string name="reject_contact_button">Запретить</string>
+    <string name="accept_connection_request__question">Принять запрос на соединение?</string>
+    <string name="if_you_choose_to_reject_the_sender_will_not_be_notified">Отправителю НЕ будет послано уведомление, если вы отклоните запрос на соединение.</string>
+    <string name="accept_contact_button">Принять</string>
+    <string name="reject_contact_button">Отклонить</string>
 
     <!-- Contact Request Information - ContactRequestView.kt -->
-    <string name="contact_wants_to_connect_with_you">хочет соединится с Вами!</string>
+    <string name="contact_wants_to_connect_with_you">хочет соединиться с Вами!</string>
 
     <!-- Image Placeholder - ChatInfoImage.kt -->
-    <string name="icon_descr_profile_image_placeholder">пустая картинка профиля</string>
-    <string name="image_descr_profile_image">картинка профиля</string>
+    <string name="icon_descr_profile_image_placeholder">аватар не установлен</string>
+    <string name="image_descr_profile_image">аватар</string>
 
     <!-- Content Descriptions -->
     <string name="icon_descr_close_button">закрыть</string>
-    <string name="image_descr_link_preview">картинка ссылки</string>
-    <string name="icon_descr_cancel_link_preview">удалить картинку ссылки</string>
-    <string name="icon_descr_settings">Установки</string>
+    <string name="image_descr_link_preview">изображение превью ссылки</string>
+    <string name="icon_descr_cancel_link_preview">удалить превью ссылки</string>
+    <string name="icon_descr_settings">Настройки</string>
     <string name="image_descr_qr_code">QR код</string>
-    <string name="icon_descr_address"><xliff:g id="appName">SimpleX</xliff:g> Адрес</string>
+    <string name="icon_descr_address"><xliff:g id="appName">SimpleX</xliff:g> адрес</string>
     <string name="icon_descr_help">Помощь</string>
     <string name="icon_descr_simplex_team"><xliff:g id="appName">SimpleX</xliff:g> команда</string>
     <string name="image_descr_simplex_logo"><xliff:g id="appName">SimpleX</xliff:g> логотип</string>
     <string name="icon_descr_email">Email</string>
 
     <!-- Add Contact - AddContactView.kt -->
-    <string name="invalid_QR_code">Ошибочный QR код</string>
+    <string name="invalid_QR_code">Неверный QR код</string>
     <string name="this_QR_code_is_not_a_link">Этот QR код - не ссылка!</string>
-    <string name="invalid_contact_link">Ошибочная ссылка!</string>
+    <string name="invalid_contact_link">Неверная ссылка!</string>
     <string name="this_link_is_not_a_valid_connection_link">Эта ссылка не является ссылкой-приглашением!</string>
     <string name="connection_request_sent">Запрос на соединение послан!</string>
-    <string name="you_will_be_connected_when_your_connection_request_is_accepted">Вы будете присоединены, когда Ваш запрос на соединение будет принят, пожалуйста подождите или проверьте позже!</string>
-    <string name="you_will_be_connected_when_your_contacts_device_is_online">Вы будете присоединены, когда Ваш контакт будет онлайн, пожалуйста подождите или проверьте позже!</string>
+    <string name="you_will_be_connected_when_your_connection_request_is_accepted">Соединение будет установлено, когда Ваш запрос будет принят, пожалуйста подождите или проверьте позже!</string>
+    <string name="you_will_be_connected_when_your_contacts_device_is_online">Соединение будет установлено, когда Ваш контакт будет онлайн, пожалуйста подождите или проверьте позже!</string>
     <string name="show_QR_code_for_your_contact_to_scan_from_the_app__multiline">Покажите QR код Вашему контакту, чтобы сосканировать его в приложении</string>
     <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel">Если вы не можете встретиться лично, Вы можете <b>показать QR код во время видео звонка</b>, или отправить ссылку через любой другой канал связи.</string>
     <string name="your_chat_profile_will_be_sent_to_your_contact">Ваш профиль будет отправлен\nвашему контакту</string>
-    <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link">Если вы не можете встретиться лично, Вы можете <b>сосканировать QR код во время видео-звонка</b>, или Ваш контакт может отправить ссылку.</string>
+    <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link">Если вы не можете встретиться лично, Вы можете <b>сосканировать QR код во время видео звонка</b>, или Ваш контакт может отправить Вам ссылку.</string>
     <string name="share_invitation_link">Поделиться ссылкой</string>
 
     <!-- settings - SettingsView.kt -->
-    <string name="your_settings">Ваши Установки</string>
+    <string name="your_settings">Настройки</string>
     <string name="your_simplex_contact_address">Ваш <xliff:g id="appName">SimpleX</xliff:g> адрес</string>
     <string name="how_to_use_simplex_chat">Как использовать <xliff:g id="appNameFull">SimpleX Chat</xliff:g></string>
-    <string name="markdown_help">Помощь по маркдаун</string>
-    <string name="markdown_in_messages">Маркдаун в сообщениях</string>
-    <string name="chat_with_the_founder">Соединиться с девелоперами</string>
-    <string name="send_us_an_email">Отправить нам email</string>
-    <string name="private_notifications">Безопасные уведомления</string>
-    <string name="chat_console">Чат консоль</string>
+    <string name="markdown_help">Помощь по markdown</string>
+    <string name="markdown_in_messages">Markdown в сообщениях</string>
+    <string name="chat_with_the_founder">Соединиться с разработчиками</string>
+    <string name="send_us_an_email">Отправить email</string>
+    <string name="private_notifications">Приватные уведомления</string>
+    <string name="chat_console">Консоль</string>
     <string name="smp_servers">SMP серверы</string>
     <string name="install_simplex_chat_for_terminal"><font color="#0088ff"><xliff:g id="appNameFull">SimpleX Chat</xliff:g> для терминала</font></string>
-    <string name="use_simplex_chat_servers__question">Использовать серверы предосталенные <xliff:g id="appNameFull">SimpleX Chat</xliff:g> servers?</string>
+    <string name="use_simplex_chat_servers__question">Использовать серверы предосталенные <xliff:g id="appNameFull">SimpleX Chat</xliff:g>?</string>
     <string name="saved_SMP_servers_will_br_removed">Сохраненные SMP серверы будут удалены.</string>
     <string name="your_SMP_servers">Ваши SMP серверы</string>
     <string name="configure_SMP_servers">Конфигурация SMP серверов</string>
@@ -190,14 +190,14 @@
     <string name="full_name__field">"Полное имя:</string>
     <string name="your_chat_profile">Ваш профиль в чате</string>
     <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Ваш профиль хранится на Вашем устройстве и отправляется только Вашим контактам.\n\n<xliff:g id="appName">SimpleX</xliff:g> серверы не могут получить доступ к Вашему профилю.</string>
-    <string name="edit_image">Поменять картинку</string>
-    <string name="delete_image">Удалить картинку</string>
+    <string name="edit_image">Поменять аватар</string>
+    <string name="delete_image">Удалить аватар</string>
     <string name="save_and_notify_contacts">Сохранить (и послать обновление контактам)</string>
 
     <!-- Welcome Prompts - WelcomeView.kt -->
     <string name="you_control_your_chat">Вы котролируете Ваш чат!</string>
-    <string name="the_messaging_and_app_platform_protecting_your_privacy_and_security">Платформа для сообщений и приложений, которая защищает вашу личную информацию и безопастность.</string>
-    <string name="we_do_not_store_contacts_or_messages_on_servers">Мы не храним Ваши контакты или сообщения (после доставки) на серверах.</string>
+    <string name="the_messaging_and_app_platform_protecting_your_privacy_and_security">Платформа для сообщений и приложений, которая защищает вашу личную информацию и безопасность.</string>
+    <string name="we_do_not_store_contacts_or_messages_on_servers">Мы не храним Ваши контакты и сообщения (после доставки) на серверах.</string>
     <string name="create_profile">Создать профиль</string>
     <string name="your_profile_is_stored_on_your_decide_and_shared_only_with_your_contacts">Ваш профиль хранится на Вашем устройстве и отправляется только Вашим контактам.</string>
     <string name="display_name_cannot_contain_whitespace">Имя профиля не может содержать пробелы.</string>
