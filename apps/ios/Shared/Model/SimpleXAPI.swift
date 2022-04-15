@@ -19,6 +19,7 @@ enum ChatCommand {
     case showActiveUser
     case createActiveUser(profile: Profile)
     case startChat
+    case setFilesFolder(filesFolder: String)
     case apiGetChats
     case apiGetChat(type: ChatType, id: Int64)
     case apiSendMessage(type: ChatType, id: Int64, file: String?, quotedItemId: Int64?, msg: MsgContent)
@@ -45,6 +46,7 @@ enum ChatCommand {
             case .showActiveUser: return "/u"
             case let .createActiveUser(profile): return "/u \(profile.displayName) \(profile.fullName)"
             case .startChat: return "/_start"
+            case let .setFilesFolder(filesFolder): return "/_files_folder \(filesFolder)"
             case .apiGetChats: return "/_get chats"
             case let .apiGetChat(type, id): return "/_get chat \(ref(type, id)) count=100"
             case let .apiSendMessage(type, id, file, quotedItemId, mc):
@@ -80,6 +82,7 @@ enum ChatCommand {
             case .showActiveUser: return "showActiveUser"
             case .createActiveUser: return "createActiveUser"
             case .startChat: return "startChat"
+            case .setFilesFolder: return "setFilesFolder"
             case .apiGetChats: return "apiGetChats"
             case .apiGetChat: return "apiGetChat"
             case .apiSendMessage: return "apiSendMessage"
@@ -106,7 +109,7 @@ enum ChatCommand {
     func ref(_ type: ChatType, _ id: Int64) -> String {
         "\(type.rawValue)\(id)"
     }
-    
+
     func smpServersStr(smpServers: [String]) -> String {
         smpServers.isEmpty ? "default" : smpServers.joined(separator: ",")
     }
@@ -200,7 +203,7 @@ enum ChatResponse: Decodable, Error {
             }
         }
     }
-    
+
     var details: String {
         get {
             switch self {
@@ -376,6 +379,12 @@ func apiCreateActiveUser(_ p: Profile) throws -> User {
 func apiStartChat() throws {
     let r = chatSendCmdSync(.startChat)
     if case .chatStarted = r { return }
+    throw r
+}
+
+func apiSetFilesFolder(filesFolder: String) throws {
+    let r = chatSendCmdSync(.setFilesFolder(filesFolder: filesFolder))
+    if case .cmdOk = r { return }
     throw r
 }
 
@@ -741,7 +750,7 @@ private func chatResponse(_ cjson: UnsafeMutablePointer<CChar>) -> ChatResponse 
     } catch {
         logger.error("chatResponse jsonDecoder.decode error: \(error.localizedDescription)")
     }
-        
+
     var type: String?
     var json: String?
     if let j = try? JSONSerialization.jsonObject(with: d) as? NSDictionary {
@@ -763,7 +772,7 @@ func prettyJSON(_ obj: NSDictionary) -> String? {
 
 private func getChatCtrl() -> chat_ctrl {
     if let controller = chatController { return controller }
-    let dataDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!.path + "/mobile_v1"
+    let dataDir = getDocumentsDirectory().path + "/mobile_v1"
     var cstr = dataDir.cString(using: .utf8)!
     logger.debug("getChatCtrl: chat_init")
     ChatModel.shared.terminalItems.append(.cmd(.now, .string("chat_init")))

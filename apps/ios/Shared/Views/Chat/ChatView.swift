@@ -261,24 +261,17 @@ struct ChatView: View {
            let dataResized = Data(base64Encoded: dropImagePrefix(imageResized)),
            let jpegData = UIImage(data: dataResized)?.jpegData(compressionQuality: 1) {
             let millisecondsSince1970 = Int64((Date().timeIntervalSince1970 * 1000.0).rounded())
-            let imageName = "image_\(millisecondsSince1970).jpg"
-            let filename = getDocumentsDirectory().appendingPathComponent(imageName)
+            let fileToSave = "image_\(millisecondsSince1970).jpg"
+            let filePath = getAppFilesDirectory().appendingPathComponent(fileToSave)
             do {
-                try jpegData.write(to: filename)
-                return filename.path
+                try jpegData.write(to: filePath)
+                return fileToSave
             } catch {
                 logger.error("ChatView.saveImage error: \(error.localizedDescription)")
                 return nil
             }
         }
         return nil
-    }
-
-    func getDocumentsDirectory() -> URL {
-        let path = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
-        return path
-//        let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
-//        return paths[0]
     }
     
     func deleteMessage(_ mode: CIDeleteMode) {

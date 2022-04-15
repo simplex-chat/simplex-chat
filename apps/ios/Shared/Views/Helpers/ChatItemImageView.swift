@@ -16,7 +16,8 @@ struct ChatItemImageView: View {
     var body: some View {
         VStack(alignment: .center, spacing: 6) {
             if let file = file,
-               let filePath = file.filePath,
+               let savedFile = file.filePath,
+               let filePath = getAppFilesDirectory().path + "/" + savedFile,
                file.stored, // TODO more advanced approach would be to send progressive jpeg and only check for filepath
                let uiImage = UIImage(contentsOfFile: filePath) {
                 Image(uiImage: uiImage)

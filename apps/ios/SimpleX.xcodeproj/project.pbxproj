@@ -119,6 +119,7 @@
 		64AA1C6A27EE10C800AC7277 /* ContextItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64AA1C6827EE10C800AC7277 /* ContextItemView.swift */; };
 		64AA1C6C27F3537400AC7277 /* DeletedItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64AA1C6B27F3537400AC7277 /* DeletedItemView.swift */; };
 		64AA1C6D27F3537400AC7277 /* DeletedItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64AA1C6B27F3537400AC7277 /* DeletedItemView.swift */; };
+		64DAE1512809D9F5000DA960 /* FileUtils.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64DAE1502809D9F5000DA960 /* FileUtils.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -207,6 +208,7 @@
 		649BCDA12805D6EF00C3A862 /* ChatItemImageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatItemImageView.swift; sourceTree = "<group>"; };
 		64AA1C6827EE10C800AC7277 /* ContextItemView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContextItemView.swift; sourceTree = "<group>"; };
 		64AA1C6B27F3537400AC7277 /* DeletedItemView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeletedItemView.swift; sourceTree = "<group>"; };
+		64DAE1502809D9F5000DA960 /* FileUtils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileUtils.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -231,8 +233,6 @@
 			files = (
 				5C764E85279C748C000C6508 /* libz.tbd in Frameworks */,
 				5C764E84279C748C000C6508 /* libiconv.tbd in Frameworks */,
-				5C411599280048E90054D6CB /* libHSsimplex-chat-1.5.0-3uBn0HoMpg08OGLfasXsOx.a in Frameworks */,
-				5C41159B280048E90054D6CB /* libffi.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -350,6 +350,7 @@
 			children = (
 				5CA059C3279559F40002BEB4 /* SimpleXApp.swift */,
 				5CA059C4279559F40002BEB4 /* ContentView.swift */,
+				64DAE1502809D9F5000DA960 /* FileUtils.swift */,
 				5C764E87279CBC8E000C6508 /* Model */,
 				5C2E260D27A30E2400F70299 /* Views */,
 				5CA059C5279559F40002BEB4 /* Assets.xcassets */,
@@ -661,6 +662,7 @@
 				649BCDA22805D6EF00C3A862 /* ChatItemImageView.swift in Sources */,
 				5CCD403A27A5F9BE00368C90 /* CreateGroupView.swift in Sources */,
 				5CEACCED27DEA495000BD591 /* MsgContentView.swift in Sources */,
+				64DAE1512809D9F5000DA960 /* FileUtils.swift in Sources */,
 				5C764E89279CBCB3000C6508 /* ChatModel.swift in Sources */,
 				5C971E1D27AEBEF600C8A3CE /* ChatInfoView.swift in Sources */,
 				5CC1C99527A6CF7F000D9FF6 /* ShareSheet.swift in Sources */,
