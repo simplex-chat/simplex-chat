@@ -1274,7 +1274,7 @@ testSendImageWithFilesFolders =
     \alice bob -> do
       connectUsers alice bob
       alice #$> ("/_files_folder ./tests/fixtures", id, "ok")
-      bob #$> ("/_files_folder ./tests/tmp", id, "ok")
+      bob #$> ("/_files_folder ./tests/tmp/app_files", id, "ok")
       alice ##> "/_send @2 file test.jpg json {\"text\":\"\",\"type\":\"image\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\"}"
       alice <# "/f @bob test.jpg"
       alice <## "use /fc 1 to cancel sending"
@@ -1289,14 +1289,14 @@ testSendImageWithFilesFolders =
         (bob <## "completed receiving file 1 (test.jpg) from alice")
         (alice <## "completed sending file 1 (test.jpg) to bob")
       src <- B.readFile "./tests/fixtures/test.jpg"
-      dest <- B.readFile "./tests/tmp/test.jpg"
+      dest <- B.readFile "./tests/tmp/app_files/test.jpg"
       dest `shouldBe` src
       alice #$> ("/_get chat @2 count=100", chatF, [((1, ""), Just "test.jpg")])
       bob #$> ("/_get chat @2 count=100", chatF, [((0, ""), Just "test.jpg")])
       -- deleting contact with files folder set should remove file
       bob ##> "/d alice"
       bob <## "alice: contact is deleted"
-      fileExists <- doesFileExist "./tests/tmp/test.jpg"
+      fileExists <- doesFileExist "./tests/tmp/app_files/test.jpg"
       fileExists `shouldBe` False
 
 testSendImageWithTextAndQuote :: IO ()
