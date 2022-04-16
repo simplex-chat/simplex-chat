@@ -508,8 +508,7 @@
       <trans-unit id="Show QR code to your contact&#10;to scan from the app" xml:space="preserve">
         <source>Show QR code to your contact
 to scan from the app</source>
-        <target>Покажите QR код Вашему контакту,
-чтобы сосканировать его в приложении</target>
+        <target>Покажите QR код вашему контакту для сканирования в приложении</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Start new chat" xml:space="preserve">
