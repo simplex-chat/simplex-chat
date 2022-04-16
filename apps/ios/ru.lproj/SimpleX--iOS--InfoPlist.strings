@@ -2,5 +2,5 @@
 "CFBundleName" = "SimpleX";
 
 /* Privacy - Camera Usage Description */
-"NSCameraUsageDescription" = "SimpleX использует камеру для сканирования QR кодов, чтобы соединиться с другими пользователями";
+"NSCameraUsageDescription" = "SimpleX использует камеру для сканирования QR кодов при соединении с другими пользователями";
 

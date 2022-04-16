@@ -341,7 +341,7 @@
 "Share link" = "Поделиться ссылкой";
 
 /* No comment provided by engineer. */
-"Show QR code to your contact\nto scan from the app" = "Покажите QR код Вашему контакту,\nчтобы сосканировать его в приложении";
+"Show QR code to your contact\nto scan from the app" = "Покажите QR код вашему контакту для сканирования в приложении";
 
 /* No comment provided by engineer. */
 "SMP servers" = "SMP серверы";
@@ -380,10 +380,10 @@
 "To start a new chat" = "Начать новый разговор";
 
 /* No comment provided by engineer. */
-"Trying to connect to the server used to receive messages from this contact (error: %@)." = "Устанавливается соединение с сервером, через который Вы получаете сообщения от этого контакта (ошибка: %@).";
+"Trying to connect to the server used to receive messages from this contact (error: %@)." = "Устанавливается соединение с сервером, через который вы получаете сообщения от этого контакта (ошибка: %@).";
 
 /* No comment provided by engineer. */
-"Trying to connect to the server used to receive messages from this contact." = "Устанавливается соединение с сервером, через который Вы получаете сообщения от этого контакта.";
+"Trying to connect to the server used to receive messages from this contact." = "Устанавливается соединение с сервером, через который вы получаете сообщения от этого контакта.";
 
 /* No comment provided by engineer. */
 "Unexpected error: %@" = "Неожиданная ошибка: %@";
@@ -410,13 +410,13 @@
 "You are already connected to %@ via this link." = "Вы уже соединены с %@ через эту ссылку.";
 
 /* No comment provided by engineer. */
-"You are connected to the server used to receive messages from this contact." = "Установлено соединение с сервером, через который Вы получается сообщения от этого контакта.";
+"You are connected to the server used to receive messages from this contact." = "Установлено соединение с сервером, через который вы получается сообщения от этого контакта.";
 
 /* notification body */
 "You can now send messages to %@" = "Вы теперь можете отправлять сообщения %@";
 
 /* No comment provided by engineer. */
-"You can share your address as a link or as a QR code - anybody will be able to connect to you. You won't lose your contacts if you later delete it." = "Вы можете использовать Ваш адрес как ссылку или как QR код - кто угодно сможет соединиться с Вами. Вы сможете удалить адрес, сохранив контакты, которые через него соединились.";
+"You can share your address as a link or as a QR code - anybody will be able to connect to you. You won't lose your contacts if you later delete it." = "Вы можете использовать ваш адрес как ссылку или как QR код - кто угодно сможет соединиться с вами. Вы сможете удалить адрес, сохранив контакты, которые через него соединились.";
 
 /* No comment provided by engineer. */
 "You can use markdown to format messages:" = "Вы можете форматировать сообщения:";
@@ -443,10 +443,10 @@
 "Your chats" = "Ваши чаты";
 
 /* No comment provided by engineer. */
-"Your profile is stored on your device and shared only with your contacts.\nSimpleX servers cannot see your profile." = "Ваш профиль хранится на вашем устройстве и отправляется только вашим контактам.\nSimpleX серверы не могут получить доступ к Вашему профилю.";
+"Your profile is stored on your device and shared only with your contacts.\nSimpleX servers cannot see your profile." = "Ваш профиль хранится на вашем устройстве и отправляется только вашим контактам.\nSimpleX серверы не могут получить доступ к вашему профилю.";
 
 /* No comment provided by engineer. */
-"Your profile will be sent to the contact that you received this link from" = "Ваш профиль будет отправлен контакту, от которого Вы получили эту ссылку.";
+"Your profile will be sent to the contact that you received this link from" = "Ваш профиль будет отправлен контакту, от которого вы получили эту ссылку.";
 
 /* No comment provided by engineer. */
 "Your profile, contacts and messages (once delivered) are only stored locally on your device." = "Ваш профиль, контакты и сообщения (после доставки) хранятся только на вашем устройстве.";
