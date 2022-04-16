@@ -25,6 +25,7 @@ import Data.Version (showVersion)
 import GHC.Generics (Generic)
 import Numeric.Natural
 import qualified Paths_simplex_chat as SC
+import Simplex.Chat.Markdown (MarkdownList)
 import Simplex.Chat.Messages
 import Simplex.Chat.Protocol
 import Simplex.Chat.Store (StoreError)
@@ -76,7 +77,8 @@ data ChatController = ChatController
     chatLock :: TMVar (),
     sndFiles :: TVar (Map Int64 Handle),
     rcvFiles :: TVar (Map Int64 Handle),
-    config :: ChatConfig
+    config :: ChatConfig,
+    filesFolder :: TVar (Maybe FilePath) -- path to files folder for mobile apps
   }
 
 data HelpSection = HSMain | HSFiles | HSGroups | HSMyAddress | HSMarkdown | HSMessages
@@ -90,11 +92,12 @@ data ChatCommand
   = ShowActiveUser
   | CreateActiveUser Profile
   | StartChat
+  | SetFilesFolder FilePath
   | APIGetChats
   | APIGetChat ChatType Int64 ChatPagination
   | APIGetChatItems Int
-  | APISendMessage ChatType Int64 MsgContent
-  | APISendMessageQuote ChatType Int64 ChatItemId MsgContent
+  | APISendMessage ChatType Int64 (Maybe FilePath) (Maybe ChatItemId) MsgContent
+  | APISendMessageQuote ChatType Int64 ChatItemId MsgContent -- TODO discontinue
   | APIUpdateChatItem ChatType Int64 ChatItemId MsgContent
   | APIDeleteChatItem ChatType Int64 ChatItemId CIDeleteMode
   | APIChatRead ChatType Int64 (ChatItemId, ChatItemId)
@@ -102,6 +105,7 @@ data ChatCommand
   | APIAcceptContact Int64
   | APIRejectContact Int64
   | APIUpdateProfile Profile
+  | APIParseMarkdown Text
   | GetUserSMPServers
   | SetUserSMPServers [SMPServer]
   | ChatHelp HelpSection
@@ -136,13 +140,15 @@ data ChatCommand
   | DeleteGroupMessage GroupName ByteString
   | EditGroupMessage {groupName :: ContactName, editedMsg :: ByteString, message :: ByteString}
   | SendFile ContactName FilePath
+  | SendFileInv ContactName FilePath
   | SendGroupFile GroupName FilePath
+  | SendGroupFileInv GroupName FilePath
   | ReceiveFile FileTransferId (Maybe FilePath)
   | CancelFile FileTransferId
   | FileStatus FileTransferId
   | ShowProfile
   | UpdateProfile ContactName Text
-  | UpdateProfileImage (Maybe ProfileImage)
+  | UpdateProfileImage (Maybe ImageData)
   | QuitChat
   | ShowVersion
   deriving (Show)
@@ -153,6 +159,7 @@ data ChatResponse
   | CRChatRunning
   | CRApiChats {chats :: [AChat]}
   | CRApiChat {chat :: AChat}
+  | CRApiParsedMarkdown {formattedText :: Maybe MarkdownList}
   | CRUserSMPServers {smpServers :: [SMPServer]}
   | CRNewChatItem {chatItem :: AChatItem}
   | CRChatItemStatusUpdated {chatItem :: AChatItem}
@@ -195,14 +202,14 @@ data ChatResponse
   | CRRcvFileAccepted {fileTransfer :: RcvFileTransfer, filePath :: FilePath}
   | CRRcvFileAcceptedSndCancelled {rcvFileTransfer :: RcvFileTransfer}
   | CRRcvFileStart {rcvFileTransfer :: RcvFileTransfer}
-  | CRRcvFileComplete {rcvFileTransfer :: RcvFileTransfer}
+  | CRRcvFileComplete {chatItem :: AChatItem}
   | CRRcvFileCancelled {rcvFileTransfer :: RcvFileTransfer}
   | CRRcvFileSndCancelled {rcvFileTransfer :: RcvFileTransfer}
   | CRSndFileStart {sndFileTransfer :: SndFileTransfer}
   | CRSndFileComplete {sndFileTransfer :: SndFileTransfer}
   | CRSndFileCancelled {sndFileTransfer :: SndFileTransfer}
   | CRSndFileRcvCancelled {sndFileTransfer :: SndFileTransfer}
-  | CRSndGroupFileCancelled {sndFileTransfers :: [SndFileTransfer]}
+  | CRSndGroupFileCancelled {fileTransferMeta :: FileTransferMeta, sndFileTransfers :: [SndFileTransfer]}
   | CRUserProfileUpdated {fromProfile :: Profile, toProfile :: Profile}
   | CRContactConnecting {contact :: Contact}
   | CRContactConnected {contact :: Contact}

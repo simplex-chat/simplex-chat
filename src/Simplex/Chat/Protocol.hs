@@ -112,8 +112,9 @@ data ChatMsgEvent
   | XMsgUpdate SharedMsgId MsgContent
   | XMsgDel SharedMsgId
   | XMsgDeleted
-  | XFile FileInvitation
-  | XFileAcpt String
+  | XFile FileInvitation -- TODO discontinue
+  | XFileAcpt String -- old file protocol
+  | XFileAcptInv SharedMsgId ConnReqInvitation String -- new file protocol
   | XInfo Profile
   | XContact Profile (Maybe XContactId)
   | XGrpInv GroupInvitation
@@ -147,14 +148,18 @@ cmToQuotedMsg = \case
   XMsgNew (MCQuote quotedMsg _) -> Just quotedMsg
   _ -> Nothing
 
-data MsgContentTag = MCText_ | MCUnknown_ Text
+data MsgContentTag = MCText_ | MCLink_ | MCImage_ | MCUnknown_ Text
 
 instance StrEncoding MsgContentTag where
   strEncode = \case
     MCText_ -> "text"
+    MCLink_ -> "link"
+    MCImage_ -> "image"
     MCUnknown_ t -> encodeUtf8 t
   strDecode = \case
     "text" -> Right MCText_
+    "link" -> Right MCLink_
+    "image" -> Right MCImage_
     t -> Right . MCUnknown_ $ safeDecodeUtf8 t
   strP = strDecode <$?> A.takeTill (== ' ')
 
@@ -166,31 +171,50 @@ instance ToJSON MsgContentTag where
   toEncoding = strToJEncoding
 
 data MsgContainer
-  = MCSimple MsgContent
-  | MCQuote QuotedMsg MsgContent
-  | MCForward MsgContent
+  = MCSimple ExtMsgContent
+  | MCQuote QuotedMsg ExtMsgContent
+  | MCForward ExtMsgContent
   deriving (Eq, Show)
 
-mcContent :: MsgContainer -> MsgContent
-mcContent = \case
+mcExtMsgContent :: MsgContainer -> ExtMsgContent
+mcExtMsgContent = \case
   MCSimple c -> c
   MCQuote _ c -> c
   MCForward c -> c
 
+data LinkPreview = LinkPreview {uri :: Text, title :: Text, description :: Text, image :: ImageData}
+  deriving (Eq, Show, Generic)
+
+instance FromJSON LinkPreview where
+  parseJSON = J.genericParseJSON J.defaultOptions {J.omitNothingFields = True}
+
+instance ToJSON LinkPreview where
+  toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
+  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
+
 data MsgContent
   = MCText Text
+  | MCLink {text :: Text, preview :: LinkPreview}
+  | MCImage {text :: Text, image :: ImageData}
   | MCUnknown {tag :: Text, text :: Text, json :: J.Object}
   deriving (Eq, Show)
 
 msgContentText :: MsgContent -> Text
 msgContentText = \case
   MCText t -> t
+  MCLink {text} -> text
+  MCImage {text} -> text
   MCUnknown {text} -> text
 
 msgContentTag :: MsgContent -> MsgContentTag
 msgContentTag = \case
   MCText _ -> MCText_
+  MCLink {} -> MCLink_
+  MCImage {} -> MCImage_
   MCUnknown {tag} -> MCUnknown_ tag
+
+data ExtMsgContent = ExtMsgContent MsgContent (Maybe FileInvitation)
+  deriving (Eq, Show)
 
 parseMsgContainer :: J.Object -> JT.Parser MsgContainer
 parseMsgContainer v =
@@ -198,12 +222,20 @@ parseMsgContainer v =
     <|> (v .: "forward" >>= \f -> (if f then MCForward else MCSimple) <$> mc)
     <|> MCSimple <$> mc
   where
-    mc = v .: "content"
+    mc = ExtMsgContent <$> v .: "content" <*> v .:? "file"
 
 instance FromJSON MsgContent where
   parseJSON (J.Object v) =
     v .: "type" >>= \case
       MCText_ -> MCText <$> v .: "text"
+      MCLink_ -> do
+        text <- v .: "text"
+        preview <- v .: "preview"
+        pure MCLink {text, preview}
+      MCImage_ -> do
+        text <- v .: "text"
+        image <- v .: "image"
+        pure MCImage {image, text}
       MCUnknown_ tag -> do
         text <- fromMaybe unknownMsgType <$> v .:? "text"
         pure MCUnknown {tag, text, json = v}
@@ -215,17 +247,25 @@ unknownMsgType = "unknown message type"
 
 msgContainerJSON :: MsgContainer -> J.Object
 msgContainerJSON = \case
-  MCQuote qm c -> JM.fromList ["quote" .= qm, "content" .= c]
-  MCForward c -> JM.fromList ["forward" .= True, "content" .= c]
-  MCSimple c -> JM.fromList ["content" .= c]
+  MCQuote qm (ExtMsgContent c file) -> JM.fromList $ withFile ["quote" .= qm, "content" .= c] file
+  MCForward (ExtMsgContent c file) -> JM.fromList $ withFile ["forward" .= True, "content" .= c] file
+  MCSimple (ExtMsgContent c file) -> JM.fromList $ withFile ["content" .= c] file
+  where
+    withFile l = \case
+      Nothing -> l
+      Just f -> l <> ["file" .= fileInvitationJSON f]
 
 instance ToJSON MsgContent where
   toJSON = \case
     MCUnknown {json} -> J.Object json
     MCText t -> J.object ["type" .= MCText_, "text" .= t]
+    MCLink {text, preview} -> J.object ["type" .= MCLink_, "text" .= text, "preview" .= preview]
+    MCImage {text, image} -> J.object ["type" .= MCImage_, "text" .= text, "image" .= image]
   toEncoding = \case
     MCUnknown {json} -> JE.value $ J.Object json
     MCText t -> J.pairs $ "type" .= MCText_ <> "text" .= t
+    MCLink {text, preview} -> J.pairs $ "type" .= MCLink_ <> "text" .= text <> "preview" .= preview
+    MCImage {text, image} -> J.pairs $ "type" .= MCImage_ <> "text" .= text <> "image" .= image
 
 instance ToField MsgContent where
   toField = toField . safeDecodeUtf8 . LB.toStrict . J.encode
@@ -240,6 +280,7 @@ data CMEventTag
   | XMsgDeleted_
   | XFile_
   | XFileAcpt_
+  | XFileAcptInv_
   | XInfo_
   | XContact_
   | XGrpInv_
@@ -269,6 +310,7 @@ instance StrEncoding CMEventTag where
     XMsgDeleted_ -> "x.msg.deleted"
     XFile_ -> "x.file"
     XFileAcpt_ -> "x.file.acpt"
+    XFileAcptInv_ -> "x.file.acpt.inv"
     XInfo_ -> "x.info"
     XContact_ -> "x.contact"
     XGrpInv_ -> "x.grp.inv"
@@ -295,6 +337,7 @@ instance StrEncoding CMEventTag where
     "x.msg.deleted" -> Right XMsgDeleted_
     "x.file" -> Right XFile_
     "x.file.acpt" -> Right XFileAcpt_
+    "x.file.acpt.inv" -> Right XFileAcptInv_
     "x.info" -> Right XInfo_
     "x.contact" -> Right XContact_
     "x.grp.inv" -> Right XGrpInv_
@@ -324,6 +367,7 @@ toCMEventTag = \case
   XMsgDeleted -> XMsgDeleted_
   XFile _ -> XFile_
   XFileAcpt _ -> XFileAcpt_
+  XFileAcptInv {} -> XFileAcptInv_
   XInfo _ -> XInfo_
   XContact _ _ -> XContact_
   XGrpInv _ -> XGrpInv_
@@ -371,6 +415,7 @@ appToChatMessage AppMessage {msgId, event, params} = do
       XMsgDeleted_ -> pure XMsgDeleted
       XFile_ -> XFile <$> p "file"
       XFileAcpt_ -> XFileAcpt <$> p "fileName"
+      XFileAcptInv_ -> XFileAcptInv <$> p "msgId" <*> p "fileConnReq" <*> p "fileName"
       XInfo_ -> XInfo <$> p "profile"
       XContact_ -> XContact <$> p "profile" <*> opt "contactReqId"
       XGrpInv_ -> XGrpInv <$> p "groupInvitation"
@@ -403,8 +448,9 @@ chatToAppMessage ChatMessage {msgId, chatMsgEvent} = AppMessage {msgId, event, p
       XMsgUpdate msgId' content -> o ["msgId" .= msgId', "content" .= content]
       XMsgDel msgId' -> o ["msgId" .= msgId']
       XMsgDeleted -> JM.empty
-      XFile fileInv -> o ["file" .= fileInv]
+      XFile fileInv -> o ["file" .= fileInvitationJSON fileInv]
       XFileAcpt fileName -> o ["fileName" .= fileName]
+      XFileAcptInv sharedMsgId fileConnReq fileName -> o ["msgId" .= sharedMsgId, "fileConnReq" .= fileConnReq, "fileName" .= fileName]
       XInfo profile -> o ["profile" .= profile]
       XContact profile xContactId -> o $ ("contactReqId" .=? xContactId) ["profile" .= profile]
       XGrpInv groupInv -> o ["groupInvitation" .= groupInv]
@@ -424,3 +470,8 @@ chatToAppMessage ChatMessage {msgId, chatMsgEvent} = AppMessage {msgId, event, p
       XInfoProbeOk probe -> o ["probe" .= probe]
       XOk -> JM.empty
       XUnknown _ ps -> ps
+
+fileInvitationJSON :: FileInvitation -> J.Object
+fileInvitationJSON FileInvitation {fileName, fileSize, fileConnReq} = case fileConnReq of
+  Nothing -> JM.fromList ["fileName" .= fileName, "fileSize" .= fileSize]
+  Just fConnReq -> JM.fromList ["fileName" .= fileName, "fileSize" .= fileSize, "fileConnReq" .= fConnReq]

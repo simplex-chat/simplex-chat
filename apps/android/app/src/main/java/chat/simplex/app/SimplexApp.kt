@@ -41,6 +41,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
 
   override fun onCreate() {
     super.onCreate()
+    context = this
     ProcessLifecycleOwner.get().lifecycle.addObserver(this)
     withApi {
       val user = chatController.apiGetActiveUser()
@@ -65,9 +66,10 @@ class SimplexApp: Application(), LifecycleEventObserver {
   }
 
   companion object {
+    lateinit var context: SimplexApp private set
+
     init {
       val socketName = "local.socket.address.listen.native.cmd2"
-
       val s = Semaphore(0)
       thread(name="stdout/stderr pipe") {
         Log.d(TAG, "starting server")
@@ -82,7 +84,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
           val inStreamReader = InputStreamReader(inStream)
           val input = BufferedReader(inStreamReader)
 
-          while(true) {
+          while (true) {
             val line = input.readLine() ?: break
             Log.w("$TAG (stdout/stderr)", line)
             logbuffer.add(line)

@@ -18,6 +18,7 @@ import qualified Data.Text as T
 import Network.Socket
 import Simplex.Chat
 import Simplex.Chat.Controller (ChatConfig (..), ChatController (..))
+import Simplex.Chat.Core
 import Simplex.Chat.Options
 import Simplex.Chat.Store
 import Simplex.Chat.Terminal
@@ -46,7 +47,9 @@ opts =
     { dbFilePrefix = undefined,
       smpServers = ["smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=@localhost:5001"],
       logConnections = False,
-      logAgent = False
+      logAgent = False,
+      chatCmd = "",
+      chatCmdDelay = 3
     }
 
 termSettings :: VirtualTerminalSettings
@@ -83,8 +86,8 @@ virtualSimplexChat dbFilePrefix profile = do
   Right user <- runExceptT $ createUser st profile True
   t <- withVirtualTerminal termSettings pure
   ct <- newChatTerminal t
-  cc <- newChatController st (Just user) cfg opts {dbFilePrefix} (const $ pure ()) -- no notifications
-  chatAsync <- async $ runSimplexChat user ct cc
+  cc <- newChatController st (Just user) cfg opts {dbFilePrefix} Nothing -- no notifications
+  chatAsync <- async . runSimplexChat user cc . const $ runChatTerminal ct
   termQ <- newTQueueIO
   termAsync <- async $ readTerminalOutput t termQ
   pure TestCC {chatController = cc, virtualTerminal = t, chatAsync, termAsync, termQ}
@@ -125,6 +128,7 @@ testChatN ps test = withTmpFiles $ do
   test tcs
   concurrentlyN_ $ map (<// 100000) tcs
   where
+    getTestCCs :: [(Profile, FilePath)] -> [TestCC] -> IO [TestCC]
     getTestCCs [] tcs = pure tcs
     getTestCCs ((p, db) : envs') tcs = (:) <$> virtualSimplexChat db p <*> getTestCCs envs' tcs
 
@@ -135,6 +139,7 @@ getTermLine :: TestCC -> IO String
 getTermLine = atomically . readTQueue . termQ
 
 -- Use code below to echo virtual terminal
+-- getTermLine :: TestCC -> IO String
 -- getTermLine cc = do
 --   s <- atomically . readTQueue $ termQ cc
 --   name <- userName cc

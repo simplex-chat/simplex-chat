@@ -36,7 +36,7 @@ struct ContentView: View {
 
     func notificationAlert() -> Alert {
         Alert(
-            title: Text("Notification are disabled!"),
+            title: Text("Notifications are disabled!"),
              message: Text("The app can notify you when you receive messages or contact requests - please open settings to enable."),
              primaryButton: .default(Text("Open Settings")) {
                  DispatchQueue.main.async {
@@ -61,7 +61,7 @@ final class AlertManager: ObservableObject {
         }
     }
 
-    func showAlertMsg(title: String, message: String? = nil) {
+    func showAlertMsg(title: LocalizedStringKey, message: LocalizedStringKey? = nil) {
         if let message = message {
             showAlert(Alert(title: Text(title), message: Text(message)))
         } else {

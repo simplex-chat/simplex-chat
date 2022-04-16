@@ -11,7 +11,7 @@ import SwiftUI
 struct SendMessageView: View {
     var sendMessage: (String) -> Void
     var inProgress: Bool = false
-    @Binding var message: String //Lorem ipsum dolor sit amet, consectetur" // adipiscing elit, sed do eiusmod tempor incididunt ut labor7 et dolore magna aliqua. Ut enim ad minim veniam, quis"// nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat."// Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
+    @Binding var message: String
     @Namespace var namespace
     @FocusState.Binding var keyboardVisible: Bool
     @Binding var editing: Bool
@@ -91,7 +91,6 @@ struct SendMessageView_Previews: PreviewProvider {
         @State var editingOff: Bool = false
         @State var editingOn: Bool = true
         @State var item: ChatItem? = ChatItem.getSample(1, .directSnd, .now, "hello")
-        @State var nilItem: ChatItem? = nil
 
         return Group {
             VStack {

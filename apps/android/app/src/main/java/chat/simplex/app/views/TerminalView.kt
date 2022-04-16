@@ -19,9 +19,7 @@ import androidx.compose.ui.unit.sp
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.chat.SendMsgView
-import chat.simplex.app.views.helpers.CloseSheetBar
-import chat.simplex.app.views.helpers.withApi
-import chat.simplex.app.views.newchat.ModalManager
+import chat.simplex.app.views.helpers.*
 import com.google.accompanist.insets.ProvideWindowInsets
 import com.google.accompanist.insets.navigationBarsWithImePadding
 import kotlinx.coroutines.launch
@@ -43,7 +41,15 @@ fun TerminalLayout(terminalItems: List<TerminalItem>, close: () -> Unit, sendCom
   ProvideWindowInsets(windowInsetsAnimationsEnabled = true) {
     Scaffold(
       topBar = { CloseSheetBar(close) },
-      bottomBar = { SendMsgView(msg = remember { mutableStateOf("") }, sendCommand) },
+      bottomBar = {
+        SendMsgView(
+          msg = remember { mutableStateOf("") },
+          linkPreview = remember { mutableStateOf(null) },
+          cancelledLinks = remember { mutableSetOf() },
+          parseMarkdown = { null },
+          sendMessage = sendCommand
+        )
+      },
       modifier = Modifier.navigationBarsWithImePadding()
     ) { contentPadding ->
       Surface(

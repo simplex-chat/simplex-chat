@@ -13,16 +13,16 @@ import qualified Data.ByteString as B
 import Data.Char (isDigit)
 import qualified Data.Text as T
 import Simplex.Chat.Controller (ChatController (..))
-import Simplex.Chat.Types (Profile (..), ProfileImage (..), User (..))
+import Simplex.Chat.Types (ImageData (..), Profile (..), User (..))
 import Simplex.Chat.Util (unlessM)
-import System.Directory (doesFileExist)
+import System.Directory (copyFile, doesFileExist)
 import Test.Hspec
 
 aliceProfile :: Profile
 aliceProfile = Profile {displayName = "alice", fullName = "Alice", image = Nothing}
 
 bobProfile :: Profile
-bobProfile = Profile {displayName = "bob", fullName = "Bob", image = Just (ProfileImage "data:image/png;base64,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")}
+bobProfile = Profile {displayName = "bob", fullName = "Bob", image = Just (ImageData "data:image/png;base64,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")}
 
 cathProfile :: Profile
 cathProfile = Profile {displayName = "cath", fullName = "Catherine", image = Nothing}
@@ -57,6 +57,21 @@ chatTests = do
     it "sender cancelled file transfer" testFileSndCancel
     it "recipient cancelled file transfer" testFileRcvCancel
     it "send and receive file to group" testGroupFileTransfer
+  describe "sending and receiving files v2" $ do
+    it "send and receive file" testFileTransferV2
+    it "send and receive a small file" testSmallFileTransferV2
+    it "sender cancelled file transfer" testFileSndCancelV2
+    it "recipient cancelled file transfer" testFileRcvCancelV2
+    it "send and receive file to group" testGroupFileTransferV2
+  describe "messages with files" $ do
+    it "send and receive message with file" testMessageWithFile
+    it "send and receive image" testSendImage
+    it "files folder: send and receive image" testFilesFoldersSendImage
+    it "files folder: sender deleted file during transfer" testFilesFoldersImageSndDelete
+    it "files folder: recipient deleted file during transfer" testFilesFoldersImageRcvDelete
+    it "send and receive image with text and quote" testSendImageWithTextAndQuote
+    it "send and receive image to group" testGroupSendImage
+    it "send and receive image with text and quote to group" testGroupSendImageWithTextAndQuote
   describe "user contact link" $ do
     it "create and connect via contact link" testUserContactLink
     it "auto accept contact requests" testUserContactLinkAutoAccept
@@ -233,7 +248,7 @@ testDirectMessageDelete =
       alice #$> ("/_get chat @2 count=100", chat, [])
 
       alice #$> ("/_update item @2 1 text updating deleted message", id, "cannot update this item")
-      alice #$> ("/_send_quote @2 1 text quoting deleted message", id, "cannot reply to this message")
+      alice #$> ("/_send @2 quoted 1 text quoting deleted message", id, "cannot reply to this message")
 
       bob #$> ("/_update item @2 2 text hey alice", id, "message updated")
       alice <# "bob> [edited] hey alice"
@@ -823,7 +838,7 @@ testGroupMessageDelete =
       cath #$> ("/_get chat #1 count=100", chat, [(0, "hello!")])
 
       alice #$> ("/_update item #1 1 text updating deleted message", id, "cannot update this item")
-      alice #$> ("/_send_quote #1 1 text quoting deleted message", id, "cannot reply to this message")
+      alice #$> ("/_send #1 quoted 1 text quoting deleted message", id, "cannot reply to this message")
 
       threadDelay 1000000
       -- msg id 2
@@ -995,7 +1010,8 @@ testFileSndCancel =
         [ do
             alice <## "cancelled sending file 1 (test.jpg) to bob"
             alice ##> "/fs 1"
-            alice <## "sending file 1 (test.jpg) cancelled",
+            alice <## "sending file 1 (test.jpg) cancelled: bob"
+            alice <## "file transfer cancelled",
           do
             bob <## "alice cancelled sending file 1 (test.jpg)"
             bob ##> "/fs 1"
@@ -1021,11 +1037,9 @@ testFileRcvCancel =
           do
             alice <## "bob cancelled receiving file 1 (test.jpg)"
             alice ##> "/fs 1"
-            alice <## "sending file 1 (test.jpg) cancelled"
+            alice <## "sending file 1 (test.jpg) cancelled: bob"
         ]
       checkPartialTransfer
-  where
-    waitFileExists f = unlessM (doesFileExist f) $ waitFileExists f
 
 testGroupFileTransfer :: IO ()
 testGroupFileTransfer =
@@ -1069,6 +1083,410 @@ testGroupFileTransfer =
             cath <## "started receiving file 1 (test.jpg) from alice"
             cath <## "completed receiving file 1 (test.jpg) from alice"
         ]
+
+testFileTransferV2 :: IO ()
+testFileTransferV2 =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+      startFileTransferV2 alice bob
+      concurrentlyN_
+        [ do
+            bob #> "@alice receiving here..."
+            bob <## "completed receiving file 1 (test.jpg) from alice",
+          do
+            alice <# "bob> receiving here..."
+            alice <## "completed sending file 1 (test.jpg) to bob"
+        ]
+      src <- B.readFile "./tests/fixtures/test.jpg"
+      dest <- B.readFile "./tests/tmp/test.jpg"
+      dest `shouldBe` src
+
+testSmallFileTransferV2 :: IO ()
+testSmallFileTransferV2 =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+      alice `send` "/f_v2 @bob ./tests/fixtures/test.txt"
+      alice <# "/f @bob ./tests/fixtures/test.txt"
+      alice <## "use /fc 1 to cancel sending"
+      bob <# "alice> sends file test.txt (11 bytes / 11 bytes)"
+      bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+      bob ##> "/fr 1 ./tests/tmp"
+      bob <## "saving file 1 from alice to ./tests/tmp/test.txt"
+      concurrentlyN_
+        [ do
+            bob <## "started receiving file 1 (test.txt) from alice"
+            bob <## "completed receiving file 1 (test.txt) from alice",
+          do
+            alice <## "started sending file 1 (test.txt) to bob"
+            alice <## "completed sending file 1 (test.txt) to bob"
+        ]
+      src <- B.readFile "./tests/fixtures/test.txt"
+      dest <- B.readFile "./tests/tmp/test.txt"
+      dest `shouldBe` src
+
+testFileSndCancelV2 :: IO ()
+testFileSndCancelV2 =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+      startFileTransferV2 alice bob
+      alice ##> "/fc 1"
+      concurrentlyN_
+        [ do
+            alice <## "cancelled sending file 1 (test.jpg) to bob"
+            alice ##> "/fs 1"
+            alice <## "sending file 1 (test.jpg) cancelled: bob"
+            alice <## "file transfer cancelled",
+          do
+            bob <## "alice cancelled sending file 1 (test.jpg)"
+            bob ##> "/fs 1"
+            bob <## "receiving file 1 (test.jpg) cancelled, received part path: ./tests/tmp/test.jpg"
+        ]
+      checkPartialTransfer
+
+testFileRcvCancelV2 :: IO ()
+testFileRcvCancelV2 =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+      startFileTransferV2 alice bob
+      bob ##> "/fs 1"
+      getTermLine bob >>= (`shouldStartWith` "receiving file 1 (test.jpg) progress")
+      waitFileExists "./tests/tmp/test.jpg"
+      bob ##> "/fc 1"
+      concurrentlyN_
+        [ do
+            bob <## "cancelled receiving file 1 (test.jpg) from alice"
+            bob ##> "/fs 1"
+            bob <## "receiving file 1 (test.jpg) cancelled, received part path: ./tests/tmp/test.jpg",
+          do
+            alice <## "bob cancelled receiving file 1 (test.jpg)"
+            alice ##> "/fs 1"
+            alice <## "sending file 1 (test.jpg) cancelled: bob"
+        ]
+      checkPartialTransfer
+
+testGroupFileTransferV2 :: IO ()
+testGroupFileTransferV2 =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+      alice `send` "/f_v2 #team ./tests/fixtures/test.jpg"
+      alice <# "/f #team ./tests/fixtures/test.jpg"
+      alice <## "use /fc 1 to cancel sending"
+      concurrentlyN_
+        [ do
+            bob <# "#team alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
+            bob <## "use /fr 1 [<dir>/ | <path>] to receive it",
+          do
+            cath <# "#team alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
+            cath <## "use /fr 1 [<dir>/ | <path>] to receive it"
+        ]
+      alice ##> "/fs 1"
+      getTermLine alice >>= (`shouldStartWith` "sending file 1 (test.jpg): no file transfers")
+      bob ##> "/fr 1 ./tests/tmp/"
+      bob <## "saving file 1 from alice to ./tests/tmp/test.jpg"
+      concurrentlyN_
+        [ do
+            alice <## "started sending file 1 (test.jpg) to bob"
+            alice <## "completed sending file 1 (test.jpg) to bob"
+            alice ##> "/fs 1"
+            alice <## "sending file 1 (test.jpg) complete: bob",
+          do
+            bob <## "started receiving file 1 (test.jpg) from alice"
+            bob <## "completed receiving file 1 (test.jpg) from alice"
+        ]
+      cath ##> "/fr 1 ./tests/tmp/"
+      cath <## "saving file 1 from alice to ./tests/tmp/test_1.jpg"
+      concurrentlyN_
+        [ do
+            alice <## "started sending file 1 (test.jpg) to cath"
+            alice <## "completed sending file 1 (test.jpg) to cath"
+            alice ##> "/fs 1"
+            getTermLine alice >>= (`shouldStartWith` "sending file 1 (test.jpg) complete"),
+          do
+            cath <## "started receiving file 1 (test.jpg) from alice"
+            cath <## "completed receiving file 1 (test.jpg) from alice"
+        ]
+
+testMessageWithFile :: IO ()
+testMessageWithFile =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+      alice ##> "/_send @2 file ./tests/fixtures/test.jpg text hi, sending a file"
+      alice <# "@bob hi, sending a file"
+      alice <# "/f @bob ./tests/fixtures/test.jpg"
+      alice <## "use /fc 1 to cancel sending"
+      bob <# "alice> hi, sending a file"
+      bob <# "alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
+      bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+      bob ##> "/fr 1 ./tests/tmp"
+      bob <## "saving file 1 from alice to ./tests/tmp/test.jpg"
+      concurrently_
+        (bob <## "started receiving file 1 (test.jpg) from alice")
+        (alice <## "started sending file 1 (test.jpg) to bob")
+      concurrently_
+        (bob <## "completed receiving file 1 (test.jpg) from alice")
+        (alice <## "completed sending file 1 (test.jpg) to bob")
+      src <- B.readFile "./tests/fixtures/test.jpg"
+      dest <- B.readFile "./tests/tmp/test.jpg"
+      dest `shouldBe` src
+      alice #$> ("/_get chat @2 count=100", chatF, [((1, "hi, sending a file"), Just "./tests/fixtures/test.jpg")])
+      bob #$> ("/_get chat @2 count=100", chatF, [((0, "hi, sending a file"), Just "./tests/tmp/test.jpg")])
+
+testSendImage :: IO ()
+testSendImage =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+      alice ##> "/_send @2 file ./tests/fixtures/test.jpg json {\"text\":\"\",\"type\":\"image\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\"}"
+      alice <# "/f @bob ./tests/fixtures/test.jpg"
+      alice <## "use /fc 1 to cancel sending"
+      bob <# "alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
+      bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+      bob ##> "/fr 1 ./tests/tmp"
+      bob <## "saving file 1 from alice to ./tests/tmp/test.jpg"
+      concurrently_
+        (bob <## "started receiving file 1 (test.jpg) from alice")
+        (alice <## "started sending file 1 (test.jpg) to bob")
+      concurrently_
+        (bob <## "completed receiving file 1 (test.jpg) from alice")
+        (alice <## "completed sending file 1 (test.jpg) to bob")
+      src <- B.readFile "./tests/fixtures/test.jpg"
+      dest <- B.readFile "./tests/tmp/test.jpg"
+      dest `shouldBe` src
+      alice #$> ("/_get chat @2 count=100", chatF, [((1, ""), Just "./tests/fixtures/test.jpg")])
+      bob #$> ("/_get chat @2 count=100", chatF, [((0, ""), Just "./tests/tmp/test.jpg")])
+      -- deleting contact without files folder set should not remove file
+      bob ##> "/d alice"
+      bob <## "alice: contact is deleted"
+      fileExists <- doesFileExist "./tests/tmp/test.jpg"
+      fileExists `shouldBe` True
+
+testFilesFoldersSendImage :: IO ()
+testFilesFoldersSendImage =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+      alice #$> ("/_files_folder ./tests/fixtures", id, "ok")
+      bob #$> ("/_files_folder ./tests/tmp/app_files", id, "ok")
+      alice ##> "/_send @2 file test.jpg json {\"text\":\"\",\"type\":\"image\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\"}"
+      alice <# "/f @bob test.jpg"
+      alice <## "use /fc 1 to cancel sending"
+      bob <# "alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
+      bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+      bob ##> "/fr 1"
+      bob <## "saving file 1 from alice to test.jpg"
+      concurrently_
+        (bob <## "started receiving file 1 (test.jpg) from alice")
+        (alice <## "started sending file 1 (test.jpg) to bob")
+      concurrently_
+        (bob <## "completed receiving file 1 (test.jpg) from alice")
+        (alice <## "completed sending file 1 (test.jpg) to bob")
+      src <- B.readFile "./tests/fixtures/test.jpg"
+      dest <- B.readFile "./tests/tmp/app_files/test.jpg"
+      dest `shouldBe` src
+      alice #$> ("/_get chat @2 count=100", chatF, [((1, ""), Just "test.jpg")])
+      bob #$> ("/_get chat @2 count=100", chatF, [((0, ""), Just "test.jpg")])
+      -- deleting contact with files folder set should remove file
+      checkActionDeletesFile "./tests/tmp/app_files/test.jpg" $ do
+        bob ##> "/d alice"
+        bob <## "alice: contact is deleted"
+
+testFilesFoldersImageSndDelete :: IO ()
+testFilesFoldersImageSndDelete =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+      alice #$> ("/_files_folder ./tests/tmp/alice_app_files", id, "ok")
+      copyFile "./tests/fixtures/test.jpg" "./tests/tmp/alice_app_files/test.jpg"
+      bob #$> ("/_files_folder ./tests/tmp/bob_app_files", id, "ok")
+      alice ##> "/_send @2 file test.jpg json {\"text\":\"\",\"type\":\"image\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\"}"
+      alice <# "/f @bob test.jpg"
+      alice <## "use /fc 1 to cancel sending"
+      bob <# "alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
+      bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+      bob ##> "/fr 1"
+      bob <## "saving file 1 from alice to test.jpg"
+      concurrently_
+        (bob <## "started receiving file 1 (test.jpg) from alice")
+        (alice <## "started sending file 1 (test.jpg) to bob")
+      -- deleting contact should cancel and remove file
+      checkActionDeletesFile "./tests/tmp/alice_app_files/test.jpg" $ do
+        alice ##> "/d bob"
+        alice <## "bob: contact is deleted"
+        bob <## "alice cancelled sending file 1 (test.jpg)"
+        bob ##> "/fs 1"
+        bob <## "receiving file 1 (test.jpg) cancelled, received part path: test.jpg"
+      -- deleting contact should remove cancelled file
+      checkActionDeletesFile "./tests/tmp/bob_app_files/test.jpg" $ do
+        bob ##> "/d alice"
+        bob <## "alice: contact is deleted"
+
+testFilesFoldersImageRcvDelete :: IO ()
+testFilesFoldersImageRcvDelete =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+      alice #$> ("/_files_folder ./tests/fixtures", id, "ok")
+      bob #$> ("/_files_folder ./tests/tmp/app_files", id, "ok")
+      alice ##> "/_send @2 file test.jpg json {\"text\":\"\",\"type\":\"image\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\"}"
+      alice <# "/f @bob test.jpg"
+      alice <## "use /fc 1 to cancel sending"
+      bob <# "alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
+      bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+      bob ##> "/fr 1"
+      bob <## "saving file 1 from alice to test.jpg"
+      concurrently_
+        (bob <## "started receiving file 1 (test.jpg) from alice")
+        (alice <## "started sending file 1 (test.jpg) to bob")
+      -- deleting contact should cancel and remove file
+      waitFileExists "./tests/tmp/app_files/test.jpg"
+      checkActionDeletesFile "./tests/tmp/app_files/test.jpg" $ do
+        bob ##> "/d alice"
+        bob <## "alice: contact is deleted"
+        alice <## "bob cancelled receiving file 1 (test.jpg)"
+        alice ##> "/fs 1"
+        alice <## "sending file 1 (test.jpg) cancelled: bob"
+
+testSendImageWithTextAndQuote :: IO ()
+testSendImageWithTextAndQuote =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+      bob #> "@alice hi alice"
+      alice <# "bob> hi alice"
+      alice ##> "/_send @2 file ./tests/fixtures/test.jpg quoted 1 json {\"text\":\"hey bob\",\"type\":\"image\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\"}"
+      alice <# "@bob > hi alice"
+      alice <## "      hey bob"
+      alice <# "/f @bob ./tests/fixtures/test.jpg"
+      alice <## "use /fc 1 to cancel sending"
+      bob <# "alice> > hi alice"
+      bob <## "      hey bob"
+      bob <# "alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
+      bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+      bob ##> "/fr 1 ./tests/tmp"
+      bob <## "saving file 1 from alice to ./tests/tmp/test.jpg"
+      concurrently_
+        (bob <## "started receiving file 1 (test.jpg) from alice")
+        (alice <## "started sending file 1 (test.jpg) to bob")
+      concurrently_
+        (bob <## "completed receiving file 1 (test.jpg) from alice")
+        (alice <## "completed sending file 1 (test.jpg) to bob")
+      src <- B.readFile "./tests/fixtures/test.jpg"
+      dest <- B.readFile "./tests/tmp/test.jpg"
+      dest `shouldBe` src
+      alice #$> ("/_get chat @2 count=100", chat'', [((0, "hi alice"), Nothing, Nothing), ((1, "hey bob"), Just (0, "hi alice"), Just "./tests/fixtures/test.jpg")])
+      alice #$$> ("/_get chats", [("@bob", "hey bob")])
+      bob #$> ("/_get chat @2 count=100", chat'', [((1, "hi alice"), Nothing, Nothing), ((0, "hey bob"), Just (1, "hi alice"), Just "./tests/tmp/test.jpg")])
+      bob #$$> ("/_get chats", [("@alice", "hey bob")])
+
+testGroupSendImage :: IO ()
+testGroupSendImage =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+      alice ##> "/_send #1 file ./tests/fixtures/test.jpg json {\"text\":\"\",\"type\":\"image\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\"}"
+      alice <# "/f #team ./tests/fixtures/test.jpg"
+      alice <## "use /fc 1 to cancel sending"
+      concurrentlyN_
+        [ do
+            bob <# "#team alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
+            bob <## "use /fr 1 [<dir>/ | <path>] to receive it",
+          do
+            cath <# "#team alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
+            cath <## "use /fr 1 [<dir>/ | <path>] to receive it"
+        ]
+      bob ##> "/fr 1 ./tests/tmp/"
+      bob <## "saving file 1 from alice to ./tests/tmp/test.jpg"
+      concurrentlyN_
+        [ do
+            alice <## "started sending file 1 (test.jpg) to bob"
+            alice <## "completed sending file 1 (test.jpg) to bob",
+          do
+            bob <## "started receiving file 1 (test.jpg) from alice"
+            bob <## "completed receiving file 1 (test.jpg) from alice"
+        ]
+      cath ##> "/fr 1 ./tests/tmp/"
+      cath <## "saving file 1 from alice to ./tests/tmp/test_1.jpg"
+      concurrentlyN_
+        [ do
+            alice <## "started sending file 1 (test.jpg) to cath"
+            alice <## "completed sending file 1 (test.jpg) to cath",
+          do
+            cath <## "started receiving file 1 (test.jpg) from alice"
+            cath <## "completed receiving file 1 (test.jpg) from alice"
+        ]
+      src <- B.readFile "./tests/fixtures/test.jpg"
+      dest <- B.readFile "./tests/tmp/test.jpg"
+      dest `shouldBe` src
+      dest2 <- B.readFile "./tests/tmp/test_1.jpg"
+      dest2 `shouldBe` src
+      alice #$> ("/_get chat #1 count=100", chatF, [((1, ""), Just "./tests/fixtures/test.jpg")])
+      bob #$> ("/_get chat #1 count=100", chatF, [((0, ""), Just "./tests/tmp/test.jpg")])
+      cath #$> ("/_get chat #1 count=100", chatF, [((0, ""), Just "./tests/tmp/test_1.jpg")])
+
+testGroupSendImageWithTextAndQuote :: IO ()
+testGroupSendImageWithTextAndQuote =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+      bob #> "#team hi team"
+      concurrently_
+        (alice <# "#team bob> hi team")
+        (cath <# "#team bob> hi team")
+      threadDelay 1000000
+      alice ##> "/_send #1 file ./tests/fixtures/test.jpg quoted 1 json {\"text\":\"hey bob\",\"type\":\"image\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\"}"
+      alice <# "#team > bob hi team"
+      alice <## "      hey bob"
+      alice <# "/f #team ./tests/fixtures/test.jpg"
+      alice <## "use /fc 1 to cancel sending"
+      concurrentlyN_
+        [ do
+            bob <# "#team alice> > bob hi team"
+            bob <## "      hey bob"
+            bob <# "#team alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
+            bob <## "use /fr 1 [<dir>/ | <path>] to receive it",
+          do
+            cath <# "#team alice> > bob hi team"
+            cath <## "      hey bob"
+            cath <# "#team alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
+            cath <## "use /fr 1 [<dir>/ | <path>] to receive it"
+        ]
+      bob ##> "/fr 1 ./tests/tmp/"
+      bob <## "saving file 1 from alice to ./tests/tmp/test.jpg"
+      concurrentlyN_
+        [ do
+            alice <## "started sending file 1 (test.jpg) to bob"
+            alice <## "completed sending file 1 (test.jpg) to bob",
+          do
+            bob <## "started receiving file 1 (test.jpg) from alice"
+            bob <## "completed receiving file 1 (test.jpg) from alice"
+        ]
+      cath ##> "/fr 1 ./tests/tmp/"
+      cath <## "saving file 1 from alice to ./tests/tmp/test_1.jpg"
+      concurrentlyN_
+        [ do
+            alice <## "started sending file 1 (test.jpg) to cath"
+            alice <## "completed sending file 1 (test.jpg) to cath",
+          do
+            cath <## "started receiving file 1 (test.jpg) from alice"
+            cath <## "completed receiving file 1 (test.jpg) from alice"
+        ]
+      src <- B.readFile "./tests/fixtures/test.jpg"
+      dest <- B.readFile "./tests/tmp/test.jpg"
+      dest `shouldBe` src
+      dest2 <- B.readFile "./tests/tmp/test_1.jpg"
+      dest2 `shouldBe` src
+      alice #$> ("/_get chat #1 count=100", chat'', [((0, "hi team"), Nothing, Nothing), ((1, "hey bob"), Just (0, "hi team"), Just "./tests/fixtures/test.jpg")])
+      alice #$$> ("/_get chats", [("#team", "hey bob"), ("@bob", ""), ("@cath", "")])
+      bob #$> ("/_get chat #1 count=100", chat'', [((1, "hi team"), Nothing, Nothing), ((0, "hey bob"), Just (1, "hi team"), Just "./tests/tmp/test.jpg")])
+      bob #$$> ("/_get chats", [("#team", "hey bob"), ("@alice", ""), ("@cath", "")])
+      cath #$> ("/_get chat #1 count=100", chat'', [((0, "hi team"), Nothing, Nothing), ((0, "hey bob"), Just (0, "hi team"), Just "./tests/tmp/test_1.jpg")])
+      cath #$$> ("/_get chats", [("#team", "hey bob"), ("@alice", ""), ("@bob", "")])
 
 testUserContactLink :: IO ()
 testUserContactLink = testChat3 aliceProfile bobProfile cathProfile $
@@ -1324,12 +1742,36 @@ startFileTransfer alice bob = do
     (bob <## "started receiving file 1 (test.jpg) from alice")
     (alice <## "started sending file 1 (test.jpg) to bob")
 
+startFileTransferV2 :: TestCC -> TestCC -> IO ()
+startFileTransferV2 alice bob = do
+  alice `send` "/f_v2 @bob ./tests/fixtures/test.jpg"
+  alice <# "/f @bob ./tests/fixtures/test.jpg"
+  alice <## "use /fc 1 to cancel sending"
+  bob <# "alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
+  bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+  bob ##> "/fr 1 ./tests/tmp"
+  bob <## "saving file 1 from alice to ./tests/tmp/test.jpg"
+  concurrently_
+    (bob <## "started receiving file 1 (test.jpg) from alice")
+    (alice <## "started sending file 1 (test.jpg) to bob")
+
 checkPartialTransfer :: IO ()
 checkPartialTransfer = do
   src <- B.readFile "./tests/fixtures/test.jpg"
   dest <- B.readFile "./tests/tmp/test.jpg"
   B.unpack src `shouldStartWith` B.unpack dest
   B.length src > B.length dest `shouldBe` True
+
+checkActionDeletesFile :: FilePath -> IO () -> IO ()
+checkActionDeletesFile file action = do
+  fileExistsBefore <- doesFileExist file
+  fileExistsBefore `shouldBe` True
+  action
+  fileExistsAfter <- doesFileExist file
+  fileExistsAfter `shouldBe` False
+
+waitFileExists :: FilePath -> IO ()
+waitFileExists f = unlessM (doesFileExist f) $ waitFileExists f
 
 connectUsers :: TestCC -> TestCC -> IO ()
 connectUsers cc1 cc2 = do
@@ -1418,10 +1860,16 @@ cc #$> (cmd, f, res) = do
   (f <$> getTermLine cc) `shouldReturn` res
 
 chat :: String -> [(Int, String)]
-chat = map fst . chat'
+chat = map (\(a, _, _) -> a) . chat''
 
 chat' :: String -> [((Int, String), Maybe (Int, String))]
-chat' = read
+chat' = map (\(a, b, _) -> (a, b)) . chat''
+
+chatF :: String -> [((Int, String), Maybe String)]
+chatF = map (\(a, _, c) -> (a, c)) . chat''
+
+chat'' :: String -> [((Int, String), Maybe (Int, String), Maybe String)]
+chat'' = read
 
 (#$$>) :: TestCC -> (String, [(String, String)]) -> Expectation
 cc #$$> (cmd, res) = do

@@ -17,6 +17,7 @@ struct ChatView: View {
     @State var message: String = ""
     @State var quotedItem: ChatItem? = nil
     @State var editingItem: ChatItem? = nil
+    @State var linkPreview: LinkPreview? = nil
     @State var deletingItem: ChatItem? = nil
     @State private var inProgress: Bool = false
     @FocusState private var keyboardVisible: Bool
@@ -85,6 +86,7 @@ struct ChatView: View {
                 message: $message,
                 quotedItem: $quotedItem,
                 editingItem: $editingItem,
+                linkPreview: $linkPreview,
                 sendMessage: sendMessage,
                 resetMessage: { message = "" },
                 inProgress: inProgress,
@@ -98,7 +100,7 @@ struct ChatView: View {
                 Button { chatModel.chatId = nil } label: {
                     HStack(spacing: 4) {
                         Image(systemName: "chevron.backward")
-                        Text("Chats")
+                        Text("Chats", comment: "back button to return to chats list")
                     }
                 }
             }
@@ -200,7 +202,7 @@ struct ChatView: View {
         }
     }
 
-    func sendMessage(_ msg: String) {
+    func sendMessage(_ text: String) {
         logger.debug("ChatView sendMessage")
         Task {
             logger.debug("ChatView sendMessage: in Task")
@@ -210,21 +212,29 @@ struct ChatView: View {
                         type: chat.chatInfo.chatType,
                         id: chat.chatInfo.apiId,
                         itemId: ei.id,
-                        msg: .text(msg)
+                        msg: .text(text)
                     )
                     DispatchQueue.main.async {
                         editingItem = nil
+                        linkPreview = nil
                         let _ = chatModel.upsertChatItem(chat.chatInfo, chatItem)
                     }
                 } else {
+                    let mc: MsgContent
+                    if let preview = linkPreview {
+                        mc = .link(text: text, preview: preview)
+                    } else {
+                        mc = .text(text)
+                    }
                     let chatItem = try await apiSendMessage(
                         type: chat.chatInfo.chatType,
                         id: chat.chatInfo.apiId,
                         quotedItemId: quotedItem?.meta.itemId,
-                        msg: .text(msg)
+                        msg: mc
                     )
                     DispatchQueue.main.async {
                         quotedItem = nil
+                        linkPreview = nil
                         chatModel.addChatItem(chat.chatInfo, chatItem)
                     }
                 }
