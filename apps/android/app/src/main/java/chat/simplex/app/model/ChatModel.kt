@@ -7,8 +7,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.font.*
 import androidx.compose.ui.text.style.TextDecoration
+import chat.simplex.app.R
 import chat.simplex.app.ui.theme.SecretColor
 import chat.simplex.app.ui.theme.SimplexBlue
+import chat.simplex.app.views.helpers.generalGetString
 import kotlinx.datetime.*
 import kotlinx.serialization.*
 import kotlinx.serialization.descriptors.*
@@ -267,12 +269,12 @@ data class Chat (
 
   @Serializable
   sealed class NetworkStatus {
-    val statusString: String get() = if (this is Connected) "Server connected" else "Connecting server…"
+    val statusString: String get() = if (this is Connected) generalGetString(R.string.server_connected) else generalGetString(R.string.server_connecting)
     val statusExplanation: String get() =
-      when {
-        this is Connected -> "You are connected to the server used to receive messages from this contact."
-        this is Error -> "Trying to connect to the server used to receive messages from this contact (error: $error)."
-        else -> "Trying to connect to the server used to receive messages from this contact."
+      when (this) {
+        is Connected -> generalGetString(R.string.connected_to_server_to_receive_messages_from_contact)
+        is Error -> String.format(generalGetString(R.string.trying_to_connect_to_server_to_receive_messages_with_error), error)
+        else -> generalGetString(R.string.trying_to_connect_to_server_to_receive_messages)
       }
 
     @Serializable @SerialName("unknown") class Unknown: NetworkStatus()
@@ -571,7 +573,7 @@ data class ChatItem (
       id: Long = 1,
       dir: CIDirection = CIDirection.DirectRcv(),
       ts: Instant = Clock.System.now(),
-      text: String = "this item is deleted",
+      text: String = "this item is deleted", // sample not localized
       status: CIStatus = CIStatus.RcvRead()
     ) =
       ChatItem(
@@ -698,13 +700,13 @@ sealed class CIContent: ItemContent {
 
   @Serializable @SerialName("sndDeleted")
   class SndDeleted(val deleteMode: CIDeleteMode): CIContent() {
-    override val text get() = "deleted"
+    override val text get() = generalGetString(R.string.deleted_description)
     override val msgContent get() = null
   }
 
   @Serializable @SerialName("rcvDeleted")
   class RcvDeleted(val deleteMode: CIDeleteMode): CIContent() {
-    override val text get() = "deleted"
+    override val text get() = generalGetString(R.string.deleted_description)
     override val msgContent get() = null
   }
 }
@@ -721,7 +723,7 @@ class CIQuote (
   override val text: String get() = content.text
 
   fun sender(user: User): String? = when (chatDir) {
-    is CIDirection.DirectSnd -> "you"
+    is CIDirection.DirectSnd -> generalGetString(R.string.sender_you_pronoun)
     is CIDirection.DirectRcv -> null
     is CIDirection.GroupSnd -> user.displayName
     is CIDirection.GroupRcv -> chatDir.groupMember.memberProfile.displayName
@@ -813,7 +815,7 @@ object MsgContentSerializer : KSerializer<MsgContent> {
     return if (json is JsonObject) {
       if ("type" in json) {
         val t = json["type"]?.jsonPrimitive?.content ?: ""
-        val text = json["text"]?.jsonPrimitive?.content ?: "unknown message format"
+        val text = json["text"]?.jsonPrimitive?.content ?: generalGetString(R.string.unknown_message_format)
         when (t) {
           "text" -> MsgContent.MCText(text)
           "link" -> {
@@ -827,10 +829,10 @@ object MsgContentSerializer : KSerializer<MsgContent> {
           else -> MsgContent.MCUnknown(t, text, json)
         }
       } else {
-        MsgContent.MCUnknown(text = "invalid message format", json = json)
+        MsgContent.MCUnknown(text = generalGetString(R.string.invalid_message_format), json = json)
       }
     } else {
-      MsgContent.MCUnknown(text = "invalid message format", json = json)
+      MsgContent.MCUnknown(text = generalGetString(R.string.invalid_message_format), json = json)
     }
   }
 

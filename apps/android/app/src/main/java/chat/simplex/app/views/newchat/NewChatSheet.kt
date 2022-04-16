@@ -14,11 +14,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import chat.simplex.app.R
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.ui.theme.HighOrLowlight
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.chatlist.ScaffoldController
-import chat.simplex.app.views.helpers.withApi
+import chat.simplex.app.views.helpers.*
 import com.google.accompanist.permissions.rememberPermissionState
 
 @Composable
@@ -57,8 +58,10 @@ fun NewChatSheetLayout(addContact: () -> Unit, scanCode: () -> Unit) {
         .weight(1F)
         .fillMaxWidth()) {
       ActionButton(
-        "Add contact", "(create QR code\nor link)",
-        Icons.Outlined.PersonAdd, click = addContact
+        generalGetString(R.string.add_contact),
+        generalGetString(R.string.create_QR_code_or_link__bracketed__multiline),
+        Icons.Outlined.PersonAdd,
+        click = addContact
       )
     }
     Box(
@@ -66,8 +69,10 @@ fun NewChatSheetLayout(addContact: () -> Unit, scanCode: () -> Unit) {
         .weight(1F)
         .fillMaxWidth()) {
       ActionButton(
-        "Scan QR code", "(in person or in video call)",
-        Icons.Outlined.QrCode, click = scanCode
+        generalGetString(R.string.scan_QR_code),
+        generalGetString(R.string.in_person_or_in_video_call__bracketed),
+        Icons.Outlined.QrCode,
+        click = scanCode
       )
     }
     Box(
@@ -75,8 +80,10 @@ fun NewChatSheetLayout(addContact: () -> Unit, scanCode: () -> Unit) {
         .weight(1F)
         .fillMaxWidth()) {
       ActionButton(
-        "Create Group", "(coming soon!)",
-        Icons.Outlined.GroupAdd, disabled = true
+        generalGetString(R.string.create_group),
+        generalGetString(R.string.coming_soon__bracketed),
+        Icons.Outlined.GroupAdd,
+        disabled = true
       )
     }
   }

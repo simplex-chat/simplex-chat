@@ -1,0 +1,456 @@
+/* No comment provided by engineer. */
+" " = " ";
+
+/* No comment provided by engineer. */
+" (" = " (";
+
+/* No comment provided by engineer. */
+" (can be copied)" = " (можно скопировать)";
+
+/* No comment provided by engineer. */
+"_italic_" = "\\_курсив_";
+
+/* No comment provided by engineer. */
+", " = ", ";
+
+/* No comment provided by engineer. */
+": " = ": ";
+
+/* No comment provided by engineer. */
+": %@" = ": %@";
+
+/* No comment provided by engineer. */
+"!1 colored!" = "!1 цвет!";
+
+/* No comment provided by engineer. */
+"(shared only with your contacts)" = "(отправляется только вашим контактам)";
+
+/* No comment provided by engineer. */
+")" = ")";
+
+/* No comment provided by engineer. */
+"[Send us email](mailto:chat@simplex.chat)" = "[Отправить email](mailto:chat@simplex.chat)";
+
+/* No comment provided by engineer. */
+"**Add new contact**: to create your one-time QR Code for your contact." = "**Добавить новый контакт**: чтобы создать одноразовый QR код или ссылку для вашего контакта.";
+
+/* No comment provided by engineer. */
+"**Scan QR code**: to connect to your contact who shows QR code to you." = "**Сканировать QR код**: чтобы соединиться с вашим контактом (который показывает вам QR код).";
+
+/* No comment provided by engineer. */
+"*bold*" = "\\*жирный*";
+
+/* No comment provided by engineer. */
+"#secret#" = "#секрет#";
+
+/* notification title */
+"%@ is connected!" = "Установлено соединение с %@!";
+
+/* notification title */
+"%@ wants to connect!" = "%@ хочет соединиться!";
+
+/* No comment provided by engineer. */
+"%lld" = "%lld";
+
+/* No comment provided by engineer. */
+"%lldk" = "%lldk";
+
+/* No comment provided by engineer. */
+"`a + b`" = "\\`a + b`";
+
+/* No comment provided by engineer. */
+"~strike~" = "\\~зачеркнуть~";
+
+/* No comment provided by engineer. */
+"💻 desktop: scan displayed QR code from the app, via **Scan QR code**." = "💻 на компьютере: сосканируйте QR код из приложения через **Сканировать QR код**.";
+
+/* No comment provided by engineer. */
+"📱 mobile: tap **Open in mobile app**, then tap **Connect** in the app." = "📱 на мобильном: намжите кнопку **Open in mobile app** на веб странице, затем нажмите **Соединиться** в приложении.";
+
+/* No comment provided by engineer. */
+"6" = "6";
+
+/* No comment provided by engineer. */
+"above, then:" = "наверху, затем:";
+
+/* accept contact request via notification */
+"Accept" = "Принять";
+
+/* No comment provided by engineer. */
+"Accept contact" = "Принять запрос";
+
+/* notification body */
+"Accept contact request from %@?" = "Принять запрос на соединение от %@?";
+
+/* No comment provided by engineer. */
+"Add contact" = "Добавить контакт";
+
+/* No comment provided by engineer. */
+"All your contacts will remain connected" = "Все контакты, которые соединились через этот адрес, сохранятся.";
+
+/* No comment provided by engineer. */
+"bold" = "жирный";
+
+/* No comment provided by engineer. */
+"Cancel" = "Отменить";
+
+/* No comment provided by engineer. */
+"Chat console" = "Консоль";
+
+/* No comment provided by engineer. */
+"Chat with the developers" = "Соединиться с разработчиками";
+
+/* back button to return to chats list */
+"Chats" = "Назад";
+
+/* No comment provided by engineer. */
+"Choose from library" = "Выбрать из библиотеки";
+
+/* No comment provided by engineer. */
+"colored" = "цвет";
+
+/* No comment provided by engineer. */
+"Configure SMP servers" = "Настройка SMP серверов";
+
+/* No comment provided by engineer. */
+"Confirm" = "Подтвердить";
+
+/* No comment provided by engineer. */
+"Connect" = "Соединиться";
+
+/* No comment provided by engineer. */
+"connect to SimpleX Chat developers." = "соединиться с разработчиками.";
+
+/* No comment provided by engineer. */
+"Connect via contact link?" = "Соединиться через ссылку-контакт?";
+
+/* No comment provided by engineer. */
+"Connect via invitation link?" = "Соединиться через ссылку-приглашение?";
+
+/* No comment provided by engineer. */
+"Connecting server…" = "Устанавливается соединение с сервером…";
+
+/* No comment provided by engineer. */
+"Connecting server… (error: %@)" = "Устанавливается соединение с сервером… (ошибка: %@)";
+
+/* No comment provided by engineer. */
+"Connecting..." = "Устанавливается соединение…";
+
+/* No comment provided by engineer. */
+"Connection error" = "Ошибка соединения";
+
+/* No comment provided by engineer. */
+"Connection request" = "Запрос на соединение";
+
+/* No comment provided by engineer. */
+"Connection request sent!" = "Запрос на соединение отправлен!";
+
+/* No comment provided by engineer. */
+"Connection timeout" = "Превышено время соединения";
+
+/* No comment provided by engineer. */
+"Contact already exists" = "Существующий контакт";
+
+/* No comment provided by engineer. */
+"Contact and all messages will be deleted - this cannot be undone!" = "Контакт и все сообщения будут удалены - это действие нельзя отменить!";
+
+/* notification */
+"Contact is connected" = "Соединение с контактом установлено";
+
+/* No comment provided by engineer. */
+"Copy" = "Скопировать";
+
+/* No comment provided by engineer. */
+"Create" = "Создать";
+
+/* No comment provided by engineer. */
+"Create address" = "Создать адрес";
+
+/* No comment provided by engineer. */
+"Create group" = "Создать группу";
+
+/* No comment provided by engineer. */
+"Create profile" = "Создать профиль";
+
+/* No comment provided by engineer. */
+"Delete" = "Удалить";
+
+/* No comment provided by engineer. */
+"Delete address" = "Удалить адрес";
+
+/* No comment provided by engineer. */
+"Delete address?" = "Удалить адрес?";
+
+/* No comment provided by engineer. */
+"Delete contact" = "Удалить контакт";
+
+/* No comment provided by engineer. */
+"Delete contact?" = "Удалить контакт?";
+
+/* No comment provided by engineer. */
+"Delete for me" = "Удалить для меня";
+
+/* No comment provided by engineer. */
+"Delete group" = "Удалить группу";
+
+/* No comment provided by engineer. */
+"Delete message?" = "Удалить сообщение?";
+
+/* deleted chat item */
+"deleted" = "удалено";
+
+/* No comment provided by engineer. */
+"Develop" = "Для разработчиков";
+
+/* No comment provided by engineer. */
+"Display name" = "Имя профиля";
+
+/* No comment provided by engineer. */
+"Edit" = "Редактировать";
+
+/* No comment provided by engineer. */
+"Enter one SMP server per line:" = "Введите SMP серверы, каждый на отдельной строке:";
+
+/* No comment provided by engineer. */
+"Error saving SMP servers" = "Ошибка при сохранении SMP серверов";
+
+/* No comment provided by engineer. */
+"Error: %@" = "Ошибка: %@";
+
+/* No comment provided by engineer. */
+"Error: URL is invalid" = "Ошибка: неверная ссылка";
+
+/* No comment provided by engineer. */
+"Full name (optional)" = "Полное имя (не обязательно)";
+
+/* No comment provided by engineer. */
+"Group deletion is not supported" = "Удаление групп не поддерживается";
+
+/* No comment provided by engineer. */
+"Help" = "Помощь";
+
+/* No comment provided by engineer. */
+"How to" = "Информация";
+
+/* No comment provided by engineer. */
+"How to use markdown" = "Как форматировать";
+
+/* No comment provided by engineer. */
+"How to use SimpleX Chat" = "Как использовать SimpleX Chat";
+
+/* No comment provided by engineer. */
+"If you cannot meet in person, you can **scan QR code in the video call**, or your contact can share an invitation link." = "Если вы не можете встретиться лично, вы можете **сосканировать QR код во время видеозвонка**, или ваш контакт может отправить вам ссылку.";
+
+/* No comment provided by engineer. */
+"If you cannot meet in person, you can **show QR code in the video call**, or you can share the invitation link via any other channel." = "Если вы не можете встретиться лично, вы можете **показать QR код во время видеозвонка** или отправить ссылку через любой другой канал связи.";
+
+/* No comment provided by engineer. */
+"If you received SimpleX Chat invitation link you can open it in your browser:" = "Если вы получили ссылку с приглашением из SimpleX Chat, вы можете открыть её в браузере:";
+
+/* No comment provided by engineer. */
+"Install [SimpleX Chat for terminal](https://github.com/simplex-chat/simplex-chat)" = "[SimpleX Chat для терминала](https://github.com/simplex-chat/simplex-chat)";
+
+/* No comment provided by engineer. */
+"Invalid connection link" = "Ошибка в ссылке контакта";
+
+/* No comment provided by engineer. */
+"italic" = "курсив";
+
+/* No comment provided by engineer. */
+"Make sure SMP server addresses are in correct format, line separated and are not duplicated." = "Пожалуйста, проверьте, что адреса SMP серверов имеют правильный формат, каждый адрес на отдельной строке и не повторяется.";
+
+/* No comment provided by engineer. */
+"Markdown in messages" = "Форматирование сообщений";
+
+/* No comment provided by engineer. */
+"Message delivery error" = "Ошибка доставки сообщения";
+
+/* No comment provided by engineer. */
+"Most likely this contact has deleted the connection with you." = "Скорее всего, этот контакт удалил соединение с вами.";
+
+/* notification */
+"New contact request" = "Новый запрос на соединение";
+
+/* notifications */
+"New message" = "Новое сообщение";
+
+/* No comment provided by engineer. */
+"Notifications are disabled!" = "Уведомления выключены";
+
+/* No comment provided by engineer. */
+"Open Settings" = "Открыть Настройки";
+
+/* No comment provided by engineer. */
+"Please check that you used the correct link or ask your contact to send you another one." = "Пожалуйста, проверьте, что вы использовали правильную ссылку или попросите, чтобы ваш контакт отправил вам другую ссылку.";
+
+/* No comment provided by engineer. */
+"Please check your network connection and try again." = "Пожалуйста, проверьте ваше соединение с сетью и попробуйте еще раз.";
+
+/* No comment provided by engineer. */
+"Profile image" = "Аватар";
+
+/* No comment provided by engineer. */
+"Read" = "Прочитано";
+
+/* No comment provided by engineer. */
+"Reject" = "Отклонить";
+
+/* No comment provided by engineer. */
+"Reject contact (sender NOT notified)" = "Отклонить (не уведомляя отправителя)";
+
+/* No comment provided by engineer. */
+"Reject contact request" = "Отклонить запрос";
+
+/* No comment provided by engineer. */
+"Reply" = "Ответить";
+
+/* No comment provided by engineer. */
+"Save" = "Сохранить";
+
+/* No comment provided by engineer. */
+"Save (and notify contacts)" = "Сохранить (и уведомить контакты)";
+
+/* No comment provided by engineer. */
+"Saved SMP servers will be removed" = "Сохраненные SMP серверы будут удалены";
+
+/* No comment provided by engineer. */
+"Scan QR code" = "Сканировать QR код";
+
+/* No comment provided by engineer. */
+"secret" = "секрет";
+
+/* No comment provided by engineer. */
+"Server connected" = "Установлено соединение с сервером";
+
+/* No comment provided by engineer. */
+"Settings" = "Настройки";
+
+/* No comment provided by engineer. */
+"Share" = "Поделиться";
+
+/* No comment provided by engineer. */
+"Share invitation link" = "Поделиться ссылкой";
+
+/* No comment provided by engineer. */
+"Share link" = "Поделиться ссылкой";
+
+/* No comment provided by engineer. */
+"Show QR code to your contact\nto scan from the app" = "Покажите QR код вашему контакту для сканирования в приложении";
+
+/* No comment provided by engineer. */
+"SMP servers" = "SMP серверы";
+
+/* No comment provided by engineer. */
+"Start new chat" = "Начать новый разговор";
+
+/* No comment provided by engineer. */
+"strike" = "зачеркнуть";
+
+/* No comment provided by engineer. */
+"Take picture" = "Сделать фото";
+
+/* No comment provided by engineer. */
+"Tap button " = "Нажмите кнопку";
+
+/* No comment provided by engineer. */
+"Thank you for installing SimpleX Chat!" = "Спасибо, что Вы установили SimpleX Chat!";
+
+/* No comment provided by engineer. */
+"The app can notify you when you receive messages or contact requests - please open settings to enable." = "Приложение может посылать вам уведомления о сообщениях и запросах на соединение - уведомления можно включить в Настройках.";
+
+/* No comment provided by engineer. */
+"The messaging and application platform 100% private by design!" = "Платформа для сообщений и приложений, которая защищает вашу личную информацию и безопасность.";
+
+/* No comment provided by engineer. */
+"The sender will NOT be notified" = "Отправитель не будет уведомлён";
+
+/* No comment provided by engineer. */
+"To ask any questions and to receive updates:" = "Задать вопросы и получать уведомления о новых версиях:";
+
+/* No comment provided by engineer. */
+"To connect via link" = "Соединиться через ссылку";
+
+/* No comment provided by engineer. */
+"To start a new chat" = "Начать новый разговор";
+
+/* No comment provided by engineer. */
+"Trying to connect to the server used to receive messages from this contact (error: %@)." = "Устанавливается соединение с сервером, через который вы получаете сообщения от этого контакта (ошибка: %@).";
+
+/* No comment provided by engineer. */
+"Trying to connect to the server used to receive messages from this contact." = "Устанавливается соединение с сервером, через который вы получаете сообщения от этого контакта.";
+
+/* No comment provided by engineer. */
+"Unexpected error: %@" = "Неожиданная ошибка: %@";
+
+/* No comment provided by engineer. */
+"Use SimpleX Chat servers?" = "Использовать серверы предосталенные SimpleX Chat?";
+
+/* No comment provided by engineer. */
+"Using SimpleX Chat servers." = "Используются серверы, предоставленные SimpleX Chat.";
+
+/* No comment provided by engineer. */
+"v%@ (%@)" = "v%@ (%@)";
+
+/* No comment provided by engineer. */
+"wants to connect to you!" = "хочет соединиться с вами!";
+
+/* No comment provided by engineer. */
+"Welcome %@!" = "Здравствуйте %@!";
+
+/* No comment provided by engineer. */
+"You" = "Вы";
+
+/* No comment provided by engineer. */
+"You are already connected to %@ via this link." = "Вы уже соединены с %@ через эту ссылку.";
+
+/* No comment provided by engineer. */
+"You are connected to the server used to receive messages from this contact." = "Установлено соединение с сервером, через который вы получается сообщения от этого контакта.";
+
+/* notification body */
+"You can now send messages to %@" = "Вы теперь можете отправлять сообщения %@";
+
+/* No comment provided by engineer. */
+"You can share your address as a link or as a QR code - anybody will be able to connect to you. You won't lose your contacts if you later delete it." = "Вы можете использовать ваш адрес как ссылку или как QR код - кто угодно сможет соединиться с вами. Вы сможете удалить адрес, сохранив контакты, которые через него соединились.";
+
+/* No comment provided by engineer. */
+"You can use markdown to format messages:" = "Вы можете форматировать сообщения:";
+
+/* No comment provided by engineer. */
+"You control your chat!" = "Вы котролируете Ваш чат!";
+
+/* No comment provided by engineer. */
+"You will be connected when your connection request is accepted, please wait or check later!" = "Соединение будет установлено, когда ваш запрос будет принят. Пожалуйста, подождите или проверьте позже!";
+
+/* No comment provided by engineer. */
+"You will be connected when your contact's device is online, please wait or check later!" = "Соединение будет установлено, когда ваш контакт будет онлайн. Пожалуйста, подождите или проверьте позже!";
+
+/* No comment provided by engineer. */
+"Your chat address" = "Ваш SimpleX адрес";
+
+/* No comment provided by engineer. */
+"Your chat profile" = "Ваш профиль";
+
+/* No comment provided by engineer. */
+"Your chat profile will be sent to your contact" = "Ваш профиль будет отправлен вашему контакту";
+
+/* No comment provided by engineer. */
+"Your chats" = "Ваши чаты";
+
+/* No comment provided by engineer. */
+"Your profile is stored on your device and shared only with your contacts.\nSimpleX servers cannot see your profile." = "Ваш профиль хранится на вашем устройстве и отправляется только вашим контактам.\nSimpleX серверы не могут получить доступ к вашему профилю.";
+
+/* No comment provided by engineer. */
+"Your profile will be sent to the contact that you received this link from" = "Ваш профиль будет отправлен контакту, от которого вы получили эту ссылку.";
+
+/* No comment provided by engineer. */
+"Your profile, contacts and messages (once delivered) are only stored locally on your device." = "Ваш профиль, контакты и сообщения (после доставки) хранятся только на вашем устройстве.";
+
+/* No comment provided by engineer. */
+"Your settings" = "Настройки";
+
+/* No comment provided by engineer. */
+"Your SimpleX contact address" = "Ваш SimpleX адрес";
+
+/* No comment provided by engineer. */
+"Your SMP servers" = "Ваши SMP серверы";
+

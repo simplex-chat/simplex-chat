@@ -26,7 +26,11 @@ struct ConnectContactView: View {
                     .aspectRatio(1, contentMode: .fit)
                     .border(.gray)
             }
-            .padding(13.0)
+            .padding(12)
+            Text("If you cannot meet in person, you can **scan QR code in the video call**, or your contact can share an invitation link.")
+                .font(.subheadline)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal)
         }
     }
 

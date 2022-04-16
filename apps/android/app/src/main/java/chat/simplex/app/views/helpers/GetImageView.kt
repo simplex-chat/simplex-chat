@@ -27,8 +27,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
-import chat.simplex.app.BuildConfig
-import chat.simplex.app.TAG
+import chat.simplex.app.*
+import chat.simplex.app.R
 import chat.simplex.app.views.newchat.ActionButton
 import java.io.ByteArrayOutputStream
 import java.io.File
@@ -153,7 +153,7 @@ fun GetImageBottomSheet(
       else galleryLauncher.launch("image/*")
       hideBottomSheet()
     } else {
-      Toast.makeText(context, "Permission Denied!", Toast.LENGTH_SHORT).show()
+      Toast.makeText(context, generalGetString(R.string.toast_camera_permission_denied), Toast.LENGTH_SHORT).show()
     }
   }
 
@@ -171,7 +171,7 @@ fun GetImageBottomSheet(
         .padding(horizontal = 8.dp, vertical = 30.dp),
       horizontalArrangement = Arrangement.SpaceEvenly
     ) {
-      ActionButton(null, "Use Camera", icon = Icons.Outlined.PhotoCamera) {
+      ActionButton(null, generalGetString(R.string.use_camera_button), icon = Icons.Outlined.PhotoCamera) {
         when (PackageManager.PERMISSION_GRANTED) {
           ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) -> {
             cameraLauncher.launch(null)
@@ -183,7 +183,7 @@ fun GetImageBottomSheet(
           }
         }
       }
-      ActionButton(null, "From Gallery", icon = Icons.Outlined.Collections) {
+      ActionButton(null, generalGetString(R.string.from_gallery_button), icon = Icons.Outlined.Collections) {
         when (PackageManager.PERMISSION_GRANTED) {
           ContextCompat.checkSelfPermission(context, Manifest.permission.READ_EXTERNAL_STORAGE) -> {
             galleryLauncher.launch("image/*")

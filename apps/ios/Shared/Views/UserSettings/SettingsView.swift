@@ -100,7 +100,7 @@ struct SettingsView: View {
                                 UIApplication.shared.open(simplexTeamURL)
                             }
                         } label: {
-                            Text("Chat with the founder")
+                            Text("Chat with the developers")
                         }
                     }
                     HStack {

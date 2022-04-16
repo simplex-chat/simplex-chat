@@ -26,13 +26,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import chat.simplex.app.R
 import chat.simplex.app.TAG
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.chat.item.ChatItemView
 import chat.simplex.app.views.chatlist.openChat
 import chat.simplex.app.views.helpers.*
-import chat.simplex.app.views.newchat.ModalManager
 import com.google.accompanist.insets.ProvideWindowInsets
 import com.google.accompanist.insets.navigationBarsWithImePadding
 import kotlinx.coroutines.*
@@ -232,7 +232,7 @@ fun ChatInfoToolbar(chat: Chat, back: () -> Unit, info: () -> Unit) {
       IconButton(onClick = back) {
         Icon(
           Icons.Outlined.ArrowBackIos,
-          "Back",
+          generalGetString(R.string.back),
           tint = MaterialTheme.colors.primary,
           modifier = Modifier.padding(10.dp)
         )

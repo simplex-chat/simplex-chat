@@ -92,22 +92,22 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
                 identifier: ntfCategoryContactRequest,
                 actions: [UNNotificationAction(
                     identifier: ntfActionAccept,
-                    title: "Accept"
+                    title: NSLocalizedString("Accept", comment: "accept contact request via notification")
                 )],
                 intentIdentifiers: [],
-                hiddenPreviewsBodyPlaceholder: "New contact request"
+                hiddenPreviewsBodyPlaceholder: NSLocalizedString("New contact request", comment: "notification")
             ),
             UNNotificationCategory(
                 identifier: ntfCategoryContactConnected,
                 actions: [],
                 intentIdentifiers: [],
-                hiddenPreviewsBodyPlaceholder: "Contact is connected"
+                hiddenPreviewsBodyPlaceholder: NSLocalizedString("Contact is connected", comment: "notification")
             ),
             UNNotificationCategory(
                 identifier: ntfCategoryMessageReceived,
                 actions: [],
                 intentIdentifiers: [],
-                hiddenPreviewsBodyPlaceholder: "New message"
+                hiddenPreviewsBodyPlaceholder: NSLocalizedString("New message", comment: "notifications")
             )
         ])
     }
@@ -139,8 +139,8 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
         logger.debug("NtfManager.notifyContactRequest")
         addNotification(
             categoryIdentifier: ntfCategoryContactRequest,
-            title: "\(contactRequest.displayName) wants to connect!",
-            body: "Accept contact request from \(contactRequest.chatViewName)?",
+            title: String.localizedStringWithFormat(NSLocalizedString("%@ wants to connect!", comment: "notification title"), contactRequest.displayName),
+            body: String.localizedStringWithFormat(NSLocalizedString("Accept contact request from %@?", comment: "notification body"), contactRequest.chatViewName),
             targetContentIdentifier: nil,
             userInfo: ["chatId": contactRequest.id, "contactRequestId": contactRequest.apiId]
         )
@@ -150,8 +150,8 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
         logger.debug("NtfManager.notifyContactConnected")
         addNotification(
             categoryIdentifier: ntfCategoryContactConnected,
-            title: "\(contact.displayName) is connected!",
-            body: "You can now send messages to \(contact.chatViewName)",
+            title: String.localizedStringWithFormat(NSLocalizedString("%@ is connected!", comment: "notification title"), contact.displayName),
+            body: String.localizedStringWithFormat(NSLocalizedString("You can now send messages to %@", comment: "notification body"), contact.chatViewName),
             targetContentIdentifier: contact.id
 //            userInfo: ["chatId": contact.id, "contactId": contact.apiId]
         )

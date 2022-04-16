@@ -105,7 +105,7 @@ struct ChatView: View {
                 Button { chatModel.chatId = nil } label: {
                     HStack(spacing: 4) {
                         Image(systemName: "chevron.backward")
-                        Text("Chats")
+                        Text("Chats", comment: "back button to return to chats list")
                     }
                 }
             }

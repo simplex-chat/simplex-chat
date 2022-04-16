@@ -483,13 +483,13 @@ func apiConnect(connReq: String) async throws -> Bool {
     case .chatCmdError(.errorAgent(.BROKER(.TIMEOUT))):
         am.showAlertMsg(
             title: "Connection timeout",
-            message: "Please check your network connection and try again"
+            message: "Please check your network connection and try again."
         )
         return false
     case .chatCmdError(.errorAgent(.BROKER(.NETWORK))):
         am.showAlertMsg(
             title: "Connection error",
-            message: "Please check your network connection and try again"
+            message: "Please check your network connection and try again."
         )
         return false
     default: throw r
