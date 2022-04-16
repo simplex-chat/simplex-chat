@@ -22,6 +22,7 @@ import Data.Map.Strict (Map)
 import Data.Text (Text)
 import Data.Time (ZonedTime)
 import Data.Version (showVersion)
+import Data.Word (Word16)
 import GHC.Generics (Generic)
 import Numeric.Natural
 import qualified Paths_simplex_chat as SC
@@ -34,7 +35,8 @@ import Simplex.Messaging.Agent (AgentClient)
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig)
 import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore)
-import Simplex.Messaging.Notifications.Protocol (DeviceToken (..), NtfRegCode)
+import qualified Simplex.Messaging.Crypto as C
+import Simplex.Messaging.Notifications.Protocol (DeviceToken (..))
 import Simplex.Messaging.Parsers (dropPrefix, enumJSON, sumTypeJSON)
 import Simplex.Messaging.Protocol (CorrId)
 import System.IO (Handle)
@@ -108,7 +110,8 @@ data ChatCommand
   | APIUpdateProfile Profile
   | APIParseMarkdown Text
   | APIRegisterToken DeviceToken
-  | APIVerifyToken DeviceToken NtfRegCode
+  | APIVerifyToken DeviceToken ByteString C.CbNonce
+  | APIIntervalNofication DeviceToken Word16
   | GetUserSMPServers
   | SetUserSMPServers [SMPServer]
   | ChatHelp HelpSection

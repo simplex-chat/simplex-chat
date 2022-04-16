@@ -54,7 +54,7 @@ import Simplex.Messaging.Agent.Protocol
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Notifications.Protocol (DeviceToken (..), NtfRegCode (..), PushProvider (..))
+import Simplex.Messaging.Notifications.Protocol (DeviceToken (..), PushProvider (..))
 import Simplex.Messaging.Parsers (base64P, parseAll)
 import Simplex.Messaging.Protocol (ErrorType (..), MsgBody)
 import qualified Simplex.Messaging.Protocol as SMP
@@ -371,7 +371,8 @@ processChatCommand = \case
   APIUpdateProfile profile -> withUser (`updateProfile` profile)
   APIParseMarkdown text -> pure . CRApiParsedMarkdown $ parseMaybeMarkdownList text
   APIRegisterToken token -> withUser $ \_ -> withAgent (`registerNtfToken` token) $> CRCmdOk
-  APIVerifyToken token code -> withUser $ \_ -> withAgent (\a -> verifyNtfToken a token code) $> CRCmdOk
+  APIVerifyToken token code nonce -> withUser $ \_ -> withAgent (\a -> verifyNtfToken a token code nonce) $> CRCmdOk
+  APIIntervalNofication token interval -> withUser $ \_ -> withAgent (\a -> enableNtfCron a token interval) $> CRCmdOk
   GetUserSMPServers -> CRUserSMPServers <$> withUser (\user -> withStore (`getSMPServers` user))
   SetUserSMPServers smpServers -> withUser $ \user -> withChatLock $ do
     withStore $ \st -> overwriteSMPServers st user smpServers
@@ -1897,7 +1898,8 @@ chatCommandP =
     <|> "/_profile " *> (APIUpdateProfile <$> jsonP)
     <|> "/_parse " *> (APIParseMarkdown . safeDecodeUtf8 <$> A.takeByteString)
     <|> "/_ntf register " *> (APIRegisterToken <$> tokenP)
-    <|> "/_ntf verify " *> (APIVerifyToken <$> tokenP <* A.space <*> (NtfRegCode <$> base64P))
+    <|> "/_ntf verify " *> (APIVerifyToken <$> tokenP <* A.space <*> base64P <* A.space <*> strP)
+    <|> "/_ntf interval " *> (APIIntervalNofication <$> tokenP <* A.space <*> A.decimal)
     <|> "/smp_servers default" $> SetUserSMPServers []
     <|> "/smp_servers " *> (SetUserSMPServers <$> smpServersP)
     <|> "/smp_servers" $> GetUserSMPServers
@@ -1963,7 +1965,7 @@ chatCommandP =
       "text " *> (MCText . safeDecodeUtf8 <$> A.takeByteString)
         <|> "json " *> jsonP
     ciDeleteMode = "broadcast" $> CIDMBroadcast <|> "internal" $> CIDMInternal
-    tokenP = "apn " *> (DeviceToken PPApple <$> hexStringP)
+    tokenP = "apns " *> (DeviceToken PPApns <$> hexStringP)
     hexStringP =
       A.takeWhile (\c -> (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f')) >>= \s ->
         if even (B.length s) then pure s else fail "odd number of hex characters"
