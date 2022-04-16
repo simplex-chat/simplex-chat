@@ -65,7 +65,7 @@ struct NewChatButton: View {
     }
 
     func connectionErrorAlert(_ error: Error) {
-        AlertManager.shared.showAlertMsg(title: "Connection error", message: error.localizedDescription)
+        AlertManager.shared.showAlertMsg(title: "Connection error", message: "Error: \(error.localizedDescription)")
     }
 }
 
@@ -75,12 +75,11 @@ enum ConnReqType: Equatable {
 }
 
 func connectionReqSentAlert(_ type: ConnReqType) {
-    let whenConnected = type == .contact
-        ? "your connection request is accepted"
-        : "your contact's device is online"
     AlertManager.shared.showAlertMsg(
         title: "Connection request sent!",
-        message: "You will be connected when \(whenConnected), please wait or check later!"
+        message: type == .contact
+            ? "You will be connected when your connection request is accepted, please wait or check later!"
+            : "You will be connected when your contact's device is online, please wait or check later!"
     )
 }
 

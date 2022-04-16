@@ -15,7 +15,7 @@ import qualified Data.Text as T
 import Simplex.Chat.Controller (ChatController (..))
 import Simplex.Chat.Types (ImageData (..), Profile (..), User (..))
 import Simplex.Chat.Util (unlessM)
-import System.Directory (doesFileExist)
+import System.Directory (copyFile, doesFileExist)
 import Test.Hspec
 
 aliceProfile :: Profile
@@ -66,6 +66,9 @@ chatTests = do
   describe "messages with files" $ do
     it "send and receive message with file" testMessageWithFile
     it "send and receive image" testSendImage
+    it "files folder: send and receive image" testFilesFoldersSendImage
+    it "files folder: sender deleted file during transfer" testFilesFoldersImageSndDelete
+    it "files folder: recipient deleted file during transfer" testFilesFoldersImageRcvDelete
     it "send and receive image with text and quote" testSendImageWithTextAndQuote
     it "send and receive image to group" testGroupSendImage
     it "send and receive image with text and quote to group" testGroupSendImageWithTextAndQuote
@@ -1037,8 +1040,6 @@ testFileRcvCancel =
             alice <## "sending file 1 (test.jpg) cancelled: bob"
         ]
       checkPartialTransfer
-  where
-    waitFileExists f = unlessM (doesFileExist f) $ waitFileExists f
 
 testGroupFileTransfer :: IO ()
 testGroupFileTransfer =
@@ -1166,8 +1167,6 @@ testFileRcvCancelV2 =
             alice <## "sending file 1 (test.jpg) cancelled: bob"
         ]
       checkPartialTransfer
-  where
-    waitFileExists f = unlessM (doesFileExist f) $ waitFileExists f
 
 testGroupFileTransferV2 :: IO ()
 testGroupFileTransferV2 =
@@ -1261,6 +1260,97 @@ testSendImage =
       dest `shouldBe` src
       alice #$> ("/_get chat @2 count=100", chatF, [((1, ""), Just "./tests/fixtures/test.jpg")])
       bob #$> ("/_get chat @2 count=100", chatF, [((0, ""), Just "./tests/tmp/test.jpg")])
+      -- deleting contact without files folder set should not remove file
+      bob ##> "/d alice"
+      bob <## "alice: contact is deleted"
+      fileExists <- doesFileExist "./tests/tmp/test.jpg"
+      fileExists `shouldBe` True
+
+testFilesFoldersSendImage :: IO ()
+testFilesFoldersSendImage =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+      alice #$> ("/_files_folder ./tests/fixtures", id, "ok")
+      bob #$> ("/_files_folder ./tests/tmp/app_files", id, "ok")
+      alice ##> "/_send @2 file test.jpg json {\"text\":\"\",\"type\":\"image\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\"}"
+      alice <# "/f @bob test.jpg"
+      alice <## "use /fc 1 to cancel sending"
+      bob <# "alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
+      bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+      bob ##> "/fr 1"
+      bob <## "saving file 1 from alice to test.jpg"
+      concurrently_
+        (bob <## "started receiving file 1 (test.jpg) from alice")
+        (alice <## "started sending file 1 (test.jpg) to bob")
+      concurrently_
+        (bob <## "completed receiving file 1 (test.jpg) from alice")
+        (alice <## "completed sending file 1 (test.jpg) to bob")
+      src <- B.readFile "./tests/fixtures/test.jpg"
+      dest <- B.readFile "./tests/tmp/app_files/test.jpg"
+      dest `shouldBe` src
+      alice #$> ("/_get chat @2 count=100", chatF, [((1, ""), Just "test.jpg")])
+      bob #$> ("/_get chat @2 count=100", chatF, [((0, ""), Just "test.jpg")])
+      -- deleting contact with files folder set should remove file
+      checkActionDeletesFile "./tests/tmp/app_files/test.jpg" $ do
+        bob ##> "/d alice"
+        bob <## "alice: contact is deleted"
+
+testFilesFoldersImageSndDelete :: IO ()
+testFilesFoldersImageSndDelete =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+      alice #$> ("/_files_folder ./tests/tmp/alice_app_files", id, "ok")
+      copyFile "./tests/fixtures/test.jpg" "./tests/tmp/alice_app_files/test.jpg"
+      bob #$> ("/_files_folder ./tests/tmp/bob_app_files", id, "ok")
+      alice ##> "/_send @2 file test.jpg json {\"text\":\"\",\"type\":\"image\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\"}"
+      alice <# "/f @bob test.jpg"
+      alice <## "use /fc 1 to cancel sending"
+      bob <# "alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
+      bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+      bob ##> "/fr 1"
+      bob <## "saving file 1 from alice to test.jpg"
+      concurrently_
+        (bob <## "started receiving file 1 (test.jpg) from alice")
+        (alice <## "started sending file 1 (test.jpg) to bob")
+      -- deleting contact should cancel and remove file
+      checkActionDeletesFile "./tests/tmp/alice_app_files/test.jpg" $ do
+        alice ##> "/d bob"
+        alice <## "bob: contact is deleted"
+        bob <## "alice cancelled sending file 1 (test.jpg)"
+        bob ##> "/fs 1"
+        bob <## "receiving file 1 (test.jpg) cancelled, received part path: test.jpg"
+      -- deleting contact should remove cancelled file
+      checkActionDeletesFile "./tests/tmp/bob_app_files/test.jpg" $ do
+        bob ##> "/d alice"
+        bob <## "alice: contact is deleted"
+
+testFilesFoldersImageRcvDelete :: IO ()
+testFilesFoldersImageRcvDelete =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+      alice #$> ("/_files_folder ./tests/fixtures", id, "ok")
+      bob #$> ("/_files_folder ./tests/tmp/app_files", id, "ok")
+      alice ##> "/_send @2 file test.jpg json {\"text\":\"\",\"type\":\"image\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\"}"
+      alice <# "/f @bob test.jpg"
+      alice <## "use /fc 1 to cancel sending"
+      bob <# "alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
+      bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+      bob ##> "/fr 1"
+      bob <## "saving file 1 from alice to test.jpg"
+      concurrently_
+        (bob <## "started receiving file 1 (test.jpg) from alice")
+        (alice <## "started sending file 1 (test.jpg) to bob")
+      -- deleting contact should cancel and remove file
+      waitFileExists "./tests/tmp/app_files/test.jpg"
+      checkActionDeletesFile "./tests/tmp/app_files/test.jpg" $ do
+        bob ##> "/d alice"
+        bob <## "alice: contact is deleted"
+        alice <## "bob cancelled receiving file 1 (test.jpg)"
+        alice ##> "/fs 1"
+        alice <## "sending file 1 (test.jpg) cancelled: bob"
 
 testSendImageWithTextAndQuote :: IO ()
 testSendImageWithTextAndQuote =
@@ -1671,6 +1761,17 @@ checkPartialTransfer = do
   dest <- B.readFile "./tests/tmp/test.jpg"
   B.unpack src `shouldStartWith` B.unpack dest
   B.length src > B.length dest `shouldBe` True
+
+checkActionDeletesFile :: FilePath -> IO () -> IO ()
+checkActionDeletesFile file action = do
+  fileExistsBefore <- doesFileExist file
+  fileExistsBefore `shouldBe` True
+  action
+  fileExistsAfter <- doesFileExist file
+  fileExistsAfter `shouldBe` False
+
+waitFileExists :: FilePath -> IO ()
+waitFileExists f = unlessM (doesFileExist f) $ waitFileExists f
 
 connectUsers :: TestCC -> TestCC -> IO ()
 connectUsers cc1 cc2 = do

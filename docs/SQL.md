@@ -1,4 +1,4 @@
-# Message queries
+# Accessing message history via SQL queries
 
 You can run queries against `direct_messages`, `group_messages` and `all_messages` (or their simpler alternatives `direct_messages_plain`, `group_messages_plain` and `all_messages_plain`), for example:
 
@@ -21,7 +21,7 @@ select * from all_messages_plain;
 -- files you offered for sending
 select * from direct_messages where msg_sent = 1 and chat_msg_event = 'x.file';
 -- everything catherine sent related to cats
-select * from direct_messages where msg_sent = 0 and contact = 'catherine' and msg_body like '%cats%'; 
+select * from direct_messages where msg_sent = 0 and contact = 'catherine' and msg_body like '%cats%';
 -- all correspondence with alice in #team
 select * from group_messages where group_name = 'team' and contact = 'alice';
 

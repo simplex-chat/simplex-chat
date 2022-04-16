@@ -25,9 +25,9 @@ import chat.simplex.app.views.WelcomeView
 import chat.simplex.app.views.chat.ChatView
 import chat.simplex.app.views.chatlist.ChatListView
 import chat.simplex.app.views.chatlist.openChat
-import chat.simplex.app.views.helpers.AlertManager
-import chat.simplex.app.views.helpers.withApi
-import chat.simplex.app.views.newchat.*
+import chat.simplex.app.views.helpers.*
+import chat.simplex.app.views.newchat.connectViaUri
+import chat.simplex.app.views.newchat.withUriAction
 import java.util.concurrent.TimeUnit
 
 //import kotlinx.serialization.decodeFromString
@@ -100,8 +100,13 @@ fun processIntent(intent: Intent?, chatModel: ChatModel) {
       Log.d(TAG, "processIntent: OpenChatAction $chatId")
       if (chatId != null) {
         val cInfo = chatModel.getChat(chatId)?.chatInfo
+        chatModel.clearOverlays.value = true
         if (cInfo != null) withApi { openChat(chatModel, cInfo) }
       }
+    }
+    NtfManager.ShowChatsAction -> {
+      Log.d(TAG, "processIntent: ShowChatsAction")
+      chatModel.clearOverlays.value = true
     }
     "android.intent.action.VIEW" -> {
       val uri = intent.data
@@ -117,10 +122,18 @@ fun connectIfOpenedViaUri(uri: Uri, chatModel: ChatModel) {
     chatModel.appOpenUrl.value = uri
   } else {
     withUriAction(uri) { action ->
+      val title = when (action) {
+        "contact" -> generalGetString(R.string.connect_via_contact_link)
+        "invitation" -> generalGetString(R.string.connect_via_invitation_link)
+        else -> {
+          Log.e(TAG, "URI has unexpected action. Alert shown.")
+          action
+        }
+      }
       AlertManager.shared.showAlertMsg(
-        title = "Connect via $action link?",
-        text = "Your profile will be sent to the contact that you received this link from.",
-        confirmText = "Connect",
+        title = title,
+        text = generalGetString(R.string.profile_will_be_sent_to_contact_sending_link),
+        confirmText = generalGetString(R.string.connect_via_link_verb),
         onConfirm = {
           withApi {
             Log.d(TAG, "connectIfOpenedViaUri: connecting")

@@ -8,122 +8,68 @@
 
 /* Begin PBXBuildFile section */
 		3CDBCF4227FAE51000354CDD /* ComposeLinkView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CDBCF4127FAE51000354CDD /* ComposeLinkView.swift */; };
-		3CDBCF4327FAE51000354CDD /* ComposeLinkView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CDBCF4127FAE51000354CDD /* ComposeLinkView.swift */; };
 		3CDBCF4827FF621E00354CDD /* ChatItemLinkView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CDBCF4727FF621E00354CDD /* ChatItemLinkView.swift */; };
-		3CDBCF4927FF621E00354CDD /* ChatItemLinkView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CDBCF4727FF621E00354CDD /* ChatItemLinkView.swift */; };
 		5C063D2727A4564100AEC577 /* ChatPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C063D2627A4564100AEC577 /* ChatPreviewView.swift */; };
-		5C063D2827A4564100AEC577 /* ChatPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C063D2627A4564100AEC577 /* ChatPreviewView.swift */; };
 		5C116CDC27AABE0400E66D01 /* ContactRequestView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C116CDB27AABE0400E66D01 /* ContactRequestView.swift */; };
-		5C116CDD27AABE0400E66D01 /* ContactRequestView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C116CDB27AABE0400E66D01 /* ContactRequestView.swift */; };
 		5C1A4C1E27A715B700EAD5AD /* ChatItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C1A4C1D27A715B700EAD5AD /* ChatItemView.swift */; };
-		5C1A4C1F27A715B700EAD5AD /* ChatItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C1A4C1D27A715B700EAD5AD /* ChatItemView.swift */; };
 		5C2E260727A2941F00F70299 /* SimpleXAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C2E260627A2941F00F70299 /* SimpleXAPI.swift */; };
-		5C2E260827A2941F00F70299 /* SimpleXAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C2E260627A2941F00F70299 /* SimpleXAPI.swift */; };
 		5C2E260B27A30CFA00F70299 /* ChatListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C2E260A27A30CFA00F70299 /* ChatListView.swift */; };
-		5C2E260C27A30CFA00F70299 /* ChatListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C2E260A27A30CFA00F70299 /* ChatListView.swift */; };
 		5C2E260F27A30FDC00F70299 /* ChatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C2E260E27A30FDC00F70299 /* ChatView.swift */; };
-		5C2E261027A30FDC00F70299 /* ChatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C2E260E27A30FDC00F70299 /* ChatView.swift */; };
 		5C2E261227A30FEA00F70299 /* TerminalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C2E261127A30FEA00F70299 /* TerminalView.swift */; };
-		5C2E261327A30FEA00F70299 /* TerminalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C2E261127A30FEA00F70299 /* TerminalView.swift */; };
 		5C35CFC827B2782E00FB6C6D /* BGManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C35CFC727B2782E00FB6C6D /* BGManager.swift */; };
-		5C35CFC927B2782E00FB6C6D /* BGManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C35CFC727B2782E00FB6C6D /* BGManager.swift */; };
 		5C35CFCB27B2E91D00FB6C6D /* NtfManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C35CFCA27B2E91D00FB6C6D /* NtfManager.swift */; };
 		5C35CFCC27B2E91D00FB6C6D /* NtfManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C35CFCA27B2E91D00FB6C6D /* NtfManager.swift */; };
 		5C36027327F47AD5009F19D9 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C36027227F47AD5009F19D9 /* AppDelegate.swift */; };
 		5C36027427F47AD5009F19D9 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C36027227F47AD5009F19D9 /* AppDelegate.swift */; };
 		5C3A88CE27DF50170060F1C2 /* DetermineWidth.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C3A88CD27DF50170060F1C2 /* DetermineWidth.swift */; };
-		5C3A88CF27DF50170060F1C2 /* DetermineWidth.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C3A88CD27DF50170060F1C2 /* DetermineWidth.swift */; };
 		5C3A88D127DF57800060F1C2 /* FramedItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C3A88D027DF57800060F1C2 /* FramedItemView.swift */; };
-		5C3A88D227DF57800060F1C2 /* FramedItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C3A88D027DF57800060F1C2 /* FramedItemView.swift */; };
 		5C411598280048E90054D6CB /* libHSsimplex-chat-1.5.0-3uBn0HoMpg08OGLfasXsOx.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C411593280048E90054D6CB /* libHSsimplex-chat-1.5.0-3uBn0HoMpg08OGLfasXsOx.a */; };
-		5C411599280048E90054D6CB /* libHSsimplex-chat-1.5.0-3uBn0HoMpg08OGLfasXsOx.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C411593280048E90054D6CB /* libHSsimplex-chat-1.5.0-3uBn0HoMpg08OGLfasXsOx.a */; };
 		5C41159A280048E90054D6CB /* libffi.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C411594280048E90054D6CB /* libffi.a */; };
-		5C41159B280048E90054D6CB /* libffi.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C411594280048E90054D6CB /* libffi.a */; };
 		5C41159C280048E90054D6CB /* libHSsimplex-chat-1.5.0-3uBn0HoMpg08OGLfasXsOx-ghc8.10.7.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C411595280048E90054D6CB /* libHSsimplex-chat-1.5.0-3uBn0HoMpg08OGLfasXsOx-ghc8.10.7.a */; };
-		5C41159D280048E90054D6CB /* libHSsimplex-chat-1.5.0-3uBn0HoMpg08OGLfasXsOx-ghc8.10.7.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C411595280048E90054D6CB /* libHSsimplex-chat-1.5.0-3uBn0HoMpg08OGLfasXsOx-ghc8.10.7.a */; };
 		5C41159E280048E90054D6CB /* libgmpxx.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C411596280048E90054D6CB /* libgmpxx.a */; };
-		5C41159F280048E90054D6CB /* libgmpxx.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C411596280048E90054D6CB /* libgmpxx.a */; };
 		5C4115A0280048E90054D6CB /* libgmp.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C411597280048E90054D6CB /* libgmp.a */; };
-		5C4115A1280048E90054D6CB /* libgmp.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C411597280048E90054D6CB /* libgmp.a */; };
 		5C5346A827B59A6A004DF848 /* ChatHelp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C5346A727B59A6A004DF848 /* ChatHelp.swift */; };
-		5C5346A927B59A6A004DF848 /* ChatHelp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C5346A727B59A6A004DF848 /* ChatHelp.swift */; };
 		5C577F7D27C83AA10006112D /* MarkdownHelp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C577F7C27C83AA10006112D /* MarkdownHelp.swift */; };
-		5C577F7E27C83AA10006112D /* MarkdownHelp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C577F7C27C83AA10006112D /* MarkdownHelp.swift */; };
 		5C5F2B6D27EBC3FE006A9D5F /* ImagePicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C5F2B6C27EBC3FE006A9D5F /* ImagePicker.swift */; };
-		5C5F2B6E27EBC3FE006A9D5F /* ImagePicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C5F2B6C27EBC3FE006A9D5F /* ImagePicker.swift */; };
 		5C5F2B7027EBC704006A9D5F /* ProfileImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C5F2B6F27EBC704006A9D5F /* ProfileImage.swift */; };
-		5C5F2B7127EBC704006A9D5F /* ProfileImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C5F2B6F27EBC704006A9D5F /* ProfileImage.swift */; };
 		5C6AD81327A834E300348BD7 /* NewChatButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C6AD81227A834E300348BD7 /* NewChatButton.swift */; };
-		5C6AD81427A834E300348BD7 /* NewChatButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C6AD81227A834E300348BD7 /* NewChatButton.swift */; };
 		5C7505A227B65FDB00BE3227 /* CIMetaView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C7505A127B65FDB00BE3227 /* CIMetaView.swift */; };
-		5C7505A327B65FDB00BE3227 /* CIMetaView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C7505A127B65FDB00BE3227 /* CIMetaView.swift */; };
 		5C7505A527B679EE00BE3227 /* NavLinkPlain.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C7505A427B679EE00BE3227 /* NavLinkPlain.swift */; };
-		5C7505A627B679EE00BE3227 /* NavLinkPlain.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C7505A427B679EE00BE3227 /* NavLinkPlain.swift */; };
 		5C7505A827B6D34800BE3227 /* ChatInfoToolbar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C7505A727B6D34800BE3227 /* ChatInfoToolbar.swift */; };
-		5C7505A927B6D34800BE3227 /* ChatInfoToolbar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C7505A727B6D34800BE3227 /* ChatInfoToolbar.swift */; };
 		5C764E80279C7276000C6508 /* dummy.m in Sources */ = {isa = PBXBuildFile; fileRef = 5C764E7F279C7276000C6508 /* dummy.m */; };
-		5C764E81279C7276000C6508 /* dummy.m in Sources */ = {isa = PBXBuildFile; fileRef = 5C764E7F279C7276000C6508 /* dummy.m */; };
 		5C764E82279C748B000C6508 /* libiconv.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C764E7B279C71D4000C6508 /* libiconv.tbd */; };
 		5C764E83279C748B000C6508 /* libz.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C764E7C279C71DB000C6508 /* libz.tbd */; };
-		5C764E84279C748C000C6508 /* libiconv.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C764E7B279C71D4000C6508 /* libiconv.tbd */; };
-		5C764E85279C748C000C6508 /* libz.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C764E7C279C71DB000C6508 /* libz.tbd */; };
 		5C764E89279CBCB3000C6508 /* ChatModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C764E88279CBCB3000C6508 /* ChatModel.swift */; };
-		5C764E8A279CBCB3000C6508 /* ChatModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C764E88279CBCB3000C6508 /* ChatModel.swift */; };
 		5C8F01CD27A6F0D8007D2C8D /* CodeScanner in Frameworks */ = {isa = PBXBuildFile; productRef = 5C8F01CC27A6F0D8007D2C8D /* CodeScanner */; };
 		5C971E1D27AEBEF600C8A3CE /* ChatInfoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C971E1C27AEBEF600C8A3CE /* ChatInfoView.swift */; };
-		5C971E1E27AEBEF600C8A3CE /* ChatInfoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C971E1C27AEBEF600C8A3CE /* ChatInfoView.swift */; };
 		5C971E2127AEBF8300C8A3CE /* ChatInfoImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C971E2027AEBF8300C8A3CE /* ChatInfoImage.swift */; };
-		5C971E2227AEBF8300C8A3CE /* ChatInfoImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C971E2027AEBF8300C8A3CE /* ChatInfoImage.swift */; };
 		5C9FD96B27A56D4D0075386C /* JSON.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C9FD96A27A56D4D0075386C /* JSON.swift */; };
-		5C9FD96C27A56D4D0075386C /* JSON.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C9FD96A27A56D4D0075386C /* JSON.swift */; };
 		5C9FD96E27A5D6ED0075386C /* SendMessageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C9FD96D27A5D6ED0075386C /* SendMessageView.swift */; };
-		5C9FD96F27A5D6ED0075386C /* SendMessageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C9FD96D27A5D6ED0075386C /* SendMessageView.swift */; };
 		5CA059DC279559F40002BEB4 /* Tests_iOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CA059DB279559F40002BEB4 /* Tests_iOS.swift */; };
 		5CA059DE279559F40002BEB4 /* Tests_iOSLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CA059DD279559F40002BEB4 /* Tests_iOSLaunchTests.swift */; };
-		5CA059E8279559F40002BEB4 /* Tests_macOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CA059E7279559F40002BEB4 /* Tests_macOS.swift */; };
-		5CA059EA279559F40002BEB4 /* Tests_macOSLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CA059E9279559F40002BEB4 /* Tests_macOSLaunchTests.swift */; };
 		5CA059EB279559F40002BEB4 /* SimpleXApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CA059C3279559F40002BEB4 /* SimpleXApp.swift */; };
-		5CA059EC279559F40002BEB4 /* SimpleXApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CA059C3279559F40002BEB4 /* SimpleXApp.swift */; };
 		5CA059ED279559F40002BEB4 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CA059C4279559F40002BEB4 /* ContentView.swift */; };
-		5CA059EE279559F40002BEB4 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CA059C4279559F40002BEB4 /* ContentView.swift */; };
 		5CA059EF279559F40002BEB4 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 5CA059C5279559F40002BEB4 /* Assets.xcassets */; };
-		5CA059F0279559F40002BEB4 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 5CA059C5279559F40002BEB4 /* Assets.xcassets */; };
 		5CA05A4C27974EB60002BEB4 /* WelcomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CA05A4B27974EB60002BEB4 /* WelcomeView.swift */; };
-		5CA05A4D27974EB60002BEB4 /* WelcomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CA05A4B27974EB60002BEB4 /* WelcomeView.swift */; };
 		5CB924D427A853F100ACCCDD /* SettingsButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB924D327A853F100ACCCDD /* SettingsButton.swift */; };
-		5CB924D527A853F100ACCCDD /* SettingsButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB924D327A853F100ACCCDD /* SettingsButton.swift */; };
 		5CB924D727A8563F00ACCCDD /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB924D627A8563F00ACCCDD /* SettingsView.swift */; };
-		5CB924D827A8563F00ACCCDD /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB924D627A8563F00ACCCDD /* SettingsView.swift */; };
 		5CB924E127A867BA00ACCCDD /* UserProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB924E027A867BA00ACCCDD /* UserProfile.swift */; };
-		5CB924E227A867BA00ACCCDD /* UserProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB924E027A867BA00ACCCDD /* UserProfile.swift */; };
 		5CB924E427A8683A00ACCCDD /* UserAddress.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB924E327A8683A00ACCCDD /* UserAddress.swift */; };
-		5CB924E527A8683A00ACCCDD /* UserAddress.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB924E327A8683A00ACCCDD /* UserAddress.swift */; };
 		5CB9250D27A9432000ACCCDD /* ChatListNavLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB9250C27A9432000ACCCDD /* ChatListNavLink.swift */; };
-		5CB9250E27A9432000ACCCDD /* ChatListNavLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB9250C27A9432000ACCCDD /* ChatListNavLink.swift */; };
 		5CC1C99227A6C7F5000D9FF6 /* QRCode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CC1C99127A6C7F5000D9FF6 /* QRCode.swift */; };
-		5CC1C99327A6C7F5000D9FF6 /* QRCode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CC1C99127A6C7F5000D9FF6 /* QRCode.swift */; };
 		5CC1C99527A6CF7F000D9FF6 /* ShareSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CC1C99427A6CF7F000D9FF6 /* ShareSheet.swift */; };
-		5CC1C99627A6CF7F000D9FF6 /* ShareSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CC1C99427A6CF7F000D9FF6 /* ShareSheet.swift */; };
+		5CC2C0FC2809BF11000C35E3 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 5CC2C0FA2809BF11000C35E3 /* Localizable.strings */; };
+		5CC2C0FF2809BF11000C35E3 /* SimpleX--iOS--InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 5CC2C0FD2809BF11000C35E3 /* SimpleX--iOS--InfoPlist.strings */; };
 		5CCD403427A5F6DF00368C90 /* AddContactView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CCD403327A5F6DF00368C90 /* AddContactView.swift */; };
-		5CCD403527A5F6DF00368C90 /* AddContactView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CCD403327A5F6DF00368C90 /* AddContactView.swift */; };
 		5CCD403727A5F9A200368C90 /* ConnectContactView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CCD403627A5F9A200368C90 /* ConnectContactView.swift */; };
-		5CCD403827A5F9A200368C90 /* ConnectContactView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CCD403627A5F9A200368C90 /* ConnectContactView.swift */; };
 		5CCD403A27A5F9BE00368C90 /* CreateGroupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CCD403927A5F9BE00368C90 /* CreateGroupView.swift */; };
-		5CCD403B27A5F9BE00368C90 /* CreateGroupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CCD403927A5F9BE00368C90 /* CreateGroupView.swift */; };
 		5CE4407227ADB1D0007B033A /* Emoji.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CE4407127ADB1D0007B033A /* Emoji.swift */; };
-		5CE4407327ADB1D0007B033A /* Emoji.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CE4407127ADB1D0007B033A /* Emoji.swift */; };
 		5CE4407927ADB701007B033A /* EmojiItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CE4407827ADB701007B033A /* EmojiItemView.swift */; };
-		5CE4407A27ADB701007B033A /* EmojiItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CE4407827ADB701007B033A /* EmojiItemView.swift */; };
 		5CEACCE327DE9246000BD591 /* ComposeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CEACCE227DE9246000BD591 /* ComposeView.swift */; };
-		5CEACCE427DE9246000BD591 /* ComposeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CEACCE227DE9246000BD591 /* ComposeView.swift */; };
 		5CEACCED27DEA495000BD591 /* MsgContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CEACCEC27DEA495000BD591 /* MsgContentView.swift */; };
-		5CEACCEE27DEA495000BD591 /* MsgContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CEACCEC27DEA495000BD591 /* MsgContentView.swift */; };
 		640F50E327CF991C001E05C2 /* SMPServers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 640F50E227CF991C001E05C2 /* SMPServers.swift */; };
-		640F50E427CF991C001E05C2 /* SMPServers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 640F50E227CF991C001E05C2 /* SMPServers.swift */; };
 		64AA1C6927EE10C800AC7277 /* ContextItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64AA1C6827EE10C800AC7277 /* ContextItemView.swift */; };
-		64AA1C6A27EE10C800AC7277 /* ContextItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64AA1C6827EE10C800AC7277 /* ContextItemView.swift */; };
 		64AA1C6C27F3537400AC7277 /* DeletedItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64AA1C6B27F3537400AC7277 /* DeletedItemView.swift */; };
-		64AA1C6D27F3537400AC7277 /* DeletedItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64AA1C6B27F3537400AC7277 /* DeletedItemView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -133,13 +79,6 @@
 			proxyType = 1;
 			remoteGlobalIDString = 5CA059C9279559F40002BEB4;
 			remoteInfo = "SimpleX (iOS)";
-		};
-		5CA059E4279559F40002BEB4 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 5CA059BE279559F40002BEB4 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 5CA059CF279559F40002BEB4;
-			remoteInfo = "SimpleX (macOS)";
 		};
 /* End PBXContainerItemProxy section */
 
@@ -175,7 +114,6 @@
 		5C764E7B279C71D4000C6508 /* libiconv.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libiconv.tbd; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS15.2.sdk/usr/lib/libiconv.tbd; sourceTree = DEVELOPER_DIR; };
 		5C764E7C279C71DB000C6508 /* libz.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libz.tbd; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS15.2.sdk/usr/lib/libz.tbd; sourceTree = DEVELOPER_DIR; };
 		5C764E7D279C7275000C6508 /* SimpleX (iOS)-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "SimpleX (iOS)-Bridging-Header.h"; sourceTree = "<group>"; };
-		5C764E7E279C7275000C6508 /* SimpleX (macOS)-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "SimpleX (macOS)-Bridging-Header.h"; sourceTree = "<group>"; };
 		5C764E7F279C7276000C6508 /* dummy.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = dummy.m; sourceTree = "<group>"; };
 		5C764E88279CBCB3000C6508 /* ChatModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatModel.swift; sourceTree = "<group>"; };
 		5C971E1C27AEBEF600C8A3CE /* ChatInfoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatInfoView.swift; sourceTree = "<group>"; };
@@ -186,13 +124,10 @@
 		5CA059C4279559F40002BEB4 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		5CA059C5279559F40002BEB4 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		5CA059CA279559F40002BEB4 /* SimpleX.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SimpleX.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		5CA059D0279559F40002BEB4 /* SimpleX.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SimpleX.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		5CA059D7279559F40002BEB4 /* Tests iOS.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Tests iOS.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		5CA059DB279559F40002BEB4 /* Tests_iOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests_iOS.swift; sourceTree = "<group>"; };
 		5CA059DD279559F40002BEB4 /* Tests_iOSLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests_iOSLaunchTests.swift; sourceTree = "<group>"; };
 		5CA059E3279559F40002BEB4 /* Tests macOS.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Tests macOS.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
-		5CA059E7279559F40002BEB4 /* Tests_macOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests_macOS.swift; sourceTree = "<group>"; };
-		5CA059E9279559F40002BEB4 /* Tests_macOSLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests_macOSLaunchTests.swift; sourceTree = "<group>"; };
 		5CA05A4B27974EB60002BEB4 /* WelcomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeView.swift; sourceTree = "<group>"; };
 		5CB924D327A853F100ACCCDD /* SettingsButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsButton.swift; sourceTree = "<group>"; };
 		5CB924D627A8563F00ACCCDD /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
@@ -201,6 +136,8 @@
 		5CB9250C27A9432000ACCCDD /* ChatListNavLink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatListNavLink.swift; sourceTree = "<group>"; };
 		5CC1C99127A6C7F5000D9FF6 /* QRCode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QRCode.swift; sourceTree = "<group>"; };
 		5CC1C99427A6CF7F000D9FF6 /* ShareSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareSheet.swift; sourceTree = "<group>"; };
+		5CC2C0FB2809BF11000C35E3 /* ru */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ru; path = ru.lproj/Localizable.strings; sourceTree = "<group>"; };
+		5CC2C0FE2809BF11000C35E3 /* ru */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ru; path = "ru.lproj/SimpleX--iOS--InfoPlist.strings"; sourceTree = "<group>"; };
 		5CCD403327A5F6DF00368C90 /* AddContactView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddContactView.swift; sourceTree = "<group>"; };
 		5CCD403627A5F9A200368C90 /* ConnectContactView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectContactView.swift; sourceTree = "<group>"; };
 		5CCD403927A5F9BE00368C90 /* CreateGroupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateGroupView.swift; sourceTree = "<group>"; };
@@ -226,20 +163,6 @@
 				5C41159A280048E90054D6CB /* libffi.a in Frameworks */,
 				5C764E82279C748B000C6508 /* libiconv.tbd in Frameworks */,
 				5C41159E280048E90054D6CB /* libgmpxx.a in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		5CA059CD279559F40002BEB4 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				5C41159F280048E90054D6CB /* libgmpxx.a in Frameworks */,
-				5C4115A1280048E90054D6CB /* libgmp.a in Frameworks */,
-				5C764E85279C748C000C6508 /* libz.tbd in Frameworks */,
-				5C41159D280048E90054D6CB /* libHSsimplex-chat-1.5.0-3uBn0HoMpg08OGLfasXsOx-ghc8.10.7.a in Frameworks */,
-				5C764E84279C748C000C6508 /* libiconv.tbd in Frameworks */,
-				5C411599280048E90054D6CB /* libHSsimplex-chat-1.5.0-3uBn0HoMpg08OGLfasXsOx.a in Frameworks */,
-				5C41159B280048E90054D6CB /* libffi.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -339,12 +262,12 @@
 		5CA059BD279559F40002BEB4 = {
 			isa = PBXGroup;
 			children = (
+				5CC2C0FD2809BF11000C35E3 /* SimpleX--iOS--InfoPlist.strings */,
+				5CC2C0FA2809BF11000C35E3 /* Localizable.strings */,
 				5C422A7C27A9A6FA0097A1E1 /* SimpleX (iOS).entitlements */,
 				5C764E5C279C70B7000C6508 /* Libraries */,
 				5CA059C2279559F40002BEB4 /* Shared */,
-				5CA059D1279559F40002BEB4 /* macOS */,
 				5CA059DA279559F40002BEB4 /* Tests iOS */,
-				5CA059E6279559F40002BEB4 /* Tests macOS */,
 				5CA059CB279559F40002BEB4 /* Products */,
 				5C764E7A279C71D4000C6508 /* Frameworks */,
 			);
@@ -360,7 +283,6 @@
 				5C2E260D27A30E2400F70299 /* Views */,
 				5CA059C5279559F40002BEB4 /* Assets.xcassets */,
 				5C764E7D279C7275000C6508 /* SimpleX (iOS)-Bridging-Header.h */,
-				5C764E7E279C7275000C6508 /* SimpleX (macOS)-Bridging-Header.h */,
 				5C764E7F279C7276000C6508 /* dummy.m */,
 			);
 			path = Shared;
@@ -370,18 +292,10 @@
 			isa = PBXGroup;
 			children = (
 				5CA059CA279559F40002BEB4 /* SimpleX.app */,
-				5CA059D0279559F40002BEB4 /* SimpleX.app */,
 				5CA059D7279559F40002BEB4 /* Tests iOS.xctest */,
 				5CA059E3279559F40002BEB4 /* Tests macOS.xctest */,
 			);
 			name = Products;
-			sourceTree = "<group>";
-		};
-		5CA059D1279559F40002BEB4 /* macOS */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			path = macOS;
 			sourceTree = "<group>";
 		};
 		5CA059DA279559F40002BEB4 /* Tests iOS */ = {
@@ -391,15 +305,6 @@
 				5CA059DD279559F40002BEB4 /* Tests_iOSLaunchTests.swift */,
 			);
 			path = "Tests iOS";
-			sourceTree = "<group>";
-		};
-		5CA059E6279559F40002BEB4 /* Tests macOS */ = {
-			isa = PBXGroup;
-			children = (
-				5CA059E7279559F40002BEB4 /* Tests_macOS.swift */,
-				5CA059E9279559F40002BEB4 /* Tests_macOSLaunchTests.swift */,
-			);
-			path = "Tests macOS";
 			sourceTree = "<group>";
 		};
 		5CB924DD27A8622200ACCCDD /* NewChat */ = {
@@ -484,23 +389,6 @@
 			productReference = 5CA059CA279559F40002BEB4 /* SimpleX.app */;
 			productType = "com.apple.product-type.application";
 		};
-		5CA059CF279559F40002BEB4 /* SimpleX (macOS) */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 5CA059F6279559F40002BEB4 /* Build configuration list for PBXNativeTarget "SimpleX (macOS)" */;
-			buildPhases = (
-				5CA059CC279559F40002BEB4 /* Sources */,
-				5CA059CD279559F40002BEB4 /* Frameworks */,
-				5CA059CE279559F40002BEB4 /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			name = "SimpleX (macOS)";
-			productName = "SimpleX (macOS)";
-			productReference = 5CA059D0279559F40002BEB4 /* SimpleX.app */;
-			productType = "com.apple.product-type.application";
-		};
 		5CA059D6279559F40002BEB4 /* Tests iOS */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 5CA059F9279559F40002BEB4 /* Build configuration list for PBXNativeTarget "Tests iOS" */;
@@ -530,7 +418,6 @@
 			buildRules = (
 			);
 			dependencies = (
-				5CA059E5279559F40002BEB4 /* PBXTargetDependency */,
 			);
 			name = "Tests macOS";
 			productName = "Tests macOS";
@@ -552,10 +439,6 @@
 						CreatedOnToolsVersion = 13.2.1;
 						LastSwiftMigration = 1320;
 					};
-					5CA059CF279559F40002BEB4 = {
-						CreatedOnToolsVersion = 13.2.1;
-						LastSwiftMigration = 1320;
-					};
 					5CA059D6279559F40002BEB4 = {
 						CreatedOnToolsVersion = 13.2.1;
 						TestTargetID = 5CA059C9279559F40002BEB4;
@@ -573,6 +456,7 @@
 			knownRegions = (
 				en,
 				Base,
+				ru,
 			);
 			mainGroup = 5CA059BD279559F40002BEB4;
 			packageReferences = (
@@ -583,7 +467,6 @@
 			projectRoot = "";
 			targets = (
 				5CA059C9279559F40002BEB4 /* SimpleX (iOS) */,
-				5CA059CF279559F40002BEB4 /* SimpleX (macOS) */,
 				5CA059D6279559F40002BEB4 /* Tests iOS */,
 				5CA059E2279559F40002BEB4 /* Tests macOS */,
 			);
@@ -596,14 +479,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				5CA059EF279559F40002BEB4 /* Assets.xcassets in Resources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		5CA059CE279559F40002BEB4 /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				5CA059F0279559F40002BEB4 /* Assets.xcassets in Resources */,
+				5CC2C0FC2809BF11000C35E3 /* Localizable.strings in Resources */,
+				5CC2C0FF2809BF11000C35E3 /* SimpleX--iOS--InfoPlist.strings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -679,61 +556,6 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		5CA059CC279559F40002BEB4 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				5C6AD81427A834E300348BD7 /* NewChatButton.swift in Sources */,
-				5CB924D827A8563F00ACCCDD /* SettingsView.swift in Sources */,
-				5CEACCE427DE9246000BD591 /* ComposeView.swift in Sources */,
-				5C36027427F47AD5009F19D9 /* AppDelegate.swift in Sources */,
-				5CB924E227A867BA00ACCCDD /* UserProfile.swift in Sources */,
-				5CE4407A27ADB701007B033A /* EmojiItemView.swift in Sources */,
-				5C5346A927B59A6A004DF848 /* ChatHelp.swift in Sources */,
-				3CDBCF4327FAE51000354CDD /* ComposeLinkView.swift in Sources */,
-				3CDBCF4927FF621E00354CDD /* ChatItemLinkView.swift in Sources */,
-				5C764E81279C7276000C6508 /* dummy.m in Sources */,
-				5C7505A927B6D34800BE3227 /* ChatInfoToolbar.swift in Sources */,
-				5C3A88D227DF57800060F1C2 /* FramedItemView.swift in Sources */,
-				5CB924E527A8683A00ACCCDD /* UserAddress.swift in Sources */,
-				640F50E427CF991C001E05C2 /* SMPServers.swift in Sources */,
-				5C063D2827A4564100AEC577 /* ChatPreviewView.swift in Sources */,
-				5C35CFCC27B2E91D00FB6C6D /* NtfManager.swift in Sources */,
-				5C2E261327A30FEA00F70299 /* TerminalView.swift in Sources */,
-				5C9FD96C27A56D4D0075386C /* JSON.swift in Sources */,
-				5C9FD96F27A5D6ED0075386C /* SendMessageView.swift in Sources */,
-				5CC1C99327A6C7F5000D9FF6 /* QRCode.swift in Sources */,
-				5C116CDD27AABE0400E66D01 /* ContactRequestView.swift in Sources */,
-				5CB9250E27A9432000ACCCDD /* ChatListNavLink.swift in Sources */,
-				5CA059EE279559F40002BEB4 /* ContentView.swift in Sources */,
-				5CCD403527A5F6DF00368C90 /* AddContactView.swift in Sources */,
-				5C3A88CF27DF50170060F1C2 /* DetermineWidth.swift in Sources */,
-				5C7505A627B679EE00BE3227 /* NavLinkPlain.swift in Sources */,
-				5C7505A327B65FDB00BE3227 /* CIMetaView.swift in Sources */,
-				5C35CFC927B2782E00FB6C6D /* BGManager.swift in Sources */,
-				5CA05A4D27974EB60002BEB4 /* WelcomeView.swift in Sources */,
-				5C2E261027A30FDC00F70299 /* ChatView.swift in Sources */,
-				5C2E260C27A30CFA00F70299 /* ChatListView.swift in Sources */,
-				5C971E2227AEBF8300C8A3CE /* ChatInfoImage.swift in Sources */,
-				5C5F2B6E27EBC3FE006A9D5F /* ImagePicker.swift in Sources */,
-				5C577F7E27C83AA10006112D /* MarkdownHelp.swift in Sources */,
-				5CA059EC279559F40002BEB4 /* SimpleXApp.swift in Sources */,
-				5CCD403827A5F9A200368C90 /* ConnectContactView.swift in Sources */,
-				5CCD403B27A5F9BE00368C90 /* CreateGroupView.swift in Sources */,
-				5CEACCEE27DEA495000BD591 /* MsgContentView.swift in Sources */,
-				5C764E8A279CBCB3000C6508 /* ChatModel.swift in Sources */,
-				5C971E1E27AEBEF600C8A3CE /* ChatInfoView.swift in Sources */,
-				5CC1C99627A6CF7F000D9FF6 /* ShareSheet.swift in Sources */,
-				5C2E260827A2941F00F70299 /* SimpleXAPI.swift in Sources */,
-				5CB924D527A853F100ACCCDD /* SettingsButton.swift in Sources */,
-				5C5F2B7127EBC704006A9D5F /* ProfileImage.swift in Sources */,
-				64AA1C6D27F3537400AC7277 /* DeletedItemView.swift in Sources */,
-				5CE4407327ADB1D0007B033A /* Emoji.swift in Sources */,
-				5C1A4C1F27A715B700EAD5AD /* ChatItemView.swift in Sources */,
-				64AA1C6A27EE10C800AC7277 /* ContextItemView.swift in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		5CA059D3279559F40002BEB4 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -747,8 +569,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				5CA059EA279559F40002BEB4 /* Tests_macOSLaunchTests.swift in Sources */,
-				5CA059E8279559F40002BEB4 /* Tests_macOS.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -760,12 +580,26 @@
 			target = 5CA059C9279559F40002BEB4 /* SimpleX (iOS) */;
 			targetProxy = 5CA059D8279559F40002BEB4 /* PBXContainerItemProxy */;
 		};
-		5CA059E5279559F40002BEB4 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 5CA059CF279559F40002BEB4 /* SimpleX (macOS) */;
-			targetProxy = 5CA059E4279559F40002BEB4 /* PBXContainerItemProxy */;
-		};
 /* End PBXTargetDependency section */
+
+/* Begin PBXVariantGroup section */
+		5CC2C0FA2809BF11000C35E3 /* Localizable.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				5CC2C0FB2809BF11000C35E3 /* ru */,
+			);
+			name = Localizable.strings;
+			sourceTree = "<group>";
+		};
+		5CC2C0FD2809BF11000C35E3 /* SimpleX--iOS--InfoPlist.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				5CC2C0FE2809BF11000C35E3 /* ru */,
+			);
+			name = "SimpleX--iOS--InfoPlist.strings";
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
 		5CA059F1279559F40002BEB4 /* Debug */ = {
@@ -823,6 +657,7 @@
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
 			name = Debug;
@@ -875,6 +710,7 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 			};
 			name = Release;
@@ -956,83 +792,6 @@
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 1;
 				VALIDATE_PRODUCT = YES;
-			};
-			name = Release;
-		};
-		5CA059F7279559F40002BEB4 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CLANG_ENABLE_MODULES = YES;
-				CODE_SIGN_ENTITLEMENTS = "SimpleX (macOS)Debug.entitlements";
-				CODE_SIGN_IDENTITY = "-";
-				CODE_SIGN_STYLE = Automatic;
-				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 5NN7GUYB6T;
-				ENABLE_HARDENED_RUNTIME = YES;
-				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = "SimpleX--macOS--Info.plist";
-				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/../Frameworks",
-				);
-				LIBRARY_SEARCH_PATHS = (
-					"$(inherited)",
-					"$(PROJECT_DIR)/Libraries",
-					"$(PROJECT_DIR)/Libraries/ios",
-					"$(PROJECT_DIR)/Libraries/sim",
-				);
-				MACOSX_DEPLOYMENT_TARGET = 12.1;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = chat.simplex.app;
-				PRODUCT_NAME = SimpleX;
-				SDKROOT = macosx;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_OBJC_BRIDGING_HEADER = "Shared/SimpleX (macOS)-Bridging-Header.h";
-				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
-				SWIFT_VERSION = 5.0;
-			};
-			name = Debug;
-		};
-		5CA059F8279559F40002BEB4 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CLANG_ENABLE_MODULES = YES;
-				CODE_SIGN_ENTITLEMENTS = macOS/macOS.entitlements;
-				CODE_SIGN_IDENTITY = "-";
-				CODE_SIGN_STYLE = Automatic;
-				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 5NN7GUYB6T;
-				ENABLE_HARDENED_RUNTIME = YES;
-				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = "SimpleX--macOS--Info.plist";
-				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/../Frameworks",
-				);
-				LIBRARY_SEARCH_PATHS = (
-					"$(inherited)",
-					"$(PROJECT_DIR)/Libraries",
-					"$(PROJECT_DIR)/Libraries/ios",
-					"$(PROJECT_DIR)/Libraries/sim",
-				);
-				MACOSX_DEPLOYMENT_TARGET = 12.1;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = chat.simplex.app;
-				PRODUCT_NAME = SimpleX;
-				SDKROOT = macosx;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_OBJC_BRIDGING_HEADER = "Shared/SimpleX (macOS)-Bridging-Header.h";
-				SWIFT_VERSION = 5.0;
 			};
 			name = Release;
 		};
@@ -1132,15 +891,6 @@
 			buildConfigurations = (
 				5CA059F4279559F40002BEB4 /* Debug */,
 				5CA059F5279559F40002BEB4 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		5CA059F6279559F40002BEB4 /* Build configuration list for PBXNativeTarget "SimpleX (macOS)" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				5CA059F7279559F40002BEB4 /* Debug */,
-				5CA059F8279559F40002BEB4 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

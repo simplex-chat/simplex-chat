@@ -22,9 +22,7 @@ struct AddContactView: View {
                 .multilineTextAlignment(.center)
             QRCode(uri: connReqInvitation)
                 .padding()
-            (Text("If you cannot meet in person, you can ") +
-             Text("scan QR code in the video call").bold() +
-             Text(", or you can share the invitation link via any other channel."))
+            Text("If you cannot meet in person, you can **show QR code in the video call**, or you can share the invitation link via any other channel.")
                 .font(.subheadline)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal)

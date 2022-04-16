@@ -19,11 +19,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import chat.simplex.app.R
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.model.Profile
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.helpers.*
-import chat.simplex.app.views.newchat.ModalView
 import com.google.accompanist.insets.ProvideWindowInsets
 import com.google.accompanist.insets.navigationBarsWithImePadding
 import kotlinx.coroutines.launch
@@ -89,16 +90,16 @@ fun UserProfileLayout(
           horizontalAlignment = Alignment.Start
         ) {
           Text(
-            "Your chat profile",
+            generalGetString(R.string.your_chat_profile),
             Modifier.padding(bottom = 24.dp),
             style = MaterialTheme.typography.h1,
             color = MaterialTheme.colors.onBackground
           )
           Text(
-            "Your profile is stored on your device and shared only with your contacts.\n\n" +
-                "SimpleX servers cannot see your profile.",
+            generalGetString(R.string.your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it),
             Modifier.padding(bottom = 24.dp),
-            color = MaterialTheme.colors.onBackground
+            color = MaterialTheme.colors.onBackground,
+            lineHeight = 22.sp
           )
           if (editProfile.value) {
             Column(
@@ -124,14 +125,14 @@ fun UserProfileLayout(
               ProfileNameTextField(displayName)
               ProfileNameTextField(fullName)
               Row {
-                TextButton("Cancel") {
+                TextButton(generalGetString(R.string.cancel_verb)) {
                   displayName.value = profile.displayName
                   fullName.value = profile.fullName
                   profileImage.value = profile.image
                   editProfile.value = false
                 }
                 Spacer(Modifier.padding(horizontal = 8.dp))
-                TextButton("Save (and notify contacts)") {
+                TextButton(generalGetString(R.string.save_and_notify_contacts)) {
                   saveProfile(displayName.value, fullName.value, profileImage.value)
                 }
               }
@@ -154,9 +155,9 @@ fun UserProfileLayout(
                   }
                 }
               }
-              ProfileNameRow("Display name:", profile.displayName)
-              ProfileNameRow("Full name:", profile.fullName)
-              TextButton("Edit") { editProfile.value = true }
+              ProfileNameRow(generalGetString(R.string.display_name__field), profile.displayName)
+              ProfileNameRow(generalGetString(R.string.full_name__field), profile.fullName)
+              TextButton(generalGetString(R.string.edit_verb)) { editProfile.value = true }
             }
           }
           if (savedKeyboardState != keyboardState) {
@@ -223,7 +224,7 @@ fun EditImageButton(click: () -> Unit) {
   ) {
     Icon(
       Icons.Outlined.PhotoCamera,
-      contentDescription = "Edit image",
+      contentDescription = generalGetString(R.string.edit_image),
       tint = MaterialTheme.colors.primary,
       modifier = Modifier.size(36.dp)
     )
@@ -235,7 +236,7 @@ fun DeleteImageButton(click: () -> Unit) {
   IconButton(onClick = click) {
     Icon(
       Icons.Outlined.Close,
-      contentDescription = "Delete image",
+      contentDescription = generalGetString(R.string.delete_image),
       tint = MaterialTheme.colors.primary,
     )
   }

@@ -8,15 +8,15 @@ import androidx.compose.material.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import chat.simplex.app.R
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.ui.theme.SimpleXTheme
-import chat.simplex.app.views.helpers.AlertManager
-import chat.simplex.app.views.helpers.withApi
+import chat.simplex.app.views.helpers.*
 
 @Composable
 fun ConnectContactView(chatModel: ChatModel, close: () -> Unit) {
@@ -31,8 +31,8 @@ fun ConnectContactView(chatModel: ChatModel, close: () -> Unit) {
           }
         } catch (e: RuntimeException) {
           AlertManager.shared.showAlertMsg(
-            title = "Invalid QR code",
-            text = "This QR code is not a link!"
+            title = generalGetString(R.string.invalid_QR_code),
+            text = generalGetString(R.string.this_QR_code_is_not_a_link)
           )
         }
         close()
@@ -48,8 +48,8 @@ fun withUriAction(uri: Uri, run: suspend (String) -> Unit) {
     withApi { run(action) }
   } else {
     AlertManager.shared.showAlertMsg(
-      title = "Invalid link!",
-      text = "This link is not a valid connection link!"
+      title = generalGetString(R.string.invalid_contact_link),
+      text = generalGetString(R.string.this_link_is_not_a_valid_connection_link)
     )
   }
 }
@@ -57,12 +57,11 @@ fun withUriAction(uri: Uri, run: suspend (String) -> Unit) {
 suspend fun connectViaUri(chatModel: ChatModel, action: String, uri: Uri) {
   val r = chatModel.controller.apiConnect(uri.toString())
   if (r) {
-    val whenConnected =
-      if (action == "contact") "your connection request is accepted"
-      else "your contact's device is online"
     AlertManager.shared.showAlertMsg(
-      title = "Connection request sent!",
-      text = "You will be connected when $whenConnected, please wait or check later!"
+      title = generalGetString(R.string.connection_request_sent),
+      text =
+        if (action == "contact") generalGetString(R.string.you_will_be_connected_when_your_connection_request_is_accepted)
+        else generalGetString(R.string.you_will_be_connected_when_your_contacts_device_is_online)
     )
   }
 }
@@ -75,11 +74,11 @@ fun ConnectContactLayout(qrCodeScanner: @Composable () -> Unit, close: () -> Uni
       verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
       Text(
-        "Scan QR code",
+        generalGetString(R.string.scan_QR_code),
         style = MaterialTheme.typography.h1.copy(fontWeight = FontWeight.Normal),
       )
       Text(
-        "Your chat profile will be sent\nto your contact",
+        generalGetString(R.string.your_chat_profile_will_be_sent_to_your_contact),
         style = MaterialTheme.typography.h3,
         textAlign = TextAlign.Center,
         modifier = Modifier.padding(bottom = 4.dp)
@@ -90,18 +89,8 @@ fun ConnectContactLayout(qrCodeScanner: @Composable () -> Unit, close: () -> Uni
           .aspectRatio(ratio = 1F)
       ) { qrCodeScanner() }
       Text(
-        buildAnnotatedString {
-          append("If you cannot meet in person, you can ")
-          withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
-            append("scan QR code in the video call")
-          }
-          append(", or you can create the invitation link.")
-        },
-        textAlign = TextAlign.Center,
-        style = MaterialTheme.typography.caption,
-        modifier = Modifier
-          .padding(horizontal = 16.dp)
-          .padding(top = 4.dp)
+        annotatedStringResource(R.string.if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link),
+        lineHeight = 22.sp
       )
     }
   }

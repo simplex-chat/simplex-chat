@@ -15,6 +15,7 @@ import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.*
+import chat.simplex.app.R
 import chat.simplex.app.views.helpers.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -29,7 +30,7 @@ typealias ChatCtrl = Long
 
 open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: NtfManager, val appContext: Context) {
   var chatModel = ChatModel(this)
-  private val sharedPreferences: SharedPreferences  = appContext.getSharedPreferences(SHARED_PREFS_ID, Context.MODE_PRIVATE)
+  private val sharedPreferences: SharedPreferences = appContext.getSharedPreferences(SHARED_PREFS_ID, Context.MODE_PRIVATE)
 
   init {
     chatModel.runServiceInBackground.value = getRunServiceInBackground()
@@ -70,6 +71,10 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
       }
     }
     return false
+  }
+
+  fun cancelNotificationsForChat(chatId: String) {
+    ntfManager.cancelNotificationsForChat(chatId)
   }
 
   suspend fun sendCmd(cmd: CC): CR {
@@ -178,8 +183,8 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
       else -> {
         Log.e(TAG, "setUserSMPServers bad response: ${r.responseType} ${r.details}")
         AlertManager.shared.showAlertMsg(
-          "Error saving SMP servers",
-          "Make sure SMP server addresses are in correct format, line separated and are not duplicated."
+          generalGetString(R.string.error_saving_smp_servers),
+          generalGetString(R.string.ensure_smp_server_address_are_correct_format_and_unique)
         )
         false
       }
@@ -198,15 +203,17 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
     when {
       r is CR.SentConfirmation || r is CR.SentInvitation -> return true
       r is CR.ContactAlreadyExists -> {
-        AlertManager.shared.showAlertMsg("Contact already exists",
-          "You are already connected to ${r.contact.displayName} via this link."
+        AlertManager.shared.showAlertMsg(
+          generalGetString(R.string.contact_already_exists),
+          String.format(generalGetString(R.string.you_are_already_connected_to_vName_via_this_link), r.contact.displayName)
         )
         return false
       }
       r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorChat
           && r.chatError.errorType is ChatErrorType.InvalidConnReq -> {
-        AlertManager.shared.showAlertMsg("Invalid connection link",
-          "Please check that you used the correct link or ask your contact to send you another one."
+        AlertManager.shared.showAlertMsg(
+          generalGetString(R.string.invalid_connection_link),
+          generalGetString(R.string.please_check_correct_link_and_maybe_ask_for_a_new_one)
         )
         return false
       }
@@ -225,8 +232,8 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
         val e = r.chatError
         if (e is ChatError.ChatErrorChat && e.errorType is ChatErrorType.ContactGroups) {
           AlertManager.shared.showAlertMsg(
-            "Can't delete contact!",
-            "Contact ${e.errorType.contact.displayName} cannot be deleted, it is a member of the group(s) ${e.errorType.groupNames}."
+            generalGetString(R.string.cannot_delete_contact),
+            String.format(generalGetString(R.string.contact_cannot_be_deleted_as_they_are_in_groups), e.errorType.contact.displayName, e.errorType.groupNames)
           )
         }
       }
@@ -406,35 +413,22 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
             Row {
               Icon(
                 Icons.Outlined.Bolt,
-                contentDescription = "Instant notifications",
+                contentDescription = generalGetString(R.string.icon_descr_instant_notifications),
               )
-              Text("Private instant notifications!", fontWeight = FontWeight.Bold)
+              Text(generalGetString(R.string.private_instant_notifications), fontWeight = FontWeight.Bold)
             }
           },
           text = {
             Column {
               Text(
-                buildAnnotatedString {
-                  append("To preserve your privacy, instead of push notifications the app has a ")
-                  withStyle(SpanStyle(fontWeight = FontWeight.Medium)) {
-                    append("SimpleX background service")
-                  }
-                  append(" – it uses a few percent of the battery per day.")
-                },
+                annotatedStringResource(R.string.to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery),
                 Modifier.padding(bottom = 8.dp)
               )
-              Text(
-                buildAnnotatedString {
-                  withStyle(SpanStyle(fontWeight = FontWeight.Medium)) {
-                    append("It can be disabled via settings")
-                  }
-                  append(" – notifications will still be shown while the app is running.")
-                }
-              )
+              Text(annotatedStringResource(R.string.it_can_disabled_via_settings_notifications_still_shown))
             }
           },
           confirmButton = {
-            Button(onClick = AlertManager.shared::hideAlert) { Text("Ok") }
+            Button(onClick = AlertManager.shared::hideAlert) { Text(generalGetString(R.string.ok)) }
           }
         )
       }
@@ -712,7 +706,7 @@ sealed class CR {
     is Invalid -> str
   }
 
-  fun noDetails(): String ="${responseType}: no details"
+  fun noDetails(): String ="${responseType}: " + generalGetString(R.string.no_details)
 }
 
 abstract class TerminalItem {

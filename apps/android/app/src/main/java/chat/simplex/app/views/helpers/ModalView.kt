@@ -1,4 +1,4 @@
-package chat.simplex.app.views.newchat
+package chat.simplex.app.views.helpers
 
 import android.util.Log
 import androidx.activity.compose.BackHandler
@@ -11,7 +11,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.TAG
-import chat.simplex.app.views.helpers.CloseSheetBar
 
 @Composable
 fun ModalView(close: () -> Unit, content: @Composable () -> Unit) {
@@ -43,7 +42,7 @@ class ModalManager {
   }
 
   fun closeModal() {
-    if (!modalViews.isEmpty()) {
+    if (modalViews.isNotEmpty()) {
       modalViews.removeAt(modalViews.count() - 1)
     }
     modalCount.value = modalViews.count()

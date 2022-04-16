@@ -87,7 +87,7 @@ struct FramedItemView: View {
         }
     }
 
-    private func msgDeliveryError(_ err: String) {
+    private func msgDeliveryError(_ err: LocalizedStringKey) {
         AlertManager.shared.showAlertMsg(
             title: "Message delivery error",
             message: err
