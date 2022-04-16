@@ -608,7 +608,7 @@ to scan from the app</source>
       </trans-unit>
       <trans-unit id="You are connected to the server used to receive messages from this contact." xml:space="preserve">
         <source>You are connected to the server used to receive messages from this contact.</source>
-        <target>Установлено соединение с сервером, через который вы получается сообщения от этого контакта.</target>
+        <target>Установлено соединение с сервером, через который вы получаете сообщения от этого контакта.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can now send messages to %@" xml:space="preserve">
