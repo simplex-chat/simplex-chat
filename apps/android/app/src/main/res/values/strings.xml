@@ -70,6 +70,9 @@
   <string name="this_text_is_available_in_settings">This text is available in settings</string>
   <string name="your_chats">Your chats</string>
 
+  <!-- ComposeView.kt -->
+  <string name="attach">Attach</string>
+
   <!-- Chat Info Actions - ChatInfoView.kt -->
   <string name="delete_contact__question">Delete contact?</string>
   <string name="delete_contact_all_messages_deleted_cannot_undo_warning">Contact and all messages will be deleted - this cannot be undone!</string>

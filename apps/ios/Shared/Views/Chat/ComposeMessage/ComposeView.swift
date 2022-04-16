@@ -102,7 +102,7 @@ struct ComposeView: View {
         .onChange(of: editingItem == nil) { _ in
             editing = (editingItem != nil)
         }
-        .confirmationDialog("Add image", isPresented: $showChooseSource, titleVisibility: .visible) {
+        .confirmationDialog("Attach", isPresented: $showChooseSource, titleVisibility: .visible) {
             Button("Take picture") {
                 imageSource = .camera
                 showImagePicker = true

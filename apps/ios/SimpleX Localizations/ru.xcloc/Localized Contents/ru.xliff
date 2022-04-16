@@ -115,13 +115,14 @@
         <target>Добавить контакт</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Add image" xml:space="preserve">
-        <source>Add image</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="All your contacts will remain connected" xml:space="preserve">
         <source>All your contacts will remain connected</source>
         <target>Все контакты, которые соединились через этот адрес, сохранятся.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Attach" xml:space="preserve">
+        <source>Attach</source>
+        <target>Прикрепить</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Cancel" xml:space="preserve">

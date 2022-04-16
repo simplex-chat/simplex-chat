@@ -70,6 +70,9 @@
     <string name="this_text_is_available_in_settings">Этот текст можно найти в Настройках</string>
     <string name="your_chats">Ваши чаты</string>
 
+    <!-- ComposeView.kt -->
+    <string name="attach">Прикрепить</string>
+
     <!-- Chat Info Actions - ChatInfoView.kt -->
     <string name="delete_contact__question">Удалить контакт?</string>
     <string name="delete_contact_all_messages_deleted_cannot_undo_warning">Контакт и все сообщения будут удалены - это действие нельзя отменить!</string>

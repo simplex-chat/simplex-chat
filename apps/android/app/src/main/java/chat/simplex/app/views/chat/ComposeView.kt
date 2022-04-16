@@ -15,8 +15,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.views.helpers.ComposeLinkView
+import chat.simplex.app.views.helpers.generalGetString
 
 // TODO ComposeState
 
@@ -66,7 +68,7 @@ fun ComposeView(
     ) {
       Icon(
         Icons.Outlined.AddCircleOutline,
-        contentDescription = "Add image",
+        contentDescription = generalGetString(R.string.attach),
         tint = if (editingItem.value == null) MaterialTheme.colors.primary else Color.Gray,
         modifier = Modifier
           .size(40.dp)
