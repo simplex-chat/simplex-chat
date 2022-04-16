@@ -122,7 +122,10 @@
 "connect to SimpleX Chat developers." = "соединиться с разработчиками.";
 
 /* No comment provided by engineer. */
-"Connect via %@ link?" = "Соединиться через %@ ссылку?";
+"Connect via contact link?" = "Соединиться через ссылку-контакт?";
+
+/* No comment provided by engineer. */
+"Connect via invitation link?" = "Соединиться через ссылку-приглашение?";
 
 /* No comment provided by engineer. */
 "Connecting server…" = "Устанавливается соединение с сервером…";

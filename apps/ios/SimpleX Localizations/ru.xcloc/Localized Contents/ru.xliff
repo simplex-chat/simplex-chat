@@ -160,9 +160,14 @@
         <target>Соединиться</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connect via %@ link?" xml:space="preserve">
-        <source>Connect via %@ link?</source>
-        <target>Соединиться через %@ ссылку?</target>
+      <trans-unit id="Connect via contact link?" xml:space="preserve">
+        <source>Connect via contact link?</source>
+        <target>Соединиться через ссылку-контакт?</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Connect via invitation link?" xml:space="preserve">
+        <source>Connect via invitation link?</source>
+        <target>Соединиться через ссылку-приглашение?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connecting server…" xml:space="preserve">

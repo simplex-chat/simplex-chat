@@ -160,9 +160,14 @@
         <target>Connect</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connect via %@ link?" xml:space="preserve">
-        <source>Connect via %@ link?</source>
-        <target>Connect via %@ link?</target>
+      <trans-unit id="Connect via contact link?" xml:space="preserve">
+        <source>Connect via contact link?</source>
+        <target>Connect via contact link?</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Connect via invitation link?" xml:space="preserve">
+        <source>Connect via invitation link?</source>
+        <target>Connect via invitation link?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connecting server…" xml:space="preserve">
