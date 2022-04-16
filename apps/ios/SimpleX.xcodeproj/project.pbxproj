@@ -127,7 +127,6 @@
 		5CA059D7279559F40002BEB4 /* Tests iOS.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Tests iOS.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		5CA059DB279559F40002BEB4 /* Tests_iOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests_iOS.swift; sourceTree = "<group>"; };
 		5CA059DD279559F40002BEB4 /* Tests_iOSLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests_iOSLaunchTests.swift; sourceTree = "<group>"; };
-		5CA059E3279559F40002BEB4 /* Tests macOS.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Tests macOS.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		5CA05A4B27974EB60002BEB4 /* WelcomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeView.swift; sourceTree = "<group>"; };
 		5CB924D327A853F100ACCCDD /* SettingsButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsButton.swift; sourceTree = "<group>"; };
 		5CB924D627A8563F00ACCCDD /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
@@ -167,13 +166,6 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		5CA059D4279559F40002BEB4 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		5CA059E0279559F40002BEB4 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -293,7 +285,6 @@
 			children = (
 				5CA059CA279559F40002BEB4 /* SimpleX.app */,
 				5CA059D7279559F40002BEB4 /* Tests iOS.xctest */,
-				5CA059E3279559F40002BEB4 /* Tests macOS.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -407,23 +398,6 @@
 			productReference = 5CA059D7279559F40002BEB4 /* Tests iOS.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
-		5CA059E2279559F40002BEB4 /* Tests macOS */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 5CA059FC279559F40002BEB4 /* Build configuration list for PBXNativeTarget "Tests macOS" */;
-			buildPhases = (
-				5CA059DF279559F40002BEB4 /* Sources */,
-				5CA059E0279559F40002BEB4 /* Frameworks */,
-				5CA059E1279559F40002BEB4 /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			name = "Tests macOS";
-			productName = "Tests macOS";
-			productReference = 5CA059E3279559F40002BEB4 /* Tests macOS.xctest */;
-			productType = "com.apple.product-type.bundle.ui-testing";
-		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -442,10 +416,6 @@
 					5CA059D6279559F40002BEB4 = {
 						CreatedOnToolsVersion = 13.2.1;
 						TestTargetID = 5CA059C9279559F40002BEB4;
-					};
-					5CA059E2279559F40002BEB4 = {
-						CreatedOnToolsVersion = 13.2.1;
-						TestTargetID = 5CA059CF279559F40002BEB4;
 					};
 				};
 			};
@@ -468,7 +438,6 @@
 			targets = (
 				5CA059C9279559F40002BEB4 /* SimpleX (iOS) */,
 				5CA059D6279559F40002BEB4 /* Tests iOS */,
-				5CA059E2279559F40002BEB4 /* Tests macOS */,
 			);
 		};
 /* End PBXProject section */
@@ -485,13 +454,6 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		5CA059D5279559F40002BEB4 /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		5CA059E1279559F40002BEB4 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -562,13 +524,6 @@
 			files = (
 				5CA059DE279559F40002BEB4 /* Tests_iOSLaunchTests.swift in Sources */,
 				5CA059DC279559F40002BEB4 /* Tests_iOS.swift in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		5CA059DF279559F40002BEB4 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -836,44 +791,6 @@
 			};
 			name = Release;
 		};
-		5CA059FD279559F40002BEB4 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 9767FTRA3G;
-				GENERATE_INFOPLIST_FILE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 12.1;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "chat.simplex.Tests-macOS";
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = macosx;
-				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_VERSION = 5.0;
-				TEST_TARGET_NAME = "SimpleX (macOS)";
-			};
-			name = Debug;
-		};
-		5CA059FE279559F40002BEB4 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 9767FTRA3G;
-				GENERATE_INFOPLIST_FILE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 12.1;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "chat.simplex.Tests-macOS";
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = macosx;
-				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_VERSION = 5.0;
-				TEST_TARGET_NAME = "SimpleX (macOS)";
-			};
-			name = Release;
-		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -900,15 +817,6 @@
 			buildConfigurations = (
 				5CA059FA279559F40002BEB4 /* Debug */,
 				5CA059FB279559F40002BEB4 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		5CA059FC279559F40002BEB4 /* Build configuration list for PBXNativeTarget "Tests macOS" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				5CA059FD279559F40002BEB4 /* Debug */,
-				5CA059FE279559F40002BEB4 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
