@@ -247,6 +247,8 @@ struct ChatView: View {
                     DispatchQueue.main.async {
                         quotedItem = nil
                         linkPreview = nil
+                        chosenImage = nil
+                        imagePreview = nil
                         chatModel.addChatItem(chat.chatInfo, chatItem)
                     }
                 }

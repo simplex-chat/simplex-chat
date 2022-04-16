@@ -44,6 +44,7 @@ struct ComposeView: View {
     var inProgress: Bool = false
     @FocusState.Binding var keyboardVisible: Bool
     @State var editing: Bool = false
+    @State var sendEnabled: Bool = false
     @State var linkUrl: URL? = nil
     @State var prevLinkUrl: URL? = nil
     @State var pendingLinkUrl: URL? = nil
@@ -86,7 +87,8 @@ struct ComposeView: View {
                     inProgress: inProgress,
                     message: $message,
                     keyboardVisible: $keyboardVisible,
-                    editing: $editing
+                    editing: $editing,
+                    sendEnabled: $sendEnabled
                 )
                 .padding(.trailing, 12)
                 .background(.background)
@@ -98,6 +100,7 @@ struct ComposeView: View {
             } else {
                 resetLinkPreview()
             }
+            sendEnabled = (imagePreview != nil || !message.isEmpty)
         }
         .onChange(of: editingItem == nil) { _ in
             editing = (editingItem != nil)
@@ -124,12 +127,13 @@ struct ComposeView: View {
         }
         .onChange(of: chosenImage) { image in
             if let image = image {
-                // TODO
-                // imagePreview = resizeImageToDataSize(image, maxDataSize: 12500)
-                imagePreview = resizeImageToDataSize(cropToSquare(image), maxDataSize: 12500)
+                imagePreview = resizeImageToDataSize(image, maxDataSize: 12500)
             } else {
                 imagePreview = nil
             }
+        }
+        .onChange(of: imagePreview) { _ in
+            sendEnabled = (imagePreview != nil || !message.isEmpty)
         }
     }
 
