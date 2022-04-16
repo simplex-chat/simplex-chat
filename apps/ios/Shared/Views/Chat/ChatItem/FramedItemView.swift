@@ -24,7 +24,7 @@ struct FramedItemView: View {
             VStack(alignment: .leading, spacing: 0) {
                 if let qi = chatItem.quotedItem {
                     MsgContentView(
-                        content: qi,
+                        text: qi.content.text,
                         sender: qi.sender
                     )
                     .lineLimit(3)
@@ -53,21 +53,19 @@ struct FramedItemView: View {
                 } else {
                     if case let .image(_, image) = chatItem.content.msgContent {
                         ChatItemImageView(image: image, file: chatItem.file)
+                        ChatItemMsgContentView (chatItem: chatItem, showMember: showMember)
+//                    // TODO make transparent background and change color for meta
+//                    if case let .image(text, image) = chatItem.content.msgContent {
+//                        ChatItemImageView(image: image, file: chatItem.file)
+//                        if !text.isEmpty {
+//                            ChatItemMsgContentView (chatItem: chatItem, showMember: showMember)
+//                        }
                     } else if case let .link(_, preview) = chatItem.content.msgContent {
                         ChatItemLinkView(linkPreview: preview)
+                        ChatItemMsgContentView (chatItem: chatItem, showMember: showMember)
+                    } else {
+                        ChatItemMsgContentView (chatItem: chatItem, showMember: showMember)
                     }
-                    MsgContentView(
-                        content: chatItem.content,
-                        formattedText: chatItem.formattedText,
-                        sender: showMember ? chatItem.memberDisplayName : nil,
-                        metaText: chatItem.timestampText,
-                        edited: chatItem.meta.itemEdited
-                    )
-                    .padding(.vertical, 6)
-                    .padding(.horizontal, 12)
-                    .overlay(DetermineWidth())
-                    .frame(minWidth: 0, alignment: .leading)
-                    .textSelection(.enabled)
                 }
             }
             
@@ -94,6 +92,26 @@ struct FramedItemView: View {
             title: "Message delivery error",
             message: err
         )
+    }
+}
+
+struct ChatItemMsgContentView: View {
+    var chatItem: ChatItem
+    var showMember = false
+
+    var body: some View {
+        MsgContentView(
+            text: chatItem.text,
+            formattedText: chatItem.formattedText,
+            sender: showMember ? chatItem.memberDisplayName : nil,
+            metaText: chatItem.timestampText,
+            edited: chatItem.meta.itemEdited
+        )
+        .padding(.vertical, 6)
+        .padding(.horizontal, 12)
+        .overlay(DetermineWidth())
+        .frame(minWidth: 0, alignment: .leading)
+        .textSelection(.enabled)
     }
 }
 
