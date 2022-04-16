@@ -425,13 +425,13 @@
 "You control your chat!" = "Вы котролируете Ваш чат!";
 
 /* No comment provided by engineer. */
-"You will be connected when your connection request is accepted, please wait or check later!" = "Соединение будет установлено, когда Ваш запрос будет принят. Пожалуйста, подождите или проверьте позже!";
+"You will be connected when your connection request is accepted, please wait or check later!" = "Соединение будет установлено, когда ваш запрос будет принят. Пожалуйста, подождите или проверьте позже!";
 
 /* No comment provided by engineer. */
-"You will be connected when your contact's device is online, please wait or check later!" = "Соединение будет установлено, когда Ваш контакт будет онлайн. Пожалуйста, подождите или проверьте позже!";
+"You will be connected when your contact's device is online, please wait or check later!" = "Соединение будет установлено, когда ваш контакт будет онлайн. Пожалуйста, подождите или проверьте позже!";
 
 /* No comment provided by engineer. */
-"Your chat address" = "Ваш адрес";
+"Your chat address" = "Ваш SimpleX адрес";
 
 /* No comment provided by engineer. */
 "Your chat profile" = "Ваш профиль";

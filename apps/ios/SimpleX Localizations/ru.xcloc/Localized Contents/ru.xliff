@@ -628,12 +628,12 @@ to scan from the app</source>
       </trans-unit>
       <trans-unit id="You will be connected when your connection request is accepted, please wait or check later!" xml:space="preserve">
         <source>You will be connected when your connection request is accepted, please wait or check later!</source>
-        <target>Соединение будет установлено, когда Ваш запрос будет принят. Пожалуйста, подождите или проверьте позже!</target>
+        <target>Соединение будет установлено, когда ваш запрос будет принят. Пожалуйста, подождите или проверьте позже!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You will be connected when your contact's device is online, please wait or check later!" xml:space="preserve">
         <source>You will be connected when your contact's device is online, please wait or check later!</source>
-        <target>Соединение будет установлено, когда Ваш контакт будет онлайн. Пожалуйста, подождите или проверьте позже!</target>
+        <target>Соединение будет установлено, когда ваш контакт будет онлайн. Пожалуйста, подождите или проверьте позже!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your SMP servers" xml:space="preserve">
@@ -648,7 +648,7 @@ to scan from the app</source>
       </trans-unit>
       <trans-unit id="Your chat address" xml:space="preserve">
         <source>Your chat address</source>
-        <target>Ваш адрес</target>
+        <target>Ваш SimpleX адрес</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your chat profile" xml:space="preserve">
