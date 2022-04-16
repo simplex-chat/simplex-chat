@@ -35,7 +35,8 @@ fun SendMsgView(
   cancelledLinks: MutableSet<String>,
   parseMarkdown: (String) -> List<FormattedText>?,
   sendMessage: (String) -> Unit,
-  editing: Boolean = false
+  editing: Boolean = false,
+  sendEnabled: Boolean = false
 ) {
   val smallFont = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onBackground)
   var textStyle by remember { mutableStateOf(smallFont) }
@@ -124,7 +125,7 @@ fun SendMsgView(
           ) {
             innerTextField()
           }
-          val color = if (msg.value.isNotEmpty()) MaterialTheme.colors.primary else Color.Gray
+          val color = if (sendEnabled) MaterialTheme.colors.primary else Color.Gray
           Icon(
             if (editing) Icons.Filled.Check else Icons.Outlined.ArrowUpward,
             generalGetString(R.string.icon_descr_send_message),
@@ -135,7 +136,7 @@ fun SendMsgView(
               .clip(CircleShape)
               .background(color)
               .clickable {
-                if (msg.value.isNotEmpty()) {
+                if (sendEnabled) {
                   sendMessage(msg.value)
                   msg.value = ""
                   textStyle = smallFont
@@ -162,7 +163,8 @@ fun PreviewSendMsgView() {
       linkPreview = remember {mutableStateOf<LinkPreview?>(null) },
       cancelledLinks = mutableSetOf(),
       parseMarkdown = { null },
-      sendMessage = { msg -> println(msg) }
+      sendMessage = { msg -> println(msg) },
+      sendEnabled = true
     )
   }
 }
@@ -182,7 +184,8 @@ fun PreviewSendMsgViewEditing() {
       cancelledLinks = mutableSetOf(),
       sendMessage = { msg -> println(msg) },
       parseMarkdown = { null },
-      editing = true
+      editing = true,
+      sendEnabled = true
     )
   }
 }

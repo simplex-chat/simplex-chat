@@ -124,6 +124,8 @@ fun ChatView(chatModel: ChatModel) {
           editingItem.value = null
           quotedItem.value = null
           linkPreview.value = null
+          chosenImage.value = null
+          imagePreview.value = null
         }
       },
       resetMessage = { msg.value = "" },

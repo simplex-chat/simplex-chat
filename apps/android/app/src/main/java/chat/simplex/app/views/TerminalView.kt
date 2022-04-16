@@ -37,17 +37,19 @@ fun TerminalView(chatModel: ChatModel, close: () -> Unit) {
 
 @Composable
 fun TerminalLayout(terminalItems: List<TerminalItem>, close: () -> Unit, sendCommand: (String) -> Unit) {
+  var msg = remember { mutableStateOf("") }
   ProvideWindowInsets(windowInsetsAnimationsEnabled = true) {
     Scaffold(
       topBar = { CloseSheetBar(close) },
       bottomBar = {
         Box(Modifier.padding(horizontal = 8.dp)) {
           SendMsgView(
-            msg = remember { mutableStateOf("") },
+            msg = msg,
             linkPreview = remember { mutableStateOf(null) },
             cancelledLinks = remember { mutableSetOf() },
             parseMarkdown = { null },
-            sendMessage = sendCommand
+            sendMessage = sendCommand,
+            sendEnabled = msg.value.isNotEmpty()
           )
         }
       },

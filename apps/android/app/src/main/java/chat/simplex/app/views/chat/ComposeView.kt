@@ -80,7 +80,8 @@ fun ComposeView(
             }
           }
       )
-      SendMsgView(msg, linkPreview, cancelledLinks, parseMarkdown, sendMessage, editing = editingItem.value != null)
+      SendMsgView(msg, linkPreview, cancelledLinks, parseMarkdown, sendMessage,
+        editing = editingItem.value != null, sendEnabled = msg.value.isNotEmpty() || imagePreview.value != null)
     }
   }
 }
