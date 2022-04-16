@@ -38,6 +38,7 @@ enum ChatCommand {
     case apiAcceptContact(contactReqId: Int64)
     case apiRejectContact(contactReqId: Int64)
     case apiChatRead(type: ChatType, id: Int64, itemRange: (Int64, Int64))
+    case receiveFile(fileId: Int64)
     case string(String)
 
     var cmdString: String {
@@ -71,6 +72,7 @@ enum ChatCommand {
             case let .apiAcceptContact(contactReqId): return "/_accept \(contactReqId)"
             case let .apiRejectContact(contactReqId): return "/_reject \(contactReqId)"
             case let .apiChatRead(type, id, itemRange: (from, to)): return "/_read chat \(ref(type, id)) from=\(from) to=\(to)"
+            case let .receiveFile(fileId): return "/freceive \(fileId)"
             case let .string(str): return str
             }
         }
@@ -101,6 +103,7 @@ enum ChatCommand {
             case .apiAcceptContact: return "apiAcceptContact"
             case .apiRejectContact: return "apiRejectContact"
             case .apiChatRead: return "apiChatRead"
+            case .receiveFile: return "receiveFile"
             case .string: return "console command"
             }
         }
@@ -155,6 +158,8 @@ enum ChatResponse: Decodable, Error {
     case chatItemStatusUpdated(chatItem: AChatItem)
     case chatItemUpdated(chatItem: AChatItem)
     case chatItemDeleted(deletedChatItem: AChatItem, toChatItem: AChatItem)
+    case rcvFileAccepted
+    case rcvFileComplete(chatItem: AChatItem)
     case cmdOk
     case chatCmdError(chatError: ChatError)
     case chatError(chatError: ChatError)
@@ -197,6 +202,8 @@ enum ChatResponse: Decodable, Error {
             case .chatItemStatusUpdated: return "chatItemStatusUpdated"
             case .chatItemUpdated: return "chatItemUpdated"
             case .chatItemDeleted: return "chatItemDeleted"
+            case .rcvFileAccepted: return "rcvFileAccepted"
+            case .rcvFileComplete: return "rcvFileComplete"
             case .cmdOk: return "cmdOk"
             case .chatCmdError: return "chatCmdError"
             case .chatError: return "chatError"
@@ -242,6 +249,8 @@ enum ChatResponse: Decodable, Error {
             case let .chatItemStatusUpdated(chatItem): return String(describing: chatItem)
             case let .chatItemUpdated(chatItem): return String(describing: chatItem)
             case let .chatItemDeleted(deletedChatItem, toChatItem): return "deletedChatItem:\n\(String(describing: deletedChatItem))\ntoChatItem:\n\(String(describing: toChatItem))"
+            case .rcvFileAccepted: return noDetails
+            case let .rcvFileComplete(chatItem): return String(describing: chatItem)
             case .cmdOk: return noDetails
             case let .chatCmdError(chatError): return String(describing: chatError)
             case let .chatError(chatError): return String(describing: chatError)
@@ -549,6 +558,12 @@ func apiChatRead(type: ChatType, id: Int64, itemRange: (Int64, Int64)) async thr
     throw r
 }
 
+func receiveFile(fileId: Int64) async throws {
+    let r = await chatSendCmd(.receiveFile(fileId: fileId))
+    if case .rcvFileAccepted = r { return }
+    throw r
+}
+
 func acceptContactRequest(_ contactRequest: UserContactRequest) async {
     do {
         let contact = try await apiAcceptContactRequest(contactReqId: contactRequest.apiId)
@@ -673,6 +688,17 @@ func processReceivedMsg(_ res: ChatResponse) {
             let cInfo = aChatItem.chatInfo
             let cItem = aChatItem.chatItem
             chatModel.addChatItem(cInfo, cItem)
+            if let file = cItem.file,
+               file.fileSize <= 394500 {
+               // file.fileSize <= 236700 {
+                Task {
+                    do {
+                        try await receiveFile(fileId: file.fileId)
+                    } catch {
+                        logger.error("receiveFile error: \(error.localizedDescription)")
+                    }
+                }
+            }
             NtfManager.shared.notifyMessageReceived(cInfo, cItem)
         case let .chatItemStatusUpdated(aChatItem):
             let cInfo = aChatItem.chatInfo
@@ -705,6 +731,12 @@ func processReceivedMsg(_ res: ChatResponse) {
             } else {
                 // currently only broadcast deletion of rcv message can be received, and only this case should happen
                 _ = chatModel.upsertChatItem(cInfo, cItem)
+            }
+        case let .rcvFileComplete(aChatItem):
+            let cInfo = aChatItem.chatInfo
+            let cItem = aChatItem.chatItem
+            if chatModel.upsertChatItem(cInfo, cItem) {
+                NtfManager.shared.notifyMessageReceived(cInfo, cItem)
             }
         default:
             logger.debug("unsupported event: \(res.responseType)")
