@@ -17,6 +17,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import chat.simplex.app.R
 import chat.simplex.app.model.Chat
 import chat.simplex.app.model.ChatInfo
 import chat.simplex.app.ui.theme.SimpleXTheme
@@ -39,7 +40,7 @@ fun ProfileImage(
     if (image == null) {
       Icon(
         icon,
-        contentDescription = "profile image placeholder",
+        contentDescription = generalGetString(R.string.icon_descr_profile_image_placeholder),
         tint = MaterialTheme.colors.secondary,
         modifier = Modifier.fillMaxSize()
       )
@@ -47,7 +48,7 @@ fun ProfileImage(
       val imageBitmap = base64ToBitmap(image).asImageBitmap()
       Image(
         imageBitmap,
-        "profile image",
+        generalGetString(R.string.image_descr_profile_image),
         contentScale = ContentScale.Crop,
         modifier = Modifier.size(size).padding(size / 12).clip(CircleShape)
       )

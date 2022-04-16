@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
+import chat.simplex.app.R
 import chat.simplex.app.TAG
 
 class AlertManager {
@@ -40,9 +41,9 @@ class AlertManager {
   fun showAlertDialog(
     title: String,
     text: String? = null,
-    confirmText: String = "Ok",
+    confirmText: String = generalGetString(R.string.ok),
     onConfirm: (() -> Unit)? = null,
-    dismissText: String = "Cancel",
+    dismissText: String = generalGetString(R.string.cancel_verb),
     onDismiss: (() -> Unit)? = null
   ) {
     val alertText: (@Composable () -> Unit)? = if (text == null) null else { -> Text(text) }
@@ -69,7 +70,7 @@ class AlertManager {
 
   fun showAlertMsg(
     title: String, text: String? = null,
-    confirmText: String = "Ok", onConfirm: (() -> Unit)? = null
+    confirmText: String = generalGetString(R.string.ok), onConfirm: (() -> Unit)? = null
   ) {
     val alertText: (@Composable () -> Unit)? = if (text == null) null else { -> Text(text) }
     showAlert {

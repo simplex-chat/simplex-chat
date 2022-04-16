@@ -16,8 +16,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.UriHandler
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import chat.simplex.app.R
 import chat.simplex.app.model.*
-import chat.simplex.app.ui.theme.HighOrLowlight
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.helpers.*
 import kotlinx.datetime.Clock
@@ -55,21 +55,21 @@ fun ChatItemView(
       }
       if (cItem.isMsgContent) {
         DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
-          ItemAction("Reply", Icons.Outlined.Reply, onClick = {
+          ItemAction(generalGetString(R.string.reply_verb), Icons.Outlined.Reply, onClick = {
             editingItem.value = null
             quotedItem.value = cItem
             showMenu = false
           })
-          ItemAction("Share", Icons.Outlined.Share, onClick = {
+          ItemAction(generalGetString(R.string.share_verb), Icons.Outlined.Share, onClick = {
             shareText(cxt, cItem.content.text)
             showMenu = false
           })
-          ItemAction("Copy", Icons.Outlined.ContentCopy, onClick = {
+          ItemAction(generalGetString(R.string.copy_verb), Icons.Outlined.ContentCopy, onClick = {
             copyText(cxt, cItem.content.text)
             showMenu = false
           })
           if (cItem.chatDir.sent && cItem.meta.editable) {
-            ItemAction("Edit", Icons.Filled.Edit, onClick = {
+            ItemAction(generalGetString(R.string.edit_verb), Icons.Filled.Edit, onClick = {
               quotedItem.value = null
               editingItem.value = cItem
               msg.value = cItem.content.text
@@ -77,7 +77,7 @@ fun ChatItemView(
             })
           }
           ItemAction(
-            "Delete",
+            generalGetString(R.string.delete_verb),
             Icons.Outlined.Delete,
             onClick = {
               showMenu = false
@@ -109,8 +109,8 @@ private fun ItemAction(text: String, icon: ImageVector, onClick: () -> Unit, col
 
 fun deleteMessageAlertDialog(chatItem: ChatItem, deleteMessage: (Long, CIDeleteMode) -> Unit) {
   AlertManager.shared.showAlertDialogButtons(
-    title = "Delete message?",
-    text = "Message will be deleted - this cannot be undone!",
+    title = generalGetString(R.string.delete_message__question),
+    text = generalGetString(R.string.delete_message_cannot_be_undone_warning),
     buttons = {
       Row(
         Modifier
@@ -121,13 +121,13 @@ fun deleteMessageAlertDialog(chatItem: ChatItem, deleteMessage: (Long, CIDeleteM
         Button(onClick = {
           deleteMessage(chatItem.id, CIDeleteMode.cidmInternal)
           AlertManager.shared.hideAlert()
-        }) { Text("For me only") }
+        }) { Text(generalGetString(R.string.for_me_only)) }
 //        if (chatItem.meta.editable) {
 //          Spacer(Modifier.padding(horizontal = 4.dp))
 //          Button(onClick = {
 //            deleteMessage(chatItem.id, CIDeleteMode.cidmBroadcast)
 //            AlertManager.shared.hideAlert()
-//          }) { Text("For everyone") }
+//          }) { Text(generalGetString(R.string.for_everybody)) }
 //        }
       }
     }
