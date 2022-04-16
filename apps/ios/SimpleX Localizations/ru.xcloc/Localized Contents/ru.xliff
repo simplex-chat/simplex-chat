@@ -564,12 +564,12 @@ to scan from the app</source>
       </trans-unit>
       <trans-unit id="Trying to connect to the server used to receive messages from this contact (error: %@)." xml:space="preserve">
         <source>Trying to connect to the server used to receive messages from this contact (error: %@).</source>
-        <target>Устанавливается соединение с сервером, через который Вы получаете сообщения от этого контакта (ошибка: %@).</target>
+        <target>Устанавливается соединение с сервером, через который вы получаете сообщения от этого контакта (ошибка: %@).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Trying to connect to the server used to receive messages from this contact." xml:space="preserve">
         <source>Trying to connect to the server used to receive messages from this contact.</source>
-        <target>Устанавливается соединение с сервером, через который Вы получаете сообщения от этого контакта.</target>
+        <target>Устанавливается соединение с сервером, через который вы получаете сообщения от этого контакта.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Unexpected error: %@" xml:space="preserve">
@@ -604,7 +604,7 @@ to scan from the app</source>
       </trans-unit>
       <trans-unit id="You are connected to the server used to receive messages from this contact." xml:space="preserve">
         <source>You are connected to the server used to receive messages from this contact.</source>
-        <target>Установлено соединение с сервером, через который Вы получается сообщения от этого контакта.</target>
+        <target>Установлено соединение с сервером, через который вы получается сообщения от этого контакта.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can now send messages to %@" xml:space="preserve">
@@ -614,7 +614,7 @@ to scan from the app</source>
       </trans-unit>
       <trans-unit id="You can share your address as a link or as a QR code - anybody will be able to connect to you. You won't lose your contacts if you later delete it." xml:space="preserve">
         <source>You can share your address as a link or as a QR code - anybody will be able to connect to you. You won't lose your contacts if you later delete it.</source>
-        <target>Вы можете использовать Ваш адрес как ссылку или как QR код - кто угодно сможет соединиться с Вами. Вы сможете удалить адрес, сохранив контакты, которые через него соединились.</target>
+        <target>Вы можете использовать ваш адрес как ссылку или как QR код - кто угодно сможет соединиться с вами. Вы сможете удалить адрес, сохранив контакты, которые через него соединились.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can use markdown to format messages:" xml:space="preserve">
@@ -671,12 +671,12 @@ to scan from the app</source>
         <source>Your profile is stored on your device and shared only with your contacts.
 SimpleX servers cannot see your profile.</source>
         <target>Ваш профиль хранится на вашем устройстве и отправляется только вашим контактам.
-SimpleX серверы не могут получить доступ к Вашему профилю.</target>
+SimpleX серверы не могут получить доступ к вашему профилю.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your profile will be sent to the contact that you received this link from" xml:space="preserve">
         <source>Your profile will be sent to the contact that you received this link from</source>
-        <target>Ваш профиль будет отправлен контакту, от которого Вы получили эту ссылку.</target>
+        <target>Ваш профиль будет отправлен контакту, от которого вы получили эту ссылку.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your profile, contacts and messages (once delivered) are only stored locally on your device." xml:space="preserve">
@@ -793,7 +793,7 @@ SimpleX серверы не могут получить доступ к Ваше
       </trans-unit>
       <trans-unit id="NSCameraUsageDescription" xml:space="preserve">
         <source>SimpleX needs camera access to scan QR codes to connect to other app users</source>
-        <target>SimpleX использует камеру для сканирования QR кодов, чтобы соединиться с другими пользователями</target>
+        <target>SimpleX использует камеру для сканирования QR кодов при соединении с другими пользователями</target>
         <note>Privacy - Camera Usage Description</note>
       </trans-unit>
     </body>
