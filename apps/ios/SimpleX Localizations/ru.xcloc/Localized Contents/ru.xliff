@@ -212,7 +212,7 @@
       </trans-unit>
       <trans-unit id="Contact is connected" xml:space="preserve">
         <source>Contact is connected</source>
-        <target>Контакт присоединен</target>
+        <target>Соединение с контактом установлено</target>
         <note>notification</note>
       </trans-unit>
       <trans-unit id="Copy" xml:space="preserve">
@@ -297,7 +297,7 @@
       </trans-unit>
       <trans-unit id="Enter one SMP server per line:" xml:space="preserve">
         <source>Enter one SMP server per line:</source>
-        <target>Введите SMP серверы, каждый на отдельной строке</target>
+        <target>Введите SMP серверы, каждый на отдельной строке:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error saving SMP servers" xml:space="preserve">
@@ -307,7 +307,7 @@
       </trans-unit>
       <trans-unit id="Error: %@" xml:space="preserve">
         <source>Error: %@</source>
-        <target>Ошибка: </target>
+        <target>Ошибка: %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error: URL is invalid" xml:space="preserve">
@@ -347,17 +347,17 @@
       </trans-unit>
       <trans-unit id="If you cannot meet in person, you can **scan QR code in the video call**, or your contact can share an invitation link." xml:space="preserve">
         <source>If you cannot meet in person, you can **scan QR code in the video call**, or your contact can share an invitation link.</source>
-        <target>Если вы не можете встретиться лично, вы можете **сосканировать QR код во время видео-звонка**, или ваш контакт может отправить вам ссылку.</target>
+        <target>Если вы не можете встретиться лично, вы можете **сосканировать QR код во время видеозвонка**, или ваш контакт может отправить вам ссылку.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="If you cannot meet in person, you can **show QR code in the video call**, or you can share the invitation link via any other channel." xml:space="preserve">
         <source>If you cannot meet in person, you can **show QR code in the video call**, or you can share the invitation link via any other channel.</source>
-        <target>Если вы не можете встретиться лично, вы можете **показать QR код во время видео-звонка** или отправить ссылку через любой другой канал связи.</target>
+        <target>Если вы не можете встретиться лично, вы можете **показать QR код во время видеозвонка** или отправить ссылку через любой другой канал связи.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="If you received SimpleX Chat invitation link you can open it in your browser:" xml:space="preserve">
         <source>If you received SimpleX Chat invitation link you can open it in your browser:</source>
-        <target>Если Вы получили ссылку с приглашением из SimpleX Chat, Вы можете открыть её в браузере:</target>
+        <target>Если вы получили ссылку с приглашением из SimpleX Chat, вы можете открыть её в браузере:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Install [SimpleX Chat for terminal](https://github.com/simplex-chat/simplex-chat)" xml:space="preserve">
@@ -529,12 +529,12 @@ to scan from the app</source>
       </trans-unit>
       <trans-unit id="The app can notify you when you receive messages or contact requests - please open settings to enable." xml:space="preserve">
         <source>The app can notify you when you receive messages or contact requests - please open settings to enable.</source>
-        <target>Приложение может посылать вам уведомления, когда вы получите сообщение или запрос - откройте Настройки чтобы включить.</target>
+        <target>Приложение может посылать вам уведомления о сообщениях и запросах на соединение - уведомления можно включить в Настройках.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The messaging and application platform 100% private by design!" xml:space="preserve">
         <source>The messaging and application platform 100% private by design!</source>
-        <target>Платформа для сообщений и приложений, которая защищает вашу личную информацию и безопастность.</target>
+        <target>Платформа для сообщений и приложений, которая защищает вашу личную информацию и безопасность.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The sender will NOT be notified" xml:space="preserve">
@@ -654,7 +654,7 @@ to scan from the app</source>
       </trans-unit>
       <trans-unit id="Your chat profile will be sent to your contact" xml:space="preserve">
         <source>Your chat profile will be sent to your contact</source>
-        <target>Ваш профиль будет послан вашему контакту</target>
+        <target>Ваш профиль будет отправлен вашему контакту</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your chats" xml:space="preserve">
