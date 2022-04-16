@@ -306,6 +306,13 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
     return false
   }
 
+  suspend fun receiveFile(fileId: Long): Boolean {
+    val r = sendCmd(CC.ReceiveFile(fileId))
+    if (r is CR.RcvFileAccepted) return true
+    Log.e(TAG, "receiveFile bad response: ${r.responseType} ${r.details}")
+    return false
+  }
+
   fun apiErrorAlert(method: String, title: String, r: CR) {
     val errMsg = "${r.responseType}: ${r.details}"
     Log.e(TAG, "$method bad response: $errMsg")
@@ -349,6 +356,10 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
         val cInfo = r.chatItem.chatInfo
         val cItem = r.chatItem.chatItem
         chatModel.addChatItem(cInfo, cItem)
+        val file = cItem.file
+        if (file != null && file.fileSize <= 394500) { // 236700
+          withApi {receiveFile(file.fileId)}
+        }
         if (!isAppOnForeground(appContext) || chatModel.chatId.value != cInfo.id) {
           ntfManager.notifyMessageReceived(cInfo, cItem)
         }
@@ -379,6 +390,13 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
         } else {
           // currently only broadcast deletion of rcv message can be received, and only this case should happen
           chatModel.upsertChatItem(cInfo, cItem)
+        }
+      }
+      is CR.RcvFileComplete -> {
+        val cInfo = r.chatItem.chatInfo
+        val cItem = r.chatItem.chatItem
+        if (chatModel.upsertChatItem(cInfo, cItem)) {
+          ntfManager.notifyMessageReceived(cInfo, cItem)
         }
       }
       else ->
@@ -506,6 +524,7 @@ sealed class CC {
   class ApiAcceptContact(val contactReqId: Long): CC()
   class ApiRejectContact(val contactReqId: Long): CC()
   class ApiChatRead(val type: ChatType, val id: Long, val range: ItemRange): CC()
+  class ReceiveFile(val fileId: Long): CC()
 
   val cmdString: String get() = when (this) {
     is Console -> cmd
@@ -537,6 +556,7 @@ sealed class CC {
     is ApiAcceptContact -> "/_accept $contactReqId"
     is ApiRejectContact -> "/_reject $contactReqId"
     is ApiChatRead -> "/_read chat ${chatRef(type, id)} from=${range.from} to=${range.to}"
+    is ReceiveFile -> "/freceive $fileId"
   }
 
   val cmdType: String get() = when (this) {
@@ -563,6 +583,7 @@ sealed class CC {
     is ApiAcceptContact -> "apiAcceptContact"
     is ApiRejectContact -> "apiRejectContact"
     is ApiChatRead -> "apiChatRead"
+    is ReceiveFile -> "receiveFile"
   }
 
   class ItemRange(val from: Long, val to: Long)
@@ -638,6 +659,8 @@ sealed class CR {
   @Serializable @SerialName("chatItemStatusUpdated") class ChatItemStatusUpdated(val chatItem: AChatItem): CR()
   @Serializable @SerialName("chatItemUpdated") class ChatItemUpdated(val chatItem: AChatItem): CR()
   @Serializable @SerialName("chatItemDeleted") class ChatItemDeleted(val deletedChatItem: AChatItem, val toChatItem: AChatItem): CR()
+  @Serializable @SerialName("rcvFileAccepted") class RcvFileAccepted: CR()
+  @Serializable @SerialName("rcvFileComplete") class RcvFileComplete(val chatItem: AChatItem): CR()
   @Serializable @SerialName("cmdOk") class CmdOk: CR()
   @Serializable @SerialName("chatCmdError") class ChatCmdError(val chatError: ChatError): CR()
   @Serializable @SerialName("chatError") class ChatRespError(val chatError: ChatError): CR()
@@ -679,6 +702,8 @@ sealed class CR {
     is ChatItemStatusUpdated -> "chatItemStatusUpdated"
     is ChatItemUpdated -> "chatItemUpdated"
     is ChatItemDeleted -> "chatItemDeleted"
+    is RcvFileAccepted -> "rcvFileAccepted"
+    is RcvFileComplete -> "rcvFileComplete"
     is CmdOk -> "cmdOk"
     is ChatCmdError -> "chatCmdError"
     is ChatRespError -> "chatError"
@@ -721,6 +746,8 @@ sealed class CR {
     is ChatItemStatusUpdated -> json.encodeToString(chatItem)
     is ChatItemUpdated -> json.encodeToString(chatItem)
     is ChatItemDeleted -> "deletedChatItem:\n${json.encodeToString(deletedChatItem)}\ntoChatItem:\n${json.encodeToString(toChatItem)}"
+    is RcvFileAccepted -> noDetails()
+    is RcvFileComplete -> json.encodeToString(chatItem)
     is CmdOk -> noDetails()
     is ChatCmdError -> chatError.string
     is ChatRespError -> chatError.string
