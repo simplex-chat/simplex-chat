@@ -400,9 +400,9 @@
         <target>New message</target>
         <note>notifications</note>
       </trans-unit>
-      <trans-unit id="Notification are disabled!" xml:space="preserve">
-        <source>Notification are disabled!</source>
-        <target>Notification are disabled!</target>
+      <trans-unit id="Notifications are disabled!" xml:space="preserve">
+        <source>Notifications are disabled!</source>
+        <target>Notifications are disabled!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Open Settings" xml:space="preserve">
