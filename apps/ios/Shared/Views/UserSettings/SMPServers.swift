@@ -82,7 +82,7 @@ struct SMPServers: View {
                                 saveUserSMPServers()
                             }
                             .alert(isPresented: $showBadServersAlert) {
-                                Alert(title: Text("Error saving SMP servers"), message: Text("Make sure SMP server addresses are in correct format, line separated and are not duplicated"))
+                                Alert(title: Text("Error saving SMP servers"), message: Text("Make sure SMP server addresses are in correct format, line separated and are not duplicated."))
                             }
                             Spacer()
                             howToButton()

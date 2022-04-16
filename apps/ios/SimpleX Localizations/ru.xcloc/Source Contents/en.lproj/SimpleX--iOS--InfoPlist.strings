@@ -1,0 +1,4 @@
+/* Bundle name */
+"CFBundleName" = "SimpleX";
+/* Privacy - Camera Usage Description */
+"NSCameraUsageDescription" = "SimpleX needs camera access to scan QR codes to connect to other app users";

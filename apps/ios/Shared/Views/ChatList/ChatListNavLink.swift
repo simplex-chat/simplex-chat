@@ -116,7 +116,7 @@ struct ChatListNavLink: View {
     private func deleteContactAlert(_ contact: Contact) -> Alert {
         Alert(
             title: Text("Delete contact?"),
-            message: Text("Contact and all messages will be deleted"),
+            message: Text("Contact and all messages will be deleted - this cannot be undone!"),
             primaryButton: .destructive(Text("Delete")) {
                 Task {
                     do {
