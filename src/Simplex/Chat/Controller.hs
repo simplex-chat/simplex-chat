@@ -112,6 +112,7 @@ data ChatCommand
   | APIRegisterToken DeviceToken
   | APIVerifyToken DeviceToken ByteString C.CbNonce
   | APIIntervalNofication DeviceToken Word16
+  | APIDeleteToken DeviceToken
   | GetUserSMPServers
   | SetUserSMPServers [SMPServer]
   | ChatHelp HelpSection

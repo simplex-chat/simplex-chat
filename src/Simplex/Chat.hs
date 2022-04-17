@@ -373,6 +373,7 @@ processChatCommand = \case
   APIRegisterToken token -> withUser $ \_ -> withAgent (`registerNtfToken` token) $> CRCmdOk
   APIVerifyToken token code nonce -> withUser $ \_ -> withAgent (\a -> verifyNtfToken a token code nonce) $> CRCmdOk
   APIIntervalNofication token interval -> withUser $ \_ -> withAgent (\a -> enableNtfCron a token interval) $> CRCmdOk
+  APIDeleteToken token -> withUser $ \_ -> withAgent (`deleteNtfToken` token) $> CRCmdOk
   GetUserSMPServers -> CRUserSMPServers <$> withUser (\user -> withStore (`getSMPServers` user))
   SetUserSMPServers smpServers -> withUser $ \user -> withChatLock $ do
     withStore $ \st -> overwriteSMPServers st user smpServers
@@ -1900,6 +1901,7 @@ chatCommandP =
     <|> "/_ntf register " *> (APIRegisterToken <$> tokenP)
     <|> "/_ntf verify " *> (APIVerifyToken <$> tokenP <* A.space <*> base64P <* A.space <*> strP)
     <|> "/_ntf interval " *> (APIIntervalNofication <$> tokenP <* A.space <*> A.decimal)
+    <|> "/_ntf delete " *> (APIDeleteToken <$> tokenP)
     <|> "/smp_servers default" $> SetUserSMPServers []
     <|> "/smp_servers " *> (SetUserSMPServers <$> smpServersP)
     <|> "/smp_servers" $> GetUserSMPServers
