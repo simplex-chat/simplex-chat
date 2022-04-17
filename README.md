@@ -1,6 +1,8 @@
 <img src="images/simplex-chat-logo.svg" alt="SimpleX logo" width="100%">
 
-# SimpleX - the first messaging platform that has no user identifiers of any kind - 100% private by design!
+# SimpleX Chat - new era of private messaging
+
+The first and the only messaging platform that has no user identifiers of any kind!
 
 [![build](https://github.com/simplex-chat/simplex-chat/actions/workflows/build.yml/badge.svg?branch=stable)](https://github.com/simplex-chat/simplex-chat/actions/workflows/build.yml)
 [![GitHub downloads](https://img.shields.io/github/downloads/simplex-chat/simplex-chat/total)](https://github.com/simplex-chat/simplex-chat/releases)
@@ -32,7 +34,7 @@ One of the most shocking stories is the experience of [Mohamedou Ould Salahi](ht
 
 It is not enough to use an end-to-end encrypted messenger, we all should use the messengers that protect the privacy of our personal networks - who we are connected with.
 
-## SimpleX unique approach to privacy and security
+## SimpleX unique approach to privacy and security - new era of private messaging
 
 ### Full privacy of your identity, profile, contacts and metadata
 
@@ -48,7 +50,7 @@ SimpleX stores all user data on client devices, the messages are only held tempo
 
 ### Users own SimpleX network
 
-You can use SimpleX with your own servers and still communicate with people using the servers that are pre-configured in the apps or any other SimpleX servers. [Read more](./docs/SIMPLEX.md#users-own-simplex-network).
+You can use SimpleX with your own servers and still communicate with people using either the servers that are pre-configured in the mobile apps or any other SimpleX servers. [Read more](./docs/SIMPLEX.md#users-own-simplex-network).
 
 ## For developers
 
