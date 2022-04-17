@@ -1899,7 +1899,7 @@ chatCommandP =
     <|> "/_profile " *> (APIUpdateProfile <$> jsonP)
     <|> "/_parse " *> (APIParseMarkdown . safeDecodeUtf8 <$> A.takeByteString)
     <|> "/_ntf register " *> (APIRegisterToken <$> tokenP)
-    <|> "/_ntf verify " *> (APIVerifyToken <$> tokenP <* A.space <*> base64P <* A.space <*> strP)
+    <|> "/_ntf verify " *> (APIVerifyToken <$> tokenP <* A.space <*> strP <* A.space <*> strP)
     <|> "/_ntf interval " *> (APIIntervalNofication <$> tokenP <* A.space <*> A.decimal)
     <|> "/_ntf delete " *> (APIDeleteToken <$> tokenP)
     <|> "/smp_servers default" $> SetUserSMPServers []
