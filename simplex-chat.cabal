@@ -159,6 +159,7 @@ executable simplex-bot-advanced
 executable simplex-chat
   main-is: Main.hs
   other-modules:
+      Server
       Paths_simplex_chat
   hs-source-dirs:
       apps/simplex-chat
@@ -179,6 +180,7 @@ executable simplex-chat
     , exceptions ==0.10.*
     , filepath ==1.4.*
     , mtl ==2.2.*
+    , network ==3.1.*
     , optparse-applicative >=0.15 && <0.17
     , process ==1.6.*
     , simple-logger ==0.1.*

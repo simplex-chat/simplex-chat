@@ -49,7 +49,8 @@ opts =
       logConnections = False,
       logAgent = False,
       chatCmd = "",
-      chatCmdDelay = 3
+      chatCmdDelay = 3,
+      chatServerPort = Nothing
     }
 
 termSettings :: VirtualTerminalSettings
