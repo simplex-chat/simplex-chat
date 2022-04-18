@@ -42,7 +42,7 @@ fun FramedItemView(user: User, ci: ChatItem, uriHandler: UriHandler? = null, sho
               .fillMaxWidth()
           ) {
             MarkdownText(
-              qi, sender = qi.sender(user), senderBold = true, maxLines = 3,
+              qi.text, sender = qi.sender(user), senderBold = true, maxLines = 3,
               style = TextStyle(fontSize = 15.sp, color = MaterialTheme.colors.onSurface)
             )
           }
@@ -69,7 +69,7 @@ fun FramedItemView(user: User, ci: ChatItem, uriHandler: UriHandler? = null, sho
             }
             Box(Modifier.padding(vertical = 6.dp, horizontal = 12.dp)) {
               MarkdownText(
-                ci.content, ci.formattedText, if (showMember) ci.memberDisplayName else null,
+                ci.content.text, ci.formattedText, if (showMember) ci.memberDisplayName else null,
                 metaText = ci.timestampText, edited = ci.meta.itemEdited, uriHandler = uriHandler, senderBold = true
               )
             }

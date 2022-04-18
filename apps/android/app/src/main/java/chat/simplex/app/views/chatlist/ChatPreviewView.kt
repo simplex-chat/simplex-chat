@@ -42,7 +42,7 @@ fun ChatPreviewView(chat: Chat) {
       val ci = chat.chatItems.lastOrNull()
       if (ci != null) {
         MarkdownText(
-          ci.content,  ci.formattedText, ci.memberDisplayName,
+          ci.text,  ci.formattedText, ci.memberDisplayName,
           metaText = ci.timestampText,
           maxLines = 2,
           overflow = TextOverflow.Ellipsis

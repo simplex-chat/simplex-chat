@@ -528,6 +528,13 @@ data class ChatItem (
 ) {
   val id: Long get() = meta.itemId
   val timestampText: String get() = meta.timestampText
+
+  val text: String get() =
+    when {
+      content.text == "" && file != null -> file.fileName
+      else -> content.text
+    }
+
   val isRcvNew: Boolean get() = meta.itemStatus is CIStatus.RcvNew
 
   val memberDisplayName: String? get() =
