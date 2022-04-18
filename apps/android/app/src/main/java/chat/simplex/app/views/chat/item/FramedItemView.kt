@@ -1,6 +1,7 @@
 package chat.simplex.app.views.chat.item
 
 import ChatItemImageView
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -9,6 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.UriHandler
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.tooling.preview.*
@@ -16,7 +18,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.SimpleXTheme
-import chat.simplex.app.views.helpers.ChatItemLinkView
+import chat.simplex.app.views.helpers.*
 import kotlinx.datetime.Clock
 
 val SentColorLight = Color(0x1E45B8FF)
@@ -41,10 +43,25 @@ fun FramedItemView(user: User, ci: ChatItem, uriHandler: UriHandler? = null, sho
               .padding(vertical = 6.dp, horizontal = 12.dp)
               .fillMaxWidth()
           ) {
-            MarkdownText(
-              qi.text, sender = qi.sender(user), senderBold = true, maxLines = 3,
-              style = TextStyle(fontSize = 15.sp, color = MaterialTheme.colors.onSurface)
-            )
+            Row(
+              verticalAlignment = Alignment.CenterVertically,
+              horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+              MarkdownText(
+                qi.text, sender = qi.sender(user), senderBold = true, maxLines = 3,
+                style = TextStyle(fontSize = 15.sp, color = MaterialTheme.colors.onSurface)
+              )
+              if (qi.content is MsgContent.MCImage) {
+                val imageBitmap = cropToSquare(base64ToBitmap(qi.content.image)).asImageBitmap()
+                Image(
+                  imageBitmap,
+                  contentDescription = "image",
+                  modifier = Modifier
+                    .width(60.dp)
+                    .height(60.dp)
+                )
+              }
+            }
           }
         }
         if (ci.formattedText == null && isShortEmoji(ci.content.text)) {
