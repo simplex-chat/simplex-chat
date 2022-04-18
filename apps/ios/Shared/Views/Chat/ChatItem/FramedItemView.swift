@@ -33,10 +33,10 @@ struct FramedItemView: View {
                         if case let .image(_, image) = qi.content,
                            let data = Data(base64Encoded: dropImagePrefix(image)),
                            let uiImage = UIImage(data: data) {
-                            Image(uiImage: uiImage)
+                            Image(uiImage: cropToSquare(uiImage))
                                 .resizable()
                                 .aspectRatio(contentMode: .fit)
-                                .frame(maxWidth: 80, maxHeight: 60)
+                                .frame(maxHeight: 60)
                         }
                     }
                     .padding(.vertical, 6)
