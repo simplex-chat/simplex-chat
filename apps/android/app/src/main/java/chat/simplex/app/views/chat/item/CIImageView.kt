@@ -20,17 +20,12 @@ import java.io.*
 fun CIImageView(image: String, file: CIFile?) {
   Column {
     var imageBitmap: Bitmap? = null
-    if (file?.filePath != null) {
+    // TODO more advanced approach would be to send progressive jpeg and only check for filepath
+    if (file?.filePath != null && file.stored) {
       val context = LocalContext.current
       val filePath = getAppFilesDirectory(context) + "/" + file.filePath
-      if (
-        File(filePath).exists() &&
-        file.stored // TODO more advanced approach would be to send progressive jpeg and only check for filepath
-      ) {
-        try {
-          imageBitmap = getBitmapFromUri(context, filePath)
-        } catch (e: Exception) {
-        }
+      if (File(filePath).exists()) {
+        try { imageBitmap = getBitmapFromUri(context, filePath) } catch (e: Exception) {}
       }
     }
     if (imageBitmap == null) {
