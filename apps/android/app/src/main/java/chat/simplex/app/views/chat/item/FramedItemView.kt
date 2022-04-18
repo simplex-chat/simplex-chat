@@ -22,6 +22,7 @@ import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.helpers.*
 import kotlinx.datetime.Clock
+import kotlinx.serialization.encodeToString
 
 val SentColorLight = Color(0x1E45B8FF)
 val ReceivedColorLight = Color(0x20B1B0B5)
@@ -82,16 +83,18 @@ fun FramedItemView(user: User, ci: ChatItem, uriHandler: UriHandler? = null, sho
         } else {
           Column(Modifier.fillMaxWidth()) {
             val mc = ci.content.msgContent
-            if (mc is MsgContent.MCImage) {
-              CIImageView(image = mc.image, file = ci.file)
-            } else if (mc is MsgContent.MCLink) {
-              ChatItemLinkView(mc.preview)
-            }
-            Box(Modifier.padding(vertical = 6.dp, horizontal = 12.dp)) {
-              MarkdownText(
-                ci.content.text, ci.formattedText, if (showMember) ci.memberDisplayName else null,
-                metaText = ci.timestampText, edited = ci.meta.itemEdited, uriHandler = uriHandler, senderBold = true
-              )
+            when (mc) {
+              is MsgContent.MCImage -> {
+                CIImageView(image = mc.image, file = ci.file)
+                if (mc.text != "") {
+                  CIMarkdownText(ci, showMember, uriHandler)
+                }
+              }
+              is MsgContent.MCLink -> {
+                ChatItemLinkView(mc.preview)
+                CIMarkdownText(ci, showMember, uriHandler)
+              }
+              else -> CIMarkdownText(ci, showMember, uriHandler)
             }
           }
         }
@@ -100,6 +103,16 @@ fun FramedItemView(user: User, ci: ChatItem, uriHandler: UriHandler? = null, sho
         CIMetaView(ci)
       }
     }
+  }
+}
+
+@Composable
+fun CIMarkdownText(ci: ChatItem, showMember: Boolean, uriHandler: UriHandler?) {
+  Box(Modifier.padding(vertical = 6.dp, horizontal = 12.dp)) {
+    MarkdownText(
+      ci.content.text, ci.formattedText, if (showMember) ci.memberDisplayName else null,
+      metaText = ci.timestampText, edited = ci.meta.itemEdited, uriHandler = uriHandler, senderBold = true
+    )
   }
 }
 
