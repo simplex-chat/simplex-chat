@@ -21,7 +21,8 @@ fun ChatItemImageView(image: String, file: CIFile?) {
   Column(
     Modifier.width(300.dp)
   ) {
-    val imageBitmap = if (file?.filePath != null) {
+    var imageBitmap: Bitmap? = null
+    if (file?.filePath != null) {
       val context = LocalContext.current
       val filePath = getAppFilesDirectory(context) + "/" + file.filePath
       if (
@@ -29,15 +30,13 @@ fun ChatItemImageView(image: String, file: CIFile?) {
         file.stored // TODO more advanced approach would be to send progressive jpeg and only check for filepath
       ) {
         try {
-          getBitmapFromUri(context, filePath)
+          imageBitmap = getBitmapFromUri(context, filePath)
         } catch (e: Exception) {
-          base64ToBitmap(image)
         }
-      } else {
-        base64ToBitmap(image)
       }
-    } else {
-      base64ToBitmap(image)
+    }
+    if (imageBitmap == null) {
+      imageBitmap = base64ToBitmap(image)
     }
     Image(
       imageBitmap.asImageBitmap(),
