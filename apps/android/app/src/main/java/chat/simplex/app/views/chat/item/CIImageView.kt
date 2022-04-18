@@ -36,11 +36,11 @@ fun CIImageView(image: String, file: CIFile?) {
     if (imageBitmap == null) {
       imageBitmap = base64ToBitmap(image)
     }
-//    val w = (imageBitmap.width > imageBitmap.height) Infinity else maxWidth * 0.75
+    val w = if (imageBitmap.width > imageBitmap.height) 300.dp else 225.dp
     Image(
       imageBitmap.asImageBitmap(),
       contentDescription = "image",
-      modifier = Modifier.width(300.dp),
+      modifier = Modifier.width(w),
       contentScale = ContentScale.FillWidth,
     )
   }
