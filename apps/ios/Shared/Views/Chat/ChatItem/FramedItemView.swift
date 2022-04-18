@@ -17,13 +17,15 @@ struct FramedItemView: View {
     @Environment(\.colorScheme) var colorScheme
     var chatItem: ChatItem
     var showMember = false
+    var maxWidth: CGFloat = .infinity
     @State var msgWidth: CGFloat = 0
+    @State var imgWidth: CGFloat? = nil
 
     var body: some View {
         let v = ZStack(alignment: .bottomTrailing) {
             VStack(alignment: .leading, spacing: 0) {
                 if let qi = chatItem.quotedItem {
-                    HStack {
+                    let v = HStack {
                         MsgContentView(
                             content: qi,
                             sender: qi.sender
@@ -48,6 +50,12 @@ struct FramedItemView: View {
                         ? (colorScheme == .light ? sentQuoteColorLight : sentQuoteColorDark)
                         : Color(uiColor: .quaternarySystemFill)
                     )
+
+                    if let imgWidth = imgWidth, imgWidth < maxWidth {
+                        v.frame(maxWidth: imgWidth, alignment: .leading)
+                    } else {
+                        v
+                    }
                 }
 
                 if chatItem.formattedText == nil && isShortEmoji(chatItem.content.text) {
@@ -61,22 +69,23 @@ struct FramedItemView: View {
                     .frame(minWidth: msgWidth, alignment: .center)
                     .padding(.bottom, 2)
                 } else {
-                    if case let .image(_, image) = chatItem.content.msgContent {
-                        ChatItemImageView(image: image, file: chatItem.file)
+                    switch (chatItem.content.msgContent) {
+                    case let .image(text, image):
+                        CIImageView(image: image, file: chatItem.file, maxWidth: maxWidth, imgWidth: $imgWidth)
                             .overlay(DetermineWidth())
-                        ChatItemMsgContentView (chatItem: chatItem, showMember: showMember)
-//                    // TODO make transparent background and change color for meta
-//                    if case let .image(text, image) = chatItem.content.msgContent {
-//                        ChatItemImageView(image: image, file: chatItem.file)
-//                        if !text.isEmpty {
-//                            ChatItemMsgContentView (chatItem: chatItem, showMember: showMember)
-//                        }
-                    } else if case let .link(_, preview) = chatItem.content.msgContent {
-                        ChatItemLinkView(linkPreview: preview)
-                            //.overlay(DetermineWidth())
-                        ChatItemMsgContentView (chatItem: chatItem, showMember: showMember)
-                    } else {
-                        ChatItemMsgContentView (chatItem: chatItem, showMember: showMember)
+                        if text != "" {
+                            let v = CIMsgContentView (chatItem: chatItem, showMember: showMember)
+                            if let imgWidth = imgWidth, imgWidth < maxWidth {
+                                v.frame(maxWidth: imgWidth, alignment: .leading)
+                            } else {
+                                v
+                            }
+                        }
+                    case let .link(_, preview):
+                        CILinkView(linkPreview: preview)
+                        CIMsgContentView (chatItem: chatItem, showMember: showMember)
+                    default:
+                        CIMsgContentView (chatItem: chatItem, showMember: showMember)
                     }
                 }
             }
@@ -107,7 +116,7 @@ struct FramedItemView: View {
     }
 }
 
-struct ChatItemMsgContentView: View {
+struct CIMsgContentView: View {
     var chatItem: ChatItem
     var showMember = false
 

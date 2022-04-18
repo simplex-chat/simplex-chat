@@ -11,13 +11,14 @@ import SwiftUI
 struct ChatItemView: View {
     var chatItem: ChatItem
     var showMember = false
+    var maxWidth: CGFloat = .infinity
 
     var body: some View {
         if chatItem.isMsgContent() {
             if (chatItem.quotedItem == nil && isShortEmoji(chatItem.content.text)) {
                 EmojiItemView(chatItem: chatItem)
             } else {
-                FramedItemView(chatItem: chatItem, showMember: showMember)
+                FramedItemView(chatItem: chatItem, showMember: showMember, maxWidth: maxWidth)
             }
         } else if chatItem.isDeletedContent() {
             DeletedItemView(chatItem: chatItem, showMember: showMember)

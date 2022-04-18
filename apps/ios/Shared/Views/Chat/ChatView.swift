@@ -125,7 +125,7 @@ struct ChatView: View {
 
     private func chatItemWithMenu(_ ci: ChatItem, _ maxWidth: CGFloat, showMember: Bool = false) -> some View {
         let alignment: Alignment = ci.chatDir.sent ? .trailing : .leading
-        return ChatItemView(chatItem: ci, showMember: showMember)
+        return ChatItemView(chatItem: ci, showMember: showMember, maxWidth: maxWidth)
             .contextMenu {
                 if ci.isMsgContent() {
                     Button {
