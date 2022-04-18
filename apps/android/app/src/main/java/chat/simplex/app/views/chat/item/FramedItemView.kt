@@ -84,8 +84,7 @@ fun FramedItemView(user: User, ci: ChatItem, uriHandler: UriHandler? = null, sho
           }
         } else {
           Column(Modifier.fillMaxWidth()) {
-            val mc = ci.content.msgContent
-            when (mc) {
+            when (val mc = ci.content.msgContent) {
               is MsgContent.MCImage -> {
                 CIImageView(image = mc.image, file = ci.file)
                 if (mc.text == "") {
