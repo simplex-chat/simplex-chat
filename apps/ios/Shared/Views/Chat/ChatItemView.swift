@@ -15,7 +15,7 @@ struct ChatItemView: View {
 
     var body: some View {
         if chatItem.isMsgContent() {
-            if (chatItem.quotedItem == nil && isShortEmoji(chatItem.content.text)) {
+            if (chatItem.quotedItem == nil && chatItem.file == nil && isShortEmoji(chatItem.content.text)) {
                 EmojiItemView(chatItem: chatItem)
             } else {
                 FramedItemView(chatItem: chatItem, showMember: showMember, maxWidth: maxWidth)

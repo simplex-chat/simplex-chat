@@ -768,8 +768,14 @@ struct CIQuote: Decodable, ItemContent {
         }
     }
 
-    static func getSample(_ itemId: Int64?, _ sentAt: Date, _ text: String, chatDir: CIDirection?) -> CIQuote {
-        CIQuote(chatDir: chatDir, itemId: itemId, sentAt: sentAt, content: .text(text))
+    static func getSample(_ itemId: Int64?, _ sentAt: Date, _ text: String, chatDir: CIDirection?, image: String? = nil) -> CIQuote {
+        let mc: MsgContent
+        if let image = image {
+            mc = .image(text: text, image: image)
+        } else {
+            mc = .text(text)
+        }
+        return CIQuote(chatDir: chatDir, itemId: itemId, sentAt: sentAt, content: mc)
     }
 }
 
