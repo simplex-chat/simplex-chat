@@ -19,6 +19,7 @@ import androidx.compose.ui.tooling.preview.*
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.app.model.*
+import chat.simplex.app.ui.theme.HighOrLowlight
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.helpers.*
 import kotlinx.datetime.Clock
@@ -36,6 +37,7 @@ fun FramedItemView(user: User, ci: ChatItem, uriHandler: UriHandler? = null, sho
     shape = RoundedCornerShape(18.dp),
     color = if (sent) SentColorLight else ReceivedColorLight
   ) {
+    var metaColor = HighOrLowlight
     Box(contentAlignment = Alignment.BottomEnd) {
       Column(Modifier.width(IntrinsicSize.Max)) {
         val qi = ci.quotedItem
@@ -86,7 +88,9 @@ fun FramedItemView(user: User, ci: ChatItem, uriHandler: UriHandler? = null, sho
             when (mc) {
               is MsgContent.MCImage -> {
                 CIImageView(image = mc.image, file = ci.file)
-                if (mc.text != "") {
+                if (mc.text == "") {
+                  metaColor = Color.White
+                } else {
                   CIMarkdownText(ci, showMember, uriHandler)
                 }
               }
@@ -100,7 +104,7 @@ fun FramedItemView(user: User, ci: ChatItem, uriHandler: UriHandler? = null, sho
         }
       }
       Box(Modifier.padding(bottom = 6.dp, end = 12.dp)) {
-        CIMetaView(ci)
+        CIMetaView(ci, metaColor)
       }
     }
   }
