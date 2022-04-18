@@ -34,7 +34,7 @@ One of the most shocking stories is the experience of [Mohamedou Ould Salahi](ht
 
 It is not enough to use an end-to-end encrypted messenger, we all should use the messengers that protect the privacy of our personal networks - who we are connected with.
 
-## SimpleX unique approach to privacy and security - new era of private messaging
+## SimpleX unique approach to privacy and security
 
 ### Full privacy of your identity, profile, contacts and metadata
 
