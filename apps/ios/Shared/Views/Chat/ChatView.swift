@@ -135,10 +135,18 @@ struct ChatView: View {
                         }
                     } label: { Label("Reply", systemImage: "arrowshape.turn.up.left") }
                     Button {
-                        showShareSheet(items: [ci.content.text])
+                        var shareItems: [Any] = [ci.content.text]
+                        if case .image = ci.content.msgContent, let image = getStoredImage(ci.file) {
+                            shareItems.append(image)
+                        }
+                        showShareSheet(items: shareItems)
                     } label: { Label("Share", systemImage: "square.and.arrow.up") }
                     Button {
-                        UIPasteboard.general.string = ci.content.text
+                        if case .image = ci.content.msgContent, let image = getStoredImage(ci.file) {
+                            UIPasteboard.general.image = image
+                        } else {
+                            UIPasteboard.general.string = ci.content.text
+                        }
                     } label: { Label("Copy", systemImage: "doc.on.doc") }
                     if ci.meta.editable {
                         Button {
