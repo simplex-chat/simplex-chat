@@ -23,12 +23,22 @@ struct FramedItemView: View {
         let v = ZStack(alignment: .bottomTrailing) {
             VStack(alignment: .leading, spacing: 0) {
                 if let qi = chatItem.quotedItem {
-                    MsgContentView(
-                        content: qi,
-                        sender: qi.sender
-                    )
-                    .lineLimit(3)
-                    .font(.subheadline)
+                    HStack {
+                        MsgContentView(
+                            content: qi,
+                            sender: qi.sender
+                        )
+                        .lineLimit(3)
+                        .font(.subheadline)
+                        if case let .image(_, image) = qi.content,
+                           let data = Data(base64Encoded: dropImagePrefix(image)),
+                           let uiImage = UIImage(data: data) {
+                            Image(uiImage: uiImage)
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .frame(maxWidth: 80, maxHeight: 60)
+                        }
+                    }
                     .padding(.vertical, 6)
                     .padding(.horizontal, 12)
                     .overlay(DetermineWidth())
