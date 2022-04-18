@@ -14,11 +14,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import chat.simplex.app.R
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.ui.theme.ToolbarDark
 import chat.simplex.app.ui.theme.ToolbarLight
-import chat.simplex.app.views.chat.ChatHelpView
-import chat.simplex.app.views.newchat.ModalManager
+import chat.simplex.app.views.helpers.ModalManager
+import chat.simplex.app.views.helpers.generalGetString
 import chat.simplex.app.views.newchat.NewChatSheet
 import chat.simplex.app.views.usersettings.SettingsView
 import kotlinx.coroutines.CoroutineScope
@@ -110,25 +111,28 @@ fun Help(scaffoldCtrl: ScaffoldController, displayName: String?) {
       .fillMaxWidth()
       .padding(16.dp)
   ) {
+    val welcomeMsg = if (displayName != null) {
+      String.format(generalGetString(R.string.personal_welcome), displayName)
+    } else generalGetString(R.string.welcome)
     Text(
-      text = if (displayName != null) "Welcome ${displayName}!" else "Welcome!",
+      text = welcomeMsg,
       Modifier.padding(bottom = 24.dp),
       style = MaterialTheme.typography.h1,
       color = MaterialTheme.colors.onBackground
     )
-    ChatHelpView({ scaffoldCtrl.toggleSheet() })
+    ChatHelpView { scaffoldCtrl.toggleSheet() }
     Row(
       Modifier.padding(top = 30.dp),
       verticalAlignment = Alignment.CenterVertically,
       horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
       Text(
-        "This text is available in settings",
+        generalGetString(R.string.this_text_is_available_in_settings),
         color = MaterialTheme.colors.onBackground
       )
       Icon(
         Icons.Outlined.Settings,
-        "Settings",
+        generalGetString(R.string.icon_descr_settings),
         tint = MaterialTheme.colors.onBackground,
         modifier = Modifier.clickable(onClick = { scaffoldCtrl.toggleDrawer() })
       )
@@ -150,13 +154,13 @@ fun ChatListToolbar(scaffoldCtrl: ScaffoldController) {
     IconButton(onClick = { scaffoldCtrl.toggleDrawer() }) {
       Icon(
         Icons.Outlined.Menu,
-        "Settings",
+        generalGetString(R.string.icon_descr_settings),
         tint = MaterialTheme.colors.primary,
         modifier = Modifier.padding(10.dp)
       )
     }
     Text(
-      "Your chats",
+      generalGetString(R.string.your_chats),
       color = MaterialTheme.colors.onBackground,
       fontWeight = FontWeight.SemiBold,
       modifier = Modifier.padding(5.dp)
@@ -164,7 +168,7 @@ fun ChatListToolbar(scaffoldCtrl: ScaffoldController) {
     IconButton(onClick = { scaffoldCtrl.toggleSheet() }) {
       Icon(
         Icons.Outlined.PersonAdd,
-        "Add Contact",
+        generalGetString(R.string.add_contact),
         tint = MaterialTheme.colors.primary,
         modifier = Modifier.padding(10.dp)
       )

@@ -20,11 +20,11 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import chat.simplex.app.R
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.ui.theme.HighOrLowlight
 import chat.simplex.app.ui.theme.SimpleXTheme
-import chat.simplex.app.views.helpers.AlertManager
-import chat.simplex.app.views.helpers.withApi
+import chat.simplex.app.views.helpers.*
 
 @Composable
 fun SMPServersView(chatModel: ChatModel) {
@@ -60,9 +60,9 @@ fun SMPServersView(chatModel: ChatModel) {
           if (userSMPServers != null) {
             if (userSMPServers.isNotEmpty()) {
               AlertManager.shared.showAlertMsg(
-                title = "Use SimpleX Chat servers?",
-                text = "Saved SMP servers will be removed.",
-                confirmText = "Confirm",
+                title = generalGetString(R.string.use_simplex_chat_servers__question),
+                text = generalGetString(R.string.saved_SMP_servers_will_br_removed),
+                confirmText = generalGetString(R.string.confirm_verb),
                 onConfirm = {
                   saveSMPServers(listOf())
                   isUserSMPServers = false
@@ -108,14 +108,14 @@ fun SMPServersLayout(
     verticalArrangement = Arrangement.spacedBy(8.dp)
   ) {
     Text(
-      "Your SMP servers",
+      generalGetString(R.string.your_SMP_servers),
       Modifier.padding(bottom = 24.dp),
       style = MaterialTheme.typography.h1
     )
     Row(
       verticalAlignment = Alignment.CenterVertically
     ) {
-      Text("Configure SMP servers", Modifier.padding(end = 24.dp))
+      Text(generalGetString(R.string.configure_SMP_servers), Modifier.padding(end = 24.dp))
       Switch(
         checked = isUserSMPServers,
         onCheckedChange = isUserSMPServersOnOff,
@@ -127,9 +127,9 @@ fun SMPServersLayout(
     }
 
     if (!isUserSMPServers) {
-      Text("Using SimpleX Chat servers.")
+      Text(generalGetString(R.string.using_simplex_chat_servers), lineHeight = 22.sp)
     } else {
-      Text("Enter one SMP server per line:")
+      Text(generalGetString(R.string.enter_one_SMP_server_per_line))
       if (editSMPServers) {
         BasicTextField(
           value = userSMPServersStr,
@@ -173,14 +173,14 @@ fun SMPServersLayout(
           Column(horizontalAlignment = Alignment.Start) {
             Row {
               Text(
-                "Cancel",
+                generalGetString(R.string.cancel_verb),
                 color = MaterialTheme.colors.primary,
                 modifier = Modifier
                   .clickable(onClick = cancelEdit)
               )
               Spacer(Modifier.padding(horizontal = 8.dp))
               Text(
-                "Save",
+                generalGetString(R.string.save_servers_button),
                 color = MaterialTheme.colors.primary,
                 modifier = Modifier.clickable(onClick = {
                   val servers = userSMPServersStr.split("\n")
@@ -219,7 +219,7 @@ fun SMPServersLayout(
         ) {
           Column(horizontalAlignment = Alignment.Start) {
             Text(
-              "Edit",
+              generalGetString(R.string.edit_verb),
               color = MaterialTheme.colors.primary,
               modifier = Modifier
                 .clickable(onClick = editOn)
@@ -241,9 +241,9 @@ fun howToButton() {
     verticalAlignment = Alignment.CenterVertically,
     modifier = Modifier.clickable { uriHandler.openUri("https://github.com/simplex-chat/simplexmq#using-smp-server-and-smp-agent") }
   ) {
-    Text("How to", color = MaterialTheme.colors.primary)
+    Text(generalGetString(R.string.how_to), color = MaterialTheme.colors.primary)
     Icon(
-      Icons.Outlined.OpenInNew, "How to", tint = MaterialTheme.colors.primary,
+      Icons.Outlined.OpenInNew, generalGetString(R.string.how_to), tint = MaterialTheme.colors.primary,
       modifier = Modifier.padding(horizontal = 5.dp)
     )
   }
