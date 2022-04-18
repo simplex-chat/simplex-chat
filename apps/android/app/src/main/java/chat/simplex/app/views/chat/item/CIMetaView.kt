@@ -31,7 +31,7 @@ fun CIMetaView(chatItem: ChatItem, metaColor: Color = HighOrLowlight) {
           tint = metaColor,
         )
       }
-      CIStatusView(chatItem.meta.itemStatus)
+      CIStatusView(chatItem.meta.itemStatus, metaColor)
     }
     Text(
       chatItem.timestampText,
