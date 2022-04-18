@@ -585,15 +585,6 @@ struct ChatItem: Identifiable, Decodable {
 
     var timestampText: Text { get { meta.timestampText } }
 
-    var text: String {
-        get {
-            switch (content.text, file) {
-            case let ("", .some(file)): return file.fileName
-            default: return content.text
-            }
-        }
-    }
-
     func isRcvNew() -> Bool {
         if case .rcvNew = meta.itemStatus { return true }
         return false
@@ -734,7 +725,6 @@ enum CIContent: Decodable, ItemContent {
             }
         }
     }
-
     var msgContent: MsgContent? {
         get {
             switch self {

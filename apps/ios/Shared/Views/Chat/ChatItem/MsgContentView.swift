@@ -12,14 +12,14 @@ private let uiLinkColor = UIColor(red: 0, green: 0.533, blue: 1, alpha: 1)
 private let linkColor = Color(uiColor: uiLinkColor)
 
 struct MsgContentView: View {
-    var text: String
+    var content: ItemContent
     var formattedText: [FormattedText]? = nil
     var sender: String? = nil
     var metaText: Text? = nil
     var edited = false
 
     var body: some View {
-        let v = messageText(text, formattedText, sender)
+        let v = messageText(content, formattedText, sender)
         if let mt = metaText {
             return v + reserveSpaceForMeta(mt, edited)
         } else {
@@ -35,8 +35,8 @@ struct MsgContentView: View {
     }
 }
 
-func messageText(_ text: String, _ formattedText: [FormattedText]?, _ sender: String?, preview: Bool = false) -> Text {
-    let s = text
+func messageText(_ content: ItemContent, _ formattedText: [FormattedText]?, _ sender: String?, preview: Bool = false) -> Text {
+    let s = content.text
     var res: Text
     if let ft = formattedText, ft.count > 0 {
         res = formattText(ft[0], preview)
@@ -90,7 +90,7 @@ struct MsgContentView_Previews: PreviewProvider {
     static var previews: some View {
         let chatItem = ChatItem.getSample(1, .directSnd, .now, "hello")
         return MsgContentView(
-            text: chatItem.text,
+            content: chatItem.content,
             formattedText: chatItem.formattedText,
             sender: chatItem.memberDisplayName,
             metaText: chatItem.timestampText
