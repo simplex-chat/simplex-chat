@@ -42,17 +42,20 @@ fun FramedItemView(user: User, ci: ChatItem, uriHandler: UriHandler? = null, sho
           Box(
             Modifier
               .background(if (sent) SentQuoteColorLight else ReceivedQuoteColorLight)
-              .padding(vertical = 6.dp, horizontal = 12.dp)
               .fillMaxWidth()
           ) {
             Row(
-              verticalAlignment = Alignment.CenterVertically,
-              horizontalArrangement = Arrangement.spacedBy(8.dp)
+              verticalAlignment = Alignment.CenterVertically
             ) {
-              MarkdownText(
-                qi.text, sender = qi.sender(user), senderBold = true, maxLines = 3,
-                style = TextStyle(fontSize = 15.sp, color = MaterialTheme.colors.onSurface)
-              )
+              Box(
+                Modifier.padding(vertical = 6.dp, horizontal = 12.dp)
+              ) {
+                MarkdownText(
+                  qi.text, sender = qi.sender(user), senderBold = true, maxLines = 3,
+                  style = TextStyle(fontSize = 15.sp, color = MaterialTheme.colors.onSurface)
+                )
+              }
+              Spacer(Modifier.weight(1f))
               if (qi.content is MsgContent.MCImage) {
                 val imageBitmap = base64ToBitmap(qi.content.image).asImageBitmap()
                 Image(
