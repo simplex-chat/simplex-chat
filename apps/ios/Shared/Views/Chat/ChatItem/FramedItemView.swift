@@ -31,13 +31,13 @@ struct FramedItemView: View {
                     .font(.subheadline)
                     .padding(.vertical, 6)
                     .padding(.horizontal, 12)
+                    .overlay(DetermineWidth())
                     .frame(minWidth: msgWidth, alignment: .leading)
                     .background(
                         chatItem.chatDir.sent
                         ? (colorScheme == .light ? sentQuoteColorLight : sentQuoteColorDark)
                         : Color(uiColor: .quaternarySystemFill)
                     )
-                    .overlay(DetermineWidth())
                 }
 
                 if chatItem.formattedText == nil && isShortEmoji(chatItem.content.text) {
@@ -53,6 +53,7 @@ struct FramedItemView: View {
                 } else {
                     if case let .image(_, image) = chatItem.content.msgContent {
                         ChatItemImageView(image: image, file: chatItem.file)
+                            .overlay(DetermineWidth())
                         ChatItemMsgContentView (chatItem: chatItem, showMember: showMember)
 //                    // TODO make transparent background and change color for meta
 //                    if case let .image(text, image) = chatItem.content.msgContent {
@@ -62,6 +63,7 @@ struct FramedItemView: View {
 //                        }
                     } else if case let .link(_, preview) = chatItem.content.msgContent {
                         ChatItemLinkView(linkPreview: preview)
+                            //.overlay(DetermineWidth())
                         ChatItemMsgContentView (chatItem: chatItem, showMember: showMember)
                     } else {
                         ChatItemMsgContentView (chatItem: chatItem, showMember: showMember)
