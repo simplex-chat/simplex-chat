@@ -39,34 +39,31 @@ fun FramedItemView(user: User, ci: ChatItem, uriHandler: UriHandler? = null, sho
       Column(Modifier.width(IntrinsicSize.Max)) {
         val qi = ci.quotedItem
         if (qi != null) {
-          Box(
+          Row(
             Modifier
               .background(if (sent) SentQuoteColorLight else ReceivedQuoteColorLight)
               .fillMaxWidth()
           ) {
-            Row(
-              verticalAlignment = Alignment.CenterVertically
+            Box(
+              Modifier.padding(vertical = 6.dp, horizontal = 12.dp),
+              contentAlignment = Alignment.TopStart
             ) {
-              Box(
-                Modifier.padding(vertical = 6.dp, horizontal = 12.dp)
-              ) {
-                MarkdownText(
-                  qi.text, sender = qi.sender(user), senderBold = true, maxLines = 3,
-                  style = TextStyle(fontSize = 15.sp, color = MaterialTheme.colors.onSurface)
-                )
-              }
-              Spacer(Modifier.weight(1f))
-              if (qi.content is MsgContent.MCImage) {
-                val imageBitmap = base64ToBitmap(qi.content.image).asImageBitmap()
-                Image(
-                  imageBitmap,
-                  contentDescription = "image",
-                  contentScale = ContentScale.Crop,
-                  modifier = Modifier
-                    .size(60.dp)
-                    .clipToBounds()
-                )
-              }
+              MarkdownText(
+                qi.text, sender = qi.sender(user), senderBold = true, maxLines = 3,
+                style = TextStyle(fontSize = 15.sp, color = MaterialTheme.colors.onSurface)
+              )
+            }
+            Spacer(Modifier.weight(1f))
+            if (qi.content is MsgContent.MCImage) {
+              val imageBitmap = base64ToBitmap(qi.content.image).asImageBitmap()
+              Image(
+                imageBitmap,
+                contentDescription = "image",
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                  .size(60.dp)
+                  .clipToBounds()
+              )
             }
           }
         }
