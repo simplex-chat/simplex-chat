@@ -293,7 +293,7 @@ fun ChatItemsList(
   openDirectChat: (Long) -> Unit,
   deleteMessage: (Long, CIDeleteMode) -> Unit
 ) {
-  val listState = rememberLazyListState()
+  val listState = rememberLazyListState(initialFirstVisibleItemIndex = chatItems.size - chatItems.count { it.isRcvNew })
   val keyboardState by getKeyboardState()
   val ciListState = rememberSaveable(stateSaver = CIListStateSaver) {
     mutableStateOf(CIListState(false, chatItems.count(), keyboardState))
