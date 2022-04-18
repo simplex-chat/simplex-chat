@@ -17,10 +17,8 @@ import chat.simplex.app.views.helpers.getAppFilesDirectory
 import java.io.*
 
 @Composable
-fun ChatItemImageView(image: String, file: CIFile?) {
-  Column(
-    Modifier.width(300.dp)
-  ) {
+fun CIImageView(image: String, file: CIFile?) {
+  Column {
     var imageBitmap: Bitmap? = null
     if (file?.filePath != null) {
       val context = LocalContext.current
@@ -38,10 +36,11 @@ fun ChatItemImageView(image: String, file: CIFile?) {
     if (imageBitmap == null) {
       imageBitmap = base64ToBitmap(image)
     }
+//    val w = (imageBitmap.width > imageBitmap.height) Infinity else maxWidth * 0.75
     Image(
       imageBitmap.asImageBitmap(),
       contentDescription = "image",
-      modifier = Modifier.fillMaxWidth(),
+      modifier = Modifier.width(300.dp),
       contentScale = ContentScale.FillWidth,
     )
   }

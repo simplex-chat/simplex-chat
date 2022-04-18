@@ -1,6 +1,6 @@
 package chat.simplex.app.views.chat.item
 
-import ChatItemImageView
+import CIImageView
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -67,7 +67,7 @@ fun FramedItemView(user: User, ci: ChatItem, uriHandler: UriHandler? = null, sho
             }
           }
         }
-        if (ci.formattedText == null && isShortEmoji(ci.content.text)) {
+        if (ci.file == null && ci.formattedText == null && isShortEmoji(ci.content.text)) {
           Box(Modifier.padding(vertical = 6.dp, horizontal = 12.dp)) {
             Column(
               Modifier
@@ -83,7 +83,7 @@ fun FramedItemView(user: User, ci: ChatItem, uriHandler: UriHandler? = null, sho
           Column(Modifier.fillMaxWidth()) {
             val mc = ci.content.msgContent
             if (mc is MsgContent.MCImage) {
-              ChatItemImageView(image = mc.image, file = ci.file)
+              CIImageView(image = mc.image, file = ci.file)
             } else if (mc is MsgContent.MCLink) {
               ChatItemLinkView(mc.preview)
             }

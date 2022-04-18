@@ -45,7 +45,7 @@ fun ChatItemView(
   ) {
     Column(Modifier.combinedClickable(onLongClick = { showMenu = true }, onClick = {})) {
       if (cItem.isMsgContent) {
-        if (cItem.quotedItem == null && isShortEmoji(cItem.content.text)) {
+        if (cItem.file == null && cItem.quotedItem == null && isShortEmoji(cItem.content.text)) {
           EmojiItemView(cItem)
         } else {
           FramedItemView(user, cItem, uriHandler, showMember = showMember)
