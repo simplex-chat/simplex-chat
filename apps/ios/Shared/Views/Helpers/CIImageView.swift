@@ -28,6 +28,14 @@ struct CIImageView: View {
                             .scaledToFit()
                     }
                     .onTapGesture { showFullScreenImage = false }
+                    .gesture(
+                        DragGesture(minimumDistance: 80).onChanged { gesture in
+                            let t = gesture.translation
+                            if t.height > 60 && t.height > abs(t.width)  {
+                                showFullScreenImage = false
+                            }
+                        }
+                    )
                 }
                 .onTapGesture { showFullScreenImage = true }
             } else if let data = Data(base64Encoded: dropImagePrefix(image)),
