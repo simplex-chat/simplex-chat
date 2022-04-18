@@ -14,15 +14,22 @@ struct CIImageView: View {
     let file: CIFile?
     let maxWidth: CGFloat
     @Binding var imgWidth: CGFloat?
+    @State var showFullScreenImage = false
 
     var body: some View {
         VStack(alignment: .center, spacing: 6) {
-            if let file = file,
-               let savedFile = file.filePath,
-               let filePath = getAppFilesDirectory().path + "/" + savedFile,
-               file.stored, // TODO more advanced approach would be to send progressive jpeg and only check for filepath
-               let uiImage = UIImage(contentsOfFile: filePath) {
+            if let uiImage = getStoredImage(file) {
                 imageView(uiImage)
+                .fullScreenCover(isPresented: $showFullScreenImage) {
+                    ZStack {
+                        Color.black.edgesIgnoringSafeArea(.all)
+                        Image(uiImage: uiImage)
+                            .resizable()
+                            .scaledToFit()
+                    }
+                    .onTapGesture { showFullScreenImage = false }
+                }
+                .onTapGesture { showFullScreenImage = true }
             } else if let data = Data(base64Encoded: dropImagePrefix(image)),
               let uiImage = UIImage(data: data) {
                 imageView(uiImage)
