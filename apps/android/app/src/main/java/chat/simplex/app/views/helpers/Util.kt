@@ -2,7 +2,7 @@ package chat.simplex.app.views.helpers
 
 import android.content.Context
 import android.content.res.Resources
-import android.graphics.Rect
+import android.graphics.*
 import android.graphics.Typeface
 import android.text.Spanned
 import android.text.SpannedString
@@ -17,9 +17,13 @@ import androidx.compose.ui.text.font.*
 import androidx.compose.ui.text.style.BaselineShift
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.*
+import androidx.core.content.FileProvider
 import androidx.core.text.HtmlCompat
+import chat.simplex.app.BuildConfig
 import chat.simplex.app.SimplexApp
+import chat.simplex.app.model.CIFile
 import kotlinx.coroutines.*
+import java.io.File
 
 fun withApi(action: suspend CoroutineScope.() -> Unit): Job =
   GlobalScope.launch { withContext(Dispatchers.Main, action) }
@@ -53,11 +57,9 @@ fun getKeyboardState(): State<KeyboardState> {
 
   return keyboardState
 }
-
 // Resource to annotated string from
 // https://stackoverflow.com/questions/68549248/android-jetpack-compose-how-to-show-styled-text-from-string-resources
-
-fun generalGetString(id: Int) : String {
+fun generalGetString(id: Int): String {
   return SimplexApp.context.getString(id)
 }
 
@@ -203,4 +205,32 @@ fun getFilesDirectory(context: Context): String {
 
 fun getAppFilesDirectory(context: Context): String {
   return getFilesDirectory(context) + "/app_files"
+}
+
+fun getStoredFilePath(context: Context, file: CIFile?): String? {
+  return if (file?.filePath != null && file.stored) {
+    val filePath = getAppFilesDirectory(context) + "/" + file.filePath
+    if (File(filePath).exists()) filePath else null
+  } else {
+    null
+  }
+}
+
+// https://developer.android.com/training/data-storage/shared/documents-files#bitmap
+fun getStoredImage(context: Context, file: CIFile?): Bitmap? {
+  val filePath = getStoredFilePath(context, file)
+  return if (filePath != null) {
+    try {
+      val uri = FileProvider.getUriForFile(context, "${BuildConfig.APPLICATION_ID}.provider", File(filePath))
+      val parcelFileDescriptor = context.contentResolver.openFileDescriptor(uri, "r")
+      val fileDescriptor = parcelFileDescriptor?.fileDescriptor
+      val image = BitmapFactory.decodeFileDescriptor(fileDescriptor)
+      parcelFileDescriptor?.close()
+      image
+    } catch (e: Exception) {
+      null
+    }
+  } else {
+    null
+  }
 }
