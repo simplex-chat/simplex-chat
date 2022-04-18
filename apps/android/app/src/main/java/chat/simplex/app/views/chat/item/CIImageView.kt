@@ -36,11 +36,12 @@ fun CIImageView(image: String, file: CIFile?) {
     if (imageBitmap == null) {
       imageBitmap = base64ToBitmap(image)
     }
-    val w = if (imageBitmap.width > imageBitmap.height) 300.dp else 225.dp
     Image(
       imageBitmap.asImageBitmap(),
       contentDescription = "image",
-      modifier = Modifier.width(w),
+      // hack for image to increase IntrinsicSize of FramedItemView if text is short
+      // and take all available width if text is long
+      modifier = Modifier.width(1000.dp),
       contentScale = ContentScale.FillWidth,
     )
   }
