@@ -56,9 +56,7 @@ fun FramedItemView(user: User, ci: ChatItem, uriHandler: UriHandler? = null, sho
                 Image(
                   imageBitmap,
                   contentDescription = "image",
-                  modifier = Modifier
-                    .width(60.dp)
-                    .height(60.dp)
+                  modifier = Modifier.width(60.dp)
                 )
               }
             }
