@@ -95,7 +95,6 @@ data ChatCommand
   | SetFilesFolder FilePath
   | APIGetChats
   | APIGetChat ChatType Int64 ChatPagination
-  | APIGetChatItems Int
   | APISendMessage ChatType Int64 (Maybe FilePath) (Maybe ChatItemId) MsgContent
   | APISendMessageQuote ChatType Int64 ChatItemId MsgContent -- TODO discontinue
   | APIUpdateChatItem ChatType Int64 ChatItemId MsgContent

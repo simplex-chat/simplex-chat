@@ -1,0 +1,1 @@
+# SimpleX Chat JavaScript client

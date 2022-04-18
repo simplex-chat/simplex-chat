@@ -1,0 +1,35 @@
+{
+  "name": "simplex-chat-client",
+  "version": "0.0.1",
+  "description": "SimpleX Chat client",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/simplex-chat/simplex-chat.git"
+  },
+  "keywords": [
+    "messenger",
+    "chat",
+    "privacy",
+    "security"
+  ],
+  "author": "SimpleX Chat",
+  "license": "AGPL-3.0",
+  "bugs": {
+    "url": "https://github.com/simplex-chat/simplex-chat/issues"
+  },
+  "homepage": "https://github.com/simplex-chat/simplex-chat/packages/simplex-chat-client/typescript#readme",
+  "devDependencies": {
+    "@types/node": "^17.0.24",
+    "husky": "^7.0.4",
+    "lint-staged": "^12.3.8",
+    "prettier": "^2.6.2",
+    "typescript": "^4.6.3"
+  },
+  "lint-staged": {
+    "**/*": "prettier --write --ignore-unknown"
+  }
+}
