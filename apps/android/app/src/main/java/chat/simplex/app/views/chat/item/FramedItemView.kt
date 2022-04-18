@@ -9,8 +9,10 @@ import androidx.compose.material.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.UriHandler
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.tooling.preview.*
@@ -52,11 +54,14 @@ fun FramedItemView(user: User, ci: ChatItem, uriHandler: UriHandler? = null, sho
                 style = TextStyle(fontSize = 15.sp, color = MaterialTheme.colors.onSurface)
               )
               if (qi.content is MsgContent.MCImage) {
-                val imageBitmap = cropToSquare(base64ToBitmap(qi.content.image)).asImageBitmap()
+                val imageBitmap = base64ToBitmap(qi.content.image).asImageBitmap()
                 Image(
                   imageBitmap,
                   contentDescription = "image",
-                  modifier = Modifier.width(60.dp)
+                  contentScale = ContentScale.Crop,
+                  modifier = Modifier
+                    .size(60.dp)
+                    .clipToBounds()
                 )
               }
             }
