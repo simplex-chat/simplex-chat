@@ -144,6 +144,7 @@
 		5CEACCE227DE9246000BD591 /* ComposeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComposeView.swift; sourceTree = "<group>"; };
 		5CEACCEC27DEA495000BD591 /* MsgContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MsgContentView.swift; sourceTree = "<group>"; };
 		640F50E227CF991C001E05C2 /* SMPServers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SMPServers.swift; sourceTree = "<group>"; };
+		6493D667280ED77F007A76FB /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
 		649BCD9F280460FD00C3A862 /* ComposeImageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComposeImageView.swift; sourceTree = "<group>"; };
 		649BCDA12805D6EF00C3A862 /* CIImageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CIImageView.swift; sourceTree = "<group>"; };
 		64AA1C6827EE10C800AC7277 /* ContextItemView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContextItemView.swift; sourceTree = "<group>"; };
@@ -548,6 +549,7 @@
 			isa = PBXVariantGroup;
 			children = (
 				5CC2C0FB2809BF11000C35E3 /* ru */,
+				6493D667280ED77F007A76FB /* en */,
 			);
 			name = Localizable.strings;
 			sourceTree = "<group>";

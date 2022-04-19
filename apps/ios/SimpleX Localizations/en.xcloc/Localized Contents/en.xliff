@@ -176,13 +176,13 @@
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connecting server…" xml:space="preserve">
-        <source>Connecting server…</source>
-        <target>Connecting server…</target>
+        <source>Connecting to server…</source>
+        <target>Connecting to server…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connecting server… (error: %@)" xml:space="preserve">
-        <source>Connecting server… (error: %@)</source>
-        <target>Connecting server… (error: %@)</target>
+        <source>Connecting to server… (error: %@)</source>
+        <target>Connecting to server… (error: %@)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connecting..." xml:space="preserve">
