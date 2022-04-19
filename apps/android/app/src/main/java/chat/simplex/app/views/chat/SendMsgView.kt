@@ -140,6 +140,7 @@ fun SendMsgView(
                   sendMessage(msg.value)
                   msg.value = ""
                   textStyle = smallFont
+                  cancelledLinks.clear()
                 }
               }
           )
