@@ -275,6 +275,11 @@
         <target>Удалить контакт?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Delete for everyone" xml:space="preserve">
+        <source>Delete for everyone</source>
+        <target>Удалить для всех</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Delete for me" xml:space="preserve">
         <source>Delete for me</source>
         <target>Удалить для меня</target>

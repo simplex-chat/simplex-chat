@@ -126,13 +126,13 @@ fun deleteMessageAlertDialog(chatItem: ChatItem, deleteMessage: (Long, CIDeleteM
           deleteMessage(chatItem.id, CIDeleteMode.cidmInternal)
           AlertManager.shared.hideAlert()
         }) { Text(generalGetString(R.string.for_me_only)) }
-//        if (chatItem.meta.editable) {
-//          Spacer(Modifier.padding(horizontal = 4.dp))
-//          Button(onClick = {
-//            deleteMessage(chatItem.id, CIDeleteMode.cidmBroadcast)
-//            AlertManager.shared.hideAlert()
-//          }) { Text(generalGetString(R.string.for_everybody)) }
-//        }
+        if (chatItem.meta.editable) {
+          Spacer(Modifier.padding(horizontal = 4.dp))
+          Button(onClick = {
+            deleteMessage(chatItem.id, CIDeleteMode.cidmBroadcast)
+            AlertManager.shared.hideAlert()
+          }) { Text(generalGetString(R.string.for_everybody)) }
+        }
       }
     }
   )

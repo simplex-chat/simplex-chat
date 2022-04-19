@@ -360,7 +360,7 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
         val cItem = r.chatItem.chatItem
         chatModel.addChatItem(cInfo, cItem)
         val file = cItem.file
-        if (file != null && file.fileSize <= 394500) { // 236700
+        if (file != null && file.fileSize <= 236700) { // 394500
           withApi {receiveFile(file.fileId)}
         }
         if (!isAppOnForeground(appContext) || chatModel.chatId.value != cInfo.id) {

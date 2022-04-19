@@ -169,12 +169,12 @@ struct ChatView: View {
                 Button("Delete for me", role: .destructive) {
                     deleteMessage(.cidmInternal)
                 }
-//                if let di = deletingItem {
-//                    if di.meta.editable {
-//                        Button("Delete for everyone",role: .destructive) { deleteMessage(.cidmBroadcast)
-//                        }
-//                    }
-//                }
+                if let di = deletingItem {
+                    if di.meta.editable {
+                        Button("Delete for everyone",role: .destructive) { deleteMessage(.cidmBroadcast)
+                        }
+                    }
+                }
             }
             .frame(maxWidth: maxWidth, maxHeight: .infinity, alignment: alignment)
             .frame(minWidth: 0, maxWidth: .infinity, alignment: alignment)
