@@ -1,5 +1,6 @@
 import android.graphics.Bitmap
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.Composable
@@ -27,12 +28,10 @@ fun CIImageView(image: String, file: CIFile?) {
       // and take all available width if text is long
       modifier = Modifier
         .width(1000.dp)
-        .pointerInput(Unit) {
-          detectTapGestures(onTap = {
-            if (getStoredFilePath(context, file) != null) {
-              ModalManager.shared.showCustomModal { close -> ImageFullScreenView(imageBitmap, close) }
-            }
-          })
+        .clickable {
+          if (getStoredFilePath(context, file) != null) {
+            ModalManager.shared.showCustomModal { close -> ImageFullScreenView(imageBitmap, close) }
+          }
         },
       contentScale = ContentScale.FillWidth,
     )
