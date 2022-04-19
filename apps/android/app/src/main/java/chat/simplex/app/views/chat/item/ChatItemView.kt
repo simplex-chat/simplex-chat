@@ -54,7 +54,11 @@ fun ChatItemView(
         DeletedItemView(cItem, showMember = showMember)
       }
       if (cItem.isMsgContent) {
-        DropdownMenu(expanded = showMenu.value, onDismissRequest = { showMenu.value = false }) {
+        DropdownMenu(
+          expanded = showMenu.value,
+          onDismissRequest = { showMenu.value = false },
+          Modifier.width(150.dp)
+        ) {
           ItemAction(generalGetString(R.string.reply_verb), Icons.Outlined.Reply, onClick = {
             editingItem.value = null
             quotedItem.value = cItem
