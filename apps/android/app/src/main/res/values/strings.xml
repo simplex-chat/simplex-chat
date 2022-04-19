@@ -55,7 +55,7 @@
   <string name="delete_message__question">Delete message?</string>
   <string name="delete_message_cannot_be_undone_warning">Message will be deleted - this cannot be undone!</string>
   <string name="for_me_only">For me only</string>
-  <string name="for_everybody">For everybody</string>
+  <string name="for_everybody">For everyone</string>
 
   <!-- CIMetaView.kt -->
   <string name="icon_descr_edited">edited</string>
