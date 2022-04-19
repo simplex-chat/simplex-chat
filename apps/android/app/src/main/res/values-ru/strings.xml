@@ -49,7 +49,7 @@
     <!-- Chat Actions - ChatItemView.kt (and general) -->
     <string name="reply_verb">Ответить</string>
     <string name="share_verb">Поделиться</string>
-    <string name="copy_verb">Скопировать</string>
+    <string name="copy_verb">Копировать</string>
     <string name="edit_verb">Редактировать</string>
     <string name="delete_verb">Удалить</string>
     <string name="delete_message__question">Удалить сообщение?</string>
@@ -69,6 +69,12 @@
     <string name="welcome">Здравствуйте!</string>
     <string name="this_text_is_available_in_settings">Этот текст можно найти в Настройках</string>
     <string name="your_chats">Ваши чаты</string>
+
+    <!-- ComposeView.kt -->
+    <string name="attach">Прикрепить</string>
+
+    <!-- Images -->
+    <string name="image_descr">Изображение</string>
 
     <!-- Chat Info Actions - ChatInfoView.kt -->
     <string name="delete_contact__question">Удалить контакт?</string>

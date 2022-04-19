@@ -120,6 +120,11 @@
         <target>All your contacts will remain connected</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Attach" xml:space="preserve">
+        <source>Attach</source>
+        <target>Attach</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Cancel" xml:space="preserve">
         <source>Cancel</source>
         <target>Cancel</target>
@@ -734,20 +739,10 @@ SimpleX servers cannot see your profile.</target>
         <target>italic</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="receiving files is not supported yet" xml:space="preserve">
-        <source>receiving files is not supported yet</source>
-        <target>receiving files is not supported yet</target>
-        <note>to be removed</note>
-      </trans-unit>
       <trans-unit id="secret" xml:space="preserve">
         <source>secret</source>
         <target>secret</target>
         <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="sending files is not supported yet" xml:space="preserve">
-        <source>sending files is not supported yet</source>
-        <target>sending files is not supported yet</target>
-        <note>to be removed</note>
       </trans-unit>
       <trans-unit id="strike" xml:space="preserve">
         <source>strike</source>

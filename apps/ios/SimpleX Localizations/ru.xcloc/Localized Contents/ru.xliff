@@ -120,6 +120,11 @@
         <target>Все контакты, которые соединились через этот адрес, сохранятся.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Attach" xml:space="preserve">
+        <source>Attach</source>
+        <target>Прикрепить</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Cancel" xml:space="preserve">
         <source>Cancel</source>
         <target>Отменить</target>
@@ -603,7 +608,7 @@ to scan from the app</source>
       </trans-unit>
       <trans-unit id="You are connected to the server used to receive messages from this contact." xml:space="preserve">
         <source>You are connected to the server used to receive messages from this contact.</source>
-        <target>Установлено соединение с сервером, через который вы получается сообщения от этого контакта.</target>
+        <target>Установлено соединение с сервером, через который вы получаете сообщения от этого контакта.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can now send messages to %@" xml:space="preserve">
@@ -733,20 +738,10 @@ SimpleX серверы не могут получить доступ к ваше
         <target>курсив</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="receiving files is not supported yet" xml:space="preserve">
-        <source>receiving files is not supported yet</source>
-        <target>получение файлов не поддерживается</target>
-        <note>to be removed</note>
-      </trans-unit>
       <trans-unit id="secret" xml:space="preserve">
         <source>secret</source>
         <target>секрет</target>
         <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="sending files is not supported yet" xml:space="preserve">
-        <source>sending files is not supported yet</source>
-        <target>отправка файлов не поддерживается</target>
-        <note>to be removed</note>
       </trans-unit>
       <trans-unit id="strike" xml:space="preserve">
         <source>strike</source>

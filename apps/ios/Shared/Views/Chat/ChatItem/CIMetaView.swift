@@ -10,17 +10,18 @@ import SwiftUI
 
 struct CIMetaView: View {
     var chatItem: ChatItem
+    var metaColor = Color.secondary
 
     var body: some View {
         HStack(alignment: .center, spacing: 4) {
             if !chatItem.isDeletedContent() {
                 if chatItem.meta.itemEdited {
-                    statusImage("pencil", .secondary, 9)
+                    statusImage("pencil", metaColor, 9)
                 }
 
                 switch chatItem.meta.itemStatus {
                 case .sndSent:
-                    statusImage("checkmark", .secondary)
+                    statusImage("checkmark", metaColor)
                 case .sndErrorAuth:
                     statusImage("multiply", .red)
                 case .sndError:
@@ -33,7 +34,7 @@ struct CIMetaView: View {
 
             chatItem.timestampText
                 .font(.caption)
-                .foregroundColor(.secondary)
+                .foregroundColor(metaColor)
         }
     }
 

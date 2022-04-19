@@ -579,10 +579,20 @@ struct ChatItem: Identifiable, Decodable {
     var content: CIContent
     var formattedText: [FormattedText]?
     var quotedItem: CIQuote?
+    var file: CIFile?
 
     var id: Int64 { get { meta.itemId } }
 
     var timestampText: Text { get { meta.timestampText } }
+
+    var text: String {
+        get {
+            switch (content.text, file) {
+            case let ("", .some(file)): return file.fileName
+            default: return content.text
+            }
+        }
+    }
 
     func isRcvNew() -> Bool {
         if case .rcvNew = meta.itemStatus { return true }
@@ -615,12 +625,13 @@ struct ChatItem: Identifiable, Decodable {
         }
     }
     
-    static func getSample (_ id: Int64, _ dir: CIDirection, _ ts: Date, _ text: String, _ status: CIStatus = .sndNew, quotedItem: CIQuote? = nil, _ itemDeleted: Bool = false, _ itemEdited: Bool = false, _ editable: Bool = true) -> ChatItem {
+    static func getSample (_ id: Int64, _ dir: CIDirection, _ ts: Date, _ text: String, _ status: CIStatus = .sndNew, quotedItem: CIQuote? = nil, file: CIFile? = nil, _ itemDeleted: Bool = false, _ itemEdited: Bool = false, _ editable: Bool = true) -> ChatItem {
         ChatItem(
             chatDir: dir,
             meta: CIMeta.getSample(id, ts, text, status, itemDeleted, itemEdited, editable),
             content: .sndMsgContent(msgContent: .text(text)),
-            quotedItem: quotedItem
+            quotedItem: quotedItem,
+            file: file
        )
     }
     
@@ -629,7 +640,8 @@ struct ChatItem: Identifiable, Decodable {
             chatDir: dir,
             meta: CIMeta.getSample(id, ts, text, status, false, false, false),
             content: .rcvDeleted(deleteMode: .cidmBroadcast),
-            quotedItem: nil
+            quotedItem: nil,
+            file: nil
        )
     }
 }
@@ -711,8 +723,6 @@ enum CIContent: Decodable, ItemContent {
     case rcvMsgContent(msgContent: MsgContent)
     case sndDeleted(deleteMode: CIDeleteMode)
     case rcvDeleted(deleteMode: CIDeleteMode)
-    case sndFileInvitation(fileId: Int64, filePath: String)
-    case rcvFileInvitation(rcvFileTransfer: RcvFileTransfer)
 
     var text: String {
         get {
@@ -721,11 +731,10 @@ enum CIContent: Decodable, ItemContent {
             case let .rcvMsgContent(mc): return mc.text
             case .sndDeleted: return NSLocalizedString("deleted", comment: "deleted chat item")
             case .rcvDeleted: return NSLocalizedString("deleted", comment: "deleted chat item")
-            case .sndFileInvitation: return NSLocalizedString("sending files is not supported yet", comment: "to be removed")
-            case .rcvFileInvitation: return  NSLocalizedString("receiving files is not supported yet", comment: "to be removed")
             }
         }
     }
+
     var msgContent: MsgContent? {
         get {
             switch self {
@@ -735,10 +744,6 @@ enum CIContent: Decodable, ItemContent {
             }
         }
     }
-}
-
-struct RcvFileTransfer: Decodable {
-
 }
 
 struct CIQuote: Decodable, ItemContent {
@@ -763,14 +768,53 @@ struct CIQuote: Decodable, ItemContent {
         }
     }
 
-    static func getSample(_ itemId: Int64?, _ sentAt: Date, _ text: String, chatDir: CIDirection?) -> CIQuote {
-        CIQuote(chatDir: chatDir, itemId: itemId, sentAt: sentAt, content: .text(text))
+    static func getSample(_ itemId: Int64?, _ sentAt: Date, _ text: String, chatDir: CIDirection?, image: String? = nil) -> CIQuote {
+        let mc: MsgContent
+        if let image = image {
+            mc = .image(text: text, image: image)
+        } else {
+            mc = .text(text)
+        }
+        return CIQuote(chatDir: chatDir, itemId: itemId, sentAt: sentAt, content: mc)
     }
+}
+
+struct CIFile: Decodable {
+    var fileId: Int64
+    var fileName: String
+    var fileSize: Int64
+    var filePath: String?
+    var fileStatus: CIFileStatus
+
+    static func getSample(_ fileId: Int64, _ fileName: String, _ fileSize: Int64, filePath: String?, fileStatus: CIFileStatus = .sndStored) -> CIFile {
+        CIFile(fileId: fileId, fileName: fileName, fileSize: fileSize, filePath: filePath, fileStatus: fileStatus)
+    }
+
+    var stored: Bool {
+        get {
+            switch self.fileStatus {
+            case .sndStored: return true
+            case .sndCancelled: return true
+            case .rcvComplete: return true
+            default: return false
+            }
+        }
+    }
+}
+
+enum CIFileStatus: String, Decodable {
+    case sndStored = "snd_stored"
+    case sndCancelled = "snd_cancelled"
+    case rcvInvitation = "rcv_invitation"
+    case rcvTransfer = "rcv_transfer"
+    case rcvComplete = "rcv_complete"
+    case rcvCancelled = "rcv_cancelled"
 }
 
 enum MsgContent {
     case text(String)
     case link(text: String, preview: LinkPreview)
+    case image(text: String, image: String)
     // TODO include original JSON, possibly using https://github.com/zoul/generic-json-swift
     case unknown(type: String, text: String)
 
@@ -779,6 +823,7 @@ enum MsgContent {
             switch self {
             case let .text(text): return text
             case let .link(text, _): return text
+            case let .image(text, _): return text
             case let .unknown(_, text): return text
             }
         }
@@ -790,6 +835,8 @@ enum MsgContent {
             case let .text(text): return "text \(text)"
             case let .link(text: text, preview: preview):
                 return "json {\"type\":\"link\",\"text\":\(encodeJSON(text)),\"preview\":\(encodeJSON(preview))}"
+            case let .image(text: text, image: image):
+                return "json {\"type\":\"image\",\"text\":\(encodeJSON(text)),\"image\":\(encodeJSON(image))}"
             default: return ""
             }
         }
@@ -799,6 +846,7 @@ enum MsgContent {
         case type
         case text
         case preview
+        case image
     }
 }
 
@@ -816,6 +864,10 @@ extension MsgContent: Decodable {
                 let text = try container.decode(String.self, forKey: CodingKeys.text)
                 let preview = try container.decode(LinkPreview.self, forKey: CodingKeys.preview)
                 self = .link(text: text, preview: preview)
+            case "image":
+                let text = try container.decode(String.self, forKey: CodingKeys.text)
+                let image = try container.decode(String.self, forKey: CodingKeys.image)
+                self = .image(text: text, image: image)
             default:
                 let text = try? container.decode(String.self, forKey: CodingKeys.text)
                 self = .unknown(type: type, text: text ?? "unknown message format")

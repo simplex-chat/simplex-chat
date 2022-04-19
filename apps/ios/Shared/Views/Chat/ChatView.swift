@@ -24,6 +24,9 @@ struct ChatView: View {
     @State private var showChatInfo = false
     @State private var showDeleteMessage = false
 
+    @State private var chosenImage: UIImage? = nil
+    @State private var imagePreview: String? = nil
+
     var body: some View {
         let cInfo = chat.chatInfo
 
@@ -90,7 +93,9 @@ struct ChatView: View {
                 sendMessage: sendMessage,
                 resetMessage: { message = "" },
                 inProgress: inProgress,
-                keyboardVisible: $keyboardVisible
+                keyboardVisible: $keyboardVisible,
+                chosenImage: $chosenImage,
+                imagePreview: $imagePreview
             )
         }
         .navigationTitle(cInfo.chatViewName)
@@ -120,7 +125,7 @@ struct ChatView: View {
 
     private func chatItemWithMenu(_ ci: ChatItem, _ maxWidth: CGFloat, showMember: Bool = false) -> some View {
         let alignment: Alignment = ci.chatDir.sent ? .trailing : .leading
-        return ChatItemView(chatItem: ci, showMember: showMember)
+        return ChatItemView(chatItem: ci, showMember: showMember, maxWidth: maxWidth)
             .contextMenu {
                 if ci.isMsgContent() {
                     Button {
@@ -130,10 +135,18 @@ struct ChatView: View {
                         }
                     } label: { Label("Reply", systemImage: "arrowshape.turn.up.left") }
                     Button {
-                        showShareSheet(items: [ci.content.text])
+                        var shareItems: [Any] = [ci.content.text]
+                        if case .image = ci.content.msgContent, let image = getStoredImage(ci.file) {
+                            shareItems.append(image)
+                        }
+                        showShareSheet(items: shareItems)
                     } label: { Label("Share", systemImage: "square.and.arrow.up") }
                     Button {
-                        UIPasteboard.general.string = ci.content.text
+                        if case .image = ci.content.msgContent, let image = getStoredImage(ci.file) {
+                            UIPasteboard.general.image = image
+                        } else {
+                            UIPasteboard.general.string = ci.content.text
+                        }
                     } label: { Label("Copy", systemImage: "doc.on.doc") }
                     if ci.meta.editable {
                         Button {
@@ -221,7 +234,13 @@ struct ChatView: View {
                     }
                 } else {
                     let mc: MsgContent
-                    if let preview = linkPreview {
+                    var file: String? = nil
+                    if let preview = imagePreview,
+                       let uiImage = chosenImage,
+                       let savedFile = saveImage(uiImage) {
+                        mc = .image(text: text, image: preview)
+                        file = savedFile
+                    } else if let preview = linkPreview {
                         mc = .link(text: text, preview: preview)
                     } else {
                         mc = .text(text)
@@ -229,12 +248,15 @@ struct ChatView: View {
                     let chatItem = try await apiSendMessage(
                         type: chat.chatInfo.chatType,
                         id: chat.chatInfo.apiId,
+                        file: file,
                         quotedItemId: quotedItem?.meta.itemId,
                         msg: mc
                     )
                     DispatchQueue.main.async {
                         quotedItem = nil
                         linkPreview = nil
+                        chosenImage = nil
+                        imagePreview = nil
                         chatModel.addChatItem(chat.chatInfo, chatItem)
                     }
                 }
@@ -242,6 +264,24 @@ struct ChatView: View {
                 logger.error("ChatView.sendMessage error: \(error.localizedDescription)")
             }
         }
+    }
+
+    func saveImage(_ uiImage: UIImage) -> String? {
+        if let imageResized = resizeImageToDataSize(uiImage, maxDataSize: 160000),
+           let dataResized = Data(base64Encoded: dropImagePrefix(imageResized)),
+           let jpegData = UIImage(data: dataResized)?.jpegData(compressionQuality: 1) {
+            let millisecondsSince1970 = Int64((Date().timeIntervalSince1970 * 1000.0).rounded())
+            let fileToSave = "image_\(millisecondsSince1970).jpg"
+            let filePath = getAppFilesDirectory().appendingPathComponent(fileToSave)
+            do {
+                try jpegData.write(to: filePath)
+                return fileToSave
+            } catch {
+                logger.error("ChatView.saveImage error: \(error.localizedDescription)")
+                return nil
+            }
+        }
+        return nil
     }
     
     func deleteMessage(_ mode: CIDeleteMode) {

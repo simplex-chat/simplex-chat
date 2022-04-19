@@ -89,6 +89,9 @@
 "All your contacts will remain connected" = "Все контакты, которые соединились через этот адрес, сохранятся.";
 
 /* No comment provided by engineer. */
+"Attach" = "Прикрепить";
+
+/* No comment provided by engineer. */
 "bold" = "жирный";
 
 /* No comment provided by engineer. */
@@ -292,9 +295,6 @@
 /* No comment provided by engineer. */
 "Read" = "Прочитано";
 
-/* to be removed */
-"receiving files is not supported yet" = "получение файлов не поддерживается";
-
 /* No comment provided by engineer. */
 "Reject" = "Отклонить";
 
@@ -321,9 +321,6 @@
 
 /* No comment provided by engineer. */
 "secret" = "секрет";
-
-/* to be removed */
-"sending files is not supported yet" = "отправка файлов не поддерживается";
 
 /* No comment provided by engineer. */
 "Server connected" = "Установлено соединение с сервером";
@@ -410,7 +407,7 @@
 "You are already connected to %@ via this link." = "Вы уже соединены с %@ через эту ссылку.";
 
 /* No comment provided by engineer. */
-"You are connected to the server used to receive messages from this contact." = "Установлено соединение с сервером, через который вы получается сообщения от этого контакта.";
+"You are connected to the server used to receive messages from this contact." = "Установлено соединение с сервером, через который вы получаете сообщения от этого контакта.";
 
 /* notification body */
 "You can now send messages to %@" = "Вы теперь можете отправлять сообщения %@";
