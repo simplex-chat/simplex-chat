@@ -6,7 +6,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
@@ -24,7 +24,6 @@ import chat.simplex.app.ui.theme.HighOrLowlight
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.helpers.*
 import kotlinx.datetime.Clock
-import kotlinx.serialization.encodeToString
 
 val SentColorLight = Color(0x1E45B8FF)
 val ReceivedColorLight = Color(0x20B1B0B5)
@@ -32,7 +31,13 @@ val SentQuoteColorLight = Color(0x2545B8FF)
 val ReceivedQuoteColorLight = Color(0x25B1B0B5)
 
 @Composable
-fun FramedItemView(user: User, ci: ChatItem, uriHandler: UriHandler? = null, showMember: Boolean = false) {
+fun FramedItemView(
+  user: User,
+  ci: ChatItem,
+  uriHandler: UriHandler? = null,
+  showMember: Boolean = false,
+  showMenu: MutableState<Boolean>
+) {
   val sent = ci.chatDir.sent
   Surface(
     shape = RoundedCornerShape(18.dp),
@@ -87,7 +92,7 @@ fun FramedItemView(user: User, ci: ChatItem, uriHandler: UriHandler? = null, sho
           Column(Modifier.fillMaxWidth()) {
             when (val mc = ci.content.msgContent) {
               is MsgContent.MCImage -> {
-                CIImageView(image = mc.image, file = ci.file)
+                CIImageView(image = mc.image, file = ci.file, showMenu)
                 if (mc.text == "") {
                   metaColor = Color.White
                 } else {
@@ -127,12 +132,14 @@ class EditedProvider: PreviewParameterProvider<Boolean> {
 @Preview
 @Composable
 fun PreviewTextItemViewSnd(@PreviewParameter(EditedProvider::class) edited: Boolean) {
+  val showMenu = remember { mutableStateOf(false) }
   SimpleXTheme {
     FramedItemView(
       User.sampleData,
       ChatItem.getSampleData(
-        1, CIDirection.DirectSnd(), Clock.System.now(), "hello", itemEdited = edited
-      )
+        1, CIDirection.DirectSnd(), Clock.System.now(), "hello", itemEdited = edited,
+      ),
+      showMenu = showMenu
     )
   }
 }
@@ -140,12 +147,14 @@ fun PreviewTextItemViewSnd(@PreviewParameter(EditedProvider::class) edited: Bool
 @Preview
 @Composable
 fun PreviewTextItemViewRcv(@PreviewParameter(EditedProvider::class) edited: Boolean) {
+  val showMenu = remember { mutableStateOf(false) }
   SimpleXTheme {
     FramedItemView(
       User.sampleData,
       ChatItem.getSampleData(
         1, CIDirection.DirectRcv(), Clock.System.now(), "hello", itemEdited = edited
-      )
+      ),
+      showMenu = showMenu
     )
   }
 }
@@ -153,6 +162,7 @@ fun PreviewTextItemViewRcv(@PreviewParameter(EditedProvider::class) edited: Bool
 @Preview
 @Composable
 fun PreviewTextItemViewLong(@PreviewParameter(EditedProvider::class) edited: Boolean) {
+  val showMenu = remember { mutableStateOf(false) }
   SimpleXTheme {
     FramedItemView(
       User.sampleData,
@@ -162,7 +172,8 @@ fun PreviewTextItemViewLong(@PreviewParameter(EditedProvider::class) edited: Boo
         Clock.System.now(),
         "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
         itemEdited = edited
-      )
+      ),
+      showMenu = showMenu
     )
   }
 }
@@ -170,6 +181,7 @@ fun PreviewTextItemViewLong(@PreviewParameter(EditedProvider::class) edited: Boo
 @Preview
 @Composable
 fun PreviewTextItemViewQuote(@PreviewParameter(EditedProvider::class) edited: Boolean) {
+  val showMenu = remember { mutableStateOf(false) }
   SimpleXTheme {
     FramedItemView(
       User.sampleData,
@@ -180,7 +192,8 @@ fun PreviewTextItemViewQuote(@PreviewParameter(EditedProvider::class) edited: Bo
         CIStatus.SndSent(),
         quotedItem = CIQuote.getSample(1, Clock.System.now(), "hi", chatDir = CIDirection.DirectRcv()),
         itemEdited = edited
-      )
+      ),
+      showMenu = showMenu
     )
   }
 }
@@ -188,6 +201,7 @@ fun PreviewTextItemViewQuote(@PreviewParameter(EditedProvider::class) edited: Bo
 @Preview
 @Composable
 fun PreviewTextItemViewEmoji(@PreviewParameter(EditedProvider::class) edited: Boolean) {
+  val showMenu = remember { mutableStateOf(false) }
   SimpleXTheme {
     FramedItemView(
       User.sampleData,
@@ -198,7 +212,8 @@ fun PreviewTextItemViewEmoji(@PreviewParameter(EditedProvider::class) edited: Bo
         CIStatus.SndSent(),
         quotedItem = CIQuote.getSample(1, Clock.System.now(), "Lorem ipsum dolor sit amet", chatDir = CIDirection.DirectRcv()),
         itemEdited = edited
-      )
+      ),
+      showMenu = showMenu
     )
   }
 }
