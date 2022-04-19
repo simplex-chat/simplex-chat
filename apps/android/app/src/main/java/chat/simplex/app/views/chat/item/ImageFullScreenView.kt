@@ -18,7 +18,6 @@ fun ImageFullScreenView(imageBitmap: Bitmap, close: () -> Unit) {
       .fillMaxSize()
       .background(Color.Black)
   ) {
-    CloseSheetBar(close)
     Image(
       imageBitmap.asImageBitmap(),
       contentDescription = "image",
