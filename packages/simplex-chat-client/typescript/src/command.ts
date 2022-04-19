@@ -184,6 +184,7 @@ interface Profile {
 enum ChatType {
   CTDirect = "@",
   CTGroup = "#",
+  CTContactRequest = "<@",
 }
 
 type ChatPagination =
@@ -276,4 +277,394 @@ function paginationStr(cp: ChatPagination): string {
 
 function tagged<T>(tag: string, x?: T): string {
   return x ? ` ${tag}=${x}` : ""
+}
+
+type ChatResponse = 
+  | CRActiveUser
+  | CRChatStarted
+  | CRChatRunning
+  | CRApiChats
+  | CRApiChat
+  | CRApiParsedMarkdown
+  | CRUserSMPServers
+  | CRNewChatItem
+  | CRChatItemStatusUpdated
+  | CRChatItemUpdated
+  | CRChatItemDeleted
+  | CRMsgIntegrityError
+  | CRCmdOk
+  | CRUserContactLink
+  | CRUserContactLinkUpdated
+  | CRContactRequestRejected
+  | CRUserProfile
+  | CRUserProfileNoChange
+  | CRUserProfileUpdated
+  | CRInvitation
+  | CRSentConfirmation
+  | CRSentInvitation
+  | CRContactUpdated
+  | CRContactDeleted
+  | CRUserContactLinkCreated
+  | CRUserContactLinkDeleted
+  | CRReceivedContactRequest
+  | CRAcceptingContactRequest
+  | CRContactAlreadyExists
+  | CRContactRequestAlreadyAccepted
+  | CRContactConnecting
+  | CRContactConnected
+  | CRContactAnotherClient
+  | CRContactDisconnected
+  | CRContactSubscribed
+  | CRContactSubError
+  | CRContactSubSummary
+  | CRGroupEmpty
+  | CRPendingSubSummary
+  | CRUserContactLinkSubscribed
+  | CRUserContactLinkSubError
+  | CRMessageError
+  | CRChatCmdError
+  | CRChatError
+
+type ChatResponseTag =
+  | "activeUser"
+  | "chatStarted"
+  | "chatRunning"
+  | "apiChats"
+  | "apiChat"
+  | "apiParsedMarkdown"
+  | "userSMPServers"
+  | "newChatItem"
+  | "chatItemStatusUpdated"
+  | "chatItemUpdated"
+  | "chatItemDeleted"
+  | "msgIntegrityError"
+  | "cmdOk"
+  | "userContactLink"
+  | "userContactLinkUpdated"
+  | "userContactLinkCreated"
+  | "userContactLinkDeleted"
+  | "contactRequestRejected"
+  | "userProfile"
+  | "userProfileNoChange"
+  | "userProfileUpdated"
+  | "invitation"
+  | "sentConfirmation"
+  | "sentInvitation"
+  | "contactUpdated"
+  | "contactDeleted"
+  | "receivedContactRequest"
+  | "acceptingContactRequest"
+  | "contactAlreadyExists"
+  | "contactRequestAlreadyAccepted"
+  | "contactConnecting"
+  | "contactConnected"
+  | "contactAnotherClient"
+  | "contactDisconnected"
+  | "contactSubscribed"
+  | "contactSubError"
+  | "contactSubSummary"
+  | "groupEmpty"
+  | "pendingSubSummary"
+  | "userContactLinkSubscribed"
+  | "userContactLinkSubError"
+  | "messageError"
+  | "chatCmdError"
+  | "chatError"
+
+interface CR {
+  type: ChatResponseTag
+}
+
+interface CRActiveUser extends CR {
+  type: "activeUser"
+  user: User
+}
+
+interface CRChatStarted extends CR {
+  type: "chatStarted"
+}
+
+interface CRChatRunning extends CR {
+  type: "chatRunning"
+}
+
+interface CRApiChats extends CR {
+  type: "apiChats"
+  chats: Chat[]
+}
+
+interface CRApiChat extends CR {
+  type: "apiChat"
+  chats: Chat
+}
+
+interface CRApiParsedMarkdown extends CR {
+  type: "apiParsedMarkdown"
+  formattedText?: FormattedText[]
+}
+
+interface CRUserSMPServers extends CR {
+  type: "userSMPServers"
+  smpServers: string[]
+}
+
+interface CRNewChatItem extends CR {
+  type: "newChatItem"
+  chatItem: ChatItem
+}
+
+interface CRChatItemStatusUpdated extends CR {
+  type: "chatItemStatusUpdated"
+  chatItem: ChatItem
+}
+
+interface CRChatItemUpdated extends CR {
+  type: "chatItemUpdated"
+  chatItem: ChatItem
+}
+
+interface CRChatItemDeleted extends CR {
+  type: "chatItemDeleted"
+  deletedChatItem: ChatItem
+  toChatItem: ChatItem
+}
+
+interface CRMsgIntegrityError extends CR {
+  type: "msgIntegrityError"
+  msgerror: MsgErrorType
+}
+
+interface CRCmdOk extends CR {
+  type: "cmdOk"
+}
+
+interface CRUserContactLink extends CR {
+  type: "userContactLink"
+  connReqContact: string
+  autoAccept: boolean
+}
+
+interface CRUserContactLinkUpdated extends CR {
+  type: "userContactLinkUpdated"
+  connReqContact: string
+  autoAccept: boolean
+}
+
+interface CRContactRequestRejected extends CR {
+  type: "contactRequestRejected"
+  contactRequest: UserContactRequest
+}
+
+interface CRUserProfile extends CR {
+  type: "userProfile"
+  profile: Profile
+}
+
+interface CRUserProfileNoChange extends CR {
+  type: "userProfileNoChange"
+}
+
+interface CRUserProfileUpdated extends CR {
+  type: "userProfileUpdated"
+  fromProfile: Profile
+  toProfile: Profile
+}
+
+interface CRInvitation extends CR {
+  type: "invitation"
+  connReqInvitation: string
+}
+
+interface CRSentConfirmation extends CR {
+  type: "sentConfirmation"
+}
+
+interface CRSentInvitation extends CR {
+  type: "sentInvitation"
+}
+
+interface CRContactUpdated extends CR {
+  type: "contactUpdated"
+  fromContact: Contact
+  toContact: Contact
+}
+
+interface CRContactDeleted extends CR {
+  type: "contactDeleted"
+  contact: Contact
+}
+
+interface CRUserContactLinkCreated extends CR {
+  type: "userContactLinkCreated"
+  connReqContact: string
+}
+
+interface CRUserContactLinkDeleted extends CR {
+  type: "userContactLinkDeleted"
+}
+
+interface CRReceivedContactRequest extends CR {
+  type: "receivedContactRequest"
+  contactRequest: UserContactRequest
+}
+
+interface CRAcceptingContactRequest extends CR {
+  type: "acceptingContactRequest"
+  contact: Contact
+}
+
+interface CRContactAlreadyExists extends CR {
+  type: "contactAlreadyExists"
+  contact: Contact
+}
+
+interface CRContactRequestAlreadyAccepted extends CR {
+  type: "contactRequestAlreadyAccepted"
+  contact: Contact
+}
+
+interface CRContactConnecting extends CR {
+  type: "contactConnecting"
+  contact: Contact
+}
+
+interface CRContactConnected extends CR {
+  type: "contactConnected"
+  contact: Contact
+}
+
+interface CRContactAnotherClient extends CR {
+  type: "contactAnotherClient"
+  contact: Contact
+}
+
+interface CRContactDisconnected extends CR {
+  type: "contactDisconnected"
+  contact: Contact
+}
+
+interface CRContactSubscribed extends CR {
+  type: "contactSubscribed"
+  contact: Contact
+}
+
+interface CRContactSubError extends CR {
+  type: "contactSubError"
+  contact: Contact
+  chatError: ChatError
+}
+
+interface CRContactSubSummary extends CR {
+  type: "contactSubSummary"
+  contactSubscriptions: ContactSubStatus[]
+}
+
+interface CRGroupEmpty extends CR {
+  type: "groupEmpty"
+  groupInfo: GroupInfo
+}
+
+interface CRPendingSubSummary extends CR {
+  type: "pendingSubSummary"
+  pendingSubStatus: PendingSubStatus[]
+}
+
+interface CRUserContactLinkSubscribed extends CR {
+  type: "userContactLinkSubscribed"
+}
+
+interface CRUserContactLinkSubError extends CR {
+  type: "userContactLinkSubError"
+  chatError: ChatError
+}
+
+interface CRMessageError extends CR {
+  type: "messageError"
+  severity: string
+  errorMessage: string
+}
+
+interface CRChatCmdError extends CR {
+  type: "chatCmdError"
+  chatError: ChatError
+}
+
+interface CRChatError extends CR {
+  type: "chatError"
+  chatError: ChatError
+}
+
+interface User {
+  userId: number
+  userContactId: number
+  localDisplayName: string
+  profile: Profile
+  activeUser: boolean
+}
+
+interface Chat {
+  chatInfo: ChatInfo
+  chatItems: [ChatItem]
+  chatStats: ChatStats
+}
+
+type ChatInfo = CInfoDirect | CInfoGroup | CInfoContactRequest
+
+interface CInfo {
+  type: ChatType
+}
+
+interface CInfoDirect {
+  type: ChatType.CTDirect
+  contact: Contact
+}
+
+interface CInfoGroup {
+  type: ChatType.CTGroup
+  groupInfo: GroupInfo
+}
+
+interface CInfoContactRequest {
+  type: ChatType.CTContactRequest
+  contactRequest: UserContactRequest
+}
+
+interface Contact {
+
+}
+
+interface GroupInfo {
+
+}
+
+interface UserContactRequest {
+
+}
+
+interface ChatItem {
+
+}
+
+interface ChatStats {
+
+}
+
+interface FormattedText {
+
+}
+
+interface MsgErrorType {
+
+}
+
+interface ChatError {
+
+}
+
+interface ContactSubStatus {
+
+}
+
+interface PendingSubStatus {
+
 }
