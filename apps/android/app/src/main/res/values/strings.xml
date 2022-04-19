@@ -73,6 +73,9 @@
   <!-- ComposeView.kt -->
   <string name="attach">Attach</string>
 
+  <!-- Images -->
+  <string name="image_descr">Image</string>
+
   <!-- Chat Info Actions - ChatInfoView.kt -->
   <string name="delete_contact__question">Delete contact?</string>
   <string name="delete_contact_all_messages_deleted_cannot_undo_warning">Contact and all messages will be deleted - this cannot be undone!</string>

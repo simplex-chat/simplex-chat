@@ -18,6 +18,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.tooling.preview.*
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.HighOrLowlight
 import chat.simplex.app.ui.theme.SimpleXTheme
@@ -61,7 +62,7 @@ fun FramedItemView(user: User, ci: ChatItem, uriHandler: UriHandler? = null, sho
               val imageBitmap = base64ToBitmap(qi.content.image).asImageBitmap()
               Image(
                 imageBitmap,
-                contentDescription = "image",
+                contentDescription = generalGetString(R.string.image_descr),
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
                   .size(60.dp)
