@@ -34,7 +34,7 @@ import kotlinx.coroutines.launch
 fun UserProfileView(chatModel: ChatModel, close: () -> Unit) {
   val user = chatModel.currentUser.value
   if (user != null) {
-    var editProfile = remember { mutableStateOf(false) }
+    val editProfile = remember { mutableStateOf(false) }
     var profile by remember { mutableStateOf(user.profile) }
     UserProfileLayout(
       close = close,
@@ -278,7 +278,7 @@ fun PreviewUserProfileLayoutEditOn() {
       close = {},
       profile = Profile.sampleData,
       editProfile = remember { mutableStateOf(true) },
-      saveProfile = {_, _, _ ->}
+      saveProfile = { _, _, _ -> }
     )
   }
 }

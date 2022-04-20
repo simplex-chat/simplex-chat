@@ -99,7 +99,7 @@
 
     <!-- NewChatSheet -->
     <string name="create_QR_code_or_link__bracketed__multiline">(создать QR код или ссылку)</string>
-    <string name="in_person_or_in_video_call__bracketed">(при встрече или через видео звонок)</string>
+    <string name="in_person_or_in_video_call__bracketed">(при встрече или через видеозвонок)</string>
     <string name="create_group">Создать группу</string>
     <string name="coming_soon__bracketed">(скоро!)</string>
 
@@ -109,7 +109,7 @@
     <string name="from_gallery_button">Открыть галерею</string>
 
     <!-- help - ChatHelpView.kt -->
-    <string name="thank_you_for_installing_simplex">Спасибо что установили <xliff:g id="appNameFull">SimpleX Chat</xliff:g>!</string>
+    <string name="thank_you_for_installing_simplex">Спасибо, что установили <xliff:g id="appNameFull">SimpleX Chat</xliff:g>!</string>
     <string name="you_can_connect_to_simplex_chat_founder">Вы можете <font color="#0088ff">соединиться с разработчиками</font>, чтобы задать любые вопросы или получать уведомления о новых версиях.</string>
     <string name="to_start_a_new_chat_help_header">Чтобы начать новый чат</string>
     <string name="chat_help_tap_button">Нажмите кнопку</string>
@@ -155,9 +155,9 @@
     <string name="you_will_be_connected_when_your_connection_request_is_accepted">Соединение будет установлено когда ваш запрос будет принят. Пожалуйста, подождите или проверьте позже!</string>
     <string name="you_will_be_connected_when_your_contacts_device_is_online">Соединение будет установлено когда ваш контакт будет онлайн. Пожалуйста, подождите или проверьте позже!</string>
     <string name="show_QR_code_for_your_contact_to_scan_from_the_app__multiline">Покажите QR код вашему контакту, чтобы сосканировать его из приложения</string>
-    <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel">Если вы не можете встретиться лично, вы можете <b>показать QR код во время видео звонка</b> или отправить ссылку через любой другой канал связи.</string>
+    <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel">Если вы не можете встретиться лично, вы можете <b>показать QR код во время видеозвонка</b> или отправить ссылку через любой другой канал связи.</string>
     <string name="your_chat_profile_will_be_sent_to_your_contact">Ваш профиль будет отправлен\nвашему контакту</string>
-    <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link">Если вы не можете встретиться лично, вы можете <b>сосканировать QR код во время видео звонка</b>, или ваш контакт может отправить вам ссылку.</string>
+    <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link">Если вы не можете встретиться лично, вы можете <b>сосканировать QR код во время видеозвонка</b>, или ваш контакт может отправить вам ссылку.</string>
     <string name="share_invitation_link">Поделиться ссылкой</string>
 
     <!-- settings - SettingsView.kt -->
@@ -178,7 +178,7 @@
     <string name="configure_SMP_servers">Настройка SMP серверов</string>
     <string name="using_simplex_chat_servers">Используются серверы предоставленные <xliff:g id="appNameFull">SimpleX Chat</xliff:g>.</string>
     <string name="enter_one_SMP_server_per_line">Введите SMP серверы, каждый сервер в отдельной строке:</string>
-    <string name="how_to">Информация</string>
+    <string name="how_to">Инфо</string>
     <string name="save_servers_button">Сохранить</string>
 
     <!-- Address Items - UserAddressView.kt -->

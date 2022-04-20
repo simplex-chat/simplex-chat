@@ -108,6 +108,7 @@ fun ChatListView(chatModel: ChatModel) {
 fun Help(scaffoldCtrl: ScaffoldController, displayName: String?) {
   Column(
     Modifier
+      .verticalScroll(rememberScrollState())
       .fillMaxWidth()
       .padding(16.dp)
   ) {
