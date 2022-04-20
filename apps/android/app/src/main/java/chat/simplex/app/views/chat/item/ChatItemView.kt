@@ -57,7 +57,7 @@ fun ChatItemView(
         DropdownMenu(
           expanded = showMenu.value,
           onDismissRequest = { showMenu.value = false },
-          Modifier.width(180.dp)
+          Modifier.width(220.dp)
         ) {
           ItemAction(generalGetString(R.string.reply_verb), Icons.Outlined.Reply, onClick = {
             editingItem.value = null

@@ -17,7 +17,7 @@
       </trans-unit>
       <trans-unit id=" (can be copied)" xml:space="preserve">
         <source> (can be copied)</source>
-        <target> (можно скопировать)</target>
+        <target> (можно выделить)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="!1 colored!" xml:space="preserve">
@@ -347,7 +347,7 @@
       </trans-unit>
       <trans-unit id="How to" xml:space="preserve">
         <source>How to</source>
-        <target>Информация</target>
+        <target>Инфо</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="How to use SimpleX Chat" xml:space="preserve">
@@ -538,7 +538,7 @@ to scan from the app</source>
       </trans-unit>
       <trans-unit id="Thank you for installing SimpleX Chat!" xml:space="preserve">
         <source>Thank you for installing SimpleX Chat!</source>
-        <target>Спасибо, что Вы установили SimpleX Chat!</target>
+        <target>Спасибо что установили SimpleX Chat!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The app can notify you when you receive messages or contact requests - please open settings to enable." xml:space="preserve">
@@ -558,7 +558,7 @@ to scan from the app</source>
       </trans-unit>
       <trans-unit id="To ask any questions and to receive updates:" xml:space="preserve">
         <source>To ask any questions and to receive updates:</source>
-        <target>Задать вопросы и получать уведомления о новых версиях:</target>
+        <target>Чтобы задать вопросы и получать уведомления о новых версиях,</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="To connect via link" xml:space="preserve">
@@ -730,7 +730,7 @@ SimpleX серверы не могут получить доступ к ваше
       </trans-unit>
       <trans-unit id="connect to SimpleX Chat developers." xml:space="preserve">
         <source>connect to SimpleX Chat developers.</source>
-        <target>соединиться с разработчиками.</target>
+        <target>соединитесь с разработчиками.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="deleted" xml:space="preserve">

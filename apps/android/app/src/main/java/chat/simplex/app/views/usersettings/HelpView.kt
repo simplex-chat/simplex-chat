@@ -29,7 +29,9 @@ fun HelpView(chatModel: ChatModel) {
 @Composable
 fun HelpLayout(displayName: String) {
   Column(
-    Modifier.verticalScroll(rememberScrollState()),
+    Modifier
+      .verticalScroll(rememberScrollState())
+      .padding(bottom = 16.dp),
     horizontalAlignment = Alignment.Start
   ){
     Text(

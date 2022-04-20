@@ -5,7 +5,7 @@
 " (" = " (";
 
 /* No comment provided by engineer. */
-" (can be copied)" = " (можно скопировать)";
+" (can be copied)" = " (можно выделить)";
 
 /* No comment provided by engineer. */
 "_italic_" = "\\_курсив_";
@@ -122,7 +122,7 @@
 "Connect" = "Соединиться";
 
 /* No comment provided by engineer. */
-"connect to SimpleX Chat developers." = "соединиться с разработчиками.";
+"connect to SimpleX Chat developers." = "соединитесь с разработчиками.";
 
 /* No comment provided by engineer. */
 "Connect via contact link?" = "Соединиться через ссылку-контакт?";
@@ -236,7 +236,7 @@
 "Help" = "Помощь";
 
 /* No comment provided by engineer. */
-"How to" = "Информация";
+"How to" = "Инфо";
 
 /* No comment provided by engineer. */
 "How to use markdown" = "Как форматировать";
@@ -359,7 +359,7 @@
 "Tap button " = "Нажмите кнопку";
 
 /* No comment provided by engineer. */
-"Thank you for installing SimpleX Chat!" = "Спасибо, что Вы установили SimpleX Chat!";
+"Thank you for installing SimpleX Chat!" = "Спасибо что установили SimpleX Chat!";
 
 /* No comment provided by engineer. */
 "The app can notify you when you receive messages or contact requests - please open settings to enable." = "Приложение может посылать вам уведомления о сообщениях и запросах на соединение - уведомления можно включить в Настройках.";
@@ -371,7 +371,7 @@
 "The sender will NOT be notified" = "Отправитель не будет уведомлён";
 
 /* No comment provided by engineer. */
-"To ask any questions and to receive updates:" = "Задать вопросы и получать уведомления о новых версиях:";
+"To ask any questions and to receive updates:" = "Чтобы задать вопросы и получать уведомления о новых версиях,";
 
 /* No comment provided by engineer. */
 "To connect via link" = "Соединиться через ссылку";
