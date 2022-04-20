@@ -13,7 +13,7 @@ To extend the functionality of the SimpleX mobile apps in pursuit of supporting 
 - [ ] Incoming calls trigger a notification which offers the chance to accept or reject the call. Accepting the call opens the app to a call page.
 - [ ] (TBC) Calls will be entered into chat history as immutable messages with styling differing from typical messages
 
-## Proposed Implementation
+## Proposed Implementation
 <!-- The calls themselves should be handled by [WebRTC](https://www.html5rocks.com/en/tutorials/webrtc/infrastructure). This requires some initial messaging to set up the details of the session (routing, codecs, message priorities) and then the data of the call is passed peer-to-peer through the WebRTC channel resulting from the session instantiation. In order to secure the communications, the initial communication to set up the session will be handled through the existing SimpleX communication channel between users. The content sent through the WebRTC session will also be encrypted using keys (exchanged through SimpleX). Full details of the workflow for setting up WebRTC calls can be found [here](https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API/Signaling_and_video_calling). -->
 
 To take advantage of existing expertise and development in secure audio-visual communication, we propose to build this functionality using the [Jitsi](https://jitsi.github.io/handbook) [Android](https://jitsi.github.io/handbook/docs/dev-guide/dev-guide-android-sdk) and [iOS](https://jitsi.github.io/handbook/docs/dev-guide/dev-guide-ios-sdk) SDKs.
