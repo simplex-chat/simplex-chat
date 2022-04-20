@@ -109,7 +109,7 @@
     <string name="from_gallery_button">Открыть галерею</string>
 
     <!-- help - ChatHelpView.kt -->
-    <string name="thank_you_for_installing_simplex">Спасибо что установили <xliff:g id="appNameFull">SimpleX Chat</xliff:g>!</string>
+    <string name="thank_you_for_installing_simplex">Спасибо, что установили <xliff:g id="appNameFull">SimpleX Chat</xliff:g>!</string>
     <string name="you_can_connect_to_simplex_chat_founder">Вы можете <font color="#0088ff">соединиться с разработчиками</font>, чтобы задать любые вопросы или получать уведомления о новых версиях.</string>
     <string name="to_start_a_new_chat_help_header">Чтобы начать новый чат</string>
     <string name="chat_help_tap_button">Нажмите кнопку</string>
