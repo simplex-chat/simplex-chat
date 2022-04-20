@@ -55,7 +55,7 @@
   <string name="delete_message__question">Delete message?</string>
   <string name="delete_message_cannot_be_undone_warning">Message will be deleted - this cannot be undone!</string>
   <string name="for_me_only">For me only</string>
-  <string name="for_everybody">For everybody</string>
+  <string name="for_everybody">For everyone</string>
 
   <!-- CIMetaView.kt -->
   <string name="icon_descr_edited">edited</string>
@@ -69,6 +69,12 @@
   <string name="welcome">Welcome!</string>
   <string name="this_text_is_available_in_settings">This text is available in settings</string>
   <string name="your_chats">Your chats</string>
+
+  <!-- ComposeView.kt -->
+  <string name="attach">Attach</string>
+
+  <!-- Images -->
+  <string name="image_descr">Image</string>
 
   <!-- Chat Info Actions - ChatInfoView.kt -->
   <string name="delete_contact__question">Delete contact?</string>

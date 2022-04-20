@@ -37,7 +37,7 @@ import kotlin.math.sqrt
 
 // Inspired by https://github.com/MakeItEasyDev/Jetpack-Compose-Capture-Image-Or-Choose-from-Gallery
 
-private fun cropToSquare(image: Bitmap): Bitmap {
+fun cropToSquare(image: Bitmap): Bitmap {
   var xOffset = 0
   var yOffset = 0
   val side = min(image.height, image.width)
@@ -124,7 +124,8 @@ fun rememberPermissionLauncher(cb: (Boolean) -> Unit): ManagedActivityResultLaun
 
 @Composable
 fun GetImageBottomSheet(
-  profileImageStr: MutableState<String?>,
+  imageBitmap: MutableState<Bitmap?>,
+  onImageChange: (Bitmap) -> Unit,
   hideBottomSheet: () -> Unit
 ) {
   val context = LocalContext.current
@@ -134,12 +135,16 @@ fun GetImageBottomSheet(
     if (uri != null) {
       val source = ImageDecoder.createSource(context.contentResolver, uri)
       val bitmap = ImageDecoder.decodeBitmap(source)
-      profileImageStr.value = resizeImageToDataSize(cropToSquare(bitmap), maxDataSize = 12500)
+      imageBitmap.value = bitmap
+      onImageChange(bitmap)
     }
   }
 
   val cameraLauncher = rememberCameraLauncher { bitmap: Bitmap? ->
-    if (bitmap != null) profileImageStr.value = resizeImageToDataSize(cropToSquare(bitmap), maxDataSize = 12500)
+    if (bitmap != null) {
+      imageBitmap.value = bitmap
+      onImageChange(bitmap)
+    }
   }
 
   val permissionLauncher = rememberPermissionLauncher { isGranted: Boolean ->

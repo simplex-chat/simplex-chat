@@ -18,6 +18,7 @@ struct TerminalView: View {
     @State var message: String = ""
     @FocusState private var keyboardVisible: Bool
     @State var editing: Bool = false
+    @State var sendEnabled: Bool = false
 
     var body: some View {
         VStack {
@@ -67,12 +68,17 @@ struct TerminalView: View {
                     inProgress: inProgress,
                     message: $message,
                     keyboardVisible: $keyboardVisible,
-                    editing: $editing
+                    editing: $editing,
+                    sendEnabled: $sendEnabled
                 )
+                .padding(.horizontal, 12)
             }
         }
         .navigationViewStyle(.stack)
         .navigationTitle("Chat console")
+        .onChange(of: message) { _ in
+            sendEnabled = !message.isEmpty
+        }
     }
 
     func scrollToBottom(_ proxy: ScrollViewProxy, animation: Animation = .default) {

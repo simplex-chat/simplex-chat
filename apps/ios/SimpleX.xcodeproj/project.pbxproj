@@ -8,7 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		3CDBCF4227FAE51000354CDD /* ComposeLinkView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CDBCF4127FAE51000354CDD /* ComposeLinkView.swift */; };
-		3CDBCF4827FF621E00354CDD /* ChatItemLinkView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CDBCF4727FF621E00354CDD /* ChatItemLinkView.swift */; };
+		3CDBCF4827FF621E00354CDD /* CILinkView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CDBCF4727FF621E00354CDD /* CILinkView.swift */; };
 		5C063D2727A4564100AEC577 /* ChatPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C063D2627A4564100AEC577 /* ChatPreviewView.swift */; };
 		5C116CDC27AABE0400E66D01 /* ContactRequestView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C116CDB27AABE0400E66D01 /* ContactRequestView.swift */; };
 		5C1A4C1E27A715B700EAD5AD /* ChatItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C1A4C1D27A715B700EAD5AD /* ChatItemView.swift */; };
@@ -20,12 +20,12 @@
 		5C35CFCB27B2E91D00FB6C6D /* NtfManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C35CFCA27B2E91D00FB6C6D /* NtfManager.swift */; };
 		5C3A88CE27DF50170060F1C2 /* DetermineWidth.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C3A88CD27DF50170060F1C2 /* DetermineWidth.swift */; };
 		5C3A88D127DF57800060F1C2 /* FramedItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C3A88D027DF57800060F1C2 /* FramedItemView.swift */; };
-		5C411598280048E90054D6CB /* libHSsimplex-chat-1.5.0-3uBn0HoMpg08OGLfasXsOx.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C411593280048E90054D6CB /* libHSsimplex-chat-1.5.0-3uBn0HoMpg08OGLfasXsOx.a */; };
-		5C41159A280048E90054D6CB /* libffi.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C411594280048E90054D6CB /* libffi.a */; };
-		5C41159C280048E90054D6CB /* libHSsimplex-chat-1.5.0-3uBn0HoMpg08OGLfasXsOx-ghc8.10.7.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C411595280048E90054D6CB /* libHSsimplex-chat-1.5.0-3uBn0HoMpg08OGLfasXsOx-ghc8.10.7.a */; };
-		5C41159E280048E90054D6CB /* libgmpxx.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C411596280048E90054D6CB /* libgmpxx.a */; };
-		5C4115A0280048E90054D6CB /* libgmp.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C411597280048E90054D6CB /* libgmp.a */; };
 		5C5346A827B59A6A004DF848 /* ChatHelp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C5346A727B59A6A004DF848 /* ChatHelp.swift */; };
+		5C545C81280D7A7E007A6B96 /* libHSsimplex-chat-1.6.0-JmSjOVFru1I9XqltphBD8q.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C545C7C280D7A7E007A6B96 /* libHSsimplex-chat-1.6.0-JmSjOVFru1I9XqltphBD8q.a */; };
+		5C545C82280D7A7E007A6B96 /* libffi.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C545C7D280D7A7E007A6B96 /* libffi.a */; };
+		5C545C83280D7A7E007A6B96 /* libgmp.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C545C7E280D7A7E007A6B96 /* libgmp.a */; };
+		5C545C84280D7A7E007A6B96 /* libHSsimplex-chat-1.6.0-JmSjOVFru1I9XqltphBD8q-ghc8.10.7.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C545C7F280D7A7E007A6B96 /* libHSsimplex-chat-1.6.0-JmSjOVFru1I9XqltphBD8q-ghc8.10.7.a */; };
+		5C545C85280D7A7E007A6B96 /* libgmpxx.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C545C80280D7A7E007A6B96 /* libgmpxx.a */; };
 		5C577F7D27C83AA10006112D /* MarkdownHelp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C577F7C27C83AA10006112D /* MarkdownHelp.swift */; };
 		5C5F2B6D27EBC3FE006A9D5F /* ImagePicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C5F2B6C27EBC3FE006A9D5F /* ImagePicker.swift */; };
 		5C5F2B7027EBC704006A9D5F /* ProfileImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C5F2B6F27EBC704006A9D5F /* ProfileImage.swift */; };
@@ -65,8 +65,11 @@
 		5CEACCE327DE9246000BD591 /* ComposeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CEACCE227DE9246000BD591 /* ComposeView.swift */; };
 		5CEACCED27DEA495000BD591 /* MsgContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CEACCEC27DEA495000BD591 /* MsgContentView.swift */; };
 		640F50E327CF991C001E05C2 /* SMPServers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 640F50E227CF991C001E05C2 /* SMPServers.swift */; };
+		649BCDA0280460FD00C3A862 /* ComposeImageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 649BCD9F280460FD00C3A862 /* ComposeImageView.swift */; };
+		649BCDA22805D6EF00C3A862 /* CIImageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 649BCDA12805D6EF00C3A862 /* CIImageView.swift */; };
 		64AA1C6927EE10C800AC7277 /* ContextItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64AA1C6827EE10C800AC7277 /* ContextItemView.swift */; };
 		64AA1C6C27F3537400AC7277 /* DeletedItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64AA1C6B27F3537400AC7277 /* DeletedItemView.swift */; };
+		64DAE1512809D9F5000DA960 /* FileUtils.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64DAE1502809D9F5000DA960 /* FileUtils.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -81,7 +84,7 @@
 
 /* Begin PBXFileReference section */
 		3CDBCF4127FAE51000354CDD /* ComposeLinkView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComposeLinkView.swift; sourceTree = "<group>"; };
-		3CDBCF4727FF621E00354CDD /* ChatItemLinkView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatItemLinkView.swift; sourceTree = "<group>"; };
+		3CDBCF4727FF621E00354CDD /* CILinkView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CILinkView.swift; sourceTree = "<group>"; };
 		5C063D2627A4564100AEC577 /* ChatPreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatPreviewView.swift; sourceTree = "<group>"; };
 		5C116CDB27AABE0400E66D01 /* ContactRequestView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContactRequestView.swift; sourceTree = "<group>"; };
 		5C1A4C1D27A715B700EAD5AD /* ChatItemView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatItemView.swift; sourceTree = "<group>"; };
@@ -93,13 +96,13 @@
 		5C35CFCA27B2E91D00FB6C6D /* NtfManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NtfManager.swift; sourceTree = "<group>"; };
 		5C3A88CD27DF50170060F1C2 /* DetermineWidth.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DetermineWidth.swift; sourceTree = "<group>"; };
 		5C3A88D027DF57800060F1C2 /* FramedItemView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FramedItemView.swift; sourceTree = "<group>"; };
-		5C411593280048E90054D6CB /* libHSsimplex-chat-1.5.0-3uBn0HoMpg08OGLfasXsOx.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = "libHSsimplex-chat-1.5.0-3uBn0HoMpg08OGLfasXsOx.a"; sourceTree = "<group>"; };
-		5C411594280048E90054D6CB /* libffi.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libffi.a; sourceTree = "<group>"; };
-		5C411595280048E90054D6CB /* libHSsimplex-chat-1.5.0-3uBn0HoMpg08OGLfasXsOx-ghc8.10.7.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = "libHSsimplex-chat-1.5.0-3uBn0HoMpg08OGLfasXsOx-ghc8.10.7.a"; sourceTree = "<group>"; };
-		5C411596280048E90054D6CB /* libgmpxx.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libgmpxx.a; sourceTree = "<group>"; };
-		5C411597280048E90054D6CB /* libgmp.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libgmp.a; sourceTree = "<group>"; };
 		5C422A7C27A9A6FA0097A1E1 /* SimpleX (iOS).entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "SimpleX (iOS).entitlements"; sourceTree = "<group>"; };
 		5C5346A727B59A6A004DF848 /* ChatHelp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatHelp.swift; sourceTree = "<group>"; };
+		5C545C7C280D7A7E007A6B96 /* libHSsimplex-chat-1.6.0-JmSjOVFru1I9XqltphBD8q.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = "libHSsimplex-chat-1.6.0-JmSjOVFru1I9XqltphBD8q.a"; sourceTree = "<group>"; };
+		5C545C7D280D7A7E007A6B96 /* libffi.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libffi.a; sourceTree = "<group>"; };
+		5C545C7E280D7A7E007A6B96 /* libgmp.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libgmp.a; sourceTree = "<group>"; };
+		5C545C7F280D7A7E007A6B96 /* libHSsimplex-chat-1.6.0-JmSjOVFru1I9XqltphBD8q-ghc8.10.7.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = "libHSsimplex-chat-1.6.0-JmSjOVFru1I9XqltphBD8q-ghc8.10.7.a"; sourceTree = "<group>"; };
+		5C545C80280D7A7E007A6B96 /* libgmpxx.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libgmpxx.a; sourceTree = "<group>"; };
 		5C577F7C27C83AA10006112D /* MarkdownHelp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownHelp.swift; sourceTree = "<group>"; };
 		5C5F2B6C27EBC3FE006A9D5F /* ImagePicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImagePicker.swift; sourceTree = "<group>"; };
 		5C5F2B6F27EBC704006A9D5F /* ProfileImage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileImage.swift; sourceTree = "<group>"; };
@@ -141,8 +144,12 @@
 		5CEACCE227DE9246000BD591 /* ComposeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComposeView.swift; sourceTree = "<group>"; };
 		5CEACCEC27DEA495000BD591 /* MsgContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MsgContentView.swift; sourceTree = "<group>"; };
 		640F50E227CF991C001E05C2 /* SMPServers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SMPServers.swift; sourceTree = "<group>"; };
+		6493D667280ED77F007A76FB /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
+		649BCD9F280460FD00C3A862 /* ComposeImageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComposeImageView.swift; sourceTree = "<group>"; };
+		649BCDA12805D6EF00C3A862 /* CIImageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CIImageView.swift; sourceTree = "<group>"; };
 		64AA1C6827EE10C800AC7277 /* ContextItemView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContextItemView.swift; sourceTree = "<group>"; };
 		64AA1C6B27F3537400AC7277 /* DeletedItemView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeletedItemView.swift; sourceTree = "<group>"; };
+		64DAE1502809D9F5000DA960 /* FileUtils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileUtils.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -151,13 +158,13 @@
 			buildActionMask = 2147483647;
 			files = (
 				5C8F01CD27A6F0D8007D2C8D /* CodeScanner in Frameworks */,
-				5C411598280048E90054D6CB /* libHSsimplex-chat-1.5.0-3uBn0HoMpg08OGLfasXsOx.a in Frameworks */,
-				5C4115A0280048E90054D6CB /* libgmp.a in Frameworks */,
-				5C41159C280048E90054D6CB /* libHSsimplex-chat-1.5.0-3uBn0HoMpg08OGLfasXsOx-ghc8.10.7.a in Frameworks */,
 				5C764E83279C748B000C6508 /* libz.tbd in Frameworks */,
-				5C41159A280048E90054D6CB /* libffi.a in Frameworks */,
+				5C545C81280D7A7E007A6B96 /* libHSsimplex-chat-1.6.0-JmSjOVFru1I9XqltphBD8q.a in Frameworks */,
+				5C545C82280D7A7E007A6B96 /* libffi.a in Frameworks */,
+				5C545C85280D7A7E007A6B96 /* libgmpxx.a in Frameworks */,
+				5C545C84280D7A7E007A6B96 /* libHSsimplex-chat-1.6.0-JmSjOVFru1I9XqltphBD8q-ghc8.10.7.a in Frameworks */,
+				5C545C83280D7A7E007A6B96 /* libgmp.a in Frameworks */,
 				5C764E82279C748B000C6508 /* libiconv.tbd in Frameworks */,
-				5C41159E280048E90054D6CB /* libgmpxx.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -202,11 +209,11 @@
 		5C764E5C279C70B7000C6508 /* Libraries */ = {
 			isa = PBXGroup;
 			children = (
-				5C411594280048E90054D6CB /* libffi.a */,
-				5C411597280048E90054D6CB /* libgmp.a */,
-				5C411596280048E90054D6CB /* libgmpxx.a */,
-				5C411595280048E90054D6CB /* libHSsimplex-chat-1.5.0-3uBn0HoMpg08OGLfasXsOx-ghc8.10.7.a */,
-				5C411593280048E90054D6CB /* libHSsimplex-chat-1.5.0-3uBn0HoMpg08OGLfasXsOx.a */,
+				5C545C7D280D7A7E007A6B96 /* libffi.a */,
+				5C545C7E280D7A7E007A6B96 /* libgmp.a */,
+				5C545C80280D7A7E007A6B96 /* libgmpxx.a */,
+				5C545C7F280D7A7E007A6B96 /* libHSsimplex-chat-1.6.0-JmSjOVFru1I9XqltphBD8q-ghc8.10.7.a */,
+				5C545C7C280D7A7E007A6B96 /* libHSsimplex-chat-1.6.0-JmSjOVFru1I9XqltphBD8q.a */,
 			);
 			path = Libraries;
 			sourceTree = "<group>";
@@ -242,7 +249,9 @@
 				5C5F2B6C27EBC3FE006A9D5F /* ImagePicker.swift */,
 				5C5F2B6F27EBC704006A9D5F /* ProfileImage.swift */,
 				3CDBCF4127FAE51000354CDD /* ComposeLinkView.swift */,
-				3CDBCF4727FF621E00354CDD /* ChatItemLinkView.swift */,
+				3CDBCF4727FF621E00354CDD /* CILinkView.swift */,
+				649BCD9F280460FD00C3A862 /* ComposeImageView.swift */,
+				649BCDA12805D6EF00C3A862 /* CIImageView.swift */,
 			);
 			path = Helpers;
 			sourceTree = "<group>";
@@ -266,6 +275,7 @@
 			children = (
 				5CA059C3279559F40002BEB4 /* SimpleXApp.swift */,
 				5CA059C4279559F40002BEB4 /* ContentView.swift */,
+				64DAE1502809D9F5000DA960 /* FileUtils.swift */,
 				5C764E87279CBC8E000C6508 /* Model */,
 				5C2E260D27A30E2400F70299 /* Views */,
 				5CA059C5279559F40002BEB4 /* Assets.xcassets */,
@@ -469,7 +479,7 @@
 				5CE4407927ADB701007B033A /* EmojiItemView.swift in Sources */,
 				5C5346A827B59A6A004DF848 /* ChatHelp.swift in Sources */,
 				3CDBCF4227FAE51000354CDD /* ComposeLinkView.swift in Sources */,
-				3CDBCF4827FF621E00354CDD /* ChatItemLinkView.swift in Sources */,
+				3CDBCF4827FF621E00354CDD /* CILinkView.swift in Sources */,
 				5C764E80279C7276000C6508 /* dummy.m in Sources */,
 				5C7505A827B6D34800BE3227 /* ChatInfoToolbar.swift in Sources */,
 				5C3A88D127DF57800060F1C2 /* FramedItemView.swift in Sources */,
@@ -483,6 +493,7 @@
 				5CC1C99227A6C7F5000D9FF6 /* QRCode.swift in Sources */,
 				5C116CDC27AABE0400E66D01 /* ContactRequestView.swift in Sources */,
 				5CB9250D27A9432000ACCCDD /* ChatListNavLink.swift in Sources */,
+				649BCDA0280460FD00C3A862 /* ComposeImageView.swift in Sources */,
 				5CA059ED279559F40002BEB4 /* ContentView.swift in Sources */,
 				5CCD403427A5F6DF00368C90 /* AddContactView.swift in Sources */,
 				5C3A88CE27DF50170060F1C2 /* DetermineWidth.swift in Sources */,
@@ -497,8 +508,10 @@
 				5C577F7D27C83AA10006112D /* MarkdownHelp.swift in Sources */,
 				5CA059EB279559F40002BEB4 /* SimpleXApp.swift in Sources */,
 				5CCD403727A5F9A200368C90 /* ConnectContactView.swift in Sources */,
+				649BCDA22805D6EF00C3A862 /* CIImageView.swift in Sources */,
 				5CCD403A27A5F9BE00368C90 /* CreateGroupView.swift in Sources */,
 				5CEACCED27DEA495000BD591 /* MsgContentView.swift in Sources */,
+				64DAE1512809D9F5000DA960 /* FileUtils.swift in Sources */,
 				5C764E89279CBCB3000C6508 /* ChatModel.swift in Sources */,
 				5C971E1D27AEBEF600C8A3CE /* ChatInfoView.swift in Sources */,
 				5CC1C99527A6CF7F000D9FF6 /* ShareSheet.swift in Sources */,
@@ -536,6 +549,7 @@
 			isa = PBXVariantGroup;
 			children = (
 				5CC2C0FB2809BF11000C35E3 /* ru */,
+				6493D667280ED77F007A76FB /* en */,
 			);
 			name = Localizable.strings;
 			sourceTree = "<group>";
@@ -672,7 +686,7 @@
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = "SimpleX (iOS).entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 35;
+				CURRENT_PROJECT_VERSION = 39;
 				DEVELOPMENT_TEAM = 5NN7GUYB6T;
 				ENABLE_BITCODE = NO;
 				ENABLE_PREVIEWS = YES;
@@ -690,9 +704,13 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/Libraries",
+				);
 				"LIBRARY_SEARCH_PATHS[sdk=iphoneos*]" = "$(PROJECT_DIR)/Libraries/ios";
 				"LIBRARY_SEARCH_PATHS[sdk=iphonesimulator*]" = "$(PROJECT_DIR)/Libraries/sim";
-				MARKETING_VERSION = 1.5;
+				MARKETING_VERSION = 1.6;
 				PRODUCT_BUNDLE_IDENTIFIER = chat.simplex.app;
 				PRODUCT_NAME = SimpleX;
 				SDKROOT = iphoneos;
@@ -712,7 +730,7 @@
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = "SimpleX (iOS).entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 35;
+				CURRENT_PROJECT_VERSION = 39;
 				DEVELOPMENT_TEAM = 5NN7GUYB6T;
 				ENABLE_BITCODE = NO;
 				ENABLE_PREVIEWS = YES;
@@ -730,9 +748,13 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/Libraries",
+				);
 				"LIBRARY_SEARCH_PATHS[sdk=iphoneos*]" = "$(PROJECT_DIR)/Libraries/ios";
 				"LIBRARY_SEARCH_PATHS[sdk=iphonesimulator*]" = "$(PROJECT_DIR)/Libraries/sim";
-				MARKETING_VERSION = 1.5;
+				MARKETING_VERSION = 1.6;
 				PRODUCT_BUNDLE_IDENTIFIER = chat.simplex.app;
 				PRODUCT_NAME = SimpleX;
 				SDKROOT = iphoneos;

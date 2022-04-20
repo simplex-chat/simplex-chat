@@ -18,7 +18,7 @@ String.localizedStringWithFormat(NSLocalizedString("You can now send messages to
 
 1. Choose `Product -> Export Localizations...` in the menu, choose `ios` folder as the destination and `SimpleX Localizations` as the folder name, confirm to overwrite it (make sure not to save to subfolder).
 2. Add `target` keys to the localizations that were added or changed.
-3. Choose `Product -> Import Localizations...` for any non-Enlish folders - that would update Localizable files.
+3. Choose `Product -> Import Localizations...` for any non-English folders - that would update Localizable files.
 
 Localizable files values can be edited directly, the changes will be included in the next export. Following the process above though guarantees that all strings are localized.
 

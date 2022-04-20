@@ -36,51 +36,55 @@ fun ChatItemView(
 ) {
   val sent = cItem.chatDir.sent
   val alignment = if (sent) Alignment.CenterEnd else Alignment.CenterStart
-  var showMenu by remember { mutableStateOf(false) }
+  val showMenu = remember { mutableStateOf(false) }
   Box(
     modifier = Modifier
       .padding(bottom = 4.dp)
       .fillMaxWidth(),
     contentAlignment = alignment,
   ) {
-    Column(Modifier.combinedClickable(onLongClick = { showMenu = true }, onClick = {})) {
+    Column(Modifier.combinedClickable(onLongClick = { showMenu.value = true }, onClick = {})) {
       if (cItem.isMsgContent) {
-        if (cItem.quotedItem == null && isShortEmoji(cItem.content.text)) {
+        if (cItem.file == null && cItem.quotedItem == null && isShortEmoji(cItem.content.text)) {
           EmojiItemView(cItem)
         } else {
-          FramedItemView(user, cItem, uriHandler, showMember = showMember)
+          FramedItemView(user, cItem, uriHandler, showMember = showMember, showMenu)
         }
       } else if (cItem.isDeletedContent) {
         DeletedItemView(cItem, showMember = showMember)
       }
       if (cItem.isMsgContent) {
-        DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
+        DropdownMenu(
+          expanded = showMenu.value,
+          onDismissRequest = { showMenu.value = false },
+          Modifier.width(220.dp)
+        ) {
           ItemAction(generalGetString(R.string.reply_verb), Icons.Outlined.Reply, onClick = {
             editingItem.value = null
             quotedItem.value = cItem
-            showMenu = false
+            showMenu.value = false
           })
           ItemAction(generalGetString(R.string.share_verb), Icons.Outlined.Share, onClick = {
             shareText(cxt, cItem.content.text)
-            showMenu = false
+            showMenu.value = false
           })
           ItemAction(generalGetString(R.string.copy_verb), Icons.Outlined.ContentCopy, onClick = {
             copyText(cxt, cItem.content.text)
-            showMenu = false
+            showMenu.value = false
           })
           if (cItem.chatDir.sent && cItem.meta.editable) {
             ItemAction(generalGetString(R.string.edit_verb), Icons.Filled.Edit, onClick = {
               quotedItem.value = null
               editingItem.value = cItem
               msg.value = cItem.content.text
-              showMenu = false
+              showMenu.value = false
             })
           }
           ItemAction(
             generalGetString(R.string.delete_verb),
             Icons.Outlined.Delete,
             onClick = {
-              showMenu = false
+              showMenu.value = false
               deleteMessageAlertDialog(cItem, deleteMessage = deleteMessage)
             },
             color = Color.Red
@@ -122,13 +126,13 @@ fun deleteMessageAlertDialog(chatItem: ChatItem, deleteMessage: (Long, CIDeleteM
           deleteMessage(chatItem.id, CIDeleteMode.cidmInternal)
           AlertManager.shared.hideAlert()
         }) { Text(generalGetString(R.string.for_me_only)) }
-//        if (chatItem.meta.editable) {
-//          Spacer(Modifier.padding(horizontal = 4.dp))
-//          Button(onClick = {
-//            deleteMessage(chatItem.id, CIDeleteMode.cidmBroadcast)
-//            AlertManager.shared.hideAlert()
-//          }) { Text(generalGetString(R.string.for_everybody)) }
-//        }
+        if (chatItem.meta.editable) {
+          Spacer(Modifier.padding(horizontal = 4.dp))
+          Button(onClick = {
+            deleteMessage(chatItem.id, CIDeleteMode.cidmBroadcast)
+            AlertManager.shared.hideAlert()
+          }) { Text(generalGetString(R.string.for_everybody)) }
+        }
       }
     }
   )
