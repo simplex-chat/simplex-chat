@@ -654,7 +654,10 @@ viewChatError = \case
     SEQuotedChatItemNotFound -> ["message not found - reply is not sent"]
     e -> ["chat db error: " <> sShow e]
   ChatErrorAgent err -> case err of
-    SMP SMP.AUTH -> ["error: this connection is deleted"]
+    SMP SMP.AUTH ->
+      [ "error: connection authorization failed - this could happen if connection was deleted,\
+        \ secured with different credentials, or due to a bug - please re-create the connection"
+      ]
     e -> ["smp agent error: " <> sShow e]
   where
     fileNotFound fileId = ["file " <> sShow fileId <> " not found"]

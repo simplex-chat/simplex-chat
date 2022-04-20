@@ -190,6 +190,11 @@
         <target>Устанавливается соединение…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Connection authorization error" xml:space="preserve">
+        <source>Connection authorization error</source>
+        <target>Ошибка авторизации соединения</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Connection error" xml:space="preserve">
         <source>Connection error</source>
         <target>Ошибка соединения</target>
@@ -373,6 +378,11 @@
       <trans-unit id="If you received SimpleX Chat invitation link you can open it in your browser:" xml:space="preserve">
         <source>If you received SimpleX Chat invitation link you can open it in your browser:</source>
         <target>Если вы получили ссылку с приглашением из SimpleX Chat, вы можете открыть её в браузере:</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="If your contact didn't delete the connection, please contact us and tell about the error - it is possible that a bug occured. Sorry, this is a permanent error, please re-create the connection." xml:space="preserve">
+        <source>If your contact didn't delete the connection, please contact us and tell about the error - it is possible that a bug occured. Sorry, this is a permanent error, please re-create the connection.</source>
+        <target>Если ваш контакт не удалял соединение, пожалуйста свяжитесь с нами и расскажите об ошибке - возможно произошла программная ошибка. Это постоянная ошибка, пожалуйста создайте новое соединение.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Install [SimpleX Chat for terminal](https://github.com/simplex-chat/simplex-chat)" xml:space="preserve">
