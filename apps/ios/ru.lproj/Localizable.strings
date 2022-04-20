@@ -140,10 +140,10 @@
 "Connecting..." = "Устанавливается соединение…";
 
 /* No comment provided by engineer. */
-"Connection authorization error" = "Ошибка авторизации соединения";
+"Connection error" = "Ошибка соединения";
 
 /* No comment provided by engineer. */
-"Connection error" = "Ошибка соединения";
+"Connection error (AUTH)" = "Ошибка соединения (AUTH)";
 
 /* No comment provided by engineer. */
 "Connection request" = "Запрос на соединение";
@@ -255,9 +255,6 @@
 
 /* No comment provided by engineer. */
 "If you received SimpleX Chat invitation link you can open it in your browser:" = "Если вы получили ссылку с приглашением из SimpleX Chat, вы можете открыть её в браузере:";
-
-/* No comment provided by engineer. */
-"If your contact didn't delete the connection, please contact us and tell about the error - it is possible that a bug occured. Sorry, this is a permanent error, please re-create the connection." = "Если ваш контакт не удалял соединение, пожалуйста свяжитесь с нами и расскажите об ошибке - возможно произошла программная ошибка. Это постоянная ошибка, пожалуйста создайте новое соединение.";
 
 /* No comment provided by engineer. */
 "Install [SimpleX Chat for terminal](https://github.com/simplex-chat/simplex-chat)" = "[SimpleX Chat для терминала](https://github.com/simplex-chat/simplex-chat)";
@@ -393,6 +390,9 @@
 
 /* No comment provided by engineer. */
 "Unexpected error: %@" = "Неожиданная ошибка: %@";
+
+/* No comment provided by engineer. */
+"Unless your contact deleted the connection or this link was already used, it might be a bug - please report it. To connect, please ask your contact to create another connection link and check if you have a stable network connection." = "Если ваш контакт не удалил соединение или эта ссылка уже не использовалась, это может быть программная ошибка - пожалуйста, сообщите нам об этом. Чтобы установить соединение, попросите ваш контакт создать еще одну ссылку-приглашение и проверьте, стабильно ли у вас сетевое соединение.";
 
 /* No comment provided by engineer. */
 "Use SimpleX Chat servers?" = "Использовать серверы предосталенные SimpleX Chat?";

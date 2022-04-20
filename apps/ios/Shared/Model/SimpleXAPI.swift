@@ -494,8 +494,8 @@ func apiConnect(connReq: String) async throws -> Bool {
         return false
     case .chatCmdError(.errorAgent(.SMP(.AUTH))):
         am.showAlertMsg(
-            title: "Connection authorization error",
-            message: "If your contact didn't delete the connection, please contact us and tell about the error - it is possible that a bug occured. Sorry, this is a permanent error, please re-create the connection."
+            title: "Connection error (AUTH)",
+            message: "Unless your contact deleted the connection or this link was already used, it might be a bug - please report it. To connect, please ask your contact to create another connection link and check if you have a stable network connection."
         )
         return false
     default: throw r
