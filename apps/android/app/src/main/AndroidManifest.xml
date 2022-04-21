@@ -53,6 +53,7 @@
         <data android:scheme="https" />
         <data android:host="simplex.chat" />
         <data android:pathPrefix="/invitation" />
+        <data android:pathPrefix="/contact" />
       </intent-filter>
     </activity>
 
