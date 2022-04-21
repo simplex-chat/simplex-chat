@@ -15,6 +15,24 @@ import SwiftUI
 //    case editing(editingItem: ChatItem)
 //}
 
+//enum ReferencedItem {
+//    case none
+//    case quoted(quotedItem: ChatItem)
+//    case editing(editingItem: ChatItem)
+//}
+//
+//enum Preview {
+//    case none
+//    case link(linkPreview: LinkPreview)
+//    case image(image: UIImage)
+//}
+//
+//struct ComposeState {
+//    var quotedItem: ChatItem? = nil
+//    var editingItem: ChatItem? = nil
+//    var linkPreview: LinkPreview? = nil
+//}
+
 struct ComposeView: View {
     @Binding var message: String
     @Binding var quotedItem: ChatItem?
@@ -26,15 +44,23 @@ struct ComposeView: View {
     var inProgress: Bool = false
     @FocusState.Binding var keyboardVisible: Bool
     @State var editing: Bool = false
+    @State var sendEnabled: Bool = false
     @State var linkUrl: URL? = nil
     @State var prevLinkUrl: URL? = nil
     @State var pendingLinkUrl: URL? = nil
     @State var cancelledLinks: Set<String> = []
 
+    @State private var showChooseSource = false
+    @State private var showImagePicker = false
+    @State private var imageSource: ImageSource = .imageLibrary
+    @Binding var chosenImage: UIImage?
+    @Binding var imagePreview: String?
     
     var body: some View {
         VStack(spacing: 0) {
-            if let metadata = linkPreview {
+            if let metadata = imagePreview {
+                ComposeImageView(image: metadata, cancelImage: nil)
+            } else if let metadata = linkPreview {
                 ComposeLinkView(linkPreview: metadata, cancelPreview: cancelPreview)
             }
             if (quotedItem != nil) {
@@ -42,17 +68,33 @@ struct ComposeView: View {
             } else if (editingItem != nil) {
                 ContextItemView(contextItem: $editingItem, editing: $editing, resetMessage: resetMessage)
             }
-            SendMessageView(
-                sendMessage: { text in
-                    sendMessage(text)
-                    resetLinkPreview()
-                },
-                inProgress: inProgress,
-                message: $message,
-                keyboardVisible: $keyboardVisible,
-                editing: $editing
-            )
-            .background(.background)
+            HStack{
+//                Button {
+//                    showChooseSource = true
+//                } label: {
+//                    Image(systemName: "paperclip")
+//                        .resizable()
+//                }
+//                .disabled(editingItem != nil)
+//                .frame(width: 25, height: 25)
+//                .padding(.vertical, 4)
+//                .padding(.leading, 12)
+                SendMessageView(
+                    sendMessage: { text in
+                        sendMessage(text)
+                        resetLinkPreview()
+                    },
+                    inProgress: inProgress,
+                    message: $message,
+                    keyboardVisible: $keyboardVisible,
+                    editing: $editing,
+                    sendEnabled: $sendEnabled
+                )
+                .padding(.horizontal, 12)
+//                // use this padding when attach button is uncommented
+//                .padding(.trailing, 12)
+                .background(.background)
+            }
         }
         .onChange(of: message) { _ in
             if message.count > 0 {
@@ -60,9 +102,40 @@ struct ComposeView: View {
             } else {
                 resetLinkPreview()
             }
+            sendEnabled = (imagePreview != nil || !message.isEmpty)
         }
         .onChange(of: editingItem == nil) { _ in
             editing = (editingItem != nil)
+        }
+        .confirmationDialog("Attach", isPresented: $showChooseSource, titleVisibility: .visible) {
+            Button("Take picture") {
+                imageSource = .camera
+                showImagePicker = true
+            }
+            Button("Choose from library") {
+                imageSource = .imageLibrary
+                showImagePicker = true
+            }
+        }
+        .sheet(isPresented: $showImagePicker) {
+            switch imageSource {
+            case .imageLibrary:
+                LibraryImagePicker(image: $chosenImage) {
+                    didSelectItem in showImagePicker = false
+                }
+            case .camera:
+                CameraImagePicker(image: $chosenImage)
+            }
+        }
+        .onChange(of: chosenImage) { image in
+            if let image = image {
+                imagePreview = resizeImageToDataSize(image, maxDataSize: 12500)
+            } else {
+                imagePreview = nil
+            }
+        }
+        .onChange(of: imagePreview) { _ in
+            sendEnabled = (imagePreview != nil || !message.isEmpty)
         }
     }
 
@@ -136,6 +209,8 @@ struct ComposeView_Previews: PreviewProvider {
         @State var item: ChatItem? = ChatItem.getSample(1, .directSnd, .now, "hello")
         @State var nilItem: ChatItem? = nil
         @State var linkPreview: LinkPreview? = nil
+        @State var chosenImage: UIImage? = nil
+        @State var imagePreview: String? = nil
 
         return Group {
             ComposeView(
@@ -145,7 +220,9 @@ struct ComposeView_Previews: PreviewProvider {
                 linkPreview: $linkPreview,
                 sendMessage: { print ($0) },
                 resetMessage: {},
-                keyboardVisible: $keyboardVisible
+                keyboardVisible: $keyboardVisible,
+                chosenImage: $chosenImage,
+                imagePreview: $imagePreview
             )
             ComposeView(
                 message: $message,
@@ -154,7 +231,9 @@ struct ComposeView_Previews: PreviewProvider {
                 linkPreview: $linkPreview,
                 sendMessage: { print ($0) },
                 resetMessage: {},
-                keyboardVisible: $keyboardVisible
+                keyboardVisible: $keyboardVisible,
+                chosenImage: $chosenImage,
+                imagePreview: $imagePreview
             )
         }
     }

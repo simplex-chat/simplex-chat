@@ -35,7 +35,7 @@ fun appendSender(b: AnnotatedString.Builder, sender: String?, senderBold: Boolea
 
 @Composable
 fun MarkdownText (
-  content: ItemContent,
+  text: String,
   formattedText: List<FormattedText>? = null,
   sender: String? = null,
   metaText: String? = null,
@@ -51,7 +51,7 @@ fun MarkdownText (
   if (formattedText == null) {
     val annotatedText = buildAnnotatedString {
       appendSender(this, sender, senderBold)
-      append(content.text)
+      append(text)
       if (metaText != null) withStyle(reserveTimestampStyle) { append(reserve + metaText) }
     }
     Text(annotatedText, style = style, modifier = modifier, maxLines = maxLines, overflow = overflow)

@@ -20,7 +20,7 @@ import chat.simplex.app.views.helpers.generalGetString
 import kotlinx.datetime.Clock
 
 @Composable
-fun CIMetaView(chatItem: ChatItem) {
+fun CIMetaView(chatItem: ChatItem, metaColor: Color = HighOrLowlight) {
   Row(verticalAlignment = Alignment.CenterVertically) {
     if (!chatItem.isDeletedContent) {
       if (chatItem.meta.itemEdited) {
@@ -28,14 +28,14 @@ fun CIMetaView(chatItem: ChatItem) {
           Icons.Filled.Edit,
           modifier = Modifier.height(12.dp).padding(end = 1.dp),
           contentDescription = generalGetString(R.string.icon_descr_edited),
-          tint = HighOrLowlight,
+          tint = metaColor,
         )
       }
-      CIStatusView(chatItem.meta.itemStatus)
+      CIStatusView(chatItem.meta.itemStatus, metaColor)
     }
     Text(
       chatItem.timestampText,
-      color = HighOrLowlight,
+      color = metaColor,
       fontSize = 14.sp,
       modifier = Modifier.padding(start = 3.dp)
     )
@@ -44,10 +44,10 @@ fun CIMetaView(chatItem: ChatItem) {
 
 
 @Composable
-fun CIStatusView(status: CIStatus) {
+fun CIStatusView(status: CIStatus, metaColor: Color = HighOrLowlight) {
   when (status) {
     is CIStatus.SndSent -> {
-      Icon(Icons.Filled.Check, generalGetString(R.string.icon_descr_sent_msg_status_sent), Modifier.height(12.dp), tint = HighOrLowlight)
+      Icon(Icons.Filled.Check, generalGetString(R.string.icon_descr_sent_msg_status_sent), Modifier.height(12.dp), tint = metaColor)
     }
     is CIStatus.SndErrorAuth -> {
       Icon(Icons.Filled.Close,  generalGetString(R.string.icon_descr_sent_msg_status_unauthorized_send), Modifier.height(12.dp), tint = Color.Red)

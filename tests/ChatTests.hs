@@ -1694,7 +1694,7 @@ testRejectContactAndDeleteUserContact = testChat3 aliceProfile bobProfile cathPr
     alice <## "To create a new chat address use /ad"
 
     cath ##> ("/c " <> cLink)
-    cath <## "error: this connection is deleted"
+    cath <## "error: connection authorization failed - this could happen if connection was deleted, secured with different credentials, or due to a bug - please re-create the connection"
 
 testDeleteConnectionRequests :: IO ()
 testDeleteConnectionRequests = testChat3 aliceProfile bobProfile cathProfile $

@@ -15,6 +15,7 @@ struct SendMessageView: View {
     @Namespace var namespace
     @FocusState.Binding var keyboardVisible: Bool
     @Binding var editing: Bool
+    @Binding var sendEnabled: Bool
     @State private var teHeight: CGFloat = 42
     @State private var teFont: Font = .body
     var maxHeight: CGFloat = 360
@@ -52,7 +53,7 @@ struct SendMessageView: View {
                             .resizable()
                             .foregroundColor(.accentColor)
                     }
-                    .disabled(message.isEmpty)
+                    .disabled(!sendEnabled)
                     .frame(width: 29, height: 29)
                     .padding([.bottom, .trailing], 4)
                 }
@@ -62,7 +63,6 @@ struct SendMessageView: View {
                 .strokeBorder(.secondary, lineWidth: 0.3, antialiased: true)
                 .frame(height: teHeight)
         }
-        .padding(.horizontal, 12)
         .padding(.vertical, 8)
     }
 
@@ -90,6 +90,7 @@ struct SendMessageView_Previews: PreviewProvider {
         @FocusState var keyboardVisible: Bool
         @State var editingOff: Bool = false
         @State var editingOn: Bool = true
+        @State var sendEnabled: Bool = true
         @State var item: ChatItem? = ChatItem.getSample(1, .directSnd, .now, "hello")
 
         return Group {
@@ -100,7 +101,8 @@ struct SendMessageView_Previews: PreviewProvider {
                     sendMessage: { print ($0) },
                     message: $message,
                     keyboardVisible: $keyboardVisible,
-                    editing: $editingOff
+                    editing: $editingOff,
+                    sendEnabled: $sendEnabled
                 )
             }
             VStack {
@@ -110,7 +112,8 @@ struct SendMessageView_Previews: PreviewProvider {
                     sendMessage: { print ($0) },
                     message: $message,
                     keyboardVisible: $keyboardVisible,
-                    editing: $editingOn
+                    editing: $editingOn,
+                    sendEnabled: $sendEnabled
                 )
             }
         }

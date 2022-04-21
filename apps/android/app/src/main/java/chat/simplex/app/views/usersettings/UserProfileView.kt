@@ -1,6 +1,7 @@
 package chat.simplex.app.views.usersettings
 
 import android.content.res.Configuration
+import android.graphics.Bitmap
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -33,7 +34,7 @@ import kotlinx.coroutines.launch
 fun UserProfileView(chatModel: ChatModel, close: () -> Unit) {
   val user = chatModel.currentUser.value
   if (user != null) {
-    var editProfile = remember { mutableStateOf(false) }
+    val editProfile = remember { mutableStateOf(false) }
     var profile by remember { mutableStateOf(user.profile) }
     UserProfileLayout(
       close = close,
@@ -64,6 +65,7 @@ fun UserProfileLayout(
   val bottomSheetModalState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden)
   val displayName = remember { mutableStateOf(profile.displayName) }
   val fullName = remember { mutableStateOf(profile.fullName) }
+  val chosenImage = remember { mutableStateOf<Bitmap?>(null) }
   val profileImage = remember { mutableStateOf(profile.image) }
   val scope = rememberCoroutineScope()
   val scrollState = rememberScrollState()
@@ -75,9 +77,12 @@ fun UserProfileLayout(
       scrimColor = Color.Black.copy(alpha = 0.12F),
       modifier = Modifier.navigationBarsWithImePadding(),
       sheetContent = {
-        GetImageBottomSheet(profileImage, hideBottomSheet = {
-          scope.launch { bottomSheetModalState.hide() }
-        })
+        GetImageBottomSheet(
+          chosenImage,
+          onImageChange = { bitmap -> profileImage.value = resizeImageToDataSize(cropToSquare(bitmap), maxDataSize = 12500) },
+          hideBottomSheet = {
+            scope.launch { bottomSheetModalState.hide() }
+          })
       },
       sheetState = bottomSheetModalState,
       sheetShape = RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp)
@@ -273,7 +278,7 @@ fun PreviewUserProfileLayoutEditOn() {
       close = {},
       profile = Profile.sampleData,
       editProfile = remember { mutableStateOf(true) },
-      saveProfile = {_, _, _ ->}
+      saveProfile = { _, _, _ -> }
     )
   }
 }

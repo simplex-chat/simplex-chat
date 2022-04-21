@@ -39,7 +39,6 @@ class MainActivity: ComponentActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
 //    testJson()
-    processIntent(intent, vm.chatModel)
     setContent {
       SimpleXTheme {
         Surface(
@@ -52,6 +51,11 @@ class MainActivity: ComponentActivity() {
       }
     }
     schedulePeriodicServiceRestartWorker()
+  }
+
+  override fun onNewIntent(intent: Intent?) {
+    super.onNewIntent(intent)
+    processIntent(intent, vm.chatModel)
   }
 
   private fun schedulePeriodicServiceRestartWorker() {

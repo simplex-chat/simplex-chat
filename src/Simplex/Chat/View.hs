@@ -200,19 +200,15 @@ viewChatItem chat ChatItem {chatDir, meta, content, quotedItem, file} = case cha
       quote = maybe [] (groupQuote g) quotedItem
   _ -> []
   where
-    sndMsg to quote mc = case (msgContentText mc, file) of
+    withSndFile = withFile viewSentFileInvitation
+    withRcvFile = withFile viewReceivedFileInvitation
+    withFile view dir l = maybe l (\f -> l <> view dir f meta) file
+    sndMsg = msg viewSentMessage
+    rcvMsg = msg viewReceivedMessage
+    msg view dir quote mc = case (msgContentText mc, file) of
       ("", Just _) -> []
-      _ -> viewSentMessage to quote mc meta
-    withSndFile to l = case file of
-      -- TODO pass CIFile
-      Just CIFile {fileId, filePath = Just fPath} -> l <> viewSentFileInvitation to fileId fPath meta
-      _ -> l
-    rcvMsg from quote mc = case (msgContentText mc, file) of
-      ("", Just _) -> []
-      _ -> viewReceivedMessage from quote mc meta
-    withRcvFile from l = case file of
-      Just f -> l <> viewReceivedFileInvitation from f meta
-      _ -> l
+      -- (_, Just _) -> prependFirst "      " $ ttyMsgContent mc
+      _ -> view dir quote mc meta
 
 viewItemUpdate :: MsgDirectionI d => ChatInfo c -> ChatItem c d -> [StyledString]
 viewItemUpdate chat ChatItem {chatDir, meta, content, quotedItem} = case chat of
@@ -476,8 +472,10 @@ viewSentMessage to quote mc = sentWithTime_ (prependFirst to $ quote <> prependF
 viewSentBroadcast :: MsgContent -> Int -> ZonedTime -> [StyledString]
 viewSentBroadcast mc n ts = prependFirst (highlight' "/feed" <> " (" <> sShow n <> ") " <> ttyMsgTime ts <> " ") (ttyMsgContent mc)
 
-viewSentFileInvitation :: StyledString -> FileTransferId -> FilePath -> CIMeta d -> [StyledString]
-viewSentFileInvitation to fId fPath = sentWithTime_ $ ttySentFile to fId fPath
+viewSentFileInvitation :: StyledString -> CIFile d -> CIMeta d -> [StyledString]
+viewSentFileInvitation to CIFile {fileId, filePath} = case filePath of
+  Just fPath -> sentWithTime_ $ ttySentFile to fileId fPath
+  _ -> const []
 
 sentWithTime_ :: [StyledString] -> CIMeta d -> [StyledString]
 sentWithTime_ styledMsg CIMeta {localItemTs} =
@@ -656,7 +654,10 @@ viewChatError = \case
     SEQuotedChatItemNotFound -> ["message not found - reply is not sent"]
     e -> ["chat db error: " <> sShow e]
   ChatErrorAgent err -> case err of
-    SMP SMP.AUTH -> ["error: this connection is deleted"]
+    SMP SMP.AUTH ->
+      [ "error: connection authorization failed - this could happen if connection was deleted,\
+        \ secured with different credentials, or due to a bug - please re-create the connection"
+      ]
     e -> ["smp agent error: " <> sShow e]
   where
     fileNotFound fileId = ["file " <> sShow fileId <> " not found"]

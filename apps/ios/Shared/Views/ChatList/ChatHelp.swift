@@ -24,6 +24,7 @@ struct ChatHelp: View {
                         UIApplication.shared.open(simplexTeamURL)
                     }
                 }
+                .padding(.top, 2)
             }
 
             VStack(alignment: .leading, spacing: 10) {

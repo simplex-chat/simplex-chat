@@ -17,13 +17,18 @@ import chat.simplex.app.R
 import chat.simplex.app.SimplexService
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.model.Profile
-import chat.simplex.app.views.helpers.generalGetString
-import chat.simplex.app.views.helpers.withApi
+import chat.simplex.app.views.helpers.*
 import com.google.accompanist.insets.ProvideWindowInsets
 import com.google.accompanist.insets.navigationBarsWithImePadding
+import kotlinx.coroutines.launch
 
 @Composable
 fun WelcomeView(chatModel: ChatModel) {
+  val scope = rememberCoroutineScope()
+  val scrollState = rememberScrollState()
+  val keyboardState by getKeyboardState()
+  var savedKeyboardState by remember { mutableStateOf(keyboardState) }
+
   ProvideWindowInsets(windowInsetsAnimationsEnabled = true) {
     Box(
       modifier = Modifier
@@ -33,7 +38,7 @@ fun WelcomeView(chatModel: ChatModel) {
       Column(
         verticalArrangement = Arrangement.SpaceBetween,
         modifier = Modifier
-          .verticalScroll(rememberScrollState())
+          .verticalScroll(scrollState)
           .fillMaxSize()
           .background(color = MaterialTheme.colors.background)
           .padding(12.dp)
@@ -61,6 +66,14 @@ fun WelcomeView(chatModel: ChatModel) {
         )
         Spacer(Modifier.height(24.dp))
         CreateProfilePanel(chatModel)
+      }
+      if (savedKeyboardState != keyboardState) {
+        LaunchedEffect(keyboardState) {
+          scope.launch {
+            savedKeyboardState = keyboardState
+            scrollState.animateScrollTo(scrollState.maxValue)
+          }
+        }
       }
     }
   }

@@ -33,6 +33,8 @@
     <string name="you_are_already_connected_to_vName_via_this_link">Вы уже соединены с <xliff:g id="contactName" example="Alice">%1$s!</xliff:g> через эту ссылку.</string>
     <string name="invalid_connection_link">Ошибка в ссылке контакта</string>
     <string name="please_check_correct_link_and_maybe_ask_for_a_new_one">Пожалуйста, проверьте, что вы использовали правильную ссылку, или попросите ваш контакт отправить вам новую.</string>
+    <string name="connection_error_auth">Ошибка соединения (AUTH)</string>
+    <string name="connection_error_auth_desc">Возможно, ваш контакт удалил ссылку, или она уже была использована. Если это не так, то это может быть ошибкой - пожалуйста, сообщите нам об этом.\nЧтобы установить соединение, попросите ваш контакт создать еще одну ссылку и проверьте ваше соединение с сетью.</string>
     <string name="cannot_delete_contact">Невозможно удалить контакт!</string>
     <string name="contact_cannot_be_deleted_as_they_are_in_groups">Контакт <xliff:g id="contactName" example="Jane Doe">%1$s!</xliff:g> не может быть удален, так как является членом групп(ы) <xliff:g id="groups" example="[team, chess club]">%2$s</xliff:g>.</string>
     <string name="icon_descr_instant_notifications">Мгновенные уведомления</string>
@@ -49,7 +51,7 @@
     <!-- Chat Actions - ChatItemView.kt (and general) -->
     <string name="reply_verb">Ответить</string>
     <string name="share_verb">Поделиться</string>
-    <string name="copy_verb">Скопировать</string>
+    <string name="copy_verb">Копировать</string>
     <string name="edit_verb">Редактировать</string>
     <string name="delete_verb">Удалить</string>
     <string name="delete_message__question">Удалить сообщение?</string>
@@ -69,6 +71,12 @@
     <string name="welcome">Здравствуйте!</string>
     <string name="this_text_is_available_in_settings">Этот текст можно найти в Настройках</string>
     <string name="your_chats">Ваши чаты</string>
+
+    <!-- ComposeView.kt -->
+    <string name="attach">Прикрепить</string>
+
+    <!-- Images -->
+    <string name="image_descr">Изображение</string>
 
     <!-- Chat Info Actions - ChatInfoView.kt -->
     <string name="delete_contact__question">Удалить контакт?</string>
@@ -93,7 +101,7 @@
 
     <!-- NewChatSheet -->
     <string name="create_QR_code_or_link__bracketed__multiline">(создать QR код или ссылку)</string>
-    <string name="in_person_or_in_video_call__bracketed">(при встрече или через видео звонок)</string>
+    <string name="in_person_or_in_video_call__bracketed">(при встрече или через видеозвонок)</string>
     <string name="create_group">Создать группу</string>
     <string name="coming_soon__bracketed">(скоро!)</string>
 
@@ -103,7 +111,7 @@
     <string name="from_gallery_button">Открыть галерею</string>
 
     <!-- help - ChatHelpView.kt -->
-    <string name="thank_you_for_installing_simplex">Спасибо что установили <xliff:g id="appNameFull">SimpleX Chat</xliff:g>!</string>
+    <string name="thank_you_for_installing_simplex">Спасибо, что установили <xliff:g id="appNameFull">SimpleX Chat</xliff:g>!</string>
     <string name="you_can_connect_to_simplex_chat_founder">Вы можете <font color="#0088ff">соединиться с разработчиками</font>, чтобы задать любые вопросы или получать уведомления о новых версиях.</string>
     <string name="to_start_a_new_chat_help_header">Чтобы начать новый чат</string>
     <string name="chat_help_tap_button">Нажмите кнопку</string>
@@ -149,9 +157,9 @@
     <string name="you_will_be_connected_when_your_connection_request_is_accepted">Соединение будет установлено когда ваш запрос будет принят. Пожалуйста, подождите или проверьте позже!</string>
     <string name="you_will_be_connected_when_your_contacts_device_is_online">Соединение будет установлено когда ваш контакт будет онлайн. Пожалуйста, подождите или проверьте позже!</string>
     <string name="show_QR_code_for_your_contact_to_scan_from_the_app__multiline">Покажите QR код вашему контакту, чтобы сосканировать его из приложения</string>
-    <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel">Если вы не можете встретиться лично, вы можете <b>показать QR код во время видео звонка</b> или отправить ссылку через любой другой канал связи.</string>
+    <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel">Если вы не можете встретиться лично, вы можете <b>показать QR код во время видеозвонка</b> или отправить ссылку через любой другой канал связи.</string>
     <string name="your_chat_profile_will_be_sent_to_your_contact">Ваш профиль будет отправлен\nвашему контакту</string>
-    <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link">Если вы не можете встретиться лично, вы можете <b>сосканировать QR код во время видео звонка</b>, или ваш контакт может отправить вам ссылку.</string>
+    <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link">Если вы не можете встретиться лично, вы можете <b>сосканировать QR код во время видеозвонка</b>, или ваш контакт может отправить вам ссылку.</string>
     <string name="share_invitation_link">Поделиться ссылкой</string>
 
     <!-- settings - SettingsView.kt -->
@@ -172,7 +180,7 @@
     <string name="configure_SMP_servers">Настройка SMP серверов</string>
     <string name="using_simplex_chat_servers">Используются серверы предоставленные <xliff:g id="appNameFull">SimpleX Chat</xliff:g>.</string>
     <string name="enter_one_SMP_server_per_line">Введите SMP серверы, каждый сервер в отдельной строке:</string>
-    <string name="how_to">Информация</string>
+    <string name="how_to">Инфо</string>
     <string name="save_servers_button">Сохранить</string>
 
     <!-- Address Items - UserAddressView.kt -->
