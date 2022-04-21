@@ -30,13 +30,24 @@ instance Monoid StyledString where mempty = plain ""
 instance IsString StyledString where fromString = plain
 
 styleMarkdown :: Markdown -> StyledString
-styleMarkdown (s1 :|: s2) = styleMarkdown s1 <> styleMarkdown s2
-styleMarkdown (Markdown f s) = styleFormat f s
+styleMarkdown = \case 
+    Markdown Nothing s -> plain s 
+    Markdown (Just Snippet) s -> '`' `wrap` styled Snippet s -- TODO: This can't "undo" outer layers, meaning formatting still gets gorked if this is on the inside 
+    Markdown f s -> merge . (<> styleFormat f s) . styleMarkdown . parseMarkdown $ s 
+    (s1 :|: s2) -> styleMarkdown s1 <> styleMarkdown s2 
+
+    where 
+        merge :: StyledString -> StyledString 
+        merge = \case 
+            (Styled f1 s :<>: Styled f2 _) -> Styled (f1 ++ f2) s 
+            (Styled f s :<>: a) -> (<> Styled f s) . merge $ a 
+            sing -> sing
 
 styleMarkdownList :: MarkdownList -> StyledString
-styleMarkdownList [] = plain ""
-styleMarkdownList [FormattedText f s] = styleFormat f s
-styleMarkdownList (FormattedText f s : ts) = styleFormat f s <> styleMarkdownList ts
+styleMarkdownList = \case 
+    [] -> plain ""
+    [FormattedText f s] -> styleMarkdown (Markdown f s)
+    (FormattedText f s : ts) -> (<> styleMarkdown (Markdown f s)) . styleMarkdownList $ ts
 
 styleFormat :: Maybe Format -> Text -> StyledString
 styleFormat (Just Snippet) s = '`' `wrap` styled Snippet s
