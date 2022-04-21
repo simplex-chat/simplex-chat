@@ -59,7 +59,7 @@ struct ComposeView: View {
     var body: some View {
         VStack(spacing: 0) {
             if let metadata = imagePreview {
-                ComposeImageView(image: metadata, cancelImage: nil)
+                ComposeImageView(image: metadata, cancelImage: cancelImage)
             } else if let metadata = linkPreview {
                 ComposeLinkView(linkPreview: metadata, cancelPreview: cancelPreview)
             }
@@ -96,7 +96,9 @@ struct ComposeView: View {
         }
         .onChange(of: message) { _ in
             if message.count > 0 {
-                showLinkPreview(message)
+                if imagePreview == nil {
+                    showLinkPreview(message)
+                }
             } else {
                 resetLinkPreview()
             }
@@ -132,8 +134,11 @@ struct ComposeView: View {
                 imagePreview = nil
             }
         }
-        .onChange(of: imagePreview) { _ in
+        .onChange(of: imagePreview) { ip in
             sendEnabled = (imagePreview != nil || !message.isEmpty)
+            if ip != nil {
+                linkPreview = nil
+            }
         }
     }
 
@@ -168,6 +173,11 @@ struct ComposeView: View {
             logger.error("apiParseMarkdown error: \(error.localizedDescription)")
             return nil
         }
+    }
+
+    private func cancelImage() {
+        chosenImage = nil
+        imagePreview = nil
     }
 
     private func isSimplexLink(_ link: String) -> Bool {

@@ -11,27 +11,27 @@ import SwiftUI
 struct ComposeImageView: View {
     @Environment(\.colorScheme) var colorScheme
     let image: String
-    var cancelImage: (() -> Void)? = nil
+    let cancelImage: (() -> Void)
 
     var body: some View {
-        HStack(alignment: .center, spacing: 8) {
-            if let data = Data(base64Encoded: dropImagePrefix(image)),
-               let uiImage = UIImage(data: data) {
-                Image(uiImage: uiImage)
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(maxWidth: 80, maxHeight: 60)
-            }
-            if let cancelImage = cancelImage {
-                Button { cancelImage() } label: {
-                    Image(systemName: "multiply")
+        if let data = Data(base64Encoded: dropImagePrefix(image)),
+           let uiImage = UIImage(data: data) {
+            HStack(alignment: .center) {
+                ZStack(alignment: .topTrailing) {
+                    Image(uiImage: uiImage)
+                        .resizable()
+                        .scaledToFit()
+                        .cornerRadius(20)
+                        .frame(maxHeight: 200)
+                    Button { cancelImage() } label: {
+                        Image(systemName: "multiply")
+                            .renderingMode(.template)
+                            .foregroundColor(.white)
+                    }
+                    .padding(8)
                 }
             }
+            .padding(.top, 8)
         }
-        .padding(.vertical, 1)
-        .padding(.trailing, 12)
-        .background(colorScheme == .light ? sentColorLight : sentColorDark)
-        .frame(maxWidth: .infinity)
-        .padding(.top, 8)
     }
 }
