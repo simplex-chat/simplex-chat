@@ -40,14 +40,14 @@ styleMarkdown = \case
         merge :: StyledString -> StyledString 
         merge = \case 
             (Styled f1 s :<>: Styled f2 _) -> Styled (f1 ++ f2) s 
-            (Styled f s :<>: a) -> (<> Styled f s) . merge $ a 
+            (Styled f s :<>: a) -> merge . (<>) (Styled f s) . merge $ a 
             sing -> sing
 
 styleMarkdownList :: MarkdownList -> StyledString
 styleMarkdownList = \case 
     [] -> plain ""
     [FormattedText f s] -> styleMarkdown (Markdown f s)
-    (FormattedText f s : ts) -> (<> styleMarkdown (Markdown f s)) . styleMarkdownList $ ts
+    (FormattedText f s : ts) -> (<>) (styleMarkdown (Markdown f s)) . styleMarkdownList $ ts
 
 styleFormat :: Maybe Format -> Text -> StyledString
 styleFormat (Just Snippet) s = '`' `wrap` styled Snippet s
