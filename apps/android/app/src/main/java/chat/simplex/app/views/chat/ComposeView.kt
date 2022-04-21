@@ -7,8 +7,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.AddCircleOutline
 import androidx.compose.foundation.layout.Column
+import androidx.compose.material.icons.filled.AddCircle
+import androidx.compose.material.icons.filled.AttachFile
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -21,7 +23,6 @@ import chat.simplex.app.views.helpers.ComposeLinkView
 import chat.simplex.app.views.helpers.generalGetString
 
 // TODO ComposeState
-
 @Composable
 fun ComposeView(
   msg: MutableState<String>,
@@ -62,26 +63,29 @@ fun ComposeView(
       else -> {}
     }
     Row(
-      modifier = Modifier.padding(start = 2.dp, end = 8.dp),
-      verticalAlignment = Alignment.CenterVertically,
+      modifier = Modifier.padding(start = 4.dp, end = 8.dp),
+      verticalAlignment = Alignment.Bottom,
       horizontalArrangement = Arrangement.spacedBy(2.dp)
     ) {
-      Icon(
-        Icons.Outlined.AddCircleOutline,
-        contentDescription = generalGetString(R.string.attach),
-        tint = if (editingItem.value == null) MaterialTheme.colors.primary else Color.Gray,
-        modifier = Modifier
-          .size(40.dp)
-          .padding(vertical = 4.dp)
-          .clip(CircleShape)
-          .clickable {
-            if (editingItem.value == null) {
-              showBottomSheet()
+      Box(Modifier.padding(bottom = 12.dp)) {
+        Icon(
+          Icons.Filled.AttachFile,
+          contentDescription = generalGetString(R.string.attach),
+          tint = if (editingItem.value == null) MaterialTheme.colors.primary else Color.Gray,
+          modifier = Modifier
+            .size(28.dp)
+            .clip(CircleShape)
+            .clickable {
+              if (editingItem.value == null) {
+                showBottomSheet()
+              }
             }
-          }
+        )
+      }
+      SendMsgView(
+        msg, linkPreview, cancelledLinks, parseMarkdown, sendMessage,
+        editing = editingItem.value != null, sendEnabled = msg.value.isNotEmpty() || imagePreview.value != null
       )
-      SendMsgView(msg, linkPreview, cancelledLinks, parseMarkdown, sendMessage,
-        editing = editingItem.value != null, sendEnabled = msg.value.isNotEmpty() || imagePreview.value != null)
     }
   }
 }

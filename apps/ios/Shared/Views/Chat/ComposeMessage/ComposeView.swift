@@ -68,7 +68,7 @@ struct ComposeView: View {
             } else if (editingItem != nil) {
                 ContextItemView(contextItem: $editingItem, editing: $editing, resetMessage: resetMessage)
             }
-            HStack{
+            HStack (alignment: .bottom) {
                 Button {
                     showChooseSource = true
                 } label: {
@@ -77,7 +77,7 @@ struct ComposeView: View {
                 }
                 .disabled(editingItem != nil)
                 .frame(width: 25, height: 25)
-                .padding(.vertical, 4)
+                .padding(.bottom, 12)
                 .padding(.leading, 12)
                 SendMessageView(
                     sendMessage: { text in
