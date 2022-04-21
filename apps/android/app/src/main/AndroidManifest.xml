@@ -25,6 +25,7 @@
     <!-- Main activity -->
     <activity
         android:name=".MainActivity"
+        android:launchMode="singleTask"
         android:exported="true"
         android:label="@string/app_name"
         android:windowSoftInputMode="adjustResize"
