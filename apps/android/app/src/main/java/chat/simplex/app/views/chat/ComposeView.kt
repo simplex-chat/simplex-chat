@@ -62,26 +62,24 @@ fun ComposeView(
       else -> {}
     }
     Row(
-      modifier = Modifier.padding(horizontal = 8.dp),
-//      // use this padding when attach button is uncommented
-//      modifier = Modifier.padding(start = 2.dp, end = 8.dp),
+      modifier = Modifier.padding(start = 2.dp, end = 8.dp),
       verticalAlignment = Alignment.CenterVertically,
       horizontalArrangement = Arrangement.spacedBy(2.dp)
     ) {
-//      Icon(
-//        Icons.Outlined.AddCircleOutline,
-//        contentDescription = generalGetString(R.string.attach),
-//        tint = if (editingItem.value == null) MaterialTheme.colors.primary else Color.Gray,
-//        modifier = Modifier
-//          .size(40.dp)
-//          .padding(vertical = 4.dp)
-//          .clip(CircleShape)
-//          .clickable {
-//            if (editingItem.value == null) {
-//              showBottomSheet()
-//            }
-//          }
-//      )
+      Icon(
+        Icons.Outlined.AddCircleOutline,
+        contentDescription = generalGetString(R.string.attach),
+        tint = if (editingItem.value == null) MaterialTheme.colors.primary else Color.Gray,
+        modifier = Modifier
+          .size(40.dp)
+          .padding(vertical = 4.dp)
+          .clip(CircleShape)
+          .clickable {
+            if (editingItem.value == null) {
+              showBottomSheet()
+            }
+          }
+      )
       SendMsgView(msg, linkPreview, cancelledLinks, parseMarkdown, sendMessage,
         editing = editingItem.value != null, sendEnabled = msg.value.isNotEmpty() || imagePreview.value != null)
     }

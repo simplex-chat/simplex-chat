@@ -69,16 +69,16 @@ struct ComposeView: View {
                 ContextItemView(contextItem: $editingItem, editing: $editing, resetMessage: resetMessage)
             }
             HStack{
-//                Button {
-//                    showChooseSource = true
-//                } label: {
-//                    Image(systemName: "paperclip")
-//                        .resizable()
-//                }
-//                .disabled(editingItem != nil)
-//                .frame(width: 25, height: 25)
-//                .padding(.vertical, 4)
-//                .padding(.leading, 12)
+                Button {
+                    showChooseSource = true
+                } label: {
+                    Image(systemName: "paperclip")
+                        .resizable()
+                }
+                .disabled(editingItem != nil)
+                .frame(width: 25, height: 25)
+                .padding(.vertical, 4)
+                .padding(.leading, 12)
                 SendMessageView(
                     sendMessage: { text in
                         sendMessage(text)
@@ -90,9 +90,7 @@ struct ComposeView: View {
                     editing: $editing,
                     sendEnabled: $sendEnabled
                 )
-                .padding(.horizontal, 12)
-//                // use this padding when attach button is uncommented
-//                .padding(.trailing, 12)
+                .padding(.trailing, 12)
                 .background(.background)
             }
         }
