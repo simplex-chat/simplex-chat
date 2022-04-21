@@ -33,6 +33,8 @@
     <string name="you_are_already_connected_to_vName_via_this_link">Вы уже соединены с <xliff:g id="contactName" example="Alice">%1$s!</xliff:g> через эту ссылку.</string>
     <string name="invalid_connection_link">Ошибка в ссылке контакта</string>
     <string name="please_check_correct_link_and_maybe_ask_for_a_new_one">Пожалуйста, проверьте, что вы использовали правильную ссылку, или попросите ваш контакт отправить вам новую.</string>
+    <string name="connection_error_auth">Ошибка соединения (AUTH)</string>
+    <string name="connection_error_auth_desc">Возможно, ваш контакт удалил ссылку, или она уже была использована. Если это не так, то это может быть ошибкой - пожалуйста, сообщите нам об этом.\nЧтобы установить соединение, попросите ваш контакт создать еще одну ссылку и проверьте ваше соединение с сетью.</string>
     <string name="cannot_delete_contact">Невозможно удалить контакт!</string>
     <string name="contact_cannot_be_deleted_as_they_are_in_groups">Контакт <xliff:g id="contactName" example="Jane Doe">%1$s!</xliff:g> не может быть удален, так как является членом групп(ы) <xliff:g id="groups" example="[team, chess club]">%2$s</xliff:g>.</string>
     <string name="icon_descr_instant_notifications">Мгновенные уведомления</string>

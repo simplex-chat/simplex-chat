@@ -195,6 +195,11 @@
         <target>Connection error</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Connection error (AUTH)" xml:space="preserve">
+        <source>Connection error (AUTH)</source>
+        <target>Connection error (AUTH)</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Connection request" xml:space="preserve">
         <source>Connection request</source>
         <target>Connection request</target>
@@ -585,6 +590,13 @@ to scan from the app</target>
       <trans-unit id="Unexpected error: %@" xml:space="preserve">
         <source>Unexpected error: %@</source>
         <target>Unexpected error: %@</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.&#10;To connect, please ask your contact to create another connection link and check that you have a stable network connection." xml:space="preserve">
+        <source>Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.
+To connect, please ask your contact to create another connection link and check that you have a stable network connection.</source>
+        <target>Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.
+To connect, please ask your contact to create another connection link and check that you have a stable network connection.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Use SimpleX Chat servers?" xml:space="preserve">

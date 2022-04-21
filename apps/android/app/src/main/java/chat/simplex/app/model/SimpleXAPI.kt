@@ -223,6 +223,15 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
         )
         return false
       }
+      r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorAgent
+          && r.chatError.agentError is AgentErrorType.SMP
+          && r.chatError.agentError.smpErr is SMPErrorType.AUTH -> {
+        AlertManager.shared.showAlertMsg(
+          generalGetString(R.string.connection_error_auth),
+          generalGetString(R.string.connection_error_auth_desc)
+        )
+        return false
+      }
       else -> {
         apiErrorAlert("apiConnect", "Connection error", r)
         return false

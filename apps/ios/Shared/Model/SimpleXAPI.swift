@@ -492,6 +492,12 @@ func apiConnect(connReq: String) async throws -> Bool {
             message: "Please check your network connection and try again."
         )
         return false
+    case .chatCmdError(.errorAgent(.SMP(.AUTH))):
+        am.showAlertMsg(
+            title: "Connection error (AUTH)",
+            message: "Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.\nTo connect, please ask your contact to create another connection link and check that you have a stable network connection."
+        )
+        return false
     default: throw r
     }
 }

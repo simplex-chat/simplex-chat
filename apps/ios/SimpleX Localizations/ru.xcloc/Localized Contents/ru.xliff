@@ -195,6 +195,11 @@
         <target>Ошибка соединения</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Connection error (AUTH)" xml:space="preserve">
+        <source>Connection error (AUTH)</source>
+        <target>Ошибка соединения (AUTH)</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Connection request" xml:space="preserve">
         <source>Connection request</source>
         <target>Запрос на соединение</target>
@@ -584,6 +589,13 @@ to scan from the app</source>
       <trans-unit id="Unexpected error: %@" xml:space="preserve">
         <source>Unexpected error: %@</source>
         <target>Неожиданная ошибка: %@</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.&#10;To connect, please ask your contact to create another connection link and check that you have a stable network connection." xml:space="preserve">
+        <source>Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.
+To connect, please ask your contact to create another connection link and check that you have a stable network connection.</source>
+        <target>Возможно, ваш контакт удалил ссылку, или она уже была использована. Если это не так, то это может быть ошибкой - пожалуйста, сообщите нам об этом.
+Чтобы установить соединение, попросите ваш контакт создать еще одну ссылку и проверьте ваше соединение с сетью.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Use SimpleX Chat servers?" xml:space="preserve">
