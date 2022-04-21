@@ -49,24 +49,42 @@ fun cropToSquare(image: Bitmap): Bitmap {
   return Bitmap.createBitmap(image, xOffset, yOffset, side, side)
 }
 
-fun resizeImageToDataSize(image: Bitmap, maxDataSize: Int): String {
+fun resizeImageToStrSize(image: Bitmap, maxDataSize: Int): String {
   var img = image
-  var str = compressImage(img)
+  var str = compressImageStr(img)
   while (str.length > maxDataSize) {
     val ratio = sqrt(str.length.toDouble() / maxDataSize.toDouble())
     val clippedRatio = min(ratio, 2.0)
     val width = (img.width.toDouble() / clippedRatio).toInt()
     val height = img.height * width / img.width
     img = Bitmap.createScaledBitmap(img, width, height, true)
-    str = compressImage(img)
+    str = compressImageStr(img)
   }
   return str
 }
 
-private fun compressImage(bitmap: Bitmap): String {
+private fun compressImageStr(bitmap: Bitmap): String {
+  return "data:image/jpg;base64," + Base64.encodeToString(compressImageData(bitmap).toByteArray(), Base64.NO_WRAP)
+}
+
+fun resizeImageToDataSize(image: Bitmap, maxDataSize: Int): ByteArrayOutputStream {
+  var img = image
+  var stream = compressImageData(img)
+  while (stream.size() > maxDataSize) {
+    val ratio = sqrt(stream.size().toDouble() / maxDataSize.toDouble())
+    val clippedRatio = min(ratio, 2.0)
+    val width = (img.width.toDouble() / clippedRatio).toInt()
+    val height = img.height * width / img.width
+    img = Bitmap.createScaledBitmap(img, width, height, true)
+    stream = compressImageData(img)
+  }
+  return stream
+}
+
+private fun compressImageData(bitmap: Bitmap): ByteArrayOutputStream {
   val stream = ByteArrayOutputStream()
   bitmap.compress(Bitmap.CompressFormat.JPEG, 85, stream)
-  return "data:image/jpg;base64," + Base64.encodeToString(stream.toByteArray(), Base64.NO_WRAP)
+  return stream
 }
 
 fun base64ToBitmap(base64ImageString: String) : Bitmap {

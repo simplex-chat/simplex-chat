@@ -79,7 +79,7 @@ fun UserProfileLayout(
       sheetContent = {
         GetImageBottomSheet(
           chosenImage,
-          onImageChange = { bitmap -> profileImage.value = resizeImageToDataSize(cropToSquare(bitmap), maxDataSize = 12500) },
+          onImageChange = { bitmap -> profileImage.value = resizeImageToStrSize(cropToSquare(bitmap), maxDataSize = 12500) },
           hideBottomSheet = {
             scope.launch { bottomSheetModalState.hide() }
           })

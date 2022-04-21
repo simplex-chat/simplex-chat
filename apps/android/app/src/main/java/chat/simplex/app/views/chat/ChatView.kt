@@ -20,6 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
@@ -142,17 +143,17 @@ fun ChatView(chatModel: ChatModel) {
         }
       },
       parseMarkdown = { text -> runBlocking { chatModel.controller.apiParseMarkdown(text) } },
-      onImageChange = { bitmap -> imagePreview.value = resizeImageToDataSize(bitmap, maxDataSize = 12500) }
+      onImageChange = { bitmap -> imagePreview.value = resizeImageToStrSize(bitmap, maxDataSize = 14000) }
     )
   }
 }
 
 fun saveImage(context: Context, image: Bitmap): String {
-  val imageResized = base64ToBitmap(resizeImageToDataSize(image, 160000))
+  val dataResized = resizeImageToDataSize(image, maxDataSize = MAX_IMAGE_SIZE)
   val fileToSave = "image_${System.currentTimeMillis()}.jpg"
   val file = File(getAppFilesDirectory(context) + "/" + fileToSave)
   val output = FileOutputStream(file)
-  imageResized.compress(Bitmap.CompressFormat.JPEG, 100, output)
+  dataResized.writeTo(output)
   output.flush()
   output.close()
   return fileToSave

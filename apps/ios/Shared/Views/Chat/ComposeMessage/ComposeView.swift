@@ -127,7 +127,7 @@ struct ComposeView: View {
         }
         .onChange(of: chosenImage) { image in
             if let image = image {
-                imagePreview = resizeImageToDataSize(image, maxDataSize: 12500)
+                imagePreview = resizeImageToStrSize(image, maxDataSize: 14000)
             } else {
                 imagePreview = nil
             }

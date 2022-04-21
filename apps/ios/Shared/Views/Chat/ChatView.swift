@@ -267,14 +267,12 @@ struct ChatView: View {
     }
 
     func saveImage(_ uiImage: UIImage) -> String? {
-        if let imageResized = resizeImageToDataSize(uiImage, maxDataSize: 160000),
-           let dataResized = Data(base64Encoded: dropImagePrefix(imageResized)),
-           let jpegData = UIImage(data: dataResized)?.jpegData(compressionQuality: 1) {
+        if let imageDataResized = resizeImageToDataSize(uiImage, maxDataSize: maxImageSize) {
             let millisecondsSince1970 = Int64((Date().timeIntervalSince1970 * 1000.0).rounded())
             let fileToSave = "image_\(millisecondsSince1970).jpg"
             let filePath = getAppFilesDirectory().appendingPathComponent(fileToSave)
             do {
-                try jpegData.write(to: filePath)
+                try imageDataResized.write(to: filePath)
                 return fileToSave
             } catch {
                 logger.error("ChatView.saveImage error: \(error.localizedDescription)")
