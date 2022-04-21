@@ -1,6 +1,7 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE NumericUnderscores #-}
 {-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeApplications #-}
@@ -183,6 +184,9 @@ serverCfg =
       queueIdBytes = 12,
       msgIdBytes = 6,
       storeLogFile = Nothing,
+      allowNewQueues = True,
+      messageTTL = Just $ 7 * 86400, -- 7 days
+      expireMessagesInterval = Just 21600_000000, -- microseconds, 6 hours
       caCertificateFile = "tests/fixtures/tls/ca.crt",
       privateKeyFile = "tests/fixtures/tls/server.key",
       certificateFile = "tests/fixtures/tls/server.crt"
