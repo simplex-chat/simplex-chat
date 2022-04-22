@@ -205,7 +205,7 @@ fun ChatLayout(
           topBar = { ChatInfoToolbar(chat, back, info) },
           bottomBar = {
             ComposeView(
-              msg, quotedItem, editingItem, linkPreview, imagePreview, sendMessage, resetMessage, parseMarkdown,
+              msg, quotedItem, editingItem, linkPreview, chosenImage, imagePreview, sendMessage, resetMessage, parseMarkdown,
               showBottomSheet = { scope.launch { bottomSheetModalState.show() } }
             )
           },

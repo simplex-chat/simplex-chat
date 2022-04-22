@@ -1,6 +1,7 @@
 package chat.simplex.app.views.chat
 
 import ComposeImageView
+import android.graphics.Bitmap
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -8,9 +9,7 @@ import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.icons.Icons
 import androidx.compose.foundation.layout.Column
-import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.AttachFile
-import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -29,6 +28,7 @@ fun ComposeView(
   quotedItem: MutableState<ChatItem?>,
   editingItem: MutableState<ChatItem?>,
   linkPreview: MutableState<LinkPreview?>,
+  chosenImage: MutableState<Bitmap?>,
   imagePreview: MutableState<String?>,
   sendMessage: (String) -> Unit,
   resetMessage: () -> Unit,
@@ -45,10 +45,15 @@ fun ComposeView(
     linkPreview.value = null
   }
 
+  fun cancelImage() {
+    chosenImage.value = null
+    imagePreview.value = null
+  }
+
   Column {
     val ip = imagePreview.value
     if (ip != null) {
-      ComposeImageView(ip)
+      ComposeImageView(ip, ::cancelImage)
     } else {
       val lp = linkPreview.value
       if (lp != null) ComposeLinkView(lp, ::cancelPreview)
