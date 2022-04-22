@@ -154,6 +154,7 @@ enum ChatResponse: Decodable, Error {
     case userContactLinkCreated(connReqContact: String)
     case userContactLinkDeleted
     case contactConnected(contact: Contact)
+    case contactConnecting(contact: Contact)
     case receivedContactRequest(contactRequest: UserContactRequest)
     case acceptingContactRequest(contact: Contact)
     case contactRequestRejected
@@ -198,6 +199,7 @@ enum ChatResponse: Decodable, Error {
             case .userContactLinkCreated: return "userContactLinkCreated"
             case .userContactLinkDeleted: return "userContactLinkDeleted"
             case .contactConnected: return "contactConnected"
+            case .contactConnecting: return "contactConnecting"
             case .receivedContactRequest: return "receivedContactRequest"
             case .acceptingContactRequest: return "acceptingContactRequest"
             case .contactRequestRejected: return "contactRequestRejected"
@@ -245,6 +247,7 @@ enum ChatResponse: Decodable, Error {
             case let .userContactLinkCreated(connReq): return connReq
             case .userContactLinkDeleted: return noDetails
             case let .contactConnected(contact): return String(describing: contact)
+            case let .contactConnecting(contact): return String(describing: contact)
             case let .receivedContactRequest(contactRequest): return String(describing: contactRequest)
             case let .acceptingContactRequest(contact): return String(describing: contact)
             case .contactRequestRejected: return noDetails
@@ -702,6 +705,8 @@ func processReceivedMsg(_ res: ChatResponse) {
             chatModel.updateContact(contact)
             chatModel.updateNetworkStatus(contact, .connected)
             NtfManager.shared.notifyContactConnected(contact)
+        case let .contactConnecting(contact):
+            chatModel.updateContact(contact)
         case let .receivedContactRequest(contactRequest):
             chatModel.addChat(Chat(
                 chatInfo: ChatInfo.contactRequest(contactRequest: contactRequest),

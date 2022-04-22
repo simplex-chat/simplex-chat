@@ -107,6 +107,9 @@
 "Chats" = "Назад";
 
 /* No comment provided by engineer. */
+"Check messages" = "Проверять сообщения";
+
+/* No comment provided by engineer. */
 "Choose from library" = "Выбрать из библиотеки";
 
 /* No comment provided by engineer. */
@@ -164,6 +167,9 @@
 "Contact is connected" = "Соединение с контактом установлено";
 
 /* No comment provided by engineer. */
+"Contact is not connected yet!" = "Соединение еще не установлено!";
+
+/* No comment provided by engineer. */
 "Copy" = "Скопировать";
 
 /* No comment provided by engineer. */
@@ -191,6 +197,9 @@
 "Delete contact" = "Удалить контакт";
 
 /* No comment provided by engineer. */
+"Delete Contact" = "Удалить контакт";
+
+/* No comment provided by engineer. */
 "Delete contact?" = "Удалить контакт?";
 
 /* No comment provided by engineer. */
@@ -205,6 +214,9 @@
 /* No comment provided by engineer. */
 "Delete message?" = "Удалить сообщение?";
 
+/* No comment provided by engineer. */
+"Delete pending connection" = "Удалить соединение";
+
 /* deleted chat item */
 "deleted" = "удалено";
 
@@ -218,7 +230,16 @@
 "Edit" = "Редактировать";
 
 /* No comment provided by engineer. */
+"Enable notifications? (BETA)" = "Включить уведомления? (БЕТА)";
+
+/* No comment provided by engineer. */
 "Enter one SMP server per line:" = "Введите SMP серверы, каждый на отдельной строке:";
+
+/* No comment provided by engineer. */
+"Error deleting token" = "Ошибка удаления токена";
+
+/* No comment provided by engineer. */
+"Error registering token" = "Ошибка регистрации токена";
 
 /* No comment provided by engineer. */
 "Error saving SMP servers" = "Ошибка при сохранении SMP серверов";
@@ -368,6 +389,9 @@
 "The app can notify you when you receive messages or contact requests - please open settings to enable." = "Приложение может посылать вам уведомления о сообщениях и запросах на соединение - уведомления можно включить в Настройках.";
 
 /* No comment provided by engineer. */
+"The app can receive background notifications every 20 minutes to check the new messages.\n*Please note*: if you confirm, your device token will be sent to SimpleX Chat notifications server." = "Приложение может получать скрытые уведомления каждые 20 минут чтобы проверить новые сообщения.\n*Обратите внимание*: если вы подтвердите, токен вашего устройства будет послан на сервер SimpleX Chat.";
+
+/* No comment provided by engineer. */
 "The messaging and application platform 100% private by design!" = "Платформа для сообщений и приложений, которая защищает вашу личную информацию и безопасность.";
 
 /* No comment provided by engineer. */
@@ -447,6 +471,9 @@
 
 /* No comment provided by engineer. */
 "Your chats" = "Ваши чаты";
+
+/* No comment provided by engineer. */
+"Your contact needs to be online for the connection to complete.\nYou can cancel this connection and remove the contact (and try later with a new link)." = "Ваш контакт должен быть в сети чтобы установить соединение.\nВы можете отменить соединение и удалить контакт (и попробовать позже с другой ссылкой).";
 
 /* No comment provided by engineer. */
 "Your profile is stored on your device and shared only with your contacts.\nSimpleX servers cannot see your profile." = "Ваш профиль хранится на вашем устройстве и отправляется только вашим контактам.\nSimpleX серверы не могут получить доступ к вашему профилю.";
