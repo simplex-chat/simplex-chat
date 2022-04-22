@@ -357,7 +357,7 @@ class Contact(
   override val chatType get() = ChatType.Direct
   override val id get() = "@$contactId"
   override val apiId get() = contactId
-  override val ready get() = activeConn.connStatus == "ready" || activeConn.connStatus == "snd-ready"
+  override val ready get() = activeConn.connStatus == "ready"
   override val displayName get() = profile.displayName
   override val fullName get() = profile.fullName
   override val image get() = profile.image

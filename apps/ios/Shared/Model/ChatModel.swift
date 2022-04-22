@@ -455,7 +455,7 @@ struct Contact: Identifiable, Decodable, NamedChat {
 
     var id: ChatId { get { "@\(contactId)" } }
     var apiId: Int64 { get { contactId } }
-    var ready: Bool { get { activeConn.connStatus == "ready" || activeConn.connStatus == "snd-ready" } }
+    var ready: Bool { get { activeConn.connStatus == "ready" } }
     var displayName: String { get { profile.displayName } }
     var fullName: String { get { profile.fullName } }
     var image: String? { get { profile.image } }
