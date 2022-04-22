@@ -113,7 +113,7 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
             ),
             // TODO remove
             UNNotificationCategory(
-                identifier: ntfCategoryMessageReceived,
+                identifier: ntfCategoryCheckingMessages,
                 actions: [],
                 intentIdentifiers: [],
                 hiddenPreviewsBodyPlaceholder: NSLocalizedString("Checking new messages...", comment: "notifications")
