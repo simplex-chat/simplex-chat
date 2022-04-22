@@ -124,11 +124,15 @@
   <string name="desktop_scan_QR_code_from_app_via_scan_QR_code">💻 desktop: scan displayed QR code from the app, via <b>Scan QR code</b>.</string>
   <string name="mobile_tap_open_in_mobile_app_then_tap_connect_in_app">📱 mobile: tap <b>Open in mobile app</b>, then tap <b>Connect</b> in the app.</string>
 
-  <!-- Contact Request Alert Dialogue - CharListNavLinkView.kt -->
+  <!-- Contact Request Alert Dialogue - ChatListNavLinkView.kt -->
   <string name="accept_connection_request__question">Accept connection request?</string>
   <string name="if_you_choose_to_reject_the_sender_will_not_be_notified">If you choose to reject sender will NOT be notified.</string>
   <string name="accept_contact_button">Accept</string>
   <string name="reject_contact_button">Reject</string>
+
+  <!-- Connection Pending Alert Dialogue - ChatListNavLinkView.kt -->
+  <string name="contact_connection_pending">Contact connection pending</string>
+  <string name="connection_pending_they_need_to_be_online_can_delete_and_retry">Your connection to this contact is pending. They need to be online for the connection to become active. You can cancel this connection and remove the contact (and later retry with a new link).</string>
 
   <!-- Contact Request Information - ContactRequestView.kt -->
   <string name="contact_wants_to_connect_with_you">wants to connect to you!</string>

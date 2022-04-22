@@ -28,6 +28,9 @@ fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
         if (chat.chatInfo.ready) {
           withApi { openChat(chatModel, chat.chatInfo) }
         }
+        else {
+          pendingConnectionAlertDialog(chat.chatInfo, chatModel)
+        }
       }
     }
   )
@@ -62,6 +65,24 @@ fun contactRequestAlertDialog(contactRequest: ChatInfo.ContactRequest, chatModel
         chatModel.removeChat(contactRequest.id)
       }
     }
+  )
+}
+
+fun pendingConnectionAlertDialog(chatInfo: ChatInfo, chatModel: ChatModel) {
+  AlertManager.shared.showAlertDialog(
+    title = generalGetString(R.string.contact_connection_pending),
+    text = generalGetString(R.string.connection_pending_they_need_to_be_online_can_delete_and_retry),
+    confirmText = generalGetString(R.string.button_delete_contact),
+    onConfirm = {
+      withApi {
+        val r = chatModel.controller.apiDeleteChat(chatInfo.chatType, chatInfo.apiId)
+        if (r) {
+          chatModel.removeChat(chatInfo.id)
+          chatModel.chatId.value = null
+        }
+      }
+    },
+    dismissText = generalGetString(R.string.cancel_verb),
   )
 }
 

@@ -33,7 +33,7 @@ struct ChatPreviewView: View {
 
             VStack(spacing: 0) {
                 HStack(alignment: .top) {
-                    Text(chat.chatInfo.ready ? chat.chatInfo.chatViewName : "\(chat.chatInfo.chatViewName) (pending)")
+                    Text(chat.chatInfo.chatViewName)
                         .font(.title3)
                         .fontWeight(.bold)
                         .foregroundColor(chat.chatInfo.ready ? .primary : .secondary)
