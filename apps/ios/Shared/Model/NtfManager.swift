@@ -181,7 +181,7 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
     func notifyCheckingMessages() {
         logger.debug("NtfManager.notifyCheckingMessages")
         addNotification(
-            categoryIdentifier: ntfCategoryMessageReceived,
+            categoryIdentifier: ntfCategoryCheckingMessages,
             title: NSLocalizedString("Checking new messages...", comment: "notification")
         )
     }
