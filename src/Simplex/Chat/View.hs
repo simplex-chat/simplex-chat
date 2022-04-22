@@ -141,6 +141,9 @@ responseToView testView = \case
     ["received file " <> sShow fileId <> " (" <> plain fileName <> ") error: " <> sShow e]
   CRUserContactLinkSubscribed -> ["Your address is active! To show: " <> highlight' "/sa"]
   CRUserContactLinkSubError e -> ["user address error: " <> sShow e, "to delete your address: " <> highlight' "/da"]
+  CRNewContactConnection _ -> []
+  CRContactConnectionUpdated _ -> []
+  CRContactConnectionDeleted _ -> []
   CRNtfTokenStatus status -> ["device token status: " <> plain (smpEncode status)]
   CRMessageError prefix err -> [plain prefix <> ": " <> plain err]
   CRChatError e -> viewChatError e

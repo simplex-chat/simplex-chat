@@ -2514,6 +2514,7 @@ getChatPreviews st user =
       DirectChat Contact {createdAt} -> createdAt
       GroupChat GroupInfo {createdAt} -> createdAt
       ContactRequest UserContactRequest {createdAt} -> createdAt
+      ContactConnection Connection {createdAt} -> createdAt
 
 chatItemTs :: CChatItem d -> UTCTime
 chatItemTs (CChatItem _ ChatItem {meta = CIMeta {itemTs}}) = itemTs

@@ -183,11 +183,12 @@ processChatCommand = \case
     ff <- asks filesFolder
     atomically . writeTVar ff $ Just filesFolder'
     pure CRCmdOk
-  APIGetChats -> CRApiChats <$> withUser (\user -> withStore (`getChatPreviews` user))
+  APIGetChats _ -> CRApiChats <$> withUser (\user -> withStore (`getChatPreviews` user))
   APIGetChat cType cId pagination -> withUser $ \user -> case cType of
     CTDirect -> CRApiChat . AChat SCTDirect <$> withStore (\st -> getDirectChat st user cId pagination)
     CTGroup -> CRApiChat . AChat SCTGroup <$> withStore (\st -> getGroupChat st user cId pagination)
     CTContactRequest -> pure $ chatCmdError "not implemented"
+    CTContactConnection -> pure $ chatCmdError "not supported"
   APIGetChatItems _pagination -> pure $ chatCmdError "not implemented"
   APISendMessage cType chatId file_ quotedItemId_ mc -> withUser $ \user@User {userId} -> withChatLock $ case cType of
     CTDirect -> do
@@ -263,6 +264,7 @@ processChatCommand = \case
             quoteData (CIRcvMsgContent qmc) (CIGroupRcv m) _ = pure (qmc, CIQGroupRcv $ Just m, False, m)
             quoteData _ _ _ = throwChatError CEInvalidQuote
     CTContactRequest -> pure $ chatCmdError "not supported"
+    CTContactConnection -> pure $ chatCmdError "not supported"
     where
       quoteContent qmc = \case
         MCText _ -> qmc
@@ -300,6 +302,7 @@ processChatCommand = \case
             _ -> throwChatError CEInvalidChatItemUpdate
         CChatItem SMDRcv _ -> throwChatError CEInvalidChatItemUpdate
     CTContactRequest -> pure $ chatCmdError "not supported"
+    CTContactConnection -> pure $ chatCmdError "not supported"
   APIDeleteChatItem cType chatId itemId mode -> withUser $ \user@User {userId} -> withChatLock $ case cType of
     CTDirect -> do
       (ct@Contact {localDisplayName = c}, CChatItem msgDir deletedItem@ChatItem {meta = CIMeta {itemSharedMsgId}, file}) <- withStore $ \st -> (,) <$> getContact st userId chatId <*> getDirectChatItem st userId chatId itemId
@@ -332,6 +335,7 @@ processChatCommand = \case
           pure $ CRChatItemDeleted (AChatItem SCTGroup msgDir (GroupChat gInfo) deletedItem) toCi
         (CIDMBroadcast, _, _) -> throwChatError CEInvalidChatItemDelete
     CTContactRequest -> pure $ chatCmdError "not supported"
+    CTContactConnection -> pure $ chatCmdError "not supported"
     where
       deleteFile :: MsgDirectionI d => UserId -> Maybe (CIFile d) -> m ()
       deleteFile userId file =
@@ -343,6 +347,7 @@ processChatCommand = \case
     CTDirect -> withStore (\st -> updateDirectChatItemsRead st chatId fromToIds) $> CRCmdOk
     CTGroup -> withStore (\st -> updateGroupChatItemsRead st chatId fromToIds) $> CRCmdOk
     CTContactRequest -> pure $ chatCmdError "not supported"
+    CTContactConnection -> pure $ chatCmdError "not supported"
   APIDeleteChat cType chatId -> withUser $ \User {userId} -> case cType of
     CTDirect -> do
       ct@Contact {localDisplayName} <- withStore $ \st -> getContact st userId chatId
@@ -362,6 +367,7 @@ processChatCommand = \case
         gs -> throwChatError $ CEContactGroups ct gs
     CTGroup -> pure $ chatCmdError "not implemented"
     CTContactRequest -> pure $ chatCmdError "not supported"
+    CTContactConnection -> pure $ chatCmdError "not supported"
   APIAcceptContact connReqId -> withUser $ \user@User {userId} -> withChatLock $ do
     cReq <- withStore $ \st -> getContactRequest st userId connReqId
     procCmd $ CRAcceptingContactRequest <$> acceptContactRequest user cReq
@@ -1889,7 +1895,7 @@ chatCommandP =
     <|> ("/user" <|> "/u") $> ShowActiveUser
     <|> "/_start" $> StartChat
     <|> "/_files_folder " *> (SetFilesFolder <$> filePath)
-    <|> "/_get chats" $> APIGetChats
+    <|> "/_get chats" *> (APIGetChats <$> (" connections" $> True <|> pure False))
     <|> "/_get chat " *> (APIGetChat <$> chatTypeP <*> A.decimal <* A.space <*> chatPaginationP)
     <|> "/_get items count=" *> (APIGetChatItems <$> A.decimal)
     <|> "/_send " *> (APISendMessage <$> chatTypeP <*> A.decimal <*> optional filePathTagged <*> optional quotedItemIdTagged <* A.space <*> msgContentP)
