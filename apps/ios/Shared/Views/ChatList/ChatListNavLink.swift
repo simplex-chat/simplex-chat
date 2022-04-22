@@ -54,11 +54,18 @@ struct ChatListNavLink: View {
         }
         .swipeActions(edge: .trailing) {
             Button(role: .destructive) {
-                AlertManager.shared.showAlert(deleteContactAlert(contact))
+                if contact.ready {
+                    AlertManager.shared.showAlert(deleteContactAlert(contact))
+                }
+                else {
+                    AlertManager.shared.showAlert(deletePendingContactAlert(chat, contact))
+                }
             } label: {
                 Label("Delete", systemImage: "trash")
             }
         }
+        .onTapGesture { showPendingContactAlert = true && !contact.ready }
+        .alert(isPresented: $showPendingContactAlert) { pendingContactAlert(chat, contact) }
         .frame(height: 80)
     }
 
@@ -112,20 +119,6 @@ struct ChatListNavLink: View {
             Button("Accept contact") { Task { await acceptContactRequest(contactRequest) } }
             Button("Reject contact (sender NOT notified)") { Task { await rejectContactRequest(contactRequest) } }
         }
-    }
-
-    private func pendingContactNavLink(_ contact: Contact) -> some View {
-        PendingConnectionView(chat: chat)
-        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-            Button(role: .destructive) {
-                AlertManager.shared.showAlert(deletePendingContactAlert(chat, contact))
-            } label: {
-                Label("Reject", systemImage: "multiply")
-            }
-        }
-        .frame(height: 80)
-        .onTapGesture { showPendingContactAlert = true }
-        .alert(isPresented: $showPendingContactAlert) { pendingContactAlert(chat, contact) }
     }
 
     private func deleteContactAlert(_ contact: Contact) -> Alert {
