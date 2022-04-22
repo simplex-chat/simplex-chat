@@ -53,9 +53,18 @@ struct ChatListNavLink: View {
         }
         .swipeActions(edge: .trailing) {
             Button(role: .destructive) {
-                AlertManager.shared.showAlert(deleteContactAlert(contact))
+                AlertManager.shared.showAlert(
+                    contact.ready
+                    ? deleteContactAlert(contact)
+                    : deletePendingContactAlert(chat, contact)
+                )
             } label: {
                 Label("Delete", systemImage: "trash")
+            }
+        }
+        .onTapGesture {
+            if !contact.ready {
+                AlertManager.shared.showAlert(pendingContactAlert(chat, contact))
             }
         }
         .frame(height: 80)
@@ -149,6 +158,41 @@ struct ChatListNavLink: View {
             },
             secondaryButton: .cancel()
         )
+    }
+
+    private func pendingContactAlert(_ chat: Chat, _ contact: Contact) -> Alert {
+        Alert(
+            title: Text("Contact is not connected yet!"),
+            message: Text("Your contact needs to be online for the connection to complete.\nYou can cancel this connection and remove the contact (and try later with a new link)."),
+            primaryButton: .cancel(),
+            secondaryButton: .destructive(Text("Delete Contact")) {
+                removePendingContact(chat, contact)
+            }
+        )
+    }
+
+    private func deletePendingContactAlert(_ chat: Chat, _ contact: Contact) -> Alert {
+        Alert(
+            title: Text("Delete pending connection"),
+            message: Text("Your contact needs to be online for the connection to complete.\nYou can cancel this connection and remove the contact (and try later with a new link)."),
+            primaryButton: .destructive(Text("Delete")) {
+                removePendingContact(chat, contact)
+            },
+            secondaryButton: .cancel()
+        )
+    }
+
+    private func removePendingContact(_ chat: Chat, _ contact: Contact) {
+        Task {
+            do {
+                try await apiDeleteChat(type: chat.chatInfo.chatType, id: chat.chatInfo.apiId)
+                DispatchQueue.main.async {
+                    chatModel.removeChat(contact.id)
+                }
+            } catch let error {
+                logger.error("ChatListNavLink.removePendingContact apiDeleteChat error: \(responseError(error))")
+            }
+        }
     }
 }
 

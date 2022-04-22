@@ -18,8 +18,18 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 
     func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
         let token = deviceToken.map { String(format: "%02hhx", $0) }.joined()
-        ChatModel.shared.deviceToken = token
         logger.debug("AppDelegate: didRegisterForRemoteNotificationsWithDeviceToken \(token)")
+        ChatModel.shared.deviceToken = token
+        let useNotifications = UserDefaults.standard.bool(forKey: "useNotifications")
+        if useNotifications {
+            Task {
+                do {
+                    try await apiRegisterToken(token: token)
+                } catch {
+                    logger.error("apiRegisterToken error: \(responseError(error))")
+                }
+            }
+        }
     }
 
     func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
@@ -30,21 +40,39 @@ class AppDelegate: NSObject, UIApplicationDelegate {
                      didReceiveRemoteNotification userInfo: [AnyHashable : Any],
                      fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
         logger.debug("AppDelegate: didReceiveRemoteNotification")
-        print(userInfo)
-        if let ntfData = userInfo["notificationData"] as? [AnyHashable : Any] {
-            if let verification = ntfData["verification"] as? String {
-                logger.debug("AppDelegate: didReceiveRemoteNotification: verification, confirming \(verification)")
-                // TODO send to chat
-                completionHandler(.newData)
+        if let ntfData = userInfo["notificationData"] as? [AnyHashable : Any],
+           UserDefaults.standard.bool(forKey: "useNotifications") {
+            if let verification = ntfData["verification"] as? String,
+               let nonce = ntfData["nonce"] as? String {
+                if let token = ChatModel.shared.deviceToken {
+                    logger.debug("AppDelegate: didReceiveRemoteNotification: verification, confirming \(verification)")
+                    Task {
+                        do {
+                            try await apiVerifyToken(token: token, code: verification, nonce: nonce)
+                            try await apiIntervalNofication(token: token, interval: 20)
+                        } catch {
+                            logger.error("AppDelegate: didReceiveRemoteNotification: apiVerifyToken or apiIntervalNofication error: \(responseError(error))")
+                        }
+                        completionHandler(.newData)
+                    }
+                } else {
+                    completionHandler(.noData)
+                }
             } else if let checkMessages = ntfData["checkMessages"] as? Bool, checkMessages {
                 // TODO check if app in background
                 logger.debug("AppDelegate: didReceiveRemoteNotification: checkMessages")
+                // TODO remove
+                NtfManager.shared.notifyCheckingMessages()
                 receiveMessages(completionHandler)
             } else if let smpQueue = ntfData["checkMessage"] as? String {
                 // TODO check if app in background
                 logger.debug("AppDelegate: didReceiveRemoteNotification: checkMessage \(smpQueue)")
                 receiveMessages(completionHandler)
+            } else {
+                completionHandler(.noData)
             }
+        } else {
+            completionHandler(.noData)
         }
     }
 

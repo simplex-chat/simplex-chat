@@ -145,6 +145,11 @@
         <target>Chats</target>
         <note>back button to return to chats list</note>
       </trans-unit>
+      <trans-unit id="Check messages" xml:space="preserve">
+        <source>Check messages</source>
+        <target>Check messages</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Choose from library" xml:space="preserve">
         <source>Choose from library</source>
         <target>Choose from library</target>
@@ -230,6 +235,11 @@
         <target>Contact is connected</target>
         <note>notification</note>
       </trans-unit>
+      <trans-unit id="Contact is not connected yet!" xml:space="preserve">
+        <source>Contact is not connected yet!</source>
+        <target>Contact is not connected yet!</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Copy" xml:space="preserve">
         <source>Copy</source>
         <target>Copy</target>
@@ -258,6 +268,11 @@
       <trans-unit id="Delete" xml:space="preserve">
         <source>Delete</source>
         <target>Delete</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Delete Contact" xml:space="preserve">
+        <source>Delete Contact</source>
+        <target>Delete Contact</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete address" xml:space="preserve">
@@ -300,6 +315,11 @@
         <target>Delete message?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Delete pending connection" xml:space="preserve">
+        <source>Delete pending connection</source>
+        <target>Delete pending connection</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Develop" xml:space="preserve">
         <source>Develop</source>
         <target>Develop</target>
@@ -315,9 +335,24 @@
         <target>Edit</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Enable notifications? (BETA)" xml:space="preserve">
+        <source>Enable notifications? (BETA)</source>
+        <target>Enable notifications? (BETA)</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Enter one SMP server per line:" xml:space="preserve">
         <source>Enter one SMP server per line:</source>
         <target>Enter one SMP server per line:</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Error deleting token" xml:space="preserve">
+        <source>Error deleting token</source>
+        <target>Error deleting token</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Error registering token" xml:space="preserve">
+        <source>Error registering token</source>
+        <target>Error registering token</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error saving SMP servers" xml:space="preserve">
@@ -552,6 +587,13 @@ to scan from the app</target>
         <target>The app can notify you when you receive messages or contact requests - please open settings to enable.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="The app can receive background notifications every 20 minutes to check the new messages.&#10;*Please note*: if you confirm, your device token will be sent to SimpleX Chat notifications server." xml:space="preserve">
+        <source>The app can receive background notifications every 20 minutes to check the new messages.
+*Please note*: if you confirm, your device token will be sent to SimpleX Chat notifications server.</source>
+        <target>The app can receive background notifications every 20 minutes to check the new messages.
+*Please note*: if you confirm, your device token will be sent to SimpleX Chat notifications server.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="The messaging and application platform 100% private by design!" xml:space="preserve">
         <source>The messaging and application platform 100% private by design!</source>
         <target>The messaging and application platform 100% private by design!</target>
@@ -687,6 +729,13 @@ To connect, please ask your contact to create another connection link and check 
       <trans-unit id="Your chats" xml:space="preserve">
         <source>Your chats</source>
         <target>Your chats</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Your contact needs to be online for the connection to complete.&#10;You can cancel this connection and remove the contact (and try later with a new link)." xml:space="preserve">
+        <source>Your contact needs to be online for the connection to complete.
+You can cancel this connection and remove the contact (and try later with a new link).</source>
+        <target>Your contact needs to be online for the connection to complete.
+You can cancel this connection and remove the contact (and try later with a new link).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your profile is stored on your device and shared only with your contacts.&#10;SimpleX servers cannot see your profile." xml:space="preserve">

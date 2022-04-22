@@ -71,6 +71,7 @@
     <string name="welcome">Здравствуйте!</string>
     <string name="this_text_is_available_in_settings">Этот текст можно найти в Настройках</string>
     <string name="your_chats">Ваши чаты</string>
+    <string name="contact_connection_pending">соединяется…</string>
 
     <!-- ComposeView.kt -->
     <string name="attach">Прикрепить</string>
@@ -128,6 +129,10 @@
     <string name="if_you_choose_to_reject_the_sender_will_not_be_notified">Отправителю НЕ будет послано уведомление, если вы отклоните запрос на соединение.</string>
     <string name="accept_contact_button">Принять</string>
     <string name="reject_contact_button">Отклонить</string>
+
+    <!-- Connection Pending Alert Dialogue - ChatListNavLinkView.kt -->
+    <string name="alert_title_contact_connection_pending">Соединение еще не установлено!</string>
+    <string name="alert_text_connection_pending_they_need_to_be_online_can_delete_and_retry">Ваш контакт должен быть в сети чтобы установить соединение.\nВы можете отменить соединение и удалить контакт (и попробовать позже с другой ссылкой).</string>
 
     <!-- Contact Request Information - ContactRequestView.kt -->
     <string name="contact_wants_to_connect_with_you">хочет соединиться с вами!</string>
