@@ -670,7 +670,6 @@ func processReceivedMsg(_ res: ChatResponse) {
         case let .contactConnecting(contact):
             chatModel.updateContact(contact)
             chatModel.updateNetworkStatus(contact, .connecting)
-//            NtfManager.shared.notifyContactConnected(contact)
         case let .receivedContactRequest(contactRequest):
             chatModel.addChat(Chat(
                 chatInfo: ChatInfo.contactRequest(contactRequest: contactRequest),
