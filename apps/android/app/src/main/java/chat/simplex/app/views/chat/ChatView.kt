@@ -87,13 +87,16 @@ fun ChatView(chatModel: ChatModel) {
           val cInfo = chat.chatInfo
           val ei = editingItem.value
           if (ei != null) {
-            val updatedItem = chatModel.controller.apiUpdateChatItem(
-              type = cInfo.chatType,
-              id = cInfo.apiId,
-              itemId = ei.meta.itemId,
-              mc = MsgContent.MCText(msg)
-            )
-            if (updatedItem != null) chatModel.upsertChatItem(cInfo, updatedItem.chatItem)
+            val oldMsgContent = ei.content.msgContent
+            if (oldMsgContent != null) {
+              val updatedItem = chatModel.controller.apiUpdateChatItem(
+                type = cInfo.chatType,
+                id = cInfo.apiId,
+                itemId = ei.meta.itemId,
+                mc = updateMsgContent(oldMsgContent, msg)
+              )
+              if (updatedItem != null) chatModel.upsertChatItem(cInfo, updatedItem.chatItem)
+            }
           } else {
             var file: String? = null
             val imagePreviewData = imagePreview.value
@@ -144,6 +147,15 @@ fun ChatView(chatModel: ChatModel) {
       parseMarkdown = { text -> runBlocking { chatModel.controller.apiParseMarkdown(text) } },
       onImageChange = { bitmap -> imagePreview.value = resizeImageToStrSize(bitmap, maxDataSize = 14000) }
     )
+  }
+}
+
+fun updateMsgContent(msgContent: MsgContent, text: String): MsgContent {
+  return when (msgContent) {
+    is MsgContent.MCText -> MsgContent.MCText(text)
+    is MsgContent.MCLink -> MsgContent.MCLink(text, preview = msgContent.preview)
+    is MsgContent.MCImage -> MsgContent.MCImage(text, image = msgContent.image)
+    is MsgContent.MCUnknown -> MsgContent.MCUnknown(type = msgContent.type, text = text, json = msgContent.json)
   }
 }
 

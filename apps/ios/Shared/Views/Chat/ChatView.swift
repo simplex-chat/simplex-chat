@@ -222,12 +222,13 @@ struct ChatView: View {
         Task {
             logger.debug("ChatView sendMessage: in Task")
             do {
-                if let ei = editingItem {
+                if let ei = editingItem,
+                   let oldMsgContent = ei.content.msgContent {
                     let chatItem = try await apiUpdateChatItem(
                         type: chat.chatInfo.chatType,
                         id: chat.chatInfo.apiId,
                         itemId: ei.id,
-                        msg: .text(text)
+                        msg: updateMsgContent(oldMsgContent, text)
                     )
                     DispatchQueue.main.async {
                         editingItem = nil
@@ -265,6 +266,19 @@ struct ChatView: View {
             } catch {
                 logger.error("ChatView.sendMessage error: \(error.localizedDescription)")
             }
+        }
+    }
+
+    func updateMsgContent(_ msgContent: MsgContent, _ text: String) -> MsgContent {
+        switch msgContent {
+        case .text:
+            return .text(text)
+        case .link(_, let preview):
+            return .link(text: text, preview: preview)
+        case .image(_, let image):
+            return .image(text: text, image: image)
+        case .unknown(let type, _):
+            return .unknown(type: type, text: text)
         }
     }
 
