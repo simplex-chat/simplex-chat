@@ -37,7 +37,7 @@ fun ChatPreviewView(chat: Chat) {
         overflow = TextOverflow.Ellipsis,
         style = MaterialTheme.typography.h3,
         fontWeight = FontWeight.Bold,
-        color = if (chat.chatInfo.ready) Color.Unspecified else SimplexBlue
+        color = if (chat.chatInfo.ready) Color.Unspecified else HighOrLowlight
       )
       if (chat.chatInfo.ready) {
         val ci = chat.chatItems.lastOrNull()
