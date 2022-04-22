@@ -72,6 +72,7 @@
   <string name="welcome">Welcome!</string>
   <string name="this_text_is_available_in_settings">This text is available in settings</string>
   <string name="your_chats">Your chats</string>
+  <string name="contact_connection_pending">connecting…</string>
 
   <!-- ComposeView.kt -->
   <string name="attach">Attach</string>
@@ -131,8 +132,8 @@
   <string name="reject_contact_button">Reject</string>
 
   <!-- Connection Pending Alert Dialogue - ChatListNavLinkView.kt -->
-  <string name="contact_connection_pending">Contact is not connected yet!</string>
-  <string name="connection_pending_they_need_to_be_online_can_delete_and_retry">Your contact needs to be online for the connection to complete.\nYou can cancel this connection and remove the contact (and try later with a new link).</string>
+  <string name="alert_title_contact_connection_pending">Contact is not connected yet!</string>
+  <string name="alert_text_connection_pending_they_need_to_be_online_can_delete_and_retry">Your contact needs to be online for the connection to complete.\nYou can cancel this connection and remove the contact (and try later with a new link).</string>
 
   <!-- Contact Request Information - ContactRequestView.kt -->
   <string name="contact_wants_to_connect_with_you">wants to connect to you!</string>

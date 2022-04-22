@@ -70,8 +70,8 @@ fun contactRequestAlertDialog(contactRequest: ChatInfo.ContactRequest, chatModel
 
 fun pendingConnectionAlertDialog(chatInfo: ChatInfo, chatModel: ChatModel) {
   AlertManager.shared.showAlertDialog(
-    title = generalGetString(R.string.contact_connection_pending),
-    text = generalGetString(R.string.connection_pending_they_need_to_be_online_can_delete_and_retry),
+    title = generalGetString(R.string.alert_title_contact_connection_pending),
+    text = generalGetString(R.string.alert_text_connection_pending_they_need_to_be_online_can_delete_and_retry),
     confirmText = generalGetString(R.string.button_delete_contact),
     onConfirm = {
       withApi {
