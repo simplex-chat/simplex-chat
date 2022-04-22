@@ -161,20 +161,11 @@ struct ChatListNavLink: View {
 
     private func pendingContactAlert(_ chat: Chat, _ contact: Contact) -> Alert {
         Alert(
-            title: Text("Pending connection"),
-            message: Text("Your connection to this contact is pending. They need to be online for the connection to become active. You can cancel this connection and remove the contact (and later retry with a new link)."),
+            title: Text("Contact is not connected yet!"),
+            message: Text("Your contact needs to be online for the connection to complete.\nYou can cancel this connection and remove the contact (and try later with a new link)."),
             primaryButton: .cancel(),
             secondaryButton: .destructive(Text("Delete Contact")) {
-                Task {
-                    do {
-                        try await apiDeleteChat(type: chat.chatInfo.chatType, id: chat.chatInfo.apiId)
-                        DispatchQueue.main.async {
-                            chatModel.removeChat(contact.id)
-                        }
-                    } catch let error {
-                        logger.error("ChatListNavLink.deletePendingContactAlert apiDeleteChat error: \(error.localizedDescription)")
-                    }
-                }
+                removePendingContact(chat, contact)
             }
         )
     }
@@ -182,21 +173,25 @@ struct ChatListNavLink: View {
     private func deletePendingContactAlert(_ chat: Chat, _ contact: Contact) -> Alert {
         Alert(
             title: Text("Delete pending connection"),
-            message: Text("Your connection to this contact is pending. They need to be online for the connection to become active. You can cancel this connection and remove the contact (and later retry with a new link)."),
+            message: Text("Your contact needs to be online for the connection to complete.\nYou can cancel this connection and remove the contact (and try later with a new link)."),
             primaryButton: .destructive(Text("Delete")) {
-                Task {
-                    do {
-                        try await apiDeleteChat(type: chat.chatInfo.chatType, id: chat.chatInfo.apiId)
-                        DispatchQueue.main.async {
-                            chatModel.removeChat(contact.id)
-                        }
-                    } catch let error {
-                        logger.error("ChatListNavLink.deletePendingContactAlert apiDeleteChat error: \(error.localizedDescription)")
-                    }
-                }
+                removePendingContact(chat, contact)
             },
             secondaryButton: .cancel()
         )
+    }
+
+    private func removePendingContact(_ chat: Chat, _ contact: Contact) {
+        Task {
+            do {
+                try await apiDeleteChat(type: chat.chatInfo.chatType, id: chat.chatInfo.apiId)
+                DispatchQueue.main.async {
+                    chatModel.removeChat(contact.id)
+                }
+            } catch let error {
+                logger.error("ChatListNavLink.removePendingContact apiDeleteChat error: \(responseError(error))")
+            }
+        }
     }
 }
 
