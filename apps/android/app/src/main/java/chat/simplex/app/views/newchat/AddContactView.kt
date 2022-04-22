@@ -63,7 +63,7 @@ fun AddContactLayout(connReq: String, share: () -> Unit) {
         lineHeight = 22.sp,
         modifier = Modifier
           .padding(horizontal = 16.dp)
-          .padding(bottom = if(screenHeight > 600.dp) 16.dp else 8.dp)
+          .padding(bottom = if (screenHeight > 600.dp) 16.dp else 8.dp)
       )
       SimpleButton(generalGetString(R.string.share_invitation_link), icon = Icons.Outlined.Share, click = share)
       Spacer(Modifier.height(10.dp))
@@ -82,7 +82,7 @@ fun PreviewAddContactView() {
   SimpleXTheme {
     AddContactLayout(
       connReq = "https://simplex.chat/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23MCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%3D",
-      share = {}
+      share = {},
     )
   }
 }

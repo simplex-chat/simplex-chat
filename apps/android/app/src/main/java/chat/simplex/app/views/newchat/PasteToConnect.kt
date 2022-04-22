@@ -1,5 +1,6 @@
 package chat.simplex.app.views.newchat
 
+import android.content.*
 import android.content.res.Configuration
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -14,16 +15,21 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat.getSystemService
 import chat.simplex.app.R
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.helpers.generalGetString
+import chat.simplex.app.views.helpers.withApi
 
 @Composable
 fun PasteToConnect(connectViaLink: (String) -> Unit) {
+  val context = LocalContext.current
+  val clipboard = getSystemService(context, ClipboardManager::class.java)
   fun pasteFromClipboard() : String {
-    return ""
+    return clipboard?.primaryClip?.getItemAt(0)?.coerceToText(context) as String
   }
 
   var address = remember { mutableStateOf<String?>(null) }
@@ -31,6 +37,7 @@ fun PasteToConnect(connectViaLink: (String) -> Unit) {
     BasicTextField(
       value = address.value ?: "",
       onValueChange = {s-> address.value = s},
+      textStyle = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onBackground),
       decorationBox = { innerTextField ->
         Surface(
           shape = RoundedCornerShape(18.dp),
@@ -51,8 +58,8 @@ fun PasteToConnect(connectViaLink: (String) -> Unit) {
             }
             val color = MaterialTheme.colors.primary
             Icon(
-              if (address.value == null) Icons.Outlined.ContentPaste else Icons.Outlined.Check,
-              generalGetString(if (address.value == null) R.string.icon_paste_from_clipboard else R.string.icon_checkmark_action),
+              if (address.value == null || address.value == "") Icons.Outlined.ContentPaste else Icons.Outlined.Check,
+              generalGetString(if (address.value == null || address.value == "") R.string.icon_paste_from_clipboard else R.string.icon_checkmark_action),
               tint = Color.White,
               modifier = Modifier
                 .size(36.dp)
@@ -60,10 +67,12 @@ fun PasteToConnect(connectViaLink: (String) -> Unit) {
                 .clip(CircleShape)
                 .background(color)
                 .clickable {
-                  if (address.value == null) {
+                  val link = address.value
+                  if (link == null) {
                     address.value = pasteFromClipboard()
                   } else {
-                    address.value?.let(connectViaLink)
+                    connectViaLink(link)
+                    address.value = null
                   }
                 }
             )
@@ -81,8 +90,15 @@ fun PasteToConnect(connectViaLink: (String) -> Unit) {
   name = "Dark Mode"
 )
 @Composable
-fun PreviewDeletedItemView() {
+fun PreviewPasteToConnect() {
   SimpleXTheme {
-    PasteToConnect { _ -> }
+    PasteToConnect { link ->
+      try {
+        println(link)
+//        withApi { chatModel.controller.apiConnect(link) }
+      } catch (e: Exception) {
+        e.printStackTrace()
+      }
+    }
   }
 }
