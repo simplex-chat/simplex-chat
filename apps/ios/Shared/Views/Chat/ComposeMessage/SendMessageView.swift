@@ -26,6 +26,7 @@ struct SendMessageView: View {
             HStack(alignment: .bottom) {
                 ZStack(alignment: .leading) {
                     Text(message)
+                        .lineLimit(10)
                         .font(teFont)
                         .foregroundColor(.clear)
                         .padding(.horizontal, 10)

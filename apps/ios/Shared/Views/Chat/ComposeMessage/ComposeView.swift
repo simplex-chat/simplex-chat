@@ -134,9 +134,9 @@ struct ComposeView: View {
                 imagePreview = nil
             }
         }
-        .onChange(of: imagePreview) { ip in
+        .onChange(of: imagePreview) { imagePreview in
             sendEnabled = (imagePreview != nil || !message.isEmpty)
-            if ip != nil {
+            if imagePreview != nil {
                 linkPreview = nil
             }
         }

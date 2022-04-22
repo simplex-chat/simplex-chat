@@ -142,7 +142,9 @@ struct ChatView: View {
                         showShareSheet(items: shareItems)
                     } label: { Label("Share", systemImage: "square.and.arrow.up") }
                     Button {
-                        if case .image = ci.content.msgContent, let image = getStoredImage(ci.file) {
+                        if case let .image(text, _) = ci.content.msgContent,
+                           text == "",
+                           let image = getStoredImage(ci.file) {
                             UIPasteboard.general.image = image
                         } else {
                             UIPasteboard.general.string = ci.content.text
