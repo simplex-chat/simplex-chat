@@ -191,7 +191,7 @@ struct SettingsView: View {
             primaryButton: .destructive(Text("Confirm")) {
                 Task {
                     do {
-                        try await apiRegisterToken(token: token)
+                        chatModel.tokenStatus = try await apiRegisterToken(token: token)
                     } catch {
                         DispatchQueue.main.async {
                             useNotifications = false
