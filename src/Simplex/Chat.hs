@@ -97,6 +97,9 @@ defaultSMPServers =
       "smp://6iIcWT_dF2zN_w5xzZEY7HI2Prbh3ldP07YTyDexPjE=@smp10.simplex.im"
     ]
 
+defaultNtfServers :: [NtfServer]
+defaultNtfServers = ["smp://ZH1Dkt2_EQRbxUUyjLlcUjg1KAhBrqfvE0xfn7Ki0Zg=@ntf1.simplex.im"]
+
 logCfg :: LogConfig
 logCfg = LogConfig {lc_file = Nothing, lc_stderr = True}
 
@@ -109,7 +112,7 @@ newChatController chatStore user cfg@ChatConfig {agentConfig = aCfg, tbqSize} Ch
   firstTime <- not <$> doesFileExist f
   currentUser <- newTVarIO user
   initialSMPServers <- resolveServers
-  let servers = InitialAgentServers {smp = initialSMPServers, ntf = ["smp://smAc80rtvJKA02nysCCmiDzMUmcGnYA3gujwKU1NT30=@127.0.0.1:443"]}
+  let servers = InitialAgentServers {smp = initialSMPServers, ntf = defaultNtfServers}
   smpAgent <- getSMPAgentClient aCfg {dbFile = dbFilePrefix <> "_agent.db"} servers
   agentAsync <- newTVarIO Nothing
   idsDrg <- newTVarIO =<< drgNew
