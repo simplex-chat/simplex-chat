@@ -339,7 +339,6 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
 //        NtfManager.shared.notifyContactConnected(contact)
       }
       is CR.ContactConnecting -> {
-        println("CONNECTING... CONNECTING... CONNECTING...")
         chatModel.updateContact(r.contact)
         chatModel.updateNetworkStatus(r.contact, Chat.NetworkStatus.Connecting())
       }
