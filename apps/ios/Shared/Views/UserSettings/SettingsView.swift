@@ -18,6 +18,9 @@ struct SettingsView: View {
     @Environment(\.colorScheme) var colorScheme
     @EnvironmentObject var chatModel: ChatModel
     @Binding var showSettings: Bool
+    @AppStorage("useNotifications") private var useNotifications: Bool = false
+    @State var showNotificationsAlert: Bool = false
+    @State var whichNotificationsAlert = NotificationAlert.enable
 
     var body: some View {
         let user: User = chatModel.currentUser!
@@ -128,11 +131,85 @@ struct SettingsView: View {
                             .padding(.trailing, 8)
                         Text("Install [SimpleX Chat for terminal](https://github.com/simplex-chat/simplex-chat)")
                     }
+                    if let token = chatModel.deviceToken {
+                        HStack {
+                            Image(systemName: "bolt.fill")
+                                .padding(.trailing, 4)
+                            NotificationsToggle(token)
+                        }
+                    }
                     Text("v\(appVersion ?? "?") (\(appBuild ?? "?"))")
                 }
             }
             .navigationTitle("Your settings")
         }
+    }
+
+    enum NotificationAlert {
+        case enable
+        case error(LocalizedStringKey, String)
+    }
+
+    private func NotificationsToggle(_ token:  String) -> some View {
+        Toggle("Check messages", isOn: $useNotifications)
+            .onChange(of: useNotifications) { enable in
+                if enable {
+                    showNotificationsAlert = true
+                    whichNotificationsAlert = .enable
+                } else {
+                    Task {
+                        do {
+                            try await apiDeleteToken(token: token)
+                        }
+                        catch {
+                            DispatchQueue.main.async {
+                                if let cr = error as? ChatResponse {
+                                    let err = String(describing: cr)
+                                    logger.error("apiDeleteToken error: \(err)")
+                                    showNotificationsAlert = true
+                                    whichNotificationsAlert = .error("Error deleting token", err)
+                                } else {
+                                    logger.error("apiDeleteToken unknown error: \(error.localizedDescription)")
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            .alert(isPresented: $showNotificationsAlert) {
+                switch (whichNotificationsAlert) {
+                case .enable: return enableNotificationsAlert(token)
+                case let .error(title, err): return Alert(title: Text(title), message: Text(err))
+                }
+            }
+    }
+
+    private func enableNotificationsAlert(_ token: String) -> Alert {
+        Alert(
+            title: Text("Enable notifications? (BETA)"),
+            message: Text("The app can receive background notifications every 20 minutes to check the new messages.\n*Please note*: if you confirm, your device token will be sent to SimpleX Chat notifications server."),
+            primaryButton: .destructive(Text("Confirm")) {
+                Task {
+                    do {
+                        try await apiRegisterToken(token: token)
+                    } catch {
+                        DispatchQueue.main.async {
+                            useNotifications = false
+                            if let cr = error as? ChatResponse {
+                                let err = String(describing: cr)
+                                logger.error("apiRegisterToken error: \(err)")
+                                showNotificationsAlert = true
+                                whichNotificationsAlert = .error("Error registering token", err)
+                            } else {
+                                logger.error("apiRegisterToken unknown error: \(error.localizedDescription)")
+                            }
+                        }
+                    }
+                }
+            }, secondaryButton: .cancel() {
+                withAnimation() { useNotifications = false }
+            }
+        )
     }
 }
 

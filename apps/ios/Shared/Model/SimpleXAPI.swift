@@ -26,7 +26,9 @@ enum ChatCommand {
     case apiUpdateChatItem(type: ChatType, id: Int64, itemId: Int64, msg: MsgContent)
     case apiDeleteChatItem(type: ChatType, id: Int64, itemId: Int64, mode: CIDeleteMode)
     case apiRegisterToken(token: String)
-    case apiVerifyToken(token: String, code: String)
+    case apiVerifyToken(token: String, code: String, nonce: String)
+    case apiIntervalNofication(token: String, interval: Int)
+    case apiDeleteToken(token: String)
     case getUserSMPServers
     case setUserSMPServers(smpServers: [String])
     case addContact
@@ -61,8 +63,10 @@ enum ChatCommand {
                 }
             case let .apiUpdateChatItem(type, id, itemId, mc): return "/_update item \(ref(type, id)) \(itemId) \(mc.cmdString)"
             case let .apiDeleteChatItem(type, id, itemId, mode): return "/_delete item \(ref(type, id)) \(itemId) \(mode.rawValue)"
-            case let .apiRegisterToken(token): return "/_ntf register apn \(token)"
-            case let .apiVerifyToken(token, code): return "/_ntf verify apn \(token) \(code)"
+            case let .apiRegisterToken(token): return "/_ntf register apns \(token)"
+            case let .apiVerifyToken(token, code, nonce): return "/_ntf verify apns \(token) \(code) \(nonce)"
+            case let .apiIntervalNofication(token, interval): return "/_ntf interval apns \(token) \(interval)"
+            case let .apiDeleteToken(token): return "/_ntf delete apns \(token)"
             case .getUserSMPServers: return "/smp_servers"
             case let .setUserSMPServers(smpServers): return "/smp_servers \(smpServersStr(smpServers: smpServers))"
             case .addContact: return "/connect"
@@ -96,6 +100,8 @@ enum ChatCommand {
             case .apiDeleteChatItem: return "apiDeleteChatItem"
             case .apiRegisterToken: return "apiRegisterToken"
             case .apiVerifyToken: return "apiRegisterToken"
+            case .apiIntervalNofication: return "apiIntervalNofication"
+            case .apiDeleteToken: return "apiDeleteToken"
             case .getUserSMPServers: return "getUserSMPServers"
             case .setUserSMPServers: return "setUserSMPServers"
             case .addContact: return "addContact"
@@ -454,15 +460,19 @@ func apiDeleteChatItem(type: ChatType, id: Int64, itemId: Int64, mode: CIDeleteM
 }
 
 func apiRegisterToken(token: String) async throws {
-    let r = await chatSendCmd(.apiRegisterToken(token: token))
-    if case .cmdOk = r { return }
-    throw r
+    try await sendCommandOkResp(.apiRegisterToken(token: token))
 }
 
-func apiVerifyToken(token: String, code: String) async throws {
-    let r = await chatSendCmd(.apiVerifyToken(token: token, code: code))
-    if case .cmdOk = r { return }
-    throw r
+func apiVerifyToken(token: String, code: String, nonce: String) async throws {
+    try await sendCommandOkResp(.apiVerifyToken(token: token, code: code, nonce: nonce))
+}
+
+func apiIntervalNofication(token: String, interval: Int) async throws {
+    try await sendCommandOkResp(.apiIntervalNofication(token: token, interval: interval))
+}
+
+func apiDeleteToken(token: String) async throws {
+    try await sendCommandOkResp(.apiDeleteToken(token: token))
 }
 
 func getUserSMPServers() throws -> [String] {
@@ -472,9 +482,7 @@ func getUserSMPServers() throws -> [String] {
 }
 
 func setUserSMPServers(smpServers: [String]) async throws {
-    let r = await chatSendCmd(.setUserSMPServers(smpServers: smpServers))
-    if case .cmdOk = r { return }
-    throw r
+    try await sendCommandOkResp(.setUserSMPServers(smpServers: smpServers))
 }
 
 func apiAddContact() throws -> String {
@@ -580,9 +588,7 @@ func apiRejectContactRequest(contactReqId: Int64) async throws {
 }
 
 func apiChatRead(type: ChatType, id: Int64, itemRange: (Int64, Int64)) async throws {
-    let r = await chatSendCmd(.apiChatRead(type: type, id: id, itemRange: itemRange))
-    if case .cmdOk = r { return }
-    throw r
+    try await sendCommandOkResp(.apiChatRead(type: type, id: id, itemRange: itemRange))
 }
 
 func receiveFile(fileId: Int64) async throws {
@@ -628,6 +634,20 @@ func markChatItemRead(_ cInfo: ChatInfo, _ cItem: ChatItem) async {
         DispatchQueue.main.async { ChatModel.shared.markChatItemRead(cInfo, cItem) }
     } catch {
         logger.error("markChatItemRead apiChatRead error: \(error.localizedDescription)")
+    }
+}
+
+private func sendCommandOkResp(_ cmd: ChatCommand) async throws {
+    let r = await chatSendCmd(cmd)
+    if case .cmdOk = r { return }
+    throw r
+}
+
+func responseError(_ err: Error) -> String {
+    if let r = err as? ChatResponse {
+        return String(describing: r)
+    } else {
+        return err.localizedDescription
     }
 }
 
