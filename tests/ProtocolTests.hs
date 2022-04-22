@@ -15,7 +15,7 @@ import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.Ratchet
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (parseAll)
-import Simplex.Messaging.Protocol (smpClientVRange)
+import Simplex.Messaging.Protocol (ProtocolServer (..), smpClientVRange)
 import Test.Hspec
 
 protocolTests :: Spec
@@ -23,7 +23,7 @@ protocolTests = decodeChatMessageTest
 
 srv :: SMPServer
 srv =
-  SMPServer
+  ProtocolServer
     { host = "smp.simplex.im",
       port = "5223",
       keyHash = C.KeyHash "\215m\248\251"

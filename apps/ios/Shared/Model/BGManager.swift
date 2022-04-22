@@ -20,7 +20,7 @@ class BGManager {
     static let shared = BGManager()
     var chatReceiver: ChatReceiver?
     var bgTimer: Timer?
-    var completed = false
+    var completed = true
 
     func register() {
         logger.debug("BGManager.register")
@@ -43,36 +43,48 @@ class BGManager {
     private func handleRefresh(_ task: BGAppRefreshTask) {
         logger.debug("BGManager.handleRefresh")
         schedule()
-        self.completed = false
+        let completeRefresh = completionHandler {
+            task.setTaskCompleted(success: true)
+        }
+        task.expirationHandler = { completeRefresh("expirationHandler") }
+        receiveMessages(completeRefresh)
+    }
 
-        let completeTask: (String) -> Void = { reason in
-            logger.debug("BGManager.handleRefresh completeTask: \(reason)")
+    func completionHandler(_ complete: @escaping () -> Void) -> ((String) -> Void) {
+        { reason in
+            logger.debug("BGManager.completionHandler: \(reason)")
             if !self.completed {
                 self.completed = true
                 self.chatReceiver?.stop()
                 self.chatReceiver = nil
                 self.bgTimer?.invalidate()
                 self.bgTimer = nil
-                task.setTaskCompleted(success: true)
+                complete()
             }
         }
+    }
 
-        task.expirationHandler = { completeTask("expirationHandler") }
+    func receiveMessages(_ completeReceiving: @escaping (String) -> Void) {
+        if (!self.completed) {
+            logger.debug("BGManager.receiveMessages: in progress, exiting")
+            return
+        }
+        self.completed = false
         DispatchQueue.main.async {
             initializeChat()
             if ChatModel.shared.currentUser == nil {
-                completeTask("no current user")
+                completeReceiving("no current user")
                 return
             }
-            logger.debug("BGManager.handleRefresh: starting chat")
+            logger.debug("BGManager.receiveMessages: starting chat")
             let cr = ChatReceiver()
             self.chatReceiver = cr
             cr.start()
             RunLoop.current.add(Timer(timeInterval: 2, repeats: true) { timer in
-                logger.debug("BGManager.handleRefresh: timer")
+                logger.debug("BGManager.receiveMessages: timer")
                 self.bgTimer = timer
                 if cr.lastMsgTime.distance(to: Date.now) >= waitForMessages {
-                    completeTask("timer (no messages after \(waitForMessages) seconds)")
+                    completeReceiving("timer (no messages after \(waitForMessages) seconds)")
                 }
             }, forMode: .default)
         }

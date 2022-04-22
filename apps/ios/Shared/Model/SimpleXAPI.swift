@@ -25,6 +25,8 @@ enum ChatCommand {
     case apiSendMessage(type: ChatType, id: Int64, file: String?, quotedItemId: Int64?, msg: MsgContent)
     case apiUpdateChatItem(type: ChatType, id: Int64, itemId: Int64, msg: MsgContent)
     case apiDeleteChatItem(type: ChatType, id: Int64, itemId: Int64, mode: CIDeleteMode)
+    case apiRegisterToken(token: String)
+    case apiVerifyToken(token: String, code: String)
     case getUserSMPServers
     case setUserSMPServers(smpServers: [String])
     case addContact
@@ -59,6 +61,8 @@ enum ChatCommand {
                 }
             case let .apiUpdateChatItem(type, id, itemId, mc): return "/_update item \(ref(type, id)) \(itemId) \(mc.cmdString)"
             case let .apiDeleteChatItem(type, id, itemId, mode): return "/_delete item \(ref(type, id)) \(itemId) \(mode.rawValue)"
+            case let .apiRegisterToken(token): return "/_ntf register apn \(token)"
+            case let .apiVerifyToken(token, code): return "/_ntf verify apn \(token) \(code)"
             case .getUserSMPServers: return "/smp_servers"
             case let .setUserSMPServers(smpServers): return "/smp_servers \(smpServersStr(smpServers: smpServers))"
             case .addContact: return "/connect"
@@ -90,6 +94,8 @@ enum ChatCommand {
             case .apiSendMessage: return "apiSendMessage"
             case .apiUpdateChatItem: return "apiUpdateChatItem"
             case .apiDeleteChatItem: return "apiDeleteChatItem"
+            case .apiRegisterToken: return "apiRegisterToken"
+            case .apiVerifyToken: return "apiRegisterToken"
             case .getUserSMPServers: return "getUserSMPServers"
             case .setUserSMPServers: return "setUserSMPServers"
             case .addContact: return "addContact"
@@ -444,6 +450,18 @@ func apiUpdateChatItem(type: ChatType, id: Int64, itemId: Int64, msg: MsgContent
 func apiDeleteChatItem(type: ChatType, id: Int64, itemId: Int64, mode: CIDeleteMode) async throws -> ChatItem {
     let r = await chatSendCmd(.apiDeleteChatItem(type: type, id: id, itemId: itemId, mode: mode), bgDelay: msgDelay)
     if case let .chatItemDeleted(_, toChatItem) = r { return toChatItem.chatItem }
+    throw r
+}
+
+func apiRegisterToken(token: String) async throws {
+    let r = await chatSendCmd(.apiRegisterToken(token: token))
+    if case .cmdOk = r { return }
+    throw r
+}
+
+func apiVerifyToken(token: String, code: String) async throws {
+    let r = await chatSendCmd(.apiVerifyToken(token: token, code: code))
+    if case .cmdOk = r { return }
     throw r
 }
 
