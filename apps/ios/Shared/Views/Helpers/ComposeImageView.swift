@@ -20,7 +20,7 @@ struct ComposeImageView: View {
                 Image(uiImage: uiImage)
                     .resizable()
                     .aspectRatio(contentMode: .fit)
-                    .frame(maxWidth: 80, maxHeight: 60)
+                    .frame(maxWidth: 80, minHeight: 40, maxHeight: 60)
             }
             Spacer()
             Button { cancelImage() } label: {
