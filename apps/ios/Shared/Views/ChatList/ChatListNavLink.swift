@@ -12,7 +12,6 @@ struct ChatListNavLink: View {
     @EnvironmentObject var chatModel: ChatModel
     @State var chat: Chat
     @State private var showContactRequestDialog = false
-    @State private var showPendingContactAlert = false
 
     var body: some View {
         switch chat.chatInfo {
@@ -54,18 +53,20 @@ struct ChatListNavLink: View {
         }
         .swipeActions(edge: .trailing) {
             Button(role: .destructive) {
-                if contact.ready {
-                    AlertManager.shared.showAlert(deleteContactAlert(contact))
-                }
-                else {
-                    AlertManager.shared.showAlert(deletePendingContactAlert(chat, contact))
-                }
+                AlertManager.shared.showAlert(
+                    contact.ready
+                    ? deleteContactAlert(contact)
+                    : deletePendingContactAlert(chat, contact)
+                )
             } label: {
                 Label("Delete", systemImage: "trash")
             }
         }
-        .onTapGesture { showPendingContactAlert = true && !contact.ready }
-        .alert(isPresented: $showPendingContactAlert) { pendingContactAlert(chat, contact) }
+        .onTapGesture {
+            if !contact.ready {
+                AlertManager.shared.showAlert(pendingContactAlert(chat, contact))
+            }
+        }
         .frame(height: 80)
     }
 
