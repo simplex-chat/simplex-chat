@@ -131,7 +131,7 @@
   <string name="reject_contact_button">Reject</string>
 
   <!-- Connection Pending Alert Dialogue - ChatListNavLinkView.kt -->
-  <string name="contact_connection_pending">Contact connection pending</string>
+  <string name="contact_connection_pending">Contact connection pending…</string>
   <string name="connection_pending_they_need_to_be_online_can_delete_and_retry">Your connection to this contact is pending. They need to be online for the connection to become active. You can cancel this connection and remove the contact (and later retry with a new link).</string>
 
   <!-- Contact Request Information - ContactRequestView.kt -->

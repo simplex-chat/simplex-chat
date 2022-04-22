@@ -12,11 +12,12 @@ struct ChatListNavLink: View {
     @EnvironmentObject var chatModel: ChatModel
     @State var chat: Chat
     @State private var showContactRequestDialog = false
+    @State private var showPendingContactAlert = false
 
     var body: some View {
         switch chat.chatInfo {
         case let .direct(contact):
-            contactNavLink(contact)
+            if contact.ready { contactNavLink(contact) } else { pendingContactNavLink(contact) }
         case let .group(groupInfo):
             groupNavLink(groupInfo)
         case let .contactRequest(cReq):
@@ -113,6 +114,20 @@ struct ChatListNavLink: View {
         }
     }
 
+    private func pendingContactNavLink(_ contact: Contact) -> some View {
+        PendingConnectionView(chat: chat)
+        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+            Button(role: .destructive) {
+                AlertManager.shared.showAlert(deletePendingContactAlert(chat, contact))
+            } label: {
+                Label("Reject", systemImage: "multiply")
+            }
+        }
+        .frame(height: 80)
+        .onTapGesture { showPendingContactAlert = true }
+        .alert(isPresented: $showPendingContactAlert) { pendingContactAlert(chat, contact) }
+    }
+
     private func deleteContactAlert(_ contact: Contact) -> Alert {
         Alert(
             title: Text("Delete contact?"),
@@ -146,6 +161,46 @@ struct ChatListNavLink: View {
             message: Text("The sender will NOT be notified"),
             primaryButton: .destructive(Text("Reject")) {
                 Task { await rejectContactRequest(contactRequest) }
+            },
+            secondaryButton: .cancel()
+        )
+    }
+
+    private func pendingContactAlert(_ chat: Chat, _ contact: Contact) -> Alert {
+        Alert(
+            title: Text("Pending connection"),
+            message: Text("Your connection to this contact is pending. They need to be online for the connection to become active. You can cancel this connection and remove the contact (and later retry with a new link)."),
+            primaryButton: .cancel(),
+            secondaryButton: .destructive(Text("Delete Contact")) {
+                Task {
+                    do {
+                        try await apiDeleteChat(type: chat.chatInfo.chatType, id: chat.chatInfo.apiId)
+                        DispatchQueue.main.async {
+                            chatModel.removeChat(contact.id)
+                        }
+                    } catch let error {
+                        logger.error("ChatListNavLink.deletePendingContactAlert apiDeleteChat error: \(error.localizedDescription)")
+                    }
+                }
+            }
+        )
+    }
+
+    private func deletePendingContactAlert(_ chat: Chat, _ contact: Contact) -> Alert {
+        Alert(
+            title: Text("Delete pending connection"),
+            message: Text("Your connection to this contact is pending. They need to be online for the connection to become active. You can cancel this connection and remove the contact (and later retry with a new link)."),
+            primaryButton: .destructive(Text("Delete")) {
+                Task {
+                    do {
+                        try await apiDeleteChat(type: chat.chatInfo.chatType, id: chat.chatInfo.apiId)
+                        DispatchQueue.main.async {
+                            chatModel.removeChat(contact.id)
+                        }
+                    } catch let error {
+                        logger.error("ChatListNavLink.deletePendingContactAlert apiDeleteChat error: \(error.localizedDescription)")
+                    }
+                }
             },
             secondaryButton: .cancel()
         )
