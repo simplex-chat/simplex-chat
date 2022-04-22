@@ -273,14 +273,12 @@ data class Chat (
     val statusExplanation: String get() =
       when (this) {
         is Connected -> generalGetString(R.string.connected_to_server_to_receive_messages_from_contact)
-        is Connecting -> generalGetString(R.string.you_are_being_connected_to_server_awaiting_confirmation)
         is Error -> String.format(generalGetString(R.string.trying_to_connect_to_server_to_receive_messages_with_error), error)
         else -> generalGetString(R.string.trying_to_connect_to_server_to_receive_messages)
       }
 
     @Serializable @SerialName("unknown") class Unknown: NetworkStatus()
     @Serializable @SerialName("connected") class Connected: NetworkStatus()
-    @Serializable @SerialName("connecting") class Connecting: NetworkStatus()
     @Serializable @SerialName("disconnected") class Disconnected: NetworkStatus()
     @Serializable @SerialName("error") class Error(val error: String): NetworkStatus()
   }

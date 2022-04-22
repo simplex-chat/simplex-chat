@@ -27,8 +27,7 @@ fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
       } else {
         if (chat.chatInfo.ready) {
           withApi { openChat(chatModel, chat.chatInfo) }
-        }
-        else {
+        } else {
           pendingConnectionAlertDialog(chat.chatInfo, chatModel)
         }
       }

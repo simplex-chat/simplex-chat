@@ -340,7 +340,6 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
       }
       is CR.ContactConnecting -> {
         chatModel.updateContact(r.contact)
-        chatModel.updateNetworkStatus(r.contact, Chat.NetworkStatus.Connecting())
       }
       is CR.ReceivedContactRequest -> {
         val contactRequest = r.contactRequest
