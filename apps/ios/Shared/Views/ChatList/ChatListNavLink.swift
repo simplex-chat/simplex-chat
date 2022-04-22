@@ -17,7 +17,7 @@ struct ChatListNavLink: View {
     var body: some View {
         switch chat.chatInfo {
         case let .direct(contact):
-            if contact.ready { contactNavLink(contact) } else { pendingContactNavLink(contact) }
+            contactNavLink(contact)
         case let .group(groupInfo):
             groupNavLink(groupInfo)
         case let .contactRequest(cReq):
