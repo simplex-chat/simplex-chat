@@ -99,7 +99,7 @@ enum ChatCommand {
             case .apiUpdateChatItem: return "apiUpdateChatItem"
             case .apiDeleteChatItem: return "apiDeleteChatItem"
             case .apiRegisterToken: return "apiRegisterToken"
-            case .apiVerifyToken: return "apiRegisterToken"
+            case .apiVerifyToken: return "apiVerifyToken"
             case .apiIntervalNofication: return "apiIntervalNofication"
             case .apiDeleteToken: return "apiDeleteToken"
             case .getUserSMPServers: return "getUserSMPServers"
