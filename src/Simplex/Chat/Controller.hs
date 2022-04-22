@@ -36,7 +36,7 @@ import Simplex.Messaging.Agent.Env.SQLite (AgentConfig)
 import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore)
 import qualified Simplex.Messaging.Crypto as C
-import Simplex.Messaging.Notifications.Protocol (DeviceToken (..))
+import Simplex.Messaging.Notifications.Protocol (DeviceToken (..), NtfTknStatus)
 import Simplex.Messaging.Parsers (dropPrefix, enumJSON, sumTypeJSON)
 import Simplex.Messaging.Protocol (CorrId)
 import System.IO (Handle)
@@ -245,6 +245,7 @@ data ChatResponse
   | CRRcvFileSubError {rcvFileTransfer :: RcvFileTransfer, chatError :: ChatError}
   | CRUserContactLinkSubscribed
   | CRUserContactLinkSubError {chatError :: ChatError}
+  | CRNtfTokenStatus {status :: NtfTknStatus}
   | CRMessageError {severity :: Text, errorMessage :: Text}
   | CRChatCmdError {chatError :: ChatError}
   | CRChatError {chatError :: ChatError}
