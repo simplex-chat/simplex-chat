@@ -25,7 +25,9 @@ fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
       if (chat.chatInfo is ChatInfo.ContactRequest) {
         contactRequestAlertDialog(chat.chatInfo, chatModel)
       } else {
-        withApi { openChat(chatModel, chat.chatInfo) }
+        if (chat.chatInfo.ready) {
+          withApi { openChat(chatModel, chat.chatInfo) }
+        }
       }
     }
   )
