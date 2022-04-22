@@ -31,8 +31,9 @@ fun ChatPreviewView(chat: Chat) {
         .padding(horizontal = 8.dp)
         .weight(1F)
     ) {
+      val heading = chat.chatInfo.chatViewName + (if (chat.chatInfo.ready) "" else "(pending)")
       Text(
-        chat.chatInfo.chatViewName,
+        heading,
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
         style = MaterialTheme.typography.h3,
