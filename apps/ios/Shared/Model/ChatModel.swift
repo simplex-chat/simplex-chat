@@ -382,14 +382,12 @@ final class Chat: ObservableObject, Identifiable {
     enum NetworkStatus: Decodable, Equatable {
         case unknown
         case connected
-        case connecting
         case disconnected
         case error(String)
 
         var statusString: LocalizedStringKey {
             get {
                 switch self {
-                case .connecting: return "Connection pending"
                 case .connected: return "Server connected"
                 case let .error(err): return "Connecting server… (error: \(err))"
                 default: return "Connecting server…"
@@ -400,7 +398,6 @@ final class Chat: ObservableObject, Identifiable {
         var statusExplanation: LocalizedStringKey {
             get {
                 switch self {
-                case .connecting: return "You are being connected to the server for this contact. Awaiting their confirmation before sending messages is enabled."
                 case .connected: return "You are connected to the server used to receive messages from this contact."
                 case let .error(err): return "Trying to connect to the server used to receive messages from this contact (error: \(err))."
                 default: return "Trying to connect to the server used to receive messages from this contact."
@@ -412,7 +409,6 @@ final class Chat: ObservableObject, Identifiable {
             get {
                 switch self {
                 case .unknown: return "circle.dotted"
-                case .connecting: return "circle.dotted"
                 case .connected: return "circle.fill"
                 case .disconnected: return "ellipsis.circle.fill"
                 case .error: return "exclamationmark.circle.fill"
