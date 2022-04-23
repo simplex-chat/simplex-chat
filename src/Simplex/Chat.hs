@@ -1899,7 +1899,7 @@ chatCommandP =
     <|> ("/user" <|> "/u") $> ShowActiveUser
     <|> "/_start" $> StartChat
     <|> "/_files_folder " *> (SetFilesFolder <$> filePath)
-    <|> "/_get chats" *> (APIGetChats <$> (" connections" $> True <|> pure False))
+    <|> "/_get chats" *> (APIGetChats <$> (" pcc=on" $> True <|> " pcc=off" $> False <|> pure False))
     <|> "/_get chat " *> (APIGetChat <$> chatTypeP <*> A.decimal <* A.space <*> chatPaginationP)
     <|> "/_get items count=" *> (APIGetChatItems <$> A.decimal)
     <|> "/_send " *> (APISendMessage <$> chatTypeP <*> A.decimal <*> optional filePathTagged <*> optional quotedItemIdTagged <* A.space <*> msgContentP)
