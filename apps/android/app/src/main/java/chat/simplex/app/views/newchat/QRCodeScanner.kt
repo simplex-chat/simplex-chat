@@ -18,14 +18,14 @@ import com.google.zxing.common.HybridBinarizer
 import com.google.zxing.qrcode.QRCodeReader
 import java.nio.ByteBuffer
 import java.util.*
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
+import java.util.concurrent.*
 
 @Composable
 fun QRCodeScanner(onBarcode: (String) -> Unit) {
   val context = LocalContext.current
   val lifecycleOwner = LocalLifecycleOwner.current
   var preview by remember { mutableStateOf<Preview?>(null) }
+  var lastAnalyzedTimeStamp = 0L
 
   AndroidView(
     factory = { AndroidViewContext ->
@@ -53,30 +53,41 @@ fun QRCodeScanner(onBarcode: (String) -> Unit) {
       val cameraProvider: ProcessCameraProvider = cameraProviderFuture.get()
       val qrReader = QRCodeReader()
       fun getQR(imageProxy: ImageProxy) {
-        val bitmap = imageProxyToBinaryBitmap(imageProxy)
-        val decodeHints = EnumMap<DecodeHintType, Any>(
-          DecodeHintType::class.java
-        )
-//        decodeHints[DecodeHintType.TRY_HARDER] = true
-        decodeHints[DecodeHintType.POSSIBLE_FORMATS] = BarcodeFormat.QR_CODE
-        try {
-          val result = qrReader.decode(bitmap, decodeHints)
-          println("QR RESULT: ${result.text}")
-//          onBarcode(result.text)
-        } catch(nfe: NotFoundException) {
-          Log.e(TAG, "Failed to find QR code in current image.")
-        } catch (fe: FormatException) {
-          Log.e(TAG, "Failed to find QR code of expected format. Possible mis-detection.")
-        } catch (ce: ChecksumException) {
-          Log.e(TAG, "Invalid QR Code. Checksum failure.")
-        } catch (e: Exception) {
-          Log.e(TAG, "QR code detection failed for unknown reason: ${e.localizedMessage}")
+        val currentTimeStamp = System.currentTimeMillis()
+        if (currentTimeStamp - lastAnalyzedTimeStamp >= TimeUnit.SECONDS.toMillis(1)) {
+          lastAnalyzedTimeStamp = currentTimeStamp
+          val bitmap = imageProxyToBinaryBitmap(imageProxy)
+          val decodeHints = EnumMap<DecodeHintType, Any>(
+            DecodeHintType::class.java
+          )
+          decodeHints[DecodeHintType.POSSIBLE_FORMATS] = BarcodeFormat.QR_CODE
+          try {
+            val result = qrReader.decode(bitmap, decodeHints)
+            onBarcode(result.text)
+            imageProxy.close()
+          } catch (nfe: NotFoundException) {
+            // Comment log for too much noise
+            // Log.d(TAG, "Failed to find QR code in current image.")
+            imageProxy.close()
+          } catch (fe: FormatException) {
+            Log.d(TAG, "Failed to find QR code of expected format. Possible mis-detection.")
+            imageProxy.close()
+          } catch (ce: ChecksumException) {
+            Log.d(TAG, "Invalid QR Code. Checksum failure.")
+            imageProxy.close()
+          } catch (e: Exception) {
+            Log.d(TAG, "QR code detection failed for unknown reason: ${e.localizedMessage}")
+            imageProxy.close()
+          }
+        } else {
+          imageProxy.close()
         }
       }
 
       val imageAnalyzer = ImageAnalysis.Analyzer { proxy -> getQR(proxy) }
       val imageAnalysis: ImageAnalysis = ImageAnalysis.Builder()
         .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+        .setImageQueueDepth(1)
         .build()
         .also { it.setAnalyzer(cameraExecutor, imageAnalyzer) }
       try {
