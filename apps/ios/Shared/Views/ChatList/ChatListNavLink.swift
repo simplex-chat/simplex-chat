@@ -16,14 +16,7 @@ struct ChatListNavLink: View {
     var body: some View {
         switch chat.chatInfo {
         case let .direct(contact):
-            if contact.ready {
-                contactNavLink(contact)
-            } else {
-                contactNavLink(contact)
-                    .onTapGesture {
-                        AlertManager.shared.showAlert(pendingContactAlert(chat, contact))
-                    }
-            }
+            contactNavLink(contact)
         case let .group(groupInfo):
             groupNavLink(groupInfo)
         case let .contactRequest(cReq):
@@ -45,8 +38,8 @@ struct ChatListNavLink: View {
         }
     }
 
-    private func contactNavLink(_ contact: Contact) -> some View {
-        NavLinkPlain(
+    @ViewBuilder private func contactNavLink(_ contact: Contact) -> some View {
+        let v = NavLinkPlain(
             tag: chat.chatInfo.id,
             selection: $chatModel.chatId,
             destination: { chatView() },
@@ -70,6 +63,14 @@ struct ChatListNavLink: View {
             }
         }
         .frame(height: 80)
+
+        if contact.ready {
+            v
+        } else {
+            v.onTapGesture {
+                AlertManager.shared.showAlert(pendingContactAlert(chat, contact))
+            }
+        }
     }
 
     private func groupNavLink(_ groupInfo: GroupInfo) -> some View {
