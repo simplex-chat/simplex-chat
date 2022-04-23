@@ -41,12 +41,16 @@ fun NewChatSheet(chatModel: ChatModel, newChatCtrl: ScaffoldController) {
       newChatCtrl.collapse()
       ModalManager.shared.showCustomModal { close -> ConnectContactView(chatModel, close) }
       cameraPermissionState.launchPermissionRequest()
+    },
+    pasteLink = {
+      newChatCtrl.collapse()
+      ModalManager.shared.showModal { PasteToConnectView(chatModel) }
     }
   )
 }
 
 @Composable
-fun NewChatSheetLayout(addContact: () -> Unit, scanCode: () -> Unit) {
+fun NewChatSheetLayout(addContact: () -> Unit, scanCode: () -> Unit, pasteLink: () -> Unit) {
   Row(
     Modifier
       .fillMaxWidth()
@@ -80,10 +84,10 @@ fun NewChatSheetLayout(addContact: () -> Unit, scanCode: () -> Unit) {
         .weight(1F)
         .fillMaxWidth()) {
       ActionButton(
-        generalGetString(R.string.create_group),
-        generalGetString(R.string.coming_soon__bracketed),
-        Icons.Outlined.GroupAdd,
-        disabled = true
+        generalGetString(R.string.paste_connection_link),
+        generalGetString(R.string.paste_received_link_from_clipboard),
+        Icons.Outlined.ContentPaste,
+        click = pasteLink
       )
     }
   }
@@ -129,7 +133,8 @@ fun PreviewNewChatSheet() {
   SimpleXTheme {
     NewChatSheetLayout(
       addContact = {},
-      scanCode = {}
+      scanCode = {},
+      pasteLink = {}
     )
   }
 }

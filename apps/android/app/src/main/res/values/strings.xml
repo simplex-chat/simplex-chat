@@ -103,8 +103,8 @@
   <!-- NewChatSheet -->
   <string name="create_QR_code_or_link__bracketed__multiline">(create QR code\nor link)</string>
   <string name="in_person_or_in_video_call__bracketed">(in person or in video call)</string>
-  <string name="create_group">Create Group</string>
-  <string name="coming_soon__bracketed">(coming soon!)</string>
+  <string name="paste_connection_link">Paste Link</string>
+  <string name="paste_received_link_from_clipboard">(paste link from clipboard)</string>
 
   <!-- GetImageView -->
   <string name="toast_camera_permission_denied">Permission Denied!</string>
@@ -168,6 +168,7 @@
   <string name="your_chat_profile_will_be_sent_to_your_contact">Your chat profile will be sent\nto your contact</string>
   <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link">If you cannot meet in person, you can <b>scan QR code in the video call</b>, or your contact can share an invitation link.</string>
   <string name="share_invitation_link">Share invitation link</string>
+  <string name="paste_connection_link_below_to_connect">Paste connection link in the box below to connect with a contact.</string>
 
   <!-- settings - SettingsView.kt -->
   <string name="your_settings">Your settings</string>
