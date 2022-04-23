@@ -19,12 +19,13 @@ class AppDelegate: NSObject, UIApplicationDelegate {
     func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
         let token = deviceToken.map { String(format: "%02hhx", $0) }.joined()
         logger.debug("AppDelegate: didRegisterForRemoteNotificationsWithDeviceToken \(token)")
-        ChatModel.shared.deviceToken = token
+        let m = ChatModel.shared
+        m.deviceToken = token
         let useNotifications = UserDefaults.standard.bool(forKey: "useNotifications")
         if useNotifications {
             Task {
                 do {
-                    try await apiRegisterToken(token: token)
+                    m.tokenStatus = try await apiRegisterToken(token: token)
                 } catch {
                     logger.error("apiRegisterToken error: \(responseError(error))")
                 }
@@ -47,10 +48,16 @@ class AppDelegate: NSObject, UIApplicationDelegate {
                 if let token = ChatModel.shared.deviceToken {
                     logger.debug("AppDelegate: didReceiveRemoteNotification: verification, confirming \(verification)")
                     Task {
+                        let m = ChatModel.shared
                         do {
+                            if case .active = m.tokenStatus {} else { m.tokenStatus = .confirmed }
                             try await apiVerifyToken(token: token, code: verification, nonce: nonce)
+                            m.tokenStatus = .active
                             try await apiIntervalNofication(token: token, interval: 20)
                         } catch {
+                            if let cr = error as? ChatResponse, case .chatCmdError(.errorAgent(.NTF(.AUTH))) = cr {
+                                m.tokenStatus = .expired
+                            }
                             logger.error("AppDelegate: didReceiveRemoteNotification: apiVerifyToken or apiIntervalNofication error: \(responseError(error))")
                         }
                         completionHandler(.newData)

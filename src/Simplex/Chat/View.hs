@@ -31,6 +31,7 @@ import Simplex.Chat.Store (StoreError (..))
 import Simplex.Chat.Styled
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Protocol
+import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
 import qualified Simplex.Messaging.Protocol as SMP
 import Simplex.Messaging.Util (bshow)
@@ -140,6 +141,7 @@ responseToView testView = \case
     ["received file " <> sShow fileId <> " (" <> plain fileName <> ") error: " <> sShow e]
   CRUserContactLinkSubscribed -> ["Your address is active! To show: " <> highlight' "/sa"]
   CRUserContactLinkSubError e -> ["user address error: " <> sShow e, "to delete your address: " <> highlight' "/da"]
+  CRNtfTokenStatus status -> ["device token status: " <> plain (smpEncode status)]
   CRMessageError prefix err -> [plain prefix <> ": " <> plain err]
   CRChatError e -> viewChatError e
   where
