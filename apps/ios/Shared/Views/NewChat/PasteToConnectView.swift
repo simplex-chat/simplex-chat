@@ -12,9 +12,7 @@ struct PasteToConnectView: View {
     var connectViaLink: (String) -> Void
     @State private var teHeight: CGFloat = 42
     @State private var connectionLink: String = ""
-    @State private var submitEnabled: Bool = false
     @Namespace var namespace
-    @FocusState.Binding var keyboardVisible: Bool
     var maxHeight: CGFloat = 360
     var minHeight: CGFloat = 37
 
@@ -31,7 +29,6 @@ struct PasteToConnectView: View {
                         .background(GeometryReader(content: updateHeight))
                     TextEditor(text: $connectionLink)
                         .onSubmit(submit)
-                        .focused($keyboardVisible)
                         .font(.body)
                         .textInputAutocapitalization(.never)
                         .padding(.horizontal, 5)
@@ -39,7 +36,7 @@ struct PasteToConnectView: View {
                         .frame(height: teHeight)
                 }
                 Button(action: submit) {
-                    Image(systemName: submitEnabled ? "checkmark.circle.fill" : "arrow.right.doc.on.clipboard")
+                    Image(systemName: (connectionLink != "") ? "checkmark.circle.fill" : "arrow.right.doc.on.clipboard")
                         .resizable()
                         .foregroundColor(.accentColor)
                 }
@@ -54,7 +51,7 @@ struct PasteToConnectView: View {
         .padding(.vertical, 8)
     }
     private func submit() {
-        if submitEnabled {
+        if (connectionLink != "") {
             connectViaLink(connectionLink)
             connectionLink = ""
         } else {
@@ -71,7 +68,6 @@ struct PasteToConnectView: View {
 
 struct PasteToConnectView_Previews: PreviewProvider {
     static var previews: some View {
-        @FocusState var keyboardVisible: Bool
-        return PasteToConnectView(connectViaLink: { print($0) }, keyboardVisible: $keyboardVisible)
+        return PasteToConnectView(connectViaLink: { print($0) })
     }
 }
