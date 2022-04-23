@@ -24,6 +24,7 @@ final class ChatModel: ObservableObject {
     @Published var userSMPServers: [String]?
     @Published var appOpenUrl: URL?
     @Published var deviceToken: String?
+    @Published var tokenStatus = NtfTknStatus.new
 
     var messageDelivery: Dictionary<Int64, () -> Void> = [:]
 
@@ -929,4 +930,13 @@ struct LinkPreview: Codable {
     // TODO remove once optional in haskell
     var description: String = ""
     var image: String
+}
+
+enum NtfTknStatus: String, Decodable {
+    case new = "NEW"
+    case registered = "REGISTERED"
+    case invalid = "INVALID"
+    case confirmed = "CONFIRMED"
+    case active = "ACTIVE"
+    case expired = "EXPIRED"
 }

@@ -173,6 +173,7 @@ enum ChatResponse: Decodable, Error {
     case chatItemDeleted(deletedChatItem: AChatItem, toChatItem: AChatItem)
     case rcvFileAccepted
     case rcvFileComplete(chatItem: AChatItem)
+    case ntfTokenStatus(status: NtfTknStatus)
     case cmdOk
     case chatCmdError(chatError: ChatError)
     case chatError(chatError: ChatError)
@@ -218,6 +219,7 @@ enum ChatResponse: Decodable, Error {
             case .chatItemDeleted: return "chatItemDeleted"
             case .rcvFileAccepted: return "rcvFileAccepted"
             case .rcvFileComplete: return "rcvFileComplete"
+            case .ntfTokenStatus: return "ntfTokenStatus"
             case .cmdOk: return "cmdOk"
             case .chatCmdError: return "chatCmdError"
             case .chatError: return "chatError"
@@ -266,6 +268,7 @@ enum ChatResponse: Decodable, Error {
             case let .chatItemDeleted(deletedChatItem, toChatItem): return "deletedChatItem:\n\(String(describing: deletedChatItem))\ntoChatItem:\n\(String(describing: toChatItem))"
             case .rcvFileAccepted: return noDetails
             case let .rcvFileComplete(chatItem): return String(describing: chatItem)
+            case let .ntfTokenStatus(status): return String(describing: status)
             case .cmdOk: return noDetails
             case let .chatCmdError(chatError): return String(describing: chatError)
             case let .chatError(chatError): return String(describing: chatError)
@@ -459,8 +462,10 @@ func apiDeleteChatItem(type: ChatType, id: Int64, itemId: Int64, mode: CIDeleteM
     throw r
 }
 
-func apiRegisterToken(token: String) async throws {
-    try await sendCommandOkResp(.apiRegisterToken(token: token))
+func apiRegisterToken(token: String) async throws -> NtfTknStatus {
+    let r = await chatSendCmd(.apiRegisterToken(token: token))
+    if case let .ntfTokenStatus(status) = r { return status }
+    throw r
 }
 
 func apiVerifyToken(token: String, code: String, nonce: String) async throws {
@@ -959,7 +964,8 @@ enum StoreError: Decodable {
 enum AgentErrorType: Decodable {
     case CMD(cmdErr: CommandErrorType)
     case CONN(connErr: ConnectionErrorType)
-    case SMP(smpErr: SMPErrorType)
+    case SMP(smpErr: ProtocolErrorType)
+    case NTF(ntfErr: ProtocolErrorType)
     case BROKER(brokerErr: BrokerErrorType)
     case AGENT(agentErr: SMPAgentError)
     case INTERNAL(internalErr: String)
@@ -982,17 +988,17 @@ enum ConnectionErrorType: Decodable {
 }
 
 enum BrokerErrorType: Decodable {
-    case RESPONSE(smpErr: SMPErrorType)
+    case RESPONSE(smpErr: ProtocolErrorType)
     case UNEXPECTED
     case NETWORK
-    case TRANSPORT(transportErr: SMPTransportError)
+    case TRANSPORT(transportErr: ProtocolTransportError)
     case TIMEOUT
 }
 
-enum SMPErrorType: Decodable {
+enum ProtocolErrorType: Decodable {
     case BLOCK
     case SESSION
-    case CMD(cmdErr: SMPCommandError)
+    case CMD(cmdErr: ProtocolCommandError)
     case AUTH
     case QUOTA
     case NO_MSG
@@ -1000,15 +1006,15 @@ enum SMPErrorType: Decodable {
     case INTERNAL
 }
 
-enum SMPCommandError: Decodable {
+enum ProtocolCommandError: Decodable {
     case UNKNOWN
     case SYNTAX
     case NO_AUTH
     case HAS_AUTH
-    case NO_QUEUE
+    case NO_ENTITY
 }
 
-enum SMPTransportError: Decodable {
+enum ProtocolTransportError: Decodable {
     case badBlock
     case largeMsg
     case badSession
