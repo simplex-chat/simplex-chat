@@ -12,6 +12,7 @@ struct ComposeImageView: View {
     @Environment(\.colorScheme) var colorScheme
     let image: String
     let cancelImage: (() -> Void)
+    let cancelEnabled: Bool
 
     var body: some View {
         HStack(alignment: .center, spacing: 8) {
@@ -23,8 +24,10 @@ struct ComposeImageView: View {
                     .frame(maxWidth: 80, minHeight: 40, maxHeight: 60)
             }
             Spacer()
-            Button { cancelImage() } label: {
-                Image(systemName: "multiply")
+            if cancelEnabled {
+                Button { cancelImage() } label: {
+                    Image(systemName: "multiply")
+                }
             }
         }
         .padding(.vertical, 1)

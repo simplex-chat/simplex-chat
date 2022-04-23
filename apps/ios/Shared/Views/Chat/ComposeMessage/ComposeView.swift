@@ -11,7 +11,7 @@ import SwiftUI
 enum ComposePreview {
     case noPreview
     case linkPreview(linkPreview: LinkPreview)
-    case imagePreview(image: String)
+    case imagePreview(imagePreview: String)
 }
 
 enum ComposeContextItem {
@@ -22,8 +22,21 @@ enum ComposeContextItem {
 
 struct ComposeState {
     var message: String
+    var preview: ComposePreview
     var contextItem: ComposeContextItem
     var inProgress: Bool = false
+
+    func copy(
+        message: String? = nil,
+        preview: ComposePreview? = nil,
+        contextItem: ComposeContextItem? = nil
+    ) -> ComposeState {
+        ComposeState(
+            message: message ?? self.message,
+            preview: preview ?? self.preview,
+            contextItem: contextItem ?? self.contextItem
+        )
+    }
 
     func editing() -> Bool {
         switch contextItem {
@@ -33,24 +46,64 @@ struct ComposeState {
     }
 
     func sendEnabled() -> Bool {
-        return !message.isEmpty
+        switch preview {
+        case .imagePreview:
+            return true
+        default:
+            return !message.isEmpty
+        }
+    }
+
+    func allowedToGenerateLinkPreview() -> Bool {
+        switch preview {
+        case .imagePreview:
+            return false
+        default:
+            return true
+        }
+    }
+
+    func linkPreview() -> LinkPreview? {
+        switch preview {
+        case let .linkPreview(linkPreview):
+            return linkPreview
+        default:
+            return nil
+        }
     }
 }
 
-func newComposeState() -> ComposeState {
-    return ComposeState(message: "", contextItem: .noContextItem)
+func newComposeState(
+    message: String = "",
+    preview: ComposePreview = .noPreview,
+    contextItem: ComposeContextItem = .noContextItem
+) -> ComposeState {
+    return ComposeState(
+        message: message,
+        preview: preview,
+        contextItem: contextItem
+    )
+}
+
+func chatItemPreview(chatItem: ChatItem) -> ComposePreview {
+    let chatItemPreview: ComposePreview
+    switch chatItem.content.msgContent {
+    case let .link(_, preview: preview):
+        chatItemPreview = .linkPreview(linkPreview: preview)
+    case let .image(_, image: image):
+        chatItemPreview = .imagePreview(imagePreview: image)
+    default:
+        chatItemPreview = .noPreview
+    }
+    return chatItemPreview
 }
 
 func composeStateEditing(editingItem: ChatItem) -> ComposeState {
-    return ComposeState(message: editingItem.content.text, contextItem: .editingItem(chatItem: editingItem))
-}
-
-func composeStateQuoted(oldState: ComposeState, quotedItem: ChatItem) -> ComposeState {
-    return ComposeState(message: oldState.message, contextItem: .quotedItem(chatItem: quotedItem))
-}
-
-func composeStateCancelQuote(oldState: ComposeState, quotedItem: ChatItem) -> ComposeState {
-    return ComposeState(message: oldState.message, contextItem: .noContextItem)
+    return newComposeState(
+        message: editingItem.content.text,
+        preview: chatItemPreview(chatItem: editingItem),
+        contextItem: .editingItem(chatItem: editingItem)
+    )
 }
 
 struct ComposeView: View {
@@ -59,7 +112,6 @@ struct ComposeView: View {
     @Binding var composeState: ComposeState
     @FocusState.Binding var keyboardVisible: Bool
 
-    @State var linkPreview: LinkPreview? = nil
     @State var linkUrl: URL? = nil
     @State var prevLinkUrl: URL? = nil
     @State var pendingLinkUrl: URL? = nil
@@ -69,16 +121,11 @@ struct ComposeView: View {
     @State private var showImagePicker = false
     @State private var imageSource: ImageSource = .imageLibrary
     @State var chosenImage: UIImage?
-    @State var imagePreview: String?
     
     var body: some View {
         VStack(spacing: 0) {
-            if let metadata = imagePreview {
-                ComposeImageView(image: metadata, cancelImage: cancelImage)
-            } else if let metadata = linkPreview {
-                ComposeLinkView(linkPreview: metadata, cancelPreview: cancelPreview)
-            }
             contextItemView()
+            previewView()
             HStack (alignment: .bottom) {
                 Button {
                     showChooseSource = true
@@ -103,12 +150,12 @@ struct ComposeView: View {
             }
         }
         .onChange(of: composeState.message) { _ in
-            if composeState.message.count > 0 {
-                if imagePreview == nil {
+            if composeState.allowedToGenerateLinkPreview() {
+                if composeState.message.count > 0 {
                     showLinkPreview(composeState.message)
+                } else {
+                    resetLinkPreview()
                 }
-            } else {
-                resetLinkPreview()
             }
         }
         .confirmationDialog("Attach", isPresented: $showChooseSource, titleVisibility: .visible) {
@@ -132,36 +179,35 @@ struct ComposeView: View {
             }
         }
         .onChange(of: chosenImage) { image in
-            if let image = image {
-                imagePreview = resizeImageToStrSize(image, maxDataSize: 14000)
+            if let image = image,
+               let imagePreview = resizeImageToStrSize(image, maxDataSize: 14000) {
+                composeState = composeState.copy(preview: .imagePreview(imagePreview: imagePreview))
             } else {
-                imagePreview = nil
-            }
-        }
-        .onChange(of: imagePreview) { imagePreview in
-            if imagePreview != nil {
-                linkPreview = nil
+                composeState = composeState.copy(preview: .noPreview)
             }
         }
     }
 
-    //    @ViewBuilder func previewView() -> some View {
-    //        switch composeState.preview {
-    //        case .noPreview:
-    //            EmptyView()
-    //        case let .linkPreview(linkPreview: preview):
-    //            ComposeLinkView(linkPreview: preview, cancelPreview: cancelLinkPreview)
-    //        case let .imagePreview(image: img):
-    //            ComposeImageView(image: img, cancelImage: cancelImagePreview)
-    //        }
-    //    }
+    @ViewBuilder func previewView() -> some View {
+        switch composeState.preview {
+        case .noPreview:
+            EmptyView()
+        case let .linkPreview(linkPreview: preview):
+            ComposeLinkView(linkPreview: preview, cancelPreview: cancelLinkPreview)
+        case let .imagePreview(imagePreview: img):
+            ComposeImageView(
+                image: img,
+                cancelImage: { composeState = composeState.copy(preview: .noPreview) },
+                cancelEnabled: !composeState.editing())
+        }
+    }
 
     @ViewBuilder private func contextItemView() -> some View {
         switch composeState.contextItem {
         case .noContextItem:
             EmptyView()
         case let .quotedItem(chatItem: quotedItem):
-            ContextItemView(contextItem: quotedItem, cancelContextItem: { composeState = composeStateCancelQuote(oldState: composeState, quotedItem: quotedItem) })
+            ContextItemView(contextItem: quotedItem, cancelContextItem: { composeState = composeState.copy(contextItem: .noContextItem) })
         case let .editingItem(chatItem: editingItem):
             ContextItemView(contextItem: editingItem, cancelContextItem: { composeState = newComposeState()})
         }
@@ -179,7 +225,7 @@ struct ComposeView: View {
                             type: chat.chatInfo.chatType,
                             id: chat.chatInfo.apiId,
                             itemId: ei.id,
-                            msg: updateMsgContent(oldMsgContent, composeState.message)
+                            msg: updateMsgContent(oldMsgContent)
                         )
                         DispatchQueue.main.async {
                             let _ = self.chatModel.upsertChatItem(self.chat.chatInfo, chatItem)
@@ -188,16 +234,19 @@ struct ComposeView: View {
                 default:
                     var mc: MsgContent? = nil
                     var file: String? = nil
-                    if let preview = imagePreview,
-                       let uiImage = chosenImage,
-                       let savedFile = saveImage(uiImage) {
-                        mc = .image(text: text, image: preview)
-                        file = savedFile
-                    } else if let preview = linkPreview {
-                        mc = .link(text: text, preview: preview)
-                    } else {
-                        mc = .text(text)
+                    switch (composeState.preview) {
+                    case .noPreview:
+                        mc = .text(composeState.message)
+                    case let .linkPreview(linkPreview: preview):
+                        mc = .link(text: composeState.message, preview: preview)
+                    case let .imagePreview(imagePreview: image):
+                        if let uiImage = chosenImage,
+                           let savedFile = saveImage(uiImage) {
+                            mc = .image(text: composeState.message, image: image)
+                            file = savedFile
+                        }
                     }
+
                     var quotedItemId: Int64? = nil
                     switch (composeState.contextItem) {
                     case let .quotedItem(chatItem: quotedItem):
@@ -223,16 +272,26 @@ struct ComposeView: View {
         }
     }
 
-    private func updateMsgContent(_ msgContent: MsgContent, _ text: String) -> MsgContent {
+    private func updateMsgContent(_ msgContent: MsgContent) -> MsgContent {
         switch msgContent {
         case .text:
-            return .text(text)
-        case .link(_, let preview):
-            return .link(text: text, preview: preview)
+            return .text(composeState.message)
+        case .link:
+            switch (composeState.preview) {
+            case let .linkPreview(linkPreview: linkPreview):
+                if let url = parseMessage(composeState.message),
+                   url == linkPreview.uri {
+                    return .link(text: composeState.message, preview: linkPreview)
+                } else {
+                    return .text(composeState.message)
+                }
+            default:
+                return .text(composeState.message)
+            }
         case .image(_, let image):
-            return .image(text: text, image: image)
+            return .image(text: composeState.message, image: image)
         case .unknown(let type, _):
-            return .unknown(type: type, text: text)
+            return .unknown(type: type, text: composeState.message)
         }
     }
 
@@ -256,7 +315,7 @@ struct ComposeView: View {
         prevLinkUrl = linkUrl
         linkUrl = parseMessage(s)
         if let url = linkUrl {
-            if url != linkPreview?.uri && url != pendingLinkUrl {
+            if url != composeState.linkPreview()?.uri && url != pendingLinkUrl {
                 pendingLinkUrl = url
                 if prevLinkUrl == url {
                     loadLinkPreview(url)
@@ -267,7 +326,7 @@ struct ComposeView: View {
                 }
             }
         } else {
-            linkPreview = nil
+            composeState = composeState.copy(preview: .noPreview)
         }
     }
 
@@ -285,27 +344,23 @@ struct ComposeView: View {
         }
     }
 
-    private func cancelImage() {
-        chosenImage = nil
-        imagePreview = nil
-    }
-
     private func isSimplexLink(_ link: String) -> Bool {
         link.starts(with: "https://simplex.chat") || link.starts(with: "http://simplex.chat")
     }
 
-    private func cancelPreview() {
-        if let uri = linkPreview?.uri.absoluteString {
+    private func cancelLinkPreview() {
+        if let uri = composeState.linkPreview()?.uri.absoluteString {
             cancelledLinks.insert(uri)
         }
-        linkPreview = nil
+        composeState = composeState.copy(preview: .noPreview)
     }
 
     private func loadLinkPreview(_ url: URL) {
         if pendingLinkUrl == url {
-            getLinkPreview(url: url) { lp in
-                if pendingLinkUrl == url {
-                    linkPreview = lp
+            getLinkPreview(url: url) { linkPreview in
+                if let linkPreview = linkPreview,
+                   pendingLinkUrl == url {
+                    composeState = composeState.copy(preview: .linkPreview(linkPreview: linkPreview))
                     pendingLinkUrl = nil
                 }
             }
@@ -323,7 +378,7 @@ struct ComposeView: View {
 struct ComposeView_Previews: PreviewProvider {
     static var previews: some View {
         let chat = Chat(chatInfo: ChatInfo.sampleData.direct, chatItems: [])
-        @State var composeState = ComposeState(message: "hello", contextItem: .noContextItem)
+        @State var composeState = newComposeState(message: "hello")
         @FocusState var keyboardVisible: Bool
 
         return Group {

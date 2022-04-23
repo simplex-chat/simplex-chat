@@ -116,7 +116,7 @@ struct ChatView: View {
                 if ci.isMsgContent() {
                     Button {
                         withAnimation {
-                            composeState = composeStateQuoted(oldState: composeState, quotedItem: ci)
+                            composeState = composeState.copy(contextItem: .quotedItem(chatItem: ci))
                         }
                     } label: { Label("Reply", systemImage: "arrowshape.turn.up.left") }
                     Button {
