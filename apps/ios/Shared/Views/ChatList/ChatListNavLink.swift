@@ -38,8 +38,8 @@ struct ChatListNavLink: View {
         }
     }
 
-    private func contactNavLink(_ contact: Contact) -> some View {
-        NavLinkPlain(
+    @ViewBuilder private func contactNavLink(_ contact: Contact) -> some View {
+        let v = NavLinkPlain(
             tag: chat.chatInfo.id,
             selection: $chatModel.chatId,
             destination: { chatView() },
@@ -62,12 +62,15 @@ struct ChatListNavLink: View {
                 Label("Delete", systemImage: "trash")
             }
         }
-        .onTapGesture {
-            if !contact.ready {
+        .frame(height: 80)
+
+        if contact.ready {
+            v
+        } else {
+            v.onTapGesture {
                 AlertManager.shared.showAlert(pendingContactAlert(chat, contact))
             }
         }
-        .frame(height: 80)
     }
 
     private func groupNavLink(_ groupInfo: GroupInfo) -> some View {

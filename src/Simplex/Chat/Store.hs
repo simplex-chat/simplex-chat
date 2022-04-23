@@ -151,6 +151,7 @@ module Simplex.Chat.Store
     updateGroupChatItemsRead,
     getSMPServers,
     overwriteSMPServers,
+    deletePendingContactConnection,
   )
 where
 
@@ -171,7 +172,7 @@ import Data.Function (on)
 import Data.Functor (($>))
 import Data.Int (Int64)
 import Data.List (find, sortBy, sortOn)
-import Data.Maybe (fromMaybe, listToMaybe)
+import Data.Maybe (fromMaybe, isJust, listToMaybe)
 import Data.Ord (Down (..))
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -296,10 +297,11 @@ setActiveUser st userId = do
     DB.execute_ db "UPDATE users SET active_user = 0"
     DB.execute db "UPDATE users SET active_user = 1 WHERE user_id = ?" (Only userId)
 
-createConnReqConnection :: MonadUnliftIO m => SQLiteStore -> UserId -> ConnId -> ConnReqUriHash -> XContactId -> m ()
+createConnReqConnection :: MonadUnliftIO m => SQLiteStore -> UserId -> ConnId -> ConnReqUriHash -> XContactId -> m PendingContactConnection
 createConnReqConnection st userId acId cReqHash xContactId = do
   liftIO . withTransaction st $ \db -> do
-    currentTs <- getCurrentTime
+    createdAt <- getCurrentTime
+    let pccConnStatus = ConnJoined
     DB.execute
       db
       [sql|
@@ -308,7 +310,9 @@ createConnReqConnection st userId acId cReqHash xContactId = do
           created_at, updated_at, via_contact_uri_hash, xcontact_id
         ) VALUES (?,?,?,?,?,?,?,?)
       |]
-      (userId, acId, ConnNew, ConnContact, currentTs, currentTs, cReqHash, xContactId)
+      (userId, acId, pccConnStatus, ConnContact, createdAt, createdAt, cReqHash, xContactId)
+    pccConnId <- insertedRowId db
+    pure PendingContactConnection {pccConnId, pccAgentConnId = AgentConnId acId, pccConnStatus, viaContactUri = True, createdAt}
 
 getConnReqContactXContactId :: MonadUnliftIO m => SQLiteStore -> UserId -> ConnReqUriHash -> m (Maybe Contact, Maybe XContactId)
 getConnReqContactXContactId st userId cReqHash = do
@@ -345,11 +349,19 @@ getConnReqContactXContactId st userId cReqHash = do
           "SELECT xcontact_id FROM connections WHERE user_id = ? AND via_contact_uri_hash = ? LIMIT 1"
           (userId, cReqHash)
 
-createDirectConnection :: MonadUnliftIO m => SQLiteStore -> UserId -> ConnId -> m ()
-createDirectConnection st userId agentConnId =
+createDirectConnection :: MonadUnliftIO m => SQLiteStore -> UserId -> ConnId -> ConnStatus -> m PendingContactConnection
+createDirectConnection st userId acId pccConnStatus =
   liftIO . withTransaction st $ \db -> do
-    currentTs <- getCurrentTime
-    void $ createContactConnection_ db userId agentConnId Nothing 0 currentTs
+    createdAt <- getCurrentTime
+    DB.execute
+      db
+      [sql|
+        INSERT INTO connections
+          (user_id, agent_conn_id, conn_status, conn_type, created_at, updated_at) VALUES (?,?,?,?,?,?)
+      |]
+      (userId, acId, pccConnStatus, ConnContact, createdAt, createdAt)
+    pccConnId <- insertedRowId db
+    pure PendingContactConnection {pccConnId, pccAgentConnId = AgentConnId acId, pccConnStatus, createdAt, viaContactUri = False}
 
 createContactConnection_ :: DB.Connection -> UserId -> ConnId -> Maybe Int64 -> Int -> UTCTime -> IO Connection
 createContactConnection_ db userId = createConnection_ db userId ConnContact Nothing
@@ -2500,13 +2512,14 @@ getChatItemQuote_ db User {userId, userContactId} chatDirection QuotedMsg {msgRe
         ciQuoteGroup [] = ciQuote Nothing $ CIQGroupRcv Nothing
         ciQuoteGroup ((Only itemId :. memberRow) : _) = ciQuote itemId . CIQGroupRcv . Just $ toGroupMember userContactId memberRow
 
-getChatPreviews :: MonadUnliftIO m => SQLiteStore -> User -> m [AChat]
-getChatPreviews st user =
+getChatPreviews :: MonadUnliftIO m => SQLiteStore -> User -> Bool -> m [AChat]
+getChatPreviews st user withPCC =
   liftIO . withTransaction st $ \db -> do
     directChats <- getDirectChatPreviews_ db user
     groupChats <- getGroupChatPreviews_ db user
     cReqChats <- getContactRequestChatPreviews_ db user
-    pure $ sortOn (Down . ts) (directChats <> groupChats <> cReqChats)
+    connChats <- getContactConnectionChatPreviews_ db user withPCC
+    pure $ sortOn (Down . ts) (directChats <> groupChats <> cReqChats <> connChats)
   where
     ts :: AChat -> UTCTime
     ts (AChat _ Chat {chatItems = ci : _}) = chatItemTs ci
@@ -2514,6 +2527,7 @@ getChatPreviews st user =
       DirectChat Contact {createdAt} -> createdAt
       GroupChat GroupInfo {createdAt} -> createdAt
       ContactRequest UserContactRequest {createdAt} -> createdAt
+      ContactConnection PendingContactConnection {createdAt} -> createdAt
 
 chatItemTs :: CChatItem d -> UTCTime
 chatItemTs (CChatItem _ ChatItem {meta = CIMeta {itemTs}}) = itemTs
@@ -2670,6 +2684,45 @@ getContactRequestChatPreviews_ db User {userId} =
       let cReq = toContactRequest cReqRow
           stats = ChatStats {unreadCount = 0, minUnreadItemId = 0}
        in AChat SCTContactRequest $ Chat (ContactRequest cReq) [] stats
+
+getContactConnectionChatPreviews_ :: DB.Connection -> User -> Bool -> IO [AChat]
+getContactConnectionChatPreviews_ _ _ False = pure []
+getContactConnectionChatPreviews_ db User {userId} _ =
+  map toContactConnectionChatPreview
+    <$> DB.query
+      db
+      [sql|
+        SELECT connection_id, agent_conn_id, conn_status, via_contact_uri_hash, created_at
+        FROM connections
+        WHERE user_id = ? AND conn_type = ? AND contact_id IS NULL AND conn_level = 0 AND via_contact IS NULL
+      |]
+      (userId, ConnContact)
+  where
+    toContactConnectionChatPreview :: (Int64, ConnId, ConnStatus, Maybe ByteString, UTCTime) -> AChat
+    toContactConnectionChatPreview connRow =
+      let conn = toPendingContactConnection connRow
+          stats = ChatStats {unreadCount = 0, minUnreadItemId = 0}
+       in AChat SCTContactConnection $ Chat (ContactConnection conn) [] stats
+
+deletePendingContactConnection :: StoreMonad m => SQLiteStore -> UserId -> Int64 -> m PendingContactConnection
+deletePendingContactConnection st userId connId =
+  liftIOEither . withTransaction st $ \db -> runExceptT $ do
+    conn <-
+      ExceptT . firstRow toPendingContactConnection (SEPendingConnectionNotFound connId) $
+        DB.query
+          db
+          [sql|
+            SELECT connection_id, agent_conn_id, conn_status, via_contact_uri_hash, created_at
+            FROM connections
+            WHERE user_id = ? AND conn_type = ? AND contact_id IS NULL AND conn_level = 0 AND via_contact IS NULL
+          |]
+          (userId, ConnContact)
+    liftIO $ DB.execute db "DELETE FROM connections WHERE connection_id = ?" (Only connId)
+    pure conn
+
+toPendingContactConnection :: (Int64, ConnId, ConnStatus, Maybe ByteString, UTCTime) -> PendingContactConnection
+toPendingContactConnection (pccConnId, acId, pccConnStatus, connReqHash, createdAt) =
+  PendingContactConnection {pccConnId, pccAgentConnId = AgentConnId acId, pccConnStatus, viaContactUri = isJust connReqHash, createdAt}
 
 getDirectChat :: StoreMonad m => SQLiteStore -> User -> Int64 -> ChatPagination -> m (Chat 'CTDirect)
 getDirectChat st user contactId pagination =
@@ -3646,6 +3699,7 @@ data StoreError
   | SESharedMsgIdNotFoundByFileId {fileId :: FileTransferId}
   | SEFileIdNotFoundBySharedMsgId {sharedMsgId :: SharedMsgId}
   | SEConnectionNotFound {agentConnId :: AgentConnId}
+  | SEPendingConnectionNotFound {connId :: Int64}
   | SEIntroNotFound
   | SEUniqueID
   | SEInternalError {message :: String}

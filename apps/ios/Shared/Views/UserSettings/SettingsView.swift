@@ -133,9 +133,8 @@ struct SettingsView: View {
                     }
                     if let token = chatModel.deviceToken {
                         HStack {
-                            Image(systemName: "bolt.fill")
-                                .padding(.trailing, 4)
-                            NotificationsToggle(token)
+                            notificationsIcon()
+                            notificationsToggle(token)
                         }
                     }
                     Text("v\(appVersion ?? "?") (\(appBuild ?? "?"))")
@@ -150,7 +149,35 @@ struct SettingsView: View {
         case error(LocalizedStringKey, String)
     }
 
-    private func NotificationsToggle(_ token:  String) -> some View {
+    private func notificationsIcon() -> some View {
+        let icon: String
+        let color: Color
+        switch (chatModel.tokenStatus) {
+        case .new:
+            icon = "bolt"
+            color = .primary
+        case .registered:
+            icon = "bolt.fill"
+            color = .primary
+        case .invalid:
+            icon = "bolt.slash"
+            color = .primary
+        case .confirmed:
+            icon = "bolt.fill"
+            color = .yellow
+        case .active:
+            icon = "bolt.fill"
+            color = .green
+        case .expired:
+            icon = "bolt.slash.fill"
+            color = .primary
+        }
+        return Image(systemName: icon)
+            .padding(.trailing, 9)
+            .foregroundColor(color)
+    }
+
+    private func notificationsToggle(_ token:  String) -> some View {
         Toggle("Check messages", isOn: $useNotifications)
             .onChange(of: useNotifications) { enable in
                 if enable {
@@ -160,6 +187,7 @@ struct SettingsView: View {
                     Task {
                         do {
                             try await apiDeleteToken(token: token)
+                            chatModel.tokenStatus = .new
                         }
                         catch {
                             DispatchQueue.main.async {
@@ -191,7 +219,7 @@ struct SettingsView: View {
             primaryButton: .destructive(Text("Confirm")) {
                 Task {
                     do {
-                        try await apiRegisterToken(token: token)
+                        chatModel.tokenStatus = try await apiRegisterToken(token: token)
                     } catch {
                         DispatchQueue.main.async {
                             useNotifications = false

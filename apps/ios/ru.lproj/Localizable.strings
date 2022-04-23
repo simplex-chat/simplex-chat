@@ -109,6 +109,9 @@
 /* No comment provided by engineer. */
 "Check messages" = "Проверять сообщения";
 
+/* notification */
+"Checking new messages..." = "Проверяются новые сообщения...";
+
 /* No comment provided by engineer. */
 "Choose from library" = "Выбрать из библиотеки";
 
@@ -301,7 +304,7 @@
 /* notification */
 "New contact request" = "Новый запрос на соединение";
 
-/* notifications */
+/* notification */
 "New message" = "Новое сообщение";
 
 /* No comment provided by engineer. */
