@@ -96,7 +96,7 @@ data ChatCommand
   | CreateActiveUser Profile
   | StartChat
   | SetFilesFolder FilePath
-  | APIGetChats
+  | APIGetChats {pendingConnections :: Bool}
   | APIGetChat ChatType Int64 ChatPagination
   | APIGetChatItems Int
   | APISendMessage ChatType Int64 (Maybe FilePath) (Maybe ChatItemId) MsgContent
@@ -246,6 +246,8 @@ data ChatResponse
   | CRUserContactLinkSubscribed
   | CRUserContactLinkSubError {chatError :: ChatError}
   | CRNtfTokenStatus {status :: NtfTknStatus}
+  | CRNewContactConnection {connection :: PendingContactConnection}
+  | CRContactConnectionDeleted {connection :: PendingContactConnection}
   | CRMessageError {severity :: Text, errorMessage :: Text}
   | CRChatCmdError {chatError :: ChatError}
   | CRChatError {chatError :: ChatError}
