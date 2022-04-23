@@ -141,6 +141,8 @@ responseToView testView = \case
     ["received file " <> sShow fileId <> " (" <> plain fileName <> ") error: " <> sShow e]
   CRUserContactLinkSubscribed -> ["Your address is active! To show: " <> highlight' "/sa"]
   CRUserContactLinkSubError e -> ["user address error: " <> sShow e, "to delete your address: " <> highlight' "/da"]
+  CRNewContactConnection _ -> []
+  CRContactConnectionDeleted _ -> []
   CRNtfTokenStatus status -> ["device token status: " <> plain (smpEncode status)]
   CRMessageError prefix err -> [plain prefix <> ": " <> plain err]
   CRChatError e -> viewChatError e
@@ -152,6 +154,7 @@ responseToView testView = \case
         toChatView (AChat _ (Chat (DirectChat Contact {localDisplayName}) items _)) = ("@" <> localDisplayName, toCIPreview items)
         toChatView (AChat _ (Chat (GroupChat GroupInfo {localDisplayName}) items _)) = ("#" <> localDisplayName, toCIPreview items)
         toChatView (AChat _ (Chat (ContactRequest UserContactRequest {localDisplayName}) items _)) = ("<@" <> localDisplayName, toCIPreview items)
+        toChatView (AChat _ (Chat (ContactConnection PendingContactConnection {pccConnId}) items _)) = (":" <> T.pack (show pccConnId), toCIPreview items)
         toCIPreview :: [CChatItem c] -> Text
         toCIPreview ((CChatItem _ ChatItem {meta}) : _) = itemText meta
         toCIPreview _ = ""
