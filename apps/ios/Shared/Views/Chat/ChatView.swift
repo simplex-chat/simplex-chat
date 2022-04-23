@@ -14,18 +14,11 @@ struct ChatView: View {
     @EnvironmentObject var chatModel: ChatModel
     @Environment(\.colorScheme) var colorScheme
     @ObservedObject var chat: Chat
-    @State var message: String = ""
-    @State var quotedItem: ChatItem? = nil
-    @State var editingItem: ChatItem? = nil
-    @State var linkPreview: LinkPreview? = nil
+    @State var composeState = newComposeState()
     @State var deletingItem: ChatItem? = nil
-    @State private var inProgress: Bool = false
     @FocusState private var keyboardVisible: Bool
     @State private var showChatInfo = false
     @State private var showDeleteMessage = false
-
-    @State private var chosenImage: UIImage? = nil
-    @State private var imagePreview: String? = nil
 
     var body: some View {
         let cInfo = chat.chatInfo
@@ -86,16 +79,9 @@ struct ChatView: View {
             Spacer(minLength: 0)
 
             ComposeView(
-                message: $message,
-                quotedItem: $quotedItem,
-                editingItem: $editingItem,
-                linkPreview: $linkPreview,
-                sendMessage: sendMessage,
-                resetMessage: { message = "" },
-                inProgress: inProgress,
-                keyboardVisible: $keyboardVisible,
-                chosenImage: $chosenImage,
-                imagePreview: $imagePreview
+                chat: chat,
+                composeState: $composeState,
+                keyboardVisible: $keyboardVisible
             )
         }
         .navigationTitle(cInfo.chatViewName)
@@ -130,8 +116,7 @@ struct ChatView: View {
                 if ci.isMsgContent() {
                     Button {
                         withAnimation {
-                            editingItem = nil
-                            quotedItem = ci
+                            composeState = composeStateQuoted(oldState: composeState, quotedItem: ci)
                         }
                     } label: { Label("Reply", systemImage: "arrowshape.turn.up.left") }
                     Button {
@@ -153,9 +138,7 @@ struct ChatView: View {
                     if ci.meta.editable {
                         Button {
                             withAnimation {
-                                quotedItem = nil
-                                editingItem = ci
-                                message = ci.content.text
+                                composeState = composeStateEditing(editingItem: ci)
                             }
                         } label: { Label("Edit", systemImage: "square.and.pencil") }
                     }
@@ -215,87 +198,6 @@ struct ChatView: View {
                 Task { await markChatRead(chat) }
             }
         }
-    }
-
-    func sendMessage(_ text: String) {
-        logger.debug("ChatView sendMessage")
-        Task {
-            logger.debug("ChatView sendMessage: in Task")
-            do {
-                if let ei = editingItem,
-                   let oldMsgContent = ei.content.msgContent {
-                    let chatItem = try await apiUpdateChatItem(
-                        type: chat.chatInfo.chatType,
-                        id: chat.chatInfo.apiId,
-                        itemId: ei.id,
-                        msg: updateMsgContent(oldMsgContent, text)
-                    )
-                    DispatchQueue.main.async {
-                        editingItem = nil
-                        linkPreview = nil
-                        let _ = chatModel.upsertChatItem(chat.chatInfo, chatItem)
-                    }
-                } else {
-                    let mc: MsgContent
-                    var file: String? = nil
-                    if let preview = imagePreview,
-                       let uiImage = chosenImage,
-                       let savedFile = saveImage(uiImage) {
-                        mc = .image(text: text, image: preview)
-                        file = savedFile
-                    } else if let preview = linkPreview {
-                        mc = .link(text: text, preview: preview)
-                    } else {
-                        mc = .text(text)
-                    }
-                    let chatItem = try await apiSendMessage(
-                        type: chat.chatInfo.chatType,
-                        id: chat.chatInfo.apiId,
-                        file: file,
-                        quotedItemId: quotedItem?.meta.itemId,
-                        msg: mc
-                    )
-                    DispatchQueue.main.async {
-                        quotedItem = nil
-                        linkPreview = nil
-                        chosenImage = nil
-                        imagePreview = nil
-                        chatModel.addChatItem(chat.chatInfo, chatItem)
-                    }
-                }
-            } catch {
-                logger.error("ChatView.sendMessage error: \(error.localizedDescription)")
-            }
-        }
-    }
-
-    func updateMsgContent(_ msgContent: MsgContent, _ text: String) -> MsgContent {
-        switch msgContent {
-        case .text:
-            return .text(text)
-        case .link(_, let preview):
-            return .link(text: text, preview: preview)
-        case .image(_, let image):
-            return .image(text: text, image: image)
-        case .unknown(let type, _):
-            return .unknown(type: type, text: text)
-        }
-    }
-
-    func saveImage(_ uiImage: UIImage) -> String? {
-        if let imageDataResized = resizeImageToDataSize(uiImage, maxDataSize: maxImageSize) {
-            let millisecondsSince1970 = Int64((Date().timeIntervalSince1970 * 1000.0).rounded())
-            let fileToSave = "image_\(millisecondsSince1970).jpg"
-            let filePath = getAppFilesDirectory().appendingPathComponent(fileToSave)
-            do {
-                try imageDataResized.write(to: filePath)
-                return fileToSave
-            } catch {
-                logger.error("ChatView.saveImage error: \(error.localizedDescription)")
-                return nil
-            }
-        }
-        return nil
     }
     
     func deleteMessage(_ mode: CIDeleteMode) {

@@ -9,13 +9,11 @@
 import SwiftUI
 
 struct SendMessageView: View {
+    @Binding var composeState: ComposeState
     var sendMessage: (String) -> Void
     var inProgress: Bool = false
-    @Binding var message: String
     @Namespace var namespace
     @FocusState.Binding var keyboardVisible: Bool
-    @Binding var editing: Bool
-    @Binding var sendEnabled: Bool
     @State private var teHeight: CGFloat = 42
     @State private var teFont: Font = .body
     var maxHeight: CGFloat = 360
@@ -25,7 +23,7 @@ struct SendMessageView: View {
         ZStack {
             HStack(alignment: .bottom) {
                 ZStack(alignment: .leading) {
-                    Text(message)
+                    Text(composeState.message)
                         .lineLimit(10)
                         .font(teFont)
                         .foregroundColor(.clear)
@@ -33,7 +31,7 @@ struct SendMessageView: View {
                         .padding(.vertical, 8)
                         .matchedGeometryEffect(id: "te", in: namespace)
                         .background(GeometryReader(content: updateHeight))
-                    TextEditor(text: $message)
+                    TextEditor(text: $composeState.message)
                         .onSubmit(submit)
                         .focused($keyboardVisible)
                         .font(teFont)
@@ -50,11 +48,11 @@ struct SendMessageView: View {
                         .padding([.bottom, .trailing], 3)
                 } else {
                     Button(action: submit) {
-                        Image(systemName: editing ? "checkmark.circle.fill" : "arrow.up.circle.fill")
+                        Image(systemName: composeState.editing() ? "checkmark.circle.fill" : "arrow.up.circle.fill")
                             .resizable()
                             .foregroundColor(.accentColor)
                     }
-                    .disabled(!sendEnabled)
+                    .disabled(!composeState.sendEnabled())
                     .frame(width: 29, height: 29)
                     .padding([.bottom, .trailing], 4)
                 }
@@ -68,15 +66,14 @@ struct SendMessageView: View {
     }
 
     func submit() {
-        sendMessage(message)
-        message = ""
+        sendMessage(composeState.message)
     }
 
     func updateHeight(_ g: GeometryProxy) -> Color {
         DispatchQueue.main.async {
             teHeight = min(max(g.frame(in: .local).size.height, minHeight), maxHeight)
-            teFont = isShortEmoji(message)
-                ? message.count < 4
+            teFont = isShortEmoji(composeState.message)
+            ? composeState.message.count < 4
                     ? largeEmojiFont
                     : mediumEmojiFont
                 : .body
@@ -87,34 +84,29 @@ struct SendMessageView: View {
 
 struct SendMessageView_Previews: PreviewProvider {
     static var previews: some View {
-        @State var message: String = ""
+        @State var newComposeState = newComposeState()
+        let ci = ChatItem.getSample(1, .directSnd, .now, "hello")
+        @State var composeStateEditing = composeStateEditing(editingItem: ci)
         @FocusState var keyboardVisible: Bool
-        @State var editingOff: Bool = false
-        @State var editingOn: Bool = true
         @State var sendEnabled: Bool = true
-        @State var item: ChatItem? = ChatItem.getSample(1, .directSnd, .now, "hello")
 
         return Group {
             VStack {
                 Text("")
                 Spacer(minLength: 0)
                 SendMessageView(
+                    composeState: $newComposeState,
                     sendMessage: { print ($0) },
-                    message: $message,
-                    keyboardVisible: $keyboardVisible,
-                    editing: $editingOff,
-                    sendEnabled: $sendEnabled
+                    keyboardVisible: $keyboardVisible
                 )
             }
             VStack {
                 Text("")
                 Spacer(minLength: 0)
                 SendMessageView(
+                    composeState: $composeStateEditing,
                     sendMessage: { print ($0) },
-                    message: $message,
-                    keyboardVisible: $keyboardVisible,
-                    editing: $editingOn,
-                    sendEnabled: $sendEnabled
+                    keyboardVisible: $keyboardVisible
                 )
             }
         }

@@ -8,43 +8,59 @@
 
 import SwiftUI
 
-// TODO
-//enum ComposeState {
-//    case plain
-//    case quoted(quotedItem: ChatItem)
-//    case editing(editingItem: ChatItem)
+//enum ComposePreview {
+//    case noPreview
+//    case linkPreview(linkPreview: LinkPreview)
+//    case imagePreview(image: String)
 //}
 
-//enum ReferencedItem {
-//    case none
-//    case quoted(quotedItem: ChatItem)
-//    case editing(editingItem: ChatItem)
-//}
-//
-//enum Preview {
-//    case none
-//    case link(linkPreview: LinkPreview)
-//    case image(image: UIImage)
-//}
-//
-//struct ComposeState {
-//    var quotedItem: ChatItem? = nil
-//    var editingItem: ChatItem? = nil
-//    var linkPreview: LinkPreview? = nil
-//}
+enum ComposeContextItem {
+    case noContextItem
+    case quotedItem(chatItem: ChatItem)
+    case editingItem(chatItem: ChatItem)
+}
+
+struct ComposeState {
+    var message: String
+    var contextItem: ComposeContextItem
+
+    func editing() -> Bool {
+        switch contextItem {
+        case .editingItem: return true
+        default: return false
+        }
+    }
+
+    func sendEnabled() -> Bool {
+        return !message.isEmpty
+    }
+}
+
+func newComposeState() -> ComposeState {
+    return ComposeState(message: "", contextItem: .noContextItem)
+}
+
+func composeStateEditing(editingItem: ChatItem) -> ComposeState {
+    return ComposeState(message: editingItem.content.text, contextItem: .editingItem(chatItem: editingItem))
+}
+
+func composeStateQuoted(oldState: ComposeState, quotedItem: ChatItem) -> ComposeState {
+    return ComposeState(message: oldState.message, contextItem: .quotedItem(chatItem: quotedItem))
+}
+
+func composeStateCancelQuote(oldState: ComposeState, quotedItem: ChatItem) -> ComposeState {
+    return ComposeState(message: oldState.message, contextItem: .noContextItem)
+}
 
 struct ComposeView: View {
-    @Binding var message: String
-    @Binding var quotedItem: ChatItem?
-    @Binding var editingItem: ChatItem?
-    @Binding var linkPreview: LinkPreview?
+    @EnvironmentObject var chatModel: ChatModel
+    let chat: Chat
+    @Binding var composeState: ComposeState
 
-    var sendMessage: (String) -> Void
-    var resetMessage: () -> Void
-    var inProgress: Bool = false
+    @State var inProgress: Bool = false
     @FocusState.Binding var keyboardVisible: Bool
-    @State var editing: Bool = false
-    @State var sendEnabled: Bool = false
+
+    @State var linkPreview: LinkPreview? = nil
     @State var linkUrl: URL? = nil
     @State var prevLinkUrl: URL? = nil
     @State var pendingLinkUrl: URL? = nil
@@ -53,8 +69,8 @@ struct ComposeView: View {
     @State private var showChooseSource = false
     @State private var showImagePicker = false
     @State private var imageSource: ImageSource = .imageLibrary
-    @Binding var chosenImage: UIImage?
-    @Binding var imagePreview: String?
+    @State var chosenImage: UIImage?
+    @State var imagePreview: String?
     
     var body: some View {
         VStack(spacing: 0) {
@@ -63,11 +79,7 @@ struct ComposeView: View {
             } else if let metadata = linkPreview {
                 ComposeLinkView(linkPreview: metadata, cancelPreview: cancelPreview)
             }
-            if (quotedItem != nil) {
-                ContextItemView(contextItem: $quotedItem, editing: $editing)
-            } else if (editingItem != nil) {
-                ContextItemView(contextItem: $editingItem, editing: $editing, resetMessage: resetMessage)
-            }
+            contextItemView()
             HStack (alignment: .bottom) {
                 Button {
                     showChooseSource = true
@@ -75,37 +87,31 @@ struct ComposeView: View {
                     Image(systemName: "paperclip")
                         .resizable()
                 }
-                .disabled(editingItem != nil)
+                .disabled(composeState.editing())
                 .frame(width: 25, height: 25)
                 .padding(.bottom, 12)
                 .padding(.leading, 12)
                 SendMessageView(
+                    composeState: $composeState,
                     sendMessage: { text in
                         sendMessage(text)
                         resetLinkPreview()
                     },
                     inProgress: inProgress,
-                    message: $message,
-                    keyboardVisible: $keyboardVisible,
-                    editing: $editing,
-                    sendEnabled: $sendEnabled
+                    keyboardVisible: $keyboardVisible
                 )
                 .padding(.trailing, 12)
                 .background(.background)
             }
         }
-        .onChange(of: message) { _ in
-            if message.count > 0 {
+        .onChange(of: composeState.message) { _ in
+            if composeState.message.count > 0 {
                 if imagePreview == nil {
-                    showLinkPreview(message)
+                    showLinkPreview(composeState.message)
                 }
             } else {
                 resetLinkPreview()
             }
-            sendEnabled = (imagePreview != nil || !message.isEmpty)
-        }
-        .onChange(of: editingItem == nil) { _ in
-            editing = (editingItem != nil)
         }
         .confirmationDialog("Attach", isPresented: $showChooseSource, titleVisibility: .visible) {
             Button("Take picture") {
@@ -135,11 +141,117 @@ struct ComposeView: View {
             }
         }
         .onChange(of: imagePreview) { imagePreview in
-            sendEnabled = (imagePreview != nil || !message.isEmpty)
             if imagePreview != nil {
                 linkPreview = nil
             }
         }
+    }
+
+    //    @ViewBuilder func previewView() -> some View {
+    //        switch composeState.preview {
+    //        case .noPreview:
+    //            EmptyView()
+    //        case let .linkPreview(linkPreview: preview):
+    //            ComposeLinkView(linkPreview: preview, cancelPreview: cancelLinkPreview)
+    //        case let .imagePreview(image: img):
+    //            ComposeImageView(image: img, cancelImage: cancelImagePreview)
+    //        }
+    //    }
+
+    @ViewBuilder private func contextItemView() -> some View {
+        switch composeState.contextItem {
+        case .noContextItem:
+            EmptyView()
+        case let .quotedItem(chatItem: quotedItem):
+            ContextItemView(contextItem: quotedItem, cancelContextItem: { composeState = composeStateCancelQuote(oldState: composeState, quotedItem: quotedItem) })
+        case let .editingItem(chatItem: editingItem):
+            ContextItemView(contextItem: editingItem, cancelContextItem: { composeState = newComposeState()})
+        }
+    }
+
+    private func sendMessage(_ text: String) {
+        logger.debug("ChatView sendMessage")
+        Task {
+            logger.debug("ChatView sendMessage: in Task")
+            do {
+                switch composeState.contextItem {
+                case let .editingItem(chatItem: ei):
+                    if let oldMsgContent = ei.content.msgContent {
+                        let chatItem = try await apiUpdateChatItem(
+                            type: chat.chatInfo.chatType,
+                            id: chat.chatInfo.apiId,
+                            itemId: ei.id,
+                            msg: updateMsgContent(oldMsgContent, composeState.message)
+                        )
+                        DispatchQueue.main.async {
+                            let _ = self.chatModel.upsertChatItem(self.chat.chatInfo, chatItem)
+                        }
+                    }
+                default:
+                    var mc: MsgContent? = nil
+                    var file: String? = nil
+                    if let preview = imagePreview,
+                       let uiImage = chosenImage,
+                       let savedFile = saveImage(uiImage) {
+                        mc = .image(text: text, image: preview)
+                        file = savedFile
+                    } else if let preview = linkPreview {
+                        mc = .link(text: text, preview: preview)
+                    } else {
+                        mc = .text(text)
+                    }
+                    var quotedItemId: Int64? = nil
+                    switch (composeState.contextItem) {
+                    case let .quotedItem(chatItem: quotedItem):
+                        quotedItemId = quotedItem.id
+                    default:
+                        quotedItemId = nil
+                    }
+                    if let mc = mc {
+                        let chatItem = try await apiSendMessage(
+                            type: chat.chatInfo.chatType,
+                            id: chat.chatInfo.apiId,
+                            file: file,
+                            quotedItemId: quotedItemId,
+                            msg: mc
+                        )
+                        chatModel.addChatItem(chat.chatInfo, chatItem)
+                    }
+                }
+                composeState = newComposeState()
+            } catch {
+                logger.error("ChatView.sendMessage error: \(error.localizedDescription)")
+            }
+        }
+    }
+
+    private func updateMsgContent(_ msgContent: MsgContent, _ text: String) -> MsgContent {
+        switch msgContent {
+        case .text:
+            return .text(text)
+        case .link(_, let preview):
+            return .link(text: text, preview: preview)
+        case .image(_, let image):
+            return .image(text: text, image: image)
+        case .unknown(let type, _):
+            return .unknown(type: type, text: text)
+        }
+    }
+
+    private func saveImage(_ uiImage: UIImage) -> String? {
+        if let imageDataResized = resizeImageToDataSize(uiImage, maxDataSize: maxImageSize) {
+            let millisecondsSince1970 = Int64((Date().timeIntervalSince1970 * 1000.0).rounded())
+            let fileToSave = "image_\(millisecondsSince1970).jpg"
+            let filePath = getAppFilesDirectory().appendingPathComponent(fileToSave)
+            do {
+                try imageDataResized.write(to: filePath)
+                return fileToSave
+            } catch {
+                logger.error("ChatView.saveImage error: \(error.localizedDescription)")
+                return nil
+            }
+        }
+        return nil
     }
 
     private func showLinkPreview(_ s: String) {
@@ -165,7 +277,7 @@ struct ComposeView: View {
         do {
             let parsedMsg = try apiParseMarkdown(text: msg)
             let uri = parsedMsg?.first(where: { ft in
-               ft.format == .uri && !cancelledLinks.contains(ft.text) && !isSimplexLink(ft.text)
+                ft.format == .uri && !cancelledLinks.contains(ft.text) && !isSimplexLink(ft.text)
             })
             if let uri = uri { return URL(string: uri.text) }
             else { return nil }
@@ -212,36 +324,20 @@ struct ComposeView: View {
 
 struct ComposeView_Previews: PreviewProvider {
     static var previews: some View {
-        @State var message: String = ""
+        let chat = Chat(chatInfo: ChatInfo.sampleData.direct, chatItems: [])
+        @State var composeState = ComposeState(message: "hello", contextItem: .noContextItem)
         @FocusState var keyboardVisible: Bool
-        @State var item: ChatItem? = ChatItem.getSample(1, .directSnd, .now, "hello")
-        @State var nilItem: ChatItem? = nil
-        @State var linkPreview: LinkPreview? = nil
-        @State var chosenImage: UIImage? = nil
-        @State var imagePreview: String? = nil
 
         return Group {
             ComposeView(
-                message: $message,
-                quotedItem: $item,
-                editingItem: $nilItem,
-                linkPreview: $linkPreview,
-                sendMessage: { print ($0) },
-                resetMessage: {},
-                keyboardVisible: $keyboardVisible,
-                chosenImage: $chosenImage,
-                imagePreview: $imagePreview
+                chat: chat,
+                composeState: $composeState,
+                keyboardVisible: $keyboardVisible
             )
             ComposeView(
-                message: $message,
-                quotedItem: $nilItem,
-                editingItem: $item,
-                linkPreview: $linkPreview,
-                sendMessage: { print ($0) },
-                resetMessage: {},
-                keyboardVisible: $keyboardVisible,
-                chosenImage: $chosenImage,
-                imagePreview: $imagePreview
+                chat: chat,
+                composeState: $composeState,
+                keyboardVisible: $keyboardVisible
             )
         }
     }
