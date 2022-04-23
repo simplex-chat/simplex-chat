@@ -105,6 +105,7 @@
 		5C545C892812A833007A6B96 /* libHSsimplex-chat-1.6.0-IWA13KO27d7KsfAsFQIqFK.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = "libHSsimplex-chat-1.6.0-IWA13KO27d7KsfAsFQIqFK.a"; sourceTree = "<group>"; };
 		5C545C8A2812A833007A6B96 /* libffi.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libffi.a; sourceTree = "<group>"; };
 		5C545C8B2812A833007A6B96 /* libHSsimplex-chat-1.6.0-IWA13KO27d7KsfAsFQIqFK-ghc8.10.7.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = "libHSsimplex-chat-1.6.0-IWA13KO27d7KsfAsFQIqFK-ghc8.10.7.a"; sourceTree = "<group>"; };
+		5C5478B028140DE200C26EF3 /* nl */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = nl; path = nl.lproj/Localizable.strings; sourceTree = "<group>"; };
 		5C577F7C27C83AA10006112D /* MarkdownHelp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownHelp.swift; sourceTree = "<group>"; };
 		5C5F2B6C27EBC3FE006A9D5F /* ImagePicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImagePicker.swift; sourceTree = "<group>"; };
 		5C5F2B6F27EBC704006A9D5F /* ProfileImage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileImage.swift; sourceTree = "<group>"; };
@@ -435,6 +436,7 @@
 				en,
 				Base,
 				ru,
+				nl,
 			);
 			mainGroup = 5CA059BD279559F40002BEB4;
 			packageReferences = (
@@ -554,6 +556,7 @@
 			children = (
 				5CC2C0FB2809BF11000C35E3 /* ru */,
 				6493D667280ED77F007A76FB /* en */,
+				5C5478B028140DE200C26EF3 /* nl */,
 			);
 			name = Localizable.strings;
 			sourceTree = "<group>";
