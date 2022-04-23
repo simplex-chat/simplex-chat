@@ -1,5 +1,6 @@
 package chat.simplex.app.views.newchat
 
+import android.graphics.ImageFormat.*
 import android.util.Log
 import android.view.ViewGroup
 import androidx.camera.core.*
@@ -12,13 +13,13 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import chat.simplex.app.TAG
 import com.google.common.util.concurrent.ListenableFuture
-import com.google.mlkit.vision.barcode.BarcodeScannerOptions
-import com.google.mlkit.vision.barcode.BarcodeScanning
-import com.google.mlkit.vision.barcode.common.Barcode
-import com.google.mlkit.vision.common.InputImage
-import java.util.concurrent.*
-
-// Bar code scanner adapted from https://github.com/MakeItEasyDev/Jetpack-Compose-BarCode-Scanner
+import com.google.zxing.*
+import com.google.zxing.common.HybridBinarizer
+import com.google.zxing.qrcode.QRCodeReader
+import java.nio.ByteBuffer
+import java.util.*
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
 
 @Composable
 fun QRCodeScanner(onBarcode: (String) -> Unit) {
@@ -37,7 +38,6 @@ fun QRCodeScanner(onBarcode: (String) -> Unit) {
         implementationMode = PreviewView.ImplementationMode.COMPATIBLE
       }
     },
-//    modifier = Modifier.fillMaxSize(),
     update = { previewView ->
       val cameraSelector: CameraSelector = CameraSelector.Builder()
         .requireLensFacing(CameraSelector.LENS_FACING_BACK)
@@ -51,14 +51,24 @@ fun QRCodeScanner(onBarcode: (String) -> Unit) {
           it.setSurfaceProvider(previewView.surfaceProvider)
         }
         val cameraProvider: ProcessCameraProvider = cameraProviderFuture.get()
-        val barcodeAnalyser = BarCodeAnalyser { barcodes ->
-          barcodes.firstOrNull()?.rawValue?.let(onBarcode)
+        val qrReader = QRCodeReader()
+        fun getQR(imageProxy: ImageProxy) {
+          val bitmap = imageProxyToBinaryBitmap(imageProxy)
+          val decodeHints = EnumMap<DecodeHintType, Any>(
+            DecodeHintType::class.java
+          )
+          decodeHints[DecodeHintType.TRY_HARDER] = true
+          decodeHints[DecodeHintType.POSSIBLE_FORMATS] = BarcodeFormat.QR_CODE
+          decodeHints[DecodeHintType.PURE_BARCODE] = false
+          val result = qrReader.decode(bitmap, decodeHints)
+          print("QR RESULT: ${result.text}")
+//          onBarcode(result.text)
         }
+        val imageAnalyzer = ImageAnalysis.Analyzer { proxy -> getQR(proxy)}
         val imageAnalysis: ImageAnalysis = ImageAnalysis.Builder()
-          .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-          .build()
-          .also { it.setAnalyzer(cameraExecutor, barcodeAnalyser) }
-
+        .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+        .build()
+        .also { it.setAnalyzer(cameraExecutor, imageAnalyzer) }
         try {
           cameraProvider.unbindAll()
           cameraProvider.bindToLifecycle(lifecycleOwner, cameraSelector, preview, imageAnalysis)
@@ -70,40 +80,20 @@ fun QRCodeScanner(onBarcode: (String) -> Unit) {
   )
 }
 
-class BarCodeAnalyser(
-  private val onBarcodeDetected: (barcodes: List<Barcode>) -> Unit,
-): ImageAnalysis.Analyzer {
-  private var lastAnalyzedTimeStamp = 0L
-
-  @ExperimentalGetImage
-  override fun analyze(image: ImageProxy) {
-    val currentTimestamp = System.currentTimeMillis()
-    if (currentTimestamp - lastAnalyzedTimeStamp >= TimeUnit.SECONDS.toMillis(1)) {
-      image.image?.let { imageToAnalyze ->
-        val options = BarcodeScannerOptions.Builder()
-          .setBarcodeFormats(Barcode.FORMAT_ALL_FORMATS)
-          .build()
-        val barcodeScanner = BarcodeScanning.getClient(options)
-        val imageToProcess = InputImage.fromMediaImage(imageToAnalyze, image.imageInfo.rotationDegrees)
-
-        barcodeScanner.process(imageToProcess)
-          .addOnSuccessListener { barcodes ->
-            if (barcodes.isNotEmpty()) {
-              onBarcodeDetected(barcodes)
-            } else {
-              Log.d(TAG, "BarcodeAnalyser: No barcode Scanned")
-            }
-          }
-          .addOnFailureListener { exception ->
-            Log.e(TAG, "BarcodeAnalyser: Something went wrong $exception")
-          }
-          .addOnCompleteListener {
-            image.close()
-          }
-      }
-      lastAnalyzedTimeStamp = currentTimestamp
-    } else {
-      image.close()
-    }
+private fun imageProxyToBinaryBitmap(img: ImageProxy) : BinaryBitmap? {
+  if (img.format == YUV_420_888 || img.format == YUV_422_888 || img.format == YUV_444_888) {
+    val byteBuffer: ByteBuffer = img.planes[0].buffer
+    val imageData = ByteArray(byteBuffer.capacity())
+    // TODO(BREAKS HERE -- NEED TO DOWNSAMPLE)
+    byteBuffer.get(imageData)
+    val source = PlanarYUVLuminanceSource(
+      imageData,
+      img.width, img.height,
+      0, 0,
+      img.width, img.height,
+      false
+    )
+    return BinaryBitmap(HybridBinarizer(source))
   }
+  return null
 }
