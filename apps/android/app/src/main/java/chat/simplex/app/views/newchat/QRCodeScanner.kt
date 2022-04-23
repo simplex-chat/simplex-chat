@@ -57,20 +57,20 @@ fun QRCodeScanner(onBarcode: (String) -> Unit) {
         val decodeHints = EnumMap<DecodeHintType, Any>(
           DecodeHintType::class.java
         )
-        decodeHints[DecodeHintType.TRY_HARDER] = true
+//        decodeHints[DecodeHintType.TRY_HARDER] = true
         decodeHints[DecodeHintType.POSSIBLE_FORMATS] = BarcodeFormat.QR_CODE
-        decodeHints[DecodeHintType.PURE_BARCODE] = false
         try {
           val result = qrReader.decode(bitmap, decodeHints)
           println("QR RESULT: ${result.text}")
 //          onBarcode(result.text)
+        } catch(nfe: NotFoundException) {
+          Log.e(TAG, "Failed to find QR code in current image.")
+        } catch (fe: FormatException) {
+          Log.e(TAG, "Failed to find QR code of expected format. Possible mis-detection.")
+        } catch (ce: ChecksumException) {
+          Log.e(TAG, "Invalid QR Code. Checksum failure.")
         } catch (e: Exception) {
-          when (e) {
-            is FormatException, is ChecksumException, is NotFoundException -> {
-              // No QR found yet
-            }
-            else -> e.printStackTrace()
-          }
+          Log.e(TAG, "QR code detection failed for unknown reason: ${e.localizedMessage}")
         }
       }
 
