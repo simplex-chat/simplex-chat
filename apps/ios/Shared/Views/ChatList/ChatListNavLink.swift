@@ -16,7 +16,14 @@ struct ChatListNavLink: View {
     var body: some View {
         switch chat.chatInfo {
         case let .direct(contact):
-            contactNavLink(contact)
+            if contact.ready {
+                contactNavLink(contact)
+            } else {
+                contactNavLink(contact)
+                    .onTapGesture {
+                        AlertManager.shared.showAlert(pendingContactAlert(chat, contact))
+                    }
+            }
         case let .group(groupInfo):
             groupNavLink(groupInfo)
         case let .contactRequest(cReq):
@@ -60,11 +67,6 @@ struct ChatListNavLink: View {
                 )
             } label: {
                 Label("Delete", systemImage: "trash")
-            }
-        }
-        .onTapGesture {
-            if !contact.ready {
-                AlertManager.shared.showAlert(pendingContactAlert(chat, contact))
             }
         }
         .frame(height: 80)
