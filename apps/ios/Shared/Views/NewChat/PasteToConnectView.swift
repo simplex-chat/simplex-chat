@@ -9,6 +9,36 @@
 import SwiftUI
 
 struct PasteToConnectView: View {
+    var completed: ((Result<Bool, Error>) -> Void)
+
+    var body: some View {
+        VStack {
+            Text("Add Contact from Link")
+                .font(.title)
+                .padding(.bottom)
+            Text("Paste connection link in the box below to connect with a contact.")
+                .font(.title2)
+                .multilineTextAlignment(.center)
+                .padding()
+            PasteToConnectTextbox(connectViaLink: processLink)
+        }
+    }
+
+    func processLink(_ connectionLink: String) {
+        Task {
+            do {
+                let ok = try await apiConnect(connReq: connectionLink)
+                completed(.success(ok))
+            } catch {
+                logger.error("ConnectContactView.processQRCode apiConnect error: \(error.localizedDescription)")
+                completed(.failure(error))
+            }
+        }
+    }
+}
+
+
+struct PasteToConnectTextbox: View {
     var connectViaLink: (String) -> Void
     @State private var teHeight: CGFloat = 42
     @State private var connectionLink: String = ""
@@ -66,8 +96,14 @@ struct PasteToConnectView: View {
     }
 }
 
+struct PasteToConnectTextbox_Previews: PreviewProvider {
+    static var previews: some View {
+        return PasteToConnectTextbox(connectViaLink: { print($0) })
+    }
+}
+
 struct PasteToConnectView_Previews: PreviewProvider {
     static var previews: some View {
-        return PasteToConnectView(connectViaLink: { print($0) })
+        return PasteToConnectView(completed: {_ in })
     }
 }

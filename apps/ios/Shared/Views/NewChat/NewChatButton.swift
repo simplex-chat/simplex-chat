@@ -12,8 +12,8 @@ struct NewChatButton: View {
     @State private var showAddChat = false
     @State private var addContact = false
     @State private var connReqInvitation: String = ""
-    @State private var connectContact = false
-    @State private var createGroup = false
+    @State private var scanToConnect = false
+    @State private var pasteToConnect = false
 
     var body: some View {
         Button { showAddChat = true } label: {
@@ -21,17 +21,16 @@ struct NewChatButton: View {
         }
         .confirmationDialog("Start new chat", isPresented: $showAddChat, titleVisibility: .visible) {
             Button("Add contact") { addContactAction() }
-            Button("Scan QR code") { connectContact = true }
-            Button("Create group") { createGroup = true }
-                .disabled(true)
+            Button("Scan QR code") { scanToConnect = true }
+            Button("Paste link to connect") { pasteToConnect = true }
         }
         .sheet(isPresented: $addContact, content: {
             AddContactView(connReqInvitation: connReqInvitation)
         })
-        .sheet(isPresented: $connectContact, content: {
-            connectContactSheet()
+        .sheet(isPresented: $scanToConnect, content: {
+            scanToConnectSheet()
         })
-        .sheet(isPresented: $createGroup, content: { CreateGroupView() })
+        .sheet(isPresented: $pasteToConnect, content: { pasteToConnectSheet() })
     }
 
     func addContactAction() {
@@ -50,18 +49,33 @@ struct NewChatButton: View {
         AddContactView(connReqInvitation: connReqInvitation)
     }
 
-    func connectContactSheet() -> some View {
-        ConnectContactView(completed: { err in
-            connectContact = false
-            DispatchQueue.global().async {
-                switch (err) {
-                case let .success(ok):
-                    if ok { connectionReqSentAlert(.invitation) }
-                case let .failure(error):
-                    connectionErrorAlert(error)
-                }
+    private func onCompletedConnectionAttempt(_ result: Result<Bool, Error>) {
+        DispatchQueue.global().async {
+            switch (result) {
+            case let .success(ok):
+                if ok { connectionReqSentAlert(.invitation) }
+            case let .failure(error):
+                connectionErrorAlert(error)
             }
-        })
+        }
+    }
+
+    func scanToConnectSheet() -> some View {
+        ScanQRToContactView(
+            completed: { r in
+                pasteToConnect = false
+                onCompletedConnectionAttempt(r)
+            }
+        )
+    }
+
+    func pasteToConnectSheet() -> some View {
+        PasteToConnectView(
+            completed: { r in
+                scanToConnect = false
+                onCompletedConnectionAttempt(r)
+            }
+        )
     }
 
     func connectionErrorAlert(_ error: Error) {
