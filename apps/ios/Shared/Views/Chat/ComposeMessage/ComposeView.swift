@@ -8,11 +8,11 @@
 
 import SwiftUI
 
-//enum ComposePreview {
-//    case noPreview
-//    case linkPreview(linkPreview: LinkPreview)
-//    case imagePreview(image: String)
-//}
+enum ComposePreview {
+    case noPreview
+    case linkPreview(linkPreview: LinkPreview)
+    case imagePreview(image: String)
+}
 
 enum ComposeContextItem {
     case noContextItem
@@ -23,6 +23,7 @@ enum ComposeContextItem {
 struct ComposeState {
     var message: String
     var contextItem: ComposeContextItem
+    var inProgress: Bool = false
 
     func editing() -> Bool {
         switch contextItem {
@@ -56,8 +57,6 @@ struct ComposeView: View {
     @EnvironmentObject var chatModel: ChatModel
     let chat: Chat
     @Binding var composeState: ComposeState
-
-    @State var inProgress: Bool = false
     @FocusState.Binding var keyboardVisible: Bool
 
     @State var linkPreview: LinkPreview? = nil
@@ -97,7 +96,6 @@ struct ComposeView: View {
                         sendMessage(text)
                         resetLinkPreview()
                     },
-                    inProgress: inProgress,
                     keyboardVisible: $keyboardVisible
                 )
                 .padding(.trailing, 12)

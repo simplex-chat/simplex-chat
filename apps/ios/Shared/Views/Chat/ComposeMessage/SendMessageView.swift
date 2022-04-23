@@ -11,7 +11,6 @@ import SwiftUI
 struct SendMessageView: View {
     @Binding var composeState: ComposeState
     var sendMessage: (String) -> Void
-    var inProgress: Bool = false
     @Namespace var namespace
     @FocusState.Binding var keyboardVisible: Bool
     @State private var teHeight: CGFloat = 42
@@ -32,7 +31,6 @@ struct SendMessageView: View {
                         .matchedGeometryEffect(id: "te", in: namespace)
                         .background(GeometryReader(content: updateHeight))
                     TextEditor(text: $composeState.message)
-                        .onSubmit(submit)
                         .focused($keyboardVisible)
                         .font(teFont)
                         .textInputAutocapitalization(.sentences)
@@ -41,13 +39,13 @@ struct SendMessageView: View {
                         .frame(height: teHeight)
                 }
 
-                if (inProgress) {
+                if (composeState.inProgress) {
                     ProgressView()
                         .scaleEffect(1.4)
                         .frame(width: 31, height: 31, alignment: .center)
                         .padding([.bottom, .trailing], 3)
                 } else {
-                    Button(action: submit) {
+                    Button(action: { sendMessage(composeState.message) }) {
                         Image(systemName: composeState.editing() ? "checkmark.circle.fill" : "arrow.up.circle.fill")
                             .resizable()
                             .foregroundColor(.accentColor)
@@ -63,10 +61,6 @@ struct SendMessageView: View {
                 .frame(height: teHeight)
         }
         .padding(.vertical, 8)
-    }
-
-    func submit() {
-        sendMessage(composeState.message)
     }
 
     func updateHeight(_ g: GeometryProxy) -> Color {
