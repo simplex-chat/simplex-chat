@@ -26,6 +26,7 @@ fun QRCodeScanner(onBarcode: (String) -> Unit) {
   val lifecycleOwner = LocalLifecycleOwner.current
   var preview by remember { mutableStateOf<Preview?>(null) }
   var lastAnalyzedTimeStamp = 0L
+  var contactLink = ""
 
   AndroidView(
     factory = { AndroidViewContext ->
@@ -63,7 +64,11 @@ fun QRCodeScanner(onBarcode: (String) -> Unit) {
           decodeHints[DecodeHintType.POSSIBLE_FORMATS] = BarcodeFormat.QR_CODE
           try {
             val result = qrReader.decode(bitmap, decodeHints)
-            onBarcode(result.text)
+            if (result.text != contactLink) {
+              // Make sure link is new and not a repeat
+              contactLink = result.text
+              onBarcode(contactLink)
+            }
             imageProxy.close()
           } catch (nfe: NotFoundException) {
             // Comment log for too much noise
