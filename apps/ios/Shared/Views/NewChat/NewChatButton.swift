@@ -63,7 +63,7 @@ struct NewChatButton: View {
     func scanToConnectSheet() -> some View {
         ScanToConnectView(
             completed: { r in
-                pasteToConnect = false
+                scanToConnect = false
                 onCompletedConnectionAttempt(r)
             }
         )
@@ -72,7 +72,7 @@ struct NewChatButton: View {
     func pasteToConnectSheet() -> some View {
         PasteToConnectView(
             completed: { r in
-                scanToConnect = false
+                pasteToConnect = false
                 onCompletedConnectionAttempt(r)
             }
         )
