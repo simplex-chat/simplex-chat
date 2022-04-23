@@ -60,9 +60,10 @@ fun QRCodeScanner(onBarcode: (String) -> Unit) {
           decodeHints[DecodeHintType.TRY_HARDER] = true
           decodeHints[DecodeHintType.POSSIBLE_FORMATS] = BarcodeFormat.QR_CODE
           decodeHints[DecodeHintType.PURE_BARCODE] = false
-          val result = qrReader.decode(bitmap, decodeHints)
-          print("QR RESULT: ${result.text}")
-//          onBarcode(result.text)
+          // TODO(Breaks here need to downsample bitmap)
+          // val result = qrReader.decode(bitmap, decodeHints)
+          // println("QR RESULT: ${result.text}")
+          // onBarcode(result.text)
         }
         val imageAnalyzer = ImageAnalysis.Analyzer { proxy -> getQR(proxy)}
         val imageAnalysis: ImageAnalysis = ImageAnalysis.Builder()
@@ -84,16 +85,19 @@ private fun imageProxyToBinaryBitmap(img: ImageProxy) : BinaryBitmap? {
   if (img.format == YUV_420_888 || img.format == YUV_422_888 || img.format == YUV_444_888) {
     val byteBuffer: ByteBuffer = img.planes[0].buffer
     val imageData = ByteArray(byteBuffer.capacity())
-    // TODO(BREAKS HERE -- NEED TO DOWNSAMPLE)
-    byteBuffer.get(imageData)
-    val source = PlanarYUVLuminanceSource(
-      imageData,
-      img.width, img.height,
-      0, 0,
-      img.width, img.height,
-      false
-    )
-    return BinaryBitmap(HybridBinarizer(source))
+    try {
+      byteBuffer.get(imageData)
+      val source = PlanarYUVLuminanceSource(
+        imageData,
+        img.width, img.height,
+        0, 0,
+        img.width, img.height,
+        false
+      )
+      return BinaryBitmap(HybridBinarizer(source))
+    } catch (e: Exception) {
+      e.printStackTrace()
+    }
   }
   return null
 }
