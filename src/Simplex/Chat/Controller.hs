@@ -246,9 +246,8 @@ data ChatResponse
   | CRUserContactLinkSubscribed
   | CRUserContactLinkSubError {chatError :: ChatError}
   | CRNtfTokenStatus {status :: NtfTknStatus}
-  | CRNewContactConnection {connection :: Connection}
-  | CRContactConnectionUpdated {connection :: Connection}
-  | CRContactConnectionDeleted {connection :: Connection}
+  | CRNewContactConnection {connection :: PendingContactConnection}
+  | CRContactConnectionDeleted {connection :: PendingContactConnection}
   | CRMessageError {severity :: Text, errorMessage :: Text}
   | CRChatCmdError {chatError :: ChatError}
   | CRChatError {chatError :: ChatError}

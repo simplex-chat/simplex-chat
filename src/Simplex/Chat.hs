@@ -183,7 +183,7 @@ processChatCommand = \case
     ff <- asks filesFolder
     atomically . writeTVar ff $ Just filesFolder'
     pure CRCmdOk
-  APIGetChats _ -> CRApiChats <$> withUser (\user -> withStore (`getChatPreviews` user))
+  APIGetChats withPCC -> CRApiChats <$> withUser (\user -> withStore $ \st -> getChatPreviews st user withPCC)
   APIGetChat cType cId pagination -> withUser $ \user -> case cType of
     CTDirect -> CRApiChat . AChat SCTDirect <$> withStore (\st -> getDirectChat st user cId pagination)
     CTGroup -> CRApiChat . AChat SCTGroup <$> withStore (\st -> getGroupChat st user cId pagination)
@@ -365,9 +365,10 @@ processChatCommand = \case
             unsetActive $ ActiveC localDisplayName
             pure $ CRContactDeleted ct
         gs -> throwChatError $ CEContactGroups ct gs
+    CTContactConnection ->
+      CRContactConnectionDeleted <$> withStore (\st -> deletePendingContactConnection st userId chatId)
     CTGroup -> pure $ chatCmdError "not implemented"
     CTContactRequest -> pure $ chatCmdError "not supported"
-    CTContactConnection -> pure $ chatCmdError "not supported"
   APIAcceptContact connReqId -> withUser $ \user@User {userId} -> withChatLock $ do
     cReq <- withStore $ \st -> getContactRequest st userId connReqId
     procCmd $ CRAcceptingContactRequest <$> acceptContactRequest user cReq
@@ -393,11 +394,13 @@ processChatCommand = \case
   Welcome -> withUser $ pure . CRWelcome
   AddContact -> withUser $ \User {userId} -> withChatLock . procCmd $ do
     (connId, cReq) <- withAgent (`createConnection` SCMInvitation)
-    withStore $ \st -> createDirectConnection st userId connId
+    conn <- withStore $ \st -> createDirectConnection st userId connId ConnNew
+    toView $ CRNewContactConnection conn
     pure $ CRInvitation cReq
   Connect (Just (ACR SCMInvitation cReq)) -> withUser $ \User {userId, profile} -> withChatLock . procCmd $ do
     connId <- withAgent $ \a -> joinConnection a cReq . directMessage $ XInfo profile
-    withStore $ \st -> createDirectConnection st userId connId
+    conn <- withStore $ \st -> createDirectConnection st userId connId ConnJoined
+    toView $ CRNewContactConnection conn
     pure CRSentConfirmation
   Connect (Just (ACR SCMContact cReq)) -> withUser $ \User {userId, profile} ->
     connectViaContact userId cReq profile
@@ -653,7 +656,8 @@ processChatCommand = \case
           let randomXContactId = XContactId <$> (asks idsDrg >>= liftIO . (`randomBytes` 16))
           xContactId <- maybe randomXContactId pure xContactId_
           connId <- withAgent $ \a -> joinConnection a cReq $ directMessage (XContact profile $ Just xContactId)
-          withStore $ \st -> createConnReqConnection st userId connId cReqHash xContactId
+          conn <- withStore $ \st -> createConnReqConnection st userId connId cReqHash xContactId
+          toView $ CRNewContactConnection conn
           pure CRSentInvitation
     contactMember :: Contact -> [GroupMember] -> Maybe GroupMember
     contactMember Contact {contactId} =
@@ -1968,7 +1972,7 @@ chatCommandP =
   where
     imagePrefix = (<>) <$> "data:" <*> ("image/png;base64," <|> "image/jpg;base64,")
     imageP = safeDecodeUtf8 <$> ((<>) <$> imagePrefix <*> (B64.encode <$> base64P))
-    chatTypeP = A.char '@' $> CTDirect <|> A.char '#' $> CTGroup
+    chatTypeP = A.char '@' $> CTDirect <|> A.char '#' $> CTGroup <|> A.char ':' $> CTContactConnection
     chatPaginationP =
       (CPLast <$ "count=" <*> A.decimal)
         <|> (CPAfter <$ "after=" <*> A.decimal <* A.space <* "count=" <*> A.decimal)

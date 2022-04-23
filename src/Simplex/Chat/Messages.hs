@@ -49,7 +49,7 @@ data ChatInfo (c :: ChatType) where
   DirectChat :: Contact -> ChatInfo 'CTDirect
   GroupChat :: GroupInfo -> ChatInfo 'CTGroup
   ContactRequest :: UserContactRequest -> ChatInfo 'CTContactRequest
-  ContactConnection :: Connection -> ChatInfo 'CTContactConnection
+  ContactConnection :: PendingContactConnection -> ChatInfo 'CTContactConnection
 
 deriving instance Show (ChatInfo c)
 
@@ -57,7 +57,7 @@ data JSONChatInfo
   = JCInfoDirect {contact :: Contact}
   | JCInfoGroup {groupInfo :: GroupInfo}
   | JCInfoContactRequest {contactRequest :: UserContactRequest}
-  | JCInfoContactConnection {contactConnection :: Connection}
+  | JCInfoContactConnection {contactConnection :: PendingContactConnection}
   deriving (Generic)
 
 instance ToJSON JSONChatInfo where
@@ -522,12 +522,15 @@ data SChatType (c :: ChatType) where
   SCTDirect :: SChatType 'CTDirect
   SCTGroup :: SChatType 'CTGroup
   SCTContactRequest :: SChatType 'CTContactRequest
+  SCTContactConnection :: SChatType 'CTContactConnection
 
 deriving instance Show (SChatType c)
 
 instance TestEquality SChatType where
   testEquality SCTDirect SCTDirect = Just Refl
   testEquality SCTGroup SCTGroup = Just Refl
+  testEquality SCTContactRequest SCTContactRequest = Just Refl
+  testEquality SCTContactConnection SCTContactConnection = Just Refl
   testEquality _ _ = Nothing
 
 class ChatTypeI (c :: ChatType) where
