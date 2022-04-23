@@ -39,7 +39,7 @@ fun NewChatSheet(chatModel: ChatModel, newChatCtrl: ScaffoldController) {
     },
     scanCode = {
       newChatCtrl.collapse()
-      ModalManager.shared.showCustomModal { close -> ConnectContactView(chatModel, close) }
+      ModalManager.shared.showCustomModal { close -> ScanToConnectView(chatModel, close) }
       cameraPermissionState.launchPermissionRequest()
     },
     pasteLink = {

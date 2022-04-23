@@ -9,7 +9,7 @@
 import SwiftUI
 import CodeScanner
 
-struct ScanQRToContactView: View {
+struct ScanToConnectView: View {
     var completed: ((Result<Bool, Error>) -> Void)
 
     var body: some View {
@@ -55,6 +55,6 @@ struct ScanQRToContactView: View {
 
 struct ConnectContactView_Previews: PreviewProvider {
     static var previews: some View {
-        return ScanQRToContactView(completed: {_ in })
+        return ScanToConnectView(completed: {_ in })
     }
 }

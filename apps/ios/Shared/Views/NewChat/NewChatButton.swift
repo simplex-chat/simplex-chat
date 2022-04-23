@@ -61,7 +61,7 @@ struct NewChatButton: View {
     }
 
     func scanToConnectSheet() -> some View {
-        ScanQRToContactView(
+        ScanToConnectView(
             completed: { r in
                 pasteToConnect = false
                 onCompletedConnectionAttempt(r)
