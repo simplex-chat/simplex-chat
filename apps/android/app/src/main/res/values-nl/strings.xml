@@ -154,39 +154,39 @@
     <string name="icon_descr_email">Email</string>
 
     <!-- Add Contact - AddContactView.kt -->
-    <string name="invalid_QR_code">Invalid QR code</string>
-    <string name="this_QR_code_is_not_a_link">This QR code is not a link!</string>
-    <string name="invalid_contact_link">Invalid link!</string>
-    <string name="this_link_is_not_a_valid_connection_link">This link is not a valid connection link!</string>
-    <string name="connection_request_sent">Connection request sent!</string>
-    <string name="you_will_be_connected_when_your_connection_request_is_accepted">You will be connected when your connection request is accepted, please wait or check later!</string>
-    <string name="you_will_be_connected_when_your_contacts_device_is_online">You will be connected when your contact\'s device is online, please wait or check later!</string>
-    <string name="show_QR_code_for_your_contact_to_scan_from_the_app__multiline">Show QR code for your contact\nto scan from the app</string>
-    <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel">If you cannot meet in person, you can <b>show QR code in the video call</b>, or you can share the invitation link via any other channel.</string>
-    <string name="your_chat_profile_will_be_sent_to_your_contact">Your chat profile will be sent\nto your contact</string>
-    <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link">If you cannot meet in person, you can <b>scan QR code in the video call</b>, or your contact can share an invitation link.</string>
-    <string name="share_invitation_link">Share invitation link</string>
+    <string name="invalid_QR_code">Ongeldige QR-code</string>
+    <string name="this_QR_code_is_not_a_link">Deze QR-code is geen link!</string>
+    <string name="invalid_contact_link">Ongeldige link!</string>
+    <string name="this_link_is_not_a_valid_connection_link">Deze link is geen geldige verbindingslink!</string>
+    <string name="connection_request_sent">Verbindingsaanvraag verzonden!</string>
+    <string name="you_will_be_connected_when_your_connection_request_is_accepted">U wordt verbonden wanneer uw verbindingsverzoek wordt geaccepteerd, wacht of controleer later!</string>
+    <string name="you_will_be_connected_when_your_contacts_device_is_online">U wordt verbonden wanneer het apparaat van uw contact online is, wacht of controleer later!</string>
+    <string name="show_QR_code_for_your_contact_to_scan_from_the_app__multiline">Qr-code voor uw contact weergeven\nto scan vanuit de app</string>
+    <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel">Als u elkaar niet persoonlijk kunt ontmoeten, kunt u de <b>QR-code in het videogesprek weergeven</b>, of u kunt de uitnodigingslink delen via een ander kanaal.</string>
+    <string name="your_chat_profile_will_be_sent_to_your_contact">Je chatprofiel wordt naar je contactpersoon verzonden</string>
+    <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link">Als u elkaar niet persoonlijk kunt ontmoeten, kunt u de <b>QR-code in het videogesprek scannen</b>, of uw contactpersoon kan een uitnodigingslink delen.</string>
+    <string name="share_invitation_link">Uitnodigingslink delen</string>
 
     <!-- settings - SettingsView.kt -->
-    <string name="your_settings">Your settings</string>
-    <string name="your_simplex_contact_address">Your <xliff:g id="appName">SimpleX</xliff:g> contact address</string>
-    <string name="how_to_use_simplex_chat">How to use <xliff:g id="appNameFull">SimpleX Chat</xliff:g></string>
+    <string name="your_settings">Uw instellingen</string>
+    <string name="your_simplex_contact_address">Uw <xliff:g id="appName">SimpleX</xliff:g> contactadres</string>
+    <string name="how_to_use_simplex_chat">Hoe gebruik je <xliff:g id="appNameFull">SimpleX Chat</xliff:g></string>
     <string name="markdown_help">Markdown help</string>
-    <string name="markdown_in_messages">Markdown in messages</string>
-    <string name="chat_with_the_founder">Connect to the developers</string>
-    <string name="send_us_an_email">Send us email</string>
-    <string name="private_notifications">Private notifications</string>
+    <string name="markdown_in_messages">Markdown in berichten</string>
+    <string name="chat_with_the_founder">Maak verbinding met de ontwikkelaars</string>
+    <string name="send_us_an_email">Stuur ons een e-mail</string>
+    <string name="private_notifications">Privémeldingen</string>
     <string name="chat_console">Chat console</string>
-    <string name="smp_servers">SMP servers</string>
+    <string name="smp_servers">SMP-servers</string>
     <string name="install_simplex_chat_for_terminal">Install <font color="#0088ff"><xliff:g id="appNameFull">SimpleX Chat</xliff:g> for terminal</font></string>
-    <string name="use_simplex_chat_servers__question">Use <xliff:g id="appNameFull">SimpleX Chat</xliff:g> servers?</string>
-    <string name="saved_SMP_servers_will_br_removed">Saved SMP servers will be removed.</string>
-    <string name="your_SMP_servers">Your SMP servers</string>
-    <string name="configure_SMP_servers">Configure SMP servers</string>
-    <string name="using_simplex_chat_servers">Using <xliff:g id="appNameFull">SimpleX Chat</xliff:g> servers.</string>
-    <string name="enter_one_SMP_server_per_line">Enter one SMP server per line:</string>
+    <string name="use_simplex_chat_servers__question">Gebruik <xliff:g id="appNameFull">SimpleX Chat</xliff:g> servers?</string>
+    <string name="saved_SMP_servers_will_br_removed">Opgeslagen SMP-servers worden verwijderd.</string>
+    <string name="your_SMP_servers">Uw SMP-servers</string>
+    <string name="configure_SMP_servers">SMP-servers configureren</string>
+    <string name="using_simplex_chat_servers">Gebruik <xliff:g id="appNameFull">SimpleX Chat</xliff:g> servers.</string>
+    <string name="enter_one_SMP_server_per_line">Voer één SMP-server per regel in:</string>
     <string name="how_to">How to</string>
-    <string name="save_servers_button">Save</string>
+    <string name="save_servers_button">Opslaan</string>
 
     <!-- Address Items - UserAddressView.kt -->
     <string name="create_address">Create address</string>
