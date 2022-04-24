@@ -10,7 +10,7 @@ import SwiftUI
 import CodeScanner
 
 struct ScanToConnectView: View {
-    var completed: ((Result<Bool, Error>) -> Void)
+    @Binding var openedSheet: Bool
 
     var body: some View {
         VStack {
@@ -37,24 +37,17 @@ struct ScanToConnectView: View {
     func processQRCode(_ resp: Result<ScanResult, ScanError>) {
         switch resp {
         case let .success(r):
-            Task {
-                do {
-                    let ok = try await apiConnect(connReq: r.string)
-                    completed(.success(ok))
-                } catch {
-                    logger.error("ConnectContactView.processQRCode apiConnect error: \(error.localizedDescription)")
-                    completed(.failure(error))
-                }
-            }
+            Task { connectViaLink(r.string, $openedSheet) }
         case let .failure(e):
             logger.error("ConnectContactView.processQRCode QR code error: \(e.localizedDescription)")
-            completed(.failure(e))
+            openedSheet = false
         }
     }
 }
 
 struct ConnectContactView_Previews: PreviewProvider {
     static var previews: some View {
-        return ScanToConnectView(completed: {_ in })
+        @State var openedSheet: Bool = true
+        return ScanToConnectView(openedSheet: $openedSheet)
     }
 }

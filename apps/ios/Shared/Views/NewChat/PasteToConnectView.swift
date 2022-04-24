@@ -9,101 +9,58 @@
 import SwiftUI
 
 struct PasteToConnectView: View {
-    var completed: ((Result<Bool, Error>) -> Void)
-
-    var body: some View {
-        VStack {
-            Text("Add Contact from Link")
-                .font(.title)
-                .padding(.bottom)
-            Text("Paste connection link in the box below to connect with a contact.")
-                .font(.title2)
-                .multilineTextAlignment(.center)
-                .padding()
-            PasteToConnectTextbox(connectViaLink: processLink)
-        }
-    }
-
-    func processLink(_ connectionLink: String) {
-        Task {
-            do {
-                let ok = try await apiConnect(connReq: connectionLink)
-                completed(.success(ok))
-            } catch {
-                logger.error("ConnectContactView.processQRCode apiConnect error: \(error.localizedDescription)")
-                completed(.failure(error))
-            }
-        }
-    }
-}
-
-
-struct PasteToConnectTextbox: View {
-    var connectViaLink: (String) -> Void
-    @State private var teHeight: CGFloat = 42
+    @Binding var openedSheet: Bool
     @State private var connectionLink: String = ""
-    @Namespace var namespace
-    var maxHeight: CGFloat = 360
-    var minHeight: CGFloat = 37
 
     var body: some View {
-        ZStack {
-            HStack(alignment: .bottom) {
-                ZStack(alignment: .leading) {
-                    Text(connectionLink)
-                        .font(.body)
-                        .foregroundColor(.clear)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 8)
-                        .matchedGeometryEffect(id: "te", in: namespace)
-                        .background(GeometryReader(content: updateHeight))
-                    TextEditor(text: $connectionLink)
-                        .onSubmit(submit)
-                        .font(.body)
-                        .textInputAutocapitalization(.never)
-                        .padding(.horizontal, 5)
-                        .allowsTightening(false)
-                        .frame(height: teHeight)
+        VStack(alignment: .leading) {
+            Text("Connect via link")
+                .font(.title)
+                .padding([.bottom])
+                .frame(maxWidth: .infinity, alignment: .center)
+            Text("Paste the link you received into the box below to connect with your contact.")
+                .multilineTextAlignment(.leading)
+            Text("Your profile will be sent to the contact that you received this link from")
+                .multilineTextAlignment(.leading)
+                .padding(.bottom)
+            TextEditor(text: $connectionLink)
+                .onSubmit(connect)
+                .font(.body)
+                .textInputAutocapitalization(.never)
+                .disableAutocorrection(true)
+                .allowsTightening(false)
+                .frame(height: 180)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10)
+                        .strokeBorder(.secondary, lineWidth: 0.3, antialiased: true)
+                )
+            HStack(spacing: 20) {
+                Button {
+                    connectionLink = UIPasteboard.general.string ?? ""
+                } label: {
+                    Label("Paste", systemImage: "doc.on.clipboard")
                 }
-                Button(action: submit) {
-                    Image(systemName: (connectionLink != "") ? "checkmark.circle.fill" : "arrow.right.doc.on.clipboard")
-                        .resizable()
-                        .foregroundColor(.accentColor)
-                }
-                .frame(width: 29, height: 29)
-                .padding([.bottom, .trailing], 4)
+                Button(action: connect, label: {
+                    Label("Connect", systemImage: "link")
+                })
+                .disabled(connectionLink == "" || connectionLink.trimmingCharacters(in: .whitespaces).firstIndex(of: " ") != nil)
             }
+            .padding(.bottom)
 
-            RoundedRectangle(cornerSize: CGSize(width: 20, height: 20))
-                .strokeBorder(.secondary, lineWidth: 0.3, antialiased: true)
-                .frame(height: teHeight)
+            Text("You can also connect by clicking the link. If it opens in the browser, click **Open in mobile app** button")
+                .multilineTextAlignment(.leading)
         }
-        .padding(.vertical, 8)
+        .padding()
     }
-    private func submit() {
-        if (connectionLink != "") {
-            connectViaLink(connectionLink)
-            connectionLink = ""
-        } else {
-            connectionLink = UIPasteboard.general.string ?? ""
-        }
-    }
-    func updateHeight(_ g: GeometryProxy) -> Color {
-        DispatchQueue.main.async {
-            teHeight = min(max(g.frame(in: .local).size.height, minHeight), maxHeight)
-        }
-        return Color.clear
-    }
-}
 
-struct PasteToConnectTextbox_Previews: PreviewProvider {
-    static var previews: some View {
-        return PasteToConnectTextbox(connectViaLink: { print($0) })
+    private func connect() {
+        connectViaLink(connectionLink.trimmingCharacters(in: .whitespaces), $openedSheet)
     }
 }
 
 struct PasteToConnectView_Previews: PreviewProvider {
     static var previews: some View {
-        return PasteToConnectView(completed: {_ in })
+        @State var openedSheet: Bool = true
+        return PasteToConnectView(openedSheet: $openedSheet)
     }
 }

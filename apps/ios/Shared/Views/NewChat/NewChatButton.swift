@@ -22,15 +22,17 @@ struct NewChatButton: View {
         .confirmationDialog("Start new chat", isPresented: $showAddChat, titleVisibility: .visible) {
             Button("Add contact") { addContactAction() }
             Button("Scan QR code") { scanToConnect = true }
-            Button("Paste link to connect") { pasteToConnect = true }
+            Button("Connect via link") { pasteToConnect = true }
         }
         .sheet(isPresented: $addContact, content: {
             AddContactView(connReqInvitation: connReqInvitation)
         })
         .sheet(isPresented: $scanToConnect, content: {
-            scanToConnectSheet()
+            ScanToConnectView(openedSheet: $scanToConnect)
         })
-        .sheet(isPresented: $pasteToConnect, content: { pasteToConnectSheet() })
+        .sheet(isPresented: $pasteToConnect, content: {
+            PasteToConnectView(openedSheet: $pasteToConnect)
+        })
     }
 
     func addContactAction() {
@@ -44,48 +46,35 @@ struct NewChatButton: View {
             logger.error("NewChatButton.addContactAction apiAddContact error: \(error.localizedDescription)")
         }
     }
-    
-    func addContactSheet() -> some View {
-        AddContactView(connReqInvitation: connReqInvitation)
-    }
-
-    private func onCompletedConnectionAttempt(_ result: Result<Bool, Error>) {
-        DispatchQueue.global().async {
-            switch (result) {
-            case let .success(ok):
-                if ok { connectionReqSentAlert(.invitation) }
-            case let .failure(error):
-                connectionErrorAlert(error)
-            }
-        }
-    }
-
-    func scanToConnectSheet() -> some View {
-        ScanToConnectView(
-            completed: { r in
-                scanToConnect = false
-                onCompletedConnectionAttempt(r)
-            }
-        )
-    }
-
-    func pasteToConnectSheet() -> some View {
-        PasteToConnectView(
-            completed: { r in
-                pasteToConnect = false
-                onCompletedConnectionAttempt(r)
-            }
-        )
-    }
-
-    func connectionErrorAlert(_ error: Error) {
-        AlertManager.shared.showAlertMsg(title: "Connection error", message: "Error: \(error.localizedDescription)")
-    }
 }
 
 enum ConnReqType: Equatable {
     case contact
     case invitation
+}
+
+func connectViaLink(_ connectionLink: String, _ openedSheet: Binding<Bool>? = nil) {
+    Task {
+        do {
+            let res = try await apiConnect(connReq: connectionLink)
+            DispatchQueue.main.async {
+                openedSheet?.wrappedValue = false
+                if let connReqType = res {
+                    connectionReqSentAlert(connReqType)
+                }
+            }
+        } catch {
+            logger.error("connectViaLink apiConnect error: \(responseError(error))")
+            DispatchQueue.main.async {
+                openedSheet?.wrappedValue = false
+                connectionErrorAlert(error)
+            }
+        }
+    }
+}
+
+func connectionErrorAlert(_ error: Error) {
+    AlertManager.shared.showAlertMsg(title: "Connection error", message: "Error: \(error.localizedDescription)")
 }
 
 func connectionReqSentAlert(_ type: ConnReqType) {
