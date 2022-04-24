@@ -138,8 +138,8 @@
     <string name="contact_wants_to_connect_with_you">wil contact met u maken!</string>
 
     <!-- Image Placeholder - ChatInfoImage.kt -->
-    <string name="icon_descr_profile_image_placeholder">profile image placeholder</string>
-    <string name="image_descr_profile_image">profielafbeelding</string>
+    <string name="icon_descr_profile_image_placeholder">profiel afbeelding</string>
+    <string name="image_descr_profile_image">profiel afbeelding</string>
 
     <!-- Content Descriptions -->
     <string name="icon_descr_close_button">Knop Sluiten</string>
@@ -208,24 +208,24 @@
     <string name="save_and_notify_contacts">Opslaan (en contacten op de hoogte stellen)</string>
 
     <!-- Welcome Prompts - WelcomeView.kt -->
-    <string name="you_control_your_chat">You control your chat!</string>
-    <string name="the_messaging_and_app_platform_protecting_your_privacy_and_security">The messaging and application platform protecting your privacy and security.</string>
-    <string name="we_do_not_store_contacts_or_messages_on_servers">We don\'t store any of your contacts or messages (once delivered) on the servers.</string>
-    <string name="create_profile">Create profile</string>
-    <string name="your_profile_is_stored_on_your_decide_and_shared_only_with_your_contacts">Your profile is stored on your device and shared only with your contacts.</string>
-    <string name="display_name_cannot_contain_whitespace">Display name cannot contain whitespace.</string>
-    <string name="display_name">Display Name</string>
-    <string name="full_name_optional__prompt">Full Name (Optional)</string>
-    <string name="create_profile_button">Create</string>
+    <string name="you_control_your_chat">Jij beheert je chat!</string>
+    <string name="the_messaging_and_app_platform_protecting_your_privacy_and_security">Het berichten- en applicatieplatform dat uw privacy en veiligheid beschermt.</string>
+    <string name="we_do_not_store_contacts_or_messages_on_servers">We slaan geen van uw contacten of berichten (eenmaal afgeleverd) op de servers op.</string>
+    <string name="create_profile">Profiel aanmaken</string>
+    <string name="your_profile_is_stored_on_your_decide_and_shared_only_with_your_contacts">Uw profiel wordt opgeslagen op uw apparaat en alleen gedeeld met uw contacten.</string>
+    <string name="display_name_cannot_contain_whitespace">Weergavenaam mag geen spatie bevatten.</string>
+    <string name="display_name">Weergegeven naam</string>
+    <string name="full_name_optional__prompt">Volledige naam (optioneel)</string>
+    <string name="create_profile_button">Maak aan</string>
 
     <!-- markdown demo - MarkdownHelpView.kt -->
-    <string name="how_to_use_markdown">How to use markdown</string>
-    <string name="you_can_use_markdown_to_format_messages__prompt">You can use markdown to format messages:</string>
+    <string name="how_to_use_markdown">Hoe markdown te gebruiken</string>
+    <string name="you_can_use_markdown_to_format_messages__prompt">U kunt markdown gebruiken om berichten op te maken:</string>
     <string name="bold">bold</string>
     <string name="italic">italic</string>
     <string name="strikethrough">strike</string>
     <string name="a_plus_b">a + b</string>
-    <string name="colored">colored</string>
-    <string name="secret">secret</string>
+    <string name="colored">gekleurd</string>
+    <string name="secret">geheim</string>
 
 </resources>
