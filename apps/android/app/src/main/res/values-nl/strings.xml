@@ -189,23 +189,23 @@
     <string name="save_servers_button">Opslaan</string>
 
     <!-- Address Items - UserAddressView.kt -->
-    <string name="create_address">Create address</string>
-    <string name="delete_address__question">Delete address?</string>
-    <string name="all_your_contacts_will_remain_connected">All your contacts will remain connected.</string>
-    <string name="your_chat_address">Your chat address</string>
-    <string name="you_can_share_your_address_anybody_will_be_able_to_connect">You can share your address as a link or as a QR code - anybody will be able to connect to you.</string>
-    <string name="if_you_delete_address_you_wont_lose_contacts">If you later delete it - you won\'t lose your contacts.</string>
-    <string name="share_link">Share link</string>
-    <string name="delete_address">Delete address</string>
+    <string name="create_address">Adres aanmaken</string>
+    <string name="delete_address__question">Adres verwijderen?</string>
+    <string name="all_your_contacts_will_remain_connected">Al uw contacten blijven verbonden.</string>
+    <string name="your_chat_address">Uw chatadres</string>
+    <string name="you_can_share_your_address_anybody_will_be_able_to_connect">U kunt uw adres delen als een link of als een QR-code - iedereen kan verbinding met u maken.</string>
+    <string name="if_you_delete_address_you_wont_lose_contacts">Als u het later verwijdert, verliest u uw contacten niet.</string>
+    <string name="share_link">Link delen</string>
+    <string name="delete_address">Adres verwijderen</string>
 
     <!-- User profile details - UserProfileView.kt -->
-    <string name="display_name__field">Display name:</string>
-    <string name="full_name__field">"Full name:</string>
-    <string name="your_chat_profile">Your chat profile</string>
-    <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Your profile is stored on your device and shared only with your contacts.\n\n<xliff:g id="appName">SimpleX</xliff:g> servers cannot see your profile.</string>
-    <string name="edit_image">Edit image</string>
-    <string name="delete_image">Delete image</string>
-    <string name="save_and_notify_contacts">Save (and notify contacts)</string>
+    <string name="display_name__field">Weergegeven naam:</string>
+    <string name="full_name__field">"Volledige naam:</string>
+    <string name="your_chat_profile">Uw chatprofiel</string>
+    <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Uw profiel wordt opgeslagen op uw apparaat en alleen gedeeld met uw contacten.\n\n<xliff:g id="appName">SimpleX</xliff:g> servers kunnen uw profiel niet zien.</string>
+    <string name="edit_image">Afbeelding bewerken</string>
+    <string name="delete_image">Afbeelding verwijderen</string>
+    <string name="save_and_notify_contacts">Opslaan (en contacten op de hoogte stellen)</string>
 
     <!-- Welcome Prompts - WelcomeView.kt -->
     <string name="you_control_your_chat">You control your chat!</string>
