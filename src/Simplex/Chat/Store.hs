@@ -312,7 +312,7 @@ createConnReqConnection st userId acId cReqHash xContactId = do
       |]
       (userId, acId, pccConnStatus, ConnContact, createdAt, createdAt, cReqHash, xContactId)
     pccConnId <- insertedRowId db
-    pure PendingContactConnection {pccConnId, pccAgentConnId = AgentConnId acId, pccConnStatus, viaContactUri = True, createdAt}
+    pure PendingContactConnection {pccConnId, pccAgentConnId = AgentConnId acId, pccConnStatus, viaContactUri = True, createdAt, updatedAt = createdAt}
 
 getConnReqContactXContactId :: MonadUnliftIO m => SQLiteStore -> UserId -> ConnReqUriHash -> m (Maybe Contact, Maybe XContactId)
 getConnReqContactXContactId st userId cReqHash = do
@@ -361,7 +361,7 @@ createDirectConnection st userId acId pccConnStatus =
       |]
       (userId, acId, pccConnStatus, ConnContact, createdAt, createdAt)
     pccConnId <- insertedRowId db
-    pure PendingContactConnection {pccConnId, pccAgentConnId = AgentConnId acId, pccConnStatus, createdAt, viaContactUri = False}
+    pure PendingContactConnection {pccConnId, pccAgentConnId = AgentConnId acId, pccConnStatus, viaContactUri = False, createdAt, updatedAt = createdAt}
 
 createContactConnection_ :: DB.Connection -> UserId -> ConnId -> Maybe Int64 -> Int -> UTCTime -> IO Connection
 createContactConnection_ db userId = createConnection_ db userId ConnContact Nothing
@@ -718,7 +718,7 @@ createOrUpdateContactRequest_ db userId userContactLinkId invId Profile {display
           [sql|
             SELECT
               cr.contact_request_id, cr.local_display_name, cr.agent_invitation_id, cr.user_contact_link_id,
-              c.agent_conn_id, cr.contact_profile_id, p.display_name, p.full_name, p.image, cr.created_at, cr.xcontact_id
+              c.agent_conn_id, cr.contact_profile_id, p.display_name, p.full_name, p.image, cr.xcontact_id, cr.created_at, cr.updated_at
             FROM contact_requests cr
             JOIN connections c USING (user_contact_link_id)
             JOIN contact_profiles p USING (contact_profile_id)
@@ -777,7 +777,7 @@ getContactRequest_ db userId contactRequestId =
       [sql|
         SELECT
           cr.contact_request_id, cr.local_display_name, cr.agent_invitation_id, cr.user_contact_link_id,
-          c.agent_conn_id, cr.contact_profile_id, p.display_name, p.full_name, p.image, cr.created_at, cr.xcontact_id
+          c.agent_conn_id, cr.contact_profile_id, p.display_name, p.full_name, p.image, cr.xcontact_id, cr.created_at, cr.updated_at
         FROM contact_requests cr
         JOIN connections c USING (user_contact_link_id)
         JOIN contact_profiles p USING (contact_profile_id)
@@ -786,12 +786,12 @@ getContactRequest_ db userId contactRequestId =
       |]
       (userId, contactRequestId)
 
-type ContactRequestRow = (Int64, ContactName, AgentInvId, Int64, AgentConnId, Int64, ContactName, Text, Maybe ImageData, UTCTime, Maybe XContactId)
+type ContactRequestRow = (Int64, ContactName, AgentInvId, Int64, AgentConnId, Int64, ContactName, Text, Maybe ImageData, Maybe XContactId, UTCTime, UTCTime)
 
 toContactRequest :: ContactRequestRow -> UserContactRequest
-toContactRequest (contactRequestId, localDisplayName, agentInvitationId, userContactLinkId, agentContactConnId, profileId, displayName, fullName, image, createdAt, xContactId) = do
+toContactRequest (contactRequestId, localDisplayName, agentInvitationId, userContactLinkId, agentContactConnId, profileId, displayName, fullName, image, xContactId, createdAt, updatedAt) = do
   let profile = Profile {displayName, fullName, image}
-   in UserContactRequest {contactRequestId, agentInvitationId, userContactLinkId, agentContactConnId, localDisplayName, profileId, profile, createdAt, xContactId}
+   in UserContactRequest {contactRequestId, agentInvitationId, userContactLinkId, agentContactConnId, localDisplayName, profileId, profile, xContactId, createdAt, updatedAt}
 
 getContactRequestIdByName :: StoreMonad m => SQLiteStore -> UserId -> ContactName -> m Int64
 getContactRequestIdByName st userId cName =
@@ -2526,8 +2526,8 @@ getChatPreviews st user withPCC =
     ts (AChat _ Chat {chatInfo}) = case chatInfo of
       DirectChat Contact {createdAt} -> createdAt
       GroupChat GroupInfo {createdAt} -> createdAt
-      ContactRequest UserContactRequest {createdAt} -> createdAt
-      ContactConnection PendingContactConnection {createdAt} -> createdAt
+      ContactRequest UserContactRequest {updatedAt} -> updatedAt
+      ContactConnection PendingContactConnection {updatedAt} -> updatedAt
 
 chatItemTs :: CChatItem d -> UTCTime
 chatItemTs (CChatItem _ ChatItem {meta = CIMeta {itemTs}}) = itemTs
@@ -2671,7 +2671,7 @@ getContactRequestChatPreviews_ db User {userId} =
       [sql|
         SELECT
           cr.contact_request_id, cr.local_display_name, cr.agent_invitation_id, cr.user_contact_link_id,
-          c.agent_conn_id, cr.contact_profile_id, p.display_name, p.full_name, p.image, cr.created_at, cr.xcontact_id
+          c.agent_conn_id, cr.contact_profile_id, p.display_name, p.full_name, p.image, cr.xcontact_id, cr.created_at, cr.updated_at
         FROM contact_requests cr
         JOIN connections c USING (user_contact_link_id)
         JOIN contact_profiles p USING (contact_profile_id)
@@ -2692,13 +2692,13 @@ getContactConnectionChatPreviews_ db User {userId} _ =
     <$> DB.query
       db
       [sql|
-        SELECT connection_id, agent_conn_id, conn_status, via_contact_uri_hash, created_at
+        SELECT connection_id, agent_conn_id, conn_status, via_contact_uri_hash, created_at, updated_at
         FROM connections
         WHERE user_id = ? AND conn_type = ? AND contact_id IS NULL AND conn_level = 0 AND via_contact IS NULL
       |]
       (userId, ConnContact)
   where
-    toContactConnectionChatPreview :: (Int64, ConnId, ConnStatus, Maybe ByteString, UTCTime) -> AChat
+    toContactConnectionChatPreview :: (Int64, ConnId, ConnStatus, Maybe ByteString, UTCTime, UTCTime) -> AChat
     toContactConnectionChatPreview connRow =
       let conn = toPendingContactConnection connRow
           stats = ChatStats {unreadCount = 0, minUnreadItemId = 0}
@@ -2712,7 +2712,7 @@ deletePendingContactConnection st userId connId =
         DB.query
           db
           [sql|
-            SELECT connection_id, agent_conn_id, conn_status, via_contact_uri_hash, created_at
+            SELECT connection_id, agent_conn_id, conn_status, via_contact_uri_hash, created_at, updated_at
             FROM connections
             WHERE user_id = ? AND conn_type = ? AND contact_id IS NULL AND conn_level = 0 AND via_contact IS NULL
           |]
@@ -2720,9 +2720,9 @@ deletePendingContactConnection st userId connId =
     liftIO $ DB.execute db "DELETE FROM connections WHERE connection_id = ?" (Only connId)
     pure conn
 
-toPendingContactConnection :: (Int64, ConnId, ConnStatus, Maybe ByteString, UTCTime) -> PendingContactConnection
-toPendingContactConnection (pccConnId, acId, pccConnStatus, connReqHash, createdAt) =
-  PendingContactConnection {pccConnId, pccAgentConnId = AgentConnId acId, pccConnStatus, viaContactUri = isJust connReqHash, createdAt}
+toPendingContactConnection :: (Int64, ConnId, ConnStatus, Maybe ByteString, UTCTime, UTCTime) -> PendingContactConnection
+toPendingContactConnection (pccConnId, acId, pccConnStatus, connReqHash, createdAt, updatedAt) =
+  PendingContactConnection {pccConnId, pccAgentConnId = AgentConnId acId, pccConnStatus, viaContactUri = isJust connReqHash, createdAt, updatedAt}
 
 getDirectChat :: StoreMonad m => SQLiteStore -> User -> Int64 -> ChatPagination -> m (Chat 'CTDirect)
 getDirectChat st user contactId pagination =

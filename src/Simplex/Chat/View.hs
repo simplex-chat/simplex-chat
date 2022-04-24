@@ -142,7 +142,7 @@ responseToView testView = \case
   CRUserContactLinkSubscribed -> ["Your address is active! To show: " <> highlight' "/sa"]
   CRUserContactLinkSubError e -> ["user address error: " <> sShow e, "to delete your address: " <> highlight' "/da"]
   CRNewContactConnection _ -> []
-  CRContactConnectionDeleted _ -> []
+  CRContactConnectionDeleted PendingContactConnection {pccConnId} -> ["connection :" <> sShow pccConnId <> " deleted"]
   CRNtfTokenStatus status -> ["device token status: " <> plain (smpEncode status)]
   CRMessageError prefix err -> [plain prefix <> ": " <> plain err]
   CRChatError e -> viewChatError e
@@ -150,11 +150,11 @@ responseToView testView = \case
     testViewChats :: [AChat] -> [StyledString]
     testViewChats chats = [sShow $ map toChatView chats]
       where
-        toChatView :: AChat -> (Text, Text)
-        toChatView (AChat _ (Chat (DirectChat Contact {localDisplayName}) items _)) = ("@" <> localDisplayName, toCIPreview items)
-        toChatView (AChat _ (Chat (GroupChat GroupInfo {localDisplayName}) items _)) = ("#" <> localDisplayName, toCIPreview items)
-        toChatView (AChat _ (Chat (ContactRequest UserContactRequest {localDisplayName}) items _)) = ("<@" <> localDisplayName, toCIPreview items)
-        toChatView (AChat _ (Chat (ContactConnection PendingContactConnection {pccConnId}) items _)) = (":" <> T.pack (show pccConnId), toCIPreview items)
+        toChatView :: AChat -> (Text, Text, Maybe ConnStatus)
+        toChatView (AChat _ (Chat (DirectChat Contact {localDisplayName, activeConn}) items _)) = ("@" <> localDisplayName, toCIPreview items, Just $ connStatus activeConn)
+        toChatView (AChat _ (Chat (GroupChat GroupInfo {localDisplayName}) items _)) = ("#" <> localDisplayName, toCIPreview items, Nothing)
+        toChatView (AChat _ (Chat (ContactRequest UserContactRequest {localDisplayName}) items _)) = ("<@" <> localDisplayName, toCIPreview items, Nothing)
+        toChatView (AChat _ (Chat (ContactConnection PendingContactConnection {pccConnId, pccConnStatus}) items _)) = (":" <> T.pack (show pccConnId), toCIPreview items, Just $ pccConnStatus)
         toCIPreview :: [CChatItem c] -> Text
         toCIPreview ((CChatItem _ ChatItem {meta}) : _) = itemText meta
         toCIPreview _ = ""
