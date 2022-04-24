@@ -77,28 +77,28 @@
     <string name="attach">Toevoegen</string>
 
     <!-- Images -->
-    <string name="image_descr">Image</string>
+    <string name="image_descr">Afbeelding</string>
 
     <!-- Chat Info Actions - ChatInfoView.kt -->
-    <string name="delete_contact__question">Delete contact?</string>
-    <string name="delete_contact_all_messages_deleted_cannot_undo_warning">Contact and all messages will be deleted - this cannot be undone!</string>
-    <string name="button_delete_contact">Delete contact</string>
-    <string name="icon_descr_server_status_connected">Connected</string>
-    <string name="icon_descr_server_status_disconnected">Disconnected</string>
-    <string name="icon_descr_server_status_error">Error</string>
-    <string name="icon_descr_server_status_pending">Pending</string>
+    <string name="delete_contact__question">Contact verwijderen?</string>
+    <string name="delete_contact_all_messages_deleted_cannot_undo_warning">Contact en alle berichten worden verwijderd - dit kan niet ongedaan worden gemaakt!</string>
+    <string name="button_delete_contact">Contact verwijderen</string>
+    <string name="icon_descr_server_status_connected">Verbonden</string>
+    <string name="icon_descr_server_status_disconnected">Verbroken</string>
+    <string name="icon_descr_server_status_error">Fout</string>
+    <string name="icon_descr_server_status_pending">In afwachting</string>
 
     <!-- Message Actions - SendMsgView.kt -->
-    <string name="icon_descr_send_message">Send Message</string>
+    <string name="icon_descr_send_message">Bericht verzenden</string>
 
     <!-- General Actions / Responses -->
-    <string name="back">Back</string>
-    <string name="cancel_verb">Cancel</string>
-    <string name="confirm_verb">Confirm</string>
+    <string name="back">Terug</string>
+    <string name="cancel_verb">Annuleren</string>
+    <string name="confirm_verb">Bevestigen</string>
     <string name="ok">Ok</string>
-    <string name="no_details">no details</string>
-    <string name="add_contact">Add contact</string>
-    <string name="scan_QR_code">Scan QR code</string>
+    <string name="no_details">geen gegevens</string>
+    <string name="add_contact">Contact toevoegen</string>
+    <string name="scan_QR_code">QR-code scannen</string>
 
     <!-- NewChatSheet -->
     <string name="create_QR_code_or_link__bracketed__multiline">(create QR code\nor link)</string>
