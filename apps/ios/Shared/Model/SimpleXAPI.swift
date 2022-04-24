@@ -52,7 +52,7 @@ enum ChatCommand {
             case let .createActiveUser(profile): return "/u \(profile.displayName) \(profile.fullName)"
             case .startChat: return "/_start"
             case let .setFilesFolder(filesFolder): return "/_files_folder \(filesFolder)"
-            case .apiGetChats: return "/_get chats"
+            case .apiGetChats: return "/_get chats pcc=on"
             case let .apiGetChat(type, id): return "/_get chat \(ref(type, id)) count=100"
             case let .apiSendMessage(type, id, file, quotedItemId, mc):
                 switch (file, quotedItemId) {

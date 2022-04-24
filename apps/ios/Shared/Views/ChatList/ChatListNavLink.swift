@@ -21,6 +21,8 @@ struct ChatListNavLink: View {
             groupNavLink(groupInfo)
         case let .contactRequest(cReq):
             contactRequestNavLink(cReq)
+        case let .contactConnection(cConn):
+            contactConnectionNavLink(cConn)
         }
     }
 
@@ -123,6 +125,11 @@ struct ChatListNavLink: View {
             Button("Accept contact") { Task { await acceptContactRequest(contactRequest) } }
             Button("Reject contact (sender NOT notified)") { Task { await rejectContactRequest(contactRequest) } }
         }
+    }
+
+    private func contactConnectionNavLink(_ contactConnection: PendingContactConnection) -> some View {
+        ContactConnectionView(contactConnection: contactConnection)
+            .frame(height: 80)
     }
 
     private func deleteContactAlert(_ contact: Contact) -> Alert {
