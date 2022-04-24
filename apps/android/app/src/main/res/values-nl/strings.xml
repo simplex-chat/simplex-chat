@@ -46,18 +46,18 @@
 
     <!-- SimpleX Chat foreground Service -->
     <string name="simplex_service_notification_title"><xliff:g id="appNameFull">SimpleX Chat</xliff:g> service</string>
-    <string name="simplex_service_notification_text">Receiving messages…</string>
+    <string name="simplex_service_notification_text">Berichten ontvangen...</string>
 
     <!-- Chat Actions - ChatItemView.kt (and general) -->
-    <string name="reply_verb">Reply</string>
-    <string name="share_verb">Share</string>
-    <string name="copy_verb">Copy</string>
-    <string name="edit_verb">Edit</string>
-    <string name="delete_verb">Delete</string>
-    <string name="delete_message__question">Delete message?</string>
-    <string name="delete_message_cannot_be_undone_warning">Message will be deleted - this cannot be undone!</string>
-    <string name="for_me_only">For me only</string>
-    <string name="for_everybody">For everyone</string>
+    <string name="reply_verb">Antwoord</string>
+    <string name="share_verb">Delen</string>
+    <string name="copy_verb">Kopiëren</string>
+    <string name="edit_verb">Bewerken</string>
+    <string name="delete_verb">Verwijderen</string>
+    <string name="delete_message__question">Bericht verwijderen?</string>
+    <string name="delete_message_cannot_be_undone_warning">Bericht wordt verwijderd - dit kan niet ongedaan worden gemaakt!</string>
+    <string name="for_me_only">Alleen voor mij</string>
+    <string name="for_everybody">Voor iedereen</string>
 
     <!-- CIMetaView.kt -->
     <string name="icon_descr_edited">edited</string>
