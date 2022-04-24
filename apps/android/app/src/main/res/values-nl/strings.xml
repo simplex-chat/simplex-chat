@@ -101,28 +101,28 @@
     <string name="scan_QR_code">QR-code scannen</string>
 
     <!-- NewChatSheet -->
-    <string name="create_QR_code_or_link__bracketed__multiline">(create QR code\nor link)</string>
-    <string name="in_person_or_in_video_call__bracketed">(in person or in video call)</string>
-    <string name="create_group">Create Group</string>
-    <string name="coming_soon__bracketed">(coming soon!)</string>
+    <string name="create_QR_code_or_link__bracketed__multiline">(qr-code of link maken)</string>
+    <string name="in_person_or_in_video_call__bracketed">(persoonlijk of in videogesprek)</string>
+    <string name="create_group">Groep maken</string>
+    <string name="coming_soon__bracketed">(Binnenkort beschikbaar!)</string>
 
     <!-- GetImageView -->
-    <string name="toast_camera_permission_denied">Permission Denied!</string>
-    <string name="use_camera_button">Use Camera</string>
-    <string name="from_gallery_button">From Gallery</string>
+    <string name="toast_camera_permission_denied">Toestemming geweigerd!</string>
+    <string name="use_camera_button">Camera gebruiken</string>
+    <string name="from_gallery_button">Uit Galerij</string>
 
     <!-- help - ChatHelpView.kt -->
-    <string name="thank_you_for_installing_simplex">Thank you for installing <xliff:g id="appNameFull">SimpleX Chat</xliff:g>!</string>
-    <string name="you_can_connect_to_simplex_chat_founder">You can <font color="#0088ff">connect to <xliff:g id="appNameFull">SimpleX Chat</xliff:g> developers to ask any questions and to receive updates</font>.</string>
-    <string name="to_start_a_new_chat_help_header">To start a new chat</string>
-    <string name="chat_help_tap_button">Tap button</string>
-    <string name="above_then_preposition_continuation">above, then:</string>
-    <string name="add_new_contact_to_create_one_time_QR_code"><b>Add new contact</b>: to create your one-time QR Code for your contact.</string>
-    <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><b>Scan QR code</b>: to connect to your contact who shows QR code to you.</string>
-    <string name="to_connect_via_link_title">To connect via link</string>
-    <string name="if_you_received_simplex_invitation_link_you_can_open_in_browser">If you received <xliff:g id="appName">SimpleX Chat</xliff:g> invitation link, you can open it in your browser:</string>
-    <string name="desktop_scan_QR_code_from_app_via_scan_QR_code">💻 desktop: scan displayed QR code from the app, via <b>Scan QR code</b>.</string>
-    <string name="mobile_tap_open_in_mobile_app_then_tap_connect_in_app">📱 mobile: tap <b>Open in mobile app</b>, then tap <b>Connect</b> in the app.</string>
+    <string name="thank_you_for_installing_simplex">Bedankt voor het installeren <xliff:g id="appNameFull">SimpleX Chat</xliff:g>!</string>
+    <string name="you_can_connect_to_simplex_chat_founder">U kunt <font color="#0088ff">connect naar <xliff:g id="appNameFull">SimpleX Chat</xliff:g> ontwikkelaars om vragen te stellen en updates te ontvangen</font>.</string>
+    <string name="to_start_a_new_chat_help_header">Een nieuwe chat starten</string>
+    <string name="chat_help_tap_button">Tik op de knop</string>
+    <string name="above_then_preposition_continuation">hier boven en vervolgens op de knop:</string>
+    <string name="add_new_contact_to_create_one_time_QR_code"><b>Nieuwe contact toevoegen</b>: om uw eenmalige QR-code voor uw contact te maken.</string>
+    <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><b>QR-code scannen</b>: om verbinding te maken met uw contact die u een QR-code laat zien.</string>
+    <string name="to_connect_via_link_title">Verbinding maken via link</string>
+    <string name="if_you_received_simplex_invitation_link_you_can_open_in_browser">Als u <xliff:g id="appName">SimpleX Chat</xliff:g> een uitnodigingslink hebt ontvangen, kunt u deze openen in uw browser:</string>
+    <string name="desktop_scan_QR_code_from_app_via_scan_QR_code">💻 desktop: scan weergegeven QR-code van de app, via Qr-code scannen</b>.</string>
+    <string name="mobile_tap_open_in_mobile_app_then_tap_connect_in_app">📱 mobile: tik <b>Openen in mobiele app</b>, dan tik <b>Connect</b> in de app.</string>
 
     <!-- Contact Request Alert Dialogue - ChatListNavLinkView.kt -->
     <string name="accept_connection_request__question">Accept connection request?</string>
