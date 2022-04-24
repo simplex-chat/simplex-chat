@@ -99,6 +99,7 @@ data UserContactRequest = UserContactRequest
     profileId :: Int64,
     profile :: Profile,
     createdAt :: UTCTime,
+    updatedAt :: UTCTime,
     xContactId :: Maybe XContactId
   }
   deriving (Eq, Show, Generic)
@@ -670,7 +671,8 @@ data PendingContactConnection = PendingContactConnection
     pccAgentConnId :: AgentConnId,
     pccConnStatus :: ConnStatus,
     viaContactUri :: Bool,
-    createdAt :: UTCTime
+    createdAt :: UTCTime,
+    updatedAt :: UTCTime
   }
   deriving (Eq, Show, Generic)
 
@@ -691,7 +693,7 @@ data ConnStatus
     ConnReady
   | -- | connection deleted
     ConnDeleted
-  deriving (Eq, Show)
+  deriving (Eq, Show, Read)
 
 instance FromField ConnStatus where fromField = fromTextField_ textDecode
 
