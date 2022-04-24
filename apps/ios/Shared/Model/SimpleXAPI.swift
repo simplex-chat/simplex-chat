@@ -19,12 +19,16 @@ enum ChatCommand {
     case showActiveUser
     case createActiveUser(profile: Profile)
     case startChat
+    case setFilesFolder(filesFolder: String)
     case apiGetChats
     case apiGetChat(type: ChatType, id: Int64)
-    case apiSendMessage(type: ChatType, id: Int64, msg: MsgContent)
-    case apiSendMessageQuote(type: ChatType, id: Int64, itemId: Int64, msg: MsgContent)
+    case apiSendMessage(type: ChatType, id: Int64, file: String?, quotedItemId: Int64?, msg: MsgContent)
     case apiUpdateChatItem(type: ChatType, id: Int64, itemId: Int64, msg: MsgContent)
     case apiDeleteChatItem(type: ChatType, id: Int64, itemId: Int64, mode: CIDeleteMode)
+    case apiRegisterToken(token: String)
+    case apiVerifyToken(token: String, code: String, nonce: String)
+    case apiIntervalNofication(token: String, interval: Int)
+    case apiDeleteToken(token: String)
     case getUserSMPServers
     case setUserSMPServers(smpServers: [String])
     case addContact
@@ -38,6 +42,7 @@ enum ChatCommand {
     case apiAcceptContact(contactReqId: Int64)
     case apiRejectContact(contactReqId: Int64)
     case apiChatRead(type: ChatType, id: Int64, itemRange: (Int64, Int64))
+    case receiveFile(fileId: Int64)
     case string(String)
 
     var cmdString: String {
@@ -46,12 +51,22 @@ enum ChatCommand {
             case .showActiveUser: return "/u"
             case let .createActiveUser(profile): return "/u \(profile.displayName) \(profile.fullName)"
             case .startChat: return "/_start"
+            case let .setFilesFolder(filesFolder): return "/_files_folder \(filesFolder)"
             case .apiGetChats: return "/_get chats"
             case let .apiGetChat(type, id): return "/_get chat \(ref(type, id)) count=100"
-            case let .apiSendMessage(type, id, mc): return "/_send \(ref(type, id)) \(mc.cmdString)"
-            case let .apiSendMessageQuote(type, id, itemId, mc): return "/_send_quote \(ref(type, id)) \(itemId) \(mc.cmdString)"
+            case let .apiSendMessage(type, id, file, quotedItemId, mc):
+                switch (file, quotedItemId) {
+                case (nil, nil): return "/_send \(ref(type, id)) \(mc.cmdString)"
+                case let (.some(file), nil): return "/_send \(ref(type, id)) file \(file) \(mc.cmdString)"
+                case let (nil, .some(quotedItemId)): return "/_send \(ref(type, id)) quoted \(quotedItemId) \(mc.cmdString)"
+                case let (.some(file), .some(quotedItemId)): return "/_send \(ref(type, id)) file \(file) quoted \(quotedItemId) \(mc.cmdString)"
+                }
             case let .apiUpdateChatItem(type, id, itemId, mc): return "/_update item \(ref(type, id)) \(itemId) \(mc.cmdString)"
             case let .apiDeleteChatItem(type, id, itemId, mode): return "/_delete item \(ref(type, id)) \(itemId) \(mode.rawValue)"
+            case let .apiRegisterToken(token): return "/_ntf register apns \(token)"
+            case let .apiVerifyToken(token, code, nonce): return "/_ntf verify apns \(token) \(code) \(nonce)"
+            case let .apiIntervalNofication(token, interval): return "/_ntf interval apns \(token) \(interval)"
+            case let .apiDeleteToken(token): return "/_ntf delete apns \(token)"
             case .getUserSMPServers: return "/smp_servers"
             case let .setUserSMPServers(smpServers): return "/smp_servers \(smpServersStr(smpServers: smpServers))"
             case .addContact: return "/connect"
@@ -65,6 +80,7 @@ enum ChatCommand {
             case let .apiAcceptContact(contactReqId): return "/_accept \(contactReqId)"
             case let .apiRejectContact(contactReqId): return "/_reject \(contactReqId)"
             case let .apiChatRead(type, id, itemRange: (from, to)): return "/_read chat \(ref(type, id)) from=\(from) to=\(to)"
+            case let .receiveFile(fileId): return "/freceive \(fileId)"
             case let .string(str): return str
             }
         }
@@ -76,12 +92,16 @@ enum ChatCommand {
             case .showActiveUser: return "showActiveUser"
             case .createActiveUser: return "createActiveUser"
             case .startChat: return "startChat"
+            case .setFilesFolder: return "setFilesFolder"
             case .apiGetChats: return "apiGetChats"
             case .apiGetChat: return "apiGetChat"
             case .apiSendMessage: return "apiSendMessage"
-            case .apiSendMessageQuote: return "apiSendMessageQuote"
             case .apiUpdateChatItem: return "apiUpdateChatItem"
             case .apiDeleteChatItem: return "apiDeleteChatItem"
+            case .apiRegisterToken: return "apiRegisterToken"
+            case .apiVerifyToken: return "apiVerifyToken"
+            case .apiIntervalNofication: return "apiIntervalNofication"
+            case .apiDeleteToken: return "apiDeleteToken"
             case .getUserSMPServers: return "getUserSMPServers"
             case .setUserSMPServers: return "setUserSMPServers"
             case .addContact: return "addContact"
@@ -95,6 +115,7 @@ enum ChatCommand {
             case .apiAcceptContact: return "apiAcceptContact"
             case .apiRejectContact: return "apiRejectContact"
             case .apiChatRead: return "apiChatRead"
+            case .receiveFile: return "receiveFile"
             case .string: return "console command"
             }
         }
@@ -103,7 +124,7 @@ enum ChatCommand {
     func ref(_ type: ChatType, _ id: Int64) -> String {
         "\(type.rawValue)\(id)"
     }
-    
+
     func smpServersStr(smpServers: [String]) -> String {
         smpServers.isEmpty ? "default" : smpServers.joined(separator: ",")
     }
@@ -133,6 +154,7 @@ enum ChatResponse: Decodable, Error {
     case userContactLinkCreated(connReqContact: String)
     case userContactLinkDeleted
     case contactConnected(contact: Contact)
+    case contactConnecting(contact: Contact)
     case receivedContactRequest(contactRequest: UserContactRequest)
     case acceptingContactRequest(contact: Contact)
     case contactRequestRejected
@@ -149,6 +171,9 @@ enum ChatResponse: Decodable, Error {
     case chatItemStatusUpdated(chatItem: AChatItem)
     case chatItemUpdated(chatItem: AChatItem)
     case chatItemDeleted(deletedChatItem: AChatItem, toChatItem: AChatItem)
+    case rcvFileAccepted
+    case rcvFileComplete(chatItem: AChatItem)
+    case ntfTokenStatus(status: NtfTknStatus)
     case cmdOk
     case chatCmdError(chatError: ChatError)
     case chatError(chatError: ChatError)
@@ -175,6 +200,7 @@ enum ChatResponse: Decodable, Error {
             case .userContactLinkCreated: return "userContactLinkCreated"
             case .userContactLinkDeleted: return "userContactLinkDeleted"
             case .contactConnected: return "contactConnected"
+            case .contactConnecting: return "contactConnecting"
             case .receivedContactRequest: return "receivedContactRequest"
             case .acceptingContactRequest: return "acceptingContactRequest"
             case .contactRequestRejected: return "contactRequestRejected"
@@ -191,13 +217,16 @@ enum ChatResponse: Decodable, Error {
             case .chatItemStatusUpdated: return "chatItemStatusUpdated"
             case .chatItemUpdated: return "chatItemUpdated"
             case .chatItemDeleted: return "chatItemDeleted"
+            case .rcvFileAccepted: return "rcvFileAccepted"
+            case .rcvFileComplete: return "rcvFileComplete"
+            case .ntfTokenStatus: return "ntfTokenStatus"
             case .cmdOk: return "cmdOk"
             case .chatCmdError: return "chatCmdError"
             case .chatError: return "chatError"
             }
         }
     }
-    
+
     var details: String {
         get {
             switch self {
@@ -220,6 +249,7 @@ enum ChatResponse: Decodable, Error {
             case let .userContactLinkCreated(connReq): return connReq
             case .userContactLinkDeleted: return noDetails
             case let .contactConnected(contact): return String(describing: contact)
+            case let .contactConnecting(contact): return String(describing: contact)
             case let .receivedContactRequest(contactRequest): return String(describing: contactRequest)
             case let .acceptingContactRequest(contact): return String(describing: contact)
             case .contactRequestRejected: return noDetails
@@ -236,6 +266,9 @@ enum ChatResponse: Decodable, Error {
             case let .chatItemStatusUpdated(chatItem): return String(describing: chatItem)
             case let .chatItemUpdated(chatItem): return String(describing: chatItem)
             case let .chatItemDeleted(deletedChatItem, toChatItem): return "deletedChatItem:\n\(String(describing: deletedChatItem))\ntoChatItem:\n\(String(describing: toChatItem))"
+            case .rcvFileAccepted: return noDetails
+            case let .rcvFileComplete(chatItem): return String(describing: chatItem)
+            case let .ntfTokenStatus(status): return String(describing: status)
             case .cmdOk: return noDetails
             case let .chatCmdError(chatError): return String(describing: chatError)
             case let .chatError(chatError): return String(describing: chatError)
@@ -376,6 +409,12 @@ func apiStartChat() throws {
     throw r
 }
 
+func apiSetFilesFolder(filesFolder: String) throws {
+    let r = chatSendCmdSync(.setFilesFolder(filesFolder: filesFolder))
+    if case .cmdOk = r { return }
+    throw r
+}
+
 func apiGetChats() throws -> [Chat] {
     let r = chatSendCmdSync(.apiGetChats)
     if case let .apiChats(chats) = r { return chats.map { Chat.init($0) } }
@@ -388,14 +427,9 @@ func apiGetChat(type: ChatType, id: Int64) throws -> Chat {
     throw r
 }
 
-func apiSendMessage(type: ChatType, id: Int64, quotedItemId: Int64?, msg: MsgContent) async throws -> ChatItem {
+func apiSendMessage(type: ChatType, id: Int64, file: String?, quotedItemId: Int64?, msg: MsgContent) async throws -> ChatItem {
     let chatModel = ChatModel.shared
-    let cmd: ChatCommand
-    if let itemId = quotedItemId {
-        cmd = .apiSendMessageQuote(type: type, id: id, itemId: itemId, msg: msg)
-    } else {
-        cmd = .apiSendMessage(type: type, id: id, msg: msg)
-    }
+    let cmd: ChatCommand = .apiSendMessage(type: type, id: id, file: file, quotedItemId: quotedItemId, msg: msg)
     let r: ChatResponse
     if type == .direct {
         var cItem: ChatItem!
@@ -428,6 +462,24 @@ func apiDeleteChatItem(type: ChatType, id: Int64, itemId: Int64, mode: CIDeleteM
     throw r
 }
 
+func apiRegisterToken(token: String) async throws -> NtfTknStatus {
+    let r = await chatSendCmd(.apiRegisterToken(token: token))
+    if case let .ntfTokenStatus(status) = r { return status }
+    throw r
+}
+
+func apiVerifyToken(token: String, code: String, nonce: String) async throws {
+    try await sendCommandOkResp(.apiVerifyToken(token: token, code: code, nonce: nonce))
+}
+
+func apiIntervalNofication(token: String, interval: Int) async throws {
+    try await sendCommandOkResp(.apiIntervalNofication(token: token, interval: interval))
+}
+
+func apiDeleteToken(token: String) async throws {
+    try await sendCommandOkResp(.apiDeleteToken(token: token))
+}
+
 func getUserSMPServers() throws -> [String] {
     let r = chatSendCmdSync(.getUserSMPServers)
     if case let .userSMPServers(smpServers) = r { return smpServers }
@@ -435,9 +487,7 @@ func getUserSMPServers() throws -> [String] {
 }
 
 func setUserSMPServers(smpServers: [String]) async throws {
-    let r = await chatSendCmd(.setUserSMPServers(smpServers: smpServers))
-    if case .cmdOk = r { return }
-    throw r
+    try await sendCommandOkResp(.setUserSMPServers(smpServers: smpServers))
 }
 
 func apiAddContact() throws -> String {
@@ -474,6 +524,12 @@ func apiConnect(connReq: String) async throws -> Bool {
         am.showAlertMsg(
             title: "Connection error",
             message: "Please check your network connection and try again."
+        )
+        return false
+    case .chatCmdError(.errorAgent(.SMP(.AUTH))):
+        am.showAlertMsg(
+            title: "Connection error (AUTH)",
+            message: "Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.\nTo connect, please ask your contact to create another connection link and check that you have a stable network connection."
         )
         return false
     default: throw r
@@ -513,8 +569,8 @@ func apiDeleteUserAddress() async throws {
     throw r
 }
 
-func apiGetUserAddress() async throws -> String? {
-    let r = await chatSendCmd(.showMyAddress)
+func apiGetUserAddress() throws -> String? {
+    let r = chatSendCmdSync(.showMyAddress)
     switch r {
     case let .userContactLink(connReq):
         return connReq
@@ -537,8 +593,12 @@ func apiRejectContactRequest(contactReqId: Int64) async throws {
 }
 
 func apiChatRead(type: ChatType, id: Int64, itemRange: (Int64, Int64)) async throws {
-    let r = await chatSendCmd(.apiChatRead(type: type, id: id, itemRange: itemRange))
-    if case .cmdOk = r { return }
+    try await sendCommandOkResp(.apiChatRead(type: type, id: id, itemRange: itemRange))
+}
+
+func receiveFile(fileId: Int64) async throws {
+    let r = await chatSendCmd(.receiveFile(fileId: fileId))
+    if case .rcvFileAccepted = r { return }
     throw r
 }
 
@@ -579,6 +639,20 @@ func markChatItemRead(_ cInfo: ChatInfo, _ cItem: ChatItem) async {
         DispatchQueue.main.async { ChatModel.shared.markChatItemRead(cInfo, cItem) }
     } catch {
         logger.error("markChatItemRead apiChatRead error: \(error.localizedDescription)")
+    }
+}
+
+private func sendCommandOkResp(_ cmd: ChatCommand) async throws {
+    let r = await chatSendCmd(cmd)
+    if case .cmdOk = r { return }
+    throw r
+}
+
+func responseError(_ err: Error) -> String {
+    if let r = err as? ChatResponse {
+        return String(describing: r)
+    } else {
+        return err.localizedDescription
     }
 }
 
@@ -636,6 +710,8 @@ func processReceivedMsg(_ res: ChatResponse) {
             chatModel.updateContact(contact)
             chatModel.updateNetworkStatus(contact, .connected)
             NtfManager.shared.notifyContactConnected(contact)
+        case let .contactConnecting(contact):
+            chatModel.updateContact(contact)
         case let .receivedContactRequest(contactRequest):
             chatModel.addChat(Chat(
                 chatInfo: ChatInfo.contactRequest(contactRequest: contactRequest),
@@ -666,6 +742,17 @@ func processReceivedMsg(_ res: ChatResponse) {
             let cInfo = aChatItem.chatInfo
             let cItem = aChatItem.chatItem
             chatModel.addChatItem(cInfo, cItem)
+            if let file = cItem.file,
+               file.fileSize <= 236700 {
+               // file.fileSize <= 394500 {
+                Task {
+                    do {
+                        try await receiveFile(fileId: file.fileId)
+                    } catch {
+                        logger.error("receiveFile error: \(error.localizedDescription)")
+                    }
+                }
+            }
             NtfManager.shared.notifyMessageReceived(cInfo, cItem)
         case let .chatItemStatusUpdated(aChatItem):
             let cInfo = aChatItem.chatInfo
@@ -698,6 +785,12 @@ func processReceivedMsg(_ res: ChatResponse) {
             } else {
                 // currently only broadcast deletion of rcv message can be received, and only this case should happen
                 _ = chatModel.upsertChatItem(cInfo, cItem)
+            }
+        case let .rcvFileComplete(aChatItem):
+            let cInfo = aChatItem.chatInfo
+            let cItem = aChatItem.chatItem
+            if chatModel.upsertChatItem(cInfo, cItem) {
+                NtfManager.shared.notifyMessageReceived(cInfo, cItem)
             }
         default:
             logger.debug("unsupported event: \(res.responseType)")
@@ -743,7 +836,7 @@ private func chatResponse(_ cjson: UnsafeMutablePointer<CChar>) -> ChatResponse 
     } catch {
         logger.error("chatResponse jsonDecoder.decode error: \(error.localizedDescription)")
     }
-        
+
     var type: String?
     var json: String?
     if let j = try? JSONSerialization.jsonObject(with: d) as? NSDictionary {
@@ -765,7 +858,7 @@ func prettyJSON(_ obj: NSDictionary) -> String? {
 
 private func getChatCtrl() -> chat_ctrl {
     if let controller = chatController { return controller }
-    let dataDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!.path + "/mobile_v1"
+    let dataDir = getDocumentsDirectory().path + "/mobile_v1"
     var cstr = dataDir.cString(using: .utf8)!
     logger.debug("getChatCtrl: chat_init")
     ChatModel.shared.terminalItems.append(.cmd(.now, .string("chat_init")))
@@ -871,7 +964,8 @@ enum StoreError: Decodable {
 enum AgentErrorType: Decodable {
     case CMD(cmdErr: CommandErrorType)
     case CONN(connErr: ConnectionErrorType)
-    case SMP(smpErr: SMPErrorType)
+    case SMP(smpErr: ProtocolErrorType)
+    case NTF(ntfErr: ProtocolErrorType)
     case BROKER(brokerErr: BrokerErrorType)
     case AGENT(agentErr: SMPAgentError)
     case INTERNAL(internalErr: String)
@@ -894,17 +988,17 @@ enum ConnectionErrorType: Decodable {
 }
 
 enum BrokerErrorType: Decodable {
-    case RESPONSE(smpErr: SMPErrorType)
+    case RESPONSE(smpErr: ProtocolErrorType)
     case UNEXPECTED
     case NETWORK
-    case TRANSPORT(transportErr: SMPTransportError)
+    case TRANSPORT(transportErr: ProtocolTransportError)
     case TIMEOUT
 }
 
-enum SMPErrorType: Decodable {
+enum ProtocolErrorType: Decodable {
     case BLOCK
     case SESSION
-    case CMD(cmdErr: SMPCommandError)
+    case CMD(cmdErr: ProtocolCommandError)
     case AUTH
     case QUOTA
     case NO_MSG
@@ -912,15 +1006,15 @@ enum SMPErrorType: Decodable {
     case INTERNAL
 }
 
-enum SMPCommandError: Decodable {
+enum ProtocolCommandError: Decodable {
     case UNKNOWN
     case SYNTAX
     case NO_AUTH
     case HAS_AUTH
-    case NO_QUEUE
+    case NO_ENTITY
 }
 
-enum SMPTransportError: Decodable {
+enum ProtocolTransportError: Decodable {
     case badBlock
     case largeMsg
     case badSession

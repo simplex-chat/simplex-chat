@@ -49,11 +49,13 @@ import Simplex.Chat.Store
 import Simplex.Chat.Types
 import Simplex.Chat.Util (ifM, safeDecodeUtf8, unlessM, whenM)
 import Simplex.Messaging.Agent
-import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), defaultAgentConfig)
+import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), InitialAgentServers (..), defaultAgentConfig)
 import Simplex.Messaging.Agent.Protocol
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
+import Simplex.Messaging.Notifications.Client (NtfServer)
+import Simplex.Messaging.Notifications.Protocol (DeviceToken (..), PushProvider (..))
 import Simplex.Messaging.Parsers (base64P, parseAll)
 import Simplex.Messaging.Protocol (ErrorType (..), MsgBody)
 import qualified Simplex.Messaging.Protocol as SMP
@@ -75,8 +77,7 @@ defaultChatConfig =
     { agentConfig =
         defaultAgentConfig
           { tcpPort = undefined, -- agent does not listen to TCP
-            initialSMPServers = undefined, -- filled in newChatController
-            dbFile = undefined, -- filled in newChatController
+            dbFile = "simplex_v1",
             dbPoolSize = 1,
             yesToMigrations = False
           },
@@ -97,6 +98,9 @@ defaultSMPServers =
       "smp://6iIcWT_dF2zN_w5xzZEY7HI2Prbh3ldP07YTyDexPjE=@smp10.simplex.im"
     ]
 
+defaultNtfServers :: [NtfServer]
+defaultNtfServers = ["smp://ZH1Dkt2_EQRbxUUyjLlcUjg1KAhBrqfvE0xfn7Ki0Zg=@ntf1.simplex.im"]
+
 logCfg :: LogConfig
 logCfg = LogConfig {lc_file = Nothing, lc_stderr = True}
 
@@ -109,7 +113,8 @@ newChatController chatStore user cfg@ChatConfig {agentConfig = aCfg, tbqSize} Ch
   firstTime <- not <$> doesFileExist f
   currentUser <- newTVarIO user
   initialSMPServers <- resolveServers
-  smpAgent <- getSMPAgentClient aCfg {dbFile = dbFilePrefix <> "_agent.db", initialSMPServers}
+  let servers = InitialAgentServers {smp = initialSMPServers, ntf = defaultNtfServers}
+  smpAgent <- getSMPAgentClient aCfg {dbFile = dbFilePrefix <> "_agent.db"} servers
   agentAsync <- newTVarIO Nothing
   idsDrg <- newTVarIO =<< drgNew
   inputQ <- newTBQueueIO tbqSize
@@ -178,11 +183,12 @@ processChatCommand = \case
     ff <- asks filesFolder
     atomically . writeTVar ff $ Just filesFolder'
     pure CRCmdOk
-  APIGetChats -> CRApiChats <$> withUser (\user -> withStore (`getChatPreviews` user))
+  APIGetChats withPCC -> CRApiChats <$> withUser (\user -> withStore $ \st -> getChatPreviews st user withPCC)
   APIGetChat cType cId pagination -> withUser $ \user -> case cType of
     CTDirect -> CRApiChat . AChat SCTDirect <$> withStore (\st -> getDirectChat st user cId pagination)
     CTGroup -> CRApiChat . AChat SCTGroup <$> withStore (\st -> getGroupChat st user cId pagination)
     CTContactRequest -> pure $ chatCmdError "not implemented"
+    CTContactConnection -> pure $ chatCmdError "not supported"
   APIGetChatItems _pagination -> pure $ chatCmdError "not implemented"
   APISendMessage cType chatId file_ quotedItemId_ mc -> withUser $ \user@User {userId} -> withChatLock $ case cType of
     CTDirect -> do
@@ -258,6 +264,7 @@ processChatCommand = \case
             quoteData (CIRcvMsgContent qmc) (CIGroupRcv m) _ = pure (qmc, CIQGroupRcv $ Just m, False, m)
             quoteData _ _ _ = throwChatError CEInvalidQuote
     CTContactRequest -> pure $ chatCmdError "not supported"
+    CTContactConnection -> pure $ chatCmdError "not supported"
     where
       quoteContent qmc = \case
         MCText _ -> qmc
@@ -295,6 +302,7 @@ processChatCommand = \case
             _ -> throwChatError CEInvalidChatItemUpdate
         CChatItem SMDRcv _ -> throwChatError CEInvalidChatItemUpdate
     CTContactRequest -> pure $ chatCmdError "not supported"
+    CTContactConnection -> pure $ chatCmdError "not supported"
   APIDeleteChatItem cType chatId itemId mode -> withUser $ \user@User {userId} -> withChatLock $ case cType of
     CTDirect -> do
       (ct@Contact {localDisplayName = c}, CChatItem msgDir deletedItem@ChatItem {meta = CIMeta {itemSharedMsgId}, file}) <- withStore $ \st -> (,) <$> getContact st userId chatId <*> getDirectChatItem st userId chatId itemId
@@ -327,6 +335,7 @@ processChatCommand = \case
           pure $ CRChatItemDeleted (AChatItem SCTGroup msgDir (GroupChat gInfo) deletedItem) toCi
         (CIDMBroadcast, _, _) -> throwChatError CEInvalidChatItemDelete
     CTContactRequest -> pure $ chatCmdError "not supported"
+    CTContactConnection -> pure $ chatCmdError "not supported"
     where
       deleteFile :: MsgDirectionI d => UserId -> Maybe (CIFile d) -> m ()
       deleteFile userId file =
@@ -338,6 +347,7 @@ processChatCommand = \case
     CTDirect -> withStore (\st -> updateDirectChatItemsRead st chatId fromToIds) $> CRCmdOk
     CTGroup -> withStore (\st -> updateGroupChatItemsRead st chatId fromToIds) $> CRCmdOk
     CTContactRequest -> pure $ chatCmdError "not supported"
+    CTContactConnection -> pure $ chatCmdError "not supported"
   APIDeleteChat cType chatId -> withUser $ \User {userId} -> case cType of
     CTDirect -> do
       ct@Contact {localDisplayName} <- withStore $ \st -> getContact st userId chatId
@@ -355,6 +365,8 @@ processChatCommand = \case
             unsetActive $ ActiveC localDisplayName
             pure $ CRContactDeleted ct
         gs -> throwChatError $ CEContactGroups ct gs
+    CTContactConnection ->
+      CRContactConnectionDeleted <$> withStore (\st -> deletePendingContactConnection st userId chatId)
     CTGroup -> pure $ chatCmdError "not implemented"
     CTContactRequest -> pure $ chatCmdError "not supported"
   APIAcceptContact connReqId -> withUser $ \user@User {userId} -> withChatLock $ do
@@ -369,6 +381,10 @@ processChatCommand = \case
     pure $ CRContactRequestRejected cReq
   APIUpdateProfile profile -> withUser (`updateProfile` profile)
   APIParseMarkdown text -> pure . CRApiParsedMarkdown $ parseMaybeMarkdownList text
+  APIRegisterToken token -> CRNtfTokenStatus <$> withUser (\_ -> withAgent (`registerNtfToken` token))
+  APIVerifyToken token code nonce -> withUser $ \_ -> withAgent (\a -> verifyNtfToken a token code nonce) $> CRCmdOk
+  APIIntervalNofication token interval -> withUser $ \_ -> withAgent (\a -> enableNtfCron a token interval) $> CRCmdOk
+  APIDeleteToken token -> withUser $ \_ -> withAgent (`deleteNtfToken` token) $> CRCmdOk
   GetUserSMPServers -> CRUserSMPServers <$> withUser (\user -> withStore (`getSMPServers` user))
   SetUserSMPServers smpServers -> withUser $ \user -> withChatLock $ do
     withStore $ \st -> overwriteSMPServers st user smpServers
@@ -378,11 +394,13 @@ processChatCommand = \case
   Welcome -> withUser $ pure . CRWelcome
   AddContact -> withUser $ \User {userId} -> withChatLock . procCmd $ do
     (connId, cReq) <- withAgent (`createConnection` SCMInvitation)
-    withStore $ \st -> createDirectConnection st userId connId
+    conn <- withStore $ \st -> createDirectConnection st userId connId ConnNew
+    toView $ CRNewContactConnection conn
     pure $ CRInvitation cReq
   Connect (Just (ACR SCMInvitation cReq)) -> withUser $ \User {userId, profile} -> withChatLock . procCmd $ do
     connId <- withAgent $ \a -> joinConnection a cReq . directMessage $ XInfo profile
-    withStore $ \st -> createDirectConnection st userId connId
+    conn <- withStore $ \st -> createDirectConnection st userId connId ConnJoined
+    toView $ CRNewContactConnection conn
     pure CRSentConfirmation
   Connect (Just (ACR SCMContact cReq)) -> withUser $ \User {userId, profile} ->
     connectViaContact userId cReq profile
@@ -638,7 +656,8 @@ processChatCommand = \case
           let randomXContactId = XContactId <$> (asks idsDrg >>= liftIO . (`randomBytes` 16))
           xContactId <- maybe randomXContactId pure xContactId_
           connId <- withAgent $ \a -> joinConnection a cReq $ directMessage (XContact profile $ Just xContactId)
-          withStore $ \st -> createConnReqConnection st userId connId cReqHash xContactId
+          conn <- withStore $ \st -> createConnReqConnection st userId connId cReqHash xContactId
+          toView $ CRNewContactConnection conn
           pure CRSentInvitation
     contactMember :: Contact -> [GroupMember] -> Maybe GroupMember
     contactMember Contact {contactId} =
@@ -1880,7 +1899,7 @@ chatCommandP =
     <|> ("/user" <|> "/u") $> ShowActiveUser
     <|> "/_start" $> StartChat
     <|> "/_files_folder " *> (SetFilesFolder <$> filePath)
-    <|> "/_get chats" $> APIGetChats
+    <|> "/_get chats" *> (APIGetChats <$> (" pcc=on" $> True <|> " pcc=off" $> False <|> pure False))
     <|> "/_get chat " *> (APIGetChat <$> chatTypeP <*> A.decimal <* A.space <*> chatPaginationP)
     <|> "/_get items count=" *> (APIGetChatItems <$> A.decimal)
     <|> "/_send " *> (APISendMessage <$> chatTypeP <*> A.decimal <*> optional filePathTagged <*> optional quotedItemIdTagged <* A.space <*> msgContentP)
@@ -1893,6 +1912,10 @@ chatCommandP =
     <|> "/_reject " *> (APIRejectContact <$> A.decimal)
     <|> "/_profile " *> (APIUpdateProfile <$> jsonP)
     <|> "/_parse " *> (APIParseMarkdown . safeDecodeUtf8 <$> A.takeByteString)
+    <|> "/_ntf register " *> (APIRegisterToken <$> tokenP)
+    <|> "/_ntf verify " *> (APIVerifyToken <$> tokenP <* A.space <*> strP <* A.space <*> strP)
+    <|> "/_ntf interval " *> (APIIntervalNofication <$> tokenP <* A.space <*> A.decimal)
+    <|> "/_ntf delete " *> (APIDeleteToken <$> tokenP)
     <|> "/smp_servers default" $> SetUserSMPServers []
     <|> "/smp_servers " *> (SetUserSMPServers <$> smpServersP)
     <|> "/smp_servers" $> GetUserSMPServers
@@ -1949,7 +1972,7 @@ chatCommandP =
   where
     imagePrefix = (<>) <$> "data:" <*> ("image/png;base64," <|> "image/jpg;base64,")
     imageP = safeDecodeUtf8 <$> ((<>) <$> imagePrefix <*> (B64.encode <$> base64P))
-    chatTypeP = A.char '@' $> CTDirect <|> A.char '#' $> CTGroup
+    chatTypeP = A.char '@' $> CTDirect <|> A.char '#' $> CTGroup <|> A.char ':' $> CTContactConnection
     chatPaginationP =
       (CPLast <$ "count=" <*> A.decimal)
         <|> (CPAfter <$ "after=" <*> A.decimal <* A.space <* "count=" <*> A.decimal)
@@ -1958,6 +1981,10 @@ chatCommandP =
       "text " *> (MCText . safeDecodeUtf8 <$> A.takeByteString)
         <|> "json " *> jsonP
     ciDeleteMode = "broadcast" $> CIDMBroadcast <|> "internal" $> CIDMInternal
+    tokenP = "apns " *> (DeviceToken PPApns <$> hexStringP)
+    hexStringP =
+      A.takeWhile (\c -> (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f')) >>= \s ->
+        if even (B.length s) then pure s else fail "odd number of hex characters"
     displayName = safeDecodeUtf8 <$> (B.cons <$> A.satisfy refChar <*> A.takeTill (== ' '))
     sendMsgQuote msgDir = SendMessageQuote <$> displayName <* A.space <*> pure msgDir <*> quotedMsg <*> A.takeByteString
     quotedMsg = A.char '(' *> A.takeTill (== ')') <* A.char ')' <* optional A.space

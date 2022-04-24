@@ -33,6 +33,8 @@
   <string name="you_are_already_connected_to_vName_via_this_link">You are already connected to <xliff:g id="contactName" example="Alice">%1$s!</xliff:g> via this link.</string>
   <string name="invalid_connection_link">Invalid connection link</string>
   <string name="please_check_correct_link_and_maybe_ask_for_a_new_one">Please check that you used the correct link or ask your contact to send you another one.</string>
+  <string name="connection_error_auth">Connection error (AUTH)</string>
+  <string name="connection_error_auth_desc">Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.\nTo connect, please ask your contact to create another connection link and check that you have a stable network connection.</string>
   <string name="cannot_delete_contact">Can\'t delete contact!</string>
   <string name="contact_cannot_be_deleted_as_they_are_in_groups">Contact <xliff:g id="contactName" example="Jane Doe">%1$s!</xliff:g> cannot be deleted, they are a member of the group(s) <xliff:g id="groups" example="[team, chess club]">%2$s</xliff:g>.</string>
   <string name="icon_descr_instant_notifications">Instant notifications</string>
@@ -55,7 +57,7 @@
   <string name="delete_message__question">Delete message?</string>
   <string name="delete_message_cannot_be_undone_warning">Message will be deleted - this cannot be undone!</string>
   <string name="for_me_only">For me only</string>
-  <string name="for_everybody">For everybody</string>
+  <string name="for_everybody">For everyone</string>
 
   <!-- CIMetaView.kt -->
   <string name="icon_descr_edited">edited</string>
@@ -69,6 +71,13 @@
   <string name="welcome">Welcome!</string>
   <string name="this_text_is_available_in_settings">This text is available in settings</string>
   <string name="your_chats">Your chats</string>
+  <string name="contact_connection_pending">connecting…</string>
+
+  <!-- ComposeView.kt -->
+  <string name="attach">Attach</string>
+
+  <!-- Images -->
+  <string name="image_descr">Image</string>
 
   <!-- Chat Info Actions - ChatInfoView.kt -->
   <string name="delete_contact__question">Delete contact?</string>
@@ -115,11 +124,15 @@
   <string name="desktop_scan_QR_code_from_app_via_scan_QR_code">💻 desktop: scan displayed QR code from the app, via <b>Scan QR code</b>.</string>
   <string name="mobile_tap_open_in_mobile_app_then_tap_connect_in_app">📱 mobile: tap <b>Open in mobile app</b>, then tap <b>Connect</b> in the app.</string>
 
-  <!-- Contact Request Alert Dialogue - CharListNavLinkView.kt -->
+  <!-- Contact Request Alert Dialogue - ChatListNavLinkView.kt -->
   <string name="accept_connection_request__question">Accept connection request?</string>
   <string name="if_you_choose_to_reject_the_sender_will_not_be_notified">If you choose to reject sender will NOT be notified.</string>
   <string name="accept_contact_button">Accept</string>
   <string name="reject_contact_button">Reject</string>
+
+  <!-- Connection Pending Alert Dialogue - ChatListNavLinkView.kt -->
+  <string name="alert_title_contact_connection_pending">Contact is not connected yet!</string>
+  <string name="alert_text_connection_pending_they_need_to_be_online_can_delete_and_retry">Your contact needs to be online for the connection to complete.\nYou can cancel this connection and remove the contact (and try later with a new link).</string>
 
   <!-- Contact Request Information - ContactRequestView.kt -->
   <string name="contact_wants_to_connect_with_you">wants to connect to you!</string>

@@ -33,13 +33,12 @@ import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Chat.Util (eitherToMaybe, safeDecodeUtf8)
 import Simplex.Messaging.Agent.Protocol (AgentErrorType, AgentMsgId, MsgMeta (..))
-import Simplex.Messaging.Agent.Store.SQLite (fromTextField_)
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Parsers (dropPrefix, enumJSON, singleFieldJSON, sumTypeJSON)
+import Simplex.Messaging.Parsers (dropPrefix, enumJSON, fromTextField_, singleFieldJSON, sumTypeJSON)
 import Simplex.Messaging.Protocol (MsgBody)
 import Simplex.Messaging.Util ((<$?>))
 
-data ChatType = CTDirect | CTGroup | CTContactRequest
+data ChatType = CTDirect | CTGroup | CTContactRequest | CTContactConnection
   deriving (Show, Generic)
 
 instance ToJSON ChatType where
@@ -50,6 +49,7 @@ data ChatInfo (c :: ChatType) where
   DirectChat :: Contact -> ChatInfo 'CTDirect
   GroupChat :: GroupInfo -> ChatInfo 'CTGroup
   ContactRequest :: UserContactRequest -> ChatInfo 'CTContactRequest
+  ContactConnection :: PendingContactConnection -> ChatInfo 'CTContactConnection
 
 deriving instance Show (ChatInfo c)
 
@@ -57,6 +57,7 @@ data JSONChatInfo
   = JCInfoDirect {contact :: Contact}
   | JCInfoGroup {groupInfo :: GroupInfo}
   | JCInfoContactRequest {contactRequest :: UserContactRequest}
+  | JCInfoContactConnection {contactConnection :: PendingContactConnection}
   deriving (Generic)
 
 instance ToJSON JSONChatInfo where
@@ -72,6 +73,7 @@ jsonChatInfo = \case
   DirectChat c -> JCInfoDirect c
   GroupChat g -> JCInfoGroup g
   ContactRequest g -> JCInfoContactRequest g
+  ContactConnection c -> JCInfoContactConnection c
 
 data ChatItem (c :: ChatType) (d :: MsgDirection) = ChatItem
   { chatDir :: CIDirection c d,
@@ -520,12 +522,15 @@ data SChatType (c :: ChatType) where
   SCTDirect :: SChatType 'CTDirect
   SCTGroup :: SChatType 'CTGroup
   SCTContactRequest :: SChatType 'CTContactRequest
+  SCTContactConnection :: SChatType 'CTContactConnection
 
 deriving instance Show (SChatType c)
 
 instance TestEquality SChatType where
   testEquality SCTDirect SCTDirect = Just Refl
   testEquality SCTGroup SCTGroup = Just Refl
+  testEquality SCTContactRequest SCTContactRequest = Just Refl
+  testEquality SCTContactConnection SCTContactConnection = Just Refl
   testEquality _ _ = Nothing
 
 class ChatTypeI (c :: ChatType) where

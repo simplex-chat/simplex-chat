@@ -9,6 +9,7 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -17,8 +18,7 @@ import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
 import chat.simplex.app.model.Chat
 import chat.simplex.app.model.getTimestampText
-import chat.simplex.app.ui.theme.HighOrLowlight
-import chat.simplex.app.ui.theme.SimpleXTheme
+import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.chat.item.MarkdownText
 import chat.simplex.app.views.helpers.*
 
@@ -36,17 +36,21 @@ fun ChatPreviewView(chat: Chat) {
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
         style = MaterialTheme.typography.h3,
-        fontWeight = FontWeight.Bold
+        fontWeight = FontWeight.Bold,
+        color = if (chat.chatInfo.ready) Color.Unspecified else HighOrLowlight
       )
-
-      val ci = chat.chatItems.lastOrNull()
-      if (ci != null) {
-        MarkdownText(
-          ci.content,  ci.formattedText, ci.memberDisplayName,
-          metaText = ci.timestampText,
-          maxLines = 2,
-          overflow = TextOverflow.Ellipsis
-        )
+      if (chat.chatInfo.ready) {
+        val ci = chat.chatItems.lastOrNull()
+        if (ci != null) {
+          MarkdownText(
+            ci.text, ci.formattedText, ci.memberDisplayName,
+            metaText = ci.timestampText,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis
+          )
+        }
+      } else {
+        Text(generalGetString(R.string.contact_connection_pending), color = HighOrLowlight)
       }
     }
     val ts = chat.chatItems.lastOrNull()?.timestampText ?: getTimestampText(chat.chatInfo.createdAt)

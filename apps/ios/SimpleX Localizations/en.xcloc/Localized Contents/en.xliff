@@ -120,6 +120,11 @@
         <target>All your contacts will remain connected</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Attach" xml:space="preserve">
+        <source>Attach</source>
+        <target>Attach</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Cancel" xml:space="preserve">
         <source>Cancel</source>
         <target>Cancel</target>
@@ -139,6 +144,16 @@
         <source>Chats</source>
         <target>Chats</target>
         <note>back button to return to chats list</note>
+      </trans-unit>
+      <trans-unit id="Check messages" xml:space="preserve">
+        <source>Check messages</source>
+        <target>Check messages</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Checking new messages..." xml:space="preserve">
+        <source>Checking new messages...</source>
+        <target>Checking new messages...</target>
+        <note>notification</note>
       </trans-unit>
       <trans-unit id="Choose from library" xml:space="preserve">
         <source>Choose from library</source>
@@ -171,13 +186,13 @@
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connecting server…" xml:space="preserve">
-        <source>Connecting server…</source>
-        <target>Connecting server…</target>
+        <source>Connecting to server…</source>
+        <target>Connecting to server…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connecting server… (error: %@)" xml:space="preserve">
-        <source>Connecting server… (error: %@)</source>
-        <target>Connecting server… (error: %@)</target>
+        <source>Connecting to server… (error: %@)</source>
+        <target>Connecting to server… (error: %@)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connecting..." xml:space="preserve">
@@ -188,6 +203,11 @@
       <trans-unit id="Connection error" xml:space="preserve">
         <source>Connection error</source>
         <target>Connection error</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Connection error (AUTH)" xml:space="preserve">
+        <source>Connection error (AUTH)</source>
+        <target>Connection error (AUTH)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connection request" xml:space="preserve">
@@ -220,6 +240,11 @@
         <target>Contact is connected</target>
         <note>notification</note>
       </trans-unit>
+      <trans-unit id="Contact is not connected yet!" xml:space="preserve">
+        <source>Contact is not connected yet!</source>
+        <target>Contact is not connected yet!</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Copy" xml:space="preserve">
         <source>Copy</source>
         <target>Copy</target>
@@ -250,6 +275,11 @@
         <target>Delete</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Delete Contact" xml:space="preserve">
+        <source>Delete Contact</source>
+        <target>Delete Contact</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Delete address" xml:space="preserve">
         <source>Delete address</source>
         <target>Delete address</target>
@@ -270,6 +300,11 @@
         <target>Delete contact?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Delete for everyone" xml:space="preserve">
+        <source>Delete for everyone</source>
+        <target>Delete for everyone</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Delete for me" xml:space="preserve">
         <source>Delete for me</source>
         <target>Delete for me</target>
@@ -283,6 +318,11 @@
       <trans-unit id="Delete message?" xml:space="preserve">
         <source>Delete message?</source>
         <target>Delete message?</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Delete pending connection" xml:space="preserve">
+        <source>Delete pending connection</source>
+        <target>Delete pending connection</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Develop" xml:space="preserve">
@@ -300,9 +340,24 @@
         <target>Edit</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Enable notifications? (BETA)" xml:space="preserve">
+        <source>Enable notifications? (BETA)</source>
+        <target>Enable notifications? (BETA)</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Enter one SMP server per line:" xml:space="preserve">
         <source>Enter one SMP server per line:</source>
         <target>Enter one SMP server per line:</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Error deleting token" xml:space="preserve">
+        <source>Error deleting token</source>
+        <target>Error deleting token</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Error registering token" xml:space="preserve">
+        <source>Error registering token</source>
+        <target>Error registering token</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error saving SMP servers" xml:space="preserve">
@@ -403,7 +458,7 @@
       <trans-unit id="New message" xml:space="preserve">
         <source>New message</source>
         <target>New message</target>
-        <note>notifications</note>
+        <note>notification</note>
       </trans-unit>
       <trans-unit id="Notifications are disabled!" xml:space="preserve">
         <source>Notifications are disabled!</source>
@@ -537,6 +592,13 @@ to scan from the app</target>
         <target>The app can notify you when you receive messages or contact requests - please open settings to enable.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="The app can receive background notifications every 20 minutes to check the new messages.&#10;*Please note*: if you confirm, your device token will be sent to SimpleX Chat notifications server." xml:space="preserve">
+        <source>The app can receive background notifications every 20 minutes to check the new messages.
+*Please note*: if you confirm, your device token will be sent to SimpleX Chat notifications server.</source>
+        <target>The app can receive background notifications every 20 minutes to check the new messages.
+*Please note*: if you confirm, your device token will be sent to SimpleX Chat notifications server.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="The messaging and application platform 100% private by design!" xml:space="preserve">
         <source>The messaging and application platform 100% private by design!</source>
         <target>The messaging and application platform 100% private by design!</target>
@@ -575,6 +637,13 @@ to scan from the app</target>
       <trans-unit id="Unexpected error: %@" xml:space="preserve">
         <source>Unexpected error: %@</source>
         <target>Unexpected error: %@</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.&#10;To connect, please ask your contact to create another connection link and check that you have a stable network connection." xml:space="preserve">
+        <source>Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.
+To connect, please ask your contact to create another connection link and check that you have a stable network connection.</source>
+        <target>Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.
+To connect, please ask your contact to create another connection link and check that you have a stable network connection.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Use SimpleX Chat servers?" xml:space="preserve">
@@ -667,6 +736,13 @@ to scan from the app</target>
         <target>Your chats</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Your contact needs to be online for the connection to complete.&#10;You can cancel this connection and remove the contact (and try later with a new link)." xml:space="preserve">
+        <source>Your contact needs to be online for the connection to complete.
+You can cancel this connection and remove the contact (and try later with a new link).</source>
+        <target>Your contact needs to be online for the connection to complete.
+You can cancel this connection and remove the contact (and try later with a new link).</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Your profile is stored on your device and shared only with your contacts.&#10;SimpleX servers cannot see your profile." xml:space="preserve">
         <source>Your profile is stored on your device and shared only with your contacts.
 SimpleX servers cannot see your profile.</source>
@@ -734,20 +810,10 @@ SimpleX servers cannot see your profile.</target>
         <target>italic</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="receiving files is not supported yet" xml:space="preserve">
-        <source>receiving files is not supported yet</source>
-        <target>receiving files is not supported yet</target>
-        <note>to be removed</note>
-      </trans-unit>
       <trans-unit id="secret" xml:space="preserve">
         <source>secret</source>
         <target>secret</target>
         <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="sending files is not supported yet" xml:space="preserve">
-        <source>sending files is not supported yet</source>
-        <target>sending files is not supported yet</target>
-        <note>to be removed</note>
       </trans-unit>
       <trans-unit id="strike" xml:space="preserve">
         <source>strike</source>

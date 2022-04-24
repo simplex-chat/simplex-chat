@@ -32,9 +32,8 @@ import Database.SQLite.Simple.Ok (Ok (Ok))
 import Database.SQLite.Simple.ToField (ToField (..))
 import GHC.Generics (Generic)
 import Simplex.Messaging.Agent.Protocol (ConnId, ConnectionMode (..), ConnectionRequestUri, InvitationId)
-import Simplex.Messaging.Agent.Store.SQLite (fromTextField_)
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Parsers (dropPrefix, sumTypeJSON)
+import Simplex.Messaging.Parsers (dropPrefix, fromTextField_, sumTypeJSON)
 import Simplex.Messaging.Util ((<$?>))
 
 class IsContact a where
@@ -73,7 +72,7 @@ data Contact = Contact
     viaGroup :: Maybe Int64,
     createdAt :: UTCTime
   }
-  deriving (Eq, Show, Generic, FromJSON)
+  deriving (Eq, Show, Generic)
 
 instance ToJSON Contact where
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
@@ -100,9 +99,10 @@ data UserContactRequest = UserContactRequest
     profileId :: Int64,
     profile :: Profile,
     createdAt :: UTCTime,
+    updatedAt :: UTCTime,
     xContactId :: Maybe XContactId
   }
-  deriving (Eq, Show, Generic, FromJSON)
+  deriving (Eq, Show, Generic)
 
 instance ToJSON UserContactRequest where
   toEncoding = J.genericToEncoding J.defaultOptions
@@ -161,7 +161,7 @@ data GroupInfo = GroupInfo
     membership :: GroupMember,
     createdAt :: UTCTime
   }
-  deriving (Eq, Show, Generic, FromJSON)
+  deriving (Eq, Show, Generic)
 
 instance ToJSON GroupInfo where toEncoding = J.genericToEncoding J.defaultOptions
 
@@ -263,7 +263,7 @@ data GroupMember = GroupMember
     memberContactId :: Maybe Int64,
     activeConn :: Maybe Connection
   }
-  deriving (Eq, Show, Generic, FromJSON)
+  deriving (Eq, Show, Generic)
 
 instance ToJSON GroupMember where
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
@@ -306,9 +306,6 @@ instance ToJSON MemberId where
 
 data InvitedBy = IBContact {byContactId :: Int64} | IBUser | IBUnknown
   deriving (Eq, Show, Generic)
-
-instance FromJSON InvitedBy where
-  parseJSON = J.genericParseJSON . sumTypeJSON $ dropPrefix "IB"
 
 instance ToJSON InvitedBy where
   toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "IB"
@@ -398,25 +395,23 @@ data GroupMemberCategory
   | GCPostMember -- member who joined after the user to whom the user was introduced (user receives x.grp.mem.new announcing these members and then x.grp.mem.fwd with invitation from these members)
   deriving (Eq, Show)
 
-instance FromField GroupMemberCategory where fromField = fromTextField_ decodeText
+instance FromField GroupMemberCategory where fromField = fromTextField_ textDecode
 
-instance ToField GroupMemberCategory where toField = toField . encodeText
-
-instance FromJSON GroupMemberCategory where parseJSON = textParseJSON "GroupMemberCategory"
+instance ToField GroupMemberCategory where toField = toField . textEncode
 
 instance ToJSON GroupMemberCategory where
-  toJSON = J.String . encodeText
-  toEncoding = JE.text . encodeText
+  toJSON = J.String . textEncode
+  toEncoding = JE.text . textEncode
 
 instance TextEncoding GroupMemberCategory where
-  decodeText = \case
+  textDecode = \case
     "user" -> Just GCUserMember
     "invitee" -> Just GCInviteeMember
     "host" -> Just GCHostMember
     "pre" -> Just GCPreMember
     "post" -> Just GCPostMember
     _ -> Nothing
-  encodeText = \case
+  textEncode = \case
     GCUserMember -> "user"
     GCInviteeMember -> "invitee"
     GCHostMember -> "host"
@@ -437,15 +432,13 @@ data GroupMemberStatus
   | GSMemCreator -- user member that created the group (only GCUserMember)
   deriving (Eq, Show, Ord)
 
-instance FromField GroupMemberStatus where fromField = fromTextField_ decodeText
+instance FromField GroupMemberStatus where fromField = fromTextField_ textDecode
 
-instance ToField GroupMemberStatus where toField = toField . encodeText
-
-instance FromJSON GroupMemberStatus where parseJSON = textParseJSON "GroupMemberStatus"
+instance ToField GroupMemberStatus where toField = toField . textEncode
 
 instance ToJSON GroupMemberStatus where
-  toJSON = J.String . encodeText
-  toEncoding = JE.text . encodeText
+  toJSON = J.String . textEncode
+  toEncoding = JE.text . textEncode
 
 memberActive :: GroupMember -> Bool
 memberActive m = case memberStatus m of
@@ -476,7 +469,7 @@ memberCurrent m = case memberStatus m of
   GSMemCreator -> True
 
 instance TextEncoding GroupMemberStatus where
-  decodeText = \case
+  textDecode = \case
     "removed" -> Just GSMemRemoved
     "left" -> Just GSMemLeft
     "deleted" -> Just GSMemGroupDeleted
@@ -489,7 +482,7 @@ instance TextEncoding GroupMemberStatus where
     "complete" -> Just GSMemComplete
     "creator" -> Just GSMemCreator
     _ -> Nothing
-  encodeText = \case
+  textEncode = \case
     GSMemRemoved -> "removed"
     GSMemLeft -> "left"
     GSMemGroupDeleted -> "deleted"
@@ -537,7 +530,7 @@ data RcvFileTransfer = RcvFileTransfer
     cancelled :: Bool,
     grpMemberId :: Maybe Int64
   }
-  deriving (Eq, Show, Generic, FromJSON)
+  deriving (Eq, Show, Generic)
 
 instance ToJSON RcvFileTransfer where toEncoding = J.genericToEncoding J.defaultOptions
 
@@ -549,9 +542,6 @@ data RcvFileStatus
   | RFSCancelled RcvFileInfo
   deriving (Eq, Show, Generic)
 
-instance FromJSON RcvFileStatus where
-  parseJSON = J.genericParseJSON . sumTypeJSON $ dropPrefix "RFS"
-
 instance ToJSON RcvFileStatus where
   toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "RFS"
   toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "RFS"
@@ -561,7 +551,7 @@ data RcvFileInfo = RcvFileInfo
     connId :: Int64,
     agentConnId :: AgentConnId
   }
-  deriving (Eq, Show, Generic, FromJSON)
+  deriving (Eq, Show, Generic)
 
 instance ToJSON RcvFileInfo where toEncoding = J.genericToEncoding J.defaultOptions
 
@@ -572,9 +562,6 @@ instance StrEncoding AgentConnId where
   strEncode (AgentConnId connId) = strEncode connId
   strDecode s = AgentConnId <$> strDecode s
   strP = AgentConnId <$> strP
-
-instance FromJSON AgentConnId where
-  parseJSON = strParseJSON "AgentConnId"
 
 instance ToJSON AgentConnId where
   toJSON = strToJSON
@@ -591,9 +578,6 @@ instance StrEncoding AgentInvId where
   strEncode (AgentInvId connId) = strEncode connId
   strDecode s = AgentInvId <$> strDecode s
   strP = AgentInvId <$> strP
-
-instance FromJSON AgentInvId where
-  parseJSON = strParseJSON "AgentInvId"
 
 instance ToJSON AgentInvId where
   toJSON = strToJSON
@@ -633,25 +617,23 @@ fileTransferCancelled (FTRcv RcvFileTransfer {cancelled}) = cancelled
 
 data FileStatus = FSNew | FSAccepted | FSConnected | FSComplete | FSCancelled deriving (Eq, Ord, Show)
 
-instance FromField FileStatus where fromField = fromTextField_ decodeText
+instance FromField FileStatus where fromField = fromTextField_ textDecode
 
-instance ToField FileStatus where toField = toField . encodeText
-
-instance FromJSON FileStatus where parseJSON = textParseJSON "FileStatus"
+instance ToField FileStatus where toField = toField . textEncode
 
 instance ToJSON FileStatus where
-  toJSON = J.String . encodeText
-  toEncoding = JE.text . encodeText
+  toJSON = J.String . textEncode
+  toEncoding = JE.text . textEncode
 
 instance TextEncoding FileStatus where
-  decodeText = \case
+  textDecode = \case
     "new" -> Just FSNew
     "accepted" -> Just FSAccepted
     "connected" -> Just FSConnected
     "complete" -> Just FSComplete
     "cancelled" -> Just FSCancelled
     _ -> Nothing
-  encodeText = \case
+  textEncode = \case
     FSNew -> "new"
     FSAccepted -> "accepted"
     FSConnected -> "connected"
@@ -675,7 +657,7 @@ data Connection = Connection
     entityId :: Maybe Int64, -- contact, group member, file ID or user contact ID
     createdAt :: UTCTime
   }
-  deriving (Eq, Show, Generic, FromJSON)
+  deriving (Eq, Show, Generic)
 
 aConnId :: Connection -> ConnId
 aConnId Connection {agentConnId = AgentConnId cId} = cId
@@ -683,6 +665,18 @@ aConnId Connection {agentConnId = AgentConnId cId} = cId
 instance ToJSON Connection where
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
   toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
+
+data PendingContactConnection = PendingContactConnection
+  { pccConnId :: Int64,
+    pccAgentConnId :: AgentConnId,
+    pccConnStatus :: ConnStatus,
+    viaContactUri :: Bool,
+    createdAt :: UTCTime,
+    updatedAt :: UTCTime
+  }
+  deriving (Eq, Show, Generic)
+
+instance ToJSON PendingContactConnection where toEncoding = J.genericToEncoding J.defaultOptions
 
 data ConnStatus
   = -- | connection is created by initiating party with agent NEW command (createConnection)
@@ -699,20 +693,18 @@ data ConnStatus
     ConnReady
   | -- | connection deleted
     ConnDeleted
-  deriving (Eq, Show)
+  deriving (Eq, Show, Read)
 
-instance FromField ConnStatus where fromField = fromTextField_ decodeText
+instance FromField ConnStatus where fromField = fromTextField_ textDecode
 
-instance ToField ConnStatus where toField = toField . encodeText
-
-instance FromJSON ConnStatus where parseJSON = textParseJSON "ConnStatus"
+instance ToField ConnStatus where toField = toField . textEncode
 
 instance ToJSON ConnStatus where
-  toJSON = J.String . encodeText
-  toEncoding = JE.text . encodeText
+  toJSON = J.String . textEncode
+  toEncoding = JE.text . textEncode
 
 instance TextEncoding ConnStatus where
-  decodeText = \case
+  textDecode = \case
     "new" -> Just ConnNew
     "joined" -> Just ConnJoined
     "requested" -> Just ConnRequested
@@ -721,7 +713,7 @@ instance TextEncoding ConnStatus where
     "ready" -> Just ConnReady
     "deleted" -> Just ConnDeleted
     _ -> Nothing
-  encodeText = \case
+  textEncode = \case
     ConnNew -> "new"
     ConnJoined -> "joined"
     ConnRequested -> "requested"
@@ -733,25 +725,23 @@ instance TextEncoding ConnStatus where
 data ConnType = ConnContact | ConnMember | ConnSndFile | ConnRcvFile | ConnUserContact
   deriving (Eq, Show)
 
-instance FromField ConnType where fromField = fromTextField_ decodeText
+instance FromField ConnType where fromField = fromTextField_ textDecode
 
-instance ToField ConnType where toField = toField . encodeText
-
-instance FromJSON ConnType where parseJSON = textParseJSON "ConnType"
+instance ToField ConnType where toField = toField . textEncode
 
 instance ToJSON ConnType where
-  toJSON = J.String . encodeText
-  toEncoding = JE.text . encodeText
+  toJSON = J.String . textEncode
+  toEncoding = JE.text . textEncode
 
 instance TextEncoding ConnType where
-  decodeText = \case
+  textDecode = \case
     "contact" -> Just ConnContact
     "member" -> Just ConnMember
     "snd_file" -> Just ConnSndFile
     "rcv_file" -> Just ConnRcvFile
     "user_contact" -> Just ConnUserContact
     _ -> Nothing
-  encodeText = \case
+  textEncode = \case
     ConnContact -> "contact"
     ConnMember -> "member"
     ConnSndFile -> "snd_file"
@@ -812,9 +802,5 @@ data Notification = Notification {title :: Text, text :: Text}
 
 type JSONString = String
 
-class TextEncoding a where
-  encodeText :: a -> Text
-  decodeText :: Text -> Maybe a
-
 textParseJSON :: TextEncoding a => String -> J.Value -> JT.Parser a
-textParseJSON name = J.withText name $ maybe (fail $ "bad " <> name) pure . decodeText
+textParseJSON name = J.withText name $ maybe (fail $ "bad " <> name) pure . textDecode
