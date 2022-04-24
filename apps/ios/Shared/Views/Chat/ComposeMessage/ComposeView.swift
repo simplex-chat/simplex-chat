@@ -237,8 +237,8 @@ struct ComposeView: View {
                     switch (composeState.preview) {
                     case .noPreview:
                         mc = .text(composeState.message)
-                    case let .linkPreview(linkPreview: preview):
-                        mc = .link(text: composeState.message, preview: preview)
+                    case .linkPreview:
+                        mc = checkLinkPreview()
                     case let .imagePreview(imagePreview: image):
                         if let uiImage = chosenImage,
                            let savedFile = saveImage(uiImage) {
@@ -275,19 +275,9 @@ struct ComposeView: View {
     private func updateMsgContent(_ msgContent: MsgContent) -> MsgContent {
         switch msgContent {
         case .text:
-            return .text(composeState.message)
+            return checkLinkPreview()
         case .link:
-            switch (composeState.preview) {
-            case let .linkPreview(linkPreview: linkPreview):
-                if let url = parseMessage(composeState.message),
-                   url == linkPreview.uri {
-                    return .link(text: composeState.message, preview: linkPreview)
-                } else {
-                    return .text(composeState.message)
-                }
-            default:
-                return .text(composeState.message)
-            }
+            return checkLinkPreview()
         case .image(_, let image):
             return .image(text: composeState.message, image: image)
         case .unknown(let type, _):
@@ -372,6 +362,20 @@ struct ComposeView: View {
         prevLinkUrl = nil
         pendingLinkUrl = nil
         cancelledLinks = []
+    }
+
+    private func checkLinkPreview() -> MsgContent {
+        switch (composeState.preview) {
+        case let .linkPreview(linkPreview: linkPreview):
+            if let url = parseMessage(composeState.message),
+               url == linkPreview.uri {
+                return .link(text: composeState.message, preview: linkPreview)
+            } else {
+                return .text(composeState.message)
+            }
+        default:
+            return .text(composeState.message)
+        }
     }
 }
 
