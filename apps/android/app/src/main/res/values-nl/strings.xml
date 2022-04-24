@@ -60,21 +60,21 @@
     <string name="for_everybody">Voor iedereen</string>
 
     <!-- CIMetaView.kt -->
-    <string name="icon_descr_edited">edited</string>
-    <string name="icon_descr_sent_msg_status_sent">sent</string>
-    <string name="icon_descr_sent_msg_status_unauthorized_send">unauthorized send</string>
-    <string name="icon_descr_sent_msg_status_send_failed">send failed</string>
-    <string name="icon_descr_received_msg_status_unread">unread</string>
+    <string name="icon_descr_edited">Bewerkt</string>
+    <string name="icon_descr_sent_msg_status_sent">verzonden</string>
+    <string name="icon_descr_sent_msg_status_unauthorized_send">ongeautoriseerd verzenden</string>
+    <string name="icon_descr_sent_msg_status_send_failed">verzenden mislukt</string>
+    <string name="icon_descr_received_msg_status_unread">ongelezen</string>
 
     <!-- ChatListView.kt -->
-    <string name="personal_welcome">Welcome <xliff:g>%1$s</xliff:g>!</string>
-    <string name="welcome">Welcome!</string>
-    <string name="this_text_is_available_in_settings">This text is available in settings</string>
-    <string name="your_chats">Your chats</string>
-    <string name="contact_connection_pending">connecting…</string>
+    <string name="personal_welcome">Welkom <xliff:g>%1$s</xliff:g>!</string>
+    <string name="welcome">Welkom!</string>
+    <string name="this_text_is_available_in_settings">Deze tekst is beschikbaar in instellingen</string>
+    <string name="your_chats">Uw chats</string>
+    <string name="contact_connection_pending">Verbinden…</string>
 
     <!-- ComposeView.kt -->
-    <string name="attach">Attach</string>
+    <string name="attach">Toevoegen</string>
 
     <!-- Images -->
     <string name="image_descr">Image</string>
