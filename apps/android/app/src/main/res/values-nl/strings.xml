@@ -4,8 +4,8 @@
     <string name="thousand_abbreviation">k</string>
 
     <!-- Connect via Link - MainActivity.kt -->
-    <string name="connect_via_contact_link">Verbind via contact link?</string>
-    <string name="connect_via_invitation_link">Verbind via uitnodigings link?</string>
+    <string name="connect_via_contact_link">Verbinding maken via contactlink?</string>
+    <string name="connect_via_invitation_link">Verbinding maken via uitnodigingslink?</string>
     <string name="profile_will_be_sent_to_contact_sending_link">Je profiel wordt verzonden naar de contactpersoon waarvan je deze link hebt ontvangen.</string>
     <string name="connect_via_link_verb">Verbind</string>
 
