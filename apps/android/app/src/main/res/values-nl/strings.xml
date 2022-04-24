@@ -125,29 +125,29 @@
     <string name="mobile_tap_open_in_mobile_app_then_tap_connect_in_app">📱 mobile: tik <b>Openen in mobiele app</b>, dan tik <b>Connect</b> in de app.</string>
 
     <!-- Contact Request Alert Dialogue - ChatListNavLinkView.kt -->
-    <string name="accept_connection_request__question">Accept connection request?</string>
-    <string name="if_you_choose_to_reject_the_sender_will_not_be_notified">If you choose to reject sender will NOT be notified.</string>
-    <string name="accept_contact_button">Accept</string>
-    <string name="reject_contact_button">Reject</string>
+    <string name="accept_connection_request__question">Verbindingsverzoek accepteren?</string>
+    <string name="if_you_choose_to_reject_the_sender_will_not_be_notified">Als u ervoor kiest om de afzender te weigeren, wordt er GEEN melding van gemaakt.</string>
+    <string name="accept_contact_button">Accepteren</string>
+    <string name="reject_contact_button">Verwerpen</string>
 
     <!-- Connection Pending Alert Dialogue - ChatListNavLinkView.kt -->
-    <string name="alert_title_contact_connection_pending">Contact is not connected yet!</string>
-    <string name="alert_text_connection_pending_they_need_to_be_online_can_delete_and_retry">Your contact needs to be online for the connection to complete.\nYou can cancel this connection and remove the contact (and try later with a new link).</string>
+    <string name="alert_title_contact_connection_pending">Contact is nog niet verbonden!</string>
+    <string name="alert_text_connection_pending_they_need_to_be_online_can_delete_and_retry">Uw contactpersoon moet online zijn om de verbinding te voltooien.\nU kunt deze verbinding annuleren en de contact verwijderen (en probeer het later met een nieuwe link).</string>
 
     <!-- Contact Request Information - ContactRequestView.kt -->
-    <string name="contact_wants_to_connect_with_you">wants to connect to you!</string>
+    <string name="contact_wants_to_connect_with_you">wil contact met u maken!</string>
 
     <!-- Image Placeholder - ChatInfoImage.kt -->
     <string name="icon_descr_profile_image_placeholder">profile image placeholder</string>
-    <string name="image_descr_profile_image">profile image</string>
+    <string name="image_descr_profile_image">profielafbeelding</string>
 
     <!-- Content Descriptions -->
-    <string name="icon_descr_close_button">Close button</string>
-    <string name="image_descr_link_preview">link preview image</string>
-    <string name="icon_descr_cancel_link_preview">cancel link preview</string>
-    <string name="icon_descr_settings">Settings</string>
+    <string name="icon_descr_close_button">Knop Sluiten</string>
+    <string name="image_descr_link_preview">link voorbeeld afbeelding</string>
+    <string name="icon_descr_cancel_link_preview">voorbeeld van link annuleren</string>
+    <string name="icon_descr_settings">Instellingen</string>
     <string name="image_descr_qr_code">QR Code</string>
-    <string name="icon_descr_address"><xliff:g id="appName">SimpleX</xliff:g> Address</string>
+    <string name="icon_descr_address"><xliff:g id="appName">SimpleX</xliff:g> Adres</string>
     <string name="icon_descr_help">help</string>
     <string name="icon_descr_simplex_team"><xliff:g id="appName">SimpleX</xliff:g> Team</string>
     <string name="image_descr_simplex_logo"><xliff:g id="appName">SimpleX</xliff:g> Logo</string>
