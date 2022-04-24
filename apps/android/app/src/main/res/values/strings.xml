@@ -175,7 +175,7 @@
   <!-- PasteToConnect.kt -->
   <string name="connect_via_link">Connect via link</string>
   <string name="this_string_is_not_a_connection_link">This string is not a connection link!</string>
-  <string name="you_can_also_connect_by_clicking_the_link">You can also connect by clicking the link. If it opens in the browser, click <b>Open in mobile app</b> button</string>
+  <string name="you_can_also_connect_by_clicking_the_link">You can also connect by clicking the link. If it opens in the browser, click <b>Open in mobile app</b> button.</string>
 
   <!-- settings - SettingsView.kt -->
   <string name="your_settings">Your settings</string>
