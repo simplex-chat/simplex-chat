@@ -17,7 +17,6 @@ import com.google.zxing.*
 import com.google.zxing.common.HybridBinarizer
 import com.google.zxing.qrcode.QRCodeReader
 import java.nio.ByteBuffer
-import java.util.*
 import java.util.concurrent.*
 
 @Composable
@@ -58,12 +57,8 @@ fun QRCodeScanner(onBarcode: (String) -> Unit) {
         if (currentTimeStamp - lastAnalyzedTimeStamp >= TimeUnit.SECONDS.toMillis(1)) {
           lastAnalyzedTimeStamp = currentTimeStamp
           val bitmap = imageProxyToBinaryBitmap(imageProxy)
-          val decodeHints = EnumMap<DecodeHintType, Any>(
-            DecodeHintType::class.java
-          )
-          decodeHints[DecodeHintType.POSSIBLE_FORMATS] = BarcodeFormat.QR_CODE
           try {
-            val result = qrReader.decode(bitmap, decodeHints)
+            val result = qrReader.decode(bitmap)
             if (result.text != contactLink) {
               // Make sure link is new and not a repeat
               contactLink = result.text
