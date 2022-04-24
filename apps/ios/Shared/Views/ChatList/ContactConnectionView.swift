@@ -12,10 +12,13 @@ struct ContactConnectionView: View {
     var contactConnection: PendingContactConnection
     
     var body: some View {
-        return HStack(spacing: 8) {
-            Image(systemName: "person.crop.circle.fill")
+        let initiated = contactConnection.pccConnStatus.initiated ?? false
+        HStack(spacing: 8) {
+            Image(systemName: initiated ? "link.badge.plus" : "link")
                 .resizable()
                 .foregroundColor(Color(uiColor: .secondarySystemBackground))
+                .scaledToFill()
+                .frame(width: 48, height: 48)
                 .frame(width: 63, height: 63)
                 .padding(.leading, 4)
             VStack(alignment: .leading, spacing: 4) {

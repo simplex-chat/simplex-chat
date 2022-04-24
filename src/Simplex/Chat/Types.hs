@@ -676,6 +676,9 @@ data PendingContactConnection = PendingContactConnection
   }
   deriving (Eq, Show, Generic)
 
+aConnId' :: PendingContactConnection -> ConnId
+aConnId' PendingContactConnection {pccAgentConnId = AgentConnId cId} = cId
+
 instance ToJSON PendingContactConnection where toEncoding = J.genericToEncoding J.defaultOptions
 
 data ConnStatus

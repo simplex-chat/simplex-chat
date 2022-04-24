@@ -365,8 +365,11 @@ processChatCommand = \case
             unsetActive $ ActiveC localDisplayName
             pure $ CRContactDeleted ct
         gs -> throwChatError $ CEContactGroups ct gs
-    CTContactConnection ->
-      CRContactConnectionDeleted <$> withStore (\st -> deletePendingContactConnection st userId chatId)
+    CTContactConnection -> withChatLock . procCmd $ do
+      conn <- withStore $ \st -> getPendingContactConnection st userId chatId
+      withAgent $ \a -> deleteConnection a $ aConnId' conn
+      withStore $ \st -> deletePendingContactConnection st userId chatId
+      pure $ CRContactConnectionDeleted conn
     CTGroup -> pure $ chatCmdError "not implemented"
     CTContactRequest -> pure $ chatCmdError "not supported"
   APIAcceptContact connReqId -> withUser $ \user@User {userId} -> withChatLock $ do

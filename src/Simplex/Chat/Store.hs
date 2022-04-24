@@ -151,6 +151,7 @@ module Simplex.Chat.Store
     updateGroupChatItemsRead,
     getSMPServers,
     overwriteSMPServers,
+    getPendingContactConnection,
     deletePendingContactConnection,
   )
 where
@@ -2704,21 +2705,39 @@ getContactConnectionChatPreviews_ db User {userId} _ =
           stats = ChatStats {unreadCount = 0, minUnreadItemId = 0}
        in AChat SCTContactConnection $ Chat (ContactConnection conn) [] stats
 
-deletePendingContactConnection :: StoreMonad m => SQLiteStore -> UserId -> Int64 -> m PendingContactConnection
+getPendingContactConnection :: StoreMonad m => SQLiteStore -> UserId -> Int64 -> m PendingContactConnection
+getPendingContactConnection st userId connId =
+  liftIOEither . withTransaction st $ \db -> do
+    firstRow toPendingContactConnection (SEPendingConnectionNotFound connId) $
+      DB.query
+        db
+        [sql|
+          SELECT connection_id, agent_conn_id, conn_status, via_contact_uri_hash, created_at, updated_at
+          FROM connections
+          WHERE user_id = ?
+            AND connection_id = ?
+            AND conn_type = ?
+            AND contact_id IS NULL
+            AND conn_level = 0
+            AND via_contact IS NULL
+        |]
+        (userId, connId, ConnContact)
+
+deletePendingContactConnection :: MonadUnliftIO m => SQLiteStore -> UserId -> Int64 -> m ()
 deletePendingContactConnection st userId connId =
-  liftIOEither . withTransaction st $ \db -> runExceptT $ do
-    conn <-
-      ExceptT . firstRow toPendingContactConnection (SEPendingConnectionNotFound connId) $
-        DB.query
-          db
-          [sql|
-            SELECT connection_id, agent_conn_id, conn_status, via_contact_uri_hash, created_at, updated_at
-            FROM connections
-            WHERE user_id = ? AND conn_type = ? AND contact_id IS NULL AND conn_level = 0 AND via_contact IS NULL
-          |]
-          (userId, ConnContact)
-    liftIO $ DB.execute db "DELETE FROM connections WHERE connection_id = ?" (Only connId)
-    pure conn
+  liftIO . withTransaction st $ \db ->
+    DB.execute
+      db
+      [sql|
+        DELETE FROM connections
+          WHERE user_id = ?
+            AND connection_id = ?
+            AND conn_type = ?
+            AND contact_id IS NULL
+            AND conn_level = 0
+            AND via_contact IS NULL
+      |]
+      (userId, connId, ConnContact)
 
 toPendingContactConnection :: (Int64, ConnId, ConnStatus, Maybe ByteString, UTCTime, UTCTime) -> PendingContactConnection
 toPendingContactConnection (pccConnId, acId, pccConnStatus, connReqHash, createdAt, updatedAt) =

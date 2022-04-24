@@ -54,9 +54,16 @@ final class ChatModel: ObservableObject {
         }
     }
 
+    func updateContactConnection(_ contactConnection: PendingContactConnection) {
+        updateChat(.contactConnection(contactConnection: contactConnection))
+    }
+
     func updateContact(_ contact: Contact) {
-        let cInfo = ChatInfo.direct(contact: contact)
-        if hasChat(contact.id) {
+        updateChat(.direct(contact: contact))
+    }
+
+    private func updateChat(_ cInfo: ChatInfo) {
+        if hasChat(cInfo.id) {
             updateChatInfo(cInfo)
         } else {
             addChat(Chat(chatInfo: cInfo, chatItems: []))
@@ -487,9 +494,15 @@ struct ContactSubStatus: Decodable {
 }
 
 struct Connection: Decodable {
+    var connId: Int64
     var connStatus: ConnStatus
 
-    static let sampleData = Connection(connStatus: .ready)
+    var id: ChatId { get { ":\(connId)" } }
+
+    static let sampleData = Connection(
+        connId: 1,
+        connStatus: .ready
+    )
 }
 
 struct UserContactRequest: Decodable, NamedChat {
@@ -534,7 +547,7 @@ struct PendingContactConnection: Decodable, NamedChat {
             if let initiated = pccConnStatus.initiated {
                 return initiated
                 ? NSLocalizedString("invited to connect", comment: "chat list item title")
-                : NSLocalizedString("connecting ...", comment: "chat list item title")
+                : NSLocalizedString("connecting…", comment: "chat list item title")
             } else {
                 // this should not be in the list
                 return NSLocalizedString("connection established", comment: "chat list item title (it should not be shown")
@@ -550,8 +563,8 @@ struct PendingContactConnection: Decodable, NamedChat {
                 return initiated
                 ? NSLocalizedString("you shared one-time link", comment: "chat list item description")
                 : viaContactUri
-                ? NSLocalizedString("via contact address link...", comment: "chat list item description")
-                : NSLocalizedString("via one-time link...", comment: "chat list item description")
+                ? NSLocalizedString("via contact address link", comment: "chat list item description")
+                : NSLocalizedString("via one-time link", comment: "chat list item description")
             } else {
                 return ""
             }
