@@ -6,43 +6,43 @@
     <!-- Connect via Link - MainActivity.kt -->
     <string name="connect_via_contact_link">Verbind via contact link?</string>
     <string name="connect_via_invitation_link">Verbind via uitnodigings link?</string>
-    <string name="profile_will_be_sent_to_contact_sending_link">Your profile will be sent to the contact that you received this link from.</string>
-    <string name="connect_via_link_verb">Connect</string>
+    <string name="profile_will_be_sent_to_contact_sending_link">Je profiel wordt verzonden naar de contactpersoon waarvan je deze link hebt ontvangen.</string>
+    <string name="connect_via_link_verb">Verbind</string>
 
     <!-- Server info - ChatModel.kt -->
-    <string name="server_connected">Server connected</string>
-    <string name="server_connecting">Connecting server…</string>
-    <string name="connected_to_server_to_receive_messages_from_contact">You are connected to the server used to receive messages from this contact.</string>
-    <string name="trying_to_connect_to_server_to_receive_messages_with_error">Trying to connect to the server used to receive messages from this contact (error: <xliff:g id="errorMsg">%1$s</xliff:g>).</string>
-    <string name="trying_to_connect_to_server_to_receive_messages">Trying to connect to the server used to receive messages from this contact.</string>
+    <string name="server_connected">Server verbonden</string>
+    <string name="server_connecting">Verbinden met server…</string>
+    <string name="connected_to_server_to_receive_messages_from_contact">U bent verbonden met de server die wordt gebruikt om berichten van deze contactpersoon te ontvangen.</string>
+    <string name="trying_to_connect_to_server_to_receive_messages_with_error">Verbinding proberen te maken met de server die wordt gebruikt om berichten van deze contactpersoon te ontvangen (error: <xliff:g id="errorMsg">%1$s</xliff:g>).</string>
+    <string name="trying_to_connect_to_server_to_receive_messages">Verbinding proberen te maken met de server die wordt gebruikt om berichten van deze contactpersoon te ontvangen.</string>
 
     <!-- Item Content - ChatModel.kt -->
-    <string name="deleted_description">deleted</string>
-    <string name="sending_files_not_yet_supported">sending files is not supported yet</string>
-    <string name="receiving_files_not_yet_supported">receiving files is not supported yet</string>
-    <string name="sender_you_pronoun">you</string>
-    <string name="unknown_message_format">unknown message format</string>
-    <string name="invalid_message_format">invalid message format</string>
+    <string name="deleted_description">Verwijderd</string>
+    <string name="sending_files_not_yet_supported">het verzenden van bestanden wordt nog niet ondersteund</string>
+    <string name="receiving_files_not_yet_supported">het ontvangen van bestanden wordt nog niet ondersteund</string>
+    <string name="sender_you_pronoun">Jij</string>
+    <string name="unknown_message_format">onbekende berichtindeling</string>
+    <string name="invalid_message_format">ongeldig berichtformaat</string>
 
     <!-- SMP Server Information - SimpleXAPI.kt -->
-    <string name="error_saving_smp_servers">Error saving SMP servers</string>
-    <string name="ensure_smp_server_address_are_correct_format_and_unique">Make sure SMP server addresses are in correct format, line separated and are not duplicated.</string>
+    <string name="error_saving_smp_servers">Fout bij het opslaan van SMP-servers</string>
+    <string name="ensure_smp_server_address_are_correct_format_and_unique">Zorg ervoor dat SMP-serveradressen de juiste indeling hebben, gescheiden zijn van regels en niet worden gedupliceerd.</string>
 
     <!-- API Error Responses - SimpleXAPI.kt -->
-    <string name="contact_already_exists">Contact already exists</string>
-    <string name="you_are_already_connected_to_vName_via_this_link">You are already connected to <xliff:g id="contactName" example="Alice">%1$s!</xliff:g> via this link.</string>
-    <string name="invalid_connection_link">Invalid connection link</string>
-    <string name="please_check_correct_link_and_maybe_ask_for_a_new_one">Please check that you used the correct link or ask your contact to send you another one.</string>
-    <string name="connection_error_auth">Connection error (AUTH)</string>
-    <string name="connection_error_auth_desc">Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.\nTo connect, please ask your contact to create another connection link and check that you have a stable network connection.</string>
-    <string name="cannot_delete_contact">Can\'t delete contact!</string>
-    <string name="contact_cannot_be_deleted_as_they_are_in_groups">Contact <xliff:g id="contactName" example="Jane Doe">%1$s!</xliff:g> cannot be deleted, they are a member of the group(s) <xliff:g id="groups" example="[team, chess club]">%2$s</xliff:g>.</string>
-    <string name="icon_descr_instant_notifications">Instant notifications</string>
+    <string name="contact_already_exists">Contact bestaat al</string>
+    <string name="you_are_already_connected_to_vName_via_this_link">U bent al verbonden met <xliff:g id="contactName" example="Alice">%1$s!</xliff:g> via deze link.</string>
+    <string name="invalid_connection_link">Ongeldige verbindingslink</string>
+    <string name="please_check_correct_link_and_maybe_ask_for_a_new_one">Controleer of je de juiste link hebt gebruikt of vraag je contactpersoon om je een andere link te sturen.</string>
+    <string name="connection_error_auth">Verbindingsfout (AUTH)</string>
+    <string name="connection_error_auth_desc">Tenzij uw contactpersoon de verbinding heeft verwijderd of deze koppeling al is gebruikt, kan het een bug zijn - meld het.\nOm verbinding te maken, vraagt u uw contactpersoon om een andere verbindingskoppeling te maken en controleert u of u een stabiele netwerkverbinding hebt.</string>
+    <string name="cannot_delete_contact">Kan contact niet verwijderen!</string>
+    <string name="contact_cannot_be_deleted_as_they_are_in_groups">Contact <xliff:g id="contactName" example="Jane Doe">%1$s!</xliff:g> kunnen niet worden verwijderd, ze zijn lid van de groep(en) <xliff:g id="groups" example="[team, chess club]">%2$s</xliff:g>.</string>
+    <string name="icon_descr_instant_notifications">Directe meldingen</string>
 
     <!-- background service notice - SimpleXAPI.kt -->
-    <string name="private_instant_notifications">Private instant notifications!</string>
-    <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery">To preserve your privacy, instead of push notifications the app has a <b><xliff:g id="appName">SimpleX</xliff:g> background service</b> – it uses a few percent of the battery per day.</string>
-    <string name="it_can_disabled_via_settings_notifications_still_shown"><b>It can be disabled via settings</b> – notifications will still be shown while the app is running.</string>
+    <string name="private_instant_notifications">Privé instant notificaties!</string>
+    <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery">Om je privacy te beschermen, heeft de app in plaats van pushmeldingen een <b><xliff:g id="appName">SimpleX</xliff:g> achtergrond service</b> – het gebruikt een paar procent van de batterij per dag.</string>
+    <string name="it_can_disabled_via_settings_notifications_still_shown"><b>Het kan worden uitgeschakeld via instellingen</b> – meldingen worden nog steeds weergegeven terwijl de app actief is.</string>
 
     <!-- SimpleX Chat foreground Service -->
     <string name="simplex_service_notification_title"><xliff:g id="appNameFull">SimpleX Chat</xliff:g> service</string>
