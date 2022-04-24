@@ -34,17 +34,29 @@ struct PasteToConnectView: View {
                     RoundedRectangle(cornerRadius: 10)
                         .strokeBorder(.secondary, lineWidth: 0.3, antialiased: true)
                 )
+
             HStack(spacing: 20) {
-                Button {
-                    connectionLink = UIPasteboard.general.string ?? ""
-                } label: {
-                    Label("Paste", systemImage: "doc.on.clipboard")
+                if connectionLink == "" {
+                    Button {
+                        connectionLink = UIPasteboard.general.string ?? ""
+                    } label: {
+                        Label("Paste", systemImage: "doc.on.clipboard")
+                    }
+                } else {
+                    Button {
+                        connectionLink = ""
+                    } label: {
+                        Label("Clear", systemImage: "multiply")
+                    }
+
                 }
+                Spacer()
                 Button(action: connect, label: {
                     Label("Connect", systemImage: "link")
                 })
                 .disabled(connectionLink == "" || connectionLink.trimmingCharacters(in: .whitespaces).firstIndex(of: " ") != nil)
             }
+            .frame(height: 48)
             .padding(.bottom)
 
             Text("You can also connect by clicking the link. If it opens in the browser, click **Open in mobile app** button")

@@ -3,6 +3,7 @@ package chat.simplex.app.views.newchat
 import android.Manifest
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
@@ -44,51 +45,60 @@ fun NewChatSheet(chatModel: ChatModel, newChatCtrl: ScaffoldController) {
     },
     pasteLink = {
       newChatCtrl.collapse()
-      ModalManager.shared.showModal { PasteToConnectView(chatModel) }
+      ModalManager.shared.showCustomModal { close -> PasteToConnectView(chatModel, close) }
     }
   )
 }
 
 @Composable
 fun NewChatSheetLayout(addContact: () -> Unit, scanCode: () -> Unit, pasteLink: () -> Unit) {
-  Row(
-    Modifier
-      .fillMaxWidth()
-      .padding(horizontal = 8.dp, vertical = 48.dp),
-    horizontalArrangement = Arrangement.SpaceEvenly
+  Column(
+    horizontalAlignment = Alignment.CenterHorizontally
   ) {
-    Box(
+    Text(
+      generalGetString(R.string.add_contact_to_start_new_chat),
+      modifier = Modifier.padding(horizontal = 8.dp).padding(top = 32.dp)
+    )
+    Row(
       Modifier
-        .weight(1F)
-        .fillMaxWidth()) {
-      ActionButton(
-        generalGetString(R.string.add_contact),
-        generalGetString(R.string.create_QR_code_or_link__bracketed__multiline),
-        Icons.Outlined.PersonAdd,
-        click = addContact
-      )
-    }
-    Box(
-      Modifier
-        .weight(1F)
-        .fillMaxWidth()) {
-      ActionButton(
-        generalGetString(R.string.scan_QR_code),
-        generalGetString(R.string.in_person_or_in_video_call__bracketed),
-        Icons.Outlined.QrCode,
-        click = scanCode
-      )
-    }
-    Box(
-      Modifier
-        .weight(1F)
-        .fillMaxWidth()) {
-      ActionButton(
-        generalGetString(R.string.paste_connection_link),
-        generalGetString(R.string.paste_received_link_from_clipboard),
-        Icons.Outlined.ContentPaste,
-        click = pasteLink
-      )
+        .fillMaxWidth()
+        .padding(horizontal = 8.dp)
+        .padding(top = 24.dp, bottom = 40.dp),
+      horizontalArrangement = Arrangement.SpaceEvenly
+    ) {
+      Box(
+        Modifier
+          .weight(1F)
+          .fillMaxWidth()) {
+        ActionButton(
+          generalGetString(R.string.create_one_time_link),
+          generalGetString(R.string.to_share_with_your_contact),
+          Icons.Outlined.PersonAdd,
+          click = addContact
+        )
+      }
+      Box(
+        Modifier
+          .weight(1F)
+          .fillMaxWidth()) {
+        ActionButton(
+          generalGetString(R.string.paste_received_link),
+          generalGetString(R.string.paste_received_link_from_clipboard),
+          Icons.Outlined.Link,
+          click = pasteLink
+        )
+      }
+      Box(
+        Modifier
+          .weight(1F)
+          .fillMaxWidth()) {
+        ActionButton(
+          generalGetString(R.string.scan_QR_code),
+          generalGetString(R.string.in_person_or_in_video_call__bracketed),
+          Icons.Outlined.QrCode,
+          click = scanCode
+        )
+      }
     }
   }
 }
@@ -96,33 +106,35 @@ fun NewChatSheetLayout(addContact: () -> Unit, scanCode: () -> Unit, pasteLink: 
 @Composable
 fun ActionButton(text: String?, comment: String?, icon: ImageVector, disabled: Boolean = false,
                  click: () -> Unit = {}) {
-  Column(
-    Modifier
-      .clickable(onClick = click)
-      .padding(horizontal = 8.dp),
-    horizontalAlignment = Alignment.CenterHorizontally
-  ) {
-    val tint = if (disabled) HighOrLowlight else MaterialTheme.colors.primary
-    Icon(icon, text,
-      tint = tint,
-      modifier = Modifier
-        .size(40.dp)
-        .padding(bottom = 8.dp))
-    if (text != null) {
-      Text(
-        text,
-        textAlign = TextAlign.Center,
-        fontWeight = FontWeight.Bold,
-        color = tint,
-        modifier = Modifier.padding(bottom = 4.dp)
-      )
-    }
-    if (comment != null) {
-      Text(
-        comment,
-        textAlign = TextAlign.Center,
-        style = MaterialTheme.typography.body2
-      )
+  Surface(shape = RoundedCornerShape(18.dp)) {
+    Column(
+      Modifier
+        .clickable(onClick = click)
+        .padding(8.dp),
+      horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+      val tint = if (disabled) HighOrLowlight else MaterialTheme.colors.primary
+      Icon(icon, text,
+        tint = tint,
+        modifier = Modifier
+          .size(40.dp)
+          .padding(bottom = 8.dp))
+      if (text != null) {
+        Text(
+          text,
+          textAlign = TextAlign.Center,
+          fontWeight = FontWeight.Bold,
+          color = tint,
+          modifier = Modifier.padding(bottom = 4.dp)
+        )
+      }
+      if (comment != null) {
+        Text(
+          comment,
+          textAlign = TextAlign.Center,
+          style = MaterialTheme.typography.body2
+        )
+      }
     }
   }
 }

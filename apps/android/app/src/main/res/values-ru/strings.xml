@@ -98,12 +98,13 @@
     <string name="ok">Oк</string>
     <string name="no_details">нет описания</string>
     <string name="add_contact">Добавить контакт</string>
-    <string name="scan_QR_code">Сканировать QR код</string>
 
     <!-- NewChatSheet -->
-    <string name="create_QR_code_or_link__bracketed__multiline">(создать QR код или ссылку)</string>
+    <string name="create_one_time_link">Создать одноразовую ссылку</string>
+    <string name="paste_received_link">Вставить полученную ссылку</string>
+    <string name="scan_QR_code">Сканировать QR код</string>
+    <string name="to_share_with_your_contact">(чтобы отправить вашему контакту)</string>
     <string name="in_person_or_in_video_call__bracketed">(при встрече или через видеозвонок)</string>
-    <string name="paste_connection_link">TODO</string>
     <string name="paste_received_link_from_clipboard">TODO</string>
 
     <!-- GetImageView -->

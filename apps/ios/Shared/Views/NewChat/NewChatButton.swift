@@ -19,10 +19,10 @@ struct NewChatButton: View {
         Button { showAddChat = true } label: {
             Image(systemName: "person.crop.circle.badge.plus")
         }
-        .confirmationDialog("Start new chat", isPresented: $showAddChat, titleVisibility: .visible) {
-            Button("Add contact") { addContactAction() }
+        .confirmationDialog("Add contact to start a new chat", isPresented: $showAddChat, titleVisibility: .visible) {
+            Button("Create link / QR code") { addContactAction() }
+            Button("Paste received link") { pasteToConnect = true }
             Button("Scan QR code") { scanToConnect = true }
-            Button("Connect via link") { pasteToConnect = true }
         }
         .sheet(isPresented: $addContact, content: {
             AddContactView(connReqInvitation: connReqInvitation)
