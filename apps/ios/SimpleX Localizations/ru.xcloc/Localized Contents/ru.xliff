@@ -115,6 +115,11 @@
         <target>Добавить контакт</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Add contact to start a new chat" xml:space="preserve">
+        <source>Add contact to start a new chat</source>
+        <target>Добавьте контакт, чтобы начать разговор</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="All your contacts will remain connected" xml:space="preserve">
         <source>All your contacts will remain connected</source>
         <target>Все контакты, которые соединились через этот адрес, сохранятся.</target>
@@ -150,9 +155,19 @@
         <target>Проверять сообщения</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Checking new messages..." xml:space="preserve">
+        <source>Checking new messages...</source>
+        <target>Проверяются новые сообщения...</target>
+        <note>notification</note>
+      </trans-unit>
       <trans-unit id="Choose from library" xml:space="preserve">
         <source>Choose from library</source>
         <target>Выбрать из библиотеки</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Clear" xml:space="preserve">
+        <source>Clear</source>
+        <target>Очистить</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Configure SMP servers" xml:space="preserve">
@@ -175,9 +190,14 @@
         <target>Соединиться через ссылку-контакт?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connect via invitation link?" xml:space="preserve">
-        <source>Connect via invitation link?</source>
-        <target>Соединиться через ссылку-приглашение?</target>
+      <trans-unit id="Connect via link" xml:space="preserve">
+        <source>Connect via link</source>
+        <target>Соединиться через ссылку</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Connect via one-time link?" xml:space="preserve">
+        <source>Connect via one-time link?</source>
+        <target>Соединиться через одноразовую ссылку?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connecting server…" xml:space="preserve">
@@ -255,9 +275,9 @@
         <target>Создать адрес</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Create group" xml:space="preserve">
-        <source>Create group</source>
-        <target>Создать группу</target>
+      <trans-unit id="Create link / QR code" xml:space="preserve">
+        <source>Create link / QR code</source>
+        <target>Создать ссылку / QR код</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Create profile" xml:space="preserve">
@@ -453,7 +473,7 @@
       <trans-unit id="New message" xml:space="preserve">
         <source>New message</source>
         <target>Новое сообщение</target>
-        <note>notifications</note>
+        <note>notification</note>
       </trans-unit>
       <trans-unit id="Notifications are disabled!" xml:space="preserve">
         <source>Notifications are disabled!</source>
@@ -463,6 +483,21 @@
       <trans-unit id="Open Settings" xml:space="preserve">
         <source>Open Settings</source>
         <target>Открыть Настройки</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Paste" xml:space="preserve">
+        <source>Paste</source>
+        <target>Вставить</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Paste received link" xml:space="preserve">
+        <source>Paste received link</source>
+        <target>Вставить полученную ссылку</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Paste the link you received into the box below to connect with your contact." xml:space="preserve">
+        <source>Paste the link you received into the box below to connect with your contact.</source>
+        <target>Чтобы соединиться, вставьте в это поле ссылку, полученную от вашего контакта.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Please check that you used the correct link or ask your contact to send you another one." xml:space="preserve">
@@ -559,11 +594,6 @@
         <source>Show QR code to your contact
 to scan from the app</source>
         <target>Покажите QR код вашему контакту для сканирования в приложении</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Start new chat" xml:space="preserve">
-        <source>Start new chat</source>
-        <target>Начать новый разговор</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Take picture" xml:space="preserve">
@@ -668,6 +698,11 @@ To connect, please ask your contact to create another connection link and check 
       <trans-unit id="You are connected to the server used to receive messages from this contact." xml:space="preserve">
         <source>You are connected to the server used to receive messages from this contact.</source>
         <target>Установлено соединение с сервером, через который вы получаете сообщения от этого контакта.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="You can also connect by clicking the link. If it opens in the browser, click **Open in mobile app** button" xml:space="preserve">
+        <source>You can also connect by clicking the link. If it opens in the browser, click **Open in mobile app** button</source>
+        <target>Вы также можете соединиться, открыв ссылку там, где вы её получили. Если ссылка откроется в браузере, нажмите кнопку **Open in mobile app**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can now send messages to %@" xml:space="preserve">

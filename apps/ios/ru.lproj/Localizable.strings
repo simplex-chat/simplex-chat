@@ -86,6 +86,9 @@
 "Add contact" = "Добавить контакт";
 
 /* No comment provided by engineer. */
+"Add contact to start a new chat" = "Добавьте контакт, чтобы начать разговор";
+
+/* No comment provided by engineer. */
 "All your contacts will remain connected" = "Все контакты, которые соединились через этот адрес, сохранятся.";
 
 /* No comment provided by engineer. */
@@ -109,8 +112,14 @@
 /* No comment provided by engineer. */
 "Check messages" = "Проверять сообщения";
 
+/* notification */
+"Checking new messages..." = "Проверяются новые сообщения...";
+
 /* No comment provided by engineer. */
 "Choose from library" = "Выбрать из библиотеки";
+
+/* No comment provided by engineer. */
+"Clear" = "Очистить";
 
 /* No comment provided by engineer. */
 "colored" = "цвет";
@@ -131,7 +140,10 @@
 "Connect via contact link?" = "Соединиться через ссылку-контакт?";
 
 /* No comment provided by engineer. */
-"Connect via invitation link?" = "Соединиться через ссылку-приглашение?";
+"Connect via link" = "Соединиться через ссылку";
+
+/* No comment provided by engineer. */
+"Connect via one-time link?" = "Соединиться через одноразовую ссылку?";
 
 /* No comment provided by engineer. */
 "Connecting server…" = "Устанавливается соединение с сервером…";
@@ -179,7 +191,7 @@
 "Create address" = "Создать адрес";
 
 /* No comment provided by engineer. */
-"Create group" = "Создать группу";
+"Create link / QR code" = "Создать ссылку / QR код";
 
 /* No comment provided by engineer. */
 "Create profile" = "Создать профиль";
@@ -301,7 +313,7 @@
 /* notification */
 "New contact request" = "Новый запрос на соединение";
 
-/* notifications */
+/* notification */
 "New message" = "Новое сообщение";
 
 /* No comment provided by engineer. */
@@ -309,6 +321,15 @@
 
 /* No comment provided by engineer. */
 "Open Settings" = "Открыть Настройки";
+
+/* No comment provided by engineer. */
+"Paste" = "Вставить";
+
+/* No comment provided by engineer. */
+"Paste received link" = "Вставить полученную ссылку";
+
+/* No comment provided by engineer. */
+"Paste the link you received into the box below to connect with your contact." = "Чтобы соединиться, вставьте в это поле ссылку, полученную от вашего контакта.";
 
 /* No comment provided by engineer. */
 "Please check that you used the correct link or ask your contact to send you another one." = "Пожалуйста, проверьте, что вы использовали правильную ссылку или попросите, чтобы ваш контакт отправил вам другую ссылку.";
@@ -369,9 +390,6 @@
 
 /* No comment provided by engineer. */
 "SMP servers" = "SMP серверы";
-
-/* No comment provided by engineer. */
-"Start new chat" = "Начать новый разговор";
 
 /* No comment provided by engineer. */
 "strike" = "зачеркнуть";
@@ -441,6 +459,9 @@
 
 /* No comment provided by engineer. */
 "You are connected to the server used to receive messages from this contact." = "Установлено соединение с сервером, через который вы получаете сообщения от этого контакта.";
+
+/* No comment provided by engineer. */
+"You can also connect by clicking the link. If it opens in the browser, click **Open in mobile app** button" = "Вы также можете соединиться, открыв ссылку там, где вы её получили. Если ссылка откроется в браузере, нажмите кнопку **Open in mobile app**.";
 
 /* notification body */
 "You can now send messages to %@" = "Вы теперь можете отправлять сообщения %@";

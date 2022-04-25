@@ -13,7 +13,7 @@ import qualified Data.ByteString as B
 import Data.Char (isDigit)
 import qualified Data.Text as T
 import Simplex.Chat.Controller (ChatController (..))
-import Simplex.Chat.Types (ImageData (..), Profile (..), User (..))
+import Simplex.Chat.Types (ConnStatus (..), ImageData (..), Profile (..), User (..))
 import Simplex.Chat.Util (unlessM)
 import System.Directory (copyFile, doesFileExist)
 import Test.Hspec
@@ -112,30 +112,30 @@ testAddContact =
       bob <# "alice_1> hello"
       bob #> "@alice_1 hi"
       alice <# "bob_1> hi"
-      alice #$$> ("/_get chats", [("@bob_1", "hi"), ("@bob", "hi")])
-      bob #$$> ("/_get chats", [("@alice_1", "hi"), ("@alice", "hi")])
+      alice @@@ [("@bob_1", "hi"), ("@bob", "hi")]
+      bob @@@ [("@alice_1", "hi"), ("@alice", "hi")]
       -- test deleting contact
       alice ##> "/d bob_1"
       alice <## "bob_1: contact is deleted"
       alice ##> "@bob_1 hey"
       alice <## "no contact bob_1"
-      alice #$$> ("/_get chats", [("@bob", "hi")])
-      bob #$$> ("/_get chats", [("@alice_1", "hi"), ("@alice", "hi")])
+      alice @@@ [("@bob", "hi")]
+      bob @@@ [("@alice_1", "hi"), ("@alice", "hi")]
   where
     chatsEmpty alice bob = do
-      alice #$$> ("/_get chats", [("@bob", "")])
+      alice @@@ [("@bob", "")]
       alice #$> ("/_get chat @2 count=100", chat, [])
-      bob #$$> ("/_get chats", [("@alice", "")])
+      bob @@@ [("@alice", "")]
       bob #$> ("/_get chat @2 count=100", chat, [])
     chatsOneMessage alice bob = do
-      alice #$$> ("/_get chats", [("@bob", "hello 🙂")])
+      alice @@@ [("@bob", "hello 🙂")]
       alice #$> ("/_get chat @2 count=100", chat, [(1, "hello 🙂")])
-      bob #$$> ("/_get chats", [("@alice", "hello 🙂")])
+      bob @@@ [("@alice", "hello 🙂")]
       bob #$> ("/_get chat @2 count=100", chat, [(0, "hello 🙂")])
     chatsManyMessages alice bob = do
-      alice #$$> ("/_get chats", [("@bob", "hi")])
+      alice @@@ [("@bob", "hi")]
       alice #$> ("/_get chat @2 count=100", chat, [(1, "hello 🙂"), (0, "hi")])
-      bob #$$> ("/_get chats", [("@alice", "hi")])
+      bob @@@ [("@alice", "hi")]
       bob #$> ("/_get chat @2 count=100", chat, [(0, "hello 🙂"), (1, "hi")])
       -- pagination
       alice #$> ("/_get chat @2 after=1 count=100", chat, [(0, "hi")])
@@ -244,7 +244,7 @@ testDirectMessageDelete =
       alice #$> ("/_delete item @2 1 internal", id, "message deleted")
       alice #$> ("/_delete item @2 2 internal", id, "message deleted")
 
-      alice #$$> ("/_get chats", [("@bob", "")])
+      alice @@@ [("@bob", "")]
       alice #$> ("/_get chat @2 count=100", chat, [])
 
       alice #$> ("/_update item @2 1 text updating deleted message", id, "cannot update this item")
@@ -253,7 +253,7 @@ testDirectMessageDelete =
       bob #$> ("/_update item @2 2 text hey alice", id, "message updated")
       alice <# "bob> [edited] hey alice"
 
-      alice #$$> ("/_get chats", [("@bob", "hey alice")])
+      alice @@@ [("@bob", "hey alice")]
       alice #$> ("/_get chat @2 count=100", chat, [(0, "hey alice")])
 
       -- msg id 3
@@ -269,9 +269,9 @@ testDirectMessageDelete =
       alice #$> ("/_delete item @2 2 broadcast", id, "cannot delete this item")
       alice #$> ("/_delete item @2 2 internal", id, "message deleted")
 
-      alice #$$> ("/_get chats", [("@bob", "this item is deleted (broadcast)")])
+      alice @@@ [("@bob", "this item is deleted (broadcast)")]
       alice #$> ("/_get chat @2 count=100", chat, [(0, "this item is deleted (broadcast)")])
-      bob #$$> ("/_get chats", [("@alice", "hey alice")])
+      bob @@@ [("@alice", "hey alice")]
       bob #$> ("/_get chat @2 count=100", chat', [((0, "this item is deleted (broadcast)"), Nothing), ((1, "hey alice"), (Just (0, "hello 🙂")))])
 
 testGroup :: IO ()
@@ -363,13 +363,13 @@ testGroup =
       bob <##> cath
   where
     getReadChats alice bob cath = do
-      alice #$$> ("/_get chats", [("#team", "hey team"), ("@cath", ""), ("@bob", "")])
+      alice @@@ [("#team", "hey team"), ("@cath", ""), ("@bob", "")]
       alice #$> ("/_get chat #1 count=100", chat, [(1, "hello"), (0, "hi there"), (0, "hey team")])
       alice #$> ("/_get chat #1 after=1 count=100", chat, [(0, "hi there"), (0, "hey team")])
       alice #$> ("/_get chat #1 before=3 count=100", chat, [(1, "hello"), (0, "hi there")])
-      bob #$$> ("/_get chats", [("@cath", "hey"), ("#team", "hey team"), ("@alice", "")])
+      bob @@@ [("@cath", "hey"), ("#team", "hey team"), ("@alice", "")]
       bob #$> ("/_get chat #1 count=100", chat, [(0, "hello"), (1, "hi there"), (0, "hey team")])
-      cath #$$> ("/_get chats", [("@bob", "hey"), ("#team", "hey team"), ("@alice", "")])
+      cath @@@ [("@bob", "hey"), ("#team", "hey team"), ("@alice", "")]
       cath #$> ("/_get chat #1 count=100", chat, [(0, "hello"), (0, "hi there"), (1, "hey team")])
       alice #$> ("/_read chat #1 from=1 to=100", id, "ok")
       bob #$> ("/_read chat #1 from=1 to=100", id, "ok")
@@ -1380,9 +1380,9 @@ testSendImageWithTextAndQuote =
       dest <- B.readFile "./tests/tmp/test.jpg"
       dest `shouldBe` src
       alice #$> ("/_get chat @2 count=100", chat'', [((0, "hi alice"), Nothing, Nothing), ((1, "hey bob"), Just (0, "hi alice"), Just "./tests/fixtures/test.jpg")])
-      alice #$$> ("/_get chats", [("@bob", "hey bob")])
+      alice @@@ [("@bob", "hey bob")]
       bob #$> ("/_get chat @2 count=100", chat'', [((1, "hi alice"), Nothing, Nothing), ((0, "hey bob"), Just (1, "hi alice"), Just "./tests/tmp/test.jpg")])
-      bob #$$> ("/_get chats", [("@alice", "hey bob")])
+      bob @@@ [("@alice", "hey bob")]
 
 testGroupSendImage :: IO ()
 testGroupSendImage =
@@ -1482,11 +1482,11 @@ testGroupSendImageWithTextAndQuote =
       dest2 <- B.readFile "./tests/tmp/test_1.jpg"
       dest2 `shouldBe` src
       alice #$> ("/_get chat #1 count=100", chat'', [((0, "hi team"), Nothing, Nothing), ((1, "hey bob"), Just (0, "hi team"), Just "./tests/fixtures/test.jpg")])
-      alice #$$> ("/_get chats", [("#team", "hey bob"), ("@bob", ""), ("@cath", "")])
+      alice @@@ [("#team", "hey bob"), ("@bob", ""), ("@cath", "")]
       bob #$> ("/_get chat #1 count=100", chat'', [((1, "hi team"), Nothing, Nothing), ((0, "hey bob"), Just (1, "hi team"), Just "./tests/tmp/test.jpg")])
-      bob #$$> ("/_get chats", [("#team", "hey bob"), ("@alice", ""), ("@cath", "")])
+      bob @@@ [("#team", "hey bob"), ("@alice", ""), ("@cath", "")]
       cath #$> ("/_get chat #1 count=100", chat'', [((0, "hi team"), Nothing, Nothing), ((0, "hey bob"), Just (0, "hi team"), Just "./tests/tmp/test_1.jpg")])
-      cath #$$> ("/_get chats", [("#team", "hey bob"), ("@alice", ""), ("@bob", "")])
+      cath @@@ [("#team", "hey bob"), ("@alice", ""), ("@bob", "")]
 
 testUserContactLink :: IO ()
 testUserContactLink = testChat3 aliceProfile bobProfile cathProfile $
@@ -1495,24 +1495,24 @@ testUserContactLink = testChat3 aliceProfile bobProfile cathProfile $
     cLink <- getContactLink alice True
     bob ##> ("/c " <> cLink)
     alice <#? bob
-    alice #$$> ("/_get chats", [("<@bob", "")])
+    alice @@@ [("<@bob", "")]
     alice ##> "/ac bob"
     alice <## "bob (Bob): accepting contact request..."
     concurrently_
       (bob <## "alice (Alice): contact is connected")
       (alice <## "bob (Bob): contact is connected")
-    alice #$$> ("/_get chats", [("@bob", "")])
+    alice @@@ [("@bob", "")]
     alice <##> bob
 
     cath ##> ("/c " <> cLink)
     alice <#? cath
-    alice #$$> ("/_get chats", [("<@cath", ""), ("@bob", "hey")])
+    alice @@@ [("<@cath", ""), ("@bob", "hey")]
     alice ##> "/ac cath"
     alice <## "cath (Catherine): accepting contact request..."
     concurrently_
       (cath <## "alice (Alice): contact is connected")
       (alice <## "cath (Catherine): contact is connected")
-    alice #$$> ("/_get chats", [("@cath", ""), ("@bob", "hey")])
+    alice @@@ [("@cath", ""), ("@bob", "hey")]
     alice <##> cath
 
 testUserContactLinkAutoAccept :: IO ()
@@ -1524,13 +1524,13 @@ testUserContactLinkAutoAccept =
 
       bob ##> ("/c " <> cLink)
       alice <#? bob
-      alice #$$> ("/_get chats", [("<@bob", "")])
+      alice @@@ [("<@bob", "")]
       alice ##> "/ac bob"
       alice <## "bob (Bob): accepting contact request..."
       concurrently_
         (bob <## "alice (Alice): contact is connected")
         (alice <## "bob (Bob): contact is connected")
-      alice #$$> ("/_get chats", [("@bob", "")])
+      alice @@@ [("@bob", "")]
       alice <##> bob
 
       alice ##> "/auto_accept on"
@@ -1542,7 +1542,7 @@ testUserContactLinkAutoAccept =
       concurrently_
         (cath <## "alice (Alice): contact is connected")
         (alice <## "cath (Catherine): contact is connected")
-      alice #$$> ("/_get chats", [("@cath", ""), ("@bob", "hey")])
+      alice @@@ [("@cath", ""), ("@bob", "hey")]
       alice <##> cath
 
       alice ##> "/auto_accept off"
@@ -1550,13 +1550,13 @@ testUserContactLinkAutoAccept =
 
       dan ##> ("/c " <> cLink)
       alice <#? dan
-      alice #$$> ("/_get chats", [("<@dan", ""), ("@cath", "hey"), ("@bob", "hey")])
+      alice @@@ [("<@dan", ""), ("@cath", "hey"), ("@bob", "hey")]
       alice ##> "/ac dan"
       alice <## "dan (Daniel): accepting contact request..."
       concurrently_
         (dan <## "alice (Alice): contact is connected")
         (alice <## "dan (Daniel): contact is connected")
-      alice #$$> ("/_get chats", [("@dan", ""), ("@cath", "hey"), ("@bob", "hey")])
+      alice @@@ [("@dan", ""), ("@cath", "hey"), ("@bob", "hey")]
       alice <##> dan
 
 testDeduplicateContactRequests :: IO ()
@@ -1567,13 +1567,15 @@ testDeduplicateContactRequests = testChat3 aliceProfile bobProfile cathProfile $
 
     bob ##> ("/c " <> cLink)
     alice <#? bob
-    alice #$$> ("/_get chats", [("<@bob", "")])
+    alice @@@ [("<@bob", "")]
+    bob @@@! [(":1", "", Just ConnJoined)]
 
     bob ##> ("/c " <> cLink)
     alice <#? bob
     bob ##> ("/c " <> cLink)
     alice <#? bob
-    alice #$$> ("/_get chats", [("<@bob", "")])
+    alice @@@ [("<@bob", "")]
+    bob @@@! [(":3", "", Just ConnJoined), (":2", "", Just ConnJoined), (":1", "", Just ConnJoined)]
 
     alice ##> "/ac bob"
     alice <## "bob (Bob): accepting contact request..."
@@ -1583,12 +1585,16 @@ testDeduplicateContactRequests = testChat3 aliceProfile bobProfile cathProfile $
 
     bob ##> ("/c " <> cLink)
     bob <## "alice (Alice): contact already exists"
-    alice #$$> ("/_get chats", [("@bob", "")])
-    bob #$$> ("/_get chats", [("@alice", "")])
+    alice @@@ [("@bob", "")]
+    bob @@@ [("@alice", ""), (":2", ""), (":1", "")]
+    bob ##> "/_delete :1"
+    bob <## "connection :1 deleted"
+    bob ##> "/_delete :2"
+    bob <## "connection :2 deleted"
 
     alice <##> bob
-    alice #$$> ("/_get chats", [("@bob", "hey")])
-    bob #$$> ("/_get chats", [("@alice", "hey")])
+    alice @@@ [("@bob", "hey")]
+    bob @@@ [("@alice", "hey")]
 
     bob ##> ("/c " <> cLink)
     bob <## "alice (Alice): contact already exists"
@@ -1599,13 +1605,13 @@ testDeduplicateContactRequests = testChat3 aliceProfile bobProfile cathProfile $
 
     cath ##> ("/c " <> cLink)
     alice <#? cath
-    alice #$$> ("/_get chats", [("<@cath", ""), ("@bob", "hey")])
+    alice @@@ [("<@cath", ""), ("@bob", "hey")]
     alice ##> "/ac cath"
     alice <## "cath (Catherine): accepting contact request..."
     concurrently_
       (cath <## "alice (Alice): contact is connected")
       (alice <## "cath (Catherine): contact is connected")
-    alice #$$> ("/_get chats", [("@cath", ""), ("@bob", "hey")])
+    alice @@@ [("@cath", ""), ("@bob", "hey")]
     alice <##> cath
 
 testDeduplicateContactRequestsProfileChange :: IO ()
@@ -1616,7 +1622,7 @@ testDeduplicateContactRequestsProfileChange = testChat3 aliceProfile bobProfile 
 
     bob ##> ("/c " <> cLink)
     alice <#? bob
-    alice #$$> ("/_get chats", [("<@bob", "")])
+    alice @@@ [("<@bob", "")]
 
     bob ##> "/p bob"
     bob <## "user full name removed (your contacts are notified)"
@@ -1625,19 +1631,19 @@ testDeduplicateContactRequestsProfileChange = testChat3 aliceProfile bobProfile 
     alice <## "bob wants to connect to you!"
     alice <## "to accept: /ac bob"
     alice <## "to reject: /rc bob (the sender will NOT be notified)"
-    alice #$$> ("/_get chats", [("<@bob", "")])
+    alice @@@ [("<@bob", "")]
 
     bob ##> "/p bob Bob Ross"
     bob <## "user full name changed to Bob Ross (your contacts are notified)"
     bob ##> ("/c " <> cLink)
     alice <#? bob
-    alice #$$> ("/_get chats", [("<@bob", "")])
+    alice @@@ [("<@bob", "")]
 
     bob ##> "/p robert Robert"
     bob <## "user profile is changed to robert (Robert) (your contacts are notified)"
     bob ##> ("/c " <> cLink)
     alice <#? bob
-    alice #$$> ("/_get chats", [("<@robert", "")])
+    alice @@@ [("<@robert", "")]
 
     alice ##> "/ac bob"
     alice <## "no contact request from bob"
@@ -1649,12 +1655,18 @@ testDeduplicateContactRequestsProfileChange = testChat3 aliceProfile bobProfile 
 
     bob ##> ("/c " <> cLink)
     bob <## "alice (Alice): contact already exists"
-    alice #$$> ("/_get chats", [("@robert", "")])
-    bob #$$> ("/_get chats", [("@alice", "")])
+    alice @@@ [("@robert", "")]
+    bob @@@ [("@alice", ""), (":3", ""), (":2", ""), (":1", "")]
+    bob ##> "/_delete :1"
+    bob <## "connection :1 deleted"
+    bob ##> "/_delete :2"
+    bob <## "connection :2 deleted"
+    bob ##> "/_delete :3"
+    bob <## "connection :3 deleted"
 
     alice <##> bob
-    alice #$$> ("/_get chats", [("@robert", "hey")])
-    bob #$$> ("/_get chats", [("@alice", "hey")])
+    alice @@@ [("@robert", "hey")]
+    bob @@@ [("@alice", "hey")]
 
     bob ##> ("/c " <> cLink)
     bob <## "alice (Alice): contact already exists"
@@ -1665,13 +1677,13 @@ testDeduplicateContactRequestsProfileChange = testChat3 aliceProfile bobProfile 
 
     cath ##> ("/c " <> cLink)
     alice <#? cath
-    alice #$$> ("/_get chats", [("<@cath", ""), ("@robert", "hey")])
+    alice @@@ [("<@cath", ""), ("@robert", "hey")]
     alice ##> "/ac cath"
     alice <## "cath (Catherine): accepting contact request..."
     concurrently_
       (cath <## "alice (Alice): contact is connected")
       (alice <## "cath (Catherine): contact is connected")
-    alice #$$> ("/_get chats", [("@cath", ""), ("@robert", "hey")])
+    alice @@@ [("@cath", ""), ("@robert", "hey")]
     alice <##> cath
 
 testRejectContactAndDeleteUserContact :: IO ()
@@ -1871,12 +1883,17 @@ chatF = map (\(a, _, c) -> (a, c)) . chat''
 chat'' :: String -> [((Int, String), Maybe (Int, String), Maybe String)]
 chat'' = read
 
-(#$$>) :: TestCC -> (String, [(String, String)]) -> Expectation
-cc #$$> (cmd, res) = do
-  cc ##> cmd
+(@@@) :: TestCC -> [(String, String)] -> Expectation
+(@@@) = getChats . map $ \(ldn, msg, _) -> (ldn, msg)
+
+(@@@!) :: TestCC -> [(String, String, Maybe ConnStatus)] -> Expectation
+(@@@!) = getChats id
+
+getChats :: (Eq a, Show a) => ([(String, String, Maybe ConnStatus)] -> [a]) -> TestCC -> [a] -> Expectation
+getChats f cc res = do
+  cc ##> "/_get chats pcc=on"
   line <- getTermLine cc
-  let chats = read line
-  chats `shouldMatchList` res
+  f (read line) `shouldMatchList` res
 
 send :: TestCC -> String -> IO ()
 send TestCC {chatController = cc} cmd = atomically $ writeTBQueue (inputQ cc) cmd

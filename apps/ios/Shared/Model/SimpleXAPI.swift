@@ -496,42 +496,42 @@ func apiAddContact() throws -> String {
     throw r
 }
 
-func apiConnect(connReq: String) async throws -> Bool {
+func apiConnect(connReq: String) async throws -> ConnReqType? {
     let r = await chatSendCmd(.connect(connReq: connReq))
     let am = AlertManager.shared
     switch r {
-    case .sentConfirmation: return true
-    case .sentInvitation: return true
+    case .sentConfirmation: return .invitation
+    case .sentInvitation: return .contact
     case let .contactAlreadyExists(contact):
         am.showAlertMsg(
             title: "Contact already exists",
             message: "You are already connected to \(contact.displayName) via this link."
         )
-        return false
+        return nil
     case .chatCmdError(.error(.invalidConnReq)):
         am.showAlertMsg(
             title: "Invalid connection link",
             message: "Please check that you used the correct link or ask your contact to send you another one."
         )
-        return false
+        return nil
     case .chatCmdError(.errorAgent(.BROKER(.TIMEOUT))):
         am.showAlertMsg(
             title: "Connection timeout",
             message: "Please check your network connection and try again."
         )
-        return false
+        return nil
     case .chatCmdError(.errorAgent(.BROKER(.NETWORK))):
         am.showAlertMsg(
             title: "Connection error",
             message: "Please check your network connection and try again."
         )
-        return false
+        return nil
     case .chatCmdError(.errorAgent(.SMP(.AUTH))):
         am.showAlertMsg(
             title: "Connection error (AUTH)",
             message: "Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.\nTo connect, please ask your contact to create another connection link and check that you have a stable network connection."
         )
-        return false
+        return nil
     default: throw r
     }
 }
