@@ -1858,16 +1858,12 @@ testAsyncGroupFileTransfer = withTmpFiles $ do
   withTestChat 3 $ \cath -> withGroup3Connected cath $ do
     cath <## "started receiving file 1 (test.jpg) from alice"
   withTestChat 1 $ \alice -> withGroup3Connected alice $ do
-    -- alice sends files to both bob and cath here
-    -- TODO these lines appear in non deterministic order
-    --   [ do
-    --       alice <## "started sending file 1 (test.jpg) to bob"
-    --       alice <## "completed sending file 1 (test.jpg) to bob",
-    --     do
-    --       alice <## "started sending file 1 (test.jpg) to cath"
-    --       alice <## "completed sending file 1 (test.jpg) to cath"
-    --   ]
-    pure ()
+    alice
+      <### [ "started sending file 1 (test.jpg) to bob",
+             "completed sending file 1 (test.jpg) to bob",
+             "started sending file 1 (test.jpg) to cath",
+             "completed sending file 1 (test.jpg) to cath"
+           ]
   withTestChat 2 $ \bob -> withGroup3Connected bob $ do
     bob <## "completed receiving file 1 (test.jpg) from alice"
   withTestChat 3 $ \cath -> withGroup3Connected cath $ do
