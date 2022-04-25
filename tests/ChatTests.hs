@@ -13,7 +13,7 @@ import qualified Data.ByteString as B
 import Data.Char (isDigit)
 import qualified Data.Text as T
 import Simplex.Chat.Controller (ChatController (..))
-import Simplex.Chat.Types (ImageData (..), Profile (..), User (..))
+import Simplex.Chat.Types (ConnStatus (..), ImageData (..), Profile (..), User (..))
 import Simplex.Chat.Util (unlessM)
 import System.Directory (copyFile, doesFileExist)
 import Test.Hspec
@@ -1568,12 +1568,14 @@ testDeduplicateContactRequests = testChat3 aliceProfile bobProfile cathProfile $
     bob ##> ("/c " <> cLink)
     alice <#? bob
     alice @@@ [("<@bob", "")]
+    bob @@@! [(":1", "", Just ConnJoined)]
 
     bob ##> ("/c " <> cLink)
     alice <#? bob
     bob ##> ("/c " <> cLink)
     alice <#? bob
     alice @@@ [("<@bob", "")]
+    bob @@@! [(":3", "", Just ConnJoined), (":2", "", Just ConnJoined), (":1", "", Just ConnJoined)]
 
     alice ##> "/ac bob"
     alice <## "bob (Bob): accepting contact request..."
@@ -1584,7 +1586,11 @@ testDeduplicateContactRequests = testChat3 aliceProfile bobProfile cathProfile $
     bob ##> ("/c " <> cLink)
     bob <## "alice (Alice): contact already exists"
     alice @@@ [("@bob", "")]
-    bob @@@ [("@alice", "")]
+    bob @@@ [("@alice", ""), (":2", ""), (":1", "")]
+    bob ##> "/_delete :1"
+    bob <## "connection :1 deleted"
+    bob ##> "/_delete :2"
+    bob <## "connection :2 deleted"
 
     alice <##> bob
     alice @@@ [("@bob", "hey")]
@@ -1650,7 +1656,13 @@ testDeduplicateContactRequestsProfileChange = testChat3 aliceProfile bobProfile 
     bob ##> ("/c " <> cLink)
     bob <## "alice (Alice): contact already exists"
     alice @@@ [("@robert", "")]
-    bob @@@ [("@alice", "")]
+    bob @@@ [("@alice", ""), (":3", ""), (":2", ""), (":1", "")]
+    bob ##> "/_delete :1"
+    bob <## "connection :1 deleted"
+    bob ##> "/_delete :2"
+    bob <## "connection :2 deleted"
+    bob ##> "/_delete :3"
+    bob <## "connection :3 deleted"
 
     alice <##> bob
     alice @@@ [("@robert", "hey")]
@@ -1872,10 +1884,16 @@ chat'' :: String -> [((Int, String), Maybe (Int, String), Maybe String)]
 chat'' = read
 
 (@@@) :: TestCC -> [(String, String)] -> Expectation
-cc @@@ chats = do
-  cc ##> "/_get chats"
+(@@@) = getChats . map $ \(ldn, msg, _) -> (ldn, msg)
+
+(@@@!) :: TestCC -> [(String, String, Maybe ConnStatus)] -> Expectation
+(@@@!) = getChats id
+
+getChats :: (Eq a, Show a) => ([(String, String, Maybe ConnStatus)] -> [a]) -> TestCC -> [a] -> Expectation
+getChats f cc res = do
+  cc ##> "/_get chats pcc=on"
   line <- getTermLine cc
-  read line `shouldMatchList` chats
+  f (read line) `shouldMatchList` res
 
 send :: TestCC -> String -> IO ()
 send TestCC {chatController = cc} cmd = atomically $ writeTBQueue (inputQ cc) cmd
