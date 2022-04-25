@@ -545,7 +545,7 @@ struct PendingContactConnection: Decodable, NamedChat {
     var displayName: String {
         get {
             if let initiated = pccConnStatus.initiated {
-                return initiated
+                return initiated && !viaContactUri
                 ? NSLocalizedString("invited to connect", comment: "chat list item title")
                 : NSLocalizedString("connecting…", comment: "chat list item title")
             } else {
@@ -556,11 +556,12 @@ struct PendingContactConnection: Decodable, NamedChat {
     }
     var fullName: String { get { "" } }
     var image: String? { get { nil } }
+    var initiated: Bool { get { (pccConnStatus.initiated ?? false) && !viaContactUri } }
 
     var description: String {
         get {
             if let initiated = pccConnStatus.initiated {
-                return initiated
+                return initiated && !viaContactUri
                 ? NSLocalizedString("you shared one-time link", comment: "chat list item description")
                 : viaContactUri
                 ? NSLocalizedString("via contact address link", comment: "chat list item description")
@@ -597,7 +598,7 @@ enum ConnStatus: String, Decodable {
             switch self {
             case .new: return true
             case .joined: return false
-            case .requested: return false
+            case .requested: return true
             case .accepted: return true
             case .sndReady: return false
             case .ready: return nil

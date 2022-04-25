@@ -12,9 +12,8 @@ struct ContactConnectionView: View {
     var contactConnection: PendingContactConnection
     
     var body: some View {
-        let initiated = contactConnection.pccConnStatus.initiated ?? false
         HStack(spacing: 8) {
-            Image(systemName: initiated ? "link.badge.plus" : "link")
+            Image(systemName: contactConnection.initiated ? "link.badge.plus" : "link")
                 .resizable()
                 .foregroundColor(Color(uiColor: .secondarySystemBackground))
                 .scaledToFill()

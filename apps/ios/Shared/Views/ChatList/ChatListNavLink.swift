@@ -138,10 +138,9 @@ struct ChatListNavLink: View {
         }
         .frame(height: 80)
         .onTapGesture {
-            let initiated = contactConnection.pccConnStatus.initiated ?? false
             AlertManager.shared.showAlertMsg(
                 title:
-                    initiated
+                    contactConnection.initiated
                     ? "You invited your contact"
                     : "You accepted connection",
                 // below are the same messages that are shown in alert
@@ -195,7 +194,7 @@ struct ChatListNavLink: View {
         Alert(
             title: Text("Delete pending connection?"),
             message:
-                (contactConnection.pccConnStatus.initiated ?? false)
+                contactConnection.initiated
                 ? Text("The contact you shared this link with will NOT be able to connect!")
                 : Text("The connection you accepted will be cancelled!"),
             primaryButton: .destructive(Text("Delete")) {
