@@ -115,6 +115,11 @@
         <target>Добавить контакт</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Add contact to start a new chat" xml:space="preserve">
+        <source>Add contact to start a new chat</source>
+        <target>Добавьте контакт, чтобы начать разговор</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="All your contacts will remain connected" xml:space="preserve">
         <source>All your contacts will remain connected</source>
         <target>Все контакты, которые соединились через этот адрес, сохранятся.</target>
@@ -145,9 +150,24 @@
         <target>Назад</target>
         <note>back button to return to chats list</note>
       </trans-unit>
+      <trans-unit id="Check messages" xml:space="preserve">
+        <source>Check messages</source>
+        <target>Проверять сообщения</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Checking new messages..." xml:space="preserve">
+        <source>Checking new messages...</source>
+        <target>Проверяются новые сообщения...</target>
+        <note>notification</note>
+      </trans-unit>
       <trans-unit id="Choose from library" xml:space="preserve">
         <source>Choose from library</source>
         <target>Выбрать из библиотеки</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Clear" xml:space="preserve">
+        <source>Clear</source>
+        <target>Очистить</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Configure SMP servers" xml:space="preserve">
@@ -170,9 +190,14 @@
         <target>Соединиться через ссылку-контакт?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connect via invitation link?" xml:space="preserve">
-        <source>Connect via invitation link?</source>
-        <target>Соединиться через ссылку-приглашение?</target>
+      <trans-unit id="Connect via link" xml:space="preserve">
+        <source>Connect via link</source>
+        <target>Соединиться через ссылку</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Connect via one-time link?" xml:space="preserve">
+        <source>Connect via one-time link?</source>
+        <target>Соединиться через одноразовую ссылку?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connecting server…" xml:space="preserve">
@@ -193,6 +218,11 @@
       <trans-unit id="Connection error" xml:space="preserve">
         <source>Connection error</source>
         <target>Ошибка соединения</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Connection error (AUTH)" xml:space="preserve">
+        <source>Connection error (AUTH)</source>
+        <target>Ошибка соединения (AUTH)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connection request" xml:space="preserve">
@@ -225,6 +255,11 @@
         <target>Соединение с контактом установлено</target>
         <note>notification</note>
       </trans-unit>
+      <trans-unit id="Contact is not connected yet!" xml:space="preserve">
+        <source>Contact is not connected yet!</source>
+        <target>Соединение еще не установлено!</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Copy" xml:space="preserve">
         <source>Copy</source>
         <target>Скопировать</target>
@@ -240,9 +275,9 @@
         <target>Создать адрес</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Create group" xml:space="preserve">
-        <source>Create group</source>
-        <target>Создать группу</target>
+      <trans-unit id="Create link / QR code" xml:space="preserve">
+        <source>Create link / QR code</source>
+        <target>Создать ссылку / QR код</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Create profile" xml:space="preserve">
@@ -253,6 +288,11 @@
       <trans-unit id="Delete" xml:space="preserve">
         <source>Delete</source>
         <target>Удалить</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Delete Contact" xml:space="preserve">
+        <source>Delete Contact</source>
+        <target>Удалить контакт</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete address" xml:space="preserve">
@@ -295,6 +335,11 @@
         <target>Удалить сообщение?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Delete pending connection" xml:space="preserve">
+        <source>Delete pending connection</source>
+        <target>Удалить соединение</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Develop" xml:space="preserve">
         <source>Develop</source>
         <target>Для разработчиков</target>
@@ -310,9 +355,24 @@
         <target>Редактировать</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Enable notifications? (BETA)" xml:space="preserve">
+        <source>Enable notifications? (BETA)</source>
+        <target>Включить уведомления? (БЕТА)</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Enter one SMP server per line:" xml:space="preserve">
         <source>Enter one SMP server per line:</source>
         <target>Введите SMP серверы, каждый на отдельной строке:</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Error deleting token" xml:space="preserve">
+        <source>Error deleting token</source>
+        <target>Ошибка удаления токена</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Error registering token" xml:space="preserve">
+        <source>Error registering token</source>
+        <target>Ошибка регистрации токена</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error saving SMP servers" xml:space="preserve">
@@ -413,7 +473,7 @@
       <trans-unit id="New message" xml:space="preserve">
         <source>New message</source>
         <target>Новое сообщение</target>
-        <note>notifications</note>
+        <note>notification</note>
       </trans-unit>
       <trans-unit id="Notifications are disabled!" xml:space="preserve">
         <source>Notifications are disabled!</source>
@@ -423,6 +483,21 @@
       <trans-unit id="Open Settings" xml:space="preserve">
         <source>Open Settings</source>
         <target>Открыть Настройки</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Paste" xml:space="preserve">
+        <source>Paste</source>
+        <target>Вставить</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Paste received link" xml:space="preserve">
+        <source>Paste received link</source>
+        <target>Вставить полученную ссылку</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Paste the link you received into the box below to connect with your contact." xml:space="preserve">
+        <source>Paste the link you received into the box below to connect with your contact.</source>
+        <target>Чтобы соединиться, вставьте в это поле ссылку, полученную от вашего контакта.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Please check that you used the correct link or ask your contact to send you another one." xml:space="preserve">
@@ -521,11 +596,6 @@ to scan from the app</source>
         <target>Покажите QR код вашему контакту для сканирования в приложении</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Start new chat" xml:space="preserve">
-        <source>Start new chat</source>
-        <target>Начать новый разговор</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Take picture" xml:space="preserve">
         <source>Take picture</source>
         <target>Сделать фото</target>
@@ -544,6 +614,13 @@ to scan from the app</source>
       <trans-unit id="The app can notify you when you receive messages or contact requests - please open settings to enable." xml:space="preserve">
         <source>The app can notify you when you receive messages or contact requests - please open settings to enable.</source>
         <target>Приложение может посылать вам уведомления о сообщениях и запросах на соединение - уведомления можно включить в Настройках.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="The app can receive background notifications every 20 minutes to check the new messages.&#10;*Please note*: if you confirm, your device token will be sent to SimpleX Chat notifications server." xml:space="preserve">
+        <source>The app can receive background notifications every 20 minutes to check the new messages.
+*Please note*: if you confirm, your device token will be sent to SimpleX Chat notifications server.</source>
+        <target>Приложение может получать скрытые уведомления каждые 20 минут чтобы проверить новые сообщения.
+*Обратите внимание*: если вы подтвердите, токен вашего устройства будет послан на сервер SimpleX Chat.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The messaging and application platform 100% private by design!" xml:space="preserve">
@@ -586,6 +663,13 @@ to scan from the app</source>
         <target>Неожиданная ошибка: %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.&#10;To connect, please ask your contact to create another connection link and check that you have a stable network connection." xml:space="preserve">
+        <source>Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.
+To connect, please ask your contact to create another connection link and check that you have a stable network connection.</source>
+        <target>Возможно, ваш контакт удалил ссылку, или она уже была использована. Если это не так, то это может быть ошибкой - пожалуйста, сообщите нам об этом.
+Чтобы установить соединение, попросите ваш контакт создать еще одну ссылку и проверьте ваше соединение с сетью.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Use SimpleX Chat servers?" xml:space="preserve">
         <source>Use SimpleX Chat servers?</source>
         <target>Использовать серверы предосталенные SimpleX Chat?</target>
@@ -614,6 +698,11 @@ to scan from the app</source>
       <trans-unit id="You are connected to the server used to receive messages from this contact." xml:space="preserve">
         <source>You are connected to the server used to receive messages from this contact.</source>
         <target>Установлено соединение с сервером, через который вы получаете сообщения от этого контакта.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="You can also connect by clicking the link. If it opens in the browser, click **Open in mobile app** button" xml:space="preserve">
+        <source>You can also connect by clicking the link. If it opens in the browser, click **Open in mobile app** button</source>
+        <target>Вы также можете соединиться, открыв ссылку там, где вы её получили. Если ссылка откроется в браузере, нажмите кнопку **Open in mobile app**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can now send messages to %@" xml:space="preserve">
@@ -674,6 +763,13 @@ to scan from the app</source>
       <trans-unit id="Your chats" xml:space="preserve">
         <source>Your chats</source>
         <target>Ваши чаты</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Your contact needs to be online for the connection to complete.&#10;You can cancel this connection and remove the contact (and try later with a new link)." xml:space="preserve">
+        <source>Your contact needs to be online for the connection to complete.
+You can cancel this connection and remove the contact (and try later with a new link).</source>
+        <target>Ваш контакт должен быть в сети чтобы установить соединение.
+Вы можете отменить соединение и удалить контакт (и попробовать позже с другой ссылкой).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your profile is stored on your device and shared only with your contacts.&#10;SimpleX servers cannot see your profile." xml:space="preserve">

@@ -22,6 +22,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -87,13 +88,16 @@ fun ChatView(chatModel: ChatModel) {
           val cInfo = chat.chatInfo
           val ei = editingItem.value
           if (ei != null) {
-            val updatedItem = chatModel.controller.apiUpdateChatItem(
-              type = cInfo.chatType,
-              id = cInfo.apiId,
-              itemId = ei.meta.itemId,
-              mc = MsgContent.MCText(msg)
-            )
-            if (updatedItem != null) chatModel.upsertChatItem(cInfo, updatedItem.chatItem)
+            val oldMsgContent = ei.content.msgContent
+            if (oldMsgContent != null) {
+              val updatedItem = chatModel.controller.apiUpdateChatItem(
+                type = cInfo.chatType,
+                id = cInfo.apiId,
+                itemId = ei.meta.itemId,
+                mc = updateMsgContent(oldMsgContent, msg)
+              )
+              if (updatedItem != null) chatModel.upsertChatItem(cInfo, updatedItem.chatItem)
+            }
           } else {
             var file: String? = null
             val imagePreviewData = imagePreview.value
@@ -142,17 +146,26 @@ fun ChatView(chatModel: ChatModel) {
         }
       },
       parseMarkdown = { text -> runBlocking { chatModel.controller.apiParseMarkdown(text) } },
-      onImageChange = { bitmap -> imagePreview.value = resizeImageToDataSize(bitmap, maxDataSize = 12500) }
+      onImageChange = { bitmap -> imagePreview.value = resizeImageToStrSize(bitmap, maxDataSize = 14000) }
     )
   }
 }
 
+fun updateMsgContent(msgContent: MsgContent, text: String): MsgContent {
+  return when (msgContent) {
+    is MsgContent.MCText -> MsgContent.MCText(text)
+    is MsgContent.MCLink -> MsgContent.MCLink(text, preview = msgContent.preview)
+    is MsgContent.MCImage -> MsgContent.MCImage(text, image = msgContent.image)
+    is MsgContent.MCUnknown -> MsgContent.MCUnknown(type = msgContent.type, text = text, json = msgContent.json)
+  }
+}
+
 fun saveImage(context: Context, image: Bitmap): String {
-  val imageResized = base64ToBitmap(resizeImageToDataSize(image, 160000))
+  val dataResized = resizeImageToDataSize(image, maxDataSize = MAX_IMAGE_SIZE)
   val fileToSave = "image_${System.currentTimeMillis()}.jpg"
   val file = File(getAppFilesDirectory(context) + "/" + fileToSave)
   val output = FileOutputStream(file)
-  imageResized.compress(Bitmap.CompressFormat.JPEG, 100, output)
+  dataResized.writeTo(output)
   output.flush()
   output.close()
   return fileToSave
@@ -205,7 +218,7 @@ fun ChatLayout(
           topBar = { ChatInfoToolbar(chat, back, info) },
           bottomBar = {
             ComposeView(
-              msg, quotedItem, editingItem, linkPreview, imagePreview, sendMessage, resetMessage, parseMarkdown,
+              msg, quotedItem, editingItem, linkPreview, chosenImage, imagePreview, sendMessage, resetMessage, parseMarkdown,
               showBottomSheet = { scope.launch { bottomSheetModalState.show() } }
             )
           },
@@ -234,7 +247,7 @@ fun ChatInfoToolbar(chat: Chat, back: () -> Unit, info: () -> Unit) {
       IconButton(onClick = back) {
         Icon(
           Icons.Outlined.ArrowBackIos,
-          generalGetString(R.string.back),
+          stringResource(R.string.back),
           tint = MaterialTheme.colors.primary,
           modifier = Modifier.padding(10.dp)
         )

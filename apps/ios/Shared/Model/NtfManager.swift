@@ -15,6 +15,8 @@ let ntfActionAccept = "NTF_ACT_ACCEPT"
 let ntfCategoryContactRequest = "NTF_CAT_CONTACT_REQUEST"
 let ntfCategoryContactConnected = "NTF_CAT_CONTACT_CONNECTED"
 let ntfCategoryMessageReceived = "NTF_CAT_MESSAGE_RECEIVED"
+// TODO remove
+let ntfCategoryCheckingMessages = "NTF_CAT_CHECKING_MESSAGES"
 
 let appNotificationId = "chat.simplex.app.notification"
 
@@ -107,7 +109,14 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
                 identifier: ntfCategoryMessageReceived,
                 actions: [],
                 intentIdentifiers: [],
-                hiddenPreviewsBodyPlaceholder: NSLocalizedString("New message", comment: "notifications")
+                hiddenPreviewsBodyPlaceholder: NSLocalizedString("New message", comment: "notification")
+            ),
+            // TODO remove
+            UNNotificationCategory(
+                identifier: ntfCategoryCheckingMessages,
+                actions: [],
+                intentIdentifiers: [],
+                hiddenPreviewsBodyPlaceholder: NSLocalizedString("Checking new messages...", comment: "notification")
             )
         ])
     }
@@ -167,7 +176,16 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
 //            userInfo: ["chatId": cInfo.id, "chatItemId": cItem.id]
         )
     }
-    
+
+    // TODO remove
+    func notifyCheckingMessages() {
+        logger.debug("NtfManager.notifyCheckingMessages")
+        addNotification(
+            categoryIdentifier: ntfCategoryCheckingMessages,
+            title: NSLocalizedString("Checking new messages...", comment: "notification")
+        )
+    }
+
     func hideSecrets(_ cItem: ChatItem) -> String {
         if let md = cItem.formattedText {
             var res = ""

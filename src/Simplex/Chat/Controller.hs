@@ -22,6 +22,7 @@ import Data.Map.Strict (Map)
 import Data.Text (Text)
 import Data.Time (ZonedTime)
 import Data.Version (showVersion)
+import Data.Word (Word16)
 import GHC.Generics (Generic)
 import Numeric.Natural
 import qualified Paths_simplex_chat as SC
@@ -34,6 +35,8 @@ import Simplex.Messaging.Agent (AgentClient)
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig)
 import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore)
+import qualified Simplex.Messaging.Crypto as C
+import Simplex.Messaging.Notifications.Protocol (DeviceToken (..), NtfTknStatus)
 import Simplex.Messaging.Parsers (dropPrefix, enumJSON, sumTypeJSON)
 import Simplex.Messaging.Protocol (CorrId)
 import System.IO (Handle)
@@ -93,7 +96,7 @@ data ChatCommand
   | CreateActiveUser Profile
   | StartChat
   | SetFilesFolder FilePath
-  | APIGetChats
+  | APIGetChats {pendingConnections :: Bool}
   | APIGetChat ChatType Int64 ChatPagination
   | APIGetChatItems Int
   | APISendMessage ChatType Int64 (Maybe FilePath) (Maybe ChatItemId) MsgContent
@@ -106,6 +109,10 @@ data ChatCommand
   | APIRejectContact Int64
   | APIUpdateProfile Profile
   | APIParseMarkdown Text
+  | APIRegisterToken DeviceToken
+  | APIVerifyToken DeviceToken ByteString C.CbNonce
+  | APIIntervalNofication DeviceToken Word16
+  | APIDeleteToken DeviceToken
   | GetUserSMPServers
   | SetUserSMPServers [SMPServer]
   | ChatHelp HelpSection
@@ -214,8 +221,8 @@ data ChatResponse
   | CRContactConnecting {contact :: Contact}
   | CRContactConnected {contact :: Contact}
   | CRContactAnotherClient {contact :: Contact}
-  | CRContactDisconnected {contact :: Contact}
-  | CRContactSubscribed {contact :: Contact}
+  | CRContactsDisconnected {server :: SMPServer, contactRefs :: [ContactRef]}
+  | CRContactsSubscribed {server :: SMPServer, contactRefs :: [ContactRef]}
   | CRContactSubError {contact :: Contact, chatError :: ChatError}
   | CRContactSubSummary {contactSubscriptions :: [ContactSubStatus]}
   | CRGroupInvitation {groupInfo :: GroupInfo}
@@ -238,6 +245,9 @@ data ChatResponse
   | CRRcvFileSubError {rcvFileTransfer :: RcvFileTransfer, chatError :: ChatError}
   | CRUserContactLinkSubscribed
   | CRUserContactLinkSubError {chatError :: ChatError}
+  | CRNtfTokenStatus {status :: NtfTknStatus}
+  | CRNewContactConnection {connection :: PendingContactConnection}
+  | CRContactConnectionDeleted {connection :: PendingContactConnection}
   | CRMessageError {severity :: Text, errorMessage :: Text}
   | CRChatCmdError {chatError :: ChatError}
   | CRChatError {chatError :: ChatError}

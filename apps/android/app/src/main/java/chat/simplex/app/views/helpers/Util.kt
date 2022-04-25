@@ -57,9 +57,11 @@ fun getKeyboardState(): State<KeyboardState> {
 
   return keyboardState
 }
+
 // Resource to annotated string from
 // https://stackoverflow.com/questions/68549248/android-jetpack-compose-how-to-show-styled-text-from-string-resources
 fun generalGetString(id: Int): String {
+  // prefer stringResource in Composable items to retain preview abilities
   return SimplexApp.context.getString(id)
 }
 
@@ -198,6 +200,9 @@ private fun spannableStringToAnnotatedString(
     AnnotatedString(text.toString())
   }
 }
+
+// maximum image file size to be auto-accepted
+const val MAX_IMAGE_SIZE = 236700
 
 fun getFilesDirectory(context: Context): String {
   return context.filesDir.toString()

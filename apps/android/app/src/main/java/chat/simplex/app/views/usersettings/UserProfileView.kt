@@ -16,6 +16,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.tooling.preview.Preview
@@ -79,7 +80,7 @@ fun UserProfileLayout(
       sheetContent = {
         GetImageBottomSheet(
           chosenImage,
-          onImageChange = { bitmap -> profileImage.value = resizeImageToDataSize(cropToSquare(bitmap), maxDataSize = 12500) },
+          onImageChange = { bitmap -> profileImage.value = resizeImageToStrSize(cropToSquare(bitmap), maxDataSize = 12500) },
           hideBottomSheet = {
             scope.launch { bottomSheetModalState.hide() }
           })
@@ -95,13 +96,13 @@ fun UserProfileLayout(
           horizontalAlignment = Alignment.Start
         ) {
           Text(
-            generalGetString(R.string.your_chat_profile),
+            stringResource(R.string.your_chat_profile),
             Modifier.padding(bottom = 24.dp),
             style = MaterialTheme.typography.h1,
             color = MaterialTheme.colors.onBackground
           )
           Text(
-            generalGetString(R.string.your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it),
+            stringResource(R.string.your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it),
             Modifier.padding(bottom = 24.dp),
             color = MaterialTheme.colors.onBackground,
             lineHeight = 22.sp
@@ -130,14 +131,14 @@ fun UserProfileLayout(
               ProfileNameTextField(displayName)
               ProfileNameTextField(fullName)
               Row {
-                TextButton(generalGetString(R.string.cancel_verb)) {
+                TextButton(stringResource(R.string.cancel_verb)) {
                   displayName.value = profile.displayName
                   fullName.value = profile.fullName
                   profileImage.value = profile.image
                   editProfile.value = false
                 }
                 Spacer(Modifier.padding(horizontal = 8.dp))
-                TextButton(generalGetString(R.string.save_and_notify_contacts)) {
+                TextButton(stringResource(R.string.save_and_notify_contacts)) {
                   saveProfile(displayName.value, fullName.value, profileImage.value)
                 }
               }
@@ -160,9 +161,9 @@ fun UserProfileLayout(
                   }
                 }
               }
-              ProfileNameRow(generalGetString(R.string.display_name__field), profile.displayName)
-              ProfileNameRow(generalGetString(R.string.full_name__field), profile.fullName)
-              TextButton(generalGetString(R.string.edit_verb)) { editProfile.value = true }
+              ProfileNameRow(stringResource(R.string.display_name__field), profile.displayName)
+              ProfileNameRow(stringResource(R.string.full_name__field), profile.fullName)
+              TextButton(stringResource(R.string.edit_verb)) { editProfile.value = true }
             }
           }
           if (savedKeyboardState != keyboardState) {
@@ -229,7 +230,7 @@ fun EditImageButton(click: () -> Unit) {
   ) {
     Icon(
       Icons.Outlined.PhotoCamera,
-      contentDescription = generalGetString(R.string.edit_image),
+      contentDescription = stringResource(R.string.edit_image),
       tint = MaterialTheme.colors.primary,
       modifier = Modifier.size(36.dp)
     )
@@ -241,7 +242,7 @@ fun DeleteImageButton(click: () -> Unit) {
   IconButton(onClick = click) {
     Icon(
       Icons.Outlined.Close,
-      contentDescription = generalGetString(R.string.delete_image),
+      contentDescription = stringResource(R.string.delete_image),
       tint = MaterialTheme.colors.primary,
     )
   }

@@ -24,6 +24,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
@@ -49,24 +50,42 @@ fun cropToSquare(image: Bitmap): Bitmap {
   return Bitmap.createBitmap(image, xOffset, yOffset, side, side)
 }
 
-fun resizeImageToDataSize(image: Bitmap, maxDataSize: Int): String {
+fun resizeImageToStrSize(image: Bitmap, maxDataSize: Int): String {
   var img = image
-  var str = compressImage(img)
+  var str = compressImageStr(img)
   while (str.length > maxDataSize) {
     val ratio = sqrt(str.length.toDouble() / maxDataSize.toDouble())
     val clippedRatio = min(ratio, 2.0)
     val width = (img.width.toDouble() / clippedRatio).toInt()
     val height = img.height * width / img.width
     img = Bitmap.createScaledBitmap(img, width, height, true)
-    str = compressImage(img)
+    str = compressImageStr(img)
   }
   return str
 }
 
-private fun compressImage(bitmap: Bitmap): String {
+private fun compressImageStr(bitmap: Bitmap): String {
+  return "data:image/jpg;base64," + Base64.encodeToString(compressImageData(bitmap).toByteArray(), Base64.NO_WRAP)
+}
+
+fun resizeImageToDataSize(image: Bitmap, maxDataSize: Int): ByteArrayOutputStream {
+  var img = image
+  var stream = compressImageData(img)
+  while (stream.size() > maxDataSize) {
+    val ratio = sqrt(stream.size().toDouble() / maxDataSize.toDouble())
+    val clippedRatio = min(ratio, 2.0)
+    val width = (img.width.toDouble() / clippedRatio).toInt()
+    val height = img.height * width / img.width
+    img = Bitmap.createScaledBitmap(img, width, height, true)
+    stream = compressImageData(img)
+  }
+  return stream
+}
+
+private fun compressImageData(bitmap: Bitmap): ByteArrayOutputStream {
   val stream = ByteArrayOutputStream()
   bitmap.compress(Bitmap.CompressFormat.JPEG, 85, stream)
-  return "data:image/jpg;base64," + Base64.encodeToString(stream.toByteArray(), Base64.NO_WRAP)
+  return stream
 }
 
 fun base64ToBitmap(base64ImageString: String) : Bitmap {
@@ -171,7 +190,7 @@ fun GetImageBottomSheet(
         .padding(horizontal = 8.dp, vertical = 30.dp),
       horizontalArrangement = Arrangement.SpaceEvenly
     ) {
-      ActionButton(null, generalGetString(R.string.use_camera_button), icon = Icons.Outlined.PhotoCamera) {
+      ActionButton(null, stringResource(R.string.use_camera_button), icon = Icons.Outlined.PhotoCamera) {
         when (PackageManager.PERMISSION_GRANTED) {
           ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) -> {
             cameraLauncher.launch(null)
@@ -183,7 +202,7 @@ fun GetImageBottomSheet(
           }
         }
       }
-      ActionButton(null, generalGetString(R.string.from_gallery_button), icon = Icons.Outlined.Collections) {
+      ActionButton(null, stringResource(R.string.from_gallery_button), icon = Icons.Outlined.Collections) {
         when (PackageManager.PERMISSION_GRANTED) {
           ContextCompat.checkSelfPermission(context, Manifest.permission.READ_EXTERNAL_STORAGE) -> {
             galleryLauncher.launch("image/*")

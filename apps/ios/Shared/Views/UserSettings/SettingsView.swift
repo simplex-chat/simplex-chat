@@ -18,6 +18,10 @@ struct SettingsView: View {
     @Environment(\.colorScheme) var colorScheme
     @EnvironmentObject var chatModel: ChatModel
     @Binding var showSettings: Bool
+    @AppStorage("useNotifications") private var useNotifications = false
+    @AppStorage("pendingConnections") private var pendingConnections = true
+    @State var showNotificationsAlert: Bool = false
+    @State var whichNotificationsAlert = NotificationAlert.enable
 
     var body: some View {
         let user: User = chatModel.currentUser!
@@ -56,6 +60,11 @@ struct SettingsView: View {
                 }
                 
                 Section("Settings") {
+                    HStack {
+                        Image(systemName: "link")
+                            .padding(.trailing, 8)
+                        Toggle("Show pending connections", isOn: $pendingConnections)
+                    }
                     NavigationLink {
                         SMPServers()
                             .navigationTitle("Your SMP servers")
@@ -128,11 +137,113 @@ struct SettingsView: View {
                             .padding(.trailing, 8)
                         Text("Install [SimpleX Chat for terminal](https://github.com/simplex-chat/simplex-chat)")
                     }
+                    if let token = chatModel.deviceToken {
+                        HStack {
+                            notificationsIcon()
+                            notificationsToggle(token)
+                        }
+                    }
                     Text("v\(appVersion ?? "?") (\(appBuild ?? "?"))")
                 }
             }
             .navigationTitle("Your settings")
         }
+    }
+
+    enum NotificationAlert {
+        case enable
+        case error(LocalizedStringKey, String)
+    }
+
+    private func notificationsIcon() -> some View {
+        let icon: String
+        let color: Color
+        switch (chatModel.tokenStatus) {
+        case .new:
+            icon = "bolt"
+            color = .primary
+        case .registered:
+            icon = "bolt.fill"
+            color = .primary
+        case .invalid:
+            icon = "bolt.slash"
+            color = .primary
+        case .confirmed:
+            icon = "bolt.fill"
+            color = .yellow
+        case .active:
+            icon = "bolt.fill"
+            color = .green
+        case .expired:
+            icon = "bolt.slash.fill"
+            color = .primary
+        }
+        return Image(systemName: icon)
+            .padding(.trailing, 9)
+            .foregroundColor(color)
+    }
+
+    private func notificationsToggle(_ token:  String) -> some View {
+        Toggle("Check messages", isOn: $useNotifications)
+            .onChange(of: useNotifications) { enable in
+                if enable {
+                    showNotificationsAlert = true
+                    whichNotificationsAlert = .enable
+                } else {
+                    Task {
+                        do {
+                            try await apiDeleteToken(token: token)
+                            chatModel.tokenStatus = .new
+                        }
+                        catch {
+                            DispatchQueue.main.async {
+                                if let cr = error as? ChatResponse {
+                                    let err = String(describing: cr)
+                                    logger.error("apiDeleteToken error: \(err)")
+                                    showNotificationsAlert = true
+                                    whichNotificationsAlert = .error("Error deleting token", err)
+                                } else {
+                                    logger.error("apiDeleteToken unknown error: \(error.localizedDescription)")
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            .alert(isPresented: $showNotificationsAlert) {
+                switch (whichNotificationsAlert) {
+                case .enable: return enableNotificationsAlert(token)
+                case let .error(title, err): return Alert(title: Text(title), message: Text(err))
+                }
+            }
+    }
+
+    private func enableNotificationsAlert(_ token: String) -> Alert {
+        Alert(
+            title: Text("Enable notifications? (BETA)"),
+            message: Text("The app can receive background notifications every 20 minutes to check the new messages.\n*Please note*: if you confirm, your device token will be sent to SimpleX Chat notifications server."),
+            primaryButton: .destructive(Text("Confirm")) {
+                Task {
+                    do {
+                        chatModel.tokenStatus = try await apiRegisterToken(token: token)
+                    } catch {
+                        DispatchQueue.main.async {
+                            useNotifications = false
+                            if let cr = error as? ChatResponse {
+                                let err = String(describing: cr)
+                                logger.error("apiRegisterToken error: \(err)")
+                                showNotificationsAlert = true
+                                whichNotificationsAlert = .error("Error registering token", err)
+                            } else {
+                                logger.error("apiRegisterToken unknown error: \(error.localizedDescription)")
+                            }
+                        }
+                    }
+                }
+            }, secondaryButton: .cancel() {
+                withAnimation() { useNotifications = false }
+            }
+        )
     }
 }
 

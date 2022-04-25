@@ -11,7 +11,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Bolt
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.*
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.*
@@ -223,6 +223,15 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
         )
         return false
       }
+      r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorAgent
+          && r.chatError.agentError is AgentErrorType.SMP
+          && r.chatError.agentError.smpErr is SMPErrorType.AUTH -> {
+        AlertManager.shared.showAlertMsg(
+          generalGetString(R.string.connection_error_auth),
+          generalGetString(R.string.connection_error_auth_desc)
+        )
+        return false
+      }
       else -> {
         apiErrorAlert("apiConnect", "Connection error", r)
         return false
@@ -330,6 +339,9 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
         chatModel.updateNetworkStatus(r.contact, Chat.NetworkStatus.Connected())
 //        NtfManager.shared.notifyContactConnected(contact)
       }
+      is CR.ContactConnecting -> {
+        chatModel.updateContact(r.contact)
+      }
       is CR.ReceivedContactRequest -> {
         val contactRequest = r.contactRequest
         val cInfo = ChatInfo.ContactRequest(contactRequest)
@@ -360,7 +372,7 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
         val cItem = r.chatItem.chatItem
         chatModel.addChatItem(cInfo, cItem)
         val file = cItem.file
-        if (file != null && file.fileSize <= 236700) { // 394500
+        if (file != null && file.fileSize <= MAX_IMAGE_SIZE) {
           withApi {receiveFile(file.fileId)}
         }
         if (!isAppOnForeground(appContext) || chatModel.chatId.value != cInfo.id) {
@@ -437,9 +449,9 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
             Row {
               Icon(
                 Icons.Outlined.Bolt,
-                contentDescription = generalGetString(R.string.icon_descr_instant_notifications),
+                contentDescription = stringResource(R.string.icon_descr_instant_notifications),
               )
-              Text(generalGetString(R.string.private_instant_notifications), fontWeight = FontWeight.Bold)
+              Text(stringResource(R.string.private_instant_notifications), fontWeight = FontWeight.Bold)
             }
           },
           text = {
@@ -452,7 +464,7 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
             }
           },
           confirmButton = {
-            Button(onClick = AlertManager.shared::hideAlert) { Text(generalGetString(R.string.ok)) }
+            Button(onClick = AlertManager.shared::hideAlert) { Text(stringResource(R.string.ok)) }
           }
         )
       }
@@ -633,6 +645,7 @@ sealed class CR {
   @Serializable @SerialName("userContactLinkCreated") class UserContactLinkCreated(val connReqContact: String): CR()
   @Serializable @SerialName("userContactLinkDeleted") class UserContactLinkDeleted: CR()
   @Serializable @SerialName("contactConnected") class ContactConnected(val contact: Contact): CR()
+  @Serializable @SerialName("contactConnecting") class ContactConnecting(val contact: Contact): CR()
   @Serializable @SerialName("receivedContactRequest") class ReceivedContactRequest(val contactRequest: UserContactRequest): CR()
   @Serializable @SerialName("acceptingContactRequest") class AcceptingContactRequest(val contact: Contact): CR()
   @Serializable @SerialName("contactRequestRejected") class ContactRequestRejected: CR()
@@ -676,6 +689,7 @@ sealed class CR {
     is UserContactLinkCreated -> "userContactLinkCreated"
     is UserContactLinkDeleted -> "userContactLinkDeleted"
     is ContactConnected -> "contactConnected"
+    is ContactConnecting -> "contactConnecting"
     is ReceivedContactRequest -> "receivedContactRequest"
     is AcceptingContactRequest -> "acceptingContactRequest"
     is ContactRequestRejected -> "contactRequestRejected"
@@ -720,6 +734,7 @@ sealed class CR {
     is UserContactLinkCreated -> connReqContact
     is UserContactLinkDeleted -> noDetails()
     is ContactConnected -> json.encodeToString(contact)
+    is ContactConnecting -> json.encodeToString(contact)
     is ReceivedContactRequest -> json.encodeToString(contactRequest)
     is AcceptingContactRequest -> json.encodeToString(contact)
     is ContactRequestRejected -> noDetails()
