@@ -7,9 +7,9 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import chat.simplex.app.R
 import chat.simplex.app.model.CIFile
 import chat.simplex.app.views.helpers.*
-import chat.simplex.app.R
 
 @Composable
 fun CIImageView(

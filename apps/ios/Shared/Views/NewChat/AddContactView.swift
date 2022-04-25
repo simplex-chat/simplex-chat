@@ -11,7 +11,6 @@ import CoreImage.CIFilterBuiltins
 
 struct AddContactView: View {
     var connReqInvitation: String
-
     var body: some View {
         VStack {
             Text("Add contact")

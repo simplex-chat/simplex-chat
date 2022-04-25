@@ -63,7 +63,7 @@ fun AddContactLayout(connReq: String, share: () -> Unit) {
         lineHeight = 22.sp,
         modifier = Modifier
           .padding(horizontal = 16.dp)
-          .padding(bottom = if(screenHeight > 600.dp) 16.dp else 8.dp)
+          .padding(bottom = if (screenHeight > 600.dp) 16.dp else 8.dp)
       )
       SimpleButton(generalGetString(R.string.share_invitation_link), icon = Icons.Outlined.Share, click = share)
       Spacer(Modifier.height(10.dp))
