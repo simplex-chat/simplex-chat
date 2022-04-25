@@ -70,7 +70,7 @@ struct ComposeState {
         }
     }
 
-    func allowedToGenerateLinkPreview() -> Bool {
+    func linkPreviewAllowed() -> Bool {
         switch preview {
         case .imagePreview:
             return false
@@ -146,7 +146,7 @@ struct ComposeView: View {
             }
         }
         .onChange(of: composeState.message) { _ in
-            if composeState.allowedToGenerateLinkPreview() {
+            if composeState.linkPreviewAllowed() {
                 if composeState.message.count > 0 {
                     showLinkPreview(composeState.message)
                 } else {

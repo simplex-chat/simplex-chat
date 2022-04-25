@@ -220,7 +220,7 @@ mkCIMeta :: ChatItemId -> CIContent d -> Text -> CIStatus d -> Maybe SharedMsgId
 mkCIMeta itemId itemContent itemText itemStatus itemSharedMsgId itemDeleted itemEdited tz currentTs itemTs createdAt =
   let localItemTs = utcToZonedTime tz itemTs
       editable = case itemContent of
-        CISndMsgContent mc -> diffUTCTime currentTs itemTs < nominalDay && msgContentText mc /= ""
+        CISndMsgContent _ -> diffUTCTime currentTs itemTs < nominalDay
         _ -> False
    in CIMeta {itemId, itemTs, itemText, itemStatus, itemSharedMsgId, itemDeleted, itemEdited, editable, localItemTs, createdAt}
 
