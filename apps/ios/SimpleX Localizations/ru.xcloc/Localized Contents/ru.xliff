@@ -117,7 +117,7 @@
       </trans-unit>
       <trans-unit id="Add contact to start a new chat" xml:space="preserve">
         <source>Add contact to start a new chat</source>
-        <target>Добавьте контакт чтобы отправить сообщение</target>
+        <target>Добавьте контакт, чтобы начать разговор</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="All your contacts will remain connected" xml:space="preserve">
@@ -497,7 +497,7 @@
       </trans-unit>
       <trans-unit id="Paste the link you received into the box below to connect with your contact." xml:space="preserve">
         <source>Paste the link you received into the box below to connect with your contact.</source>
-        <target>Чтобы соединиться, вставьте ссылку, которую вы получили от вашего контакта, в это поле.</target>
+        <target>Чтобы соединиться, вставьте в это поле ссылку, полученную от вашего контакта.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Please check that you used the correct link or ask your contact to send you another one." xml:space="preserve">
@@ -702,7 +702,7 @@ To connect, please ask your contact to create another connection link and check 
       </trans-unit>
       <trans-unit id="You can also connect by clicking the link. If it opens in the browser, click **Open in mobile app** button" xml:space="preserve">
         <source>You can also connect by clicking the link. If it opens in the browser, click **Open in mobile app** button</source>
-        <target>Вы также можете соединиться открыв ссылку там, где вы её получили. Если ссылка откроется в браузере, нажмите кнопку **Open in mobile app**.</target>
+        <target>Вы также можете соединиться, открыв ссылку там, где вы её получили. Если ссылка откроется в браузере, нажмите кнопку **Open in mobile app**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can now send messages to %@" xml:space="preserve">

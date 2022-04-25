@@ -329,7 +329,7 @@
 "Paste received link" = "Вставить полученную ссылку";
 
 /* No comment provided by engineer. */
-"Paste the link you received into the box below to connect with your contact." = "Чтобы соединиться, вставьте ссылку, которую вы получили от вашего контакта, в это поле.";
+"Paste the link you received into the box below to connect with your contact." = "Чтобы соединиться, вставьте в это поле ссылку, полученную от вашего контакта.";
 
 /* No comment provided by engineer. */
 "Please check that you used the correct link or ask your contact to send you another one." = "Пожалуйста, проверьте, что вы использовали правильную ссылку или попросите, чтобы ваш контакт отправил вам другую ссылку.";
@@ -461,7 +461,7 @@
 "You are connected to the server used to receive messages from this contact." = "Установлено соединение с сервером, через который вы получаете сообщения от этого контакта.";
 
 /* No comment provided by engineer. */
-"You can also connect by clicking the link. If it opens in the browser, click **Open in mobile app** button" = "Вы также можете соединиться открыв ссылку там, где вы её получили. Если ссылка откроется в браузере, нажмите кнопку **Open in mobile app**.";
+"You can also connect by clicking the link. If it opens in the browser, click **Open in mobile app** button" = "Вы также можете соединиться, открыв ссылку там, где вы её получили. Если ссылка откроется в браузере, нажмите кнопку **Open in mobile app**.";
 
 /* notification body */
 "You can now send messages to %@" = "Вы теперь можете отправлять сообщения %@";
