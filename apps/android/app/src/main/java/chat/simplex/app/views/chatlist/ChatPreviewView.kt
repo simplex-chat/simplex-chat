@@ -28,21 +28,22 @@ import chat.simplex.app.views.helpers.badgeLayout
 @Composable
 fun ChatPreviewView(chat: Chat) {
   Row {
-    ChatInfoImage(chat, size = 72.dp)
+    val cInfo = chat.chatInfo
+    ChatInfoImage(cInfo, size = 72.dp)
     Column(
       modifier = Modifier
         .padding(horizontal = 8.dp)
         .weight(1F)
     ) {
       Text(
-        chat.chatInfo.chatViewName,
+        cInfo.chatViewName,
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
         style = MaterialTheme.typography.h3,
         fontWeight = FontWeight.Bold,
-        color = if (chat.chatInfo.ready) Color.Unspecified else HighOrLowlight
+        color = if (cInfo.ready) Color.Unspecified else HighOrLowlight
       )
-      if (chat.chatInfo.ready) {
+      if (cInfo.ready) {
         val ci = chat.chatItems.lastOrNull()
         if (ci != null) {
           MarkdownText(

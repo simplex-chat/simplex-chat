@@ -24,6 +24,15 @@
     <string name="unknown_message_format">неизвестный формат сообщения</string>
     <string name="invalid_message_format">неверный формат сообщения</string>
 
+    <!-- PendingContactConnection - ChatModel.kt -->
+    <string name="connection_local_display_name">connection <xliff:g id="connection ID" example="1">%1$d</xliff:g></string>
+    <string name="display_name_connection_established">соединение установлено</string>
+    <string name="display_name_invited_to_connect">приглашение соединиться</string>
+    <string name="display_name_connecting">соединеняется…</string>
+    <string name="description_you_shared_one_time_link">вы создали одноразовую ссылку</string>
+    <string name="description_via_contact_address_link">через ссылку-контакт</string>
+    <string name="description_via_one_time_link">через одноразовую ссылку</string>
+
     <!-- SMP Server Information - SimpleXAPI.kt -->
     <string name="error_saving_smp_servers">Ошибка при сохранении SMP серверов</string>
     <string name="ensure_smp_server_address_are_correct_format_and_unique">Пожалуйста, проверьте, что адреса SMP серверов имеют правильный формат, каждый адрес на отдельной строке и не повторяется.</string>
@@ -38,6 +47,10 @@
     <string name="cannot_delete_contact">Невозможно удалить контакт!</string>
     <string name="contact_cannot_be_deleted_as_they_are_in_groups">Контакт <xliff:g id="contactName" example="Jane Doe">%1$s!</xliff:g> не может быть удален, так как является членом групп(ы) <xliff:g id="groups" example="[team, chess club]">%2$s</xliff:g>.</string>
     <string name="icon_descr_instant_notifications">Мгновенные уведомления</string>
+    <string name="error_deleting_contact">Ошибка удаления контакта</string>
+    <string name="error_deleting_group">Ошибка удаления группы</string>
+    <string name="error_deleting_contact_request">Ошибка удаления запроса</string>
+    <string name="error_deleting_pending_contact_connection">Ошибка удаления ожидаемого соединения</string>
 
     <!-- background service notice - SimpleXAPI.kt -->
     <string name="private_instant_notifications">Приватные мгновенные уведомления!</string>
@@ -131,6 +144,13 @@
     <string name="if_you_choose_to_reject_the_sender_will_not_be_notified">Отправителю НЕ будет послано уведомление, если вы отклоните запрос на соединение.</string>
     <string name="accept_contact_button">Принять</string>
     <string name="reject_contact_button">Отклонить</string>
+
+    <!-- Pending contact connection alert dialogues -->
+    <string name="you_invited_your_contact">Вы пригласили ваш контакт</string>
+    <string name="you_accepted_connection">Вы приняли приглашение соединениться</string>
+    <string name="delete_pending_connection__question">Удалить ожидаемое соединение?</string>
+    <string name="contact_you_shared_link_with_wont_be_able_to_connect">Контакт, которому вы отправили эту ссылку, не сможет соединиться!</string>
+    <string name="connection_you_accepted_will_be_cancelled">Подтвержденное соединение будет отменено!</string>
 
     <!-- Connection Pending Alert Dialogue - ChatListNavLinkView.kt -->
     <string name="alert_title_contact_connection_pending">Соединение еще не установлено!</string>
