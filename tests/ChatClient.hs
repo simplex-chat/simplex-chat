@@ -8,12 +8,12 @@
 
 module ChatClient where
 
-import Control.Concurrent (ThreadId, forkIOWithUnmask, killThread)
+import Control.Concurrent (ThreadId, forkIOWithUnmask, killThread, threadDelay)
 import Control.Concurrent.Async
 import Control.Concurrent.STM
 import Control.Exception (bracket, bracket_)
 import Control.Monad.Except
-import Data.List (dropWhileEnd)
+import Data.List (dropWhileEnd, find)
 import Data.Maybe (fromJust)
 import qualified Data.Text as T
 import Network.Socket
@@ -81,10 +81,22 @@ cfg =
       testView = True
     }
 
-virtualSimplexChat :: FilePath -> Profile -> IO TestCC
-virtualSimplexChat dbFilePrefix profile = do
+createTestChat :: Int -> Profile -> IO TestCC
+createTestChat dbNumber profile = do
+  let dbFilePrefix = testDBPrefix <> show dbNumber
   st <- createStore (dbFilePrefix <> "_chat.db") 1 False
   Right user <- runExceptT $ createUser st profile True
+  startTestChat_ st dbFilePrefix user
+
+startTestChat :: Int -> IO TestCC
+startTestChat dbNumber = do
+  let dbFilePrefix = testDBPrefix <> show dbNumber
+  st <- createStore (dbFilePrefix <> "_chat.db") 1 False
+  Just user <- find activeUser <$> getUsers st
+  startTestChat_ st dbFilePrefix user
+
+startTestChat_ :: SQLiteStore -> FilePath -> User -> IO TestCC
+startTestChat_ st dbFilePrefix user = do
   t <- withVirtualTerminal termSettings pure
   ct <- newChatTerminal t
   cc <- newChatController st (Just user) cfg opts {dbFilePrefix} Nothing -- no notifications
@@ -92,6 +104,19 @@ virtualSimplexChat dbFilePrefix profile = do
   termQ <- newTQueueIO
   termAsync <- async $ readTerminalOutput t termQ
   pure TestCC {chatController = cc, virtualTerminal = t, chatAsync, termAsync, termQ}
+
+stopTestChat :: TestCC -> IO ()
+stopTestChat TestCC {chatController = cc, chatAsync, termAsync} = do
+  threadDelay 500000
+  stopChatController cc
+  uninterruptibleCancel termAsync
+  uninterruptibleCancel chatAsync
+
+withNewTestChat :: Int -> Profile -> (TestCC -> IO a) -> IO a
+withNewTestChat dbNumber profile = bracket (createTestChat dbNumber profile) stopTestChat
+
+withTestChat :: Int -> (TestCC -> IO a) -> IO a
+withTestChat dbNumber = bracket (startTestChat dbNumber) stopTestChat
 
 readTerminalOutput :: VirtualTerminal -> TQueue String -> IO ()
 readTerminalOutput t termQ = do
@@ -124,14 +149,14 @@ withTmpFiles =
 
 testChatN :: [Profile] -> ([TestCC] -> IO ()) -> IO ()
 testChatN ps test = withTmpFiles $ do
-  let envs = zip ps $ map ((testDBPrefix <>) . show) [(1 :: Int) ..]
-  tcs <- getTestCCs envs []
+  tcs <- getTestCCs (zip ps [1 ..]) []
   test tcs
   concurrentlyN_ $ map (<// 100000) tcs
+  concurrentlyN_ $ map stopTestChat tcs
   where
-    getTestCCs :: [(Profile, FilePath)] -> [TestCC] -> IO [TestCC]
+    getTestCCs :: [(Profile, Int)] -> [TestCC] -> IO [TestCC]
     getTestCCs [] tcs = pure tcs
-    getTestCCs ((p, db) : envs') tcs = (:) <$> virtualSimplexChat db p <*> getTestCCs envs' tcs
+    getTestCCs ((p, db) : envs') tcs = (:) <$> createTestChat db p <*> getTestCCs envs' tcs
 
 (<//) :: TestCC -> Int -> Expectation
 (<//) cc t = timeout t (getTermLine cc) `shouldReturn` Nothing

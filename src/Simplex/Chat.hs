@@ -146,6 +146,11 @@ startChatController user = do
       atomically . writeTVar s $ Just a
       pure a
 
+stopChatController :: MonadUnliftIO m => ChatController -> m ()
+stopChatController ChatController {smpAgent, agentAsync = s} = do
+  disconnectAgentClient smpAgent
+  readTVarIO s >>= mapM_ uninterruptibleCancel >> atomically (writeTVar s Nothing)
+
 withLock :: MonadUnliftIO m => TMVar () -> m a -> m a
 withLock lock =
   E.bracket_
