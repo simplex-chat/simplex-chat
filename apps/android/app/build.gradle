@@ -90,9 +90,11 @@ dependencies {
     implementation "androidx.camera:camera-camera2:${camerax_version}"
     implementation "androidx.camera:camera-lifecycle:${camerax_version}"
     implementation "androidx.camera:camera-view:${camerax_version}"
+
     //Barcode
-    implementation 'com.google.zxing:core:3.4.0'
-    implementation 'com.google.mlkit:barcode-scanning:17.0.2'
+    implementation 'org.boofcv:boofcv-android:0.40.1'
+    implementation 'org.boofcv:boofcv-core:0.40.1'
+
     //Camera Permission
     implementation "com.google.accompanist:accompanist-permissions:0.23.0"
 

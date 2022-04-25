@@ -1,5 +1,6 @@
 package chat.simplex.app.views.newchat
 
+import android.annotation.SuppressLint
 import android.util.Log
 import android.view.ViewGroup
 import androidx.camera.core.*
@@ -10,21 +11,24 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
+import boofcv.abst.fiducial.QrCodeDetector
+import boofcv.alg.color.ColorFormat
+import boofcv.android.ConvertCameraImage
+import boofcv.factory.fiducial.FactoryFiducial
+import boofcv.struct.image.GrayU8
 import chat.simplex.app.TAG
 import com.google.common.util.concurrent.ListenableFuture
-import com.google.mlkit.vision.barcode.BarcodeScannerOptions
-import com.google.mlkit.vision.barcode.BarcodeScanning
-import com.google.mlkit.vision.barcode.common.Barcode
-import com.google.mlkit.vision.common.InputImage
 import java.util.concurrent.*
 
-// Bar code scanner adapted from https://github.com/MakeItEasyDev/Jetpack-Compose-BarCode-Scanner
+// Adapted from learntodroid - https://gist.github.com/learntodroid/8f839be0b29d0378f843af70607bd7f5
 
 @Composable
 fun QRCodeScanner(onBarcode: (String) -> Unit) {
   val context = LocalContext.current
   val lifecycleOwner = LocalLifecycleOwner.current
   var preview by remember { mutableStateOf<Preview?>(null) }
+  var lastAnalyzedTimeStamp = 0L
+  var contactLink = ""
 
   AndroidView(
     factory = { AndroidViewContext ->
@@ -36,74 +40,60 @@ fun QRCodeScanner(onBarcode: (String) -> Unit) {
         )
         implementationMode = PreviewView.ImplementationMode.COMPATIBLE
       }
-    },
-//    modifier = Modifier.fillMaxSize(),
-    update = { previewView ->
-      val cameraSelector: CameraSelector = CameraSelector.Builder()
-        .requireLensFacing(CameraSelector.LENS_FACING_BACK)
-        .build()
-      val cameraExecutor: ExecutorService = Executors.newSingleThreadExecutor()
-      val cameraProviderFuture: ListenableFuture<ProcessCameraProvider> =
-        ProcessCameraProvider.getInstance(context)
-
-      cameraProviderFuture.addListener({
-        preview = Preview.Builder().build().also {
-          it.setSurfaceProvider(previewView.surfaceProvider)
-        }
-        val cameraProvider: ProcessCameraProvider = cameraProviderFuture.get()
-        val barcodeAnalyser = BarCodeAnalyser { barcodes ->
-          barcodes.firstOrNull()?.rawValue?.let(onBarcode)
-        }
-        val imageAnalysis: ImageAnalysis = ImageAnalysis.Builder()
-          .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-          .build()
-          .also { it.setAnalyzer(cameraExecutor, barcodeAnalyser) }
-
-        try {
-          cameraProvider.unbindAll()
-          cameraProvider.bindToLifecycle(lifecycleOwner, cameraSelector, preview, imageAnalysis)
-        } catch (e: Exception) {
-          Log.d(TAG, "CameraPreview: ${e.localizedMessage}")
-        }
-      }, ContextCompat.getMainExecutor(context))
     }
-  )
-}
+  ) { previewView ->
+    val cameraSelector: CameraSelector = CameraSelector.Builder()
+      .requireLensFacing(CameraSelector.LENS_FACING_BACK)
+      .build()
+    val cameraExecutor: ExecutorService = Executors.newSingleThreadExecutor()
+    val cameraProviderFuture: ListenableFuture<ProcessCameraProvider> =
+      ProcessCameraProvider.getInstance(context)
 
-class BarCodeAnalyser(
-  private val onBarcodeDetected: (barcodes: List<Barcode>) -> Unit,
-): ImageAnalysis.Analyzer {
-  private var lastAnalyzedTimeStamp = 0L
-
-  @ExperimentalGetImage
-  override fun analyze(image: ImageProxy) {
-    val currentTimestamp = System.currentTimeMillis()
-    if (currentTimestamp - lastAnalyzedTimeStamp >= TimeUnit.SECONDS.toMillis(1)) {
-      image.image?.let { imageToAnalyze ->
-        val options = BarcodeScannerOptions.Builder()
-          .setBarcodeFormats(Barcode.FORMAT_ALL_FORMATS)
-          .build()
-        val barcodeScanner = BarcodeScanning.getClient(options)
-        val imageToProcess = InputImage.fromMediaImage(imageToAnalyze, image.imageInfo.rotationDegrees)
-
-        barcodeScanner.process(imageToProcess)
-          .addOnSuccessListener { barcodes ->
-            if (barcodes.isNotEmpty()) {
-              onBarcodeDetected(barcodes)
-            } else {
-              Log.d(TAG, "BarcodeAnalyser: No barcode Scanned")
+    cameraProviderFuture.addListener({
+      preview = Preview.Builder().build().also {
+        it.setSurfaceProvider(previewView.surfaceProvider)
+      }
+      val cameraProvider: ProcessCameraProvider = cameraProviderFuture.get()
+      val detector: QrCodeDetector<GrayU8> = FactoryFiducial.qrcode(null, GrayU8::class.java)
+      fun getQR(imageProxy: ImageProxy) {
+        val currentTimeStamp = System.currentTimeMillis()
+        if (currentTimeStamp - lastAnalyzedTimeStamp >= TimeUnit.SECONDS.toMillis(1)) {
+          detector.process(imageProxyToGrayU8(imageProxy))
+          val found = detector.detections
+          val qr = found.firstOrNull()
+          if (qr != null) {
+            if (qr.message != contactLink) {
+              // Make sure link is new and not a repeat
+              contactLink = qr.message
+              onBarcode(contactLink)
             }
           }
-          .addOnFailureListener { exception ->
-            Log.e(TAG, "BarcodeAnalyser: Something went wrong $exception")
-          }
-          .addOnCompleteListener {
-            image.close()
-          }
+        }
+        imageProxy.close()
       }
-      lastAnalyzedTimeStamp = currentTimestamp
-    } else {
-      image.close()
-    }
+      val imageAnalyzer = ImageAnalysis.Analyzer { proxy -> getQR(proxy) }
+      val imageAnalysis: ImageAnalysis = ImageAnalysis.Builder()
+        .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+        .setImageQueueDepth(1)
+        .build()
+        .also { it.setAnalyzer(cameraExecutor, imageAnalyzer) }
+      try {
+        cameraProvider.unbindAll()
+        cameraProvider.bindToLifecycle(lifecycleOwner, cameraSelector, preview, imageAnalysis)
+      } catch (e: Exception) {
+        Log.d(TAG, "CameraPreview: ${e.localizedMessage}")
+      }
+    }, ContextCompat.getMainExecutor(context))
   }
+}
+
+@SuppressLint("UnsafeOptInUsageError")
+private fun imageProxyToGrayU8(img: ImageProxy) : GrayU8? {
+  val image = img.image
+  if (image != null) {
+    val outImg = GrayU8()
+    ConvertCameraImage.imageToBoof(image, ColorFormat.GRAY, outImg, null)
+    return outImg
+  }
+  return null
 }
