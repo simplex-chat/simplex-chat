@@ -138,7 +138,7 @@ struct ChatView: View {
                     if ci.meta.editable {
                         Button {
                             withAnimation {
-                                composeState = composeStateEditing(editingItem: ci)
+                                composeState = ComposeState(editingItem: ci)
                             }
                         } label: { Label("Edit", systemImage: "square.and.pencil") }
                     }

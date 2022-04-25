@@ -21,10 +21,26 @@ enum ComposeContextItem {
 }
 
 struct ComposeState {
-    var message: String = ""
-    var preview: ComposePreview = .noPreview
-    var contextItem: ComposeContextItem = .noContextItem
+    var message: String
+    var preview: ComposePreview
+    var contextItem: ComposeContextItem
     var inProgress: Bool = false
+
+    init(
+        message: String = "",
+        preview: ComposePreview = .noPreview,
+        contextItem: ComposeContextItem = .noContextItem
+    ) {
+        self.message = message
+        self.preview = preview
+        self.contextItem = contextItem
+    }
+
+    init(editingItem: ChatItem) {
+        self.message = editingItem.content.text
+        self.preview = chatItemPreview(chatItem: editingItem)
+        self.contextItem = .editingItem(chatItem: editingItem)
+    }
 
     func copy(
         message: String? = nil,
@@ -84,14 +100,6 @@ func chatItemPreview(chatItem: ChatItem) -> ComposePreview {
         chatItemPreview = .noPreview
     }
     return chatItemPreview
-}
-
-func composeStateEditing(editingItem: ChatItem) -> ComposeState {
-    return ComposeState(
-        message: editingItem.content.text,
-        preview: chatItemPreview(chatItem: editingItem),
-        contextItem: .editingItem(chatItem: editingItem)
-    )
 }
 
 struct ComposeView: View {

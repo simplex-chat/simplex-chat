@@ -78,9 +78,9 @@ struct SendMessageView: View {
 
 struct SendMessageView_Previews: PreviewProvider {
     static var previews: some View {
-        @State var newComposeState = ComposeState()
+        @State var composeStateNew = ComposeState()
         let ci = ChatItem.getSample(1, .directSnd, .now, "hello")
-        @State var composeStateEditing = composeStateEditing(editingItem: ci)
+        @State var composeStateEditing = ComposeState(editingItem: ci)
         @FocusState var keyboardVisible: Bool
         @State var sendEnabled: Bool = true
 
@@ -89,7 +89,7 @@ struct SendMessageView_Previews: PreviewProvider {
                 Text("")
                 Spacer(minLength: 0)
                 SendMessageView(
-                    composeState: $newComposeState,
+                    composeState: $composeStateNew,
                     sendMessage: { print ($0) },
                     keyboardVisible: $keyboardVisible
                 )
