@@ -91,9 +91,9 @@ fun QRCodeScanner(onBarcode: (String) -> Unit) {
 private fun imageProxyToGrayU8(img: ImageProxy) : GrayU8? {
   val image = img.image
   if (image != null) {
-    val out = GrayU8()
-    ConvertCameraImage.imageToBoof(image, ColorFormat.GRAY, out, null)
-    return out
+    val outImg = GrayU8()
+    ConvertCameraImage.imageToBoof(image, ColorFormat.GRAY, outImg, null)
+    return outImg
   }
   return null
 }
