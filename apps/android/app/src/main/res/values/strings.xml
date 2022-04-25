@@ -154,8 +154,6 @@
   <string name="icon_descr_simplex_team"><xliff:g id="appName">SimpleX</xliff:g> Team</string>
   <string name="image_descr_simplex_logo"><xliff:g id="appName">SimpleX</xliff:g> Logo</string>
   <string name="icon_descr_email">Email</string>
-  <string name="icon_checkmark_action">Check and Execute</string>
-  <string name="icon_paste_from_clipboard">Paste from clipboard</string>
 
   <!-- Add Contact - AddContactView.kt -->
   <string name="invalid_QR_code">Invalid QR code</string>
