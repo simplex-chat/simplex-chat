@@ -11,6 +11,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.tooling.preview.Preview
@@ -102,14 +103,14 @@ fun SMPServersLayout(
     verticalArrangement = Arrangement.spacedBy(8.dp)
   ) {
     Text(
-      generalGetString(R.string.your_SMP_servers),
+      stringResource(R.string.your_SMP_servers),
       Modifier.padding(bottom = 24.dp),
       style = MaterialTheme.typography.h1
     )
     Row(
       verticalAlignment = Alignment.CenterVertically
     ) {
-      Text(generalGetString(R.string.configure_SMP_servers), Modifier.padding(end = 24.dp))
+      Text(stringResource(R.string.configure_SMP_servers), Modifier.padding(end = 24.dp))
       Switch(
         checked = isUserSMPServers,
         onCheckedChange = isUserSMPServersOnOff,
@@ -121,9 +122,9 @@ fun SMPServersLayout(
     }
 
     if (!isUserSMPServers) {
-      Text(generalGetString(R.string.using_simplex_chat_servers), lineHeight = 22.sp)
+      Text(stringResource(R.string.using_simplex_chat_servers), lineHeight = 22.sp)
     } else {
-      Text(generalGetString(R.string.enter_one_SMP_server_per_line))
+      Text(stringResource(R.string.enter_one_SMP_server_per_line))
       if (editSMPServers) {
         TextEditor(Modifier.height(160.dp), text = userSMPServersStr)
 
@@ -135,14 +136,14 @@ fun SMPServersLayout(
           Column(horizontalAlignment = Alignment.Start) {
             Row {
               Text(
-                generalGetString(R.string.cancel_verb),
+                stringResource(R.string.cancel_verb),
                 color = MaterialTheme.colors.primary,
                 modifier = Modifier
                   .clickable(onClick = cancelEdit)
               )
               Spacer(Modifier.padding(horizontal = 8.dp))
               Text(
-                generalGetString(R.string.save_servers_button),
+                stringResource(R.string.save_servers_button),
                 color = MaterialTheme.colors.primary,
                 modifier = Modifier.clickable(onClick = {
                   val servers = userSMPServersStr.value.split("\n")
@@ -181,7 +182,7 @@ fun SMPServersLayout(
         ) {
           Column(horizontalAlignment = Alignment.Start) {
             Text(
-              generalGetString(R.string.edit_verb),
+              stringResource(R.string.edit_verb),
               color = MaterialTheme.colors.primary,
               modifier = Modifier
                 .clickable(onClick = editOn)
@@ -203,9 +204,9 @@ fun howToButton() {
     verticalAlignment = Alignment.CenterVertically,
     modifier = Modifier.clickable { uriHandler.openUri("https://github.com/simplex-chat/simplexmq#using-smp-server-and-smp-agent") }
   ) {
-    Text(generalGetString(R.string.how_to), color = MaterialTheme.colors.primary)
+    Text(stringResource(R.string.how_to), color = MaterialTheme.colors.primary)
     Icon(
-      Icons.Outlined.OpenInNew, generalGetString(R.string.how_to), tint = MaterialTheme.colors.primary,
+      Icons.Outlined.OpenInNew, stringResource(R.string.how_to), tint = MaterialTheme.colors.primary,
       modifier = Modifier.padding(horizontal = 5.dp)
     )
   }

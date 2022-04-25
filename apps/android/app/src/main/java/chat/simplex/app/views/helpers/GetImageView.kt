@@ -24,6 +24,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
@@ -189,7 +190,7 @@ fun GetImageBottomSheet(
         .padding(horizontal = 8.dp, vertical = 30.dp),
       horizontalArrangement = Arrangement.SpaceEvenly
     ) {
-      ActionButton(null, generalGetString(R.string.use_camera_button), icon = Icons.Outlined.PhotoCamera) {
+      ActionButton(null, stringResource(R.string.use_camera_button), icon = Icons.Outlined.PhotoCamera) {
         when (PackageManager.PERMISSION_GRANTED) {
           ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) -> {
             cameraLauncher.launch(null)
@@ -201,7 +202,7 @@ fun GetImageBottomSheet(
           }
         }
       }
-      ActionButton(null, generalGetString(R.string.from_gallery_button), icon = Icons.Outlined.Collections) {
+      ActionButton(null, stringResource(R.string.from_gallery_button), icon = Icons.Outlined.Collections) {
         when (PackageManager.PERMISSION_GRANTED) {
           ContextCompat.checkSelfPermission(context, Manifest.permission.READ_EXTERNAL_STORAGE) -> {
             galleryLauncher.launch("image/*")

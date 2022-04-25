@@ -11,6 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -20,7 +21,8 @@ import chat.simplex.app.model.ChatModel
 import chat.simplex.app.ui.theme.HighOrLowlight
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.chatlist.ScaffoldController
-import chat.simplex.app.views.helpers.*
+import chat.simplex.app.views.helpers.ModalManager
+import chat.simplex.app.views.helpers.withApi
 import com.google.accompanist.permissions.rememberPermissionState
 
 @Composable
@@ -56,7 +58,7 @@ fun NewChatSheetLayout(addContact: () -> Unit, scanCode: () -> Unit, pasteLink: 
     horizontalAlignment = Alignment.CenterHorizontally
   ) {
     Text(
-      generalGetString(R.string.add_contact_to_start_new_chat),
+      stringResource(R.string.add_contact_to_start_new_chat),
       modifier = Modifier.padding(horizontal = 8.dp).padding(top = 32.dp)
     )
     Row(
@@ -71,8 +73,8 @@ fun NewChatSheetLayout(addContact: () -> Unit, scanCode: () -> Unit, pasteLink: 
           .weight(1F)
           .fillMaxWidth()) {
         ActionButton(
-          generalGetString(R.string.create_one_time_link),
-          generalGetString(R.string.to_share_with_your_contact),
+          stringResource(R.string.create_one_time_link),
+          stringResource(R.string.to_share_with_your_contact),
           Icons.Outlined.PersonAdd,
           click = addContact
         )
@@ -82,8 +84,8 @@ fun NewChatSheetLayout(addContact: () -> Unit, scanCode: () -> Unit, pasteLink: 
           .weight(1F)
           .fillMaxWidth()) {
         ActionButton(
-          generalGetString(R.string.paste_received_link),
-          generalGetString(R.string.paste_received_link_from_clipboard),
+          stringResource(R.string.paste_received_link),
+          stringResource(R.string.paste_received_link_from_clipboard),
           Icons.Outlined.Link,
           click = pasteLink
         )
@@ -93,8 +95,8 @@ fun NewChatSheetLayout(addContact: () -> Unit, scanCode: () -> Unit, pasteLink: 
           .weight(1F)
           .fillMaxWidth()) {
         ActionButton(
-          generalGetString(R.string.scan_QR_code),
-          generalGetString(R.string.in_person_or_in_video_call__bracketed),
+          stringResource(R.string.scan_QR_code),
+          stringResource(R.string.in_person_or_in_video_call__bracketed),
           Icons.Outlined.QrCode,
           click = scanCode
         )

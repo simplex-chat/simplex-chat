@@ -12,6 +12,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.R
@@ -19,7 +20,6 @@ import chat.simplex.app.model.ChatModel
 import chat.simplex.app.ui.theme.ToolbarDark
 import chat.simplex.app.ui.theme.ToolbarLight
 import chat.simplex.app.views.helpers.ModalManager
-import chat.simplex.app.views.helpers.generalGetString
 import chat.simplex.app.views.newchat.NewChatSheet
 import chat.simplex.app.views.usersettings.SettingsView
 import kotlinx.coroutines.CoroutineScope
@@ -113,8 +113,8 @@ fun Help(scaffoldCtrl: ScaffoldController, displayName: String?) {
       .padding(16.dp)
   ) {
     val welcomeMsg = if (displayName != null) {
-      String.format(generalGetString(R.string.personal_welcome), displayName)
-    } else generalGetString(R.string.welcome)
+      String.format(stringResource(R.string.personal_welcome), displayName)
+    } else stringResource(R.string.welcome)
     Text(
       text = welcomeMsg,
       Modifier.padding(bottom = 24.dp),
@@ -128,12 +128,12 @@ fun Help(scaffoldCtrl: ScaffoldController, displayName: String?) {
       horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
       Text(
-        generalGetString(R.string.this_text_is_available_in_settings),
+        stringResource(R.string.this_text_is_available_in_settings),
         color = MaterialTheme.colors.onBackground
       )
       Icon(
         Icons.Outlined.Settings,
-        generalGetString(R.string.icon_descr_settings),
+        stringResource(R.string.icon_descr_settings),
         tint = MaterialTheme.colors.onBackground,
         modifier = Modifier.clickable(onClick = { scaffoldCtrl.toggleDrawer() })
       )
@@ -155,13 +155,13 @@ fun ChatListToolbar(scaffoldCtrl: ScaffoldController) {
     IconButton(onClick = { scaffoldCtrl.toggleDrawer() }) {
       Icon(
         Icons.Outlined.Menu,
-        generalGetString(R.string.icon_descr_settings),
+        stringResource(R.string.icon_descr_settings),
         tint = MaterialTheme.colors.primary,
         modifier = Modifier.padding(10.dp)
       )
     }
     Text(
-      generalGetString(R.string.your_chats),
+      stringResource(R.string.your_chats),
       color = MaterialTheme.colors.onBackground,
       fontWeight = FontWeight.SemiBold,
       modifier = Modifier.padding(5.dp)
@@ -169,7 +169,7 @@ fun ChatListToolbar(scaffoldCtrl: ScaffoldController) {
     IconButton(onClick = { scaffoldCtrl.toggleSheet() }) {
       Icon(
         Icons.Outlined.PersonAdd,
-        generalGetString(R.string.add_contact),
+        stringResource(R.string.add_contact),
         tint = MaterialTheme.colors.primary,
         modifier = Modifier.padding(10.dp)
       )
