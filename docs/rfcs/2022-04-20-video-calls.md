@@ -17,36 +17,32 @@ To extend the functionality of the SimpleX mobile apps in pursuit of supporting 
 
 The calls themselves should be handled by [WebRTC](https://www.html5rocks.com/en/tutorials/webrtc/infrastructure). This requires some initial messaging to set up the details of the session (routing, codecs, message priorities) and then the data of the call is passed peer-to-peer through the WebRTC channel resulting from the session instantiation. In order to secure the communications, the initial communication to set up the session will be handled through the existing SimpleX communication channel between users. The content sent through the WebRTC session will also be encrypted using keys (exchanged through SimpleX). Full details of the workflow for setting up WebRTC calls can be found [here](https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API/Signaling_and_video_calling).
 
-To take advantage of existing expertise and development in secure audio-visual communication, we propose to build this functionality using the [Jitsi](https://jitsi.github.io/handbook) [Android](https://jitsi.github.io/handbook/docs/dev-guide/dev-guide-android-sdk) and [iOS](https://jitsi.github.io/handbook/docs/dev-guide/dev-guide-ios-sdk) SDKs.
-
-Note that Jitsi calls [support end-to-end encryption](https://jitsi.org/blog/e2ee/).
+To take advantage of existing development and infrastructure, we propose to build this functionality using webviews in our apps which will have web pages using JavaScript APIs to handle WebRTC elements.
 
 
 ### Setting Up the Session
 
 In essence, we can use SimpleX to [handle the signalling](https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API/Signaling_and_video_calling) with [ICE](https://developer.mozilla.org/en-US/docs/Glossary/ICE) agents performing negotiation at either end in the SimpleX mobile app. This requires the sharing of [Session Description Protocol](https://developer.mozilla.org/en-US/docs/Glossary/SDP) information which can be serialised as JSON. These can be passed as a new message type in the SimpleX API.
 
-There are a few key features required to set up a jitsi call session. These features are TBC after discussion with jitsi team.
-
-1. A room ID which should be unique and single-use
-2. A private key for the call (note that this is a [relatively new feature](https://jitsi.org/blog/e2ee/) and may not yet have full support). This private key can be any url appropriate string.
-3. [Possibly] A password to connect to the call. Depending on whether this is supported by the API. It seems likely that this is unnecessary if we have E2EE as per point 2.
+There are a few key features required to set up a call session.
+1. Generation of Offers
+2. Negotiation of Offers
+3. Instantiating the call over the network
+4. Showing the users the video streams
 
 These elements can be included in a new 'call' message type which includes the information alongside the nature of the call (i.e. audio only or video).
 
-
-Issues with Jitsi
-- We likely reveal user's IP addresses to Jitsi
-- We lose control of encryption
-- We're passing traffic to Jitsi Servers (although we could [self-host](https://jitsi.github.io/handbook/docs/devops-guide/))
-- SDK and encryption are WIP
-
-
-### Setting Up the Call
-Using Jitsi SDKs, the JitsiMeetView ([Android](https://jitsi.github.io/handbook/docs/dev-guide/dev-guide-android-sdk#jitsimeetview), [iOS](https://jitsi.github.io/handbook/docs/dev-guide/dev-guide-ios-sdk#jitsimeetview-class)) can be shown to the user.
-
 User state etc can be updated as calls are connected/disconnected.
 
+### Initial Prototype
+To get off the ground, we will develop an initial prototype (not for app store release). This prototype will simply set up a video call with no changes to the SimpleX API (as we will simply pass messages as JSON through other channels).
+
+This prototype will demonstrate how to set up calls using WebRTC and demonstrate how to pass information to and from webviews in app.
+
+The workflow will be as follows
+1. 
+2. 
+3. 
 
 ## Queries
 **Do we need to set up and destroy virtual IP addresses for additional security?**
@@ -58,4 +54,4 @@ For initial implementation it is sufficient to warn users that they may be expos
 Yes. We can implement a 'frame encryption' method in the SimpleX API which given a key and some content returns the encrypted content. Similarly, we will have a decryption call. Keys can be call specific and formed using typical DH key exchange.
 
 **Who runs the STUN/TURN servers?**
-If using Jitsi SDK then we connect via Jitsi owned servers. In other methods (WebViews) SimpleX needs to run its own routing servers to support ICE.
+For the initial prototype we can use publicly available servers. For a full release implementation, SimpleX will need to run its own routing servers to support ICE and possibly STUN/TURN. Open source implementations for these elements exist.
