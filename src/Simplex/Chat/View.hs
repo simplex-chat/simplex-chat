@@ -111,8 +111,8 @@ responseToView testView = \case
   CRContactConnecting _ -> []
   CRContactConnected ct -> [ttyFullContact ct <> ": contact is connected"]
   CRContactAnotherClient c -> [ttyContact' c <> ": contact is connected to another client"]
-  CRContactDisconnected c -> [ttyContact' c <> ": disconnected from server (messages will be queued)"]
-  CRContactSubscribed c -> [ttyContact' c <> ": connected to server"]
+  CRContactsDisconnected srv cs -> [plain $ "server disconnected " <> smpServer srv <> " (" <> contactList cs <> ")"]
+  CRContactsSubscribed srv cs -> [plain $ "server connected " <> smpServer srv <> " (" <> contactList cs <> ")"]
   CRContactSubError c e -> [ttyContact' c <> ": contact error " <> sShow e]
   CRContactSubSummary summary ->
     [sShow (length subscribed) <> " contacts connected (use " <> highlight' "/cs" <> " for the list)" | not (null subscribed)] <> viewErrorsSummary errors " contact errors"
@@ -174,6 +174,10 @@ responseToView testView = \case
               _ -> Nothing
     viewErrorsSummary :: [a] -> StyledString -> [StyledString]
     viewErrorsSummary summary s = [ttyError (T.pack . show $ length summary) <> s <> " (run with -c option to show each error)" | not (null summary)]
+    smpServer :: SMPServer -> String
+    smpServer SMP.ProtocolServer {host, port} = B.unpack . strEncode $ SrvLoc host port
+    contactList :: [ContactRef] -> String
+    contactList cs = T.unpack . T.intercalate ", " $ map (\ContactRef {localDisplayName = n} -> "@" <> n) cs
 
 viewChatItem :: MsgDirectionI d => ChatInfo c -> ChatItem c d -> [StyledString]
 viewChatItem chat ChatItem {chatDir, meta, content, quotedItem, file} = case chat of
