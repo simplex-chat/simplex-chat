@@ -81,6 +81,10 @@ chatTests = do
     it "delete connection requests when contact link deleted" testDeleteConnectionRequests
   describe "SMP servers" $
     it "get and set SMP servers" testGetSetSMPServers
+  describe "Async connection handshake" $ do
+    it "should connect when initiating client goes offline" testAsyncInitiatingOffline
+    it "should connect when accepting client goes offline" testAsyncAcceptingOffline
+    it "should connect when accepting client goes offline" testAsyncNeverTogetherOnline
 
 testAddContact :: IO ()
 testAddContact =
@@ -1741,6 +1745,53 @@ testGetSetSMPServers =
       alice #$> ("/smp_servers", id, "smp://2345-w==@smp2.example.im, smp://3456-w==@smp3.example.im:5224")
       alice #$> ("/smp_servers default", id, "ok")
       alice #$> ("/smp_servers", id, "no custom SMP servers saved")
+
+testAsyncInitiatingOffline :: IO ()
+testAsyncInitiatingOffline = withTmpFiles $ do
+  inv <- withNewTestChat 1 aliceProfile $ \alice -> do
+    alice ##> "/c"
+    getInvitation alice
+  withNewTestChat 2 bobProfile $ \bob -> do
+    bob ##> ("/c " <> inv)
+    bob <## "confirmation sent!"
+    withTestChat 1 $ \alice -> do
+      concurrently_
+        (bob <## "alice (Alice): contact is connected")
+        (alice <## "bob (Bob): contact is connected")
+
+testAsyncAcceptingOffline :: IO ()
+testAsyncAcceptingOffline = withTmpFiles $ do
+  inv <- withNewTestChat 1 aliceProfile $ \alice -> do
+    alice ##> "/c"
+    getInvitation alice
+  withNewTestChat 2 bobProfile $ \bob -> do
+    bob ##> ("/c " <> inv)
+    bob <## "confirmation sent!"
+  withTestChat 1 $ \alice ->
+    withTestChat 2 $ \bob ->
+      concurrently_
+        (bob <## "alice (Alice): contact is connected")
+        (alice <## "bob (Bob): contact is connected")
+
+testAsyncNeverTogetherOnline :: IO ()
+testAsyncNeverTogetherOnline = withTmpFiles $ do
+  inv <- withNewTestChat 1 aliceProfile $ \alice -> do
+    alice ##> "/c"
+    getInvitation alice
+  withNewTestChat 2 bobProfile $ \bob -> do
+    bob ##> ("/c " <> inv)
+    bob <## "confirmation sent!"
+  withTestChat 1 $ \_ -> pure ()
+  withTestChat 2 $ \_ -> pure ()
+  withTestChat 1 $ \alice ->
+    alice <## "1 contacts connected (use /cs for the list)"
+  withTestChat 2 $ \_ -> pure ()
+  withTestChat 1 $ \alice -> do
+    alice <## "1 contacts connected (use /cs for the list)"
+    alice <## "bob (Bob): contact is connected"
+  withTestChat 2 $ \bob -> do
+    bob <## "1 contacts connected (use /cs for the list)"
+    bob <## "alice (Alice): contact is connected"
 
 startFileTransfer :: TestCC -> TestCC -> IO ()
 startFileTransfer alice bob = do
