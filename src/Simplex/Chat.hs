@@ -1020,13 +1020,6 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
           toView $ CRContactAnotherClient ct
           showToast (c <> "> ") "connected to another client"
           unsetActive $ ActiveC c
-        -- DOWN -> do
-        --   toView $ CRContactDisconnected ct
-        --   showToast (c <> "> ") "disconnected"
-        -- UP -> do
-        --   toView $ CRContactSubscribed ct
-        --   showToast (c <> "> ") "is active"
-        --   setActive $ ActiveC c
         -- TODO print errors
         MERR msgId err -> do
           chatItemId_ <- withStore $ \st -> getChatItemIdByAgentMsgId st connId msgId
