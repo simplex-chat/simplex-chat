@@ -11,6 +11,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Bolt
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.*
@@ -448,9 +449,9 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
             Row {
               Icon(
                 Icons.Outlined.Bolt,
-                contentDescription = generalGetString(R.string.icon_descr_instant_notifications),
+                contentDescription = stringResource(R.string.icon_descr_instant_notifications),
               )
-              Text(generalGetString(R.string.private_instant_notifications), fontWeight = FontWeight.Bold)
+              Text(stringResource(R.string.private_instant_notifications), fontWeight = FontWeight.Bold)
             }
           },
           text = {
@@ -463,7 +464,7 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
             }
           },
           confirmButton = {
-            Button(onClick = AlertManager.shared::hideAlert) { Text(generalGetString(R.string.ok)) }
+            Button(onClick = AlertManager.shared::hideAlert) { Text(stringResource(R.string.ok)) }
           }
         )
       }

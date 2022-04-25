@@ -14,6 +14,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.UriHandler
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.tooling.preview.*
 import androidx.compose.ui.unit.dp
@@ -22,7 +23,8 @@ import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.HighOrLowlight
 import chat.simplex.app.ui.theme.SimpleXTheme
-import chat.simplex.app.views.helpers.*
+import chat.simplex.app.views.helpers.ChatItemLinkView
+import chat.simplex.app.views.helpers.base64ToBitmap
 import kotlinx.datetime.Clock
 
 val SentColorLight = Color(0x1E45B8FF)
@@ -67,7 +69,7 @@ fun FramedItemView(
               val imageBitmap = base64ToBitmap(qi.content.image).asImageBitmap()
               Image(
                 imageBitmap,
-                contentDescription = generalGetString(R.string.image_descr),
+                contentDescription = stringResource(R.string.image_descr),
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
                   .size(60.dp)

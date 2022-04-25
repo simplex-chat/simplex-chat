@@ -13,6 +13,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -65,12 +66,12 @@ fun PasteToConnectLayout(
       verticalArrangement = Arrangement.SpaceBetween,
     ) {
       Text(
-        generalGetString(R.string.connect_via_link),
+        stringResource(R.string.connect_via_link),
         style = MaterialTheme.typography.h1.copy(fontWeight = FontWeight.Normal),
         modifier = Modifier.padding(bottom = 16.dp)
       )
-      Text(generalGetString(R.string.paste_connection_link_below_to_connect))
-      Text(generalGetString(R.string.profile_will_be_sent_to_contact_sending_link))
+      Text(stringResource(R.string.paste_connection_link_below_to_connect))
+      Text(stringResource(R.string.profile_will_be_sent_to_contact_sending_link))
 
       Box(Modifier.padding(top = 16.dp, bottom = 6.dp)) {
         TextEditor(Modifier.height(180.dp), text = connectionLink)

@@ -5,19 +5,19 @@ import androidx.compose.foundation.Image
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import boofcv.alg.fiducial.qrcode.QrCodeEncoder
 import boofcv.alg.fiducial.qrcode.QrCodeGeneratorImage
 import boofcv.android.ConvertBitmap
 import chat.simplex.app.R
 import chat.simplex.app.ui.theme.SimpleXTheme
-import chat.simplex.app.views.helpers.generalGetString
 
 @Composable
 fun QRCode(connReq: String, modifier: Modifier = Modifier) {
   Image(
     bitmap = qrCodeBitmap(connReq, 1024).asImageBitmap(),
-    contentDescription = generalGetString(R.string.image_descr_qr_code),
+    contentDescription = stringResource(R.string.image_descr_qr_code),
     modifier = modifier
   )
 }

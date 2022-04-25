@@ -10,6 +10,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -17,7 +18,8 @@ import chat.simplex.app.R
 import chat.simplex.app.SimplexService
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.model.Profile
-import chat.simplex.app.views.helpers.*
+import chat.simplex.app.views.helpers.getKeyboardState
+import chat.simplex.app.views.helpers.withApi
 import com.google.accompanist.insets.ProvideWindowInsets
 import com.google.accompanist.insets.navigationBarsWithImePadding
 import kotlinx.coroutines.launch
@@ -45,22 +47,22 @@ fun WelcomeView(chatModel: ChatModel) {
       ) {
         Image(
           painter = painterResource(R.drawable.logo),
-          contentDescription = generalGetString(R.string.image_descr_simplex_logo),
+          contentDescription = stringResource(R.string.image_descr_simplex_logo),
           modifier = Modifier.padding(vertical = 15.dp)
         )
         Text(
-          generalGetString(R.string.you_control_your_chat),
+          stringResource(R.string.you_control_your_chat),
           style = MaterialTheme.typography.h4,
           color = MaterialTheme.colors.onBackground
         )
         Text(
-          generalGetString(R.string.the_messaging_and_app_platform_protecting_your_privacy_and_security),
+          stringResource(R.string.the_messaging_and_app_platform_protecting_your_privacy_and_security),
           style = MaterialTheme.typography.body1,
           color = MaterialTheme.colors.onBackground
         )
         Spacer(Modifier.height(8.dp))
         Text(
-          generalGetString(R.string.we_do_not_store_contacts_or_messages_on_servers),
+          stringResource(R.string.we_do_not_store_contacts_or_messages_on_servers),
           style = MaterialTheme.typography.body1,
           color = MaterialTheme.colors.onBackground
         )
@@ -93,19 +95,19 @@ fun CreateProfilePanel(chatModel: ChatModel) {
     modifier=Modifier.fillMaxSize()
   ) {
     Text(
-      generalGetString(R.string.create_profile),
+      stringResource(R.string.create_profile),
       style = MaterialTheme.typography.h4,
       color = MaterialTheme.colors.onBackground,
       modifier = Modifier.padding(vertical = 5.dp)
     )
     Text(
-      generalGetString(R.string.your_profile_is_stored_on_your_decide_and_shared_only_with_your_contacts),
+      stringResource(R.string.your_profile_is_stored_on_your_decide_and_shared_only_with_your_contacts),
       style = MaterialTheme.typography.body1,
       color = MaterialTheme.colors.onBackground
     )
     Spacer(Modifier.height(10.dp))
     Text(
-      generalGetString(R.string.display_name),
+      stringResource(R.string.display_name),
       style = MaterialTheme.typography.h6,
       color = MaterialTheme.colors.onBackground,
       modifier = Modifier.padding(bottom = 3.dp)
@@ -127,7 +129,7 @@ fun CreateProfilePanel(chatModel: ChatModel) {
       ),
       singleLine = true
     )
-    val errorText = if(!isValidDisplayName(displayName)) generalGetString(R.string.display_name_cannot_contain_whitespace) else ""
+    val errorText = if(!isValidDisplayName(displayName)) stringResource(R.string.display_name_cannot_contain_whitespace) else ""
 
     Text(
       errorText,
@@ -137,7 +139,7 @@ fun CreateProfilePanel(chatModel: ChatModel) {
 
     Spacer(Modifier.height(3.dp))
     Text(
-      generalGetString(R.string.full_name_optional__prompt),
+      stringResource(R.string.full_name_optional__prompt),
       style = MaterialTheme.typography.h6,
       color = MaterialTheme.colors.onBackground,
       modifier = Modifier.padding(bottom = 5.dp)
@@ -171,6 +173,6 @@ fun CreateProfilePanel(chatModel: ChatModel) {
       }
     },
     enabled = (displayName.isNotEmpty() && isValidDisplayName(displayName))
-    ) { Text(generalGetString(R.string.create_profile_button)) }
+    ) { Text(stringResource(R.string.create_profile_button)) }
   }
 }
