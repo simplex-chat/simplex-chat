@@ -46,26 +46,41 @@ func reduceSize(_ image: UIImage, ratio: CGFloat) -> UIImage {
     return resizeImage(image, newBounds: bounds, drawIn: bounds)
 }
 
-func resizeImageToDataSize(_ image: UIImage, maxDataSize: Int) -> String? {
+func resizeImageToStrSize(_ image: UIImage, maxDataSize: Int) -> String? {
     var img = image
-    var str = compressImage(img)
+    var str = compressImageStr(img)
     var dataSize = str?.count ?? 0
     while dataSize != 0 && dataSize > maxDataSize {
         let ratio = sqrt(Double(dataSize) / Double(maxDataSize))
         let clippedRatio = min(ratio, 2.0)
         img = reduceSize(img, ratio: clippedRatio)
-        str = compressImage(img)
+        str = compressImageStr(img)
         dataSize = str?.count ?? 0
     }
-    logger.debug("resizeImageToDataSize final \(dataSize)")
+    logger.debug("resizeImageToStrSize final \(dataSize)")
     return str
 }
 
-func compressImage(_ image: UIImage, _ compressionQuality: CGFloat = 0.85) -> String? {
+func compressImageStr(_ image: UIImage, _ compressionQuality: CGFloat = 0.85) -> String? {
     if let data = image.jpegData(compressionQuality: compressionQuality) {
         return "data:image/jpg;base64,\(data.base64EncodedString())"
     }
     return nil
+}
+
+func resizeImageToDataSize(_ image: UIImage, maxDataSize: Int) -> Data? {
+    var img = image
+    var data = img.jpegData(compressionQuality: 0.85)
+    var dataSize = data?.count ?? 0
+    while dataSize != 0 && dataSize > maxDataSize {
+        let ratio = sqrt(Double(dataSize) / Double(maxDataSize))
+        let clippedRatio = min(ratio, 2.0)
+        img = reduceSize(img, ratio: clippedRatio)
+        data = img.jpegData(compressionQuality: 0.85)
+        dataSize = data?.count ?? 0
+    }
+    logger.debug("resizeImageToDataSize final \(dataSize)")
+    return data
 }
 
 enum ImageSource {

@@ -21,6 +21,8 @@ struct ChatListNavLink: View {
             groupNavLink(groupInfo)
         case let .contactRequest(cReq):
             contactRequestNavLink(cReq)
+        case let .contactConnection(cConn):
+            contactConnectionNavLink(cConn)
         }
     }
 
@@ -125,6 +127,31 @@ struct ChatListNavLink: View {
         }
     }
 
+    private func contactConnectionNavLink(_ contactConnection: PendingContactConnection) -> some View {
+        ContactConnectionView(contactConnection: contactConnection)
+        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+            Button(role: .destructive) {
+                AlertManager.shared.showAlert(deleteContactConnectionAlert(contactConnection))
+            } label: {
+                Label("Delete", systemImage: "trash")
+            }
+        }
+        .frame(height: 80)
+        .onTapGesture {
+            AlertManager.shared.showAlertMsg(
+                title:
+                    contactConnection.initiated
+                    ? "You invited your contact"
+                    : "You accepted connection",
+                // below are the same messages that are shown in alert
+                message:
+                    contactConnection.viaContactUri
+                    ? "You will be connected when your connection request is accepted, please wait or check later!"
+                    : "You will be connected when your contact's device is online, please wait or check later!"
+            )
+        }
+    }
+
     private func deleteContactAlert(_ contact: Contact) -> Alert {
         Alert(
             title: Text("Delete contact?"),
@@ -137,7 +164,7 @@ struct ChatListNavLink: View {
                             chatModel.removeChat(contact.id)
                         }
                     } catch let error {
-                        logger.error("ChatListNavLink.deleteContactAlert apiDeleteChat error: \(error.localizedDescription)")
+                        logger.error("ChatListNavLink.deleteContactAlert apiDeleteChat error: \(responseError(error))")
                     }
                 }
             },
@@ -158,6 +185,29 @@ struct ChatListNavLink: View {
             message: Text("The sender will NOT be notified"),
             primaryButton: .destructive(Text("Reject")) {
                 Task { await rejectContactRequest(contactRequest) }
+            },
+            secondaryButton: .cancel()
+        )
+    }
+
+    private func deleteContactConnectionAlert(_ contactConnection: PendingContactConnection) -> Alert {
+        Alert(
+            title: Text("Delete pending connection?"),
+            message:
+                contactConnection.initiated
+                ? Text("The contact you shared this link with will NOT be able to connect!")
+                : Text("The connection you accepted will be cancelled!"),
+            primaryButton: .destructive(Text("Delete")) {
+                Task {
+                    do {
+                        try await apiDeleteChat(type: .contactConnection, id: contactConnection.apiId)
+                        DispatchQueue.main.async {
+                            chatModel.removeChat(contactConnection.id)
+                        }
+                    } catch let error {
+                        logger.error("ChatListNavLink.deleteContactConnectionAlert apiDeleteChat error: \(responseError(error))")
+                    }
+                }
             },
             secondaryButton: .cancel()
         )

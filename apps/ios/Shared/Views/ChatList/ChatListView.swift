@@ -13,6 +13,7 @@ struct ChatListView: View {
     // not really used in this view
     @State private var showSettings = false
     @State private var searchText = ""
+    @AppStorage("pendingConnections") private var pendingConnections = true
 
     var user: User
 
@@ -64,9 +65,16 @@ struct ChatListView: View {
 
     private func filteredChats() -> [Chat] {
         let s = searchText.trimmingCharacters(in: .whitespaces).localizedLowercase
-        return s == ""
+        return s == "" && pendingConnections
             ? chatModel.chats
-            : chatModel.chats.filter { $0.chatInfo.chatViewName.localizedLowercase.contains(s) }
+            : s == ""
+            ? chatModel.chats.filter {
+                pendingConnections || $0.chatInfo.chatType != .contactConnection
+            }
+            : chatModel.chats.filter {
+                (pendingConnections || $0.chatInfo.chatType != .contactConnection) &&
+                $0.chatInfo.chatViewName.localizedLowercase.contains(s)
+            }
     }
 
     private func connectViaUrlAlert(_ url: URL) -> Alert {
@@ -78,23 +86,12 @@ struct ChatListView: View {
             let link = url.absoluteString.replacingOccurrences(of: "///\(path)", with: "/\(path)")
             let title: LocalizedStringKey
             if case .contact = action { title = "Connect via contact link?" }
-            else { title = "Connect via invitation link?" }
+            else { title = "Connect via one-time link?" }
             return Alert(
                 title: Text(title),
                 message: Text("Your profile will be sent to the contact that you received this link from"),
                 primaryButton: .default(Text("Connect")) {
-                    DispatchQueue.main.async {
-                        Task {
-                            do {
-                                let ok = try await apiConnect(connReq: link)
-                                if ok { connectionReqSentAlert(action) }
-                            } catch {
-                                let err = error.localizedDescription
-                                AlertManager.shared.showAlertMsg(title: "Connection error", message: "Error: \(err)")
-                                logger.debug("ChatListView.connectViaUrlAlert: apiConnect error: \(err)")
-                            }
-                        }
-                    }
+                    connectViaLink(link)
                 },
                 secondaryButton: .cancel()
             )

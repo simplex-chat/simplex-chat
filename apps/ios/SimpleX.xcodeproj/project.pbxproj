@@ -7,10 +7,12 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		3C8C548928133C84000A3EC7 /* PasteToConnectView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C8C548828133C84000A3EC7 /* PasteToConnectView.swift */; };
 		3CDBCF4227FAE51000354CDD /* ComposeLinkView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CDBCF4127FAE51000354CDD /* ComposeLinkView.swift */; };
 		3CDBCF4827FF621E00354CDD /* CILinkView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CDBCF4727FF621E00354CDD /* CILinkView.swift */; };
 		5C063D2727A4564100AEC577 /* ChatPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C063D2627A4564100AEC577 /* ChatPreviewView.swift */; };
 		5C116CDC27AABE0400E66D01 /* ContactRequestView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C116CDB27AABE0400E66D01 /* ContactRequestView.swift */; };
+		5C13730B28156D2700F43030 /* ContactConnectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C13730A28156D2700F43030 /* ContactConnectionView.swift */; };
 		5C1A4C1E27A715B700EAD5AD /* ChatItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C1A4C1D27A715B700EAD5AD /* ChatItemView.swift */; };
 		5C2E260727A2941F00F70299 /* SimpleXAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C2E260627A2941F00F70299 /* SimpleXAPI.swift */; };
 		5C2E260B27A30CFA00F70299 /* ChatListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C2E260A27A30CFA00F70299 /* ChatListView.swift */; };
@@ -59,7 +61,7 @@
 		5CC2C0FC2809BF11000C35E3 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 5CC2C0FA2809BF11000C35E3 /* Localizable.strings */; };
 		5CC2C0FF2809BF11000C35E3 /* SimpleX--iOS--InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 5CC2C0FD2809BF11000C35E3 /* SimpleX--iOS--InfoPlist.strings */; };
 		5CCD403427A5F6DF00368C90 /* AddContactView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CCD403327A5F6DF00368C90 /* AddContactView.swift */; };
-		5CCD403727A5F9A200368C90 /* ConnectContactView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CCD403627A5F9A200368C90 /* ConnectContactView.swift */; };
+		5CCD403727A5F9A200368C90 /* ScanToConnectView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CCD403627A5F9A200368C90 /* ScanToConnectView.swift */; };
 		5CCD403A27A5F9BE00368C90 /* CreateGroupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CCD403927A5F9BE00368C90 /* CreateGroupView.swift */; };
 		5CE4407227ADB1D0007B033A /* Emoji.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CE4407127ADB1D0007B033A /* Emoji.swift */; };
 		5CE4407927ADB701007B033A /* EmojiItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CE4407827ADB701007B033A /* EmojiItemView.swift */; };
@@ -84,10 +86,13 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		3C8C548828133C84000A3EC7 /* PasteToConnectView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PasteToConnectView.swift; sourceTree = "<group>"; };
 		3CDBCF4127FAE51000354CDD /* ComposeLinkView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComposeLinkView.swift; sourceTree = "<group>"; };
 		3CDBCF4727FF621E00354CDD /* CILinkView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CILinkView.swift; sourceTree = "<group>"; };
 		5C063D2627A4564100AEC577 /* ChatPreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatPreviewView.swift; sourceTree = "<group>"; };
 		5C116CDB27AABE0400E66D01 /* ContactRequestView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContactRequestView.swift; sourceTree = "<group>"; };
+		5C13730A28156D2700F43030 /* ContactConnectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContactConnectionView.swift; sourceTree = "<group>"; };
+		5C13730C2815740A00F43030 /* DebugJSON.playground */ = {isa = PBXFileReference; lastKnownFileType = file.playground; path = DebugJSON.playground; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.swift; };
 		5C1A4C1D27A715B700EAD5AD /* ChatItemView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatItemView.swift; sourceTree = "<group>"; };
 		5C2E260627A2941F00F70299 /* SimpleXAPI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimpleXAPI.swift; sourceTree = "<group>"; };
 		5C2E260A27A30CFA00F70299 /* ChatListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatListView.swift; sourceTree = "<group>"; };
@@ -139,7 +144,7 @@
 		5CC2C0FB2809BF11000C35E3 /* ru */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ru; path = ru.lproj/Localizable.strings; sourceTree = "<group>"; };
 		5CC2C0FE2809BF11000C35E3 /* ru */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ru; path = "ru.lproj/SimpleX--iOS--InfoPlist.strings"; sourceTree = "<group>"; };
 		5CCD403327A5F6DF00368C90 /* AddContactView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddContactView.swift; sourceTree = "<group>"; };
-		5CCD403627A5F9A200368C90 /* ConnectContactView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectContactView.swift; sourceTree = "<group>"; };
+		5CCD403627A5F9A200368C90 /* ScanToConnectView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanToConnectView.swift; sourceTree = "<group>"; };
 		5CCD403927A5F9BE00368C90 /* CreateGroupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateGroupView.swift; sourceTree = "<group>"; };
 		5CE4407127ADB1D0007B033A /* Emoji.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Emoji.swift; sourceTree = "<group>"; };
 		5CE4407827ADB701007B033A /* EmojiItemView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmojiItemView.swift; sourceTree = "<group>"; };
@@ -284,6 +289,7 @@
 				5CA059C5279559F40002BEB4 /* Assets.xcassets */,
 				5C764E7D279C7275000C6508 /* SimpleX (iOS)-Bridging-Header.h */,
 				5C764E7F279C7276000C6508 /* dummy.m */,
+				5C13730C2815740A00F43030 /* DebugJSON.playground */,
 			);
 			path = Shared;
 			sourceTree = "<group>";
@@ -311,7 +317,8 @@
 			children = (
 				5C6AD81227A834E300348BD7 /* NewChatButton.swift */,
 				5CCD403327A5F6DF00368C90 /* AddContactView.swift */,
-				5CCD403627A5F9A200368C90 /* ConnectContactView.swift */,
+				5CCD403627A5F9A200368C90 /* ScanToConnectView.swift */,
+				3C8C548828133C84000A3EC7 /* PasteToConnectView.swift */,
 				5CCD403927A5F9BE00368C90 /* CreateGroupView.swift */,
 				5CC1C99127A6C7F5000D9FF6 /* QRCode.swift */,
 			);
@@ -339,6 +346,7 @@
 				5CB9250C27A9432000ACCCDD /* ChatListNavLink.swift */,
 				5C063D2627A4564100AEC577 /* ChatPreviewView.swift */,
 				5C116CDB27AABE0400E66D01 /* ContactRequestView.swift */,
+				5C13730A28156D2700F43030 /* ContactConnectionView.swift */,
 			);
 			path = ChatList;
 			sourceTree = "<group>";
@@ -480,6 +488,7 @@
 				5CEACCE327DE9246000BD591 /* ComposeView.swift in Sources */,
 				5C36027327F47AD5009F19D9 /* AppDelegate.swift in Sources */,
 				5CB924E127A867BA00ACCCDD /* UserProfile.swift in Sources */,
+				5C13730B28156D2700F43030 /* ContactConnectionView.swift in Sources */,
 				5CE4407927ADB701007B033A /* EmojiItemView.swift in Sources */,
 				5C5346A827B59A6A004DF848 /* ChatHelp.swift in Sources */,
 				3CDBCF4227FAE51000354CDD /* ComposeLinkView.swift in Sources */,
@@ -491,6 +500,7 @@
 				640F50E327CF991C001E05C2 /* SMPServers.swift in Sources */,
 				5C063D2727A4564100AEC577 /* ChatPreviewView.swift in Sources */,
 				5C35CFCB27B2E91D00FB6C6D /* NtfManager.swift in Sources */,
+				3C8C548928133C84000A3EC7 /* PasteToConnectView.swift in Sources */,
 				5C2E261227A30FEA00F70299 /* TerminalView.swift in Sources */,
 				5C9FD96B27A56D4D0075386C /* JSON.swift in Sources */,
 				5C9FD96E27A5D6ED0075386C /* SendMessageView.swift in Sources */,
@@ -511,7 +521,7 @@
 				5C5F2B6D27EBC3FE006A9D5F /* ImagePicker.swift in Sources */,
 				5C577F7D27C83AA10006112D /* MarkdownHelp.swift in Sources */,
 				5CA059EB279559F40002BEB4 /* SimpleXApp.swift in Sources */,
-				5CCD403727A5F9A200368C90 /* ConnectContactView.swift in Sources */,
+				5CCD403727A5F9A200368C90 /* ScanToConnectView.swift in Sources */,
 				649BCDA22805D6EF00C3A862 /* CIImageView.swift in Sources */,
 				5CCD403A27A5F9BE00368C90 /* CreateGroupView.swift in Sources */,
 				5CEACCED27DEA495000BD591 /* MsgContentView.swift in Sources */,

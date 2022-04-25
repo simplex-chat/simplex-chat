@@ -52,7 +52,7 @@ enum ChatCommand {
             case let .createActiveUser(profile): return "/u \(profile.displayName) \(profile.fullName)"
             case .startChat: return "/_start"
             case let .setFilesFolder(filesFolder): return "/_files_folder \(filesFolder)"
-            case .apiGetChats: return "/_get chats"
+            case .apiGetChats: return "/_get chats pcc=on"
             case let .apiGetChat(type, id): return "/_get chat \(ref(type, id)) count=100"
             case let .apiSendMessage(type, id, file, quotedItemId, mc):
                 switch (file, quotedItemId) {
@@ -174,6 +174,8 @@ enum ChatResponse: Decodable, Error {
     case rcvFileAccepted
     case rcvFileComplete(chatItem: AChatItem)
     case ntfTokenStatus(status: NtfTknStatus)
+    case newContactConnection(connection: PendingContactConnection)
+    case contactConnectionDeleted(connection: PendingContactConnection)
     case cmdOk
     case chatCmdError(chatError: ChatError)
     case chatError(chatError: ChatError)
@@ -220,6 +222,8 @@ enum ChatResponse: Decodable, Error {
             case .rcvFileAccepted: return "rcvFileAccepted"
             case .rcvFileComplete: return "rcvFileComplete"
             case .ntfTokenStatus: return "ntfTokenStatus"
+            case .newContactConnection: return "newContactConnection"
+            case .contactConnectionDeleted: return "contactConnectionDeleted"
             case .cmdOk: return "cmdOk"
             case .chatCmdError: return "chatCmdError"
             case .chatError: return "chatError"
@@ -269,6 +273,8 @@ enum ChatResponse: Decodable, Error {
             case .rcvFileAccepted: return noDetails
             case let .rcvFileComplete(chatItem): return String(describing: chatItem)
             case let .ntfTokenStatus(status): return String(describing: status)
+            case let .newContactConnection(connection): return String(describing: connection)
+            case let .contactConnectionDeleted(connection): return String(describing: connection)
             case .cmdOk: return noDetails
             case let .chatCmdError(chatError): return String(describing: chatError)
             case let .chatError(chatError): return String(describing: chatError)
@@ -496,49 +502,50 @@ func apiAddContact() throws -> String {
     throw r
 }
 
-func apiConnect(connReq: String) async throws -> Bool {
+func apiConnect(connReq: String) async throws -> ConnReqType? {
     let r = await chatSendCmd(.connect(connReq: connReq))
     let am = AlertManager.shared
     switch r {
-    case .sentConfirmation: return true
-    case .sentInvitation: return true
+    case .sentConfirmation: return .invitation
+    case .sentInvitation: return .contact
     case let .contactAlreadyExists(contact):
         am.showAlertMsg(
             title: "Contact already exists",
             message: "You are already connected to \(contact.displayName) via this link."
         )
-        return false
+        return nil
     case .chatCmdError(.error(.invalidConnReq)):
         am.showAlertMsg(
             title: "Invalid connection link",
             message: "Please check that you used the correct link or ask your contact to send you another one."
         )
-        return false
+        return nil
     case .chatCmdError(.errorAgent(.BROKER(.TIMEOUT))):
         am.showAlertMsg(
             title: "Connection timeout",
             message: "Please check your network connection and try again."
         )
-        return false
+        return nil
     case .chatCmdError(.errorAgent(.BROKER(.NETWORK))):
         am.showAlertMsg(
             title: "Connection error",
             message: "Please check your network connection and try again."
         )
-        return false
+        return nil
     case .chatCmdError(.errorAgent(.SMP(.AUTH))):
         am.showAlertMsg(
             title: "Connection error (AUTH)",
             message: "Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.\nTo connect, please ask your contact to create another connection link and check that you have a stable network connection."
         )
-        return false
+        return nil
     default: throw r
     }
 }
 
 func apiDeleteChat(type: ChatType, id: Int64) async throws {
     let r = await chatSendCmd(.apiDeleteChat(type: type, id: id), bgTask: false)
-    if case .contactDeleted = r { return }
+    if case .direct = type, case .contactDeleted = r { return }
+    if case .contactConnection = type, case .contactConnectionDeleted = r { return }
     throw r
 }
 
@@ -608,7 +615,7 @@ func acceptContactRequest(_ contactRequest: UserContactRequest) async {
         let chat = Chat(chatInfo: ChatInfo.direct(contact: contact), chatItems: [])
         DispatchQueue.main.async { ChatModel.shared.replaceChat(contactRequest.id, chat) }
     } catch let error {
-        logger.error("acceptContactRequest error: \(error.localizedDescription)")
+        logger.error("acceptContactRequest error: \(responseError(error))")
     }
 }
 
@@ -617,7 +624,7 @@ func rejectContactRequest(_ contactRequest: UserContactRequest) async {
         try await apiRejectContactRequest(contactReqId: contactRequest.apiId)
         DispatchQueue.main.async { ChatModel.shared.removeChat(contactRequest.id) }
     } catch let error {
-        logger.error("rejectContactRequest: \(error.localizedDescription)")
+        logger.error("rejectContactRequest: \(responseError(error))")
     }
 }
 
@@ -629,7 +636,7 @@ func markChatRead(_ chat: Chat) async {
         try await apiChatRead(type: cInfo.chatType, id: cInfo.apiId, itemRange: itemRange)
         DispatchQueue.main.async { ChatModel.shared.markChatItemsRead(cInfo) }
     } catch {
-        logger.error("markChatRead apiChatRead error: \(error.localizedDescription)")
+        logger.error("markChatRead apiChatRead error: \(responseError(error))")
     }
 }
 
@@ -638,7 +645,7 @@ func markChatItemRead(_ cInfo: ChatInfo, _ cItem: ChatItem) async {
         try await apiChatRead(type: cInfo.chatType, id: cInfo.apiId, itemRange: (cItem.id, cItem.id))
         DispatchQueue.main.async { ChatModel.shared.markChatItemRead(cInfo, cItem) }
     } catch {
-        logger.error("markChatItemRead apiChatRead error: \(error.localizedDescription)")
+        logger.error("markChatItemRead apiChatRead error: \(responseError(error))")
     }
 }
 
@@ -701,33 +708,37 @@ class ChatReceiver {
 }
 
 func processReceivedMsg(_ res: ChatResponse) {
-    let chatModel = ChatModel.shared
+    let m = ChatModel.shared
     DispatchQueue.main.async {
-        chatModel.terminalItems.append(.resp(.now, res))
+        m.terminalItems.append(.resp(.now, res))
         logger.debug("processReceivedMsg: \(res.responseType)")
         switch res {
+        case let .newContactConnection(contactConnection):
+            m.updateContactConnection(contactConnection)
         case let .contactConnected(contact):
-            chatModel.updateContact(contact)
-            chatModel.updateNetworkStatus(contact, .connected)
+            m.updateContact(contact)
+            m.removeChat(contact.activeConn.id)
+            m.updateNetworkStatus(contact, .connected)
             NtfManager.shared.notifyContactConnected(contact)
         case let .contactConnecting(contact):
-            chatModel.updateContact(contact)
+            m.updateContact(contact)
+            m.removeChat(contact.activeConn.id)
         case let .receivedContactRequest(contactRequest):
-            chatModel.addChat(Chat(
+            m.addChat(Chat(
                 chatInfo: ChatInfo.contactRequest(contactRequest: contactRequest),
                 chatItems: []
             ))
             NtfManager.shared.notifyContactRequest(contactRequest)
         case let .contactUpdated(toContact):
             let cInfo = ChatInfo.direct(contact: toContact)
-            if chatModel.hasChat(toContact.id) {
-                chatModel.updateChatInfo(cInfo)
+            if m.hasChat(toContact.id) {
+                m.updateChatInfo(cInfo)
             }
         case let .contactSubscribed(contact):
             processContactSubscribed(contact)
         case let .contactDisconnected(contact):
-            chatModel.updateContact(contact)
-            chatModel.updateNetworkStatus(contact, .disconnected)
+            m.updateContact(contact)
+            m.updateNetworkStatus(contact, .disconnected)
         case let .contactSubError(contact, chatError):
             processContactSubError(contact, chatError)
         case let .contactSubSummary(contactSubscriptions):
@@ -741,10 +752,9 @@ func processReceivedMsg(_ res: ChatResponse) {
         case let .newChatItem(aChatItem):
             let cInfo = aChatItem.chatInfo
             let cItem = aChatItem.chatItem
-            chatModel.addChatItem(cInfo, cItem)
+            m.addChatItem(cInfo, cItem)
             if let file = cItem.file,
-               file.fileSize <= 236700 {
-               // file.fileSize <= 394500 {
+               file.fileSize <= maxImageSize {
                 Task {
                     do {
                         try await receiveFile(fileId: file.fileId)
@@ -759,11 +769,11 @@ func processReceivedMsg(_ res: ChatResponse) {
             let cItem = aChatItem.chatItem
             var res = false
             if !cItem.isDeletedContent() {
-                res = chatModel.upsertChatItem(cInfo, cItem)
+                res = m.upsertChatItem(cInfo, cItem)
             }
             if res {
                 NtfManager.shared.notifyMessageReceived(cInfo, cItem)
-            } else if let endTask = chatModel.messageDelivery[cItem.id] {
+            } else if let endTask = m.messageDelivery[cItem.id] {
                 switch cItem.meta.itemStatus {
                 case .sndSent: endTask()
                 case .sndErrorAuth: endTask()
@@ -774,22 +784,22 @@ func processReceivedMsg(_ res: ChatResponse) {
         case let .chatItemUpdated(aChatItem):
             let cInfo = aChatItem.chatInfo
             let cItem = aChatItem.chatItem
-            if chatModel.upsertChatItem(cInfo, cItem) {
+            if m.upsertChatItem(cInfo, cItem) {
                 NtfManager.shared.notifyMessageReceived(cInfo, cItem)
             }
         case let .chatItemDeleted(_, toChatItem):
             let cInfo = toChatItem.chatInfo
             let cItem = toChatItem.chatItem
             if cItem.meta.itemDeleted {
-                chatModel.removeChatItem(cInfo, cItem)
+                m.removeChatItem(cInfo, cItem)
             } else {
                 // currently only broadcast deletion of rcv message can be received, and only this case should happen
-                _ = chatModel.upsertChatItem(cInfo, cItem)
+                _ = m.upsertChatItem(cInfo, cItem)
             }
         case let .rcvFileComplete(aChatItem):
             let cInfo = aChatItem.chatInfo
             let cItem = aChatItem.chatItem
-            if chatModel.upsertChatItem(cInfo, cItem) {
+            if m.upsertChatItem(cInfo, cItem) {
                 NtfManager.shared.notifyMessageReceived(cInfo, cItem)
             }
         default:

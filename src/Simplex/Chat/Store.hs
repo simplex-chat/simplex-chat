@@ -53,6 +53,7 @@ module Simplex.Chat.Store
     getPendingConnections,
     getContactConnections,
     getConnectionEntity,
+    getConnectionsContacts,
     getGroupAndMember,
     updateConnectionStatus,
     createNewGroup,
@@ -151,6 +152,7 @@ module Simplex.Chat.Store
     updateGroupChatItemsRead,
     getSMPServers,
     overwriteSMPServers,
+    getPendingContactConnection,
     deletePendingContactConnection,
   )
 where
@@ -1192,6 +1194,28 @@ getConnectionEntity st User {userId, userContactId} agentConnId =
         userContact_ :: [Only ConnReqContact] -> Either StoreError UserContact
         userContact_ [Only cReq] = Right UserContact {userContactLinkId, connReqContact = cReq}
         userContact_ _ = Left SEUserContactLinkNotFound
+
+getConnectionsContacts :: MonadUnliftIO m => SQLiteStore -> UserId -> [ConnId] -> m [ContactRef]
+getConnectionsContacts st userId agentConnIds =
+  liftIO . withTransaction st $ \db -> do
+    DB.execute_ db "DROP TABLE IF EXISTS temp.conn_ids"
+    DB.execute_ db "CREATE TABLE temp.conn_ids (conn_id BLOB)"
+    DB.executeMany db "INSERT INTO temp.conn_ids (conn_id) VALUES (?)" $ map Only agentConnIds
+    conns <-
+      map (uncurry ContactRef)
+        <$> DB.query
+          db
+          [sql|
+            SELECT ct.contact_id, ct.local_display_name
+            FROM contacts ct
+            JOIN connections c ON c.contact_id = ct.contact_id
+            WHERE ct.user_id = ? AND c.agent_conn_id IN (SELECT conn_id FROM temp.conn_ids)
+              AND c.conn_type = ?
+              AND (c.conn_status = ? OR c.conn_status = ?)
+          |]
+          (userId, ConnContact, ConnReady, ConnSndReady)
+    DB.execute_ db "DROP TABLE temp.conn_ids"
+    pure conns
 
 getGroupAndMember :: StoreMonad m => SQLiteStore -> User -> Int64 -> m (GroupInfo, GroupMember)
 getGroupAndMember st User {userId, userContactId} groupMemberId =
@@ -2704,21 +2728,39 @@ getContactConnectionChatPreviews_ db User {userId} _ =
           stats = ChatStats {unreadCount = 0, minUnreadItemId = 0}
        in AChat SCTContactConnection $ Chat (ContactConnection conn) [] stats
 
-deletePendingContactConnection :: StoreMonad m => SQLiteStore -> UserId -> Int64 -> m PendingContactConnection
+getPendingContactConnection :: StoreMonad m => SQLiteStore -> UserId -> Int64 -> m PendingContactConnection
+getPendingContactConnection st userId connId =
+  liftIOEither . withTransaction st $ \db -> do
+    firstRow toPendingContactConnection (SEPendingConnectionNotFound connId) $
+      DB.query
+        db
+        [sql|
+          SELECT connection_id, agent_conn_id, conn_status, via_contact_uri_hash, created_at, updated_at
+          FROM connections
+          WHERE user_id = ?
+            AND connection_id = ?
+            AND conn_type = ?
+            AND contact_id IS NULL
+            AND conn_level = 0
+            AND via_contact IS NULL
+        |]
+        (userId, connId, ConnContact)
+
+deletePendingContactConnection :: MonadUnliftIO m => SQLiteStore -> UserId -> Int64 -> m ()
 deletePendingContactConnection st userId connId =
-  liftIOEither . withTransaction st $ \db -> runExceptT $ do
-    conn <-
-      ExceptT . firstRow toPendingContactConnection (SEPendingConnectionNotFound connId) $
-        DB.query
-          db
-          [sql|
-            SELECT connection_id, agent_conn_id, conn_status, via_contact_uri_hash, created_at, updated_at
-            FROM connections
-            WHERE user_id = ? AND conn_type = ? AND contact_id IS NULL AND conn_level = 0 AND via_contact IS NULL
-          |]
-          (userId, ConnContact)
-    liftIO $ DB.execute db "DELETE FROM connections WHERE connection_id = ?" (Only connId)
-    pure conn
+  liftIO . withTransaction st $ \db ->
+    DB.execute
+      db
+      [sql|
+        DELETE FROM connections
+          WHERE user_id = ?
+            AND connection_id = ?
+            AND conn_type = ?
+            AND contact_id IS NULL
+            AND conn_level = 0
+            AND via_contact IS NULL
+      |]
+      (userId, connId, ConnContact)
 
 toPendingContactConnection :: (Int64, ConnId, ConnStatus, Maybe ByteString, UTCTime, UTCTime) -> PendingContactConnection
 toPendingContactConnection (pccConnId, acId, pccConnStatus, connReqHash, createdAt, updatedAt) =

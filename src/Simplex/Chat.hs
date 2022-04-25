@@ -365,8 +365,11 @@ processChatCommand = \case
             unsetActive $ ActiveC localDisplayName
             pure $ CRContactDeleted ct
         gs -> throwChatError $ CEContactGroups ct gs
-    CTContactConnection ->
-      CRContactConnectionDeleted <$> withStore (\st -> deletePendingContactConnection st userId chatId)
+    CTContactConnection -> withChatLock . procCmd $ do
+      conn <- withStore $ \st -> getPendingContactConnection st userId chatId
+      withAgent $ \a -> deleteConnection a $ aConnId' conn
+      withStore $ \st -> deletePendingContactConnection st userId chatId
+      pure $ CRContactConnectionDeleted conn
     CTGroup -> pure $ chatCmdError "not implemented"
     CTContactRequest -> pure $ chatCmdError "not supported"
   APIAcceptContact connReqId -> withUser $ \user@User {userId} -> withChatLock $ do
@@ -836,7 +839,7 @@ subscribeUserConnections user@User {userId} = do
       contacts <- withStore (`getUserContacts` user)
       toView . CRContactSubSummary =<< pooledForConcurrentlyN n contacts (\ct -> ContactSubStatus ct <$> subscribeContact ce ct)
     subscribeContact ce ct =
-      (subscribe (contactConnId ct) >> when ce (toView $ CRContactSubscribed ct) $> Nothing)
+      (subscribe (contactConnId ct) $> Nothing)
         `catchError` (\e -> when ce (toView $ CRContactSubError ct e) $> Just e)
     subscribeGroups n ce = do
       groups <- withStore (`getUserGroups` user)
@@ -898,6 +901,15 @@ subscribeUserConnections user@User {userId} = do
 
 processAgentMessage :: forall m. ChatMonad m => Maybe User -> ConnId -> ACommand 'Agent -> m ()
 processAgentMessage Nothing _ _ = throwChatError CENoActiveUser
+processAgentMessage (Just User {userId}) "" agentMessage = case agentMessage of
+  DOWN srv conns -> serverEvent srv conns CRContactsDisconnected "disconnected"
+  UP srv conns -> serverEvent srv conns CRContactsSubscribed "connected"
+  _ -> pure ()
+  where
+    serverEvent srv@SMP.ProtocolServer {host, port} conns event str = do
+      cs <- withStore $ \st -> getConnectionsContacts st userId conns
+      toView $ event srv cs
+      showToast ("server " <> str) (safeDecodeUtf8 . strEncode $ SrvLoc host port)
 processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage =
   (withStore (\st -> getConnectionEntity st user agentConnId) >>= updateConnStatus) >>= \case
     RcvDirectMsgConnection conn contact_ ->
@@ -1011,13 +1023,6 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
           toView $ CRContactAnotherClient ct
           showToast (c <> "> ") "connected to another client"
           unsetActive $ ActiveC c
-        DOWN -> do
-          toView $ CRContactDisconnected ct
-          showToast (c <> "> ") "disconnected"
-        UP -> do
-          toView $ CRContactSubscribed ct
-          showToast (c <> "> ") "is active"
-          setActive $ ActiveC c
         -- TODO print errors
         MERR msgId err -> do
           chatItemId_ <- withStore $ \st -> getChatItemIdByAgentMsgId st connId msgId
