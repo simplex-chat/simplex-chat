@@ -18,7 +18,8 @@ struct SettingsView: View {
     @Environment(\.colorScheme) var colorScheme
     @EnvironmentObject var chatModel: ChatModel
     @Binding var showSettings: Bool
-    @AppStorage("useNotifications") private var useNotifications: Bool = false
+    @AppStorage("useNotifications") private var useNotifications = false
+    @AppStorage("pendingConnections") private var pendingConnections = true
     @State var showNotificationsAlert: Bool = false
     @State var whichNotificationsAlert = NotificationAlert.enable
 
@@ -59,6 +60,11 @@ struct SettingsView: View {
                 }
                 
                 Section("Settings") {
+                    HStack {
+                        Image(systemName: "link")
+                            .padding(.trailing, 8)
+                        Toggle("Show pending connections", isOn: $pendingConnections)
+                    }
                     NavigationLink {
                         SMPServers()
                             .navigationTitle("Your SMP servers")

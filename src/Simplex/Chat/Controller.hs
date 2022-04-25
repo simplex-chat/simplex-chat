@@ -221,8 +221,8 @@ data ChatResponse
   | CRContactConnecting {contact :: Contact}
   | CRContactConnected {contact :: Contact}
   | CRContactAnotherClient {contact :: Contact}
-  | CRContactDisconnected {contact :: Contact}
-  | CRContactSubscribed {contact :: Contact}
+  | CRContactsDisconnected {server :: SMPServer, contactRefs :: [ContactRef]}
+  | CRContactsSubscribed {server :: SMPServer, contactRefs :: [ContactRef]}
   | CRContactSubError {contact :: Contact, chatError :: ChatError}
   | CRContactSubSummary {contactSubscriptions :: [ContactSubStatus]}
   | CRGroupInvitation {groupInfo :: GroupInfo}

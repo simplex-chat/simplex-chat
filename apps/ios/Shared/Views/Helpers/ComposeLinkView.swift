@@ -25,7 +25,7 @@ func getLinkPreview(url: URL, cb: @escaping (LinkPreview?) -> Void) {
                     logger.error("Couldn't load image preview from link metadata with error: \(error.localizedDescription)")
                 } else {
                     if let image = object as? UIImage,
-                       let resized = resizeImageToDataSize(image, maxDataSize: 14000),
+                       let resized = resizeImageToStrSize(image, maxDataSize: 14000),
                        let title = metadata.title,
                        let uri = metadata.originalURL {
                         linkPreview = LinkPreview(uri: uri, title: title, image: resized)
