@@ -13,6 +13,7 @@ struct ChatListView: View {
     // not really used in this view
     @State private var showSettings = false
     @State private var searchText = ""
+    @AppStorage("pendingConnections") private var pendingConnections = true
 
     var user: User
 
@@ -64,9 +65,16 @@ struct ChatListView: View {
 
     private func filteredChats() -> [Chat] {
         let s = searchText.trimmingCharacters(in: .whitespaces).localizedLowercase
-        return s == ""
+        return s == "" && pendingConnections
             ? chatModel.chats
-            : chatModel.chats.filter { $0.chatInfo.chatViewName.localizedLowercase.contains(s) }
+            : s == ""
+            ? chatModel.chats.filter {
+                pendingConnections || $0.chatInfo.chatType != .contactConnection
+            }
+            : chatModel.chats.filter {
+                (pendingConnections || $0.chatInfo.chatType != .contactConnection) &&
+                $0.chatInfo.chatViewName.localizedLowercase.contains(s)
+            }
     }
 
     private func connectViaUrlAlert(_ url: URL) -> Alert {

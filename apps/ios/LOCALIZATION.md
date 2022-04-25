@@ -11,7 +11,7 @@ There are three ways XCode generates localization keys from strings:
 3. All strings wrapped in `NSLocalizedString`. Please note that such strings do not support swift interpolation, instead formatted strings should be used:
 
 ```swift
-String.localizedStringWithFormat(NSLocalizedString("You can now send messages to %@", comment: "notification body")
+String.localizedStringWithFormat(NSLocalizedString("You can now send messages to %@", comment: "notification body"), value)
 ```
 
 ## Adding strings to the existing localizations

@@ -54,9 +54,16 @@ final class ChatModel: ObservableObject {
         }
     }
 
+    func updateContactConnection(_ contactConnection: PendingContactConnection) {
+        updateChat(.contactConnection(contactConnection: contactConnection))
+    }
+
     func updateContact(_ contact: Contact) {
-        let cInfo = ChatInfo.direct(contact: contact)
-        if hasChat(contact.id) {
+        updateChat(.direct(contact: contact))
+    }
+
+    private func updateChat(_ cInfo: ChatInfo) {
+        if hasChat(cInfo.id) {
             updateChatInfo(cInfo)
         } else {
             addChat(Chat(chatInfo: cInfo, chatItems: []))
@@ -248,6 +255,7 @@ enum ChatType: String {
     case direct = "@"
     case group = "#"
     case contactRequest = "<@"
+    case contactConnection = ":"
 }
 
 protocol NamedChat {
@@ -268,6 +276,7 @@ enum ChatInfo: Identifiable, Decodable, NamedChat {
     case direct(contact: Contact)
     case group(groupInfo: GroupInfo)
     case contactRequest(contactRequest: UserContactRequest)
+    case contactConnection(contactConnection: PendingContactConnection)
     
     var localDisplayName: String {
         get {
@@ -275,6 +284,7 @@ enum ChatInfo: Identifiable, Decodable, NamedChat {
             case let .direct(contact): return contact.localDisplayName
             case let .group(groupInfo): return groupInfo.localDisplayName
             case let .contactRequest(contactRequest): return contactRequest.localDisplayName
+            case let .contactConnection(contactConnection): return contactConnection.localDisplayName
             }
         }
     }
@@ -285,6 +295,7 @@ enum ChatInfo: Identifiable, Decodable, NamedChat {
             case let .direct(contact): return contact.displayName
             case let .group(groupInfo): return groupInfo.displayName
             case let .contactRequest(contactRequest): return contactRequest.displayName
+            case let .contactConnection(contactConnection): return contactConnection.displayName
             }
         }
     }
@@ -295,6 +306,7 @@ enum ChatInfo: Identifiable, Decodable, NamedChat {
             case let .direct(contact): return contact.fullName
             case let .group(groupInfo): return groupInfo.fullName
             case let .contactRequest(contactRequest): return contactRequest.fullName
+            case let .contactConnection(contactConnection): return contactConnection.fullName
             }
         }
     }
@@ -305,6 +317,7 @@ enum ChatInfo: Identifiable, Decodable, NamedChat {
             case let .direct(contact): return contact.image
             case let .group(groupInfo): return groupInfo.image
             case let .contactRequest(contactRequest): return contactRequest.image
+            case let .contactConnection(contactConnection): return contactConnection.image
             }
         }
     }
@@ -315,6 +328,7 @@ enum ChatInfo: Identifiable, Decodable, NamedChat {
             case let .direct(contact): return contact.id
             case let .group(groupInfo): return groupInfo.id
             case let .contactRequest(contactRequest): return contactRequest.id
+            case let .contactConnection(contactConnection): return contactConnection.id
             }
         }
     }
@@ -325,6 +339,7 @@ enum ChatInfo: Identifiable, Decodable, NamedChat {
             case .direct: return .direct
             case .group: return .group
             case .contactRequest: return .contactRequest
+            case .contactConnection: return .contactConnection
             }
         }
     }
@@ -335,6 +350,7 @@ enum ChatInfo: Identifiable, Decodable, NamedChat {
             case let .direct(contact): return contact.apiId
             case let .group(groupInfo): return groupInfo.apiId
             case let .contactRequest(contactRequest): return contactRequest.apiId
+            case let .contactConnection(contactConnection): return contactConnection.apiId
             }
         }
     }
@@ -345,6 +361,7 @@ enum ChatInfo: Identifiable, Decodable, NamedChat {
             case let .direct(contact): return contact.ready
             case let .group(groupInfo): return groupInfo.ready
             case let .contactRequest(contactRequest): return contactRequest.ready
+            case let .contactConnection(contactConnection): return contactConnection.ready
             }
         }
     }
@@ -354,6 +371,7 @@ enum ChatInfo: Identifiable, Decodable, NamedChat {
         case let .direct(contact): return contact.createdAt
         case let .group(groupInfo): return groupInfo.createdAt
         case let .contactRequest(contactRequest): return contactRequest.createdAt
+        case let .contactConnection(contactConnection): return contactConnection.createdAt
         }
     }
 
@@ -456,7 +474,7 @@ struct Contact: Identifiable, Decodable, NamedChat {
 
     var id: ChatId { get { "@\(contactId)" } }
     var apiId: Int64 { get { contactId } }
-    var ready: Bool { get { activeConn.connStatus == "ready" } }
+    var ready: Bool { get { activeConn.connStatus == .ready } }
     var displayName: String { get { profile.displayName } }
     var fullName: String { get { profile.fullName } }
     var image: String? { get { profile.image } }
@@ -476,9 +494,15 @@ struct ContactSubStatus: Decodable {
 }
 
 struct Connection: Decodable {
-    var connStatus: String
+    var connId: Int64
+    var connStatus: ConnStatus
 
-    static let sampleData = Connection(connStatus: "ready")
+    var id: ChatId { get { ":\(connId)" } }
+
+    static let sampleData = Connection(
+        connId: 1,
+        connStatus: .ready
+    )
 }
 
 struct UserContactRequest: Decodable, NamedChat {
@@ -486,6 +510,7 @@ struct UserContactRequest: Decodable, NamedChat {
     var localDisplayName: ContactName
     var profile: Profile
     var createdAt: Date
+    var updatedAt: Date
 
     var id: ChatId { get { "<@\(contactRequestId)" } }
     var apiId: Int64 { get { contactRequestId } }
@@ -498,8 +523,89 @@ struct UserContactRequest: Decodable, NamedChat {
         contactRequestId: 1,
         localDisplayName: "alice",
         profile: Profile.sampleData,
-        createdAt: .now
+        createdAt: .now,
+        updatedAt: .now
     )
+}
+
+struct PendingContactConnection: Decodable, NamedChat {
+    var pccConnId: Int64
+    var pccAgentConnId: String
+    var pccConnStatus: ConnStatus
+    var viaContactUri: Bool
+    var createdAt: Date
+    var updatedAt: Date
+
+    var id: ChatId { get { ":\(pccConnId)" } }
+    var apiId: Int64 { get { pccConnId } }
+    var ready: Bool { get { false } }
+    var localDisplayName: String {
+        get { String.localizedStringWithFormat(NSLocalizedString("connection:%@", comment: "connection information"), pccConnId) }
+    }
+    var displayName: String {
+        get {
+            if let initiated = pccConnStatus.initiated {
+                return initiated && !viaContactUri
+                ? NSLocalizedString("invited to connect", comment: "chat list item title")
+                : NSLocalizedString("connecting…", comment: "chat list item title")
+            } else {
+                // this should not be in the list
+                return NSLocalizedString("connection established", comment: "chat list item title (it should not be shown")
+            }
+        }
+    }
+    var fullName: String { get { "" } }
+    var image: String? { get { nil } }
+    var initiated: Bool { get { (pccConnStatus.initiated ?? false) && !viaContactUri } }
+
+    var description: String {
+        get {
+            if let initiated = pccConnStatus.initiated {
+                return initiated && !viaContactUri
+                ? NSLocalizedString("you shared one-time link", comment: "chat list item description")
+                : viaContactUri
+                ? NSLocalizedString("via contact address link", comment: "chat list item description")
+                : NSLocalizedString("via one-time link", comment: "chat list item description")
+            } else {
+                return ""
+            }
+        }
+    }
+
+    static func getSampleData(_ status: ConnStatus = .new, viaContactUri: Bool = false) -> PendingContactConnection {
+        PendingContactConnection(
+            pccConnId: 1,
+            pccAgentConnId: "abcd",
+            pccConnStatus: status,
+            viaContactUri: viaContactUri,
+            createdAt: .now,
+            updatedAt: .now
+        )
+    }
+}
+
+enum ConnStatus: String, Decodable {
+    case new = "new"
+    case joined = "joined"
+    case requested = "requested"
+    case accepted = "accepted"
+    case sndReady = "snd-ready"
+    case ready = "ready"
+    case deleted = "deleted"
+
+    var initiated: Bool? {
+        get {
+            switch self {
+            case .new: return true
+            case .joined: return false
+            case .requested: return true
+            case .accepted: return true
+            case .sndReady: return false
+            case .ready: return nil
+            case .deleted: return nil
+            }
+        }
+    }
 }
 
 struct GroupInfo: Identifiable, Decodable, NamedChat {
