@@ -94,7 +94,6 @@ dependencies {
     //Barcode
     implementation 'org.boofcv:boofcv-android:0.40.1'
     implementation 'org.boofcv:boofcv-core:0.40.1'
-    implementation 'com.google.zxing:core:3.4.0'
 
     //Camera Permission
     implementation "com.google.accompanist:accompanist-permissions:0.23.0"
