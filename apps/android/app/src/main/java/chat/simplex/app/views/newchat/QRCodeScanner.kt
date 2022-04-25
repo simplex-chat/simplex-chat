@@ -20,6 +20,8 @@ import chat.simplex.app.TAG
 import com.google.common.util.concurrent.ListenableFuture
 import java.util.concurrent.*
 
+// Adapted from learntodroid - https://gist.github.com/learntodroid/8f839be0b29d0378f843af70607bd7f5
+
 @Composable
 fun QRCodeScanner(onBarcode: (String) -> Unit) {
   val context = LocalContext.current
@@ -84,8 +86,6 @@ fun QRCodeScanner(onBarcode: (String) -> Unit) {
     }, ContextCompat.getMainExecutor(context))
   }
 }
-
-
 
 @SuppressLint("UnsafeOptInUsageError")
 private fun imageProxyToGrayU8(img: ImageProxy) : GrayU8? {
