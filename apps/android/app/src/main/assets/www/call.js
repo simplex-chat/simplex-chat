@@ -36,3 +36,5 @@ function f() {
 //        localStream.getVideoTracks()[0].enabled = false
 //    }
 //}
+
+console.log("call.js RUN COMPLETE")

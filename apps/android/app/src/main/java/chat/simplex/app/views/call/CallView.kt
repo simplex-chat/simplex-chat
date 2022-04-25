@@ -15,7 +15,7 @@ import androidx.webkit.WebViewClientCompat
 fun VideoCallView(close: () -> Unit) {
   BackHandler(onBack = close)
   val assetLoader = WebViewAssetLoader.Builder()
-    .addPathHandler("/assets/", WebViewAssetLoader.AssetsPathHandler(LocalContext.current))
+    .addPathHandler("/assets/www/", WebViewAssetLoader.AssetsPathHandler(LocalContext.current))
     .build()
   AndroidView(
     factory = {
@@ -31,7 +31,7 @@ fun VideoCallView(close: () -> Unit) {
           }
         }
         this.webViewClient = LocalContentWebViewClient(assetLoader)
-        this.clearHistory();
+        this.clearHistory()
         this.clearCache(true)
         this.addJavascriptInterface(JavascriptInterface(), "Android")
         val webViewSettings = this.settings
@@ -41,11 +41,11 @@ fun VideoCallView(close: () -> Unit) {
         webViewSettings.mediaPlaybackRequiresUserGesture = false
         webViewSettings.useWideViewPort = true
         webViewSettings.cacheMode = WebSettings.LOAD_NO_CACHE
-        this.loadUrl("https://appassets.androidplatform.net/assets/www/call.html")
+        this.loadUrl("file:android_asset/www/call.html")
       }
     }
   ) {
-    webView -> webView.post { webView.evaluateJavascript("javascript:f();", null) }
+//    webView -> webView.post { webView.evaluateJavascript("javascript:f();", null) }
   }
 }
 
@@ -55,5 +55,8 @@ private class LocalContentWebViewClient(private val assetLoader: WebViewAssetLoa
     request: WebResourceRequest
   ): WebResourceResponse? {
     return assetLoader.shouldInterceptRequest(request.url)
+  }
+  override fun onPageFinished(view: WebView?, url: String?) {
+    view?.post { view.evaluateJavascript("javascript:f();", null) }
   }
 }
