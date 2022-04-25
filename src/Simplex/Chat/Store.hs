@@ -173,7 +173,7 @@ import Data.Function (on)
 import Data.Functor (($>))
 import Data.Int (Int64)
 import Data.List (find, sortBy, sortOn)
-import Data.Maybe (catMaybes, fromMaybe, isJust, listToMaybe)
+import Data.Maybe (fromMaybe, isJust, listToMaybe)
 import Data.Ord (Down (..))
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -1196,19 +1196,25 @@ getConnectionEntity st User {userId, userContactId} agentConnId =
 
 getConnectionsContacts :: MonadUnliftIO m => SQLiteStore -> UserId -> [ConnId] -> m [ContactRef]
 getConnectionsContacts st userId agentConnIds =
-  liftIO . withTransaction st $ fmap catMaybes . contactNamesAndIds
-  where
-    contactNamesAndIds db = forM agentConnIds $ \acId ->
-      listToMaybe . map (uncurry ContactRef)
+  liftIO . withTransaction st $ \db -> do
+    DB.execute_ db "DROP TABLE IF EXISTS temp.conn_ids"
+    DB.execute_ db "CREATE TABLE temp.conn_ids (conn_id BLOB)"
+    DB.executeMany db "INSERT INTO temp.conn_ids (conn_id) VALUES (?)" $ map Only agentConnIds
+    conns <-
+      map (uncurry ContactRef)
         <$> DB.query
           db
           [sql|
             SELECT ct.contact_id, ct.local_display_name
             FROM contacts ct
             JOIN connections c ON c.contact_id = ct.contact_id
-            WHERE ct.user_id = ? AND c.agent_conn_id = ? AND (c.conn_status = ? OR c.conn_status = ?)
+            WHERE ct.user_id = ? AND c.agent_conn_id IN (SELECT conn_id FROM temp.conn_ids)
+              AND c.conn_type = ?
+              AND (c.conn_status = ? OR c.conn_status = ?)
           |]
-          (userId, acId, ConnReady, ConnSndReady)
+          (userId, ConnContact, ConnReady, ConnSndReady)
+    DB.execute_ db "DROP TABLE temp.conn_ids"
+    pure conns
 
 getGroupAndMember :: StoreMonad m => SQLiteStore -> User -> Int64 -> m (GroupInfo, GroupMember)
 getGroupAndMember st User {userId, userContactId} groupMemberId =
