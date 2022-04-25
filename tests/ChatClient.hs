@@ -107,16 +107,15 @@ startTestChat_ st dbFilePrefix user = do
 
 stopTestChat :: TestCC -> IO ()
 stopTestChat TestCC {chatController = cc, chatAsync, termAsync} = do
-  threadDelay 500000
   stopChatController cc
   uninterruptibleCancel termAsync
   uninterruptibleCancel chatAsync
 
 withNewTestChat :: Int -> Profile -> (TestCC -> IO a) -> IO a
-withNewTestChat dbNumber profile = bracket (createTestChat dbNumber profile) stopTestChat
+withNewTestChat dbNumber profile = bracket (createTestChat dbNumber profile) (\cc -> threadDelay 500000 >> stopTestChat cc)
 
 withTestChat :: Int -> (TestCC -> IO a) -> IO a
-withTestChat dbNumber = bracket (startTestChat dbNumber) stopTestChat
+withTestChat dbNumber = bracket (startTestChat dbNumber) (\cc -> threadDelay 500000 >> stopTestChat cc)
 
 readTerminalOutput :: VirtualTerminal -> TQueue String -> IO ()
 readTerminalOutput t termQ = do
@@ -205,7 +204,7 @@ serverCfg =
     { transports = [(serverPort, transport @TLS)],
       tbqSize = 1,
       serverTbqSize = 1,
-      msgQueueQuota = 4,
+      msgQueueQuota = 16,
       queueIdBytes = 12,
       msgIdBytes = 6,
       storeLogFile = Nothing,
