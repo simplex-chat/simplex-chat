@@ -514,7 +514,7 @@ struct UserContactRequest: Decodable, NamedChat {
 
     var id: ChatId { get { "<@\(contactRequestId)" } }
     var apiId: Int64 { get { contactRequestId } }
-    var ready: Bool = true
+    var ready: Bool { get { true } }
     var displayName: String { get { profile.displayName } }
     var fullName: String { get { profile.fullName } }
     var image: String? { get { profile.image } }
