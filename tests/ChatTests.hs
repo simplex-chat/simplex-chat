@@ -84,7 +84,7 @@ chatTests = do
   describe "Async connection handshake" $ do
     it "should connect when initiating client goes offline" testAsyncInitiatingOffline
     it "should connect when accepting client goes offline" testAsyncAcceptingOffline
-    it "should connect when accepting client goes offline" testAsyncNeverTogetherOnline
+    it "should connect when clients are never simultaneously online" testAsyncNeverTogetherOnline
 
 testAddContact :: IO ()
 testAddContact =
