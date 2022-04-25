@@ -1,24 +1,13 @@
 package chat.simplex.app.views.chat
 
 import ComposeImageView
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.Icon
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.AddCircleOutline
-import androidx.compose.foundation.layout.Column
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.views.helpers.ComposeLinkView
-import chat.simplex.app.views.helpers.generalGetString
 
 // TODO ComposeState
 
