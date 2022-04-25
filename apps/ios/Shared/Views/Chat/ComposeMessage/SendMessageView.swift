@@ -78,7 +78,7 @@ struct SendMessageView: View {
 
 struct SendMessageView_Previews: PreviewProvider {
     static var previews: some View {
-        @State var newComposeState = newComposeState()
+        @State var newComposeState = ComposeState()
         let ci = ChatItem.getSample(1, .directSnd, .now, "hello")
         @State var composeStateEditing = composeStateEditing(editingItem: ci)
         @FocusState var keyboardVisible: Bool

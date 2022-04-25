@@ -14,7 +14,7 @@ private let maxItemSize: Int = 50000
 
 struct TerminalView: View {
     @EnvironmentObject var chatModel: ChatModel
-    @State var composeState: ComposeState = newComposeState()
+    @State var composeState: ComposeState = ComposeState()
     @FocusState private var keyboardVisible: Bool
 
     var body: some View {
@@ -89,7 +89,7 @@ struct TerminalView: View {
                 composeState.inProgress = false
             }
         }
-        composeState = newComposeState()
+        composeState = ComposeState()
     }
 }
 

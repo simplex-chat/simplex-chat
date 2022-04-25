@@ -21,9 +21,9 @@ enum ComposeContextItem {
 }
 
 struct ComposeState {
-    var message: String
-    var preview: ComposePreview
-    var contextItem: ComposeContextItem
+    var message: String = ""
+    var preview: ComposePreview = .noPreview
+    var contextItem: ComposeContextItem = .noContextItem
     var inProgress: Bool = false
 
     func copy(
@@ -73,18 +73,6 @@ struct ComposeState {
     }
 }
 
-func newComposeState(
-    message: String = "",
-    preview: ComposePreview = .noPreview,
-    contextItem: ComposeContextItem = .noContextItem
-) -> ComposeState {
-    return ComposeState(
-        message: message,
-        preview: preview,
-        contextItem: contextItem
-    )
-}
-
 func chatItemPreview(chatItem: ChatItem) -> ComposePreview {
     let chatItemPreview: ComposePreview
     switch chatItem.content.msgContent {
@@ -99,7 +87,7 @@ func chatItemPreview(chatItem: ChatItem) -> ComposePreview {
 }
 
 func composeStateEditing(editingItem: ChatItem) -> ComposeState {
-    return newComposeState(
+    return ComposeState(
         message: editingItem.content.text,
         preview: chatItemPreview(chatItem: editingItem),
         contextItem: .editingItem(chatItem: editingItem)
@@ -209,7 +197,7 @@ struct ComposeView: View {
         case let .quotedItem(chatItem: quotedItem):
             ContextItemView(contextItem: quotedItem, cancelContextItem: { composeState = composeState.copy(contextItem: .noContextItem) })
         case let .editingItem(chatItem: editingItem):
-            ContextItemView(contextItem: editingItem, cancelContextItem: { composeState = newComposeState()})
+            ContextItemView(contextItem: editingItem, cancelContextItem: { composeState = ComposeState()})
         }
     }
 
@@ -265,7 +253,7 @@ struct ComposeView: View {
                         chatModel.addChatItem(chat.chatInfo, chatItem)
                     }
                 }
-                composeState = newComposeState()
+                composeState = ComposeState()
             } catch {
                 logger.error("ChatView.sendMessage error: \(error.localizedDescription)")
             }
@@ -382,7 +370,7 @@ struct ComposeView: View {
 struct ComposeView_Previews: PreviewProvider {
     static var previews: some View {
         let chat = Chat(chatInfo: ChatInfo.sampleData.direct, chatItems: [])
-        @State var composeState = newComposeState(message: "hello")
+        @State var composeState = ComposeState(message: "hello")
         @FocusState var keyboardVisible: Bool
 
         return Group {

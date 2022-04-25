@@ -14,7 +14,7 @@ struct ChatView: View {
     @EnvironmentObject var chatModel: ChatModel
     @Environment(\.colorScheme) var colorScheme
     @ObservedObject var chat: Chat
-    @State var composeState = newComposeState()
+    @State var composeState = ComposeState()
     @State var deletingItem: ChatItem? = nil
     @FocusState private var keyboardVisible: Bool
     @State private var showChatInfo = false
