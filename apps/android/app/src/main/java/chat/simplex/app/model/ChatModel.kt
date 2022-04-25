@@ -67,8 +67,8 @@ class ChatModel(val controller: ChatController) {
     }
   }
 
-  fun updateNetworkStatus(contact: Contact, status: Chat.NetworkStatus) {
-    val i = getChatIndex(contact.id)
+  fun updateNetworkStatus(id: ChatId, status: Chat.NetworkStatus) {
+    val i = getChatIndex(id)
     if (i >= 0) {
       val chat = chats[i]
       chats[i] = chat.copy(serverInfo = chat.serverInfo.copy(networkStatus = status))
@@ -387,6 +387,14 @@ class Contact(
       createdAt = Clock.System.now()
     )
   }
+}
+
+@Serializable
+class ContactRef(
+  val contactId: Long,
+  var localDisplayName: String
+) {
+  val id: ChatId get() = "@$contactId"
 }
 
 @Serializable

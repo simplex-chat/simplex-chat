@@ -352,7 +352,7 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
       is CR.ContactConnected -> {
         chatModel.updateContact(r.contact)
         chatModel.removeChat(r.contact.activeConn.id)
-        chatModel.updateNetworkStatus(r.contact, Chat.NetworkStatus.Connected())
+        chatModel.updateNetworkStatus(r.contact.id, Chat.NetworkStatus.Connected())
 //        NtfManager.shared.notifyContactConnected(contact)
       }
       is CR.ContactConnecting -> {
@@ -371,17 +371,18 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
           chatModel.updateChatInfo(cInfo)
         }
       }
-      is CR.ContactSubscribed -> processContactSubscribed(r.contact)
-      is CR.ContactDisconnected -> {
-        chatModel.updateContact(r.contact)
-        chatModel.updateNetworkStatus(r.contact, Chat.NetworkStatus.Disconnected())
-      }
+      is CR.ContactsSubscribed -> updateContactsStatus(r.contactRefs, Chat.NetworkStatus.Connected())
+      is CR.ContactsDisconnected -> updateContactsStatus(r.contactRefs, Chat.NetworkStatus.Disconnected())
       is CR.ContactSubError -> processContactSubError(r.contact, r.chatError)
       is CR.ContactSubSummary -> {
         for (sub in r.contactSubscriptions) {
           val err = sub.contactError
-          if (err == null) processContactSubscribed(sub.contact)
-          else processContactSubError(sub.contact, sub.contactError)
+          if (err == null) {
+            chatModel.updateContact(sub.contact)
+            chatModel.updateNetworkStatus(sub.contact.id, Chat.NetworkStatus.Connected())
+          } else {
+            processContactSubError(sub.contact, sub.contactError)
+          }
         }
       }
       is CR.NewChatItem -> {
@@ -436,9 +437,10 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
     }
   }
 
-  fun processContactSubscribed(contact: Contact) {
-    chatModel.updateContact(contact)
-    chatModel.updateNetworkStatus(contact, Chat.NetworkStatus.Connected())
+  fun updateContactsStatus(contactRefs: List<ContactRef>, status: Chat.NetworkStatus) {
+    for (c in contactRefs) {
+      chatModel.updateNetworkStatus(c.id, status)
+    }
   }
 
   fun processContactSubError(contact: Contact, chatError: ChatError) {
@@ -454,7 +456,7 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
         }
       }
       else e.string
-    chatModel.updateNetworkStatus(contact, Chat.NetworkStatus.Error(err))
+    chatModel.updateNetworkStatus(contact.id, Chat.NetworkStatus.Error(err))
   }
 
   fun showBackgroundServiceNotice() {
@@ -667,8 +669,8 @@ sealed class CR {
   @Serializable @SerialName("acceptingContactRequest") class AcceptingContactRequest(val contact: Contact): CR()
   @Serializable @SerialName("contactRequestRejected") class ContactRequestRejected: CR()
   @Serializable @SerialName("contactUpdated") class ContactUpdated(val toContact: Contact): CR()
-  @Serializable @SerialName("contactSubscribed") class ContactSubscribed(val contact: Contact): CR()
-  @Serializable @SerialName("contactDisconnected") class ContactDisconnected(val contact: Contact): CR()
+  @Serializable @SerialName("contactsSubscribed") class ContactsSubscribed(val server: String, val contactRefs: List<ContactRef>): CR()
+  @Serializable @SerialName("contactsDisconnected") class ContactsDisconnected(val server: String, val contactRefs: List<ContactRef>): CR()
   @Serializable @SerialName("contactSubError") class ContactSubError(val contact: Contact, val chatError: ChatError): CR()
   @Serializable @SerialName("contactSubSummary") class ContactSubSummary(val contactSubscriptions: List<ContactSubStatus>): CR()
   @Serializable @SerialName("groupSubscribed") class GroupSubscribed(val group: GroupInfo): CR()
@@ -713,8 +715,8 @@ sealed class CR {
     is AcceptingContactRequest -> "acceptingContactRequest"
     is ContactRequestRejected -> "contactRequestRejected"
     is ContactUpdated -> "contactUpdated"
-    is ContactSubscribed -> "contactSubscribed"
-    is ContactDisconnected -> "contactDisconnected"
+    is ContactsSubscribed -> "contactsSubscribed"
+    is ContactsDisconnected -> "contactsDisconnected"
     is ContactSubError -> "contactSubError"
     is ContactSubSummary -> "contactSubSummary"
     is GroupSubscribed -> "groupSubscribed"
@@ -760,8 +762,8 @@ sealed class CR {
     is AcceptingContactRequest -> json.encodeToString(contact)
     is ContactRequestRejected -> noDetails()
     is ContactUpdated -> json.encodeToString(toContact)
-    is ContactSubscribed -> json.encodeToString(contact)
-    is ContactDisconnected -> json.encodeToString(contact)
+    is ContactsSubscribed -> "server: $server\ncontacts:\n${json.encodeToString(contactRefs)}"
+    is ContactsDisconnected -> "server: $server\ncontacts:\n${json.encodeToString(contactRefs)}"
     is ContactSubError -> "error:\n${chatError.string}\ncontact:\n${json.encodeToString(contact)}"
     is ContactSubSummary -> json.encodeToString(contactSubscriptions)
     is GroupSubscribed -> json.encodeToString(group)
