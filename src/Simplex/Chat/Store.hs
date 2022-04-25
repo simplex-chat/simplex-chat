@@ -53,6 +53,7 @@ module Simplex.Chat.Store
     getPendingConnections,
     getContactConnections,
     getConnectionEntity,
+    getConnectionsContacts,
     getGroupAndMember,
     updateConnectionStatus,
     createNewGroup,
@@ -1193,6 +1194,28 @@ getConnectionEntity st User {userId, userContactId} agentConnId =
         userContact_ :: [Only ConnReqContact] -> Either StoreError UserContact
         userContact_ [Only cReq] = Right UserContact {userContactLinkId, connReqContact = cReq}
         userContact_ _ = Left SEUserContactLinkNotFound
+
+getConnectionsContacts :: MonadUnliftIO m => SQLiteStore -> UserId -> [ConnId] -> m [ContactRef]
+getConnectionsContacts st userId agentConnIds =
+  liftIO . withTransaction st $ \db -> do
+    DB.execute_ db "DROP TABLE IF EXISTS temp.conn_ids"
+    DB.execute_ db "CREATE TABLE temp.conn_ids (conn_id BLOB)"
+    DB.executeMany db "INSERT INTO temp.conn_ids (conn_id) VALUES (?)" $ map Only agentConnIds
+    conns <-
+      map (uncurry ContactRef)
+        <$> DB.query
+          db
+          [sql|
+            SELECT ct.contact_id, ct.local_display_name
+            FROM contacts ct
+            JOIN connections c ON c.contact_id = ct.contact_id
+            WHERE ct.user_id = ? AND c.agent_conn_id IN (SELECT conn_id FROM temp.conn_ids)
+              AND c.conn_type = ?
+              AND (c.conn_status = ? OR c.conn_status = ?)
+          |]
+          (userId, ConnContact, ConnReady, ConnSndReady)
+    DB.execute_ db "DROP TABLE temp.conn_ids"
+    pure conns
 
 getGroupAndMember :: StoreMonad m => SQLiteStore -> User -> Int64 -> m (GroupInfo, GroupMember)
 getGroupAndMember st User {userId, userContactId} groupMemberId =

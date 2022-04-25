@@ -84,6 +84,14 @@ contactConn = activeConn
 contactConnId :: Contact -> ConnId
 contactConnId Contact {activeConn} = aConnId activeConn
 
+data ContactRef = ContactRef
+  { contactId :: Int64,
+    localDisplayName :: ContactName
+  }
+  deriving (Eq, Show, Generic)
+
+instance ToJSON ContactRef where toEncoding = J.genericToEncoding J.defaultOptions
+
 data UserContact = UserContact
   { userContactLinkId :: Int64,
     connReqContact :: ConnReqContact
