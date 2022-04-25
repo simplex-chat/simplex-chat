@@ -42,7 +42,7 @@ suspend fun getLinkPreview(url: String): LinkPreview? {
       if (imageUri != null) {
         try {
           val stream = java.net.URL(imageUri).openStream()
-          val image = resizeImageToDataSize(BitmapFactory.decodeStream(stream), maxDataSize = 14000)
+          val image = resizeImageToStrSize(BitmapFactory.decodeStream(stream), maxDataSize = 14000)
 //          TODO add once supported in iOS
 //          val description = ogTags.firstOrNull {
 //            it.attr("property") == "og:description"

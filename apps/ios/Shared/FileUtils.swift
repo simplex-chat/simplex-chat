@@ -9,6 +9,9 @@
 import Foundation
 import SwiftUI
 
+// maximum image file size to be auto-accepted
+let maxImageSize = 236700
+
 func getDocumentsDirectory() -> URL {
     return FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
 }

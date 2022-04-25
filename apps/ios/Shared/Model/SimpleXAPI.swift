@@ -743,8 +743,7 @@ func processReceivedMsg(_ res: ChatResponse) {
             let cItem = aChatItem.chatItem
             chatModel.addChatItem(cInfo, cItem)
             if let file = cItem.file,
-               file.fileSize <= 236700 {
-               // file.fileSize <= 394500 {
+               file.fileSize <= maxImageSize {
                 Task {
                     do {
                         try await receiveFile(fileId: file.fileId)
