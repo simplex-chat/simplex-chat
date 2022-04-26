@@ -1306,27 +1306,27 @@ testFilesFoldersImageSndDelete =
     \alice bob -> do
       connectUsers alice bob
       alice #$> ("/_files_folder ./tests/tmp/alice_app_files", id, "ok")
-      copyFile "./tests/fixtures/test.jpg" "./tests/tmp/alice_app_files/test.jpg"
+      copyFile "./tests/fixtures/test_1MB.pdf" "./tests/tmp/alice_app_files/test_1MB.pdf"
       bob #$> ("/_files_folder ./tests/tmp/bob_app_files", id, "ok")
-      alice ##> "/_send @2 file test.jpg json {\"text\":\"\",\"type\":\"image\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\"}"
-      alice <# "/f @bob test.jpg"
+      alice ##> "/_send @2 file test_1MB.pdf json {\"text\":\"\",\"type\":\"image\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\"}"
+      alice <# "/f @bob test_1MB.pdf"
       alice <## "use /fc 1 to cancel sending"
-      bob <# "alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
+      bob <# "alice> sends file test_1MB.pdf (1017.7 KiB / 1042157 bytes)"
       bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
       bob ##> "/fr 1"
-      bob <## "saving file 1 from alice to test.jpg"
+      bob <## "saving file 1 from alice to test_1MB.pdf"
       concurrently_
-        (bob <## "started receiving file 1 (test.jpg) from alice")
-        (alice <## "started sending file 1 (test.jpg) to bob")
+        (bob <## "started receiving file 1 (test_1MB.pdf) from alice")
+        (alice <## "started sending file 1 (test_1MB.pdf) to bob")
       -- deleting contact should cancel and remove file
-      checkActionDeletesFile "./tests/tmp/alice_app_files/test.jpg" $ do
+      checkActionDeletesFile "./tests/tmp/alice_app_files/test_1MB.pdf" $ do
         alice ##> "/d bob"
         alice <## "bob: contact is deleted"
-        bob <## "alice cancelled sending file 1 (test.jpg)"
+        bob <## "alice cancelled sending file 1 (test_1MB.pdf)"
         bob ##> "/fs 1"
-        bob <## "receiving file 1 (test.jpg) cancelled, received part path: test.jpg"
+        bob <## "receiving file 1 (test_1MB.pdf) cancelled, received part path: test_1MB.pdf"
       -- deleting contact should remove cancelled file
-      checkActionDeletesFile "./tests/tmp/bob_app_files/test.jpg" $ do
+      checkActionDeletesFile "./tests/tmp/bob_app_files/test_1MB.pdf" $ do
         bob ##> "/d alice"
         bob <## "alice: contact is deleted"
 
