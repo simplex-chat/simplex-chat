@@ -1209,11 +1209,11 @@ getConnectionsContacts st userId agentConnIds =
             SELECT ct.contact_id, ct.local_display_name
             FROM contacts ct
             JOIN connections c ON c.contact_id = ct.contact_id
-            WHERE ct.user_id = ? AND c.agent_conn_id IN (SELECT conn_id FROM temp.conn_ids)
+            WHERE ct.user_id = ?
+              AND c.agent_conn_id IN (SELECT conn_id FROM temp.conn_ids)
               AND c.conn_type = ?
-              AND (c.conn_status = ? OR c.conn_status = ?)
           |]
-          (userId, ConnContact, ConnReady, ConnSndReady)
+          (userId, ConnContact)
     DB.execute_ db "DROP TABLE temp.conn_ids"
     pure conns
 
