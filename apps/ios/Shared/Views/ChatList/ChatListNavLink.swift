@@ -108,7 +108,7 @@ struct ChatListNavLink: View {
     }
 
     private func contactRequestNavLink(_ contactRequest: UserContactRequest) -> some View {
-        ContactRequestView(contactRequest: contactRequest)
+        ContactRequestView(contactRequest: contactRequest, chat: chat)
         .swipeActions(edge: .trailing, allowsFullSwipe: true) {
             Button { Task { await acceptContactRequest(contactRequest) } }
                 label: { Label("Accept", systemImage: "checkmark") }

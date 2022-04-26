@@ -241,9 +241,10 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
 
   suspend fun apiDeleteChat(type: ChatType, id: Long): Boolean {
     val r = sendCmd(CC.ApiDeleteChat(type, id))
-    when (r) {
-      is CR.ContactDeleted -> return true // TODO groups
-      is CR.ChatCmdError -> {
+    when {
+      r is CR.ContactDeleted && type == ChatType.Direct -> return true
+      r is CR.ContactConnectionDeleted && type == ChatType.ContactConnection -> return true
+      r is CR.ChatCmdError -> {
         val e = r.chatError
         if (e is ChatError.ChatErrorChat && e.errorType is ChatErrorType.ContactGroups) {
           AlertManager.shared.showAlertMsg(
@@ -252,7 +253,15 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
           )
         }
       }
-      else -> apiErrorAlert("apiDeleteChat", "Error deleting ${type.chatTypeName}", r)
+      else -> {
+        val titleId = when (type) {
+          ChatType.Direct -> R.string.error_deleting_contact
+          ChatType.Group -> R.string.error_deleting_group
+          ChatType.ContactRequest -> R.string.error_deleting_contact_request
+          ChatType.ContactConnection -> R.string.error_deleting_pending_contact_connection
+        }
+        apiErrorAlert("apiDeleteChat", generalGetString(titleId), r)
+      }
     }
     return false
   }
@@ -334,13 +343,21 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
   fun processReceivedMsg(r: CR) {
     chatModel.terminalItems.add(TerminalItem.resp(r))
     when (r) {
+      is CR.NewContactConnection -> {
+        chatModel.updateContactConnection(r.connection)
+      }
+      is CR.ContactConnectionDeleted -> {
+        chatModel.removeChat(r.connection.id)
+      }
       is CR.ContactConnected -> {
         chatModel.updateContact(r.contact)
+        chatModel.removeChat(r.contact.activeConn.id)
         chatModel.updateNetworkStatus(r.contact, Chat.NetworkStatus.Connected())
 //        NtfManager.shared.notifyContactConnected(contact)
       }
       is CR.ContactConnecting -> {
         chatModel.updateContact(r.contact)
+        chatModel.removeChat(r.contact.activeConn.id)
       }
       is CR.ReceivedContactRequest -> {
         val contactRequest = r.contactRequest
@@ -534,7 +551,7 @@ sealed class CC {
     is CreateActiveUser -> "/u ${profile.displayName} ${profile.fullName}"
     is StartChat -> "/_start"
     is SetFilesFolder -> "/_files_folder $filesFolder"
-    is ApiGetChats -> "/_get chats"
+    is ApiGetChats -> "/_get chats pcc=on"
     is ApiGetChat -> "/_get chat ${chatRef(type, id)} count=100"
     is ApiSendMessage -> when {
       file == null && quotedItemId == null -> "/_send ${chatRef(type, id)} ${mc.cmdString}"
@@ -664,6 +681,8 @@ sealed class CR {
   @Serializable @SerialName("chatItemDeleted") class ChatItemDeleted(val deletedChatItem: AChatItem, val toChatItem: AChatItem): CR()
   @Serializable @SerialName("rcvFileAccepted") class RcvFileAccepted: CR()
   @Serializable @SerialName("rcvFileComplete") class RcvFileComplete(val chatItem: AChatItem): CR()
+  @Serializable @SerialName("newContactConnection") class NewContactConnection(val connection: PendingContactConnection): CR()
+  @Serializable @SerialName("contactConnectionDeleted") class ContactConnectionDeleted(val connection: PendingContactConnection): CR()
   @Serializable @SerialName("cmdOk") class CmdOk: CR()
   @Serializable @SerialName("chatCmdError") class ChatCmdError(val chatError: ChatError): CR()
   @Serializable @SerialName("chatError") class ChatRespError(val chatError: ChatError): CR()
@@ -708,6 +727,8 @@ sealed class CR {
     is ChatItemDeleted -> "chatItemDeleted"
     is RcvFileAccepted -> "rcvFileAccepted"
     is RcvFileComplete -> "rcvFileComplete"
+    is NewContactConnection -> "newContactConnection"
+    is ContactConnectionDeleted -> "contactConnectionDeleted"
     is CmdOk -> "cmdOk"
     is ChatCmdError -> "chatCmdError"
     is ChatRespError -> "chatError"
@@ -753,6 +774,8 @@ sealed class CR {
     is ChatItemDeleted -> "deletedChatItem:\n${json.encodeToString(deletedChatItem)}\ntoChatItem:\n${json.encodeToString(toChatItem)}"
     is RcvFileAccepted -> noDetails()
     is RcvFileComplete -> json.encodeToString(chatItem)
+    is NewContactConnection -> json.encodeToString(connection)
+    is ContactConnectionDeleted -> json.encodeToString(connection)
     is CmdOk -> noDetails()
     is ChatCmdError -> chatError.string
     is ChatRespError -> chatError.string

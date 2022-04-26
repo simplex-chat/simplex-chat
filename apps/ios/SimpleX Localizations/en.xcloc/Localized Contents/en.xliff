@@ -340,6 +340,11 @@
         <target>Delete pending connection</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Delete pending connection?" xml:space="preserve">
+        <source>Delete pending connection?</source>
+        <target>Delete pending connection?</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Develop" xml:space="preserve">
         <source>Develop</source>
         <target>Develop</target>
@@ -597,6 +602,11 @@ to scan from the app</source>
 to scan from the app</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Show pending connections" xml:space="preserve">
+        <source>Show pending connections</source>
+        <target>Show pending connections</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Take picture" xml:space="preserve">
         <source>Take picture</source>
         <target>Take picture</target>
@@ -622,6 +632,16 @@ to scan from the app</target>
 *Please note*: if you confirm, your device token will be sent to SimpleX Chat notifications server.</source>
         <target>The app can receive background notifications every 20 minutes to check the new messages.
 *Please note*: if you confirm, your device token will be sent to SimpleX Chat notifications server.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="The connection you accepted will be cancelled!" xml:space="preserve">
+        <source>The connection you accepted will be cancelled!</source>
+        <target>The connection you accepted will be cancelled!</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="The contact you shared this link with will NOT be able to connect!" xml:space="preserve">
+        <source>The contact you shared this link with will NOT be able to connect!</source>
+        <target>The contact you shared this link with will NOT be able to connect!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The messaging and application platform 100% private by design!" xml:space="preserve">
@@ -691,6 +711,11 @@ To connect, please ask your contact to create another connection link and check 
         <target>You</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="You accepted connection" xml:space="preserve">
+        <source>You accepted connection</source>
+        <target>You accepted connection</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="You are already connected to %@ via this link." xml:space="preserve">
         <source>You are already connected to %@ via this link.</source>
         <target>You are already connected to %@ via this link.</target>
@@ -724,6 +749,11 @@ To connect, please ask your contact to create another connection link and check 
       <trans-unit id="You control your chat!" xml:space="preserve">
         <source>You control your chat!</source>
         <target>You control your chat!</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="You invited your contact" xml:space="preserve">
+        <source>You invited your contact</source>
+        <target>You invited your contact</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You will be connected when your connection request is accepted, please wait or check later!" xml:space="preserve">
@@ -830,10 +860,30 @@ SimpleX servers cannot see your profile.</target>
         <target>connect to SimpleX Chat developers.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="connecting…" xml:space="preserve">
+        <source>connecting…</source>
+        <target>connecting…</target>
+        <note>chat list item title</note>
+      </trans-unit>
+      <trans-unit id="connection established" xml:space="preserve">
+        <source>connection established</source>
+        <target>connection established</target>
+        <note>chat list item title (it should not be shown</note>
+      </trans-unit>
+      <trans-unit id="connection:%@" xml:space="preserve">
+        <source>connection:%@</source>
+        <target>connection:%@</target>
+        <note>connection information</note>
+      </trans-unit>
       <trans-unit id="deleted" xml:space="preserve">
         <source>deleted</source>
         <target>deleted</target>
         <note>deleted chat item</note>
+      </trans-unit>
+      <trans-unit id="invited to connect" xml:space="preserve">
+        <source>invited to connect</source>
+        <target>invited to connect</target>
+        <note>chat list item title</note>
       </trans-unit>
       <trans-unit id="italic" xml:space="preserve">
         <source>italic</source>
@@ -855,10 +905,25 @@ SimpleX servers cannot see your profile.</target>
         <target>v%@ (%@)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="via contact address link" xml:space="preserve">
+        <source>via contact address link</source>
+        <target>via contact address link</target>
+        <note>chat list item description</note>
+      </trans-unit>
+      <trans-unit id="via one-time link" xml:space="preserve">
+        <source>via one-time link</source>
+        <target>via one-time link</target>
+        <note>chat list item description</note>
+      </trans-unit>
       <trans-unit id="wants to connect to you!" xml:space="preserve">
         <source>wants to connect to you!</source>
         <target>wants to connect to you!</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="you shared one-time link" xml:space="preserve">
+        <source>you shared one-time link</source>
+        <target>you shared one-time link</target>
+        <note>chat list item description</note>
       </trans-unit>
       <trans-unit id="~strike~" xml:space="preserve">
         <source>~strike~</source>

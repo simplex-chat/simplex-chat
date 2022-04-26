@@ -713,8 +713,10 @@ func processReceivedMsg(_ res: ChatResponse) {
         m.terminalItems.append(.resp(.now, res))
         logger.debug("processReceivedMsg: \(res.responseType)")
         switch res {
-        case let .newContactConnection(contactConnection):
-            m.updateContactConnection(contactConnection)
+        case let .newContactConnection(connection):
+            m.updateContactConnection(connection)
+        case let .contactConnectionDeleted(connection):
+            m.removeChat(connection.id)
         case let .contactConnected(contact):
             m.updateContact(contact)
             m.removeChat(contact.activeConn.id)
@@ -961,6 +963,7 @@ enum StoreError: Decodable {
     case fileNotFound(fileId: Int64)
     case rcvFileInvalid(fileId: Int64)
     case connectionNotFound(agentConnId: String)
+    case pendingConnectionNotFound(connId: Int64)
     case introNotFound
     case uniqueID
     case internalError(message: String)
@@ -969,6 +972,7 @@ enum StoreError: Decodable {
     case chatItemNotFound(itemId: Int64)
     case quotedChatItemNotFound
     case chatItemSharedMsgIdNotFound(sharedMsgId: String)
+    case chatItemNotFoundByFileId(fileId: Int64)
 }
 
 enum AgentErrorType: Decodable {
