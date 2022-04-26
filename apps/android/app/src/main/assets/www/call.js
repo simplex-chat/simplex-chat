@@ -11,36 +11,50 @@ outgoingVideo.onplaying = () => {
 
 // STUN servers
 const servers = {
-  iceServers: [{urls: ["stun:stun1.1.google.com:19302", "stun:stun2.1.google.com:19302"]}],
+  iceServers: [{urls: ["stun:stun.l.google.com:19302"]}],
   iceCandidatePoolSize: 10,
 }
 
-let pc = RTCPeerConnection(servers)
+let pc
+run().then(() => console.log("finished"))
 
-let remoteStream = new MediaStream()
-let localStream = getLocalVideoStream()
-setUpVideos()
+async function run() {
+  pc = new RTCPeerConnection(servers)
 
-pc.onicecandidate = (event) => {
-  // send candidate to recipient via simplex
-  event.candidate && console.log("ICECANDIDATE\n" + event.candidate.toJSON())
+  // This handler 'sends' any ICE candidates to the other peer, as they are received.
+  pc.onicecandidate = (event) => {
+    // send candidate to recipient via simplex
+    console.log("ICECANDIDATE\n" + JSON.stringify(event))
+    event.candidate && console.log("ICECANDIDATE\n" + JSON.stringify(event.candidate))
+  }
+
+  let remoteStream = new MediaStream()
+  let localStream = await getLocalVideoStream()
+  setUpVideos(pc, localStream, remoteStream)
 }
 
-function processInbound(data) {
+async function processInbound(data) {
   switch (data.action) {
     case "initiateCall":
-      return makeRTCOffer(pc)
+      console.log("initiating call")
+      let result = await makeRTCOffer(pc)
+      console.log(JSON.stringify(result))
+      return
     case "iceCandidate":
-      return processIceCandidate(data.content)
+      result = processIceCandidate(data.content)
+      console.log(JSON.stringify(result))
+      return
     case "rtcOffer":
-      return processInboundOffer(data.content)
+      result = processInboundOffer(data.content)
+      console.log(JSON.stringify(result))
+      return
     default:
       console.log("JS: Unknown Command")
   }
 }
 
 async function makeRTCOffer(pc) {
-  // For initiating a call
+  // For initiating a call. Send offer to callee
   let offerDescription = await pc.createOffer()
   await pc.setLocalDescription(offerDescription)
   let offer = {
@@ -57,23 +71,28 @@ async function answerRTCOffer(pc) {
     sdp: answerDescription.sdp,
     type: answerDescription.type,
   }
-  return answer
+  return JSON.stringify(answer)
 }
 
 function processIceCandidate(iceCandidateJSON) {
-  let candidate = new RTCIceCandidate(iceCandidateJSON)
+  let candidate = new RTCIceCandidate(iceCandidateJSON.candidate)
   pc.addIceCandidate(candidate)
 }
 
 function processInboundOffer(incomingJSON) {
   // Negotiating initial connection
   if (!pc.currentRemoteDescription) {
-    let answer = new RTCSessionDescription(incomingJSON)
+    let answer = new RTCSessionDescription(incomingJSON.sdp)
+    console.log("ANSWER\n\n\n" + JSON.stringify(answer))
     pc.setRemoteDescription(answer)
+      .then((_) => {
+        answerRTCOffer(pc)
+      })
+      .then((x) => console.log(x))
   }
 }
 
-function setUpVideos() {
+function setUpVideos(pc, localStream, remoteStream) {
   localStream.getTracks().forEach((track) => {
     pc.addTrack(track, localStream)
   })
@@ -88,7 +107,7 @@ function setUpVideos() {
 }
 
 async function getLocalVideoStream() {
-  localStream = await navigator.mediaDevices.getUserMedia({
+  return await navigator.mediaDevices.getUserMedia({
     audio: true,
     video: {
       frameRate: 24,
@@ -100,7 +119,6 @@ async function getLocalVideoStream() {
       aspectRatio: 1.33,
     },
   })
-  return localStream
 }
 
 function toggleVideo(b) {

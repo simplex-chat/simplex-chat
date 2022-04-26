@@ -62,7 +62,6 @@ fun VideoCallView(close: () -> Unit) {
               }
             }
 
-
             override fun onConsoleMessage(consoleMessage: ConsoleMessage?): Boolean {
               val rtnValue = super.onConsoleMessage(consoleMessage)
               println("JS MESSAGE: ${consoleMessage?.message()}")
@@ -101,7 +100,7 @@ private class LocalContentWebViewClient(private val assetLoader: WebViewAssetLoa
   override fun onPageFinished(view: WebView?, url: String?) {
     val msg = "{\"action\": \"initiateCall\", \"content\": {}}"
     view?.post {
-      view.evaluateJavascript("await processInbound($msg);") {
+      view.evaluateJavascript("processInbound($msg);") {
         response -> println("JAVASCRIPT RESPONSE: $response")
       }
     }
