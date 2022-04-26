@@ -11,7 +11,7 @@ import Test.Hspec
 
 mobileTests :: Spec
 mobileTests = do
-  fdescribe "mobile API" $ do
+  describe "mobile API" $ do
     it "start new chat without user" testChatApiNoUser
     it "start new chat with existing user" testChatApi
 
