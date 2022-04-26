@@ -61,8 +61,8 @@ fun ChatInfoLayout(chat: Chat, close: () -> Unit, deleteContact: () -> Unit) {
   ) {
     CloseSheetBar(close)
     Spacer(Modifier.size(48.dp))
-    ChatInfoImage(chat, size = 192.dp)
     val cInfo = chat.chatInfo
+    ChatInfoImage(cInfo, size = 192.dp)
     Text(
       cInfo.displayName, style = MaterialTheme.typography.h1.copy(fontWeight = FontWeight.Normal),
       color = MaterialTheme.colors.onBackground,

@@ -17,6 +17,7 @@ struct ChatInfoImage: View {
         switch chat.chatInfo {
         case .direct: iconName = "person.crop.circle.fill"
         case .group: iconName = "person.2.circle.fill"
+        case .contactRequest: iconName = "person.crop.circle.fill"
         default: iconName = "circle.fill"
         }
         return ProfileImage(

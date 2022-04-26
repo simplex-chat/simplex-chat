@@ -261,7 +261,7 @@ fun ChatInfoToolbar(chat: Chat, back: () -> Unit, info: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically
       ) {
         val cInfo = chat.chatInfo
-        ChatInfoImage(chat, size = 40.dp)
+        ChatInfoImage(cInfo, size = 40.dp)
         Column(
           Modifier.padding(start = 8.dp),
           horizontalAlignment = Alignment.CenterHorizontally

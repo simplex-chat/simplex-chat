@@ -4,6 +4,7 @@ import android.net.Uri
 import androidx.compose.material.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.font.*
 import androidx.compose.ui.text.style.TextDecoration
@@ -54,17 +55,20 @@ class ChatModel(val controller: ChatController) {
     if (i >= 0) chats[i] = chats[i].copy(chatInfo = cInfo)
   }
 
-  fun updateContact(contact: Contact) {
-    val cInfo = ChatInfo.Direct(contact)
-    if (hasChat(contact.id)) {
+  fun updateContactConnection(contactConnection: PendingContactConnection) = updateChat(ChatInfo.ContactConnection(contactConnection))
+
+  fun updateContact(contact: Contact) = updateChat(ChatInfo.Direct(contact))
+
+  private fun updateChat(cInfo: ChatInfo) {
+    if (hasChat(cInfo.id)) {
       updateChatInfo(cInfo)
     } else {
       addChat(Chat(chatInfo = cInfo, chatItems = arrayListOf()))
     }
   }
 
-  fun updateNetworkStatus(contact: Contact, status: Chat.NetworkStatus) {
-    val i = getChatIndex(contact.id)
+  fun updateNetworkStatus(id: ChatId, status: Chat.NetworkStatus) {
+    val i = getChatIndex(id)
     if (i >= 0) {
       val chat = chats[i]
       chats[i] = chat.copy(serverInfo = chat.serverInfo.copy(networkStatus = status))
@@ -200,14 +204,8 @@ class ChatModel(val controller: ChatController) {
 enum class ChatType(val type: String) {
   Direct("@"),
   Group("#"),
-  ContactRequest("<@");
-
-  val chatTypeName: String get () =
-    when (this) {
-      Direct -> "contact"
-      Group -> "group"
-      ContactRequest -> "contact request"
-    }
+  ContactRequest("<@"),
+  ContactConnection(":");
 }
 
 @Serializable
@@ -343,6 +341,24 @@ sealed class ChatInfo: SomeChat, NamedChat {
       val sampleData = ContactRequest(UserContactRequest.sampleData)
     }
   }
+
+  @Serializable @SerialName("contactConnection")
+  class ContactConnection(val contactConnection: PendingContactConnection): ChatInfo() {
+    override val chatType get() = ChatType.ContactConnection
+    override val localDisplayName get() = contactConnection.localDisplayName
+    override val id get() = contactConnection.id
+    override val apiId get() = contactConnection.apiId
+    override val ready get() = contactConnection.ready
+    override val createdAt get() = contactConnection.createdAt
+    override val displayName get() = contactConnection.displayName
+    override val fullName get() = contactConnection.fullName
+    override val image get() = contactConnection.image
+
+    companion object {
+      fun getSampleData(status: ConnStatus = ConnStatus.New, viaContactUri: Boolean = false): ContactConnection =
+        ContactConnection(PendingContactConnection.getSampleData(status, viaContactUri))
+    }
+  }
 }
 
 @Serializable
@@ -357,7 +373,7 @@ class Contact(
   override val chatType get() = ChatType.Direct
   override val id get() = "@$contactId"
   override val apiId get() = contactId
-  override val ready get() = activeConn.connStatus == "ready"
+  override val ready get() = activeConn.connStatus == ConnStatus.Ready
   override val displayName get() = profile.displayName
   override val fullName get() = profile.fullName
   override val image get() = profile.image
@@ -374,15 +390,24 @@ class Contact(
 }
 
 @Serializable
+class ContactRef(
+  val contactId: Long,
+  var localDisplayName: String
+) {
+  val id: ChatId get() = "@$contactId"
+}
+
+@Serializable
 class ContactSubStatus(
   val contact: Contact,
   val contactError: ChatError? = null
 )
 
 @Serializable
-class Connection(val connStatus: String) {
+class Connection(val connId: Long, val connStatus: ConnStatus) {
+  val id: ChatId get() = ":$connId"
   companion object {
-    val sampleData = Connection(connStatus = "ready")
+    val sampleData = Connection(connId = 1, connStatus = ConnStatus.Ready)
   }
 }
 
@@ -491,7 +516,8 @@ class UserContactRequest (
   val contactRequestId: Long,
   override val localDisplayName: String,
   val profile: Profile,
-  override val createdAt: Instant
+  override val createdAt: Instant,
+  val updatedAt: Instant
 ): SomeChat, NamedChat {
   override val chatType get() = ChatType.ContactRequest
   override val id get() = "<@$contactRequestId"
@@ -506,8 +532,82 @@ class UserContactRequest (
       contactRequestId = 1,
       localDisplayName = "alice",
       profile = Profile.sampleData,
-      createdAt = Clock.System.now()
+      createdAt = Clock.System.now(),
+      updatedAt = Clock.System.now()
     )
+  }
+}
+
+@Serializable
+class PendingContactConnection(
+  val pccConnId: Long,
+  val pccAgentConnId: String,
+  val pccConnStatus: ConnStatus,
+  val viaContactUri: Boolean,
+  override val createdAt: Instant,
+  val updatedAt: Instant
+): SomeChat, NamedChat {
+  override val chatType get() = ChatType.ContactConnection
+  override val id get () = ":$pccConnId"
+  override val apiId get() = pccConnId
+  override val ready get() = false
+  override val localDisplayName get() = String.format(generalGetString(R.string.connection_local_display_name), pccConnId)
+  override val displayName: String get() {
+    val initiated = pccConnStatus.initiated
+    return if (initiated == null) {
+      // this should not be in the chat list
+      generalGetString(R.string.display_name_connection_established)
+    } else {
+      generalGetString(
+        if (initiated && !viaContactUri) R.string.display_name_invited_to_connect
+        else R.string.display_name_connecting
+      )
+    }
+  }
+  override val fullName get() = ""
+  override val image get() = null
+  val initiated get() = (pccConnStatus.initiated ?: false) && !viaContactUri
+
+  val description: String get() {
+    val initiated = pccConnStatus.initiated
+    return if (initiated == null) "" else generalGetString(
+      if (initiated && !viaContactUri) R.string.description_you_shared_one_time_link
+      else if (viaContactUri ) R.string.description_via_contact_address_link
+      else R.string.description_via_one_time_link
+    )
+  }
+
+  companion object {
+    fun getSampleData(status: ConnStatus = ConnStatus.New, viaContactUri: Boolean = false): PendingContactConnection =
+      PendingContactConnection(
+        pccConnId = 1,
+        pccAgentConnId = "abcd",
+        pccConnStatus = status,
+        viaContactUri = viaContactUri,
+        createdAt = Clock.System.now(),
+        updatedAt = Clock.System.now()
+      )
+  }
+}
+
+@Serializable
+enum class ConnStatus {
+  @SerialName("new") New,
+  @SerialName("joined") Joined,
+  @SerialName("requested") Requested,
+  @SerialName("accepted") Accepted,
+  @SerialName("snd-ready") SndReady,
+  @SerialName("ready") Ready,
+  @SerialName("deleted") Deleted;
+
+  val initiated: Boolean? get() = when (this) {
+    New -> true
+    Joined -> false
+    Requested -> true
+    Accepted -> true
+    SndReady -> false
+    Ready -> null
+    Deleted -> null
   }
 }
 
@@ -800,7 +900,6 @@ sealed class MsgContent {
 }
 
 object MsgContentSerializer : KSerializer<MsgContent> {
-  @OptIn(InternalSerializationApi::class)
   override val descriptor: SerialDescriptor = buildSerialDescriptor("MsgContent", PolymorphicKind.SEALED) {
     element("MCText", buildClassSerialDescriptor("MCText") {
       element<String>("text")
