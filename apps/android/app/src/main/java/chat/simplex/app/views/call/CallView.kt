@@ -87,9 +87,6 @@ fun VideoCallView(close: () -> Unit) {
     }
   } else {
     Text("NEED PERMISSIONS")
-//    SideEffect {
-//      permissionsState.launchMultiplePermissionRequest()
-//    }
   }
 
 }
@@ -102,6 +99,11 @@ private class LocalContentWebViewClient(private val assetLoader: WebViewAssetLoa
     return assetLoader.shouldInterceptRequest(request.url)
   }
   override fun onPageFinished(view: WebView?, url: String?) {
-    view?.post { view.evaluateJavascript("startCall();", null) }
+    val msg = "{\"action\": \"initiateCall\", \"content\": {}}"
+    view?.post {
+      view.evaluateJavascript("await processInbound($msg);") {
+        response -> println("JAVASCRIPT RESPONSE: $response")
+      }
+    }
   }
 }
