@@ -83,14 +83,14 @@ cfg =
 
 createTestChat :: String -> Profile -> IO TestCC
 createTestChat dbPrefix profile = do
-  let dbFilePrefix = testDBPrefix <> show dbPrefix
+  let dbFilePrefix = testDBPrefix <> dbPrefix
   st <- createStore (dbFilePrefix <> "_chat.db") 1 False
   Right user <- runExceptT $ createUser st profile True
   startTestChat_ st dbFilePrefix user
 
 startTestChat :: String -> IO TestCC
 startTestChat dbPrefix = do
-  let dbFilePrefix = testDBPrefix <> show dbPrefix
+  let dbFilePrefix = testDBPrefix <> dbPrefix
   st <- createStore (dbFilePrefix <> "_chat.db") 1 False
   Just user <- find activeUser <$> getUsers st
   startTestChat_ st dbFilePrefix user
