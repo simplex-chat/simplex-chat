@@ -85,7 +85,7 @@ chatTests = do
     it "connect when initiating client goes offline" testAsyncInitiatingOffline
     it "connect when accepting client goes offline" testAsyncAcceptingOffline
     it "connect, fully asynchronous (when clients are never simultaneously online)" testFullAsync
-  describe "async sending and receiving files" $ do
+  xdescribe "async sending and receiving files" $ do
     it "send and receive file, fully asynchronous" testAsyncFileTransfer
     it "send and receive file to group, fully asynchronous" testAsyncGroupFileTransfer
 
