@@ -8,7 +8,7 @@
 
 module ChatClient where
 
-import Control.Concurrent (ThreadId, forkIOWithUnmask, killThread, threadDelay)
+import Control.Concurrent (ThreadId, forkIOWithUnmask, killThread)
 import Control.Concurrent.Async
 import Control.Concurrent.STM
 import Control.Exception (bracket, bracket_)
@@ -81,16 +81,16 @@ cfg =
       testView = True
     }
 
-createTestChat :: Int -> Profile -> IO TestCC
-createTestChat dbNumber profile = do
-  let dbFilePrefix = testDBPrefix <> show dbNumber
+createTestChat :: String -> Profile -> IO TestCC
+createTestChat dbPrefix profile = do
+  let dbFilePrefix = testDBPrefix <> dbPrefix
   st <- createStore (dbFilePrefix <> "_chat.db") 1 False
   Right user <- runExceptT $ createUser st profile True
   startTestChat_ st dbFilePrefix user
 
-startTestChat :: Int -> IO TestCC
-startTestChat dbNumber = do
-  let dbFilePrefix = testDBPrefix <> show dbNumber
+startTestChat :: String -> IO TestCC
+startTestChat dbPrefix = do
+  let dbFilePrefix = testDBPrefix <> dbPrefix
   st <- createStore (dbFilePrefix <> "_chat.db") 1 False
   Just user <- find activeUser <$> getUsers st
   startTestChat_ st dbFilePrefix user
@@ -107,16 +107,15 @@ startTestChat_ st dbFilePrefix user = do
 
 stopTestChat :: TestCC -> IO ()
 stopTestChat TestCC {chatController = cc, chatAsync, termAsync} = do
-  threadDelay 500000
   stopChatController cc
   uninterruptibleCancel termAsync
   uninterruptibleCancel chatAsync
 
-withNewTestChat :: Int -> Profile -> (TestCC -> IO a) -> IO a
-withNewTestChat dbNumber profile = bracket (createTestChat dbNumber profile) stopTestChat
+withNewTestChat :: String -> Profile -> (TestCC -> IO a) -> IO a
+withNewTestChat dbPrefix profile = bracket (createTestChat dbPrefix profile) (\cc -> cc <// 100000 >> stopTestChat cc)
 
-withTestChat :: Int -> (TestCC -> IO a) -> IO a
-withTestChat dbNumber = bracket (startTestChat dbNumber) stopTestChat
+withTestChat :: String -> (TestCC -> IO a) -> IO a
+withTestChat dbPrefix = bracket (startTestChat dbPrefix) (\cc -> cc <// 100000 >> stopTestChat cc)
 
 readTerminalOutput :: VirtualTerminal -> TQueue String -> IO ()
 readTerminalOutput t termQ = do
@@ -156,7 +155,7 @@ testChatN ps test = withTmpFiles $ do
   where
     getTestCCs :: [(Profile, Int)] -> [TestCC] -> IO [TestCC]
     getTestCCs [] tcs = pure tcs
-    getTestCCs ((p, db) : envs') tcs = (:) <$> createTestChat db p <*> getTestCCs envs' tcs
+    getTestCCs ((p, db) : envs') tcs = (:) <$> createTestChat (show db) p <*> getTestCCs envs' tcs
 
 (<//) :: TestCC -> Int -> Expectation
 (<//) cc t = timeout t (getTermLine cc) `shouldReturn` Nothing
@@ -205,7 +204,7 @@ serverCfg =
     { transports = [(serverPort, transport @TLS)],
       tbqSize = 1,
       serverTbqSize = 1,
-      msgQueueQuota = 4,
+      msgQueueQuota = 16,
       queueIdBytes = 12,
       msgIdBytes = 6,
       storeLogFile = Nothing,

@@ -879,7 +879,7 @@ subscribeUserConnections user@User {userId} = do
             threadDelay 1000000
             l <- asks chatLock
             a <- asks smpAgent
-            unless (fileStatus == FSNew) . unlessM (isFileActive fileId sndFiles) $
+            when (fileStatus == FSConnected) . unlessM (isFileActive fileId sndFiles) $
               withAgentLock a . withLock l $
                 sendFileChunk ft
         subscribeRcvFile ft@RcvFileTransfer {fileStatus} =
@@ -1675,8 +1675,8 @@ cancelRcvFileTransfer ft@RcvFileTransfer {fileId, fileStatus} = do
     updateRcvFileStatus st ft FSCancelled
     deleteRcvFileChunks st ft
   case fileStatus of
-    RFSAccepted RcvFileInfo {agentConnId = AgentConnId acId} -> withAgent (`suspendConnection` acId)
-    RFSConnected RcvFileInfo {agentConnId = AgentConnId acId} -> withAgent (`suspendConnection` acId)
+    RFSAccepted RcvFileInfo {agentConnId = AgentConnId acId} -> withAgent (`deleteConnection` acId)
+    RFSConnected RcvFileInfo {agentConnId = AgentConnId acId} -> withAgent (`deleteConnection` acId)
     _ -> pure ()
 
 cancelSndFileTransfer :: ChatMonad m => SndFileTransfer -> m ()
@@ -1687,7 +1687,7 @@ cancelSndFileTransfer ft@SndFileTransfer {agentConnId = AgentConnId acId, fileSt
       deleteSndFileChunks st ft
     withAgent $ \a -> do
       void (sendMessage a acId $ smpEncode FileChunkCancel) `catchError` \_ -> pure ()
-      suspendConnection a acId
+      deleteConnection a acId
 
 closeFileHandle :: ChatMonad m => Int64 -> (ChatController -> TVar (Map Int64 Handle)) -> m ()
 closeFileHandle fileId files = do
