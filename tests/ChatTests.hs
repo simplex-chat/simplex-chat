@@ -1751,75 +1751,75 @@ testGetSetSMPServers =
 
 testAsyncInitiatingOffline :: IO ()
 testAsyncInitiatingOffline = withTmpFiles $ do
-  inv <- withNewTestChat 1 aliceProfile $ \alice -> do
+  inv <- withNewTestChat "alice" aliceProfile $ \alice -> do
     alice ##> "/c"
     getInvitation alice
-  withNewTestChat 2 bobProfile $ \bob -> do
+  withNewTestChat "bob" bobProfile $ \bob -> do
     bob ##> ("/c " <> inv)
     bob <## "confirmation sent!"
-    withTestChat 1 $ \alice -> do
+    withTestChat "alice" $ \alice -> do
       concurrently_
         (bob <## "alice (Alice): contact is connected")
         (alice <## "bob (Bob): contact is connected")
 
 testAsyncAcceptingOffline :: IO ()
 testAsyncAcceptingOffline = withTmpFiles $ do
-  inv <- withNewTestChat 1 aliceProfile $ \alice -> do
+  inv <- withNewTestChat "alice" aliceProfile $ \alice -> do
     alice ##> "/c"
     getInvitation alice
-  withNewTestChat 2 bobProfile $ \bob -> do
+  withNewTestChat "bob" bobProfile $ \bob -> do
     bob ##> ("/c " <> inv)
     bob <## "confirmation sent!"
-  withTestChat 1 $ \alice ->
-    withTestChat 2 $ \bob ->
+  withTestChat "alice" $ \alice ->
+    withTestChat "bob" $ \bob ->
       concurrently_
         (bob <## "alice (Alice): contact is connected")
         (alice <## "bob (Bob): contact is connected")
 
 testFullAsync :: IO ()
 testFullAsync = withTmpFiles $ do
-  inv <- withNewTestChat 1 aliceProfile $ \alice -> do
+  inv <- withNewTestChat "alice" aliceProfile $ \alice -> do
     alice ##> "/c"
     getInvitation alice
-  withNewTestChat 2 bobProfile $ \bob -> do
+  withNewTestChat "bob" bobProfile $ \bob -> do
     bob ##> ("/c " <> inv)
     bob <## "confirmation sent!"
-  withTestChat 1 $ \_ -> pure ()
-  withTestChat 2 $ \_ -> pure ()
-  withTestChat 1 $ \alice ->
+  withTestChat "alice" $ \_ -> pure ()
+  withTestChat "bob" $ \_ -> pure ()
+  withTestChat "alice" $ \alice ->
     alice <## "1 contacts connected (use /cs for the list)"
-  withTestChat 2 $ \_ -> pure ()
-  withTestChat 1 $ \alice -> do
+  withTestChat "bob" $ \_ -> pure ()
+  withTestChat "alice" $ \alice -> do
     alice <## "1 contacts connected (use /cs for the list)"
     alice <## "bob (Bob): contact is connected"
-  withTestChat 2 $ \bob -> do
+  withTestChat "bob" $ \bob -> do
     bob <## "1 contacts connected (use /cs for the list)"
     bob <## "alice (Alice): contact is connected"
 
 testAsyncFileTransfer :: IO ()
 testAsyncFileTransfer = withTmpFiles $ do
-  withNewTestChat 1 aliceProfile $ \alice ->
-    withNewTestChat 2 bobProfile $ \bob ->
+  withNewTestChat "alice" aliceProfile $ \alice ->
+    withNewTestChat "bob" bobProfile $ \bob ->
       connectUsers alice bob
-  withTestChat 1 $ \alice -> withContactConnected alice $ do
+  withTestChatContactConnected "alice" $ \alice -> do
     alice ##> "/_send @2 file ./tests/fixtures/test.jpg text hi, sending a file"
     alice <# "@bob hi, sending a file"
     alice <# "/f @bob ./tests/fixtures/test.jpg"
     alice <## "use /fc 1 to cancel sending"
-  withTestChat 2 $ \bob -> withContactConnected bob $ do
+  withTestChatContactConnected "bob" $ \bob -> do
     bob <# "alice> hi, sending a file"
     bob <# "alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
     bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
     bob ##> "/fr 1 ./tests/tmp"
     bob <## "saving file 1 from alice to ./tests/tmp/test.jpg"
-  withTestChat 1 $ \alice -> withContactConnected' alice
-  withTestChat 2 $ \bob -> withContactConnected' bob
-  withTestChat 1 $ \alice -> withContactConnected' alice
-  withTestChat 2 $ \bob -> withContactConnected' bob
-  withTestChat 1 $ \alice -> withContactConnected alice $ do
+  withTestChatContactConnected' "alice"
+  withTestChatContactConnected' "bob"
+  withTestChatContactConnected' "alice"
+  withTestChatContactConnected' "bob"
+  withTestChatContactConnected "alice" $ \alice -> do
     alice <## "started sending file 1 (test.jpg) to bob"
     alice <## "completed sending file 1 (test.jpg) to bob"
-  withTestChat 2 $ \bob -> withContactConnected bob $ do
+  withTestChatContactConnected "bob" $ \bob -> do
     bob <## "started receiving file 1 (test.jpg) from alice"
     bob <## "completed receiving file 1 (test.jpg) from alice"
   src <- B.readFile "./tests/fixtures/test.jpg"
@@ -1828,45 +1828,45 @@ testAsyncFileTransfer = withTmpFiles $ do
 
 testAsyncGroupFileTransfer :: IO ()
 testAsyncGroupFileTransfer = withTmpFiles $ do
-  withNewTestChat 1 aliceProfile $ \alice ->
-    withNewTestChat 2 bobProfile $ \bob ->
-      withNewTestChat 3 cathProfile $ \cath ->
+  withNewTestChat "alice" aliceProfile $ \alice ->
+    withNewTestChat "bob" bobProfile $ \bob ->
+      withNewTestChat "cath" cathProfile $ \cath ->
         createGroup3 "team" alice bob cath
-  withTestChat 1 $ \alice -> withGroup3Connected alice $ do
+  withTestChatGroup3Connected "alice" $ \alice -> do
     alice ##> "/_send #1 file ./tests/fixtures/test.jpg json {\"text\":\"\",\"type\":\"text\"}"
     alice <# "/f #team ./tests/fixtures/test.jpg"
     alice <## "use /fc 1 to cancel sending"
-  withTestChat 2 $ \bob -> withGroup3Connected bob $ do
+  withTestChatGroup3Connected "bob" $ \bob -> do
     bob <# "#team alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
     bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
     bob ##> "/fr 1 ./tests/tmp/"
     bob <## "saving file 1 from alice to ./tests/tmp/test.jpg"
-  withTestChat 3 $ \cath -> withGroup3Connected cath $ do
+  withTestChatGroup3Connected "cath" $ \cath -> do
     cath <# "#team alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
     cath <## "use /fr 1 [<dir>/ | <path>] to receive it"
     cath ##> "/fr 1 ./tests/tmp/"
     cath <## "saving file 1 from alice to ./tests/tmp/test_1.jpg"
-  withTestChat 1 $ \alice -> withGroup3Connected' alice
-  withTestChat 2 $ \bob -> withGroup3Connected' bob
-  withTestChat 3 $ \cath -> withGroup3Connected' cath
-  withTestChat 1 $ \alice -> withGroup3Connected' alice
-  withTestChat 2 $ \bob -> withGroup3Connected' bob
-  withTestChat 3 $ \cath -> withGroup3Connected' cath
-  withTestChat 1 $ \alice -> withGroup3Connected' alice
-  withTestChat 2 $ \bob -> withGroup3Connected bob $ do
+  withTestChatGroup3Connected' "alice"
+  withTestChatGroup3Connected' "bob"
+  withTestChatGroup3Connected' "cath"
+  withTestChatGroup3Connected' "alice"
+  withTestChatGroup3Connected' "bob"
+  withTestChatGroup3Connected' "cath"
+  withTestChatGroup3Connected' "alice"
+  withTestChatGroup3Connected "bob" $ \bob -> do
     bob <## "started receiving file 1 (test.jpg) from alice"
-  withTestChat 3 $ \cath -> withGroup3Connected cath $ do
+  withTestChatGroup3Connected "cath" $ \cath -> do
     cath <## "started receiving file 1 (test.jpg) from alice"
-  withTestChat 1 $ \alice -> withGroup3Connected alice $ do
+  withTestChatGroup3Connected "alice" $ \alice -> do
     alice
       <### [ "started sending file 1 (test.jpg) to bob",
              "completed sending file 1 (test.jpg) to bob",
              "started sending file 1 (test.jpg) to cath",
              "completed sending file 1 (test.jpg) to cath"
            ]
-  withTestChat 2 $ \bob -> withGroup3Connected bob $ do
+  withTestChatGroup3Connected "bob" $ \bob -> do
     bob <## "completed receiving file 1 (test.jpg) from alice"
-  withTestChat 3 $ \cath -> withGroup3Connected cath $ do
+  withTestChatGroup3Connected "cath" $ \cath -> do
     cath <## "completed receiving file 1 (test.jpg) from alice"
   src <- B.readFile "./tests/fixtures/test.jpg"
   dest <- B.readFile "./tests/tmp/test.jpg"
@@ -1874,22 +1874,24 @@ testAsyncGroupFileTransfer = withTmpFiles $ do
   dest2 <- B.readFile "./tests/tmp/test_1.jpg"
   dest2 `shouldBe` src
 
-withContactConnected :: TestCC -> IO a -> IO a
-withContactConnected cc action = do
-  cc <## "1 contacts connected (use /cs for the list)"
-  action
+withTestChatContactConnected :: String -> (TestCC -> IO a) -> IO a
+withTestChatContactConnected dbPrefix action =
+  withTestChat dbPrefix $ \cc -> do
+    cc <## "1 contacts connected (use /cs for the list)"
+    action cc
 
-withContactConnected' :: TestCC -> IO ()
-withContactConnected' cc = withContactConnected cc $ pure ()
+withTestChatContactConnected' :: String -> IO ()
+withTestChatContactConnected' dbPrefix = withTestChatContactConnected dbPrefix $ \_ -> pure ()
 
-withGroup3Connected :: TestCC -> IO a -> IO a
-withGroup3Connected cc action = do
-  cc <## "2 contacts connected (use /cs for the list)"
-  cc <## "#team: connected to server(s)"
-  action
+withTestChatGroup3Connected :: String -> (TestCC -> IO a) -> IO a
+withTestChatGroup3Connected dbPrefix action = do
+  withTestChat dbPrefix $ \cc -> do
+    cc <## "2 contacts connected (use /cs for the list)"
+    cc <## "#team: connected to server(s)"
+    action cc
 
-withGroup3Connected' :: TestCC -> IO ()
-withGroup3Connected' cc = withGroup3Connected cc $ pure ()
+withTestChatGroup3Connected' :: String -> IO ()
+withTestChatGroup3Connected' dbPrefix = withTestChatGroup3Connected dbPrefix $ \_ -> pure ()
 
 startFileTransfer :: TestCC -> TestCC -> IO ()
 startFileTransfer alice bob = do
