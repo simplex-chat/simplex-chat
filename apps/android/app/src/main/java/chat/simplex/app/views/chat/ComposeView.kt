@@ -20,7 +20,64 @@ import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.views.helpers.ComposeLinkView
 
-// TODO ComposeState
+sealed class ComposePreview {
+  object NoPreview: ComposePreview()
+  class CLinkPreview(val linkPreview: LinkPreview): ComposePreview()
+  class ImagePreview(val image: String): ComposePreview()
+}
+
+sealed class ComposeContextItem {
+  object NoContextItem: ComposeContextItem()
+  class QuotedItem(val chatItem: ChatItem): ComposeContextItem()
+  class EditingItem(val chatItem: ChatItem): ComposeContextItem()
+}
+
+data class ComposeState(
+  val message: String,
+  val preview: ComposePreview,
+  var contextItem: ComposeContextItem,
+  var inProgress: Boolean = false
+) {
+  constructor(editingItem: ChatItem): this(
+    editingItem.content.text,
+    chatItemPreview(editingItem),
+    ComposeContextItem.EditingItem(editingItem)
+  )
+
+  val editing: Boolean
+    get() =
+      when (contextItem) {
+        is ComposeContextItem.EditingItem -> true
+        else -> false
+      }
+  val sendEnabled: Boolean
+    get() =
+      when (preview) {
+        is ComposePreview.ImagePreview -> true
+        else -> message.isNotEmpty()
+      }
+  val linkPreviewAllowed: Boolean
+    get() =
+      when (preview) {
+        is ComposePreview.ImagePreview -> false
+        else -> true
+      }
+  val linkPreview: LinkPreview?
+    get() =
+      when (preview) {
+        is ComposePreview.CLinkPreview -> preview.linkPreview
+        else -> null
+      }
+}
+
+fun chatItemPreview(chatItem: ChatItem): ComposePreview {
+  return when (val mc = chatItem.content.msgContent) {
+    is MsgContent.MCLink -> ComposePreview.CLinkPreview(linkPreview = mc.preview)
+    is MsgContent.MCImage -> ComposePreview.ImagePreview(image = mc.image)
+    else -> ComposePreview.NoPreview
+  }
+}
+
 @Composable
 fun ComposeView(
   msg: MutableState<String>,
