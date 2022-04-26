@@ -28,7 +28,7 @@
     <string name="connection_local_display_name">connection <xliff:g id="connection ID" example="1">%1$d</xliff:g></string>
     <string name="display_name_connection_established">соединение установлено</string>
     <string name="display_name_invited_to_connect">приглашение соединиться</string>
-    <string name="display_name_connecting">соединеняется…</string>
+    <string name="display_name_connecting">соединяется…</string>
     <string name="description_you_shared_one_time_link">вы создали одноразовую ссылку</string>
     <string name="description_via_contact_address_link">через ссылку-контакт</string>
     <string name="description_via_one_time_link">через одноразовую ссылку</string>
