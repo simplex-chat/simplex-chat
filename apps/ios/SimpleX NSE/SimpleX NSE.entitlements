@@ -2,14 +2,6 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>aps-environment</key>
-	<string>development</string>
-	<key>com.apple.developer.associated-domains</key>
-	<array>
-		<string>applinks:simplex.chat</string>
-		<string>applinks:www.simplex.chat</string>
-		<string>applinks:simplex.chat?mode=developer</string>
-	</array>
 	<key>com.apple.security.application-groups</key>
 	<array>
 		<string>group.chat.simplex.app</string>

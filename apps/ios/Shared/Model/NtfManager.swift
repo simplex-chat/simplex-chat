@@ -15,6 +15,7 @@ let ntfActionAccept = "NTF_ACT_ACCEPT"
 let ntfCategoryContactRequest = "NTF_CAT_CONTACT_REQUEST"
 let ntfCategoryContactConnected = "NTF_CAT_CONTACT_CONNECTED"
 let ntfCategoryMessageReceived = "NTF_CAT_MESSAGE_RECEIVED"
+let ntfCategoryCheckMessage = "NTF_CAT_CHECK_MESSAGE"
 // TODO remove
 let ntfCategoryCheckingMessages = "NTF_CAT_CHECKING_MESSAGES"
 
@@ -69,10 +70,13 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
                     // in another chat
                     return recentInTheSameChat(content) ? [.banner, .list] : [.sound, .banner, .list]
                 }
+            // this notification is deliverd from the notifications server
+            // when the app is in foreground it does not need to be shown
+            case ntfCategoryCheckMessage: return []
             default: return [.sound, .banner, .list]
             }
         } else {
-            return [.sound, .banner, .list]
+            return content.categoryIdentifier == ntfCategoryCheckMessage ? [] : [.sound, .banner, .list]
         }
     }
 

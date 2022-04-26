@@ -34,6 +34,8 @@ struct SimpleXApp: App {
                     initializeChat()
                 }
                 .onChange(of: scenePhase) { phase in
+                    logger.debug("scenePhase \(String(describing: scenePhase))")
+                    setAppState(phase)
                     if phase == .background {
                         BGManager.shared.schedule()
                     }
