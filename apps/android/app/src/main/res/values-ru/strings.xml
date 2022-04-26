@@ -147,7 +147,7 @@
 
     <!-- Pending contact connection alert dialogues -->
     <string name="you_invited_your_contact">Вы пригласили ваш контакт</string>
-    <string name="you_accepted_connection">Вы приняли приглашение соединениться</string>
+    <string name="you_accepted_connection">Вы приняли приглашение соединиться</string>
     <string name="delete_pending_connection__question">Удалить ожидаемое соединение?</string>
     <string name="contact_you_shared_link_with_wont_be_able_to_connect">Контакт, которому вы отправили эту ссылку, не сможет соединиться!</string>
     <string name="connection_you_accepted_will_be_cancelled">Подтвержденное соединение будет отменено!</string>

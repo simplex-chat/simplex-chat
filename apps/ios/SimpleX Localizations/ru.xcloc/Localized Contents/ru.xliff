@@ -712,7 +712,7 @@ To connect, please ask your contact to create another connection link and check 
       </trans-unit>
       <trans-unit id="You accepted connection" xml:space="preserve">
         <source>You accepted connection</source>
-        <target>Вы приняли приглашение соединениться</target>
+        <target>Вы приняли приглашение соединиться</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You are already connected to %@ via this link." xml:space="preserve">
@@ -861,7 +861,7 @@ SimpleX серверы не могут получить доступ к ваше
       </trans-unit>
       <trans-unit id="connecting…" xml:space="preserve">
         <source>connecting…</source>
-        <target>соединеняется…</target>
+        <target>соединяется…</target>
         <note>chat list item title</note>
       </trans-unit>
       <trans-unit id="connection established" xml:space="preserve">

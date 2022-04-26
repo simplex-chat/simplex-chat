@@ -152,7 +152,7 @@
 "Connecting server… (error: %@)" = "Устанавливается соединение с сервером… (ошибка: %@)";
 
 /* chat list item title */
-"connecting…" = "соединеняется…";
+"connecting…" = "соединяется…";
 
 /* No comment provided by engineer. */
 "Connecting..." = "Устанавливается соединение…";
@@ -485,7 +485,7 @@
 "You" = "Вы";
 
 /* No comment provided by engineer. */
-"You accepted connection" = "Вы приняли приглашение соединениться";
+"You accepted connection" = "Вы приняли приглашение соединиться";
 
 /* No comment provided by engineer. */
 "You are already connected to %@ via this link." = "Вы уже соединены с %@ через эту ссылку.";
