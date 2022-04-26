@@ -24,6 +24,15 @@
   <string name="unknown_message_format">unknown message format</string>
   <string name="invalid_message_format">invalid message format</string>
 
+  <!-- PendingContactConnection - ChatModel.kt -->
+  <string name="connection_local_display_name">connection <xliff:g id="connection ID" example="1">%1$d</xliff:g></string>
+  <string name="display_name_connection_established">connection established</string>
+  <string name="display_name_invited_to_connect">invited to connect</string>
+  <string name="display_name_connecting">connecting…</string>
+  <string name="description_you_shared_one_time_link">you shared one-time link</string>
+  <string name="description_via_contact_address_link">via contact address link</string>
+  <string name="description_via_one_time_link">via one-time link</string>
+
   <!-- SMP Server Information - SimpleXAPI.kt -->
   <string name="error_saving_smp_servers">Error saving SMP servers</string>
   <string name="ensure_smp_server_address_are_correct_format_and_unique">Make sure SMP server addresses are in correct format, line separated and are not duplicated.</string>
@@ -38,6 +47,10 @@
   <string name="cannot_delete_contact">Can\'t delete contact!</string>
   <string name="contact_cannot_be_deleted_as_they_are_in_groups">Contact <xliff:g id="contactName" example="Jane Doe">%1$s!</xliff:g> cannot be deleted, they are a member of the group(s) <xliff:g id="groups" example="[team, chess club]">%2$s</xliff:g>.</string>
   <string name="icon_descr_instant_notifications">Instant notifications</string>
+  <string name="error_deleting_contact">Error deleting contact</string>
+  <string name="error_deleting_group">Error deleting group</string>
+  <string name="error_deleting_contact_request">Error deleting contact request</string>
+  <string name="error_deleting_pending_contact_connection">Error deleting pending contact connection</string>
 
   <!-- background service notice - SimpleXAPI.kt -->
   <string name="private_instant_notifications">Private instant notifications!</string>
@@ -133,7 +146,14 @@
   <string name="accept_contact_button">Accept</string>
   <string name="reject_contact_button">Reject</string>
 
-  <!-- Connection Pending Alert Dialogue - ChatListNavLinkView.kt -->
+  <!-- Pending contact connection alert dialogues -->
+  <string name="you_invited_your_contact">You invited your contact</string>
+  <string name="you_accepted_connection">You accepted connection</string>
+  <string name="delete_pending_connection__question">Delete pending connection?</string>
+  <string name="contact_you_shared_link_with_wont_be_able_to_connect">The contact you shared this link with will NOT be able to connect!</string>
+  <string name="connection_you_accepted_will_be_cancelled">The connection you accepted will be cancelled!</string>
+
+  <!-- Contact Pending Alert Dialogue - ChatListNavLinkView.kt -->
   <string name="alert_title_contact_connection_pending">Contact is not connected yet!</string>
   <string name="alert_text_connection_pending_they_need_to_be_online_can_delete_and_retry">Your contact needs to be online for the connection to complete.\nYou can cancel this connection and remove the contact (and try later with a new link).</string>
 

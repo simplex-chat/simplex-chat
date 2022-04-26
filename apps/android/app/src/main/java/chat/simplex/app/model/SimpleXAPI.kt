@@ -11,6 +11,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Bolt
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.*
@@ -240,9 +241,10 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
 
   suspend fun apiDeleteChat(type: ChatType, id: Long): Boolean {
     val r = sendCmd(CC.ApiDeleteChat(type, id))
-    when (r) {
-      is CR.ContactDeleted -> return true // TODO groups
-      is CR.ChatCmdError -> {
+    when {
+      r is CR.ContactDeleted && type == ChatType.Direct -> return true
+      r is CR.ContactConnectionDeleted && type == ChatType.ContactConnection -> return true
+      r is CR.ChatCmdError -> {
         val e = r.chatError
         if (e is ChatError.ChatErrorChat && e.errorType is ChatErrorType.ContactGroups) {
           AlertManager.shared.showAlertMsg(
@@ -251,7 +253,15 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
           )
         }
       }
-      else -> apiErrorAlert("apiDeleteChat", "Error deleting ${type.chatTypeName}", r)
+      else -> {
+        val titleId = when (type) {
+          ChatType.Direct -> R.string.error_deleting_contact
+          ChatType.Group -> R.string.error_deleting_group
+          ChatType.ContactRequest -> R.string.error_deleting_contact_request
+          ChatType.ContactConnection -> R.string.error_deleting_pending_contact_connection
+        }
+        apiErrorAlert("apiDeleteChat", generalGetString(titleId), r)
+      }
     }
     return false
   }
@@ -333,13 +343,21 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
   fun processReceivedMsg(r: CR) {
     chatModel.terminalItems.add(TerminalItem.resp(r))
     when (r) {
+      is CR.NewContactConnection -> {
+        chatModel.updateContactConnection(r.connection)
+      }
+      is CR.ContactConnectionDeleted -> {
+        chatModel.removeChat(r.connection.id)
+      }
       is CR.ContactConnected -> {
         chatModel.updateContact(r.contact)
-        chatModel.updateNetworkStatus(r.contact, Chat.NetworkStatus.Connected())
+        chatModel.removeChat(r.contact.activeConn.id)
+        chatModel.updateNetworkStatus(r.contact.id, Chat.NetworkStatus.Connected())
 //        NtfManager.shared.notifyContactConnected(contact)
       }
       is CR.ContactConnecting -> {
         chatModel.updateContact(r.contact)
+        chatModel.removeChat(r.contact.activeConn.id)
       }
       is CR.ReceivedContactRequest -> {
         val contactRequest = r.contactRequest
@@ -353,17 +371,18 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
           chatModel.updateChatInfo(cInfo)
         }
       }
-      is CR.ContactSubscribed -> processContactSubscribed(r.contact)
-      is CR.ContactDisconnected -> {
-        chatModel.updateContact(r.contact)
-        chatModel.updateNetworkStatus(r.contact, Chat.NetworkStatus.Disconnected())
-      }
+      is CR.ContactsSubscribed -> updateContactsStatus(r.contactRefs, Chat.NetworkStatus.Connected())
+      is CR.ContactsDisconnected -> updateContactsStatus(r.contactRefs, Chat.NetworkStatus.Disconnected())
       is CR.ContactSubError -> processContactSubError(r.contact, r.chatError)
       is CR.ContactSubSummary -> {
         for (sub in r.contactSubscriptions) {
           val err = sub.contactError
-          if (err == null) processContactSubscribed(sub.contact)
-          else processContactSubError(sub.contact, sub.contactError)
+          if (err == null) {
+            chatModel.updateContact(sub.contact)
+            chatModel.updateNetworkStatus(sub.contact.id, Chat.NetworkStatus.Connected())
+          } else {
+            processContactSubError(sub.contact, sub.contactError)
+          }
         }
       }
       is CR.NewChatItem -> {
@@ -418,9 +437,10 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
     }
   }
 
-  fun processContactSubscribed(contact: Contact) {
-    chatModel.updateContact(contact)
-    chatModel.updateNetworkStatus(contact, Chat.NetworkStatus.Connected())
+  fun updateContactsStatus(contactRefs: List<ContactRef>, status: Chat.NetworkStatus) {
+    for (c in contactRefs) {
+      chatModel.updateNetworkStatus(c.id, status)
+    }
   }
 
   fun processContactSubError(contact: Contact, chatError: ChatError) {
@@ -436,7 +456,7 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
         }
       }
       else e.string
-    chatModel.updateNetworkStatus(contact, Chat.NetworkStatus.Error(err))
+    chatModel.updateNetworkStatus(contact.id, Chat.NetworkStatus.Error(err))
   }
 
   fun showBackgroundServiceNotice() {
@@ -448,9 +468,9 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
             Row {
               Icon(
                 Icons.Outlined.Bolt,
-                contentDescription = generalGetString(R.string.icon_descr_instant_notifications),
+                contentDescription = stringResource(R.string.icon_descr_instant_notifications),
               )
-              Text(generalGetString(R.string.private_instant_notifications), fontWeight = FontWeight.Bold)
+              Text(stringResource(R.string.private_instant_notifications), fontWeight = FontWeight.Bold)
             }
           },
           text = {
@@ -463,7 +483,7 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
             }
           },
           confirmButton = {
-            Button(onClick = AlertManager.shared::hideAlert) { Text(generalGetString(R.string.ok)) }
+            Button(onClick = AlertManager.shared::hideAlert) { Text(stringResource(R.string.ok)) }
           }
         )
       }
@@ -533,7 +553,7 @@ sealed class CC {
     is CreateActiveUser -> "/u ${profile.displayName} ${profile.fullName}"
     is StartChat -> "/_start"
     is SetFilesFolder -> "/_files_folder $filesFolder"
-    is ApiGetChats -> "/_get chats"
+    is ApiGetChats -> "/_get chats pcc=on"
     is ApiGetChat -> "/_get chat ${chatRef(type, id)} count=100"
     is ApiSendMessage -> when {
       file == null && quotedItemId == null -> "/_send ${chatRef(type, id)} ${mc.cmdString}"
@@ -649,8 +669,8 @@ sealed class CR {
   @Serializable @SerialName("acceptingContactRequest") class AcceptingContactRequest(val contact: Contact): CR()
   @Serializable @SerialName("contactRequestRejected") class ContactRequestRejected: CR()
   @Serializable @SerialName("contactUpdated") class ContactUpdated(val toContact: Contact): CR()
-  @Serializable @SerialName("contactSubscribed") class ContactSubscribed(val contact: Contact): CR()
-  @Serializable @SerialName("contactDisconnected") class ContactDisconnected(val contact: Contact): CR()
+  @Serializable @SerialName("contactsSubscribed") class ContactsSubscribed(val server: String, val contactRefs: List<ContactRef>): CR()
+  @Serializable @SerialName("contactsDisconnected") class ContactsDisconnected(val server: String, val contactRefs: List<ContactRef>): CR()
   @Serializable @SerialName("contactSubError") class ContactSubError(val contact: Contact, val chatError: ChatError): CR()
   @Serializable @SerialName("contactSubSummary") class ContactSubSummary(val contactSubscriptions: List<ContactSubStatus>): CR()
   @Serializable @SerialName("groupSubscribed") class GroupSubscribed(val group: GroupInfo): CR()
@@ -663,6 +683,8 @@ sealed class CR {
   @Serializable @SerialName("chatItemDeleted") class ChatItemDeleted(val deletedChatItem: AChatItem, val toChatItem: AChatItem): CR()
   @Serializable @SerialName("rcvFileAccepted") class RcvFileAccepted: CR()
   @Serializable @SerialName("rcvFileComplete") class RcvFileComplete(val chatItem: AChatItem): CR()
+  @Serializable @SerialName("newContactConnection") class NewContactConnection(val connection: PendingContactConnection): CR()
+  @Serializable @SerialName("contactConnectionDeleted") class ContactConnectionDeleted(val connection: PendingContactConnection): CR()
   @Serializable @SerialName("cmdOk") class CmdOk: CR()
   @Serializable @SerialName("chatCmdError") class ChatCmdError(val chatError: ChatError): CR()
   @Serializable @SerialName("chatError") class ChatRespError(val chatError: ChatError): CR()
@@ -693,8 +715,8 @@ sealed class CR {
     is AcceptingContactRequest -> "acceptingContactRequest"
     is ContactRequestRejected -> "contactRequestRejected"
     is ContactUpdated -> "contactUpdated"
-    is ContactSubscribed -> "contactSubscribed"
-    is ContactDisconnected -> "contactDisconnected"
+    is ContactsSubscribed -> "contactsSubscribed"
+    is ContactsDisconnected -> "contactsDisconnected"
     is ContactSubError -> "contactSubError"
     is ContactSubSummary -> "contactSubSummary"
     is GroupSubscribed -> "groupSubscribed"
@@ -707,6 +729,8 @@ sealed class CR {
     is ChatItemDeleted -> "chatItemDeleted"
     is RcvFileAccepted -> "rcvFileAccepted"
     is RcvFileComplete -> "rcvFileComplete"
+    is NewContactConnection -> "newContactConnection"
+    is ContactConnectionDeleted -> "contactConnectionDeleted"
     is CmdOk -> "cmdOk"
     is ChatCmdError -> "chatCmdError"
     is ChatRespError -> "chatError"
@@ -738,8 +762,8 @@ sealed class CR {
     is AcceptingContactRequest -> json.encodeToString(contact)
     is ContactRequestRejected -> noDetails()
     is ContactUpdated -> json.encodeToString(toContact)
-    is ContactSubscribed -> json.encodeToString(contact)
-    is ContactDisconnected -> json.encodeToString(contact)
+    is ContactsSubscribed -> "server: $server\ncontacts:\n${json.encodeToString(contactRefs)}"
+    is ContactsDisconnected -> "server: $server\ncontacts:\n${json.encodeToString(contactRefs)}"
     is ContactSubError -> "error:\n${chatError.string}\ncontact:\n${json.encodeToString(contact)}"
     is ContactSubSummary -> json.encodeToString(contactSubscriptions)
     is GroupSubscribed -> json.encodeToString(group)
@@ -752,6 +776,8 @@ sealed class CR {
     is ChatItemDeleted -> "deletedChatItem:\n${json.encodeToString(deletedChatItem)}\ntoChatItem:\n${json.encodeToString(toChatItem)}"
     is RcvFileAccepted -> noDetails()
     is RcvFileComplete -> json.encodeToString(chatItem)
+    is NewContactConnection -> json.encodeToString(connection)
+    is ContactConnectionDeleted -> json.encodeToString(connection)
     is CmdOk -> noDetails()
     is ChatCmdError -> chatError.string
     is ChatRespError -> chatError.string

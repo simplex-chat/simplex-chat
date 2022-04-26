@@ -22,6 +22,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -246,7 +247,7 @@ fun ChatInfoToolbar(chat: Chat, back: () -> Unit, info: () -> Unit) {
       IconButton(onClick = back) {
         Icon(
           Icons.Outlined.ArrowBackIos,
-          generalGetString(R.string.back),
+          stringResource(R.string.back),
           tint = MaterialTheme.colors.primary,
           modifier = Modifier.padding(10.dp)
         )
@@ -260,7 +261,7 @@ fun ChatInfoToolbar(chat: Chat, back: () -> Unit, info: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically
       ) {
         val cInfo = chat.chatInfo
-        ChatInfoImage(chat, size = 40.dp)
+        ChatInfoImage(cInfo, size = 40.dp)
         Column(
           Modifier.padding(start = 8.dp),
           horizontalAlignment = Alignment.CenterHorizontally

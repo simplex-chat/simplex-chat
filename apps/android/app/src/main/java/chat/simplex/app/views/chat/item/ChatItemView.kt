@@ -14,6 +14,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.UriHandler
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.R
@@ -59,21 +60,21 @@ fun ChatItemView(
           onDismissRequest = { showMenu.value = false },
           Modifier.width(220.dp)
         ) {
-          ItemAction(generalGetString(R.string.reply_verb), Icons.Outlined.Reply, onClick = {
+          ItemAction(stringResource(R.string.reply_verb), Icons.Outlined.Reply, onClick = {
             editingItem.value = null
             quotedItem.value = cItem
             showMenu.value = false
           })
-          ItemAction(generalGetString(R.string.share_verb), Icons.Outlined.Share, onClick = {
+          ItemAction(stringResource(R.string.share_verb), Icons.Outlined.Share, onClick = {
             shareText(cxt, cItem.content.text)
             showMenu.value = false
           })
-          ItemAction(generalGetString(R.string.copy_verb), Icons.Outlined.ContentCopy, onClick = {
+          ItemAction(stringResource(R.string.copy_verb), Icons.Outlined.ContentCopy, onClick = {
             copyText(cxt, cItem.content.text)
             showMenu.value = false
           })
           if (cItem.chatDir.sent && cItem.meta.editable) {
-            ItemAction(generalGetString(R.string.edit_verb), Icons.Filled.Edit, onClick = {
+            ItemAction(stringResource(R.string.edit_verb), Icons.Filled.Edit, onClick = {
               quotedItem.value = null
               editingItem.value = cItem
               msg.value = cItem.content.text
@@ -81,7 +82,7 @@ fun ChatItemView(
             })
           }
           ItemAction(
-            generalGetString(R.string.delete_verb),
+            stringResource(R.string.delete_verb),
             Icons.Outlined.Delete,
             onClick = {
               showMenu.value = false
@@ -125,13 +126,13 @@ fun deleteMessageAlertDialog(chatItem: ChatItem, deleteMessage: (Long, CIDeleteM
         Button(onClick = {
           deleteMessage(chatItem.id, CIDeleteMode.cidmInternal)
           AlertManager.shared.hideAlert()
-        }) { Text(generalGetString(R.string.for_me_only)) }
+        }) { Text(stringResource(R.string.for_me_only)) }
         if (chatItem.meta.editable) {
           Spacer(Modifier.padding(horizontal = 4.dp))
           Button(onClick = {
             deleteMessage(chatItem.id, CIDeleteMode.cidmBroadcast)
             AlertManager.shared.hideAlert()
-          }) { Text(generalGetString(R.string.for_everybody)) }
+          }) { Text(stringResource(R.string.for_everybody)) }
         }
       }
     }

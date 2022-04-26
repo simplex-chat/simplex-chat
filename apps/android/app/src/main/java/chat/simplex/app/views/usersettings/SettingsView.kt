@@ -12,6 +12,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
@@ -69,7 +70,7 @@ fun SettingsLayout(
         .padding(top = 16.dp)
     ) {
       Text(
-        generalGetString(R.string.your_settings),
+        stringResource(R.string.your_settings),
         style = MaterialTheme.typography.h1,
         modifier = Modifier.padding(start = 8.dp)
       )
@@ -91,39 +92,39 @@ fun SettingsLayout(
       SettingsSectionView(showModal { UserAddressView(it) }) {
         Icon(
           Icons.Outlined.QrCode,
-          contentDescription = generalGetString(R.string.icon_descr_address),
+          contentDescription = stringResource(R.string.icon_descr_address),
         )
         Spacer(Modifier.padding(horizontal = 4.dp))
-        Text(generalGetString(R.string.your_simplex_contact_address))
+        Text(stringResource(R.string.your_simplex_contact_address))
       }
       Spacer(Modifier.height(24.dp))
 
       SettingsSectionView(showModal { HelpView(it) }) {
         Icon(
           Icons.Outlined.HelpOutline,
-          contentDescription = generalGetString(R.string.icon_descr_help),
+          contentDescription = stringResource(R.string.icon_descr_help),
         )
         Spacer(Modifier.padding(horizontal = 4.dp))
-        Text(generalGetString(R.string.how_to_use_simplex_chat))
+        Text(stringResource(R.string.how_to_use_simplex_chat))
       }
       Divider(Modifier.padding(horizontal = 8.dp))
       SettingsSectionView(showModal { MarkdownHelpView() }) {
         Icon(
           Icons.Outlined.TextFormat,
-          contentDescription = generalGetString(R.string.markdown_help),
+          contentDescription = stringResource(R.string.markdown_help),
         )
         Spacer(Modifier.padding(horizontal = 4.dp))
-        Text(generalGetString(R.string.markdown_in_messages))
+        Text(stringResource(R.string.markdown_in_messages))
       }
       Divider(Modifier.padding(horizontal = 8.dp))
       SettingsSectionView({ uriHandler.openUri(simplexTeamUri) }) {
         Icon(
           Icons.Outlined.Tag,
-          contentDescription = generalGetString(R.string.icon_descr_simplex_team),
+          contentDescription = stringResource(R.string.icon_descr_simplex_team),
         )
         Spacer(Modifier.padding(horizontal = 4.dp))
         Text(
-          generalGetString(R.string.chat_with_the_founder),
+          stringResource(R.string.chat_with_the_founder),
           color = MaterialTheme.colors.primary
         )
       }
@@ -131,11 +132,11 @@ fun SettingsLayout(
       SettingsSectionView({ uriHandler.openUri("mailto:chat@simplex.chat") }) {
         Icon(
           Icons.Outlined.Email,
-          contentDescription = generalGetString(R.string.icon_descr_email),
+          contentDescription = stringResource(R.string.icon_descr_email),
         )
         Spacer(Modifier.padding(horizontal = 4.dp))
         Text(
-          generalGetString(R.string.send_us_an_email),
+          stringResource(R.string.send_us_an_email),
           color = MaterialTheme.colors.primary
         )
       }
@@ -144,20 +145,20 @@ fun SettingsLayout(
       SettingsSectionView(showModal { SMPServersView(it) }) {
         Icon(
           Icons.Outlined.Dns,
-          contentDescription = generalGetString(R.string.smp_servers),
+          contentDescription = stringResource(R.string.smp_servers),
         )
         Spacer(Modifier.padding(horizontal = 4.dp))
-        Text(generalGetString(R.string.smp_servers))
+        Text(stringResource(R.string.smp_servers))
       }
       Divider(Modifier.padding(horizontal = 8.dp))
       SettingsSectionView() {
         Icon(
           Icons.Outlined.Bolt,
-          contentDescription = generalGetString(R.string.private_notifications),
+          contentDescription = stringResource(R.string.private_notifications),
         )
         Spacer(Modifier.padding(horizontal = 4.dp))
         Text(
-          generalGetString(R.string.private_notifications), Modifier
+          stringResource(R.string.private_notifications), Modifier
           .padding(end = 24.dp)
           .fillMaxWidth()
           .weight(1F))
@@ -175,10 +176,10 @@ fun SettingsLayout(
       SettingsSectionView(showTerminal) {
         Icon(
           painter = painterResource(id = R.drawable.ic_outline_terminal),
-          contentDescription = generalGetString(R.string.chat_console),
+          contentDescription = stringResource(R.string.chat_console),
         )
         Spacer(Modifier.padding(horizontal = 4.dp))
-        Text(generalGetString(R.string.chat_console))
+        Text(stringResource(R.string.chat_console))
       }
       Divider(Modifier.padding(horizontal = 8.dp))
       SettingsSectionView({ uriHandler.openUri("https://github.com/simplex-chat/simplex-chat") }) {

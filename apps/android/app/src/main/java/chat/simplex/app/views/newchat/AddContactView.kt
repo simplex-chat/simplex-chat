@@ -10,6 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -19,7 +20,6 @@ import chat.simplex.app.R
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.ui.theme.SimpleButton
 import chat.simplex.app.ui.theme.SimpleXTheme
-import chat.simplex.app.views.helpers.generalGetString
 import chat.simplex.app.views.helpers.shareText
 
 @Composable
@@ -43,11 +43,11 @@ fun AddContactLayout(connReq: String, share: () -> Unit) {
       verticalArrangement = Arrangement.SpaceBetween,
     ) {
       Text(
-        generalGetString(R.string.add_contact),
+        stringResource(R.string.add_contact),
         style = MaterialTheme.typography.h1.copy(fontWeight = FontWeight.Normal),
       )
       Text(
-        generalGetString(R.string.show_QR_code_for_your_contact_to_scan_from_the_app__multiline),
+        stringResource(R.string.show_QR_code_for_your_contact_to_scan_from_the_app__multiline),
         style = MaterialTheme.typography.h3,
         textAlign = TextAlign.Center,
       )
@@ -58,14 +58,14 @@ fun AddContactLayout(connReq: String, share: () -> Unit) {
           .padding(vertical = 3.dp)
       )
       Text(
-        generalGetString(R.string.if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel),
+        stringResource(R.string.if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel),
         textAlign = TextAlign.Center,
         lineHeight = 22.sp,
         modifier = Modifier
           .padding(horizontal = 16.dp)
           .padding(bottom = if (screenHeight > 600.dp) 16.dp else 8.dp)
       )
-      SimpleButton(generalGetString(R.string.share_invitation_link), icon = Icons.Outlined.Share, click = share)
+      SimpleButton(stringResource(R.string.share_invitation_link), icon = Icons.Outlined.Share, click = share)
       Spacer(Modifier.height(10.dp))
     }
   }

@@ -12,6 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -60,8 +61,8 @@ fun ChatInfoLayout(chat: Chat, close: () -> Unit, deleteContact: () -> Unit) {
   ) {
     CloseSheetBar(close)
     Spacer(Modifier.size(48.dp))
-    ChatInfoImage(chat, size = 192.dp)
     val cInfo = chat.chatInfo
+    ChatInfoImage(cInfo, size = 192.dp)
     Text(
       cInfo.displayName, style = MaterialTheme.typography.h1.copy(fontWeight = FontWeight.Normal),
       color = MaterialTheme.colors.onBackground,
@@ -97,7 +98,7 @@ fun ChatInfoLayout(chat: Chat, close: () -> Unit, deleteContact: () -> Unit) {
 
       Box(Modifier.padding(48.dp)) {
         SimpleButton(
-          generalGetString(R.string.button_delete_contact),
+          stringResource(R.string.button_delete_contact),
           icon = Icons.Outlined.Delete,
           color = Color.Red,
           click = deleteContact
@@ -112,13 +113,13 @@ fun ServerImage(chat: Chat) {
   val status = chat.serverInfo.networkStatus
   when {
     status is Chat.NetworkStatus.Connected ->
-      Icon(Icons.Filled.Circle, generalGetString(R.string.icon_descr_server_status_connected), tint = MaterialTheme.colors.primaryVariant)
+      Icon(Icons.Filled.Circle, stringResource(R.string.icon_descr_server_status_connected), tint = MaterialTheme.colors.primaryVariant)
     status is Chat.NetworkStatus.Disconnected ->
-      Icon(Icons.Filled.Pending, generalGetString(R.string.icon_descr_server_status_disconnected), tint = HighOrLowlight)
+      Icon(Icons.Filled.Pending, stringResource(R.string.icon_descr_server_status_disconnected), tint = HighOrLowlight)
     status is Chat.NetworkStatus.Error ->
-      Icon(Icons.Filled.Error, generalGetString(R.string.icon_descr_server_status_error), tint = HighOrLowlight)
+      Icon(Icons.Filled.Error, stringResource(R.string.icon_descr_server_status_error), tint = HighOrLowlight)
     else ->
-      Icon(Icons.Outlined.Circle, generalGetString(R.string.icon_descr_server_status_pending), tint = HighOrLowlight)
+      Icon(Icons.Outlined.Circle, stringResource(R.string.icon_descr_server_status_pending), tint = HighOrLowlight)
   }
 }
 

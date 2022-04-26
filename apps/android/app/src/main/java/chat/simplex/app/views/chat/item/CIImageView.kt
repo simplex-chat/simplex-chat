@@ -6,6 +6,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.R
 import chat.simplex.app.model.CIFile
@@ -25,7 +26,7 @@ fun CIImageView(
     }
     Image(
       imageBitmap.asImageBitmap(),
-      contentDescription = generalGetString(R.string.image_descr),
+      contentDescription = stringResource(R.string.image_descr),
       // .width(1000.dp) is a hack for image to increase IntrinsicSize of FramedItemView
       // if text is short and take all available width if text is long
       modifier = Modifier

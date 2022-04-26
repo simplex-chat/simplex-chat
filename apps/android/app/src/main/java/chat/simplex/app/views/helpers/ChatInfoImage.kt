@@ -14,6 +14,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -23,11 +24,11 @@ import chat.simplex.app.model.ChatInfo
 import chat.simplex.app.ui.theme.SimpleXTheme
 
 @Composable
-fun ChatInfoImage(chat: Chat, size: Dp) {
+fun ChatInfoImage(chatInfo: ChatInfo, size: Dp) {
   val icon =
-    if (chat.chatInfo is ChatInfo.Group) Icons.Filled.SupervisedUserCircle
+    if (chatInfo is ChatInfo.Group) Icons.Filled.SupervisedUserCircle
                                     else Icons.Filled.AccountCircle
-  ProfileImage(size, chat.chatInfo.image, icon)
+  ProfileImage(size, chatInfo.image, icon)
 }
 
 @Composable
@@ -40,7 +41,7 @@ fun ProfileImage(
     if (image == null) {
       Icon(
         icon,
-        contentDescription = generalGetString(R.string.icon_descr_profile_image_placeholder),
+        contentDescription = stringResource(R.string.icon_descr_profile_image_placeholder),
         tint = MaterialTheme.colors.secondary,
         modifier = Modifier.fillMaxSize()
       )
@@ -48,7 +49,7 @@ fun ProfileImage(
       val imageBitmap = base64ToBitmap(image).asImageBitmap()
       Image(
         imageBitmap,
-        generalGetString(R.string.image_descr_profile_image),
+        stringResource(R.string.image_descr_profile_image),
         contentScale = ContentScale.Crop,
         modifier = Modifier.size(size).padding(size / 12).clip(CircleShape)
       )
@@ -61,7 +62,7 @@ fun ProfileImage(
 fun PreviewChatInfoImage() {
   SimpleXTheme {
     ChatInfoImage(
-      chat = Chat(chatInfo = ChatInfo.Direct.sampleData, chatItems = arrayListOf()),
+      chatInfo = ChatInfo.Direct.sampleData,
       size = 55.dp
     )
   }

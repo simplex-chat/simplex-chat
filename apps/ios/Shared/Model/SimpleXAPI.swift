@@ -159,8 +159,8 @@ enum ChatResponse: Decodable, Error {
     case acceptingContactRequest(contact: Contact)
     case contactRequestRejected
     case contactUpdated(toContact: Contact)
-    case contactSubscribed(contact: Contact)
-    case contactDisconnected(contact: Contact)
+    case contactsSubscribed(server: String, contactRefs: [ContactRef])
+    case contactsDisconnected(server: String, contactRefs: [ContactRef])
     case contactSubError(contact: Contact, chatError: ChatError)
     case contactSubSummary(contactSubscriptions: [ContactSubStatus])
     case groupSubscribed(groupInfo: GroupInfo)
@@ -207,8 +207,8 @@ enum ChatResponse: Decodable, Error {
             case .acceptingContactRequest: return "acceptingContactRequest"
             case .contactRequestRejected: return "contactRequestRejected"
             case .contactUpdated: return "contactUpdated"
-            case .contactSubscribed: return "contactSubscribed"
-            case .contactDisconnected: return "contactDisconnected"
+            case .contactsSubscribed: return "contactsSubscribed"
+            case .contactsDisconnected: return "contactsDisconnected"
             case .contactSubError: return "contactSubError"
             case .contactSubSummary: return "contactSubSummary"
             case .groupSubscribed: return "groupSubscribed"
@@ -258,8 +258,8 @@ enum ChatResponse: Decodable, Error {
             case let .acceptingContactRequest(contact): return String(describing: contact)
             case .contactRequestRejected: return noDetails
             case let .contactUpdated(toContact): return String(describing: toContact)
-            case let .contactSubscribed(contact): return String(describing: contact)
-            case let .contactDisconnected(contact): return String(describing: contact)
+            case let .contactsSubscribed(server, contactRefs): return "server: \(server)\ncontacts:\n\(String(describing: contactRefs))"
+            case let .contactsDisconnected(server, contactRefs): return "server: \(server)\ncontacts:\n\(String(describing: contactRefs))"
             case let .contactSubError(contact, chatError): return "contact:\n\(String(describing: contact))\nerror:\n\(String(describing: chatError))"
             case let .contactSubSummary(contactSubscriptions): return String(describing: contactSubscriptions)
             case let .groupSubscribed(groupInfo): return String(describing: groupInfo)
@@ -713,12 +713,14 @@ func processReceivedMsg(_ res: ChatResponse) {
         m.terminalItems.append(.resp(.now, res))
         logger.debug("processReceivedMsg: \(res.responseType)")
         switch res {
-        case let .newContactConnection(contactConnection):
-            m.updateContactConnection(contactConnection)
+        case let .newContactConnection(connection):
+            m.updateContactConnection(connection)
+        case let .contactConnectionDeleted(connection):
+            m.removeChat(connection.id)
         case let .contactConnected(contact):
             m.updateContact(contact)
             m.removeChat(contact.activeConn.id)
-            m.updateNetworkStatus(contact, .connected)
+            m.updateNetworkStatus(contact.id, .connected)
             NtfManager.shared.notifyContactConnected(contact)
         case let .contactConnecting(contact):
             m.updateContact(contact)
@@ -734,11 +736,10 @@ func processReceivedMsg(_ res: ChatResponse) {
             if m.hasChat(toContact.id) {
                 m.updateChatInfo(cInfo)
             }
-        case let .contactSubscribed(contact):
-            processContactSubscribed(contact)
-        case let .contactDisconnected(contact):
-            m.updateContact(contact)
-            m.updateNetworkStatus(contact, .disconnected)
+        case let .contactsSubscribed(_, contactRefs):
+            updateContactsStatus(contactRefs, status: .connected)
+        case let .contactsDisconnected(_, contactRefs):
+            updateContactsStatus(contactRefs, status: .disconnected)
         case let .contactSubError(contact, chatError):
             processContactSubError(contact, chatError)
         case let .contactSubSummary(contactSubscriptions):
@@ -746,7 +747,8 @@ func processReceivedMsg(_ res: ChatResponse) {
                 if let err = sub.contactError {
                     processContactSubError(sub.contact, err)
                 } else {
-                    processContactSubscribed(sub.contact)
+                    m.updateContact(sub.contact)
+                    m.updateNetworkStatus(sub.contact.id, .connected)
                 }
             }
         case let .newChatItem(aChatItem):
@@ -808,10 +810,11 @@ func processReceivedMsg(_ res: ChatResponse) {
     }
 }
 
-func processContactSubscribed(_ contact: Contact) {
+func updateContactsStatus(_ contactRefs: [ContactRef], status: Chat.NetworkStatus) {
     let m = ChatModel.shared
-    m.updateContact(contact)
-    m.updateNetworkStatus(contact, .connected)
+    for c in contactRefs {
+        m.updateNetworkStatus(c.id, status)
+    }
 }
 
 func processContactSubError(_ contact: Contact, _ chatError: ChatError) {
@@ -823,7 +826,7 @@ func processContactSubError(_ contact: Contact, _ chatError: ChatError) {
     case .errorAgent(agentError: .SMP(smpErr: .AUTH)): err = "contact deleted"
     default: err = String(describing: chatError)
     }
-    m.updateNetworkStatus(contact, .error(err))
+    m.updateNetworkStatus(contact.id, .error(err))
 }
 
 private struct UserResponse: Decodable {
@@ -961,6 +964,7 @@ enum StoreError: Decodable {
     case fileNotFound(fileId: Int64)
     case rcvFileInvalid(fileId: Int64)
     case connectionNotFound(agentConnId: String)
+    case pendingConnectionNotFound(connId: Int64)
     case introNotFound
     case uniqueID
     case internalError(message: String)
@@ -969,6 +973,7 @@ enum StoreError: Decodable {
     case chatItemNotFound(itemId: Int64)
     case quotedChatItemNotFound
     case chatItemSharedMsgIdNotFound(sharedMsgId: String)
+    case chatItemNotFoundByFileId(fileId: Int64)
 }
 
 enum AgentErrorType: Decodable {

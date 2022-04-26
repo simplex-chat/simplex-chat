@@ -151,6 +151,9 @@
 /* No comment provided by engineer. */
 "Connecting server… (error: %@)" = "Устанавливается соединение с сервером… (ошибка: %@)";
 
+/* chat list item title */
+"connecting…" = "соединяется…";
+
 /* No comment provided by engineer. */
 "Connecting..." = "Устанавливается соединение…";
 
@@ -160,6 +163,9 @@
 /* No comment provided by engineer. */
 "Connection error (AUTH)" = "Ошибка соединения (AUTH)";
 
+/* chat list item title (it should not be shown */
+"connection established" = "соединение установлено";
+
 /* No comment provided by engineer. */
 "Connection request" = "Запрос на соединение";
 
@@ -168,6 +174,9 @@
 
 /* No comment provided by engineer. */
 "Connection timeout" = "Превышено время соединения";
+
+/* connection information */
+"connection:%@" = "connection:%@";
 
 /* No comment provided by engineer. */
 "Contact already exists" = "Существующий контакт";
@@ -228,6 +237,9 @@
 
 /* No comment provided by engineer. */
 "Delete pending connection" = "Удалить соединение";
+
+/* No comment provided by engineer. */
+"Delete pending connection?" = "Удалить ожидаемое соединение?";
 
 /* deleted chat item */
 "deleted" = "удалено";
@@ -294,6 +306,9 @@
 
 /* No comment provided by engineer. */
 "Invalid connection link" = "Ошибка в ссылке контакта";
+
+/* chat list item title */
+"invited to connect" = "приглашение соединиться";
 
 /* No comment provided by engineer. */
 "italic" = "курсив";
@@ -386,6 +401,9 @@
 "Share link" = "Поделиться ссылкой";
 
 /* No comment provided by engineer. */
+"Show pending connections" = "Показать ожидаемые соединения";
+
+/* No comment provided by engineer. */
 "Show QR code to your contact\nto scan from the app" = "Покажите QR код вашему контакту для сканирования в приложении";
 
 /* No comment provided by engineer. */
@@ -408,6 +426,12 @@
 
 /* No comment provided by engineer. */
 "The app can receive background notifications every 20 minutes to check the new messages.\n*Please note*: if you confirm, your device token will be sent to SimpleX Chat notifications server." = "Приложение может получать скрытые уведомления каждые 20 минут чтобы проверить новые сообщения.\n*Обратите внимание*: если вы подтвердите, токен вашего устройства будет послан на сервер SimpleX Chat.";
+
+/* No comment provided by engineer. */
+"The connection you accepted will be cancelled!" = "Подтвержденное соединение будет отменено!";
+
+/* No comment provided by engineer. */
+"The contact you shared this link with will NOT be able to connect!" = "Контакт, которому вы отправили эту ссылку, не сможет соединиться!";
 
 /* No comment provided by engineer. */
 "The messaging and application platform 100% private by design!" = "Платформа для сообщений и приложений, которая защищает вашу личную информацию и безопасность.";
@@ -445,6 +469,12 @@
 /* No comment provided by engineer. */
 "v%@ (%@)" = "v%@ (%@)";
 
+/* chat list item description */
+"via contact address link" = "через ссылку-контакт";
+
+/* chat list item description */
+"via one-time link" = "через одноразовую ссылку";
+
 /* No comment provided by engineer. */
 "wants to connect to you!" = "хочет соединиться с вами!";
 
@@ -453,6 +483,9 @@
 
 /* No comment provided by engineer. */
 "You" = "Вы";
+
+/* No comment provided by engineer. */
+"You accepted connection" = "Вы приняли приглашение соединиться";
 
 /* No comment provided by engineer. */
 "You are already connected to %@ via this link." = "Вы уже соединены с %@ через эту ссылку.";
@@ -474,6 +507,12 @@
 
 /* No comment provided by engineer. */
 "You control your chat!" = "Вы котролируете Ваш чат!";
+
+/* No comment provided by engineer. */
+"You invited your contact" = "Вы пригласили ваш контакт";
+
+/* chat list item description */
+"you shared one-time link" = "вы создали одноразовую ссылку";
 
 /* No comment provided by engineer. */
 "You will be connected when your connection request is accepted, please wait or check later!" = "Соединение будет установлено, когда ваш запрос будет принят. Пожалуйста, подождите или проверьте позже!";
