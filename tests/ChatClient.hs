@@ -8,7 +8,7 @@
 
 module ChatClient where
 
-import Control.Concurrent (ThreadId, forkIOWithUnmask, killThread, threadDelay)
+import Control.Concurrent (ThreadId, forkIOWithUnmask, killThread)
 import Control.Concurrent.Async
 import Control.Concurrent.STM
 import Control.Exception (bracket, bracket_)
@@ -112,10 +112,10 @@ stopTestChat TestCC {chatController = cc, chatAsync, termAsync} = do
   uninterruptibleCancel chatAsync
 
 withNewTestChat :: Int -> Profile -> (TestCC -> IO a) -> IO a
-withNewTestChat dbNumber profile = bracket (createTestChat dbNumber profile) (\cc -> threadDelay 500000 >> stopTestChat cc)
+withNewTestChat dbNumber profile = bracket (createTestChat dbNumber profile) (\cc -> cc <// 100000 >> stopTestChat cc)
 
 withTestChat :: Int -> (TestCC -> IO a) -> IO a
-withTestChat dbNumber = bracket (startTestChat dbNumber) (\cc -> threadDelay 500000 >> stopTestChat cc)
+withTestChat dbNumber = bracket (startTestChat dbNumber) (\cc -> cc <// 100000 >> stopTestChat cc)
 
 readTerminalOutput :: VirtualTerminal -> TQueue String -> IO ()
 readTerminalOutput t termQ = do
