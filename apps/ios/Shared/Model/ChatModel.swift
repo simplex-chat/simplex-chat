@@ -70,9 +70,9 @@ final class ChatModel: ObservableObject {
         }
     }
 
-    func updateNetworkStatus(_ contact: Contact, _ status: Chat.NetworkStatus) {
-        if let ix = getChatIndex(contact.id) {
-            chats[ix].serverInfo.networkStatus = status
+    func updateNetworkStatus(_ id: ChatId, _ status: Chat.NetworkStatus) {
+        if let i = getChatIndex(id) {
+            chats[i].serverInfo.networkStatus = status
         }
     }
 
@@ -486,6 +486,13 @@ struct Contact: Identifiable, Decodable, NamedChat {
         activeConn: Connection.sampleData,
         createdAt: .now
     )
+}
+
+struct ContactRef: Decodable {
+    var contactId: Int64
+    var localDisplayName: ContactName
+
+    var id: ChatId { get { "@\(contactId)" } }
 }
 
 struct ContactSubStatus: Decodable {
