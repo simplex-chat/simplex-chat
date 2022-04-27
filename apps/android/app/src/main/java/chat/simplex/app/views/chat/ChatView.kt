@@ -1,12 +1,14 @@
 package chat.simplex.app.views.chat
 
 import android.content.res.Configuration
+import android.graphics.Bitmap
 import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ArrowBackIos
@@ -16,6 +18,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
@@ -30,6 +33,7 @@ import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.chat.item.ChatItemView
 import chat.simplex.app.views.chatlist.openChat
 import chat.simplex.app.views.helpers.*
+import com.google.accompanist.insets.ProvideWindowInsets
 import com.google.accompanist.insets.navigationBarsWithImePadding
 import kotlinx.coroutines.*
 import kotlinx.datetime.Clock
@@ -39,6 +43,10 @@ fun ChatView(chatModel: ChatModel) {
   val chat: Chat? = chatModel.chats.firstOrNull { chat -> chat.chatInfo.id == chatModel.chatId.value }
   val user = chatModel.currentUser.value
   val composeState = remember { mutableStateOf(ComposeState()) }
+  val attachmentBottomSheetState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden)
+  val scope = rememberCoroutineScope()
+  val chosenImage = remember { mutableStateOf<Bitmap?>(null) }
+
   if (chat == null || user == null) {
     chatModel.chatId.value = null
   } else {
@@ -63,7 +71,17 @@ fun ChatView(chatModel: ChatModel) {
       user,
       chat,
       composeState,
-      composeView = { ComposeView(chatModel, chat, composeState) },
+      composeView = {
+        ComposeView(
+          chatModel,
+          chat,
+          composeState,
+          chosenImage,
+          showAttachmentBottomSheet = { scope.launch { attachmentBottomSheetState.show() } })
+      },
+      chosenImage,
+      scope,
+      attachmentBottomSheetState,
       chatModel.chatItems,
       back = { chatModel.chatId.value = null },
       info = { ModalManager.shared.showCustomModal { close -> ChatInfoView(chatModel, close) } },
@@ -95,24 +113,49 @@ fun ChatLayout(
   chat: Chat,
   composeState: MutableState<ComposeState>,
   composeView: (@Composable () -> Unit),
+  chosenImage: MutableState<Bitmap?>,
+  scope: CoroutineScope,
+  attachmentBottomSheetState: ModalBottomSheetState,
   chatItems: List<ChatItem>,
   back: () -> Unit,
   info: () -> Unit,
   openDirectChat: (Long) -> Unit,
   deleteMessage: (Long, CIDeleteMode) -> Unit
 ) {
+  fun onImageChange(bitmap: Bitmap) {
+    val imagePreview = resizeImageToStrSize(bitmap, maxDataSize = 14000)
+    composeState.value = composeState.value.copy(preview = ComposePreview.ImagePreview(imagePreview))
+  }
+
   Surface(
     Modifier
       .fillMaxWidth()
       .background(MaterialTheme.colors.background)
   ) {
-    Scaffold(
-      topBar = { ChatInfoToolbar(chat, back, info) },
-      bottomBar = composeView,
-      modifier = Modifier.navigationBarsWithImePadding()
-    ) { contentPadding ->
-      Box(Modifier.padding(contentPadding)) {
-        ChatItemsList(user, chat, composeState, chatItems, openDirectChat, deleteMessage)
+    ProvideWindowInsets(windowInsetsAnimationsEnabled = true) {
+      ModalBottomSheetLayout(
+        scrimColor = Color.Black.copy(alpha = 0.12F),
+        modifier = Modifier.navigationBarsWithImePadding(),
+        sheetContent = {
+          GetImageBottomSheet(
+            chosenImage,
+            ::onImageChange,
+            hideBottomSheet = {
+              scope.launch { attachmentBottomSheetState.hide() }
+            })
+        },
+        sheetState = attachmentBottomSheetState,
+        sheetShape = RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp)
+      ) {
+        Scaffold(
+          topBar = { ChatInfoToolbar(chat, back, info) },
+          bottomBar = composeView,
+          modifier = Modifier.navigationBarsWithImePadding()
+        ) { contentPadding ->
+          Box(Modifier.padding(contentPadding)) {
+            ChatItemsList(user, chat, composeState, chatItems, openDirectChat, deleteMessage)
+          }
+        }
       }
     }
   }
@@ -300,6 +343,9 @@ fun PreviewChatLayout() {
       ),
       composeState = remember { mutableStateOf(ComposeState()) },
       composeView = {},
+      chosenImage = remember { mutableStateOf(null) },
+      scope = rememberCoroutineScope(),
+      attachmentBottomSheetState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden),
       chatItems = chatItems,
       back = {},
       info = {},
@@ -340,6 +386,9 @@ fun PreviewGroupChatLayout() {
       ),
       composeState = remember { mutableStateOf(ComposeState()) },
       composeView = {},
+      chosenImage = remember { mutableStateOf(null) },
+      scope = rememberCoroutineScope(),
+      attachmentBottomSheetState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden),
       chatItems = chatItems,
       back = {},
       info = {},

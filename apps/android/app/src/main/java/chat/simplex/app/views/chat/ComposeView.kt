@@ -6,7 +6,6 @@ import android.graphics.Bitmap
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AttachFile
@@ -22,8 +21,6 @@ import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.views.chat.item.*
 import chat.simplex.app.views.helpers.*
-import com.google.accompanist.insets.ProvideWindowInsets
-import com.google.accompanist.insets.navigationBarsWithImePadding
 import kotlinx.coroutines.*
 import java.io.File
 import java.io.FileOutputStream
@@ -90,16 +87,15 @@ fun chatItemPreview(chatItem: ChatItem): ComposePreview {
 fun ComposeView(
   chatModel: ChatModel,
   chat: Chat,
-  composeState: MutableState<ComposeState>
+  composeState: MutableState<ComposeState>,
+  chosenImage: MutableState<Bitmap?>,
+  showAttachmentBottomSheet: () -> Unit
 ) {
   val context = LocalContext.current
   val linkUrl = remember { mutableStateOf<String?>(null) }
   val prevLinkUrl = remember { mutableStateOf<String?>(null) }
   val pendingLinkUrl = remember { mutableStateOf<String?>(null) }
   val cancelledLinks = remember { mutableSetOf<String>() }
-  val chosenImage = remember { mutableStateOf<Bitmap?>(null) }
-  val bottomSheetModalState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden)
-  val scope = rememberCoroutineScope()
   val smallFont = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onBackground)
   val textStyle = remember { mutableStateOf(smallFont) }
 
@@ -251,17 +247,14 @@ fun ComposeView(
       textStyle.value = if (s.codePoints().count() < 4) largeEmojiFont else mediumEmojiFont
     } else {
       textStyle.value = smallFont
-      if (s.isNotEmpty()) showLinkPreview(s)
-      else resetLinkPreview()
+      if (composeState.value.linkPreviewAllowed) {
+        if (s.isNotEmpty()) showLinkPreview(s)
+        else resetLinkPreview()
+      }
     }
   }
 
-  fun onImageChange(bitmap: Bitmap) {
-    val imagePreview = resizeImageToStrSize(bitmap, maxDataSize = 14000)
-    composeState.value = composeState.value.copy(preview = ComposePreview.ImagePreview(imagePreview))
-  }
-
-  fun cancelPreview() {
+  fun cancelLinkPreview() {
     val uri = composeState.value.linkPreview?.uri
     if (uri != null) {
       cancelledLinks.add(uri)
@@ -274,66 +267,53 @@ fun ComposeView(
     composeState.value = composeState.value.copy(preview = ComposePreview.NoPreview)
   }
 
+  @Composable
+  fun previewView() {
+    when (val preview = composeState.value.preview) {
+      ComposePreview.NoPreview -> {}
+      is ComposePreview.CLinkPreview -> ComposeLinkView(preview.linkPreview, ::cancelLinkPreview)
+      is ComposePreview.ImagePreview -> ComposeImageView(
+        preview.image,
+        ::cancelImage,
+        cancelEnabled = !composeState.value.editing
+      )
+    }
+  }
+
+  @Composable
+  fun contextItemView() {
+    when (val contextItem = composeState.value.contextItem) {
+      ComposeContextItem.NoContextItem -> {}
+      is ComposeContextItem.QuotedItem -> ContextItemView(contextItem.chatItem) { composeState.value = composeState.value.copy(contextItem = ComposeContextItem.NoContextItem) }
+      is ComposeContextItem.EditingItem -> ContextItemView(contextItem.chatItem) { composeState.value = ComposeState() }
+    }
+  }
+
   Column {
-    ProvideWindowInsets(windowInsetsAnimationsEnabled = true) {
-      ModalBottomSheetLayout(
-        scrimColor = Color.Black.copy(alpha = 0.12F),
-        modifier = Modifier.navigationBarsWithImePadding(),
-        sheetContent = {
-          GetImageBottomSheet(
-            chosenImage,
-            ::onImageChange,
-            hideBottomSheet = {
-              scope.launch { bottomSheetModalState.hide() }
-            })
-        },
-        sheetState = bottomSheetModalState,
-        sheetShape = RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp)
-      ) {
-        Column {
-          // TODO contextItemView()
-          // TODO previewView()
-          //    val ip = imagePreview.value
-          //    if (ip != null) {
-          //      ComposeImageView(ip, ::cancelImage)
-          //    } else {
-          //      val lp = linkPreview.value
-          //      if (lp != null) ComposeLinkView(lp, ::cancelPreview)
-          //    }
-          //    when {
-          //      quotedItem.value != null -> {
-          //        ContextItemView(quotedItem)
-          //      }
-          //      editingItem.value != null -> {
-          //        ContextItemView(editingItem, editing = editingItem.value != null, resetMessage)
-          //      }
-          //      else -> {}
-          //    }
-          Row(
-            modifier = Modifier.padding(start = 4.dp, end = 8.dp),
-            verticalAlignment = Alignment.Bottom,
-            horizontalArrangement = Arrangement.spacedBy(2.dp)
-          ) {
-            val attachEnabled = !composeState.value.editing
-            Box(Modifier.padding(bottom = 12.dp)) {
-              Icon(
-                Icons.Filled.AttachFile,
-                contentDescription = stringResource(R.string.attach),
-                tint = if (attachEnabled) MaterialTheme.colors.primary else Color.Gray,
-                modifier = Modifier
-                  .size(28.dp)
-                  .clip(CircleShape)
-                  .clickable {
-                    if (attachEnabled) {
-                      scope.launch { bottomSheetModalState.show() }
-                    }
-                  }
-              )
+    contextItemView()
+    previewView()
+    Row(
+      modifier = Modifier.padding(start = 4.dp, end = 8.dp),
+      verticalAlignment = Alignment.Bottom,
+      horizontalArrangement = Arrangement.spacedBy(2.dp)
+    ) {
+      val attachEnabled = !composeState.value.editing
+      Box(Modifier.padding(bottom = 12.dp)) {
+        Icon(
+          Icons.Filled.AttachFile,
+          contentDescription = stringResource(R.string.attach),
+          tint = if (attachEnabled) MaterialTheme.colors.primary else Color.Gray,
+          modifier = Modifier
+            .size(28.dp)
+            .clip(CircleShape)
+            .clickable {
+              if (attachEnabled) {
+                showAttachmentBottomSheet()
+              }
             }
-            SendMsgView(composeState, ::sendMessage, ::onMessageChange, textStyle)
-          }
-        }
+        )
       }
+      SendMsgView(composeState, ::sendMessage, ::onMessageChange, textStyle)
     }
   }
 }

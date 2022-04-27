@@ -22,41 +22,32 @@ import kotlinx.datetime.Clock
 
 @Composable
 fun ContextItemView(
-  contextItem: MutableState<ChatItem?>,
-  editing: Boolean = false,
-  resetMessage: () -> Unit = {}
+  contextItem: ChatItem,
+  cancelContextItem: () -> Unit
 ) {
-  val cxtItem = contextItem.value
-  if (cxtItem != null) {
-    val sent = cxtItem.chatDir.sent
-    Row(
+  val sent = contextItem.chatDir.sent
+  Row(
+    Modifier
+      .padding(top = 8.dp)
+      .background(if (sent) SentColorLight else ReceivedColorLight),
+    verticalAlignment = Alignment.CenterVertically
+  ) {
+    Box(
       Modifier
-        .padding(top = 8.dp)
-        .background(if (sent) SentColorLight else ReceivedColorLight),
-      verticalAlignment = Alignment.CenterVertically
+        .padding(start = 16.dp)
+        .padding(vertical = 12.dp)
+        .fillMaxWidth()
+        .weight(1F)
     ) {
-      Box(
-        Modifier
-          .padding(start = 16.dp)
-          .padding(vertical = 12.dp)
-          .fillMaxWidth()
-          .weight(1F)
-      ) {
-        ContextItemText(cxtItem)
-      }
-      IconButton(onClick = {
-        contextItem.value = null
-        if (editing) {
-          resetMessage()
-        }
-      }) {
-        Icon(
-          Icons.Outlined.Close,
-          contentDescription = stringResource(R.string.cancel_verb),
-          tint = MaterialTheme.colors.primary,
-          modifier = Modifier.padding(10.dp)
-        )
-      }
+      ContextItemText(contextItem)
+    }
+    IconButton(onClick = cancelContextItem) {
+      Icon(
+        Icons.Outlined.Close,
+        contentDescription = stringResource(R.string.cancel_verb),
+        tint = MaterialTheme.colors.primary,
+        modifier = Modifier.padding(10.dp)
+      )
     }
   }
 }
@@ -80,13 +71,8 @@ private fun ContextItemText(cxtItem: ChatItem) {
 fun PreviewContextItemView() {
   SimpleXTheme {
     ContextItemView(
-      contextItem = remember {
-        mutableStateOf(
-          ChatItem.getSampleData(
-            1, CIDirection.DirectRcv(), Clock.System.now(), "hello"
-          )
-        )
-      }
+      contextItem = ChatItem.getSampleData(1, CIDirection.DirectRcv(), Clock.System.now(), "hello"),
+      cancelContextItem = {}
     )
   }
 }

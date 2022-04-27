@@ -4,7 +4,6 @@ import android.net.Uri
 import androidx.compose.material.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.font.*
 import androidx.compose.ui.text.style.TextDecoration
