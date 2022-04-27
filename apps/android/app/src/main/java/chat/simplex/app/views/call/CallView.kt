@@ -60,7 +60,9 @@ fun VideoCallView(close: () -> Unit) {
   Column(
     horizontalAlignment = Alignment.CenterHorizontally,
     verticalArrangement = Arrangement.spacedBy(12.dp),
-    modifier = Modifier.background(MaterialTheme.colors.background).fillMaxSize()
+    modifier = Modifier
+      .background(MaterialTheme.colors.background)
+      .fillMaxSize()
   ) {
     if (permissionsState.allPermissionsGranted) {
       Box(
@@ -115,8 +117,7 @@ fun VideoCallView(close: () -> Unit) {
           wv = it
           wv.post { wv.evaluateJavascript("f()") { response ->
             println("JAVASCRIPT RESPONSE: $response")
-          }
-          }
+          } }
         }
       }
     } else {
@@ -126,7 +127,9 @@ fun VideoCallView(close: () -> Unit) {
     TextEditor(Modifier.height(180.dp), text = commandToShow)
 
     Row(
-      Modifier.fillMaxWidth().padding(bottom = 6.dp),
+      Modifier
+        .fillMaxWidth()
+        .padding(bottom = 6.dp),
       horizontalArrangement = Arrangement.SpaceBetween
     ) {
       Button( onClick = {
@@ -138,9 +141,11 @@ fun VideoCallView(close: () -> Unit) {
       }) {Text("Paste")}
       Button( onClick = {
         println("sending: ${commandToShow.value}")
-        wv.post { wv.evaluateJavascript(commandToShow.value){
-            response -> println("JAVASCRIPT RESPONSE: $response")
-        } }
+        wv.post {
+          wv.evaluateJavascript(commandToShow.value) { response ->
+            println("JAVASCRIPT RESPONSE: $response")
+          }
+        }
         commandToShow.value = ""
       }) {Text("Send")}
       Button( onClick = {
@@ -156,6 +161,5 @@ private class LocalContentWebViewClient(private val assetLoader: WebViewAssetLoa
     request: WebResourceRequest
   ): WebResourceResponse? {
     return assetLoader.shouldInterceptRequest(request.url)
-  }
   }
 }

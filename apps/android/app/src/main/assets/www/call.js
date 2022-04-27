@@ -17,7 +17,7 @@ const servers = {
 
 let pc
 let candidates = []
-await run()
+run().then(console.log("Setup Complete"))
 
 async function run() {
   pc = new RTCPeerConnection(servers)
