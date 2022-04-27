@@ -560,6 +560,10 @@ processChatCommand = \case
     editedItemId <- withStore $ \st -> getGroupChatItemIdByText st user groupId (Just localDisplayName) (safeDecodeUtf8 editedMsg)
     let mc = MCText $ safeDecodeUtf8 msg
     processChatCommand $ APIUpdateChatItem CTGroup groupId editedItemId mc
+  LastMessages (Just c@(ChatName cType _)) count -> do
+    chatId <- getChatId c
+    CRLastMessages . aChatItems . chat <$> (processChatCommand . APIGetChat cType chatId $ CPLast count)
+  LastMessages Nothing _count -> pure $ chatCmdError "not implemented"
   -- old file protocol
   -- SendFile cName f -> withUser $ \User {userId} -> do
   --   contactId <- withStore $ \st -> getContactIdByName st userId cName
@@ -655,6 +659,11 @@ processChatCommand = \case
     -- use function below to make commands "synchronous"
     procCmd :: m ChatResponse -> m ChatResponse
     procCmd = id
+    getChatId :: ChatName -> m Int64
+    getChatId (ChatName cType name) = withUser $ \user@User {userId} -> case cType of
+      CTDirect -> withStore $ \st -> getContactIdByName st userId name
+      CTGroup -> withStore $ \st -> getGroupIdByName st user name
+      _ -> throwChatError $ CECommandError "not supported"
     connectViaContact :: UserId -> ConnectionRequestUri 'CMContact -> Profile -> m ChatResponse
     connectViaContact userId cReq profile = withChatLock $ do
       let cReqHash = ConnReqUriHash . C.sha256Hash $ strEncode cReq
@@ -1957,6 +1966,7 @@ chatCommandP =
     <|> ("\\@" <|> "\\ @") *> (DeleteMessage <$> displayName <* A.space <*> A.takeByteString)
     <|> ("!@" <|> "! @") *> (EditMessage <$> displayName <* A.space <*> (quotedMsg <|> pure "") <*> A.takeByteString)
     <|> "/feed " *> (SendMessageBroadcast <$> A.takeByteString)
+    <|> ("/tail" <|> "/t") *> (LastMessages <$> optional chatNameP <*> msgCountP)
     <|> ("/file #" <|> "/f #") *> (SendGroupFile <$> displayName <* A.space <*> filePath)
     <|> ("/file_v2 #" <|> "/f_v2 #") *> (SendGroupFileInv <$> displayName <* A.space <*> filePath)
     <|> ("/file @" <|> "/file " <|> "/f @" <|> "/f ") *> (SendFile <$> displayName <* A.space <*> filePath)
@@ -2024,6 +2034,8 @@ chatCommandP =
         <|> (" admin" $> GRAdmin)
         <|> (" member" $> GRMember)
         <|> pure GRAdmin
+    chatNameP = A.space *> (ChatName <$> chatTypeP <*> displayName)
+    msgCountP = A.space *> A.decimal <|> pure 10
 
 adminContactReq :: ConnReqContact
 adminContactReq =

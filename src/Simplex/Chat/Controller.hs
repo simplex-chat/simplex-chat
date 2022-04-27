@@ -146,6 +146,7 @@ data ChatCommand
   | SendGroupMessageQuote {groupName :: GroupName, contactName_ :: Maybe ContactName, quotedMsg :: ByteString, message :: ByteString}
   | DeleteGroupMessage GroupName ByteString
   | EditGroupMessage {groupName :: ContactName, editedMsg :: ByteString, message :: ByteString}
+  | LastMessages (Maybe ChatName) Int
   | SendFile ContactName FilePath
   | SendFileInv ContactName FilePath
   | SendGroupFile GroupName FilePath
@@ -166,6 +167,7 @@ data ChatResponse
   | CRChatRunning
   | CRApiChats {chats :: [AChat]}
   | CRApiChat {chat :: AChat}
+  | CRLastMessages {chatItems :: [AChatItem]}
   | CRApiParsedMarkdown {formattedText :: Maybe MarkdownList}
   | CRUserSMPServers {smpServers :: [SMPServer]}
   | CRNewChatItem {chatItem :: AChatItem}
