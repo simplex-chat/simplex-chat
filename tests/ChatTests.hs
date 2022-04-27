@@ -32,6 +32,13 @@ danProfile = Profile {displayName = "dan", fullName = "Daniel", image = Nothing}
 
 chatTests :: Spec
 chatTests = do
+  describe "async sending and receiving files" $ do
+    it "send and receive file, fully asynchronous" testAsyncFileTransfer
+    it "send and receive file to group, fully asynchronous" testAsyncGroupFileTransfer
+  describe "async connection handshake" $ do
+    it "connect when initiating client goes offline" testAsyncInitiatingOffline
+    it "connect when accepting client goes offline" testAsyncAcceptingOffline
+    it "connect, fully asynchronous (when clients are never simultaneously online)" testFullAsync
   describe "direct messages" $ do
     it "add contact and send/receive message" testAddContact
     it "direct message quoted replies" testDirectMessageQuotedReply
@@ -81,13 +88,6 @@ chatTests = do
     it "delete connection requests when contact link deleted" testDeleteConnectionRequests
   describe "SMP servers" $
     it "get and set SMP servers" testGetSetSMPServers
-  describe "async connection handshake" $ do
-    it "connect when initiating client goes offline" testAsyncInitiatingOffline
-    it "connect when accepting client goes offline" testAsyncAcceptingOffline
-    it "connect, fully asynchronous (when clients are never simultaneously online)" testFullAsync
-  xdescribe "async sending and receiving files" $ do
-    it "send and receive file, fully asynchronous" testAsyncFileTransfer
-    it "send and receive file to group, fully asynchronous" testAsyncGroupFileTransfer
 
 testAddContact :: IO ()
 testAddContact =
