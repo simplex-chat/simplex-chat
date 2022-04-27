@@ -312,7 +312,15 @@ fun ComposeView(
             }
         )
       }
-      SendMsgView(composeState, ::sendMessage, ::onMessageChange, textStyle)
+      SendMsgView(
+        composeState,
+        sendMessage = {
+          sendMessage()
+          resetLinkPreview()
+        },
+        ::onMessageChange,
+        textStyle
+      )
     }
   }
 }
