@@ -16,6 +16,7 @@ const servers = {
 }
 
 let pc
+let candidates = []
 run().then(() => console.log("finished"))
 
 async function run() {
@@ -23,9 +24,16 @@ async function run() {
 
   // This handler 'sends' any ICE candidates to the other peer, as they are received.
   pc.onicecandidate = (event) => {
-    // send candidate to recipient via simplex
-    console.log("ICECANDIDATE\n" + JSON.stringify(event))
-    event.candidate && console.log("ICECANDIDATE\n" + JSON.stringify(event.candidate))
+    // add candidate to maintained list to be sent all at once
+    if (event.candidate) {
+      candidates.push(event.candidate)
+    }
+  }
+  pc.onicegatheringstatechange = (event) => {
+    if (pc.iceGatheringState == "complete") {
+      // Give command for other caller to use
+      console.log({action: "processIceCandidates", content: candidates})
+    }
   }
 
   let remoteStream = new MediaStream()
@@ -38,16 +46,27 @@ async function processInbound(data) {
     case "initiateCall":
       console.log("initiating call")
       let result = await makeRTCOffer(pc)
-      console.log(JSON.stringify(result))
-      return
-    case "iceCandidate":
-      result = processIceCandidate(data.content)
-      console.log(JSON.stringify(result))
-      return
-    case "rtcOffer":
-      result = processInboundOffer(data.content)
-      console.log(JSON.stringify(result))
-      return
+      // Give command for callee to use
+      console.log({
+        action: "processAndAnswerOffer",
+        content: result,
+      })
+      break
+    case "processIceCandidates":
+      processIceCandidates(data.content)
+      break
+    case "processOffer":
+      await processOffer(data.content)
+      break
+    case "processAndAnswerOffer":
+      await processOffer(data.content)
+      let answer = await answerOffer(pc)
+      // Give command for callee to use
+      console.log({
+        action: "processOffer",
+        content: answer,
+      })
+      break
     default:
       console.log("JS: Unknown Command")
   }
@@ -64,22 +83,26 @@ async function makeRTCOffer(pc) {
   return offer
 }
 
-async function answerRTCOffer(pc) {
+async function answerOffer(pc) {
   let answerDescription = await pc.createAnswer()
   await pc.setLocalDescription(answerDescription)
   let answer = {
     sdp: answerDescription.sdp,
     type: answerDescription.type,
   }
-  return JSON.stringify(answer)
+  return answer
 }
 
-function processIceCandidate(iceCandidateJSON) {
-  let candidate = new RTCIceCandidate(iceCandidateJSON)
+function processIceCandidates(iceCandidates) {
+  iceCandidates.forEach((candidate) => processIceCandidate(candidate))
+}
+
+function processIceCandidate(iceCandidate) {
+  let candidate = new RTCIceCandidate(iceCandidate)
   pc.addIceCandidate(candidate)
 }
 
-async function processInboundOffer(offer) {
+async function processOffer(offer) {
   // Negotiating initial connection
   if (!pc.currentRemoteDescription) {
     let remoteSessionDescription = new RTCSessionDescription(offer)
