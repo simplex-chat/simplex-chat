@@ -75,20 +75,15 @@ async function answerRTCOffer(pc) {
 }
 
 function processIceCandidate(iceCandidateJSON) {
-  let candidate = new RTCIceCandidate(iceCandidateJSON.candidate)
+  let candidate = new RTCIceCandidate(iceCandidateJSON)
   pc.addIceCandidate(candidate)
 }
 
-function processInboundOffer(incomingJSON) {
+async function processInboundOffer(offer) {
   // Negotiating initial connection
   if (!pc.currentRemoteDescription) {
-    let answer = new RTCSessionDescription(incomingJSON.sdp)
-    console.log("ANSWER\n\n\n" + JSON.stringify(answer))
-    pc.setRemoteDescription(answer)
-      .then((_) => {
-        answerRTCOffer(pc)
-      })
-      .then((x) => console.log(x))
+    let remoteSessionDescription = new RTCSessionDescription(offer)
+    await pc.setRemoteDescription(remoteSessionDescription)
   }
 }
 
