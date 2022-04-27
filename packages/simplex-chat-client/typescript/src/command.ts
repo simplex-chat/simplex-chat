@@ -410,23 +410,23 @@ interface CRUserSMPServers extends CR {
 
 interface CRNewChatItem extends CR {
   type: "newChatItem"
-  chatItem: ChatItem
+  chatItem: AChatItem
 }
 
 interface CRChatItemStatusUpdated extends CR {
   type: "chatItemStatusUpdated"
-  chatItem: ChatItem
+  chatItem: AChatItem
 }
 
 interface CRChatItemUpdated extends CR {
   type: "chatItemUpdated"
-  chatItem: ChatItem
+  chatItem: AChatItem
 }
 
 interface CRChatItemDeleted extends CR {
   type: "chatItemDeleted"
-  deletedChatItem: ChatItem
-  toChatItem: ChatItem
+  deletedChatItem: AChatItem
+  toChatItem: AChatItem
 }
 
 interface CRMsgIntegrityError extends CR {
@@ -614,38 +614,113 @@ interface CInfo {
   type: ChatType
 }
 
-interface CInfoDirect {
+interface CInfoDirect extends CInfo {
   type: ChatType.CTDirect
   contact: Contact
 }
 
-interface CInfoGroup {
+interface CInfoGroup extends CInfo {
   type: ChatType.CTGroup
   groupInfo: GroupInfo
 }
 
-interface CInfoContactRequest {
+interface CInfoContactRequest extends CInfo {
   type: ChatType.CTContactRequest
   contactRequest: UserContactRequest
 }
 
 interface Contact {
-
+  contactId: number
+  localDisplayName: string,
+  profile: Profile
+  activeConn: Connection
+  viaGroup?: number
+  createdAt: Date
 }
 
 interface GroupInfo {
+  groupId: number
+  localDisplayName: string
+  groupProfile: GroupProfile
+  membership: GroupMember
+  createdAt: Date
+}
 
+interface GroupProfile {
+  displayName: string
+  fullName: string
+  image?: string // web-compatible data/base64 string for the image
+}
+
+interface GroupMember {
+  groupMemberId: number
+  memberId: string
+  // memberRole: GroupMemberRole
+  // memberCategory: GroupMemberCategory
+  // memberStatus: GroupMemberStatus
+  // invitedBy: InvitedBy
+  localDisplayName: string
+  memberProfile: Profile
+  memberContactId?: number
+  activeConn?: Connection
 }
 
 interface UserContactRequest {
+  contactRequestId: number
+  localDisplayName: string
+  profile: Profile
+  createdAt: Date
+}
 
+interface Connection {
+  connId: number
+}
+
+interface AChatItem {
+  chatInfo: ChatInfo
+  chatItem: ChatItem
 }
 
 interface ChatItem {
+  chatDir: CIDirection
+  meta: CIMeta
+  content: CIContent
+  formattedText?: FormattedText[]
+  quotedItem?: CIQuote
+}
+
+type CIDirection = CIDirectSnd | CIDirectRcv | CIGroupSnd | CIGroupRcv
+
+interface CIDirectSnd {
+  type: "directSnd"
+}
+
+interface CIDirectRcv {
+  type: "directRcv"
+}
+
+interface CIGroupSnd {
+  type: "groupSnd"
+}
+
+interface CIGroupRcv {
+  type: "groupRcv"
+  groupMember: GroupMember
+}
+
+interface CIMeta {
+
+}
+
+interface CIContent {
 
 }
 
 interface ChatStats {
+
+}
+
+interface CIQuote {
 
 }
 
