@@ -44,6 +44,9 @@ data ChatType = CTDirect | CTGroup | CTContactRequest | CTContactConnection
 data ChatName = ChatName ChatType Text
   deriving (Show)
 
+data ChatRef = ChatRef ChatType Int64
+  deriving (Show)
+
 instance ToJSON ChatType where
   toJSON = J.genericToJSON . enumJSON $ dropPrefix "CT"
   toEncoding = J.genericToEncoding . enumJSON $ dropPrefix "CT"
