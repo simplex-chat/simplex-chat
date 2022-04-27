@@ -17,7 +17,7 @@ const servers = {
 
 let pc
 let candidates = []
-run().then(() => console.log("finished"))
+await run()
 
 async function run() {
   pc = new RTCPeerConnection(servers)
@@ -41,7 +41,12 @@ async function run() {
   setUpVideos(pc, localStream, remoteStream)
 }
 
-async function processInbound(data) {
+function f() {
+  console.log("Debug Function")
+  return "Debugging Return"
+}
+
+async function processCommand(data) {
   switch (data.action) {
     case "initiateCall":
       console.log("initiating call")
@@ -51,7 +56,7 @@ async function processInbound(data) {
         action: "processAndAnswerOffer",
         content: result,
       })
-      break
+      return result
     case "processIceCandidates":
       processIceCandidates(data.content)
       break
@@ -66,7 +71,7 @@ async function processInbound(data) {
         action: "processOffer",
         content: answer,
       })
-      break
+      return answer
     default:
       console.log("JS: Unknown Command")
   }
