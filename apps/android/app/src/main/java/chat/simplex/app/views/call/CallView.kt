@@ -25,7 +25,7 @@ import androidx.webkit.WebViewClientCompat
 import chat.simplex.app.views.helpers.TextEditor
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 
-@SuppressLint("JavascriptInterface")
+//@SuppressLint("JavascriptInterface")
 @Composable
 fun VideoCallView(close: () -> Unit) {
   BackHandler(onBack = close)
@@ -51,8 +51,8 @@ fun VideoCallView(close: () -> Unit) {
     onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
   }
   val localContext = LocalContext.current
-  var iceCandidateCommand = remember { mutableStateOf("") }
-  var commandToShow = remember { mutableStateOf("processCommand({action: \"initiateCall\"})") }
+  val iceCandidateCommand = remember { mutableStateOf("") }
+  val commandToShow = remember { mutableStateOf("processCommand({action: \"initiateCall\"})") }
   val assetLoader = WebViewAssetLoader.Builder()
     .addPathHandler("/assets/www/", WebViewAssetLoader.AssetsPathHandler(localContext))
     .build()
@@ -92,7 +92,6 @@ fun VideoCallView(close: () -> Unit) {
                   val msg = consoleMessage?.message() as String
                   println("MESSAGE: $msg")
                   if (msg.startsWith("{\"action\":\"processIceCandidates\"")) {
-                    println("ICE Candidate made")
                     iceCandidateCommand.value = "processCommand($msg)"
                   } else if (msg.startsWith("{")) {
                     commandToShow.value = "processCommand($msg)"
@@ -115,9 +114,6 @@ fun VideoCallView(close: () -> Unit) {
           }
         ) {
           wv = it
-          wv.post { wv.evaluateJavascript("f()") { response ->
-            println("JAVASCRIPT RESPONSE: $response")
-          } }
         }
       }
     } else {

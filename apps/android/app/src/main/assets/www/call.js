@@ -1,7 +1,7 @@
 let incomingVideo = document.getElementById("incoming-video-stream")
 let outgoingVideo = document.getElementById("outgoing-video-stream")
 incomingVideo.style.opacity = 0
-//outgoingVideo.style.opacity = 0
+outgoingVideo.style.opacity = 0
 incomingVideo.onplaying = () => {
   incomingVideo.style.opacity = 1
 }
@@ -22,7 +22,6 @@ run().then(console.log("Setup Complete"))
 async function run() {
   pc = new RTCPeerConnection(servers)
 
-  // This handler 'sends' any ICE candidates to the other peer, as they are received.
   pc.onicecandidate = (event) => {
     // add candidate to maintained list to be sent all at once
     if (event.candidate) {
@@ -41,16 +40,11 @@ async function run() {
   setUpVideos(pc, localStream, remoteStream)
 }
 
-function f() {
-  console.log("Debug Function")
-  return "Debugging Return"
-}
-
 async function processCommand(data) {
   switch (data.action) {
     case "initiateCall":
       console.log("initiating call")
-      let result = await makeRTCOffer(pc)
+      let result = await makeOffer(pc)
       // Give command for callee to use
       console.log(
         JSON.stringify({
@@ -59,12 +53,6 @@ async function processCommand(data) {
         })
       )
       return result
-    case "processIceCandidates":
-      processIceCandidates(data.content)
-      break
-    case "processOffer":
-      await processOffer(data.content)
-      break
     case "processAndAnswerOffer":
       await processOffer(data.content)
       let answer = await answerOffer(pc)
@@ -76,12 +64,18 @@ async function processCommand(data) {
         })
       )
       return answer
+    case "processOffer":
+      await processOffer(data.content)
+      break
+    case "processIceCandidates":
+      processIceCandidates(data.content)
+      break
     default:
       console.log("JS: Unknown Command")
   }
 }
 
-async function makeRTCOffer(pc) {
+async function makeOffer(pc) {
   // For initiating a call. Send offer to callee
   let offerDescription = await pc.createOffer()
   await pc.setLocalDescription(offerDescription)
@@ -154,4 +148,9 @@ function toggleVideo(b) {
   } else {
     localStream.getVideoTracks()[0].enabled = false
   }
+}
+
+function f() {
+  console.log("Debug Function")
+  return "Debugging Return"
 }
