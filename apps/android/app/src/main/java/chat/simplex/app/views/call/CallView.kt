@@ -52,7 +52,7 @@ fun VideoCallView(close: () -> Unit) {
   }
   val localContext = LocalContext.current
   var iceCandidateCommand = remember { mutableStateOf("") }
-  var commandToShow = remember { mutableStateOf("await processCommand({action: \"initiateCall\"})") }
+  var commandToShow = remember { mutableStateOf("processCommand({action: \"initiateCall\"})") }
   val assetLoader = WebViewAssetLoader.Builder()
     .addPathHandler("/assets/www/", WebViewAssetLoader.AssetsPathHandler(localContext))
     .build()
@@ -88,15 +88,15 @@ fun VideoCallView(close: () -> Unit) {
                 }
 
                 override fun onConsoleMessage(consoleMessage: ConsoleMessage?): Boolean {
-                  println("CONSOLE MESSAGE")
                   val rtnValue = super.onConsoleMessage(consoleMessage)
-                  if (consoleMessage?.message().toString().startsWith("{action: \"processIceCandidates\"")) {
+                  val msg = consoleMessage?.message() as String
+                  println("MESSAGE: $msg")
+                  if (msg.startsWith("{\"action\":\"processIceCandidates\"")) {
                     println("ICE Candidate made")
-                    iceCandidateCommand.value = "await processCommand(${consoleMessage?.message()})"
-                  } else {
-                    commandToShow.value = "await processCommand(${consoleMessage?.message()})"
+                    iceCandidateCommand.value = "processCommand($msg)"
+                  } else if (msg.startsWith("{")) {
+                    commandToShow.value = "processCommand($msg})"
                   }
-                  println("JS MESSAGE: ${consoleMessage?.message()}")
                   return rtnValue
                 }
               }
@@ -141,10 +141,8 @@ fun VideoCallView(close: () -> Unit) {
       }) {Text("Paste")}
       Button( onClick = {
         println("sending: ${commandToShow.value}")
-        wv.post {
-          wv.evaluateJavascript(commandToShow.value) { response ->
-            println("JAVASCRIPT RESPONSE: $response")
-          }
+        wv.evaluateJavascript(commandToShow.value) { response ->
+          println("JAVASCRIPT RESPONSE: $response")
         }
         commandToShow.value = ""
       }) {Text("Send")}

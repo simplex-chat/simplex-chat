@@ -32,7 +32,7 @@ async function run() {
   pc.onicegatheringstatechange = (event) => {
     if (pc.iceGatheringState == "complete") {
       // Give command for other caller to use
-      console.log({action: "processIceCandidates", content: candidates})
+      console.log(JSON.stringify({action: "processIceCandidates", content: candidates}))
     }
   }
 
@@ -52,10 +52,12 @@ async function processCommand(data) {
       console.log("initiating call")
       let result = await makeRTCOffer(pc)
       // Give command for callee to use
-      console.log({
-        action: "processAndAnswerOffer",
-        content: result,
-      })
+      console.log(
+        JSON.stringify({
+          action: "processAndAnswerOffer",
+          content: result,
+        })
+      )
       return result
     case "processIceCandidates":
       processIceCandidates(data.content)
@@ -67,10 +69,12 @@ async function processCommand(data) {
       await processOffer(data.content)
       let answer = await answerOffer(pc)
       // Give command for callee to use
-      console.log({
-        action: "processOffer",
-        content: answer,
-      })
+      console.log(
+        JSON.stringify({
+          action: "processOffer",
+          content: answer,
+        })
+      )
       return answer
     default:
       console.log("JS: Unknown Command")
