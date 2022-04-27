@@ -218,10 +218,9 @@ fun ComposeView(
               }
             }
           }
-          var quotedItemId: Long? = null
-          when (contextItem) {
+          val quotedItemId: Long? = when (contextItem) {
             is ComposeContextItem.QuotedItem -> contextItem.chatItem.id
-            else -> quotedItemId = null
+            else -> null
           }
 
           if (mc != null) {
