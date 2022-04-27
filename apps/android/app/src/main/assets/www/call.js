@@ -142,6 +142,10 @@ async function getLocalVideoStream() {
   })
 }
 
+function endCall() {
+  pc.close()
+}
+
 function toggleVideo(b) {
   if (b == "true") {
     localStream.getVideoTracks()[0].enabled = true

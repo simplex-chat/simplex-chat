@@ -4,6 +4,7 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.content.ClipData
 import android.content.ClipboardManager
+import android.util.Log
 import android.view.ViewGroup
 import android.webkit.*
 import androidx.activity.compose.BackHandler
@@ -22,6 +23,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.webkit.WebViewAssetLoader
 import androidx.webkit.WebViewClientCompat
+import chat.simplex.app.TAG
 import chat.simplex.app.views.helpers.TextEditor
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 
@@ -29,6 +31,7 @@ import com.google.accompanist.permissions.rememberMultiplePermissionsState
 @Composable
 fun VideoCallView(close: () -> Unit) {
   BackHandler(onBack = close)
+  lateinit var wv: WebView
   val context = LocalContext.current
   val clipboard = ContextCompat.getSystemService(context, ClipboardManager::class.java)
   val permissionsState = rememberMultiplePermissionsState(
@@ -48,7 +51,10 @@ fun VideoCallView(close: () -> Unit) {
     }
     lifecycleOwner.lifecycle.addObserver(observer)
 
-    onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    onDispose {
+      wv.evaluateJavascript("endCall()", null)
+      lifecycleOwner.lifecycle.removeObserver(observer)
+    }
   }
   val localContext = LocalContext.current
   val iceCandidateCommand = remember { mutableStateOf("") }
@@ -56,7 +62,7 @@ fun VideoCallView(close: () -> Unit) {
   val assetLoader = WebViewAssetLoader.Builder()
     .addPathHandler("/assets/www/", WebViewAssetLoader.AssetsPathHandler(localContext))
     .build()
-  lateinit var wv: WebView
+
   Column(
     horizontalAlignment = Alignment.CenterHorizontally,
     verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -82,7 +88,7 @@ fun VideoCallView(close: () -> Unit) {
                   if (request.origin.toString().startsWith("file:/")) {
                     request.grant(request.resources)
                   } else {
-                    println("DENIED")
+                    Log.d(TAG, "Permission request from webview denied.")
                     request.deny()
                   }
                 }
@@ -90,7 +96,6 @@ fun VideoCallView(close: () -> Unit) {
                 override fun onConsoleMessage(consoleMessage: ConsoleMessage?): Boolean {
                   val rtnValue = super.onConsoleMessage(consoleMessage)
                   val msg = consoleMessage?.message() as String
-                  println("MESSAGE: $msg")
                   if (msg.startsWith("{\"action\":\"processIceCandidates\"")) {
                     iceCandidateCommand.value = "processCommand($msg)"
                   } else if (msg.startsWith("{")) {
@@ -102,7 +107,7 @@ fun VideoCallView(close: () -> Unit) {
               this.webViewClient = LocalContentWebViewClient(assetLoader)
               this.clearHistory()
               this.clearCache(true)
-//        this.addJavascriptInterface(JavascriptInterface(), "Android")
+//              this.addJavascriptInterface(JavascriptInterface(), "Android")
               val webViewSettings = this.settings
               webViewSettings.allowFileAccess = true
               webViewSettings.allowContentAccess = true
@@ -137,9 +142,7 @@ fun VideoCallView(close: () -> Unit) {
       }) {Text("Paste")}
       Button( onClick = {
         println("sending: ${commandToShow.value}")
-        wv.evaluateJavascript(commandToShow.value) { response ->
-          println("JAVASCRIPT RESPONSE: $response")
-        }
+        wv.evaluateJavascript(commandToShow.value, null)
         commandToShow.value = ""
       }) {Text("Send")}
       Button( onClick = {
