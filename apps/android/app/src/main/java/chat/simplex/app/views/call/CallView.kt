@@ -95,7 +95,7 @@ fun VideoCallView(close: () -> Unit) {
                     println("ICE Candidate made")
                     iceCandidateCommand.value = "processCommand($msg)"
                   } else if (msg.startsWith("{")) {
-                    commandToShow.value = "processCommand($msg})"
+                    commandToShow.value = "processCommand($msg)"
                   }
                   return rtnValue
                 }
