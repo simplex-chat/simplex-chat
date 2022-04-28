@@ -147,7 +147,10 @@ fun VideoCallView(close: () -> Unit) {
       }) {Text("Send")}
       Button( onClick = {
         commandToShow.value = iceCandidateCommand.value
-      }) {Text("ICE Candidates")}
+      }) {Text("ICE")}
+      Button( onClick = {
+        commandToShow.value = ""
+      }) {Text("Clear")}
     }
   }
 }

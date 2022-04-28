@@ -10,9 +10,10 @@ outgoingVideo.onplaying = () => {
 }
 
 // STUN servers
-const servers = {
+const peerConnectionConfig = {
   iceServers: [{urls: ["stun:stun.l.google.com:19302"]}],
   iceCandidatePoolSize: 10,
+  encodedInsertableStreams: true,
 }
 
 let pc
@@ -20,7 +21,7 @@ let candidates = []
 run().then(console.log("Setup Complete"))
 
 async function run() {
-  pc = new RTCPeerConnection(servers)
+  pc = new RTCPeerConnection(peerConnectionConfig)
 
   pc.onicecandidate = (event) => {
     // add candidate to maintained list to be sent all at once
@@ -117,8 +118,10 @@ function setUpVideos(pc, localStream, remoteStream) {
   localStream.getTracks().forEach((track) => {
     pc.addTrack(track, localStream)
   })
+  pc.getSenders().forEach(setupSenderTransform)
   // Pull tracks from remote stream as they arrive add them to remoteStream video
   pc.ontrack = (event) => {
+    setupReceiverTransform(event.receiver)
     event.streams[0].getTracks().forEach((track) => {
       remoteStream.addTrack(track)
     })
@@ -158,3 +161,61 @@ function f() {
   console.log("Debug Function")
   return "Debugging Return"
 }
+
+/* Stream Transforms */
+function setupSenderTransform(sender) {
+  const senderStreams = sender.createEncodedStreams()
+  const transformStream = new TransformStream({
+    transform: encodeFunction,
+  })
+  senderStreams.readable.pipeThrough(transformStream).pipeTo(senderStreams.writable)
+}
+
+function setupReceiverTransform(receiver) {
+  let receiverStreams = receiver.createEncodedStreams()
+  let transformStream = new TransformStream({
+    transform: decodeFunction,
+  })
+  receiverStreams.readable.pipeThrough(transformStream).pipeTo(receiverStreams.writable)
+}
+
+/* Cryptography */
+function encodeFunction(frame, controller) {
+  controller.enqueue(frame)
+}
+function decodeFunction(frame, controller) {
+  controller.enqueue(frame)
+}
+
+/*
+AESKey = CryptoKey & {type: "secret", algorithm: AesKeyGenParams}
+function randomAESKey(length = 256) {
+  return crypto.subtle.generateKey({name: "AES-GCM", length}, true, ["encrypt", "decrypt"])
+}
+async function encryptAES(key, iv, padTo, data) {
+  if (data.byteLength >= padTo) throw new CryptoError("large message")
+  const padded = new Uint8Array(padTo)
+  padded.set(new Uint8Array(data), 0)
+  padded.fill(PADDING, data.byteLength)
+  return crypto.subtle.encrypt({name: "AES-GCM", iv}, key, padded)
+}
+function decryptAES(key, iv, encryptedAndTag) {
+  return crypto.subtle.decrypt({name: "AES-GCM", iv}, key, encryptedAndTag)
+}
+function randomIV() {
+  return crypto.getRandomValues(new Uint8Array(16))
+}
+function encodeAESKey(key) {
+  return crypto.subtle.exportKey("raw", key)
+}
+
+function decodeAESKey(rawKey) {
+  return crypto.subtle.importKey("raw", rawKey, "AES-GCM", true, ["encrypt", "decrypt"])
+}
+*/
+
+// use AES-GCP
+// increment none on each frame
+// sequential/random av
+// turn servers https://github.com/coturn/coturn
+//
