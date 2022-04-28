@@ -141,96 +141,38 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
 
     func notifyContactRequest(_ contactRequest: UserContactRequest) {
         logger.debug("NtfManager.notifyContactRequest")
-        addNotification(
-            categoryIdentifier: ntfCategoryContactRequest,
-            title: String.localizedStringWithFormat(NSLocalizedString("%@ wants to connect!", comment: "notification title"), contactRequest.displayName),
-            body: String.localizedStringWithFormat(NSLocalizedString("Accept contact request from %@?", comment: "notification body"), contactRequest.chatViewName),
-            targetContentIdentifier: nil,
-            userInfo: ["chatId": contactRequest.id, "contactRequestId": contactRequest.apiId]
-        )
+        addNotification(createContactRequestNtf(contactRequest))
     }
 
     func notifyContactConnected(_ contact: Contact) {
         logger.debug("NtfManager.notifyContactConnected")
-        addNotification(
-            categoryIdentifier: ntfCategoryContactConnected,
-            title: String.localizedStringWithFormat(NSLocalizedString("%@ is connected!", comment: "notification title"), contact.displayName),
-            body: String.localizedStringWithFormat(NSLocalizedString("You can now send messages to %@", comment: "notification body"), contact.chatViewName),
-            targetContentIdentifier: contact.id
-//            userInfo: ["chatId": contact.id, "contactId": contact.apiId]
-        )
+        addNotification(createContactConnectedNtf(contact))
     }
 
     func notifyMessageReceived(_ cInfo: ChatInfo, _ cItem: ChatItem) {
         logger.debug("NtfManager.notifyMessageReceived")
-        addNotification(
-            categoryIdentifier: ntfCategoryMessageReceived,
-            title: "\(cInfo.chatViewName):",
-            body: hideSecrets(cItem),
-            targetContentIdentifier: cInfo.id
-//            userInfo: ["chatId": cInfo.id, "chatItemId": cItem.id]
-        )
+        addNotification(createMessageReceivedNtf(cInfo, cItem))
     }
 
     // TODO remove
     func notifyCheckingMessages() {
         logger.debug("NtfManager.notifyCheckingMessages")
-        addNotification(
+        let content = createNotification(
             categoryIdentifier: ntfCategoryCheckingMessages,
             title: NSLocalizedString("Checking new messages...", comment: "notification")
         )
+        addNotification(content)
     }
 
-    func hideSecrets(_ cItem: ChatItem) -> String {
-        if let md = cItem.formattedText {
-            var res = ""
-            for ft in md {
-                if case .secret = ft.format {
-                    res = res + "..."
-                } else {
-                    res = res + ft.text
-                }
-            }
-            return res
-        } else {
-            return cItem.content.text
-        }
-    }
-
-    private func addNotification(categoryIdentifier: String, title: String, subtitle: String? = nil, body: String? = nil,
-                                 targetContentIdentifier: String? = nil, userInfo: [AnyHashable : Any] = [:]) {
+    private func addNotification(_ content: UNMutableNotificationContent) {
         if !granted { return }
-        let content = createNotification(
-            categoryIdentifier: categoryIdentifier,
-            title: title,
-            subtitle: subtitle,
-            body: body,
-            targetContentIdentifier: targetContentIdentifier,
-            userInfo: userInfo
-        )
         let trigger = UNTimeIntervalNotificationTrigger(timeInterval: ntfTimeInterval, repeats: false)
         let request = UNNotificationRequest(identifier: appNotificationId, content: content, trigger: trigger)
         UNUserNotificationCenter.current().add(request) { error in
             if let error = error { logger.error("addNotification error: \(error.localizedDescription)") }
         }
     }
-
-    func createNotification(categoryIdentifier: String, title: String, subtitle: String? = nil, body: String? = nil,
-                            targetContentIdentifier: String? = nil, userInfo: [AnyHashable : Any] = [:]) -> UNMutableNotificationContent {
-        let content = UNMutableNotificationContent()
-        content.categoryIdentifier = categoryIdentifier
-        content.title = title
-        if let s = subtitle { content.subtitle = s }
-        if let s = body { content.body = s }
-        content.targetContentIdentifier = targetContentIdentifier
-        content.userInfo = userInfo
-        // TODO move logic of adding sound here, so it applies to background notifications too
-        content.sound = .default
-    //        content.interruptionLevel = .active
-    //        content.relevanceScore = 0.5 // 0-1
-        return content
-    }
-
+    
     func removeNotifications(_ ids : [String]){
         UNUserNotificationCenter.current().removeDeliveredNotifications(withIdentifiers: ids)
         UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: ids)

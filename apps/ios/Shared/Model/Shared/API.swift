@@ -13,9 +13,10 @@ private var chatController: chat_ctrl?
 func getChatCtrl() -> chat_ctrl {
     if let controller = chatController { return controller }
     let dataDir = getDocumentsDirectory().path + "/mobile_v1"
+    logger.debug("documents directory \(dataDir)")
     var cstr = dataDir.cString(using: .utf8)!
-    logger.debug("getChatCtrl: chat_init")
     chatController = chat_init(&cstr)
+    logger.debug("getChatCtrl: chat_init")
     return chatController!
 }
 

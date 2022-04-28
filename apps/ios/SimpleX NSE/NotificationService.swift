@@ -25,8 +25,10 @@ class NotificationService: UNNotificationServiceExtension {
         logger.debug("NotificationService: app is in the background")
         self.contentHandler = contentHandler
         bestAttemptContent = (request.content.mutableCopy() as? UNMutableNotificationContent)
-        if let user = startChat() {
-            receiveMessages()
+        if let _ = startChat() {
+            let content = receiveMessages()
+            contentHandler (content)
+            return
         }
 
         if let bestAttemptContent = bestAttemptContent {
@@ -51,6 +53,7 @@ class NotificationService: UNNotificationServiceExtension {
 func startChat() -> User? {
     hs_init(0, nil)
     if let user = apiGetActiveUser() {
+        logger.debug("active user \(String(describing: user))")
         do {
             try apiStartChat()
             try apiSetFilesFolder(filesFolder: getAppFilesDirectory().path)
@@ -58,106 +61,46 @@ func startChat() -> User? {
         } catch {
             logger.error("NotificationService startChat error: \(responseError(error))")
         }
+    } else {
+        logger.debug("no active user")
     }
     return nil
 }
 
-func receiveMessages() -> UNNotificationContent? {
+func receiveMessages() -> UNNotificationContent {
     logger.debug("NotificationService receiveMessages started")
     while true {
         let res = chatResponse(chat_recv_msg(getChatCtrl())!)
         logger.debug("NotificationService receiveMessages: \(res.responseType)")
-        return nil
         switch res {
 //        case let .newContactConnection(connection):
 //        case let .contactConnectionDeleted(connection):
-
-//        case let .contactConnected(contact):
-//            NtfManager.shared.notifyContactConnected(contact)
+        case let .contactConnected(contact):
+            return createContactConnectedNtf(contact)
 //        case let .contactConnecting(contact):
-//            m.updateContact(contact)
-//            m.removeChat(contact.activeConn.id)
-//        case let .receivedContactRequest(contactRequest):
-//            m.addChat(Chat(
-//                chatInfo: ChatInfo.contactRequest(contactRequest: contactRequest),
-//                chatItems: []
-//            ))
-//            NtfManager.shared.notifyContactRequest(contactRequest)
+//            TODO profile update
+        case let .receivedContactRequest(contactRequest):
+            return createContactRequestNtf(contactRequest)
 //        case let .contactUpdated(toContact):
-//            let cInfo = ChatInfo.direct(contact: toContact)
-//            if m.hasChat(toContact.id) {
-//                m.updateChatInfo(cInfo)
-//            }
-//        case let .contactsSubscribed(_, contactRefs):
-//            updateContactsStatus(contactRefs, status: .connected)
-//        case let .contactsDisconnected(_, contactRefs):
-//            updateContactsStatus(contactRefs, status: .disconnected)
-//        case let .contactSubError(contact, chatError):
-//            processContactSubError(contact, chatError)
-//        case let .contactSubSummary(contactSubscriptions):
-//            for sub in contactSubscriptions {
-//                if let err = sub.contactError {
-//                    processContactSubError(sub.contact, err)
-//                } else {
-//                    m.updateContact(sub.contact)
-//                    m.updateNetworkStatus(sub.contact.id, .connected)
-//                }
-//            }
-//        case let .newChatItem(aChatItem):
-//            let cInfo = aChatItem.chatInfo
-//            let cItem = aChatItem.chatItem
-//            m.addChatItem(cInfo, cItem)
-//            if let file = cItem.file,
-//               file.fileSize <= maxImageSize {
-//                Task {
-//                    do {
-//                        try await receiveFile(fileId: file.fileId)
-//                    } catch {
-//                        logger.error("receiveFile error: \(error.localizedDescription)")
-//                    }
-//                }
-//            }
-//            NtfManager.shared.notifyMessageReceived(cInfo, cItem)
-//        case let .chatItemStatusUpdated(aChatItem):
-//            let cInfo = aChatItem.chatInfo
-//            let cItem = aChatItem.chatItem
-//            var res = false
-//            if !cItem.isDeletedContent() {
-//                res = m.upsertChatItem(cInfo, cItem)
-//            }
-//            if res {
-//                NtfManager.shared.notifyMessageReceived(cInfo, cItem)
-//            } else if let endTask = m.messageDelivery[cItem.id] {
-//                switch cItem.meta.itemStatus {
-//                case .sndSent: endTask()
-//                case .sndErrorAuth: endTask()
-//                case .sndError: endTask()
-//                default: break
-//                }
-//            }
+//            TODO profile updated
+        case let .newChatItem(aChatItem):
+            let cInfo = aChatItem.chatInfo
+            let cItem = aChatItem.chatItem
+            return createMessageReceivedNtf(cInfo, cItem)
 //        case let .chatItemUpdated(aChatItem):
+//            TODO message updated
 //            let cInfo = aChatItem.chatInfo
 //            let cItem = aChatItem.chatItem
-//            if m.upsertChatItem(cInfo, cItem) {
-//                NtfManager.shared.notifyMessageReceived(cInfo, cItem)
-//            }
+//            NtfManager.shared.notifyMessageReceived(cInfo, cItem)
 //        case let .chatItemDeleted(_, toChatItem):
-//            let cInfo = toChatItem.chatInfo
-//            let cItem = toChatItem.chatItem
-//            if cItem.meta.itemDeleted {
-//                m.removeChatItem(cInfo, cItem)
-//            } else {
-//                // currently only broadcast deletion of rcv message can be received, and only this case should happen
-//                _ = m.upsertChatItem(cInfo, cItem)
-//            }
+//            TODO message updated
 //        case let .rcvFileComplete(aChatItem):
+//            TODO file received?
 //            let cInfo = aChatItem.chatInfo
 //            let cItem = aChatItem.chatItem
-//            if m.upsertChatItem(cInfo, cItem) {
-//                NtfManager.shared.notifyMessageReceived(cInfo, cItem)
-//            }
+//            NtfManager.shared.notifyMessageReceived(cInfo, cItem)
         default:
-            logger.debug("unsupported event: \(res.responseType)")
+            logger.debug("NotificationService ignored event: \(res.responseType)")
         }
     }
 }
@@ -165,6 +108,7 @@ func receiveMessages() -> UNNotificationContent? {
 func apiGetActiveUser() -> User? {
     let _ = getChatCtrl()
     let r = sendSimpleXCmd(.showActiveUser)
+    logger.debug("apiGetActiveUser sendSimpleXCmd responce: \(String(describing: r))")
     switch r {
     case let .activeUser(user): return user
     case .chatCmdError(.error(.noActiveUser)): return nil
