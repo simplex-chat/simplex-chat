@@ -279,7 +279,7 @@ function tagged<T>(tag: string, x?: T): string {
   return x ? ` ${tag}=${x}` : ""
 }
 
-type ChatResponse = 
+type ChatResponse =
   | CRActiveUser
   | CRChatStarted
   | CRChatRunning
@@ -431,7 +431,7 @@ interface CRChatItemDeleted extends CR {
 
 interface CRMsgIntegrityError extends CR {
   type: "msgIntegrityError"
-  msgerror: MsgErrorType
+  msgError: MsgErrorType
 }
 
 interface CRCmdOk extends CR {
@@ -610,28 +610,28 @@ interface Chat {
 
 type ChatInfo = CInfoDirect | CInfoGroup | CInfoContactRequest
 
-interface CInfo {
+interface IChatInfo {
   type: ChatType
 }
 
-interface CInfoDirect extends CInfo {
+interface CInfoDirect extends IChatInfo {
   type: ChatType.CTDirect
   contact: Contact
 }
 
-interface CInfoGroup extends CInfo {
+interface CInfoGroup extends IChatInfo {
   type: ChatType.CTGroup
   groupInfo: GroupInfo
 }
 
-interface CInfoContactRequest extends CInfo {
+interface CInfoContactRequest extends IChatInfo {
   type: ChatType.CTContactRequest
   contactRequest: UserContactRequest
 }
 
 interface Contact {
   contactId: number
-  localDisplayName: string,
+  localDisplayName: string
   profile: Profile
   activeConn: Connection
   viaGroup?: number
@@ -691,55 +691,135 @@ interface ChatItem {
 
 type CIDirection = CIDirectSnd | CIDirectRcv | CIGroupSnd | CIGroupRcv
 
-interface CIDirectSnd {
+interface ICIDirection {
+  type: "directSnd" | "directRcv" | "groupSnd" | "groupRcv"
+}
+
+interface CIDirectSnd extends ICIDirection {
   type: "directSnd"
 }
 
-interface CIDirectRcv {
+interface CIDirectRcv extends ICIDirection {
   type: "directRcv"
 }
 
-interface CIGroupSnd {
+interface CIGroupSnd extends ICIDirection {
   type: "groupSnd"
 }
 
-interface CIGroupRcv {
+interface CIGroupRcv extends ICIDirection {
   type: "groupRcv"
   groupMember: GroupMember
 }
 
 interface CIMeta {
-
+  itemId: number
+  itemTs: Date
+  itemText: string
+  itemStatus: CIStatus
+  createdAt: Date
+  itemDeleted: boolean
+  itemEdited: boolean
+  editable: boolean
 }
 
-interface CIContent {
+type CIContent = CISndMsgContent | CIRcvMsgContent | CISndDeleted | CIRcvDeleted | CISndFileInvitation | CIRcvFileInvitation
 
+interface ICIContent {
+  type: "sndMsgContent" | "rcvMsgContent" | "sndDeleted" | "rcvDeleted" | "sndFileInvitation" | "rcvFileInvitation"
 }
+
+interface CISndMsgContent extends ICIContent {
+  type: "sndMsgContent"
+  msgContent: MsgContent
+}
+
+interface CIRcvMsgContent extends ICIContent {
+  type: "rcvMsgContent"
+  msgContent: MsgContent
+}
+
+interface CISndDeleted extends ICIContent {
+  type: "sndDeleted"
+  deleteMode: CIDeleteMode
+}
+
+interface CIRcvDeleted extends ICIContent {
+  type: "rcvDeleted"
+  deleteMode: CIDeleteMode
+}
+
+interface CISndFileInvitation extends ICIContent {
+  type: "sndFileInvitation"
+  fileId: number
+  filePath: string
+}
+
+interface CIRcvFileInvitation extends ICIContent {
+  type: "rcvFileInvitation"
+  rcvFileTransfer: RcvFileTransfer
+}
+
+enum CIDeleteMode {
+  Broadcast = "broadcast",
+  Internal = "internal",
+}
+
+interface RcvFileTransfer {}
 
 interface ChatStats {
-
+  unreadCount: number
+  minUnreadItemId: number
 }
 
 interface CIQuote {
-
+  chatDir?: CIDirection
+  itemId?: number
+  sharedMsgId?: string
+  sentAt: Date
+  content: MsgContent
+  formattedText?: FormattedText[]
 }
 
-interface FormattedText {
+type CIStatus = CISndNew | CISndSent | CISndErrorAuth | CISndError | CIRcvNew | CIRcvRead
 
+interface ICIStatus {
+  type: "sndNew" | "sndSent" | "sndErrorAuth" | "sndError" | "rcvNew" | "rcvRead"
 }
 
-interface MsgErrorType {
-
+interface CISndNew extends ICIStatus {
+  type: "sndNew"
 }
 
-interface ChatError {
-
+interface CISndSent extends ICIStatus {
+  type: "sndSent"
 }
 
-interface ContactSubStatus {
-
+interface CISndErrorAuth extends ICIStatus {
+  type: "sndErrorAuth"
 }
 
-interface PendingSubStatus {
-
+interface CISndError extends ICIStatus {
+  type: "sndError"
+  agentError: AgentErrorType
 }
+
+interface CIRcvNew extends ICIStatus {
+  type: "rcvNew"
+}
+
+interface CIRcvRead extends ICIStatus {
+  type: "rcvRead"
+}
+
+interface FormattedText {}
+
+interface MsgErrorType {}
+
+interface ChatError {}
+
+interface ContactSubStatus {}
+
+interface PendingSubStatus {}
+
+interface AgentErrorType {}
