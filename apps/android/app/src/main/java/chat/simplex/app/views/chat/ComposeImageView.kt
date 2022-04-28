@@ -15,7 +15,7 @@ import chat.simplex.app.views.chat.item.SentColorLight
 import chat.simplex.app.views.helpers.base64ToBitmap
 
 @Composable
-fun ComposeImageView(image: String, cancelImage: () -> Unit) {
+fun ComposeImageView(image: String, cancelImage: () -> Unit, cancelEnabled: Boolean) {
   Row(
     Modifier
       .fillMaxWidth()
@@ -33,13 +33,15 @@ fun ComposeImageView(image: String, cancelImage: () -> Unit) {
         .padding(end = 8.dp)
     )
     Spacer(Modifier.weight(1f))
-    IconButton(onClick = cancelImage, modifier = Modifier.padding(0.dp)) {
-      Icon(
-        Icons.Outlined.Close,
-        contentDescription = stringResource(R.string.icon_descr_cancel_image_preview),
-        tint = MaterialTheme.colors.primary,
-        modifier = Modifier.padding(10.dp)
-      )
+    if (cancelEnabled) {
+      IconButton(onClick = cancelImage, modifier = Modifier.padding(0.dp)) {
+        Icon(
+          Icons.Outlined.Close,
+          contentDescription = stringResource(R.string.icon_descr_cancel_image_preview),
+          tint = MaterialTheme.colors.primary,
+          modifier = Modifier.padding(10.dp)
+        )
+      }
     }
   }
 }

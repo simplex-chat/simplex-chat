@@ -80,8 +80,8 @@ struct TerminalView: View {
         }
     }
     
-    func sendMessage(_ cmdStr: String) {
-        let cmd = ChatCommand.string(cmdStr)
+    func sendMessage() {
+        let cmd = ChatCommand.string(composeState.message)
         DispatchQueue.global().async {
             Task {
                 composeState.inProgress = true

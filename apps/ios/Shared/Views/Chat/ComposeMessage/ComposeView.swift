@@ -135,8 +135,8 @@ struct ComposeView: View {
                 .padding(.leading, 12)
                 SendMessageView(
                     composeState: $composeState,
-                    sendMessage: { text in
-                        sendMessage(text)
+                    sendMessage: {
+                        sendMessage()
                         resetLinkPreview()
                     },
                     keyboardVisible: $keyboardVisible
@@ -209,7 +209,7 @@ struct ComposeView: View {
         }
     }
 
-    private func sendMessage(_ text: String) {
+    private func sendMessage() {
         logger.debug("ChatView sendMessage")
         Task {
             logger.debug("ChatView sendMessage: in Task")
