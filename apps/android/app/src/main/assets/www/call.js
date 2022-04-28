@@ -23,7 +23,7 @@ let keyGenConfig = {
 let keyUsages = ["encrypt", "decrypt"]
 
 // Hardcode a key for development
-let keyData = {alg: "A256GCM", ext: true, k: "JCMDWkhxLmPDhua0BUdhgv6Ac6hOtB9frSxJlnkTAK8", key_ops: ["encrypt", "decrypt"], kty: "oct"}
+let keyData = {alg: "A256GCM", ext: true, k: "JCMDWkhxLmPDhua0BUdhgv6Ac6hOtB9frSxJlnkTAK8", key_ops: keyUsages, kty: "oct"}
 
 let pc
 let key
