@@ -15,10 +15,21 @@ const peerConnectionConfig = {
   iceCandidatePoolSize: 10,
   encodedInsertableStreams: true,
 }
+let keyGenConfig = {
+  name: "AES-GCM",
+  length: 256,
+  tagLength: 128,
+}
+let keyUsages = ["encrypt", "decrypt"]
+
+let keyData = {alg: "A256GCM", ext: true, k: "JCMDWkhxLmPDhua0BUdhgv6Ac6hOtB9frSxJlnkTAK8", key_ops: ["encrypt", "decrypt"], kty: "oct"}
 
 let pc
+let key
+let iv = Uint8Array.from([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]) // randomIV()
+// let encryptKeyRepresentation
 let candidates = []
-run().then(console.log("Setup Complete"))
+run()
 
 async function run() {
   pc = new RTCPeerConnection(peerConnectionConfig)
@@ -29,14 +40,32 @@ async function run() {
       candidates.push(event.candidate)
     }
   }
-  pc.onicegatheringstatechange = (event) => {
+  pc.onicegatheringstatechange = (_) => {
     if (pc.iceGatheringState == "complete") {
       // Give command for other caller to use
       console.log(JSON.stringify({action: "processIceCandidates", content: candidates}))
     }
   }
-
+  // crypto.subtle
+  //   .generateKey(keyGenConfig, true, keyUsages)
+  //   .then((k) => {
+  //     encryptKey = k
+  //     return crypto.subtle.exportKey("jwk", encryptKey)
+  //   })
+  //   .then((r) => {
+  //     encryptKeyRepresentation = r
+  //     console.log(
+  //       JSON.stringify({
+  //         action: "processDecryptionKey",
+  //         content: {
+  //           key: encryptKeyRepresentation,
+  //           iv: encryptIv,
+  //         },
+  //       })
+  //     )
+  //   })
   let remoteStream = new MediaStream()
+  key = await crypto.subtle.importKey("jwk", keyData, keyGenConfig, true, keyUsages)
   let localStream = await getLocalVideoStream()
   setUpVideos(pc, localStream, remoteStream)
 }
@@ -172,8 +201,8 @@ function setupSenderTransform(sender) {
 }
 
 function setupReceiverTransform(receiver) {
-  let receiverStreams = receiver.createEncodedStreams()
-  let transformStream = new TransformStream({
+  const receiverStreams = receiver.createEncodedStreams()
+  const transformStream = new TransformStream({
     transform: decodeFunction,
   })
   receiverStreams.readable.pipeThrough(transformStream).pipeTo(receiverStreams.writable)
@@ -181,41 +210,33 @@ function setupReceiverTransform(receiver) {
 
 /* Cryptography */
 function encodeFunction(frame, controller) {
-  controller.enqueue(frame)
+  // frame is an RTCEncodedAudioFrame
+  // frame.data is ArrayBuffer(81) with [[Int8Array]]: Int8Array(81)
+
+  let data = frame.data
+  crypto.subtle.encrypt({name: "AES-GCM", iv: iv.buffer}, key, data).then((d) => {
+    frame.data = d
+    controller.enqueue(frame)
+  })
 }
 function decodeFunction(frame, controller) {
-  controller.enqueue(frame)
+  let data = frame.data
+  crypto.subtle
+    .decrypt({name: "AES-GCM", iv: iv.buffer}, key, data)
+    .then((a) => {
+      frame.data = a
+      controller.enqueue(frame)
+    })
+    .catch((e) => {
+      console.log("decode error")
+      // console.log(e)
+      // throw e
+    })
 }
 
-/*
-AESKey = CryptoKey & {type: "secret", algorithm: AesKeyGenParams}
-function randomAESKey(length = 256) {
-  return crypto.subtle.generateKey({name: "AES-GCM", length}, true, ["encrypt", "decrypt"])
-}
-async function encryptAES(key, iv, padTo, data) {
-  if (data.byteLength >= padTo) throw new CryptoError("large message")
-  const padded = new Uint8Array(padTo)
-  padded.set(new Uint8Array(data), 0)
-  padded.fill(PADDING, data.byteLength)
-  return crypto.subtle.encrypt({name: "AES-GCM", iv}, key, padded)
-}
-function decryptAES(key, iv, encryptedAndTag) {
-  return crypto.subtle.decrypt({name: "AES-GCM", iv}, key, encryptedAndTag)
-}
 function randomIV() {
-  return crypto.getRandomValues(new Uint8Array(16))
+  return crypto.getRandomValues(new Uint8Array(12))
 }
-function encodeAESKey(key) {
-  return crypto.subtle.exportKey("raw", key)
+async function loadKey(keyData) {
+  key = await crypto.subtle.importKey("jwk", keyData, keyGenConfig, false, keyUsages)
 }
-
-function decodeAESKey(rawKey) {
-  return crypto.subtle.importKey("raw", rawKey, "AES-GCM", true, ["encrypt", "decrypt"])
-}
-*/
-
-// use AES-GCP
-// increment none on each frame
-// sequential/random av
-// turn servers https://github.com/coturn/coturn
-//
