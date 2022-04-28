@@ -12,15 +12,6 @@ import UIKit
 
 let ntfActionAccept = "NTF_ACT_ACCEPT"
 
-let ntfCategoryContactRequest = "NTF_CAT_CONTACT_REQUEST"
-let ntfCategoryContactConnected = "NTF_CAT_CONTACT_CONNECTED"
-let ntfCategoryMessageReceived = "NTF_CAT_MESSAGE_RECEIVED"
-let ntfCategoryCheckMessage = "NTF_CAT_CHECK_MESSAGE"
-// TODO remove
-let ntfCategoryCheckingMessages = "NTF_CAT_CHECKING_MESSAGES"
-
-let appNotificationId = "chat.simplex.app.notification"
-
 private let ntfTimeInterval: TimeInterval = 1
 
 class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
@@ -209,6 +200,23 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
     private func addNotification(categoryIdentifier: String, title: String, subtitle: String? = nil, body: String? = nil,
                                  targetContentIdentifier: String? = nil, userInfo: [AnyHashable : Any] = [:]) {
         if !granted { return }
+        let content = createNotification(
+            categoryIdentifier: categoryIdentifier,
+            title: title,
+            subtitle: subtitle,
+            body: body,
+            targetContentIdentifier: targetContentIdentifier,
+            userInfo: userInfo
+        )
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: ntfTimeInterval, repeats: false)
+        let request = UNNotificationRequest(identifier: appNotificationId, content: content, trigger: trigger)
+        UNUserNotificationCenter.current().add(request) { error in
+            if let error = error { logger.error("addNotification error: \(error.localizedDescription)") }
+        }
+    }
+
+    func createNotification(categoryIdentifier: String, title: String, subtitle: String? = nil, body: String? = nil,
+                            targetContentIdentifier: String? = nil, userInfo: [AnyHashable : Any] = [:]) -> UNMutableNotificationContent {
         let content = UNMutableNotificationContent()
         content.categoryIdentifier = categoryIdentifier
         content.title = title
@@ -218,13 +226,9 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
         content.userInfo = userInfo
         // TODO move logic of adding sound here, so it applies to background notifications too
         content.sound = .default
-//        content.interruptionLevel = .active
-//        content.relevanceScore = 0.5 // 0-1
-        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: ntfTimeInterval, repeats: false)
-        let request = UNNotificationRequest(identifier: appNotificationId, content: content, trigger: trigger)
-        UNUserNotificationCenter.current().add(request) { error in
-            if let error = error { logger.error("addNotification error: \(error.localizedDescription)") }
-        }
+    //        content.interruptionLevel = .active
+    //        content.relevanceScore = 0.5 // 0-1
+        return content
     }
 
     func removeNotifications(_ ids : [String]){
