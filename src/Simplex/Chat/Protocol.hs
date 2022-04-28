@@ -198,7 +198,7 @@ data MsgContent
   = MCText Text
   | MCLink {text :: Text, preview :: LinkPreview}
   | MCImage {text :: Text, image :: ImageData}
-  | MCFile {text :: Text, fileName :: Text}
+  | MCFile Text
   | MCUnknown {tag :: Text, text :: Text, json :: J.Object}
   deriving (Eq, Show)
 
@@ -207,7 +207,7 @@ msgContentText = \case
   MCText t -> t
   MCLink {text} -> text
   MCImage {text} -> text
-  MCFile {text} -> text
+  MCFile t -> t
   MCUnknown {text} -> text
 
 msgContentTag :: MsgContent -> MsgContentTag
@@ -241,10 +241,7 @@ instance FromJSON MsgContent where
         text <- v .: "text"
         image <- v .: "image"
         pure MCImage {image, text}
-      MCFile_ -> do
-        text <- v .: "text"
-        fileName <- v .: "fileName"
-        pure MCFile {fileName, text}
+      MCFile_ -> MCFile <$> v .: "text"
       MCUnknown_ tag -> do
         text <- fromMaybe unknownMsgType <$> v .:? "text"
         pure MCUnknown {tag, text, json = v}
@@ -270,13 +267,13 @@ instance ToJSON MsgContent where
     MCText t -> J.object ["type" .= MCText_, "text" .= t]
     MCLink {text, preview} -> J.object ["type" .= MCLink_, "text" .= text, "preview" .= preview]
     MCImage {text, image} -> J.object ["type" .= MCImage_, "text" .= text, "image" .= image]
-    MCFile {text, fileName} -> J.object ["type" .= MCFile_, "text" .= text, "fileName" .= fileName]
+    MCFile t -> J.object ["type" .= MCFile_, "text" .= t]
   toEncoding = \case
     MCUnknown {json} -> JE.value $ J.Object json
     MCText t -> J.pairs $ "type" .= MCText_ <> "text" .= t
     MCLink {text, preview} -> J.pairs $ "type" .= MCLink_ <> "text" .= text <> "preview" .= preview
     MCImage {text, image} -> J.pairs $ "type" .= MCImage_ <> "text" .= text <> "image" .= image
-    MCFile {text, fileName} -> J.pairs $ "type" .= MCFile_ <> "text" .= text <> "fileName" .= fileName
+    MCFile t -> J.pairs $ "type" .= MCFile_ <> "text" .= t
 
 instance ToField MsgContent where
   toField = toField . safeDecodeUtf8 . LB.toStrict . J.encode

@@ -127,8 +127,8 @@ decodeChatMessageTest = describe "Chat message encoding/decoding" $ do
     "{\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello\",\"type\":\"text\"},\"file\":{\"fileSize\":12345,\"fileName\":\"photo.jpg\"}}}"
       #==# XMsgNew (MCSimple (ExtMsgContent (MCText "hello") (Just FileInvitation {fileName = "photo.jpg", fileSize = 12345, fileConnReq = Nothing})))
   it "x.msg.new simple file with file" $
-    "{\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"\",\"type\":\"file\",\"fileName\":\"file.txt\"},\"file\":{\"fileSize\":12345,\"fileName\":\"file.txt\"}}}"
-      #==# XMsgNew (MCSimple (ExtMsgContent (MCFile "" "file.txt") (Just FileInvitation {fileName = "file.txt", fileSize = 12345, fileConnReq = Nothing})))
+    "{\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"\",\"type\":\"file\"},\"file\":{\"fileSize\":12345,\"fileName\":\"file.txt\"}}}"
+      #==# XMsgNew (MCSimple (ExtMsgContent (MCFile "") (Just FileInvitation {fileName = "file.txt", fileSize = 12345, fileConnReq = Nothing})))
   it "x.msg.new quote with file" $
     "{\"msgId\":\"AQIDBA==\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello to you too\",\"type\":\"text\"},\"quote\":{\"content\":{\"text\":\"hello there!\",\"type\":\"text\"},\"msgRef\":{\"msgId\":\"BQYHCA==\",\"sent\":true,\"sentAt\":\"1970-01-01T00:00:01.000000001Z\"}},\"file\":{\"fileSize\":12345,\"fileName\":\"photo.jpg\"}}}"
       ##==## ChatMessage
