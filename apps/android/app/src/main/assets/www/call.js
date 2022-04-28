@@ -22,6 +22,7 @@ let keyGenConfig = {
 }
 let keyUsages = ["encrypt", "decrypt"]
 
+// Hardcode a key for development
 let keyData = {alg: "A256GCM", ext: true, k: "JCMDWkhxLmPDhua0BUdhgv6Ac6hOtB9frSxJlnkTAK8", key_ops: ["encrypt", "decrypt"], kty: "oct"}
 
 let pc
@@ -155,6 +156,15 @@ function setUpVideos(pc, localStream, remoteStream) {
       remoteStream.addTrack(track)
     })
   }
+  // Use VP8 by default to limit depacketisation issues.
+  // const {codecs} = RTCRtpSender.getCapabilities("video")
+  // const selectedCodecIndex = codecs.findIndex((c) => c.mimeType === "video/VP8")
+  // const selectedCodec = codecs[selectedCodecIndex]
+  // codecs.splice(selectedCodecIndex, 1)
+  // codecs.unshift(selectedCodec)
+  // const transceiver = pc.getTransceivers().find((t) => t.sender && t.sender.track.kind === "video")
+  // transceiver.setCodecPreferences(codecs)
+
   outgoingVideo.srcObject = localStream
   incomingVideo.srcObject = remoteStream
 }
@@ -214,10 +224,17 @@ function encodeFunction(frame, controller) {
   // frame.data is ArrayBuffer(81) with [[Int8Array]]: Int8Array(81)
 
   let data = frame.data
-  crypto.subtle.encrypt({name: "AES-GCM", iv: iv.buffer}, key, data).then((d) => {
-    frame.data = d
-    controller.enqueue(frame)
-  })
+  crypto.subtle
+    .encrypt({name: "AES-GCM", iv: iv.buffer}, key, data)
+    .then((d) => {
+      frame.data = d
+      controller.enqueue(frame)
+    })
+    .catch((e) => {
+      console.log("encrypt error")
+      // console.log(e)
+      // throw e
+    })
 }
 function decodeFunction(frame, controller) {
   let data = frame.data
@@ -228,7 +245,7 @@ function decodeFunction(frame, controller) {
       controller.enqueue(frame)
     })
     .catch((e) => {
-      console.log("decode error")
+      console.log("decrypt error")
       // console.log(e)
       // throw e
     })
