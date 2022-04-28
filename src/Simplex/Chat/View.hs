@@ -50,6 +50,7 @@ responseToView testView = \case
   CRApiParsedMarkdown ft -> [plain . bshow $ J.encode ft]
   CRUserSMPServers smpServers -> viewSMPServers smpServers testView
   CRNewChatItem (AChatItem _ _ chat item) -> viewChatItem chat item
+  CRLastMessages chatItems -> concatMap (\(AChatItem _ _ chat item) -> viewChatItem chat item) chatItems
   CRChatItemStatusUpdated _ -> []
   CRChatItemUpdated (AChatItem _ _ chat item) -> viewItemUpdate chat item
   CRChatItemDeleted (AChatItem _ _ chat deletedItem) (AChatItem _ _ _ toItem) -> viewItemDelete chat deletedItem toItem

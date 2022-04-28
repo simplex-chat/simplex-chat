@@ -41,6 +41,9 @@ import Simplex.Messaging.Util ((<$?>))
 data ChatType = CTDirect | CTGroup | CTContactRequest | CTContactConnection
   deriving (Show, Generic)
 
+data ChatName = ChatName ChatType Text
+  deriving (Show)
+
 instance ToJSON ChatType where
   toJSON = J.genericToJSON . enumJSON $ dropPrefix "CT"
   toEncoding = J.genericToEncoding . enumJSON $ dropPrefix "CT"
@@ -197,6 +200,11 @@ instance ToJSON AChatItem where
 
 data JSONAnyChatItem c d = JSONAnyChatItem {chatInfo :: ChatInfo c, chatItem :: ChatItem c d}
   deriving (Generic)
+
+aChatItems :: AChat -> [AChatItem]
+aChatItems (AChat ct Chat {chatInfo, chatItems}) = map aChatItem chatItems
+  where
+    aChatItem (CChatItem md ci) = AChatItem ct md chatInfo ci
 
 instance MsgDirectionI d => ToJSON (JSONAnyChatItem c d) where
   toJSON = J.genericToJSON J.defaultOptions
