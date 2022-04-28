@@ -97,14 +97,14 @@ data ChatCommand
   | StartChat
   | SetFilesFolder FilePath
   | APIGetChats {pendingConnections :: Bool}
-  | APIGetChat ChatType Int64 ChatPagination
+  | APIGetChat ChatRef ChatPagination
   | APIGetChatItems Int
-  | APISendMessage ChatType Int64 (Maybe FilePath) (Maybe ChatItemId) MsgContent
-  | APISendMessageQuote ChatType Int64 ChatItemId MsgContent -- TODO discontinue
-  | APIUpdateChatItem ChatType Int64 ChatItemId MsgContent
-  | APIDeleteChatItem ChatType Int64 ChatItemId CIDeleteMode
-  | APIChatRead ChatType Int64 (ChatItemId, ChatItemId)
-  | APIDeleteChat ChatType Int64
+  | APISendMessage ChatRef (Maybe FilePath) (Maybe ChatItemId) MsgContent
+  | APISendMessageQuote ChatRef ChatItemId MsgContent -- TODO discontinue
+  | APIUpdateChatItem ChatRef ChatItemId MsgContent
+  | APIDeleteChatItem ChatRef ChatItemId CIDeleteMode
+  | APIChatRead ChatRef (ChatItemId, ChatItemId)
+  | APIDeleteChat ChatRef
   | APIAcceptContact Int64
   | APIRejectContact Int64
   | APIUpdateProfile Profile
@@ -128,11 +128,11 @@ data ChatCommand
   | AddressAutoAccept Bool
   | AcceptContact ContactName
   | RejectContact ContactName
-  | SendMessage ContactName ByteString
+  | SendMessage ChatName ByteString
   | SendMessageQuote {contactName :: ContactName, msgDir :: AMsgDirection, quotedMsg :: ByteString, message :: ByteString}
   | SendMessageBroadcast ByteString
-  | DeleteMessage ContactName ByteString
-  | EditMessage {contactName :: ContactName, editedMsg :: ByteString, message :: ByteString}
+  | DeleteMessage ChatName ByteString
+  | EditMessage {chatName :: ChatName, editedMsg :: ByteString, message :: ByteString}
   | NewGroup GroupProfile
   | AddMember GroupName ContactName GroupMemberRole
   | JoinGroup GroupName
@@ -142,10 +142,7 @@ data ChatCommand
   | DeleteGroup GroupName
   | ListMembers GroupName
   | ListGroups
-  | SendGroupMessage GroupName ByteString
   | SendGroupMessageQuote {groupName :: GroupName, contactName_ :: Maybe ContactName, quotedMsg :: ByteString, message :: ByteString}
-  | DeleteGroupMessage GroupName ByteString
-  | EditGroupMessage {groupName :: ContactName, editedMsg :: ByteString, message :: ByteString}
   | LastMessages (Maybe ChatName) Int
   | SendFile ContactName FilePath
   | SendFileInv ContactName FilePath
