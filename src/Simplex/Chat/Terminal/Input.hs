@@ -45,7 +45,6 @@ runInputLoop ct cc = forever $ do
     echo s = printToTerminal ct [plain s]
     isMessage = \case
       Right SendMessage {} -> True
-      Right SendGroupMessage {} -> True
       Right SendFile {} -> True
       Right SendFileInv {} -> True
       Right SendGroupFile {} -> True
@@ -139,7 +138,6 @@ updateTermState ac tw (key, ms) ts@TerminalState {inputString = s, inputPosition
       Left _ -> inp
       Right cmd -> case cmd of
         SendMessage {} -> "! " <> inp
-        SendGroupMessage {} -> "! " <> inp
         SendMessageQuote {contactName, message} -> T.unpack $ "! @" <> contactName <> " " <> safeDecodeUtf8 message
         SendGroupMessageQuote {groupName, message} -> T.unpack $ "! #" <> groupName <> " " <> safeDecodeUtf8 message
         _ -> inp

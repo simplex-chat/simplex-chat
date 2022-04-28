@@ -10,7 +10,7 @@ import SwiftUI
 
 struct SendMessageView: View {
     @Binding var composeState: ComposeState
-    var sendMessage: (String) -> Void
+    var sendMessage: () -> Void
     @Namespace var namespace
     @FocusState.Binding var keyboardVisible: Bool
     @State private var teHeight: CGFloat = 42
@@ -45,7 +45,7 @@ struct SendMessageView: View {
                         .frame(width: 31, height: 31, alignment: .center)
                         .padding([.bottom, .trailing], 3)
                 } else {
-                    Button(action: { sendMessage(composeState.message) }) {
+                    Button(action: { sendMessage() }) {
                         Image(systemName: composeState.editing() ? "checkmark.circle.fill" : "arrow.up.circle.fill")
                             .resizable()
                             .foregroundColor(.accentColor)
@@ -90,7 +90,7 @@ struct SendMessageView_Previews: PreviewProvider {
                 Spacer(minLength: 0)
                 SendMessageView(
                     composeState: $composeStateNew,
-                    sendMessage: { print ($0) },
+                    sendMessage: {},
                     keyboardVisible: $keyboardVisible
                 )
             }
@@ -99,7 +99,7 @@ struct SendMessageView_Previews: PreviewProvider {
                 Spacer(minLength: 0)
                 SendMessageView(
                     composeState: $composeStateEditing,
-                    sendMessage: { print ($0) },
+                    sendMessage: {},
                     keyboardVisible: $keyboardVisible
                 )
             }
