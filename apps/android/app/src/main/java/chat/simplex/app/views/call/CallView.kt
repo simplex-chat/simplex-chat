@@ -138,9 +138,6 @@ fun VideoCallView(close: () -> Unit) {
         clipboard?.setPrimaryClip(clip)
       }) {Text("Copy")}
       Button( onClick = {
-        commandToShow.value = clipboard?.primaryClip?.getItemAt(0)?.coerceToText(context) as String
-      }) {Text("Paste")}
-      Button( onClick = {
         println("sending: ${commandToShow.value}")
         wv.evaluateJavascript(commandToShow.value, null)
         commandToShow.value = ""
@@ -151,6 +148,9 @@ fun VideoCallView(close: () -> Unit) {
       Button( onClick = {
         commandToShow.value = ""
       }) {Text("Clear")}
+      Button( onClick = {
+        wv.evaluateJavascript("endCall()", null)
+      }) {Text("End Call")}
     }
   }
 }

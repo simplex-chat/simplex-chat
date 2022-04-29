@@ -1,3 +1,6 @@
+// Inspired by
+// https://github.com/webrtc/samples/blob/gh-pages/src/content/insertable-streams/endtoend-encryption
+
 let incomingVideo = document.getElementById("incoming-video-stream")
 let outgoingVideo = document.getElementById("outgoing-video-stream")
 incomingVideo.style.opacity = 0
