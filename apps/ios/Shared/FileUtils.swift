@@ -24,7 +24,7 @@ func getStoredFilePath(_ file: CIFile?) -> String? {
     if let file = file,
        file.stored,
        let savedFile = file.filePath {
-        return getAppFilesDirectory().path + "/" + savedFile
+        return getAppFilesDirectory().appendingPathComponent(savedFile).path
     }
     return nil
 }

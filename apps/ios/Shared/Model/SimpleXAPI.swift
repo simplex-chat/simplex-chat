@@ -755,7 +755,8 @@ func processReceivedMsg(_ res: ChatResponse) {
             let cInfo = aChatItem.chatInfo
             let cItem = aChatItem.chatItem
             m.addChatItem(cInfo, cItem)
-            if let file = cItem.file,
+            if case .image = cItem.content.msgContent,
+               let file = cItem.file,
                file.fileSize <= maxImageSize {
                 Task {
                     do {

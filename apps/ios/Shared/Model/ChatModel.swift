@@ -930,6 +930,7 @@ enum MsgContent {
     case text(String)
     case link(text: String, preview: LinkPreview)
     case image(text: String, image: String)
+    case file(String)
     // TODO include original JSON, possibly using https://github.com/zoul/generic-json-swift
     case unknown(type: String, text: String)
 
@@ -939,6 +940,7 @@ enum MsgContent {
             case let .text(text): return text
             case let .link(text, _): return text
             case let .image(text, _): return text
+            case let .file(text): return text
             case let .unknown(_, text): return text
             }
         }
@@ -952,6 +954,7 @@ enum MsgContent {
                 return "json {\"type\":\"link\",\"text\":\(encodeJSON(text)),\"preview\":\(encodeJSON(preview))}"
             case let .image(text: text, image: image):
                 return "json {\"type\":\"image\",\"text\":\(encodeJSON(text)),\"image\":\(encodeJSON(image))}"
+            case let .file(text): return "json {\"type\":\"file\",\"text\":\(encodeJSON(text))}"
             default: return ""
             }
         }
@@ -962,6 +965,7 @@ enum MsgContent {
         case text
         case preview
         case image
+        case file
     }
 }
 
@@ -983,6 +987,9 @@ extension MsgContent: Decodable {
                 let text = try container.decode(String.self, forKey: CodingKeys.text)
                 let image = try container.decode(String.self, forKey: CodingKeys.image)
                 self = .image(text: text, image: image)
+            case "file":
+                let text = try container.decode(String.self, forKey: CodingKeys.text)
+                self = .file(text)
             default:
                 let text = try? container.decode(String.self, forKey: CodingKeys.text)
                 self = .unknown(type: type, text: text ?? "unknown message format")

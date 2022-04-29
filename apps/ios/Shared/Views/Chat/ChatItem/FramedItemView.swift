@@ -55,6 +55,9 @@ struct FramedItemView: View {
                         } else {
                             ciMsgContentView (chatItem, showMember)
                         }
+                    case .file:
+                        CIFileView(file: chatItem.file)
+                        ciMsgContentView (chatItem, showMember)
                     case let .link(_, preview):
                         CILinkView(linkPreview: preview)
                         ciMsgContentView (chatItem, showMember)
