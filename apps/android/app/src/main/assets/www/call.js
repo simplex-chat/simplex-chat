@@ -223,7 +223,7 @@ function encodeFunction(frame, controller) {
   // frame is an RTCEncodedAudioFrame
   // frame.data is ArrayBuffer
   let data = new Uint8Array(frame.data)
-  let n = initialPlainTextRequired[frame.type]
+  let n = frame instanceof RTCEncodedVideoFrame ? initialPlainTextRequired[frame.type] : 0
   let iv = randomIV()
   let initial = data.subarray(0, n)
   let plaintext = data.subarray(n, data.byteLength)
@@ -241,7 +241,7 @@ function encodeFunction(frame, controller) {
 }
 function decodeFunction(frame, controller) {
   let data = new Uint8Array(frame.data)
-  let n = initialPlainTextRequired[frame.type]
+  let n = frame instanceof RTCEncodedVideoFrame ? initialPlainTextRequired[frame.type] : 0
   let initial = data.subarray(0, n)
   let ciphertext = data.subarray(n, data.byteLength - IV_LENGTH)
   let iv = data.subarray(data.byteLength - IV_LENGTH, data.byteLength)
