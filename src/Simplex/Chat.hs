@@ -189,13 +189,13 @@ processChatCommand = \case
     atomically . writeTVar ff $ Just filesFolder'
     pure CRCmdOk
   APIGetChats withPCC -> CRApiChats <$> withUser (\user -> withStore $ \st -> getChatPreviews st user withPCC)
-  APIGetChat cType cId pagination -> withUser $ \user -> case cType of
+  APIGetChat (ChatRef cType cId) pagination -> withUser $ \user -> case cType of
     CTDirect -> CRApiChat . AChat SCTDirect <$> withStore (\st -> getDirectChat st user cId pagination)
     CTGroup -> CRApiChat . AChat SCTGroup <$> withStore (\st -> getGroupChat st user cId pagination)
     CTContactRequest -> pure $ chatCmdError "not implemented"
     CTContactConnection -> pure $ chatCmdError "not supported"
   APIGetChatItems _pagination -> pure $ chatCmdError "not implemented"
-  APISendMessage cType chatId file_ quotedItemId_ mc -> withUser $ \user@User {userId} -> withChatLock $ case cType of
+  APISendMessage (ChatRef cType chatId) file_ quotedItemId_ mc -> withUser $ \user@User {userId} -> withChatLock $ case cType of
     CTDirect -> do
       ct@Contact {localDisplayName = c} <- withStore $ \st -> getContact st userId chatId
       (fileInvitation_, ciFile_) <- unzipMaybe <$> setupSndFileTransfer ct
@@ -277,9 +277,9 @@ processChatCommand = \case
       unzipMaybe :: Maybe (a, b) -> (Maybe a, Maybe b)
       unzipMaybe t = (fst <$> t, snd <$> t)
   -- TODO discontinue
-  APISendMessageQuote cType chatId quotedItemId mc ->
-    processChatCommand $ APISendMessage cType chatId Nothing (Just quotedItemId) mc
-  APIUpdateChatItem cType chatId itemId mc -> withUser $ \user@User {userId} -> withChatLock $ case cType of
+  APISendMessageQuote chatId quotedItemId mc ->
+    processChatCommand $ APISendMessage chatId Nothing (Just quotedItemId) mc
+  APIUpdateChatItem (ChatRef cType chatId) itemId mc -> withUser $ \user@User {userId} -> withChatLock $ case cType of
     CTDirect -> do
       (ct@Contact {contactId, localDisplayName = c}, ci) <- withStore $ \st -> (,) <$> getContact st userId chatId <*> getDirectChatItem st userId chatId itemId
       case ci of
@@ -308,7 +308,7 @@ processChatCommand = \case
         CChatItem SMDRcv _ -> throwChatError CEInvalidChatItemUpdate
     CTContactRequest -> pure $ chatCmdError "not supported"
     CTContactConnection -> pure $ chatCmdError "not supported"
-  APIDeleteChatItem cType chatId itemId mode -> withUser $ \user@User {userId} -> withChatLock $ case cType of
+  APIDeleteChatItem (ChatRef cType chatId) itemId mode -> withUser $ \user@User {userId} -> withChatLock $ case cType of
     CTDirect -> do
       (ct@Contact {localDisplayName = c}, CChatItem msgDir deletedItem@ChatItem {meta = CIMeta {itemSharedMsgId}, file}) <- withStore $ \st -> (,) <$> getContact st userId chatId <*> getDirectChatItem st userId chatId itemId
       case (mode, msgDir, itemSharedMsgId) of
@@ -348,12 +348,12 @@ processChatCommand = \case
           cancelFiles userId [(fileId, AFS msgDirection fileStatus)]
           withFilesFolder $ \filesFolder ->
             deleteFiles filesFolder [filePath]
-  APIChatRead cType chatId fromToIds -> withChatLock $ case cType of
+  APIChatRead (ChatRef cType chatId) fromToIds -> withChatLock $ case cType of
     CTDirect -> withStore (\st -> updateDirectChatItemsRead st chatId fromToIds) $> CRCmdOk
     CTGroup -> withStore (\st -> updateGroupChatItemsRead st chatId fromToIds) $> CRCmdOk
     CTContactRequest -> pure $ chatCmdError "not supported"
     CTContactConnection -> pure $ chatCmdError "not supported"
-  APIDeleteChat cType chatId -> withUser $ \User {userId} -> case cType of
+  APIDeleteChat (ChatRef cType chatId) -> withUser $ \User {userId} -> case cType of
     CTDirect -> do
       ct@Contact {localDisplayName} <- withStore $ \st -> getContact st userId chatId
       withStore (\st -> getContactGroupNames st userId ct) >>= \case
@@ -417,7 +417,7 @@ processChatCommand = \case
     connectViaContact userId adminContactReq profile
   DeleteContact cName -> withUser $ \User {userId} -> do
     contactId <- withStore $ \st -> getContactIdByName st userId cName
-    processChatCommand $ APIDeleteChat CTDirect contactId
+    processChatCommand $ APIDeleteChat (ChatRef CTDirect contactId)
   ListContacts -> withUser $ \user -> CRContactsList <$> withStore (`getUserContacts` user)
   CreateMyAddress -> withUser $ \User {userId} -> withChatLock . procCmd $ do
     (connId, cReq) <- withAgent (`createConnection` SCMContact)
@@ -440,10 +440,10 @@ processChatCommand = \case
   RejectContact cName -> withUser $ \User {userId} -> do
     connReqId <- withStore $ \st -> getContactRequestIdByName st userId cName
     processChatCommand $ APIRejectContact connReqId
-  SendMessage cName msg -> withUser $ \User {userId} -> do
-    contactId <- withStore $ \st -> getContactIdByName st userId cName
+  SendMessage chatName msg -> withUser $ \user -> do
+    chatRef <- getChatRef user chatName
     let mc = MCText $ safeDecodeUtf8 msg
-    processChatCommand $ APISendMessage CTDirect contactId Nothing Nothing mc
+    processChatCommand $ APISendMessage chatRef Nothing Nothing mc
   SendMessageBroadcast msg -> withUser $ \user -> do
     contacts <- withStore (`getUserContacts` user)
     withChatLock . procCmd $ do
@@ -461,16 +461,16 @@ processChatCommand = \case
     contactId <- withStore $ \st -> getContactIdByName st userId cName
     quotedItemId <- withStore $ \st -> getDirectChatItemIdByText st userId contactId msgDir (safeDecodeUtf8 quotedMsg)
     let mc = MCText $ safeDecodeUtf8 msg
-    processChatCommand $ APISendMessage CTDirect contactId Nothing (Just quotedItemId) mc
-  DeleteMessage cName deletedMsg -> withUser $ \User {userId} -> do
-    contactId <- withStore $ \st -> getContactIdByName st userId cName
-    deletedItemId <- withStore $ \st -> getDirectChatItemIdByText st userId contactId SMDSnd (safeDecodeUtf8 deletedMsg)
-    processChatCommand $ APIDeleteChatItem CTDirect contactId deletedItemId CIDMBroadcast
-  EditMessage cName editedMsg msg -> withUser $ \User {userId} -> do
-    contactId <- withStore $ \st -> getContactIdByName st userId cName
-    editedItemId <- withStore $ \st -> getDirectChatItemIdByText st userId contactId SMDSnd (safeDecodeUtf8 editedMsg)
+    processChatCommand $ APISendMessage (ChatRef CTDirect contactId) Nothing (Just quotedItemId) mc
+  DeleteMessage chatName deletedMsg -> withUser $ \user -> do
+    chatRef <- getChatRef user chatName
+    deletedItemId <- getSentChatItemIdByText user chatRef deletedMsg
+    processChatCommand $ APIDeleteChatItem chatRef deletedItemId CIDMBroadcast
+  EditMessage chatName editedMsg msg -> withUser $ \user -> do
+    chatRef <- getChatRef user chatName
+    editedItemId <- getSentChatItemIdByText user chatRef editedMsg
     let mc = MCText $ safeDecodeUtf8 msg
-    processChatCommand $ APIUpdateChatItem CTDirect contactId editedItemId mc
+    processChatCommand $ APIUpdateChatItem chatRef editedItemId mc
   NewGroup gProfile -> withUser $ \user -> do
     gVar <- asks idsDrg
     CRGroupCreated <$> withStore (\st -> createNewGroup st gVar user gProfile)
@@ -542,24 +542,15 @@ processChatCommand = \case
       pure $ CRGroupDeletedUser gInfo
   ListMembers gName -> CRGroupMembers <$> withUser (\user -> withStore (\st -> getGroupByName st user gName))
   ListGroups -> CRGroupsList <$> withUser (\user -> withStore (`getUserGroupDetails` user))
-  SendGroupMessage gName msg -> withUser $ \user -> do
-    groupId <- withStore $ \st -> getGroupIdByName st user gName
-    let mc = MCText $ safeDecodeUtf8 msg
-    processChatCommand $ APISendMessage CTGroup groupId Nothing Nothing mc
   SendGroupMessageQuote gName cName quotedMsg msg -> withUser $ \user -> do
     groupId <- withStore $ \st -> getGroupIdByName st user gName
     quotedItemId <- withStore $ \st -> getGroupChatItemIdByText st user groupId cName (safeDecodeUtf8 quotedMsg)
     let mc = MCText $ safeDecodeUtf8 msg
-    processChatCommand $ APISendMessage CTGroup groupId Nothing (Just quotedItemId) mc
-  DeleteGroupMessage gName deletedMsg -> withUser $ \user@User {localDisplayName} -> do
-    groupId <- withStore $ \st -> getGroupIdByName st user gName
-    deletedItemId <- withStore $ \st -> getGroupChatItemIdByText st user groupId (Just localDisplayName) (safeDecodeUtf8 deletedMsg)
-    processChatCommand $ APIDeleteChatItem CTGroup groupId deletedItemId CIDMBroadcast
-  EditGroupMessage gName editedMsg msg -> withUser $ \user@User {localDisplayName} -> do
-    groupId <- withStore $ \st -> getGroupIdByName st user gName
-    editedItemId <- withStore $ \st -> getGroupChatItemIdByText st user groupId (Just localDisplayName) (safeDecodeUtf8 editedMsg)
-    let mc = MCText $ safeDecodeUtf8 msg
-    processChatCommand $ APIUpdateChatItem CTGroup groupId editedItemId mc
+    processChatCommand $ APISendMessage (ChatRef CTGroup groupId) Nothing (Just quotedItemId) mc
+  LastMessages (Just chatName) count -> withUser $ \user -> do
+    chatRef <- getChatRef user chatName
+    CRLastMessages . aChatItems . chat <$> (processChatCommand . APIGetChat chatRef $ CPLast count)
+  LastMessages Nothing _count -> pure $ chatCmdError "not implemented"
   -- old file protocol
   -- SendFile cName f -> withUser $ \User {userId} -> do
   --   contactId <- withStore $ \st -> getContactIdByName st userId cName
@@ -614,13 +605,14 @@ processChatCommand = \case
   -- new file protocol
   SendGroupFileInv gName f -> withUser $ \user -> do
     groupId <- withStore $ \st -> getGroupIdByName st user gName
-    processChatCommand $ APISendMessage CTGroup groupId (Just f) Nothing (MCText "")
+    processChatCommand $ APISendMessage (ChatRef CTGroup groupId) (Just f) Nothing (MCText "")
   ReceiveFile fileId filePath_ -> withUser $ \user@User {userId} ->
     withChatLock . procCmd $ do
       ft <- withStore $ \st -> getRcvFileTransfer st userId fileId
-      (CRRcvFileAccepted ft <$> acceptFileReceive user ft filePath_) `catchError` processError ft
+      (CRRcvFileAccepted <$> acceptFileReceive user ft filePath_) `catchError` processError ft
     where
       processError ft = \case
+        -- TODO AChatItem in Cancelled events
         ChatErrorAgent (SMP SMP.AUTH) -> pure $ CRRcvFileAcceptedSndCancelled ft
         ChatErrorAgent (CONN DUPLICATE) -> pure $ CRRcvFileAcceptedSndCancelled ft
         e -> throwError e
@@ -655,6 +647,17 @@ processChatCommand = \case
     -- use function below to make commands "synchronous"
     procCmd :: m ChatResponse -> m ChatResponse
     procCmd = id
+    getChatRef :: User -> ChatName -> m ChatRef
+    getChatRef user@User {userId} (ChatName cType name) =
+      ChatRef cType <$> case cType of
+        CTDirect -> withStore $ \st -> getContactIdByName st userId name
+        CTGroup -> withStore $ \st -> getGroupIdByName st user name
+        _ -> throwChatError $ CECommandError "not supported"
+    getSentChatItemIdByText :: User -> ChatRef -> ByteString -> m Int64
+    getSentChatItemIdByText user@User {userId, localDisplayName} (ChatRef cType cId) msg = case cType of
+      CTDirect -> withStore $ \st -> getDirectChatItemIdByText st userId cId SMDSnd (safeDecodeUtf8 msg)
+      CTGroup -> withStore $ \st -> getGroupChatItemIdByText st user cId (Just localDisplayName) (safeDecodeUtf8 msg)
+      _ -> throwChatError $ CECommandError "not supported"
     connectViaContact :: UserId -> ConnectionRequestUri 'CMContact -> Profile -> m ChatResponse
     connectViaContact userId cReq profile = withChatLock $ do
       let cReqHash = ConnReqUriHash . C.sha256Hash $ strEncode cReq
@@ -708,6 +711,7 @@ processChatCommand = \case
         case status of
           AFS _ CIFSSndStored -> cancelById fileId
           AFS _ CIFSRcvInvitation -> cancelById fileId
+          AFS _ CIFSRcvAccepted -> cancelById fileId
           AFS _ CIFSRcvTransfer -> cancelById fileId
           _ -> pure ()
       where
@@ -740,7 +744,7 @@ toFSFilePath :: ChatMonad m => FilePath -> m FilePath
 toFSFilePath f =
   maybe f (<> "/" <> f) <$> (readTVarIO =<< asks filesFolder)
 
-acceptFileReceive :: forall m. ChatMonad m => User -> RcvFileTransfer -> Maybe FilePath -> m FilePath
+acceptFileReceive :: forall m. ChatMonad m => User -> RcvFileTransfer -> Maybe FilePath -> m AChatItem
 acceptFileReceive user@User {userId} RcvFileTransfer {fileId, fileInvitation = FileInvitation {fileName = fName, fileConnReq}, fileStatus, senderDisplayName, grpMemberId} filePath_ = do
   unless (fileStatus == RFSNew) . throwChatError $ CEFileAlreadyReceiving fName
   case fileConnReq of
@@ -749,8 +753,7 @@ acceptFileReceive user@User {userId} RcvFileTransfer {fileId, fileInvitation = F
       tryError (withAgent $ \a -> joinConnection a connReq . directMessage $ XFileAcpt fName) >>= \case
         Right agentConnId -> do
           filePath <- getRcvFilePath filePath_ fName
-          withStore $ \st -> acceptRcvFileTransfer st userId fileId agentConnId filePath
-          pure filePath
+          withStore $ \st -> acceptRcvFileTransfer st user fileId agentConnId filePath
         Left e -> throwError e
     -- new file protocol
     Nothing ->
@@ -765,14 +768,14 @@ acceptFileReceive user@User {userId} RcvFileTransfer {fileId, fileInvitation = F
               acceptFileV2 $ \sharedMsgId fileInvConnReq -> sendDirectMessage conn (XFileAcptInv sharedMsgId fileInvConnReq fName) (GroupId groupId)
             _ -> throwChatError $ CEFileInternal "member connection not active" -- should not happen
       where
-        acceptFileV2 :: (SharedMsgId -> ConnReqInvitation -> m SndMessage) -> m FilePath
+        acceptFileV2 :: (SharedMsgId -> ConnReqInvitation -> m SndMessage) -> m AChatItem
         acceptFileV2 sendXFileAcptInv = do
           sharedMsgId <- withStore $ \st -> getSharedMsgIdByFileId st userId fileId
           (agentConnId, fileInvConnReq) <- withAgent (`createConnection` SCMInvitation)
           filePath <- getRcvFilePath filePath_ fName
-          withStore $ \st -> acceptRcvFileTransfer st userId fileId agentConnId filePath
+          ci <- withStore $ \st -> acceptRcvFileTransfer st user fileId agentConnId filePath
           void $ sendXFileAcptInv sharedMsgId fileInvConnReq
-          pure filePath
+          pure ci
   where
     getRcvFilePath :: Maybe FilePath -> String -> m FilePath
     getRcvFilePath fPath_ fn = case fPath_ of
@@ -1174,8 +1177,11 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
             XOk -> allowAgentConnection conn confId XOk
             _ -> pure ()
         CON -> do
-          withStore $ \st -> updateRcvFileStatus st ft FSConnected
-          toView $ CRRcvFileStart ft
+          ci <- withStore $ \st -> do
+            updateRcvFileStatus st ft FSConnected
+            updateCIFileStatus st userId fileId CIFSRcvTransfer
+            getChatItemByFileId st user fileId
+          toView $ CRRcvFileStart ci
         MSG meta@MsgMeta {recipient = (msgId, _), integrity} msgBody -> withAckMessage agentConnId meta $ do
           parseFileChunk msgBody >>= \case
             FileChunkCancel -> do
@@ -1910,14 +1916,14 @@ chatCommandP =
     <|> "/_start" $> StartChat
     <|> "/_files_folder " *> (SetFilesFolder <$> filePath)
     <|> "/_get chats" *> (APIGetChats <$> (" pcc=on" $> True <|> " pcc=off" $> False <|> pure False))
-    <|> "/_get chat " *> (APIGetChat <$> chatTypeP <*> A.decimal <* A.space <*> chatPaginationP)
+    <|> "/_get chat " *> (APIGetChat <$> chatRefP <* A.space <*> chatPaginationP)
     <|> "/_get items count=" *> (APIGetChatItems <$> A.decimal)
-    <|> "/_send " *> (APISendMessage <$> chatTypeP <*> A.decimal <*> optional filePathTagged <*> optional quotedItemIdTagged <* A.space <*> msgContentP)
-    <|> "/_send_quote " *> (APISendMessageQuote <$> chatTypeP <*> A.decimal <* A.space <*> A.decimal <* A.space <*> msgContentP)
-    <|> "/_update item " *> (APIUpdateChatItem <$> chatTypeP <*> A.decimal <* A.space <*> A.decimal <* A.space <*> msgContentP)
-    <|> "/_delete item " *> (APIDeleteChatItem <$> chatTypeP <*> A.decimal <* A.space <*> A.decimal <* A.space <*> ciDeleteMode)
-    <|> "/_read chat " *> (APIChatRead <$> chatTypeP <*> A.decimal <* A.space <*> ((,) <$> ("from=" *> A.decimal) <* A.space <*> ("to=" *> A.decimal)))
-    <|> "/_delete " *> (APIDeleteChat <$> chatTypeP <*> A.decimal)
+    <|> "/_send " *> (APISendMessage <$> chatRefP <*> optional filePathTagged <*> optional quotedItemIdTagged <* A.space <*> msgContentP)
+    <|> "/_send_quote " *> (APISendMessageQuote <$> chatRefP <* A.space <*> A.decimal <* A.space <*> msgContentP)
+    <|> "/_update item " *> (APIUpdateChatItem <$> chatRefP <* A.space <*> A.decimal <* A.space <*> msgContentP)
+    <|> "/_delete item " *> (APIDeleteChatItem <$> chatRefP <* A.space <*> A.decimal <* A.space <*> ciDeleteMode)
+    <|> "/_read chat " *> (APIChatRead <$> chatRefP <* A.space <*> ((,) <$> ("from=" *> A.decimal) <* A.space <*> ("to=" *> A.decimal)))
+    <|> "/_delete " *> (APIDeleteChat <$> chatRefP)
     <|> "/_accept " *> (APIAcceptContact <$> A.decimal)
     <|> "/_reject " *> (APIRejectContact <$> A.decimal)
     <|> "/_profile " *> (APIUpdateProfile <$> jsonP)
@@ -1942,21 +1948,19 @@ chatCommandP =
     <|> ("/delete #" <|> "/d #") *> (DeleteGroup <$> displayName)
     <|> ("/members #" <|> "/members " <|> "/ms #" <|> "/ms ") *> (ListMembers <$> displayName)
     <|> ("/groups" <|> "/gs") $> ListGroups
-    <|> A.char '#' *> (SendGroupMessage <$> displayName <* A.space <*> A.takeByteString)
     <|> (">#" <|> "> #") *> (SendGroupMessageQuote <$> displayName <* A.space <*> pure Nothing <*> quotedMsg <*> A.takeByteString)
     <|> (">#" <|> "> #") *> (SendGroupMessageQuote <$> displayName <* A.space <* optional (A.char '@') <*> (Just <$> displayName) <* A.space <*> quotedMsg <*> A.takeByteString)
-    <|> ("\\#" <|> "\\ #") *> (DeleteGroupMessage <$> displayName <* A.space <*> A.takeByteString)
-    <|> ("!#" <|> "! #") *> (EditGroupMessage <$> displayName <* A.space <*> (quotedMsg <|> pure "") <*> A.takeByteString)
     <|> ("/contacts" <|> "/cs") $> ListContacts
     <|> ("/connect " <|> "/c ") *> (Connect <$> ((Just <$> strP) <|> A.takeByteString $> Nothing))
     <|> ("/connect" <|> "/c") $> AddContact
     <|> ("/delete @" <|> "/delete " <|> "/d @" <|> "/d ") *> (DeleteContact <$> displayName)
-    <|> A.char '@' *> (SendMessage <$> displayName <* A.space <*> A.takeByteString)
+    <|> (SendMessage <$> chatNameP <* A.space <*> A.takeByteString)
     <|> (">@" <|> "> @") *> sendMsgQuote (AMsgDirection SMDRcv)
     <|> (">>@" <|> ">> @") *> sendMsgQuote (AMsgDirection SMDSnd)
-    <|> ("\\@" <|> "\\ @") *> (DeleteMessage <$> displayName <* A.space <*> A.takeByteString)
-    <|> ("!@" <|> "! @") *> (EditMessage <$> displayName <* A.space <*> (quotedMsg <|> pure "") <*> A.takeByteString)
+    <|> ("\\ " <|> "\\") *> (DeleteMessage <$> chatNameP <* A.space <*> A.takeByteString)
+    <|> ("! " <|> "!") *> (EditMessage <$> chatNameP <* A.space <*> (quotedMsg <|> pure "") <*> A.takeByteString)
     <|> "/feed " *> (SendMessageBroadcast <$> A.takeByteString)
+    <|> ("/tail" <|> "/t") *> (LastMessages <$> optional (A.space *> chatNameP) <*> msgCountP)
     <|> ("/file #" <|> "/f #") *> (SendGroupFile <$> displayName <* A.space <*> filePath)
     <|> ("/file_v2 #" <|> "/f_v2 #") *> (SendGroupFileInv <$> displayName <* A.space <*> filePath)
     <|> ("/file @" <|> "/file " <|> "/f @" <|> "/f ") *> (SendFile <$> displayName <* A.space <*> filePath)
@@ -2024,6 +2028,9 @@ chatCommandP =
         <|> (" admin" $> GRAdmin)
         <|> (" member" $> GRMember)
         <|> pure GRAdmin
+    chatNameP = ChatName <$> chatTypeP <*> displayName
+    chatRefP = ChatRef <$> chatTypeP <*> A.decimal
+    msgCountP = A.space *> A.decimal <|> pure 10
 
 adminContactReq :: ConnReqContact
 adminContactReq =
