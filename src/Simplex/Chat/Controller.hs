@@ -205,9 +205,9 @@ data ChatResponse
   | CRContactRequestAlreadyAccepted {contact :: Contact}
   | CRLeftMemberUser {groupInfo :: GroupInfo}
   | CRGroupDeletedUser {groupInfo :: GroupInfo}
-  | CRRcvFileAccepted {fileTransfer :: RcvFileTransfer, filePath :: FilePath}
+  | CRRcvFileAccepted {chatItem :: AChatItem}
   | CRRcvFileAcceptedSndCancelled {rcvFileTransfer :: RcvFileTransfer}
-  | CRRcvFileStart {rcvFileTransfer :: RcvFileTransfer}
+  | CRRcvFileStart {chatItem :: AChatItem}
   | CRRcvFileComplete {chatItem :: AChatItem}
   | CRRcvFileCancelled {rcvFileTransfer :: RcvFileTransfer}
   | CRRcvFileSndCancelled {rcvFileTransfer :: RcvFileTransfer}
