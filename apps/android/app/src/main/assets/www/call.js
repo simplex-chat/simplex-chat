@@ -223,31 +223,35 @@ function encodeFunction(frame, controller) {
   // frame is an RTCEncodedAudioFrame
   // frame.data is ArrayBuffer(81) with [[Int8Array]]: Int8Array(81)
 
-  let data = frame.data
+  let data = new Uint8Array(frame.data)
+  let initial = data.subarray(0, 10)
+  let plaintext = data.subarray(10, data.byteLength)
   crypto.subtle
-    .encrypt({name: "AES-GCM", iv: iv.buffer}, key, data)
-    .then((d) => {
-      frame.data = d
+    .encrypt({name: "AES-GCM", iv: iv.buffer}, key, plaintext)
+    .then((c) => {
+      frame.data = concat(initial, new Uint8Array(c)).buffer
       controller.enqueue(frame)
     })
     .catch((e) => {
       console.log("encrypt error")
-      // console.log(e)
-      // throw e
+      endCall()
+      throw e
     })
 }
 function decodeFunction(frame, controller) {
-  let data = frame.data
+  let data = new Uint8Array(frame.data)
+  let initial = data.subarray(0, 10)
+  let ciphertext = data.subarray(10, data.byteLength)
   crypto.subtle
-    .decrypt({name: "AES-GCM", iv: iv.buffer}, key, data)
-    .then((a) => {
-      frame.data = a
+    .decrypt({name: "AES-GCM", iv: iv.buffer}, key, ciphertext)
+    .then((p) => {
+      frame.data = concat(initial, new Uint8Array(p)).buffer
       controller.enqueue(frame)
     })
     .catch((e) => {
       console.log("decrypt error")
-      // console.log(e)
-      // throw e
+      endCall()
+      throw e
     })
 }
 
@@ -256,4 +260,11 @@ function randomIV() {
 }
 async function loadKey(keyData) {
   key = await crypto.subtle.importKey("jwk", keyData, keyGenConfig, false, keyUsages)
+}
+
+function concat(b1, b2) {
+  const a = new Uint8Array(b1.byteLength + b2.byteLength)
+  a.set(b1, 0)
+  a.set(b2, b1.byteLength)
+  return a
 }
