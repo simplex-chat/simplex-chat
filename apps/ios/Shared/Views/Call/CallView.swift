@@ -27,10 +27,10 @@ struct WebView: UIViewRepresentable {
             didReceive message: WKScriptMessage
         ) {
             print(message.body)
-            let date = Date()
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                self.messageToWebview(msg: "hello, I got your messsage: \(message.body) at \(date)")
-            }
+//            let date = Date()
+//            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+//                self.messageToWebview(msg: "hello, I got your messsage: \(message.body) at \(date)")
+//            }
         }
 
         func messageToWebview(msg: String) {
@@ -51,6 +51,13 @@ struct WebView: UIViewRepresentable {
         configuration.userContentController = userContentController
         configuration.mediaTypesRequiringUserActionForPlayback = []
         configuration.allowsInlineMediaPlayback = true
+
+        // Enable us to capture calls to console.log in the xcode logs
+        // Print actually happens on line 29
+        let source = "console.log = (msg) => webkit.messageHandlers.logHandler.postMessage(msg)"
+        let script = WKUserScript(source: source, injectionTime: .atDocumentStart, forMainFrameOnly: false)
+        configuration.userContentController.addUserScript(script)
+        configuration.userContentController.add(makeCoordinator(), name: "logHandler")
 
         let _wkwebview = WKWebView(frame: .zero, configuration: configuration)
         _wkwebview.navigationDelegate = coordinator
