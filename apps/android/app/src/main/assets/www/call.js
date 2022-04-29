@@ -27,8 +27,6 @@ let keyData = {alg: "A256GCM", ext: true, k: "JCMDWkhxLmPDhua0BUdhgv6Ac6hOtB9frS
 
 let pc
 let key
-// Hardcode iv as pulling iv from received data currently fails
-let iv = Uint8Array.from([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12])
 let IV_LENGTH = 12
 const initialPlainTextRequired = {
   key: 10,
@@ -214,7 +212,7 @@ function encodeFunction(frame, controller) {
   // frame.data is ArrayBuffer
   let data = new Uint8Array(frame.data)
   let n = initialPlainTextRequired[frame.type]
-  // let iv = randomIV()
+  let iv = randomIV()
   let initial = data.subarray(0, n)
   let plaintext = data.subarray(n, data.byteLength)
   crypto.subtle
@@ -234,10 +232,9 @@ function decodeFunction(frame, controller) {
   let n = initialPlainTextRequired[frame.type]
   let initial = data.subarray(0, n)
   let ciphertext = data.subarray(n, data.byteLength - IV_LENGTH)
-  // Decrypt fails with IV pulled from received data
-  // let iv = data.subarray(data.byteLength - IV_LENGTH, data.byteLength)
+  let iv = data.subarray(data.byteLength - IV_LENGTH, data.byteLength)
   crypto.subtle
-    .decrypt({name: "AES-GCM", iv: iv.buffer}, key, ciphertext)
+    .decrypt({name: "AES-GCM", iv: iv}, key, ciphertext)
     .then((p) => {
       frame.data = concatN(initial, new Uint8Array(p)).buffer
       controller.enqueue(frame)
