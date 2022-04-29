@@ -57,7 +57,7 @@ struct WebView: UIViewRepresentable {
         let source = "console.log = (msg) => webkit.messageHandlers.logHandler.postMessage(msg)"
         let script = WKUserScript(source: source, injectionTime: .atDocumentStart, forMainFrameOnly: false)
         configuration.userContentController.addUserScript(script)
-        configuration.userContentController.add(makeCoordinator(), name: "logHandler")
+        configuration.userContentController.add(coordinator, name: "logHandler")
 
         let _wkwebview = WKWebView(frame: .zero, configuration: configuration)
         _wkwebview.navigationDelegate = coordinator
