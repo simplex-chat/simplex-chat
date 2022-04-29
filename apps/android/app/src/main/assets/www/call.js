@@ -27,7 +27,9 @@ let keyData = {alg: "A256GCM", ext: true, k: "JCMDWkhxLmPDhua0BUdhgv6Ac6hOtB9frS
 
 let pc
 let key
-let iv = Uint8Array.from([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]) // randomIV()
+// Hardcode iv as pulling iv from received data currently fails
+let iv = Uint8Array.from([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12])
+let IV_LENGTH = 12
 // let encryptKeyRepresentation
 let candidates = []
 run()
@@ -47,24 +49,6 @@ async function run() {
       console.log(JSON.stringify({action: "processIceCandidates", content: candidates}))
     }
   }
-  // crypto.subtle
-  //   .generateKey(keyGenConfig, true, keyUsages)
-  //   .then((k) => {
-  //     encryptKey = k
-  //     return crypto.subtle.exportKey("jwk", encryptKey)
-  //   })
-  //   .then((r) => {
-  //     encryptKeyRepresentation = r
-  //     console.log(
-  //       JSON.stringify({
-  //         action: "processDecryptionKey",
-  //         content: {
-  //           key: encryptKeyRepresentation,
-  //           iv: encryptIv,
-  //         },
-  //       })
-  //     )
-  //   })
   let remoteStream = new MediaStream()
   key = await crypto.subtle.importKey("jwk", keyData, keyGenConfig, true, keyUsages)
   let localStream = await getLocalVideoStream()
@@ -221,15 +205,15 @@ function setupReceiverTransform(receiver) {
 /* Cryptography */
 function encodeFunction(frame, controller) {
   // frame is an RTCEncodedAudioFrame
-  // frame.data is ArrayBuffer(81) with [[Int8Array]]: Int8Array(81)
-
+  // frame.data is ArrayBuffer
   let data = new Uint8Array(frame.data)
+  // let iv = randomIV()
   let initial = data.subarray(0, 10)
   let plaintext = data.subarray(10, data.byteLength)
   crypto.subtle
     .encrypt({name: "AES-GCM", iv: iv.buffer}, key, plaintext)
     .then((c) => {
-      frame.data = concat(initial, new Uint8Array(c)).buffer
+      frame.data = concatN(initial, new Uint8Array(c), iv).buffer
       controller.enqueue(frame)
     })
     .catch((e) => {
@@ -241,11 +225,13 @@ function encodeFunction(frame, controller) {
 function decodeFunction(frame, controller) {
   let data = new Uint8Array(frame.data)
   let initial = data.subarray(0, 10)
-  let ciphertext = data.subarray(10, data.byteLength)
+  let ciphertext = data.subarray(10, data.byteLength - IV_LENGTH)
+  // Decrypt fails with IV pulled from received data
+  // let iv = data.subarray(data.byteLength - IV_LENGTH, data.byteLength)
   crypto.subtle
     .decrypt({name: "AES-GCM", iv: iv.buffer}, key, ciphertext)
     .then((p) => {
-      frame.data = concat(initial, new Uint8Array(p)).buffer
+      frame.data = concatN(initial, new Uint8Array(p)).buffer
       controller.enqueue(frame)
     })
     .catch((e) => {
@@ -256,15 +242,38 @@ function decodeFunction(frame, controller) {
 }
 
 function randomIV() {
-  return crypto.getRandomValues(new Uint8Array(12))
+  return crypto.getRandomValues(new Uint8Array(IV_LENGTH))
 }
 async function loadKey(keyData) {
   key = await crypto.subtle.importKey("jwk", keyData, keyGenConfig, false, keyUsages)
 }
 
-function concat(b1, b2) {
-  const a = new Uint8Array(b1.byteLength + b2.byteLength)
-  a.set(b1, 0)
-  a.set(b2, b1.byteLength)
+function concatN(...bs) {
+  const a = new Uint8Array(bs.reduce((size, b) => size + b.byteLength, 0))
+  bs.reduce((offset, b) => {
+    a.set(b, offset)
+    return offset + b.byteLength
+  }, 0)
   return a
+}
+
+async function generateKey() {
+  crypto.subtle
+    .generateKey(keyGenConfig, true, keyUsages)
+    .then((k) => {
+      encryptKey = k
+      return crypto.subtle.exportKey("jwk", encryptKey)
+    })
+    .then((r) => {
+      encryptKeyRepresentation = r
+      console.log(
+        JSON.stringify({
+          action: "processDecryptionKey",
+          content: {
+            key: encryptKeyRepresentation,
+            iv: encryptIv,
+          },
+        })
+      )
+    })
 }
