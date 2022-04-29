@@ -171,7 +171,8 @@ enum ChatResponse: Decodable, Error {
     case chatItemStatusUpdated(chatItem: AChatItem)
     case chatItemUpdated(chatItem: AChatItem)
     case chatItemDeleted(deletedChatItem: AChatItem, toChatItem: AChatItem)
-    case rcvFileAccepted
+    case rcvFileAccepted(chatItem: AChatItem)
+    case rcvFileStart(chatItem: AChatItem)
     case rcvFileComplete(chatItem: AChatItem)
     case ntfTokenStatus(status: NtfTknStatus)
     case newContactConnection(connection: PendingContactConnection)
@@ -220,6 +221,7 @@ enum ChatResponse: Decodable, Error {
             case .chatItemUpdated: return "chatItemUpdated"
             case .chatItemDeleted: return "chatItemDeleted"
             case .rcvFileAccepted: return "rcvFileAccepted"
+            case .rcvFileStart: return "rcvFileStart"
             case .rcvFileComplete: return "rcvFileComplete"
             case .ntfTokenStatus: return "ntfTokenStatus"
             case .newContactConnection: return "newContactConnection"
@@ -270,7 +272,8 @@ enum ChatResponse: Decodable, Error {
             case let .chatItemStatusUpdated(chatItem): return String(describing: chatItem)
             case let .chatItemUpdated(chatItem): return String(describing: chatItem)
             case let .chatItemDeleted(deletedChatItem, toChatItem): return "deletedChatItem:\n\(String(describing: deletedChatItem))\ntoChatItem:\n\(String(describing: toChatItem))"
-            case .rcvFileAccepted: return noDetails
+            case let .rcvFileAccepted(chatItem): return String(describing: chatItem)
+            case let .rcvFileStart(chatItem): return String(describing: chatItem)
             case let .rcvFileComplete(chatItem): return String(describing: chatItem)
             case let .ntfTokenStatus(status): return String(describing: status)
             case let .newContactConnection(connection): return String(describing: connection)
@@ -784,12 +787,7 @@ func processReceivedMsg(_ res: ChatResponse) {
                 default: break
                 }
             }
-        case let .chatItemUpdated(aChatItem):
-            let cInfo = aChatItem.chatInfo
-            let cItem = aChatItem.chatItem
-            if m.upsertChatItem(cInfo, cItem) {
-                NtfManager.shared.notifyMessageReceived(cInfo, cItem)
-            }
+        case let .chatItemUpdated(aChatItem): chatItemSimpleUpdate(aChatItem)
         case let .chatItemDeleted(_, toChatItem):
             let cInfo = toChatItem.chatInfo
             let cItem = toChatItem.chatItem
@@ -799,14 +797,19 @@ func processReceivedMsg(_ res: ChatResponse) {
                 // currently only broadcast deletion of rcv message can be received, and only this case should happen
                 _ = m.upsertChatItem(cInfo, cItem)
             }
-        case let .rcvFileComplete(aChatItem):
-            let cInfo = aChatItem.chatInfo
-            let cItem = aChatItem.chatItem
-            if m.upsertChatItem(cInfo, cItem) {
-                NtfManager.shared.notifyMessageReceived(cInfo, cItem)
-            }
+        case let .rcvFileAccepted(aChatItem): chatItemSimpleUpdate(aChatItem)
+        case let .rcvFileStart(aChatItem): chatItemSimpleUpdate(aChatItem)
+        case let .rcvFileComplete(aChatItem): chatItemSimpleUpdate(aChatItem)
         default:
             logger.debug("unsupported event: \(res.responseType)")
+        }
+    }
+
+    func chatItemSimpleUpdate(_ aChatItem: AChatItem) {
+        let cInfo = aChatItem.chatInfo
+        let cItem = aChatItem.chatItem
+        if m.upsertChatItem(cInfo, cItem) {
+            NtfManager.shared.notifyMessageReceived(cInfo, cItem)
         }
     }
 }

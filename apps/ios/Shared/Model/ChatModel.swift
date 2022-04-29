@@ -921,6 +921,7 @@ enum CIFileStatus: String, Decodable {
     case sndStored = "snd_stored"
     case sndCancelled = "snd_cancelled"
     case rcvInvitation = "rcv_invitation"
+    case rcvAccepted = "rcv_accepted"
     case rcvTransfer = "rcv_transfer"
     case rcvComplete = "rcv_complete"
     case rcvCancelled = "rcv_cancelled"

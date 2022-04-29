@@ -15,11 +15,7 @@ struct CIFileView: View {
     var body: some View {
         Button(action: processFile) {
             HStack(alignment: .center, spacing: 6) {
-                Image(systemName: determineIcon())
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(width: 40, height: 40)
-                    .foregroundColor(.accentColor)
+                fileIndicator()
                 if let file = file {
                     VStack(alignment: .leading) {
                         Text(file.fileName)
@@ -36,18 +32,34 @@ struct CIFileView: View {
         .disabled(file == nil || (file?.fileStatus != .rcvInvitation && file?.fileStatus != .rcvComplete))
     }
 
+    func fileSizeValid() -> Bool {
+        if let file = file,
+           file.fileSize <= maxFileSize {
+            return true
+        } else {
+            return false
+        }
+    }
+
     func processFile() {
         logger.debug("CIFileView processFile")
         if let file = file {
             switch (file.fileStatus) {
             case .rcvInvitation:
-                Task {
-                    logger.debug("CIFileView processFile - in .rcvInvitation, in Task")
-                    do {
-                        try await receiveFile(fileId: file.fileId)
-                    } catch {
-                        logger.error("CIFileView.processFile - in .rcvInvitation error: \(error.localizedDescription)")
+                if fileSizeValid() {
+                    Task {
+                        logger.debug("CIFileView processFile - in .rcvInvitation, in Task")
+                        do {
+                            try await receiveFile(fileId: file.fileId)
+                        } catch {
+                            logger.error("CIFileView.processFile - in .rcvInvitation error: \(error.localizedDescription)")
+                        }
                     }
+                } else {
+                    AlertManager.shared.showAlertMsg(
+                        title: "Invalid file size",
+                        message: "Your contact wants to send a file larger than supported size (\(maxFileSize) bytes)."
+                    )
                 }
             case .rcvComplete:
                 logger.debug("CIFileView processFile - in .rcvComplete")
@@ -60,15 +72,26 @@ struct CIFileView: View {
         }
     }
 
-    func determineIcon() -> String {
-        var icon = "doc.circle.fill"
-        switch file?.fileStatus {
-        case .rcvInvitation: icon = "arrow.down.circle.fill"
-        case .rcvTransfer: icon = "ellipsis.circle.fill" // TODO animation
-        case .rcvCancelled: icon = "x.circle.fill"
-        default: icon = "doc.circle.fill"
+    @ViewBuilder func fileIndicator() -> some View {
+        if let file = file {
+            switch file.fileStatus {
+            case .rcvInvitation: fileIcon(fileSizeValid() ? "arrow.down.circle.fill" : "exclamationmark.triangle.fill")
+            case .rcvAccepted: fileIcon("link.circle.fill")
+            case .rcvTransfer: ProgressView().progressViewStyle(.circular).frame(width: 40, height: 40) // TODO pretty spinner
+            case .rcvCancelled: fileIcon("x.circle.fill")
+            default: fileIcon("doc.circle.fill")
+            }
+        } else {
+            fileIcon("doc.circle.fill")
         }
-        return icon
+    }
+
+    func fileIcon(_ icon: String) -> some View {
+        Image(systemName: icon)
+            .resizable()
+            .aspectRatio(contentMode: .fit)
+            .frame(width: 40, height: 40)
+            .foregroundColor(fileSizeValid() ? .accentColor : .red)
     }
 
     func formatBytes(bytes: Int64) -> String {

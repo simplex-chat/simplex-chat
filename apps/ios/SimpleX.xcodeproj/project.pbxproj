@@ -711,6 +711,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "SimpleX--iOS--Info.plist";
 				INFOPLIST_KEY_NSCameraUsageDescription = "SimpleX needs camera access to scan QR codes to connect to other app users";
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Access to Photo Library is needed for saving captured and received media";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -755,6 +756,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "SimpleX--iOS--Info.plist";
 				INFOPLIST_KEY_NSCameraUsageDescription = "SimpleX needs camera access to scan QR codes to connect to other app users";
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Access to Photo Library is needed for saving captured and received media";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
