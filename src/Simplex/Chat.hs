@@ -609,9 +609,10 @@ processChatCommand = \case
   ReceiveFile fileId filePath_ -> withUser $ \user@User {userId} ->
     withChatLock . procCmd $ do
       ft <- withStore $ \st -> getRcvFileTransfer st userId fileId
-      (CRRcvFileAccepted ft <$> acceptFileReceive user ft filePath_) `catchError` processError ft
+      (CRRcvFileAccepted <$> acceptFileReceive user ft filePath_) `catchError` processError ft
     where
       processError ft = \case
+        -- TODO AChatItem in Cancelled events
         ChatErrorAgent (SMP SMP.AUTH) -> pure $ CRRcvFileAcceptedSndCancelled ft
         ChatErrorAgent (CONN DUPLICATE) -> pure $ CRRcvFileAcceptedSndCancelled ft
         e -> throwError e
@@ -710,6 +711,7 @@ processChatCommand = \case
         case status of
           AFS _ CIFSSndStored -> cancelById fileId
           AFS _ CIFSRcvInvitation -> cancelById fileId
+          AFS _ CIFSRcvAccepted -> cancelById fileId
           AFS _ CIFSRcvTransfer -> cancelById fileId
           _ -> pure ()
       where
@@ -742,7 +744,7 @@ toFSFilePath :: ChatMonad m => FilePath -> m FilePath
 toFSFilePath f =
   maybe f (<> "/" <> f) <$> (readTVarIO =<< asks filesFolder)
 
-acceptFileReceive :: forall m. ChatMonad m => User -> RcvFileTransfer -> Maybe FilePath -> m FilePath
+acceptFileReceive :: forall m. ChatMonad m => User -> RcvFileTransfer -> Maybe FilePath -> m AChatItem
 acceptFileReceive user@User {userId} RcvFileTransfer {fileId, fileInvitation = FileInvitation {fileName = fName, fileConnReq}, fileStatus, senderDisplayName, grpMemberId} filePath_ = do
   unless (fileStatus == RFSNew) . throwChatError $ CEFileAlreadyReceiving fName
   case fileConnReq of
@@ -751,8 +753,7 @@ acceptFileReceive user@User {userId} RcvFileTransfer {fileId, fileInvitation = F
       tryError (withAgent $ \a -> joinConnection a connReq . directMessage $ XFileAcpt fName) >>= \case
         Right agentConnId -> do
           filePath <- getRcvFilePath filePath_ fName
-          withStore $ \st -> acceptRcvFileTransfer st userId fileId agentConnId filePath
-          pure filePath
+          withStore $ \st -> acceptRcvFileTransfer st user fileId agentConnId filePath
         Left e -> throwError e
     -- new file protocol
     Nothing ->
@@ -767,14 +768,14 @@ acceptFileReceive user@User {userId} RcvFileTransfer {fileId, fileInvitation = F
               acceptFileV2 $ \sharedMsgId fileInvConnReq -> sendDirectMessage conn (XFileAcptInv sharedMsgId fileInvConnReq fName) (GroupId groupId)
             _ -> throwChatError $ CEFileInternal "member connection not active" -- should not happen
       where
-        acceptFileV2 :: (SharedMsgId -> ConnReqInvitation -> m SndMessage) -> m FilePath
+        acceptFileV2 :: (SharedMsgId -> ConnReqInvitation -> m SndMessage) -> m AChatItem
         acceptFileV2 sendXFileAcptInv = do
           sharedMsgId <- withStore $ \st -> getSharedMsgIdByFileId st userId fileId
           (agentConnId, fileInvConnReq) <- withAgent (`createConnection` SCMInvitation)
           filePath <- getRcvFilePath filePath_ fName
-          withStore $ \st -> acceptRcvFileTransfer st userId fileId agentConnId filePath
+          ci <- withStore $ \st -> acceptRcvFileTransfer st user fileId agentConnId filePath
           void $ sendXFileAcptInv sharedMsgId fileInvConnReq
-          pure filePath
+          pure ci
   where
     getRcvFilePath :: Maybe FilePath -> String -> m FilePath
     getRcvFilePath fPath_ fn = case fPath_ of
@@ -1176,8 +1177,11 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
             XOk -> allowAgentConnection conn confId XOk
             _ -> pure ()
         CON -> do
-          withStore $ \st -> updateRcvFileStatus st ft FSConnected
-          toView $ CRRcvFileStart ft
+          ci <- withStore $ \st -> do
+            updateRcvFileStatus st ft FSConnected
+            updateCIFileStatus st userId fileId CIFSRcvTransfer
+            getChatItemByFileId st user fileId
+          toView $ CRRcvFileStart ci
         MSG meta@MsgMeta {recipient = (msgId, _), integrity} msgBody -> withAckMessage agentConnId meta $ do
           parseFileChunk msgBody >>= \case
             FileChunkCancel -> do

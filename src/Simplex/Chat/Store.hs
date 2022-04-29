@@ -2093,14 +2093,14 @@ getRcvFileTransfer_ db userId fileId =
         cancelled = fromMaybe False cancelled_
     rcvFileTransfer _ = Left $ SERcvFileNotFound fileId
 
-acceptRcvFileTransfer :: StoreMonad m => SQLiteStore -> UserId -> Int64 -> ConnId -> FilePath -> m ()
-acceptRcvFileTransfer st userId fileId agentConnId filePath =
-  liftIO . withTransaction st $ \db -> do
+acceptRcvFileTransfer :: StoreMonad m => SQLiteStore -> User -> Int64 -> ConnId -> FilePath -> m AChatItem
+acceptRcvFileTransfer st user@User {userId} fileId agentConnId filePath =
+  liftIOEither . withTransaction st $ \db -> do
     currentTs <- getCurrentTime
     DB.execute
       db
       "UPDATE files SET file_path = ?, ci_file_status = ?, updated_at = ? WHERE user_id = ? AND file_id = ?"
-      (filePath, CIFSRcvTransfer, currentTs, userId, fileId)
+      (filePath, CIFSRcvAccepted, currentTs, userId, fileId)
     DB.execute
       db
       "UPDATE rcv_files SET file_status = ?, updated_at = ? WHERE file_id = ?"
@@ -2109,6 +2109,7 @@ acceptRcvFileTransfer st userId fileId agentConnId filePath =
       db
       "INSERT INTO connections (agent_conn_id, conn_status, conn_type, rcv_file_id, user_id, created_at, updated_at) VALUES (?,?,?,?,?,?,?)"
       (agentConnId, ConnJoined, ConnRcvFile, fileId, userId, currentTs, currentTs)
+    getChatItemByFileId_ db user fileId
 
 updateRcvFileStatus :: MonadUnliftIO m => SQLiteStore -> RcvFileTransfer -> FileStatus -> m ()
 updateRcvFileStatus st RcvFileTransfer {fileId} status =
@@ -3480,19 +3481,23 @@ getGroupChatItemIdByText st User {userId, localDisplayName = userName} groupId c
         (userId, groupId, cName, quotedMsg <> "%")
 
 getChatItemByFileId :: StoreMonad m => SQLiteStore -> User -> Int64 -> m AChatItem
-getChatItemByFileId st user@User {userId} fileId = do
-  liftIOEither . withTransaction st $ \db -> runExceptT $ do
-    r <- ExceptT $ getChatItemIdByFileId_ db userId fileId
-    case r of
-      (itemId, Just contactId, Nothing) -> do
-        ct <- ExceptT $ getContact_ db userId contactId
-        (CChatItem msgDir ci) <- ExceptT $ getDirectChatItem_ db userId contactId itemId
-        pure $ AChatItem SCTDirect msgDir (DirectChat ct) ci
-      (itemId, Nothing, Just groupId) -> do
-        gInfo <- ExceptT $ getGroupInfo_ db user groupId
-        (CChatItem msgDir ci) <- ExceptT $ getGroupChatItem_ db user groupId itemId
-        pure $ AChatItem SCTGroup msgDir (GroupChat gInfo) ci
-      _ -> throwError $ SEChatItemNotFoundByFileId fileId
+getChatItemByFileId st user fileId =
+  liftIOEither . withTransaction st $ \db ->
+    getChatItemByFileId_ db user fileId
+
+getChatItemByFileId_ :: DB.Connection -> User -> Int64 -> IO (Either StoreError AChatItem)
+getChatItemByFileId_ db user@User {userId} fileId = runExceptT $ do
+  r <- ExceptT $ getChatItemIdByFileId_ db userId fileId
+  case r of
+    (itemId, Just contactId, Nothing) -> do
+      ct <- ExceptT $ getContact_ db userId contactId
+      (CChatItem msgDir ci) <- ExceptT $ getDirectChatItem_ db userId contactId itemId
+      pure $ AChatItem SCTDirect msgDir (DirectChat ct) ci
+    (itemId, Nothing, Just groupId) -> do
+      gInfo <- ExceptT $ getGroupInfo_ db user groupId
+      (CChatItem msgDir ci) <- ExceptT $ getGroupChatItem_ db user groupId itemId
+      pure $ AChatItem SCTGroup msgDir (GroupChat gInfo) ci
+    _ -> throwError $ SEChatItemNotFoundByFileId fileId
 
 getChatItemIdByFileId_ :: DB.Connection -> UserId -> Int64 -> IO (Either StoreError (ChatItemId, Maybe Int64, Maybe Int64))
 getChatItemIdByFileId_ db userId fileId =
