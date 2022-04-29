@@ -30,6 +30,12 @@ let key
 // Hardcode iv as pulling iv from received data currently fails
 let iv = Uint8Array.from([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12])
 let IV_LENGTH = 12
+const initialPlainTextRequired = {
+  key: 10,
+  delta: 3,
+  undefined: 1,
+}
+
 // let encryptKeyRepresentation
 let candidates = []
 run()
@@ -207,9 +213,10 @@ function encodeFunction(frame, controller) {
   // frame is an RTCEncodedAudioFrame
   // frame.data is ArrayBuffer
   let data = new Uint8Array(frame.data)
+  let n = initialPlainTextRequired[frame.type]
   // let iv = randomIV()
-  let initial = data.subarray(0, 10)
-  let plaintext = data.subarray(10, data.byteLength)
+  let initial = data.subarray(0, n)
+  let plaintext = data.subarray(n, data.byteLength)
   crypto.subtle
     .encrypt({name: "AES-GCM", iv: iv.buffer}, key, plaintext)
     .then((c) => {
@@ -224,8 +231,9 @@ function encodeFunction(frame, controller) {
 }
 function decodeFunction(frame, controller) {
   let data = new Uint8Array(frame.data)
-  let initial = data.subarray(0, 10)
-  let ciphertext = data.subarray(10, data.byteLength - IV_LENGTH)
+  let n = initialPlainTextRequired[frame.type]
+  let initial = data.subarray(0, n)
+  let ciphertext = data.subarray(n, data.byteLength - IV_LENGTH)
   // Decrypt fails with IV pulled from received data
   // let iv = data.subarray(data.byteLength - IV_LENGTH, data.byteLength)
   crypto.subtle
