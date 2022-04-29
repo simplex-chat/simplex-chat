@@ -144,14 +144,26 @@ function setUpVideos(pc, localStream, remoteStream) {
       remoteStream.addTrack(track)
     })
   }
-  // Use VP8 by default to limit depacketisation issues.
-  // const {codecs} = RTCRtpSender.getCapabilities("video")
-  // const selectedCodecIndex = codecs.findIndex((c) => c.mimeType === "video/VP8")
-  // const selectedCodec = codecs[selectedCodecIndex]
-  // codecs.splice(selectedCodecIndex, 1)
-  // codecs.unshift(selectedCodec)
-  // const transceiver = pc.getTransceivers().find((t) => t.sender && t.sender.track.kind === "video")
-  // transceiver.setCodecPreferences(codecs)
+  // We assume VP8 encoding in the decode/encode stages to get the initial
+  // bytes to pass as plaintext so we enforce that here.
+  // VP8 is supported by all supports of webrtc.
+  // Use of VP8 by default may also reduce depacketisation issues.
+  // We do not encrypt the first couple of bytes of the payload so that the
+  // video elements can work by determining video keyframes and the opus mode
+  // being used. This appears to be necessary for any video feed at all.
+  // For VP8 this is the content described in
+  //   https://tools.ietf.org/html/rfc6386#section-9.1
+  // which is 10 bytes for key frames and 3 bytes for delta frames.
+  // For opus (where encodedFrame.type is not set) this is the TOC byte from
+  //   https://tools.ietf.org/html/rfc6716#section-3.1
+
+  const {codecs} = RTCRtpSender.getCapabilities("video")
+  const selectedCodecIndex = codecs.findIndex((c) => c.mimeType === "video/VP8")
+  const selectedCodec = codecs[selectedCodecIndex]
+  codecs.splice(selectedCodecIndex, 1)
+  codecs.unshift(selectedCodec)
+  const transceiver = pc.getTransceivers().find((t) => t.sender && t.sender.track.kind === "video")
+  transceiver.setCodecPreferences(codecs)
 
   outgoingVideo.srcObject = localStream
   incomingVideo.srcObject = remoteStream
