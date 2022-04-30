@@ -554,10 +554,10 @@ processChatCommand = \case
   LastMessages Nothing _count -> pure $ chatCmdError "not implemented"
   SendFile cName f -> withUser $ \User {userId} -> do
     contactId <- withStore $ \st -> getContactIdByName st userId cName
-    processChatCommand $ APISendMessage (ChatRef CTDirect contactId) (Just f) Nothing (MCText "")
+    processChatCommand $ APISendMessage (ChatRef CTDirect contactId) (Just f) Nothing (MCFile "")
   SendGroupFile gName f -> withUser $ \user -> do
     groupId <- withStore $ \st -> getGroupIdByName st user gName
-    processChatCommand $ APISendMessage (ChatRef CTGroup groupId) (Just f) Nothing (MCText "")
+    processChatCommand $ APISendMessage (ChatRef CTGroup groupId) (Just f) Nothing (MCFile "")
   ReceiveFile fileId filePath_ -> withUser $ \user@User {userId} ->
     withChatLock . procCmd $ do
       ft <- withStore $ \st -> getRcvFileTransfer st userId fileId
@@ -1340,7 +1340,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
       chSize <- asks $ fileChunkSize . config
       RcvFileTransfer {fileId} <- withStore $ \st -> createRcvFileTransfer st userId ct fInv chSize
       let ciFile = Just $ CIFile {fileId, fileName, fileSize, filePath = Nothing, fileStatus = CIFSRcvInvitation}
-      ci <- saveRcvChatItem user (CDDirectRcv ct) msg msgMeta (CIRcvMsgContent $ MCText "") ciFile
+      ci <- saveRcvChatItem user (CDDirectRcv ct) msg msgMeta (CIRcvMsgContent $ MCFile "") ciFile
       toView . CRNewChatItem $ AChatItem SCTDirect SMDRcv (DirectChat ct) ci
       checkIntegrity msgMeta $ toView . CRMsgIntegrityError
       showToast (c <> "> ") "wants to send a file"
@@ -1352,7 +1352,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
       chSize <- asks $ fileChunkSize . config
       RcvFileTransfer {fileId} <- withStore $ \st -> createRcvGroupFileTransfer st userId m fInv chSize
       let ciFile = Just $ CIFile {fileId, fileName, fileSize, filePath = Nothing, fileStatus = CIFSRcvInvitation}
-      ci <- saveRcvChatItem user (CDGroupRcv gInfo m) msg msgMeta (CIRcvMsgContent $ MCText "") ciFile
+      ci <- saveRcvChatItem user (CDGroupRcv gInfo m) msg msgMeta (CIRcvMsgContent $ MCFile "") ciFile
       groupMsgToView gInfo ci msgMeta
       let g = groupName' gInfo
       showToast ("#" <> g <> " " <> c <> "> ") "wants to send a file"
