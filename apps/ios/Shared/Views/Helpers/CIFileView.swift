@@ -14,21 +14,28 @@ struct CIFileView: View {
 
     var body: some View {
         Button(action: fileAction) {
-            HStack(alignment: .center, spacing: 6) {
+            HStack(alignment: .bottom, spacing: 6) {
                 fileIndicator()
+                    .padding(.top, 5)
+                    .padding(.bottom, 3)
                 if let file = file {
-                    VStack(alignment: .leading) {
+                    VStack(alignment: .leading, spacing: 2) {
                         Text(file.fileName)
+                            .lineLimit(1)
+                            .multilineTextAlignment(.leading)
                             .foregroundColor(.primary)
-                        Text(formatBytes(bytes: file.fileSize))
+                        Text(formatBytes(bytes: file.fileSize) + "                   ")
                             .font(.caption)
+                            .lineLimit(1)
+                            .multilineTextAlignment(.leading)
                             .foregroundColor(.secondary)
                     }
                 }
             }
-            .padding(.vertical, 6)
-            .padding(.leading, 12)
-            .padding(.trailing, 72)
+            .padding(.top, 4)
+            .padding(.bottom, 6)
+            .padding(.leading, 10)
+            .padding(.trailing, 12)
         }
         .disabled(file == nil || (file?.fileStatus != .rcvInvitation && file?.fileStatus != .rcvAccepted && file?.fileStatus != .rcvComplete))
     }
@@ -77,7 +84,7 @@ struct CIFileView: View {
             switch file.fileStatus {
             case .rcvInvitation:
                 if fileSizeValid() {
-                    fileIcon("arrow.down.doc.fill")
+                    fileIcon("arrow.down.doc.fill", color: .accentColor)
                 } else {
                     fileIcon("doc.fill", color: .orange, innerIcon: "exclamationmark", innerIconSize: 12)
                 }
@@ -96,7 +103,7 @@ struct CIFileView: View {
             Image(systemName: icon)
                 .resizable()
                 .aspectRatio(contentMode: .fit)
-                .frame(width: 29, height: 29)
+                .frame(width: 30, height: 30)
                 .foregroundColor(color)
             if let innerIcon = innerIcon,
                let innerIconSize = innerIconSize {
@@ -134,7 +141,7 @@ struct CIFileView_Previews: PreviewProvider {
     static var previews: some View {
         Group{
             ChatItemView(chatItem: ChatItem.getFileMsgContentSample())
-            ChatItemView(chatItem: ChatItem.getFileMsgContentSample(fileStatus: .rcvInvitation))
+            ChatItemView(chatItem: ChatItem.getFileMsgContentSample(fileName: "some_long_file_name_here", fileStatus: .rcvInvitation))
             ChatItemView(chatItem: ChatItem.getFileMsgContentSample(fileStatus: .rcvAccepted))
             ChatItemView(chatItem: ChatItem.getFileMsgContentSample(fileStatus: .rcvTransfer))
             ChatItemView(chatItem: ChatItem.getFileMsgContentSample(fileStatus: .rcvCancelled))
