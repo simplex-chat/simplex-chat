@@ -26,8 +26,9 @@ struct CIFileView: View {
                     }
                 }
             }
-            .padding(.top, 8)
-            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .padding(.leading, 12)
+            .padding(.trailing, 72)
         }
         .disabled(file == nil || (file?.fileStatus != .rcvInvitation && file?.fileStatus != .rcvAccepted && file?.fileStatus != .rcvComplete))
     }
@@ -74,10 +75,15 @@ struct CIFileView: View {
     @ViewBuilder func fileIndicator() -> some View {
         if let file = file {
             switch file.fileStatus {
-            case .rcvInvitation: if fileSizeValid() { fileIcon("arrow.down.doc.fill") } else { largeFileIcon() }
-            case .rcvAccepted: fileIcon("doc.fill.badge.ellipsis")
-            case .rcvTransfer: ProgressView().frame(width: 40, height: 40)
-            case .rcvCancelled: cancelledFileIcon()
+            case .rcvInvitation:
+                if fileSizeValid() {
+                    fileIcon("arrow.down.doc.fill")
+                } else {
+                    fileIcon("doc.fill", color: .orange, innerIcon: "exclamationmark", innerIconSize: 12)
+                }
+            case .rcvAccepted: fileIcon("doc.fill", innerIcon: "ellipsis", innerIconSize: 12)
+            case .rcvTransfer: ProgressView().frame(width: 35, height: 35)
+            case .rcvCancelled: fileIcon("doc.fill", innerIcon: "xmark", innerIconSize: 10)
             default: fileIcon("doc.fill")
             }
         } else {
@@ -85,45 +91,23 @@ struct CIFileView: View {
         }
     }
 
-    func fileIcon(_ icon: String) -> some View {
-        Image(systemName: icon)
-            .resizable()
-            .aspectRatio(contentMode: .fit)
-            .frame(width: 29, height: 29)
-            .foregroundColor(.secondary)
-    }
-
-    func largeFileIcon() -> some View {
+    func fileIcon(_ icon: String, color: Color = .secondary, innerIcon: String? = nil, innerIconSize: CGFloat? = nil) -> some View {
         ZStack(alignment: .center) {
-            Image(systemName: "doc.fill")
+            Image(systemName: icon)
                 .resizable()
                 .aspectRatio(contentMode: .fit)
                 .frame(width: 29, height: 29)
-                .foregroundColor(.orange)
-            Image(systemName: "exclamationmark")
-                .resizable()
-                .aspectRatio(contentMode: .fit)
-                .frame(maxHeight: 16)
-                .frame(width: 12, height: 12)
-                .foregroundColor(.white)
-                .padding(.top, 12)
-        }
-    }
-
-    func cancelledFileIcon() -> some View {
-        ZStack(alignment: .center) {
-            Image(systemName: "doc.fill")
-                .resizable()
-                .aspectRatio(contentMode: .fit)
-                .frame(width: 29, height: 29)
-                .foregroundColor(.secondary)
-            Image(systemName: "xmark")
-                .resizable()
-                .aspectRatio(contentMode: .fit)
-                .frame(maxHeight: 16)
-                .frame(width: 10, height: 10)
-                .foregroundColor(.white)
-                .padding(.top, 12)
+                .foregroundColor(color)
+            if let innerIcon = innerIcon,
+               let innerIconSize = innerIconSize {
+                Image(systemName: innerIcon)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(maxHeight: 16)
+                    .frame(width: innerIconSize, height: innerIconSize)
+                    .foregroundColor(.white)
+                    .padding(.top, 12)
+            }
         }
     }
 
@@ -156,6 +140,7 @@ struct CIFileView_Previews: PreviewProvider {
             ChatItemView(chatItem: ChatItem.getFileMsgContentSample(fileStatus: .rcvCancelled))
             ChatItemView(chatItem: ChatItem.getFileMsgContentSample(fileSize: 2000000, fileStatus: .rcvInvitation))
             ChatItemView(chatItem: ChatItem.getFileMsgContentSample(fileName: "x"))
+            ChatItemView(chatItem: ChatItem.getFileMsgContentSample(text: "Hello there", fileStatus: .rcvInvitation))
             ChatItemView(chatItem: ChatItem.getFileMsgContentSample(text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.", fileStatus: .rcvInvitation))
         }
         .previewLayout(.fixed(width: 360, height: 360))
