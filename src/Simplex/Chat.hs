@@ -551,7 +551,8 @@ processChatCommand = \case
   LastMessages (Just chatName) count -> withUser $ \user -> do
     chatRef <- getChatRef user chatName
     CRLastMessages . aChatItems . chat <$> (processChatCommand . APIGetChat chatRef $ CPLast count)
-  LastMessages Nothing _count -> pure $ chatCmdError "not implemented"
+  LastMessages Nothing count -> withUser $ \user -> withStore $ \st ->
+    CRLastMessages <$> getAllChatItems st user (CPLast count)
   SendFile chatName f -> withUser $ \user -> do
     chatRef <- getChatRef user chatName
     processChatCommand $ APISendMessage chatRef (Just f) Nothing (MCFile "")
