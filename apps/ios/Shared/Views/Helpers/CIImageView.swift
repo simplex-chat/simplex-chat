@@ -42,7 +42,7 @@ struct CIImageView: View {
               let uiImage = UIImage(data: data) {
                 imageView(uiImage)
                     .onTapGesture {
-                        if case file?.fileStatus = CIFileStatus.rcvAccepted {
+                        if case .rcvAccepted = file?.fileStatus {
                             AlertManager.shared.showAlertMsg(
                                 title: "Waiting for image",
                                 message: "Image reception will start when your contact is online, please wait or check later!"
