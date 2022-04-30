@@ -1915,7 +1915,7 @@ chatCommandP =
     <|> ("! " <|> "!") *> (EditMessage <$> chatNameP <* A.space <*> (quotedMsg <|> pure "") <*> A.takeByteString)
     <|> "/feed " *> (SendMessageBroadcast <$> A.takeByteString)
     <|> ("/tail" <|> "/t") *> (LastMessages <$> optional (A.space *> chatNameP) <*> msgCountP)
-    <|> ("/file " <|> "/f ") *> (SendFile <$> chatNameP <* A.space <*> filePath)
+    <|> ("/file " <|> "/f ") *> (SendFile <$> chatNameP' <* A.space <*> filePath)
     <|> ("/freceive " <|> "/fr ") *> (ReceiveFile <$> A.decimal <*> optional (A.space *> filePath))
     <|> ("/fcancel " <|> "/fc ") *> (CancelFile <$> A.decimal)
     <|> ("/fstatus " <|> "/fs ") *> (FileStatus <$> A.decimal)
@@ -1980,6 +1980,7 @@ chatCommandP =
         <|> (" member" $> GRMember)
         <|> pure GRAdmin
     chatNameP = ChatName <$> chatTypeP <*> displayName
+    chatNameP' = ChatName <$> (chatTypeP <|> pure CTDirect) <*> displayName
     chatRefP = ChatRef <$> chatTypeP <*> A.decimal
     msgCountP = A.space *> A.decimal <|> pure 10
 
