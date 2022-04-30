@@ -469,6 +469,20 @@ testGroup2 =
       bob <##> cath
       dan <##> cath
       dan <##> alice
+      -- show last messages
+      alice ##> "/t #club 3"
+      alice <# "#club cath> hey"
+      alice <# "#club dan> how is it going?"
+      alice <# "#club hello"
+      alice ##> "/t @dan 2"
+      alice <# "dan> hi"
+      alice <# "@dan hey"
+      alice ##> "/t 5"
+      alice <# "#club cath> hey"
+      alice <# "#club dan> how is it going?"
+      alice <# "dan> hi"
+      alice <# "#club hello"
+      alice <# "@dan hey"
       -- remove member
       cath ##> "/rm club dan"
       concurrentlyN_
