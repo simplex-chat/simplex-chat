@@ -41,6 +41,14 @@ struct CIImageView: View {
             } else if let data = Data(base64Encoded: dropImagePrefix(image)),
               let uiImage = UIImage(data: data) {
                 imageView(uiImage)
+                    .onTapGesture {
+                        if case file?.fileStatus = CIFileStatus.rcvAccepted {
+                            AlertManager.shared.showAlertMsg(
+                                title: "Image invitation accepted",
+                                message: "Image transfer will start when your contact's device is online, please wait or check later!"
+                            )
+                        }
+                    }
             }
         }
     }

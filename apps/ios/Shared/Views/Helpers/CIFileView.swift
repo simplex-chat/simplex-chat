@@ -13,7 +13,7 @@ struct CIFileView: View {
     let file: CIFile?
 
     var body: some View {
-        Button(action: processFile) {
+        Button(action: fileAction) {
             HStack(alignment: .center, spacing: 6) {
                 fileIndicator()
                 if let file = file {
@@ -29,7 +29,7 @@ struct CIFileView: View {
             .padding(.top, 8)
             .padding(.horizontal, 12)
         }
-        .disabled(file == nil || (file?.fileStatus != .rcvInvitation && file?.fileStatus != .rcvComplete))
+        .disabled(file == nil || (file?.fileStatus != .rcvInvitation && file?.fileStatus != .rcvAccepted && file?.fileStatus != .rcvComplete))
     }
 
     func fileSizeValid() -> Bool {
@@ -41,7 +41,7 @@ struct CIFileView: View {
         }
     }
 
-    func processFile() {
+    func fileAction() {
         logger.debug("CIFileView processFile")
         if let file = file {
             switch (file.fileStatus) {
@@ -57,6 +57,11 @@ struct CIFileView: View {
                         message: "Your contact wants to send a file larger than supported size (\(maxFileSize) bytes)."
                     )
                 }
+            case .rcvAccepted:
+                AlertManager.shared.showAlertMsg(
+                    title: "File invitation accepted",
+                    message: "File transfer will start when your contact's device is online, please wait or check later!"
+                )
             case .rcvComplete:
                 logger.debug("CIFileView processFile - in .rcvComplete")
                 if let filePath = getStoredFilePath(file){
