@@ -552,12 +552,9 @@ processChatCommand = \case
     chatRef <- getChatRef user chatName
     CRLastMessages . aChatItems . chat <$> (processChatCommand . APIGetChat chatRef $ CPLast count)
   LastMessages Nothing _count -> pure $ chatCmdError "not implemented"
-  SendFile cName f -> withUser $ \User {userId} -> do
-    contactId <- withStore $ \st -> getContactIdByName st userId cName
-    processChatCommand $ APISendMessage (ChatRef CTDirect contactId) (Just f) Nothing (MCFile "")
-  SendGroupFile gName f -> withUser $ \user -> do
-    groupId <- withStore $ \st -> getGroupIdByName st user gName
-    processChatCommand $ APISendMessage (ChatRef CTGroup groupId) (Just f) Nothing (MCFile "")
+  SendFile chatName f -> withUser $ \user -> do
+    chatRef <- getChatRef user chatName
+    processChatCommand $ APISendMessage chatRef (Just f) Nothing (MCFile "")
   ReceiveFile fileId filePath_ -> withUser $ \user@User {userId} ->
     withChatLock . procCmd $ do
       ft <- withStore $ \st -> getRcvFileTransfer st userId fileId
@@ -1918,8 +1915,7 @@ chatCommandP =
     <|> ("! " <|> "!") *> (EditMessage <$> chatNameP <* A.space <*> (quotedMsg <|> pure "") <*> A.takeByteString)
     <|> "/feed " *> (SendMessageBroadcast <$> A.takeByteString)
     <|> ("/tail" <|> "/t") *> (LastMessages <$> optional (A.space *> chatNameP) <*> msgCountP)
-    <|> ("/file #" <|> "/f #") *> (SendGroupFile <$> displayName <* A.space <*> filePath)
-    <|> ("/file @" <|> "/file " <|> "/f @" <|> "/f ") *> (SendFile <$> displayName <* A.space <*> filePath)
+    <|> ("/file " <|> "/f ") *> (SendFile <$> chatNameP <* A.space <*> filePath)
     <|> ("/freceive " <|> "/fr ") *> (ReceiveFile <$> A.decimal <*> optional (A.space *> filePath))
     <|> ("/fcancel " <|> "/fc ") *> (CancelFile <$> A.decimal)
     <|> ("/fstatus " <|> "/fs ") *> (FileStatus <$> A.decimal)

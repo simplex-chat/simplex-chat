@@ -46,7 +46,6 @@ runInputLoop ct cc = forever $ do
     isMessage = \case
       Right SendMessage {} -> True
       Right SendFile {} -> True
-      Right SendGroupFile {} -> True
       Right SendMessageQuote {} -> True
       Right SendGroupMessageQuote {} -> True
       Right SendMessageBroadcast {} -> True
