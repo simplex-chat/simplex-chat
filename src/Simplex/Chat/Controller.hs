@@ -95,6 +95,7 @@ data ChatCommand
   = ShowActiveUser
   | CreateActiveUser Profile
   | StartChat
+  | ResubscribeAllConnections
   | SetFilesFolder FilePath
   | APIGetChats {pendingConnections :: Bool}
   | APIGetChat ChatRef ChatPagination
