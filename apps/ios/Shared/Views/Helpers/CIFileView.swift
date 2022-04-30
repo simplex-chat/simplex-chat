@@ -49,11 +49,7 @@ struct CIFileView: View {
                 if fileSizeValid() {
                     Task {
                         logger.debug("CIFileView processFile - in .rcvInvitation, in Task")
-                        do {
-                            try await receiveFile(fileId: file.fileId)
-                        } catch {
-                            logger.error("CIFileView.processFile - in .rcvInvitation error: \(error.localizedDescription)")
-                        }
+                        await receiveFile(fileId: file.fileId)
                     }
                 } else {
                     AlertManager.shared.showAlertMsg(
