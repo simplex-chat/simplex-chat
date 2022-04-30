@@ -77,7 +77,7 @@ struct CIFileView: View {
             case .rcvInvitation: if fileSizeValid() { fileIcon("arrow.down.doc.fill") } else { largeFileIcon() }
             case .rcvAccepted: fileIcon("doc.fill.badge.ellipsis")
             case .rcvTransfer: ProgressView().frame(width: 40, height: 40)
-            case .rcvCancelled: fileIcon("x.circle.fill")
+            case .rcvCancelled: cancelledFileIcon()
             default: fileIcon("doc.fill")
             }
         } else {
@@ -104,8 +104,26 @@ struct CIFileView: View {
                 .resizable()
                 .aspectRatio(contentMode: .fit)
                 .frame(maxHeight: 16)
-                .frame(width: 29, height: 29)
+                .frame(width: 12, height: 12)
                 .foregroundColor(.white)
+                .padding(.top, 12)
+        }
+    }
+
+    func cancelledFileIcon() -> some View {
+        ZStack(alignment: .center) {
+            Image(systemName: "doc.fill")
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 29, height: 29)
+                .foregroundColor(.secondary)
+            Image(systemName: "xmark")
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(maxHeight: 16)
+                .frame(width: 10, height: 10)
+                .foregroundColor(.white)
+                .padding(.top, 12)
         }
     }
 
