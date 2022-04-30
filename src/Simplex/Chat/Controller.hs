@@ -146,9 +146,7 @@ data ChatCommand
   | SendGroupMessageQuote {groupName :: GroupName, contactName_ :: Maybe ContactName, quotedMsg :: ByteString, message :: ByteString}
   | LastMessages (Maybe ChatName) Int
   | SendFile ContactName FilePath
-  | SendFileInv ContactName FilePath
   | SendGroupFile GroupName FilePath
-  | SendGroupFileInv GroupName FilePath
   | ReceiveFile FileTransferId (Maybe FilePath)
   | CancelFile FileTransferId
   | FileStatus FileTransferId
