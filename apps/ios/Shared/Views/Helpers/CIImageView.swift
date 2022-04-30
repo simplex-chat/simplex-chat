@@ -44,8 +44,8 @@ struct CIImageView: View {
                     .onTapGesture {
                         if case file?.fileStatus = CIFileStatus.rcvAccepted {
                             AlertManager.shared.showAlertMsg(
-                                title: "Image invitation accepted",
-                                message: "Image transfer will start when your contact's device is online, please wait or check later!"
+                                title: "Waiting for image",
+                                message: "Image reception will start when your contact is online, please wait or check later!"
                             )
                         }
                     }
@@ -70,13 +70,13 @@ struct CIImageView: View {
         if let file = file {
             switch file.fileStatus {
             case .rcvAccepted:
-                Image(systemName: "link.circle.fill")
+                Image(systemName: "ellipsis")
                     .resizable()
                     .aspectRatio(contentMode: .fit)
                     .frame(width: 20, height: 20)
                     .foregroundColor(.white)
             case .rcvTransfer:
-                ProgressView() // TODO pretty spinner
+                ProgressView()
                     .progressViewStyle(.circular)
                     .frame(width: 20, height: 20)
                     .tint(.white)
