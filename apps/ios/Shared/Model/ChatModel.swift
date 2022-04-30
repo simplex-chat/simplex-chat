@@ -749,6 +749,16 @@ struct ChatItem: Identifiable, Decodable {
             file: file
        )
     }
+
+    static func getFileMsgContentSample (id: Int64 = 1, text: String = "", fileName: String = "test.txt", fileSize: Int64 = 100, fileStatus: CIFileStatus = .rcvComplete) -> ChatItem {
+        ChatItem(
+            chatDir: .directRcv,
+            meta: CIMeta.getSample(id, .now, text, .rcvRead, false, false, false),
+            content: .rcvMsgContent(msgContent: .file(text)),
+            quotedItem: nil,
+            file: CIFile.getSample(fileName: fileName, fileSize: fileSize, fileStatus: fileStatus)
+       )
+    }
     
     static func getDeletedContentSample (_ id: Int64 = 1, dir: CIDirection = .directRcv, _ ts: Date = .now, _ text: String = "this item is deleted", _ status: CIStatus = .rcvRead) -> ChatItem {
         ChatItem(
@@ -901,7 +911,7 @@ struct CIFile: Decodable {
     var filePath: String?
     var fileStatus: CIFileStatus
 
-    static func getSample(_ fileId: Int64, _ fileName: String, _ fileSize: Int64, filePath: String?, fileStatus: CIFileStatus = .sndStored) -> CIFile {
+    static func getSample(fileId: Int64 = 1, fileName: String = "test.txt", fileSize: Int64 = 100, filePath: String? = "test.txt", fileStatus: CIFileStatus = .rcvComplete) -> CIFile {
         CIFile(fileId: fileId, fileName: fileName, fileSize: fileSize, filePath: filePath, fileStatus: fileStatus)
     }
 
