@@ -45,7 +45,7 @@ struct CIImageView: View {
                         if case .rcvAccepted = file?.fileStatus {
                             AlertManager.shared.showAlertMsg(
                                 title: "Waiting for image",
-                                message: "Image reception will start when your contact is online, please wait or check later!"
+                                message: "Image will be received when your contact is online, please wait or check later!"
                             )
                         }
                     }

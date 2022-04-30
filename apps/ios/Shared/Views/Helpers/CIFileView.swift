@@ -22,7 +22,7 @@ struct CIFileView: View {
                             .foregroundColor(.primary)
                         Text(formatBytes(bytes: file.fileSize))
                             .font(.caption)
-                            .foregroundColor(.primary)
+                            .foregroundColor(.secondary)
                     }
                 }
             }
@@ -33,12 +33,10 @@ struct CIFileView: View {
     }
 
     func fileSizeValid() -> Bool {
-        if let file = file,
-           file.fileSize <= maxFileSize {
-            return true
-        } else {
-            return false
+        if let file = file {
+           return file.fileSize <= maxFileSize
         }
+        return false
     }
 
     func fileAction() {
@@ -53,14 +51,14 @@ struct CIFileView: View {
                     }
                 } else {
                     AlertManager.shared.showAlertMsg(
-                        title: "Invalid file size",
-                        message: "Your contact wants to send a file larger than supported size (\(maxFileSize) bytes)."
+                        title: "Large file!",
+                        message: "Your contact sent file that is larger than currently supported maximum size (\(maxFileSize) bytes)."
                     )
                 }
             case .rcvAccepted:
                 AlertManager.shared.showAlertMsg(
-                    title: "File invitation accepted",
-                    message: "File transfer will start when your contact's device is online, please wait or check later!"
+                    title: "Waiting for file",
+                    message: "File will be received when your contact is online, please wait or check later!"
                 )
             case .rcvComplete:
                 logger.debug("CIFileView processFile - in .rcvComplete")
@@ -76,11 +74,11 @@ struct CIFileView: View {
     @ViewBuilder func fileIndicator() -> some View {
         if let file = file {
             switch file.fileStatus {
-            case .rcvInvitation: fileIcon(fileSizeValid() ? "arrow.down.circle.fill" : "exclamationmark.triangle.fill")
-            case .rcvAccepted: fileIcon("link.circle.fill")
-            case .rcvTransfer: ProgressView().progressViewStyle(.circular).frame(width: 40, height: 40) // TODO pretty spinner
+            case .rcvInvitation: if fileSizeValid() { fileIcon("arrow.down.doc.fill") } else { largeFileIcon() }
+            case .rcvAccepted: fileIcon("doc.fill.badge.ellipsis")
+            case .rcvTransfer: ProgressView().frame(width: 40, height: 40)
             case .rcvCancelled: fileIcon("x.circle.fill")
-            default: fileIcon("doc.circle.fill")
+            default: fileIcon("doc.fill")
             }
         } else {
             fileIcon("doc.circle.fill")
@@ -91,8 +89,24 @@ struct CIFileView: View {
         Image(systemName: icon)
             .resizable()
             .aspectRatio(contentMode: .fit)
-            .frame(width: 40, height: 40)
-            .foregroundColor(fileSizeValid() ? .accentColor : .red)
+            .frame(width: 29, height: 29)
+            .foregroundColor(.secondary)
+    }
+
+    func largeFileIcon() -> some View {
+        ZStack(alignment: .center) {
+            Image(systemName: "doc.fill")
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 29, height: 29)
+                .foregroundColor(.orange)
+            Image(systemName: "exclamationmark")
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(maxHeight: 16)
+                .frame(width: 29, height: 29)
+                .foregroundColor(.white)
+        }
     }
 
     func formatBytes(bytes: Int64) -> String {
