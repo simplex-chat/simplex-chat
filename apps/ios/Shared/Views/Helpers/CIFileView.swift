@@ -82,7 +82,7 @@ struct CIFileView: View {
                     fileIcon("doc.fill", color: .orange, innerIcon: "exclamationmark", innerIconSize: 12)
                 }
             case .rcvAccepted: fileIcon("doc.fill", innerIcon: "ellipsis", innerIconSize: 12)
-            case .rcvTransfer: ProgressView().frame(width: 35, height: 35)
+            case .rcvTransfer: ProgressView().frame(width: 29, height: 29)
             case .rcvCancelled: fileIcon("doc.fill", innerIcon: "xmark", innerIconSize: 10)
             default: fileIcon("doc.fill")
             }
