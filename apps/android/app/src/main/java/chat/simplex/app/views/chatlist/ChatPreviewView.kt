@@ -4,8 +4,10 @@ import android.content.res.Configuration
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Text
+import androidx.compose.material.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Circle
+import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -17,8 +19,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
-import chat.simplex.app.model.Chat
-import chat.simplex.app.model.getTimestampText
+import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.HighOrLowlight
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.chat.item.MarkdownText
@@ -29,7 +30,12 @@ import chat.simplex.app.views.helpers.badgeLayout
 fun ChatPreviewView(chat: Chat) {
   Row {
     val cInfo = chat.chatInfo
-    ChatInfoImage(cInfo, size = 72.dp)
+    Box(contentAlignment = Alignment.BottomStart) {
+      ChatInfoImage(cInfo, size = 72.dp)
+      if (cInfo is ChatInfo.Direct) {
+        ChatStatusImage(chat)
+      }
+    }
     Column(
       modifier = Modifier
         .padding(horizontal = 8.dp)
@@ -83,6 +89,27 @@ fun ChatPreviewView(chat: Chat) {
         )
       }
     }
+  }
+}
+
+@Composable
+fun ChatStatusImage(chat: Chat) {
+  val s = chat.serverInfo.networkStatus
+  val descr = s.statusString
+  if (s is Chat.NetworkStatus.Error) {
+    Icon(
+      Icons.Filled.Circle,
+      contentDescription = descr,
+      tint = HighOrLowlight,
+      modifier = Modifier.padding(start = 6.dp).padding(bottom = 4.dp).size(6.dp)
+    )
+  } else if (!(s is Chat.NetworkStatus.Connected)) {
+    Icon(
+      Icons.Filled.MoreHoriz,
+      contentDescription = descr,
+      tint = HighOrLowlight,
+      modifier = Modifier.width(19.dp).padding(start = 6.dp)
+    )
   }
 }
 
