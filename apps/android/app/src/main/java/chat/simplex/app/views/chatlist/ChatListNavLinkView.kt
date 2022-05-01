@@ -3,12 +3,12 @@ package chat.simplex.app.views.chatlist
 import android.content.res.Configuration
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.Divider
-import androidx.compose.material.Surface
+import androidx.compose.material.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.R
@@ -22,14 +22,15 @@ fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
   ChatListNavLinkLayout(
     chat = chat,
     click = {
-      if (chat.chatInfo is ChatInfo.ContactRequest) {
-        contactRequestAlertDialog(chat.chatInfo, chatModel)
-      } else {
-        if (chat.chatInfo.ready) {
-          withApi { openChat(chatModel, chat.chatInfo) }
-        } else {
-          pendingConnectionAlertDialog(chat.chatInfo, chatModel)
-        }
+      when (chat.chatInfo) {
+        is ChatInfo.ContactRequest -> contactRequestAlertDialog(chat.chatInfo, chatModel)
+        is ChatInfo.ContactConnection -> contactConnectionAlertDialog(chat.chatInfo.contactConnection, chatModel)
+        else ->
+          if (chat.chatInfo.ready) {
+            withApi { openChat(chatModel, chat.chatInfo) }
+          } else {
+            pendingContactAlertDialog(chat.chatInfo, chatModel)
+          }
       }
     }
   )
@@ -67,7 +68,58 @@ fun contactRequestAlertDialog(contactRequest: ChatInfo.ContactRequest, chatModel
   )
 }
 
-fun pendingConnectionAlertDialog(chatInfo: ChatInfo, chatModel: ChatModel) {
+fun contactConnectionAlertDialog(connection: PendingContactConnection, chatModel: ChatModel) {
+  AlertManager.shared.showAlertDialogButtons(
+    title = generalGetString(
+      if (connection.initiated) R.string.you_invited_your_contact
+      else R.string.you_accepted_connection
+    ),
+    text = generalGetString(
+      if (connection.viaContactUri) R.string.you_will_be_connected_when_your_connection_request_is_accepted
+      else R.string.you_will_be_connected_when_your_contacts_device_is_online
+    ),
+    buttons = {
+      Row(
+        Modifier
+          .fillMaxWidth()
+          .padding(horizontal = 8.dp, vertical = 2.dp),
+        horizontalArrangement = Arrangement.End,
+      ) {
+        Button(onClick = {
+          AlertManager.shared.hideAlert()
+          deleteContactConnectionAlert(connection, chatModel)
+        }) {
+          Text(stringResource(R.string.delete_verb))
+        }
+        Spacer(Modifier.padding(horizontal = 4.dp))
+        Button(onClick = { AlertManager.shared.hideAlert() }) {
+          Text(stringResource(R.string.ok))
+        }
+      }
+    }
+  )
+}
+
+fun deleteContactConnectionAlert(connection: PendingContactConnection, chatModel: ChatModel) {
+  AlertManager.shared.showAlertDialog(
+    title = generalGetString(R.string.delete_pending_connection__question),
+    text = generalGetString(
+      if (connection.initiated) R.string.contact_you_shared_link_with_wont_be_able_to_connect
+      else R.string.connection_you_accepted_will_be_cancelled
+    ),
+    confirmText = generalGetString(R.string.delete_verb),
+    onConfirm = {
+      withApi {
+        AlertManager.shared.hideAlert()
+        if (chatModel.controller.apiDeleteChat(ChatType.ContactConnection, connection.apiId)) {
+          chatModel.removeChat(connection.id)
+        }
+      }
+    }
+  )
+}
+
+fun pendingContactAlertDialog(chatInfo: ChatInfo, chatModel: ChatModel) {
   AlertManager.shared.showAlertDialog(
     title = generalGetString(R.string.alert_title_contact_connection_pending),
     text = generalGetString(R.string.alert_text_connection_pending_they_need_to_be_online_can_delete_and_retry),
@@ -101,10 +153,11 @@ fun ChatListNavLinkLayout(chat: Chat, click: () -> Unit) {
         .padding(end = 12.dp),
       verticalAlignment = Alignment.Top
     ) {
-      if (chat.chatInfo is ChatInfo.ContactRequest) {
-        ContactRequestView(chat)
-      } else {
-        ChatPreviewView(chat)
+      when (chat.chatInfo) {
+        is ChatInfo.Direct -> ChatPreviewView(chat)
+        is ChatInfo.Group -> ChatPreviewView(chat)
+        is ChatInfo.ContactRequest -> ContactRequestView(chat.chatInfo)
+        is ChatInfo.ContactConnection -> ContactConnectionView(chat.chatInfo.contactConnection)
       }
     }
   }

@@ -50,6 +50,7 @@ responseToView testView = \case
   CRApiParsedMarkdown ft -> [plain . bshow $ J.encode ft]
   CRUserSMPServers smpServers -> viewSMPServers smpServers testView
   CRNewChatItem (AChatItem _ _ chat item) -> viewChatItem chat item
+  CRLastMessages chatItems -> concatMap (\(AChatItem _ _ chat item) -> viewChatItem chat item) chatItems
   CRChatItemStatusUpdated _ -> []
   CRChatItemUpdated (AChatItem _ _ chat item) -> viewItemUpdate chat item
   CRChatItemDeleted (AChatItem _ _ chat deletedItem) (AChatItem _ _ _ toItem) -> viewItemDelete chat deletedItem toItem
@@ -91,8 +92,7 @@ responseToView testView = \case
   CRUserDeletedMember g m -> [ttyGroup' g <> ": you removed " <> ttyMember m <> " from the group"]
   CRLeftMemberUser g -> [ttyGroup' g <> ": you left the group"] <> groupPreserved g
   CRGroupDeletedUser g -> [ttyGroup' g <> ": you deleted the group"]
-  CRRcvFileAccepted RcvFileTransfer {fileId, senderDisplayName = c} filePath ->
-    ["saving file " <> sShow fileId <> " from " <> ttyContact c <> " to " <> plain filePath]
+  CRRcvFileAccepted ci -> savingFile' ci
   CRRcvFileAcceptedSndCancelled ft -> viewRcvFileSndCancelled ft
   CRSndGroupFileCancelled ftm fts -> viewSndGroupFileCancelled ftm fts
   CRRcvFileCancelled ft -> receivingFile_ "cancelled" ft
@@ -100,7 +100,7 @@ responseToView testView = \case
   CRContactUpdated c c' -> viewContactUpdated c c'
   CRContactsMerged intoCt mergedCt -> viewContactsMerged intoCt mergedCt
   CRReceivedContactRequest UserContactRequest {localDisplayName = c, profile} -> viewReceivedContactRequest c profile
-  CRRcvFileStart ft -> receivingFile_ "started" ft
+  CRRcvFileStart ci -> receivingFile_' "started" ci
   CRRcvFileComplete ci -> receivingFile_' "completed" ci
   CRRcvFileSndCancelled ft -> viewRcvFileSndCancelled ft
   CRSndFileStart ft -> sendingFile_ "started" ft
@@ -554,6 +554,15 @@ humanReadableSize size
     kB = 1024
     mB = kB * 1024
     gB = mB * 1024
+
+savingFile' :: AChatItem -> [StyledString]
+savingFile' (AChatItem _ _ (DirectChat Contact {localDisplayName = c}) ChatItem {file = Just CIFile {fileId, filePath = Just filePath}, chatDir = CIDirectRcv}) =
+  ["saving file " <> sShow fileId <> " from " <> ttyContact c <> " to " <> plain filePath]
+savingFile' (AChatItem _ _ _ ChatItem {file = Just CIFile {fileId, filePath = Just filePath}, chatDir = CIGroupRcv GroupMember {localDisplayName = m}}) =
+  ["saving file " <> sShow fileId <> " from " <> ttyContact m <> " to " <> plain filePath]
+savingFile' (AChatItem _ _ _ ChatItem {file = Just CIFile {fileId, filePath = Just filePath}}) =
+  ["saving file " <> sShow fileId <> " to " <> plain filePath]
+savingFile' _ = ["saving file"] -- shouldn't happen
 
 receivingFile_' :: StyledString -> AChatItem -> [StyledString]
 receivingFile_' status (AChatItem _ _ (DirectChat Contact {localDisplayName = c}) ChatItem {file = Just CIFile {fileId, fileName}, chatDir = CIDirectRcv}) =

@@ -47,6 +47,7 @@ android {
         freeCompilerArgs += "-opt-in=com.google.accompanist.insets.ExperimentalAnimatedInsets"
         freeCompilerArgs += "-opt-in=com.google.accompanist.permissions.ExperimentalPermissionsApi"
         freeCompilerArgs += "-opt-in=kotlinx.serialization.InternalSerializationApi"
+        freeCompilerArgs += "-opt-in=kotlinx.serialization.ExperimentalSerializationApi"
     }
     externalNativeBuild {
         cmake {

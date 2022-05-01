@@ -3,7 +3,11 @@ package chat.simplex.app.views.chatlist
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.AddLink
+import androidx.compose.material.icons.outlined.Link
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -13,27 +17,30 @@ import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.HighOrLowlight
 import chat.simplex.app.views.helpers.ChatInfoImage
+import chat.simplex.app.views.helpers.ProfileImage
 
 @Composable
-fun ContactRequestView(contactRequest: ChatInfo.ContactRequest) {
+fun ContactConnectionView(contactConnection: PendingContactConnection) {
   Row {
-    ChatInfoImage(contactRequest, size = 72.dp)
+    Box(Modifier.size(72.dp), contentAlignment = Alignment.Center) {
+      ProfileImage(size = 54.dp, null, if (contactConnection.initiated) Icons.Outlined.AddLink else Icons.Outlined.Link)
+    }
     Column(
       modifier = Modifier
         .padding(horizontal = 8.dp)
         .weight(1F)
     ) {
       Text(
-        contactRequest.chatViewName,
+        contactConnection.displayName,
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
         style = MaterialTheme.typography.h3,
         fontWeight = FontWeight.Bold,
-        color = MaterialTheme.colors.primary
+        color = HighOrLowlight
       )
-      Text(stringResource(R.string.contact_wants_to_connect_with_you), maxLines = 2)
+      Text(contactConnection.description, maxLines = 2, color = HighOrLowlight)
     }
-    val ts = getTimestampText(contactRequest.contactRequest.updatedAt)
+    val ts = getTimestampText(contactConnection.updatedAt)
     Column(
       Modifier.fillMaxHeight(),
       verticalArrangement = Arrangement.Top

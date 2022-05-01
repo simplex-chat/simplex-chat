@@ -41,6 +41,12 @@ import Simplex.Messaging.Util ((<$?>))
 data ChatType = CTDirect | CTGroup | CTContactRequest | CTContactConnection
   deriving (Show, Generic)
 
+data ChatName = ChatName ChatType Text
+  deriving (Show)
+
+data ChatRef = ChatRef ChatType Int64
+  deriving (Show)
+
 instance ToJSON ChatType where
   toJSON = J.genericToJSON . enumJSON $ dropPrefix "CT"
   toEncoding = J.genericToEncoding . enumJSON $ dropPrefix "CT"
@@ -198,6 +204,11 @@ instance ToJSON AChatItem where
 data JSONAnyChatItem c d = JSONAnyChatItem {chatInfo :: ChatInfo c, chatItem :: ChatItem c d}
   deriving (Generic)
 
+aChatItems :: AChat -> [AChatItem]
+aChatItems (AChat ct Chat {chatInfo, chatItems}) = map aChatItem chatItems
+  where
+    aChatItem (CChatItem md ci) = AChatItem ct md chatInfo ci
+
 instance MsgDirectionI d => ToJSON (JSONAnyChatItem c d) where
   toJSON = J.genericToJSON J.defaultOptions
   toEncoding = J.genericToEncoding J.defaultOptions
@@ -284,6 +295,7 @@ data CIFileStatus (d :: MsgDirection) where
   CIFSSndStored :: CIFileStatus 'MDSnd
   CIFSSndCancelled :: CIFileStatus 'MDSnd
   CIFSRcvInvitation :: CIFileStatus 'MDRcv
+  CIFSRcvAccepted :: CIFileStatus 'MDRcv
   CIFSRcvTransfer :: CIFileStatus 'MDRcv
   CIFSRcvComplete :: CIFileStatus 'MDRcv
   CIFSRcvCancelled :: CIFileStatus 'MDRcv
@@ -307,6 +319,7 @@ instance MsgDirectionI d => StrEncoding (CIFileStatus d) where
     CIFSSndStored -> "snd_stored"
     CIFSSndCancelled -> "snd_cancelled"
     CIFSRcvInvitation -> "rcv_invitation"
+    CIFSRcvAccepted -> "rcv_accepted"
     CIFSRcvTransfer -> "rcv_transfer"
     CIFSRcvComplete -> "rcv_complete"
     CIFSRcvCancelled -> "rcv_cancelled"
@@ -319,6 +332,7 @@ instance StrEncoding ACIFileStatus where
       "snd_stored" -> pure $ AFS SMDSnd CIFSSndStored
       "snd_cancelled" -> pure $ AFS SMDSnd CIFSSndCancelled
       "rcv_invitation" -> pure $ AFS SMDRcv CIFSRcvInvitation
+      "rcv_accepted" -> pure $ AFS SMDRcv CIFSRcvAccepted
       "rcv_transfer" -> pure $ AFS SMDRcv CIFSRcvTransfer
       "rcv_complete" -> pure $ AFS SMDRcv CIFSRcvComplete
       "rcv_cancelled" -> pure $ AFS SMDRcv CIFSRcvCancelled

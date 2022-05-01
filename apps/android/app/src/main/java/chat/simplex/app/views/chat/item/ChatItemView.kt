@@ -20,6 +20,8 @@ import androidx.compose.ui.unit.dp
 import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.SimpleXTheme
+import chat.simplex.app.views.chat.ComposeContextItem
+import chat.simplex.app.views.chat.ComposeState
 import chat.simplex.app.views.helpers.*
 import kotlinx.datetime.Clock
 
@@ -27,9 +29,7 @@ import kotlinx.datetime.Clock
 fun ChatItemView(
   user: User,
   cItem: ChatItem,
-  msg: MutableState<String>,
-  quotedItem: MutableState<ChatItem?>,
-  editingItem: MutableState<ChatItem?>,
+  composeState: MutableState<ComposeState>,
   cxt: Context,
   uriHandler: UriHandler? = null,
   showMember: Boolean = false,
@@ -61,8 +61,7 @@ fun ChatItemView(
           Modifier.width(220.dp)
         ) {
           ItemAction(stringResource(R.string.reply_verb), Icons.Outlined.Reply, onClick = {
-            editingItem.value = null
-            quotedItem.value = cItem
+            composeState.value = composeState.value.copy(contextItem = ComposeContextItem.QuotedItem(cItem))
             showMenu.value = false
           })
           ItemAction(stringResource(R.string.share_verb), Icons.Outlined.Share, onClick = {
@@ -75,9 +74,7 @@ fun ChatItemView(
           })
           if (cItem.chatDir.sent && cItem.meta.editable) {
             ItemAction(stringResource(R.string.edit_verb), Icons.Filled.Edit, onClick = {
-              quotedItem.value = null
-              editingItem.value = cItem
-              msg.value = cItem.content.text
+              composeState.value = ComposeState(editingItem = cItem)
               showMenu.value = false
             })
           }
@@ -148,9 +145,7 @@ fun PreviewChatItemView() {
       ChatItem.getSampleData(
         1, CIDirection.DirectSnd(), Clock.System.now(), "hello"
       ),
-      msg = remember { mutableStateOf("") },
-      quotedItem = remember { mutableStateOf(null) },
-      editingItem = remember { mutableStateOf(null) },
+      composeState = remember { mutableStateOf(ComposeState()) },
       cxt = LocalContext.current,
       deleteMessage = { _, _ -> }
     )
@@ -164,9 +159,7 @@ fun PreviewChatItemViewDeletedContent() {
     ChatItemView(
       User.sampleData,
       ChatItem.getDeletedContentSampleData(),
-      msg = remember { mutableStateOf("") },
-      quotedItem = remember { mutableStateOf(null) },
-      editingItem = remember { mutableStateOf(null) },
+      composeState = remember { mutableStateOf(ComposeState()) },
       cxt = LocalContext.current,
       deleteMessage = { _, _ -> }
     )
