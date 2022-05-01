@@ -478,11 +478,13 @@ testGroup2 =
       alice <# "dan> hi"
       alice <# "@dan hey"
       alice ##> "/t 5"
-      alice <# "#club cath> hey"
-      alice <# "#club dan> how is it going?"
-      alice <# "dan> hi"
-      alice <# "#club hello"
-      alice <# "@dan hey"
+      alice -- these strings are expected in any order because of sorting by time
+        <##? [ "#club cath> hey",
+               "#club dan> how is it going?",
+               "#club hello",
+               "dan> hi",
+               "@dan hey"
+             ]
       -- remove member
       cath ##> "/rm club dan"
       concurrentlyN_
@@ -1919,13 +1921,19 @@ send TestCC {chatController = cc} cmd = atomically $ writeTBQueue (inputQ cc) cm
 (<##) :: TestCC -> String -> Expectation
 cc <## line = getTermLine cc `shouldReturn` line
 
-(<###) :: TestCC -> [String] -> Expectation
-_ <### [] = pure ()
-cc <### ls = do
-  line <- getTermLine cc
+getInAnyOrder :: (String -> String) -> TestCC -> [String] -> Expectation
+getInAnyOrder _ _ [] = pure ()
+getInAnyOrder f cc ls = do
+  line <- f <$> getTermLine cc
   if line `elem` ls
-    then cc <### filter (/= line) ls
+    then getInAnyOrder f cc $ filter (/= line) ls
     else error $ "unexpected output: " <> line
+
+(<###) :: TestCC -> [String] -> Expectation
+(<###) = getInAnyOrder id
+
+(<##?) :: TestCC -> [String] -> Expectation
+(<##?) = getInAnyOrder dropTime
 
 (<#) :: TestCC -> String -> Expectation
 cc <# line = (dropTime <$> getTermLine cc) `shouldReturn` line
