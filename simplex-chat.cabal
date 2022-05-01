@@ -21,6 +21,7 @@ library
   exposed-modules:
       Simplex.Chat
       Simplex.Chat.Bot
+      Simplex.Chat.Call
       Simplex.Chat.Controller
       Simplex.Chat.Core
       Simplex.Chat.Help

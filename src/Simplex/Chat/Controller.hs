@@ -26,6 +26,7 @@ import Data.Word (Word16)
 import GHC.Generics (Generic)
 import Numeric.Natural
 import qualified Paths_simplex_chat as SC
+import Simplex.Chat.Call
 import Simplex.Chat.Markdown (MarkdownList)
 import Simplex.Chat.Messages
 import Simplex.Chat.Protocol
@@ -108,6 +109,12 @@ data ChatCommand
   | APIDeleteChat ChatRef
   | APIAcceptContact Int64
   | APIRejectContact Int64
+  | APISendCallInvitation ChatRef CallMedia CallCapabilities
+  | APIRejectCall ChatRef CallId
+  | APISendCallOffer ChatRef CallId WebRTCSession
+  | APISendCallAnswer ChatRef CallId WebRTCSession
+  | APISendCallExtraInfo ChatRef CallId WebRTCExtraInfo
+  | APIEndCall ChatRef CallId
   | APIUpdateProfile Profile
   | APIParseMarkdown Text
   | APIRegisterToken DeviceToken
@@ -240,7 +247,8 @@ data ChatResponse
   | CRPendingSubSummary {pendingSubStatus :: [PendingSubStatus]}
   | CRSndFileSubError {sndFileTransfer :: SndFileTransfer, chatError :: ChatError}
   | CRRcvFileSubError {rcvFileTransfer :: RcvFileTransfer, chatError :: ChatError}
-  | CRUserContactLinkSubscribed
+  | -- | CRCallInvSent {callId :: Int64}
+    CRUserContactLinkSubscribed
   | CRUserContactLinkSubError {chatError :: ChatError}
   | CRNtfTokenStatus {status :: NtfTknStatus}
   | CRNewContactConnection {connection :: PendingContactConnection}
