@@ -15,29 +15,32 @@ sequenceDiagram
   AN ->> AW: WCCapabilities
   AW ->> AN: WRCapabilities (e2e?)
 
-  AN ->> AC: SendCallInvitation
+  AN ->> AC: APISendCallInvitation
   AC -->> BC: XCallInv
-  AC ->> AN: CRCallInvSent
+  AC ->> AN: CRCallInvitationSent
 
   BC ->> BN: CRCallInvitation
   note over BN: show: accept call?
   
   alt user accepted?
-    BN ->> BC: no: RejectCall
+    BN ->> BC: no: APIRejectCall<br>(sender not notified)
+    BC ->> BN: CRCmdOk
   else
     BN ->> BW: yes: WCStartCall
     BW ->> BN: WCallOffer
   end
 
-  BN ->> BC: SendCallOffer
+  BN ->> BC: APISendCallOffer
   BC -->> AC: XCallOffer
-  BC ->> BN: CRCallOfferSent
+  BC ->> BN: CRCmdOk
   AC ->> AN: CRCallOffer
+  note over AN: show if no e2e: continue call?
+
   AN ->> AW: WCallOffer
   AW ->> AN: WCallAnswer
-  AN ->> AC: SendCallAnswer
+  AN ->> AC: APISendCallAnswer
   AC -->> BC: XCallAnswer
-  AC ->> AN: CRCallAnswerSent
+  AC ->> AN: CRCmdOk
   BC ->> BN: CRCallAnswer
   BN ->> BW: WCallAnswer
 
@@ -46,8 +49,9 @@ sequenceDiagram
   note over AW, BW: 2. Sending additional ice candidates<br>(optional, same for another side):
 
   BW ->> BN: WCallICE
-  BN ->> BC: SendCallExtraInfo
+  BN ->> BC: APISendCallExtraInfo
   BC -->> AC: XCallExtra
+  BC ->> BN: CRCmdOk
   AC ->> AN: CRCallExtraInfo
   AN ->> AW: WCallICE
 
@@ -55,8 +59,9 @@ sequenceDiagram
 
   note over AN: user: end call
   AN ->> AW: WEndCall
-  AN ->> AC: EndCall
+  AN ->> AC: APIEndCall
   AC -->> BC: XCallEnd
+  AC ->> AN: CRCmdOk
   BC ->> BN: CRCallEnded
   note over BN: show: call ended
   BN ->> BW: WEndCall
