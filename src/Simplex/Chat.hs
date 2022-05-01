@@ -40,7 +40,6 @@ import qualified Data.Text as T
 import Data.Time.Clock (UTCTime, getCurrentTime)
 import Data.Time.LocalTime (getCurrentTimeZone, getZonedTime)
 import Data.Word (Word32)
-import Simplex.Chat.Call
 import Simplex.Chat.Controller
 import Simplex.Chat.Markdown
 import Simplex.Chat.Messages
@@ -124,8 +123,9 @@ newChatController chatStore user cfg@ChatConfig {agentConfig = aCfg, tbqSize} Ch
   chatLock <- newTMVarIO ()
   sndFiles <- newTVarIO M.empty
   rcvFiles <- newTVarIO M.empty
+  currentCall <- newTVarIO Nothing
   filesFolder <- newTVarIO Nothing
-  pure ChatController {activeTo, firstTime, currentUser, smpAgent, agentAsync, chatStore, idsDrg, inputQ, outputQ, notifyQ, chatLock, sndFiles, rcvFiles, config, sendNotification, filesFolder}
+  pure ChatController {activeTo, firstTime, currentUser, smpAgent, agentAsync, chatStore, idsDrg, inputQ, outputQ, notifyQ, chatLock, sndFiles, rcvFiles, currentCall, config, sendNotification, filesFolder}
   where
     resolveServers :: IO (NonEmpty SMPServer)
     resolveServers = case user of
@@ -389,12 +389,12 @@ processChatCommand = \case
           `E.finally` deleteContactRequest st userId connReqId
     withAgent $ \a -> rejectContact a connId invId
     pure $ CRContactRequestRejected cReq
-  APISendCallInvitation _chatRef _media _capabilities -> pure $ chatCmdError "not implemented"
-  APIRejectCall _chatRef _callId -> pure $ chatCmdError "not implemented"
-  APISendCallOffer _chatRef _callId _rtcSession -> pure $ chatCmdError "not implemented"
-  APISendCallAnswer _chatRef _callId _rtcSession -> pure $ chatCmdError "not implemented"
-  APISendCallExtraInfo _chatRef _callId _rtcExtraInfo -> pure $ chatCmdError "not implemented"
-  APIEndCall _chatRef _callId -> pure $ chatCmdError "not implemented"
+  APISendCallInvitation _contactId _callType -> pure $ chatCmdError "not implemented"
+  APIRejectCall _contactId -> pure $ chatCmdError "not implemented"
+  APISendCallOffer _contactId _wCallOffer -> pure $ chatCmdError "not implemented"
+  APISendCallAnswer _contactId _rtcSession -> pure $ chatCmdError "not implemented"
+  APISendCallExtraInfo _contactId _rtcExtraInfo -> pure $ chatCmdError "not implemented"
+  APIEndCall _contactId -> pure $ chatCmdError "not implemented"
   APIUpdateProfile profile -> withUser (`updateProfile` profile)
   APIParseMarkdown text -> pure . CRApiParsedMarkdown $ parseMaybeMarkdownList text
   APIRegisterToken token -> CRNtfTokenStatus <$> withUser (\_ -> withAgent (`registerNtfToken` token))
@@ -1888,12 +1888,12 @@ chatCommandP =
     <|> "/_delete " *> (APIDeleteChat <$> chatRefP)
     <|> "/_accept " *> (APIAcceptContact <$> A.decimal)
     <|> "/_reject " *> (APIRejectContact <$> A.decimal)
-    <|> "/_call invite" *> (APISendCallInvitation <$> chatRefP <* A.space <*> strP <* A.space <*> jsonP)
-    <|> "/_call reject" *> (APIRejectCall <$> chatRefP <* A.space <*> callIdP)
-    <|> "/_call offer" *> (APISendCallOffer <$> chatRefP <* A.space <*> callIdP <* A.space <*> jsonP)
-    <|> "/_call answer" *> (APISendCallAnswer <$> chatRefP <* A.space <*> callIdP <* A.space <*> jsonP)
-    <|> "/_call extra" *> (APISendCallExtraInfo <$> chatRefP <* A.space <*> callIdP <* A.space <*> jsonP)
-    <|> "/_call end" *> (APIEndCall <$> chatRefP <* A.space <*> callIdP)
+    <|> "/_call invite @" *> (APISendCallInvitation <$> A.decimal <* A.space <*> jsonP)
+    <|> "/_call reject @" *> (APIRejectCall <$> A.decimal)
+    <|> "/_call offer @" *> (APISendCallOffer <$> A.decimal <* A.space <*> jsonP)
+    <|> "/_call answer @" *> (APISendCallAnswer <$> A.decimal <* A.space <*> jsonP)
+    <|> "/_call extra @" *> (APISendCallExtraInfo <$> A.decimal <* A.space <*> jsonP)
+    <|> "/_call end @" *> (APIEndCall <$> A.decimal)
     <|> "/_profile " *> (APIUpdateProfile <$> jsonP)
     <|> "/_parse " *> (APIParseMarkdown . safeDecodeUtf8 <$> A.takeByteString)
     <|> "/_ntf register " *> (APIRegisterToken <$> tokenP)
@@ -1997,7 +1997,6 @@ chatCommandP =
     chatNameP' = ChatName <$> (chatTypeP <|> pure CTDirect) <*> displayName
     chatRefP = ChatRef <$> chatTypeP <*> A.decimal
     msgCountP = A.space *> A.decimal <|> pure 10
-    callIdP = CallId <$> A.decimal
 
 adminContactReq :: ConnReqContact
 adminContactReq =

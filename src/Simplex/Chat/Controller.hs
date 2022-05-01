@@ -81,6 +81,7 @@ data ChatController = ChatController
     chatLock :: TMVar (),
     sndFiles :: TVar (Map Int64 Handle),
     rcvFiles :: TVar (Map Int64 Handle),
+    currentCall :: TVar (Maybe Call),
     config :: ChatConfig,
     filesFolder :: TVar (Maybe FilePath) -- path to files folder for mobile apps
   }
@@ -109,12 +110,12 @@ data ChatCommand
   | APIDeleteChat ChatRef
   | APIAcceptContact Int64
   | APIRejectContact Int64
-  | APISendCallInvitation ChatRef CallMedia CallCapabilities
-  | APIRejectCall ChatRef CallId
-  | APISendCallOffer ChatRef CallId WebRTCSession
-  | APISendCallAnswer ChatRef CallId WebRTCSession
-  | APISendCallExtraInfo ChatRef CallId WebRTCExtraInfo
-  | APIEndCall ChatRef CallId
+  | APISendCallInvitation Int64 CallType
+  | APIRejectCall Int64
+  | APISendCallOffer Int64 WebRTCCallOffer
+  | APISendCallAnswer Int64 WebRTCSession
+  | APISendCallExtraInfo Int64 WebRTCExtraInfo
+  | APIEndCall Int64
   | APIUpdateProfile Profile
   | APIParseMarkdown Text
   | APIRegisterToken DeviceToken
@@ -247,8 +248,13 @@ data ChatResponse
   | CRPendingSubSummary {pendingSubStatus :: [PendingSubStatus]}
   | CRSndFileSubError {sndFileTransfer :: SndFileTransfer, chatError :: ChatError}
   | CRRcvFileSubError {rcvFileTransfer :: RcvFileTransfer, chatError :: ChatError}
-  | -- | CRCallInvSent {callId :: Int64}
-    CRUserContactLinkSubscribed
+  | CRCallInvitationSent {contact :: Contact}
+  | CRCallInvitation {contact :: Contact, callType :: CallType, encryptionKey :: Maybe C.Key}
+  | CRCallOffer {contact :: Contact, callType :: CallType, offer :: WebRTCSession, encryptionKey :: Maybe C.Key, askConfirmation :: Bool}
+  | CRCallAnswer {contact :: Contact, answer :: WebRTCSession}
+  | CRCallExtraInfo {contact :: Contact, extraInfo :: WebRTCExtraInfo}
+  | CRCallEnded {contact :: Contact}
+  | CRUserContactLinkSubscribed
   | CRUserContactLinkSubError {chatError :: ChatError}
   | CRNtfTokenStatus {status :: NtfTknStatus}
   | CRNewContactConnection {connection :: PendingContactConnection}

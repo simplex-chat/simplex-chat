@@ -1,3 +1,4 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
@@ -8,12 +9,51 @@ module Simplex.Chat.Call where
 
 import Data.Aeson (FromJSON, ToJSON)
 import qualified Data.Aeson as J
-import Data.Word (Word16)
+import Data.ByteString.Char8 (ByteString)
+import Data.Int (Int64)
 import GHC.Generics (Generic)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String
+import Simplex.Messaging.Parsers (dropPrefix, enumJSON)
 
-newtype CallId = CallId Word16
+data Call = Call
+  { contactId :: Int64,
+    callId :: CallId,
+    chatItemId :: Int64,
+    callState :: CallState
+  }
+
+data CallState
+  = CallInvitationSent
+      { localCallType :: CallType,
+        localDhPrivKey :: Maybe C.PrivateKeyX25519
+      }
+  | CallInvitationReceived
+      { peerCallType :: CallType,
+        localDhPubKey :: Maybe C.PublicKeyX25519,
+        sharedKey :: Maybe C.Key
+      }
+  | CallOfferSent
+      { localCallType :: CallType,
+        peerCallType :: CallType,
+        localCallSession :: WebRTCSession,
+        sharedKey :: Maybe C.Key
+      }
+  | CallOfferReceived
+      { localCallType :: CallType,
+        peerCallType :: CallType,
+        peerCallSession :: WebRTCSession,
+        sharedKey :: Maybe C.Key
+      }
+  | CallNegotiated
+      { localCallType :: CallType,
+        peerCallType :: CallType,
+        localCallSession :: WebRTCSession,
+        peerCallSession :: WebRTCSession,
+        sharedKey :: Maybe C.Key
+      }
+
+newtype CallId = CallId ByteString
   deriving (Eq, Show)
 
 instance StrEncoding CallId where
@@ -28,11 +68,18 @@ instance ToJSON CallId where
   toJSON = strToJSON
   toEncoding = strToJEncoding
 
+data CallType = CallType
+  { media :: CallMedia,
+    capabilities :: CallCapabilities
+  }
+  deriving (Eq, Show, Generic, FromJSON)
+
+instance ToJSON CallType where toEncoding = J.genericToEncoding J.defaultOptions
+
 -- | * Types for chat protocol
 data CallInvitation = CallInvitation
-  { callDhPubKey :: Maybe C.PublicKeyX25519,
-    callMedia :: CallMedia,
-    callCapabilities :: CallCapabilities
+  { callType :: CallType,
+    callDhPubKey :: Maybe C.PublicKeyX25519
   }
   deriving (Eq, Show, Generic)
 
@@ -47,20 +94,11 @@ data CallMedia = CMAudio | CMVideo
   deriving (Eq, Show, Generic)
 
 instance FromJSON CallMedia where
-  parseJSON = strParseJSON "CallMedia"
+  parseJSON = J.genericParseJSON . enumJSON $ dropPrefix "CM"
 
 instance ToJSON CallMedia where
-  toJSON = strToJSON
-  toEncoding = strToJEncoding
-
-instance StrEncoding CallMedia where
-  strEncode = \case
-    CMAudio -> "audio"
-    CMVideo -> "video"
-  strDecode = \case
-    "audio" -> Right CMAudio
-    "video" -> Right CMVideo
-    _ -> Left "bad CallMedia"
+  toJSON = J.genericToJSON . enumJSON $ dropPrefix "CM"
+  toEncoding = J.genericToEncoding . enumJSON $ dropPrefix "CM"
 
 data CallCapabilities = CallCapabilities
   { encryption :: Bool
@@ -72,8 +110,9 @@ instance ToJSON CallCapabilities where
   toEncoding = J.genericToEncoding J.defaultOptions
 
 data CallOffer = CallOffer
-  { callDhPubKey :: Maybe C.PublicKeyX25519,
-    rtcSession :: WebRTCSession
+  { callType :: CallType,
+    rtcSession :: WebRTCSession,
+    callDhPubKey :: Maybe C.PublicKeyX25519
   }
   deriving (Eq, Show, Generic)
 
@@ -83,6 +122,15 @@ instance FromJSON CallOffer where
 instance ToJSON CallOffer where
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
   toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
+
+data WebRTCCallOffer = WebRTCCallOffer
+  { callType :: CallType,
+    rtcSession :: WebRTCSession
+  }
+  deriving (Eq, Show, Generic)
+
+instance FromJSON WebRTCCallOffer where
+  parseJSON = J.genericParseJSON J.defaultOptions {J.omitNothingFields = True}
 
 data CallAnswer = CallAnswer
   { rtcSession :: WebRTCSession
