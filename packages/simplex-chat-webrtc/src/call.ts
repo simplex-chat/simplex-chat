@@ -12,7 +12,11 @@
 //   outgoingVideo.style.opacity = 1
 // }
 
-type WCallMessage = WCallCommand | WCallResponse
+// Object.defineProperty(window, "processCommand", {value: processCommand})
+
+// Object.defineProperty(window, "f", {value: f})
+
+// type WCallMessage = WCallCommand | WCallResponse
 
 type WCallCommand = WCCapabilities | WCStartCall | WCAcceptOffer | WCEndCall | WCallCommandResponse
 
@@ -38,7 +42,7 @@ interface WCCapabilities extends IWebCallMessage {
 interface WCStartCall extends IWebCallMessage {
   type: "start"
   media: CallMediaType
-  aesKey?: Uint8Array
+  aesKey?: string
 }
 
 interface WCEndCall extends IWebCallMessage {
@@ -50,7 +54,7 @@ interface WCAcceptOffer extends IWebCallMessage {
   offer: RTCSessionDescriptionInit
   iceCandidates: RTCIceCandidateInit[]
   media: CallMediaType
-  aesKey?: Uint8Array
+  aesKey?: string
 }
 
 interface WCallOffer extends IWebCallMessage {
@@ -108,8 +112,7 @@ const peerConnectionConfig: RTCConfigurationWithEncryption = {
 }
 
 // let keyGenConfig: AesKeyGenParams = {
-//   name: "AES-GCM",
-//   length: 256,
+//   name: "AES-GCM", length: 256,
 //   tagLength: 128,
 // }
 
@@ -133,7 +136,7 @@ let pc: RTCPeerConnection | undefined
 
 // let key
 
-let IV_LENGTH = 12
+const IV_LENGTH = 12
 
 const initialPlainTextRequired = {
   key: 10,
@@ -142,7 +145,7 @@ const initialPlainTextRequired = {
 }
 
 // let encryptKeyRepresentation
-let candidates: RTCIceCandidate[] = []
+// let candidates: RTCIceCandidate[] = []
 // run()
 
 // async function run() {
@@ -231,9 +234,9 @@ function sendMessageToNative(msg: WCallResponse | WCallCommand) {
   console.log(JSON.stringify(msg))
 }
 
-async function initializeCall(mediaType: CallMediaType, keyData?: Uint8Array): Promise<CallPeerConnection> {
+async function initializeCall(mediaType: CallMediaType, keyData?: string): Promise<CallPeerConnection> {
   const call = await createPeerConnection({
-    waitForIceCandidates: 1000,
+    waitForIceCandidates: 4000,
     timeoutIceCandidates: 4000
   })
   const {connection, extraIceCandidates} = call
@@ -262,15 +265,19 @@ async function processCommand(command: WCallCommand): Promise<WCallResponse | WC
       } else if (!supportsInsertableStreams() && command.aesKey) {
         resp = {type: "error", message: "start: encryption is not supported"}
       } else {
-        const {media, aesKey} = command
-        const call = await initializeCall(media, aesKey)
-        const {connection, iceCandidates} = call
-        pc = connection
-        const offer = await pc.createOffer()
-        await pc.setLocalDescription(offer)
-        // for debugging, returning the command for callee to use
-        resp = {type: "accept", offer, iceCandidates, media, aesKey}
-        // resp = {type: "offer", offer, iceCandidates}
+        try {
+          const {media, aesKey} = command
+          const call = await initializeCall(media, aesKey)
+          const {connection, iceCandidates} = call
+          pc = connection
+          const offer = await pc.createOffer()
+          await pc.setLocalDescription(offer)
+          // for debugging, returning the command for callee to use
+          resp = {type: "accept", offer, iceCandidates, media, aesKey}
+          // resp = {type: "offer", offer, iceCandidates}
+        } catch (e) {
+          resp = {type: "error", message: (e as Error).message}
+        }
       }
       break
     case "accept":
@@ -279,21 +286,25 @@ async function processCommand(command: WCallCommand): Promise<WCallResponse | WC
       } else if (!supportsInsertableStreams() && command.aesKey) {
         resp = {type: "error", message: "accept: encryption is not supported"}
       } else {
-        const call = await initializeCall(command.media, command.aesKey)
-        const {connection, iceCandidates} = call
-        pc = connection
-        await pc.setRemoteDescription(new RTCSessionDescription(command.offer))
-        const answer = await pc.createAnswer()
-        await pc.setLocalDescription(answer)
-        addIceCandidates(pc, command.iceCandidates)
-        // same as command for caller to use
-        resp = {type: "answer", answer, iceCandidates}
+        try {
+          const call = await initializeCall(command.media, command.aesKey)
+          const {connection, iceCandidates} = call
+          pc = connection
+          await pc.setRemoteDescription(new RTCSessionDescription(command.offer))
+          const answer = await pc.createAnswer()
+          await pc.setLocalDescription(answer)
+          addIceCandidates(pc, command.iceCandidates)
+          // same as command for caller to use
+          resp = {type: "answer", answer, iceCandidates}
+        } catch (e) {
+          resp = {type: "error", message: (e as Error).message}
+        }
       }
       break
     case "answer":
       if (!pc) {
         resp = {type: "error", message: "answer: call not started"}
-      } else if (!pc.currentLocalDescription) {
+      } else if (!pc.localDescription) {
         resp = {type: "error", message: "answer: local description is not set"}
       } else if (pc.currentRemoteDescription) {
         resp = {type: "error", message: "answer: remote description already set"}
@@ -334,23 +345,30 @@ function addIceCandidates(conn: RTCPeerConnection, iceCandidates: RTCIceCandidat
   }
 }
 
-async function setUpMediaStreams(pc: RTCPeerConnection, localStream: MediaStream, remoteStream: MediaStream, keyData?: Uint8Array): Promise<void> {
+async function setUpMediaStreams(pc: RTCPeerConnection, localStream: MediaStream, remoteStream: MediaStream, aesKey?: string): Promise<void> {
   const videos = getVideoElelements()
   if (!videos) throw Error("no video elements")
 
   let key: CryptoKey | undefined
-  if (keyData) key = await crypto.subtle.importKey("raw", keyData, keyAlgorithm, false, keyUsages)
+  if (aesKey) {
+    const keyData = decodeBase64(encodeAscii(aesKey))
+    if (keyData) key = await crypto.subtle.importKey("raw", keyData, keyAlgorithm, false, keyUsages)
+  }
   for (const track of localStream.getTracks()) {
     pc.addTrack(track, localStream)
   }
   if (key) {
+    console.log("set up encryption for sending")
     for (const sender of pc.getSenders() as RTCRtpSenderWithEncryption[]) {
       setupPeerTransform(sender, encodeFunction(key))
     }
   }
   // Pull tracks from remote stream as they arrive add them to remoteStream video
   pc.ontrack = (event) => {
-    if (key) setupPeerTransform(event.receiver as RTCRtpReceiverWithEncryption, decodeFunction(key))
+    if (key) {
+      console.log("set up decryption for receiving")
+      setupPeerTransform(event.receiver as RTCRtpReceiverWithEncryption, decodeFunction(key))
+    }
     for (const track of event.streams[0].getTracks()) {
       remoteStream.addTrack(track)
     }
@@ -501,29 +519,84 @@ function randomIV() {
   return crypto.getRandomValues(new Uint8Array(IV_LENGTH))
 }
 
-// async function loadKey(keyData) {
-//   key = await crypto.subtle.importKey("jwk", keyData, keyGenConfig, false, keyUsages)
-// }
+const char_equal = "=".charCodeAt(0)
 
 function concatN(...bs: Uint8Array[]): Uint8Array {
   const a = new Uint8Array(bs.reduce((size, b) => size + b.byteLength, 0))
-  bs.reduce((offset, b) => {
+  bs.reduce((offset, b: Uint8Array) => {
     a.set(b, offset)
     return offset + b.byteLength
   }, 0)
   return a
 }
 
-// async function generateKey() {
-//   let rawKey = await crypto.subtle.generateKey(keyGenConfig, true, keyUsages)
-//   let key = await crypto.subtle.exportKey("jwk", rawKey)
-//   console.log(
-//     JSON.stringify({
-//       action: "processDecryptionKey",
-//       content: {
-//         key,
-//         iv: encryptIv,
-//       },
-//     })
-//   )
-// }
+function encodeAscii(s: string): Uint8Array {
+  const a = new Uint8Array(s.length)
+  let i = s.length
+  while (i--) a[i] = s.charCodeAt(i)
+  return a
+}
+
+function decodeAscii(a: Uint8Array): string {
+  let s = ""
+  for (let i = 0; i < a.length; i++) s += String.fromCharCode(a[i])
+  return s
+}
+
+const base64chars = new Uint8Array(
+  "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/".split("").map((c) => c.charCodeAt(0))
+)
+
+const base64lookup = new Array(256) as (number | undefined)[]
+base64chars.forEach((c, i) => (base64lookup[c] = i))
+
+function encodeBase64(a: Uint8Array): Uint8Array {
+  const len = a.length
+  const b64len = Math.ceil(len / 3) * 4
+  const b64 = new Uint8Array(b64len)
+
+  let j = 0
+  for (let i = 0; i < len; i += 3) {
+    b64[j++] = base64chars[a[i] >> 2]
+    b64[j++] = base64chars[((a[i] & 3) << 4) | (a[i + 1] >> 4)]
+    b64[j++] = base64chars[((a[i + 1] & 15) << 2) | (a[i + 2] >> 6)]
+    b64[j++] = base64chars[a[i + 2] & 63]
+  }
+
+  if (len % 3) b64[b64len - 1] = char_equal
+  if (len % 3 === 1) b64[b64len - 2] = char_equal
+
+  return b64
+}
+
+function decodeBase64(b64: Uint8Array): Uint8Array | undefined {
+  let len = b64.length
+  if (len % 4) return
+  let bLen = (len * 3) / 4
+
+  if (b64[len - 1] === char_equal) {
+    len--
+    bLen--
+    if (b64[len - 1] === char_equal) {
+      len--
+      bLen--
+    }
+  }
+
+  const bytes = new Uint8Array(bLen)
+
+  let i = 0
+  let pos = 0
+  while (i < len) {
+    const enc1 = base64lookup[b64[i++]]
+    const enc2 = i < len ? base64lookup[b64[i++]] : 0
+    const enc3 = i < len ? base64lookup[b64[i++]] : 0
+    const enc4 = i < len ? base64lookup[b64[i++]] : 0
+    if (enc1 === undefined || enc2 === undefined || enc3 === undefined || enc4 === undefined) return
+    bytes[pos++] = (enc1 << 2) | (enc2 >> 4)
+    bytes[pos++] = ((enc2 & 15) << 4) | (enc3 >> 2)
+    bytes[pos++] = ((enc3 & 3) << 6) | (enc4 & 63)
+  }
+
+  return bytes
+}

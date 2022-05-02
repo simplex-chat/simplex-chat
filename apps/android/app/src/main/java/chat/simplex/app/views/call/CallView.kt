@@ -58,7 +58,7 @@ fun VideoCallView(close: () -> Unit) {
   }
   val localContext = LocalContext.current
   val iceCandidateCommand = remember { mutableStateOf("") }
-  val commandToShow = remember { mutableStateOf("processCommand({action: \"initiateCall\"})") }
+  val commandToShow = remember { mutableStateOf("processCommand({type: 'start', media: 'video', aesKey: 'FwW+t6UbnwHoapYOfN4mUBUuqR7UtvYWxW16iBqM29U='})") }
   val assetLoader = WebViewAssetLoader.Builder()
     .addPathHandler("/assets/www/", WebViewAssetLoader.AssetsPathHandler(localContext))
     .build()
