@@ -24,6 +24,7 @@ import chat.simplex.app.model.Profile
 import chat.simplex.app.ui.theme.HighOrLowlight
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.TerminalView
+import chat.simplex.app.views.call.VideoCallView
 import chat.simplex.app.views.helpers.*
 
 @Composable
@@ -39,7 +40,8 @@ fun SettingsView(chatModel: ChatModel) {
       },
       showModal = { modalView -> { ModalManager.shared.showModal { modalView(chatModel) } } },
       showCustomModal = { modalView -> { ModalManager.shared.showCustomModal { close -> modalView(chatModel, close) } } },
-      showTerminal = { ModalManager.shared.showCustomModal { close -> TerminalView(chatModel, close) } }
+      showTerminal = { ModalManager.shared.showCustomModal { close -> TerminalView(chatModel, close) } },
+      showVideoChatPrototype = { ModalManager.shared.showCustomModal { close -> VideoCallView(close) } },
     )
   }
 }
@@ -54,7 +56,8 @@ fun SettingsLayout(
   setRunServiceInBackground: (Boolean) -> Unit,
   showModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
   showCustomModal: (@Composable (ChatModel, () -> Unit) -> Unit) -> (() -> Unit),
-  showTerminal: () -> Unit
+  showTerminal: () -> Unit,
+  showVideoChatPrototype: () -> Unit
 ) {
   val uriHandler = LocalUriHandler.current
   Surface(
@@ -159,9 +162,9 @@ fun SettingsLayout(
         Spacer(Modifier.padding(horizontal = 4.dp))
         Text(
           stringResource(R.string.private_notifications), Modifier
-          .padding(end = 24.dp)
-          .fillMaxWidth()
-          .weight(1F))
+            .padding(end = 24.dp)
+            .fillMaxWidth()
+            .weight(1F))
         Switch(
           checked = runServiceInBackground.value,
           onCheckedChange = { setRunServiceInBackground(it) },
@@ -191,7 +194,7 @@ fun SettingsLayout(
         Text(annotatedStringResource(R.string.install_simplex_chat_for_terminal))
       }
       Divider(Modifier.padding(horizontal = 8.dp))
-      SettingsSectionView() {
+      SettingsSectionView(showVideoChatPrototype) {
         Text("v${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})")
       }
     }
@@ -227,7 +230,8 @@ fun PreviewSettingsLayout() {
       setRunServiceInBackground = {},
       showModal = {{}},
       showCustomModal = {{}},
-      showTerminal = {}
+      showTerminal = {},
+      showVideoChatPrototype = {}
     )
   }
 }
