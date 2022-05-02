@@ -2,7 +2,7 @@
   "name": "simplex-chat-webrtc",
   "version": "0.0.1",
   "description": "WebRTC call in browser and webview",
-  "main": "dist/index.js",
+  "main": "dist/call.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
