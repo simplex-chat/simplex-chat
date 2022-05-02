@@ -12,94 +12,104 @@ const peerConnectionConfig = {
     iceCandidatePoolSize: 10,
     encodedInsertableStreams: true,
 };
-// let keyGenConfig: AesKeyGenParams = {
-//   name: "AES-GCM", length: 256,
-//   tagLength: 128,
-// }
 const keyAlgorithm = {
     name: "AES-GCM",
     length: 256
 };
 const keyUsages = ["encrypt", "decrypt"];
-// Hardcode a key for development
-// let keyData = {
-//   alg: "A256GCM",
-//   ext: true,
-//   k: "JCMDWkhxLmPDhua0BUdhgv6Ac6hOtB9frSxJlnkTAK8",
-//   key_ops: keyUsages,
-//   kty: "oct",
-// }
 let pc;
-// let key
 const IV_LENGTH = 12;
 const initialPlainTextRequired = {
     key: 10,
     delta: 3,
     undefined: 1,
 };
-function createPeerConnection(config) {
-    let connection = new RTCPeerConnection(peerConnectionConfig);
-    return new Promise((resolve, _) => {
-        const extraIceCandidates = new Promise((resolveExtra, _) => {
-            let candidates = [];
-            let ok = false;
-            let okExtra = false;
-            let waitExtra;
-            const wait = setTimeout(() => {
-                if (!ok) {
-                    const iceCandidates = candidates.slice();
-                    candidates = [];
-                    ok = true;
-                    waitExtra = setTimeout(() => {
-                        if (!okExtra) {
-                            okExtra = true;
-                            resolveExtra({
-                                iceCandidates: candidates.slice(),
-                                complete: false,
-                            });
-                        }
-                    }, config.timeoutIceCandidates);
-                    resolve({ connection, iceCandidates, extraIceCandidates });
+const defaultCallConfig = {
+    iceCandidates: {
+        delay: 2000,
+        extrasInterval: 2000,
+        extrasTimeout: 8000
+    }
+};
+async function initializeCall(config, mediaType, aesKey) {
+    const connection = new RTCPeerConnection(peerConnectionConfig);
+    const remoteStream = new MediaStream();
+    const localStream = await navigator.mediaDevices.getUserMedia(callMediaContraints(mediaType));
+    await setUpMediaStreams(connection, localStream, remoteStream, aesKey);
+    const iceCandidates = new Promise((resolve, _) => {
+        let candidates = [];
+        let resolved = false;
+        let extrasInterval;
+        let extrasTimeout;
+        const delay = setTimeout(() => {
+            if (!resolved) {
+                resolveIceCandidates();
+                extrasInterval = setInterval(() => {
+                    sendIceCandidates();
+                }, config.iceCandidates.extrasInterval);
+                extrasTimeout = setTimeout(() => {
+                    clearInterval(extrasInterval);
+                    sendIceCandidates();
+                }, config.iceCandidates.extrasTimeout);
+            }
+        }, config.iceCandidates.delay);
+        connection.onconnectionstatechange = ({ target }) => {
+            const t = target;
+            sendMessageToNative({
+                type: "connection",
+                state: {
+                    connectionState: t.connectionState,
+                    iceConnectionState: t.iceConnectionState,
+                    iceGatheringState: t.iceGatheringState,
+                    signalingState: t.signalingState,
+                    currentLocalDescription: !!t.currentLocalDescription,
+                    currentRemoteDescription: !!t.currentRemoteDescription
                 }
-            }, config.waitForIceCandidates);
-            connection.onicecandidate = (e) => e.candidate && candidates.push(e.candidate);
-            connection.onicegatheringstatechange = (_) => {
-                if (connection.iceGatheringState == "complete") {
-                    if (!ok) {
-                        ok = true;
-                        clearTimeout(wait);
-                        resolve({ connection, iceCandidates: candidates });
-                    }
-                    else if (!okExtra) {
-                        okExtra = true;
-                        waitExtra && clearTimeout(waitExtra);
-                        resolveExtra({ iceCandidates: candidates, complete: true });
-                    }
+            });
+            if (t.connectionState == "disconnected" || t.connectionState == "failed") {
+                connection.onconnectionstatechange = null;
+                sendMessageToNative({ type: "ended" });
+                connection.close();
+                pc = undefined;
+                resetVideoElements();
+            }
+        };
+        connection.onicecandidate = ({ candidate: c }) => c && candidates.push(c);
+        connection.onicegatheringstatechange = (_) => {
+            if (connection.iceGatheringState == "complete") {
+                if (resolved) {
+                    if (extrasInterval)
+                        clearInterval(extrasInterval);
+                    if (extrasTimeout)
+                        clearTimeout(extrasTimeout);
+                    sendIceCandidates();
                 }
-            };
-        });
+                else {
+                    resolveIceCandidates();
+                }
+            }
+        };
+        function resolveIceCandidates() {
+            if (delay)
+                clearTimeout(delay);
+            resolved = true;
+            const iceCandidates = candidates.slice();
+            candidates = [];
+            resolve(iceCandidates);
+        }
+        function sendIceCandidates() {
+            if (candidates.length === 0)
+                return;
+            const iceCandidates = candidates.slice();
+            candidates = [];
+            sendMessageToNative({ type: "ice", iceCandidates });
+        }
     });
+    return { connection, iceCandidates };
 }
 // TODO remove WCallCommand from parameter type
 function sendMessageToNative(msg) {
     console.log(JSON.stringify(msg));
-}
-async function initializeCall(mediaType, keyData) {
-    const call = await createPeerConnection({
-        waitForIceCandidates: 4000,
-        timeoutIceCandidates: 4000
-    });
-    const { connection, extraIceCandidates } = call;
-    const remoteStream = new MediaStream();
-    const localStream = await navigator.mediaDevices.getUserMedia(callMediaContraints(mediaType));
-    await setUpMediaStreams(connection, localStream, remoteStream, keyData);
-    extraIceCandidates === null || extraIceCandidates === void 0 ? void 0 : extraIceCandidates.then(({ iceCandidates, complete }) => {
-        if (!complete)
-            console.log("ICE candidates gathering not completed");
-        if (iceCandidates.length > 0)
-            sendMessageToNative({ type: "ice", iceCandidates });
-    });
-    return call;
 }
 // TODO remove WCallCommand from result type
 async function processCommand(command) {
@@ -120,14 +130,14 @@ async function processCommand(command) {
             else {
                 try {
                     const { media, aesKey } = command;
-                    const call = await initializeCall(media, aesKey);
+                    const call = await initializeCall(defaultCallConfig, media, aesKey);
                     const { connection, iceCandidates } = call;
                     pc = connection;
                     const offer = await pc.createOffer();
                     await pc.setLocalDescription(offer);
                     // for debugging, returning the command for callee to use
-                    resp = { type: "accept", offer, iceCandidates, media, aesKey };
-                    // resp = {type: "offer", offer, iceCandidates}
+                    resp = { type: "accept", offer, iceCandidates: await iceCandidates, media, aesKey };
+                    // resp = {type: "offer", offer, iceCandidates: await iceCandidates}
                 }
                 catch (e) {
                     resp = { type: "error", message: e.message };
@@ -143,7 +153,7 @@ async function processCommand(command) {
             }
             else {
                 try {
-                    const call = await initializeCall(command.media, command.aesKey);
+                    const call = await initializeCall(defaultCallConfig, command.media, command.aesKey);
                     const { connection, iceCandidates } = call;
                     pc = connection;
                     await pc.setRemoteDescription(new RTCSessionDescription(command.offer));
@@ -151,7 +161,7 @@ async function processCommand(command) {
                     await pc.setLocalDescription(answer);
                     addIceCandidates(pc, command.iceCandidates);
                     // same as command for caller to use
-                    resp = { type: "answer", answer, iceCandidates };
+                    resp = { type: "answer", answer, iceCandidates: await iceCandidates };
                 }
                 catch (e) {
                     resp = { type: "error", message: e.message };
@@ -187,6 +197,7 @@ async function processCommand(command) {
             if (pc) {
                 pc.close();
                 pc = undefined;
+                resetVideoElements();
                 resp = { type: "ok" };
             }
             else {
@@ -207,7 +218,7 @@ function addIceCandidates(conn, iceCandidates) {
 }
 async function setUpMediaStreams(pc, localStream, remoteStream, aesKey) {
     var _a;
-    const videos = getVideoElelements();
+    const videos = getVideoElements();
     if (!videos)
         throw Error("no video elements");
     let key;
@@ -260,6 +271,8 @@ async function setUpMediaStreams(pc, localStream, remoteStream, aesKey) {
             }
         }
     }
+    // setupVideoElement(videos.local)
+    // setupVideoElement(videos.remote)
     videos.local.srcObject = localStream;
     videos.remote.srcObject = remoteStream;
 }
@@ -286,22 +299,27 @@ function supportsInsertableStreams() {
     return ("createEncodedStreams" in RTCRtpSender.prototype)
         && ("createEncodedStreams" in RTCRtpReceiver.prototype);
 }
-function getVideoElelements() {
+function resetVideoElements() {
+    const videos = getVideoElements();
+    if (!videos)
+        return;
+    videos.local.srcObject = null;
+    videos.remote.srcObject = null;
+}
+function getVideoElements() {
     const local = document.getElementById("local-video-stream");
     const remote = document.getElementById("remote-video-stream");
     if (!(local && remote && local instanceof HTMLMediaElement && remote instanceof HTMLMediaElement))
         return;
-    setupVideoElement(local);
-    setupVideoElement(remote);
     return { local, remote };
 }
-function setupVideoElement(video) {
-    // TODO use display: none
-    video.style.opacity = "0";
-    video.onplaying = () => {
-        video.style.opacity = "1";
-    };
-}
+// function setupVideoElement(video: HTMLElement) {
+//   // TODO use display: none
+//   video.style.opacity = "0"
+//   video.onplaying = () => {
+//     video.style.opacity = "1"
+//   }
+// }
 // what does it do?
 // function toggleVideo(b) {
 //   if (b == "true") {
@@ -321,8 +339,6 @@ function setupPeerTransform(peer, transform) {
 }
 /* Cryptography */
 function encodeFunction(key) {
-    // frame is an RTCEncodedAudioFrame
-    // frame.data is ArrayBuffer
     return async (frame, controller) => {
         const data = new Uint8Array(frame.data);
         const n = frame instanceof RTCEncodedVideoFrame ? initialPlainTextRequired[frame.type] : 0;
@@ -336,7 +352,6 @@ function encodeFunction(key) {
         }
         catch (e) {
             console.log(`encryption error ${e}`);
-            // pc.close()
             throw e;
         }
     };
@@ -355,7 +370,6 @@ function decodeFunction(key) {
         }
         catch (e) {
             console.log(`decryption error ${e}`);
-            // pc.close()
             throw e;
         }
     };
@@ -369,22 +383,6 @@ class RTCEncodedVideoFrame {
 function randomIV() {
     return crypto.getRandomValues(new Uint8Array(IV_LENGTH));
 }
-// async function loadKey(keyData) {
-//   key = await crypto.subtle.importKey("jwk", keyData, keyGenConfig, false, keyUsages)
-// }
-// async function generateKey() {
-//   let rawKey = await crypto.subtle.generateKey(keyGenConfig, true, keyUsages)
-//   let key = await crypto.subtle.exportKey("jwk", rawKey)
-//   console.log(
-//     JSON.stringify({
-//       action: "processDecryptionKey",
-//       content: {
-//         key,
-//         iv: encryptIv,
-//       },
-//     })
-//   )
-// }
 const char_equal = "=".charCodeAt(0);
 function concatN(...bs) {
     const a = new Uint8Array(bs.reduce((size, b) => size + b.byteLength, 0));

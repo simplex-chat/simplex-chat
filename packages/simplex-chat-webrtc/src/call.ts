@@ -1,30 +1,15 @@
 // Inspired by
 // https://github.com/webrtc/samples/blob/gh-pages/src/content/insertable-streams/endtoend-encryption
 
-// let incomingVideo = document.getElementById("incoming-video-stream")
-// let outgoingVideo = document.getElementById("outgoing-video-stream")
-// incomingVideo.style.opacity = 0
-// outgoingVideo.style.opacity = 0
-// incomingVideo.onplaying = () => {
-//   incomingVideo.style.opacity = 1
-// }
-// outgoingVideo.onplaying = () => {
-//   outgoingVideo.style.opacity = 1
-// }
-
-// Object.defineProperty(window, "processCommand", {value: processCommand})
-
-// Object.defineProperty(window, "f", {value: f})
-
 // type WCallMessage = WCallCommand | WCallResponse
 
 type WCallCommand = WCCapabilities | WCStartCall | WCAcceptOffer | WCEndCall | WCallCommandResponse
 
-type WCallResponse = WRCapabilities | WROk | WRError | WCallCommandResponse
+type WCallResponse = WRCapabilities | WRConnection | WRCallEnded | WROk | WRError | WCallCommandResponse
 
 type WCallCommandResponse = WCallOffer | WCallAnswer | WCallIceCandidates
 
-type WCallMessageTag = "capabilities" | "start" | "offer" | "accept" | "answer" | "ice" | "end" | "ok" | "error"
+type WCallMessageTag = "capabilities" | "connection" | "start" | "offer" | "accept" | "answer" | "ice" | "end" | "ended" | "ok" | "error"
 
 enum CallMediaType {
   Audio = "audio",
@@ -37,6 +22,18 @@ interface IWebCallMessage {
 
 interface WCCapabilities extends IWebCallMessage {
   type: "capabilities"
+}
+
+interface WRConnection extends IWebCallMessage {
+  type: "connection",
+  state: {
+    connectionState: string
+    iceConnectionState: string
+    iceGatheringState: string
+    signalingState: string
+    currentLocalDescription: boolean
+    currentRemoteDescription: boolean
+  }
 }
 
 interface WCStartCall extends IWebCallMessage {
@@ -83,6 +80,10 @@ interface CallCapabilities {
   encryption: boolean
 }
 
+interface WRCallEnded extends IWebCallMessage {
+  type: "ended"
+}
+
 interface WROk extends IWebCallMessage {
   type: "ok"
 }
@@ -111,11 +112,6 @@ const peerConnectionConfig: RTCConfigurationWithEncryption = {
   encodedInsertableStreams: true,
 }
 
-// let keyGenConfig: AesKeyGenParams = {
-//   name: "AES-GCM", length: 256,
-//   tagLength: 128,
-// }
-
 const keyAlgorithm: AesKeyAlgorithm = {
   name: "AES-GCM",
   length: 256
@@ -123,18 +119,7 @@ const keyAlgorithm: AesKeyAlgorithm = {
 
 const keyUsages: KeyUsage[] = ["encrypt", "decrypt"]
 
-// Hardcode a key for development
-// let keyData = {
-//   alg: "A256GCM",
-//   ext: true,
-//   k: "JCMDWkhxLmPDhua0BUdhgv6Ac6hOtB9frSxJlnkTAK8",
-//   key_ops: keyUsages,
-//   kty: "oct",
-// }
-
 let pc: RTCPeerConnection | undefined
-
-// let key
 
 const IV_LENGTH = 12
 
@@ -144,110 +129,106 @@ const initialPlainTextRequired = {
   undefined: 1,
 }
 
-// let encryptKeyRepresentation
-// let candidates: RTCIceCandidate[] = []
-// run()
-
-// async function run() {
-//   pc = new RTCPeerConnection(peerConnectionConfig)
-
-//   pc.onicecandidate = (event) => {
-//     // add candidate to maintained list to be sent all at once
-//     if (event.candidate) {
-//       candidates.push(event.candidate)
-//     }
-//   }
-//   pc.onicegatheringstatechange = (_) => {
-//     if (pc.iceGatheringState == "complete") {
-//       // Give command for other caller to use
-//       console.log(JSON.stringify({action: "processIceCandidates", content: candidates}))
-//     }
-//   }
-//   let remoteStream = new MediaStream()
-//   key = await crypto.subtle.importKey("jwk", keyData, keyGenConfig, true, keyUsages)
-//   let localStream = await navigator.mediaDevices.getUserMedia(callMediaContraints(CallMediaType.Video))
-//   setUpMediaStreams(pc, localStream, remoteStream)
-// }
-
-interface CallPeerConnection {
+interface Call {
   connection: RTCPeerConnection
-  iceCandidates: RTCIceCandidate[]
-  extraIceCandidates?: Promise<ExtraIceCandidates>
-}
-
-interface ExtraIceCandidates {
-  iceCandidates: RTCIceCandidate[]
-  complete: boolean
+  iceCandidates: Promise<RTCIceCandidate[]>
 }
 
 interface CallConfig {
-  waitForIceCandidates: number
-  timeoutIceCandidates: number
+  iceCandidates: {
+    delay: number
+    extrasInterval: number
+    extrasTimeout: number
+  }
 }
 
-function createPeerConnection(config: CallConfig): Promise<CallPeerConnection> {
-  let connection = new RTCPeerConnection(peerConnectionConfig)
-  return new Promise((resolve, _) => {
-    const extraIceCandidates = new Promise<ExtraIceCandidates>((resolveExtra, _) => {
-      let candidates: RTCIceCandidate[] = []
-      let ok = false
-      let okExtra = false
-      let waitExtra: number | undefined
-      const wait = setTimeout(() => {
-        if (!ok) {
-          const iceCandidates = candidates.slice()
-          candidates = []
-          ok = true
-          waitExtra = setTimeout(() => {
-            if (!okExtra) {
-              okExtra = true
-              resolveExtra({
-                iceCandidates: candidates.slice(),
-                complete: false,
-              })
-            }
-          }, config.timeoutIceCandidates)
-          resolve({connection, iceCandidates, extraIceCandidates})
-        }
-      }, config.waitForIceCandidates)
+const defaultCallConfig: CallConfig = {
+  iceCandidates: {
+    delay: 2000,
+    extrasInterval: 2000,
+    extrasTimeout: 8000
+  }
+}
 
-      connection.onicecandidate = (e) => e.candidate && candidates.push(e.candidate)
-      connection.onicegatheringstatechange = (_) => {
-        if (connection.iceGatheringState == "complete") {
-          if (!ok) {
-            ok = true
-            clearTimeout(wait)
-            resolve({connection, iceCandidates: candidates})
-          } else if (!okExtra) {
-            okExtra = true
-            waitExtra && clearTimeout(waitExtra)
-            resolveExtra({iceCandidates: candidates, complete: true})
-          }
+async function initializeCall(config: CallConfig, mediaType: CallMediaType, aesKey?: string): Promise<Call> {
+  const connection = new RTCPeerConnection(peerConnectionConfig)
+  const remoteStream = new MediaStream()
+  const localStream = await navigator.mediaDevices.getUserMedia(callMediaContraints(mediaType))
+  await setUpMediaStreams(connection, localStream, remoteStream, aesKey)
+  const iceCandidates = new Promise<RTCIceCandidate[]>((resolve, _) => {
+    let candidates: RTCIceCandidate[] = []
+    let resolved = false
+    let extrasInterval: number | undefined
+    let extrasTimeout: number | undefined
+    const delay = setTimeout(() => {
+      if (!resolved) {
+        resolveIceCandidates()
+        extrasInterval = setInterval(() => {
+          sendIceCandidates()
+        }, config.iceCandidates.extrasInterval)
+        extrasTimeout = setTimeout(() => {
+          clearInterval(extrasInterval)
+          sendIceCandidates()
+        }, config.iceCandidates.extrasTimeout)
+      }
+    }, config.iceCandidates.delay)
+
+    connection.onconnectionstatechange = ({target}) => {
+      const t = target as RTCPeerConnection
+      sendMessageToNative({
+        type: "connection",
+        state: {
+          connectionState: t.connectionState,
+          iceConnectionState: t.iceConnectionState,
+          iceGatheringState: t.iceGatheringState,
+          signalingState: t.signalingState,
+          currentLocalDescription: !!t.currentLocalDescription,
+          currentRemoteDescription: !!t.currentRemoteDescription
+        }
+      })
+      if (t.connectionState == "disconnected" || t.connectionState == "failed") {
+        connection.onconnectionstatechange = null
+        sendMessageToNative({type: "ended"})
+        connection.close()
+        pc = undefined
+        resetVideoElements()
+      }
+    }
+    connection.onicecandidate = ({candidate: c}) => c && candidates.push(c)
+    connection.onicegatheringstatechange = (_) => {
+      if (connection.iceGatheringState == "complete") {
+        if (resolved) {
+          if (extrasInterval) clearInterval(extrasInterval)
+          if (extrasTimeout) clearTimeout(extrasTimeout)
+          sendIceCandidates()
+        } else {
+          resolveIceCandidates()
         }
       }
-    })
+    }
+
+    function resolveIceCandidates() {
+      if (delay) clearTimeout(delay)
+      resolved = true
+      const iceCandidates = candidates.slice()
+      candidates = []
+      resolve(iceCandidates)
+    }  
+
+    function sendIceCandidates() {
+      if (candidates.length === 0) return
+      const iceCandidates = candidates.slice()
+      candidates = []
+      sendMessageToNative({type: "ice", iceCandidates})
+    }
   })
+
+  return {connection, iceCandidates}
 }
 
 // TODO remove WCallCommand from parameter type
 function sendMessageToNative(msg: WCallResponse | WCallCommand) {
   console.log(JSON.stringify(msg))
-}
-
-async function initializeCall(mediaType: CallMediaType, keyData?: string): Promise<CallPeerConnection> {
-  const call = await createPeerConnection({
-    waitForIceCandidates: 4000,
-    timeoutIceCandidates: 4000
-  })
-  const {connection, extraIceCandidates} = call
-  const remoteStream = new MediaStream()
-  const localStream = await navigator.mediaDevices.getUserMedia(callMediaContraints(mediaType))
-  await setUpMediaStreams(connection, localStream, remoteStream, keyData)
-  extraIceCandidates?.then(({iceCandidates, complete}) => {
-    if (!complete) console.log("ICE candidates gathering not completed")
-    if (iceCandidates.length > 0) sendMessageToNative({type: "ice", iceCandidates})
-  })
-  return call
 }
 
 // TODO remove WCallCommand from result type
@@ -267,14 +248,14 @@ async function processCommand(command: WCallCommand): Promise<WCallResponse | WC
       } else {
         try {
           const {media, aesKey} = command
-          const call = await initializeCall(media, aesKey)
+          const call = await initializeCall(defaultCallConfig, media, aesKey)
           const {connection, iceCandidates} = call
           pc = connection
           const offer = await pc.createOffer()
           await pc.setLocalDescription(offer)
           // for debugging, returning the command for callee to use
-          resp = {type: "accept", offer, iceCandidates, media, aesKey}
-          // resp = {type: "offer", offer, iceCandidates}
+          resp = {type: "accept", offer, iceCandidates: await iceCandidates, media, aesKey}
+          // resp = {type: "offer", offer, iceCandidates: await iceCandidates}
         } catch (e) {
           resp = {type: "error", message: (e as Error).message}
         }
@@ -287,7 +268,7 @@ async function processCommand(command: WCallCommand): Promise<WCallResponse | WC
         resp = {type: "error", message: "accept: encryption is not supported"}
       } else {
         try {
-          const call = await initializeCall(command.media, command.aesKey)
+          const call = await initializeCall(defaultCallConfig, command.media, command.aesKey)
           const {connection, iceCandidates} = call
           pc = connection
           await pc.setRemoteDescription(new RTCSessionDescription(command.offer))
@@ -295,7 +276,7 @@ async function processCommand(command: WCallCommand): Promise<WCallResponse | WC
           await pc.setLocalDescription(answer)
           addIceCandidates(pc, command.iceCandidates)
           // same as command for caller to use
-          resp = {type: "answer", answer, iceCandidates}
+          resp = {type: "answer", answer, iceCandidates: await iceCandidates}
         } catch (e) {
           resp = {type: "error", message: (e as Error).message}
         }
@@ -326,6 +307,7 @@ async function processCommand(command: WCallCommand): Promise<WCallResponse | WC
       if (pc) {
         pc.close()
         pc = undefined
+        resetVideoElements()
         resp = {type: "ok"}
       } else {
         resp = {type: "error", message: "end: call not started"}
@@ -346,7 +328,7 @@ function addIceCandidates(conn: RTCPeerConnection, iceCandidates: RTCIceCandidat
 }
 
 async function setUpMediaStreams(pc: RTCPeerConnection, localStream: MediaStream, remoteStream: MediaStream, aesKey?: string): Promise<void> {
-  const videos = getVideoElelements()
+  const videos = getVideoElements()
   if (!videos) throw Error("no video elements")
 
   let key: CryptoKey | undefined
@@ -399,6 +381,8 @@ async function setUpMediaStreams(pc: RTCPeerConnection, localStream: MediaStream
       }
     }
   }
+  // setupVideoElement(videos.local)
+  // setupVideoElement(videos.remote)
   videos.local.srcObject = localStream
   videos.remote.srcObject = remoteStream
 }
@@ -433,22 +417,27 @@ interface VideoElements {
   remote: HTMLMediaElement
 }
 
-function getVideoElelements(): VideoElements | undefined {
+function resetVideoElements() {
+  const videos = getVideoElements()
+  if (!videos) return
+  videos.local.srcObject = null
+  videos.remote.srcObject = null
+}
+
+function getVideoElements(): VideoElements | undefined {
   const local = document.getElementById("local-video-stream")
   const remote = document.getElementById("remote-video-stream")
   if (!(local && remote && local instanceof HTMLMediaElement && remote instanceof HTMLMediaElement)) return
-  setupVideoElement(local)
-  setupVideoElement(remote)
   return {local, remote}
 }
 
-function setupVideoElement(video: HTMLElement) {
-  // TODO use display: none
-  video.style.opacity = "0"
-  video.onplaying = () => {
-    video.style.opacity = "1"
-  }
-}
+// function setupVideoElement(video: HTMLElement) {
+//   // TODO use display: none
+//   video.style.opacity = "0"
+//   video.onplaying = () => {
+//     video.style.opacity = "1"
+//   }
+// }
 
 // what does it do?
 // function toggleVideo(b) {
@@ -472,8 +461,6 @@ function setupPeerTransform(peer: RTCRtpSenderWithEncryption | RTCRtpReceiverWit
 
 /* Cryptography */
 function encodeFunction(key: CryptoKey): (frame: RTCEncodedVideoFrame, controller: TransformStreamDefaultController) => void {
-  // frame is an RTCEncodedAudioFrame
-  // frame.data is ArrayBuffer
   return async (frame, controller) => {
     const data = new Uint8Array(frame.data)
     const n = frame instanceof RTCEncodedVideoFrame ? initialPlainTextRequired[frame.type] : 0
@@ -486,7 +473,6 @@ function encodeFunction(key: CryptoKey): (frame: RTCEncodedVideoFrame, controlle
       controller.enqueue(frame)
     } catch (e) {
       console.log(`encryption error ${e}`)
-      // pc.close()
       throw e
     }
   }
@@ -505,7 +491,6 @@ function decodeFunction(key: CryptoKey): (frame: RTCEncodedVideoFrame, controlle
       controller.enqueue(frame)
     } catch (e) {
       console.log(`decryption error ${e}`)
-      // pc.close()
       throw e
     }
   }
