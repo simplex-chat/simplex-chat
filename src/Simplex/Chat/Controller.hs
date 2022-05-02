@@ -336,6 +336,10 @@ data ChatErrorType
   | CEInvalidQuote
   | CEInvalidChatItemUpdate
   | CEInvalidChatItemDelete
+  | CEHasCurrentCall
+  | CENoCurrentCall
+  | CECallContact {contactId :: Int64}
+  | CECallState {callState :: CallStateTag}
   | CEAgentVersion
   | CECommandError {message :: String}
   deriving (Show, Exception, Generic)

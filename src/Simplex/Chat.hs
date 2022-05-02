@@ -40,6 +40,7 @@ import qualified Data.Text as T
 import Data.Time.Clock (UTCTime, getCurrentTime)
 import Data.Time.LocalTime (getCurrentTimeZone, getZonedTime)
 import Data.Word (Word32)
+import Simplex.Chat.Call
 import Simplex.Chat.Controller
 import Simplex.Chat.Markdown
 import Simplex.Chat.Messages
@@ -389,12 +390,62 @@ processChatCommand = \case
           `E.finally` deleteContactRequest st userId connReqId
     withAgent $ \a -> rejectContact a connId invId
     pure $ CRContactRequestRejected cReq
-  APISendCallInvitation _contactId _callType -> pure $ chatCmdError "not implemented"
-  APIRejectCall _contactId -> pure $ chatCmdError "not implemented"
-  APISendCallOffer _contactId _wCallOffer -> pure $ chatCmdError "not implemented"
-  APISendCallAnswer _contactId _rtcSession -> pure $ chatCmdError "not implemented"
-  APISendCallExtraInfo _contactId _rtcExtraInfo -> pure $ chatCmdError "not implemented"
-  APIEndCall _contactId -> pure $ chatCmdError "not implemented"
+  APISendCallInvitation contactId callType@CallType {capabilities = CallCapabilities {encryption}} -> withUser $ \user@User {userId} -> do
+    ct <- withStore $ \st -> getContact st userId contactId
+    call <- asks currentCall
+    withChatLock $
+      readTVarIO call >>= \case
+        Just _ -> throwChatError CEHasCurrentCall
+        _ -> do
+          callId <- CallId <$> (asks idsDrg >>= liftIO . (`randomBytes` 16))
+          dhKeyPair <- if encryption then Just <$> liftIO C.generateKeyPair' else pure Nothing
+          let invitation = CallInvitation {callType, callDhPubKey = fst <$> dhKeyPair}
+              callState = CallInvitationSent {localCallType = callType, localDhPrivKey = snd <$> dhKeyPair}
+          msg <- sendDirectContactMessage ct (XCallInv callId invitation)
+          ci <- saveSndChatItem user (CDDirectSnd ct) msg (CISndCall CISCallPending 0) Nothing Nothing
+          atomically . writeTVar call $ Just Call {contactId, callId, chatItemId = chatItemId' ci, callState}
+          toView . CRNewChatItem $ AChatItem SCTDirect SMDSnd (DirectChat ct) ci
+          pure CRCmdOk
+  APIRejectCall contactId ->
+    withCurrentCall contactId $ \userId ct Call {chatItemId, callState} -> case callState of
+      CallInvitationReceived {} -> do
+        updCi <- withStore $ \st -> updateDirectChatItemNoMsg st userId contactId chatItemId (CIRcvCall CISCallRejected 0)
+        toView . CRChatItemUpdated $ AChatItem SCTDirect SMDRcv (DirectChat ct) updCi
+        pure Nothing
+      _ -> throwChatError . CECallState $ callStateTag callState
+  APISendCallOffer contactId WebRTCCallOffer {callType, rtcSession} ->
+    withCurrentCall contactId $ \userId ct call@Call {callId, chatItemId, callState} -> case callState of
+      CallInvitationReceived {peerCallType, localDhPubKey, sharedKey} -> do
+        -- TODO check that call type matches peerCallType
+        let offer = CallOffer {callType, rtcSession, callDhPubKey = localDhPubKey}
+            callState' = CallOfferSent {localCallType = callType, peerCallType, localCallSession = rtcSession, sharedKey}
+        SndMessage {msgId} <- sendDirectContactMessage ct (XCallOffer callId offer)
+        updCi <- withStore $ \st -> updateDirectChatItem st userId contactId chatItemId (CIRcvCall CISCallAccepted 0) msgId
+        toView . CRChatItemUpdated $ AChatItem SCTDirect SMDRcv (DirectChat ct) updCi
+        pure $ Just (call :: Call) {callState = callState'}
+      _ -> throwChatError . CECallState $ callStateTag callState
+  APISendCallAnswer contactId rtcSession ->
+    withCurrentCall contactId $ \userId ct call@Call {callId, chatItemId, callState} -> case callState of
+      CallOfferReceived {localCallType, peerCallType, peerCallSession, sharedKey} -> do
+        SndMessage {msgId} <- sendDirectContactMessage ct (XCallAnswer callId CallAnswer {rtcSession})
+        updCi <- withStore $ \st -> updateDirectChatItem st userId contactId chatItemId (CISndCall CISCallNegotiated 0) msgId
+        toView . CRChatItemUpdated $ AChatItem SCTDirect SMDSnd (DirectChat ct) updCi
+        let callState' = CallNegotiated {localCallType, peerCallType, localCallSession = rtcSession, peerCallSession, sharedKey}
+        pure $ Just (call :: Call) {callState = callState'}
+      _ -> throwChatError . CECallState $ callStateTag callState
+  APISendCallExtraInfo contactId rtcExtraInfo ->
+    withCurrentCall contactId $ \userId ct call@Call {callId, chatItemId, callState} -> case callState of
+      CallNegotiated {localCallType, peerCallType, localCallSession, peerCallSession, sharedKey} -> do
+        _ <- sendDirectContactMessage ct (XCallExtra callId CallExtraInfo {rtcExtraInfo})
+        let callState' = CallNegotiated {localCallType, peerCallType, localCallSession, peerCallSession, sharedKey}
+        pure $ Just (call :: Call) {callState = callState'}
+      _ -> throwChatError . CECallState $ callStateTag callState
+  APIEndCall contactId ->
+    withCurrentCall contactId $ \userId ct Call {callId, chatItemId} -> do
+      SndMessage {msgId} <- sendDirectContactMessage ct (XCallEnd callId)
+      updCi <- withStore $ \st -> updateDirectChatItem st userId contactId chatItemId (CISndCall CISCallEnded 0) msgId
+      toView . CRChatItemUpdated $ AChatItem SCTDirect SMDSnd (DirectChat ct) updCi
+      pure Nothing
   APIUpdateProfile profile -> withUser (`updateProfile` profile)
   APIParseMarkdown text -> pure . CRApiParsedMarkdown $ parseMaybeMarkdownList text
   APIRegisterToken token -> CRNtfTokenStatus <$> withUser (\_ -> withAgent (`registerNtfToken` token))
@@ -693,6 +744,19 @@ processChatCommand = \case
             withStore $ \st -> do
               updateFileCancelled st userId fileId
               updateCIFileStatus st userId fileId ciFileStatus
+    withCurrentCall :: Int64 -> (UserId -> Contact -> Call -> m (Maybe Call)) -> m ChatResponse
+    withCurrentCall ctId action = withUser $ \User {userId} -> do
+      ct <- withStore $ \st -> getContact st userId ctId
+      callVar <- asks currentCall
+      withChatLock $
+        readTVarIO callVar >>= \case
+          Nothing -> throwChatError CENoCurrentCall
+          Just call@Call {contactId}
+            | ctId == contactId -> do
+              call_ <- action userId ct call
+              atomically $ writeTVar callVar call_
+              pure CRCmdOk
+            | otherwise -> throwChatError $ CECallContact contactId
 
 -- mobile clients use file paths relative to app directory (e.g. for the reason ios app directory changes on updates),
 -- so we have to differentiate between the file path stored in db and communicated with frontend, and the file path

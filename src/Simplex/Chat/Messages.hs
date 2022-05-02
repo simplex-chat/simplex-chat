@@ -553,6 +553,8 @@ data CICallStatus
   = CISCallPending
   | CISCallMissed
   | CISCallRejected -- only possible for received calls, not on type level
+  | CISCallAccepted
+  | CISCallNegotiated
   | CISCallProgress
   | CISCallEnded
   | CISCallError
@@ -570,6 +572,8 @@ ciCallInfoText status duration = case status of
   CISCallPending -> "calling..."
   CISCallMissed -> "missed"
   CISCallRejected -> "rejected"
+  CISCallAccepted -> "accepted"
+  CISCallNegotiated -> "connecting..."
   CISCallProgress -> "in progress " <> d
   CISCallEnded -> "ended " <> d
   CISCallError -> "error"
