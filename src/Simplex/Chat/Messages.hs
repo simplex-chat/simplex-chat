@@ -555,6 +555,7 @@ data CICallStatus
   | CISCallRejected -- only possible for received calls, not on type level
   | CISCallProgress
   | CISCallEnded
+  | CISCallError
   deriving (Show, Generic)
 
 instance FromJSON CICallStatus where
@@ -571,6 +572,7 @@ ciCallInfoText status duration = case status of
   CISCallRejected -> "rejected"
   CISCallProgress -> "in progress " <> d
   CISCallEnded -> "ended " <> d
+  CISCallError -> "error"
   where
     d = let (mins, secs) = duration `divMod` 60 in T.pack $ "(" <> show mins <> ":" <> show secs <> ")"
 

@@ -139,7 +139,6 @@ responseToView testView = \case
     ["sent file " <> sShow fileId <> " (" <> plain fileName <> ") error: " <> sShow e]
   CRRcvFileSubError RcvFileTransfer {fileId, fileInvitation = FileInvitation {fileName}} e ->
     ["received file " <> sShow fileId <> " (" <> plain fileName <> ") error: " <> sShow e]
-  CRCallInvitationSent {} -> []
   CRCallInvitation {} -> []
   CRCallOffer {} -> []
   CRCallAnswer {} -> []
