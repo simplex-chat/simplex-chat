@@ -31,8 +31,6 @@ interface WRConnection extends IWebCallMessage {
     iceConnectionState: string
     iceGatheringState: string
     signalingState: string
-    currentLocalDescription: boolean
-    currentRemoteDescription: boolean
   }
 }
 
@@ -151,10 +149,11 @@ const defaultCallConfig: CallConfig = {
 }
 
 async function initializeCall(config: CallConfig, mediaType: CallMediaType, aesKey?: string): Promise<Call> {
-  const connection = new RTCPeerConnection(peerConnectionConfig)
+  const conn = new RTCPeerConnection(peerConnectionConfig)
   const remoteStream = new MediaStream()
   const localStream = await navigator.mediaDevices.getUserMedia(callMediaContraints(mediaType))
-  await setUpMediaStreams(connection, localStream, remoteStream, aesKey)
+  await setUpMediaStreams(conn, localStream, remoteStream, aesKey)
+  conn.addEventListener("connectionstatechange", connectionStateChange)
   const iceCandidates = new Promise<RTCIceCandidate[]>((resolve, _) => {
     let candidates: RTCIceCandidate[] = []
     let resolved = false
@@ -173,30 +172,9 @@ async function initializeCall(config: CallConfig, mediaType: CallMediaType, aesK
       }
     }, config.iceCandidates.delay)
 
-    connection.onconnectionstatechange = ({target}) => {
-      const t = target as RTCPeerConnection
-      sendMessageToNative({
-        type: "connection",
-        state: {
-          connectionState: t.connectionState,
-          iceConnectionState: t.iceConnectionState,
-          iceGatheringState: t.iceGatheringState,
-          signalingState: t.signalingState,
-          currentLocalDescription: !!t.currentLocalDescription,
-          currentRemoteDescription: !!t.currentRemoteDescription
-        }
-      })
-      if (t.connectionState == "disconnected" || t.connectionState == "failed") {
-        connection.onconnectionstatechange = null
-        sendMessageToNative({type: "ended"})
-        connection.close()
-        pc = undefined
-        resetVideoElements()
-      }
-    }
-    connection.onicecandidate = ({candidate: c}) => c && candidates.push(c)
-    connection.onicegatheringstatechange = (_) => {
-      if (connection.iceGatheringState == "complete") {
+    conn.onicecandidate = ({candidate: c}) => c && candidates.push(c)
+    conn.onicegatheringstatechange = () => {
+      if (conn.iceGatheringState == "complete") {
         if (resolved) {
           if (extrasInterval) clearInterval(extrasInterval)
           if (extrasTimeout) clearTimeout(extrasTimeout)
@@ -223,7 +201,26 @@ async function initializeCall(config: CallConfig, mediaType: CallMediaType, aesK
     }
   })
 
-  return {connection, iceCandidates}
+  return {connection: conn, iceCandidates}
+
+  function connectionStateChange() {
+    sendMessageToNative({
+      type: "connection",
+      state: {
+        connectionState: conn.connectionState,
+        iceConnectionState: conn.iceConnectionState,
+        iceGatheringState: conn.iceGatheringState,
+        signalingState: conn.signalingState,
+      }
+    })
+    if (conn.connectionState == "disconnected" || conn.connectionState == "failed") {
+      conn.removeEventListener("connectionstatechange", connectionStateChange)
+      sendMessageToNative({type: "ended"})
+      conn.close()
+      pc = undefined
+      resetVideoElements()
+    }
+  }
 }
 
 // TODO remove WCallCommand from parameter type
