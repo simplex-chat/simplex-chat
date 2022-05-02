@@ -56,7 +56,7 @@ struct FramedItemView: View {
                             ciMsgContentView (chatItem, showMember)
                         }
                     case let .file(text):
-                        CIFileView(file: chatItem.file)
+                        CIFileView(file: chatItem.file, edited: chatItem.meta.itemEdited)
                         if text != "" {
                             ciMsgContentView (chatItem, showMember)
                         }

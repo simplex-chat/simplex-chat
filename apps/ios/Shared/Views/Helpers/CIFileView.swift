@@ -11,9 +11,12 @@ import SwiftUI
 struct CIFileView: View {
     @Environment(\.colorScheme) var colorScheme
     let file: CIFile?
+    let edited: Bool
 
     var body: some View {
-        let metaReserve = "                          "
+        let metaReserve = edited
+          ? "                         "
+          : "                     "
         Button(action: fileAction) {
             HStack(alignment: .bottom, spacing: 6) {
                 fileIndicator()
