@@ -13,6 +13,7 @@ struct CIFileView: View {
     let file: CIFile?
 
     var body: some View {
+        let metaReserve = "                          "
         Button(action: fileAction) {
             HStack(alignment: .bottom, spacing: 6) {
                 fileIndicator()
@@ -24,12 +25,14 @@ struct CIFileView: View {
                             .lineLimit(1)
                             .multilineTextAlignment(.leading)
                             .foregroundColor(.primary)
-                        Text(formatBytes(bytes: file.fileSize) + "                   ")
+                        Text(formatBytes(bytes: file.fileSize) + metaReserve)
                             .font(.caption)
                             .lineLimit(1)
                             .multilineTextAlignment(.leading)
                             .foregroundColor(.secondary)
                     }
+                } else {
+                    Text(metaReserve)
                 }
             }
             .padding(.top, 4)
@@ -82,6 +85,7 @@ struct CIFileView: View {
     @ViewBuilder func fileIndicator() -> some View {
         if let file = file {
             switch file.fileStatus {
+            case .sndCancelled: fileIcon("doc.fill", innerIcon: "xmark", innerIconSize: 10)
             case .rcvInvitation:
                 if fileSizeValid() {
                     fileIcon("arrow.down.doc.fill", color: .accentColor)
@@ -89,12 +93,12 @@ struct CIFileView: View {
                     fileIcon("doc.fill", color: .orange, innerIcon: "exclamationmark", innerIconSize: 12)
                 }
             case .rcvAccepted: fileIcon("doc.fill", innerIcon: "ellipsis", innerIconSize: 12)
-            case .rcvTransfer: ProgressView().frame(width: 29, height: 29)
+            case .rcvTransfer: ProgressView().frame(width: 30, height: 30)
             case .rcvCancelled: fileIcon("doc.fill", innerIcon: "xmark", innerIconSize: 10)
             default: fileIcon("doc.fill")
             }
         } else {
-            fileIcon("doc.circle.fill")
+            fileIcon("doc.fill")
         }
     }
 
@@ -139,16 +143,31 @@ struct CIFileView: View {
 
 struct CIFileView_Previews: PreviewProvider {
     static var previews: some View {
+        let sentFile = ChatItem(
+            chatDir: .directSnd,
+            meta: CIMeta.getSample(1, .now, "", .sndSent, false, true, false),
+            content: .sndMsgContent(msgContent: .file("")),
+            quotedItem: nil,
+            file: CIFile.getSample(fileStatus: .sndStored)
+        )
+        let fileChatItemWtFile = ChatItem(
+            chatDir: .directRcv,
+            meta: CIMeta.getSample(1, .now, "", .rcvRead, false, false, false),
+            content: .rcvMsgContent(msgContent: .file("")),
+            quotedItem: nil,
+            file: nil
+        )
         Group{
+            ChatItemView(chatItem: sentFile)
             ChatItemView(chatItem: ChatItem.getFileMsgContentSample())
             ChatItemView(chatItem: ChatItem.getFileMsgContentSample(fileName: "some_long_file_name_here", fileStatus: .rcvInvitation))
             ChatItemView(chatItem: ChatItem.getFileMsgContentSample(fileStatus: .rcvAccepted))
             ChatItemView(chatItem: ChatItem.getFileMsgContentSample(fileStatus: .rcvTransfer))
             ChatItemView(chatItem: ChatItem.getFileMsgContentSample(fileStatus: .rcvCancelled))
             ChatItemView(chatItem: ChatItem.getFileMsgContentSample(fileSize: 2000000, fileStatus: .rcvInvitation))
-            ChatItemView(chatItem: ChatItem.getFileMsgContentSample(fileName: "x"))
             ChatItemView(chatItem: ChatItem.getFileMsgContentSample(text: "Hello there", fileStatus: .rcvInvitation))
             ChatItemView(chatItem: ChatItem.getFileMsgContentSample(text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.", fileStatus: .rcvInvitation))
+            ChatItemView(chatItem: fileChatItemWtFile)
         }
         .previewLayout(.fixed(width: 360, height: 360))
     }
