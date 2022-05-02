@@ -275,9 +275,9 @@ async function processCommand(command: WCallCommand): Promise<WCallResponse | WC
       break
     case "accept":
       if (pc) {
-        resp = {type: "error", message: "offer: call already started"}
+        resp = {type: "error", message: "accept: call already started"}
       } else if (!supportsInsertableStreams() && command.aesKey) {
-        resp = {type: "error", message: "offer: encryption is not supported"}
+        resp = {type: "error", message: "accept: encryption is not supported"}
       } else {
         const call = await initializeCall(command.media, command.aesKey)
         const {connection, iceCandidates} = call
