@@ -470,18 +470,24 @@ testGroup2 =
       dan <##> cath
       dan <##> alice
       -- show last messages
-      alice ##> "/t #club 3"
-      alice <# "#club cath> hey"
-      alice <# "#club dan> how is it going?"
-      alice <# "#club hello"
+      alice ##> "/t #club 4"
+      alice -- these strings are expected in any order because of sorting by time and rounding of time for sent
+        <##? [ "#club hello",
+               "#club bob> hi there",
+               "#club cath> hey",
+               "#club dan> how is it going?"
+             ]
       alice ##> "/t @dan 2"
-      alice <# "dan> hi"
-      alice <# "@dan hey"
-      alice ##> "/t 5"
-      alice -- these strings are expected in any order because of sorting by time
-        <##? [ "#club cath> hey",
+      alice
+        <##? [ "dan> hi",
+               "@dan hey"
+             ]
+      alice ##> "/t 6"
+      alice
+        <##? [ "#club hello",
+               "#club bob> hi there",
+               "#club cath> hey",
                "#club dan> how is it going?",
-               "#club hello",
                "dan> hi",
                "@dan hey"
              ]
