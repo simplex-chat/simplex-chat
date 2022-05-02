@@ -1,5 +1,6 @@
 package chat.simplex.app.views.chat.item
 
+import CIFileView
 import CIImageView
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -38,7 +39,8 @@ fun FramedItemView(
   ci: ChatItem,
   uriHandler: UriHandler? = null,
   showMember: Boolean = false,
-  showMenu: MutableState<Boolean>
+  showMenu: MutableState<Boolean>,
+  receiveFile: (Long) -> Unit
 ) {
   val sent = ci.chatDir.sent
   Surface(
@@ -101,6 +103,12 @@ fun FramedItemView(
                   CIMarkdownText(ci, showMember, uriHandler)
                 }
               }
+              is MsgContent.MCFile -> {
+                CIFileView(ci.file, ci.meta.itemEdited, receiveFile)
+                if (mc.text != "") {
+                  CIMarkdownText(ci, showMember, uriHandler)
+                }
+              }
               is MsgContent.MCLink -> {
                 ChatItemLinkView(mc.preview)
                 CIMarkdownText(ci, showMember, uriHandler)
@@ -141,7 +149,8 @@ fun PreviewTextItemViewSnd(@PreviewParameter(EditedProvider::class) edited: Bool
       ChatItem.getSampleData(
         1, CIDirection.DirectSnd(), Clock.System.now(), "hello", itemEdited = edited,
       ),
-      showMenu = showMenu
+      showMenu = showMenu,
+      receiveFile = {}
     )
   }
 }
@@ -156,7 +165,8 @@ fun PreviewTextItemViewRcv(@PreviewParameter(EditedProvider::class) edited: Bool
       ChatItem.getSampleData(
         1, CIDirection.DirectRcv(), Clock.System.now(), "hello", itemEdited = edited
       ),
-      showMenu = showMenu
+      showMenu = showMenu,
+      receiveFile = {}
     )
   }
 }
@@ -175,7 +185,8 @@ fun PreviewTextItemViewLong(@PreviewParameter(EditedProvider::class) edited: Boo
         "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
         itemEdited = edited
       ),
-      showMenu = showMenu
+      showMenu = showMenu,
+      receiveFile = {}
     )
   }
 }
@@ -195,7 +206,8 @@ fun PreviewTextItemViewQuote(@PreviewParameter(EditedProvider::class) edited: Bo
         quotedItem = CIQuote.getSample(1, Clock.System.now(), "hi", chatDir = CIDirection.DirectRcv()),
         itemEdited = edited
       ),
-      showMenu = showMenu
+      showMenu = showMenu,
+      receiveFile = {}
     )
   }
 }
@@ -215,7 +227,8 @@ fun PreviewTextItemViewEmoji(@PreviewParameter(EditedProvider::class) edited: Bo
         quotedItem = CIQuote.getSample(1, Clock.System.now(), "Lorem ipsum dolor sit amet", chatDir = CIDirection.DirectRcv()),
         itemEdited = edited
       ),
-      showMenu = showMenu
+      showMenu = showMenu,
+      receiveFile = {}
     )
   }
 }

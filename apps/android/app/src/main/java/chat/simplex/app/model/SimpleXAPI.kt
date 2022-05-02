@@ -327,11 +327,11 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
     return false
   }
 
-  suspend fun receiveFile(fileId: Long): Boolean {
+  suspend fun apiReceiveFile(fileId: Long): AChatItem? {
     val r = sendCmd(CC.ReceiveFile(fileId))
-    if (r is CR.RcvFileAccepted) return true
+    if (r is CR.RcvFileAccepted) return r.chatItem
     Log.e(TAG, "receiveFile bad response: ${r.responseType} ${r.details}")
-    return false
+    return null
   }
 
   fun apiErrorAlert(method: String, title: String, r: CR) {
@@ -390,8 +390,13 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
         val cItem = r.chatItem.chatItem
         chatModel.addChatItem(cInfo, cItem)
         val file = cItem.file
-        if (file != null && file.fileSize <= MAX_IMAGE_SIZE) {
-          withApi {receiveFile(file.fileId)}
+        if (cItem.content.msgContent is MsgContent.MCImage && file != null && file.fileSize <= MAX_IMAGE_SIZE) {
+          withApi {
+            val chatItem = apiReceiveFile(file.fileId)
+            if (chatItem != null) {
+              chatItemSimpleUpdate(chatItem)
+            }
+          }
         }
         if (!isAppOnForeground(appContext) || chatModel.chatId.value != cInfo.id) {
           ntfManager.notifyMessageReceived(cInfo, cItem)
@@ -408,13 +413,8 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
           ntfManager.notifyMessageReceived(cInfo, cItem)
         }
       }
-      is CR.ChatItemUpdated -> {
-        val cInfo = r.chatItem.chatInfo
-        val cItem = r.chatItem.chatItem
-        if (chatModel.upsertChatItem(cInfo, cItem)) {
-          ntfManager.notifyMessageReceived(cInfo, cItem)
-        }
-      }
+      is CR.ChatItemUpdated ->
+        chatItemSimpleUpdate(r.chatItem)
       is CR.ChatItemDeleted -> {
         val cInfo = r.toChatItem.chatInfo
         val cItem = r.toChatItem.chatItem
@@ -425,15 +425,20 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
           chatModel.upsertChatItem(cInfo, cItem)
         }
       }
-      is CR.RcvFileComplete -> {
-        val cInfo = r.chatItem.chatInfo
-        val cItem = r.chatItem.chatItem
-        if (chatModel.upsertChatItem(cInfo, cItem)) {
-          ntfManager.notifyMessageReceived(cInfo, cItem)
-        }
-      }
+      is CR.RcvFileStart ->
+        chatItemSimpleUpdate(r.chatItem)
+      is CR.RcvFileComplete ->
+        chatItemSimpleUpdate(r.chatItem)
       else ->
         Log.d(TAG , "unsupported event: ${r.responseType}")
+    }
+  }
+
+  private fun chatItemSimpleUpdate(aChatItem: AChatItem) {
+    val cInfo = aChatItem.chatInfo
+    val cItem = aChatItem.chatItem
+    if (chatModel.upsertChatItem(cInfo, cItem)) {
+      ntfManager.notifyMessageReceived(cInfo, cItem)
     }
   }
 
@@ -681,7 +686,8 @@ sealed class CR {
   @Serializable @SerialName("chatItemStatusUpdated") class ChatItemStatusUpdated(val chatItem: AChatItem): CR()
   @Serializable @SerialName("chatItemUpdated") class ChatItemUpdated(val chatItem: AChatItem): CR()
   @Serializable @SerialName("chatItemDeleted") class ChatItemDeleted(val deletedChatItem: AChatItem, val toChatItem: AChatItem): CR()
-  @Serializable @SerialName("rcvFileAccepted") class RcvFileAccepted: CR()
+  @Serializable @SerialName("rcvFileAccepted") class RcvFileAccepted(val chatItem: AChatItem): CR()
+  @Serializable @SerialName("rcvFileStart") class RcvFileStart(val chatItem: AChatItem): CR()
   @Serializable @SerialName("rcvFileComplete") class RcvFileComplete(val chatItem: AChatItem): CR()
   @Serializable @SerialName("newContactConnection") class NewContactConnection(val connection: PendingContactConnection): CR()
   @Serializable @SerialName("contactConnectionDeleted") class ContactConnectionDeleted(val connection: PendingContactConnection): CR()
@@ -728,6 +734,7 @@ sealed class CR {
     is ChatItemUpdated -> "chatItemUpdated"
     is ChatItemDeleted -> "chatItemDeleted"
     is RcvFileAccepted -> "rcvFileAccepted"
+    is RcvFileStart -> "rcvFileStart"
     is RcvFileComplete -> "rcvFileComplete"
     is NewContactConnection -> "newContactConnection"
     is ContactConnectionDeleted -> "contactConnectionDeleted"
@@ -774,7 +781,8 @@ sealed class CR {
     is ChatItemStatusUpdated -> json.encodeToString(chatItem)
     is ChatItemUpdated -> json.encodeToString(chatItem)
     is ChatItemDeleted -> "deletedChatItem:\n${json.encodeToString(deletedChatItem)}\ntoChatItem:\n${json.encodeToString(toChatItem)}"
-    is RcvFileAccepted -> noDetails()
+    is RcvFileAccepted -> json.encodeToString(chatItem)
+    is RcvFileStart -> json.encodeToString(chatItem)
     is RcvFileComplete -> json.encodeToString(chatItem)
     is NewContactConnection -> json.encodeToString(connection)
     is ContactConnectionDeleted -> json.encodeToString(connection)

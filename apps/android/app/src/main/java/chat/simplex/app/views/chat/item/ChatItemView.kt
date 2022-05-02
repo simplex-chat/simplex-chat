@@ -33,7 +33,8 @@ fun ChatItemView(
   cxt: Context,
   uriHandler: UriHandler? = null,
   showMember: Boolean = false,
-  deleteMessage: (Long, CIDeleteMode) -> Unit
+  deleteMessage: (Long, CIDeleteMode) -> Unit,
+  receiveFile: (Long) -> Unit
 ) {
   val sent = cItem.chatDir.sent
   val alignment = if (sent) Alignment.CenterEnd else Alignment.CenterStart
@@ -49,7 +50,7 @@ fun ChatItemView(
         if (cItem.file == null && cItem.quotedItem == null && isShortEmoji(cItem.content.text)) {
           EmojiItemView(cItem)
         } else {
-          FramedItemView(user, cItem, uriHandler, showMember = showMember, showMenu)
+          FramedItemView(user, cItem, uriHandler, showMember = showMember, showMenu, receiveFile)
         }
       } else if (cItem.isDeletedContent) {
         DeletedItemView(cItem, showMember = showMember)
@@ -147,7 +148,8 @@ fun PreviewChatItemView() {
       ),
       composeState = remember { mutableStateOf(ComposeState()) },
       cxt = LocalContext.current,
-      deleteMessage = { _, _ -> }
+      deleteMessage = { _, _ -> },
+      receiveFile = {}
     )
   }
 }
@@ -161,7 +163,8 @@ fun PreviewChatItemViewDeletedContent() {
       ChatItem.getDeletedContentSampleData(),
       composeState = remember { mutableStateOf(ComposeState()) },
       cxt = LocalContext.current,
-      deleteMessage = { _, _ -> }
+      deleteMessage = { _, _ -> },
+      receiveFile = {}
     )
   }
 }

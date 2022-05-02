@@ -1,5 +1,5 @@
 //
-//  LargeLinkPreviewView.swift
+//  CIFileView.swift
 //  SimpleX
 //
 //  Created by JRoberts on 28/04/2022.
@@ -66,7 +66,7 @@ struct CIFileView: View {
                 } else {
                     AlertManager.shared.showAlertMsg(
                         title: "Large file!",
-                        message: "Your contact sent file that is larger than currently supported maximum size (\(maxFileSize) bytes)."
+                        message: "Your contact sent a file that is larger than currently supported maximum size (\(maxFileSize) bytes)."
                     )
                 }
             case .rcvAccepted:
