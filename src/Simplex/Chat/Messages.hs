@@ -468,7 +468,7 @@ instance ToJSON (CIContent d) where
   toJSON = J.toJSON . jsonCIContent
   toEncoding = J.toEncoding . jsonCIContent
 
-data ACIContent = forall d. ACIContent (SMsgDirection d) (CIContent d)
+data ACIContent = forall d. MsgDirectionI d => ACIContent (SMsgDirection d) (CIContent d)
 
 deriving instance Show ACIContent
 
