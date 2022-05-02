@@ -1,0 +1,67 @@
+sequenceDiagram
+  participant AW as Alice's<br>web view
+  participant AN as Alice's<br>app native
+  participant AC as Alice's<br>chat core
+  participant BC as Bob's<br>chat core
+  participant BN as Bob's<br>app native
+  participant BW as Bob's<br>web view
+
+  note over AW, AC: Alice's app
+  note over BC, BW: Bob's app
+
+  note over AW, BW: 1. Establishing call
+
+  note over AN: user: start call
+  AN ->> AW: WCCapabilities
+  AW ->> AN: WRCapabilities (e2e?)
+
+  AN ->> AC: APISendCallInvitation
+  AC -->> BC: XCallInv
+  AC ->> AN: CRCmdOk
+
+  BC ->> BN: CRCallInvitation
+  note over BN: show: accept call?
+  
+  alt user accepted?
+    BN ->> BC: no: APIRejectCall<br>(sender not notified)
+    BC ->> BN: CRCmdOk
+  else
+    BN ->> BW: yes: WCStartCall
+    BW ->> BN: WCallOffer
+  end
+
+  BN ->> BC: APISendCallOffer
+  BC -->> AC: XCallOffer
+  BC ->> BN: CRCmdOk
+  AC ->> AN: CRCallOffer
+  note over AN: show if no e2e: continue call?
+
+  AN ->> AW: WCallOffer
+  AW ->> AN: WCallAnswer
+  AN ->> AC: APISendCallAnswer
+  AC -->> BC: XCallAnswer
+  AC ->> AN: CRCmdOk
+  BC ->> BN: CRCallAnswer
+  BN ->> BW: WCallAnswer
+
+  note over AW, BW: call can be established at this point
+
+  note over AW, BW: 2. Sending additional ice candidates<br>(optional, same for another side):
+
+  BW ->> BN: WCallICE
+  BN ->> BC: APISendCallExtraInfo
+  BC -->> AC: XCallExtra
+  BC ->> BN: CRCmdOk
+  AC ->> AN: CRCallExtraInfo
+  AN ->> AW: WCallICE
+
+  note over AW, BW: 3. Call termination (same for another party):
+
+  note over AN: user: end call
+  AN ->> AW: WEndCall
+  AN ->> AC: APIEndCall
+  AC -->> BC: XCallEnd
+  AC ->> AN: CRCmdOk
+  BC ->> BN: CRCallEnded
+  note over BN: show: call ended
+  BN ->> BW: WEndCall
