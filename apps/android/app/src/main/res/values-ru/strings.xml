@@ -65,6 +65,7 @@
     <string name="reply_verb">Ответить</string>
     <string name="share_verb">Поделиться</string>
     <string name="copy_verb">Копировать</string>
+    <string name="save_verb">Сохранить</string>
     <string name="edit_verb">Редактировать</string>
     <string name="delete_verb">Удалить</string>
     <string name="delete_message__question">Удалить сообщение?</string>

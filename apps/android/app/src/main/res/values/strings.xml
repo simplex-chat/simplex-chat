@@ -65,6 +65,7 @@
   <string name="reply_verb">Reply</string>
   <string name="share_verb">Share</string>
   <string name="copy_verb">Copy</string>
+  <string name="save_verb">Save</string>
   <string name="edit_verb">Edit</string>
   <string name="delete_verb">Delete</string>
   <string name="delete_message__question">Delete message?</string>

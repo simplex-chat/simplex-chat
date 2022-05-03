@@ -1,6 +1,9 @@
 package chat.simplex.app.views.chat.item
 
 import android.content.Context
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
@@ -24,6 +27,8 @@ import chat.simplex.app.views.chat.ComposeContextItem
 import chat.simplex.app.views.chat.ComposeState
 import chat.simplex.app.views.helpers.*
 import kotlinx.datetime.Clock
+import java.io.File
+import java.io.IOException
 
 @Composable
 fun ChatItemView(
@@ -36,9 +41,34 @@ fun ChatItemView(
   deleteMessage: (Long, CIDeleteMode) -> Unit,
   receiveFile: (Long) -> Unit
 ) {
+  val context = LocalContext.current
   val sent = cItem.chatDir.sent
   val alignment = if (sent) Alignment.CenterEnd else Alignment.CenterStart
   val showMenu = remember { mutableStateOf(false) }
+  val saveFileLauncher = rememberLauncherForActivityResult(
+    contract = ActivityResultContracts.CreateDocument(),
+    onResult = { destination ->
+      if (destination != null) {
+        val filePath = getStoredFilePath(context, cItem.file)
+        if (filePath != null) {
+          val contentResolver = context.contentResolver
+          val appFile = File(filePath)
+          try {
+            val outputStream = contentResolver.openOutputStream(destination)
+            if (outputStream != null) {
+              outputStream.write(appFile.readBytes())
+              outputStream.close()
+              Toast.makeText(context, generalGetString(R.string.file_saved), Toast.LENGTH_SHORT).show()
+            }
+          } catch (e: IOException) {
+            Toast.makeText(context, generalGetString(R.string.error_saving_file), Toast.LENGTH_SHORT).show()
+          }
+        } else {
+          Toast.makeText(context, generalGetString(R.string.file_not_found), Toast.LENGTH_SHORT).show()
+        }
+      }
+    }
+  )
   Box(
     modifier = Modifier
       .padding(bottom = 4.dp)
@@ -73,6 +103,15 @@ fun ChatItemView(
             copyText(cxt, cItem.content.text)
             showMenu.value = false
           })
+          if (cItem.content.msgContent is MsgContent.MCImage) {
+            val filePath = getStoredFilePath(context, cItem.file)
+            if (filePath != null) {
+              ItemAction(stringResource(R.string.save_verb), Icons.Outlined.SaveAlt, onClick = {
+                saveFileLauncher.launch(cItem.file?.fileName)
+                showMenu.value = false
+              })
+            }
+          }
           if (cItem.chatDir.sent && cItem.meta.editable) {
             ItemAction(stringResource(R.string.edit_verb), Icons.Filled.Edit, onClick = {
               composeState.value = ComposeState(editingItem = cItem)
