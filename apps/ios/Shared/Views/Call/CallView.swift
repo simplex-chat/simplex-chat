@@ -9,40 +9,78 @@
 import SwiftUI
 import WebKit
 
-struct WebView: UIViewRepresentable {
-    @Binding var commandStr: String
+class WebViewCoordinator: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
+    var webView: WKWebView!
 
-    class Coordinator: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
-        var webView: WKWebView!
+    var corrId = 0
+    var pendingCommands: Dictionary<Int, CheckedContinuation<WError, Never>> = [:]
 
-        func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
-            webView.allowsBackForwardNavigationGestures = false
-            self.webView = webView
+    func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        webView.allowsBackForwardNavigationGestures = false
+        self.webView = webView
+    }
+
+    // receive message from wkwebview
+    func userContentController(
+        _ userContentController: WKUserContentController,
+        didReceive message: WKScriptMessage
+    ) {
+        logger.debug("WebViewCoordinator.userContentController")
+        print(message.body)
+        // parse response
+        let data = (message.body as! String).data(using: .utf8)!
+        let msg = try! jsonDecoder.decode(WebViewMessage.self, from: data)
+        if let corrId = msg.corrId, let cont = pendingCommands.removeValue(forKey: corrId) {
+            cont.resume(returning: msg.resp)
+        } else {
+            print(msg.resp)
         }
+        
 
-        // receive message from wkwebview
-        func userContentController(
-            _ userContentController: WKUserContentController,
-            didReceive message: WKScriptMessage
-        ) {
-            print(message.body)
+//        cont.resume(returning: resp)
 //            let date = Date()
 //            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
 //                self.messageToWebview(msg: "hello, I got your messsage: \(message.body) at \(date)")
 //            }
-        }
-
-        func messageToWebview(msg: String) {
-            self.webView.evaluateJavaScript("webkit.messageHandlers.logHandler.postMessage('\(msg)')")
-        }
     }
 
-    func makeCoordinator() -> Coordinator {
+    func messageToWebview(msg: String) {
+        logger.debug("WebViewCoordinator.messageToWebview")
+        self.webView.evaluateJavaScript("webkit.messageHandlers.logHandler.postMessage('\(msg)')")
+    }
+
+    func processCommand(cmd: WCallCommand) async -> WError {
+        await withCheckedContinuation { cont in
+            logger.debug("WebViewCoordinator.processCommand")
+            let corrId_ = corrId
+            corrId = corrId + 1
+            pendingCommands[corrId_] = cont
+            let apiCmd = WebViewAPICall(corrId: corrId_, command: cmd)
+            DispatchQueue.main.async {
+                logger.debug("WebViewCoordinator.processCommand DispatchQueue.main.async")
+                let apiData = try! jsonEncoder.encode(apiCmd)
+                let apiStr = String(decoding: apiData, as: UTF8.self)
+                let js = "processCommand(\(apiStr))"
+                print(js)
+                self.webView.evaluateJavaScript(js)
+            }
+        }
+    }
+}
+
+struct WebView: UIViewRepresentable {
+    @Binding var coordinator: WebViewCoordinator?
+
+    func makeCoordinator() -> WebViewCoordinator {
         return Coordinator()
     }
 
     func makeUIView(context: Context) -> WKWebView {
-        let coordinator = makeCoordinator()
+        let _coordinator = makeCoordinator()
+        DispatchQueue.main.async {
+            coordinator = _coordinator
+        }
+
         let userContentController = WKUserContentController()
 
         let configuration = WKWebViewConfiguration()
@@ -54,10 +92,10 @@ struct WebView: UIViewRepresentable {
         let source = "console.log = (msg) => webkit.messageHandlers.logHandler.postMessage(msg)"
         let script = WKUserScript(source: source, injectionTime: .atDocumentStart, forMainFrameOnly: false)
         configuration.userContentController.addUserScript(script)
-        configuration.userContentController.add(coordinator, name: "logHandler")
+        configuration.userContentController.add(_coordinator, name: "logHandler")
 
         let _wkwebview = WKWebView(frame: .zero, configuration: configuration)
-        _wkwebview.navigationDelegate = coordinator
+        _wkwebview.navigationDelegate = _coordinator
         guard let path: String = Bundle.main.path(forResource: "call", ofType: "html", inDirectory: "www") else {
             print("Page Not Found")
             return _wkwebview
@@ -75,11 +113,13 @@ struct WebView: UIViewRepresentable {
 
 
 struct CallView: View {
+    @State var coordinator: WebViewCoordinator? = nil
     @State var commandStr = ""
     @FocusState private var keyboardVisible: Bool
+
     var body: some View {
         VStack(spacing: 30) {
-            WebView(commandStr: $commandStr).frame(maxHeight: 260)
+            WebView(coordinator: $coordinator).frame(maxHeight: 260)
             TextEditor(text: $commandStr)
                 .focused($keyboardVisible)
                 .disableAutocorrection(true)
@@ -102,7 +142,14 @@ struct CallView: View {
                     commandStr = ""
                 }
                 Button("Send") {
-                    // ?
+                    print("in send")
+                    if let c = coordinator {
+                        print("has coordinator")
+                        Task {
+                            let resp = await c.processCommand(cmd: .startCall(media: .video))
+                            print(resp)
+                        }
+                    }
                 }
             }
             HStack(spacing: 20) {

@@ -3,6 +3,17 @@
 
 // type WCallMessage = WCallCommand | WCallResponse
 
+interface WebViewAPICall {
+  corrId: number
+  command: WCallCommand
+}
+
+// TODO remove WCallCommand from resp type
+interface WebViewMessage {
+  corrId?: number
+  resp: WCallResponse | WCallCommand
+}
+
 type WCallCommand = WCCapabilities | WCStartCall | WCAcceptOffer | WCEndCall | WCallCommandResponse
 
 type WCallResponse = WRCapabilities | WRConnection | WRCallEnded | WROk | WRError | WCallCommandResponse
@@ -197,7 +208,7 @@ async function initializeCall(config: CallConfig, mediaType: CallMediaType, aesK
       if (candidates.length === 0) return
       const iceCandidates = candidates.slice()
       candidates = []
-      sendMessageToNative({type: "ice", iceCandidates})
+      sendMessageToNative({resp: {type: "ice", iceCandidates}})
     }
   })
 
@@ -205,17 +216,19 @@ async function initializeCall(config: CallConfig, mediaType: CallMediaType, aesK
 
   function connectionStateChange() {
     sendMessageToNative({
-      type: "connection",
-      state: {
-        connectionState: conn.connectionState,
-        iceConnectionState: conn.iceConnectionState,
-        iceGatheringState: conn.iceGatheringState,
-        signalingState: conn.signalingState,
+      resp: {
+        type: "connection",
+        state: {
+          connectionState: conn.connectionState,
+          iceConnectionState: conn.iceConnectionState,
+          iceGatheringState: conn.iceGatheringState,
+          signalingState: conn.signalingState,
+        }
       }
     })
     if (conn.connectionState == "disconnected" || conn.connectionState == "failed") {
       conn.removeEventListener("connectionstatechange", connectionStateChange)
-      sendMessageToNative({type: "ended"})
+      sendMessageToNative({resp: {type: "ended"}})
       conn.close()
       pc = undefined
       resetVideoElements()
@@ -223,13 +236,13 @@ async function initializeCall(config: CallConfig, mediaType: CallMediaType, aesK
   }
 }
 
-// TODO remove WCallCommand from parameter type
-function sendMessageToNative(msg: WCallResponse | WCallCommand) {
+function sendMessageToNative(msg: WebViewMessage) {
   console.log(JSON.stringify(msg))
 }
 
 // TODO remove WCallCommand from result type
-async function processCommand(command: WCallCommand): Promise<WCallResponse | WCallCommand> {
+async function processCommand(body: WebViewAPICall): Promise<WebViewMessage> {
+  const {command, corrId} = body
   let resp: WCallResponse | WCallCommand
   switch (command.type) {
     case "capabilities":
@@ -314,8 +327,9 @@ async function processCommand(command: WCallCommand): Promise<WCallResponse | WC
       resp = {type: "error", message: "unknown command"}
       break
   }
-  sendMessageToNative(resp)
-  return resp
+  const apiResp = {resp, corrId}
+  sendMessageToNative(apiResp)
+  return apiResp
 }
 
 function addIceCandidates(conn: RTCPeerConnection, iceCandidates: RTCIceCandidateInit[]) {

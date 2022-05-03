@@ -34,7 +34,7 @@ const defaultCallConfig = {
 async function initializeCall(config, mediaType, aesKey) {
     const conn = new RTCPeerConnection(peerConnectionConfig);
     const remoteStream = new MediaStream();
-    const localStream = await navigator.mediaDevices.getUserMedia(callMediaContraints(mediaType));
+    const localStream = await navigator.mediaDevices.getUserMedia(callMediaConstraints(mediaType));
     await setUpMediaStreams(conn, localStream, remoteStream, aesKey);
     conn.addEventListener("connectionstatechange", connectionStateChange);
     const iceCandidates = new Promise((resolve, _) => {
@@ -82,35 +82,37 @@ async function initializeCall(config, mediaType, aesKey) {
                 return;
             const iceCandidates = candidates.slice();
             candidates = [];
-            sendMessageToNative({ type: "ice", iceCandidates });
+            sendMessageToNative({ resp: { type: "ice", iceCandidates } });
         }
     });
     return { connection: conn, iceCandidates };
     function connectionStateChange() {
         sendMessageToNative({
-            type: "connection",
-            state: {
-                connectionState: conn.connectionState,
-                iceConnectionState: conn.iceConnectionState,
-                iceGatheringState: conn.iceGatheringState,
-                signalingState: conn.signalingState,
+            resp: {
+                type: "connection",
+                state: {
+                    connectionState: conn.connectionState,
+                    iceConnectionState: conn.iceConnectionState,
+                    iceGatheringState: conn.iceGatheringState,
+                    signalingState: conn.signalingState,
+                }
             }
         });
         if (conn.connectionState == "disconnected" || conn.connectionState == "failed") {
             conn.removeEventListener("connectionstatechange", connectionStateChange);
-            sendMessageToNative({ type: "ended" });
+            sendMessageToNative({ resp: { type: "ended" } });
             conn.close();
             pc = undefined;
             resetVideoElements();
         }
     }
 }
-// TODO remove WCallCommand from parameter type
 function sendMessageToNative(msg) {
     console.log(JSON.stringify(msg));
 }
 // TODO remove WCallCommand from result type
-async function processCommand(command) {
+async function processCommand(body) {
+    const { command, corrId } = body;
     let resp;
     switch (command.type) {
         case "capabilities":
@@ -206,8 +208,9 @@ async function processCommand(command) {
             resp = { type: "error", message: "unknown command" };
             break;
     }
-    sendMessageToNative(resp);
-    return resp;
+    const apiResp = { resp, corrId };
+    sendMessageToNative(apiResp);
+    return apiResp;
 }
 function addIceCandidates(conn, iceCandidates) {
     for (const c of iceCandidates) {
@@ -274,7 +277,7 @@ async function setUpMediaStreams(pc, localStream, remoteStream, aesKey) {
     videos.local.srcObject = localStream;
     videos.remote.srcObject = remoteStream;
 }
-function callMediaContraints(mediaType) {
+function callMediaConstraints(mediaType) {
     switch (mediaType) {
         case CallMediaType.Audio:
             return { audio: true, video: false };
