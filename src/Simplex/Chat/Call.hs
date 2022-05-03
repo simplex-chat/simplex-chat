@@ -23,6 +23,26 @@ data Call = Call
     callState :: CallState
   }
 
+data CallStateTag
+  = CSTCallInvitationSent
+  | CSTCallInvitationReceived
+  | CSTCallOfferSent
+  | CSTCallOfferReceived
+  | CSTCallNegotiated
+  deriving (Show, Generic)
+
+instance ToJSON CallStateTag where
+  toJSON = J.genericToJSON . enumJSON $ dropPrefix "CSTCall"
+  toEncoding = J.genericToEncoding . enumJSON $ dropPrefix "CSTCall"
+
+callStateTag :: CallState -> CallStateTag
+callStateTag = \case
+  CallInvitationSent {} -> CSTCallInvitationSent
+  CallInvitationReceived {} -> CSTCallInvitationReceived
+  CallOfferSent {} -> CSTCallOfferSent
+  CallOfferReceived {} -> CSTCallOfferReceived
+  CallNegotiated {} -> CSTCallNegotiated
+
 data CallState
   = CallInvitationSent
       { localCallType :: CallType,

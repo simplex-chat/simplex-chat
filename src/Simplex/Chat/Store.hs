@@ -142,6 +142,7 @@ module Simplex.Chat.Store
     getChatItemByFileId,
     updateDirectChatItemStatus,
     updateDirectChatItem,
+    updateDirectChatItemNoMsg,
     deleteDirectChatItemInternal,
     deleteDirectChatItemRcvBroadcast,
     deleteDirectChatItemSndBroadcast,
@@ -170,7 +171,7 @@ import qualified Data.Aeson as J
 import Data.Bifunctor (first)
 import qualified Data.ByteString.Base64 as B64
 import Data.ByteString.Char8 (ByteString)
-import Data.Either (rights)
+import Data.Either (isRight, rights)
 import Data.Function (on)
 import Data.Functor (($>))
 import Data.Int (Int64)
@@ -1286,7 +1287,7 @@ createNewGroup st gVar user groupProfile =
       "INSERT INTO groups (local_display_name, user_id, group_profile_id, created_at, updated_at) VALUES (?,?,?,?,?)"
       (displayName, uId, profileId, currentTs, currentTs)
     groupId <- insertedRowId db
-    memberId <- randomBytes gVar 12
+    memberId <- encodedRandomBytes gVar 12
     membership <- createContactMember_ db user groupId user (MemberIdRole (MemberId memberId) GROwner) GCUserMember GSMemCreator IBUser currentTs
     pure $ Right GroupInfo {groupId, localDisplayName = displayName, groupProfile, membership, createdAt = currentTs}
 
@@ -3178,12 +3179,21 @@ updateDirectChatItemStatus st userId contactId itemId itemStatus =
 
 updateDirectChatItem :: forall m d. (StoreMonad m, MsgDirectionI d) => SQLiteStore -> UserId -> Int64 -> ChatItemId -> CIContent d -> MessageId -> m (ChatItem 'CTDirect d)
 updateDirectChatItem st userId contactId itemId newContent msgId =
-  liftIOEither . withTransaction st $ \db -> updateDirectChatItem_ db userId contactId itemId newContent msgId
+  liftIOEither . withTransaction st $ \db -> do
+    currentTs <- liftIO getCurrentTime
+    ci <- updateDirectChatItem_ db userId contactId itemId newContent currentTs
+    when (isRight ci) . liftIO $ insertChatItemMessage_ db itemId msgId currentTs
+    pure ci
 
-updateDirectChatItem_ :: forall d. (MsgDirectionI d) => DB.Connection -> UserId -> Int64 -> ChatItemId -> CIContent d -> MessageId -> IO (Either StoreError (ChatItem 'CTDirect d))
-updateDirectChatItem_ db userId contactId itemId newContent msgId = runExceptT $ do
+updateDirectChatItemNoMsg :: forall m d. (StoreMonad m, MsgDirectionI d) => SQLiteStore -> UserId -> Int64 -> ChatItemId -> CIContent d -> m (ChatItem 'CTDirect d)
+updateDirectChatItemNoMsg st userId contactId itemId newContent =
+  liftIOEither . withTransaction st $ \db -> do
+    currentTs <- liftIO getCurrentTime
+    updateDirectChatItem_ db userId contactId itemId newContent currentTs
+
+updateDirectChatItem_ :: forall d. (MsgDirectionI d) => DB.Connection -> UserId -> Int64 -> ChatItemId -> CIContent d -> UTCTime -> IO (Either StoreError (ChatItem 'CTDirect d))
+updateDirectChatItem_ db userId contactId itemId newContent currentTs = runExceptT $ do
   ci <- ExceptT $ (correctDir =<<) <$> getDirectChatItem_ db userId contactId itemId
-  currentTs <- liftIO getCurrentTime
   let newText = ciContentToText newContent
   liftIO $ do
     DB.execute
@@ -3194,7 +3204,6 @@ updateDirectChatItem_ db userId contactId itemId newContent msgId = runExceptT $
         WHERE user_id = ? AND contact_id = ? AND chat_item_id = ?
       |]
       (newContent, newText, currentTs, userId, contactId, itemId)
-    insertChatItemMessage_ db itemId msgId currentTs
   pure ci {content = newContent, meta = (meta ci) {itemText = newText, itemEdited = True}, formattedText = parseMaybeMarkdownList newText}
   where
     correctDir :: CChatItem c -> Either StoreError (ChatItem c d)
@@ -3747,15 +3756,18 @@ createWithRandomBytes size gVar create = tryCreate 3
     tryCreate :: Int -> IO (Either StoreError a)
     tryCreate 0 = pure $ Left SEUniqueID
     tryCreate n = do
-      id' <- randomBytes gVar size
+      id' <- encodedRandomBytes gVar size
       E.try (create id') >>= \case
         Right x -> pure $ Right x
         Left e
           | DB.sqlError e == DB.ErrorConstraint -> tryCreate (n - 1)
           | otherwise -> pure . Left . SEInternalError $ show e
 
+encodedRandomBytes :: TVar ChaChaDRG -> Int -> IO ByteString
+encodedRandomBytes gVar = fmap B64.encode . randomBytes gVar
+
 randomBytes :: TVar ChaChaDRG -> Int -> IO ByteString
-randomBytes gVar n = B64.encode <$> (atomically . stateTVar gVar $ randomBytesGenerate n)
+randomBytes gVar = atomically . stateTVar gVar . randomBytesGenerate
 
 listToEither :: e -> [a] -> Either e a
 listToEither _ (x : _) = Right x

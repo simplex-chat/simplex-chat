@@ -248,8 +248,8 @@ data ChatResponse
   | CRPendingSubSummary {pendingSubStatus :: [PendingSubStatus]}
   | CRSndFileSubError {sndFileTransfer :: SndFileTransfer, chatError :: ChatError}
   | CRRcvFileSubError {rcvFileTransfer :: RcvFileTransfer, chatError :: ChatError}
-  | CRCallInvitation {contact :: Contact, callType :: CallType, encryptionKey :: Maybe C.Key}
-  | CRCallOffer {contact :: Contact, callType :: CallType, offer :: WebRTCSession, encryptionKey :: Maybe C.Key, askConfirmation :: Bool}
+  | CRCallInvitation {contact :: Contact, callType :: CallType, sharedKey :: Maybe C.Key}
+  | CRCallOffer {contact :: Contact, callType :: CallType, offer :: WebRTCSession, sharedKey :: Maybe C.Key, askConfirmation :: Bool}
   | CRCallAnswer {contact :: Contact, answer :: WebRTCSession}
   | CRCallExtraInfo {contact :: Contact, extraInfo :: WebRTCExtraInfo}
   | CRCallEnded {contact :: Contact}
@@ -336,6 +336,10 @@ data ChatErrorType
   | CEInvalidQuote
   | CEInvalidChatItemUpdate
   | CEInvalidChatItemDelete
+  | CEHasCurrentCall
+  | CENoCurrentCall
+  | CECallContact {contactId :: Int64}
+  | CECallState {currentCallState :: CallStateTag}
   | CEAgentVersion
   | CECommandError {message :: String}
   deriving (Show, Exception, Generic)

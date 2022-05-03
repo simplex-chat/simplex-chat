@@ -468,7 +468,7 @@ instance ToJSON (CIContent d) where
   toJSON = J.toJSON . jsonCIContent
   toEncoding = J.toEncoding . jsonCIContent
 
-data ACIContent = forall d. ACIContent (SMsgDirection d) (CIContent d)
+data ACIContent = forall d. MsgDirectionI d => ACIContent (SMsgDirection d) (CIContent d)
 
 deriving instance Show ACIContent
 
@@ -553,6 +553,8 @@ data CICallStatus
   = CISCallPending
   | CISCallMissed
   | CISCallRejected -- only possible for received calls, not on type level
+  | CISCallAccepted
+  | CISCallNegotiated
   | CISCallProgress
   | CISCallEnded
   | CISCallError
@@ -570,6 +572,8 @@ ciCallInfoText status duration = case status of
   CISCallPending -> "calling..."
   CISCallMissed -> "missed"
   CISCallRejected -> "rejected"
+  CISCallAccepted -> "accepted"
+  CISCallNegotiated -> "connecting..."
   CISCallProgress -> "in progress " <> d
   CISCallEnded -> "ended " <> d
   CISCallError -> "error"
