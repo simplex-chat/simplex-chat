@@ -1,3 +1,7 @@
+import android.util.Log
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
@@ -9,16 +13,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.*
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
+import chat.simplex.app.TAG
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.chat.item.FramedItemView
 import chat.simplex.app.views.helpers.*
 import kotlinx.datetime.Clock
+import java.io.File
+import java.io.IOException
 import kotlin.math.log2
 import kotlin.math.pow
 
@@ -28,6 +36,30 @@ fun CIFileView(
   edited: Boolean,
   receiveFile: (Long) -> Unit
 ) {
+  val context = LocalContext.current
+  val saveFileLauncher = rememberLauncherForActivityResult(
+    contract = ActivityResultContracts.CreateDocument(),
+    onResult = { destination ->
+      if (destination != null) {
+        val filePath = getStoredFilePath(context, file)
+        if (filePath != null) {
+          val contentResolver = context.contentResolver
+          val appFile = File(filePath)
+          try {
+            val outputStream = contentResolver.openOutputStream(destination)
+            if (outputStream != null) {
+              outputStream.write(appFile.readBytes())
+              outputStream.close()
+              Toast.makeText(context, generalGetString(R.string.file_saved), Toast.LENGTH_SHORT).show()
+            }
+          } catch (e: IOException) {
+            Log.e(TAG, "failed to save file, error: $e")
+          }
+        }
+      }
+    }
+  )
+
   @Composable
   fun fileIcon(innerIcon: ImageVector? = null, color: Color = HighOrLowlight) {
     Box(
@@ -77,7 +109,12 @@ fun CIFileView(
             generalGetString(R.string.waiting_for_file),
             String.format(generalGetString(R.string.file_will_be_received_when_contact_is_online), MAX_FILE_SIZE)
           )
-        CIFileStatus.RcvComplete -> {}
+        CIFileStatus.RcvComplete -> {
+          val filePath = getStoredFilePath(context, file)
+          if (filePath != null) {
+            saveFileLauncher.launch(file.fileName)
+          }
+        }
         else -> {}
       }
     }

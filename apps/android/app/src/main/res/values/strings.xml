@@ -102,6 +102,7 @@
   <string name="contact_sent_large_file">Your contact sent a file that is larger than currently supported maximum size (<xliff:g id="maxFileSize">%1$s</xliff:g> bytes).</string>
   <string name="waiting_for_file">Waiting for file</string>
   <string name="file_will_be_received_when_contact_is_online">File will be received when your contact is online, please wait or check later!</string>
+  <string name="file_saved">File saved</string>
 
   <!-- Chat Info Actions - ChatInfoView.kt -->
   <string name="delete_contact__question">Delete contact?</string>
