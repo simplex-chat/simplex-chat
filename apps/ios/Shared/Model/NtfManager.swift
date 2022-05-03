@@ -172,7 +172,7 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
             if let error = error { logger.error("addNotification error: \(error.localizedDescription)") }
         }
     }
-    
+
     func removeNotifications(_ ids : [String]){
         UNUserNotificationCenter.current().removeDeliveredNotifications(withIdentifiers: ids)
         UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: ids)
