@@ -30,7 +30,7 @@ struct ContactConnectionView: View {
                         .padding(.top, 4)
                         .frame(maxHeight: .infinity, alignment: .topLeading)
                     Spacer()
-                    timestampText(contactConnection.updatedAt)
+                    formatTimestampText(contactConnection.updatedAt)
                         .font(.subheadline)
                         .padding(.trailing, 8)
                         .padding(.top, 4)

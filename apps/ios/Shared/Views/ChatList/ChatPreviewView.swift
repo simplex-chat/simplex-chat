@@ -35,7 +35,7 @@ struct ChatPreviewView: View {
                         .foregroundColor(chat.chatInfo.ready ? .primary : .secondary)
                         .frame(maxHeight: .infinity, alignment: .topLeading)
                     Spacer()
-                    (cItem?.timestampText ?? timestampText(chat.chatInfo.createdAt))
+                    (cItem?.timestampText ?? formatTimestampText(chat.chatInfo.createdAt))
                         .font(.subheadline)
                         .frame(minWidth: 60, alignment: .trailing)
                         .foregroundColor(.secondary)
