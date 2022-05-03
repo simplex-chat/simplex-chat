@@ -103,6 +103,8 @@
     <string name="waiting_for_file">Ожидание файла</string>
     <string name="file_will_be_received_when_contact_is_online">Файл будет получен, когда ваш контакт будет в сети, пожалуйста, подождите или проверьте позже!</string>
     <string name="file_saved">Файл сохранен</string>
+    <string name="file_not_found">Файл не найден</string>
+    <string name="error_saving_file">Ошибка сохранения файла</string>
 
     <!-- Chat Info Actions - ChatInfoView.kt -->
     <string name="delete_contact__question">Удалить контакт?</string>

@@ -1,4 +1,3 @@
-import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -19,7 +18,6 @@ import androidx.compose.ui.tooling.preview.*
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
-import chat.simplex.app.TAG
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.chat.item.FramedItemView
@@ -53,8 +51,10 @@ fun CIFileView(
               Toast.makeText(context, generalGetString(R.string.file_saved), Toast.LENGTH_SHORT).show()
             }
           } catch (e: IOException) {
-            Log.e(TAG, "failed to save file, error: $e")
+            Toast.makeText(context, generalGetString(R.string.error_saving_file), Toast.LENGTH_SHORT).show()
           }
+        } else {
+          Toast.makeText(context, generalGetString(R.string.file_not_found), Toast.LENGTH_SHORT).show()
         }
       }
     }
@@ -113,6 +113,8 @@ fun CIFileView(
           val filePath = getStoredFilePath(context, file)
           if (filePath != null) {
             saveFileLauncher.launch(file.fileName)
+          } else {
+            Toast.makeText(context, generalGetString(R.string.file_not_found), Toast.LENGTH_SHORT).show()
           }
         }
         else -> {}

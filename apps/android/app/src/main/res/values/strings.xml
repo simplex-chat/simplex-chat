@@ -103,6 +103,8 @@
   <string name="waiting_for_file">Waiting for file</string>
   <string name="file_will_be_received_when_contact_is_online">File will be received when your contact is online, please wait or check later!</string>
   <string name="file_saved">File saved</string>
+  <string name="file_not_found">File not found</string>
+  <string name="error_saving_file">Error saving file</string>
 
   <!-- Chat Info Actions - ChatInfoView.kt -->
   <string name="delete_contact__question">Delete contact?</string>
