@@ -23,8 +23,6 @@ import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.chat.item.FramedItemView
 import chat.simplex.app.views.helpers.*
 import kotlinx.datetime.Clock
-import java.io.File
-import java.io.IOException
 import kotlin.math.log2
 import kotlin.math.pow
 
@@ -38,25 +36,7 @@ fun CIFileView(
   val saveFileLauncher = rememberLauncherForActivityResult(
     contract = ActivityResultContracts.CreateDocument(),
     onResult = { destination ->
-      if (destination != null) {
-        val filePath = getStoredFilePath(context, file)
-        if (filePath != null) {
-          val contentResolver = context.contentResolver
-          val appFile = File(filePath)
-          try {
-            val outputStream = contentResolver.openOutputStream(destination)
-            if (outputStream != null) {
-              outputStream.write(appFile.readBytes())
-              outputStream.close()
-              Toast.makeText(context, generalGetString(R.string.file_saved), Toast.LENGTH_SHORT).show()
-            }
-          } catch (e: IOException) {
-            Toast.makeText(context, generalGetString(R.string.error_saving_file), Toast.LENGTH_SHORT).show()
-          }
-        } else {
-          Toast.makeText(context, generalGetString(R.string.file_not_found), Toast.LENGTH_SHORT).show()
-        }
-      }
+      saveFile(context, file, destination)
     }
   )
 
