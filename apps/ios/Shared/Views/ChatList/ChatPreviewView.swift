@@ -20,12 +20,8 @@ struct ChatPreviewView: View {
             ZStack(alignment: .bottomLeading) {
                 ChatInfoImage(chat: chat)
                     .frame(width: 63, height: 63)
-                if case .direct = chat.chatInfo,
-                   chat.serverInfo.networkStatus == .connected {
-                    Image(systemName: "circle.fill")
-                        .resizable()
-                        .foregroundColor(colorScheme == .dark ? darkGreen : .green)
-                        .frame(width: 5, height: 5)
+                if case .direct = chat.chatInfo {
+                   chatStatusImage()
                         .padding([.bottom, .leading], 1)
                 }
             }
@@ -39,7 +35,7 @@ struct ChatPreviewView: View {
                         .foregroundColor(chat.chatInfo.ready ? .primary : .secondary)
                         .frame(maxHeight: .infinity, alignment: .topLeading)
                     Spacer()
-                    (cItem?.timestampText ?? timestampText(chat.chatInfo.createdAt))
+                    (cItem?.timestampText ?? formatTimestampText(chat.chatInfo.createdAt))
                         .font(.subheadline)
                         .frame(minWidth: 60, alignment: .trailing)
                         .foregroundColor(.secondary)
@@ -89,6 +85,24 @@ struct ChatPreviewView: View {
                 .font(.caption)
                 .foregroundColor(.yellow) + Text(" ")
         default: return Text("")
+        }
+    }
+
+    @ViewBuilder private func chatStatusImage() -> some View {
+        switch chat.serverInfo.networkStatus {
+        case .connected: EmptyView()
+        case .error:
+            Image(systemName: "circle.fill")
+                .resizable()
+                .scaledToFit()
+                .frame(maxHeight: 5)
+                .foregroundColor(.secondary)
+        default:
+            Image(systemName: "ellipsis")
+                .resizable()
+                .scaledToFit()
+                .frame(maxWidth: 10)
+                .foregroundColor(.secondary)
         }
     }
 }
