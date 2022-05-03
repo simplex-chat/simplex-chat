@@ -749,16 +749,6 @@ struct ChatItem: Identifiable, Decodable {
             file: file
        )
     }
-
-    static func getFileMsgContentSample (id: Int64 = 1, text: String = "", fileName: String = "test.txt", fileSize: Int64 = 100, fileStatus: CIFileStatus = .rcvComplete) -> ChatItem {
-        ChatItem(
-            chatDir: .directRcv,
-            meta: CIMeta.getSample(id, .now, text, .rcvRead, false, false, false),
-            content: .rcvMsgContent(msgContent: .file(text)),
-            quotedItem: nil,
-            file: CIFile.getSample(fileName: fileName, fileSize: fileSize, fileStatus: fileStatus)
-       )
-    }
     
     static func getDeletedContentSample (_ id: Int64 = 1, dir: CIDirection = .directRcv, _ ts: Date = .now, _ text: String = "this item is deleted", _ status: CIStatus = .rcvRead) -> ChatItem {
         ChatItem(
@@ -911,7 +901,7 @@ struct CIFile: Decodable {
     var filePath: String?
     var fileStatus: CIFileStatus
 
-    static func getSample(fileId: Int64 = 1, fileName: String = "test.txt", fileSize: Int64 = 100, filePath: String? = "test.txt", fileStatus: CIFileStatus = .rcvComplete) -> CIFile {
+    static func getSample(_ fileId: Int64, _ fileName: String, _ fileSize: Int64, filePath: String?, fileStatus: CIFileStatus = .sndStored) -> CIFile {
         CIFile(fileId: fileId, fileName: fileName, fileSize: fileSize, filePath: filePath, fileStatus: fileStatus)
     }
 
@@ -931,7 +921,6 @@ enum CIFileStatus: String, Decodable {
     case sndStored = "snd_stored"
     case sndCancelled = "snd_cancelled"
     case rcvInvitation = "rcv_invitation"
-    case rcvAccepted = "rcv_accepted"
     case rcvTransfer = "rcv_transfer"
     case rcvComplete = "rcv_complete"
     case rcvCancelled = "rcv_cancelled"
@@ -941,7 +930,6 @@ enum MsgContent {
     case text(String)
     case link(text: String, preview: LinkPreview)
     case image(text: String, image: String)
-    case file(String)
     // TODO include original JSON, possibly using https://github.com/zoul/generic-json-swift
     case unknown(type: String, text: String)
 
@@ -951,7 +939,6 @@ enum MsgContent {
             case let .text(text): return text
             case let .link(text, _): return text
             case let .image(text, _): return text
-            case let .file(text): return text
             case let .unknown(_, text): return text
             }
         }
@@ -965,7 +952,6 @@ enum MsgContent {
                 return "json {\"type\":\"link\",\"text\":\(encodeJSON(text)),\"preview\":\(encodeJSON(preview))}"
             case let .image(text: text, image: image):
                 return "json {\"type\":\"image\",\"text\":\(encodeJSON(text)),\"image\":\(encodeJSON(image))}"
-            case let .file(text): return "json {\"type\":\"file\",\"text\":\(encodeJSON(text))}"
             default: return ""
             }
         }
@@ -976,7 +962,6 @@ enum MsgContent {
         case text
         case preview
         case image
-        case file
     }
 }
 
@@ -998,9 +983,6 @@ extension MsgContent: Decodable {
                 let text = try container.decode(String.self, forKey: CodingKeys.text)
                 let image = try container.decode(String.self, forKey: CodingKeys.image)
                 self = .image(text: text, image: image)
-            case "file":
-                let text = try container.decode(String.self, forKey: CodingKeys.text)
-                self = .file(text)
             default:
                 let text = try? container.decode(String.self, forKey: CodingKeys.text)
                 self = .unknown(type: type, text: text ?? "unknown message format")
