@@ -151,7 +151,7 @@ const defaultCallConfig: CallConfig = {
 async function initializeCall(config: CallConfig, mediaType: CallMediaType, aesKey?: string): Promise<Call> {
   const conn = new RTCPeerConnection(peerConnectionConfig)
   const remoteStream = new MediaStream()
-  const localStream = await navigator.mediaDevices.getUserMedia(callMediaContraints(mediaType))
+  const localStream = await navigator.mediaDevices.getUserMedia(callMediaConstraints(mediaType))
   await setUpMediaStreams(conn, localStream, remoteStream, aesKey)
   conn.addEventListener("connectionstatechange", connectionStateChange)
   const iceCandidates = new Promise<RTCIceCandidate[]>((resolve, _) => {
@@ -384,7 +384,7 @@ async function setUpMediaStreams(pc: RTCPeerConnection, localStream: MediaStream
   videos.remote.srcObject = remoteStream
 }
 
-function callMediaContraints(mediaType: CallMediaType): MediaStreamConstraints {
+function callMediaConstraints(mediaType: CallMediaType): MediaStreamConstraints {
   switch (mediaType) {
     case CallMediaType.Audio:
       return {audio: true, video: false}

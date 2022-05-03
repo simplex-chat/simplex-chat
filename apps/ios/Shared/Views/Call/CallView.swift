@@ -10,6 +10,8 @@ import SwiftUI
 import WebKit
 
 struct WebView: UIViewRepresentable {
+    @Binding var commandStr: String
+
     class Coordinator: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
         var webView: WKWebView!
 
@@ -59,26 +61,75 @@ struct WebView: UIViewRepresentable {
 
         let _wkwebview = WKWebView(frame: .zero, configuration: configuration)
         _wkwebview.navigationDelegate = coordinator
-
+        guard let path: String = Bundle.main.path(forResource: "call", ofType: "html", inDirectory: "www") else {
+            print("Page Not Found")
+            return _wkwebview
+        }
+        let localHTMLUrl = URL(fileURLWithPath: path, isDirectory: false)
+        _wkwebview.loadFileURL(localHTMLUrl, allowingReadAccessTo: localHTMLUrl)
         return _wkwebview
     }
 
     func updateUIView(_ webView: WKWebView, context: Context) {
-        guard let path: String = Bundle.main.path(forResource: "call", ofType: "html", inDirectory: "www") else {
-            print("page not found")
-            return
+        if commandStr.starts(with: "run ") {
+            let cmd = dropPrefix(commandStr, "run ")
+            print(cmd)
+            let controller = makeCoordinator()
+            controller.messageToWebview(msg: cmd)
         }
-        let localHTMLUrl = URL(fileURLWithPath: path, isDirectory: false)
-        webView.loadFileURL(localHTMLUrl, allowingReadAccessTo: localHTMLUrl)
     }
 }
 
 
 
 struct CallView: View {
+    @State var commandStr = ""
+    @FocusState private var keyboardVisible: Bool
     var body: some View {
-        VStack {
-            WebView()
+        VStack(spacing: 30) {
+            WebView(commandStr: $commandStr).frame(maxHeight: 260)
+            TextEditor(text: $commandStr)
+                .focused($keyboardVisible)
+                .disableAutocorrection(true)
+                .textInputAutocapitalization(.never)
+                .padding(.horizontal, 5)
+                .padding(.top, 2)
+                .frame(height: 112)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10)
+                        .strokeBorder(.secondary, lineWidth: 0.3, antialiased: true)
+                )
+            HStack(spacing: 20) {
+                Button("Copy") {
+                    UIPasteboard.general.string = commandStr
+                }
+                Button("Paste") {
+                    commandStr = UIPasteboard.general.string ?? ""
+                }
+                Button("Clear") {
+                    commandStr = ""
+                }
+            }
+            HStack(spacing: 20) {
+                Button("Capabilities") {
+//                    initialize()
+                }
+                Button("Start") {
+//                    initialize()
+                }
+                Button("Accept") {
+//                    saveUserSMPServers()
+                }
+                Button("Answer") {
+//                    saveUserSMPServers()
+                }
+                Button("ICE") {
+
+                }
+                Button("End") {
+
+                }
+            }
         }
     }
 }
