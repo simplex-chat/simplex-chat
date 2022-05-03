@@ -15,7 +15,6 @@ struct WebView: UIViewRepresentable {
     class Coordinator: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
         var webView: WKWebView!
 
-
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
             webView.allowsBackForwardNavigationGestures = false
             self.webView = webView
@@ -52,7 +51,6 @@ struct WebView: UIViewRepresentable {
         configuration.allowsInlineMediaPlayback = true
 
         // Enable us to capture calls to console.log in the xcode logs
-        // Print actually happens on line 29
         let source = "console.log = (msg) => webkit.messageHandlers.logHandler.postMessage(msg)"
         let script = WKUserScript(source: source, injectionTime: .atDocumentStart, forMainFrameOnly: false)
         configuration.userContentController.addUserScript(script)
@@ -70,10 +68,7 @@ struct WebView: UIViewRepresentable {
     }
 
     func updateUIView(_ webView: WKWebView, context: Context) {
-        if commandStr.starts(with: "run ") {
-            let cmd = dropPrefix(commandStr, "run ")
-            webView.evaluateJavaScript(cmd)
-        }
+        print("updating")
     }
 }
 
@@ -106,19 +101,22 @@ struct CallView: View {
                 Button("Clear") {
                     commandStr = ""
                 }
+                Button("Send") {
+                    // ?
+                }
             }
             HStack(spacing: 20) {
                 Button("Capabilities") {
-//                    initialize()
+
                 }
                 Button("Start") {
-//                    initialize()
+
                 }
                 Button("Accept") {
-//                    saveUserSMPServers()
+
                 }
                 Button("Answer") {
-//                    saveUserSMPServers()
+
                 }
                 Button("ICE") {
 
