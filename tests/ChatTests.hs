@@ -1811,7 +1811,22 @@ testNegotiateCall =
     alice <## "message updated"
     alice #$> ("/_get chat @2 count=100", chat, [(1, "outgoing call: connecting...")])
     bob <## "call answer from alice"
-    bob #$> ("/_get chat @2 count=100", chat, [(0, "incoming call: accepted")])
+    bob #$> ("/_get chat @2 count=100", chat, [(0, "incoming call: connecting...")])
+    -- participants can update calls as connected
+    alice ##> "/_call status @2 connected"
+    alice <## "ok"
+    alice <## "message updated"
+    alice #$> ("/_get chat @2 count=100", chat, [(1, "outgoing call: in progress (00:00)")])
+    bob ##> "/_call status @2 connected"
+    bob <## "ok"
+    bob #$> ("/_get chat @2 count=100", chat, [(0, "incoming call: in progress (00:00)")])
+    -- either party can end the call
+    bob ##> "/_call end @2"
+    bob <## "ok"
+    bob #$> ("/_get chat @2 count=100", chat, [(0, "incoming call: ended (00:00)")])
+    alice <## "call with bob ended"
+    alice <## "message updated"
+    alice #$> ("/_get chat @2 count=100", chat, [(1, "outgoing call: ended (00:00)")])
 
 withTestChatContactConnected :: String -> (TestCC -> IO a) -> IO a
 withTestChatContactConnected dbPrefix action =

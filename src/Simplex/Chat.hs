@@ -423,9 +423,7 @@ processChatCommand = \case
         let offer = CallOffer {callType, rtcSession, callDhPubKey = localDhPubKey}
             callState' = CallOfferSent {localCallType = callType, peerCallType, localCallSession = rtcSession, sharedKey}
         SndMessage {msgId} <- sendDirectContactMessage ct (XCallOffer callId offer)
-        liftIO $ putStrLn "msg sent"
         updCi <- withStore $ \st -> updateDirectChatItem st userId contactId chatItemId (CIRcvCall CISCallAccepted 0) msgId
-        liftIO $ putStrLn "chat item updated"
         toView . CRChatItemUpdated $ AChatItem SCTDirect SMDRcv (DirectChat ct) updCi
         pure $ Just call {callState = callState'}
       _ -> throwChatError . CECallState $ callStateTag callState
@@ -454,6 +452,17 @@ processChatCommand = \case
       SndMessage {msgId} <- sendDirectContactMessage ct (XCallEnd callId)
       endCall userId ct call msgId
       pure Nothing
+  APICallStatus contactId status ->
+    withCurrentCall contactId $ \userId ct call@Call {chatItemId} -> do
+      CChatItem msgDir _ <- withStore $ \st -> getDirectChatItem st userId contactId chatItemId
+      let aciContent = case msgDir of
+            SMDSnd -> ACIContent SMDSnd $ CISndCall (ciCallStatus status) 0
+            SMDRcv -> ACIContent SMDRcv $ CIRcvCall (ciCallStatus status) 0
+      case aciContent of
+        ACIContent msgDir' ciContent -> do
+          updCi <- withStore $ \st -> updateDirectChatItemNoMsg st userId contactId chatItemId ciContent
+          toView . CRChatItemUpdated $ AChatItem SCTDirect msgDir' (DirectChat ct) updCi
+      pure $ Just call
   APIUpdateProfile profile -> withUser (`updateProfile` profile)
   APIParseMarkdown text -> pure . CRApiParsedMarkdown $ parseMaybeMarkdownList text
   APIRegisterToken token -> CRNtfTokenStatus <$> withUser (\_ -> withAgent (`registerNtfToken` token))
@@ -1576,7 +1585,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
           CallOfferSent {localCallType, peerCallType, localCallSession, sharedKey} -> do
             let callState' = CallNegotiated {localCallType, peerCallType, localCallSession, peerCallSession = rtcSession, sharedKey}
             toView $ CRCallAnswer ct rtcSession
-            pure (Just call {callState = callState'}, Nothing) -- Just . ACIContent SMDRcv $ CIRcvCall CISCallNegotiated 0)
+            pure (Just call {callState = callState'}, Just . ACIContent SMDRcv $ CIRcvCall CISCallNegotiated 0)
           _ -> do
             msgCallStateError "x.call.answer" call
             pure (Just call, Nothing)
@@ -2077,6 +2086,7 @@ chatCommandP =
     <|> "/_call answer @" *> (APISendCallAnswer <$> A.decimal <* A.space <*> jsonP)
     <|> "/_call extra @" *> (APISendCallExtraInfo <$> A.decimal <* A.space <*> jsonP)
     <|> "/_call end @" *> (APIEndCall <$> A.decimal)
+    <|> "/_call status @" *> (APICallStatus <$> A.decimal <* A.space <*> strP)
     <|> "/_profile " *> (APIUpdateProfile <$> jsonP)
     <|> "/_parse " *> (APIParseMarkdown . safeDecodeUtf8 <$> A.takeByteString)
     <|> "/_ntf register " *> (APIRegisterToken <$> tokenP)

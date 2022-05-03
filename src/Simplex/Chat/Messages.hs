@@ -29,6 +29,7 @@ import Data.Typeable (Typeable)
 import Database.SQLite.Simple.FromField (FromField (..))
 import Database.SQLite.Simple.ToField (ToField (..))
 import GHC.Generics (Generic)
+import Simplex.Chat.Call
 import Simplex.Chat.Markdown
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
@@ -578,7 +579,16 @@ ciCallInfoText status duration = case status of
   CISCallEnded -> "ended " <> d
   CISCallError -> "error"
   where
-    d = let (mins, secs) = duration `divMod` 60 in T.pack $ "(" <> show mins <> ":" <> show secs <> ")"
+    d = let (mins, secs) = duration `divMod` 60 in T.pack $ "(" <> with0 mins <> ":" <> with0 secs <> ")"
+    with0 n
+      | n < 9 = '0' : show n
+      | otherwise = show n
+
+ciCallStatus :: WebRTCCallStatus -> CICallStatus
+ciCallStatus = \case
+  WCSConnected -> CISCallProgress
+  WCSDisconnected -> CISCallEnded
+  WCSFailed -> CISCallError
 
 data SChatType (c :: ChatType) where
   SCTDirect :: SChatType 'CTDirect

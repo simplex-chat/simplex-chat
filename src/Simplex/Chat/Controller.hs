@@ -117,6 +117,7 @@ data ChatCommand
   | APISendCallAnswer ContactId WebRTCSession
   | APISendCallExtraInfo ContactId WebRTCExtraInfo
   | APIEndCall ContactId
+  | APICallStatus ContactId WebRTCCallStatus
   | APIUpdateProfile Profile
   | APIParseMarkdown Text
   | APIRegisterToken DeviceToken

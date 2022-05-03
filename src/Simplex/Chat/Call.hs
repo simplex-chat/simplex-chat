@@ -9,6 +9,7 @@ module Simplex.Chat.Call where
 
 import Data.Aeson (FromJSON, ToJSON)
 import qualified Data.Aeson as J
+import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.ByteString.Char8 (ByteString)
 import Data.Int (Int64)
 import GHC.Generics (Generic)
@@ -192,3 +193,18 @@ data WebRTCExtraInfo = WebRTCExtraInfo
 instance ToJSON WebRTCExtraInfo where
   toJSON = J.genericToJSON J.defaultOptions
   toEncoding = J.genericToEncoding J.defaultOptions
+
+data WebRTCCallStatus = WCSConnected | WCSDisconnected | WCSFailed
+  deriving (Show)
+
+instance StrEncoding WebRTCCallStatus where
+  strEncode = \case
+    WCSConnected -> "connected"
+    WCSDisconnected -> "disconnected"
+    WCSFailed -> "failed"
+  strP =
+    A.takeTill (== ' ') >>= \case
+      "connected" -> pure WCSConnected
+      "disconnected" -> pure WCSDisconnected
+      "failed" -> pure WCSFailed
+      _ -> fail "bad WebRTCCallStatus"
