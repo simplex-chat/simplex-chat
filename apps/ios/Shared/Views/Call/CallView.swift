@@ -34,7 +34,7 @@ struct WebView: UIViewRepresentable {
         }
 
         func messageToWebview(msg: String) {
-            self.webView?.evaluateJavaScript("webkit.messageHandlers.bridge.onMessage('\(msg)')")
+            self.webView.evaluateJavaScript("webkit.messageHandlers.logHandler.postMessage('\(msg)')")
         }
     }
 
@@ -45,7 +45,6 @@ struct WebView: UIViewRepresentable {
     func makeUIView(context: Context) -> WKWebView {
         let coordinator = makeCoordinator()
         let userContentController = WKUserContentController()
-        userContentController.add(coordinator, name: "bridge")
 
         let configuration = WKWebViewConfiguration()
         configuration.userContentController = userContentController
@@ -73,9 +72,7 @@ struct WebView: UIViewRepresentable {
     func updateUIView(_ webView: WKWebView, context: Context) {
         if commandStr.starts(with: "run ") {
             let cmd = dropPrefix(commandStr, "run ")
-            print(cmd)
-            let controller = makeCoordinator()
-            controller.messageToWebview(msg: cmd)
+            webView.evaluateJavaScript(cmd)
         }
     }
 }
