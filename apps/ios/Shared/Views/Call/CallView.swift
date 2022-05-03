@@ -33,15 +33,9 @@ class WebViewCoordinator: NSObject, WKNavigationDelegate, WKScriptMessageHandler
         if let corrId = msg.corrId, let cont = pendingCommands.removeValue(forKey: corrId) {
             cont.resume(returning: msg.resp)
         } else {
+            // TODO pass messages to call view via binding
             print(msg.resp)
         }
-        
-
-//        cont.resume(returning: resp)
-//            let date = Date()
-//            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-//                self.messageToWebview(msg: "hello, I got your messsage: \(message.body) at \(date)")
-//            }
     }
 
     func messageToWebview(msg: String) {

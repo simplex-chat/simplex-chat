@@ -25,7 +25,7 @@ struct WError: Codable {
 
 enum WCallCommand: Codable {
     case capabilities
-    case startCall(media: CallMediaType, aesKey: String? = nil)
+    case start(media: CallMediaType, aesKey: String? = nil)
 }
 
 enum WCallResponse: Codable {
