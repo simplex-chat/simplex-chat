@@ -9,9 +9,13 @@ import ChatClient
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
 import Control.Concurrent.STM
-import qualified Data.ByteString as B
+import Data.Aeson (ToJSON, (.=))
+import qualified Data.Aeson as J
+import qualified Data.ByteString.Char8 as B
+import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Char (isDigit)
 import qualified Data.Text as T
+import Simplex.Chat.Call
 import Simplex.Chat.Controller (ChatController (..))
 import Simplex.Chat.Types (ConnStatus (..), ImageData (..), Profile (..), User (..))
 import Simplex.Chat.Util (unlessM)
@@ -82,6 +86,8 @@ chatTests = do
   xdescribe "async sending and receiving files" $ do
     it "send and receive file, fully asynchronous" testAsyncFileTransfer
     it "send and receive file to group, fully asynchronous" testAsyncGroupFileTransfer
+  describe "webrtc calls api" $ do
+    fit "negotiate call" testNegotiateCall
 
 testAddContact :: IO ()
 testAddContact =
@@ -1761,6 +1767,43 @@ testAsyncGroupFileTransfer = withTmpFiles $ do
   dest `shouldBe` src
   dest2 <- B.readFile "./tests/tmp/test_1.jpg"
   dest2 `shouldBe` src
+
+testCallType :: CallType
+testCallType = CallType {media = CMVideo, capabilities = CallCapabilities {encryption = True}}
+
+testWebRTCSession :: WebRTCSession
+testWebRTCSession =
+  WebRTCSession
+    { rtcSession = J.object ["test" .= (123 :: Int)],
+      rtcIceCandidates = []
+    }
+
+testWebRTCCallOffer :: WebRTCCallOffer
+testWebRTCCallOffer =
+  WebRTCCallOffer
+    { callType = testCallType,
+      rtcSession = testWebRTCSession
+    }
+
+serialize :: ToJSON a => a -> String
+serialize = B.unpack . LB.toStrict . J.encode
+
+testNegotiateCall :: IO ()
+testNegotiateCall =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    connectUsers alice bob
+    alice ##> ("/_call invite @2 " <> serialize testCallType)
+    alice <## "ok"
+    bob <## "call invitation from alice"
+    bob ##> ("/_call offer @2 " <> serialize testWebRTCCallOffer)
+    bob <## "ok"
+    alice <## "call offer from bob"
+    alice ##> ("/_call answer @2 " <> serialize testWebRTCSession)
+    alice <## "message updated" -- call chat item updated
+    alice <## "ok"
+    alice <## "message updated"
+
+-- bob <## "call answer from alice"
 
 withTestChatContactConnected :: String -> (TestCC -> IO a) -> IO a
 withTestChatContactConnected dbPrefix action =

@@ -152,6 +152,10 @@ data WebRTCCallOffer = WebRTCCallOffer
 instance FromJSON WebRTCCallOffer where
   parseJSON = J.genericParseJSON J.defaultOptions {J.omitNothingFields = True}
 
+instance ToJSON WebRTCCallOffer where
+  toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
+  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
+
 data CallAnswer = CallAnswer
   { rtcSession :: WebRTCSession
   }
