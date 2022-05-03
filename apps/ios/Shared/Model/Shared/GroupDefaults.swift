@@ -10,7 +10,7 @@ import Foundation
 import SwiftUI
 
 func getGroupDefaults() -> UserDefaults? {
-    UserDefaults(suiteName: "group.chat.simplex.app")
+    UserDefaults(suiteName: "5NN7GUYB6T.group.chat.simplex.app")
 }
 
 func setAppState(_ phase: ScenePhase) {
