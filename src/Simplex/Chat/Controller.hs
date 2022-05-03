@@ -95,6 +95,7 @@ data ChatCommand
   = ShowActiveUser
   | CreateActiveUser Profile
   | StartChat
+  | ResubscribeAllConnections
   | SetFilesFolder FilePath
   | APIGetChats {pendingConnections :: Bool}
   | APIGetChat ChatRef ChatPagination
@@ -144,10 +145,7 @@ data ChatCommand
   | ListGroups
   | SendGroupMessageQuote {groupName :: GroupName, contactName_ :: Maybe ContactName, quotedMsg :: ByteString, message :: ByteString}
   | LastMessages (Maybe ChatName) Int
-  | SendFile ContactName FilePath
-  | SendFileInv ContactName FilePath
-  | SendGroupFile GroupName FilePath
-  | SendGroupFileInv GroupName FilePath
+  | SendFile ChatName FilePath
   | ReceiveFile FileTransferId (Maybe FilePath)
   | CancelFile FileTransferId
   | FileStatus FileTransferId
@@ -205,9 +203,9 @@ data ChatResponse
   | CRContactRequestAlreadyAccepted {contact :: Contact}
   | CRLeftMemberUser {groupInfo :: GroupInfo}
   | CRGroupDeletedUser {groupInfo :: GroupInfo}
-  | CRRcvFileAccepted {fileTransfer :: RcvFileTransfer, filePath :: FilePath}
+  | CRRcvFileAccepted {chatItem :: AChatItem}
   | CRRcvFileAcceptedSndCancelled {rcvFileTransfer :: RcvFileTransfer}
-  | CRRcvFileStart {rcvFileTransfer :: RcvFileTransfer}
+  | CRRcvFileStart {chatItem :: AChatItem}
   | CRRcvFileComplete {chatItem :: AChatItem}
   | CRRcvFileCancelled {rcvFileTransfer :: RcvFileTransfer}
   | CRRcvFileSndCancelled {rcvFileTransfer :: RcvFileTransfer}

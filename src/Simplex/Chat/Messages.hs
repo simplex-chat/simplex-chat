@@ -295,6 +295,7 @@ data CIFileStatus (d :: MsgDirection) where
   CIFSSndStored :: CIFileStatus 'MDSnd
   CIFSSndCancelled :: CIFileStatus 'MDSnd
   CIFSRcvInvitation :: CIFileStatus 'MDRcv
+  CIFSRcvAccepted :: CIFileStatus 'MDRcv
   CIFSRcvTransfer :: CIFileStatus 'MDRcv
   CIFSRcvComplete :: CIFileStatus 'MDRcv
   CIFSRcvCancelled :: CIFileStatus 'MDRcv
@@ -318,6 +319,7 @@ instance MsgDirectionI d => StrEncoding (CIFileStatus d) where
     CIFSSndStored -> "snd_stored"
     CIFSSndCancelled -> "snd_cancelled"
     CIFSRcvInvitation -> "rcv_invitation"
+    CIFSRcvAccepted -> "rcv_accepted"
     CIFSRcvTransfer -> "rcv_transfer"
     CIFSRcvComplete -> "rcv_complete"
     CIFSRcvCancelled -> "rcv_cancelled"
@@ -330,6 +332,7 @@ instance StrEncoding ACIFileStatus where
       "snd_stored" -> pure $ AFS SMDSnd CIFSSndStored
       "snd_cancelled" -> pure $ AFS SMDSnd CIFSSndCancelled
       "rcv_invitation" -> pure $ AFS SMDRcv CIFSRcvInvitation
+      "rcv_accepted" -> pure $ AFS SMDRcv CIFSRcvAccepted
       "rcv_transfer" -> pure $ AFS SMDRcv CIFSRcvTransfer
       "rcv_complete" -> pure $ AFS SMDRcv CIFSRcvComplete
       "rcv_cancelled" -> pure $ AFS SMDRcv CIFSRcvCancelled

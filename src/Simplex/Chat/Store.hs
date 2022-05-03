@@ -131,6 +131,7 @@ module Simplex.Chat.Store
     getChatPreviews,
     getDirectChat,
     getGroupChat,
+    getAllChatItems,
     getChatItemIdByAgentMsgId,
     getDirectChatItem,
     getDirectChatItemBySharedMsgId,
@@ -2093,14 +2094,14 @@ getRcvFileTransfer_ db userId fileId =
         cancelled = fromMaybe False cancelled_
     rcvFileTransfer _ = Left $ SERcvFileNotFound fileId
 
-acceptRcvFileTransfer :: StoreMonad m => SQLiteStore -> UserId -> Int64 -> ConnId -> FilePath -> m ()
-acceptRcvFileTransfer st userId fileId agentConnId filePath =
-  liftIO . withTransaction st $ \db -> do
+acceptRcvFileTransfer :: StoreMonad m => SQLiteStore -> User -> Int64 -> ConnId -> FilePath -> m AChatItem
+acceptRcvFileTransfer st user@User {userId} fileId agentConnId filePath =
+  liftIOEither . withTransaction st $ \db -> do
     currentTs <- getCurrentTime
     DB.execute
       db
       "UPDATE files SET file_path = ?, ci_file_status = ?, updated_at = ? WHERE user_id = ? AND file_id = ?"
-      (filePath, CIFSRcvTransfer, currentTs, userId, fileId)
+      (filePath, CIFSRcvAccepted, currentTs, userId, fileId)
     DB.execute
       db
       "UPDATE rcv_files SET file_status = ?, updated_at = ? WHERE file_id = ?"
@@ -2109,6 +2110,7 @@ acceptRcvFileTransfer st userId fileId agentConnId filePath =
       db
       "INSERT INTO connections (agent_conn_id, conn_status, conn_type, rcv_file_id, user_id, created_at, updated_at) VALUES (?,?,?,?,?,?,?)"
       (agentConnId, ConnJoined, ConnRcvFile, fileId, userId, currentTs, currentTs)
+    getChatItemByFileId_ db user fileId
 
 updateRcvFileStatus :: MonadUnliftIO m => SQLiteStore -> RcvFileTransfer -> FileStatus -> m ()
 updateRcvFileStatus st RcvFileTransfer {fileId} status =
@@ -3111,6 +3113,31 @@ getGroupInfo_ db User {userId, userContactId} groupId =
       |]
       (groupId, userId, userContactId)
 
+getAllChatItems :: StoreMonad m => SQLiteStore -> User -> ChatPagination -> m [AChatItem]
+getAllChatItems st user pagination =
+  liftIOEither . withTransaction st $ \db -> runExceptT $ do
+    case pagination of
+      CPLast count -> getAllChatItemsLast_ db user count
+      CPAfter _afterId _count -> throwError $ SEInternalError "not implemented"
+      CPBefore _beforeId _count -> throwError $ SEInternalError "not implemented"
+
+getAllChatItemsLast_ :: DB.Connection -> User -> Int -> ExceptT StoreError IO [AChatItem]
+getAllChatItemsLast_ db user@User {userId} count = do
+  itemRefs <-
+    liftIO $
+      reverse . rights . map toChatItemRef
+        <$> DB.query
+          db
+          [sql|
+            SELECT chat_item_id, contact_id, group_id
+            FROM chat_items
+            WHERE user_id = ?
+            ORDER BY item_ts DESC, chat_item_id DESC
+            LIMIT ?
+          |]
+          (userId, count)
+  mapM (uncurry $ getAChatItem_ db user) itemRefs
+
 getGroupIdByName :: StoreMonad m => SQLiteStore -> User -> GroupName -> m Int64
 getGroupIdByName st user gName =
   liftIOEither . withTransaction st $ \db -> getGroupIdByName_ db user gName
@@ -3480,23 +3507,30 @@ getGroupChatItemIdByText st User {userId, localDisplayName = userName} groupId c
         (userId, groupId, cName, quotedMsg <> "%")
 
 getChatItemByFileId :: StoreMonad m => SQLiteStore -> User -> Int64 -> m AChatItem
-getChatItemByFileId st user@User {userId} fileId = do
-  liftIOEither . withTransaction st $ \db -> runExceptT $ do
-    r <- ExceptT $ getChatItemIdByFileId_ db userId fileId
-    case r of
-      (itemId, Just contactId, Nothing) -> do
-        ct <- ExceptT $ getContact_ db userId contactId
-        (CChatItem msgDir ci) <- ExceptT $ getDirectChatItem_ db userId contactId itemId
-        pure $ AChatItem SCTDirect msgDir (DirectChat ct) ci
-      (itemId, Nothing, Just groupId) -> do
-        gInfo <- ExceptT $ getGroupInfo_ db user groupId
-        (CChatItem msgDir ci) <- ExceptT $ getGroupChatItem_ db user groupId itemId
-        pure $ AChatItem SCTGroup msgDir (GroupChat gInfo) ci
-      _ -> throwError $ SEChatItemNotFoundByFileId fileId
+getChatItemByFileId st user fileId =
+  liftIOEither . withTransaction st $ \db ->
+    getChatItemByFileId_ db user fileId
 
-getChatItemIdByFileId_ :: DB.Connection -> UserId -> Int64 -> IO (Either StoreError (ChatItemId, Maybe Int64, Maybe Int64))
+getChatItemByFileId_ :: DB.Connection -> User -> Int64 -> IO (Either StoreError AChatItem)
+getChatItemByFileId_ db user@User {userId} fileId = runExceptT $ do
+  (itemId, chatRef) <- ExceptT $ getChatItemIdByFileId_ db userId fileId
+  getAChatItem_ db user itemId chatRef
+
+getAChatItem_ :: DB.Connection -> User -> ChatItemId -> ChatRef -> ExceptT StoreError IO AChatItem
+getAChatItem_ db user@User {userId} itemId = \case
+  ChatRef CTDirect contactId -> do
+    ct <- ExceptT $ getContact_ db userId contactId
+    (CChatItem msgDir ci) <- ExceptT $ getDirectChatItem_ db userId contactId itemId
+    pure $ AChatItem SCTDirect msgDir (DirectChat ct) ci
+  ChatRef CTGroup groupId -> do
+    gInfo <- ExceptT $ getGroupInfo_ db user groupId
+    (CChatItem msgDir ci) <- ExceptT $ getGroupChatItem_ db user groupId itemId
+    pure $ AChatItem SCTGroup msgDir (GroupChat gInfo) ci
+  _ -> throwError $ SEChatItemNotFound itemId
+
+getChatItemIdByFileId_ :: DB.Connection -> UserId -> Int64 -> IO (Either StoreError (ChatItemId, ChatRef))
 getChatItemIdByFileId_ db userId fileId =
-  firstRow id (SEChatItemNotFoundByFileId fileId) $
+  firstRow' toChatItemRef (SEChatItemNotFoundByFileId fileId) $
     DB.query
       db
       [sql|
@@ -3507,6 +3541,12 @@ getChatItemIdByFileId_ db userId fileId =
         LIMIT 1
       |]
       (userId, fileId)
+
+toChatItemRef :: (ChatItemId, Maybe Int64, Maybe Int64) -> Either StoreError (ChatItemId, ChatRef)
+toChatItemRef = \case
+  (itemId, Just contactId, Nothing) -> Right (itemId, ChatRef CTDirect contactId)
+  (itemId, Nothing, Just groupId) -> Right (itemId, ChatRef CTGroup groupId)
+  (itemId, _, _) -> Left $ SEBadChatItem itemId
 
 updateDirectChatItemsRead :: (StoreMonad m) => SQLiteStore -> Int64 -> (ChatItemId, ChatItemId) -> m ()
 updateDirectChatItemsRead st contactId (fromItemId, toItemId) = do
@@ -3716,6 +3756,13 @@ createWithRandomBytes size gVar create = tryCreate 3
 
 randomBytes :: TVar ChaChaDRG -> Int -> IO ByteString
 randomBytes gVar n = B64.encode <$> (atomically . stateTVar gVar $ randomBytesGenerate n)
+
+listToEither :: e -> [a] -> Either e a
+listToEither _ (x : _) = Right x
+listToEither e _ = Left e
+
+firstRow' :: (a -> Either e b) -> e -> IO [a] -> IO (Either e b)
+firstRow' f e a = (f <=< listToEither e) <$> a
 
 -- These error type constructors must be added to mobile apps
 data StoreError
