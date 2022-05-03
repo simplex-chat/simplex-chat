@@ -141,7 +141,7 @@ responseToView testView = \case
     ["received file " <> sShow fileId <> " (" <> plain fileName <> ") error: " <> sShow e]
   CRCallInvitation {contact} -> ["call invitation from " <> ttyContact' contact]
   CRCallOffer {contact} -> ["call offer from " <> ttyContact' contact]
-  CRCallAnswer {contact} -> ["call offer from " <> ttyContact' contact]
+  CRCallAnswer {contact} -> ["call answer from " <> ttyContact' contact]
   CRCallExtraInfo {contact} -> ["call extra info from " <> ttyContact' contact]
   CRCallEnded {contact} -> ["call with " <> ttyContact' contact <> " ended"]
   CRUserContactLinkSubscribed -> ["Your address is active! To show: " <> highlight' "/sa"]

@@ -87,7 +87,7 @@ chatTests = do
     it "send and receive file, fully asynchronous" testAsyncFileTransfer
     it "send and receive file to group, fully asynchronous" testAsyncGroupFileTransfer
   describe "webrtc calls api" $ do
-    fit "negotiate call" testNegotiateCall
+    it "negotiate call" testNegotiateCall
 
 testAddContact :: IO ()
 testAddContact =
@@ -1792,18 +1792,26 @@ testNegotiateCall :: IO ()
 testNegotiateCall =
   testChat2 aliceProfile bobProfile $ \alice bob -> do
     connectUsers alice bob
+    -- alice invite bob to call
     alice ##> ("/_call invite @2 " <> serialize testCallType)
     alice <## "ok"
+    alice #$> ("/_get chat @2 count=100", chat, [(1, "outgoing call: calling...")])
     bob <## "call invitation from alice"
+    bob #$> ("/_get chat @2 count=100", chat, [(0, "incoming call: calling...")])
+    -- bob accepts call by sending WebRTC offer
     bob ##> ("/_call offer @2 " <> serialize testWebRTCCallOffer)
     bob <## "ok"
+    bob #$> ("/_get chat @2 count=100", chat, [(0, "incoming call: accepted")])
     alice <## "call offer from bob"
-    alice ##> ("/_call answer @2 " <> serialize testWebRTCSession)
     alice <## "message updated" -- call chat item updated
+    alice #$> ("/_get chat @2 count=100", chat, [(1, "outgoing call: accepted")])
+    -- alice confirms call by sending WebRTC answer
+    alice ##> ("/_call answer @2 " <> serialize testWebRTCSession)
     alice <## "ok"
     alice <## "message updated"
-
--- bob <## "call answer from alice"
+    alice #$> ("/_get chat @2 count=100", chat, [(1, "outgoing call: connecting...")])
+    bob <## "call answer from alice"
+    bob #$> ("/_get chat @2 count=100", chat, [(0, "incoming call: accepted")])
 
 withTestChatContactConnected :: String -> (TestCC -> IO a) -> IO a
 withTestChatContactConnected dbPrefix action =

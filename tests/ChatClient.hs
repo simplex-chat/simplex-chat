@@ -160,16 +160,16 @@ testChatN ps test = withTmpFiles $ do
 (<//) :: TestCC -> Int -> Expectation
 (<//) cc t = timeout t (getTermLine cc) `shouldReturn` Nothing
 
--- getTermLine :: TestCC -> IO String
--- getTermLine = atomically . readTQueue . termQ
+getTermLine :: TestCC -> IO String
+getTermLine = atomically . readTQueue . termQ
 
 -- Use code below to echo virtual terminal
-getTermLine :: TestCC -> IO String
-getTermLine cc = do
-  s <- atomically . readTQueue $ termQ cc
-  name <- userName cc
-  putStrLn $ name <> ": " <> s
-  pure s
+-- getTermLine :: TestCC -> IO String
+-- getTermLine cc = do
+--   s <- atomically . readTQueue $ termQ cc
+--   name <- userName cc
+--   putStrLn $ name <> ": " <> s
+--   pure s
 
 userName :: TestCC -> IO [Char]
 userName (TestCC ChatController {currentUser} _ _ _ _) = T.unpack . localDisplayName . fromJust <$> readTVarIO currentUser

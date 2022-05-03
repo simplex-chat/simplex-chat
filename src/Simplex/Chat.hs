@@ -423,7 +423,9 @@ processChatCommand = \case
         let offer = CallOffer {callType, rtcSession, callDhPubKey = localDhPubKey}
             callState' = CallOfferSent {localCallType = callType, peerCallType, localCallSession = rtcSession, sharedKey}
         SndMessage {msgId} <- sendDirectContactMessage ct (XCallOffer callId offer)
+        liftIO $ putStrLn "msg sent"
         updCi <- withStore $ \st -> updateDirectChatItem st userId contactId chatItemId (CIRcvCall CISCallAccepted 0) msgId
+        liftIO $ putStrLn "chat item updated"
         toView . CRChatItemUpdated $ AChatItem SCTDirect SMDRcv (DirectChat ct) updCi
         pure $ Just call {callState = callState'}
       _ -> throwChatError . CECallState $ callStateTag callState
@@ -1069,12 +1071,11 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
                 when (memberCategory m == GCPreMember) $ probeMatchingContacts ct
         SENT msgId -> do
           sentMsgDeliveryEvent conn msgId
-          chatItemId_ <- withStore $ \st -> getChatItemIdByAgentMsgId st connId msgId
-          case chatItemId_ of
-            Nothing -> pure ()
-            Just chatItemId -> do
-              chatItem <- withStore $ \st -> updateDirectChatItemStatus st userId contactId chatItemId CISSndSent
+          withStore (\st -> getDirectChatItemByAgentMsgId st userId contactId connId msgId) >>= \case
+            Just (CChatItem SMDSnd ci) -> do
+              chatItem <- withStore $ \st -> updateDirectChatItemStatus st userId contactId (chatItemId' ci) CISSndSent
               toView $ CRChatItemStatusUpdated (AChatItem SCTDirect SMDSnd (DirectChat ct) chatItem)
+            _ -> pure ()
         END -> do
           toView $ CRContactAnotherClient ct
           showToast (c <> "> ") "connected to another client"

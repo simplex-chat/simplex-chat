@@ -135,6 +135,7 @@ module Simplex.Chat.Store
     getChatItemIdByAgentMsgId,
     getDirectChatItem,
     getDirectChatItemBySharedMsgId,
+    getDirectChatItemByAgentMsgId,
     getGroupChatItem,
     getGroupChatItemBySharedMsgId,
     getDirectChatItemIdByText,
@@ -3150,24 +3151,27 @@ getGroupIdByName_ db User {userId} gName =
 
 getChatItemIdByAgentMsgId :: StoreMonad m => SQLiteStore -> Int64 -> AgentMsgId -> m (Maybe ChatItemId)
 getChatItemIdByAgentMsgId st connId msgId =
-  liftIO . withTransaction st $ \db ->
-    join . listToMaybe . map fromOnly
-      <$> DB.query
-        db
-        [sql|
-          SELECT chat_item_id
-          FROM chat_item_messages
-          WHERE message_id = (
-            SELECT message_id
-            FROM msg_deliveries
-            WHERE connection_id = ? AND agent_msg_id = ?
-            LIMIT 1
-          )
-        |]
-        (connId, msgId)
+  liftIO . withTransaction st $ \db -> getChatItemIdByAgentMsgId_ db connId msgId
+
+getChatItemIdByAgentMsgId_ :: DB.Connection -> Int64 -> AgentMsgId -> IO (Maybe ChatItemId)
+getChatItemIdByAgentMsgId_ db connId msgId =
+  join . listToMaybe . map fromOnly
+    <$> DB.query
+      db
+      [sql|
+        SELECT chat_item_id
+        FROM chat_item_messages
+        WHERE message_id = (
+          SELECT message_id
+          FROM msg_deliveries
+          WHERE connection_id = ? AND agent_msg_id = ?
+          LIMIT 1
+        )
+      |]
+      (connId, msgId)
 
 updateDirectChatItemStatus :: forall m d. (StoreMonad m, MsgDirectionI d) => SQLiteStore -> UserId -> Int64 -> ChatItemId -> CIStatus d -> m (ChatItem 'CTDirect d)
-updateDirectChatItemStatus st userId contactId itemId itemStatus =
+updateDirectChatItemStatus st userId contactId itemId itemStatus = do
   liftIOEither . withTransaction st $ \db -> runExceptT $ do
     ci <- ExceptT $ (correctDir =<<) <$> getDirectChatItem_ db userId contactId itemId
     currentTs <- liftIO getCurrentTime
@@ -3280,15 +3284,21 @@ deleteQuote_ db itemId =
     |]
     (Only itemId)
 
-getDirectChatItem :: StoreMonad m => SQLiteStore -> UserId -> Int64 -> ChatItemId -> m (CChatItem 'CTDirect)
+getDirectChatItem :: StoreMonad m => SQLiteStore -> UserId -> ContactId -> ChatItemId -> m (CChatItem 'CTDirect)
 getDirectChatItem st userId contactId itemId =
   liftIOEither . withTransaction st $ \db -> getDirectChatItem_ db userId contactId itemId
 
-getDirectChatItemBySharedMsgId :: StoreMonad m => SQLiteStore -> UserId -> Int64 -> SharedMsgId -> m (CChatItem 'CTDirect)
+getDirectChatItemBySharedMsgId :: StoreMonad m => SQLiteStore -> UserId -> ContactId -> SharedMsgId -> m (CChatItem 'CTDirect)
 getDirectChatItemBySharedMsgId st userId contactId sharedMsgId =
   liftIOEither . withTransaction st $ \db -> runExceptT $ do
     itemId <- ExceptT $ getDirectChatItemIdBySharedMsgId_ db userId contactId sharedMsgId
     liftIOEither $ getDirectChatItem_ db userId contactId itemId
+
+getDirectChatItemByAgentMsgId :: MonadUnliftIO m => SQLiteStore -> UserId -> ContactId -> Int64 -> AgentMsgId -> m (Maybe (CChatItem 'CTDirect))
+getDirectChatItemByAgentMsgId st userId contactId connId msgId =
+  liftIO . withTransaction st $ \db -> do
+    itemId_ <- getChatItemIdByAgentMsgId_ db connId msgId
+    maybe (pure Nothing) (fmap eitherToMaybe . getDirectChatItem_ db userId contactId) itemId_
 
 getDirectChatItemIdBySharedMsgId_ :: DB.Connection -> UserId -> Int64 -> SharedMsgId -> IO (Either StoreError Int64)
 getDirectChatItemIdBySharedMsgId_ db userId contactId sharedMsgId =
