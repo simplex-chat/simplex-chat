@@ -37,7 +37,7 @@ import Simplex.Messaging.Parsers (dropPrefix, fromTextField_, sumTypeJSON)
 import Simplex.Messaging.Util ((<$?>))
 
 class IsContact a where
-  contactId' :: a -> Int64
+  contactId' :: a -> ContactId
   profile' :: a -> Profile
   localDisplayName' :: a -> ContactName
 
@@ -53,7 +53,7 @@ instance IsContact Contact where
 
 data User = User
   { userId :: UserId,
-    userContactId :: Int64,
+    userContactId :: ContactId,
     localDisplayName :: ContactName,
     profile :: Profile,
     activeUser :: Bool
@@ -62,10 +62,12 @@ data User = User
 
 instance ToJSON User where toEncoding = J.genericToEncoding J.defaultOptions
 
-type UserId = Int64
+type UserId = ContactId
+
+type ContactId = Int64
 
 data Contact = Contact
-  { contactId :: Int64,
+  { contactId :: ContactId,
     localDisplayName :: ContactName,
     profile :: Profile,
     activeConn :: Connection,
@@ -85,7 +87,7 @@ contactConnId :: Contact -> ConnId
 contactConnId Contact {activeConn} = aConnId activeConn
 
 data ContactRef = ContactRef
-  { contactId :: Int64,
+  { contactId :: ContactId,
     localDisplayName :: ContactName
   }
   deriving (Eq, Show, Generic)

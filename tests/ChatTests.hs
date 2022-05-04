@@ -9,9 +9,13 @@ import ChatClient
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
 import Control.Concurrent.STM
-import qualified Data.ByteString as B
+import Data.Aeson (ToJSON, (.=))
+import qualified Data.Aeson as J
+import qualified Data.ByteString.Char8 as B
+import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Char (isDigit)
 import qualified Data.Text as T
+import Simplex.Chat.Call
 import Simplex.Chat.Controller (ChatController (..))
 import Simplex.Chat.Types (ConnStatus (..), ImageData (..), Profile (..), User (..))
 import Simplex.Chat.Util (unlessM)
@@ -82,6 +86,8 @@ chatTests = do
   xdescribe "async sending and receiving files" $ do
     it "send and receive file, fully asynchronous" testAsyncFileTransfer
     it "send and receive file to group, fully asynchronous" testAsyncGroupFileTransfer
+  describe "webrtc calls api" $ do
+    it "negotiate call" testNegotiateCall
 
 testAddContact :: IO ()
 testAddContact =
@@ -1027,20 +1033,20 @@ testFileSndCancel =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
       connectUsers alice bob
-      startFileTransfer alice bob
+      startFileTransfer' alice bob "test_1MB.pdf" "1017.7 KiB / 1042157 bytes"
       alice ##> "/fc 1"
       concurrentlyN_
         [ do
-            alice <## "cancelled sending file 1 (test.jpg) to bob"
+            alice <## "cancelled sending file 1 (test_1MB.pdf) to bob"
             alice ##> "/fs 1"
-            alice <## "sending file 1 (test.jpg) cancelled: bob"
+            alice <## "sending file 1 (test_1MB.pdf) cancelled: bob"
             alice <## "file transfer cancelled",
           do
-            bob <## "alice cancelled sending file 1 (test.jpg)"
+            bob <## "alice cancelled sending file 1 (test_1MB.pdf)"
             bob ##> "/fs 1"
-            bob <## "receiving file 1 (test.jpg) cancelled, received part path: ./tests/tmp/test.jpg"
+            bob <## "receiving file 1 (test_1MB.pdf) cancelled, received part path: ./tests/tmp/test_1MB.pdf"
         ]
-      checkPartialTransfer
+      checkPartialTransfer "test_1MB.pdf"
 
 testFileRcvCancel :: IO ()
 testFileRcvCancel =
@@ -1062,7 +1068,7 @@ testFileRcvCancel =
             alice ##> "/fs 1"
             alice <## "sending file 1 (test.jpg) cancelled: bob"
         ]
-      checkPartialTransfer
+      checkPartialTransfer "test.jpg"
 
 testGroupFileTransfer :: IO ()
 testGroupFileTransfer =
@@ -1762,6 +1768,66 @@ testAsyncGroupFileTransfer = withTmpFiles $ do
   dest2 <- B.readFile "./tests/tmp/test_1.jpg"
   dest2 `shouldBe` src
 
+testCallType :: CallType
+testCallType = CallType {media = CMVideo, capabilities = CallCapabilities {encryption = True}}
+
+testWebRTCSession :: WebRTCSession
+testWebRTCSession =
+  WebRTCSession
+    { rtcSession = J.object ["test" .= (123 :: Int)],
+      rtcIceCandidates = []
+    }
+
+testWebRTCCallOffer :: WebRTCCallOffer
+testWebRTCCallOffer =
+  WebRTCCallOffer
+    { callType = testCallType,
+      rtcSession = testWebRTCSession
+    }
+
+serialize :: ToJSON a => a -> String
+serialize = B.unpack . LB.toStrict . J.encode
+
+testNegotiateCall :: IO ()
+testNegotiateCall =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    connectUsers alice bob
+    -- alice invite bob to call
+    alice ##> ("/_call invite @2 " <> serialize testCallType)
+    alice <## "ok"
+    alice #$> ("/_get chat @2 count=100", chat, [(1, "outgoing call: calling...")])
+    bob <## "call invitation from alice"
+    bob #$> ("/_get chat @2 count=100", chat, [(0, "incoming call: calling...")])
+    -- bob accepts call by sending WebRTC offer
+    bob ##> ("/_call offer @2 " <> serialize testWebRTCCallOffer)
+    bob <## "ok"
+    bob #$> ("/_get chat @2 count=100", chat, [(0, "incoming call: accepted")])
+    alice <## "call offer from bob"
+    alice <## "message updated" -- call chat item updated
+    alice #$> ("/_get chat @2 count=100", chat, [(1, "outgoing call: accepted")])
+    -- alice confirms call by sending WebRTC answer
+    alice ##> ("/_call answer @2 " <> serialize testWebRTCSession)
+    alice <## "ok"
+    alice <## "message updated"
+    alice #$> ("/_get chat @2 count=100", chat, [(1, "outgoing call: connecting...")])
+    bob <## "call answer from alice"
+    bob #$> ("/_get chat @2 count=100", chat, [(0, "incoming call: connecting...")])
+    -- participants can update calls as connected
+    alice ##> "/_call status @2 connected"
+    alice <## "ok"
+    alice <## "message updated"
+    alice #$> ("/_get chat @2 count=100", chat, [(1, "outgoing call: in progress (00:00)")])
+    bob ##> "/_call status @2 connected"
+    bob <## "ok"
+    bob #$> ("/_get chat @2 count=100", chat, [(0, "incoming call: in progress (00:00)")])
+    -- either party can end the call
+    bob ##> "/_call end @2"
+    bob <## "ok"
+    bob #$> ("/_get chat @2 count=100", chat, [(0, "incoming call: ended (00:00)")])
+    alice <## "call with bob ended"
+    alice <## "message updated"
+    alice #$> ("/_get chat @2 count=100", chat, [(1, "outgoing call: ended (00:00)")])
+
 withTestChatContactConnected :: String -> (TestCC -> IO a) -> IO a
 withTestChatContactConnected dbPrefix action =
   withTestChat dbPrefix $ \cc -> do
@@ -1782,21 +1848,25 @@ withTestChatGroup3Connected' :: String -> IO ()
 withTestChatGroup3Connected' dbPrefix = withTestChatGroup3Connected dbPrefix $ \_ -> pure ()
 
 startFileTransfer :: TestCC -> TestCC -> IO ()
-startFileTransfer alice bob = do
-  alice #> "/f @bob ./tests/fixtures/test.jpg"
+startFileTransfer alice bob =
+  startFileTransfer' alice bob "test.jpg" "136.5 KiB / 139737 bytes"
+
+startFileTransfer' :: TestCC -> TestCC -> String -> String -> IO ()
+startFileTransfer' alice bob fileName fileSize = do
+  alice #> ("/f @bob ./tests/fixtures/" <> fileName)
   alice <## "use /fc 1 to cancel sending"
-  bob <# "alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
+  bob <# ("alice> sends file " <> fileName <> " (" <> fileSize <> ")")
   bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
   bob ##> "/fr 1 ./tests/tmp"
-  bob <## "saving file 1 from alice to ./tests/tmp/test.jpg"
+  bob <## ("saving file 1 from alice to ./tests/tmp/" <> fileName)
   concurrently_
-    (bob <## "started receiving file 1 (test.jpg) from alice")
-    (alice <## "started sending file 1 (test.jpg) to bob")
+    (bob <## ("started receiving file 1 (" <> fileName <> ") from alice"))
+    (alice <## ("started sending file 1 (" <> fileName <> ") to bob"))
 
-checkPartialTransfer :: IO ()
-checkPartialTransfer = do
-  src <- B.readFile "./tests/fixtures/test.jpg"
-  dest <- B.readFile "./tests/tmp/test.jpg"
+checkPartialTransfer :: String -> IO ()
+checkPartialTransfer fileName = do
+  src <- B.readFile $ "./tests/fixtures/" <> fileName
+  dest <- B.readFile $ "./tests/tmp/" <> fileName
   B.unpack src `shouldStartWith` B.unpack dest
   B.length src > B.length dest `shouldBe` True
 

@@ -65,6 +65,7 @@
     <string name="reply_verb">Ответить</string>
     <string name="share_verb">Поделиться</string>
     <string name="copy_verb">Копировать</string>
+    <string name="save_verb">Сохранить</string>
     <string name="edit_verb">Редактировать</string>
     <string name="delete_verb">Удалить</string>
     <string name="delete_message__question">Удалить сообщение?</string>
@@ -91,7 +92,20 @@
 
     <!-- Images -->
     <string name="image_descr">Изображение</string>
-    <string name="icon_descr_cancel_image_preview">удалить превью изображения</string>
+    <string name="icon_descr_cancel_image_preview">Удалить превью изображения</string>
+    <string name="icon_descr_waiting_for_image">Ожидание изображения</string>
+    <string name="waiting_for_image">Ожидание изображения</string>
+    <string name="image_will_be_received_when_contact_is_online">Изображение будет получено, когда ваш контакт будет в сети, пожалуйста, подождите или проверьте позже!</string>
+
+    <!-- Files - CIFileView.kt -->
+    <string name="icon_descr_file">Файл</string>
+    <string name="large_file">Большой файл!</string>
+    <string name="contact_sent_large_file">Ваш контакт отправил файл, размер которого превышает поддерживаемый в настоящее время максимальный размер (<xliff:g id="maxFileSize">%1$s</xliff:g> байта).</string>
+    <string name="waiting_for_file">Ожидание файла</string>
+    <string name="file_will_be_received_when_contact_is_online">Файл будет получен, когда ваш контакт будет в сети, пожалуйста, подождите или проверьте позже!</string>
+    <string name="file_saved">Файл сохранен</string>
+    <string name="file_not_found">Файл не найден</string>
+    <string name="error_saving_file">Ошибка сохранения файла</string>
 
     <!-- Chat Info Actions - ChatInfoView.kt -->
     <string name="delete_contact__question">Удалить контакт?</string>
