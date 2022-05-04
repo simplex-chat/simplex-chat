@@ -33,9 +33,9 @@ struct ContextItemView: View {
     
     func contextText(_ cxtItem: ChatItem) -> some View {
         if let s = cxtItem.memberDisplayName {
-            return (Text(s).fontWeight(.medium) + Text(": \(cxtItem.content.text)"))
+            return (Text(s).fontWeight(.medium) + Text(": \(cxtItem.text)"))
         } else {
-            return Text(cxtItem.content.text)
+            return Text(cxtItem.text)
         }
     }
 }
