@@ -12,6 +12,7 @@ import qualified Data.Aeson as J
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.ByteString.Char8 (ByteString)
 import Data.Int (Int64)
+import Data.Text (Text)
 import GHC.Generics (Generic)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String
@@ -176,8 +177,8 @@ instance ToJSON CallExtraInfo where
   toEncoding = J.genericToEncoding J.defaultOptions
 
 data WebRTCSession = WebRTCSession
-  { rtcSession :: J.Value,
-    rtcIceCandidates :: [J.Value]
+  { rtcSession :: Text,
+    rtcIceCandidates :: [Text]
   }
   deriving (Eq, Show, Generic, FromJSON)
 
@@ -186,7 +187,7 @@ instance ToJSON WebRTCSession where
   toEncoding = J.genericToEncoding J.defaultOptions
 
 data WebRTCExtraInfo = WebRTCExtraInfo
-  { rtcIceCandidates :: [J.Value]
+  { rtcIceCandidates :: [Text]
   }
   deriving (Eq, Show, Generic, FromJSON)
 
