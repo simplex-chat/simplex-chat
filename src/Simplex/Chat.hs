@@ -27,6 +27,7 @@ import qualified Data.ByteString.Base64 as B64
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.Char (isSpace)
+import Data.Fixed (div')
 import Data.Functor (($>))
 import Data.Int (Int64)
 import Data.List (find)
@@ -37,7 +38,7 @@ import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe, isJust, mapMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Time.Clock (UTCTime, getCurrentTime)
+import Data.Time.Clock (UTCTime, diffUTCTime, getCurrentTime, nominalDiffTimeToSeconds)
 import Data.Time.LocalTime (getCurrentTimeZone, getZonedTime)
 import Data.Word (Word32)
 import Simplex.Chat.Call
@@ -291,7 +292,7 @@ processChatCommand = \case
           case (ciContent, itemSharedMsgId) of
             (CISndMsgContent _, Just itemSharedMId) -> do
               SndMessage {msgId} <- sendDirectContactMessage ct (XMsgUpdate itemSharedMId mc)
-              updCi <- withStore $ \st -> updateDirectChatItem st userId contactId itemId (CISndMsgContent mc) msgId
+              updCi <- withStore $ \st -> updateDirectChatItem st userId contactId itemId (CISndMsgContent mc) $ Just msgId
               setActive $ ActiveC c
               pure . CRChatItemUpdated $ AChatItem SCTDirect SMDSnd (DirectChat ct) updCi
             _ -> throwChatError CEInvalidChatItemUpdate
@@ -404,16 +405,15 @@ processChatCommand = \case
       ci <- saveSndChatItem user (CDDirectSnd ct) msg (CISndCall CISCallPending 0) Nothing Nothing
       let call' = Call {contactId, callId, chatItemId = chatItemId' ci, callState}
       call_ <- atomically $ TM.lookupInsert contactId call' calls
-      forM_ call_ $ \call -> endCall userId ct call msgId
+      forM_ call_ $ \call -> updateCallItemStatus userId ct call WCSDisconnected $ Just msgId
       toView . CRNewChatItem $ AChatItem SCTDirect SMDSnd (DirectChat ct) ci
       pure CRCmdOk
   APIRejectCall contactId ->
     -- party accepting call
     withCurrentCall contactId $ \userId ct Call {chatItemId, callState} -> case callState of
-      CallInvitationReceived {} -> do
-        updCi <- withStore $ \st -> updateDirectChatItemNoMsg st userId contactId chatItemId (CIRcvCall CISCallRejected 0)
-        toView . CRChatItemUpdated $ AChatItem SCTDirect SMDRcv (DirectChat ct) updCi
-        pure Nothing
+      CallInvitationReceived {} ->
+        let aciContent = ACIContent SMDRcv $ CIRcvCall CISCallRejected 0
+         in updateDirectChatItemView userId ct chatItemId aciContent Nothing $> Nothing
       _ -> throwChatError . CECallState $ callStateTag callState
   APISendCallOffer contactId WebRTCCallOffer {callType, rtcSession} ->
     -- party accepting call
@@ -422,19 +422,19 @@ processChatCommand = \case
         -- TODO check that call type matches peerCallType
         let offer = CallOffer {callType, rtcSession, callDhPubKey = localDhPubKey}
             callState' = CallOfferSent {localCallType = callType, peerCallType, localCallSession = rtcSession, sharedKey}
+            aciContent = ACIContent SMDRcv $ CIRcvCall CISCallAccepted 0
         SndMessage {msgId} <- sendDirectContactMessage ct (XCallOffer callId offer)
-        updCi <- withStore $ \st -> updateDirectChatItem st userId contactId chatItemId (CIRcvCall CISCallAccepted 0) msgId
-        toView . CRChatItemUpdated $ AChatItem SCTDirect SMDRcv (DirectChat ct) updCi
+        updateDirectChatItemView userId ct chatItemId aciContent $ Just msgId
         pure $ Just call {callState = callState'}
       _ -> throwChatError . CECallState $ callStateTag callState
   APISendCallAnswer contactId rtcSession ->
     -- party initiating call
     withCurrentCall contactId $ \userId ct call@Call {callId, chatItemId, callState} -> case callState of
       CallOfferReceived {localCallType, peerCallType, peerCallSession, sharedKey} -> do
-        SndMessage {msgId} <- sendDirectContactMessage ct (XCallAnswer callId CallAnswer {rtcSession})
-        updCi <- withStore $ \st -> updateDirectChatItem st userId contactId chatItemId (CISndCall CISCallNegotiated 0) msgId
-        toView . CRChatItemUpdated $ AChatItem SCTDirect SMDSnd (DirectChat ct) updCi
         let callState' = CallNegotiated {localCallType, peerCallType, localCallSession = rtcSession, peerCallSession, sharedKey}
+            aciContent = ACIContent SMDSnd $ CISndCall CISCallNegotiated 0
+        SndMessage {msgId} <- sendDirectContactMessage ct (XCallAnswer callId CallAnswer {rtcSession})
+        updateDirectChatItemView userId ct chatItemId aciContent $ Just msgId
         pure $ Just call {callState = callState'}
       _ -> throwChatError . CECallState $ callStateTag callState
   APISendCallExtraInfo contactId rtcExtraInfo ->
@@ -450,19 +450,11 @@ processChatCommand = \case
     -- any call party
     withCurrentCall contactId $ \userId ct call@Call {callId} -> do
       SndMessage {msgId} <- sendDirectContactMessage ct (XCallEnd callId)
-      endCall userId ct call msgId
+      updateCallItemStatus userId ct call WCSDisconnected $ Just msgId
       pure Nothing
-  APICallStatus contactId status ->
-    withCurrentCall contactId $ \userId ct call@Call {chatItemId} -> do
-      CChatItem msgDir _ <- withStore $ \st -> getDirectChatItem st userId contactId chatItemId
-      let aciContent = case msgDir of
-            SMDSnd -> ACIContent SMDSnd $ CISndCall (ciCallStatus status) 0
-            SMDRcv -> ACIContent SMDRcv $ CIRcvCall (ciCallStatus status) 0
-      case aciContent of
-        ACIContent msgDir' ciContent -> do
-          updCi <- withStore $ \st -> updateDirectChatItemNoMsg st userId contactId chatItemId ciContent
-          toView . CRChatItemUpdated $ AChatItem SCTDirect msgDir' (DirectChat ct) updCi
-      pure $ Just call
+  APICallStatus contactId receivedStatus ->
+    withCurrentCall contactId $ \userId ct call ->
+      updateCallItemStatus userId ct call receivedStatus Nothing $> Just call
   APIUpdateProfile profile -> withUser (`updateProfile` profile)
   APIParseMarkdown text -> pure . CRApiParsedMarkdown $ parseMaybeMarkdownList text
   APIRegisterToken token -> CRNtfTokenStatus <$> withUser (\_ -> withAgent (`registerNtfToken` token))
@@ -776,16 +768,43 @@ processChatCommand = \case
                 _ -> TM.delete ctId calls
               pure CRCmdOk
             | otherwise -> throwChatError $ CECallContact contactId
-    endCall :: UserId -> Contact -> Call -> MessageId -> m ()
-    endCall userId ct@Contact {contactId} Call {chatItemId} msgId = do
-      CChatItem msgDir _ <- withStore $ \st -> getDirectChatItem st userId contactId chatItemId
-      let aciContent = case msgDir of
-            SMDSnd -> ACIContent SMDSnd $ CISndCall CISCallEnded 0
-            SMDRcv -> ACIContent SMDRcv $ CIRcvCall CISCallEnded 0
-      case aciContent of
-        ACIContent msgDir' ciContent -> do
-          updCi <- withStore $ \st -> updateDirectChatItem st userId contactId chatItemId ciContent msgId
-          toView . CRChatItemUpdated $ AChatItem SCTDirect msgDir' (DirectChat ct) updCi
+
+updateCallItemStatus :: ChatMonad m => UserId -> Contact -> Call -> WebRTCCallStatus -> Maybe MessageId -> m ()
+updateCallItemStatus userId ct Call {chatItemId} receivedStatus msgId_ = do
+  aciContent_ <- callStatusItemContent userId ct chatItemId receivedStatus
+  forM_ aciContent_ $ \aciContent -> updateDirectChatItemView userId ct chatItemId aciContent msgId_
+
+updateDirectChatItemView :: ChatMonad m => UserId -> Contact -> ChatItemId -> ACIContent -> Maybe MessageId -> m ()
+updateDirectChatItemView userId ct@Contact {contactId} chatItemId (ACIContent msgDir ciContent) msgId_ = do
+  updCi <- withStore $ \st -> updateDirectChatItem st userId contactId chatItemId ciContent msgId_
+  toView . CRChatItemUpdated $ AChatItem SCTDirect msgDir (DirectChat ct) updCi
+
+callStatusItemContent :: ChatMonad m => UserId -> Contact -> ChatItemId -> WebRTCCallStatus -> m (Maybe ACIContent)
+callStatusItemContent userId Contact {contactId} chatItemId receivedStatus = do
+  CChatItem msgDir ChatItem {meta = CIMeta {updatedAt}, content} <-
+    withStore $ \st -> getDirectChatItem st userId contactId chatItemId
+  ts <- liftIO getCurrentTime
+  let callDuration :: Int = nominalDiffTimeToSeconds (ts `diffUTCTime` updatedAt) `div'` 1
+      callStatus = case content of
+        CISndCall st _ -> Just st
+        CIRcvCall st _ -> Just st
+        _ -> Nothing
+      newState_ = case (callStatus, receivedStatus) of
+        (Just CISCallProgress, WCSConnected) -> Nothing -- if call in-progress received connected -> no change
+        (Just CISCallProgress, WCSDisconnected) -> Just (CISCallEnded, callDuration) -- calculate in-progress duration
+        (Just CISCallProgress, WCSFailed) -> Just (CISCallEnded, callDuration) -- whether call disconnected or failed
+        (Just CISCallEnded, _) -> Nothing -- if call already ended or failed -> no change
+        (Just CISCallError, _) -> Nothing
+        (Just _, WCSConnected) -> Just (CISCallProgress, 0) -- if call ended that was never connected, duration = 0
+        (Just _, WCSDisconnected) -> Just (CISCallEnded, 0)
+        (Just _, WCSFailed) -> Just (CISCallError, 0)
+        (Nothing, _) -> Nothing -- some other content - we should never get here, but no exception is thrown
+  pure $ aciContent msgDir <$> newState_
+  where
+    aciContent :: forall d. SMsgDirection d -> (CICallStatus, Int) -> ACIContent
+    aciContent msgDir (callStatus', duration) = case msgDir of
+      SMDSnd -> ACIContent SMDSnd $ CISndCall callStatus' duration
+      SMDRcv -> ACIContent SMDRcv $ CIRcvCall callStatus' duration
 
 -- mobile clients use file paths relative to app directory (e.g. for the reason ios app directory changes on updates),
 -- so we have to differentiate between the file path stored in db and communicated with frontend, and the file path
@@ -1380,9 +1399,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
       checkIntegrity msgMeta $ toView . CRMsgIntegrityError
       CChatItem msgDir ChatItem {meta = CIMeta {itemId}} <- withStore $ \st -> getDirectChatItemBySharedMsgId st userId contactId sharedMsgId
       case msgDir of
-        SMDRcv -> do
-          updCi <- withStore $ \st -> updateDirectChatItem st userId contactId itemId (CIRcvMsgContent mc) msgId
-          toView . CRChatItemUpdated $ AChatItem SCTDirect SMDRcv (DirectChat ct) updCi
+        SMDRcv -> updateDirectChatItemView userId ct itemId (ACIContent SMDRcv $ CIRcvMsgContent mc) $ Just msgId
         SMDSnd -> messageError "x.msg.update: contact attempted invalid message update"
 
     messageDelete :: Contact -> SharedMsgId -> RcvMessage -> MsgMeta -> m ()
@@ -1547,16 +1564,11 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
           callState = CallInvitationReceived {peerCallType = callType, localDhPubKey = fst <$> dhKeyPair, sharedKey}
           call' = Call {contactId, callId, chatItemId = chatItemId' ci, callState}
       calls <- asks currentCalls
+      -- theoretically, the new call invitation for the current contant can mark the in-progress call as ended
+      -- (and replace it in ChatController)
+      -- practically, this should not happen
       call_ <- atomically (TM.lookupInsert contactId call' calls)
-      forM_ call_ $ \Call {chatItemId} -> do
-        CChatItem msgDir _ <- withStore $ \st -> getDirectChatItem st userId contactId chatItemId
-        let aciContent = case msgDir of
-              SMDSnd -> ACIContent SMDSnd $ CISndCall CISCallEnded 0
-              SMDRcv -> ACIContent SMDRcv $ CIRcvCall CISCallEnded 0
-        case aciContent of
-          ACIContent msgDir' ciContent -> do
-            updCi <- withStore $ \st -> updateDirectChatItem st userId contactId chatItemId ciContent msgId
-            toView . CRChatItemUpdated $ AChatItem SCTDirect msgDir' (DirectChat ct) updCi
+      forM_ call_ $ \call -> updateCallItemStatus userId ct call WCSDisconnected $ Just msgId
       toView $ CRCallInvitation ct callType sharedKey
       toView . CRNewChatItem $ AChatItem SCTDirect SMDRcv (DirectChat ct) ci
       where
@@ -1627,9 +1639,8 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
             atomically $ case call_ of
               Just call' -> TM.insert ctId' call' calls
               _ -> TM.delete ctId' calls
-            forM_ aciContent_ $ \(ACIContent msgDir ciContent) -> do
-              updCi <- withStore $ \st -> updateDirectChatItem st userId contactId chatItemId ciContent msgId
-              toView . CRChatItemUpdated $ AChatItem SCTDirect msgDir (DirectChat ct) updCi
+            forM_ aciContent_ $ \aciContent ->
+              updateDirectChatItemView userId ct chatItemId aciContent $ Just msgId
 
     msgCallStateError :: Text -> Call -> m ()
     msgCallStateError eventName Call {callState} =
@@ -1948,11 +1959,10 @@ saveRcvChatItem user cd msg@RcvMessage {sharedMsgId_} MsgMeta {broker = (_, brok
   liftIO $ mkChatItem cd ciId content ciFile quotedItem sharedMsgId_ brokerTs createdAt
 
 mkChatItem :: MsgDirectionI d => ChatDirection c d -> ChatItemId -> CIContent d -> Maybe (CIFile d) -> Maybe (CIQuote c) -> Maybe SharedMsgId -> ChatItemTs -> UTCTime -> IO (ChatItem c d)
-mkChatItem cd ciId content file quotedItem sharedMsgId itemTs createdAt = do
+mkChatItem cd ciId content file quotedItem sharedMsgId itemTs currentTs = do
   tz <- getCurrentTimeZone
-  currentTs <- liftIO getCurrentTime
   let itemText = ciContentToText content
-      meta = mkCIMeta ciId content itemText ciStatusNew sharedMsgId False False tz currentTs itemTs createdAt
+      meta = mkCIMeta ciId content itemText ciStatusNew sharedMsgId False False tz currentTs itemTs currentTs currentTs
   pure ChatItem {chatDir = toCIDirection cd, meta, content, formattedText = parseMaybeMarkdownList itemText, quotedItem, file}
 
 allowAgentConnection :: ChatMonad m => Connection -> ConfirmationId -> ChatMsgEvent -> m ()

@@ -29,7 +29,6 @@ import Data.Typeable (Typeable)
 import Database.SQLite.Simple.FromField (FromField (..))
 import Database.SQLite.Simple.ToField (ToField (..))
 import GHC.Generics (Generic)
-import Simplex.Chat.Call
 import Simplex.Chat.Markdown
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
@@ -225,17 +224,18 @@ data CIMeta (d :: MsgDirection) = CIMeta
     itemEdited :: Bool,
     editable :: Bool,
     localItemTs :: ZonedTime,
-    createdAt :: UTCTime
+    createdAt :: UTCTime,
+    updatedAt :: UTCTime
   }
   deriving (Show, Generic)
 
-mkCIMeta :: ChatItemId -> CIContent d -> Text -> CIStatus d -> Maybe SharedMsgId -> Bool -> Bool -> TimeZone -> UTCTime -> ChatItemTs -> UTCTime -> CIMeta d
-mkCIMeta itemId itemContent itemText itemStatus itemSharedMsgId itemDeleted itemEdited tz currentTs itemTs createdAt =
+mkCIMeta :: ChatItemId -> CIContent d -> Text -> CIStatus d -> Maybe SharedMsgId -> Bool -> Bool -> TimeZone -> UTCTime -> ChatItemTs -> UTCTime -> UTCTime -> CIMeta d
+mkCIMeta itemId itemContent itemText itemStatus itemSharedMsgId itemDeleted itemEdited tz currentTs itemTs createdAt updatedAt =
   let localItemTs = utcToZonedTime tz itemTs
       editable = case itemContent of
         CISndMsgContent _ -> diffUTCTime currentTs itemTs < nominalDay
         _ -> False
-   in CIMeta {itemId, itemTs, itemText, itemStatus, itemSharedMsgId, itemDeleted, itemEdited, editable, localItemTs, createdAt}
+   in CIMeta {itemId, itemTs, itemText, itemStatus, itemSharedMsgId, itemDeleted, itemEdited, editable, localItemTs, createdAt, updatedAt}
 
 instance ToJSON (CIMeta d) where toEncoding = J.genericToEncoding J.defaultOptions
 
@@ -583,12 +583,6 @@ ciCallInfoText status duration = case status of
     with0 n
       | n < 9 = '0' : show n
       | otherwise = show n
-
-ciCallStatus :: WebRTCCallStatus -> CICallStatus
-ciCallStatus = \case
-  WCSConnected -> CISCallProgress
-  WCSDisconnected -> CISCallEnded
-  WCSFailed -> CISCallError
 
 data SChatType (c :: ChatType) where
   SCTDirect :: SChatType 'CTDirect
