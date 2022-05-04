@@ -4,7 +4,8 @@
   "description": "WebRTC call in browser and webview",
   "main": "dist/call.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "prettier --write --ignore-unknown . && tsc && ./copy"
   },
   "keywords": [
     "SimpleX",
