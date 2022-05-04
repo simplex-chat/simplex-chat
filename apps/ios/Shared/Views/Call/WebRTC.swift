@@ -23,13 +23,71 @@ struct WError: Codable {
     var message: String
 }
 
+struct CallCapabilities: Codable {
+    var encryption: Bool
+}
+
+struct RTCSessionDescriptionInit: Codable {
+    var sdp: String?
+    var type: RTCSdpType
+}
+
+struct RTCIceCandidateInit: Codable {
+    var candidate: String?
+//    var sdpMLineIndex: NSNumber?
+    var sdpMid: String?
+    var usernameFragment: String?
+}
+
+struct CallState: Codable {
+    var connectionState: String
+    var iceConnectionState: String
+    var iceGatheringSatet: String
+    var signallingState: String
+}
+
+enum RTCSdpType: String, Codable {
+    case answer = "answer"
+    case offer = "offer"
+    case pranswer = "pranswer"
+    case rollback = "rollback"
+}
+
 enum WCallCommand: Codable {
     case capabilities
     case start(media: CallMediaType, aesKey: String? = nil)
+    case accept(offer: RTCSessionDescriptionInit, iceCandidates: [RTCIceCandidateInit], media: CallMediaType, aesKey: String? = nil)
+    case end
+//    case callCommandResponse
+}
+
+enum WCallCommandResponse: Codable {
+    case offer(offer: RTCSessionDescriptionInit, iceCanddiates: [RTCIceCandidateInit])
+    case answer(offer: RTCSessionDescriptionInit, iceCanddiates: [RTCIceCandidateInit])
+    case iceCandidates(iceCandidates: [RTCIceCandidateInit])
+}
+
+enum WCallMessageTag: String, Codable {
+    case capabilities = "capabilities"
+    case connection = "connection"
+    case start = "start"
+    case offer = "offer"
+    case accept = "accept"
+    case answer = "answer"
+    case ice = "ice"
+    case end = "end"
+    case ended = "ended"
+    case ok = "ok"
+    case error = "error"
 }
 
 enum WCallResponse: Codable {
-    case capabilities
+    case capabilities(capabilities: CallCapabilities)
+    case connection(state: CallState)
+    case ended
+    case ok
+    case error(message: String)
+    //    case callCommandResponse
 }
 
 enum CallMediaType: String, Codable {
@@ -37,47 +95,6 @@ enum CallMediaType: String, Codable {
     case audio = "audio"
 }
 
-//type WCallCommand = WCCapabilities | WCStartCall | WCAcceptOffer | WCEndCall | WCallCommandResponse
-//
-//type WCallResponse = WRCapabilities | WRConnection | WRCallEnded | WROk | WRError | WCallCommandResponse
-//
-//type WCallCommandResponse = WCallOffer | WCallAnswer | WCallIceCandidates
-//
-//type WCallMessageTag = "capabilities" | "connection" | "start" | "offer" | "accept" | "answer" | "ice" | "end" | "ended" | "ok" | "error"
-//
-//enum CallMediaType {
-//  Audio = "audio",
-//  Video = "video",
-//}
-//
-//interface IWebCallMessage {
-//  type: WCallMessageTag
-//}
-//
-//interface WCCapabilities extends IWebCallMessage {
-//  type: "capabilities"
-//}
-//
-//interface WRConnection extends IWebCallMessage {
-//  type: "connection",
-//  state: {
-//    connectionState: string
-//    iceConnectionState: string
-//    iceGatheringState: string
-//    signalingState: string
-//  }
-//}
-//
-//interface WCStartCall extends IWebCallMessage {
-//  type: "start"
-//  media: CallMediaType
-//  aesKey?: string
-//}
-//
-//interface WCEndCall extends IWebCallMessage {
-//  type: "end"
-//}
-//
 //interface WCAcceptOffer extends IWebCallMessage {
 //  type: "accept"
 //  offer: RTCSessionDescriptionInit
@@ -85,32 +102,17 @@ enum CallMediaType: String, Codable {
 //  media: CallMediaType
 //  aesKey?: string
 //}
+//type WCallCommand = WCCapabilities | WCStartCall | WCAcceptOffer | WCEndCall | WCallCommandResponse
 //
-//interface WCallOffer extends IWebCallMessage {
-//  type: "offer"
-//  offer: RTCSessionDescriptionInit
-//  iceCandidates: RTCIceCandidateInit[]
+//type WCallResponse = WRCapabilities | WRConnection | WRCallEnded | WROk | WRError | WCallCommandResponse
+//
+//type WCallCommandResponse = WCallOffer | WCallAnswer | WCallIceCandidates
+///
+//interface IWebCallMessage {
+//  type: WCallMessageTag
 //}
 //
-//interface WCallAnswer extends IWebCallMessage {
-//  type: "answer"
-//  answer: RTCSessionDescriptionInit
-//  iceCandidates: RTCIceCandidateInit[]
-//}
-//
-//interface WCallIceCandidates extends IWebCallMessage {
-//  type: "ice"
-//  iceCandidates: RTCIceCandidateInit[]
-//}
-//
-//interface WRCapabilities {
-//  type: "capabilities"
-//  capabilities: CallCapabilities
-//}
-//
-//interface CallCapabilities {
-//  encryption: boolean
-//}
+
 //
 //interface WRCallEnded extends IWebCallMessage {
 //  type: "ended"
