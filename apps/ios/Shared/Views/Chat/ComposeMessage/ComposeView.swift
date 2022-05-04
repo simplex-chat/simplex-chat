@@ -276,6 +276,8 @@ struct ComposeView: View {
             return checkLinkPreview()
         case .image(_, let image):
             return .image(text: composeState.message, image: image)
+        case .file:
+            return .file(composeState.message)
         case .unknown(let type, _):
             return .unknown(type: type, text: composeState.message)
         }

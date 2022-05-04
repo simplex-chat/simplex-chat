@@ -102,6 +102,16 @@ fun ChatView(chatModel: ChatModel) {
           )
           if (toItem != null) chatModel.removeChatItem(cInfo, toItem.chatItem)
         }
+      },
+      receiveFile = { fileId ->
+        withApi {
+          val chatItem = chatModel.controller.apiReceiveFile(fileId)
+          if (chatItem != null) {
+            val cInfo = chatItem.chatInfo
+            val cItem = chatItem.chatItem
+            chatModel.upsertChatItem(cInfo, cItem)
+          }
+        }
       }
     )
   }
@@ -120,7 +130,8 @@ fun ChatLayout(
   back: () -> Unit,
   info: () -> Unit,
   openDirectChat: (Long) -> Unit,
-  deleteMessage: (Long, CIDeleteMode) -> Unit
+  deleteMessage: (Long, CIDeleteMode) -> Unit,
+  receiveFile: (Long) -> Unit
 ) {
   fun onImageChange(bitmap: Bitmap) {
     val imagePreview = resizeImageToStrSize(bitmap, maxDataSize = 14000)
@@ -153,7 +164,7 @@ fun ChatLayout(
           modifier = Modifier.navigationBarsWithImePadding()
         ) { contentPadding ->
           Box(Modifier.padding(contentPadding)) {
-            ChatItemsList(user, chat, composeState, chatItems, openDirectChat, deleteMessage)
+            ChatItemsList(user, chat, composeState, chatItems, openDirectChat, deleteMessage, receiveFile)
           }
         }
       }
@@ -230,7 +241,8 @@ fun ChatItemsList(
   composeState: MutableState<ComposeState>,
   chatItems: List<ChatItem>,
   openDirectChat: (Long) -> Unit,
-  deleteMessage: (Long, CIDeleteMode) -> Unit
+  deleteMessage: (Long, CIDeleteMode) -> Unit,
+  receiveFile: (Long) -> Unit
 ) {
   val listState = rememberLazyListState(initialFirstVisibleItemIndex = chatItems.size - chatItems.count { it.isRcvNew })
   val keyboardState by getKeyboardState()
@@ -268,11 +280,11 @@ fun ChatItemsList(
             } else {
               Spacer(Modifier.size(42.dp))
             }
-            ChatItemView(user, cItem, composeState, cxt, uriHandler, showMember = showMember, deleteMessage = deleteMessage)
+            ChatItemView(user, cItem, composeState, cxt, uriHandler, showMember = showMember, deleteMessage = deleteMessage, receiveFile = receiveFile)
           }
         } else {
           Box(Modifier.padding(start = 86.dp, end = 12.dp)) {
-            ChatItemView(user, cItem, composeState, cxt, uriHandler, deleteMessage = deleteMessage)
+            ChatItemView(user, cItem, composeState, cxt, uriHandler, deleteMessage = deleteMessage, receiveFile = receiveFile)
           }
         }
       } else { // direct message
@@ -283,7 +295,7 @@ fun ChatItemsList(
             end = if (sent) 12.dp else 76.dp,
           )
         ) {
-          ChatItemView(user, cItem, composeState, cxt, uriHandler, deleteMessage = deleteMessage)
+          ChatItemView(user, cItem, composeState, cxt, uriHandler, deleteMessage = deleteMessage, receiveFile = receiveFile)
         }
       }
     }
@@ -350,7 +362,8 @@ fun PreviewChatLayout() {
       back = {},
       info = {},
       openDirectChat = {},
-      deleteMessage = { _, _ -> }
+      deleteMessage = { _, _ -> },
+      receiveFile = {}
     )
   }
 }
@@ -393,7 +406,8 @@ fun PreviewGroupChatLayout() {
       back = {},
       info = {},
       openDirectChat = {},
-      deleteMessage = { _, _ -> }
+      deleteMessage = { _, _ -> },
+      receiveFile = {}
     )
   }
 }

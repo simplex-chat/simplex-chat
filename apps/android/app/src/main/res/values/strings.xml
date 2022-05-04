@@ -65,6 +65,7 @@
   <string name="reply_verb">Reply</string>
   <string name="share_verb">Share</string>
   <string name="copy_verb">Copy</string>
+  <string name="save_verb">Save</string>
   <string name="edit_verb">Edit</string>
   <string name="delete_verb">Delete</string>
   <string name="delete_message__question">Delete message?</string>
@@ -91,7 +92,20 @@
 
   <!-- Images -->
   <string name="image_descr">Image</string>
-  <string name="icon_descr_cancel_image_preview">cancel image preview</string>
+  <string name="icon_descr_cancel_image_preview">Cancel image preview</string>
+  <string name="icon_descr_waiting_for_image">Waiting for image</string>
+  <string name="waiting_for_image">Waiting for image</string>
+  <string name="image_will_be_received_when_contact_is_online">Image will be received when your contact is online, please wait or check later!</string>
+
+  <!-- Files - CIFileView.kt -->
+  <string name="icon_descr_file">File</string>
+  <string name="large_file">Large file!</string>
+  <string name="contact_sent_large_file">Your contact sent a file that is larger than currently supported maximum size (<xliff:g id="maxFileSize">%1$s</xliff:g> bytes).</string>
+  <string name="waiting_for_file">Waiting for file</string>
+  <string name="file_will_be_received_when_contact_is_online">File will be received when your contact is online, please wait or check later!</string>
+  <string name="file_saved">File saved</string>
+  <string name="file_not_found">File not found</string>
+  <string name="error_saving_file">Error saving file</string>
 
   <!-- Chat Info Actions - ChatInfoView.kt -->
   <string name="delete_contact__question">Delete contact?</string>

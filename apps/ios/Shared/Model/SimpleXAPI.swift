@@ -326,9 +326,18 @@ func apiChatRead(type: ChatType, id: Int64, itemRange: (Int64, Int64)) async thr
     try await sendCommandOkResp(.apiChatRead(type: type, id: id, itemRange: itemRange))
 }
 
-func receiveFile(fileId: Int64) async throws {
+func receiveFile(fileId: Int64) async {
+    do {
+        let chatItem = try await apiReceiveFile(fileId: fileId)
+        DispatchQueue.main.async { chatItemSimpleUpdate(chatItem) }
+    } catch let error {
+        logger.error("receiveFile error: \(responseError(error))")
+    }
+}
+
+func apiReceiveFile(fileId: Int64) async throws -> AChatItem {
     let r = await chatSendCmd(.receiveFile(fileId: fileId))
-    if case .rcvFileAccepted = r { return }
+    if case .rcvFileAccepted(let chatItem) = r { return chatItem }
     throw r
 }
 
@@ -470,14 +479,11 @@ func processReceivedMsg(_ res: ChatResponse) {
             let cInfo = aChatItem.chatInfo
             let cItem = aChatItem.chatItem
             m.addChatItem(cInfo, cItem)
-            if let file = cItem.file,
+            if case .image = cItem.content.msgContent,
+               let file = cItem.file,
                file.fileSize <= maxImageSize {
                 Task {
-                    do {
-                        try await receiveFile(fileId: file.fileId)
-                    } catch {
-                        logger.error("receiveFile error: \(error.localizedDescription)")
-                    }
+                    await receiveFile(fileId: file.fileId)
                 }
             }
             NtfManager.shared.notifyMessageReceived(cInfo, cItem)
@@ -499,11 +505,7 @@ func processReceivedMsg(_ res: ChatResponse) {
                 }
             }
         case let .chatItemUpdated(aChatItem):
-            let cInfo = aChatItem.chatInfo
-            let cItem = aChatItem.chatItem
-            if m.upsertChatItem(cInfo, cItem) {
-                NtfManager.shared.notifyMessageReceived(cInfo, cItem)
-            }
+            chatItemSimpleUpdate(aChatItem)
         case let .chatItemDeleted(_, toChatItem):
             let cInfo = toChatItem.chatInfo
             let cItem = toChatItem.chatItem
@@ -513,15 +515,22 @@ func processReceivedMsg(_ res: ChatResponse) {
                 // currently only broadcast deletion of rcv message can be received, and only this case should happen
                 _ = m.upsertChatItem(cInfo, cItem)
             }
+        case let .rcvFileStart(aChatItem):
+            chatItemSimpleUpdate(aChatItem)
         case let .rcvFileComplete(aChatItem):
-            let cInfo = aChatItem.chatInfo
-            let cItem = aChatItem.chatItem
-            if m.upsertChatItem(cInfo, cItem) {
-                NtfManager.shared.notifyMessageReceived(cInfo, cItem)
-            }
+            chatItemSimpleUpdate(aChatItem)
         default:
             logger.debug("unsupported event: \(res.responseType)")
         }
+    }
+}
+
+func chatItemSimpleUpdate(_ aChatItem: AChatItem) {
+    let m = ChatModel.shared
+    let cInfo = aChatItem.chatInfo
+    let cItem = aChatItem.chatItem
+    if m.upsertChatItem(cInfo, cItem) {
+        NtfManager.shared.notifyMessageReceived(cInfo, cItem)
     }
 }
 
