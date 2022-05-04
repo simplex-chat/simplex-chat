@@ -9,7 +9,7 @@ import ChatClient
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
 import Control.Concurrent.STM
-import Data.Aeson (ToJSON, (.=))
+import Data.Aeson (ToJSON)
 import qualified Data.Aeson as J
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
@@ -1774,8 +1774,8 @@ testCallType = CallType {media = CMVideo, capabilities = CallCapabilities {encry
 testWebRTCSession :: WebRTCSession
 testWebRTCSession =
   WebRTCSession
-    { rtcSession = J.object ["test" .= (123 :: Int)],
-      rtcIceCandidates = []
+    { rtcSession = "{}",
+      rtcIceCandidates = [""]
     }
 
 testWebRTCCallOffer :: WebRTCCallOffer
