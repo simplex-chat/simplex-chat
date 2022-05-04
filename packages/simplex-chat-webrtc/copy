@@ -1,0 +1,10 @@
+#!/bin/sh
+
+# it can be tested in the browser from dist folder
+cp ./src/call.html ./dist/call.html
+cp ./src/style.css ./dist/style.css
+
+# copy to android app
+cp ./src/call.html ../../apps/android/app/src/main/assets/www/call.html
+cp ./src/style.css ../../apps/android/app/src/main/assets/www/style.css
+cp ./dist/call.js ../../apps/android/app/src/main/assets/www/call.js

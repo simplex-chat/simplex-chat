@@ -6,12 +6,6 @@ var CallMediaType;
     CallMediaType["Audio"] = "audio";
     CallMediaType["Video"] = "video";
 })(CallMediaType || (CallMediaType = {}));
-// STUN servers
-const peerConnectionConfig = {
-    iceServers: [{ urls: ["stun:stun.l.google.com:19302"] }],
-    iceCandidatePoolSize: 10,
-    encodedInsertableStreams: true,
-};
 const keyAlgorithm = {
     name: "AES-GCM",
     length: 256
@@ -24,15 +18,22 @@ const initialPlainTextRequired = {
     delta: 3,
     undefined: 1,
 };
-const defaultCallConfig = {
-    iceCandidates: {
-        delay: 2000,
-        extrasInterval: 2000,
-        extrasTimeout: 8000
-    }
-};
+function defaultCallConfig(encodedInsertableStreams) {
+    return {
+        peerConnectionConfig: {
+            iceServers: [{ urls: ["stun:stun.l.google.com:19302"] }],
+            iceCandidatePoolSize: 10,
+            encodedInsertableStreams,
+        },
+        iceCandidates: {
+            delay: 2000,
+            extrasInterval: 2000,
+            extrasTimeout: 8000
+        }
+    };
+}
 async function initializeCall(config, mediaType, aesKey) {
-    const conn = new RTCPeerConnection(peerConnectionConfig);
+    const conn = new RTCPeerConnection(config.peerConnectionConfig);
     const remoteStream = new MediaStream();
     const localStream = await navigator.mediaDevices.getUserMedia(callMediaConstraints(mediaType));
     await setUpMediaStreams(conn, localStream, remoteStream, aesKey);
@@ -73,14 +74,14 @@ async function initializeCall(config, mediaType, aesKey) {
             if (delay)
                 clearTimeout(delay);
             resolved = true;
-            const iceCandidates = candidates.slice();
+            const iceCandidates = candidates.map((c) => JSON.stringify(c));
             candidates = [];
             resolve(iceCandidates);
         }
         function sendIceCandidates() {
             if (candidates.length === 0)
                 return;
-            const iceCandidates = candidates.slice();
+            const iceCandidates = candidates.map((c) => JSON.stringify(c));
             candidates = [];
             sendMessageToNative({ resp: { type: "ice", iceCandidates } });
         }
@@ -114,99 +115,99 @@ function sendMessageToNative(msg) {
 async function processCommand(body) {
     const { command, corrId } = body;
     let resp;
-    switch (command.type) {
-        case "capabilities":
-            const encryption = supportsInsertableStreams();
-            resp = { type: "capabilities", capabilities: { encryption } };
-            break;
-        case "start":
-            console.log("starting call");
-            if (pc) {
-                resp = { type: "error", message: "start: call already started" };
-            }
-            else if (!supportsInsertableStreams() && command.aesKey) {
-                resp = { type: "error", message: "start: encryption is not supported" };
-            }
-            else {
-                try {
+    try {
+        switch (command.type) {
+            case "capabilities":
+                const encryption = supportsInsertableStreams();
+                resp = { type: "capabilities", capabilities: { encryption } };
+                break;
+            case "start":
+                console.log("starting call");
+                if (pc) {
+                    resp = { type: "error", message: "start: call already started" };
+                }
+                else if (!supportsInsertableStreams() && command.aesKey) {
+                    resp = { type: "error", message: "start: encryption is not supported" };
+                }
+                else {
                     const { media, aesKey } = command;
-                    const call = await initializeCall(defaultCallConfig, media, aesKey);
+                    const call = await initializeCall(defaultCallConfig(!!aesKey), media, aesKey);
                     const { connection, iceCandidates } = call;
                     pc = connection;
                     const offer = await pc.createOffer();
                     await pc.setLocalDescription(offer);
                     // for debugging, returning the command for callee to use
-                    resp = { type: "accept", offer, iceCandidates: await iceCandidates, media, aesKey };
+                    resp = { type: "accept", offer: JSON.stringify(offer), iceCandidates: await iceCandidates, media, aesKey };
                     // resp = {type: "offer", offer, iceCandidates: await iceCandidates}
                 }
-                catch (e) {
-                    resp = { type: "error", message: e.message };
+                break;
+            case "accept":
+                if (pc) {
+                    resp = { type: "error", message: "accept: call already started" };
                 }
-            }
-            break;
-        case "accept":
-            if (pc) {
-                resp = { type: "error", message: "accept: call already started" };
-            }
-            else if (!supportsInsertableStreams() && command.aesKey) {
-                resp = { type: "error", message: "accept: encryption is not supported" };
-            }
-            else {
-                try {
-                    const call = await initializeCall(defaultCallConfig, command.media, command.aesKey);
+                else if (!supportsInsertableStreams() && command.aesKey) {
+                    resp = { type: "error", message: "accept: encryption is not supported" };
+                }
+                else {
+                    const offer = JSON.parse(command.offer);
+                    const remoteIceCandidates = command.iceCandidates.map((c) => JSON.parse(c));
+                    const call = await initializeCall(defaultCallConfig(!!command.aesKey), command.media, command.aesKey);
                     const { connection, iceCandidates } = call;
                     pc = connection;
-                    await pc.setRemoteDescription(new RTCSessionDescription(command.offer));
+                    await pc.setRemoteDescription(new RTCSessionDescription(offer));
                     const answer = await pc.createAnswer();
                     await pc.setLocalDescription(answer);
-                    addIceCandidates(pc, command.iceCandidates);
+                    addIceCandidates(pc, remoteIceCandidates);
                     // same as command for caller to use
-                    resp = { type: "answer", answer, iceCandidates: await iceCandidates };
+                    resp = { type: "answer", answer: JSON.stringify(answer), iceCandidates: await iceCandidates };
                 }
-                catch (e) {
-                    resp = { type: "error", message: e.message };
+                break;
+            case "answer":
+                if (!pc) {
+                    resp = { type: "error", message: "answer: call not started" };
                 }
-            }
-            break;
-        case "answer":
-            if (!pc) {
-                resp = { type: "error", message: "answer: call not started" };
-            }
-            else if (!pc.localDescription) {
-                resp = { type: "error", message: "answer: local description is not set" };
-            }
-            else if (pc.currentRemoteDescription) {
-                resp = { type: "error", message: "answer: remote description already set" };
-            }
-            else {
-                await pc.setRemoteDescription(new RTCSessionDescription(command.answer));
-                addIceCandidates(pc, command.iceCandidates);
-                resp = { type: "ok" };
-            }
-            break;
-        case "ice":
-            if (pc) {
-                addIceCandidates(pc, command.iceCandidates);
-                resp = { type: "ok" };
-            }
-            else {
-                resp = { type: "error", message: "ice: call not started" };
-            }
-            break;
-        case "end":
-            if (pc) {
-                pc.close();
-                pc = undefined;
-                resetVideoElements();
-                resp = { type: "ok" };
-            }
-            else {
-                resp = { type: "error", message: "end: call not started" };
-            }
-            break;
-        default:
-            resp = { type: "error", message: "unknown command" };
-            break;
+                else if (!pc.localDescription) {
+                    resp = { type: "error", message: "answer: local description is not set" };
+                }
+                else if (pc.currentRemoteDescription) {
+                    resp = { type: "error", message: "answer: remote description already set" };
+                }
+                else {
+                    const answer = JSON.parse(command.answer);
+                    const remoteIceCandidates = command.iceCandidates.map((c) => JSON.parse(c));
+                    await pc.setRemoteDescription(new RTCSessionDescription(answer));
+                    addIceCandidates(pc, remoteIceCandidates);
+                    resp = { type: "ok" };
+                }
+                break;
+            case "ice":
+                if (pc) {
+                    const remoteIceCandidates = command.iceCandidates.map((c) => JSON.parse(c));
+                    addIceCandidates(pc, remoteIceCandidates);
+                    resp = { type: "ok" };
+                }
+                else {
+                    resp = { type: "error", message: "ice: call not started" };
+                }
+                break;
+            case "end":
+                if (pc) {
+                    pc.close();
+                    pc = undefined;
+                    resetVideoElements();
+                    resp = { type: "ok" };
+                }
+                else {
+                    resp = { type: "error", message: "end: call not started" };
+                }
+                break;
+            default:
+                resp = { type: "error", message: "unknown command" };
+                break;
+        }
+    }
+    catch (e) {
+        resp = { type: "error", message: e.message };
     }
     const apiResp = { resp, corrId };
     sendMessageToNative(apiResp);
@@ -329,10 +330,6 @@ function getVideoElements() {
 //     localStream.getVideoTracks()[0].enabled = false
 //   }
 // }
-function f() {
-    console.log("Debug Function");
-    return "Debugging Return";
-}
 /* Stream Transforms */
 function setupPeerTransform(peer, transform) {
     const streams = peer.createEncodedStreams();

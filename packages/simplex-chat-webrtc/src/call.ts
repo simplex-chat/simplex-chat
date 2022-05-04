@@ -14,28 +14,76 @@ interface WebViewMessage {
   resp: WCallResponse | WCallCommand
 }
 
-type WCallCommand = WCCapabilities | WCStartCall | WCAcceptOffer | WCEndCall | WCallCommandResponse
+type WCallCommand = WCCapabilities | WCStartCall | WCAcceptOffer | WCallAnswer | WCallIceCandidates | WCEndCall 
 
-type WCallResponse = WRCapabilities | WRConnection | WRCallEnded | WROk | WRError | WCallCommandResponse
+type WCallResponse = WRCapabilities | WCallOffer | WCallAnswer | WCallIceCandidates | WRConnection | WRCallEnded | WROk | WRError 
 
-type WCallCommandResponse = WCallOffer | WCallAnswer | WCallIceCandidates
+type WCallCommandTag = "capabilities" | "start" | "accept" | "answer" | "ice" | "end"
 
-type WCallMessageTag = "capabilities" | "connection" | "start" | "offer" | "accept" | "answer" | "ice" | "end" | "ended" | "ok" | "error"
+type WCallResponseTag = "capabilities" | "offer" | "answer" | "ice" | "connection" | "ended" | "ok" | "error"
 
 enum CallMediaType {
   Audio = "audio",
   Video = "video",
 }
 
-interface IWebCallMessage {
-  type: WCallMessageTag
+interface IWCallCommand {
+  type: WCallCommandTag
 }
 
-interface WCCapabilities extends IWebCallMessage {
+interface IWCallResponse {
+  type: WCallResponseTag
+}
+
+interface WCCapabilities extends IWCallCommand {
   type: "capabilities"
 }
 
-interface WRConnection extends IWebCallMessage {
+interface WCStartCall extends IWCallCommand {
+  type: "start"
+  media: CallMediaType
+  aesKey?: string
+}
+
+interface WCEndCall extends IWCallCommand {
+  type: "end"
+}
+
+interface WCAcceptOffer extends IWCallCommand {
+  type: "accept"
+  offer: string // JSON string for RTCSessionDescriptionInit
+  iceCandidates: string[] // JSON strings for RTCIceCandidateInit
+  media: CallMediaType
+  aesKey?: string
+}
+
+interface WCallOffer extends IWCallResponse {
+  type: "offer"
+  offer: string // JSON string for RTCSessionDescriptionInit
+  iceCandidates: string[] // JSON strings for RTCIceCandidateInit
+}
+
+interface WCallAnswer extends IWCallCommand, IWCallResponse {
+  type: "answer"
+  answer: string // JSON string for RTCSessionDescriptionInit
+  iceCandidates: string[] // JSON strings for RTCIceCandidateInit
+}
+
+interface WCallIceCandidates extends IWCallCommand, IWCallResponse {
+  type: "ice"
+  iceCandidates: string[] // JSON strings for RTCIceCandidateInit
+}
+
+interface WRCapabilities extends IWCallResponse {
+  type: "capabilities"
+  capabilities: CallCapabilities
+}
+
+interface CallCapabilities {
+  encryption: boolean
+}
+
+interface WRConnection extends IWCallResponse {
   type: "connection",
   state: {
     connectionState: string
@@ -45,59 +93,16 @@ interface WRConnection extends IWebCallMessage {
   }
 }
 
-interface WCStartCall extends IWebCallMessage {
-  type: "start"
-  media: CallMediaType
-  aesKey?: string
-}
 
-interface WCEndCall extends IWebCallMessage {
-  type: "end"
-}
-
-interface WCAcceptOffer extends IWebCallMessage {
-  type: "accept"
-  offer: RTCSessionDescriptionInit
-  iceCandidates: RTCIceCandidateInit[]
-  media: CallMediaType
-  aesKey?: string
-}
-
-interface WCallOffer extends IWebCallMessage {
-  type: "offer"
-  offer: RTCSessionDescriptionInit
-  iceCandidates: RTCIceCandidateInit[]
-}
-
-interface WCallAnswer extends IWebCallMessage {
-  type: "answer"
-  answer: RTCSessionDescriptionInit
-  iceCandidates: RTCIceCandidateInit[]
-}
-
-interface WCallIceCandidates extends IWebCallMessage {
-  type: "ice"
-  iceCandidates: RTCIceCandidateInit[]
-}
-
-interface WRCapabilities {
-  type: "capabilities"
-  capabilities: CallCapabilities
-}
-
-interface CallCapabilities {
-  encryption: boolean
-}
-
-interface WRCallEnded extends IWebCallMessage {
+interface WRCallEnded extends IWCallResponse {
   type: "ended"
 }
 
-interface WROk extends IWebCallMessage {
+interface WROk extends IWCallResponse {
   type: "ok"
 }
 
-interface WRError extends IWebCallMessage {
+interface WRError extends IWCallResponse {
   type: "error"
   message: string
 }
@@ -112,13 +117,6 @@ type RTCRtpReceiverWithEncryption = RTCRtpReceiver & {
 
 type RTCConfigurationWithEncryption = RTCConfiguration & {
   encodedInsertableStreams: boolean
-}
-
-// STUN servers
-const peerConnectionConfig: RTCConfigurationWithEncryption = {
-  iceServers: [{urls: ["stun:stun.l.google.com:19302"]}],
-  iceCandidatePoolSize: 10,
-  encodedInsertableStreams: true,
 }
 
 const keyAlgorithm: AesKeyAlgorithm = {
@@ -140,10 +138,11 @@ const initialPlainTextRequired = {
 
 interface Call {
   connection: RTCPeerConnection
-  iceCandidates: Promise<RTCIceCandidate[]>
+  iceCandidates: Promise<string[]> // JSON strings for RTCIceCandidate
 }
 
 interface CallConfig {
+  peerConnectionConfig: RTCConfigurationWithEncryption,
   iceCandidates: {
     delay: number
     extrasInterval: number
@@ -151,21 +150,28 @@ interface CallConfig {
   }
 }
 
-const defaultCallConfig: CallConfig = {
-  iceCandidates: {
-    delay: 2000,
-    extrasInterval: 2000,
-    extrasTimeout: 8000
+function defaultCallConfig(encodedInsertableStreams: boolean): CallConfig {
+  return {
+    peerConnectionConfig: {
+      iceServers: [{urls: ["stun:stun.l.google.com:19302"]}],
+      iceCandidatePoolSize: 10,
+      encodedInsertableStreams,
+    },
+    iceCandidates: {
+      delay: 2000,
+      extrasInterval: 2000,
+      extrasTimeout: 8000
+    }
   }
 }
 
 async function initializeCall(config: CallConfig, mediaType: CallMediaType, aesKey?: string): Promise<Call> {
-  const conn = new RTCPeerConnection(peerConnectionConfig)
+  const conn = new RTCPeerConnection(config.peerConnectionConfig)
   const remoteStream = new MediaStream()
   const localStream = await navigator.mediaDevices.getUserMedia(callMediaConstraints(mediaType))
   await setUpMediaStreams(conn, localStream, remoteStream, aesKey)
   conn.addEventListener("connectionstatechange", connectionStateChange)
-  const iceCandidates = new Promise<RTCIceCandidate[]>((resolve, _) => {
+  const iceCandidates = new Promise<string[]>((resolve, _) => {
     let candidates: RTCIceCandidate[] = []
     let resolved = false
     let extrasInterval: number | undefined
@@ -199,14 +205,14 @@ async function initializeCall(config: CallConfig, mediaType: CallMediaType, aesK
     function resolveIceCandidates() {
       if (delay) clearTimeout(delay)
       resolved = true
-      const iceCandidates = candidates.slice()
+      const iceCandidates = candidates.map((c) => JSON.stringify(c))
       candidates = []
       resolve(iceCandidates)
     }  
 
     function sendIceCandidates() {
       if (candidates.length === 0) return
-      const iceCandidates = candidates.slice()
+      const iceCandidates = candidates.map((c) => JSON.stringify(c))
       candidates = []
       sendMessageToNative({resp: {type: "ice", iceCandidates}})
     }
@@ -244,88 +250,89 @@ function sendMessageToNative(msg: WebViewMessage) {
 async function processCommand(body: WebViewAPICall): Promise<WebViewMessage> {
   const {command, corrId} = body
   let resp: WCallResponse | WCallCommand
-  switch (command.type) {
-    case "capabilities":
-      const encryption = supportsInsertableStreams()
-      resp = {type: "capabilities", capabilities: {encryption}}
-      break
-    case "start":
-      console.log("starting call")
-      if (pc) {
-        resp = {type: "error", message: "start: call already started"}
-      } else if (!supportsInsertableStreams() && command.aesKey) {
-        resp = {type: "error", message: "start: encryption is not supported"}
-      } else {
-        try {
-          const {media, aesKey} = command
-          const call = await initializeCall(defaultCallConfig, media, aesKey)
-          const {connection, iceCandidates} = call
-          pc = connection
-          const offer = await pc.createOffer()
-          await pc.setLocalDescription(offer)
-          // for debugging, returning the command for callee to use
-          resp = {type: "accept", offer, iceCandidates: await iceCandidates, media, aesKey}
-          // resp = {type: "offer", offer, iceCandidates: await iceCandidates}
-        } catch (e) {
-          resp = {type: "error", message: (e as Error).message}
+  try {
+    switch (command.type) {
+      case "capabilities":
+        const encryption = supportsInsertableStreams()
+        resp = {type: "capabilities", capabilities: {encryption}}
+        break
+      case "start":
+        console.log("starting call")
+        if (pc) {
+          resp = {type: "error", message: "start: call already started"}
+        } else if (!supportsInsertableStreams() && command.aesKey) {
+          resp = {type: "error", message: "start: encryption is not supported"}
+        } else {
+            const {media, aesKey} = command
+            const call = await initializeCall(defaultCallConfig(!!aesKey), media, aesKey)
+            const {connection, iceCandidates} = call
+            pc = connection
+            const offer = await pc.createOffer()
+            await pc.setLocalDescription(offer)
+            // for debugging, returning the command for callee to use
+            resp = {type: "accept", offer: JSON.stringify(offer), iceCandidates: await iceCandidates, media, aesKey}
+            // resp = {type: "offer", offer, iceCandidates: await iceCandidates}
         }
-      }
-      break
-    case "accept":
-      if (pc) {
-        resp = {type: "error", message: "accept: call already started"}
-      } else if (!supportsInsertableStreams() && command.aesKey) {
-        resp = {type: "error", message: "accept: encryption is not supported"}
-      } else {
-        try {
-          const call = await initializeCall(defaultCallConfig, command.media, command.aesKey)
+        break
+      case "accept":
+        if (pc) {
+          resp = {type: "error", message: "accept: call already started"}
+        } else if (!supportsInsertableStreams() && command.aesKey) {
+          resp = {type: "error", message: "accept: encryption is not supported"}
+        } else {
+          const offer = JSON.parse(command.offer)
+          const remoteIceCandidates = command.iceCandidates.map((c) => JSON.parse(c))
+          const call = await initializeCall(defaultCallConfig(!!command.aesKey), command.media, command.aesKey)
           const {connection, iceCandidates} = call
           pc = connection
-          await pc.setRemoteDescription(new RTCSessionDescription(command.offer))
+          await pc.setRemoteDescription(new RTCSessionDescription(offer))
           const answer = await pc.createAnswer()
           await pc.setLocalDescription(answer)
-          addIceCandidates(pc, command.iceCandidates)
+          addIceCandidates(pc, remoteIceCandidates)
           // same as command for caller to use
-          resp = {type: "answer", answer, iceCandidates: await iceCandidates}
-        } catch (e) {
-          resp = {type: "error", message: (e as Error).message}
+          resp = {type: "answer", answer: JSON.stringify(answer), iceCandidates: await iceCandidates}
         }
-      }
-      break
-    case "answer":
-      if (!pc) {
-        resp = {type: "error", message: "answer: call not started"}
-      } else if (!pc.localDescription) {
-        resp = {type: "error", message: "answer: local description is not set"}
-      } else if (pc.currentRemoteDescription) {
-        resp = {type: "error", message: "answer: remote description already set"}
-      } else {
-        await pc.setRemoteDescription(new RTCSessionDescription(command.answer))
-        addIceCandidates(pc, command.iceCandidates)
-        resp = {type: "ok"}
-      }
-      break
-    case "ice":
-      if (pc) {
-        addIceCandidates(pc, command.iceCandidates)
-        resp = {type: "ok"}
-      } else {
-        resp = {type: "error", message: "ice: call not started"}
-      }
-      break
-    case "end":
-      if (pc) {
-        pc.close()
-        pc = undefined
-        resetVideoElements()
-        resp = {type: "ok"}
-      } else {
-        resp = {type: "error", message: "end: call not started"}
-      }
-      break
-    default:
-      resp = {type: "error", message: "unknown command"}
-      break
+        break
+      case "answer":
+        if (!pc) {
+          resp = {type: "error", message: "answer: call not started"}
+        } else if (!pc.localDescription) {
+          resp = {type: "error", message: "answer: local description is not set"}
+        } else if (pc.currentRemoteDescription) {
+          resp = {type: "error", message: "answer: remote description already set"}
+        } else {
+          const answer = JSON.parse(command.answer)
+          const remoteIceCandidates = command.iceCandidates.map((c) => JSON.parse(c))
+          await pc.setRemoteDescription(new RTCSessionDescription(answer))
+          addIceCandidates(pc, remoteIceCandidates)
+          resp = {type: "ok"}
+        }
+        break
+      case "ice":
+        if (pc) {
+          const remoteIceCandidates = command.iceCandidates.map((c) => JSON.parse(c))
+          addIceCandidates(pc, remoteIceCandidates)
+          resp = {type: "ok"}
+        } else {
+          resp = {type: "error", message: "ice: call not started"}
+        }
+        break
+      case "end":
+        if (pc) {
+          pc.close()
+          pc = undefined
+          resetVideoElements()
+          resp = {type: "ok"}
+        } else {
+          resp = {type: "error", message: "end: call not started"}
+        }
+        break
+      default:
+        resp = {type: "error", message: "unknown command"}
+        break
+    }
+  } catch (e) {
+    resp = {type: "error", message: (e as Error).message}
   }
   const apiResp = {resp, corrId}
   sendMessageToNative(apiResp)
@@ -458,11 +465,6 @@ function getVideoElements(): VideoElements | undefined {
 //     localStream.getVideoTracks()[0].enabled = false
 //   }
 // }
-
-function f() {
-  console.log("Debug Function")
-  return "Debugging Return"
-}
 
 /* Stream Transforms */
 function setupPeerTransform(peer: RTCRtpSenderWithEncryption | RTCRtpReceiverWithEncryption, transform: (frame: RTCEncodedVideoFrame, controller: TransformStreamDefaultController) => void) {

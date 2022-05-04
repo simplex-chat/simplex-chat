@@ -9,64 +9,66 @@
 import SwiftUI
 import WebKit
 
-class WebViewCoordinator: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
+class WebRTCCoordinator: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
     var webView: WKWebView!
 
     var corrId = 0
-    var pendingCommands: Dictionary<Int, CheckedContinuation<WError, Never>> = [:]
+    var pendingCommands: Dictionary<Int, CheckedContinuation<WCallResponse, Never>> = [:]
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         webView.allowsBackForwardNavigationGestures = false
         self.webView = webView
     }
 
-    // receive message from wkwebview
+    // receive message from WKWebView
     func userContentController(
         _ userContentController: WKUserContentController,
         didReceive message: WKScriptMessage
     ) {
-        logger.debug("WebViewCoordinator.userContentController")
-        print(message.body)
-        // parse response
-        let data = (message.body as! String).data(using: .utf8)!
-        let msg = try! jsonDecoder.decode(WebViewMessage.self, from: data)
-        if let corrId = msg.corrId, let cont = pendingCommands.removeValue(forKey: corrId) {
-            cont.resume(returning: msg.resp)
+        logger.debug("WebRTCCoordinator.userContentController")
+        if let data = (message.body as? String)?.data(using: .utf8),
+           let msg = try? jsonDecoder.decode(WVAPIMessage.self, from: data) {
+            if let corrId = msg.corrId, let cont = pendingCommands.removeValue(forKey: corrId) {
+                cont.resume(returning: msg.resp)
+            } else {
+                // TODO pass messages to call view via binding
+                // print(msg.resp)
+            }
         } else {
-            // TODO pass messages to call view via binding
-            print(msg.resp)
+            logger.error("WebRTCCoordinator.userContentController: invalid message \(String(describing: message.body))")
         }
     }
 
     func messageToWebview(msg: String) {
-        logger.debug("WebViewCoordinator.messageToWebview")
+        logger.debug("WebRTCCoordinator.messageToWebview")
         self.webView.evaluateJavaScript("webkit.messageHandlers.logHandler.postMessage('\(msg)')")
     }
 
-    func processCommand(cmd: WCallCommand) async -> WError {
+    func processCommand(command: WCallCommand) async -> WCallResponse {
         await withCheckedContinuation { cont in
-            logger.debug("WebViewCoordinator.processCommand")
+            logger.debug("WebRTCCoordinator.processCommand")
             let corrId_ = corrId
             corrId = corrId + 1
             pendingCommands[corrId_] = cont
-            let apiCmd = WebViewAPICall(corrId: corrId_, command: cmd)
-            DispatchQueue.main.async {
-                logger.debug("WebViewCoordinator.processCommand DispatchQueue.main.async")
-                let apiData = try! jsonEncoder.encode(apiCmd)
-                let apiStr = String(decoding: apiData, as: UTF8.self)
-                let js = "processCommand(\(apiStr))"
-                print(js)
-                self.webView.evaluateJavaScript(js)
+            do {
+                let apiData = try jsonEncoder.encode(WVAPICall(corrId: corrId_, command: command))
+                DispatchQueue.main.async {
+                    logger.debug("WebRTCCoordinator.processCommand DispatchQueue.main.async")
+                    let js = "processCommand(\(String(decoding: apiData, as: UTF8.self)))"
+                    self.webView.evaluateJavaScript(js)
+                }
+            } catch {
+                logger.error("WebRTCCoordinator.processCommand: error encoding command \(error.localizedDescription)")
             }
         }
     }
 }
 
-struct WebView: UIViewRepresentable {
-    @Binding var coordinator: WebViewCoordinator?
+struct WebRTCView: UIViewRepresentable {
+    @Binding var coordinator: WebRTCCoordinator?
 
-    func makeCoordinator() -> WebViewCoordinator {
-        return Coordinator()
+    func makeCoordinator() -> WebRTCCoordinator {
+        WebRTCCoordinator()
     }
 
     func makeUIView(context: Context) -> WKWebView {
@@ -77,21 +79,21 @@ struct WebView: UIViewRepresentable {
 
         let userContentController = WKUserContentController()
 
-        let configuration = WKWebViewConfiguration()
-        configuration.userContentController = userContentController
-        configuration.mediaTypesRequiringUserActionForPlayback = []
-        configuration.allowsInlineMediaPlayback = true
+        let cfg = WKWebViewConfiguration()
+        cfg.userContentController = userContentController
+        cfg.mediaTypesRequiringUserActionForPlayback = []
+        cfg.allowsInlineMediaPlayback = true
 
         // Enable us to capture calls to console.log in the xcode logs
         let source = "console.log = (msg) => webkit.messageHandlers.logHandler.postMessage(msg)"
         let script = WKUserScript(source: source, injectionTime: .atDocumentStart, forMainFrameOnly: false)
-        configuration.userContentController.addUserScript(script)
-        configuration.userContentController.add(_coordinator, name: "logHandler")
+        cfg.userContentController.addUserScript(script)
+        cfg.userContentController.add(_coordinator, name: "logHandler")
 
-        let _wkwebview = WKWebView(frame: .zero, configuration: configuration)
+        let _wkwebview = WKWebView(frame: .zero, configuration: cfg)
         _wkwebview.navigationDelegate = _coordinator
         guard let path: String = Bundle.main.path(forResource: "call", ofType: "html", inDirectory: "www") else {
-            print("Page Not Found")
+            logger.error("WebRTCView.makeUIView call.html not found")
             return _wkwebview
         }
         let localHTMLUrl = URL(fileURLWithPath: path, isDirectory: false)
@@ -100,20 +102,20 @@ struct WebView: UIViewRepresentable {
     }
 
     func updateUIView(_ webView: WKWebView, context: Context) {
-        print("updating")
+        logger.debug("WebRTCView.updateUIView")
     }
 }
 
 
 
 struct CallView: View {
-    @State var coordinator: WebViewCoordinator? = nil
+    @State var coordinator: WebRTCCoordinator? = nil
     @State var commandStr = ""
     @FocusState private var keyboardVisible: Bool
 
     var body: some View {
         VStack(spacing: 30) {
-            WebView(coordinator: $coordinator).frame(maxHeight: 260)
+            WebRTCView(coordinator: $coordinator).frame(maxHeight: 260)
             TextEditor(text: $commandStr)
                 .focused($keyboardVisible)
                 .disableAutocorrection(true)
@@ -136,13 +138,16 @@ struct CallView: View {
                     commandStr = ""
                 }
                 Button("Send") {
-                    print("in send")
-                    if let c = coordinator {
-                        print("has coordinator")
-                        Task {
-                            let resp = await c.processCommand(cmd: .startCall(media: .video))
-                            print(resp)
+                    do {
+                        let command = try jsonDecoder.decode(WCallCommand.self, from: commandStr.data(using: .utf8)!)
+                        if let c = coordinator {
+                            Task {
+                                let resp = await c.processCommand(command: command)
+                                print(String(decoding: try! jsonEncoder.encode(resp), as: UTF8.self))
+                            }
                         }
+                    } catch {
+                        print(error)
                     }
                 }
             }
@@ -151,7 +156,12 @@ struct CallView: View {
 
                 }
                 Button("Start") {
-
+                    if let c = coordinator {
+                        Task {
+                            let resp = await c.processCommand(command: .start(media: .video))
+                            print(String(decoding: try! jsonEncoder.encode(resp), as: UTF8.self))
+                        }
+                    }
                 }
                 Button("Accept") {
 
@@ -169,9 +179,6 @@ struct CallView: View {
         }
     }
 }
-
-
-
 
 struct CallView_Previews: PreviewProvider {
     static var previews: some View {
