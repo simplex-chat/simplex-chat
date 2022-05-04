@@ -40,6 +40,7 @@ import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Notifications.Protocol (DeviceToken (..), NtfTknStatus)
 import Simplex.Messaging.Parsers (dropPrefix, enumJSON, sumTypeJSON)
 import Simplex.Messaging.Protocol (CorrId)
+import Simplex.Messaging.TMap (TMap)
 import System.IO (Handle)
 import UnliftIO.STM
 
@@ -81,7 +82,7 @@ data ChatController = ChatController
     chatLock :: TMVar (),
     sndFiles :: TVar (Map Int64 Handle),
     rcvFiles :: TVar (Map Int64 Handle),
-    currentCall :: TVar (Maybe Call),
+    currentCalls :: TMap ContactId Call,
     config :: ChatConfig,
     filesFolder :: TVar (Maybe FilePath) -- path to files folder for mobile apps
   }
@@ -110,12 +111,13 @@ data ChatCommand
   | APIDeleteChat ChatRef
   | APIAcceptContact Int64
   | APIRejectContact Int64
-  | APISendCallInvitation Int64 CallType
-  | APIRejectCall Int64
-  | APISendCallOffer Int64 WebRTCCallOffer
-  | APISendCallAnswer Int64 WebRTCSession
-  | APISendCallExtraInfo Int64 WebRTCExtraInfo
-  | APIEndCall Int64
+  | APISendCallInvitation ContactId CallType
+  | APIRejectCall ContactId
+  | APISendCallOffer ContactId WebRTCCallOffer
+  | APISendCallAnswer ContactId WebRTCSession
+  | APISendCallExtraInfo ContactId WebRTCExtraInfo
+  | APIEndCall ContactId
+  | APICallStatus ContactId WebRTCCallStatus
   | APIUpdateProfile Profile
   | APIParseMarkdown Text
   | APIRegisterToken DeviceToken
