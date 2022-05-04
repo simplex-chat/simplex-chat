@@ -105,7 +105,7 @@ struct CIFileView: View {
         }
     }
 
-    func fileIcon(_ icon: String, color: Color = .secondary, innerIcon: String? = nil, innerIconSize: CGFloat? = nil) -> some View {
+    func fileIcon(_ icon: String, color: Color = Color(uiColor: .tertiaryLabel), innerIcon: String? = nil, innerIconSize: CGFloat? = nil) -> some View {
         ZStack(alignment: .center) {
             Image(systemName: icon)
                 .resizable()

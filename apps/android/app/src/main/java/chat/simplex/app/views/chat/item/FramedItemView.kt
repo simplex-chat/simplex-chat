@@ -1,6 +1,5 @@
 package chat.simplex.app.views.chat.item
 
-import CIFileView
 import CIImageView
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background

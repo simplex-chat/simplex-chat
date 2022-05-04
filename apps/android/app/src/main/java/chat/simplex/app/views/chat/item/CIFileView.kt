@@ -1,8 +1,12 @@
+package chat.simplex.app.views.chat.item
+
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.InsertDriveFile
@@ -10,6 +14,7 @@ import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -20,11 +25,13 @@ import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
-import chat.simplex.app.views.chat.item.FramedItemView
 import chat.simplex.app.views.helpers.*
 import kotlinx.datetime.Clock
 import kotlin.math.log2
 import kotlin.math.pow
+
+val FileLight = Color(183, 190, 199, 255)
+val FileDark = Color(101, 101, 106, 255)
 
 @Composable
 fun CIFileView(
@@ -41,7 +48,10 @@ fun CIFileView(
   )
 
   @Composable
-  fun fileIcon(innerIcon: ImageVector? = null, color: Color = HighOrLowlight) {
+  fun fileIcon(
+    innerIcon: ImageVector? = null,
+    color: Color = if (isSystemInDarkTheme()) FileDark else FileLight
+  ) {
     Box(
       contentAlignment = Alignment.Center
     ) {
@@ -105,7 +115,10 @@ fun CIFileView(
   @Composable
   fun fileIndicator() {
     Box(
-      Modifier.size(44.dp),
+      Modifier
+        .size(42.dp)
+        .clip(RoundedCornerShape(4.dp))
+        .clickable(onClick = { fileAction() }),
       contentAlignment = Alignment.Center
     ) {
       if (file != null) {
@@ -119,7 +132,7 @@ fun CIFileView(
           CIFileStatus.RcvAccepted -> fileIcon(innerIcon = Icons.Outlined.MoreHoriz)
           CIFileStatus.RcvTransfer ->
             CircularProgressIndicator(
-              Modifier.size(36.dp),
+              Modifier.size(32.dp),
               color = HighOrLowlight,
               strokeWidth = 4.dp
             )
@@ -151,11 +164,9 @@ fun CIFileView(
   }
 
   Row(
-    Modifier
-      .padding(top = 4.dp, bottom = 6.dp, start = 10.dp, end = 12.dp)
-      .clickable(onClick = { fileAction() }),
+    Modifier.padding(top = 4.dp, bottom = 6.dp, start = 6.dp, end = 12.dp),
     verticalAlignment = Alignment.Bottom,
-    horizontalArrangement = Arrangement.spacedBy(4.dp)
+    horizontalArrangement = Arrangement.spacedBy(2.dp)
   ) {
     fileIndicator()
     val metaReserve = if (edited)
