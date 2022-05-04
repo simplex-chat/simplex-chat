@@ -210,49 +210,6 @@ extension WCallResponse: Encodable {
             try container.encode(type, forKey: .type)
         }
     }
-//    init(from decoder: Decoder) throws {
-//        do {
-//            let container = try decoder.container(keyedBy: CodingKeys.self)
-//            let type = try container.decode(String.self, forKey: CodingKeys.type)
-//            switch type {
-//            case "capabilities":
-//                let capabilities = try container.decode(CallCapabilities.self, forKey: CodingKeys.capabilities)
-//                self = .capabilities(capabilities: capabilities)
-//            case "offer":
-//                let offer = try container.decode(String.self, forKey: CodingKeys.offer)
-//                let iceCandidates = try container.decode([String].self, forKey: CodingKeys.iceCandidates)
-//                self = .offer(offer: offer, iceCandidates: iceCandidates)
-//            // TODO remove accept
-//            case "accept":
-//                let offer = try container.decode(String.self, forKey: CodingKeys.offer)
-//                let iceCandidates = try container.decode([String].self, forKey: CodingKeys.iceCandidates)
-//                let media = try container.decode(CallMediaType.self, forKey: CodingKeys.media)
-//                let aesKey = try? container.decode(String.self, forKey: CodingKeys.aesKey)
-//                self = .accept(offer: offer, iceCandidates: iceCandidates, media: media, aesKey: aesKey)
-//            case "answer":
-//                let answer = try container.decode(String.self, forKey: CodingKeys.answer)
-//                let iceCandidates = try container.decode([String].self, forKey: CodingKeys.iceCandidates)
-//                self = .answer(answer: answer, iceCandidates: iceCandidates)
-//            case "ice":
-//                let iceCandidates = try container.decode([String].self, forKey: CodingKeys.iceCandidates)
-//                self = .ice(iceCandidates: iceCandidates)
-//            case "connection":
-//                let state = try container.decode(ConnectionState.self, forKey: CodingKeys.state)
-//                self = .connection(state: state)
-//            case "ended":
-//                self = .ended
-//            case "ok":
-//                self = .ok
-//            case "error":
-//                let message = try container.decode(String.self, forKey: CodingKeys.message)
-//                self = .error(message: message)
-//            default:
-//                self = .invalid(type: type)
-//            }
-//        } catch {
-//            self = .invalid(type: "unknown")
-//        }
-//    }
 }
 
 enum CallMediaType: String, Codable {
