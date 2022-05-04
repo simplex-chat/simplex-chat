@@ -41,6 +41,14 @@ struct CIImageView: View {
             } else if let data = Data(base64Encoded: dropImagePrefix(image)),
               let uiImage = UIImage(data: data) {
                 imageView(uiImage)
+                    .onTapGesture {
+                        if case .rcvAccepted = file?.fileStatus {
+                            AlertManager.shared.showAlertMsg(
+                                title: "Waiting for image",
+                                message: "Image will be received when your contact is online, please wait or check later!"
+                            )
+                        }
+                    }
             }
         }
     }
@@ -48,9 +56,32 @@ struct CIImageView: View {
     private func imageView(_ img: UIImage) -> some View {
         let w = img.size.width > img.size.height ? .infinity : maxWidth * 0.75
         DispatchQueue.main.async { imgWidth = w }
-        return Image(uiImage: img)
-            .resizable()
-            .scaledToFit()
-            .frame(maxWidth: w)
+        return ZStack(alignment: .topTrailing) {
+            Image(uiImage: img)
+                .resizable()
+                .scaledToFit()
+                .frame(maxWidth: w)
+            loadingIndicator()
+                .padding(8)
+        }
+    }
+
+    @ViewBuilder private func loadingIndicator() -> some View {
+        if let file = file {
+            switch file.fileStatus {
+            case .rcvAccepted:
+                Image(systemName: "ellipsis")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 20, height: 20)
+                    .foregroundColor(.white)
+            case .rcvTransfer:
+                ProgressView()
+                    .progressViewStyle(.circular)
+                    .frame(width: 20, height: 20)
+                    .tint(.white)
+            default: EmptyView()
+            }
+        }
     }
 }

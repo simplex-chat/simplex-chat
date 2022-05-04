@@ -164,6 +164,7 @@ fun ComposeView(
       is MsgContent.MCText -> checkLinkPreview()
       is MsgContent.MCLink -> checkLinkPreview()
       is MsgContent.MCImage -> MsgContent.MCImage(cs.message, image = msgContent.image)
+      is MsgContent.MCFile -> MsgContent.MCFile(cs.message)
       is MsgContent.MCUnknown -> MsgContent.MCUnknown(type = msgContent.type, text = cs.message, json = msgContent.json)
     }
   }

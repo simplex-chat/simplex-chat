@@ -204,6 +204,8 @@ private fun spannableStringToAnnotatedString(
 // maximum image file size to be auto-accepted
 const val MAX_IMAGE_SIZE = 236700
 
+const val MAX_FILE_SIZE = 1893600
+
 fun getFilesDirectory(context: Context): String {
   return context.filesDir.toString()
 }

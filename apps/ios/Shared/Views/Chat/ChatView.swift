@@ -135,6 +135,12 @@ struct ChatView: View {
                             UIPasteboard.general.string = ci.content.text
                         }
                     } label: { Label("Copy", systemImage: "doc.on.doc") }
+                    if case .image = ci.content.msgContent,
+                       let image = getStoredImage(ci.file) {
+                        Button {
+                            UIImageWriteToSavedPhotosAlbum(image, nil, nil, nil)
+                        } label: { Label("Save", systemImage: "square.and.arrow.down") }
+                    }
                     if ci.meta.editable {
                         Button {
                             withAnimation {
