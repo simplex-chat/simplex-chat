@@ -8,7 +8,7 @@ var CallMediaType;
 })(CallMediaType || (CallMediaType = {}));
 const keyAlgorithm = {
     name: "AES-GCM",
-    length: 256
+    length: 256,
 };
 const keyUsages = ["encrypt", "decrypt"];
 let pc;
@@ -28,8 +28,8 @@ function defaultCallConfig(encodedInsertableStreams) {
         iceCandidates: {
             delay: 2000,
             extrasInterval: 2000,
-            extrasTimeout: 8000
-        }
+            extrasTimeout: 8000,
+        },
     };
 }
 async function initializeCall(config, mediaType, aesKey) {
@@ -96,8 +96,8 @@ async function initializeCall(config, mediaType, aesKey) {
                     iceConnectionState: conn.iceConnectionState,
                     iceGatheringState: conn.iceGatheringState,
                     signalingState: conn.signalingState,
-                }
-            }
+                },
+            },
         });
         if (conn.connectionState == "disconnected" || conn.connectionState == "failed") {
             conn.removeEventListener("connectionstatechange", connectionStateChange);
@@ -298,8 +298,7 @@ function callMediaConstraints(mediaType) {
     }
 }
 function supportsInsertableStreams() {
-    return ("createEncodedStreams" in RTCRtpSender.prototype)
-        && ("createEncodedStreams" in RTCRtpReceiver.prototype);
+    return "createEncodedStreams" in RTCRtpSender.prototype && "createEncodedStreams" in RTCRtpReceiver.prototype;
 }
 function resetVideoElements() {
     const videos = getVideoElements();

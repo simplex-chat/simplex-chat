@@ -14,9 +14,9 @@ interface WebViewMessage {
   resp: WCallResponse | WCallCommand
 }
 
-type WCallCommand = WCCapabilities | WCStartCall | WCAcceptOffer | WCallAnswer | WCallIceCandidates | WCEndCall 
+type WCallCommand = WCCapabilities | WCStartCall | WCAcceptOffer | WCallAnswer | WCallIceCandidates | WCEndCall
 
-type WCallResponse = WRCapabilities | WCallOffer | WCallAnswer | WCallIceCandidates | WRConnection | WRCallEnded | WROk | WRError 
+type WCallResponse = WRCapabilities | WCallOffer | WCallAnswer | WCallIceCandidates | WRConnection | WRCallEnded | WROk | WRError
 
 type WCallCommandTag = "capabilities" | "start" | "accept" | "answer" | "ice" | "end"
 
@@ -84,7 +84,7 @@ interface CallCapabilities {
 }
 
 interface WRConnection extends IWCallResponse {
-  type: "connection",
+  type: "connection"
   state: {
     connectionState: string
     iceConnectionState: string
@@ -92,7 +92,6 @@ interface WRConnection extends IWCallResponse {
     signalingState: string
   }
 }
-
 
 interface WRCallEnded extends IWCallResponse {
   type: "ended"
@@ -121,7 +120,7 @@ type RTCConfigurationWithEncryption = RTCConfiguration & {
 
 const keyAlgorithm: AesKeyAlgorithm = {
   name: "AES-GCM",
-  length: 256
+  length: 256,
 }
 
 const keyUsages: KeyUsage[] = ["encrypt", "decrypt"]
@@ -142,7 +141,7 @@ interface Call {
 }
 
 interface CallConfig {
-  peerConnectionConfig: RTCConfigurationWithEncryption,
+  peerConnectionConfig: RTCConfigurationWithEncryption
   iceCandidates: {
     delay: number
     extrasInterval: number
@@ -160,8 +159,8 @@ function defaultCallConfig(encodedInsertableStreams: boolean): CallConfig {
     iceCandidates: {
       delay: 2000,
       extrasInterval: 2000,
-      extrasTimeout: 8000
-    }
+      extrasTimeout: 8000,
+    },
   }
 }
 
@@ -208,7 +207,7 @@ async function initializeCall(config: CallConfig, mediaType: CallMediaType, aesK
       const iceCandidates = candidates.map((c) => JSON.stringify(c))
       candidates = []
       resolve(iceCandidates)
-    }  
+    }
 
     function sendIceCandidates() {
       if (candidates.length === 0) return
@@ -229,8 +228,8 @@ async function initializeCall(config: CallConfig, mediaType: CallMediaType, aesK
           iceConnectionState: conn.iceConnectionState,
           iceGatheringState: conn.iceGatheringState,
           signalingState: conn.signalingState,
-        }
-      }
+        },
+      },
     })
     if (conn.connectionState == "disconnected" || conn.connectionState == "failed") {
       conn.removeEventListener("connectionstatechange", connectionStateChange)
@@ -263,15 +262,15 @@ async function processCommand(body: WebViewAPICall): Promise<WebViewMessage> {
         } else if (!supportsInsertableStreams() && command.aesKey) {
           resp = {type: "error", message: "start: encryption is not supported"}
         } else {
-            const {media, aesKey} = command
-            const call = await initializeCall(defaultCallConfig(!!aesKey), media, aesKey)
-            const {connection, iceCandidates} = call
-            pc = connection
-            const offer = await pc.createOffer()
-            await pc.setLocalDescription(offer)
-            // for debugging, returning the command for callee to use
-            resp = {type: "accept", offer: JSON.stringify(offer), iceCandidates: await iceCandidates, media, aesKey}
-            // resp = {type: "offer", offer, iceCandidates: await iceCandidates}
+          const {media, aesKey} = command
+          const call = await initializeCall(defaultCallConfig(!!aesKey), media, aesKey)
+          const {connection, iceCandidates} = call
+          pc = connection
+          const offer = await pc.createOffer()
+          await pc.setLocalDescription(offer)
+          // for debugging, returning the command for callee to use
+          resp = {type: "accept", offer: JSON.stringify(offer), iceCandidates: await iceCandidates, media, aesKey}
+          // resp = {type: "offer", offer, iceCandidates: await iceCandidates}
         }
         break
       case "accept":
@@ -345,7 +344,12 @@ function addIceCandidates(conn: RTCPeerConnection, iceCandidates: RTCIceCandidat
   }
 }
 
-async function setUpMediaStreams(pc: RTCPeerConnection, localStream: MediaStream, remoteStream: MediaStream, aesKey?: string): Promise<void> {
+async function setUpMediaStreams(
+  pc: RTCPeerConnection,
+  localStream: MediaStream,
+  remoteStream: MediaStream,
+  aesKey?: string
+): Promise<void> {
   const videos = getVideoElements()
   if (!videos) throw Error("no video elements")
 
@@ -426,8 +430,7 @@ function callMediaConstraints(mediaType: CallMediaType): MediaStreamConstraints 
 }
 
 function supportsInsertableStreams(): boolean {
-  return ("createEncodedStreams" in RTCRtpSender.prototype)
-    && ("createEncodedStreams" in RTCRtpReceiver.prototype)
+  return "createEncodedStreams" in RTCRtpSender.prototype && "createEncodedStreams" in RTCRtpReceiver.prototype
 }
 
 interface VideoElements {
@@ -467,7 +470,10 @@ function getVideoElements(): VideoElements | undefined {
 // }
 
 /* Stream Transforms */
-function setupPeerTransform(peer: RTCRtpSenderWithEncryption | RTCRtpReceiverWithEncryption, transform: (frame: RTCEncodedVideoFrame, controller: TransformStreamDefaultController) => void) {
+function setupPeerTransform(
+  peer: RTCRtpSenderWithEncryption | RTCRtpReceiverWithEncryption,
+  transform: (frame: RTCEncodedVideoFrame, controller: TransformStreamDefaultController) => void
+) {
   const streams = peer.createEncodedStreams()
   streams.readable.pipeThrough(new TransformStream({transform})).pipeTo(streams.writable)
 }
@@ -541,9 +547,7 @@ function decodeAscii(a: Uint8Array): string {
   return s
 }
 
-const base64chars = new Uint8Array(
-  "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/".split("").map((c) => c.charCodeAt(0))
-)
+const base64chars = new Uint8Array("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/".split("").map((c) => c.charCodeAt(0)))
 
 const base64lookup = new Array(256) as (number | undefined)[]
 base64chars.forEach((c, i) => (base64lookup[c] = i))
