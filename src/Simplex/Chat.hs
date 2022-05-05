@@ -200,7 +200,7 @@ processChatCommand = \case
     CTContactRequest -> pure $ chatCmdError "not implemented"
     CTContactConnection -> pure $ chatCmdError "not supported"
   APIGetChatItems _pagination -> pure $ chatCmdError "not implemented"
-  APISendMessage (ChatRef cType chatId) file_ quotedItemId_ mc -> withUser $ \user@User {userId} -> withChatLock $ case cType of
+  APISendMessage (ChatRef cType chatId) (ComposedMessage file_ quotedItemId_ mc) -> withUser $ \user@User {userId} -> withChatLock $ case cType of
     CTDirect -> do
       ct@Contact {localDisplayName = c} <- withStore $ \st -> getContact st userId chatId
       (fileInvitation_, ciFile_) <- unzipMaybe <$> setupSndFileTransfer ct
@@ -287,7 +287,7 @@ processChatCommand = \case
       unzipMaybe t = (fst <$> t, snd <$> t)
   -- TODO discontinue
   APISendMessageQuote chatId quotedItemId mc ->
-    processChatCommand $ APISendMessage chatId Nothing (Just quotedItemId) mc
+    processChatCommand . APISendMessage chatId $ ComposedMessage Nothing (Just quotedItemId) mc
   APIUpdateChatItem (ChatRef cType chatId) itemId mc -> withUser $ \user@User {userId} -> withChatLock $ case cType of
     CTDirect -> do
       (ct@Contact {contactId, localDisplayName = c}, ci) <- withStore $ \st -> (,) <$> getContact st userId chatId <*> getDirectChatItem st userId chatId itemId
@@ -515,7 +515,7 @@ processChatCommand = \case
   SendMessage chatName msg -> withUser $ \user -> do
     chatRef <- getChatRef user chatName
     let mc = MCText $ safeDecodeUtf8 msg
-    processChatCommand $ APISendMessage chatRef Nothing Nothing mc
+    processChatCommand . APISendMessage chatRef $ ComposedMessage Nothing Nothing mc
   SendMessageBroadcast msg -> withUser $ \user -> do
     contacts <- withStore (`getUserContacts` user)
     withChatLock . procCmd $ do
@@ -533,7 +533,7 @@ processChatCommand = \case
     contactId <- withStore $ \st -> getContactIdByName st userId cName
     quotedItemId <- withStore $ \st -> getDirectChatItemIdByText st userId contactId msgDir (safeDecodeUtf8 quotedMsg)
     let mc = MCText $ safeDecodeUtf8 msg
-    processChatCommand $ APISendMessage (ChatRef CTDirect contactId) Nothing (Just quotedItemId) mc
+    processChatCommand . APISendMessage (ChatRef CTDirect contactId) $ ComposedMessage Nothing (Just quotedItemId) mc
   DeleteMessage chatName deletedMsg -> withUser $ \user -> do
     chatRef <- getChatRef user chatName
     deletedItemId <- getSentChatItemIdByText user chatRef deletedMsg
@@ -618,7 +618,7 @@ processChatCommand = \case
     groupId <- withStore $ \st -> getGroupIdByName st user gName
     quotedItemId <- withStore $ \st -> getGroupChatItemIdByText st user groupId cName (safeDecodeUtf8 quotedMsg)
     let mc = MCText $ safeDecodeUtf8 msg
-    processChatCommand $ APISendMessage (ChatRef CTGroup groupId) Nothing (Just quotedItemId) mc
+    processChatCommand . APISendMessage (ChatRef CTGroup groupId) $ ComposedMessage Nothing (Just quotedItemId) mc
   LastMessages (Just chatName) count -> withUser $ \user -> do
     chatRef <- getChatRef user chatName
     CRLastMessages . aChatItems . chat <$> (processChatCommand . APIGetChat chatRef $ CPLast count)
@@ -626,7 +626,7 @@ processChatCommand = \case
     CRLastMessages <$> getAllChatItems st user (CPLast count)
   SendFile chatName f -> withUser $ \user -> do
     chatRef <- getChatRef user chatName
-    processChatCommand $ APISendMessage chatRef (Just f) Nothing (MCFile "")
+    processChatCommand . APISendMessage chatRef $ ComposedMessage (Just f) Nothing (MCFile "")
   ReceiveFile fileId filePath_ -> withUser $ \user@User {userId} ->
     withChatLock . procCmd $ do
       ft <- withStore $ \st -> getRcvFileTransfer st userId fileId
@@ -2097,7 +2097,8 @@ chatCommandP =
     <|> "/_get chats" *> (APIGetChats <$> (" pcc=on" $> True <|> " pcc=off" $> False <|> pure False))
     <|> "/_get chat " *> (APIGetChat <$> chatRefP <* A.space <*> chatPaginationP)
     <|> "/_get items count=" *> (APIGetChatItems <$> A.decimal)
-    <|> "/_send " *> (APISendMessage <$> chatRefP <*> optional filePathTagged <*> optional quotedItemIdTagged <* A.space <*> msgContentP)
+    <|> "/_send " *> (APISendMessage <$> chatRefP <*> composedMsgP)
+    <|> "/_send_v2 " *> (APISendMessage <$> chatRefP <*> jsonP)
     <|> "/_send_quote " *> (APISendMessageQuote <$> chatRefP <* A.space <*> A.decimal <* A.space <*> msgContentP)
     <|> "/_update item " *> (APIUpdateChatItem <$> chatRefP <* A.space <*> A.decimal <* A.space <*> msgContentP)
     <|> "/_delete item " *> (APIDeleteChatItem <$> chatRefP <* A.space <*> A.decimal <* A.space <*> ciDeleteMode)
@@ -2203,6 +2204,7 @@ chatCommandP =
     fullNameP name = do
       n <- (A.space *> A.takeByteString) <|> pure ""
       pure $ if B.null n then name else safeDecodeUtf8 n
+    composedMsgP = ComposedMessage <$> optional filePathTagged <*> optional quotedItemIdTagged <* A.space <*> msgContentP
     filePath = T.unpack . safeDecodeUtf8 <$> A.takeByteString
     filePathTagged = " file " *> (T.unpack . safeDecodeUtf8 <$> A.takeTill (== ' '))
     quotedItemIdTagged = " quoted " *> A.decimal
