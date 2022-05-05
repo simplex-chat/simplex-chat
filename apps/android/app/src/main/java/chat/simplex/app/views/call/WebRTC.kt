@@ -31,13 +31,31 @@ sealed class WCallResponse {
 }
 
 @Serializable
+class WebRTCCallOffer(val callType: CallType, val rtcSession: WebRTCSession)
+
+@Serializable
+class WebRTCSession(val rtcSession: String, val rtcIceCandidates: List<String>)
+
+@Serializable
+class WebRTCExtraInfo(val rtcIceCandidates: List<String>)
+
+@Serializable
+class CallType(val media: CallMediaType, val capabilities: CallCapabilities)
+
+enum class WebRTCCallStatus(val status: String) {
+  Connected("connected"),
+  Disconnected("disconnected"),
+  Failed("failed")
+}
+
+@Serializable
 enum class CallMediaType(val media: String) {
   Video("video"),
   Audio("audio")
 }
 
 @Serializable
-class CallCapabilities(val encryption: Boolean) {}
+class CallCapabilities(val encryption: Boolean)
 
 @Serializable
 class ConnectionState(

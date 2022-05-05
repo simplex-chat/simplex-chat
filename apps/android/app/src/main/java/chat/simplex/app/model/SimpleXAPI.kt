@@ -16,6 +16,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.*
 import chat.simplex.app.R
+import chat.simplex.app.views.call.*
 import chat.simplex.app.views.helpers.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -547,6 +548,13 @@ sealed class CC {
   class CreateMyAddress: CC()
   class DeleteMyAddress: CC()
   class ShowMyAddress: CC()
+  class ApiSendCallInvitation(val contact: Contact, val callType: CallType): CC()
+  class ApiRejectCall(val contact: Contact): CC()
+  class ApiSendCallOffer(val contact: Contact, val callOffer: WebRTCCallOffer): CC()
+  class ApiSendCallAnswer(val contact: Contact, val answer: WebRTCSession): CC()
+  class ApiSendCallExtraInfo(val contact: Contact, val extraInfo: WebRTCExtraInfo): CC()
+  class ApiEndCall(val contact: Contact): CC()
+  class ApiCallStatus(val contact: Contact, val callStatus: WebRTCCallStatus): CC()
   class ApiAcceptContact(val contactReqId: Long): CC()
   class ApiRejectContact(val contactReqId: Long): CC()
   class ApiChatRead(val type: ChatType, val id: Long, val range: ItemRange): CC()
@@ -583,6 +591,13 @@ sealed class CC {
     is ShowMyAddress -> "/show_address"
     is ApiAcceptContact -> "/_accept $contactReqId"
     is ApiRejectContact -> "/_reject $contactReqId"
+    is ApiSendCallInvitation -> "/_call invite @${contact.apiId} ${json.encodeToString(callType)}"
+    is ApiRejectCall -> "/_call reject @${contact.apiId}"
+    is ApiSendCallOffer -> "/_call offer @${contact.apiId} ${json.encodeToString(callOffer)}"
+    is ApiSendCallAnswer -> "/_call answer @${contact.apiId} ${json.encodeToString(answer)}"
+    is ApiSendCallExtraInfo -> "/_call extra @${contact.apiId} ${json.encodeToString(extraInfo)}"
+    is ApiEndCall -> "/_call end @${contact.apiId}"
+    is ApiCallStatus -> "/_call status @${contact.apiId} ${callStatus}"
     is ApiChatRead -> "/_read chat ${chatRef(type, id)} from=${range.from} to=${range.to}"
     is ReceiveFile -> "/freceive $fileId"
   }
@@ -610,6 +625,13 @@ sealed class CC {
     is ShowMyAddress -> "showMyAddress"
     is ApiAcceptContact -> "apiAcceptContact"
     is ApiRejectContact -> "apiRejectContact"
+    is ApiSendCallInvitation -> "apiSendCallInvitation"
+    is ApiRejectCall -> "apiRejectCall"
+    is ApiSendCallOffer -> "apiSendCallOffer"
+    is ApiSendCallAnswer -> "apiSendCallAnswer"
+    is ApiSendCallExtraInfo -> "apiSendCallExtraInfo"
+    is ApiEndCall -> "apiEndCall"
+    is ApiCallStatus -> "apiCallStatus"
     is ApiChatRead -> "apiChatRead"
     is ReceiveFile -> "receiveFile"
   }
@@ -699,6 +721,11 @@ sealed class CR {
   @Serializable @SerialName("sndFileCancelled") class SndFileCancelled(val chatItem: AChatItem, val sndFileTransfer: SndFileTransfer): CR()
   @Serializable @SerialName("sndFileRcvCancelled") class SndFileRcvCancelled(val chatItem: AChatItem, val sndFileTransfer: SndFileTransfer): CR()
   @Serializable @SerialName("sndGroupFileCancelled") class SndGroupFileCancelled(val chatItem: AChatItem, val fileTransferMeta: FileTransferMeta, val sndFileTransfers: List<SndFileTransfer>): CR()
+  @Serializable @SerialName("callInvitation") class CallInvitation(val contact: Contact, val callType: CallType, val sharedKey: String?): CR()
+  @Serializable @SerialName("callOffer") class CallOffer(val contact: Contact, val callType: CallType, val offer: WebRTCSession, val sharedKey: String?, val askConfirmation: Boolean): CR()
+  @Serializable @SerialName("callAnswer") class CallAnswer(val contact: Contact, val answer: WebRTCSession): CR()
+  @Serializable @SerialName("callExtraInfo") class CallExtraInfo(val contact: Contact, val extraInfo: WebRTCExtraInfo): CR()
+  @Serializable @SerialName("callEnded") class CallEnded(val contact: Contact): CR()
   @Serializable @SerialName("newContactConnection") class NewContactConnection(val connection: PendingContactConnection): CR()
   @Serializable @SerialName("contactConnectionDeleted") class ContactConnectionDeleted(val connection: PendingContactConnection): CR()
   @Serializable @SerialName("cmdOk") class CmdOk: CR()
@@ -751,6 +778,11 @@ sealed class CR {
     is SndFileRcvCancelled -> "sndFileRcvCancelled"
     is SndFileStart -> "sndFileStart"
     is SndGroupFileCancelled -> "sndGroupFileCancelled"
+    is CallInvitation -> "callInvitation"
+    is CallOffer -> "callOffer"
+    is CallAnswer -> "callAnswer"
+    is CallExtraInfo -> "callExtraInfo"
+    is CallEnded -> "callEnded"
     is NewContactConnection -> "newContactConnection"
     is ContactConnectionDeleted -> "contactConnectionDeleted"
     is CmdOk -> "cmdOk"
@@ -804,6 +836,11 @@ sealed class CR {
     is SndFileRcvCancelled -> json.encodeToString(chatItem)
     is SndFileStart -> json.encodeToString(chatItem)
     is SndGroupFileCancelled -> json.encodeToString(chatItem)
+    is CallInvitation -> "contact: ${contact.id}\ncallType: $callType\nsharedKey: ${sharedKey ?: ""}"
+    is CallOffer -> "contact: ${contact.id}\ncallType: $callType\nsharedKey: ${sharedKey ?: ""}\naskConfirmation: $askConfirmation\noffer: ${json.encodeToString(offer)}"
+    is CallAnswer -> "contact: ${contact.id}\nanswer: ${json.encodeToString(answer)}"
+    is CallExtraInfo -> "contact: ${contact.id}\nextraInfo: ${json.encodeToString(extraInfo)}"
+    is CallEnded -> "contact: ${contact.id}"
     is NewContactConnection -> json.encodeToString(connection)
     is ContactConnectionDeleted -> json.encodeToString(connection)
     is CmdOk -> noDetails()
