@@ -519,6 +519,14 @@ func processReceivedMsg(_ res: ChatResponse) {
             chatItemSimpleUpdate(aChatItem)
         case let .rcvFileComplete(aChatItem):
             chatItemSimpleUpdate(aChatItem)
+        case let .sndFileStart(aChatItem, _):
+            chatItemSimpleUpdate(aChatItem)
+        case let .sndFileComplete(aChatItem, _):
+            chatItemSimpleUpdate(aChatItem)
+            if aChatItem.chatInfo.chatType == .direct,
+               let fileName = aChatItem.chatItem.file?.filePath {
+                removeFile(fileName)
+            }
         default:
             logger.debug("unsupported event: \(res.responseType)")
         }

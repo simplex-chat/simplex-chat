@@ -90,6 +90,8 @@ struct CIFileView: View {
     @ViewBuilder func fileIndicator() -> some View {
         if let file = file {
             switch file.fileStatus {
+            case .sndTransfer: ProgressView().frame(width: 30, height: 30)
+            case .sndComplete: fileIcon("doc.fill", innerIcon: "checkmark", innerIconSize: 10)
             case .sndCancelled: fileIcon("doc.fill", innerIcon: "xmark", innerIconSize: 10)
             case .rcvInvitation:
                 if fileSizeValid() {
@@ -135,7 +137,7 @@ struct CIFileView_Previews: PreviewProvider {
             meta: CIMeta.getSample(1, .now, "", .sndSent, false, true, false),
             content: .sndMsgContent(msgContent: .file("")),
             quotedItem: nil,
-            file: CIFile.getSample(fileStatus: .sndStored)
+            file: CIFile.getSample(fileStatus: .sndComplete)
         )
         let fileChatItemWtFile = ChatItem(
             chatDir: .directRcv,

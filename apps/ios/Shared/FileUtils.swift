@@ -104,6 +104,14 @@ private extension String {
     }
 }
 
+func removeFile(_ fileName: String) {
+    do {
+        try FileManager.default.removeItem(atPath: getFilePath(fileName))
+    } catch {
+        logger.error("FileUtils.removeFile error: \(error.localizedDescription)")
+    }
+}
+
 // image utils
 
 func dropImagePrefix(_ s: String) -> String {
