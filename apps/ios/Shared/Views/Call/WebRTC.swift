@@ -8,6 +8,43 @@
 
 import Foundation
 
+struct Call {
+    var contact: Contact
+    var callState: CallState
+    var localMedia: CallMediaType
+    var localCapabilities: CallCapabilities?
+    var peerMedia: CallMediaType?
+    var sharedKey: String?
+
+    func copy(
+        contact: Contact? = nil,
+        callState: CallState? = nil,
+        localMedia: CallMediaType? = nil,
+        localCapabilities: CallCapabilities? = nil,
+        peerMedia: CallMediaType? = nil,
+        sharedKey: String? = nil
+    ) -> Call {
+        Call (
+            contact: contact ?? self.contact,
+            callState: callState ?? self.callState,
+            localMedia: localMedia ?? self.localMedia,
+            localCapabilities: localCapabilities ?? self.localCapabilities,
+            peerMedia: peerMedia ?? self.peerMedia,
+            sharedKey: sharedKey ?? self.sharedKey
+        )
+    }
+}
+
+enum CallState {
+    case waitCapabilities
+    case invitationSent
+    case invitationReceived
+    case offerSent
+    case offerReceived
+    case negotiated
+    case connected
+}
+
 struct WVAPICall: Encodable {
     var corrId: Int
     var command: WCallCommand
@@ -18,7 +55,7 @@ struct WVAPIMessage: Decodable {
     var resp: WCallResponse
 }
 
-enum WCallCommand {
+enum WCallCommand: Equatable {
     case capabilities
     case start(media: CallMediaType, aesKey: String? = nil)
     case accept(offer: String, iceCandidates: [String], media: CallMediaType, aesKey: String? = nil)
@@ -210,15 +247,6 @@ extension WCallResponse: Encodable {
             try container.encode(type, forKey: .type)
         }
     }
-}
-
-enum CallMediaType: String, Codable {
-    case video = "video"
-    case audio = "audio"
-}
-
-struct CallCapabilities: Codable {
-    var encryption: Bool
 }
 
 struct ConnectionState: Codable {

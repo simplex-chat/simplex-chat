@@ -1,5 +1,5 @@
 //
-//  CallView.swift
+//  WebRTCView.swift
 //  SimpleX (iOS)
 //
 //  Created by Ian Davies on 29/04/2022.
@@ -104,7 +104,7 @@ struct WebRTCView: UIViewRepresentable {
 
 
 
-struct CallView: View {
+struct CallViewDebug: View {
     @State var coordinator: WebRTCCoordinator? = nil
     @State var commandStr = ""
     @FocusState private var keyboardVisible: Bool
@@ -176,8 +176,8 @@ struct CallView: View {
     }
 }
 
-struct CallView_Previews: PreviewProvider {
+struct CallViewDebug_Previews: PreviewProvider {
     static var previews: some View {
-        CallView()
+        CallViewDebug()
     }
 }

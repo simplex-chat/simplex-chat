@@ -144,7 +144,7 @@ struct SettingsView: View {
                         }
                     }
                     NavigationLink {
-                        CallView()
+                        CallViewDebug()
                             .frame(maxHeight: .infinity, alignment: .top)
                     } label: {
                         Text("v\(appVersion ?? "?") (\(appBuild ?? "?"))")

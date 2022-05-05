@@ -14,8 +14,9 @@ struct ChatView: View {
     @EnvironmentObject var chatModel: ChatModel
     @Environment(\.colorScheme) var colorScheme
     @ObservedObject var chat: Chat
-    @State var composeState = ComposeState()
-    @State var deletingItem: ChatItem? = nil
+    @State private var showCallView = false
+    @State private var composeState = ComposeState()
+    @State private var deletingItem: ChatItem? = nil
     @FocusState private var keyboardVisible: Bool
     @State private var showChatInfo = false
     @State private var showDeleteMessage = false
@@ -103,6 +104,24 @@ struct ChatView: View {
                 }
                 .sheet(isPresented: $showChatInfo) {
                     ChatInfoView(chat: chat, showChatInfo: $showChatInfo)
+                }
+            }
+            ToolbarItem(placement: .navigationBarTrailing) {
+                if case let .direct(contact) = cInfo {
+                    Button {
+                        Task {
+                            do {
+                                chatModel.currentCall = Call(contact: contact, callState: .waitCapabilities, localMedia: .video)
+                                chatModel.callCommand = .capabilities
+                                showCallView = true
+                            }
+                        }
+                    } label: {
+                        Image(systemName: "video")
+                    }
+                    .fullScreenCover(isPresented: $showCallView) {
+                        ActiveCallView()
+                    }
                 }
             }
         }
