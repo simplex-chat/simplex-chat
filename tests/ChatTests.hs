@@ -9,9 +9,13 @@ import ChatClient
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
 import Control.Concurrent.STM
-import qualified Data.ByteString as B
+import Data.Aeson (ToJSON)
+import qualified Data.Aeson as J
+import qualified Data.ByteString.Char8 as B
+import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Char (isDigit)
 import qualified Data.Text as T
+import Simplex.Chat.Call
 import Simplex.Chat.Controller (ChatController (..))
 import Simplex.Chat.Types (ConnStatus (..), ImageData (..), Profile (..), User (..))
 import Simplex.Chat.Util (unlessM)
@@ -82,6 +86,8 @@ chatTests = do
   xdescribe "async sending and receiving files" $ do
     it "send and receive file, fully asynchronous" testAsyncFileTransfer
     it "send and receive file to group, fully asynchronous" testAsyncGroupFileTransfer
+  describe "webrtc calls api" $ do
+    it "negotiate call" testNegotiateCall
 
 testAddContact :: IO ()
 testAddContact =
@@ -1761,6 +1767,66 @@ testAsyncGroupFileTransfer = withTmpFiles $ do
   dest `shouldBe` src
   dest2 <- B.readFile "./tests/tmp/test_1.jpg"
   dest2 `shouldBe` src
+
+testCallType :: CallType
+testCallType = CallType {media = CMVideo, capabilities = CallCapabilities {encryption = True}}
+
+testWebRTCSession :: WebRTCSession
+testWebRTCSession =
+  WebRTCSession
+    { rtcSession = "{}",
+      rtcIceCandidates = [""]
+    }
+
+testWebRTCCallOffer :: WebRTCCallOffer
+testWebRTCCallOffer =
+  WebRTCCallOffer
+    { callType = testCallType,
+      rtcSession = testWebRTCSession
+    }
+
+serialize :: ToJSON a => a -> String
+serialize = B.unpack . LB.toStrict . J.encode
+
+testNegotiateCall :: IO ()
+testNegotiateCall =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    connectUsers alice bob
+    -- alice invite bob to call
+    alice ##> ("/_call invite @2 " <> serialize testCallType)
+    alice <## "ok"
+    alice #$> ("/_get chat @2 count=100", chat, [(1, "outgoing call: calling...")])
+    bob <## "call invitation from alice"
+    bob #$> ("/_get chat @2 count=100", chat, [(0, "incoming call: calling...")])
+    -- bob accepts call by sending WebRTC offer
+    bob ##> ("/_call offer @2 " <> serialize testWebRTCCallOffer)
+    bob <## "ok"
+    bob #$> ("/_get chat @2 count=100", chat, [(0, "incoming call: accepted")])
+    alice <## "call offer from bob"
+    alice <## "message updated" -- call chat item updated
+    alice #$> ("/_get chat @2 count=100", chat, [(1, "outgoing call: accepted")])
+    -- alice confirms call by sending WebRTC answer
+    alice ##> ("/_call answer @2 " <> serialize testWebRTCSession)
+    alice <## "ok"
+    alice <## "message updated"
+    alice #$> ("/_get chat @2 count=100", chat, [(1, "outgoing call: connecting...")])
+    bob <## "call answer from alice"
+    bob #$> ("/_get chat @2 count=100", chat, [(0, "incoming call: connecting...")])
+    -- participants can update calls as connected
+    alice ##> "/_call status @2 connected"
+    alice <## "ok"
+    alice <## "message updated"
+    alice #$> ("/_get chat @2 count=100", chat, [(1, "outgoing call: in progress (00:00)")])
+    bob ##> "/_call status @2 connected"
+    bob <## "ok"
+    bob #$> ("/_get chat @2 count=100", chat, [(0, "incoming call: in progress (00:00)")])
+    -- either party can end the call
+    bob ##> "/_call end @2"
+    bob <## "ok"
+    bob #$> ("/_get chat @2 count=100", chat, [(0, "incoming call: ended (00:00)")])
+    alice <## "call with bob ended"
+    alice <## "message updated"
+    alice #$> ("/_get chat @2 count=100", chat, [(1, "outgoing call: ended (00:00)")])
 
 withTestChatContactConnected :: String -> (TestCC -> IO a) -> IO a
 withTestChatContactConnected dbPrefix action =

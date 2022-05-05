@@ -20,6 +20,7 @@ import qualified Data.ByteString.Base64 as B64
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Int (Int64)
 import Data.Text (Text)
+import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
 import Data.Time.Clock (UTCTime, diffUTCTime, nominalDay)
 import Data.Time.LocalTime (TimeZone, ZonedTime, utcToZonedTime)
@@ -223,17 +224,18 @@ data CIMeta (d :: MsgDirection) = CIMeta
     itemEdited :: Bool,
     editable :: Bool,
     localItemTs :: ZonedTime,
-    createdAt :: UTCTime
+    createdAt :: UTCTime,
+    updatedAt :: UTCTime
   }
   deriving (Show, Generic)
 
-mkCIMeta :: ChatItemId -> CIContent d -> Text -> CIStatus d -> Maybe SharedMsgId -> Bool -> Bool -> TimeZone -> UTCTime -> ChatItemTs -> UTCTime -> CIMeta d
-mkCIMeta itemId itemContent itemText itemStatus itemSharedMsgId itemDeleted itemEdited tz currentTs itemTs createdAt =
+mkCIMeta :: ChatItemId -> CIContent d -> Text -> CIStatus d -> Maybe SharedMsgId -> Bool -> Bool -> TimeZone -> UTCTime -> ChatItemTs -> UTCTime -> UTCTime -> CIMeta d
+mkCIMeta itemId itemContent itemText itemStatus itemSharedMsgId itemDeleted itemEdited tz currentTs itemTs createdAt updatedAt =
   let localItemTs = utcToZonedTime tz itemTs
       editable = case itemContent of
         CISndMsgContent _ -> diffUTCTime currentTs itemTs < nominalDay
         _ -> False
-   in CIMeta {itemId, itemTs, itemText, itemStatus, itemSharedMsgId, itemDeleted, itemEdited, editable, localItemTs, createdAt}
+   in CIMeta {itemId, itemTs, itemText, itemStatus, itemSharedMsgId, itemDeleted, itemEdited, editable, localItemTs, createdAt, updatedAt}
 
 instance ToJSON (CIMeta d) where toEncoding = J.genericToEncoding J.defaultOptions
 
@@ -439,6 +441,8 @@ data CIContent (d :: MsgDirection) where
   CIRcvMsgContent :: MsgContent -> CIContent 'MDRcv
   CISndDeleted :: CIDeleteMode -> CIContent 'MDSnd
   CIRcvDeleted :: CIDeleteMode -> CIContent 'MDRcv
+  CISndCall :: CICallStatus -> Int -> CIContent 'MDSnd
+  CIRcvCall :: CICallStatus -> Int -> CIContent 'MDRcv
 
 deriving instance Show (CIContent d)
 
@@ -448,6 +452,8 @@ ciContentToText = \case
   CIRcvMsgContent mc -> msgContentText mc
   CISndDeleted cidm -> ciDeleteModeToText cidm
   CIRcvDeleted cidm -> ciDeleteModeToText cidm
+  CISndCall status duration -> "outgoing call: " <> ciCallInfoText status duration
+  CIRcvCall status duration -> "incoming call: " <> ciCallInfoText status duration
 
 msgDirToDeletedContent_ :: SMsgDirection d -> CIDeleteMode -> CIContent d
 msgDirToDeletedContent_ msgDir mode = case msgDir of
@@ -463,7 +469,7 @@ instance ToJSON (CIContent d) where
   toJSON = J.toJSON . jsonCIContent
   toEncoding = J.toEncoding . jsonCIContent
 
-data ACIContent = forall d. ACIContent (SMsgDirection d) (CIContent d)
+data ACIContent = forall d. MsgDirectionI d => ACIContent (SMsgDirection d) (CIContent d)
 
 deriving instance Show ACIContent
 
@@ -480,6 +486,8 @@ data JSONCIContent
   | JCIRcvMsgContent {msgContent :: MsgContent}
   | JCISndDeleted {deleteMode :: CIDeleteMode}
   | JCIRcvDeleted {deleteMode :: CIDeleteMode}
+  | JCISndCall {status :: CICallStatus, duration :: Int} -- duration in seconds
+  | JCIRcvCall {status :: CICallStatus, duration :: Int}
   deriving (Generic)
 
 instance FromJSON JSONCIContent where
@@ -495,6 +503,8 @@ jsonCIContent = \case
   CIRcvMsgContent mc -> JCIRcvMsgContent mc
   CISndDeleted cidm -> JCISndDeleted cidm
   CIRcvDeleted cidm -> JCIRcvDeleted cidm
+  CISndCall status duration -> JCISndCall {status, duration}
+  CIRcvCall status duration -> JCIRcvCall {status, duration}
 
 aciContentJSON :: JSONCIContent -> ACIContent
 aciContentJSON = \case
@@ -502,6 +512,8 @@ aciContentJSON = \case
   JCIRcvMsgContent mc -> ACIContent SMDRcv $ CIRcvMsgContent mc
   JCISndDeleted cidm -> ACIContent SMDSnd $ CISndDeleted cidm
   JCIRcvDeleted cidm -> ACIContent SMDRcv $ CIRcvDeleted cidm
+  JCISndCall {status, duration} -> ACIContent SMDSnd $ CISndCall status duration
+  JCIRcvCall {status, duration} -> ACIContent SMDRcv $ CIRcvCall status duration
 
 -- platform independent
 data DBJSONCIContent
@@ -509,6 +521,8 @@ data DBJSONCIContent
   | DBJCIRcvMsgContent {msgContent :: MsgContent}
   | DBJCISndDeleted {deleteMode :: CIDeleteMode}
   | DBJCIRcvDeleted {deleteMode :: CIDeleteMode}
+  | DBJCISndCall {status :: CICallStatus, duration :: Int}
+  | DBJCIRcvCall {status :: CICallStatus, duration :: Int}
   deriving (Generic)
 
 instance FromJSON DBJSONCIContent where
@@ -524,6 +538,8 @@ dbJsonCIContent = \case
   CIRcvMsgContent mc -> DBJCIRcvMsgContent mc
   CISndDeleted cidm -> DBJCISndDeleted cidm
   CIRcvDeleted cidm -> DBJCIRcvDeleted cidm
+  CISndCall status duration -> DBJCISndCall {status, duration}
+  CIRcvCall status duration -> DBJCIRcvCall {status, duration}
 
 aciContentDBJSON :: DBJSONCIContent -> ACIContent
 aciContentDBJSON = \case
@@ -531,6 +547,42 @@ aciContentDBJSON = \case
   DBJCIRcvMsgContent mc -> ACIContent SMDRcv $ CIRcvMsgContent mc
   DBJCISndDeleted cidm -> ACIContent SMDSnd $ CISndDeleted cidm
   DBJCIRcvDeleted cidm -> ACIContent SMDRcv $ CIRcvDeleted cidm
+  DBJCISndCall {status, duration} -> ACIContent SMDSnd $ CISndCall status duration
+  DBJCIRcvCall {status, duration} -> ACIContent SMDRcv $ CIRcvCall status duration
+
+data CICallStatus
+  = CISCallPending
+  | CISCallMissed
+  | CISCallRejected -- only possible for received calls, not on type level
+  | CISCallAccepted
+  | CISCallNegotiated
+  | CISCallProgress
+  | CISCallEnded
+  | CISCallError
+  deriving (Show, Generic)
+
+instance FromJSON CICallStatus where
+  parseJSON = J.genericParseJSON . enumJSON $ dropPrefix "CISCall"
+
+instance ToJSON CICallStatus where
+  toJSON = J.genericToJSON . enumJSON $ dropPrefix "CISCall"
+  toEncoding = J.genericToEncoding . enumJSON $ dropPrefix "CISCall"
+
+ciCallInfoText :: CICallStatus -> Int -> Text
+ciCallInfoText status duration = case status of
+  CISCallPending -> "calling..."
+  CISCallMissed -> "missed"
+  CISCallRejected -> "rejected"
+  CISCallAccepted -> "accepted"
+  CISCallNegotiated -> "connecting..."
+  CISCallProgress -> "in progress " <> d
+  CISCallEnded -> "ended " <> d
+  CISCallError -> "error"
+  where
+    d = let (mins, secs) = duration `divMod` 60 in T.pack $ "(" <> with0 mins <> ":" <> with0 secs <> ")"
+    with0 n
+      | n < 9 = '0' : show n
+      | otherwise = show n
 
 data SChatType (c :: ChatType) where
   SCTDirect :: SChatType 'CTDirect
@@ -548,11 +600,11 @@ instance TestEquality SChatType where
   testEquality _ _ = Nothing
 
 class ChatTypeI (c :: ChatType) where
-  chatType :: SChatType c
+  chatTypeI :: SChatType c
 
-instance ChatTypeI 'CTDirect where chatType = SCTDirect
+instance ChatTypeI 'CTDirect where chatTypeI = SCTDirect
 
-instance ChatTypeI 'CTGroup where chatType = SCTGroup
+instance ChatTypeI 'CTGroup where chatTypeI = SCTGroup
 
 data NewMessage = NewMessage
   { chatMsgEvent :: ChatMsgEvent,
