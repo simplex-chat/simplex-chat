@@ -14,7 +14,7 @@ import Control.Monad.Except
 import Control.Monad.IO.Unlift
 import Control.Monad.Reader
 import Crypto.Random (ChaChaDRG)
-import Data.Aeson (ToJSON)
+import Data.Aeson (FromJSON, ToJSON)
 import qualified Data.Aeson as J
 import Data.ByteString.Char8 (ByteString)
 import Data.Int (Int64)
@@ -103,7 +103,7 @@ data ChatCommand
   | APIGetChats {pendingConnections :: Bool}
   | APIGetChat ChatRef ChatPagination
   | APIGetChatItems Int
-  | APISendMessage ChatRef (Maybe FilePath) (Maybe ChatItemId) MsgContent
+  | APISendMessage ChatRef ComposedMessage
   | APISendMessageQuote ChatRef ChatItemId MsgContent -- TODO discontinue
   | APIUpdateChatItem ChatRef ChatItemId MsgContent
   | APIDeleteChatItem ChatRef ChatItemId CIDeleteMode
@@ -297,6 +297,13 @@ data PendingSubStatus = PendingSubStatus
 instance ToJSON PendingSubStatus where
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
   toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
+
+data ComposedMessage = ComposedMessage
+  { filePath :: Maybe FilePath,
+    quotedItemId :: Maybe ChatItemId,
+    msgContent :: MsgContent
+  }
+  deriving (Show, Generic, FromJSON)
 
 data ChatError
   = ChatError {errorType :: ChatErrorType}
