@@ -139,6 +139,11 @@ responseToView testView = \case
     ["sent file " <> sShow fileId <> " (" <> plain fileName <> ") error: " <> sShow e]
   CRRcvFileSubError RcvFileTransfer {fileId, fileInvitation = FileInvitation {fileName}} e ->
     ["received file " <> sShow fileId <> " (" <> plain fileName <> ") error: " <> sShow e]
+  CRCallInvitation {contact} -> ["call invitation from " <> ttyContact' contact]
+  CRCallOffer {contact} -> ["call offer from " <> ttyContact' contact]
+  CRCallAnswer {contact} -> ["call answer from " <> ttyContact' contact]
+  CRCallExtraInfo {contact} -> ["call extra info from " <> ttyContact' contact]
+  CRCallEnded {contact} -> ["call with " <> ttyContact' contact <> " ended"]
   CRUserContactLinkSubscribed -> ["Your address is active! To show: " <> highlight' "/sa"]
   CRUserContactLinkSubError e -> ["user address error: " <> sShow e, "to delete your address: " <> highlight' "/da"]
   CRNewContactConnection _ -> []
@@ -185,11 +190,13 @@ viewChatItem chat ChatItem {chatDir, meta, content, quotedItem, file} = case cha
     CIDirectSnd -> case content of
       CISndMsgContent mc -> withSndFile to $ sndMsg to quote mc
       CISndDeleted _ -> []
+      CISndCall {} -> []
       where
         to = ttyToContact' c
     CIDirectRcv -> case content of
       CIRcvMsgContent mc -> withRcvFile from $ rcvMsg from quote mc
       CIRcvDeleted _ -> []
+      CIRcvCall {} -> []
       where
         from = ttyFromContact' c
     where
@@ -198,11 +205,13 @@ viewChatItem chat ChatItem {chatDir, meta, content, quotedItem, file} = case cha
     CIGroupSnd -> case content of
       CISndMsgContent mc -> withSndFile to $ sndMsg to quote mc
       CISndDeleted _ -> []
+      CISndCall {} -> []
       where
         to = ttyToGroup g
     CIGroupRcv m -> case content of
       CIRcvMsgContent mc -> withRcvFile from $ rcvMsg from quote mc
       CIRcvDeleted _ -> []
+      CIRcvCall {} -> []
       where
         from = ttyFromGroup' g m
     where
@@ -652,6 +661,10 @@ viewChatError = \case
     CEInvalidQuote -> ["cannot reply to this message"]
     CEInvalidChatItemUpdate -> ["cannot update this item"]
     CEInvalidChatItemDelete -> ["cannot delete this item"]
+    CEHasCurrentCall -> ["call already in progress"]
+    CENoCurrentCall -> ["no call in progress"]
+    CECallContact _ -> []
+    CECallState _ -> []
     CEAgentVersion -> ["unsupported agent version"]
     CECommandError e -> ["bad chat command: " <> plain e]
   -- e -> ["chat error: " <> sShow e]

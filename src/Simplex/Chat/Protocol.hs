@@ -29,6 +29,7 @@ import Data.Time.Clock (UTCTime)
 import Database.SQLite.Simple.FromField (FromField (..))
 import Database.SQLite.Simple.ToField (ToField (..))
 import GHC.Generics (Generic)
+import Simplex.Chat.Call
 import Simplex.Chat.Types
 import Simplex.Chat.Util (eitherToMaybe, safeDecodeUtf8)
 import Simplex.Messaging.Encoding.String
@@ -132,6 +133,11 @@ data ChatMsgEvent
   | XInfoProbe Probe
   | XInfoProbeCheck ProbeHash
   | XInfoProbeOk Probe
+  | XCallInv CallId CallInvitation
+  | XCallOffer CallId CallOffer
+  | XCallAnswer CallId CallAnswer
+  | XCallExtra CallId CallExtraInfo
+  | XCallEnd CallId
   | XOk
   | XUnknown {event :: Text, params :: J.Object}
   deriving (Eq, Show)
@@ -306,6 +312,11 @@ data CMEventTag
   | XInfoProbe_
   | XInfoProbeCheck_
   | XInfoProbeOk_
+  | XCallInv_
+  | XCallOffer_
+  | XCallAnswer_
+  | XCallExtra_
+  | XCallEnd_
   | XOk_
   | XUnknown_ Text
   deriving (Eq, Show)
@@ -336,6 +347,11 @@ instance StrEncoding CMEventTag where
     XInfoProbe_ -> "x.info.probe"
     XInfoProbeCheck_ -> "x.info.probe.check"
     XInfoProbeOk_ -> "x.info.probe.ok"
+    XCallInv_ -> "x.call.inv"
+    XCallOffer_ -> "x.call.offer"
+    XCallAnswer_ -> "x.call.answer"
+    XCallExtra_ -> "x.call.extra"
+    XCallEnd_ -> "x.call.end"
     XOk_ -> "x.ok"
     XUnknown_ t -> encodeUtf8 t
   strDecode = \case
@@ -363,6 +379,11 @@ instance StrEncoding CMEventTag where
     "x.info.probe" -> Right XInfoProbe_
     "x.info.probe.check" -> Right XInfoProbeCheck_
     "x.info.probe.ok" -> Right XInfoProbeOk_
+    "x.call.inv" -> Right XCallInv_
+    "x.call.offer" -> Right XCallOffer_
+    "x.call.answer" -> Right XCallAnswer_
+    "x.call.extra" -> Right XCallExtra_
+    "x.call.end" -> Right XCallEnd_
     "x.ok" -> Right XOk_
     t -> Right . XUnknown_ $ safeDecodeUtf8 t
   strP = strDecode <$?> A.takeTill (== ' ')
@@ -393,6 +414,11 @@ toCMEventTag = \case
   XInfoProbe _ -> XInfoProbe_
   XInfoProbeCheck _ -> XInfoProbeCheck_
   XInfoProbeOk _ -> XInfoProbeOk_
+  XCallInv _ _ -> XCallInv_
+  XCallOffer _ _ -> XCallOffer_
+  XCallAnswer _ _ -> XCallAnswer_
+  XCallExtra _ _ -> XCallExtra_
+  XCallEnd _ -> XCallEnd_
   XOk -> XOk_
   XUnknown t _ -> XUnknown_ t
 
@@ -441,6 +467,11 @@ appToChatMessage AppMessage {msgId, event, params} = do
       XInfoProbe_ -> XInfoProbe <$> p "probe"
       XInfoProbeCheck_ -> XInfoProbeCheck <$> p "probeHash"
       XInfoProbeOk_ -> XInfoProbeOk <$> p "probe"
+      XCallInv_ -> XCallInv <$> p "callId" <*> p "invitation"
+      XCallOffer_ -> XCallOffer <$> p "callId" <*> p "offer"
+      XCallAnswer_ -> XCallAnswer <$> p "callId" <*> p "answer"
+      XCallExtra_ -> XCallExtra <$> p "callId" <*> p "extra"
+      XCallEnd_ -> XCallEnd <$> p "callId"
       XOk_ -> pure XOk
       XUnknown_ t -> pure $ XUnknown t params
 
@@ -476,6 +507,11 @@ chatToAppMessage ChatMessage {msgId, chatMsgEvent} = AppMessage {msgId, event, p
       XInfoProbe probe -> o ["probe" .= probe]
       XInfoProbeCheck probeHash -> o ["probeHash" .= probeHash]
       XInfoProbeOk probe -> o ["probe" .= probe]
+      XCallInv callId inv -> o ["callId" .= callId, "invitation" .= inv]
+      XCallOffer callId offer -> o ["callId" .= callId, "offer" .= offer]
+      XCallAnswer callId answer -> o ["callId" .= callId, "answer" .= answer]
+      XCallExtra callId extra -> o ["callId" .= callId, "extra" .= extra]
+      XCallEnd callId -> o ["callId" .= callId]
       XOk -> JM.empty
       XUnknown _ ps -> ps
 

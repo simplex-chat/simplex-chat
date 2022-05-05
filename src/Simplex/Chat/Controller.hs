@@ -26,6 +26,7 @@ import Data.Word (Word16)
 import GHC.Generics (Generic)
 import Numeric.Natural
 import qualified Paths_simplex_chat as SC
+import Simplex.Chat.Call
 import Simplex.Chat.Markdown (MarkdownList)
 import Simplex.Chat.Messages
 import Simplex.Chat.Protocol
@@ -39,6 +40,7 @@ import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Notifications.Protocol (DeviceToken (..), NtfTknStatus)
 import Simplex.Messaging.Parsers (dropPrefix, enumJSON, sumTypeJSON)
 import Simplex.Messaging.Protocol (CorrId)
+import Simplex.Messaging.TMap (TMap)
 import System.IO (Handle)
 import UnliftIO.STM
 
@@ -80,6 +82,7 @@ data ChatController = ChatController
     chatLock :: TMVar (),
     sndFiles :: TVar (Map Int64 Handle),
     rcvFiles :: TVar (Map Int64 Handle),
+    currentCalls :: TMap ContactId Call,
     config :: ChatConfig,
     filesFolder :: TVar (Maybe FilePath) -- path to files folder for mobile apps
   }
@@ -108,6 +111,13 @@ data ChatCommand
   | APIDeleteChat ChatRef
   | APIAcceptContact Int64
   | APIRejectContact Int64
+  | APISendCallInvitation ContactId CallType
+  | APIRejectCall ContactId
+  | APISendCallOffer ContactId WebRTCCallOffer
+  | APISendCallAnswer ContactId WebRTCSession
+  | APISendCallExtraInfo ContactId WebRTCExtraInfo
+  | APIEndCall ContactId
+  | APICallStatus ContactId WebRTCCallStatus
   | APIUpdateProfile Profile
   | APIParseMarkdown Text
   | APIRegisterToken DeviceToken
@@ -240,6 +250,11 @@ data ChatResponse
   | CRPendingSubSummary {pendingSubStatus :: [PendingSubStatus]}
   | CRSndFileSubError {sndFileTransfer :: SndFileTransfer, chatError :: ChatError}
   | CRRcvFileSubError {rcvFileTransfer :: RcvFileTransfer, chatError :: ChatError}
+  | CRCallInvitation {contact :: Contact, callType :: CallType, sharedKey :: Maybe C.Key}
+  | CRCallOffer {contact :: Contact, callType :: CallType, offer :: WebRTCSession, sharedKey :: Maybe C.Key, askConfirmation :: Bool}
+  | CRCallAnswer {contact :: Contact, answer :: WebRTCSession}
+  | CRCallExtraInfo {contact :: Contact, extraInfo :: WebRTCExtraInfo}
+  | CRCallEnded {contact :: Contact}
   | CRUserContactLinkSubscribed
   | CRUserContactLinkSubError {chatError :: ChatError}
   | CRNtfTokenStatus {status :: NtfTknStatus}
@@ -323,6 +338,10 @@ data ChatErrorType
   | CEInvalidQuote
   | CEInvalidChatItemUpdate
   | CEInvalidChatItemDelete
+  | CEHasCurrentCall
+  | CENoCurrentCall
+  | CECallContact {contactId :: Int64}
+  | CECallState {currentCallState :: CallStateTag}
   | CEAgentVersion
   | CECommandError {message :: String}
   deriving (Show, Exception, Generic)

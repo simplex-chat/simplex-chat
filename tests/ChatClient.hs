@@ -30,7 +30,7 @@ import Simplex.Messaging.Agent.RetryInterval
 import Simplex.Messaging.Server (runSMPServerBlocking)
 import Simplex.Messaging.Server.Env.STM
 import Simplex.Messaging.Transport
-import System.Directory (createDirectoryIfMissing, removeDirectoryRecursive)
+import System.Directory (createDirectoryIfMissing, removePathForcibly)
 import qualified System.Terminal as C
 import System.Terminal.Internal (VirtualTerminal (..), VirtualTerminalSettings (..), withVirtualTerminal)
 import System.Timeout (timeout)
@@ -144,7 +144,7 @@ withTmpFiles :: IO () -> IO ()
 withTmpFiles =
   bracket_
     (createDirectoryIfMissing False "tests/tmp")
-    (removeDirectoryRecursive "tests/tmp")
+    (removePathForcibly "tests/tmp")
 
 testChatN :: [Profile] -> ([TestCC] -> IO ()) -> IO ()
 testChatN ps test = withTmpFiles $ do
