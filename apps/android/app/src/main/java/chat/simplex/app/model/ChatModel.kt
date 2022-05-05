@@ -887,6 +887,8 @@ class CIFile(
 @Serializable
 enum class CIFileStatus {
   @SerialName("snd_stored") SndStored,
+  @SerialName("snd_transfer") SndTransfer,
+  @SerialName("snd_complete") SndComplete,
   @SerialName("snd_cancelled") SndCancelled,
   @SerialName("rcv_invitation") RcvInvitation,
   @SerialName("rcv_accepted") RcvAccepted,
