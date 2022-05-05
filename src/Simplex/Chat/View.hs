@@ -94,7 +94,7 @@ responseToView testView = \case
   CRGroupDeletedUser g -> [ttyGroup' g <> ": you deleted the group"]
   CRRcvFileAccepted ci -> savingFile' ci
   CRRcvFileAcceptedSndCancelled ft -> viewRcvFileSndCancelled ft
-  CRSndGroupFileCancelled ftm fts -> viewSndGroupFileCancelled ftm fts
+  CRSndGroupFileCancelled _ ftm fts -> viewSndGroupFileCancelled ftm fts
   CRRcvFileCancelled ft -> receivingFile_ "cancelled" ft
   CRUserProfileUpdated p p' -> viewUserProfileUpdated p p'
   CRContactUpdated c c' -> viewContactUpdated c c'
@@ -103,10 +103,10 @@ responseToView testView = \case
   CRRcvFileStart ci -> receivingFile_' "started" ci
   CRRcvFileComplete ci -> receivingFile_' "completed" ci
   CRRcvFileSndCancelled ft -> viewRcvFileSndCancelled ft
-  CRSndFileStart ft -> sendingFile_ "started" ft
-  CRSndFileComplete ft -> sendingFile_ "completed" ft
-  CRSndFileCancelled ft -> sendingFile_ "cancelled" ft
-  CRSndFileRcvCancelled ft@SndFileTransfer {recipientDisplayName = c} ->
+  CRSndFileStart _ ft -> sendingFile_ "started" ft
+  CRSndFileComplete _ ft -> sendingFile_ "completed" ft
+  CRSndFileCancelled _ ft -> sendingFile_ "cancelled" ft
+  CRSndFileRcvCancelled _ ft@SndFileTransfer {recipientDisplayName = c} ->
     [ttyContact c <> " cancelled receiving " <> sndFile ft]
   CRContactConnecting _ -> []
   CRContactConnected ct -> [ttyFullContact ct <> ": contact is connected"]

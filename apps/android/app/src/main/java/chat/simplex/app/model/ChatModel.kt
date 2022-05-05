@@ -1063,3 +1063,9 @@ enum class FormatColor(val color: String) {
     white -> MaterialTheme.colors.onBackground
   }
 }
+
+@Serializable
+class SndFileTransfer() {}
+
+@Serializable
+class FileTransferMeta() {}

@@ -167,9 +167,16 @@ enum ChatResponse: Decodable, Error {
     case chatItemStatusUpdated(chatItem: AChatItem)
     case chatItemUpdated(chatItem: AChatItem)
     case chatItemDeleted(deletedChatItem: AChatItem, toChatItem: AChatItem)
+    // receiving file events
     case rcvFileAccepted(chatItem: AChatItem)
     case rcvFileStart(chatItem: AChatItem)
     case rcvFileComplete(chatItem: AChatItem)
+    // sending file events
+    case sndFileStart(chatItem: AChatItem, sndFileTransfer: SndFileTransfer)
+    case sndFileComplete(chatItem: AChatItem, sndFileTransfer: SndFileTransfer)
+    case sndFileCancelled(chatItem: AChatItem, sndFileTransfer: SndFileTransfer)
+    case sndFileRcvCancelled(chatItem: AChatItem, sndFileTransfer: SndFileTransfer)
+    case sndGroupFileCancelled(chatItem: AChatItem, fileTransferMeta: FileTransferMeta, sndFileTransfers: [SndFileTransfer])
     case ntfTokenStatus(status: NtfTknStatus)
     case newContactConnection(connection: PendingContactConnection)
     case contactConnectionDeleted(connection: PendingContactConnection)
@@ -219,6 +226,11 @@ enum ChatResponse: Decodable, Error {
             case .rcvFileAccepted: return "rcvFileAccepted"
             case .rcvFileStart: return "rcvFileStart"
             case .rcvFileComplete: return "rcvFileComplete"
+            case .sndFileStart: return "sndFileStart"
+            case .sndFileComplete: return "sndFileComplete"
+            case .sndFileCancelled: return "sndFileCancelled"
+            case .sndFileRcvCancelled: return "sndFileRcvCancelled"
+            case .sndGroupFileCancelled: return "sndGroupFileCancelled"
             case .ntfTokenStatus: return "ntfTokenStatus"
             case .newContactConnection: return "newContactConnection"
             case .contactConnectionDeleted: return "contactConnectionDeleted"
@@ -271,6 +283,11 @@ enum ChatResponse: Decodable, Error {
             case let .rcvFileAccepted(chatItem): return String(describing: chatItem)
             case let .rcvFileStart(chatItem): return String(describing: chatItem)
             case let .rcvFileComplete(chatItem): return String(describing: chatItem)
+            case let .sndFileStart(chatItem, _): return String(describing: chatItem)
+            case let .sndFileComplete(chatItem, _): return String(describing: chatItem)
+            case let .sndFileCancelled(chatItem, _): return String(describing: chatItem)
+            case let .sndFileRcvCancelled(chatItem, _): return String(describing: chatItem)
+            case let .sndGroupFileCancelled(chatItem, _, _): return String(describing: chatItem)
             case let .ntfTokenStatus(status): return String(describing: status)
             case let .newContactConnection(connection): return String(describing: connection)
             case let .contactConnectionDeleted(connection): return String(describing: connection)

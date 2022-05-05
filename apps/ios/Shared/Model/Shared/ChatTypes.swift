@@ -799,3 +799,11 @@ enum NtfTknStatus: String, Decodable {
     case active = "ACTIVE"
     case expired = "EXPIRED"
 }
+
+struct SndFileTransfer: Decodable {
+
+}
+
+struct FileTransferMeta: Decodable {
+    
+}
