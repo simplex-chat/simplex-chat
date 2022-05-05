@@ -727,15 +727,20 @@ processChatCommand = \case
           removeFile fsFilePath `E.catch` \(_ :: E.SomeException) ->
             removePathForcibly fsFilePath `E.catch` \(_ :: E.SomeException) -> pure ()
     cancelFiles :: User -> [(Int64, ACIFileStatus)] -> m ()
-    cancelFiles user@User {userId} files =
-      forM_ files $ \(fileId, status) -> do
-        case status of
+    cancelFiles user@User {userId} files = mapM_ maybeCancelFile files
+      where
+        maybeCancelFile :: (Int64, ACIFileStatus) -> m ()
+        maybeCancelFile (fileId, status) = case status of
           AFS _ CIFSSndStored -> cancelById fileId
+          AFS _ CIFSSndTransfer -> cancelById fileId
+          AFS _ CIFSSndCancelled -> pure ()
+          AFS _ CIFSSndComplete -> pure ()
           AFS _ CIFSRcvInvitation -> cancelById fileId
           AFS _ CIFSRcvAccepted -> cancelById fileId
           AFS _ CIFSRcvTransfer -> cancelById fileId
-          _ -> pure ()
-      where
+          AFS _ CIFSRcvCancelled -> pure ()
+          AFS _ CIFSRcvComplete -> pure ()
+        cancelById :: Int64 -> m ()
         cancelById fileId = do
           ft <- withStore (\st -> getFileTransfer st userId fileId)
           void $ cancelFile user fileId ft
@@ -1233,7 +1238,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
         CON -> do
           ci <- withStore $ \st -> do
             updateSndFileStatus st ft FSConnected
-            getChatItemByFileId st user fileId
+            updateDirectCIFileStatus st user fileId CIFSSndTransfer
           toView $ CRSndFileStart ci ft
           sendFileChunk user ft
         SENT msgId -> do
@@ -1774,7 +1779,7 @@ sendFileChunk user ft@SndFileTransfer {fileId, fileStatus, agentConnId = AgentCo
         ci <- withStore $ \st -> do
           updateSndFileStatus st ft FSComplete
           deleteSndFileChunks st ft
-          getChatItemByFileId st user fileId
+          updateDirectCIFileStatus st user fileId CIFSSndComplete
         toView $ CRSndFileComplete ci ft
         closeFileHandle fileId sndFiles
         withAgent (`deleteConnection` acId)
