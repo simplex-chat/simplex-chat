@@ -223,9 +223,9 @@ viewChatItem chat ChatItem {chatDir, meta, content, quotedItem, file} = case cha
     withFile view dir l = maybe l (\f -> l <> view dir f meta) file
     sndMsg = msg viewSentMessage
     rcvMsg = msg viewReceivedMessage
-    msg view dir quote mc = case (msgContentText mc, file) of
-      ("", Just _) -> []
-      -- (_, Just _) -> prependFirst "      " $ ttyMsgContent mc
+    msg view dir quote mc = case (msgContentText mc, file, quote) of
+      ("", Just _, []) -> []
+      ("", Just CIFile {fileName}, _) -> view dir quote (MCText $ T.pack fileName) meta
       _ -> view dir quote mc meta
 
 viewItemUpdate :: MsgDirectionI d => ChatInfo c -> ChatItem c d -> [StyledString]

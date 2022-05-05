@@ -1278,12 +1278,50 @@ testSendImageWithTextAndQuote =
         (bob <## "completed receiving file 1 (test.jpg) from alice")
         (alice <## "completed sending file 1 (test.jpg) to bob")
       src <- B.readFile "./tests/fixtures/test.jpg"
-      dest <- B.readFile "./tests/tmp/test.jpg"
-      dest `shouldBe` src
+      B.readFile "./tests/tmp/test.jpg" `shouldReturn` src
       alice #$> ("/_get chat @2 count=100", chat'', [((0, "hi alice"), Nothing, Nothing), ((1, "hey bob"), Just (0, "hi alice"), Just "./tests/fixtures/test.jpg")])
       alice @@@ [("@bob", "hey bob")]
       bob #$> ("/_get chat @2 count=100", chat'', [((1, "hi alice"), Nothing, Nothing), ((0, "hey bob"), Just (1, "hi alice"), Just "./tests/tmp/test.jpg")])
       bob @@@ [("@alice", "hey bob")]
+      -- quoting (file + text) with file uses quoted text
+      bob ##> "/_send @2 file ./tests/fixtures/test.txt quoted 2 json {\"text\":\"\",\"type\":\"file\"}"
+      bob <# "@alice > hey bob"
+      bob <## "      test.txt"
+      bob <# "/f @alice ./tests/fixtures/test.txt"
+      bob <## "use /fc 2 to cancel sending"
+      alice <# "bob> > hey bob"
+      alice <## "      test.txt"
+      alice <# "bob> sends file test.txt (11 bytes / 11 bytes)"
+      alice <## "use /fr 2 [<dir>/ | <path>] to receive it"
+      alice ##> "/fr 2 ./tests/tmp"
+      alice <## "saving file 2 from bob to ./tests/tmp/test.txt"
+      concurrently_
+        (alice <## "started receiving file 2 (test.txt) from bob")
+        (bob <## "started sending file 2 (test.txt) to alice")
+      concurrently_
+        (alice <## "completed receiving file 2 (test.txt) from bob")
+        (bob <## "completed sending file 2 (test.txt) to alice")
+      txtSrc <- B.readFile "./tests/fixtures/test.txt"
+      B.readFile "./tests/tmp/test.txt" `shouldReturn` txtSrc
+      -- quoting (file without text) with file uses file name
+      alice ##> "/_send @2 file ./tests/fixtures/test.jpg quoted 3 json {\"text\":\"\",\"type\":\"image\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\"}"
+      alice <# "@bob > test.txt"
+      alice <## "      test.jpg"
+      alice <# "/f @bob ./tests/fixtures/test.jpg"
+      alice <## "use /fc 3 to cancel sending"
+      bob <# "alice> > test.txt"
+      bob <## "      test.jpg"
+      bob <# "alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
+      bob <## "use /fr 3 [<dir>/ | <path>] to receive it"
+      bob ##> "/fr 3 ./tests/tmp"
+      bob <## "saving file 3 from alice to ./tests/tmp/test_1.jpg"
+      concurrently_
+        (bob <## "started receiving file 3 (test.jpg) from alice")
+        (alice <## "started sending file 3 (test.jpg) to bob")
+      concurrently_
+        (bob <## "completed receiving file 3 (test.jpg) from alice")
+        (alice <## "completed sending file 3 (test.jpg) to bob")
+      B.readFile "./tests/tmp/test_1.jpg" `shouldReturn` src
 
 testGroupSendImage :: IO ()
 testGroupSendImage =
