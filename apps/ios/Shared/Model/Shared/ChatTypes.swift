@@ -647,6 +647,8 @@ struct CIFile: Decodable {
         get {
             switch self.fileStatus {
             case .sndStored: return true
+            case .sndTransfer: return true
+            case .sndComplete: return true
             case .sndCancelled: return true
             case .rcvComplete: return true
             default: return false
