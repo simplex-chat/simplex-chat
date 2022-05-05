@@ -1762,7 +1762,7 @@ parseChatMessage :: ByteString -> Either ChatError ChatMessage
 parseChatMessage = first (ChatError . CEInvalidChatMessage) . strDecode
 
 sendFileChunk :: ChatMonad m => User -> SndFileTransfer -> m ()
-sendFileChunk user ft@SndFileTransfer {fileId, fileStatus, agentConnId = AgentConnId acId} =
+sendFileChunk user@User {userId} ft@SndFileTransfer {fileId, fileStatus, agentConnId = AgentConnId acId} =
   unless (fileStatus == FSComplete || fileStatus == FSCancelled) $
     withStore (`createSndFileChunk` ft) >>= \case
       Just chunkNo -> sendFileChunkNo ft chunkNo
@@ -1770,7 +1770,11 @@ sendFileChunk user ft@SndFileTransfer {fileId, fileStatus, agentConnId = AgentCo
         ci <- withStore $ \st -> do
           updateSndFileStatus st ft FSComplete
           deleteSndFileChunks st ft
-          getChatItemByFileId st user fileId
+          ci@(AChatItem cType _ _ _) <- getChatItemByFileId st user fileId
+          case cType of
+            SCTDirect -> updateCIFileStatus st userId fileId CIFSSndComplete
+            _ -> pure ()
+          pure ci
         toView $ CRSndFileComplete ci ft
         closeFileHandle fileId sndFiles
         withAgent (`deleteConnection` acId)

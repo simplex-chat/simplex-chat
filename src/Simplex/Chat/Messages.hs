@@ -296,6 +296,7 @@ instance MsgDirectionI d => ToJSON (CIFile d) where
 data CIFileStatus (d :: MsgDirection) where
   CIFSSndStored :: CIFileStatus 'MDSnd
   CIFSSndCancelled :: CIFileStatus 'MDSnd
+  CIFSSndComplete :: CIFileStatus 'MDSnd
   CIFSRcvInvitation :: CIFileStatus 'MDRcv
   CIFSRcvAccepted :: CIFileStatus 'MDRcv
   CIFSRcvTransfer :: CIFileStatus 'MDRcv
@@ -320,6 +321,7 @@ instance MsgDirectionI d => StrEncoding (CIFileStatus d) where
   strEncode = \case
     CIFSSndStored -> "snd_stored"
     CIFSSndCancelled -> "snd_cancelled"
+    CIFSSndComplete -> "snd_complete"
     CIFSRcvInvitation -> "rcv_invitation"
     CIFSRcvAccepted -> "rcv_accepted"
     CIFSRcvTransfer -> "rcv_transfer"
@@ -333,6 +335,7 @@ instance StrEncoding ACIFileStatus where
     A.takeTill (== ' ') >>= \case
       "snd_stored" -> pure $ AFS SMDSnd CIFSSndStored
       "snd_cancelled" -> pure $ AFS SMDSnd CIFSSndCancelled
+      "snd_complete" -> pure $ AFS SMDSnd CIFSSndComplete
       "rcv_invitation" -> pure $ AFS SMDRcv CIFSRcvInvitation
       "rcv_accepted" -> pure $ AFS SMDRcv CIFSRcvAccepted
       "rcv_transfer" -> pure $ AFS SMDRcv CIFSRcvTransfer
