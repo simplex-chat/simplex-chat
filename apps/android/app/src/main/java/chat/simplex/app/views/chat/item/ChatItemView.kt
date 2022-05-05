@@ -1,6 +1,8 @@
 package chat.simplex.app.views.chat.item
 
 import android.content.Context
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
@@ -33,11 +35,19 @@ fun ChatItemView(
   cxt: Context,
   uriHandler: UriHandler? = null,
   showMember: Boolean = false,
-  deleteMessage: (Long, CIDeleteMode) -> Unit
+  deleteMessage: (Long, CIDeleteMode) -> Unit,
+  receiveFile: (Long) -> Unit
 ) {
+  val context = LocalContext.current
   val sent = cItem.chatDir.sent
   val alignment = if (sent) Alignment.CenterEnd else Alignment.CenterStart
   val showMenu = remember { mutableStateOf(false) }
+  val saveFileLauncher = rememberLauncherForActivityResult(
+    contract = ActivityResultContracts.CreateDocument(),
+    onResult = { destination ->
+      saveFile(context, cItem.file, destination)
+    }
+  )
   Box(
     modifier = Modifier
       .padding(bottom = 4.dp)
@@ -49,7 +59,7 @@ fun ChatItemView(
         if (cItem.file == null && cItem.quotedItem == null && isShortEmoji(cItem.content.text)) {
           EmojiItemView(cItem)
         } else {
-          FramedItemView(user, cItem, uriHandler, showMember = showMember, showMenu)
+          FramedItemView(user, cItem, uriHandler, showMember = showMember, showMenu, receiveFile)
         }
       } else if (cItem.isDeletedContent) {
         DeletedItemView(cItem, showMember = showMember)
@@ -72,6 +82,15 @@ fun ChatItemView(
             copyText(cxt, cItem.content.text)
             showMenu.value = false
           })
+          if (cItem.content.msgContent is MsgContent.MCImage) {
+            val filePath = getStoredFilePath(context, cItem.file)
+            if (filePath != null) {
+              ItemAction(stringResource(R.string.save_verb), Icons.Outlined.SaveAlt, onClick = {
+                saveFileLauncher.launch(cItem.file?.fileName)
+                showMenu.value = false
+              })
+            }
+          }
           if (cItem.chatDir.sent && cItem.meta.editable) {
             ItemAction(stringResource(R.string.edit_verb), Icons.Filled.Edit, onClick = {
               composeState.value = ComposeState(editingItem = cItem)
@@ -147,7 +166,8 @@ fun PreviewChatItemView() {
       ),
       composeState = remember { mutableStateOf(ComposeState()) },
       cxt = LocalContext.current,
-      deleteMessage = { _, _ -> }
+      deleteMessage = { _, _ -> },
+      receiveFile = {}
     )
   }
 }
@@ -161,7 +181,8 @@ fun PreviewChatItemViewDeletedContent() {
       ChatItem.getDeletedContentSampleData(),
       composeState = remember { mutableStateOf(ComposeState()) },
       cxt = LocalContext.current,
-      deleteMessage = { _, _ -> }
+      deleteMessage = { _, _ -> },
+      receiveFile = {}
     )
   }
 }

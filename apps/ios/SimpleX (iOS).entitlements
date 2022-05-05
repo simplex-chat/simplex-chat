@@ -10,5 +10,9 @@
 		<string>applinks:www.simplex.chat</string>
 		<string>applinks:simplex.chat?mode=developer</string>
 	</array>
+	<key>com.apple.security.application-groups</key>
+	<array>
+		<string>group.chat.simplex.app</string>
+	</array>
 </dict>
 </plist>

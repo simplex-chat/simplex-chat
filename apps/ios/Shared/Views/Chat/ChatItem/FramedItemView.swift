@@ -55,6 +55,11 @@ struct FramedItemView: View {
                         } else {
                             ciMsgContentView (chatItem, showMember)
                         }
+                    case let .file(text):
+                        CIFileView(file: chatItem.file, edited: chatItem.meta.itemEdited)
+                        if text != "" {
+                            ciMsgContentView (chatItem, showMember)
+                        }
                     case let .link(_, preview):
                         CILinkView(linkPreview: preview)
                         ciMsgContentView (chatItem, showMember)
@@ -153,7 +158,7 @@ private struct MetaColorPreferenceKey: PreferenceKey {
 private func ciQuotedMsgView(_ qi: CIQuote) -> some View {
     MsgContentView(
         content: qi,
-        sender: qi.sender
+        sender: qi.getSender(ChatModel.shared.currentUser)
     )
     .lineLimit(3)
     .font(.subheadline)

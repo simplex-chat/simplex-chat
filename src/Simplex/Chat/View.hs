@@ -94,7 +94,7 @@ responseToView testView = \case
   CRGroupDeletedUser g -> [ttyGroup' g <> ": you deleted the group"]
   CRRcvFileAccepted ci -> savingFile' ci
   CRRcvFileAcceptedSndCancelled ft -> viewRcvFileSndCancelled ft
-  CRSndGroupFileCancelled ftm fts -> viewSndGroupFileCancelled ftm fts
+  CRSndGroupFileCancelled _ ftm fts -> viewSndGroupFileCancelled ftm fts
   CRRcvFileCancelled ft -> receivingFile_ "cancelled" ft
   CRUserProfileUpdated p p' -> viewUserProfileUpdated p p'
   CRContactUpdated c c' -> viewContactUpdated c c'
@@ -103,10 +103,10 @@ responseToView testView = \case
   CRRcvFileStart ci -> receivingFile_' "started" ci
   CRRcvFileComplete ci -> receivingFile_' "completed" ci
   CRRcvFileSndCancelled ft -> viewRcvFileSndCancelled ft
-  CRSndFileStart ft -> sendingFile_ "started" ft
-  CRSndFileComplete ft -> sendingFile_ "completed" ft
-  CRSndFileCancelled ft -> sendingFile_ "cancelled" ft
-  CRSndFileRcvCancelled ft@SndFileTransfer {recipientDisplayName = c} ->
+  CRSndFileStart _ ft -> sendingFile_ "started" ft
+  CRSndFileComplete _ ft -> sendingFile_ "completed" ft
+  CRSndFileCancelled _ ft -> sendingFile_ "cancelled" ft
+  CRSndFileRcvCancelled _ ft@SndFileTransfer {recipientDisplayName = c} ->
     [ttyContact c <> " cancelled receiving " <> sndFile ft]
   CRContactConnecting _ -> []
   CRContactConnected ct -> [ttyFullContact ct <> ": contact is connected"]
@@ -139,6 +139,11 @@ responseToView testView = \case
     ["sent file " <> sShow fileId <> " (" <> plain fileName <> ") error: " <> sShow e]
   CRRcvFileSubError RcvFileTransfer {fileId, fileInvitation = FileInvitation {fileName}} e ->
     ["received file " <> sShow fileId <> " (" <> plain fileName <> ") error: " <> sShow e]
+  CRCallInvitation {contact} -> ["call invitation from " <> ttyContact' contact]
+  CRCallOffer {contact} -> ["call offer from " <> ttyContact' contact]
+  CRCallAnswer {contact} -> ["call answer from " <> ttyContact' contact]
+  CRCallExtraInfo {contact} -> ["call extra info from " <> ttyContact' contact]
+  CRCallEnded {contact} -> ["call with " <> ttyContact' contact <> " ended"]
   CRUserContactLinkSubscribed -> ["Your address is active! To show: " <> highlight' "/sa"]
   CRUserContactLinkSubError e -> ["user address error: " <> sShow e, "to delete your address: " <> highlight' "/da"]
   CRNewContactConnection _ -> []
@@ -185,11 +190,13 @@ viewChatItem chat ChatItem {chatDir, meta, content, quotedItem, file} = case cha
     CIDirectSnd -> case content of
       CISndMsgContent mc -> withSndFile to $ sndMsg to quote mc
       CISndDeleted _ -> []
+      CISndCall {} -> []
       where
         to = ttyToContact' c
     CIDirectRcv -> case content of
       CIRcvMsgContent mc -> withRcvFile from $ rcvMsg from quote mc
       CIRcvDeleted _ -> []
+      CIRcvCall {} -> []
       where
         from = ttyFromContact' c
     where
@@ -198,11 +205,13 @@ viewChatItem chat ChatItem {chatDir, meta, content, quotedItem, file} = case cha
     CIGroupSnd -> case content of
       CISndMsgContent mc -> withSndFile to $ sndMsg to quote mc
       CISndDeleted _ -> []
+      CISndCall {} -> []
       where
         to = ttyToGroup g
     CIGroupRcv m -> case content of
       CIRcvMsgContent mc -> withRcvFile from $ rcvMsg from quote mc
       CIRcvDeleted _ -> []
+      CIRcvCall {} -> []
       where
         from = ttyFromGroup' g m
     where
@@ -214,9 +223,9 @@ viewChatItem chat ChatItem {chatDir, meta, content, quotedItem, file} = case cha
     withFile view dir l = maybe l (\f -> l <> view dir f meta) file
     sndMsg = msg viewSentMessage
     rcvMsg = msg viewReceivedMessage
-    msg view dir quote mc = case (msgContentText mc, file) of
-      ("", Just _) -> []
-      -- (_, Just _) -> prependFirst "      " $ ttyMsgContent mc
+    msg view dir quote mc = case (msgContentText mc, file, quote) of
+      ("", Just _, []) -> []
+      ("", Just CIFile {fileName}, _) -> view dir quote (MCText $ T.pack fileName) meta
       _ -> view dir quote mc meta
 
 viewItemUpdate :: MsgDirectionI d => ChatInfo c -> ChatItem c d -> [StyledString]
@@ -652,6 +661,10 @@ viewChatError = \case
     CEInvalidQuote -> ["cannot reply to this message"]
     CEInvalidChatItemUpdate -> ["cannot update this item"]
     CEInvalidChatItemDelete -> ["cannot delete this item"]
+    CEHasCurrentCall -> ["call already in progress"]
+    CENoCurrentCall -> ["no call in progress"]
+    CECallContact _ -> []
+    CECallState _ -> []
     CEAgentVersion -> ["unsupported agent version"]
     CECommandError e -> ["bad chat command: " <> plain e]
   -- e -> ["chat error: " <> sShow e]

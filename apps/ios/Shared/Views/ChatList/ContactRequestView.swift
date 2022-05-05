@@ -26,7 +26,7 @@ struct ContactRequestView: View {
                         .padding(.top, 4)
                         .frame(maxHeight: .infinity, alignment: .topLeading)
                     Spacer()
-                    timestampText(contactRequest.updatedAt)
+                    formatTimestampText(contactRequest.updatedAt)
                         .font(.subheadline)
                         .padding(.trailing, 8)
                         .padding(.top, 4)
