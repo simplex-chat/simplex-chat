@@ -689,6 +689,11 @@ sealed class CR {
   @Serializable @SerialName("rcvFileAccepted") class RcvFileAccepted(val chatItem: AChatItem): CR()
   @Serializable @SerialName("rcvFileStart") class RcvFileStart(val chatItem: AChatItem): CR()
   @Serializable @SerialName("rcvFileComplete") class RcvFileComplete(val chatItem: AChatItem): CR()
+  @Serializable @SerialName("sndFileStart") class SndFileStart(val chatItem: AChatItem, val sndFileTransfer: SndFileTransfer): CR()
+  @Serializable @SerialName("sndFileComplete") class SndFileComplete(val chatItem: AChatItem, val sndFileTransfer: SndFileTransfer): CR()
+  @Serializable @SerialName("sndFileCancelled") class SndFileCancelled(val chatItem: AChatItem, val sndFileTransfer: SndFileTransfer): CR()
+  @Serializable @SerialName("sndFileRcvCancelled") class SndFileRcvCancelled(val chatItem: AChatItem, val sndFileTransfer: SndFileTransfer): CR()
+  @Serializable @SerialName("sndGroupFileCancelled") class SndGroupFileCancelled(val chatItem: AChatItem, val fileTransferMeta: FileTransferMeta, val sndFileTransfers: List<SndFileTransfer>): CR()
   @Serializable @SerialName("newContactConnection") class NewContactConnection(val connection: PendingContactConnection): CR()
   @Serializable @SerialName("contactConnectionDeleted") class ContactConnectionDeleted(val connection: PendingContactConnection): CR()
   @Serializable @SerialName("cmdOk") class CmdOk: CR()
@@ -736,6 +741,11 @@ sealed class CR {
     is RcvFileAccepted -> "rcvFileAccepted"
     is RcvFileStart -> "rcvFileStart"
     is RcvFileComplete -> "rcvFileComplete"
+    is SndFileCancelled -> "sndFileCancelled"
+    is SndFileComplete -> "sndFileComplete"
+    is SndFileRcvCancelled -> "sndFileRcvCancelled"
+    is SndFileStart -> "sndFileStart"
+    is SndGroupFileCancelled -> "sndGroupFileCancelled"
     is NewContactConnection -> "newContactConnection"
     is ContactConnectionDeleted -> "contactConnectionDeleted"
     is CmdOk -> "cmdOk"
@@ -784,6 +794,11 @@ sealed class CR {
     is RcvFileAccepted -> json.encodeToString(chatItem)
     is RcvFileStart -> json.encodeToString(chatItem)
     is RcvFileComplete -> json.encodeToString(chatItem)
+    is SndFileCancelled -> json.encodeToString(chatItem)
+    is SndFileComplete -> json.encodeToString(chatItem)
+    is SndFileRcvCancelled -> json.encodeToString(chatItem)
+    is SndFileStart -> json.encodeToString(chatItem)
+    is SndGroupFileCancelled -> json.encodeToString(chatItem)
     is NewContactConnection -> json.encodeToString(connection)
     is ContactConnectionDeleted -> json.encodeToString(connection)
     is CmdOk -> noDetails()
