@@ -1,8 +1,6 @@
 package chat.simplex.app.views.chat.item
 
 import android.content.Context
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -44,12 +42,7 @@ fun ChatItemView(
   val sent = cItem.chatDir.sent
   val alignment = if (sent) Alignment.CenterEnd else Alignment.CenterStart
   val showMenu = remember { mutableStateOf(false) }
-  val saveFileLauncher = rememberLauncherForActivityResult(
-    contract = ActivityResultContracts.CreateDocument(),
-    onResult = { destination ->
-      saveFile(context, cItem.file, destination)
-    }
-  )
+  val saveFileLauncher = rememberSaveFileLauncher(cxt = context, ciFile = cItem.file)
   Box(
     modifier = Modifier
       .padding(bottom = 4.dp)

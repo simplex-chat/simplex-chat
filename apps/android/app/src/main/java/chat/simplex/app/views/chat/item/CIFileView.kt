@@ -1,8 +1,6 @@
 package chat.simplex.app.views.chat.item
 
 import android.widget.Toast
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
@@ -40,12 +38,7 @@ fun CIFileView(
   receiveFile: (Long) -> Unit
 ) {
   val context = LocalContext.current
-  val saveFileLauncher = rememberLauncherForActivityResult(
-    contract = ActivityResultContracts.CreateDocument(),
-    onResult = { destination ->
-      saveFile(context, file, destination)
-    }
-  )
+  val saveFileLauncher = rememberSaveFileLauncher(cxt = context, ciFile = file)
 
   @Composable
   fun fileIcon(
