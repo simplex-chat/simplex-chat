@@ -225,11 +225,11 @@ processChatCommand = \case
         prepareMsg fileInvitation_ = case quotedItemId_ of
           Nothing -> pure (MCSimple (ExtMsgContent mc fileInvitation_), Nothing)
           Just quotedItemId -> do
-            CChatItem _ ChatItem {meta = CIMeta {itemTs, itemSharedMsgId}, content = ciContent, formattedText} <-
+            CChatItem _ ChatItem {meta = CIMeta {itemTs, itemSharedMsgId}, content = ciContent, formattedText, file} <-
               withStore $ \st -> getDirectChatItem st userId chatId quotedItemId
             (origQmc, qd, sent) <- quoteData ciContent
             let msgRef = MsgRef {msgId = itemSharedMsgId, sentAt = itemTs, sent, memberId = Nothing}
-                qmc = quoteContent origQmc mc
+                qmc = quoteContent origQmc file mc
                 quotedItem = CIQuote {chatDir = qd, itemId = Just quotedItemId, sharedMsgId = itemSharedMsgId, sentAt = itemTs, content = qmc, formattedText}
             pure (MCQuote QuotedMsg {msgRef, content = qmc} (ExtMsgContent mc fileInvitation_), Just quotedItem)
           where
@@ -261,11 +261,11 @@ processChatCommand = \case
         prepareMsg fileInvitation_ membership = case quotedItemId_ of
           Nothing -> pure (MCSimple (ExtMsgContent mc fileInvitation_), Nothing)
           Just quotedItemId -> do
-            CChatItem _ ChatItem {chatDir, meta = CIMeta {itemTs, itemSharedMsgId}, content = ciContent, formattedText} <-
+            CChatItem _ ChatItem {chatDir, meta = CIMeta {itemTs, itemSharedMsgId}, content = ciContent, formattedText, file} <-
               withStore $ \st -> getGroupChatItem st user chatId quotedItemId
             (origQmc, qd, sent, GroupMember {memberId}) <- quoteData ciContent chatDir membership
             let msgRef = MsgRef {msgId = itemSharedMsgId, sentAt = itemTs, sent, memberId = Just memberId}
-                qmc = quoteContent origQmc mc
+                qmc = quoteContent origQmc file mc
                 quotedItem = CIQuote {chatDir = qd, itemId = Just quotedItemId, sharedMsgId = itemSharedMsgId, sentAt = itemTs, content = qmc, formattedText}
             pure (MCQuote QuotedMsg {msgRef, content = qmc} (ExtMsgContent mc fileInvitation_), Just quotedItem)
           where
@@ -276,9 +276,13 @@ processChatCommand = \case
     CTContactRequest -> pure $ chatCmdError "not supported"
     CTContactConnection -> pure $ chatCmdError "not supported"
     where
-      quoteContent qmc = \case
+      quoteContent :: forall d. MsgContent -> Maybe (CIFile d) -> MsgContent -> MsgContent
+      quoteContent qmc ciFile_ = \case
         MCText _ -> qmc
-        _ -> MCText $ msgContentText qmc
+        _ ->
+          let t = msgContentText qmc
+              fileName' = T.pack . (fileName :: CIFile d -> String)
+           in MCText $ if T.null t then maybe t fileName' ciFile_ else t
       unzipMaybe :: Maybe (a, b) -> (Maybe a, Maybe b)
       unzipMaybe t = (fst <$> t, snd <$> t)
   -- TODO discontinue
@@ -723,15 +727,20 @@ processChatCommand = \case
           removeFile fsFilePath `E.catch` \(_ :: E.SomeException) ->
             removePathForcibly fsFilePath `E.catch` \(_ :: E.SomeException) -> pure ()
     cancelFiles :: User -> [(Int64, ACIFileStatus)] -> m ()
-    cancelFiles user@User {userId} files =
-      forM_ files $ \(fileId, status) -> do
-        case status of
+    cancelFiles user@User {userId} files = mapM_ maybeCancelFile files
+      where
+        maybeCancelFile :: (Int64, ACIFileStatus) -> m ()
+        maybeCancelFile (fileId, status) = case status of
           AFS _ CIFSSndStored -> cancelById fileId
+          AFS _ CIFSSndTransfer -> cancelById fileId
+          AFS _ CIFSSndCancelled -> pure ()
+          AFS _ CIFSSndComplete -> pure ()
           AFS _ CIFSRcvInvitation -> cancelById fileId
           AFS _ CIFSRcvAccepted -> cancelById fileId
           AFS _ CIFSRcvTransfer -> cancelById fileId
-          _ -> pure ()
-      where
+          AFS _ CIFSRcvCancelled -> pure ()
+          AFS _ CIFSRcvComplete -> pure ()
+        cancelById :: Int64 -> m ()
         cancelById fileId = do
           ft <- withStore (\st -> getFileTransfer st userId fileId)
           void $ cancelFile user fileId ft
@@ -1229,7 +1238,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
         CON -> do
           ci <- withStore $ \st -> do
             updateSndFileStatus st ft FSConnected
-            getChatItemByFileId st user fileId
+            updateDirectCIFileStatus st user fileId CIFSSndTransfer
           toView $ CRSndFileStart ci ft
           sendFileChunk user ft
         SENT msgId -> do
@@ -1770,7 +1779,7 @@ sendFileChunk user ft@SndFileTransfer {fileId, fileStatus, agentConnId = AgentCo
         ci <- withStore $ \st -> do
           updateSndFileStatus st ft FSComplete
           deleteSndFileChunks st ft
-          getChatItemByFileId st user fileId
+          updateDirectCIFileStatus st user fileId CIFSSndComplete
         toView $ CRSndFileComplete ci ft
         closeFileHandle fileId sndFiles
         withAgent (`deleteConnection` acId)
