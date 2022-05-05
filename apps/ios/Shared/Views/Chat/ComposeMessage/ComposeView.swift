@@ -133,7 +133,10 @@ struct ComposeView: View {
     var body: some View {
         VStack(spacing: 0) {
             contextItemView()
-            previewView()
+            switch (composeState.editing(), composeState.preview) {
+                case (true, .filePreview): EmptyView()
+                default: previewView()
+            }
             HStack (alignment: .bottom) {
                 Button {
                     showChooseSource = true
@@ -260,9 +263,17 @@ struct ComposeView: View {
         case .noContextItem:
             EmptyView()
         case let .quotedItem(chatItem: quotedItem):
-            ContextItemView(contextItem: quotedItem, cancelContextItem: { composeState = composeState.copy(contextItem: .noContextItem) })
+            ContextItemView(
+                contextItem: quotedItem,
+                contextIcon: "arrowshape.turn.up.left.circle",
+                cancelContextItem: { composeState = composeState.copy(contextItem: .noContextItem) }
+            )
         case let .editingItem(chatItem: editingItem):
-            ContextItemView(contextItem: editingItem, cancelContextItem: { clearState() })
+            ContextItemView(
+                contextItem: editingItem,
+                contextIcon: "pencil.circle",
+                cancelContextItem: { clearState() }
+            )
         }
     }
 

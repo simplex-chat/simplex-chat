@@ -11,10 +11,16 @@ import SwiftUI
 struct ContextItemView: View {
     @Environment(\.colorScheme) var colorScheme
     let contextItem: ChatItem
+    let contextIcon: String
     let cancelContextItem: () -> Void
 
     var body: some View {
         HStack {
+            Image(systemName: contextIcon)
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 20, height: 20)
+                .foregroundColor(.secondary)
             contextText(contextItem).lineLimit(3)
             Spacer()
             Button {
@@ -26,6 +32,7 @@ struct ContextItemView: View {
             }
         }
         .padding(12)
+        .frame(height: 50)
         .frame(maxWidth: .infinity)
         .background(chatItemFrameColor(contextItem, colorScheme))
         .padding(.top, 8)
@@ -43,6 +50,6 @@ struct ContextItemView: View {
 struct ContextItemView_Previews: PreviewProvider {
     static var previews: some View {
         let contextItem: ChatItem = ChatItem.getSample(1, .directSnd, .now, "hello")
-        return ContextItemView(contextItem: contextItem, cancelContextItem: {})
+        return ContextItemView(contextItem: contextItem, contextIcon: "pencil.circle", cancelContextItem: {})
     }
 }
