@@ -657,6 +657,8 @@ struct CIFile: Decodable {
 
 enum CIFileStatus: String, Decodable {
     case sndStored = "snd_stored"
+    case sndTransfer = "snd_transfer"
+    case sndComplete = "snd_complete"
     case sndCancelled = "snd_cancelled"
     case rcvInvitation = "rcv_invitation"
     case rcvAccepted = "rcv_accepted"

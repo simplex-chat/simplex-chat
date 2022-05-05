@@ -50,15 +50,11 @@ class WebRTCCoordinator: NSObject, WKNavigationDelegate, WKScriptMessageHandler 
             let corrId_ = corrId
             corrId = corrId + 1
             pendingCommands[corrId_] = cont
-            do {
-                let apiData = try jsonEncoder.encode(WVAPICall(corrId: corrId_, command: command))
-                DispatchQueue.main.async {
-                    logger.debug("WebRTCCoordinator.processCommand DispatchQueue.main.async")
-                    let js = "processCommand(\(String(decoding: apiData, as: UTF8.self)))"
-                    self.webView.evaluateJavaScript(js)
-                }
-            } catch {
-                logger.error("WebRTCCoordinator.processCommand: error encoding command \(error.localizedDescription)")
+            let apiCmd = encodeJSON(WVAPICall(corrId: corrId_, command: command))
+            DispatchQueue.main.async {
+                logger.debug("WebRTCCoordinator.processCommand DispatchQueue.main.async")
+                let js = "processCommand(\(apiCmd))"
+                self.webView.evaluateJavaScript(js)
             }
         }
     }
@@ -143,7 +139,7 @@ struct CallView: View {
                         if let c = coordinator {
                             Task {
                                 let resp = await c.processCommand(command: command)
-                                print(String(decoding: try! jsonEncoder.encode(resp), as: UTF8.self))
+                                print(encodeJSON(resp))
                             }
                         }
                     } catch {
@@ -159,7 +155,7 @@ struct CallView: View {
                     if let c = coordinator {
                         Task {
                             let resp = await c.processCommand(command: .start(media: .video))
-                            print(String(decoding: try! jsonEncoder.encode(resp), as: UTF8.self))
+                            print(encodeJSON(resp))
                         }
                     }
                 }
