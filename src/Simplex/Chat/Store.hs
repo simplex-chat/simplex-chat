@@ -142,6 +142,7 @@ module Simplex.Chat.Store
     getGroupChatItemIdByText,
     getChatItemByFileId,
     updateDirectChatItemStatus,
+    updateDirectCIFileStatus,
     updateDirectChatItem,
     deleteDirectChatItemInternal,
     deleteDirectChatItemRcvBroadcast,
@@ -182,6 +183,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (UTCTime (..), getCurrentTime)
 import Data.Time.LocalTime (TimeZone, getCurrentTimeZone)
+import Data.Type.Equality
 import Database.SQLite.Simple (NamedParam (..), Only (..), Query (..), SQLError, (:.) (..))
 import qualified Database.SQLite.Simple as DB
 import Database.SQLite.Simple.QQ (sql)
@@ -1907,11 +1909,14 @@ updateFileCancelled st userId fileId =
     currentTs <- getCurrentTime
     DB.execute db "UPDATE files SET cancelled = 1, updated_at = ? WHERE user_id = ? AND file_id = ?" (currentTs, userId, fileId)
 
-updateCIFileStatus :: MsgDirectionI d => MonadUnliftIO m => SQLiteStore -> UserId -> Int64 -> CIFileStatus d -> m ()
+updateCIFileStatus :: (MsgDirectionI d, MonadUnliftIO m) => SQLiteStore -> UserId -> Int64 -> CIFileStatus d -> m ()
 updateCIFileStatus st userId fileId ciFileStatus =
-  liftIO . withTransaction st $ \db -> do
-    currentTs <- getCurrentTime
-    DB.execute db "UPDATE files SET ci_file_status = ?, updated_at = ? WHERE user_id = ? AND file_id = ?" (ciFileStatus, currentTs, userId, fileId)
+  liftIO . withTransaction st $ \db -> updateCIFileStatus_ db userId fileId ciFileStatus
+
+updateCIFileStatus_ :: MsgDirectionI d => DB.Connection -> UserId -> Int64 -> CIFileStatus d -> IO ()
+updateCIFileStatus_ db userId fileId ciFileStatus = do
+  currentTs <- getCurrentTime
+  DB.execute db "UPDATE files SET ci_file_status = ?, updated_at = ? WHERE user_id = ? AND file_id = ?" (ciFileStatus, currentTs, userId, fileId)
 
 getSharedMsgIdByFileId :: StoreMonad m => SQLiteStore -> UserId -> Int64 -> m SharedMsgId
 getSharedMsgIdByFileId st userId fileId =
@@ -3553,6 +3558,16 @@ getChatItemIdByFileId_ db userId fileId =
         LIMIT 1
       |]
       (userId, fileId)
+
+updateDirectCIFileStatus :: forall d m. (MsgDirectionI d, StoreMonad m) => SQLiteStore -> User -> Int64 -> CIFileStatus d -> m AChatItem
+updateDirectCIFileStatus st user@User {userId} fileId fileStatus =
+  liftIOEither . withTransaction st $ \db -> runExceptT $ do
+    aci@(AChatItem cType d cInfo ci) <- ExceptT $ getChatItemByFileId_ db user fileId
+    case (cType, testEquality d $ msgDirection @d) of
+      (SCTDirect, Just Refl) -> do
+        liftIO $ updateCIFileStatus_ db userId fileId fileStatus
+        pure $ AChatItem SCTDirect d cInfo $ updateFileStatus ci fileStatus
+      _ -> pure aci
 
 toChatItemRef :: (ChatItemId, Maybe Int64, Maybe Int64) -> Either StoreError (ChatItemId, ChatRef)
 toChatItemRef = \case

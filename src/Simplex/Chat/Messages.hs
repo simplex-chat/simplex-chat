@@ -210,6 +210,11 @@ aChatItems (AChat ct Chat {chatInfo, chatItems}) = map aChatItem chatItems
   where
     aChatItem (CChatItem md ci) = AChatItem ct md chatInfo ci
 
+updateFileStatus :: forall c d. ChatItem c d -> CIFileStatus d -> ChatItem c d
+updateFileStatus ci@ChatItem {file} status = case file of
+  Just f -> ci {file = Just (f :: CIFile d) {fileStatus = status}}
+  Nothing -> ci
+
 instance MsgDirectionI d => ToJSON (JSONAnyChatItem c d) where
   toJSON = J.genericToJSON J.defaultOptions
   toEncoding = J.genericToEncoding J.defaultOptions
@@ -295,6 +300,7 @@ instance MsgDirectionI d => ToJSON (CIFile d) where
 
 data CIFileStatus (d :: MsgDirection) where
   CIFSSndStored :: CIFileStatus 'MDSnd
+  CIFSSndTransfer :: CIFileStatus 'MDSnd
   CIFSSndCancelled :: CIFileStatus 'MDSnd
   CIFSSndComplete :: CIFileStatus 'MDSnd
   CIFSRcvInvitation :: CIFileStatus 'MDRcv
@@ -320,6 +326,7 @@ deriving instance Show ACIFileStatus
 instance MsgDirectionI d => StrEncoding (CIFileStatus d) where
   strEncode = \case
     CIFSSndStored -> "snd_stored"
+    CIFSSndTransfer -> "snd_transfer"
     CIFSSndCancelled -> "snd_cancelled"
     CIFSSndComplete -> "snd_complete"
     CIFSRcvInvitation -> "rcv_invitation"
@@ -334,6 +341,7 @@ instance StrEncoding ACIFileStatus where
   strP =
     A.takeTill (== ' ') >>= \case
       "snd_stored" -> pure $ AFS SMDSnd CIFSSndStored
+      "snd_transfer" -> pure $ AFS SMDSnd CIFSSndTransfer
       "snd_cancelled" -> pure $ AFS SMDSnd CIFSSndCancelled
       "snd_complete" -> pure $ AFS SMDSnd CIFSSndComplete
       "rcv_invitation" -> pure $ AFS SMDRcv CIFSRcvInvitation
