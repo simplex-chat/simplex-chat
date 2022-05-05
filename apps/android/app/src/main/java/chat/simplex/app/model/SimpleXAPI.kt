@@ -321,6 +321,51 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
     return false
   }
 
+  suspend fun apiSendCallInvitation(contact: Contact, callType: CallType): Boolean {
+    val r = sendCmd(CC.ApiSendCallInvitation(contact, callType))
+    return r is CR.CmdOk
+  }
+
+  suspend fun apiRejectCall(contact: Contact): Boolean {
+    val r = sendCmd(CC.ApiRejectCall(contact))
+    return r is CR.CmdOk
+  }
+
+  suspend fun apiSendCallOffer(contact: Contact, rtcSession: String, rtcIceCandidates: List<String>, media: CallMediaType, capabilities: CallCapabilities): Boolean {
+    val webRtcSession = WebRTCSession(rtcSession, rtcIceCandidates)
+    val callOffer = WebRTCCallOffer(CallType(media, capabilities), webRtcSession)
+    val r = sendCmd(CC.ApiSendCallOffer(contact, callOffer))
+    return r is CR.CmdOk
+  }
+
+  suspend fun apiSendCallAnswer(contact: Contact, rtcSession: String, rtcIceCandidates: List<String>): Boolean {
+    val answer = WebRTCSession(rtcSession, rtcIceCandidates)
+    val r = sendCmd(CC.ApiSendCallAnswer(contact, answer))
+    return r is CR.CmdOk
+  }
+
+  suspend fun apiSendCallExtraInfo(contact: Contact, rtcIceCandidates: List<String>): Boolean {
+    val extraInfo = WebRTCExtraInfo(rtcIceCandidates)
+    val r = sendCmd(CC.ApiSendCallExtraInfo(contact, extraInfo))
+    return r is CR.CmdOk
+  }
+
+  suspend fun apiEndCall(contact: Contact): Boolean {
+    val r = sendCmd(CC.ApiEndCall(contact))
+    return r is CR.CmdOk
+  }
+
+  suspend fun apiCallStatus(contact: Contact, status: String): Boolean {
+    try {
+      val callStatus = WebRTCCallStatus.valueOf(status)
+      val r = sendCmd(CC.ApiCallStatus(contact, callStatus))
+      return r is CR.CmdOk
+    } catch (e: Error) {
+      Log.d(TAG,"apiCallStatus: call status $status not used")
+      return false
+    }
+  }
+
   suspend fun apiChatRead(type: ChatType, id: Long, range: CC.ItemRange): Boolean {
     val r = sendCmd(CC.ApiChatRead(type, id, range))
     if (r is CR.CmdOk) return true
