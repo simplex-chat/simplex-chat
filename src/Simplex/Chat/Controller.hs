@@ -219,11 +219,11 @@ data ChatResponse
   | CRRcvFileComplete {chatItem :: AChatItem}
   | CRRcvFileCancelled {rcvFileTransfer :: RcvFileTransfer}
   | CRRcvFileSndCancelled {rcvFileTransfer :: RcvFileTransfer}
-  | CRSndFileStart {sndFileTransfer :: SndFileTransfer}
-  | CRSndFileComplete {sndFileTransfer :: SndFileTransfer}
-  | CRSndFileCancelled {sndFileTransfer :: SndFileTransfer}
-  | CRSndFileRcvCancelled {sndFileTransfer :: SndFileTransfer}
-  | CRSndGroupFileCancelled {fileTransferMeta :: FileTransferMeta, sndFileTransfers :: [SndFileTransfer]}
+  | CRSndFileStart {chatItem :: AChatItem, sndFileTransfer :: SndFileTransfer}
+  | CRSndFileComplete {chatItem :: AChatItem, sndFileTransfer :: SndFileTransfer}
+  | CRSndFileCancelled {chatItem :: AChatItem, sndFileTransfer :: SndFileTransfer}
+  | CRSndFileRcvCancelled {chatItem :: AChatItem, sndFileTransfer :: SndFileTransfer}
+  | CRSndGroupFileCancelled {chatItem :: AChatItem, fileTransferMeta :: FileTransferMeta, sndFileTransfers :: [SndFileTransfer]}
   | CRUserProfileUpdated {fromProfile :: Profile, toProfile :: Profile}
   | CRContactConnecting {contact :: Contact}
   | CRContactConnected {contact :: Contact}
