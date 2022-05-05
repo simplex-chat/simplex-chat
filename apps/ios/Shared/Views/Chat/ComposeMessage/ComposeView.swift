@@ -205,8 +205,23 @@ struct ComposeView: View {
             if case .success = result {
                 do {
                     let fileURL: URL = try result.get().first!
-                    chosenFile = fileURL
-                    composeState = composeState.copy(preview: .filePreview(fileName: fileURL.lastPathComponent))
+                    var fileSize: Int? = nil
+                    if fileURL.startAccessingSecurityScopedResource() {
+                        let resourceValues = try fileURL.resourceValues(forKeys: [.fileSizeKey])
+                        fileSize = resourceValues.fileSize
+                    }
+                    fileURL.stopAccessingSecurityScopedResource()
+                    if let fileSize = fileSize,
+                       fileSize <= maxFileSize {
+                        chosenFile = fileURL
+                        composeState = composeState.copy(preview: .filePreview(fileName: fileURL.lastPathComponent))
+                    } else {
+                        let prettyMaxFileSize = ByteCountFormatter().string(fromByteCount: maxFileSize)
+                        AlertManager.shared.showAlertMsg(
+                            title: "Cannot send file",
+                            message: "Currently maximum supported file size is \(prettyMaxFileSize)."
+                        )
+                    }
                 } catch {
                     logger.error("ComposeView fileImporter error \(error.localizedDescription)")
                 }

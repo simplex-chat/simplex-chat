@@ -23,12 +23,13 @@ struct CIFileView: View {
                     .padding(.top, 5)
                     .padding(.bottom, 3)
                 if let file = file {
+                    let prettyFileSize = ByteCountFormatter().string(fromByteCount: file.fileSize)
                     VStack(alignment: .leading, spacing: 2) {
                         Text(file.fileName)
                             .lineLimit(1)
                             .multilineTextAlignment(.leading)
                             .foregroundColor(.primary)
-                        Text(formatBytes(bytes: file.fileSize) + metaReserve)
+                        Text(prettyFileSize + metaReserve)
                             .font(.caption)
                             .lineLimit(1)
                             .multilineTextAlignment(.leading)
@@ -64,9 +65,10 @@ struct CIFileView: View {
                         await receiveFile(fileId: file.fileId)
                     }
                 } else {
+                    let prettyMaxFileSize = ByteCountFormatter().string(fromByteCount: maxFileSize)
                     AlertManager.shared.showAlertMsg(
                         title: "Large file!",
-                        message: "Your contact sent a file that is larger than currently supported maximum size (\(maxFileSize) bytes)."
+                        message: "Your contact sent a file that is larger than currently supported maximum size (\(prettyMaxFileSize))."
                     )
                 }
             case .rcvAccepted:
@@ -122,24 +124,6 @@ struct CIFileView: View {
                     .foregroundColor(.white)
                     .padding(.top, 12)
             }
-        }
-    }
-
-    func formatBytes(bytes: Int64) -> String {
-        if (bytes == 0) { return "0 bytes" }
-
-        let bytesDouble = Double(bytes)
-        let k: Double = 1000
-        let units = ["bytes", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"]
-
-        let i = floor(log2(bytesDouble) / log2(k))
-        let size = bytesDouble / pow(k, i)
-        let unit = units[Int(i)]
-
-        if (i <= 1) {
-            return String(format: "%.0f \(unit)", size)
-        } else {
-            return String(format: "%.2f \(unit)", size)
         }
     }
 }

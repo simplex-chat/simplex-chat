@@ -10,9 +10,9 @@ import Foundation
 import SwiftUI
 
 // maximum image file size to be auto-accepted
-let maxImageSize = 236700
+let maxImageSize: Int64 = 236700
 
-let maxFileSize = 1893600
+let maxFileSize: Int64 = 1893600
 
 func getDocumentsDirectory() -> URL {
     FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
@@ -127,7 +127,7 @@ func cropToSquare(_ image: UIImage) -> UIImage {
     return resizeImage(image, newBounds: CGRect(origin: .zero, size: newSize), drawIn: CGRect(origin: origin, size: size))
 }
 
-func resizeImageToDataSize(_ image: UIImage, maxDataSize: Int) -> Data? {
+func resizeImageToDataSize(_ image: UIImage, maxDataSize: Int64) -> Data? {
     var img = image
     var data = img.jpegData(compressionQuality: 0.85)
     var dataSize = data?.count ?? 0
@@ -142,7 +142,7 @@ func resizeImageToDataSize(_ image: UIImage, maxDataSize: Int) -> Data? {
     return data
 }
 
-func resizeImageToStrSize(_ image: UIImage, maxDataSize: Int) -> String? {
+func resizeImageToStrSize(_ image: UIImage, maxDataSize: Int64) -> String? {
     var img = image
     var str = compressImageStr(img)
     var dataSize = str?.count ?? 0
