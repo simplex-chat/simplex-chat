@@ -62,24 +62,38 @@ struct CIImageView: View {
                 .scaledToFit()
                 .frame(maxWidth: w)
             loadingIndicator()
-                .padding(8)
         }
     }
 
     @ViewBuilder private func loadingIndicator() -> some View {
         if let file = file {
             switch file.fileStatus {
+            case .sndTransfer:
+                ProgressView()
+                    .progressViewStyle(.circular)
+                    .frame(width: 20, height: 20)
+                    .tint(.white)
+                    .padding(8)
+            case .sndComplete:
+                Image(systemName: "checkmark.circle")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 20, height: 20)
+                    .foregroundColor(.white)
+                    .padding(8)
             case .rcvAccepted:
                 Image(systemName: "ellipsis")
                     .resizable()
                     .aspectRatio(contentMode: .fit)
                     .frame(width: 20, height: 20)
                     .foregroundColor(.white)
+                    .padding(8)
             case .rcvTransfer:
                 ProgressView()
                     .progressViewStyle(.circular)
                     .frame(width: 20, height: 20)
                     .tint(.white)
+                    .padding(8)
             default: EmptyView()
             }
         }
