@@ -50,6 +50,7 @@ enum ChatCommand {
             case let .setFilesFolder(filesFolder): return "/_files_folder \(filesFolder)"
             case .apiGetChats: return "/_get chats pcc=on"
             case let .apiGetChat(type, id): return "/_get chat \(ref(type, id)) count=100"
+            // TODO replace with /_send_v2
             case let .apiSendMessage(type, id, file, quotedItemId, mc):
                 switch (file, quotedItemId) {
                 case (nil, nil): return "/_send \(ref(type, id)) \(mc.cmdString)"
@@ -57,6 +58,8 @@ enum ChatCommand {
                 case let (nil, .some(quotedItemId)): return "/_send \(ref(type, id)) quoted \(quotedItemId) \(mc.cmdString)"
                 case let (.some(file), .some(quotedItemId)): return "/_send \(ref(type, id)) file \(file) quoted \(quotedItemId) \(mc.cmdString)"
                 }
+//            case let .apiSendMessage(type, id, file, quotedItemId, mc):
+//                return "/_send_v2 \(ref(type, id)) \(try! jsonEncoder.encode(ComposedMessage(filePath: file, quotedItemId: quotedItemId, msgContent: mc)))"
             case let .apiUpdateChatItem(type, id, itemId, mc): return "/_update item \(ref(type, id)) \(itemId) \(mc.cmdString)"
             case let .apiDeleteChatItem(type, id, itemId, mode): return "/_delete item \(ref(type, id)) \(itemId) \(mode.rawValue)"
             case let .apiRegisterToken(token): return "/_ntf register apns \(token)"
@@ -299,6 +302,12 @@ enum ChatResponse: Decodable, Error {
     }
 
     private var noDetails: String { get { "\(responseType): no details" } }
+}
+
+struct ComposedMessage: Encodable {
+    var filePath: String?
+    var quotedItemId: Int64?
+    var msgContent: MsgContent
 }
 
 private func decodeCJSON<T: Decodable>(_ cjson: UnsafePointer<CChar>) -> T? {

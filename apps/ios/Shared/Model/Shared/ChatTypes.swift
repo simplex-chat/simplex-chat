@@ -689,12 +689,7 @@ enum MsgContent {
         get {
             switch self {
             case let .text(text): return "text \(text)"
-            case let .link(text: text, preview: preview):
-                return "json {\"type\":\"link\",\"text\":\(encodeJSON(text)),\"preview\":\(encodeJSON(preview))}"
-            case let .image(text: text, image: image):
-                return "json {\"type\":\"image\",\"text\":\(encodeJSON(text)),\"image\":\(encodeJSON(image))}"
-            case let .file(text): return "json {\"type\":\"file\",\"text\":\(encodeJSON(text))}"
-            default: return ""
+            default: return "json \(encodeJSON(self))"
             }
         }
     }
@@ -704,7 +699,6 @@ enum MsgContent {
         case text
         case preview
         case image
-        case file
     }
 }
 
@@ -735,6 +729,32 @@ extension MsgContent: Decodable {
             }
         } catch {
             self = .unknown(type: "unknown", text: "invalid message format")
+        }
+    }
+}
+
+extension MsgContent: Encodable {
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        switch self {
+        case let .text(text):
+            try container.encode("text", forKey: .type)
+            try container.encode(text, forKey: .text)
+        case let .link(text, preview):
+            try container.encode("link", forKey: .type)
+            try container.encode(text, forKey: .text)
+            try container.encode(preview, forKey: .preview)
+        case let .image(text, image):
+            try container.encode("image", forKey: .type)
+            try container.encode(text, forKey: .text)
+            try container.encode(image, forKey: .image)
+        case let .file(text):
+            try container.encode("file", forKey: .type)
+            try container.encode(text, forKey: .text)
+        // TODO use original JSON and type
+        case let .unknown(_, text):
+            try container.encode("text", forKey: .type)
+            try container.encode(text, forKey: .text)
         }
     }
 }
