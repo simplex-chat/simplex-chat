@@ -70,7 +70,11 @@ fun ChatItemView(
           Modifier.width(220.dp)
         ) {
           ItemAction(stringResource(R.string.reply_verb), Icons.Outlined.Reply, onClick = {
-            composeState.value = composeState.value.copy(contextItem = ComposeContextItem.QuotedItem(cItem))
+            if (composeState.value.editing) {
+              composeState.value = ComposeState(contextItem = ComposeContextItem.QuotedItem(cItem))
+            } else {
+              composeState.value = composeState.value.copy(contextItem = ComposeContextItem.QuotedItem(cItem))
+            }
             showMenu.value = false
           })
           ItemAction(stringResource(R.string.share_verb), Icons.Outlined.Share, onClick = {

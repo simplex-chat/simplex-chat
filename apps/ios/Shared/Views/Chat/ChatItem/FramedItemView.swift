@@ -57,6 +57,7 @@ struct FramedItemView: View {
                         }
                     case let .file(text):
                         CIFileView(file: chatItem.file, edited: chatItem.meta.itemEdited)
+                            .overlay(DetermineWidth())
                         if text != "" {
                             ciMsgContentView (chatItem, showMember)
                         }

@@ -4,10 +4,13 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.Reply
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
@@ -16,6 +19,7 @@ import androidx.compose.ui.unit.dp
 import chat.simplex.app.R
 import chat.simplex.app.model.CIDirection
 import chat.simplex.app.model.ChatItem
+import chat.simplex.app.ui.theme.HighOrLowlight
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.chat.item.*
 import kotlinx.datetime.Clock
@@ -23,6 +27,7 @@ import kotlinx.datetime.Clock
 @Composable
 fun ContextItemView(
   contextItem: ChatItem,
+  contextIcon: ImageVector,
   cancelContextItem: () -> Unit
 ) {
   val sent = contextItem.chatDir.sent
@@ -32,13 +37,22 @@ fun ContextItemView(
       .background(if (sent) SentColorLight else ReceivedColorLight),
     verticalAlignment = Alignment.CenterVertically
   ) {
-    Box(
+    Row(
       Modifier
-        .padding(start = 16.dp)
         .padding(vertical = 12.dp)
         .fillMaxWidth()
-        .weight(1F)
+        .weight(1F),
+      verticalAlignment = Alignment.CenterVertically
     ) {
+      Icon(
+        contextIcon,
+        modifier = Modifier
+          .padding(horizontal = 8.dp)
+          .height(20.dp)
+          .width(20.dp),
+        contentDescription = stringResource(R.string.icon_descr_context),
+        tint = HighOrLowlight,
+      )
       ContextItemText(contextItem)
     }
     IconButton(onClick = cancelContextItem) {
@@ -56,11 +70,11 @@ fun ContextItemView(
 private fun ContextItemText(cxtItem: ChatItem) {
   val member = cxtItem.memberDisplayName
   if (member == null) {
-    Text(cxtItem.content.text, maxLines = 3)
+    Text(cxtItem.text, maxLines = 3)
   } else {
     val annotatedText = buildAnnotatedString {
       withStyle(boldFont) { append(member) }
-      append(": ${cxtItem.content.text}")
+      append(": ${cxtItem.text}")
     }
     Text(annotatedText, maxLines = 3)
   }
@@ -72,6 +86,7 @@ fun PreviewContextItemView() {
   SimpleXTheme {
     ContextItemView(
       contextItem = ChatItem.getSampleData(1, CIDirection.DirectRcv(), Clock.System.now(), "hello"),
+      contextIcon = Icons.Filled.Edit,
       cancelContextItem = {}
     )
   }

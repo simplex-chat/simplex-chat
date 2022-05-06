@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.InsertDriveFile
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
@@ -25,11 +26,6 @@ import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
 import kotlinx.datetime.Clock
-import kotlin.math.log2
-import kotlin.math.pow
-
-val FileLight = Color(183, 190, 199, 255)
-val FileDark = Color(101, 101, 106, 255)
 
 @Composable
 fun CIFileView(
@@ -83,7 +79,7 @@ fun CIFileView(
           } else {
             AlertManager.shared.showAlertMsg(
               generalGetString(R.string.large_file),
-              String.format(generalGetString(R.string.contact_sent_large_file), MAX_FILE_SIZE)
+              String.format(generalGetString(R.string.contact_sent_large_file), formatBytes(MAX_FILE_SIZE))
             )
           }
         }
@@ -106,6 +102,15 @@ fun CIFileView(
   }
 
   @Composable
+  fun progressIndicator() {
+    CircularProgressIndicator(
+      Modifier.size(32.dp),
+      color = HighOrLowlight,
+      strokeWidth = 4.dp
+    )
+  }
+
+  @Composable
   fun fileIndicator() {
     Box(
       Modifier
@@ -116,6 +121,8 @@ fun CIFileView(
     ) {
       if (file != null) {
         when (file.fileStatus) {
+          CIFileStatus.SndTransfer -> progressIndicator()
+          CIFileStatus.SndComplete -> fileIcon(innerIcon = Icons.Filled.Check)
           CIFileStatus.SndCancelled -> fileIcon(innerIcon = Icons.Outlined.Close)
           CIFileStatus.RcvInvitation ->
             if (fileSizeValid())
@@ -123,36 +130,13 @@ fun CIFileView(
             else
               fileIcon(innerIcon = Icons.Outlined.PriorityHigh, color = WarningOrange)
           CIFileStatus.RcvAccepted -> fileIcon(innerIcon = Icons.Outlined.MoreHoriz)
-          CIFileStatus.RcvTransfer ->
-            CircularProgressIndicator(
-              Modifier.size(32.dp),
-              color = HighOrLowlight,
-              strokeWidth = 4.dp
-            )
+          CIFileStatus.RcvTransfer -> progressIndicator()
           CIFileStatus.RcvCancelled -> fileIcon(innerIcon = Icons.Outlined.Close)
           else -> fileIcon()
         }
       } else {
         fileIcon()
       }
-    }
-  }
-
-  fun formatBytes(bytes: Long): String {
-    if (bytes == 0.toLong()) {
-      return "0 bytes"
-    }
-    val bytesDouble = bytes.toDouble()
-    val k = 1000.toDouble()
-    val units = arrayOf("bytes", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB")
-    val i = kotlin.math.floor(log2(bytesDouble) / log2(k))
-    val size = bytesDouble / k.pow(i)
-    val unit = units[i.toInt()]
-
-    return if (i <= 1) {
-      String.format("%.0f %s", size, unit)
-    } else {
-      String.format("%.2f %s", size, unit)
     }
   }
 
@@ -193,7 +177,7 @@ class ChatItemProvider: PreviewParameterProvider<ChatItem> {
     meta = CIMeta.getSample(1, Clock.System.now(), "", CIStatus.SndSent(), itemDeleted = false, itemEdited = true, editable = false),
     content = CIContent.SndMsgContent(msgContent = MsgContent.MCFile("")),
     quotedItem = null,
-    file = CIFile.getSample(fileStatus = CIFileStatus.SndStored)
+    file = CIFile.getSample(fileStatus = CIFileStatus.SndComplete)
   )
   private val fileChatItemWtFile = ChatItem(
     chatDir = CIDirection.DirectRcv(),

@@ -32,7 +32,7 @@ struct ContextItemView: View {
             }
         }
         .padding(12)
-        .frame(height: 50)
+        .frame(minHeight: 50)
         .frame(maxWidth: .infinity)
         .background(chatItemFrameColor(contextItem, colorScheme))
         .padding(.top, 8)

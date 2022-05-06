@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.Icon
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.outlined.MoreHoriz
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -34,6 +35,19 @@ fun CIImageView(
         contentAlignment = Alignment.Center
       ) {
         when (file.fileStatus) {
+          CIFileStatus.SndTransfer ->
+            CircularProgressIndicator(
+              Modifier.size(16.dp),
+              color = Color.White,
+              strokeWidth = 2.dp
+            )
+          CIFileStatus.SndComplete ->
+            Icon(
+              Icons.Filled.Check,
+              stringResource(R.string.icon_descr_image_snd_complete),
+              Modifier.fillMaxSize(),
+              tint = Color.White
+            )
           CIFileStatus.RcvAccepted ->
             Icon(
               Icons.Outlined.MoreHoriz,
