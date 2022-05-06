@@ -65,7 +65,9 @@ fun SendMsgView(
           }
           val icon = if (cs.editing) Icons.Filled.Check else Icons.Outlined.ArrowUpward
           val color = if (cs.sendEnabled()) MaterialTheme.colors.primary else HighOrLowlight
-          if (cs.inProgress) {
+          if (cs.inProgress
+            && (cs.preview is ComposePreview.ImagePreview || cs.preview is ComposePreview.FilePreview)
+          ) {
             CircularProgressIndicator(
               Modifier
                 .size(36.dp)
