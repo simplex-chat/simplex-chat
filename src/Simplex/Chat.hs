@@ -288,9 +288,9 @@ processChatCommand = \case
           -- we replace the quote's content with MCText
           replaceContent = case mc of
             MCText _ -> False
+            MCFile _ -> False
             MCLink {} -> True
             MCImage {} -> True
-            MCFile _ -> False
             MCUnknown {} -> True
           qText = msgContentText qmc
           qFileName = maybe qText (T.pack . (fileName :: CIFile d -> String)) ciFile_
