@@ -278,16 +278,15 @@ processChatCommand = \case
     where
       quoteContent :: forall d. MsgContent -> Maybe (CIFile d) -> MsgContent -> MsgContent
       quoteContent qmc ciFile_ = \case
-        MCText _ -> updateMsgContentText qmc quoteText
-        MCLink {} -> MCText quoteText
-        MCImage {} -> MCText quoteText
-        MCFile _ -> updateMsgContentText qmc quoteText
-        MCUnknown {} -> MCText quoteText
+        MCText _ -> case qmc of
+          MCImage {image} -> MCImage qTextOrFile image
+          MCFile _ -> MCFile qTextOrFile
+          _ -> qmc
+        _ -> MCText qTextOrFile
         where
-          quoteText =
-            let t = msgContentText qmc
-                fileName' = T.pack . (fileName :: CIFile d -> String)
-             in if T.null t then maybe t fileName' ciFile_ else t
+          qText = msgContentText qmc
+          qFileName = maybe qText (T.pack . (fileName :: CIFile d -> String)) ciFile_
+          qTextOrFile = if T.null then qText else qFileName
       unzipMaybe :: Maybe (a, b) -> (Maybe a, Maybe b)
       unzipMaybe t = (fst <$> t, snd <$> t)
   -- TODO discontinue
