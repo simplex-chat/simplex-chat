@@ -1651,13 +1651,10 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
 
     -- to any call party
     xCallEnd :: Contact -> CallId -> RcvMessage -> MsgMeta -> m ()
-    xCallEnd ct@Contact {contactId} callId msg msgMeta =
+    xCallEnd ct callId msg msgMeta =
       msgCurrentCall ct callId "x.call.end" msg msgMeta $ \Call {chatItemId} -> do
         toView $ CRCallEnded ct
-        CChatItem msgDir _ <- withStore $ \st -> getDirectChatItem st userId contactId chatItemId
-        pure $ case msgDir of
-          SMDSnd -> (Nothing, Just . ACIContent SMDSnd $ CISndCall CISCallEnded 0)
-          SMDRcv -> (Nothing, Just . ACIContent SMDRcv $ CIRcvCall CISCallEnded 0)
+        (Nothing,) <$> callStatusItemContent userId ct chatItemId WCSDisconnected
 
     msgCurrentCall :: Contact -> CallId -> Text -> RcvMessage -> MsgMeta -> (Call -> m (Maybe Call, Maybe ACIContent)) -> m ()
     msgCurrentCall ct@Contact {contactId = ctId'} callId' eventName RcvMessage {msgId} msgMeta action = do
