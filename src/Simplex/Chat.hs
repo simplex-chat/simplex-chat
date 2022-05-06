@@ -279,7 +279,10 @@ processChatCommand = \case
       quoteContent :: forall d. MsgContent -> Maybe (CIFile d) -> MsgContent -> MsgContent
       quoteContent qmc ciFile_ = \case
         MCText _ -> updateMsgContentText qmc quoteText
-        _ -> MCText quoteText
+        MCLink {} -> MCText quoteText
+        MCImage {} -> MCText quoteText
+        MCFile _ -> updateMsgContentText qmc quoteText
+        MCUnknown {} -> MCText quoteText
         where
           quoteText =
             let t = msgContentText qmc
