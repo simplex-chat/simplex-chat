@@ -24,8 +24,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.R
 import chat.simplex.app.model.*
-import chat.simplex.app.ui.theme.HighOrLowlight
-import chat.simplex.app.ui.theme.SimpleXTheme
+import chat.simplex.app.ui.theme.*
 
 @Composable
 fun SendMsgView(
@@ -65,22 +64,34 @@ fun SendMsgView(
             innerTextField()
           }
           val icon = if (cs.editing) Icons.Filled.Check else Icons.Outlined.ArrowUpward
-          val color = if (cs.sendEnabled) MaterialTheme.colors.primary else Color.Gray
-          Icon(
-            icon,
-            stringResource(R.string.icon_descr_send_message),
-            tint = Color.White,
-            modifier = Modifier
-              .size(36.dp)
-              .padding(4.dp)
-              .clip(CircleShape)
-              .background(color)
-              .clickable {
-                if (cs.sendEnabled) {
-                  sendMessage()
+          val color = if (cs.sendEnabled()) MaterialTheme.colors.primary else HighOrLowlight
+          if (cs.inProgress
+            && (cs.preview is ComposePreview.ImagePreview || cs.preview is ComposePreview.FilePreview)
+          ) {
+            CircularProgressIndicator(
+              Modifier
+                .size(36.dp)
+                .padding(4.dp),
+              color = HighOrLowlight,
+              strokeWidth = 4.dp
+            )
+          } else {
+            Icon(
+              icon,
+              stringResource(R.string.icon_descr_send_message),
+              tint = Color.White,
+              modifier = Modifier
+                .size(36.dp)
+                .padding(4.dp)
+                .clip(CircleShape)
+                .background(color)
+                .clickable {
+                  if (cs.sendEnabled()) {
+                    sendMessage()
+                  }
                 }
-              }
-          )
+            )
+          }
         }
       }
     }
@@ -121,6 +132,27 @@ fun PreviewSendMsgViewEditing() {
   SimpleXTheme {
     SendMsgView(
       composeState = remember { mutableStateOf(composeStateEditing) },
+      sendMessage = {},
+      onMessageChange = { _ -> },
+      textStyle = textStyle
+    )
+  }
+}
+
+@Preview(showBackground = true)
+@Preview(
+  uiMode = Configuration.UI_MODE_NIGHT_YES,
+  showBackground = true,
+  name = "Dark Mode"
+)
+@Composable
+fun PreviewSendMsgViewInProgress() {
+  val smallFont = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onBackground)
+  val textStyle = remember { mutableStateOf(smallFont) }
+  val composeStateInProgress = ComposeState(inProgress = true)
+  SimpleXTheme {
+    SendMsgView(
+      composeState = remember { mutableStateOf(composeStateInProgress) },
       sendMessage = {},
       onMessageChange = { _ -> },
       textStyle = textStyle

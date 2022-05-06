@@ -1,14 +1,17 @@
 package chat.simplex.app.views.chat
 
+import ComposeFileView
 import ComposeImageView
-import android.content.Context
 import android.graphics.Bitmap
+import android.net.Uri
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AttachFile
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.outlined.Reply
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -22,13 +25,12 @@ import chat.simplex.app.model.*
 import chat.simplex.app.views.chat.item.*
 import chat.simplex.app.views.helpers.*
 import kotlinx.coroutines.*
-import java.io.File
-import java.io.FileOutputStream
 
 sealed class ComposePreview {
   object NoPreview: ComposePreview()
   class CLinkPreview(val linkPreview: LinkPreview): ComposePreview()
   class ImagePreview(val image: String): ComposePreview()
+  class FilePreview(val fileName: String): ComposePreview()
 }
 
 sealed class ComposeContextItem {
@@ -55,16 +57,20 @@ data class ComposeState(
         is ComposeContextItem.EditingItem -> true
         else -> false
       }
-  val sendEnabled: Boolean
-    get() =
-      when (preview) {
+  val sendEnabled: () -> Boolean
+    get() = {
+      val hasContent = when (preview) {
         is ComposePreview.ImagePreview -> true
+        is ComposePreview.FilePreview -> true
         else -> message.isNotEmpty()
       }
+      hasContent && !inProgress
+    }
   val linkPreviewAllowed: Boolean
     get() =
       when (preview) {
         is ComposePreview.ImagePreview -> false
+        is ComposePreview.FilePreview -> false
         else -> true
       }
   val linkPreview: LinkPreview?
@@ -77,8 +83,13 @@ data class ComposeState(
 
 fun chatItemPreview(chatItem: ChatItem): ComposePreview {
   return when (val mc = chatItem.content.msgContent) {
+    is MsgContent.MCText -> ComposePreview.NoPreview
     is MsgContent.MCLink -> ComposePreview.CLinkPreview(linkPreview = mc.preview)
     is MsgContent.MCImage -> ComposePreview.ImagePreview(image = mc.image)
+    is MsgContent.MCFile -> {
+      val fileName = chatItem.file?.fileName ?: ""
+      ComposePreview.FilePreview(fileName)
+    }
     else -> ComposePreview.NoPreview
   }
 }
@@ -89,6 +100,7 @@ fun ComposeView(
   chat: Chat,
   composeState: MutableState<ComposeState>,
   chosenImage: MutableState<Bitmap?>,
+  chosenFile: MutableState<Uri?>,
   showAttachmentBottomSheet: () -> Unit
 ) {
   val context = LocalContext.current
@@ -169,24 +181,19 @@ fun ComposeView(
     }
   }
 
-  fun saveImage(context: Context, image: Bitmap): String? {
-    return try {
-      val dataResized = resizeImageToDataSize(image, maxDataSize = MAX_IMAGE_SIZE)
-      val fileToSave = "image_${System.currentTimeMillis()}.jpg"
-      val file = File(getAppFilesDirectory(context) + "/" + fileToSave)
-      val output = FileOutputStream(file)
-      dataResized.writeTo(output)
-      output.flush()
-      output.close()
-      fileToSave
-    } catch (e: Exception) {
-      null
-    }
+  fun clearState() {
+    composeState.value = ComposeState()
+    chosenImage.value = null
+    chosenFile.value = null
+    linkUrl.value = null
+    prevLinkUrl.value = null
+    pendingLinkUrl.value = null
+    cancelledLinks.clear()
   }
 
   fun sendMessage() {
     withApi {
-      // show "in progress"
+      composeState.value = composeState.value.copy(inProgress = true)
       val cInfo = chat.chatInfo
       val cs = composeState.value
       when (val contextItem = cs.contextItem) {
@@ -218,6 +225,15 @@ fun ComposeView(
                 }
               }
             }
+            is ComposePreview.FilePreview -> {
+              val chosenFileVal = chosenFile.value
+              if (chosenFileVal != null) {
+                file = saveFileFromUri(context, chosenFileVal)
+                if (file != null) {
+                  mc = MsgContent.MCFile(cs.message)
+                }
+              }
+            }
           }
           val quotedItemId: Long? = when (contextItem) {
             is ComposeContextItem.QuotedItem -> contextItem.chatItem.id
@@ -236,8 +252,7 @@ fun ComposeView(
           }
         }
       }
-      // hide "in progress"
-      composeState.value = ComposeState()
+      clearState()
     }
   }
 
@@ -263,8 +278,13 @@ fun ComposeView(
   }
 
   fun cancelImage() {
-    chosenImage.value = null
     composeState.value = composeState.value.copy(preview = ComposePreview.NoPreview)
+    chosenImage.value = null
+  }
+
+  fun cancelFile() {
+    composeState.value = composeState.value.copy(preview = ComposePreview.NoPreview)
+    chosenFile.value = null
   }
 
   @Composable
@@ -277,6 +297,11 @@ fun ComposeView(
         ::cancelImage,
         cancelEnabled = !composeState.value.editing
       )
+      is ComposePreview.FilePreview -> ComposeFileView(
+        preview.fileName,
+        ::cancelFile,
+        cancelEnabled = !composeState.value.editing
+      )
     }
   }
 
@@ -284,14 +309,21 @@ fun ComposeView(
   fun contextItemView() {
     when (val contextItem = composeState.value.contextItem) {
       ComposeContextItem.NoContextItem -> {}
-      is ComposeContextItem.QuotedItem -> ContextItemView(contextItem.chatItem) { composeState.value = composeState.value.copy(contextItem = ComposeContextItem.NoContextItem) }
-      is ComposeContextItem.EditingItem -> ContextItemView(contextItem.chatItem) { composeState.value = ComposeState() }
+      is ComposeContextItem.QuotedItem -> ContextItemView(contextItem.chatItem, Icons.Outlined.Reply) {
+        composeState.value = composeState.value.copy(contextItem = ComposeContextItem.NoContextItem)
+      }
+      is ComposeContextItem.EditingItem -> ContextItemView(contextItem.chatItem, Icons.Filled.Edit) {
+        clearState()
+      }
     }
   }
 
   Column {
     contextItemView()
-    previewView()
+    when {
+      composeState.value.editing && composeState.value.preview is ComposePreview.FilePreview -> {}
+      else -> previewView()
+    }
     Row(
       modifier = Modifier.padding(start = 4.dp, end = 8.dp),
       verticalAlignment = Alignment.Bottom,

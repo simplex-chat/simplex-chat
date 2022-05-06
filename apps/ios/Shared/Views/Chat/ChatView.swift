@@ -116,7 +116,11 @@ struct ChatView: View {
                 if ci.isMsgContent() {
                     Button {
                         withAnimation {
-                            composeState = composeState.copy(contextItem: .quotedItem(chatItem: ci))
+                            if composeState.editing() {
+                                composeState = ComposeState(contextItem: .quotedItem(chatItem: ci))
+                            } else {
+                                composeState = composeState.copy(contextItem: .quotedItem(chatItem: ci))
+                            }
                         }
                     } label: { Label("Reply", systemImage: "arrowshape.turn.up.left") }
                     Button {
