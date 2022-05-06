@@ -229,7 +229,7 @@ processChatCommand = \case
               withStore $ \st -> getDirectChatItem st userId chatId quotedItemId
             (origQmc, qd, sent) <- quoteData ciContent
             let msgRef = MsgRef {msgId = itemSharedMsgId, sentAt = itemTs, sent, memberId = Nothing}
-                qmc = quoteContent origQmc file mc
+                qmc = quoteContent origQmc file
                 quotedItem = CIQuote {chatDir = qd, itemId = Just quotedItemId, sharedMsgId = itemSharedMsgId, sentAt = itemTs, content = qmc, formattedText}
             pure (MCQuote QuotedMsg {msgRef, content = qmc} (ExtMsgContent mc fileInvitation_), Just quotedItem)
           where
@@ -265,7 +265,7 @@ processChatCommand = \case
               withStore $ \st -> getGroupChatItem st user chatId quotedItemId
             (origQmc, qd, sent, GroupMember {memberId}) <- quoteData ciContent chatDir membership
             let msgRef = MsgRef {msgId = itemSharedMsgId, sentAt = itemTs, sent, memberId = Just memberId}
-                qmc = quoteContent origQmc file mc
+                qmc = quoteContent origQmc file
                 quotedItem = CIQuote {chatDir = qd, itemId = Just quotedItemId, sharedMsgId = itemSharedMsgId, sentAt = itemTs, content = qmc, formattedText}
             pure (MCQuote QuotedMsg {msgRef, content = qmc} (ExtMsgContent mc fileInvitation_), Just quotedItem)
           where
@@ -276,13 +276,25 @@ processChatCommand = \case
     CTContactRequest -> pure $ chatCmdError "not supported"
     CTContactConnection -> pure $ chatCmdError "not supported"
     where
-      quoteContent :: forall d. MsgContent -> Maybe (CIFile d) -> MsgContent -> MsgContent
-      quoteContent qmc ciFile_ = \case
-        MCText _ -> qmc
-        _ ->
-          let t = msgContentText qmc
-              fileName' = T.pack . (fileName :: CIFile d -> String)
-           in MCText $ if T.null t then maybe t fileName' ciFile_ else t
+      quoteContent :: forall d. MsgContent -> Maybe (CIFile d) -> MsgContent
+      quoteContent qmc ciFile_
+        | replaceContent = MCText qTextOrFile
+        | otherwise = case qmc of
+          MCImage _ image -> MCImage qTextOrFile image
+          MCFile _ -> MCFile qTextOrFile
+          _ -> qmc
+        where
+          -- if the message we're quoting with is one of the "large" MsgContents
+          -- we replace the quote's content with MCText
+          replaceContent = case mc of
+            MCText _ -> False
+            MCFile _ -> False
+            MCLink {} -> True
+            MCImage {} -> True
+            MCUnknown {} -> True
+          qText = msgContentText qmc
+          qFileName = maybe qText (T.pack . (fileName :: CIFile d -> String)) ciFile_
+          qTextOrFile = if T.null qText then qFileName else qText
       unzipMaybe :: Maybe (a, b) -> (Maybe a, Maybe b)
       unzipMaybe t = (fst <$> t, snd <$> t)
   -- TODO discontinue
