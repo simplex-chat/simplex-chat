@@ -575,7 +575,7 @@ sealed class CC {
     is SetFilesFolder -> "/_files_folder $filesFolder"
     is ApiGetChats -> "/_get chats pcc=on"
     is ApiGetChat -> "/_get chat ${chatRef(type, id)} count=100"
-    is ApiSendMessage -> "/_send_v2 ${chatRef(type, id)} ${json.encodeToString(ComposedMessage(file, quotedItemId, mc))}"
+    is ApiSendMessage -> "/_send ${chatRef(type, id)} json ${json.encodeToString(ComposedMessage(file, quotedItemId, mc))}"
     is ApiUpdateChatItem -> "/_update item ${chatRef(type, id)} $itemId ${mc.cmdString}"
     is ApiDeleteChatItem -> "/_delete item ${chatRef(type, id)} $itemId ${mode.deleteMode}"
     is GetUserSMPServers -> "/smp_servers"
