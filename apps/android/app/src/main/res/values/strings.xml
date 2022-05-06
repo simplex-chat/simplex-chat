@@ -87,20 +87,24 @@
   <string name="your_chats">Your chats</string>
   <string name="contact_connection_pending">connecting…</string>
 
-  <!-- ComposeView.kt -->
+  <!-- ComposeView.kt, helpers -->
   <string name="attach">Attach</string>
-
-  <!-- Images -->
-  <string name="image_descr">Image</string>
+  <string name="icon_descr_context">Context icon</string>
   <string name="icon_descr_cancel_image_preview">Cancel image preview</string>
+  <string name="icon_descr_cancel_file_preview">Cancel file preview</string>
+
+  <!-- Images - CIImageView.kt -->
+  <string name="image_descr">Image</string>
   <string name="icon_descr_waiting_for_image">Waiting for image</string>
+  <string name="icon_descr_image_snd_complete">Image sent</string>
   <string name="waiting_for_image">Waiting for image</string>
   <string name="image_will_be_received_when_contact_is_online">Image will be received when your contact is online, please wait or check later!</string>
 
   <!-- Files - CIFileView.kt -->
   <string name="icon_descr_file">File</string>
   <string name="large_file">Large file!</string>
-  <string name="contact_sent_large_file">Your contact sent a file that is larger than currently supported maximum size (<xliff:g id="maxFileSize">%1$s</xliff:g> bytes).</string>
+  <string name="contact_sent_large_file">Your contact sent a file that is larger than currently supported maximum size (<xliff:g id="maxFileSize">%1$s</xliff:g>).</string>
+  <string name="maximum_supported_file_size">Currently maximum supported file size is <xliff:g id="maxFileSize">%1$s</xliff:g>.</string>
   <string name="waiting_for_file">Waiting for file</string>
   <string name="file_will_be_received_when_contact_is_online">File will be received when your contact is online, please wait or check later!</string>
   <string name="file_saved">File saved</string>
@@ -137,9 +141,10 @@
   <string name="paste_received_link_from_clipboard">(paste link from clipboard)</string>
 
   <!-- GetImageView -->
-  <string name="toast_camera_permission_denied">Permission Denied!</string>
+  <string name="toast_permission_denied">Permission Denied!</string>
   <string name="use_camera_button">Use Camera</string>
   <string name="from_gallery_button">From Gallery</string>
+  <string name="choose_file">Choose file</string>
 
   <!-- help - ChatHelpView.kt -->
   <string name="thank_you_for_installing_simplex">Thank you for installing <xliff:g id="appNameFull">SimpleX Chat</xliff:g>!</string>

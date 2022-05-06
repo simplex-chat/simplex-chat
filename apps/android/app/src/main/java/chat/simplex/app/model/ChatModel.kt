@@ -867,6 +867,8 @@ class CIFile(
 ) {
   val stored: Boolean = when (fileStatus) {
     CIFileStatus.SndStored -> true
+    CIFileStatus.SndTransfer -> true
+    CIFileStatus.SndComplete -> true
     CIFileStatus.SndCancelled -> true
     CIFileStatus.RcvComplete -> true
     else -> false

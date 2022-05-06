@@ -557,6 +557,17 @@ func processReceivedMsg(_ res: ChatResponse) {
             chatItemSimpleUpdate(aChatItem)
         case let .rcvFileComplete(aChatItem):
             chatItemSimpleUpdate(aChatItem)
+        case let .sndFileStart(aChatItem, _):
+            chatItemSimpleUpdate(aChatItem)
+        case let .sndFileComplete(aChatItem, _):
+            chatItemSimpleUpdate(aChatItem)
+            let cItem = aChatItem.chatItem
+            if aChatItem.chatInfo.chatType == .direct,
+               let mc = cItem.content.msgContent,
+               mc.isFile(),
+               let fileName = cItem.file?.filePath {
+                removeFile(fileName)
+            }
         case let .callInvitation(contact, callType, sharedKey):
             let invitation = CallInvitation(peerMedia: callType.media, sharedKey: sharedKey)
             m.callInvitations[contact.id] = invitation

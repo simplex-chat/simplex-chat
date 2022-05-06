@@ -87,20 +87,24 @@
     <string name="your_chats">Ваши чаты</string>
     <string name="contact_connection_pending">соединяется…</string>
 
-    <!-- ComposeView.kt -->
+    <!-- ComposeView.kt, helpers -->
     <string name="attach">Прикрепить</string>
-
-    <!-- Images -->
-    <string name="image_descr">Изображение</string>
+    <string name="icon_descr_context">Значок контекста</string>
     <string name="icon_descr_cancel_image_preview">Удалить превью изображения</string>
+    <string name="icon_descr_cancel_file_preview">Удалить превью файла</string>
+
+    <!-- Images - CIImageView.kt -->
+    <string name="image_descr">Изображение</string>
     <string name="icon_descr_waiting_for_image">Ожидание изображения</string>
+    <string name="icon_descr_image_snd_complete">Изображение отправлено</string>
     <string name="waiting_for_image">Ожидание изображения</string>
     <string name="image_will_be_received_when_contact_is_online">Изображение будет получено, когда ваш контакт будет в сети, пожалуйста, подождите или проверьте позже!</string>
 
     <!-- Files - CIFileView.kt -->
     <string name="icon_descr_file">Файл</string>
     <string name="large_file">Большой файл!</string>
-    <string name="contact_sent_large_file">Ваш контакт отправил файл, размер которого превышает поддерживаемый в настоящее время максимальный размер (<xliff:g id="maxFileSize">%1$s</xliff:g> байта).</string>
+    <string name="contact_sent_large_file">Ваш контакт отправил файл, размер которого превышает поддерживаемый в настоящее время максимальный размер (<xliff:g id="maxFileSize">%1$s</xliff:g>).</string>
+    <string name="maximum_supported_file_size">В настоящее время максимальный поддерживаемый размер файла составляет <xliff:g id="maxFileSize">%1$s</xliff:g>.</string>
     <string name="waiting_for_file">Ожидание файла</string>
     <string name="file_will_be_received_when_contact_is_online">Файл будет получен, когда ваш контакт будет в сети, пожалуйста, подождите или проверьте позже!</string>
     <string name="file_saved">Файл сохранен</string>
@@ -136,9 +140,10 @@
     <string name="paste_received_link_from_clipboard">(вставить ссылку из буфера обмена)</string>
 
     <!-- GetImageView -->
-    <string name="toast_camera_permission_denied">Разрешение не получено!</string>
+    <string name="toast_permission_denied">Разрешение не получено!</string>
     <string name="use_camera_button">Использовать камеру</string>
     <string name="from_gallery_button">Открыть галерею</string>
+    <string name="choose_file">Выбрать файл</string>
 
     <!-- help - ChatHelpView.kt -->
     <string name="thank_you_for_installing_simplex">Спасибо, что установили <xliff:g id="appNameFull">SimpleX Chat</xliff:g>!</string>

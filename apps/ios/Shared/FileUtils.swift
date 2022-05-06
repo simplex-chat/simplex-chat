@@ -10,23 +10,27 @@ import Foundation
 import SwiftUI
 
 // maximum image file size to be auto-accepted
-let maxImageSize = 236700
+let maxImageSize: Int64 = 236700
 
-let maxFileSize = 1893600
+let maxFileSize: Int64 = 8000000
 
 func getDocumentsDirectory() -> URL {
-    return FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+    FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
 }
 
 func getAppFilesDirectory() -> URL {
-    return getDocumentsDirectory().appendingPathComponent("app_files", isDirectory: true)
+    getDocumentsDirectory().appendingPathComponent("app_files", isDirectory: true)
+}
+
+func getAppFilePath(_ fileName: String) -> URL {
+    getAppFilesDirectory().appendingPathComponent(fileName)
 }
 
 func getStoredFilePath(_ file: CIFile?) -> String? {
     if let file = file,
        file.stored,
        let savedFile = file.filePath {
-        return getAppFilesDirectory().appendingPathComponent(savedFile).path
+        return getAppFilePath(savedFile).path
     }
     return nil
 }
@@ -36,6 +40,76 @@ func getStoredImage(_ file: CIFile?) -> UIImage? {
         return UIImage(contentsOfFile: filePath)
     }
     return nil
+}
+
+func saveFileFromURL(_ url: URL) -> String? {
+    let savedFile: String?
+    if url.startAccessingSecurityScopedResource() {
+        do {
+            let fileData = try Data(contentsOf: url)
+            let fileName = uniqueCombine(url.lastPathComponent)
+            savedFile = saveFile(fileData, fileName)
+        } catch {
+            logger.error("FileUtils.saveFileFromURL error: \(error.localizedDescription)")
+            savedFile = nil
+        }
+    } else {
+        logger.error("FileUtils.saveFileFromURL startAccessingSecurityScopedResource returned false")
+        savedFile = nil
+    }
+    url.stopAccessingSecurityScopedResource()
+    return savedFile
+}
+
+func saveImage(_ uiImage: UIImage) -> String? {
+    if let imageDataResized = resizeImageToDataSize(uiImage, maxDataSize: maxImageSize) {
+        let millisecondsSince1970 = Int64((Date().timeIntervalSince1970 * 1000.0).rounded())
+        let fileName = uniqueCombine("image_\(millisecondsSince1970).jpg")
+        return saveFile(imageDataResized, fileName)
+    }
+    return nil
+}
+
+private func saveFile(_ data: Data, _ fileName: String) -> String? {
+    let filePath = getAppFilePath(fileName)
+    do {
+        try data.write(to: filePath)
+        return fileName
+    } catch {
+        logger.error("FileUtils.saveFile error: \(error.localizedDescription)")
+        return nil
+    }
+}
+
+private func uniqueCombine(_ fileName: String) -> String {
+    func tryCombine(_ fileName: String, _ n: Int) -> String {
+        let name = fileName.deletingPathExtension
+        let ext = fileName.pathExtension
+        let suffix = (n == 0) ? "" : "_\(n)"
+        let f = "\(name)\(suffix).\(ext)"
+        return (FileManager.default.fileExists(atPath: getAppFilePath(f).path)) ? tryCombine(fileName, n + 1) : f
+    }
+    return tryCombine(fileName, 0)
+}
+
+private extension String {
+    var ns: NSString {
+        return self as NSString
+    }
+    var pathExtension: String {
+        return ns.pathExtension
+    }
+    var deletingPathExtension: String {
+        return ns.deletingPathExtension
+    }
+}
+
+func removeFile(_ fileName: String) {
+    do {
+        try FileManager.default.removeItem(atPath: getAppFilePath(fileName).path)
+    } catch {
+        logger.error("FileUtils.removeFile error: \(error.localizedDescription)")
+    }
 }
 
 // image utils
@@ -61,7 +135,7 @@ func cropToSquare(_ image: UIImage) -> UIImage {
     return resizeImage(image, newBounds: CGRect(origin: .zero, size: newSize), drawIn: CGRect(origin: origin, size: size))
 }
 
-func resizeImageToDataSize(_ image: UIImage, maxDataSize: Int) -> Data? {
+func resizeImageToDataSize(_ image: UIImage, maxDataSize: Int64) -> Data? {
     var img = image
     var data = img.jpegData(compressionQuality: 0.85)
     var dataSize = data?.count ?? 0
@@ -76,7 +150,7 @@ func resizeImageToDataSize(_ image: UIImage, maxDataSize: Int) -> Data? {
     return data
 }
 
-func resizeImageToStrSize(_ image: UIImage, maxDataSize: Int) -> String? {
+func resizeImageToStrSize(_ image: UIImage, maxDataSize: Int64) -> String? {
     var img = image
     var str = compressImageStr(img)
     var dataSize = str?.count ?? 0

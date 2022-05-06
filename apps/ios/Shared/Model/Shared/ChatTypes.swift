@@ -659,6 +659,8 @@ struct CIFile: Decodable {
         get {
             switch self.fileStatus {
             case .sndStored: return true
+            case .sndTransfer: return true
+            case .sndComplete: return true
             case .sndCancelled: return true
             case .rcvComplete: return true
             default: return false
@@ -705,6 +707,13 @@ enum MsgContent {
             case let .text(text): return "text \(text)"
             default: return "json \(encodeJSON(self))"
             }
+        }
+    }
+
+    func isFile() -> Bool {
+        switch self {
+        case .file: return true
+        default: return false
         }
     }
 

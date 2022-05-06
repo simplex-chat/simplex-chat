@@ -57,6 +57,7 @@ struct FramedItemView: View {
                         }
                     case let .file(text):
                         CIFileView(file: chatItem.file, edited: chatItem.meta.itemEdited)
+                            .overlay(DetermineWidth())
                         if text != "" {
                             ciMsgContentView (chatItem, showMember)
                         }
@@ -107,6 +108,16 @@ struct FramedItemView: View {
                     .aspectRatio(contentMode: .fill)
                     .frame(width: 68, height: 68)
                     .clipped()
+            } else if case .file = qi.content {
+                ciQuotedMsgView(qi)
+                    .padding(.trailing, 20).frame(minWidth: msgWidth, alignment: .leading)
+                Image(systemName: "doc.fill")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 18, height: 18)
+                    .foregroundColor(Color(uiColor: .tertiaryLabel))
+                    .padding(.top, 6)
+                    .padding(.trailing, 4)
             } else {
                 ciQuotedMsgView(qi)
             }

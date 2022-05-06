@@ -79,7 +79,11 @@ class NtfManager(val context: Context) {
   private fun hideSecrets(cItem: ChatItem) : String {
     val md = cItem.formattedText
     return if (md == null) {
-      cItem.content.text
+      if (cItem.content.text != "") {
+        cItem.content.text
+      } else {
+        cItem.file?.fileName ?: ""
+      }
     } else {
       var res = ""
       for (ft in md) {

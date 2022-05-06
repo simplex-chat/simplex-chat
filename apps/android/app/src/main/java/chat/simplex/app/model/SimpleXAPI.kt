@@ -475,6 +475,21 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
         chatItemSimpleUpdate(r.chatItem)
       is CR.RcvFileComplete ->
         chatItemSimpleUpdate(r.chatItem)
+      is CR.SndFileStart ->
+        chatItemSimpleUpdate(r.chatItem)
+      is CR.SndFileComplete -> {
+        chatItemSimpleUpdate(r.chatItem)
+        val cItem = r.chatItem.chatItem
+        val mc = cItem.content.msgContent
+        val fileName = cItem.file?.fileName
+        if (
+          r.chatItem.chatInfo.chatType == ChatType.Direct
+          && mc is MsgContent.MCFile
+          && fileName != null
+        ) {
+          removeFile(appContext, fileName)
+        }
+      }
       else ->
         Log.d(TAG , "unsupported event: ${r.responseType}")
     }
@@ -613,15 +628,7 @@ sealed class CC {
     is SetFilesFolder -> "/_files_folder $filesFolder"
     is ApiGetChats -> "/_get chats pcc=on"
     is ApiGetChat -> "/_get chat ${chatRef(type, id)} count=100"
-    is ApiSendMessage -> when {
-      file == null && quotedItemId == null -> "/_send ${chatRef(type, id)} ${mc.cmdString}"
-      file != null && quotedItemId == null -> "/_send ${chatRef(type, id)} file $file ${mc.cmdString}"
-      file == null && quotedItemId != null -> "/_send ${chatRef(type, id)} quoted $quotedItemId ${mc.cmdString}"
-      file != null && quotedItemId != null -> "/_send ${chatRef(type, id)} file $file quoted $quotedItemId ${mc.cmdString}"
-      else -> throw Exception()
-    }
-    // TODO use below
-    // is ApiSendMessage -> "/_send_v2 ${chatRef(type, id)} ${json.encodeToString(ComposedMessage(file, quotedItemId, mc))}"
+    is ApiSendMessage -> "/_send ${chatRef(type, id)} json ${json.encodeToString(ComposedMessage(file, quotedItemId, mc))}"
     is ApiUpdateChatItem -> "/_update item ${chatRef(type, id)} $itemId ${mc.cmdString}"
     is ApiDeleteChatItem -> "/_delete item ${chatRef(type, id)} $itemId ${mode.deleteMode}"
     is GetUserSMPServers -> "/smp_servers"

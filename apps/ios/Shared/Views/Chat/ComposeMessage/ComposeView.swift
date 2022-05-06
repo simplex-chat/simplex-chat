@@ -12,6 +12,7 @@ enum ComposePreview {
     case noPreview
     case linkPreview(linkPreview: LinkPreview)
     case imagePreview(imagePreview: String)
+    case filePreview(fileName: String)
 }
 
 enum ComposeContextItem {
@@ -65,6 +66,8 @@ struct ComposeState {
         switch preview {
         case .imagePreview:
             return true
+        case .filePreview:
+            return true
         default:
             return !message.isEmpty
         }
@@ -73,6 +76,8 @@ struct ComposeState {
     func linkPreviewAllowed() -> Bool {
         switch preview {
         case .imagePreview:
+            return false
+        case .filePreview:
             return false
         default:
             return true
@@ -92,10 +97,14 @@ struct ComposeState {
 func chatItemPreview(chatItem: ChatItem) -> ComposePreview {
     let chatItemPreview: ComposePreview
     switch chatItem.content.msgContent {
+    case .text:
+        chatItemPreview = .noPreview
     case let .link(_, preview: preview):
         chatItemPreview = .linkPreview(linkPreview: preview)
     case let .image(_, image: image):
         chatItemPreview = .imagePreview(imagePreview: image)
+    case .file:
+        chatItemPreview = .filePreview(fileName: chatItem.file?.fileName ?? "")
     default:
         chatItemPreview = .noPreview
     }
@@ -116,12 +125,18 @@ struct ComposeView: View {
     @State private var showChooseSource = false
     @State private var showImagePicker = false
     @State private var imageSource: ImageSource = .imageLibrary
-    @State var chosenImage: UIImage?
+    @State var chosenImage: UIImage? = nil
+
+    @State private var showFileImporter = false
+    @State var chosenFile: URL? = nil
     
     var body: some View {
         VStack(spacing: 0) {
             contextItemView()
-            previewView()
+            switch (composeState.editing(), composeState.preview) {
+                case (true, .filePreview): EmptyView()
+                default: previewView()
+            }
             HStack (alignment: .bottom) {
                 Button {
                     showChooseSource = true
@@ -163,6 +178,9 @@ struct ComposeView: View {
                 imageSource = .imageLibrary
                 showImagePicker = true
             }
+            Button("Choose file") {
+                showFileImporter = true
+            }
         }
         .sheet(isPresented: $showImagePicker) {
             switch imageSource {
@@ -182,6 +200,36 @@ struct ComposeView: View {
                 composeState = composeState.copy(preview: .noPreview)
             }
         }
+        .fileImporter(
+            isPresented: $showFileImporter,
+            allowedContentTypes: [.data],
+            allowsMultipleSelection: false
+        ) { result in
+            if case .success = result {
+                do {
+                    let fileURL: URL = try result.get().first!
+                    var fileSize: Int? = nil
+                    if fileURL.startAccessingSecurityScopedResource() {
+                        let resourceValues = try fileURL.resourceValues(forKeys: [.fileSizeKey])
+                        fileSize = resourceValues.fileSize
+                    }
+                    fileURL.stopAccessingSecurityScopedResource()
+                    if let fileSize = fileSize,
+                       fileSize <= maxFileSize {
+                        chosenFile = fileURL
+                        composeState = composeState.copy(preview: .filePreview(fileName: fileURL.lastPathComponent))
+                    } else {
+                        let prettyMaxFileSize = ByteCountFormatter().string(fromByteCount: maxFileSize)
+                        AlertManager.shared.showAlertMsg(
+                            title: "Large file!",
+                            message: "Currently maximum supported file size is \(prettyMaxFileSize)."
+                        )
+                    }
+                } catch {
+                    logger.error("ComposeView fileImporter error \(error.localizedDescription)")
+                }
+            }
+        }
     }
 
     @ViewBuilder func previewView() -> some View {
@@ -193,7 +241,18 @@ struct ComposeView: View {
         case let .imagePreview(imagePreview: img):
             ComposeImageView(
                 image: img,
-                cancelImage: { composeState = composeState.copy(preview: .noPreview) },
+                cancelImage: {
+                    composeState = composeState.copy(preview: .noPreview)
+                    chosenImage = nil
+                },
+                cancelEnabled: !composeState.editing())
+        case let .filePreview(fileName: fileName):
+            ComposeFileView(
+                fileName: fileName,
+                cancelFile: {
+                    composeState = composeState.copy(preview: .noPreview)
+                    chosenFile = nil
+                },
                 cancelEnabled: !composeState.editing())
         }
     }
@@ -203,9 +262,17 @@ struct ComposeView: View {
         case .noContextItem:
             EmptyView()
         case let .quotedItem(chatItem: quotedItem):
-            ContextItemView(contextItem: quotedItem, cancelContextItem: { composeState = composeState.copy(contextItem: .noContextItem) })
+            ContextItemView(
+                contextItem: quotedItem,
+                contextIcon: "arrowshape.turn.up.left.circle",
+                cancelContextItem: { composeState = composeState.copy(contextItem: .noContextItem) }
+            )
         case let .editingItem(chatItem: editingItem):
-            ContextItemView(contextItem: editingItem, cancelContextItem: { composeState = ComposeState()})
+            ContextItemView(
+                contextItem: editingItem,
+                contextIcon: "pencil.circle",
+                cancelContextItem: { clearState() }
+            )
         }
     }
 
@@ -241,6 +308,12 @@ struct ComposeView: View {
                             mc = .image(text: composeState.message, image: image)
                             file = savedFile
                         }
+                    case .filePreview:
+                        if let fileURL = chosenFile,
+                           let savedFile = saveFileFromURL(fileURL) {
+                            mc = .file(composeState.message)
+                            file = savedFile
+                        }
                     }
 
                     var quotedItemId: Int64? = nil
@@ -261,11 +334,22 @@ struct ComposeView: View {
                         chatModel.addChatItem(chat.chatInfo, chatItem)
                     }
                 }
-                composeState = ComposeState()
+                clearState()
             } catch {
+                clearState()
                 logger.error("ChatView.sendMessage error: \(error.localizedDescription)")
             }
         }
+    }
+
+    private func clearState() {
+        composeState = ComposeState()
+        linkUrl = nil
+        prevLinkUrl = nil
+        pendingLinkUrl = nil
+        cancelledLinks = []
+        chosenImage = nil
+        chosenFile = nil
     }
 
     private func updateMsgContent(_ msgContent: MsgContent) -> MsgContent {
@@ -281,22 +365,6 @@ struct ComposeView: View {
         case .unknown(let type, _):
             return .unknown(type: type, text: composeState.message)
         }
-    }
-
-    private func saveImage(_ uiImage: UIImage) -> String? {
-        if let imageDataResized = resizeImageToDataSize(uiImage, maxDataSize: maxImageSize) {
-            let millisecondsSince1970 = Int64((Date().timeIntervalSince1970 * 1000.0).rounded())
-            let fileToSave = "image_\(millisecondsSince1970).jpg"
-            let filePath = getAppFilesDirectory().appendingPathComponent(fileToSave)
-            do {
-                try imageDataResized.write(to: filePath)
-                return fileToSave
-            } catch {
-                logger.error("ChatView.saveImage error: \(error.localizedDescription)")
-                return nil
-            }
-        }
-        return nil
     }
 
     private func showLinkPreview(_ s: String) {
