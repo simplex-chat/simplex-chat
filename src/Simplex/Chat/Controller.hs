@@ -104,7 +104,6 @@ data ChatCommand
   | APIGetChat ChatRef ChatPagination
   | APIGetChatItems Int
   | APISendMessage ChatRef ComposedMessage
-  | APISendMessageQuote ChatRef ChatItemId MsgContent -- TODO discontinue
   | APIUpdateChatItem ChatRef ChatItemId MsgContent
   | APIDeleteChatItem ChatRef ChatItemId CIDeleteMode
   | APIChatRead ChatRef (ChatItemId, ChatItemId)

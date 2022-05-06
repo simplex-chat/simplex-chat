@@ -297,9 +297,6 @@ processChatCommand = \case
           qTextOrFile = if T.null qText then qFileName else qText
       unzipMaybe :: Maybe (a, b) -> (Maybe a, Maybe b)
       unzipMaybe t = (fst <$> t, snd <$> t)
-  -- TODO discontinue
-  APISendMessageQuote chatId quotedItemId mc ->
-    processChatCommand . APISendMessage chatId $ ComposedMessage Nothing (Just quotedItemId) mc
   APIUpdateChatItem (ChatRef cType chatId) itemId mc -> withUser $ \user@User {userId} -> withChatLock $ case cType of
     CTDirect -> do
       (ct@Contact {contactId, localDisplayName = c}, ci) <- withStore $ \st -> (,) <$> getContact st userId chatId <*> getDirectChatItem st userId chatId itemId
@@ -2109,9 +2106,7 @@ chatCommandP =
     <|> "/_get chats" *> (APIGetChats <$> (" pcc=on" $> True <|> " pcc=off" $> False <|> pure False))
     <|> "/_get chat " *> (APIGetChat <$> chatRefP <* A.space <*> chatPaginationP)
     <|> "/_get items count=" *> (APIGetChatItems <$> A.decimal)
-    <|> "/_send " *> (APISendMessage <$> chatRefP <*> composedMsgP)
-    <|> "/_send_v2 " *> (APISendMessage <$> chatRefP <*> jsonP)
-    <|> "/_send_quote " *> (APISendMessageQuote <$> chatRefP <* A.space <*> A.decimal <* A.space <*> msgContentP)
+    <|> "/_send " *> (APISendMessage <$> chatRefP <*> (" json " *> jsonP <|> " text " *> (ComposedMessage Nothing Nothing <$> mcTextP)))
     <|> "/_update item " *> (APIUpdateChatItem <$> chatRefP <* A.space <*> A.decimal <* A.space <*> msgContentP)
     <|> "/_delete item " *> (APIDeleteChatItem <$> chatRefP <* A.space <*> A.decimal <* A.space <*> ciDeleteMode)
     <|> "/_read chat " *> (APIChatRead <$> chatRefP <* A.space <*> ((,) <$> ("from=" *> A.decimal) <* A.space <*> ("to=" *> A.decimal)))
@@ -2187,9 +2182,8 @@ chatCommandP =
       (CPLast <$ "count=" <*> A.decimal)
         <|> (CPAfter <$ "after=" <*> A.decimal <* A.space <* "count=" <*> A.decimal)
         <|> (CPBefore <$ "before=" <*> A.decimal <* A.space <* "count=" <*> A.decimal)
-    msgContentP =
-      "text " *> (MCText . safeDecodeUtf8 <$> A.takeByteString)
-        <|> "json " *> jsonP
+    mcTextP = MCText . safeDecodeUtf8 <$> A.takeByteString
+    msgContentP = "text " *> mcTextP <|> "json " *> jsonP
     ciDeleteMode = "broadcast" $> CIDMBroadcast <|> "internal" $> CIDMInternal
     tokenP = "apns " *> (DeviceToken PPApns <$> hexStringP)
     hexStringP =
@@ -2216,10 +2210,7 @@ chatCommandP =
     fullNameP name = do
       n <- (A.space *> A.takeByteString) <|> pure ""
       pure $ if B.null n then name else safeDecodeUtf8 n
-    composedMsgP = ComposedMessage <$> optional filePathTagged <*> optional quotedItemIdTagged <* A.space <*> msgContentP
     filePath = T.unpack . safeDecodeUtf8 <$> A.takeByteString
-    filePathTagged = " file " *> (T.unpack . safeDecodeUtf8 <$> A.takeTill (== ' '))
-    quotedItemIdTagged = " quoted " *> A.decimal
     memberRole =
       (" owner" $> GROwner)
         <|> (" admin" $> GRAdmin)
