@@ -286,7 +286,7 @@ processChatCommand = \case
         where
           qText = msgContentText qmc
           qFileName = maybe qText (T.pack . (fileName :: CIFile d -> String)) ciFile_
-          qTextOrFile = if T.null then qText else qFileName
+          qTextOrFile = if T.null qText then qFileName else qText
       unzipMaybe :: Maybe (a, b) -> (Maybe a, Maybe b)
       unzipMaybe t = (fst <$> t, snd <$> t)
   -- TODO discontinue
