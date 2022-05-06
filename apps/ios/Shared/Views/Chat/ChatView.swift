@@ -108,17 +108,28 @@ struct ChatView: View {
             }
             ToolbarItem(placement: .navigationBarTrailing) {
                 if case let .direct(contact) = cInfo {
-                    Button {
-                        chatModel.activeCall = Call(contact: contact, callState: .waitCapabilities, localMedia: .video)
-                        showCallView = true
-                        chatModel.callCommand = .capabilities
-                    } label: {
-                        Image(systemName: "video")
+                    HStack {
+                        callButton(contact, .audio, imageName: "phone")
+                        callButton(contact, .video, imageName: "video")
                     }
                 }
             }
         }
         .navigationBarBackButtonHidden(true)
+    }
+
+    private func callButton(_ contact: Contact, _ media: CallMediaType, imageName: String) -> some View {
+        Button {
+            chatModel.activeCall = Call(
+                contact: contact,
+                callState: .waitCapabilities,
+                localMedia: media
+            )
+            showCallView = true
+            chatModel.callCommand = .capabilities
+        } label: {
+            Image(systemName: imageName)
+        }
     }
 
     private func chatItemWithMenu(_ ci: ChatItem, _ maxWidth: CGFloat, showMember: Bool = false) -> some View {
