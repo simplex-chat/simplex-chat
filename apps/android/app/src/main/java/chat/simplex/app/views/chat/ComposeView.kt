@@ -88,7 +88,7 @@ fun chatItemPreview(chatItem: ChatItem): ComposePreview {
     is MsgContent.MCImage -> ComposePreview.ImagePreview(image = mc.image)
     is MsgContent.MCFile -> {
       val fileName = chatItem.file?.fileName ?: ""
-      ComposePreview.FilePreview(fileName = fileName)
+      ComposePreview.FilePreview(fileName)
     }
     else -> ComposePreview.NoPreview
   }
