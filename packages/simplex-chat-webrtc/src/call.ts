@@ -1,17 +1,15 @@
 // Inspired by
 // https://github.com/webrtc/samples/blob/gh-pages/src/content/insertable-streams/endtoend-encryption
 
-// type WCallMessage = WCallCommand | WCallResponse
-
-interface WebViewAPICall {
-  corrId: number
+interface WVAPICall {
+  corrId?: number
   command: WCallCommand
 }
 
-// TODO remove WCallCommand from resp type
-interface WebViewMessage {
+interface WVApiMessage {
   corrId?: number
-  resp: WCallResponse | WCallCommand
+  resp: WCallResponse
+  command?: WCallCommand
 }
 
 type WCallCommand = WCCapabilities | WCStartCall | WCAcceptOffer | WCallAnswer | WCallIceCandidates | WCEndCall
@@ -242,12 +240,11 @@ async function initializeCall(config: CallConfig, mediaType: CallMediaType, aesK
   }
 }
 
-var sendMessageToNative = (msg: WebViewMessage) => console.log(JSON.stringify(msg))
+var sendMessageToNative = (msg: WVApiMessage) => console.log(JSON.stringify(msg))
 
-// TODO remove WCallCommand from result type
-async function processCommand(body: WebViewAPICall): Promise<WebViewMessage> {
-  const {command, corrId} = body
-  let resp: WCallResponse | WCallCommand
+async function processCommand(body: WVAPICall): Promise<WVApiMessage> {
+  const {corrId, command} = body
+  let resp: WCallResponse
   try {
     switch (command.type) {
       case "capabilities":
@@ -294,7 +291,11 @@ async function processCommand(body: WebViewAPICall): Promise<WebViewMessage> {
           await pc.setLocalDescription(answer)
           addIceCandidates(pc, remoteIceCandidates)
           // same as command for caller to use
-          resp = {type: "answer", answer: JSON.stringify(answer), iceCandidates: await iceCandidates}
+          resp = {
+            type: "answer",
+            answer: JSON.stringify(answer),
+            iceCandidates: await iceCandidates,
+          }
         }
         break
       case "answer":
@@ -338,7 +339,7 @@ async function processCommand(body: WebViewAPICall): Promise<WebViewMessage> {
   } catch (e) {
     resp = {type: "error", message: (e as Error).message}
   }
-  const apiResp = {resp, corrId}
+  const apiResp = {corrId, resp, command}
   sendMessageToNative(apiResp)
   return apiResp
 }

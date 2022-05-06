@@ -340,12 +340,18 @@ struct ComposedMessage: Encodable {
     var msgContent: MsgContent
 }
 
-private func decodeCJSON<T: Decodable>(_ cjson: UnsafePointer<CChar>) -> T? {
-    let s = String.init(cString: cjson)
-    let d = s.data(using: .utf8)!
-//    let p = UnsafeMutableRawPointer.init(mutating: UnsafeRawPointer(cjson))
-//    let d = Data.init(bytesNoCopy: p, count: strlen(cjson), deallocator: .free)
-    return try? jsonDecoder.decode(T.self, from: d)
+func decodeJSON<T: Decodable>(_ json: String) -> T? {
+    if let data = json.data(using: .utf8) {
+        return try? jsonDecoder.decode(T.self, from: data)
+    }
+    return nil
+}
+
+func decodeCJSON<T: Decodable>(_ cjson: UnsafePointer<CChar>) -> T? {
+    // TODO is there a way to do it without copying the data? e.g:
+    //    let p = UnsafeMutableRawPointer.init(mutating: UnsafeRawPointer(cjson))
+    //    let d = Data.init(bytesNoCopy: p, count: strlen(cjson), deallocator: .free)
+    decodeJSON(String.init(cString: cjson))
 }
 
 private func getJSONObject(_ cjson: UnsafePointer<CChar>) -> NSDictionary? {

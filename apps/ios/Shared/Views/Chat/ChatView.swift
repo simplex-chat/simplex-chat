@@ -109,7 +109,7 @@ struct ChatView: View {
             ToolbarItem(placement: .navigationBarTrailing) {
                 if case let .direct(contact) = cInfo {
                     Button {
-                        chatModel.currentCall = Call(contact: contact, callState: .waitCapabilities, localMedia: .video)
+                        chatModel.activeCall = Call(contact: contact, callState: .waitCapabilities, localMedia: .video)
                         showCallView = true
                         chatModel.callCommand = .capabilities
                     } label: {
@@ -174,7 +174,8 @@ struct ChatView: View {
                 }
                 if let di = deletingItem {
                     if di.meta.editable {
-                        Button("Delete for everyone",role: .destructive) { deleteMessage(.cidmBroadcast)
+                        Button("Delete for everyone",role: .destructive) {
+                            deleteMessage(.cidmBroadcast)
                         }
                     }
                 }

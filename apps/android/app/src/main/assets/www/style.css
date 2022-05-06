@@ -5,6 +5,7 @@ html,
 body {
   padding: 0;
   margin: 0;
+  background-color: black;
 }
 #remote-video-stream {
   position: absolute;

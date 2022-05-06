@@ -568,12 +568,12 @@ func processReceivedMsg(_ res: ChatResponse) {
             // TODO askConfirmation?
             // TODO check encryption is compatible
             withCall(contact) { call in
-                m.currentCall = call.copy(callState: .offerReceived, peerMedia: callType.media, sharedKey: sharedKey)
+                m.activeCall = call.copy(callState: .offerReceived, peerMedia: callType.media, sharedKey: sharedKey)
                 m.callCommand = .accept(offer: offer.rtcSession, iceCandidates: offer.rtcIceCandidates, media: callType.media, aesKey: sharedKey)
             }
         case let .callAnswer(contact, answer):
             withCall(contact) { call in
-                m.currentCall = call.copy(callState: .negotiated)
+                m.activeCall = call.copy(callState: .negotiated)
                 m.callCommand = .answer(answer: answer.rtcSession, iceCandidates: answer.rtcIceCandidates)
             }
         case let .callExtraInfo(contact, extraInfo):
@@ -581,8 +581,8 @@ func processReceivedMsg(_ res: ChatResponse) {
                 m.callCommand = .ice(iceCandidates: extraInfo.rtcIceCandidates)
             }
         case let .callEnded(contact):
+            m.activeCallInvitation = nil
             withCall(contact) { _ in
-                // TODO close call view? or after end is executed? or update call state so it's reflected in the view?
                 m.callCommand = .end
             }
         default:
@@ -590,7 +590,7 @@ func processReceivedMsg(_ res: ChatResponse) {
         }
 
         func withCall(_ contact: Contact, _ perform: (Call) -> Void) {
-            if let call = m.currentCall, call.contact.apiId == contact.apiId {
+            if let call = m.activeCall, call.contact.apiId == contact.apiId {
                 perform(call)
             } else {
                 logger.debug("processReceivedMsg: ignoring \(res.responseType), not in call with the contact \(contact.id)")

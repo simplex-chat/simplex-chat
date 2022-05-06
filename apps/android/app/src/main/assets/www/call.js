@@ -109,9 +109,8 @@ async function initializeCall(config, mediaType, aesKey) {
     }
 }
 var sendMessageToNative = (msg) => console.log(JSON.stringify(msg));
-// TODO remove WCallCommand from result type
 async function processCommand(body) {
-    const { command, corrId } = body;
+    const { corrId, command } = body;
     let resp;
     try {
         switch (command.type) {
@@ -163,7 +162,11 @@ async function processCommand(body) {
                     await pc.setLocalDescription(answer);
                     addIceCandidates(pc, remoteIceCandidates);
                     // same as command for caller to use
-                    resp = { type: "answer", answer: JSON.stringify(answer), iceCandidates: await iceCandidates };
+                    resp = {
+                        type: "answer",
+                        answer: JSON.stringify(answer),
+                        iceCandidates: await iceCandidates,
+                    };
                 }
                 break;
             case "answer":
@@ -213,7 +216,7 @@ async function processCommand(body) {
     catch (e) {
         resp = { type: "error", message: e.message };
     }
-    const apiResp = { resp, corrId };
+    const apiResp = { corrId, resp, command };
     sendMessageToNative(apiResp);
     return apiResp;
 }

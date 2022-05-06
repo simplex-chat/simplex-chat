@@ -54,34 +54,27 @@ struct ChatListView: View {
                     NewChatButton()
                 }
             }
-            .sheet(isPresented: $showCallView) {
+            .fullScreenCover(isPresented: $showCallView) {
                 ActiveCallView(showCallView: $showCallView)
             }
-//            .onChange(of: chatModel.currentCall) { _ in
-//                if chatModel.currentCall != nil {
-//                    showCallView = true
-//                }
-//            }
             .onChange(of: showCallView) { _ in
-                if (!showCallView) {
-                    chatModel.callCommand = nil
-                    chatModel.currentCall = nil
+                if (showCallView) { return }
+                if let call = chatModel.activeCall {
+                    Task {
+                        do {
+                            try await apiEndCall(call.contact)
+                        } catch {
+                            logger.error("ChatListView apiEndCall error: \(error.localizedDescription)")
+                        }
+                    }
                 }
+                chatModel.callCommand = .end
             }
-            .onChange(of: chatModel.activeCallInvitation) { contactRef in
-                if let contactRef = contactRef,
+            .onChange(of: chatModel.activeCallInvitation) { _ in
+                if let contactRef = chatModel.activeCallInvitation,
                    case let .direct(contact) = chatModel.getChat(contactRef.id)?.chatInfo,
-                   let invitation = chatModel.callInvitations[contactRef.id] {
-                    chatModel.activeCallInvitation = nil
-                    AlertManager.shared.showAlert(Alert(
-                        title: Text("Incoming call"),
-                        primaryButton: .default(Text("Answer")) {
-                            chatModel.currentCall = Call(contact: contact, callState: .invitationReceived, localMedia: invitation.peerMedia)
-                            showCallView = true
-                            chatModel.callCommand = .start(media: invitation.peerMedia, aesKey: invitation.sharedKey)
-                        },
-                        secondaryButton: .cancel()
-                    ))
+                   let invitation = chatModel.callInvitations.removeValue(forKey: contactRef.id) {
+                    answerCallAlert(contact, invitation)
                 }
             }
         }
@@ -129,6 +122,25 @@ struct ChatListView: View {
         } else {
             return Alert(title: Text("Error: URL is invalid"))
         }
+    }
+
+    private func answerCallAlert(_ contact: Contact, _ invitation: CallInvitation) {
+        AlertManager.shared.showAlert(Alert(
+            title: Text("Incoming call"),
+            primaryButton: .default(Text("Answer")) {
+                if chatModel.activeCallInvitation == nil {
+                    DispatchQueue.main.async {
+                        AlertManager.shared.showAlertMsg(title: "Call already ended!")
+                    }
+                } else {
+                    chatModel.activeCallInvitation = nil
+                    chatModel.activeCall = Call(contact: contact, callState: .invitationReceived, localMedia: invitation.peerMedia)
+                    showCallView = true
+                    chatModel.callCommand = .start(media: invitation.peerMedia, aesKey: invitation.sharedKey)
+                }
+            },
+            secondaryButton: .cancel()
+        ))
     }
 }
 

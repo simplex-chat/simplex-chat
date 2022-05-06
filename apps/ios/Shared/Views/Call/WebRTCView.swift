@@ -11,10 +11,10 @@ import WebKit
 
 class WebRTCCoordinator: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
     var webViewReady: Binding<Bool>
-    var webViewMsg: Binding<WCallResponse?>
+    var webViewMsg: Binding<WVAPIMessage?>
     private var webView: WKWebView?
 
-    internal init(webViewReady: Binding<Bool>, webViewMsg: Binding<WCallResponse?>) {
+    internal init(webViewReady: Binding<Bool>, webViewMsg: Binding<WVAPIMessage?>) {
         self.webViewReady = webViewReady
         self.webViewMsg = webViewMsg
     }
@@ -31,9 +31,9 @@ class WebRTCCoordinator: NSObject, WKNavigationDelegate, WKScriptMessageHandler 
         didReceive message: WKScriptMessage
     ) {
         logger.debug("WebRTCCoordinator.userContentController")
-        if let data = (message.body as? String)?.data(using: .utf8),
-           let msg = try? jsonDecoder.decode(WVAPIMessage.self, from: data) {
-            webViewMsg.wrappedValue = msg.resp
+        if let msgStr = message.body as? String,
+           let msg: WVAPIMessage = decodeJSON(msgStr) {
+            webViewMsg.wrappedValue = msg
         } else {
             logger.error("WebRTCCoordinator.userContentController: invalid message \(String(describing: message.body))")
         }
@@ -52,7 +52,7 @@ class WebRTCCoordinator: NSObject, WKNavigationDelegate, WKScriptMessageHandler 
 struct WebRTCView: UIViewRepresentable {
     @Binding var coordinator: WebRTCCoordinator?
     @Binding var webViewReady: Bool
-    @Binding var webViewMsg: WCallResponse?
+    @Binding var webViewMsg: WVAPIMessage?
 
     func makeCoordinator() -> WebRTCCoordinator {
         WebRTCCoordinator(webViewReady: $webViewReady, webViewMsg: $webViewMsg)
@@ -127,8 +127,8 @@ struct WebRTCView: UIViewRepresentable {
 //                }
 //                Button("Send") {
 //                    do {
-//                        let command = try jsonDecoder.decode(WCallCommand.self, from: commandStr.data(using: .utf8)!)
-//                        if let c = coordinator {
+//                        if let c = coordinator,
+//                           let command: WCallCommand = decodeJSON(commandStr) {
 //                            c.sendCommand(command: command)
 //                        }
 //                    } catch {

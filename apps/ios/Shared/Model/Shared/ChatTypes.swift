@@ -856,13 +856,13 @@ enum CICallStatus: String, Decodable {
         switch self {
         case .pending: return "calling..."
         case .negotiated: return "connecting..."
-        case .progress: return "in progress \(duration(sec))"
+        case .progress: return "in progress"
         case .ended: return "ended \(duration(sec))"
         default: return self.rawValue
         }
     }
 
     func duration(_ sec: Int) -> String {
-        "\(sec % 60):\(sec / 60)"
+        String(format: "%02d:%02d", sec / 60, sec % 60)
     }
 }
