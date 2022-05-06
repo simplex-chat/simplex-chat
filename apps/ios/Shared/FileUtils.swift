@@ -22,15 +22,15 @@ func getAppFilesDirectory() -> URL {
     getDocumentsDirectory().appendingPathComponent("app_files", isDirectory: true)
 }
 
-func getFilePath(_ fileName: String) -> String {
-    getAppFilesDirectory().appendingPathComponent(fileName).path
+func getAppFilePath(_ fileName: String) -> URL {
+    getAppFilesDirectory().appendingPathComponent(fileName)
 }
 
 func getStoredFilePath(_ file: CIFile?) -> String? {
     if let file = file,
        file.stored,
        let savedFile = file.filePath {
-        return getFilePath(savedFile)
+        return getAppFilePath(savedFile).path
     }
     return nil
 }
@@ -71,7 +71,7 @@ func saveImage(_ uiImage: UIImage) -> String? {
 }
 
 private func saveFile(_ data: Data, _ fileName: String) -> String? {
-    let filePath = getAppFilesDirectory().appendingPathComponent(fileName)
+    let filePath = getAppFilePath(fileName)
     do {
         try data.write(to: filePath)
         return fileName
@@ -87,7 +87,7 @@ private func uniqueCombine(_ fileName: String) -> String {
         let ext = fileName.pathExtension
         let suffix = (n == 0) ? "" : "_\(n)"
         let f = "\(name)\(suffix).\(ext)"
-        return (FileManager.default.fileExists(atPath: getFilePath(f))) ? tryCombine(fileName, n + 1) : f
+        return (FileManager.default.fileExists(atPath: getAppFilePath(f).path)) ? tryCombine(fileName, n + 1) : f
     }
     return tryCombine(fileName, 0)
 }
@@ -106,7 +106,7 @@ private extension String {
 
 func removeFile(_ fileName: String) {
     do {
-        try FileManager.default.removeItem(atPath: getFilePath(fileName))
+        try FileManager.default.removeItem(atPath: getAppFilePath(fileName).path)
     } catch {
         logger.error("FileUtils.removeFile error: \(error.localizedDescription)")
     }

@@ -221,7 +221,7 @@ struct ComposeView: View {
                     } else {
                         let prettyMaxFileSize = ByteCountFormatter().string(fromByteCount: maxFileSize)
                         AlertManager.shared.showAlertMsg(
-                            title: "Cannot send file",
+                            title: "Large file!",
                             message: "Currently maximum supported file size is \(prettyMaxFileSize)."
                         )
                     }
@@ -254,7 +254,6 @@ struct ComposeView: View {
                     chosenFile = nil
                 },
                 cancelEnabled: !composeState.editing())
-            EmptyView()
         }
     }
 
