@@ -278,11 +278,13 @@ processChatCommand = \case
     where
       quoteContent :: forall d. MsgContent -> Maybe (CIFile d) -> MsgContent -> MsgContent
       quoteContent qmc ciFile_ = \case
-        MCText _ -> qmc
-        _ ->
-          let t = msgContentText qmc
-              fileName' = T.pack . (fileName :: CIFile d -> String)
-           in MCText $ if T.null t then maybe t fileName' ciFile_ else t
+        MCText _ -> MCText quoteText
+        _ -> MCText quoteText
+        where
+          quoteText =
+            let t = msgContentText qmc
+                fileName' = T.pack . (fileName :: CIFile d -> String)
+             in if T.null t then maybe t fileName' ciFile_ else t
       unzipMaybe :: Maybe (a, b) -> (Maybe a, Maybe b)
       unzipMaybe t = (fst <$> t, snd <$> t)
   -- TODO discontinue
