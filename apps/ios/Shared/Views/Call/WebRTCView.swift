@@ -10,10 +10,14 @@ import SwiftUI
 import WebKit
 
 class WebRTCCoordinator: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
-    var webView: WKWebView!
+    var webViewMsg: Binding<WCallResponse?>
+    var webView: WKWebView?
+//    var corrId = 0
+//    var pendingCommands: Dictionary<Int, CheckedContinuation<WCallResponse, Never>> = [:]
 
-    var corrId = 0
-    var pendingCommands: Dictionary<Int, CheckedContinuation<WCallResponse, Never>> = [:]
+    internal init(webViewMsg: Binding<WCallResponse?>) {
+        self.webViewMsg = webViewMsg
+    }
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         webView.allowsBackForwardNavigationGestures = false
@@ -28,43 +32,58 @@ class WebRTCCoordinator: NSObject, WKNavigationDelegate, WKScriptMessageHandler 
         logger.debug("WebRTCCoordinator.userContentController")
         if let data = (message.body as? String)?.data(using: .utf8),
            let msg = try? jsonDecoder.decode(WVAPIMessage.self, from: data) {
-            if let corrId = msg.corrId, let cont = pendingCommands.removeValue(forKey: corrId) {
-                cont.resume(returning: msg.resp)
-            } else {
+//            if let corrId = msg.corrId, let cont = pendingCommands.removeValue(forKey: corrId) {
+//                cont.resume(returning: msg.resp)
+//            } else {
+            webViewMsg.wrappedValue = msg.resp
                 // TODO pass messages to call view via binding
                 // print(msg.resp)
-            }
+//            }
         } else {
             logger.error("WebRTCCoordinator.userContentController: invalid message \(String(describing: message.body))")
         }
     }
 
     func messageToWebview(msg: String) {
-        logger.debug("WebRTCCoordinator.messageToWebview")
-        self.webView.evaluateJavaScript("webkit.messageHandlers.logHandler.postMessage('\(msg)')")
-    }
-
-    func processCommand(command: WCallCommand) async -> WCallResponse {
-        await withCheckedContinuation { cont in
-            logger.debug("WebRTCCoordinator.processCommand")
-            let corrId_ = corrId
-            corrId = corrId + 1
-            pendingCommands[corrId_] = cont
-            let apiCmd = encodeJSON(WVAPICall(corrId: corrId_, command: command))
-            DispatchQueue.main.async {
-                logger.debug("WebRTCCoordinator.processCommand DispatchQueue.main.async")
-                let js = "processCommand(\(apiCmd))"
-                self.webView.evaluateJavaScript(js)
-            }
+        if let webView = webView {
+            logger.debug("WebRTCCoordinator.messageToWebview")
+            webView.evaluateJavaScript("webkit.messageHandlers.logHandler.postMessage('\(msg)')")
         }
     }
+
+    func sendCommand(command: WCallCommand) {
+        if let webView = webView {
+            logger.debug("WebRTCCoordinator.sendCommand")
+            let apiCmd = encodeJSON(WVAPICall(command: command))
+            let js = "processCommand(\(apiCmd))"
+            webView.evaluateJavaScript(js)
+        }
+    }
+
+//    func processCommand(command: WCallCommand) async -> WCallResponse {
+//        await withCheckedContinuation { cont in
+//            if let webView = webView {
+//                logger.debug("WebRTCCoordinator.processCommand")
+//                let corrId_ = corrId
+//                corrId = corrId + 1
+//                pendingCommands[corrId_] = cont
+//                let apiCmd = encodeJSON(WVAPICall(corrId: corrId_, command: command))
+//                DispatchQueue.main.async {
+//                    logger.debug("WebRTCCoordinator.processCommand DispatchQueue.main.async")
+//                    let js = "processCommand(\(apiCmd))"
+//                    webView.evaluateJavaScript(js)
+//                }
+//            }
+//        }
+//    }
 }
 
 struct WebRTCView: UIViewRepresentable {
     @Binding var coordinator: WebRTCCoordinator?
+    @Binding var webViewMsg: WCallResponse?
 
     func makeCoordinator() -> WebRTCCoordinator {
-        WebRTCCoordinator()
+        WebRTCCoordinator(webViewMsg: $webViewMsg)
     }
 
     func makeUIView(context: Context) -> WKWebView {
@@ -107,11 +126,17 @@ struct WebRTCView: UIViewRepresentable {
 struct CallViewDebug: View {
     @State var coordinator: WebRTCCoordinator? = nil
     @State var commandStr = ""
+    @State private var webViewMsg: WCallResponse? = nil
     @FocusState private var keyboardVisible: Bool
 
     var body: some View {
         VStack(spacing: 30) {
-            WebRTCView(coordinator: $coordinator).frame(maxHeight: 260)
+            WebRTCView(coordinator: $coordinator, webViewMsg: $webViewMsg).frame(maxHeight: 260)
+                .onChange(of: webViewMsg) { _ in
+                    if let resp = webViewMsg {
+                        commandStr = encodeJSON(resp)
+                    }
+                }
             TextEditor(text: $commandStr)
                 .focused($keyboardVisible)
                 .disableAutocorrection(true)
@@ -137,10 +162,7 @@ struct CallViewDebug: View {
                     do {
                         let command = try jsonDecoder.decode(WCallCommand.self, from: commandStr.data(using: .utf8)!)
                         if let c = coordinator {
-                            Task {
-                                let resp = await c.processCommand(command: command)
-                                print(encodeJSON(resp))
-                            }
+                            c.sendCommand(command: command)
                         }
                     } catch {
                         print(error)
@@ -153,10 +175,7 @@ struct CallViewDebug: View {
                 }
                 Button("Start") {
                     if let c = coordinator {
-                        Task {
-                            let resp = await c.processCommand(command: .start(media: .video))
-                            print(encodeJSON(resp))
-                        }
+                        c.sendCommand(command: .start(media: .video))
                     }
                 }
                 Button("Accept") {

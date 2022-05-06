@@ -8,7 +8,11 @@
 
 import Foundation
 
-struct Call {
+struct Call: Equatable {
+    static func == (lhs: Call, rhs: Call) -> Bool {
+        lhs.contact.apiId == rhs.contact.apiId
+    }
+
     var contact: Contact
     var callState: CallState
     var localMedia: CallMediaType
@@ -46,7 +50,7 @@ enum CallState {
 }
 
 struct WVAPICall: Encodable {
-    var corrId: Int
+    var corrId: Int? = nil
     var command: WCallCommand
 }
 
@@ -70,6 +74,19 @@ enum WCallCommand: Equatable {
         case offer
         case answer
         case iceCandidates
+    }
+
+    var cmdType: String {
+        get {
+            switch self {
+            case .capabilities: return("capabilities")
+            case .start: return("start")
+            case .accept: return("accept")
+            case .answer: return("answer")
+            case .ice: return("ice")
+            case .end: return("end")
+            }
+        }
     }
 }
 
@@ -136,7 +153,7 @@ extension WCallCommand: Decodable {
 }
 
 
-enum WCallResponse {
+enum WCallResponse: Equatable {
     case capabilities(capabilities: CallCapabilities)
     case offer(offer: String, iceCandidates: [String])
     // TODO remove accept, it is needed for debugging
@@ -160,6 +177,23 @@ enum WCallResponse {
         // TODO remove media, aesKey
         case media
         case aesKey
+    }
+
+    var respType: String {
+        get {
+            switch self {
+            case .capabilities: return("capabilities")
+            case .offer: return("offer")
+            case .accept: return("accept")
+            case .answer: return("answer (TODO remove)")
+            case .ice: return("ice")
+            case .connection: return("connection")
+            case .ended: return("ended")
+            case .ok: return("ok")
+            case .error: return("error")
+            case .invalid: return("invalid")
+            }
+        }
     }
 }
 
@@ -249,7 +283,7 @@ extension WCallResponse: Encodable {
     }
 }
 
-struct ConnectionState: Codable {
+struct ConnectionState: Codable, Equatable {
     var connectionState: String
     var iceConnectionState: String
     var iceGatheringState: String

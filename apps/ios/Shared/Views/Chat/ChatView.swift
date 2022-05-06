@@ -14,7 +14,7 @@ struct ChatView: View {
     @EnvironmentObject var chatModel: ChatModel
     @Environment(\.colorScheme) var colorScheme
     @ObservedObject var chat: Chat
-    @State private var showCallView = false
+    @Binding var showCallView: Bool
     @State private var composeState = ComposeState()
     @State private var deletingItem: ChatItem? = nil
     @FocusState private var keyboardVisible: Bool
@@ -109,18 +109,13 @@ struct ChatView: View {
             ToolbarItem(placement: .navigationBarTrailing) {
                 if case let .direct(contact) = cInfo {
                     Button {
-                        Task {
-                            do {
-                                chatModel.currentCall = Call(contact: contact, callState: .waitCapabilities, localMedia: .video)
-                                chatModel.callCommand = .capabilities
-                                showCallView = true
-                            }
+                        chatModel.currentCall = Call(contact: contact, callState: .waitCapabilities, localMedia: .video)
+                        showCallView = true
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                            chatModel.callCommand = .capabilities
                         }
                     } label: {
                         Image(systemName: "video")
-                    }
-                    .fullScreenCover(isPresented: $showCallView) {
-                        ActiveCallView()
                     }
                 }
             }
@@ -251,6 +246,7 @@ struct ChatView: View {
 
 struct ChatView_Previews: PreviewProvider {
     static var previews: some View {
+        @State var showCallView = false
         let chatModel = ChatModel()
         chatModel.chatId = "@1"
         chatModel.chatItems = [
@@ -264,7 +260,7 @@ struct ChatView_Previews: PreviewProvider {
             ChatItem.getSample(8, .directSnd, .now, "👍👍👍👍"),
             ChatItem.getSample(9, .directSnd, .now, "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.")
         ]
-        return ChatView(chat: Chat(chatInfo: ChatInfo.sampleData.direct, chatItems: []))
+        return ChatView(chat: Chat(chatInfo: ChatInfo.sampleData.direct, chatItems: []), showCallView: $showCallView)
             .environmentObject(chatModel)
     }
 }

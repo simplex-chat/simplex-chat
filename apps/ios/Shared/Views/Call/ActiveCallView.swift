@@ -10,18 +10,27 @@ import SwiftUI
 
 struct ActiveCallView: View {
     @EnvironmentObject var chatModel: ChatModel
-    @State var coordinator: WebRTCCoordinator? = nil
+    @Binding var showCallView: Bool
+    @State private var coordinator: WebRTCCoordinator? = nil
+    @State private var webViewMsg: WCallResponse? = nil
 
     var body: some View {
-        ZStack {
-            WebRTCView(coordinator: $coordinator)
+        ZStack(alignment: .topTrailing) {
+            WebRTCView(coordinator: $coordinator, webViewMsg: $webViewMsg)
                 .onChange(of: chatModel.callCommand) { _ in
-                    if let call = chatModel.currentCall,
+                    if chatModel.currentCall != nil,
                        let cmd = chatModel.callCommand,
                        let c = coordinator {
                         chatModel.callCommand = nil
+                        logger.debug("ActiveCallView: command \(cmd.cmdType)")
+                        c.sendCommand(command: cmd)
+                    }
+                }
+                .onChange(of: webViewMsg) { _ in
+                    if let resp = webViewMsg,
+                       let call = chatModel.currentCall {
+                        logger.debug("ActiveCallView: response \(resp.respType)")
                         Task {
-                            let resp = await c.processCommand(command: cmd)
                             switch resp {
                             case let .capabilities(capabilities):
                                 let callType = CallType(media: call.localMedia, capabilities: capabilities)
@@ -63,12 +72,20 @@ struct ActiveCallView: View {
                         }
                     }
                 }
+
+            Button {
+                showCallView = false
+            } label: {
+                Image(systemName: "multiply")
+            }
+            .padding()
         }
     }
 }
 
 struct ActiveCallView_Previews: PreviewProvider {
     static var previews: some View {
-        ActiveCallView()
+        @State var showCallView: Bool = true
+        return ActiveCallView(showCallView: $showCallView)
     }
 }

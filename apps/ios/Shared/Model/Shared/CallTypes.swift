@@ -22,17 +22,22 @@ struct WebRTCExtraInfo: Codable {
     var rtcIceCandidates: [String]
 }
 
+struct CallInvitation {
+    var peerMedia: CallMediaType
+    var sharedKey: String?
+}
+
 struct CallType: Codable {
     var media: CallMediaType
     var capabilities: CallCapabilities
 }
 
-enum CallMediaType: String, Codable {
+enum CallMediaType: String, Codable, Equatable {
     case video = "video"
     case audio = "audio"
 }
 
-struct CallCapabilities: Codable {
+struct CallCapabilities: Codable, Equatable {
     var encryption: Bool
 }
 

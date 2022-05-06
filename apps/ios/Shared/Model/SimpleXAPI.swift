@@ -522,7 +522,9 @@ func processReceivedMsg(_ res: ChatResponse) {
                     await receiveFile(fileId: file.fileId)
                 }
             }
-            NtfManager.shared.notifyMessageReceived(cInfo, cItem)
+            if !cItem.isCall() {
+                NtfManager.shared.notifyMessageReceived(cInfo, cItem)
+            }
         case let .chatItemStatusUpdated(aChatItem):
             let cInfo = aChatItem.chatInfo
             let cItem = aChatItem.chatItem
@@ -555,10 +557,13 @@ func processReceivedMsg(_ res: ChatResponse) {
             chatItemSimpleUpdate(aChatItem)
         case let .rcvFileComplete(aChatItem):
             chatItemSimpleUpdate(aChatItem)
-//        case let .callInvitation(contact, callType, sharedKey):
-//            // send notification?
-              // add pending invitation in model so it pops up in the chat?
-              // set callCommand on UI action - .start
+        case let .callInvitation(contact, callType, sharedKey):
+            let invitation = CallInvitation(peerMedia: callType.media, sharedKey: sharedKey)
+            m.callInvitations[contact.id] = invitation
+            if (m.activeCallInvitation == nil) {
+                m.activeCallInvitation = ContactRef(contactId: contact.apiId, localDisplayName: contact.localDisplayName)
+            }
+            NtfManager.shared.notifyCallInvitation(contact, invitation)
         case let .callOffer(contact, callType, offer, sharedKey, _):
             // TODO askConfirmation?
             // TODO check encryption is compatible

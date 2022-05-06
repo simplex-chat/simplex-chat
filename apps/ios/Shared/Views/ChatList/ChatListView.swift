@@ -13,6 +13,7 @@ struct ChatListView: View {
     // not really used in this view
     @State private var showSettings = false
     @State private var searchText = ""
+    @State private var showCallView = false
     @AppStorage("pendingConnections") private var pendingConnections = true
 
     var user: User
@@ -24,7 +25,7 @@ struct ChatListView: View {
                     ChatHelp(showSettings: $showSettings)
                 } else {
                     ForEach(filteredChats()) { chat in
-                        ChatListNavLink(chat: chat)
+                        ChatListNavLink(chat: chat, showCallView: $showCallView)
                             .padding(.trailing, -16)
                     }
                 }
@@ -51,6 +52,37 @@ struct ChatListView: View {
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     NewChatButton()
+                }
+            }
+            .sheet(isPresented: $showCallView) {
+                ActiveCallView(showCallView: $showCallView)
+            }
+            .onChange(of: chatModel.currentCall) { _ in
+                if chatModel.currentCall != nil {
+                    showCallView = true
+                }
+            }
+            .onChange(of: showCallView) { _ in
+                if (!showCallView) {
+                    chatModel.callCommand = nil
+                    chatModel.currentCall = nil
+                }
+            }
+            .onChange(of: chatModel.activeCallInvitation) { contactRef in
+                if let contactRef = contactRef,
+                   case let .direct(contact) = chatModel.getChat(contactRef.id)?.chatInfo,
+                   let invitation = chatModel.callInvitations[contactRef.id] {
+                    AlertManager.shared.showAlert(Alert(
+                        title: Text("Incoming call"),
+                        primaryButton: .default(Text("Answer")) {
+                            chatModel.currentCall = Call(contact: contact, callState: .invitationReceived, localMedia: invitation.peerMedia)
+                            chatModel.chatId = nil
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                                chatModel.callCommand = .start(media: invitation.peerMedia, aesKey: invitation.sharedKey)
+                            }
+                        },
+                        secondaryButton: .cancel()
+                    ))
                 }
             }
         }

@@ -10,7 +10,9 @@ import Foundation
 import UserNotifications
 import UIKit
 
-let ntfActionAccept = "NTF_ACT_ACCEPT"
+let ntfActionAcceptContact = "NTF_ACT_ACCEPT_CONTACT"
+let ntfActionAcceptCall = "NTF_ACT_ACCEPT_CALL"
+let ntfActionRejectCall = "NTF_ACT_REJECT_CALL"
 
 private let ntfTimeInterval: TimeInterval = 1
 
@@ -28,10 +30,35 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
         logger.debug("NtfManager.userNotificationCenter: didReceive")
         let content = response.notification.request.content
         let chatModel = ChatModel.shared
-        if content.categoryIdentifier == ntfCategoryContactRequest && response.actionIdentifier == ntfActionAccept,
+        let action = response.actionIdentifier
+        if content.categoryIdentifier == ntfCategoryContactRequest && action == ntfActionAcceptContact,
            let chatId = content.userInfo["chatId"] as? String,
            case let .contactRequest(contactRequest) = chatModel.getChat(chatId)?.chatInfo {
             Task { await acceptContactRequest(contactRequest) }
+        } else if content.categoryIdentifier == ntfCategoryCallInvitation && (action == ntfActionAcceptCall || action == ntfActionRejectCall),
+                  let chatId = content.userInfo["chatId"] as? String,
+                  case let .direct(contact) = chatModel.getChat(chatId)?.chatInfo,
+                  let invitation = chatModel.callInvitations[chatId] {
+            if action == ntfActionAcceptCall {
+                chatModel.currentCall = Call(contact: contact, callState: .invitationReceived, localMedia: invitation.peerMedia)
+                chatModel.chatId = nil
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                    chatModel.callCommand = .start(media: invitation.peerMedia, aesKey: invitation.sharedKey)
+                }
+            } else {
+                Task {
+                    do {
+                        try await apiRejectCall(contact)
+                        if chatModel.currentCall?.contact.id == chatId {
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                                chatModel.callCommand = .end
+                                chatModel.currentCall = nil
+                            }
+                        }
+                    }
+                }
+            }
+            chatModel.callInvitations.removeValue(forKey: chatId)
         } else {
             chatModel.chatId = content.targetContentIdentifier
         }
@@ -88,7 +115,7 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
             UNNotificationCategory(
                 identifier: ntfCategoryContactRequest,
                 actions: [UNNotificationAction(
-                    identifier: ntfActionAccept,
+                    identifier: ntfActionAcceptContact,
                     title: NSLocalizedString("Accept", comment: "accept contact request via notification")
                 )],
                 intentIdentifiers: [],
@@ -105,6 +132,21 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
                 actions: [],
                 intentIdentifiers: [],
                 hiddenPreviewsBodyPlaceholder: NSLocalizedString("New message", comment: "notification")
+            ),
+            UNNotificationCategory(
+                identifier: ntfCategoryCallInvitation,
+                actions: [
+                    UNNotificationAction(
+                        identifier: ntfActionAcceptCall,
+                        title: NSLocalizedString("Answer", comment: "accept incoming call via notification")
+                    ),
+                    UNNotificationAction(
+                        identifier: ntfActionRejectCall,
+                        title: NSLocalizedString("Ignore", comment: "ignore incoming call via notification")
+                    )
+                ],
+                intentIdentifiers: [],
+                hiddenPreviewsBodyPlaceholder: NSLocalizedString("Incoming call", comment: "notification")
             ),
             // TODO remove
             UNNotificationCategory(
@@ -152,6 +194,11 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
     func notifyMessageReceived(_ cInfo: ChatInfo, _ cItem: ChatItem) {
         logger.debug("NtfManager.notifyMessageReceived")
         addNotification(createMessageReceivedNtf(cInfo, cItem))
+    }
+
+    func notifyCallInvitation(_ contact: Contact, _ invitation: CallInvitation) {
+        logger.debug("NtfManager.notifyCallInvitation")
+        addNotification(createCallInvitationNtf(contact, invitation))
     }
 
     // TODO remove
