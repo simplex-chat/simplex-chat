@@ -11,7 +11,7 @@ const keyAlgorithm = {
     length: 256,
 };
 const keyUsages = ["encrypt", "decrypt"];
-let pc;
+let activeCall;
 const IV_LENGTH = 12;
 const initialPlainTextRequired = {
     key: 10,
@@ -86,7 +86,7 @@ async function initializeCall(config, mediaType, aesKey) {
             sendMessageToNative({ resp: { type: "ice", iceCandidates } });
         }
     });
-    return { connection: conn, iceCandidates };
+    return { connection: conn, iceCandidates, localMedia: mediaType, localStream };
     function connectionStateChange() {
         sendMessageToNative({
             resp: {
@@ -103,7 +103,7 @@ async function initializeCall(config, mediaType, aesKey) {
             conn.removeEventListener("connectionstatechange", connectionStateChange);
             sendMessageToNative({ resp: { type: "ended" } });
             conn.close();
-            pc = undefined;
+            activeCall = undefined;
             resetVideoElements();
         }
     }
@@ -111,6 +111,7 @@ async function initializeCall(config, mediaType, aesKey) {
 var sendMessageToNative = (msg) => console.log(JSON.stringify(msg));
 async function processCommand(body) {
     const { corrId, command } = body;
+    const pc = activeCall === null || activeCall === void 0 ? void 0 : activeCall.connection;
     let resp;
     try {
         switch (command.type) {
@@ -120,7 +121,7 @@ async function processCommand(body) {
                 break;
             case "start":
                 console.log("starting call");
-                if (pc) {
+                if (activeCall) {
                     resp = { type: "error", message: "start: call already started" };
                 }
                 else if (!supportsInsertableStreams() && command.aesKey) {
@@ -129,9 +130,8 @@ async function processCommand(body) {
                 else {
                     const encryption = supportsInsertableStreams();
                     const { media, aesKey } = command;
-                    const call = await initializeCall(defaultCallConfig(encryption && !!aesKey), media, encryption ? aesKey : undefined);
-                    const { connection, iceCandidates } = call;
-                    pc = connection;
+                    activeCall = await initializeCall(defaultCallConfig(encryption && !!aesKey), media, encryption ? aesKey : undefined);
+                    const pc = activeCall.connection;
                     const offer = await pc.createOffer();
                     await pc.setLocalDescription(offer);
                     // for debugging, returning the command for callee to use
@@ -139,13 +139,13 @@ async function processCommand(body) {
                     resp = {
                         type: "offer",
                         offer: JSON.stringify(offer),
-                        iceCandidates: await iceCandidates,
+                        iceCandidates: await activeCall.iceCandidates,
                         capabilities: { encryption },
                     };
                 }
                 break;
             case "accept":
-                if (pc) {
+                if (activeCall) {
                     resp = { type: "error", message: "accept: call already started" };
                 }
                 else if (!supportsInsertableStreams() && command.aesKey) {
@@ -154,9 +154,8 @@ async function processCommand(body) {
                 else {
                     const offer = JSON.parse(command.offer);
                     const remoteIceCandidates = command.iceCandidates.map((c) => JSON.parse(c));
-                    const call = await initializeCall(defaultCallConfig(!!command.aesKey), command.media, command.aesKey);
-                    const { connection, iceCandidates } = call;
-                    pc = connection;
+                    activeCall = await initializeCall(defaultCallConfig(!!command.aesKey), command.media, command.aesKey);
+                    const pc = activeCall.connection;
                     await pc.setRemoteDescription(new RTCSessionDescription(offer));
                     const answer = await pc.createAnswer();
                     await pc.setLocalDescription(answer);
@@ -165,7 +164,7 @@ async function processCommand(body) {
                     resp = {
                         type: "answer",
                         answer: JSON.stringify(answer),
-                        iceCandidates: await iceCandidates,
+                        iceCandidates: await activeCall.iceCandidates,
                     };
                 }
                 break;
@@ -197,10 +196,22 @@ async function processCommand(body) {
                     resp = { type: "error", message: "ice: call not started" };
                 }
                 break;
+            case "media":
+                if (!activeCall) {
+                    resp = { type: "error", message: "media: call not started" };
+                }
+                else if (activeCall.localMedia == CallMediaType.Audio && command.media == CallMediaType.Video) {
+                    resp = { type: "error", message: "media: no video" };
+                }
+                else {
+                    enableMedia(activeCall.localStream, command.media, command.enable);
+                    resp = { type: "ok" };
+                }
+                break;
             case "end":
                 if (pc) {
                     pc.close();
-                    pc = undefined;
+                    activeCall = undefined;
                     resetVideoElements();
                     resp = { type: "ok" };
                 }
@@ -328,14 +339,11 @@ function getVideoElements() {
 //     video.style.opacity = "1"
 //   }
 // }
-// what does it do?
-// function toggleVideo(b) {
-//   if (b == "true") {
-//     localStream.getVideoTracks()[0].enabled = true
-//   } else {
-//     localStream.getVideoTracks()[0].enabled = false
-//   }
-// }
+function enableMedia(s, media, enable) {
+    const tracks = media == CallMediaType.Video ? s.getVideoTracks() : s.getAudioTracks();
+    for (const t of tracks)
+        t.enabled = enable;
+}
 /* Stream Transforms */
 function setupPeerTransform(peer, transform) {
     const streams = peer.createEncodedStreams();

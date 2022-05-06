@@ -9,7 +9,7 @@
 import Foundation
 import SwiftUI
 
-struct Call: Equatable {
+class Call: Equatable {
     static func == (lhs: Call, rhs: Call) -> Bool {
         lhs.contact.apiId == rhs.contact.apiId
     }
@@ -20,6 +20,28 @@ struct Call: Equatable {
     var localCapabilities: CallCapabilities?
     var peerMedia: CallMediaType?
     var sharedKey: String?
+    var audioEnabled: Bool
+    var videoEnabled: Bool
+
+    init(
+        contact: Contact,
+        callState: CallState,
+        localMedia: CallMediaType,
+        localCapabilities: CallCapabilities? = nil,
+        peerMedia: CallMediaType? = nil,
+        sharedKey: String? = nil,
+        audioEnabled: Bool? = nil,
+        videoEnabled: Bool? = nil
+    ) {
+        self.contact = contact
+        self.callState = callState
+        self.localMedia = localMedia
+        self.localCapabilities = localCapabilities
+        self.peerMedia = peerMedia
+        self.sharedKey = sharedKey
+        self.audioEnabled = audioEnabled ?? true
+        self.videoEnabled = videoEnabled ?? (localMedia == .video)
+    }
 
     func copy(
         contact: Contact? = nil,
@@ -27,7 +49,9 @@ struct Call: Equatable {
         localMedia: CallMediaType? = nil,
         localCapabilities: CallCapabilities? = nil,
         peerMedia: CallMediaType? = nil,
-        sharedKey: String? = nil
+        sharedKey: String? = nil,
+        audioEnabled: Bool? = nil,
+        videoEnabled: Bool? = nil
     ) -> Call {
         Call (
             contact: contact ?? self.contact,
@@ -35,7 +59,9 @@ struct Call: Equatable {
             localMedia: localMedia ?? self.localMedia,
             localCapabilities: localCapabilities ?? self.localCapabilities,
             peerMedia: peerMedia ?? self.peerMedia,
-            sharedKey: sharedKey ?? self.sharedKey
+            sharedKey: sharedKey ?? self.sharedKey,
+            audioEnabled: audioEnabled ?? self.audioEnabled,
+            videoEnabled: videoEnabled ?? self.videoEnabled
         )
     }
 
@@ -83,6 +109,7 @@ enum WCallCommand: Equatable, Encodable, Decodable {
     case accept(offer: String, iceCandidates: [String], media: CallMediaType, aesKey: String? = nil)
     case answer(answer: String, iceCandidates: [String])
     case ice(iceCandidates: [String])
+    case media(media: CallMediaType, enable: Bool)
     case end
 
     enum CodingKeys: String, CodingKey {
@@ -92,17 +119,19 @@ enum WCallCommand: Equatable, Encodable, Decodable {
         case offer
         case answer
         case iceCandidates
+        case enable
     }
 
     var cmdType: String {
         get {
             switch self {
-            case .capabilities: return("capabilities")
-            case .start: return("start")
-            case .accept: return("accept")
-            case .answer: return("answer")
-            case .ice: return("ice")
-            case .end: return("end")
+            case .capabilities: return "capabilities"
+            case .start: return "start"
+            case .accept: return "accept"
+            case .answer: return "answer"
+            case .ice: return "ice"
+            case .media: return "media"
+            case .end: return "end"
             }
         }
     }
@@ -129,6 +158,10 @@ enum WCallCommand: Equatable, Encodable, Decodable {
         case let .ice(iceCandidates):
             try container.encode("ice", forKey: .type)
             try container.encode(iceCandidates, forKey: .iceCandidates)
+        case let .media(media, enable):
+            try container.encode("media", forKey: .type)
+            try container.encode(media, forKey: .media)
+            try container.encode(enable, forKey: .enable)
         case .end:
             try container.encode("end", forKey: .type)
         }
@@ -157,6 +190,10 @@ enum WCallCommand: Equatable, Encodable, Decodable {
         case "ice":
             let iceCandidates = try container.decode([String].self, forKey: CodingKeys.iceCandidates)
             self = .ice(iceCandidates: iceCandidates)
+        case "media":
+            let media = try container.decode(CallMediaType.self, forKey: CodingKeys.media)
+            let enable = try container.decode(Bool.self, forKey: CodingKeys.enable)
+            self = .media(media: media, enable: enable)
         case "end":
             self = .end
         default:

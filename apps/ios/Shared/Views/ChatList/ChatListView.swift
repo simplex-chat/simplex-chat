@@ -134,7 +134,11 @@ struct ChatListView: View {
                     }
                 } else {
                     chatModel.activeCallInvitation = nil
-                    chatModel.activeCall = Call(contact: contact, callState: .invitationReceived, localMedia: invitation.peerMedia)
+                    chatModel.activeCall = Call(
+                        contact: contact,
+                        callState: .invitationReceived,
+                        localMedia: invitation.peerMedia
+                    )
                     showCallView = true
                     chatModel.callCommand = .start(media: invitation.peerMedia, aesKey: invitation.sharedKey)
                 }

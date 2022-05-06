@@ -70,11 +70,18 @@ struct ActiveCallView: View {
                     m.callCommand = nil
                     showCallView = false
                 case .ok:
-                    if msg.command == .end {
+                    switch msg.command {
+                    case let .media(media, enable):
+                        switch media {
+                        case .video: m.activeCall = call.copy(videoEnabled: enable)
+                        case .audio: m.activeCall = call.copy(audioEnabled: enable)
+                        }
+                    case .end:
                         m.activeCall = nil
                         m.activeCallInvitation = nil
                         m.callCommand = nil
                         showCallView = false
+                    default: ()
                     }
                 case let .error(message):
                     logger.debug("ActiveCallView: command error: \(message)")
@@ -87,6 +94,7 @@ struct ActiveCallView: View {
 }
 
 struct ActiveCallOverlay: View {
+    @EnvironmentObject var chatModel: ChatModel
     var call: Call?
     var dismiss: () -> Void
 
@@ -111,18 +119,30 @@ struct ActiveCallOverlay: View {
                     .padding()
                     .frame(maxHeight: .infinity)
                 }
-            }
-            Spacer()
-            Button {
-                dismiss()
-            } label: {
-                Image(systemName: "phone.down.fill")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(maxWidth: 60)
+                Spacer()
+                ZStack(alignment: .bottom) {
+                    VStack(alignment: .leading) {
+                        if call.localMedia == .video {
+                            callButton(call.videoEnabled ? "video.fill" : "video.slash", size: 48) {
+                                chatModel.callCommand = .media(media: .video, enable: !call.videoEnabled)
+                            }
+                            .foregroundColor(.white)
+                            .opacity(0.85)
+                        }
+                        callButton(call.audioEnabled ? "mic.fill" : "mic.slash", size: 48) {
+                            chatModel.callCommand = .media(media: .audio, enable: !call.audioEnabled)
+                        }
+                        .foregroundColor(.white)
+                        .opacity(0.85)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.top)
+                    }
+                    callButton("phone.down.fill", size: 60) { dismiss() }
                     .foregroundColor(.red)
+                }
+                .padding(.bottom, 60)
+                .padding(.horizontal, 48)
             }
-            .padding(.bottom, 60)
         }
         .frame(maxWidth: .infinity)
     }
@@ -141,6 +161,17 @@ struct ActiveCallOverlay: View {
             Text(status)
                 .font(.subheadline)
                 .frame(maxWidth: .infinity, alignment: alignment)
+        }
+    }
+
+    private func callButton(_ imageName: String, size: CGFloat, perform: @escaping () -> Void) -> some View {
+        Button {
+            perform()
+        } label: {
+            Image(systemName: imageName)
+                .resizable()
+                .scaledToFit()
+                .frame(maxWidth: size, maxHeight: size)
         }
     }
 }
