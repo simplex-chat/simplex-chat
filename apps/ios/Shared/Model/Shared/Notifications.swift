@@ -65,17 +65,21 @@ func createNotification(categoryIdentifier: String, title: String, subtitle: Str
 }
 
 func hideSecrets(_ cItem: ChatItem) -> String {
-    if let md = cItem.formattedText {
-        var res = ""
-        for ft in md {
-            if case .secret = ft.format {
-                res = res + "..."
-            } else {
-                res = res + ft.text
+    if cItem.content.text != "" {
+        if let md = cItem.formattedText {
+            var res = ""
+            for ft in md {
+                if case .secret = ft.format {
+                    res = res + "..."
+                } else {
+                    res = res + ft.text
+                }
             }
+            return res
+        } else {
+            return cItem.content.text
         }
-        return res
     } else {
-        return cItem.content.text
+        return cItem.file?.fileName ?? ""
     }
 }
