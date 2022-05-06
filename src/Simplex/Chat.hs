@@ -280,13 +280,13 @@ processChatCommand = \case
       quoteContent qmc ciFile_
         | replaceContent = MCText qTextOrFile
         | otherwise = case qmc of
-          MCImage {image} -> MCImage qTextOrFile image
+          MCImage _ image -> MCImage qTextOrFile image
           MCFile _ -> MCFile qTextOrFile
           _ -> qmc
         where
           replaceContent = case mc of
-            MCText {} -> False
-            MCFile {} -> False
+            MCText _ -> False
+            MCFile _ -> False
             _ -> True
           qText = msgContentText qmc
           qFileName = maybe qText (T.pack . (fileName :: CIFile d -> String)) ciFile_
