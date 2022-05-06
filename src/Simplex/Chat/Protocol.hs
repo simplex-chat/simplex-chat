@@ -224,6 +224,14 @@ msgContentTag = \case
   MCFile {} -> MCFile_
   MCUnknown {tag} -> MCUnknown_ tag
 
+updateMsgContentText :: MsgContent -> Text -> MsgContent
+updateMsgContentText mc newText = case mc of
+  MCText _ -> MCText newText
+  MCLink {preview} -> MCLink newText preview
+  MCImage {image} -> MCImage newText image
+  MCFile _ -> MCFile newText
+  m@MCUnknown {} -> m
+
 data ExtMsgContent = ExtMsgContent MsgContent (Maybe FileInvitation)
   deriving (Eq, Show)
 

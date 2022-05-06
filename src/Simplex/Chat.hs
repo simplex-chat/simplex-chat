@@ -278,7 +278,7 @@ processChatCommand = \case
     where
       quoteContent :: forall d. MsgContent -> Maybe (CIFile d) -> MsgContent -> MsgContent
       quoteContent qmc ciFile_ = \case
-        MCText _ -> MCText quoteText
+        MCText _ -> updateMsgContentText qmc quoteText
         _ -> MCText quoteText
         where
           quoteText =
