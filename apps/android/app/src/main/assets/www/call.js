@@ -108,9 +108,7 @@ async function initializeCall(config, mediaType, aesKey) {
         }
     }
 }
-function sendMessageToNative(msg) {
-    console.log(JSON.stringify(msg));
-}
+var sendMessageToNative = (msg) => console.log(JSON.stringify(msg));
 // TODO remove WCallCommand from result type
 async function processCommand(body) {
     const { command, corrId } = body;
@@ -130,15 +128,21 @@ async function processCommand(body) {
                     resp = { type: "error", message: "start: encryption is not supported" };
                 }
                 else {
+                    const encryption = supportsInsertableStreams();
                     const { media, aesKey } = command;
-                    const call = await initializeCall(defaultCallConfig(!!aesKey), media, aesKey);
+                    const call = await initializeCall(defaultCallConfig(encryption && !!aesKey), media, encryption ? aesKey : undefined);
                     const { connection, iceCandidates } = call;
                     pc = connection;
                     const offer = await pc.createOffer();
                     await pc.setLocalDescription(offer);
                     // for debugging, returning the command for callee to use
-                    resp = { type: "accept", offer: JSON.stringify(offer), iceCandidates: await iceCandidates, media, aesKey };
-                    // resp = {type: "offer", offer, iceCandidates: await iceCandidates}
+                    // resp = {type: "accept", offer: JSON.stringify(offer), iceCandidates: await iceCandidates, media, aesKey}
+                    resp = {
+                        type: "offer",
+                        offer: JSON.stringify(offer),
+                        iceCandidates: await iceCandidates,
+                        capabilities: { encryption },
+                    };
                 }
                 break;
             case "accept":

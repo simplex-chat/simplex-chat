@@ -453,8 +453,13 @@ processChatCommand = \case
   APISendCallExtraInfo contactId rtcExtraInfo ->
     -- any call party
     withCurrentCall contactId $ \_ ct call@Call {callId, callState} -> case callState of
+      CallOfferSent {localCallType, peerCallType, localCallSession, sharedKey} -> do
+        -- TODO update the list of ice servers in localCallSession
+        _ <- sendDirectContactMessage ct (XCallExtra callId CallExtraInfo {rtcExtraInfo})
+        let callState' = CallOfferSent {localCallType, peerCallType, localCallSession, sharedKey}
+        pure $ Just call {callState = callState'}
       CallNegotiated {localCallType, peerCallType, localCallSession, peerCallSession, sharedKey} -> do
-        -- TODO update the list of ice servers
+        -- TODO update the list of ice servers in localCallSession
         _ <- sendDirectContactMessage ct (XCallExtra callId CallExtraInfo {rtcExtraInfo})
         let callState' = CallNegotiated {localCallType, peerCallType, localCallSession, peerCallSession, sharedKey}
         pure $ Just call {callState = callState'}
@@ -1630,8 +1635,13 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
     xCallExtra ct callId CallExtraInfo {rtcExtraInfo} msg msgMeta = do
       msgCurrentCall ct callId "x.call.extra" msg msgMeta $
         \call -> case callState call of
+          CallOfferReceived {localCallType, peerCallType, peerCallSession, sharedKey} -> do
+            -- TODO update the list of ice servers in peerCallSession
+            let callState' = CallOfferReceived {localCallType, peerCallType, peerCallSession, sharedKey}
+            toView $ CRCallExtraInfo ct rtcExtraInfo
+            pure (Just call {callState = callState'}, Nothing)
           CallNegotiated {localCallType, peerCallType, localCallSession, peerCallSession, sharedKey} -> do
-            -- TODO update the list of ice servers
+            -- TODO update the list of ice servers in peerCallSession
             let callState' = CallNegotiated {localCallType, peerCallType, localCallSession, peerCallSession, sharedKey}
             toView $ CRCallExtraInfo ct rtcExtraInfo
             pure (Just call {callState = callState'}, Nothing)

@@ -111,9 +111,7 @@ struct ChatView: View {
                     Button {
                         chatModel.currentCall = Call(contact: contact, callState: .waitCapabilities, localMedia: .video)
                         showCallView = true
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                            chatModel.callCommand = .capabilities
-                        }
+                        chatModel.callCommand = .capabilities
                     } label: {
                         Image(systemName: "video")
                     }

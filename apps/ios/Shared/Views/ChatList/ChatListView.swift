@@ -57,11 +57,11 @@ struct ChatListView: View {
             .sheet(isPresented: $showCallView) {
                 ActiveCallView(showCallView: $showCallView)
             }
-            .onChange(of: chatModel.currentCall) { _ in
-                if chatModel.currentCall != nil {
-                    showCallView = true
-                }
-            }
+//            .onChange(of: chatModel.currentCall) { _ in
+//                if chatModel.currentCall != nil {
+//                    showCallView = true
+//                }
+//            }
             .onChange(of: showCallView) { _ in
                 if (!showCallView) {
                     chatModel.callCommand = nil
@@ -72,14 +72,13 @@ struct ChatListView: View {
                 if let contactRef = contactRef,
                    case let .direct(contact) = chatModel.getChat(contactRef.id)?.chatInfo,
                    let invitation = chatModel.callInvitations[contactRef.id] {
+                    chatModel.activeCallInvitation = nil
                     AlertManager.shared.showAlert(Alert(
                         title: Text("Incoming call"),
                         primaryButton: .default(Text("Answer")) {
                             chatModel.currentCall = Call(contact: contact, callState: .invitationReceived, localMedia: invitation.peerMedia)
-                            chatModel.chatId = nil
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
-                                chatModel.callCommand = .start(media: invitation.peerMedia, aesKey: invitation.sharedKey)
-                            }
+                            showCallView = true
+                            chatModel.callCommand = .start(media: invitation.peerMedia, aesKey: invitation.sharedKey)
                         },
                         secondaryButton: .cancel()
                     ))

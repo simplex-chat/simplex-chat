@@ -42,15 +42,13 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
             if action == ntfActionAcceptCall {
                 chatModel.currentCall = Call(contact: contact, callState: .invitationReceived, localMedia: invitation.peerMedia)
                 chatModel.chatId = nil
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
-                    chatModel.callCommand = .start(media: invitation.peerMedia, aesKey: invitation.sharedKey)
-                }
+                chatModel.callCommand = .start(media: invitation.peerMedia, aesKey: invitation.sharedKey)
             } else {
                 Task {
                     do {
                         try await apiRejectCall(contact)
                         if chatModel.currentCall?.contact.id == chatId {
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                            DispatchQueue.main.async {
                                 chatModel.callCommand = .end
                                 chatModel.currentCall = nil
                             }

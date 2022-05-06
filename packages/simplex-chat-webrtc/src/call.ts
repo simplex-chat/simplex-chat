@@ -61,6 +61,7 @@ interface WCallOffer extends IWCallResponse {
   type: "offer"
   offer: string // JSON string for RTCSessionDescriptionInit
   iceCandidates: string[] // JSON strings for RTCIceCandidateInit
+  capabilities: CallCapabilities
 }
 
 interface WCallAnswer extends IWCallCommand, IWCallResponse {
@@ -241,9 +242,7 @@ async function initializeCall(config: CallConfig, mediaType: CallMediaType, aesK
   }
 }
 
-function sendMessageToNative(msg: WebViewMessage) {
-  console.log(JSON.stringify(msg))
-}
+var sendMessageToNative = (msg: WebViewMessage) => console.log(JSON.stringify(msg))
 
 // TODO remove WCallCommand from result type
 async function processCommand(body: WebViewAPICall): Promise<WebViewMessage> {
@@ -262,15 +261,21 @@ async function processCommand(body: WebViewAPICall): Promise<WebViewMessage> {
         } else if (!supportsInsertableStreams() && command.aesKey) {
           resp = {type: "error", message: "start: encryption is not supported"}
         } else {
+          const encryption = supportsInsertableStreams()
           const {media, aesKey} = command
-          const call = await initializeCall(defaultCallConfig(!!aesKey), media, aesKey)
+          const call = await initializeCall(defaultCallConfig(encryption && !!aesKey), media, encryption ? aesKey : undefined)
           const {connection, iceCandidates} = call
           pc = connection
           const offer = await pc.createOffer()
           await pc.setLocalDescription(offer)
           // for debugging, returning the command for callee to use
-          resp = {type: "accept", offer: JSON.stringify(offer), iceCandidates: await iceCandidates, media, aesKey}
-          // resp = {type: "offer", offer, iceCandidates: await iceCandidates}
+          // resp = {type: "accept", offer: JSON.stringify(offer), iceCandidates: await iceCandidates, media, aesKey}
+          resp = {
+            type: "offer",
+            offer: JSON.stringify(offer),
+            iceCandidates: await iceCandidates,
+            capabilities: {encryption},
+          }
         }
         break
       case "accept":
