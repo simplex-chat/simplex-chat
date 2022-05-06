@@ -57,13 +57,15 @@ data class ComposeState(
         is ComposeContextItem.EditingItem -> true
         else -> false
       }
-  val sendEnabled: Boolean
-    get() =
-      when (preview) {
+  val sendEnabled: () -> Boolean
+    get() = {
+      val hasContent = when (preview) {
         is ComposePreview.ImagePreview -> true
         is ComposePreview.FilePreview -> true
         else -> message.isNotEmpty()
       }
+      hasContent && !inProgress
+    }
   val linkPreviewAllowed: Boolean
     get() =
       when (preview) {
@@ -191,7 +193,7 @@ fun ComposeView(
 
   fun sendMessage() {
     withApi {
-      // show "in progress"
+      composeState.value = composeState.value.copy(inProgress = true)
       val cInfo = chat.chatInfo
       val cs = composeState.value
       when (val contextItem = cs.contextItem) {
@@ -250,7 +252,6 @@ fun ComposeView(
           }
         }
       }
-      // hide "in progress"
       clearState()
     }
   }
