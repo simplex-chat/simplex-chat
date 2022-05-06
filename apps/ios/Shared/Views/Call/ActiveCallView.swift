@@ -93,23 +93,24 @@ struct ActiveCallOverlay: View {
     var body: some View {
         VStack {
             if let call = call {
-                VStack {
-                    Text(call.contact.chatViewName)
-                        .lineLimit(1)
-                        .font(.title)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    let status = call.callState == .connected
-                                    ? call.encrypted
-                                       ? "end-to-end encrypted"
-                                       : "no end-to-end encryption"
-                                    : call.callState.text
-                    Text(status)
-                        .font(.subheadline)
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                switch call.localMedia {
+                case .video:
+                    callInfoView(call, .leading)
+                    .foregroundColor(.white)
+                    .opacity(0.8)
+                    .padding()
+                case .audio:
+                    VStack {
+                        ProfileImage(imageStr: call.contact.profile.image)
+                            .scaledToFit()
+                            .frame(width: 192, height: 192)
+                        callInfoView(call, .center)
+                    }
+                    .foregroundColor(.white)
+                    .opacity(0.8)
+                    .padding()
+                    .frame(maxHeight: .infinity)
                 }
-                .foregroundColor(.white)
-                .opacity(0.8)
-                .padding()
             }
             Spacer()
             Button {
@@ -125,11 +126,32 @@ struct ActiveCallOverlay: View {
         }
         .frame(maxWidth: .infinity)
     }
+
+    private func callInfoView(_ call: Call, _ alignment: Alignment) -> some View {
+        VStack {
+            Text(call.contact.chatViewName)
+                .lineLimit(1)
+                .font(.title)
+                .frame(maxWidth: .infinity, alignment: alignment)
+            let status = call.callState == .connected
+                            ? call.encrypted
+                               ? "end-to-end encrypted"
+                               : "no end-to-end encryption"
+                            : call.callState.text
+            Text(status)
+                .font(.subheadline)
+                .frame(maxWidth: .infinity, alignment: alignment)
+        }
+    }
 }
 
 struct ActiveCallOverlay_Previews: PreviewProvider {
     static var previews: some View {
-        ActiveCallOverlay(call: Call(contact: Contact.sampleData, callState: .offerSent, localMedia: .video), dismiss: {})
-            .background(.black)
+        Group{
+            ActiveCallOverlay(call: Call(contact: Contact.sampleData, callState: .offerSent, localMedia: .video), dismiss: {})
+                .background(.black)
+            ActiveCallOverlay(call: Call(contact: Contact.sampleData, callState: .offerSent, localMedia: .audio), dismiss: {})
+                .background(.black)
+        }
     }
 }
