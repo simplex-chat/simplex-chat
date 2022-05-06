@@ -284,10 +284,14 @@ processChatCommand = \case
           MCFile _ -> MCFile qTextOrFile
           _ -> qmc
         where
+          -- if the message we're quoting with is one of the "large" MsgContents
+          -- we replace the quote's content with MCText
           replaceContent = case mc of
             MCText _ -> False
+            MCLink {} -> True
+            MCImage {} -> True
             MCFile _ -> False
-            _ -> True
+            MCUnknown {} -> True
           qText = msgContentText qmc
           qFileName = maybe qText (T.pack . (fileName :: CIFile d -> String)) ciFile_
           qTextOrFile = if T.null qText then qFileName else qText
