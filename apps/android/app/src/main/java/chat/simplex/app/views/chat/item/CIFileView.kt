@@ -105,7 +105,7 @@ fun CIFileView(
   fun progressIndicator() {
     CircularProgressIndicator(
       Modifier.size(32.dp),
-      color = HighOrLowlight,
+      color = if (isSystemInDarkTheme()) FileDark else FileLight,
       strokeWidth = 4.dp
     )
   }
@@ -121,6 +121,7 @@ fun CIFileView(
     ) {
       if (file != null) {
         when (file.fileStatus) {
+          CIFileStatus.SndStored -> fileIcon()
           CIFileStatus.SndTransfer -> progressIndicator()
           CIFileStatus.SndComplete -> fileIcon(innerIcon = Icons.Filled.Check)
           CIFileStatus.SndCancelled -> fileIcon(innerIcon = Icons.Outlined.Close)
@@ -131,8 +132,8 @@ fun CIFileView(
               fileIcon(innerIcon = Icons.Outlined.PriorityHigh, color = WarningOrange)
           CIFileStatus.RcvAccepted -> fileIcon(innerIcon = Icons.Outlined.MoreHoriz)
           CIFileStatus.RcvTransfer -> progressIndicator()
+          CIFileStatus.RcvComplete -> fileIcon(innerIcon = Icons.Outlined.ArrowDownward)
           CIFileStatus.RcvCancelled -> fileIcon(innerIcon = Icons.Outlined.Close)
-          else -> fileIcon()
         }
       } else {
         fileIcon()
@@ -193,7 +194,7 @@ class ChatItemProvider: PreviewParameterProvider<ChatItem> {
     ChatItem.getFileMsgContentSample(fileStatus = CIFileStatus.RcvAccepted),
     ChatItem.getFileMsgContentSample(fileStatus = CIFileStatus.RcvTransfer),
     ChatItem.getFileMsgContentSample(fileStatus = CIFileStatus.RcvCancelled),
-    ChatItem.getFileMsgContentSample(fileSize = 2000000, fileStatus = CIFileStatus.RcvInvitation),
+    ChatItem.getFileMsgContentSample(fileSize = 1_000_000_000, fileStatus = CIFileStatus.RcvInvitation),
     ChatItem.getFileMsgContentSample(text = "Hello there", fileStatus = CIFileStatus.RcvInvitation),
     ChatItem.getFileMsgContentSample(text = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.", fileStatus = CIFileStatus.RcvInvitation),
     fileChatItemWtFile

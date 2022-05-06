@@ -126,7 +126,6 @@ class CustomTakePicturePreview: ActivityResultContract<Void?, Bitmap?>() {
     }
   }
 }
-
 //class GetGalleryContent: ActivityResultContracts.GetContent() {
 //  override fun createIntent(context: Context, input: String): Intent {
 //    return super.createIntent(context, input).apply {
@@ -136,7 +135,6 @@ class CustomTakePicturePreview: ActivityResultContract<Void?, Bitmap?>() {
 //    }
 //  }
 //}
-
 @Composable
 fun rememberGetContentLauncher(cb: (Uri?) -> Unit): ManagedActivityResultLauncher<String, Uri?> =
 //  rememberLauncherForActivityResult(contract = GetGalleryContent(), cb)
