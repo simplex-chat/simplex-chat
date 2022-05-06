@@ -66,7 +66,9 @@ fun FramedItemView(
     ) {
       when (qi.content) {
         is MsgContent.MCImage -> {
-          ciQuotedMsgView(qi, paddingEnd = 60.dp)
+          ciQuotedMsgView(qi)
+          // TODO fix quotes containing long text and image / file
+          // ciQuotedMsgView(qi, paddingEnd = 60.dp)
           Spacer(Modifier.weight(1f))
           val imageBitmap = base64ToBitmap(qi.content.image).asImageBitmap()
           Image(
@@ -79,7 +81,8 @@ fun FramedItemView(
           )
         }
         is MsgContent.MCFile -> {
-          ciQuotedMsgView(qi, paddingEnd = 26.dp)
+          ciQuotedMsgView(qi)
+          // ciQuotedMsgView(qi, paddingEnd = 26.dp)
           Spacer(Modifier.weight(1f))
           Icon(
             Icons.Filled.InsertDriveFile,
