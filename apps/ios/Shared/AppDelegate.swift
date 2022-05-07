@@ -21,16 +21,17 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         logger.debug("AppDelegate: didRegisterForRemoteNotificationsWithDeviceToken \(token)")
         let m = ChatModel.shared
         m.deviceToken = token
-        let useNotifications = UserDefaults.standard.bool(forKey: "useNotifications")
-        if useNotifications {
-            Task {
-                do {
-                    m.tokenStatus = try await apiRegisterToken(token: token)
-                } catch {
-                    logger.error("apiRegisterToken error: \(responseError(error))")
-                }
-            }
-        }
+        UserDefaults.standard.set(false, forKey: DEFAULT_USE_NOTIFICATIONS)
+//        let useNotifications = UserDefaults.standard.bool(forKey: "useNotifications")
+//        if useNotifications {
+//            Task {
+//                do {
+//                    m.tokenStatus = try await apiRegisterToken(token: token)
+//                } catch {
+//                    logger.error("apiRegisterToken error: \(responseError(error))")
+//                }
+//            }
+//        }
     }
 
     func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
