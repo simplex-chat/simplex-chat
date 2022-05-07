@@ -425,7 +425,28 @@ private func sendCommandOkResp(_ cmd: ChatCommand) async throws {
 
 func initializeChat() {
     do {
-        ChatModel.shared.currentUser = try apiGetActiveUser()
+        let m = ChatModel.shared
+        m.currentUser = try apiGetActiveUser()
+        if m.currentUser == nil {
+            m.onboardingStep = .step1_SimpleXInfo
+        } else {
+            do {
+                try apiStartChat()
+                try apiSetFilesFolder(filesFolder: getAppFilesDirectory().path)
+                m.userAddress = try apiGetUserAddress()
+                m.userSMPServers = try getUserSMPServers()
+                m.chats = try apiGetChats()
+                if m.appOpenUrl != nil {
+                    m.onboardingStep = .step3b_ConnectViaLink
+                } else if m.chats.isEmpty {
+                    m.onboardingStep = .step3a_MakeConnection
+                } else {
+                    m.onboardingStep = nil
+                }
+            } catch {
+                fatalError("Failed to start or load chats: \(error)")
+            }
+        }
     } catch {
         fatalError("Failed to initialize chat controller or database: \(error)")
     }

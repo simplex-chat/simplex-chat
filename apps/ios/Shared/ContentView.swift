@@ -13,26 +13,17 @@ struct ContentView: View {
     @State private var showNotificationAlert = false
 
     var body: some View {
-        if let user = chatModel.currentUser {
+        if let step = chatModel.onboardingStep {
+            OnboardingView(onboardingStep: step)
+        } else if let user = chatModel.currentUser {
             ChatListView(user: user)
                 .onAppear {
-                    do {
-                        try apiStartChat()
-                        try apiSetFilesFolder(filesFolder: getAppFilesDirectory().path)
-                        chatModel.userAddress = try apiGetUserAddress()
-                        chatModel.userSMPServers = try getUserSMPServers()
-                        chatModel.chats = try apiGetChats()
-                    } catch {
-                        fatalError("Failed to start or load chats: \(error)")
-                    }
                     ChatReceiver.shared.start()
                     NtfManager.shared.requestAuthorization(onDeny: {
                         alertManager.showAlert(notificationAlert())
                     })
                 }
                 .alert(isPresented: $alertManager.presentAlert) { alertManager.alertView! }
-        } else {
-            WelcomeView()
         }
     }
 

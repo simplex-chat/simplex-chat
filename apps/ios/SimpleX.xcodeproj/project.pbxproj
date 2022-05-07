@@ -59,6 +59,12 @@
 		5CA05A4C27974EB60002BEB4 /* WelcomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CA05A4B27974EB60002BEB4 /* WelcomeView.swift */; };
 		5CB0BA882826CB3A00B3292C /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 5CB0BA862826CB3A00B3292C /* InfoPlist.strings */; };
 		5CB0BA8B2826CB3A00B3292C /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 5CB0BA892826CB3A00B3292C /* Localizable.strings */; };
+		5CB0BA8E2827126500B3292C /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB0BA8D2827126500B3292C /* OnboardingView.swift */; };
+		5CB0BA90282713D900B3292C /* SimpleXInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB0BA8F282713D900B3292C /* SimpleXInfo.swift */; };
+		5CB0BA92282713FD00B3292C /* CreateProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB0BA91282713FD00B3292C /* CreateProfile.swift */; };
+		5CB0BA942827141F00B3292C /* ConnectViaLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB0BA932827141F00B3292C /* ConnectViaLink.swift */; };
+		5CB0BA962827143500B3292C /* MakeConnection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB0BA952827143500B3292C /* MakeConnection.swift */; };
+		5CB0BA982827146200B3292C /* ConnectToDevelopers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB0BA972827146200B3292C /* ConnectToDevelopers.swift */; };
 		5CB924D427A853F100ACCCDD /* SettingsButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB924D327A853F100ACCCDD /* SettingsButton.swift */; };
 		5CB924D727A8563F00ACCCDD /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB924D627A8563F00ACCCDD /* SettingsView.swift */; };
 		5CB924E127A867BA00ACCCDD /* UserProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB924E027A867BA00ACCCDD /* UserProfile.swift */; };
@@ -194,6 +200,12 @@
 		5CA05A4B27974EB60002BEB4 /* WelcomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeView.swift; sourceTree = "<group>"; };
 		5CB0BA872826CB3A00B3292C /* ru */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ru; path = ru.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		5CB0BA8A2826CB3A00B3292C /* ru */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ru; path = ru.lproj/Localizable.strings; sourceTree = "<group>"; };
+		5CB0BA8D2827126500B3292C /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
+		5CB0BA8F282713D900B3292C /* SimpleXInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimpleXInfo.swift; sourceTree = "<group>"; };
+		5CB0BA91282713FD00B3292C /* CreateProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateProfile.swift; sourceTree = "<group>"; };
+		5CB0BA932827141F00B3292C /* ConnectViaLink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectViaLink.swift; sourceTree = "<group>"; };
+		5CB0BA952827143500B3292C /* MakeConnection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MakeConnection.swift; sourceTree = "<group>"; };
+		5CB0BA972827146200B3292C /* ConnectToDevelopers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectToDevelopers.swift; sourceTree = "<group>"; };
 		5CB924D327A853F100ACCCDD /* SettingsButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsButton.swift; sourceTree = "<group>"; };
 		5CB924D627A8563F00ACCCDD /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		5CB924E027A867BA00ACCCDD /* UserProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserProfile.swift; sourceTree = "<group>"; };
@@ -287,6 +299,7 @@
 		5C2E260D27A30E2400F70299 /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				5CB0BA8C282711BC00B3292C /* Onboarding */,
 				3C714775281C080100CB4D4B /* Call */,
 				5C971E1F27AEBF7000C8A3CE /* Helpers */,
 				5C5F4AC227A5E9AF00B51EF1 /* Chat */,
@@ -417,6 +430,19 @@
 				5CA059DD279559F40002BEB4 /* Tests_iOSLaunchTests.swift */,
 			);
 			path = "Tests iOS";
+			sourceTree = "<group>";
+		};
+		5CB0BA8C282711BC00B3292C /* Onboarding */ = {
+			isa = PBXGroup;
+			children = (
+				5CB0BA8D2827126500B3292C /* OnboardingView.swift */,
+				5CB0BA8F282713D900B3292C /* SimpleXInfo.swift */,
+				5CB0BA91282713FD00B3292C /* CreateProfile.swift */,
+				5CB0BA952827143500B3292C /* MakeConnection.swift */,
+				5CB0BA932827141F00B3292C /* ConnectViaLink.swift */,
+				5CB0BA972827146200B3292C /* ConnectToDevelopers.swift */,
+			);
+			path = Onboarding;
 			sourceTree = "<group>";
 		};
 		5CB924DD27A8622200ACCCDD /* NewChat */ = {
@@ -672,21 +698,25 @@
 				5C3A88D127DF57800060F1C2 /* FramedItemView.swift in Sources */,
 				5CB924E427A8683A00ACCCDD /* UserAddress.swift in Sources */,
 				640F50E327CF991C001E05C2 /* SMPServers.swift in Sources */,
+				5CB0BA90282713D900B3292C /* SimpleXInfo.swift in Sources */,
 				5C063D2727A4564100AEC577 /* ChatPreviewView.swift in Sources */,
 				5C35CFCB27B2E91D00FB6C6D /* NtfManager.swift in Sources */,
 				3C8C548928133C84000A3EC7 /* PasteToConnectView.swift in Sources */,
 				5C9D13A3282187BB00AB8B43 /* WebRTC.swift in Sources */,
+				5CB0BA8E2827126500B3292C /* OnboardingView.swift in Sources */,
 				5C2E261227A30FEA00F70299 /* TerminalView.swift in Sources */,
 				5CDCAD7628188D3600503DA2 /* APITypes.swift in Sources */,
 				5C9FD96B27A56D4D0075386C /* JSON.swift in Sources */,
 				5C9FD96E27A5D6ED0075386C /* SendMessageView.swift in Sources */,
 				5CC1C99227A6C7F5000D9FF6 /* QRCode.swift in Sources */,
+				5CB0BA942827141F00B3292C /* ConnectViaLink.swift in Sources */,
 				5C116CDC27AABE0400E66D01 /* ContactRequestView.swift in Sources */,
 				5CB9250D27A9432000ACCCDD /* ChatListNavLink.swift in Sources */,
 				649BCDA0280460FD00C3A862 /* ComposeImageView.swift in Sources */,
 				5CA059ED279559F40002BEB4 /* ContentView.swift in Sources */,
 				5CCD403427A5F6DF00368C90 /* AddContactView.swift in Sources */,
 				5C3A88CE27DF50170060F1C2 /* DetermineWidth.swift in Sources */,
+				5CB0BA962827143500B3292C /* MakeConnection.swift in Sources */,
 				5C7505A527B679EE00BE3227 /* NavLinkPlain.swift in Sources */,
 				5C7505A227B65FDB00BE3227 /* CIMetaView.swift in Sources */,
 				5C35CFC827B2782E00FB6C6D /* BGManager.swift in Sources */,
@@ -708,8 +738,10 @@
 				5CC1C99527A6CF7F000D9FF6 /* ShareSheet.swift in Sources */,
 				5C5E5D3B2824468B00B0488A /* ActiveCallView.swift in Sources */,
 				5C2E260727A2941F00F70299 /* SimpleXAPI.swift in Sources */,
+				5CB0BA982827146200B3292C /* ConnectToDevelopers.swift in Sources */,
 				5CB924D427A853F100ACCCDD /* SettingsButton.swift in Sources */,
 				3C714777281C081000CB4D4B /* WebRTCView.swift in Sources */,
+				5CB0BA92282713FD00B3292C /* CreateProfile.swift in Sources */,
 				5C5F2B7027EBC704006A9D5F /* ProfileImage.swift in Sources */,
 				5C5E5D3D282447AB00B0488A /* CallTypes.swift in Sources */,
 				64AA1C6C27F3537400AC7277 /* DeletedItemView.swift in Sources */,
