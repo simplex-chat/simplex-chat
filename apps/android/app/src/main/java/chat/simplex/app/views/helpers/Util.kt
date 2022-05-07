@@ -29,6 +29,8 @@ import chat.simplex.app.model.CIFile
 import kotlinx.coroutines.*
 import java.io.File
 import java.io.FileOutputStream
+import java.text.SimpleDateFormat
+import java.util.*
 import kotlin.math.log2
 import kotlin.math.pow
 
@@ -271,7 +273,8 @@ fun getFileSize(context: Context, uri: Uri): Long? {
 fun saveImage(context: Context, image: Bitmap): String? {
   return try {
     val dataResized = resizeImageToDataSize(image, maxDataSize = MAX_IMAGE_SIZE)
-    val fileToSave = uniqueCombine(context, "image_${System.currentTimeMillis()}.jpg")
+    val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
+    val fileToSave = uniqueCombine(context, "IMG_${timestamp}.jpg")
     val file = File(getAppFilePath(context, fileToSave))
     val output = FileOutputStream(file)
     dataResized.writeTo(output)

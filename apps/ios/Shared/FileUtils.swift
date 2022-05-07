@@ -63,11 +63,20 @@ func saveFileFromURL(_ url: URL) -> String? {
 
 func saveImage(_ uiImage: UIImage) -> String? {
     if let imageDataResized = resizeImageToDataSize(uiImage, maxDataSize: maxImageSize) {
-        let millisecondsSince1970 = Int64((Date().timeIntervalSince1970 * 1000.0).rounded())
-        let fileName = uniqueCombine("image_\(millisecondsSince1970).jpg")
+        let timestamp = Date().getFormattedDate("yyyyMMdd_HHmmss")
+        let fileName = uniqueCombine("IMG_\(timestamp).jpg")
         return saveFile(imageDataResized, fileName)
     }
     return nil
+}
+
+extension Date {
+  func getFormattedDate(_ format: String) -> String {
+    let df = DateFormatter()
+      df.dateFormat = format
+      df.locale = Locale(identifier: "US")
+    return df.string(from: self)
+  }
 }
 
 private func saveFile(_ data: Data, _ fileName: String) -> String? {
