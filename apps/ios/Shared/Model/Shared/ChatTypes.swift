@@ -655,15 +655,18 @@ struct CIFile: Decodable {
         CIFile(fileId: fileId, fileName: fileName, fileSize: fileSize, filePath: filePath, fileStatus: fileStatus)
     }
 
-    var stored: Bool {
+    var loaded: Bool {
         get {
             switch self.fileStatus {
             case .sndStored: return true
             case .sndTransfer: return true
             case .sndComplete: return true
             case .sndCancelled: return true
+            case .rcvInvitation: return false
+            case .rcvAccepted: return false
+            case .rcvTransfer: return false
+            case .rcvCancelled: return false
             case .rcvComplete: return true
-            default: return false
             }
         }
     }

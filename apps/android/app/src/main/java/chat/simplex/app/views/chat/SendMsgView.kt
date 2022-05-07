@@ -73,7 +73,7 @@ fun SendMsgView(
                 .size(36.dp)
                 .padding(4.dp),
               color = HighOrLowlight,
-              strokeWidth = 4.dp
+              strokeWidth = 3.dp
             )
           } else {
             Icon(
@@ -149,7 +149,7 @@ fun PreviewSendMsgViewEditing() {
 fun PreviewSendMsgViewInProgress() {
   val smallFont = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onBackground)
   val textStyle = remember { mutableStateOf(smallFont) }
-  val composeStateInProgress = ComposeState(inProgress = true)
+  val composeStateInProgress = ComposeState(preview = ComposePreview.FilePreview("test.txt"), inProgress = true)
   SimpleXTheme {
     SendMsgView(
       composeState = remember { mutableStateOf(composeStateInProgress) },

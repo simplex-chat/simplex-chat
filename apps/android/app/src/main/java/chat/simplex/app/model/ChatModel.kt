@@ -851,13 +851,16 @@ class CIFile(
   val filePath: String? = null,
   val fileStatus: CIFileStatus
 ) {
-  val stored: Boolean = when (fileStatus) {
+  val loaded: Boolean = when (fileStatus) {
     CIFileStatus.SndStored -> true
     CIFileStatus.SndTransfer -> true
     CIFileStatus.SndComplete -> true
     CIFileStatus.SndCancelled -> true
+    CIFileStatus.RcvInvitation -> false
+    CIFileStatus.RcvAccepted -> false
+    CIFileStatus.RcvTransfer -> false
+    CIFileStatus.RcvCancelled -> false
     CIFileStatus.RcvComplete -> true
-    else -> false
   }
 
   companion object {
