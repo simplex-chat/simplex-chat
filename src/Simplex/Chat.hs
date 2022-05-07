@@ -2137,9 +2137,9 @@ withStore ::
   m a
 withStore action =
   asks chatStore
-    >>= runExceptT . action
+    -- >>= runExceptT . action
     -- use this line instead of above to log query errors
-    -- >>= (\st -> runExceptT $ action st `E.catch` \(e :: E.SomeException) -> liftIO (print e) >> E.throwIO e)
+    >>= (\st -> runExceptT $ action st `E.catch` \(e :: E.SomeException) -> liftIO (print e) >> E.throwIO e)
     >>= liftEither . first ChatErrorStore
 
 chatCommandP :: Parser ChatCommand
