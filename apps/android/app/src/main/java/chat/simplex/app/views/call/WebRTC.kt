@@ -1,9 +1,47 @@
 package chat.simplex.app.views.call
 
-import chat.simplex.app.model.CR
-import chat.simplex.app.model.User
+import chat.simplex.app.model.*
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+
+class Call(
+  val contact: Contact,
+  val callState: CallState,
+  val localMedia: CallMediaType,
+  val localCapabilities: CallCapabilities? = null,
+  val peerMedia: CallMediaType? = null,
+  val sharedKey: String? = null,
+  val audioEnabled: Boolean = true,
+  val videoEnabled: Boolean = localMedia == CallMediaType.Video
+) {
+  val encrypted: Boolean get() = (localCapabilities?.encryption ?: false) && sharedKey != null
+}
+
+enum class CallState {
+  WaitCapabilities,
+  InvitationSent,
+  InvitationReceived,
+  OfferSent,
+  OfferReceived,
+  Negotiated,
+  Connected;
+
+  val text: String get() = when(this) {
+    WaitCapabilities -> "starting..."
+    InvitationSent -> "waiting for answer..."
+    InvitationReceived -> "starting..."
+    OfferSent -> "waiting for confirmation..."
+    OfferReceived -> "received answer..."
+    Negotiated -> "connecting..."
+    Connected -> "connected"
+  }
+}
+
+@Serializable
+class WVAPICall(val corrId: Int? = null, val command: WCallCommand)
+
+@Serializable
+class WVAPIMessage(val corrId: Int? = null, val resp: WCallResponse, val command: WCallCommand?)
 
 @Serializable
 sealed class WCallCommand {
@@ -12,6 +50,7 @@ sealed class WCallCommand {
   @Serializable @SerialName("accept") class Accept(val offer: String, val iceCandidates: List<String>, val media: CallMediaType, val aesKey: String? = null): WCallCommand()
   @Serializable @SerialName("answer") class Answer (val answer: String, val iceCandidates: List<String>): WCallCommand()
   @Serializable @SerialName("ice") class Ice(val iceCandidates: List<String>): WCallCommand()
+  @Serializable @SerialName("media") class Media(val media: CallMediaType, val enable: Boolean): WCallCommand()
   @Serializable @SerialName("end") class End(): WCallCommand()
 }
 

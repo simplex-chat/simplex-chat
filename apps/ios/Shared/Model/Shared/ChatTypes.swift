@@ -725,7 +725,6 @@ enum MsgContent {
     }
 }
 
-// TODO define Encodable
 extension MsgContent: Decodable {
     init(from decoder: Decoder) throws {
         do {

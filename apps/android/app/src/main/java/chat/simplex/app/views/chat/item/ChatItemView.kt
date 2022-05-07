@@ -62,6 +62,8 @@ fun ChatItemView(
         }
       } else if (cItem.isDeletedContent) {
         DeletedItemView(cItem, showMember = showMember)
+      } else if (cItem.isCall) {
+        FramedItemView(user, cItem, uriHandler, showMember = showMember, showMenu, receiveFile)
       }
       if (cItem.isMsgContent) {
         DropdownMenu(

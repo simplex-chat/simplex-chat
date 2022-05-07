@@ -39,7 +39,8 @@ fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
 suspend fun openChat(chatModel: ChatModel, cInfo: ChatInfo) {
   val chat = chatModel.controller.apiGetChat(cInfo.chatType, cInfo.apiId)
   if (chat != null) {
-    chatModel.chatItems = chat.chatItems.toMutableStateList()
+    chatModel.chatItems.clear()
+    chatModel.chatItems.addAll(chat.chatItems)
     chatModel.chatId.value = cInfo.id
   }
 }
