@@ -218,7 +218,7 @@ struct Contact: Identifiable, Decodable, NamedChat {
     )
 }
 
-struct ContactRef: Decodable {
+struct ContactRef: Decodable, Equatable {
     var contactId: Int64
     var localDisplayName: ContactName
 
@@ -460,6 +460,14 @@ struct ChatItem: Identifiable, Decodable {
         }
     }
 
+    func isCall() -> Bool {
+        switch content {
+        case .sndCall: return true
+        case .rcvCall: return true
+        default: return false
+        }
+    }
+
     var memberDisplayName: String? {
         get {
             if case let .groupRcv(groupMember) = chatDir {
@@ -578,6 +586,8 @@ enum CIContent: Decodable, ItemContent {
     case rcvMsgContent(msgContent: MsgContent)
     case sndDeleted(deleteMode: CIDeleteMode)
     case rcvDeleted(deleteMode: CIDeleteMode)
+    case sndCall(status: CICallStatus, duration: Int)
+    case rcvCall(status: CICallStatus, duration: Int)
 
     var text: String {
         get {
@@ -586,6 +596,8 @@ enum CIContent: Decodable, ItemContent {
             case let .rcvMsgContent(mc): return mc.text
             case .sndDeleted: return NSLocalizedString("deleted", comment: "deleted chat item")
             case .rcvDeleted: return NSLocalizedString("deleted", comment: "deleted chat item")
+            case let .sndCall(status, duration): return status.text(duration)
+            case let .rcvCall(status, duration): return status.text(duration)
             }
         }
     }
@@ -647,6 +659,8 @@ struct CIFile: Decodable {
         get {
             switch self.fileStatus {
             case .sndStored: return true
+            case .sndTransfer: return true
+            case .sndComplete: return true
             case .sndCancelled: return true
             case .rcvComplete: return true
             default: return false
@@ -693,6 +707,13 @@ enum MsgContent {
             case let .text(text): return "text \(text)"
             default: return "json \(encodeJSON(self))"
             }
+        }
+    }
+
+    func isFile() -> Bool {
+        switch self {
+        case .file: return true
+        default: return false
         }
     }
 
@@ -828,4 +849,29 @@ struct SndFileTransfer: Decodable {
 
 struct FileTransferMeta: Decodable {
     
+}
+
+enum CICallStatus: String, Decodable {
+    case pending
+    case missed
+    case rejected
+    case accepted
+    case negotiated
+    case progress
+    case ended
+    case error
+
+    func text(_ sec: Int) -> String {
+        switch self {
+        case .pending: return "calling..."
+        case .negotiated: return "connecting..."
+        case .progress: return "in progress"
+        case .ended: return "ended \(duration(sec))"
+        default: return self.rawValue
+        }
+    }
+
+    func duration(_ sec: Int) -> String {
+        String(format: "%02d:%02d", sec / 60, sec % 60)
+    }
 }

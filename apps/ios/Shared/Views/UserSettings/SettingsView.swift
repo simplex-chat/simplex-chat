@@ -143,12 +143,12 @@ struct SettingsView: View {
                             notificationsToggle(token)
                         }
                     }
-                    NavigationLink {
-                        CallView()
-                            .frame(maxHeight: .infinity, alignment: .top)
-                    } label: {
+//                    NavigationLink {
+//                        CallViewDebug()
+//                            .frame(maxHeight: .infinity, alignment: .top)
+//                    } label: {
                         Text("v\(appVersion ?? "?") (\(appBuild ?? "?"))")
-                    }
+//                    }
                 }
             }
             .navigationTitle("Your settings")

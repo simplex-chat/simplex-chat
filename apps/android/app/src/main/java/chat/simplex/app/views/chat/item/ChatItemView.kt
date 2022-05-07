@@ -1,10 +1,9 @@
 package chat.simplex.app.views.chat.item
 
 import android.content.Context
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
@@ -12,6 +11,7 @@ import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -42,19 +42,18 @@ fun ChatItemView(
   val sent = cItem.chatDir.sent
   val alignment = if (sent) Alignment.CenterEnd else Alignment.CenterStart
   val showMenu = remember { mutableStateOf(false) }
-  val saveFileLauncher = rememberLauncherForActivityResult(
-    contract = ActivityResultContracts.CreateDocument(),
-    onResult = { destination ->
-      saveFile(context, cItem.file, destination)
-    }
-  )
+  val saveFileLauncher = rememberSaveFileLauncher(cxt = context, ciFile = cItem.file)
   Box(
     modifier = Modifier
       .padding(bottom = 4.dp)
       .fillMaxWidth(),
     contentAlignment = alignment,
   ) {
-    Column(Modifier.combinedClickable(onLongClick = { showMenu.value = true }, onClick = {})) {
+    Column(
+      Modifier
+        .clip(RoundedCornerShape(18.dp))
+        .combinedClickable(onLongClick = { showMenu.value = true }, onClick = {})
+    ) {
       if (cItem.isMsgContent) {
         if (cItem.file == null && cItem.quotedItem == null && isShortEmoji(cItem.content.text)) {
           EmojiItemView(cItem)
@@ -71,7 +70,11 @@ fun ChatItemView(
           Modifier.width(220.dp)
         ) {
           ItemAction(stringResource(R.string.reply_verb), Icons.Outlined.Reply, onClick = {
-            composeState.value = composeState.value.copy(contextItem = ComposeContextItem.QuotedItem(cItem))
+            if (composeState.value.editing) {
+              composeState.value = ComposeState(contextItem = ComposeContextItem.QuotedItem(cItem))
+            } else {
+              composeState.value = composeState.value.copy(contextItem = ComposeContextItem.QuotedItem(cItem))
+            }
             showMenu.value = false
           })
           ItemAction(stringResource(R.string.share_verb), Icons.Outlined.Share, onClick = {
@@ -82,7 +85,7 @@ fun ChatItemView(
             copyText(cxt, cItem.content.text)
             showMenu.value = false
           })
-          if (cItem.content.msgContent is MsgContent.MCImage) {
+          if (cItem.content.msgContent is MsgContent.MCImage || cItem.content.msgContent is MsgContent.MCFile) {
             val filePath = getStoredFilePath(context, cItem.file)
             if (filePath != null) {
               ItemAction(stringResource(R.string.save_verb), Icons.Outlined.SaveAlt, onClick = {

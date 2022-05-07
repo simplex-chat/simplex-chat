@@ -3,6 +3,10 @@ package chat.simplex.app.views.helpers
 import android.content.*
 import android.net.Uri
 import android.widget.Toast
+import androidx.activity.compose.ManagedActivityResultLauncher
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.runtime.Composable
 import androidx.core.content.ContextCompat
 import chat.simplex.app.R
 import chat.simplex.app.model.CIFile
@@ -24,24 +28,29 @@ fun copyText(cxt: Context, text: String) {
   clipboard?.setPrimaryClip(ClipData.newPlainText("text", text))
 }
 
-fun saveFile(cxt: Context, ciFile: CIFile?, destination: Uri?) {
-  if (destination != null) {
-    val filePath = getStoredFilePath(cxt, ciFile)
-    if (filePath != null) {
-      val contentResolver = cxt.contentResolver
-      val file = File(filePath)
-      try {
-        val outputStream = contentResolver.openOutputStream(destination)
-        if (outputStream != null) {
-          outputStream.write(file.readBytes())
-          outputStream.close()
-          Toast.makeText(cxt, generalGetString(R.string.file_saved), Toast.LENGTH_SHORT).show()
+@Composable
+fun rememberSaveFileLauncher(cxt: Context, ciFile: CIFile?): ManagedActivityResultLauncher<String, Uri?> =
+  rememberLauncherForActivityResult(
+    contract = ActivityResultContracts.CreateDocument(),
+    onResult = { destination ->
+      if (destination != null) {
+        val filePath = getStoredFilePath(cxt, ciFile)
+        if (filePath != null) {
+          val contentResolver = cxt.contentResolver
+          val file = File(filePath)
+          try {
+            val outputStream = contentResolver.openOutputStream(destination)
+            if (outputStream != null) {
+              outputStream.write(file.readBytes())
+              outputStream.close()
+              Toast.makeText(cxt, generalGetString(R.string.file_saved), Toast.LENGTH_SHORT).show()
+            }
+          } catch (e: IOException) {
+            Toast.makeText(cxt, generalGetString(R.string.error_saving_file), Toast.LENGTH_SHORT).show()
+          }
+        } else {
+          Toast.makeText(cxt, generalGetString(R.string.file_not_found), Toast.LENGTH_SHORT).show()
         }
-      } catch (e: IOException) {
-        Toast.makeText(cxt, generalGetString(R.string.error_saving_file), Toast.LENGTH_SHORT).show()
       }
-    } else {
-      Toast.makeText(cxt, generalGetString(R.string.file_not_found), Toast.LENGTH_SHORT).show()
     }
-  }
-}
+  )

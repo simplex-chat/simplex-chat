@@ -12,6 +12,7 @@ import UserNotifications
 let ntfCategoryContactRequest = "NTF_CAT_CONTACT_REQUEST"
 let ntfCategoryContactConnected = "NTF_CAT_CONTACT_CONNECTED"
 let ntfCategoryMessageReceived = "NTF_CAT_MESSAGE_RECEIVED"
+let ntfCategoryCallInvitation = "NTF_CAT_CALL_INVITATION"
 let ntfCategoryCheckMessage = "NTF_CAT_CHECK_MESSAGE"
 // TODO remove
 let ntfCategoryCheckingMessages = "NTF_CAT_CHECKING_MESSAGES"
@@ -48,6 +49,16 @@ func createMessageReceivedNtf(_ cInfo: ChatInfo, _ cItem: ChatItem) -> UNMutable
     )
 }
 
+func createCallInvitationNtf(_ contact: Contact, _ invitation: CallInvitation) -> UNMutableNotificationContent {
+    createNotification(
+        categoryIdentifier: ntfCategoryCallInvitation,
+        title: "\(contact.chatViewName):",
+        body: String.localizedStringWithFormat(NSLocalizedString("Incoming %@ call", comment: "notification body"), invitation.peerMedia.rawValue),
+        targetContentIdentifier: nil,
+        userInfo: ["chatId": contact.id]
+    )
+}
+
 func createNotification(categoryIdentifier: String, title: String, subtitle: String? = nil, body: String? = nil,
                         targetContentIdentifier: String? = nil, userInfo: [AnyHashable : Any] = [:]) -> UNMutableNotificationContent {
     let content = UNMutableNotificationContent()
@@ -65,17 +76,21 @@ func createNotification(categoryIdentifier: String, title: String, subtitle: Str
 }
 
 func hideSecrets(_ cItem: ChatItem) -> String {
-    if let md = cItem.formattedText {
-        var res = ""
-        for ft in md {
-            if case .secret = ft.format {
-                res = res + "..."
-            } else {
-                res = res + ft.text
+    if cItem.content.text != "" {
+        if let md = cItem.formattedText {
+            var res = ""
+            for ft in md {
+                if case .secret = ft.format {
+                    res = res + "..."
+                } else {
+                    res = res + ft.text
+                }
             }
+            return res
+        } else {
+            return cItem.content.text
         }
-        return res
     } else {
-        return cItem.content.text
+        return cItem.file?.fileName ?? ""
     }
 }
