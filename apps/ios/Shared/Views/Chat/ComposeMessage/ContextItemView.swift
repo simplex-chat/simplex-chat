@@ -16,12 +16,15 @@ struct ContextItemView: View {
 
     var body: some View {
         HStack {
-            Image(systemName: contextIcon)
-                .resizable()
-                .aspectRatio(contentMode: .fit)
-                .frame(width: 20, height: 20)
-                .foregroundColor(.secondary)
-            contextText(contextItem).lineLimit(3)
+            ZStack(alignment: .topLeading) {
+                Image(systemName: contextIcon)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 16, height: 16)
+                    .foregroundColor(.secondary)
+                    .padding(.top, 1)
+                contextText(contextItem).lineLimit(3)
+            }
             Spacer()
             Button {
                 withAnimation {
@@ -40,9 +43,9 @@ struct ContextItemView: View {
     
     func contextText(_ cxtItem: ChatItem) -> some View {
         if let s = cxtItem.memberDisplayName {
-            return (Text(s).fontWeight(.medium) + Text(": \(cxtItem.text)"))
+            return (Text("     ") + Text(s).fontWeight(.medium) + Text(": \(cxtItem.text)"))
         } else {
-            return Text(cxtItem.text)
+            return Text("     " + cxtItem.text)
         }
     }
 }
@@ -50,6 +53,6 @@ struct ContextItemView: View {
 struct ContextItemView_Previews: PreviewProvider {
     static var previews: some View {
         let contextItem: ChatItem = ChatItem.getSample(1, .directSnd, .now, "hello")
-        return ContextItemView(contextItem: contextItem, contextIcon: "pencil.circle", cancelContextItem: {})
+        return ContextItemView(contextItem: contextItem, contextIcon: "arrowshape.turn.up.left", cancelContextItem: {})
     }
 }
