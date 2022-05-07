@@ -143,7 +143,7 @@
     <string name="toast_permission_denied">Разрешение не получено!</string>
     <string name="use_camera_button">Использовать камеру</string>
     <string name="from_gallery_button">Открыть галерею</string>
-    <string name="choose_file">Выбрать файл</string>
+    <string name="choose_file">Выбрать файл (v2.0)</string>
 
     <!-- help - ChatHelpView.kt -->
     <string name="thank_you_for_installing_simplex">Спасибо, что установили <xliff:g id="appNameFull">SimpleX Chat</xliff:g>!</string>
