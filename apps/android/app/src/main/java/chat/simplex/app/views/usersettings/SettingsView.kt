@@ -194,7 +194,8 @@ fun SettingsLayout(
         Text(annotatedStringResource(R.string.install_simplex_chat_for_terminal))
       }
       Divider(Modifier.padding(horizontal = 8.dp))
-      SettingsSectionView(showVideoChatPrototype) {
+//      SettingsSectionView(showVideoChatPrototype) {
+      SettingsSectionView() {
         Text("v${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})")
       }
     }

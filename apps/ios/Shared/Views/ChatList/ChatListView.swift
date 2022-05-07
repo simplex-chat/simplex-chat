@@ -14,7 +14,7 @@ struct ChatListView: View {
     @State private var showSettings = false
     @State private var searchText = ""
     @State private var showCallView = false
-    @AppStorage("pendingConnections") private var pendingConnections = true
+    @AppStorage(DEFAULT_PENDING_CONNECTIONS) private var pendingConnections = true
 
     var user: User
 

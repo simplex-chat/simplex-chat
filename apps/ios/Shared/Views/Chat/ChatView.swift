@@ -106,14 +106,14 @@ struct ChatView: View {
                     ChatInfoView(chat: chat, showChatInfo: $showChatInfo)
                 }
             }
-            ToolbarItem(placement: .navigationBarTrailing) {
-                if case let .direct(contact) = cInfo {
-                    HStack {
-                        callButton(contact, .audio, imageName: "phone")
-                        callButton(contact, .video, imageName: "video")
-                    }
-                }
-            }
+//            ToolbarItem(placement: .navigationBarTrailing) {
+//                if case let .direct(contact) = cInfo {
+//                    HStack {
+//                        callButton(contact, .audio, imageName: "phone")
+//                        callButton(contact, .video, imageName: "video")
+//                    }
+//                }
+//            }
         }
         .navigationBarBackButtonHidden(true)
     }
