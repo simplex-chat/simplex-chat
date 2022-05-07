@@ -36,17 +36,17 @@ fun ContextItemView(
       .background(if (sent) SentColorLight else ReceivedColorLight),
     verticalAlignment = Alignment.CenterVertically
   ) {
-    Row(
+    Box(
       Modifier
         .padding(vertical = 12.dp)
         .fillMaxWidth()
         .weight(1F),
-      verticalAlignment = Alignment.CenterVertically
+      contentAlignment = Alignment.TopStart
     ) {
       Icon(
         contextIcon,
         modifier = Modifier
-          .padding(horizontal = 8.dp)
+          .padding(horizontal = 14.dp)
           .height(20.dp)
           .width(20.dp),
         contentDescription = stringResource(R.string.icon_descr_context),
@@ -68,14 +68,17 @@ fun ContextItemView(
 @Composable
 private fun ContextItemText(cxtItem: ChatItem) {
   val member = cxtItem.memberDisplayName
-  if (member == null) {
-    Text(cxtItem.text, maxLines = 3)
-  } else {
-    val annotatedText = buildAnnotatedString {
-      withStyle(boldFont) { append(member) }
-      append(": ${cxtItem.text}")
+  Box(Modifier.padding(start = 12.dp)) {
+    if (member == null) {
+      Text("      " + cxtItem.text, maxLines = 3)
+    } else {
+      val annotatedText = buildAnnotatedString {
+        append("      ")
+        withStyle(boldFont) { append(member) }
+        append(": ${cxtItem.text}")
+      }
+      Text(annotatedText, maxLines = 3)
     }
-    Text(annotatedText, maxLines = 3)
   }
 }
 
