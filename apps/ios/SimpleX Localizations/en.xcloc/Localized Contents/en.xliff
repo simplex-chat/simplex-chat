@@ -172,7 +172,7 @@
       </trans-unit>
       <trans-unit id="Choose file" xml:space="preserve">
         <source>Choose file</source>
-        <target>Choose file</target>
+        <target>Choose file (new in v2.0)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Choose from library" xml:space="preserve">
@@ -944,7 +944,7 @@ SimpleX servers cannot see your profile.</target>
         <source>connecting…</source>
         <target>connecting…</target>
         <note>call status
-chat list item title</note>
+   chat list item title</note>
       </trans-unit>
       <trans-unit id="connection established" xml:space="preserve">
         <source>connection established</source>

@@ -172,8 +172,8 @@
       </trans-unit>
       <trans-unit id="Choose file" xml:space="preserve">
         <source>Choose file</source>
-        <target>Выбрать файл</target>
-        <note>Attachment option to choose file.</note>
+        <target>Выбрать файл (v2.0)</target>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Choose from library" xml:space="preserve">
         <source>Choose from library</source>
@@ -942,7 +942,8 @@ SimpleX серверы не могут получить доступ к ваше
       <trans-unit id="connecting…" xml:space="preserve">
         <source>connecting…</source>
         <target>соединяется…</target>
-        <note>call status chat list item title</note>
+        <note>call status
+   chat list item title</note>
       </trans-unit>
       <trans-unit id="connection established" xml:space="preserve">
         <source>connection established</source>
@@ -1103,7 +1104,7 @@ SimpleX серверы не могут получить доступ к ваше
       </trans-unit>
     </body>
   </file>
-  <file original="SimpleX NSE/en.lproj/InfoPlist.strings" datatype="plaintext" source-language="en" target-language="ru">
+  <file original="SimpleX NSE/en.lproj/InfoPlist.strings" source-language="en" target-language="ru" datatype="plaintext">
     <header>
       <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="13.3" build-num="13E113"/>
     </header>
@@ -1125,7 +1126,7 @@ SimpleX серверы не могут получить доступ к ваше
       </trans-unit>
     </body>
   </file>
-  <file original="SimpleX NSE/en.lproj/Localizable.strings" datatype="plaintext" source-language="en" target-language="ru">
+  <file original="SimpleX NSE/en.lproj/Localizable.strings" source-language="en" target-language="ru" datatype="plaintext">
     <header>
       <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="13.3" build-num="13E113"/>
     </header>
