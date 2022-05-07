@@ -443,6 +443,10 @@ deleteContact st userId Contact {contactId, localDisplayName} = do
         )
       |]
       (userId, contactId)
+    liftIO $ putStrLn "DB.execute db \"DELETE FROM files WHERE user_id = ? AND contact_id = ?\" (userId, contactId)"
+    DB.execute db "DELETE FROM files WHERE user_id = ? AND contact_id = ?" (userId, contactId)
+    liftIO $ putStrLn "DB.execute db \"DELETE FROM chat_items WHERE user_id = ? AND contact_id = ?\" (userId, contactId)"
+    DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND contact_id = ?" (userId, contactId)
     liftIO $ putStrLn "DB.execute db \"DELETE FROM contacts WHERE user_id = ? AND contact_id = ?\" (userId, contactId)"
     DB.execute db "DELETE FROM contacts WHERE user_id = ? AND contact_id = ?" (userId, contactId)
     liftIO $ putStrLn "DB.execute db \"DELETE FROM display_names WHERE user_id = ? AND local_display_name = ?\" (userId, localDisplayName)"
