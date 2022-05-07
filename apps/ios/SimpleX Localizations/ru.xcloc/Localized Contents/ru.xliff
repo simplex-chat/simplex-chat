@@ -472,7 +472,7 @@
       </trans-unit>
       <trans-unit id="Image will be received when your contact is online, please wait or check later!" xml:space="preserve">
         <source>Image will be received when your contact is online, please wait or check later!</source>
-        <target>Картинка будет принята, когда ваш контакт онлайн, подождите или проверьте позже!</target>
+        <target>Изображение будет принято, когда ваш контакт будет в сети, подождите или проверьте позже!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Incoming %@ call" xml:space="preserve">
@@ -757,7 +757,7 @@ To connect, please ask your contact to create another connection link and check 
       </trans-unit>
       <trans-unit id="Waiting for image" xml:space="preserve">
         <source>Waiting for image</source>
-        <target>Ожидается прием картинки</target>
+        <target>Ожидается прием изображения</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Welcome %@!" xml:space="preserve">
