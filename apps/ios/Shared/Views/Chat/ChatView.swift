@@ -14,8 +14,9 @@ struct ChatView: View {
     @EnvironmentObject var chatModel: ChatModel
     @Environment(\.colorScheme) var colorScheme
     @ObservedObject var chat: Chat
-    @State var composeState = ComposeState()
-    @State var deletingItem: ChatItem? = nil
+    @Binding var showCallView: Bool
+    @State private var composeState = ComposeState()
+    @State private var deletingItem: ChatItem? = nil
     @FocusState private var keyboardVisible: Bool
     @State private var showChatInfo = false
     @State private var showDeleteMessage = false
@@ -105,8 +106,30 @@ struct ChatView: View {
                     ChatInfoView(chat: chat, showChatInfo: $showChatInfo)
                 }
             }
+            ToolbarItem(placement: .navigationBarTrailing) {
+                if case let .direct(contact) = cInfo {
+                    HStack {
+                        callButton(contact, .audio, imageName: "phone")
+                        callButton(contact, .video, imageName: "video")
+                    }
+                }
+            }
         }
         .navigationBarBackButtonHidden(true)
+    }
+
+    private func callButton(_ contact: Contact, _ media: CallMediaType, imageName: String) -> some View {
+        Button {
+            chatModel.activeCall = Call(
+                contact: contact,
+                callState: .waitCapabilities,
+                localMedia: media
+            )
+            showCallView = true
+            chatModel.callCommand = .capabilities
+        } label: {
+            Image(systemName: imageName)
+        }
     }
 
     private func chatItemWithMenu(_ ci: ChatItem, _ maxWidth: CGFloat, showMember: Bool = false) -> some View {
@@ -166,7 +189,8 @@ struct ChatView: View {
                 }
                 if let di = deletingItem {
                     if di.meta.editable {
-                        Button("Delete for everyone",role: .destructive) { deleteMessage(.cidmBroadcast)
+                        Button("Delete for everyone",role: .destructive) {
+                            deleteMessage(.cidmBroadcast)
                         }
                     }
                 }
@@ -236,6 +260,7 @@ struct ChatView: View {
 
 struct ChatView_Previews: PreviewProvider {
     static var previews: some View {
+        @State var showCallView = false
         let chatModel = ChatModel()
         chatModel.chatId = "@1"
         chatModel.chatItems = [
@@ -249,7 +274,7 @@ struct ChatView_Previews: PreviewProvider {
             ChatItem.getSample(8, .directSnd, .now, "👍👍👍👍"),
             ChatItem.getSample(9, .directSnd, .now, "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.")
         ]
-        return ChatView(chat: Chat(chatInfo: ChatInfo.sampleData.direct, chatItems: []))
+        return ChatView(chat: Chat(chatInfo: ChatInfo.sampleData.direct, chatItems: []), showCallView: $showCallView)
             .environmentObject(chatModel)
     }
 }

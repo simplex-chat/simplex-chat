@@ -13,6 +13,7 @@ struct ChatListView: View {
     // not really used in this view
     @State private var showSettings = false
     @State private var searchText = ""
+    @State private var showCallView = false
     @AppStorage("pendingConnections") private var pendingConnections = true
 
     var user: User
@@ -24,7 +25,7 @@ struct ChatListView: View {
                     ChatHelp(showSettings: $showSettings)
                 } else {
                     ForEach(filteredChats()) { chat in
-                        ChatListNavLink(chat: chat)
+                        ChatListNavLink(chat: chat, showCallView: $showCallView)
                             .padding(.trailing, -16)
                     }
                 }
@@ -51,6 +52,29 @@ struct ChatListView: View {
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     NewChatButton()
+                }
+            }
+            .fullScreenCover(isPresented: $showCallView) {
+                ActiveCallView(showCallView: $showCallView)
+            }
+            .onChange(of: showCallView) { _ in
+                if (showCallView) { return }
+                if let call = chatModel.activeCall {
+                    Task {
+                        do {
+                            try await apiEndCall(call.contact)
+                        } catch {
+                            logger.error("ChatListView apiEndCall error: \(error.localizedDescription)")
+                        }
+                    }
+                }
+                chatModel.callCommand = .end
+            }
+            .onChange(of: chatModel.activeCallInvitation) { _ in
+                if let contactRef = chatModel.activeCallInvitation,
+                   case let .direct(contact) = chatModel.getChat(contactRef.id)?.chatInfo,
+                   let invitation = chatModel.callInvitations.removeValue(forKey: contactRef.id) {
+                    answerCallAlert(contact, invitation)
                 }
             }
         }
@@ -98,6 +122,29 @@ struct ChatListView: View {
         } else {
             return Alert(title: Text("Error: URL is invalid"))
         }
+    }
+
+    private func answerCallAlert(_ contact: Contact, _ invitation: CallInvitation) {
+        AlertManager.shared.showAlert(Alert(
+            title: Text("Incoming call"),
+            primaryButton: .default(Text("Answer")) {
+                if chatModel.activeCallInvitation == nil {
+                    DispatchQueue.main.async {
+                        AlertManager.shared.showAlertMsg(title: "Call already ended!")
+                    }
+                } else {
+                    chatModel.activeCallInvitation = nil
+                    chatModel.activeCall = Call(
+                        contact: contact,
+                        callState: .invitationReceived,
+                        localMedia: invitation.peerMedia
+                    )
+                    showCallView = true
+                    chatModel.callCommand = .start(media: invitation.peerMedia, aesKey: invitation.sharedKey)
+                }
+            },
+            secondaryButton: .cancel()
+        ))
     }
 }
 

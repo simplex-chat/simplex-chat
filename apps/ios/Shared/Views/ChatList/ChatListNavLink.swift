@@ -11,6 +11,7 @@ import SwiftUI
 struct ChatListNavLink: View {
     @EnvironmentObject var chatModel: ChatModel
     @State var chat: Chat
+    @Binding var showCallView: Bool
     @State private var showContactRequestDialog = false
 
     var body: some View {
@@ -27,7 +28,7 @@ struct ChatListNavLink: View {
     }
 
     private func chatView() -> some View {
-        ChatView(chat: chat)
+        ChatView(chat: chat, showCallView: $showCallView)
         .onAppear {
             do {
                 let cInfo = chat.chatInfo
@@ -252,19 +253,20 @@ struct ChatListNavLink: View {
 struct ChatListNavLink_Previews: PreviewProvider {
     static var previews: some View {
         @State var chatId: String? = "@1"
+        @State var showCallView = false
         return Group {
             ChatListNavLink(chat: Chat(
                 chatInfo: ChatInfo.sampleData.direct,
                 chatItems: [ChatItem.getSample(1, .directSnd, .now, "hello")]
-            ))
+            ), showCallView: $showCallView)
             ChatListNavLink(chat: Chat(
                 chatInfo: ChatInfo.sampleData.direct,
                 chatItems: [ChatItem.getSample(1, .directSnd, .now, "hello")]
-            ))
+            ), showCallView: $showCallView)
             ChatListNavLink(chat: Chat(
                 chatInfo: ChatInfo.sampleData.contactRequest,
                 chatItems: []
-            ))
+            ), showCallView: $showCallView)
         }
         .previewLayout(.fixed(width: 360, height: 80))
     }

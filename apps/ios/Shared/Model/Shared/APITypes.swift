@@ -37,6 +37,14 @@ enum ChatCommand {
     case showMyAddress
     case apiAcceptContact(contactReqId: Int64)
     case apiRejectContact(contactReqId: Int64)
+    // WebRTC calls
+    case apiSendCallInvitation(contact: Contact, callType: CallType)
+    case apiRejectCall(contact: Contact)
+    case apiSendCallOffer(contact: Contact, callOffer: WebRTCCallOffer)
+    case apiSendCallAnswer(contact: Contact, answer: WebRTCSession)
+    case apiSendCallExtraInfo(contact: Contact, extraInfo: WebRTCExtraInfo)
+    case apiEndCall(contact: Contact)
+    case apiCallStatus(contact: Contact, callStatus: WebRTCCallStatus)
     case apiChatRead(type: ChatType, id: Int64, itemRange: (Int64, Int64))
     case receiveFile(fileId: Int64)
     case string(String)
@@ -71,6 +79,13 @@ enum ChatCommand {
             case .showMyAddress: return "/show_address"
             case let .apiAcceptContact(contactReqId): return "/_accept \(contactReqId)"
             case let .apiRejectContact(contactReqId): return "/_reject \(contactReqId)"
+            case let .apiSendCallInvitation(contact, callType): return "/_call invite @\(contact.apiId) \(encodeJSON(callType))"
+            case let .apiRejectCall(contact): return "/_call reject @\(contact.apiId)"
+            case let .apiSendCallOffer(contact, callOffer): return "/_call offer @\(contact.apiId) \(encodeJSON(callOffer))"
+            case let .apiSendCallAnswer(contact, answer): return "/_call answer @\(contact.apiId) \(encodeJSON(answer))"
+            case let .apiSendCallExtraInfo(contact, extraInfo): return "/_call extra @\(contact.apiId) \(encodeJSON(extraInfo))"
+            case let .apiEndCall(contact): return "/_call end @\(contact.apiId)"
+            case let .apiCallStatus(contact, callStatus): return "/_call status @\(contact.apiId) \(callStatus.rawValue)"
             case let .apiChatRead(type, id, itemRange: (from, to)): return "/_read chat \(ref(type, id)) from=\(from) to=\(to)"
             case let .receiveFile(fileId): return "/freceive \(fileId)"
             case let .string(str): return str
@@ -106,6 +121,13 @@ enum ChatCommand {
             case .showMyAddress: return "showMyAddress"
             case .apiAcceptContact: return "apiAcceptContact"
             case .apiRejectContact: return "apiRejectContact"
+            case .apiSendCallInvitation: return "apiSendCallInvitation"
+            case .apiRejectCall: return "apiRejectCall"
+            case .apiSendCallOffer: return "apiSendCallOffer"
+            case .apiSendCallAnswer: return "apiSendCallAnswer"
+            case .apiSendCallExtraInfo: return "apiSendCallExtraInfo"
+            case .apiEndCall: return "apiEndCall"
+            case .apiCallStatus: return "apiCallStatus"
             case .apiChatRead: return "apiChatRead"
             case .receiveFile: return "receiveFile"
             case .string: return "console command"
@@ -173,6 +195,11 @@ enum ChatResponse: Decodable, Error {
     case sndFileCancelled(chatItem: AChatItem, sndFileTransfer: SndFileTransfer)
     case sndFileRcvCancelled(chatItem: AChatItem, sndFileTransfer: SndFileTransfer)
     case sndGroupFileCancelled(chatItem: AChatItem, fileTransferMeta: FileTransferMeta, sndFileTransfers: [SndFileTransfer])
+    case callInvitation(contact: Contact, callType: CallType, sharedKey: String?)
+    case callOffer(contact: Contact, callType: CallType, offer: WebRTCSession, sharedKey: String?, askConfirmation: Bool)
+    case callAnswer(contact: Contact, answer: WebRTCSession)
+    case callExtraInfo(contact: Contact, extraInfo: WebRTCExtraInfo)
+    case callEnded(contact: Contact)
     case ntfTokenStatus(status: NtfTknStatus)
     case newContactConnection(connection: PendingContactConnection)
     case contactConnectionDeleted(connection: PendingContactConnection)
@@ -227,6 +254,11 @@ enum ChatResponse: Decodable, Error {
             case .sndFileCancelled: return "sndFileCancelled"
             case .sndFileRcvCancelled: return "sndFileRcvCancelled"
             case .sndGroupFileCancelled: return "sndGroupFileCancelled"
+            case .callInvitation: return "callInvitation"
+            case .callOffer: return "callOffer"
+            case .callAnswer: return "callAnswer"
+            case .callExtraInfo: return "callExtraInfo"
+            case .callEnded: return "callEnded"
             case .ntfTokenStatus: return "ntfTokenStatus"
             case .newContactConnection: return "newContactConnection"
             case .contactConnectionDeleted: return "contactConnectionDeleted"
@@ -284,6 +316,11 @@ enum ChatResponse: Decodable, Error {
             case let .sndFileCancelled(chatItem, _): return String(describing: chatItem)
             case let .sndFileRcvCancelled(chatItem, _): return String(describing: chatItem)
             case let .sndGroupFileCancelled(chatItem, _, _): return String(describing: chatItem)
+            case let .callInvitation(contact, callType, sharedKey): return "contact: \(contact.id)\ncallType: \(String(describing: callType))\nsharedKey: \(sharedKey ?? "")"
+            case let .callOffer(contact, callType, offer, sharedKey, askConfirmation): return "contact: \(contact.id)\ncallType: \(String(describing: callType))\nsharedKey: \(sharedKey ?? "")\naskConfirmation: \(askConfirmation)\noffer: \(String(describing: offer))"
+            case let .callAnswer(contact, answer): return "contact: \(contact.id)\nanswer: \(String(describing: answer))"
+            case let .callExtraInfo(contact, extraInfo): return "contact: \(contact.id)\nextraInfo: \(String(describing: extraInfo))"
+            case let .callEnded(contact): return "contact: \(contact.id)"
             case let .ntfTokenStatus(status): return String(describing: status)
             case let .newContactConnection(connection): return String(describing: connection)
             case let .contactConnectionDeleted(connection): return String(describing: connection)
@@ -303,12 +340,18 @@ struct ComposedMessage: Encodable {
     var msgContent: MsgContent
 }
 
-private func decodeCJSON<T: Decodable>(_ cjson: UnsafePointer<CChar>) -> T? {
-    let s = String.init(cString: cjson)
-    let d = s.data(using: .utf8)!
-//    let p = UnsafeMutableRawPointer.init(mutating: UnsafeRawPointer(cjson))
-//    let d = Data.init(bytesNoCopy: p, count: strlen(cjson), deallocator: .free)
-    return try? jsonDecoder.decode(T.self, from: d)
+func decodeJSON<T: Decodable>(_ json: String) -> T? {
+    if let data = json.data(using: .utf8) {
+        return try? jsonDecoder.decode(T.self, from: data)
+    }
+    return nil
+}
+
+func decodeCJSON<T: Decodable>(_ cjson: UnsafePointer<CChar>) -> T? {
+    // TODO is there a way to do it without copying the data? e.g:
+    //    let p = UnsafeMutableRawPointer.init(mutating: UnsafeRawPointer(cjson))
+    //    let d = Data.init(bytesNoCopy: p, count: strlen(cjson), deallocator: .free)
+    decodeJSON(String.init(cString: cjson))
 }
 
 private func getJSONObject(_ cjson: UnsafePointer<CChar>) -> NSDictionary? {

@@ -360,6 +360,42 @@ func rejectContactRequest(_ contactRequest: UserContactRequest) async {
     }
 }
 
+func apiSendCallInvitation(_ contact: Contact, _ callType: CallType) async throws {
+    try await sendCommandOkResp(.apiSendCallInvitation(contact: contact, callType: callType))
+}
+
+func apiRejectCall(_ contact: Contact) async throws {
+    try await sendCommandOkResp(.apiRejectCall(contact: contact))
+}
+
+func apiSendCallOffer(_ contact: Contact, _ rtcSession: String, _ rtcIceCandidates: [String], media: CallMediaType, capabilities: CallCapabilities) async throws {
+    let webRtcSession = WebRTCSession(rtcSession: rtcSession, rtcIceCandidates: rtcIceCandidates)
+    let callOffer = WebRTCCallOffer(callType: CallType(media: media, capabilities: capabilities), rtcSession: webRtcSession)
+    try await sendCommandOkResp(.apiSendCallOffer(contact: contact, callOffer: callOffer))
+}
+
+func apiSendCallAnswer(_ contact: Contact, _ rtcSession: String, _ rtcIceCandidates: [String]) async throws {
+    let answer = WebRTCSession(rtcSession: rtcSession, rtcIceCandidates: rtcIceCandidates)
+    try await sendCommandOkResp(.apiSendCallAnswer(contact: contact, answer: answer))
+}
+
+func apiSendCallExtraInfo(_ contact: Contact, _ rtcIceCandidates: [String]) async throws {
+    let extraInfo = WebRTCExtraInfo(rtcIceCandidates: rtcIceCandidates)
+    try await sendCommandOkResp(.apiSendCallExtraInfo(contact: contact, extraInfo: extraInfo))
+}
+
+func apiEndCall(_ contact: Contact) async throws {
+    try await sendCommandOkResp(.apiEndCall(contact: contact))
+}
+
+func apiCallStatus(_ contact: Contact, _ status: String) async throws {
+    if let callStatus = WebRTCCallStatus.init(rawValue: status) {
+        try await sendCommandOkResp(.apiCallStatus(contact: contact, callStatus: callStatus))
+    } else {
+        logger.debug("apiCallStatus: call status \(status) not used")
+    }
+}
+
 func markChatRead(_ chat: Chat) async {
     do {
         let minItemId = chat.chatStats.minUnreadItemId
@@ -486,7 +522,9 @@ func processReceivedMsg(_ res: ChatResponse) {
                     await receiveFile(fileId: file.fileId)
                 }
             }
-            NtfManager.shared.notifyMessageReceived(cInfo, cItem)
+            if !cItem.isCall() {
+                NtfManager.shared.notifyMessageReceived(cInfo, cItem)
+            }
         case let .chatItemStatusUpdated(aChatItem):
             let cInfo = aChatItem.chatInfo
             let cItem = aChatItem.chatItem
@@ -530,8 +568,44 @@ func processReceivedMsg(_ res: ChatResponse) {
                let fileName = cItem.file?.filePath {
                 removeFile(fileName)
             }
+        case let .callInvitation(contact, callType, sharedKey):
+            let invitation = CallInvitation(peerMedia: callType.media, sharedKey: sharedKey)
+            m.callInvitations[contact.id] = invitation
+            if (m.activeCallInvitation == nil) {
+                m.activeCallInvitation = ContactRef(contactId: contact.apiId, localDisplayName: contact.localDisplayName)
+            }
+            NtfManager.shared.notifyCallInvitation(contact, invitation)
+        case let .callOffer(contact, callType, offer, sharedKey, _):
+            // TODO askConfirmation?
+            // TODO check encryption is compatible
+            withCall(contact) { call in
+                m.activeCall = call.copy(callState: .offerReceived, peerMedia: callType.media, sharedKey: sharedKey)
+                m.callCommand = .accept(offer: offer.rtcSession, iceCandidates: offer.rtcIceCandidates, media: callType.media, aesKey: sharedKey)
+            }
+        case let .callAnswer(contact, answer):
+            withCall(contact) { call in
+                m.activeCall = call.copy(callState: .negotiated)
+                m.callCommand = .answer(answer: answer.rtcSession, iceCandidates: answer.rtcIceCandidates)
+            }
+        case let .callExtraInfo(contact, extraInfo):
+            withCall(contact) { _ in
+                m.callCommand = .ice(iceCandidates: extraInfo.rtcIceCandidates)
+            }
+        case let .callEnded(contact):
+            m.activeCallInvitation = nil
+            withCall(contact) { _ in
+                m.callCommand = .end
+            }
         default:
             logger.debug("unsupported event: \(res.responseType)")
+        }
+
+        func withCall(_ contact: Contact, _ perform: (Call) -> Void) {
+            if let call = m.activeCall, call.contact.apiId == contact.apiId {
+                perform(call)
+            } else {
+                logger.debug("processReceivedMsg: ignoring \(res.responseType), not in call with the contact \(contact.id)")
+            }
         }
     }
 }

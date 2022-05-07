@@ -22,6 +22,8 @@ struct ChatItemView: View {
             }
         } else if chatItem.isDeletedContent() {
             DeletedItemView(chatItem: chatItem, showMember: showMember)
+        } else if chatItem.isCall() {
+            FramedItemView(chatItem: chatItem, showMember: showMember, maxWidth: maxWidth)
         }
     }
 }
