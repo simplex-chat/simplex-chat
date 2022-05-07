@@ -10,6 +10,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import chat.simplex.app.R
 import chat.simplex.app.ui.theme.SecretColor
 import chat.simplex.app.ui.theme.SimplexBlue
+import chat.simplex.app.views.call.*
 import chat.simplex.app.views.helpers.generalGetString
 import kotlinx.datetime.*
 import kotlinx.serialization.*
@@ -36,6 +37,12 @@ class ChatModel(val controller: ChatController) {
   // set when app is opened via contact or invitation URI
   val appOpenUrl = mutableStateOf<Uri?>(null)
   val runServiceInBackground = mutableStateOf(true)
+
+  // current WebRTC call
+  val callInvitations = mutableStateMapOf<String, CallInvitation>()
+  val activeCallInvitation = mutableStateOf<ContactRef?>(null)
+  val activeCall = mutableStateOf<Call?>(null)
+  val callCommand = mutableStateOf<WCallCommand?>(null)
 
   fun updateUserProfile(profile: Profile) {
     val user = currentUser.value
@@ -1056,14 +1063,14 @@ enum class CICallStatus {
   @SerialName("error") Error;
 
   fun text(sec: Int): String = when (this) {
-    Pending -> "calling..."
-    Missed -> "missed"
-    Rejected -> "rejected"
-    Accepted -> "accepted"
-    Negotiated -> "connecting..."
-    Progress -> "in progress"
-    Ended -> "ended ${duration(sec)}"
-    Error -> "error"
+    Pending -> generalGetString(R.string.callstatus_calling)
+    Missed -> generalGetString(R.string.callstatus_missed)
+    Rejected -> generalGetString(R.string.callstatus_rejected)
+    Accepted -> generalGetString(R.string.callstatus_accepted)
+    Negotiated -> generalGetString(R.string.callstatus_connecting)
+    Progress -> generalGetString(R.string.callstatus_in_progress)
+    Ended -> String.format(generalGetString(R.string.callstatus_ended), duration(sec))
+    Error -> generalGetString(R.string.callstatus_error)
   }
 
   fun duration(sec: Int): String = "%02d:%02d".format(sec / 60, sec % 60)

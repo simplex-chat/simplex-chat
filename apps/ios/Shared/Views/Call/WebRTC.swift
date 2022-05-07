@@ -81,12 +81,12 @@ enum CallState {
 
     var text: LocalizedStringKey {
         switch self {
-        case .waitCapabilities: return "starting..."
-        case .invitationSent: return "waiting for answer..."
-        case .invitationReceived: return "starting..."
-        case .offerSent: return "waiting for confirmation..."
-        case .offerReceived: return "received answer..."
-        case .negotiated: return "connecting..."
+        case .waitCapabilities: return "starting…"
+        case .invitationSent: return "waiting for answer…"
+        case .invitationReceived: return "starting…"
+        case .offerSent: return "waiting for confirmation…"
+        case .offerReceived: return "received answer…"
+        case .negotiated: return "connecting…"
         case .connected: return "connected"
         }
     }

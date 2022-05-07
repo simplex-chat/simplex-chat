@@ -91,14 +91,15 @@ struct WebRTCView: UIViewRepresentable {
 }
 
 //struct CallViewDebug: View {
-//    @State var coordinator: WebRTCCoordinator? = nil
-//    @State var commandStr = ""
-//    @State private var webViewMsg: WCallResponse? = nil
+//    @State private var coordinator: WebRTCCoordinator? = nil
+//    @State private var commandStr = ""
+//    @State private var webViewReady: Bool = false
+//    @State private var webViewMsg: WVAPIMessage? = nil
 //    @FocusState private var keyboardVisible: Bool
 //
 //    var body: some View {
 //        VStack(spacing: 30) {
-//            WebRTCView(coordinator: $coordinator, webViewMsg: $webViewMsg).frame(maxHeight: 260)
+//            WebRTCView(coordinator: $coordinator, webViewReady: $webViewReady, webViewMsg: $webViewMsg).frame(maxHeight: 260)
 //                .onChange(of: webViewMsg) { _ in
 //                    if let resp = webViewMsg {
 //                        commandStr = encodeJSON(resp)
@@ -126,13 +127,9 @@ struct WebRTCView: UIViewRepresentable {
 //                    commandStr = ""
 //                }
 //                Button("Send") {
-//                    do {
-//                        if let c = coordinator,
-//                           let command: WCallCommand = decodeJSON(commandStr) {
-//                            c.sendCommand(command: command)
-//                        }
-//                    } catch {
-//                        print(error)
+//                    if let c = coordinator,
+//                       let command: WCallCommand = decodeJSON(commandStr) {
+//                        c.sendCommand(command: command)
 //                    }
 //                }
 //            }

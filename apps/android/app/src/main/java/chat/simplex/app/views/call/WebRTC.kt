@@ -1,6 +1,8 @@
 package chat.simplex.app.views.call
 
+import chat.simplex.app.R
 import chat.simplex.app.model.*
+import chat.simplex.app.views.helpers.generalGetString
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -27,21 +29,18 @@ enum class CallState {
   Connected;
 
   val text: String get() = when(this) {
-    WaitCapabilities -> "starting..."
-    InvitationSent -> "waiting for answer..."
-    InvitationReceived -> "starting..."
-    OfferSent -> "waiting for confirmation..."
-    OfferReceived -> "received answer..."
-    Negotiated -> "connecting..."
-    Connected -> "connected"
+    WaitCapabilities -> generalGetString(R.string.callstate_starting)
+    InvitationSent -> generalGetString(R.string.callstate_waiting_for_answer)
+    InvitationReceived -> generalGetString(R.string.callstate_starting)
+    OfferSent -> generalGetString(R.string.callstate_waiting_for_confirmation)
+    OfferReceived -> generalGetString(R.string.callstate_received_answer)
+    Negotiated -> generalGetString(R.string.callstate_connecting)
+    Connected -> generalGetString(R.string.callstate_connected)
   }
 }
 
-@Serializable
-class WVAPICall(val corrId: Int? = null, val command: WCallCommand)
-
-@Serializable
-class WVAPIMessage(val corrId: Int? = null, val resp: WCallResponse, val command: WCallCommand?)
+@Serializable class WVAPICall(val corrId: Int? = null, val command: WCallCommand)
+@Serializable class WVAPIMessage(val corrId: Int? = null, val resp: WCallResponse, val command: WCallCommand?)
 
 @Serializable
 sealed class WCallCommand {
@@ -69,17 +68,12 @@ sealed class WCallResponse {
   @Serializable class Invalid(val str: String): WCallResponse()
 }
 
-@Serializable
-class WebRTCCallOffer(val callType: CallType, val rtcSession: WebRTCSession)
-
-@Serializable
-class WebRTCSession(val rtcSession: String, val rtcIceCandidates: List<String>)
-
-@Serializable
-class WebRTCExtraInfo(val rtcIceCandidates: List<String>)
-
-@Serializable
-class CallType(val media: CallMediaType, val capabilities: CallCapabilities)
+@Serializable class WebRTCCallOffer(val callType: CallType, val rtcSession: WebRTCSession)
+@Serializable class WebRTCSession(val rtcSession: String, val rtcIceCandidates: List<String>)
+@Serializable class WebRTCExtraInfo(val rtcIceCandidates: List<String>)
+@Serializable class CallType(val media: CallMediaType, val capabilities: CallCapabilities)
+@Serializable class CallInvitation(val peerMedia: CallMediaType?, val sharedKey: String?)
+@Serializable class CallCapabilities(val encryption: Boolean)
 
 enum class WebRTCCallStatus(val status: String) {
   Connected("connected"),
@@ -92,9 +86,6 @@ enum class CallMediaType(val media: String) {
   Video("video"),
   Audio("audio")
 }
-
-@Serializable
-class CallCapabilities(val encryption: Boolean)
 
 @Serializable
 class ConnectionState(

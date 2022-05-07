@@ -276,4 +276,21 @@
   <string name="colored">colored</string>
   <string name="secret">secret</string>
 
+  <!-- CICallStatus -->
+  <string name="callstatus_calling">calling…</string>
+  <string name="callstatus_missed">missed</string>
+  <string name="callstatus_rejected">rejected</string>
+  <string name="callstatus_accepted">accepted</string>
+  <string name="callstatus_connecting">connecting…</string>
+  <string name="callstatus_in_progress">in progress</string>
+  <string name="callstatus_ended">ended <xliff:g id="duration" example="01:15">%1$s!</xliff:g></string>
+  <string name="callstatus_error">error</string>
+
+  <!-- CallState -->
+  <string name="callstate_starting">starting…</string>
+  <string name="callstate_waiting_for_answer">waiting for answer…</string>
+  <string name="callstate_waiting_for_confirmation">waiting for confirmation…</string>
+  <string name="callstate_received_answer">received answer…</string>
+  <string name="callstate_connecting">connecting…</string>
+  <string name="callstate_connected">connected</string>
 </resources>
