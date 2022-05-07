@@ -226,8 +226,8 @@ fun getAppFilePath(context: Context, fileName: String): String {
   return "${getAppFilesDirectory(context)}/$fileName"
 }
 
-fun getStoredFilePath(context: Context, file: CIFile?): String? {
-  return if (file?.filePath != null && file.stored) {
+fun getLoadedFilePath(context: Context, file: CIFile?): String? {
+  return if (file?.filePath != null && file.loaded) {
     val filePath = getAppFilePath(context, file.filePath)
     if (File(filePath).exists()) filePath else null
   } else {
@@ -236,8 +236,8 @@ fun getStoredFilePath(context: Context, file: CIFile?): String? {
 }
 
 // https://developer.android.com/training/data-storage/shared/documents-files#bitmap
-fun getStoredImage(context: Context, file: CIFile?): Bitmap? {
-  val filePath = getStoredFilePath(context, file)
+fun getLoadedImage(context: Context, file: CIFile?): Bitmap? {
+  val filePath = getLoadedFilePath(context, file)
   return if (filePath != null) {
     try {
       val uri = FileProvider.getUriForFile(context, "${BuildConfig.APPLICATION_ID}.provider", File(filePath))

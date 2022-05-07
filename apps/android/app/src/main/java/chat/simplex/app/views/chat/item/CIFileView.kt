@@ -89,7 +89,7 @@ fun CIFileView(
             String.format(generalGetString(R.string.file_will_be_received_when_contact_is_online), MAX_FILE_SIZE)
           )
         CIFileStatus.RcvComplete -> {
-          val filePath = getStoredFilePath(context, file)
+          val filePath = getLoadedFilePath(context, file)
           if (filePath != null) {
             saveFileLauncher.launch(file.fileName)
           } else {

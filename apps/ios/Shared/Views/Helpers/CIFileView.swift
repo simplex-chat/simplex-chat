@@ -78,7 +78,7 @@ struct CIFileView: View {
                 )
             case .rcvComplete:
                 logger.debug("CIFileView processFile - in .rcvComplete")
-                if let filePath = getStoredFilePath(file){
+                if let filePath = getLoadedFilePath(file){
                     let url = URL(fileURLWithPath: filePath)
                     showShareSheet(items: [url])
                 }

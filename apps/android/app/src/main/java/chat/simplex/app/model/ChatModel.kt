@@ -24,7 +24,6 @@ class ChatModel(val controller: ChatController) {
   var chats = mutableStateListOf<Chat>()
   var chatId = mutableStateOf<String?>(null)
   var chatItems = mutableStateListOf<ChatItem>()
-
   var connReqInvitation: String? = null
   var terminalItems = mutableStateListOf<TerminalItem>()
   var userAddress = mutableStateOf<String?>(null)
@@ -93,12 +92,11 @@ class ChatModel(val controller: ChatController) {
       chats[i] = chat.copy(
         chatItems = arrayListOf(cItem),
         chatStats =
-          if (cItem.meta.itemStatus is CIStatus.RcvNew) {
-            val minUnreadId = if(chat.chatStats.minUnreadItemId == 0L) cItem.id else chat.chatStats.minUnreadItemId
-            chat.chatStats.copy(unreadCount = chat.chatStats.unreadCount + 1, minUnreadItemId = minUnreadId)
-          }
-          else
-            chat.chatStats
+        if (cItem.meta.itemStatus is CIStatus.RcvNew) {
+          val minUnreadId = if (chat.chatStats.minUnreadItemId == 0L) cItem.id else chat.chatStats.minUnreadItemId
+          chat.chatStats.copy(unreadCount = chat.chatStats.unreadCount + 1, minUnreadItemId = minUnreadId)
+        } else
+          chat.chatStats
       )
       if (i > 0) {
         popChat_(i)
@@ -171,7 +169,7 @@ class ChatModel(val controller: ChatController) {
       while (i < chatItems.count()) {
         val item = chatItems[i]
         if (item.meta.itemStatus is CIStatus.RcvNew) {
-          chatItems[i] = item.copy(meta=item.meta.copy(itemStatus = CIStatus.RcvRead()))
+          chatItems[i] = item.copy(meta = item.meta.copy(itemStatus = CIStatus.RcvRead()))
         }
         i += 1
       }
@@ -181,15 +179,12 @@ class ChatModel(val controller: ChatController) {
         chatStats = chat.chatStats.copy(unreadCount = 0, minUnreadItemId = chat.chatItems.last().id + 1)
       )
     }
-
   }
-
 //  func popChat(_ id: String) {
 //    if let i = getChatIndex(id) {
 //      popChat_(i)
 //    }
 //  }
-
   private fun popChat_(i: Int) {
     val chat = chats.removeAt(i)
     chats.add(index = 0, chat)
@@ -250,7 +245,7 @@ interface SomeChat {
 }
 
 @Serializable
-data class Chat (
+data class Chat(
   val chatInfo: ChatInfo,
   val chatItems: List<ChatItem>,
   val chatStats: ChatStats = ChatStats(),
@@ -267,12 +262,13 @@ data class Chat (
   @Serializable
   sealed class NetworkStatus {
     val statusString: String get() = if (this is Connected) generalGetString(R.string.server_connected) else generalGetString(R.string.server_connecting)
-    val statusExplanation: String get() =
-      when (this) {
-        is Connected -> generalGetString(R.string.connected_to_server_to_receive_messages_from_contact)
-        is Error -> String.format(generalGetString(R.string.trying_to_connect_to_server_to_receive_messages_with_error), error)
-        else -> generalGetString(R.string.trying_to_connect_to_server_to_receive_messages)
-      }
+    val statusExplanation: String
+      get() =
+        when (this) {
+          is Connected -> generalGetString(R.string.connected_to_server_to_receive_messages_from_contact)
+          is Error -> String.format(generalGetString(R.string.trying_to_connect_to_server_to_receive_messages_with_error), error)
+          else -> generalGetString(R.string.trying_to_connect_to_server_to_receive_messages)
+        }
 
     @Serializable @SerialName("unknown") class Unknown: NetworkStatus()
     @Serializable @SerialName("connected") class Connected: NetworkStatus()
@@ -405,6 +401,7 @@ class ContactSubStatus(
 @Serializable
 class Connection(val connId: Long, val connStatus: ConnStatus) {
   val id: ChatId get() = ":$connId"
+
   companion object {
     val sampleData = Connection(connId = 1, connStatus = ConnStatus.Ready)
   }
@@ -415,7 +412,7 @@ class Profile(
   val displayName: String,
   val fullName: String,
   val image: String? = null
-  ) {
+) {
   companion object {
     val sampleData = Profile(
       displayName = "alice",
@@ -425,7 +422,7 @@ class Profile(
 }
 
 @Serializable
-class GroupInfo (
+class GroupInfo(
   val groupId: Long,
   override val localDisplayName: String,
   val groupProfile: GroupProfile,
@@ -450,7 +447,7 @@ class GroupInfo (
 }
 
 @Serializable
-class GroupProfile (
+class GroupProfile(
   override val displayName: String,
   override val fullName: String,
   override val image: String? = null
@@ -464,7 +461,7 @@ class GroupProfile (
 }
 
 @Serializable
-class GroupMember (
+class GroupMember(
   val groupMemberId: Long,
   val memberId: String,
 //    var memberRole: GroupMemberRole
@@ -488,7 +485,7 @@ class GroupMember (
 }
 
 @Serializable
-class LinkPreview (
+class LinkPreview(
   val uri: String,
   val title: String,
   val description: String,
@@ -505,13 +502,13 @@ class LinkPreview (
 }
 
 @Serializable
-class MemberSubError (
+class MemberSubError(
   val member: GroupMember,
   val memberError: ChatError
 )
 
 @Serializable
-class UserContactRequest (
+class UserContactRequest(
   val contactRequestId: Long,
   override val localDisplayName: String,
   val profile: Profile,
@@ -547,34 +544,35 @@ class PendingContactConnection(
   val updatedAt: Instant
 ): SomeChat, NamedChat {
   override val chatType get() = ChatType.ContactConnection
-  override val id get () = ":$pccConnId"
+  override val id get() = ":$pccConnId"
   override val apiId get() = pccConnId
   override val ready get() = false
   override val localDisplayName get() = String.format(generalGetString(R.string.connection_local_display_name), pccConnId)
-  override val displayName: String get() {
-    val initiated = pccConnStatus.initiated
-    return if (initiated == null) {
-      // this should not be in the chat list
-      generalGetString(R.string.display_name_connection_established)
-    } else {
-      generalGetString(
-        if (initiated && !viaContactUri) R.string.display_name_invited_to_connect
-        else R.string.display_name_connecting
-      )
+  override val displayName: String
+    get() {
+      val initiated = pccConnStatus.initiated
+      return if (initiated == null) {
+        // this should not be in the chat list
+        generalGetString(R.string.display_name_connection_established)
+      } else {
+        generalGetString(
+          if (initiated && !viaContactUri) R.string.display_name_invited_to_connect
+          else R.string.display_name_connecting
+        )
+      }
     }
-  }
   override val fullName get() = ""
   override val image get() = null
   val initiated get() = (pccConnStatus.initiated ?: false) && !viaContactUri
-
-  val description: String get() {
-    val initiated = pccConnStatus.initiated
-    return if (initiated == null) "" else generalGetString(
-      if (initiated && !viaContactUri) R.string.description_you_shared_one_time_link
-      else if (viaContactUri ) R.string.description_via_contact_address_link
-      else R.string.description_via_one_time_link
-    )
-  }
+  val description: String
+    get() {
+      val initiated = pccConnStatus.initiated
+      return if (initiated == null) "" else generalGetString(
+        if (initiated && !viaContactUri) R.string.description_you_shared_one_time_link
+        else if (viaContactUri) R.string.description_via_contact_address_link
+        else R.string.description_via_one_time_link
+      )
+    }
 
   companion object {
     fun getSampleData(status: ConnStatus = ConnStatus.New, viaContactUri: Boolean = false): PendingContactConnection =
@@ -599,25 +597,26 @@ enum class ConnStatus {
   @SerialName("ready") Ready,
   @SerialName("deleted") Deleted;
 
-  val initiated: Boolean? get() = when (this) {
-    New -> true
-    Joined -> false
-    Requested -> true
-    Accepted -> true
-    SndReady -> false
-    Ready -> null
-    Deleted -> null
-  }
+  val initiated: Boolean?
+    get() = when (this) {
+      New -> true
+      Joined -> false
+      Requested -> true
+      Accepted -> true
+      SndReady -> false
+      Ready -> null
+      Deleted -> null
+    }
 }
 
 @Serializable
-class AChatItem (
+class AChatItem(
   val chatInfo: ChatInfo,
   val chatItem: ChatItem
 )
 
 @Serializable
-data class ChatItem (
+data class ChatItem(
   val chatDir: CIDirection,
   val meta: CIMeta,
   val content: CIContent,
@@ -627,32 +626,31 @@ data class ChatItem (
 ) {
   val id: Long get() = meta.itemId
   val timestampText: String get() = meta.timestampText
-
-  val text: String get() =
-    when {
-      content.text == "" && file != null -> file.fileName
-      else -> content.text
-    }
-
+  val text: String
+    get() =
+      when {
+        content.text == "" && file != null -> file.fileName
+        else -> content.text
+      }
   val isRcvNew: Boolean get() = meta.itemStatus is CIStatus.RcvNew
-
-  val memberDisplayName: String? get() =
-    if (chatDir is CIDirection.GroupRcv) chatDir.groupMember.memberProfile.displayName
-    else null
-
-  val isMsgContent: Boolean get() =
-    when (content) {
-      is CIContent.SndMsgContent -> true
-      is CIContent.RcvMsgContent -> true
-      else -> false
-    }
-
-  val isDeletedContent: Boolean get() =
-    when (content) {
-      is CIContent.SndDeleted -> true
-      is CIContent.RcvDeleted -> true
-      else -> false
-    }
+  val memberDisplayName: String?
+    get() =
+      if (chatDir is CIDirection.GroupRcv) chatDir.groupMember.memberProfile.displayName
+      else null
+  val isMsgContent: Boolean
+    get() =
+      when (content) {
+        is CIContent.SndMsgContent -> true
+        is CIContent.RcvMsgContent -> true
+        else -> false
+      }
+  val isDeletedContent: Boolean
+    get() =
+      when (content) {
+        is CIContent.SndDeleted -> true
+        is CIContent.RcvDeleted -> true
+        else -> false
+      }
 
   companion object {
     fun getSampleData(
@@ -733,7 +731,7 @@ sealed class CIDirection {
 }
 
 @Serializable
-data class CIMeta (
+data class CIMeta(
   val itemId: Long,
   val itemTs: Instant,
   val itemText: String,
@@ -768,9 +766,9 @@ fun getTimestampText(t: Instant): String {
   val now: LocalDateTime = Clock.System.now().toLocalDateTime(tz)
   val time: LocalDateTime = t.toLocalDateTime(tz)
   val recent = now.date == time.date ||
-      (now.date.minus(time.date).days == 1 && now.hour < 12 && time.hour >= 18 )
+      (now.date.minus(time.date).days == 1 && now.hour < 12 && time.hour >= 18)
   return if (recent) String.format("%02d:%02d", time.hour, time.minute)
-                else String.format("%02d/%02d", time.dayOfMonth, time.monthNumber)
+  else String.format("%02d/%02d", time.dayOfMonth, time.monthNumber)
 }
 
 @Serializable
@@ -833,7 +831,7 @@ sealed class CIContent: ItemContent {
 }
 
 @Serializable
-class CIQuote (
+class CIQuote(
   val chatDir: CIDirection? = null,
   val itemId: Long? = null,
   val sharedMsgId: String? = null,
@@ -865,13 +863,16 @@ class CIFile(
   val filePath: String? = null,
   val fileStatus: CIFileStatus
 ) {
-  val stored: Boolean = when (fileStatus) {
+  val loaded: Boolean = when (fileStatus) {
     CIFileStatus.SndStored -> true
     CIFileStatus.SndTransfer -> true
     CIFileStatus.SndComplete -> true
     CIFileStatus.SndCancelled -> true
+    CIFileStatus.RcvInvitation -> false
+    CIFileStatus.RcvAccepted -> false
+    CIFileStatus.RcvTransfer -> false
+    CIFileStatus.RcvCancelled -> false
     CIFileStatus.RcvComplete -> true
-    else -> false
   }
 
   companion object {
@@ -919,16 +920,17 @@ sealed class MsgContent {
   @Serializable(with = MsgContentSerializer::class)
   class MCUnknown(val type: String? = null, override val text: String, val json: JsonElement): MsgContent()
 
-  val cmdString: String get() = when (this) {
-    is MCText -> "text $text"
-    is MCLink -> "json ${json.encodeToString(this)}"
-    is MCImage -> "json ${json.encodeToString(this)}"
-    is MCFile -> "json ${json.encodeToString(this)}"
-    is MCUnknown -> "json $json"
-  }
+  val cmdString: String
+    get() = when (this) {
+      is MCText -> "text $text"
+      is MCLink -> "json ${json.encodeToString(this)}"
+      is MCImage -> "json ${json.encodeToString(this)}"
+      is MCFile -> "json ${json.encodeToString(this)}"
+      is MCUnknown -> "json $json"
+    }
 }
 
-object MsgContentSerializer : KSerializer<MsgContent> {
+object MsgContentSerializer: KSerializer<MsgContent> {
   override val descriptor: SerialDescriptor = buildSerialDescriptor("MsgContent", PolymorphicKind.SEALED) {
     element("MCText", buildClassSerialDescriptor("MCText") {
       element<String>("text")
@@ -1028,17 +1030,18 @@ sealed class Format {
   @Serializable @SerialName("email") class Email: Format()
   @Serializable @SerialName("phone") class Phone: Format()
 
-  val style: SpanStyle @Composable get() = when (this) {
-    is Bold -> SpanStyle(fontWeight = FontWeight.Bold)
-    is Italic -> SpanStyle(fontStyle = FontStyle.Italic)
-    is StrikeThrough -> SpanStyle(textDecoration = TextDecoration.LineThrough)
-    is Snippet -> SpanStyle(fontFamily = FontFamily.Monospace)
-    is Secret -> SpanStyle(color = Color.Transparent, background = SecretColor)
-    is Colored -> SpanStyle(color = this.color.uiColor)
-    is Uri -> linkStyle
-    is Email -> linkStyle
-    is Phone -> linkStyle
-  }
+  val style: SpanStyle
+    @Composable get() = when (this) {
+      is Bold -> SpanStyle(fontWeight = FontWeight.Bold)
+      is Italic -> SpanStyle(fontStyle = FontStyle.Italic)
+      is StrikeThrough -> SpanStyle(textDecoration = TextDecoration.LineThrough)
+      is Snippet -> SpanStyle(fontFamily = FontFamily.Monospace)
+      is Secret -> SpanStyle(color = Color.Transparent, background = SecretColor)
+      is Colored -> SpanStyle(color = this.color.uiColor)
+      is Uri -> linkStyle
+      is Email -> linkStyle
+      is Phone -> linkStyle
+    }
 
   companion object {
     val linkStyle @Composable get() = SpanStyle(color = MaterialTheme.colors.primary, textDecoration = TextDecoration.Underline)
@@ -1056,16 +1059,17 @@ enum class FormatColor(val color: String) {
   black("black"),
   white("white");
 
-  val uiColor: Color @Composable get() = when (this) {
-    red -> Color.Red
-    green -> Color.Green
-    blue -> SimplexBlue
-    yellow -> Color.Yellow
-    cyan -> Color.Cyan
-    magenta -> Color.Magenta
-    black -> MaterialTheme.colors.onBackground
-    white -> MaterialTheme.colors.onBackground
-  }
+  val uiColor: Color
+    @Composable get() = when (this) {
+      red -> Color.Red
+      green -> Color.Green
+      blue -> SimplexBlue
+      yellow -> Color.Yellow
+      cyan -> Color.Cyan
+      magenta -> Color.Magenta
+      black -> MaterialTheme.colors.onBackground
+      white -> MaterialTheme.colors.onBackground
+    }
 }
 
 @Serializable

@@ -148,7 +148,7 @@ struct ChatView: View {
                     } label: { Label("Reply", systemImage: "arrowshape.turn.up.left") }
                     Button {
                         var shareItems: [Any] = [ci.content.text]
-                        if case .image = ci.content.msgContent, let image = getStoredImage(ci.file) {
+                        if case .image = ci.content.msgContent, let image = getLoadedImage(ci.file) {
                             shareItems.append(image)
                         }
                         showShareSheet(items: shareItems)
@@ -156,14 +156,14 @@ struct ChatView: View {
                     Button {
                         if case let .image(text, _) = ci.content.msgContent,
                            text == "",
-                           let image = getStoredImage(ci.file) {
+                           let image = getLoadedImage(ci.file) {
                             UIPasteboard.general.image = image
                         } else {
                             UIPasteboard.general.string = ci.content.text
                         }
                     } label: { Label("Copy", systemImage: "doc.on.doc") }
                     if case .image = ci.content.msgContent,
-                       let image = getStoredImage(ci.file) {
+                       let image = getLoadedImage(ci.file) {
                         Button {
                             UIImageWriteToSavedPhotosAlbum(image, nil, nil, nil)
                         } label: { Label("Save", systemImage: "square.and.arrow.down") }

@@ -26,17 +26,17 @@ func getAppFilePath(_ fileName: String) -> URL {
     getAppFilesDirectory().appendingPathComponent(fileName)
 }
 
-func getStoredFilePath(_ file: CIFile?) -> String? {
+func getLoadedFilePath(_ file: CIFile?) -> String? {
     if let file = file,
-       file.stored,
+       file.loaded,
        let savedFile = file.filePath {
         return getAppFilePath(savedFile).path
     }
     return nil
 }
 
-func getStoredImage(_ file: CIFile?) -> UIImage? {
-    if let filePath = getStoredFilePath(file) {
+func getLoadedImage(_ file: CIFile?) -> UIImage? {
+    if let filePath = getLoadedFilePath(file) {
         return UIImage(contentsOfFile: filePath)
     }
     return nil
