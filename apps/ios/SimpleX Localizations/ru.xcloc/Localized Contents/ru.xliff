@@ -864,7 +864,7 @@ You can cancel this connection and remove the contact (and try later with a new 
       </trans-unit>
       <trans-unit id="Your contact sent a file that is larger than currently supported maximum size (%@)." xml:space="preserve">
         <source>Your contact sent a file that is larger than currently supported maximum size (%@).</source>
-        <target>Ваш контакт послал файл больше максимально разрешенного размера (%@).</target>
+        <target>Ваш контакт отправил файл, размер которого превышает максимальный размер (%@).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your profile is stored on your device and shared only with your contacts.&#10;SimpleX servers cannot see your profile." xml:space="preserve">
