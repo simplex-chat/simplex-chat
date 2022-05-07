@@ -95,18 +95,18 @@
 
     <!-- Images - CIImageView.kt -->
     <string name="image_descr">Изображение</string>
-    <string name="icon_descr_waiting_for_image">Ожидание изображения</string>
+    <string name="icon_descr_waiting_for_image">Ожидается прием изображения</string>
     <string name="icon_descr_image_snd_complete">Изображение отправлено</string>
-    <string name="waiting_for_image">Ожидание изображения</string>
-    <string name="image_will_be_received_when_contact_is_online">Изображение будет получено, когда ваш контакт будет в сети, пожалуйста, подождите или проверьте позже!</string>
+    <string name="waiting_for_image">Ожидается прием изображения</string>
+    <string name="image_will_be_received_when_contact_is_online">Изображение будет принято, когда ваш контакт будет в сети, подождите или проверьте позже!</string>
 
     <!-- Files - CIFileView.kt -->
     <string name="icon_descr_file">Файл</string>
     <string name="large_file">Большой файл!</string>
     <string name="contact_sent_large_file">Ваш контакт отправил файл, размер которого превышает поддерживаемый в настоящее время максимальный размер (<xliff:g id="maxFileSize">%1$s</xliff:g>).</string>
     <string name="maximum_supported_file_size">В настоящее время максимальный поддерживаемый размер файла составляет <xliff:g id="maxFileSize">%1$s</xliff:g>.</string>
-    <string name="waiting_for_file">Ожидание файла</string>
-    <string name="file_will_be_received_when_contact_is_online">Файл будет получен, когда ваш контакт будет в сети, пожалуйста, подождите или проверьте позже!</string>
+    <string name="waiting_for_file">Ожидается прием файла</string>
+    <string name="file_will_be_received_when_contact_is_online">Файл будет принят, когда ваш контакт будет в сети, подождите или проверьте позже!</string>
     <string name="file_saved">Файл сохранен</string>
     <string name="file_not_found">Файл не найден</string>
     <string name="error_saving_file">Ошибка сохранения файла</string>
