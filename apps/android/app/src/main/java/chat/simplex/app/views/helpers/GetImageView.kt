@@ -1,13 +1,16 @@
 package chat.simplex.app.views.helpers
 
+import android.Manifest
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.*
 import android.net.Uri
 import android.provider.MediaStore
 import android.util.Base64
 import android.util.Log
+import android.widget.Toast
 import androidx.activity.compose.ManagedActivityResultLauncher
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContract
@@ -16,12 +19,14 @@ import androidx.annotation.CallSuper
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import chat.simplex.app.*
 import chat.simplex.app.R
@@ -123,23 +128,28 @@ class CustomTakePicturePreview: ActivityResultContract<Void?, Bitmap?>() {
   }
 }
 
-//class GetGalleryContent: ActivityResultContracts.GetContent() {
-//  override fun createIntent(context: Context, input: String): Intent {
-//    return super.createIntent(context, input).apply {
-//      Log.e(TAG, "########################################################### in GetGalleryContent")
-//      uri = DocumentsContract.buildDocumentUriUsingTree(uri, DocumentsContract.getTreeDocumentId(uri))
-//      putExtra(DocumentsContract.EXTRA_INITIAL_URI, Environment.DIRECTORY_PICTURES)
-//    }
-//  }
-//}
+class GetGalleryContent: ActivityResultContracts.GetContent() {
+  override fun createIntent(context: Context, input: String): Intent {
+    super.createIntent(context, input)
+    return Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
+  }
+}
+
 @Composable
-fun rememberGetContentLauncher(cb: (Uri?) -> Unit): ManagedActivityResultLauncher<String, Uri?> =
-//  rememberLauncherForActivityResult(contract = GetGalleryContent(), cb)
-  rememberLauncherForActivityResult(contract = ActivityResultContracts.GetContent(), cb)
+fun rememberGalleryLauncher(cb: (Uri?) -> Unit): ManagedActivityResultLauncher<String, Uri?> =
+  rememberLauncherForActivityResult(contract = GetGalleryContent(), cb)
 
 @Composable
 fun rememberCameraLauncher(cb: (Bitmap?) -> Unit): ManagedActivityResultLauncher<Void?, Bitmap?> =
   rememberLauncherForActivityResult(contract = CustomTakePicturePreview(), cb)
+
+@Composable
+fun rememberPermissionLauncher(cb: (Boolean) -> Unit): ManagedActivityResultLauncher<String, Boolean> =
+  rememberLauncherForActivityResult(contract = ActivityResultContracts.RequestPermission(), cb)
+
+@Composable
+fun rememberGetContentLauncher(cb: (Uri?) -> Unit): ManagedActivityResultLauncher<String, Uri?> =
+  rememberLauncherForActivityResult(contract = ActivityResultContracts.GetContent(), cb)
 
 @Composable
 fun GetImageBottomSheet(
@@ -150,7 +160,7 @@ fun GetImageBottomSheet(
   hideBottomSheet: () -> Unit
 ) {
   val context = LocalContext.current
-  val galleryLauncher = rememberGetContentLauncher { uri: Uri? ->
+  val galleryLauncher = rememberGalleryLauncher { uri: Uri? ->
     if (uri != null) {
       val source = ImageDecoder.createSource(context.contentResolver, uri)
       val bitmap = ImageDecoder.decodeBitmap(source)
@@ -162,6 +172,14 @@ fun GetImageBottomSheet(
     if (bitmap != null) {
       imageBitmap.value = bitmap
       onImageChange(bitmap)
+    }
+  }
+  val permissionLauncher = rememberPermissionLauncher { isGranted: Boolean ->
+    if (isGranted) {
+      cameraLauncher.launch(null)
+      hideBottomSheet()
+    } else {
+      Toast.makeText(context, generalGetString(R.string.toast_permission_denied), Toast.LENGTH_SHORT).show()
     }
   }
   val filesLauncher = rememberGetContentLauncher { uri: Uri? ->
@@ -194,8 +212,15 @@ fun GetImageBottomSheet(
       horizontalArrangement = Arrangement.SpaceEvenly
     ) {
       ActionButton(null, stringResource(R.string.use_camera_button), icon = Icons.Outlined.PhotoCamera) {
-        cameraLauncher.launch(null)
-        hideBottomSheet()
+        when (PackageManager.PERMISSION_GRANTED) {
+          ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) -> {
+            cameraLauncher.launch(null)
+            hideBottomSheet()
+          }
+          else -> {
+            permissionLauncher.launch(Manifest.permission.CAMERA)
+          }
+        }
       }
       ActionButton(null, stringResource(R.string.from_gallery_button), icon = Icons.Outlined.Collections) {
         galleryLauncher.launch("image/*")
