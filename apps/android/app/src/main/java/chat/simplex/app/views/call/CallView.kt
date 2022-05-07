@@ -27,7 +27,7 @@ import chat.simplex.app.TAG
 import chat.simplex.app.views.helpers.TextEditor
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 
-//@SuppressLint("JavascriptInterface")
+@SuppressLint("SetJavaScriptEnabled")
 @Composable
 fun VideoCallView(close: () -> Unit) {
   BackHandler(onBack = close)
@@ -57,8 +57,7 @@ fun VideoCallView(close: () -> Unit) {
     }
   }
   val localContext = LocalContext.current
-  val iceCandidateCommand = remember { mutableStateOf("") }
-  val commandToShow = remember { mutableStateOf("processCommand({type: 'start', media: 'video', aesKey: 'FwW+t6UbnwHoapYOfN4mUBUuqR7UtvYWxW16iBqM29U='})") }
+  val commandToShow = remember { mutableStateOf("processCommand({command: {type: 'start', media: 'video'}})") } //, aesKey: 'FwW+t6UbnwHoapYOfN4mUBUuqR7UtvYWxW16iBqM29U='})") }
   val assetLoader = WebViewAssetLoader.Builder()
     .addPathHandler("/assets/www/", WebViewAssetLoader.AssetsPathHandler(localContext))
     .build()
@@ -96,9 +95,7 @@ fun VideoCallView(close: () -> Unit) {
                 override fun onConsoleMessage(consoleMessage: ConsoleMessage?): Boolean {
                   val rtnValue = super.onConsoleMessage(consoleMessage)
                   val msg = consoleMessage?.message() as String
-                  if (msg.startsWith("{\"action\":\"processIceCandidates\"")) {
-                    iceCandidateCommand.value = "processCommand($msg)"
-                  } else if (msg.startsWith("{")) {
+                  if (msg.startsWith("{")) {
                     commandToShow.value = "processCommand($msg)"
                   }
                   return rtnValue
@@ -143,14 +140,8 @@ fun VideoCallView(close: () -> Unit) {
         commandToShow.value = ""
       }) {Text("Send")}
       Button( onClick = {
-        commandToShow.value = iceCandidateCommand.value
-      }) {Text("ICE")}
-      Button( onClick = {
         commandToShow.value = ""
       }) {Text("Clear")}
-      Button( onClick = {
-        wv.evaluateJavascript("endCall()", null)
-      }) {Text("End Call")}
     }
   }
 }

@@ -47,7 +47,7 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
       val chats = apiGetChats()
       chatModel.chats.clear()
       chatModel.chats.addAll(chats)
-      chatModel.currentUser = mutableStateOf(user)
+      chatModel.currentUser.value = user
       chatModel.userCreated.value = true
       Log.d(TAG, "started chat")
     } catch(e: Error) {
@@ -713,7 +713,7 @@ class APIResponse(val resp: CR, val corr: String? = null) {
         json.decodeFromString(str)
       } catch(e: Exception) {
         try {
-          Log.d(TAG, e.localizedMessage)
+          Log.d(TAG, e.localizedMessage ?: "")
           val data = json.parseToJsonElement(str).jsonObject
           APIResponse(
             resp = CR.Response(data["resp"]!!.jsonObject["type"]?.toString() ?: "invalid", json.encodeToString(data)),

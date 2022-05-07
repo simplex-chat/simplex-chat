@@ -725,7 +725,6 @@ enum MsgContent {
     }
 }
 
-// TODO define Encodable
 extension MsgContent: Decodable {
     init(from decoder: Decoder) throws {
         do {
@@ -863,15 +862,14 @@ enum CICallStatus: String, Decodable {
 
     func text(_ sec: Int) -> String {
         switch self {
-        case .pending: return "calling..."
-        case .negotiated: return "connecting..."
-        case .progress: return "in progress"
-        case .ended: return "ended \(duration(sec))"
-        default: return self.rawValue
+        case .pending: return NSLocalizedString("calling…", comment: "call status")
+        case .missed: return NSLocalizedString("missed…", comment: "call status")
+        case .rejected: return NSLocalizedString("rejected", comment: "call status")
+        case .accepted: return NSLocalizedString("accepted", comment: "call status")
+        case .negotiated: return NSLocalizedString("connecting…", comment: "call status")
+        case .progress: return NSLocalizedString("in progress", comment: "call status")
+        case .ended: return String.localizedStringWithFormat(NSLocalizedString("ended %02d:%02d", comment: "call status"), sec / 60, sec % 60)
+        case .error: return NSLocalizedString("error", comment: "call status")
         }
-    }
-
-    func duration(_ sec: Int) -> String {
-        String(format: "%02d:%02d", sec / 60, sec % 60)
     }
 }
