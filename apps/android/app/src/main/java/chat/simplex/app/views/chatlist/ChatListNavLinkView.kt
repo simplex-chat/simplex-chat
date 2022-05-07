@@ -2,6 +2,7 @@ package chat.simplex.app.views.chatlist
 
 import android.content.res.Configuration
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
@@ -32,14 +33,37 @@ fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
             pendingContactAlertDialog(chat.chatInfo, chatModel)
           }
       }
-    }
+    },
+    longClick = {
+      when (chat.chatInfo) {
+        is ChatInfo.Direct -> {
+          AlertManager.shared.showAlertMsg(
+            title = generalGetString(R.string.delete_contact__question),
+            text = generalGetString(R.string.delete_contact_all_messages_deleted_cannot_undo_warning),
+            confirmText = generalGetString(R.string.delete_verb),
+            onConfirm = {
+              val cInfo = chat.chatInfo
+              withApi {
+                val r = chatModel.controller.apiDeleteChat(cInfo.chatType, cInfo.apiId)
+                if (r) {
+                  chatModel.removeChat(cInfo.id)
+                  chatModel.chatId.value = null
+                }
+              }
+            }
+          )
+        }
+        else -> {}
+      }
+    },
   )
 }
 
 suspend fun openChat(chatModel: ChatModel, cInfo: ChatInfo) {
   val chat = chatModel.controller.apiGetChat(cInfo.chatType, cInfo.apiId)
   if (chat != null) {
-    chatModel.chatItems = chat.chatItems.toMutableStateList()
+    chatModel.chatItems.clear()
+    chatModel.chatItems.addAll(chat.chatItems)
     chatModel.chatId.value = cInfo.id
   }
 }
@@ -138,11 +162,14 @@ fun pendingContactAlertDialog(chatInfo: ChatInfo, chatModel: ChatModel) {
 }
 
 @Composable
-fun ChatListNavLinkLayout(chat: Chat, click: () -> Unit) {
+fun ChatListNavLinkLayout(chat: Chat, click: () -> Unit, longClick: () -> Unit) {
   Surface(
     modifier = Modifier
       .fillMaxWidth()
-      .clickable(onClick = click)
+      .combinedClickable(
+        onClick = click,
+        onLongClick = longClick
+      )
       .height(88.dp)
   ) {
     Row(
@@ -186,7 +213,8 @@ fun PreviewChatListNavLinkDirect() {
         ),
         chatStats = Chat.ChatStats()
       ),
-      click = {}
+      click = {},
+      longClick = {}
     )
   }
 }
@@ -213,7 +241,8 @@ fun PreviewChatListNavLinkGroup() {
         ),
         chatStats = Chat.ChatStats()
       ),
-      click = {}
+      click = {},
+      longClick = {}
     )
   }
 }
@@ -233,7 +262,8 @@ fun PreviewChatListNavLinkContactRequest() {
         chatItems = listOf(),
         chatStats = Chat.ChatStats()
       ),
-      click = {}
+      click = {},
+      longClick = {}
     )
   }
 }

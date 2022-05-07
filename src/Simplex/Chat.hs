@@ -376,15 +376,25 @@ processChatCommand = \case
       ct@Contact {localDisplayName} <- withStore $ \st -> getContact st userId chatId
       withStore (\st -> getContactGroupNames st userId ct) >>= \case
         [] -> do
+          liftIO $ putStrLn "### files <- withStore $ \\st -> getContactFiles st userId ct"
           files <- withStore $ \st -> getContactFiles st userId ct
+          liftIO $ putStrLn "### conns <- withStore $ \\st -> getContactConnections st userId ct"
           conns <- withStore $ \st -> getContactConnections st userId ct
+          liftIO $ putStrLn "### withChatLock . procCmd $ do"
           withChatLock . procCmd $ do
+            liftIO $ putStrLn "### cancelFiles user (map (\\(fId, fStatus, _) -> (fId, fStatus)) files)"
             cancelFiles user (map (\(fId, fStatus, _) -> (fId, fStatus)) files)
+            liftIO $ putStrLn "### withFilesFolder $ \\filesFolder -> do"
             withFilesFolder $ \filesFolder -> do
+              liftIO $ putStrLn "### deleteFiles filesFolder (map (\\(_, _, fPath) -> fPath) files)"
               deleteFiles filesFolder (map (\(_, _, fPath) -> fPath) files)
-            withAgent $ \a -> forM_ conns $ \conn ->
+            liftIO $ putStrLn "### withAgent $ \\a -> forM_ conns $ \\conn ->"
+            withAgent $ \a -> forM_ conns $ \conn -> do
+              liftIO $ putStrLn "### deleteConnection a (aConnId conn) `catchError` \\(_ :: AgentErrorType) -> pure ()"
               deleteConnection a (aConnId conn) `catchError` \(_ :: AgentErrorType) -> pure ()
+            liftIO $ putStrLn "### withStore $ \\st -> deleteContact st userId ct"
             withStore $ \st -> deleteContact st userId ct
+            liftIO $ putStrLn "### unsetActive $ ActiveC localDisplayName"
             unsetActive $ ActiveC localDisplayName
             pure $ CRContactDeleted ct
         gs -> throwChatError $ CEContactGroups ct gs
@@ -734,11 +744,14 @@ processChatCommand = \case
     withFilesFolder :: (FilePath -> m ()) -> m ()
     withFilesFolder action = asks filesFolder >>= readTVarIO >>= mapM_ action
     deleteFiles :: FilePath -> [Maybe FilePath] -> m ()
-    deleteFiles filesFolder filePaths =
+    deleteFiles filesFolder filePaths = do
       forM_ filePaths $ \filePath_ ->
         forM_ filePath_ $ \filePath -> do
           let fsFilePath = filesFolder <> "/" <> filePath
-          removeFile fsFilePath `E.catch` \(_ :: E.SomeException) ->
+          liftIO $ putStrLn ("in deleteFiles - fsFilePath " <> fsFilePath)
+          liftIO $ putStrLn "removeFile fsFilePath `E.catch` \\(_ :: E.SomeException) ->"
+          removeFile fsFilePath `E.catch` \(_ :: E.SomeException) -> do
+            liftIO $ putStrLn "removePathForcibly fsFilePath `E.catch` \\(_ :: E.SomeException) -> pure ()"
             removePathForcibly fsFilePath `E.catch` \(_ :: E.SomeException) -> pure ()
     cancelFiles :: User -> [(Int64, ACIFileStatus)] -> m ()
     cancelFiles user@User {userId} files = mapM_ maybeCancelFile files
@@ -756,26 +769,39 @@ processChatCommand = \case
           AFS _ CIFSRcvComplete -> pure ()
         cancelById :: Int64 -> m ()
         cancelById fileId = do
+          liftIO $ putStrLn ("cancelById - fileId " <> show fileId)
+          liftIO $ putStrLn "ft <- withStore (\\st -> getFileTransfer st userId fileId)"
           ft <- withStore (\st -> getFileTransfer st userId fileId)
+          liftIO $ putStrLn "void $ cancelFile user fileId ft"
           void $ cancelFile user fileId ft
     cancelFile :: User -> Int64 -> FileTransfer -> m ChatResponse
     cancelFile user@User {userId} fileId ft =
       case ft of
         FTSnd ftm fts -> do
+          liftIO $ putStrLn "cancelFileTransfer CIFSSndCancelled"
           cancelFileTransfer CIFSSndCancelled
+          liftIO $ putStrLn "forM_ fts $ \\ft' -> cancelSndFileTransfer ft'"
           forM_ fts $ \ft' -> cancelSndFileTransfer ft'
+          liftIO $ putStrLn "ci <- withStore $ \\st -> getChatItemByFileId st user fileId"
           ci <- withStore $ \st -> getChatItemByFileId st user fileId
+          liftIO $ putStrLn "pure $ CRSndGroupFileCancelled ci ftm fts"
           pure $ CRSndGroupFileCancelled ci ftm fts
         FTRcv ftr -> do
+          liftIO $ putStrLn "cancelFileTransfer CIFSRcvCancelled"
           cancelFileTransfer CIFSRcvCancelled
+          liftIO $ putStrLn "cancelRcvFileTransfer ftr"
           cancelRcvFileTransfer ftr
+          liftIO $ putStrLn "pure $ CRRcvFileCancelled ftr"
           pure $ CRRcvFileCancelled ftr
       where
         cancelFileTransfer :: MsgDirectionI d => CIFileStatus d -> m ()
-        cancelFileTransfer ciFileStatus =
+        cancelFileTransfer ciFileStatus = do
+          liftIO $ putStrLn "unless (fileTransferCancelled ft) $"
           unless (fileTransferCancelled ft) $
             withStore $ \st -> do
+              liftIO $ putStrLn "updateFileCancelled st userId fileId"
               updateFileCancelled st userId fileId
+              liftIO $ putStrLn "updateCIFileStatus st userId fileId ciFileStatus"
               updateCIFileStatus st userId fileId ciFileStatus
     withCurrentCall :: ContactId -> (UserId -> Contact -> Call -> m (Maybe Call)) -> m ChatResponse
     withCurrentCall ctId action = withUser $ \User {userId} -> do
@@ -1871,23 +1897,36 @@ isFileActive fileId files = do
 
 cancelRcvFileTransfer :: ChatMonad m => RcvFileTransfer -> m ()
 cancelRcvFileTransfer ft@RcvFileTransfer {fileId, fileStatus} = do
+  liftIO $ putStrLn "closeFileHandle fileId rcvFiles"
   closeFileHandle fileId rcvFiles
+  liftIO $ putStrLn "withStore $ \\st -> do"
   withStore $ \st -> do
+    liftIO $ putStrLn "updateRcvFileStatus st ft FSCancelled"
     updateRcvFileStatus st ft FSCancelled
+    liftIO $ putStrLn "deleteRcvFileChunks st ft"
     deleteRcvFileChunks st ft
   case fileStatus of
-    RFSAccepted RcvFileInfo {agentConnId = AgentConnId acId} -> withAgent (`deleteConnection` acId)
-    RFSConnected RcvFileInfo {agentConnId = AgentConnId acId} -> withAgent (`deleteConnection` acId)
+    RFSAccepted RcvFileInfo {agentConnId = AgentConnId acId} -> do
+      liftIO $ putStrLn "withAgent (`deleteConnection` acId)"
+      withAgent (`deleteConnection` acId)
+    RFSConnected RcvFileInfo {agentConnId = AgentConnId acId} -> do
+      liftIO $ putStrLn "withAgent (`deleteConnection` acId)"
+      withAgent (`deleteConnection` acId)
     _ -> pure ()
 
 cancelSndFileTransfer :: ChatMonad m => SndFileTransfer -> m ()
-cancelSndFileTransfer ft@SndFileTransfer {agentConnId = AgentConnId acId, fileStatus} =
+cancelSndFileTransfer ft@SndFileTransfer {agentConnId = AgentConnId acId, fileStatus} = do
+  liftIO $ putStrLn "unless (fileStatus == FSCancelled || fileStatus == FSComplete) $ do"
   unless (fileStatus == FSCancelled || fileStatus == FSComplete) $ do
     withStore $ \st -> do
+      liftIO $ putStrLn "updateSndFileStatus st ft FSCancelled"
       updateSndFileStatus st ft FSCancelled
+      liftIO $ putStrLn "deleteSndFileChunks st ft"
       deleteSndFileChunks st ft
     withAgent $ \a -> do
+      liftIO $ putStrLn "void (sendMessage a acId $ smpEncode FileChunkCancel) `catchError` \\_ -> pure ()"
       void (sendMessage a acId $ smpEncode FileChunkCancel) `catchError` \_ -> pure ()
+      liftIO $ putStrLn "deleteConnection a acId"
       deleteConnection a acId
 
 closeFileHandle :: ChatMonad m => Int64 -> (ChatController -> TVar (Map Int64 Handle)) -> m ()

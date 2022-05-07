@@ -18,7 +18,7 @@ struct CIImageView: View {
 
     var body: some View {
         VStack(alignment: .center, spacing: 6) {
-            if let uiImage = getStoredImage(file) {
+            if let uiImage = getLoadedImage(file) {
                 imageView(uiImage)
                 .fullScreenCover(isPresented: $showFullScreenImage) {
                     ZStack {

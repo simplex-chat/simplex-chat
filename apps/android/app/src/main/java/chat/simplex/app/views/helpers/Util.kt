@@ -29,6 +29,8 @@ import chat.simplex.app.model.CIFile
 import kotlinx.coroutines.*
 import java.io.File
 import java.io.FileOutputStream
+import java.text.SimpleDateFormat
+import java.util.*
 import kotlin.math.log2
 import kotlin.math.pow
 
@@ -224,8 +226,8 @@ fun getAppFilePath(context: Context, fileName: String): String {
   return "${getAppFilesDirectory(context)}/$fileName"
 }
 
-fun getStoredFilePath(context: Context, file: CIFile?): String? {
-  return if (file?.filePath != null && file.stored) {
+fun getLoadedFilePath(context: Context, file: CIFile?): String? {
+  return if (file?.filePath != null && file.loaded) {
     val filePath = getAppFilePath(context, file.filePath)
     if (File(filePath).exists()) filePath else null
   } else {
@@ -234,8 +236,8 @@ fun getStoredFilePath(context: Context, file: CIFile?): String? {
 }
 
 // https://developer.android.com/training/data-storage/shared/documents-files#bitmap
-fun getStoredImage(context: Context, file: CIFile?): Bitmap? {
-  val filePath = getStoredFilePath(context, file)
+fun getLoadedImage(context: Context, file: CIFile?): Bitmap? {
+  val filePath = getLoadedFilePath(context, file)
   return if (filePath != null) {
     try {
       val uri = FileProvider.getUriForFile(context, "${BuildConfig.APPLICATION_ID}.provider", File(filePath))
@@ -271,7 +273,8 @@ fun getFileSize(context: Context, uri: Uri): Long? {
 fun saveImage(context: Context, image: Bitmap): String? {
   return try {
     val dataResized = resizeImageToDataSize(image, maxDataSize = MAX_IMAGE_SIZE)
-    val fileToSave = uniqueCombine(context, "image_${System.currentTimeMillis()}.jpg")
+    val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
+    val fileToSave = uniqueCombine(context, "IMG_${timestamp}.jpg")
     val file = File(getAppFilePath(context, fileToSave))
     val output = FileOutputStream(file)
     dataResized.writeTo(output)

@@ -62,6 +62,8 @@ fun ChatItemView(
         }
       } else if (cItem.isDeletedContent) {
         DeletedItemView(cItem, showMember = showMember)
+      } else if (cItem.isCall) {
+        FramedItemView(user, cItem, uriHandler, showMember = showMember, showMenu, receiveFile)
       }
       if (cItem.isMsgContent) {
         DropdownMenu(
@@ -86,7 +88,7 @@ fun ChatItemView(
             showMenu.value = false
           })
           if (cItem.content.msgContent is MsgContent.MCImage || cItem.content.msgContent is MsgContent.MCFile) {
-            val filePath = getStoredFilePath(context, cItem.file)
+            val filePath = getLoadedFilePath(context, cItem.file)
             if (filePath != null) {
               ItemAction(stringResource(R.string.save_verb), Icons.Outlined.SaveAlt, onClick = {
                 saveFileLauncher.launch(cItem.file?.fileName)

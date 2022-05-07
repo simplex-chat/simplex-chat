@@ -19,7 +19,8 @@ import androidx.annotation.CallSuper
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalContext
@@ -126,19 +127,17 @@ class CustomTakePicturePreview: ActivityResultContract<Void?, Bitmap?>() {
     }
   }
 }
-//class GetGalleryContent: ActivityResultContracts.GetContent() {
-//  override fun createIntent(context: Context, input: String): Intent {
-//    return super.createIntent(context, input).apply {
-//      Log.e(TAG, "########################################################### in GetGalleryContent")
-//      uri = DocumentsContract.buildDocumentUriUsingTree(uri, DocumentsContract.getTreeDocumentId(uri))
-//      putExtra(DocumentsContract.EXTRA_INITIAL_URI, Environment.DIRECTORY_PICTURES)
-//    }
-//  }
-//}
+
+class GetGalleryContent: ActivityResultContracts.GetContent() {
+  override fun createIntent(context: Context, input: String): Intent {
+    super.createIntent(context, input)
+    return Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
+  }
+}
+
 @Composable
-fun rememberGetContentLauncher(cb: (Uri?) -> Unit): ManagedActivityResultLauncher<String, Uri?> =
-//  rememberLauncherForActivityResult(contract = GetGalleryContent(), cb)
-  rememberLauncherForActivityResult(contract = ActivityResultContracts.GetContent(), cb)
+fun rememberGalleryLauncher(cb: (Uri?) -> Unit): ManagedActivityResultLauncher<String, Uri?> =
+  rememberLauncherForActivityResult(contract = GetGalleryContent(), cb)
 
 @Composable
 fun rememberCameraLauncher(cb: (Bitmap?) -> Unit): ManagedActivityResultLauncher<Void?, Bitmap?> =
@@ -149,6 +148,10 @@ fun rememberPermissionLauncher(cb: (Boolean) -> Unit): ManagedActivityResultLaun
   rememberLauncherForActivityResult(contract = ActivityResultContracts.RequestPermission(), cb)
 
 @Composable
+fun rememberGetContentLauncher(cb: (Uri?) -> Unit): ManagedActivityResultLauncher<String, Uri?> =
+  rememberLauncherForActivityResult(contract = ActivityResultContracts.GetContent(), cb)
+
+@Composable
 fun GetImageBottomSheet(
   imageBitmap: MutableState<Bitmap?>,
   onImageChange: (Bitmap) -> Unit,
@@ -157,8 +160,7 @@ fun GetImageBottomSheet(
   hideBottomSheet: () -> Unit
 ) {
   val context = LocalContext.current
-  val isCameraSelected = remember { mutableStateOf(false) }
-  val galleryLauncher = rememberGetContentLauncher { uri: Uri? ->
+  val galleryLauncher = rememberGalleryLauncher { uri: Uri? ->
     if (uri != null) {
       val source = ImageDecoder.createSource(context.contentResolver, uri)
       val bitmap = ImageDecoder.decodeBitmap(source)
@@ -174,8 +176,7 @@ fun GetImageBottomSheet(
   }
   val permissionLauncher = rememberPermissionLauncher { isGranted: Boolean ->
     if (isGranted) {
-      if (isCameraSelected.value) cameraLauncher.launch(null)
-      else galleryLauncher.launch("image/*")
+      cameraLauncher.launch(null)
       hideBottomSheet()
     } else {
       Toast.makeText(context, generalGetString(R.string.toast_permission_denied), Toast.LENGTH_SHORT).show()
@@ -193,14 +194,6 @@ fun GetImageBottomSheet(
           String.format(generalGetString(R.string.maximum_supported_file_size), formatBytes(MAX_FILE_SIZE))
         )
       }
-    }
-  }
-  val filesPermissionLauncher = rememberPermissionLauncher { isGranted: Boolean ->
-    if (isGranted) {
-      filesLauncher.launch("*/*")
-      hideBottomSheet()
-    } else {
-      Toast.makeText(context, generalGetString(R.string.toast_permission_denied), Toast.LENGTH_SHORT).show()
     }
   }
 
@@ -225,34 +218,18 @@ fun GetImageBottomSheet(
             hideBottomSheet()
           }
           else -> {
-            isCameraSelected.value = true
             permissionLauncher.launch(Manifest.permission.CAMERA)
           }
         }
       }
       ActionButton(null, stringResource(R.string.from_gallery_button), icon = Icons.Outlined.Collections) {
-        when (PackageManager.PERMISSION_GRANTED) {
-          ContextCompat.checkSelfPermission(context, Manifest.permission.READ_EXTERNAL_STORAGE) -> {
-            galleryLauncher.launch("image/*")
-            hideBottomSheet()
-          }
-          else -> {
-            isCameraSelected.value = false
-            permissionLauncher.launch(Manifest.permission.READ_EXTERNAL_STORAGE)
-          }
-        }
+        galleryLauncher.launch("image/*")
+        hideBottomSheet()
       }
       if (fileUri != null && onFileChange != null) {
         ActionButton(null, stringResource(R.string.choose_file), icon = Icons.Outlined.InsertDriveFile) {
-          when (PackageManager.PERMISSION_GRANTED) {
-            ContextCompat.checkSelfPermission(context, Manifest.permission.READ_EXTERNAL_STORAGE) -> {
-              filesLauncher.launch("*/*")
-              hideBottomSheet()
-            }
-            else -> {
-              filesPermissionLauncher.launch(Manifest.permission.READ_EXTERNAL_STORAGE)
-            }
-          }
+          filesLauncher.launch("*/*")
+          hideBottomSheet()
         }
       }
     }

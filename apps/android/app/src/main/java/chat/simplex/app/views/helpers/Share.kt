@@ -34,7 +34,7 @@ fun rememberSaveFileLauncher(cxt: Context, ciFile: CIFile?): ManagedActivityResu
     contract = ActivityResultContracts.CreateDocument(),
     onResult = { destination ->
       if (destination != null) {
-        val filePath = getStoredFilePath(cxt, ciFile)
+        val filePath = getLoadedFilePath(cxt, ciFile)
         if (filePath != null) {
           val contentResolver = cxt.contentResolver
           val file = File(filePath)

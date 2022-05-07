@@ -10,6 +10,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import chat.simplex.app.R
 import chat.simplex.app.ui.theme.SecretColor
 import chat.simplex.app.ui.theme.SimplexBlue
+import chat.simplex.app.views.call.*
 import chat.simplex.app.views.helpers.generalGetString
 import kotlinx.datetime.*
 import kotlinx.serialization.*
@@ -19,23 +20,29 @@ import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.*
 
 class ChatModel(val controller: ChatController) {
-  var currentUser = mutableStateOf<User?>(null)
-  var userCreated = mutableStateOf<Boolean?>(null)
-  var chats = mutableStateListOf<Chat>()
-  var chatId = mutableStateOf<String?>(null)
-  var chatItems = mutableStateListOf<ChatItem>()
+  val currentUser = mutableStateOf<User?>(null)
+  val userCreated = mutableStateOf<Boolean?>(null)
+  val chats = mutableStateListOf<Chat>()
+  val chatId = mutableStateOf<String?>(null)
+  val chatItems = mutableStateListOf<ChatItem>()
 
   var connReqInvitation: String? = null
-  var terminalItems = mutableStateListOf<TerminalItem>()
-  var userAddress = mutableStateOf<String?>(null)
-  var userSMPServers = mutableStateOf<(List<String>)?>(null)
+  val terminalItems = mutableStateListOf<TerminalItem>()
+  val userAddress = mutableStateOf<String?>(null)
+  val userSMPServers = mutableStateOf<(List<String>)?>(null)
 
   // set when app opened from external intent
-  var clearOverlays = mutableStateOf<Boolean>(false)
+  val clearOverlays = mutableStateOf<Boolean>(false)
 
   // set when app is opened via contact or invitation URI
-  var appOpenUrl = mutableStateOf<Uri?>(null)
-  var runServiceInBackground = mutableStateOf(true)
+  val appOpenUrl = mutableStateOf<Uri?>(null)
+  val runServiceInBackground = mutableStateOf(true)
+
+  // current WebRTC call
+  val callInvitations = mutableStateMapOf<String, CallInvitation>()
+  val activeCallInvitation = mutableStateOf<ContactRef?>(null)
+  val activeCall = mutableStateOf<Call?>(null)
+  val callCommand = mutableStateOf<WCallCommand?>(null)
 
   fun updateUserProfile(profile: Profile) {
     val user = currentUser.value
@@ -654,6 +661,13 @@ data class ChatItem (
       else -> false
     }
 
+  val isCall: Boolean get() =
+    when (content) {
+      is CIContent.SndCall -> true
+      is CIContent.RcvCall -> true
+      else -> false
+    }
+
   companion object {
     fun getSampleData(
       id: Long = 1,
@@ -709,26 +723,16 @@ data class ChatItem (
 
 @Serializable
 sealed class CIDirection {
-  abstract val sent: Boolean
+  @Serializable @SerialName("directSnd") class DirectSnd: CIDirection()
+  @Serializable @SerialName("directRcv") class DirectRcv: CIDirection()
+  @Serializable @SerialName("groupSnd") class GroupSnd: CIDirection()
+  @Serializable @SerialName("groupRcv") class GroupRcv(val groupMember: GroupMember): CIDirection()
 
-  @Serializable @SerialName("directSnd")
-  class DirectSnd: CIDirection() {
-    override val sent get() = true
-  }
-
-  @Serializable @SerialName("directRcv")
-  class DirectRcv: CIDirection() {
-    override val sent get() = false
-  }
-
-  @Serializable @SerialName("groupSnd")
-  class GroupSnd: CIDirection() {
-    override val sent get() = true
-  }
-
-  @Serializable @SerialName("groupRcv")
-  class GroupRcv(val groupMember: GroupMember): CIDirection() {
-    override val sent get() = false
+  val sent: Boolean get() = when(this) {
+    is DirectSnd -> true
+    is DirectRcv -> false
+    is GroupSnd -> true
+    is GroupRcv -> false
   }
 }
 
@@ -775,23 +779,12 @@ fun getTimestampText(t: Instant): String {
 
 @Serializable
 sealed class CIStatus {
-  @Serializable @SerialName("sndNew")
-  class SndNew: CIStatus()
-
-  @Serializable @SerialName("sndSent")
-  class SndSent: CIStatus()
-
-  @Serializable @SerialName("sndErrorAuth")
-  class SndErrorAuth: CIStatus()
-
-  @Serializable @SerialName("sndError")
-  class SndError(val agentError: AgentErrorType): CIStatus()
-
-  @Serializable @SerialName("rcvNew")
-  class RcvNew: CIStatus()
-
-  @Serializable @SerialName("rcvRead")
-  class RcvRead: CIStatus()
+  @Serializable @SerialName("sndNew") class SndNew: CIStatus()
+  @Serializable @SerialName("sndSent") class SndSent: CIStatus()
+  @Serializable @SerialName("sndErrorAuth") class SndErrorAuth: CIStatus()
+  @Serializable @SerialName("sndError") class SndError(val agentError: AgentErrorType): CIStatus()
+  @Serializable @SerialName("rcvNew") class RcvNew: CIStatus()
+  @Serializable @SerialName("rcvRead") class RcvRead: CIStatus()
 }
 
 @Serializable
@@ -806,29 +799,22 @@ interface ItemContent {
 
 @Serializable
 sealed class CIContent: ItemContent {
-  abstract override val text: String
   abstract val msgContent: MsgContent?
 
-  @Serializable @SerialName("sndMsgContent")
-  class SndMsgContent(override val msgContent: MsgContent): CIContent() {
-    override val text get() = msgContent.text
-  }
+  @Serializable @SerialName("sndMsgContent") class SndMsgContent(override val msgContent: MsgContent): CIContent()
+  @Serializable @SerialName("rcvMsgContent") class RcvMsgContent(override val msgContent: MsgContent): CIContent()
+  @Serializable @SerialName("sndDeleted") class SndDeleted(val deleteMode: CIDeleteMode): CIContent() { override val msgContent get() = null }
+  @Serializable @SerialName("rcvDeleted")  class RcvDeleted(val deleteMode: CIDeleteMode): CIContent() { override val msgContent get() = null }
+  @Serializable @SerialName("sndCall") class SndCall(val status: CICallStatus, val duration: Int): CIContent() { override val msgContent get() = null }
+  @Serializable @SerialName("rcvCall") class RcvCall(val status: CICallStatus, val duration: Int): CIContent() { override val msgContent get() = null }
 
-  @Serializable @SerialName("rcvMsgContent")
-  class RcvMsgContent(override val msgContent: MsgContent): CIContent() {
-    override val text get() = msgContent.text
-  }
-
-  @Serializable @SerialName("sndDeleted")
-  class SndDeleted(val deleteMode: CIDeleteMode): CIContent() {
-    override val text get() = generalGetString(R.string.deleted_description)
-    override val msgContent get() = null
-  }
-
-  @Serializable @SerialName("rcvDeleted")
-  class RcvDeleted(val deleteMode: CIDeleteMode): CIContent() {
-    override val text get() = generalGetString(R.string.deleted_description)
-    override val msgContent get() = null
+  override val text: String get() = when(this) {
+    is SndMsgContent -> msgContent.text
+    is RcvMsgContent -> msgContent.text
+    is SndDeleted -> generalGetString(R.string.deleted_description)
+    is RcvDeleted -> generalGetString(R.string.deleted_description)
+    is SndCall -> status.text(duration)
+    is RcvCall -> status.text(duration)
   }
 }
 
@@ -865,13 +851,16 @@ class CIFile(
   val filePath: String? = null,
   val fileStatus: CIFileStatus
 ) {
-  val stored: Boolean = when (fileStatus) {
+  val loaded: Boolean = when (fileStatus) {
     CIFileStatus.SndStored -> true
     CIFileStatus.SndTransfer -> true
     CIFileStatus.SndComplete -> true
     CIFileStatus.SndCancelled -> true
+    CIFileStatus.RcvInvitation -> false
+    CIFileStatus.RcvAccepted -> false
+    CIFileStatus.RcvTransfer -> false
+    CIFileStatus.RcvCancelled -> false
     CIFileStatus.RcvComplete -> true
-    else -> false
   }
 
   companion object {
@@ -904,20 +893,11 @@ enum class CIFileStatus {
 sealed class MsgContent {
   abstract val text: String
 
-  @Serializable(with = MsgContentSerializer::class)
-  class MCText(override val text: String): MsgContent()
-
-  @Serializable(with = MsgContentSerializer::class)
-  class MCLink(override val text: String, val preview: LinkPreview): MsgContent()
-
-  @Serializable(with = MsgContentSerializer::class)
-  class MCImage(override val text: String, val image: String): MsgContent()
-
-  @Serializable(with = MsgContentSerializer::class)
-  class MCFile(override val text: String): MsgContent()
-
-  @Serializable(with = MsgContentSerializer::class)
-  class MCUnknown(val type: String? = null, override val text: String, val json: JsonElement): MsgContent()
+  @Serializable(with = MsgContentSerializer::class) class MCText(override val text: String): MsgContent()
+  @Serializable(with = MsgContentSerializer::class) class MCLink(override val text: String, val preview: LinkPreview): MsgContent()
+  @Serializable(with = MsgContentSerializer::class) class MCImage(override val text: String, val image: String): MsgContent()
+  @Serializable(with = MsgContentSerializer::class) class MCFile(override val text: String): MsgContent()
+  @Serializable(with = MsgContentSerializer::class) class MCUnknown(val type: String? = null, override val text: String, val json: JsonElement): MsgContent()
 
   val cmdString: String get() = when (this) {
     is MCText -> "text $text"
@@ -1073,3 +1053,28 @@ class SndFileTransfer() {}
 
 @Serializable
 class FileTransferMeta() {}
+
+@Serializable
+enum class CICallStatus {
+  @SerialName("pending") Pending,
+  @SerialName("missed") Missed,
+  @SerialName("rejected") Rejected,
+  @SerialName("accepted") Accepted,
+  @SerialName("negotiated") Negotiated,
+  @SerialName("progress") Progress,
+  @SerialName("ended") Ended,
+  @SerialName("error") Error;
+
+  fun text(sec: Int): String = when (this) {
+    Pending -> generalGetString(R.string.callstatus_calling)
+    Missed -> generalGetString(R.string.callstatus_missed)
+    Rejected -> generalGetString(R.string.callstatus_rejected)
+    Accepted -> generalGetString(R.string.callstatus_accepted)
+    Negotiated -> generalGetString(R.string.callstatus_connecting)
+    Progress -> generalGetString(R.string.callstatus_in_progress)
+    Ended -> String.format(generalGetString(R.string.callstatus_ended), duration(sec))
+    Error -> generalGetString(R.string.callstatus_error)
+  }
+
+  fun duration(sec: Int): String = "%02d:%02d".format(sec / 60, sec % 60)
+}

@@ -86,10 +86,10 @@ fun CIImageView(
 
   Box(contentAlignment = Alignment.TopEnd) {
     val context = LocalContext.current
-    val imageBitmap: Bitmap? = getStoredImage(context, file)
+    val imageBitmap: Bitmap? = getLoadedImage(context, file)
     if (imageBitmap != null) {
       imageView(imageBitmap, onClick = {
-        if (getStoredFilePath(context, file) != null) {
+        if (getLoadedFilePath(context, file) != null) {
           ModalManager.shared.showCustomModal { close -> ImageFullScreenView(imageBitmap, close) }
         }
       })

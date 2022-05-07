@@ -17,8 +17,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.AndroidViewModel
 import androidx.work.*
-import chat.simplex.app.model.ChatModel
-import chat.simplex.app.model.NtfManager
+import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.SplashView
 import chat.simplex.app.views.WelcomeView
@@ -29,7 +28,6 @@ import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.newchat.connectViaUri
 import chat.simplex.app.views.newchat.withUriAction
 import java.util.concurrent.TimeUnit
-
 //import kotlinx.serialization.decodeFromString
 
 class MainActivity: ComponentActivity() {

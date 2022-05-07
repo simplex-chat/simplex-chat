@@ -275,4 +275,21 @@
     <string name="you_can_also_connect_by_clicking_the_link">Вы также можете соединиться, открыв ссылку там, где вы её получили. Если ссылка откроется в браузере, нажмите кнопку <b>Open in mobile app</b>.</string>
     <string name="add_contact_to_start_new_chat">Добавьте контакт, чтобы начать разговор:</string>
 
+    <!-- CICallStatus -->
+    <string name="callstatus_calling">входящий звонок…</string>
+    <string name="callstatus_missed">пропущенный звонок</string>
+    <string name="callstatus_rejected">отклоненный звонок</string>
+    <string name="callstatus_accepted">принятый звонок</string>
+    <string name="callstatus_connecting">соединяется…</string>
+    <string name="callstatus_in_progress">активный звонок</string>
+    <string name="callstatus_ended">звонок завершён <xliff:g id="duration" example="01:15">%1$s!</xliff:g></string>
+    <string name="callstatus_error">ошибка соединения</string>
+
+    <!-- CallState -->
+    <string name="callstate_starting">инициализация…</string>
+    <string name="callstate_waiting_for_answer">ожидается ответ…</string>
+    <string name="callstate_waiting_for_confirmation">ожидается подтверждение…</string>
+    <string name="callstate_received_answer">получен ответ…</string>
+    <string name="callstate_connecting">соединяется…</string>
+    <string name="callstate_connected">соединено</string>
 </resources>
