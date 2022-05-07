@@ -1088,7 +1088,7 @@ SimpleX серверы не могут получить доступ к ваше
       </trans-unit>
       <trans-unit id="NSCameraUsageDescription" xml:space="preserve">
         <source>SimpleX needs camera access to scan QR codes to connect to other users and for video calls.</source>
-        <target>SimpleX использует камеру для сканирования QR кодов при соединении с другими пользователями</target>
+        <target>SimpleX использует камеру для сканирования QR кодов при соединении с другими пользователями и для видео звонков.</target>
         <note>Privacy - Camera Usage Description</note>
       </trans-unit>
       <trans-unit id="NSMicrophoneUsageDescription" xml:space="preserve">
