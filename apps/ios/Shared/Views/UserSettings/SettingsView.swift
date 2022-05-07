@@ -14,12 +14,15 @@ let appVersion = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionS
 
 let appBuild = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion")  as? String
 
+let DEFAULT_USE_NOTIFICATIONS = "useNotifications"
+let DEFAULT_PENDING_CONNECTIONS = "pendingConnections"
+
 struct SettingsView: View {
     @Environment(\.colorScheme) var colorScheme
     @EnvironmentObject var chatModel: ChatModel
     @Binding var showSettings: Bool
-    @AppStorage("useNotifications") private var useNotifications = false
-    @AppStorage("pendingConnections") private var pendingConnections = true
+    @AppStorage(DEFAULT_USE_NOTIFICATIONS) private var useNotifications = false
+    @AppStorage(DEFAULT_PENDING_CONNECTIONS) private var pendingConnections = true
     @State var showNotificationsAlert: Bool = false
     @State var whichNotificationsAlert = NotificationAlert.enable
 
@@ -137,12 +140,12 @@ struct SettingsView: View {
                             .padding(.trailing, 8)
                         Text("Install [SimpleX Chat for terminal](https://github.com/simplex-chat/simplex-chat)")
                     }
-                    if let token = chatModel.deviceToken {
-                        HStack {
-                            notificationsIcon()
-                            notificationsToggle(token)
-                        }
-                    }
+//                    if let token = chatModel.deviceToken {
+//                        HStack {
+//                            notificationsIcon()
+//                            notificationsToggle(token)
+//                        }
+//                    }
 //                    NavigationLink {
 //                        CallViewDebug()
 //                            .frame(maxHeight: .infinity, alignment: .top)
