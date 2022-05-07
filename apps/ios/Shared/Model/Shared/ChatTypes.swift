@@ -866,7 +866,7 @@ enum CICallStatus: String, Decodable {
     func text(_ sec: Int) -> String {
         switch self {
         case .pending: return NSLocalizedString("calling…", comment: "call status")
-        case .missed: return NSLocalizedString("missed…", comment: "call status")
+        case .missed: return NSLocalizedString("missed", comment: "call status")
         case .rejected: return NSLocalizedString("rejected", comment: "call status")
         case .accepted: return NSLocalizedString("accepted", comment: "call status")
         case .negotiated: return NSLocalizedString("connecting…", comment: "call status")

@@ -57,6 +57,8 @@
 		5CA059ED279559F40002BEB4 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CA059C4279559F40002BEB4 /* ContentView.swift */; };
 		5CA059EF279559F40002BEB4 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 5CA059C5279559F40002BEB4 /* Assets.xcassets */; };
 		5CA05A4C27974EB60002BEB4 /* WelcomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CA05A4B27974EB60002BEB4 /* WelcomeView.swift */; };
+		5CB0BA882826CB3A00B3292C /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 5CB0BA862826CB3A00B3292C /* InfoPlist.strings */; };
+		5CB0BA8B2826CB3A00B3292C /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 5CB0BA892826CB3A00B3292C /* Localizable.strings */; };
 		5CB924D427A853F100ACCCDD /* SettingsButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB924D327A853F100ACCCDD /* SettingsButton.swift */; };
 		5CB924D727A8563F00ACCCDD /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB924D627A8563F00ACCCDD /* SettingsView.swift */; };
 		5CB924E127A867BA00ACCCDD /* UserProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB924E027A867BA00ACCCDD /* UserProfile.swift */; };
@@ -190,6 +192,8 @@
 		5CA059DB279559F40002BEB4 /* Tests_iOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests_iOS.swift; sourceTree = "<group>"; };
 		5CA059DD279559F40002BEB4 /* Tests_iOSLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests_iOSLaunchTests.swift; sourceTree = "<group>"; };
 		5CA05A4B27974EB60002BEB4 /* WelcomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeView.swift; sourceTree = "<group>"; };
+		5CB0BA872826CB3A00B3292C /* ru */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ru; path = ru.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		5CB0BA8A2826CB3A00B3292C /* ru */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ru; path = ru.lproj/Localizable.strings; sourceTree = "<group>"; };
 		5CB924D327A853F100ACCCDD /* SettingsButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsButton.swift; sourceTree = "<group>"; };
 		5CB924D627A8563F00ACCCDD /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		5CB924E027A867BA00ACCCDD /* UserProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserProfile.swift; sourceTree = "<group>"; };
@@ -460,6 +464,8 @@
 				5CDCAD5128186DE400503DA2 /* SimpleX NSE.entitlements */,
 				5CDCAD472818589900503DA2 /* NotificationService.swift */,
 				5CDCAD492818589900503DA2 /* Info.plist */,
+				5CB0BA892826CB3A00B3292C /* Localizable.strings */,
+				5CB0BA862826CB3A00B3292C /* InfoPlist.strings */,
 				5CDCAD5728187C7500503DA2 /* dummy.m */,
 				5CDCAD5628187C7500503DA2 /* SimpleX NSE-Bridging-Header.h */,
 			);
@@ -634,6 +640,8 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				5CB0BA882826CB3A00B3292C /* InfoPlist.strings in Resources */,
+				5CB0BA8B2826CB3A00B3292C /* Localizable.strings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -753,6 +761,22 @@
 /* End PBXTargetDependency section */
 
 /* Begin PBXVariantGroup section */
+		5CB0BA862826CB3A00B3292C /* InfoPlist.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				5CB0BA872826CB3A00B3292C /* ru */,
+			);
+			name = InfoPlist.strings;
+			sourceTree = "<group>";
+		};
+		5CB0BA892826CB3A00B3292C /* Localizable.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				5CB0BA8A2826CB3A00B3292C /* ru */,
+			);
+			name = Localizable.strings;
+			sourceTree = "<group>";
+		};
 		5CC2C0FA2809BF11000C35E3 /* Localizable.strings */ = {
 			isa = PBXVariantGroup;
 			children = (

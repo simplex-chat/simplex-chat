@@ -1,0 +1,61 @@
+/* notification title */
+"%@ is connected!" = "%@ присоединен!";
+
+/* notification title */
+"%@ wants to connect!" = "%@ хочет соединиться!";
+
+/* notification body */
+"Accept contact request from %@?" = "Принять запрос на соединение от %@?";
+
+/* call status */
+"accepted" = "принятый звонок";
+
+/* call status */
+"calling…" = "входящий звонок…";
+
+/* call status
+   chat list item title */
+"connecting…" = "соединяется…";
+
+/* chat list item title (it should not be shown */
+"connection established" = "соединение установлено";
+
+/* connection information */
+"connection:%@" = "connection:%@";
+
+/* deleted chat item */
+"deleted" = "удалено";
+
+/* call status */
+"ended %02d:%02d" = "звонок завершён %1$d:%2$d";
+
+/* call status */
+"error" = "ошибка соединения";
+
+/* call status */
+"in progress" = "активный звонок";
+
+/* notification body */
+"Incoming %@ call" = "Входящий звонок";
+
+/* chat list item title */
+"invited to connect" = "приглашение соединиться";
+
+/* call status */
+"missed" = "пропущенный звонок";
+
+/* call status */
+"rejected" = "отклоненный звонок";
+
+/* chat list item description */
+"via contact address link" = "через ссылку-контакт";
+
+/* chat list item description */
+"via one-time link" = "через одноразовую ссылку";
+
+/* notification body */
+"You can now send messages to %@" = "Вы можете отправлять сообщения %@";
+
+/* chat list item description */
+"you shared one-time link" = "вы создали одноразовую ссылку";
+

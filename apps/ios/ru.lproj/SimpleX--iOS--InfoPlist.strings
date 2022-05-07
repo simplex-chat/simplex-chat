@@ -4,3 +4,9 @@
 /* Privacy - Camera Usage Description */
 "NSCameraUsageDescription" = "SimpleX использует камеру для сканирования QR кодов при соединении с другими пользователями";
 
+/* Privacy - Microphone Usage Description */
+"NSMicrophoneUsageDescription" = "SimpleX использует микрофон для аудио и видео звонков.";
+
+/* Privacy - Photo Library Additions Usage Description */
+"NSPhotoLibraryAddUsageDescription" = "SimpleX использует доступ к Photo Library для сохранения сделанных и полученных фотографий";
+

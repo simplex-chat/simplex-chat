@@ -125,9 +125,19 @@
         <target>Все контакты, которые соединились через этот адрес, сохранятся.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Answer" xml:space="preserve">
+        <source>Answer</source>
+        <target>Ответить</target>
+        <note>accept incoming call via notification</note>
+      </trans-unit>
       <trans-unit id="Attach" xml:space="preserve">
         <source>Attach</source>
         <target>Прикрепить</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Call already ended!" xml:space="preserve">
+        <source>Call already ended!</source>
+        <target>Звонок уже завершен!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Cancel" xml:space="preserve">
@@ -159,6 +169,11 @@
         <source>Checking new messages...</source>
         <target>Проверяются новые сообщения...</target>
         <note>notification</note>
+      </trans-unit>
+      <trans-unit id="Choose file" xml:space="preserve">
+        <source>Choose file</source>
+        <target>Выберите файл</target>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Choose from library" xml:space="preserve">
         <source>Choose from library</source>
@@ -285,6 +300,11 @@
         <target>Создать профиль</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Currently maximum supported file size is %@." xml:space="preserve">
+        <source>Currently maximum supported file size is %@.</source>
+        <target>Максимальный размер файла - %@.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Delete" xml:space="preserve">
         <source>Delete</source>
         <target>Удалить</target>
@@ -395,6 +415,11 @@
         <target>Ошибка: неверная ссылка</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="File will be received when your contact is online, please wait or check later!" xml:space="preserve">
+        <source>File will be received when your contact is online, please wait or check later!</source>
+        <target>Файл будет принят, когда ваш контакт онлайн, подождите или проверьте позже!</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Full name (optional)" xml:space="preserve">
         <source>Full name (optional)</source>
         <target>Полное имя (не обязательно)</target>
@@ -440,6 +465,26 @@
         <target>Если вы получили ссылку с приглашением из SimpleX Chat, вы можете открыть её в браузере:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Ignore" xml:space="preserve">
+        <source>Ignore</source>
+        <target>Не отвечать</target>
+        <note>ignore incoming call via notification</note>
+      </trans-unit>
+      <trans-unit id="Image will be received when your contact is online, please wait or check later!" xml:space="preserve">
+        <source>Image will be received when your contact is online, please wait or check later!</source>
+        <target>Картинка будет принята, когда ваш контакт онлайн, подождите или проверьте позже!</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Incoming %@ call" xml:space="preserve">
+        <source>Incoming %@ call</source>
+        <target>Входящий звонок</target>
+        <note>notification body</note>
+      </trans-unit>
+      <trans-unit id="Incoming call" xml:space="preserve">
+        <source>Incoming call</source>
+        <target>Входящий звонок</target>
+        <note>notification</note>
+      </trans-unit>
       <trans-unit id="Install [SimpleX Chat for terminal](https://github.com/simplex-chat/simplex-chat)" xml:space="preserve">
         <source>Install [SimpleX Chat for terminal](https://github.com/simplex-chat/simplex-chat)</source>
         <target>[SimpleX Chat для терминала](https://github.com/simplex-chat/simplex-chat)</target>
@@ -448,6 +493,11 @@
       <trans-unit id="Invalid connection link" xml:space="preserve">
         <source>Invalid connection link</source>
         <target>Ошибка в ссылке контакта</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Large file!" xml:space="preserve">
+        <source>Large file!</source>
+        <target>Большой файл!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Make sure SMP server addresses are in correct format, line separated and are not duplicated." xml:space="preserve">
@@ -700,6 +750,16 @@ To connect, please ask your contact to create another connection link and check 
         <target>Используются серверы, предоставленные SimpleX Chat.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Waiting for file" xml:space="preserve">
+        <source>Waiting for file</source>
+        <target>Ожидается прием файла</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Waiting for image" xml:space="preserve">
+        <source>Waiting for image</source>
+        <target>Ожидается прием картинки</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Welcome %@!" xml:space="preserve">
         <source>Welcome %@!</source>
         <target>Здравствуйте %@!</target>
@@ -802,6 +862,11 @@ You can cancel this connection and remove the contact (and try later with a new 
 Вы можете отменить соединение и удалить контакт (и попробовать позже с другой ссылкой).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Your contact sent a file that is larger than currently supported maximum size (%@)." xml:space="preserve">
+        <source>Your contact sent a file that is larger than currently supported maximum size (%@).</source>
+        <target>Ваш контакт послал файл больше максимально разрешенного размера (%@).</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Your profile is stored on your device and shared only with your contacts.&#10;SimpleX servers cannot see your profile." xml:space="preserve">
         <source>Your profile is stored on your device and shared only with your contacts.
 SimpleX servers cannot see your profile.</source>
@@ -844,10 +909,20 @@ SimpleX серверы не могут получить доступ к ваше
         <target>наверху, затем:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="accepted" xml:space="preserve">
+        <source>accepted</source>
+        <target>принятый звонок</target>
+        <note>call status</note>
+      </trans-unit>
       <trans-unit id="bold" xml:space="preserve">
         <source>bold</source>
         <target>жирный</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="calling…" xml:space="preserve">
+        <source>calling…</source>
+        <target>входящий звонок…</target>
+        <note>call status</note>
       </trans-unit>
       <trans-unit id="colored" xml:space="preserve">
         <source>colored</source>
@@ -859,10 +934,15 @@ SimpleX серверы не могут получить доступ к ваше
         <target>соединитесь с разработчиками.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="connected" xml:space="preserve">
+        <source>connected</source>
+        <target>соединено</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="connecting…" xml:space="preserve">
         <source>connecting…</source>
         <target>соединяется…</target>
-        <note>chat list item title</note>
+        <note>call status chat list item title</note>
       </trans-unit>
       <trans-unit id="connection established" xml:space="preserve">
         <source>connection established</source>
@@ -879,6 +959,26 @@ SimpleX серверы не могут получить доступ к ваше
         <target>удалено</target>
         <note>deleted chat item</note>
       </trans-unit>
+      <trans-unit id="end-to-end encrypted" xml:space="preserve">
+        <source>end-to-end encrypted</source>
+        <target>end-to-end зашифрованный звонок</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="ended %02d:%02d" xml:space="preserve">
+        <source>ended %1$d:%2$d</source>
+        <target>звонок завершён %1$d:%2$d</target>
+        <note>call status</note>
+      </trans-unit>
+      <trans-unit id="error" xml:space="preserve">
+        <source>error</source>
+        <target>ошибка соединения</target>
+        <note>call status</note>
+      </trans-unit>
+      <trans-unit id="in progress" xml:space="preserve">
+        <source>in progress</source>
+        <target>активный звонок</target>
+        <note>call status</note>
+      </trans-unit>
       <trans-unit id="invited to connect" xml:space="preserve">
         <source>invited to connect</source>
         <target>приглашение соединиться</target>
@@ -889,9 +989,34 @@ SimpleX серверы не могут получить доступ к ваше
         <target>курсив</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="missed" xml:space="preserve">
+        <source>missed</source>
+        <target>пропущенный звонок</target>
+        <note>call status</note>
+      </trans-unit>
+      <trans-unit id="no end-to-end encryption" xml:space="preserve">
+        <source>no end-to-end encryption</source>
+        <target>end-to-end шифрование не поддерживается</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="received answer…" xml:space="preserve">
+        <source>received answer…</source>
+        <target>получен ответ…</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="rejected" xml:space="preserve">
+        <source>rejected</source>
+        <target>отклоненный звонок</target>
+        <note>call status</note>
+      </trans-unit>
       <trans-unit id="secret" xml:space="preserve">
         <source>secret</source>
         <target>секрет</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="starting…" xml:space="preserve">
+        <source>starting…</source>
+        <target>инициализация…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="strike" xml:space="preserve">
@@ -913,6 +1038,16 @@ SimpleX серверы не могут получить доступ к ваше
         <source>via one-time link</source>
         <target>через одноразовую ссылку</target>
         <note>chat list item description</note>
+      </trans-unit>
+      <trans-unit id="waiting for answer…" xml:space="preserve">
+        <source>waiting for answer…</source>
+        <target>ожидается ответ…</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="waiting for confirmation…" xml:space="preserve">
+        <source>waiting for confirmation…</source>
+        <target>ожидается подтверждение…</target>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="wants to connect to you!" xml:space="preserve">
         <source>wants to connect to you!</source>
@@ -952,9 +1087,149 @@ SimpleX серверы не могут получить доступ к ваше
         <note>Bundle name</note>
       </trans-unit>
       <trans-unit id="NSCameraUsageDescription" xml:space="preserve">
-        <source>SimpleX needs camera access to scan QR codes to connect to other app users</source>
+        <source>SimpleX needs camera access to scan QR codes to connect to other users and for video calls.</source>
         <target>SimpleX использует камеру для сканирования QR кодов при соединении с другими пользователями</target>
         <note>Privacy - Camera Usage Description</note>
+      </trans-unit>
+      <trans-unit id="NSMicrophoneUsageDescription" xml:space="preserve">
+        <source>SimpleX needs microphone access for audio and video calls.</source>
+        <target>SimpleX использует микрофон для аудио и видео звонков.</target>
+        <note>Privacy - Microphone Usage Description</note>
+      </trans-unit>
+      <trans-unit id="NSPhotoLibraryAddUsageDescription" xml:space="preserve">
+        <source>SimpleX needs access to Photo Library for saving captured and received media</source>
+        <target>SimpleX использует доступ к Photo Library для сохранения сделанных и полученных фотографий</target>
+        <note>Privacy - Photo Library Additions Usage Description</note>
+      </trans-unit>
+    </body>
+  </file>
+  <file original="SimpleX NSE/en.lproj/InfoPlist.strings" datatype="plaintext" source-language="en" target-language="ru">
+    <header>
+      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="13.3" build-num="13E113"/>
+    </header>
+    <body>
+      <trans-unit id="CFBundleDisplayName" xml:space="preserve">
+        <source>SimpleX NSE</source>
+        <target>SimpleX NSE</target>
+        <note>Bundle display name</note>
+      </trans-unit>
+      <trans-unit id="CFBundleName" xml:space="preserve">
+        <source>SimpleX NSE</source>
+        <target>SimpleX NSE</target>
+        <note>Bundle name</note>
+      </trans-unit>
+      <trans-unit id="NSHumanReadableCopyright" xml:space="preserve">
+        <source>Copyright © 2022 SimpleX Chat. All rights reserved.</source>
+        <target>Copyright © 2022 SimpleX Chat. Все права зарезервированы.</target>
+        <note>Copyright (human-readable)</note>
+      </trans-unit>
+    </body>
+  </file>
+  <file original="SimpleX NSE/en.lproj/Localizable.strings" datatype="plaintext" source-language="en" target-language="ru">
+    <header>
+      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="13.3" build-num="13E113"/>
+    </header>
+    <body>
+      <trans-unit id="%@ is connected!" xml:space="preserve">
+        <source>%@ is connected!</source>
+        <target>%@ присоединен!</target>
+        <note>notification title</note>
+      </trans-unit>
+      <trans-unit id="%@ wants to connect!" xml:space="preserve">
+        <source>%@ wants to connect!</source>
+        <target>%@ хочет соединиться!</target>
+        <note>notification title</note>
+      </trans-unit>
+      <trans-unit id="Accept contact request from %@?" xml:space="preserve">
+        <source>Accept contact request from %@?</source>
+        <target>Принять запрос на соединение от %@?</target>
+        <note>notification body</note>
+      </trans-unit>
+      <trans-unit id="Incoming %@ call" xml:space="preserve">
+        <source>Incoming %@ call</source>
+        <target>Входящий звонок</target>
+        <note>notification body</note>
+      </trans-unit>
+      <trans-unit id="You can now send messages to %@" xml:space="preserve">
+        <source>You can now send messages to %@</source>
+        <target>Вы можете отправлять сообщения %@</target>
+        <note>notification body</note>
+      </trans-unit>
+      <trans-unit id="accepted" xml:space="preserve">
+        <source>accepted</source>
+        <target>принятый звонок</target>
+        <note>call status</note>
+      </trans-unit>
+      <trans-unit id="calling…" xml:space="preserve">
+        <source>calling…</source>
+        <target>входящий звонок…</target>
+        <note>call status</note>
+      </trans-unit>
+      <trans-unit id="connecting…" xml:space="preserve">
+        <source>connecting…</source>
+        <target>соединяется…</target>
+        <note>call status
+   chat list item title</note>
+      </trans-unit>
+      <trans-unit id="connection established" xml:space="preserve">
+        <source>connection established</source>
+        <target>соединение установлено</target>
+        <note>chat list item title (it should not be shown</note>
+      </trans-unit>
+      <trans-unit id="connection:%@" xml:space="preserve">
+        <source>connection:%@</source>
+        <target>connection:%@</target>
+        <note>connection information</note>
+      </trans-unit>
+      <trans-unit id="deleted" xml:space="preserve">
+        <source>deleted</source>
+        <target>удалено</target>
+        <note>deleted chat item</note>
+      </trans-unit>
+      <trans-unit id="ended %02d:%02d" xml:space="preserve">
+        <source>ended %1$d:%2$d</source>
+        <target>звонок завершён %1$d:%2$d</target>
+        <note>call status</note>
+      </trans-unit>
+      <trans-unit id="error" xml:space="preserve">
+        <source>error</source>
+        <target>ошибка соединения</target>
+        <note>call status</note>
+      </trans-unit>
+      <trans-unit id="in progress" xml:space="preserve">
+        <source>in progress</source>
+        <target>активный звонок</target>
+        <note>call status</note>
+      </trans-unit>
+      <trans-unit id="invited to connect" xml:space="preserve">
+        <source>invited to connect</source>
+        <target>приглашение соединиться</target>
+        <note>chat list item title</note>
+      </trans-unit>
+      <trans-unit id="missed" xml:space="preserve">
+        <source>missed</source>
+        <target>пропущенный звонок</target>
+        <note>call status</note>
+      </trans-unit>
+      <trans-unit id="rejected" xml:space="preserve">
+        <source>rejected</source>
+        <target>отклоненный звонок</target>
+        <note>call status</note>
+      </trans-unit>
+      <trans-unit id="via contact address link" xml:space="preserve">
+        <source>via contact address link</source>
+        <target>через ссылку-контакт</target>
+        <note>chat list item description</note>
+      </trans-unit>
+      <trans-unit id="via one-time link" xml:space="preserve">
+        <source>via one-time link</source>
+        <target>через одноразовую ссылку</target>
+        <note>chat list item description</note>
+      </trans-unit>
+      <trans-unit id="you shared one-time link" xml:space="preserve">
+        <source>you shared one-time link</source>
+        <target>вы создали одноразовую ссылку</target>
+        <note>chat list item description</note>
       </trans-unit>
     </body>
   </file>
