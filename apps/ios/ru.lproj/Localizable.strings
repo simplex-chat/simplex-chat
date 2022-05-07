@@ -128,7 +128,7 @@
 "Checking new messages..." = "Проверяются новые сообщения...";
 
 /* No comment provided by engineer. */
-"Choose file" = "Выберите файл";
+"Choose file" = "Выбрать файл";
 
 /* No comment provided by engineer. */
 "Choose from library" = "Выбрать из библиотеки";
@@ -161,7 +161,7 @@
 "Connect via one-time link?" = "Соединиться через одноразовую ссылку?";
 
 /* No comment provided by engineer. */
-"connected" = "соединено";
+"connected" = "соединение установлено";
 
 /* No comment provided by engineer. */
 "Connecting server…" = "Устанавливается соединение с сервером…";
@@ -306,7 +306,7 @@
 "Error: URL is invalid" = "Ошибка: неверная ссылка";
 
 /* No comment provided by engineer. */
-"File will be received when your contact is online, please wait or check later!" = "Файл будет принят, когда ваш контакт онлайн, подождите или проверьте позже!";
+"File will be received when your contact is online, please wait or check later!" = "Файл будет принят, когда ваш контакт будет в сети, подождите или проверьте позже!";
 
 /* No comment provided by engineer. */
 "Full name (optional)" = "Полное имя (не обязательно)";
@@ -339,7 +339,7 @@
 "Ignore" = "Не отвечать";
 
 /* No comment provided by engineer. */
-"Image will be received when your contact is online, please wait or check later!" = "Картинка будет принята, когда ваш контакт онлайн, подождите или проверьте позже!";
+"Image will be received when your contact is online, please wait or check later!" = "Изображение будет принято, когда ваш контакт будет в сети, подождите или проверьте позже!";
 
 /* call status */
 "in progress" = "активный звонок";
@@ -552,7 +552,7 @@
 "Waiting for file" = "Ожидается прием файла";
 
 /* No comment provided by engineer. */
-"Waiting for image" = "Ожидается прием картинки";
+"Waiting for image" = "Ожидается прием изображения";
 
 /* No comment provided by engineer. */
 "wants to connect to you!" = "хочет соединиться с вами!";
@@ -615,7 +615,7 @@
 "Your contact needs to be online for the connection to complete.\nYou can cancel this connection and remove the contact (and try later with a new link)." = "Ваш контакт должен быть в сети чтобы установить соединение.\nВы можете отменить соединение и удалить контакт (и попробовать позже с другой ссылкой).";
 
 /* No comment provided by engineer. */
-"Your contact sent a file that is larger than currently supported maximum size (%@)." = "Ваш контакт послал файл больше максимально разрешенного размера (%@).";
+"Your contact sent a file that is larger than currently supported maximum size (%@)." = "Ваш контакт отправил файл, размер которого превышает максимальный размер (%@).";
 
 /* No comment provided by engineer. */
 "Your profile is stored on your device and shared only with your contacts.\nSimpleX servers cannot see your profile." = "Ваш профиль хранится на вашем устройстве и отправляется только вашим контактам.\nSimpleX серверы не могут получить доступ к вашему профилю.";

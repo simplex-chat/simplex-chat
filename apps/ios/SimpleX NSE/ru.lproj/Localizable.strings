@@ -1,5 +1,5 @@
 /* notification title */
-"%@ is connected!" = "%@ присоединен!";
+"%@ is connected!" = "соединение с %@ установлено!";
 
 /* notification title */
 "%@ wants to connect!" = "%@ хочет соединиться!";
