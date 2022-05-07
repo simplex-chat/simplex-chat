@@ -1,16 +1,13 @@
 package chat.simplex.app.views.helpers
 
-import android.Manifest
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.graphics.*
 import android.net.Uri
 import android.provider.MediaStore
 import android.util.Base64
 import android.util.Log
-import android.widget.Toast
 import androidx.activity.compose.ManagedActivityResultLauncher
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContract
@@ -25,7 +22,6 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import chat.simplex.app.*
 import chat.simplex.app.R
@@ -126,6 +122,7 @@ class CustomTakePicturePreview: ActivityResultContract<Void?, Bitmap?>() {
     }
   }
 }
+
 //class GetGalleryContent: ActivityResultContracts.GetContent() {
 //  override fun createIntent(context: Context, input: String): Intent {
 //    return super.createIntent(context, input).apply {
@@ -145,10 +142,6 @@ fun rememberCameraLauncher(cb: (Bitmap?) -> Unit): ManagedActivityResultLauncher
   rememberLauncherForActivityResult(contract = CustomTakePicturePreview(), cb)
 
 @Composable
-fun rememberPermissionLauncher(cb: (Boolean) -> Unit): ManagedActivityResultLauncher<String, Boolean> =
-  rememberLauncherForActivityResult(contract = ActivityResultContracts.RequestPermission(), cb)
-
-@Composable
 fun GetImageBottomSheet(
   imageBitmap: MutableState<Bitmap?>,
   onImageChange: (Bitmap) -> Unit,
@@ -157,7 +150,6 @@ fun GetImageBottomSheet(
   hideBottomSheet: () -> Unit
 ) {
   val context = LocalContext.current
-  val isCameraSelected = remember { mutableStateOf(false) }
   val galleryLauncher = rememberGetContentLauncher { uri: Uri? ->
     if (uri != null) {
       val source = ImageDecoder.createSource(context.contentResolver, uri)
@@ -172,15 +164,6 @@ fun GetImageBottomSheet(
       onImageChange(bitmap)
     }
   }
-  val permissionLauncher = rememberPermissionLauncher { isGranted: Boolean ->
-    if (isGranted) {
-      if (isCameraSelected.value) cameraLauncher.launch(null)
-      else galleryLauncher.launch("image/*")
-      hideBottomSheet()
-    } else {
-      Toast.makeText(context, generalGetString(R.string.toast_permission_denied), Toast.LENGTH_SHORT).show()
-    }
-  }
   val filesLauncher = rememberGetContentLauncher { uri: Uri? ->
     if (uri != null && fileUri != null && onFileChange != null) {
       val fileSize = getFileSize(context, uri)
@@ -193,14 +176,6 @@ fun GetImageBottomSheet(
           String.format(generalGetString(R.string.maximum_supported_file_size), formatBytes(MAX_FILE_SIZE))
         )
       }
-    }
-  }
-  val filesPermissionLauncher = rememberPermissionLauncher { isGranted: Boolean ->
-    if (isGranted) {
-      filesLauncher.launch("*/*")
-      hideBottomSheet()
-    } else {
-      Toast.makeText(context, generalGetString(R.string.toast_permission_denied), Toast.LENGTH_SHORT).show()
     }
   }
 
@@ -219,40 +194,17 @@ fun GetImageBottomSheet(
       horizontalArrangement = Arrangement.SpaceEvenly
     ) {
       ActionButton(null, stringResource(R.string.use_camera_button), icon = Icons.Outlined.PhotoCamera) {
-        when (PackageManager.PERMISSION_GRANTED) {
-          ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) -> {
-            cameraLauncher.launch(null)
-            hideBottomSheet()
-          }
-          else -> {
-            isCameraSelected.value = true
-            permissionLauncher.launch(Manifest.permission.CAMERA)
-          }
-        }
+        cameraLauncher.launch(null)
+        hideBottomSheet()
       }
       ActionButton(null, stringResource(R.string.from_gallery_button), icon = Icons.Outlined.Collections) {
-        when (PackageManager.PERMISSION_GRANTED) {
-          ContextCompat.checkSelfPermission(context, Manifest.permission.READ_EXTERNAL_STORAGE) -> {
-            galleryLauncher.launch("image/*")
-            hideBottomSheet()
-          }
-          else -> {
-            isCameraSelected.value = false
-            permissionLauncher.launch(Manifest.permission.READ_EXTERNAL_STORAGE)
-          }
-        }
+        galleryLauncher.launch("image/*")
+        hideBottomSheet()
       }
       if (fileUri != null && onFileChange != null) {
         ActionButton(null, stringResource(R.string.choose_file), icon = Icons.Outlined.InsertDriveFile) {
-          when (PackageManager.PERMISSION_GRANTED) {
-            ContextCompat.checkSelfPermission(context, Manifest.permission.READ_EXTERNAL_STORAGE) -> {
-              filesLauncher.launch("*/*")
-              hideBottomSheet()
-            }
-            else -> {
-              filesPermissionLauncher.launch(Manifest.permission.READ_EXTERNAL_STORAGE)
-            }
-          }
+          filesLauncher.launch("*/*")
+          hideBottomSheet()
         }
       }
     }
