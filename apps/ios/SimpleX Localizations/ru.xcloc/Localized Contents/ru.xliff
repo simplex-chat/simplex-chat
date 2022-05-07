@@ -172,8 +172,8 @@
       </trans-unit>
       <trans-unit id="Choose file" xml:space="preserve">
         <source>Choose file</source>
-        <target>Выберите файл</target>
-        <note>No comment provided by engineer.</note>
+        <target>Выбрать файл</target>
+        <note>Attachment option to choose file.</note>
       </trans-unit>
       <trans-unit id="Choose from library" xml:space="preserve">
         <source>Choose from library</source>
@@ -417,7 +417,7 @@
       </trans-unit>
       <trans-unit id="File will be received when your contact is online, please wait or check later!" xml:space="preserve">
         <source>File will be received when your contact is online, please wait or check later!</source>
-        <target>Файл будет принят, когда ваш контакт онлайн, подождите или проверьте позже!</target>
+        <target>Файл будет принят, когда ваш контакт будет в сети, подождите или проверьте позже!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Full name (optional)" xml:space="preserve">
@@ -936,7 +936,7 @@ SimpleX серверы не могут получить доступ к ваше
       </trans-unit>
       <trans-unit id="connected" xml:space="preserve">
         <source>connected</source>
-        <target>соединено</target>
+        <target>соединение установлено</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="connecting…" xml:space="preserve">
@@ -1132,7 +1132,7 @@ SimpleX серверы не могут получить доступ к ваше
     <body>
       <trans-unit id="%@ is connected!" xml:space="preserve">
         <source>%@ is connected!</source>
-        <target>%@ присоединен!</target>
+        <target>соединение с %@ установлено!</target>
         <note>notification title</note>
       </trans-unit>
       <trans-unit id="%@ wants to connect!" xml:space="preserve">
