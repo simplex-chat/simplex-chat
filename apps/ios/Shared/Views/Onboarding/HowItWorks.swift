@@ -20,7 +20,7 @@ struct HowItWorks: View {
                 Text("Many people asked: *if SimpleX has no user identifiers, how can it deliver messages?*")
                 Text("To protect privacy, instead of user IDs used by all other platforms, SimpleX has identifiers for message queues, separate for each of your contacts.")
                 Text("You control through which server(s) **to receive** the messages, your contacts – the servers you use to message them.")
-                Text("Only client devices store user profiles, contacts, groups, and messages sent with 2-layer end-to-end encryption.")
+                Text("Only client devices store user profiles, contacts, groups, and messages sent with **2-layer end-to-end encryption**.")
                 Text("Read more in our GitHub repository.")
             }
             .padding(.bottom)
@@ -28,8 +28,7 @@ struct HowItWorks: View {
             Spacer()
 
             OnboardingActionButton()
-
-            Spacer()
+                .padding(.bottom, 8)
         }
         .lineLimit(10)
         .padding()

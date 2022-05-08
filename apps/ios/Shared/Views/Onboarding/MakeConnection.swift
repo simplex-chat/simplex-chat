@@ -73,6 +73,7 @@ struct MakeConnection: View {
                     Text("About SimpleX")
                 }
             }
+            .padding(.bottom, 8)
             .padding(.bottom)
         }
         .sheet(item: $actionSheet) { sheet in
