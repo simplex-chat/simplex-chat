@@ -9,42 +9,76 @@
 import SwiftUI
 
 struct MakeConnection: View {
-    @EnvironmentObject var chatModel: ChatModel
+    @EnvironmentObject var m: ChatModel
     @State private var connReq: String = ""
     @State private var actionSheet: NewChatAction?
 
     var body: some View {
         VStack(alignment: .leading) {
-            Text("Make a private connection")
-                .font(.largeTitle)
-                .padding(.bottom)
+            if let user = m.currentUser {
+                Text("Welcome \(user.displayName)!")
+                    .font(.largeTitle)
+                    .bold()
+                    .padding(.bottom)
+            } else {
+                Text("Make a private connection")
+                    .font(.largeTitle)
+                    .padding(.bottom)
+            }
 
-            Text("To make your first connection:")
+            Text("To make your first private connection, choose **one of the following**:")
                 .padding(.bottom)
 
             actionRow(
                 icon: "qrcode",
                 title: "Create 1-time link / QR code",
-                text: "Only one contact can connect via it – it's secure to share via any channel."
+                text: "It's secure to share - only one contact can use it."
             ) { addContactAction() }
 
             actionRow(
                 icon: "link",
                 title: "Paste the link you received",
-                text: "Or you can open the link in the browser and tap **Open in mobile** button."
+                text: "Or open the link in the browser and tap **Open in mobile**."
             ) { actionSheet = .pasteLink }
 
             actionRow(
                 icon: "qrcode.viewfinder",
-                title: "Scan QR code shown to you",
-                text: "In person or in the video call – this is the most secure way to connect."
+                title: "Scan contact's QR code",
+                text: "In person or via a video call – the most secure way to connect."
             ) { actionSheet = .scanQRCode }
+
+            Text("or")
+                .padding(.bottom)
+                .frame(maxWidth: .infinity)
+
+            actionRow(
+                icon: "number",
+                title: "Connect with the developers",
+                text: "To ask any questions and to receive SimpleX Chat updates."
+            ) { actionSheet = .scanQRCode }
+
+            Spacer()
+
+            Button {
+                withAnimation { m.onboardingStage = .step1_SimpleXInfo }
+            } label: {
+                HStack {
+                    Image(systemName: "lessthan")
+                    Text("About SimpleX")
+                }
+            }
+
         }
         .sheet(item: $actionSheet) { sheet in
             switch sheet {
             case .createLink: AddContactView(connReqInvitation: connReq)
             case .pasteLink: PasteToConnectView(openedSheet: $actionSheet)
             case .scanQRCode: ScanToConnectView(openedSheet: $actionSheet)
+            }
+        }
+        .onChange(of: actionSheet) { _ in
+            if actionSheet == nil && !m.chats.isEmpty {
+                withAnimation { m.onboardingStage = .onboardingComplete }
             }
         }
         .padding()
@@ -80,7 +114,7 @@ struct MakeConnection: View {
             })
             VStack(alignment: .leading) {
                 Button(title, action: action).font(.headline)
-                Text(text).padding(.bottom)
+                Text(text).font(.subheadline).padding(.bottom)
             }
         }
     }
@@ -88,6 +122,9 @@ struct MakeConnection: View {
 
 struct MakeConnection_Previews: PreviewProvider {
     static var previews: some View {
-        MakeConnection()
+        let chatModel = ChatModel()
+        chatModel.currentUser = User.sampleData
+        return MakeConnection()
+            .environmentObject(chatModel)
     }
 }

@@ -18,7 +18,7 @@ struct ConnectToDevelopers: View {
             Spacer()
 
             Button {
-                chatModel.onboardingStep = .step3a_MakeConnection
+                chatModel.onboardingStage = .step3a_MakeConnection
             } label: {
                 HStack {
                     Text("Connect")

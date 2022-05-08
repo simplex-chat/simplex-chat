@@ -9,7 +9,8 @@
 import SwiftUI
 
 struct SimpleXInfo: View {
-    @EnvironmentObject var chatModel: ChatModel
+    @EnvironmentObject var m: ChatModel
+    @State private var showHowItWorks = false
 
     var body: some View {
         GeometryReader { g in
@@ -23,65 +24,25 @@ struct SimpleXInfo: View {
                     .font(.title)
                     .padding(.bottom)
 
-                HStack(alignment: .top) {
-                    Text("🎭")
-                        .font(mediumEmojiFont)
-                        .frame(width: 40)
-                    VStack(alignment: .leading) {
-                        Text("Privacy redefined")
-                            .font(.headline)
-                        Text("The 1st platform that has no user identifiers – 100% private by design!")
-                            .lineLimit(3)
-                            .font(.subheadline)
-                    }
-                }
-                .padding(.bottom)
+                infoRow("🎭", "Privacy redefined",
+                        "The 1st platform that has no user identifiers – 100% private by design!")
+                infoRow("📭", "Immune to spam and abuse",
+                        "People can connect to you only via the links you share.")
+                infoRow("😎", "Decentralized",
+                        "Based on open-source protocol – anybody can run the servers.")
 
-                HStack(alignment: .top) {
-                    Text("📭")
-                        .font(mediumEmojiFont)
-                        .frame(width: 40)
-                    VStack(alignment: .leading) {
-                        Text("Immune to spam and abuse")
-                            .font(.headline)
-                        Text("People can connect to you only via the links you share.")
-                            .font(.subheadline)
-                    }
-                }
-                .padding(.bottom)
+                Spacer()
 
-                HStack(alignment: .top) {
-                    Text("😎")
-                        .font(mediumEmojiFont)
-                        .frame(width: 40)
-                    VStack(alignment: .leading) {
-                        Text("Decentralized")
-                            .font(.headline)
-                        Text("Based on open-source protocol – anybody can run the servers.")
-                            .font(.subheadline)
-                    }
+                if m.currentUser == nil {
+                    actionButton("Create your profile", onboarding: .step2_CreateProfile)
+                } else {
+                    actionButton("Make a private connection", onboarding: .step3a_MakeConnection)
                 }
-                .padding(.bottom)
 
                 Spacer()
 
                 Button {
-                    withAnimation {
-                        chatModel.onboardingStep = .step2_CreateProfile
-                    }
-                } label: {
-                    HStack {
-                        Text("Create your profile")
-                            .font(.title2)
-                        Image(systemName: "greaterthan")
-                    }
-                }
-                .frame(maxWidth: .infinity)
-
-                Spacer()
-
-                Button {
-
+                    showHowItWorks = true
                 } label: {
                     Label("How it works", systemImage: "info.circle")
                         .font(.subheadline)
@@ -89,8 +50,36 @@ struct SimpleXInfo: View {
                 .padding(.bottom, 8)
                 .frame(maxWidth: .infinity)
             }
+            .sheet(isPresented: $showHowItWorks) { HowItWorks() }
         }
         .padding()
+    }
+
+    private func infoRow(_ emoji: String, _ title: LocalizedStringKey, _ text: LocalizedStringKey) -> some View {
+        HStack(alignment: .top) {
+            Text(emoji)
+                .font(mediumEmojiFont)
+                .frame(width: 40)
+            VStack(alignment: .leading) {
+                Text(title).font(.headline)
+                Text(text).font(.subheadline)
+            }
+        }
+        .padding(.bottom)
+    }
+
+    private func actionButton(_ label: LocalizedStringKey, onboarding: OnboardingStage) -> some View {
+        Button {
+            withAnimation {
+                m.onboardingStage = onboarding
+            }
+        } label: {
+            HStack {
+                Text(label).font(.title2)
+                Image(systemName: "greaterthan")
+            }
+        }
+        .frame(maxWidth: .infinity)
     }
 }
 

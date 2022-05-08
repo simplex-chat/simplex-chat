@@ -9,29 +9,31 @@
 import SwiftUI
 
 struct OnboardingView: View {
-    var onboardingStep: OnboardingStep
+    var onboarding: OnboardingStage
 
     var body: some View {
-        switch onboardingStep {
+        switch onboarding {
         case .step1_SimpleXInfo: SimpleXInfo()
         case .step2_CreateProfile: CreateProfile()
         case .step3a_MakeConnection: MakeConnection()
         case .step3b_ConnectViaLink: ConnectViaLink()
         case .step3c_ConnectToDevelopers: ConnectToDevelopers()
+        case .onboardingComplete: EmptyView()
         }
     }
 }
 
-enum OnboardingStep {
+enum OnboardingStage {
     case step1_SimpleXInfo
     case step2_CreateProfile
     case step3a_MakeConnection
     case step3b_ConnectViaLink
     case step3c_ConnectToDevelopers
+    case onboardingComplete
 }
 
 struct OnboardingStepsView_Previews: PreviewProvider {
     static var previews: some View {
-        OnboardingView(onboardingStep: .step1_SimpleXInfo)
+        OnboardingView(onboarding: .step1_SimpleXInfo)
     }
 }

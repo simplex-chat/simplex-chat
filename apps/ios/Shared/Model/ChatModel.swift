@@ -11,7 +11,7 @@ import Combine
 import SwiftUI
 
 final class ChatModel: ObservableObject {
-    @Published var onboardingStep: OnboardingStep?
+    @Published var onboardingStage: OnboardingStage?
     @Published var currentUser: User?
     // list of chat "previews"
     @Published var chats: [Chat] = []

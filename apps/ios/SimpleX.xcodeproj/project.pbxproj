@@ -65,6 +65,7 @@
 		5CB0BA942827141F00B3292C /* ConnectViaLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB0BA932827141F00B3292C /* ConnectViaLink.swift */; };
 		5CB0BA962827143500B3292C /* MakeConnection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB0BA952827143500B3292C /* MakeConnection.swift */; };
 		5CB0BA982827146200B3292C /* ConnectToDevelopers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB0BA972827146200B3292C /* ConnectToDevelopers.swift */; };
+		5CB0BA9A2827FD8800B3292C /* HowItWorks.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB0BA992827FD8800B3292C /* HowItWorks.swift */; };
 		5CB924D427A853F100ACCCDD /* SettingsButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB924D327A853F100ACCCDD /* SettingsButton.swift */; };
 		5CB924D727A8563F00ACCCDD /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB924D627A8563F00ACCCDD /* SettingsView.swift */; };
 		5CB924E127A867BA00ACCCDD /* UserProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB924E027A867BA00ACCCDD /* UserProfile.swift */; };
@@ -206,6 +207,7 @@
 		5CB0BA932827141F00B3292C /* ConnectViaLink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectViaLink.swift; sourceTree = "<group>"; };
 		5CB0BA952827143500B3292C /* MakeConnection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MakeConnection.swift; sourceTree = "<group>"; };
 		5CB0BA972827146200B3292C /* ConnectToDevelopers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectToDevelopers.swift; sourceTree = "<group>"; };
+		5CB0BA992827FD8800B3292C /* HowItWorks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HowItWorks.swift; sourceTree = "<group>"; };
 		5CB924D327A853F100ACCCDD /* SettingsButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsButton.swift; sourceTree = "<group>"; };
 		5CB924D627A8563F00ACCCDD /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		5CB924E027A867BA00ACCCDD /* UserProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserProfile.swift; sourceTree = "<group>"; };
@@ -441,6 +443,7 @@
 				5CB0BA952827143500B3292C /* MakeConnection.swift */,
 				5CB0BA932827141F00B3292C /* ConnectViaLink.swift */,
 				5CB0BA972827146200B3292C /* ConnectToDevelopers.swift */,
+				5CB0BA992827FD8800B3292C /* HowItWorks.swift */,
 			);
 			path = Onboarding;
 			sourceTree = "<group>";
@@ -686,6 +689,7 @@
 				5CDCAD7728188D3800503DA2 /* ChatTypes.swift in Sources */,
 				5C36027327F47AD5009F19D9 /* AppDelegate.swift in Sources */,
 				5CB924E127A867BA00ACCCDD /* UserProfile.swift in Sources */,
+				5CB0BA9A2827FD8800B3292C /* HowItWorks.swift in Sources */,
 				5CDCAD5328186F9500503DA2 /* GroupDefaults.swift in Sources */,
 				5C13730B28156D2700F43030 /* ContactConnectionView.swift in Sources */,
 				5CE4407927ADB701007B033A /* EmojiItemView.swift in Sources */,

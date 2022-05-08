@@ -13,16 +13,19 @@ struct ContentView: View {
     @State private var showNotificationAlert = false
 
     var body: some View {
-        if let step = chatModel.onboardingStep {
-            OnboardingView(onboardingStep: step)
-        } else if let user = chatModel.currentUser {
-            ChatListView(user: user)
-                .onAppear {
-                    NtfManager.shared.requestAuthorization(onDeny: {
-                        alertManager.showAlert(notificationAlert())
-                    })
-                }
-                .alert(isPresented: $alertManager.presentAlert) { alertManager.alertView! }
+        if let step = chatModel.onboardingStage {
+            if case .onboardingComplete = step,
+               let user = chatModel.currentUser {
+                ChatListView(user: user)
+                    .onAppear {
+                        NtfManager.shared.requestAuthorization(onDeny: {
+                            alertManager.showAlert(notificationAlert())
+                        })
+                    }
+                    .alert(isPresented: $alertManager.presentAlert) { alertManager.alertView! }
+            } else {
+                OnboardingView(onboarding: step)
+            }
         }
     }
 

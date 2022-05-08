@@ -429,7 +429,7 @@ func initializeChat() {
         let m = ChatModel.shared
         m.currentUser = try apiGetActiveUser()
         if m.currentUser == nil {
-            m.onboardingStep = .step1_SimpleXInfo
+            m.onboardingStage = .step1_SimpleXInfo
         } else {
             startChat()
         }
@@ -447,11 +447,11 @@ func startChat() {
         m.userSMPServers = try getUserSMPServers()
         m.chats = try apiGetChats()
         withAnimation {
-            m.onboardingStep = m.appOpenUrl != nil
+            m.onboardingStage = m.appOpenUrl != nil
                                 ? .step3b_ConnectViaLink
                                 : m.chats.isEmpty
                                 ? .step3a_MakeConnection
-                                : nil
+                                : .onboardingComplete
         }
         ChatReceiver.shared.start()
     } catch {

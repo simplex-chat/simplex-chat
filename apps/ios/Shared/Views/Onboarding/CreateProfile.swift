@@ -31,67 +31,68 @@ struct CreateProfile: View {
                             .foregroundColor(.red)
                             .padding(.top, 4)
                     }
-                    TextField("Display name", text: $displayName)
-                        .textInputAutocapitalization(.never)
-                        .disableAutocorrection(true)
+                    textField("Display name", text: $displayName)
                         .focused($focusDisplayName)
-                        .padding(.leading, 28)
-                        .padding(.bottom, 2)
                         .submitLabel(.next)
                         .onSubmit {
                             if canCreateProfile() { focusFullName = true }
                             else { focusDisplayName = true }
                         }
-                        .toolbar {
-                            ToolbarItem(placement: .keyboard) {
-                                Button("Create") { createProfile() }
-                                .disabled(!canCreateProfile())
-                            }
-                        }
                 }
-                .padding(.bottom)
-                TextField("Full name (optional)", text: $fullName)
-                    .textInputAutocapitalization(.never)
-                    .disableAutocorrection(true)
+                textField("Full name (optional)", text: $fullName)
                     .focused($focusFullName)
-                    .padding(.leading, 28)
-                    .padding(.bottom)
                     .submitLabel(.go)
                     .onSubmit {
                         if canCreateProfile() { createProfile() }
                         else { focusFullName = true }
                     }
-                    .toolbar {
-                        ToolbarItem(placement: .keyboard) {
-                            Button("Create") { createProfile() }
-                            .disabled(!canCreateProfile())
+
+                Spacer()
+
+                HStack {
+                    Button {
+                        hideKeyboard()
+                        withAnimation { m.onboardingStage = .step1_SimpleXInfo }
+                    } label: {
+                        HStack {
+                            Image(systemName: "lessthan")
+                            Text("About SimpleX")
                         }
                     }
-
-                VStack(alignment: .leading) {
-                    Button("Create") { createProfile() }
-                    .disabled(!canCreateProfile())
-                    .padding(.bottom)
 
                     Spacer()
 
-                    Button {
-                        hideKeyboard()
-                        withAnimation {
-                            m.onboardingStep = .step1_SimpleXInfo
+                    HStack {
+                        Button {
+                            createProfile()
+                        } label: {
+                            Text("Create")
+                            Image(systemName: "greaterthan")
                         }
-                    } label: {
-                        Image(systemName: "lessthan")
-                        Text("About SimpleX")
+                        .disabled(!canCreateProfile())
                     }
                 }
-                .padding(.bottom, 8)
             }
             .onAppear() {
                 focusDisplayName = true
             }
+            .toolbar {
+                ToolbarItem(placement: .keyboard) {
+                    Button("Create") { createProfile() }
+//                    .disabled(!canCreateProfile())
+                }
+            }
+
         }
         .padding()
+    }
+
+    func textField(_ placeholder: LocalizedStringKey, text: Binding<String>) -> some View {
+        TextField(placeholder, text: text)
+            .textInputAutocapitalization(.never)
+            .disableAutocorrection(true)
+            .padding(.leading, 28)
+            .padding(.bottom)
     }
 
     func createProfile() {
@@ -104,7 +105,7 @@ struct CreateProfile: View {
             m.currentUser = try apiCreateActiveUser(profile)
             startChat()
             withAnimation {
-                m.onboardingStep = m.appOpenUrl == nil
+                m.onboardingStage = m.appOpenUrl == nil
                                     ? .step3a_MakeConnection
                                     : .step3b_ConnectViaLink
             }
@@ -123,7 +124,7 @@ struct CreateProfile: View {
     }
 
     func canCreateProfile() -> Bool {
-        validDisplayName(displayName) && displayName != ""
+        displayName != "" && validDisplayName(displayName)
     }
 }
 

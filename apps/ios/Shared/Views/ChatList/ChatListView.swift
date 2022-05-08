@@ -21,13 +21,9 @@ struct ChatListView: View {
     var body: some View {
         let v = NavigationView {
             List {
-                if chatModel.chats.isEmpty {
-                    ChatHelp(showSettings: $showSettings)
-                } else {
-                    ForEach(filteredChats()) { chat in
-                        ChatListNavLink(chat: chat, showCallView: $showCallView)
-                            .padding(.trailing, -16)
-                    }
+                ForEach(filteredChats()) { chat in
+                    ChatListNavLink(chat: chat, showCallView: $showCallView)
+                        .padding(.trailing, -16)
                 }
             }
             .onChange(of: chatModel.chatId) { _ in
@@ -44,7 +40,7 @@ struct ChatListView: View {
             }
             .offset(x: -8)
             .listStyle(.plain)
-            .navigationTitle(chatModel.chats.isEmpty ? "Welcome \(user.displayName)!" : "Your chats")
+            .navigationTitle("Your chats")
             .navigationBarTitleDisplayMode(chatModel.chats.count > 8 ? .inline : .large)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
