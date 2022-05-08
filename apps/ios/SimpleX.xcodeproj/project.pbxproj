@@ -62,7 +62,6 @@
 		5CB0BA8E2827126500B3292C /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB0BA8D2827126500B3292C /* OnboardingView.swift */; };
 		5CB0BA90282713D900B3292C /* SimpleXInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB0BA8F282713D900B3292C /* SimpleXInfo.swift */; };
 		5CB0BA92282713FD00B3292C /* CreateProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB0BA91282713FD00B3292C /* CreateProfile.swift */; };
-		5CB0BA942827141F00B3292C /* ConnectViaLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB0BA932827141F00B3292C /* ConnectViaLink.swift */; };
 		5CB0BA962827143500B3292C /* MakeConnection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB0BA952827143500B3292C /* MakeConnection.swift */; };
 		5CB0BA982827146200B3292C /* ConnectToDevelopers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB0BA972827146200B3292C /* ConnectToDevelopers.swift */; };
 		5CB0BA9A2827FD8800B3292C /* HowItWorks.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB0BA992827FD8800B3292C /* HowItWorks.swift */; };
@@ -204,7 +203,6 @@
 		5CB0BA8D2827126500B3292C /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		5CB0BA8F282713D900B3292C /* SimpleXInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimpleXInfo.swift; sourceTree = "<group>"; };
 		5CB0BA91282713FD00B3292C /* CreateProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateProfile.swift; sourceTree = "<group>"; };
-		5CB0BA932827141F00B3292C /* ConnectViaLink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectViaLink.swift; sourceTree = "<group>"; };
 		5CB0BA952827143500B3292C /* MakeConnection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MakeConnection.swift; sourceTree = "<group>"; };
 		5CB0BA972827146200B3292C /* ConnectToDevelopers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectToDevelopers.swift; sourceTree = "<group>"; };
 		5CB0BA992827FD8800B3292C /* HowItWorks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HowItWorks.swift; sourceTree = "<group>"; };
@@ -441,7 +439,6 @@
 				5CB0BA8F282713D900B3292C /* SimpleXInfo.swift */,
 				5CB0BA91282713FD00B3292C /* CreateProfile.swift */,
 				5CB0BA952827143500B3292C /* MakeConnection.swift */,
-				5CB0BA932827141F00B3292C /* ConnectViaLink.swift */,
 				5CB0BA972827146200B3292C /* ConnectToDevelopers.swift */,
 				5CB0BA992827FD8800B3292C /* HowItWorks.swift */,
 			);
@@ -713,7 +710,6 @@
 				5C9FD96B27A56D4D0075386C /* JSON.swift in Sources */,
 				5C9FD96E27A5D6ED0075386C /* SendMessageView.swift in Sources */,
 				5CC1C99227A6C7F5000D9FF6 /* QRCode.swift in Sources */,
-				5CB0BA942827141F00B3292C /* ConnectViaLink.swift in Sources */,
 				5C116CDC27AABE0400E66D01 /* ContactRequestView.swift in Sources */,
 				5CB9250D27A9432000ACCCDD /* ChatListNavLink.swift in Sources */,
 				649BCDA0280460FD00C3A862 /* ComposeImageView.swift in Sources */,

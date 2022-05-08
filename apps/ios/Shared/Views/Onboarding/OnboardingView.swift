@@ -9,21 +9,13 @@
 import SwiftUI
 
 struct OnboardingView: View {
-    @EnvironmentObject var m: ChatModel
     var onboarding: OnboardingStage
 
     var body: some View {
         switch onboarding {
         case .step1_SimpleXInfo: SimpleXInfo()
         case .step2_CreateProfile: CreateProfile()
-        case .step3a_MakeConnection: MakeConnection()
-        case .step3b_ConnectViaLink:
-            if let appOpenUrl = m.appOpenUrl {
-                ConnectViaLink(appOpenUrl: appOpenUrl)
-            } else {
-                MakeConnection()
-            }
-        case .step3c_ConnectToDevelopers: ConnectToDevelopers()
+        case .step3_MakeConnection: MakeConnection()
         case .onboardingComplete: EmptyView()
         }
     }
@@ -32,9 +24,7 @@ struct OnboardingView: View {
 enum OnboardingStage {
     case step1_SimpleXInfo
     case step2_CreateProfile
-    case step3a_MakeConnection
-    case step3b_ConnectViaLink
-    case step3c_ConnectToDevelopers
+    case step3_MakeConnection
     case onboardingComplete
 }
 

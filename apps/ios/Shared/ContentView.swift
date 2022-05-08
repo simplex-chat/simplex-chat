@@ -13,20 +13,22 @@ struct ContentView: View {
     @State private var showNotificationAlert = false
 
     var body: some View {
-        if let step = chatModel.onboardingStage {
-            if case .onboardingComplete = step,
-               let user = chatModel.currentUser {
-                ChatListView(user: user)
+        ZStack {
+            if let step = chatModel.onboardingStage {
+                if case .onboardingComplete = step,
+                   let user = chatModel.currentUser {
+                    ChatListView(user: user)
                     .onAppear {
                         NtfManager.shared.requestAuthorization(onDeny: {
                             alertManager.showAlert(notificationAlert())
                         })
                     }
-                    .alert(isPresented: $alertManager.presentAlert) { alertManager.alertView! }
-            } else {
-                OnboardingView(onboarding: step)
+                } else {
+                    OnboardingView(onboarding: step)
+                }
             }
         }
+        .alert(isPresented: $alertManager.presentAlert) { alertManager.alertView! }
     }
 
     func notificationAlert() -> Alert {
@@ -40,6 +42,37 @@ struct ContentView: View {
              },
              secondaryButton: .cancel()
          )
+    }
+}
+
+func connectViaUrl() {
+    let m = ChatModel.shared
+    if let url = m.appOpenUrl {
+        m.appOpenUrl = nil
+        AlertManager.shared.showAlert(connectViaUrlAlert(url))
+    }
+}
+
+func connectViaUrlAlert(_ url: URL) -> Alert {
+    var path = url.path
+    logger.debug("ChatListView.connectViaUrlAlert path: \(path)")
+    if (path == "/contact" || path == "/invitation") {
+        path.removeFirst()
+        let action: ConnReqType = path == "contact" ? .contact : .invitation
+        let link = url.absoluteString.replacingOccurrences(of: "///\(path)", with: "/\(path)")
+        let title: LocalizedStringKey
+        if case .contact = action { title = "Connect via contact link?" }
+        else { title = "Connect via one-time link?" }
+        return Alert(
+            title: Text(title),
+            message: Text("Your profile will be sent to the contact that you received this link from"),
+            primaryButton: .default(Text("Connect")) {
+                connectViaLink(link)
+            },
+            secondaryButton: .cancel()
+        )
+    } else {
+        return Alert(title: Text("Error: URL is invalid"))
     }
 }
 

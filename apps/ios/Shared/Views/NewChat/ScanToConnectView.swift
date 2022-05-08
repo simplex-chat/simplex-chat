@@ -13,25 +13,23 @@ struct ScanToConnectView: View {
     @Binding var openedSheet: NewChatAction?
 
     var body: some View {
-        VStack {
+        VStack(alignment: .leading) {
             Text("Scan QR code")
                 .font(.title)
-                .padding(.bottom)
+                .padding(.vertical)
             Text("Your chat profile will be sent to your contact")
-                .font(.title2)
-                .multilineTextAlignment(.center)
-                .padding()
+                .padding(.bottom)
             ZStack {
                 CodeScannerView(codeTypes: [.qr], completion: processQRCode)
                     .aspectRatio(1, contentMode: .fit)
                     .border(.gray)
             }
-            .padding(12)
+            .padding(.bottom)
             Text("If you cannot meet in person, you can **scan QR code in the video call**, or your contact can share an invitation link.")
-                .font(.subheadline)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal)
+                .padding(.bottom)
         }
+        .padding()
+        .frame(maxHeight: .infinity, alignment: .top)
     }
 
     func processQRCode(_ resp: Result<ScanResult, ScanError>) {

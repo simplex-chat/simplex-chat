@@ -15,11 +15,13 @@ struct MakeConnection: View {
 
     var body: some View {
         VStack(alignment: .leading) {
+            SettingsButton().padding(.bottom, 1)
+
             if let user = m.currentUser {
                 Text("Welcome \(user.displayName)!")
                     .font(.largeTitle)
                     .bold()
-                    .padding(.bottom)
+                    .padding(.bottom, 8)
             } else {
                 Text("Make a private connection")
                     .font(.largeTitle)
@@ -55,7 +57,11 @@ struct MakeConnection: View {
                 icon: "number",
                 title: "Connect with the developers",
                 text: "To ask any questions and to receive SimpleX Chat updates."
-            ) { actionSheet = .scanQRCode }
+            ) {
+                DispatchQueue.main.async {
+                    UIApplication.shared.open(simplexTeamURL)
+                }
+            }
 
             Spacer()
 
@@ -67,7 +73,7 @@ struct MakeConnection: View {
                     Text("About SimpleX")
                 }
             }
-
+            .padding(.bottom)
         }
         .sheet(item: $actionSheet) { sheet in
             switch sheet {
@@ -76,21 +82,21 @@ struct MakeConnection: View {
             case .scanQRCode: ScanToConnectView(openedSheet: $actionSheet)
             }
         }
-        .onChange(of: actionSheet) { _ in
-            if actionSheet == nil && !m.chats.isEmpty {
-                withAnimation { m.onboardingStage = .onboardingComplete }
-            }
-        }
-        .onChange(of: m.chats.isEmpty) { empty in
-            if actionSheet == nil && !empty {
-                withAnimation { m.onboardingStage = .onboardingComplete }
-            }
-        }
-        .padding()
+        .onChange(of: actionSheet) { _ in checkOnboarding() }
+        .onChange(of: m.chats.isEmpty) { _ in checkOnboarding() }
+        .onChange(of: m.appOpenUrl) { _ in connectViaUrl() }
+        .onAppear() { connectViaUrl() }
+        .padding(.horizontal)
         .frame(maxHeight: .infinity, alignment: .top)
     }
 
-    func addContactAction() {
+    private func checkOnboarding() {
+        if actionSheet == nil && !m.chats.isEmpty {
+            withAnimation { m.onboardingStage = .onboardingComplete }
+        }
+    }
+
+    private func addContactAction() {
         do {
             connReq = try apiAddContact()
             actionSheet = .createLink

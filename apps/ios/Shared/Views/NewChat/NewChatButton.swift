@@ -78,7 +78,7 @@ func connectViaLink(_ connectionLink: String, _ openedSheet: Binding<NewChatActi
 }
 
 func connectionErrorAlert(_ error: Error) {
-    AlertManager.shared.showAlertMsg(title: "Connection error", message: "Error: \(error.localizedDescription)")
+    AlertManager.shared.showAlertMsg(title: "Connection error", message: "Error: \(responseError(error))")
 }
 
 func connectionReqSentAlert(_ type: ConnReqType) {

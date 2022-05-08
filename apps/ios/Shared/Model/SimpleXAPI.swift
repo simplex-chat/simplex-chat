@@ -262,6 +262,16 @@ func apiConnect(connReq: String) async throws -> ConnReqType? {
             message: "Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.\nTo connect, please ask your contact to create another connection link and check that you have a stable network connection."
         )
         return nil
+    case let .chatCmdError(.errorAgent(.INTERNAL(internalErr))):
+        if internalErr == "SEUniqueID" {
+            am.showAlertMsg(
+                title: "Already connected?",
+                message: "It seems like you are already connected via this link. If it is not the case, there was an error (\(responseError(r)))."
+            )
+            return nil
+        } else {
+            throw r
+        }
     default: throw r
     }
 }
@@ -448,12 +458,9 @@ func startChat() {
         m.userAddress = try apiGetUserAddress()
         m.userSMPServers = try getUserSMPServers()
         m.chats = try apiGetChats()
-        print(m.appOpenUrl)
         withAnimation {
-            m.onboardingStage = m.appOpenUrl != nil
-                                ? .step3b_ConnectViaLink
-                                : m.chats.isEmpty
-                                ? .step3a_MakeConnection
+            m.onboardingStage = m.chats.isEmpty
+                                ? .step3_MakeConnection
                                 : .onboardingComplete
         }
         ChatReceiver.shared.start()

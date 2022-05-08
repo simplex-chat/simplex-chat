@@ -104,11 +104,7 @@ struct CreateProfile: View {
         do {
             m.currentUser = try apiCreateActiveUser(profile)
             startChat()
-            withAnimation {
-                m.onboardingStage = m.appOpenUrl == nil
-                                    ? .step3a_MakeConnection
-                                    : .step3b_ConnectViaLink
-            }
+            withAnimation { m.onboardingStage = .step3_MakeConnection }
 
         } catch {
             fatalError("Failed to create user: \(error)")
