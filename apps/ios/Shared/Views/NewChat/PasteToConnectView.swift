@@ -9,7 +9,7 @@
 import SwiftUI
 
 struct PasteToConnectView: View {
-    @Binding var openedSheet: Bool
+    @Binding var openedSheet: NewChatAction?
     @State private var connectionLink: String = ""
 
     var body: some View {
@@ -72,7 +72,7 @@ struct PasteToConnectView: View {
 
 struct PasteToConnectView_Previews: PreviewProvider {
     static var previews: some View {
-        @State var openedSheet: Bool = true
+        @State var openedSheet: NewChatAction? = nil
         return PasteToConnectView(openedSheet: $openedSheet)
     }
 }

@@ -18,7 +18,6 @@ struct ContentView: View {
         } else if let user = chatModel.currentUser {
             ChatListView(user: user)
                 .onAppear {
-                    ChatReceiver.shared.start()
                     NtfManager.shared.requestAuthorization(onDeny: {
                         alertManager.showAlert(notificationAlert())
                     })

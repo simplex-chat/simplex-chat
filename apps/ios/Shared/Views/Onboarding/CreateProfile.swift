@@ -10,21 +10,20 @@ import SwiftUI
 
 struct CreateProfile: View {
     @EnvironmentObject var m: ChatModel
-    @State var displayName: String = ""
-    @State var fullName: String = ""
+    @State private var displayName: String = ""
+    @State private var fullName: String = ""
+    @FocusState private var focusDisplayName
+    @FocusState private var focusFullName
 
     var body: some View {
         GeometryReader { g in
             VStack(alignment: .leading) {
-                Image("logo")
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(width: g.size.width * 0.7)
-                    .padding(.bottom)
-                Text("Create profile")
+                Text("Create your profile")
                     .font(.largeTitle)
                     .padding(.bottom, 4)
-                Text("(shared only with your contacts)")
+                Text("Your profile, contacts and delivered messages are stored on your device.")
+                    .padding(.bottom, 4)
+                Text("The profile is only shared with your contacts.")
                     .padding(.bottom)
                 ZStack(alignment: .topLeading) {
                     if !validDisplayName(displayName) {
@@ -35,57 +34,96 @@ struct CreateProfile: View {
                     TextField("Display name", text: $displayName)
                         .textInputAutocapitalization(.never)
                         .disableAutocorrection(true)
+                        .focused($focusDisplayName)
                         .padding(.leading, 28)
                         .padding(.bottom, 2)
+                        .submitLabel(.next)
+                        .onSubmit {
+                            if canCreateProfile() { focusFullName = true }
+                            else { focusDisplayName = true }
+                        }
+                        .toolbar {
+                            ToolbarItem(placement: .keyboard) {
+                                Button("Create") { createProfile() }
+                                .disabled(!canCreateProfile())
+                            }
+                        }
                 }
                 .padding(.bottom)
                 TextField("Full name (optional)", text: $fullName)
                     .textInputAutocapitalization(.never)
                     .disableAutocorrection(true)
+                    .focused($focusFullName)
                     .padding(.leading, 28)
-                    .padding(.bottom, 48)
-
-                HStack {
-                    Button {
-                        m.onboardingStep = .step1_SimpleXInfo
-                    } label: {
-                        Image(systemName: "lessthan")
-                        Text("Back")
-                            .font(.title2)
+                    .padding(.bottom)
+                    .submitLabel(.go)
+                    .onSubmit {
+                        if canCreateProfile() { createProfile() }
+                        else { focusFullName = true }
                     }
+                    .toolbar {
+                        ToolbarItem(placement: .keyboard) {
+                            Button("Create") { createProfile() }
+                            .disabled(!canCreateProfile())
+                        }
+                    }
+
+                VStack(alignment: .leading) {
+                    Button("Create") { createProfile() }
+                    .disabled(!canCreateProfile())
+                    .padding(.bottom)
 
                     Spacer()
 
                     Button {
-                        let profile = Profile(
-                            displayName: displayName,
-                            fullName: fullName
-                        )
-                        do {
-                            m.currentUser = try apiCreateActiveUser(profile)
-                            if m.appOpenUrl == nil {
-                                m.onboardingStep = .step3a_MakeConnection
-                            } else {
-                                m.onboardingStep = .step3b_ConnectViaLink
-                            }
-
-                        } catch {
-                            fatalError("Failed to create user: \(error)")
+                        hideKeyboard()
+                        withAnimation {
+                            m.onboardingStep = .step1_SimpleXInfo
                         }
                     } label: {
-                        Text("Create")
-                            .font(.title2)
-                        Image(systemName: "greaterthan")
+                        Image(systemName: "lessthan")
+                        Text("About SimpleX")
                     }
-                    .disabled(!validDisplayName(displayName) || displayName == "")
                 }
+                .padding(.bottom, 8)
             }
-            .padding()
+            .onAppear() {
+                focusDisplayName = true
+            }
         }
+        .padding()
+    }
+
+    func createProfile() {
+        hideKeyboard()
+        let profile = Profile(
+            displayName: displayName,
+            fullName: fullName
+        )
+        do {
+            m.currentUser = try apiCreateActiveUser(profile)
+            startChat()
+            withAnimation {
+                m.onboardingStep = m.appOpenUrl == nil
+                                    ? .step3a_MakeConnection
+                                    : .step3b_ConnectViaLink
+            }
+
+        } catch {
+            fatalError("Failed to create user: \(error)")
+        }
+    }
+
+    func hideKeyboard() {
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
     }
 
     func validDisplayName(_ name: String) -> Bool {
         name.firstIndex(of: " ") == nil
+    }
+
+    func canCreateProfile() -> Bool {
+        validDisplayName(displayName) && displayName != ""
     }
 }
 

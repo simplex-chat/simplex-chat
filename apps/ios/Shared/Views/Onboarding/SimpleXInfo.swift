@@ -28,56 +28,47 @@ struct SimpleXInfo: View {
                         .font(mediumEmojiFont)
                         .frame(width: 40)
                     VStack(alignment: .leading) {
-                        Text("World's 1st platform without IDs")
+                        Text("Privacy redefined")
                             .font(.headline)
-                        Text("No phones or any other user identifiers – 100% private by design!")
+                        Text("The 1st platform that has no user identifiers – 100% private by design!")
+                            .lineLimit(3)
                             .font(.subheadline)
-                            .padding(.bottom, 8)
                     }
                 }
-
-                HStack(alignment: .top) {
-                    Text("😎")
-                        .font(mediumEmojiFont)
-                        .frame(width: 40)
-                    VStack(alignment: .leading) {
-                        Text("Immune to spam and abuse")
-                            .font(.headline)
-                        Text("People can connect to you only via your one-time or long-term link you share.")
-                            .font(.subheadline)
-                            .padding(.bottom, 8)
-                    }
-                }
+                .padding(.bottom)
 
                 HStack(alignment: .top) {
                     Text("📭")
                         .font(mediumEmojiFont)
                         .frame(width: 40)
                     VStack(alignment: .leading) {
-                        Text("Open and decentralized")
+                        Text("Immune to spam and abuse")
                             .font(.headline)
-                        Text("Your profile, contacts and delivered messages are stored only on your device.")
+                        Text("People can connect to you only via the links you share.")
                             .font(.subheadline)
-                            .padding(.bottom, 8)
                     }
                 }
+                .padding(.bottom)
 
                 HStack(alignment: .top) {
-                    Text("🔐")
+                    Text("😎")
                         .font(mediumEmojiFont)
                         .frame(width: 40)
                     VStack(alignment: .leading) {
-                        Text("More secure")
+                        Text("Decentralized")
                             .font(.headline)
-                        Text("2-layer end-to-end encryption for the privacy of messages and meta-data")
+                        Text("Based on open-source protocol – anybody can run the servers.")
                             .font(.subheadline)
                     }
                 }
+                .padding(.bottom)
 
                 Spacer()
 
                 Button {
-                    chatModel.onboardingStep = .step2_CreateProfile
+                    withAnimation {
+                        chatModel.onboardingStep = .step2_CreateProfile
+                    }
                 } label: {
                     HStack {
                         Text("Create your profile")
@@ -88,6 +79,15 @@ struct SimpleXInfo: View {
                 .frame(maxWidth: .infinity)
 
                 Spacer()
+
+                Button {
+
+                } label: {
+                    Label("How it works", systemImage: "info.circle")
+                        .font(.subheadline)
+                }
+                .padding(.bottom, 8)
+                .frame(maxWidth: .infinity)
             }
         }
         .padding()

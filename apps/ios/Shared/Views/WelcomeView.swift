@@ -56,8 +56,8 @@ struct WelcomeView: View {
                         fullName: fullName
                     )
                     do {
-                        let user = try apiCreateActiveUser(profile)
-                        chatModel.currentUser = user
+                        chatModel.currentUser = try apiCreateActiveUser(profile)
+                        startChat()
                     } catch {
                         fatalError("Failed to create user: \(error)")
                     }

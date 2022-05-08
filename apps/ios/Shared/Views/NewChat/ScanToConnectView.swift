@@ -10,7 +10,7 @@ import SwiftUI
 import CodeScanner
 
 struct ScanToConnectView: View {
-    @Binding var openedSheet: Bool
+    @Binding var openedSheet: NewChatAction?
 
     var body: some View {
         VStack {
@@ -40,14 +40,14 @@ struct ScanToConnectView: View {
             Task { connectViaLink(r.string, $openedSheet) }
         case let .failure(e):
             logger.error("ConnectContactView.processQRCode QR code error: \(e.localizedDescription)")
-            openedSheet = false
+            openedSheet = nil
         }
     }
 }
 
 struct ConnectContactView_Previews: PreviewProvider {
     static var previews: some View {
-        @State var openedSheet: Bool = true
+        @State var openedSheet: NewChatAction? = nil
         return ScanToConnectView(openedSheet: $openedSheet)
     }
 }

@@ -10,6 +10,7 @@ import Foundation
 import UIKit
 import Dispatch
 import BackgroundTasks
+import SwiftUI
 
 private var chatController: chat_ctrl?
 
@@ -430,25 +431,31 @@ func initializeChat() {
         if m.currentUser == nil {
             m.onboardingStep = .step1_SimpleXInfo
         } else {
-            do {
-                try apiStartChat()
-                try apiSetFilesFolder(filesFolder: getAppFilesDirectory().path)
-                m.userAddress = try apiGetUserAddress()
-                m.userSMPServers = try getUserSMPServers()
-                m.chats = try apiGetChats()
-                if m.appOpenUrl != nil {
-                    m.onboardingStep = .step3b_ConnectViaLink
-                } else if m.chats.isEmpty {
-                    m.onboardingStep = .step3a_MakeConnection
-                } else {
-                    m.onboardingStep = nil
-                }
-            } catch {
-                fatalError("Failed to start or load chats: \(error)")
-            }
+            startChat()
         }
     } catch {
         fatalError("Failed to initialize chat controller or database: \(error)")
+    }
+}
+
+func startChat() {
+    do {
+        let m = ChatModel.shared
+        try apiStartChat()
+        try apiSetFilesFolder(filesFolder: getAppFilesDirectory().path)
+        m.userAddress = try apiGetUserAddress()
+        m.userSMPServers = try getUserSMPServers()
+        m.chats = try apiGetChats()
+        withAnimation {
+            m.onboardingStep = m.appOpenUrl != nil
+                                ? .step3b_ConnectViaLink
+                                : m.chats.isEmpty
+                                ? .step3a_MakeConnection
+                                : nil
+        }
+        ChatReceiver.shared.start()
+    } catch {
+        fatalError("Failed to start or load chats: \(error)")
     }
 }
 

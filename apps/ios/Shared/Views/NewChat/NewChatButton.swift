@@ -8,12 +8,18 @@
 
 import SwiftUI
 
+enum NewChatAction: Identifiable {
+    case createLink
+    case pasteLink
+    case scanQRCode
+
+    var id: NewChatAction { get { self } }
+}
+
 struct NewChatButton: View {
     @State private var showAddChat = false
-    @State private var addContact = false
-    @State private var connReqInvitation: String = ""
-    @State private var scanToConnect = false
-    @State private var pasteToConnect = false
+    @State private var connReq: String = ""
+    @State private var actionSheet: NewChatAction?
 
     var body: some View {
         Button { showAddChat = true } label: {
@@ -21,24 +27,22 @@ struct NewChatButton: View {
         }
         .confirmationDialog("Add contact to start a new chat", isPresented: $showAddChat, titleVisibility: .visible) {
             Button("Create link / QR code") { addContactAction() }
-            Button("Paste received link") { pasteToConnect = true }
-            Button("Scan QR code") { scanToConnect = true }
+            Button("Paste received link") { actionSheet = .pasteLink }
+            Button("Scan QR code") { actionSheet = .scanQRCode }
         }
-        .sheet(isPresented: $addContact, content: {
-            AddContactView(connReqInvitation: connReqInvitation)
-        })
-        .sheet(isPresented: $scanToConnect, content: {
-            ScanToConnectView(openedSheet: $scanToConnect)
-        })
-        .sheet(isPresented: $pasteToConnect, content: {
-            PasteToConnectView(openedSheet: $pasteToConnect)
-        })
+        .sheet(item: $actionSheet) { sheet in
+            switch sheet {
+            case .createLink: AddContactView(connReqInvitation: connReq)
+            case .pasteLink: PasteToConnectView(openedSheet: $actionSheet)
+            case .scanQRCode: ScanToConnectView(openedSheet: $actionSheet)
+            }
+        }
     }
 
     func addContactAction() {
         do {
-            connReqInvitation = try apiAddContact()
-            addContact = true
+            connReq = try apiAddContact()
+            actionSheet = .createLink
         } catch {
             DispatchQueue.global().async {
                 connectionErrorAlert(error)
@@ -53,12 +57,12 @@ enum ConnReqType: Equatable {
     case invitation
 }
 
-func connectViaLink(_ connectionLink: String, _ openedSheet: Binding<Bool>? = nil) {
+func connectViaLink(_ connectionLink: String, _ openedSheet: Binding<NewChatAction?>? = nil) {
     Task {
         do {
             let res = try await apiConnect(connReq: connectionLink)
             DispatchQueue.main.async {
-                openedSheet?.wrappedValue = false
+                openedSheet?.wrappedValue = nil
                 if let connReqType = res {
                     connectionReqSentAlert(connReqType)
                 }
@@ -66,7 +70,7 @@ func connectViaLink(_ connectionLink: String, _ openedSheet: Binding<Bool>? = ni
         } catch {
             logger.error("connectViaLink apiConnect error: \(responseError(error))")
             DispatchQueue.main.async {
-                openedSheet?.wrappedValue = false
+                openedSheet?.wrappedValue = nil
                 connectionErrorAlert(error)
             }
         }
