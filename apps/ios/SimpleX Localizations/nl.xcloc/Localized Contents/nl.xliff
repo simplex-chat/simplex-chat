@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.2" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 http://docs.oasis-open.org/xliff/v1.2/os/xliff-core-1.2-strict.xsd">
-  <file original="en.lproj/Localizable.strings" source-language="en" target-language="nl" datatype="plaintext">
+  <file original="en.lproj/Localizable.strings" datatype="plaintext" source-language="en" target-language="nl">
     <header>
       <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="13.3" build-num="13E113"/>
     </header>
@@ -93,6 +93,10 @@
         <source>Add contact</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Add contact to start a new chat" xml:space="preserve">
+        <source>Add contact to start a new chat</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="All your contacts will remain connected" xml:space="preserve">
         <source>All your contacts will remain connected</source>
         <note>No comment provided by engineer.</note>
@@ -129,6 +133,10 @@
         <source>Choose from library</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Clear" xml:space="preserve">
+        <source>Clear</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Configure SMP servers" xml:space="preserve">
         <source>Configure SMP servers</source>
         <note>No comment provided by engineer.</note>
@@ -145,18 +153,20 @@
         <source>Connect via contact link?</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connect via invitation link?" xml:space="preserve">
-        <source>Connect via invitation link?</source>
+      <trans-unit id="Connect via link" xml:space="preserve">
+        <source>Connect via link</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Connect via one-time link?" xml:space="preserve">
+        <source>Connect via one-time link?</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connecting server…" xml:space="preserve">
         <source>Connecting to server…</source>
-        <target>Connecting to server…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connecting server… (error: %@)" xml:space="preserve">
         <source>Connecting to server… (error: %@)</source>
-        <target>Connecting to server… (error: %@)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connecting..." xml:space="preserve">
@@ -211,8 +221,8 @@
         <source>Create address</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Create group" xml:space="preserve">
-        <source>Create group</source>
+      <trans-unit id="Create link / QR code" xml:space="preserve">
+        <source>Create link / QR code</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Create profile" xml:space="preserve">
@@ -379,6 +389,18 @@
         <source>Open Settings</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Paste" xml:space="preserve">
+        <source>Paste</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Paste received link" xml:space="preserve">
+        <source>Paste received link</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Paste the link you received into the box below to connect with your contact." xml:space="preserve">
+        <source>Paste the link you received into the box below to connect with your contact.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Please check that you used the correct link or ask your contact to send you another one." xml:space="preserve">
         <source>Please check that you used the correct link or ask your contact to send you another one.</source>
         <note>No comment provided by engineer.</note>
@@ -454,10 +476,6 @@
       <trans-unit id="Show QR code to your contact&#10;to scan from the app" xml:space="preserve">
         <source>Show QR code to your contact
 to scan from the app</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Start new chat" xml:space="preserve">
-        <source>Start new chat</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Take picture" xml:space="preserve">
@@ -540,6 +558,10 @@ To connect, please ask your contact to create another connection link and check 
       </trans-unit>
       <trans-unit id="You are connected to the server used to receive messages from this contact." xml:space="preserve">
         <source>You are connected to the server used to receive messages from this contact.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="You can also connect by clicking the link. If it opens in the browser, click **Open in mobile app** button" xml:space="preserve">
+        <source>You can also connect by clicking the link. If it opens in the browser, click **Open in mobile app** button</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can now send messages to %@" xml:space="preserve">
