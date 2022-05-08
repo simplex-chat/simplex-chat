@@ -25,11 +25,11 @@ struct SimpleXInfo: View {
                     .padding(.bottom)
 
                 infoRow("🎭", "Privacy redefined",
-                        "The 1st platform that has no user identifiers – 100% private by design!")
+                        "The 1st platform without any user identifiers – private by design.")
                 infoRow("📭", "Immune to spam and abuse",
                         "People can connect to you only via the links you share.")
-                infoRow("😎", "Decentralized",
-                        "Based on open-source protocol – anybody can run the servers.")
+                infoRow("🤝", "Decentralized",
+                        "Open-source protocol – anybody can run the servers.")
 
                 Spacer()
 

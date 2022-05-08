@@ -18,12 +18,11 @@ struct HowItWorks: View {
                 .padding(.vertical)
             Group {
                 Text("Many people asked: *if SimpleX has no user identifiers, how can it deliver messages?*")
-                Text("To protect users' privacy, instead of user identifiers used by other messaging platforms, SimpleX uses identifiers for message queues.")
-                Text("Users control through which server(s) **to receive** the messages by creating queues and sharing them with their contacts as links or QR codes, that include asymmetric end-to-end encryption keys.")
-                Text("Only the client devices store information about users, their contacts and groups.")
+                Text("To protect privacy, instead of user IDs used by all other platforms, SimpleX has identifiers for message queues, separate for each of your contacts.")
+                Text("You control through which server(s) **to receive** the messages, your contacts – the servers you use to message them.")
+                Text("Only client devices store user profiles, contacts, groups, and messages sent with 2-layer end-to-end encryption.")
                 Text("Read more in our GitHub repository.")
             }
-            .font(.subheadline)
             .padding(.bottom)
 
             Spacer()
