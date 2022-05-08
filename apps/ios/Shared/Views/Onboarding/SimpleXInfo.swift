@@ -11,6 +11,7 @@ import SwiftUI
 struct SimpleXInfo: View {
     @EnvironmentObject var m: ChatModel
     @State private var showHowItWorks = false
+    var onboarding: Bool
 
     var body: some View {
         GeometryReader { g in
@@ -33,9 +34,10 @@ struct SimpleXInfo: View {
 
                 Spacer()
 
-                OnboardingActionButton()
-
-                Spacer()
+                if onboarding {
+                    OnboardingActionButton()
+                    Spacer()
+                }
 
                 Button {
                     showHowItWorks = true
@@ -46,7 +48,9 @@ struct SimpleXInfo: View {
                 .padding(.bottom, 8)
                 .frame(maxWidth: .infinity)
             }
-            .sheet(isPresented: $showHowItWorks) { HowItWorks() }
+            .sheet(isPresented: $showHowItWorks) {
+                HowItWorks(onboarding: onboarding)
+            }
         }
         .padding()
     }
@@ -58,7 +62,7 @@ struct SimpleXInfo: View {
                 .frame(width: 40)
             VStack(alignment: .leading) {
                 Text(title).font(.headline)
-                Text(text).font(.subheadline)
+                Text(text)
             }
         }
         .padding(.bottom)
@@ -93,6 +97,6 @@ struct OnboardingActionButton: View {
 
 struct SimpleXInfo_Previews: PreviewProvider {
     static var previews: some View {
-        SimpleXInfo()
+        SimpleXInfo(onboarding: true)
     }
 }
