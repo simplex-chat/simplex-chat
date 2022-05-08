@@ -56,19 +56,19 @@ struct SettingsView: View {
                         UserAddress()
                             .navigationTitle("Your chat address")
                     } label: {
-                        section("qrcode") { Text("Your SimpleX contact address") }
+                        settingsRow("qrcode") { Text("Your SimpleX contact address") }
                     }
                 }
                 
                 Section("Settings") {
-                    section("link") {
+                    settingsRow("link") {
                         Toggle("Show pending connections", isOn: $pendingConnections)
                     }
                     NavigationLink {
                         SMPServers()
                             .navigationTitle("Your SMP servers")
                     } label: {
-                        section("server.rack") { Text("SMP servers") }
+                        settingsRow("server.rack") { Text("SMP servers") }
                     }
                 }
 
@@ -78,23 +78,23 @@ struct SettingsView: View {
                             .navigationTitle("Welcome \(user.displayName)!")
                             .frame(maxHeight: .infinity, alignment: .top)
                     } label: {
-                        section("questionmark") { Text("How to use it") }
+                        settingsRow("questionmark") { Text("How to use it") }
                     }
                     NavigationLink {
                         SimpleXInfo(onboarding: false)
                             .navigationBarTitle("", displayMode: .inline)
                             .frame(maxHeight: .infinity, alignment: .top)
                     } label: {
-                        section("info") { Text("About SimpleX Chat") }
+                        settingsRow("info") { Text("About SimpleX Chat") }
                     }
                     NavigationLink {
                         MarkdownHelp()
                             .navigationTitle("How to use markdown")
                             .frame(maxHeight: .infinity, alignment: .top)
                     } label: {
-                        section("textformat") { Text("Markdown in messages") }
+                        settingsRow("textformat") { Text("Markdown in messages") }
                     }
-                    section("number") {
+                    settingsRow("number") {
                         Button {
                             showSettings = false
                             DispatchQueue.main.async {
@@ -104,14 +104,14 @@ struct SettingsView: View {
                             Text("Chat with the developers")
                         }
                     }
-                    section("envelope") { Text("[Send us email](mailto:chat@simplex.chat)") }
+                    settingsRow("envelope") { Text("[Send us email](mailto:chat@simplex.chat)") }
                 }
 
                 Section("Develop") {
                     NavigationLink {
                         TerminalView()
                     } label: {
-                        section("terminal") { Text("Chat console") }
+                        settingsRow("terminal") { Text("Chat console") }
                     }
                     ZStack(alignment: .leading) {
                         Image(colorScheme == .dark ? "github_light" : "github")
@@ -138,7 +138,7 @@ struct SettingsView: View {
         }
     }
 
-    private func section<Content : View>(_ icon: String, content: @escaping () -> Content) -> some View {
+    private func settingsRow<Content : View>(_ icon: String, content: @escaping () -> Content) -> some View {
         ZStack(alignment: .leading) {
             Image(systemName: icon).frame(maxWidth: 24, maxHeight: 24, alignment: .center)
             content().padding(.leading, indent)
