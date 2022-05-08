@@ -25,7 +25,7 @@ struct PasteToConnectView: View {
                 .padding(.bottom)
             TextEditor(text: $connectionLink)
                 .onSubmit(connect)
-                .font(.body)
+                .font(.caption)
                 .textInputAutocapitalization(.never)
                 .disableAutocorrection(true)
                 .allowsTightening(false)

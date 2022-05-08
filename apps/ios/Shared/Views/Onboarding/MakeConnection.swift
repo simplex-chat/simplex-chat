@@ -81,6 +81,11 @@ struct MakeConnection: View {
                 withAnimation { m.onboardingStage = .onboardingComplete }
             }
         }
+        .onChange(of: m.chats.isEmpty) { empty in
+            if actionSheet == nil && !empty {
+                withAnimation { m.onboardingStage = .onboardingComplete }
+            }
+        }
         .padding()
         .frame(maxHeight: .infinity, alignment: .top)
     }

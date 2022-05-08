@@ -425,6 +425,7 @@ private func sendCommandOkResp(_ cmd: ChatCommand) async throws {
 }
 
 func initializeChat() {
+    logger.debug("initializeChat")
     do {
         let m = ChatModel.shared
         m.currentUser = try apiGetActiveUser()
@@ -439,6 +440,7 @@ func initializeChat() {
 }
 
 func startChat() {
+    logger.debug("startChat")
     do {
         let m = ChatModel.shared
         try apiStartChat()
@@ -446,6 +448,7 @@ func startChat() {
         m.userAddress = try apiGetUserAddress()
         m.userSMPServers = try getUserSMPServers()
         m.chats = try apiGetChats()
+        print(m.appOpenUrl)
         withAnimation {
             m.onboardingStage = m.appOpenUrl != nil
                                 ? .step3b_ConnectViaLink

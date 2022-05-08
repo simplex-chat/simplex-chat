@@ -33,11 +33,7 @@ struct SimpleXInfo: View {
 
                 Spacer()
 
-                if m.currentUser == nil {
-                    actionButton("Create your profile", onboarding: .step2_CreateProfile)
-                } else {
-                    actionButton("Make a private connection", onboarding: .step3a_MakeConnection)
-                }
+                OnboardingActionButton()
 
                 Spacer()
 
@@ -66,6 +62,18 @@ struct SimpleXInfo: View {
             }
         }
         .padding(.bottom)
+    }
+}
+
+struct OnboardingActionButton: View {
+    @EnvironmentObject var m: ChatModel
+
+    var body: some View {
+        if m.currentUser == nil {
+            actionButton("Create your profile", onboarding: .step2_CreateProfile)
+        } else {
+            actionButton("Make a private connection", onboarding: .step3a_MakeConnection)
+        }
     }
 
     private func actionButton(_ label: LocalizedStringKey, onboarding: OnboardingStage) -> some View {
