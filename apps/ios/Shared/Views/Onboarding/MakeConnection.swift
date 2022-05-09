@@ -124,9 +124,11 @@ struct MakeConnection: View {
                     .padding(.top, 6)
             })
             VStack(alignment: .leading) {
-                Button(title, action: action)
-                    .font(.headline)
-                    .multilineTextAlignment(.leading)
+                Button(action: action, label: {
+                    Text(title)
+                        .font(.headline)
+                        .multilineTextAlignment(.leading)
+                })
                 Text(text)
             }
         }

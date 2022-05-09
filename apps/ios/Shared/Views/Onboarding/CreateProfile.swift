@@ -76,13 +76,6 @@ struct CreateProfile: View {
             .onAppear() {
                 focusDisplayName = true
             }
-            .toolbar {
-                ToolbarItem(placement: .keyboard) {
-                    Button("Create") { createProfile() }
-//                    .disabled(!canCreateProfile())
-                }
-            }
-
         }
         .padding()
     }

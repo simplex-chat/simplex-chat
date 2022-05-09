@@ -68,7 +68,7 @@
 "6" = "6";
 
 /* No comment provided by engineer. */
-"About SimpleX" = "Информация о SimpleX";
+"About SimpleX" = "О SimpleX";
 
 /* No comment provided by engineer. */
 "About SimpleX Chat" = "Информация о SimpleX Chat";
@@ -164,7 +164,7 @@
 "Connect via one-time link?" = "Соединиться через одноразовую ссылку?";
 
 /* No comment provided by engineer. */
-"Connect with the developers" = "Соединиться с девелоперами";
+"Connect with the developers" = "Соединиться с разработчиками";
 
 /* No comment provided by engineer. */
 "connected" = "соединение установлено";
@@ -231,7 +231,7 @@
 "Create link / QR code" = "Создать ссылку / QR код";
 
 /* No comment provided by engineer. */
-"Create your profile" = "Создать ваш профиль";
+"Create your profile" = "Создать профиль";
 
 /* No comment provided by engineer. */
 "Currently maximum supported file size is %@." = "Максимальный размер файла - %@.";
@@ -357,10 +357,10 @@
 "Image will be received when your contact is online, please wait or check later!" = "Изображение будет принято, когда ваш контакт будет в сети, подождите или проверьте позже!";
 
 /* No comment provided by engineer. */
-"Immune to spam and abuse" = "Защищен от спама и атак";
+"Immune to spam and abuse" = "Защищен от спама";
 
 /* No comment provided by engineer. */
-"In person or via a video call – the most secure way to connect." = "При встрече или в видеозвонке - самое безопасное соединение.";
+"In person or via a video call – the most secure way to connect." = "При встрече или в видеозвонке – самый безопасный способ установить соединение";
 
 /* call status */
 "in progress" = "активный звонок";
@@ -384,7 +384,7 @@
 "It seems like you are already connected via this link. If it is not the case, there was an error (%@)." = "Возможно, вы уже соединились через эту ссылку. Если это не так, то это ошибка (%@).";
 
 /* No comment provided by engineer. */
-"It's secure to share - only one contact can use it." = "Ей безопасно поделиться - только один контак может использовать её.";
+"It's secure to share - only one contact can use it." = "Ей безопасно поделиться - только один контакт может использовать её.";
 
 /* No comment provided by engineer. */
 "italic" = "курсив";
@@ -399,7 +399,7 @@
 "Make sure SMP server addresses are in correct format, line separated and are not duplicated." = "Пожалуйста, проверьте, что адреса SMP серверов имеют правильный формат, каждый адрес на отдельной строке и не повторяется.";
 
 /* No comment provided by engineer. */
-"Many people asked: *if SimpleX has no user identifiers, how can it deliver messages?*" = "Много пользователей спросили: *как SimpleX может доставлять сообщения без идентификаторов пользователей?*";
+"Many people asked: *if SimpleX has no user identifiers, how can it deliver messages?*" = "Много пользователей спросили: *как SimpleX доставляет сообщения без идентификаторов пользователей?*";
 
 /* No comment provided by engineer. */
 "Markdown in messages" = "Форматирование сообщений";
@@ -429,13 +429,13 @@
 "One-time invitation link" = "Одноразовая ссылка";
 
 /* No comment provided by engineer. */
-"Only client devices store user profiles, contacts, groups, and messages sent with **2-layer end-to-end encryption**." = "Только пользовательские устройства хранят контакты, группы и сообщения, которые **отправляются с 2-х уровневым шифрованием**";
+"Only client devices store user profiles, contacts, groups, and messages sent with **2-layer end-to-end encryption**." = "Только пользовательские устройства хранят контакты, группы и сообщения, которые отправляются **с двухуровневым end-to-end шифрованием**";
 
 /* No comment provided by engineer. */
 "Open Settings" = "Открыть Настройки";
 
 /* No comment provided by engineer. */
-"Open-source protocol and code – anybody can run the servers." = "Открытый протокол и код - кто угодно может хостить серверы.";
+"Open-source protocol and code – anybody can run the servers." = "Открытый протокол и код - кто угодно может запускать серверы.";
 
 /* No comment provided by engineer. */
 "or" = "или";
@@ -474,10 +474,10 @@
 "Read" = "Прочитано";
 
 /* No comment provided by engineer. */
-"Read more in our [GitHub repository](https://github.com/simplex-chat/simplex-chat#readme)." = "Узнайте больше из нашей [репозитории в GitHub](https://github.com/simplex-chat/simplex-chat#readme).";
+"Read more in our [GitHub repository](https://github.com/simplex-chat/simplex-chat#readme)." = "Узнайте больше из нашего [GitHub репозитория](https://github.com/simplex-chat/simplex-chat#readme).";
 
 /* No comment provided by engineer. */
-"Read more in our GitHub repository." = "Узнайте больше из нашей репозитории в GitHub.";
+"Read more in our GitHub repository." = "Узнайте больше из нашего GitHub репозитория.";
 
 /* No comment provided by engineer. */
 "received answer…" = "получен ответ…";
@@ -588,7 +588,7 @@
 "To make your first private connection, choose **one of the following**:" = "Чтобы сделать ваше первое приватное соединение, выберите **одно из**:";
 
 /* No comment provided by engineer. */
-"To protect privacy, instead of user IDs used by all other platforms, SimpleX has identifiers for message queues, separate for each of your contacts." = "Чтобы защитить вашу конфиденциальность, вместо ID пользователей, которые есть в других платформах, SimpleX использует ID для очередей сообщений, разные для каждого котакта.";
+"To protect privacy, instead of user IDs used by all other platforms, SimpleX has identifiers for message queues, separate for each of your contacts." = "Чтобы защитить вашу конфиденциальность, вместо ID пользователей, которые есть в других платформах, SimpleX использует ID для очередей сообщений, разные для каждого контакта.";
 
 /* No comment provided by engineer. */
 "Trying to connect to the server used to receive messages from this contact (error: %@)." = "Устанавливается соединение с сервером, через который вы получаете сообщения от этого контакта (ошибка: %@).";
